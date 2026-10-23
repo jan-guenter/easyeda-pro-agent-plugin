@@ -397,7 +397,7 @@ void test("NetGroup and filtered PCB membership reads expose narrow native route
   assert.match(route.scope, /not public primitive instances/u); assert.match(route.scope, /explicit nonempty unique filters/u);
   assert.match(route.scope, /source\/inventory\/source/u);
   assert.deepEqual(extensionApiCoverageSummary()["statuses"], {
-    "implemented-public-subset": 212, "implemented-native-equivalent": 33, "internal-lifecycle-only": 0, "implemented-but-blocked": 79, omitted: 450,
+    "implemented-public-subset": 212, "implemented-native-equivalent": 34, "internal-lifecycle-only": 0, "implemented-but-blocked": 79, omitted: 449,
   });
 });
 
@@ -953,7 +953,16 @@ void test("selected PCB objects expose source DTOs without promoting the lossy p
   assert.ok(isRecord(publicRead));
   assert.equal(publicRead["authority"], "native-selected-source-objects-not-public-instance-or-persistence-proof");
   const raw = inventoryExtensionApiCoverage().find((entry) => entry.path === "eda.pcb_SelectControl.getSelectedPrimitives");
-  assert.equal(raw?.status, "omitted"); assert.equal(raw?.omission?.code, "lossy-selected-object-projection");
+  assert.equal(raw?.status, "implemented-native-equivalent"); assert.equal(raw.omission, null);
+  const selectedRoute = raw.routes[0]; assert.ok(selectedRoute);
+  assert.equal(selectedRoute.tool, "easyeda_control_pcb_geometry");
+  assert.equal(selectedRoute.executionState, "available-with-runtime-guards");
+  assert.match(selectedRoute.scope, /two compound samples must match/u);
+  assert.match(selectedRoute.scope, /unsupported, never silently dropped/u);
+  assert.match(selectedRoute.scope, /raw selected-object serializer is never called/u);
+  assert.match(selectedRoute.scope, /showNet/u);
+  const selectedDiscovery = queryOfflineApi(apiRequestSchema.parse({ action: "pcb-geometry", query: { method: raw.path } })).result;
+  assert.ok(isRecord(selectedDiscovery)); assert.equal(selectedDiscovery["total"], 1);
 });
 
 void test("polygon splitting is bounded public data, Pin enumeration is a native equivalent and discretize remains a stub", () => {

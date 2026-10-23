@@ -90,6 +90,7 @@ export class CurrentPcbWorkerStartupOpening {
   #openingAttempted = false;
   #capture: Promise<CurrentPcbWorkerConstructionPacket> | null = null;
   #openingResult: CurrentPcbDiagnosticOpeningResult | null = null;
+  #target: CurrentDisposableOpenSealedTarget | null = null;
   #construction: CurrentPcbWorkerConstructionPacket | null = null;
   #workerIdentity: CurrentPcbWorkerConstructionProjectIdentity | null = null;
   #completed: CurrentPcbWorkerStartupOpeningResult | null = null;
@@ -187,6 +188,7 @@ export class CurrentPcbWorkerStartupOpening {
     try {
       this.#stage = "target-validation"; this.#step = "validate-target";
       const target = Object.freeze(currentDisposableOpenSealedTargetSchema.parse(captureCurrentPcbStringClockReply(input).value));
+      this.#target = target;
       if (typeof reverify !== "function") { throw fail("CHECKPOINT_CALLBACK"); }
       this.#stage = "parent-before-preflight"; await this.#parent();
       this.#stage = "ancillary-before-preflight"; await this.#ancillary();
@@ -240,11 +242,28 @@ export class CurrentPcbWorkerStartupOpening {
       throw error;
     } finally { this.#settled = true; }
   }
-  public async requireOriginal(result: CurrentPcbWorkerStartupOpeningResult): Promise<CurrentPcbWorkerStartupTransport> {
+  public requireOriginal(result: CurrentPcbWorkerStartupOpeningResult): Promise<CurrentPcbWorkerStartupTransport> {
+    return this.#requireOriginalResult(result);
+  }
+  async #requireOriginalResult(result: CurrentPcbWorkerStartupOpeningResult): Promise<CurrentPcbWorkerStartupTransport> {
     if (result !== this.#completed || !this.#settled || this.#released || this.#releasing ||
         this.#workerIdentity === null || result.workerIdentity !== this.#workerIdentity) { throw fail("ORIGINAL_RESULT"); }
     await this.#current(); const runner = await this.#transport.requireOriginal(result.construction); await this.#current();
     await runner.requireProjectIdentity(result.construction, this.#workerIdentity); await this.#current(); return this.#transport;
+  }
+  /** The same original opening can be joined to its own PCB qualification.
+   * Matching serialized evidence cannot transfer it to another native channel
+   * or replace the checkpoint-selected target. This is not writer authority. */
+  public async requireOriginalPcbDependency(result: CurrentPcbWorkerStartupOpeningResult,
+    dependency: CurrentPcbWorkerStartupDependency, input: CurrentDisposableOpenSealedTarget): Promise<void> {
+    const target = currentDisposableOpenSealedTargetSchema.parse(captureCurrentPcbStringClockReply(input).value);
+    if (dependency !== this.#dependency || this.#target === null || JSON.stringify(target) !== JSON.stringify(this.#target)) {
+      throw fail("ORIGINAL_PCB_DEPENDENCY");
+    }
+    await this.#requireOriginalResult(result);
+    if (dependency !== this.#dependency || JSON.stringify(target) !== JSON.stringify(this.#target)) {
+      throw fail("ORIGINAL_PCB_DEPENDENCY");
+    }
   }
   /** These sequential reads associate current wrappers with the retained
    * constructor callbacks. They do not prove continuous or atomic ownership. */

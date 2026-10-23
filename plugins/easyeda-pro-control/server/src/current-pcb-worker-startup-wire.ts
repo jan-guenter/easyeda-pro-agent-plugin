@@ -1,5 +1,6 @@
 /** Fixed private startup wire vocabulary. No command text or caller-supplied
  * expression crosses the native boundary. Separate from diagnostic no-pause. */
+/* oxlint-disable import/max-dependencies -- This native boundary compares every fixed program against its original contract literal; splitting those checks would duplicate the admission policy. */
 import { z } from "zod";
 import { types } from "node:util";
 import { captureCurrentPcbStringClockReply } from "./current-pcb-string-clock-reply.ts";
@@ -10,9 +11,9 @@ import type { CurrentPcbWorkerStartupCommand } from "./current-pcb-worker-startu
 import { freezeDeep } from "./sqlite-inventory-core.ts";
 import { CURRENT_PCB_WORKER_CONSTRUCTION_ASSIGNMENT_CALLS } from "./current-pcb-worker-construction-assignment.ts";
 import { CURRENT_PCB_DIAGNOSTIC_OPENING_FUNCTION } from "./current-pcb-diagnostic-opening.ts";
+import { CURRENT_PCB_DIAGNOSTIC_PCB_OPENING_FUNCTION } from "./current-pcb-diagnostic-pcb-opening.ts";
 import { currentDisposableOpenSealedTargetSchema } from "./current-disposable-open.ts";
 import { CURRENT_PCB_WORKER_STARTUP_UI_ACTOR_CLOCK_FUNCTION, CURRENT_PCB_WORKER_STARTUP_WORKER_ACTOR_CLOCK_FUNCTION } from "./current-pcb-worker-startup-actor.ts";
-// oxlint-disable-next-line import/max-dependencies -- The native boundary must compare all fixed startup programs with their original contract literals in one encoder.
 import { CURRENT_PCB_WORKER_STARTUP_CHANNEL_CALLS } from "./current-pcb-worker-startup-channel-observation.ts";
 
 export const CURRENT_PCB_WORKER_STARTUP_REQUEST_LIMIT = 256;
@@ -38,6 +39,12 @@ const schema: z.ZodType<CurrentPcbWorkerStartupCommand> = z.union([
       z.object({ value: z.enum(["preflight", "open-project"]) }).strict()]),
     returnByValue: z.literal(true), awaitPromise: z.literal(true), silent: z.literal(true), generatePreview: z.literal(false),
     userGesture: z.literal(false), throwOnSideEffect: z.literal(false) }).strict()),
+  command("Runtime.callFunctionOn", z.object({ functionDeclaration: z.literal(CURRENT_PCB_DIAGNOSTIC_PCB_OPENING_FUNCTION),
+    uniqueContextId: sessionId, arguments: z.tuple([z.object({ value: currentDisposableOpenSealedTargetSchema }).strict(),
+      z.object({ value: z.enum(["preflight", "open-document", "observe"]) }).strict()]),
+    returnByValue: z.literal(true), awaitPromise: z.literal(true), silent: z.literal(true), generatePreview: z.literal(false),
+    userGesture: z.literal(false), throwOnSideEffect: z.literal(false) }).strict()),
+  command("Debugger.getScriptSource", z.object({ scriptId: handle }).strict()).extend({ pcbPhase: z.literal("source") }),
   command("Target.setAutoAttach", z.object({ autoAttach: z.literal(true), waitForDebuggerOnStart: z.literal(true),
     flatten: z.literal(true), filter: z.tuple([z.object({ type: z.literal("worker"), exclude: z.literal(false) }).strict(),
       z.object({ exclude: z.literal(true) }).strict()]) }).strict()),
@@ -75,7 +82,9 @@ function captureWire(raw: unknown): unknown {
   const original: unknown = params?.value;
   if (params === undefined || !Object.hasOwn(params, "value") || !plain(original)) { return captureCurrentPcbStringClockReply(raw).value; }
   const functionField = Object.getOwnPropertyDescriptor(original, "functionDeclaration");
-  if (functionField === undefined || !Object.hasOwn(functionField, "value") || functionField.value !== CURRENT_PCB_DIAGNOSTIC_OPENING_FUNCTION) {
+  const sourceText: unknown = functionField?.value;
+  if (functionField === undefined || !Object.hasOwn(functionField, "value") || typeof sourceText !== "string" ||
+      sourceText !== CURRENT_PCB_DIAGNOSTIC_OPENING_FUNCTION && sourceText !== CURRENT_PCB_DIAGNOSTIC_PCB_OPENING_FUNCTION) {
     return captureCurrentPcbStringClockReply(raw).value;
   }
   const descriptors = Object.getOwnPropertyDescriptors(original);
@@ -84,7 +93,7 @@ function captureWire(raw: unknown): unknown {
   outer["params"] = { ...params, value: Object.create(null, descriptors) as unknown };
   const captured = captureCurrentPcbStringClockReply(Object.create(null, outer)).value;
   if (!plain(captured) || !plain(captured["params"])) { return fail(); }
-  return { ...captured, params: { ...captured["params"], functionDeclaration: CURRENT_PCB_DIAGNOSTIC_OPENING_FUNCTION } };
+  return { ...captured, params: { ...captured["params"], functionDeclaration: sourceText } };
 }
 
 /** Decodes only inert own-data input before any schema/property inspection.
@@ -110,7 +119,11 @@ export function currentPcbWorkerStartupWire(raw: unknown, id: number): Readonly<
     case "Debugger.enable": { fields = { startupPhase: "debugger" }; break; }
     case "Debugger.setInstrumentationBreakpoint": { fields = { startupPhase: "instrument" }; break; }
     case "Runtime.runIfWaitingForDebugger": { fields = { startupPhase: "start" }; break; }
-    case "Debugger.getScriptSource": { fields = { startupPhase: "source", scriptId: parsed.params.scriptId }; break; }
+    case "Debugger.getScriptSource": {
+      if ("pcbPhase" in parsed) { action = "worker-startup-parent"; fields = { parentPhase: "pcb-source", scriptId: parsed.params.scriptId }; }
+      else { fields = { startupPhase: "source", scriptId: parsed.params.scriptId }; }
+      break;
+    }
     case "Debugger.removeBreakpoint": { fields = { startupPhase: "remove", breakpointId: parsed.params.breakpointId }; break; }
     case "Debugger.resume": { fields = { startupPhase: "resume" }; break; }
     case "Debugger.setBreakpoint": {
@@ -131,7 +144,8 @@ export function currentPcbWorkerStartupWire(raw: unknown, id: number): Readonly<
           fields = { parentPhase: "actor-clock", uniqueContextId: parsed.params.uniqueContextId }; break;
         }
         const [target, phase] = parsed.params.arguments;
-        fields = { parentPhase: phase.value, uniqueContextId: parsed.params.uniqueContextId,
+        fields = { parentPhase: parsed.params.functionDeclaration === CURRENT_PCB_DIAGNOSTIC_PCB_OPENING_FUNCTION ? `pcb-${phase.value}` : phase.value,
+          uniqueContextId: parsed.params.uniqueContextId,
           targetRawWindowsPath: target.value.rawWindowsPath, targetProjectUuid: target.value.projectUuid,
           targetBranchUuid: target.value.branchUuid, targetDocumentUuid: target.value.documentUuid,
           targetExpectedSourceSha256: target.value.expectedSourceSha256 };

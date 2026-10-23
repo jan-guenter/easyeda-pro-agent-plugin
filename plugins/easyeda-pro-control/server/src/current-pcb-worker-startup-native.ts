@@ -6,6 +6,7 @@ import { CURRENT_PCB_WORKER_CONSTRUCTION_IDENTITY, CURRENT_PCB_WORKER_CONSTRUCTI
 import { CURRENT_PCB_WORKER_STARTUP_ATTACH } from "./current-pcb-worker-startup-contract.ts";
 import type { CurrentPcbWorkerStartupParentCommand, CurrentPcbWorkerStartupWorkerCommand } from "./current-pcb-worker-startup-contract.ts";
 import { CURRENT_PCB_DIAGNOSTIC_OPENING_FUNCTION } from "./current-pcb-diagnostic-opening.ts";
+import { CURRENT_PCB_DIAGNOSTIC_PCB_OPENING_FUNCTION } from "./current-pcb-diagnostic-pcb-opening.ts";
 import { sha256Text } from "./core.ts";
 import { CURRENT_PCB_WORKER_STARTUP_REQUEST_LIMIT, currentPcbWorkerStartupWire } from "./current-pcb-worker-startup-wire.ts";
 import { freezeDeep } from "./sqlite-inventory-core.ts";
@@ -63,9 +64,15 @@ export function currentPcbWorkerStartupNativeParentCases(): readonly CurrentPcbW
     { method: "Page.getFrameTree", params: {}, sessionId },
     { method: "DOM.getFrameOwner", params: { frameId: "original-frame" }, sessionId },
     { method: "DOM.describeNode", params: { backendNodeId: 42, depth: 0, pierce: false }, sessionId },
+    { method: "Debugger.getScriptSource", pcbPhase: "source", params: { scriptId: "original-pcb-script" }, sessionId },
     currentPcbWorkerStartupUiActorCommand(sessionId, "original-context"),
     ...(["preflight", "open-project"] as const).map(phase => ({ method: "Runtime.callFunctionOn" as const, params: {
       functionDeclaration: CURRENT_PCB_DIAGNOSTIC_OPENING_FUNCTION, uniqueContextId: "original-context",
+      arguments: [{ value: target }, { value: phase }] as const, returnByValue: true as const, awaitPromise: true as const,
+      silent: true as const, generatePreview: false as const, userGesture: false as const, throwOnSideEffect: false as const,
+    }, sessionId })),
+    ...(["preflight", "open-document", "observe"] as const).map(phase => ({ method: "Runtime.callFunctionOn" as const, params: {
+      functionDeclaration: CURRENT_PCB_DIAGNOSTIC_PCB_OPENING_FUNCTION, uniqueContextId: "original-context",
       arguments: [{ value: target }, { value: phase }] as const, returnByValue: true as const, awaitPromise: true as const,
       silent: true as const, generatePreview: false as const, userGesture: false as const, throwOnSideEffect: false as const,
     }, sessionId })),
@@ -114,6 +121,7 @@ export function currentPcbWorkerStartupNativeSource(): string {
 // Generated from current-pcb-worker-startup-native.ts. Do not edit this block.
 public static class EasyedaWorkerStartupProtocol {
   public const string UiActorClockFunction=${literal(CURRENT_PCB_WORKER_STARTUP_UI_ACTOR_CLOCK_FUNCTION)};
+  public const string PcbOpeningFunction=${literal(CURRENT_PCB_DIAGNOSTIC_PCB_OPENING_FUNCTION)};
   static void Need(bool condition,string code) { if(!condition)throw new System.InvalidOperationException("pcb-diagnostic-startup-"+code); }
   static string Field(System.Collections.IDictionary fields,string key) {
     Need(fields!=null && fields.Contains(key),"field");

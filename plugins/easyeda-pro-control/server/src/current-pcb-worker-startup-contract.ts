@@ -4,6 +4,7 @@ import { freezeDeep } from "./sqlite-inventory-core.ts";
 import type { CurrentPcbWorkerConstructionCommand } from "./current-pcb-worker-construction-contract.ts";
 import type { CurrentDisposableOpenSealedTarget } from "./current-disposable-open.ts";
 import type { CURRENT_PCB_DIAGNOSTIC_OPENING_FUNCTION } from "./current-pcb-diagnostic-opening.ts";
+import type { CurrentPcbDiagnosticPcbOpeningPhase } from "./current-pcb-diagnostic-pcb-opening.ts";
 import type { CurrentPcbWorkerStartupUiActorCommand } from "./current-pcb-worker-startup-actor.ts";
 
 export const CURRENT_PCB_WORKER_STARTUP_ATTACH = freezeDeep({ autoAttach: true,
@@ -14,12 +15,14 @@ export type CurrentPcbWorkerStartupParentCommand =
   | CurrentPcbWorkerStartupUiActorCommand
   | Readonly<{ method: "Target.getTargets"; params: Readonly<Record<string, never>>; sessionId?: never }>
   | (Readonly<{ sessionId: string }> & (
+    | Readonly<{ method: "Debugger.getScriptSource"; pcbPhase: "source"; params: Readonly<{ scriptId: string }> }>
     | Readonly<{ method: "Page.getFrameTree"; params: Readonly<Record<string, never>> }>
     | Readonly<{ method: "DOM.getFrameOwner"; params: Readonly<{ frameId: string }> }>
     | Readonly<{ method: "DOM.describeNode"; params: Readonly<{ backendNodeId: number; depth: 0; pierce: false }> }>
     | Readonly<{ method: "Runtime.callFunctionOn"; params: Readonly<{
+      /** Wire validation independently selects the exact project/PCB literal and phase pair. */
       functionDeclaration: typeof CURRENT_PCB_DIAGNOSTIC_OPENING_FUNCTION; uniqueContextId: string;
-      arguments: readonly [Readonly<{ value: CurrentDisposableOpenSealedTarget }>, Readonly<{ value: "preflight" | "open-project" }>];
+      arguments: readonly [Readonly<{ value: CurrentDisposableOpenSealedTarget }>, Readonly<{ value: "open-project" | CurrentPcbDiagnosticPcbOpeningPhase }>];
       returnByValue: true; awaitPromise: true; silent: true; generatePreview: false; userGesture: false; throwOnSideEffect: false;
     }> }>
   ));

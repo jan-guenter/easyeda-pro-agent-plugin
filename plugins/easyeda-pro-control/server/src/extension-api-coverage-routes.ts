@@ -1,3 +1,5 @@
+import { CURRENT_PCB_SELECTED_GEOMETRY_METHOD, CURRENT_PCB_SELECTION_LIMITATION } from "./current-pcb-selection.ts";
+
 /** Reviewed links from public SDK methods to actual maintained execution paths.
  * A native task equivalent does not claim to invoke the public wrapper, support
  * every overload, or validate that wrapper's implementation.
@@ -25,7 +27,16 @@ interface RouteGroup {
 const groups: RouteGroup[] = [];
 const topologyBlock = "Generic ordinary schematic type-1 execution requires readDesignTopology in design-execution.ts. The exact schematic-topology reader is currently refused before dispatch: the pinned compiled-netlist path can annotate DESIGNATOR/UNIQUEID and invoke global SaveAll. A reviewed pure complete topology reader and disposable proof are required for this generic route; existing action schemas and historical tests do not make it callable. Separately listed sealed flat-display and flat-wire-reroute routes do not activate this route or other schematic operations.";
 
-groups.push({ namespace: "dmt_Board", methods: ["getBoardInfo", "getAllBoardsInfo"], route: {
+groups.push({ namespace: "pcb_SelectControl", methods: ["getSelectedPrimitives"], route: {
+  tool: "easyeda_control_pcb_geometry", selector: CURRENT_PCB_SELECTED_GEOMETRY_METHOD, implementation: "native-task-equivalent",
+  scope: `Separately pinned current API/UI/PCB equivalent on one explicit active ordinary type-3 target. Captured frame/receiver and native identity checks around every awaited boundary. ${CURRENT_PCB_SELECTION_LIMITATION} Each family/selection/group is bounded to256 rows, identities256characters, combined evidence393216bytes; existing field bounds and projections apply. At most2304 observed family rows and256 returned rows. Native enumeration/serialization precedes bounds and is not cancelled by deadline. No selection, navigation, write, source export, Save or current connected validation.`,
+  source: ["current-pcb-selection.ts", "current-pcb-geometry.ts", "current-pcb-geometry-program.ts", "current-pcb-geometry-runtime.ts", "current-pcb-layers.ts", "sdk-local-runtime.ts"],
+  tests: ["current-pcb-geometry.test.ts", "current-pcb-geometry-registration.test.ts", "extension-api-coverage.test.ts"], documentTypes: [3],
+  validation: "offline-regression;current-live-unclaimed", executionState: "available-with-runtime-guards",
+  inputDiscovery: { tool: "easyeda_control_api", arguments: { request: { action: "pcb-geometry", query: {
+    method: CURRENT_PCB_SELECTED_GEOMETRY_METHOD, includeSchemas: true,
+  } } } },
+} }, { namespace: "dmt_Board", methods: ["getBoardInfo", "getAllBoardsInfo"], route: {
   tool: "easyeda_control_project_board", selector: "eda.dmt_Board.getBoardInfo|getAllBoardsInfo;loaded-local-project-no-editors", implementation: "native-task-equivalent",
   scope: "Explicit loaded local path-hash project/branch with no editor tabs or hidden frames. Two matching complete bounded native board key/value maps, bracketed by project-owner checks; selected lookup also matches its exact project-qualified native getter. The public getBoardInfo boardName selector is intentionally replaced by an explicit boardUuid contract; boardName is rejected. Preserves UUID, raw title, zIndex and ticket, with UUID comparison order rather than visual order. Genuine empty maps accepted; full sample bounded to 128 boards and 65536 UTF-8 bytes before selected filtering, after native enumeration. No public IDMT_BoardItem parity, child document membership, saved membership, worker lease, startup completion or writer authority. No canvas/source loading, clock/client, name lookup, navigation, cloud lookup, mutation or Save. Installed143713 passed both methods with one populated board and two matching samples per call. Empty-map behavior and later generations remain unvalidated live.",
   source: ["current-project-board-metadata.ts", "current-project-board-metadata-program.ts", "current-project-board-metadata-runtime.ts", "current-project-only-symbol-guard.ts", "current-disposable-open-profile.ts"],

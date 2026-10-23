@@ -44,7 +44,7 @@ function synthetic(): Readonly<{
   return { owner, commands, state };
 }
 
-void test("three snapshot-bound running workers do not disturb actual V8 project construction capture", { timeout: 30_000 }, async context => {
+void test("three browser placeholders gain renderer metadata without disturbing actual V8 project construction capture", { timeout: 30_000 }, async context => {
   const fixture = await workerStartupInspector(context), sent: CurrentPcbWorkerStartupCommand[] = [];
   let listener: ((event: CurrentPcbWorkerStartupEvent) => void) | null = null;
   const dependency: CurrentPcbWorkerStartupDependency = { ...fixture.dependency,
@@ -62,7 +62,11 @@ void test("three snapshot-bound running workers do not disturb actual V8 project
     },
     request: command => {
       sent.push(command);
-      if (command.method === "Target.setAutoAttach") { for (let index = 0; index < 3; index += 1) { listener?.(attachment(index)); } }
+      if (command.method === "Target.setAutoAttach") {
+        for (let index = 0; index < 3; index += 1) {
+          listener?.(attachment(index, { title: `background-${index}`, url: `file:///workers/background-${index}.js` }));
+        }
+      }
       return fixture.dependency.request(command);
     },
   };
@@ -77,7 +81,7 @@ void test("three snapshot-bound running workers do not disturb actual V8 project
   await fixture.stopped(); await owner.releaseAfterTermination();
 });
 
-void test("native channel and transport retain three existing workers and select only the newly paused project", async () => {
+void test("native channel preserves placeholder identity while transport selects only the newly paused project", async () => {
   const frames: Buffer[] = [], sent: Readonly<Record<string, string | number>>[] = [];
   const frame = (value: unknown): void => { frames.push(Buffer.from(`${JSON.stringify(value)}\0`)); };
   const originalParent = Object.freeze({ targetId: "parent-target", sessionId: "parent-session", nextRequestId: 1 });
@@ -90,7 +94,9 @@ void test("native channel and transport retain three existing workers and select
       if (request.action === "poll") { return Promise.resolve({ bytes: (frames.shift() ?? Buffer.alloc(0)).toString("base64") }); }
       assert.ok("requestId" in request); sent.push(request);
       if (request["method"] === "Target.setAutoAttach") {
-        for (let index = 0; index < 3; index += 1) { frame(attachment(index)); }
+        for (let index = 0; index < 3; index += 1) {
+          frame(attachment(index, { title: `background-${index}`, url: `file:///workers/background-${index}.js` }));
+        }
         frame({ method: "Target.attachedToTarget", sessionId: "parent-session", params: { sessionId: "project-session",
           waitingForDebugger: true, targetInfo: { targetId: "project-target", type: "worker", attached: true, title: projectTitle, url: projectUrl } } });
       }
@@ -121,10 +127,38 @@ void test("fifteen existing workers consume no waiting cleanup commands and inve
   assert.equal(value.commands.length, 1); await value.owner.releaseAfterTermination();
 });
 
-void test("changed, paused, unknown, duplicated and cross-session attachments refuse before qualification", async () => {
+void test("initialized background metadata stays exact and never grants a debugger command", async () => {
+  const metadata = { title: "background", url: "file:///workers/background.js" }, value = synthetic();
+  value.owner.bindExistingWorkers({ targetInfos: [parent, { ...background, targetId: "background-0", ...metadata }] });
+  value.state.attachEvents = [attachment(0, metadata)];
+  const rejected = assert.rejects(value.owner.capture(), /ABORTED/u); await value.owner.whenArmed();
+  assert.equal(value.owner.status().existingWorkersAttached, 1); await value.owner.abort(); await rejected;
+  assert.equal(value.commands.length, 1); await value.owner.releaseAfterTermination();
+});
+
+void test("populated browser metadata cannot change, disappear or be independently filled", async () => {
   const cases = [
-    { events: [attachment(0, { title: "changed" })], reason: "EXISTING_WORKER_CHANGED", resumes: 0 },
-    { events: [attachment(0, { url: "file:///changed.js" })], reason: "EXISTING_WORKER_CHANGED", resumes: 0 },
+    { original: { title: "background", url: "file:///workers/background.js" }, changed: { title: "changed", url: "file:///workers/background.js" } },
+    { original: { title: "background", url: "file:///workers/background.js" }, changed: { title: "background", url: "file:///changed.js" } },
+    { original: { title: "background", url: "file:///workers/background.js" }, changed: { title: "", url: "" } },
+    { original: { title: "background", url: "" }, changed: { title: "background", url: "file:///workers/background.js" } },
+    { original: { title: "", url: "file:///workers/background.js" }, changed: { title: "background", url: "file:///workers/background.js" } },
+  ];
+  for (const item of cases) {
+    const value = synthetic();
+    value.owner.bindExistingWorkers({ targetInfos: [parent, { ...background, targetId: "background-0", ...item.original }] });
+    value.state.attachEvents = [attachment(0, item.changed)]; await assert.rejects(value.owner.capture());
+    assert.deepEqual(value.owner.status().firstEventFailure, { method: "Target.attachedToTarget", reason: "EXISTING_WORKER_CHANGED" });
+    assert.equal(value.owner.status().existingWorkersAttached, 0); assert.equal(value.commands.length, 1);
+    await value.owner.releaseAfterTermination();
+  }
+});
+
+void test("selected, paused, unknown, duplicated and cross-session attachments refuse before qualification", async () => {
+  const cases = [
+    { events: [attachment(0, { title: projectTitle })], reason: "EXISTING_WORKER_SELECTED", resumes: 0 },
+    { events: [attachment(0, { url: projectUrl })], reason: "EXISTING_WORKER_SELECTED", resumes: 0 },
+    { events: [attachment(0, { title: projectTitle, url: projectUrl })], reason: "EXISTING_WORKER_SELECTED", resumes: 0 },
     { events: [attachment(0, {}, true)], reason: "EXISTING_WORKER_PAUSED", resumes: 1 },
     { events: [attachment(3)], reason: "WORKER_NOT_WAITING", resumes: 0 },
     { events: [attachment(3, {}, true)], reason: "WORKER_URL", resumes: 1 },

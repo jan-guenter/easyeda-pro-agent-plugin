@@ -8,7 +8,7 @@ import { CURRENT_PCB_WORKER_STARTUP_CHANNEL_CALLS } from "../src/current-pcb-wor
 
 const samples = currentPcbWorkerStartupNativeCases();
 void test("startup parent grammar retains browser-global reads and exact sealed opener, never caller code", () => {
-  const parents = currentPcbWorkerStartupNativeParentCases(); assert.equal(parents.length, 7);
+  const parents = currentPcbWorkerStartupNativeParentCases(); assert.equal(parents.length, 11);
   for (const sample of parents) {
     const result = currentPcbWorkerStartupWire(sample, 256);
     assert.deepEqual(result.command, { id: 256, ...sample });

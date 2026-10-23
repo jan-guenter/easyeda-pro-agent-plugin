@@ -56,7 +56,7 @@ function fixture(preflightRefused = false, openedWindow?: string): Readonly<{
     request: (command: CurrentPcbWorkerStartupCommand): Promise<unknown> => {
       if (command.method === "Runtime.callFunctionOn" && "uniqueContextId" in command.params &&
           command.params.functionDeclaration === CURRENT_PCB_DIAGNOSTIC_OPENING_FUNCTION && command.params.arguments.length === 2) {
-        const phase = command.params.arguments[1].value; calls.push(phase);
+        const phase = command.params.arguments[1].value; assert.ok(phase === "preflight" || phase === "open-project"); calls.push(phase);
         const refused = phase === "open-project" ? openedWindow === undefined : preflightRefused;
         return Promise.resolve(reply(phase, refused, phase === "open-project" ? openedWindow : undefined));
       }

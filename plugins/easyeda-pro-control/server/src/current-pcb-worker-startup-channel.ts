@@ -7,6 +7,7 @@ import { decodeCurrentPcbDiagnosticJson } from "./current-pcb-diagnostic-json.ts
 import { captureCurrentPcbStringClockReply } from "./current-pcb-string-clock-reply.ts";
 import { CURRENT_PCB_WORKER_STARTUP_REQUEST_LIMIT, currentPcbWorkerStartupWire } from "./current-pcb-worker-startup-wire.ts";
 import type { CurrentPcbWorkerStartupCommand, CurrentPcbWorkerStartupDependency, CurrentPcbWorkerStartupEvent } from "./current-pcb-worker-startup-contract.ts";
+import { CURRENT_PCB_DIAGNOSTIC_PCB_OPENING_FUNCTION } from "./current-pcb-diagnostic-pcb-opening.ts";
 
 export interface CurrentPcbWorkerStartupParent {
   readonly targetId: string;
@@ -55,6 +56,7 @@ function cleanupCommand(command: CurrentPcbWorkerStartupCommand): boolean {
 function parentCommand(command: CurrentPcbWorkerStartupCommand): boolean {
   return command.method === "Target.getTargets" || command.method === "Page.getFrameTree" ||
     command.method === "DOM.getFrameOwner" || command.method === "DOM.describeNode" ||
+    command.method === "Debugger.getScriptSource" && "pcbPhase" in command ||
     command.method === "Runtime.callFunctionOn" && "uniqueContextId" in command.params;
 }
 function members(dependency: CurrentPcbWorkerStartupNativeDependency): readonly unknown[] {
@@ -106,6 +108,10 @@ export class CurrentPcbWorkerStartupChannel {
   #openingContext: string | null = null;
   #openingConsumed = false;
   #actorReads = 0;
+  #pcbPreflightConsumed = false;
+  #pcbOpeningConsumed = false;
+  #pcbSourceConsumed = false;
+  #pcbObservationConsumed = false;
   #failure: Error | null = null;
   #fatal = false;
 
@@ -180,6 +186,7 @@ export class CurrentPcbWorkerStartupChannel {
     }
     if (parentCommand(command)) {
       if (command.method !== "Target.getTargets" && command.sessionId !== this.#parent.sessionId) { throw fail("PARENT_SESSION"); }
+      if (command.method === "Debugger.getScriptSource" && (!this.#pcbOpeningConsumed || this.#pcbSourceConsumed)) { throw fail("PCB_SOURCE_SEQUENCE"); }
       if (command.method === "Runtime.callFunctionOn" && "uniqueContextId" in command.params) {
         if (command.params.arguments.length === 0) {
           if (!this.#openingConsumed || command.params.uniqueContextId !== this.#openingContext || this.#actorReads >= 2) { throw fail("ACTOR_SEQUENCE"); }
@@ -187,6 +194,13 @@ export class CurrentPcbWorkerStartupChannel {
         }
         const identity = JSON.stringify([command.params.uniqueContextId, command.params.arguments[0].value]);
         const phase = command.params.arguments[1].value;
+        if (command.params.functionDeclaration === CURRENT_PCB_DIAGNOSTIC_PCB_OPENING_FUNCTION) {
+          if (!this.#openingConsumed || this.#openingIdentity !== identity ||
+              phase === "preflight" && this.#pcbPreflightConsumed ||
+              phase === "open-document" && (!this.#pcbPreflightConsumed || this.#pcbOpeningConsumed) ||
+              phase === "observe" && (!this.#pcbSourceConsumed || this.#pcbObservationConsumed)) { throw fail("PCB_OPENING_SEQUENCE"); }
+          return;
+        }
         if (phase === "preflight" ? this.#openingIdentity !== null :
             !this.#attachAcknowledged || this.#openingIdentity !== identity || this.#openingConsumed) { throw fail("OPENING_SEQUENCE"); }
       }
@@ -215,8 +229,14 @@ export class CurrentPcbWorkerStartupChannel {
           written: false, writeFailed: false, replied: false, result: null, remoteError: false, settled: false };
         this.#pending.set(pending.id, pending);
         if (command.method === "Target.setAutoAttach") { this.#attachIssued = true; }
+        if (command.method === "Debugger.getScriptSource" && "pcbPhase" in command) { this.#pcbSourceConsumed = true; }
         if (command.method === "Runtime.callFunctionOn" && "uniqueContextId" in command.params) {
           if (command.params.arguments.length === 0) { this.#actorReads += 1; }
+          else if (command.params.functionDeclaration === CURRENT_PCB_DIAGNOSTIC_PCB_OPENING_FUNCTION) {
+            if (command.params.arguments[1].value === "preflight") { this.#pcbPreflightConsumed = true; }
+            else if (command.params.arguments[1].value === "open-document") { this.#pcbOpeningConsumed = true; }
+            else { this.#pcbObservationConsumed = true; }
+          }
           else if (command.params.arguments[1].value === "preflight") {
             this.#openingIdentity = JSON.stringify([command.params.uniqueContextId, command.params.arguments[0].value]);
             this.#openingContext = command.params.uniqueContextId;

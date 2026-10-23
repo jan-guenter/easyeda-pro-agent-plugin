@@ -55,9 +55,12 @@ import { freezeDeep } from "./sqlite-inventory-core.ts";
 import { CurrentPcbWorkerStartupChannel } from "./current-pcb-worker-startup-channel.ts";
 import type { CurrentPcbWorkerStartupNativeDependency, CurrentPcbWorkerStartupParent } from "./current-pcb-worker-startup-channel.ts";
 import type { CurrentPcbWorkerStartupDependency } from "./current-pcb-worker-startup-contract.ts";
+import { CurrentPcbWorkerStartupOpening } from "./current-pcb-worker-startup-opening.ts";
+import type { CurrentPcbWorkerStartupOpeningResult } from "./current-pcb-worker-startup-opening.ts";
+import { CurrentPcbWorkerStartupPcbSession } from "./current-pcb-worker-startup-pcb-session.ts";
 
-const HELPER_SHA256 = "90d86d38b1c0c876ae6180523ae5d21924aa81d0ba85cd76f9d371876af1601a";
-const HELPER_BYTES = 818_600;
+const HELPER_SHA256 = "ef944ecff37bb0bcc7b2e2399eb54713af479cc5770e973d7fddd0e783dd3b49";
+const HELPER_BYTES = 880_724;
 const MAX_LINE = 100_000;
 // 64 MiB native bytes need at most 85.34 MiB base64 plus bounded poll envelopes.
 const MAX_TOTAL = 96 * 1024 * 1024;
@@ -142,6 +145,8 @@ class CurrentPcbRetainedOwnerCore {
   #startupParent: CurrentPcbWorkerStartupParent | null = null;
   #startupChannel: CurrentPcbWorkerStartupChannel | null = null;
   #startupHandoff: CurrentPcbWorkerStartupHandoff | null = null;
+  #startupPcbConsumed = false;
+  #startupPcbSession: CurrentPcbWorkerStartupPcbSession | null = null;
   #nativeTail: Promise<void> = Promise.resolve();
   readonly #closed = Promise.withResolvers<null>();
   #pending: Pending | null = null;
@@ -814,7 +819,7 @@ class CurrentPcbRetainedOwnerCore {
         this.#available();
         if (this.#binding !== original || this.#startupParent !== parent || !this.#launchSucceeded ||
             this.#terminationObserved || this.#releaseConsumed || this.#closeConsumed) { throw error("STARTUP_OWNER_CHANGED"); }
-        const observed = context.openingContext();
+        const observed = this.#startupPcbSession?.status().transitionStarted === true ? context.pcbOpeningContext() : context.openingContext();
         if (observed.sessionId !== selected.sessionId || observed.uniqueContextId !== selected.uniqueContextId) { throw error("STARTUP_PARENT_CHANGED"); }
       };
       const reprove = async (): Promise<void> => {
@@ -875,6 +880,33 @@ class CurrentPcbRetainedOwnerCore {
       });
       this.#startupHandoff = Object.freeze({ channel, dependency, opening });
       return this.#startupHandoff;
+    } finally { this.#busy = false; }
+  }
+
+  /** Private preparation for the same constructor-captured project's PCB.
+   * No public action invokes this yet. Its caller must durably consume PCB
+   * navigation intent before openAndQualify; preparation itself sends no open.
+   * The actual context stays with its original native owner, never caller JSON. */
+  public async prepareWorkerStartupPcbSession(opening: CurrentPcbWorkerStartupOpening,
+    result: CurrentPcbWorkerStartupOpeningResult, input: CurrentDisposableOpenSealedTarget,
+    reverifyCheckpoint: () => Promise<void>): Promise<CurrentPcbWorkerStartupPcbSession> {
+    const context = this.#stagedContext, handoff = this.#startupHandoff;
+    const target = currentDisposableOpenSealedTargetSchema.parse(captureCurrentPcbStringClockReply(input).value);
+    if (this.#purpose !== "worker-startup" || handoff === null || context === null || this.#startupPcbConsumed ||
+        this.#startupPcbSession !== null || this.#projectOpeningTarget === null ||
+        canonicalJson(target) !== canonicalJson(this.#projectOpeningTarget) || typeof reverifyCheckpoint !== "function") {
+      throw error("STARTUP_PCB_UNAVAILABLE");
+    }
+    this.#enter(true); this.#startupPcbConsumed = true;
+    try {
+      await CurrentPcbWorkerStartupOpening.prototype.requireOriginalPcbDependency.call(opening, result, handoff.dependency, target);
+      this.#available();
+      const parent = context.openingContext();
+      if (this.#startupHandoff !== handoff || this.#stagedContext !== context || parent.sessionId !== handoff.dependency.parentSessionId) {
+        throw error("STARTUP_PCB_OWNER_CHANGED");
+      }
+      this.#startupPcbSession = new CurrentPcbWorkerStartupPcbSession(opening, result, handoff.dependency, context, target, reverifyCheckpoint);
+      return this.#startupPcbSession;
     } finally { this.#busy = false; }
   }
 
@@ -1123,7 +1155,8 @@ class CurrentPcbRetainedOwnerCore {
     try {
       const data = `${JSON.stringify({ ...this.#binding, ...request, id })}\n`;
       const maximum = request["method"] === "Runtime.callFunctionOn" && (request["action"] === "worker-startup-parent" &&
-        (request["parentPhase"] === "preflight" || request["parentPhase"] === "open-project") || request["action"] === "send" &&
+        (request["parentPhase"] === "preflight" || request["parentPhase"] === "open-project" ||
+          request["parentPhase"] === "pcb-preflight" || request["parentPhase"] === "pcb-open-document" || request["parentPhase"] === "pcb-observe") || request["action"] === "send" &&
         (request["openingPhase"] === "preflight" || request["openingPhase"] === "open-project" ||
           request["pcbOpeningPhase"] === "preflight" || request["pcbOpeningPhase"] === "open-document" ||
           request["pcbOpeningPhase"] === "observe")) ? 32_768 : 4096;

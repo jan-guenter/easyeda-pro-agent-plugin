@@ -9,6 +9,7 @@ import type { CurrentPcbWorkerStartupEvent } from "../src/current-pcb-worker-sta
 import { CURRENT_PCB_WORKER_CONSTRUCTION_SITES } from "../src/current-pcb-worker-construction-contract.ts";
 import { currentPcbWorkerStartupNativeParentCases } from "../src/current-pcb-worker-startup-native.ts";
 import { currentPcbWorkerStartupUiActorCommand } from "../src/current-pcb-worker-startup-actor.ts";
+import { CURRENT_PCB_DIAGNOSTIC_PCB_OPENING_FUNCTION } from "../src/current-pcb-diagnostic-pcb-opening.ts";
 
 type NativeSend = Readonly<Record<string, string | number>>;
 async function fixture(context: TestContext): Promise<Readonly<{
@@ -96,6 +97,35 @@ async function openForActor(value: Awaited<ReturnType<typeof fixture>>): Promise
     await value.dependency.request({ ...sample, sessionId: "parent-session" });
   }
 }
+void test("same startup channel admits one sealed PCB continuation and no source or observation before its stage", async context => {
+  const samples = currentPcbWorkerStartupNativeParentCases(), value = await fixture(context);
+  const select = (phase: "preflight" | "open-document" | "observe"): Extract<typeof samples[number], { method: "Runtime.callFunctionOn" }> => {
+    const selected = samples.find(command => command.method === "Runtime.callFunctionOn" &&
+      command.params.functionDeclaration === CURRENT_PCB_DIAGNOSTIC_PCB_OPENING_FUNCTION &&
+      command.params.arguments.length === 2 && command.params.arguments[1].value === phase);
+    assert.ok(selected?.method === "Runtime.callFunctionOn"); return { ...selected, sessionId: "parent-session" };
+  };
+  const observation = select("observe"), opening = select("open-document"), preflight = select("preflight");
+  const source = { method: "Debugger.getScriptSource", pcbPhase: "source", sessionId: "parent-session", params: { scriptId: "pcb-script" } } as const;
+  await assert.rejects(value.dependency.request(preflight), /PCB_OPENING_SEQUENCE/u);
+  await assert.rejects(value.dependency.request(source), /PCB_SOURCE_SEQUENCE/u);
+  await openForActor(value);
+  await assert.rejects(value.dependency.request(opening), /PCB_OPENING_SEQUENCE/u);
+  await assert.rejects(value.dependency.request(observation), /PCB_OPENING_SEQUENCE/u);
+  await value.dependency.request(preflight);
+  await assert.rejects(value.dependency.request(preflight), /PCB_OPENING_SEQUENCE/u);
+  await assert.rejects(value.dependency.request({ ...opening, sessionId: "worker-session" }), /PARENT_SESSION/u);
+  await value.dependency.request(opening);
+  await assert.rejects(value.dependency.request(opening), /PCB_OPENING_SEQUENCE/u);
+  await assert.rejects(value.dependency.request(observation), /PCB_OPENING_SEQUENCE/u);
+  await value.dependency.request(source);
+  await assert.rejects(value.dependency.request(source), /PCB_SOURCE_SEQUENCE/u);
+  await value.dependency.request(observation);
+  await assert.rejects(value.dependency.request(observation), /PCB_OPENING_SEQUENCE/u);
+  assert.deepEqual(value.requests.filter(request => String(request["parentPhase"]).startsWith("pcb-")).map(request => request["parentPhase"]),
+    ["pcb-preflight", "pcb-open-document", "pcb-source", "pcb-observe"]);
+  assert.equal(value.channel.status().failed, false);
+});
 void test("startup UI actor reads require original opened context and consume exactly two native calls", async context => {
   const command = currentPcbWorkerStartupUiActorCommand("parent-session", "original-context"), value = await fixture(context);
   await assert.rejects(value.dependency.request(command), /ACTOR_SEQUENCE/u); assert.equal(value.requests.length, 0);

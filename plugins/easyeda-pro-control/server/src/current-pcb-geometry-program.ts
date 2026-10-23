@@ -4,6 +4,7 @@ import { EXACT_READ_ENVELOPE_SCHEMA } from "./exact-readers.ts";
 import { buildCurrentProjectUrlGuard } from "./current-project-url.ts";
 import { CURRENT_PCB_IMAGE_ROW_PROGRAM } from "./current-pcb-image-geometry.ts";
 import { CURRENT_PCB_PAD_POLYGON_PROGRAM } from "./current-pcb-pad-polygon.ts";
+import { CURRENT_PCB_SELECTION_FAMILIES, CURRENT_PCB_SELECTION_PROGRAM } from "./current-pcb-selection.ts";
 
 /** Current API021d155b / UI3823ed6e / PCB217199c8 only. The native
  * serializers are the same ones used by current identity enumeration.
@@ -19,7 +20,8 @@ export function buildCurrentPcbGeometryProgram(input: unknown): string {
     Attribute: "pcb/extensionAPI/attribute-getAll", Dimension: "pcb/extensionAPI/dimension-getAll", Image: "pcb/extensionAPI/image-getAll" } as const;
   return `let timer,clear;
 try{
-const root=globalThis,apply=Reflect.apply,target=${JSON.stringify(request.target)},family=${JSON.stringify(family)},topic=${JSON.stringify(topics[family])},primitiveIds=${JSON.stringify(primitiveIds)},componentPrimitiveId=${JSON.stringify(componentPrimitiveId)};let expired=false;
+const root=globalThis,apply=Reflect.apply,target=${JSON.stringify(request.target)},family=${JSON.stringify(family)},topics=${JSON.stringify(topics)},topic=${JSON.stringify(family === "Selected" ? null : topics[family])},primitiveIds=${JSON.stringify(primitiveIds)},componentPrimitiveId=${JSON.stringify(componentPrimitiveId)};
+const selectionFamilies=${JSON.stringify(CURRENT_PCB_SELECTION_FAMILIES)},maxBytes=${CURRENT_PCB_GEOMETRY_MAX_BYTES};let expired=false;
 const bad=()=>{throw new Error('CURRENT_PCB_GEOMETRY_READ_FAILED');};
 ${buildCurrentProjectUrlGuard()}
 const own=(owner,key)=>{if(owner===null||(typeof owner!=='object'&&typeof owner!=='function'))bad();const d=Object.getOwnPropertyDescriptor(owner,key);if(!d||!Object.hasOwn(d,'value'))bad();return d.value;};
@@ -117,7 +119,7 @@ const thermal=row=>{
  const mode=integer(own(rule,'connectMode'));if(mode===1||mode===2)return{mode};if(mode!==0)bad();
  return{mode,clearance:num(num(own(rule,'lineClearance'))*10),spokeWidth:num(num(own(rule,'lineWidth'))*10),angle:num(num(own(rule,'lineAngle'))/Math.PI*180)};
 };
-const copyRows=value=>{
+const copyRows=(value,family=${JSON.stringify(family)})=>{
  const n=arrayLength(value);
  const rows=[],seen=new Set();
  for(let i=0;i<n;i++){
@@ -187,7 +189,7 @@ const copyAttributeGroups=value=>{
  const rows=[],attributeParentGroups=[],seen=new Set();
  for(const group of groups){
   const ids=[];
-  for(const row of copyRows(group.attrs)){
+  for(const row of copyRows(group.attrs,'Attribute')){
    if(parents.has(row.primitiveId)||seen.has(row.primitiveId))bad();seen.add(row.primitiveId);ids.push(row.primitiveId);
    rows.push({...row,parentPrimitiveId:group.parentPrimitiveId});
   }
@@ -213,12 +215,15 @@ const readComponentPads=async()=>{
  }
  await identity();check();return{componentIds,pads,childRows,selected};
 };
+${CURRENT_PCB_SELECTION_PROGRAM}
 const run=async()=>{
- const reader=componentPrimitiveId===null?read:readComponentPads,first=await reader(),firstJson=JSON.stringify(first);if(new TextEncoder().encode(firstJson).byteLength>${CURRENT_PCB_GEOMETRY_MAX_BYTES})bad();
+ const reader=family==='Selected'?readSelected:componentPrimitiveId===null?read:readComponentPads,first=await reader(),firstJson=JSON.stringify(first);if(new TextEncoder().encode(firstJson).byteLength>${CURRENT_PCB_GEOMETRY_MAX_BYTES})bad();
  const second=await reader();if(JSON.stringify(second)!==firstJson)bad();check();
- const firstRows=componentPrimitiveId!==null?first.selected:family==='Attribute'?first.rows:first;
+ const firstRows=componentPrimitiveId!==null?first.selected:family==='Attribute'||family==='Selected'?first.rows:first;
  const observation={ok:true,kind:'current-pcb-geometry-observation',method:${JSON.stringify(request.method)},target,rows:firstRows,samples:2,implementationKind:'native-task-equivalent',cadAuthority:false,persistenceVerified:false,sourceMembershipVerified:false};
  if(family==='Attribute')Object.assign(observation,{attributeParentGroups:first.attributeParentGroups,relationshipEvidence:'native-component-attribute-groups',reciprocalParentVerified:false});
+ if(family==='Selected')Object.assign(observation,{selectedPrimitiveIds:first.selectedPrimitiveIds,observedFamilies:first.observedFamilies,
+  attributeParentGroups:first.attributeParentGroups,selectionEvidence:'native-ordered-selection-and-complete-family-projections',reciprocalParentVerified:false});
  if(componentPrimitiveId!==null)Object.assign(observation,{componentPrimitiveId,observedComponentCount:first.componentIds.length,observedPadCount:first.pads.length,
   relationshipEvidence:'native-component-child-list-and-global-pad-membership',reciprocalParentVerified:false,symbolPinMappingVerified:false});
  const encode=value=>{const json=JSON.stringify(value),utf8Bytes=new TextEncoder().encode(json).byteLength,envelope={schema:${JSON.stringify(EXACT_READ_ENVELOPE_SCHEMA)},utf8Bytes,json};
