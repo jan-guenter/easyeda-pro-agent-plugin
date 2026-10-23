@@ -1,6 +1,6 @@
 import assert from "node:assert/strict";
 import { test } from "node:test";
-import { CALCULATION_ONLY_TOOLS, configuredFacadeMode, facadeToolRegistered } from "../src/facade-mode.ts";
+import { CALCULATION_ONLY_TOOLS, PUBLIC_UTILITIES_ONLY_TOOLS, configuredFacadeMode, facadeToolRegistered, publicUtilitiesOnlyCapabilities } from "../src/facade-mode.ts";
 
 void test("only the exact legacy configuration retains legacy tool registration", () => {
   const legacy = { EASYEDA_PCB_BUNDLE_VERSION: "3.2.149.5378b690", EASYEDA_PUBLIC_API_BUNDLE_VERSION: "0.2.53.aee2f57a" };
@@ -35,4 +35,21 @@ void test("restricted registration admits scoped metadata and disposable opening
     assert.equal(facadeToolRegistered("calculation-only", name), false);
     assert.equal(facadeToolRegistered("legacy-reviewed", name), true);
   }
+});
+
+void test("exact209 selectors expose only six public utility tools without inheriting old native routes", () => {
+  assert.equal(configuredFacadeMode({ EASYEDA_PCB_BUNDLE_VERSION: "3.2.195.6b67774e",
+    EASYEDA_PUBLIC_API_BUNDLE_VERSION: "0.3.59.1ca9efb5" }), "public-utilities-only");
+  assert.equal(PUBLIC_UTILITIES_ONLY_TOOLS.length, 6);
+  for (const name of PUBLIC_UTILITIES_ONLY_TOOLS) { assert.equal(facadeToolRegistered("public-utilities-only", name), true); }
+  for (const name of CALCULATION_ONLY_TOOLS.filter((entry) => !PUBLIC_UTILITIES_ONLY_TOOLS.includes(entry))) {
+    assert.equal(facadeToolRegistered("public-utilities-only", name), false);
+  }
+  for (const name of ["easyeda_control_design", "easyeda_control_native_ui", "easyeda_control_runtime", "easyeda_control_save_reopen"]) {
+    assert.equal(facadeToolRegistered("public-utilities-only", name), false);
+  }
+  const capabilities = publicUtilitiesOnlyCapabilities();
+  assert.deepEqual(capabilities["navigation"], { enabled: false });
+  assert.deepEqual(capabilities["designAccess"], { enabled: false, scope: "all-design-routes" });
+  assert.equal(Object.hasOwn(capabilities, "projectSymbolMetadata"), false);
 });

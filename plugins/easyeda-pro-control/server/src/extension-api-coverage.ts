@@ -227,8 +227,8 @@ export function inventoryExtensionApiCoverage(): ApiCoverageEntry[] {
   const routes = new Map(maintainedApiCoverageRoutes());
   for (const descriptor of sdkMathDescriptors()) {
     routes.set(descriptor.path, [{ tool: "easyeda_control_calculate", selector: descriptor.path, implementation: "public-method",
-      scope: `Separately reviewed EasyEDA 3.2.206/API 0.3.50 calculation-only runtime, not legacy-tuple admission. ${descriptor.limitations.join(" ")}`,
-      source: ["sdk-math.ts", "sdk-math-clipping.ts", "sdk-math-runtime.ts", "sdk-local-runtime.ts", "facade-mode.ts"], tests: ["sdk-math.test.ts", "sdk-math-clipping.test.ts", "sdk-math-runtime.test.ts", "facade-mode.test.ts"],
+      scope: `Separately reviewed EasyEDA 3.2.206/API 0.3.50 or 3.2.209/API 0.3.59 public calculation subset, not legacy/native-tuple admission. ${descriptor.limitations.join(" ")}`,
+      source: ["sdk-math.ts", "sdk-math-clipping.ts", "sdk-math-runtime.ts", "sdk-local-runtime.ts", "sdk-public-utilities-profile.ts", "facade-mode.ts"], tests: ["sdk-math.test.ts", "sdk-math-clipping.test.ts", "sdk-math-runtime.test.ts", "sdk-public-utilities-runtime.test.ts", "facade-mode.test.ts"],
       validation: "offline-regression;current-live-unclaimed", executionState: "available-with-runtime-guards",
       inputDiscovery: { tool: "easyeda_control_api", arguments: { request: { action: "calculations", query: { method: descriptor.path, includeSchemas: true } } } },
     }]);
@@ -236,9 +236,9 @@ export function inventoryExtensionApiCoverage(): ApiCoverageEntry[] {
   for (const descriptor of sdkSystemDescriptors()) {
     const existing = routes.get(descriptor.path) ?? [];
     routes.set(descriptor.path, [...existing, { tool: "easyeda_control_system", selector: descriptor.path, implementation: "public-method",
-      scope: `Separately reviewed EasyEDA 3.2.206/API 0.3.50 local-system subset; no project context or legacy-tuple admission. ${descriptor.limitations.join(" ")}`,
-      source: ["sdk-system.ts", "sdk-system-runtime.ts", "sdk-local-runtime.ts", "facade-mode.ts"],
-      tests: ["sdk-system.test.ts", "sdk-system-runtime.test.ts", "facade-mode.test.ts"],
+      scope: `Separately reviewed EasyEDA 3.2.206/API 0.3.50 or 3.2.209/API 0.3.59 local-system subset; no project context or legacy/native-tuple admission. ${descriptor.limitations.join(" ")}`,
+      source: ["sdk-system.ts", "sdk-system-runtime.ts", "sdk-local-runtime.ts", "sdk-public-utilities-profile.ts", "facade-mode.ts"],
+      tests: ["sdk-system.test.ts", "sdk-system-runtime.test.ts", "sdk-public-utilities-runtime.test.ts", "facade-mode.test.ts"],
       validation: "offline-regression;current-live-unclaimed", executionState: "available-with-runtime-guards",
       inputDiscovery: { tool: "easyeda_control_api", arguments: { request: { action: "system", query: { method: descriptor.path, includeSchemas: true } } } },
     }]);

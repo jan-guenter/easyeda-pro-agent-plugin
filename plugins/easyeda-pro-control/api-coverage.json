@@ -30889,16 +30889,18 @@
           "tool": "easyeda_control_system",
           "selector": "eda.sys_Environment.getEditorCompliedDate",
           "implementation": "public-method",
-          "scope": "Separately reviewed EasyEDA 3.2.206/API 0.3.50 local-system subset; no project context or legacy-tuple admission. Separately hash-admitted API 0.3.50 implementation. Discovery, source implementation and offline tests do not establish current connected validation. Fixed synchronous public methods only, two exact scalar samples on the same owner/method. No project, document, selection, account, file, network, navigation, shared-settings change or Save access. Responses are bounded to 8192 UTF-8 bytes; metadata strings to 128 printable ASCII characters. Malformed, asynchronous, unstable or oversized results refuse without truncation or automatic retry. Reads editorMainDate metadata and may initialize T.editorCompliedDate in the API's local runtime cache. This is not a strictly pure function; it does not change a shared preference or persist data. The bounded returned date text is not parsed or relabeled as a timezone.",
+          "scope": "Separately reviewed EasyEDA 3.2.206/API 0.3.50 or 3.2.209/API 0.3.59 local-system subset; no project context or legacy/native-tuple admission. Separately hash-admitted API 0.3.50 or 0.3.59 implementation under its exact runtime profile. Discovery, source implementation and offline tests do not establish current connected validation. Fixed synchronous public methods only, two exact scalar samples on the same owner/method. No project, document, selection, account, file, network, navigation, shared-settings change or Save access. Responses are bounded to 8192 UTF-8 bytes; metadata strings to 128 printable ASCII characters. Malformed, asynchronous, unstable or oversized results refuse without truncation or automatic retry. Reads editorMainDate metadata and may initialize T.editorCompliedDate in the API's local runtime cache. This is not a strictly pure function; it does not change a shared preference or persist data. The bounded returned date text is not parsed or relabeled as a timezone.",
           "source": [
             "sdk-system.ts",
             "sdk-system-runtime.ts",
             "sdk-local-runtime.ts",
+            "sdk-public-utilities-profile.ts",
             "facade-mode.ts"
           ],
           "tests": [
             "sdk-system.test.ts",
             "sdk-system-runtime.test.ts",
+            "sdk-public-utilities-runtime.test.ts",
             "facade-mode.test.ts"
           ],
           "validation": "offline-regression;current-live-unclaimed",
@@ -30981,16 +30983,18 @@
           "tool": "easyeda_control_system",
           "selector": "eda.sys_Environment.getEditorCurrentVersion",
           "implementation": "public-method",
-          "scope": "Separately reviewed EasyEDA 3.2.206/API 0.3.50 local-system subset; no project context or legacy-tuple admission. Separately hash-admitted API 0.3.50 implementation. Discovery, source implementation and offline tests do not establish current connected validation. Fixed synchronous public methods only, two exact scalar samples on the same owner/method. No project, document, selection, account, file, network, navigation, shared-settings change or Save access. Responses are bounded to 8192 UTF-8 bytes; metadata strings to 128 printable ASCII characters. Malformed, asynchronous, unstable or oversized results refuse without truncation or automatic retry. Reads editorMainVersion metadata, not the installed package's suffixed version. onlySemantic optionally limits it to three components and pads a two-component value. It does not admit a runtime or update compatibility pins.",
+          "scope": "Separately reviewed EasyEDA 3.2.206/API 0.3.50 or 3.2.209/API 0.3.59 local-system subset; no project context or legacy/native-tuple admission. Separately hash-admitted API 0.3.50 or 0.3.59 implementation under its exact runtime profile. Discovery, source implementation and offline tests do not establish current connected validation. Fixed synchronous public methods only, two exact scalar samples on the same owner/method. No project, document, selection, account, file, network, navigation, shared-settings change or Save access. Responses are bounded to 8192 UTF-8 bytes; metadata strings to 128 printable ASCII characters. Malformed, asynchronous, unstable or oversized results refuse without truncation or automatic retry. Reads editorMainVersion metadata, not the installed package's suffixed version. onlySemantic optionally limits it to three components and pads a two-component value. It does not admit a runtime or update compatibility pins.",
           "source": [
             "sdk-system.ts",
             "sdk-system-runtime.ts",
             "sdk-local-runtime.ts",
+            "sdk-public-utilities-profile.ts",
             "facade-mode.ts"
           ],
           "tests": [
             "sdk-system.test.ts",
             "sdk-system-runtime.test.ts",
+            "sdk-public-utilities-runtime.test.ts",
             "facade-mode.test.ts"
           ],
           "validation": "offline-regression;current-live-unclaimed",
@@ -31106,16 +31110,18 @@
           "tool": "easyeda_control_system",
           "selector": "eda.sys_Environment.isClient",
           "implementation": "public-method",
-          "scope": "Separately reviewed EasyEDA 3.2.206/API 0.3.50 local-system subset; no project context or legacy-tuple admission. Separately hash-admitted API 0.3.50 implementation. Discovery, source implementation and offline tests do not establish current connected validation. Fixed synchronous public methods only, two exact scalar samples on the same owner/method. No project, document, selection, account, file, network, navigation, shared-settings change or Save access. Responses are bounded to 8192 UTF-8 bytes; metadata strings to 128 printable ASCII characters. Malformed, asynchronous, unstable or oversized results refuse without truncation or automatic retry. Reads the API's captured application mode/edition flag. This is not a network-connectivity probe or current project state.",
+          "scope": "Separately reviewed EasyEDA 3.2.206/API 0.3.50 or 3.2.209/API 0.3.59 local-system subset; no project context or legacy/native-tuple admission. Separately hash-admitted API 0.3.50 or 0.3.59 implementation under its exact runtime profile. Discovery, source implementation and offline tests do not establish current connected validation. Fixed synchronous public methods only, two exact scalar samples on the same owner/method. No project, document, selection, account, file, network, navigation, shared-settings change or Save access. Responses are bounded to 8192 UTF-8 bytes; metadata strings to 128 printable ASCII characters. Malformed, asynchronous, unstable or oversized results refuse without truncation or automatic retry. Reads the API's captured application mode/edition flag. This is not a network-connectivity probe or current project state.",
           "source": [
             "sdk-system.ts",
             "sdk-system-runtime.ts",
             "sdk-local-runtime.ts",
+            "sdk-public-utilities-profile.ts",
             "facade-mode.ts"
           ],
           "tests": [
             "sdk-system.test.ts",
             "sdk-system-runtime.test.ts",
+            "sdk-public-utilities-runtime.test.ts",
             "facade-mode.test.ts"
           ],
           "validation": "offline-regression;current-live-unclaimed",
@@ -31198,16 +31204,18 @@
           "tool": "easyeda_control_system",
           "selector": "eda.sys_Environment.isEasyEDAProEdition",
           "implementation": "public-method",
-          "scope": "Separately reviewed EasyEDA 3.2.206/API 0.3.50 local-system subset; no project context or legacy-tuple admission. Separately hash-admitted API 0.3.50 implementation. Discovery, source implementation and offline tests do not establish current connected validation. Fixed synchronous public methods only, two exact scalar samples on the same owner/method. No project, document, selection, account, file, network, navigation, shared-settings change or Save access. Responses are bounded to 8192 UTF-8 bytes; metadata strings to 128 printable ASCII characters. Malformed, asynchronous, unstable or oversized results refuse without truncation or automatic retry. Reads the API's captured application mode/edition flag. This is not a network-connectivity probe or current project state.",
+          "scope": "Separately reviewed EasyEDA 3.2.206/API 0.3.50 or 3.2.209/API 0.3.59 local-system subset; no project context or legacy/native-tuple admission. Separately hash-admitted API 0.3.50 or 0.3.59 implementation under its exact runtime profile. Discovery, source implementation and offline tests do not establish current connected validation. Fixed synchronous public methods only, two exact scalar samples on the same owner/method. No project, document, selection, account, file, network, navigation, shared-settings change or Save access. Responses are bounded to 8192 UTF-8 bytes; metadata strings to 128 printable ASCII characters. Malformed, asynchronous, unstable or oversized results refuse without truncation or automatic retry. Reads the API's captured application mode/edition flag. This is not a network-connectivity probe or current project state.",
           "source": [
             "sdk-system.ts",
             "sdk-system-runtime.ts",
             "sdk-local-runtime.ts",
+            "sdk-public-utilities-profile.ts",
             "facade-mode.ts"
           ],
           "tests": [
             "sdk-system.test.ts",
             "sdk-system-runtime.test.ts",
+            "sdk-public-utilities-runtime.test.ts",
             "facade-mode.test.ts"
           ],
           "validation": "offline-regression;current-live-unclaimed",
@@ -31283,16 +31291,18 @@
           "tool": "easyeda_control_system",
           "selector": "eda.sys_Environment.isEditorCurrentVersionGreaterThanOrEqual",
           "implementation": "public-method",
-          "scope": "Separately reviewed EasyEDA 3.2.206/API 0.3.50 local-system subset; no project context or legacy-tuple admission. Separately hash-admitted API 0.3.50 implementation. Discovery, source implementation and offline tests do not establish current connected validation. Fixed synchronous public methods only, two exact scalar samples on the same owner/method. No project, document, selection, account, file, network, navigation, shared-settings change or Save access. Responses are bounded to 8192 UTF-8 bytes; metadata strings to 128 printable ASCII characters. Malformed, asynchronous, unstable or oversized results refuse without truncation or automatic retry. Compares SUPPLIED version >= CURRENT editor semantic version, despite the method's ambiguous English name. Canonical major.minor.patch only, each component 0-999999; no dev, leading zeros, prerelease, build suffix, partial version or implicit coercion. Bundled semver can emit console diagnostics if its initialization enabled semver NODE_DEBUG.",
+          "scope": "Separately reviewed EasyEDA 3.2.206/API 0.3.50 or 3.2.209/API 0.3.59 local-system subset; no project context or legacy/native-tuple admission. Separately hash-admitted API 0.3.50 or 0.3.59 implementation under its exact runtime profile. Discovery, source implementation and offline tests do not establish current connected validation. Fixed synchronous public methods only, two exact scalar samples on the same owner/method. No project, document, selection, account, file, network, navigation, shared-settings change or Save access. Responses are bounded to 8192 UTF-8 bytes; metadata strings to 128 printable ASCII characters. Malformed, asynchronous, unstable or oversized results refuse without truncation or automatic retry. Compares SUPPLIED version >= CURRENT editor semantic version, despite the method's ambiguous English name. Canonical major.minor.patch only, each component 0-999999; no dev, leading zeros, prerelease, build suffix, partial version or implicit coercion. Bundled semver can emit console diagnostics if its initialization enabled semver NODE_DEBUG.",
           "source": [
             "sdk-system.ts",
             "sdk-system-runtime.ts",
             "sdk-local-runtime.ts",
+            "sdk-public-utilities-profile.ts",
             "facade-mode.ts"
           ],
           "tests": [
             "sdk-system.test.ts",
             "sdk-system-runtime.test.ts",
+            "sdk-public-utilities-runtime.test.ts",
             "facade-mode.test.ts"
           ],
           "validation": "offline-regression;current-live-unclaimed",
@@ -31336,16 +31346,18 @@
           "tool": "easyeda_control_system",
           "selector": "eda.sys_Environment.isEditorCurrentVersionLessThanOrEqual",
           "implementation": "public-method",
-          "scope": "Separately reviewed EasyEDA 3.2.206/API 0.3.50 local-system subset; no project context or legacy-tuple admission. Separately hash-admitted API 0.3.50 implementation. Discovery, source implementation and offline tests do not establish current connected validation. Fixed synchronous public methods only, two exact scalar samples on the same owner/method. No project, document, selection, account, file, network, navigation, shared-settings change or Save access. Responses are bounded to 8192 UTF-8 bytes; metadata strings to 128 printable ASCII characters. Malformed, asynchronous, unstable or oversized results refuse without truncation or automatic retry. Compares SUPPLIED version <= CURRENT editor semantic version, despite the method's ambiguous English name. Canonical major.minor.patch only, each component 0-999999; no dev, leading zeros, prerelease, build suffix, partial version or implicit coercion. Bundled semver can emit console diagnostics if its initialization enabled semver NODE_DEBUG.",
+          "scope": "Separately reviewed EasyEDA 3.2.206/API 0.3.50 or 3.2.209/API 0.3.59 local-system subset; no project context or legacy/native-tuple admission. Separately hash-admitted API 0.3.50 or 0.3.59 implementation under its exact runtime profile. Discovery, source implementation and offline tests do not establish current connected validation. Fixed synchronous public methods only, two exact scalar samples on the same owner/method. No project, document, selection, account, file, network, navigation, shared-settings change or Save access. Responses are bounded to 8192 UTF-8 bytes; metadata strings to 128 printable ASCII characters. Malformed, asynchronous, unstable or oversized results refuse without truncation or automatic retry. Compares SUPPLIED version <= CURRENT editor semantic version, despite the method's ambiguous English name. Canonical major.minor.patch only, each component 0-999999; no dev, leading zeros, prerelease, build suffix, partial version or implicit coercion. Bundled semver can emit console diagnostics if its initialization enabled semver NODE_DEBUG.",
           "source": [
             "sdk-system.ts",
             "sdk-system-runtime.ts",
             "sdk-local-runtime.ts",
+            "sdk-public-utilities-profile.ts",
             "facade-mode.ts"
           ],
           "tests": [
             "sdk-system.test.ts",
             "sdk-system-runtime.test.ts",
+            "sdk-public-utilities-runtime.test.ts",
             "facade-mode.test.ts"
           ],
           "validation": "offline-regression;current-live-unclaimed",
@@ -31396,16 +31408,18 @@
           "tool": "easyeda_control_system",
           "selector": "eda.sys_Environment.isHalfOfflineMode",
           "implementation": "public-method",
-          "scope": "Separately reviewed EasyEDA 3.2.206/API 0.3.50 local-system subset; no project context or legacy-tuple admission. Separately hash-admitted API 0.3.50 implementation. Discovery, source implementation and offline tests do not establish current connected validation. Fixed synchronous public methods only, two exact scalar samples on the same owner/method. No project, document, selection, account, file, network, navigation, shared-settings change or Save access. Responses are bounded to 8192 UTF-8 bytes; metadata strings to 128 printable ASCII characters. Malformed, asynchronous, unstable or oversized results refuse without truncation or automatic retry. Reads the API's captured application mode/edition flag. This is not a network-connectivity probe or current project state.",
+          "scope": "Separately reviewed EasyEDA 3.2.206/API 0.3.50 or 3.2.209/API 0.3.59 local-system subset; no project context or legacy/native-tuple admission. Separately hash-admitted API 0.3.50 or 0.3.59 implementation under its exact runtime profile. Discovery, source implementation and offline tests do not establish current connected validation. Fixed synchronous public methods only, two exact scalar samples on the same owner/method. No project, document, selection, account, file, network, navigation, shared-settings change or Save access. Responses are bounded to 8192 UTF-8 bytes; metadata strings to 128 printable ASCII characters. Malformed, asynchronous, unstable or oversized results refuse without truncation or automatic retry. Reads the API's captured application mode/edition flag. This is not a network-connectivity probe or current project state.",
           "source": [
             "sdk-system.ts",
             "sdk-system-runtime.ts",
             "sdk-local-runtime.ts",
+            "sdk-public-utilities-profile.ts",
             "facade-mode.ts"
           ],
           "tests": [
             "sdk-system.test.ts",
             "sdk-system-runtime.test.ts",
+            "sdk-public-utilities-runtime.test.ts",
             "facade-mode.test.ts"
           ],
           "validation": "offline-regression;current-live-unclaimed",
@@ -31488,16 +31502,18 @@
           "tool": "easyeda_control_system",
           "selector": "eda.sys_Environment.isJLCEDAProEdition",
           "implementation": "public-method",
-          "scope": "Separately reviewed EasyEDA 3.2.206/API 0.3.50 local-system subset; no project context or legacy-tuple admission. Separately hash-admitted API 0.3.50 implementation. Discovery, source implementation and offline tests do not establish current connected validation. Fixed synchronous public methods only, two exact scalar samples on the same owner/method. No project, document, selection, account, file, network, navigation, shared-settings change or Save access. Responses are bounded to 8192 UTF-8 bytes; metadata strings to 128 printable ASCII characters. Malformed, asynchronous, unstable or oversized results refuse without truncation or automatic retry. Reads the API's captured application mode/edition flag. This is not a network-connectivity probe or current project state.",
+          "scope": "Separately reviewed EasyEDA 3.2.206/API 0.3.50 or 3.2.209/API 0.3.59 local-system subset; no project context or legacy/native-tuple admission. Separately hash-admitted API 0.3.50 or 0.3.59 implementation under its exact runtime profile. Discovery, source implementation and offline tests do not establish current connected validation. Fixed synchronous public methods only, two exact scalar samples on the same owner/method. No project, document, selection, account, file, network, navigation, shared-settings change or Save access. Responses are bounded to 8192 UTF-8 bytes; metadata strings to 128 printable ASCII characters. Malformed, asynchronous, unstable or oversized results refuse without truncation or automatic retry. Reads the API's captured application mode/edition flag. This is not a network-connectivity probe or current project state.",
           "source": [
             "sdk-system.ts",
             "sdk-system-runtime.ts",
             "sdk-local-runtime.ts",
+            "sdk-public-utilities-profile.ts",
             "facade-mode.ts"
           ],
           "tests": [
             "sdk-system.test.ts",
             "sdk-system-runtime.test.ts",
+            "sdk-public-utilities-runtime.test.ts",
             "facade-mode.test.ts"
           ],
           "validation": "offline-regression;current-live-unclaimed",
@@ -31580,16 +31596,18 @@
           "tool": "easyeda_control_system",
           "selector": "eda.sys_Environment.isOfflineMode",
           "implementation": "public-method",
-          "scope": "Separately reviewed EasyEDA 3.2.206/API 0.3.50 local-system subset; no project context or legacy-tuple admission. Separately hash-admitted API 0.3.50 implementation. Discovery, source implementation and offline tests do not establish current connected validation. Fixed synchronous public methods only, two exact scalar samples on the same owner/method. No project, document, selection, account, file, network, navigation, shared-settings change or Save access. Responses are bounded to 8192 UTF-8 bytes; metadata strings to 128 printable ASCII characters. Malformed, asynchronous, unstable or oversized results refuse without truncation or automatic retry. Reads the API's captured application mode/edition flag. This is not a network-connectivity probe or current project state.",
+          "scope": "Separately reviewed EasyEDA 3.2.206/API 0.3.50 or 3.2.209/API 0.3.59 local-system subset; no project context or legacy/native-tuple admission. Separately hash-admitted API 0.3.50 or 0.3.59 implementation under its exact runtime profile. Discovery, source implementation and offline tests do not establish current connected validation. Fixed synchronous public methods only, two exact scalar samples on the same owner/method. No project, document, selection, account, file, network, navigation, shared-settings change or Save access. Responses are bounded to 8192 UTF-8 bytes; metadata strings to 128 printable ASCII characters. Malformed, asynchronous, unstable or oversized results refuse without truncation or automatic retry. Reads the API's captured application mode/edition flag. This is not a network-connectivity probe or current project state.",
           "source": [
             "sdk-system.ts",
             "sdk-system-runtime.ts",
             "sdk-local-runtime.ts",
+            "sdk-public-utilities-profile.ts",
             "facade-mode.ts"
           ],
           "tests": [
             "sdk-system.test.ts",
             "sdk-system-runtime.test.ts",
+            "sdk-public-utilities-runtime.test.ts",
             "facade-mode.test.ts"
           ],
           "validation": "offline-regression;current-live-unclaimed",
@@ -31672,16 +31690,18 @@
           "tool": "easyeda_control_system",
           "selector": "eda.sys_Environment.isOnlineMode",
           "implementation": "public-method",
-          "scope": "Separately reviewed EasyEDA 3.2.206/API 0.3.50 local-system subset; no project context or legacy-tuple admission. Separately hash-admitted API 0.3.50 implementation. Discovery, source implementation and offline tests do not establish current connected validation. Fixed synchronous public methods only, two exact scalar samples on the same owner/method. No project, document, selection, account, file, network, navigation, shared-settings change or Save access. Responses are bounded to 8192 UTF-8 bytes; metadata strings to 128 printable ASCII characters. Malformed, asynchronous, unstable or oversized results refuse without truncation or automatic retry. Reads the API's captured application mode/edition flag. This is not a network-connectivity probe or current project state.",
+          "scope": "Separately reviewed EasyEDA 3.2.206/API 0.3.50 or 3.2.209/API 0.3.59 local-system subset; no project context or legacy/native-tuple admission. Separately hash-admitted API 0.3.50 or 0.3.59 implementation under its exact runtime profile. Discovery, source implementation and offline tests do not establish current connected validation. Fixed synchronous public methods only, two exact scalar samples on the same owner/method. No project, document, selection, account, file, network, navigation, shared-settings change or Save access. Responses are bounded to 8192 UTF-8 bytes; metadata strings to 128 printable ASCII characters. Malformed, asynchronous, unstable or oversized results refuse without truncation or automatic retry. Reads the API's captured application mode/edition flag. This is not a network-connectivity probe or current project state.",
           "source": [
             "sdk-system.ts",
             "sdk-system-runtime.ts",
             "sdk-local-runtime.ts",
+            "sdk-public-utilities-profile.ts",
             "facade-mode.ts"
           ],
           "tests": [
             "sdk-system.test.ts",
             "sdk-system-runtime.test.ts",
+            "sdk-public-utilities-runtime.test.ts",
             "facade-mode.test.ts"
           ],
           "validation": "offline-regression;current-live-unclaimed",
@@ -31764,16 +31784,18 @@
           "tool": "easyeda_control_system",
           "selector": "eda.sys_Environment.isProPrivateEdition",
           "implementation": "public-method",
-          "scope": "Separately reviewed EasyEDA 3.2.206/API 0.3.50 local-system subset; no project context or legacy-tuple admission. Separately hash-admitted API 0.3.50 implementation. Discovery, source implementation and offline tests do not establish current connected validation. Fixed synchronous public methods only, two exact scalar samples on the same owner/method. No project, document, selection, account, file, network, navigation, shared-settings change or Save access. Responses are bounded to 8192 UTF-8 bytes; metadata strings to 128 printable ASCII characters. Malformed, asynchronous, unstable or oversized results refuse without truncation or automatic retry. Reads the API's captured application mode/edition flag. This is not a network-connectivity probe or current project state.",
+          "scope": "Separately reviewed EasyEDA 3.2.206/API 0.3.50 or 3.2.209/API 0.3.59 local-system subset; no project context or legacy/native-tuple admission. Separately hash-admitted API 0.3.50 or 0.3.59 implementation under its exact runtime profile. Discovery, source implementation and offline tests do not establish current connected validation. Fixed synchronous public methods only, two exact scalar samples on the same owner/method. No project, document, selection, account, file, network, navigation, shared-settings change or Save access. Responses are bounded to 8192 UTF-8 bytes; metadata strings to 128 printable ASCII characters. Malformed, asynchronous, unstable or oversized results refuse without truncation or automatic retry. Reads the API's captured application mode/edition flag. This is not a network-connectivity probe or current project state.",
           "source": [
             "sdk-system.ts",
             "sdk-system-runtime.ts",
             "sdk-local-runtime.ts",
+            "sdk-public-utilities-profile.ts",
             "facade-mode.ts"
           ],
           "tests": [
             "sdk-system.test.ts",
             "sdk-system-runtime.test.ts",
+            "sdk-public-utilities-runtime.test.ts",
             "facade-mode.test.ts"
           ],
           "validation": "offline-regression;current-live-unclaimed",
@@ -31856,16 +31878,18 @@
           "tool": "easyeda_control_system",
           "selector": "eda.sys_Environment.isWeb",
           "implementation": "public-method",
-          "scope": "Separately reviewed EasyEDA 3.2.206/API 0.3.50 local-system subset; no project context or legacy-tuple admission. Separately hash-admitted API 0.3.50 implementation. Discovery, source implementation and offline tests do not establish current connected validation. Fixed synchronous public methods only, two exact scalar samples on the same owner/method. No project, document, selection, account, file, network, navigation, shared-settings change or Save access. Responses are bounded to 8192 UTF-8 bytes; metadata strings to 128 printable ASCII characters. Malformed, asynchronous, unstable or oversized results refuse without truncation or automatic retry. Reads the API's captured application mode/edition flag. This is not a network-connectivity probe or current project state.",
+          "scope": "Separately reviewed EasyEDA 3.2.206/API 0.3.50 or 3.2.209/API 0.3.59 local-system subset; no project context or legacy/native-tuple admission. Separately hash-admitted API 0.3.50 or 0.3.59 implementation under its exact runtime profile. Discovery, source implementation and offline tests do not establish current connected validation. Fixed synchronous public methods only, two exact scalar samples on the same owner/method. No project, document, selection, account, file, network, navigation, shared-settings change or Save access. Responses are bounded to 8192 UTF-8 bytes; metadata strings to 128 printable ASCII characters. Malformed, asynchronous, unstable or oversized results refuse without truncation or automatic retry. Reads the API's captured application mode/edition flag. This is not a network-connectivity probe or current project state.",
           "source": [
             "sdk-system.ts",
             "sdk-system-runtime.ts",
             "sdk-local-runtime.ts",
+            "sdk-public-utilities-profile.ts",
             "facade-mode.ts"
           ],
           "tests": [
             "sdk-system.test.ts",
             "sdk-system-runtime.test.ts",
+            "sdk-public-utilities-runtime.test.ts",
             "facade-mode.test.ts"
           ],
           "validation": "offline-regression;current-live-unclaimed",
@@ -34557,18 +34581,20 @@
           "tool": "easyeda_control_calculate",
           "selector": "eda.sys_Math.bboxIntersects",
           "implementation": "public-method",
-          "scope": "Separately reviewed EasyEDA 3.2.206/API 0.3.50 calculation-only runtime, not legacy-tuple admission. API 0.3.50 implementation only, separately hash-admitted; absent from the old reviewed 0.2.53 runtime. Source implementation and offline tests are not connected validation. Strict finite JSON inputs only. Simple methods accept +/-1e6 coordinates and 3-128 ring vertices; clipping has its separately documented narrower bounds. No input holes, groups, curves, native handles, callbacks or arbitrary SDK paths. Calculations use supplied coordinate units without unit conversion. No document, project, viewport, selection, shared setting, file, network, Save or CAD mutation is involved. JSON Schema omits geometric and paired-center refinements; use the exact argument validator. SDK floating-point results are observations, not exact geometric, electrical or manufacturing guarantees. Touching bbox edges count as intersecting; this is not polygon intersection.",
+          "scope": "Separately reviewed EasyEDA 3.2.206/API 0.3.50 or 3.2.209/API 0.3.59 public calculation subset, not legacy/native-tuple admission. Separately hash-admitted API 0.3.50 or 0.3.59 implementation, each under its exact runtime profile; absent from the old reviewed 0.2.53 runtime. Source implementation and offline tests are not connected validation. Strict finite JSON inputs only. Simple methods accept +/-1e6 coordinates and 3-128 ring vertices; clipping has its separately documented narrower bounds. No input holes, groups, curves, native handles, callbacks or arbitrary SDK paths. Calculations use supplied coordinate units without unit conversion. No document, project, viewport, selection, shared setting, file, network, Save or CAD mutation is involved. JSON Schema omits geometric and paired-center refinements; use the exact argument validator. SDK floating-point results are observations, not exact geometric, electrical or manufacturing guarantees. Touching bbox edges count as intersecting; this is not polygon intersection.",
           "source": [
             "sdk-math.ts",
             "sdk-math-clipping.ts",
             "sdk-math-runtime.ts",
             "sdk-local-runtime.ts",
+            "sdk-public-utilities-profile.ts",
             "facade-mode.ts"
           ],
           "tests": [
             "sdk-math.test.ts",
             "sdk-math-clipping.test.ts",
             "sdk-math-runtime.test.ts",
+            "sdk-public-utilities-runtime.test.ts",
             "facade-mode.test.ts"
           ],
           "validation": "offline-regression;current-live-unclaimed",
@@ -34612,18 +34638,20 @@
           "tool": "easyeda_control_calculate",
           "selector": "eda.sys_Math.calculateArea",
           "implementation": "public-method",
-          "scope": "Separately reviewed EasyEDA 3.2.206/API 0.3.50 calculation-only runtime, not legacy-tuple admission. API 0.3.50 implementation only, separately hash-admitted; absent from the old reviewed 0.2.53 runtime. Source implementation and offline tests are not connected validation. Strict finite JSON inputs only. Simple methods accept +/-1e6 coordinates and 3-128 ring vertices; clipping has its separately documented narrower bounds. No input holes, groups, curves, native handles, callbacks or arbitrary SDK paths. Calculations use supplied coordinate units without unit conversion. No document, project, viewport, selection, shared setting, file, network, Save or CAD mutation is involved. JSON Schema omits geometric and paired-center refinements; use the exact argument validator. SDK floating-point results are observations, not exact geometric, electrical or manufacturing guarantees. Absolute SDK shoelace area for one simple ring, in squared input-coordinate units.",
+          "scope": "Separately reviewed EasyEDA 3.2.206/API 0.3.50 or 3.2.209/API 0.3.59 public calculation subset, not legacy/native-tuple admission. Separately hash-admitted API 0.3.50 or 0.3.59 implementation, each under its exact runtime profile; absent from the old reviewed 0.2.53 runtime. Source implementation and offline tests are not connected validation. Strict finite JSON inputs only. Simple methods accept +/-1e6 coordinates and 3-128 ring vertices; clipping has its separately documented narrower bounds. No input holes, groups, curves, native handles, callbacks or arbitrary SDK paths. Calculations use supplied coordinate units without unit conversion. No document, project, viewport, selection, shared setting, file, network, Save or CAD mutation is involved. JSON Schema omits geometric and paired-center refinements; use the exact argument validator. SDK floating-point results are observations, not exact geometric, electrical or manufacturing guarantees. Absolute SDK shoelace area for one simple ring, in squared input-coordinate units.",
           "source": [
             "sdk-math.ts",
             "sdk-math-clipping.ts",
             "sdk-math-runtime.ts",
             "sdk-local-runtime.ts",
+            "sdk-public-utilities-profile.ts",
             "facade-mode.ts"
           ],
           "tests": [
             "sdk-math.test.ts",
             "sdk-math-clipping.test.ts",
             "sdk-math-runtime.test.ts",
+            "sdk-public-utilities-runtime.test.ts",
             "facade-mode.test.ts"
           ],
           "validation": "offline-regression;current-live-unclaimed",
@@ -34667,18 +34695,20 @@
           "tool": "easyeda_control_calculate",
           "selector": "eda.sys_Math.calculatePerimeter",
           "implementation": "public-method",
-          "scope": "Separately reviewed EasyEDA 3.2.206/API 0.3.50 calculation-only runtime, not legacy-tuple admission. API 0.3.50 implementation only, separately hash-admitted; absent from the old reviewed 0.2.53 runtime. Source implementation and offline tests are not connected validation. Strict finite JSON inputs only. Simple methods accept +/-1e6 coordinates and 3-128 ring vertices; clipping has its separately documented narrower bounds. No input holes, groups, curves, native handles, callbacks or arbitrary SDK paths. Calculations use supplied coordinate units without unit conversion. No document, project, viewport, selection, shared setting, file, network, Save or CAD mutation is involved. JSON Schema omits geometric and paired-center refinements; use the exact argument validator. SDK floating-point results are observations, not exact geometric, electrical or manufacturing guarantees. SDK perimeter includes the last-to-first edge even for an open point array.",
+          "scope": "Separately reviewed EasyEDA 3.2.206/API 0.3.50 or 3.2.209/API 0.3.59 public calculation subset, not legacy/native-tuple admission. Separately hash-admitted API 0.3.50 or 0.3.59 implementation, each under its exact runtime profile; absent from the old reviewed 0.2.53 runtime. Source implementation and offline tests are not connected validation. Strict finite JSON inputs only. Simple methods accept +/-1e6 coordinates and 3-128 ring vertices; clipping has its separately documented narrower bounds. No input holes, groups, curves, native handles, callbacks or arbitrary SDK paths. Calculations use supplied coordinate units without unit conversion. No document, project, viewport, selection, shared setting, file, network, Save or CAD mutation is involved. JSON Schema omits geometric and paired-center refinements; use the exact argument validator. SDK floating-point results are observations, not exact geometric, electrical or manufacturing guarantees. SDK perimeter includes the last-to-first edge even for an open point array.",
           "source": [
             "sdk-math.ts",
             "sdk-math-clipping.ts",
             "sdk-math-runtime.ts",
             "sdk-local-runtime.ts",
+            "sdk-public-utilities-profile.ts",
             "facade-mode.ts"
           ],
           "tests": [
             "sdk-math.test.ts",
             "sdk-math-clipping.test.ts",
             "sdk-math-runtime.test.ts",
+            "sdk-public-utilities-runtime.test.ts",
             "facade-mode.test.ts"
           ],
           "validation": "offline-regression;current-live-unclaimed",
@@ -34722,18 +34752,20 @@
           "tool": "easyeda_control_calculate",
           "selector": "eda.sys_Math.contains",
           "implementation": "public-method",
-          "scope": "Separately reviewed EasyEDA 3.2.206/API 0.3.50 calculation-only runtime, not legacy-tuple admission. API 0.3.50 implementation only, separately hash-admitted; absent from the old reviewed 0.2.53 runtime. Source implementation and offline tests are not connected validation. Strict finite JSON inputs only. Simple methods accept +/-1e6 coordinates and 3-128 ring vertices; clipping has its separately documented narrower bounds. No input holes, groups, curves, native handles, callbacks or arbitrary SDK paths. Calculations use supplied coordinate units without unit conversion. No document, project, viewport, selection, shared setting, file, network, Save or CAD mutation is involved. JSON Schema omits geometric and paired-center refinements; use the exact argument validator. SDK floating-point results are observations, not exact geometric, electrical or manufacturing guarantees. SDK tests only inner vertices. The outer ring must be strictly convex; boundary classification remains the SDK ray-casting result, not a tolerance-aware guarantee.",
+          "scope": "Separately reviewed EasyEDA 3.2.206/API 0.3.50 or 3.2.209/API 0.3.59 public calculation subset, not legacy/native-tuple admission. Separately hash-admitted API 0.3.50 or 0.3.59 implementation, each under its exact runtime profile; absent from the old reviewed 0.2.53 runtime. Source implementation and offline tests are not connected validation. Strict finite JSON inputs only. Simple methods accept +/-1e6 coordinates and 3-128 ring vertices; clipping has its separately documented narrower bounds. No input holes, groups, curves, native handles, callbacks or arbitrary SDK paths. Calculations use supplied coordinate units without unit conversion. No document, project, viewport, selection, shared setting, file, network, Save or CAD mutation is involved. JSON Schema omits geometric and paired-center refinements; use the exact argument validator. SDK floating-point results are observations, not exact geometric, electrical or manufacturing guarantees. SDK tests only inner vertices. The outer ring must be strictly convex; boundary classification remains the SDK ray-casting result, not a tolerance-aware guarantee.",
           "source": [
             "sdk-math.ts",
             "sdk-math-clipping.ts",
             "sdk-math-runtime.ts",
             "sdk-local-runtime.ts",
+            "sdk-public-utilities-profile.ts",
             "facade-mode.ts"
           ],
           "tests": [
             "sdk-math.test.ts",
             "sdk-math-clipping.test.ts",
             "sdk-math-runtime.test.ts",
+            "sdk-public-utilities-runtime.test.ts",
             "facade-mode.test.ts"
           ],
           "validation": "offline-regression;current-live-unclaimed",
@@ -34777,18 +34809,20 @@
           "tool": "easyeda_control_calculate",
           "selector": "eda.sys_Math.containsPoint",
           "implementation": "public-method",
-          "scope": "Separately reviewed EasyEDA 3.2.206/API 0.3.50 calculation-only runtime, not legacy-tuple admission. API 0.3.50 implementation only, separately hash-admitted; absent from the old reviewed 0.2.53 runtime. Source implementation and offline tests are not connected validation. Strict finite JSON inputs only. Simple methods accept +/-1e6 coordinates and 3-128 ring vertices; clipping has its separately documented narrower bounds. No input holes, groups, curves, native handles, callbacks or arbitrary SDK paths. Calculations use supplied coordinate units without unit conversion. No document, project, viewport, selection, shared setting, file, network, Save or CAD mutation is involved. JSON Schema omits geometric and paired-center refinements; use the exact argument validator. SDK floating-point results are observations, not exact geometric, electrical or manufacturing guarantees. SDK ray casting classifies boundary points inconsistently; do not use this result as electrical connectivity or manufacturing clearance proof.",
+          "scope": "Separately reviewed EasyEDA 3.2.206/API 0.3.50 or 3.2.209/API 0.3.59 public calculation subset, not legacy/native-tuple admission. Separately hash-admitted API 0.3.50 or 0.3.59 implementation, each under its exact runtime profile; absent from the old reviewed 0.2.53 runtime. Source implementation and offline tests are not connected validation. Strict finite JSON inputs only. Simple methods accept +/-1e6 coordinates and 3-128 ring vertices; clipping has its separately documented narrower bounds. No input holes, groups, curves, native handles, callbacks or arbitrary SDK paths. Calculations use supplied coordinate units without unit conversion. No document, project, viewport, selection, shared setting, file, network, Save or CAD mutation is involved. JSON Schema omits geometric and paired-center refinements; use the exact argument validator. SDK floating-point results are observations, not exact geometric, electrical or manufacturing guarantees. SDK ray casting classifies boundary points inconsistently; do not use this result as electrical connectivity or manufacturing clearance proof.",
           "source": [
             "sdk-math.ts",
             "sdk-math-clipping.ts",
             "sdk-math-runtime.ts",
             "sdk-local-runtime.ts",
+            "sdk-public-utilities-profile.ts",
             "facade-mode.ts"
           ],
           "tests": [
             "sdk-math.test.ts",
             "sdk-math-clipping.test.ts",
             "sdk-math-runtime.test.ts",
+            "sdk-public-utilities-runtime.test.ts",
             "facade-mode.test.ts"
           ],
           "validation": "offline-regression;current-live-unclaimed",
@@ -34832,18 +34866,20 @@
           "tool": "easyeda_control_calculate",
           "selector": "eda.sys_Math.distanceToPoint",
           "implementation": "public-method",
-          "scope": "Separately reviewed EasyEDA 3.2.206/API 0.3.50 calculation-only runtime, not legacy-tuple admission. API 0.3.50 implementation only, separately hash-admitted; absent from the old reviewed 0.2.53 runtime. Source implementation and offline tests are not connected validation. Strict finite JSON inputs only. Simple methods accept +/-1e6 coordinates and 3-128 ring vertices; clipping has its separately documented narrower bounds. No input holes, groups, curves, native handles, callbacks or arbitrary SDK paths. Calculations use supplied coordinate units without unit conversion. No document, project, viewport, selection, shared setting, file, network, Save or CAD mutation is involved. JSON Schema omits geometric and paired-center refinements; use the exact argument validator. SDK floating-point results are observations, not exact geometric, electrical or manufacturing guarantees. Returns zero for both interior and boundary points. Zero is not proof of boundary membership.",
+          "scope": "Separately reviewed EasyEDA 3.2.206/API 0.3.50 or 3.2.209/API 0.3.59 public calculation subset, not legacy/native-tuple admission. Separately hash-admitted API 0.3.50 or 0.3.59 implementation, each under its exact runtime profile; absent from the old reviewed 0.2.53 runtime. Source implementation and offline tests are not connected validation. Strict finite JSON inputs only. Simple methods accept +/-1e6 coordinates and 3-128 ring vertices; clipping has its separately documented narrower bounds. No input holes, groups, curves, native handles, callbacks or arbitrary SDK paths. Calculations use supplied coordinate units without unit conversion. No document, project, viewport, selection, shared setting, file, network, Save or CAD mutation is involved. JSON Schema omits geometric and paired-center refinements; use the exact argument validator. SDK floating-point results are observations, not exact geometric, electrical or manufacturing guarantees. Returns zero for both interior and boundary points. Zero is not proof of boundary membership.",
           "source": [
             "sdk-math.ts",
             "sdk-math-clipping.ts",
             "sdk-math-runtime.ts",
             "sdk-local-runtime.ts",
+            "sdk-public-utilities-profile.ts",
             "facade-mode.ts"
           ],
           "tests": [
             "sdk-math.test.ts",
             "sdk-math-clipping.test.ts",
             "sdk-math-runtime.test.ts",
+            "sdk-public-utilities-runtime.test.ts",
             "facade-mode.test.ts"
           ],
           "validation": "offline-regression;current-live-unclaimed",
@@ -34887,18 +34923,20 @@
           "tool": "easyeda_control_calculate",
           "selector": "eda.sys_Math.getBBox",
           "implementation": "public-method",
-          "scope": "Separately reviewed EasyEDA 3.2.206/API 0.3.50 calculation-only runtime, not legacy-tuple admission. API 0.3.50 implementation only, separately hash-admitted; absent from the old reviewed 0.2.53 runtime. Source implementation and offline tests are not connected validation. Strict finite JSON inputs only. Simple methods accept +/-1e6 coordinates and 3-128 ring vertices; clipping has its separately documented narrower bounds. No input holes, groups, curves, native handles, callbacks or arbitrary SDK paths. Calculations use supplied coordinate units without unit conversion. No document, project, viewport, selection, shared setting, file, network, Save or CAD mutation is involved. JSON Schema omits geometric and paired-center refinements; use the exact argument validator. SDK floating-point results are observations, not exact geometric, electrical or manufacturing guarantees. Extrema of the supplied point array only; no native primitive or curve bounds are read.",
+          "scope": "Separately reviewed EasyEDA 3.2.206/API 0.3.50 or 3.2.209/API 0.3.59 public calculation subset, not legacy/native-tuple admission. Separately hash-admitted API 0.3.50 or 0.3.59 implementation, each under its exact runtime profile; absent from the old reviewed 0.2.53 runtime. Source implementation and offline tests are not connected validation. Strict finite JSON inputs only. Simple methods accept +/-1e6 coordinates and 3-128 ring vertices; clipping has its separately documented narrower bounds. No input holes, groups, curves, native handles, callbacks or arbitrary SDK paths. Calculations use supplied coordinate units without unit conversion. No document, project, viewport, selection, shared setting, file, network, Save or CAD mutation is involved. JSON Schema omits geometric and paired-center refinements; use the exact argument validator. SDK floating-point results are observations, not exact geometric, electrical or manufacturing guarantees. Extrema of the supplied point array only; no native primitive or curve bounds are read.",
           "source": [
             "sdk-math.ts",
             "sdk-math-clipping.ts",
             "sdk-math-runtime.ts",
             "sdk-local-runtime.ts",
+            "sdk-public-utilities-profile.ts",
             "facade-mode.ts"
           ],
           "tests": [
             "sdk-math.test.ts",
             "sdk-math-clipping.test.ts",
             "sdk-math-runtime.test.ts",
+            "sdk-public-utilities-runtime.test.ts",
             "facade-mode.test.ts"
           ],
           "validation": "offline-regression;current-live-unclaimed",
@@ -34942,18 +34980,20 @@
           "tool": "easyeda_control_calculate",
           "selector": "eda.sys_Math.getCentroid",
           "implementation": "public-method",
-          "scope": "Separately reviewed EasyEDA 3.2.206/API 0.3.50 calculation-only runtime, not legacy-tuple admission. API 0.3.50 implementation only, separately hash-admitted; absent from the old reviewed 0.2.53 runtime. Source implementation and offline tests are not connected validation. Strict finite JSON inputs only. Simple methods accept +/-1e6 coordinates and 3-128 ring vertices; clipping has its separately documented narrower bounds. No input holes, groups, curves, native handles, callbacks or arbitrary SDK paths. Calculations use supplied coordinate units without unit conversion. No document, project, viewport, selection, shared setting, file, network, Save or CAD mutation is involved. JSON Schema omits geometric and paired-center refinements; use the exact argument validator. SDK floating-point results are observations, not exact geometric, electrical or manufacturing guarantees. SDK signed-area centroid for one ring; nonfinite or out-of-bounds results refuse instead of becoming JSON null.",
+          "scope": "Separately reviewed EasyEDA 3.2.206/API 0.3.50 or 3.2.209/API 0.3.59 public calculation subset, not legacy/native-tuple admission. Separately hash-admitted API 0.3.50 or 0.3.59 implementation, each under its exact runtime profile; absent from the old reviewed 0.2.53 runtime. Source implementation and offline tests are not connected validation. Strict finite JSON inputs only. Simple methods accept +/-1e6 coordinates and 3-128 ring vertices; clipping has its separately documented narrower bounds. No input holes, groups, curves, native handles, callbacks or arbitrary SDK paths. Calculations use supplied coordinate units without unit conversion. No document, project, viewport, selection, shared setting, file, network, Save or CAD mutation is involved. JSON Schema omits geometric and paired-center refinements; use the exact argument validator. SDK floating-point results are observations, not exact geometric, electrical or manufacturing guarantees. SDK signed-area centroid for one ring; nonfinite or out-of-bounds results refuse instead of becoming JSON null.",
           "source": [
             "sdk-math.ts",
             "sdk-math-clipping.ts",
             "sdk-math-runtime.ts",
             "sdk-local-runtime.ts",
+            "sdk-public-utilities-profile.ts",
             "facade-mode.ts"
           ],
           "tests": [
             "sdk-math.test.ts",
             "sdk-math-clipping.test.ts",
             "sdk-math-runtime.test.ts",
+            "sdk-public-utilities-runtime.test.ts",
             "facade-mode.test.ts"
           ],
           "validation": "offline-regression;current-live-unclaimed",
@@ -34997,18 +35037,20 @@
           "tool": "easyeda_control_calculate",
           "selector": "eda.sys_Math.intersection",
           "implementation": "public-method",
-          "scope": "Separately reviewed EasyEDA 3.2.206/API 0.3.50 calculation-only runtime, not legacy-tuple admission. API 0.3.50 implementation only, separately hash-admitted; absent from the old reviewed 0.2.53 runtime. Source implementation and offline tests are not connected validation. Strict finite JSON inputs only. Simple methods accept +/-1e6 coordinates and 3-128 ring vertices; clipping has its separately documented narrower bounds. No input holes, groups, curves, native handles, callbacks or arbitrary SDK paths. Calculations use supplied coordinate units without unit conversion. No document, project, viewport, selection, shared setting, file, network, Save or CAD mutation is involved. JSON Schema omits geometric and paired-center refinements; use the exact argument validator. SDK floating-point results are observations, not exact geometric, electrical or manufacturing guarantees. Clipping subset: one simple alternating orthogonal integer ring per operand, +/-32768 coordinates, 4-16 vertices; copied explicit closure. No input holes/groups, cross-operand collinear lines (even disjoint), boundary contacts or more than two crossings per edge. Exact all-fragment arithmetic required. Complete bounded groups/holes/empty results retained; output components may share vertices. Self-touching output rings or touching outer/hole boundaries refuse after execution without repair or truncation. Module-local clipping scratch/counter changes are not CAD mutations. Empty intersection returns an empty group array.",
+          "scope": "Separately reviewed EasyEDA 3.2.206/API 0.3.50 or 3.2.209/API 0.3.59 public calculation subset, not legacy/native-tuple admission. Separately hash-admitted API 0.3.50 or 0.3.59 implementation, each under its exact runtime profile; absent from the old reviewed 0.2.53 runtime. Source implementation and offline tests are not connected validation. Strict finite JSON inputs only. Simple methods accept +/-1e6 coordinates and 3-128 ring vertices; clipping has its separately documented narrower bounds. No input holes, groups, curves, native handles, callbacks or arbitrary SDK paths. Calculations use supplied coordinate units without unit conversion. No document, project, viewport, selection, shared setting, file, network, Save or CAD mutation is involved. JSON Schema omits geometric and paired-center refinements; use the exact argument validator. SDK floating-point results are observations, not exact geometric, electrical or manufacturing guarantees. Clipping subset: one simple alternating orthogonal integer ring per operand, +/-32768 coordinates, 4-16 vertices; copied explicit closure. No input holes/groups, cross-operand collinear lines (even disjoint), boundary contacts or more than two crossings per edge. Exact all-fragment arithmetic required. Complete bounded groups/holes/empty results retained; output components may share vertices. Self-touching output rings or touching outer/hole boundaries refuse after execution without repair or truncation. Module-local clipping scratch/counter changes are not CAD mutations. Empty intersection returns an empty group array.",
           "source": [
             "sdk-math.ts",
             "sdk-math-clipping.ts",
             "sdk-math-runtime.ts",
             "sdk-local-runtime.ts",
+            "sdk-public-utilities-profile.ts",
             "facade-mode.ts"
           ],
           "tests": [
             "sdk-math.test.ts",
             "sdk-math-clipping.test.ts",
             "sdk-math-runtime.test.ts",
+            "sdk-public-utilities-runtime.test.ts",
             "facade-mode.test.ts"
           ],
           "validation": "offline-regression;current-live-unclaimed",
@@ -35052,18 +35094,20 @@
           "tool": "easyeda_control_calculate",
           "selector": "eda.sys_Math.intersects",
           "implementation": "public-method",
-          "scope": "Separately reviewed EasyEDA 3.2.206/API 0.3.50 calculation-only runtime, not legacy-tuple admission. API 0.3.50 implementation only, separately hash-admitted; absent from the old reviewed 0.2.53 runtime. Source implementation and offline tests are not connected validation. Strict finite JSON inputs only. Simple methods accept +/-1e6 coordinates and 3-128 ring vertices; clipping has its separately documented narrower bounds. No input holes, groups, curves, native handles, callbacks or arbitrary SDK paths. Calculations use supplied coordinate units without unit conversion. No document, project, viewport, selection, shared setting, file, network, Save or CAD mutation is involved. JSON Schema omits geometric and paired-center refinements; use the exact argument validator. SDK floating-point results are observations, not exact geometric, electrical or manufacturing guarantees. Clipping subset: one simple alternating orthogonal integer ring per operand, +/-32768 coordinates, 4-16 vertices; copied explicit closure. No input holes/groups, cross-operand collinear lines (even disjoint), boundary contacts or more than two crossings per edge. Exact all-fragment arithmetic required. Complete bounded groups/holes/empty results retained; output components may share vertices. Self-touching output rings or touching outer/hole boundaries refuse after execution without repair or truncation. Module-local clipping scratch/counter changes are not CAD mutations. Boundary-only contacts are refused before execution, not classified as area overlap.",
+          "scope": "Separately reviewed EasyEDA 3.2.206/API 0.3.50 or 3.2.209/API 0.3.59 public calculation subset, not legacy/native-tuple admission. Separately hash-admitted API 0.3.50 or 0.3.59 implementation, each under its exact runtime profile; absent from the old reviewed 0.2.53 runtime. Source implementation and offline tests are not connected validation. Strict finite JSON inputs only. Simple methods accept +/-1e6 coordinates and 3-128 ring vertices; clipping has its separately documented narrower bounds. No input holes, groups, curves, native handles, callbacks or arbitrary SDK paths. Calculations use supplied coordinate units without unit conversion. No document, project, viewport, selection, shared setting, file, network, Save or CAD mutation is involved. JSON Schema omits geometric and paired-center refinements; use the exact argument validator. SDK floating-point results are observations, not exact geometric, electrical or manufacturing guarantees. Clipping subset: one simple alternating orthogonal integer ring per operand, +/-32768 coordinates, 4-16 vertices; copied explicit closure. No input holes/groups, cross-operand collinear lines (even disjoint), boundary contacts or more than two crossings per edge. Exact all-fragment arithmetic required. Complete bounded groups/holes/empty results retained; output components may share vertices. Self-touching output rings or touching outer/hole boundaries refuse after execution without repair or truncation. Module-local clipping scratch/counter changes are not CAD mutations. Boundary-only contacts are refused before execution, not classified as area overlap.",
           "source": [
             "sdk-math.ts",
             "sdk-math-clipping.ts",
             "sdk-math-runtime.ts",
             "sdk-local-runtime.ts",
+            "sdk-public-utilities-profile.ts",
             "facade-mode.ts"
           ],
           "tests": [
             "sdk-math.test.ts",
             "sdk-math-clipping.test.ts",
             "sdk-math-runtime.test.ts",
+            "sdk-public-utilities-runtime.test.ts",
             "facade-mode.test.ts"
           ],
           "validation": "offline-regression;current-live-unclaimed",
@@ -35107,18 +35151,20 @@
           "tool": "easyeda_control_calculate",
           "selector": "eda.sys_Math.rotate",
           "implementation": "public-method",
-          "scope": "Separately reviewed EasyEDA 3.2.206/API 0.3.50 calculation-only runtime, not legacy-tuple admission. API 0.3.50 implementation only, separately hash-admitted; absent from the old reviewed 0.2.53 runtime. Source implementation and offline tests are not connected validation. Strict finite JSON inputs only. Simple methods accept +/-1e6 coordinates and 3-128 ring vertices; clipping has its separately documented narrower bounds. No input holes, groups, curves, native handles, callbacks or arbitrary SDK paths. Calculations use supplied coordinate units without unit conversion. No document, project, viewport, selection, shared setting, file, network, Save or CAD mutation is involved. JSON Schema omits geometric and paired-center refinements; use the exact argument validator. SDK floating-point results are observations, not exact geometric, electrical or manufacturing guarantees. Degrees, positive counterclockwise. Supply both center coordinates or neither; neither uses the SDK centroid.",
+          "scope": "Separately reviewed EasyEDA 3.2.206/API 0.3.50 or 3.2.209/API 0.3.59 public calculation subset, not legacy/native-tuple admission. Separately hash-admitted API 0.3.50 or 0.3.59 implementation, each under its exact runtime profile; absent from the old reviewed 0.2.53 runtime. Source implementation and offline tests are not connected validation. Strict finite JSON inputs only. Simple methods accept +/-1e6 coordinates and 3-128 ring vertices; clipping has its separately documented narrower bounds. No input holes, groups, curves, native handles, callbacks or arbitrary SDK paths. Calculations use supplied coordinate units without unit conversion. No document, project, viewport, selection, shared setting, file, network, Save or CAD mutation is involved. JSON Schema omits geometric and paired-center refinements; use the exact argument validator. SDK floating-point results are observations, not exact geometric, electrical or manufacturing guarantees. Degrees, positive counterclockwise. Supply both center coordinates or neither; neither uses the SDK centroid.",
           "source": [
             "sdk-math.ts",
             "sdk-math-clipping.ts",
             "sdk-math-runtime.ts",
             "sdk-local-runtime.ts",
+            "sdk-public-utilities-profile.ts",
             "facade-mode.ts"
           ],
           "tests": [
             "sdk-math.test.ts",
             "sdk-math-clipping.test.ts",
             "sdk-math-runtime.test.ts",
+            "sdk-public-utilities-runtime.test.ts",
             "facade-mode.test.ts"
           ],
           "validation": "offline-regression;current-live-unclaimed",
@@ -35162,18 +35208,20 @@
           "tool": "easyeda_control_calculate",
           "selector": "eda.sys_Math.scale",
           "implementation": "public-method",
-          "scope": "Separately reviewed EasyEDA 3.2.206/API 0.3.50 calculation-only runtime, not legacy-tuple admission. API 0.3.50 implementation only, separately hash-admitted; absent from the old reviewed 0.2.53 runtime. Source implementation and offline tests are not connected validation. Strict finite JSON inputs only. Simple methods accept +/-1e6 coordinates and 3-128 ring vertices; clipping has its separately documented narrower bounds. No input holes, groups, curves, native handles, callbacks or arbitrary SDK paths. Calculations use supplied coordinate units without unit conversion. No document, project, viewport, selection, shared setting, file, network, Save or CAD mutation is involved. JSON Schema omits geometric and paired-center refinements; use the exact argument validator. SDK floating-point results are observations, not exact geometric, electrical or manufacturing guarantees. Omitted scaleY uses scaleX. Zero/negative factors are allowed and may collapse/reflect output. Both center coordinates or neither are required.",
+          "scope": "Separately reviewed EasyEDA 3.2.206/API 0.3.50 or 3.2.209/API 0.3.59 public calculation subset, not legacy/native-tuple admission. Separately hash-admitted API 0.3.50 or 0.3.59 implementation, each under its exact runtime profile; absent from the old reviewed 0.2.53 runtime. Source implementation and offline tests are not connected validation. Strict finite JSON inputs only. Simple methods accept +/-1e6 coordinates and 3-128 ring vertices; clipping has its separately documented narrower bounds. No input holes, groups, curves, native handles, callbacks or arbitrary SDK paths. Calculations use supplied coordinate units without unit conversion. No document, project, viewport, selection, shared setting, file, network, Save or CAD mutation is involved. JSON Schema omits geometric and paired-center refinements; use the exact argument validator. SDK floating-point results are observations, not exact geometric, electrical or manufacturing guarantees. Omitted scaleY uses scaleX. Zero/negative factors are allowed and may collapse/reflect output. Both center coordinates or neither are required.",
           "source": [
             "sdk-math.ts",
             "sdk-math-clipping.ts",
             "sdk-math-runtime.ts",
             "sdk-local-runtime.ts",
+            "sdk-public-utilities-profile.ts",
             "facade-mode.ts"
           ],
           "tests": [
             "sdk-math.test.ts",
             "sdk-math-clipping.test.ts",
             "sdk-math-runtime.test.ts",
+            "sdk-public-utilities-runtime.test.ts",
             "facade-mode.test.ts"
           ],
           "validation": "offline-regression;current-live-unclaimed",
@@ -35217,18 +35265,20 @@
           "tool": "easyeda_control_calculate",
           "selector": "eda.sys_Math.subtract",
           "implementation": "public-method",
-          "scope": "Separately reviewed EasyEDA 3.2.206/API 0.3.50 calculation-only runtime, not legacy-tuple admission. API 0.3.50 implementation only, separately hash-admitted; absent from the old reviewed 0.2.53 runtime. Source implementation and offline tests are not connected validation. Strict finite JSON inputs only. Simple methods accept +/-1e6 coordinates and 3-128 ring vertices; clipping has its separately documented narrower bounds. No input holes, groups, curves, native handles, callbacks or arbitrary SDK paths. Calculations use supplied coordinate units without unit conversion. No document, project, viewport, selection, shared setting, file, network, Save or CAD mutation is involved. JSON Schema omits geometric and paired-center refinements; use the exact argument validator. SDK floating-point results are observations, not exact geometric, electrical or manufacturing guarantees. Clipping subset: one simple alternating orthogonal integer ring per operand, +/-32768 coordinates, 4-16 vertices; copied explicit closure. No input holes/groups, cross-operand collinear lines (even disjoint), boundary contacts or more than two crossings per edge. Exact all-fragment arithmetic required. Complete bounded groups/holes/empty results retained; output components may share vertices. Self-touching output rings or touching outer/hole boundaries refuse after execution without repair or truncation. Module-local clipping scratch/counter changes are not CAD mutations. Directional first-minus-second difference; a nested second ring can produce a hole.",
+          "scope": "Separately reviewed EasyEDA 3.2.206/API 0.3.50 or 3.2.209/API 0.3.59 public calculation subset, not legacy/native-tuple admission. Separately hash-admitted API 0.3.50 or 0.3.59 implementation, each under its exact runtime profile; absent from the old reviewed 0.2.53 runtime. Source implementation and offline tests are not connected validation. Strict finite JSON inputs only. Simple methods accept +/-1e6 coordinates and 3-128 ring vertices; clipping has its separately documented narrower bounds. No input holes, groups, curves, native handles, callbacks or arbitrary SDK paths. Calculations use supplied coordinate units without unit conversion. No document, project, viewport, selection, shared setting, file, network, Save or CAD mutation is involved. JSON Schema omits geometric and paired-center refinements; use the exact argument validator. SDK floating-point results are observations, not exact geometric, electrical or manufacturing guarantees. Clipping subset: one simple alternating orthogonal integer ring per operand, +/-32768 coordinates, 4-16 vertices; copied explicit closure. No input holes/groups, cross-operand collinear lines (even disjoint), boundary contacts or more than two crossings per edge. Exact all-fragment arithmetic required. Complete bounded groups/holes/empty results retained; output components may share vertices. Self-touching output rings or touching outer/hole boundaries refuse after execution without repair or truncation. Module-local clipping scratch/counter changes are not CAD mutations. Directional first-minus-second difference; a nested second ring can produce a hole.",
           "source": [
             "sdk-math.ts",
             "sdk-math-clipping.ts",
             "sdk-math-runtime.ts",
             "sdk-local-runtime.ts",
+            "sdk-public-utilities-profile.ts",
             "facade-mode.ts"
           ],
           "tests": [
             "sdk-math.test.ts",
             "sdk-math-clipping.test.ts",
             "sdk-math-runtime.test.ts",
+            "sdk-public-utilities-runtime.test.ts",
             "facade-mode.test.ts"
           ],
           "validation": "offline-regression;current-live-unclaimed",
@@ -35272,18 +35322,20 @@
           "tool": "easyeda_control_calculate",
           "selector": "eda.sys_Math.translate",
           "implementation": "public-method",
-          "scope": "Separately reviewed EasyEDA 3.2.206/API 0.3.50 calculation-only runtime, not legacy-tuple admission. API 0.3.50 implementation only, separately hash-admitted; absent from the old reviewed 0.2.53 runtime. Source implementation and offline tests are not connected validation. Strict finite JSON inputs only. Simple methods accept +/-1e6 coordinates and 3-128 ring vertices; clipping has its separately documented narrower bounds. No input holes, groups, curves, native handles, callbacks or arbitrary SDK paths. Calculations use supplied coordinate units without unit conversion. No document, project, viewport, selection, shared setting, file, network, Save or CAD mutation is involved. JSON Schema omits geometric and paired-center refinements; use the exact argument validator. SDK floating-point results are observations, not exact geometric, electrical or manufacturing guarantees. Returns a new point array, preserving supplied point order and closure representation; does not move CAD objects.",
+          "scope": "Separately reviewed EasyEDA 3.2.206/API 0.3.50 or 3.2.209/API 0.3.59 public calculation subset, not legacy/native-tuple admission. Separately hash-admitted API 0.3.50 or 0.3.59 implementation, each under its exact runtime profile; absent from the old reviewed 0.2.53 runtime. Source implementation and offline tests are not connected validation. Strict finite JSON inputs only. Simple methods accept +/-1e6 coordinates and 3-128 ring vertices; clipping has its separately documented narrower bounds. No input holes, groups, curves, native handles, callbacks or arbitrary SDK paths. Calculations use supplied coordinate units without unit conversion. No document, project, viewport, selection, shared setting, file, network, Save or CAD mutation is involved. JSON Schema omits geometric and paired-center refinements; use the exact argument validator. SDK floating-point results are observations, not exact geometric, electrical or manufacturing guarantees. Returns a new point array, preserving supplied point order and closure representation; does not move CAD objects.",
           "source": [
             "sdk-math.ts",
             "sdk-math-clipping.ts",
             "sdk-math-runtime.ts",
             "sdk-local-runtime.ts",
+            "sdk-public-utilities-profile.ts",
             "facade-mode.ts"
           ],
           "tests": [
             "sdk-math.test.ts",
             "sdk-math-clipping.test.ts",
             "sdk-math-runtime.test.ts",
+            "sdk-public-utilities-runtime.test.ts",
             "facade-mode.test.ts"
           ],
           "validation": "offline-regression;current-live-unclaimed",
@@ -35327,18 +35379,20 @@
           "tool": "easyeda_control_calculate",
           "selector": "eda.sys_Math.union",
           "implementation": "public-method",
-          "scope": "Separately reviewed EasyEDA 3.2.206/API 0.3.50 calculation-only runtime, not legacy-tuple admission. API 0.3.50 implementation only, separately hash-admitted; absent from the old reviewed 0.2.53 runtime. Source implementation and offline tests are not connected validation. Strict finite JSON inputs only. Simple methods accept +/-1e6 coordinates and 3-128 ring vertices; clipping has its separately documented narrower bounds. No input holes, groups, curves, native handles, callbacks or arbitrary SDK paths. Calculations use supplied coordinate units without unit conversion. No document, project, viewport, selection, shared setting, file, network, Save or CAD mutation is involved. JSON Schema omits geometric and paired-center refinements; use the exact argument validator. SDK floating-point results are observations, not exact geometric, electrical or manufacturing guarantees. Clipping subset: one simple alternating orthogonal integer ring per operand, +/-32768 coordinates, 4-16 vertices; copied explicit closure. No input holes/groups, cross-operand collinear lines (even disjoint), boundary contacts or more than two crossings per edge. Exact all-fragment arithmetic required. Complete bounded groups/holes/empty results retained; output components may share vertices. Self-touching output rings or touching outer/hole boundaries refuse after execution without repair or truncation. Module-local clipping scratch/counter changes are not CAD mutations. Returns the complete SDK union group.",
+          "scope": "Separately reviewed EasyEDA 3.2.206/API 0.3.50 or 3.2.209/API 0.3.59 public calculation subset, not legacy/native-tuple admission. Separately hash-admitted API 0.3.50 or 0.3.59 implementation, each under its exact runtime profile; absent from the old reviewed 0.2.53 runtime. Source implementation and offline tests are not connected validation. Strict finite JSON inputs only. Simple methods accept +/-1e6 coordinates and 3-128 ring vertices; clipping has its separately documented narrower bounds. No input holes, groups, curves, native handles, callbacks or arbitrary SDK paths. Calculations use supplied coordinate units without unit conversion. No document, project, viewport, selection, shared setting, file, network, Save or CAD mutation is involved. JSON Schema omits geometric and paired-center refinements; use the exact argument validator. SDK floating-point results are observations, not exact geometric, electrical or manufacturing guarantees. Clipping subset: one simple alternating orthogonal integer ring per operand, +/-32768 coordinates, 4-16 vertices; copied explicit closure. No input holes/groups, cross-operand collinear lines (even disjoint), boundary contacts or more than two crossings per edge. Exact all-fragment arithmetic required. Complete bounded groups/holes/empty results retained; output components may share vertices. Self-touching output rings or touching outer/hole boundaries refuse after execution without repair or truncation. Module-local clipping scratch/counter changes are not CAD mutations. Returns the complete SDK union group.",
           "source": [
             "sdk-math.ts",
             "sdk-math-clipping.ts",
             "sdk-math-runtime.ts",
             "sdk-local-runtime.ts",
+            "sdk-public-utilities-profile.ts",
             "facade-mode.ts"
           ],
           "tests": [
             "sdk-math.test.ts",
             "sdk-math-clipping.test.ts",
             "sdk-math-runtime.test.ts",
+            "sdk-public-utilities-runtime.test.ts",
             "facade-mode.test.ts"
           ],
           "validation": "offline-regression;current-live-unclaimed",
@@ -35382,18 +35436,20 @@
           "tool": "easyeda_control_calculate",
           "selector": "eda.sys_Math.xor",
           "implementation": "public-method",
-          "scope": "Separately reviewed EasyEDA 3.2.206/API 0.3.50 calculation-only runtime, not legacy-tuple admission. API 0.3.50 implementation only, separately hash-admitted; absent from the old reviewed 0.2.53 runtime. Source implementation and offline tests are not connected validation. Strict finite JSON inputs only. Simple methods accept +/-1e6 coordinates and 3-128 ring vertices; clipping has its separately documented narrower bounds. No input holes, groups, curves, native handles, callbacks or arbitrary SDK paths. Calculations use supplied coordinate units without unit conversion. No document, project, viewport, selection, shared setting, file, network, Save or CAD mutation is involved. JSON Schema omits geometric and paired-center refinements; use the exact argument validator. SDK floating-point results are observations, not exact geometric, electrical or manufacturing guarantees. Clipping subset: one simple alternating orthogonal integer ring per operand, +/-32768 coordinates, 4-16 vertices; copied explicit closure. No input holes/groups, cross-operand collinear lines (even disjoint), boundary contacts or more than two crossings per edge. Exact all-fragment arithmetic required. Complete bounded groups/holes/empty results retained; output components may share vertices. Self-touching output rings or touching outer/hole boundaries refuse after execution without repair or truncation. Module-local clipping scratch/counter changes are not CAD mutations. Symmetric difference; disconnected components may share crossing vertices.",
+          "scope": "Separately reviewed EasyEDA 3.2.206/API 0.3.50 or 3.2.209/API 0.3.59 public calculation subset, not legacy/native-tuple admission. Separately hash-admitted API 0.3.50 or 0.3.59 implementation, each under its exact runtime profile; absent from the old reviewed 0.2.53 runtime. Source implementation and offline tests are not connected validation. Strict finite JSON inputs only. Simple methods accept +/-1e6 coordinates and 3-128 ring vertices; clipping has its separately documented narrower bounds. No input holes, groups, curves, native handles, callbacks or arbitrary SDK paths. Calculations use supplied coordinate units without unit conversion. No document, project, viewport, selection, shared setting, file, network, Save or CAD mutation is involved. JSON Schema omits geometric and paired-center refinements; use the exact argument validator. SDK floating-point results are observations, not exact geometric, electrical or manufacturing guarantees. Clipping subset: one simple alternating orthogonal integer ring per operand, +/-32768 coordinates, 4-16 vertices; copied explicit closure. No input holes/groups, cross-operand collinear lines (even disjoint), boundary contacts or more than two crossings per edge. Exact all-fragment arithmetic required. Complete bounded groups/holes/empty results retained; output components may share vertices. Self-touching output rings or touching outer/hole boundaries refuse after execution without repair or truncation. Module-local clipping scratch/counter changes are not CAD mutations. Symmetric difference; disconnected components may share crossing vertices.",
           "source": [
             "sdk-math.ts",
             "sdk-math-clipping.ts",
             "sdk-math-runtime.ts",
             "sdk-local-runtime.ts",
+            "sdk-public-utilities-profile.ts",
             "facade-mode.ts"
           ],
           "tests": [
             "sdk-math.test.ts",
             "sdk-math-clipping.test.ts",
             "sdk-math-runtime.test.ts",
+            "sdk-public-utilities-runtime.test.ts",
             "facade-mode.test.ts"
           ],
           "validation": "offline-regression;current-live-unclaimed",
@@ -37575,16 +37631,18 @@
           "tool": "easyeda_control_system",
           "selector": "eda.sys_Unit.inchToMil",
           "implementation": "public-method",
-          "scope": "Separately reviewed EasyEDA 3.2.206/API 0.3.50 local-system subset; no project context or legacy-tuple admission. Separately hash-admitted API 0.3.50 implementation. Discovery, source implementation and offline tests do not establish current connected validation. Fixed synchronous public methods only, two exact scalar samples on the same owner/method. No project, document, selection, account, file, network, navigation, shared-settings change or Save access. Responses are bounded to 8192 UTF-8 bytes; metadata strings to 128 printable ASCII characters. Malformed, asynchronous, unstable or oversized results refuse without truncation or automatic retry. Finite input magnitude <=1e9; integer decimal precision 0-12, default 4. Uses SDK rounding, including its positive 1e-10 intermediate adjustment, not exact decimal arithmetic. Negative zero is preserved by the negativeZero flag. No canvas-origin or frontend-unit conversion.",
+          "scope": "Separately reviewed EasyEDA 3.2.206/API 0.3.50 or 3.2.209/API 0.3.59 local-system subset; no project context or legacy/native-tuple admission. Separately hash-admitted API 0.3.50 or 0.3.59 implementation under its exact runtime profile. Discovery, source implementation and offline tests do not establish current connected validation. Fixed synchronous public methods only, two exact scalar samples on the same owner/method. No project, document, selection, account, file, network, navigation, shared-settings change or Save access. Responses are bounded to 8192 UTF-8 bytes; metadata strings to 128 printable ASCII characters. Malformed, asynchronous, unstable or oversized results refuse without truncation or automatic retry. Finite input magnitude <=1e9; integer decimal precision 0-12, default 4. Uses SDK rounding, including its positive 1e-10 intermediate adjustment, not exact decimal arithmetic. Negative zero is preserved by the negativeZero flag. No canvas-origin or frontend-unit conversion.",
           "source": [
             "sdk-system.ts",
             "sdk-system-runtime.ts",
             "sdk-local-runtime.ts",
+            "sdk-public-utilities-profile.ts",
             "facade-mode.ts"
           ],
           "tests": [
             "sdk-system.test.ts",
             "sdk-system-runtime.test.ts",
+            "sdk-public-utilities-runtime.test.ts",
             "facade-mode.test.ts"
           ],
           "validation": "offline-regression;current-live-unclaimed",
@@ -37667,16 +37725,18 @@
           "tool": "easyeda_control_system",
           "selector": "eda.sys_Unit.inchToMm",
           "implementation": "public-method",
-          "scope": "Separately reviewed EasyEDA 3.2.206/API 0.3.50 local-system subset; no project context or legacy-tuple admission. Separately hash-admitted API 0.3.50 implementation. Discovery, source implementation and offline tests do not establish current connected validation. Fixed synchronous public methods only, two exact scalar samples on the same owner/method. No project, document, selection, account, file, network, navigation, shared-settings change or Save access. Responses are bounded to 8192 UTF-8 bytes; metadata strings to 128 printable ASCII characters. Malformed, asynchronous, unstable or oversized results refuse without truncation or automatic retry. Finite input magnitude <=1e9; integer decimal precision 0-12, default 4. Uses SDK rounding, including its positive 1e-10 intermediate adjustment, not exact decimal arithmetic. Negative zero is preserved by the negativeZero flag. No canvas-origin or frontend-unit conversion.",
+          "scope": "Separately reviewed EasyEDA 3.2.206/API 0.3.50 or 3.2.209/API 0.3.59 local-system subset; no project context or legacy/native-tuple admission. Separately hash-admitted API 0.3.50 or 0.3.59 implementation under its exact runtime profile. Discovery, source implementation and offline tests do not establish current connected validation. Fixed synchronous public methods only, two exact scalar samples on the same owner/method. No project, document, selection, account, file, network, navigation, shared-settings change or Save access. Responses are bounded to 8192 UTF-8 bytes; metadata strings to 128 printable ASCII characters. Malformed, asynchronous, unstable or oversized results refuse without truncation or automatic retry. Finite input magnitude <=1e9; integer decimal precision 0-12, default 4. Uses SDK rounding, including its positive 1e-10 intermediate adjustment, not exact decimal arithmetic. Negative zero is preserved by the negativeZero flag. No canvas-origin or frontend-unit conversion.",
           "source": [
             "sdk-system.ts",
             "sdk-system-runtime.ts",
             "sdk-local-runtime.ts",
+            "sdk-public-utilities-profile.ts",
             "facade-mode.ts"
           ],
           "tests": [
             "sdk-system.test.ts",
             "sdk-system-runtime.test.ts",
+            "sdk-public-utilities-runtime.test.ts",
             "facade-mode.test.ts"
           ],
           "validation": "offline-regression;current-live-unclaimed",
@@ -37759,16 +37819,18 @@
           "tool": "easyeda_control_system",
           "selector": "eda.sys_Unit.milToInch",
           "implementation": "public-method",
-          "scope": "Separately reviewed EasyEDA 3.2.206/API 0.3.50 local-system subset; no project context or legacy-tuple admission. Separately hash-admitted API 0.3.50 implementation. Discovery, source implementation and offline tests do not establish current connected validation. Fixed synchronous public methods only, two exact scalar samples on the same owner/method. No project, document, selection, account, file, network, navigation, shared-settings change or Save access. Responses are bounded to 8192 UTF-8 bytes; metadata strings to 128 printable ASCII characters. Malformed, asynchronous, unstable or oversized results refuse without truncation or automatic retry. Finite input magnitude <=1e9; integer decimal precision 0-12, default 4. Uses SDK rounding, including its positive 1e-10 intermediate adjustment, not exact decimal arithmetic. Negative zero is preserved by the negativeZero flag. No canvas-origin or frontend-unit conversion.",
+          "scope": "Separately reviewed EasyEDA 3.2.206/API 0.3.50 or 3.2.209/API 0.3.59 local-system subset; no project context or legacy/native-tuple admission. Separately hash-admitted API 0.3.50 or 0.3.59 implementation under its exact runtime profile. Discovery, source implementation and offline tests do not establish current connected validation. Fixed synchronous public methods only, two exact scalar samples on the same owner/method. No project, document, selection, account, file, network, navigation, shared-settings change or Save access. Responses are bounded to 8192 UTF-8 bytes; metadata strings to 128 printable ASCII characters. Malformed, asynchronous, unstable or oversized results refuse without truncation or automatic retry. Finite input magnitude <=1e9; integer decimal precision 0-12, default 4. Uses SDK rounding, including its positive 1e-10 intermediate adjustment, not exact decimal arithmetic. Negative zero is preserved by the negativeZero flag. No canvas-origin or frontend-unit conversion.",
           "source": [
             "sdk-system.ts",
             "sdk-system-runtime.ts",
             "sdk-local-runtime.ts",
+            "sdk-public-utilities-profile.ts",
             "facade-mode.ts"
           ],
           "tests": [
             "sdk-system.test.ts",
             "sdk-system-runtime.test.ts",
+            "sdk-public-utilities-runtime.test.ts",
             "facade-mode.test.ts"
           ],
           "validation": "offline-regression;current-live-unclaimed",
@@ -37851,16 +37913,18 @@
           "tool": "easyeda_control_system",
           "selector": "eda.sys_Unit.milToMm",
           "implementation": "public-method",
-          "scope": "Separately reviewed EasyEDA 3.2.206/API 0.3.50 local-system subset; no project context or legacy-tuple admission. Separately hash-admitted API 0.3.50 implementation. Discovery, source implementation and offline tests do not establish current connected validation. Fixed synchronous public methods only, two exact scalar samples on the same owner/method. No project, document, selection, account, file, network, navigation, shared-settings change or Save access. Responses are bounded to 8192 UTF-8 bytes; metadata strings to 128 printable ASCII characters. Malformed, asynchronous, unstable or oversized results refuse without truncation or automatic retry. Finite input magnitude <=1e9; integer decimal precision 0-12, default 4. Uses SDK rounding, including its positive 1e-10 intermediate adjustment, not exact decimal arithmetic. Negative zero is preserved by the negativeZero flag. No canvas-origin or frontend-unit conversion.",
+          "scope": "Separately reviewed EasyEDA 3.2.206/API 0.3.50 or 3.2.209/API 0.3.59 local-system subset; no project context or legacy/native-tuple admission. Separately hash-admitted API 0.3.50 or 0.3.59 implementation under its exact runtime profile. Discovery, source implementation and offline tests do not establish current connected validation. Fixed synchronous public methods only, two exact scalar samples on the same owner/method. No project, document, selection, account, file, network, navigation, shared-settings change or Save access. Responses are bounded to 8192 UTF-8 bytes; metadata strings to 128 printable ASCII characters. Malformed, asynchronous, unstable or oversized results refuse without truncation or automatic retry. Finite input magnitude <=1e9; integer decimal precision 0-12, default 4. Uses SDK rounding, including its positive 1e-10 intermediate adjustment, not exact decimal arithmetic. Negative zero is preserved by the negativeZero flag. No canvas-origin or frontend-unit conversion.",
           "source": [
             "sdk-system.ts",
             "sdk-system-runtime.ts",
             "sdk-local-runtime.ts",
+            "sdk-public-utilities-profile.ts",
             "facade-mode.ts"
           ],
           "tests": [
             "sdk-system.test.ts",
             "sdk-system-runtime.test.ts",
+            "sdk-public-utilities-runtime.test.ts",
             "facade-mode.test.ts"
           ],
           "validation": "offline-regression;current-live-unclaimed",
@@ -37943,16 +38007,18 @@
           "tool": "easyeda_control_system",
           "selector": "eda.sys_Unit.mmToInch",
           "implementation": "public-method",
-          "scope": "Separately reviewed EasyEDA 3.2.206/API 0.3.50 local-system subset; no project context or legacy-tuple admission. Separately hash-admitted API 0.3.50 implementation. Discovery, source implementation and offline tests do not establish current connected validation. Fixed synchronous public methods only, two exact scalar samples on the same owner/method. No project, document, selection, account, file, network, navigation, shared-settings change or Save access. Responses are bounded to 8192 UTF-8 bytes; metadata strings to 128 printable ASCII characters. Malformed, asynchronous, unstable or oversized results refuse without truncation or automatic retry. Finite input magnitude <=1e9; integer decimal precision 0-12, default 4. Uses SDK rounding, including its positive 1e-10 intermediate adjustment, not exact decimal arithmetic. Negative zero is preserved by the negativeZero flag. No canvas-origin or frontend-unit conversion.",
+          "scope": "Separately reviewed EasyEDA 3.2.206/API 0.3.50 or 3.2.209/API 0.3.59 local-system subset; no project context or legacy/native-tuple admission. Separately hash-admitted API 0.3.50 or 0.3.59 implementation under its exact runtime profile. Discovery, source implementation and offline tests do not establish current connected validation. Fixed synchronous public methods only, two exact scalar samples on the same owner/method. No project, document, selection, account, file, network, navigation, shared-settings change or Save access. Responses are bounded to 8192 UTF-8 bytes; metadata strings to 128 printable ASCII characters. Malformed, asynchronous, unstable or oversized results refuse without truncation or automatic retry. Finite input magnitude <=1e9; integer decimal precision 0-12, default 4. Uses SDK rounding, including its positive 1e-10 intermediate adjustment, not exact decimal arithmetic. Negative zero is preserved by the negativeZero flag. No canvas-origin or frontend-unit conversion.",
           "source": [
             "sdk-system.ts",
             "sdk-system-runtime.ts",
             "sdk-local-runtime.ts",
+            "sdk-public-utilities-profile.ts",
             "facade-mode.ts"
           ],
           "tests": [
             "sdk-system.test.ts",
             "sdk-system-runtime.test.ts",
+            "sdk-public-utilities-runtime.test.ts",
             "facade-mode.test.ts"
           ],
           "validation": "offline-regression;current-live-unclaimed",
@@ -38035,16 +38101,18 @@
           "tool": "easyeda_control_system",
           "selector": "eda.sys_Unit.mmToMil",
           "implementation": "public-method",
-          "scope": "Separately reviewed EasyEDA 3.2.206/API 0.3.50 local-system subset; no project context or legacy-tuple admission. Separately hash-admitted API 0.3.50 implementation. Discovery, source implementation and offline tests do not establish current connected validation. Fixed synchronous public methods only, two exact scalar samples on the same owner/method. No project, document, selection, account, file, network, navigation, shared-settings change or Save access. Responses are bounded to 8192 UTF-8 bytes; metadata strings to 128 printable ASCII characters. Malformed, asynchronous, unstable or oversized results refuse without truncation or automatic retry. Finite input magnitude <=1e9; integer decimal precision 0-12, default 4. Uses SDK rounding, including its positive 1e-10 intermediate adjustment, not exact decimal arithmetic. Negative zero is preserved by the negativeZero flag. No canvas-origin or frontend-unit conversion.",
+          "scope": "Separately reviewed EasyEDA 3.2.206/API 0.3.50 or 3.2.209/API 0.3.59 local-system subset; no project context or legacy/native-tuple admission. Separately hash-admitted API 0.3.50 or 0.3.59 implementation under its exact runtime profile. Discovery, source implementation and offline tests do not establish current connected validation. Fixed synchronous public methods only, two exact scalar samples on the same owner/method. No project, document, selection, account, file, network, navigation, shared-settings change or Save access. Responses are bounded to 8192 UTF-8 bytes; metadata strings to 128 printable ASCII characters. Malformed, asynchronous, unstable or oversized results refuse without truncation or automatic retry. Finite input magnitude <=1e9; integer decimal precision 0-12, default 4. Uses SDK rounding, including its positive 1e-10 intermediate adjustment, not exact decimal arithmetic. Negative zero is preserved by the negativeZero flag. No canvas-origin or frontend-unit conversion.",
           "source": [
             "sdk-system.ts",
             "sdk-system-runtime.ts",
             "sdk-local-runtime.ts",
+            "sdk-public-utilities-profile.ts",
             "facade-mode.ts"
           ],
           "tests": [
             "sdk-system.test.ts",
             "sdk-system-runtime.test.ts",
+            "sdk-public-utilities-runtime.test.ts",
             "facade-mode.test.ts"
           ],
           "validation": "offline-regression;current-live-unclaimed",

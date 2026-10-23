@@ -1,8 +1,10 @@
 import { z } from "zod";
 import { EXACT_READ_ENVELOPE_SCHEMA } from "./exact-readers.ts";
+import { SDK_PUBLIC_UTILITIES_209_PROFILE } from "./sdk-public-utilities-profile.ts";
 
 export const SDK_SYSTEM_API_VERSION = "0.3.50.ab46409c";
 export const SDK_SYSTEM_API_SHA256 = "021d155baafbcdc7b558da12f0834a8ee473aa37e276c6ea679936f952080c76";
+const defaultProvenance = Object.freeze({ version: SDK_SYSTEM_API_VERSION, implementationSha256: SDK_SYSTEM_API_SHA256 });
 export const SDK_SYSTEM_MAX_BYTES = 8192;
 const inputNumber = z.number().min(-1_000_000_000).max(1_000_000_000);
 const precision = z.number().int().min(0).max(12).optional();
@@ -76,7 +78,7 @@ const definitions: Record<SystemMethod, Definition> = {
     limitation: "Compares SUPPLIED version <= CURRENT editor semantic version, despite the method's ambiguous English name. Canonical major.minor.patch only, each component 0-999999; no dev, leading zeros, prerelease, build suffix, partial version or implicit coercion. Bundled semver can emit console diagnostics if its initialization enabled semver NODE_DEBUG." },
 };
 const commonLimitations = [
-  "Separately hash-admitted API 0.3.50 implementation. Discovery, source implementation and offline tests do not establish current connected validation.",
+  "Separately hash-admitted API 0.3.50 or 0.3.59 implementation under its exact runtime profile. Discovery, source implementation and offline tests do not establish current connected validation.",
   "Fixed synchronous public methods only, two exact scalar samples on the same owner/method. No project, document, selection, account, file, network, navigation, shared-settings change or Save access.",
   "Responses are bounded to 8192 UTF-8 bytes; metadata strings to 128 printable ASCII characters. Malformed, asynchronous, unstable or oversized results refuse without truncation or automatic retry.",
 ] as const;
@@ -94,6 +96,7 @@ export interface SdkSystemDescriptor {
   limitations: string[];
   invocationEnabledByDiscovery: false;
   provenance: { version: string; apiSha256: string; implementationKind: "public-method-bounded-subset"; liveValidation: "not-recorded" };
+  additionalReviewedProvenance: { version: string; apiSha256: string; scope: "public-utilities-only"; liveValidation: "not-recorded" }[];
 }
 
 export function sdkSystemDescriptors(): SdkSystemDescriptor[] {
@@ -103,7 +106,10 @@ export function sdkSystemDescriptors(): SdkSystemDescriptor[] {
     return { path: method, method, inputSchema: z.toJSONSchema(schema), parameters: [...definition.parameters], resultKind: definition.result,
       effect: definition.effect, ...(definition.units === undefined ? {} : { units: { ...definition.units } }),
       limitations: [...commonLimitations, definition.limitation], invocationEnabledByDiscovery: false,
-      provenance: { version: SDK_SYSTEM_API_VERSION, apiSha256: SDK_SYSTEM_API_SHA256, implementationKind: "public-method-bounded-subset", liveValidation: "not-recorded" } };
+      provenance: { version: SDK_SYSTEM_API_VERSION, apiSha256: SDK_SYSTEM_API_SHA256, implementationKind: "public-method-bounded-subset", liveValidation: "not-recorded" },
+      additionalReviewedProvenance: [{ version: SDK_PUBLIC_UTILITIES_209_PROFILE.installedBundles.publicApi.version,
+        apiSha256: SDK_PUBLIC_UTILITIES_209_PROFILE.installedBundles.publicApi.implementationSha256,
+        scope: "public-utilities-only", liveValidation: "not-recorded" }] };
   });
 }
 
@@ -155,7 +161,8 @@ return envelope;
 const payloadSchema = z.object({ ok: z.literal(true), kind: z.literal("sdk-system"), method: z.string(), value: z.unknown(), negativeZero: z.boolean().optional() }).strict();
 const metadataText = z.string().min(1).max(128).regex(/^[\u0020-\u007E]+$/u);
 
-export function validateSdkSystemResult(input: unknown, raw: unknown): Record<string, unknown> {
+export function validateSdkSystemResult(input: unknown, raw: unknown,
+  provenance: { readonly version: string; readonly implementationSha256: string } = defaultProvenance): Record<string, unknown> {
   const request = parseSdkSystemRequest(input);
   const payload = payloadSchema.parse(raw);
   const definition = definitions[request.method];
@@ -173,6 +180,6 @@ export function validateSdkSystemResult(input: unknown, raw: unknown): Record<st
   return { ...payload, value, effect: definition.effect,
     ...(definition.units === undefined ? {} : { units: { ...definition.units }, numberOfDecimals: "numberOfDecimals" in request.arguments ? request.arguments.numberOfDecimals ?? 4 : 4 }),
     authority: "bounded-system-metadata-or-unit-calculation-only;not-project-state-or-runtime-admission",
-    apiVersion: SDK_SYSTEM_API_VERSION, apiSha256: SDK_SYSTEM_API_SHA256,
+    apiVersion: provenance.version, apiSha256: provenance.implementationSha256,
     limitations: [...commonLimitations, definition.limitation] };
 }

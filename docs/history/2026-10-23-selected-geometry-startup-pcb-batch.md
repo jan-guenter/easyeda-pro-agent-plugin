@@ -113,3 +113,89 @@ skill-creator validators. No scanner limit or exclusion was changed.
 5. Continue the wider inventory:774methods comprise212public subsets,
    34native-equivalent routes,79implemented-but-blocked methods and449documented
    omissions. These are implementation gaps, not merely missing tests.
+
+## 2026-10-23 verification and protected merge
+
+Candidate `6064be0d9673e5d7dcb91e44c5e6488db8791f6f` passed the complete frozen
+verification under Node24.18.0/npm11.16.0 and soft core limit zero. Facade results:
+12,366 tests,12,362 passed,four skipped,zero failures; bridge results:424 passed.
+Types, strict type-aware lint, generated coverage/protocol checks, compatibility,
+build, MCP-contract and all skill checks passed. The complete suite took626seconds.
+Both bundles reproduced byte-for-byte after the suite, and the worktree was clean.
+Independent review of the exact37staged paths found no remaining actionable
+security/privacy issue. Only facade source/bundle projections and review time
+changed in compatibility metadata; all external pins remain unchanged.
+
+Frozen projections:
+
+- Source617files: `22eaecb930bbfffd128fbf4c2876704042f218d93757f2a2c00e704be9c843fe`.
+- Server10235143bytes: `f3c7d6c983ea01ca9d8d5241955ffb9cae918cb91eae0e74941df40e164da924`.
+- Supervisor786410bytes: `1325f762d1bc96910c6b42b6ba1650ded4a0610509ecfa0b75c99c34081a62e1`.
+- Native helper880724bytes: `ef944ecff37bb0bcc7b2e2399eb54713af479cc5770e973d7fddd0e783dd3b49`.
+
+[PR102](https://github.com/jan-guenter/easyeda-pro-agent-plugin/pull/102) passed
+exact-payload [Linux CI39927240697](https://github.com/jan-guenter/easyeda-pro-agent-plugin/actions/runs/39927240697)
+and [Windows CI39927240691](https://github.com/jan-guenter/easyeda-pro-agent-plugin/actions/runs/39927240691).
+All eight Linux test shards, build, aggregate gate and Windows native checks were
+green before protected merge. Main is `ee31fa105bfb1f3ab4e8bb9ced0b65230e9a7f28`,
+merged09:00:54Z; its tree is exactly the tested candidate tree.
+Main [Linux CI39928774811](https://github.com/jan-guenter/easyeda-pro-agent-plugin/actions/runs/39928774811)
+and [Windows CI39928774657](https://github.com/jan-guenter/easyeda-pro-agent-plugin/actions/runs/39928774657)
+are running at this entry. Official marketplace upgrade is in progress; no new
+live call or connected-validation claim follows from the merge.
+
+## Proposed next coherent batch
+
+Finish startup-to-PCB preparation as one owner-bound route, not another independent
+observer. Preserve the existing worker-startup contract. A separate launch-selected
+combined purpose should retain the actual opening, construction, PCB session and
+native channel; capture the original PCB initializer and source-defined ratline
+factory before the single PCB opening. Qualify finite project/ratline/subworker
+roles, their creation relationships, complete sources and original result receivers.
+Existing ratline research in the [finite-effects record](2026-10-21-current-pcb-string-finite-effects.md)
+is not an admitted source pin or proof of terminal completion.
+
+Then join existing precreate/common, move, producer and actor collectors and take
+the full stable baseline after attributed startup completion. Normal worker
+destruction needs attributed completion; late replies and one-shot paused/waiting
+cleanup must remain retained through original root/Job termination. Callback
+inspection must never invoke work to manufacture evidence.
+
+The current239-of256 budget cannot hold this route: existing precreate/common
+alone adds3309requests. A proposed separate3868ceiling reserves256ratline and
+64cleanup requests above the3548subtotal, but generated phase counts and cumulative
+source/common byte bounds must justify it before implementation. This is planning,
+not authority to raise the ordinary contract. Add focused original-class positive,
+wrong-parent/duplicate-result and late-cleanup cases plus native parity; avoid a
+new broad research or test campaign. Writer and Save lifecycle work remains later.
+
+## 2026-10-23 official installation and handoff
+
+The official CLI upgraded only Git marketplace
+`https://github.com/jan-guenter/easyeda-pro-agent-plugin.git` under umask022,
+with no errors. Its snapshot HEAD equals merged main. Version
+`0.3.0+codex.20261023084000` is installed and enabled. The maintained comparator
+verified all1766committed files,42directories and36,653,457bytes with exact modes.
+Inventory SHA256 is `36b7c557a86a404c926ca0aed8cec28f6cf407911fb0082ef22aff28ae91d79b`;
+plugin tree is `d3fa47823c4cf476a60901be00b317bd5a2d9013`.
+
+The installed synthetic-profile offline probe passed26tools and10queries under
+the pinned Node24.18.0 executable. Its geometry catalog now has20methods. It
+selected no live control root, sampled no descendants/non-stdio sockets, retained
+clean EOF shutdown and zero stderr, and verified the upstream marker stayed absent.
+These checks are not actual-host admission, continuous isolation or connected
+validation. Main Windows CI39928774657 passed; main Linux CI39928774811 remains
+running at this append. Required exact-payload PR CI already passed, and the main
+tree is identical.
+
+No live call, owner termination, cache patch, Save or production access followed
+the upgrade. The control skill requires a fresh Codex session before live use of
+084000. Admit that actual host, check final main CI, and run one new disposable
+startup case. Never replay terminal074000. If capture passes, validate assignments,
+actor and channel together before original-owner closure. The new selected reader
+also needs connected validation on a disposable target; do not borrow the private,
+unregistered PCB coordinator as a public opener.
+
+This verification/install handoff remains local for the next substantive batch;
+the PR records the same completion evidence. This avoids another release and CI
+cycle solely for bookkeeping. Only this history file is intentionally dirty.

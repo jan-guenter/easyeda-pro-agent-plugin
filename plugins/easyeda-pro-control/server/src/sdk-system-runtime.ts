@@ -6,8 +6,9 @@ import {
   sha256Json,
 } from "./core.ts";
 import { decodeExactReadEnvelope } from "./exact-readers.ts";
-import { SDK_LOCAL_RUNTIME_PROFILE, validateSdkLocalRuntimeFingerprint } from "./sdk-local-runtime.ts";
+import { SDK_LOCAL_RUNTIME_PROFILE } from "./sdk-local-runtime.ts";
 import type { SdkLocalEngine } from "./sdk-local-runtime.ts";
+import { selectSdkPublicUtilitiesRuntimeProfile } from "./sdk-public-utilities-profile.ts";
 import {
   SDK_SYSTEM_MAX_BYTES,
   buildSdkSystemProgram,
@@ -32,11 +33,11 @@ export async function readSdkSystem(engine: SdkSystemEngine, requestInput: unkno
   expectedFingerprint: Record<string, unknown>): Promise<Record<string, unknown>> {
   const request = parseSdkSystemRequest(requestInput);
   const expected = structuredClone(expectedFingerprint);
-  validateSdkLocalRuntimeFingerprint(expected);
+  selectSdkPublicUtilitiesRuntimeProfile(expected);
   await engine.assertBridgeDispatchAllowed();
   const initialStatus = await engine.status();
   const initial = structuredClone(initialStatus.stableFingerprint);
-  validateSdkLocalRuntimeFingerprint(initial);
+  const profile = selectSdkPublicUtilitiesRuntimeProfile(initial);
   assertSubset(initial, expected, "SDK system expected runtime");
   await engine.assertBridgeDispatchAllowed();
   const raw = await engine.upstream.callTool("easyeda_execute", {
@@ -47,16 +48,16 @@ export async function readSdkSystem(engine: SdkSystemEngine, requestInput: unkno
   if (Buffer.byteLength(JSON.stringify(envelope), "utf8") > SDK_SYSTEM_MAX_BYTES) {
     throw new Error("SDK system reply exceeds its byte bound.");
   }
-  const result = validateSdkSystemResult(request, decodeExactReadEnvelope(envelope));
+  const result = validateSdkSystemResult(request, decodeExactReadEnvelope(envelope), profile.installedBundles.publicApi);
   await engine.assertBridgeDispatchAllowed();
   const finalStatus = await engine.status();
   const finalFingerprint = finalStatus.stableFingerprint;
-  validateSdkLocalRuntimeFingerprint(finalFingerprint);
+  selectSdkPublicUtilitiesRuntimeProfile(finalFingerprint);
   if (canonicalJson(finalFingerprint) !== canonicalJson(initial)) {
     throw new Error("SDK system runtime changed around the local operation.");
   }
   const response = { ...result, runtimeAdmission: {
-    profile: SDK_SYSTEM_RUNTIME_PROFILE.schema,
+    profile: profile === SDK_LOCAL_RUNTIME_PROFILE ? SDK_SYSTEM_RUNTIME_PROFILE.schema : profile.schema,
     fingerprintSha256: sha256Json(initial),
     beforeAndAfterChecked: true,
     scope: "fixed-local-sdk-system",

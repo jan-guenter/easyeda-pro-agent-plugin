@@ -8,6 +8,9 @@ and dialogs.
 
 Support depends on the exact application version and operation. General
 schematic, PCB and library writers remain disabled on EasyEDA Pro 3.2.206.
+EasyEDA Pro 3.2.209 has a separate six-tool utility-only profile: API reference,
+local discovery, status, bounded calculations/system observations and ordinary
+application launch. It does not enable project opening or design operations.
 The ordinary symbol-metadata route allows forward name/description edits of
 unused project-local symbols with eligible history. Disposable validation
 routes have separate gates. Check the

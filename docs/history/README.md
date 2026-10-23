@@ -45,6 +45,8 @@ layout. The connected ledger retains its generation and case anchors.
 
 | Record | Former path |
 | --- | --- |
+| [2026-10-23-generation209-ratline-capture.md](2026-10-23-generation209-ratline-capture.md) | New generation source research and dormant finite-role comparison |
+| [2026-10-23-generation209-utilities-and-installation-drift.md](2026-10-23-generation209-utilities-and-installation-drift.md) | Installation drift, narrow utility/launch migration and release handoff |
 | [2026-08-27-primary-research.md](2026-08-27-primary-research.md) | `docs/primary-research-2026-08-27.md` |
 | [2026-09-06-review.md](2026-09-06-review.md) | `docs/review-2026-09-06.md` |
 | [2026-09-08-connection-repair.md](2026-09-08-connection-repair.md) | `docs/connection-repair-2026-09-08.md` |

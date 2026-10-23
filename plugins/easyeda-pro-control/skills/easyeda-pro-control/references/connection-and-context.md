@@ -8,6 +8,12 @@ sufficient. Do not change settings or use a UI fallback to pass admission.
 
 ## Current-version disposable opening
 
+First inspect the registered toolset. On the separately reviewed 3.2.209 utility
+profile, `public-utilities-only` registers only API reference, local discovery,
+status, calculations, system observations and ordinary launch. No project opening,
+native/private adapter, design operation or Save is registered. The 3.2.206
+workflows below do not transfer to that generation.
+
 On the separately reviewed 3.2.206 installation, use
 `easyeda_control_project_open` only for a selected registered disposable file
 and existing PCB. Read [current-project-opening.md](current-project-opening.md)
@@ -239,8 +245,9 @@ Distinguish these failure layers before changing anything:
 | Observation | What it proves | Next step |
 |---|---|---|
 | Tool is absent or host rejects dispatch as unavailable | No facade handler result | Check the plugin's enabled state. For authorized EasyEDA work, the checkout-only foreground MCP client below can use the same facade when no other owner is active. Never start a second owner or use a new data root to evade the lease. |
-| Status reports `mode:"offline-only"` and `installation.ready:false`; only three tools are listed | Trusted profile/Node admission passed, but a selected external installation check failed | Use its fixed `machine-installation-*` code and read-only installation inspection. API reference and local discovery remain usable. Live and recovery tools do not exist in this process. Review the changed installation before updating any pins, then restart the MCP session. |
-| Status reports `facade.mode:"calculation-only"`; twenty tools are listed | Configured bundle selectors are not the older reviewed design tuple | API reference, local discovery, status, scoped utilities/metadata including no-editor project PCB metadata, exact PCB layer/loaded-view identities and geometry, local historical abandonment, ordinary launch, disposable project opening, disposable symbol copying, disposable PCB renaming and the separate forward-only `easyeda_control_project_symbol_metadata` route are registered. Each has separate exact admission. The ordinary symbol route supports unused project-local symbols with complete META-only or bounded canvas-segments history and exactly one write; it does not enable generic design writers. Generic navigation, native UI and legacy recovery remain unavailable. |
+| Status reports `mode:"offline-only"` and `installation.ready:false`; only three tools are listed | Trusted profile/Node admission passed, but a selected external installation check failed | Use the retained startup code and current read-only `diagnostics`: configured file roles, candidate bundle directory names and app package version. These metadata observations neither admit candidates nor prove who replaced the app. API reference/local discovery remain usable; live/recovery tools do not exist here. Review the changed installation, use only a supported explicit migration, then restart. |
+| Status reports `facade.mode:"public-utilities-only"`; six tools are listed | The exact 3.2.209 PCB/API selector pair selected the small catalog, not runtime admission | Use only its separately admitted Math/Unit/Environment operations and ordinary launch. No old PCB, metadata writer, project opener, native/private or Save route is registered. Source/synthetic checks do not prove connected execution. |
+| Status reports `facade.mode:"calculation-only"`; twenty-six tools are listed | Configured bundle selectors selected the older restricted catalog | API reference, local discovery, status, scoped utilities/metadata including no-editor project PCB metadata, exact PCB layer/loaded-view identities and geometry, local historical abandonment, ordinary launch, disposable project opening, disposable symbol copying, disposable PCB renaming and the separate forward-only `easyeda_control_project_symbol_metadata` route are registered. Each has separate exact admission. The ordinary symbol route supports unused project-local symbols with complete META-only or bounded canvas-segments history and exactly one write; it does not enable generic design writers. Generic navigation, native UI and legacy recovery remain unavailable. |
 | Structured status error during upstream startup | Facade handler ran, but startup failed | Run `npm run doctor` offline from the trusted checkout. Use reported stage/exit details and failed checks; private stderr remains withheld. Do not infer the cause from its hash or length. |
 | Status succeeds but has no authenticated session | Upstream responded; extension connection is unproven | Verify the selected receipt/import and bridge connection. Do not call context or design readers yet. |
 | Authenticated session with `validation-required` tuple | Connection succeeded; compatibility remains unadmitted | Collect bounded status/context/public-read evidence for review. Exact/private calls remain blocked. |
@@ -268,6 +275,15 @@ verified no-op; other generations refuse. It does not update the old global
 compatibility manifest or launch a bridge. Use a fresh Codex chat afterward.
 Never start a competing owner to test the new selection. Broader editor support
 requires separate review; this helper selects the restricted utility catalog.
+
+For the separately reviewed 3.2.209 installation, use the same helper with the
+explicit `--target public-utilities-209`. It accepts the previous 3.2.206 selector
+pair or an already-selected exact 3.2.209 pair, verifies all new package/bundle
+hashes, retains the exact backup and changes only the two selectors. It does not
+replace old native/private profiles. A fresh session will expose the six-tool
+utility-only catalog, not the older twenty-six-tool catalog. Existing offline
+status remains offline even if its current metadata diagnostics now find all
+configured files. Never use a second facade or patched cache to skip that restart.
 
 When present, status `bridgeConnection` reports bounded fixed-code counters and timestamps. `observedUpgradeCount: 0` means this gateway observed no valid WebSocket upgrade, not that no TCP traffic arrived. `origin-rejected`, `authentication-failed`, `authenticated-build-mismatch`, and `credential-epoch-mismatch` separate Origin policy, authentication/protocol, archive and epoch failures. `authentication-failed` alone does not establish a key mismatch or justify rotation. `lastFailure` is historical and may remain after a later `session-established`; require the current authenticated session, not a counter, for live work. These diagnostics are not part of the stable authority fingerprint. Do not repeatedly poll an unchanged disconnected state.
 
