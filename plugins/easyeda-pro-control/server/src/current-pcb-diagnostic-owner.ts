@@ -4,7 +4,7 @@
  * release path first proves original root and complete Job termination.
  * Browser discovery grants no frame, worker, script or CAD execution authority. */
 /* oxlint-disable import/max-dependencies -- This owner composes separately audited native installation, fixed protocol, identity observation and original process/pipe cleanup boundaries. */
-/* oxlint-disable max-classes-per-file -- Three fixed-purpose exported facades share an unexported retained owner core; exporting a configurable core would expose a purpose-selection bypass. */
+/* oxlint-disable max-classes-per-file -- Four fixed-purpose exported facades share an unexported retained owner core; exporting a configurable core would expose a purpose-selection bypass. */
 import { spawn } from "node:child_process";
 import type { ChildProcessWithoutNullStreams } from "node:child_process";
 import { createHash, randomBytes } from "node:crypto";
@@ -58,16 +58,17 @@ import type { CurrentPcbWorkerStartupDependency } from "./current-pcb-worker-sta
 import { CurrentPcbWorkerStartupOpening } from "./current-pcb-worker-startup-opening.ts";
 import type { CurrentPcbWorkerStartupOpeningResult } from "./current-pcb-worker-startup-opening.ts";
 import { CurrentPcbWorkerStartupPcbSession } from "./current-pcb-worker-startup-pcb-session.ts";
+import { decodeCurrentPcb209LayersReply } from "./current-pcb-209-layers.ts";
 
-const HELPER_SHA256 = "ef944ecff37bb0bcc7b2e2399eb54713af479cc5770e973d7fddd0e783dd3b49";
-const HELPER_BYTES = 880_724;
+const HELPER_SHA256 = "3b0c243a5937456357a22425f105bbddbd9f2e64f76d7a70c2dc30aa799bdf5d";
+const HELPER_BYTES = 895_943;
 const MAX_LINE = 100_000;
 // 64 MiB native bytes need at most 85.34 MiB base64 plus bounded poll envelopes.
 const MAX_TOTAL = 96 * 1024 * 1024;
 // Original helper owners remain reachable after caller exceptions.
 const retainedOwners = new Set<object>();
 type RecordValue = Record<string, unknown>;
-type OwnerPurpose = "diagnostic" | "string-precreate" | "worker-startup";
+type OwnerPurpose = "diagnostic" | "diagnostic209" | "string-precreate" | "worker-startup";
 export interface CurrentPcbWorkerStartupOpeningBinding {
   readonly context: () => Readonly<{ sessionId: string; uniqueContextId: string }>;
   readonly reprove: () => Promise<void>;
@@ -128,7 +129,7 @@ function noProcessState(value: RecordValue, released: boolean): Readonly<NoProce
 }
 
 /** Test seams supply a real retained child, never process IDs or an attach path.
- * Only the three fixed owner factories check packaged helper source. Neither
+ * Only the fixed owner factories check packaged helper source. Neither
  * constructor nor successful discovery grants current runtime admission. */
 class CurrentPcbRetainedOwnerCore {
   readonly #child: ChildProcessWithoutNullStreams;
@@ -188,6 +189,8 @@ class CurrentPcbRetainedOwnerCore {
   #pcbObservationConsumed = false;
   #pcbFrameObservation: CurrentPcbDiagnosticPcbOpeningResult | null = null;
   #pcbSourceQualified = false;
+  #pcbSourceProfile: DiagnosticScriptProfile | null = null;
+  #layers209Consumed = false;
   #modelConsumed = false;
   #stringPrecreateConsumed = false;
   #commonBaselineConsumed = false;
@@ -487,15 +490,43 @@ class CurrentPcbRetainedOwnerCore {
       context.completePcbOpening(); context.modelContext();
       const result = diagnosticBoundedObservation({ ...proof, openingObservation: observed, ancillaryFrame: context.ancillaryObservation() });
       this.#pcbSourceQualified = true;
+      this.#pcbSourceProfile = profile;
       return result;
     } catch (caughtError) { this.#input.emit("error", error("PCB_OBSERVATION_FAILED")); throw caughtError; }
+    finally { this.#busy = false; }
+  }
+
+  /** One fixed 209 layer read through the original UI context and child RPC.
+   * No bridge dispatch, new target, model scope or raw command is accepted. */
+  public async observeLayers209(input: CurrentDisposableOpenSealedTarget): Promise<Readonly<RecordValue>> {
+    const context = this.#stagedContext, profile = this.#pcbSourceProfile, target = currentDisposableOpenSealedTargetSchema.parse(input);
+    if (this.#purpose !== "diagnostic209" || context === null || this.#layers209Consumed || !this.#pcbSourceQualified ||
+        profile === null ||
+        this.#pcbFrameObservation?.ok !== true || this.#workersConsumed || this.#modelConsumed ||
+        JSON.stringify(target) !== JSON.stringify(this.#projectOpeningTarget)) { throw error("LAYERS209_UNAVAILABLE"); }
+    this.#enter(true); this.#layers209Consumed = true;
+    try {
+      const pcb = context.modelContext(), selected = context.pcbOpeningContext();
+      const reprove = (): void => {
+        this.#available(); context.pcbScript(profile);
+        if (JSON.stringify(context.pcbOpeningContext()) !== JSON.stringify(selected) ||
+            JSON.stringify(context.modelContext()) !== JSON.stringify(pcb)) { throw error("LAYERS209_CONTEXT"); }
+      };
+      await this.#verifyInstallation(); reprove(); await this.#verify(); reprove();
+      await this.#observeParent(); reprove(); await this.#observeOpeningAncillary(); reprove();
+      const result = decodeCurrentPcb209LayersReply(
+        await this.#transfer(() => this.#pipe.observeLayers209(selected.uniqueContextId, target)), target);
+      reprove(); await this.#observeParent(); reprove(); await this.#observeOpeningAncillary(); reprove();
+      await this.#verifyInstallation(); reprove(); await this.#verify(); reprove();
+      return result;
+    } catch (caughtError) { this.#input.emit("error", error("LAYERS209_FAILED")); throw caughtError; }
     finally { this.#busy = false; }
   }
 
   /** Fixed parent-only child reporting. The optional profile is an internal
    * synthetic-test seam, never part of the public lifecycle request. */
   public async inspectWorkers(profile?: DiagnosticWorkerScriptProfile): Promise<Readonly<RecordValue>> {
-    if (this.#purpose === "worker-startup") { throw error("STARTUP_LEGACY_ROUTE"); }
+    if (this.#purpose === "worker-startup" || this.#purpose === "diagnostic209") { throw error("STARTUP_LEGACY_ROUTE"); }
     const attachment = this.#stagedAttachment;
     if (this.#workersConsumed || this.#stagedContext === null || attachment === null || this.#inspectionConsumed ||
         this.#modelConsumed || (this.#stringPurpose ? !this.#pcbSourceQualified : this.#pcbOpeningConsumed)) {
@@ -550,6 +581,7 @@ class CurrentPcbRetainedOwnerCore {
   /** Fixed read-only scope path in an already source-qualified PCB context.
    * No opened UI/worker or caller-provided handle can substitute for it. */
   public async observeModelState(): Promise<CurrentPcbDiagnosticModelObservation> {
+    if (this.#purpose === "diagnostic209") { throw error("MODEL_OBSERVATION_UNAVAILABLE"); }
     if (this.#purpose === "worker-startup") { throw error("STARTUP_LEGACY_ROUTE"); }
     const context = this.#stagedContext;
     if (this.#stringPurpose || this.#modelConsumed || context === null || !this.#scriptConsumed || this.#inspectionConsumed ||
@@ -1223,6 +1255,14 @@ export class CurrentPcbDiagnosticOwner extends CurrentPcbRetainedOwnerCore {
   }
 }
 
+/** Separate launch-sealed 209 navigation and layer metadata owner. */
+export class CurrentPcb209DiagnosticOwner extends CurrentPcbRetainedOwnerCore {
+  public constructor(child: ChildProcessWithoutNullStreams, verify: () => Promise<void>,
+    installation: CurrentPcbDiagnosticInstallation | null = null, verifyInstallation: () => Promise<void> = (): Promise<void> => Promise.resolve()) {
+    super(child, verify, installation, verifyInstallation, "diagnostic209");
+  }
+}
+
 /** Unregistered pre-create-only facade, with no create, Save or generic send. */
 export class CurrentPcbStringPrecreateOwner extends CurrentPcbRetainedOwnerCore {
   public constructor(child: ChildProcessWithoutNullStreams, verify: () => Promise<void>,
@@ -1246,10 +1286,10 @@ export class CurrentPcbWorkerStartupOwner extends CurrentPcbRetainedOwnerCore {
 export function startCurrentPcbDiagnosticOwner(options: CurrentPcbDiagnosticInstallationOptions): Promise<CurrentPcbDiagnosticOwner> {
   return startFixedOwner(options, "diagnostic");
 }
-/** Separate 209 opening-only allocator. No existing owner can be upgraded and
- * the fixed native diagnostic command vocabulary and budget are unchanged. */
-export function startCurrentPcb209DiagnosticOwner(options: CurrentPcbDiagnosticInstallationOptions): Promise<CurrentPcbDiagnosticOwner> {
-  return startFixedOwner(options, "diagnostic", "209-opening");
+/** Separate 209 opening/layer allocator. No existing owner can be upgraded.
+ * The native layer command is purpose-sealed; the103-request budget is unchanged. */
+export function startCurrentPcb209DiagnosticOwner(options: CurrentPcbDiagnosticInstallationOptions): Promise<CurrentPcb209DiagnosticOwner> {
+  return startFixedOwner(options, "diagnostic209", "209-opening");
 }
 /** Called only by the separate String lifecycle, never diagnostic requests. */
 export function startCurrentPcbStringPrecreateOwner(options: CurrentPcbDiagnosticInstallationOptions): Promise<CurrentPcbStringPrecreateOwner> {
@@ -1261,7 +1301,7 @@ export function startCurrentPcbWorkerStartupOwner(options: CurrentPcbDiagnosticI
 async function startFixedOwner(options: CurrentPcbDiagnosticInstallationOptions, purpose: OwnerPurpose,
   generation: "206" | "209-opening" = "206"): Promise<CurrentPcbDiagnosticOwner | CurrentPcbStringPrecreateOwner | CurrentPcbWorkerStartupOwner> {
   const sealedOptions = Object.freeze({ ...options });
-  if (generation === "209-opening" && purpose !== "diagnostic") { throw error("INSTALLATION_PURPOSE"); }
+  if ((generation === "209-opening") !== (purpose === "diagnostic209")) { throw error("INSTALLATION_PURPOSE"); }
   const verifier = generation === "209-opening" ? verifyCurrentPcb209DiagnosticInstallation : verifyCurrentPcbDiagnosticInstallation;
   const installation = await verifier(sealedOptions);
   if (fileURLToPath(new URL("../..", import.meta.url)) !== `${sealedOptions.pluginRoot}/`) { throw error("INSTALLATION_PLUGIN"); }
@@ -1300,6 +1340,7 @@ async function startFixedOwner(options: CurrentPcbDiagnosticInstallationOptions,
   let purposeSwitch = "";
   if (purpose === "worker-startup") { purposeSwitch = " -WorkerStartup"; }
   else if (purpose === "string-precreate") { purposeSwitch = " -StringPrecreate"; }
+  else if (purpose === "diagnostic209") { purposeSwitch = " -Layers209"; }
   const bootstrap = `$ErrorActionPreference='Stop';$ProgressPreference='SilentlyContinue';` +
     `$file=[IO.File]::Open('${windowsPath.replaceAll("'", "''")}',[IO.FileMode]::Open,[IO.FileAccess]::Read,[IO.FileShare]::Read);` +
     `try{if($file.Length -ne ${HELPER_BYTES}){throw 'pcb-diagnostic-helper-size'};$bytes=New-Object byte[] ([int]$file.Length);$offset=0;` +
@@ -1315,6 +1356,7 @@ async function startFixedOwner(options: CurrentPcbDiagnosticInstallationOptions,
   let owner: CurrentPcbRetainedOwnerCore;
   if (purpose === "worker-startup") { owner = new CurrentPcbWorkerStartupOwner(child, verify, installation, verifyInstallation, verifyStartupFacade); }
   else if (purpose === "string-precreate") { owner = new CurrentPcbStringPrecreateOwner(child, verify, installation, verifyInstallation); }
+  else if (purpose === "diagnostic209") { owner = new CurrentPcb209DiagnosticOwner(child, verify, installation, verifyInstallation); }
   else { owner = new CurrentPcbDiagnosticOwner(child, verify, installation, verifyInstallation); }
   retainedOwners.add(owner); owner.start();
   return owner;

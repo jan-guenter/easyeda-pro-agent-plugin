@@ -19,8 +19,8 @@ const deviceResult = (): Record<string, unknown> => ({ ...metadata(), project_uu
   symbol: { uuid: symbolUuid, display_title: "R" }, footprint: { uuid: footprintUuid, display_title: "R0603" }, product_code: "C12345" });
 const envelope = (result: unknown): Record<string, unknown> => ({ success: true, code: 0, result });
 
-void test("catalog expansion has three strict bounded requests and offline schemas, without destination selection", () => {
-  for (const request of [searchRequest, symbolRequest, deviceRequest]) {
+void test("catalog expansion has five strict bounded requests and offline schemas, without destination selection", () => {
+  for (const request of [searchRequest, symbolRequest, deviceRequest, { ...searchRequest, action: "search-symbols" }, { ...searchRequest, action: "search-devices" }]) {
     assert.deepEqual(parsePublicSystemCatalogRequest(request), request);
     assert.equal(validatePublicSystemCatalogArguments(request)["valid"], true);
     for (const change of [{ confirmNetwork: false }, { url: "https://private.invalid" }, { path: "private" }, { cookie: "private" },
@@ -31,14 +31,16 @@ void test("catalog expansion has three strict bounded requests and offline schem
   for (const change of [{ query: "" }, { query: " " }, { query: " R0603" }, { query: "x\n" }, { query: "x\u0000y" },
     { query: "\uD800" }, { query: "x".repeat(129) }, { page: 0 }, { page: "1" }, { page: 1001 }, { page: 1.1 },
     { pageSize: 0 }, { pageSize: 21 }, { page: undefined }, { confirmNetwork: undefined }, { docType: 2 }, { tag: [] }]) {
-    assert.throws(() => parsePublicSystemCatalogRequest({ ...searchRequest, ...change }));
+    for (const action of ["search-footprints", "search-symbols", "search-devices"]) {
+      assert.throws(() => parsePublicSystemCatalogRequest({ ...searchRequest, action, ...change }));
+    }
   }
   for (const symbol of ["../project.eprj2", "A".repeat(32), "a".repeat(64)]) {
     assert.throws(() => parsePublicSystemCatalogRequest({ ...symbolRequest, symbolUuid: symbol }));
   }
   assert.equal(validatePublicSystemCatalogArguments({})["valid"], false);
   const catalog = queryPublicSystemCatalog({ includeSchemas: true });
-  assert.equal(catalog["total"], 3); assert.equal(catalog["offline"], true); assert.equal(catalog["invocationEnabledByDiscovery"], false);
+  assert.equal(catalog["total"], 5); assert.equal(catalog["offline"], true); assert.equal(catalog["invocationEnabledByDiscovery"], false);
   assert.match(JSON.stringify(catalog), /inputSchema/u); assert.match(JSON.stringify(catalog), /read-only POST/u);
   assert.throws(() => queryPublicSystemCatalog({ method: "private" }));
 });
@@ -114,7 +116,7 @@ void test("device preserves absent visibility/path flags and validates its bound
 });
 
 void test("all catalog actions refuse unsuccessful/malformed envelopes and bound the projected result independently", () => {
-  for (const request of [searchRequest, symbolRequest, deviceRequest]) {
+  for (const request of [searchRequest, symbolRequest, deviceRequest, { ...searchRequest, action: "search-symbols" }, { ...searchRequest, action: "search-devices" }]) {
     for (const raw of [null, {}, { success: false, code: 404, message: "PRIVATE_VENDOR_ERROR" },
       { success: true, code: 1, result: symbolResult() }, envelope(null)]) {
       assert.throws(() => validatePublicSystemCatalogResult(request, raw));

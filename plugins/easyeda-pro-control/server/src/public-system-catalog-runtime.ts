@@ -2,18 +2,25 @@ import { PUBLIC_SYSTEM_FOOTPRINT_LIBRARY, PUBLIC_SYSTEM_FOOTPRINT_MAX_RESPONSE_B
   PUBLIC_SYSTEM_FOOTPRINT_TIMEOUT_MS } from "./public-system-footprint.ts";
 import { parsePublicSystemCatalogRequest, validatePublicSystemCatalogResult } from "./public-system-catalog.ts";
 
-/** Fixed metadata endpoints only. Search's source-defined POST is a read, not
- * a caller-selected HTTP method or a route to a component write endpoint. */
+/** Fixed metadata endpoints only. The source defines read-only POST routes;
+ * form encoding is qualified by anonymous samples, not the desktop JSON default. */
 export async function readPublicSystemCatalog(input: unknown): Promise<Record<string, unknown>> {
   const request = parsePublicSystemCatalogRequest(input);
   let body: string | undefined, path: string;
   switch (request.action) {
     case "get-symbol": { path = `/api/v2/components/${request.symbolUuid}`; break; }
     case "get-device": { path = `/api/v2/devices/${request.deviceUuid}`; break; }
-    case "search-footprints": {
+    case "search-footprints": case "search-symbols": {
       path = "/api/v2/components/search";
       body = new URLSearchParams({ path: PUBLIC_SYSTEM_FOOTPRINT_LIBRARY, uid: PUBLIC_SYSTEM_FOOTPRINT_LIBRARY,
-        page: String(request.page), pageSize: String(request.pageSize), "docType[]": "4", wd: request.query }).toString(); break;
+        page: String(request.page), pageSize: String(request.pageSize), "docType[]": request.action === "search-footprints" ? "4" : "2",
+        wd: request.query }).toString(); break;
+    }
+    case "search-devices": {
+      path = "/api/devices/search";
+      // The fixed empty tag array emits no form field. No device docType filter exists.
+      body = new URLSearchParams({ path: PUBLIC_SYSTEM_FOOTPRINT_LIBRARY, uid: PUBLIC_SYSTEM_FOOTPRINT_LIBRARY,
+        page: String(request.page), pageSize: String(request.pageSize), wd: request.query }).toString(); break;
     }
     default: { throw new Error("PUBLIC_SYSTEM_CATALOG_ACTION"); }
   }

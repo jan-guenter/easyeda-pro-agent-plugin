@@ -483,7 +483,11 @@ check(
     packageScripts["sanitizer:check"] ===
       "node scripts/build-descriptor-sanitizer.ts --check" &&
     packageScripts["build"] ===
-      "npm run sanitizer:check && npm run sql:reader:check && npm run startup:protocol:check && node scripts/build-server.ts" &&
+      "npm run sanitizer:check && npm run sql:reader:check && npm run startup:protocol:check && npm run pcb209:layers:check && node scripts/build-server.ts" &&
+    packageScripts["pcb209:layers:check"] ===
+      "node scripts/generate-pcb209-layers-protocol.ts --check" &&
+    packageScripts["pcb209:layers:update"] ===
+      "node scripts/generate-pcb209-layers-protocol.ts --write" &&
     packageScripts["startup:protocol:check"] ===
       "node scripts/generate-worker-startup-protocol.ts --check" &&
     packageScripts["startup:protocol:update"] ===

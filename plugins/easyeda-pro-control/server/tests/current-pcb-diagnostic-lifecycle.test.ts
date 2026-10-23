@@ -104,9 +104,10 @@ function fixture(context: TestContext, id: string, dependencies: FixtureDependen
   const stringPurpose = id.startsWith("string-precreate-");
   const startupPurpose = id.startsWith("worker-startup-");
   const opening209 = id.startsWith("pcb209-");
-  let ownerPurpose: "diagnostic" | "string-precreate" | "worker-startup" = "diagnostic";
+  let ownerPurpose: "diagnostic" | "diagnostic209" | "string-precreate" | "worker-startup" = "diagnostic";
   if (stringPurpose) { ownerPurpose = "string-precreate"; }
   else if (startupPurpose) { ownerPurpose = "worker-startup"; }
+  else if (opening209) { ownerPurpose = "diagnostic209"; }
   let originalInventory: Awaited<ReturnType<typeof sqlFixture>>["before"] | null = null;
   let originalCheckpoint = structuredClone(OPEN_CHECKPOINT);
   const owner: CurrentPcbStringPrecreateLifecycleOwner & CurrentPcbWorkerStartupLifecycleOwner = {
@@ -124,7 +125,7 @@ function fixture(context: TestContext, id: string, dependencies: FixtureDependen
     launch: async () => {
       calls.push("launch");
       const intent = await readFile(join(directory(id), "intent.json"), "utf8");
-      assert.match(intent, { diagnostic: /diagnostic-launch-intent/u, "string-precreate": /string-precreate-launch-intent/u,
+      assert.match(intent, { diagnostic: /diagnostic-launch-intent/u, diagnostic209: /diagnostic-launch-intent/u, "string-precreate": /string-precreate-launch-intent/u,
         "worker-startup": /worker-startup-launch-intent/u }[ownerPurpose]);
       if (state.rootless !== null) { throw new Error("synthetic settled rootless refusal"); }
       state.bound = true;
@@ -232,6 +233,13 @@ function fixture(context: TestContext, id: string, dependencies: FixtureDependen
       if (opening209) { assert.equal(profile, CURRENT_PCB_209_OPENING_SCRIPTS.pcb); }
       assert.deepEqual(target, { ...OPEN_TARGET, branchUuid: OPEN_CHECKPOINT.targetEvidence.branchUuid }); assert.equal(profile.family, "pcb");
       return Promise.resolve(structuredClone(PCB_SOURCE_RESULT));
+    },
+    async observeLayers209(target): Promise<Readonly<Record<string, unknown>>> {
+      assert.equal(this, owner); assert.equal(opening209, true);
+      assert.deepEqual(target, { ...OPEN_TARGET, branchUuid: OPEN_CHECKPOINT.targetEvidence.branchUuid });
+      const intentPath = join(directory(id), "layers209-intent.json");
+      assert.match(await readFile(intentPath, "utf8"), /"stage":"layers209"/u);
+      calls.push("layers209"); return { samples: 2, executionAuthorized: false, saveAuthorized: false };
     },
   };
   const options: CurrentPcbDiagnosticLifecycleOptions = {
@@ -1182,12 +1190,17 @@ void test("original PCB opening is two one-shot stages before separate model obs
 void test("209 original lifecycle composes fixed project and PCB opens with separate source profiles and normal cleanup", async context => {
   const id = "pcb209-test-open", value = fixture(context, id);
   await readyForOpening(id, value);
+  await assert.rejects(value.request("observe-layers"), /PROJECT_OPENING_UNCONFIRMED/u);
   await value.request("open-project", OPEN_INPUT);
   await value.request("open-pcb", { acceptNormalOpenEffects: true });
   const observed = await value.request("observe-pcb-opening");
   assert.deepEqual(observed["result"], PCB_SOURCE_RESULT);
   assert.equal(observed["startupQualified"], false);
   assert.equal(observed["designExecutionAuthorized"], false);
+  const layers = await value.request("observe-layers");
+  assert.equal(layers["stage"], "layers209");
+  assert.deepEqual(layers["result"], { samples: 2, executionAuthorized: false, saveAuthorized: false });
+  await assert.rejects(value.request("observe-layers"), /OBSERVATION_CONSUMED/u);
   for (const action of ["inspect-workers", "observe-worker-state", "observe-model-state", "observe-string-precreate"]) {
     await assert.rejects(value.request(action));
   }
@@ -1202,6 +1215,7 @@ void test("209 original lifecycle composes fixed project and PCB opens with sepa
   assert.equal(value.calls.filter(action => action === "open-dispatch").length, 1);
   assert.equal(value.calls.filter(action => action === "pcb-dispatch").length, 1);
   assert.equal(value.calls.filter(action => action === "release").length, 1);
+  assert.equal(value.calls.filter(action => action === "layers209").length, 1);
 });
 void test("209 ambiguous PCB opening remains consumed and retains original cleanup without model fallback", async context => {
   const id = "pcb209-test-ambiguous", value = fixture(context, id);

@@ -116,20 +116,21 @@ const noProcessReleasedSchema = z.object({ schema: z.literal("easyeda-pro-contro
   noProcessReleaseIntentSha256: diagnosticLifecycleDigestSchema, proof: diagnosticLifecycleNoProcessReleaseProofSchema,
 }).strict();
 export const diagnosticObservationStageSchema = z.enum(["browser", "frames", "script", "workers", "worker-script", "worker-state", "pcb-opening", "model-state"]);
-export const lifecycleObservationStages = [...diagnosticObservationStageSchema.options, "common-baseline", "string-precreate"] as const;
+const extendedObservationStageSchema = z.enum([...diagnosticObservationStageSchema.options, "layers209"]);
+export const lifecycleObservationStages = [...extendedObservationStageSchema.options, "common-baseline", "string-precreate"] as const;
 const observationIntentSchema = z.object({ schema: z.literal("easyeda-pro-control.pcb-diagnostic-observation-intent.v1"), ...base,
-  bindingSha256: diagnosticLifecycleDigestSchema, stage: diagnosticObservationStageSchema,
+  bindingSha256: diagnosticLifecycleDigestSchema, stage: extendedObservationStageSchema,
   targetId: z.string().regex(/^[A-Za-z\d_.:-]{1,128}$/u).optional(), frameId: z.string().regex(/^[A-Za-z\d_.:-]{1,128}$/u).optional(),
   family: z.enum(["ui", "pcb", "public-api"]).optional(),
 }).strict().refine(value => {
-  if (value.stage === "browser" || value.stage === "workers" || value.stage === "worker-state" || value.stage === "model-state" || value.stage === "pcb-opening") {
+  if (value.stage === "browser" || value.stage === "workers" || value.stage === "worker-state" || value.stage === "model-state" || value.stage === "pcb-opening" || value.stage === "layers209") {
     return value.targetId === undefined && value.frameId === undefined && value.family === undefined;
   }
   if (value.stage === "frames" || value.stage === "worker-script") { return value.targetId !== undefined && value.frameId === undefined && value.family === undefined; }
   return value.targetId === undefined && value.frameId !== undefined && value.family !== undefined;
 }, "Observation selectors must match the exact stage.");
 const observationResultSchema = z.object({ schema: z.literal("easyeda-pro-control.pcb-diagnostic-observation-result.v1"), ...base,
-  intentSha256: diagnosticLifecycleDigestSchema, stage: diagnosticObservationStageSchema,
+  intentSha256: diagnosticLifecycleDigestSchema, stage: extendedObservationStageSchema,
   result: z.record(z.string(), z.unknown()), executionAuthorized: z.literal(false),
 }).strict().refine(value => Buffer.byteLength(canonicalJson(value.result)) <= DIAGNOSTIC_OBSERVATION_MAX_BYTES, "Observation result exceeds its bound.");
 const stringPrecreateIntentSchema = z.object({
@@ -350,6 +351,7 @@ export const diagnosticLifecycleRecordSchemas = {
   "project-opening-intent.json": projectOpeningIntentSchema, "project-opening-result.json": projectOpeningResultSchema,
   "pcb-open-intent.json": pcbOpenIntentSchema, "pcb-open-result.json": pcbOpenResultSchema,
   "pcb-opening-intent.json": observationIntentSchema, "pcb-opening-result.json": observationResultSchema,
+  "layers209-intent.json": observationIntentSchema, "layers209-result.json": observationResultSchema,
   "string-precreate-intent.json": stringPrecreateIntentSchema, "string-precreate-result.json": stringPrecreateResultSchema,
   "common-baseline-intent.json": commonBaselineIntentSchema, "common-baseline-result.json": commonBaselineResultSchema,
   "common-baseline-failure.json": commonBaselineFailureSchema,
@@ -512,6 +514,9 @@ function validateChain(operation: DiagnosticLifecycleOperation): void {
   requireValue(records["worker-state-intent.json"] === undefined || records["worker-script-result.json"] !== undefined, "WORKER_STATE_CHAIN");
   const opened = records["project-opening-result.json"], opening = records["project-opening-intent.json"], script = records["script-result.json"];
   const pcbObserved = records["pcb-opening-result.json"], pcbOpen = records["pcb-open-intent.json"], pcbOpened = records["pcb-open-result.json"];
+  requireValue(records["layers209-intent.json"] === undefined || operation.operationId.startsWith("pcb209-") && pcbObserved !== undefined &&
+    pcbObserved.result["sourceVerified"] === true && records["workers-intent.json"] === undefined && records["model-state-intent.json"] === undefined,
+  "LAYERS209_CHAIN");
   requireValue(pcbOpen === undefined || binding !== undefined && pcbOpen.bindingSha256 === sha256Json(binding) &&
     opening !== undefined && pcbOpen.projectOpeningIntentSha256 === sha256Json(opening) && opened !== undefined &&
     pcbOpen.projectOpeningResultSha256 === sha256Json(opened) && opened.result["ok"] === true &&

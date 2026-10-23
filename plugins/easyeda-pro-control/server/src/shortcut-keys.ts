@@ -25,8 +25,17 @@ const payloadSchema = z.object({ ok: z.literal(true), kind: z.literal("shortcut-
   includeSystem: z.boolean(), shortcuts: z.array(shortcut).max(MAX_RECORDS), keyboardExecutionAuthorized: z.literal(false),
   cadAuthority: z.literal(false), persistenceVerified: z.literal(false) }).strict();
 const documentType209 = z.number().int().min(0).max(14);
-const shortcut209 = shortcut.extend({ documentType: z.array(documentType209).max(MAX_SCOPES) });
-const payload209Schema = payloadSchema.extend({ shortcuts: z.array(shortcut209).max(MAX_RECORDS) });
+// The pinned UI's Log scope has one omitted slot. Preserve its representation
+// Explicitly; never invent a numeric editor scope or silently remove the slot.
+const knownGapScope209 = z.tuple([z.literal(4), z.literal(2), z.literal(5), z.literal(3),
+  z.object({ unmappedScope: z.enum(["hole", "undefined", "null"]) }).strict(),
+  // Zod literals admit -0 as 0; the native exact-shape guard rejects it.
+  z.literal(0).refine((value) => !Object.is(value, -0))]);
+const shortcut209 = shortcut.extend({ documentType: z.union([z.array(documentType209).max(MAX_SCOPES), knownGapScope209]) });
+const payload209Schema = payloadSchema.extend({ shortcuts: z.array(shortcut209).max(MAX_RECORDS) }).refine((value) => {
+  const gaps = value.shortcuts.filter((item) => item.documentType.some((scope) => typeof scope === "object")).length;
+  return gaps <= (value.includeSystem ? 1 : 0);
+});
 export const SHORTCUT_KEYS_209_REFUSAL_STAGES = Object.freeze([
   "initial-environment", "public-method", "rpc-method", "locale-cache", "locale-methods", "timer-owner",
   "frame-owner", "editor-mode", "api-owner", "rpc-owner", "locale-owner", "locale-method-owner", "public-call",
@@ -57,7 +66,10 @@ const limitations209: string[] = limitations.map((limitation) => {
   }
   return limitation;
 });
-limitations209.push("A failed 209 observation returns only a fixed refusal code/first-failure stage, sample/call-attempt counters and cleanupFailed boolean, with ok:false and no partial shortcuts or raw vendor/native errors. These diagnostics locate the failed guard or call; they do not establish its cause or authorize a retry.");
+limitations209.push(
+  "A failed 209 observation returns only a fixed refusal code/first-failure stage, sample/call-attempt counters and cleanupFailed boolean, with ok:false and no partial shortcuts or raw vendor/native errors. These diagnostics locate the failed guard or call; they do not establish its cause or authorize a retry.",
+  "For includeSystem:true only, one exact source-known scope shape [4,2,5,3,<gap>,0] may preserve its fifth slot as {unmappedScope:'hole'|'undefined'|'null'}. This is a tagged representation of the observed missing value, not a numeric scope, a repaired registry or verified Log-command identity. All other sparse, null or undefined scope slots refuse. No such exception applies to scenes or the older206 profile.",
+);
 
 export function queryShortcutKeys(input: unknown = {}): Record<string, unknown> {
   const query = shortcutKeysQuerySchema.parse(input);
@@ -160,10 +172,20 @@ const check=()=>{
  if(fn(locale,'i18n')!==translate||fn(locale,'_context_i18n')!==contextTranslate||fn(locale,'_getValue')!==getValue)bad();
  const d=Object.getOwnPropertyDescriptor(locale,'curr');if(!d||Object.hasOwn(d,'value')||d.get!==currentDescriptor.get||d.set!==currentDescriptor.set||d.enumerable!==currentDescriptor.enumerable||d.configurable!==currentDescriptor.configurable)bad();
 };
-const scopes=(value,min,max)=>{const n=dense(value,${MAX_SCOPES}),out=[];for(let i=0;i<n;i++){const item=own(value,String(i));if(!Number.isInteger(item)||item<min||item>max||Object.is(item,-0))bad();out.push(item);}return out;};
+${diagnostics209 && request.arguments.includeSystem ? `const knownScopeGap=value=>{
+ if(!Array.isArray(value)||Object.getPrototypeOf(value)!==Array.prototype||own(value,'length')!==6)return;
+ const d=Object.getOwnPropertyDescriptor(value,'4');
+ if(d&&(!Object.hasOwn(d,'value')||d.value!==null&&d.value!==undefined))return;
+ if(!d&&'4' in value)bad();
+ const expected=['0','1','2','3','5','length',...(d?['4']:[])],keys=Reflect.ownKeys(value);
+ if(keys.length!==expected.length||!keys.every(key=>expected.includes(key)))bad();
+ for(const [index,wanted]of [[0,4],[1,2],[2,5],[3,3],[5,0]])if(own(value,String(index))!==wanted||Object.is(own(value,String(index)),-0))bad();
+ return [4,2,5,3,{unmappedScope:!d?'hole':d.value===null?'null':'undefined'},0];
+};` : ""}
+const scopes=(value,min,max)=>{${diagnostics209 && request.arguments.includeSystem ? "if(min===0){const gap=knownScopeGap(value);if(gap)return gap;}" : ""}const n=dense(value,${MAX_SCOPES}),out=[];for(let i=0;i<n;i++){const item=own(value,String(i));if(!Number.isInteger(item)||item<min||item>max||Object.is(item,-0))bad();out.push(item);}return out;};
 const project=value=>{
  ${stage("result-array")}
- const n=dense(value,${MAX_RECORDS}),result=[];
+ const n=dense(value,${MAX_RECORDS}),result=[];${diagnostics209 ? "let gapCount=0;" : ""}
  for(let i=0;i<n;i++){
   ${stage("result-record")}
   const row=plain(own(value,String(i))),keys=Reflect.ownKeys(row);if(keys.length!==4||!keys.every(key=>['shortcutKey','title','documentType','scene'].includes(key)))bad();
@@ -175,6 +197,7 @@ const project=value=>{
   const title=text(own(row,'title'),1024);
   ${stage("result-document-types")}
   const documentType=scopes(own(row,'documentType'),0,${maxDocumentType});
+  ${diagnostics209 ? "if(documentType.some(scope=>typeof scope==='object')&&++gapCount>1)bad();" : ""}
   ${stage("result-scenes")}
   const scene=scopes(own(row,'scene'),1,6);
   result.push({shortcutKey,title,documentType,scene});

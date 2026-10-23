@@ -79,6 +79,26 @@ void test("209 disposable opening coverage discovers native owner stages without
   }
 });
 
+void test("209 layer coverage retains original-owner observation without admitting general PCB methods", () => {
+  const rows = inventoryExtensionApiCoverage();
+  for (const path of ["eda.pcb_Layer.getAllLayers", "eda.pcb_Layer.getTheNumberOfCopperLayers"]) {
+    const row = rows.find(entry => entry.path === path); assert.ok(row);
+    const route = row.routes.find(entry => entry.tool === "easyeda_control_pcb209_opening"); assert.ok(route);
+    assert.equal(route.selector, "observe-layers"); assert.equal(route.implementation, "native-task-equivalent");
+    assert.equal(route.executionState, "available-with-runtime-guards"); assert.equal(row.currentGenerationLiveValidation, "not-recorded");
+    assert.equal(row.completeDeclaredContractSupported, false); assert.deepEqual(route.documentTypes, [3]);
+    for (const required of ["two complete matching", "512 layers", "65536 native", "SIGNAL/PLANE", "physical stackup", "writer/Save authority"]) {
+      assert.ok(route.scope.includes(required));
+    }
+    assert.ok(route.inputDiscovery);
+    const discovery = queryOfflineApi(apiRequestSchema.parse(route.inputDiscovery.arguments["request"]));
+    assert.ok(isRecord(discovery.result)); assert.equal(discovery.result["connectedValidation"], false);
+    const actions = discovery.result["actions"]; assert.ok(Array.isArray(actions)); assert.ok(actions.includes("observe-layers"));
+  }
+  const unsupported = rows.find(entry => entry.path === "eda.pcb_Layer.getCurrentLayer"); assert.ok(unsupported);
+  assert.equal(unsupported.routes.some(entry => entry.tool === "easyeda_control_pcb209_opening"), false);
+});
+
 void test("project board coverage exposes bounded observed metadata without public parity or writer authority", () => {
   const rows = inventoryExtensionApiCoverage();
   for (const path of ["eda.dmt_Board.getBoardInfo", "eda.dmt_Board.getAllBoardsInfo"]) {
@@ -428,7 +448,7 @@ void test("NetGroup and filtered PCB membership reads expose narrow native route
   assert.match(route.scope, /not public primitive instances/u); assert.match(route.scope, /explicit nonempty unique filters/u);
   assert.match(route.scope, /source\/inventory\/source/u);
   assert.deepEqual(extensionApiCoverageSummary()["statuses"], {
-    "implemented-public-subset": 213, "implemented-native-equivalent": 34, "implemented-vendor-http-equivalent": 1, "internal-lifecycle-only": 0, "implemented-but-blocked": 79, omitted: 508,
+    "implemented-public-subset": 213, "implemented-native-equivalent": 34, "implemented-vendor-http-equivalent": 3, "internal-lifecycle-only": 0, "implemented-but-blocked": 79, omitted: 506,
   });
 });
 
@@ -719,7 +739,7 @@ void test("existing capture workflows have truthful public-subset coverage witho
 void test("current PCB layer coverage preserves the separate legacy route and discloses native execution", () => {
   for (const method of ["getAllLayers", "getTheNumberOfCopperLayers"]) {
     const row = inventoryExtensionApiCoverage().find((entry) => entry.path === `eda.pcb_Layer.${method}`);
-    assert.ok(row); assert.equal(row.status, "implemented-public-subset"); assert.equal(row.routes.length, 2);
+    assert.ok(row); assert.equal(row.status, "implemented-public-subset"); assert.equal(row.routes.length, 3);
     assert.equal(row.routes.some((route) => route.tool === "easyeda_control_sdk_read"), true);
     const route = row.routes.find((entry) => entry.tool === "easyeda_control_pcb_layers"); assert.ok(route);
     assert.deepEqual(route.documentTypes, [3]); assert.equal(route.implementation, "native-task-equivalent");

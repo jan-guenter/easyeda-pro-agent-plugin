@@ -53,3 +53,15 @@ void test("catalog footprint refuses foreign identity, nonpublic and malformed e
     assert.throws(() => validatePublicSystemFootprintResult(request, raw));
   }
 });
+
+void test("catalog footprint refuses supplied project scope and does not invent absent project identity", () => {
+  const baseline = payload(); assert.ok(baseline["result"] !== null && typeof baseline["result"] === "object");
+  const expected = validatePublicSystemFootprintResult(request, baseline);
+  const empty = { ...baseline, result: { ...baseline["result"], project_uuid: "" } };
+  assert.deepEqual(validatePublicSystemFootprintResult(request, empty), expected);
+  assert.doesNotMatch(JSON.stringify(expected), /"project_uuid"/u);
+  for (const projectUuid of ["b".repeat(32), PUBLIC_SYSTEM_FOOTPRINT_LIBRARY, null, 0, {}]) {
+    const invalid = { ...baseline, result: { ...baseline["result"], project_uuid: projectUuid } };
+    assert.throws(() => validatePublicSystemFootprintResult(request, invalid));
+  }
+});

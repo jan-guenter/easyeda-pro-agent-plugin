@@ -8,7 +8,7 @@ import { test } from "node:test";
 import type { TestContext } from "node:test";
 import { setImmediate as yieldToEventLoop } from "node:timers/promises";
 import { fileURLToPath } from "node:url";
-import { CurrentPcbDiagnosticOwner, CurrentPcbStringPrecreateOwner } from "../src/current-pcb-diagnostic-owner.ts";
+import { CurrentPcb209DiagnosticOwner, CurrentPcbDiagnosticOwner, CurrentPcbStringPrecreateOwner } from "../src/current-pcb-diagnostic-owner.ts";
 // oxlint-disable-next-line import/max-dependencies -- One integration case supplies the real completed SQL reader to the existing synthetic retained native-helper owner.
 import { IDS, encrypted, inventory, mutate, fixture as sqlFixture } from "./helpers/symbol-sql-fixture.ts";
 import { currentPcbStringSaveProvenanceSource } from "../src/current-pcb-string-save-provenance.ts";
@@ -39,7 +39,8 @@ function fixture(context: TestContext, scenario = "normal", stringPurpose = fals
     }
     return originalWrite(...args);
   });
-  const Owner = stringPurpose ? CurrentPcbStringPrecreateOwner : CurrentPcbDiagnosticOwner;
+  let Owner = stringPurpose ? CurrentPcbStringPrecreateOwner : CurrentPcbDiagnosticOwner;
+  if (scenario.startsWith("opening-pcb-layers209")) { Owner = CurrentPcb209DiagnosticOwner; }
   const owner = new Owner(child, () => source.valid ? Promise.resolve() : Promise.reject(new Error("source changed")), null,
     () => installation.valid ? Promise.resolve() : Promise.reject(new Error("installation changed")));
   owner.start();
@@ -609,6 +610,28 @@ void test("original source-shaped ancillary OBJECT and constructors fit the103-c
   assert.deepEqual(value.openingPhases, ["preflight", "open-project"]);
   assert.deepEqual(value.pcbPhases, ["preflight", "open-document", "observe"]);
   await close(value);
+});
+
+void test("209 layer stage forwards through the original real helper pipe and retains normal cleanup", async context => {
+  for (const scenario of ["opening-pcb-layers209", "opening-pcb-layers209-ancillary", "opening-pcb-layers209-refused"]) {
+    const value = await openingFixture(context, scenario);
+    assert.equal(value.owner.status().profile, "diagnostic209");
+    await assert.rejects(value.owner.observeLayers209(OPEN_TARGET), /LAYERS209_UNAVAILABLE/u);
+    await value.owner.openProject(OPEN_TARGET, () => Promise.resolve());
+    await value.owner.openPcb(OPEN_TARGET, () => Promise.resolve());
+    await assert.rejects(value.owner.observeLayers209(OPEN_TARGET), /LAYERS209_UNAVAILABLE/u);
+    await value.owner.observePcbOpening(OPEN_TARGET, SCRIPT_PROFILE);
+    if (scenario.endsWith("refused")) { await assert.rejects(value.owner.observeLayers209(OPEN_TARGET)); }
+    else {
+      const result = await value.owner.observeLayers209(OPEN_TARGET);
+      assert.equal(result["copperLayerCount"], 2); assert.equal(result["samples"], 2);
+      assert.equal(value.actions.filter(action => action === "send").length, scenario.endsWith("ancillary") ? 58 : 44);
+    }
+    await assert.rejects(value.owner.observeLayers209(OPEN_TARGET), /LAYERS209_UNAVAILABLE/u);
+    await close(value);
+  }
+  const legacy = await openingFixture(context, "opening-pcb");
+  await assert.rejects(legacy.owner.observeLayers209(OPEN_TARGET), /LAYERS209_UNAVAILABLE/u); await close(legacy);
 });
 
 void test("ancillary DOM refusal consumes the original opening without preflight or navigation", async context => {

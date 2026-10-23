@@ -140,6 +140,105 @@ void test("209 fixed shortcut program preserves UI scopes 11-14 but refuses out-
   }
 });
 
+void test("209 system shortcuts preserve the three source-shaped scope gaps without identifying or repairing the command", async () => {
+  const input = { method: SHORTCUT_KEYS_METHOD, arguments: { includeSystem: true } };
+  for (const representation of ["hole", "undefined", "null"] as const) {
+    const before = `rows[0].documentType=[4,2,5,3,${representation === "hole" ? "" : representation},0];`;
+    const fixture = environment([row()], { before, generation209: true, includeSystem: true });
+    const raw = decodeExactReadEnvelope(await fixture.run()), result = validateShortcutKeys209Result(input, raw);
+    assert.equal(result["ok"], true); assert.equal(fixture.evaluate("calls"), 2);
+    assert.deepEqual(result["shortcuts"], [{ ...row(), documentType: [4, 2, 5, 3, { unmappedScope: representation }, 0] }]);
+    assert.equal(fixture.evaluate("Object.hasOwn(rows[0].documentType,'4')"), representation !== "hole");
+    assert.equal(fixture.evaluate("rows[0].documentType[4]"), representation === "null" ? null : undefined);
+    assert.equal(fixture.evaluate("rows[0].documentType.length"), 6);
+    assert.equal(result["declarationScopeConformanceVerified"], false);
+    assert.equal(result["keyboardExecutionAuthorized"], false); assert.equal(result["cadAuthority"], false);
+    assert.equal(result["persistenceVerified"], false); assert.equal(result["liveValidation"], "not-recorded");
+    assert.throws(() => validateShortcutKeysResult(input, raw));
+    assert.throws(() => validateShortcutKeys209Result(request, raw));
+  }
+});
+
+void test("209 scope-gap exception is absent for the default filter, explicit false and legacy206", async () => {
+  for (const scope of ["[4,2,5,3,,0]", "[4,2,5,3,undefined,0]", "[4,2,5,3,null,0]"]) {
+    for (const filter of [{}, { includeSystem: false }]) {
+      const fixture = environment([row()], { ...filter, generation209: true, before: `rows[0].documentType=${scope};` });
+      const refusal = validateShortcutKeys209Result(request, decodeExactReadEnvelope(await fixture.run()));
+      assert.equal(refusal["ok"], false); assert.equal(refusal["stage"], "result-document-types");
+      assert.equal(refusal["shortcuts"], undefined); assert.equal(fixture.evaluate("calls"), 1);
+    }
+    const legacy = environment([row()], { includeSystem: true, before: `rows[0].documentType=${scope};` });
+    await assert.rejects(legacy.run(), { message: "SHORTCUT_KEYS_READ_FAILED" });
+    assert.equal(legacy.evaluate("calls"), 1);
+  }
+});
+
+void test("209 scope gaps reject other shapes, slots, accessors, inherited values, duplicate rows and scene gaps", async () => {
+  const input = { method: SHORTCUT_KEYS_METHOD, arguments: { includeSystem: true } };
+  const cases = [
+    { before: "rows[0].documentType=[4,2,5,3,,0,1];", stage: "result-document-types" },
+    { before: "rows[0].documentType=[4,2,5,3,,1];", stage: "result-document-types" },
+    { before: "rows[0].documentType=[4,2,5,3,,-0];", stage: "result-document-types" },
+    { before: "rows[0].documentType=[4,2,5,,3,0];", stage: "result-document-types" },
+    { before: "rows[0].documentType=[4,2,5,null,3,0];", stage: "result-document-types" },
+    { before: "rows[0].documentType=[4,2,5,undefined,3,0];", stage: "result-document-types" },
+    { before: "rows[0].documentType=[4,2,5,3,{unmappedScope:'hole'},0];", stage: "result-document-types" },
+    { before: "rows[0].documentType=[4,2,5,3,,0];rows[0].documentType.extra='PRIVATE';", stage: "result-document-types" },
+    { before: "rows[0].documentType=[4,2,5,3,,0];Object.defineProperty(rows[0].documentType,'4',{get(){getterReads++;return null;}});", stage: "result-document-types" },
+    { before: "rows[0].documentType=[4,2,5,3,,0];Object.defineProperty(rows[0].documentType,'1',{get(){getterReads++;return 2;}});", stage: "result-document-types" },
+    { before: "rows[0].documentType=[4,2,5,3,,0];Object.defineProperty(Array.prototype,'4',{value:undefined,writable:true,configurable:true});", stage: "result-document-types" },
+    { before: "rows[0].documentType=[4,2,5,3,,0];Object.defineProperty(Array.prototype,'4',{get(){getterReads++;return null;},configurable:true});", stage: "result-document-types" },
+    { before: "rows[0].documentType=[4,2,5,3,,0];rows.push({...rows[0]});", stage: "result-document-types" },
+    { before: "rows[0].scene=[4,2,5,3,,1];", stage: "result-scenes" },
+    { before: "rows[0].scene=[4,2,5,3,null,1];", stage: "result-scenes" },
+    { before: "rows[0].scene=[4,2,5,3,undefined,1];", stage: "result-scenes" },
+    ...[0, 1, 2, 3, 5].flatMap((index) => [
+      { before: `rows[0].documentType=[4,2,5,3,1,0];delete rows[0].documentType[${index}];`, stage: "result-document-types" },
+      { before: `rows[0].documentType=[4,2,5,3,1,0];rows[0].documentType[${index}]=undefined;`, stage: "result-document-types" },
+      { before: `rows[0].documentType=[4,2,5,3,1,0];rows[0].documentType[${index}]=null;`, stage: "result-document-types" },
+    ]),
+  ];
+  for (const options of cases) {
+    const fixture = environment([row()], { ...options, generation209: true, includeSystem: true });
+    const raw = decodeExactReadEnvelope(await fixture.run()), refusal = validateShortcutKeys209Result(input, raw);
+    assert.equal(refusal["ok"], false); assert.equal(refusal["stage"], options.stage);
+    assert.equal(refusal["shortcuts"], undefined); assert.equal(fixture.evaluate("calls"), 1);
+    assert.equal(fixture.evaluate("getterReads"), 0); assert.doesNotMatch(JSON.stringify(raw), /PRIVATE|Raw shortcut/u);
+  }
+});
+
+void test("209 scope-gap representation and inherited ownership are rechecked between samples", async () => {
+  const input = { method: SHORTCUT_KEYS_METHOD, arguments: { includeSystem: true } };
+  for (const change of [
+    { afterRead: "if(calls===2)rows[0].documentType[4]=null;", stage: "sample-equality" },
+    { afterRead: "if(calls===2)rows[0].documentType[4]=undefined;", stage: "sample-equality" },
+    { afterRead: "if(calls===2)Object.defineProperty(Array.prototype,'4',{value:undefined,writable:true,configurable:true});", stage: "result-document-types" },
+    { afterRead: "if(calls===2)Object.setPrototypeOf(rows[0].documentType,{});", stage: "result-document-types" },
+  ]) {
+    const fixture = environment([row()], { ...change, before: "rows[0].documentType=[4,2,5,3,,0];", generation209: true, includeSystem: true });
+    const refusal = validateShortcutKeys209Result(input, decodeExactReadEnvelope(await fixture.run()));
+    assert.equal(refusal["ok"], false); assert.equal(refusal["stage"], change.stage);
+    assert.equal(refusal["shortcuts"], undefined); assert.equal(fixture.evaluate("calls"), 2);
+  }
+});
+
+void test("209 tagged scope decoder binds the filter, exact tuple, single gap and false authority", async () => {
+  const input = { method: SHORTCUT_KEYS_METHOD, arguments: { includeSystem: true } };
+  const fixture = environment([row()], { before: "rows[0].documentType=[4,2,5,3,,0];", generation209: true, includeSystem: true });
+  const raw: unknown = decodeExactReadEnvelope(await fixture.run()); assert.ok(raw !== null && typeof raw === "object");
+  const tagged = { ...row(), documentType: [4, 2, 5, 3, { unmappedScope: "hole" }, 0] };
+  for (const documentType of [[4, 2, 5, 3, { unmappedScope: "other" }, 0], [4, 2, 5, 3, { unmappedScope: "hole", extra: true }, 0],
+    [4, 2, 5, { unmappedScope: "hole" }, 3, 0], [4, 2, 5, 3, { unmappedScope: "hole" }, -0],
+    [4, 2, 5, 3, null, 0], [4, 2, 5, 3, undefined, 0]]) {
+    assert.throws(() => validateShortcutKeys209Result(input, { ...raw, shortcuts: [{ ...row(), documentType }] }));
+  }
+  for (const change of [{ includeSystem: false }, { shortcuts: [tagged, tagged] },
+    { shortcuts: [{ ...tagged, scene: tagged.documentType }] }, { keyboardExecutionAuthorized: true }]) {
+    assert.throws(() => validateShortcutKeys209Result(input, { ...raw, ...change }));
+  }
+  assert.throws(() => validateShortcutKeys209Result(request, { ...raw, includeSystem: false }));
+});
+
 void test("209 shortcut refusal stages identify failed guards without leaking raw values or partial shortcut data", async () => {
   const cases = [
     { before: "delete globalThis.PRO_EDITOR_MODE;", stage: "initial-environment", calls: 0 },
