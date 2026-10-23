@@ -782,7 +782,7 @@ void describe("published facade contracts", { concurrency: false }, () => {
     const selectors = requireRecord(query["properties"], "SDK selectors");
     assert.deepEqual(Object.keys(selectors).toSorted(), ["detail", "kind", "limit", "namespace", "offset", "reference", "search"]);
     const reference = requireRecord(selectors["reference"], "SDK reference selector");
-    assert.deepEqual(reference["enum"], ["reviewed-installed", "official-latest"]);
+    assert.deepEqual(reference["enum"], ["reviewed-installed", "official-latest", "installed-209"]);
     const limit = requireRecord(selectors["limit"], "SDK page limit");
     assert.equal(limit["maximum"], 100);
   });

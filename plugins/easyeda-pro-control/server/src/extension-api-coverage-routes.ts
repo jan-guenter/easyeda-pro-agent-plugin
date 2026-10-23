@@ -1,18 +1,18 @@
 import { CURRENT_PCB_SELECTED_GEOMETRY_METHOD, CURRENT_PCB_SELECTION_LIMITATION } from "./current-pcb-selection.ts";
 
 /** Reviewed links from public SDK methods to actual maintained execution paths.
- * A native task equivalent does not claim to invoke the public wrapper, support
- * every overload, or validate that wrapper's implementation.
+ * Native and vendor HTTP task equivalents do not claim to invoke the public
+ * wrapper, support every overload, or validate that wrapper's implementation.
  */
 export interface ApiCoverageRoute {
   readonly tool: string;
   readonly selector: string;
-  readonly implementation: "public-method" | "native-task-equivalent" | "internal-lifecycle-only";
+  readonly implementation: "public-method" | "native-task-equivalent" | "vendor-http-task-equivalent" | "internal-lifecycle-only";
   readonly scope: string;
   readonly source: readonly string[];
   readonly tests: readonly string[];
   readonly validation: "offline-regression;current-live-unclaimed";
-  readonly executionState: "available-with-runtime-guards" | "blocked" | "partially-blocked";
+  readonly executionState: "available-with-runtime-guards" | "available-with-network-guards" | "blocked" | "partially-blocked";
   readonly blockedReason?: string;
   readonly blockedDocumentTypes?: readonly number[];
   readonly inputDiscovery?: { readonly tool: "easyeda_control_api"; readonly arguments: Readonly<Record<string, unknown>> };
@@ -228,9 +228,9 @@ groups.push({ namespace: "lib_Symbol", methods: ["get"], route: {
   inputDiscovery: { tool: "easyeda_control_api", arguments: { request: { action: "pcb-layers", query: { includeSchemas: true } } } },
 } }, { namespace: "sys_ShortcutKey", methods: ["getShortcutKeys"], route: {
   tool: "easyeda_control_shortcuts", selector: "eda.sys_ShortcutKey.getShortcutKeys", implementation: "public-method",
-  scope: "Separately pinned current API 0.3.50/UI 3.2.196 public shortcut-registry read, without design context or legacy-route admission. Optional includeSystem defaults false. Two owner-stable bounded copies preserve raw key strings, order, duplicates and empty tokens. Shortcut scope enums are not document types. No key execution, registration, navigation, settings or Save; the separate menu registry is excluded and vendor enumeration is not cancelled by the observer deadline.",
-  source: ["shortcut-keys.ts", "shortcut-keys-runtime.ts", "current-ui-implementation.ts", "sdk-local-runtime.ts", "facade-mode.ts"],
-  tests: ["shortcut-keys.test.ts", "shortcut-keys-runtime.test.ts", "facade-mode.test.ts"],
+  scope: "Separately pinned API 0.3.50/UI 3.2.196 and installed-209 API 0.3.59/UI 3.2.198 public shortcut-registry reads, without design context or legacy-route admission. The 206 scope remains 0-10; the 209 raw UI registry scope is 0-14 although its declaration lists only 0-10, so declarationScopeConformanceVerified remains false. Shortcut scope enums are not document types. Optional includeSystem defaults false. Two owner-stable bounded copies preserve raw key strings, order, duplicates and empty tokens. The 209 route additionally verifies both installed generation selectors before and after dispatch. No key execution, registration, navigation, settings or Save; the separate menu registry is excluded and vendor enumeration is not cancelled by the observer deadline. Neither source review nor offline regression establishes connected validation.",
+  source: ["shortcut-keys.ts", "shortcut-keys-runtime.ts", "current-ui-implementation.ts", "editor-observation209-profile.ts", "sdk-local-runtime.ts", "sdk-public-utilities-profile.ts", "facade-mode.ts"],
+  tests: ["shortcut-keys.test.ts", "shortcut-keys-runtime.test.ts", "editor-observation209-runtime.test.ts", "facade-mode.test.ts"],
   validation: "offline-regression;current-live-unclaimed", executionState: "available-with-runtime-guards",
   inputDiscovery: { tool: "easyeda_control_api", arguments: { request: { action: "shortcuts", query: { includeSchemas: true } } } },
 } });

@@ -1,5 +1,6 @@
 import { z } from "zod";
 import { buildEditorObservationProgram } from "./editor-observation-program.ts";
+import { EDITOR_OBSERVATION_209_PROVENANCE } from "./editor-observation209-profile.ts";
 
 export const EDITOR_SHELL_API_VERSION = "0.3.50.ab46409c";
 export const EDITOR_SHELL_API_SHA256 = "021d155baafbcdc7b558da12f0834a8ee473aa37e276c6ea679936f952080c76";
@@ -43,6 +44,7 @@ export function queryEditorShell(input: unknown = {}): Record<string, unknown> {
     ...(query.includeSchemas ? { inputSchema: z.toJSONSchema(editorShellRequestSchema), resultSchema: z.toJSONSchema(editorShellResultSchema) } : {}),
     limitations: [...limitations], provenance: { apiVersion: EDITOR_SHELL_API_VERSION, apiSha256: EDITOR_SHELL_API_SHA256,
       uiVersion: EDITOR_SHELL_UI_VERSION, uiSha256: EDITOR_SHELL_UI_SHA256, implementationKind: "fixed-native-shell-observer", liveValidation: "not-recorded" },
+    additionalReviewedProvenance: [{ ...EDITOR_OBSERVATION_209_PROVENANCE, implementationKind: "fixed-native-shell-observer", liveValidation: "not-recorded" }],
   }] };
 }
 

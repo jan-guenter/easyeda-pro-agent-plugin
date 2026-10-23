@@ -22,6 +22,9 @@ editor-reported EasyEDA 3.2.206 and API 0.3.50.ab46409c independently from the o
 design profile, with exact source hashes before and after the two synchronous
 samples. The installed package version is separately 3.2.206.715d940d; it is not
 the version string returned by the authenticated editor.
+The separate 3.2.209 profile admits the same bounded methods on API
+0.3.59.1ca9efb5 with its own exact implementation hashes. Neither profile admits
+the other's native adapters or design workflows.
 An unknown tuple may list the tool but cannot pass its execution checks.
 
 The eleven non-clipping methods are `bboxIntersects`, `calculateArea`, `calculatePerimeter`,
@@ -105,6 +108,30 @@ document, project, selection, private account, file, network, navigation or Save
 is accessed. `getFrontendDataUnit` is excluded because it dispatches to UI state.
 New system methods are source-tested, not connected-validated.
 
+## Language and API-page viewport readers
+
+On the exact 3.2.209/API0.3.59 profile, query `public-readers` with an exact
+`method` and `includeSchemas:true`. Validate the inner request with
+`public-readers-validate`, then pass it and the actual authenticated status
+fingerprint to `easyeda_control_public_readers`.
+
+The three methods are `eda.sys_I18n.getAllSupportedLanguages`,
+`eda.sys_I18n.isLanguageSupported` and `eda.sys_Window.getViewportSize`.
+Use the discovered schema for the membership argument; the other two accept
+empty arguments. Preserve language identifier order and spelling. Membership
+is case-sensitive, without locale normalization or a current-language lookup.
+
+Viewport width and height are the API page's `window.innerWidth/innerHeight`,
+not Windows screen dimensions, editor zoom, PCB units or rendered-object bounds.
+Zero is an observation, not proof that the editor is ready or visible. Resizing
+between samples can make the request refuse.
+
+The adapter retains the same namespace/method owners, copies complete bounded
+results twice and rejects malformed or changing output without truncation.
+It does not open a project, inspect a library, change language/settings or access
+files/network. These methods have source and offline tests; connected validation
+is recorded separately. Older profiles do not register this route.
+
 ## Configured shortcut listing on the current tuple
 
 Query `shortcuts` with `includeSchemas:true`, then use `shortcuts-validate`
@@ -119,6 +146,10 @@ Omitted `includeSystem` becomes `false`, which lists vendor `isCustomize`
 entries only. `true` includes system entries in the same initialized registry,
 not the separate menu registry or every local shortcut. No active design or
 legacy `expectedContext` is required.
+The fixed readers admit separately reviewed 3.2.206/API0.3.50/UI3.2.196 and
+3.2.209/API0.3.59/UI3.2.198 profiles. Read the returned selected provenance;
+additional catalog provenance is not runtime admission. The 209 reader hashes
+both installed `editor.ini` selectors as well as the UI before and after.
 
 Each returned shortcut contains raw `shortcutKey` strings, localized `title`,
 `documentType` scopes and `scene` scopes. Preserve case, order, duplicates and
@@ -130,6 +161,11 @@ Shortcut `documentType` is 0 blank, 1 Home, 2 schematic page, 3 symbol, 4 PCB,
 5 footprint, 6 panel, 7 PCB 3D, 8 PCB 2D, 9 panel 3D and 10 panel library.
 It is not the ordinary document enum. Scenes are 1 editor, 2 selected canvas,
 3 unselected canvas, 4 drawing, 5 placement and 6 local.
+On 209 only, the actual UI registry also returns 11 assembly variant,
+12 NGSPICE (`NGSCPIE` in the vendor enum), 13 SimulIDE and 14 waveform. Preserve
+these raw scopes even though the installed public declaration ends at 10;
+`declarationScopeConformanceVerified:false` marks that difference. The 206
+reader remains limited to 0-10. Values outside the selected domain refuse.
 
 The reader permits 1024 records, eight key tokens per record, 32 characters
 per token, 1024 title characters, 32 entries per scope array and 262144 UTF-8
@@ -142,6 +178,32 @@ dispatched. It does not prove focus, executable keys or complete shortcut
 inventory. This route is source-tested only; connected validation is pending.
 It adds a current-version route for an existing method, not a new distinct
 method in the coverage inventory.
+
+## Registered editor shell and identity on 206/209
+
+Use `easyeda_control_editor_shell` with
+`{"action":"observe-editor-shell"}` for registered tab/container counts and
+Start Page flags. Use `easyeda_control_editor_context` with
+`{"action":"observe-editor-context"}` for supported active/project/branch
+identity metadata. Discover `editor-shell` or `editor-context`, validate with
+the corresponding `-validate` action, and supply the fresh authenticated
+`expectedFingerprint` to the live tool. Do not supply legacy design context.
+
+These routes independently admit the same two API/UI generations listed above.
+On 209, the exact UI file and both installed module selectors are hashed around
+the observation; the returned API/UI provenance must identify 209, not 206.
+No generic native adapter is enabled. Two bounded samples retain the root
+editor frame, UI, tab registry and inspected owners; neither route opens a
+project, invokes a project manager, makes a document RPC or returns design
+contents. Shell results omit titles, paths and document IDs.
+
+Start Page flags describe registered state, not visible windows or completed
+restoration. Missing project/branch fields preserve native absent, undefined
+and empty states; they do not prove closure. Read the
+[connection and identity contract](connection-and-context.md) for supported
+document IDs and interpretation. `startupQualified`, `cadAuthority` and
+`persistenceVerified` stay false. Source and synthetic tests do not establish
+connected validation or authorize a later navigation, Save or edit.
 
 ## Initialized extension-index observation
 

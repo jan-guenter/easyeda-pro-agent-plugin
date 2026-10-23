@@ -2,13 +2,19 @@
 
 Use supported typed APIs first. Native controls cover genuine API stubs and dialogs. This matrix describes the current source package; an older installed snapshot may not contain these tools. Historical external-tuple admission and installed-generation evidence do not admit this new source. Exact reads and typed operations still require their pinned implementation identities and operation-specific proof.
 
-The separate EasyEDA3.2.209 profile registers only six tools: API reference,
-local discovery, status, calculations, system observations and ordinary launch.
+The separate EasyEDA3.2.209 profile registers eleven tools: API reference,
+local discovery, status, calculations, system observations, language/viewport
+readers, tab-count/active-identity/shortcut observations, public footprint catalog
+lookup and ordinary launch.
 It admits the source-reviewed fixed16Math and18Unit/Environment subsets through
-their own exact runtime checks. Connected validation remains pending. None of
-the older native/private design, project-opening or metadata-writing routes
+their own exact runtime checks. Two utility argument sets passed on the prior
+installed release; that does not validate every method or this source payload.
+None of the older native/private design-content, project-opening or metadata-writing routes
 below is registered there. The new ratline source verifier and finite-role
 model are dormant implementation groundwork, not an executable capture route.
+The [public footprint lookup](current-system-library.md) requires explicit network
+confirmation and uses a fixed credential-free vendor endpoint, without local
+application/database access. It is a task equivalent, not SDK execution.
 
 Current safety restriction (October 10): schematic compiled topology is disabled.
 The installed netlist File getter can annotate components and invoke Save All.

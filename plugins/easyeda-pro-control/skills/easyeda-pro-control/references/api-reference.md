@@ -18,6 +18,9 @@ Its request actions separate documentation from execution:
 `sdk` searches the mounted `eda` namespaces and method/type declarations. The
 reviewed snapshot has 93 namespaces and 749 signatures. `official-latest` has
 99 namespaces and 806 signatures, from official declaration package 0.4.26.
+The separate `installed-209` snapshot records API0.3.59.1ca9efb5 shipped with
+EasyEDA3.2.209: 113 namespaces and 844 signatures across 811 distinct method
+paths. It does not replace either earlier snapshot or admit its declared methods.
 Every response includes the exact package version, source digest and provenance.
 Use `kind:"types"` to look up parameter interfaces/enums; type searches do not
 take a namespace filter. Page with returned `nextOffset`, never infer that a
@@ -53,7 +56,7 @@ read an unrelated runtime's contract as permission to use its adapters.
 ```
 
 Coverage uses distinct mounted method paths, not overload counts. Every method
-in either pinned snapshot has a row. A row can name a direct public call, a
+in any of the three pinned snapshots has a row. A row can name a direct public call, a
 narrower native task equivalent, an internal lifecycle dependency, or a concrete
 omission with the evidence and work required to support it. A native equivalent
 does not prove the public wrapper works. An internal Save call is not a new
@@ -62,6 +65,17 @@ standalone Save capability. Follow the returned route and its exact scope.
 Use the coverage response's summary for current method and route counts.
 They are implementation classifications, not connected validation counts;
 one method can have several routes. Do not add route counts to method counts.
+
+For 3.2.209 language and API-page viewport observations, query `public-readers`
+and validate with `public-readers-validate`. Read [the utility contract](current-utility-readers.md#language-and-api-page-viewport-readers)
+before calling the separate `easyeda_control_public_readers` tool. This does not
+enable the older `sdk_read` executor or any design reader.
+
+For one known public system-footprint UUID, discover `catalog-footprint`
+and validate with `catalog-footprint-validate`. Read [the catalog contract](current-system-library.md)
+for network confirmation and metadata limits. This separate fixed vendor HTTPS
+lookup needs no application or fingerprint and is not public SDK execution.
+It does not enable the general library executor.
 
 For current-version disposable project/PCB opening, query `project-open` with
 `includeSchemas:true` and validate with `project-open-validate`. Read

@@ -6,8 +6,10 @@ import {
 } from "./core.ts";
 import { SDK_LOCAL_RUNTIME_PROFILE, validateSdkLocalRuntimeFingerprint } from "./sdk-local-runtime.ts";
 
-/** This generation admits only the fixed public Math, Unit and Environment
- * subsets. It must never replace the older shared native-adapter profile.
+/** Common identity for separately scoped public Math, Unit, Environment and
+ * language/page-viewport readers. Shell/context/shortcut observations add their
+ * own UI/selector hash gates; the HTTP catalog uses no installed runtime.
+ * This never replaces admission for other native adapters.
  */
 export const SDK_PUBLIC_UTILITIES_209_PROFILE = Object.freeze({
   schema: "easyeda-pro-control.sdk-public-utilities-209.v1",

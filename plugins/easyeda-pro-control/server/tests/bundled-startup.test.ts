@@ -403,7 +403,7 @@ void describe("self-contained packaged machine startup", () => {
       assert.ok(tools.tools.some((tool) => tool.name === "easyeda_control_disposable_pcb_rename"));
       assert.ok(tools.tools.some((tool) => tool.name === "easyeda_control_disposable_schematic_rename"));
       assert.ok(tools.tools.some((tool) => tool.name === "easyeda_control_pcb_string_precreate_validation"));
-      for (const [reference, methods] of [["reviewed-installed", 749], ["official-latest", 806]] as const) {
+      for (const [reference, methods] of [["reviewed-installed", 749], ["official-latest", 806], ["installed-209", 844]] as const) {
         const sdk = await api(client, { action: "sdk", query: { reference, namespace: "sys_WebSocket", limit: 1, detail: true } });
         assert.equal(sdk["invocationEnabled"], false);
         assert.equal(record(sdk["totals"])["methods"], methods);
@@ -414,7 +414,7 @@ void describe("self-contained packaged machine startup", () => {
         assert.equal(operations["executionAuthorized"], false);
       }
       const coverage = await api(client, { action: "coverage", query: { search: "pcb_PrimitivePad.get", detail: true } });
-      assert.equal(record(coverage["summary"])["totalDistinctMethods"], 774);
+      assert.equal(record(coverage["summary"])["totalDistinctMethods"], 835);
       assert.equal(coverage["invocationEnabled"], false);
       const sdkReads = await api(client, { action: "sdk-reads", query: { method: "eda.pcb_PrimitivePad.get", includeSchemas: true } });
       assert.equal(sdkReads["matched"], 1);
