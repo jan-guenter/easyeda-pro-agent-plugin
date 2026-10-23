@@ -175,9 +175,23 @@ the current API and UI hashes are checked separately. Vendor enumeration runs
 before these bounds, and the 10-second deadline does not cancel that work.
 No registration, callback, input, navigation, settings or design action is
 dispatched. It does not prove focus, executable keys or complete shortcut
-inventory. This route is source-tested only; connected validation is pending.
+inventory. Connected 209 validation has not succeeded: an installed143500
+attempt refused with an unclassified upstream failure. Do not retry that
+consumed observation or infer its cause from the opaque error.
 It adds a current-version route for an existing method, not a new distinct
 method in the coverage inventory.
+
+Newer 209 payloads return a bounded `shortcut-key-refusal` envelope when the
+generated read itself fails. `observationSucceeded:false` and
+`effect:"configured-shortcut-registry-read-refused"`
+are failures, not an empty shortcut inventory. The fixed `stage` names the
+first failed guard/read/projection; `sample` and `publicCallsAttempted` are
+bounded counters, not permission to retry. `cleanupFailed` separately records
+a timer-cleanup failure without replacing an earlier cause. The envelope
+contains no raw error or partial shortcuts and must still pass the surrounding
+runtime, UI and selector reproof. An outer reproof failure remains an error.
+This diagnostic implementation is source/synthetic-tested, not yet observed
+on the connected failed case. The 206 result/error contract is unchanged.
 
 ## Registered editor shell and identity on 206/209
 

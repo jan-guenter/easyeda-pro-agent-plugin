@@ -70,6 +70,19 @@ for (const [namespace, method] of [["dmt_Project", "openProject"], ["dmt_EditorC
   } });
 }
 
+for (const [namespace, method, action] of [["dmt_Project", "openProject", "open-project"],
+  ["dmt_EditorControl", "openDocument", "open-pcb"]] as const) {
+  groups.push({ namespace, methods: [method], route: {
+    tool: "easyeda_control_pcb209_opening", selector: action, implementation: "native-task-equivalent",
+    scope: `Separately pinned installed209 validation-only native equivalent, not public SDK execution. Original pcb209-* native owner, exact registered disposable project/checkpoint and default-branch PCB membership only. ${action === "open-project" ? "One project opening from the source-qualified empty UI; it does not create the PCB frame." : "One retained PCB opening after the same owner's accepted project opening; the caller cannot substitute another document."} Each stage consumes its intent once; inspect after ambiguity without replay. Normal restoration, migration, cache replay and automatic Save are accepted opening effects, not unchanged-storage proof. Separate UI/PCB source and frame/identity observations do not prove startup completion, ratline completion, complete design contents, persistence or writer authority. The original native owner must remain through normal close, proved root/Job termination, helper release and record settlement. No historical-owner adoption, worker/model capture, caller code/protocol, general navigation, CAD edit, explicit Save, force termination or Save/Discard choice. This route does not admit older diagnostic purposes or inherit their validation.`,
+    source: ["current-pcb-209-opening-validation.ts", "current-pcb-209-opening-profile.ts", "current-pcb-diagnostic-installation.ts",
+      "current-pcb-diagnostic-owner.ts", "current-pcb-diagnostic-lifecycle.ts", "current-pcb-diagnostic-opening.ts", "current-pcb-diagnostic-pcb-opening.ts", "current-disposable-open-checkpoint.ts"],
+    tests: ["current-pcb-209-opening.test.ts", "current-pcb-209-opening-registration.test.ts", "current-pcb-diagnostic-lifecycle.test.ts"],
+    documentTypes: [3], validation: "offline-regression;current-live-unclaimed", executionState: "available-with-runtime-guards",
+    inputDiscovery: { tool: "easyeda_control_api", arguments: { request: { action: "pcb209-opening", query: { includeSchemas: true } } } },
+  } });
+}
+
 function add(namespace: string, methods: readonly string[], tool: string, selector: string,
   implementation: ApiCoverageRoute["implementation"], scope: string, source: readonly string[], tests: readonly string[], admittedDocumentTypes?: readonly number[]): void {
   let inputDiscovery: ApiCoverageRoute["inputDiscovery"];

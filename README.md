@@ -8,12 +8,14 @@ and dialogs.
 
 Support depends on the exact application version and operation. General
 schematic, PCB and library writers remain disabled on EasyEDA Pro 3.2.206.
-EasyEDA Pro 3.2.209 has a separate eleven-tool profile: API reference, local
+EasyEDA Pro 3.2.209 has a separate thirteen-tool profile: API reference, local
 discovery, status, bounded calculations/system and language/viewport readers,
-tab-count/active-identity/shortcut observations, public footprint catalog lookup
-and ordinary launch. The catalog lookup requires explicit network confirmation
-and runs without the application; it is not SDK execution.
-This profile does not enable project opening or design-content operations.
+tab-count/active-identity/shortcut observations, public catalog metadata/search,
+ordinary launch and a separate disposable project/PCB opening lifecycle.
+Catalog queries require explicit network confirmation and run without the
+application; they are not SDK execution. Disposable opening retains its original
+process through cleanup and can trigger ordinary migration/cache/automatic-Save
+effects. It does not enable design-content operations or explicit Save.
 On eligible 3.2.206 profiles, the ordinary symbol-metadata route allows forward name/description edits of
 unused project-local symbols with eligible history. Disposable validation
 routes have separate gates. Check the

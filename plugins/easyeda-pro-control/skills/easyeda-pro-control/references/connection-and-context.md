@@ -11,10 +11,12 @@ sufficient. Do not change settings or use a UI fallback to pass admission.
 First inspect the registered toolset. On the separately reviewed 3.2.209 utility
 profile, `public-utilities-only` registers only API reference, local discovery,
 status, calculations, system observations, language/API-page viewport readers,
-tab-count/active-identity/shortcut observations, public footprint catalog lookup
-and ordinary launch. The catalog route requires network confirmation but no
-app/bridge/fingerprint and is not SDK execution. No project opening,
-design-content operation or Save is registered. The 3.2.206
+tab-count/active-identity/shortcut observations, public catalog queries,
+ordinary launch and the separate `easyeda_control_pcb209_opening` lifecycle.
+Catalog routes require network confirmation but no app/bridge/fingerprint and
+are not SDK execution. Read [209 disposable opening](current-pcb209-opening.md)
+before using its restricted original-owner stages. Opening can automatically
+persist/Save, but no design-content operation or explicit Save is registered. The3.2.206
 workflows below do not transfer to that generation.
 
 On the separately reviewed 3.2.206 installation, use
@@ -249,7 +251,7 @@ Distinguish these failure layers before changing anything:
 |---|---|---|
 | Tool is absent or host rejects dispatch as unavailable | No facade handler result | Check the plugin's enabled state. For authorized EasyEDA work, the checkout-only foreground MCP client below can use the same facade when no other owner is active. Never start a second owner or use a new data root to evade the lease. |
 | Status reports `mode:"offline-only"` and `installation.ready:false`; only three tools are listed | Trusted profile/Node admission passed, but a selected external installation check failed | Use the retained startup code and current read-only `diagnostics`: configured file roles, candidate bundle directory names and app package version. These metadata observations neither admit candidates nor prove who replaced the app. API reference/local discovery remain usable; live/recovery tools do not exist here. Review the changed installation, use only a supported explicit migration, then restart. |
-| Status reports `facade.mode:"public-utilities-only"`; eleven tools are listed | The exact 3.2.209 PCB/API selector pair selected the small catalog, not runtime admission | Use only its separately admitted utilities, language/API-page viewport and tab/identity/shortcut observations, public catalog lookup and ordinary launch. The catalog lookup requires network confirmation but no app or SDK execution. No old PCB, metadata writer, project opener, design-content adapter or Save route is registered. Source/synthetic checks do not prove connected execution. |
+| Status reports `facade.mode:"public-utilities-only"`; thirteen tools are listed | The exact3.2.209 selector pair selected the restricted catalog, not runtime admission | Utilities, shell/identity/shortcut observations, catalog queries and ordinary launch have separate contracts. The209-only disposable opener retains its own native owner through cleanup; opening can automatically persist/Save. No older project opener, worker/model, design-content or explicit Save route is registered. Source tests are not connected validation. |
 | Status reports `facade.mode:"calculation-only"`; twenty-six tools are listed | Configured bundle selectors selected the older restricted catalog | API reference, local discovery, status, scoped utilities/metadata including no-editor project PCB metadata, exact PCB layer/loaded-view identities and geometry, local historical abandonment, ordinary launch, disposable project opening, disposable symbol copying, disposable PCB renaming and the separate forward-only `easyeda_control_project_symbol_metadata` route are registered. Each has separate exact admission. The ordinary symbol route supports unused project-local symbols with complete META-only or bounded canvas-segments history and exactly one write; it does not enable generic design writers. Generic navigation, native UI and legacy recovery remain unavailable. |
 | Structured status error during upstream startup | Facade handler ran, but startup failed | Run `npm run doctor` offline from the trusted checkout. Use reported stage/exit details and failed checks; private stderr remains withheld. Do not infer the cause from its hash or length. |
 | Status succeeds but has no authenticated session | Upstream responded; extension connection is unproven | Verify the selected receipt/import and bridge connection. Do not call context or design readers yet. |
@@ -283,7 +285,7 @@ For the separately reviewed 3.2.209 installation, use the same helper with the
 explicit `--target public-utilities-209`. It accepts the previous 3.2.206 selector
 pair or an already-selected exact 3.2.209 pair, verifies all new package/bundle
 hashes, retains the exact backup and changes only the two selectors. It does not
-replace old native/private profiles. A fresh session will expose the eleven-tool
+replace old native/private profiles. A fresh session will expose the thirteen-tool
 utility-only catalog, not the older twenty-six-tool catalog. Existing offline
 status remains offline even if its current metadata diagnostics now find all
 configured files. Never use a second facade or patched cache to skip that restart.

@@ -124,7 +124,7 @@ async function assertNoLiveStartup(options: BundledFixture, pid: number): Promis
 }
 
 void describe("self-contained packaged machine startup", () => {
-  void test("209 configuration registers eleven scoped tools and refuses design routes before upstream startup", async (context) => {
+  void test("209 configuration registers thirteen scoped tools and refuses design routes before upstream startup", async (context) => {
     const options = await fixture(context, "public-utilities");
     const transport = new StdioClientTransport({ command: options.bootstrapNode,
       args: [options.bundle, "--machine-launch"], cwd: options.root, env: options.environment, stderr: "pipe" });
@@ -134,8 +134,8 @@ void describe("self-contained packaged machine startup", () => {
     const pid = transport.pid; assert.ok(pid !== null);
     const listed = await client.listTools();
     assert.deepEqual(listed.tools.map((tool) => tool.name).toSorted(), ["easyeda_control_api", "easyeda_control_calculate",
-      "easyeda_control_catalog_footprint", "easyeda_control_discover", "easyeda_control_editor_context", "easyeda_control_editor_shell",
-      "easyeda_control_launch", "easyeda_control_public_readers", "easyeda_control_shortcuts", "easyeda_control_status", "easyeda_control_system"]);
+      "easyeda_control_catalog_components", "easyeda_control_catalog_footprint", "easyeda_control_discover", "easyeda_control_editor_context", "easyeda_control_editor_shell",
+      "easyeda_control_launch", "easyeda_control_pcb209_opening", "easyeda_control_public_readers", "easyeda_control_shortcuts", "easyeda_control_status", "easyeda_control_system"]);
     const catalog = await api(client, { action: "calculations", query: { includeSchemas: true } });
     assert.equal(catalog["total"], 16); assert.equal(catalog["invocationEnabledByDiscovery"], false);
     for (const name of ["easyeda_control_project_open", "easyeda_control_pcb_geometry", "easyeda_control_project_symbol_metadata",

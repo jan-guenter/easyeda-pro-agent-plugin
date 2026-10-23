@@ -7,14 +7,16 @@ import { querySdkMathCalculations, sdkMathCatalogQuerySchema, validateSdkMathArg
 import { querySdkSystemMethods, sdkSystemCatalogQuerySchema, validateSdkSystemArguments } from "./sdk-system.ts";
 import { querySdkPublicReadersMethods, sdkPublicReadersCatalogQuerySchema, validateSdkPublicReadersArguments } from "./sdk-public-readers.ts";
 import { publicSystemFootprintQuerySchema, queryPublicSystemFootprint, validatePublicSystemFootprintArguments } from "./public-system-footprint.ts";
-import { queryStartupExtensions, startupExtensionsQuerySchema, validateStartupExtensionsArguments } from "./startup-extensions.ts";
+import { publicSystemCatalogQuerySchema, queryPublicSystemCatalog, validatePublicSystemCatalogArguments } from "./public-system-catalog.ts";
 // oxlint-disable-next-line import/max-dependencies -- This fixed offline router imports each capability's own validator; an intermediary would only hide those dependencies.
+import { queryStartupExtensions, startupExtensionsQuerySchema, validateStartupExtensionsArguments } from "./startup-extensions.ts";
 import { editorShellQuerySchema, queryEditorShell, validateEditorShellArguments } from "./editor-shell.ts";
 import { editorContextQuerySchema, queryEditorContext, validateEditorContextArguments } from "./editor-context.ts";
 import { queryShortcutKeys, shortcutKeysQuerySchema, validateShortcutKeysArguments } from "./shortcut-keys.ts";
 import { queryOrdinaryLaunch, validateOrdinaryLaunchArguments } from "./ordinary-launch.ts";
 import { currentPcbDiagnosticValidationQuerySchema, queryCurrentPcbDiagnosticValidation,
   validateCurrentPcbDiagnosticValidationArguments } from "./current-pcb-diagnostic-validation.ts";
+import { queryCurrentPcb209Opening, validateCurrentPcb209OpeningArguments } from "./current-pcb-209-opening-validation.ts";
 import { currentPcbStringPrecreateQuerySchema, queryCurrentPcbStringPrecreate,
   validateCurrentPcbStringPrecreateArguments } from "./current-pcb-string-precreate-validation.ts";
 import { currentPcbLayersQuerySchema, queryCurrentPcbLayers, validateCurrentPcbLayersArguments } from "./current-pcb-layers.ts";
@@ -54,6 +56,8 @@ export const apiRequestSchema = z.discriminatedUnion("action", [
   z.object({ action: z.literal("public-readers-validate"), query: publicSdkValidationQuerySchema }).strict(),
   z.object({ action: z.literal("catalog-footprint"), query: publicSystemFootprintQuerySchema.optional() }).strict(),
   z.object({ action: z.literal("catalog-footprint-validate"), query: publicSdkValidationQuerySchema }).strict(),
+  z.object({ action: z.literal("catalog-components"), query: publicSystemCatalogQuerySchema.optional() }).strict(),
+  z.object({ action: z.literal("catalog-components-validate"), query: publicSdkValidationQuerySchema }).strict(),
   z.object({ action: z.literal("extensions"), query: startupExtensionsQuerySchema.optional() }).strict(),
   z.object({ action: z.literal("extensions-validate"), query: publicSdkValidationQuerySchema }).strict(),
   z.object({ action: z.literal("editor-shell"), query: editorShellQuerySchema.optional() }).strict(),
@@ -104,6 +108,8 @@ export const apiRequestSchema = z.discriminatedUnion("action", [
   z.object({ action: z.literal("launch-validate"), query: publicSdkValidationQuerySchema }).strict(),
   z.object({ action: z.literal("pcb-diagnostic-validation"), query: currentPcbDiagnosticValidationQuerySchema.optional() }).strict(),
   z.object({ action: z.literal("pcb-diagnostic-validation-validate"), query: publicSdkValidationQuerySchema }).strict(),
+  z.object({ action: z.literal("pcb209-opening"), query: currentPcbDiagnosticValidationQuerySchema.optional() }).strict(),
+  z.object({ action: z.literal("pcb209-opening-validate"), query: publicSdkValidationQuerySchema }).strict(),
   z.object({ action: z.literal("pcb-string-precreate-validation"), query: currentPcbStringPrecreateQuerySchema.optional() }).strict(),
   z.object({ action: z.literal("pcb-string-precreate-validation-validate"), query: publicSdkValidationQuerySchema }).strict(),
   z.object({ action: z.literal("operations"), query: operationCatalogQuerySchema }).strict(),
@@ -136,6 +142,8 @@ export function queryOfflineApi(request: ApiRequest): { offline: true; result: u
   switch (request.action) {
     case "pcb-diagnostic-validation": { result = queryCurrentPcbDiagnosticValidation(request.query ?? {}); break; }
     case "pcb-diagnostic-validation-validate": { result = validateCurrentPcbDiagnosticValidationArguments(request.query.request); break; }
+    case "pcb209-opening": { result = queryCurrentPcb209Opening(request.query ?? {}); break; }
+    case "pcb209-opening-validate": { result = validateCurrentPcb209OpeningArguments(request.query.request); break; }
     case "pcb-string-precreate-validation": { result = queryCurrentPcbStringPrecreate(request.query ?? {}); break; }
     case "pcb-string-precreate-validation-validate": { result = validateCurrentPcbStringPrecreateArguments(request.query.request); break; }
     case "sdk": { result = queryExtensionApiCatalog(request.query ?? {}); break; }
@@ -150,6 +158,8 @@ export function queryOfflineApi(request: ApiRequest): { offline: true; result: u
     case "public-readers-validate": { result = validateSdkPublicReadersArguments(request.query.request); break; }
     case "catalog-footprint": { result = queryPublicSystemFootprint(request.query ?? {}); break; }
     case "catalog-footprint-validate": { result = validatePublicSystemFootprintArguments(request.query.request); break; }
+    case "catalog-components": { result = queryPublicSystemCatalog(request.query ?? {}); break; }
+    case "catalog-components-validate": { result = validatePublicSystemCatalogArguments(request.query.request); break; }
     case "extensions": { result = queryStartupExtensions(request.query ?? {}); break; }
     case "extensions-validate": { result = validateStartupExtensionsArguments(request.query.request); break; }
     case "editor-shell": { result = queryEditorShell(request.query ?? {}); break; }
