@@ -58,6 +58,8 @@ void test("exact209 selectors expose thirteen scoped tools without inheriting un
   }
   const capabilities = publicUtilitiesOnlyCapabilities();
   assert.deepEqual(capabilities["navigation"], { enabled: true, scope: "original-owner-disposable209-opening-only" });
-  assert.deepEqual(capabilities["designAccess"], { enabled: false, scope: "design-content-routes" });
+  assert.deepEqual(capabilities["designAccess"], { enabled: false, scope: "general-geometry-and-writers;disposable-layer-metadata-only" });
+  const opening = capabilities["disposableOpening"]; assert.ok(typeof opening === "object" && opening !== null && "layerObservation" in opening);
+  assert.equal(opening.layerObservation, "double-sampled-metadata-and-copper-count");
   assert.equal(Object.hasOwn(capabilities, "projectSymbolMetadata"), false);
 });

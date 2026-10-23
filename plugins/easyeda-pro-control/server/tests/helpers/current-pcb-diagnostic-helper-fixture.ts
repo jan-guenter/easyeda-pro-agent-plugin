@@ -59,6 +59,21 @@ let producerResponder: ReturnType<typeof createCurrentPcbStringWorkerProducerRes
 let sent = Buffer.alloc(0), terminated = false;
 let terminationReads = 0;
 const lines = createInterface({ input: process.stdin });
+function layers209Response(request: object & Record<"pcbLayers209Phase", unknown>): unknown {
+  assert.equal(scenario?.startsWith("opening-pcb-layers209"), true);
+  assert.equal(pcbSourceRead, true); assert.equal(request.pcbLayers209Phase, "observe");
+  assert.ok("uniqueContextId" in request); assert.equal(request.uniqueContextId, "unique-context-1");
+  if (scenario === "opening-pcb-layers209-refused") { return { result: { type: "undefined" } }; }
+  return { result: { type: "string", value: JSON.stringify({ ok: true, kind: "pcb209-original-layer-observation",
+    target: { projectUuid, branchUuid, documentUuid: pcbDocumentUuid, tabId: pcbTabId }, nativeLayers: [{ layerId: 1, type: "TOP", name: "Top",
+      order: 1, activeColor: "#ff0000", activeColorAlpha: 1, deactiveColor: "#800000", deactiveColorAlpha: 0.5,
+      visible: true, locked: false, active: true, layerStatus: 1 }], samples: 2, implementationKind: "native-task-equivalent",
+    cadAuthority: false, persistenceVerified: false, physicalStackVerified: false }) } };
+}
+function openingOrLayerResponse(request: object, events: unknown[]): unknown {
+  if ("pcbLayers209Phase" in request) { return layers209Response(request); }
+  return "pcbOpeningPhase" in request ? pcbOpeningResponse(request, events) : openingResponse(request, events);
+}
 lines.on("close", (): void => { producerResponder?.close(); });
 lines.on("line", line => {
   const request: unknown = JSON.parse(line);
@@ -148,7 +163,7 @@ lines.on("line", line => {
           payload = describeOwnerResponse(request);
         } else if (request["method"] === "Runtime.callFunctionOn") {
           assert.equal(openingCase, true);
-          payload = "pcbOpeningPhase" in request ? pcbOpeningResponse(request, events) : openingResponse(request, events);
+          payload = openingOrLayerResponse(request, events);
         } else { throw new Error("unexpected synthetic method"); }
       }
     }

@@ -83,6 +83,15 @@ for (const [namespace, method, action] of [["dmt_Project", "openProject", "open-
   } });
 }
 
+groups.push({ namespace: "pcb_Layer", methods: ["getAllLayers", "getTheNumberOfCopperLayers"], route: {
+  tool: "easyeda_control_pcb209_opening", selector: "observe-layers", implementation: "native-task-equivalent",
+  scope: "Separately pinned installed209 disposable original-owner layer observation, not public SDK execution. After accepted checkpoint-bound PCB opening and exact UI/PCB source/identity admission, one consumed stage obtains two complete matching native layer collections with original receiver/target checks around each await. At most512 layers and65536 native UTF-8 bytes; nine-field getAllLayers projection and enabled native SIGNAL/PLANE count plus two share those samples. Raw malformed color strings are preserved, not repaired. RPC bookkeeping and possible lazy identity-environment initialization are incidental effects. This proves neither physical stackup, complete startup/ratline delivery, saved contents nor writer/Save authority. Original normal close, termination and release remain required. getCurrentLayer is still excluded; legacy206 owners cannot select this command.",
+  source: ["current-pcb-209-layers.ts", "current-pcb-209-opening-validation.ts", "current-pcb-diagnostic-lifecycle.ts", "current-pcb-diagnostic-owner.ts", "current-pcb-layers.ts"],
+  tests: ["current-pcb-209-layers.test.ts", "current-pcb-209-opening.test.ts", "current-pcb-209-opening-registration.test.ts", "current-pcb-diagnostic-owner.test.ts", "current-pcb-diagnostic-lifecycle.test.ts"],
+  documentTypes: [3], validation: "offline-regression;current-live-unclaimed", executionState: "available-with-runtime-guards",
+  inputDiscovery: { tool: "easyeda_control_api", arguments: { request: { action: "pcb209-opening", query: { includeSchemas: true } } } },
+} });
+
 function add(namespace: string, methods: readonly string[], tool: string, selector: string,
   implementation: ApiCoverageRoute["implementation"], scope: string, source: readonly string[], tests: readonly string[], admittedDocumentTypes?: readonly number[]): void {
   let inputDiscovery: ApiCoverageRoute["inputDiscovery"];

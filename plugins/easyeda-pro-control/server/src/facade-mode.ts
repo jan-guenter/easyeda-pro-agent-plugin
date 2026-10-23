@@ -14,7 +14,7 @@ export const PUBLIC_UTILITIES_ONLY_TOOLS = Object.freeze([
   "easyeda_control_editor_context", "easyeda_control_shortcuts",
   "easyeda_control_pcb209_opening",
 ]);
-export const PUBLIC_UTILITIES_ONLY_SCOPE = "EasyEDA 3.2.209 scoped Math, Unit, Environment, language, API-page viewport, tab-count, active-identity and shortcut observations, plus ordinary launch. Separate catalog tools perform explicitly confirmed credential-free vendor HTTPS metadata queries without EasyEDA or SDK execution. The separate pcb209_opening route owns one disposable project/PCB opening and UI/PCB source/identity checks through original normal cleanup; ordinary opening can migrate data and automatically Save. No general design-content read/write, explicit Save, recovery or PCB-worker route is registered. Source review and synthetic tests are not connected execution validation. Identity observations and launch do not prove isolation or readiness.";
+export const PUBLIC_UTILITIES_ONLY_SCOPE = "EasyEDA 3.2.209 scoped Math, Unit, Environment, language, API-page viewport, tab-count, active-identity and shortcut observations, plus ordinary launch. Separate catalog tools perform explicitly confirmed credential-free vendor HTTPS metadata queries without EasyEDA or SDK execution. The separate pcb209_opening route owns one disposable project/PCB opening, UI/PCB source/identity checks and a bounded layer/copper-count observation through original normal cleanup; ordinary opening can migrate data and automatically Save. No general geometry read/write, explicit Save, recovery or PCB-worker route is registered. Source review and synthetic tests are not connected execution validation. Identity/layer observations and launch do not prove isolation, physical stackup or readiness.";
 
 export function publicUtilitiesOnlyCapabilities(): Record<string, unknown> {
   return {
@@ -31,9 +31,9 @@ export function publicUtilitiesOnlyCapabilities(): Record<string, unknown> {
     shortcutKeys: { tool: "easyeda_control_shortcuts", runtimeAdmissionRequired: true, keyboardExecution: false },
     ordinaryLaunch: { tool: "easyeda_control_launch", installedIdentityAdmissionRequired: true, profileIsolation: false, connectedValidation: false },
     disposableOpening: { tool: "easyeda_control_pcb209_opening", validationOnly: true, connectedValidation: false,
-      runtimeAdmissionRequired: true, startupCompletionVerified: false, cadAuthority: false },
-    designAccess: { enabled: false, scope: "design-content-routes" }, navigation: { enabled: true, scope: "original-owner-disposable209-opening-only" },
-    save: { enabled: false }, recovery: { enabled: false }, nativeAdapters: { enabled: true, scope: "identity-observations-and-disposable209-opening-only" },
+      runtimeAdmissionRequired: true, startupCompletionVerified: false, cadAuthority: false, layerObservation: "double-sampled-metadata-and-copper-count" },
+    designAccess: { enabled: false, scope: "general-geometry-and-writers;disposable-layer-metadata-only" }, navigation: { enabled: true, scope: "original-owner-disposable209-opening-only" },
+    save: { enabled: false }, recovery: { enabled: false }, nativeAdapters: { enabled: true, scope: "identity-observations-and-disposable209-opening-layer-metadata-only" },
   };
 }
 

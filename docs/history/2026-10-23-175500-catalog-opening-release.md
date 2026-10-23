@@ -139,3 +139,134 @@ The implementation backlog remains substantive:
 The user requested larger batches and fewer restart cycles. This candidate
 combines three independent improvements before publication; it does not claim
 the remaining implementation backlog is complete.
+
+## Terminal release and installation, 2026-10-23
+
+Final PR payload `cc5964009ba8e44cde8c2a00f3ff926b0800ec77` passed
+CI40002783325 and Windows40002783236. All eight facade shards, the build and
+the aggregate passed. [PR105](https://github.com/jan-guenter/easyeda-pro-agent-plugin/pull/105)
+merged through protected main as `8e87429fc945d6fe8261fa1f2405f2adec2da75e`.
+Main CI40004821468 and Windows40004821517 also passed. No protection bypass
+was used. The complete repository trees match at
+`c63c76b7b17dda731ea3f483e001dcfa64e5d219`; the plugin tree is
+`3eefc4bc6f2cd95e16249e8036fb9461ea7a5599`.
+
+The final unchanged local `npm run verify` passed: 12,449 facade tests passed,
+four skipped, zero failed or cancelled; 424 bridge tests passed. The facade
+suite took 1,770,104ms. The earlier interrupted runs above remain failures of
+the release-check process, not passing evidence for this payload. The final
+log is retained privately with SHA-256
+`5cd68dcfa5807c56f5e3b1fd8e6b597531e7d7539a8c94f57036c04f02dcc700`.
+The complete affected coverage/registration/lifecycle group also passed its
+196 focused tests before that frozen run.
+
+Node24.18.0/npm11.16.0 and zero core limit were used. Dependency installation,
+complete dependency listing, 151 registry signatures/40 attestations,
+zero-vulnerability audit, sanitizer, strict types/type-aware lint, generated
+coverage, reproducible bundles, compatibility, repository, plugin and all-skill
+checks passed. All seven skills passed the installed official quick validator;
+no separate official plugin validator was available. External compatibility
+pins stayed unchanged. Only facade projections and review time refreshed.
+
+Final source projection covers 633 files:
+`6fdcd3b57a964bda88fb759ab07a73b8266f082be3cd47b68318249fe7c6da2c`.
+Bundle projection:
+`7d3696ed9f4f29d8908f298ca25b4a0705c864f1df1503b3eb9d103a0c0611cd`.
+Server SHA-256:
+`cb302342ed71de8003b6bbef6987317883513ad4385b4f0d6c558a6f217e4201`.
+Supervisor SHA-256:
+`0230e69bd78fa29a4db1443b529c6427b9f3cb553abfea9c129ac7861d220f60`.
+Compatibility manifest SHA-256:
+`7fbbbab24bb3085b70bbf04cd1003226513197975edf3079c569dbf1f91ba613`.
+
+One official CLI marketplace upgrade ran from a neutral private directory
+with installer umask022. It refreshed the existing Git marketplace
+`https://github.com/jan-guenter/easyeda-pro-agent-plugin.git` and installed and
+enabled `0.3.0+codex.20261023175500`. Marketplace HEAD equals merged main.
+There was no extra add, retry, manual cache edit, credential rotation or
+host-gateway termination. The exact installed comparison passed all 1,801 files,
+42 directories and 38,034,288 bytes, including 755/644 modes. Inventory SHA-256:
+`8b87fd0a1417f32d9a2f0baff434069ca4f45cd2540af376f596e967a98c4940`.
+Private comparison-receipt SHA-256:
+`9f45ae33cbcce5d2fe0fa63b95fe6f9ccb2468330b2a0273a099f1fb995f5be4`.
+
+The installed dependency-free offline probe passed its synthetic206 profile:
+26 tools, ten catalog/schema queries, no sampled descendants or non-stdio
+sockets, no upstream execution, and observed exit0 after stdin EOF. Its private
+receipt SHA-256 is
+`b20fabc4928b6e8da2820e32d8f3efde2d176923949becf7785f986299c1e5db`.
+That synthetic catalog is not the actual209 thirteen-tool catalog and is not
+runtime admission or connected validation. The209 startup registration is
+covered separately by the bundled-startup tests.
+
+The loaded host remains the older143500 process. EasyEDA was closed with
+original termination proved earlier in this record. No native operation or
+release-verification process remains pending. Start a fresh Codex session
+before calling the new installed tools; do not call the old host or replay
+the consumed143500 launch, reads, shortcut failure or close.
+
+### Post-merge catalog provenance corrections
+
+A bounded read-only next-batch review found two wording issues. These correct
+interpretation of the shipped metadata contract; they do not claim new code
+or new network qualification.
+
+1. The vendor can include inline source in a bounded metadata response. The
+   retained symbol detail contains `dataStr`; device search can include symbol
+   and footprint `dataStr` even without `withPackage`. The adapter discards it.
+   The precise guarantee is no source projected, parsed as CAD or executed,
+   and no separate linked-asset download. The packaged discovery sentence
+   saying no source is "fetched or returned" is too broad and remains a
+   wording correction for the next combined implementation batch.
+2. The desktop POST helper defaults to JSON. UI `Man` at UTF-16 offset6061207
+   supplies `Content-Type:application/json`, then `Ian` encodes the body.
+   Current form encoding is supported by retained successful anonymous
+   endpoint samples, not by the exact desktop default. Do not change the
+   transport merely to erase this distinction or describe it as source-defined
+   form encoding. No additional request was made during this review.
+
+### Concrete next combined batch
+
+First admit the actual175500 process and prove its thirteen-tool catalog.
+Use one fresh disposable209 opening/observation/normal-cleanup lifecycle.
+Inspect failures through their original owner; never repeat navigation.
+A separate ordinary launch may inspect one new shortcut diagnostic, after the
+diagnostic owner is released. This is not a retry of the consumed143500 call.
+
+Then combine the following implementations before another release:
+
+- Port `getAllLayers` and `getTheNumberOfCopperLayers` as fixed209 native layer
+  observations. Installed PCB `a840…` at UTF-16 offset10323176 returns the same
+  twelve native fields; UI `3515…` at17359479 dispatches that getter and at
+  17356586 counts enabled SIGNAL/PLANE rows plus two. The API nine-field/type/
+  alpha projection still matches. These reads do not require ratline completion.
+  Preserve two matching samples, exact target/source checks and original cleanup.
+- Add a specific original-owner layer-observation stage after accepted PCB
+  opening. An active209 diagnostic owner intentionally blocks ordinary bridge
+  dispatch. Registering the old layer tool alone will not inspect that owner;
+  do not introduce a quarantine exception or arbitrary evaluator. Keep startup,
+  baseline and writer claims false. Do not port `getCurrentLayer` yet: the209
+  public method is empty and its old native adapter needs separate ACTIVE_LAYER
+  correlation. Selecting an `active:true` row is not the same contract.
+- Add anonymous `search-devices` at fixed POST `/api/devices/search`, and
+  ordinary `search-symbols` at `/api/v2/components/search` with `docType:[2]`.
+  Reuse explicit network confirmation and bounded query/pagination/transport.
+  Device search already has a retained ordinary-result sample; symbol search
+  still needs one small anonymous sample. Require exact system ownership and
+  consistent device associations; do not require absent optional ownership/
+  visibility fields. Discard inline source, facets and unrestricted attributes.
+  Correct the packaged provenance wording in the same batch. Keep special
+  symbol types, private/project libraries, incomplete bindings, geometry and
+  pin mappings unsupported until separately qualified.
+
+The larger ratline, complete-baseline, saved/reopened writer and broader API
+backlog above remains open. This terminal handoff is a local post-release
+append; the implementation and operating skills are already published. Carry
+the append into the next reviewed documentation commit without changing the
+installed175500 snapshot or the excluded production project record.
+
+The terminal release/installation result and catalog corrections are also
+published in the [PR105 release comment](https://github.com/jan-guenter/easyeda-pro-agent-plugin/pull/105#issuecomment-6372461369).
+Post-append repository, MCP-contract and all-skill validation passed. The only
+local uncommitted change is this dated history append; source, bundles, pins
+and the installed package remain identical to merged main.

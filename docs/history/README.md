@@ -45,6 +45,10 @@ layout. The connected ledger retains its generation and case anchors.
 
 | Record | Former path |
 | --- | --- |
+| [2026-10-23-195500-layers-catalog-release.md](2026-10-23-195500-layers-catalog-release.md) | Installed175500 opening/shortcut results and combined layer/catalog release |
+| [2026-10-23-generation209-layer-observation.md](2026-10-23-generation209-layer-observation.md) | Original-owner209 layer collection and copper-count implementation |
+| [2026-10-23-catalog-device-symbol-search.md](2026-10-23-catalog-device-symbol-search.md) | Device/symbol search and contradictory project-scope refusal |
+| [2026-10-23-shortcut-scope-gap.md](2026-10-23-shortcut-scope-gap.md) | Tagged preservation of one source-known209 shortcut scope gap |
 | [2026-10-23-175500-catalog-opening-release.md](2026-10-23-175500-catalog-opening-release.md) | Installed143500 reader results and combined catalog/opening/diagnostic release handoff |
 | [2026-10-23-public-catalog-expansion.md](2026-10-23-public-catalog-expansion.md) | Anonymous footprint search, symbol/device metadata and retained projection correction |
 | [2026-10-23-generation209-startup-batch.md](2026-10-23-generation209-startup-batch.md) | Separately pinned209 disposable opening with original native-owner cleanup |

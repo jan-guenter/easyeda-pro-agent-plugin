@@ -1,5 +1,5 @@
 /** Separate 209 disposable-opening profile. These exact assets qualify only
- * the fixed project/PCB navigation programs and identity observations. They do
+ * the fixed project/PCB navigation, identity and layer observations. They do
  * not qualify legacy compiler, project-worker, ratline or design readers. */
 import type { CurrentPcbDiagnosticScriptProfile } from "./current-pcb-diagnostic-profile.ts";
 import { ORDINARY_LAUNCH_209_PROFILE } from "./ordinary-launch-209-profile.ts";

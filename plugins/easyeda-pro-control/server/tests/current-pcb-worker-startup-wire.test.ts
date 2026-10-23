@@ -122,7 +122,7 @@ void test("native startup source is generated exactly and keeps the distinct pur
   assert.ok(!generated.includes("parameters.Replace("));
   assert.ok(generated.includes("smoke-placeholder") && generated.includes("smoke-parity"));
   assert.ok(native.includes("if(!workerStartup || stringPrecreate)throw Error(\"startup-purpose\")"));
-  assert.ok(native.includes("if ($StringPrecreate -and $WorkerStartup)"));
+  assert.ok(native.includes("if (($StringPrecreate -and $WorkerStartup) -or ($Layers209 -and ($StringPrecreate -or $WorkerStartup)))"));
   assert.ok(native.includes("[EasyedaWorkerStartupProtocol]::VerifySmoke()"));
   assert.ok(native.includes("if ($WorkerStartup -and @('Browser.getVersion'"));
 });

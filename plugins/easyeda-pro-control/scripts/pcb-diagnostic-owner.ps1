@@ -1,6 +1,6 @@
-param([switch]$CompileOnly,[switch]$StringPrecreate,[switch]$WorkerStartup)
+param([switch]$CompileOnly,[switch]$StringPrecreate,[switch]$WorkerStartup,[switch]$Layers209)
 $ErrorActionPreference = 'Stop'
-if ($StringPrecreate -and $WorkerStartup) {throw 'pcb-diagnostic-conflicting-purpose'}
+if (($StringPrecreate -and $WorkerStartup) -or ($Layers209 -and ($StringPrecreate -or $WorkerStartup))) {throw 'pcb-diagnostic-conflicting-purpose'}
 [Console]::OutputEncoding = New-Object System.Text.UTF8Encoding($false)
 # Separate diagnostic owner. The ordinary no-argument launcher is unchanged.
 # Electron requests Browser::Quit on pipe disconnect. Never dispose live pipes,
@@ -920,6 +920,7 @@ public sealed class EasyedaDiagnosticOwner {
   CreationPhase creationPhase; bool launchSettled; uint? createProcessError;
   readonly EasyedaDiagnosticInstallation installation=new EasyedaDiagnosticInstallation();
   readonly bool stringPrecreate;
+  readonly bool layers209;
   readonly bool workerStartup;
   int RequestLimit { get { return workerStartup?256:stringPrecreate?3309:103; } }
   public readonly string JobId=Guid.NewGuid().ToString("N");
@@ -934,6 +935,8 @@ public sealed class EasyedaDiagnosticOwner {
   public static EasyedaDiagnosticOwner CreateStringPrecreate() { return new EasyedaDiagnosticOwner(true); }
   EasyedaDiagnosticOwner(bool stringPrecreatePurpose,bool workerStartupPurpose) { stringPrecreate=stringPrecreatePurpose;workerStartup=workerStartupPurpose; }
   public static EasyedaDiagnosticOwner CreateWorkerStartup() { return new EasyedaDiagnosticOwner(false,true); }
+  EasyedaDiagnosticOwner(bool stringPrecreatePurpose,bool workerStartupPurpose,bool layers209Purpose) { stringPrecreate=stringPrecreatePurpose;workerStartup=workerStartupPurpose;layers209=layers209Purpose; }
+  public static EasyedaDiagnosticOwner CreateLayers209() { return new EasyedaDiagnosticOwner(false,false,true); }
   public void Initialize() {
     if(job!=IntPtr.Zero || released) throw Error("initialize-consumed");
     job=CreateJobObject(IntPtr.Zero,null); if(job==IntPtr.Zero) throw Error("job-create");
@@ -1438,6 +1441,120 @@ if(publicResult!==target.documentUuid+""@""+target.projectUuid)publicResult=null
 if(typeof windowTabId!==""string""||!/^[A-Za-z0-9_-]{1,128}$/.test(windowTabId))windowTabId=null;
 return JSON.stringify({schema:""easyeda-pro-control.pcb-diagnostic-pcb-opening.v1"",phase,projectUuid:target.projectUuid,branchUuid:target.branchUuid,documentUuid:target.documentUuid,tabId:target.documentUuid+""@""+target.projectUuid,...outcome,dispatchAttempted,publicResult,nativeWorkMayRemain:dispatchAttempted,frameObserved,windowTabId});
 }";
+  // BEGIN GENERATED PCB209 LAYERS PROGRAM
+  const string Layers209Function=@"async function(sealed,phase){
+""use strict"";
+let timer,clear,expired=false;
+try{
+const root=globalThis,apply=Reflect.apply,bad=()=>{throw new Error(""PCB209_LAYERS_REFUSED"");};
+const own=(o,k)=>{if(o===null||(typeof o!==""object""&&typeof o!==""function""))bad();const d=Object.getOwnPropertyDescriptor(o,k);if(!d||!Object.hasOwn(d,""value""))bad();return d.value;};
+const object=o=>o!==null&&typeof o===""object""&&!Array.isArray(o);
+const plain=o=>{if(!object(o)||Object.getPrototypeOf(o)!==Object.prototype)bad();return o;};
+const absent=(o,k)=>{const d=Object.getOwnPropertyDescriptor(o,k);if(d&&(!Object.hasOwn(d,""value"")||d.value!==undefined))bad();};
+const fn=(o,k)=>{const f=own(o,k);if(typeof f!==""function"")bad();return f;};
+plain(sealed);if(phase!==""observe""||Reflect.ownKeys(sealed).length!==5)bad();
+for(const k of [""rawWindowsPath"",""projectUuid"",""documentUuid"",""expectedSourceSha256"",""branchUuid""])if(typeof own(sealed,k)!==""string"")bad();
+const match=(s,re)=>{const m=re.exec(s);return m!==null&&m[0]===s;};
+if(!match(sealed.projectUuid,/^[a-f0-9]{64}$/)||!match(sealed.branchUuid,/^[a-f0-9]{32}$/)||!match(sealed.documentUuid,/^(?:[a-f0-9]{16}|[a-f0-9]{32})$/)||!match(sealed.expectedSourceSha256,/^[a-f0-9]{64}$/))bad();
+const target={projectUuid:sealed.projectUuid,branchUuid:sealed.branchUuid,documentUuid:sealed.documentUuid,tabId:sealed.documentUuid+""@""+sealed.projectUuid};
+const parseProjectUrl=(value,projectUuid,activeTabId)=>{
+ if(typeof value!=='string'||value.length>32768||typeof projectUuid!=='string')bad();
+ const projectMatch=/^(?:[a-f0-9]{32}|[a-f0-9]{64})$/.exec(projectUuid);if(!projectMatch||projectMatch[0]!==projectUuid)bad();
+ const pieces=value.split('#');if(pieces.length>2)bad();const base=pieces[0];
+ const baseMatch=/^https:\/\/client\/editor\?cll=(?:trace|debug|info|warn|error)$/.exec(base);if(!baseMatch||baseMatch[0]!==base)bad();
+ const fragment=pieces.length===1?'':pieces[1];
+ if(fragment==='')return{base,empty:true,tabIds:[],activeTabId:null};
+ const prefix='id='+projectUuid;if(fragment===prefix)return{base,empty:false,tabIds:[],activeTabId:null};
+ if(!fragment.startsWith(prefix+',tab='))bad();const entries=fragment.slice(prefix.length+5).split('|');
+ if(entries.length<1||entries.length>256)bad();const tabIds=[],seen=new Set();let markedTabId=null;
+ for(const entry of entries){
+  const match=/^(\*?)([a-f0-9]{16}|[a-f0-9]{32})@([a-f0-9]{32}|[a-f0-9]{64})$/.exec(entry);
+  if(!match||match[0]!==entry||match[3]!==projectUuid)bad();const tabId=match[2]+'@'+match[3];if(seen.has(tabId))bad();seen.add(tabId);tabIds.push(tabId);
+  if(match[1]==='*'){if(markedTabId!==null||(activeTabId!==undefined&&activeTabId!==null&&activeTabId!==tabId))bad();markedTabId=tabId;}
+ }
+ return{base,empty:false,tabIds,activeTabId:markedTabId};
+};
+const location=root.location,href=location?.href,document=root.document,ui=own(root,""UI""),host=own(root,""gVars""),mode=own(root,""PRO_EDITOR_MODE"");
+const project=plain(own(host,""currentProject"")),tabs=own(ui,""tabBar"");
+if(typeof tabs!==""function""||Object.getPrototypeOf(tabs)!==Function.prototype)bad();
+const active=fn(tabs,""getActiveTab""),getTab=fn(tabs,""getTabById""),select=document?.querySelectorAll;
+if(typeof select!==""function"")bad();
+const tab=plain(apply(getTab,tabs,[target.tabId])),data=plain(own(tab,""data""));
+const found=apply(select,document,['[id=""frame_'+target.tabId+'""]']);if(found.length!==1)bad();
+const frame=found[0],child=frame?.contentWindow,childDocument=child?.document,parent=frame?.parentElement;
+const native=own(child,""MSG_BUS_PCB""),channel=own(native,""messageBus""),childObject=own(child,""Object""),childArray=own(child,""Array"");
+const childObjectPrototype=own(childObject,""prototype""),childArrayPrototype=own(childArray,""prototype"");
+const attr=frame?.getAttribute,has=frame?.hasAttribute,classes=frame?.classList,contains=classes?.contains,parentAttr=parent?.getAttribute;
+if(typeof attr!==""function""||typeof has!==""function""||typeof contains!==""function""||typeof parentAttr!==""function"")bad();
+const chain=[channel];let rpc,rpcOwner;
+for(let i=0;i<3;i++){const node=chain[i];if(!object(node))bad();const d=Object.getOwnPropertyDescriptor(node,""rpcCall"");if(d){if(!Object.hasOwn(d,""value"")||typeof d.value!==""function"")bad();rpc=d.value;rpcOwner=node;break;}chain.push(Object.getPrototypeOf(node));}
+if(typeof rpc!==""function"")bad();
+const set=fn(root,""setTimeout"");clear=fn(root,""clearTimeout"");
+const check=()=>{
+if(expired||root.window!==root||root.top!==root||root.location!==location||root.document!==document||document?.defaultView!==root||document?.nodeType!==9||document?.URL!==href||location?.href!==href||location?.origin!==""https://client"")bad();
+parseProjectUrl(href,target.projectUuid,target.tabId);
+if(own(root,""PRO_EDITOR_MODE"")!==mode||![""CLIENT-HALF_OFFLINE-EASYEDA-PCB-SCH-PANEL-SIM"",""CLIENT-OFFLINE-EASYEDA-PCB-SCH-PANEL-SIM""].includes(mode))bad();
+if(own(root,""UI"")!==ui||own(root,""gVars"")!==host||own(ui,""gVars"")!==host||own(host,""currentProject"")!==project||own(ui,""tabBar"")!==tabs)bad();
+if(own(project,""projectId"")!==target.projectUuid||own(project,""branchUuid"")!==target.branchUuid||own(project,""isV2Format"")!==false||own(host,""isHistoryMode"")!==false)bad();
+if(fn(tabs,""getActiveTab"")!==active||fn(tabs,""getTabById"")!==getTab||apply(active,tabs,[])!==target.tabId||apply(getTab,tabs,[target.tabId])!==tab||own(tab,""data"")!==data)bad();
+if(own(tab,""tabId"")!==target.tabId||own(data,""doctype"")!==3||own(data,""pid"")!==target.projectUuid)bad();absent(tab,""parentLibraryUuid"");
+if(document.querySelectorAll!==select)bad();const current=apply(select,document,['[id=""frame_'+target.tabId+'""]']);if(current.length!==1||current[0]!==frame)bad();
+if(frame.tagName!==""IFRAME""||frame.id!==""frame_""+target.tabId||frame.ownerDocument!==document||frame.isConnected!==true||frame.parentElement!==parent||frame.classList!==classes||classes.contains!==contains||frame.getAttribute!==attr||frame.hasAttribute!==has||parent.getAttribute!==parentAttr||!apply(contains,classes,[""editframe""])||apply(parentAttr,parent,[""uuid""])!==target.tabId)bad();
+for(const [k,v] of [[""c_dbid"",target.tabId],[""c_doctype"",""3""],[""src"",""editor?entry=pcb""],[""pcb-canvas"",""true""]])if(apply(attr,frame,[k])!==v)bad();
+for(const k of [""blankIframe"",""fromFile"",""jsonCacheReady""])if(apply(has,frame,[k]))bad();
+if(frame.contentWindow!==child||child.document!==childDocument||childDocument?.defaultView!==child||childDocument?.nodeType!==9||child.frameElement!==frame||child.parent!==root||child.top!==root||child.location?.href!==""https://client/editor?entry=pcb""||own(child,""MSG_BUS_PCB"")!==native||own(native,""messageBus"")!==channel)bad();
+if(own(child,""Object"")!==childObject||own(childObject,""prototype"")!==childObjectPrototype||own(child,""Array"")!==childArray||own(childArray,""prototype"")!==childArrayPrototype)bad();
+for(let i=0;i<chain.length;i++){const node=chain[i];if(i>0&&Object.getPrototypeOf(chain[i-1])!==node)bad();if(node===rpcOwner){if(own(node,""rpcCall"")!==rpc)bad();}else if(Object.hasOwn(node,""rpcCall""))bad();}
+if(fn(root,""setTimeout"")!==set||fn(root,""clearTimeout"")!==clear)bad();
+};
+const childPlain=o=>{if(!object(o))bad();const p=Object.getPrototypeOf(o);if(p!==Object.prototype&&p!==childObjectPrototype)bad();return o;};
+const exact=(o,keys)=>{childPlain(o);const actual=Reflect.ownKeys(o);if(actual.length!==keys.length||actual.some(k=>!keys.includes(k)))bad();};
+const text=(v,n,empty=false)=>{if(typeof v!==""string""||v.length>n||(!empty&&v.length===0)||!v.isWellFormed())bad();return v;};
+const num=(v,min=-Number.MAX_VALUE,max=Number.MAX_VALUE)=>{if(typeof v!==""number""||!Number.isFinite(v)||Object.is(v,-0)||v<min||v>max)bad();return v;};
+const bool=v=>{if(typeof v!==""boolean"")bad();return v;};
+const projectRows=raw=>{
+if(!Array.isArray(raw)||![Array.prototype,childArrayPrototype].includes(Object.getPrototypeOf(raw)))bad();
+const n=own(raw,""length"");if(n<1||n>512||Reflect.ownKeys(raw).length!==n+1)bad();const ids=new Set(),rows=[];
+for(let i=0;i<n;i++){const row=own(raw,String(i));exact(row,[""layerId"",""type"",""name"",""order"",""activeColor"",""activeColorAlpha"",""deactiveColor"",""deactiveColorAlpha"",""visible"",""locked"",""active"",""layerStatus""]);
+const id=num(own(row,""layerId""),1,65535),status=num(own(row,""layerStatus""),0,2);if(!Number.isInteger(id)||!Number.isInteger(status)||ids.has(id))bad();ids.add(id);
+rows.push({layerId:id,type:text(own(row,""type""),128),name:text(own(row,""name""),1024,true),order:num(own(row,""order"")),activeColor:text(own(row,""activeColor""),128),activeColorAlpha:num(own(row,""activeColorAlpha""),0,1),deactiveColor:text(own(row,""deactiveColor""),128),deactiveColorAlpha:num(own(row,""deactiveColorAlpha""),0,1),visible:bool(own(row,""visible"")),locked:bool(own(row,""locked"")),active:bool(own(row,""active"")),layerStatus:status});}
+return rows;};
+const call=async topic=>{check();const reply=await apply(rpc,channel,[topic,undefined,0]);check();childPlain(reply);return own(reply,""message"");};
+const identity=async()=>{const value=await call(""getTabIdAndDocType"");check();exact(value,[""tabId"",""docType""]);if(own(value,""tabId"")!==target.tabId||own(value,""docType"")!==3)bad();};
+const read=async()=>{await identity();check();const raw=await call(""pcb/extensionAPI/pcblayer-getAllLayers"");check();const rows=projectRows(raw);await identity();check();return rows;};
+const run=async()=>{const first=await read(),json=JSON.stringify(first);if(new TextEncoder().encode(json).byteLength>65536)bad();
+const second=await read();check();if(JSON.stringify(second)!==json)bad();const result=JSON.stringify({ok:true,kind:""pcb209-original-layer-observation"",target,nativeLayers:first,samples:2,implementationKind:""native-task-equivalent"",cadAuthority:false,persistenceVerified:false,physicalStackVerified:false});
+if(new TextEncoder().encode(result).byteLength>65536)bad();return result;};
+check();const timeout=new Promise((resolve,reject)=>{timer=apply(set,root,[()=>{expired=true;reject(new Error(""PCB209_LAYERS_REFUSED""));},10000]);});return await Promise.race([run(),timeout]);
+}catch{throw new Error(""PCB209_LAYERS_REFUSED"");}finally{if(timer!==undefined&&typeof clear===""function""){try{Reflect.apply(clear,globalThis,[timer]);}catch{throw new Error(""PCB209_LAYERS_REFUSED"");}}}
+}";
+  const string Layers209FunctionSha256="65e4089208affb3e8d3d1fd9a050439b13c5b400ff411f76d7311ff5a3add980";
+  // END GENERATED PCB209 LAYERS PROGRAM
+  public static string Layers209ProtocolMessage(int id,string sessionId,string uniqueContextId,string phase,
+    string path,string project,string branch,string document,string source) {
+    return OpeningProtocolMessageCore(true,id,sessionId,uniqueContextId,phase,path,project,branch,document,source,false,false,true);
+  }
+  public static void VerifyLayers209Smoke() {
+    string path=@"C:\Reviewed\LayerFixture.eprj2",project;
+    using(SHA256 hash=SHA256.Create()) {
+      string program=BitConverter.ToString(hash.ComputeHash(Encoding.UTF8.GetBytes(Layers209Function))).Replace("-","").ToLowerInvariant();
+      if(program!=Layers209FunctionSha256) throw Error("layers209-program");
+      project=BitConverter.ToString(hash.ComputeHash(Encoding.UTF8.GetBytes(path))).Replace("-","").ToLowerInvariant();
+    }
+    string message=Layers209ProtocolMessage(103,"original-session","original-context","observe",path,project,new string('a',32),new string('b',16),new string('c',64));
+    if(message.IndexOf("\"method\":\"Runtime.callFunctionOn\"",StringComparison.Ordinal)<0 || message.IndexOf("\"uniqueContextId\":\"original-context\"",StringComparison.Ordinal)<0 ||
+      message.IndexOf("\"awaitPromise\":true",StringComparison.Ordinal)<0 || message.IndexOf("\"userGesture\":false",StringComparison.Ordinal)<0) throw Error("layers209-command");
+    bool refused=false;
+    try {Layers209ProtocolMessage(104,"s","c","observe",path,project,new string('a',32),new string('b',16),new string('c',64));} catch {refused=true;}
+    if(!refused) throw Error("layers209-budget");
+    refused=false;try {Layers209ProtocolMessage(1,"s","c","open-document",path,project,new string('a',32),new string('b',16),new string('c',64));} catch {refused=true;}
+    if(!refused) throw Error("layers209-phase");
+    foreach(EasyedaDiagnosticOwner legacy in new EasyedaDiagnosticOwner[]{new EasyedaDiagnosticOwner(),CreateStringPrecreate(),CreateWorkerStartup()}) {
+      refused=false;try {legacy.SendLayers209(1,"s","c","observe",path,project,new string('a',32),new string('b',16),new string('c',64));} catch(Exception failure) {refused=failure.Message=="pcb-diagnostic-layers209-purpose";}
+      if(!refused) throw Error("layers209-legacy-purpose");
+    }
+    EasyedaDiagnosticOwner current=CreateLayers209();if(!current.layers209 || current.stringPrecreate || current.workerStartup) throw Error("layers209-owner-purpose");
+  }
   public static string OpeningProtocolMessage(int id,string sessionId,string uniqueContextId,string phase,
     string path,string project,string branch,string document,string source) {
     return OpeningProtocolMessageCore(false,id,sessionId,uniqueContextId,phase,path,project,branch,document,source,false);
@@ -1447,9 +1564,9 @@ return JSON.stringify({schema:""easyeda-pro-control.pcb-diagnostic-pcb-opening.v
     return OpeningProtocolMessageCore(true,id,sessionId,uniqueContextId,phase,path,project,branch,document,source,false);
   }
   static string OpeningProtocolMessageCore(bool pcb,int id,string sessionId,string uniqueContextId,string phase,
-    string path,string project,string branch,string document,string source,bool stringPurpose,bool startupPurpose=false) {
+    string path,string project,string branch,string document,string source,bool stringPurpose,bool startupPurpose=false,bool layers209Purpose=false) {
     Func<string,string,bool> matches=(value,pattern)=>value!=null && System.Text.RegularExpressions.Regex.IsMatch(value,pattern);
-    if(startupPurpose && stringPurpose) throw Error("opening-purpose");
+    if(startupPurpose && stringPurpose || layers209Purpose && (startupPurpose || stringPurpose || !pcb || phase!="observe")) throw Error("opening-purpose");
     if(id<1 || id>(startupPurpose?256:stringPurpose?3309:103) || !matches(sessionId,@"\A[A-Za-z0-9_.:-]{1,128}\z") || !matches(uniqueContextId,@"\A[A-Za-z0-9_.:-]{1,128}\z") ||
       (pcb?(phase!="preflight" && phase!="open-document" && phase!="observe"):(phase!="preflight" && phase!="open-project")) ||
       path==null || path.Length<12 || path.Length>4096 ||
@@ -1467,7 +1584,7 @@ return JSON.stringify({schema:""easyeda-pro-control.pcb-diagnostic-pcb-opening.v
     string target="{\"rawWindowsPath\":"+JsonString(path)+",\"projectUuid\":"+JsonString(project)+
       ",\"documentUuid\":"+JsonString(document)+",\"expectedSourceSha256\":"+JsonString(source)+",\"branchUuid\":"+JsonString(branch)+"}";
     string message="{\"id\":"+id.ToString(CultureInfo.InvariantCulture)+",\"method\":\"Runtime.callFunctionOn\",\"params\":{\"functionDeclaration\":"+
-      JsonString(pcb?(startupPurpose?EasyedaWorkerStartupProtocol.PcbOpeningFunction:PcbOpeningFunction):OpeningFunction)+",\"uniqueContextId\":"+JsonString(uniqueContextId)+",\"arguments\":[{\"value\":"+target+"},{\"value\":"+JsonString(phase)+
+      JsonString(layers209Purpose?Layers209Function:pcb?(startupPurpose?EasyedaWorkerStartupProtocol.PcbOpeningFunction:PcbOpeningFunction):OpeningFunction)+",\"uniqueContextId\":"+JsonString(uniqueContextId)+",\"arguments\":[{\"value\":"+target+"},{\"value\":"+JsonString(phase)+
       "}],\"returnByValue\":true,\"awaitPromise\":true,\"silent\":true,\"generatePreview\":false,\"userGesture\":false,\"throwOnSideEffect\":false},\"sessionId\":"+JsonString(sessionId)+"}\0";
     if(Encoding.UTF8.GetByteCount(message)>65536) throw Error("opening-send-size");
     return message;
@@ -3958,6 +4075,10 @@ return JSON.stringify({schema:""easyeda-pro-control.pcb-string-producer-markers.
   public void SendPcbOpening(int id,string sessionId,string uniqueContextId,string phase,string path,string project,string branch,string document,string source) {
     SendMessage(id,OpeningProtocolMessageCore(true,id,sessionId,uniqueContextId,phase,path,project,branch,document,source,stringPrecreate));
   }
+  public void SendLayers209(int id,string sessionId,string uniqueContextId,string phase,string path,string project,string branch,string document,string source) {
+    if(!layers209 || stringPrecreate || workerStartup) throw Error("layers209-purpose");
+    SendMessage(id,Layers209ProtocolMessage(id,sessionId,uniqueContextId,phase,path,project,branch,document,source));
+  }
   public void SendModel(int id,string method,string sessionId,string phase,object uniqueContextId,object objectId,object callbackObjectId,object constructorObjectId,object teardropObjectId) {
     SendMessage(id,ModelProtocolMessageCore(id,method,sessionId,phase,OptionalText(uniqueContextId),OptionalText(objectId),OptionalText(callbackObjectId),OptionalText(constructorObjectId),stringPrecreate,OptionalText(teardropObjectId)));
   }
@@ -6120,7 +6241,7 @@ return callback;
   }
 }
 '@
-$owner=if ($WorkerStartup) {[EasyedaDiagnosticOwner]::CreateWorkerStartup()} elseif ($StringPrecreate) {[EasyedaDiagnosticOwner]::CreateStringPrecreate()} else {New-Object EasyedaDiagnosticOwner}
+$owner=if ($WorkerStartup) {[EasyedaDiagnosticOwner]::CreateWorkerStartup()} elseif ($StringPrecreate) {[EasyedaDiagnosticOwner]::CreateStringPrecreate()} elseif ($Layers209) {[EasyedaDiagnosticOwner]::CreateLayers209()} else {New-Object EasyedaDiagnosticOwner}
 try {
   $owner.Initialize()
   if ($CompileOnly) {
@@ -6128,6 +6249,7 @@ try {
     [EasyedaDiagnosticOwner]::VerifyWorkerStartupPurposeSmoke()
     [EasyedaDiagnosticInstallation]::VerifyLeaseSmoke()
     [EasyedaDiagnosticOwner]::VerifyProtocolSmoke()
+    [EasyedaDiagnosticOwner]::VerifyLayers209Smoke()
     [EasyedaDiagnosticOwner]::VerifyStringClockSmoke()
     # Exercise the actual PowerShell-to-.NET binder used by Send/SendModel.
     # Direct C# null literals cannot detect PowerShell's string coercion.
@@ -6297,6 +6419,7 @@ try {
         }
         'send' {
           if ($WorkerStartup -and @('Browser.getVersion','Target.getTargets','Target.attachToTarget','Page.enable','Page.getFrameTree','Runtime.enable','Debugger.enable','Debugger.getScriptSource','DOM.getFrameOwner','DOM.describeNode') -cnotcontains $request.method) {throw 'pcb-diagnostic-startup-discovery-method'}
+          if ($Layers209 -and ($null -ne $request.modelPhase -or $null -ne $request.stringPhase -or $null -ne $request.commonPhase -or $null -ne $request.workerProducerPhase -or $null -ne $request.movePhase -or $null -ne $request.actorClockPhase -or @('Runtime.evaluate','Runtime.getProperties','Runtime.releaseObjectGroup','Target.setAutoAttach') -ccontains $request.method)) {throw 'pcb-diagnostic-layers209-method'}
           $requestLimit=if ($StringPrecreate) {3309} else {103}
           if (-not $launched -or ($request.requestId -isnot [int] -and $request.requestId -isnot [long]) -or $request.requestId -lt 1 -or $request.requestId -gt $requestLimit -or $request.method -isnot [string]) {throw 'pcb-diagnostic-request-id'}
           $fields=@('action','helperInstance','id','jobId','method','requestId','rootCreated','rootPid')
@@ -6388,7 +6511,7 @@ try {
             'Runtime.evaluate' {$fields+=@('sessionId','uniqueContextId')}
             'Runtime.callFunctionOn' {
               $fields+=@('sessionId','uniqueContextId','targetRawWindowsPath','targetProjectUuid','targetBranchUuid','targetDocumentUuid','targetExpectedSourceSha256')
-              if ($null -ne $request.pcbOpeningPhase) {$fields+=@('pcbOpeningPhase')} else {$fields+=@('openingPhase')}
+              if ($null -ne $request.pcbLayers209Phase) {if (-not $Layers209) {throw 'pcb-diagnostic-layers209-purpose'};$fields+=@('pcbLayers209Phase')} elseif ($null -ne $request.pcbOpeningPhase) {$fields+=@('pcbOpeningPhase')} else {$fields+=@('openingPhase')}
             }
             'Debugger.enable' {$fields+=@('sessionId')}
             'Debugger.getScriptSource' {$fields+=@('sessionId','scriptId')}
@@ -6399,6 +6522,7 @@ try {
           if ((@($request.PSObject.Properties.Name | Sort-Object) -join ',') -cne (@($fields | Sort-Object) -join ',')) {throw 'pcb-diagnostic-request-fields'}
           foreach ($field in @('targetId','sessionId','scriptId','uniqueContextId','openingPhase','pcbOpeningPhase','targetRawWindowsPath','targetProjectUuid','targetBranchUuid','targetDocumentUuid','targetExpectedSourceSha256','modelPhase','stringPhase','commonPhase','objectId','callbackObjectId','constructorObjectId','teardropObjectId','teardropCallbacksObjectId','teardropReceiver0','teardropReceiver1','teardropReceiver2','teardropReceiver3','teardropReceiver4','teardropReceiver5','teardropTarget0','teardropTarget1','teardropTarget2','teardropTarget3','teardropTarget4','teardropTarget5','frameId')) {if ($null -ne $request.$field -and $request.$field -isnot [string]) {throw 'pcb-diagnostic-request-field'}}
           foreach ($field in @('workerProducerPhase','workerArgument0','workerArgument1','workerArgument2','workerArgument3','workerArgument4','workerArgument5')) {if ($null -ne $request.$field -and $request.$field -isnot [string]) {throw 'pcb-diagnostic-worker-producer-field'}}
+          if ($null -ne $request.pcbLayers209Phase -and $request.pcbLayers209Phase -isnot [string]) {throw 'pcb-diagnostic-layers209-field'}
           foreach ($field in @('movePhase','moveArgument0','moveArgument1','moveArgument2')) {if ($null -ne $request.$field -and $request.$field -isnot [string]) {throw 'pcb-diagnostic-move-producer-field'}}
           if ($null -ne $request.movePhase) {
             $moveArguments=$null
@@ -6433,7 +6557,9 @@ try {
           } elseif ($request.method -ceq 'DOM.getFrameOwner' -or $request.method -ceq 'DOM.describeNode') {
             $owner.SendDom([int]$request.requestId,$request.method,$request.sessionId,$request.frameId,$request.backendNodeId)
           } elseif ($request.method -ceq 'Runtime.callFunctionOn') {
-            if ($null -ne $request.pcbOpeningPhase) {
+            if ($null -ne $request.pcbLayers209Phase) {
+              $owner.SendLayers209([int]$request.requestId,$request.sessionId,$request.uniqueContextId,$request.pcbLayers209Phase,$request.targetRawWindowsPath,$request.targetProjectUuid,$request.targetBranchUuid,$request.targetDocumentUuid,$request.targetExpectedSourceSha256)
+            } elseif ($null -ne $request.pcbOpeningPhase) {
               $owner.SendPcbOpening([int]$request.requestId,$request.sessionId,$request.uniqueContextId,$request.pcbOpeningPhase,$request.targetRawWindowsPath,$request.targetProjectUuid,$request.targetBranchUuid,$request.targetDocumentUuid,$request.targetExpectedSourceSha256)
             } else {
               $owner.SendOpening([int]$request.requestId,$request.sessionId,$request.uniqueContextId,$request.openingPhase,$request.targetRawWindowsPath,$request.targetProjectUuid,$request.targetBranchUuid,$request.targetDocumentUuid,$request.targetExpectedSourceSha256)

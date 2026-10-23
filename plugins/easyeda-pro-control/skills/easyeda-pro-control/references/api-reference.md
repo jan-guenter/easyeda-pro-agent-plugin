@@ -77,7 +77,7 @@ for network confirmation and metadata limits. This separate fixed vendor HTTPS
 lookup needs no application or fingerprint and is not public SDK execution.
 It does not enable the general library executor.
 
-For footprint search or symbol/device metadata, discover `catalog-components`
+For footprint/symbol/device search or symbol/device metadata, discover `catalog-components`
 and validate with `catalog-components-validate`. The separate catalog tool
 uses fixed anonymous vendor HTTPS endpoints, not desktop SDK getters. Read
 [the catalog contract](current-system-library.md) for candidate pagination,
@@ -85,7 +85,9 @@ visibility evidence and association limits.
 
 For the3.2.209 disposable project/PCB route, discover `pcb209-opening` and
 validate with `pcb209-opening-validate`; read [its workflow](current-pcb209-opening.md).
-It has its own strict action set and retained process owner. The older opening,
+It has its own strict action set and retained process owner. After original
+PCB source/identity admission, `observe-layers` returns bounded layer metadata
+and copper count without physical-stackup, saved-state or writer authority. The older opening,
 worker, model and writer contracts below do not transfer to that route.
 
 For current-version disposable project/PCB opening, query `project-open` with

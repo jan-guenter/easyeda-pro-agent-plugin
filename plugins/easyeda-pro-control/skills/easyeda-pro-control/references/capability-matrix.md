@@ -5,20 +5,23 @@ Use supported typed APIs first. Native controls cover genuine API stubs and dial
 The separate EasyEDA3.2.209 profile registers thirteen tools: API reference,
 local discovery, status, calculations, system observations, language/viewport
 readers, tab-count/active-identity/shortcut observations, public catalog queries,
-ordinary launch and disposable project/PCB opening.
+ordinary launch and disposable project/PCB opening with layer metadata.
 It admits the source-reviewed fixed16Math and18Unit/Environment subsets through
 their own exact runtime checks. Two utility argument sets passed on the prior
 installed release; that does not validate every method or this source payload.
 None of the older native/private design-content, project-opening or metadata-writing routes
 below is registered there. Its separate [209 opening route](current-pcb209-opening.md)
 uses its own restricted original-owner lifecycle and source pins; it can trigger
-ordinary automatic persistence, but offers no explicit Save or writer.
+ordinary automatic persistence, but offers no explicit Save or writer. Its
+one-shot `observe-layers` stage provides two matching native layer samples,
+the public layer projection and enabled copper count; it does not establish
+physical stackup, complete startup or a saved baseline.
 The new ratline source verifier and finite-role
 model are dormant implementation groundwork, not an executable capture route.
 The [public catalog queries](current-system-library.md) require explicit network
 confirmation and use fixed credential-free vendor endpoints, without local
-application/database access. Footprint search, symbol/device metadata and known
-footprint lookup are task equivalents, not SDK execution. Device references
+application/database access. Footprint/symbol/device search, symbol/device
+metadata and known footprint lookup are task equivalents, not SDK execution. Device references
 are not verified pin mappings; search candidates are not exhaustive matches.
 
 Current safety restriction (October 10): schematic compiled topology is disabled.

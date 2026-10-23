@@ -47,6 +47,8 @@ const tag = z.union([z.object({ uuid }), emptyTag]);
 const ownerSchema = z.object({ uuid: z.literal(PUBLIC_SYSTEM_FOOTPRINT_LIBRARY) });
 const resultSchema = z.object({
   uuid, path: z.literal(PUBLIC_SYSTEM_FOOTPRINT_LIBRARY), docType: z.literal(4), public: z.literal(true),
+  // The installed UI treats project_uuid as an ownership path, not unrelated metadata.
+  project_uuid: z.literal("").optional(),
   owner: ownerSchema, display_title: safeText(512),
   description: safeText(65_536).optional(), tags: z.object({ parent_tag: tag, child_tag: tag }),
 });

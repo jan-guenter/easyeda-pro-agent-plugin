@@ -1,4 +1,4 @@
-# Disposable project and PCB opening on 3.2.209
+# Disposable project/PCB opening and layer observation on 3.2.209
 
 Use `easyeda_control_pcb209_opening` only for an explicitly disposable,
 already-registered local project and an existing PCB. It owns a separate native
@@ -33,7 +33,11 @@ not the larger older diagnostic catalog, determines available actions.
    and `acceptNormalOpenEffects:true`. The target is already sealed; do not
    supply a replacement document. `observe-pcb-opening` then separately checks
    the child frame, DOM owner, complete PCB source and native target identity.
-6. Use `observe-window`, then one `normal-close` with its observed `hwnd` and
+6. If layer metadata is needed, call `observe-layers` once after successful
+   `observe-pcb-opening`, with only the original operation ID and binding.
+   It returns both the layer projection and copper count. A separate target,
+   method or existing ordinary owner cannot be substituted.
+7. Use `observe-window`, then one `normal-close` with its observed `hwnd` and
    `confirmNormalClose:true`. Observe original root/Job termination with
    `observe-termination`, then call `release-closed`. Finish any offered
    `settle-records` using the inspected original intent digest.
@@ -48,11 +52,32 @@ prove ratline delivery, complete startup, geometry, saved contents or writer
 eligibility. The result leaves those claims false. This route has source and
 offline validation; a later installed generation needs its own live evidence.
 
+## Layer result
+
+`observe-layers` captures the original PCB receiver and brackets two complete
+layer reads with native tab/type observations and owner checks. It returns raw
+twelve-field native rows, the nine-field `getAllLayers` equivalent and
+`copperLayerCount`: enabled native SIGNAL/PLANE rows plus two. Do not recount
+public SIGNAL rows without checking status; public TOP/BOTTOM also map to
+SIGNAL. Disabled inner layers remain in the returned collection. Native color
+strings are preserved even if malformed, not repaired or validated as CSS.
+
+Limits are512 unique layers,65536 native JSON bytes and131072 final result
+bytes. Unknown/accessor fields, duplicates, drift or incomplete collections
+refuse whole. The ten-second observation deadline does not cancel native RPC
+work; failure consumes the attempt. RPC bookkeeping and possible lazy local
+identity-environment initialization are incidental effects. Neither this read
+nor copper count establishes physical stackup, ratline completion, saved
+contents or writer eligibility. `getCurrentLayer` remains an unsupported stub;
+do not substitute the first active row.
+
 ## Failure and cleanup
 
 After an error or lost reply, use `inspect`; never repeat navigation under the
 same or a new ID. Optional inspection stages are only `browser`, `frames`,
-`script` and `pcb-opening`. It cannot inspect workers or native model state.
+`script`, `pcb-opening` and `layers209`. Layer inspection returns the retained
+attempt; it does not dispatch another read. Workers and the complete native
+geometry/model baseline remain unavailable.
 Original normal cleanup remains available after a failed observation and does
 not depend on bridge authentication. A requested close is not termination.
 

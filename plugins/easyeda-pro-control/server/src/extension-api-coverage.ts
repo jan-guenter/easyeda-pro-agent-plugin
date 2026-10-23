@@ -269,12 +269,13 @@ export function inventoryExtensionApiCoverage(): ApiCoverageEntry[] {
     inputDiscovery: { tool: "easyeda_control_api", arguments: { request: { action: "catalog-footprint", query: { includeSchemas: true } } } },
   }]);
   for (const [path, selector] of [["eda.lib_Footprint.search", "search-footprints"],
+    ["eda.lib_Symbol.search", "search-symbols"], ["eda.lib_Device.search", "search-devices"],
     ["eda.lib_Symbol.get", "get-symbol"], ["eda.lib_Device.get", "get-device"]] as const) {
     routes.set(path, [...routes.get(path) ?? [], {
       tool: "easyeda_control_catalog_components", selector, implementation: "vendor-http-task-equivalent",
       scope: "Application-independent credential-free vendor catalog metadata; not public SDK execution or installed runtime admission. Fixed system owner, bounded public query or exact UUID, explicit confirmNetwork:true, one request without redirects/retries or automatic pagination. Search returns at most twenty candidates with raw vendor pagination, not exact/exhaustive matches. Symbol metadata excludes drawings/subparts/pins; device associations are references, not verified pin mapping or linked-asset ownership. Missing visibility/path flags are disclosed and contradictory supplied flags refuse. No credentials, local library/database, editor, project, geometry, stock, prices, CAD write or Save. Desktop SDK getters remain unregistered on209 because local fallback can initialize storage or construct drawing managers and ONLINE can load unpinned remote UI.",
       source: ["public-system-catalog.ts", "public-system-catalog-runtime.ts", "facade-mode.ts"],
-      tests: ["public-system-catalog.test.ts", "public-system-catalog-runtime.test.ts", "public-system-catalog-registration.test.ts"],
+      tests: ["public-system-catalog.test.ts", "public-system-catalog-search.test.ts", "public-system-catalog-runtime.test.ts", "public-system-catalog-registration.test.ts"],
       validation: "offline-regression;current-live-unclaimed", executionState: "available-with-network-guards",
       inputDiscovery: { tool: "easyeda_control_api", arguments: { request: { action: "catalog-components", query: { includeSchemas: true } } } },
     }]);

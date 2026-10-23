@@ -17,7 +17,7 @@ function response(body: BodyInit | null = JSON.stringify(symbolRaw), options: { 
   Object.defineProperty(result, "redirected", { value: options.redirected ?? false }); return result;
 }
 
-void test("catalog transport dispatches only one fixed anonymous request per action, including source-defined read-only form POST", async (context) => {
+void test("catalog transport dispatches one fixed anonymous request per action, using sample-qualified form POST", async (context) => {
   let calls = 0; const signals: AbortSignal[] = [];
   const deviceUrl = `${PUBLIC_SYSTEM_FOOTPRINT_ORIGIN}/api/v2/devices/${assetUuid}`, searchUrl = `${PUBLIC_SYSTEM_FOOTPRINT_ORIGIN}/api/v2/components/search`;
   const payloads = [{ url: symbolUrl, body: symbolRaw }, { url: deviceUrl, body: { success: true, code: 0,
@@ -44,6 +44,39 @@ void test("catalog transport dispatches only one fixed anonymous request per act
   assert.equal(calls, 3); assert.ok(signals.every((signal) => signal.aborted));
   await assert.rejects(readPublicSystemCatalog({ ...symbolRequest, confirmNetwork: false }));
   await assert.rejects(readPublicSystemCatalog({ ...symbolRequest, url: "https://private.invalid" })); assert.equal(calls, 3);
+});
+
+void test("device and symbol searches use separate fixed paths and filters, without tags or follow-up source requests", async (context) => {
+  let calls = 0;
+  const signals: AbortSignal[] = [];
+  const query = "10k & 1/2W";
+  const commonBody = `path=${PUBLIC_SYSTEM_FOOTPRINT_LIBRARY}&uid=${PUBLIC_SYSTEM_FOOTPRINT_LIBRARY}&page=2&pageSize=1`;
+  context.mock.method(globalThis, "fetch", (input: unknown, init: RequestInit): Promise<Response> => {
+    const isDevice = calls === 0; calls += 1;
+    const url = `${PUBLIC_SYSTEM_FOOTPRINT_ORIGIN}${isDevice ? "/api/devices/search" : "/api/v2/components/search"}`;
+    assert.equal(input, url); assert.equal(init.method, "POST");
+    assert.equal(init.body, `${commonBody}${isDevice ? "" : "&docType%5B%5D=2"}&wd=10k+%26+1%2F2W`);
+    assert.deepEqual(init.headers, { accept: "application/json", path: PUBLIC_SYSTEM_FOOTPRINT_LIBRARY,
+      "content-type": "application/x-www-form-urlencoded;charset=UTF-8" });
+    assert.equal(init.credentials, "omit"); assert.equal(init.redirect, "error"); assert.equal(init.cache, "no-store");
+    assert.equal(init.referrerPolicy, "no-referrer"); assert.ok(init.signal instanceof AbortSignal); signals.push(init.signal);
+    const item = isDevice ? { ...metadata, project_uuid: "", symbol_type: 2, footprint_type: 4,
+      attributes: { Symbol: symbolUuid, Footprint: footprintUuid },
+      symbol_info: { uuid: symbolUuid, dataStr: "UNPROJECTED_SOURCE", dataStrId: "https://private.invalid" } } :
+      { ...metadata, ownerUuid: PUBLIC_SYSTEM_FOOTPRINT_LIBRARY, docType: 2 };
+    return Promise.resolve(response(JSON.stringify({ success: true, code: 0, result: { uid: PUBLIC_SYSTEM_FOOTPRINT_LIBRARY,
+      page: "2", pageSize: "1", count: 5200, totalPage: 52, lists: { lcsc: [item], mine: [], user: [] } } }), { url }));
+  });
+  for (const action of ["search-devices", "search-symbols"]) {
+    const result = await readPublicSystemCatalog({ action, query, page: 2, pageSize: 1, confirmNetwork: true });
+    assert.equal(result["ok"], true); assert.equal(result["returnedCount"], 1);
+    assert.doesNotMatch(JSON.stringify(result), /UNPROJECTED_SOURCE|private\.invalid/u);
+  }
+  assert.equal(calls, 2); assert.ok(signals.every((signal) => signal.aborted));
+  for (const action of ["search-devices", "search-symbols"]) {
+    await assert.rejects(readPublicSystemCatalog({ action, query, page: 2, pageSize: 1, confirmNetwork: true, withPackage: true }));
+  }
+  assert.equal(calls, 2);
 });
 
 void test("catalog transport refuses unsafe or malformed remote responses, without retry or raw error disclosure", async (context) => {

@@ -167,6 +167,15 @@ these raw scopes even though the installed public declaration ends at 10;
 `declarationScopeConformanceVerified:false` marks that difference. The 206
 reader remains limited to 0-10. Values outside the selected domain refuse.
 
+With `includeSystem:true`, the209 reader can preserve one source-known scope
+shape `[4,2,5,3,<gap>,0]`: its fifth slot becomes
+`{"unmappedScope":"hole"}`, `"undefined"` or `"null"`, according to the raw
+representation. Keep that tag; do not drop it, infer an editor number, or turn
+the array into executable key instructions. It identifies the shape, not the
+Log command's identity or a repaired registry. Other malformed scope slots,
+duplicate exceptional rows and malformed scenes still refuse;206 has no such
+exception.
+
 The reader permits 1024 records, eight key tokens per record, 32 characters
 per token, 1024 title characters, 32 entries per scope array and 262144 UTF-8
 bytes. It rejects malformed, changed or oversized results without truncation.
@@ -175,9 +184,9 @@ the current API and UI hashes are checked separately. Vendor enumeration runs
 before these bounds, and the 10-second deadline does not cancel that work.
 No registration, callback, input, navigation, settings or design action is
 dispatched. It does not prove focus, executable keys or complete shortcut
-inventory. Connected 209 validation has not succeeded: an installed143500
-attempt refused with an unclassified upstream failure. Do not retry that
-consumed observation or infer its cause from the opaque error.
+inventory. A refusal is not a successful registry observation, even when its
+diagnostic stage matches a source-known defect. Do not retry a consumed
+observation or infer its exact cause from a guard name alone.
 It adds a current-version route for an existing method, not a new distinct
 method in the coverage inventory.
 
@@ -190,8 +199,8 @@ bounded counters, not permission to retry. `cleanupFailed` separately records
 a timer-cleanup failure without replacing an earlier cause. The envelope
 contains no raw error or partial shortcuts and must still pass the surrounding
 runtime, UI and selector reproof. An outer reproof failure remains an error.
-This diagnostic implementation is source/synthetic-tested, not yet observed
-on the connected failed case. The 206 result/error contract is unchanged.
+Source/synthetic tests of a corrected projection are not connected validation.
+The 206 result/error contract is unchanged.
 
 ## Registered editor shell and identity on 206/209
 

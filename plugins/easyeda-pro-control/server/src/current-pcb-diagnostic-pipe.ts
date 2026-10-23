@@ -10,7 +10,7 @@
 /* oxlint-disable import/max-dependencies -- Fixed transport composes independent model/common/worker/actor grammars without merging their source or authority boundaries. */
 import type { Readable, Writable } from "node:stream";
 import { DIAGNOSTIC_REQUEST_LIMIT, DIAGNOSTIC_SESSION_BYTES, DIAGNOSTIC_SOURCE_FRAME_BYTES, DIAGNOSTIC_WORKER_ATTACH_PARAMS,
-  diagnosticExact, diagnosticOpeningParams, diagnosticPcbOpeningParams, diagnosticToken, diagnosticWorkerEvaluationParams } from "./current-pcb-diagnostic-protocol.ts";
+  diagnosticExact, diagnosticLayers209Params, diagnosticOpeningParams, diagnosticPcbOpeningParams, diagnosticToken, diagnosticWorkerEvaluationParams } from "./current-pcb-diagnostic-protocol.ts";
 import type { DiagnosticCommand, DiagnosticEvent } from "./current-pcb-diagnostic-protocol.ts";
 import { decodeCurrentPcbDiagnosticJson } from "./current-pcb-diagnostic-json.ts";
 import type { CurrentDisposableOpenSealedTarget } from "./current-disposable-open.ts";
@@ -42,7 +42,7 @@ type FailureReason = Failure | "empty-frame" | "nonobject-frame" | "reply-unsoli
   "event-budget-or-handler" | "event-envelope" | "event-session" | "worker-attachment" | "worker-handler" | "event-callback" | "unsolicited-data" |
   "trailing-reply-data" | "attachment-result" | "worker-discovery-result";
 type RequestPhase = "discovery" | "frame-owner" | "worker-discovery" | "worker-state" |
-  `project-${CurrentPcbDiagnosticOpeningPhase}` | `pcb-${CurrentPcbDiagnosticPcbOpeningPhase}` |
+  `project-${CurrentPcbDiagnosticOpeningPhase}` | `pcb-${CurrentPcbDiagnosticPcbOpeningPhase}` | "layers209" |
   `model-${CurrentPcbDiagnosticModelCommand["modelPhase"]}` | `string-${CurrentPcbStringPrecreatePhase}` |
   `common-${CurrentPcbCommonBaselineCommand["commonPhase"]}` | `worker-producer-${CurrentPcbStringWorkerProducerCommand["workerProducerPhase"]}` |
   `actor-clock-${CurrentPcbStringActorClockCommand["actorClockPhase"]}` | `move-${CurrentPcbStringMoveCommand["movePhase"]}`;
@@ -53,7 +53,7 @@ const REQUEST_METHODS = [
 ] as const satisfies readonly DiagnosticCommand["method"][];
 const REQUEST_PHASES = [
   "discovery", "frame-owner", "worker-discovery", "worker-state", "project-preflight", "project-open-project",
-  "pcb-preflight", "pcb-open-document", "pcb-observe", "model-wrapper", "model-properties", "model-handler",
+  "pcb-preflight", "pcb-open-document", "pcb-observe", "layers209", "model-wrapper", "model-properties", "model-handler",
   "model-constructors-diagnostic", "model-constructors-precreate",
   "model-teardrop-callbacks", "model-teardrop-owner",
   "model-snapshot", "model-pending", "model-raw-strings", "model-root-inventory", "model-release",
@@ -322,6 +322,11 @@ class CurrentPcbFixedPipeCore {
     if (this.#sessionId === null || this.#workerEvent !== null) { return Promise.reject(new Error("PCB_DIAGNOSTIC_PIPE_OPENING_INPUT")); }
     return this.#request({ id: this.#nextId, method: "Runtime.callFunctionOn",
       params: diagnosticPcbOpeningParams(uniqueContextId, target, phase), sessionId: this.#sessionId }, `pcb-${phase}`);
+  }
+  public observeLayers209(uniqueContextId: string, target: CurrentDisposableOpenSealedTarget): Promise<Reply> {
+    if (this.#sessionId === null || this.#workerEvent !== null) { return Promise.reject(new Error("PCB209_LAYERS_PIPE_INPUT")); }
+    return this.#request({ id: this.#nextId, method: "Runtime.callFunctionOn",
+      params: diagnosticLayers209Params(uniqueContextId, target), sessionId: this.#sessionId }, "layers209");
   }
   #workerSession(): string {
     if (!this.#workerDiscoverySettled || this.#selectedWorkerSession === null ||
