@@ -47,7 +47,7 @@ async function assertNoModuleAncestor(path: string): Promise<void> {
   }
 }
 
-async function fixture(context: TestContext, calculationOnly = false): Promise<BundledFixture> {
+async function fixture(context: TestContext, calculationOnly: boolean | "public-utilities" = false): Promise<BundledFixture> {
   // Honor the selected filesystem; assertNoModuleAncestor still proves isolation.
   const root = await mkdtemp(join(tmpdir(), "easyeda-bundled-startup-"));
   context.after(async () => { await rm(root, { recursive: true, force: true }); });
@@ -57,8 +57,8 @@ async function fixture(context: TestContext, calculationOnly = false): Promise<B
   const upstreamRoot = join(root, "metadata", "upstream");
   const assetsRoot = join(root, "metadata", "assets");
   const controlDirectory = join(root, "control");
-  const pcbVersion = calculationOnly ? "3.2.193.682ed44e" : "3.2.149.5378b690";
-  const apiVersion = calculationOnly ? "0.3.50.ab46409c" : "0.2.53.aee2f57a";
+  const olderVersions = calculationOnly === true ? ["3.2.193.682ed44e", "0.3.50.ab46409c"] as const : ["3.2.149.5378b690", "0.2.53.aee2f57a"] as const;
+  const [pcbVersion, apiVersion] = calculationOnly === "public-utilities" ? ["3.2.195.6b67774e", "0.3.59.1ca9efb5"] as const : olderVersions;
   for (const path of [distRoot, binRoot, join(upstreamRoot, "dist"),
     join(assetsRoot, "pro-pcb", pcbVersion, "js"), join(assetsRoot, "pro-api", apiVersion),
   ]) { await mkdir(path, { recursive: true, mode: 0o700 }); }
@@ -124,6 +124,30 @@ async function assertNoLiveStartup(options: BundledFixture, pid: number): Promis
 }
 
 void describe("self-contained packaged machine startup", () => {
+  void test("209 configuration registers only public utilities and refuses old routes before upstream startup", async (context) => {
+    const options = await fixture(context, "public-utilities");
+    const transport = new StdioClientTransport({ command: options.bootstrapNode,
+      args: [options.bundle, "--machine-launch"], cwd: options.root, env: options.environment, stderr: "pipe" });
+    const client = new Client({ name: "public-utility-startup-test", version: "1.0.0" }, { capabilities: {} });
+    context.after(async () => { await client.close(); });
+    await client.connect(transport, { timeout: 15_000, maxTotalTimeout: 15_000 });
+    const pid = transport.pid; assert.ok(pid !== null);
+    const listed = await client.listTools();
+    assert.deepEqual(listed.tools.map((tool) => tool.name).toSorted(), ["easyeda_control_api", "easyeda_control_calculate",
+      "easyeda_control_discover", "easyeda_control_launch", "easyeda_control_status", "easyeda_control_system"]);
+    const catalog = await api(client, { action: "calculations", query: { includeSchemas: true } });
+    assert.equal(catalog["total"], 16); assert.equal(catalog["invocationEnabledByDiscovery"], false);
+    for (const name of ["easyeda_control_project_open", "easyeda_control_pcb_geometry", "easyeda_control_project_symbol_metadata",
+      "easyeda_control_pcb_diagnostic_validation", "easyeda_control_editor_context", "easyeda_control_native_ui", "easyeda_control_save_reopen"]) {
+      const refused = await client.callTool({ name, arguments: {} }); assert.equal(refused.isError, true);
+    }
+    const live = await client.callTool({ name: "easyeda_control_discover", arguments: { source: "live" } });
+    assert.equal(live.isError, true);
+    await assertNoLiveStartup(options, pid);
+    await client.close();
+    assert.deepEqual(await readdir(options.controlDirectory), ["machine-profile.json"]);
+  });
+
   void test("new configured generation exposes only calculation-mode tools without starting upstream", async (context) => {
     const options = await fixture(context, true);
     const transport = new StdioClientTransport({ command: options.bootstrapNode,
@@ -304,6 +328,10 @@ void describe("self-contained packaged machine startup", () => {
     assert.equal(status["liveExecutionAvailable"], false);
     assert.equal(status["restartRequired"], true);
     assert.deepEqual(status["installation"], { ready: false, code: "machine-installation-pcb-bundle-unavailable" });
+    const diagnostics = record(status["diagnostics"]);
+    assert.equal(diagnostics["configuredBundleFilesPresent"], false);
+    assert.equal(diagnostics["candidatesAdmitted"], false);
+    assert.deepEqual(record(diagnostics["pcb"])["configuredFiles"], { implementation: "missing" });
     const sdk = await api(client, { action: "sdk", query: { reference: "reviewed-installed", namespace: "sys_WebSocket", limit: 1 } });
     assert.equal(sdk["invocationEnabled"], false);
     const validated = await api(client, { action: "validate", query: { family: "design",
@@ -328,7 +356,14 @@ void describe("self-contained packaged machine startup", () => {
     const restoredTools = await client.listTools();
     assert.deepEqual(restoredTools.tools.map((tool) => tool.name).toSorted(), expectedTools);
     const restoredStatus = await client.callTool({ name: "easyeda_control_status", arguments: {} });
-    assert.deepEqual(restoredStatus.structuredContent, initialStatus.structuredContent);
+    const restored = record(restoredStatus.structuredContent);
+    assert.deepEqual(restored["installation"], status["installation"]);
+    assert.equal(restored["liveExecutionAvailable"], false);
+    assert.equal(restored["restartRequired"], true);
+    const restoredDiagnostic = record(restored["diagnostics"]);
+    assert.equal(restoredDiagnostic["configuredBundleFilesPresent"], true);
+    assert.equal(restoredDiagnostic["liveExecutionAvailable"], false);
+    assert.equal(restoredDiagnostic["candidatesAdmitted"], false);
     await assertNoLiveStartup(options, pid);
     await client.close();
     assert.deepEqual(await readdir(options.controlDirectory), ["machine-profile.json"]);

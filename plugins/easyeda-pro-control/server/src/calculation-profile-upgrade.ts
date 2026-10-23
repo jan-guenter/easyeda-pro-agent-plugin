@@ -14,10 +14,31 @@ import {
 } from "./machine-profile.ts";
 import type { MachineProfile } from "./machine-profile.ts";
 import { SDK_MATH_RUNTIME_PROFILE } from "./sdk-math-runtime.ts";
+import { SDK_PUBLIC_UTILITIES_209_PROFILE } from "./sdk-public-utilities-profile.ts";
 
 const PROFILE_MAX_BYTES = 16 * 1024;
 const BUNDLE_MAX_BYTES = 32 * 1024 * 1024;
 const APP_PACKAGE_SHA256 = "e349f8d80f809f82a057f1b81799430ba25bfa0f7c7cb96f6155327b49391455";
+
+export type CalculationProfileUpgradeTarget = "sdk-math-206" | "public-utilities-209";
+
+/** Explicit closed targets only. Installation discovery never chooses an
+ * admission profile, and the historical default remains the 206 generation.
+ */
+export function calculationProfileUpgradeTarget(target: CalculationProfileUpgradeTarget = "sdk-math-206"): {
+  readonly installedBundles: typeof SDK_MATH_RUNTIME_PROFILE.installedBundles | typeof SDK_PUBLIC_UTILITIES_209_PROFILE.installedBundles;
+  readonly packageSha256: string;
+  readonly mode: "calculation-only" | "public-utilities-only";
+} {
+  if (target === "sdk-math-206") {
+    return { installedBundles: SDK_MATH_RUNTIME_PROFILE.installedBundles, packageSha256: APP_PACKAGE_SHA256, mode: "calculation-only" };
+  }
+  if (target === "public-utilities-209") {
+    return { installedBundles: SDK_PUBLIC_UTILITIES_209_PROFILE.installedBundles,
+      packageSha256: SDK_PUBLIC_UTILITIES_209_PROFILE.packageSha256, mode: "public-utilities-only" };
+  }
+  throw new MachineProfileError("machine-upgrade-target-generation-unsupported");
+}
 
 function sameFile(left: Stats, right: Stats): boolean {
   return left.dev === right.dev && left.ino === right.ino && left.size === right.size &&
@@ -67,13 +88,14 @@ async function verifyFileHash(path: string, expected: string): Promise<void> {
   } finally { await file.close(); }
 }
 
-async function verifyCalculationInstallation(profile: MachineProfile): Promise<void> {
-  const assets = profile.easyeda.assetsRoot, pins = SDK_MATH_RUNTIME_PROFILE.installedBundles;
+async function verifyCalculationInstallation(profile: MachineProfile, generation: CalculationProfileUpgradeTarget): Promise<void> {
+  const reviewed = calculationProfileUpgradeTarget(generation);
+  const assets = profile.easyeda.assetsRoot, pins = reviewed.installedBundles;
   const api = join(assets, "pro-api", pins.publicApi.version);
-  // This exact package identifies app 3.2.206.715d940d independently of bundle
-  // Names. Runtime admission still requires the authenticated app-version value.
+  // The separately reviewed package identifies the exact suffixed generation.
+  // Runtime admission still requires its authenticated semantic version.
   const files = [
-    [join(dirname(assets), "package.json"), APP_PACKAGE_SHA256],
+    [join(dirname(assets), "package.json"), reviewed.packageSha256],
     [join(assets, "pro-pcb", pins.pcbEditor.version, "js", "pcb.js"), pins.pcbEditor.implementationSha256],
     [join(api, "api.js"), pins.publicApi.implementationSha256],
     [join(api, "api-types.js"), pins.publicApi.adapterSha256],
@@ -107,7 +129,7 @@ async function removeOwnedFile(path: string, expected: Stats): Promise<void> {
 export interface CalculationProfileUpgradeReceipt {
   readonly ok: true;
   readonly changed: boolean;
-  readonly mode: "calculation-only";
+  readonly mode: "calculation-only" | "public-utilities-only";
   readonly previousSha256: string;
   readonly profileSha256: string;
   readonly backupFile?: string;
@@ -118,12 +140,15 @@ export interface CalculationProfileUpgradeReceipt {
  * project, token or journal access. A running offline process never promotes.
  * Exact backup bytes remain even if a later stage refuses or is interrupted.
  */
-export async function upgradeCalculationProfile(profilePath: string): Promise<CalculationProfileUpgradeReceipt> {
+export async function upgradeCalculationProfile(profilePath: string,
+  generation: CalculationProfileUpgradeTarget = "sdk-math-206"): Promise<CalculationProfileUpgradeReceipt> {
+  const reviewed = calculationProfileUpgradeTarget(generation);
   const loaded = await loadMachineLaunchProfile({ profilePath });
-  const original = loaded.profile, pins = SDK_MATH_RUNTIME_PROFILE.installedBundles;
-  const legacy = loadReviewedCompatibilityManifest().installedBundles;
+  const original = loaded.profile, pins = reviewed.installedBundles;
+  const prior = generation === "public-utilities-209"
+    ? SDK_MATH_RUNTIME_PROFILE.installedBundles : loadReviewedCompatibilityManifest().installedBundles;
   const alreadyNew = original.easyeda.pcbBundleVersion === pins.pcbEditor.version && original.easyeda.publicApiBundleVersion === pins.publicApi.version;
-  if (!alreadyNew && (original.easyeda.pcbBundleVersion !== legacy.pcbEditor.version || original.easyeda.publicApiBundleVersion !== legacy.publicApi.version)) {
+  if (!alreadyNew && (original.easyeda.pcbBundleVersion !== prior.pcbEditor.version || original.easyeda.publicApiBundleVersion !== prior.publicApi.version)) {
     throw new MachineProfileError("machine-upgrade-source-generation-unsupported");
   }
   const target = machineProfileSchema.parse({ ...original, easyeda: { ...original.easyeda,
@@ -143,7 +168,7 @@ export async function upgradeCalculationProfile(profilePath: string): Promise<Ca
       throw new MachineProfileError("machine-upgrade-profile-changed");
     }
     const previousSha256 = createHash("sha256").update(before.bytes).digest("hex");
-    await verifyCalculationInstallation(target);
+    await verifyCalculationInstallation(target, generation);
     // Check the unchanged upstream, Node and directory configuration before any
     // Profile replacement, even when the old generation can no longer launch.
     const validated = await createMachineProfile({ pluginRoot: original.controlDirectory,
@@ -153,9 +178,10 @@ export async function upgradeCalculationProfile(profilePath: string): Promise<Ca
     if (canonicalJson(validated) !== canonicalJson(target)) { throw new MachineProfileError("machine-upgrade-configuration-changed"); }
     if (alreadyNew) {
       await readMachineProfile(profilePath);
+      await verifyCalculationInstallation(target, generation);
       const unchanged = await readPrivateProfile(profile);
       if (!sameFile(before.information, unchanged.information) || !before.bytes.equals(unchanged.bytes)) { throw new MachineProfileError("machine-upgrade-profile-changed"); }
-      return { ok: true, changed: false, mode: "calculation-only", previousSha256, profileSha256: previousSha256, restartRequired: true };
+      return { ok: true, changed: false, mode: reviewed.mode, previousSha256, profileSha256: previousSha256, restartRequired: true };
     }
     const backupFile = `${basename(profilePath)}.before-sdk-math-${previousSha256}.json`;
     const backup = capability.childDescriptorPath(join(original.controlDirectory, backupFile));
@@ -168,6 +194,8 @@ export async function upgradeCalculationProfile(profilePath: string): Promise<Ca
     stagedInfo = await writeExclusive(staged, bytes);
     await capability.handle.sync();
     await capability.assertCurrent();
+    await verifyCalculationInstallation(target, generation);
+    await capability.assertCurrent();
     const current = await readPrivateProfile(profile);
     if (!sameFile(before.information, current.information) || !before.bytes.equals(current.bytes)) { throw new MachineProfileError("machine-upgrade-profile-changed"); }
     const staging = await readPrivateProfile(staged);
@@ -179,11 +207,12 @@ export async function upgradeCalculationProfile(profilePath: string): Promise<Ca
     await capability.handle.sync();
     await capability.assertCurrent();
     if (canonicalJson(await readMachineProfile(profilePath)) !== canonicalJson(target)) { throw new MachineProfileError("machine-upgrade-profile-postcheck-failed"); }
+    await verifyCalculationInstallation(target, generation);
     const installed = await readPrivateProfile(profile);
     if (installed.information.dev !== staging.information.dev || installed.information.ino !== staging.information.ino || !installed.bytes.equals(bytes)) {
       throw new MachineProfileError("machine-upgrade-profile-postcheck-failed");
     }
-    return { ok: true, changed: true, mode: "calculation-only", previousSha256,
+    return { ok: true, changed: true, mode: reviewed.mode, previousSha256,
       profileSha256: createHash("sha256").update(bytes).digest("hex"), backupFile, restartRequired: true };
   } catch (error) {
     primaryFailure = error;

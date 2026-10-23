@@ -1065,7 +1065,7 @@ void test("all sixteen new-version calculations have scoped routes without broad
     assert.equal(entry.currentGenerationLiveValidation, "not-recorded");
     assert.equal(entry.omission, null);
     assert.equal(entry.routes[0]?.tool, "easyeda_control_calculate");
-    assert.match(entry.routes[0]?.scope ?? "", /calculation-only runtime, not legacy-tuple admission/u);
+    assert.match(entry.routes[0]?.scope ?? "", /^Separately reviewed EasyEDA 3\.2\.206\/API 0\.3\.50 or 3\.2\.209\/API 0\.3\.59 public calculation subset, not legacy\/native-tuple admission\./u);
   }
 });
 

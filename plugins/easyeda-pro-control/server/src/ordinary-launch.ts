@@ -14,6 +14,8 @@ import { WindowsControlRuntime } from "./windows-runtime.ts";
 import { observeOrdinaryLaunchRecovery, ordinaryLaunchRecoveryObservationSchema, recordedOrdinaryLaunchRecoveryObservationSchema } from "./ordinary-launch-recovery.ts";
 import { OrdinaryLaunchTimings } from "./ordinary-launch-timings.ts";
 import type { OrdinaryLaunchTimingStage } from "./ordinary-launch-timings.ts";
+import { ORDINARY_LAUNCH_209_PROFILE } from "./ordinary-launch-209-profile.ts";
+import { isPublicUtilities209Configured } from "./sdk-public-utilities-profile.ts";
 
 /** Ordinary startup of the existing profile, not project-free or isolated startup. */
 export const ORDINARY_LAUNCH_PROFILE = {
@@ -28,6 +30,14 @@ export const ORDINARY_LAUNCH_PROFILE = {
   // Adds a separate retained-capture clock observer; launch and normal close are unchanged.
   helper: { relativePath: "scripts/windows-authority.ps1", sha256: "507fdea31ee30387ea31e90ca749058fa987ee573de12940db57357d2d321e35" },
 } as const;
+type OrdinaryLaunchProfile = typeof ORDINARY_LAUNCH_PROFILE | typeof ORDINARY_LAUNCH_209_PROFILE;
+function configuredLaunchProfile(): OrdinaryLaunchProfile {
+  return isPublicUtilities209Configured(process.env) ? ORDINARY_LAUNCH_209_PROFILE : ORDINARY_LAUNCH_PROFILE;
+}
+function configuredSelectors(): string {
+  return JSON.stringify([process.env["EASYEDA_PCB_BUNDLE_VERSION"] ?? null,
+    process.env["EASYEDA_PUBLIC_API_BUNDLE_VERSION"] ?? null]);
+}
 
 const operationIdSchema = z.string().min(1).max(80).regex(/^[a-z0-9][a-z0-9_-]*$/u);
 const digestSchema = z.string().regex(/^[a-f0-9]{64}$/u);
@@ -69,7 +79,7 @@ const claims = { bridgeAuthentication: "not-observed", startPage: "not-observed"
 export function queryOrdinaryLaunch(input: unknown = {}): Record<string, unknown> {
   const parsed = z.object({ includeSchemas: z.boolean().optional() }).strict().parse(input);
   return { tool: "easyeda_control_launch", actions: ["launch", "inspect", "observe-application", "observe-termination", "observe-window", "normal-close", "abandon-supervision", "abandon-unknown-launch"],
-    effect: "ordinary-existing-profile-application-startup", profile: ORDINARY_LAUNCH_PROFILE,
+    effect: "ordinary-existing-profile-application-startup", profile: configuredLaunchProfile(),
     limitations, ...(parsed.includeSchemas === true ? { requestSchema: z.toJSONSchema(ordinaryLaunchRequestSchema) } : {}) };
 }
 export function validateOrdinaryLaunchArguments(input: unknown): Record<string, unknown> {
@@ -232,7 +242,7 @@ function hasHelperBeforeIntentProtocol(intent: Intent): boolean {
   if (intent.schema === "easyeda-pro-control.ordinary-launch-intent.v1") {
     return intent.profileSha256 === HISTORICAL_UNKNOWN_LAUNCH.profileSha256 && intent.facadeSha256 === HISTORICAL_UNKNOWN_LAUNCH.facadeSha256;
   }
-  return intent.profileSha256 === sha256Json(ORDINARY_LAUNCH_PROFILE);
+  return intent.profileSha256 === sha256Json(ORDINARY_LAUNCH_PROFILE) || intent.profileSha256 === sha256Json(ORDINARY_LAUNCH_209_PROFILE);
 }
 function describeLaunchProtocol(intent: Intent): string {
   if (!hasHelperBeforeIntentProtocol(intent)) { return "unsupported"; }
@@ -268,7 +278,12 @@ async function hashPinnedFile(absolute: string, sha256: string, bytes?: number):
   } finally { await handle.close(); }
 }
 
-export async function verifyOrdinaryLaunchInstallation(options: OrdinaryLaunchOptions): Promise<string> {
+export function verifyOrdinaryLaunchInstallation(options: OrdinaryLaunchOptions): Promise<string> {
+  return verifyInstalledProfile(options, ORDINARY_LAUNCH_PROFILE);
+}
+
+/** Deliberately private: legacy diagnostic callers retain the old exported verifier. */
+async function verifyInstalledProfile(options: OrdinaryLaunchOptions, profile: OrdinaryLaunchProfile): Promise<string> {
   requireValue(/^\/mnt\/[a-z]\/[^\r\n]+\/resources\/app\/assets$/u.test(options.assetsRoot) &&
     resolve(options.assetsRoot) === options.assetsRoot && await realpath(options.assetsRoot) === options.assetsRoot,
   "Ordinary launch requires the canonical installed Windows assets root.");
@@ -280,10 +295,10 @@ export async function verifyOrdinaryLaunchInstallation(options: OrdinaryLaunchOp
   assertSubset({ version: actual.version, operationSchema: actual.operationSchema, sha256: actual.sha256, fileCount: actual.files.length,
     files: actual.files.map(({ relativePath, bytes, sha256 }) => ({ relativePath, bytes, sha256 })) },
   manifest.facadeImplementation[actual.mode], "Ordinary launch facade identity");
-  for (const pin of ORDINARY_LAUNCH_PROFILE.installedFiles) {
+  for (const pin of profile.installedFiles) {
     await hashPinnedFile(resolve(options.assetsRoot, pin.relativePath), pin.sha256, pin.bytes);
   }
-  await hashPinnedFile(join(options.pluginRoot, ORDINARY_LAUNCH_PROFILE.helper.relativePath), ORDINARY_LAUNCH_PROFILE.helper.sha256);
+  await hashPinnedFile(join(options.pluginRoot, profile.helper.relativePath), profile.helper.sha256);
   requireValue(canonicalJson(manifestIdentity) === canonicalJson(reviewedCompatibilityManifestFingerprint()), "Ordinary launch manifest changed.");
   return actual.sha256;
 }
@@ -428,6 +443,8 @@ export async function assertNoUnresolvedOrdinaryLaunches(): Promise<void> {
 }
 
 export class OrdinaryLaunchCoordinator {
+  private readonly profile: OrdinaryLaunchProfile;
+  private readonly selectors: string;
   private readonly options: OrdinaryLaunchOptions;
   private readonly verify: (options: OrdinaryLaunchOptions) => Promise<string>;
   private readonly observeRecovery: typeof observeOrdinaryLaunchRecovery;
@@ -441,10 +458,25 @@ export class OrdinaryLaunchCoordinator {
   private uncertain = false;
 
   public constructor(options: OrdinaryLaunchOptions, dependencies: OrdinaryLaunchDependencies = {}) {
-    this.options = options;
-    this.verify = dependencies.verifyInstallation ?? verifyOrdinaryLaunchInstallation;
+    this.profile = configuredLaunchProfile();
+    this.selectors = configuredSelectors();
+    this.options = { ...options, assertAllowed: (): Promise<void> => this.checked(() => options.assertAllowed()) };
+    this.verify = (input): Promise<string> => this.checked(() => dependencies.verifyInstallation === undefined ?
+      verifyInstalledProfile(input, this.profile) : dependencies.verifyInstallation(input));
     this.observeRecovery = dependencies.observeRecovery ?? observeOrdinaryLaunchRecovery;
     this.productionServices = dependencies.verifyInstallation === undefined && dependencies.observeRecovery === undefined;
+  }
+
+  private assertProfileCurrent(): void {
+    requireValue(this.selectors === configuredSelectors() && this.profile === configuredLaunchProfile(),
+      "Ordinary launch configured bundle selectors changed; the original profile cannot be replaced.");
+  }
+
+  private async checked<Value>(action: () => Promise<Value>): Promise<Value> {
+    this.assertProfileCurrent();
+    const result = await action();
+    this.assertProfileCurrent();
+    return result;
   }
 
   public async run(input: unknown): Promise<Record<string, unknown>> {
@@ -460,9 +492,11 @@ export class OrdinaryLaunchCoordinator {
       ? new OrdinaryLaunchTimings() : undefined;
     if (timings !== undefined) { this.launchTimings.set(request.operationId, timings); }
     const measure = <Value,>(stage: OrdinaryLaunchTimingStage, action: () => Promise<Value>): Promise<Value> =>
-      timings === undefined ? action() : timings.measure(stage, action);
+      this.checked(() => timings === undefined ? action() : timings.measure(stage, action));
     try {
-      const operations = await measure("inventory-initial", inventory);
+      // Historical/local inspection grants no runtime authority and remains
+      // Available when the originally captured configuration has changed.
+      const operations = request.action === "inspect" ? await inventory() : await measure("inventory-initial", inventory);
       const operation = operations.find((candidate) => candidate.operationId === request.operationId);
       if (request.action === "inspect") {
         return { ...describe(request.operationId, operation), ...this.timingSummary(request.operationId),
@@ -490,11 +524,11 @@ export class OrdinaryLaunchCoordinator {
       // Refuse an already known diagnostic blocker before allocating a helper
       // Or consuming an ordinary intent. The runtime repeats this exclusion at
       // Native dispatch to cover changes during the intervening admission work.
-      await withCurrentPcbDiagnosticLaunchExclusion(assertNoUnresolvedCurrentPcbDiagnosticLaunches);
+      await this.checked(() => withCurrentPcbDiagnosticLaunchExclusion(assertNoUnresolvedCurrentPcbDiagnosticLaunches));
       const facadeSha256 = digestSchema.parse(await measure("installation-initial", () => this.verify(this.options)));
       await measure("admission-before-helper", () => this.options.assertAllowed());
-      this.runtime ??= this.options.allocateRuntime({ expectedExecutableSha256: ORDINARY_LAUNCH_PROFILE.installedFiles[0].sha256,
-        expectedHelperSha256: ORDINARY_LAUNCH_PROFILE.helper.sha256,
+      this.runtime ??= this.options.allocateRuntime({ expectedExecutableSha256: this.profile.installedFiles[0].sha256,
+        expectedHelperSha256: this.profile.helper.sha256,
         reviewedExecutionScopeSha256: facadeSha256 });
       const runtime = this.runtime;
       const launchRuntime = runtime.launch;
@@ -502,7 +536,9 @@ export class OrdinaryLaunchCoordinator {
       // oxlint-disable-next-line typescript/unbound-method -- Retain identity; later calls use the original runtime receiver.
       const runtimeStatus = runtime instanceof WindowsControlRuntime ? runtime.status : undefined;
       const assertCurrentLaunch = (): void => {
+        this.assertProfileCurrent();
         this.options.assertLocalAllowed?.();
+        this.assertProfileCurrent();
         requireValue(this.runtime === runtime && runtime.launch === launchRuntime && runtime.observeLaunchTermination === observeTermination &&
           (runtimeStatus === undefined || runtime instanceof WindowsControlRuntime && runtime.status === runtimeStatus),
           "Ordinary launch retained runtime or launch method changed before dispatch.");
@@ -520,7 +556,7 @@ export class OrdinaryLaunchCoordinator {
         } finally { await parent.handle.close(); }
       });
       const intent: Intent = { schema: "easyeda-pro-control.ordinary-launch-intent.v2", dispatchProtocol: "retained-helper-before-intent.v1", operationId: request.operationId,
-        profileSha256: sha256Json(ORDINARY_LAUNCH_PROFILE), facadeSha256, createdAt: new Date().toISOString() };
+        profileSha256: sha256Json(this.profile), facadeSha256, createdAt: new Date().toISOString() };
       await measure("intent-publication", () => publish(request.operationId, "intent.json", intent));
       publishedIntent = intent;
       // This historical timing label now includes a local-only owner check when
@@ -538,17 +574,28 @@ export class OrdinaryLaunchCoordinator {
       await measure("admission-before-dispatch", () => this.options.assertAllowed());
       assertCurrentLaunch();
       launchInvoked = true;
-      const launch = launchSchema.parse(await measure("launch-dispatch", () => launchRuntime.call(runtime)));
+      // Preserve an actual acknowledged root/Job before any post-await refusal.
+      // Configuration drift must not discard the original cleanup owner or turn
+      // A known launch into an intent-only ambiguous attempt. These two steps
+      // Only retain/publish the result; they do not admit another native action.
+      const launchCall = (): Promise<WindowsAuthorityLaunch> => launchRuntime.call(runtime);
+      const launch = launchSchema.parse(await (timings === undefined ? launchCall() : timings.measure("launch-dispatch", launchCall)));
       const launched: Launched = { schema: "easyeda-pro-control.ordinary-launched.v1", operationId: request.operationId, intentSha256: sha256Json(intent), launch };
       this.retained = { operationId: request.operationId, launch, launched, observeTermination, status: runtimeStatus };
-      await measure("launched-publication", () => publish(request.operationId, "launched.json", launched));
+      const publishLaunch = (): Promise<void> => publish(request.operationId, "launched.json", launched);
+      await (timings === undefined ? publishLaunch() : timings.measure("launched-publication", publishLaunch));
       this.uncertain = false;
+      this.assertProfileCurrent();
       return { ...describe(request.operationId, { operationId: request.operationId, intent, launched }), ...this.timingSummary(request.operationId) };
     } catch (error) {
       if (publishedIntent !== undefined && !launchInvoked) {
         const refused: Refused = { schema: "easyeda-pro-control.ordinary-not-dispatched.v1", operationId: request.operationId,
           intentSha256: sha256Json(publishedIntent), dispatchAttempted: false };
-        await measure("nondispatch-publication", () => publish(request.operationId, "not-dispatched.json", refused));
+        // The lexical invocation flag already proves this narrow nondispatch.
+        // Retaining that fact is not runtime admission and must survive selector
+        // Drift. Once invocation starts, no error can enter this branch.
+        const publishRefusal = (): Promise<void> => publish(request.operationId, "not-dispatched.json", refused);
+        await (timings === undefined ? publishRefusal() : timings.measure("nondispatch-publication", publishRefusal));
         this.uncertain = false;
       }
       throw error;
@@ -573,23 +620,24 @@ export class OrdinaryLaunchCoordinator {
     requireValue(runtime !== undefined && retained !== undefined && retained.operationId === request.operationId &&
       canonicalJson(operation.launched) === canonicalJson(retained.launched), "Ordinary window observation has no retained owner for this exact operation.");
     requireValue(request.expectedLaunchedSha256 === sha256Json(retained.launched), "Ordinary window observation launch digest differs.");
-    requireValue(operation.intent.profileSha256 === sha256Json(ORDINARY_LAUNCH_PROFILE), "Ordinary window observation profile changed.");
+    requireValue(operation.intent.profileSha256 === sha256Json(this.profile), "Ordinary window observation profile changed.");
     const observeWindow = runtime.observeApplicationWindow;
     requireValue(observeWindow !== undefined, "Ordinary retained window observation is unavailable.");
     const current = (): void => {
+      this.assertProfileCurrent();
       requireValue(this.runtime === runtime && this.retained === retained && runtime.observeApplicationWindow === observeWindow &&
         canonicalJson(retained.launched) === canonicalJson(operation.launched), "Ordinary window observation retained owner changed.");
     };
     const facadeSha256 = digestSchema.parse(await this.verify(this.options));
     requireValue(facadeSha256 === operation.intent.facadeSha256, "Ordinary window observation installation changed from launch.");
     await this.options.assertAllowed(); current();
-    const window = windowObservationSchema.parse(await observeWindow.call(runtime));
+    const window = windowObservationSchema.parse(await this.checked(() => observeWindow.call(runtime)));
     current();
     requireValue(window.jobId === retained.launch.jobId && window.helperInstance === retained.launch.helperInstance,
       "Ordinary window observation returned another launch.");
     requireValue(await this.verify(this.options) === facadeSha256, "Ordinary window observation installation changed.");
     await this.options.assertAllowed(); current();
-    requireValue(canonicalJson(await inventory()) === canonicalJson(operations), "Ordinary window observation journal changed.");
+    requireValue(canonicalJson(await this.checked(inventory)) === canonicalJson(operations), "Ordinary window observation journal changed.");
     current();
     return { runtime, retained, window, facadeSha256 };
   }
@@ -610,22 +658,22 @@ export class OrdinaryLaunchCoordinator {
     // A publication error may have left durable bytes. Consume this launch in
     // Memory before attempting publication, without blocking read-only exit proof.
     this.closeAttempts.add(request.operationId);
-    await publish(request.operationId, "close-intent.json", closeIntent);
+    await this.checked(() => publish(request.operationId, "close-intent.json", closeIntent));
     requireValue(await this.verify(this.options) === facadeSha256, "Ordinary normal-close installation changed before dispatch.");
     await this.options.assertAllowed();
     const expected = operations.map((candidate) => candidate.operationId === request.operationId ? { ...candidate, closeIntent } : candidate);
-    requireValue(canonicalJson(await inventory()) === canonicalJson(expected), "Ordinary normal-close journal changed before dispatch.");
+    requireValue(canonicalJson(await this.checked(inventory)) === canonicalJson(expected), "Ordinary normal-close journal changed before dispatch.");
     await this.options.assertAllowed();
     requireValue(this.runtime === runtime && this.retained === retained && runtime.normalClose === close &&
       canonicalJson(retained.launched) === canonicalJson(operation.launched), "Ordinary normal-close retained owner changed before dispatch.");
     // The original helper repeats root/Job/HWND guards before its fixed WM_CLOSE.
     // Any error or missing reply after this point leaves the intent consumed.
-    await close.call(runtime, request.hwnd);
+    await this.checked(() => close.call(runtime, request.hwnd));
     requireValue(this.runtime === runtime && this.retained === retained && runtime.normalClose === close &&
       canonicalJson(retained.launched) === canonicalJson(operation.launched), "Ordinary normal-close retained owner changed during dispatch.");
     const closeAcknowledgment: CloseAcknowledgment = { schema: "easyeda-pro-control.ordinary-normal-close-acknowledged.v1",
       operationId: request.operationId, closeIntentSha256: sha256Json(closeIntent), requestAcknowledged: true, terminationProved: false };
-    await publish(request.operationId, "close-acknowledged.json", closeAcknowledgment);
+    await this.checked(() => publish(request.operationId, "close-acknowledged.json", closeAcknowledgment));
     return { ...describe(request.operationId, { ...operation, closeIntent, closeAcknowledgment }), action: "normal-close", terminationObserved: false };
   }
 
@@ -633,18 +681,18 @@ export class OrdinaryLaunchCoordinator {
     requireValue(operation !== undefined, "Ordinary launch operation was not found.");
     const facadeSha256 = digestSchema.parse(await this.verify(this.options));
     await this.options.assertAllowed();
-    this.runtime ??= this.options.allocateRuntime({ expectedExecutableSha256: ORDINARY_LAUNCH_PROFILE.installedFiles[0].sha256,
-      expectedHelperSha256: ORDINARY_LAUNCH_PROFILE.helper.sha256, reviewedExecutionScopeSha256: facadeSha256 });
+    this.runtime ??= this.options.allocateRuntime({ expectedExecutableSha256: this.profile.installedFiles[0].sha256,
+      expectedHelperSha256: this.profile.helper.sha256, reviewedExecutionScopeSha256: facadeSha256 });
     const runtime = this.runtime;
     const presenceSchema = z.object({ running: z.boolean() }).strict();
-    const first = presenceSchema.parse(await runtime.observeExistingApplication());
+    const first = presenceSchema.parse(await this.checked(() => runtime.observeExistingApplication()));
     await this.options.assertAllowed();
-    const second = presenceSchema.parse(await runtime.observeExistingApplication());
+    const second = presenceSchema.parse(await this.checked(() => runtime.observeExistingApplication()));
     await this.options.assertAllowed();
     requireValue(first.running === second.running, "Ordinary application presence changed between samples.");
     requireValue(await this.verify(this.options) === facadeSha256, "Ordinary application observation installation changed.");
     await this.options.assertAllowed();
-    requireValue(canonicalJson(await inventory()) === canonicalJson(operations), "Ordinary application observation journal changed.");
+    requireValue(canonicalJson(await this.checked(inventory)) === canonicalJson(operations), "Ordinary application observation journal changed.");
     requireValue(this.runtime === runtime, "Ordinary application observation runtime changed.");
     return { action: "observe-application", operationId, facadeSha256, historical: describe(operationId, operation),
       application: { sameNameProcessPresent: second.running, samples: 2, originalLaunchIdentityVerified: false,
@@ -659,23 +707,24 @@ export class OrdinaryLaunchCoordinator {
       canonicalJson(operation.launched) === canonicalJson(retained.launched), "Ordinary launch has no retained owner for this exact operation.");
     const launchText = canonicalJson(retained.launch), launchedText = canonicalJson(retained.launched), observe = retained.observeTermination;
     const current = (): void => {
+      this.assertProfileCurrent();
       requireValue(this.runtime === runtime && this.retained === retained && runtime.observeLaunchTermination === observe &&
         (retained.status === undefined || runtime instanceof WindowsControlRuntime && runtime.status === retained.status) &&
         canonicalJson(retained.launch) === launchText && canonicalJson(retained.launched) === launchedText,
       "Ordinary termination retained runtime, launch or observer changed.");
     };
     current(); const facadeSha256 = await this.verify(this.options); current();
-    const observed = z.object({ jobId: tokenSchema, helperInstance: tokenSchema, terminated: z.boolean() }).strict().parse(await observe.call(runtime)); current();
+    const observed = z.object({ jobId: tokenSchema, helperInstance: tokenSchema, terminated: z.boolean() }).strict().parse(await this.checked(() => observe.call(runtime))); current();
     requireValue(observed.jobId === retained.launch.jobId && observed.helperInstance === retained.launch.helperInstance, "Ordinary termination observed another launch.");
     if (!observed.terminated) { return { ...describe(operationId, operation), terminationObserved: false }; }
     const terminated: Terminated = { schema: "easyeda-pro-control.ordinary-terminated.v1", operationId,
       launchedSha256: sha256Json(retained.launched), ...observed, terminated: true };
     this.uncertain = true;
-    await publish(operationId, "terminated.json", terminated);
+    await this.checked(() => publish(operationId, "terminated.json", terminated));
     current();
     this.uncertain = false;
     if (this.productionServices && runtime instanceof WindowsControlRuntime) {
-      requireValue(operation.intent?.facadeSha256 === facadeSha256 && operation.intent.profileSha256 === sha256Json(ORDINARY_LAUNCH_PROFILE),
+      requireValue(operation.intent?.facadeSha256 === facadeSha256 && operation.intent.profileSha256 === sha256Json(this.profile),
         "Original ordinary termination producer differs from its launch.");
       const status = retained.status;
       requireValue(status !== undefined, "Original ordinary runtime status was not retained before launch.");
@@ -709,6 +758,7 @@ export class OrdinaryLaunchCoordinator {
     requireValue(this.retained === undefined, "Supervision abandonment cannot supersede a current retained owner; observe its termination instead.");
     requireValue(request.expectedLaunchedSha256 === sha256Json(operation.launched), "Supervision abandonment launch digest differs.");
     requireValue(operation.intent.profileSha256 === sha256Json(ORDINARY_LAUNCH_PROFILE) ||
+      operation.intent.profileSha256 === sha256Json(ORDINARY_LAUNCH_209_PROFILE) ||
       operation.intent.profileSha256 === HISTORICAL_ABANDONMENT_PROFILE_SHA256 ||
       operation.intent.profileSha256 === WINDOW_HELPER_ABANDONMENT_PROFILE_SHA256, "Supervision abandonment historical profile is not reviewed.");
     // This is an explicit risk acknowledgement, not restoration of lost handles.
@@ -723,7 +773,7 @@ export class OrdinaryLaunchCoordinator {
       sameNameProcessPresent: false, samples: 2, terminationProved: false, originalLaunchIdentityVerified: false,
       retainedLaunchAuthority: false, designExecutionAuthorized: false };
     this.uncertain = true;
-    await publish(request.operationId, "abandonment.json", abandoned);
+    await this.checked(() => publish(request.operationId, "abandonment.json", abandoned));
     this.uncertain = false;
     return describe(request.operationId, { ...operation, abandoned });
   }
@@ -743,7 +793,7 @@ export class OrdinaryLaunchCoordinator {
     // The historical helper already existed when this intent was published.
     // PowerShell absence precedes EasyEDA sampling to exclude its delayed launch.
     // A timed-out facade may have left that helper hashing the executable.
-    const observation = ordinaryLaunchRecoveryObservationSchema.parse(await this.observeRecovery(this.options));
+    const observation = ordinaryLaunchRecoveryObservationSchema.parse(await this.checked(() => this.observeRecovery(this.options)));
     let presenceRefusal = "Unknown-launch abandonment refused: a same-name EasyEDA application was observed.";
     if (observation.otherPowerShellPresent) {
       presenceRefusal = observation.sameNameProcessPresent ?
@@ -755,7 +805,7 @@ export class OrdinaryLaunchCoordinator {
     await this.options.assertAllowed();
     requireValue(await this.verify(this.options) === facadeSha256, "Unknown-launch recovery installation changed.");
     await this.options.assertAllowed();
-    requireValue(canonicalJson(await inventory()) === canonicalJson(operations), "Unknown-launch recovery journal changed.");
+    requireValue(canonicalJson(await this.checked(inventory)) === canonicalJson(operations), "Unknown-launch recovery journal changed.");
     requireValue(this.retained === undefined && this.runtime === undefined, "Unknown-launch recovery runtime changed.");
     const unknownAbandoned: UnknownAbandoned = { schema: "easyeda-pro-control.ordinary-unknown-launch-abandoned.v1",
       operationId: request.operationId, intentSha256: request.expectedIntentSha256, profileSha256: operation.intent.profileSha256,
@@ -763,7 +813,7 @@ export class OrdinaryLaunchCoordinator {
       observation, pendingHelperLaunchExcluded: true, launchOutcome: "unknown", terminationProved: false,
       originalLaunchIdentityVerified: false, retainedLaunchAuthority: false, designExecutionAuthorized: false };
     this.uncertain = true;
-    await publish(request.operationId, "unknown-abandonment.json", unknownAbandoned);
+    await this.checked(() => publish(request.operationId, "unknown-abandonment.json", unknownAbandoned));
     this.uncertain = false;
     return describe(request.operationId, { ...operation, unknownAbandoned });
   }

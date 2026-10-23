@@ -10,7 +10,7 @@ const require = function __easyedaGuardedRequire(specifier) { if (typeof specifi
 	const __easyedaPublicationLockPath = __easyedaJoin(__easyedaPublicationDirectory, ".bundle-publication.lock");
 const __easyedaAssertNoPublication = () => { try { __easyedaLstatSync(__easyedaPublicationLockPath); throw new Error("The facade bundle is undergoing a fail-closed publication transaction."); } catch (__easyedaPublicationError) { if (!__easyedaPublicationError || typeof __easyedaPublicationError !== "object" || !("code" in __easyedaPublicationError) || __easyedaPublicationError.code !== "ENOENT") throw __easyedaPublicationError; } };
 __easyedaAssertNoPublication();
-const __easyedaBundlePairId = "4def9673c358cd9a5b11f56111ad6e21e6d940ffdaf0fdd28f48c949c3045833";
+const __easyedaBundlePairId = "eeb677f776cd47d7f0444f2801bff3cb94ed358b3a5e346162ed9edeef130374";
 if (__easyedaBasename(import.meta.filename) === "server.mjs") {
   const __easyedaPeerPath = __easyedaJoin(import.meta.dirname, "upstream-supervisor.mjs");
   const __easyedaPeerPathBefore = __easyedaLstatSync(__easyedaPeerPath, { bigint: true });
@@ -15745,13 +15745,17 @@ async function validateInstallation(profile, allowMissingControl) {
 function defaultMachineProfilePath() {
   return join2(homedir(), ".easyeda-pro-control", "machine-profile.json");
 }
-async function readMachineLaunchConfiguration(path6) {
+async function readMachineInspectionProfile(path6) {
   assertSupportedHost();
   await validateControlDirectory(dirname(path6), false);
   const profile = machineProfileSchema.parse(await readJson(path6, PROFILE_MAX_BYTES, true));
   if (dirname(path6) !== profile.controlDirectory) {
     throw new MachineProfileError("machine-profile-outside-control-directory");
   }
+  return profile;
+}
+async function readMachineLaunchConfiguration(path6) {
+  const profile = await readMachineInspectionProfile(path6);
   const node = await openVerifiedMachineNode(profile.runtime);
   await node.close();
   return profile;
@@ -25939,12 +25943,12 @@ var require_code2 = __commonJS({
       });
     }
     exports2.checkReportMissingProp = checkReportMissingProp;
-    function checkMissingProp({ gen, data: data15, it: { opts } }, properties, missing3) {
-      return (0, codegen_1.or)(...properties.map((prop) => (0, codegen_1.and)(noPropertyInData(gen, data15, prop, opts.ownProperties), (0, codegen_1._)`${missing3} = ${prop}`)));
+    function checkMissingProp({ gen, data: data15, it: { opts } }, properties, missing4) {
+      return (0, codegen_1.or)(...properties.map((prop) => (0, codegen_1.and)(noPropertyInData(gen, data15, prop, opts.ownProperties), (0, codegen_1._)`${missing4} = ${prop}`)));
     }
     exports2.checkMissingProp = checkMissingProp;
-    function reportMissingProp(cxt, missing3) {
-      cxt.setParams({ missingProperty: missing3 }, true);
+    function reportMissingProp(cxt, missing4) {
+      cxt.setParams({ missingProperty: missing4 }, true);
       cxt.error();
     }
     exports2.reportMissingProp = reportMissingProp;
@@ -29450,14 +29454,14 @@ var require_required = __commonJS({
           }
         }
         function exitOnErrorMode() {
-          const missing3 = gen.let("missing");
+          const missing4 = gen.let("missing");
           if (useLoop || $data) {
             const valid = gen.let("valid", true);
-            cxt.block$data(valid, () => loopUntilMissing(missing3, valid));
+            cxt.block$data(valid, () => loopUntilMissing(missing4, valid));
             cxt.ok(valid);
           } else {
-            gen.if((0, code_1.checkMissingProp)(cxt, schema10, missing3));
-            (0, code_1.reportMissingProp)(cxt, missing3);
+            gen.if((0, code_1.checkMissingProp)(cxt, schema10, missing4));
+            (0, code_1.reportMissingProp)(cxt, missing4);
             gen.else();
           }
         }
@@ -29467,10 +29471,10 @@ var require_required = __commonJS({
             gen.if((0, code_1.noPropertyInData)(gen, data15, prop, opts.ownProperties), () => cxt.error());
           });
         }
-        function loopUntilMissing(missing3, valid) {
-          cxt.setParams({ missingProperty: missing3 });
-          gen.forOf(missing3, schemaCode, () => {
-            gen.assign(valid, (0, code_1.propertyInData)(gen, data15, missing3, opts.ownProperties));
+        function loopUntilMissing(missing4, valid) {
+          cxt.setParams({ missingProperty: missing4 });
+          gen.forOf(missing4, schemaCode, () => {
+            gen.assign(valid, (0, code_1.propertyInData)(gen, data15, missing4, opts.ownProperties));
             gen.if((0, codegen_1.not)(valid), () => {
               cxt.error();
               gen.break();
@@ -30008,7 +30012,7 @@ var require_dependencies = __commonJS({
       const { gen, data: data15, it } = cxt;
       if (Object.keys(propertyDeps).length === 0)
         return;
-      const missing3 = gen.let("missing");
+      const missing4 = gen.let("missing");
       for (const prop in propertyDeps) {
         const deps = propertyDeps[prop];
         if (deps.length === 0)
@@ -30026,8 +30030,8 @@ var require_dependencies = __commonJS({
             }
           });
         } else {
-          gen.if((0, codegen_1._)`${hasProperty} && (${(0, code_1.checkMissingProp)(cxt, deps, missing3)})`);
-          (0, code_1.reportMissingProp)(cxt, missing3);
+          gen.if((0, codegen_1._)`${hasProperty} && (${(0, code_1.checkMissingProp)(cxt, deps, missing4)})`);
+          (0, code_1.reportMissingProp)(cxt, missing4);
           gen.else();
         }
       }
@@ -35747,12 +35751,12 @@ function assertExpectedFingerprint(fingerprint) {
   if (!isRecord(fingerprint)) {
     throw new Error("expectedFingerprint must be an object.");
   }
-  const missing3 = EXPECTED_FINGERPRINT_REQUIREMENTS.filter(
+  const missing4 = EXPECTED_FINGERPRINT_REQUIREMENTS.filter(
     ([pointer, kind]) => fingerprintRequirementMissing(getJsonPointer(fingerprint, pointer), kind)
   ).map(([pointer, kind]) => ({ pointer, required: kind }));
   const bridgeEasyedaVersion = getJsonPointer(fingerprint, "/bridge/payload/easyeda_version");
   if (bridgeEasyedaVersion !== void 0 && (typeof bridgeEasyedaVersion !== "string" || bridgeEasyedaVersion.trim().length === 0 || bridgeEasyedaVersion !== getJsonPointer(fingerprint, "/health/payload/easyeda_version"))) {
-    missing3.push({
+    missing4.push({
       pointer: "/bridge/payload/easyeda_version",
       required: "absent or nonempty string equal to health application version"
     });
@@ -35761,17 +35765,17 @@ function assertExpectedFingerprint(fingerprint) {
   if (Array.isArray(files)) {
     for (const [index2, file3] of files.entries()) {
       if (!isRecord(file3) || typeof file3["path"] !== "string" || file3["path"].length === 0 || typeof file3["relativePath"] !== "string" || file3["relativePath"].length === 0 || !Number.isInteger(file3["bytes"]) || Number(file3["bytes"]) < 1 || !isSha256(file3["sha256"])) {
-        missing3.push({
+        missing4.push({
           pointer: `/facadeImplementation/files/${index2}`,
           required: "exact implementation file fingerprint"
         });
       }
     }
   }
-  if (missing3.length > 0) {
+  if (missing4.length > 0) {
     throw errorWithDetails(
       "expectedFingerprint must pin a connected, non-mismatched EasyEDA runtime and method registry.",
-      { missingFingerprintFields: missing3 }
+      { missingFingerprintFields: missing4 }
     );
   }
 }
@@ -38024,16 +38028,16 @@ async function assertOperationIdUnused(operationId13) {
   const directory4 = await openSafeManagedDirectory(OPERATIONS_DIR, false);
   const absent4 = async (selected3) => {
     for (const path6 of paths) {
-      let missing3 = false;
+      let missing4 = false;
       try {
         await lstat3(boundManagedChild(selected3, path6));
       } catch (error52) {
         if (!isErrnoException(error52) || error52.code !== "ENOENT") {
           throw error52;
         }
-        missing3 = true;
+        missing4 = true;
       }
-      if (!missing3) {
+      if (!missing4) {
         throw new Error("Current disposable-open operation ID is consumed.");
       }
     }
@@ -39329,6 +39333,142 @@ var init_lease = __esm({
   "server/src/lease.ts"() {
     init_control_root();
     MAXIMUM_LEASE_RECORD_BYTES = 4096n;
+  }
+});
+
+// server/src/machine-installation-diagnostics.ts
+import { constants as fsConstants5 } from "node:fs";
+import { lstat as lstat5, open as open5, opendir, realpath as realpath2 } from "node:fs/promises";
+import { dirname as dirname3, join as join6 } from "node:path";
+function sameFile2(left, right) {
+  return left.dev === right.dev && left.ino === right.ino && left.mode === right.mode && left.size === right.size && left.mtimeMs === right.mtimeMs && left.ctimeMs === right.ctimeMs;
+}
+function missing(error52) {
+  return error52 !== null && typeof error52 === "object" && "code" in error52 && error52.code === "ENOENT";
+}
+async function observe(path6, directory4) {
+  try {
+    const before = await lstat5(path6);
+    if (before.isSymbolicLink() || (directory4 ? !before.isDirectory() : !before.isFile() || before.size === 0 || before.size > MAX_BUNDLE_BYTES) || await realpath2(path6) !== path6 || !sameFile2(before, await lstat5(path6))) {
+      return "unsafe";
+    }
+    return "present";
+  } catch (error52) {
+    return missing(error52) ? "missing" : "unavailable";
+  }
+}
+async function packageVersion(assetsRoot) {
+  const path6 = join6(dirname3(assetsRoot), "package.json");
+  const state4 = await observe(path6, false);
+  if (state4 !== "present") {
+    return { state: state4 };
+  }
+  try {
+    const before = await lstat5(path6);
+    if (before.size > 64 * 1024) {
+      return { state: "unsafe" };
+    }
+    const file3 = await open5(path6, fsConstants5.O_RDONLY | fsConstants5.O_NOFOLLOW);
+    try {
+      if (!sameFile2(before, await file3.stat())) {
+        return { state: "unsafe" };
+      }
+      const bytes2 = Buffer.alloc(64 * 1024 + 1);
+      const result = await file3.read(bytes2, 0, bytes2.length, 0);
+      if (result.bytesRead !== before.size || !sameFile2(before, await file3.stat()) || !sameFile2(before, await lstat5(path6))) {
+        return { state: "unsafe" };
+      }
+      const input = JSON.parse(bytes2.subarray(0, result.bytesRead).toString("utf8"));
+      const parsed2 = external_exports.looseObject({ version: versionSchema2 }).safeParse(input);
+      return parsed2.success ? { state: "present", version: parsed2.data.version } : { state: "unsafe" };
+    } finally {
+      await file3.close();
+    }
+  } catch (error52) {
+    return { state: missing(error52) ? "missing" : "unavailable" };
+  }
+}
+async function familyObservation(root2, family2, configuredVersion, files) {
+  const directory4 = join6(root2, family2);
+  const state4 = await observe(directory4, true);
+  const configuredFiles = {};
+  for (const [role, relative11] of Object.entries(files)) {
+    configuredFiles[role] = state4 === "present" ? await observe(join6(directory4, configuredVersion, relative11), false) : state4;
+  }
+  const base9 = { configuredVersion, configuredFiles, candidatesAdmitted: false };
+  if (state4 !== "present") {
+    return { ...base9, state: state4, candidateVersions: [] };
+  }
+  try {
+    const before = await lstat5(directory4);
+    const versions = [];
+    let count3 = 0;
+    for await (const entry of await opendir(directory4)) {
+      count3 += 1;
+      if (count3 > MAX_ENTRIES) {
+        return { ...base9, state: "too-many-entries", candidateVersions: [] };
+      }
+      if (entry.isDirectory() && versionSchema2.safeParse(entry.name).success && await observe(join6(directory4, entry.name), true) === "present") {
+        versions.push(entry.name);
+      }
+    }
+    if (!sameFile2(before, await lstat5(directory4)) || await realpath2(directory4) !== directory4) {
+      return { ...base9, state: "unsafe", candidateVersions: [] };
+    }
+    return { ...base9, state: "present", candidateVersions: versions.toSorted() };
+  } catch (error52) {
+    return { ...base9, state: missing(error52) ? "missing" : "unavailable", candidateVersions: [] };
+  }
+}
+async function inspectMachineInstallation(profileInput) {
+  const profile = machineProfileSchema.parse(profileInput);
+  const root2 = profile.easyeda.assetsRoot;
+  const assets2 = await observe(root2, true);
+  if (assets2 !== "present") {
+    return { state: assets2, configuredBundleFilesPresent: false, candidatesAdmitted: false, liveExecutionAvailable: false };
+  }
+  const application2 = await packageVersion(root2);
+  const pcb6 = await familyObservation(root2, "pro-pcb", profile.easyeda.pcbBundleVersion, { implementation: "js/pcb.js" });
+  const publicApi = await familyObservation(
+    root2,
+    "pro-api",
+    profile.easyeda.publicApiBundleVersion,
+    { implementation: "api.js", adapter: "api-types.js", declarations: "api-types.d.ts" }
+  );
+  return {
+    state: "observed",
+    observationScope: "current-configured-installation-not-startup-snapshot",
+    application: application2,
+    pcb: pcb6,
+    publicApi,
+    configuredBundleFilesPresent: [pcb6, publicApi].every((family2) => family2.state === "present" && Object.values(family2.configuredFiles).every((state4) => state4 === "present")),
+    candidatesAdmitted: false,
+    liveExecutionAvailable: false,
+    nextAction: "Review the installed generation and use an explicitly supported profile migration, then restart. Do not replace compatibility hashes or selectors based on this inventory."
+  };
+}
+async function diagnoseConfiguredInstallation() {
+  try {
+    const profile = await readMachineInspectionProfile(process.env[MACHINE_PROFILE_ENVIRONMENT_VARIABLE] ?? defaultMachineProfilePath());
+    return { ...await inspectMachineInstallation(profile), restartRequired: true };
+  } catch {
+    return {
+      state: "configuration-unavailable",
+      candidatesAdmitted: false,
+      liveExecutionAvailable: false,
+      restartRequired: true,
+      nextAction: "Review the private machine configuration locally. This offline process cannot promote itself."
+    };
+  }
+}
+var versionSchema2, MAX_ENTRIES, MAX_BUNDLE_BYTES;
+var init_machine_installation_diagnostics = __esm({
+  "server/src/machine-installation-diagnostics.ts"() {
+    init_zod();
+    init_machine_profile();
+    versionSchema2 = external_exports.string().regex(/^[0-9][A-Za-z0-9.+-]{0,127}$/u);
+    MAX_ENTRIES = 128;
+    MAX_BUNDLE_BYTES = 256 * 1024 * 1024;
   }
 });
 
@@ -41566,7 +41706,7 @@ var init_pcb_text_reload_history = __esm({
 // server/src/native-history.ts
 import { createDecipheriv, createHash as createHash6 } from "node:crypto";
 import { constants } from "node:fs";
-import { lstat as lstat5, open as open5 } from "node:fs/promises";
+import { lstat as lstat6, open as open6 } from "node:fs/promises";
 import { isAbsolute as isAbsolute5 } from "node:path";
 import { DatabaseSync } from "node:sqlite";
 import { TextDecoder as TextDecoder2, promisify as promisify2 } from "node:util";
@@ -42048,17 +42188,17 @@ async function materializeNativeHistoryCooperatively(plaintextChunks, checkpoint
 }
 async function absentSidecars(path6) {
   for (const suffix of ["-wal", "-shm", "-journal"]) {
-    let missing3 = false;
+    let missing4 = false;
     try {
-      await lstat5(`${path6}${suffix}`);
+      await lstat6(`${path6}${suffix}`);
     } catch (error52) {
       if (isRecord(error52) && error52["code"] === "ENOENT") {
-        missing3 = true;
+        missing4 = true;
       } else {
         fail2();
       }
     }
-    if (!missing3) {
+    if (!missing4) {
       fail2();
     }
   }
@@ -42074,7 +42214,7 @@ async function readNativeHistoryCheckpoint(input) {
     fail2();
   }
   await absentSidecars(checkpointPath);
-  const file3 = await open5(checkpointPath, constants.O_RDONLY | constants.O_NOFOLLOW | constants.O_NONBLOCK);
+  const file3 = await open6(checkpointPath, constants.O_RDONLY | constants.O_NOFOLLOW | constants.O_NONBLOCK);
   let database;
   try {
     stage = "checkpoint-file";
@@ -42148,7 +42288,7 @@ async function readNativeHistoryCheckpoint(input) {
     );
     stage = "checkpoint-stability";
     const after = await file3.stat({ bigint: true });
-    const pathAfter = await lstat5(checkpointPath, { bigint: true });
+    const pathAfter = await lstat6(checkpointPath, { bigint: true });
     if (before.dev !== after.dev || before.ino !== after.ino || before.size !== after.size || before.mtimeNs !== after.mtimeNs || before.ctimeNs !== after.ctimeNs || after.dev !== pathAfter.dev || after.ino !== pathAfter.ino) {
       fail2();
     }
@@ -44765,18 +44905,18 @@ var init_exact_readers = __esm({
 // server/src/native-profiles.ts
 import { createHash as createHash7 } from "node:crypto";
 import { constants as constants2 } from "node:fs";
-import { lstat as lstat6, open as open6, realpath as realpath2 } from "node:fs/promises";
-import { isAbsolute as isAbsolute6, join as join6 } from "node:path";
+import { lstat as lstat7, open as open7, realpath as realpath3 } from "node:fs/promises";
+import { isAbsolute as isAbsolute6, join as join7 } from "node:path";
 async function verifySchematicNativeProfile(assetsRoot) {
-  if (!isAbsolute6(assetsRoot) || await realpath2(assetsRoot) !== assetsRoot) {
+  if (!isAbsolute6(assetsRoot) || await realpath3(assetsRoot) !== assetsRoot) {
     throw new Error("Native profile assets root is not canonical.");
   }
-  const path6 = join6(assetsRoot, SCHEMATIC_NATIVE_IMPLEMENTATION.relativePath);
-  const before = await lstat6(path6, { bigint: true });
-  if (!before.isFile() || before.isSymbolicLink() || before.size <= 0n || before.size > 128n * 1024n * 1024n || await realpath2(path6) !== path6) {
+  const path6 = join7(assetsRoot, SCHEMATIC_NATIVE_IMPLEMENTATION.relativePath);
+  const before = await lstat7(path6, { bigint: true });
+  if (!before.isFile() || before.isSymbolicLink() || before.size <= 0n || before.size > 128n * 1024n * 1024n || await realpath3(path6) !== path6) {
     throw new Error("Native profile implementation is not a bounded regular file.");
   }
-  const file3 = await open6(path6, constants2.O_RDONLY | constants2.O_NOFOLLOW);
+  const file3 = await open7(path6, constants2.O_RDONLY | constants2.O_NOFOLLOW);
   try {
     const hash45 = createHash7("sha256");
     for await (const chunk of file3.createReadStream({ autoClose: false })) {
@@ -44786,7 +44926,7 @@ async function verifySchematicNativeProfile(assetsRoot) {
       hash45.update(chunk);
     }
     const after = await file3.stat({ bigint: true });
-    const current10 = await lstat6(path6, { bigint: true });
+    const current10 = await lstat7(path6, { bigint: true });
     if (before.dev !== after.dev || before.ino !== after.ino || before.size !== after.size || before.mtimeNs !== after.mtimeNs || before.ctimeNs !== after.ctimeNs || after.dev !== current10.dev || after.ino !== current10.ino || after.mtimeNs !== current10.mtimeNs || after.ctimeNs !== current10.ctimeNs || hash45.digest("hex") !== SCHEMATIC_NATIVE_IMPLEMENTATION.sha256) {
       throw new Error("Installed schematic native implementation differs from its reviewed profile.");
     }
@@ -44810,18 +44950,18 @@ var init_native_profiles = __esm({
 // server/src/library-native-profile.ts
 import { createHash as createHash8 } from "node:crypto";
 import { constants as constants3 } from "node:fs";
-import { lstat as lstat7, open as open7, realpath as realpath3 } from "node:fs/promises";
-import { isAbsolute as isAbsolute7, join as join7 } from "node:path";
+import { lstat as lstat8, open as open8, realpath as realpath4 } from "node:fs/promises";
+import { isAbsolute as isAbsolute7, join as join8 } from "node:path";
 async function verifyLibraryNativeProfile(assetsRoot) {
-  if (!isAbsolute7(assetsRoot) || await realpath3(assetsRoot) !== assetsRoot) {
+  if (!isAbsolute7(assetsRoot) || await realpath4(assetsRoot) !== assetsRoot) {
     throw new Error("Library implementation root is not canonical.");
   }
-  const path6 = join7(assetsRoot, LIBRARY_NATIVE_IMPLEMENTATION.relativePath);
-  const before = await lstat7(path6, { bigint: true });
-  if (!before.isFile() || before.isSymbolicLink() || before.size <= 0n || before.size > 128n * 1024n * 1024n || await realpath3(path6) !== path6) {
+  const path6 = join8(assetsRoot, LIBRARY_NATIVE_IMPLEMENTATION.relativePath);
+  const before = await lstat8(path6, { bigint: true });
+  if (!before.isFile() || before.isSymbolicLink() || before.size <= 0n || before.size > 128n * 1024n * 1024n || await realpath4(path6) !== path6) {
     throw new Error("Library implementation is not a bounded regular file.");
   }
-  const file3 = await open7(path6, constants3.O_RDONLY | constants3.O_NOFOLLOW);
+  const file3 = await open8(path6, constants3.O_RDONLY | constants3.O_NOFOLLOW);
   try {
     const hash45 = createHash8("sha256");
     for await (const chunk of file3.createReadStream({ autoClose: false })) {
@@ -44831,7 +44971,7 @@ async function verifyLibraryNativeProfile(assetsRoot) {
       hash45.update(chunk);
     }
     const after = await file3.stat({ bigint: true });
-    const current10 = await lstat7(path6, { bigint: true });
+    const current10 = await lstat8(path6, { bigint: true });
     if (before.dev !== after.dev || before.ino !== after.ino || before.size !== after.size || before.mtimeNs !== after.mtimeNs || before.ctimeNs !== after.ctimeNs || after.dev !== current10.dev || after.ino !== current10.ino || after.mtimeNs !== current10.mtimeNs || after.ctimeNs !== current10.ctimeNs || hash45.digest("hex") !== LIBRARY_NATIVE_IMPLEMENTATION.sha256) {
       throw new Error("Native library implementation differs from the reviewed profile.");
     }
@@ -44855,20 +44995,20 @@ var init_library_native_profile = __esm({
 // server/src/device-native-profile.ts
 import { createHash as createHash9 } from "node:crypto";
 import { constants as constants4 } from "node:fs";
-import { lstat as lstat8, open as open8, realpath as realpath4 } from "node:fs/promises";
-import { isAbsolute as isAbsolute8, join as join8 } from "node:path";
+import { lstat as lstat9, open as open9, realpath as realpath5 } from "node:fs/promises";
+import { isAbsolute as isAbsolute8, join as join9 } from "node:path";
 async function verifyDeviceAssociationNativeProfile(assetsRoot) {
   await verifyLibraryNativeProfile(assetsRoot);
-  if (!isAbsolute8(assetsRoot) || await realpath4(assetsRoot) !== assetsRoot) {
+  if (!isAbsolute8(assetsRoot) || await realpath5(assetsRoot) !== assetsRoot) {
     throw new Error("Device implementation root is not canonical.");
   }
   for (const implementation of DEVICE_NATIVE_IMPLEMENTATIONS) {
-    const path6 = join8(assetsRoot, implementation.relativePath);
-    const before = await lstat8(path6, { bigint: true });
-    if (!before.isFile() || before.isSymbolicLink() || before.size <= 0n || before.size > 128n * 1024n * 1024n || await realpath4(path6) !== path6) {
+    const path6 = join9(assetsRoot, implementation.relativePath);
+    const before = await lstat9(path6, { bigint: true });
+    if (!before.isFile() || before.isSymbolicLink() || before.size <= 0n || before.size > 128n * 1024n * 1024n || await realpath5(path6) !== path6) {
       throw new Error("Device native implementation is not a bounded regular file.");
     }
-    const file3 = await open8(path6, constants4.O_RDONLY | constants4.O_NOFOLLOW);
+    const file3 = await open9(path6, constants4.O_RDONLY | constants4.O_NOFOLLOW);
     try {
       const hash45 = createHash9("sha256");
       for await (const chunk of file3.createReadStream({ autoClose: false })) {
@@ -44878,7 +45018,7 @@ async function verifyDeviceAssociationNativeProfile(assetsRoot) {
         hash45.update(chunk);
       }
       const after = await file3.stat({ bigint: true });
-      const current10 = await lstat8(path6, { bigint: true });
+      const current10 = await lstat9(path6, { bigint: true });
       if (before.dev !== after.dev || before.ino !== after.ino || before.size !== after.size || before.mtimeNs !== after.mtimeNs || before.ctimeNs !== after.ctimeNs || after.dev !== current10.dev || after.ino !== current10.ino || after.mtimeNs !== current10.mtimeNs || after.ctimeNs !== current10.ctimeNs || hash45.digest("hex") !== implementation.sha256) {
         throw new Error("Native device implementation differs from the reviewed profile.");
       }
@@ -48626,7 +48766,7 @@ return await (async () => {
 });
 
 // server/src/editor-tab-lookups.ts
-import { join as join9 } from "node:path";
+import { join as join10 } from "node:path";
 function isEditorTabLookupMethod(method7) {
   return method7 === TAB_METHOD || method7 === SPLIT_METHOD;
 }
@@ -48790,7 +48930,7 @@ async function readEditorTabLookup(engine2, requestInput2, expectedContext, over
   await profile();
   const expected3 = structuredClone(expectedContext);
   const context4 = await engine2.assertContext(expected3);
-  const outputDir = join9(controlDataDirectory(), "checkpoints");
+  const outputDir = join10(controlDataDirectory(), "checkpoints");
   const checkpoint = checkpointSchema.parse(await engine2.checkpoint({
     source: context4.project.path,
     outputDir,
@@ -48815,7 +48955,7 @@ async function readEditorTabLookup(engine2, requestInput2, expectedContext, over
   });
   const scope6 = prepareEditorTabLookupScope(history, context4);
   const code = wrapWithContextGuard(buildEditorTabLookupCode(request13, scope6), context4);
-  const observe6 = async () => {
+  const observe7 = async () => {
     await engine2.assertBridgeDispatchAllowed();
     await engine2.assertContext(context4);
     await unchanged5();
@@ -48826,7 +48966,7 @@ async function readEditorTabLookup(engine2, requestInput2, expectedContext, over
     await unchanged5();
     return result;
   };
-  const first = await observe6(), second = await observe6();
+  const first = await observe7(), second = await observe7();
   await profile();
   await unchanged5();
   await engine2.assertContext(context4);
@@ -48982,7 +49122,7 @@ var init_native_library_header_evidence = __esm({
 });
 
 // server/src/pcb-inherited-lines.ts
-import { join as join10 } from "node:path";
+import { join as join11 } from "node:path";
 function bindings(rows2) {
   return rows2.filter((row10) => row10.type === "COMPONENT" || row10.type === "ATTR" && row10.body["key"] === "Footprint").map(({ id: id14, type: type2, body: body4 }) => ({ id: id14, type: type2, body: body4 })).toSorted((left, right) => left.id.localeCompare(right.id));
 }
@@ -49139,7 +49279,7 @@ async function capturePcbInheritedLineScope(engine2, expectedContext, overrides 
     }
   };
   await unchangedContext();
-  const outputDir = join10(controlDataDirectory(), "checkpoints");
+  const outputDir = join11(controlDataDirectory(), "checkpoints");
   const checkpoint = checkpointSchema2.parse(await engine2.checkpoint({
     source: context4.project.path,
     outputDir,
@@ -49622,7 +49762,7 @@ async function readPcbPrimitiveType(engine2, requestInput2, expectedContext, exp
     throw new Error("PCB primitive type active identity changed.");
   }
   let inheritedScope;
-  const observe6 = async (kind) => {
+  const observe7 = async (kind) => {
     await engine2.assertBridgeDispatchAllowed();
     if (canonicalJson(await engine2.assertContext(context4)) !== canonicalJson(context4)) {
       throw new Error("PCB primitive type context changed before observation.");
@@ -49636,9 +49776,9 @@ async function readPcbPrimitiveType(engine2, requestInput2, expectedContext, exp
     return payload;
   };
   const observations2 = async () => {
-    const beforePayload = await observe6("pcb-source");
-    const inventory2 = await observe6("pcb-inventory");
-    const afterPayload = await observe6("pcb-source");
+    const beforePayload = await observe7("pcb-source");
+    const inventory2 = await observe7("pcb-inventory");
+    const afterPayload = await observe7("pcb-source");
     const before = parseDocumentSource(external_exports.string().max(16777216).parse(beforePayload["source"]));
     const after = parseDocumentSource(external_exports.string().max(16777216).parse(afterPayload["source"]));
     if (before.sha256 !== after.sha256) {
@@ -50590,12 +50730,12 @@ function validatePrimitiveFields(row10, rowIndex, definition, undefinedPointers)
   const schematic4 = definition.path.startsWith("eda.sch_");
   const type2 = definition.primitiveType;
   for (const [field13, value2] of Object.entries(row10)) {
-    const missing3 = undefinedPointers.has(`/value/${rowIndex}/${field13}`);
+    const missing4 = undefinedPointers.has(`/value/${rowIndex}/${field13}`);
     const optional3 = type2 === "Component" && (optionalComponentFields.has(field13) || schematic4 && ["AddIntoBom", "AddIntoPcb", "Net"].includes(field13)) || type2 === "Object" && !schematic4 && ["Layer", "TopLeftX", "TopLeftY"].includes(field13) || type2 === "Region" && field13 === "RegionName" || type2 === "Fill" && ["Net", "FillMode"].includes(field13) || ["Pad", "ComponentPad"].includes(type2 ?? "") && ["Pad", "Net", "SpecialPad"].includes(field13) || schematic4 && ["Pin", "ComponentPin"].includes(type2 ?? "") && field13 === "OtherProperty";
-    if (missing3 && !optional3) {
+    if (missing4 && !optional3) {
       throw new Error(`Required public SDK getter returned undefined: ${field13}.`);
     }
-    if (!missing3) {
+    if (!missing4) {
       const nullable2 = nullableStyleFields.has(field13) || field13 === "DesignRuleBlindViaName" || type2 === "Attribute" && ["X", "Y"].includes(field13) || schematic4 && ["LineWidth", "LineType", "FillStyle", "FontSize"].includes(field13) || schematic4 && type2 === "Attribute" && ["Rotation", "Bold", "Italic", "UnderLine", "AlignMode", "KeyVisible", "ValueVisible"].includes(field13);
       if (!(value2 === null && nullable2)) {
         if (numericStateFields.has(field13) && (typeof value2 !== "number" || !Number.isFinite(value2))) {
@@ -51657,6 +51797,154 @@ const clipGroups=value=>{let points=0,rings=0;const ring=raw=>{const entries=cli
   }
 });
 
+// server/src/sdk-local-runtime.ts
+function validateSdkLocalRuntimeFingerprint(fingerprint) {
+  assertExpectedFingerprint(fingerprint);
+  const manifestBefore = reviewedCompatibilityManifestFingerprint();
+  const manifest = loadReviewedCompatibilityManifest();
+  assertSubset(reviewedCompatibilityManifestFingerprint(), manifestBefore, "SDK local manifest stability");
+  assertSubset(fingerprint.reviewedCompatibilityManifest, manifestBefore, "SDK local manifest identity");
+  const implementation = fingerprint.facadeImplementation;
+  const actual = {
+    facadeImplementation: {
+      version: implementation.version,
+      operationSchema: implementation.operationSchema,
+      sha256: implementation.sha256,
+      fileCount: implementation.files.length,
+      files: implementation.files.map((file3) => ({ relativePath: file3.relativePath, bytes: file3.bytes, sha256: file3.sha256 })).toSorted((left, right) => left.relativePath.localeCompare(right.relativePath))
+    },
+    upstream: {
+      serverVersion: fingerprint.upstreamServer.version,
+      launcher: fingerprint.upstreamLauncher,
+      toolCatalog: { count: fingerprint.toolCount, sha256: fingerprint.toolCatalogSha256 }
+    },
+    connectedRuntime: {
+      healthVersion: fingerprint.health.payload.version,
+      nodeVersion: fingerprint.health.payload.node_version.replace(/^v/u, ""),
+      easyedaVersion: fingerprint.health.payload.easyeda_version,
+      extensionVersion: fingerprint.health.payload.extension_version,
+      bridgeVersion: fingerprint.bridge.payload.bridge_version,
+      bridgeEasyedaVersion: fingerprint.bridge.payload.easyeda_version ?? null,
+      methodRegistryHash: fingerprint.bridge.payload.diagnostics.method_registry_hash,
+      dispatcher: {
+        source: fingerprint.bridgeDispatcher.payload.source,
+        buildId: fingerprint.bridgeDispatcher.payload.dispatcher_build_id,
+        total: fingerprint.bridgeDispatcher.payload.total
+      }
+    },
+    installedBundles: fingerprint.installedBundles
+  };
+  assertSubset(actual, {
+    facadeImplementation: manifest.facadeImplementation[implementation.mode],
+    upstream: manifest.upstream,
+    connectedRuntime: { ...manifest.connectedRuntime, easyedaVersion: SDK_LOCAL_RUNTIME_PROFILE.editorReportedVersion },
+    installedBundles: SDK_LOCAL_RUNTIME_PROFILE.installedBundles
+  }, "SDK local reviewed runtime scope");
+  return true;
+}
+var SDK_LOCAL_RUNTIME_PROFILE;
+var init_sdk_local_runtime = __esm({
+  "server/src/sdk-local-runtime.ts"() {
+    init_core3();
+    SDK_LOCAL_RUNTIME_PROFILE = {
+      schema: "easyeda-pro-control.sdk-local-runtime.v1",
+      // The authenticated handshake forwards getEditorCurrentVersion(), which
+      // Reports editorMainVersion, not the suffixed installed package version.
+      editorReportedVersion: "3.2.206",
+      installedBundles: {
+        pcbEditor: {
+          version: "3.2.193.682ed44e",
+          implementationSha256: "217199c8532c48aa50ed5fc254ddf2e6d09c886984c9498b5eea4d1cf0b7ef33"
+        },
+        publicApi: {
+          version: "0.3.50.ab46409c",
+          implementationSha256: "021d155baafbcdc7b558da12f0834a8ee473aa37e276c6ea679936f952080c76",
+          adapterSha256: "5570385041b304d6b2fc8ce59de7e0030f2732913cf6d43861fe985e0c079f3a",
+          declarationsSha256: "d5fe990034c55001302ea6c3f704c2d4b88cdf23253cc5293b3bad62a32b9def"
+        }
+      }
+    };
+  }
+});
+
+// server/src/sdk-public-utilities-profile.ts
+function isPublicUtilities209Configured(environment) {
+  const pins = SDK_PUBLIC_UTILITIES_209_PROFILE.installedBundles;
+  return environment["EASYEDA_PCB_BUNDLE_VERSION"] === pins.pcbEditor.version && environment["EASYEDA_PUBLIC_API_BUNDLE_VERSION"] === pins.publicApi.version;
+}
+function selectSdkPublicUtilitiesRuntimeProfile(fingerprint) {
+  assertExpectedFingerprint(fingerprint);
+  if (fingerprint.health.payload.easyeda_version !== SDK_PUBLIC_UTILITIES_209_PROFILE.editorReportedVersion) {
+    validateSdkLocalRuntimeFingerprint(fingerprint);
+    return SDK_LOCAL_RUNTIME_PROFILE;
+  }
+  const manifestBefore = reviewedCompatibilityManifestFingerprint();
+  const manifest = loadReviewedCompatibilityManifest();
+  assertSubset(reviewedCompatibilityManifestFingerprint(), manifestBefore, "SDK public utilities manifest stability");
+  assertSubset(fingerprint.reviewedCompatibilityManifest, manifestBefore, "SDK public utilities manifest identity");
+  const implementation = fingerprint.facadeImplementation;
+  assertSubset({
+    facadeImplementation: {
+      version: implementation.version,
+      operationSchema: implementation.operationSchema,
+      sha256: implementation.sha256,
+      fileCount: implementation.files.length,
+      files: implementation.files.map((file3) => ({ relativePath: file3.relativePath, bytes: file3.bytes, sha256: file3.sha256 })).toSorted((left, right) => left.relativePath.localeCompare(right.relativePath))
+    },
+    upstream: {
+      serverVersion: fingerprint.upstreamServer.version,
+      launcher: fingerprint.upstreamLauncher,
+      toolCatalog: { count: fingerprint.toolCount, sha256: fingerprint.toolCatalogSha256 }
+    },
+    connectedRuntime: {
+      healthVersion: fingerprint.health.payload.version,
+      nodeVersion: fingerprint.health.payload.node_version.replace(/^v/u, ""),
+      easyedaVersion: fingerprint.health.payload.easyeda_version,
+      extensionVersion: fingerprint.health.payload.extension_version,
+      bridgeVersion: fingerprint.bridge.payload.bridge_version,
+      bridgeEasyedaVersion: fingerprint.bridge.payload.easyeda_version ?? null,
+      methodRegistryHash: fingerprint.bridge.payload.diagnostics.method_registry_hash,
+      dispatcher: {
+        source: fingerprint.bridgeDispatcher.payload.source,
+        buildId: fingerprint.bridgeDispatcher.payload.dispatcher_build_id,
+        total: fingerprint.bridgeDispatcher.payload.total
+      }
+    },
+    installedBundles: fingerprint.installedBundles
+  }, {
+    facadeImplementation: manifest.facadeImplementation[implementation.mode],
+    upstream: manifest.upstream,
+    connectedRuntime: { ...manifest.connectedRuntime, easyedaVersion: SDK_PUBLIC_UTILITIES_209_PROFILE.editorReportedVersion },
+    installedBundles: SDK_PUBLIC_UTILITIES_209_PROFILE.installedBundles
+  }, "SDK public utilities 209 reviewed runtime scope");
+  return SDK_PUBLIC_UTILITIES_209_PROFILE;
+}
+var SDK_PUBLIC_UTILITIES_209_PROFILE;
+var init_sdk_public_utilities_profile = __esm({
+  "server/src/sdk-public-utilities-profile.ts"() {
+    init_core3();
+    init_sdk_local_runtime();
+    SDK_PUBLIC_UTILITIES_209_PROFILE = Object.freeze({
+      schema: "easyeda-pro-control.sdk-public-utilities-209.v1",
+      editorReportedVersion: "3.2.209",
+      installedPackageVersion: "3.2.209.8a704eab",
+      packageSha256: "c63c12edae82c39c1fb2c0f0dd0e27678b83526c89ea174b3b79655711da8e51",
+      installedBundles: Object.freeze({
+        pcbEditor: Object.freeze({
+          version: "3.2.195.6b67774e",
+          implementationSha256: "a84059304d32d4f0feb768d6c5baf00d72a954643ac62299f2c46c08fa68fd0b"
+        }),
+        publicApi: Object.freeze({
+          version: "0.3.59.1ca9efb5",
+          implementationSha256: "e7c31b0de9dcbe4806e6b3cf8879b31c9e44425361bb8e67c3e8480ae359c8b1",
+          adapterSha256: "d2b384470013c991733c92c281a3f4e440d7c711a62a4dd27b9288d26d9a6cb0",
+          declarationsSha256: "0a6910f4108f3d09733a9de9176b20c41ccd2a87fc4e335f8d6d656eb054ba72"
+        })
+      })
+    });
+  }
+});
+
 // server/src/sdk-math.ts
 function exactCoordinate(value2) {
   const view = new DataView(new ArrayBuffer(8));
@@ -51742,7 +52030,13 @@ function sdkMathDescriptors() {
       resultKind: definition.result,
       limitations: [...commonLimitations, definition.limitation],
       invocationEnabledByDiscovery: false,
-      provenance: { version: SDK_MATH_API_VERSION, apiSha256: SDK_MATH_API_SHA256, implementationKind: "public-method-bounded-subset", liveValidation: "not-recorded" }
+      provenance: { version: SDK_MATH_API_VERSION, apiSha256: SDK_MATH_API_SHA256, implementationKind: "public-method-bounded-subset", liveValidation: "not-recorded" },
+      additionalReviewedProvenance: [{
+        version: SDK_PUBLIC_UTILITIES_209_PROFILE.installedBundles.publicApi.version,
+        apiSha256: SDK_PUBLIC_UTILITIES_209_PROFILE.installedBundles.publicApi.implementationSha256,
+        scope: "public-utilities-only",
+        liveValidation: "not-recorded"
+      }]
     };
   });
 }
@@ -51793,7 +52087,7 @@ if(utf8Bytes>${SDK_MATH_MAX_BYTES}||new TextEncoder().encode(JSON.stringify(enve
 return envelope;
 }catch{throw new Error('SDK_MATH_CALCULATION_FAILED');}`;
 }
-function validateSdkMathResult(input, raw) {
+function validateSdkMathResult(input, raw, provenance = defaultProvenance) {
   const request13 = parseSdkMathRequest(input);
   const payload = payloadSchema3.parse(raw);
   const definition = definitions2[request13.method];
@@ -51841,19 +52135,21 @@ function validateSdkMathResult(input, raw) {
     ...payload,
     value: value2,
     authority: "supplied-coordinate-calculation-only;not-cad-connectivity-or-manufacturing-proof",
-    apiVersion: SDK_MATH_API_VERSION,
-    apiSha256: SDK_MATH_API_SHA256,
+    apiVersion: provenance.version,
+    apiSha256: provenance.implementationSha256,
     limitations: [...commonLimitations, definition.limitation]
   };
 }
-var SDK_MATH_API_VERSION, SDK_MATH_API_SHA256, SDK_MATH_MAX_VERTICES, SDK_MATH_MAX_BYTES, coordinate4, pointSchema2, ringSchema, convexRingSchema, bboxSchema, polygonArguments, pointArguments, centers, pairedCenters, rotateArguments, scaleArguments, sdkMathRequestSchema, definitions2, commonLimitations, sdkMathCatalogQuerySchema, resultNumber, resultPoint, resultBbox, payloadSchema3;
+var SDK_MATH_API_VERSION, SDK_MATH_API_SHA256, defaultProvenance, SDK_MATH_MAX_VERTICES, SDK_MATH_MAX_BYTES, coordinate4, pointSchema2, ringSchema, convexRingSchema, bboxSchema, polygonArguments, pointArguments, centers, pairedCenters, rotateArguments, scaleArguments, sdkMathRequestSchema, definitions2, commonLimitations, sdkMathCatalogQuerySchema, resultNumber, resultPoint, resultBbox, payloadSchema3;
 var init_sdk_math = __esm({
   "server/src/sdk-math.ts"() {
     init_zod();
     init_exact_readers();
     init_sdk_math_clipping();
+    init_sdk_public_utilities_profile();
     SDK_MATH_API_VERSION = "0.3.50.ab46409c";
     SDK_MATH_API_SHA256 = "021d155baafbcdc7b558da12f0834a8ee473aa37e276c6ea679936f952080c76";
+    defaultProvenance = Object.freeze({ version: SDK_MATH_API_VERSION, implementationSha256: SDK_MATH_API_SHA256 });
     SDK_MATH_MAX_VERTICES = 128;
     SDK_MATH_MAX_BYTES = 32768;
     coordinate4 = external_exports.number().min(-1e6).max(1e6);
@@ -51907,7 +52203,7 @@ var init_sdk_math = __esm({
       "eda.sys_Math.xor": { parameters: ["polygon1", "polygon2"], result: "groups", limitation: `${SDK_CLIPPING_LIMITATION} Symmetric difference; disconnected components may share crossing vertices.` }
     };
     commonLimitations = [
-      "API 0.3.50 implementation only, separately hash-admitted; absent from the old reviewed 0.2.53 runtime. Source implementation and offline tests are not connected validation.",
+      "Separately hash-admitted API 0.3.50 or 0.3.59 implementation, each under its exact runtime profile; absent from the old reviewed 0.2.53 runtime. Source implementation and offline tests are not connected validation.",
       "Strict finite JSON inputs only. Simple methods accept +/-1e6 coordinates and 3-128 ring vertices; clipping has its separately documented narrower bounds. No input holes, groups, curves, native handles, callbacks or arbitrary SDK paths.",
       "Calculations use supplied coordinate units without unit conversion. No document, project, viewport, selection, shared setting, file, network, Save or CAD mutation is involved.",
       "JSON Schema omits geometric and paired-center refinements; use the exact argument validator. SDK floating-point results are observations, not exact geometric, electrical or manufacturing guarantees."
@@ -51947,7 +52243,13 @@ function sdkSystemDescriptors() {
       ...definition.units === void 0 ? {} : { units: { ...definition.units } },
       limitations: [...commonLimitations2, definition.limitation],
       invocationEnabledByDiscovery: false,
-      provenance: { version: SDK_SYSTEM_API_VERSION, apiSha256: SDK_SYSTEM_API_SHA256, implementationKind: "public-method-bounded-subset", liveValidation: "not-recorded" }
+      provenance: { version: SDK_SYSTEM_API_VERSION, apiSha256: SDK_SYSTEM_API_SHA256, implementationKind: "public-method-bounded-subset", liveValidation: "not-recorded" },
+      additionalReviewedProvenance: [{
+        version: SDK_PUBLIC_UTILITIES_209_PROFILE.installedBundles.publicApi.version,
+        apiSha256: SDK_PUBLIC_UTILITIES_209_PROFILE.installedBundles.publicApi.implementationSha256,
+        scope: "public-utilities-only",
+        liveValidation: "not-recorded"
+      }]
     };
   });
 }
@@ -51989,7 +52291,7 @@ if(utf8Bytes>${SDK_SYSTEM_MAX_BYTES}||new TextEncoder().encode(JSON.stringify(en
 return envelope;
 }catch{throw new Error('SDK_SYSTEM_READ_FAILED');}`;
 }
-function validateSdkSystemResult(input, raw) {
+function validateSdkSystemResult(input, raw, provenance = defaultProvenance2) {
   const request13 = parseSdkSystemRequest(input);
   const payload = payloadSchema4.parse(raw);
   const definition = definitions3[request13.method];
@@ -52014,18 +52316,20 @@ function validateSdkSystemResult(input, raw) {
     effect: definition.effect,
     ...definition.units === void 0 ? {} : { units: { ...definition.units }, numberOfDecimals: "numberOfDecimals" in request13.arguments ? request13.arguments.numberOfDecimals ?? 4 : 4 },
     authority: "bounded-system-metadata-or-unit-calculation-only;not-project-state-or-runtime-admission",
-    apiVersion: SDK_SYSTEM_API_VERSION,
-    apiSha256: SDK_SYSTEM_API_SHA256,
+    apiVersion: provenance.version,
+    apiSha256: provenance.implementationSha256,
     limitations: [...commonLimitations2, definition.limitation]
   };
 }
-var SDK_SYSTEM_API_VERSION, SDK_SYSTEM_API_SHA256, SDK_SYSTEM_MAX_BYTES, inputNumber, precision, emptyArguments3, version2, comparisonArguments, editorVersionArguments, sdkSystemRequestSchema, environmentBoolean, definitions3, commonLimitations2, sdkSystemCatalogQuerySchema, payloadSchema4, metadataText;
+var SDK_SYSTEM_API_VERSION, SDK_SYSTEM_API_SHA256, defaultProvenance2, SDK_SYSTEM_MAX_BYTES, inputNumber, precision, emptyArguments3, version2, comparisonArguments, editorVersionArguments, sdkSystemRequestSchema, environmentBoolean, definitions3, commonLimitations2, sdkSystemCatalogQuerySchema, payloadSchema4, metadataText;
 var init_sdk_system = __esm({
   "server/src/sdk-system.ts"() {
     init_zod();
     init_exact_readers();
+    init_sdk_public_utilities_profile();
     SDK_SYSTEM_API_VERSION = "0.3.50.ab46409c";
     SDK_SYSTEM_API_SHA256 = "021d155baafbcdc7b558da12f0834a8ee473aa37e276c6ea679936f952080c76";
+    defaultProvenance2 = Object.freeze({ version: SDK_SYSTEM_API_VERSION, implementationSha256: SDK_SYSTEM_API_SHA256 });
     SDK_SYSTEM_MAX_BYTES = 8192;
     inputNumber = external_exports.number().min(-1e9).max(1e9);
     precision = external_exports.number().int().min(0).max(12).optional();
@@ -52100,7 +52404,7 @@ var init_sdk_system = __esm({
       }
     };
     commonLimitations2 = [
-      "Separately hash-admitted API 0.3.50 implementation. Discovery, source implementation and offline tests do not establish current connected validation.",
+      "Separately hash-admitted API 0.3.50 or 0.3.59 implementation under its exact runtime profile. Discovery, source implementation and offline tests do not establish current connected validation.",
       "Fixed synchronous public methods only, two exact scalar samples on the same owner/method. No project, document, selection, account, file, network, navigation, shared-settings change or Save access.",
       "Responses are bounded to 8192 UTF-8 bytes; metadata strings to 128 printable ASCII characters. Malformed, asynchronous, unstable or oversized results refuse without truncation or automatic retry."
     ];
@@ -52227,9 +52531,9 @@ function inventoryExtensionApiCoverage() {
       tool: "easyeda_control_calculate",
       selector: descriptor10.path,
       implementation: "public-method",
-      scope: `Separately reviewed EasyEDA 3.2.206/API 0.3.50 calculation-only runtime, not legacy-tuple admission. ${descriptor10.limitations.join(" ")}`,
-      source: ["sdk-math.ts", "sdk-math-clipping.ts", "sdk-math-runtime.ts", "sdk-local-runtime.ts", "facade-mode.ts"],
-      tests: ["sdk-math.test.ts", "sdk-math-clipping.test.ts", "sdk-math-runtime.test.ts", "facade-mode.test.ts"],
+      scope: `Separately reviewed EasyEDA 3.2.206/API 0.3.50 or 3.2.209/API 0.3.59 public calculation subset, not legacy/native-tuple admission. ${descriptor10.limitations.join(" ")}`,
+      source: ["sdk-math.ts", "sdk-math-clipping.ts", "sdk-math-runtime.ts", "sdk-local-runtime.ts", "sdk-public-utilities-profile.ts", "facade-mode.ts"],
+      tests: ["sdk-math.test.ts", "sdk-math-clipping.test.ts", "sdk-math-runtime.test.ts", "sdk-public-utilities-runtime.test.ts", "facade-mode.test.ts"],
       validation: "offline-regression;current-live-unclaimed",
       executionState: "available-with-runtime-guards",
       inputDiscovery: { tool: "easyeda_control_api", arguments: { request: { action: "calculations", query: { method: descriptor10.path, includeSchemas: true } } } }
@@ -52241,9 +52545,9 @@ function inventoryExtensionApiCoverage() {
       tool: "easyeda_control_system",
       selector: descriptor10.path,
       implementation: "public-method",
-      scope: `Separately reviewed EasyEDA 3.2.206/API 0.3.50 local-system subset; no project context or legacy-tuple admission. ${descriptor10.limitations.join(" ")}`,
-      source: ["sdk-system.ts", "sdk-system-runtime.ts", "sdk-local-runtime.ts", "facade-mode.ts"],
-      tests: ["sdk-system.test.ts", "sdk-system-runtime.test.ts", "facade-mode.test.ts"],
+      scope: `Separately reviewed EasyEDA 3.2.206/API 0.3.50 or 3.2.209/API 0.3.59 local-system subset; no project context or legacy/native-tuple admission. ${descriptor10.limitations.join(" ")}`,
+      source: ["sdk-system.ts", "sdk-system-runtime.ts", "sdk-local-runtime.ts", "sdk-public-utilities-profile.ts", "facade-mode.ts"],
+      tests: ["sdk-system.test.ts", "sdk-system-runtime.test.ts", "sdk-public-utilities-runtime.test.ts", "facade-mode.test.ts"],
       validation: "offline-regression;current-live-unclaimed",
       executionState: "available-with-runtime-guards",
       inputDiscovery: { tool: "easyeda_control_api", arguments: { request: { action: "system", query: { method: descriptor10.path, includeSchemas: true } } } }
@@ -58960,8 +59264,8 @@ var init_schematic_storage_persistence = __esm({
 // server/src/schematic-layout-constructor-witness.ts
 import { createHash as createHash12 } from "node:crypto";
 import { constants as constants5 } from "node:fs";
-import { lstat as lstat9, open as open9, realpath as realpath5 } from "node:fs/promises";
-import { basename as basename3, join as join11 } from "node:path";
+import { lstat as lstat10, open as open10, realpath as realpath6 } from "node:fs/promises";
+import { basename as basename3, join as join12 } from "node:path";
 function fail6() {
   throw new Error("Schematic constructor order lacks one exact preceding managed close/reopen witness.");
 }
@@ -59170,12 +59474,12 @@ async function phaseText(descriptor10) {
   return result;
 }
 async function workerProfile(assetsRoot) {
-  const path6 = join11(assetsRoot, WORKER.relativePath);
-  const before = await lstat9(path6, { bigint: true });
-  if (!before.isFile() || before.isSymbolicLink() || before.size <= 0n || before.size > 128n * 1024n * 1024n || await realpath5(path6) !== path6) {
+  const path6 = join12(assetsRoot, WORKER.relativePath);
+  const before = await lstat10(path6, { bigint: true });
+  if (!before.isFile() || before.isSymbolicLink() || before.size <= 0n || before.size > 128n * 1024n * 1024n || await realpath6(path6) !== path6) {
     fail6();
   }
-  const file3 = await open9(path6, constants5.O_RDONLY | constants5.O_NOFOLLOW);
+  const file3 = await open10(path6, constants5.O_RDONLY | constants5.O_NOFOLLOW);
   try {
     const hash45 = createHash12("sha256");
     for await (const chunk of file3.createReadStream({ autoClose: false })) {
@@ -59184,7 +59488,7 @@ async function workerProfile(assetsRoot) {
       }
       hash45.update(chunk);
     }
-    const after = await file3.stat({ bigint: true }), current10 = await lstat9(path6, { bigint: true });
+    const after = await file3.stat({ bigint: true }), current10 = await lstat10(path6, { bigint: true });
     if (before.dev !== after.dev || before.ino !== after.ino || before.size !== after.size || before.mtimeNs !== after.mtimeNs || before.ctimeNs !== after.ctimeNs || after.dev !== current10.dev || after.ino !== current10.ino || after.mtimeNs !== current10.mtimeNs || after.ctimeNs !== current10.ctimeNs || hash45.digest("hex") !== WORKER.sha256) {
       fail6();
     }
@@ -62761,7 +63065,7 @@ var init_library_operations = __esm({
 });
 
 // server/src/closed-symbol-terminal-shape.ts
-import { basename as basename4, dirname as dirname3, isAbsolute as isAbsolute9, resolve as resolve5 } from "node:path";
+import { basename as basename4, dirname as dirname4, isAbsolute as isAbsolute9, resolve as resolve5 } from "node:path";
 function need(value2, message) {
   if (!value2) {
     throw new Error(message);
@@ -62802,7 +63106,7 @@ function array2(value2, length) {
 function descriptor(value2, directory4, maximum5, filename) {
   const fields26 = exact(value2, ["path", "bytes", "sha256"]);
   const bytes2 = fields26["bytes"], path6 = text7(fields26["path"]);
-  need(isAbsolute9(path6) && resolve5(path6) === path6 && dirname3(path6) === directory4 && !/[\0\r\n]/u.test(path6) && (filename === void 0 || basename4(path6) === filename), "Terminal artifact path refused.");
+  need(isAbsolute9(path6) && resolve5(path6) === path6 && dirname4(path6) === directory4 && !/[\0\r\n]/u.test(path6) && (filename === void 0 || basename4(path6) === filename), "Terminal artifact path refused.");
   need(typeof bytes2 === "number" && Number.isSafeInteger(bytes2) && !Object.is(bytes2, -0) && bytes2 > 0 && bytes2 <= maximum5, "Terminal artifact byte bound refused.");
   return Object.freeze({ path: path6, bytes: bytes2, sha256: hash11(fields26["sha256"]) });
 }
@@ -63021,7 +63325,7 @@ var init_closed_symbol_terminal_shape = __esm({
 });
 
 // server/src/closed-symbol-aged-terminal-shape.ts
-import { basename as basename5, dirname as dirname4, isAbsolute as isAbsolute10, resolve as resolve6 } from "node:path";
+import { basename as basename5, dirname as dirname5, isAbsolute as isAbsolute10, resolve as resolve6 } from "node:path";
 function need2(value2, message) {
   if (!value2) {
     throw new Error(message);
@@ -63062,7 +63366,7 @@ function array3(value2, length) {
 function descriptor2(value2, directory4, maximum5, filename) {
   const fields26 = exact2(value2, ["path", "bytes", "sha256"]);
   const bytes2 = fields26["bytes"], path6 = text8(fields26["path"]);
-  need2(isAbsolute10(path6) && resolve6(path6) === path6 && dirname4(path6) === directory4 && !/[\0\r\n]/u.test(path6) && (filename === void 0 || basename5(path6) === filename), "Terminal artifact path refused.");
+  need2(isAbsolute10(path6) && resolve6(path6) === path6 && dirname5(path6) === directory4 && !/[\0\r\n]/u.test(path6) && (filename === void 0 || basename5(path6) === filename), "Terminal artifact path refused.");
   need2(typeof bytes2 === "number" && Number.isSafeInteger(bytes2) && !Object.is(bytes2, -0) && bytes2 > 0 && bytes2 <= maximum5, "Terminal artifact byte bound refused.");
   return Object.freeze({ path: path6, bytes: bytes2, sha256: hash12(fields26["sha256"]) });
 }
@@ -64106,7 +64410,7 @@ var init_project_symbol_metadata = __esm({
 });
 
 // server/src/closed-symbol-journal.ts
-import { join as join12 } from "node:path";
+import { join as join13 } from "node:path";
 function requireValue(value2, message) {
   if (!value2) {
     throw new Error(message);
@@ -64319,7 +64623,7 @@ async function readEvents(journal) {
   for (const [index2, descriptor10] of journal.artifacts.entries()) {
     const position6 = expected2(index2 + 1);
     const phase5 = `${position6.step}-${position6.kind}`;
-    requireValue(descriptor10.path === join12(operationPath(journal.operationId).slice(0, -5), `${String(index2 + 1).padStart(2, "0")}-${phase5}.json`) && Number.isSafeInteger(descriptor10.bytes) && descriptor10.bytes > 0 && descriptor10.bytes <= MAX_EVENT_BYTES, "Closed journal artifact descriptor refused.");
+    requireValue(descriptor10.path === join13(operationPath(journal.operationId).slice(0, -5), `${String(index2 + 1).padStart(2, "0")}-${phase5}.json`) && Number.isSafeInteger(descriptor10.bytes) && descriptor10.bytes > 0 && descriptor10.bytes <= MAX_EVENT_BYTES, "Closed journal artifact descriptor refused.");
     const read2 = await readExactUtf8Artifact(descriptor10);
     const raw = JSON.parse(read2.text);
     events.push(parseEvent(raw));
@@ -64359,7 +64663,7 @@ async function readClosedSymbolPhasePrefix(journal) {
   const events = await readEvents(journal);
   if (journal.sequence < STEPS.length * 2) {
     const position6 = expected2(journal.sequence + 1);
-    const path6 = join12(operationPath(operationId13).slice(0, -5), `${String(journal.sequence + 1).padStart(2, "0")}-${position6.step}-${position6.kind}.json`);
+    const path6 = join13(operationPath(operationId13).slice(0, -5), `${String(journal.sequence + 1).padStart(2, "0")}-${position6.step}-${position6.kind}.json`);
     try {
       await readArtifact(path6, 0, 1);
     } catch (error52) {
@@ -64660,7 +64964,7 @@ var init_sqlite_inventory_json = __esm({
 });
 
 // server/src/sqlite-inventory-core.ts
-import { lstat as lstat10, open as open10, realpath as realpath6 } from "node:fs/promises";
+import { lstat as lstat11, open as open11, realpath as realpath7 } from "node:fs/promises";
 import { DatabaseSync as DatabaseSync2 } from "node:sqlite";
 function identity16(info) {
   return {
@@ -64691,7 +64995,7 @@ function freezeDeep(value2) {
 }
 async function noSidecars(path6) {
   for (const suffix of ["-wal", "-shm", "-journal"]) {
-    const absent4 = await lstat10(`${path6}${suffix}`).then(() => false, (error52) => {
+    const absent4 = await lstat11(`${path6}${suffix}`).then(() => false, (error52) => {
       if (error52 instanceof Error && "code" in error52 && error52.code === "ENOENT") {
         return true;
       }
@@ -64715,7 +65019,7 @@ var init_sqlite_inventory_core = __esm({
 // server/src/sqlite-inventory.ts
 import { spawn } from "node:child_process";
 import { constants as constants6 } from "node:fs";
-import { lstat as lstat11, open as open11, realpath as realpath7 } from "node:fs/promises";
+import { lstat as lstat12, open as open12, realpath as realpath8 } from "node:fs/promises";
 import { isAbsolute as isAbsolute11 } from "node:path";
 import { performance as performance2 } from "node:perf_hooks";
 function requireValue3(condition, message) {
@@ -64877,9 +65181,9 @@ async function readExactSqlInventory(input) {
   const scanDeadlineMs = input.scanDeadlineMs ?? TOTAL_DEADLINE_MS;
   requireValue3(process.platform === "linux" && isAbsolute11(path6) && path6.endsWith(".eprj2") && HASH5.test(expectedSha256), "Invalid immutable checkpoint input.");
   requireValue3(Number.isSafeInteger(scanDeadlineMs) && scanDeadlineMs >= 1 && scanDeadlineMs <= TOTAL_DEADLINE_MS, "SQL scan deadline bound refused.");
-  requireValue3(await realpath7(path6) === path6, "Checkpoint path includes a symbolic link.");
+  requireValue3(await realpath8(path6) === path6, "Checkpoint path includes a symbolic link.");
   await noSidecars(path6);
-  const file3 = await open11(path6, constants6.O_RDONLY | constants6.O_NOFOLLOW);
+  const file3 = await open12(path6, constants6.O_RDONLY | constants6.O_NOFOLLOW);
   let node;
   try {
     const before = await file3.stat({ bigint: true });
@@ -64888,8 +65192,8 @@ async function readExactSqlInventory(input) {
     const result = await runReader(file3, node, { checkpointPath: path6, expectedSha256, identity: identity16(before) }, scanDeadlineMs);
     await node.assertCurrent();
     const after = await file3.stat({ bigint: true });
-    const named = await lstat11(path6, { bigint: true });
-    requireValue3(canonicalJson2(identity16(before)) === canonicalJson2(identity16(after)) && canonicalJson2(identity16(after)) === canonicalJson2(identity16(named)) && named.isFile() && await realpath7(path6) === path6, "Checkpoint identity changed during SQL inventory.");
+    const named = await lstat12(path6, { bigint: true });
+    requireValue3(canonicalJson2(identity16(before)) === canonicalJson2(identity16(after)) && canonicalJson2(identity16(after)) === canonicalJson2(identity16(named)) && named.isFile() && await realpath8(path6) === path6, "Checkpoint identity changed during SQL inventory.");
     await noSidecars(path6);
     completions.set(result.inventory, result.completion);
     return result.inventory;
@@ -65016,20 +65320,20 @@ var init_closed_symbol_terminal_admission_shape = __esm({
 
 // server/src/checkpoint.ts
 import { createHash as createHash14, randomUUID as randomUUID4 } from "node:crypto";
-import { constants as fsConstants5 } from "node:fs";
+import { constants as fsConstants6 } from "node:fs";
 import {
   link as link2,
-  lstat as lstat12,
+  lstat as lstat13,
   mkdir as mkdir2,
-  open as open12,
-  realpath as realpath8,
+  open as open13,
+  realpath as realpath9,
   unlink as unlink3
 } from "node:fs/promises";
 import {
   basename as basename6,
-  dirname as dirname5,
+  dirname as dirname6,
   isAbsolute as isAbsolute12,
-  join as join13,
+  join as join14,
   relative as relative4,
   resolve as resolvePath
 } from "node:path";
@@ -65150,37 +65454,37 @@ async function openBoundDirectory(input, create, controlRoot) {
   }
   const segments3 = absolute.split("/").filter(Boolean);
   let currentPath = "/";
-  let currentHandle = await open12(
+  let currentHandle = await open13(
     "/",
-    fsConstants5.O_RDONLY | fsConstants5.O_DIRECTORY | fsConstants5.O_NOFOLLOW
+    fsConstants6.O_RDONLY | fsConstants6.O_DIRECTORY | fsConstants6.O_NOFOLLOW
   );
   try {
     for (const segment2 of segments3) {
       const childPath = `/proc/self/fd/${currentHandle.fd}/${segment2}`;
       let before;
       try {
-        before = await lstat12(childPath, { bigint: true });
+        before = await lstat13(childPath, { bigint: true });
       } catch (error52) {
         if (!create || !isRecord(error52) || error52["code"] !== "ENOENT") {
           throw error52;
         }
         await mkdir2(childPath, { mode: 448 });
-        before = await lstat12(childPath, { bigint: true });
+        before = await lstat13(childPath, { bigint: true });
       }
       if (before.isSymbolicLink() || !before.isDirectory()) {
         throw new Error(
-          `Checkpoint directory path contains a non-directory or symbolic link: ${join13(currentPath, segment2)}`
+          `Checkpoint directory path contains a non-directory or symbolic link: ${join14(currentPath, segment2)}`
         );
       }
-      const childHandle = await open12(
+      const childHandle = await open13(
         childPath,
-        fsConstants5.O_RDONLY | fsConstants5.O_DIRECTORY | fsConstants5.O_NOFOLLOW
+        fsConstants6.O_RDONLY | fsConstants6.O_DIRECTORY | fsConstants6.O_NOFOLLOW
       );
       try {
         const info2 = await childHandle.stat({ bigint: true });
         if (!info2.isDirectory() || before.dev !== info2.dev || before.ino !== info2.ino) {
           throw new Error(
-            `Checkpoint directory identity changed: ${join13(currentPath, segment2)}`
+            `Checkpoint directory identity changed: ${join14(currentPath, segment2)}`
           );
         }
       } catch (error52) {
@@ -65189,7 +65493,7 @@ async function openBoundDirectory(input, create, controlRoot) {
       }
       await currentHandle.close();
       currentHandle = childHandle;
-      currentPath = join13(currentPath, segment2);
+      currentPath = join14(currentPath, segment2);
     }
     const info = await currentHandle.stat({ bigint: true });
     return { absolute, handle: currentHandle, info };
@@ -65218,20 +65522,20 @@ async function assertDirectoryPathIdentity(directory4) {
 async function openBoundFile(input, label, controlRoot) {
   const absolute = resolvePath(input);
   const directory4 = await openBoundDirectory(
-    dirname5(absolute),
+    dirname6(absolute),
     false,
     controlRoot
   );
   const boundPath = boundChildPath(directory4, basename6(absolute));
   try {
-    const before = await lstat12(boundPath, { bigint: true });
+    const before = await lstat13(boundPath, { bigint: true });
     if (before.isSymbolicLink() || !before.isFile()) {
       throw new Error(`${label} must be a regular non-symlink file.`);
     }
     assertManagedFileAuthority2(directory4, before, label);
-    const handle11 = await open12(
+    const handle11 = await open13(
       boundPath,
-      fsConstants5.O_RDONLY | fsConstants5.O_NOFOLLOW
+      fsConstants6.O_RDONLY | fsConstants6.O_NOFOLLOW
     );
     try {
       const info = await handle11.stat({ bigint: true });
@@ -65248,11 +65552,11 @@ async function openBoundFile(input, label, controlRoot) {
   }
 }
 async function createBoundFile(directory4, name6, label) {
-  const absolute = join13(directory4.absolute, name6);
+  const absolute = join14(directory4.absolute, name6);
   const boundPath = boundChildPath(directory4, name6);
-  const handle11 = await open12(
+  const handle11 = await open13(
     boundPath,
-    fsConstants5.O_CREAT | fsConstants5.O_EXCL | fsConstants5.O_RDWR | fsConstants5.O_NOFOLLOW,
+    fsConstants6.O_CREAT | fsConstants6.O_EXCL | fsConstants6.O_RDWR | fsConstants6.O_NOFOLLOW,
     384
   );
   try {
@@ -65263,14 +65567,14 @@ async function createBoundFile(directory4, name6, label) {
         `${label} reservation is not a private owner-owned empty regular file.`
       );
     }
-    const current10 = await lstat12(boundPath, { bigint: true });
+    const current10 = await lstat13(boundPath, { bigint: true });
     assertSameIdentity(info, current10, label);
     return { absolute, boundPath, directory: directory4, handle: handle11, info };
   } catch (error52) {
     const cleanupErrors = [];
     try {
       const opened = await handle11.stat({ bigint: true });
-      const current10 = await lstat12(boundPath, { bigint: true });
+      const current10 = await lstat13(boundPath, { bigint: true });
       assertSameIdentity(opened, current10, `${label} failed reservation`);
       await unlink3(boundPath);
       await directory4.handle.sync();
@@ -65291,7 +65595,7 @@ async function createBoundFile(directory4, name6, label) {
   }
 }
 async function unlinkBoundFile(file3, label, expectedLinkCount = 1n) {
-  const current10 = await lstat12(file3.boundPath, { bigint: true });
+  const current10 = await lstat13(file3.boundPath, { bigint: true });
   assertSameIdentity(file3.info, current10, label);
   assertManagedFileAuthority2(
     file3.directory,
@@ -65355,8 +65659,8 @@ async function trustedSqliteBinary() {
   for (const candidate of SQLITE_BINARY_CANDIDATES) {
     try {
       const [resolved2, info] = await Promise.all([
-        realpath8(candidate),
-        lstat12(candidate, { bigint: true })
+        realpath9(candidate),
+        lstat13(candidate, { bigint: true })
       ]);
       if (resolved2 === candidate && info.isFile() && info.uid === 0n && (info.mode & 0o022n) === 0n) {
         return candidate;
@@ -65509,7 +65813,7 @@ function dataVersion(database) {
   return Number(value2["data_version"]);
 }
 async function assertBoundPathIdentity(file3, label) {
-  const current10 = await lstat12(file3.boundPath, { bigint: true });
+  const current10 = await lstat13(file3.boundPath, { bigint: true });
   assertSameIdentity(file3.info, current10, label);
   assertManagedFileAuthority2(file3.directory, current10, label);
   await assertDirectoryPathIdentity(file3.directory);
@@ -65555,10 +65859,10 @@ async function publishBoundFile(staging, name6, label) {
   const publishedPath = boundChildPath(staging.directory, name6);
   await link2(staging.boundPath, publishedPath);
   try {
-    const publishedInfo = await lstat12(publishedPath, { bigint: true });
+    const publishedInfo = await lstat13(publishedPath, { bigint: true });
     assertSameIdentity(staging.info, publishedInfo, `Published ${label}`);
     await unlinkBoundFile(staging, `${label} staging file`, 2n);
-    const current10 = await lstat12(publishedPath, { bigint: true });
+    const current10 = await lstat13(publishedPath, { bigint: true });
     assertSameIdentity(staging.info, current10, `Published ${label}`);
     if (current10.nlink !== 1n || (current10.mode & 0o777n) !== 0o600n || typeof process.getuid === "function" && current10.uid !== BigInt(process.getuid())) {
       throw new Error(
@@ -65566,7 +65870,7 @@ async function publishBoundFile(staging, name6, label) {
       );
     }
     return {
-      absolute: join13(staging.directory.absolute, name6),
+      absolute: join14(staging.directory.absolute, name6),
       boundPath: publishedPath,
       directory: staging.directory,
       handle: staging.handle,
@@ -65575,7 +65879,7 @@ async function publishBoundFile(staging, name6, label) {
   } catch (error52) {
     const cleanupErrors = [];
     try {
-      const current10 = await lstat12(publishedPath, { bigint: true });
+      const current10 = await lstat13(publishedPath, { bigint: true });
       assertSameIdentity(staging.info, current10, `Published ${label} cleanup`);
       await unlink3(publishedPath);
       await staging.directory.handle.sync();
@@ -65595,12 +65899,12 @@ async function publishBoundFile(staging, name6, label) {
 async function reopenPublishedFileReadOnly(file3, label) {
   const writableInformation = await file3.handle.stat({ bigint: true });
   await file3.handle.close();
-  const before = await lstat12(file3.boundPath, { bigint: true });
+  const before = await lstat13(file3.boundPath, { bigint: true });
   assertSameIdentity(writableInformation, before, label);
   assertManagedFileAuthority2(file3.directory, before, label);
-  const handle11 = await open12(
+  const handle11 = await open13(
     file3.boundPath,
-    fsConstants5.O_RDONLY | fsConstants5.O_NOFOLLOW
+    fsConstants6.O_RDONLY | fsConstants6.O_NOFOLLOW
   );
   try {
     const information = await handle11.stat({ bigint: true });
@@ -65690,7 +65994,7 @@ async function openTemporarySnapshotDirectory(checkpointDirectory, policy2) {
   }
 }
 async function makeSnapshotDescriptorOnly(file3, state4) {
-  const linked = await lstat12(file3.boundPath, { bigint: true });
+  const linked = await lstat13(file3.boundPath, { bigint: true });
   assertSameIdentity(file3.info, linked, "Temporary checkpoint verification snapshot");
   if (linked.nlink !== 1n || (linked.mode & 0o777n) !== 0o600n || typeof process.getuid === "function" && linked.uid !== BigInt(process.getuid())) {
     throw new Error(
@@ -65780,7 +66084,7 @@ async function createCheckpoint({
     const stem = `${sourceStem}-${checkedLabel}-${timestampForPath(createdAt)}`;
     const checkpointName = `${stem}.eprj2`;
     const receiptName = `${stem}.checkpoint.json`;
-    const receiptPath = join13(destination.absolute, receiptName);
+    const receiptPath = join14(destination.absolute, receiptName);
     const snapshot8 = await stableSourceSnapshot(
       sourceFile,
       sourceDatabase,
@@ -66076,8 +66380,8 @@ var init_checkpoint = __esm({
 });
 
 // server/src/closed-symbol-recorded-copy.ts
-import { lstat as lstat13 } from "node:fs/promises";
-import { basename as basename7, dirname as dirname6, isAbsolute as isAbsolute13, resolve as resolve7 } from "node:path";
+import { lstat as lstat14 } from "node:fs/promises";
+import { basename as basename7, dirname as dirname7, isAbsolute as isAbsolute13, resolve as resolve7 } from "node:path";
 function requireValue4(condition, message) {
   if (!condition) {
     throw new Error(message);
@@ -66118,7 +66422,7 @@ function copyReceipt(input, source5, directory4) {
   const value2 = exact5(input, ["schema", "source", "artifact", "bytes", "sha256", "sourceIdentity", "artifactIdentity", "closureProofSha256", "sourceEqualsArtifactBytes", "sourceProjectGenerationBindingVerified", "executionAuthorized", "receiptSha256"]);
   requireValue4(value2["schema"] === "easyeda-pro-control.closed-file-byte-copy.v1" && value2["source"] === source5 && isAbsolute13(source5) && resolve7(source5) === source5 && source5.endsWith(".eprj2"), "Recorded copy source/schema binding refused.");
   const artifact2 = value2["artifact"];
-  requireValue4(typeof artifact2 === "string" && dirname6(artifact2) === directory4 && resolve7(artifact2) === artifact2 && /^closed-copy-[a-f0-9]{8}-[a-f0-9]{4}-4[a-f0-9]{3}-[89ab][a-f0-9]{3}-[a-f0-9]{12}\.eprj2$/u.test(basename7(artifact2)), "Recorded copy artifact is not the operation-owned direct child.");
+  requireValue4(typeof artifact2 === "string" && dirname7(artifact2) === directory4 && resolve7(artifact2) === artifact2 && /^closed-copy-[a-f0-9]{8}-[a-f0-9]{4}-4[a-f0-9]{3}-[89ab][a-f0-9]{3}-[a-f0-9]{12}\.eprj2$/u.test(basename7(artifact2)), "Recorded copy artifact is not the operation-owned direct child.");
   const bytes2 = value2["bytes"];
   requireValue4(typeof bytes2 === "number" && Number.isSafeInteger(bytes2) && bytes2 > 0 && bytes2 <= 268435456, "Recorded copy byte bound refused.");
   requireValue4(value2["sourceEqualsArtifactBytes"] === true && value2["sourceProjectGenerationBindingVerified"] === false && value2["executionAuthorized"] === false, "Recorded copy authority flags refused.");
@@ -66143,7 +66447,7 @@ function identity17(value2) {
   return { device: value2.dev.toString(), inode: value2.ino.toString(), size: value2.size.toString(), mtimeNs: value2.mtimeNs.toString(), ctimeNs: value2.ctimeNs.toString(), birthtimeNs: value2.birthtimeNs.toString(), mode: value2.mode.toString(), uid: value2.uid.toString(), gid: value2.gid.toString(), links: value2.nlink.toString() };
 }
 async function assertArtifact(path6, expected3) {
-  const value2 = await lstat13(path6, { bigint: true });
+  const value2 = await lstat14(path6, { bigint: true });
   requireValue4(value2.isFile() && !value2.isSymbolicLink() && value2.nlink === 1n && value2.mode % 512n === 0o600n && typeof process.getuid === "function" && value2.uid === BigInt(process.getuid()) && canonicalJson(identity17(value2)) === canonicalJson(expected3), "Recorded copy artifact identity changed.");
 }
 async function inspectRecordedClosedCopy(input) {
@@ -66227,8 +66531,8 @@ var init_closed_symbol_recorded_copy = __esm({
 // server/src/closed-symbol-abandonment-cache.ts
 import { createHash as createHash15 } from "node:crypto";
 import { constants as constants7 } from "node:fs";
-import { lstat as lstat14, open as open13, realpath as realpath9 } from "node:fs/promises";
-import { basename as basename8, dirname as dirname7, join as join14 } from "node:path";
+import { lstat as lstat15, open as open14, realpath as realpath10 } from "node:fs/promises";
+import { basename as basename8, dirname as dirname8, join as join15 } from "node:path";
 import { performance as performance3 } from "node:perf_hooks";
 function need3(value2, message) {
   if (!value2) {
@@ -66261,7 +66565,7 @@ async function noSidecars2(path6) {
   for (const suffix of ["-wal", "-shm", "-journal"]) {
     let absent4 = false;
     try {
-      await lstat14(`${path6}${suffix}`);
+      await lstat15(`${path6}${suffix}`);
     } catch (error52) {
       if (error52 instanceof Error && "code" in error52 && error52.code === "ENOENT") {
         absent4 = true;
@@ -66274,22 +66578,22 @@ async function noSidecars2(path6) {
 }
 function plans(loaded, checkpoint) {
   const checkpointPath = checkpoint["checkpoint"], raw = bag(bag(loaded.events[9]?.data)["copyReceipt"]), rawPath = raw["artifact"];
-  need3(typeof rawPath === "string" && dirname7(rawPath) === operationPath(loaded.journal.operationId).slice(0, -5) && /^closed-copy-[a-f0-9-]{36}\.eprj2$/u.test(basename8(rawPath)), "raw copy path escaped its operation");
-  need3(typeof checkpointPath === "string" && dirname7(checkpointPath) === join14(controlDataDirectory(), "checkpoints") && checkpointPath.endsWith(".eprj2"), "checkpoint path escaped managed storage");
+  need3(typeof rawPath === "string" && dirname8(rawPath) === operationPath(loaded.journal.operationId).slice(0, -5) && /^closed-copy-[a-f0-9-]{36}\.eprj2$/u.test(basename8(rawPath)), "raw copy path escaped its operation");
+  need3(typeof checkpointPath === "string" && dirname8(checkpointPath) === join15(controlDataDirectory(), "checkpoints") && checkpointPath.endsWith(".eprj2"), "checkpoint path escaped managed storage");
   return [
     { path: rawPath, sha256: hash13(raw["sha256"]), recordedIdentity: raw["artifactIdentity"] },
     { path: checkpointPath, sha256: hash13(checkpoint["checkpointSha256"]) }
   ];
 }
 async function retain(root2, plan2) {
-  need3(await realpath9(plan2.path) === plan2.path, "path contains a symlink");
-  const directory4 = await root2.openDirectory(dirname7(plan2.path), false);
+  need3(await realpath10(plan2.path) === plan2.path, "path contains a symlink");
+  const directory4 = await root2.openDirectory(dirname8(plan2.path), false);
   let file3;
   try {
     const bound5 = `/proc/self/fd/${directory4.handle.fd}/${basename8(plan2.path)}`;
     await noSidecars2(bound5);
     await noSidecars2(plan2.path);
-    file3 = await open13(bound5, constants7.O_RDONLY | constants7.O_NOFOLLOW | constants7.O_NONBLOCK);
+    file3 = await open14(bound5, constants7.O_RDONLY | constants7.O_NOFOLLOW | constants7.O_NONBLOCK);
     const stat3 = await file3.stat({ bigint: true });
     need3(stat3.isFile() && stat3.nlink === 1n && stat3.size > 0n && stat3.size <= MAX_BYTES3, "file kind or bound changed");
     const currentIdentity = canonicalJson(identity18(stat3));
@@ -66307,10 +66611,10 @@ async function retain(root2, plan2) {
   }
 }
 async function unchanged(root2, item2) {
-  for (const value2 of [await item2.file.stat({ bigint: true }), await lstat14(item2.bound, { bigint: true }), await lstat14(item2.plan.path, { bigint: true })]) {
+  for (const value2 of [await item2.file.stat({ bigint: true }), await lstat15(item2.bound, { bigint: true }), await lstat15(item2.plan.path, { bigint: true })]) {
     need3(value2.isFile() && !value2.isSymbolicLink() && canonicalJson(identity18(value2)) === item2.identity, "file identity changed");
   }
-  need3(await realpath9(item2.plan.path) === item2.plan.path, "path changed");
+  need3(await realpath10(item2.plan.path) === item2.plan.path, "path changed");
   await noSidecars2(item2.bound);
   await noSidecars2(item2.plan.path);
   const named = await root2.openDirectory(item2.directory.absolute, false);
@@ -66321,7 +66625,7 @@ async function unchanged(root2, item2) {
   }
   await root2.assertCurrent();
 }
-async function observe(root2, files) {
+async function observe2(root2, files) {
   const buffer = Buffer.alloc(1048576);
   for (const item2 of files) {
     await unchanged(root2, item2);
@@ -66368,7 +66672,7 @@ async function inspectHistoricalAbandonmentSql(loaded, checkpoint, runtime) {
     for (const plan2 of filePlans) {
       files.push(await retain(root2, plan2));
     }
-    await observe(root2, files);
+    await observe2(root2, files);
     const key = sha256Json({
       inputText,
       root: { path: root2.path, device: String(root2.device), inode: String(root2.inode) },
@@ -66386,7 +66690,7 @@ async function inspectHistoricalAbandonmentSql(loaded, checkpoint, runtime) {
     }
     const selected3 = entries.get(slot);
     result = selected3?.result ?? await cold(loaded, checkpoint, runtime, checkpointPlan);
-    await observe(root2, files);
+    await observe2(root2, files);
     await node.assertCurrent();
     for (const item2 of files) {
       await unchanged(root2, item2);
@@ -66412,12 +66716,12 @@ async function inspectHistoricalAbandonmentSql(loaded, checkpoint, runtime) {
     }
   }
   need3(result !== void 0, "result is missing");
-  if (pending !== void 0 && !entries.has(slot) && entries.size < MAX_ENTRIES) {
+  if (pending !== void 0 && !entries.has(slot) && entries.size < MAX_ENTRIES2) {
     entries.set(slot, pending);
   }
   return result;
 }
-var LIFETIME_MS, MAX_BYTES3, MAX_ENTRIES, entries, readerProgramSha256;
+var LIFETIME_MS, MAX_BYTES3, MAX_ENTRIES2, entries, readerProgramSha256;
 var init_closed_symbol_abandonment_cache = __esm({
   "server/src/closed-symbol-abandonment-cache.ts"() {
     init_artifacts();
@@ -66428,7 +66732,7 @@ var init_closed_symbol_abandonment_cache = __esm({
     init_sqlite_inventory();
     LIFETIME_MS = 6e5;
     MAX_BYTES3 = 268435456n;
-    MAX_ENTRIES = 4;
+    MAX_ENTRIES2 = 4;
     entries = /* @__PURE__ */ new Map();
     readerProgramSha256 = sha256Json(SQLITE_INVENTORY_PROGRAM);
   }
@@ -67027,20 +67331,20 @@ var init_closed_symbol_startup_program = __esm({
 // server/src/closed-symbol-native-profile.ts
 import { createHash as createHash16 } from "node:crypto";
 import { constants as constants8 } from "node:fs";
-import { lstat as lstat15, open as open14, realpath as realpath10 } from "node:fs/promises";
-import { dirname as dirname8, isAbsolute as isAbsolute14, join as join15 } from "node:path";
+import { lstat as lstat16, open as open15, realpath as realpath11 } from "node:fs/promises";
+import { dirname as dirname9, isAbsolute as isAbsolute14, join as join16 } from "node:path";
 function need4(value2) {
   if (!value2) {
     throw new Error("Witness native program profile changed or is unavailable.");
   }
 }
 async function verifyWitnessNativeProfile(assetsRoot) {
-  need4(isAbsolute14(assetsRoot) && await realpath10(assetsRoot) === assetsRoot);
+  need4(isAbsolute14(assetsRoot) && await realpath11(assetsRoot) === assetsRoot);
   for (const pin4 of WITNESS_NATIVE_PINS) {
-    const path6 = join15(pin4.root === "app" ? dirname8(assetsRoot) : assetsRoot, pin4.relativePath);
-    const before = await lstat15(path6, { bigint: true });
-    need4(before.isFile() && !before.isSymbolicLink() && before.size > 0n && before.size <= 128n * 1024n * 1024n && await realpath10(path6) === path6);
-    const file3 = await open14(path6, constants8.O_RDONLY | constants8.O_NOFOLLOW);
+    const path6 = join16(pin4.root === "app" ? dirname9(assetsRoot) : assetsRoot, pin4.relativePath);
+    const before = await lstat16(path6, { bigint: true });
+    need4(before.isFile() && !before.isSymbolicLink() && before.size > 0n && before.size <= 128n * 1024n * 1024n && await realpath11(path6) === path6);
+    const file3 = await open15(path6, constants8.O_RDONLY | constants8.O_NOFOLLOW);
     try {
       const hash45 = createHash16("sha256");
       let consumed3 = 0n;
@@ -67050,8 +67354,8 @@ async function verifyWitnessNativeProfile(assetsRoot) {
         need4(consumed3 <= before.size && consumed3 <= 128n * 1024n * 1024n);
         hash45.update(chunk);
       }
-      const after = await file3.stat({ bigint: true }), named = await lstat15(path6, { bigint: true });
-      need4(consumed3 === before.size && before.dev === after.dev && before.ino === after.ino && before.size === after.size && before.mtimeNs === after.mtimeNs && before.ctimeNs === after.ctimeNs && after.dev === named.dev && after.ino === named.ino && after.size === named.size && after.mtimeNs === named.mtimeNs && after.ctimeNs === named.ctimeNs && named.isFile() && !named.isSymbolicLink() && await realpath10(path6) === path6 && hash45.digest("hex") === pin4.sha256);
+      const after = await file3.stat({ bigint: true }), named = await lstat16(path6, { bigint: true });
+      need4(consumed3 === before.size && before.dev === after.dev && before.ino === after.ino && before.size === after.size && before.mtimeNs === after.mtimeNs && before.ctimeNs === after.ctimeNs && after.dev === named.dev && after.ino === named.ino && after.size === named.size && after.mtimeNs === named.mtimeNs && after.ctimeNs === named.ctimeNs && named.isFile() && !named.isSymbolicLink() && await realpath11(path6) === path6 && hash45.digest("hex") === pin4.sha256);
     } finally {
       await file3.close();
     }
@@ -67135,7 +67439,7 @@ var init_closed_symbol_validation_request = __esm({
 // server/src/closed-symbol-target-claim.ts
 import { closeSync as closeSync2, constants as constants9, fstatSync as fstatSync2, lstatSync as lstatSync2, openSync as openSync2, readSync } from "node:fs";
 import { mkdir as mkdir3 } from "node:fs/promises";
-import { join as join16 } from "node:path";
+import { join as join17 } from "node:path";
 function inputs(rawRequest, rawPlan) {
   const request13 = parseClosedSymbolValidationRequest(rawRequest);
   const source5 = exactData(rawPlan, ["profile", "projectUuid", "branchUuid", "ownerUuid", "targetUuid", "activeUuid", "projectPath", "operation", "marker", "nativePinsSha256", "facadeSha256", "expectedFingerprintSha256"]);
@@ -67170,7 +67474,7 @@ function inputs(rawRequest, rawPlan) {
   requireValue6(operation["id"] === VALIDATION_ACTION_ID && operation["action"] === "library.symbol.modify" && operation["libraryUuid"] === request13.target.projectUuid && target9["uuid"] === request13.target.symbolUuid && patch5["name"] === request13.metadata.name && patch5["description"] === request13.metadata.description, "Validation operation does not match the fixed request.");
   return Object.freeze({ request: request13, plan: plan2 });
 }
-function sameFile2(left, right) {
+function sameFile3(left, right) {
   return ["dev", "ino", "mode", "uid", "gid", "nlink", "size", "mtimeNs", "ctimeNs"].every((key) => left[key] === right[key]);
 }
 function finalDirectory(path6, device, inode, uid) {
@@ -67205,12 +67509,12 @@ function finalReservation(root2, parent, slot, artifact2, expected3) {
       }
       offset9 += count3;
     }
-    requireValue6(offset9 === expected3.length && bytes2.subarray(0, offset9).equals(expected3) && sameFile2(before, fstatSync2(descriptor10, { bigint: true })), "Validation claim bytes changed after publication cleanup.");
+    requireValue6(offset9 === expected3.length && bytes2.subarray(0, offset9).equals(expected3) && sameFile3(before, fstatSync2(descriptor10, { bigint: true })), "Validation claim bytes changed after publication cleanup.");
   } finally {
     closeSync2(descriptor10);
   }
   lineage();
-  requireValue6(sameFile2(before, lstatSync2(boundPath, { bigint: true })), "Validation claim pathname changed after final read.");
+  requireValue6(sameFile3(before, lstatSync2(boundPath, { bigint: true })), "Validation claim pathname changed after final read.");
 }
 async function claimClosedSymbolValidationTarget(rawRequest, ownerPlan) {
   requireValue6(typeof process.getuid === "function", "Validation claim requires Linux UID support.");
@@ -67219,7 +67523,7 @@ async function claimClosedSymbolValidationTarget(rawRequest, ownerPlan) {
     requireValue6(canonicalJson(inputs(rawRequest, ownerPlan)) === seal2, "Validation claim inputs changed during publication.");
   };
   const targetKey = sha256Json({ profile: PROFILE7, projectUuid: bound5.request.target.projectUuid, symbolUuid: bound5.request.target.symbolUuid });
-  const parentPath = join16(controlDataDirectory(), "closed-symbol-validation-claims-v1"), reservationPath = join16(parentPath, targetKey);
+  const parentPath = join17(controlDataDirectory(), "closed-symbol-validation-claims-v1"), reservationPath = join17(parentPath, targetKey);
   const closedPlanSha256 = sha256Json(bound5.plan), markerSha256 = sha256Json(bound5.plan.marker), requestSha256 = sha256Json(bound5.request);
   const body4 = {
     profile: PROFILE7,
@@ -67244,7 +67548,7 @@ async function claimClosedSymbolValidationTarget(rawRequest, ownerPlan) {
   let artifact2, retainedSlot;
   try {
     currentInputs();
-    await mkdir3(join16(`/proc/self/fd/${parent.handle.fd}`, targetKey), { mode: 448 });
+    await mkdir3(join17(`/proc/self/fd/${parent.handle.fd}`, targetKey), { mode: 448 });
     await parent.handle.sync();
     currentInputs();
     const slot = await root2.openDirectory(reservationPath, false);
@@ -67252,7 +67556,7 @@ async function claimClosedSymbolValidationTarget(rawRequest, ownerPlan) {
     try {
       await slot.handle.sync();
       currentInputs();
-      artifact2 = await publishManagedAttachmentExclusive(join16(reservationPath, "claim.json"), "Closed-symbol permanent claim", bytes2, PROFILE7);
+      artifact2 = await publishManagedAttachmentExclusive(join17(reservationPath, "claim.json"), "Closed-symbol permanent claim", bytes2, PROFILE7);
       currentInputs();
       await readExactUtf8Artifact({ path: artifact2.path, bytes: artifact2.bytes, sha256: artifact2.sha256 });
       currentInputs();
@@ -67308,8 +67612,8 @@ __export(closed_symbol_abandonment_exports, {
   abandonClosedSymbolBeforeNavigation: () => abandonClosedSymbolBeforeNavigation,
   inspectClosedSymbolAbandonment: () => inspectClosedSymbolAbandonment
 });
-import { opendir } from "node:fs/promises";
-import { dirname as dirname9, join as join17 } from "node:path";
+import { opendir as opendir2 } from "node:fs/promises";
+import { dirname as dirname10, join as join18 } from "node:path";
 function need5(condition, message) {
   if (!condition) {
     throw new Error(message);
@@ -67323,7 +67627,7 @@ function bag2(value2) {
   return value2;
 }
 function pathFor(operationId13) {
-  return join17(operationPath(identifier5.parse(operationId13)).slice(0, -5), "abandoned-before-navigation.json");
+  return join18(operationPath(identifier5.parse(operationId13)).slice(0, -5), "abandoned-before-navigation.json");
 }
 function text11(value2) {
   need5(typeof value2 === "string", "Closed-symbol abandonment string missing.");
@@ -67343,7 +67647,7 @@ async function noLaterEvidence(operationId13) {
   const root2 = await controlRootCapability(false);
   const directory4 = await root2.openDirectory(operationPath(operationId13).slice(0, -5), false);
   try {
-    const entries6 = await opendir(`/proc/self/fd/${directory4.handle.fd}`);
+    const entries6 = await opendir2(`/proc/self/fd/${directory4.handle.fd}`);
     let count3 = 0;
     for await (const entry of entries6) {
       count3 += 1;
@@ -67395,7 +67699,7 @@ async function prefix(operationId13) {
 async function claim(loaded) {
   const { plan: plan2 } = loaded.journal;
   const targetKey = sha256Json({ profile: "easyeda-pro-control.closed-symbol-validation-claim.v1", projectUuid: plan2.projectUuid, symbolUuid: plan2.targetUuid });
-  const path6 = join17(controlDataDirectory(), "closed-symbol-validation-claims-v1", targetKey, "claim.json");
+  const path6 = join18(controlDataDirectory(), "closed-symbol-validation-claims-v1", targetKey, "claim.json");
   const retained2 = await managedJson(path6, 131072), value2 = bag2(retained2.value);
   const request13 = {
     action: "run-disposable-once",
@@ -67430,9 +67734,9 @@ async function claim(loaded) {
 async function baseline(loaded) {
   const { journal, events } = loaded, checkpoint = bag2(bag2(events[8]?.data)["checkpoint"]);
   const checkpointPath = text11(checkpoint["checkpoint"]), receiptPath = text11(checkpoint["receiptPath"]);
-  const checkpointDirectory = join17(controlDataDirectory(), "checkpoints");
+  const checkpointDirectory = join18(controlDataDirectory(), "checkpoints");
   need5(
-    dirname9(receiptPath) === checkpointDirectory && dirname9(checkpointPath) === checkpointDirectory && checkpoint["source"] === journal.plan.projectPath && checkpoint["schema"] === "easyeda-pro-control.checkpoint.v2",
+    dirname10(receiptPath) === checkpointDirectory && dirname10(checkpointPath) === checkpointDirectory && checkpoint["source"] === journal.plan.projectPath && checkpoint["schema"] === "easyeda-pro-control.checkpoint.v2",
     "Closed-symbol abandonment baseline checkpoint binding differs."
   );
   const retained2 = await managedJson(receiptPath);
@@ -67506,7 +67810,7 @@ async function abandonClosedSymbolBeforeNavigation(operationId13) {
     const root2 = await controlRootCapability(false);
     const observed2 = await verifyCheckpoint(recorded2.checkpointReceipt.path, {
       controlRoot: root2,
-      artifactRoots: [join17(controlDataDirectory(), "checkpoints")],
+      artifactRoots: [join18(controlDataDirectory(), "checkpoints")],
       expectedSource: loaded.journal.plan.projectPath,
       maximumSourceBytes: 268435456
     });
@@ -67621,8 +67925,8 @@ __export(closed_symbol_baseline_abandonment_exports, {
   abandonClosedSymbolBaselineBeforeNavigation: () => abandonClosedSymbolBaselineBeforeNavigation,
   inspectClosedSymbolBaselineAbandonment: () => inspectClosedSymbolBaselineAbandonment
 });
-import { opendir as opendir2 } from "node:fs/promises";
-import { basename as basename9, join as join18 } from "node:path";
+import { opendir as opendir3 } from "node:fs/promises";
+import { basename as basename9, join as join19 } from "node:path";
 function need6(condition, message) {
   if (!condition) {
     throw new Error(message);
@@ -67636,7 +67940,7 @@ function bag3(value2) {
   return value2;
 }
 function pathFor2(operationId13) {
-  return join18(operationPath(identifier6.parse(operationId13)).slice(0, -5), FILE);
+  return join19(operationPath(identifier6.parse(operationId13)).slice(0, -5), FILE);
 }
 async function managedJson2(path6, maximum5 = MAX_BYTES5) {
   const page = await readArtifact(path6, 0, maximum5);
@@ -67650,7 +67954,7 @@ async function noLaterEvidence2(loaded) {
   const directory4 = await root2.openDirectory(operationPath(loaded.journal.operationId).slice(0, -5), false);
   const allowed = /* @__PURE__ */ new Set(["00-expected-fingerprint.json", WINDOW_FILE, FILE, ...loaded.journal.artifacts.map((item2) => basename9(item2.path))]);
   try {
-    const entries6 = await opendir2(`/proc/self/fd/${directory4.handle.fd}`);
+    const entries6 = await opendir3(`/proc/self/fd/${directory4.handle.fd}`);
     let count3 = 0;
     for await (const entry of entries6) {
       count3 += 1;
@@ -67662,7 +67966,7 @@ async function noLaterEvidence2(loaded) {
   }
 }
 async function windowDiagnostic(loaded) {
-  const path6 = join18(operationPath(loaded.journal.operationId).slice(0, -5), WINDOW_FILE);
+  const path6 = join19(operationPath(loaded.journal.operationId).slice(0, -5), WINDOW_FILE);
   try {
     await readArtifact(path6, 0, 1);
   } catch (error52) {
@@ -67721,7 +68025,7 @@ async function prefix2(operationId13) {
 async function claim2(loaded) {
   const { plan: plan2 } = loaded.journal;
   const targetKey = sha256Json({ profile: "easyeda-pro-control.closed-symbol-validation-claim.v1", projectUuid: plan2.projectUuid, symbolUuid: plan2.targetUuid });
-  const path6 = join18(controlDataDirectory(), "closed-symbol-validation-claims-v1", targetKey, "claim.json");
+  const path6 = join19(controlDataDirectory(), "closed-symbol-validation-claims-v1", targetKey, "claim.json");
   const retained2 = await managedJson2(path6, 131072), value2 = bag3(retained2.value);
   const request13 = {
     action: "run-disposable-once",
@@ -67895,8 +68199,8 @@ __export(current_symbol_baseline_abandonment_exports, {
   abandonCurrentSymbolBaselineBeforeRelaunch: () => abandonCurrentSymbolBaselineBeforeRelaunch,
   inspectCurrentSymbolBaselineAbandonment: () => inspectCurrentSymbolBaselineAbandonment
 });
-import { opendir as opendir3 } from "node:fs/promises";
-import { basename as basename10, join as join19 } from "node:path";
+import { opendir as opendir4 } from "node:fs/promises";
+import { basename as basename10, join as join20 } from "node:path";
 function need7(condition, message) {
   if (!condition) {
     throw new Error(message);
@@ -67917,7 +68221,7 @@ function sealed(input, key) {
   return object6;
 }
 function pathFor3(operationId13) {
-  return join19(operationPath(identifier7.parse(operationId13)).slice(0, -5), FILE2);
+  return join20(operationPath(identifier7.parse(operationId13)).slice(0, -5), FILE2);
 }
 async function managedJson3(path6) {
   const page = await readArtifact(path6, 0, MAX_BYTES6);
@@ -67932,7 +68236,7 @@ async function noLaterEvidence3(operationId13, artifacts, rawCopy) {
   const required2 = /* @__PURE__ */ new Set([basename10(rawCopy.path), ...artifacts.map((item2) => basename10(item2.path))]);
   const allowed = /* @__PURE__ */ new Set([FILE2, ...required2]);
   try {
-    const entries6 = await opendir3(`/proc/self/fd/${directory4.handle.fd}`);
+    const entries6 = await opendir4(`/proc/self/fd/${directory4.handle.fd}`);
     const seen = /* @__PURE__ */ new Set();
     for await (const entry of entries6) {
       seen.add(entry.name);
@@ -68007,7 +68311,7 @@ async function prefix3(operationId13) {
   for (const [index2, phase5] of phases2.entries()) {
     const artifact2 = journal.artifacts[index2];
     need7(
-      artifact2 !== void 0 && artifact2.bytes <= MAX_BYTES6 && artifact2.path === join19(operationPath(operationId13).slice(0, -5), `${String(index2 + 1).padStart(2, "0")}-${phase5}.json`),
+      artifact2 !== void 0 && artifact2.bytes <= MAX_BYTES6 && artifact2.path === join20(operationPath(operationId13).slice(0, -5), `${String(index2 + 1).padStart(2, "0")}-${phase5}.json`),
       "Pre-relaunch abandonment requires the contiguous seven-phase prefix."
     );
     const raw = await readExactUtf8Artifact(artifact2);
@@ -68066,12 +68370,12 @@ async function prefix3(operationId13) {
   hash16.parse(sql4["logicalSha256"]);
   const rawCopy = descriptor5.parse({ path: copy3["artifact"], bytes: copy3["bytes"], sha256: copy3["sha256"] });
   need7(
-    /^closed-copy-[a-f0-9-]{36}\.eprj2$/u.test(basename10(rawCopy.path)) && rawCopy.path === join19(operationPath(operationId13).slice(0, -5), basename10(rawCopy.path)),
+    /^closed-copy-[a-f0-9-]{36}\.eprj2$/u.test(basename10(rawCopy.path)) && rawCopy.path === join20(operationPath(operationId13).slice(0, -5), basename10(rawCopy.path)),
     "Pre-relaunch abandonment raw copy escaped its operation."
   );
   const checkpoint = descriptor5.parse(bag4(prepared["checkpoint"]));
   need7(
-    checkpoint.path === checkpointReceipt2["checkpoint"] && checkpoint.sha256 === checkpointReceipt2["checkpointSha256"] && checkpoint.path === join19(controlDataDirectory(), "checkpoints", basename10(checkpoint.path)) && checkpoint.path.endsWith(".eprj2"),
+    checkpoint.path === checkpointReceipt2["checkpoint"] && checkpoint.sha256 === checkpointReceipt2["checkpointSha256"] && checkpoint.path === join20(controlDataDirectory(), "checkpoints", basename10(checkpoint.path)) && checkpoint.path.endsWith(".eprj2"),
     "Pre-relaunch abandonment checkpoint escaped its managed directory."
   );
   const receiptPath = external_exports.string().parse(checkpointReceipt2["receiptPath"]);
@@ -68258,7 +68562,7 @@ var init_current_symbol_baseline_abandonment = __esm({
 });
 
 // server/src/closed-symbol-terminal-closure-plan.ts
-import { basename as basename11, dirname as dirname10, join as join20, resolve as resolve8 } from "node:path";
+import { basename as basename11, dirname as dirname11, join as join21, resolve as resolve8 } from "node:path";
 function requireEvidence(condition, message) {
   if (!condition) {
     throw new ClosureEvidenceChangedError(message);
@@ -68376,7 +68680,7 @@ function deriveClosedSymbolTerminalClosure(input) {
     const step = STEPS[Math.floor(index2 / 2)];
     const kind = index2 % 2 === 0 ? "intent" : "result";
     requireEvidence(descriptor10 !== void 0 && step !== void 0 && event4["sequence"] === index2 + 1 && event4["step"] === step && event4["kind"] === kind && event4["operationId"] === operationId13 && event4["dataSha256"] === sha256Json(event4["data"]) && event4["previousArtifactSha256"] === (index2 === 0 ? null : envelope4.body.phaseArtifacts[index2 - 1]?.sha256), "closure-phase-binding");
-    requireEvidence(descriptor10.path === join20(directory4, `${String(index2 + 1).padStart(2, "0")}-${step}-${kind}.json`), "closure-phase-path");
+    requireEvidence(descriptor10.path === join21(directory4, `${String(index2 + 1).padStart(2, "0")}-${step}-${kind}.json`), "closure-phase-path");
     add4(`phase:${String(index2 + 1)}`, descriptor10.path, descriptor10.bytes, 6e4, descriptor10.sha256, sha256Json(event4));
   }
   add4("terminal", terminal.path, terminal.bytes, 65536, terminal.sha256, sha256Json(envelope4));
@@ -68410,8 +68714,8 @@ function deriveClosedSymbolTerminalClosure(input) {
     );
     const path6 = text12(checkpoint["checkpoint"]);
     const receiptPath = text12(checkpoint["receiptPath"]);
-    const checkpointDirectory = join20(controlDataDirectory(), "checkpoints");
-    requireEvidence(dirname10(path6) === checkpointDirectory && dirname10(receiptPath) === checkpointDirectory && basename11(path6).endsWith(".eprj2") && basename11(receiptPath).endsWith(".json"), "closure-checkpoint-path");
+    const checkpointDirectory = join21(controlDataDirectory(), "checkpoints");
+    requireEvidence(dirname11(path6) === checkpointDirectory && dirname11(receiptPath) === checkpointDirectory && basename11(path6).endsWith(".eprj2") && basename11(receiptPath).endsWith(".json"), "closure-checkpoint-path");
     add4(
       `checkpoint:${String(ordinal)}`,
       path6,
@@ -68471,8 +68775,8 @@ var init_closed_symbol_terminal_closure_plan = __esm({
 // server/src/closed-symbol-terminal-closure-journal.ts
 import { createHash as createHash17 } from "node:crypto";
 import { constants as constants10 } from "node:fs";
-import { lstat as lstat16, open as open15 } from "node:fs/promises";
-import { basename as basename12, dirname as dirname11 } from "node:path";
+import { lstat as lstat17, open as open16 } from "node:fs/promises";
+import { basename as basename12, dirname as dirname12 } from "node:path";
 import { performance as performance4 } from "node:perf_hooks";
 function identity20(info) {
   return canonicalJson([info.dev, info.ino, info.size, info.mtimeNs, info.ctimeNs, info.birthtimeNs, info.mode, info.uid, info.gid, info.nlink].map(String));
@@ -68500,19 +68804,19 @@ async function captureClosedSymbolJournalBytes(input) {
   };
   const root2 = await controlRootCapability(false);
   deadline2();
-  const directory4 = await root2.openDirectory(dirname11(path6), false);
+  const directory4 = await root2.openDirectory(dirname12(path6), false);
   let handle11;
   let failed = false;
   let originalFailure;
   try {
     deadline2();
     const bound5 = `/proc/self/fd/${directory4.handle.fd}/${basename12(path6)}`;
-    const before = await lstat16(bound5, { bigint: true });
+    const before = await lstat17(bound5, { bigint: true });
     file2(before);
     deadline2();
     const retained2 = identity20(before);
-    requireEvidence(identity20(await lstat16(path6, { bigint: true })) === retained2, "closure-journal-named-identity");
-    handle11 = await open15(bound5, constants10.O_RDONLY | constants10.O_NOFOLLOW | constants10.O_NONBLOCK);
+    requireEvidence(identity20(await lstat17(path6, { bigint: true })) === retained2, "closure-journal-named-identity");
+    handle11 = await open16(bound5, constants10.O_RDONLY | constants10.O_NOFOLLOW | constants10.O_NONBLOCK);
     requireEvidence(identity20(await handle11.stat({ bigint: true })) === retained2, "closure-journal-opened-identity");
     const bytes2 = Buffer.alloc(Number(before.size));
     let position6 = 0;
@@ -68546,8 +68850,8 @@ async function captureClosedSymbolJournalBytes(input) {
 `) {
       throw new ClosureIneligibleError("closure-journal-producer-encoding");
     }
-    requireEvidence(identity20(await handle11.stat({ bigint: true })) === retained2 && identity20(await lstat16(bound5, { bigint: true })) === retained2 && identity20(await lstat16(path6, { bigint: true })) === retained2, "closure-journal-final-identity");
-    const current10 = await root2.openDirectory(dirname11(path6), false);
+    requireEvidence(identity20(await handle11.stat({ bigint: true })) === retained2 && identity20(await lstat17(bound5, { bigint: true })) === retained2 && identity20(await lstat17(path6, { bigint: true })) === retained2, "closure-journal-final-identity");
+    const current10 = await root2.openDirectory(dirname12(path6), false);
     try {
       requireEvidence(
         current10.info.dev === directory4.info.dev && current10.info.ino === directory4.info.ino && current10.info.mode === directory4.info.mode && current10.info.uid === directory4.info.uid && current10.info.gid === directory4.info.gid,
@@ -68953,7 +69257,7 @@ var init_main_reference_helper_identity = __esm({
 // server/src/closed-symbol-main-reference-v3-metadata.ts
 import { createHash as createHash18 } from "node:crypto";
 import { constants as constants11 } from "node:fs";
-import { open as open16 } from "node:fs/promises";
+import { open as open17 } from "node:fs/promises";
 import { fileURLToPath } from "node:url";
 function mainReferenceV3AssetDescriptors() {
   const identity35 = MAIN_REFERENCE_HELPER_IDENTITY;
@@ -68987,7 +69291,7 @@ function hash18(value2) {
   need9(/^[a-f0-9]{64}$/u.test(value2));
 }
 async function pinnedBytes(url2, expectedHash, maximum5, exactBytes) {
-  const handle11 = await open16(fileURLToPath(url2), constants11.O_RDONLY | constants11.O_NOFOLLOW | constants11.O_NONBLOCK);
+  const handle11 = await open17(fileURLToPath(url2), constants11.O_RDONLY | constants11.O_NOFOLLOW | constants11.O_NONBLOCK);
   try {
     const before = await handle11.stat({ bigint: true });
     need9(before.isFile() && before.nlink === 1n && before.size > 0n && before.size <= BigInt(maximum5) && (exactBytes === void 0 || before.size === BigInt(exactBytes)));
@@ -69079,7 +69383,7 @@ var closed_symbol_aged_terminal_closure_plan_exports = {};
 __export(closed_symbol_aged_terminal_closure_plan_exports, {
   deriveClosedSymbolAgedTerminalClosure: () => deriveClosedSymbolAgedTerminalClosure
 });
-import { basename as basename13, dirname as dirname12, join as join21, resolve as resolve9 } from "node:path";
+import { basename as basename13, dirname as dirname13, join as join22, resolve as resolve9 } from "node:path";
 function eligible2(condition, message) {
   if (!condition) {
     throw new ClosureIneligibleError(message);
@@ -69141,7 +69445,7 @@ function deriveClosedSymbolAgedTerminalClosure(input) {
     const step = STEPS[Math.floor(index2 / 2)];
     const kind = index2 % 2 === 0 ? "intent" : "result";
     requireEvidence(descriptor10 !== void 0 && step !== void 0 && event4["sequence"] === index2 + 1 && event4["step"] === step && event4["kind"] === kind && event4["operationId"] === operationId13 && event4["dataSha256"] === sha256Json(event4["data"]) && event4["previousArtifactSha256"] === (index2 === 0 ? null : envelope4.body.phaseArtifacts[index2 - 1]?.sha256), "closure-phase-binding");
-    requireEvidence(descriptor10.path === join21(directory4, `${String(index2 + 1).padStart(2, "0")}-${step}-${kind}.json`), "closure-phase-path");
+    requireEvidence(descriptor10.path === join22(directory4, `${String(index2 + 1).padStart(2, "0")}-${step}-${kind}.json`), "closure-phase-path");
     add4(`phase:${String(index2 + 1)}`, descriptor10.path, descriptor10.bytes, 6e4, descriptor10.sha256, sha256Json(event4));
   }
   add4("terminal", terminal.path, terminal.bytes, 65536, terminal.sha256, sha256Json(envelope4));
@@ -69177,8 +69481,8 @@ function deriveClosedSymbolAgedTerminalClosure(input) {
     );
     const path6 = text13(checkpoint["checkpoint"]);
     const receiptPath = text13(checkpoint["receiptPath"]);
-    const checkpointDirectory = join21(controlDataDirectory(), "checkpoints");
-    requireEvidence(dirname12(path6) === checkpointDirectory && dirname12(receiptPath) === checkpointDirectory && basename13(path6).endsWith(".eprj2") && basename13(receiptPath).endsWith(".json"), "closure-checkpoint-path");
+    const checkpointDirectory = join22(controlDataDirectory(), "checkpoints");
+    requireEvidence(dirname13(path6) === checkpointDirectory && dirname13(receiptPath) === checkpointDirectory && basename13(path6).endsWith(".eprj2") && basename13(receiptPath).endsWith(".json"), "closure-checkpoint-path");
     add4(
       `checkpoint:${String(ordinal)}`,
       path6,
@@ -69239,8 +69543,8 @@ var init_closed_symbol_aged_terminal_closure_plan = __esm({
 // server/src/closed-symbol-terminal-closure-observer.ts
 import { createHash as createHash19 } from "node:crypto";
 import { constants as constants12 } from "node:fs";
-import { lstat as lstat17, open as open17, realpath as realpath11 } from "node:fs/promises";
-import { basename as basename14, dirname as dirname13 } from "node:path";
+import { lstat as lstat18, open as open18, realpath as realpath12 } from "node:fs/promises";
+import { basename as basename14, dirname as dirname14 } from "node:path";
 import { performance as performance5 } from "node:perf_hooks";
 function identity22(value2) {
   return Object.freeze({
@@ -69280,7 +69584,7 @@ function jsonDigest(bytes2, bytesSha256) {
 }
 async function absent(path6) {
   try {
-    await lstat17(path6);
+    await lstat18(path6);
   } catch (error52) {
     if (error52 !== null && typeof error52 === "object" && "code" in error52 && error52.code === "ENOENT") {
       return;
@@ -69329,10 +69633,10 @@ function manifestEligible(info) {
   }
 }
 async function manifestDirectory(parent) {
-  if (await realpath11(parent) !== parent) {
+  if (await realpath12(parent) !== parent) {
     throw new ClosureIneligibleError("closure-manifest-parent-alias");
   }
-  const handle11 = await open17(parent, constants12.O_RDONLY | constants12.O_DIRECTORY | constants12.O_NOFOLLOW);
+  const handle11 = await open18(parent, constants12.O_RDONLY | constants12.O_DIRECTORY | constants12.O_NOFOLLOW);
   try {
     return { path: parent, handle: handle11, identity: directoryIdentity(await handle11.stat({ bigint: true })), managed: false };
   } catch (error52) {
@@ -69340,7 +69644,7 @@ async function manifestDirectory(parent) {
     throw error52;
   }
 }
-async function observe2(input, profile = "locked", lease) {
+async function observe3(input, profile = "locked", lease) {
   const started = performance5.now();
   let plan2;
   if (profile === "aged") {
@@ -69390,7 +69694,7 @@ async function observe2(input, profile = "locked", lease) {
       deadline2();
       const role = values2[0];
       requireEvidence(role !== void 0, "closure-role-empty");
-      const parent = dirname13(role.path);
+      const parent = dirname14(role.path);
       let directory4 = directories.find((entry) => entry.path === parent);
       if (directory4 === void 0) {
         if (role.managed) {
@@ -69411,16 +69715,16 @@ async function observe2(input, profile = "locked", lease) {
           absentSidecars3.push(...values2.map((alias) => ({ role: `${alias.role}${suffix}`, path: `${role.path}${suffix}` })));
         }
       }
-      const before = await lstat17(bound5, { bigint: true });
+      const before = await lstat18(bound5, { bigint: true });
       boundedFile(before, role);
       deadline2();
       const fileIdentity5 = identity22(before);
-      same22(identity22(await lstat17(role.path, { bigint: true })), fileIdentity5, "named-file");
+      same22(identity22(await lstat18(role.path, { bigint: true })), fileIdentity5, "named-file");
       observedBytes += Number(before.size);
       if (observedBytes > CLOSURE_LIMITS.aggregateBytes) {
         throw new ClosureIneligibleError("closure-aggregate-budget");
       }
-      const handle11 = await open17(bound5, constants12.O_RDONLY | constants12.O_NOFOLLOW | constants12.O_NONBLOCK);
+      const handle11 = await open18(bound5, constants12.O_RDONLY | constants12.O_NOFOLLOW | constants12.O_NONBLOCK);
       files.push({ handle: handle11, role, bound: bound5, identity: fileIdentity5 });
       deadline2();
       same22(identity22(await handle11.stat({ bigint: true })), fileIdentity5, "opened-file");
@@ -69455,16 +69759,16 @@ async function observe2(input, profile = "locked", lease) {
         manifestEligible(fileIdentity5);
       }
       same22(identity22(await handle11.stat({ bigint: true })), fileIdentity5, "hashed-file");
-      same22(identity22(await lstat17(bound5, { bigint: true })), fileIdentity5, "bound-file");
-      same22(identity22(await lstat17(role.path, { bigint: true })), fileIdentity5, "named-file");
+      same22(identity22(await lstat18(bound5, { bigint: true })), fileIdentity5, "bound-file");
+      same22(identity22(await lstat18(role.path, { bigint: true })), fileIdentity5, "named-file");
       fileMetadata.push({ path: role.path, identity: fileIdentity5, sha256: digest14, roles: Object.freeze(values2.map((entry) => entry.role)) });
       deadline2();
     }
     for (const file3 of files) {
       deadline2();
       same22(identity22(await file3.handle.stat({ bigint: true })), file3.identity, "final-descriptor");
-      same22(identity22(await lstat17(file3.bound, { bigint: true })), file3.identity, "final-bound");
-      same22(identity22(await lstat17(file3.role.path, { bigint: true })), file3.identity, "final-named");
+      same22(identity22(await lstat18(file3.bound, { bigint: true })), file3.identity, "final-bound");
+      same22(identity22(await lstat18(file3.role.path, { bigint: true })), file3.identity, "final-named");
       if (file3.role.database) {
         for (const suffix of ["-wal", "-shm", "-journal"]) {
           await absent(`${file3.bound}${suffix}`);
@@ -69475,7 +69779,7 @@ async function observe2(input, profile = "locked", lease) {
     for (const directory4 of directories) {
       deadline2();
       same22(directoryIdentity(await directory4.handle.stat({ bigint: true })), directory4.identity, "directory-descriptor");
-      same22(directoryIdentity(await lstat17(directory4.path, { bigint: true })), directory4.identity, "directory-named");
+      same22(directoryIdentity(await lstat18(directory4.path, { bigint: true })), directory4.identity, "directory-named");
       if (directory4.managed) {
         const current10 = await root2.openDirectory(directory4.path, false);
         try {
@@ -69484,7 +69788,7 @@ async function observe2(input, profile = "locked", lease) {
           await current10.handle.close();
         }
       } else {
-        requireEvidence(await realpath11(directory4.path) === directory4.path, "closure-manifest-parent-changed");
+        requireEvidence(await realpath12(directory4.path) === directory4.path, "closure-manifest-parent-changed");
       }
     }
     await root2.assertCurrent();
@@ -69535,20 +69839,20 @@ async function observe2(input, profile = "locked", lease) {
   }
 }
 function observeClosedSymbolTerminalClosure(input, lease) {
-  return observe2(input, "locked", lease);
+  return observe3(input, "locked", lease);
 }
 async function revalidateClosedSymbolTerminalClosure(input, previous, lease) {
   const retained2 = ownBoundedData(previous);
-  const current10 = await observe2(input, "locked", lease);
+  const current10 = await observe3(input, "locked", lease);
   same22(current10, retained2, "previous-observation");
   return current10;
 }
 function observeClosedSymbolAgedTerminalClosure(input, lease) {
-  return observe2(input, "aged", lease);
+  return observe3(input, "aged", lease);
 }
 async function revalidateClosedSymbolAgedTerminalClosure(input, previous, lease) {
   const retained2 = ownBoundedData(previous);
-  const current10 = await observe2(input, "aged", lease);
+  const current10 = await observe3(input, "aged", lease);
   same22(current10, retained2, "previous-observation");
   return current10;
 }
@@ -69930,7 +70234,7 @@ var init_windows_clock_transport = __esm({
 // server/src/windows-authority.ts
 import { spawn as spawn3 } from "node:child_process";
 import { createHash as createHash21, randomBytes as randomBytes8 } from "node:crypto";
-import { lstat as lstat18, readFile as readFile4, realpath as realpath12 } from "node:fs/promises";
+import { lstat as lstat19, readFile as readFile4, realpath as realpath13 } from "node:fs/promises";
 import { isIP } from "node:net";
 import path from "node:path";
 import process7 from "node:process";
@@ -70826,8 +71130,8 @@ function createWindowsAuthoritySupervisor(transport2, policy2) {
   };
 }
 async function startWindowsAuthoritySupervisor(options) {
-  const helperStat = await lstat18(options.helperPath);
-  if (!helperStat.isFile() || helperStat.isSymbolicLink() || helperStat.nlink !== 1 || helperStat.size > 65536 || await realpath12(options.helperPath) !== options.helperPath || !path.isAbsolute(options.powershellExecutable)) {
+  const helperStat = await lstat19(options.helperPath);
+  if (!helperStat.isFile() || helperStat.isSymbolicLink() || helperStat.nlink !== 1 || helperStat.size > 65536 || await realpath13(options.helperPath) !== options.helperPath || !path.isAbsolute(options.powershellExecutable)) {
     throw new Error("Windows authority helper requires a canonical reviewed regular file and absolute PowerShell executable.");
   }
   const helperSha256 = createHash21("sha256").update(await readFile4(options.helperPath)).digest("hex");
@@ -70941,11 +71245,11 @@ async function startWindowsAuthoritySupervisor(options) {
     }
   };
   async function revalidateClosedSessionHelper() {
-    const before = await lstat18(options.helperPath);
-    if (!before.isFile() || before.isSymbolicLink() || before.nlink !== 1 || before.dev !== helperStat.dev || before.ino !== helperStat.ino || before.size !== helperStat.size || before.mtimeMs !== helperStat.mtimeMs || before.ctimeMs !== helperStat.ctimeMs || await realpath12(options.helperPath) !== options.helperPath || createHash21("sha256").update(await readFile4(options.helperPath)).digest("hex") !== helperSha256) {
+    const before = await lstat19(options.helperPath);
+    if (!before.isFile() || before.isSymbolicLink() || before.nlink !== 1 || before.dev !== helperStat.dev || before.ino !== helperStat.ino || before.size !== helperStat.size || before.mtimeMs !== helperStat.mtimeMs || before.ctimeMs !== helperStat.ctimeMs || await realpath13(options.helperPath) !== options.helperPath || createHash21("sha256").update(await readFile4(options.helperPath)).digest("hex") !== helperSha256) {
       throw new Error("Closed-session reviewed helper source changed.");
     }
-    const after = await lstat18(options.helperPath);
+    const after = await lstat19(options.helperPath);
     if (after.dev !== before.dev || after.ino !== before.ino || after.size !== before.size || after.mtimeMs !== before.mtimeMs || after.ctimeMs !== before.ctimeMs || after.nlink !== 1 || after.isSymbolicLink()) {
       throw new Error("Closed-session helper source changed during verification.");
     }
@@ -71445,8 +71749,8 @@ var init_closed_symbol_recorded_termination = __esm({
 // server/src/closed-file-copy.ts
 import { createHash as createHash22, randomUUID as randomUUID5 } from "node:crypto";
 import { constants as constants13 } from "node:fs";
-import { lstat as lstat19, open as open18 } from "node:fs/promises";
-import { basename as basename15, dirname as dirname14, isAbsolute as isAbsolute15, join as join22, resolve as resolve10 } from "node:path";
+import { lstat as lstat20, open as open19 } from "node:fs/promises";
+import { basename as basename15, dirname as dirname15, isAbsolute as isAbsolute15, join as join23, resolve as resolve10 } from "node:path";
 function check2(condition, message) {
   if (!condition) {
     throw new Error(message);
@@ -71483,13 +71787,13 @@ async function bindDirectory(absolute) {
   const segments3 = absolute.split("/").filter((value2) => value2.length > 0);
   check2(segments3.length > 0 && segments3.length <= 64, "Source parent directory depth refused.");
   const flags5 = constants13.O_RDONLY | constants13.O_DIRECTORY | constants13.O_NOFOLLOW;
-  let handle11 = await open18("/", flags5);
+  let handle11 = await open19("/", flags5);
   try {
     for (const segment2 of segments3) {
       const path6 = `/proc/self/fd/${handle11.fd}/${segment2}`;
-      const before = await lstat19(path6, { bigint: true });
+      const before = await lstat20(path6, { bigint: true });
       check2(before.isDirectory() && !before.isSymbolicLink(), "Source parent contains a symlink or non-directory.");
-      const child = await open18(path6, flags5);
+      const child = await open19(path6, flags5);
       try {
         const current10 = await child.stat({ bigint: true });
         check2(current10.isDirectory() && sameInode(before, current10), "Source directory changed while opening.");
@@ -71528,7 +71832,7 @@ async function assertDirectory(directory4) {
 }
 async function absentSidecars2(path6) {
   for (const suffix of ["-wal", "-shm", "-journal"]) {
-    const absent4 = await lstat19(`${path6}${suffix}`).then(() => false, (error52) => {
+    const absent4 = await lstat20(`${path6}${suffix}`).then(() => false, (error52) => {
       if (error52 instanceof Error && "code" in error52 && error52.code === "ENOENT") {
         return true;
       }
@@ -71577,7 +71881,7 @@ async function copyClosedProjectBytes(input) {
     isAbsolute15(artifactDirectory) && resolve10(artifactDirectory) === artifactDirectory,
     "Artifact directory must be canonical and absolute."
   );
-  const directory4 = await bindDirectory(dirname14(source5));
+  const directory4 = await bindDirectory(dirname15(source5));
   const sourceBound = `/proc/self/fd/${directory4.handle.fd}/${basename15(source5)}`;
   let sourceHandle;
   let artifactHandle;
@@ -71588,18 +71892,18 @@ async function copyClosedProjectBytes(input) {
   let completed5;
   try {
     await absentSidecars2(sourceBound);
-    const before = await lstat19(sourceBound, { bigint: true });
+    const before = await lstat20(sourceBound, { bigint: true });
     check2(validSource(before), "Closed source is not a bounded single-link regular file.");
-    sourceHandle = await open18(sourceBound, constants13.O_RDONLY | constants13.O_NOFOLLOW);
+    sourceHandle = await open19(sourceBound, constants13.O_RDONLY | constants13.O_NOFOLLOW);
     check2(sameStableFile(before, await sourceHandle.stat({ bigint: true })), "Source identity changed while opening.");
     const bytes2 = Number(before.size);
     check2(await hashFile(sourceHandle, bytes2) === expectedSourceSha256, "Closed source hash differs from its independent binding.");
     await assertClosedSessionCopyAuthority(proof);
     root2 = await openControlRootCapability(artifactDirectory);
     const name6 = `closed-copy-${randomUUID5()}.eprj2`;
-    artifact2 = join22(root2.path, name6);
+    artifact2 = join23(root2.path, name6);
     const artifactBound = root2.childDescriptorPath(artifact2);
-    artifactHandle = await open18(artifactBound, constants13.O_CREAT | constants13.O_EXCL | constants13.O_RDWR | constants13.O_NOFOLLOW, 384);
+    artifactHandle = await open19(artifactBound, constants13.O_CREAT | constants13.O_EXCL | constants13.O_RDWR | constants13.O_NOFOLLOW, 384);
     const created = await artifactHandle.stat({ bigint: true });
     check2(
       created.isFile() && created.nlink === 1n && created.size === 0n && created.mode % 512n === 0o600n,
@@ -71621,11 +71925,11 @@ async function copyClosedProjectBytes(input) {
     await assertDirectory(directory4);
     await root2.assertCurrent();
     check2(
-      sameStableFile(before, await sourceHandle.stat({ bigint: true })) && sameStableFile(before, await lstat19(sourceBound, { bigint: true })),
+      sameStableFile(before, await sourceHandle.stat({ bigint: true })) && sameStableFile(before, await lstat20(sourceBound, { bigint: true })),
       "Closed source identity changed during copy."
     );
     check2(
-      sameStableFile(copied, await artifactHandle.stat({ bigint: true })) && sameStableFile(copied, await lstat19(artifactBound, { bigint: true })),
+      sameStableFile(copied, await artifactHandle.stat({ bigint: true })) && sameStableFile(copied, await lstat20(artifactBound, { bigint: true })),
       "Raw-copy artifact path changed during copy."
     );
     const payload = {
@@ -71692,7 +71996,7 @@ var init_closed_file_copy = __esm({
 });
 
 // server/src/closed-sql-bindings.ts
-import { dirname as dirname15, join as join23 } from "node:path";
+import { dirname as dirname16, join as join24 } from "node:path";
 function need13(value2) {
   if (!value2) {
     throw new Error("Closed SQL copy binding refused.");
@@ -71702,7 +72006,7 @@ function sqlDigests(inventory2) {
   return { checkpointSha256: inventory2.checkpointSha256, schemaSha256: inventory2.schemaSha256, logicalSha256: inventory2.logicalSha256 };
 }
 async function readWitnessClockArtifact(operationId13, descriptor10, expectedSha256) {
-  need13(descriptor10.path === join23(operationPath(operationId13).slice(0, -5), "20-edit-witness-clock-qualification.json") && descriptor10.sha256 === expectedSha256 && descriptor10.bytes > 0 && descriptor10.bytes <= 6e4);
+  need13(descriptor10.path === join24(operationPath(operationId13).slice(0, -5), "20-edit-witness-clock-qualification.json") && descriptor10.sha256 === expectedSha256 && descriptor10.bytes > 0 && descriptor10.bytes <= 6e4);
   const original2 = canonicalJson(descriptor10);
   const read2 = await readExactUtf8Artifact(descriptor10);
   need13(canonicalJson(descriptor10) === original2 && read2.path === descriptor10.path && read2.bytes === descriptor10.bytes && read2.sha256 === expectedSha256);
@@ -71715,7 +72019,7 @@ function bindClosedSqlCopy(input) {
   const selected3 = PHASES[input.phase], { copy: copy3, inventory: inventory2, journal } = input;
   assertIssuedClosedFileCopy(copy3);
   need13(readerCompletion(inventory2).exitCode === 0);
-  need13(copy3.source === journal.plan.projectPath && dirname15(copy3.artifact) === operationPath(journal.operationId).slice(0, -5) && inventory2.checkpointSha256 === copy3.sha256);
+  need13(copy3.source === journal.plan.projectPath && dirname16(copy3.artifact) === operationPath(journal.operationId).slice(0, -5) && inventory2.checkpointSha256 === copy3.sha256);
   const intent = input.events.find((event4) => event4.step === input.phase && event4.kind === "intent");
   const result = input.events.find((event4) => event4.step === input.phase && event4.kind === "result");
   const generation5 = result?.generation;
@@ -72420,7 +72724,7 @@ var init_closed_symbol_recorded_witness_baseline = __esm({
 });
 
 // server/src/closed-symbol-recorded-witness.ts
-import { join as join24 } from "node:path";
+import { join as join25 } from "node:path";
 function need15(value2) {
   if (!value2) {
     throw new Error("Recorded locked witness refused.");
@@ -72454,7 +72758,7 @@ function event(journal, events, sequence, step, kind) {
   need15(value2 !== void 0 && value2.sequence === sequence && value2.step === step && value2.kind === kind && value2.operationId === journal.operationId && value2.closedPlanSha256 === journal.closedPlanSha256 && value2.markerSha256 === journal.markerSha256 && value2.dataSha256 === sha256Json(value2.data));
   const descriptor10 = journal.artifacts[sequence - 1];
   need15(descriptor10 !== void 0 && descriptor10.bytes > 0 && descriptor10.bytes <= 6e4);
-  need15(descriptor10.path === join24(operationPath(journal.operationId).slice(0, -5), `${String(sequence).padStart(2, "0")}-${step}-${kind}.json`));
+  need15(descriptor10.path === join25(operationPath(journal.operationId).slice(0, -5), `${String(sequence).padStart(2, "0")}-${step}-${kind}.json`));
   hash22(descriptor10.sha256);
   return value2;
 }
@@ -74199,7 +74503,7 @@ var init_saved_symbol_projection = __esm({
 });
 
 // server/src/closed-symbol-recorded-sql.ts
-import { join as join25 } from "node:path";
+import { join as join26 } from "node:path";
 function need19(value2, message) {
   if (!value2) {
     throw new Error(`Recorded symbol SQL: ${message}`);
@@ -74252,7 +74556,7 @@ async function reconstructClosedSymbolSqlEvidence(input) {
     const kind = index2 % 2 === 0 ? "intent" : "result";
     const artifact2 = journal.artifacts[index2];
     need19(step !== void 0 && artifact2 !== void 0 && event5.sequence === index2 + 1 && event5.step === step && event5.kind === kind && event5.operationId === operationId13 && event5.closedPlanSha256 === journal.closedPlanSha256 && event5.markerSha256 === journal.markerSha256 && event5.dataSha256 === sha256Json(event5.data) && event5.previousArtifactSha256 === (journal.artifacts[index2 - 1]?.sha256 ?? null), "phase binding differs");
-    need19(artifact2.path === join25(directory4, `${String(index2 + 1).padStart(2, "0")}-${step}-${kind}.json`) && Number.isSafeInteger(artifact2.bytes) && artifact2.bytes > 0 && artifact2.bytes <= 6e4, "phase artifact descriptor differs");
+    need19(artifact2.path === join26(directory4, `${String(index2 + 1).padStart(2, "0")}-${step}-${kind}.json`) && Number.isSafeInteger(artifact2.bytes) && artifact2.bytes > 0 && artifact2.bytes <= 6e4, "phase artifact descriptor differs");
     hash23(artifact2.sha256);
     if (kind === "result") {
       need19(event5.requestSha256 === events[index2 - 1]?.requestSha256, "paired request differs");
@@ -74280,7 +74584,7 @@ async function reconstructClosedSymbolSqlEvidence(input) {
     witness.projectUuid === journal.plan.projectUuid && witness.branchUuid === journal.plan.branchUuid && !Object.hasOwn(witness, "agedHead"),
     "first historical profile requires the exact locked witness"
   );
-  need19(witnessClockArtifact.path === join25(directory4, "20-edit-witness-clock-qualification.json") && Number.isSafeInteger(witnessClockArtifact.bytes) && witnessClockArtifact.bytes > 0 && witnessClockArtifact.bytes <= 6e4, "witness auxiliary descriptor differs");
+  need19(witnessClockArtifact.path === join26(directory4, "20-edit-witness-clock-qualification.json") && Number.isSafeInteger(witnessClockArtifact.bytes) && witnessClockArtifact.bytes > 0 && witnessClockArtifact.bytes <= 6e4, "witness auxiliary descriptor differs");
   hash23(witnessClockArtifact.sha256);
   const sqlPlan = await prepareSymbolNewHeadSqlPlan({ before: baselineInventory, operation: journal.plan.operation, witness });
   current10();
@@ -74771,10 +75075,10 @@ var init_closed_symbol_close = __esm({
 });
 
 // server/src/closed-file-sql.ts
-import { lstat as lstat20 } from "node:fs/promises";
+import { lstat as lstat21 } from "node:fs/promises";
 async function assertArtifact2(receipt2) {
   assertIssuedClosedFileCopy(receipt2);
-  const value2 = await lstat20(receipt2.artifact, { bigint: true });
+  const value2 = await lstat21(receipt2.artifact, { bigint: true });
   const expected3 = receipt2.artifactIdentity;
   if (!value2.isFile() || value2.isSymbolicLink() || value2.dev.toString() !== expected3.device || value2.ino.toString() !== expected3.inode || value2.size.toString() !== expected3.size || value2.mtimeNs.toString() !== expected3.mtimeNs || value2.ctimeNs.toString() !== expected3.ctimeNs || value2.birthtimeNs.toString() !== expected3.birthtimeNs || value2.mode.toString() !== expected3.mode || value2.uid.toString() !== expected3.uid || value2.gid.toString() !== expected3.gid || value2.nlink.toString() !== expected3.links) {
     throw new Error("Closed-copy artifact differs from its issued receipt.");
@@ -74798,7 +75102,7 @@ var init_closed_file_sql = __esm({
 });
 
 // server/src/closed-symbol-copy.ts
-import { join as join26 } from "node:path";
+import { join as join27 } from "node:path";
 function requireValue9(value2, message) {
   if (!value2) {
     throw new Error(message);
@@ -74891,7 +75195,7 @@ var init_closed_symbol_copy = __esm({
         await current10();
         const root2 = await controlRootCapability();
         await current10();
-        const outputDir = join26(controlDataDirectory(), "checkpoints");
+        const outputDir = join27(controlDataDirectory(), "checkpoints");
         const checkpoint = await createCheckpoint(
           { source: journal.plan.projectPath, outputDir, label: `${phase5}-${operationId13.slice(-8)}` },
           { expectedSource: journal.plan.projectPath, artifactRoots: [outputDir], controlRoot: root2, maximumSourceBytes: 268435456 }
@@ -75045,7 +75349,7 @@ var init_closed_symbol_launch = __esm({
 });
 
 // server/src/closed-symbol-relaunch.ts
-import { join as join27 } from "node:path";
+import { join as join28 } from "node:path";
 function requireValue11(value2, message) {
   if (!value2) {
     throw new Error(message);
@@ -75144,7 +75448,7 @@ var init_closed_symbol_relaunch = __esm({
         await current10();
         const verified = await verifyCheckpoint(retained2.checkpoint.receiptPath, {
           expectedSource: journal.plan.projectPath,
-          artifactRoots: [join27(controlDataDirectory(), "checkpoints")],
+          artifactRoots: [join28(controlDataDirectory(), "checkpoints")],
           controlRoot
         });
         await current10();
@@ -75201,7 +75505,7 @@ var init_closed_symbol_relaunch = __esm({
 });
 
 // server/src/recovery-navigation.ts
-import { dirname as dirname16, join as join28 } from "node:path";
+import { dirname as dirname17, join as join29 } from "node:path";
 function deriveRecoveryNavigationTarget(expectedContext, checkpoint) {
   const documentUuid5 = expectedContext.document.uuid ?? expectedContext.document.documentUuid;
   const library2 = [2, 4].includes(expectedContext.document.documentType);
@@ -75237,7 +75541,7 @@ async function prepareRecoveryNavigation(input) {
   const verified = await verifyCheckpoint(preCheckpoint.receiptPath, {
     expectedSource: source5,
     controlRoot: await controlRootCapability(),
-    artifactRoots: [join28(dirname16(source5), "backups"), join28(controlDataDirectory(), "checkpoints")]
+    artifactRoots: [join29(dirname17(source5), "backups"), join29(controlDataDirectory(), "checkpoints")]
   });
   if (!verified.checkpointMatchesReceipt || verified.checkpointSha256 !== preCheckpoint.checkpointSha256 || verified.checkpoint !== preCheckpoint.checkpoint || verified.receiptPath !== preCheckpoint.receiptPath || normalizeEasyedaProjectPath(verified.source) !== source5) {
     throw new Error("Recovery navigation retained checkpoint verification failed.");
@@ -75596,7 +75900,7 @@ var init_recovery_navigation = __esm({
 });
 
 // server/src/closed-symbol-navigation.ts
-import { join as join29 } from "node:path";
+import { join as join30 } from "node:path";
 function requireValue12(value2, message) {
   if (!value2) {
     throw new Error(message);
@@ -75656,7 +75960,7 @@ var init_closed_symbol_navigation = __esm({
         requireValue12(checkpoint.source === source5, "Closed navigation checkpoint selects another source.");
         const verified = await this.io.verifyCheckpoint(checkpoint.receiptPath, {
           expectedSource: source5,
-          artifactRoots: [join29(controlDataDirectory(), "checkpoints")],
+          artifactRoots: [join30(controlDataDirectory(), "checkpoints")],
           controlRoot: await controlRootCapability()
         });
         requireValue12(verified.ok && verified.sourceMatchesReceipt && verified.checkpointMatchesReceipt && verified.sourceEqualsCheckpoint && !verified.sourceChanged && verified.source === source5 && verified.checkpoint === checkpoint.checkpoint && verified.receiptPath === checkpoint.receiptPath && verified.checkpointSha256 === checkpoint.checkpointSha256 && verified.sourceSha256 === checkpoint.sourceSha256 && verified.sourceDumpSha256 === checkpoint.sourceDumpSha256 && verified.sourceDumpSha256 === checkpoint.checkpointDumpSha256 && verified.checkpointDumpSha256 === checkpoint.checkpointDumpSha256, "Closed navigation lost its exact unchanged checkpoint.");
@@ -76150,7 +76454,7 @@ var init_current_main_reference_helper_identity = __esm({
 // server/src/current-aged-sql-reference-program.ts
 import { createHash as createHash24 } from "node:crypto";
 import { constants as constants14 } from "node:fs";
-import { lstat as lstat21, open as open19 } from "node:fs/promises";
+import { lstat as lstat22, open as open20 } from "node:fs/promises";
 import { fileURLToPath as fileURLToPath2 } from "node:url";
 function need22(condition) {
   if (!condition) {
@@ -76181,7 +76485,7 @@ return currentAgedControls.controlsAfter;})()`);
 async function currentHelperBytes() {
   const path6 = fileURLToPath2(new URL("../bin/Easyeda.CurrentMainReference.dll", import.meta.url));
   const identity35 = CURRENT_MAIN_REFERENCE_HELPER_IDENTITY;
-  const handle11 = await open19(path6, constants14.O_RDONLY | constants14.O_NOFOLLOW | constants14.O_NONBLOCK);
+  const handle11 = await open20(path6, constants14.O_RDONLY | constants14.O_NOFOLLOW | constants14.O_NONBLOCK);
   try {
     const before = await handle11.stat({ bigint: true });
     need22(before.isFile() && before.nlink === 1n && before.size > 0n && before.size <= 262144n && before.size === BigInt(identity35.bytes));
@@ -76193,7 +76497,7 @@ async function currentHelperBytes() {
       offset9 += part.bytesRead;
     }
     const eof = await handle11.read(Buffer.alloc(1), 0, 1, bytes2.length);
-    const after = await handle11.stat({ bigint: true }), named = await lstat21(path6, { bigint: true });
+    const after = await handle11.stat({ bigint: true }), named = await lstat22(path6, { bigint: true });
     need22(eof.bytesRead === 0 && createHash24("sha256").update(bytes2).digest("hex") === identity35.sha256);
     for (const observed2 of [after, named]) {
       need22(observed2.isFile() && !observed2.isSymbolicLink());
@@ -76801,7 +77105,7 @@ var init_closed_symbol_main_reference_result_envelope = __esm({
 
 // server/src/closed-symbol-main-reference.ts
 import { randomBytes as randomBytes9 } from "node:crypto";
-import { join as join30 } from "node:path";
+import { join as join31 } from "node:path";
 function need26(value2, message) {
   if (!value2) {
     throw new Error(message);
@@ -76815,7 +77119,7 @@ function assertOriginalMainReference(value2, engine2, operationId13) {
 async function revalidateOriginalMainReference(value2, engine2, operationId13) {
   const original2 = assertOriginalMainReference(value2, engine2, operationId13);
   const directory4 = operationPath(operationId13).slice(0, -5);
-  need26(original2.intentArtifact.path === join30(directory4, "10-baseline-main-reference-intent.json") && original2.resultArtifact.path === join30(directory4, "10-baseline-main-reference-result.json") && original2.intentArtifact.bytes > 0 && original2.intentArtifact.bytes <= 6e4 && original2.resultArtifact.bytes > 0 && original2.resultArtifact.bytes <= 196608, "Main reference historical artifact scope differs.");
+  need26(original2.intentArtifact.path === join31(directory4, "10-baseline-main-reference-intent.json") && original2.resultArtifact.path === join31(directory4, "10-baseline-main-reference-result.json") && original2.intentArtifact.bytes > 0 && original2.intentArtifact.bytes <= 6e4 && original2.resultArtifact.bytes > 0 && original2.resultArtifact.bytes <= 196608, "Main reference historical artifact scope differs.");
   await readExactUtf8Artifact(original2.intentArtifact);
   need26(assertOriginalMainReference(value2, engine2, operationId13) === original2, "Main reference changed during historical revalidation.");
   await readExactUtf8Artifact(original2.resultArtifact);
@@ -76909,7 +77213,7 @@ var init_closed_symbol_main_reference = __esm({
         });
         const invocation = await compileMainReferenceTransportV3(request13);
         await current10();
-        const directory4 = operationPath(operationId13).slice(0, -5), resultPath = join30(directory4, "10-baseline-main-reference-result.json");
+        const directory4 = operationPath(operationId13).slice(0, -5), resultPath = join31(directory4, "10-baseline-main-reference-result.json");
         const beforeIntent = await loadClosedSymbolJournal(operationId13);
         unchanged5();
         need26(canonicalJson(beforeIntent.journal) === callerText, "Main reference journal advanced before intent.");
@@ -77096,7 +77400,7 @@ var init_aged_symbol_witness = __esm({
 });
 
 // server/src/closed-symbol-witness.ts
-import { join as join31 } from "node:path";
+import { join as join32 } from "node:path";
 function need28(value2, message) {
   if (!value2) {
     throw new Error(message);
@@ -77307,7 +77611,7 @@ var init_closed_symbol_witness = __esm({
           };
           const controlScope = reference3 === void 0 ? void 0 : { createdAtLiteral: reference3.request.createdAtLiteral, referenceUtcMs: reference3.request.referenceUtcMs };
           const code = `return await ${controlScope === void 0 ? buildSymbolWitnessReadExpression(scope6) : buildAgedSymbolWitnessReadExpression(scope6, controlScope, actor10)}`;
-          const qualificationPath = join31(operationPath(operationId13).slice(0, -5), "20-edit-witness-clock-qualification.json");
+          const qualificationPath = join32(operationPath(operationId13).slice(0, -5), "20-edit-witness-clock-qualification.json");
           const request13 = {
             profile: "private.closed-symbol-witness-request.v1",
             scope: scope6,
@@ -78449,7 +78753,7 @@ var init_saved_symbol_reader = __esm({
 });
 
 // server/src/closed-symbol-saved-read.ts
-import { join as join32 } from "node:path";
+import { join as join33 } from "node:path";
 function need34(value2, message) {
   if (!value2) {
     throw new Error(message);
@@ -78653,7 +78957,7 @@ var init_closed_symbol_saved_read = __esm({
             notAfterMs: notBeforeMs + 6e4
           };
           const code = `return await ${buildClosedSymbolSavedContentExpression(readPlan, context4, actor10)}`;
-          const rawPath = join32(operationPath(operationId13).slice(0, -5), "38-verify-content-read-raw.json");
+          const rawPath = join33(operationPath(operationId13).slice(0, -5), "38-verify-content-read-raw.json");
           const request13 = {
             profile: "private.closed-symbol-saved-read-request.v1",
             source: source5,
@@ -79813,8 +80117,8 @@ var init_closed_symbol_coordinator = __esm({
 });
 
 // server/src/closed-symbol-terminal-lifecycle.ts
-import { lstat as lstat22 } from "node:fs/promises";
-import { basename as basename16, dirname as dirname17, join as join33 } from "node:path";
+import { lstat as lstat23 } from "node:fs/promises";
+import { basename as basename16, dirname as dirname18, join as join34 } from "node:path";
 function need36(condition, message) {
   if (!condition) {
     throw new Error(message);
@@ -79860,8 +80164,8 @@ async function artifactJson(descriptor10) {
 }
 async function checkpointArtifact(checkpoint, copy3, source5, runtime) {
   const path6 = text23(checkpoint["checkpoint"]), receiptPath = text23(checkpoint["receiptPath"]);
-  const directory4 = join33(controlDataDirectory(), "checkpoints");
-  need36(dirname17(path6) === directory4 && dirname17(receiptPath) === directory4 && path6.endsWith(".eprj2") && receiptPath.endsWith(".json") && checkpoint["source"] === source5 && checkpoint["schema"] === "easyeda-pro-control.checkpoint.v2", "Terminal checkpoint paths or source binding differ.");
+  const directory4 = join34(controlDataDirectory(), "checkpoints");
+  need36(dirname18(path6) === directory4 && dirname18(receiptPath) === directory4 && path6.endsWith(".eprj2") && receiptPath.endsWith(".json") && checkpoint["source"] === source5 && checkpoint["schema"] === "easyeda-pro-control.checkpoint.v2", "Terminal checkpoint paths or source binding differ.");
   selfHash(checkpoint, "receiptSha256");
   same26(checkpoint["quickCheck"], { sourceBefore: "ok", sourceAfter: "ok", checkpoint: "ok" }, "checkpoint quick checks");
   need36(
@@ -79879,7 +80183,7 @@ async function checkpointArtifact(checkpoint, copy3, source5, runtime) {
   need36(Buffer.byteLength(receiptText) <= 6e4, "Terminal retained checkpoint receipt is oversized.");
   await readExactUtf8Artifact({ path: receiptPath, bytes: Buffer.byteLength(receiptText), sha256: sha256Text(receiptText) });
   const assertIdentity = async () => {
-    const value2 = await lstat22(path6, { bigint: true });
+    const value2 = await lstat23(path6, { bigint: true });
     need36(
       value2.isFile() && !value2.isSymbolicLink() && value2.nlink === 1n && value2.mode % 512n === 0o600n && typeof process.getuid === "function" && value2.uid === BigInt(process.getuid()) && value2.dev.toString() === expected3["dev"] && value2.ino.toString() === expected3["ino"] && value2.birthtimeNs.toString() === expected3["birthtimeNs"] && value2.ctimeNs.toString() === expected3["ctimeNs"],
       "Terminal retained checkpoint identity differs."
@@ -79921,7 +80225,7 @@ async function replayRecordedLifecycle(input) {
   await controlRootCapability(false);
   current10();
   need36(
-    input.fingerprint.path === join33(operationPath(journal.operationId).slice(0, -5), "00-expected-fingerprint.json") && input.fingerprint.bytes <= 262144,
+    input.fingerprint.path === join34(operationPath(journal.operationId).slice(0, -5), "00-expected-fingerprint.json") && input.fingerprint.bytes <= 262144,
     "Terminal fingerprint path or bound differs."
   );
   const fingerprint = bag8(await artifactJson(input.fingerprint));
@@ -80098,7 +80402,7 @@ async function replayRecordedLifecycle(input) {
     const windowDescriptor = input.windows[ordinal];
     const windowName = ["baseline", "edit", "verify"][ordinal];
     need36(
-      windowDescriptor.bytes <= 262144 && windowDescriptor.path === join33(operationPath(journal.operationId).slice(0, -5), `00-${String(windowName)}-owned-window.json`),
+      windowDescriptor.bytes <= 262144 && windowDescriptor.path === join34(operationPath(journal.operationId).slice(0, -5), `00-${String(windowName)}-owned-window.json`),
       "Terminal owned-window path or bound differs."
     );
     const window2 = bag8(await artifactJson(windowDescriptor));
@@ -80117,7 +80421,7 @@ async function replayRecordedLifecycle(input) {
     await checkpointArtifact(checkpoint, copy3, journal.plan.projectPath, input.runtime);
     current10();
     const artifact2 = text23(copy3["artifact"]), bytes2 = copy3["bytes"];
-    need36(typeof bytes2 === "number" && Number.isSafeInteger(bytes2) && bytes2 > 0 && bytes2 <= 268435456 && dirname17(artifact2) === operationPath(journal.operationId).slice(0, -5) && /^closed-copy-[a-f0-9-]+\.eprj2$/u.test(basename16(artifact2)), "Terminal copy artifact is invalid.");
+    need36(typeof bytes2 === "number" && Number.isSafeInteger(bytes2) && bytes2 > 0 && bytes2 <= 268435456 && dirname18(artifact2) === operationPath(journal.operationId).slice(0, -5) && /^closed-copy-[a-f0-9-]+\.eprj2$/u.test(basename16(artifact2)), "Terminal copy artifact is invalid.");
     result.push({
       generation: generation5,
       launch,
@@ -80162,7 +80466,7 @@ var init_closed_symbol_terminal_lifecycle = __esm({
 });
 
 // server/src/closed-symbol-terminal-content.ts
-import { join as join34 } from "node:path";
+import { join as join35 } from "node:path";
 function need37(condition, message) {
   if (!condition) {
     throw new Error(message);
@@ -80380,7 +80684,7 @@ async function reconstructRecordedSavedRead(input) {
     notAfterMs: notBeforeMs + 6e4
   };
   const code = `return await ${buildClosedSymbolSavedContentExpression(readPlan, expectedContext, actor10)}`;
-  const rawPath = join34(operationPath(journal.operationId).slice(0, -5), "38-verify-content-read-raw.json");
+  const rawPath = join35(operationPath(journal.operationId).slice(0, -5), "38-verify-content-read-raw.json");
   const expected3 = {
     profile: "private.closed-symbol-saved-read-request.v1",
     source: source5,
@@ -80481,7 +80785,7 @@ __export(closed_symbol_terminal_exports, {
   assertOriginalClosedSymbolCompletion: () => assertOriginalClosedSymbolCompletion,
   inspectClosedSymbolTerminal: () => inspectClosedSymbolTerminal
 });
-import { join as join35 } from "node:path";
+import { join as join36 } from "node:path";
 function need38(value2, message) {
   if (!value2) {
     throw new Error(message);
@@ -80718,7 +81022,7 @@ async function inspectClosedSymbolTerminal(operationId13, runtime) {
   await controlRootCapability(false);
   const loaded = await loadClosedSymbolHistoricalPhaseJournal(operationId13);
   if (loaded.journal.state !== TERMINAL_STATE) {
-    const path6 = join35(operationPath(operationId13).slice(0, -5), "45-closed-symbol-terminal.json");
+    const path6 = join36(operationPath(operationId13).slice(0, -5), "45-closed-symbol-terminal.json");
     try {
       await readArtifact(path6, 0, 1);
     } catch (error52) {
@@ -80827,7 +81131,7 @@ var init_closed_symbol_terminal = __esm({
           current10();
           const verified = await verifyCheckpoint(checkpoint.receiptPath, {
             expectedSource: original2.journal.plan.projectPath,
-            artifactRoots: [join35(controlDataDirectory(), "checkpoints")],
+            artifactRoots: [join36(controlDataDirectory(), "checkpoints")],
             controlRoot: root2
           });
           current10();
@@ -81093,13 +81397,13 @@ async function inspectLockedTerminalForAdmission(candidateInput, runtimeInput, l
   const enrolledAt = performance6.now();
   expire(enrolledAt);
   const bytes2 = Buffer.byteLength(JSON.stringify({ key, candidate, runtime, input, observation: observation3, result, enrolledAt }));
-  if (!entries3.has(slot) && entries3.size < MAX_ENTRIES2 && retainedBytes + bytes2 <= MAX_RETAINED_BYTES) {
+  if (!entries3.has(slot) && entries3.size < MAX_ENTRIES3 && retainedBytes + bytes2 <= MAX_RETAINED_BYTES) {
     entries3.set(slot, Object.freeze({ key, candidate, runtime, input, observation: observation3, result, bytes: bytes2, enrolledAt }));
     retainedBytes += bytes2;
   }
   return result;
 }
-var LIFETIME_MS2, MAX_ENTRIES2, MAX_RETAINED_BYTES, REVISION, entries3, retainedBytes;
+var LIFETIME_MS2, MAX_ENTRIES3, MAX_RETAINED_BYTES, REVISION, entries3, retainedBytes;
 var init_closed_symbol_terminal_admission_cache = __esm({
   "server/src/closed-symbol-terminal-admission-cache.ts"() {
     init_artifacts();
@@ -81113,7 +81417,7 @@ var init_closed_symbol_terminal_admission_cache = __esm({
     init_closed_symbol_terminal_closure_evidence_error();
     init_closed_symbol_terminal_closure_ineligible_error();
     LIFETIME_MS2 = 6e5;
-    MAX_ENTRIES2 = 4;
+    MAX_ENTRIES3 = 4;
     MAX_RETAINED_BYTES = 33554432;
     REVISION = "private.locked-admission-cache.v1";
     entries3 = /* @__PURE__ */ new Map();
@@ -81313,7 +81617,7 @@ var init_closed_symbol_recorded_unlocked_baseline = __esm({
 });
 
 // server/src/closed-symbol-recorded-main-reference.ts
-import { join as join36 } from "node:path";
+import { join as join37 } from "node:path";
 function need41(value2) {
   if (!value2) {
     throw new Error("Recorded main reference refused.");
@@ -81360,7 +81664,7 @@ function phase3(journal, events, sequence, step, kind) {
   const value2 = events[sequence - 1];
   const file3 = journal.artifacts[sequence - 1];
   need41(value2 !== void 0 && file3 !== void 0 && value2.sequence === sequence && value2.step === step && value2.kind === kind && value2.operationId === journal.operationId && value2.closedPlanSha256 === journal.closedPlanSha256 && value2.markerSha256 === journal.markerSha256 && value2.dataSha256 === sha256Json(value2.data));
-  descriptor6(file3, join36(operationPath(journal.operationId).slice(0, -5), `${String(sequence).padStart(2, "0")}-${step}-${kind}.json`), 6e4);
+  descriptor6(file3, join37(operationPath(journal.operationId).slice(0, -5), `${String(sequence).padStart(2, "0")}-${step}-${kind}.json`), 6e4);
   return value2;
 }
 function pair(intent, result) {
@@ -81376,8 +81680,8 @@ async function reconstructRecordedMainReference(input) {
   need41(events.length >= 10 && events.length <= 44 && journal.artifacts.length === events.length && journal.sequence === events.length && journal.plan.nativePinsSha256 === WITNESS_NATIVE_PINS_SHA256);
   unchanged5();
   const directory4 = operationPath(journal.operationId).slice(0, -5);
-  const intentArtifact = descriptor6(input.mainReferenceIntent, join36(directory4, "10-baseline-main-reference-intent.json"), 6e4);
-  const resultArtifact = descriptor6(input.mainReferenceResult, join36(directory4, "10-baseline-main-reference-result.json"), 196608);
+  const intentArtifact = descriptor6(input.mainReferenceIntent, join37(directory4, "10-baseline-main-reference-intent.json"), 6e4);
+  const resultArtifact = descriptor6(input.mainReferenceResult, join37(directory4, "10-baseline-main-reference-result.json"), 196608);
   const launchEvent = phase3(journal, events, 2, "baseline-launch", "result");
   const admissionIntent = phase3(journal, events, 3, "baseline-admission", "intent");
   const admissionEvent = phase3(journal, events, 4, "baseline-admission", "result");
@@ -81593,7 +81897,7 @@ var init_closed_symbol_recorded_aged_clock = __esm({
 });
 
 // server/src/closed-symbol-recorded-aged-witness.ts
-import { join as join37 } from "node:path";
+import { join as join38 } from "node:path";
 function need43(value2) {
   if (!value2) {
     throw new Error("Recorded aged witness refused.");
@@ -81627,7 +81931,7 @@ function event2(journal, events, sequence, step, kind) {
   need43(value2 !== void 0 && value2.sequence === sequence && value2.step === step && value2.kind === kind && value2.operationId === journal.operationId && value2.closedPlanSha256 === journal.closedPlanSha256 && value2.markerSha256 === journal.markerSha256 && value2.dataSha256 === sha256Json(value2.data));
   const descriptor10 = journal.artifacts[sequence - 1];
   need43(descriptor10 !== void 0 && descriptor10.bytes > 0 && descriptor10.bytes <= 6e4);
-  need43(descriptor10.path === join37(operationPath(journal.operationId).slice(0, -5), `${String(sequence).padStart(2, "0")}-${step}-${kind}.json`));
+  need43(descriptor10.path === join38(operationPath(journal.operationId).slice(0, -5), `${String(sequence).padStart(2, "0")}-${step}-${kind}.json`));
   hash28(descriptor10.sha256);
   return value2;
 }
@@ -81963,7 +82267,7 @@ var init_closed_symbol_recorded_aged_witness = __esm({
 });
 
 // server/src/closed-symbol-recorded-aged-sql.ts
-import { join as join38 } from "node:path";
+import { join as join39 } from "node:path";
 function need44(value2, message) {
   if (!value2) {
     throw new Error(`Recorded symbol SQL: ${message}`);
@@ -82016,7 +82320,7 @@ async function reconstructAgedClosedSymbolSqlEvidence(input) {
     const kind = index2 % 2 === 0 ? "intent" : "result";
     const artifact2 = journal.artifacts[index2];
     need44(step !== void 0 && artifact2 !== void 0 && event5.sequence === index2 + 1 && event5.step === step && event5.kind === kind && event5.operationId === operationId13 && event5.closedPlanSha256 === journal.closedPlanSha256 && event5.markerSha256 === journal.markerSha256 && event5.dataSha256 === sha256Json(event5.data) && event5.previousArtifactSha256 === (journal.artifacts[index2 - 1]?.sha256 ?? null), "phase binding differs");
-    need44(artifact2.path === join38(directory4, `${String(index2 + 1).padStart(2, "0")}-${step}-${kind}.json`) && Number.isSafeInteger(artifact2.bytes) && artifact2.bytes > 0 && artifact2.bytes <= 6e4, "phase artifact descriptor differs");
+    need44(artifact2.path === join39(directory4, `${String(index2 + 1).padStart(2, "0")}-${step}-${kind}.json`) && Number.isSafeInteger(artifact2.bytes) && artifact2.bytes > 0 && artifact2.bytes <= 6e4, "phase artifact descriptor differs");
     hash29(artifact2.sha256);
     if (kind === "result") {
       need44(event5.requestSha256 === events[index2 - 1]?.requestSha256, "paired request differs");
@@ -82044,7 +82348,7 @@ async function reconstructAgedClosedSymbolSqlEvidence(input) {
     witness.projectUuid === journal.plan.projectUuid && witness.branchUuid === journal.plan.branchUuid && Object.hasOwn(witness, "agedHead") && witness.agedHead !== void 0,
     "aged historical profile requires its exact aged witness"
   );
-  need44(witnessClockArtifact.path === join38(directory4, "20-edit-witness-clock-qualification.json") && Number.isSafeInteger(witnessClockArtifact.bytes) && witnessClockArtifact.bytes > 0 && witnessClockArtifact.bytes <= 6e4, "witness auxiliary descriptor differs");
+  need44(witnessClockArtifact.path === join39(directory4, "20-edit-witness-clock-qualification.json") && Number.isSafeInteger(witnessClockArtifact.bytes) && witnessClockArtifact.bytes > 0 && witnessClockArtifact.bytes <= 6e4, "witness auxiliary descriptor differs");
   hash29(witnessClockArtifact.sha256);
   const sqlPlan = await prepareSymbolNewHeadSqlPlan({ before: baselineInventory, operation: journal.plan.operation, witness });
   current10();
@@ -82187,7 +82491,7 @@ __export(closed_symbol_aged_terminal_exports, {
   assertOriginalAgedClosedSymbolCompletion: () => assertOriginalAgedClosedSymbolCompletion,
   inspectClosedSymbolAgedTerminal: () => inspectClosedSymbolAgedTerminal
 });
-import { join as join39 } from "node:path";
+import { join as join40 } from "node:path";
 function need45(value2, message) {
   if (!value2) {
     throw new Error(message);
@@ -82441,7 +82745,7 @@ async function inspectClosedSymbolAgedTerminal(operationId13, runtime) {
   await controlRootCapability(false);
   const loaded = await loadClosedSymbolHistoricalPhaseJournal(operationId13);
   if (loaded.journal.state !== AGED_TERMINAL_STATE) {
-    const path6 = join39(operationPath(operationId13).slice(0, -5), "45-closed-symbol-terminal.json");
+    const path6 = join40(operationPath(operationId13).slice(0, -5), "45-closed-symbol-terminal.json");
     try {
       await readArtifact(path6, 0, 1);
     } catch (error52) {
@@ -82552,7 +82856,7 @@ var init_closed_symbol_aged_terminal = __esm({
           current10();
           const verified = await verifyCheckpoint(checkpoint.receiptPath, {
             expectedSource: original2.journal.plan.projectPath,
-            artifactRoots: [join39(controlDataDirectory(), "checkpoints")],
+            artifactRoots: [join40(controlDataDirectory(), "checkpoints")],
             controlRoot: root2
           });
           current10();
@@ -82818,13 +83122,13 @@ async function inspectAgedTerminalForAdmission(candidateInput, runtimeInput, lea
   const enrolledAt = performance7.now();
   expire2(enrolledAt);
   const bytes2 = Buffer.byteLength(JSON.stringify({ key, candidate, runtime, input, observation: observation3, result, enrolledAt }));
-  if (!entries4.has(slot) && entries4.size < MAX_ENTRIES3 && retainedBytes2 + bytes2 <= MAX_RETAINED_BYTES2) {
+  if (!entries4.has(slot) && entries4.size < MAX_ENTRIES4 && retainedBytes2 + bytes2 <= MAX_RETAINED_BYTES2) {
     entries4.set(slot, Object.freeze({ key, candidate, runtime, input, observation: observation3, result, bytes: bytes2, enrolledAt }));
     retainedBytes2 += bytes2;
   }
   return result;
 }
-var LIFETIME_MS3, MAX_ENTRIES3, MAX_RETAINED_BYTES2, REVISION2, entries4, retainedBytes2;
+var LIFETIME_MS3, MAX_ENTRIES4, MAX_RETAINED_BYTES2, REVISION2, entries4, retainedBytes2;
 var init_closed_symbol_aged_terminal_admission_cache = __esm({
   "server/src/closed-symbol-aged-terminal-admission-cache.ts"() {
     init_artifacts();
@@ -82838,7 +83142,7 @@ var init_closed_symbol_aged_terminal_admission_cache = __esm({
     init_closed_symbol_terminal_closure_evidence_error();
     init_closed_symbol_terminal_closure_ineligible_error();
     LIFETIME_MS3 = 6e5;
-    MAX_ENTRIES3 = 4;
+    MAX_ENTRIES4 = 4;
     MAX_RETAINED_BYTES2 = 33554432;
     REVISION2 = "private.aged-admission-cache.v1";
     entries4 = /* @__PURE__ */ new Map();
@@ -86260,8 +86564,8 @@ function verifyWireRetainedSaveAuthority(journal, afterPhase, acknowledgment) {
   if (!isRecord(acknowledgment) || acknowledgment["ok"] !== true || acknowledgment["saved"] !== true || acknowledgment["closed"] !== true || acknowledgment["reopened"] !== true || !isRecord(acknowledgment["document"]) || acknowledgment["document"]["uuid"] !== expected3.document["uuid"] || acknowledgment["document"]["documentType"] !== 1 || acknowledgment["document"]["tabId"] !== journal.context.document.tabId || expected3.document["uuid"] !== (journal.context.document.uuid ?? journal.context.document.documentUuid)) {
     throw new Error("Retained wire Save/reopen acknowledgment is missing or does not match the target; do not repeat Save.");
   }
-  const barrier = acknowledgment["projectUploadBarrier"], close = acknowledgment["closeProof"], guard = acknowledgment["exactSaveGuard"], open43 = acknowledgment["openProof"];
-  if (!isRecord(guard) || guard["passes"] !== 2 || guard["saveInvokedInSameExecution"] !== true || guard["publicCompareAndSwapAvailable"] !== false || !same36(guard["labels"], ["schematic-source"]) || !same36(guard["snapshotSha256"], [consistency["snapshotSha256"]]) || !isRecord(close) || close["profile"] !== "easyeda-pro-control.native-document-close.v1" || close["closeCalls"] !== 1 || close["terminalNotification"] !== true || close["oldFrameRemoved"] !== true || close["oldTabRemoved"] !== true || close["saved"] !== false || !isRecord(open43) || open43["profile"] !== "easyeda-pro-control.native-document-open.v1" || open43["tabId"] !== journal.context.document.tabId || open43["newFrameReady"] !== true || open43["exactContext"] !== true || open43["readinessSamples"] !== 2 || typeof open43["activated"] !== "boolean" || !isRecord(barrier) || barrier["profile"] !== "easyeda-pro-control.project-upload-barrier.v1" || barrier["projectUuid"] !== projectUuid4 || barrier["scheduledWritesSettled"] !== true || barrier["savedEditorChanges"] !== false) {
+  const barrier = acknowledgment["projectUploadBarrier"], close = acknowledgment["closeProof"], guard = acknowledgment["exactSaveGuard"], open44 = acknowledgment["openProof"];
+  if (!isRecord(guard) || guard["passes"] !== 2 || guard["saveInvokedInSameExecution"] !== true || guard["publicCompareAndSwapAvailable"] !== false || !same36(guard["labels"], ["schematic-source"]) || !same36(guard["snapshotSha256"], [consistency["snapshotSha256"]]) || !isRecord(close) || close["profile"] !== "easyeda-pro-control.native-document-close.v1" || close["closeCalls"] !== 1 || close["terminalNotification"] !== true || close["oldFrameRemoved"] !== true || close["oldTabRemoved"] !== true || close["saved"] !== false || !isRecord(open44) || open44["profile"] !== "easyeda-pro-control.native-document-open.v1" || open44["tabId"] !== journal.context.document.tabId || open44["newFrameReady"] !== true || open44["exactContext"] !== true || open44["readinessSamples"] !== 2 || typeof open44["activated"] !== "boolean" || !isRecord(barrier) || barrier["profile"] !== "easyeda-pro-control.project-upload-barrier.v1" || barrier["projectUuid"] !== projectUuid4 || barrier["scheduledWritesSettled"] !== true || barrier["savedEditorChanges"] !== false) {
     throw new Error("Retained wire Save lacks its exact guard, terminal close, ready reopen or upload barrier.");
   }
 }
@@ -86323,7 +86627,7 @@ function buildSchematicLayoutPageLoadCode(value2, pageUuid) {
   if (scope6.projectPath !== normalizeEasyedaProjectPath(scope6.projectPath) || scope6.activeTabId !== `${scope6.activePageUuid}@${scope6.projectUuid}` || new Set(scope6.pageUuids).size !== scope6.pageUuids.length || !scope6.pageUuids.includes(scope6.activePageUuid) || !scope6.pageUuids.includes(pageUuid)) {
     throw new Error("Schematic page loading target is outside the declared checkpoint scope.");
   }
-  const open43 = buildNativeDocumentOpenFunction({ projectUuid: scope6.projectUuid, documentUuid: pageUuid, documentType: 1 });
+  const open44 = buildNativeDocumentOpenFunction({ projectUuid: scope6.projectUuid, documentUuid: pageUuid, documentType: 1 });
   return `return await (async()=>{
 ${DEVICE_NATIVE_HOST_GUARD}
 const scope=${JSON.stringify(scope6)},pageUuid=${JSON.stringify(pageUuid)},targetTab=pageUuid+'@'+scope.projectUuid;
@@ -86355,7 +86659,7 @@ const activeMatches=async(id)=>{
 await owners();if(!await activeMatches(scope.activePageUuid))fail();
 if(pageUuid!==scope.activePageUuid){
  const present=(await bus.rpcCall('isOpenTab',[targetTab]))?.message;
- if(present===false){if(manager.get(pageUuid)!==undefined&&manager.get(pageUuid)!==null)fail();await (${open43})(targetTab);}
+ if(present===false){if(manager.get(pageUuid)!==undefined&&manager.get(pageUuid)!==null)fail();await (${open44})(targetTab);}
  else if(present!==true||!await frameReady(pageUuid))fail();
 }
 let deadline,pollTimer,rejectDeadline;
@@ -87280,7 +87584,7 @@ var init_flat_transaction_profile = __esm({
 });
 
 // server/src/schematic-flat-read.ts
-import { join as join40 } from "node:path";
+import { join as join41 } from "node:path";
 async function captureSchematicFlatTopology(engine2, expectedContext, overrides, bindProject) {
   const capturedContext = structuredClone(expectedContext);
   if (capturedContext.document.documentType !== 1) {
@@ -87298,7 +87602,7 @@ async function captureSchematicFlatTopology(engine2, expectedContext, overrides,
   };
   await profile();
   const context4 = await engine2.assertContext(capturedContext);
-  const outputDir = join40(controlDataDirectory(), "checkpoints");
+  const outputDir = join41(controlDataDirectory(), "checkpoints");
   const checkpoint = checkpointSchema3.parse(await engine2.checkpoint({
     source: context4.project.path,
     outputDir,
@@ -87353,7 +87657,7 @@ const json=JSON.stringify(payload),utf8Bytes=new TextEncoder().encode(json).byte
 const envelope={schema:'easyeda-pro-control.exact-json.v1',utf8Bytes,json};
 if(new TextEncoder().encode(JSON.stringify(envelope)).byteLength>4194304)throw new Error('SCH_FLAT_TRANSPORT_BOUND');
 return envelope;`, context4);
-  const observe6 = async () => {
+  const observe7 = async () => {
     await engine2.assertBridgeDispatchAllowed();
     await engine2.assertContext(context4);
     await unchanged5();
@@ -87368,7 +87672,7 @@ return envelope;`, context4);
     await unchanged5();
     return { observation: payload, proof };
   };
-  const first = await observe6(), second = await observe6();
+  const first = await observe7(), second = await observe7();
   await profile();
   await unchanged5();
   await engine2.assertContext(context4);
@@ -87491,7 +87795,7 @@ var init_design_inverse_attempt = __esm({
 });
 
 // server/src/flat-inverse-checkpoint.ts
-import { dirname as dirname18, join as join41 } from "node:path";
+import { dirname as dirname19, join as join42 } from "node:path";
 async function verifyFlatInverseCheckpoint(checkpoint, source5) {
   const expected3 = receiptSchema.parse(checkpoint), expectedSource = normalizeEasyedaProjectPath(source5);
   if (normalizeEasyedaProjectPath(expected3.source) !== expectedSource) {
@@ -87505,7 +87809,7 @@ async function verifyFlatInverseCheckpoint(checkpoint, source5) {
   const verified = await verifyCheckpoint(expected3.receiptPath, {
     expectedSource,
     controlRoot: await controlRootCapability(),
-    artifactRoots: [join41(dirname18(expectedSource), "backups"), join41(controlDataDirectory(), "checkpoints")]
+    artifactRoots: [join42(dirname19(expectedSource), "backups"), join42(controlDataDirectory(), "checkpoints")]
   });
   const fields26 = ["receiptPath", "source", "checkpoint", "sourceSha256", "checkpointSha256", "sourceDumpSha256", "checkpointDumpSha256"];
   if (!verified.ok || verified.sourceChanged || !verified.sourceMatchesReceipt || !verified.checkpointMatchesReceipt || fields26.some((field13) => verified[field13] !== expected3[field13])) {
@@ -87978,21 +88282,21 @@ const policy=async()=>{const value=JSON.parse(JSON.stringify(await eda.pcb_Drc.g
 // server/src/native-rule-profile.ts
 import { createHash as createHash26 } from "node:crypto";
 import { constants as constants15 } from "node:fs";
-import { lstat as lstat23, open as open20, realpath as realpath13 } from "node:fs/promises";
-import { isAbsolute as isAbsolute16, join as join42 } from "node:path";
+import { lstat as lstat24, open as open21, realpath as realpath14 } from "node:fs/promises";
+import { isAbsolute as isAbsolute16, join as join43 } from "node:path";
 async function verifyNativeRuleReportProfile(assetsRoot, kindInput) {
   const { kind } = nativeRuleCheckRequestSchema.parse({ kind: kindInput });
-  if (!isAbsolute16(assetsRoot) || await realpath13(assetsRoot) !== assetsRoot) {
+  if (!isAbsolute16(assetsRoot) || await realpath14(assetsRoot) !== assetsRoot) {
     throw new Error("Rule-check implementation root is not canonical.");
   }
   const implementations = NATIVE_RULE_IMPLEMENTATIONS[kind];
   for (const implementation of implementations) {
-    const path6 = join42(assetsRoot, implementation.relativePath);
-    const before = await lstat23(path6, { bigint: true });
-    if (!before.isFile() || before.isSymbolicLink() || before.size <= 0n || before.size > 128n * 1024n * 1024n || await realpath13(path6) !== path6) {
+    const path6 = join43(assetsRoot, implementation.relativePath);
+    const before = await lstat24(path6, { bigint: true });
+    if (!before.isFile() || before.isSymbolicLink() || before.size <= 0n || before.size > 128n * 1024n * 1024n || await realpath14(path6) !== path6) {
       throw new Error("Rule-check implementation is not a bounded regular file.");
     }
-    const file3 = await open20(path6, constants15.O_RDONLY | constants15.O_NOFOLLOW);
+    const file3 = await open21(path6, constants15.O_RDONLY | constants15.O_NOFOLLOW);
     try {
       const hash45 = createHash26("sha256");
       for await (const chunk of file3.createReadStream({ autoClose: false })) {
@@ -88001,7 +88305,7 @@ async function verifyNativeRuleReportProfile(assetsRoot, kindInput) {
         }
         hash45.update(chunk);
       }
-      const after = await file3.stat({ bigint: true }), current10 = await lstat23(path6, { bigint: true });
+      const after = await file3.stat({ bigint: true }), current10 = await lstat24(path6, { bigint: true });
       if (before.dev !== after.dev || before.ino !== after.ino || before.size !== after.size || before.mtimeNs !== after.mtimeNs || before.ctimeNs !== after.ctimeNs || after.dev !== current10.dev || after.ino !== current10.ino || after.size !== current10.size || after.mtimeNs !== current10.mtimeNs || after.ctimeNs !== current10.ctimeNs || hash45.digest("hex") !== implementation.sha256) {
         throw new Error("Rule-check implementation differs from its reviewed profile.");
       }
@@ -88062,7 +88366,7 @@ var init_pcb_navigation_preflight = __esm({
 });
 
 // server/src/design-execution.ts
-import { basename as basename20, join as join43 } from "node:path";
+import { basename as basename20, join as join44 } from "node:path";
 function externalRuntimeIdentity(value2) {
   const external2 = Object.fromEntries(Object.entries(value2).filter(([key]) => !["facadeImplementation", "reviewedCompatibilityManifest"].includes(key)));
   const serialized = JSON.parse(canonicalJson(external2));
@@ -88145,8 +88449,8 @@ function verifyLayoutRetainedSaveAuthority(journal, afterPhase, acknowledgment) 
   if (!isRecord(acknowledgment) || acknowledgment["ok"] !== true || acknowledgment["saved"] !== true || acknowledgment["closed"] !== true || acknowledgment["reopened"] !== true || !isRecord(acknowledgment["document"]) || acknowledgment["document"]["uuid"] !== expected3.document["uuid"] || acknowledgment["document"]["documentType"] !== 1 || acknowledgment["document"]["tabId"] !== journal.context.document.tabId || expected3.document["uuid"] !== (journal.context.document.uuid ?? journal.context.document.documentUuid)) {
     throw new Error("Retained layout Save/reopen receipt does not match the exact current target.");
   }
-  const barrier = acknowledgment["projectUploadBarrier"], close = acknowledgment["closeProof"], guard = acknowledgment["exactSaveGuard"], open43 = acknowledgment["openProof"];
-  if (!isRecord(guard) || guard["passes"] !== 2 || guard["saveInvokedInSameExecution"] !== true || guard["publicCompareAndSwapAvailable"] !== false || canonicalJson(guard["labels"]) !== canonicalJson(["schematic-source"]) || canonicalJson(guard["snapshotSha256"]) !== canonicalJson([consistency["snapshotSha256"]]) || !isRecord(close) || close["profile"] !== "easyeda-pro-control.native-document-close.v1" || close["closeCalls"] !== 1 || close["terminalNotification"] !== true || close["oldFrameRemoved"] !== true || close["oldTabRemoved"] !== true || close["saved"] !== false || !isRecord(open43) || open43["profile"] !== "easyeda-pro-control.native-document-open.v1" || open43["tabId"] !== journal.context.document.tabId || open43["newFrameReady"] !== true || open43["exactContext"] !== true || open43["readinessSamples"] !== 2 || typeof open43["activated"] !== "boolean" || !isRecord(barrier) || barrier["profile"] !== "easyeda-pro-control.project-upload-barrier.v1" || barrier["projectUuid"] !== projectUuid4 || barrier["scheduledWritesSettled"] !== true || barrier["savedEditorChanges"] !== false) {
+  const barrier = acknowledgment["projectUploadBarrier"], close = acknowledgment["closeProof"], guard = acknowledgment["exactSaveGuard"], open44 = acknowledgment["openProof"];
+  if (!isRecord(guard) || guard["passes"] !== 2 || guard["saveInvokedInSameExecution"] !== true || guard["publicCompareAndSwapAvailable"] !== false || canonicalJson(guard["labels"]) !== canonicalJson(["schematic-source"]) || canonicalJson(guard["snapshotSha256"]) !== canonicalJson([consistency["snapshotSha256"]]) || !isRecord(close) || close["profile"] !== "easyeda-pro-control.native-document-close.v1" || close["closeCalls"] !== 1 || close["terminalNotification"] !== true || close["oldFrameRemoved"] !== true || close["oldTabRemoved"] !== true || close["saved"] !== false || !isRecord(open44) || open44["profile"] !== "easyeda-pro-control.native-document-open.v1" || open44["tabId"] !== journal.context.document.tabId || open44["newFrameReady"] !== true || open44["exactContext"] !== true || open44["readinessSamples"] !== 2 || typeof open44["activated"] !== "boolean" || !isRecord(barrier) || barrier["profile"] !== "easyeda-pro-control.project-upload-barrier.v1" || barrier["projectUuid"] !== projectUuid4 || barrier["scheduledWritesSettled"] !== true || barrier["savedEditorChanges"] !== false) {
     throw new Error("Retained layout Save lacks its exact guard, terminal close, ready reopen or upload barrier.");
   }
 }
@@ -89010,7 +89314,7 @@ var init_design_execution = __esm({
         } else if (input.expectedTopology !== void 0) {
           throw new Error("Explicit schematic topology cannot be supplied for a PCB action.");
         }
-        const checkpoint = flatBefore === void 0 ? await this.engine.checkpoint({ source: context4.project.path, outputDir: join43(controlDataDirectory(), "checkpoints"), label: "typed-design-before" }) : { ...flatBefore.checkpoint };
+        const checkpoint = flatBefore === void 0 ? await this.engine.checkpoint({ source: context4.project.path, outputDir: join44(controlDataDirectory(), "checkpoints"), label: "typed-design-before" }) : { ...flatBefore.checkpoint };
         if (!("receiptPath" in checkpoint) || typeof checkpoint.receiptPath !== "string") {
           throw new Error("Checkpoint creation did not return a durable receipt.");
         }
@@ -89545,7 +89849,7 @@ return {ok:true,profile:${JSON.stringify(correction.profile)},id:${JSON.stringif
           correction = prepareSchematicLayoutVisibilityRepair(journal.plan.operation, journal.before, journal.beforeNative, journal.createdIds, evidence2, current10.snapshot, current10.native);
           preflightCheckpoint = await this.engine.checkpoint({
             source: journal.context.project.path,
-            outputDir: join43(controlDataDirectory(), "checkpoints"),
+            outputDir: join44(controlDataDirectory(), "checkpoints"),
             label: "typed-layout-visibility-before"
           });
           if (!("receiptPath" in preflightCheckpoint)) {
@@ -89695,7 +89999,7 @@ return {ok:true,profile:${JSON.stringify(correction.profile)},id:${JSON.stringif
           verifyLayoutWireGroupRepairTopology(journal.beforeNative, journal.beforeTopology, currentTopology, correction.misnamedPins);
           preflightCheckpoint = await this.engine.checkpoint({
             source: journal.context.project.path,
-            outputDir: join43(controlDataDirectory(), "checkpoints"),
+            outputDir: join44(controlDataDirectory(), "checkpoints"),
             label: "typed-layout-wire-group-before"
           });
           if (!("receiptPath" in preflightCheckpoint)) {
@@ -89883,7 +90187,7 @@ return {ok:true,profile:${JSON.stringify(profile)},id:${JSON.stringify(journal.p
           await this.engine.awaitProjectUploads(journal.context, journal, "layout-saved-reconcile-upload-barrier");
           const checkpoint = await this.engine.checkpoint({
             source: journal.context.project.path,
-            outputDir: join43(controlDataDirectory(), "checkpoints"),
+            outputDir: join44(controlDataDirectory(), "checkpoints"),
             label: "typed-layout-retained-save-reconciled"
           });
           if (!("receiptPath" in checkpoint)) {
@@ -89941,7 +90245,7 @@ return {ok:true,profile:${JSON.stringify(profile)},id:${JSON.stringify(journal.p
             if (journal.plan.expectedTopology !== void 0) {
               verifyDesignTopology(journal.plan.expectedTopology, await readDesignTopology(this.engine, journal.context));
             }
-            const checkpoint = await this.engine.checkpoint({ source: journal.context.project.path, outputDir: join43(controlDataDirectory(), "checkpoints"), label: "typed-copper-reconciled-persisted" });
+            const checkpoint = await this.engine.checkpoint({ source: journal.context.project.path, outputDir: join44(controlDataDirectory(), "checkpoints"), label: "typed-copper-reconciled-persisted" });
             if (!("receiptPath" in checkpoint)) {
               throw new Error("Copper reconciliation checkpoint receipt missing.");
             }
@@ -89978,7 +90282,7 @@ return {ok:true,profile:${JSON.stringify(profile)},id:${JSON.stringify(journal.p
           }
           const checkpoint = await this.engine.checkpoint({
             source: journal.context.project.path,
-            outputDir: join43(controlDataDirectory(), "checkpoints"),
+            outputDir: join44(controlDataDirectory(), "checkpoints"),
             label: "typed-design-reconciled-before"
           });
           if (!("receiptPath" in checkpoint)) {
@@ -90026,7 +90330,7 @@ return {ok:true,profile:${JSON.stringify(profile)},id:${JSON.stringify(journal.p
               { history: beforeState2.history, templates: journal.layoutTemplates ?? {} }
             );
             verifyDesignTopology(journal.beforeTopology, await readDesignTopology(this.engine, journal.context));
-            const checkpoint = await this.engine.checkpoint({ source: journal.context.project.path, outputDir: join43(controlDataDirectory(), "checkpoints"), label: "typed-layout-historical-reconciled" });
+            const checkpoint = await this.engine.checkpoint({ source: journal.context.project.path, outputDir: join44(controlDataDirectory(), "checkpoints"), label: "typed-layout-historical-reconciled" });
             if (!("receiptPath" in checkpoint)) {
               throw new Error("Historical layout reconciliation checkpoint receipt missing.");
             }
@@ -90151,7 +90455,7 @@ return {ok:true,profile:${JSON.stringify(profile)},id:${JSON.stringify(journal.p
         const current10 = await this.snapshot(journal.context);
         const checkpoint = await this.engine.checkpoint({
           source: journal.context.project.path,
-          outputDir: join43(controlDataDirectory(), "checkpoints"),
+          outputDir: join44(controlDataDirectory(), "checkpoints"),
           label: "typed-pcb-text-retained-save"
         });
         if (!("receiptPath" in checkpoint) || typeof checkpoint.receiptPath !== "string") {
@@ -90231,7 +90535,7 @@ return {ok:true,profile:${JSON.stringify(profile)},id:${JSON.stringify(journal.p
         await this.engine.awaitProjectUploads(journal.context, journal, "wire-saved-reconcile-upload-barrier");
         const checkpoint = await this.engine.checkpoint({
           source: journal.context.project.path,
-          outputDir: join43(controlDataDirectory(), "checkpoints"),
+          outputDir: join44(controlDataDirectory(), "checkpoints"),
           label: "typed-wire-retained-save-reconciled"
         });
         if (!("receiptPath" in checkpoint)) {
@@ -90372,7 +90676,7 @@ return {ok:true,profile:${JSON.stringify(profile)},id:${JSON.stringify(journal.p
             flatLifecycleObservation = await _DesignExecutor.retainFlatLifecycleObservation(journal, reopened, "commit", "after", flatEvidence);
           }
           await this.engine.awaitProjectUploads(context4, journal, "commit-upload-barrier");
-          const checkpoint = await this.engine.checkpoint({ source: context4.project.path, outputDir: join43(controlDataDirectory(), "checkpoints"), label: "typed-design-committed" });
+          const checkpoint = await this.engine.checkpoint({ source: context4.project.path, outputDir: join44(controlDataDirectory(), "checkpoints"), label: "typed-design-committed" });
           if (!("receiptPath" in checkpoint)) {
             throw new Error("Committed checkpoint receipt missing.");
           }
@@ -90460,7 +90764,7 @@ return {ok:true,profile:${JSON.stringify(profile)},id:${JSON.stringify(journal.p
         const persistenceInput = { before: baseline2, expectedBefore: journal.before, expectedAfter: journal.after };
         const retainedPersistence = await _DesignExecutor.libraryPersistence(journal, { ...persistenceInput, after: retainedHistory });
         await this.engine.awaitProjectUploads(journal.context, journal, "saved-library-recovery-upload-barrier");
-        const checkpoint = await this.engine.checkpoint({ source: journal.context.project.path, outputDir: join43(controlDataDirectory(), "checkpoints"), label: "typed-library-saved-recovery" });
+        const checkpoint = await this.engine.checkpoint({ source: journal.context.project.path, outputDir: join44(controlDataDirectory(), "checkpoints"), label: "typed-library-saved-recovery" });
         if (!("receiptPath" in checkpoint)) {
           throw new Error("Saved library recovery checkpoint receipt missing.");
         }
@@ -90527,7 +90831,7 @@ return {ok:true,profile:${JSON.stringify(profile)},id:${JSON.stringify(journal.p
         if (!sameState(state(saved.snapshot), state(journal.after))) {
           throw new Error("Library source changed during save; close refused.");
         }
-        const checkpoint = await this.engine.checkpoint({ source: journal.context.project.path, outputDir: join43(controlDataDirectory(), "checkpoints"), label: `typed-${lifecycle.family}-saved-before-close` });
+        const checkpoint = await this.engine.checkpoint({ source: journal.context.project.path, outputDir: join44(controlDataDirectory(), "checkpoints"), label: `typed-${lifecycle.family}-saved-before-close` });
         if (!("receiptPath" in checkpoint)) {
           throw new Error("Library saved checkpoint receipt missing; close refused.");
         }
@@ -90601,7 +90905,7 @@ return {ok:true,profile:${JSON.stringify(profile)},id:${JSON.stringify(journal.p
             verifyDesignTopology(journal.beforeTopology, topology);
             flatLifecycleObservation = await _DesignExecutor.retainFlatLifecycleObservation(journal, restored, "inverse", "before", flatEvidence);
           }
-          const checkpoint = await this.engine.checkpoint({ source: journal.context.project.path, outputDir: join43(controlDataDirectory(), "checkpoints"), label: "typed-design-rolled-back" });
+          const checkpoint = await this.engine.checkpoint({ source: journal.context.project.path, outputDir: join44(controlDataDirectory(), "checkpoints"), label: "typed-design-rolled-back" });
           if (!("receiptPath" in checkpoint)) {
             throw new Error("Rollback checkpoint receipt missing; durable restoration is unverified.");
           }
@@ -91624,19 +91928,19 @@ var init_document_container_rename_runtime = __esm({
 // server/src/document-container-rename-native-profile.ts
 import { createHash as createHash27 } from "node:crypto";
 import { constants as constants16 } from "node:fs";
-import { lstat as lstat24, open as open21, realpath as realpath14 } from "node:fs/promises";
-import { isAbsolute as isAbsolute17, join as join44 } from "node:path";
+import { lstat as lstat25, open as open22, realpath as realpath15 } from "node:fs/promises";
+import { isAbsolute as isAbsolute17, join as join45 } from "node:path";
 async function verifyDocumentContainerRenameNativeProfile(assetsRoot) {
   await verifyDeviceAssociationNativeProfile(assetsRoot);
-  if (!isAbsolute17(assetsRoot) || await realpath14(assetsRoot) !== assetsRoot) {
+  if (!isAbsolute17(assetsRoot) || await realpath15(assetsRoot) !== assetsRoot) {
     throw new Error("Document rename implementation root is not canonical.");
   }
-  const implementation = DOCUMENT_CONTAINER_RENAME_NATIVE_IMPLEMENTATION, path6 = join44(assetsRoot, implementation.relativePath);
-  const before = await lstat24(path6, { bigint: true });
-  if (!before.isFile() || before.isSymbolicLink() || before.size <= 0n || before.size > 128n * 1024n * 1024n || await realpath14(path6) !== path6) {
+  const implementation = DOCUMENT_CONTAINER_RENAME_NATIVE_IMPLEMENTATION, path6 = join45(assetsRoot, implementation.relativePath);
+  const before = await lstat25(path6, { bigint: true });
+  if (!before.isFile() || before.isSymbolicLink() || before.size <= 0n || before.size > 128n * 1024n * 1024n || await realpath15(path6) !== path6) {
     throw new Error("Document rename native implementation is not a bounded regular file.");
   }
-  const file3 = await open21(path6, constants16.O_RDONLY | constants16.O_NOFOLLOW);
+  const file3 = await open22(path6, constants16.O_RDONLY | constants16.O_NOFOLLOW);
   try {
     const hash45 = createHash27("sha256");
     for await (const chunk of file3.createReadStream({ autoClose: false })) {
@@ -91645,7 +91949,7 @@ async function verifyDocumentContainerRenameNativeProfile(assetsRoot) {
       }
       hash45.update(chunk);
     }
-    const after = await file3.stat({ bigint: true }), current10 = await lstat24(path6, { bigint: true });
+    const after = await file3.stat({ bigint: true }), current10 = await lstat25(path6, { bigint: true });
     if (before.dev !== after.dev || before.ino !== after.ino || before.size !== after.size || before.mtimeNs !== after.mtimeNs || before.ctimeNs !== after.ctimeNs || after.dev !== current10.dev || after.ino !== current10.ino || after.mtimeNs !== current10.mtimeNs || after.ctimeNs !== current10.ctimeNs || hash45.digest("hex") !== implementation.sha256) {
       throw new Error("Native document rename implementation differs from the reviewed profile.");
     }
@@ -91869,19 +92173,19 @@ var init_project_schematic_create_runtime = __esm({
 // server/src/project-schematic-create-native-profile.ts
 import { createHash as createHash28 } from "node:crypto";
 import { constants as constants17 } from "node:fs";
-import { lstat as lstat25, open as open22, realpath as realpath15 } from "node:fs/promises";
-import { isAbsolute as isAbsolute18, join as join45 } from "node:path";
+import { lstat as lstat26, open as open23, realpath as realpath16 } from "node:fs/promises";
+import { isAbsolute as isAbsolute18, join as join46 } from "node:path";
 async function verifyProjectSchematicCreateNativeProfile(assetsRoot) {
   await verifyDocumentContainerRenameNativeProfile(assetsRoot);
-  if (!isAbsolute18(assetsRoot) || await realpath15(assetsRoot) !== assetsRoot) {
+  if (!isAbsolute18(assetsRoot) || await realpath16(assetsRoot) !== assetsRoot) {
     throw new Error("Schematic creation implementation root is not canonical.");
   }
-  const implementation = PROJECT_SCHEMATIC_CREATE_NATIVE_IMPLEMENTATION, path6 = join45(assetsRoot, implementation.relativePath);
-  const before = await lstat25(path6, { bigint: true });
-  if (!before.isFile() || before.isSymbolicLink() || before.size <= 0n || before.size > 128n * 1024n * 1024n || await realpath15(path6) !== path6) {
+  const implementation = PROJECT_SCHEMATIC_CREATE_NATIVE_IMPLEMENTATION, path6 = join46(assetsRoot, implementation.relativePath);
+  const before = await lstat26(path6, { bigint: true });
+  if (!before.isFile() || before.isSymbolicLink() || before.size <= 0n || before.size > 128n * 1024n * 1024n || await realpath16(path6) !== path6) {
     throw new Error("Schematic creation native implementation is not a bounded regular file.");
   }
-  const file3 = await open22(path6, constants17.O_RDONLY | constants17.O_NOFOLLOW);
+  const file3 = await open23(path6, constants17.O_RDONLY | constants17.O_NOFOLLOW);
   try {
     const hash45 = createHash28("sha256");
     for await (const chunk of file3.createReadStream({ autoClose: false })) {
@@ -91890,7 +92194,7 @@ async function verifyProjectSchematicCreateNativeProfile(assetsRoot) {
       }
       hash45.update(chunk);
     }
-    const after = await file3.stat({ bigint: true }), current10 = await lstat25(path6, { bigint: true });
+    const after = await file3.stat({ bigint: true }), current10 = await lstat26(path6, { bigint: true });
     if (before.dev !== after.dev || before.ino !== after.ino || before.size !== after.size || before.mtimeNs !== after.mtimeNs || before.ctimeNs !== after.ctimeNs || after.dev !== current10.dev || after.ino !== current10.ino || after.mtimeNs !== current10.mtimeNs || after.ctimeNs !== current10.ctimeNs || hash45.digest("hex") !== implementation.sha256) {
       throw new Error("Native schematic creation implementation differs from the reviewed profile.");
     }
@@ -91910,7 +92214,7 @@ var init_project_schematic_create_native_profile = __esm({
 });
 
 // server/src/library-recovery.ts
-import { join as join46 } from "node:path";
+import { join as join47 } from "node:path";
 function summary2(journal) {
   return {
     operationId: journal.operationId,
@@ -92292,7 +92596,7 @@ var init_library_recovery = __esm({
             const originalContext2 = await this.engine.assertContext(structuredClone(journal.plan.expectedContext));
             assertDocumentPageCreateContext(expected3, originalContext2);
           }
-          const checkpoint = await this.engine.checkpoint({ source: journal.context.project.path, outputDir: join46(controlDataDirectory(), "checkpoints"), label: "library-reconciled" });
+          const checkpoint = await this.engine.checkpoint({ source: journal.context.project.path, outputDir: join47(controlDataDirectory(), "checkpoints"), label: "library-reconciled" });
           const afterReceipt = receipt(checkpoint);
           const after = await this.history(afterReceipt, journal.context, journal.plan.operation);
           let result;
@@ -92458,7 +92762,7 @@ var init_library_recovery = __esm({
             throw new Error("Undispatched preparation before artifact contradicts its baseline.");
           }
         }
-        const snapshot8 = await this.engine.checkpoint({ source: context4.project.path, outputDir: join46(controlDataDirectory(), "checkpoints"), label: "library-undispatched" });
+        const snapshot8 = await this.engine.checkpoint({ source: context4.project.path, outputDir: join47(controlDataDirectory(), "checkpoints"), label: "library-undispatched" });
         const afterReceipt = receipt(snapshot8);
         const after = await this.history(afterReceipt, context4, journal.plan.operation);
         if (baseline2.checkpointDumpSha256 !== afterReceipt.checkpointDumpSha256 || libraryProjectRecordsHash(before) !== libraryProjectRecordsHash(after) || rederiveUndispatchedLibraryPlan(journal, after) !== preparedPlanSha256) {
@@ -92535,7 +92839,7 @@ var init_library_recovery = __esm({
         const response3 = extractToolPayload(raw);
         const observation3 = validateDocumentCloseReconciliation(decodeExactReadEnvelope(response3), plan2);
         await this.services.record(journal, "close-reconciliation-return", observation3);
-        const afterCheckpoint = await this.engine.checkpoint({ source: context4.project.path, outputDir: join46(controlDataDirectory(), "checkpoints"), label: "close-reconciled" });
+        const afterCheckpoint = await this.engine.checkpoint({ source: context4.project.path, outputDir: join47(controlDataDirectory(), "checkpoints"), label: "close-reconciled" });
         const afterReceipt = receipt(afterCheckpoint);
         verifyDocumentCloseProject(plan2, before, await this.history(afterReceipt, context4));
         if (baseline2.checkpointDumpSha256 !== afterReceipt.checkpointDumpSha256) {
@@ -92590,7 +92894,7 @@ var init_library_recovery = __esm({
         if (!targetActive && sourceHash(source5) !== journal.beforeSourceSha256) {
           throw new Error("Original editor source differs from its activation baseline.");
         }
-        const afterCheckpoint = await this.engine.checkpoint({ source: context4.project.path, outputDir: join46(controlDataDirectory(), "checkpoints"), label: "activation-reconciled" });
+        const afterCheckpoint = await this.engine.checkpoint({ source: context4.project.path, outputDir: join47(controlDataDirectory(), "checkpoints"), label: "activation-reconciled" });
         const afterReceipt = receipt(afterCheckpoint);
         verifyDocumentActivationProject(plan2, before, await this.history(afterReceipt, context4));
         if (receipt(journal.preCheckpoint).checkpointDumpSha256 !== afterReceipt.checkpointDumpSha256) {
@@ -92634,7 +92938,7 @@ var init_library_recovery = __esm({
 });
 
 // server/src/library-execution.ts
-import { join as join47 } from "node:path";
+import { join as join48 } from "node:path";
 function projectId(context4) {
   const id14 = context4.project.uuid ?? context4.project.projectUuid;
   if (typeof id14 !== "string" || id14.length === 0) {
@@ -92932,7 +93236,7 @@ var init_library_execution = __esm({
         }
       }
       async checkpoint(context4, label) {
-        const checkpoint = await this.engine.checkpoint({ source: context4.project.path, outputDir: join47(controlDataDirectory(), "checkpoints"), label });
+        const checkpoint = await this.engine.checkpoint({ source: context4.project.path, outputDir: join48(controlDataDirectory(), "checkpoints"), label });
         if (!isCheckpoint(checkpoint)) {
           throw new Error("Library checkpoint receipt missing.");
         }
@@ -93346,9 +93650,9 @@ var init_library_execution = __esm({
                 throw new Error("File operation bound is missing.");
               }
               const file3 = decodeLibraryFileResult(envelope4, operation.maxBytes);
-              const directory4 = await ensureManagedDirectory(join47(controlDataDirectory(), "exports", operationId13));
-              const reservation = await reserveEvidencePaths({ resultPath: join47(directory4, "result.json"), receiptPath: join47(directory4, "receipt.json") });
-              const attachment = await publishManagedAttachmentExclusive(join47(directory4, "payload.bin"), "Native library export", file3.bytes, "native-file-export");
+              const directory4 = await ensureManagedDirectory(join48(controlDataDirectory(), "exports", operationId13));
+              const reservation = await reserveEvidencePaths({ resultPath: join48(directory4, "result.json"), receiptPath: join48(directory4, "receipt.json") });
+              const attachment = await publishManagedAttachmentExclusive(join48(directory4, "payload.bin"), "Native library export", file3.bytes, "native-file-export");
               const receipt2 = await archiveExternalEvidence({ reservation, request: operation, result: { name: file3.name, mime: file3.mime, bytes: file3.bytes.length, sha256: file3.sha256 }, metadata: { operationId: operationId13, context: context4, sourceSha256: sourceHash2(afterSource), fabricationApproved: false }, attachments: [attachment] });
               result = { kind, name: file3.name, mime: file3.mime, attachment, receipt: receipt2, fabricationApproved: false };
             } else if (kind === "metadata-read") {
@@ -93779,7 +94083,7 @@ const events=value=>{
  return result;
 };
 const project=value=>{
- const n=dense(value,${MAX_ENTRIES4});if(n===0)bad();const seen=new Set(),result=[];
+ const n=dense(value,${MAX_ENTRIES5});if(n===0)bad();const seen=new Set(),result=[];
  for(let i=0;i<n;i++){
   const row=plain(own(value,String(i))),id=uuid(own(row,'uuid')),config=plain(own(row,'config'));
   if(seen.has(id)||uuid(own(config,'uuid'))!==id)bad();seen.add(id);
@@ -93826,7 +94130,7 @@ function validateStartupExtensionsResult(input, raw) {
     limitations: [...limitations]
   };
 }
-var STARTUP_EXTENSIONS_API_VERSION, STARTUP_EXTENSIONS_API_SHA256, STARTUP_EXTENSIONS_UI_VERSION, STARTUP_EXTENSIONS_UI_SHA256, STARTUP_EXTENSIONS_BRIDGE_UUID, STARTUP_EXTENSIONS_MAX_BYTES, MAX_ENTRIES4, MAX_EVENTS, eventKeyPattern, text25, eventValue, activationEvents, extension, payloadSchema5, startupExtensionsRequestSchema, limitations, startupExtensionsQuerySchema;
+var STARTUP_EXTENSIONS_API_VERSION, STARTUP_EXTENSIONS_API_SHA256, STARTUP_EXTENSIONS_UI_VERSION, STARTUP_EXTENSIONS_UI_SHA256, STARTUP_EXTENSIONS_BRIDGE_UUID, STARTUP_EXTENSIONS_MAX_BYTES, MAX_ENTRIES5, MAX_EVENTS, eventKeyPattern, text25, eventValue, activationEvents, extension, payloadSchema5, startupExtensionsRequestSchema, limitations, startupExtensionsQuerySchema;
 var init_startup_extensions = __esm({
   "server/src/startup-extensions.ts"() {
     init_zod();
@@ -93837,7 +94141,7 @@ var init_startup_extensions = __esm({
     STARTUP_EXTENSIONS_UI_SHA256 = "3823ed6eb2798c5ff4bdd7f2428dad07282115914da70a1852710542e0e6ad0a";
     STARTUP_EXTENSIONS_BRIDGE_UUID = "7e06d286b1ac846ef7eab9c7f2a9ee40";
     STARTUP_EXTENSIONS_MAX_BYTES = 65536;
-    MAX_ENTRIES4 = 128;
+    MAX_ENTRIES5 = 128;
     MAX_EVENTS = 32;
     eventKeyPattern = /^[A-Za-z][A-Za-z0-9]{0,63}$/u;
     text25 = (maximum5) => external_exports.string().min(1).max(maximum5).regex(/^[^\u0000-\u001F\u007F]+$/u);
@@ -93856,7 +94160,7 @@ var init_startup_extensions = __esm({
       action: external_exports.literal("list-startup-index"),
       databaseActorBound: external_exports.literal(false),
       startupQualified: external_exports.literal(false),
-      extensions: external_exports.array(extension).min(1).max(MAX_ENTRIES4)
+      extensions: external_exports.array(extension).min(1).max(MAX_ENTRIES5)
     }).strict().refine((value2) => new Set(value2.extensions.map((item2) => item2.uuid)).size === value2.extensions.length && value2.extensions.some((item2) => item2.uuid === STARTUP_EXTENSIONS_BRIDGE_UUID));
     startupExtensionsRequestSchema = external_exports.object({ action: external_exports.literal("list-startup-index") }).strict();
     limitations = [
@@ -94182,19 +94486,19 @@ var init_editor_context = __esm({
 // server/src/current-ui-implementation.ts
 import { createHash as createHash30 } from "node:crypto";
 import { constants as constants18 } from "node:fs";
-import { lstat as lstat26, open as open23, realpath as realpath16 } from "node:fs/promises";
-import { isAbsolute as isAbsolute19, join as join48 } from "node:path";
+import { lstat as lstat27, open as open24, realpath as realpath17 } from "node:fs/promises";
+import { isAbsolute as isAbsolute19, join as join49 } from "node:path";
 function needUi(value2) {
   if (!value2) {
     throw new Error("Current UI implementation differs from its reviewed profile.");
   }
 }
 async function verifyCurrentUiImplementation(assetsRoot) {
-  needUi(isAbsolute19(assetsRoot) && await realpath16(assetsRoot) === assetsRoot);
-  const path6 = join48(assetsRoot, CURRENT_UI_IMPLEMENTATION.relativePath);
-  const before = await lstat26(path6, { bigint: true });
-  needUi(before.isFile() && !before.isSymbolicLink() && before.size > 0n && before.size <= 128n * 1024n * 1024n && await realpath16(path6) === path6);
-  const file3 = await open23(path6, constants18.O_RDONLY | constants18.O_NOFOLLOW | constants18.O_NONBLOCK);
+  needUi(isAbsolute19(assetsRoot) && await realpath17(assetsRoot) === assetsRoot);
+  const path6 = join49(assetsRoot, CURRENT_UI_IMPLEMENTATION.relativePath);
+  const before = await lstat27(path6, { bigint: true });
+  needUi(before.isFile() && !before.isSymbolicLink() && before.size > 0n && before.size <= 128n * 1024n * 1024n && await realpath17(path6) === path6);
+  const file3 = await open24(path6, constants18.O_RDONLY | constants18.O_NOFOLLOW | constants18.O_NONBLOCK);
   try {
     const opened = await file3.stat({ bigint: true });
     needUi(opened.isFile() && before.dev === opened.dev && before.ino === opened.ino && before.size === opened.size && before.mtimeNs === opened.mtimeNs && before.ctimeNs === opened.ctimeNs);
@@ -94206,8 +94510,8 @@ async function verifyCurrentUiImplementation(assetsRoot) {
       needUi(consumed3 <= before.size && consumed3 <= 128n * 1024n * 1024n);
       hash45.update(chunk);
     }
-    const after = await file3.stat({ bigint: true }), named = await lstat26(path6, { bigint: true });
-    needUi(after.isFile() && consumed3 === before.size && before.dev === after.dev && before.ino === after.ino && before.size === after.size && before.mtimeNs === after.mtimeNs && before.ctimeNs === after.ctimeNs && after.dev === named.dev && after.ino === named.ino && after.size === named.size && after.mtimeNs === named.mtimeNs && after.ctimeNs === named.ctimeNs && named.isFile() && !named.isSymbolicLink() && await realpath16(path6) === path6 && hash45.digest("hex") === CURRENT_UI_IMPLEMENTATION.sha256);
+    const after = await file3.stat({ bigint: true }), named = await lstat27(path6, { bigint: true });
+    needUi(after.isFile() && consumed3 === before.size && before.dev === after.dev && before.ino === after.ino && before.size === after.size && before.mtimeNs === after.mtimeNs && before.ctimeNs === after.ctimeNs && after.dev === named.dev && after.ino === named.ino && after.size === named.size && after.mtimeNs === named.mtimeNs && after.ctimeNs === named.ctimeNs && named.isFile() && !named.isSymbolicLink() && await realpath17(path6) === path6 && hash45.digest("hex") === CURRENT_UI_IMPLEMENTATION.sha256);
   } finally {
     await file3.close();
   }
@@ -94220,76 +94524,6 @@ var init_current_ui_implementation = __esm({
       relativePath: "pro-ui/3.2.196.26ed3d6c/js/ui.js",
       sha256: "3823ed6eb2798c5ff4bdd7f2428dad07282115914da70a1852710542e0e6ad0a"
     });
-  }
-});
-
-// server/src/sdk-local-runtime.ts
-function validateSdkLocalRuntimeFingerprint(fingerprint) {
-  assertExpectedFingerprint(fingerprint);
-  const manifestBefore = reviewedCompatibilityManifestFingerprint();
-  const manifest = loadReviewedCompatibilityManifest();
-  assertSubset(reviewedCompatibilityManifestFingerprint(), manifestBefore, "SDK local manifest stability");
-  assertSubset(fingerprint.reviewedCompatibilityManifest, manifestBefore, "SDK local manifest identity");
-  const implementation = fingerprint.facadeImplementation;
-  const actual = {
-    facadeImplementation: {
-      version: implementation.version,
-      operationSchema: implementation.operationSchema,
-      sha256: implementation.sha256,
-      fileCount: implementation.files.length,
-      files: implementation.files.map((file3) => ({ relativePath: file3.relativePath, bytes: file3.bytes, sha256: file3.sha256 })).toSorted((left, right) => left.relativePath.localeCompare(right.relativePath))
-    },
-    upstream: {
-      serverVersion: fingerprint.upstreamServer.version,
-      launcher: fingerprint.upstreamLauncher,
-      toolCatalog: { count: fingerprint.toolCount, sha256: fingerprint.toolCatalogSha256 }
-    },
-    connectedRuntime: {
-      healthVersion: fingerprint.health.payload.version,
-      nodeVersion: fingerprint.health.payload.node_version.replace(/^v/u, ""),
-      easyedaVersion: fingerprint.health.payload.easyeda_version,
-      extensionVersion: fingerprint.health.payload.extension_version,
-      bridgeVersion: fingerprint.bridge.payload.bridge_version,
-      bridgeEasyedaVersion: fingerprint.bridge.payload.easyeda_version ?? null,
-      methodRegistryHash: fingerprint.bridge.payload.diagnostics.method_registry_hash,
-      dispatcher: {
-        source: fingerprint.bridgeDispatcher.payload.source,
-        buildId: fingerprint.bridgeDispatcher.payload.dispatcher_build_id,
-        total: fingerprint.bridgeDispatcher.payload.total
-      }
-    },
-    installedBundles: fingerprint.installedBundles
-  };
-  assertSubset(actual, {
-    facadeImplementation: manifest.facadeImplementation[implementation.mode],
-    upstream: manifest.upstream,
-    connectedRuntime: { ...manifest.connectedRuntime, easyedaVersion: SDK_LOCAL_RUNTIME_PROFILE.editorReportedVersion },
-    installedBundles: SDK_LOCAL_RUNTIME_PROFILE.installedBundles
-  }, "SDK local reviewed runtime scope");
-  return true;
-}
-var SDK_LOCAL_RUNTIME_PROFILE;
-var init_sdk_local_runtime = __esm({
-  "server/src/sdk-local-runtime.ts"() {
-    init_core3();
-    SDK_LOCAL_RUNTIME_PROFILE = {
-      schema: "easyeda-pro-control.sdk-local-runtime.v1",
-      // The authenticated handshake forwards getEditorCurrentVersion(), which
-      // Reports editorMainVersion, not the suffixed installed package version.
-      editorReportedVersion: "3.2.206",
-      installedBundles: {
-        pcbEditor: {
-          version: "3.2.193.682ed44e",
-          implementationSha256: "217199c8532c48aa50ed5fc254ddf2e6d09c886984c9498b5eea4d1cf0b7ef33"
-        },
-        publicApi: {
-          version: "0.3.50.ab46409c",
-          implementationSha256: "021d155baafbcdc7b558da12f0834a8ee473aa37e276c6ea679936f952080c76",
-          adapterSha256: "5570385041b304d6b2fc8ce59de7e0030f2732913cf6d43861fe985e0c079f3a",
-          declarationsSha256: "d5fe990034c55001302ea6c3f704c2d4b88cdf23253cc5293b3bad62a32b9def"
-        }
-      }
-    };
   }
 });
 
@@ -94735,8 +94969,8 @@ var init_current_pcb_layers = __esm({
 // server/src/current-disposable-open-profile.ts
 import { createHash as createHash31 } from "node:crypto";
 import { constants as constants19 } from "node:fs";
-import { lstat as lstat27, open as open24, realpath as realpath17 } from "node:fs/promises";
-import { dirname as dirname19, isAbsolute as isAbsolute20, resolve as resolve13 } from "node:path";
+import { lstat as lstat28, open as open25, realpath as realpath18 } from "node:fs/promises";
+import { dirname as dirname20, isAbsolute as isAbsolute20, resolve as resolve13 } from "node:path";
 async function verifyCurrentProjectOnlyOpenImplementation(assetsRoot) {
   await verifyCurrentDisposableOpenImplementation(assetsRoot);
   await verifyFiles(assetsRoot, [CURRENT_PROJECT_ONLY_SCH_IMPLEMENTATION]);
@@ -94751,7 +94985,7 @@ function requirePinned(condition) {
   }
 }
 async function verifyCurrentDisposableOpenImplementation(assetsRoot) {
-  requirePinned(isAbsolute20(assetsRoot) && await realpath17(assetsRoot) === assetsRoot);
+  requirePinned(isAbsolute20(assetsRoot) && await realpath18(assetsRoot) === assetsRoot);
   await verifyCurrentUiImplementation(assetsRoot);
   await verifyFiles(assetsRoot, CURRENT_DISPOSABLE_OPEN_IMPLEMENTATION.files);
 }
@@ -94760,7 +94994,7 @@ async function verifyCurrentSymbolWitnessImplementation(assetsRoot) {
   await verifyFiles(assetsRoot, [CURRENT_SYMBOL_CLOCK_IMPLEMENTATION]);
 }
 async function verifyCurrentSymbolPersistenceImplementation(assetsRoot) {
-  requirePinned(isAbsolute20(assetsRoot) && await realpath17(assetsRoot) === assetsRoot);
+  requirePinned(isAbsolute20(assetsRoot) && await realpath18(assetsRoot) === assetsRoot);
   const before = await persistenceResolution(assetsRoot);
   await verifyCurrentDisposableOpenImplementation(assetsRoot);
   await verifyFiles(assetsRoot, CURRENT_SYMBOL_PERSISTENCE_IMPLEMENTATION.files);
@@ -94774,10 +95008,10 @@ async function persistenceResolution(assetsRoot) {
   const files = CURRENT_SYMBOL_PERSISTENCE_IMPLEMENTATION.files.map((pin4) => resolve13(assetsRoot, pin4.relativePath));
   const directories = /* @__PURE__ */ new Set([assetsRoot]);
   for (const path6 of [assetsRoot, ...files]) {
-    let directory4 = dirname19(path6);
+    let directory4 = dirname20(path6);
     for (; ; ) {
       directories.add(directory4);
-      const parent = dirname19(directory4);
+      const parent = dirname20(directory4);
       if (parent === directory4) {
         break;
       }
@@ -94786,13 +95020,13 @@ async function persistenceResolution(assetsRoot) {
   }
   const result = [];
   for (const directory4 of directories) {
-    const info = await lstat27(directory4, { bigint: true });
-    requirePinned(info.isDirectory() && !info.isSymbolicLink() && await realpath17(directory4) === directory4);
+    const info = await lstat28(directory4, { bigint: true });
+    requirePinned(info.isDirectory() && !info.isSymbolicLink() && await realpath18(directory4) === directory4);
     result.push(`${directory4}:${identity28(info, true)}`);
   }
   for (const path6 of files) {
-    const info = await lstat27(path6, { bigint: true });
-    requirePinned(info.isFile() && !info.isSymbolicLink() && info.nlink === 1n && await realpath17(path6) === path6);
+    const info = await lstat28(path6, { bigint: true });
+    requirePinned(info.isFile() && !info.isSymbolicLink() && info.nlink === 1n && await realpath18(path6) === path6);
     result.push(`${path6}:${identity28(info, false)}`);
   }
   for (const relativePath of CURRENT_SYMBOL_PERSISTENCE_IMPLEMENTATION.absent) {
@@ -94802,7 +95036,7 @@ async function persistenceResolution(assetsRoot) {
 }
 async function requireAbsent(path6) {
   try {
-    await lstat27(path6);
+    await lstat28(path6);
   } catch (error52) {
     if (error52 instanceof Error && "code" in error52 && error52.code === "ENOENT") {
       return;
@@ -94814,8 +95048,8 @@ async function requireAbsent(path6) {
 async function verifyFiles(assetsRoot, pins) {
   for (const pin4 of pins) {
     const path6 = resolve13(assetsRoot, pin4.relativePath);
-    requirePinned(await realpath17(path6) === path6);
-    const handle11 = await open24(path6, constants19.O_RDONLY | constants19.O_NOFOLLOW | constants19.O_NONBLOCK);
+    requirePinned(await realpath18(path6) === path6);
+    const handle11 = await open25(path6, constants19.O_RDONLY | constants19.O_NOFOLLOW | constants19.O_NONBLOCK);
     try {
       const before = await handle11.stat({ bigint: true });
       requirePinned(before.isFile() && before.size === BigInt(pin4.bytes));
@@ -94827,8 +95061,8 @@ async function verifyFiles(assetsRoot, pins) {
         requirePinned(bytes2 <= pin4.bytes);
         hash45.update(chunk);
       }
-      const after = await handle11.stat({ bigint: true }), named = await lstat27(path6, { bigint: true });
-      requirePinned(bytes2 === pin4.bytes && hash45.digest("hex") === pin4.sha256 && after.isFile() && named.isFile() && !named.isSymbolicLink() && before.dev === after.dev && before.ino === after.ino && before.size === after.size && before.mtimeNs === after.mtimeNs && before.ctimeNs === after.ctimeNs && after.dev === named.dev && after.ino === named.ino && after.size === named.size && after.mtimeNs === named.mtimeNs && after.ctimeNs === named.ctimeNs && await realpath17(path6) === path6);
+      const after = await handle11.stat({ bigint: true }), named = await lstat28(path6, { bigint: true });
+      requirePinned(bytes2 === pin4.bytes && hash45.digest("hex") === pin4.sha256 && after.isFile() && named.isFile() && !named.isSymbolicLink() && before.dev === after.dev && before.ino === after.ino && before.size === after.size && before.mtimeNs === after.mtimeNs && before.ctimeNs === after.ctimeNs && after.dev === named.dev && after.ino === named.ino && after.size === named.size && after.mtimeNs === named.mtimeNs && after.ctimeNs === named.ctimeNs && await realpath18(path6) === path6);
     } finally {
       await handle11.close();
     }
@@ -95018,8 +95252,8 @@ var init_current_symbol_metadata = __esm({
 // server/src/current-symbol-metadata-preparation.ts
 import { createHash as createHash32 } from "node:crypto";
 import { constants as constants20 } from "node:fs";
-import { lstat as lstat28, open as open25 } from "node:fs/promises";
-import { basename as basename23, dirname as dirname20, isAbsolute as isAbsolute21, join as join49, relative as relative5, resolve as resolve14, sep as sep3 } from "node:path";
+import { lstat as lstat29, open as open26 } from "node:fs/promises";
+import { basename as basename23, dirname as dirname21, isAbsolute as isAbsolute21, join as join50, relative as relative5, resolve as resolve14, sep as sep3 } from "node:path";
 import process8 from "node:process";
 function queryCurrentSymbolMetadataPreparation(input = {}) {
   const query = external_exports.object({ includeSchemas: external_exports.boolean().default(false) }).strict().parse(input);
@@ -95055,7 +95289,7 @@ function requireCheckpoint(condition) {
     throw new Error("Current symbol metadata checkpoint identity, scope or stability is not proven.");
   }
 }
-function sameFile3(before, after) {
+function sameFile4(before, after) {
   return after.isFile() && !after.isSymbolicLink() && before.dev === after.dev && before.ino === after.ino && before.uid === after.uid && before.mode === after.mode && before.nlink === after.nlink && before.size === after.size && before.mtimeNs === after.mtimeNs && before.ctimeNs === after.ctimeNs;
 }
 async function verifyBytes(file3, descriptor10) {
@@ -95071,14 +95305,14 @@ async function verifyBytes(file3, descriptor10) {
 }
 async function requireNoSidecars(path6) {
   for (const suffix of ["-wal", "-shm", "-journal"]) {
-    let missing3 = false;
+    let missing4 = false;
     try {
-      await lstat28(`${path6}${suffix}`);
+      await lstat29(`${path6}${suffix}`);
     } catch (error52) {
       requireCheckpoint(isRecord(error52) && error52["code"] === "ENOENT");
-      missing3 = true;
+      missing4 = true;
     }
-    requireCheckpoint(missing3);
+    requireCheckpoint(missing4);
   }
 }
 function prepareCurrentSymbolMetadata(input) {
@@ -95089,19 +95323,19 @@ function prepareCurrentInverseSymbolMetadata(input) {
 }
 async function prepareMetadata(input, preserveHeaders) {
   const request13 = currentSymbolMetadataPreparationRequestSchema.parse(input);
-  const checkpointRoot = join49(controlDataDirectory(), "checkpoints");
+  const checkpointRoot = join50(controlDataDirectory(), "checkpoints");
   const child = relative5(checkpointRoot, request13.checkpoint.path);
   requireCheckpoint(child.length > 0 && child !== ".." && !child.startsWith(`..${sep3}`) && !isAbsolute21(child));
   const root2 = await controlRootCapability(false);
-  const directory4 = await root2.openDirectory(dirname20(request13.checkpoint.path), false);
+  const directory4 = await root2.openDirectory(dirname21(request13.checkpoint.path), false);
   try {
     const boundPath = `/proc/self/fd/${String(directory4.handle.fd)}/${basename23(request13.checkpoint.path)}`;
-    const named = await lstat28(boundPath, { bigint: true });
+    const named = await lstat29(boundPath, { bigint: true });
     requireCheckpoint(named.isFile() && !named.isSymbolicLink() && named.nlink === 1n && named.mode % 64n === 0n && named.size === BigInt(request13.checkpoint.bytes) && (typeof process8.getuid !== "function" || named.uid === BigInt(process8.getuid())));
-    const file3 = await open25(boundPath, constants20.O_RDONLY | constants20.O_NOFOLLOW | constants20.O_NONBLOCK);
+    const file3 = await open26(boundPath, constants20.O_RDONLY | constants20.O_NOFOLLOW | constants20.O_NONBLOCK);
     try {
       const before = await file3.stat({ bigint: true });
-      requireCheckpoint(sameFile3(named, before));
+      requireCheckpoint(sameFile4(named, before));
       const history = await readNativeHistoryCheckpoint({
         checkpointPath: boundPath,
         expectedSha256: request13.checkpoint.sha256,
@@ -95162,7 +95396,7 @@ async function prepareMetadata(input, preserveHeaders) {
         throw new Error("Current symbol metadata preparation exceeds the 512 KiB offline response limit.");
       }
       await verifyBytes(file3, request13.checkpoint);
-      requireCheckpoint(sameFile3(before, await file3.stat({ bigint: true })) && sameFile3(before, await lstat28(boundPath, { bigint: true })));
+      requireCheckpoint(sameFile4(before, await file3.stat({ bigint: true })) && sameFile4(before, await lstat29(boundPath, { bigint: true })));
       const currentDirectory = await root2.openDirectory(directory4.absolute, false);
       try {
         requireCheckpoint(currentDirectory.info.dev === directory4.info.dev && currentDirectory.info.ino === directory4.info.ino);
@@ -98162,20 +98396,20 @@ var init_current_pcb_observation_failure = __esm({
 });
 
 // server/src/current-pcb-string-ledger-exclusion.ts
-import { opendir as opendir4 } from "node:fs/promises";
-import { join as join50 } from "node:path";
+import { opendir as opendir5 } from "node:fs/promises";
+import { join as join51 } from "node:path";
 function need47(value2, detail) {
   if (!value2) {
     throw new Error(`PCB_STRING_LEDGER_EXCLUSION: ${detail}`);
   }
 }
-function missing(error52) {
+function missing2(error52) {
   return error52 instanceof Error && "code" in error52 && error52.code === "ENOENT";
 }
 async function readCurrentPcbStringLedgerReservations() {
   const root2 = await controlRootCapability(false);
-  const parent = await root2.openDirectory(join50(controlDataDirectory(), CURRENT_PCB_STRING_LEDGER_DIRECTORY), false).catch((error52) => {
-    if (missing(error52)) {
+  const parent = await root2.openDirectory(join51(controlDataDirectory(), CURRENT_PCB_STRING_LEDGER_DIRECTORY), false).catch((error52) => {
+    if (missing2(error52)) {
       return null;
     }
     throw error52;
@@ -98186,7 +98420,7 @@ async function readCurrentPcbStringLedgerReservations() {
   }
   try {
     const before = await parent.handle.stat({ bigint: true }), result = [];
-    const directory4 = await opendir4(`/proc/self/fd/${String(parent.handle.fd)}`);
+    const directory4 = await opendir5(`/proc/self/fd/${String(parent.handle.fd)}`);
     for await (const entry of directory4) {
       need47(result.length < MAX_OPERATIONS, "operation bound exceeded");
       need47(entry.isDirectory() && /^string-ledger-[a-z0-9][a-z0-9_-]{0,63}$/u.test(entry.name), "unknown reservation");
@@ -100311,8 +100545,8 @@ var init_current_pcb_common_baseline_validation = __esm({
 
 // server/src/current-pcb-diagnostic-lifecycle-journal.ts
 import { constants as constants21 } from "node:fs";
-import { lstat as lstat29, mkdir as mkdir4, open as open26, opendir as opendir5 } from "node:fs/promises";
-import { join as join51 } from "node:path";
+import { lstat as lstat30, mkdir as mkdir4, open as open27, opendir as opendir6 } from "node:fs/promises";
+import { join as join52 } from "node:path";
 function diagnosticPcbOpeningSourceAccepted(result, target9) {
   const parsed2 = qualifiedPcbOpeningSchema.safeParse(result);
   if (!parsed2.success) {
@@ -100375,7 +100609,7 @@ async function withCurrentPcbDiagnosticLaunchExclusion(action) {
 }
 async function entries5(directory4, limit) {
   const result = [];
-  const handle11 = await opendir5(`/proc/self/fd/${String(directory4.handle.fd)}`);
+  const handle11 = await opendir6(`/proc/self/fd/${String(directory4.handle.fd)}`);
   for await (const entry of handle11) {
     requireValue14(result.length < limit, "INVENTORY_BOUND");
     result.push(entry);
@@ -100384,7 +100618,7 @@ async function entries5(directory4, limit) {
 }
 async function readRecord(directory4, name6) {
   const path6 = `/proc/self/fd/${String(directory4.handle.fd)}/${name6}`;
-  const handle11 = await open26(path6, constants21.O_RDONLY | constants21.O_NOFOLLOW | constants21.O_NONBLOCK);
+  const handle11 = await open27(path6, constants21.O_RDONLY | constants21.O_NOFOLLOW | constants21.O_NONBLOCK);
   try {
     const initial = await handle11.stat({ bigint: true });
     requireValue14(initial.isFile() && initial.nlink === 1n && initial.size > 0n && initial.size <= BigInt(recordBound(name6)) && initial.mode % 512n === 0o600n && typeof process.getuid === "function" && initial.uid === BigInt(process.getuid()), "RECORD_AUTHORITY");
@@ -100397,7 +100631,7 @@ async function readRecord(directory4, name6) {
       }
       count3 += read2.bytesRead;
     }
-    requireValue14(count3 === Number(initial.size) && same41(initial, await handle11.stat({ bigint: true })) && same41(initial, await lstat29(path6, { bigint: true })), "RECORD_CHANGED");
+    requireValue14(count3 === Number(initial.size) && same41(initial, await handle11.stat({ bigint: true })) && same41(initial, await lstat30(path6, { bigint: true })), "RECORD_CHANGED");
     return JSON.parse(new TextDecoder("utf-8", { fatal: true }).decode(bytes2.subarray(0, count3)));
   } finally {
     await handle11.close();
@@ -100518,7 +100752,7 @@ function validateChain(operation) {
 }
 async function readCurrentPcbDiagnosticLifecycles() {
   const root2 = await controlRootCapability(false);
-  const parent = await root2.openDirectory(join51(controlDataDirectory(), DIRECTORY), false).catch((error52) => {
+  const parent = await root2.openDirectory(join52(controlDataDirectory(), DIRECTORY), false).catch((error52) => {
     if (absent2(error52)) {
       return null;
     }
@@ -100532,7 +100766,7 @@ async function readCurrentPcbDiagnosticLifecycles() {
     const children2 = await entries5(parent, MAX_OPERATIONS2);
     for (const entry of children2.toSorted((left, right) => left.name.localeCompare(right.name))) {
       requireValue14(entry.isDirectory() && diagnosticLifecycleIdSchema.safeParse(entry.name).success, "UNKNOWN_OPERATION");
-      const slot = await root2.openDirectory(join51(parent.absolute, entry.name), false);
+      const slot = await root2.openDirectory(join52(parent.absolute, entry.name), false);
       try {
         const records2 = {};
         for (const record21 of await entries5(slot, Object.keys(diagnosticLifecycleRecordSchemas).length)) {
@@ -100561,7 +100795,7 @@ async function assertNoUnresolvedCurrentPcbDiagnosticLaunches() {
 async function reserveCurrentPcbDiagnosticLifecycle(operationId13) {
   diagnosticLifecycleIdSchema.parse(operationId13);
   const root2 = await controlRootCapability();
-  const parent = await root2.openDirectory(join51(controlDataDirectory(), DIRECTORY));
+  const parent = await root2.openDirectory(join52(controlDataDirectory(), DIRECTORY));
   try {
     await mkdir4(`/proc/self/fd/${String(parent.handle.fd)}/${operationId13}`, { mode: 448 });
     await parent.handle.sync();
@@ -100578,7 +100812,7 @@ async function publishCurrentPcbDiagnosticLifecycleRecord(operationId13, name6, 
 `);
   requireValue14(bytes2.length <= recordBound(name6), "PUBLICATION_BOUND");
   await publishManagedAttachmentExclusive(
-    join51(controlDataDirectory(), DIRECTORY, operationId13, name6),
+    join52(controlDataDirectory(), DIRECTORY, operationId13, name6),
     "PCB diagnostic lifecycle record",
     bytes2,
     "easyeda-pro-control.pcb-diagnostic-lifecycle.v1"
@@ -101170,7 +101404,7 @@ var init_current_pcb_diagnostic_lifecycle_journal = __esm({
 // server/src/windows-runtime.ts
 import { createHash as createHash42 } from "node:crypto";
 import { constants as constants22 } from "node:fs";
-import { lstat as lstat30, open as open27, realpath as realpath18 } from "node:fs/promises";
+import { lstat as lstat31, open as open28, realpath as realpath19 } from "node:fs/promises";
 import path2 from "node:path";
 import process9 from "node:process";
 function canonicalHostPath(value2) {
@@ -101221,11 +101455,11 @@ function deriveWindowsRuntimePaths(options) {
   return { assetsRoot, executablePath, executableWindowsPath, helperPath, helperWindowsPath, powershellExecutable };
 }
 async function hashInstalledExecutable(executablePath, assetsRoot) {
-  const directory4 = await lstat30(assetsRoot);
-  if (!directory4.isDirectory() || directory4.isSymbolicLink() || await realpath18(assetsRoot) !== assetsRoot || await realpath18(executablePath) !== executablePath || path2.posix.resolve(assetsRoot, "../../..", "easyeda-pro.exe") !== executablePath) {
+  const directory4 = await lstat31(assetsRoot);
+  if (!directory4.isDirectory() || directory4.isSymbolicLink() || await realpath19(assetsRoot) !== assetsRoot || await realpath19(executablePath) !== executablePath || path2.posix.resolve(assetsRoot, "../../..", "easyeda-pro.exe") !== executablePath) {
     throw new Error("EasyEDA executable and canonical installed assets do not agree.");
   }
-  const handle11 = await open27(executablePath, constants22.O_RDONLY | constants22.O_NOFOLLOW);
+  const handle11 = await open28(executablePath, constants22.O_RDONLY | constants22.O_NOFOLLOW);
   try {
     const before = await handle11.stat();
     if (!before.isFile() || before.nlink !== 1 || before.size === 0 || before.size > 1073741824) {
@@ -101239,13 +101473,13 @@ async function hashInstalledExecutable(executablePath, assetsRoot) {
       digest14.update(chunk);
     }
     const after = await handle11.stat();
-    const named = await lstat30(executablePath);
+    const named = await lstat31(executablePath);
     for (const candidate of [after, named]) {
       if (!candidate.isFile() || candidate.nlink !== 1 || candidate.dev !== before.dev || candidate.ino !== before.ino || candidate.size !== before.size || candidate.mtimeMs !== before.mtimeMs || candidate.ctimeMs !== before.ctimeMs) {
         throw new Error("EasyEDA executable changed during reviewed identity capture.");
       }
     }
-    if (await realpath18(executablePath) !== executablePath || await realpath18(assetsRoot) !== assetsRoot) {
+    if (await realpath19(executablePath) !== executablePath || await realpath19(assetsRoot) !== assetsRoot) {
       throw new Error("EasyEDA installed paths changed during identity capture.");
     }
     return digest14.digest("hex");
@@ -101465,18 +101699,18 @@ var init_windows_runtime = __esm({
       async observeCurrentClock(evidence2) {
         const supervisor = this.requireSupervisor();
         const methods22 = this.supervisorClockMethods.get(supervisor);
-        const observe6 = methods22?.observe;
-        if (observe6 === void 0) {
+        const observe7 = methods22?.observe;
+        if (observe7 === void 0) {
           throw new Error("Retained runtime has no original fresh-clock method.");
         }
         const evidenceText = canonicalJson(evidence2), launch = this.currentLaunch, launchText = canonicalJson(launch);
         const current10 = () => {
-          if (this.requireSupervisor() !== supervisor || this.currentLaunch !== launch || canonicalJson(this.currentLaunch) !== launchText || this.supervisorClockMethods.get(supervisor) !== methods22 || supervisor.observeCurrentClock !== observe6 || supervisor.capture !== methods22?.capture || canonicalJson(evidence2) !== evidenceText) {
+          if (this.requireSupervisor() !== supervisor || this.currentLaunch !== launch || canonicalJson(this.currentLaunch) !== launchText || this.supervisorClockMethods.get(supervisor) !== methods22 || supervisor.observeCurrentClock !== observe7 || supervisor.capture !== methods22?.capture || canonicalJson(evidence2) !== evidenceText) {
             throw new Error("Fresh runtime clock lost its original capture, supervisor, method or launch.");
           }
         };
         current10();
-        const observation3 = await observe6.call(supervisor, evidence2);
+        const observation3 = await observe7.call(supervisor, evidence2);
         current10();
         const issued33 = assertCurrentIssuedWindowsClockObservation(observation3);
         if (issued33 !== observation3 || observation3.phase !== "owned-observation" || launch === null || observation3.base["jobId"] !== launch.jobId || observation3.base["helperInstance"] !== launch.helperInstance || observation3.base["captureBindingSha256"] !== evidence2.bindingSha256 || observation3.ownerBinding["bindingSha256"] !== evidence2.bindingSha256 || observation3.ownerBinding["authoritySha256"] !== evidence2.authoritySha256) {
@@ -101590,22 +101824,22 @@ var init_windows_runtime = __esm({
 import { spawn as spawn5 } from "node:child_process";
 import { createHash as createHash43 } from "node:crypto";
 import { constants as constants23 } from "node:fs";
-import { lstat as lstat31, open as open28, realpath as realpath19 } from "node:fs/promises";
-import { join as join52 } from "node:path";
+import { lstat as lstat32, open as open29, realpath as realpath20 } from "node:fs/promises";
+import { join as join53 } from "node:path";
 function refused(category) {
   return new OrdinaryLaunchRecoveryError(category);
 }
-function sameFile4(left, right) {
+function sameFile5(left, right) {
   return ["dev", "ino", "size", "mode", "uid", "gid", "nlink", "mtimeNs", "ctimeNs"].every((key) => left[key] === right[key]);
 }
 async function verifyHelper(helperPath, expected3) {
-  if (await realpath19(helperPath) !== helperPath) {
+  if (await realpath20(helperPath) !== helperPath) {
     throw new Error("Recovery helper source check failed.");
   }
-  const handle11 = await open28(helperPath, constants23.O_RDONLY | constants23.O_NOFOLLOW | constants23.O_NONBLOCK);
+  const handle11 = await open29(helperPath, constants23.O_RDONLY | constants23.O_NOFOLLOW | constants23.O_NONBLOCK);
   try {
     const before = await handle11.stat({ bigint: true });
-    if (!before.isFile() || before.nlink !== 1n || before.size !== BigInt(ORDINARY_LAUNCH_RECOVERY_HELPER.bytes) || expected3 !== void 0 && !sameFile4(before, expected3)) {
+    if (!before.isFile() || before.nlink !== 1n || before.size !== BigInt(ORDINARY_LAUNCH_RECOVERY_HELPER.bytes) || expected3 !== void 0 && !sameFile5(before, expected3)) {
       throw new Error("Recovery helper source check failed.");
     }
     const bytes2 = Buffer.alloc(ORDINARY_LAUNCH_RECOVERY_HELPER.bytes + 1);
@@ -101617,7 +101851,7 @@ async function verifyHelper(helperPath, expected3) {
       }
       count3 += result.bytesRead;
     }
-    if (count3 !== ORDINARY_LAUNCH_RECOVERY_HELPER.bytes || createHash43("sha256").update(bytes2.subarray(0, count3)).digest("hex") !== ORDINARY_LAUNCH_RECOVERY_HELPER.sha256 || !sameFile4(before, await handle11.stat({ bigint: true })) || !sameFile4(before, await lstat31(helperPath, { bigint: true })) || await realpath19(helperPath) !== helperPath) {
+    if (count3 !== ORDINARY_LAUNCH_RECOVERY_HELPER.bytes || createHash43("sha256").update(bytes2.subarray(0, count3)).digest("hex") !== ORDINARY_LAUNCH_RECOVERY_HELPER.sha256 || !sameFile5(before, await handle11.stat({ bigint: true })) || !sameFile5(before, await lstat32(helperPath, { bigint: true })) || await realpath20(helperPath) !== helperPath) {
       throw new Error("Recovery helper source check failed.");
     }
     const source5 = new TextDecoder("utf-8", { fatal: true }).decode(bytes2.subarray(0, count3));
@@ -101715,7 +101949,7 @@ async function observeOrdinaryLaunchRecovery(options) {
   let before, helperPath;
   try {
     deriveWindowsRuntimePaths(options);
-    helperPath = join52(options.pluginRoot, ORDINARY_LAUNCH_RECOVERY_HELPER.relativePath);
+    helperPath = join53(options.pluginRoot, ORDINARY_LAUNCH_RECOVERY_HELPER.relativePath);
     before = await verifyHelper(helperPath);
   } catch {
     throw refused("pre-helper-source");
@@ -101841,11 +102075,38 @@ var init_ordinary_launch_timings = __esm({
   }
 });
 
+// server/src/ordinary-launch-209-profile.ts
+var ORDINARY_LAUNCH_209_PROFILE;
+var init_ordinary_launch_209_profile = __esm({
+  "server/src/ordinary-launch-209-profile.ts"() {
+    ORDINARY_LAUNCH_209_PROFILE = {
+      schema: "easyeda-pro-control.ordinary-launch.v1",
+      installedPackageVersion: "3.2.209.8a704eab",
+      installedFiles: [
+        { relativePath: "../../../easyeda-pro.exe", bytes: 222989936, sha256: "8770f2cea950d9483f230f961b486e5ceaeffd619e2c2816957cb6ff3fd0bb38" },
+        { relativePath: "../app.js", bytes: 2657192, sha256: "52f51ce43cfebc81a362addde6cd27e39fa58c8fc1ab4ee5adacca4551e5ef0c" },
+        { relativePath: "../package.json", bytes: 248, sha256: "c63c12edae82c39c1fb2c0f0dd0e27678b83526c89ea174b3b79655711da8e51" },
+        { relativePath: "../editor.ini", bytes: 8031, sha256: "ced74cf98aedf6b04d0f23871b945f4155978d7e35edbc1704b8cdaf566623f9" }
+      ],
+      helper: { relativePath: "scripts/windows-authority.ps1", sha256: "507fdea31ee30387ea31e90ca749058fa987ee573de12940db57357d2d321e35" }
+    };
+  }
+});
+
 // server/src/ordinary-launch.ts
 import { createHash as createHash44 } from "node:crypto";
 import { constants as constants24 } from "node:fs";
-import { lstat as lstat32, mkdir as mkdir5, open as open29, opendir as opendir6, realpath as realpath20 } from "node:fs/promises";
-import { join as join53, resolve as resolve15 } from "node:path";
+import { lstat as lstat33, mkdir as mkdir5, open as open30, opendir as opendir7, realpath as realpath21 } from "node:fs/promises";
+import { join as join54, resolve as resolve15 } from "node:path";
+function configuredLaunchProfile() {
+  return isPublicUtilities209Configured(process.env) ? ORDINARY_LAUNCH_209_PROFILE : ORDINARY_LAUNCH_PROFILE;
+}
+function configuredSelectors() {
+  return JSON.stringify([
+    process.env["EASYEDA_PCB_BUNDLE_VERSION"] ?? null,
+    process.env["EASYEDA_PUBLIC_API_BUNDLE_VERSION"] ?? null
+  ]);
+}
 function parseOrdinaryLaunchRequest(input) {
   return ordinaryLaunchRequestSchema.parse(input);
 }
@@ -101855,7 +102116,7 @@ function queryOrdinaryLaunch(input = {}) {
     tool: "easyeda_control_launch",
     actions: ["launch", "inspect", "observe-application", "observe-termination", "observe-window", "normal-close", "abandon-supervision", "abandon-unknown-launch"],
     effect: "ordinary-existing-profile-application-startup",
-    profile: ORDINARY_LAUNCH_PROFILE,
+    profile: configuredLaunchProfile(),
     limitations: limitations9,
     ...parsed2.includeSchemas === true ? { requestSchema: external_exports.toJSONSchema(ordinaryLaunchRequestSchema) } : {}
   };
@@ -101893,7 +102154,7 @@ function hasHelperBeforeIntentProtocol(intent) {
   if (intent.schema === "easyeda-pro-control.ordinary-launch-intent.v1") {
     return intent.profileSha256 === HISTORICAL_UNKNOWN_LAUNCH.profileSha256 && intent.facadeSha256 === HISTORICAL_UNKNOWN_LAUNCH.facadeSha256;
   }
-  return intent.profileSha256 === sha256Json(ORDINARY_LAUNCH_PROFILE);
+  return intent.profileSha256 === sha256Json(ORDINARY_LAUNCH_PROFILE) || intent.profileSha256 === sha256Json(ORDINARY_LAUNCH_209_PROFILE);
 }
 function describeLaunchProtocol(intent) {
   if (!hasHelperBeforeIntentProtocol(intent)) {
@@ -101912,12 +102173,12 @@ function requireValue15(condition, message) {
 function absent3(error52) {
   return error52 !== null && typeof error52 === "object" && "code" in error52 && error52.code === "ENOENT";
 }
-function sameFile5(left, right) {
+function sameFile6(left, right) {
   return ["dev", "ino", "size", "mode", "uid", "gid", "nlink", "mtimeNs", "ctimeNs"].every((key) => left[key] === right[key]);
 }
 async function hashPinnedFile(absolute, sha256, bytes2) {
-  requireValue15(resolve15(absolute) === absolute && await realpath20(absolute) === absolute, "Ordinary launch file path is not canonical.");
-  const handle11 = await open29(absolute, constants24.O_RDONLY | constants24.O_NOFOLLOW | constants24.O_NONBLOCK);
+  requireValue15(resolve15(absolute) === absolute && await realpath21(absolute) === absolute, "Ordinary launch file path is not canonical.");
+  const handle11 = await open30(absolute, constants24.O_RDONLY | constants24.O_NOFOLLOW | constants24.O_NONBLOCK);
   try {
     const before = await handle11.stat({ bigint: true });
     requireValue15(before.isFile() && before.nlink === 1n && before.size > 0n && before.size <= 1073741824n && (bytes2 === void 0 ? before.size <= 65536n : before.size === BigInt(bytes2)), "Ordinary launch pinned file size or kind differs.");
@@ -101929,18 +102190,21 @@ async function hashPinnedFile(absolute, sha256, bytes2) {
       requireValue15(count3 <= Number(before.size), "Ordinary launch file grew during hashing.");
       hash45.update(chunk);
     }
-    requireValue15(count3 === Number(before.size) && hash45.digest("hex") === sha256 && sameFile5(before, await handle11.stat({ bigint: true })) && sameFile5(before, await lstat32(absolute, { bigint: true })) && await realpath20(absolute) === absolute, "Ordinary launch pinned file identity differs.");
+    requireValue15(count3 === Number(before.size) && hash45.digest("hex") === sha256 && sameFile6(before, await handle11.stat({ bigint: true })) && sameFile6(before, await lstat33(absolute, { bigint: true })) && await realpath21(absolute) === absolute, "Ordinary launch pinned file identity differs.");
   } finally {
     await handle11.close();
   }
 }
-async function verifyOrdinaryLaunchInstallation(options) {
+function verifyOrdinaryLaunchInstallation(options) {
+  return verifyInstalledProfile(options, ORDINARY_LAUNCH_PROFILE);
+}
+async function verifyInstalledProfile(options, profile) {
   requireValue15(
-    /^\/mnt\/[a-z]\/[^\r\n]+\/resources\/app\/assets$/u.test(options.assetsRoot) && resolve15(options.assetsRoot) === options.assetsRoot && await realpath20(options.assetsRoot) === options.assetsRoot,
+    /^\/mnt\/[a-z]\/[^\r\n]+\/resources\/app\/assets$/u.test(options.assetsRoot) && resolve15(options.assetsRoot) === options.assetsRoot && await realpath21(options.assetsRoot) === options.assetsRoot,
     "Ordinary launch requires the canonical installed Windows assets root."
   );
   requireValue15(
-    resolve15(options.pluginRoot) === options.pluginRoot && await realpath20(options.pluginRoot) === options.pluginRoot,
+    resolve15(options.pluginRoot) === options.pluginRoot && await realpath21(options.pluginRoot) === options.pluginRoot,
     "Ordinary launch requires the canonical plugin root."
   );
   const manifestIdentity = reviewedCompatibilityManifestFingerprint();
@@ -101957,16 +102221,16 @@ async function verifyOrdinaryLaunchInstallation(options) {
     manifest.facadeImplementation[actual.mode],
     "Ordinary launch facade identity"
   );
-  for (const pin4 of ORDINARY_LAUNCH_PROFILE.installedFiles) {
+  for (const pin4 of profile.installedFiles) {
     await hashPinnedFile(resolve15(options.assetsRoot, pin4.relativePath), pin4.sha256, pin4.bytes);
   }
-  await hashPinnedFile(join53(options.pluginRoot, ORDINARY_LAUNCH_PROFILE.helper.relativePath), ORDINARY_LAUNCH_PROFILE.helper.sha256);
+  await hashPinnedFile(join54(options.pluginRoot, profile.helper.relativePath), profile.helper.sha256);
   requireValue15(canonicalJson(manifestIdentity) === canonicalJson(reviewedCompatibilityManifestFingerprint()), "Ordinary launch manifest changed.");
   return actual.sha256;
 }
 async function readRecord2(directory4, name6) {
   const path6 = `/proc/self/fd/${directory4.handle.fd}/${name6}`;
-  const handle11 = await open29(path6, constants24.O_RDONLY | constants24.O_NOFOLLOW | constants24.O_NONBLOCK).catch((error52) => {
+  const handle11 = await open30(path6, constants24.O_RDONLY | constants24.O_NOFOLLOW | constants24.O_NONBLOCK).catch((error52) => {
     if (absent3(error52)) {
       return null;
     }
@@ -101987,7 +102251,7 @@ async function readRecord2(directory4, name6) {
       }
       offset9 += read2.bytesRead;
     }
-    requireValue15(offset9 === Number(before.size) && sameFile5(before, await handle11.stat({ bigint: true })) && sameFile5(before, await lstat32(path6, { bigint: true })), "Ordinary launch journal changed during read.");
+    requireValue15(offset9 === Number(before.size) && sameFile6(before, await handle11.stat({ bigint: true })) && sameFile6(before, await lstat33(path6, { bigint: true })), "Ordinary launch journal changed during read.");
     return JSON.parse(new TextDecoder("utf-8", { fatal: true }).decode(bytes2.subarray(0, offset9)));
   } finally {
     await handle11.close();
@@ -101995,7 +102259,7 @@ async function readRecord2(directory4, name6) {
 }
 async function boundedEntries(directory4, limit) {
   const entries6 = [];
-  const handle11 = await opendir6(`/proc/self/fd/${directory4.handle.fd}`);
+  const handle11 = await opendir7(`/proc/self/fd/${directory4.handle.fd}`);
   for await (const entry of handle11) {
     requireValue15(entries6.length < limit, "Ordinary launch inventory exceeds its bound.");
     entries6.push(entry);
@@ -102004,7 +102268,7 @@ async function boundedEntries(directory4, limit) {
 }
 async function inventory() {
   const root2 = await controlRootCapability(false);
-  const parent = await root2.openDirectory(join53(controlDataDirectory(), JOURNAL_DIRECTORY), false).catch((error52) => {
+  const parent = await root2.openDirectory(join54(controlDataDirectory(), JOURNAL_DIRECTORY), false).catch((error52) => {
     if (absent3(error52)) {
       return null;
     }
@@ -102018,7 +102282,7 @@ async function inventory() {
     const operations = [];
     for (const entry of entries6.toSorted((left, right) => left.name.localeCompare(right.name))) {
       requireValue15(entry.isDirectory() && operationIdSchema.safeParse(entry.name).success, "Ordinary launch inventory contains an unknown entry.");
-      const slot = await root2.openDirectory(join53(parent.absolute, entry.name), false);
+      const slot = await root2.openDirectory(join54(parent.absolute, entry.name), false);
       try {
         const records2 = await boundedEntries(slot, 8);
         requireValue15(records2.every((record21) => record21.isFile() && ["intent.json", "launched.json", "terminated.json", "not-dispatched.json", "abandonment.json", "unknown-abandonment.json", "close-intent.json", "close-acknowledged.json"].includes(record21.name)), "Ordinary launch journal contains unknown records.");
@@ -102069,7 +102333,7 @@ async function publish(operationId13, name6, record21) {
 `);
   requireValue15(bytes2.length <= MAX_RECORD_BYTES, "Ordinary launch receipt exceeds its bound.");
   await publishManagedAttachmentExclusive(
-    join53(controlDataDirectory(), JOURNAL_DIRECTORY, operationId13, name6),
+    join54(controlDataDirectory(), JOURNAL_DIRECTORY, operationId13, name6),
     "Ordinary launch receipt",
     bytes2,
     ORDINARY_LAUNCH_PROFILE.schema
@@ -102146,6 +102410,8 @@ var init_ordinary_launch = __esm({
     init_windows_runtime();
     init_ordinary_launch_recovery();
     init_ordinary_launch_timings();
+    init_ordinary_launch_209_profile();
+    init_sdk_public_utilities_profile();
     ORDINARY_LAUNCH_PROFILE = {
       schema: "easyeda-pro-control.ordinary-launch.v1",
       installedPackageVersion: "3.2.206.715d940d",
@@ -102319,6 +102585,8 @@ var init_ordinary_launch = __esm({
       facadeSha256: "d7f99363d58ee66181f74c7841edcfd6b00d6e7da02a7dc1b5b686b77cf828a7"
     };
     OrdinaryLaunchCoordinator = class {
+      profile;
+      selectors;
       options;
       verify;
       observeRecovery;
@@ -102331,10 +102599,24 @@ var init_ordinary_launch = __esm({
       busy = false;
       uncertain = false;
       constructor(options, dependencies3 = {}) {
-        this.options = options;
-        this.verify = dependencies3.verifyInstallation ?? verifyOrdinaryLaunchInstallation;
+        this.profile = configuredLaunchProfile();
+        this.selectors = configuredSelectors();
+        this.options = { ...options, assertAllowed: () => this.checked(() => options.assertAllowed()) };
+        this.verify = (input) => this.checked(() => dependencies3.verifyInstallation === void 0 ? verifyInstalledProfile(input, this.profile) : dependencies3.verifyInstallation(input));
         this.observeRecovery = dependencies3.observeRecovery ?? observeOrdinaryLaunchRecovery;
         this.productionServices = dependencies3.verifyInstallation === void 0 && dependencies3.observeRecovery === void 0;
+      }
+      assertProfileCurrent() {
+        requireValue15(
+          this.selectors === configuredSelectors() && this.profile === configuredLaunchProfile(),
+          "Ordinary launch configured bundle selectors changed; the original profile cannot be replaced."
+        );
+      }
+      async checked(action) {
+        this.assertProfileCurrent();
+        const result = await action();
+        this.assertProfileCurrent();
+        return result;
       }
       async run(input) {
         const request13 = parseOrdinaryLaunchRequest(input);
@@ -102347,9 +102629,9 @@ var init_ordinary_launch = __esm({
         if (timings !== void 0) {
           this.launchTimings.set(request13.operationId, timings);
         }
-        const measure = (stage, action) => timings === void 0 ? action() : timings.measure(stage, action);
+        const measure = (stage, action) => this.checked(() => timings === void 0 ? action() : timings.measure(stage, action));
         try {
-          const operations = await measure("inventory-initial", inventory);
+          const operations = request13.action === "inspect" ? await inventory() : await measure("inventory-initial", inventory);
           const operation = operations.find((candidate) => candidate.operationId === request13.operationId);
           if (request13.action === "inspect") {
             return {
@@ -102398,12 +102680,12 @@ var init_ordinary_launch = __esm({
           }
           requireValue15(operation === void 0 && operations.length < MAX_OPERATIONS3, "Ordinary launch operation ID is consumed or inventory full.");
           requireValue15(operations.every((candidate) => allowsNextLaunch(candidate)), "An unresolved ordinary launch blocks another launch.");
-          await withCurrentPcbDiagnosticLaunchExclusion(assertNoUnresolvedCurrentPcbDiagnosticLaunches);
+          await this.checked(() => withCurrentPcbDiagnosticLaunchExclusion(assertNoUnresolvedCurrentPcbDiagnosticLaunches));
           const facadeSha256 = digestSchema.parse(await measure("installation-initial", () => this.verify(this.options)));
           await measure("admission-before-helper", () => this.options.assertAllowed());
           this.runtime ??= this.options.allocateRuntime({
-            expectedExecutableSha256: ORDINARY_LAUNCH_PROFILE.installedFiles[0].sha256,
-            expectedHelperSha256: ORDINARY_LAUNCH_PROFILE.helper.sha256,
+            expectedExecutableSha256: this.profile.installedFiles[0].sha256,
+            expectedHelperSha256: this.profile.helper.sha256,
             reviewedExecutionScopeSha256: facadeSha256
           });
           const runtime = this.runtime;
@@ -102411,7 +102693,9 @@ var init_ordinary_launch = __esm({
           const observeTermination = runtime.observeLaunchTermination;
           const runtimeStatus = runtime instanceof WindowsControlRuntime ? runtime.status : void 0;
           const assertCurrentLaunch = () => {
+            this.assertProfileCurrent();
             this.options.assertLocalAllowed?.();
+            this.assertProfileCurrent();
             requireValue15(
               this.runtime === runtime && runtime.launch === launchRuntime && runtime.observeLaunchTermination === observeTermination && (runtimeStatus === void 0 || runtime instanceof WindowsControlRuntime && runtime.status === runtimeStatus),
               "Ordinary launch retained runtime or launch method changed before dispatch."
@@ -102423,7 +102707,7 @@ var init_ordinary_launch = __esm({
           }
           await measure("reservation", async () => {
             const root2 = await controlRootCapability();
-            const parent = await root2.openDirectory(join53(controlDataDirectory(), JOURNAL_DIRECTORY));
+            const parent = await root2.openDirectory(join54(controlDataDirectory(), JOURNAL_DIRECTORY));
             try {
               await mkdir5(`/proc/self/fd/${parent.handle.fd}/${request13.operationId}`, { mode: 448 });
               this.uncertain = true;
@@ -102436,7 +102720,7 @@ var init_ordinary_launch = __esm({
             schema: "easyeda-pro-control.ordinary-launch-intent.v2",
             dispatchProtocol: "retained-helper-before-intent.v1",
             operationId: request13.operationId,
-            profileSha256: sha256Json(ORDINARY_LAUNCH_PROFILE),
+            profileSha256: sha256Json(this.profile),
             facadeSha256,
             createdAt: (/* @__PURE__ */ new Date()).toISOString()
           };
@@ -102457,11 +102741,14 @@ var init_ordinary_launch = __esm({
           await measure("admission-before-dispatch", () => this.options.assertAllowed());
           assertCurrentLaunch();
           launchInvoked = true;
-          const launch = launchSchema.parse(await measure("launch-dispatch", () => launchRuntime.call(runtime)));
+          const launchCall = () => launchRuntime.call(runtime);
+          const launch = launchSchema.parse(await (timings === void 0 ? launchCall() : timings.measure("launch-dispatch", launchCall)));
           const launched = { schema: "easyeda-pro-control.ordinary-launched.v1", operationId: request13.operationId, intentSha256: sha256Json(intent), launch };
           this.retained = { operationId: request13.operationId, launch, launched, observeTermination, status: runtimeStatus };
-          await measure("launched-publication", () => publish(request13.operationId, "launched.json", launched));
+          const publishLaunch = () => publish(request13.operationId, "launched.json", launched);
+          await (timings === void 0 ? publishLaunch() : timings.measure("launched-publication", publishLaunch));
           this.uncertain = false;
+          this.assertProfileCurrent();
           return { ...describe3(request13.operationId, { operationId: request13.operationId, intent, launched }), ...this.timingSummary(request13.operationId) };
         } catch (error52) {
           if (publishedIntent !== void 0 && !launchInvoked) {
@@ -102471,7 +102758,8 @@ var init_ordinary_launch = __esm({
               intentSha256: sha256Json(publishedIntent),
               dispatchAttempted: false
             };
-            await measure("nondispatch-publication", () => publish(request13.operationId, "not-dispatched.json", refused2));
+            const publishRefusal = () => publish(request13.operationId, "not-dispatched.json", refused2);
+            await (timings === void 0 ? publishRefusal() : timings.measure("nondispatch-publication", publishRefusal));
             this.uncertain = false;
           }
           throw error52;
@@ -102496,17 +102784,18 @@ var init_ordinary_launch = __esm({
         const retained2 = this.retained, runtime = this.runtime;
         requireValue15(runtime !== void 0 && retained2 !== void 0 && retained2.operationId === request13.operationId && canonicalJson(operation.launched) === canonicalJson(retained2.launched), "Ordinary window observation has no retained owner for this exact operation.");
         requireValue15(request13.expectedLaunchedSha256 === sha256Json(retained2.launched), "Ordinary window observation launch digest differs.");
-        requireValue15(operation.intent.profileSha256 === sha256Json(ORDINARY_LAUNCH_PROFILE), "Ordinary window observation profile changed.");
+        requireValue15(operation.intent.profileSha256 === sha256Json(this.profile), "Ordinary window observation profile changed.");
         const observeWindow = runtime.observeApplicationWindow;
         requireValue15(observeWindow !== void 0, "Ordinary retained window observation is unavailable.");
         const current10 = () => {
+          this.assertProfileCurrent();
           requireValue15(this.runtime === runtime && this.retained === retained2 && runtime.observeApplicationWindow === observeWindow && canonicalJson(retained2.launched) === canonicalJson(operation.launched), "Ordinary window observation retained owner changed.");
         };
         const facadeSha256 = digestSchema.parse(await this.verify(this.options));
         requireValue15(facadeSha256 === operation.intent.facadeSha256, "Ordinary window observation installation changed from launch.");
         await this.options.assertAllowed();
         current10();
-        const window2 = windowObservationSchema.parse(await observeWindow.call(runtime));
+        const window2 = windowObservationSchema.parse(await this.checked(() => observeWindow.call(runtime)));
         current10();
         requireValue15(
           window2.jobId === retained2.launch.jobId && window2.helperInstance === retained2.launch.helperInstance,
@@ -102515,7 +102804,7 @@ var init_ordinary_launch = __esm({
         requireValue15(await this.verify(this.options) === facadeSha256, "Ordinary window observation installation changed.");
         await this.options.assertAllowed();
         current10();
-        requireValue15(canonicalJson(await inventory()) === canonicalJson(operations), "Ordinary window observation journal changed.");
+        requireValue15(canonicalJson(await this.checked(inventory)) === canonicalJson(operations), "Ordinary window observation journal changed.");
         current10();
         return { runtime, retained: retained2, window: window2, facadeSha256 };
       }
@@ -102543,14 +102832,14 @@ var init_ordinary_launch = __esm({
           confirmNormalClose: true
         };
         this.closeAttempts.add(request13.operationId);
-        await publish(request13.operationId, "close-intent.json", closeIntent);
+        await this.checked(() => publish(request13.operationId, "close-intent.json", closeIntent));
         requireValue15(await this.verify(this.options) === facadeSha256, "Ordinary normal-close installation changed before dispatch.");
         await this.options.assertAllowed();
         const expected3 = operations.map((candidate) => candidate.operationId === request13.operationId ? { ...candidate, closeIntent } : candidate);
-        requireValue15(canonicalJson(await inventory()) === canonicalJson(expected3), "Ordinary normal-close journal changed before dispatch.");
+        requireValue15(canonicalJson(await this.checked(inventory)) === canonicalJson(expected3), "Ordinary normal-close journal changed before dispatch.");
         await this.options.assertAllowed();
         requireValue15(this.runtime === runtime && this.retained === retained2 && runtime.normalClose === close && canonicalJson(retained2.launched) === canonicalJson(operation.launched), "Ordinary normal-close retained owner changed before dispatch.");
-        await close.call(runtime, request13.hwnd);
+        await this.checked(() => close.call(runtime, request13.hwnd));
         requireValue15(this.runtime === runtime && this.retained === retained2 && runtime.normalClose === close && canonicalJson(retained2.launched) === canonicalJson(operation.launched), "Ordinary normal-close retained owner changed during dispatch.");
         const closeAcknowledgment = {
           schema: "easyeda-pro-control.ordinary-normal-close-acknowledged.v1",
@@ -102559,7 +102848,7 @@ var init_ordinary_launch = __esm({
           requestAcknowledged: true,
           terminationProved: false
         };
-        await publish(request13.operationId, "close-acknowledged.json", closeAcknowledgment);
+        await this.checked(() => publish(request13.operationId, "close-acknowledged.json", closeAcknowledgment));
         return { ...describe3(request13.operationId, { ...operation, closeIntent, closeAcknowledgment }), action: "normal-close", terminationObserved: false };
       }
       async observeApplication(operationId13, operation, operations) {
@@ -102567,20 +102856,20 @@ var init_ordinary_launch = __esm({
         const facadeSha256 = digestSchema.parse(await this.verify(this.options));
         await this.options.assertAllowed();
         this.runtime ??= this.options.allocateRuntime({
-          expectedExecutableSha256: ORDINARY_LAUNCH_PROFILE.installedFiles[0].sha256,
-          expectedHelperSha256: ORDINARY_LAUNCH_PROFILE.helper.sha256,
+          expectedExecutableSha256: this.profile.installedFiles[0].sha256,
+          expectedHelperSha256: this.profile.helper.sha256,
           reviewedExecutionScopeSha256: facadeSha256
         });
         const runtime = this.runtime;
         const presenceSchema = external_exports.object({ running: external_exports.boolean() }).strict();
-        const first = presenceSchema.parse(await runtime.observeExistingApplication());
+        const first = presenceSchema.parse(await this.checked(() => runtime.observeExistingApplication()));
         await this.options.assertAllowed();
-        const second = presenceSchema.parse(await runtime.observeExistingApplication());
+        const second = presenceSchema.parse(await this.checked(() => runtime.observeExistingApplication()));
         await this.options.assertAllowed();
         requireValue15(first.running === second.running, "Ordinary application presence changed between samples.");
         requireValue15(await this.verify(this.options) === facadeSha256, "Ordinary application observation installation changed.");
         await this.options.assertAllowed();
-        requireValue15(canonicalJson(await inventory()) === canonicalJson(operations), "Ordinary application observation journal changed.");
+        requireValue15(canonicalJson(await this.checked(inventory)) === canonicalJson(operations), "Ordinary application observation journal changed.");
         requireValue15(this.runtime === runtime, "Ordinary application observation runtime changed.");
         return {
           action: "observe-application",
@@ -102606,17 +102895,18 @@ var init_ordinary_launch = __esm({
         }
         const retained2 = this.retained, runtime = this.runtime;
         requireValue15(runtime !== void 0 && retained2 !== void 0 && retained2.operationId === operationId13 && canonicalJson(operation.launched) === canonicalJson(retained2.launched), "Ordinary launch has no retained owner for this exact operation.");
-        const launchText = canonicalJson(retained2.launch), launchedText = canonicalJson(retained2.launched), observe6 = retained2.observeTermination;
+        const launchText = canonicalJson(retained2.launch), launchedText = canonicalJson(retained2.launched), observe7 = retained2.observeTermination;
         const current10 = () => {
+          this.assertProfileCurrent();
           requireValue15(
-            this.runtime === runtime && this.retained === retained2 && runtime.observeLaunchTermination === observe6 && (retained2.status === void 0 || runtime instanceof WindowsControlRuntime && runtime.status === retained2.status) && canonicalJson(retained2.launch) === launchText && canonicalJson(retained2.launched) === launchedText,
+            this.runtime === runtime && this.retained === retained2 && runtime.observeLaunchTermination === observe7 && (retained2.status === void 0 || runtime instanceof WindowsControlRuntime && runtime.status === retained2.status) && canonicalJson(retained2.launch) === launchText && canonicalJson(retained2.launched) === launchedText,
             "Ordinary termination retained runtime, launch or observer changed."
           );
         };
         current10();
         const facadeSha256 = await this.verify(this.options);
         current10();
-        const observed2 = external_exports.object({ jobId: tokenSchema, helperInstance: tokenSchema, terminated: external_exports.boolean() }).strict().parse(await observe6.call(runtime));
+        const observed2 = external_exports.object({ jobId: tokenSchema, helperInstance: tokenSchema, terminated: external_exports.boolean() }).strict().parse(await this.checked(() => observe7.call(runtime)));
         current10();
         requireValue15(observed2.jobId === retained2.launch.jobId && observed2.helperInstance === retained2.launch.helperInstance, "Ordinary termination observed another launch.");
         if (!observed2.terminated) {
@@ -102630,17 +102920,17 @@ var init_ordinary_launch = __esm({
           terminated: true
         };
         this.uncertain = true;
-        await publish(operationId13, "terminated.json", terminated);
+        await this.checked(() => publish(operationId13, "terminated.json", terminated));
         current10();
         this.uncertain = false;
         if (this.productionServices && runtime instanceof WindowsControlRuntime) {
           requireValue15(
-            operation.intent?.facadeSha256 === facadeSha256 && operation.intent.profileSha256 === sha256Json(ORDINARY_LAUNCH_PROFILE),
+            operation.intent?.facadeSha256 === facadeSha256 && operation.intent.profileSha256 === sha256Json(this.profile),
             "Original ordinary termination producer differs from its launch."
           );
           const status3 = retained2.status;
           requireValue15(status3 !== void 0, "Original ordinary runtime status was not retained before launch.");
-          const recordPath = join53(controlDataDirectory(), JOURNAL_DIRECTORY, operationId13, "terminated.json"), recordText = `${JSON.stringify(terminated)}
+          const recordPath = join54(controlDataDirectory(), JOURNAL_DIRECTORY, operationId13, "terminated.json"), recordText = `${JSON.stringify(terminated)}
 `;
           const launch = Object.freeze({ ...retained2.launch, root: Object.freeze({ ...retained2.launch.root }) });
           const value2 = Object.freeze({
@@ -102657,7 +102947,7 @@ var init_ordinary_launch = __esm({
           const recordCurrent = () => {
             current10();
             requireValue15(
-              !this.busy && !this.uncertain && runtime.status === status3 && recordPath === join53(controlDataDirectory(), JOURNAL_DIRECTORY, operationId13, "terminated.json"),
+              !this.busy && !this.uncertain && runtime.status === status3 && recordPath === join54(controlDataDirectory(), JOURNAL_DIRECTORY, operationId13, "terminated.json"),
               "Original ordinary termination coordinator is incomplete or changed."
             );
             const snapshot8 = status3.call(runtime);
@@ -102678,7 +102968,7 @@ var init_ordinary_launch = __esm({
         requireValue15(!allowsNextLaunch(operation), "Ordinary launch supervision is already resolved or abandoned.");
         requireValue15(this.retained === void 0, "Supervision abandonment cannot supersede a current retained owner; observe its termination instead.");
         requireValue15(request13.expectedLaunchedSha256 === sha256Json(operation.launched), "Supervision abandonment launch digest differs.");
-        requireValue15(operation.intent.profileSha256 === sha256Json(ORDINARY_LAUNCH_PROFILE) || operation.intent.profileSha256 === HISTORICAL_ABANDONMENT_PROFILE_SHA256 || operation.intent.profileSha256 === WINDOW_HELPER_ABANDONMENT_PROFILE_SHA256, "Supervision abandonment historical profile is not reviewed.");
+        requireValue15(operation.intent.profileSha256 === sha256Json(ORDINARY_LAUNCH_PROFILE) || operation.intent.profileSha256 === sha256Json(ORDINARY_LAUNCH_209_PROFILE) || operation.intent.profileSha256 === HISTORICAL_ABANDONMENT_PROFILE_SHA256 || operation.intent.profileSha256 === WINDOW_HELPER_ABANDONMENT_PROFILE_SHA256, "Supervision abandonment historical profile is not reviewed.");
         const observation3 = await this.observeApplication(request13.operationId, operation, operations);
         const application2 = external_exports.looseObject({ sameNameProcessPresent: external_exports.boolean() }).parse(observation3["application"]);
         requireValue15(!application2.sameNameProcessPresent, "Supervision abandonment requires absent same-name application samples.");
@@ -102700,7 +102990,7 @@ var init_ordinary_launch = __esm({
           designExecutionAuthorized: false
         };
         this.uncertain = true;
-        await publish(request13.operationId, "abandonment.json", abandoned);
+        await this.checked(() => publish(request13.operationId, "abandonment.json", abandoned));
         this.uncertain = false;
         return describe3(request13.operationId, { ...operation, abandoned });
       }
@@ -102721,7 +103011,7 @@ var init_ordinary_launch = __esm({
           "Unknown-launch v2 producer differs from the currently reviewed facade."
         );
         await this.options.assertAllowed();
-        const observation3 = ordinaryLaunchRecoveryObservationSchema.parse(await this.observeRecovery(this.options));
+        const observation3 = ordinaryLaunchRecoveryObservationSchema.parse(await this.checked(() => this.observeRecovery(this.options)));
         let presenceRefusal = "Unknown-launch abandonment refused: a same-name EasyEDA application was observed.";
         if (observation3.otherPowerShellPresent) {
           presenceRefusal = observation3.sameNameProcessPresent ? "Unknown-launch abandonment refused: another PowerShell process and a same-name EasyEDA application were observed." : "Unknown-launch abandonment refused: another PowerShell process was observed.";
@@ -102733,7 +103023,7 @@ var init_ordinary_launch = __esm({
         await this.options.assertAllowed();
         requireValue15(await this.verify(this.options) === facadeSha256, "Unknown-launch recovery installation changed.");
         await this.options.assertAllowed();
-        requireValue15(canonicalJson(await inventory()) === canonicalJson(operations), "Unknown-launch recovery journal changed.");
+        requireValue15(canonicalJson(await this.checked(inventory)) === canonicalJson(operations), "Unknown-launch recovery journal changed.");
         requireValue15(this.retained === void 0 && this.runtime === void 0, "Unknown-launch recovery runtime changed.");
         const unknownAbandoned = {
           schema: "easyeda-pro-control.ordinary-unknown-launch-abandoned.v1",
@@ -102753,7 +103043,7 @@ var init_ordinary_launch = __esm({
           designExecutionAuthorized: false
         };
         this.uncertain = true;
-        await publish(request13.operationId, "unknown-abandonment.json", unknownAbandoned);
+        await this.checked(() => publish(request13.operationId, "unknown-abandonment.json", unknownAbandoned));
         this.uncertain = false;
         return describe3(request13.operationId, { ...operation, unknownAbandoned });
       }
@@ -105506,8 +105796,8 @@ var init_historical_abandonment = __esm({
 });
 
 // server/src/current-symbol-baseline-analysis.ts
-import { lstat as lstat33, opendir as opendir7 } from "node:fs/promises";
-import { basename as basename24, join as join54 } from "node:path";
+import { lstat as lstat34, opendir as opendir8 } from "node:fs/promises";
+import { basename as basename24, join as join55 } from "node:path";
 function need48(condition, detail) {
   if (!condition) {
     throw new Error(`Current baseline analysis ${detail}.`);
@@ -105550,10 +105840,10 @@ async function snapshot7(operationId13, result, source5) {
   hash32.parse(sql4["logicalSha256"]);
   const raw = descriptorSchema.parse({ path: copy3.artifact, bytes: copy3.bytes, sha256: copy3.sha256 });
   need48(
-    /^closed-copy-[a-f0-9-]{36}\.eprj2$/u.test(basename24(raw.path)) && raw.path === join54(operationPath(operationId13).slice(0, -5), basename24(raw.path)),
+    /^closed-copy-[a-f0-9-]{36}\.eprj2$/u.test(basename24(raw.path)) && raw.path === join55(operationPath(operationId13).slice(0, -5), basename24(raw.path)),
     "raw copy escaped its operation"
   );
-  const rawStat = await lstat33(raw.path, { bigint: true });
+  const rawStat = await lstat34(raw.path, { bigint: true });
   const rawIdentity = bag13(copy3.artifactIdentity);
   for (const [key, value2] of Object.entries({
     device: rawStat.dev,
@@ -105571,9 +105861,9 @@ async function snapshot7(operationId13, result, source5) {
   }
   need48(rawStat.isFile() && !rawStat.isSymbolicLink() && rawStat.nlink === 1n, "raw-copy file kind differs");
   const checkpointPath = checkpoint.checkpoint, receiptPath = checkpoint.receiptPath;
-  need48(checkpointPath === join54(controlDataDirectory(), "checkpoints", basename24(checkpointPath)) && checkpointPath.endsWith(".eprj2") && receiptPath === checkpointPath.replace(/\.eprj2$/u, ".checkpoint.json"), "checkpoint escaped its managed directory");
+  need48(checkpointPath === join55(controlDataDirectory(), "checkpoints", basename24(checkpointPath)) && checkpointPath.endsWith(".eprj2") && receiptPath === checkpointPath.replace(/\.eprj2$/u, ".checkpoint.json"), "checkpoint escaped its managed directory");
   const receipt2 = await checkpointReceipt(receiptPath, checkpoint);
-  const stat3 = await lstat33(checkpointPath, { bigint: true });
+  const stat3 = await lstat34(checkpointPath, { bigint: true });
   const identity35 = bag13(checkpoint.checkpointIdentity);
   need48(
     stat3.isFile() && !stat3.isSymbolicLink() && stat3.nlink === 1n && stat3.dev.toString() === identity35["dev"] && stat3.ino.toString() === identity35["ino"] && stat3.birthtimeNs.toString() === identity35["birthtimeNs"] && stat3.ctimeNs.toString() === identity35["ctimeNs"],
@@ -105596,7 +105886,7 @@ async function exactDirectory(operationId13, names2) {
   try {
     const expected3 = new Set(names2), seen = /* @__PURE__ */ new Set();
     need48(expected3.size === names2.length, "duplicate file descriptor");
-    const entries6 = await opendir7(`/proc/self/fd/${directory4.handle.fd}`);
+    const entries6 = await opendir8(`/proc/self/fd/${directory4.handle.fd}`);
     for await (const entry of entries6) {
       need48(entry.isFile() && expected3.has(entry.name) && !seen.has(entry.name), "found later or conflicting evidence");
       seen.add(entry.name);
@@ -105674,7 +105964,7 @@ async function evidence(operationId13) {
   for (const [index2, phase5] of phases4.entries()) {
     const artifact2 = descriptorSchema.parse(journal.artifacts[index2]);
     need48(
-      artifact2.bytes <= MAX_JSON_BYTES && artifact2.path === join54(operationPath(operationId13).slice(0, -5), `${String(index2 + 1).padStart(2, "0")}-${phase5}.json`),
+      artifact2.bytes <= MAX_JSON_BYTES && artifact2.path === join55(operationPath(operationId13).slice(0, -5), `${String(index2 + 1).padStart(2, "0")}-${phase5}.json`),
       "phase order or descriptor differs"
     );
     const raw = await readExactUtf8Artifact(artifact2);
@@ -106803,18 +107093,19 @@ async function startOfflineControlServer(code) {
   );
   server2.registerTool("easyeda_control_status", {
     title: "Report offline-only EasyEDA startup status",
-    description: "Return the bounded installation failure code. Does not inspect designs, start an upstream process, access credentials, or connect to EasyEDA. Repair and review the external installation, then restart this session to reassess availability.",
+    description: "Return the startup failure code and bounded read-only installation drift diagnostics: configured file roles, candidate bundle directory names and app package version. Candidates are not admitted. Does not inspect designs, start an upstream process, access credentials, modify configuration, or connect to EasyEDA. Review the installation, then restart this session to reassess availability.",
     inputSchema: {},
     outputSchema,
     annotations
-  }, offlineGuard(() => ({
+  }, offlineGuard(async () => ({
     offline: true,
     mode: "offline-only",
     liveExecutionAvailable: false,
     installation: { ready: false, code },
+    diagnostics: await diagnoseConfiguredInstallation(),
     restartRequired: true,
     availableTools: ["easyeda_control_api", "easyeda_control_discover", "easyeda_control_status"],
-    capabilityScope: "Bundled reference and existing managed-checkpoint preparation only; no claim about the current EasyEDA installation."
+    capabilityScope: "Bundled reference, existing managed-checkpoint preparation and installation metadata diagnostics only; no current-runtime admission."
   })));
   server2.registerTool("easyeda_control_discover", {
     title: "Discover the local EasyEDA reference catalog",
@@ -106878,6 +107169,7 @@ var init_offline_control = __esm({
     init_artifacts();
     init_core3();
     init_lease();
+    init_machine_installation_diagnostics();
     init_offline_api();
     init_reviewed_upstream_tools();
     init_shutdown();
@@ -106902,15 +107194,15 @@ var init_legacy_recovery_family = __esm({
 
 // server/src/engine.ts
 import { randomUUID as randomUUID6 } from "node:crypto";
-import { dirname as dirname21, isAbsolute as isAbsolute22, join as join55 } from "node:path";
+import { dirname as dirname22, isAbsolute as isAbsolute22, join as join56 } from "node:path";
 async function checkpointAccessPolicy(source5) {
   const expectedSource = normalizeEasyedaProjectPath(source5);
   return {
     expectedSource,
     controlRoot: await controlRootCapability(),
     artifactRoots: [
-      join55(dirname21(expectedSource), "backups"),
-      join55(controlDataDirectory(), "checkpoints")
+      join56(dirname22(expectedSource), "backups"),
+      join56(controlDataDirectory(), "checkpoints")
     ]
   };
 }
@@ -108006,13 +108298,13 @@ var init_engine = __esm({
        */
       async freshClockObservationForClosedCapture(receipt2) {
         const slot = this.closedCaptures.get(receipt2);
-        const observe6 = slot?.clockMethod;
-        if (slot === void 0 || observe6 === void 0) {
+        const observe7 = slot?.clockMethod;
+        if (slot === void 0 || observe7 === void 0) {
           throw new Error("Fresh clock requires an original closed capture and retained clock method.");
         }
         const runtimeSnapshot = canonicalJson(slot.snapshot.runtimeIdentity), sessionSnapshot = canonicalJson(slot.snapshot.bridgeSession);
         const originalCurrent = () => {
-          if (this.closedCaptures.get(receipt2) !== slot || slot.releasing || this.executionAuthorityValidator !== slot.validator || this.upstream !== slot.upstream || slot.validator.observeCurrentClock !== observe6 || slot.upstream.bridgeSessionLifecycle !== slot.sessionMethod || slot.upstream.currentAuthenticatedBridgeDispatchBinding !== slot.dispatchMethod || canonicalJson(receipt2) !== canonicalJson(slot.snapshot)) {
+          if (this.closedCaptures.get(receipt2) !== slot || slot.releasing || this.executionAuthorityValidator !== slot.validator || this.upstream !== slot.upstream || slot.validator.observeCurrentClock !== observe7 || slot.upstream.bridgeSessionLifecycle !== slot.sessionMethod || slot.upstream.currentAuthenticatedBridgeDispatchBinding !== slot.dispatchMethod || canonicalJson(receipt2) !== canonicalJson(slot.snapshot)) {
             throw new Error("Fresh clock requires the unchanged original closed capture owner and methods.");
           }
         };
@@ -108030,7 +108322,7 @@ var init_engine = __esm({
           }
         };
         current10();
-        const observation3 = await observe6.call(slot.validator, slot.originalExecutionAuthority);
+        const observation3 = await observe7.call(slot.validator, slot.originalExecutionAuthority);
         current10();
         const authority2 = slot.snapshot.executionAuthority, issued33 = assertCurrentIssuedWindowsClockObservation(observation3);
         if (issued33 !== observation3 || observation3.phase !== "owned-observation" || observation3.ownerBinding["operationId"] !== slot.snapshot.operationId || observation3.ownerBinding["phase"] !== slot.snapshot.phase || observation3.ownerBinding["challengeAttempt"] !== slot.snapshot.challengeAttempt || observation3.ownerBinding["authoritySha256"] !== authority2.authoritySha256 || observation3.ownerBinding["bindingSha256"] !== authority2.bindingSha256 || observation3.base["captureBindingSha256"] !== authority2.bindingSha256 || observation3.ownerBinding["bridgeSessionSha256"] !== sha256Text(sessionSnapshot) || observation3.ownerBinding["runtimeIdentitySha256"] !== sha256Text(runtimeSnapshot)) {
@@ -108060,12 +108352,12 @@ var init_engine = __esm({
        */
       async freshClockObservationForTrackedDispatch(operation, phase5) {
         const slot = this.trackedClockCaptures.get(operation);
-        const observe6 = slot?.clockMethod;
-        if (slot === void 0 || observe6 === void 0) {
+        const observe7 = slot?.clockMethod;
+        if (slot === void 0 || observe7 === void 0) {
           throw new Error("Fresh clock requires an original tracked capture and retained clock method.");
         }
         const current10 = () => {
-          if (this.trackedClockCaptures.get(operation) !== slot || slot.operationId !== operation.operationId || slot.phase !== phase5 || this.executionAuthorityValidator !== slot.validator || slot.validator.observeCurrentClock !== observe6 || this.upstream.bridgeSessionLifecycle !== slot.sessionMethod || this.upstream.currentAuthenticatedBridgeDispatchBinding !== slot.dispatchMethod || operation.orphanedCallPhase !== phase5 || !operation.orphanedCallPossible || operation.runtimeRestartChallengeAttempt !== slot.challengeAttempt || canonicalJson(operation.executionAuthorityBeforeOrphan) !== slot.snapshot || canonicalJson(operation.runtimeIdentityBeforeOrphan) !== slot.runtimeSnapshot || canonicalJson(operation.bridgeSessionBeforeOrphan) !== slot.sessionSnapshot || canonicalJson(operation.bridgeDispatchBeforeOrphan) !== slot.dispatchSnapshot) {
+          if (this.trackedClockCaptures.get(operation) !== slot || slot.operationId !== operation.operationId || slot.phase !== phase5 || this.executionAuthorityValidator !== slot.validator || slot.validator.observeCurrentClock !== observe7 || this.upstream.bridgeSessionLifecycle !== slot.sessionMethod || this.upstream.currentAuthenticatedBridgeDispatchBinding !== slot.dispatchMethod || operation.orphanedCallPhase !== phase5 || !operation.orphanedCallPossible || operation.runtimeRestartChallengeAttempt !== slot.challengeAttempt || canonicalJson(operation.executionAuthorityBeforeOrphan) !== slot.snapshot || canonicalJson(operation.runtimeIdentityBeforeOrphan) !== slot.runtimeSnapshot || canonicalJson(operation.bridgeSessionBeforeOrphan) !== slot.sessionSnapshot || canonicalJson(operation.bridgeDispatchBeforeOrphan) !== slot.dispatchSnapshot) {
             throw new Error("Fresh clock requires the unchanged original tracked dispatch owner and methods.");
           }
           const session = this.authenticatedBridgeSession();
@@ -108074,7 +108366,7 @@ var init_engine = __esm({
           }
         };
         current10();
-        const observation3 = await observe6.call(slot.validator, slot.original);
+        const observation3 = await observe7.call(slot.validator, slot.original);
         current10();
         const issued33 = assertCurrentIssuedWindowsClockObservation(observation3);
         if (issued33 !== observation3 || observation3.phase !== "owned-observation" || observation3.ownerBinding["operationId"] !== slot.operationId || observation3.ownerBinding["phase"] !== slot.phase || observation3.ownerBinding["challengeAttempt"] !== slot.challengeAttempt || observation3.ownerBinding["authoritySha256"] !== slot.original.authoritySha256 || observation3.ownerBinding["bindingSha256"] !== slot.original.bindingSha256 || observation3.base["captureBindingSha256"] !== slot.original.bindingSha256 || observation3.ownerBinding["bridgeSessionSha256"] !== sha256Text(slot.sessionSnapshot) || observation3.ownerBinding["runtimeIdentitySha256"] !== sha256Text(slot.runtimeSnapshot)) {
@@ -109133,7 +109425,7 @@ var init_engine = __esm({
         const initialContext = await this.assertContext(boundContext);
         boundContext.document.tabId = initialContext.document.tabId;
         const source5 = wrapWithContextGuard(buildPublicSdkReadCode(parsed2), boundContext);
-        const observe6 = async () => {
+        const observe7 = async () => {
           await this.assertBridgeDispatchAllowed();
           await this.assertContext(boundContext);
           const raw = await this.upstream.callTool("easyeda_execute", { code: source5, timeoutMs: 6e4, confirmWrite: true }, 7e4);
@@ -109142,8 +109434,8 @@ var init_engine = __esm({
           await this.assertContext(boundContext);
           return payload;
         };
-        const first = await observe6();
-        const second = await observe6();
+        const first = await observe7();
+        const second = await observe7();
         await this.assertPublicSdkImplementation();
         const snapshotSha256 = sha256Json(second);
         if (sha256Json(first) !== snapshotSha256) {
@@ -111172,7 +111464,7 @@ var init_design_execute = __esm({
 });
 
 // server/src/check-execution.ts
-import { join as join56 } from "node:path";
+import { join as join57 } from "node:path";
 function binding(context4) {
   return nativeRuleCheckBindingSchema.parse({
     projectUuid: context4.project.uuid ?? context4.project.projectUuid,
@@ -111370,7 +111662,7 @@ var init_check_execution = __esm({
         await this.runtime(plan2, plan2.expectedContext);
         const expectedContext = structuredClone(plan2.expectedContext);
         const context4 = structuredClone(await this.engine.assertContext(expectedContext));
-        const checkpointDirectory = join56(controlDataDirectory(), "checkpoints");
+        const checkpointDirectory = join57(controlDataDirectory(), "checkpoints");
         const checkpoint = checkpointSchema7.parse(await this.engine.checkpoint({ source: context4.project.path, outputDir: checkpointDirectory, label: "rule-check-before" }));
         const operationId13 = newOperationId();
         const journal = {
@@ -111539,7 +111831,7 @@ var init_check_execution = __esm({
 });
 
 // server/src/project-open-execution.ts
-import { join as join57 } from "node:path";
+import { join as join58 } from "node:path";
 function failureCategory(error52) {
   try {
     if (typeof error52 !== "object" || error52 === null) {
@@ -111552,7 +111844,7 @@ function failureCategory(error52) {
   }
 }
 async function checkpointPolicy(source5) {
-  return { expectedSource: source5, artifactRoots: [join57(controlDataDirectory(), "checkpoints")], controlRoot: await controlRootCapability() };
+  return { expectedSource: source5, artifactRoots: [join58(controlDataDirectory(), "checkpoints")], controlRoot: await controlRootCapability() };
 }
 function targetContext(target9) {
   return { project: { uuid: target9.projectUuid, path: target9.projectPath }, document: { uuid: target9.documentUuid, documentType: target9.documentType } };
@@ -111734,7 +112026,7 @@ var init_project_open_execution = __esm({
           { checkpointSha256: journal.preCheckpoint.checkpointSha256, projectUuid: journal.plan.target.projectUuid }
         );
         const checkpoint = await this.services.createCheckpoint(
-          { source: journal.plan.target.projectPath, outputDir: join57(controlDataDirectory(), "checkpoints"), label: "project-open-after" },
+          { source: journal.plan.target.projectPath, outputDir: join58(controlDataDirectory(), "checkpoints"), label: "project-open-after" },
           await this.services.checkpointPolicy(journal.plan.target.projectPath)
         );
         const after = await this.readHistory(checkpoint, journal.plan.target);
@@ -111822,7 +112114,7 @@ var init_project_open_execution = __esm({
           throw new Error("Resolve the incomplete transaction before opening another target.");
         }
         await this.runtime(input.expectedFingerprint);
-        const checkpoint = await this.services.createCheckpoint({ source: target9.projectPath, outputDir: join57(controlDataDirectory(), "checkpoints"), label: "project-open-before" }, await this.services.checkpointPolicy(target9.projectPath));
+        const checkpoint = await this.services.createCheckpoint({ source: target9.projectPath, outputDir: join58(controlDataDirectory(), "checkpoints"), label: "project-open-before" }, await this.services.checkpointPolicy(target9.projectPath));
         const before = await this.readHistory(checkpoint, target9);
         const libraryHeaderEvidence = await nativeLibraryHeaderEvidence(before, { checkpointSha256: checkpoint.checkpointSha256, projectUuid: target9.projectUuid });
         const context4 = targetContext(target9);
@@ -113418,22 +113710,22 @@ var init_closed_symbol_operation_tool = __esm({
 import { spawn as spawn6 } from "node:child_process";
 import { createHash as createHash46, randomUUID as randomUUID7 } from "node:crypto";
 import { constants as constants25 } from "node:fs";
-import { lstat as lstat34, open as open30, readFile as readFile5, realpath as realpath21 } from "node:fs/promises";
+import { lstat as lstat35, open as open31, readFile as readFile5, realpath as realpath22 } from "node:fs/promises";
 import path3 from "node:path";
 function nativeUiFailure(code, dispatched) {
   return Object.assign(new Error(code), { name: "NativeUiFailureError", dispatched });
 }
 async function verifyHelper2(helperPath) {
-  const before = await lstat34(helperPath);
-  if (!before.isFile() || before.isSymbolicLink() || before.nlink !== 1 || before.size === 0 || before.size > 128 * 1024 || await realpath21(helperPath) !== helperPath) {
+  const before = await lstat35(helperPath);
+  if (!before.isFile() || before.isSymbolicLink() || before.nlink !== 1 || before.size === 0 || before.size > 128 * 1024 || await realpath22(helperPath) !== helperPath) {
     throw new Error("Native UI helper is not the canonical bounded packaged file.");
   }
 }
 async function hashExecutable(executablePath) {
-  if (await realpath21(executablePath) !== executablePath) {
+  if (await realpath22(executablePath) !== executablePath) {
     throw nativeUiFailure("native-ui-installed-path-not-canonical", false);
   }
-  const file3 = await open30(executablePath, constants25.O_RDONLY | constants25.O_NOFOLLOW);
+  const file3 = await open31(executablePath, constants25.O_RDONLY | constants25.O_NOFOLLOW);
   try {
     const before = await file3.stat();
     if (!before.isFile() || before.nlink !== 1 || before.size === 0 || before.size > 1073741824) {
@@ -113446,7 +113738,7 @@ async function hashExecutable(executablePath) {
       }
       hash45.update(chunk);
     }
-    for (const after of [await file3.stat(), await lstat34(executablePath)]) {
+    for (const after of [await file3.stat(), await lstat35(executablePath)]) {
       if (!after.isFile() || after.nlink !== 1 || after.dev !== before.dev || after.ino !== before.ino || after.size !== before.size || after.ctimeMs !== before.ctimeMs || after.mtimeMs !== before.mtimeMs) {
         throw nativeUiFailure("native-ui-installed-executable-changed", false);
       }
@@ -117804,7 +118096,7 @@ var require_stream = __commonJS({
       };
       duplex._final = function(callback) {
         if (ws.readyState === ws.CONNECTING) {
-          ws.once("open", function open43() {
+          ws.once("open", function open44() {
             duplex._final(callback);
           });
           return;
@@ -117825,7 +118117,7 @@ var require_stream = __commonJS({
       };
       duplex._write = function(chunk, encoding, callback) {
         if (ws.readyState === ws.CONNECTING) {
-          ws.once("open", function open43() {
+          ws.once("open", function open44() {
             duplex._write(chunk, encoding, callback);
           });
           return;
@@ -119595,9 +119887,9 @@ var init_authenticated_bridge_gateway = __esm({
 
 // server/src/authenticated-bridge-build-identity.ts
 import { createHash as createHash48 } from "node:crypto";
-import { constants as fsConstants6 } from "node:fs";
-import { lstat as lstat35, open as open31 } from "node:fs/promises";
-import { basename as basename25, dirname as dirname22, join as join58 } from "node:path";
+import { constants as fsConstants7 } from "node:fs";
+import { lstat as lstat36, open as open32 } from "node:fs/promises";
+import { basename as basename25, dirname as dirname23, join as join59 } from "node:path";
 import process12 from "node:process";
 function isRecord5(value2) {
   return typeof value2 === "object" && value2 !== null && !Array.isArray(value2);
@@ -119617,14 +119909,14 @@ function assertPrivateOwnedDirectory(stat3, label) {
 }
 async function readStablePrivateChildFile(parent, name6, maximumBytes2, label) {
   const descriptorPath = `/proc/self/fd/${parent.handle.fd}/${name6}`;
-  const before = await lstat35(descriptorPath);
+  const before = await lstat36(descriptorPath);
   if (before.isSymbolicLink() || before.size > maximumBytes2) {
     throw new Error(`${label} is not a bounded regular file.`);
   }
   assertPrivateOwnedFile(before, label);
-  const handle11 = await open31(
+  const handle11 = await open32(
     descriptorPath,
-    fsConstants6.O_RDONLY | fsConstants6.O_NOFOLLOW
+    fsConstants7.O_RDONLY | fsConstants7.O_NOFOLLOW
   );
   try {
     const opened = await handle11.stat();
@@ -119637,7 +119929,7 @@ async function readStablePrivateChildFile(parent, name6, maximumBytes2, label) {
     if (!sameIdentity3(opened, after) || after.size !== opened.size || after.mtimeMs !== opened.mtimeMs || after.ctimeMs !== opened.ctimeMs) {
       throw new Error(`${label} changed while it was read.`);
     }
-    return { bytes: bytes2, path: join58(parent.path, name6), stat: after };
+    return { bytes: bytes2, path: join59(parent.path, name6), stat: after };
   } finally {
     await handle11.close();
   }
@@ -119653,7 +119945,7 @@ async function loadAuthenticatedBridgeBuildIdentity(authenticationKey, controlRo
   let build;
   try {
     const opened = await controlRoot.openDirectory(
-      join58(controlRoot.path, AUTHENTICATED_BRIDGE_BUILD_DIRECTORY),
+      join59(controlRoot.path, AUTHENTICATED_BRIDGE_BUILD_DIRECTORY),
       false
     );
     build = {
@@ -119682,7 +119974,7 @@ async function loadAuthenticatedBridgeBuildIdentity(authenticationKey, controlRo
       /\.eext$/u,
       `.${parsed2["outputSha256"]}.eext`
     );
-    if (dirname22(parsed2["outputPath"]) !== build.path || basename25(parsed2["outputPath"]) !== expectedGenerationName) {
+    if (dirname23(parsed2["outputPath"]) !== build.path || basename25(parsed2["outputPath"]) !== expectedGenerationName) {
       throw new Error(
         "The authenticated bridge commit receipt points outside its exact immutable generation namespace."
       );
@@ -119735,13 +120027,13 @@ var init_authenticated_bridge_build_identity = __esm({
 });
 
 // server/src/upstream-environment.ts
-import { constants as fsConstants7 } from "node:fs";
-import { lstat as lstat36, open as open32 } from "node:fs/promises";
+import { constants as fsConstants8 } from "node:fs";
+import { lstat as lstat37, open as open33 } from "node:fs/promises";
 import {
   basename as basename26,
-  dirname as dirname23,
+  dirname as dirname24,
   isAbsolute as isAbsolute23,
-  join as join59,
+  join as join60,
   relative as relative6,
   resolve as resolve16,
   sep as sep4
@@ -119749,7 +120041,7 @@ import {
 import process13 from "node:process";
 function configuredControlRootDirectory() {
   return resolve16(
-    process13.env["EASYEDA_CONTROL_DATA_DIR"] ?? join59(process13.env["HOME"] ?? "/tmp", ".easyeda-pro-control")
+    process13.env["EASYEDA_CONTROL_DATA_DIR"] ?? join60(process13.env["HOME"] ?? "/tmp", ".easyeda-pro-control")
   );
 }
 function isWithin3(root2, candidate) {
@@ -119803,13 +120095,13 @@ async function readBoundBridgeTokenFile(configuredPath, capability) {
     );
   }
   await capability.assertCurrent();
-  const directory4 = await capability.openDirectory(dirname23(path6), false);
+  const directory4 = await capability.openDirectory(dirname24(path6), false);
   const descriptorPath = `/proc/self/fd/${directory4.handle.fd}/${basename26(path6)}`;
   try {
-    const pathInfo = await lstat36(descriptorPath);
-    const handle11 = await open32(
+    const pathInfo = await lstat37(descriptorPath);
+    const handle11 = await open33(
       descriptorPath,
-      fsConstants7.O_RDONLY | fsConstants7.O_NOFOLLOW
+      fsConstants8.O_RDONLY | fsConstants8.O_NOFOLLOW
     );
     try {
       const token16 = await readBridgeTokenFileHandle(handle11, pathInfo);
@@ -119825,7 +120117,7 @@ async function readBoundBridgeTokenFile(configuredPath, capability) {
           );
         }
         const currentPath = `/proc/self/fd/${currentDirectory.handle.fd}/${basename26(path6)}`;
-        const currentInfo = await lstat36(currentPath);
+        const currentInfo = await lstat37(currentPath);
         if (currentInfo.isSymbolicLink() || !currentInfo.isFile() || currentInfo.dev !== openedInfo.dev || currentInfo.ino !== openedInfo.ino || currentInfo.nlink !== 1 || currentInfo.size !== openedInfo.size || currentInfo.mtimeMs !== openedInfo.mtimeMs || currentInfo.ctimeMs !== openedInfo.ctimeMs || typeof process13.getuid === "function" && currentInfo.uid !== process13.getuid()) {
           throw new Error("EASYEDA_BRIDGE_TOKEN_FILE changed while being read.");
         }
@@ -119901,7 +120193,7 @@ async function prepareBoundUpstreamEnvironment(command2, privateBridge, controlR
   }
   const controlRoot = configuredControlRootDirectory();
   const dataDirectory = resolve16(
-    process13.env["EASYEDA_UPSTREAM_DATA_DIR"] ?? join59(controlRoot, "upstream")
+    process13.env["EASYEDA_UPSTREAM_DATA_DIR"] ?? join60(controlRoot, "upstream")
   );
   if (!isWithin3(controlRoot, dataDirectory)) {
     throw new Error(
@@ -125738,10 +126030,10 @@ var init_acorn = __esm({
 
 // server/src/upstream-module-execution.ts
 import { createHash as createHash49 } from "node:crypto";
-import { constants as fsConstants8 } from "node:fs";
-import { lstat as lstat37, open as open33 } from "node:fs/promises";
+import { constants as fsConstants9 } from "node:fs";
+import { lstat as lstat38, open as open34 } from "node:fs/promises";
 import { createRequire, isBuiltin, registerHooks } from "node:module";
-import { dirname as dirname24, extname, isAbsolute as isAbsolute24, relative as relative7, resolve as resolve17, sep as sep5 } from "node:path";
+import { dirname as dirname25, extname, isAbsolute as isAbsolute24, relative as relative7, resolve as resolve17, sep as sep5 } from "node:path";
 import { fileURLToPath as fileURLToPath3, pathToFileURL } from "node:url";
 function isRecord6(value2) {
   return typeof value2 === "object" && value2 !== null && !Array.isArray(value2);
@@ -125871,7 +126163,7 @@ function assertTrustedModulePath(path6, info) {
 async function readSealedFile(path6, seals, capturedSeals) {
   let seal2 = seals.get(path6);
   if (seal2 === void 0) {
-    const info = await lstat37(path6);
+    const info = await lstat38(path6);
     assertTrustedModulePath(path6, info);
     seal2 = {
       ctimeMs: info.ctimeMs,
@@ -125888,7 +126180,7 @@ async function readSealedFile(path6, seals, capturedSeals) {
   if (seal2.kind !== "file") {
     throw new Error(`Resolved upstream module is not a sealed file: ${path6}`);
   }
-  const handle11 = await open33(path6, fsConstants8.O_RDONLY + fsConstants8.O_NOFOLLOW);
+  const handle11 = await open34(path6, fsConstants9.O_RDONLY + fsConstants9.O_NOFOLLOW);
   try {
     const opened = await handle11.stat();
     if (!sameSeal(opened, seal2)) {
@@ -125960,7 +126252,7 @@ async function packageTypeFor(path6, cwd, seals, capturedSeals, cache) {
   if (extension3 !== ".js") {
     throw new Error(`Unsupported executable upstream module extension: ${path6}`);
   }
-  let directory4 = dirname24(path6);
+  let directory4 = dirname25(path6);
   while (isWithin4(cwd, directory4)) {
     const packagePath = resolve17(directory4, "package.json");
     const captured = await readSealedFileIfPresent(
@@ -125977,7 +126269,7 @@ async function packageTypeFor(path6, cwd, seals, capturedSeals, cache) {
     if (directory4 === cwd) {
       break;
     }
-    directory4 = dirname24(directory4);
+    directory4 = dirname25(directory4);
   }
   cache.set(path6, "commonjs");
   return "commonjs";
@@ -126382,15 +126674,15 @@ var init_upstream_module_execution = __esm({
 // server/src/upstream-trust.ts
 import { createHash as createHash50 } from "node:crypto";
 import { spawn as spawn7 } from "node:child_process";
-import { constants as fsConstants9 } from "node:fs";
+import { constants as fsConstants10 } from "node:fs";
 import {
-  lstat as lstat38,
-  open as open34,
+  lstat as lstat39,
+  open as open35,
   readdir as readdir5,
   readlink as readlink2,
-  realpath as realpath22
+  realpath as realpath23
 } from "node:fs/promises";
-import { dirname as dirname25, isAbsolute as isAbsolute25, join as join60, relative as relative8, resolve as resolve18, sep as sep6 } from "node:path";
+import { dirname as dirname26, isAbsolute as isAbsolute25, join as join61, relative as relative8, resolve as resolve18, sep as sep6 } from "node:path";
 import process14 from "node:process";
 function boundedTimingInteger(value2) {
   return Math.min(Number.MAX_SAFE_INTEGER, Math.max(0, Math.floor(value2)));
@@ -126475,7 +126767,7 @@ function sameIdentity4(left, right) {
 async function hashOpenFile(path6, expected3, buffer = Buffer.allocUnsafe(65536)) {
   let handle11;
   try {
-    handle11 = await open34(path6, fsConstants9.O_RDONLY | fsConstants9.O_NOFOLLOW);
+    handle11 = await open35(path6, fsConstants10.O_RDONLY | fsConstants10.O_NOFOLLOW);
     const opened = await handle11.stat();
     if (!opened.isFile() || !sameIdentity4(expected3, opened)) {
       throw new Error(`Trusted upstream file changed before open: ${path6}`);
@@ -126510,9 +126802,9 @@ async function detectDependencyLock(cwd) {
     ["yarn", "yarn.lock"]
   ];
   for (const [type2, name6] of candidates) {
-    const path6 = join60(cwd, name6);
+    const path6 = join61(cwd, name6);
     try {
-      const info = await lstat38(path6);
+      const info = await lstat39(path6);
       if (info.isFile() && !info.isSymbolicLink()) {
         return [type2, path6];
       }
@@ -126525,8 +126817,8 @@ async function detectDependencyLock(cwd) {
   throw new Error("The upstream dependency lockfile is unavailable.");
 }
 async function captureExecutionClosure(cwd, implementationRoot, dependencyLockPath) {
-  const dependencyRoot = join60(cwd, "node_modules");
-  const packagePath = join60(cwd, "package.json");
+  const dependencyRoot = join61(cwd, "node_modules");
+  const packagePath = join61(cwd, "package.json");
   const roots = [implementationRoot, dependencyRoot, packagePath, dependencyLockPath].map((path6) => resolve18(path6)).toSorted();
   const entries6 = [];
   const seals = [];
@@ -126572,14 +126864,14 @@ async function captureExecutionClosure(cwd, implementationRoot, dependencyLockPa
     if (!isWithin5(cwd, absolute)) {
       throw new Error(`Upstream execution closure escapes its cwd: ${absolute}`);
     }
-    const info = await lstat38(absolute);
+    const info = await lstat39(absolute);
     assertTrustedOwnership(absolute, info);
     const relativePath = relative8(cwd, absolute).split(sep6).join("/");
     if (info.isSymbolicLink()) {
       const target9 = await readlink2(absolute);
       seals.push(sealFor(absolute, info, "symlink", target9));
       entries6.push({ path: relativePath, kind: "symlink", target: target9, bytes: 0 });
-      const resolvedTarget3 = await realpath22(absolute);
+      const resolvedTarget3 = await realpath23(absolute);
       if (!isWithin5(cwd, resolvedTarget3)) {
         throw new Error(
           `Upstream dependency symlink escapes its reviewed cwd: ${absolute}`
@@ -126589,7 +126881,7 @@ async function captureExecutionClosure(cwd, implementationRoot, dependencyLockPa
       return;
     }
     if (info.isDirectory()) {
-      const realDirectory = await realpath22(absolute);
+      const realDirectory = await realpath23(absolute);
       if (visitedDirectories.has(realDirectory)) {
         return;
       }
@@ -126598,7 +126890,7 @@ async function captureExecutionClosure(cwd, implementationRoot, dependencyLockPa
       entries6.push({ path: relativePath, kind: "directory", bytes: 0 });
       const children2 = await readdir5(absolute);
       for (const child of children2.toSorted()) {
-        await visit(join60(absolute, child));
+        await visit(join61(absolute, child));
       }
       return;
     }
@@ -126650,12 +126942,12 @@ async function captureExecutionClosure(cwd, implementationRoot, dependencyLockPa
     closureHash.update("\n");
   }
   const implementationFiles = sortedEntries.filter(
-    (entry) => entry.kind === "file" && isWithin5(implementationRoot, join60(cwd, entry.path)) && /\.(c?m?js|json)$/iu.test(entry.path)
+    (entry) => entry.kind === "file" && isWithin5(implementationRoot, join61(cwd, entry.path)) && /\.(c?m?js|json)$/iu.test(entry.path)
   );
   const implementationHash = createHash50("sha256");
   for (const entry of implementationFiles) {
     implementationHash.update(
-      relative8(implementationRoot, join60(cwd, entry.path)).split(sep6).join("/")
+      relative8(implementationRoot, join61(cwd, entry.path)).split(sep6).join("/")
     );
     implementationHash.update("\0");
     implementationHash.update(entry.sha256 ?? "");
@@ -126691,7 +126983,7 @@ async function captureExecutionClosure(cwd, implementationRoot, dependencyLockPa
   };
 }
 async function captureTrustedFile(path6, allowRootOwner = false) {
-  const info = await lstat38(path6);
+  const info = await lstat39(path6);
   if (info.isSymbolicLink() || !info.isFile()) {
     throw new Error(`Trusted launcher path must be a regular file: ${path6}`);
   }
@@ -126738,7 +127030,7 @@ async function sha256OpenHandle(handle11, expected3, label) {
 }
 async function openReviewedExecutable(path6, expectedSha256, label, allowRootOwner, expectedMode) {
   const absolute = resolve18(path6);
-  const pathInfo = await lstat38(absolute);
+  const pathInfo = await lstat39(absolute);
   if (pathInfo.isSymbolicLink() || !pathInfo.isFile()) {
     throw new Error(`${label} must be a regular non-symlink file.`);
   }
@@ -126748,9 +127040,9 @@ async function openReviewedExecutable(path6, expectedSha256, label, allowRootOwn
     );
   }
   assertTrustedOwnership(absolute, pathInfo, allowRootOwner);
-  const handle11 = await open34(
+  const handle11 = await open35(
     absolute,
-    fsConstants9.O_RDONLY | fsConstants9.O_NOFOLLOW
+    fsConstants10.O_RDONLY | fsConstants10.O_NOFOLLOW
   );
   let disposed = false;
   try {
@@ -126758,7 +127050,7 @@ async function openReviewedExecutable(path6, expectedSha256, label, allowRootOwn
       if (disposed) {
         throw new Error(`${label} descriptor is closed.`);
       }
-      const currentPath = await lstat38(absolute);
+      const currentPath = await lstat39(absolute);
       if (!sameIdentity4(pathInfo, currentPath) || await sha256OpenHandle(handle11, pathInfo, label) !== expectedSha256) {
         throw new Error(`${label} changed after review.`);
       }
@@ -126902,18 +127194,18 @@ function openReviewedDescriptorSanitizerExecutable() {
   );
 }
 async function captureLauncherFingerprintAt(commandPath, args, cwd, timings) {
-  const commandRealPath = await realpath22(commandPath);
-  const currentNodeRealPath = await realpath22(process14.execPath);
+  const commandRealPath = await realpath23(commandPath);
+  const currentNodeRealPath = await realpath23(process14.execPath);
   if (commandRealPath !== currentNodeRealPath) {
     throw new Error(
       "The reviewed upstream command must be the same Node executable running the facade."
     );
   }
   const entrypointPath = resolve18(args[0] ?? "");
-  if (await realpath22(cwd) !== cwd) {
+  if (await realpath23(cwd) !== cwd) {
     throw new Error("EASYEDA_UPSTREAM_CWD must not traverse a symbolic link.");
   }
-  const cwdInfo = await lstat38(cwd);
+  const cwdInfo = await lstat39(cwd);
   if (!cwdInfo.isDirectory() || cwdInfo.isSymbolicLink()) {
     throw new Error("EASYEDA_UPSTREAM_CWD must be a real directory.");
   }
@@ -126921,11 +127213,11 @@ async function captureLauncherFingerprintAt(commandPath, args, cwd, timings) {
   if (!isWithin5(cwd, entrypointPath)) {
     throw new Error("The upstream entrypoint must stay inside its reviewed cwd.");
   }
-  if (await realpath22(entrypointPath) !== entrypointPath) {
+  if (await realpath23(entrypointPath) !== entrypointPath) {
     throw new Error("The upstream entrypoint must not traverse a symbolic link.");
   }
   const [dependencyType, dependencyLockPath] = await detectDependencyLock(cwd);
-  const implementationRoot = dirname25(entrypointPath);
+  const implementationRoot = dirname26(entrypointPath);
   const closure6 = await timings.measure("execution-closure", () => captureExecutionClosure(
     cwd,
     implementationRoot,
@@ -127036,15 +127328,15 @@ async function captureLauncherAdmissionAt(expected3, command2, cwd, entrypoint) 
       "The configured sandbox-launcher identity differs from review."
     );
   }
-  if (await realpath22(normalizedCommand) !== await realpath22(process14.execPath)) {
+  if (await realpath23(normalizedCommand) !== await realpath23(process14.execPath)) {
     throw new Error(
       "The reviewed upstream command must be the Node executable running the facade."
     );
   }
-  if (await realpath22(normalizedCwd) !== normalizedCwd) {
+  if (await realpath23(normalizedCwd) !== normalizedCwd) {
     throw new Error("The reviewed upstream cwd must not traverse a symbolic link.");
   }
-  const cwdInfo = await lstat38(normalizedCwd);
+  const cwdInfo = await lstat39(normalizedCwd);
   if (!cwdInfo.isDirectory() || cwdInfo.isSymbolicLink()) {
     throw new Error("The reviewed upstream cwd must be a real directory.");
   }
@@ -127137,7 +127429,7 @@ async function assertPathSealsCurrent(seals, boundary = "before spawn") {
   for (let offset9 = 0; offset9 < seals.length; offset9 += batchSize) {
     await Promise.all(
       seals.slice(offset9, offset9 + batchSize).map(async (seal2) => {
-        const current10 = await lstat38(seal2.path);
+        const current10 = await lstat39(seal2.path);
         let currentKind = "unsupported";
         if (current10.isSymbolicLink()) {
           currentKind = "symlink";
@@ -127361,8 +127653,8 @@ var init_upstream_bootstrap = __esm({
 
 // server/src/private-runtime-payload.ts
 import { createHash as createHash51, randomUUID as randomUUID9 } from "node:crypto";
-import { constants as fsConstants10 } from "node:fs";
-import { open as open35, unlink as unlink4 } from "node:fs/promises";
+import { constants as fsConstants11 } from "node:fs";
+import { open as open36, unlink as unlink4 } from "node:fs/promises";
 import process15 from "node:process";
 function permissionMode2(mode) {
   return Number(mode % 512n);
@@ -127417,9 +127709,9 @@ async function stagePrivateRuntimePayload(source5, privateDirectory) {
   let writable;
   let readable;
   try {
-    writable = await open35(
+    writable = await open36(
       path6,
-      fsConstants10.O_CREAT | fsConstants10.O_EXCL | fsConstants10.O_RDWR | fsConstants10.O_NOFOLLOW,
+      fsConstants11.O_CREAT | fsConstants11.O_EXCL | fsConstants11.O_RDWR | fsConstants11.O_NOFOLLOW,
       384
     );
     await writeExact(writable, source5);
@@ -127509,9 +127801,9 @@ var init_private_runtime_payload = __esm({
 
 // server/src/sandboxed-stdio-client-transport.ts
 import { spawn as spawn8 } from "node:child_process";
-import { constants as fsConstants11 } from "node:fs";
+import { constants as fsConstants12 } from "node:fs";
 import { once } from "node:events";
-import { open as open36, readFile as readFile7 } from "node:fs/promises";
+import { open as open37, readFile as readFile7 } from "node:fs/promises";
 import { PassThrough, Readable, Writable } from "node:stream";
 import { setTimeout as wait2 } from "node:timers/promises";
 function protocolError(code, message) {
@@ -127790,7 +128082,7 @@ async function waitForSandboxNodeIdentity(authority2, nodeHandle, expectedComman
       if (currentAuthority.startTimeTicks !== authority2.startTimeTicks) {
         throw new Error("Sandbox child PID changed before Node admission.");
       }
-      executable = await open36(`/proc/${authority2.pid}/exe`, fsConstants11.O_RDONLY);
+      executable = await open37(`/proc/${authority2.pid}/exe`, fsConstants12.O_RDONLY);
       if (childHasClosed) {
         await closedBeforeIdentity;
       }
@@ -128356,17 +128648,17 @@ var init_sandboxed_stdio_client_transport = __esm({
 
 // server/src/supervisor-execution.ts
 import { createHash as createHash52 } from "node:crypto";
-import { constants as fsConstants12 } from "node:fs";
+import { constants as fsConstants13 } from "node:fs";
 import {
-  lstat as lstat39,
-  open as open37,
-  realpath as realpath23
+  lstat as lstat40,
+  open as open38,
+  realpath as realpath24
 } from "node:fs/promises";
-import { basename as basename27, join as join61, resolve as resolve19 } from "node:path";
+import { basename as basename27, join as join62, resolve as resolve19 } from "node:path";
 import process16 from "node:process";
 function bundledSupervisorPath() {
   const bundleDirectory = basename27(import.meta.filename) === "server.mjs" ? import.meta.dirname : resolve19(import.meta.dirname, "..", "dist");
-  return join61(bundleDirectory, SUPERVISOR_BUNDLE_NAME);
+  return join62(bundleDirectory, SUPERVISOR_BUNDLE_NAME);
 }
 function reviewedSupervisorFingerprint() {
   const expected3 = loadReviewedCompatibilityManifest().facadeImplementation.bundle.files.find(
@@ -128423,12 +128715,12 @@ async function readStableHandle(handle11, label) {
 }
 async function captureReviewedSupervisor(sourcePath, expected3) {
   const absolute = resolve19(sourcePath);
-  if (await realpath23(absolute) !== absolute) {
+  if (await realpath24(absolute) !== absolute) {
     throw new Error(
       "The upstream supervisor source must not traverse symbolic links."
     );
   }
-  const pathInfo = await lstat39(absolute, { bigint: true });
+  const pathInfo = await lstat40(absolute, { bigint: true });
   if (pathInfo.isSymbolicLink() || !pathInfo.isFile()) {
     throw new Error(
       "The upstream supervisor source must be a regular non-symlink file."
@@ -128442,9 +128734,9 @@ async function captureReviewedSupervisor(sourcePath, expected3) {
       "The upstream supervisor source must not be group- or other-writable."
     );
   }
-  const handle11 = await open37(
+  const handle11 = await open38(
     absolute,
-    fsConstants12.O_RDONLY + fsConstants12.O_NOFOLLOW
+    fsConstants13.O_RDONLY + fsConstants13.O_NOFOLLOW
   );
   try {
     const captured = await readStableHandle(handle11, "Upstream supervisor source");
@@ -128629,7 +128921,7 @@ import { AsyncLocalStorage as AsyncLocalStorage2 } from "node:async_hooks";
 import { createHash as createHash53, randomBytes as randomBytes11 } from "node:crypto";
 import { createReadStream } from "node:fs";
 import { stat } from "node:fs/promises";
-import { join as join62, resolve as resolve20 } from "node:path";
+import { join as join63, resolve as resolve20 } from "node:path";
 import process18 from "node:process";
 function startupFailureWithStderr(error52, diagnosticBytes, diagnosticSha256, startupDiagnostics) {
   return diagnosticBytes === 0 && startupDiagnostics === void 0 ? error52 : new UpstreamStartupError(
@@ -129279,16 +129571,16 @@ var init_upstream = __esm({
           process18.env["EASYEDA_PUBLIC_API_BUNDLE_VERSION"],
           "EASYEDA_PUBLIC_API_BUNDLE_VERSION"
         );
-        const pcbImplementation = join62(
+        const pcbImplementation = join63(
           assetsRoot,
           "pro-pcb",
           pcbVersion,
           "js",
           "pcb.js"
         );
-        const apiImplementation = join62(assetsRoot, "pro-api", apiVersion, "api.js");
-        const apiAdapter = join62(assetsRoot, "pro-api", apiVersion, "api-types.js");
-        const apiDeclarations = join62(
+        const apiImplementation = join63(assetsRoot, "pro-api", apiVersion, "api.js");
+        const apiAdapter = join63(assetsRoot, "pro-api", apiVersion, "api-types.js");
+        const apiDeclarations = join63(
           assetsRoot,
           "pro-api",
           apiVersion,
@@ -129512,7 +129804,7 @@ async function readPcbNetMembership(engine2, requestInput2, expectedContext, exp
     throw new Error("PCB net membership active identity changed.");
   }
   let inheritedScope;
-  const observe6 = async (kind) => {
+  const observe7 = async (kind) => {
     await engine2.assertBridgeDispatchAllowed();
     if (canonicalJson(await engine2.assertContext(context4)) !== canonicalJson(context4)) {
       throw new Error("PCB net membership context changed before observation.");
@@ -129526,9 +129818,9 @@ async function readPcbNetMembership(engine2, requestInput2, expectedContext, exp
     return payload;
   };
   const observations2 = async () => {
-    const beforePayload = await observe6("pcb-source");
-    const inventory2 = await observe6("pcb-inventory");
-    const afterPayload = await observe6("pcb-source");
+    const beforePayload = await observe7("pcb-source");
+    const inventory2 = await observe7("pcb-inventory");
+    const afterPayload = await observe7("pcb-source");
     const before = parseDocumentSource(external_exports.string().max(16777216).parse(beforePayload["source"]));
     const after = parseDocumentSource(external_exports.string().max(16777216).parse(afterPayload["source"]));
     if (before.sha256 !== after.sha256) {
@@ -129919,14 +130211,14 @@ async function readPcbSourceObjects(engine2, requestInput2, expectedContext, exp
       throw new Error("Explicit PCB context changed around observation.");
     }
   };
-  const observe6 = async (kind) => {
+  const observe7 = async (kind) => {
     const payload = checkedExact2(await engine2.exactRead({ kind }, context4), kind);
     await guard();
     return payload;
   };
   const observations2 = async () => {
-    const beforePayload = await observe6("pcb-source"), inventory2 = await observe6("pcb-inventory");
-    const afterPayload = await observe6("pcb-source");
+    const beforePayload = await observe7("pcb-source"), inventory2 = await observe7("pcb-inventory");
+    const afterPayload = await observe7("pcb-source");
     const before = parseDocumentSource(external_exports.string().max(16777216).parse(beforePayload["source"]));
     const after = parseDocumentSource(external_exports.string().max(16777216).parse(afterPayload["source"]));
     if (before.sha256 !== after.sha256) {
@@ -130024,15 +130316,40 @@ var init_pcb_source_objects_read = __esm({
 });
 
 // server/src/facade-mode.ts
+function publicUtilitiesOnlyCapabilities() {
+  return {
+    sdkCalculations: { tool: "easyeda_control_calculate", runtimeAdmissionRequired: true, connectedValidation: false },
+    sdkSystem: { tool: "easyeda_control_system", runtimeAdmissionRequired: true, connectedValidation: false },
+    ordinaryLaunch: { tool: "easyeda_control_launch", installedIdentityAdmissionRequired: true, profileIsolation: false, connectedValidation: false },
+    designAccess: { enabled: false, scope: "all-design-routes" },
+    navigation: { enabled: false },
+    save: { enabled: false },
+    recovery: { enabled: false },
+    nativeAdapters: { enabled: false }
+  };
+}
 function configuredFacadeMode(environment) {
+  if (isPublicUtilities209Configured(environment)) {
+    return "public-utilities-only";
+  }
   return environment["EASYEDA_PCB_BUNDLE_VERSION"] === "3.2.149.5378b690" && environment["EASYEDA_PUBLIC_API_BUNDLE_VERSION"] === "0.2.53.aee2f57a" ? "legacy-reviewed" : "calculation-only";
 }
 function facadeToolRegistered(mode, name6) {
-  return mode === "legacy-reviewed" || CALCULATION_ONLY_TOOLS.includes(name6);
+  return mode === "legacy-reviewed" || (mode === "public-utilities-only" ? PUBLIC_UTILITIES_ONLY_TOOLS : CALCULATION_ONLY_TOOLS).includes(name6);
 }
-var CALCULATION_ONLY_TOOLS;
+var PUBLIC_UTILITIES_ONLY_TOOLS, PUBLIC_UTILITIES_ONLY_SCOPE, CALCULATION_ONLY_TOOLS;
 var init_facade_mode = __esm({
   "server/src/facade-mode.ts"() {
+    init_sdk_public_utilities_profile();
+    PUBLIC_UTILITIES_ONLY_TOOLS = Object.freeze([
+      "easyeda_control_api",
+      "easyeda_control_discover",
+      "easyeda_control_status",
+      "easyeda_control_calculate",
+      "easyeda_control_system",
+      "easyeda_control_launch"
+    ]);
+    PUBLIC_UTILITIES_ONLY_SCOPE = "EasyEDA 3.2.209 public Math, Unit and Environment subsets and separately admitted ordinary launch only. No project opening, native/private adapter, design read/write, Save, recovery or PCB-worker route is registered. Source review and synthetic tests are not connected execution validation. Launch uses the existing profile and does not prove isolation or readiness.";
     CALCULATION_ONLY_TOOLS = Object.freeze([
       "easyeda_control_api",
       "easyeda_control_discover",
@@ -130066,7 +130383,8 @@ var init_facade_mode = __esm({
 
 // server/src/sdk-math-runtime.ts
 function validateSdkMathFingerprint(fingerprint) {
-  return validateSdkLocalRuntimeFingerprint(fingerprint);
+  selectSdkPublicUtilitiesRuntimeProfile(fingerprint);
+  return true;
 }
 async function calculateSdkMath(engine2, requestInput2, expectedFingerprint) {
   const request13 = parseSdkMathRequest(requestInput2);
@@ -130075,7 +130393,7 @@ async function calculateSdkMath(engine2, requestInput2, expectedFingerprint) {
   await engine2.assertBridgeDispatchAllowed();
   const initialStatus = await engine2.status();
   const initial = structuredClone(initialStatus.stableFingerprint);
-  validateSdkMathFingerprint(initial);
+  const profile = selectSdkPublicUtilitiesRuntimeProfile(initial);
   assertSubset(initial, expected3, "SDK math expected runtime");
   await engine2.assertBridgeDispatchAllowed();
   const raw = await engine2.upstream.callTool("easyeda_execute", {
@@ -130088,7 +130406,7 @@ async function calculateSdkMath(engine2, requestInput2, expectedFingerprint) {
   if (Buffer.byteLength(JSON.stringify(envelope4), "utf8") > SDK_MATH_MAX_BYTES) {
     throw new Error("SDK math reply exceeds its byte bound.");
   }
-  const result = validateSdkMathResult(request13, decodeExactReadEnvelope(envelope4));
+  const result = validateSdkMathResult(request13, decodeExactReadEnvelope(envelope4), profile.installedBundles.publicApi);
   await engine2.assertBridgeDispatchAllowed();
   const finalStatus = await engine2.status();
   const finalFingerprint = finalStatus.stableFingerprint;
@@ -130097,7 +130415,7 @@ async function calculateSdkMath(engine2, requestInput2, expectedFingerprint) {
     throw new Error("SDK math runtime changed around the calculation.");
   }
   const response3 = { ...result, runtimeAdmission: {
-    profile: SDK_MATH_RUNTIME_PROFILE.schema,
+    profile: profile === SDK_LOCAL_RUNTIME_PROFILE ? SDK_MATH_RUNTIME_PROFILE.schema : profile.schema,
     fingerprintSha256: sha256Json(initial),
     beforeAndAfterChecked: true,
     scope: "fixed-input-only-sdk-math",
@@ -130114,6 +130432,7 @@ var init_sdk_math_runtime = __esm({
     init_core3();
     init_exact_readers();
     init_sdk_local_runtime();
+    init_sdk_public_utilities_profile();
     init_sdk_math();
     SDK_MATH_RUNTIME_PROFILE = {
       ...SDK_LOCAL_RUNTIME_PROFILE,
@@ -130126,11 +130445,11 @@ var init_sdk_math_runtime = __esm({
 async function readSdkSystem(engine2, requestInput2, expectedFingerprint) {
   const request13 = parseSdkSystemRequest(requestInput2);
   const expected3 = structuredClone(expectedFingerprint);
-  validateSdkLocalRuntimeFingerprint(expected3);
+  selectSdkPublicUtilitiesRuntimeProfile(expected3);
   await engine2.assertBridgeDispatchAllowed();
   const initialStatus = await engine2.status();
   const initial = structuredClone(initialStatus.stableFingerprint);
-  validateSdkLocalRuntimeFingerprint(initial);
+  const profile = selectSdkPublicUtilitiesRuntimeProfile(initial);
   assertSubset(initial, expected3, "SDK system expected runtime");
   await engine2.assertBridgeDispatchAllowed();
   const raw = await engine2.upstream.callTool("easyeda_execute", {
@@ -130143,16 +130462,16 @@ async function readSdkSystem(engine2, requestInput2, expectedFingerprint) {
   if (Buffer.byteLength(JSON.stringify(envelope4), "utf8") > SDK_SYSTEM_MAX_BYTES) {
     throw new Error("SDK system reply exceeds its byte bound.");
   }
-  const result = validateSdkSystemResult(request13, decodeExactReadEnvelope(envelope4));
+  const result = validateSdkSystemResult(request13, decodeExactReadEnvelope(envelope4), profile.installedBundles.publicApi);
   await engine2.assertBridgeDispatchAllowed();
   const finalStatus = await engine2.status();
   const finalFingerprint = finalStatus.stableFingerprint;
-  validateSdkLocalRuntimeFingerprint(finalFingerprint);
+  selectSdkPublicUtilitiesRuntimeProfile(finalFingerprint);
   if (canonicalJson(finalFingerprint) !== canonicalJson(initial)) {
     throw new Error("SDK system runtime changed around the local operation.");
   }
   const response3 = { ...result, runtimeAdmission: {
-    profile: SDK_SYSTEM_RUNTIME_PROFILE.schema,
+    profile: profile === SDK_LOCAL_RUNTIME_PROFILE ? SDK_SYSTEM_RUNTIME_PROFILE.schema : profile.schema,
     fingerprintSha256: sha256Json(initial),
     beforeAndAfterChecked: true,
     scope: "fixed-local-sdk-system",
@@ -130169,6 +130488,7 @@ var init_sdk_system_runtime = __esm({
     init_core3();
     init_exact_readers();
     init_sdk_local_runtime();
+    init_sdk_public_utilities_profile();
     init_sdk_system();
     SDK_SYSTEM_RUNTIME_PROFILE = {
       ...SDK_LOCAL_RUNTIME_PROFILE,
@@ -131154,7 +131474,7 @@ var init_current_schematic_operation_startup = __esm({
 });
 
 // server/src/current-disposable-open-checkpoint.ts
-import { join as join63 } from "node:path";
+import { join as join64 } from "node:path";
 function normalizedSource(target9) {
   const raw = target9.rawWindowsPath, separator = raw[2];
   if (!/^[a-z]:[\\/]/iu.test(raw) || separator !== "\\" && separator !== "/" || raw.includes(separator === "\\" ? "/" : "\\") || target9.projectUuid !== sha256Text(raw)) {
@@ -131170,7 +131490,7 @@ async function accessPolicy(source5) {
   return {
     expectedSource: source5,
     controlRoot: await controlRootCapability(),
-    artifactRoots: [join63(controlDataDirectory(), "checkpoints")],
+    artifactRoots: [join64(controlDataDirectory(), "checkpoints")],
     maximumSourceBytes: MAX_SOURCE_BYTES
   };
 }
@@ -131227,7 +131547,7 @@ async function prepareCurrentDisposableOpenCheckpoint(input) {
   const inputText = canonicalJson(input), source5 = normalizedSource(target9);
   const checkpoint = await createCheckpoint({
     source: source5,
-    outputDir: join63(controlDataDirectory(), "checkpoints"),
+    outputDir: join64(controlDataDirectory(), "checkpoints"),
     label: "current-disposable-open"
   }, await accessPolicy(source5));
   assertSourceBinding(checkpoint, target9, source5);
@@ -132114,7 +132434,7 @@ const collection=(o,p)=>{object(o);if(Object.getPrototypeOf(o)!==p||Reflect.ownK
 import { createHash as createHash57 } from "node:crypto";
 import { types as types23 } from "node:util";
 function marked(value2) {
-  return external_exports.union([missing2, external_exports.object({ kind: external_exports.literal("value"), value: value2 }).strict()]);
+  return external_exports.union([missing3, external_exports.object({ kind: external_exports.literal("value"), value: value2 }).strict()]);
 }
 function refuse12() {
   throw currentPcbRawStringReplyFailure();
@@ -132157,7 +132477,7 @@ function decodeCurrentPcbDiagnosticRawStringsReply(input) {
     return refuse12();
   }
 }
-var CURRENT_PCB_DIAGNOSTIC_RAW_STRINGS_RESULT_BYTES, MAX_STRINGS, CURRENT_PCB_DIAGNOSTIC_RAW_STRINGS_FUNCTION, CURRENT_PCB_DIAGNOSTIC_RAW_STRINGS_FUNCTION_SHA256, finite8, integer12, identifier18, rawText, missing2, point6, color4, groupId, box, base6, model, state2, LIMITS6;
+var CURRENT_PCB_DIAGNOSTIC_RAW_STRINGS_RESULT_BYTES, MAX_STRINGS, CURRENT_PCB_DIAGNOSTIC_RAW_STRINGS_FUNCTION, CURRENT_PCB_DIAGNOSTIC_RAW_STRINGS_FUNCTION_SHA256, finite8, integer12, identifier18, rawText, missing3, point6, color4, groupId, box, base6, model, state2, LIMITS6;
 var init_current_pcb_diagnostic_raw_strings = __esm({
   "server/src/current-pcb-diagnostic-raw-strings.ts"() {
     init_zod();
@@ -132232,7 +132552,7 @@ return output;
     integer12 = finite8.refine(Number.isSafeInteger);
     identifier18 = external_exports.string().regex(/^(?:[a-f0-9]{16}|[a-f0-9]{32})$/u);
     rawText = external_exports.string().refine((value2) => value2.isWellFormed());
-    missing2 = external_exports.object({ kind: external_exports.enum(["absent", "undefined", "null"]) }).strict();
+    missing3 = external_exports.object({ kind: external_exports.enum(["absent", "undefined", "null"]) }).strict();
     point6 = external_exports.object({ x: finite8, y: finite8 }).strict();
     color4 = external_exports.object({ r: finite8, g: finite8, b: finite8, alpha: finite8 }).strict();
     groupId = external_exports.union([rawText.max(128), integer12]);
@@ -132261,7 +132581,7 @@ return output;
       zIndex: marked(integer12),
       partition: marked(rawText.max(128)),
       groupId: marked(groupId),
-      parent: missing2,
+      parent: missing3,
       number: marked(integer12),
       dataState: integer12,
       matrixChange: external_exports.boolean(),
@@ -132545,7 +132865,7 @@ function decodeCurrentPcbDiagnosticRootInventoryReply(input) {
     return refuse13();
   }
 }
-var MAX_ENTRIES5, MAX_TREES, MAX_DEPTH, MAX_RETAINED_DESCRIPTORS, CURRENT_PCB_DIAGNOSTIC_ROOT_INVENTORY_RESULT_BYTES, CURRENT_PCB_DIAGNOSTIC_ROOT_INVENTORY_FUNCTION, CURRENT_PCB_DIAGNOSTIC_ROOT_INVENTORY_FUNCTION_SHA256, countSchema4, markerSchema3, ownerSchema, familiesSchema, boardSchema, panelCountsSchema, panelSchema, treeSchema, stateSchema4, LIMITS7;
+var MAX_ENTRIES6, MAX_TREES, MAX_DEPTH, MAX_RETAINED_DESCRIPTORS, CURRENT_PCB_DIAGNOSTIC_ROOT_INVENTORY_RESULT_BYTES, CURRENT_PCB_DIAGNOSTIC_ROOT_INVENTORY_FUNCTION, CURRENT_PCB_DIAGNOSTIC_ROOT_INVENTORY_FUNCTION_SHA256, countSchema4, markerSchema3, ownerSchema, familiesSchema, boardSchema, panelCountsSchema, panelSchema, treeSchema, stateSchema4, LIMITS7;
 var init_current_pcb_diagnostic_root_inventory = __esm({
   "server/src/current-pcb-diagnostic-root-inventory.ts"() {
     init_zod();
@@ -132554,10 +132874,10 @@ var init_current_pcb_diagnostic_root_inventory = __esm({
     init_current_pcb_diagnostic_json();
     init_current_pcb_diagnostic_model_program();
     init_sqlite_inventory_core();
-    MAX_ENTRIES5 = 65536;
+    MAX_ENTRIES6 = 65536;
     MAX_TREES = 128;
     MAX_DEPTH = 64;
-    MAX_RETAINED_DESCRIPTORS = MAX_ENTRIES5 * 8 + 4096;
+    MAX_RETAINED_DESCRIPTORS = MAX_ENTRIES6 * 8 + 4096;
     CURRENT_PCB_DIAGNOSTIC_ROOT_INVENTORY_RESULT_BYTES = 8192;
     CURRENT_PCB_DIAGNOSTIC_ROOT_INVENTORY_FUNCTION = `function(originalCallback,constructors){
 "use strict";
@@ -132565,8 +132885,8 @@ const bad=()=>{throw new Error("PCB_DIAGNOSTIC_ROOT_INVENTORY_STATE");};
 const retained=[],collections=[];
 const budget={entries:0,trees:0};
 const remember=(o,k,m,v)=>{if(retained.length>=${MAX_RETAINED_DESCRIPTORS})bad();retained.push([o,k,m,v]);};
-const count=v=>{if(!Number.isSafeInteger(v)||Object.is(v,-0)||v<0||v>${MAX_ENTRIES5})bad();return v;};
-const spend=n=>{budget.entries+=count(n);if(budget.entries>${MAX_ENTRIES5})bad();};
+const count=v=>{if(!Number.isSafeInteger(v)||Object.is(v,-0)||v<0||v>${MAX_ENTRIES6})bad();return v;};
+const spend=n=>{budget.entries+=count(n);if(budget.entries>${MAX_ENTRIES6})bad();};
 const object=o=>{if(o===null||typeof o!=="object"||Array.isArray(o))bad();return o;};
 const descriptor=(o,k)=>{if(o===null||(typeof o!=="object"&&typeof o!=="function"))bad();return Object.getOwnPropertyDescriptor(o,k);};
 const own=(o,k)=>{const d=descriptor(o,k);if(!d||!Object.hasOwn(d,"value"))bad();remember(o,k,"present",d.value);return d.value;};
@@ -132667,7 +132987,7 @@ if(output.length>${CURRENT_PCB_DIAGNOSTIC_ROOT_INVENTORY_RESULT_BYTES})bad();
 return output;
 }`;
     CURRENT_PCB_DIAGNOSTIC_ROOT_INVENTORY_FUNCTION_SHA256 = createHash58("sha256").update(CURRENT_PCB_DIAGNOSTIC_ROOT_INVENTORY_FUNCTION).digest("hex");
-    countSchema4 = external_exports.number().int().min(0).max(MAX_ENTRIES5).refine((value2) => !Object.is(value2, -0));
+    countSchema4 = external_exports.number().int().min(0).max(MAX_ENTRIES6).refine((value2) => !Object.is(value2, -0));
     markerSchema3 = external_exports.enum(["absent", "undefined", "null", "present"]);
     ownerSchema = external_exports.object({ marker: markerSchema3, count: countSchema4.nullable() }).strict().refine((value2) => value2.marker === "present" === (value2.count !== null));
     familiesSchema = external_exports.object({
@@ -137405,7 +137725,7 @@ var init_current_pcb_diagnostic_worker_context = __esm({
 // server/src/current-pcb-diagnostic-installation.ts
 import { createHash as createHash67 } from "node:crypto";
 import { constants as constants26 } from "node:fs";
-import { lstat as lstat40, open as open38, realpath as realpath24 } from "node:fs/promises";
+import { lstat as lstat41, open as open39, realpath as realpath25 } from "node:fs/promises";
 import path5 from "node:path";
 function refuse22() {
   throw new Error("PCB_DIAGNOSTIC_INSTALLATION_REFUSED");
@@ -137446,10 +137766,10 @@ function sameFacadeHelper(left, right) {
   return same43(left, right) && left.uid === right.uid && left.gid === right.gid;
 }
 async function verifyCurrentPcbDiagnosticPowerShell(hostPath, expected3) {
-  if (path5.posix.resolve(hostPath) !== hostPath || await realpath24(hostPath) !== hostPath || !Number.isSafeInteger(expected3.bytes) || expected3.bytes < 1 || expected3.bytes > 16777216 || !/^[a-f\d]{64}$/u.test(expected3.sha256)) {
+  if (path5.posix.resolve(hostPath) !== hostPath || await realpath25(hostPath) !== hostPath || !Number.isSafeInteger(expected3.bytes) || expected3.bytes < 1 || expected3.bytes > 16777216 || !/^[a-f\d]{64}$/u.test(expected3.sha256)) {
     refuse22();
   }
-  const handle11 = await open38(hostPath, constants26.O_RDONLY | constants26.O_NOFOLLOW | constants26.O_NONBLOCK);
+  const handle11 = await open39(hostPath, constants26.O_RDONLY | constants26.O_NOFOLLOW | constants26.O_NONBLOCK);
   try {
     const before = await handle11.stat({ bigint: true });
     if (!before.isFile() || before.nlink < 1n || before.size !== BigInt(expected3.bytes)) {
@@ -137466,7 +137786,7 @@ async function verifyCurrentPcbDiagnosticPowerShell(hostPath, expected3) {
       hash45.update(buffer.subarray(0, result.bytesRead));
     }
     const eof = await handle11.read(buffer, 0, 1, total);
-    if (eof.bytesRead !== 0 || hash45.digest("hex") !== expected3.sha256 || !same43(before, await handle11.stat({ bigint: true })) || !same43(before, await lstat40(hostPath, { bigint: true })) || await realpath24(hostPath) !== hostPath) {
+    if (eof.bytesRead !== 0 || hash45.digest("hex") !== expected3.sha256 || !same43(before, await handle11.stat({ bigint: true })) || !same43(before, await lstat41(hostPath, { bigint: true })) || await realpath25(hostPath) !== hostPath) {
       refuse22();
     }
   } finally {
@@ -137491,7 +137811,7 @@ async function verifyCurrentPcbDiagnosticInstallation(options) {
 }
 async function verifyCurrentPcbDiagnosticFacade(options) {
   const original2 = createCurrentPcbDiagnosticInstallationPlan(options);
-  if (path5.posix.resolve(options.pluginRoot) !== options.pluginRoot || await realpath24(options.pluginRoot) !== options.pluginRoot || await realpath24(options.assetsRoot) !== options.assetsRoot) {
+  if (path5.posix.resolve(options.pluginRoot) !== options.pluginRoot || await realpath25(options.pluginRoot) !== options.pluginRoot || await realpath25(options.assetsRoot) !== options.assetsRoot) {
     refuse22();
   }
   const manifestIdentity = reviewedCompatibilityManifestFingerprint();
@@ -137509,16 +137829,16 @@ async function verifyCurrentPcbDiagnosticFacade(options) {
     "Diagnostic startup facade identity"
   );
   await verifyFacadeHelper(path5.posix.join(options.pluginRoot, ORDINARY_LAUNCH_PROFILE.helper.relativePath));
-  if (canonicalJson(manifestIdentity) !== canonicalJson(reviewedCompatibilityManifestFingerprint()) || await realpath24(options.pluginRoot) !== options.pluginRoot || await realpath24(options.assetsRoot) !== options.assetsRoot) {
+  if (canonicalJson(manifestIdentity) !== canonicalJson(reviewedCompatibilityManifestFingerprint()) || await realpath25(options.pluginRoot) !== options.pluginRoot || await realpath25(options.assetsRoot) !== options.assetsRoot) {
     refuse22();
   }
   return Object.freeze({ ...original2, facadeSha256: actual.sha256 });
 }
 async function verifyFacadeHelper(hostPath) {
-  if (await realpath24(hostPath) !== hostPath) {
+  if (await realpath25(hostPath) !== hostPath) {
     refuse22();
   }
-  const handle11 = await open38(hostPath, constants26.O_RDONLY | constants26.O_NOFOLLOW | constants26.O_NONBLOCK);
+  const handle11 = await open39(hostPath, constants26.O_RDONLY | constants26.O_NOFOLLOW | constants26.O_NONBLOCK);
   try {
     const before = await handle11.stat({ bigint: true });
     if (!before.isFile() || before.nlink !== 1n || before.size < 1n || before.size > 65536n) {
@@ -137533,7 +137853,7 @@ async function verifyFacadeHelper(hostPath) {
       }
       count3 += result.bytesRead;
     }
-    if (count3 !== Number(before.size) || createHash67("sha256").update(buffer.subarray(0, count3)).digest("hex") !== ORDINARY_LAUNCH_PROFILE.helper.sha256 || !sameFacadeHelper(before, await handle11.stat({ bigint: true })) || !sameFacadeHelper(before, await lstat40(hostPath, { bigint: true })) || await realpath24(hostPath) !== hostPath) {
+    if (count3 !== Number(before.size) || createHash67("sha256").update(buffer.subarray(0, count3)).digest("hex") !== ORDINARY_LAUNCH_PROFILE.helper.sha256 || !sameFacadeHelper(before, await handle11.stat({ bigint: true })) || !sameFacadeHelper(before, await lstat41(hostPath, { bigint: true })) || await realpath25(hostPath) !== hostPath) {
       refuse22();
     }
   } finally {
@@ -141349,7 +141669,7 @@ function members(dependency) {
     return descriptor10.value;
   });
 }
-async function observe3(work) {
+async function observe4(work) {
   try {
     await work;
   } catch {
@@ -141528,7 +141848,7 @@ var init_current_pcb_worker_startup_channel = __esm({
           await previous;
           await work();
         })();
-        this.#tail = observe3(next);
+        this.#tail = observe4(next);
         return next;
       }
       #attributed(command2) {
@@ -141654,7 +141974,7 @@ var init_current_pcb_worker_startup_channel = __esm({
             this.#schedulePoll(0);
           }
         });
-        void observe3(queued);
+        void observe4(queued);
         return completion2.promise;
       }
       #complete(pending) {
@@ -141714,7 +142034,7 @@ var init_current_pcb_worker_startup_channel = __esm({
             this.#schedulePoll(20);
           }
         });
-        void observe3(work);
+        void observe4(work);
       }
       #chunk(raw) {
         if (!record18(raw) || types40.isProxy(raw) || Reflect.ownKeys(raw).join(",") !== "bytes" || Object.getPrototypeOf(raw) !== Object.prototype && Object.getPrototypeOf(raw) !== null) {
@@ -141820,7 +142140,7 @@ var init_current_pcb_worker_startup_channel = __esm({
           const result = this.#parentEvent.call(this.#native, event4);
           if (result !== void 0) {
             if (types40.isPromise(result)) {
-              void observe3(result);
+              void observe4(result);
             }
             throw fail17("PARENT_EVENT");
           }
@@ -142781,7 +143101,7 @@ async function bounded4(work, milliseconds4 = REQUEST_MS2) {
     clearTimeout(timer);
   }
 }
-async function observe4(work) {
+async function observe5(work) {
   try {
     await work;
   } catch {
@@ -142953,10 +143273,10 @@ var init_current_pcb_worker_startup_transport = __esm({
           scriptBytes: external_exports.number().int().min(1).max(4 * 1024 * 1024),
           scriptSha256: external_exports.string().regex(/^[a-f\d]{64}$/u)
         }).strict().parse(profile));
-        void observe4(this.#attached.promise);
-        void observe4(this.#armed.promise);
-        void observe4(this.#initialPaused.promise);
-        void observe4(this.#initialResumed.promise);
+        void observe5(this.#attached.promise);
+        void observe5(this.#armed.promise);
+        void observe5(this.#initialPaused.promise);
+        void observe5(this.#initialResumed.promise);
       }
       status() {
         return Object.freeze({
@@ -143111,7 +143431,7 @@ var init_current_pcb_worker_startup_transport = __esm({
           const existing = this.#existingWorkers?.get(worker3.target.targetId);
           if (existing !== void 0) {
             if (worker3.waitingForDebugger) {
-              void observe4(this.#runWaiting(worker3));
+              void observe5(this.#runWaiting(worker3));
               throw failure2("EXISTING_WORKER_PAUSED");
             }
             if (expected3 !== null && worker3.target.title === `project_${expected3.projectUuid}_${expected3.windowTabId}` || this.#sourceUrl(worker3.target.url)) {
@@ -143127,20 +143447,20 @@ var init_current_pcb_worker_startup_transport = __esm({
             throw failure2("WORKER_NOT_WAITING");
           }
           if (this.#worker !== null) {
-            void observe4(this.#runWaiting(worker3));
+            void observe5(this.#runWaiting(worker3));
             throw failure2("EXTRA_WORKER");
           }
           this.#worker = worker3;
           if (!this.#sourceUrl(worker3.target.url)) {
-            void observe4(this.#runWaiting(worker3));
+            void observe5(this.#runWaiting(worker3));
             throw failure2("WORKER_URL");
           }
           if (expected3 !== null && worker3.target.title !== `project_${expected3.projectUuid}_${expected3.windowTabId}`) {
-            void observe4(this.#runWaiting(worker3));
+            void observe5(this.#runWaiting(worker3));
             throw failure2("WORKER_TITLE");
           }
           if (this.#failure !== null) {
-            void observe4(this.#runWaiting(worker3));
+            void observe5(this.#runWaiting(worker3));
             return;
           }
           this.#attached.resolve(worker3);
@@ -143174,11 +143494,11 @@ var init_current_pcb_worker_startup_transport = __esm({
             this.#initialPauseSeen = true;
             this.#initialPauseWatchdog = setTimeout(() => {
               this.#poison("INITIAL_PAUSE_DEADLINE");
-              void observe4(this.cleanup());
+              void observe5(this.cleanup());
             }, PAUSE_MS2);
             this.#initialPaused.resolve(event4.params);
             if (this.#failure !== null) {
-              void observe4(this.#cleanupInitialPause());
+              void observe5(this.#cleanupInitialPause());
             }
             return;
           }
@@ -143315,7 +143635,7 @@ var init_current_pcb_worker_startup_transport = __esm({
           this.#instrumentation = external_exports.object({ breakpointId: token15 }).strict().parse(captureCurrentPcbStringClockReply(raw).value).breakpointId;
           this.#instrumentationUncertain = false;
           if (this.#failure !== null) {
-            void observe4((async () => {
+            void observe5((async () => {
               await this.#removeInitialBreakpoint();
               await this.#runWaiting(worker2);
               if (this.#initialPauseSeen && !this.#initialResumeSeen) {
@@ -143404,7 +143724,7 @@ var init_current_pcb_worker_startup_transport = __esm({
           this.#runner = runner;
           const captured = runner.capture();
           this.#constructionCapture = captured;
-          void observe4(captured);
+          void observe5(captured);
           await runner.whenArmed();
           await this.#removeInitialBreakpoint();
           await this.#current();
@@ -143415,7 +143735,7 @@ var init_current_pcb_worker_startup_transport = __esm({
         } catch (error52) {
           this.#poison("CAPTURE");
           if (this.#constructionCapture !== null) {
-            await observe4(bounded4(this.#constructionCapture, WAIT_MS2));
+            await observe5(bounded4(this.#constructionCapture, WAIT_MS2));
           }
           try {
             await this.cleanup();
@@ -143525,7 +143845,7 @@ function retainedMethods(value2, keys2) {
     return descriptor10.value;
   });
 }
-async function observe5(work) {
+async function observe6(work) {
   try {
     await work;
   } catch {
@@ -143760,7 +144080,7 @@ var init_current_pcb_worker_startup_opening = __esm({
           this.#transport.bindExistingWorkers(targets);
           const capture3 = this.#transport.capture();
           this.#capture = capture3;
-          void observe5(capture3);
+          void observe6(capture3);
           this.#step = "worker-arming";
           await this.#transport.whenArmed();
           await this.#current();
@@ -143815,7 +144135,7 @@ var init_current_pcb_worker_startup_opening = __esm({
             } catch (cleanupError) {
               throw new AggregateError([error52, cleanupError], "PCB_WORKER_STARTUP_OPENING_FAILED", { cause: cleanupError });
             } finally {
-              await observe5(this.#capture);
+              await observe6(this.#capture);
             }
           }
           throw error52;
@@ -144270,7 +144590,7 @@ var init_current_pcb_worker_startup_pcb_session = __esm({
 // server/src/current-pcb-diagnostic-owner.ts
 import { spawn as spawn9 } from "node:child_process";
 import { createHash as createHash70, randomBytes as randomBytes12 } from "node:crypto";
-import { lstat as lstat41, readFile as readFile8, realpath as realpath25 } from "node:fs/promises";
+import { lstat as lstat42, readFile as readFile8, realpath as realpath26 } from "node:fs/promises";
 import process19 from "node:process";
 import { PassThrough as PassThrough2, Writable as Writable2 } from "node:stream";
 import { setTimeout as delay3 } from "node:timers/promises";
@@ -144333,13 +144653,13 @@ async function startFixedOwner(options, purpose) {
     }
   };
   const helperPath = fileURLToPath4(new URL("../../scripts/pcb-diagnostic-owner.ps1", import.meta.url));
-  const before = await lstat41(helperPath);
+  const before = await lstat42(helperPath);
   const verify = async () => {
-    const first = await lstat41(helperPath);
-    if (!first.isFile() || first.isSymbolicLink() || first.nlink !== 1 || first.size !== HELPER_BYTES || first.dev !== before.dev || first.ino !== before.ino || first.size !== before.size || first.mtimeMs !== before.mtimeMs || first.ctimeMs !== before.ctimeMs || await realpath25(helperPath) !== helperPath || createHash70("sha256").update(await readFile8(helperPath)).digest("hex") !== HELPER_SHA256) {
+    const first = await lstat42(helperPath);
+    if (!first.isFile() || first.isSymbolicLink() || first.nlink !== 1 || first.size !== HELPER_BYTES || first.dev !== before.dev || first.ino !== before.ino || first.size !== before.size || first.mtimeMs !== before.mtimeMs || first.ctimeMs !== before.ctimeMs || await realpath26(helperPath) !== helperPath || createHash70("sha256").update(await readFile8(helperPath)).digest("hex") !== HELPER_SHA256) {
       throw error51("HELPER_SOURCE");
     }
-    const after = await lstat41(helperPath);
+    const after = await lstat42(helperPath);
     if (after.dev !== first.dev || after.ino !== first.ino || after.size !== first.size || after.mtimeMs !== first.mtimeMs || after.ctimeMs !== first.ctimeMs) {
       throw error51("HELPER_SOURCE");
     }
@@ -145976,7 +146296,7 @@ var init_current_pcb_diagnostic_owner = __esm({
 });
 
 // server/src/current-pcb-diagnostic-lifecycle.ts
-import { join as join64 } from "node:path";
+import { join as join65 } from "node:path";
 function requireValue16(value2, message) {
   if (!value2) {
     throw new Error(`PCB_DIAGNOSTIC_LIFECYCLE_${message}`);
@@ -146047,7 +146367,7 @@ function publicObservationResult(operationId13, stage, result, published) {
     originalContextsRechecked: value2.originalContextsRechecked,
     summaryOnly: true,
     record: {
-      path: join64(controlDataDirectory(), "pcb-diagnostic-lifecycle-v1", operationId13, "string-precreate-result.json"),
+      path: join65(controlDataDirectory(), "pcb-diagnostic-lifecycle-v1", operationId13, "string-precreate-result.json"),
       published,
       resultSha256: sha256Json(value2),
       resultBytes: Buffer.byteLength(canonicalJson(value2))
@@ -146073,7 +146393,7 @@ function publicStartupActorResult(operationId13, record21, published) {
     sampleCount: samples.length,
     workerUserTextSha256: sha256Text(workerUserText),
     record: {
-      path: join64(controlDataDirectory(), "pcb-diagnostic-lifecycle-v1", operationId13, "worker-startup-actor-result.json"),
+      path: join65(controlDataDirectory(), "pcb-diagnostic-lifecycle-v1", operationId13, "worker-startup-actor-result.json"),
       published,
       sha256: sha256Json(record21),
       bytes: Buffer.byteLength(canonicalJson(record21))
@@ -146093,7 +146413,7 @@ function publicStartupChannelResult(operationId13, record21, published) {
     sampleCount: gateReplies.length,
     gateReplySha256: gateReplies.map((reply3) => sha256Text(reply3)),
     record: {
-      path: join64(controlDataDirectory(), "pcb-diagnostic-lifecycle-v1", operationId13, "worker-startup-channel-result.json"),
+      path: join65(controlDataDirectory(), "pcb-diagnostic-lifecycle-v1", operationId13, "worker-startup-channel-result.json"),
       published,
       sha256: sha256Json(record21),
       bytes: Buffer.byteLength(canonicalJson(record21))
@@ -147334,11 +147654,11 @@ var init_current_pcb_diagnostic_lifecycle = __esm({
           } else if (request13.action === "observe-model-state") {
             result = await retained2.methods.observeModelState.call(retained2.owner);
           } else if (request13.action === "observe-string-precreate") {
-            const observe6 = retained2.methods.observeStringPrecreate;
-            requireValue16(this.#stringPurpose && observe6 !== void 0, "STRING_PURPOSE_REQUIRED");
+            const observe7 = retained2.methods.observeStringPrecreate;
+            requireValue16(this.#stringPurpose && observe7 !== void 0, "STRING_PURPOSE_REQUIRED");
             const before = this.#originalProjectOpening(operation).commonInventory;
             requireValue16(before !== null, "STRING_ORIGINAL_SQL_REQUIRED");
-            result = await observe6.call(retained2.owner, before);
+            result = await observe7.call(retained2.owner, before);
           } else if (request13.action === "observe-pcb-opening") {
             const preparation3 = this.#originalProjectOpening(operation);
             result = await retained2.methods.observePcbOpening.call(retained2.owner, preparation3.sealedTarget, CURRENT_PCB_DIAGNOSTIC_SCRIPTS.pcb);
@@ -147405,8 +147725,8 @@ var init_current_pcb_diagnostic_lifecycle = __esm({
         return { ...describe4(request13.operationId, completed5), stage, result: publicObservationResult(request13.operationId, stage, record21.result, true) };
       }
       async #observeCommonBaseline(request13, operation, operations, retained2) {
-        const failureReader = retained2.methods.retainedCommonBaselineFailure, observe6 = retained2.methods.observeCommonBaseline;
-        requireValue16(this.#stringPurpose && observe6 !== void 0 && failureReader !== void 0, "COMMON_PURPOSE_REQUIRED");
+        const failureReader = retained2.methods.retainedCommonBaselineFailure, observe7 = retained2.methods.observeCommonBaseline;
+        requireValue16(this.#stringPurpose && observe7 !== void 0 && failureReader !== void 0, "COMMON_PURPOSE_REQUIRED");
         requireValue16(
           !this.#observationConsumed.has("common-baseline") && operation.records["common-baseline-intent.json"] === void 0,
           "COMMON_OBSERVATION_CONSUMED"
@@ -147447,7 +147767,7 @@ var init_current_pcb_diagnostic_lifecycle = __esm({
         this.#assertOwner(retained2);
         let result;
         try {
-          result = await observe6.call(retained2.owner, before);
+          result = await observe7.call(retained2.owner, before);
         } catch (caughtError) {
           const rawFailure = failureReader.call(retained2.owner);
           if (rawFailure !== null) {
@@ -148131,8 +148451,8 @@ var init_current_symbol_closed_target_runtime = __esm({
 // server/src/current-symbol-copy-preparation.ts
 import { createHash as createHash71 } from "node:crypto";
 import { constants as constants27 } from "node:fs";
-import { lstat as lstat42, open as open39 } from "node:fs/promises";
-import { basename as basename28, dirname as dirname26, isAbsolute as isAbsolute26, join as join65, relative as relative9, resolve as resolve21, sep as sep7 } from "node:path";
+import { lstat as lstat43, open as open40 } from "node:fs/promises";
+import { basename as basename28, dirname as dirname27, isAbsolute as isAbsolute26, join as join66, relative as relative9, resolve as resolve21, sep as sep7 } from "node:path";
 import process20 from "node:process";
 function need62(condition) {
   if (!condition) {
@@ -148172,14 +148492,14 @@ function plainData(input, depth = 0) {
 function originalReceipt(input) {
   receiptSchema4.parse(plainData(input));
 }
-function sameFile6(before, after) {
+function sameFile7(before, after) {
   return after.isFile() && !after.isSymbolicLink() && before.dev === after.dev && before.ino === after.ino && before.birthtimeNs === after.birthtimeNs && before.uid === after.uid && before.mode === after.mode && before.nlink === after.nlink && before.size === after.size && before.mtimeNs === after.mtimeNs && before.ctimeNs === after.ctimeNs;
 }
 async function noSidecars3(path6) {
   for (const suffix of ["-wal", "-shm", "-journal"]) {
     let absent4 = false;
     try {
-      await lstat42(`${path6}${suffix}`);
+      await lstat43(`${path6}${suffix}`);
     } catch (error52) {
       need62(isRecord(error52) && error52["code"] === "ENOENT");
       absent4 = true;
@@ -148205,21 +148525,21 @@ async function prepareCurrentSymbolCopyCheckpoint(input) {
   const checkpoint = Object.getOwnPropertyDescriptor(input, "checkpoint")?.value;
   originalReceipt(checkpoint);
   const receiptText = canonicalJson(request13.checkpoint), { receiptSha256, ...receiptCore } = request13.checkpoint;
-  need62(receiptSha256 === sha256Json(receiptCore) && request13.checkpoint.sourceDumpSha256 === request13.checkpoint.checkpointDumpSha256 && dirname26(request13.checkpoint.checkpoint) === dirname26(request13.checkpoint.receiptPath) && request13.checkpoint.source !== request13.checkpoint.checkpoint);
-  const checkpointRoot = join65(controlDataDirectory(), "checkpoints"), child = relative9(checkpointRoot, request13.checkpoint.checkpoint);
+  need62(receiptSha256 === sha256Json(receiptCore) && request13.checkpoint.sourceDumpSha256 === request13.checkpoint.checkpointDumpSha256 && dirname27(request13.checkpoint.checkpoint) === dirname27(request13.checkpoint.receiptPath) && request13.checkpoint.source !== request13.checkpoint.checkpoint);
+  const checkpointRoot = join66(controlDataDirectory(), "checkpoints"), child = relative9(checkpointRoot, request13.checkpoint.checkpoint);
   need62(child.length > 0 && child !== ".." && !child.startsWith(`..${sep7}`) && !isAbsolute26(child));
   const root2 = await controlRootCapability(false);
   await root2.assertCurrent();
-  const directory4 = await root2.openDirectory(dirname26(request13.checkpoint.checkpoint), false);
+  const directory4 = await root2.openDirectory(dirname27(request13.checkpoint.checkpoint), false);
   try {
     const boundPath = `/proc/self/fd/${String(directory4.handle.fd)}/${basename28(request13.checkpoint.checkpoint)}`;
     await noSidecars3(boundPath);
-    const expected3 = request13.checkpoint.checkpointIdentity, named = await lstat42(boundPath, { bigint: true });
+    const expected3 = request13.checkpoint.checkpointIdentity, named = await lstat43(boundPath, { bigint: true });
     need62(named.isFile() && !named.isSymbolicLink() && named.nlink === 1n && named.mode % 64n === 0n && named.size > 0n && named.size <= BigInt(maximumBytes) && (typeof process20.getuid !== "function" || named.uid === BigInt(process20.getuid())) && expected3.dev === String(named.dev) && expected3.ino === String(named.ino) && expected3.birthtimeNs === String(named.birthtimeNs) && expected3.ctimeNs === String(named.ctimeNs));
-    const file3 = await open39(boundPath, constants27.O_RDONLY | constants27.O_NOFOLLOW | constants27.O_NONBLOCK);
+    const file3 = await open40(boundPath, constants27.O_RDONLY | constants27.O_NOFOLLOW | constants27.O_NONBLOCK);
     try {
       const before = await file3.stat({ bigint: true });
-      need62(sameFile6(named, before));
+      need62(sameFile7(named, before));
       await root2.assertCurrent();
       await verifyBytes2(file3, before.size, request13.checkpoint.checkpointSha256);
       const history = await readNativeHistoryCheckpoint({
@@ -148260,7 +148580,7 @@ async function prepareCurrentSymbolCopyCheckpoint(input) {
       const result = Object.freeze({ ...body4, preparationSha256: sha256Json(body4) });
       need62(Buffer.byteLength(JSON.stringify(result)) <= 512 * 1024);
       await verifyBytes2(file3, before.size, request13.checkpoint.checkpointSha256);
-      need62(sameFile6(before, await file3.stat({ bigint: true })) && sameFile6(before, await lstat42(boundPath, { bigint: true })));
+      need62(sameFile7(before, await file3.stat({ bigint: true })) && sameFile7(before, await lstat43(boundPath, { bigint: true })));
       const currentDirectory = await root2.openDirectory(directory4.absolute, false);
       try {
         need62(currentDirectory.info.dev === directory4.info.dev && currentDirectory.info.ino === directory4.info.ino);
@@ -149244,8 +149564,8 @@ var init_current_symbol_copy_plan = __esm({
 });
 
 // server/src/current-symbol-baseline-copy.ts
-import { lstat as lstat43 } from "node:fs/promises";
-import { join as join66 } from "node:path";
+import { lstat as lstat44 } from "node:fs/promises";
+import { join as join67 } from "node:path";
 function need67(condition, message) {
   if (!condition) {
     throw new Error(message);
@@ -149306,7 +149626,7 @@ async function revalidateBaselineCopy(engine2, value2, proof) {
   current10();
   const verified = await verifyCheckpoint(value2.checkpoint.receiptPath, {
     expectedSource: value2.copy.source,
-    artifactRoots: [join66(controlDataDirectory(), "checkpoints")],
+    artifactRoots: [join67(controlDataDirectory(), "checkpoints")],
     controlRoot: root2,
     maximumSourceBytes: 268435456
   });
@@ -149319,7 +149639,7 @@ async function revalidateBaselineCopy(engine2, value2, proof) {
   await receiptCurrent();
   current10();
   for (const [path6, identity35] of [[checkpoint.source, checkpoint.sourceIdentity], [checkpoint.checkpoint, checkpoint.checkpointIdentity]]) {
-    const stat3 = await lstat43(path6, { bigint: true });
+    const stat3 = await lstat44(path6, { bigint: true });
     current10();
     need67(
       stat3.isFile() && !stat3.isSymbolicLink() && stat3.nlink === 1n && stat3.dev.toString() === identity35.dev && stat3.ino.toString() === identity35.ino && stat3.birthtimeNs.toString() === identity35.birthtimeNs && stat3.ctimeNs.toString() === identity35.ctimeNs,
@@ -149505,7 +149825,7 @@ async function captureBaselineCopy(engine2, input, onEvidence) {
   await current10();
   const root2 = await controlRootCapability();
   await current10();
-  const outputDir = join66(controlDataDirectory(), "checkpoints");
+  const outputDir = join67(controlDataDirectory(), "checkpoints");
   const policy2 = { expectedSource: sourcePath, artifactRoots: [outputDir], controlRoot: root2, maximumSourceBytes: 268435456 };
   const checkpoint = await createCheckpoint({ source: sourcePath, outputDir, label: `current-symbol-baseline-${owner.operationId.slice(-8)}` }, policy2);
   retain3({ kind: "checkpoint", value: checkpoint });
@@ -149594,7 +149914,7 @@ async function captureBaselineCopy(engine2, input, onEvidence) {
     result = Object.freeze({ ...common5, profile: "private.current-symbol-copy-baseline-copy.v1", owner, preparation: preparation3 });
   } else {
     need67(owner.profile === "private.current-symbol-baseline-owner.v1", "Metadata preparation requires its original metadata owner.");
-    const checkpointInfo = await lstat43(checkpoint.checkpoint, { bigint: true });
+    const checkpointInfo = await lstat44(checkpoint.checkpoint, { bigint: true });
     await current10();
     const preparation3 = await prepareCurrentSymbolMetadata({
       checkpoint: { path: checkpoint.checkpoint, bytes: Number(checkpointInfo.size), sha256: checkpoint.checkpointSha256 },
@@ -149705,7 +150025,7 @@ async function revalidateSnapshot(engine2, snapshot8) {
   const checkpoint = snapshot8.checkpoint;
   const verified = await verifyCheckpoint(checkpoint.receiptPath, {
     expectedSource: checkpoint.source,
-    artifactRoots: [join66(controlDataDirectory(), "checkpoints")],
+    artifactRoots: [join67(controlDataDirectory(), "checkpoints")],
     controlRoot: root2,
     maximumSourceBytes: 268435456
   });
@@ -149717,7 +150037,7 @@ async function revalidateSnapshot(engine2, snapshot8) {
   await receiptCurrent();
   current10();
   for (const [path6, identity35] of [[checkpoint.source, checkpoint.sourceIdentity], [checkpoint.checkpoint, checkpoint.checkpointIdentity]]) {
-    const stat3 = await lstat43(path6, { bigint: true });
+    const stat3 = await lstat44(path6, { bigint: true });
     current10();
     need67(
       stat3.isFile() && !stat3.isSymbolicLink() && stat3.nlink === 1n && stat3.dev.toString() === identity35.dev && stat3.ino.toString() === identity35.ino && stat3.birthtimeNs.toString() === identity35.birthtimeNs && stat3.ctimeNs.toString() === identity35.ctimeNs,
@@ -149805,7 +150125,7 @@ async function captureSnapshot(engine2, input, onEvidence, predecessor) {
   await current10();
   const root2 = await controlRootCapability();
   await current10();
-  const outputDir = join66(controlDataDirectory(), "checkpoints");
+  const outputDir = join67(controlDataDirectory(), "checkpoints");
   const policy2 = { expectedSource: sourcePath, artifactRoots: [outputDir], controlRoot: root2, maximumSourceBytes: 268435456 };
   const checkpoint = await createCheckpoint({ source: sourcePath, outputDir, label: `current-symbol-finish-${baseline2.owner.operationId.slice(-8)}` }, policy2);
   retain3({ kind: "checkpoint", value: checkpoint });
@@ -150031,8 +150351,8 @@ var init_current_symbol_cache_journal = __esm({
 // server/src/current-symbol-preopen-source.ts
 import { createHash as createHash72 } from "node:crypto";
 import { constants as constants28 } from "node:fs";
-import { lstat as lstat44, open as open40 } from "node:fs/promises";
-import { basename as basename29, dirname as dirname27, isAbsolute as isAbsolute27, resolve as resolve22 } from "node:path";
+import { lstat as lstat45, open as open41 } from "node:fs/promises";
+import { basename as basename29, dirname as dirname28, isAbsolute as isAbsolute27, resolve as resolve22 } from "node:path";
 function need69(condition, message) {
   if (!condition) {
     throw new Error(message);
@@ -150041,22 +150361,22 @@ function need69(condition, message) {
 function sameInode2(a, b) {
   return a.dev === b.dev && a.ino === b.ino;
 }
-function sameFile7(a, b) {
+function sameFile8(a, b) {
   return a.isFile() && b.isFile() && !a.isSymbolicLink() && !b.isSymbolicLink() && sameInode2(a, b) && a.size === b.size && a.mtimeNs === b.mtimeNs && a.ctimeNs === b.ctimeNs && a.birthtimeNs === b.birthtimeNs && a.mode === b.mode && a.uid === b.uid && a.gid === b.gid && a.nlink === 1n && b.nlink === 1n;
 }
 async function directory(absolute, current10) {
   const segments3 = absolute.split("/").filter(Boolean);
   need69(segments3.length > 0 && segments3.length <= 64, "Current preopen source directory depth refused.");
   const flags5 = constants28.O_RDONLY | constants28.O_DIRECTORY | constants28.O_NOFOLLOW;
-  let handle11 = await open40("/", flags5);
+  let handle11 = await open41("/", flags5);
   try {
     current10();
     for (const segment2 of segments3) {
       const path6 = `/proc/self/fd/${handle11.fd}/${segment2}`;
-      const before = await lstat44(path6, { bigint: true });
+      const before = await lstat45(path6, { bigint: true });
       current10();
       need69(before.isDirectory() && !before.isSymbolicLink(), "Current preopen source parent is not a real directory.");
-      const child = await open40(path6, flags5);
+      const child = await open41(path6, flags5);
       try {
         current10();
         const info2 = await child.stat({ bigint: true });
@@ -150088,7 +150408,7 @@ async function directory(absolute, current10) {
 }
 async function noSidecars4(path6, current10) {
   for (const suffix of ["-wal", "-shm", "-journal"]) {
-    const absent4 = await lstat44(`${path6}${suffix}`).then(() => false, (error52) => {
+    const absent4 = await lstat45(`${path6}${suffix}`).then(() => false, (error52) => {
       if (error52 instanceof Error && "code" in error52 && error52.code === "ENOENT") {
         return true;
       }
@@ -150160,7 +150480,7 @@ async function verifySource(copy3, current10) {
     process.platform === "linux" && source5.length <= 4096 && isAbsolute27(source5) && resolve22(source5) === source5 && source5.endsWith(".eprj2") && copy3.copy.source === source5 && copy3.copy.sha256 === sourceSha256 && /^[a-f0-9]{64}$/u.test(sourceSha256),
     "Current preopen source requires its canonical original baseline binding."
   );
-  const parent = await directory(dirname27(source5), current10);
+  const parent = await directory(dirname28(source5), current10);
   let file3;
   let observation3;
   let failed = false;
@@ -150170,14 +150490,14 @@ async function verifySource(copy3, current10) {
     const path6 = `/proc/self/fd/${parent.handle.fd}/${basename29(source5)}`;
     await noSidecars4(path6, current10);
     current10();
-    const before = await lstat44(path6, { bigint: true });
+    const before = await lstat45(path6, { bigint: true });
     current10();
     need69(matchesBaseline(before, copy3), "Current preopen source differs from the original baseline identity or size.");
-    file3 = await open40(path6, constants28.O_RDONLY | constants28.O_NOFOLLOW | constants28.O_NONBLOCK);
+    file3 = await open41(path6, constants28.O_RDONLY | constants28.O_NOFOLLOW | constants28.O_NONBLOCK);
     current10();
     const opened = await file3.stat({ bigint: true });
     current10();
-    need69(sameFile7(before, opened), "Current preopen source changed while opening.");
+    need69(sameFile8(before, opened), "Current preopen source changed while opening.");
     const sha256 = await hash41(file3, Number(before.size), current10);
     current10();
     need69(sha256 === sourceSha256, "Current preopen source hash differs from the original baseline.");
@@ -150194,10 +150514,10 @@ async function verifySource(copy3, current10) {
     current10();
     const after = await file3.stat({ bigint: true });
     current10();
-    const named = await lstat44(path6, { bigint: true });
+    const named = await lstat45(path6, { bigint: true });
     current10();
     need69(
-      sameInode2(parent.info, parentAfter) && sameFile7(before, after) && sameFile7(before, named),
+      sameInode2(parent.info, parentAfter) && sameFile8(before, after) && sameFile8(before, named),
       "Current preopen source descriptor or path changed during reading."
     );
     observation3 = Object.freeze({
@@ -150781,8 +151101,8 @@ var init_current_aged_sql_head = __esm({
 });
 
 // server/src/current-symbol-clock-evidence.ts
-import { opendir as opendir8 } from "node:fs/promises";
-import { join as join67 } from "node:path";
+import { opendir as opendir9 } from "node:fs/promises";
+import { join as join68 } from "node:path";
 function need73(condition) {
   if (!condition) {
     throw new Error("Current symbol clock sidecar inspection refused.");
@@ -150819,14 +151139,14 @@ async function inspectCurrentSymbolClockEvidence(operationId13) {
   }
   try {
     const names2 = /* @__PURE__ */ new Set();
-    const entries6 = await opendir8(`/proc/self/fd/${directory4.handle.fd}`);
+    const entries6 = await opendir9(`/proc/self/fd/${directory4.handle.fd}`);
     for await (const entry of entries6) {
       need73(entry.isFile() && EVIDENCE_NAMES.has(entry.name) && !names2.has(entry.name) && names2.size < EVIDENCE_NAMES.size);
       names2.add(entry.name);
     }
     const artifacts = [];
     for (const name6 of [...names2].toSorted()) {
-      const page = await readArtifact(join67(directory4.absolute, name6), 0, MAX_ARTIFACT_BYTES);
+      const page = await readArtifact(join68(directory4.absolute, name6), 0, MAX_ARTIFACT_BYTES);
       need73(page.eof && page.size > 0 && page.size <= MAX_ARTIFACT_BYTES && page.bytesRead === page.size);
       const descriptor10 = Object.freeze({ path: page.path, bytes: page.size, sha256: sha256Text(page.text) });
       const exact22 = await readExactUtf8Artifact(descriptor10);
@@ -150867,7 +151187,7 @@ var init_current_symbol_clock_evidence = __esm({
 
 // server/src/current-aged-sql-reference.ts
 import { randomBytes as randomBytes13 } from "node:crypto";
-import { join as join68 } from "node:path";
+import { join as join69 } from "node:path";
 function need74(condition, message = "Current aged SQL reference refused.") {
   if (!condition) {
     throw new Error(message);
@@ -150986,7 +151306,7 @@ var init_current_aged_sql_reference = __esm({
         need74(canonicalJson(await loadOperation(journalOperationId)) === journalText);
         unchanged5();
         const evidenceId = currentSymbolClockEvidenceId(operationId13);
-        const resultPath = join68(operationPath(evidenceId).slice(0, -5), "00-current-aged-reference-result.json");
+        const resultPath = join69(operationPath(evidenceId).slice(0, -5), "00-current-aged-reference-result.json");
         const intentArtifact = Object.freeze(await writePhaseArtifact(evidenceId, 0, "current-aged-reference-intent", {
           profile: "private.current-aged-sql-reference-intent.v1",
           binding: binding10,
@@ -151185,10 +151505,10 @@ async function collectCurrentAgedSqlClock(engine2, generation5, reference3) {
   collections.set(generation5, collection);
   const evidenceId = currentSymbolClockEvidenceId(generation5.operationId);
   try {
-    const observe6 = engine2.freshClockObservationForClosedCapture;
+    const observe7 = engine2.freshClockObservationForClosedCapture;
     const call = engine2.upstream.callTool;
     const unchanged5 = () => {
-      need76(assertCurrentProjectOnlySymbolGeneration(generation5, engine2, scopeText) === source5 && assertOriginalCurrentAgedSqlReference(reference3, engine2, source5.baseline) === reference3 && engine2.upstream.currentAuthenticatedBridgeDispatchBinding === scopeReader && canonicalJson(scopeReader.call(engine2.upstream)) === scopeText && engine2.freshClockObservationForClosedCapture === observe6 && engine2.upstream.callTool === call);
+      need76(assertCurrentProjectOnlySymbolGeneration(generation5, engine2, scopeText) === source5 && assertOriginalCurrentAgedSqlReference(reference3, engine2, source5.baseline) === reference3 && engine2.upstream.currentAuthenticatedBridgeDispatchBinding === scopeReader && canonicalJson(scopeReader.call(engine2.upstream)) === scopeText && engine2.freshClockObservationForClosedCapture === observe7 && engine2.upstream.callTool === call);
     };
     unchanged5();
     await revalidateCurrentProjectOnlySymbolGeneration(generation5, engine2, scopeText);
@@ -151223,13 +151543,13 @@ async function collectCurrentAgedSqlClock(engine2, generation5, reference3) {
     unchanged5();
     await readExactUtf8Artifact(intent);
     unchanged5();
-    const before = await observe6.call(engine2, source5.capture);
+    const before = await observe7.call(engine2, source5.capture);
     collection.before = before;
     unchanged5();
     const raw = await call.call(engine2.upstream, "easyeda_execute", { code, timeoutMs: 15e3, confirmWrite: true }, 25e3);
     collection.raw = raw;
     unchanged5();
-    const after = await observe6.call(engine2, source5.capture);
+    const after = await observe7.call(engine2, source5.capture);
     collection.after = after;
     unchanged5();
     collection.resultPublicationAttempted = true;
@@ -153218,9 +153538,9 @@ var init_current_symbol_writer_runtime = __esm({
         if (prior === void 0 && dispatch === void 0 && authority2 === void 0 && !journal.orphanedCallPossible) {
           return;
         }
-        const observe6 = this.engine.upstream.assertClosedAuthenticatedBridgeDispatchReleased;
-        need80(prior !== void 0 && dispatch !== void 0 && authority2 !== void 0 && observe6 !== void 0 && canonicalJson(prior) === canonicalJson(original2.capture.bridgeSession) && authority2.processes.some((process22) => canonicalJson(process22) === canonicalJson(original2.launch.root)) && authority2.processes.every((process22) => process22.startIdentity.endsWith(`:job:${original2.launch.jobId}`)));
-        const closed = observe6.call(this.engine.upstream, dispatch, prior);
+        const observe7 = this.engine.upstream.assertClosedAuthenticatedBridgeDispatchReleased;
+        need80(prior !== void 0 && dispatch !== void 0 && authority2 !== void 0 && observe7 !== void 0 && canonicalJson(prior) === canonicalJson(original2.capture.bridgeSession) && authority2.processes.some((process22) => canonicalJson(process22) === canonicalJson(original2.launch.root)) && authority2.processes.every((process22) => process22.startIdentity.endsWith(`:job:${original2.launch.jobId}`)));
+        const closed = observe7.call(this.engine.upstream, dispatch, prior);
         need80(isRecord(closed) && closed["sessionId"] === prior.sessionId && closed["sequence"] === prior.sequence && closed["authenticationReceiptSha256"] === prior.authenticationReceiptSha256 && closed["authenticatedAtEpochMs"] === prior.authenticatedAtEpochMs && typeof closed["closedAtEpochMs"] === "number" && Number.isSafeInteger(closed["closedAtEpochMs"]) && closed["closedAtEpochMs"] >= prior.authenticatedAtEpochMs);
       }
       inspect(operationId13) {
@@ -154537,9 +154857,9 @@ var init_current_symbol_verification_runtime = __esm({
         if (prior === void 0 && dispatch === void 0 && authority2 === void 0 && !journal.orphanedCallPossible) {
           return;
         }
-        const observe6 = this.engine.upstream.assertClosedAuthenticatedBridgeDispatchReleased;
-        need83(prior !== void 0 && dispatch !== void 0 && authority2 !== void 0 && observe6 !== void 0 && canonicalJson(prior) === canonicalJson(capture3.bridgeSession) && authority2.processes.some((process22) => canonicalJson(process22) === canonicalJson(launch.root)) && authority2.processes.every((process22) => process22.startIdentity.endsWith(`:job:${launch.jobId}`)));
-        const closed = observe6.call(this.engine.upstream, dispatch, prior);
+        const observe7 = this.engine.upstream.assertClosedAuthenticatedBridgeDispatchReleased;
+        need83(prior !== void 0 && dispatch !== void 0 && authority2 !== void 0 && observe7 !== void 0 && canonicalJson(prior) === canonicalJson(capture3.bridgeSession) && authority2.processes.some((process22) => canonicalJson(process22) === canonicalJson(launch.root)) && authority2.processes.every((process22) => process22.startIdentity.endsWith(`:job:${launch.jobId}`)));
+        const closed = observe7.call(this.engine.upstream, dispatch, prior);
         need83(isRecord(closed) && closed["sessionId"] === prior.sessionId && closed["sequence"] === prior.sequence && closed["authenticationReceiptSha256"] === prior.authenticationReceiptSha256 && closed["authenticatedAtEpochMs"] === prior.authenticatedAtEpochMs && typeof closed["closedAtEpochMs"] === "number" && Number.isSafeInteger(closed["closedAtEpochMs"]) && closed["closedAtEpochMs"] >= prior.authenticatedAtEpochMs);
       }
       inspect(operationId13) {
@@ -154553,7 +154873,7 @@ var init_current_symbol_verification_runtime = __esm({
 });
 
 // server/src/current-symbol-inverse-owner.ts
-import { lstat as lstat45 } from "node:fs/promises";
+import { lstat as lstat46 } from "node:fs/promises";
 function need84(value2) {
   if (!value2) {
     throw new Error("Current symbol inverse requires its original successful verification result.");
@@ -154626,7 +154946,7 @@ async function prepareCurrentSymbolInverseOwner(engine2, predecessor) {
     operationId: `inverse-${sha256Json({ operationId: predecessor.operationId, snapshot: snapshot8.copy.receiptSha256 })}`,
     openingOperationId: predecessor.operationId
   });
-  const stat3 = await lstat45(snapshot8.checkpoint.checkpoint, { bigint: true });
+  const stat3 = await lstat46(snapshot8.checkpoint.checkpoint, { bigint: true });
   await result.revalidateClosed();
   const checkpointPreparation = await prepareCurrentInverseSymbolMetadata({
     checkpoint: {
@@ -154670,7 +154990,7 @@ var init_current_symbol_inverse_owner = __esm({
 
 // server/src/current-copy-aged-sql-reference.ts
 import { randomBytes as randomBytes14 } from "node:crypto";
-import { join as join69 } from "node:path";
+import { join as join70 } from "node:path";
 function need85(condition, message = "Current aged SQL reference refused.") {
   if (!condition) {
     throw new Error(message);
@@ -154789,7 +155109,7 @@ var init_current_copy_aged_sql_reference = __esm({
         need85(canonicalJson(await loadOperation(journalOperationId)) === journalText);
         unchanged5();
         const evidenceId = currentSymbolClockEvidenceId(operationId13);
-        const resultPath = join69(operationPath(evidenceId).slice(0, -5), "00-current-aged-reference-result.json");
+        const resultPath = join70(operationPath(evidenceId).slice(0, -5), "00-current-aged-reference-result.json");
         const intentArtifact = Object.freeze(await writePhaseArtifact(evidenceId, 0, "current-aged-reference-intent", {
           profile: "private.current-aged-sql-reference-intent.v1",
           binding: binding10,
@@ -154929,10 +155249,10 @@ async function collectCurrentCopyAgedSqlClock(engine2, generation5, reference3) 
   collections4.set(generation5, collection);
   const evidenceId = currentSymbolClockEvidenceId(generation5.operationId);
   try {
-    const observe6 = engine2.freshClockObservationForClosedCapture;
+    const observe7 = engine2.freshClockObservationForClosedCapture;
     const call = engine2.upstream.callTool;
     const unchanged5 = () => {
-      need86(assertCurrentProjectOnlySymbolCopyGeneration(generation5, engine2, scopeText) === source5 && assertOriginalCurrentCopyAgedSqlReference(reference3, engine2, source5.baseline) === reference3 && engine2.upstream.currentAuthenticatedBridgeDispatchBinding === scopeReader && canonicalJson(scopeReader.call(engine2.upstream)) === scopeText && engine2.freshClockObservationForClosedCapture === observe6 && engine2.upstream.callTool === call);
+      need86(assertCurrentProjectOnlySymbolCopyGeneration(generation5, engine2, scopeText) === source5 && assertOriginalCurrentCopyAgedSqlReference(reference3, engine2, source5.baseline) === reference3 && engine2.upstream.currentAuthenticatedBridgeDispatchBinding === scopeReader && canonicalJson(scopeReader.call(engine2.upstream)) === scopeText && engine2.freshClockObservationForClosedCapture === observe7 && engine2.upstream.callTool === call);
     };
     unchanged5();
     await revalidateCurrentProjectOnlySymbolCopyGeneration(generation5, engine2, scopeText);
@@ -154967,13 +155287,13 @@ async function collectCurrentCopyAgedSqlClock(engine2, generation5, reference3) 
     unchanged5();
     await readExactUtf8Artifact(intent);
     unchanged5();
-    const before = await observe6.call(engine2, source5.capture);
+    const before = await observe7.call(engine2, source5.capture);
     collection.before = before;
     unchanged5();
     const raw = await call.call(engine2.upstream, "easyeda_execute", { code, timeoutMs: 15e3, confirmWrite: true }, 25e3);
     collection.raw = raw;
     unchanged5();
-    const after = await observe6.call(engine2, source5.capture);
+    const after = await observe7.call(engine2, source5.capture);
     collection.after = after;
     unchanged5();
     collection.resultPublicationAttempted = true;
@@ -159386,7 +159706,7 @@ function decodeCurrentSymbolCopySavedReadReply(raw, original2, input) {
   }
   return Object.freeze(result);
 }
-var actorSchema3, targetSchema17, versionSchema2, beforeSchema5, currentSymbolCopySavedReadRequestSchema, observationSchema7, resultSchema9;
+var actorSchema3, targetSchema17, versionSchema3, beforeSchema5, currentSymbolCopySavedReadRequestSchema, observationSchema7, resultSchema9;
 var init_current_symbol_copy_saved_read_program = __esm({
   "server/src/current-symbol-copy-saved-read-program.ts"() {
     init_zod();
@@ -159405,8 +159725,8 @@ var init_current_symbol_copy_saved_read_program = __esm({
       nickname: external_exports.string().max(ACTOR_NAME_MAX_CODE_UNITS)
     }).strict();
     targetSchema17 = currentSavedSymbolReadRequestSchema.shape.target.extend({ symbolUuid: external_exports.string().regex(/^[a-f0-9]{16}$/u) }).strict();
-    versionSchema2 = external_exports.string().regex(/^[1-9][0-9]{0,15}$/u).refine((value2) => Number.isSafeInteger(Number(value2)) && Number(value2) <= 864e13);
-    beforeSchema5 = currentSavedSymbolReadRequestSchema.shape.expectedBefore.extend({ source: external_exports.literal(""), version: versionSchema2 }).strict();
+    versionSchema3 = external_exports.string().regex(/^[1-9][0-9]{0,15}$/u).refine((value2) => Number.isSafeInteger(Number(value2)) && Number(value2) <= 864e13);
+    beforeSchema5 = currentSavedSymbolReadRequestSchema.shape.expectedBefore.extend({ source: external_exports.literal(""), version: versionSchema3 }).strict();
     currentSymbolCopySavedReadRequestSchema = external_exports.object({
       target: targetSchema17,
       expectedBefore: beforeSchema5,
@@ -160800,9 +161120,9 @@ var init_current_symbol_copy_writer_runtime = __esm({
         if (prior === void 0 && dispatch === void 0 && authority2 === void 0 && !journal.orphanedCallPossible) {
           return;
         }
-        const observe6 = this.engine.upstream.assertClosedAuthenticatedBridgeDispatchReleased;
-        need94(prior !== void 0 && dispatch !== void 0 && authority2 !== void 0 && observe6 !== void 0 && canonicalJson(prior) === canonicalJson(original2.capture.bridgeSession) && authority2.processes.some((process22) => canonicalJson(process22) === canonicalJson(original2.launch.root)) && authority2.processes.every((process22) => process22.startIdentity.endsWith(`:job:${original2.launch.jobId}`)));
-        const closed = observe6.call(this.engine.upstream, dispatch, prior);
+        const observe7 = this.engine.upstream.assertClosedAuthenticatedBridgeDispatchReleased;
+        need94(prior !== void 0 && dispatch !== void 0 && authority2 !== void 0 && observe7 !== void 0 && canonicalJson(prior) === canonicalJson(original2.capture.bridgeSession) && authority2.processes.some((process22) => canonicalJson(process22) === canonicalJson(original2.launch.root)) && authority2.processes.every((process22) => process22.startIdentity.endsWith(`:job:${original2.launch.jobId}`)));
+        const closed = observe7.call(this.engine.upstream, dispatch, prior);
         need94(isRecord(closed) && closed["sessionId"] === prior.sessionId && closed["sequence"] === prior.sequence && closed["authenticationReceiptSha256"] === prior.authenticationReceiptSha256 && closed["authenticatedAtEpochMs"] === prior.authenticatedAtEpochMs && typeof closed["closedAtEpochMs"] === "number" && Number.isSafeInteger(closed["closedAtEpochMs"]) && closed["closedAtEpochMs"] >= prior.authenticatedAtEpochMs);
       }
       inspect(operationId13) {
@@ -161903,9 +162223,9 @@ var init_current_symbol_copy_verification_runtime = __esm({
         if (prior === void 0 && dispatch === void 0 && authority2 === void 0 && !journal.orphanedCallPossible) {
           return;
         }
-        const observe6 = this.engine.upstream.assertClosedAuthenticatedBridgeDispatchReleased;
-        need97(prior !== void 0 && dispatch !== void 0 && authority2 !== void 0 && observe6 !== void 0 && canonicalJson(prior) === canonicalJson(capture3.bridgeSession) && authority2.processes.some((process22) => canonicalJson(process22) === canonicalJson(launch.root)) && authority2.processes.every((process22) => process22.startIdentity.endsWith(`:job:${launch.jobId}`)));
-        const closed = observe6.call(this.engine.upstream, dispatch, prior);
+        const observe7 = this.engine.upstream.assertClosedAuthenticatedBridgeDispatchReleased;
+        need97(prior !== void 0 && dispatch !== void 0 && authority2 !== void 0 && observe7 !== void 0 && canonicalJson(prior) === canonicalJson(capture3.bridgeSession) && authority2.processes.some((process22) => canonicalJson(process22) === canonicalJson(launch.root)) && authority2.processes.every((process22) => process22.startIdentity.endsWith(`:job:${launch.jobId}`)));
+        const closed = observe7.call(this.engine.upstream, dispatch, prior);
         need97(isRecord(closed) && closed["sessionId"] === prior.sessionId && closed["sequence"] === prior.sequence && closed["authenticationReceiptSha256"] === prior.authenticationReceiptSha256 && closed["authenticatedAtEpochMs"] === prior.authenticatedAtEpochMs && typeof closed["closedAtEpochMs"] === "number" && Number.isSafeInteger(closed["closedAtEpochMs"]) && closed["closedAtEpochMs"] >= prior.authenticatedAtEpochMs);
       }
       inspect(operationId13) {
@@ -165198,8 +165518,8 @@ var init_current_pcb_rename_preflight_runtime = __esm({
 });
 
 // server/src/current-pcb-rename-owner-baseline.ts
-import { lstat as lstat46 } from "node:fs/promises";
-import { join as join70 } from "node:path";
+import { lstat as lstat47 } from "node:fs/promises";
+import { join as join71 } from "node:path";
 import { types as types46 } from "node:util";
 function need99(condition, message) {
   if (!condition) {
@@ -165286,7 +165606,7 @@ async function verifyReceipt(checkpoint, current10) {
   need99(receipt2.eof && canonicalJson(JSON.parse(receipt2.text)) === canonicalJson(checkpoint), "checkpoint receipt changed");
   const verified = await verifyCheckpoint(checkpoint.receiptPath, {
     expectedSource: checkpoint.source,
-    artifactRoots: [join70(controlDataDirectory(), "checkpoints")],
+    artifactRoots: [join71(controlDataDirectory(), "checkpoints")],
     controlRoot: root2,
     maximumSourceBytes: 268435456
   });
@@ -165296,7 +165616,7 @@ async function verifyReceipt(checkpoint, current10) {
     "closed source/checkpoint or complete logical dump changed"
   );
   for (const [path6, identity35] of [[checkpoint.source, checkpoint.sourceIdentity], [checkpoint.checkpoint, checkpoint.checkpointIdentity]]) {
-    const stat3 = await lstat46(path6, { bigint: true });
+    const stat3 = await lstat47(path6, { bigint: true });
     await current10();
     need99(stat3.isFile() && !stat3.isSymbolicLink() && stat3.nlink === 1n && stat3.dev.toString() === identity35.dev && stat3.ino.toString() === identity35.ino && stat3.birthtimeNs.toString() === identity35.birthtimeNs && stat3.ctimeNs.toString() === identity35.ctimeNs, "source/checkpoint file identity changed");
   }
@@ -165361,7 +165681,7 @@ async function captureCurrentPcbRenameBaseline(engine2, input, onEvidence) {
   await current10();
   const root2 = await controlRootCapability();
   await current10();
-  const outputDir = join70(controlDataDirectory(), "checkpoints");
+  const outputDir = join71(controlDataDirectory(), "checkpoints");
   const checkpoint = await createCheckpoint(
     { source: sourcePath, outputDir, label: `current-pcb-baseline-${input.owner.operationId.slice(-8)}` },
     { expectedSource: sourcePath, artifactRoots: [outputDir], controlRoot: root2, maximumSourceBytes: 268435456 }
@@ -165460,7 +165780,7 @@ async function assertClosedClockSidecarsAbsent(value2, engine2) {
   for (const path6 of [value2.checkpoint.source, value2.checkpoint.checkpoint, value2.copy.artifact]) {
     for (const suffix of ["-wal", "-shm", "-journal"]) {
       current10();
-      const absent4 = await lstat46(`${path6}${suffix}`).then(() => false, (error52) => {
+      const absent4 = await lstat47(`${path6}${suffix}`).then(() => false, (error52) => {
         if (error52 instanceof Error && "code" in error52 && error52.code === "ENOENT") {
           return true;
         }
@@ -165535,7 +165855,7 @@ var init_current_pcb_rename_owner_baseline = __esm({
 
 // server/src/current-pcb-aged-sql-reference.ts
 import { randomBytes as randomBytes15 } from "node:crypto";
-import { join as join71 } from "node:path";
+import { join as join72 } from "node:path";
 function need100(condition, message = "Current aged SQL reference refused.") {
   if (!condition) {
     throw new Error(message);
@@ -165668,7 +165988,7 @@ var init_current_pcb_aged_sql_reference = __esm({
         need100(canonicalJson(await loadOperation(journalOperationId)) === journalText);
         unchanged5();
         const evidenceId = currentSymbolClockEvidenceId(operationId13);
-        const resultPath = join71(operationPath(evidenceId).slice(0, -5), "00-current-aged-reference-result.json");
+        const resultPath = join72(operationPath(evidenceId).slice(0, -5), "00-current-aged-reference-result.json");
         const intentArtifact = Object.freeze(await writePhaseArtifact(evidenceId, 0, "current-aged-reference-intent", {
           profile: "private.current-pcb-aged-sql-reference-intent.v1",
           binding: binding10,
@@ -166321,8 +166641,8 @@ var init_current_pcb_rename_baseline_runtime = __esm({
 });
 
 // server/src/current-pcb-rename-snapshot.ts
-import { lstat as lstat47 } from "node:fs/promises";
-import { join as join72 } from "node:path";
+import { lstat as lstat48 } from "node:fs/promises";
+import { join as join73 } from "node:path";
 function need102(condition, message) {
   if (!condition) {
     throw new Error(`Current PCB snapshot: ${message}`);
@@ -166352,7 +166672,7 @@ async function verifyReceipt2(checkpoint, current10) {
   need102(receipt2.eof && canonicalJson(JSON.parse(receipt2.text)) === canonicalJson(checkpoint), "checkpoint receipt changed");
   const verified = await verifyCheckpoint(checkpoint.receiptPath, {
     expectedSource: checkpoint.source,
-    artifactRoots: [join72(controlDataDirectory(), "checkpoints")],
+    artifactRoots: [join73(controlDataDirectory(), "checkpoints")],
     controlRoot: root2,
     maximumSourceBytes: 268435456
   });
@@ -166362,7 +166682,7 @@ async function verifyReceipt2(checkpoint, current10) {
     "closed source/checkpoint or complete logical dump changed"
   );
   for (const [path6, identity35] of [[checkpoint.source, checkpoint.sourceIdentity], [checkpoint.checkpoint, checkpoint.checkpointIdentity]]) {
-    const stat3 = await lstat47(path6, { bigint: true });
+    const stat3 = await lstat48(path6, { bigint: true });
     await current10();
     need102(stat3.isFile() && !stat3.isSymbolicLink() && stat3.nlink === 1n && stat3.dev.toString() === identity35.dev && stat3.ino.toString() === identity35.ino && stat3.birthtimeNs.toString() === identity35.birthtimeNs && stat3.ctimeNs.toString() === identity35.ctimeNs, "source/checkpoint identity changed");
   }
@@ -166472,7 +166792,7 @@ async function captureSnapshot2(engine2, input, onEvidence, predecessor) {
   await current10();
   const root2 = await controlRootCapability();
   await current10();
-  const outputDir = join72(controlDataDirectory(), "checkpoints");
+  const outputDir = join73(controlDataDirectory(), "checkpoints");
   const checkpoint = await createCheckpoint(
     { source: sourcePath, outputDir, label: `current-pcb-${phase5}-${baseline2.owner.operationId.slice(-8)}` },
     { expectedSource: sourcePath, artifactRoots: [outputDir], controlRoot: root2, maximumSourceBytes: 268435456 }
@@ -166559,8 +166879,8 @@ var init_current_pcb_rename_snapshot = __esm({
 // server/src/current-pcb-rename-preopen-source.ts
 import { createHash as createHash73 } from "node:crypto";
 import { constants as constants29 } from "node:fs";
-import { lstat as lstat48, open as open41 } from "node:fs/promises";
-import { basename as basename30, dirname as dirname28, isAbsolute as isAbsolute28, resolve as resolve23 } from "node:path";
+import { lstat as lstat49, open as open42 } from "node:fs/promises";
+import { basename as basename30, dirname as dirname29, isAbsolute as isAbsolute28, resolve as resolve23 } from "node:path";
 function need103(condition, message) {
   if (!condition) {
     throw new Error(message);
@@ -166569,22 +166889,22 @@ function need103(condition, message) {
 function sameInode3(a, b) {
   return a.dev === b.dev && a.ino === b.ino;
 }
-function sameFile8(a, b) {
+function sameFile9(a, b) {
   return a.isFile() && b.isFile() && !a.isSymbolicLink() && !b.isSymbolicLink() && sameInode3(a, b) && a.size === b.size && a.mtimeNs === b.mtimeNs && a.ctimeNs === b.ctimeNs && a.birthtimeNs === b.birthtimeNs && a.mode === b.mode && a.uid === b.uid && a.gid === b.gid && a.nlink === 1n && b.nlink === 1n;
 }
 async function directory2(absolute, current10) {
   const segments3 = absolute.split("/").filter(Boolean);
   need103(segments3.length > 0 && segments3.length <= 64, "Current preopen source directory depth refused.");
   const flags5 = constants29.O_RDONLY | constants29.O_DIRECTORY | constants29.O_NOFOLLOW;
-  let handle11 = await open41("/", flags5);
+  let handle11 = await open42("/", flags5);
   try {
     current10();
     for (const segment2 of segments3) {
       const path6 = `/proc/self/fd/${handle11.fd}/${segment2}`;
-      const before = await lstat48(path6, { bigint: true });
+      const before = await lstat49(path6, { bigint: true });
       current10();
       need103(before.isDirectory() && !before.isSymbolicLink(), "Current preopen source parent is not a real directory.");
-      const child = await open41(path6, flags5);
+      const child = await open42(path6, flags5);
       try {
         current10();
         const info2 = await child.stat({ bigint: true });
@@ -166616,7 +166936,7 @@ async function directory2(absolute, current10) {
 }
 async function noSidecars5(path6, current10) {
   for (const suffix of ["-wal", "-shm", "-journal"]) {
-    const absent4 = await lstat48(`${path6}${suffix}`).then(() => false, (error52) => {
+    const absent4 = await lstat49(`${path6}${suffix}`).then(() => false, (error52) => {
       if (error52 instanceof Error && "code" in error52 && error52.code === "ENOENT") {
         return true;
       }
@@ -166671,7 +166991,7 @@ async function verifySource2(copy3, current10) {
     process.platform === "linux" && source5.length <= 4096 && isAbsolute28(source5) && resolve23(source5) === source5 && source5.endsWith(".eprj2") && copy3.copy.source === source5 && copy3.copy.sha256 === sourceSha256 && /^[a-f0-9]{64}$/u.test(sourceSha256),
     "Current preopen source requires its canonical original baseline binding."
   );
-  const parent = await directory2(dirname28(source5), current10);
+  const parent = await directory2(dirname29(source5), current10);
   let file3;
   let observation3;
   let failed = false;
@@ -166681,14 +167001,14 @@ async function verifySource2(copy3, current10) {
     const path6 = `/proc/self/fd/${parent.handle.fd}/${basename30(source5)}`;
     await noSidecars5(path6, current10);
     current10();
-    const before = await lstat48(path6, { bigint: true });
+    const before = await lstat49(path6, { bigint: true });
     current10();
     need103(matchesBaseline2(before, copy3), "Current preopen source differs from the original baseline identity or size.");
-    file3 = await open41(path6, constants29.O_RDONLY | constants29.O_NOFOLLOW | constants29.O_NONBLOCK);
+    file3 = await open42(path6, constants29.O_RDONLY | constants29.O_NOFOLLOW | constants29.O_NONBLOCK);
     current10();
     const opened = await file3.stat({ bigint: true });
     current10();
-    need103(sameFile8(before, opened), "Current preopen source changed while opening.");
+    need103(sameFile9(before, opened), "Current preopen source changed while opening.");
     const sha256 = await hash43(file3, Number(before.size), current10);
     current10();
     need103(sha256 === sourceSha256, "Current preopen source hash differs from the original baseline.");
@@ -166705,10 +167025,10 @@ async function verifySource2(copy3, current10) {
     current10();
     const after = await file3.stat({ bigint: true });
     current10();
-    const named = await lstat48(path6, { bigint: true });
+    const named = await lstat49(path6, { bigint: true });
     current10();
     need103(
-      sameInode3(parent.info, parentAfter) && sameFile8(before, after) && sameFile8(before, named),
+      sameInode3(parent.info, parentAfter) && sameFile9(before, after) && sameFile9(before, named),
       "Current preopen source descriptor or path changed during reading."
     );
     observation3 = Object.freeze({
@@ -167186,14 +167506,14 @@ var init_current_pcb_rename_generation_runtime = __esm({
         need104(typeof acceptUnqualifiedSchematicStartupEffects === "boolean", "opening-effect acknowledgement must be boolean");
         return this.observe(operationId13, true, acceptUnqualifiedSchematicStartupEffects);
       }
-      async observe(operationId13, open43, acceptEffects) {
+      async observe(operationId13, open44, acceptEffects) {
         const slot = this.slots.get(operationId13);
-        need104(!this.busy && slot !== void 0 && slot.admitted && slot.source !== void 0 && slot.capture !== void 0 && slot.launch !== void 0 && (open43 ? slot.journal.state === "caches-observed" && slot.cacheObservation !== void 0 && !slot.openAttempted : slot.journal.state === "admitted" && !slot.cacheAttempted), "original unused observation is unavailable");
+        need104(!this.busy && slot !== void 0 && slot.admitted && slot.source !== void 0 && slot.capture !== void 0 && slot.launch !== void 0 && (open44 ? slot.journal.state === "caches-observed" && slot.cacheObservation !== void 0 && !slot.openAttempted : slot.journal.state === "admitted" && !slot.cacheAttempted), "original unused observation is unavailable");
         this.busy = true;
         const { source: source5, capture: capture3, launch } = slot, baseline2 = slot.closed.baseline;
         try {
           await this.captureCurrent(slot);
-          const premises = open43 ? await assessCurrentStartupPremises({
+          const premises = open44 ? await assessCurrentStartupPremises({
             inventory: baseline2.inventory,
             sourceSha256: baseline2.copy.sha256,
             checkpointSha256: baseline2.copy.sha256,
@@ -167203,7 +167523,7 @@ var init_current_pcb_rename_generation_runtime = __esm({
           }) : void 0;
           await this.captureCurrent(slot);
           need104(premises === void 0 || premises.historicalSubsetSatisfied || acceptEffects && premises.activeSchematicPages > 0 && premises.blockers.length === 1 && premises.blockers[0] === "active-schematic-pages", "startup prerequisites require unsupported opening effects");
-          if (open43) {
+          if (open44) {
             slot.openAttempted = true;
           } else {
             slot.cacheAttempted = true;
@@ -167212,9 +167532,9 @@ var init_current_pcb_rename_generation_runtime = __esm({
           await this.captureCurrent(slot);
           const target9 = { ...source5.target, expectedSourceSha256: baseline2.copy.sha256 };
           const cacheTarget = { projectUuid: target9.projectUuid, branchUuid: target9.branchUuid };
-          const phase5 = open43 ? OPEN_PHASE2 : CACHE_PHASE2, timeout = open43 ? CURRENT_PROJECT_ONLY_OPEN_TIMEOUT_MS : CURRENT_UPLOAD_QUEUE_TIMEOUT_MS;
-          const code = open43 ? buildCurrentProjectOnlyOpenProgram(target9) : buildCurrentUploadQueueReadProgram(cacheTarget);
-          const verify = open43 ? verifyCurrentProjectOnlyOpenImplementation : verifyCurrentDisposableOpenImplementation;
+          const phase5 = open44 ? OPEN_PHASE2 : CACHE_PHASE2, timeout = open44 ? CURRENT_PROJECT_ONLY_OPEN_TIMEOUT_MS : CURRENT_UPLOAD_QUEUE_TIMEOUT_MS;
+          const code = open44 ? buildCurrentProjectOnlyOpenProgram(target9) : buildCurrentUploadQueueReadProgram(cacheTarget);
+          const verify = open44 ? verifyCurrentProjectOnlyOpenImplementation : verifyCurrentDisposableOpenImplementation;
           const scope6 = this.engine.upstream.withAuthenticatedBridgeDispatchScope;
           need104(scope6 !== void 0, "observation scope is absent");
           let completed5 = false;
@@ -167230,12 +167550,12 @@ var init_current_pcb_rename_generation_runtime = __esm({
             assertSubset(fingerprint, source5.expectedFingerprint, "PCB generation runtime");
             await verify(fingerprint.installedBundles.assetsRoot);
             await this.captureCurrent(slot, scopeText);
-            if (open43) {
+            if (open44) {
               slot.preopen = await verifyCurrentPcbRenamePreopenSource(this.engine, baseline2);
               await this.captureCurrent(slot, scopeText);
             }
-            slot.journal.state = open43 ? "project-only-dispatching" : "cache-dispatching";
-            if (open43) {
+            slot.journal.state = open44 ? "project-only-dispatching" : "cache-dispatching";
+            if (open44) {
               slot.journal.mutationMayHaveOccurred = true;
             }
             await _CurrentPcbRenameGenerationCoordinator.record(slot, `${phase5}-intent`, {
@@ -167243,7 +167563,7 @@ var init_current_pcb_rename_generation_runtime = __esm({
               programSha256: sha256Json({ code }),
               preopenSource: slot.preopen ?? null,
               startupPremises: premises ?? null,
-              unqualifiedSchematicStartupEffectsAccepted: open43 && acceptEffects,
+              unqualifiedSchematicStartupEffectsAccepted: open44 && acceptEffects,
               startupQualified: false,
               executionAuthorized: false
             });
@@ -167254,7 +167574,7 @@ var init_current_pcb_rename_generation_runtime = __esm({
               slot.journal,
               phase5,
               "easyeda_execute",
-              { code, timeoutMs: timeout + (open43 ? 0 : 5e3), confirmWrite: true },
+              { code, timeoutMs: timeout + (open44 ? 0 : 5e3), confirmWrite: true },
               timeout + 15e3,
               async () => {
                 slot.current(scopeText);
@@ -167266,7 +167586,7 @@ var init_current_pcb_rename_generation_runtime = __esm({
                 slot.journalText = text49;
                 marked2 = structuredClone(slot.journal);
                 const clock9 = await this.engine.clockObservationForTrackedDispatch(slot.journal, phase5);
-                if (open43) {
+                if (open44) {
                   slot.openClock = clock9;
                 } else {
                   slot.cacheClock = clock9;
@@ -167276,13 +167596,13 @@ var init_current_pcb_rename_generation_runtime = __esm({
                 await this.captureCurrent(slot, scopeText);
                 await this.engine.assertRecoveryOperationIsolated(operationId13);
                 await this.captureCurrent(slot, scopeText);
-                if (open43) {
+                if (open44) {
                   slot.preopen = await verifyCurrentPcbRenamePreopenSource(this.engine, baseline2);
                   await this.captureCurrent(slot, scopeText);
                 }
               },
               async (raw) => {
-                if (open43) {
+                if (open44) {
                   slot.openRaw = raw;
                   slot.openReplyRetained = true;
                 } else {
@@ -167290,7 +167610,7 @@ var init_current_pcb_rename_generation_runtime = __esm({
                   slot.cacheReplyRetained = true;
                 }
                 await this.captureCurrent(slot, scopeText);
-                if (open43) {
+                if (open44) {
                   slot.openObservation = decodeCurrentProjectOnlyOpenReply(raw, target9);
                 } else {
                   slot.cacheObservation = decodeCurrentUploadQueueReadReply(raw, cacheTarget);
@@ -167322,22 +167642,22 @@ var init_current_pcb_rename_generation_runtime = __esm({
           });
           need104(completed5, "observation scope did not complete");
           await this.captureCurrent(slot);
-          slot.journal.state = open43 ? "project-only-opened" : "caches-observed";
-          slot.journal.nextSafeAction = open43 ? "Original PCB generation retained. Startup, actor/clock and writer qualification are separate; no edit or Save is authorized." : "Point-in-time inactive caches observed. One separately checked project-only open remains; no editor or writer authority.";
+          slot.journal.state = open44 ? "project-only-opened" : "caches-observed";
+          slot.journal.nextSafeAction = open44 ? "Original PCB generation retained. Startup, actor/clock and writer qualification are separate; no edit or Save is authorized." : "Point-in-time inactive caches observed. One separately checked project-only open remains; no editor or writer authority.";
           await _CurrentPcbRenameGenerationCoordinator.record(slot, `${phase5}-result`, {
-            observation: open43 ? slot.openObservation : slot.cacheObservation,
-            dispatchClock: open43 ? slot.openClock : slot.cacheClock,
+            observation: open44 ? slot.openObservation : slot.cacheObservation,
+            dispatchClock: open44 ? slot.openClock : slot.cacheClock,
             preopenSource: slot.preopen ?? null,
             startupQualified: false,
             executionAuthorized: false
           });
           await this.captureCurrent(slot);
-          if (open43) {
+          if (open44) {
             this.issue(slot);
           }
           return summary13(slot);
         } catch (error52) {
-          return await _CurrentPcbRenameGenerationCoordinator.fail(slot, open43 ? "project-only-open" : "inactive-caches", error52);
+          return await _CurrentPcbRenameGenerationCoordinator.fail(slot, open44 ? "project-only-open" : "inactive-caches", error52);
         } finally {
           this.busy = false;
         }
@@ -168314,10 +168634,10 @@ async function collectCurrentPcbAgedSqlClock(engine2, generation5, reference3, s
   collections8.set(generation5, collection);
   const evidenceId = currentSymbolClockEvidenceId(generation5.operationId);
   try {
-    const observe6 = engine2.freshClockObservationForClosedCapture;
+    const observe7 = engine2.freshClockObservationForClosedCapture;
     const call = engine2.upstream.callTool;
     const unchanged5 = () => {
-      need107(assertCurrentProjectOnlyPcbRenameGeneration(generation5, engine2, scopeText) === source5 && assertOriginalCurrentPcbAgedSqlReference(reference3, engine2, source5.baseline) === reference3 && assertOriginalCurrentPcbRenameStartup(startup2, engine2, generation5) === originalStartup && engine2.upstream.currentAuthenticatedBridgeDispatchBinding === scopeReader && canonicalJson(scopeReader.call(engine2.upstream)) === scopeText && engine2.freshClockObservationForClosedCapture === observe6 && engine2.upstream.callTool === call);
+      need107(assertCurrentProjectOnlyPcbRenameGeneration(generation5, engine2, scopeText) === source5 && assertOriginalCurrentPcbAgedSqlReference(reference3, engine2, source5.baseline) === reference3 && assertOriginalCurrentPcbRenameStartup(startup2, engine2, generation5) === originalStartup && engine2.upstream.currentAuthenticatedBridgeDispatchBinding === scopeReader && canonicalJson(scopeReader.call(engine2.upstream)) === scopeText && engine2.freshClockObservationForClosedCapture === observe7 && engine2.upstream.callTool === call);
     };
     unchanged5();
     await revalidateCurrentProjectOnlyPcbRenameGeneration(generation5, engine2, scopeText);
@@ -168355,13 +168675,13 @@ async function collectCurrentPcbAgedSqlClock(engine2, generation5, reference3, s
     unchanged5();
     await readExactUtf8Artifact(intent);
     unchanged5();
-    const before = await observe6.call(engine2, source5.capture);
+    const before = await observe7.call(engine2, source5.capture);
     collection.before = before;
     unchanged5();
     const raw = await call.call(engine2.upstream, "easyeda_execute", { code, timeoutMs: 15e3, confirmWrite: true }, 25e3);
     collection.raw = raw;
     unchanged5();
-    const after = await observe6.call(engine2, source5.capture);
+    const after = await observe7.call(engine2, source5.capture);
     collection.after = after;
     unchanged5();
     collection.resultPublicationAttempted = true;
@@ -171340,9 +171660,9 @@ var init_current_pcb_rename_writer_runtime = __esm({
         if (prior === void 0 && dispatch === void 0 && authority2 === void 0 && !journal.orphanedCallPossible) {
           return;
         }
-        const observe6 = this.engine.upstream.assertClosedAuthenticatedBridgeDispatchReleased;
-        need117(prior !== void 0 && dispatch !== void 0 && authority2 !== void 0 && observe6 !== void 0 && canonicalJson(prior) === canonicalJson(original2.capture.bridgeSession) && authority2.processes.some((process22) => canonicalJson(process22) === canonicalJson(original2.launch.root)) && authority2.processes.every((process22) => process22.startIdentity.endsWith(`:job:${original2.launch.jobId}`)));
-        const closed = observe6.call(this.engine.upstream, dispatch, prior);
+        const observe7 = this.engine.upstream.assertClosedAuthenticatedBridgeDispatchReleased;
+        need117(prior !== void 0 && dispatch !== void 0 && authority2 !== void 0 && observe7 !== void 0 && canonicalJson(prior) === canonicalJson(original2.capture.bridgeSession) && authority2.processes.some((process22) => canonicalJson(process22) === canonicalJson(original2.launch.root)) && authority2.processes.every((process22) => process22.startIdentity.endsWith(`:job:${original2.launch.jobId}`)));
+        const closed = observe7.call(this.engine.upstream, dispatch, prior);
         need117(isRecord(closed) && closed["sessionId"] === prior.sessionId && closed["sequence"] === prior.sequence && closed["authenticationReceiptSha256"] === prior.authenticationReceiptSha256 && closed["authenticatedAtEpochMs"] === prior.authenticatedAtEpochMs && typeof closed["closedAtEpochMs"] === "number" && Number.isSafeInteger(closed["closedAtEpochMs"]) && closed["closedAtEpochMs"] >= prior.authenticatedAtEpochMs);
       }
       inspect(operationId13) {
@@ -172518,9 +172838,9 @@ var init_current_pcb_rename_verification_runtime = __esm({
         if (prior === void 0 && dispatch === void 0 && authority2 === void 0 && !journal.orphanedCallPossible) {
           return;
         }
-        const observe6 = this.engine.upstream.assertClosedAuthenticatedBridgeDispatchReleased;
-        need120(prior !== void 0 && dispatch !== void 0 && authority2 !== void 0 && observe6 !== void 0 && canonicalJson(prior) === canonicalJson(capture3.bridgeSession) && authority2.processes.some((process22) => canonicalJson(process22) === canonicalJson(launch.root)) && authority2.processes.every((process22) => process22.startIdentity.endsWith(`:job:${launch.jobId}`)));
-        const closed = observe6.call(this.engine.upstream, dispatch, prior);
+        const observe7 = this.engine.upstream.assertClosedAuthenticatedBridgeDispatchReleased;
+        need120(prior !== void 0 && dispatch !== void 0 && authority2 !== void 0 && observe7 !== void 0 && canonicalJson(prior) === canonicalJson(capture3.bridgeSession) && authority2.processes.some((process22) => canonicalJson(process22) === canonicalJson(launch.root)) && authority2.processes.every((process22) => process22.startIdentity.endsWith(`:job:${launch.jobId}`)));
+        const closed = observe7.call(this.engine.upstream, dispatch, prior);
         need120(isRecord(closed) && closed["sessionId"] === prior.sessionId && closed["sequence"] === prior.sequence && closed["authenticationReceiptSha256"] === prior.authenticationReceiptSha256 && closed["authenticatedAtEpochMs"] === prior.authenticatedAtEpochMs && typeof closed["closedAtEpochMs"] === "number" && Number.isSafeInteger(closed["closedAtEpochMs"]) && closed["closedAtEpochMs"] >= prior.authenticatedAtEpochMs);
       }
       inspect(operationId13) {
@@ -172952,8 +173272,8 @@ var init_current_pcb_rename_operation_runtime = __esm({
 });
 
 // server/src/current-schematic-rename-owner-baseline.ts
-import { lstat as lstat49 } from "node:fs/promises";
-import { join as join73 } from "node:path";
+import { lstat as lstat50 } from "node:fs/promises";
+import { join as join74 } from "node:path";
 import { types as types47 } from "node:util";
 function need122(condition, message) {
   if (!condition) {
@@ -173040,7 +173360,7 @@ async function verifyReceipt3(checkpoint, current10) {
   need122(receipt2.eof && canonicalJson(JSON.parse(receipt2.text)) === canonicalJson(checkpoint), "checkpoint receipt changed");
   const verified = await verifyCheckpoint(checkpoint.receiptPath, {
     expectedSource: checkpoint.source,
-    artifactRoots: [join73(controlDataDirectory(), "checkpoints")],
+    artifactRoots: [join74(controlDataDirectory(), "checkpoints")],
     controlRoot: root2,
     maximumSourceBytes: 268435456
   });
@@ -173050,7 +173370,7 @@ async function verifyReceipt3(checkpoint, current10) {
     "closed source/checkpoint or complete logical dump changed"
   );
   for (const [path6, identity35] of [[checkpoint.source, checkpoint.sourceIdentity], [checkpoint.checkpoint, checkpoint.checkpointIdentity]]) {
-    const stat3 = await lstat49(path6, { bigint: true });
+    const stat3 = await lstat50(path6, { bigint: true });
     await current10();
     need122(stat3.isFile() && !stat3.isSymbolicLink() && stat3.nlink === 1n && stat3.dev.toString() === identity35.dev && stat3.ino.toString() === identity35.ino && stat3.birthtimeNs.toString() === identity35.birthtimeNs && stat3.ctimeNs.toString() === identity35.ctimeNs, "source/checkpoint file identity changed");
   }
@@ -173117,7 +173437,7 @@ async function captureCurrentSchematicRenameBaseline(engine2, input, onEvidence)
   await current10();
   const root2 = await controlRootCapability();
   await current10();
-  const outputDir = join73(controlDataDirectory(), "checkpoints");
+  const outputDir = join74(controlDataDirectory(), "checkpoints");
   const checkpoint = await createCheckpoint(
     { source: sourcePath, outputDir, label: `current-schematic-baseline-${input.owner.operationId.slice(-8)}` },
     { expectedSource: sourcePath, artifactRoots: [outputDir], controlRoot: root2, maximumSourceBytes: 268435456 }
@@ -173228,7 +173548,7 @@ async function assertClosedClockSidecarsAbsent2(value2, engine2) {
   for (const path6 of [value2.checkpoint.source, value2.checkpoint.checkpoint, value2.copy.artifact]) {
     for (const suffix of ["-wal", "-shm", "-journal"]) {
       current10();
-      const absent4 = await lstat49(`${path6}${suffix}`).then(() => false, (error52) => {
+      const absent4 = await lstat50(`${path6}${suffix}`).then(() => false, (error52) => {
         if (error52 instanceof Error && "code" in error52 && error52.code === "ENOENT") {
           return true;
         }
@@ -173306,7 +173626,7 @@ var init_current_schematic_rename_owner_baseline = __esm({
 
 // server/src/current-schematic-aged-sql-reference.ts
 import { randomBytes as randomBytes16 } from "node:crypto";
-import { join as join74 } from "node:path";
+import { join as join75 } from "node:path";
 function need123(condition, message = "Current aged SQL reference refused.") {
   if (!condition) {
     throw new Error(message);
@@ -173440,7 +173760,7 @@ var init_current_schematic_aged_sql_reference = __esm({
         need123(canonicalJson(await loadOperation(journalOperationId)) === journalText);
         unchanged5();
         const evidenceId = currentSymbolClockEvidenceId(operationId13);
-        const resultPath = join74(operationPath(evidenceId).slice(0, -5), "00-current-aged-reference-result.json");
+        const resultPath = join75(operationPath(evidenceId).slice(0, -5), "00-current-aged-reference-result.json");
         const intentArtifact = Object.freeze(await writePhaseArtifact(evidenceId, 0, "current-aged-reference-intent", {
           profile: "private.current-schematic-aged-sql-reference-intent.v1",
           binding: binding10,
@@ -174096,8 +174416,8 @@ var init_current_schematic_rename_baseline_runtime = __esm({
 });
 
 // server/src/current-schematic-rename-snapshot.ts
-import { lstat as lstat50 } from "node:fs/promises";
-import { join as join75 } from "node:path";
+import { lstat as lstat51 } from "node:fs/promises";
+import { join as join76 } from "node:path";
 function need125(condition, message) {
   if (!condition) {
     throw new Error(`Current SCH snapshot: ${message}`);
@@ -174128,7 +174448,7 @@ async function verifyReceipt4(checkpoint, current10) {
   need125(receipt2.eof && canonicalJson(JSON.parse(receipt2.text)) === canonicalJson(checkpoint), "checkpoint receipt changed");
   const verified = await verifyCheckpoint(checkpoint.receiptPath, {
     expectedSource: checkpoint.source,
-    artifactRoots: [join75(controlDataDirectory(), "checkpoints")],
+    artifactRoots: [join76(controlDataDirectory(), "checkpoints")],
     controlRoot: root2,
     maximumSourceBytes: 268435456
   });
@@ -174138,7 +174458,7 @@ async function verifyReceipt4(checkpoint, current10) {
     "closed source/checkpoint or complete logical dump changed"
   );
   for (const [path6, identity35] of [[checkpoint.source, checkpoint.sourceIdentity], [checkpoint.checkpoint, checkpoint.checkpointIdentity]]) {
-    const stat3 = await lstat50(path6, { bigint: true });
+    const stat3 = await lstat51(path6, { bigint: true });
     await current10();
     need125(stat3.isFile() && !stat3.isSymbolicLink() && stat3.nlink === 1n && stat3.dev.toString() === identity35.dev && stat3.ino.toString() === identity35.ino && stat3.birthtimeNs.toString() === identity35.birthtimeNs && stat3.ctimeNs.toString() === identity35.ctimeNs, "source/checkpoint identity changed");
   }
@@ -174248,7 +174568,7 @@ async function captureSnapshot3(engine2, input, onEvidence, predecessor) {
   await current10();
   const root2 = await controlRootCapability();
   await current10();
-  const outputDir = join75(controlDataDirectory(), "checkpoints");
+  const outputDir = join76(controlDataDirectory(), "checkpoints");
   const checkpoint = await createCheckpoint(
     { source: sourcePath, outputDir, label: `current-schematic-${phase5}-${baseline2.owner.operationId.slice(-8)}` },
     { expectedSource: sourcePath, artifactRoots: [outputDir], controlRoot: root2, maximumSourceBytes: 268435456 }
@@ -174341,8 +174661,8 @@ var init_current_schematic_rename_snapshot = __esm({
 // server/src/current-schematic-rename-preopen-source.ts
 import { createHash as createHash76 } from "node:crypto";
 import { constants as constants30 } from "node:fs";
-import { lstat as lstat51, open as open42 } from "node:fs/promises";
-import { basename as basename31, dirname as dirname29, isAbsolute as isAbsolute29, resolve as resolve24 } from "node:path";
+import { lstat as lstat52, open as open43 } from "node:fs/promises";
+import { basename as basename31, dirname as dirname30, isAbsolute as isAbsolute29, resolve as resolve24 } from "node:path";
 function need126(condition, message) {
   if (!condition) {
     throw new Error(message);
@@ -174351,22 +174671,22 @@ function need126(condition, message) {
 function sameInode4(a, b) {
   return a.dev === b.dev && a.ino === b.ino;
 }
-function sameFile9(a, b) {
+function sameFile10(a, b) {
   return a.isFile() && b.isFile() && !a.isSymbolicLink() && !b.isSymbolicLink() && sameInode4(a, b) && a.size === b.size && a.mtimeNs === b.mtimeNs && a.ctimeNs === b.ctimeNs && a.birthtimeNs === b.birthtimeNs && a.mode === b.mode && a.uid === b.uid && a.gid === b.gid && a.nlink === 1n && b.nlink === 1n;
 }
 async function directory3(absolute, current10) {
   const segments3 = absolute.split("/").filter(Boolean);
   need126(segments3.length > 0 && segments3.length <= 64, "Current preopen source directory depth refused.");
   const flags5 = constants30.O_RDONLY | constants30.O_DIRECTORY | constants30.O_NOFOLLOW;
-  let handle11 = await open42("/", flags5);
+  let handle11 = await open43("/", flags5);
   try {
     current10();
     for (const segment2 of segments3) {
       const path6 = `/proc/self/fd/${handle11.fd}/${segment2}`;
-      const before = await lstat51(path6, { bigint: true });
+      const before = await lstat52(path6, { bigint: true });
       current10();
       need126(before.isDirectory() && !before.isSymbolicLink(), "Current preopen source parent is not a real directory.");
-      const child = await open42(path6, flags5);
+      const child = await open43(path6, flags5);
       try {
         current10();
         const info2 = await child.stat({ bigint: true });
@@ -174398,7 +174718,7 @@ async function directory3(absolute, current10) {
 }
 async function noSidecars6(path6, current10) {
   for (const suffix of ["-wal", "-shm", "-journal"]) {
-    const absent4 = await lstat51(`${path6}${suffix}`).then(() => false, (error52) => {
+    const absent4 = await lstat52(`${path6}${suffix}`).then(() => false, (error52) => {
       if (error52 instanceof Error && "code" in error52 && error52.code === "ENOENT") {
         return true;
       }
@@ -174453,7 +174773,7 @@ async function verifySource3(copy3, current10) {
     process.platform === "linux" && source5.length <= 4096 && isAbsolute29(source5) && resolve24(source5) === source5 && source5.endsWith(".eprj2") && copy3.copy.source === source5 && copy3.copy.sha256 === sourceSha256 && /^[a-f0-9]{64}$/u.test(sourceSha256),
     "Current preopen source requires its canonical original baseline binding."
   );
-  const parent = await directory3(dirname29(source5), current10);
+  const parent = await directory3(dirname30(source5), current10);
   let file3;
   let observation3;
   let failed = false;
@@ -174463,14 +174783,14 @@ async function verifySource3(copy3, current10) {
     const path6 = `/proc/self/fd/${parent.handle.fd}/${basename31(source5)}`;
     await noSidecars6(path6, current10);
     current10();
-    const before = await lstat51(path6, { bigint: true });
+    const before = await lstat52(path6, { bigint: true });
     current10();
     need126(matchesBaseline3(before, copy3), "Current preopen source differs from the original baseline identity or size.");
-    file3 = await open42(path6, constants30.O_RDONLY | constants30.O_NOFOLLOW | constants30.O_NONBLOCK);
+    file3 = await open43(path6, constants30.O_RDONLY | constants30.O_NOFOLLOW | constants30.O_NONBLOCK);
     current10();
     const opened = await file3.stat({ bigint: true });
     current10();
-    need126(sameFile9(before, opened), "Current preopen source changed while opening.");
+    need126(sameFile10(before, opened), "Current preopen source changed while opening.");
     const sha256 = await hash44(file3, Number(before.size), current10);
     current10();
     need126(sha256 === sourceSha256, "Current preopen source hash differs from the original baseline.");
@@ -174487,10 +174807,10 @@ async function verifySource3(copy3, current10) {
     current10();
     const after = await file3.stat({ bigint: true });
     current10();
-    const named = await lstat51(path6, { bigint: true });
+    const named = await lstat52(path6, { bigint: true });
     current10();
     need126(
-      sameInode4(parent.info, parentAfter) && sameFile9(before, after) && sameFile9(before, named),
+      sameInode4(parent.info, parentAfter) && sameFile10(before, after) && sameFile10(before, named),
       "Current preopen source descriptor or path changed during reading."
     );
     observation3 = Object.freeze({
@@ -174970,9 +175290,9 @@ var init_current_schematic_rename_generation_runtime = __esm({
         need127(typeof acceptUnqualifiedSchematicStartupEffects === "boolean", "opening-effect acknowledgement must be boolean");
         return this.observe(operationId13, true, acceptUnqualifiedSchematicStartupEffects);
       }
-      async observe(operationId13, open43, acceptEffects) {
+      async observe(operationId13, open44, acceptEffects) {
         const slot = this.slots.get(operationId13);
-        need127(!this.busy && slot !== void 0 && slot.admitted && slot.source !== void 0 && slot.capture !== void 0 && slot.launch !== void 0 && (open43 ? slot.journal.state === "caches-observed" && slot.cacheObservation !== void 0 && !slot.openAttempted : slot.journal.state === "admitted" && !slot.cacheAttempted), "original unused observation is unavailable");
+        need127(!this.busy && slot !== void 0 && slot.admitted && slot.source !== void 0 && slot.capture !== void 0 && slot.launch !== void 0 && (open44 ? slot.journal.state === "caches-observed" && slot.cacheObservation !== void 0 && !slot.openAttempted : slot.journal.state === "admitted" && !slot.cacheAttempted), "original unused observation is unavailable");
         this.busy = true;
         const { source: source5, capture: capture3, launch } = slot, baseline2 = slot.closed.baseline;
         try {
@@ -174983,7 +175303,7 @@ var init_current_schematic_rename_generation_runtime = __esm({
             assertCurrentSchematicOpeningExpectation(source5.schematicExpectation, baseline2.metadata, baseline2.children);
             need127(canonicalJson(source5.startupExpectation) === canonicalJson(baseline2.children.startupInput), "ordinary startup expectation changed");
           }
-          const premises = open43 ? await assessCurrentStartupPremises({
+          const premises = open44 ? await assessCurrentStartupPremises({
             inventory: baseline2.inventory,
             sourceSha256: baseline2.copy.sha256,
             checkpointSha256: baseline2.copy.sha256,
@@ -174993,7 +175313,7 @@ var init_current_schematic_rename_generation_runtime = __esm({
           }) : void 0;
           await this.captureCurrent(slot);
           need127(premises === void 0 || premises.historicalSubsetSatisfied || (ordinary || acceptEffects) && premises.activeSchematicPages > 0 && premises.blockers.length === 1 && premises.blockers[0] === "active-schematic-pages", "startup prerequisites require unsupported opening effects");
-          if (open43) {
+          if (open44) {
             slot.openAttempted = true;
           } else {
             slot.cacheAttempted = true;
@@ -175002,9 +175322,9 @@ var init_current_schematic_rename_generation_runtime = __esm({
           await this.captureCurrent(slot);
           const target9 = { ...source5.target, expectedSourceSha256: baseline2.copy.sha256 };
           const cacheTarget = { projectUuid: target9.projectUuid, branchUuid: target9.branchUuid };
-          const phase5 = open43 ? OPEN_PHASE3 : CACHE_PHASE3, timeout = open43 ? CURRENT_PROJECT_ONLY_OPEN_TIMEOUT_MS : CURRENT_UPLOAD_QUEUE_TIMEOUT_MS;
-          const code = open43 ? buildCurrentProjectOnlyOpenProgram(target9) : buildCurrentUploadQueueReadProgram(cacheTarget);
-          const verify = open43 ? verifyCurrentProjectOnlyOpenImplementation : verifyCurrentDisposableOpenImplementation;
+          const phase5 = open44 ? OPEN_PHASE3 : CACHE_PHASE3, timeout = open44 ? CURRENT_PROJECT_ONLY_OPEN_TIMEOUT_MS : CURRENT_UPLOAD_QUEUE_TIMEOUT_MS;
+          const code = open44 ? buildCurrentProjectOnlyOpenProgram(target9) : buildCurrentUploadQueueReadProgram(cacheTarget);
+          const verify = open44 ? verifyCurrentProjectOnlyOpenImplementation : verifyCurrentDisposableOpenImplementation;
           const scope6 = this.engine.upstream.withAuthenticatedBridgeDispatchScope;
           need127(scope6 !== void 0, "observation scope is absent");
           let completed5 = false;
@@ -175020,12 +175340,12 @@ var init_current_schematic_rename_generation_runtime = __esm({
             assertSubset(fingerprint, source5.expectedFingerprint, "SCH generation runtime");
             await verify(fingerprint.installedBundles.assetsRoot);
             await this.captureCurrent(slot, scopeText);
-            if (open43) {
+            if (open44) {
               slot.preopen = await verifyCurrentSchematicRenamePreopenSource(this.engine, baseline2);
               await this.captureCurrent(slot, scopeText);
             }
-            slot.journal.state = open43 ? "project-only-dispatching" : "cache-dispatching";
-            if (open43) {
+            slot.journal.state = open44 ? "project-only-dispatching" : "cache-dispatching";
+            if (open44) {
               slot.journal.mutationMayHaveOccurred = true;
             }
             await _CurrentSchematicRenameGenerationCoordinator.record(slot, `${phase5}-intent`, {
@@ -175033,7 +175353,7 @@ var init_current_schematic_rename_generation_runtime = __esm({
               programSha256: sha256Json({ code }),
               preopenSource: slot.preopen ?? null,
               startupPremises: premises ?? null,
-              unqualifiedSchematicStartupEffectsAccepted: open43 && acceptEffects,
+              unqualifiedSchematicStartupEffectsAccepted: open44 && acceptEffects,
               ordinarySchematicStartupExpectation: ordinary ? source5.schematicExpectation : null,
               startupQualified: false,
               executionAuthorized: false
@@ -175045,7 +175365,7 @@ var init_current_schematic_rename_generation_runtime = __esm({
               slot.journal,
               phase5,
               "easyeda_execute",
-              { code, timeoutMs: timeout + (open43 ? 0 : 5e3), confirmWrite: true },
+              { code, timeoutMs: timeout + (open44 ? 0 : 5e3), confirmWrite: true },
               timeout + 15e3,
               async () => {
                 slot.current(scopeText);
@@ -175057,7 +175377,7 @@ var init_current_schematic_rename_generation_runtime = __esm({
                 slot.journalText = text49;
                 marked2 = structuredClone(slot.journal);
                 const clock9 = await this.engine.clockObservationForTrackedDispatch(slot.journal, phase5);
-                if (open43) {
+                if (open44) {
                   slot.openClock = clock9;
                 } else {
                   slot.cacheClock = clock9;
@@ -175067,13 +175387,13 @@ var init_current_schematic_rename_generation_runtime = __esm({
                 await this.captureCurrent(slot, scopeText);
                 await this.engine.assertRecoveryOperationIsolated(operationId13);
                 await this.captureCurrent(slot, scopeText);
-                if (open43) {
+                if (open44) {
                   slot.preopen = await verifyCurrentSchematicRenamePreopenSource(this.engine, baseline2);
                   await this.captureCurrent(slot, scopeText);
                 }
               },
               async (raw) => {
-                if (open43) {
+                if (open44) {
                   slot.openRaw = raw;
                   slot.openReplyRetained = true;
                 } else {
@@ -175081,7 +175401,7 @@ var init_current_schematic_rename_generation_runtime = __esm({
                   slot.cacheReplyRetained = true;
                 }
                 await this.captureCurrent(slot, scopeText);
-                if (open43) {
+                if (open44) {
                   slot.openObservation = decodeCurrentProjectOnlyOpenReply(raw, target9);
                 } else {
                   slot.cacheObservation = decodeCurrentUploadQueueReadReply(raw, cacheTarget);
@@ -175113,22 +175433,22 @@ var init_current_schematic_rename_generation_runtime = __esm({
           });
           need127(completed5, "observation scope did not complete");
           await this.captureCurrent(slot);
-          slot.journal.state = open43 ? "project-only-opened" : "caches-observed";
-          slot.journal.nextSafeAction = open43 ? "Original SCH generation retained. Startup, actor/clock and writer qualification are separate; no edit or Save is authorized." : "Point-in-time inactive caches observed. One separately checked project-only open remains; no editor or writer authority.";
+          slot.journal.state = open44 ? "project-only-opened" : "caches-observed";
+          slot.journal.nextSafeAction = open44 ? "Original SCH generation retained. Startup, actor/clock and writer qualification are separate; no edit or Save is authorized." : "Point-in-time inactive caches observed. One separately checked project-only open remains; no editor or writer authority.";
           await _CurrentSchematicRenameGenerationCoordinator.record(slot, `${phase5}-result`, {
-            observation: open43 ? slot.openObservation : slot.cacheObservation,
-            dispatchClock: open43 ? slot.openClock : slot.cacheClock,
+            observation: open44 ? slot.openObservation : slot.cacheObservation,
+            dispatchClock: open44 ? slot.openClock : slot.cacheClock,
             preopenSource: slot.preopen ?? null,
             startupQualified: false,
             executionAuthorized: false
           });
           await this.captureCurrent(slot);
-          if (open43) {
+          if (open44) {
             this.issue(slot);
           }
           return summary17(slot);
         } catch (error52) {
-          return await _CurrentSchematicRenameGenerationCoordinator.fail(slot, open43 ? "project-only-open" : "inactive-caches", error52);
+          return await _CurrentSchematicRenameGenerationCoordinator.fail(slot, open44 ? "project-only-open" : "inactive-caches", error52);
         } finally {
           this.busy = false;
         }
@@ -176140,10 +176460,10 @@ async function collectCurrentSchematicAgedSqlClock(engine2, generation5, referen
   collections11.set(generation5, collection);
   const evidenceId = currentSymbolClockEvidenceId(generation5.operationId);
   try {
-    const observe6 = engine2.freshClockObservationForClosedCapture;
+    const observe7 = engine2.freshClockObservationForClosedCapture;
     const call = engine2.upstream.callTool;
     const unchanged5 = () => {
-      need130(assertCurrentProjectOnlySchematicRenameGeneration(generation5, engine2, scopeText) === source5 && assertOriginalCurrentSchematicAgedSqlReference(reference3, engine2, source5.baseline) === reference3 && assertOriginalCurrentSchematicRenameStartup(startup2, engine2, generation5) === originalStartup && engine2.upstream.currentAuthenticatedBridgeDispatchBinding === scopeReader && canonicalJson(scopeReader.call(engine2.upstream)) === scopeText && engine2.freshClockObservationForClosedCapture === observe6 && engine2.upstream.callTool === call);
+      need130(assertCurrentProjectOnlySchematicRenameGeneration(generation5, engine2, scopeText) === source5 && assertOriginalCurrentSchematicAgedSqlReference(reference3, engine2, source5.baseline) === reference3 && assertOriginalCurrentSchematicRenameStartup(startup2, engine2, generation5) === originalStartup && engine2.upstream.currentAuthenticatedBridgeDispatchBinding === scopeReader && canonicalJson(scopeReader.call(engine2.upstream)) === scopeText && engine2.freshClockObservationForClosedCapture === observe7 && engine2.upstream.callTool === call);
     };
     unchanged5();
     await revalidateCurrentProjectOnlySchematicRenameGeneration(generation5, engine2, scopeText);
@@ -176181,13 +176501,13 @@ async function collectCurrentSchematicAgedSqlClock(engine2, generation5, referen
     unchanged5();
     await readExactUtf8Artifact(intent);
     unchanged5();
-    const before = await observe6.call(engine2, source5.capture);
+    const before = await observe7.call(engine2, source5.capture);
     collection.before = before;
     unchanged5();
     const raw = await call.call(engine2.upstream, "easyeda_execute", { code, timeoutMs: 15e3, confirmWrite: true }, 25e3);
     collection.raw = raw;
     unchanged5();
-    const after = await observe6.call(engine2, source5.capture);
+    const after = await observe7.call(engine2, source5.capture);
     collection.after = after;
     unchanged5();
     collection.resultPublicationAttempted = true;
@@ -179220,9 +179540,9 @@ var init_current_schematic_rename_writer_runtime = __esm({
         if (prior === void 0 && dispatch === void 0 && authority2 === void 0 && !journal.orphanedCallPossible) {
           return;
         }
-        const observe6 = this.engine.upstream.assertClosedAuthenticatedBridgeDispatchReleased;
-        need139(prior !== void 0 && dispatch !== void 0 && authority2 !== void 0 && observe6 !== void 0 && canonicalJson(prior) === canonicalJson(original2.capture.bridgeSession) && authority2.processes.some((process22) => canonicalJson(process22) === canonicalJson(original2.launch.root)) && authority2.processes.every((process22) => process22.startIdentity.endsWith(`:job:${original2.launch.jobId}`)));
-        const closed = observe6.call(this.engine.upstream, dispatch, prior);
+        const observe7 = this.engine.upstream.assertClosedAuthenticatedBridgeDispatchReleased;
+        need139(prior !== void 0 && dispatch !== void 0 && authority2 !== void 0 && observe7 !== void 0 && canonicalJson(prior) === canonicalJson(original2.capture.bridgeSession) && authority2.processes.some((process22) => canonicalJson(process22) === canonicalJson(original2.launch.root)) && authority2.processes.every((process22) => process22.startIdentity.endsWith(`:job:${original2.launch.jobId}`)));
+        const closed = observe7.call(this.engine.upstream, dispatch, prior);
         need139(isRecord(closed) && closed["sessionId"] === prior.sessionId && closed["sequence"] === prior.sequence && closed["authenticationReceiptSha256"] === prior.authenticationReceiptSha256 && closed["authenticatedAtEpochMs"] === prior.authenticatedAtEpochMs && typeof closed["closedAtEpochMs"] === "number" && Number.isSafeInteger(closed["closedAtEpochMs"]) && closed["closedAtEpochMs"] >= prior.authenticatedAtEpochMs);
       }
       inspect(operationId13) {
@@ -180402,9 +180722,9 @@ var init_current_schematic_rename_verification_runtime = __esm({
         if (prior === void 0 && dispatch === void 0 && authority2 === void 0 && !journal.orphanedCallPossible) {
           return;
         }
-        const observe6 = this.engine.upstream.assertClosedAuthenticatedBridgeDispatchReleased;
-        need142(prior !== void 0 && dispatch !== void 0 && authority2 !== void 0 && observe6 !== void 0 && canonicalJson(prior) === canonicalJson(capture3.bridgeSession) && authority2.processes.some((process22) => canonicalJson(process22) === canonicalJson(launch.root)) && authority2.processes.every((process22) => process22.startIdentity.endsWith(`:job:${launch.jobId}`)));
-        const closed = observe6.call(this.engine.upstream, dispatch, prior);
+        const observe7 = this.engine.upstream.assertClosedAuthenticatedBridgeDispatchReleased;
+        need142(prior !== void 0 && dispatch !== void 0 && authority2 !== void 0 && observe7 !== void 0 && canonicalJson(prior) === canonicalJson(capture3.bridgeSession) && authority2.processes.some((process22) => canonicalJson(process22) === canonicalJson(launch.root)) && authority2.processes.every((process22) => process22.startIdentity.endsWith(`:job:${launch.jobId}`)));
+        const closed = observe7.call(this.engine.upstream, dispatch, prior);
         need142(isRecord(closed) && closed["sessionId"] === prior.sessionId && closed["sequence"] === prior.sequence && closed["authenticationReceiptSha256"] === prior.authenticationReceiptSha256 && closed["authenticatedAtEpochMs"] === prior.authenticatedAtEpochMs && typeof closed["closedAtEpochMs"] === "number" && Number.isSafeInteger(closed["closedAtEpochMs"]) && closed["closedAtEpochMs"] >= prior.authenticatedAtEpochMs);
       }
       inspect(operationId13) {
@@ -181597,7 +181917,7 @@ var init_closed_symbol_disposable_entry = __esm({
 // server/src/closed-symbol-operation-intent.ts
 import { closeSync as closeSync3, constants as constants31, fstatSync as fstatSync3, lstatSync as lstatSync3, openSync as openSync3, readSync as readSync2 } from "node:fs";
 import { mkdir as mkdir6 } from "node:fs/promises";
-import { join as join76 } from "node:path";
+import { join as join77 } from "node:path";
 function inputs2(rawRequest, rawPlan) {
   const request13 = parseClosedSymbolOperationRequest(rawRequest);
   const source5 = exactData(rawPlan, ["profile", "projectUuid", "branchUuid", "ownerUuid", "targetUuid", "activeUuid", "projectPath", "operation", "marker", "nativePinsSha256", "facadeSha256", "expectedFingerprintSha256"]);
@@ -181632,7 +181952,7 @@ function inputs2(rawRequest, rawPlan) {
   requireValue6(operation["id"] === request13.operation.id && operation["action"] === "library.symbol.modify" && operation["libraryUuid"] === request13.target.projectUuid && target9["uuid"] === request13.target.symbolUuid && patch5["name"] === request13.operation.patch.name && patch5["description"] === request13.operation.patch.description, "Ordinary operation does not match its request.");
   return Object.freeze({ request: request13, plan: plan2 });
 }
-function sameFile10(left, right) {
+function sameFile11(left, right) {
   return ["dev", "ino", "mode", "uid", "gid", "nlink", "size", "mtimeNs", "ctimeNs"].every((key) => left[key] === right[key]);
 }
 function finalDirectory2(path6, device, inode, uid) {
@@ -181667,12 +181987,12 @@ function finalReservation2(root2, parent, slot, artifact2, expected3) {
       }
       offset9 += count3;
     }
-    requireValue6(offset9 === expected3.length && bytes2.subarray(0, offset9).equals(expected3) && sameFile10(before, fstatSync3(descriptor10, { bigint: true })), "Operation claim bytes changed after publication cleanup.");
+    requireValue6(offset9 === expected3.length && bytes2.subarray(0, offset9).equals(expected3) && sameFile11(before, fstatSync3(descriptor10, { bigint: true })), "Operation claim bytes changed after publication cleanup.");
   } finally {
     closeSync3(descriptor10);
   }
   lineage();
-  requireValue6(sameFile10(before, lstatSync3(boundPath, { bigint: true })), "Operation claim pathname changed after final read.");
+  requireValue6(sameFile11(before, lstatSync3(boundPath, { bigint: true })), "Operation claim pathname changed after final read.");
 }
 async function claimClosedSymbolOperationIntent(rawRequest, ownerPlan) {
   requireValue6(typeof process.getuid === "function", "Operation claim requires Linux UID support.");
@@ -181681,7 +182001,7 @@ async function claimClosedSymbolOperationIntent(rawRequest, ownerPlan) {
     requireValue6(canonicalJson(inputs2(rawRequest, ownerPlan)) === seal2, "Operation claim inputs changed during publication.");
   };
   const intentKey = sha256Json({ profile: PROFILE32, actionId: bound5.request.operation.id });
-  const parentPath = join76(controlDataDirectory(), "closed-symbol-operation-intents-v1"), reservationPath = join76(parentPath, intentKey);
+  const parentPath = join77(controlDataDirectory(), "closed-symbol-operation-intents-v1"), reservationPath = join77(parentPath, intentKey);
   const closedPlanSha256 = sha256Json(bound5.plan), markerSha256 = sha256Json(bound5.plan.marker), requestSha256 = sha256Json(bound5.request);
   const body4 = {
     profile: PROFILE32,
@@ -181706,7 +182026,7 @@ async function claimClosedSymbolOperationIntent(rawRequest, ownerPlan) {
   let artifact2, retainedSlot;
   try {
     currentInputs();
-    await mkdir6(join76(`/proc/self/fd/${parent.handle.fd}`, intentKey), { mode: 448 });
+    await mkdir6(join77(`/proc/self/fd/${parent.handle.fd}`, intentKey), { mode: 448 });
     await parent.handle.sync();
     currentInputs();
     const slot = await root2.openDirectory(reservationPath, false);
@@ -181714,7 +182034,7 @@ async function claimClosedSymbolOperationIntent(rawRequest, ownerPlan) {
     try {
       await slot.handle.sync();
       currentInputs();
-      artifact2 = await publishManagedAttachmentExclusive(join76(reservationPath, "intent.json"), "Closed-symbol operation intent", bytes2, PROFILE32);
+      artifact2 = await publishManagedAttachmentExclusive(join77(reservationPath, "intent.json"), "Closed-symbol operation intent", bytes2, PROFILE32);
       currentInputs();
       await readExactUtf8Artifact({ path: artifact2.path, bytes: artifact2.bytes, sha256: artifact2.sha256 });
       currentInputs();
@@ -182088,7 +182408,7 @@ var src_exports = {};
 import { createHash as createHash79 } from "node:crypto";
 import {
   basename as basename32,
-  dirname as dirname30,
+  dirname as dirname31,
   isAbsolute as isAbsolute30,
   relative as relative10,
   resolve as resolve25,
@@ -183042,7 +183362,7 @@ function registerFacadeTool(name6, config2, handler) {
     handler
   );
 }
-var facadeMode, MAX_INLINE_RESULT_BYTES, MAX_CAPTURE_PNG_BYTES, MAX_CAPTURE_BASE64_CHARACTERS, MAX_CAPTURE_DECODED_BYTES, EXPORT_TOOLS, CAPTURE_TOOLS, DEDICATED_FACADE_NAME2, UNBOUND_DIAGNOSTIC_READ_NAMES, UI_MUTATING_READ_NAMES, retainedControlRoot2, facadeLease, upstream, windowsRuntime, ordinaryLaunchCoordinator, ordinaryLaunchRuntime, currentPcbDiagnosticLifecycle, currentPcbStringPrecreateLifecycle, currentPcbWorkerStartupLifecycle, currentDisposableOpenCoordinator, currentPcbRenameOperationCoordinator, currentSchematicRenameOperationCoordinator, scheduledShutdown, engine, designExecutor, libraryExecutor, ruleCheckExecutor, projectOpenExecutor, bridgeGate, closedSymbolIndexReservation, closedSymbolUnreservedFailure, recordSchema2, evidenceSchema, nonEmptyStringSchema, readBatchCallSchema, capturePaddingSchema, captureInferredA4Schema, captureTabArgumentsSchema, captureRegionArgumentsSchema, captureFullPageArgumentsSchema, captureRequestSchema, capturePayloadSchema, exportBase, exportRequestSchema, dsnExportPayloadSchema, checkpointRequestSchema, operationIdSchema2, planHashSchema, sha256Schema2, installedBundleAvailableSchema, facadeImplementationFileSchema, facadeImplementationFilesSchema, bridgeDiagnosticsSchema, expectedFingerprintBaseShape, expectedFingerprintSchema, privateFingerprintSchema, projectIdentitySchema2, documentIdentitySchema, contextSchema4, operationDocumentIdentitySchema, operationContextSchema, assertionValueSchema, assertionSchema, typedCallSpecSchema, checkpointCreateSchema, operationPlanCommonShape, operationPlanSchema, errorOutputSchema, optionalFailureOutputShape, failureOutputSchema, statusAdmissionDiagnosticsSchema, statusSuccessOutputSchema, discoverItemOutputSchema, discoverSuccessOutputSchema, contextOutputSchema, evidenceSuccessOutputSchema, captureSuccessOutputSchema, operationSuccessOutputSchema, recoverSuccessOutputSchema, checkpointSuccessOutputSchema, evidenceVerificationSuccessOutputSchema, artifactReadSuccessOutputSchema, currentSymbolOperationToolOutputSchema, toolOutputSchemas, server, runtimeRequestSchema, designRequestSchema, libraryRequestSchema, checkRequestSchema, transport, shutdown, shutdownAndExit, scheduleShutdown;
+var facadeMode, MAX_INLINE_RESULT_BYTES, MAX_CAPTURE_PNG_BYTES, MAX_CAPTURE_BASE64_CHARACTERS, MAX_CAPTURE_DECODED_BYTES, EXPORT_TOOLS, CAPTURE_TOOLS, DEDICATED_FACADE_NAME2, UNBOUND_DIAGNOSTIC_READ_NAMES, UI_MUTATING_READ_NAMES, retainedControlRoot2, facadeLease, upstream, windowsRuntime, ordinaryLaunchCoordinator, ordinaryLaunchRuntime, currentPcbDiagnosticLifecycle, currentPcbStringPrecreateLifecycle, currentPcbWorkerStartupLifecycle, currentDisposableOpenCoordinator, currentPcbRenameOperationCoordinator, currentSchematicRenameOperationCoordinator, scheduledShutdown, engine, designExecutor, libraryExecutor, ruleCheckExecutor, projectOpenExecutor, bridgeGate, closedSymbolIndexReservation, closedSymbolUnreservedFailure, recordSchema2, evidenceSchema, nonEmptyStringSchema, readBatchCallSchema, capturePaddingSchema, captureInferredA4Schema, captureTabArgumentsSchema, captureRegionArgumentsSchema, captureFullPageArgumentsSchema, captureRequestSchema, capturePayloadSchema, exportBase, exportRequestSchema, dsnExportPayloadSchema, checkpointRequestSchema, operationIdSchema2, planHashSchema, sha256Schema2, installedBundleAvailableSchema, facadeImplementationFileSchema, facadeImplementationFilesSchema, bridgeDiagnosticsSchema, expectedFingerprintBaseShape, expectedFingerprintSchema, privateFingerprintSchema, projectIdentitySchema2, documentIdentitySchema, contextSchema4, operationDocumentIdentitySchema, operationContextSchema, assertionValueSchema, assertionSchema, typedCallSpecSchema, checkpointCreateSchema, operationPlanCommonShape, operationPlanSchema, errorOutputSchema, optionalFailureOutputShape, failureOutputSchema, statusAdmissionDiagnosticsSchema, statusSuccessOutputSchema, discoverItemOutputSchema, discoverSuccessOutputSchema, contextOutputSchema, evidenceSuccessOutputSchema, captureSuccessOutputSchema, operationSuccessOutputSchema, recoverSuccessOutputSchema, checkpointSuccessOutputSchema, evidenceVerificationSuccessOutputSchema, artifactReadSuccessOutputSchema, currentSymbolOperationToolOutputSchema, toolOutputSchemas, previousGenerationInstructions, server, runtimeRequestSchema, designRequestSchema, libraryRequestSchema, checkRequestSchema, transport, shutdown, shutdownAndExit, scheduleShutdown;
 var init_src = __esm({
   async "server/src/index.ts"() {
     init_mcp();
@@ -183640,11 +183960,12 @@ var init_src = __esm({
       easyeda_control_evidence_verify: evidenceVerificationSuccessOutputSchema,
       easyeda_control_artifact_read: artifactReadSuccessOutputSchema
     };
+    previousGenerationInstructions = facadeMode === "calculation-only" ? "Restricted compatibility mode. Tools include local reference/discovery, status, separately pinned calculations and metadata observations, exact-target PCB layer and loaded-view identity/geometry reads, historical abandonment, ordinary application launch and one-shot disposable-project opening. Opening requires a retained launcher, empty editor, registered local file and checkpoint-member PCB; it permits migrations/cache replay/automatic Save effects. The project-open validation-* actions run one sealed disposable metadata forward/inverse lifecycle with exact phase acknowledgements and original owners. Its META-only lifecycle passed an installed101500 disposable round trip. Installed210000 passed the disposable canvas-segments forward/inverse round trip with complete closed SQL, reopened content and final closure. The easyeda_control_project_symbol_metadata route supports an original-owner forward-only name/non-null-description change for an unused project-local symbol with complete META-only or bounded canvas-segments history, including tombstones. Ordinary purpose reserves exactly one write and no inverse. Canvas clocks must follow every target header; saved drawing records remain byte-exact. Installed080000 passed the ordinary unused drawn-symbol forward lifecycle with complete closed SQL, exact reopened content and final closure on a disposable fixture. Installed123000 passed that ordinary entrypoint's unused META-only forward lifecycle with exact closed SQL, reopened content and final closure. Historical validation grants no current-invocation authority. Both symbol routes require pre-dispatch proof budgets, exact runtime admission and complete SQL/reopened-content verification. The separate original-owner ordinary SCH-container title route passed its installed203733 disposable-fixture lifecycle, including batching, full closed SQL and fresh metadata/peer/child-roster and both AST readback followed by final closure/SQL equality. Its ordinary-project scope retains the startup, clock and one-write guards; this historical result grants no current-invocation authority. Generic design writers, native controls, navigation, explicit Save and design recovery remain unavailable. Launch does not prove isolation or readiness; observations grant no later authority. Use offline schemas and exact validation first. The internal calculation-only mode name is retained; registration stays fixed until restart." : "Use offline easyeda_control_api for documented SDK methods, exact typed operation schemas and argument validation. Declaration presence never authorizes execution. Before live work use status and exact context. Typed transactions require native record/connectivity checks and save/reopen complete-project persistence verification. Inspect library execution capabilities. Native controls handle missing APIs and dialogs; UI acknowledgment is not persistence proof. Raw execution and the old component writer remain refused. Never retry uncertain calls or Save attempts; inspect and reconcile the retained journal.";
     server = new McpServer(
       { name: "easyeda-pro-control", version: CONTROL_VERSION },
       {
         capabilities: { tools: {} },
-        instructions: facadeMode === "calculation-only" ? "Restricted compatibility mode. Tools include local reference/discovery, status, separately pinned calculations and metadata observations, exact-target PCB layer and loaded-view identity/geometry reads, historical abandonment, ordinary application launch and one-shot disposable-project opening. Opening requires a retained launcher, empty editor, registered local file and checkpoint-member PCB; it permits migrations/cache replay/automatic Save effects. The project-open validation-* actions run one sealed disposable metadata forward/inverse lifecycle with exact phase acknowledgements and original owners. Its META-only lifecycle passed an installed101500 disposable round trip. Installed210000 passed the disposable canvas-segments forward/inverse round trip with complete closed SQL, reopened content and final closure. The easyeda_control_project_symbol_metadata route supports an original-owner forward-only name/non-null-description change for an unused project-local symbol with complete META-only or bounded canvas-segments history, including tombstones. Ordinary purpose reserves exactly one write and no inverse. Canvas clocks must follow every target header; saved drawing records remain byte-exact. Installed080000 passed the ordinary unused drawn-symbol forward lifecycle with complete closed SQL, exact reopened content and final closure on a disposable fixture. Installed123000 passed that ordinary entrypoint's unused META-only forward lifecycle with exact closed SQL, reopened content and final closure. Historical validation grants no current-invocation authority. Both symbol routes require pre-dispatch proof budgets, exact runtime admission and complete SQL/reopened-content verification. The separate original-owner ordinary SCH-container title route passed its installed203733 disposable-fixture lifecycle, including batching, full closed SQL and fresh metadata/peer/child-roster and both AST readback followed by final closure/SQL equality. Its ordinary-project scope retains the startup, clock and one-write guards; this historical result grants no current-invocation authority. Generic design writers, native controls, navigation, explicit Save and design recovery remain unavailable. Launch does not prove isolation or readiness; observations grant no later authority. Use offline schemas and exact validation first. The internal calculation-only mode name is retained; registration stays fixed until restart." : "Use offline easyeda_control_api for documented SDK methods, exact typed operation schemas and argument validation. Declaration presence never authorizes execution. Before live work use status and exact context. Typed transactions require native record/connectivity checks and save/reopen complete-project persistence verification. Inspect library execution capabilities. Native controls handle missing APIs and dialogs; UI acknowledgment is not persistence proof. Raw execution and the old component writer remain refused. Never retry uncertain calls or Save attempts; inspect and reconcile the retained journal."
+        instructions: facadeMode === "public-utilities-only" ? PUBLIC_UTILITIES_ONLY_SCOPE : previousGenerationInstructions
       }
     );
     registerFacadeTool(
@@ -183667,6 +183988,10 @@ var init_src = __esm({
           processLease: { path: facadeLease.path, pid: facadeLease.pid },
           typedDesign: { enabled: facadeMode === "legacy-reviewed", tool: "easyeda_control_design", supervisorRequired: true, persistence: "native-source-plus-complete-project-record-delta", arbitraryCode: false },
           libraryExecution: { tool: "easyeda_control_library", capabilities: facadeMode === "legacy-reviewed" ? listLibraryExecutionCapabilities() : [] },
+          ...facadeMode === "public-utilities-only" ? {
+            availableTools: PUBLIC_UTILITIES_ONLY_TOOLS,
+            capabilityScope: PUBLIC_UTILITIES_ONLY_SCOPE
+          } : {},
           ...facadeMode === "calculation-only" ? {
             availableTools: CALCULATION_ONLY_TOOLS,
             capabilityScope: "Separately admitted observations, utilities, historical abandonment, ordinary existing-profile launch and checkpointed disposable opening. The shared unused META-only symbol lifecycle passed an installed101500 disposable forward/inverse round trip. Installed123000 passed the separate ordinary unused META-only forward-only route with exact closed SQL, reopened content and final closure. That historical validation grants no current-invocation authority. Ordinary unused-symbol metadata accepts complete META-only or bounded canvas-segments history, including tombstones, with exactly one write and no inverse. Installed080000 passed the ordinary unused drawn-symbol forward lifecycle with complete closed SQL, exact reopened content and final closure on a disposable fixture. Installed210000 passed the disposable canvas-segments forward/inverse round trip with complete closed SQL, reopened content and final closure. The separate original-owner ordinary SCH-container title route passed its installed203733 disposable-fixture lifecycle, including batching, full closed SQL, fresh metadata/peer/child-roster and both AST readback, final closure and unchanged SQL. Ordinary-project scope retains exact startup, clock and one-write guards; historical validation grants no current-invocation authority. Generic design writers remain disabled. No generic design-content access or legacy-route admission; ordinary opening may change storage and launch does not prove isolation."
@@ -183674,7 +183999,7 @@ var init_src = __esm({
         },
         upstream: facadeMode === "legacy-reviewed" ? await engine.status() : {
           ...await engine.status(),
-          capabilities: {
+          capabilities: facadeMode === "public-utilities-only" ? publicUtilitiesOnlyCapabilities() : {
             sdkCalculations: { tool: "easyeda_control_calculate", runtimeAdmissionRequired: true },
             sdkSystem: { tool: "easyeda_control_system", runtimeAdmissionRequired: true },
             startupExtensions: { tool: "easyeda_control_extensions", runtimeAdmissionRequired: true, launchQualification: false },
@@ -183841,7 +184166,7 @@ var init_src = __esm({
         }
       },
       guarded(async (input) => {
-        if (facadeMode === "calculation-only" && input.source === "live") {
+        if (facadeMode !== "legacy-reviewed" && input.source === "live") {
           throw new Error("Live upstream discovery is unavailable in local-utility mode; use the offline API catalogs.");
         }
         const entries6 = await discoverReviewedOrLiveTools(
@@ -185298,9 +185623,9 @@ var init_src = __esm({
             "facade-exports"
           );
           await ensureManagedDirectory(exportRoot);
-          const exportDirectory = dirname30(requestedPath);
+          const exportDirectory = dirname31(requestedPath);
           const exportRelation = relative10(exportRoot, requestedPath);
-          if (dirname30(exportDirectory) !== exportRoot || !/^export-[a-z0-9-]{8,80}$/iu.test(basename32(exportDirectory)) || exportRelation === ".." || exportRelation.startsWith(`..${sep8}`) || isAbsolute30(exportRelation)) {
+          if (dirname31(exportDirectory) !== exportRoot || !/^export-[a-z0-9-]{8,80}$/iu.test(basename32(exportDirectory)) || exportRelation === ".." || exportRelation.startsWith(`..${sep8}`) || isAbsolute30(exportRelation)) {
             throw new Error(
               `Export filePath must use a dedicated ${exportRoot}/export-<unique>/ directory.`
             );
@@ -185405,7 +185730,7 @@ var init_src = __esm({
           if (dispatched) {
             const failureMetadata = {
               effect: "artifact-write",
-              exportDirectory: dirname30(requestedPath)
+              exportDirectory: dirname31(requestedPath)
             };
             const failureAttachments = [];
             if (publishedExport === void 0) {

@@ -437,11 +437,19 @@ export async function createMachineProfile(options: MachineProfileOptions): Prom
   return profile;
 }
 
-async function readMachineLaunchConfiguration(path: string): Promise<MachineProfile> {
+/** Existing owner-only configuration, without executable or installation
+ * admission. Diagnostic callers may inspect metadata but cannot launch from it.
+ */
+export async function readMachineInspectionProfile(path: string): Promise<MachineProfile> {
   assertSupportedHost();
   await validateControlDirectory(dirname(path), false);
   const profile = machineProfileSchema.parse(await readJson(path, PROFILE_MAX_BYTES, true));
   if (dirname(path) !== profile.controlDirectory) { throw new MachineProfileError("machine-profile-outside-control-directory"); }
+  return profile;
+}
+
+async function readMachineLaunchConfiguration(path: string): Promise<MachineProfile> {
+  const profile = await readMachineInspectionProfile(path);
   const node = await openVerifiedMachineNode(profile.runtime);
   await node.close();
   return profile;

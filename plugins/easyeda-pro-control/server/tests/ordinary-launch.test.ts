@@ -8,8 +8,11 @@ import { acquireCurrentPcbDiagnosticLaunchExclusion, releaseCurrentPcbDiagnostic
 import { ORDINARY_LAUNCH_PROFILE, OrdinaryLaunchCoordinator, parseOrdinaryLaunchRequest, queryOrdinaryLaunch,
   validateOrdinaryLaunchArguments, verifyOrdinaryLaunchInstallation } from "../src/ordinary-launch.ts";
 import type { OrdinaryLaunchOptions, OrdinaryLaunchRuntime } from "../src/ordinary-launch.ts";
+import { ORDINARY_LAUNCH_209_PROFILE } from "../src/ordinary-launch-209-profile.ts";
+import { SDK_PUBLIC_UTILITIES_209_PROFILE } from "../src/sdk-public-utilities-profile.ts";
 import { ORDINARY_LAUNCH_RECOVERY_HELPER, ordinaryLaunchRecoveryObservationSchema } from "../src/ordinary-launch-recovery.ts";
 import type { observeOrdinaryLaunchRecovery } from "../src/ordinary-launch-recovery.ts";
+// oxlint-disable-next-line import/max-dependencies -- Compare both capability-specific profiles with the same retained-runtime fixture.
 import type { WindowsAuthorityLaunch } from "../src/windows-authority.ts";
 
 const facadeSha256 = "a".repeat(64);
@@ -41,6 +44,8 @@ function cleanup(context: TestContext, ...ids: string[]): void {
   context.after(async () => { for (const id of ids) { await rm(journal(id), { recursive: true, force: true }); } });
 }
 function fixture(operationId: string, behavior: { failure?: boolean; wrongTermination?: boolean; existing?: boolean;
+  profile?: typeof ORDINARY_LAUNCH_209_PROFILE;
+  onLaunched?: () => void;
   presenceChanged?: boolean; onAllowed?: (presenceSamples: number, runtime: OrdinaryLaunchRuntime) => Promise<void>;
   onLocalAllowed?: () => void;
   otherPowerShell?: boolean; recoveryApplication?: boolean; onRecovery?: () => Promise<void>;
@@ -75,6 +80,7 @@ function fixture(operationId: string, behavior: { failure?: boolean; wrongTermin
       generation += 1; terminated = false;
       const jobId = generation.toString().padStart(32, "0");
       launch = { jobId, helperInstance: "b".repeat(32), root: { pid: 456, role: "easyeda-main", startIdentity: `win32:123456789012345:job:${jobId}` } };
+      behavior.onLaunched?.();
       return launch;
     },
     observeLaunchTermination: () => {
@@ -109,8 +115,8 @@ function fixture(operationId: string, behavior: { failure?: boolean; wrongTermin
     }),
     allocateRuntime: (input) => {
       calls.push("allocate");
-      assert.equal(input.expectedExecutableSha256, ORDINARY_LAUNCH_PROFILE.installedFiles[0].sha256);
-      assert.equal(input.expectedHelperSha256, ORDINARY_LAUNCH_PROFILE.helper.sha256);
+      assert.equal(input.expectedExecutableSha256, (behavior.profile ?? ORDINARY_LAUNCH_PROFILE).installedFiles[0].sha256);
+      assert.equal(input.expectedHelperSha256, (behavior.profile ?? ORDINARY_LAUNCH_PROFILE).helper.sha256);
       assert.equal(input.reviewedExecutionScopeSha256, facadeSha256);
       return runtime;
     },
@@ -128,6 +134,95 @@ function fixture(operationId: string, behavior: { failure?: boolean; wrongTermin
   });
   return { options, calls, coordinator, markTerminated: () => { terminated = true; }, markExistingClosed: () => { existing = false; } };
 }
+
+function select209(context: TestContext): void {
+  const api = process.env["EASYEDA_PUBLIC_API_BUNDLE_VERSION"], pcb = process.env["EASYEDA_PCB_BUNDLE_VERSION"];
+  context.after(() => {
+    if (pcb === undefined) { delete process.env["EASYEDA_PCB_BUNDLE_VERSION"]; } else { process.env["EASYEDA_PCB_BUNDLE_VERSION"] = pcb; }
+    if (api === undefined) { delete process.env["EASYEDA_PUBLIC_API_BUNDLE_VERSION"]; } else { process.env["EASYEDA_PUBLIC_API_BUNDLE_VERSION"] = api; }
+  });
+  process.env["EASYEDA_PCB_BUNDLE_VERSION"] = SDK_PUBLIC_UTILITIES_209_PROFILE.installedBundles.pcbEditor.version;
+  process.env["EASYEDA_PUBLIC_API_BUNDLE_VERSION"] = SDK_PUBLIC_UTILITIES_209_PROFILE.installedBundles.publicApi.version;
+}
+
+void test("ordinary 209 selection leaves legacy pins intact and uses the separate exact profile throughout its lifecycle", async (context) => {
+  select209(context);
+  assert.equal(ORDINARY_LAUNCH_PROFILE.installedPackageVersion, "3.2.206.715d940d");
+  assert.equal(ORDINARY_LAUNCH_PROFILE.installedFiles[0].sha256, "e59d159f0f7bb5ac4832ce6583622251750ede7b839050f3aabe774cadfd1f55");
+  assert.notEqual(sha256Json(ORDINARY_LAUNCH_209_PROFILE), sha256Json(ORDINARY_LAUNCH_PROFILE));
+  assert.deepEqual(queryOrdinaryLaunch()["profile"], ORDINARY_LAUNCH_209_PROFILE);
+  assert.equal(validateOrdinaryLaunchArguments({ ...request("ordinary-test-209"), profile: ORDINARY_LAUNCH_209_PROFILE })["valid"], false);
+  const id = "ordinary-test-209"; cleanup(context, id);
+  const current = fixture(id, { profile: ORDINARY_LAUNCH_209_PROFILE });
+  const launched = await current.coordinator.run(request(id));
+  const intentPath = join(journal(id), "intent.json"), intentText = await readFile(intentPath, "utf8");
+  const raw: unknown = JSON.parse(intentText);
+  assert.ok(isRecord(raw)); assert.equal(raw["profileSha256"], sha256Json(ORDINARY_LAUNCH_209_PROFILE));
+  assert.equal(launched["helperBeforeIntentProtocol"], "recorded-v2");
+  assert.equal(typeof launched["launchedSha256"], "string");
+  const digest = String(launched["launchedSha256"]);
+  const window = await current.coordinator.run({ action: "observe-window", operationId: id, expectedLaunchedSha256: digest });
+  assert.equal(window["closeAuthorized"], false);
+  await current.coordinator.run(closeRequest(id, digest));
+  current.markTerminated();
+  const terminated = await current.coordinator.run({ action: "observe-termination", operationId: id });
+  assert.equal(terminated["state"], "terminated");
+  assert.equal(current.calls.filter(call => call === "launch").length, 1);
+  assert.equal(current.calls.filter(call => call === "close").length, 1);
+});
+
+for (const driftCheck of [1, 2]) { void test(`ordinary 209 selector drift at local check ${driftCheck} cannot switch profile or dispatch`, async (context) => {
+  select209(context);
+  const id = `ordinary-test-209-selector-drift-${driftCheck}`; cleanup(context, id);
+  let checks = 0;
+  const current = fixture(id, { profile: ORDINARY_LAUNCH_209_PROFILE, onLocalAllowed: () => {
+    checks += 1;
+    if (checks === driftCheck) { process.env["EASYEDA_PUBLIC_API_BUNDLE_VERSION"] = "0.3.50.ab46409c"; }
+  } });
+  await assert.rejects(current.coordinator.run(request(id)), /bundle selectors changed/u);
+  assert.equal(current.calls.includes("launch"), false);
+  assert.equal(await state(current.coordinator, id), "not-dispatched");
+  process.env["EASYEDA_PUBLIC_API_BUNDLE_VERSION"] = SDK_PUBLIC_UTILITIES_209_PROFILE.installedBundles.publicApi.version;
+  assert.equal(await state(current.coordinator, id), "not-dispatched");
+  await assert.rejects(current.coordinator.run(request(id)), /consumed/u);
+  assert.equal(current.calls.includes("launch"), false);
+}); }
+
+void test("ordinary 209 requires the complete selector pair and rejects drift before runtime allocation", async (context) => {
+  select209(context);
+  const id = "ordinary-test-209-initial-drift"; cleanup(context, id);
+  const current = fixture(id, { profile: ORDINARY_LAUNCH_209_PROFILE });
+  process.env["EASYEDA_PUBLIC_API_BUNDLE_VERSION"] = "0.3.59.other";
+  assert.deepEqual(queryOrdinaryLaunch()["profile"], ORDINARY_LAUNCH_PROFILE);
+  await assert.rejects(current.coordinator.run(request(id)), /bundle selectors changed/u);
+  assert.equal(current.calls.includes("allocate"), false);
+  assert.equal(current.calls.includes("launch"), false);
+  assert.equal(await state(current.coordinator, id), "not-found");
+});
+
+void test("ordinary 209 retains an acknowledged launch through arrival-time selector drift without granting execution", async (context) => {
+  select209(context);
+  const id = "ordinary-test-209-launch-arrival-drift"; cleanup(context, id);
+  const current = fixture(id, { profile: ORDINARY_LAUNCH_209_PROFILE, onLaunched: () => {
+    process.env["EASYEDA_PUBLIC_API_BUNDLE_VERSION"] = "0.3.50.ab46409c";
+  } });
+  await assert.rejects(current.coordinator.run(request(id)), /bundle selectors changed/u);
+  const observed = await current.coordinator.run({ action: "inspect", operationId: id });
+  assert.equal(observed["state"], "launched");
+  assert.equal(observed["designExecutionAuthorized"], false);
+  assert.ok(typeof observed["launchedSha256"] === "string");
+  await assert.rejects(current.coordinator.run(request(id)), /bundle selectors changed/u);
+  await assert.rejects(current.coordinator.run({ action: "observe-termination", operationId: id }), /bundle selectors changed/u);
+  assert.equal(current.calls.includes("observe"), false);
+  process.env["EASYEDA_PUBLIC_API_BUNDLE_VERSION"] = SDK_PUBLIC_UTILITIES_209_PROFILE.installedBundles.publicApi.version;
+  await current.coordinator.run(closeRequest(id, observed["launchedSha256"]));
+  current.markTerminated();
+  assert.equal(await state(current.coordinator, id), "launched");
+  const terminated = await current.coordinator.run({ action: "observe-termination", operationId: id });
+  assert.equal(terminated["state"], "terminated");
+  assert.equal(current.calls.filter(call => call === "launch").length, 1);
+  assert.equal(current.calls.filter(call => call === "close").length, 1);
+});
 
 void test("diagnostic lifetime exclusion refuses ordinary startup before helper or journal consumption", async (context) => {
   const id = "ordinary-test-diagnostic-exclusion";

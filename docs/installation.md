@@ -154,13 +154,37 @@ The external upstream checkout must already contain its reviewed built `dist/ind
 Missing or invalid external installation files now select a restricted
 offline-only process. It retains the same sole-owner lease and exact Node/profile
 trust checks but never constructs an upstream client or native controller.
-`easyeda_control_status` reports a fixed `machine-installation-*` code without
-private paths or raw errors. Local API catalogs describe bundled references,
+`easyeda_control_status` retains the startup `machine-installation-*` code and
+adds read-only metadata diagnostics: configured file-role availability,
+bounded candidate bundle directory names and the app package version, without
+private paths or raw errors. It starts no subprocess and changes no configuration.
+Candidate names and `configuredBundleFilesPresent` are not compatibility
+admission. Local API catalogs describe bundled references,
 not the currently installed application. An unsafe profile or unverified Node
 still prevents startup. Configuration reuse and the offline doctor remain strict.
 After repairing and reviewing the installation, restart the MCP session; do not
 change compatibility pins merely to suppress the failure. Current capability profiles do not admit the legacy tuple's general writer
 routes. Each operation retains its own exact gates.
+
+For the separately reviewed `3.2.209.8a704eab` installation, an explicit migration
+from the older 3.2.206 selector pair is available in the trusted checkout:
+
+```bash
+node scripts/upgrade-calculation-profile.ts --target public-utilities-209
+```
+
+An optional `--profile /absolute/control/machine-profile.json` selects the
+existing private configuration. The helper verifies the exact new package and
+PCB/API files, keeps a byte-exact private backup and changes only two bundle
+selectors. The control root, Node, upstream, credentials and journals stay
+unchanged. It never promotes an existing process or updates the legacy global
+compatibility profile. Restart Codex afterward. The new `public-utilities-only`
+mode registers six tools, with separate runtime admission for 16 Math and 18
+Unit/Environment operations and a separately pinned ordinary launcher. No
+project-opening, design, native diagnostic, Save or design-recovery route is
+registered. Source/synthetic verification is not connected validation.
+Omitting `--target` retains the older 3.2.206 migration; neither form discovers
+or admits arbitrary future releases.
 
 Reuse a profile with `node scripts/configure-machine.ts` or `node scripts/configure-machine.ts --profile /absolute/control/machine-profile.json`, without configuration overrides. Overrides against an existing profile are refused. For another supported installation, create a fresh explicit profile path inside its owner-only control directory. Do not overwrite an active profile or change directories to evade the sole-owner lease or quarantine.
 

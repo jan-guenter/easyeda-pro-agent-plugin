@@ -112,7 +112,7 @@ void test("the package test command always preloads isolation before loading tes
   assert.ok(manifest !== null && typeof manifest === "object" && "scripts" in manifest);
   const scripts: unknown = manifest.scripts;
   assert.ok(scripts !== null && typeof scripts === "object" && "test" in scripts);
-  assert.equal(scripts.test, "node --import ./scripts/test-isolation.ts --test server/tests/*.test.ts");
+  assert.equal(scripts.test, "node --import ./scripts/test-isolation.ts --test --test-concurrency=4 server/tests/*.test.ts");
 });
 
 void test("preload isolates static artifact imports, overrides an ambient root and retains evidence after failure", async (context) => {

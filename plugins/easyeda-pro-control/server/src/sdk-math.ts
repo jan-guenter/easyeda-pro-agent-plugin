@@ -1,9 +1,11 @@
 import { z } from "zod";
 import { EXACT_READ_ENVELOPE_SCHEMA } from "./exact-readers.ts";
 import { SDK_CLIPPING_GROUP_PROJECTION, SDK_CLIPPING_LIMITATION, closeSdkClippingArguments, isSdkClippingMethod, sdkClippingArgumentsSchema, validateSdkClippingResult } from "./sdk-math-clipping.ts";
+import { SDK_PUBLIC_UTILITIES_209_PROFILE } from "./sdk-public-utilities-profile.ts";
 
 export const SDK_MATH_API_VERSION = "0.3.50.ab46409c";
 export const SDK_MATH_API_SHA256 = "021d155baafbcdc7b558da12f0834a8ee473aa37e276c6ea679936f952080c76";
+const defaultProvenance = Object.freeze({ version: SDK_MATH_API_VERSION, implementationSha256: SDK_MATH_API_SHA256 });
 export const SDK_MATH_MAX_VERTICES = 128;
 export const SDK_MATH_MAX_BYTES = 32_768;
 const coordinate = z.number().min(-1_000_000).max(1_000_000);
@@ -134,7 +136,7 @@ const definitions: Record<MathMethod, { parameters: string[]; result: ResultKind
 };
 
 const commonLimitations = [
-  "API 0.3.50 implementation only, separately hash-admitted; absent from the old reviewed 0.2.53 runtime. Source implementation and offline tests are not connected validation.",
+  "Separately hash-admitted API 0.3.50 or 0.3.59 implementation, each under its exact runtime profile; absent from the old reviewed 0.2.53 runtime. Source implementation and offline tests are not connected validation.",
   "Strict finite JSON inputs only. Simple methods accept +/-1e6 coordinates and 3-128 ring vertices; clipping has its separately documented narrower bounds. No input holes, groups, curves, native handles, callbacks or arbitrary SDK paths.",
   "Calculations use supplied coordinate units without unit conversion. No document, project, viewport, selection, shared setting, file, network, Save or CAD mutation is involved.",
   "JSON Schema omits geometric and paired-center refinements; use the exact argument validator. SDK floating-point results are observations, not exact geometric, electrical or manufacturing guarantees.",
@@ -151,6 +153,7 @@ export interface SdkMathDescriptor {
   limitations: string[];
   invocationEnabledByDiscovery: false;
   provenance: { version: string; apiSha256: string; implementationKind: "public-method-bounded-subset"; liveValidation: "not-recorded" };
+  additionalReviewedProvenance: { version: string; apiSha256: string; scope: "public-utilities-only"; liveValidation: "not-recorded" }[];
 }
 
 export function sdkMathDescriptors(): SdkMathDescriptor[] {
@@ -159,7 +162,10 @@ export function sdkMathDescriptors(): SdkMathDescriptor[] {
     const definition = definitions[method];
     return { path: method, method, inputSchema: z.toJSONSchema(schema), parameters: [...definition.parameters], resultKind: definition.result,
       limitations: [...commonLimitations, definition.limitation], invocationEnabledByDiscovery: false,
-      provenance: { version: SDK_MATH_API_VERSION, apiSha256: SDK_MATH_API_SHA256, implementationKind: "public-method-bounded-subset", liveValidation: "not-recorded" } };
+      provenance: { version: SDK_MATH_API_VERSION, apiSha256: SDK_MATH_API_SHA256, implementationKind: "public-method-bounded-subset", liveValidation: "not-recorded" },
+      additionalReviewedProvenance: [{ version: SDK_PUBLIC_UTILITIES_209_PROFILE.installedBundles.publicApi.version,
+        apiSha256: SDK_PUBLIC_UTILITIES_209_PROFILE.installedBundles.publicApi.implementationSha256,
+        scope: "public-utilities-only", liveValidation: "not-recorded" }] };
   });
 }
 
@@ -223,7 +229,8 @@ const resultBbox = z.object({ minX: resultNumber, minY: resultNumber, maxX: resu
   .refine((box) => box.minX <= box.maxX && box.minY <= box.maxY);
 const payloadSchema = z.object({ ok: z.literal(true), kind: z.literal("sdk-math"), method: z.string(), value: z.unknown() }).strict();
 
-export function validateSdkMathResult(input: unknown, raw: unknown): Record<string, unknown> {
+export function validateSdkMathResult(input: unknown, raw: unknown,
+  provenance: { readonly version: string; readonly implementationSha256: string } = defaultProvenance): Record<string, unknown> {
   const request = parseSdkMathRequest(input);
   const payload = payloadSchema.parse(raw);
   const definition = definitions[request.method];
@@ -246,5 +253,5 @@ export function validateSdkMathResult(input: unknown, raw: unknown): Record<stri
     default: { throw new Error("Unsupported SDK math result."); }
   }
   return { ...payload, value, authority: "supplied-coordinate-calculation-only;not-cad-connectivity-or-manufacturing-proof",
-    apiVersion: SDK_MATH_API_VERSION, apiSha256: SDK_MATH_API_SHA256, limitations: [...commonLimitations, definition.limitation] };
+    apiVersion: provenance.version, apiSha256: provenance.implementationSha256, limitations: [...commonLimitations, definition.limitation] };
 }

@@ -6,8 +6,9 @@ import {
   sha256Json,
 } from "./core.ts";
 import { decodeExactReadEnvelope } from "./exact-readers.ts";
-import { SDK_LOCAL_RUNTIME_PROFILE, validateSdkLocalRuntimeFingerprint } from "./sdk-local-runtime.ts";
+import { SDK_LOCAL_RUNTIME_PROFILE } from "./sdk-local-runtime.ts";
 import type { SdkLocalEngine } from "./sdk-local-runtime.ts";
+import { selectSdkPublicUtilitiesRuntimeProfile } from "./sdk-public-utilities-profile.ts";
 import {
   SDK_MATH_MAX_BYTES,
   buildSdkMathProgram,
@@ -31,7 +32,8 @@ export type SdkMathEngine = SdkLocalEngine;
  * normalized or forged fingerprint into validatePrivateFingerprint.
  */
 export function validateSdkMathFingerprint(fingerprint: unknown): true {
-  return validateSdkLocalRuntimeFingerprint(fingerprint);
+  selectSdkPublicUtilitiesRuntimeProfile(fingerprint);
+  return true;
 }
 
 /** The registered caller supplies the existing serialized authenticated bridge
@@ -46,7 +48,7 @@ export async function calculateSdkMath(engine: SdkMathEngine, requestInput: unkn
   await engine.assertBridgeDispatchAllowed();
   const initialStatus = await engine.status();
   const initial = structuredClone(initialStatus.stableFingerprint);
-  validateSdkMathFingerprint(initial);
+  const profile = selectSdkPublicUtilitiesRuntimeProfile(initial);
   assertSubset(initial, expected, "SDK math expected runtime");
   await engine.assertBridgeDispatchAllowed();
   const raw = await engine.upstream.callTool("easyeda_execute", {
@@ -59,7 +61,7 @@ export async function calculateSdkMath(engine: SdkMathEngine, requestInput: unkn
   if (Buffer.byteLength(JSON.stringify(envelope), "utf8") > SDK_MATH_MAX_BYTES) {
     throw new Error("SDK math reply exceeds its byte bound.");
   }
-  const result = validateSdkMathResult(request, decodeExactReadEnvelope(envelope));
+  const result = validateSdkMathResult(request, decodeExactReadEnvelope(envelope), profile.installedBundles.publicApi);
   await engine.assertBridgeDispatchAllowed();
   const finalStatus = await engine.status();
   const finalFingerprint = finalStatus.stableFingerprint;
@@ -68,7 +70,7 @@ export async function calculateSdkMath(engine: SdkMathEngine, requestInput: unkn
     throw new Error("SDK math runtime changed around the calculation.");
   }
   const response = { ...result, runtimeAdmission: {
-    profile: SDK_MATH_RUNTIME_PROFILE.schema,
+    profile: profile === SDK_LOCAL_RUNTIME_PROFILE ? SDK_MATH_RUNTIME_PROFILE.schema : profile.schema,
     fingerprintSha256: sha256Json(initial),
     beforeAndAfterChecked: true,
     scope: "fixed-input-only-sdk-math",

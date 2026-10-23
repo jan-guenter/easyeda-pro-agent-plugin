@@ -7,8 +7,8 @@ import type { TestContext } from "node:test";
 
 import { configureMachine, parseMachineArguments } from "../../scripts/configure-machine.ts";
 import { parseMachineLauncherArguments } from "../../scripts/launch-machine.ts";
-import { parseCalculationUpgradeArguments } from "../../scripts/upgrade-calculation-profile.ts";
-import { upgradeCalculationProfile } from "../src/calculation-profile-upgrade.ts";
+import { parseCalculationUpgradeArguments, parseCalculationUpgradeOptions } from "../../scripts/upgrade-calculation-profile.ts";
+import { calculationProfileUpgradeTarget, upgradeCalculationProfile } from "../src/calculation-profile-upgrade.ts";
 import {
   createMachineProfile,
   loadMachineLaunchProfile,
@@ -49,6 +49,53 @@ void describe("installation-generated machine profiles", () => {
     assert.equal(parseCalculationUpgradeArguments(["--profile", "/tmp/fixture-profile.json"]), "/tmp/fixture-profile.json");
     for (const args of [["--profile"], ["--profile", "--node"], ["--api-version", "0.3.50.ab46409c"], ["--profile", "/tmp/example.json", "--force"]]) {
       assert.throws(() => parseCalculationUpgradeArguments(args), /machine-upgrade-arguments-invalid/u);
+    }
+  });
+
+  void test("209 migration requires an explicit closed target and preserves the historical default", () => {
+    const path = "/tmp/fixture-profile.json";
+    assert.deepEqual(parseCalculationUpgradeOptions(["--profile", path]), { profilePath: path, target: "sdk-math-206" });
+    for (const args of [["--target", "public-utilities-209", "--profile", path], ["--profile", path, "--target", "public-utilities-209"]]) {
+      assert.deepEqual(parseCalculationUpgradeOptions(args), { profilePath: path, target: "public-utilities-209" });
+    }
+    for (const args of [["--target"], ["--target", "latest"], ["--target", "public-utilities-209", "--target", "sdk-math-206"],
+      ["--target", "public-utilities-209", "--force"], ["--target", "sdk-math-206", "--profile", "--target"]]) {
+      assert.throws(() => parseCalculationUpgradeOptions(args), /machine-upgrade-arguments-invalid/u);
+    }
+    assert.equal(calculationProfileUpgradeTarget().mode, "calculation-only");
+    assert.equal(calculationProfileUpgradeTarget("public-utilities-209").mode, "public-utilities-only");
+    assert.equal(calculationProfileUpgradeTarget("public-utilities-209").installedBundles.publicApi.version, "0.3.59.1ca9efb5");
+  });
+
+  void test("209 migration refuses unknown or legacy sources before inspecting installation", async (context) => {
+    const options = await fixture(context), profilePath = join(options.controlDirectory, "machine-profile.json");
+    const original = await createMachineProfile(options);
+    await writeMachineProfile(original, profilePath);
+    for (const easyeda of [original.easyeda, { ...original.easyeda, pcbBundleVersion: "3.2.149.5378b690", publicApiBundleVersion: "0.2.53.aee2f57a" }]) {
+      await writeFile(profilePath, `${JSON.stringify({ ...original, easyeda })}\n`, { mode: 0o600 });
+      const before = await readFile(profilePath), information = await lstat(profilePath);
+      await assert.rejects(upgradeCalculationProfile(profilePath, "public-utilities-209"), /machine-upgrade-source-generation-unsupported/u);
+      assert.deepEqual(await readFile(profilePath), before);
+      const after = await lstat(profilePath);
+      assert.equal(after.ino, information.ino);
+      assert.deepEqual(await readdir(options.controlDirectory), ["machine-profile.json"]);
+    }
+  });
+
+  void test("209 migration refuses unreviewed app bytes for migration and already-selected no-op", async (context) => {
+    const options = await fixture(context), profilePath = join(options.controlDirectory, "machine-profile.json");
+    const original = await createMachineProfile(options);
+    await writeMachineProfile(original, profilePath);
+    await writeFile(join(options.assetsRoot, "..", "package.json"), '{"version":"3.2.209.8a704eab","unreviewed":true}\n');
+    for (const versions of [["3.2.193.682ed44e", "0.3.50.ab46409c"], ["3.2.195.6b67774e", "0.3.59.1ca9efb5"]] as const) {
+      await writeFile(profilePath, `${JSON.stringify({ ...original, easyeda: { ...original.easyeda,
+        pcbBundleVersion: versions[0], publicApiBundleVersion: versions[1] } })}\n`, { mode: 0o600 });
+      const before = await readFile(profilePath), information = await lstat(profilePath);
+      await assert.rejects(upgradeCalculationProfile(profilePath, "public-utilities-209"), /machine-upgrade-installation-hash-mismatch/u);
+      assert.deepEqual(await readFile(profilePath), before);
+      const after = await lstat(profilePath);
+      assert.equal(after.ino, information.ino);
+      assert.deepEqual(await readdir(options.controlDirectory), ["machine-profile.json"]);
     }
   });
 

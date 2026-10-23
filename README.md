@@ -8,6 +8,9 @@ and dialogs.
 
 Support depends on the exact application version and operation. General
 schematic, PCB and library writers remain disabled on EasyEDA Pro 3.2.206.
+EasyEDA Pro 3.2.209 has a separate six-tool utility-only profile: API reference,
+local discovery, status, bounded calculations/system observations and ordinary
+application launch. It does not enable project opening or design operations.
 The ordinary symbol-metadata route allows forward name/description edits of
 unused project-local symbols with eligible history. Disposable validation
 routes have separate gates. Check the
@@ -169,8 +172,9 @@ npm run repository:validate
 ```
 
 `verify` checks types, lint, coverage generation, builds, compatibility, facade
-and bridge tests, skills and the MCP contract. For focused facade tests, retain
-the isolation preload:
+and bridge tests, skills and the MCP contract. Local facade tests run at most
+four files concurrently to limit scheduling contention around real-time guards;
+CI runs one file per shard. For focused facade tests, retain the isolation preload:
 
 ```bash
 node --import ./scripts/test-isolation.ts --test server/tests/validation-registry.test.ts
