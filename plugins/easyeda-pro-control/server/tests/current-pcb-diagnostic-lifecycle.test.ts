@@ -11,6 +11,9 @@ import type { CurrentPcbWorkerStartupHandoff } from "../src/current-pcb-diagnost
 import { CurrentPcbWorkerStartupChannel } from "../src/current-pcb-worker-startup-channel.ts";
 import { CurrentPcbWorkerStartupTransport } from "../src/current-pcb-worker-startup-transport.ts";
 import type { CurrentPcbWorkerStartupOpeningResult } from "../src/current-pcb-worker-startup-opening.ts";
+import type { CurrentPcbWorkerConstructionAssignments } from "../src/current-pcb-worker-construction-assignment.ts";
+import { CurrentPcbWorkerStartupActorRunner } from "../src/current-pcb-worker-startup-actor-runner.ts";
+import type { CurrentPcbWorkerStartupActorPacket } from "../src/current-pcb-worker-startup-actor-runner.ts";
 import { createCurrentPcbDiagnosticInstallationPlan } from "../src/current-pcb-diagnostic-installation.ts";
 import type { CurrentPcbDiagnosticInstallation } from "../src/current-pcb-diagnostic-installation.ts";
 import { CurrentPcbDiagnosticLifecycle, CurrentPcbStringPrecreateLifecycle, CurrentPcbWorkerStartupLifecycle } from "../src/current-pcb-diagnostic-lifecycle.ts";
@@ -356,8 +359,11 @@ async function successfulStartupHandoff(context: TestContext, value: ReturnType<
   return handoff;
 }
 
+function startupActorReply(sample: unknown): Promise<unknown> {
+  return Promise.resolve({ result: { type: "string", value: JSON.stringify(sample) } });
+}
 function startupOpeningFixture(value: ReturnType<typeof fixture>, handoff: CurrentPcbWorkerStartupHandoff,
-  failAfterDispatch = false): Readonly<{ owner: CurrentPcbWorkerStartupOpeningCoordinator; result: CurrentPcbWorkerStartupOpeningResult;
+  failAfterDispatch = false, assignmentsFailure?: "prove" | "reproof" | "actor-prove" | "actor-reproof"): Readonly<{ owner: CurrentPcbWorkerStartupOpeningCoordinator; result: CurrentPcbWorkerStartupOpeningResult;
     transport: CurrentPcbWorkerStartupTransport }> {
   const result: CurrentPcbWorkerStartupOpeningResult = Object.freeze({ opening: OPEN_RESULT, construction: Object.freeze({
     profile: "private.current-pcb-worker-construction.v1", pauses: 9, originalConstructorAndFactoryEventsRetained: true,
@@ -366,7 +372,15 @@ function startupOpeningFixture(value: ReturnType<typeof fixture>, handoff: Curre
   }), workerIdentity: Object.freeze({ projectUuid: OPEN_TARGET.projectUuid, branchUuid: OPEN_CHECKPOINT.targetEvidence.branchUuid, windowTabId: "fixture-tab" }),
   ancillaryFrame: null, executionAuthorized: false, persistenceVerified: false });
   const transport = new CurrentPcbWorkerStartupTransport(handoff.dependency);
+  const assignments: CurrentPcbWorkerConstructionAssignments = Object.freeze({
+    profile: "private.current-pcb-worker-construction-assignments.v1",
+    callbackKinds: Object.freeze(["uploadStructure", "structure", "cooperation", "upload"] as const),
+    originalConstructionCallbacksMatched: true, originalCallbackReceiversVerified: true, currentProjectWrapperRelationsVerified: true,
+    continuousAssignmentOwnershipVerified: false, nativeChannelIntrinsicAndPeerOwnershipVerified: false, completePublishersVerified: false,
+    writeDestinationsContained: false, atomicSnapshotVerified: false, queueCompletionVerified: false, executionAuthorized: false,
+  });
   let dispatched = false;
+  let actor: CurrentPcbWorkerStartupActorRunner | null = null, actorPacket: CurrentPcbWorkerStartupActorPacket | null = null;
   const owner: CurrentPcbWorkerStartupOpeningCoordinator = {
     open: async (target, reverify): Promise<CurrentPcbWorkerStartupOpeningResult> => {
       value.calls.push("startup-preflight");
@@ -382,11 +396,53 @@ function startupOpeningFixture(value: ReturnType<typeof fixture>, handoff: Curre
       return result;
     },
     status: () => ({ consumed: dispatched, settled: dispatched, openingAttempted: dispatched, openingResultRetained: dispatched,
-      constructionRetained: dispatched && !failAfterDispatch, completed: dispatched && !failAfterDispatch, executionAuthorized: false }),
+      constructionRetained: dispatched && !failAfterDispatch, completed: dispatched && !failAfterDispatch,
+      diagnostics: { stage: "idle", step: "idle", failure: null }, executionAuthorized: false }),
     retainedOpeningResult: (): CurrentPcbDiagnosticOpeningResult | null => dispatched ? OPEN_RESULT : null,
     requireOriginal: (selected): Promise<CurrentPcbWorkerStartupTransport> => {
       assert.equal(selected, result); assert.equal(dispatched && !failAfterDispatch, true); value.calls.push("startup-require");
       return Promise.resolve(transport);
+    },
+    proveCurrentAssignments: async selected => {
+      assert.equal(selected, result); assert.equal(dispatched && !failAfterDispatch, true);
+      value.calls.push("startup-assignments-prove");
+      const operations = await readCurrentPcbDiagnosticLifecycles();
+      const operation = operations.at(-1);
+      const intent = operation?.records["worker-startup-assignments-intent.json"]; assert.ok(intent);
+      assert.equal(intent.openingResultSha256, sha256Json(operation?.records["worker-startup-opening-result.json"]));
+      if (assignmentsFailure === "prove") { throw new Error("synthetic assignment proof failure"); }
+      return assignments;
+    },
+    requireCurrentAssignments: (selected, observed): Promise<void> => {
+      assert.equal(selected, result); assert.equal(observed, assignments); value.calls.push("startup-assignments-require");
+      if (assignmentsFailure === "reproof") { return Promise.reject(new Error("synthetic assignment reproof failure")); }
+      return Promise.resolve();
+    },
+    retainedActorObservation: (): Readonly<Record<string, unknown>> | null => actor === null ? null : { status: actor.status(), samples: actor.retainedSamples() },
+    observeActorClock: async (selected, observed): Promise<CurrentPcbWorkerStartupActorPacket> => {
+      assert.equal(selected, result); assert.equal(observed, assignments); value.calls.push("startup-actor-observe");
+      const operations = await readCurrentPcbDiagnosticLifecycles();
+      const operation = operations.at(-1);
+      const intent = operation?.records["worker-startup-actor-intent.json"]; assert.ok(intent);
+      assert.equal(intent.assignmentsResultSha256, sha256Json(operation?.records["worker-startup-assignments-result.json"]));
+      if (assignmentsFailure === "actor-prove") { throw new Error("synthetic actor observation failure"); }
+      const workerUser = { uuid: "d".repeat(32), nickname: "", username: "", avatar: "" };
+      const stamp = { milliseconds: 1000, iso: new Date(1000).toISOString(), timezoneOffsetMinutes: 0 };
+      const base = { schema: "easyeda-pro-control.pcb-worker-startup-actor.v1", identity: result.workerIdentity,
+        workerUser, workerUserText: JSON.stringify(workerUser), clock: { before: stamp, after: stamp } };
+      const uiActor = { uuid: workerUser.uuid, username: "", nickname: "" };
+      actor = new CurrentPcbWorkerStartupActorRunner(Object.freeze({
+        observeUi: (): Promise<unknown> => startupActorReply({ ...base, phase: "ui", cachedActor: uiActor, startupActor: uiActor }),
+        observeWorker: (): Promise<unknown> => startupActorReply({ ...base, phase: "worker", originalProjectReceiverMatched: true, originalWorkerBusMatched: true }),
+        assertCurrent: (): Promise<void> => Promise.resolve(),
+      }), result.workerIdentity);
+      actorPacket = await actor.observe(); return actorPacket;
+    },
+    requireActorClock: async (selected, observed, packet): Promise<void> => {
+      assert.equal(selected, result); assert.equal(observed, assignments); assert.equal(packet, actorPacket); assert.ok(actor);
+      value.calls.push("startup-actor-require");
+      if (assignmentsFailure === "actor-reproof") { throw new Error("synthetic actor reproof failure"); }
+      await actor.requireOriginal(packet);
     },
     releaseAfterTermination: (): Promise<void> => {
       assert.equal(value.state.terminated, true); assert.equal(value.state.released, false);
@@ -394,6 +450,151 @@ function startupOpeningFixture(value: ReturnType<typeof fixture>, handoff: Curre
     },
   };
   return { owner, result, transport };
+}
+
+for (const outcome of ["success", "intent-publication", "result-publication", "prove", "reproof"] as const) {
+  void test(`startup assignments ${outcome} preserves one-shot original proof and exact settlement`, async context => {
+    const id = `worker-startup-test-assignments-${outcome}`;
+    let original: ReturnType<typeof startupOpeningFixture> | null = null, refuse = true;
+    const value = fixture(context, id, {
+      createStartupOpening: () => { assert.ok(original); return original.owner; },
+      publishRecord: async (operationId, name, record) => {
+        if (refuse && (outcome === "intent-publication" && name === "worker-startup-assignments-intent.json" ||
+          outcome === "result-publication" && name === "worker-startup-assignments-result.json")) {
+          refuse = false; throw new Error("synthetic assignment publication failure");
+        }
+        await publishCurrentPcbDiagnosticLifecycleRecord(operationId, name, record);
+      },
+    });
+    const handoff = await successfulStartupHandoff(context, value);
+    original = startupOpeningFixture(value, handoff, false, outcome === "prove" || outcome === "reproof" ? outcome : undefined);
+    await readyForOpening(id, value); assert.ok(value.coordinator instanceof CurrentPcbWorkerStartupLifecycle);
+    const before = await value.coordinator.run({ action: "inspect", operationId: id });
+    const binding = before["bindingSha256"]; assert.ok(typeof binding === "string");
+    await assert.rejects(value.coordinator.observeWorkerStartupAssignments(id, binding), /ORIGINAL_STARTUP_RESULT_REQUIRED/u);
+    await value.coordinator.captureWorkerStartup(id, binding, STARTUP_OPEN_INPUT);
+    if (outcome === "success") {
+      const observed = await value.coordinator.observeWorkerStartupAssignments(id, binding);
+      assert.equal(observed["pointInTimeObservation"], true); assert.equal(observed["saveAuthorized"], false);
+      assert.equal(observed["executionAuthorized"], false);
+      const result = observed["result"]; assert.ok(result !== null && typeof result === "object");
+      assert.equal(Reflect.get(result, "currentProjectWrapperRelationsVerified"), true);
+      for (const field of ["continuousAssignmentOwnershipVerified", "nativeChannelIntrinsicAndPeerOwnershipVerified",
+        "completePublishersVerified", "writeDestinationsContained", "atomicSnapshotVerified", "queueCompletionVerified"]) {
+        assert.equal(Reflect.get(result, field), false);
+      }
+    } else { await assert.rejects(value.coordinator.observeWorkerStartupAssignments(id, binding), /synthetic assignment/u); }
+    await assert.rejects(value.coordinator.observeWorkerStartupAssignments(id, binding), /WORKER_STARTUP_ASSIGNMENTS_CONSUMED/u);
+    let inspected = await value.coordinator.run({ action: "inspect", operationId: id });
+    assert.equal(inspected["workerStartupAssignmentsAttemptConsumed"], true);
+    assert.equal(inspected["workerStartupAssignmentsResultRetained"], outcome !== "prove" && outcome !== "intent-publication");
+    assert.equal(inspected["workerStartupAssignmentsResultPublished"], outcome === "success");
+    const count = value.calls.length;
+    await value.coordinator.run({ action: "settle-records", operationId: id, expectedIntentSha256: before["intentSha256"] });
+    assert.equal(value.calls.slice(count).some(call => call.startsWith("startup-assignments")), false);
+    inspected = await value.coordinator.run({ action: "inspect", operationId: id });
+    assert.equal(inspected["workerStartupAssignmentsResultPublished"], outcome === "success" || outcome === "result-publication");
+    assert.equal(value.calls.filter(call => call === "startup-assignments-prove").length, outcome === "intent-publication" ? 0 : 1);
+    assert.equal(value.calls.filter(call => call === "startup-dispatch").length, 1);
+    if (outcome === "success") {
+      const path = join(directory(id), "worker-startup-assignments-intent.json"), text = await readFile(path, "utf8");
+      const recorded = diagnosticLifecycleRecordSchemas["worker-startup-assignments-intent.json"].parse(JSON.parse(text) as unknown);
+      try {
+        await writeFile(path, JSON.stringify({ ...recorded, openingResultSha256: "f".repeat(64) }), { mode: 0o600 });
+        await assert.rejects(readCurrentPcbDiagnosticLifecycles(), /WORKER_STARTUP_ASSIGNMENTS_CHAIN/u);
+      } finally { await writeFile(path, text, { mode: 0o600 }); }
+      const resultPath = join(directory(id), "worker-startup-assignments-result.json"), resultText = await readFile(resultPath, "utf8");
+      const result = diagnosticLifecycleRecordSchemas["worker-startup-assignments-result.json"].parse(JSON.parse(resultText) as unknown);
+      assert.equal(diagnosticLifecycleRecordSchemas["worker-startup-assignments-result.json"].safeParse({ ...result,
+        result: { ...result.result, continuousAssignmentOwnershipVerified: true } }).success, false);
+      try {
+        await writeFile(resultPath, JSON.stringify({ ...result, intentSha256: "f".repeat(64) }), { mode: 0o600 });
+        await assert.rejects(readCurrentPcbDiagnosticLifecycles(), /WORKER_STARTUP_ASSIGNMENTS_RESULT_CHAIN/u);
+      } finally { await writeFile(resultPath, resultText, { mode: 0o600 }); }
+    }
+    const historical = new CurrentPcbWorkerStartupLifecycle(value.options);
+    await assert.rejects(historical.observeWorkerStartupAssignments(id, binding), /ORIGINAL_STARTUP_RESULT_REQUIRED/u);
+    await value.request("normal-close", { hwnd: "12345", confirmNormalClose: true });
+    await assert.rejects(value.coordinator.observeWorkerStartupAssignments(id, binding), /ORIGINAL_STARTUP_RESULT_REQUIRED/u);
+    value.state.terminated = true; await value.request("observe-termination"); await value.request("release-closed");
+    assert.ok(value.calls.indexOf("startup-release") < value.calls.indexOf("release"));
+    await assertNoUnresolvedCurrentPcbDiagnosticLaunches();
+  });
+}
+
+for (const outcome of ["success", "intent-publication", "result-publication", "prove", "reproof"] as const) {
+  void test(`startup actor ${outcome} retains original stage and never replays samples during settlement`, async context => {
+    const id = `worker-startup-test-actor-${outcome}`;
+    let original: ReturnType<typeof startupOpeningFixture> | null = null, refuse = true;
+    const value = fixture(context, id, {
+      createStartupOpening: () => { assert.ok(original); return original.owner; },
+      publishRecord: async (operationId, name, record) => {
+        if (refuse && (outcome === "intent-publication" && name === "worker-startup-actor-intent.json" ||
+          outcome === "result-publication" && name === "worker-startup-actor-result.json")) {
+          refuse = false; throw new Error("synthetic actor publication failure");
+        }
+        await publishCurrentPcbDiagnosticLifecycleRecord(operationId, name, record);
+      },
+    });
+    const handoff = await successfulStartupHandoff(context, value);
+    const failure = outcome === "prove" || outcome === "reproof" ? `actor-${outcome}` as const : undefined;
+    original = startupOpeningFixture(value, handoff, false, failure);
+    await readyForOpening(id, value); assert.ok(value.coordinator instanceof CurrentPcbWorkerStartupLifecycle);
+    const before = await value.coordinator.run({ action: "inspect", operationId: id });
+    const binding = before["bindingSha256"]; assert.ok(typeof binding === "string");
+    await value.coordinator.captureWorkerStartup(id, binding, STARTUP_OPEN_INPUT);
+    await assert.rejects(value.coordinator.observeWorkerStartupActor(id, binding), /ORIGINAL_STARTUP_ASSIGNMENTS_REQUIRED/u);
+    await value.coordinator.observeWorkerStartupAssignments(id, binding);
+    if (outcome === "success") {
+      const observed = await value.coordinator.observeWorkerStartupActor(id, binding);
+      assert.equal(observed["pointInTimeObservation"], true); assert.equal(observed["saveAuthorized"], false);
+      assert.equal(observed["executionAuthorized"], false);
+      const result = observed["result"]; assert.ok(result !== null && typeof result === "object");
+      assert.equal(Reflect.get(result, "pairedActorValuesMatched"), true);
+      for (const field of ["continuousObservation", "pcbRealmObserved", "clockProvenanceVerified", "backendActorProvenanceVerified",
+        "completePublicationIntervalVerified", "writeDestinationsContained", "atomicSnapshotVerified"]) {
+        assert.equal(Reflect.get(result, field), false);
+      }
+    } else { await assert.rejects(value.coordinator.observeWorkerStartupActor(id, binding), /synthetic actor/u); }
+    await assert.rejects(value.coordinator.observeWorkerStartupActor(id, binding), /WORKER_STARTUP_ACTOR_CONSUMED/u);
+    let inspected = await value.coordinator.run({ action: "inspect", operationId: id });
+    assert.equal(inspected["workerStartupActorAttemptConsumed"], true);
+    assert.equal(inspected["workerStartupActorResultRetained"], outcome !== "prove" && outcome !== "intent-publication");
+    assert.equal(inspected["workerStartupActorResultPublished"], outcome === "success");
+    const count = value.calls.length;
+    await value.coordinator.run({ action: "settle-records", operationId: id, expectedIntentSha256: before["intentSha256"] });
+    assert.equal(value.calls.slice(count).some(call => call.startsWith("startup-actor")), false);
+    inspected = await value.coordinator.run({ action: "inspect", operationId: id });
+    assert.equal(inspected["workerStartupActorResultPublished"], outcome === "success" || outcome === "result-publication");
+    if (outcome === "success" || outcome === "result-publication") {
+      const summary = inspected["workerStartupActorResult"]; assert.ok(summary !== null && typeof summary === "object");
+      assert.equal(Reflect.get(summary, "summaryOnly"), true); assert.equal(Reflect.get(summary, "sampleCount"), 4);
+      assert.equal(Reflect.has(summary, "samples"), false); assert.equal(Reflect.has(summary, "workerUserText"), false);
+    }
+    assert.equal(value.calls.filter(call => call === "startup-actor-observe").length, outcome === "intent-publication" ? 0 : 1);
+    assert.equal(value.calls.filter(call => call === "startup-dispatch").length, 1);
+    if (outcome === "success") {
+      const path = join(directory(id), "worker-startup-actor-intent.json"), text = await readFile(path, "utf8");
+      const recorded = diagnosticLifecycleRecordSchemas["worker-startup-actor-intent.json"].parse(JSON.parse(text) as unknown);
+      try {
+        await writeFile(path, JSON.stringify({ ...recorded, assignmentsResultSha256: "f".repeat(64) }), { mode: 0o600 });
+        await assert.rejects(readCurrentPcbDiagnosticLifecycles(), /WORKER_STARTUP_ACTOR_CHAIN/u);
+      } finally { await writeFile(path, text, { mode: 0o600 }); }
+      const resultPath = join(directory(id), "worker-startup-actor-result.json"), resultText = await readFile(resultPath, "utf8");
+      const result = diagnosticLifecycleRecordSchemas["worker-startup-actor-result.json"].parse(JSON.parse(resultText) as unknown);
+      try {
+        await writeFile(resultPath, JSON.stringify({ ...result, intentSha256: "f".repeat(64) }), { mode: 0o600 });
+        await assert.rejects(readCurrentPcbDiagnosticLifecycles(), /WORKER_STARTUP_ACTOR_RESULT_CHAIN/u);
+      } finally { await writeFile(resultPath, resultText, { mode: 0o600 }); }
+    }
+    const historical = new CurrentPcbWorkerStartupLifecycle(value.options);
+    await assert.rejects(historical.observeWorkerStartupActor(id, binding), /ORIGINAL_STARTUP_ASSIGNMENTS_REQUIRED/u);
+    await value.request("normal-close", { hwnd: "12345", confirmNormalClose: true });
+    await assert.rejects(value.coordinator.observeWorkerStartupActor(id, binding), /ORIGINAL_STARTUP_ASSIGNMENTS_REQUIRED/u);
+    value.state.terminated = true; await value.request("observe-termination"); await value.request("release-closed");
+    assert.ok(value.calls.indexOf("startup-release") < value.calls.indexOf("release"));
+    await assertNoUnresolvedCurrentPcbDiagnosticLaunches();
+  });
 }
 
 void test("worker startup seals its third purpose before allocation and excludes both older facades through cleanup", async context => {

@@ -103,7 +103,9 @@ export class CurrentPcbWorkerStartupChannel {
   #attachIssued = false;
   #attachAcknowledged = false;
   #openingIdentity: string | null = null;
+  #openingContext: string | null = null;
   #openingConsumed = false;
+  #actorReads = 0;
   #failure: Error | null = null;
   #fatal = false;
 
@@ -179,6 +181,10 @@ export class CurrentPcbWorkerStartupChannel {
     if (parentCommand(command)) {
       if (command.method !== "Target.getTargets" && command.sessionId !== this.#parent.sessionId) { throw fail("PARENT_SESSION"); }
       if (command.method === "Runtime.callFunctionOn" && "uniqueContextId" in command.params) {
+        if (command.params.arguments.length === 0) {
+          if (!this.#openingConsumed || command.params.uniqueContextId !== this.#openingContext || this.#actorReads >= 2) { throw fail("ACTOR_SEQUENCE"); }
+          return;
+        }
         const identity = JSON.stringify([command.params.uniqueContextId, command.params.arguments[0].value]);
         const phase = command.params.arguments[1].value;
         if (phase === "preflight" ? this.#openingIdentity !== null :
@@ -210,8 +216,10 @@ export class CurrentPcbWorkerStartupChannel {
         this.#pending.set(pending.id, pending);
         if (command.method === "Target.setAutoAttach") { this.#attachIssued = true; }
         if (command.method === "Runtime.callFunctionOn" && "uniqueContextId" in command.params) {
-          if (command.params.arguments[1].value === "preflight") {
+          if (command.params.arguments.length === 0) { this.#actorReads += 1; }
+          else if (command.params.arguments[1].value === "preflight") {
             this.#openingIdentity = JSON.stringify([command.params.uniqueContextId, command.params.arguments[0].value]);
+            this.#openingContext = command.params.uniqueContextId;
           } else { this.#openingConsumed = true; }
         }
         ackSchema.parse(captureCurrentPcbStringClockReply(await this.#exchange.call(this.#native, wire.request)).value);

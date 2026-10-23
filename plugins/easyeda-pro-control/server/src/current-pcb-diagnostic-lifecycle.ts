@@ -4,7 +4,7 @@
 import type { z } from "zod";
 import { join } from "node:path";
 import { controlDataDirectory } from "./artifacts.ts";
-import { canonicalJson, sha256Json } from "./core.ts";
+import { canonicalJson, sha256Json, sha256Text } from "./core.ts";
 import { currentDisposableOpenPreparationCheckpointSchema, currentDisposableOpenSealedTargetSchema } from "./current-disposable-open.ts";
 import type { CurrentDisposableOpenSealedTarget } from "./current-disposable-open.ts";
 import { prepareCurrentDisposableOpenCheckpoint, readCurrentPcbCommonOpenInventory, verifyCurrentDisposableOpenCheckpoint, verifyHistoricalCurrentDisposableOpenCheckpoint } from "./current-disposable-open-checkpoint.ts";
@@ -32,6 +32,8 @@ import type { readExactSqlInventory } from "./sqlite-inventory.ts";
 import { CurrentPcbWorkerStartupOpening } from "./current-pcb-worker-startup-opening.ts";
 import type { CurrentPcbWorkerStartupOpeningResult } from "./current-pcb-worker-startup-opening.ts";
 import type { CurrentPcbWorkerStartupTransport } from "./current-pcb-worker-startup-transport.ts";
+import type { CurrentPcbWorkerConstructionAssignments } from "./current-pcb-worker-construction-assignment.ts";
+import type { CurrentPcbWorkerStartupActorPacket } from "./current-pcb-worker-startup-actor-runner.ts";
 import { CURRENT_PCB_WORKER_STARTUP_OPERATION_PREFIX, currentPcbWorkerStartupCaptureRequestSchema,
   currentPcbWorkerStartupLifecycleIdSchema, currentPcbWorkerStartupLifecycleRequestSchema } from "./current-pcb-worker-startup-validation.ts";
 
@@ -43,7 +45,8 @@ const launchPurposeFields = {
   "worker-startup": { schema: "easyeda-pro-control.pcb-worker-startup-launch-intent.v1", purpose: "worker-startup" },
 } as const;
 const startupCaptureInputSchema = currentPcbWorkerStartupCaptureRequestSchema.omit({ action: true, operationId: true, expectedBindingSha256: true });
-const startupOpeningMethods = ["open", "status", "retainedOpeningResult", "requireOriginal", "releaseAfterTermination"] as const;
+const startupOpeningMethods = ["open", "status", "retainedOpeningResult", "requireOriginal", "proveCurrentAssignments", "requireCurrentAssignments",
+  "retainedActorObservation", "observeActorClock", "requireActorClock", "releaseAfterTermination"] as const;
 export type CurrentPcbWorkerStartupOpeningCoordinator = Pick<CurrentPcbWorkerStartupOpening, (typeof startupOpeningMethods)[number]>;
 type CleanupRequest = Exclude<LifecycleRequest, { action: "launch" | "inspect" | "settle-records" | "cleanup-unlaunched" | "cleanup-no-process" }>;
 type ObservationRequest = Extract<LifecycleRequest, { action: "browser-observation" | "inspect-frames" | "inspect-script" | "inspect-workers" | "inspect-worker-script" | "observe-worker-state" | "observe-model-state" | "observe-pcb-opening" | "observe-string-precreate" }>;
@@ -129,6 +132,10 @@ function describe(operationId: string, operation: DiagnosticLifecycleOperation |
     workerStartupHandoffResultPublished: records?.["worker-startup-handoff-result.json"] !== undefined,
     workerStartupOpeningAttemptConsumed: records?.["worker-startup-opening-intent.json"] !== undefined,
     workerStartupOpeningResultPublished: records?.["worker-startup-opening-result.json"] !== undefined,
+    workerStartupAssignmentsAttemptConsumed: records?.["worker-startup-assignments-intent.json"] !== undefined,
+    workerStartupAssignmentsResultPublished: records?.["worker-startup-assignments-result.json"] !== undefined,
+    workerStartupActorAttemptConsumed: records?.["worker-startup-actor-intent.json"] !== undefined,
+    workerStartupActorResultPublished: records?.["worker-startup-actor-result.json"] !== undefined,
     ...(binding === undefined ? {} : { binding: binding.binding, bindingSha256: sha256Json(binding), launchAcknowledged: binding.launchAcknowledged }),
     ...claims };
 }
@@ -145,6 +152,17 @@ function publicObservationResult(operationId: string, stage: ObservationStage,
       published, resultSha256: sha256Json(value), resultBytes: Buffer.byteLength(canonicalJson(value)) },
     projectWorkerAssociationVerified: false, publicationCaptureVerified: false, completeLiveSourceVerified: false,
     queueCompletionVerified: false, saveAuthorized: false, executionAuthorized: false };
+}
+/** Inspection already includes parent/opening evidence. Do not duplicate the
+ * complete actor packet beside its retained four native samples. */
+function publicStartupActorResult(operationId: string,
+  record: DiagnosticLifecycleRecords["worker-startup-actor-result.json"], published: boolean): Readonly<Record<string, unknown>> | null {
+  if (record === undefined) { return null; }
+  const { samples, workerUserText, ...summary } = record.result;
+  return { schema: "easyeda-pro-control.pcb-worker-startup-actor-summary.v1", ...summary,
+    summaryOnly: true, pointInTimeObservation: true, sampleCount: samples.length, workerUserTextSha256: sha256Text(workerUserText),
+    record: { path: join(controlDataDirectory(), "pcb-diagnostic-lifecycle-v1", operationId, "worker-startup-actor-result.json"),
+      published, sha256: sha256Json(record), bytes: Buffer.byteLength(canonicalJson(record)) } };
 }
 
 /** Shared cleanup and journal machinery. Only the three fixed exported facades
@@ -185,6 +203,10 @@ class CurrentPcbLifecycleCore {
   #startupOpening: Readonly<{ owner: CurrentPcbWorkerStartupOpeningCoordinator; methods: CurrentPcbWorkerStartupOpeningCoordinator }> | null = null;
   #startupOpeningResult: CurrentPcbWorkerStartupOpeningResult | null = null;
   #startupOpeningReleased = false;
+  #startupAssignmentsAttempted = false;
+  #startupAssignments: CurrentPcbWorkerConstructionAssignments | null = null;
+  #startupActorAttempted = false;
+  #startupActorPacket: CurrentPcbWorkerStartupActorPacket | null = null;
 
   public constructor(options: CurrentPcbDiagnosticLifecycleOptions,
     dependencies: CurrentPcbDiagnosticLifecycleDependencies | CurrentPcbStringPrecreateLifecycleDependencies | CurrentPcbWorkerStartupLifecycleDependencies,
@@ -254,6 +276,10 @@ class CurrentPcbLifecycleCore {
         ? native?.pcbOpeningResult ?? null : null;
       const nativePcbFrameObservation = original && this.#observationConsumed.has("pcb-opening") && !this.#observations.has("pcb-opening")
         ? native?.pcbFrameObservation ?? null : null;
+      const actorPending = original ? this.#pending.get("worker-startup-actor-result.json") : undefined;
+      const actorPublished = operation?.records["worker-startup-actor-result.json"];
+      const actorRecord = actorPending === undefined ? actorPublished :
+        diagnosticLifecycleRecordSchemas["worker-startup-actor-result.json"].parse(JSON.parse(actorPending) as unknown);
       let openingState = openingConsumed ? "opening-unknown" : "not-attempted";
       if (openingResult !== undefined) {
         openingState = openingResult["ok"] === true && openingResult["status"] === "opened-prefix-observed" ? "opened-prefix-observed" : "refused";
@@ -261,6 +287,7 @@ class CurrentPcbLifecycleCore {
       return { ...describe(request.operationId, operation), busy: this.#busy, observations, noProcessCleanupAvailable,
         workerStartupHandoffAttemptConsumed: operation?.records["worker-startup-handoff-intent.json"] !== undefined || original && this.#startupHandoffAttempted,
         workerStartupHandoffRetained: original && this.#startupHandoff !== null,
+        workerStartupChannel: native?.workerStartupChannel ?? null,
         workerStartupOpeningAttemptConsumed: operation?.records["worker-startup-opening-intent.json"] !== undefined ||
           original && this.#purpose === "worker-startup" && this.#openingAttempted,
         workerStartupOpeningResultRetained: original && this.#startupOpeningResult !== null,
@@ -268,6 +295,15 @@ class CurrentPcbLifecycleCore {
         workerStartupOpeningNativeReply: original && this.#startupOpening !== null ?
           this.#startupOpening.methods.retainedOpeningResult.call(this.#startupOpening.owner) : null,
         workerStartupOpeningResult: operation?.records["worker-startup-opening-result.json"]?.result ?? null,
+        workerStartupAssignmentsAttemptConsumed: operation?.records["worker-startup-assignments-intent.json"] !== undefined ||
+          original && this.#startupAssignmentsAttempted,
+        workerStartupAssignmentsResultRetained: original && this.#startupAssignments !== null,
+        workerStartupAssignmentsResult: operation?.records["worker-startup-assignments-result.json"]?.result ?? null,
+        workerStartupActorAttemptConsumed: operation?.records["worker-startup-actor-intent.json"] !== undefined || original && this.#startupActorAttempted,
+        workerStartupActorResultRetained: original && this.#startupActorPacket !== null,
+        workerStartupActorObservation: original && this.#startupOpening !== null ?
+          this.#startupOpening.methods.retainedActorObservation.call(this.#startupOpening.owner) : null,
+        workerStartupActorResult: publicStartupActorResult(request.operationId, actorRecord, actorPublished !== undefined),
         projectOpeningAttemptConsumed: openingConsumed,
         projectOpeningResultRetained: original && this.#openingResult !== null,
         projectOpeningState: openingState,
@@ -419,7 +455,9 @@ class CurrentPcbLifecycleCore {
       await assertSnapshot(expected); this.#assertOwner(retained);
       const owner = this.#createStartupOpening(handoff);
       const captured = Object.freeze({ open: owner.open, status: owner.status, retainedOpeningResult: owner.retainedOpeningResult,
-        requireOriginal: owner.requireOriginal, releaseAfterTermination: owner.releaseAfterTermination });
+        requireOriginal: owner.requireOriginal, proveCurrentAssignments: owner.proveCurrentAssignments,
+        requireCurrentAssignments: owner.requireCurrentAssignments, retainedActorObservation: owner.retainedActorObservation,
+        observeActorClock: owner.observeActorClock, requireActorClock: owner.requireActorClock, releaseAfterTermination: owner.releaseAfterTermination });
       this.#startupOpening = Object.freeze({ owner, methods: captured }); this.#assertOwner(retained);
       let reverified = false, reverifyAttempted = false;
       const result = await captured.open.call(owner, sealedTarget, async () => {
@@ -466,7 +504,7 @@ class CurrentPcbLifecycleCore {
       const operation = operations.find(value => value.operationId === operationId), retained = this.#retained;
       this.#assertPurpose(operationId, operation);
       requireValue(operation !== undefined && retained !== null && retained.operationId === operationId &&
-        result === this.#startupOpeningResult && this.#startupOpening !== null && !this.#startupOpeningReleased &&
+        result === this.#startupOpeningResult && this.#startupOpening !== null && !this.#startupOpeningReleased && !this.#closeAttempted &&
         operation.records["close-intent.json"] === undefined && operation.records["terminated.json"] === undefined &&
         sha256Json(operation.records["binding.json"]) === expectedBindingSha256 &&
         operation.records["worker-startup-opening-result.json"] !== undefined &&
@@ -476,6 +514,127 @@ class CurrentPcbLifecycleCore {
       const original = this.#startupOpening;
       const transport = await original.methods.requireOriginal.call(original.owner, result);
       this.#assertOwner(retained); await assertSnapshot(operations); this.#assertOwner(retained); return transport;
+    } finally { this.#busy = false; }
+  }
+
+  /** One journaled continuation of the original capture. The public response
+   * contains data only; its report cannot recreate the runner's lexical token. */
+  protected async observeStartupAssignments(operationId: string, expectedBindingSha256: string): Promise<Record<string, unknown>> {
+    currentPcbWorkerStartupLifecycleIdSchema.parse(operationId); diagnosticLifecycleDigestSchema.parse(expectedBindingSha256);
+    this.#options.assertLocalAllowed(); requireValue(this.#purpose === "worker-startup", "WORKER_STARTUP_PURPOSE_REQUIRED");
+    requireValue(!this.#busy, "BUSY"); this.#busy = true;
+    try {
+      const operations = await readCurrentPcbDiagnosticLifecycles();
+      const operation = operations.find(value => value.operationId === operationId), retained = this.#retained;
+      this.#assertPurpose(operationId, operation);
+      const openingResult = this.#startupOpeningResult, original = this.#startupOpening;
+      const openingRecord = operation?.records["worker-startup-opening-result.json"];
+      requireValue(operation !== undefined && retained !== null && retained.operationId === operationId && original !== null &&
+        openingResult !== null && !this.#startupOpeningReleased && !this.#closeAttempted &&
+        operation.records["close-intent.json"] === undefined && operation.records["terminated.json"] === undefined &&
+        sha256Json(operation.records["binding.json"]) === expectedBindingSha256 && openingRecord !== undefined &&
+        this.#pending.get("worker-startup-opening-result.json") === canonicalJson(openingRecord), "ORIGINAL_STARTUP_RESULT_REQUIRED");
+      this.#assertOwner(retained);
+      requireValue(!this.#startupAssignmentsAttempted && operation.records["worker-startup-assignments-intent.json"] === undefined,
+        "WORKER_STARTUP_ASSIGNMENTS_CONSUMED");
+      await this.#installation(retained); await assertSnapshot(operations); this.#assertOwner(retained);
+      const intent: NonNullable<DiagnosticLifecycleRecords["worker-startup-assignments-intent.json"]> = {
+        schema: "easyeda-pro-control.pcb-worker-startup-assignments-intent.v1", operationId, createdAt: new Date().toISOString(),
+        bindingSha256: expectedBindingSha256, openingResultSha256: sha256Json(openingRecord),
+      };
+      this.#startupAssignmentsAttempted = true;
+      await this.#record(operationId, "worker-startup-assignments-intent.json", intent);
+      const updated = { ...operation, records: { ...operation.records, "worker-startup-assignments-intent.json": intent } };
+      const expected = operations.map(value => value.operationId === operationId ? updated : value);
+      await assertSnapshot(expected); this.#assertOwner(retained);
+      const assignments = await original.methods.proveCurrentAssignments.call(original.owner, openingResult);
+      // Retain partial success before later reproof/publication. A failed
+      // Reproof leaves no accepted result plan for settlement to manufacture.
+      this.#startupAssignments = assignments; this.#assertOwner(retained);
+      await original.methods.requireCurrentAssignments.call(original.owner, openingResult, assignments); this.#assertOwner(retained);
+      const record = diagnosticLifecycleRecordSchemas["worker-startup-assignments-result.json"].parse({
+        schema: "easyeda-pro-control.pcb-worker-startup-assignments-result.v1", operationId, createdAt: new Date().toISOString(),
+        intentSha256: sha256Json(intent), result: structuredClone(assignments), pointInTimeObservation: true,
+        executionAuthorized: false, saveAuthorized: false,
+      });
+      this.#retainRecord("worker-startup-assignments-result.json", record);
+      await assertSnapshot(expected); this.#assertOwner(retained);
+      await this.#publish(operationId, "worker-startup-assignments-result.json", record);
+      const completed = { ...updated, records: { ...updated.records, "worker-startup-assignments-result.json": record } };
+      await assertSnapshot(expected.map(value => value.operationId === operationId ? completed : value)); this.#assertOwner(retained);
+      return { operationId, result: structuredClone(record.result), pointInTimeObservation: true,
+        validationOnly: true, executionAuthorized: false, saveAuthorized: false };
+    } finally { this.#busy = false; }
+  }
+
+  /** Future private compositions must reprove the current original assignments.
+   * No public action accepts a report, token or replacement owner. */
+  protected async requireStartupAssignments(operationId: string, expectedBindingSha256: string): Promise<CurrentPcbWorkerConstructionAssignments> {
+    currentPcbWorkerStartupLifecycleIdSchema.parse(operationId); diagnosticLifecycleDigestSchema.parse(expectedBindingSha256);
+    this.#options.assertLocalAllowed(); requireValue(this.#purpose === "worker-startup", "WORKER_STARTUP_PURPOSE_REQUIRED");
+    requireValue(!this.#busy, "BUSY"); this.#busy = true;
+    try {
+      const operations = await readCurrentPcbDiagnosticLifecycles();
+      const operation = operations.find(value => value.operationId === operationId), retained = this.#retained;
+      this.#assertPurpose(operationId, operation);
+      const assignments = this.#startupAssignments, openingResult = this.#startupOpeningResult, original = this.#startupOpening;
+      const openingRecord = operation?.records["worker-startup-opening-result.json"], record = operation?.records["worker-startup-assignments-result.json"];
+      requireValue(operation !== undefined && retained !== null && retained.operationId === operationId && original !== null &&
+        openingResult !== null && assignments !== null && !this.#startupOpeningReleased && !this.#closeAttempted &&
+        operation.records["close-intent.json"] === undefined && operation.records["terminated.json"] === undefined &&
+        sha256Json(operation.records["binding.json"]) === expectedBindingSha256 && openingRecord !== undefined && record !== undefined &&
+        this.#pending.get("worker-startup-opening-result.json") === canonicalJson(openingRecord) &&
+        this.#pending.get("worker-startup-assignments-result.json") === canonicalJson(record), "ORIGINAL_STARTUP_ASSIGNMENTS_REQUIRED");
+      this.#assertOwner(retained);
+      await original.methods.requireCurrentAssignments.call(original.owner, openingResult, assignments); this.#assertOwner(retained);
+      await assertSnapshot(operations); this.#assertOwner(retained); return assignments;
+    } finally { this.#busy = false; }
+  }
+
+  protected async observeStartupActor(operationId: string, expectedBindingSha256: string): Promise<Record<string, unknown>> {
+    currentPcbWorkerStartupLifecycleIdSchema.parse(operationId); diagnosticLifecycleDigestSchema.parse(expectedBindingSha256);
+    this.#options.assertLocalAllowed(); requireValue(this.#purpose === "worker-startup", "WORKER_STARTUP_PURPOSE_REQUIRED");
+    requireValue(!this.#busy, "BUSY"); this.#busy = true;
+    try {
+      const operations = await readCurrentPcbDiagnosticLifecycles();
+      const operation = operations.find(value => value.operationId === operationId), retained = this.#retained;
+      this.#assertPurpose(operationId, operation);
+      const assignments = this.#startupAssignments, openingResult = this.#startupOpeningResult, original = this.#startupOpening;
+      const openingRecord = operation?.records["worker-startup-opening-result.json"], record = operation?.records["worker-startup-assignments-result.json"];
+      requireValue(operation !== undefined && retained !== null && retained.operationId === operationId && original !== null &&
+        openingResult !== null && assignments !== null && !this.#startupOpeningReleased && !this.#closeAttempted &&
+        operation.records["close-intent.json"] === undefined && operation.records["terminated.json"] === undefined &&
+        sha256Json(operation.records["binding.json"]) === expectedBindingSha256 && openingRecord !== undefined && record !== undefined &&
+        this.#pending.get("worker-startup-opening-result.json") === canonicalJson(openingRecord) &&
+        this.#pending.get("worker-startup-assignments-result.json") === canonicalJson(record), "ORIGINAL_STARTUP_ASSIGNMENTS_REQUIRED");
+      this.#assertOwner(retained);
+      requireValue(!this.#startupActorAttempted && operation.records["worker-startup-actor-intent.json"] === undefined, "WORKER_STARTUP_ACTOR_CONSUMED");
+      await this.#installation(retained); await assertSnapshot(operations); this.#assertOwner(retained);
+      const intent: NonNullable<DiagnosticLifecycleRecords["worker-startup-actor-intent.json"]> = {
+        schema: "easyeda-pro-control.pcb-worker-startup-actor-intent.v1", operationId, createdAt: new Date().toISOString(),
+        bindingSha256: expectedBindingSha256, assignmentsResultSha256: sha256Json(record),
+      };
+      this.#startupActorAttempted = true;
+      await this.#record(operationId, "worker-startup-actor-intent.json", intent);
+      const updated = { ...operation, records: { ...operation.records, "worker-startup-actor-intent.json": intent } };
+      const expected = operations.map(value => value.operationId === operationId ? updated : value);
+      await assertSnapshot(expected); this.#assertOwner(retained);
+      const packet = await original.methods.observeActorClock.call(original.owner, openingResult, assignments);
+      this.#startupActorPacket = packet; this.#assertOwner(retained);
+      await original.methods.requireActorClock.call(original.owner, openingResult, assignments, packet); this.#assertOwner(retained);
+      const result = diagnosticLifecycleRecordSchemas["worker-startup-actor-result.json"].parse({
+        schema: "easyeda-pro-control.pcb-worker-startup-actor-result.v1", operationId, createdAt: new Date().toISOString(),
+        intentSha256: sha256Json(intent), result: structuredClone(packet), pointInTimeObservation: true,
+        executionAuthorized: false, saveAuthorized: false,
+      });
+      requireValue(canonicalJson(result.result.identity) === canonicalJson(openingResult.workerIdentity), "WORKER_STARTUP_ACTOR_IDENTITY");
+      this.#retainRecord("worker-startup-actor-result.json", result);
+      await assertSnapshot(expected); this.#assertOwner(retained);
+      await this.#publish(operationId, "worker-startup-actor-result.json", result);
+      const completed = { ...updated, records: { ...updated.records, "worker-startup-actor-result.json": result } };
+      await assertSnapshot(expected.map(value => value.operationId === operationId ? completed : value)); this.#assertOwner(retained);
+      return { operationId, result: structuredClone(result.result), pointInTimeObservation: true,
+        validationOnly: true, executionAuthorized: false, saveAuthorized: false };
     } finally { this.#busy = false; }
   }
 
@@ -1209,5 +1368,11 @@ export class CurrentPcbWorkerStartupLifecycle extends CurrentPcbLifecycleCore {
     await this.handoffStartup(operationId, expectedBindingSha256);
     const result = await this.openStartup(operationId, expectedBindingSha256, request);
     return { ...structuredClone(result), operationId, validationOnly: true, saveAuthorized: false };
+  }
+  public observeWorkerStartupAssignments(operationId: string, expectedBindingSha256: string): Promise<Record<string, unknown>> {
+    return this.observeStartupAssignments(operationId, expectedBindingSha256);
+  }
+  public observeWorkerStartupActor(operationId: string, expectedBindingSha256: string): Promise<Record<string, unknown>> {
+    return this.observeStartupActor(operationId, expectedBindingSha256);
   }
 }

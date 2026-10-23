@@ -56,6 +56,13 @@ void test("startup schema keeps its purpose, pause confirmation and disposable t
   for (const action of ["open-project", "open-pcb", "handoff", "create", "save", "upgrade", "inspect-workers", "observe-model-state"]) {
     assert.equal(currentPcbWorkerStartupValidationRequestSchema.safeParse({ action, operationId, expectedBindingSha256 }).success, false);
   }
+  for (const action of ["observe-current-assignments", "observe-actor-clock"]) {
+    const request = { action, operationId, expectedBindingSha256 };
+    assert.equal(currentPcbWorkerStartupValidationRequestSchema.safeParse(request).success, true);
+    for (const extra of [{ actor: {} }, { clock: Date.now() }, { workerObjectId: "caller" }, { assignments: {} }]) {
+      assert.equal(currentPcbWorkerStartupValidationRequestSchema.safeParse({ ...request, ...extra }).success, false);
+    }
+  }
   assert.equal(currentPcbWorkerStartupValidationRequestSchema.safeParse({ action: "inspect-script", operationId, expectedBindingSha256,
     frameId: "frame", family: "pcb" }).success, false);
 });
@@ -82,6 +89,14 @@ void test("startup public registration binds the actual inherited methods, fixed
       assert.ok(this instanceof Coordinator);
       await Promise.resolve(); assert.ok(options); options.assertLocalAllowed(); calls.push({ id, binding, input });
       return { synthetic: true, validationOnly: true, saveAuthorized: false };
+    }
+    public override async observeWorkerStartupAssignments(id: string, binding: string): Promise<Record<string, unknown>> {
+      await Promise.resolve(); assert.ok(this instanceof Coordinator); assert.ok(options); options.assertLocalAllowed();
+      calls.push({ id, binding, action: "observe-current-assignments" }); return { synthetic: true };
+    }
+    public override async observeWorkerStartupActor(id: string, binding: string): Promise<Record<string, unknown>> {
+      await Promise.resolve(); assert.ok(this instanceof Coordinator); assert.ok(options); options.assertLocalAllowed();
+      calls.push({ id, binding, action: "observe-actor-clock" }); return { synthetic: true };
     }
   }
   const environment = { EASYEDA_ASSETS_ROOT: "/synthetic/assets", WSL_DISTRO_NAME: "Ubuntu" };
@@ -116,6 +131,11 @@ void test("startup public registration binds the actual inherited methods, fixed
   await invoke({ request: wrap(capture) }); assert.equal(gateCalls, 1);
   const { action: _action, operationId: _operation, expectedBindingSha256: _binding, ...body } = capture;
   assert.equal(JSON.stringify(calls.at(-1)), JSON.stringify({ id: operationId, binding: expectedBindingSha256, input: body }));
+  for (const action of ["observe-current-assignments", "observe-actor-clock"]) {
+    await invoke({ request: wrap({ action, operationId, expectedBindingSha256 }) });
+    assert.equal(JSON.stringify(calls.at(-1)), JSON.stringify({ id: operationId, binding: expectedBindingSha256, action }));
+  }
+  assert.equal(gateCalls, 3);
   for (const name of ["windowsRuntime", "ordinaryLaunchRuntime", "currentDisposableOpenCoordinator", "currentPcbRenameOperationCoordinator",
     "currentSchematicRenameOperationCoordinator", "closedSymbolIndexReservation", "scheduledShutdown"]) {
     scope[name] = {}; await assert.rejects(options.assertOtherLaunchesSettled(), /requires no retained/u); scope[name] = undefined;
@@ -127,7 +147,7 @@ void test("startup public registration binds the actual inherited methods, fixed
   await options.assertOtherLaunchesSettled();
   const core: unknown = Object.getPrototypeOf(CurrentPcbWorkerStartupLifecycle.prototype);
   assert.ok(core !== null && typeof core === "object");
-  for (const name of ["handoffStartup", "openStartup"]) {
+  for (const name of ["handoffStartup", "openStartup", "observeStartupAssignments", "requireStartupAssignments", "observeStartupActor"]) {
     const descriptor = Object.getOwnPropertyDescriptor(core, name); assert.ok(descriptor);
     try {
       Object.defineProperty(core, name, { ...descriptor, value: (): never => { throw new Error("substituted core method called"); } });

@@ -16,6 +16,8 @@ import { CURRENT_PCB_WORKER_CONSTRUCTION_IDENTITY, CURRENT_PCB_WORKER_CONSTRUCTI
   CURRENT_PCB_WORKER_CONSTRUCTION_SOURCE } from "./current-pcb-worker-construction-contract.ts";
 import type { CurrentPcbWorkerConstructionCommand, CurrentPcbWorkerConstructionExpression,
   CurrentPcbWorkerConstructionSite, CurrentPcbWorkerConstructionTransport } from "./current-pcb-worker-construction-contract.ts";
+import { CURRENT_PCB_WORKER_STARTUP_WORKER_ACTOR_CLOCK_FUNCTION,
+  decodeCurrentPcbWorkerStartupActor } from "./current-pcb-worker-startup-actor.ts";
 
 const GROUP = CURRENT_PCB_WORKER_CONSTRUCTION_SOURCE.group;
 const token = z.string().min(1).max(256).regex(/^[A-Za-z\d_.:-]+$/u);
@@ -121,6 +123,8 @@ export class CurrentPcbWorkerConstructionRunner {
   #assignedWrappers: Readonly<Record<CurrentPcbWorkerConstructionAssignment, string>> | null = null;
   #projectIdentityConsumed = false;
   #projectIdentity: CurrentPcbWorkerConstructionProjectIdentity | null = null;
+  #actorSampleAttempts = 0;
+  #actorSampleBusy = false;
 
   public constructor(transport: CurrentPcbWorkerConstructionTransport) {
     transportMembers(transport);
@@ -405,6 +409,27 @@ export class CurrentPcbWorkerConstructionRunner {
     const original = await this.requireOriginal(packet);
     try { await this.#assignmentRecheck(original, this.#assignedWrappers); }
     catch (error) { this.#failed ??= fail("ASSIGNMENTS_CHANGED"); throw error; }
+  }
+  /** Two worker samples for the separate four-read startup actor bracket. Each
+   * request retains the original constructor PROJECT and bus, not a later
+   * global lookup or caller-provided remote handle. Failure consumes the read. */
+  public async observeActorClock(packet: CurrentPcbWorkerConstructionPacket,
+    assignments: CurrentPcbWorkerConstructionAssignments): Promise<unknown> {
+    if (this.#actorSampleAttempts >= 2 || this.#actorSampleBusy || this.#projectIdentity === null) { throw fail("ACTOR_SAMPLES_CONSUMED"); }
+    this.#actorSampleAttempts += 1; this.#actorSampleBusy = true;
+    try {
+      await this.requireCurrentAssignments(packet, assignments);
+      const original = await this.requireOriginal(packet);
+      const raw = await this.#assignmentCall(original.project, CURRENT_PCB_WORKER_STARTUP_WORKER_ACTOR_CLOCK_FUNCTION,
+        [original.channelBus]);
+      const sample = decodeCurrentPcbWorkerStartupActor(raw);
+      if (sample.phase !== "worker" || this.#projectIdentity === null || sample.identity.projectUuid !== this.#projectIdentity.projectUuid ||
+          sample.identity.branchUuid !== this.#projectIdentity.branchUuid || sample.identity.windowTabId !== this.#projectIdentity.windowTabId) {
+        throw fail("ACTOR_IDENTITY");
+      }
+      await this.requireCurrentAssignments(packet, assignments); return raw;
+    } catch (error) { this.#failed ??= fail("ACTOR_OBSERVATION_FAILED"); throw error; }
+    finally { this.#actorSampleBusy = false; }
   }
   public async release(): Promise<void> {
     if (this.#releaseConsumed) { throw fail("RELEASE_CONSUMED"); }

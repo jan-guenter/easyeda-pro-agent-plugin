@@ -8,6 +8,7 @@ import { CURRENT_PCB_WORKER_STARTUP_ATTACH } from "../src/current-pcb-worker-sta
 import type { CurrentPcbWorkerStartupEvent } from "../src/current-pcb-worker-startup-contract.ts";
 import { CURRENT_PCB_WORKER_CONSTRUCTION_SITES } from "../src/current-pcb-worker-construction-contract.ts";
 import { currentPcbWorkerStartupNativeParentCases } from "../src/current-pcb-worker-startup-native.ts";
+import { currentPcbWorkerStartupUiActorCommand } from "../src/current-pcb-worker-startup-actor.ts";
 
 type NativeSend = Readonly<Record<string, string | number>>;
 async function fixture(context: TestContext): Promise<Readonly<{
@@ -68,10 +69,12 @@ async function attach(value: Awaited<ReturnType<typeof fixture>>): Promise<void>
 void test("parent opening shares IDs, requires acknowledged attachment and cannot replay or change target", async context => {
   const value = await fixture(context);
   const samples = currentPcbWorkerStartupNativeParentCases();
-  const preflight = samples.find(sample => sample.method === "Runtime.callFunctionOn" && sample.params.arguments[1].value === "preflight");
-  const opening = samples.find(sample => sample.method === "Runtime.callFunctionOn" && sample.params.arguments[1].value === "open-project");
+  const preflight = samples.find(sample => sample.method === "Runtime.callFunctionOn" && sample.params.arguments.length === 2 && sample.params.arguments[1].value === "preflight");
+  const opening = samples.find(sample => sample.method === "Runtime.callFunctionOn" && sample.params.arguments.length === 2 && sample.params.arguments[1].value === "open-project");
   assert.ok(preflight?.method === "Runtime.callFunctionOn" && opening?.method === "Runtime.callFunctionOn");
-  const open = { ...opening, sessionId: "parent-session" }, pre = { ...preflight, sessionId: "parent-session" };
+  const openParams = opening.params, preParams = preflight.params;
+  assert.ok(openParams.awaitPromise && preParams.awaitPromise);
+  const open = { ...opening, params: openParams, sessionId: "parent-session" }, pre = { ...preflight, params: preParams, sessionId: "parent-session" };
   await assert.rejects(value.dependency.request(open), /OPENING_SEQUENCE/u);
   await value.dependency.request({ method: "Target.getTargets", params: {} });
   await value.dependency.request(pre);
@@ -83,6 +86,35 @@ void test("parent opening shares IDs, requires acknowledged attachment and canno
   await value.dependency.request(open);
   await assert.rejects(value.dependency.request(open), /OPENING_SEQUENCE/u);
   assert.deepEqual(value.requests.map(request => request["requestId"]), [17, 18, 19, 20]);
+});
+async function openForActor(value: Awaited<ReturnType<typeof fixture>>): Promise<void> {
+  for (const phase of ["preflight", "open-project"] as const) {
+    const sample = currentPcbWorkerStartupNativeParentCases().find(command => command.method === "Runtime.callFunctionOn" &&
+      command.params.arguments.length === 2 && command.params.arguments[1].value === phase);
+    assert.ok(sample?.method === "Runtime.callFunctionOn" && sample.params.arguments.length === 2);
+    if (phase === "open-project") { await attach(value); }
+    await value.dependency.request({ ...sample, sessionId: "parent-session" });
+  }
+}
+void test("startup UI actor reads require original opened context and consume exactly two native calls", async context => {
+  const command = currentPcbWorkerStartupUiActorCommand("parent-session", "original-context"), value = await fixture(context);
+  await assert.rejects(value.dependency.request(command), /ACTOR_SEQUENCE/u); assert.equal(value.requests.length, 0);
+  await openForActor(value);
+  await assert.rejects(value.dependency.request(currentPcbWorkerStartupUiActorCommand("parent-session", "foreign-context")), /ACTOR_SEQUENCE/u);
+  await assert.rejects(value.dependency.request(currentPcbWorkerStartupUiActorCommand("worker-session", "original-context")), /PARENT_SESSION/u);
+  await value.dependency.request(command); await value.dependency.request(command);
+  await assert.rejects(value.dependency.request(command), /ACTOR_SEQUENCE/u);
+  assert.deepEqual(value.requests.filter(request => request["parentPhase"] === "actor-clock").map(request => request["requestId"]), [20, 21]);
+  assert.equal(value.channel.status().failed, false);
+});
+void test("lost startup actor write acknowledgement consumes its native attempt and blocks replay", async context => {
+  const value = await fixture(context); await openForActor(value);
+  value.state.onSend = (): Promise<unknown> => Promise.reject(new Error("Synthetic lost actor write acknowledgement"));
+  const command = currentPcbWorkerStartupUiActorCommand("parent-session", "original-context");
+  await assert.rejects(value.dependency.request(command), /WRITE/u);
+  await assert.rejects(value.dependency.request(command));
+  assert.equal(value.requests.filter(request => request["parentPhase"] === "actor-clock").length, 1);
+  assert.equal(value.channel.status().failed, true);
 });
 void test("pre-capture parent replies and events are serviced before worker subscriber exists", async () => {
   const parent = Object.freeze({ targetId: "p", sessionId: "s", nextRequestId: 1 });

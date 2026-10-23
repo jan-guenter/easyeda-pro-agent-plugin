@@ -156,6 +156,11 @@ lines.on("line", line => {
       ...("sessionId" in request ? { sessionId: request["sessionId"] } : {}) };
     sent = Buffer.from([...events, response].map(value => `${JSON.stringify(value)}\0`).join(""));
     result = { written: true };
+  } else if (request["action"] === "worker-startup-reprove") {
+    assert.equal(scenario?.startsWith("opening-worker-startup"), true);
+    assert.deepEqual(Object.keys(request).toSorted(), ["action", "helperInstance", "id", "jobId", "rootCreated", "rootPid"]);
+    assert.equal(launchAttempted, true); assert.equal(terminated, false);
+    result = scenario === "opening-worker-startup-reproof-refused" ? { current: false } : { current: true };
   } else if (request["action"] === "worker-startup-send") {
     assert.equal(scenario?.startsWith("opening-worker-startup"), true);
     assert.ok("requestId" in request && "sessionId" in request && "startupPhase" in request);

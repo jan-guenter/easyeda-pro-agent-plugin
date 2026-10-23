@@ -5,6 +5,7 @@ import { createHash } from "node:crypto";
 import { test } from "node:test";
 import type { CurrentDisposableOpenSealedTarget } from "../src/current-disposable-open.ts";
 import type { CurrentPcbWorkerStartupOpeningBinding } from "../src/current-pcb-diagnostic-owner.ts";
+import { CURRENT_PCB_DIAGNOSTIC_OPENING_FUNCTION } from "../src/current-pcb-diagnostic-opening.ts";
 import type { CurrentPcbDiagnosticOpeningPhase } from "../src/current-pcb-diagnostic-opening.ts";
 import type { CurrentPcbWorkerStartupCommand, CurrentPcbWorkerStartupDependency } from "../src/current-pcb-worker-startup-contract.ts";
 import { CurrentPcbWorkerStartupOpening } from "../src/current-pcb-worker-startup-opening.ts";
@@ -53,7 +54,8 @@ function fixture(preflightRefused = false, openedWindow?: string): Readonly<{
       calls.push("subscribe"); return (): void => { state.unsubscribed = true; };
     },
     request: (command: CurrentPcbWorkerStartupCommand): Promise<unknown> => {
-      if (command.method === "Runtime.callFunctionOn" && "uniqueContextId" in command.params) {
+      if (command.method === "Runtime.callFunctionOn" && "uniqueContextId" in command.params &&
+          command.params.functionDeclaration === CURRENT_PCB_DIAGNOSTIC_OPENING_FUNCTION && command.params.arguments.length === 2) {
         const phase = command.params.arguments[1].value; calls.push(phase);
         const refused = phase === "open-project" ? openedWindow === undefined : preflightRefused;
         return Promise.resolve(reply(phase, refused, phase === "open-project" ? openedWindow : undefined));

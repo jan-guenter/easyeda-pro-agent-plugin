@@ -46,7 +46,15 @@ schema, then validate assembled requests with
    continuous ownership, every publisher, destination containment, completed
    startup, a stable design baseline and saved content. Success grants no writer
    or Save authority.
-6. Keep the same facade alive. `observe-window`, `normal-close`,
+6. After successful capture and publication, `observe-current-assignments`
+   consumes one check of the four current PROJECT wrappers against the original
+   constructor callbacks. After that result is published, `observe-actor-clock`
+   consumes a UI/worker/worker/UI bracket using the same original owners. Both
+   requests take only the operation ID and binding digest; do not supply actor,
+   clock or object-handle values. These reads are sequential, not atomic or
+   continuous. Matching user JSON and local Date samples do not prove a backend
+   actor, Windows/server time, queue completion or a future Save.
+7. Keep the same facade alive. `observe-window`, `normal-close`,
    `observe-termination` and `release-closed` use that original owner. Normal
    close requires the observed `hwnd` and `confirmNormalClose:true`. Do not
    answer a Save/Discard prompt. A close acknowledgment is not process exit;
@@ -57,12 +65,20 @@ schema, then validate assembled requests with
 
 Every preparation/opening/capture stage is consumed once, including uncertain
 replies. Nested `inspect` remains local while another call is running. Look at
-`workerStartupOpeningState`, `workerStartupOpeningNativeReply`, retained opening
-result and record publication; never
+`workerStartupOpeningState` (including its stage/step diagnostics),
+`workerStartupOpeningNativeReply`, retained opening result and record publication;
+never
 repeat `capture-project` to obtain a clearer response. `settle-records` publishes
 only absent records from the same original in-memory bytes. It cannot rerun
 capture or replace conflicting evidence. Original unlaunched/no-process cleanup
 has the same strict retained-handle requirements as ordinary diagnostics.
+
+Assignment and actor attempts also remain consumed after failure or publication
+uncertainty. Inspect their retained-result and publication fields. The actor
+summary identifies its full managed result record; partial samples are diagnostic
+evidence only. A deadline does not prove that an outstanding call stopped. Do
+not start a second capture, extend a timeout ad hoc or treat an unpublished
+result as authority. Finish original-owner closure and retain the failed case.
 
 Different workers, extra children, changed source/context, unsupported navigation,
 failed checkpoint reproof or expired capture refuse. Cleanup retains late
@@ -76,3 +92,10 @@ The shared native ceiling is 256 request IDs across discovery and handoff,
 allowances for extra probes. Fixed opening text is reconstructed in the native
 helper; caller source text never crosses that boundary. The ordinary diagnostic
 and String purposes retain their own unchanged command sets and budgets.
+
+Full installation bytes are verified at launch and handoff. During startup,
+the original native helper actively rechecks its continuously held installation
+file/ancestor leases around fresh facade and helper checks. No public request
+can supply or adopt those leases. The fixed request and pause deadlines still
+apply; a slower host must report its retained stage/channel state, not bypass
+checks or replay a consumed stage.

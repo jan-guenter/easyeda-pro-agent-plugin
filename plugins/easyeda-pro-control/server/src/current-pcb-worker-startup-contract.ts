@@ -4,12 +4,14 @@ import { freezeDeep } from "./sqlite-inventory-core.ts";
 import type { CurrentPcbWorkerConstructionCommand } from "./current-pcb-worker-construction-contract.ts";
 import type { CurrentDisposableOpenSealedTarget } from "./current-disposable-open.ts";
 import type { CURRENT_PCB_DIAGNOSTIC_OPENING_FUNCTION } from "./current-pcb-diagnostic-opening.ts";
+import type { CurrentPcbWorkerStartupUiActorCommand } from "./current-pcb-worker-startup-actor.ts";
 
 export const CURRENT_PCB_WORKER_STARTUP_ATTACH = freezeDeep({ autoAttach: true,
   waitForDebuggerOnStart: true, flatten: true,
   filter: [{ type: "worker", exclude: false }, { exclude: true }],
 } as const);
 export type CurrentPcbWorkerStartupParentCommand =
+  | CurrentPcbWorkerStartupUiActorCommand
   | Readonly<{ method: "Target.getTargets"; params: Readonly<Record<string, never>>; sessionId?: never }>
   | (Readonly<{ sessionId: string }> & (
     | Readonly<{ method: "Page.getFrameTree"; params: Readonly<Record<string, never>> }>
