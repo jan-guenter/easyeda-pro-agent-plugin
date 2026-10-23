@@ -156,11 +156,27 @@ lines.on("line", line => {
       ...("sessionId" in request ? { sessionId: request["sessionId"] } : {}) };
     sent = Buffer.from([...events, response].map(value => `${JSON.stringify(value)}\0`).join(""));
     result = { written: true };
+  } else if (request["action"] === "worker-startup-send") {
+    assert.equal(scenario?.startsWith("opening-worker-startup"), true);
+    assert.ok("requestId" in request && "sessionId" in request && "startupPhase" in request);
+    const events: unknown[] = [];
+    if (request.startupPhase === "attach") {
+      workerAttached = true;
+      events.push({ method: "Target.attachedToTarget", sessionId: "session-1",
+        params: { sessionId: "worker-session-1", targetInfo: worker, waitingForDebugger: true } });
+      if (scenario === "opening-worker-startup-context-loss") {
+        events.push({ method: "Runtime.executionContextsCleared", params: {}, sessionId: "session-1" });
+      }
+    }
+    sent = Buffer.concat([sent, Buffer.from([...events,
+      { id: request.requestId, sessionId: request.sessionId, result: {} }].map(value => `${JSON.stringify(value)}\0`).join(""))]);
+    result = { written: true };
   } else if (request["action"] === "poll") {
     if (scenario === "malformed-chunk") {
       process.stdout.write(`${JSON.stringify({ id: request["id"], ok: true, result: { bytes: "%%%" } })}\n`); return;
     }
-    const size = scenario === "identity-large-source" || scenario === "staged-large-source" || stringCase ? 65_536 : 17;
+    const size = scenario === "identity-large-source" || scenario === "staged-large-source" ||
+      scenario?.startsWith("opening-worker-startup") === true || stringCase ? 65_536 : 17;
     result = { bytes: sent.subarray(0, size).toString("base64") }; sent = sent.subarray(size);
   } else if (request["action"] === "string-clock") {
     assert.deepEqual(Object.keys(request).toSorted(), ["action", "helperInstance", "id", "jobId", "phase", "rootCreated", "rootPid", "sequence"]);

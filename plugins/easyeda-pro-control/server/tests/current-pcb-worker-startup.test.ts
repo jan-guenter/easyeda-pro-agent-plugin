@@ -3,11 +3,13 @@ import { test } from "node:test";
 import { setImmediate } from "node:timers/promises";
 import { CurrentPcbWorkerStartupTransport } from "../src/current-pcb-worker-startup-transport.ts";
 import type { CurrentPcbWorkerStartupDependency, CurrentPcbWorkerStartupEvent } from "../src/current-pcb-worker-startup-contract.ts";
+import { CURRENT_PCB_DIAGNOSTIC_WORKER_SCRIPT } from "../src/current-pcb-diagnostic-worker-context.ts";
 import { workerStartupInspector } from "./helpers/current-pcb-worker-startup-inspector.ts";
 
 void test("startup instruments actual V8 before execution then captures all nine constructor pauses", { timeout: 30_000 }, async context => {
   const fixture = await workerStartupInspector(context), owner = new CurrentPcbWorkerStartupTransport(fixture.dependency, fixture.profile);
-  const packet = await owner.capture(); await fixture.completion;
+  const capture = owner.capture(); await owner.whenArmed();
+  const packet = await capture; await fixture.completion;
   assert.equal(packet.executionAuthorized, false); assert.equal(await fixture.completed(), true);
   assert.equal(fixture.commands.filter(method => method === "Runtime.runIfWaitingForDebugger").length, 1);
   assert.equal(fixture.commands.filter(method => method === "Debugger.resume").length, 10);
@@ -20,6 +22,56 @@ void test("startup instruments actual V8 before execution then captures all nine
   assert.equal(assignments.executionAuthorized, false); await runner.release();
   await assert.rejects(owner.releaseAfterTermination()); await fixture.stopped(); await owner.releaseAfterTermination();
   assert.equal(owner.status().released, true); await assert.rejects(owner.capture(), /CONSUMED/u);
+});
+
+void test("startup armed barrier requires original auto-attach acknowledgement and abort preserves cleanup ownership", async () => {
+  const acknowledged = Promise.withResolvers<unknown>();
+  let entered = false, removed = false, terminated = false;
+  const dependency: CurrentPcbWorkerStartupDependency = Object.freeze({ parentTargetId: "parent", parentSessionId: "session",
+    assertOriginalOwner: (): Promise<void> => Promise.resolve(),
+    assertOriginalTermination: (): Promise<void> => { assert.equal(terminated, true); return Promise.resolve(); },
+    request: (command: Parameters<CurrentPcbWorkerStartupDependency["request"]>[0]): Promise<unknown> => {
+      assert.equal(command.method, "Target.setAutoAttach"); entered = true; return acknowledged.promise;
+    },
+    subscribe: (): (() => void) => (): void => { removed = true; },
+  });
+  const owner = new CurrentPcbWorkerStartupTransport(dependency);
+  const capture = owner.capture(), rejected = assert.rejects(capture, /ABORTED/u);
+  let armed = false; const barrier = (async (): Promise<void> => { await owner.whenArmed(); armed = true; })();
+  await setImmediate(); assert.equal(entered, true); assert.equal(armed, false);
+  acknowledged.resolve({}); await barrier; assert.equal(armed, true);
+  await owner.abort(); await rejected; assert.equal(removed, false);
+  await assert.rejects(owner.whenArmed(), /ABORTED/u);
+  await assert.rejects(owner.releaseAfterTermination()); assert.equal(removed, false);
+  terminated = true; await owner.releaseAfterTermination(); assert.equal(removed, true);
+});
+
+void test("sealed expected project title rejects a different waiting worker before debugger qualification", async () => {
+  const commands: string[] = [];
+  let listener: ((event: CurrentPcbWorkerStartupEvent) => void) | null = null;
+  const dependency: CurrentPcbWorkerStartupDependency = Object.freeze({ parentTargetId: "parent", parentSessionId: "parent-session",
+    assertOriginalOwner: (): Promise<void> => Promise.resolve(), assertOriginalTermination: (): Promise<void> => Promise.resolve(),
+    subscribe: (value: (event: CurrentPcbWorkerStartupEvent) => void): (() => void) => {
+      listener = value; return (): void => { listener = null; };
+    },
+    request: (command: Parameters<CurrentPcbWorkerStartupDependency["request"]>[0]): Promise<unknown> => {
+      commands.push(command.method);
+      if (command.method === "Target.setAutoAttach") {
+        listener?.({ method: "Target.attachedToTarget", sessionId: "parent-session", params: { sessionId: "worker-session",
+          waitingForDebugger: true, targetInfo: { targetId: "worker-target", type: "worker", attached: true,
+            title: `project_${"d".repeat(64)}_window`, url: `https://client/${CURRENT_PCB_DIAGNOSTIC_WORKER_SCRIPT.relativePath}` } } });
+      }
+      return Promise.resolve({});
+    },
+  });
+  const owner = new CurrentPcbWorkerStartupTransport(dependency);
+  const expected = { projectUuid: "a".repeat(64), branchUuid: "b".repeat(32), windowTabId: "window" };
+  owner.bindExpectedProject(expected);
+  assert.throws(() => { owner.bindExpectedProject(expected); }, /CONSUMED/u);
+  await assert.rejects(owner.capture());
+  assert.equal(commands.filter(method => method === "Runtime.runIfWaitingForDebugger").length, 1);
+  assert.equal(commands.includes("Runtime.enable"), false); assert.equal(commands.includes("Debugger.enable"), false);
+  await owner.releaseAfterTermination();
 });
 
 void test("full-source refusal resumes the original instrumentation pause without arming construction", { timeout: 30_000 }, async context => {

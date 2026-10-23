@@ -1,7 +1,7 @@
-/** Private startup owner composition. Existing diagnostic paths never import
- * this class. It owns initial waiting/instrumentation cleanup and delegates
+/** Private startup owner composition, allocated only by the separate startup
+ * lifecycle. It owns initial waiting/instrumentation cleanup and delegates
  * only the separately reviewed construction vocabulary after complete source
- * qualification. Native process/pipe integration remains a dependency. */
+ * qualification through the original native process and pipe. */
 import { createHash } from "node:crypto";
 import { types } from "node:util";
 import { z } from "zod";
@@ -16,6 +16,8 @@ import type { CurrentPcbWorkerStartupCommand, CurrentPcbWorkerStartupDependency,
 
 const token = z.string().min(1).max(256).regex(/^[A-Za-z\d_.:-]+$/u);
 const sessionToken = token.max(128);
+const expectedProjectSchema = z.object({ projectUuid: z.string().regex(/^[a-f\d]{64}$/u),
+  branchUuid: z.string().regex(/^[a-f\d]{32}$/u), windowTabId: z.string().regex(/^[A-Za-z\d_-]{1,128}$/u) }).strict();
 const empty = z.object({}).strict();
 const targetSchema = z.looseObject({ targetId: token, type: z.literal("worker"), attached: z.literal(true),
   title: z.string().max(8192), url: z.string().max(8192) });
@@ -69,11 +71,13 @@ export class CurrentPcbWorkerStartupTransport {
   readonly #parentTarget: string;
   readonly #profile: DiagnosticWorkerScriptProfile;
   readonly #attached = Promise.withResolvers<Worker>();
+  readonly #armed = Promise.withResolvers<null>();
   readonly #initialPaused = Promise.withResolvers<unknown>();
   readonly #initialResumed = Promise.withResolvers<null>();
   readonly #waiting = new Map<string, Promise<void>>();
   readonly #workers = new Map<string, Worker>();
   #worker: Worker | null = null;
+  #expectedProject: z.infer<typeof expectedProjectSchema> | null = null;
   #context: z.infer<typeof contextSchema> | null = null;
   #script: z.infer<typeof scriptSchema> | null = null;
   #instrumentation: string | null = null;
@@ -108,7 +112,8 @@ export class CurrentPcbWorkerStartupTransport {
     this.#assertTermination = dependency.assertOriginalTermination; this.#subscribe = dependency.subscribe;
     this.#profile = Object.freeze(z.object({ relativePath: z.string().max(512).regex(/^[A-Za-z\d_.-]+(?:\/[A-Za-z\d_.-]+)+\.js$/u),
       scriptBytes: z.number().int().min(1).max(4 * 1024 * 1024), scriptSha256: z.string().regex(/^[a-f\d]{64}$/u) }).strict().parse(profile));
-    void observe(this.#attached.promise); void observe(this.#initialPaused.promise); void observe(this.#initialResumed.promise);
+    void observe(this.#attached.promise); void observe(this.#armed.promise);
+    void observe(this.#initialPaused.promise); void observe(this.#initialResumed.promise);
   }
   public status(): Readonly<{ started: boolean; settled: boolean; failed: boolean; sourceQualified: boolean;
     initialPauseSeen: boolean; initialResumeAttempted: boolean; initialResumeSeen: boolean;
@@ -119,10 +124,25 @@ export class CurrentPcbWorkerStartupTransport {
       unresolvedInstrumentation: this.#instrumentationUncertain || this.#instrumentation !== null && !this.#instrumentationRemoved,
       attachedWorkers: this.#workers.size, released: this.#released });
   }
+  /** The private opener supplies its checkpoint-selected project and original
+   * UI window before auto-attach. This title check is only an early selector;
+   * the captured PROJECT receiver still needs its independent identity read. */
+  public bindExpectedProject(input: Readonly<{ projectUuid: string; branchUuid: string; windowTabId: string }>): void {
+    if (this.#started || this.#expectedProject !== null || this.#failure !== null || this.#released) { throw failure("EXPECTED_PROJECT_CONSUMED"); }
+    this.#expectedProject = Object.freeze(expectedProjectSchema.parse(captureCurrentPcbStringClockReply(input).value));
+  }
   #poison(code: string): void {
     this.#failure ??= failure(code); this.#attached.reject(this.#failure); this.#initialPaused.reject(this.#failure);
+    this.#armed.reject(this.#failure);
     this.#subscriber?.lost();
   }
+  /** The project opener may dispatch only after the original auto-attach reply
+   * and owner reproof. Calling capture() alone does not establish this barrier. */
+  public async whenArmed(): Promise<void> { await this.#armed.promise; await this.#current(); }
+
+  /** A refused opener stops capture through its original listener. Cleanup
+   * retains late allocation replies and never detaches or closes live pipes. */
+  public abort(): Promise<void> { this.#poison("ABORTED"); return this.cleanup(); }
   #sameDependency(): void {
     if (members(this.#dependency).some((value, index) => value !== this.#originalMembers[index])) { throw failure("DEPENDENCY_CHANGED"); }
   }
@@ -159,6 +179,10 @@ export class CurrentPcbWorkerStartupTransport {
       if (this.#worker !== null) { void observe(this.#runWaiting(worker)); throw failure("EXTRA_WORKER"); }
       this.#worker = worker;
       if (!this.#sourceUrl(worker.target.url)) { void observe(this.#runWaiting(worker)); throw failure("WORKER_URL"); }
+      const expected = this.#expectedProject;
+      if (expected !== null && worker.target.title !== `project_${expected.projectUuid}_${expected.windowTabId}`) {
+        void observe(this.#runWaiting(worker)); throw failure("WORKER_TITLE");
+      }
       // Autoattach can have succeeded before its reply was lost. A later first
       // Attachment still belongs to this original owner and must not remain
       // Waiting merely because the initial empty cleanup already settled.
@@ -296,6 +320,7 @@ export class CurrentPcbWorkerStartupTransport {
       await this.#current(); this.#unsubscribe = this.#subscribe.call(this.#dependency, this.#event);
       empty.parse(captureCurrentPcbStringClockReply(await this.#request({ method: "Target.setAutoAttach",
         params: CURRENT_PCB_WORKER_STARTUP_ATTACH, sessionId: this.#parentSession })).value);
+      this.#armed.resolve(null);
       const worker = await bounded(this.#attached.promise, WAIT_MS);
       empty.parse(captureCurrentPcbStringClockReply(await this.#request({ method: "Runtime.enable", params: {}, sessionId: worker.sessionId })).value);
       z.object({ debuggerId: token }).strict().parse(captureCurrentPcbStringClockReply(await this.#request({ method: "Debugger.enable",

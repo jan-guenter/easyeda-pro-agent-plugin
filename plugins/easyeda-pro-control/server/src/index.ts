@@ -117,8 +117,9 @@ import { editorShellRequestSchema } from "./editor-shell.ts";
 import { editorContextRequestSchema } from "./editor-context.ts";
 import { readEditorContext, readEditorShell } from "./editor-shell-runtime.ts";
 import { OrdinaryLaunchCoordinator, ordinaryLaunchRequestSchema } from "./ordinary-launch.ts";
-import { CurrentPcbDiagnosticLifecycle, CurrentPcbStringPrecreateLifecycle } from "./current-pcb-diagnostic-lifecycle.ts";
-import { currentPcbDiagnosticValidationRequestSchema } from "./current-pcb-diagnostic-validation.ts";
+import { CurrentPcbDiagnosticLifecycle, CurrentPcbStringPrecreateLifecycle, CurrentPcbWorkerStartupLifecycle } from "./current-pcb-diagnostic-lifecycle.ts";
+import { currentPcbDiagnosticToolRequestSchema } from "./current-pcb-diagnostic-validation.ts";
+import type { CurrentPcbWorkerStartupValidationRequest } from "./current-pcb-worker-startup-validation.ts";
 import { currentPcbStringPrecreateRequestSchema } from "./current-pcb-string-precreate-validation.ts";
 import { CURRENT_PCB_DIAGNOSTIC_PROFILE } from "./current-pcb-diagnostic-profile.ts";
 import { assertNoUnresolvedCurrentPcbDiagnosticLaunches } from "./current-pcb-diagnostic-lifecycle-journal.ts";
@@ -189,6 +190,7 @@ let ordinaryLaunchCoordinator: OrdinaryLaunchCoordinator | undefined;
 let ordinaryLaunchRuntime: WindowsControlRuntime | undefined;
 let currentPcbDiagnosticLifecycle: CurrentPcbDiagnosticLifecycle | undefined;
 let currentPcbStringPrecreateLifecycle: CurrentPcbStringPrecreateLifecycle | undefined;
+let currentPcbWorkerStartupLifecycle: CurrentPcbWorkerStartupLifecycle | undefined;
 let currentDisposableOpenCoordinator: CurrentDisposableOpenCoordinator | undefined;
 let currentPcbRenameOperationCoordinator: CurrentPcbRenameOperationCoordinator | undefined;
 let currentSchematicRenameOperationCoordinator: CurrentSchematicRenameOperationCoordinator | undefined;
@@ -276,7 +278,7 @@ function disposableConstructedMethods(runtime: WindowsControlRuntime, nativeUi: 
       .map(key => disposableOwnerMethod(runtime, key))];
 }
 function assertOrdinaryRuntimeAllocationAllowed(): void {
-  if (currentPcbDiagnosticLifecycle?.hasActiveReservation() === true || currentPcbStringPrecreateLifecycle?.hasActiveReservation() === true) {
+  if (currentPcbDiagnosticLifecycle?.hasActiveReservation() === true || currentPcbStringPrecreateLifecycle?.hasActiveReservation() === true || currentPcbWorkerStartupLifecycle?.hasActiveReservation() === true) {
     throw new Error("An original diagnostic lifecycle reserves application startup.");
   }
   if (closedSymbolIndexReservation !== undefined) { throw new Error("The Windows runtime is reserved by a consumed closed-symbol attempt."); }
@@ -299,7 +301,7 @@ async function runClosedSymbolTool(input: unknown, mode: "validation" | "ordinar
     const requestText = canonicalJson(parsed.request);
     phase = "reservation"; reason = "attempt-unavailable";
     if (closedSymbolIndexReservation !== undefined || windowsRuntime !== undefined || scheduledShutdown !== undefined ||
-        currentPcbDiagnosticLifecycle?.hasActiveReservation() === true || currentPcbStringPrecreateLifecycle?.hasActiveReservation() === true) {
+        currentPcbDiagnosticLifecycle?.hasActiveReservation() === true || currentPcbStringPrecreateLifecycle?.hasActiveReservation() === true || currentPcbWorkerStartupLifecycle?.hasActiveReservation() === true) {
       throw new Error("Disposable index attempt is unavailable.");
     }
     if (disposableOwnData(engine, "upstream") !== upstream) { throw new Error("Disposable index engine owner differs."); }
@@ -2433,7 +2435,7 @@ if (facadeToolRegistered(facadeMode, "easyeda_control_pcb_string_precreate_valid
         if (assetsRoot === undefined || windowsRuntime !== undefined || ordinaryLaunchRuntime !== undefined ||
             currentDisposableOpenCoordinator !== undefined || currentPcbRenameOperationCoordinator !== undefined ||
             currentSchematicRenameOperationCoordinator !== undefined || closedSymbolIndexReservation !== undefined ||
-            closedSymbolUnreservedFailure.observed || scheduledShutdown !== undefined || currentPcbDiagnosticLifecycle?.hasActiveReservation() === true) {
+            closedSymbolUnreservedFailure.observed || scheduledShutdown !== undefined || currentPcbDiagnosticLifecycle?.hasActiveReservation() === true || currentPcbWorkerStartupLifecycle?.hasActiveReservation() === true) {
           throw new Error("String precreate launch requires no retained ordinary, project, closed-symbol, diagnostic or replacement owner and no shutdown.");
         }
       };
@@ -2456,16 +2458,75 @@ if (facadeToolRegistered(facadeMode, "easyeda_control_pcb_string_precreate_valid
 }
 
 if (facadeToolRegistered(facadeMode, "easyeda_control_pcb_diagnostic_validation")) {
-  const inputSchema = z.object({ request: z.unknown().pipe(currentPcbDiagnosticValidationRequestSchema) }).strict();
+  const inputSchema = z.object({ request: z.unknown().pipe(currentPcbDiagnosticToolRequestSchema) }).strict();
   let original: { readonly owner: CurrentPcbDiagnosticLifecycle; readonly run: CurrentPcbDiagnosticLifecycle["run"];
     readonly assertLocal: () => void } | undefined;
+  let startupOriginal: { readonly owner: CurrentPcbWorkerStartupLifecycle; readonly run: CurrentPcbWorkerStartupLifecycle["run"];
+    readonly capture: CurrentPcbWorkerStartupLifecycle["captureWorkerStartup"]; readonly assertLocal: () => void } | undefined;
+  const runStartup = (request: CurrentPcbWorkerStartupValidationRequest): Promise<{ result: Record<string, unknown> }> => {
+    if (startupOriginal === undefined) {
+      const environment = process.env;
+      const assetsRoot = environment["EASYEDA_ASSETS_ROOT"], wslDistribution = environment["WSL_DISTRO_NAME"];
+      const originalEngine = engine, originalGate = bridgeGate, originalUpstream = upstream;
+      const facadePromise = disposableOwnData(engine, "controlFingerprintPromise");
+      const authority = disposableOwnData(engine, "executionAuthorityValidator");
+      const controlPath = retainedControlRoot.path, pluginRoot = resolve(import.meta.dirname, "../..");
+      const methodIdentities = (): readonly unknown[] => [disposableOwnerMethod(bridgeGate, "run"),
+        disposableOwnerMethod(engine, "assertDiagnosticLaunchOtherOperationsSettled"),
+        ...["run", "captureWorkerStartup", "handoffWorkerStartup", "openWorkerStartup", "handoffStartup", "openStartup", "requireStartup", "hasActiveReservation"]
+          .map(key => disposableOwnerMethod(CurrentPcbWorkerStartupLifecycle.prototype, key))];
+      const capturedMethods = methodIdentities();
+      const assertLocal = (): void => {
+        const currentMethods = methodIdentities();
+        if (engine !== originalEngine || upstream !== originalUpstream || bridgeGate !== originalGate ||
+            disposableOwnData(engine, "upstream") !== originalUpstream || disposableOwnData(engine, "controlFingerprintPromise") !== facadePromise ||
+            disposableOwnData(engine, "executionAuthorityValidator") !== authority || process.env !== environment ||
+            environment["EASYEDA_ASSETS_ROOT"] !== assetsRoot || environment["WSL_DISTRO_NAME"] !== wslDistribution ||
+            controlDataDirectory() !== controlPath || retainedControlRoot.path !== controlPath || resolve(import.meta.dirname, "../..") !== pluginRoot ||
+            capturedMethods.some((method, index) => method !== currentMethods[index]) || startupOriginal !== undefined &&
+            (currentPcbWorkerStartupLifecycle !== startupOriginal.owner || startupOriginal.owner.run !== startupOriginal.run ||
+              startupOriginal.owner.captureWorkerStartup !== startupOriginal.capture)) { throw new Error("Worker startup original index owner, environment or methods changed."); }
+      };
+      const assertUnreserved = (): void => {
+        assertLocal();
+        if (assetsRoot === undefined || windowsRuntime !== undefined || ordinaryLaunchRuntime !== undefined ||
+            currentDisposableOpenCoordinator !== undefined || currentPcbRenameOperationCoordinator !== undefined ||
+            currentSchematicRenameOperationCoordinator !== undefined || closedSymbolIndexReservation !== undefined ||
+            closedSymbolUnreservedFailure.observed || scheduledShutdown !== undefined ||
+            currentPcbDiagnosticLifecycle?.hasActiveReservation() === true || currentPcbStringPrecreateLifecycle?.hasActiveReservation() === true) {
+          throw new Error("Worker startup requires no retained ordinary, project, closed-symbol, diagnostic or String owner and no shutdown.");
+        }
+      };
+      const assertOtherLaunchesSettled = async (): Promise<void> => {
+        assertUnreserved(); await engine.assertDiagnosticLaunchOtherOperationsSettled(); assertUnreserved();
+      };
+      const owner = new CurrentPcbWorkerStartupLifecycle({ pluginRoot, assetsRoot: assetsRoot ?? "", ...(wslDistribution === undefined ? {} : { wslDistribution }),
+        powershellSha256: CURRENT_PCB_DIAGNOSTIC_PROFILE.powershell.sha256, powershellBytes: CURRENT_PCB_DIAGNOSTIC_PROFILE.powershell.bytes,
+        assertLocalAllowed: assertLocal, assertAllowed: assertOtherLaunchesSettled, assertOtherLaunchesSettled });
+      currentPcbWorkerStartupLifecycle = owner;
+      // oxlint-disable-next-line typescript/unbound-method -- Retain exact methods; dispatch always uses their original receiver.
+      startupOriginal = { owner, run: owner.run, capture: owner.captureWorkerStartup, assertLocal };
+    }
+    const retained = startupOriginal; retained.assertLocal();
+    const run = async (): Promise<{ result: Record<string, unknown> }> => {
+      retained.assertLocal();
+      let result: Record<string, unknown>;
+      if (request.action === "capture-project") {
+        const { action: _action, operationId, expectedBindingSha256, ...input } = request;
+        result = await retained.capture.call(retained.owner, operationId, expectedBindingSha256, input);
+      } else { result = await retained.run.call(retained.owner, request); }
+      retained.assertLocal(); return { result };
+    };
+    return request.action === "inspect" ? run() : bridgeGate.run(run);
+  };
   server.registerTool("easyeda_control_pcb_diagnostic_validation", {
     title: "Validate a contained native EasyEDA diagnostic session",
-    description: "Validation-only original-owned native launch, fixed source/frame/worker observations and sampled PCB compiler/pending-work/raw-String reads. Query offline pcb-diagnostic-validation and validate exact arguments first. Startup and opening use the existing profile: restoration, migration, cache replay and automatic Save are possible. open-project binds an exact registered disposable file/checkpoint and empty source-qualified UI. After accepted project-only opening choose worker discovery OR open-pcb, not both. open-pcb derives the retained PCB target; observe-pcb-opening separately proves its child frame, DOM owner, complete source and native identity before observe-model-state. An existing source-qualified PCB frame can also supply model observation. Samples are non-atomic and do not prove whole-board membership, queue completion, saved state or writer eligibility. No CAD edits, explicit Save, caller executable, URL, source hash, CDP method or JavaScript. Every opening/observation stage is consumed once; inspect retained outcomes after lost replies. Normal close, proved root/Job termination, helper release and record settlement are separate original-owner steps. No forced exit, implicit Save/Discard or journal-derived ownership. Ambiguous creation or a failed suspended-image check cannot use no-process cleanup.",
+    description: "Validation-only original-owned native launch, fixed source/frame/worker observations and sampled PCB compiler/pending-work/raw-String reads. Query offline pcb-diagnostic-validation and validate exact arguments first. The separate worker-startup wrapper uses its own fixed owner; capture-project requires an exact disposable target and explicit debugger-pause acceptance, arms capture before opening, and binds retained constructors to the selected project/branch/window. It cannot upgrade an ordinary owner and grants no writer authority. Startup and opening use the existing profile: restoration, migration, cache replay and automatic Save are possible. Ordinary open-project binds an exact registered disposable file/checkpoint and empty source-qualified UI. After accepted project-only opening choose worker discovery OR open-pcb, not both. open-pcb derives the retained PCB target; observe-pcb-opening separately proves its child frame, DOM owner, complete source and native identity before observe-model-state. Samples are non-atomic and do not prove whole-board membership, continuous publishers, containment, queue completion or saved state. No CAD edits, explicit Save, caller executable, URL, source hash, CDP method or JavaScript. Every opening/observation stage is consumed once; inspect retained outcomes after lost replies. Normal close, proved root/Job termination, helper release and record settlement are separate original-owner steps. No forced exit, implicit Save/Discard or journal-derived ownership. Ambiguous creation or a failed suspended-image check cannot use no-process cleanup.",
     inputSchema, outputSchema: currentSymbolOperationToolOutputSchema,
     annotations: { readOnlyHint: false, destructiveHint: false, idempotentHint: false, openWorldHint: true },
   }, guarded((input: z.infer<typeof inputSchema>) => {
     const { request } = inputSchema.parse(input);
+    if (request.action === "worker-startup") { return runStartup(request.request); }
     if (original === undefined) {
       const environment = process.env;
       const assetsRoot = environment["EASYEDA_ASSETS_ROOT"], wslDistribution = environment["WSL_DISTRO_NAME"];
@@ -2496,7 +2557,7 @@ if (facadeToolRegistered(facadeMode, "easyeda_control_pcb_diagnostic_validation"
         if (assetsRoot === undefined || windowsRuntime !== undefined || ordinaryLaunchRuntime !== undefined ||
             currentDisposableOpenCoordinator !== undefined || currentPcbRenameOperationCoordinator !== undefined ||
             currentSchematicRenameOperationCoordinator !== undefined || closedSymbolIndexReservation !== undefined ||
-            closedSymbolUnreservedFailure.observed || scheduledShutdown !== undefined || currentPcbStringPrecreateLifecycle?.hasActiveReservation() === true) {
+            closedSymbolUnreservedFailure.observed || scheduledShutdown !== undefined || currentPcbStringPrecreateLifecycle?.hasActiveReservation() === true || currentPcbWorkerStartupLifecycle?.hasActiveReservation() === true) {
           throw new Error("Diagnostic launch requires no retained ordinary, project, closed-symbol or replacement owner and no shutdown.");
         }
       };

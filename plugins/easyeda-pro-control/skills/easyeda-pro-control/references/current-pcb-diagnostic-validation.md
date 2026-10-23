@@ -1,5 +1,11 @@
 # Native PCB diagnostic validation
 
+For the separate constructor capture armed before opening, use the strictly nested
+`worker-startup` request described in
+[worker startup validation](current-pcb-worker-startup-validation.md).
+It allocates its own fixed owner and explicitly pauses workers; it cannot upgrade
+the ordinary diagnostic owner described below.
+
 Use `easyeda_control_pcb_diagnostic_validation` only to qualify the separate
 native diagnostic owner. It starts the reviewed application in its existing
 profile, observes fixed browser/frame/script identities, and normally closes
@@ -365,7 +371,7 @@ awaiting, preview generation or CSP bypass. Its by-value result is bounded to
 make native reflection free or prove that another process stayed unchanged.
 The effect check is not a sandbox or proof of pristine builtins. Native worker
 association, latent callbacks and full compiler participation remain unverified.
-There is no debugger pause/resume, CAD writer or explicit Save. Observation is
+The ordinary diagnostic purpose has no debugger pause/resume, CAD writer or explicit Save. Observation is
 sampled, not continuous. The suspended native launch's single primary-thread
 resume is internal startup, not a debugger control.
 `projectFreeVerified`, `profileIsolated`, `debuggerSocketAbsenceVerified` and

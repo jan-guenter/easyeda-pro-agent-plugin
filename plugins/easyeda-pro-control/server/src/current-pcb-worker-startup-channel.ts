@@ -22,6 +22,11 @@ export interface CurrentPcbWorkerStartupNativeDependency {
   readonly observeOriginalParentEvent: (event: CurrentPcbWorkerStartupEvent) => unknown;
   readonly exchange: (request: NativeRequest) => Promise<unknown>;
 }
+export interface CurrentPcbWorkerStartupPriorUsage {
+  readonly receivedBytes: number;
+  readonly eventCount: number;
+  readonly eventBytes: number;
+}
 const token = z.string().min(1).max(128).regex(/^[A-Za-z\d_.:-]+$/u);
 const parentSchema = z.object({ targetId: token, sessionId: token,
   nextRequestId: z.number().int().min(1).max(CURRENT_PCB_WORKER_STARTUP_REQUEST_LIMIT) }).strict();
@@ -46,6 +51,11 @@ function exact(value: object, keys: readonly string[]): boolean { return Object.
 function cleanupCommand(command: CurrentPcbWorkerStartupCommand): boolean {
   return command.method === "Debugger.removeBreakpoint" || command.method === "Debugger.resume" ||
     command.method === "Runtime.runIfWaitingForDebugger" || command.method === "Runtime.releaseObjectGroup";
+}
+function parentCommand(command: CurrentPcbWorkerStartupCommand): boolean {
+  return command.method === "Target.getTargets" || command.method === "Page.getFrameTree" ||
+    command.method === "DOM.getFrameOwner" || command.method === "DOM.describeNode" ||
+    command.method === "Runtime.callFunctionOn" && "uniqueContextId" in command.params;
 }
 function members(dependency: CurrentPcbWorkerStartupNativeDependency): readonly unknown[] {
   if (!record(dependency) || types.isProxy(dependency) ||
@@ -91,13 +101,22 @@ export class CurrentPcbWorkerStartupChannel {
   #terminationVerified = false;
   #queuedRequests = 0;
   #attachIssued = false;
+  #attachAcknowledged = false;
+  #openingIdentity: string | null = null;
+  #openingConsumed = false;
   #failure: Error | null = null;
   #fatal = false;
 
-  public constructor(native: CurrentPcbWorkerStartupNativeDependency) {
+  public constructor(native: CurrentPcbWorkerStartupNativeDependency, priorUsage?: CurrentPcbWorkerStartupPriorUsage) {
     this.#members = members(native); this.#native = native;
     this.#parentMethod = native.requireOriginalParent; this.#terminate = native.assertOriginalTermination;
     this.#parentEvent = native.observeOriginalParentEvent; this.#exchange = native.exchange;
+    if (priorUsage !== undefined) {
+      const prior = z.object({ receivedBytes: z.number().int().min(0).max(MAX_BYTES),
+        eventCount: z.number().int().min(0).max(MAX_EVENTS), eventBytes: z.number().int().min(0).max(MAX_EVENT_BYTES) }).strict()
+        .parse(captureCurrentPcbStringClockReply(priorUsage).value);
+      this.#bytes = prior.receivedBytes; this.#events = prior.eventCount; this.#eventBytes = prior.eventBytes;
+    }
   }
   public status(): Readonly<{ started: boolean; released: boolean; failed: boolean; fatal: boolean;
     pendingReplies: number; nextRequestId: number; receivedBytes: number; pollCount: number; attachedWorkers: number }> {
@@ -157,6 +176,17 @@ export class CurrentPcbWorkerStartupChannel {
       if (command.sessionId !== this.#parent.sessionId || this.#attachIssued) { throw fail("ATTACHMENT"); }
       return;
     }
+    if (parentCommand(command)) {
+      if (command.method !== "Target.getTargets" && command.sessionId !== this.#parent.sessionId) { throw fail("PARENT_SESSION"); }
+      if (command.method === "Runtime.callFunctionOn" && "uniqueContextId" in command.params) {
+        const identity = JSON.stringify([command.params.uniqueContextId, command.params.arguments[0].value]);
+        const phase = command.params.arguments[1].value;
+        if (phase === "preflight" ? this.#openingIdentity !== null :
+            !this.#attachAcknowledged || this.#openingIdentity !== identity || this.#openingConsumed) { throw fail("OPENING_SEQUENCE"); }
+      }
+      return;
+    }
+    if (command.sessionId === undefined) { throw fail("WORKER_SESSION"); }
     if (!this.#workers.has(command.sessionId)) { throw fail("WORKER_SESSION"); }
   }
   // oxlint-disable-next-line eslint/require-await -- Return the original retained completion, with synchronous guards converted to rejection.
@@ -179,6 +209,11 @@ export class CurrentPcbWorkerStartupChannel {
           written: false, writeFailed: false, replied: false, result: null, remoteError: false, settled: false };
         this.#pending.set(pending.id, pending);
         if (command.method === "Target.setAutoAttach") { this.#attachIssued = true; }
+        if (command.method === "Runtime.callFunctionOn" && "uniqueContextId" in command.params) {
+          if (command.params.arguments[1].value === "preflight") {
+            this.#openingIdentity = JSON.stringify([command.params.uniqueContextId, command.params.arguments[0].value]);
+          } else { this.#openingConsumed = true; }
+        }
         ackSchema.parse(captureCurrentPcbStringClockReply(await this.#exchange.call(this.#native, wire.request)).value);
         pending.written = true; this.#complete(pending);
       } catch (error) {
@@ -199,10 +234,17 @@ export class CurrentPcbWorkerStartupChannel {
     pending.settled = true;
     if (pending.remoteError || this.#failure !== null && !pending.allocation && !cleanupCommand(pending.command)) {
       pending.completion.reject(this.#failure ?? fail("REMOTE"));
-    } else { pending.completion.resolve(pending.result); }
+    } else {
+      if (pending.command.method === "Target.setAutoAttach") {
+        if (!record(pending.result) || !exact(pending.result, [])) { this.#poison("ATTACH_REPLY"); pending.completion.reject(fail("ATTACH_REPLY")); return; }
+        this.#attachAcknowledged = true;
+      }
+      pending.completion.resolve(pending.result);
+    }
   }
   #schedulePoll(milliseconds: number): void {
-    if (this.#released || this.#releaseRequested || this.#terminationVerified || this.#fatal || this.#listener === null || this.#pollQueued || this.#pollTimer !== null) { return; }
+    if (this.#released || this.#releaseRequested || this.#terminationVerified || this.#fatal ||
+        this.#listener === null && this.#pending.size === 0 || this.#pollQueued || this.#pollTimer !== null) { return; }
     this.#pollTimer = setTimeout(() => { this.#pollTimer = null; this.#poll(); }, milliseconds);
   }
   #poll(): void {
@@ -252,8 +294,9 @@ export class CurrentPcbWorkerStartupChannel {
     const id = value["id"];
     if (typeof id !== "number" || !Number.isSafeInteger(id)) { throw fail("REPLY_ID"); }
     const pending = this.#pending.get(id);
+    const sessionKeys = pending?.command.sessionId === undefined ? [] : ["sessionId"];
     if (pending === undefined || pending.replied || value["sessionId"] !== pending.command.sessionId ||
-        !exact(value, Object.hasOwn(value, "result") ? ["id", "sessionId", "result"] : ["id", "sessionId", "error"]) ||
+        !exact(value, ["id", ...sessionKeys, Object.hasOwn(value, "result") ? "result" : "error"]) ||
         !record(value["result"] ?? value["error"]) || bytes.length > (pending.command.method === "Debugger.getScriptSource" ? SOURCE_FRAME : MAX_FRAME)) {
       throw fail("REPLY");
     }
@@ -264,7 +307,7 @@ export class CurrentPcbWorkerStartupChannel {
   }
   #event(value: Record<string, unknown>, bytes: number): void {
     this.#events += 1; this.#eventBytes += bytes;
-    if (bytes > MAX_FRAME || this.#events > MAX_EVENTS || this.#eventBytes > MAX_EVENT_BYTES || this.#parent === null || this.#listener === null) { throw fail("EVENT_BUDGET"); }
+    if (bytes > MAX_FRAME || this.#events > MAX_EVENTS || this.#eventBytes > MAX_EVENT_BYTES || this.#parent === null) { throw fail("EVENT_BUDGET"); }
     const event = z.object({ method: z.string().min(1).max(128), params: z.record(z.string(), z.unknown()), sessionId: token }).strict()
       .parse(captureCurrentPcbStringClockReply(value).value);
     if (event.sessionId === this.#parent.sessionId) {
@@ -280,6 +323,7 @@ export class CurrentPcbWorkerStartupChannel {
       if (targetId === this.#parent.targetId || [...this.#workers.values()].includes(targetId)) { throw fail("ATTACHMENT"); }
       this.#workers.set(sessionId, targetId);
     } else if (!this.#workers.has(event.sessionId)) { throw fail("EVENT_SESSION"); }
+    if (this.#listener === null) { throw fail("WORKER_SUBSCRIBER"); }
     this.#listener(event);
   }
   #deliverParent(event: CurrentPcbWorkerStartupEvent): void {

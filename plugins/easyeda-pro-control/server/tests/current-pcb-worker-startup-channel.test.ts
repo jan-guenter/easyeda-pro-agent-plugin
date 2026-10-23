@@ -7,6 +7,7 @@ import type { CurrentPcbWorkerStartupNativeDependency, CurrentPcbWorkerStartupPa
 import { CURRENT_PCB_WORKER_STARTUP_ATTACH } from "../src/current-pcb-worker-startup-contract.ts";
 import type { CurrentPcbWorkerStartupEvent } from "../src/current-pcb-worker-startup-contract.ts";
 import { CURRENT_PCB_WORKER_CONSTRUCTION_SITES } from "../src/current-pcb-worker-construction-contract.ts";
+import { currentPcbWorkerStartupNativeParentCases } from "../src/current-pcb-worker-startup-native.ts";
 
 type NativeSend = Readonly<Record<string, string | number>>;
 async function fixture(context: TestContext): Promise<Readonly<{
@@ -64,6 +65,45 @@ async function fixture(context: TestContext): Promise<Readonly<{
 async function attach(value: Awaited<ReturnType<typeof fixture>>): Promise<void> {
   await value.dependency.request({ method: "Target.setAutoAttach", params: CURRENT_PCB_WORKER_STARTUP_ATTACH, sessionId: "parent-session" });
 }
+void test("parent opening shares IDs, requires acknowledged attachment and cannot replay or change target", async context => {
+  const value = await fixture(context);
+  const samples = currentPcbWorkerStartupNativeParentCases();
+  const preflight = samples.find(sample => sample.method === "Runtime.callFunctionOn" && sample.params.arguments[1].value === "preflight");
+  const opening = samples.find(sample => sample.method === "Runtime.callFunctionOn" && sample.params.arguments[1].value === "open-project");
+  assert.ok(preflight?.method === "Runtime.callFunctionOn" && opening?.method === "Runtime.callFunctionOn");
+  const open = { ...opening, sessionId: "parent-session" }, pre = { ...preflight, sessionId: "parent-session" };
+  await assert.rejects(value.dependency.request(open), /OPENING_SEQUENCE/u);
+  await value.dependency.request({ method: "Target.getTargets", params: {} });
+  await value.dependency.request(pre);
+  await assert.rejects(value.dependency.request(pre), /OPENING_SEQUENCE/u);
+  await assert.rejects(value.dependency.request(open), /OPENING_SEQUENCE/u);
+  await attach(value);
+  await assert.rejects(value.dependency.request({ ...open, params: { ...open.params, uniqueContextId: "other" } }), /OPENING_SEQUENCE/u);
+  await assert.rejects(value.dependency.request({ ...open, sessionId: "worker-session" }), /PARENT_SESSION/u);
+  await value.dependency.request(open);
+  await assert.rejects(value.dependency.request(open), /OPENING_SEQUENCE/u);
+  assert.deepEqual(value.requests.map(request => request["requestId"]), [17, 18, 19, 20]);
+});
+void test("pre-capture parent replies and events are serviced before worker subscriber exists", async () => {
+  const parent = Object.freeze({ targetId: "p", sessionId: "s", nextRequestId: 1 });
+  const frames: Buffer[] = []; let parentEvents = 0, terminated = false;
+  const channel = new CurrentPcbWorkerStartupChannel({
+    requireOriginalParent: (): Promise<CurrentPcbWorkerStartupParent> => Promise.resolve(parent),
+    assertOriginalTermination: (): Promise<void> => { assert.equal(terminated, true); return Promise.resolve(); },
+    observeOriginalParentEvent: (): void => { parentEvents += 1; },
+    exchange: (request): Promise<unknown> => {
+      if (request.action === "poll") { return Promise.resolve({ bytes: (frames.shift() ?? Buffer.alloc(0)).toString("base64") }); }
+      assert.ok("requestId" in request);
+      frames.push(Buffer.from(`${JSON.stringify({ method: "Page.lifecycleEvent", sessionId: "s", params: {} })}\0${JSON.stringify({ id: request["requestId"], result: { targetInfos: [] } })}\0`));
+      return Promise.resolve({ written: true });
+    },
+  });
+  try {
+    const dependency = await channel.start();
+    assert.deepEqual(await dependency.request({ method: "Target.getTargets", params: {} }), { targetInfos: [] });
+    assert.equal(parentEvents, 1); assert.equal(channel.status().pendingReplies, 0);
+  } finally { terminated = true; await channel.releaseAfterTermination(); }
+});
 async function until(predicate: () => boolean): Promise<void> {
   for (let attempt = 0; attempt < 200; attempt += 1) { if (predicate()) { return; } await delay(5); }
   assert.fail("Synthetic channel condition did not settle within its test deadline");

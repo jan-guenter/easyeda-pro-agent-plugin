@@ -297,3 +297,4 @@ layout. The connected ledger retains its generation and case anchors.
 | [2026-10-22 Vitest audit fix](2026-10-22-vitest-audit-fix.md) | PR97 dependency audit follow-up |
 | [2026-10-23 worker-startup batch](2026-10-23-worker-startup-batch.md) | New combined implementation and verification record |
 | [2026-10-23 worker-startup integration plan](2026-10-23-worker-startup-integration-plan.md) | New plan; native-owner wiring remains pending |
+| [2026-10-23 worker-startup owner](2026-10-23-worker-startup-owner.md) | Combined native owner, channel and checkpoint-opening integration |

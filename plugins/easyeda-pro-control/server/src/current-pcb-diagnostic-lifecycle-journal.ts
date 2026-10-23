@@ -11,6 +11,7 @@ import type { ControlRootDirectory } from "./control-root.ts";
 import { canonicalJson, sha256Json } from "./core.ts";
 import { currentDisposableOpenPreparationCheckpointSchema, currentDisposableOpenSealedTargetSchema } from "./current-disposable-open.ts";
 import { CURRENT_PCB_STRING_PRECREATE_OPERATION_PREFIX, currentPcbStringPrecreateIdSchema } from "./current-pcb-string-precreate-validation.ts";
+import { CURRENT_PCB_WORKER_STARTUP_OPERATION_PREFIX, currentPcbWorkerStartupLifecycleIdSchema } from "./current-pcb-worker-startup-validation.ts";
 import { currentPcbObservationFailureSchema } from "./current-pcb-observation-failure.ts";
 import { assertNoUnresolvedCurrentPcbStringLedgers } from "./current-pcb-string-ledger-exclusion.ts";
 import { CURRENT_PCB_COMMON_FAILURE_MAX_BYTES, currentPcbCommonBaselineFailureSchema, currentPcbCommonBaselineResultSchema } from "./current-pcb-common-baseline-validation.ts";
@@ -23,6 +24,7 @@ export const DIAGNOSTIC_OBSERVATION_MAX_BYTES = 128 * 1024;
 export const STRING_PRECREATE_OBSERVATION_V2_MAX_BYTES = 680 * 1024;
 export const STRING_PRECREATE_OBSERVATION_MAX_BYTES = 712 * 1024;
 const MAX_OPERATIONS = 4096;
+export type CurrentPcbDiagnosticLifecyclePurpose = "diagnostic" | "string-precreate" | "worker-startup";
 const qualifiedPcbOpeningSchema = z.looseObject({
   family: z.literal("pcb"), sourceVerified: z.literal(true), domOwnerVerified: z.literal(true),
   projectUuid: z.string(), documentUuid: z.string(), tabId: z.string(),
@@ -58,7 +60,20 @@ const stringIntentSchema = z.object({ schema: z.literal("easyeda-pro-control.pcb
   facadeSha256: diagnosticLifecycleDigestSchema, installationSha256: diagnosticLifecycleDigestSchema,
   confirmValidationOnly: z.literal(true), confirmDiagnosticLaunch: z.literal(true), acceptExistingProfileEffects: z.literal(true),
 }).strict();
-const intentSchema = z.discriminatedUnion("schema", [diagnosticIntentSchema, stringIntentSchema]);
+const workerStartupIntentSchema = z.object({ schema: z.literal("easyeda-pro-control.pcb-worker-startup-launch-intent.v1"), ...base,
+  operationId: currentPcbWorkerStartupLifecycleIdSchema, purpose: z.literal("worker-startup"),
+  facadeSha256: diagnosticLifecycleDigestSchema, installationSha256: diagnosticLifecycleDigestSchema,
+  confirmValidationOnly: z.literal(true), confirmDiagnosticLaunch: z.literal(true), acceptExistingProfileEffects: z.literal(true),
+}).strict();
+const intentSchema = z.discriminatedUnion("schema", [diagnosticIntentSchema, stringIntentSchema, workerStartupIntentSchema]);
+const workerStartupHandoffIntentSchema = z.object({ schema: z.literal("easyeda-pro-control.pcb-worker-startup-handoff-intent.v1"), ...base,
+  operationId: currentPcbWorkerStartupLifecycleIdSchema, bindingSha256: diagnosticLifecycleDigestSchema,
+  scriptResultSha256: diagnosticLifecycleDigestSchema,
+}).strict();
+const workerStartupHandoffResultSchema = z.object({ schema: z.literal("easyeda-pro-control.pcb-worker-startup-handoff-result.v1"), ...base,
+  operationId: currentPcbWorkerStartupLifecycleIdSchema, intentSha256: diagnosticLifecycleDigestSchema,
+  originalParentRetained: z.literal(true), handoffIrreversible: z.literal(true), executionAuthorized: z.literal(false),
+}).strict();
 const bindingSchema = z.object({ schema: z.literal("easyeda-pro-control.pcb-diagnostic-launch-binding.v1"), ...base,
   intentSha256: diagnosticLifecycleDigestSchema, binding: diagnosticLifecycleBindingSchema,
   launchAcknowledged: z.boolean(),
@@ -237,6 +252,35 @@ const projectOpeningResultSchema = z.object({
   schema: z.literal("easyeda-pro-control.pcb-diagnostic-project-opening-result.v1"), ...base,
   intentSha256: diagnosticLifecycleDigestSchema, result: z.record(z.string(), z.unknown()), executionAuthorized: z.literal(false),
 }).strict().refine(value => Buffer.byteLength(canonicalJson(value.result)) <= DIAGNOSTIC_OBSERVATION_MAX_BYTES, "Opening result exceeds its bound.");
+const workerStartupOpeningIntentSchema = z.object({
+  schema: z.literal("easyeda-pro-control.pcb-worker-startup-opening-intent.v1"), ...base,
+  operationId: currentPcbWorkerStartupLifecycleIdSchema, bindingSha256: diagnosticLifecycleDigestSchema,
+  handoffResultSha256: diagnosticLifecycleDigestSchema, target: currentDisposableOpenSealedTargetSchema,
+  preparationCheckpoint: currentDisposableOpenPreparationCheckpointSchema, checkpointReceiptSha256: diagnosticLifecycleDigestSchema,
+  beforeSqlSha256: diagnosticLifecycleDigestSchema, confirmDisposableProject: z.literal(true), acceptNormalOpenEffects: z.literal(true),
+  acceptDebuggerPauseEffects: z.literal(true),
+}).strict();
+const workerStartupOpenedSchema = z.looseObject({ schema: z.literal("easyeda-pro-control.pcb-diagnostic-opening.v1"), phase: z.literal("open-project"),
+      projectUuid: diagnosticLifecycleDigestSchema, branchUuid: token, documentUuid: z.string(),
+      ok: z.literal(true), status: z.literal("opened-prefix-observed"), failure: z.null(), dispatchAttempted: z.literal(true),
+      observation: z.looseObject({ windowTabId: z.string().regex(/^[A-Za-z\d_-]{1,128}$/u) }),
+      executionAuthorized: z.literal(false), persistenceVerified: z.literal(false),
+    });
+const workerStartupConstructionSchema = z.object({ profile: z.literal("private.current-pcb-worker-construction.v1"), pauses: z.literal(9),
+      originalConstructorAndFactoryEventsRetained: z.literal(true), originalProjectReceiverMatched: z.literal(true),
+      channelNativeIntrinsicAndPeerOwnershipVerified: z.literal(false), wrapperAssignmentRelationVerified: z.literal(false),
+      nativeStartupIntegrationVerified: z.literal(false), writeDestinationsContained: z.literal(false), executionAuthorized: z.literal(false),
+    }).strict();
+const workerStartupResultSchema = z.object({ opening: workerStartupOpenedSchema, construction: workerStartupConstructionSchema,
+  workerIdentity: z.object({ projectUuid: diagnosticLifecycleDigestSchema, branchUuid: token,
+    windowTabId: z.string().regex(/^[A-Za-z\d_-]{1,128}$/u) }).strict(),
+  ancillaryFrame: z.record(z.string(), z.unknown()).nullable(), executionAuthorized: z.literal(false), persistenceVerified: z.literal(false),
+}).strict();
+const workerStartupOpeningResultSchema = z.object({
+  schema: z.literal("easyeda-pro-control.pcb-worker-startup-opening-result.v1"), ...base,
+  operationId: currentPcbWorkerStartupLifecycleIdSchema, intentSha256: diagnosticLifecycleDigestSchema,
+  result: workerStartupResultSchema, executionAuthorized: z.literal(false),
+}).strict().refine(value => Buffer.byteLength(canonicalJson(value.result)) <= DIAGNOSTIC_OBSERVATION_MAX_BYTES, "Startup opening result exceeds its bound.");
 const pcbOpenIntentSchema = z.object({
   schema: z.literal("easyeda-pro-control.pcb-diagnostic-pcb-open-intent.v1"), ...base,
   bindingSha256: diagnosticLifecycleDigestSchema, projectOpeningIntentSha256: diagnosticLifecycleDigestSchema,
@@ -265,6 +309,10 @@ export const diagnosticLifecycleRecordSchemas = {
   "string-precreate-intent.json": stringPrecreateIntentSchema, "string-precreate-result.json": stringPrecreateResultSchema,
   "common-baseline-intent.json": commonBaselineIntentSchema, "common-baseline-result.json": commonBaselineResultSchema,
   "common-baseline-failure.json": commonBaselineFailureSchema,
+  "worker-startup-handoff-intent.json": workerStartupHandoffIntentSchema,
+  "worker-startup-handoff-result.json": workerStartupHandoffResultSchema,
+  "worker-startup-opening-intent.json": workerStartupOpeningIntentSchema,
+  "worker-startup-opening-result.json": workerStartupOpeningResultSchema,
   "observation-failure.json": observationFailureSchema,
 } as const;
 export type DiagnosticLifecycleRecords = { readonly [Key in keyof typeof diagnosticLifecycleRecordSchemas]?: z.infer<(typeof diagnosticLifecycleRecordSchemas)[Key]> };
@@ -282,7 +330,7 @@ function recordName(value: string): value is RecordName { return Object.hasOwn(d
 function recordBound(name: RecordName): number {
   // Two 4096-unit paths can each require six JSON bytes per UTF-16 unit;
   // The remaining schema-bounded fields fit within the ordinary 8 KiB envelope.
-  if (name === "project-opening-intent.json") { return 64 * 1024; }
+  if (name === "project-opening-intent.json" || name === "worker-startup-opening-intent.json") { return 64 * 1024; }
   if (name === "string-precreate-result.json") { return STRING_PRECREATE_OBSERVATION_MAX_BYTES + MAX_BYTES; }
   if (name === "common-baseline-failure.json") { return CURRENT_PCB_COMMON_FAILURE_MAX_BYTES + MAX_BYTES; }
   return name.endsWith("-result.json") ? DIAGNOSTIC_OBSERVATION_MAX_BYTES + MAX_BYTES : MAX_BYTES;
@@ -346,14 +394,39 @@ function validateChain(operation: DiagnosticLifecycleOperation): void {
   const notDispatched = records["not-dispatched.json"], unlaunched = records["unlaunched-release-intent.json"];
   const noProcess = records["no-process-release-intent.json"], noProcessReleased = records["no-process-released.json"];
   const stringPurpose = intent?.schema === "easyeda-pro-control.pcb-string-precreate-launch-intent.v1";
+  const startupPurpose = intent?.schema === "easyeda-pro-control.pcb-worker-startup-launch-intent.v1";
   requireValue(!stringPurpose || operation.operationId.startsWith(CURRENT_PCB_STRING_PRECREATE_OPERATION_PREFIX), "STRING_PURPOSE_ID");
   requireValue(intent === undefined || stringPurpose || !operation.operationId.startsWith(CURRENT_PCB_STRING_PRECREATE_OPERATION_PREFIX), "RESERVED_STRING_PURPOSE_ID");
+  requireValue(!startupPurpose || operation.operationId.startsWith(CURRENT_PCB_WORKER_STARTUP_OPERATION_PREFIX), "WORKER_STARTUP_PURPOSE_ID");
+  requireValue(intent === undefined || startupPurpose || !operation.operationId.startsWith(CURRENT_PCB_WORKER_STARTUP_OPERATION_PREFIX), "RESERVED_WORKER_STARTUP_PURPOSE_ID");
   requireValue(stringPurpose || records["string-precreate-intent.json"] === undefined && records["string-precreate-result.json"] === undefined, "STRING_PURPOSE_REQUIRED");
   requireValue(stringPurpose || records["common-baseline-intent.json"] === undefined && records["common-baseline-result.json"] === undefined &&
     records["common-baseline-failure.json"] === undefined && records["project-opening-intent.json"]?.commonBeforeSqlSha256 === undefined,
   "COMMON_PURPOSE_REQUIRED");
   requireValue(!stringPurpose || records["model-state-intent.json"] === undefined && records["worker-state-intent.json"] === undefined &&
     (records["script-intent.json"] === undefined || records["script-intent.json"].family === "ui"), "STRING_PURPOSE_BRANCH");
+  requireValue(!startupPurpose || records["workers-intent.json"] === undefined && records["worker-script-intent.json"] === undefined &&
+    records["worker-state-intent.json"] === undefined && records["model-state-intent.json"] === undefined &&
+    records["project-opening-intent.json"] === undefined && records["pcb-open-intent.json"] === undefined &&
+    records["pcb-opening-intent.json"] === undefined &&
+    (records["script-intent.json"] === undefined || records["script-intent.json"].family === "ui"), "WORKER_STARTUP_PURPOSE_BRANCH");
+  const handedOff = records["worker-startup-handoff-result.json"], handoff = records["worker-startup-handoff-intent.json"];
+  const qualifiedUi = records["script-result.json"];
+  requireValue(handoff === undefined || startupPurpose && binding !== undefined && binding.launchAcknowledged &&
+    binding.binding.rootCreated !== "0" && handoff.bindingSha256 === sha256Json(binding) && qualifiedUi !== undefined &&
+    handoff.scriptResultSha256 === sha256Json(qualifiedUi) && records["script-intent.json"]?.family === "ui" &&
+    qualifiedUi.result["family"] === "ui" && qualifiedUi.result["sourceVerified"] === true, "WORKER_STARTUP_HANDOFF_CHAIN");
+  requireValue(handedOff === undefined || handoff !== undefined && handedOff.intentSha256 === sha256Json(handoff), "WORKER_STARTUP_HANDOFF_RESULT_CHAIN");
+  const startupOpened = records["worker-startup-opening-result.json"], startupOpening = records["worker-startup-opening-intent.json"];
+  requireValue(startupOpening === undefined || startupPurpose && handedOff !== undefined && binding !== undefined &&
+    startupOpening.handoffResultSha256 === sha256Json(handedOff) && startupOpening.bindingSha256 === sha256Json(binding), "WORKER_STARTUP_OPENING_CHAIN");
+  requireValue(startupOpened === undefined || startupOpening !== undefined && startupOpened.intentSha256 === sha256Json(startupOpening) &&
+    startupOpened.result.opening.projectUuid === startupOpening.target.projectUuid &&
+    startupOpened.result.opening.branchUuid === startupOpening.target.branchUuid &&
+    startupOpened.result.opening.documentUuid === startupOpening.target.documentUuid &&
+    startupOpened.result.workerIdentity.projectUuid === startupOpening.target.projectUuid &&
+    startupOpened.result.workerIdentity.branchUuid === startupOpening.target.branchUuid &&
+    startupOpened.result.workerIdentity.windowTabId === startupOpened.result.opening.observation.windowTabId, "WORKER_STARTUP_OPENING_RESULT_CHAIN");
   for (const stage of lifecycleObservationStages) {
     const observation = records[`${stage}-intent.json`], result = records[`${stage}-result.json`];
     requireValue(observation === undefined || binding !== undefined && observation.stage === stage &&

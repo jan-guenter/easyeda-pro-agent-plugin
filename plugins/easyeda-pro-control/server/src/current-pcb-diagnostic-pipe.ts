@@ -6,7 +6,7 @@
  * class therefore NEVER ends, destroys or closes either stream, even on error.
  * The original native owner must retain both pipe handles until its reviewed
  * application-closure policy permits release. No TCP endpoint is supported. */
-/* oxlint-disable max-classes-per-file -- Two fixed-purpose facades share a private byte-transport core without exposing a caller-selectable purpose or budget. */
+/* oxlint-disable max-classes-per-file -- Three fixed-purpose facades share a private byte-transport core without exposing a caller-selectable purpose or budget. */
 /* oxlint-disable import/max-dependencies -- Fixed transport composes independent model/common/worker/actor grammars without merging their source or authority boundaries. */
 import type { Readable, Writable } from "node:stream";
 import { DIAGNOSTIC_REQUEST_LIMIT, DIAGNOSTIC_SESSION_BYTES, DIAGNOSTIC_SOURCE_FRAME_BYTES, DIAGNOSTIC_WORKER_ATTACH_PARAMS,
@@ -110,6 +110,14 @@ interface Pending {
   reply: Reply | null;
 }
 
+export interface CurrentPcbWorkerStartupPipeHandoff {
+  readonly sessionId: string;
+  readonly nextRequestId: number;
+  readonly receivedBytes: number;
+  readonly eventCount: number;
+  readonly eventBytes: number;
+}
+
 function record(value: unknown): value is Record<string, unknown> {
   return value !== null && typeof value === "object" && !Array.isArray(value);
 }
@@ -124,6 +132,8 @@ class CurrentPcbFixedPipeCore {
   readonly #input: Readable;
   readonly #output: Writable;
   readonly #stringPurpose: boolean;
+  readonly #startupPurpose: boolean;
+  #handedOff = false;
   #started = false;
   #failure: Failure | null = null;
   #failureObservation: CurrentPcbDiagnosticFailureObservation | null = null;
@@ -146,8 +156,22 @@ class CurrentPcbFixedPipeCore {
   #workerDiscoverySettled = false;
   #selectedWorkerSession: string | null = null;
 
-  public constructor(input: Readable, output: Writable, stringPurpose: boolean) {
-    this.#input = input; this.#output = output; this.#stringPurpose = stringPurpose;
+  public constructor(input: Readable, output: Writable, purpose: "diagnostic" | "string-precreate" | "worker-startup") {
+    this.#input = input; this.#output = output; this.#stringPurpose = purpose === "string-precreate";
+    this.#startupPurpose = purpose === "worker-startup";
+  }
+
+  /** One clean transfer of the original counter and receive budgets. Listeners
+   * remain attached but dormant until their ordinary closed-stream cleanup. */
+  protected handoffStartupPipe(): CurrentPcbWorkerStartupPipeHandoff {
+    if (!this.#startupPurpose || this.#handedOff || !this.#started || this.#released || this.#failure !== null ||
+        this.#sessionId === null || this.#event === null || this.#workerEvent !== null || this.#pending !== null || this.#used !== 0 ||
+        this.#inputEnded || this.#inputClosed || this.#outputClosed || this.#output.writableLength !== 0 || this.#input.readableLength !== 0) {
+      throw new Error("PCB_DIAGNOSTIC_PIPE_HANDOFF_UNAVAILABLE");
+    }
+    this.#handedOff = true;
+    return Object.freeze({ sessionId: this.#sessionId, nextRequestId: this.#nextId,
+      receivedBytes: this.#receivedBytes, eventCount: this.#eventCount, eventBytes: this.#eventBytes });
   }
 
   public start(): void {
@@ -337,7 +361,11 @@ class CurrentPcbFixedPipeCore {
   // oxlint-disable-next-line eslint/require-await -- Async converts pre-dispatch guards to rejected promises; native completion is callback-based.
   async #request(command: DiagnosticCommand | (Omit<CurrentPcbStringPrecreateCommand, "stringPhase"> &
     Readonly<{ id: number; sessionId: string }>), phase: RequestPhase = "discovery"): Promise<Reply> {
-    if (!this.#started || this.#released) { throw new Error("PCB_DIAGNOSTIC_PIPE_NOT_STARTED"); }
+    if (!this.#started || this.#released || this.#handedOff) { throw new Error("PCB_DIAGNOSTIC_PIPE_NOT_STARTED"); }
+    if (this.#startupPurpose && (phase !== "discovery" && phase !== "frame-owner" ||
+        command.method === "Target.setAutoAttach" || command.method === "Runtime.evaluate" || command.method === "Runtime.callFunctionOn")) {
+      throw new Error("PCB_DIAGNOSTIC_PIPE_STARTUP_DISCOVERY_ONLY");
+    }
     if (this.#failure !== null) { throw failureError(this.#failure); }
     if (this.#pending !== null) { throw new Error("PCB_DIAGNOSTIC_PIPE_REQUEST_PENDING"); }
     if (this.#nextId > (this.#stringPurpose ? CURRENT_PCB_STRING_PRECREATE_REQUEST_LIMIT : DIAGNOSTIC_REQUEST_LIMIT)) {
@@ -451,7 +479,7 @@ class CurrentPcbFixedPipeCore {
   }
 
   readonly #data = (chunk: unknown): void => {
-    if (this.#failure !== null) { return; }
+    if (this.#failure !== null || this.#handedOff) { return; }
     if (this.#pending === null && this.#event === null) { this.#fail("reply", "unsolicited-data"); return; }
     if (!Buffer.isBuffer(chunk) || chunk.length === 0 || chunk.length > MAX_CHUNK_BYTES ||
       this.#receivedBytes + chunk.length > (this.#event === null ? 8 * MAX_FRAME_BYTES : DIAGNOSTIC_SESSION_BYTES)) { this.#fail("framing"); return; }
@@ -485,12 +513,12 @@ class CurrentPcbFixedPipeCore {
 
 /** Legacy diagnostic profile. No caller cap or purpose override exists. */
 export class CurrentPcbDiagnosticPipe extends CurrentPcbFixedPipeCore {
-  public constructor(input: Readable, output: Writable) { super(input, output, false); }
+  public constructor(input: Readable, output: Writable) { super(input, output, "diagnostic"); }
 }
 /** Internal, unregistered String pre-create profile. It has no create/Save
  * vocabulary and cannot extend an existing diagnostic pipe's lifetime budget. */
 export class CurrentPcbStringPrecreatePipe extends CurrentPcbFixedPipeCore {
-  public constructor(input: Readable, output: Writable) { super(input, output, true); }
+  public constructor(input: Readable, output: Writable) { super(input, output, "string-precreate"); }
   public observeCommonBaseline(command: CurrentPcbCommonBaselineCommand): Promise<Reply> {
     return this.observeCommonBaselineCommand(command);
   }
@@ -501,4 +529,10 @@ export class CurrentPcbStringPrecreatePipe extends CurrentPcbFixedPipeCore {
   public observeActorClock(command: CurrentPcbStringActorClockCommand): Promise<Reply> {
     return this.observeActorClockCommand(command);
   }
+}
+
+/** Fixed discovery prefix for the separate constructor-capture owner. */
+export class CurrentPcbWorkerStartupDiscoveryPipe extends CurrentPcbFixedPipeCore {
+  public constructor(input: Readable, output: Writable) { super(input, output, "worker-startup"); }
+  public handoff(): CurrentPcbWorkerStartupPipeHandoff { return this.handoffStartupPipe(); }
 }
