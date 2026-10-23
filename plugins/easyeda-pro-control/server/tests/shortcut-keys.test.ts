@@ -2,15 +2,15 @@ import assert from "node:assert/strict";
 import { test } from "node:test";
 import { createContext, runInContext } from "node:vm";
 import { decodeExactReadEnvelope } from "../src/exact-readers.ts";
-import { SHORTCUT_KEYS_METHOD, buildShortcutKeysProgram, parseShortcutKeysRequest, queryShortcutKeys,
-  validateShortcutKeysArguments, validateShortcutKeysResult } from "../src/shortcut-keys.ts";
+import { SHORTCUT_KEYS_METHOD, buildShortcutKeys209Program, buildShortcutKeysProgram, parseShortcutKeysRequest, queryShortcutKeys,
+  validateShortcutKeys209Result, validateShortcutKeysArguments, validateShortcutKeysResult } from "../src/shortcut-keys.ts";
 
 const request = { method: SHORTCUT_KEYS_METHOD, arguments: {} };
 function row(): Record<string, unknown> {
   return { shortcutKey: ["Ctrl", "Page Down", ""], title: "Raw shortcut", documentType: [4, 2, 4], scene: [6, 1] };
 }
 
-function environment(rows: unknown[] = [row()], options: { before?: string; afterRead?: string; fastDeadline?: boolean; includeSystem?: boolean } = {}): {
+function environment(rows: unknown[] = [row()], options: { before?: string; afterRead?: string; fastDeadline?: boolean; includeSystem?: boolean; generation209?: boolean } = {}): {
   run: () => Promise<unknown>; evaluate: (source: string) => unknown;
 } {
   const context = createContext({ TextEncoder,
@@ -34,8 +34,9 @@ globalThis.eda={extensionUuid:'7e06d286b1ac846ef7eab9c7f2a9ee40',sys_ShortcutKey
 globalThis.Locale={_curr:'en',_cache:{en:{_status:'loaded'}},get curr(){return this._curr;},i18n(value){return value;},_getValue(value){return value;},_context_i18n(context,value){return value;}};
 ${options.before ?? ""}`, context, { timeout: 1000 });
   const input = { method: SHORTCUT_KEYS_METHOD, arguments: options.includeSystem === undefined ? {} : { includeSystem: options.includeSystem } };
+  const code = options.generation209 === true ? buildShortcutKeys209Program(input) : buildShortcutKeysProgram(input);
   return {
-    run: (): Promise<unknown> => Promise.resolve(runInContext(`(async()=>{${buildShortcutKeysProgram(input)}})()`, context, { timeout: 1000 }) as unknown),
+    run: (): Promise<unknown> => Promise.resolve(runInContext(`(async()=>{${code}})()`, context, { timeout: 1000 }) as unknown),
     evaluate: (source: string): unknown => runInContext(source, context, { timeout: 1000 }) as unknown,
   };
 }
@@ -119,5 +120,21 @@ void test("shortcut result validator binds the requested filter and refuses unkn
   for (const invalid of [{ ...payload, includeSystem: true }, { ...payload, method: "other" }, { ...payload, extra: "PRIVATE" },
     { ...payload, keyboardExecutionAuthorized: true }, { ...payload, shortcuts: [{ ...row(), documentType: [11] }] }]) {
     assert.throws(() => validateShortcutKeysResult(request, invalid));
+  }
+});
+
+void test("209 fixed shortcut program preserves UI scopes 11-14 but refuses out-of-range values and await-time mode drift", async () => {
+  const rows = [{ ...row(), documentType: [0, 10, 11, 12, 13, 14, 14] }];
+  const fixture = environment(rows, { generation209: true });
+  const result = validateShortcutKeys209Result(request, decodeExactReadEnvelope(await fixture.run()));
+  assert.deepEqual(result["shortcuts"], rows); assert.equal(result["declarationScopeConformanceVerified"], false);
+  assert.equal(fixture.evaluate("calls"), 2);
+  for (const options of [
+    { before: "rows[0].documentType=[15];" },
+    { afterRead: "globalThis.PRO_EDITOR_MODE='CLIENT-OFFLINE-EASYEDA-PCB-SCH-PANEL-SIM';" },
+    { afterRead: "globalThis.UI={gVars:globalThis.gVars};" },
+  ]) {
+    const rejected = environment(rows, { ...options, generation209: true });
+    await assert.rejects(rejected.run(), { message: "SHORTCUT_KEYS_READ_FAILED" }); assert.equal(rejected.evaluate("calls"), 1);
   }
 });

@@ -1,4 +1,5 @@
 import assert from "node:assert/strict";
+import { createHash } from "node:crypto";
 import { test } from "node:test";
 
 import { extensionApiCatalogQuerySchema, queryExtensionApiCatalog } from "../src/extension-api-catalog.ts";
@@ -24,6 +25,31 @@ void test("official and reviewed declarations remain distinct, offline and non-e
     assert.equal(entry.validation, "declaration-only");
     assert.equal(entry.inputSchema, null);
   }
+});
+
+void test("installed 209 discovery preserves both historical snapshots and records its exact independent declaration", () => {
+  assert.equal(extensionApiSnapshots.length, 3);
+  const preserved = new Map([
+    ["reviewed-installed", "1f6d1ab997e3f8c73272f3561d7ac2f7721c2fa28d6647fbdce49291901acf60"],
+    ["official-latest", "4af9c242ee42a3ab7573b9d50ce3858ebf8ac4cadd269de45183e3df1e93ecc2"],
+  ]);
+  for (const [reference, hash] of preserved) {
+    const snapshot = extensionApiSnapshots.find((entry) => entry.reference === reference); assert.ok(snapshot);
+    assert.equal(createHash("sha256").update(JSON.stringify(snapshot)).digest("hex"), hash);
+  }
+  const current = queryExtensionApiCatalog({ reference: "installed-209", namespace: "dmt_SourceProject", detail: true });
+  assert.deepEqual(current.provenance, { reference: "installed-209", version: "0.3.59.1ca9efb5", applicationVersion: "3.2.209.8a704eab",
+    sourceUrl: "https://prodocs.easyeda.com/en/api/reference/pro-api.html", sourceSha256: "0a6910f4108f3d09733a9de9176b20c41ccd2a87fc4e335f8d6d656eb054ba72",
+    sourceBytes: 1_814_791, retrievedAt: "2026-10-23", license: "Installed declaration metadata; signatures only, no implementation" });
+  assert.deepEqual(current.totals, { namespaces: 113, methods: 844, types: 436 });
+  assert.equal(current.invocationEnabled, false); assert.equal(current.offline, true);
+  assert.equal(current.entries.length, 3);
+  for (const entry of current.entries) {
+    assert.equal(entry.executable, false); assert.equal(entry.runtimeAvailability, "not-probed");
+    assert.equal(entry.validation, "declaration-only"); assert.equal(entry.inputSchema, null);
+  }
+  assert.throws(() => queryExtensionApiCatalog({ namespace: "dmt_SourceProject" }), /absent/u);
+  assert.equal(queryExtensionApiCatalog().provenance.reference, "reviewed-installed");
 });
 
 void test("catalog rejects coercion, caller code, prototype fields and unbounded selectors", () => {
@@ -56,8 +82,9 @@ void test("literal search and pagination are deterministic and do not expose mut
 
 void test("all mounted API namespaces and signatures are bounded and each page advances", () => {
   for (const snapshot of extensionApiSnapshots) {
-    assert.equal(snapshot.namespaces.length, snapshot.reference === "reviewed-installed" ? 93 : 99);
-    assert.equal(snapshot.namespaces.reduce((sum, entry) => sum + entry.methods.length, 0), snapshot.reference === "reviewed-installed" ? 749 : 806);
+    const counts = { "reviewed-installed": { namespaces: 93, methods: 749 }, "official-latest": { namespaces: 99, methods: 806 }, "installed-209": { namespaces: 113, methods: 844 } }[snapshot.reference];
+    assert.equal(snapshot.namespaces.length, counts.namespaces);
+    assert.equal(snapshot.namespaces.reduce((sum, entry) => sum + entry.methods.length, 0), counts.methods);
     const retainedSignatures = snapshot.namespaces.flatMap((entry) => entry.methods.map((method) => method.signature));
     const roundTrip = inventoryApiDeclarations(`declare class SYS_Probe {\n${retainedSignatures.map((signature) => `    ${signature}`).join("\n")}\n}\ndeclare class EDA {\n    sys_Probe: SYS_Probe;\n}\n`);
     assert.deepEqual(roundTrip.namespaces.flatMap((entry) => entry.methods.map((method) => method.signature)).toSorted(), retainedSignatures.toSorted());

@@ -124,7 +124,7 @@ async function assertNoLiveStartup(options: BundledFixture, pid: number): Promis
 }
 
 void describe("self-contained packaged machine startup", () => {
-  void test("209 configuration registers only public utilities and refuses old routes before upstream startup", async (context) => {
+  void test("209 configuration registers eleven scoped tools and refuses design routes before upstream startup", async (context) => {
     const options = await fixture(context, "public-utilities");
     const transport = new StdioClientTransport({ command: options.bootstrapNode,
       args: [options.bundle, "--machine-launch"], cwd: options.root, env: options.environment, stderr: "pipe" });
@@ -134,11 +134,12 @@ void describe("self-contained packaged machine startup", () => {
     const pid = transport.pid; assert.ok(pid !== null);
     const listed = await client.listTools();
     assert.deepEqual(listed.tools.map((tool) => tool.name).toSorted(), ["easyeda_control_api", "easyeda_control_calculate",
-      "easyeda_control_discover", "easyeda_control_launch", "easyeda_control_status", "easyeda_control_system"]);
+      "easyeda_control_catalog_footprint", "easyeda_control_discover", "easyeda_control_editor_context", "easyeda_control_editor_shell",
+      "easyeda_control_launch", "easyeda_control_public_readers", "easyeda_control_shortcuts", "easyeda_control_status", "easyeda_control_system"]);
     const catalog = await api(client, { action: "calculations", query: { includeSchemas: true } });
     assert.equal(catalog["total"], 16); assert.equal(catalog["invocationEnabledByDiscovery"], false);
     for (const name of ["easyeda_control_project_open", "easyeda_control_pcb_geometry", "easyeda_control_project_symbol_metadata",
-      "easyeda_control_pcb_diagnostic_validation", "easyeda_control_editor_context", "easyeda_control_native_ui", "easyeda_control_save_reopen"]) {
+      "easyeda_control_pcb_diagnostic_validation", "easyeda_control_native_ui", "easyeda_control_save_reopen"]) {
       const refused = await client.callTool({ name, arguments: {} }); assert.equal(refused.isError, true);
     }
     const live = await client.callTool({ name: "easyeda_control_discover", arguments: { source: "live" } });
@@ -403,7 +404,7 @@ void describe("self-contained packaged machine startup", () => {
       assert.ok(tools.tools.some((tool) => tool.name === "easyeda_control_disposable_pcb_rename"));
       assert.ok(tools.tools.some((tool) => tool.name === "easyeda_control_disposable_schematic_rename"));
       assert.ok(tools.tools.some((tool) => tool.name === "easyeda_control_pcb_string_precreate_validation"));
-      for (const [reference, methods] of [["reviewed-installed", 749], ["official-latest", 806]] as const) {
+      for (const [reference, methods] of [["reviewed-installed", 749], ["official-latest", 806], ["installed-209", 844]] as const) {
         const sdk = await api(client, { action: "sdk", query: { reference, namespace: "sys_WebSocket", limit: 1, detail: true } });
         assert.equal(sdk["invocationEnabled"], false);
         assert.equal(record(sdk["totals"])["methods"], methods);
@@ -414,7 +415,7 @@ void describe("self-contained packaged machine startup", () => {
         assert.equal(operations["executionAuthorized"], false);
       }
       const coverage = await api(client, { action: "coverage", query: { search: "pcb_PrimitivePad.get", detail: true } });
-      assert.equal(record(coverage["summary"])["totalDistinctMethods"], 774);
+      assert.equal(record(coverage["summary"])["totalDistinctMethods"], 835);
       assert.equal(coverage["invocationEnabled"], false);
       const sdkReads = await api(client, { action: "sdk-reads", query: { method: "eda.pcb_PrimitivePad.get", includeSchemas: true } });
       assert.equal(sdkReads["matched"], 1);

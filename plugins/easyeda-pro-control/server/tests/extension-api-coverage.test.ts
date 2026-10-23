@@ -42,7 +42,11 @@ void test("all eight legacy project-structure writer routes remain blocked witho
     "eda.lib_Footprint.create", "eda.lib_Footprint.modify", "eda.lib_Device.create", "eda.lib_Device.modify"]) {
     const row = rows.get(path); assert.ok(row); assert.notEqual(row.status, "implemented-but-blocked");
     for (const route of row.routes) {
-      assert.equal(route.executionState, "available-with-runtime-guards"); assert.equal(route.blockedReason, undefined);
+      if (route.tool === "easyeda_control_catalog_footprint") {
+        assert.equal(path, "eda.lib_Footprint.get"); assert.equal(route.implementation, "vendor-http-task-equivalent");
+        assert.equal(route.executionState, "available-with-network-guards");
+      } else { assert.equal(route.executionState, "available-with-runtime-guards"); }
+      assert.equal(route.blockedReason, undefined);
       assert.equal(route.source.includes("library-execution-lifecycle.ts"), false);
     }
   }
@@ -126,15 +130,16 @@ void test("ordinary symbol coverage exposes its bounded forward-only history pro
   assert.equal(result["historicalCanvasConnectedValidation"], "installed080000-ordinary-unused-canvas-segments-forward-only");
 });
 
-void test("coverage enumerates every distinct mounted method and retains every overload in both pinned snapshots", () => {
+void test("coverage enumerates every distinct mounted method and retains every overload in all three pinned snapshots", () => {
   const rows = inventoryExtensionApiCoverage();
   const expected = new Set(extensionApiSnapshots.flatMap((snapshot) => snapshot.namespaces.flatMap((namespace) => namespace.methods.map((method) => `eda.${namespace.name}.${method.name}`))));
-  assert.equal(expected.size, 774);
+  assert.equal(expected.size, 835);
   assert.equal(rows.length, expected.size);
   assert.deepEqual(new Set(rows.map((row) => row.path)), expected);
   assert.equal(rows.filter((row) => row.reviewedRuntimeDeclaration).length, 697);
   assert.equal(rows.filter((row) => row.declarations.some((declaration) => declaration.reference === "official-latest")).length, 773);
-  assert.equal(rows.reduce((count, row) => count + row.declarations.length, 0), 749 + 806);
+  assert.equal(rows.filter((row) => row.installed209Declaration).length, 811);
+  assert.equal(rows.reduce((count, row) => count + row.declarations.length, 0), 749 + 806 + 844);
   for (const row of rows) {
     assert.equal(row.currentGenerationLiveValidation, "not-recorded");
     assert.equal(row.runtimeAdmission, "not-granted-by-inventory");
@@ -397,7 +402,7 @@ void test("NetGroup and filtered PCB membership reads expose narrow native route
   assert.match(route.scope, /not public primitive instances/u); assert.match(route.scope, /explicit nonempty unique filters/u);
   assert.match(route.scope, /source\/inventory\/source/u);
   assert.deepEqual(extensionApiCoverageSummary()["statuses"], {
-    "implemented-public-subset": 212, "implemented-native-equivalent": 34, "internal-lifecycle-only": 0, "implemented-but-blocked": 79, omitted: 449,
+    "implemented-public-subset": 213, "implemented-native-equivalent": 34, "implemented-vendor-http-equivalent": 0, "internal-lifecycle-only": 0, "implemented-but-blocked": 79, omitted: 509,
   });
 });
 
@@ -799,6 +804,11 @@ void test("shortcut coverage keeps legacy and current-version routes distinct wi
   const route = row.routes.find((entry) => entry.tool === "easyeda_control_shortcuts"); assert.ok(route);
   assert.equal(route.documentTypes, undefined); assert.equal(route.implementation, "public-method");
   assert.equal(route.executionState, "available-with-runtime-guards"); assert.equal(route.validation, "offline-regression;current-live-unclaimed");
+  assert.match(route.scope, /API 0\.3\.50\/UI 3\.2\.196.*installed-209 API 0\.3\.59\/UI 3\.2\.198/u);
+  assert.match(route.scope, /206 scope remains 0-10.*209 raw UI registry scope is 0-14/u);
+  assert.match(route.scope, /declarationScopeConformanceVerified remains false/u);
+  assert.ok(route.source.includes("editor-observation209-profile.ts"));
+  assert.ok(route.tests.includes("editor-observation209-runtime.test.ts"));
   const discovery = route.inputDiscovery?.arguments["request"]; assert.ok(isRecord(discovery));
   const result = queryOfflineApi(apiRequestSchema.parse(discovery)).result; assert.ok(isRecord(result));
   assert.equal(result["total"], 1); assert.equal(result["invocationEnabledByDiscovery"], false);

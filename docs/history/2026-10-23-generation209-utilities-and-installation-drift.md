@@ -189,3 +189,143 @@ file concurrency followed the32available CPUs; `npm test` now caps it atfour
 to reduce contention. CI keeps its existing one-file-per-shard bound. No
 production deadline, packet limit or test assertion was weakened. The corrected
 payload requires a new frozen verification and exact-payload CI run.
+
+## Final publication and installation — 2026-10-23
+
+The corrected frozen payload `f87b66225680528ccb5a3cd4bd1cefaab6c6c8fd`
+passed the complete required verification. Local facade results were 12,391
+passes, four skips and zero failures; all 424 bridge tests passed. Strict types,
+type-aware lint, generated coverage, compatibility, repository/privacy, plugin
+and all seven skill validators passed. The final rebuild reproduced both
+committed bundles without a diff. The complete local verification log has
+SHA-256 `4b220fee89088657c7356792b3e01575c63a8a45b884ac1a027b656598f0b5b7`.
+
+Exact-payload CI39936701092 passed all eight facade shards and required
+`test-build`: 12,390 passes, five platform/source skips and zero failures.
+Its build job also passed 424 bridge tests. Windows CI39936701205 passed.
+[PR103](https://github.com/jan-guenter/easyeda-pro-agent-plugin/pull/103)
+merged through protected main at10:37:27Z as
+`722c4ae6aeeab35d0cdf9bdc29193f2f5ff05d35`. No protection was bypassed.
+The batch changed 42 files. Main CI39940421645 was still running at the
+installation handoff; main Windows CI39940421622 had passed. The plugin tree
+is identical to the fully tested PR payload.
+
+The official Git marketplace remains
+`https://github.com/jan-guenter/easyeda-pro-agent-plugin.git`, ref `main`.
+Its refreshed HEAD equals the merged commit. Official installation and listing
+confirm `0.3.0+codex.20261023094500` installed and enabled. Independent inspection
+verified all 1,774 files, 42 directories, 36,754,986 bytes and exact modes:
+
+- Plugin tree: `ab7e8fcb1ca4fd3986d59a08772054666c56bec4`.
+- File inventory: `dff6efe0e669a313eef4bb9854f6c1e7dda4bac0c0f8f839e5b15a7f4fe36e20`.
+- Facade source: `4832ab1301bf810eb0f977973013ae416f8ff59013f6f8e6e48c748765c6b478`.
+- Server bundle: `11bd1b04dddb760e8be65740f73fb1c0a557b22c97081f419a2cbccc5ce4341a`.
+
+The installed dependency-free probe passed 26 tools and ten queries under its
+private synthetic206 profile, with clean EOF, no stderr, no upstream execution
+and no non-stdio sockets in its samples. This is package verification, not
+admission of the actual host or connected209 validation. The new209 six-tool
+registration passed the separate bundled-startup regression.
+
+### Installer anomaly and successful recovery
+
+The first official add reported success, but subsequent listing and independent
+inspection found no installed version and an empty cache parent. Those CLI
+calls ran inside the repository, which exports a local marketplace with the
+same name as the configured Git marketplace. A neutral-directory listing
+resolved the expected Git source and showed the candidate as available but not
+installed. Only after confirming that absence, the official add was repeated
+from the private neutral directory. Subsequent neutral-directory listing,
+independent byte/mode verification and the installed probe all succeeded.
+
+The working-directory/source collision is a supported hypothesis, not a proved
+internal CLI cause; the failed first installation claim is retained here.
+No cache files were manually created, repaired or edited. Future maintenance
+should resolve the configured Git source from a neutral directory and verify
+its installed bytes, not rely on installer stdout. The
+[official plugin documentation](https://developers.openai.com/plugins/build/plugins)
+describes local and Git marketplace sources, cache installation and source
+resolution; it does not establish the cause of this observed anomaly.
+
+### Completed profile migration and restart boundary
+
+The explicit reviewed `--target public-utilities-209` migration completed once
+after successful installed-payload verification. It retained an exact private
+mode0600 backup. Independent post-comparison proved only these values changed:
+
+- PCB selector: `3.2.193.682ed44e` → `3.2.195.6b67774e`.
+- Public API selector: `0.3.50.ab46409c` → `0.3.59.1ca9efb5`.
+
+Previous profile SHA-256:
+`d935c7a418320dfbebcf4bedeb96328645dcd9862944de78a6bfb54d1c98ceb7`.
+New profile SHA-256:
+`a080fa71eb45454bd4f53721803f01bdde6ddb5f30eff54650d20afe70a7cb67`.
+All other configuration fields were unchanged. No credential, journal,
+application or design action occurred. The old084000 offline facade was not
+promoted, replaced or terminated; no live calls followed installation.
+
+A fresh Codex session is required to load094500 and prove its actual process
+and six-tool catalog before ordinary launch or utility calls. Do not repeat
+the completed migration, install or pure package probe as live acceptance.
+These post-release observations remain a local history append for the next
+substantive batch; they do not change the installed Git payload.
+
+## Follow-on research: public routes before more native machinery
+
+The new declaration inventory is not a new working implementation inventory.
+Read-only inspection of the exact209 API found 18 immediate `INTERNAL_ERROR`
+stubs: all 15 methods in `dmt_SourceBoard/Pcb/Project/Schematic`, plus
+`sch_SourceDrc.check`, `sch_SourceNet.getConnections` and
+`sch_SourceNetlist.getNetlistInRegion`. The other 29 new source-design methods
+and four readiness methods have RPC wrappers, but their inspected routes are
+absent from the installed UI dispatch registry and current manager/schematic
+implementations. This is a concrete source blocker, not a connected test.
+The [project readiness contract](https://prodocs.easyeda.com/en/api/reference/pro-api.dmt_project.waitforready.html)
+specifies EDA4.1.79; source declarations identify4.1.83. Virtual-open is a stub
+here and its documented shared storage would not provide project isolation.
+
+Evidence uses the API hash above. UTF-16 spans: document-tree stubs
+1323589–1324803; connectivity stubs1625069–1625345; source RPC transport
+1619950–1623670; readiness wrappers at427084 and1317470. Current UI
+`3.2.198.2800f583` has SHA-256
+`3515d4c299b353fa7bcd0d859f0b8b59b7eae39b5dc243b2c27f2e54a60a1ee6`;
+its inspected public dispatch registry is17440000–17446000. These offsets are
+research locations, not qualified debugger breakpoints or execution authority.
+
+Useful next209 work is a bounded public-library batch alongside the three
+language/viewport candidates above:
+
+1. `lib_Footprint.get`: reuse the strict library-operation descriptor and
+   metadata result handling, with explicit footprint and library IDs. Add
+   separately pinned209 admission; do not enable the legacy executor wholesale.
+2. `lib_Symbol.get`: existing descriptor/executor code is reusable, but its UI
+   getter constructs a document manager to enumerate subparts. Qualify that
+   callback lifecycle and report cache observations honestly. The shared cache
+   has a30-second TTL; matching repeated samples are not independent freshness.
+3. `lib_Symbol.getRenderImage`: add a fixed Blob/PNG adapter and managed image
+   evidence, without weakening the existing File-only export contract. Initially
+   omit `subPartName`: unknown names silently fall back to the first part.
+   Rendering starts an unawaited image-cache write and lacks an image-error
+   completion handler, so one outstanding request and retained late-result
+   handling are required. No blind timeout retry. Footprint rendering needs a
+   separate hidden-preview-iframe lifecycle and is outside this first batch.
+
+Current UI source locations: footprint getter17391335–17391793; symbol getter
+17378332–17378842; symbol render17381438–17382041 and generator15572268;
+image-cache persistence15554624→15554159; shared cache6155715. Public API
+wrappers are at1341604,1331670 and1333416 respectively. Complete the exact
+component-GET backend branch review before admitting external library calls:
+getters can reach local or remote services and may initialize local libraries.
+No public-method name alone establishes a pure or project-independent read.
+
+For PCB work, the smallest useful native milestone is a new209-only disposable
+startup capture through actual ratline result delivery and original-owner
+cleanup—not another observer-only release or a Save route. It needs reviewed
+project/UI/opening/context sources, fixed executable capture locations, actual
+Worker/bridge/onmessage and project-canvas receiver bindings, a closed
+role-aware runner and native encoder. Preserve the existing256-request purpose;
+give the new purpose its own generated budget. Batch these prerequisites before
+publishing. Full common/source/SQL baseline and create/Save remain later work;
+dynamic-copper completion is required before claiming complete startup, but not
+for an explicitly partial ratline-result capture. No research here executed the
+application or changed a project.

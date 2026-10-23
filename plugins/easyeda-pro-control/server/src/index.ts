@@ -111,6 +111,10 @@ import { sdkMathRequestSchema } from "./sdk-math.ts";
 import { calculateSdkMath } from "./sdk-math-runtime.ts";
 import { sdkSystemRequestSchema } from "./sdk-system.ts";
 import { readSdkSystem } from "./sdk-system-runtime.ts";
+import { sdkPublicReadersRequestSchema } from "./sdk-public-readers.ts";
+import { readSdkPublicReaders } from "./sdk-public-readers-runtime.ts";
+import { publicSystemFootprintRequestSchema } from "./public-system-footprint.ts";
+import { readPublicSystemFootprint } from "./public-system-footprint-runtime.ts";
 import { startupExtensionsRequestSchema } from "./startup-extensions.ts";
 import { readStartupExtensions } from "./startup-extensions-runtime.ts";
 import { editorShellRequestSchema } from "./editor-shell.ts";
@@ -1899,6 +1903,8 @@ const toolOutputSchemas: Readonly<Record<string, z.ZodType>> = {
   easyeda_control_sdk_read: evidenceSuccessOutputSchema,
   easyeda_control_calculate: z.object({ result: z.unknown().optional(), ...optionalFailureOutputShape }).catchall(z.unknown()),
   easyeda_control_system: z.object({ result: z.unknown().optional(), ...optionalFailureOutputShape }).catchall(z.unknown()),
+  easyeda_control_public_readers: z.object({ result: z.unknown().optional(), ...optionalFailureOutputShape }).catchall(z.unknown()),
+  easyeda_control_catalog_footprint: z.object({ result: z.unknown().optional(), ...optionalFailureOutputShape }).catchall(z.unknown()),
   easyeda_control_extensions: z.object({ result: z.unknown().optional(), ...optionalFailureOutputShape }).catchall(z.unknown()),
   easyeda_control_launch: z.object({ result: z.unknown().optional(), ...optionalFailureOutputShape }).catchall(z.unknown()),
   easyeda_control_pcb_diagnostic_validation: currentSymbolOperationToolOutputSchema,
@@ -2380,7 +2386,7 @@ registerFacadeTool(
   "easyeda_control_calculate",
   {
     title: "Calculate with reviewed EasyEDA geometry methods",
-    description: "Run one of sixteen fixed sys_Math calculation subsets on caller-supplied bounded geometry using separately reviewed EasyEDA 3.2.206/API 0.3.50. Requires the actual authenticated status fingerprint; it does not admit legacy design tools. No project access, context selection, navigation, files, Save, callbacks or arbitrary code. Inspect easyeda_control_api calculations and calculate-validate first. Clipping accepts only a smaller orthogonal integer-ring subset; complete output holes and disconnected regions are preserved. Results retain documented SDK limitations, including boundary behavior; no live validation is implied by registration.",
+    description: "Run one of sixteen fixed sys_Math calculation subsets on caller-supplied bounded geometry using an exact separately reviewed EasyEDA 3.2.206/API 0.3.50 or 3.2.209/API 0.3.59 profile. Requires the actual authenticated status fingerprint; it does not admit legacy design tools. No project access, context selection, navigation, files, Save, callbacks or arbitrary code. Inspect easyeda_control_api calculations and calculate-validate first. Clipping accepts only a smaller orthogonal integer-ring subset; complete output holes and disconnected regions are preserved. Results retain documented SDK limitations, including boundary behavior; no live validation is implied by registration.",
     inputSchema: { request: z.unknown().pipe(sdkMathRequestSchema), expectedFingerprint: privateFingerprintSchema },
     annotations: { readOnlyHint: true, destructiveHint: false, idempotentHint: true, openWorldHint: false },
   },
@@ -2391,11 +2397,33 @@ registerFacadeTool(
   "easyeda_control_system",
   {
     title: "Read local EasyEDA environment or convert units",
-    description: "Run one of eighteen fixed sys_Environment/sys_Unit subsets on separately reviewed EasyEDA 3.2.206/API 0.3.50. Uses the actual authenticated status fingerprint, without active project/context, navigation, Save, network or files. Units accept bounded scalars and precision; environment values describe API initialization metadata, not live account permissions. The compiled-date getter may populate an extension-local cache. Version comparators compare the supplied version against the current version. Inspect offline API system and system-validate first. No arbitrary method, code, callback or legacy-route admission; no connected validation is implied.",
+    description: "Run one of eighteen fixed sys_Environment/sys_Unit subsets on an exact separately reviewed EasyEDA 3.2.206/API 0.3.50 or 3.2.209/API 0.3.59 profile. Uses the actual authenticated status fingerprint, without active project/context, navigation, Save, network or files. Units accept bounded scalars and precision; environment values describe API initialization metadata, not live account permissions. The compiled-date getter may populate an extension-local cache. Version comparators compare the supplied version against the current version. Inspect offline API system and system-validate first. No arbitrary method, code, callback or legacy-route admission; no connected validation is implied.",
     inputSchema: { request: z.unknown().pipe(sdkSystemRequestSchema), expectedFingerprint: privateFingerprintSchema },
     annotations: { readOnlyHint: true, destructiveHint: false, idempotentHint: true, openWorldHint: false },
   },
   serializedLiveGuarded(async (input) => ({ result: await readSdkSystem(engine, input.request, input.expectedFingerprint) })),
+);
+
+registerFacadeTool(
+  "easyeda_control_public_readers",
+  {
+    title: "Read supported languages or the EasyEDA API viewport",
+    description: "Three fixed public readers on exact EasyEDA 3.2.209/API 0.3.59: sys_I18n.getAllSupportedLanguages, sys_I18n.isLanguageSupported and sys_Window.getViewportSize. Requires the actual authenticated status fingerprint. Preserves case-sensitive language membership and ordered language identifiers. Viewport dimensions describe the API page, not the Windows desktop or PCB geometry. Complete bounded double observations retain their original owners; changed or malformed results refuse. No project, library, file, network, settings, navigation, callback or Save operation. Inspect offline public-readers and public-readers-validate first. Source and offline tests are not connected validation.",
+    inputSchema: { request: z.unknown().pipe(sdkPublicReadersRequestSchema), expectedFingerprint: privateFingerprintSchema },
+    annotations: { readOnlyHint: true, destructiveHint: false, idempotentHint: true, openWorldHint: false },
+  },
+  serializedLiveGuarded(async (input) => ({ result: await readSdkPublicReaders(engine, input.request, input.expectedFingerprint) })),
+);
+
+registerFacadeTool(
+  "easyeda_control_catalog_footprint",
+  {
+    title: "Look up one public system-footprint catalog entry",
+    description: "Application-independent vendor HTTPS metadata lookup, not execution of lib_Footprint.get or installed SDK admission. Requires one explicit public footprint UUID and confirmNetwork:true. Sends one credential-free GET to the fixed EasyEDA system catalog; the vendor can log the request. No caller URL/library, authentication, redirects, retries, local database, bridge, editor, project access or Save. Requires exact public asset/system-owner/type identity; missing, private, malformed and unsuccessful responses refuse, and 404 does not prove absence. Returns name, description and classification, not geometry, completeness, freshness or manufacturing validation. Inspect offline catalog-footprint/catalog-footprint-validate first.",
+    inputSchema: { request: z.unknown().pipe(publicSystemFootprintRequestSchema) },
+    annotations: { readOnlyHint: true, destructiveHint: false, idempotentHint: true, openWorldHint: true },
+  },
+  guarded(async (input) => ({ result: await readPublicSystemFootprint(input.request) })),
 );
 
 if (facadeToolRegistered(facadeMode, "easyeda_control_pcb_string_precreate_validation")) {
@@ -2708,7 +2736,7 @@ registerFacadeTool(
   "easyeda_control_shortcuts",
   {
     title: "Read EasyEDA shortcut-key metadata",
-    description: "Read the fixed public getShortcutKeys method on separately reviewed EasyEDA 3.2.206/API 0.3.50/UI 3.2.196. Requires an authenticated fingerprint and two owner-stable matching bounded observations. includeSystem defaults false; true includes the vendor hotkey registry, not its separate menu registry or every executable shortcut. Preserves raw key strings, order, duplicates and empty tokens; scope enums differ from document types. No key press, callback registration, focus, settings, design, navigation or Save. Inspect offline shortcuts/shortcuts-validate first. Vendor enumeration precedes output bounds and is not cancelled by timeout; no automatic retry or connected validation is implied.",
+    description: "Read the fixed public getShortcutKeys method on separately reviewed EasyEDA 3.2.206/API 0.3.50/UI 3.2.196 or 3.2.209/API 0.3.59/UI 3.2.198. Requires an authenticated fingerprint and two owner-stable matching bounded observations. includeSystem defaults false; true includes the vendor hotkey registry, not its separate menu registry or every executable shortcut. Preserves raw key strings, order, duplicates and empty tokens; scopes differ from document types, and 209 includes source-observed scopes beyond its declarations. No key press, callback registration, focus, settings, design, navigation or Save. Inspect offline shortcuts/shortcuts-validate first. Vendor enumeration precedes output bounds and is not cancelled by timeout; no automatic retry or connected validation is implied.",
     inputSchema: { request: z.unknown().pipe(shortcutKeysRequestSchema), expectedFingerprint: privateFingerprintSchema },
     annotations: { readOnlyHint: true, destructiveHint: false, idempotentHint: true, openWorldHint: false },
   },

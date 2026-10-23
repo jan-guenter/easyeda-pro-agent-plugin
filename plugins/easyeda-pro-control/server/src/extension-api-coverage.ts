@@ -1,5 +1,6 @@
 import { z } from "zod";
 import { extensionApiSnapshots } from "./extension-api-catalog-data.ts";
+import { installed209ApiOmission } from "./extension-api-installed-209-omissions.ts";
 import type { ApiDeclarationMethod, ApiDeclarationSnapshot } from "./extension-api-declarations.ts";
 import { maintainedApiCoverageRoutes } from "./extension-api-coverage-routes.ts";
 import type { ApiCoverageRoute } from "./extension-api-coverage-routes.ts";
@@ -8,8 +9,10 @@ import { DESIGN_STRUCTURE_LIFECYCLE_REFUSAL, designExecutionLifecycleRefusal } f
 import { publicSdkReadDescriptors } from "./public-sdk-read.ts";
 import { sdkMathDescriptors } from "./sdk-math.ts";
 import { sdkSystemDescriptors } from "./sdk-system.ts";
+// oxlint-disable-next-line import/max-dependencies -- This fixed coverage aggregator joins each maintained descriptor and omission policy directly; a barrel would only hide the same dependencies.
+import { sdkPublicReadersDescriptors } from "./sdk-public-readers.ts";
 
-export type ApiCoverageStatus = "implemented-public-subset" | "implemented-native-equivalent" | "internal-lifecycle-only" | "implemented-but-blocked" | "omitted";
+export type ApiCoverageStatus = "implemented-public-subset" | "implemented-native-equivalent" | "implemented-vendor-http-equivalent" | "internal-lifecycle-only" | "implemented-but-blocked" | "omitted";
 export interface ApiCoverageOmission {
   readonly code: string;
   readonly reason: string;
@@ -28,6 +31,7 @@ export interface ApiCoverageEntry {
     readonly documentationUrl: string;
   }[];
   readonly reviewedRuntimeDeclaration: boolean;
+  readonly installed209Declaration: boolean;
   readonly status: ApiCoverageStatus;
   readonly routes: readonly ApiCoverageRoute[];
   readonly omission: ApiCoverageOmission | null;
@@ -36,9 +40,9 @@ export interface ApiCoverageEntry {
   readonly runtimeAdmission: "not-granted-by-inventory";
 }
 
-const statusSchema = z.enum(["implemented-public-subset", "implemented-native-equivalent", "internal-lifecycle-only", "implemented-but-blocked", "omitted"]);
+const statusSchema = z.enum(["implemented-public-subset", "implemented-native-equivalent", "implemented-vendor-http-equivalent", "internal-lifecycle-only", "implemented-but-blocked", "omitted"]);
 export const extensionApiCoverageInputSchema = z.object({
-  reference: z.enum(["all", "reviewed-installed", "official-latest"]).default("all"),
+  reference: z.enum(["all", "reviewed-installed", "official-latest", "installed-209"]).default("all"),
   namespace: z.string().regex(/^(?:dmt|lib|pcb|pnl|sch|sys)_[A-Za-z0-9]+$/u).optional(),
   search: z.string().min(1).max(128).optional(),
   status: statusSchema.optional(),
@@ -140,9 +144,11 @@ const concreteOmissions: Readonly<Record<string, ApiCoverageOmission>> = {
  * defects override declaration shapes. The remaining category explicitly says
  * implementation is still missing; absence is not an assertion of infeasibility.
  */
-function omissionFor(namespace: string, method: string, declarations: readonly ApiDeclarationMethod[], reviewed: boolean): ApiCoverageOmission {
+function omissionFor(namespace: string, method: string, declarations: readonly ApiDeclarationMethod[], reviewed: boolean, installed209: boolean): ApiCoverageOmission {
   const short = `${namespace}.${method}`;
-  if (!reviewed) { return omitted("not-in-reviewed-runtime", `${short} is declared only by the newer official reference and is absent from the pinned installed declaration.`, "Review and admit a newer installed implementation, then implement and test a scoped adapter; changing a declaration checksum does not admit a runtime.", ["reviewed-compatibility.json", "extension-api-catalog-data.ts"]); }
+  const installedOmission = installed209 ? installed209ApiOmission(short) : undefined;
+  if (installedOmission !== undefined) { return installedOmission; }
+  if (!reviewed) { return omitted("not-in-reviewed-runtime", `${short} is absent from the legacy reviewed-installed declaration. Its presence in a newer reference${installed209 ? " and the separately cataloged installed-209 declaration" : ""} does not admit that backend or method.`, "Review and admit a newer installed implementation, then implement and test a scoped adapter; changing a declaration checksum does not admit a runtime.", ["reviewed-compatibility.json", "extension-api-catalog-data.ts"]); }
   const concrete = concreteOmissions[short];
   if (concrete !== undefined) { return structuredClone(concrete); }
   const stub = stubs[short];
@@ -243,6 +249,25 @@ export function inventoryExtensionApiCoverage(): ApiCoverageEntry[] {
       inputDiscovery: { tool: "easyeda_control_api", arguments: { request: { action: "system", query: { method: descriptor.path, includeSchemas: true } } } },
     }]);
   }
+  for (const descriptor of sdkPublicReadersDescriptors()) {
+    const existing = routes.get(descriptor.path) ?? [];
+    routes.set(descriptor.path, [...existing, { tool: "easyeda_control_public_readers", selector: descriptor.path, implementation: "public-method",
+      scope: `Separately reviewed EasyEDA 3.2.209/API 0.3.59 only; older profiles do not register this route. ${descriptor.limitations.join(" ")}`,
+      source: ["sdk-public-readers.ts", "sdk-public-readers-runtime.ts", "sdk-public-utilities-profile.ts", "facade-mode.ts"],
+      tests: ["sdk-public-readers.test.ts", "sdk-public-readers-runtime.test.ts", "facade-mode.test.ts"],
+      validation: "offline-regression;current-live-unclaimed", executionState: "available-with-runtime-guards",
+      inputDiscovery: { tool: "easyeda_control_api", arguments: { request: { action: "public-readers", query: { method: descriptor.path, includeSchemas: true } } } },
+    }]);
+  }
+  const footprintPath = "eda.lib_Footprint.get";
+  routes.set(footprintPath, [...routes.get(footprintPath) ?? [], {
+    tool: "easyeda_control_catalog_footprint", selector: "fixed-vendor-system-catalog-footprint", implementation: "vendor-http-task-equivalent",
+    scope: "Application-independent vendor HTTPS metadata lookup, not public lib_Footprint.get execution or EasyEDA runtime admission. One explicit lowercase 32-hex footprintUuid with confirmNetwork:true; fixed pro.easyeda.com/api/v2/components endpoint, no caller destination/library/path, credentials or redirects. Strict bounded system-owned footprint metadata only, not geometry, pads, connectivity, complete asset, cached SDK parity or persistence proof. The current 3.2.209 public getter remains unregistered: HALF_OFFLINE can initialize SQLite through an unqualified CWD path, while ONLINE uses a remote UI not admitted by local installed pins. The older legacy SDK route remains separately scoped. No project opening, editor, native bridge, library write API or Save.",
+    source: ["public-system-footprint.ts", "public-system-footprint-runtime.ts", "facade-mode.ts"],
+    tests: ["public-system-footprint.test.ts", "public-system-footprint-runtime.test.ts", "public-system-footprint-registration.test.ts", "facade-mode.test.ts"],
+    validation: "offline-regression;current-live-unclaimed", executionState: "available-with-network-guards",
+    inputDiscovery: { tool: "easyeda_control_api", arguments: { request: { action: "catalog-footprint", query: { includeSchemas: true } } } },
+  }]);
   for (const descriptor of publicSdkReadDescriptors()) {
     const existing = routes.get(descriptor.path) ?? [];
     routes.set(descriptor.path, [...existing, {
@@ -259,6 +284,7 @@ export function inventoryExtensionApiCoverage(): ApiCoverageEntry[] {
   }
   return [...methods].toSorted(([left], [right]) => left.localeCompare(right, "en")).map(([path, group]) => {
     const reviewed = group.declarations.some((entry) => entry.reference === "reviewed-installed");
+    const installed209 = group.declarations.some((entry) => entry.reference === "installed-209");
     const supported: ApiCoverageRoute[] = [];
     for (const original of routes.get(path) ?? []) {
       const route = designLifecycleRoute(original, group.namespace);
@@ -269,9 +295,10 @@ export function inventoryExtensionApiCoverage(): ApiCoverageEntry[] {
     if (supported.length > 0 && supported.every((entry) => entry.executionState === "blocked")) { status = "implemented-but-blocked"; }
     else if (supported.some((entry) => entry.executionState !== "blocked" && entry.implementation === "public-method")) { status = "implemented-public-subset"; }
     else if (supported.some((entry) => entry.executionState !== "blocked" && entry.implementation === "native-task-equivalent")) { status = "implemented-native-equivalent"; }
+    else if (supported.some((entry) => entry.executionState !== "blocked" && entry.implementation === "vendor-http-task-equivalent")) { status = "implemented-vendor-http-equivalent"; }
     else if (supported.length > 0) { status = "internal-lifecycle-only"; }
-    return { path, namespace: group.namespace, method: group.method, declarations: group.declarations, reviewedRuntimeDeclaration: reviewed, status, routes: supported,
-      omission: supported.length === 0 ? omissionFor(group.namespace, group.method, group.methods, reviewed) : null,
+    return { path, namespace: group.namespace, method: group.method, declarations: group.declarations, reviewedRuntimeDeclaration: reviewed, installed209Declaration: installed209, status, routes: supported,
+      omission: supported.length === 0 ? omissionFor(group.namespace, group.method, group.methods, reviewed, installed209) : null,
       completeDeclaredContractSupported: false, currentGenerationLiveValidation: "not-recorded", runtimeAdmission: "not-granted-by-inventory" };
   });
 }
@@ -280,8 +307,9 @@ export function extensionApiCoverageSummary(entries = inventoryExtensionApiCover
   const count = (predicate: (entry: ApiCoverageEntry) => boolean): number => entries.filter((entry) => predicate(entry)).length;
   return { totalDistinctMethods: entries.length, reviewedDistinctMethods: count((entry) => entry.reviewedRuntimeDeclaration),
     latestDistinctMethods: count((entry) => entry.declarations.some((declaration) => declaration.reference === "official-latest")),
+    installed209DistinctMethods: count((entry) => entry.installed209Declaration),
     statuses: Object.fromEntries(statusSchema.options.map((status) => [status, count((entry) => entry.status === status)])),
-    executionRoutes: Object.fromEntries(["available-with-runtime-guards", "blocked", "partially-blocked"].map((state) => [state, entries.flatMap((entry) => entry.routes).filter((route) => route.executionState === state).length])),
+    executionRoutes: Object.fromEntries(["available-with-runtime-guards", "available-with-network-guards", "blocked", "partially-blocked"].map((state) => [state, entries.flatMap((entry) => entry.routes).filter((route) => route.executionState === state).length])),
     omissions: Object.fromEntries([...new Set(entries.flatMap((entry) => entry.omission === null ? [] : [entry.omission.code]))].toSorted().map((code) => [code, count((entry) => entry.omission?.code === code)])),
     currentGenerationLiveValidatedMethods: 0,
     declarationSignatures: extensionApiSnapshots.map((snapshot) => ({ reference: snapshot.reference, version: snapshot.version, sourceSha256: snapshot.sourceSha256, signatures: snapshot.namespaces.reduce((sum, namespace) => sum + namespace.methods.length, 0) })) };
@@ -300,7 +328,7 @@ export function queryExtensionApiCoverage(input: unknown = {}): Record<string, u
     (search === undefined || `${entry.path} ${entry.omission?.reason ?? ""} ${entry.routes.map((route) => route.selector).join(" ")}`.toLowerCase().includes(search)));
   const page: unknown[] = [];
   for (const entry of matched.slice(query.offset, query.offset + query.limit)) {
-    const row = query.detail ? entry : { path: entry.path, status: entry.status, reviewedRuntimeDeclaration: entry.reviewedRuntimeDeclaration,
+    const row = query.detail ? entry : { path: entry.path, status: entry.status, reviewedRuntimeDeclaration: entry.reviewedRuntimeDeclaration, installed209Declaration: entry.installed209Declaration,
       routes: entry.routes.map(({ tool, selector, implementation, executionState, blockedReason, blockedDocumentTypes, inputDiscovery }) => ({ tool, selector, implementation, executionState,
         ...(blockedReason === undefined ? {} : { blockedReason, blockedDocumentTypes }), ...(inputDiscovery === undefined ? {} : { inputDiscovery }) })), omission: entry.omission,
       currentGenerationLiveValidation: entry.currentGenerationLiveValidation, runtimeAdmission: entry.runtimeAdmission };
@@ -312,7 +340,7 @@ export function queryExtensionApiCoverage(input: unknown = {}): Record<string, u
   }
   const next = query.offset + page.length;
   const result = { schema: "easyeda-pro-control.extension-api-coverage.v1", offline: true, invocationEnabled: false,
-    scope: "Distinct mounted method paths; overloads and both snapshots retained. Supported routes expose documented subsets, not every declared contract.",
+    scope: "Distinct mounted method paths; overloads and all three snapshots retained. Legacy reviewed-installed and installed-209 declaration presence are separate from runtime admission. Supported routes expose documented subsets, not every declared contract.",
     summary: extensionApiCoverageSummary(all), page: { offset: query.offset, limit: query.limit, totalMatched: matched.length, returned: page.length,
       nextOffset: next < matched.length ? next : null, maxEntriesBytes: 49_152, maxResponseBytes: 65_536 }, entries: page };
   if (Buffer.byteLength(JSON.stringify(result), "utf8") > 65_536) { throw new Error("Coverage response exceeds budget."); }

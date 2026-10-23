@@ -47,6 +47,11 @@ layout. The connected ledger retains its generation and case anchors.
 | --- | --- |
 | [2026-10-23-generation209-ratline-capture.md](2026-10-23-generation209-ratline-capture.md) | New generation source research and dormant finite-role comparison |
 | [2026-10-23-generation209-utilities-and-installation-drift.md](2026-10-23-generation209-utilities-and-installation-drift.md) | Installation drift, narrow utility/launch migration and release handoff |
+| [2026-10-23-installed-209-declaration-inventory.md](2026-10-23-installed-209-declaration-inventory.md) | Separate installed declaration snapshot,835-method union and61 concrete omissions |
+| [2026-10-23-generation209-public-readers.md](2026-10-23-generation209-public-readers.md) | Bounded language and API-page viewport readers |
+| [2026-10-23-generation209-editor-readers.md](2026-10-23-generation209-editor-readers.md) | Separate209 shell/context/shortcut source admission without design authority |
+| [2026-10-23-generation209-system-footprint-metadata.md](2026-10-23-generation209-system-footprint-metadata.md) | Desktop getter omission and separate anonymous vendor catalog equivalent |
+| [2026-10-23-generation209-live-utilities-and-batch.md](2026-10-23-generation209-live-utilities-and-batch.md) | Installed094500 launch, authentication, two utility checks, normal termination and follow-up batch |
 | [2026-08-27-primary-research.md](2026-08-27-primary-research.md) | `docs/primary-research-2026-08-27.md` |
 | [2026-09-06-review.md](2026-09-06-review.md) | `docs/review-2026-09-06.md` |
 | [2026-09-08-connection-repair.md](2026-09-08-connection-repair.md) | `docs/connection-repair-2026-09-08.md` |

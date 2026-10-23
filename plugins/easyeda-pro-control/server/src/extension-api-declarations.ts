@@ -20,7 +20,7 @@ export interface ApiDeclarationType {
 }
 
 export interface ApiDeclarationSnapshot {
-  reference: "reviewed-installed" | "official-latest";
+  reference: "reviewed-installed" | "official-latest" | "installed-209";
   version: string;
   applicationVersion: string | null;
   sourceUrl: string;

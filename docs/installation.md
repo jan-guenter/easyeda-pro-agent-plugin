@@ -179,10 +179,13 @@ PCB/API files, keeps a byte-exact private backup and changes only two bundle
 selectors. The control root, Node, upstream, credentials and journals stay
 unchanged. It never promotes an existing process or updates the legacy global
 compatibility profile. Restart Codex afterward. The new `public-utilities-only`
-mode registers six tools, with separate runtime admission for 16 Math and 18
-Unit/Environment operations and a separately pinned ordinary launcher. No
-project-opening, design, native diagnostic, Save or design-recovery route is
-registered. Source/synthetic verification is not connected validation.
+mode registers eleven tools, with separate runtime admission for 16 Math, 18
+Unit/Environment operations, three language/API-page viewport readers,
+tab-count/active-identity/shortcut observations and ordinary launch. A separate
+public footprint catalog lookup requires explicit network confirmation but no
+application, bridge or SDK execution. No project-opening, design-content,
+native diagnostic, Save or design-recovery route is registered.
+Source/synthetic verification is not connected validation.
 Omitting `--target` retains the older 3.2.206 migration; neither form discovers
 or admits arbitrary future releases.
 

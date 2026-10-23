@@ -4,7 +4,7 @@ import { extensionApiSnapshots } from "./extension-api-catalog-data.ts";
 import type { ApiDeclarationMethod, ApiDeclarationNamespace, ApiDeclarationSnapshot } from "./extension-api-declarations.ts";
 
 export const extensionApiCatalogInputSchema = z.object({
-  reference: z.enum(["reviewed-installed", "official-latest"]).default("reviewed-installed"),
+  reference: z.enum(["reviewed-installed", "official-latest", "installed-209"]).default("reviewed-installed"),
   namespace: z.string().regex(/^(?:dmt|lib|pcb|pnl|sch|sys)_[A-Za-z0-9]+$/u).optional(),
   search: z.string().min(1).max(100).optional(),
   kind: z.enum(["methods", "types"]).default("methods"),
@@ -122,8 +122,9 @@ export function queryExtensionApiCatalog(input: unknown = {}): ExtensionApiCatal
     provenance: snapshotMetadata(snapshot),
     limitations: ["Declaration metadata is not runtime availability, implementation correctness, execution support or live validation.",
       "official-latest is reference material only; it does not change the reviewed runtime compatibility tuple.",
+      "installed-209 records the exact 3.2.209 declaration separately; its wrappers and declared methods do not admit any runtime or backend route.",
       "Heuristic risk labels do not authorize even getters; use supported typed facade routes and their strict schemas.",
-      "Documentation URLs refer to the current official site, which can differ from either frozen declaration snapshot."],
+      "Documentation URLs refer to the current official site, which can differ from every frozen declaration snapshot."],
     totals: { namespaces: snapshot.namespaces.length, methods: snapshot.namespaces.reduce((sum, entry) => sum + entry.methods.length, 0), types: snapshot.types.length },
     namespaces: snapshot.namespaces.filter((namespace) => query.kind === "methods" && (query.namespace === undefined || namespace.name === query.namespace) &&
       (search === undefined || namespace.methods.some((method) => `${namespace.name}.${method.name} ${method.signature}`.toLowerCase().includes(search))))

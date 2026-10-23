@@ -31,7 +31,7 @@ The development and CI toolchain uses:
 The offline API catalog includes extracted metadata from the official
 `@jlceda/pro-api-types` declarations. The [Apache-2.0 license](plugins/easyeda-pro-control/third-party/pro-api-types/LICENSE)
 and [extraction notice](plugins/easyeda-pro-control/third-party/pro-api-types/NOTICE.md)
-accompany its hash-pinned reviewed and latest snapshots. These declarations
+accompany its hash-pinned reviewed, frozen latest and installed-209 snapshots. These declarations
 are reference material, not bundled runtime code or execution admission.
 
 The repository vendors a reviewed derivative of the EasyEDA bridge-extension

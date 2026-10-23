@@ -1,5 +1,6 @@
 import { z } from "zod";
 import { buildEditorObservationProgram } from "./editor-observation-program.ts";
+import { EDITOR_OBSERVATION_209_PROVENANCE } from "./editor-observation209-profile.ts";
 import { EDITOR_SHELL_API_SHA256, EDITOR_SHELL_API_VERSION, EDITOR_SHELL_UI_SHA256, EDITOR_SHELL_UI_VERSION } from "./editor-shell.ts";
 
 export const EDITOR_CONTEXT_MAX_BYTES = 8192;
@@ -55,6 +56,7 @@ export function queryEditorContext(input: unknown = {}): Record<string, unknown>
     limitations: [...limitations], provenance: { apiVersion: EDITOR_SHELL_API_VERSION, apiSha256: EDITOR_SHELL_API_SHA256,
       uiVersion: EDITOR_SHELL_UI_VERSION, uiSha256: EDITOR_SHELL_UI_SHA256,
       implementationKind: "fixed-native-context-observer", liveValidation: "not-recorded" },
+    additionalReviewedProvenance: [{ ...EDITOR_OBSERVATION_209_PROVENANCE, implementationKind: "fixed-native-context-observer", liveValidation: "not-recorded" }],
   }] };
 }
 

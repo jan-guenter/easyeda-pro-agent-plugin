@@ -1,5 +1,6 @@
 import { z } from "zod";
 import { CURRENT_UI_IMPLEMENTATION } from "./current-ui-implementation.ts";
+import { EDITOR_OBSERVATION_209_PROVENANCE } from "./editor-observation209-profile.ts";
 import { EXACT_READ_ENVELOPE_SCHEMA } from "./exact-readers.ts";
 import { SDK_LOCAL_RUNTIME_PROFILE } from "./sdk-local-runtime.ts";
 
@@ -23,6 +24,9 @@ export const shortcutKeysQuerySchema = z.object({ method: z.literal(SHORTCUT_KEY
 const payloadSchema = z.object({ ok: z.literal(true), kind: z.literal("shortcut-key-observation"), method: z.literal(SHORTCUT_KEYS_METHOD),
   includeSystem: z.boolean(), shortcuts: z.array(shortcut).max(MAX_RECORDS), keyboardExecutionAuthorized: z.literal(false),
   cadAuthority: z.literal(false), persistenceVerified: z.literal(false) }).strict();
+const documentType209 = z.number().int().min(0).max(14);
+const shortcut209 = shortcut.extend({ documentType: z.array(documentType209).max(MAX_SCOPES) });
+const payload209Schema = payloadSchema.extend({ shortcuts: z.array(shortcut209).max(MAX_RECORDS) });
 
 const limitations = [
   "Observes the initialized hotkeys registry, not every menu/local shortcut, current focus, or whether a key would execute. includeSystem defaults to false; false returns vendor isCustomize entries only.",
@@ -32,6 +36,15 @@ const limitations = [
   "At most 1024 records, 8 key tokens per record, 32 characters per token, 1024 title characters, 32 entries per scope array and 262144 UTF-8 bytes. Vendor enumeration/formatting occurs before these bounds and is not cancelled by the 10-second observation deadline. RPC bookkeeping and timers are incidental local effects.",
   "Source review and offline tests are not connected validation. The installed API 0.3.50 method is beta; newer documentation marks it obsolete since EDA 4.2. No newer get/getAll method is inferred to exist here.",
 ] as const;
+const limitations209 = limitations.map((limitation) => {
+  if (limitation.startsWith("Shortcut documentType")) {
+    return "Shortcut documentType is the raw UI registry scope 0-14, not EDMT_EditorDocumentType; PCB is 4, 11 is assembly variant, 12 NGSPICE, 13 SimulIDE and 14 waveform. The installed declaration lists only 0-10. Scenes remain 1-6. No registration, callback invocation, key press, navigation, settings or design mutation is dispatched.";
+  }
+  if (limitation.startsWith("Source review")) {
+    return "Source review and offline tests are not connected validation. The installed API 0.3.59 method is beta; newer documentation marks it obsolete since EDA 4.2. No newer get/getAll method is inferred to exist here.";
+  }
+  return limitation;
+});
 
 export function queryShortcutKeys(input: unknown = {}): Record<string, unknown> {
   const query = shortcutKeysQuerySchema.parse(input);
@@ -41,7 +54,10 @@ export function queryShortcutKeys(input: unknown = {}): Record<string, unknown> 
     provenance: { version: SDK_LOCAL_RUNTIME_PROFILE.installedBundles.publicApi.version,
       apiSha256: SDK_LOCAL_RUNTIME_PROFILE.installedBundles.publicApi.implementationSha256,
       uiVersion: CURRENT_UI_IMPLEMENTATION.version, uiSha256: CURRENT_UI_IMPLEMENTATION.sha256,
-      implementationKind: "public-method-bounded-subset", liveValidation: "not-recorded" } }] };
+      implementationKind: "public-method-bounded-subset", liveValidation: "not-recorded" },
+    additionalReviewedProvenance: [{ ...EDITOR_OBSERVATION_209_PROVENANCE,
+      implementationKind: "public-method-bounded-subset", documentTypeRange: [0, 14],
+      declarationScopeConformanceVerified: false, limitations: [...limitations209], liveValidation: "not-recorded" }] }] };
 }
 
 export function validateShortcutKeysArguments(input: unknown): Record<string, unknown> {
@@ -56,6 +72,17 @@ export function validateShortcutKeysArguments(input: unknown): Record<string, un
  * selectors, registry refresh, keyboard input or extension callback is used.
  */
 export function buildShortcutKeysProgram(input: unknown): string {
+  return buildShortcutKeysProgramForScope(input, 10);
+}
+
+/** Source-reviewed 209 registry extends the raw scope enum beyond declarations.
+ * Only this fixed wrapper widens its domain; callers cannot supply a maximum.
+ */
+export function buildShortcutKeys209Program(input: unknown): string {
+  return buildShortcutKeysProgramForScope(input, 14);
+}
+
+function buildShortcutKeysProgramForScope(input: unknown, maxDocumentType: 10 | 14): string {
   const request = parseShortcutKeysRequest(input);
   return `let timer,clear;
 try{
@@ -108,7 +135,7 @@ const project=value=>{
  for(let i=0;i<n;i++){
   const row=plain(own(value,String(i))),keys=Reflect.ownKeys(row);if(keys.length!==4||!keys.every(key=>['shortcutKey','title','documentType','scene'].includes(key)))bad();
   const inputKeys=own(row,'shortcutKey'),count=dense(inputKeys,${MAX_KEYS}),shortcutKey=[];for(let j=0;j<count;j++)shortcutKey.push(text(own(inputKeys,String(j)),32));
-  result.push({shortcutKey,title:text(own(row,'title'),1024),documentType:scopes(own(row,'documentType'),0,10),scene:scopes(own(row,'scene'),1,6)});
+  result.push({shortcutKey,title:text(own(row,'title'),1024),documentType:scopes(own(row,'documentType'),0,${maxDocumentType}),scene:scopes(own(row,'scene'),1,6)});
  }
  return result;
 };
@@ -127,10 +154,20 @@ finally{if(timer!==undefined&&typeof clear==='function'){try{Reflect.apply(clear
 }
 
 export function validateShortcutKeysResult(input: unknown, raw: unknown): Record<string, unknown> {
+  return validateShortcutKeysResultForGeneration(input, raw, false);
+}
+
+export function validateShortcutKeys209Result(input: unknown, raw: unknown): Record<string, unknown> {
+  return validateShortcutKeysResultForGeneration(input, raw, true);
+}
+
+function validateShortcutKeysResultForGeneration(input: unknown, raw: unknown, generation209: boolean): Record<string, unknown> {
   const request = parseShortcutKeysRequest(input);
-  const payload = payloadSchema.parse(raw);
+  const payload = (generation209 ? payload209Schema : payloadSchema).parse(raw);
   if (payload.includeSystem !== request.arguments.includeSystem) { throw new Error("Shortcut query result differs from its request."); }
   if (Buffer.byteLength(JSON.stringify(payload), "utf8") > SHORTCUT_KEYS_MAX_BYTES) { throw new Error("Shortcut query exceeds its result bound."); }
   return { ...payload, effect: "configured-shortcut-registry-read", authority: "registry-observation-only;not-keyboard-execution-authorization",
-    completeShortcutInventory: false, focusVerified: false, declarationTokenConformanceVerified: false, liveValidation: "not-recorded", limitations: [...limitations] };
+    completeShortcutInventory: false, focusVerified: false, declarationTokenConformanceVerified: false, liveValidation: "not-recorded",
+    ...(generation209 ? { ...EDITOR_OBSERVATION_209_PROVENANCE, declarationScopeConformanceVerified: false } : {}),
+    limitations: generation209 ? [...limitations209] : [...limitations] };
 }
