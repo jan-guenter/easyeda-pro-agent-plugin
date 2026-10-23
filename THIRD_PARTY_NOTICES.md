@@ -15,7 +15,7 @@ against every esbuild input and its installed license during each build.
 - [`fast-uri` 3.1.8](https://github.com/fastify/fast-uri), [BSD 3-Clause License](plugins/easyeda-pro-control/licenses/fast-uri-BSD-3-Clause.txt).
 - [`json-schema-traverse` 1.0.0](https://github.com/epoberezkin/json-schema-traverse), [MIT License](plugins/easyeda-pro-control/licenses/json-schema-traverse-MIT.txt).
 - [`ws` 8.21.3](https://github.com/websockets/ws), [MIT License](plugins/easyeda-pro-control/licenses/ws-MIT.txt).
-- [`zod` 4.4.3](https://github.com/colinhacks/zod), [MIT License](plugins/easyeda-pro-control/licenses/zod-MIT.txt).
+- [`zod` 4.6.7](https://github.com/colinhacks/zod), [MIT License](plugins/easyeda-pro-control/licenses/zod-MIT.txt).
 - [`zod-to-json-schema` 3.25.2](https://github.com/StefanTerdell/zod-to-json-schema), [ISC License](plugins/easyeda-pro-control/licenses/zod-to-json-schema-ISC.txt).
 
 The development and CI toolchain uses:

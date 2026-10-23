@@ -118,12 +118,19 @@ void test("adapter byte drift requires deliberate source review without rewritin
   assert.deepEqual([...reviews.keys()].toSorted(), ["configured-font-read.ts", "pcb-source-objects-read.ts", "pcb-source-objects.ts", "public-sdk-read.ts", "schematic-primitive-read.ts"]);
   const before = histories();
   for (const review of reviews.values()) {
-    assert.equal(review.scope, "historical-case-index-review-only;no-live-evidence-transfer"); assert.equal(review.reviewedOn, "2026-10-12");
+    const font = review.path === "configured-font-read.ts";
+    assert.equal(review.scope, "historical-case-index-review-only;no-live-evidence-transfer");
+    assert.equal(review.reviewedOn, font ? "2026-10-23" : "2026-10-12");
+    if (font) {
+      assert.equal(review.reviewedSha256, "d0d2aabee1d9c6e14672b60972d388b340969a5f7e82a526d8e68f3ddafbd73f");
+    }
     const actual = createHash("sha256").update(await readFile(new URL(`../src/${review.path}`, import.meta.url))).digest("hex");
     assert.equal(actual, review.reviewedSha256, `Historical SDK case review required for ${review.path}; do not automatically refresh its digest.`);
     for (const generation of before.flatMap((history) => history.generations)) {
       const binding = generation.adapterBindings.find((entry) => entry.path === review.path);
-      if (binding !== undefined && review.path !== "public-sdk-read.ts") { assert.equal(binding.sha256, actual); }
+      if (binding !== undefined && review.path !== "public-sdk-read.ts") {
+        assert.equal(binding.sha256, font ? "d662d4aeb294b779494ba63ca89c7bb9a2446d430f36302b2463cc96d2e8a1c1" : actual);
+      }
     }
   }
   assert.deepEqual(histories(), before);

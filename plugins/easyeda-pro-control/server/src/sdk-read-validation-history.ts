@@ -37,7 +37,7 @@ interface HistoricalReadCase {
 interface SourceReview {
   readonly path: string;
   readonly reviewedSha256: string;
-  readonly reviewedOn: "2026-10-12";
+  readonly reviewedOn: "2026-10-12" | "2026-10-23";
   readonly scope: "historical-case-index-review-only;no-live-evidence-transfer";
 }
 export interface SdkReadValidationHistory {
@@ -107,9 +107,14 @@ const generations: readonly HistoricalGeneration[] = [
 // Generation fingerprints retain that older closure. Later registry/catalog or
 // Adapter edits never promote its cases into current-generation live evidence.
 const sourceReviews: readonly SourceReview[] = [
-  { path: sharedPath, sha256: reviewedSharedSha256 }, ...pcbBindings, schematicBinding, fontBinding,
-].map(({ path, sha256 }) => ({ path, reviewedSha256: sha256, reviewedOn: "2026-10-12",
-  scope: "historical-case-index-review-only;no-live-evidence-transfer" }));
+  ...[{ path: sharedPath, sha256: reviewedSharedSha256 }, ...pcbBindings, schematicBinding]
+    .map(({ path, sha256 }): SourceReview => ({ path, reviewedSha256: sha256, reviewedOn: "2026-10-12",
+      scope: "historical-case-index-review-only;no-live-evidence-transfer" })),
+  // Compatibility source review only: preserve the native UTF-16 title bound
+  // Under Zod's code-point max. The fixed native reader and R09 evidence are unchanged.
+  { path: fontBinding.path, reviewedSha256: "d0d2aabee1d9c6e14672b60972d388b340969a5f7e82a526d8e68f3ddafbd73f", reviewedOn: "2026-10-23",
+    scope: "historical-case-index-review-only;no-live-evidence-transfer" },
+];
 const readStages = ["two-matching-observations", "independent-receipt-review", "complete-source-correlation", "immutable-checkpoint-review"];
 const commonExclusions = ["no-current-generation-or-whole-method-validation", "no-runtime-admission-or-execution-authority",
   "no-other-arguments-or-document-types", "no-atomic-or-continuing-state-isolation", "no-writer-save-inverse-or-rollback-validation"];

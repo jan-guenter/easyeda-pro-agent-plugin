@@ -552,7 +552,9 @@ check(
     pluginPackageManifest.scripts?.["sanitizer:check"] ===
       "node scripts/build-descriptor-sanitizer.ts --check" &&
     pluginPackageManifest.scripts?.["build"] ===
-      "npm run sanitizer:check && npm run sql:reader:check && npm run startup:protocol:check && npm run pcb209:layers:check && node scripts/build-server.ts" &&
+      "npm run sanitizer:check && npm run sql:reader:check && npm run startup:protocol:check && npm run pcb209:layers:check && npm run pcb209:primitives:check && node scripts/build-server.ts" &&
+    pluginPackageManifest.scripts?.["pcb209:primitives:check"] === "node scripts/generate-pcb209-primitives-protocol.ts --check" &&
+    pluginPackageManifest.scripts?.["pcb209:primitives:update"] === "node scripts/generate-pcb209-primitives-protocol.ts --write" &&
     pluginPackageManifest.scripts?.["pcb209:layers:check"] ===
       "node scripts/generate-pcb209-layers-protocol.ts --check" &&
     pluginPackageManifest.scripts?.["pcb209:layers:update"] ===

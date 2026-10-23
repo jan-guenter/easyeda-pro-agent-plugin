@@ -97,10 +97,12 @@ void test("current symbol preparation correlates an explicit producer core proje
 
 void test("current symbol preparation refuses invalid patches, exact identity mismatches, peer collisions and unsupported META", async (t) => {
   const input = await fixture(t);
-  for (const invalid of [{}, { name: " " }, { description: null }, { classification: "x" }, { name: "x", extra: true }]) {
+  for (const invalid of [{}, { name: " " }, { description: null }, { classification: "x" }, { name: "x", extra: true },
+    { name: `${"😀".repeat(256)}x` }, { description: `${"😀".repeat(32_768)}x` }]) {
     assert.equal(validateCurrentSymbolMetadataPreparationArguments({ ...input, patch: invalid })["valid"], false);
   }
   assert.equal(validateCurrentSymbolMetadataPreparationArguments(input)["valid"], true);
+  assert.equal(validateCurrentSymbolMetadataPreparationArguments({ ...input, patch: { name: "😀".repeat(256), description: "😀".repeat(32_768) } })["valid"], true);
   assert.equal(validateCurrentSymbolMetadataPreparationArguments({ ...input, code: "execute()" })["valid"], false);
   for (const field of ["branchUuid", "ownerUuid"] as const) {
     await assert.rejects(prepareCurrentSymbolMetadata({ ...input, target: { ...target, [field]: "b".repeat(32) } }), /not proven/u);

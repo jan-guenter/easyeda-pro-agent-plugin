@@ -523,6 +523,33 @@ void test("current Attribute compares full parent and scalar samples before sele
   }
 });
 
+void test("String and Attribute text retain matching native and decoded UTF-16 bounds", async () => {
+  for (const [method, nativeRow, field] of [["eda.pcb_PrimitiveString.getAll", "rows.String[0]", "text"],
+    ["eda.pcb_PrimitiveAttribute.getAll", "rows.Attribute[0].attrs[0]", "value"]] as const) {
+    const input = inputFor(method), text = "😀".repeat(32_768);
+    const fixture = environment({ input, beforeChild: `${nativeRow}.value=${JSON.stringify(text)};` });
+    const raw: unknown = decodeExactReadEnvelope(await fixture.run());
+    assert.ok(isRecord(raw) && Array.isArray(raw["rows"]));
+    const rows: unknown[] = raw["rows"];
+    const first = rows[0]; assert.ok(isRecord(first));
+    validateCurrentPcbGeometryResult(input, raw);
+    assert.throws(() => validateCurrentPcbGeometryResult(input, { ...raw, rows: [{ ...first, [field]: `${text}x` }, ...rows.slice(1)] }), /UTF-16/u);
+    const oversized = environment({ input, beforeChild: `${nativeRow}.value=${JSON.stringify(`${text}x`)};` });
+    await assert.rejects(oversized.run(), { message: "CURRENT_PCB_GEOMETRY_READ_FAILED" });
+    assert.equal(oversized.evaluateChild("dataReads"), 1);
+  }
+  const input = inputFor("eda.pcb_PrimitiveString.getAll");
+  const raw: unknown = decodeExactReadEnvelope(await environment({ input }).run());
+  assert.ok(isRecord(raw) && Array.isArray(raw["rows"]));
+  const rows: unknown[] = raw["rows"];
+  const first = rows[0]; assert.ok(isRecord(first));
+  for (const [field, maximum] of [["primitiveId", 256], ["fontFamily", 1024], ["key", 1024], ["silkColor", 128]] as const) {
+    const text = "😀".repeat(maximum / 2);
+    validateCurrentPcbGeometryResult(input, { ...raw, rows: [{ ...first, [field]: text }, ...rows.slice(1)] });
+    assert.throws(() => validateCurrentPcbGeometryResult(input, { ...raw, rows: [{ ...first, [field]: `${text}x` }, ...rows.slice(1)] }), /UTF-16/u);
+  }
+});
+
 void test("current String projection keeps alignments and serialized display state without reading omitted model state", async () => {
   const input = inputFor("eda.pcb_PrimitiveString.getAll");
   const fixture = environment({ input, beforeChild: `rows.String=Array.from({length:9},(_,i)=>({...rows.String[0],globalIndex:'string-'+i,origin:i+1}));

@@ -50,6 +50,13 @@ void test("UTF8, JSON escaping and preserved tags/source count toward the comple
   }
 });
 
+void test("symbol proof budget rejects metadata beyond its native UTF-16 bounds", async () => {
+  for (const desired of [{ ...DESIRED, name: `${"😀".repeat(256)}x` }, { ...DESIRED, description: `${"😀".repeat(32_768)}x` },
+    { ...DESIRED, tags: [`${"😀".repeat(256)}x`] }, { ...DESIRED, source: `${"😀".repeat(2048)}x` }]) {
+    await assert.rejects(budget(decoded(), desired), /UTF-16/u);
+  }
+});
+
 void test("retained historical header users remain in the bound when a real clock selects the old header", async () => {
   const user = { uuid: "7".repeat(32), extra: "x".repeat(60_000) };
   const input = decoded([initial(2, user)]);

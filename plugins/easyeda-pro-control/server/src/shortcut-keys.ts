@@ -9,8 +9,10 @@ export const SHORTCUT_KEYS_MAX_BYTES = 262_144;
 const MAX_RECORDS = 1024;
 const MAX_KEYS = 8;
 const MAX_SCOPES = 32;
+// Mirror both native profiles' UTF-16 guards despite Zod's code-point max.
 // oxlint-disable-next-line no-control-regex -- Preserve raw key/title spelling, but reject control bytes rather than silently removing them.
-const boundedText = (maximum: number): z.ZodString => z.string().max(maximum).regex(/^[^\u0000-\u001F\u007F]*$/u);
+const boundedText = (maximum: number): z.ZodString => z.string().max(maximum).regex(/^[^\u0000-\u001F\u007F]*$/u)
+  .refine((value) => value.length <= maximum, "Shortcut text exceeds its UTF-16 unit bound.");
 const documentType = z.number().int().min(0).max(10);
 const scene = z.number().int().min(1).max(6);
 const shortcut = z.object({ shortcutKey: z.array(boundedText(32)).max(MAX_KEYS), title: boundedText(1024),

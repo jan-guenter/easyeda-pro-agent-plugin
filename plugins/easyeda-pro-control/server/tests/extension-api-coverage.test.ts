@@ -99,6 +99,39 @@ void test("209 layer coverage retains original-owner observation without admitti
   assert.equal(unsupported.routes.some(entry => entry.tool === "easyeda_control_pcb209_opening"), false);
 });
 
+void test("209 primitive coverage adds exactly eight bounded native subsets while retaining separate legacy routes", () => {
+  const rows = inventoryExtensionApiCoverage();
+  const expected = ["Line", "Arc", "Via", "String"].flatMap(family =>
+    ["getAll", "getAllPrimitiveId"].map(method => `eda.pcb_Primitive${family}.${method}`));
+  const selected = rows.filter(row => row.routes.some(route => route.tool === "easyeda_control_pcb209_opening" && route.selector === "observe-primitives"));
+  assert.deepEqual(selected.map(row => row.path).toSorted(), expected.toSorted());
+  for (const row of selected) {
+    assert.equal(row.status, "implemented-public-subset"); assert.equal(row.completeDeclaredContractSupported, false);
+    assert.equal(row.currentGenerationLiveValidation, "not-recorded"); assert.equal(row.runtimeAdmission, "not-granted-by-inventory");
+    const route = row.routes.find(entry => entry.tool === "easyeda_control_pcb209_opening"); assert.ok(route);
+    assert.equal(route.implementation, "native-task-equivalent"); assert.equal(route.executionState, "available-with-runtime-guards");
+    assert.equal(route.validation, "offline-regression;current-live-unclaimed"); assert.deepEqual(route.documentTypes, [3]);
+    assert.ok(row.routes.some(entry => entry.tool === "easyeda_control_sdk_read"));
+    assert.ok(row.routes.some(entry => entry.tool === (row.method === "getAll" ? "easyeda_control_pcb_geometry" : "easyeda_control_pcb_identities")));
+    for (const required of ["installed209 disposable original-owner", "not public SDK execution or instance parity", "existing stateWatcher views",
+      "empty results do not prove an empty PCB", "aggregate393216-byte", "at most256 rows", "sequential, not atomic",
+      "null versus empty string", "without partial output", "writer/Save authority", "legacy206 owners cannot select"]) {
+      assert.ok(route.scope.includes(required), `${row.path}: ${required}`);
+    }
+    for (const file of ["current-pcb-209-primitives.ts", "current-pcb-diagnostic-owner.ts", "current-pcb-diagnostic-protocol.ts",
+      "current-pcb-diagnostic-lifecycle-journal.ts", "../../scripts/pcb-diagnostic-owner.ps1"]) { assert.ok(route.source.includes(file)); }
+    assert.ok(route.inputDiscovery); const discovery = queryOfflineApi(apiRequestSchema.parse(route.inputDiscovery.arguments["request"]));
+    assert.ok(isRecord(discovery.result)); assert.equal(discovery.result["connectedValidation"], false); assert.equal(discovery.result["executionAuthorized"], false);
+    const actions = discovery.result["actions"]; assert.ok(Array.isArray(actions)); assert.ok(actions.includes("observe-primitives"));
+  }
+  for (const path of ["eda.pcb_PrimitiveLine.get", "eda.pcb_PrimitiveComponent.getAll", "eda.pcb_PrimitivePad.getAll",
+    "eda.pcb_PrimitiveAttribute.getAll", "eda.pcb_PrimitiveDimension.getAll", "eda.pcb_PrimitiveImage.getAll",
+    "eda.pcb_SelectControl.getSelectedPrimitives", "eda.pcb_Primitive.getPrimitiveTypeByPrimitiveId", "eda.pcb_PrimitiveLine.create"]) {
+    const row = rows.find(entry => entry.path === path); assert.ok(row);
+    assert.equal(row.routes.some(entry => entry.tool === "easyeda_control_pcb209_opening"), false);
+  }
+});
+
 void test("project board coverage exposes bounded observed metadata without public parity or writer authority", () => {
   const rows = inventoryExtensionApiCoverage();
   for (const path of ["eda.dmt_Board.getBoardInfo", "eda.dmt_Board.getAllBoardsInfo"]) {

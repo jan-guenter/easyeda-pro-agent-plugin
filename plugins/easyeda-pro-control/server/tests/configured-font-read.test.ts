@@ -141,11 +141,13 @@ void test("configured-font reader refuses inherited, non-array, sparse, accessor
 
 void test("configured-font reader and host validate exact per-title, row and aggregate bounds", async () => {
   for (const titles of [Array.from({ length: CONFIGURED_FONT_MAX_ROWS }, () => ""), ["x".repeat(CONFIGURED_FONT_MAX_TITLE)],
+    ["😀".repeat(CONFIGURED_FONT_MAX_TITLE / 2)],
     Array.from({ length: CONFIGURED_FONT_MAX_CHARACTERS / CONFIGURED_FONT_MAX_TITLE }, () => "x".repeat(CONFIGURED_FONT_MAX_TITLE))]) {
     const result = await read(fixture(titles)); assert.deepEqual(result["value"], titles);
   }
   const payload = { ok: true, kind: "public-sdk-read", method: request.method, present: true, value: [], undefinedPaths: [] };
   for (const titles of [Array.from({ length: CONFIGURED_FONT_MAX_ROWS + 1 }, () => ""), ["x".repeat(CONFIGURED_FONT_MAX_TITLE + 1)],
+    [`${"😀".repeat(CONFIGURED_FONT_MAX_TITLE / 2)}x`],
     [...Array.from({ length: CONFIGURED_FONT_MAX_CHARACTERS / CONFIGURED_FONT_MAX_TITLE }, () => "x".repeat(CONFIGURED_FONT_MAX_TITLE)), "x"]]) {
     await assert.rejects(read(fixture(titles)), /CONFIGURED_FONTS_/u);
     assert.throws(() => validatePublicSdkReadPayload({ ...payload, value: titles }, request));

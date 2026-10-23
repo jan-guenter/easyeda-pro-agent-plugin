@@ -159,3 +159,83 @@ already-reviewed three-purpose guard and six metadata routes. The second
 local suite was stopped before this test-source correction; its partial log
 is retained, not counted as a completed verification. Final CI and a fresh
 full local verification remain required on the corrected commit.
+
+## Terminal publication, installation and next-session handoff
+
+The corrected payload is `f0bbaa7852f4782043d71d90e169446f9aa05caa`.
+[PR106](https://github.com/jan-guenter/easyeda-pro-agent-plugin/pull/106)
+merged normally through protected main as
+`ac5012c79d9cbea860e6b431db154860ecab8182` on2026-10-23. Both commits have
+the exact repository tree `3168a401b67cf02895bfd9a1a0b988de4647733e` and
+plugin subtree `9efc96f2de858e6dba862a914aaacda071b011f4`.
+The final PR [Linux CI40017486839](https://github.com/jan-guenter/easyeda-pro-agent-plugin/actions/runs/40017486839)
+and [Windows40017486868](https://github.com/jan-guenter/easyeda-pro-agent-plugin/actions/runs/40017486868)
+passed. Main [Linux CI40019126057](https://github.com/jan-guenter/easyeda-pro-agent-plugin/actions/runs/40019126057)
+and [Windows40019125960](https://github.com/jan-guenter/easyeda-pro-agent-plugin/actions/runs/40019125960)
+also passed. Each Linux run includes the build, all eight facade shards and
+the aggregate. No branch-protection bypass or failed-job retry was used.
+
+Final frozen local `npm run verify` exited0:12475 facade tests,12471 passed,
+4 skipped,0 failed/cancelled;424 bridge tests passed. Strict type-aware lint,
+types, generated protocol/coverage, build, compatibility, all seven skills
+and plugin-contract validation passed. The final build left both committed
+JavaScript bundles unchanged. The two retained partial local suites and the
+first CI failure above are not counted as completed successful verification.
+The11 corrected cross-feature tests also passed independently before this run.
+
+Official marketplace refresh selected only `easyeda-pro-agent` and advanced
+its Git snapshot to the merged main commit, with no reported refresh errors.
+The subsequent explicit `plugin add` failed with “failed to back up plugin
+cache entry: Permission denied”; its output JSON was empty. That failure is
+not reclassified as success. Read-only inspection instead found195500 already
+installed/enabled and its new cache present. No installer retry, permission
+change, cache patch, host termination or manual file replacement followed.
+
+Maintained and independent exact-file verification accepted all1805 files,
+42 directories and38156057 bytes with committed0644/0755 modes. Installed
+inventory SHA-256:
+`08b117c37c3a0a8694bde3513ca86f80248666ec9e3ff99e5494d8a9e390f896`.
+The cached marketplace has the exact user GitHub origin and merged HEAD.
+The first verifier request named merged main while the intentionally frozen
+checkout still had the PR HEAD, and was refused before comparison. Verification
+against that exact PR HEAD passed; its full tree equals main as shown above.
+After the suite finished, the checkout fast-forwarded to main for the final
+main-qualified comparison. No runtime source, bundle or compatibility pin
+changed during the final suite.
+The final main-qualified comparison passed, with receipt SHA-256
+`17a36a64f5b33d04eb2f2a365bc21107ee27636e8fd9b3e5dabbc101ec32e3f2`.
+The complete local verification log SHA-256 is
+`7a8f26af4697f5d472eec1b40b9a109d4b0044f1afe3d19ce89d2c4edbaaedf4`.
+
+The maintained installed offline probe passed using a new synthetic206 profile:
+26 tools,10 discovery/argument queries,12 total requests, zero stderr, original
+stdin-EOF exit0 and closed private control state. It sampled no upstream child
+or non-stdio socket. It did not select live control data. This is package-startup
+evidence, not continuous isolation, actual209 host admission or a live layer/
+shortcut result. The current209 profile remains13 tools; the synthetic count
+must not replace that runtime-specific inventory.
+
+No pending CAD call remains. Both175500 disposable/ordinary cases are terminal
+and must not be replayed. No production project was opened or edited, and no
+explicit Save or writer was dispatched. New live tool calls stop here until
+a fresh Codex session loads and admits195500.
+
+Next session, using current packaged schemas and original retained owners:
+
+1. Admit the actual195500 host and discover/validate the current209 requests.
+2. Use a fresh disposable diagnostic case: launch, browser/frame inventory,
+   UI source admission, exact project/PCB opening and PCB opening observation,
+   then one `observe-layers`. Retain complete raw fields and both samples;
+   do not infer physical stackup, startup completion, saved state or writer scope.
+3. Complete original normal-close, root/Job termination and helper release.
+   Inspect retained outcomes instead of replaying a failed or missing reply.
+4. Only after release, use a separate fresh ordinary launch and authenticated
+   fingerprint for one shortcut read with `includeSystem:true`. Preserve any
+   exact tagged missing scope; do not invent a document type or keypress authority.
+   Complete that launch's original normal-close and termination chain too.
+5. Continue the larger implementation backlog listed above, grouping compatible
+   changes before another release. Keep this session alive through owner cleanup.
+
+This terminal append is retained locally for the next documentation batch;
+the publication/installation outcome is also recorded on PR106. It changes no
+installed payload and does not call for another version or restart by itself.

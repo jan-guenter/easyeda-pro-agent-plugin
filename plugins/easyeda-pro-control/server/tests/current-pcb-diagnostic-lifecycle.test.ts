@@ -241,6 +241,13 @@ function fixture(context: TestContext, id: string, dependencies: FixtureDependen
       assert.match(await readFile(intentPath, "utf8"), /"stage":"layers209"/u);
       calls.push("layers209"); return { samples: 2, executionAuthorized: false, saveAuthorized: false };
     },
+    async observePrimitives209(target): Promise<Readonly<Record<string, unknown>>> {
+      assert.equal(this, owner); assert.equal(opening209, true);
+      assert.deepEqual(target, { ...OPEN_TARGET, branchUuid: OPEN_CHECKPOINT.targetEvidence.branchUuid });
+      const intentPath = join(directory(id), "primitives209-intent.json");
+      assert.match(await readFile(intentPath, "utf8"), /"stage":"primitives209"/u);
+      calls.push("primitives209"); return { samples: 2, completeBoardMembershipVerified: false, executionAuthorized: false };
+    },
   };
   const options: CurrentPcbDiagnosticLifecycleOptions = {
     pluginRoot: "/mnt/c/Reviewed/Plugin", assetsRoot: "/mnt/c/Reviewed/EasyEDA/resources/app/assets",
@@ -1191,6 +1198,7 @@ void test("209 original lifecycle composes fixed project and PCB opens with sepa
   const id = "pcb209-test-open", value = fixture(context, id);
   await readyForOpening(id, value);
   await assert.rejects(value.request("observe-layers"), /PROJECT_OPENING_UNCONFIRMED/u);
+  await assert.rejects(value.request("observe-primitives"), /PROJECT_OPENING_UNCONFIRMED/u);
   await value.request("open-project", OPEN_INPUT);
   await value.request("open-pcb", { acceptNormalOpenEffects: true });
   const observed = await value.request("observe-pcb-opening");
@@ -1201,6 +1209,10 @@ void test("209 original lifecycle composes fixed project and PCB opens with sepa
   assert.equal(layers["stage"], "layers209");
   assert.deepEqual(layers["result"], { samples: 2, executionAuthorized: false, saveAuthorized: false });
   await assert.rejects(value.request("observe-layers"), /OBSERVATION_CONSUMED/u);
+  const primitives = await value.request("observe-primitives");
+  assert.equal(primitives["stage"], "primitives209");
+  assert.deepEqual(primitives["result"], { samples: 2, completeBoardMembershipVerified: false, executionAuthorized: false });
+  await assert.rejects(value.request("observe-primitives"), /OBSERVATION_CONSUMED/u);
   for (const action of ["inspect-workers", "observe-worker-state", "observe-model-state", "observe-string-precreate"]) {
     await assert.rejects(value.request(action));
   }
@@ -1216,6 +1228,40 @@ void test("209 original lifecycle composes fixed project and PCB opens with sepa
   assert.equal(value.calls.filter(action => action === "pcb-dispatch").length, 1);
   assert.equal(value.calls.filter(action => action === "release").length, 1);
   assert.equal(value.calls.filter(action => action === "layers209").length, 1);
+  assert.equal(value.calls.filter(action => action === "primitives209").length, 1);
+});
+void test("209 primitive observation ambiguity consumes the stage and preserves original cleanup", async context => {
+  const id = "pcb209-test-primitive-lost", value = fixture(context, id);
+  const original = value.owner.observePrimitives209;
+  assert.ok(original);
+  value.owner.observePrimitives209 = async (target): Promise<Readonly<Record<string, unknown>>> => {
+    await original.call(value.owner, target); throw new Error("synthetic lost primitive result");
+  };
+  await readyForOpening(id, value); await value.request("open-project", OPEN_INPUT);
+  await value.request("open-pcb", { acceptNormalOpenEffects: true }); await value.request("observe-pcb-opening");
+  await assert.rejects(value.request("observe-primitives"), /lost primitive result/u);
+  await assert.rejects(value.request("observe-primitives"), /OBSERVATION_CONSUMED/u);
+  assert.equal(value.calls.filter(action => action === "primitives209").length, 1);
+  await value.request("observe-window"); await value.request("normal-close", { hwnd: "12345", confirmNormalClose: true });
+  value.state.terminated = true; await value.request("observe-termination");
+  const released = await value.request("release-closed");
+  assert.equal(released["state"], "released");
+});
+void test("209 primitive result has its own bounded journal size without enlarging layer records", async context => {
+  const id = "pcb209-test-primitive-size", value = fixture(context, id);
+  const original = value.owner.observePrimitives209;
+  assert.ok(original);
+  value.owner.observePrimitives209 = async (target): Promise<Readonly<Record<string, unknown>>> =>
+    ({ ...await original.call(value.owner, target), synthetic: "x".repeat(160 * 1024) });
+  await readyForOpening(id, value); await value.request("open-project", OPEN_INPUT);
+  await value.request("open-pcb", { acceptNormalOpenEffects: true }); await value.request("observe-pcb-opening");
+  await value.request("observe-primitives");
+  const operations = await readCurrentPcbDiagnosticLifecycles();
+  const record = operations.find(entry => entry.operationId === id)?.records["primitives209-result.json"];
+  assert.ok(record);
+  assert.equal(diagnosticLifecycleRecordSchemas["layers209-result.json"].safeParse({ ...record, stage: "layers209" }).success, false);
+  assert.equal(diagnosticLifecycleRecordSchemas["primitives209-result.json"].safeParse({ ...record,
+    result: { synthetic: "x".repeat(384 * 1024) } }).success, false);
 });
 void test("209 ambiguous PCB opening remains consumed and retains original cleanup without model fallback", async context => {
   const id = "pcb209-test-ambiguous", value = fixture(context, id);

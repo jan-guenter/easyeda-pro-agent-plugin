@@ -12,11 +12,12 @@ EasyEDA Pro 3.2.209 has a separate thirteen-tool profile: API reference, local
 discovery, status, bounded calculations/system and language/viewport readers,
 tab-count/active-identity/shortcut observations, public catalog metadata/search,
 ordinary launch and a separate disposable project/PCB opening lifecycle with
-bounded layer metadata and copper-count observations.
+bounded layer metadata, copper count, and Line/Arc/Via/standalone-text observations.
 Catalog queries require explicit network confirmation and run without the
 application; they are not SDK execution. Disposable opening retains its original
 process through cleanup and can trigger ordinary migration/cache/automatic-Save
-effects. Layer observations do not prove physical stackup or saved contents;
+effects. Primitive observations include existing native views only, not complete
+board membership. Layer observations do not prove physical stackup or saved contents;
 general geometry operations, writers and explicit Save remain disabled.
 On eligible 3.2.206 profiles, the ordinary symbol-metadata route allows forward name/description edits of
 unused project-local symbols with eligible history. Disposable validation

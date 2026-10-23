@@ -17,9 +17,12 @@ export function parseCurrentPcbLayersRequest(input: unknown): CurrentPcbLayersRe
 export const currentPcbLayersQuerySchema = z.object({ method: z.enum(methods).optional(), includeSchemas: z.boolean().default(false) }).strict();
 const scalar = z.number().refine((value) => !Object.is(value, -0), "Signed zero is outside this bounded transport subset.");
 const layerStatus = scalar.pipe(z.union([z.literal(0), z.literal(1), z.literal(2)]));
-const layerSchema = z.object({ layerId: z.number().int().min(1).max(65_535), type: z.string().min(1).max(128), name: z.string().max(1024),
-  order: scalar, activeColor: z.string().min(1).max(128), activeColorAlpha: scalar.pipe(z.number().min(0).max(1)),
-  deactiveColor: z.string().min(1).max(128), deactiveColorAlpha: scalar.pipe(z.number().min(0).max(1)),
+// Mirror the fixed native .length guards; Zod's max alone counts code points.
+const nativeText = (maximum: number): z.ZodString => z.string().max(maximum)
+  .refine((value) => value.length <= maximum, "Layer text exceeds its UTF-16 unit bound.");
+const layerSchema = z.object({ layerId: z.number().int().min(1).max(65_535), type: nativeText(128).min(1), name: nativeText(1024),
+  order: scalar, activeColor: nativeText(128).min(1), activeColorAlpha: scalar.pipe(z.number().min(0).max(1)),
+  deactiveColor: nativeText(128).min(1), deactiveColorAlpha: scalar.pipe(z.number().min(0).max(1)),
   visible: z.boolean(), locked: z.boolean(), active: z.boolean(), layerStatus }).strict();
 export const currentPcbLayersResultSchema = z.object({ ok: z.literal(true), kind: z.literal("current-pcb-layer-observation"),
   method: z.enum(methods), target: targetSchema, nativeLayers: z.array(layerSchema).min(1).max(MAX_LAYERS), samples: z.literal(2),

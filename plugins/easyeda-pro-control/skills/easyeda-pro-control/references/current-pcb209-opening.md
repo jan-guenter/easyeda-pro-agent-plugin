@@ -1,4 +1,4 @@
-# Disposable project/PCB opening and layer observation on 3.2.209
+# Disposable project/PCB opening and bounded readers on 3.2.209
 
 Use `easyeda_control_pcb209_opening` only for an explicitly disposable,
 already-registered local project and an existing PCB. It owns a separate native
@@ -37,6 +37,9 @@ not the larger older diagnostic catalog, determines available actions.
    `observe-pcb-opening`, with only the original operation ID and binding.
    It returns both the layer projection and copper count. A separate target,
    method or existing ordinary owner cannot be substituted.
+   For Line, Arc, Via and parentless text, `observe-primitives` is a separate
+   once-only stage with the same binding and no family, filter or ID arguments.
+   Either reader may be used independently, or both under this original owner.
 7. Use `observe-window`, then one `normal-close` with its observed `hwnd` and
    `confirmNormalClose:true`. Observe original root/Job termination with
    `observe-termination`, then call `release-closed`. Finish any offered
@@ -71,12 +74,36 @@ nor copper count establishes physical stackup, ratline completion, saved
 contents or writer eligibility. `getCurrentLayer` remains an unsupported stub;
 do not substitute the first active row.
 
+## Primitive result
+
+`observe-primitives` reads Line, Arc, Via and parentless String collections in
+that order, with native tab/type checks before and after each complete sample
+and captured receiver checks around every awaited call. Two ordered projected
+samples must match. The result includes each family's DTO rows and ordered IDs,
+with at most256 rows per family and393216 UTF-8 bytes in the complete packet
+and final result. It refuses unsupported data or excess output, never truncates.
+
+These are native loaded-view projections, not public SDK instances. Models
+without an existing `stateWatcher` view and parented text are absent by the
+vendor's enumeration contract; an empty result does not prove an empty board.
+Other families, complete source membership and connectivity are not observed.
+Distances are mil and angles degrees. Arc endpoints/angle omit center, radius
+and sweep; Via omits unused-layer and suture state. Arc/Via preserve native
+precision rather than the public wrappers' rounding. String text/style and
+display flags do not verify glyphs or font contents; serialized null color can
+mean an empty native color string. Null and empty nets remain distinct.
+
+Native enumeration precedes bounds. The ten-second deadline cannot cancel an
+already dispatched callback; failure consumes this stage. No partial family
+result, selected-object query, source export, edit or Save is provided. Use the
+result for its four projected families, not as a complete baseline for writing.
+
 ## Failure and cleanup
 
 After an error or lost reply, use `inspect`; never repeat navigation under the
 same or a new ID. Optional inspection stages are only `browser`, `frames`,
-`script`, `pcb-opening` and `layers209`. Layer inspection returns the retained
-attempt; it does not dispatch another read. Workers and the complete native
+`script`, `pcb-opening`, `layers209` and `primitives209`. Inspection returns the
+retained attempt; it does not dispatch another read. Workers and the complete native
 geometry/model baseline remain unavailable.
 Original normal cleanup remains available after a failed observation and does
 not depend on bridge authentication. A requested close is not termination.

@@ -5,7 +5,7 @@ Use supported typed APIs first. Native controls cover genuine API stubs and dial
 The separate EasyEDA3.2.209 profile registers thirteen tools: API reference,
 local discovery, status, calculations, system observations, language/viewport
 readers, tab-count/active-identity/shortcut observations, public catalog queries,
-ordinary launch and disposable project/PCB opening with layer metadata.
+ordinary launch and disposable project/PCB opening with layer and primitive observations.
 It admits the source-reviewed fixed16Math and18Unit/Environment subsets through
 their own exact runtime checks. Two utility argument sets passed on the prior
 installed release; that does not validate every method or this source payload.
@@ -16,6 +16,12 @@ ordinary automatic persistence, but offers no explicit Save or writer. Its
 one-shot `observe-layers` stage provides two matching native layer samples,
 the public layer projection and enabled copper count; it does not establish
 physical stackup, complete startup or a saved baseline.
+The separate `observe-primitives` stage returns two matching Line/Arc/Via and
+parentless String loaded-view projections with ordered IDs. Its256-row per-family
+and384KiB aggregate bounds refuse excess output. It does not include raw models
+without views, other families or complete connectivity, and is not SDK-instance
+parity. The primitive route has source/offline evidence only; installed live
+validation remains pending.
 The new ratline source verifier and finite-role
 model are dormant implementation groundwork, not an executable capture route.
 The [public catalog queries](current-system-library.md) require explicit network
