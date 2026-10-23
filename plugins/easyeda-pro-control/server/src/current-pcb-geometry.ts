@@ -24,8 +24,12 @@ const targetSchema = currentPcbLayersRequestSchema.shape.target;
 const numberSchema = z.number().min(-CURRENT_PCB_GEOMETRY_MAX_NUMBER).max(CURRENT_PCB_GEOMETRY_MAX_NUMBER)
   .refine((value) => !Object.is(value, -0), "Signed zero is not supported by this JSON observation.");
 const layerSchema = numberSchema.refine((value) => Number.isInteger(value) && value >= 0 && value <= 65_535, "Invalid native layer ID.");
-const boundedText = z.string().max(1024);
-const idSchema = z.string().min(1).max(256);
+// Preserve every fixed native .length guard independently of Zod's code-point
+// Semantics at the decoder boundary, including identities and metadata.
+const nativeText = (maximum: number): z.ZodString => z.string().max(maximum)
+  .refine((value) => value.length <= maximum, "Geometry text exceeds its UTF-16 unit bound.");
+const boundedText = nativeText(1024);
+const idSchema = nativeText(256).min(1);
 const imageSchema = createCurrentPcbImageSchema(numberSchema, layerSchema, idSchema);
 const holeFields = { diameter: numberSchema.refine((value) => value >= 0, "Negative hole diameter."),
   offsetX: numberSchema, offsetY: numberSchema, rotation: numberSchema };
@@ -63,13 +67,13 @@ const componentSchema = z.object({ ...identity, primitiveType: z.literal("Compon
   manufacturer: boundedText.optional(), manufacturerPart: boundedText.optional(), supplier: boundedText.optional(),
   supplierPart: boundedText.optional() }).strict();
 const stringSchema = z.object({ ...identity, primitiveType: z.literal("String"), layer: layerSchema,
-  x: numberSchema, y: numberSchema, text: z.string().max(65_536), fontFamily: boundedText,
+  x: numberSchema, y: numberSchema, text: nativeText(65_536), fontFamily: boundedText,
   fontSize: numberSchema, lineWidth: numberSchema, alignMode: z.number().int().min(1).max(9),
   rotation: numberSchema, reverse: z.boolean(), expansion: numberSchema, mirror: z.boolean(),
   key: boundedText, showKey: z.boolean(), showValue: z.boolean(), positionIsNull: z.boolean(),
-  silkColor: z.string().min(1).max(128).nullable() }).strict();
+  silkColor: nativeText(128).min(1).nullable() }).strict();
 const attributeSchema = stringSchema.omit({ primitiveType: true, text: true, showKey: true, showValue: true }).extend({
-  primitiveType: z.literal("Attribute"), parentPrimitiveId: idSchema, value: z.string().max(65_536),
+  primitiveType: z.literal("Attribute"), parentPrimitiveId: idSchema, value: nativeText(65_536),
   keyVisible: z.boolean(), valueVisible: z.boolean(),
 }).strict();
 const attributeGroupsSchema = z.array(z.object({ parentPrimitiveId: idSchema,

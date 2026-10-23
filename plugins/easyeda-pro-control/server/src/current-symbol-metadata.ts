@@ -18,12 +18,15 @@ export type CurrentSymbolMetadataRequest = z.infer<typeof currentSymbolMetadataR
 export function parseCurrentSymbolMetadataRequest(input: unknown): CurrentSymbolMetadataRequest { return currentSymbolMetadataRequestSchema.parse(input); }
 export const currentSymbolMetadataQuerySchema = z.object({ method: z.literal(method).optional(), includeSchemas: z.boolean().default(false) }).strict();
 
-const tagsJson = z.string().max(131_072).refine((value) => {
-  try { return z.array(z.string().max(512)).max(256).safeParse(JSON.parse(value) as unknown).success; }
+// The fixed native metadata reader counts UTF-16 units, not Zod code points.
+const nativeText = (maximum: number): z.ZodString => z.string().max(maximum)
+  .refine((value) => value.length <= maximum, "Symbol metadata exceeds its UTF-16 unit bound.");
+const tagsJson = nativeText(131_072).refine((value) => {
+  try { return z.array(nativeText(512)).max(256).safeParse(JSON.parse(value) as unknown).success; }
   catch { return false; }
 }, "Native custom_tags must encode a bounded string array.");
 const valueSchema = z.object({ uuid: documentId, projectUuid: projectId, ownerUuid: ownerId,
-  name: z.string().max(512), description: z.string().max(65_536), tagsJson, source: z.string().max(4096), version: z.string().max(128),
+  name: nativeText(512), description: nativeText(65_536), tagsJson, source: nativeText(4096), version: nativeText(128),
   ticket: z.number().int().nonnegative().max(Number.MAX_SAFE_INTEGER).refine((value) => !Object.is(value, -0), "Signed zero is unsupported.") }).strict();
 export const currentSymbolMetadataResultSchema = z.object({ ok: z.literal(true), kind: z.literal("current-symbol-metadata-observation"),
   method: z.literal(method), target: targetSchema, value: valueSchema, samples: z.literal(2),

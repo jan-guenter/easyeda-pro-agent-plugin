@@ -12,8 +12,11 @@ import type { DecodedSymbolSqlRawHistory } from "./symbol-sql-comparator.ts";
 import { MAX_ENCODED_BYTES } from "./sqlite-inventory-core.ts";
 import type { NativeSqlInventory, SqlCell, SqlRow, SqlTable } from "./sqlite-inventory-core.ts";
 
-const desiredSchema = z.object({ name: z.string().min(1).max(512), description: z.string().max(65_536),
-  tags: z.array(z.string().max(512)).max(256), source: z.string().max(4096) }).strict();
+// Match native metadata and writer limits; code-point max alone is not this budget.
+const nativeText = (maximum: number): z.ZodString => z.string().max(maximum)
+  .refine((value) => value.length <= maximum, "Symbol budget text exceeds its UTF-16 unit bound.");
+const desiredSchema = z.object({ name: nativeText(512).min(1), description: nativeText(65_536),
+  tags: z.array(nativeText(512)).max(256), source: nativeText(4096) }).strict();
 const MAX_NATIVE_TIME = 8_640_000_000_000_000;
 type MetadataInput = Readonly<{ name: string; description: string; tags: readonly string[]; source: string }>;
 type BudgetStrategy = "meta-only" | "single-canvas-segment" | "canvas-segments";

@@ -6,7 +6,10 @@ export const CONFIGURED_FONT_MAX_ROWS = 512;
 export const CONFIGURED_FONT_MAX_TITLE = 1024;
 export const CONFIGURED_FONT_MAX_CHARACTERS = 131_072;
 export const configuredFontArgumentsSchema = z.object({}).strict();
-export const configuredFontTitlesSchema = z.array(z.string().max(CONFIGURED_FONT_MAX_TITLE)).max(CONFIGURED_FONT_MAX_ROWS).refine(
+// Both native title guards and the aggregate below count UTF-16, not code points.
+const titleSchema = z.string().max(CONFIGURED_FONT_MAX_TITLE).refine((title) => title.length <= CONFIGURED_FONT_MAX_TITLE,
+  "Configured font title exceeds its UTF-16 unit bound.");
+export const configuredFontTitlesSchema = z.array(titleSchema).max(CONFIGURED_FONT_MAX_ROWS).refine(
   (titles) => titles.reduce((total, title) => total + title.length, 0) <= CONFIGURED_FONT_MAX_CHARACTERS,
   "Configured font titles exceed the aggregate character bound.",
 );

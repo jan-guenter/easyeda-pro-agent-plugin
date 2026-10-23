@@ -18,14 +18,17 @@ export const CURRENT_SYMBOL_WRITE_TIME_CEILING = 8_640_000_000_000_000 - CURRENT
 const integer = z.number().int().nonnegative().max(Number.MAX_SAFE_INTEGER).refine((value) => !Object.is(value, -0));
 const time = integer.max(CURRENT_SYMBOL_WRITE_TIME_CEILING);
 const offset = z.number().int().min(-840).max(840).refine((value) => !Object.is(value, -0));
-const actorSchema = z.object({ uuid: z.string().regex(/^[a-f0-9]{32}$/u), username: z.string().min(1).max(ACTOR_NAME_MAX_CODE_UNITS),
-  nickname: z.string().max(ACTOR_NAME_MAX_CODE_UNITS) }).strict();
+// Match the native metadata/actor code-unit bounds before compiling any writer.
+const nativeText = (maximum: number): z.ZodString => z.string().max(maximum)
+  .refine((value) => value.length <= maximum, "Symbol writer text exceeds its UTF-16 unit bound.");
+const actorSchema = z.object({ uuid: z.string().regex(/^[a-f0-9]{32}$/u), username: nativeText(ACTOR_NAME_MAX_CODE_UNITS).min(1),
+  nickname: nativeText(ACTOR_NAME_MAX_CODE_UNITS) }).strict();
 const windowSchema = z.object({ minimumMs: time, maximumMs: time }).strict()
   .refine((value) => value.maximumMs - value.minimumMs === CURRENT_SYMBOL_WRITE_WINDOW_MS);
 const beforeSchema = currentProjectOnlySymbolPreflightRequestSchema.shape.expectedBefore;
 export const currentSymbolWriteProgramInputSchema = currentProjectOnlySymbolPreflightRequestSchema.extend({
-  desired: z.object({ name: z.string().min(1).max(512).refine((value) => value.trim().length > 0), description: z.string().max(65_536) }).strict(),
-  peerNames: z.array(z.string().min(1).max(512)).max(4096),
+  desired: z.object({ name: nativeText(512).min(1).refine((value) => value.trim().length > 0), description: nativeText(65_536) }).strict(),
+  peerNames: z.array(nativeText(512).min(1)).max(4096),
   expectedActor: actorSchema,
   expectedWorker: z.object({ client: z.string().regex(/^[a-f0-9]{16}$/u), maxTicket: integer.max(Number.MAX_SAFE_INTEGER - 1) }).strict(),
   backendWindow: windowSchema, documentWindow: windowSchema, rendererTimezoneOffsetMinutes: offset,

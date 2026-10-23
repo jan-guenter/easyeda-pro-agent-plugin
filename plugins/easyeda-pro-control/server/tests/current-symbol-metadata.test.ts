@@ -87,6 +87,16 @@ void test("current symbol metadata schemas bind exact local target and reject un
   }
 });
 
+void test("symbol metadata decoder retains the native UTF-16 string limits", async () => {
+  const raw: unknown = decodeExactReadEnvelope(await fixture().run()); assert.ok(raw !== null && typeof raw === "object");
+  for (const [field, maximum] of [["name", 512], ["description", 65_536], ["source", 4096], ["version", 128]] as const) {
+    const boundary = "😀".repeat(maximum / 2);
+    validateCurrentSymbolMetadataResult(request, { ...raw, value: { ...value, [field]: boundary } });
+    assert.throws(() => validateCurrentSymbolMetadataResult(request, { ...raw, value: { ...value, [field]: `${boundary}x` } }), /UTF-16/u);
+  }
+  assert.throws(() => validateCurrentSymbolMetadataResult(request, { ...raw, value: { ...value, tagsJson: JSON.stringify([`${"😀".repeat(256)}x`]) } }));
+});
+
 void test("current symbol metadata refuses malformed fields and owner/type mismatches without invoking accessors", async () => {
   for (const before of ["metadata.owner.uuid='f'.repeat(32);", "projectDetail.currentBranch='f'.repeat(32);", "projectDetail.isV2Format=true;",
     "metadata.path='f'.repeat(64);", "metadata.docType=4;", "metadata.ticket=NaN;", "metadata.ticket=-0;", "metadata.ticket='12345';",

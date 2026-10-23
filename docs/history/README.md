@@ -45,6 +45,9 @@ layout. The connected ledger retains its generation and case anchors.
 
 | Record | Former path |
 | --- | --- |
+| [2026-10-23-213000-pcb-primitives-batch.md](2026-10-23-213000-pcb-primitives-batch.md) | Four-family209 native reader batch, coverage, verification and release handoff |
+| [2026-10-23-195500-connected-layers-shortcuts.md](2026-10-23-195500-connected-layers-shortcuts.md) | Installed195500 layer and shortcut observations with original cleanup |
+| [2026-10-23-pcb209-reader-extension-research.md](2026-10-23-pcb209-reader-extension-research.md) | Installed-source semantics for Line/Arc/Via/parentless String projections |
 | [2026-10-23-195500-layers-catalog-release.md](2026-10-23-195500-layers-catalog-release.md) | Installed175500 opening/shortcut results and combined layer/catalog release |
 | [2026-10-23-generation209-layer-observation.md](2026-10-23-generation209-layer-observation.md) | Original-owner209 layer collection and copper-count implementation |
 | [2026-10-23-catalog-device-symbol-search.md](2026-10-23-catalog-device-symbol-search.md) | Device/symbol search and contradictory project-scope refusal |

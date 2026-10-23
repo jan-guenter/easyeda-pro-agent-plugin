@@ -16,7 +16,9 @@ const hex32 = z.string().regex(/^[a-f0-9]{32}$/u);
 const documentId = z.string().regex(/^(?:[a-f0-9]{16}|[a-f0-9]{32})$/u);
 const operationId = z.string().min(8).max(96).regex(/^[a-z0-9][a-z0-9-]{7,95}$/u);
 // oxlint-disable-next-line no-control-regex -- Control characters must be rejected at the Windows path authority boundary.
-const windowsPath = z.string().min(12).max(4096).regex(/^[A-Za-z]:\\[^\u0000-\u001F\u007F<>:"|?*/]+\.eprj2$/u)
+const windowsPath = z.string().max(4096).regex(/^[A-Za-z]:\\[^\u0000-\u001F\u007F<>:"|?*/]+\.eprj2$/u)
+  // Zod counts code points; the native Windows transport bounds UTF-16 units.
+  .refine((value) => value.length >= 12 && value.length <= 4096, "Windows path is outside its UTF-16 unit bounds.")
   .refine((value) => value.slice(3).split("\\").every((part) => part.length > 0 && part.trim() === part
     && part !== "." && part !== ".." && !/[. ]$/u.test(part) && !/~[0-9]/u.test(part)
     && !/^(?:con|prn|aux|nul|com[1-9]|lpt[1-9])(?:\.|$)/iu.test(part)), "Use a canonical absolute Windows project path.");

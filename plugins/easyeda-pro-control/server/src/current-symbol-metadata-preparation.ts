@@ -17,27 +17,30 @@ const hashSchema = z.string().regex(/^[a-f0-9]{64}$/u);
 const idSchema = z.string().regex(/^[a-f0-9]{32}$/u);
 const symbolIdSchema = z.string().regex(/^(?:[a-f0-9]{16}|[a-f0-9]{32})$/u);
 const maximumCheckpointBytes = 256 * 1024 * 1024;
-const checkpointSchema = z.object({ path: z.string().min(1).max(4096).refine((path) =>
+// Preserve the native metadata and path UTF-16 budgets under Zod's code-point max.
+const nativeText = (maximum: number): z.ZodString => z.string().max(maximum)
+  .refine((value) => value.length <= maximum, "Symbol preparation text exceeds its UTF-16 unit bound.");
+const checkpointSchema = z.object({ path: nativeText(4096).min(1).refine((path) =>
   isAbsolute(path) && resolve(path) === path && path.endsWith(".eprj2"), "Checkpoint must be a canonical absolute .eprj2 path."),
 bytes: z.number().int().positive().max(maximumCheckpointBytes), sha256: hashSchema }).strict();
 const targetSchema = z.object({ projectUuid: hashSchema, branchUuid: idSchema, ownerUuid: idSchema, symbolUuid: symbolIdSchema }).strict();
-const patchSchema = z.object({ name: z.string().min(1).max(512).refine((name) => name.trim().length > 0, "Name must not be blank.").optional(),
-  description: z.string().max(65_536).optional() }).strict().refine((patch) => patch.name !== undefined || patch.description !== undefined,
+const patchSchema = z.object({ name: nativeText(512).min(1).refine((name) => name.trim().length > 0, "Name must not be blank.").optional(),
+  description: nativeText(65_536).optional() }).strict().refine((patch) => patch.name !== undefined || patch.description !== undefined,
   "A name or non-null description patch is required.");
 export const currentSymbolMetadataPreparationRequestSchema = z.object({ checkpoint: checkpointSchema, target: targetSchema, patch: patchSchema,
   observationProjection: currentSymbolMetadataResultSchema.optional() }).strict();
 export type CurrentSymbolMetadataPreparationRequest = z.infer<typeof currentSymbolMetadataPreparationRequestSchema>;
 
-const metadataSchema = z.object({ name: z.string().min(1).max(512), description: z.string().max(65_536),
-  tags: z.array(z.string().max(512)).max(256), source: z.string().max(4096) }).strict();
-const peerNamesSchema = z.array(z.string().min(1).max(512)).max(4096);
+const metadataSchema = z.object({ name: nativeText(512).min(1), description: nativeText(65_536),
+  tags: z.array(nativeText(512)).max(256), source: nativeText(4096) }).strict();
+const peerNamesSchema = z.array(nativeText(512).min(1)).max(4096);
 export const currentSymbolMetadataPreparationResultSchema = z.object({
   schema: z.literal("easyeda-pro-control.current-symbol-metadata-preparation.v1"), offline: z.literal(true),
   checkpoint: checkpointSchema, target: targetSchema, patch: patchSchema,
   history: z.object({ profile: z.literal("easyeda.native-history.linear-gcm-gzip.v1"), headHistoryUuid: idSchema,
     historyRows: z.number().int().positive().max(4096), chunks: z.number().int().positive(), plaintextBytes: z.number().int().nonnegative(),
     documents: z.number().int().positive(), selectedBranchRecordsSha256: hashSchema, targetHeaderSha256: hashSchema,
-    targetHeaderEditVersion: z.string().min(1).max(128).nullable() }).strict(),
+    targetHeaderEditVersion: nativeText(128).min(1).nullable() }).strict(),
   metadata: z.object({ before: metadataSchema, after: metadataSchema, peerNames: peerNamesSchema }).strict(),
   correlation: z.object({ observationProjectionSha256: hashSchema.nullable(), metadataMatches: z.boolean(),
     freshnessVerified: z.literal(false), ticketCompared: z.literal(false), versionCompared: z.literal(false) }).strict(),

@@ -71,6 +71,21 @@ void test("current PCB layers retain cross-realm receiver and map exact raw colo
   assert.deepEqual(validateCurrentPcbLayersResult(shortInput, shortPayload)["target"], shortTarget);
 });
 
+void test("layer name, type and colors preserve matching native and decoded UTF-16 bounds", async () => {
+  for (const [field, maximum] of [["name", 1024], ["type", 128], ["activeColor", 128], ["deactiveColor", 128]] as const) {
+    const text = "😀".repeat(maximum / 2);
+    const layer = { ...row(), [field]: text };
+    const raw: unknown = decodeExactReadEnvelope(await environment([layer]).run());
+    assert.ok(raw !== null && typeof raw === "object");
+    validateCurrentPcbLayersResult(request, raw);
+    const oversized = { ...layer, [field]: `${text}x` };
+    assert.throws(() => validateCurrentPcbLayersResult(request, { ...raw, nativeLayers: [oversized] }), /UTF-16/u);
+    const fixture = environment([oversized]);
+    await assert.rejects(fixture.run(), { message: "CURRENT_PCB_LAYERS_READ_FAILED" });
+    assert.equal(fixture.evaluateChild("layerReads"), 1);
+  }
+});
+
 void test("current copper count uses enabled native SIGNAL and PLANE plus two, not public SIGNAL projection", async () => {
   const input = { ...request, method: "eda.pcb_Layer.getTheNumberOfCopperLayers" };
   const fixture = environment([row(), row(2, "BOTTOM"), row(3, "SIGNAL", 2), row(4, "PLANE", 1), row(5, "SIGNAL", 0), row(6, "CUSTOM")], { input });

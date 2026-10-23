@@ -195,6 +195,24 @@ void test("native opener diagnostics discard private exceptions and never invoke
   assert.equal(acknowledgement.evaluate("documentCalls"), 0);
 });
 
+void test("disposable Windows paths preserve the native UTF-16 cap before program construction", () => {
+  const shortPath = String.raw`C:\😀😀.eprj2`;
+  assert.equal(shortPath.length, 13);
+  assert.equal(validateCurrentDisposableOpenArguments({ ...request, rawWindowsPath: shortPath, projectUuid: sha256Text(shortPath) })["valid"], true);
+  const tooShortPath = String.raw`C:\😀.eprj2`;
+  assert.equal(tooShortPath.length, 11);
+  assert.equal(validateCurrentDisposableOpenArguments({ ...request, rawWindowsPath: tooShortPath, projectUuid: sha256Text(tooShortPath) })["valid"], false);
+  const prefix = "C:\\", suffix = String.raw`\Selected.eprj2`;
+  const length = 4096 - prefix.length - suffix.length;
+  const path = prefix + "😀".repeat(Math.floor(length / 2)) + "x".repeat(length % 2) + suffix;
+  assert.equal(path.length, 4096);
+  assert.equal(validateCurrentDisposableOpenArguments({ ...request, rawWindowsPath: path, projectUuid: sha256Text(path) })["valid"], true);
+  const oversizedPath = path.replace(suffix, `x${suffix}`);
+  const oversizedTarget = { ...target, rawWindowsPath: oversizedPath, projectUuid: sha256Text(oversizedPath) };
+  assert.equal(validateCurrentDisposableOpenArguments({ ...request, rawWindowsPath: oversizedPath, projectUuid: oversizedTarget.projectUuid })["valid"], false);
+  assert.throws(() => buildCurrentDisposableOpenProgram(oversizedTarget, "open-project"), /UTF-16/u);
+});
+
 void test("disposable schemas and result checks reject injected arguments and false authority", async () => {
   assert.deepEqual(parseCurrentDisposableOpenRequest(request), request); assert.equal(validateCurrentDisposableOpenArguments(request)["valid"], true);
   assert.deepEqual(parseCurrentDisposableOpenRequest({ action: "inspect", operationId: request.operationId }), { action: "inspect", operationId: request.operationId });

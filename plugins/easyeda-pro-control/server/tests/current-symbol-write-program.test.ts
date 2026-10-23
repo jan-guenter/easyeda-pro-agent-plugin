@@ -103,6 +103,15 @@ void test("current fixed writer treats uncertain post-write effects as failure w
   }
 });
 
+void test("fixed symbol writer preserves metadata and actor UTF-16 limits before compilation", () => {
+  for (const invalid of [
+    { ...input, desired: { ...input.desired, name: `${"😀".repeat(256)}x` } },
+    { ...input, desired: { ...input.desired, description: `${"😀".repeat(32_768)}x` } },
+    { ...input, peerNames: [`${"😀".repeat(256)}x`] },
+    { ...input, expectedActor: { ...actor, username: "😀".repeat(4096) } },
+  ]) { assert.throws(() => buildCurrentSymbolWriteProgram(invalid)); }
+});
+
 void test("current fixed writer rejects referenced symbols before any native call", () => {
   const env = fixture();
   const selected = { ...input, startup: { ...input.startup, templates: [{ uuid: target.symbolUuid, docType: 2, partId: "part-one" }] } };

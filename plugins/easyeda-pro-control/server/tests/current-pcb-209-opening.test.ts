@@ -64,3 +64,13 @@ void test("209 discovery and validation expose exact scope without startup or wr
   assert.equal(validateCurrentPcb209OpeningArguments({ action: "observe-model-state", ...bound })["valid"], false);
   assert.throws(() => queryCurrentPcb209Opening({ includeSchemas: true, generation: "206" }));
 });
+
+void test("209 primitive reader takes only its original operation binding and retains a named inspection stage", () => {
+  const request = { action: "observe-primitives", ...bound };
+  assert.deepEqual(currentPcb209OpeningRequestSchema.parse(request), request);
+  assert.equal(currentPcbDiagnosticValidationRequestSchema.safeParse(request).success, false);
+  for (const extra of [{ topic: "pcb/getAllLine" }, { code: "1" }, { ids: [] }, { family: "Line" }, { limit: 1 }]) {
+    assert.equal(currentPcb209OpeningRequestSchema.safeParse({ ...request, ...extra }).success, false);
+  }
+  assert.equal(currentPcb209OpeningRequestSchema.safeParse({ action: "inspect", operationId: bound.operationId, observation: "primitives209" }).success, true);
+});

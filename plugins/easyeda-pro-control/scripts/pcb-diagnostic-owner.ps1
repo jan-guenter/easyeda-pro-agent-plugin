@@ -1530,6 +1530,151 @@ check();const timeout=new Promise((resolve,reject)=>{timer=apply(set,root,[()=>{
 }";
   const string Layers209FunctionSha256="65e4089208affb3e8d3d1fd9a050439b13c5b400ff411f76d7311ff5a3add980";
   // END GENERATED PCB209 LAYERS PROGRAM
+  // BEGIN GENERATED PCB209 PRIMITIVES PROGRAM
+  const string Primitives209Function=@"async function(sealed,phase){
+""use strict"";
+let timer,clear,expired=false;
+try{
+const root=globalThis,apply=Reflect.apply,bad=()=>{throw new Error(""PCB209_PRIMITIVES_REFUSED"");};
+const own=(o,k)=>{if(o===null||(typeof o!==""object""&&typeof o!==""function""))bad();const d=Object.getOwnPropertyDescriptor(o,k);if(!d||!Object.hasOwn(d,""value""))bad();return d.value;};
+const object=o=>o!==null&&typeof o===""object""&&!Array.isArray(o);
+const plain=o=>{if(!object(o)||Object.getPrototypeOf(o)!==Object.prototype)bad();return o;};
+const absent=(o,k)=>{const d=Object.getOwnPropertyDescriptor(o,k);if(d&&(!Object.hasOwn(d,""value"")||d.value!==undefined))bad();};
+const fn=(o,k)=>{const f=own(o,k);if(typeof f!==""function"")bad();return f;};
+plain(sealed);if(phase!==""observe""||Reflect.ownKeys(sealed).length!==5)bad();
+for(const k of [""rawWindowsPath"",""projectUuid"",""documentUuid"",""expectedSourceSha256"",""branchUuid""])if(typeof own(sealed,k)!==""string"")bad();
+const match=(s,re)=>{const m=re.exec(s);return m!==null&&m[0]===s;};
+if(!match(sealed.projectUuid,/^[a-f0-9]{64}$/)||!match(sealed.branchUuid,/^[a-f0-9]{32}$/)||!match(sealed.documentUuid,/^(?:[a-f0-9]{16}|[a-f0-9]{32})$/)||!match(sealed.expectedSourceSha256,/^[a-f0-9]{64}$/))bad();
+const target={projectUuid:sealed.projectUuid,branchUuid:sealed.branchUuid,documentUuid:sealed.documentUuid,tabId:sealed.documentUuid+""@""+sealed.projectUuid};
+const parseProjectUrl=(value,projectUuid,activeTabId)=>{
+ if(typeof value!=='string'||value.length>32768||typeof projectUuid!=='string')bad();
+ const projectMatch=/^(?:[a-f0-9]{32}|[a-f0-9]{64})$/.exec(projectUuid);if(!projectMatch||projectMatch[0]!==projectUuid)bad();
+ const pieces=value.split('#');if(pieces.length>2)bad();const base=pieces[0];
+ const baseMatch=/^https:\/\/client\/editor\?cll=(?:trace|debug|info|warn|error)$/.exec(base);if(!baseMatch||baseMatch[0]!==base)bad();
+ const fragment=pieces.length===1?'':pieces[1];
+ if(fragment==='')return{base,empty:true,tabIds:[],activeTabId:null};
+ const prefix='id='+projectUuid;if(fragment===prefix)return{base,empty:false,tabIds:[],activeTabId:null};
+ if(!fragment.startsWith(prefix+',tab='))bad();const entries=fragment.slice(prefix.length+5).split('|');
+ if(entries.length<1||entries.length>256)bad();const tabIds=[],seen=new Set();let markedTabId=null;
+ for(const entry of entries){
+  const match=/^(\*?)([a-f0-9]{16}|[a-f0-9]{32})@([a-f0-9]{32}|[a-f0-9]{64})$/.exec(entry);
+  if(!match||match[0]!==entry||match[3]!==projectUuid)bad();const tabId=match[2]+'@'+match[3];if(seen.has(tabId))bad();seen.add(tabId);tabIds.push(tabId);
+  if(match[1]==='*'){if(markedTabId!==null||(activeTabId!==undefined&&activeTabId!==null&&activeTabId!==tabId))bad();markedTabId=tabId;}
+ }
+ return{base,empty:false,tabIds,activeTabId:markedTabId};
+};
+const location=root.location,href=location?.href,document=root.document,ui=own(root,""UI""),host=own(root,""gVars""),mode=own(root,""PRO_EDITOR_MODE"");
+const project=plain(own(host,""currentProject"")),tabs=own(ui,""tabBar"");
+if(typeof tabs!==""function""||Object.getPrototypeOf(tabs)!==Function.prototype)bad();
+const active=fn(tabs,""getActiveTab""),getTab=fn(tabs,""getTabById""),select=document?.querySelectorAll;
+if(typeof select!==""function"")bad();
+const tab=plain(apply(getTab,tabs,[target.tabId])),data=plain(own(tab,""data""));
+const found=apply(select,document,['[id=""frame_'+target.tabId+'""]']);if(found.length!==1)bad();
+const frame=found[0],child=frame?.contentWindow,childDocument=child?.document,parent=frame?.parentElement;
+const native=own(child,""MSG_BUS_PCB""),channel=own(native,""messageBus""),childObject=own(child,""Object""),childArray=own(child,""Array"");
+const childObjectPrototype=own(childObject,""prototype""),childArrayPrototype=own(childArray,""prototype"");
+const attr=frame?.getAttribute,has=frame?.hasAttribute,classes=frame?.classList,contains=classes?.contains,parentAttr=parent?.getAttribute;
+if(typeof attr!==""function""||typeof has!==""function""||typeof contains!==""function""||typeof parentAttr!==""function"")bad();
+const chain=[channel];let rpc,rpcOwner;
+for(let i=0;i<3;i++){const node=chain[i];if(!object(node))bad();const d=Object.getOwnPropertyDescriptor(node,""rpcCall"");if(d){if(!Object.hasOwn(d,""value"")||typeof d.value!==""function"")bad();rpc=d.value;rpcOwner=node;break;}chain.push(Object.getPrototypeOf(node));}
+if(typeof rpc!==""function"")bad();
+const set=fn(root,""setTimeout"");clear=fn(root,""clearTimeout"");
+const check=()=>{
+if(expired||root.window!==root||root.top!==root||root.location!==location||root.document!==document||document?.defaultView!==root||document?.nodeType!==9||document?.URL!==href||location?.href!==href||location?.origin!==""https://client"")bad();
+parseProjectUrl(href,target.projectUuid,target.tabId);
+if(own(root,""PRO_EDITOR_MODE"")!==mode||![""CLIENT-HALF_OFFLINE-EASYEDA-PCB-SCH-PANEL-SIM"",""CLIENT-OFFLINE-EASYEDA-PCB-SCH-PANEL-SIM""].includes(mode))bad();
+if(own(root,""UI"")!==ui||own(root,""gVars"")!==host||own(ui,""gVars"")!==host||own(host,""currentProject"")!==project||own(ui,""tabBar"")!==tabs)bad();
+if(own(project,""projectId"")!==target.projectUuid||own(project,""branchUuid"")!==target.branchUuid||own(project,""isV2Format"")!==false||own(host,""isHistoryMode"")!==false)bad();
+if(fn(tabs,""getActiveTab"")!==active||fn(tabs,""getTabById"")!==getTab||apply(active,tabs,[])!==target.tabId||apply(getTab,tabs,[target.tabId])!==tab||own(tab,""data"")!==data)bad();
+if(own(tab,""tabId"")!==target.tabId||own(data,""doctype"")!==3||own(data,""pid"")!==target.projectUuid)bad();absent(tab,""parentLibraryUuid"");
+if(document.querySelectorAll!==select)bad();const current=apply(select,document,['[id=""frame_'+target.tabId+'""]']);if(current.length!==1||current[0]!==frame)bad();
+if(frame.tagName!==""IFRAME""||frame.id!==""frame_""+target.tabId||frame.ownerDocument!==document||frame.isConnected!==true||frame.parentElement!==parent||frame.classList!==classes||classes.contains!==contains||frame.getAttribute!==attr||frame.hasAttribute!==has||parent.getAttribute!==parentAttr||!apply(contains,classes,[""editframe""])||apply(parentAttr,parent,[""uuid""])!==target.tabId)bad();
+for(const [k,v] of [[""c_dbid"",target.tabId],[""c_doctype"",""3""],[""src"",""editor?entry=pcb""],[""pcb-canvas"",""true""]])if(apply(attr,frame,[k])!==v)bad();
+for(const k of [""blankIframe"",""fromFile"",""jsonCacheReady""])if(apply(has,frame,[k]))bad();
+if(frame.contentWindow!==child||child.document!==childDocument||childDocument?.defaultView!==child||childDocument?.nodeType!==9||child.frameElement!==frame||child.parent!==root||child.top!==root||child.location?.href!==""https://client/editor?entry=pcb""||own(child,""MSG_BUS_PCB"")!==native||own(native,""messageBus"")!==channel)bad();
+if(own(child,""Object"")!==childObject||own(childObject,""prototype"")!==childObjectPrototype||own(child,""Array"")!==childArray||own(childArray,""prototype"")!==childArrayPrototype)bad();
+for(let i=0;i<chain.length;i++){const node=chain[i];if(i>0&&Object.getPrototypeOf(chain[i-1])!==node)bad();if(node===rpcOwner){if(own(node,""rpcCall"")!==rpc)bad();}else if(Object.hasOwn(node,""rpcCall""))bad();}
+if(fn(root,""setTimeout"")!==set||fn(root,""clearTimeout"")!==clear)bad();
+};
+const childPlain=o=>{if(!object(o))bad();const p=Object.getPrototypeOf(o);if(p!==Object.prototype&&p!==childObjectPrototype)bad();return o;};
+const exact=(o,keys)=>{childPlain(o);const actual=Reflect.ownKeys(o);if(actual.length!==keys.length||actual.some(k=>!keys.includes(k)))bad();};
+const num=v=>{if(typeof v!==""number""||!Number.isFinite(v)||Object.is(v,-0)||Math.abs(v)>1000000000000)bad();return v;};
+const integer=v=>{num(v);if(!Number.isInteger(v))bad();return v;};
+const layer=v=>{integer(v);if(v<0||v>65535)bad();return v;};
+const bool=v=>{if(typeof v!==""boolean"")bad();return v;};
+const text=(v,max,nullable=false)=>{if(v===null&&nullable)return v;if(typeof v!==""string""||v.length>max||!v.isWellFormed())bad();return v;};
+const point=v=>{if(!object(v))bad();const keys=Reflect.ownKeys(v);if(!keys.includes(""x"")||!keys.includes(""y"")||keys.some(k=>k!==""x""&&k!==""y""&&k!==""_hashed""))bad();return{x:num(own(v,""x"")),y:num(own(v,""y""))};};
+const length=v=>{if(!Array.isArray(v)||![Array.prototype,childArrayPrototype].includes(Object.getPrototypeOf(v)))bad();const n=own(v,""length"");if(n<0||n>256||Reflect.ownKeys(v).length!==n+1)bad();return n;};
+const rows=(raw,family,seen)=>{
+const n=length(raw),result=[];
+for(let i=0;i<n;i++){
+const row=childPlain(own(raw,String(i))),id=text(own(row,""globalIndex""),256);if(id.length===0||seen.has(id))bad();seen.add(id);
+const base={primitiveId:id,primitiveType:family,primitiveLock:bool(own(row,""locked""))};
+// PCB6b67774e@10401031 filters parentless String views. yr.toJSON@7394676
+// reads existing font caches; its color.toString()||null is not raw model color.
+if(family===""String""){
+const p=point(own(row,""position"")),alignMode=integer(own(row,""origin""));if(alignMode<1||alignMode>9)bad();
+const silkColor=text(own(row,""silkColor""),128,true);if(silkColor==="""")bad();
+result.push({...base,layer:layer(own(row,""layerId"")),x:num(p.x*10),y:num(p.y*10),text:text(own(row,""value""),65536),
+fontFamily:text(own(row,""fontFamily""),1024),fontSize:num(num(own(row,""fontSize""))*10),lineWidth:num(num(own(row,""strokeWidth""))*10),
+alignMode,rotation:num(num(own(row,""rotation""))*180/Math.PI),reverse:bool(own(row,""reverse"")),expansion:num(num(own(row,""reverseExpansion""))*10),
+mirror:bool(own(row,""mirror"")),key:text(own(row,""key""),1024),showKey:bool(own(row,""showKey"")),showValue:bool(own(row,""showValue"")),positionIsNull:bool(own(row,""positionIsNull"")),silkColor});continue;
+}
+base.net=text(own(row,""net""),1024,true);
+// Native Via callback already scales center and radii to mil. Keep its
+// precision; API1ca9efb5@1356367 rounds radii before multiplying by two.
+if(family===""Via""){
+const p=point(own(row,""center"")),viaType=integer(own(row,""type""));if(![0,1,2].includes(viaType))bad();
+result.push({...base,x:p.x,y:p.y,holeDiameter:num(num(own(row,""holeRadius""))*2),diameter:num(num(own(row,""radius""))*2),viaType,
+designRuleBlindViaName:text(own(row,""name""),1024,true),startLayer:layer(own(row,""startLayer"")),endLayer:layer(own(row,""endLayer"")),
+maskExpansionMode:integer(own(row,""expansion"")),topMaskExpansion:num(num(own(row,""topExpansion""))*10),bottomMaskExpansion:num(num(own(row,""bottomExpansion""))*10)});continue;
+}
+// Native track/arc callbacks return mil endpoints/width and degree arcAngle.
+// Arc center/radius/sweep remain omitted; endpoints are not full geometry.
+const track={...base,layer:layer(own(row,""layerId"")),startX:num(own(row,""startX"")),startY:num(own(row,""startY"")),endX:num(own(row,""endX"")),endY:num(own(row,""endY"")),lineWidth:num(own(row,""width""))};
+if(family===""Arc""){const interactiveMode=integer(own(row,""arcType""));if(![1,2].includes(interactiveMode))bad();result.push({...track,arcAngle:num(own(row,""arcAngle"")),interactiveMode});}else result.push(track);
+}return result;
+};
+const topics=[[""Line"",""track""],[""Arc"",""arc""],[""Via"",""via""],[""String"",""string""]];
+const call=async(topic,arg)=>{check();const reply=await apply(rpc,channel,[topic,arg,0]);check();childPlain(reply);return own(reply,""message"");};
+const identity=async()=>{const value=await call(""getTabIdAndDocType"",undefined);check();exact(value,[""tabId"",""docType""]);if(own(value,""tabId"")!==target.tabId||own(value,""docType"")!==3)bad();};
+const bounded=value=>{const json=JSON.stringify(value);if(new TextEncoder().encode(json).byteLength>393216)bad();return json;};
+const read=async()=>{await identity();check();const observations=[],seen=new Set();for(const [family,topic] of topics){const raw=await call(""pcb/extensionAPI/""+topic+""-getAll"",{});check();
+observations.push({ok:true,kind:""current-pcb-geometry-observation"",method:""eda.pcb_Primitive""+family+"".getAll"",target,rows:rows(raw,family,seen),samples:2,implementationKind:""native-task-equivalent"",cadAuthority:false,persistenceVerified:false,sourceMembershipVerified:false});bounded(observations);}
+await identity();check();return observations;};
+const run=async()=>{const first=await read(),json=bounded(first),second=await read();check();if(bounded(second)!==json)bad();return bounded({ok:true,kind:""pcb209-original-primitives-observation"",target,observations:first});};
+check();const timeout=new Promise((resolve,reject)=>{timer=apply(set,root,[()=>{expired=true;reject(new Error(""PCB209_PRIMITIVES_REFUSED""));},10000]);});return await Promise.race([run(),timeout]);
+}catch{throw new Error(""PCB209_PRIMITIVES_REFUSED"");}finally{if(timer!==undefined&&typeof clear===""function""){try{Reflect.apply(clear,globalThis,[timer]);}catch{throw new Error(""PCB209_PRIMITIVES_REFUSED"");}}}
+}";
+  const string Primitives209FunctionSha256="e8f6ab0a2b2548d55230ef623e622b02033dfb805d5a3627b81a203e14c5d219";
+  // END GENERATED PCB209 PRIMITIVES PROGRAM
+  public static string Primitives209ProtocolMessage(int id,string sessionId,string uniqueContextId,string phase,
+    string path,string project,string branch,string document,string source) {
+    return OpeningProtocolMessageCore(true,id,sessionId,uniqueContextId,phase,path,project,branch,document,source,false,false,false,true);
+  }
+  public static void VerifyPrimitives209Smoke() {
+    string path=@"C:\Reviewed\PrimitiveFixture.eprj2",project;
+    using(SHA256 hash=SHA256.Create()) {
+      string program=BitConverter.ToString(hash.ComputeHash(Encoding.UTF8.GetBytes(Primitives209Function))).Replace("-","").ToLowerInvariant();
+      if(program!=Primitives209FunctionSha256) throw Error("primitives209-program");
+      project=BitConverter.ToString(hash.ComputeHash(Encoding.UTF8.GetBytes(path))).Replace("-","").ToLowerInvariant();
+    }
+    string message=Primitives209ProtocolMessage(103,"original-session","original-context","observe",path,project,new string('a',32),new string('b',16),new string('c',64));
+    if(message.IndexOf("\"method\":\"Runtime.callFunctionOn\"",StringComparison.Ordinal)<0 || message.IndexOf("\"uniqueContextId\":\"original-context\"",StringComparison.Ordinal)<0 ||
+      message.IndexOf("\"awaitPromise\":true",StringComparison.Ordinal)<0 || message.IndexOf("\"userGesture\":false",StringComparison.Ordinal)<0) throw Error("primitives209-command");
+    bool refused=false;
+    try {Primitives209ProtocolMessage(104,"s","c","observe",path,project,new string('a',32),new string('b',16),new string('c',64));} catch {refused=true;}
+    if(!refused) throw Error("primitives209-budget");
+    refused=false;try {Primitives209ProtocolMessage(1,"s","c","open-document",path,project,new string('a',32),new string('b',16),new string('c',64));} catch {refused=true;}
+    if(!refused) throw Error("primitives209-phase");
+    foreach(EasyedaDiagnosticOwner legacy in new EasyedaDiagnosticOwner[]{new EasyedaDiagnosticOwner(),CreateStringPrecreate(),CreateWorkerStartup()}) {
+      refused=false;try {legacy.SendPrimitives209(1,"s","c","observe",path,project,new string('a',32),new string('b',16),new string('c',64));} catch(Exception failure) {refused=failure.Message=="pcb-diagnostic-primitives209-purpose";}
+      if(!refused) throw Error("primitives209-legacy-purpose");
+    }
+    refused=false;
+    try {OpeningProtocolMessageCore(true,1,"s","c","observe",path,project,new string('a',32),new string('b',16),new string('c',64),false,false,true,true);} catch {refused=true;}
+    if(!refused) throw Error("primitives209-exclusive-purpose");
+  }
   public static string Layers209ProtocolMessage(int id,string sessionId,string uniqueContextId,string phase,
     string path,string project,string branch,string document,string source) {
     return OpeningProtocolMessageCore(true,id,sessionId,uniqueContextId,phase,path,project,branch,document,source,false,false,true);
@@ -1564,9 +1709,10 @@ check();const timeout=new Promise((resolve,reject)=>{timer=apply(set,root,[()=>{
     return OpeningProtocolMessageCore(true,id,sessionId,uniqueContextId,phase,path,project,branch,document,source,false);
   }
   static string OpeningProtocolMessageCore(bool pcb,int id,string sessionId,string uniqueContextId,string phase,
-    string path,string project,string branch,string document,string source,bool stringPurpose,bool startupPurpose=false,bool layers209Purpose=false) {
+    string path,string project,string branch,string document,string source,bool stringPurpose,bool startupPurpose=false,bool layers209Purpose=false,bool primitives209Purpose=false) {
     Func<string,string,bool> matches=(value,pattern)=>value!=null && System.Text.RegularExpressions.Regex.IsMatch(value,pattern);
-    if(startupPurpose && stringPurpose || layers209Purpose && (startupPurpose || stringPurpose || !pcb || phase!="observe")) throw Error("opening-purpose");
+    if(startupPurpose && stringPurpose || layers209Purpose && primitives209Purpose ||
+      (layers209Purpose || primitives209Purpose) && (startupPurpose || stringPurpose || !pcb || phase!="observe")) throw Error("opening-purpose");
     if(id<1 || id>(startupPurpose?256:stringPurpose?3309:103) || !matches(sessionId,@"\A[A-Za-z0-9_.:-]{1,128}\z") || !matches(uniqueContextId,@"\A[A-Za-z0-9_.:-]{1,128}\z") ||
       (pcb?(phase!="preflight" && phase!="open-document" && phase!="observe"):(phase!="preflight" && phase!="open-project")) ||
       path==null || path.Length<12 || path.Length>4096 ||
@@ -1584,7 +1730,7 @@ check();const timeout=new Promise((resolve,reject)=>{timer=apply(set,root,[()=>{
     string target="{\"rawWindowsPath\":"+JsonString(path)+",\"projectUuid\":"+JsonString(project)+
       ",\"documentUuid\":"+JsonString(document)+",\"expectedSourceSha256\":"+JsonString(source)+",\"branchUuid\":"+JsonString(branch)+"}";
     string message="{\"id\":"+id.ToString(CultureInfo.InvariantCulture)+",\"method\":\"Runtime.callFunctionOn\",\"params\":{\"functionDeclaration\":"+
-      JsonString(layers209Purpose?Layers209Function:pcb?(startupPurpose?EasyedaWorkerStartupProtocol.PcbOpeningFunction:PcbOpeningFunction):OpeningFunction)+",\"uniqueContextId\":"+JsonString(uniqueContextId)+",\"arguments\":[{\"value\":"+target+"},{\"value\":"+JsonString(phase)+
+      JsonString(primitives209Purpose?Primitives209Function:layers209Purpose?Layers209Function:pcb?(startupPurpose?EasyedaWorkerStartupProtocol.PcbOpeningFunction:PcbOpeningFunction):OpeningFunction)+",\"uniqueContextId\":"+JsonString(uniqueContextId)+",\"arguments\":[{\"value\":"+target+"},{\"value\":"+JsonString(phase)+
       "}],\"returnByValue\":true,\"awaitPromise\":true,\"silent\":true,\"generatePreview\":false,\"userGesture\":false,\"throwOnSideEffect\":false},\"sessionId\":"+JsonString(sessionId)+"}\0";
     if(Encoding.UTF8.GetByteCount(message)>65536) throw Error("opening-send-size");
     return message;
@@ -4079,6 +4225,10 @@ return JSON.stringify({schema:""easyeda-pro-control.pcb-string-producer-markers.
     if(!layers209 || stringPrecreate || workerStartup) throw Error("layers209-purpose");
     SendMessage(id,Layers209ProtocolMessage(id,sessionId,uniqueContextId,phase,path,project,branch,document,source));
   }
+  public void SendPrimitives209(int id,string sessionId,string uniqueContextId,string phase,string path,string project,string branch,string document,string source) {
+    if(!layers209 || stringPrecreate || workerStartup) throw Error("primitives209-purpose");
+    SendMessage(id,Primitives209ProtocolMessage(id,sessionId,uniqueContextId,phase,path,project,branch,document,source));
+  }
   public void SendModel(int id,string method,string sessionId,string phase,object uniqueContextId,object objectId,object callbackObjectId,object constructorObjectId,object teardropObjectId) {
     SendMessage(id,ModelProtocolMessageCore(id,method,sessionId,phase,OptionalText(uniqueContextId),OptionalText(objectId),OptionalText(callbackObjectId),OptionalText(constructorObjectId),stringPrecreate,OptionalText(teardropObjectId)));
   }
@@ -6250,6 +6400,7 @@ try {
     [EasyedaDiagnosticInstallation]::VerifyLeaseSmoke()
     [EasyedaDiagnosticOwner]::VerifyProtocolSmoke()
     [EasyedaDiagnosticOwner]::VerifyLayers209Smoke()
+    [EasyedaDiagnosticOwner]::VerifyPrimitives209Smoke()
     [EasyedaDiagnosticOwner]::VerifyStringClockSmoke()
     # Exercise the actual PowerShell-to-.NET binder used by Send/SendModel.
     # Direct C# null literals cannot detect PowerShell's string coercion.
@@ -6511,7 +6662,7 @@ try {
             'Runtime.evaluate' {$fields+=@('sessionId','uniqueContextId')}
             'Runtime.callFunctionOn' {
               $fields+=@('sessionId','uniqueContextId','targetRawWindowsPath','targetProjectUuid','targetBranchUuid','targetDocumentUuid','targetExpectedSourceSha256')
-              if ($null -ne $request.pcbLayers209Phase) {if (-not $Layers209) {throw 'pcb-diagnostic-layers209-purpose'};$fields+=@('pcbLayers209Phase')} elseif ($null -ne $request.pcbOpeningPhase) {$fields+=@('pcbOpeningPhase')} else {$fields+=@('openingPhase')}
+              if ($null -ne $request.pcbPrimitives209Phase) {if (-not $Layers209) {throw 'pcb-diagnostic-primitives209-purpose'};$fields+=@('pcbPrimitives209Phase')} elseif ($null -ne $request.pcbLayers209Phase) {if (-not $Layers209) {throw 'pcb-diagnostic-layers209-purpose'};$fields+=@('pcbLayers209Phase')} elseif ($null -ne $request.pcbOpeningPhase) {$fields+=@('pcbOpeningPhase')} else {$fields+=@('openingPhase')}
             }
             'Debugger.enable' {$fields+=@('sessionId')}
             'Debugger.getScriptSource' {$fields+=@('sessionId','scriptId')}
@@ -6523,6 +6674,7 @@ try {
           foreach ($field in @('targetId','sessionId','scriptId','uniqueContextId','openingPhase','pcbOpeningPhase','targetRawWindowsPath','targetProjectUuid','targetBranchUuid','targetDocumentUuid','targetExpectedSourceSha256','modelPhase','stringPhase','commonPhase','objectId','callbackObjectId','constructorObjectId','teardropObjectId','teardropCallbacksObjectId','teardropReceiver0','teardropReceiver1','teardropReceiver2','teardropReceiver3','teardropReceiver4','teardropReceiver5','teardropTarget0','teardropTarget1','teardropTarget2','teardropTarget3','teardropTarget4','teardropTarget5','frameId')) {if ($null -ne $request.$field -and $request.$field -isnot [string]) {throw 'pcb-diagnostic-request-field'}}
           foreach ($field in @('workerProducerPhase','workerArgument0','workerArgument1','workerArgument2','workerArgument3','workerArgument4','workerArgument5')) {if ($null -ne $request.$field -and $request.$field -isnot [string]) {throw 'pcb-diagnostic-worker-producer-field'}}
           if ($null -ne $request.pcbLayers209Phase -and $request.pcbLayers209Phase -isnot [string]) {throw 'pcb-diagnostic-layers209-field'}
+          if ($null -ne $request.pcbPrimitives209Phase -and $request.pcbPrimitives209Phase -isnot [string]) {throw 'pcb-diagnostic-primitives209-field'}
           foreach ($field in @('movePhase','moveArgument0','moveArgument1','moveArgument2')) {if ($null -ne $request.$field -and $request.$field -isnot [string]) {throw 'pcb-diagnostic-move-producer-field'}}
           if ($null -ne $request.movePhase) {
             $moveArguments=$null
@@ -6557,7 +6709,9 @@ try {
           } elseif ($request.method -ceq 'DOM.getFrameOwner' -or $request.method -ceq 'DOM.describeNode') {
             $owner.SendDom([int]$request.requestId,$request.method,$request.sessionId,$request.frameId,$request.backendNodeId)
           } elseif ($request.method -ceq 'Runtime.callFunctionOn') {
-            if ($null -ne $request.pcbLayers209Phase) {
+            if ($null -ne $request.pcbPrimitives209Phase) {
+              $owner.SendPrimitives209([int]$request.requestId,$request.sessionId,$request.uniqueContextId,$request.pcbPrimitives209Phase,$request.targetRawWindowsPath,$request.targetProjectUuid,$request.targetBranchUuid,$request.targetDocumentUuid,$request.targetExpectedSourceSha256)
+            } elseif ($null -ne $request.pcbLayers209Phase) {
               $owner.SendLayers209([int]$request.requestId,$request.sessionId,$request.uniqueContextId,$request.pcbLayers209Phase,$request.targetRawWindowsPath,$request.targetProjectUuid,$request.targetBranchUuid,$request.targetDocumentUuid,$request.targetExpectedSourceSha256)
             } elseif ($null -ne $request.pcbOpeningPhase) {
               $owner.SendPcbOpening([int]$request.requestId,$request.sessionId,$request.uniqueContextId,$request.pcbOpeningPhase,$request.targetRawWindowsPath,$request.targetProjectUuid,$request.targetBranchUuid,$request.targetDocumentUuid,$request.targetExpectedSourceSha256)

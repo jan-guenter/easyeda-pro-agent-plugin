@@ -59,9 +59,10 @@ import { CurrentPcbWorkerStartupOpening } from "./current-pcb-worker-startup-ope
 import type { CurrentPcbWorkerStartupOpeningResult } from "./current-pcb-worker-startup-opening.ts";
 import { CurrentPcbWorkerStartupPcbSession } from "./current-pcb-worker-startup-pcb-session.ts";
 import { decodeCurrentPcb209LayersReply } from "./current-pcb-209-layers.ts";
+import { decodeCurrentPcb209PrimitivesReply } from "./current-pcb-209-primitives.ts";
 
-const HELPER_SHA256 = "3b0c243a5937456357a22425f105bbddbd9f2e64f76d7a70c2dc30aa799bdf5d";
-const HELPER_BYTES = 895_943;
+const HELPER_SHA256 = "989e51d7328bfad6d0a94c372db5480c884870ccf21b07709f6c312e55ebe7d9";
+const HELPER_BYTES = 912_898;
 const MAX_LINE = 100_000;
 // 64 MiB native bytes need at most 85.34 MiB base64 plus bounded poll envelopes.
 const MAX_TOTAL = 96 * 1024 * 1024;
@@ -191,6 +192,7 @@ class CurrentPcbRetainedOwnerCore {
   #pcbSourceQualified = false;
   #pcbSourceProfile: DiagnosticScriptProfile | null = null;
   #layers209Consumed = false;
+  #primitives209Consumed = false;
   #modelConsumed = false;
   #stringPrecreateConsumed = false;
   #commonBaselineConsumed = false;
@@ -520,6 +522,32 @@ class CurrentPcbRetainedOwnerCore {
       await this.#verifyInstallation(); reprove(); await this.#verify(); reprove();
       return result;
     } catch (caughtError) { this.#input.emit("error", error("LAYERS209_FAILED")); throw caughtError; }
+    finally { this.#busy = false; }
+  }
+
+  /** One fixed four-family209 DTO read through the original qualified child.
+   * This stage owns no model scope, source baseline, write or Save authority. */
+  public async observePrimitives209(input: CurrentDisposableOpenSealedTarget): Promise<Readonly<RecordValue>> {
+    const context = this.#stagedContext, profile = this.#pcbSourceProfile, target = currentDisposableOpenSealedTargetSchema.parse(input);
+    if (this.#purpose !== "diagnostic209" || context === null || this.#primitives209Consumed || !this.#pcbSourceQualified ||
+        profile === null || this.#pcbFrameObservation?.ok !== true || this.#workersConsumed || this.#modelConsumed ||
+        JSON.stringify(target) !== JSON.stringify(this.#projectOpeningTarget)) { throw error("PRIMITIVES209_UNAVAILABLE"); }
+    this.#enter(true); this.#primitives209Consumed = true;
+    try {
+      const pcb = context.modelContext(), selected = context.pcbOpeningContext();
+      const reprove = (): void => {
+        this.#available(); context.pcbScript(profile);
+        if (JSON.stringify(context.pcbOpeningContext()) !== JSON.stringify(selected) ||
+            JSON.stringify(context.modelContext()) !== JSON.stringify(pcb)) { throw error("PRIMITIVES209_CONTEXT"); }
+      };
+      await this.#verifyInstallation(); reprove(); await this.#verify(); reprove();
+      await this.#observeParent(); reprove(); await this.#observeOpeningAncillary(); reprove();
+      const result = decodeCurrentPcb209PrimitivesReply(
+        await this.#transfer(() => this.#pipe.observePrimitives209(selected.uniqueContextId, target)), target);
+      reprove(); await this.#observeParent(); reprove(); await this.#observeOpeningAncillary(); reprove();
+      await this.#verifyInstallation(); reprove(); await this.#verify(); reprove();
+      return result;
+    } catch (caughtError) { this.#input.emit("error", error("PRIMITIVES209_FAILED")); throw caughtError; }
     finally { this.#busy = false; }
   }
 

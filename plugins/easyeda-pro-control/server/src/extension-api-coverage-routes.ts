@@ -92,6 +92,25 @@ groups.push({ namespace: "pcb_Layer", methods: ["getAllLayers", "getTheNumberOfC
   inputDiscovery: { tool: "easyeda_control_api", arguments: { request: { action: "pcb209-opening", query: { includeSchemas: true } } } },
 } });
 
+for (const [family, detail] of [
+  ["Line", "Line returns native mil endpoints and width with raw displayed net spelling; partition and full model/source membership are omitted."],
+  ["Arc", "Arc returns native mil endpoints/width, degree arcAngle and interactive mode without public one-decimal rounding. Center/radius/sweep are omitted, so endpoints and angle are not complete arc reconstruction and a full-circle case can project zero angle."],
+  ["Via", "Via returns native mil center and doubled radii without public one-decimal radius rounding, type, nullable blind-via name, start/end layers and observed mask fields. Unused-layer/suture state and rule resolution are omitted."],
+  ["String", "String returns parentless native text views only, with text/font/style/display flags, positionIsNull and serialized silkColor. Internal distances scale to mil and radians to degrees. Empty strings remain empty; serialized null color does not prove raw model color absence. Existing font caches are read, not loaded or refreshed. Glyphs, outlines, full font contents, partition/group, zIndex and parent/source ownership are omitted."],
+] as const) {
+  groups.push({ namespace: `pcb_Primitive${family}`, methods: ["getAll", "getAllPrimitiveId"], route: {
+    tool: "easyeda_control_pcb209_opening", selector: "observe-primitives", implementation: "native-task-equivalent",
+    scope: `Separately pinned installed209 disposable original-owner observation, not public SDK execution or instance parity. After accepted checkpoint-bound PCB opening and exact UI/PCB source/identity admission, one consumed stage observes complete ordered Line/Arc/Via/parentless String projections twice. Each family returns DTO rows and IDs from the same samples. Captured receiver/target checks surround every await; native tab/type identity brackets each four-family sample. Only existing stateWatcher views are included; models without views, parented String and other families are excluded, so empty results do not prove an empty PCB or complete canvas membership. ${detail} All four families share an aggregate393216-byte native/final result limit, with at most256 rows per family and256characters per ID. Missing/undefined projected fields, non-finite or signed-zero numbers, malformed Unicode, unsupported modes, sparse arrays, accessors, changed projections and duplicate/cross-family IDs refuse without partial output. Nullable nets and names preserve null versus empty string. Vendor enumeration/serialization precedes output bounds and is not cancelled by them; samples are sequential, not atomic. Unfiltered getAll and ordered getAllPrimitiveId subsets only, with no filters, requested-ID lookup or selection. No complete startup/ratline delivery, saved/source membership, connectivity, writer/Save authority, navigation, edit or explicit Save. Original normal close, retained root/Job termination and release remain required; legacy206 owners cannot select this command.`,
+    source: ["current-pcb-209-primitives.ts", "current-pcb-209-opening-validation.ts", "current-pcb-209-opening-profile.ts",
+      "current-pcb-diagnostic-lifecycle.ts", "current-pcb-diagnostic-lifecycle-journal.ts", "current-pcb-diagnostic-owner.ts",
+      "current-pcb-diagnostic-pipe.ts", "current-pcb-diagnostic-protocol.ts", "current-pcb-geometry.ts", "../../scripts/pcb-diagnostic-owner.ps1"],
+    tests: ["current-pcb-209-primitives.test.ts", "current-pcb-209-primitives-native.test.ts", "current-pcb-209-opening.test.ts",
+      "current-pcb-diagnostic-owner.test.ts", "current-pcb-diagnostic-pipe.test.ts", "current-pcb-diagnostic-lifecycle.test.ts", "extension-api-coverage.test.ts"],
+    documentTypes: [3], validation: "offline-regression;current-live-unclaimed", executionState: "available-with-runtime-guards",
+    inputDiscovery: { tool: "easyeda_control_api", arguments: { request: { action: "pcb209-opening", query: { includeSchemas: true } } } },
+  } });
+}
+
 function add(namespace: string, methods: readonly string[], tool: string, selector: string,
   implementation: ApiCoverageRoute["implementation"], scope: string, source: readonly string[], tests: readonly string[], admittedDocumentTypes?: readonly number[]): void {
   let inputDiscovery: ApiCoverageRoute["inputDiscovery"];

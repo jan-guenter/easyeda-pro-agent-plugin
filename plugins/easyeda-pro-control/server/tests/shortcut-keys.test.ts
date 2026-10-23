@@ -123,6 +123,18 @@ void test("shortcut result validator binds the requested filter and refuses unkn
   }
 });
 
+void test("shortcut decoder retains native UTF-16 limits for both version profiles", async () => {
+  const shortcuts = [{ ...row(), title: "😀".repeat(512), shortcutKey: ["😀".repeat(16)] }];
+  for (const generation209 of [false, true]) {
+    const validate = generation209 ? validateShortcutKeys209Result : validateShortcutKeysResult;
+    const raw: unknown = decodeExactReadEnvelope(await environment(shortcuts, { generation209 }).run());
+    assert.ok(raw !== null && typeof raw === "object"); validate(request, raw);
+    for (const change of [{ title: `${shortcuts[0]?.title}x` }, { shortcutKey: [`${"😀".repeat(16)}x`] }]) {
+      assert.throws(() => validate(request, { ...raw, shortcuts: [{ ...shortcuts[0], ...change }] }), /UTF-16/u);
+    }
+  }
+});
+
 void test("209 fixed shortcut program preserves UI scopes 11-14 but refuses out-of-range values and await-time mode drift", async () => {
   const rows = [{ ...row(), documentType: [0, 10, 11, 12, 13, 14, 14] }];
   const fixture = environment(rows, { generation209: true });

@@ -13,7 +13,7 @@ build.
 - `fast-uri` 3.1.8 — BSD-3-Clause (`licenses/fast-uri-BSD-3-Clause.txt`)
 - `json-schema-traverse` 1.0.0 — MIT (`licenses/json-schema-traverse-MIT.txt`)
 - `ws` 8.21.3 — MIT (`licenses/ws-MIT.txt`)
-- `zod` 4.4.3 — MIT (`licenses/zod-MIT.txt`)
+- `zod` 4.6.7 — MIT (`licenses/zod-MIT.txt`)
 - `zod-to-json-schema` 3.25.2 — ISC (`licenses/zod-to-json-schema-ISC.txt`)
 
 The development and CI toolchain uses:

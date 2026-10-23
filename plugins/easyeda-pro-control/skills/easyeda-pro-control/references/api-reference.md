@@ -87,7 +87,9 @@ For the3.2.209 disposable project/PCB route, discover `pcb209-opening` and
 validate with `pcb209-opening-validate`; read [its workflow](current-pcb209-opening.md).
 It has its own strict action set and retained process owner. After original
 PCB source/identity admission, `observe-layers` returns bounded layer metadata
-and copper count without physical-stackup, saved-state or writer authority. The older opening,
+and copper count. `observe-primitives` separately returns Line/Arc/Via/parentless
+String loaded-view projections and IDs. Neither establishes complete-board,
+physical-stackup, saved-state or writer authority. The older opening,
 worker, model and writer contracts below do not transfer to that route.
 
 For current-version disposable project/PCB opening, query `project-open` with
