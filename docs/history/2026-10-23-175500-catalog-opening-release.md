@@ -90,6 +90,24 @@ as an installation or connected-support claim. Terminal evidence will be
 appended here after those steps. No changes to installed caches or host-owned
 gateways are authorized by this record.
 
+### Initial release-check failure retained
+
+Candidate commit `570e0efa21f58120906ba10cd3789f999f44485c` was submitted as
+PR105. CI39998934642 shard1 failed the existing worker-startup registration
+test: its source-extraction marker still expected the old single-condition
+registration block. The actual callback was not reached by that test.
+The other registration tests already used the new shared block. Correction
+updates the test harness's extraction marker and required scope bindings;
+runtime source, bundles and compatibility pins remain unchanged.
+
+The initial local `npm run verify` was intentionally interrupted after that
+CI result so final verification can run against one frozen test payload.
+Its cancellation entries are not runtime failures or passing evidence.
+The interrupted log is retained privately. A separately attempted plugin
+validator also closed during the concurrent bundle-build interval; stable
+post-build runs with both022 and077 umasks passed. No inference about a live
+application or design follows from these offline checks.
+
 After a fresh session admits the installed candidate, qualify the new209
 opening/normal-cleanup path on an explicitly disposable checkpoint and inspect
 one shortcut diagnostic result. Never repeat the old consumed calls.
