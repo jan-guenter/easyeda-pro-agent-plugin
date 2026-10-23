@@ -11,7 +11,7 @@ import type { CurrentPcbStringProducerKind } from "./current-pcb-string-producer
 import { CURRENT_PCB_WORKER_CONSTRUCTION_ASSIGNMENT_RECHECK, CURRENT_PCB_WORKER_CONSTRUCTION_ASSIGNMENT_RELATIONS,
   CURRENT_PCB_WORKER_CONSTRUCTION_ASSIGNMENT_SELECTORS, CURRENT_PCB_WORKER_CONSTRUCTION_DEBOUNCE_RELATION } from "./current-pcb-worker-construction-assignment.ts";
 import type { CurrentPcbWorkerConstructionAssignment, CurrentPcbWorkerConstructionAssignments } from "./current-pcb-worker-construction-assignment.ts";
-import { CURRENT_PCB_WORKER_CONSTRUCTION_PROJECT, CURRENT_PCB_WORKER_CONSTRUCTION_SAME,
+import { CURRENT_PCB_WORKER_CONSTRUCTION_IDENTITY, CURRENT_PCB_WORKER_CONSTRUCTION_PROJECT, CURRENT_PCB_WORKER_CONSTRUCTION_SAME,
   CURRENT_PCB_WORKER_CONSTRUCTION_SEQUENCE, CURRENT_PCB_WORKER_CONSTRUCTION_SITES,
   CURRENT_PCB_WORKER_CONSTRUCTION_SOURCE } from "./current-pcb-worker-construction-contract.ts";
 import type { CurrentPcbWorkerConstructionCommand, CurrentPcbWorkerConstructionExpression,
@@ -25,6 +25,13 @@ const pauseSchema = z.looseObject({ reason: z.literal("other"), hitBreakpoints: 
 const objectReply = z.object({ result: z.looseObject({ type: z.literal("object"), objectId: token }) }).strict();
 const resultBoolean = z.object({ result: z.object({ type: z.literal("boolean"), value: z.literal(true) }).strict() }).strict();
 const emptyReply = z.object({}).strict();
+const projectIdentitySchema = z.object({
+  projectUuid: z.string().refine(value => /^(?:[a-f\d]{32}|[a-f\d]{64})$/u.exec(value)?.[0] === value),
+  branchUuid: z.string().refine(value => /^[a-f\d]{32}$/u.exec(value)?.[0] === value),
+  windowTabId: z.string().refine(value => /^[A-Za-z\d_-]{1,128}$/u.exec(value)?.[0] === value),
+}).strict();
+const projectIdentityReply = z.object({ result: z.object({ type: z.literal("object"), value: projectIdentitySchema }).strict() }).strict();
+export type CurrentPcbWorkerConstructionProjectIdentity = Readonly<z.infer<typeof projectIdentitySchema>>;
 const PAUSE_MS = 5000, REQUEST_MS = 2000, WAIT_MS = 15_000;
 interface RetainedPause {
   readonly raw: unknown;
@@ -112,6 +119,8 @@ export class CurrentPcbWorkerConstructionRunner {
   #assignmentConsumed = false;
   #assignments: CurrentPcbWorkerConstructionAssignments | null = null;
   #assignedWrappers: Readonly<Record<CurrentPcbWorkerConstructionAssignment, string>> | null = null;
+  #projectIdentityConsumed = false;
+  #projectIdentity: CurrentPcbWorkerConstructionProjectIdentity | null = null;
 
   public constructor(transport: CurrentPcbWorkerConstructionTransport) {
     transportMembers(transport);
@@ -310,6 +319,29 @@ export class CurrentPcbWorkerConstructionRunner {
     return this.#request({ method: "Runtime.callFunctionOn", params: { objectId, functionDeclaration,
       arguments: args.map(value => ({ objectId: value })), objectGroup: GROUP, silent: true, returnByValue,
       generatePreview: false, throwOnSideEffect: true, awaitPromise: false, userGesture: false } });
+  }
+  /** Same original PROJECT receiver and bus, not a title-derived association.
+   * The opener separately compares these fields with its checkpoint target. */
+  public async proveProjectIdentity(packet: CurrentPcbWorkerConstructionPacket): Promise<CurrentPcbWorkerConstructionProjectIdentity> {
+    const original = await this.requireOriginal(packet);
+    if (this.#projectIdentityConsumed) { throw fail("PROJECT_IDENTITY_CONSUMED"); } this.#projectIdentityConsumed = true;
+    try {
+      const reply = await this.#assignmentCall(original.project, CURRENT_PCB_WORKER_CONSTRUCTION_IDENTITY, [original.channelBus]);
+      const observed = Object.freeze(projectIdentityReply.parse(reply).result.value);
+      await this.requireOriginal(packet); this.#projectIdentity = observed; return observed;
+    } catch (error) { this.#failed ??= fail("PROJECT_IDENTITY_FAILED"); throw error; }
+  }
+  public async requireProjectIdentity(packet: CurrentPcbWorkerConstructionPacket, identity: CurrentPcbWorkerConstructionProjectIdentity): Promise<void> {
+    if (identity !== this.#projectIdentity || this.#projectIdentity === null) { throw fail("ORIGINAL_PROJECT_IDENTITY"); }
+    const original = await this.requireOriginal(packet);
+    try {
+      const reply = await this.#assignmentCall(original.project, CURRENT_PCB_WORKER_CONSTRUCTION_IDENTITY, [original.channelBus]);
+      const observed = projectIdentityReply.parse(reply).result.value;
+      if (observed.projectUuid !== identity.projectUuid || observed.branchUuid !== identity.branchUuid || observed.windowTabId !== identity.windowTabId) {
+        throw fail("PROJECT_IDENTITY_CHANGED");
+      }
+      await this.requireOriginal(packet);
+    } catch (error) { this.#failed ??= fail("PROJECT_IDENTITY_CHANGED"); throw error; }
   }
   async #assignmentScopes(original: string, kind: CurrentPcbStringProducerKind): Promise<readonly string[]> {
     const list = decodeCurrentPcbStringProducerScopeList(await this.#request({ method: "Runtime.getProperties",

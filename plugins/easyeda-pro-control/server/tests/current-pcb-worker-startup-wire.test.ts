@@ -1,12 +1,37 @@
 import assert from "node:assert/strict";
 import { readFile } from "node:fs/promises";
 import { test } from "node:test";
-import { currentPcbWorkerStartupNativeCases, currentPcbWorkerStartupNativeSource } from "../src/current-pcb-worker-startup-native.ts";
+import { currentPcbWorkerStartupNativeCases, currentPcbWorkerStartupNativeParentCases, currentPcbWorkerStartupNativeSource } from "../src/current-pcb-worker-startup-native.ts";
 import { currentPcbWorkerStartupWire } from "../src/current-pcb-worker-startup-wire.ts";
 
 const samples = currentPcbWorkerStartupNativeCases();
+void test("startup parent grammar retains browser-global reads and exact sealed opener, never caller code", () => {
+  const parents = currentPcbWorkerStartupNativeParentCases(); assert.equal(parents.length, 6);
+  for (const sample of parents) {
+    const result = currentPcbWorkerStartupWire(sample, 256);
+    assert.deepEqual(result.command, { id: 256, ...sample });
+    assert.equal(result.request["action"], "worker-startup-parent");
+    assert.ok(!Object.hasOwn(result.request, "functionDeclaration"));
+    assert.throws(() => currentPcbWorkerStartupWire({ ...sample, params: { ...sample.params, extra: true } }, 256));
+    if (sample.method === "Target.getTargets") {
+      assert.ok(!Object.hasOwn(result.request, "sessionId"));
+      assert.throws(() => currentPcbWorkerStartupWire({ ...sample, sessionId: "parent" }, 256));
+    }
+    if (sample.method === "Runtime.callFunctionOn") {
+      for (const patch of [{ functionDeclaration: `${sample.params.functionDeclaration} ` }, { uniqueContextId: "bad\ncontext" },
+        { arguments: [{ value: { ...sample.params.arguments[0].value, projectUuid: "0".repeat(64) } }, sample.params.arguments[1]] },
+        { throwOnSideEffect: true }, { awaitPromise: false }]) {
+        assert.throws(() => currentPcbWorkerStartupWire({ ...sample, params: { ...sample.params, ...patch } }, 256));
+      }
+      let hooks = 0;
+      const parameters = { ...sample.params };
+      Object.defineProperty(parameters, "functionDeclaration", { get: (): never => { hooks += 1; throw new Error("Unexpected getter"); } });
+      assert.throws(() => currentPcbWorkerStartupWire({ ...sample, params: parameters }, 256)); assert.equal(hooks, 0);
+    }
+  }
+});
 void test("startup wire preserves every fixed command and strips native program text", () => {
-  assert.equal(samples.length, 35);
+  assert.equal(samples.length, 36);
   for (const sample of samples) {
     const wire = currentPcbWorkerStartupWire(sample, 1);
     assert.deepEqual(wire.command, { id: 1, ...sample });

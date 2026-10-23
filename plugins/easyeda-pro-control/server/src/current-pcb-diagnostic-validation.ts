@@ -2,14 +2,16 @@
 import { z } from "zod";
 import { currentDisposableOpenTargetSchema } from "./current-disposable-open.ts";
 import { CURRENT_PCB_STRING_PRECREATE_OPERATION_PREFIX } from "./current-pcb-string-precreate-validation.ts";
+import { CURRENT_PCB_WORKER_STARTUP_OPERATION_PREFIX, currentPcbWorkerStartupValidationRequestSchema,
+  queryCurrentPcbWorkerStartupValidation } from "./current-pcb-worker-startup-validation.ts";
 
 const operationId = z.string().min(1).max(80).regex(/^[a-z0-9][a-z0-9_-]*$/u);
 const digest = z.string().regex(/^[a-f0-9]{64}$/u);
 const token = z.string().regex(/^[A-Za-z\d_.:-]{1,128}$/u);
 const bound = { operationId, expectedBindingSha256: digest };
 export const currentPcbDiagnosticValidationRequestSchema = z.discriminatedUnion("action", [
-  z.object({ action: z.literal("launch"), operationId: operationId.refine(value => !value.startsWith(CURRENT_PCB_STRING_PRECREATE_OPERATION_PREFIX),
-    "The String precreate operation prefix is reserved for its separate fixed facade."), confirmValidationOnly: z.literal(true),
+  z.object({ action: z.literal("launch"), operationId: operationId.refine(value => !value.startsWith(CURRENT_PCB_STRING_PRECREATE_OPERATION_PREFIX) && !value.startsWith(CURRENT_PCB_WORKER_STARTUP_OPERATION_PREFIX),
+    "String precreate and worker startup prefixes are reserved for their separate fixed owners."), confirmValidationOnly: z.literal(true),
     confirmDiagnosticLaunch: z.literal(true), acceptExistingProfileEffects: z.literal(true) }).strict(),
   z.object({ action: z.literal("inspect"), operationId, observation: z.enum(["browser", "frames", "script", "workers", "worker-script", "worker-state", "pcb-opening", "model-state"]).optional() }).strict(),
   z.object({ action: z.literal("settle-records"), operationId, expectedIntentSha256: digest }).strict(),
@@ -32,13 +34,18 @@ export const currentPcbDiagnosticValidationRequestSchema = z.discriminatedUnion(
   z.object({ action: z.literal("release-closed"), ...bound }).strict(),
 ]);
 export type CurrentPcbDiagnosticValidationRequest = z.infer<typeof currentPcbDiagnosticValidationRequestSchema>;
+export const currentPcbDiagnosticToolRequestSchema = z.discriminatedUnion("action", [
+  ...currentPcbDiagnosticValidationRequestSchema.options,
+  z.object({ action: z.literal("worker-startup"), request: currentPcbWorkerStartupValidationRequestSchema }).strict(),
+]);
 export const currentPcbDiagnosticValidationQuerySchema = z.object({ includeSchemas: z.boolean().default(false) }).strict();
 export function queryCurrentPcbDiagnosticValidation(input: unknown = {}): Record<string, unknown> {
   const query = currentPcbDiagnosticValidationQuerySchema.parse(input);
   return { offline: true, tool: "easyeda_control_pcb_diagnostic_validation", registrationEnabled: true, validationOnly: true,
     invocationEnabledByDiscovery: false, executionAuthorized: false, connectedValidation: false, frameWorkerVerified: false,
     startupQualified: false, projectFreeVerified: false, profileIsolated: false, savedStateVerified: false,
-    actions: ["launch", "inspect", "browser-observation", "inspect-frames", "inspect-script", "inspect-workers", "inspect-worker-script",
+    workerStartup: queryCurrentPcbWorkerStartupValidation(query.includeSchemas),
+    actions: ["worker-startup", "launch", "inspect", "browser-observation", "inspect-frames", "inspect-script", "inspect-workers", "inspect-worker-script",
       "observe-worker-state", "observe-model-state", "open-project", "open-pcb", "observe-pcb-opening", "observe-window", "normal-close",
       "observe-termination", "release-closed", "cleanup-unlaunched", "cleanup-no-process", "settle-records"],
     limitations: [
@@ -56,10 +63,10 @@ export function queryCurrentPcbDiagnosticValidation(input: unknown = {}): Record
       "Normal close requires the original observed window. No Save/Discard choice, force termination or process discovery is offered. Cleanup remains local to the original owner and does not require bridge authentication or full startup re-admission. Unlaunched cleanup requires original never-dispatched state and native empty-Job proof; a factory failure without a returned owner remains unresolved.",
       "Native creation starts suspended, verifies the original process image against retained file/ancestor identities, then resumes the primary thread once. A failed post-create image check can retain a suspended process without a GUI window. It is not a no-process refusal; no retry, forced termination or caller-controlled resume is available.",
       "cleanup-no-process requires the original launch intent and healthy retained helper after a settled rootless refusal. Native proof must show either no native launch request issued or an exact refused request with CreateProcess not entered or returning false with no process created. Helper closure and terminal publication must complete; missing replies, timeouts, lost owners, post-create states and corrupt journals cannot use this route. It is distinct from never calling the launch method and never authorizes replay.",
-    ], ...(query.includeSchemas ? { inputSchema: z.toJSONSchema(currentPcbDiagnosticValidationRequestSchema) } : {}) };
+    ], ...(query.includeSchemas ? { inputSchema: z.toJSONSchema(currentPcbDiagnosticToolRequestSchema) } : {}) };
 }
 export function validateCurrentPcbDiagnosticValidationArguments(input: unknown): Record<string, unknown> {
-  const parsed = currentPcbDiagnosticValidationRequestSchema.safeParse(input);
+  const parsed = currentPcbDiagnosticToolRequestSchema.safeParse(input);
   return parsed.success ? { valid: true, request: parsed.data, validationOnly: true, executionAuthorized: false } : {
     valid: false, validationOnly: true, executionAuthorized: false,
     issues: parsed.error.issues.slice(0, 16).map(issue => ({ path: issue.path.map(String), message: issue.message.slice(0, 512) })),

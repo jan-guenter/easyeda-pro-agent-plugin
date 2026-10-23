@@ -35,6 +35,18 @@ export const CURRENT_PCB_WORKER_CONSTRUCTION_SEQUENCE = Object.freeze([
 export type CurrentPcbWorkerConstructionExpression = "this" | "e" | "t" | "this.bc" | "this.bc.onmessage";
 export const CURRENT_PCB_WORKER_CONSTRUCTION_SAME = "function(other){\"use strict\";return this===other;}";
 export const CURRENT_PCB_WORKER_CONSTRUCTION_PROJECT = "function(bus){\"use strict\";const own=(o,k)=>{const d=Object.getOwnPropertyDescriptor(o,k);if(!d||!Object.hasOwn(d,\"value\"))throw new Error(\"WORKER_CONSTRUCTION_MEMBER\");return d.value;};return own(globalThis,\"PROJECT\")===this&&own(this,\"workerBus\")===bus;}";
+/** Read only the three native identity fields already used by the pinned
+ * worker-state observer, through the original constructor-captured receiver. */
+export const CURRENT_PCB_WORKER_CONSTRUCTION_IDENTITY = `function(bus){
+"use strict";
+const bad=()=>{throw new Error("WORKER_CONSTRUCTION_IDENTITY");};
+const retained=[];
+const own=(o,k)=>{if(o===null||(typeof o!=="object"&&typeof o!=="function"))bad();const d=Object.getOwnPropertyDescriptor(o,k);if(!d||!Object.hasOwn(d,"value"))bad();retained.push([o,k,d.value]);return d.value;};
+const id=(v,re)=>{const m=typeof v==="string"?re.exec(v):null;if(m===null||m[0]!==v)bad();return v;};
+if(own(globalThis,"PROJECT")!==this||own(this,"workerBus")!==bus)bad();
+const identity={projectUuid:id(own(this,"uuid"),/^(?:[a-f0-9]{32}|[a-f0-9]{64})$/),branchUuid:id(own(this,"_branchUuid"),/^[a-f0-9]{32}$/),windowTabId:id(own(globalThis,"_TAB_ID_"),/^[A-Za-z0-9_-]{1,128}$/)};
+for(const [o,k,v]of retained){const d=Object.getOwnPropertyDescriptor(o,k);if(!d||!Object.hasOwn(d,"value")||d.value!==v)bad();}
+return identity;}`;
 export type CurrentPcbWorkerConstructionCommand =
   | Readonly<{ method: "Debugger.setBreakpoint"; params: Readonly<{ location: Readonly<{ scriptId: string; lineNumber: number; columnNumber: number }> }> }>
   | Readonly<{ method: "Debugger.removeBreakpoint"; params: Readonly<{ breakpointId: string }> }>

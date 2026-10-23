@@ -1,10 +1,12 @@
 /** Generates the independent native fixed-command encoder from literal command
  * cases. Values supplied at runtime are identifiers, never programs or params. */
 import { CURRENT_PCB_WORKER_CONSTRUCTION_ASSIGNMENT_CALLS } from "./current-pcb-worker-construction-assignment.ts";
-import { CURRENT_PCB_WORKER_CONSTRUCTION_PROJECT, CURRENT_PCB_WORKER_CONSTRUCTION_SAME,
+import { CURRENT_PCB_WORKER_CONSTRUCTION_IDENTITY, CURRENT_PCB_WORKER_CONSTRUCTION_PROJECT, CURRENT_PCB_WORKER_CONSTRUCTION_SAME,
   CURRENT_PCB_WORKER_CONSTRUCTION_SITES, CURRENT_PCB_WORKER_CONSTRUCTION_SOURCE } from "./current-pcb-worker-construction-contract.ts";
 import { CURRENT_PCB_WORKER_STARTUP_ATTACH } from "./current-pcb-worker-startup-contract.ts";
-import type { CurrentPcbWorkerStartupCommand } from "./current-pcb-worker-startup-contract.ts";
+import type { CurrentPcbWorkerStartupParentCommand, CurrentPcbWorkerStartupWorkerCommand } from "./current-pcb-worker-startup-contract.ts";
+import { CURRENT_PCB_DIAGNOSTIC_OPENING_FUNCTION } from "./current-pcb-diagnostic-opening.ts";
+import { sha256Text } from "./core.ts";
 import { CURRENT_PCB_WORKER_STARTUP_REQUEST_LIMIT, currentPcbWorkerStartupWire } from "./current-pcb-worker-startup-wire.ts";
 import { freezeDeep } from "./sqlite-inventory-core.ts";
 
@@ -12,9 +14,9 @@ const group = CURRENT_PCB_WORKER_CONSTRUCTION_SOURCE.group;
 const placeholder = (name: string): string => `__startup_${name}__`;
 const effects = { objectGroup: group, silent: true, generatePreview: false, throwOnSideEffect: true,
   awaitPromise: false, userGesture: false } as const;
-export function currentPcbWorkerStartupNativeCases(): readonly CurrentPcbWorkerStartupCommand[] {
+export function currentPcbWorkerStartupNativeCases(): readonly CurrentPcbWorkerStartupWorkerCommand[] {
   const sessionId = "original-session";
-  const commands: CurrentPcbWorkerStartupCommand[] = [
+  const commands: CurrentPcbWorkerStartupWorkerCommand[] = [
     { method: "Target.setAutoAttach", params: CURRENT_PCB_WORKER_STARTUP_ATTACH, sessionId },
     { method: "Runtime.enable", params: {}, sessionId },
     { method: "Debugger.enable", params: { maxScriptsCacheSize: 33_554_432 }, sessionId },
@@ -37,6 +39,7 @@ export function currentPcbWorkerStartupNativeCases(): readonly CurrentPcbWorkerS
   }
   for (const entry of [{ program: CURRENT_PCB_WORKER_CONSTRUCTION_SAME, arguments: 1, returnByValue: true },
     { program: CURRENT_PCB_WORKER_CONSTRUCTION_PROJECT, arguments: 1, returnByValue: true },
+    { program: CURRENT_PCB_WORKER_CONSTRUCTION_IDENTITY, arguments: 1, returnByValue: true },
     ...Object.values(CURRENT_PCB_WORKER_CONSTRUCTION_ASSIGNMENT_CALLS)]) {
     commands.push({ method: "Runtime.callFunctionOn", params: { ...effects, objectId: placeholder("objectId"),
       functionDeclaration: entry.program, returnByValue: entry.returnByValue,
@@ -45,6 +48,23 @@ export function currentPcbWorkerStartupNativeCases(): readonly CurrentPcbWorkerS
   return freezeDeep(commands);
 }
 const literal = (value: string): string => `@"${value.replaceAll('"', '""')}"`;
+/** Synthetic, path-hash-consistent protocol fixtures; never project authority. */
+export function currentPcbWorkerStartupNativeParentCases(): readonly CurrentPcbWorkerStartupParentCommand[] {
+  const rawWindowsPath = String.raw`C:\Synthetic\worker-startup.eprj2`, sessionId = "original-session";
+  const target = { rawWindowsPath, projectUuid: sha256Text(rawWindowsPath), documentUuid: "d".repeat(16),
+    expectedSourceSha256: "e".repeat(64), branchUuid: "b".repeat(32) };
+  return freezeDeep([
+    { method: "Target.getTargets", params: {} },
+    { method: "Page.getFrameTree", params: {}, sessionId },
+    { method: "DOM.getFrameOwner", params: { frameId: "original-frame" }, sessionId },
+    { method: "DOM.describeNode", params: { backendNodeId: 42, depth: 0, pierce: false }, sessionId },
+    ...(["preflight", "open-project"] as const).map(phase => ({ method: "Runtime.callFunctionOn" as const, params: {
+      functionDeclaration: CURRENT_PCB_DIAGNOSTIC_OPENING_FUNCTION, uniqueContextId: "original-context",
+      arguments: [{ value: target }, { value: phase }] as const, returnByValue: true as const, awaitPromise: true as const,
+      silent: true as const, generatePreview: false as const, userGesture: false as const, throwOnSideEffect: false as const,
+    }, sessionId })),
+  ]);
+}
 
 export function currentPcbWorkerStartupNativeSource(): string {
   const rows = currentPcbWorkerStartupNativeCases().map(sample => {
@@ -76,6 +96,13 @@ export function currentPcbWorkerStartupNativeSource(): string {
     return `    fields.Clear();\n${fields.map(([key, value]) => `    fields.Add(${literal(key)},${literal(String(value))});`).join("\n")}\n` +
       `    Need(Encode(1,${literal(sample.method)},${literal(sample.sessionId)},${literal(String(request["startupPhase"]))},fields)==${literal(expected)}+"\\0","smoke-parity");`;
   }).join("\n");
+  const parentSmoke = currentPcbWorkerStartupNativeParentCases().map(sample => {
+    const request = currentPcbWorkerStartupWire(sample, 256).request;
+    const fields = Object.entries(request).filter(([key]) => !["action", "requestId", "method", "parentPhase"].includes(key));
+    const expected = JSON.stringify({ id: 256, ...sample });
+    return `    fields.Clear();\n${fields.map(([key, value]) => `    fields.Add(${literal(key)},${typeof value === "number" ? String(value) : literal(value)});`).join("\n")}\n` +
+      `    Need(EasyedaDiagnosticOwner.WorkerStartupParentProtocolMessage(256,${literal(sample.method)},${literal(String(request["parentPhase"]))},fields)==${literal(expected)}+"\\0","smoke-parent-parity");`;
+  }).join("\n");
   return `// BEGIN GENERATED WORKER STARTUP PROTOCOL
 // Generated from current-pcb-worker-startup-native.ts. Do not edit this block.
 public static class EasyedaWorkerStartupProtocol {
@@ -102,6 +129,7 @@ ${rows.join(" else\n")}
   public static void VerifySmoke() {
     System.Collections.Hashtable fields=new System.Collections.Hashtable(System.StringComparer.Ordinal);
 ${smoke}
+${parentSmoke}
     fields.Clear();fields.Add("objectId","__startup_argument0__");fields.Add("argument0","other");
     string collision=Encode(256,"Runtime.callFunctionOn","s","same",fields);
     Need(collision.Contains(@"""objectId"":""__startup_argument0__""") && collision.Contains(@"""objectId"":""other"""),"smoke-placeholder");

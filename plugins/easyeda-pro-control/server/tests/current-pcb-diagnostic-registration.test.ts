@@ -7,7 +7,7 @@ import { z } from "zod";
 import { CurrentPcbDiagnosticLifecycle, CurrentPcbStringPrecreateLifecycle } from "../src/current-pcb-diagnostic-lifecycle.ts";
 import type { CurrentPcbDiagnosticLifecycleOptions } from "../src/current-pcb-diagnostic-lifecycle.ts";
 import { CURRENT_PCB_DIAGNOSTIC_PROFILE } from "../src/current-pcb-diagnostic-profile.ts";
-import { currentPcbDiagnosticValidationRequestSchema } from "../src/current-pcb-diagnostic-validation.ts";
+import { currentPcbDiagnosticToolRequestSchema, currentPcbDiagnosticValidationRequestSchema } from "../src/current-pcb-diagnostic-validation.ts";
 import { currentPcbStringPrecreateRequestSchema } from "../src/current-pcb-string-precreate-validation.ts";
 
 for (const stringPurpose of [false, true]) {
@@ -43,9 +43,11 @@ void test(`public ${stringPurpose ? "String precreate" : "diagnostic"} registrat
       checks += 1; if (blocked) { throw new Error("synthetic unresolved engine journal"); }
       if (pendingAdmission !== undefined) { await pendingAdmission; }
     } };
-  const scope = vm.createContext({ z, currentPcbDiagnosticValidationRequestSchema, currentPcbStringPrecreateRequestSchema, CURRENT_PCB_DIAGNOSTIC_PROFILE,
+  const scope = vm.createContext({ z, currentPcbDiagnosticToolRequestSchema, currentPcbDiagnosticValidationRequestSchema,
+    currentPcbStringPrecreateRequestSchema, CURRENT_PCB_DIAGNOSTIC_PROFILE,
     CurrentPcbDiagnosticLifecycle: Coordinator, CurrentPcbStringPrecreateLifecycle: Coordinator,
-    currentPcbDiagnosticLifecycle: undefined, currentPcbStringPrecreateLifecycle: undefined, process: { env: environment }, engine, upstream,
+    currentPcbDiagnosticLifecycle: undefined, currentPcbStringPrecreateLifecycle: undefined, currentPcbWorkerStartupLifecycle: undefined,
+    process: { env: environment }, engine, upstream,
     facadeMode: "calculation-only", facadeToolRegistered: (): boolean => true,
     bridgeGate: { run: (handler: () => Promise<unknown>): Promise<unknown> => { gateCalls += 1; return handler(); } },
     retainedControlRoot: { path: "/synthetic/control" }, controlDataDirectory: (): string => "/synthetic/control",

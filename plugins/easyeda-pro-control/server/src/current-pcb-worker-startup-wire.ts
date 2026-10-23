@@ -1,13 +1,16 @@
 /** Fixed private startup wire vocabulary. No command text or caller-supplied
  * expression crosses the native boundary. Separate from diagnostic no-pause. */
 import { z } from "zod";
+import { types } from "node:util";
 import { captureCurrentPcbStringClockReply } from "./current-pcb-string-clock-reply.ts";
-import { CURRENT_PCB_WORKER_CONSTRUCTION_PROJECT, CURRENT_PCB_WORKER_CONSTRUCTION_SAME,
+import { CURRENT_PCB_WORKER_CONSTRUCTION_IDENTITY, CURRENT_PCB_WORKER_CONSTRUCTION_PROJECT, CURRENT_PCB_WORKER_CONSTRUCTION_SAME,
   CURRENT_PCB_WORKER_CONSTRUCTION_SITES, CURRENT_PCB_WORKER_CONSTRUCTION_SOURCE } from "./current-pcb-worker-construction-contract.ts";
 import { CURRENT_PCB_WORKER_STARTUP_ATTACH } from "./current-pcb-worker-startup-contract.ts";
 import type { CurrentPcbWorkerStartupCommand } from "./current-pcb-worker-startup-contract.ts";
 import { freezeDeep } from "./sqlite-inventory-core.ts";
 import { CURRENT_PCB_WORKER_CONSTRUCTION_ASSIGNMENT_CALLS } from "./current-pcb-worker-construction-assignment.ts";
+import { CURRENT_PCB_DIAGNOSTIC_OPENING_FUNCTION } from "./current-pcb-diagnostic-opening.ts";
+import { currentDisposableOpenSealedTargetSchema } from "./current-disposable-open.ts";
 
 export const CURRENT_PCB_WORKER_STARTUP_REQUEST_LIMIT = 256;
 const handle = z.string().min(1).max(256).regex(/^[A-Za-z\d_.:-]+$/u);
@@ -20,6 +23,15 @@ const command = <Method extends CurrentPcbWorkerStartupCommand["method"], Params
   z.object({ method: z.literal(method), params, sessionId }).strict();
 /* oxlint-disable unicorn/max-nested-calls -- Keep each exact protocol shape together in this declarative schema union. */
 const schema: z.ZodType<CurrentPcbWorkerStartupCommand> = z.union([
+  z.object({ method: z.literal("Target.getTargets"), params: empty }).strict(),
+  command("Page.getFrameTree", empty),
+  command("DOM.getFrameOwner", z.object({ frameId: sessionId }).strict()),
+  command("DOM.describeNode", z.object({ backendNodeId: z.number().int().min(1).max(2_147_483_647), depth: z.literal(0), pierce: z.literal(false) }).strict()),
+  command("Runtime.callFunctionOn", z.object({ functionDeclaration: z.literal(CURRENT_PCB_DIAGNOSTIC_OPENING_FUNCTION),
+    uniqueContextId: sessionId, arguments: z.tuple([z.object({ value: currentDisposableOpenSealedTargetSchema }).strict(),
+      z.object({ value: z.enum(["preflight", "open-project"]) }).strict()]),
+    returnByValue: z.literal(true), awaitPromise: z.literal(true), silent: z.literal(true), generatePreview: z.literal(false),
+    userGesture: z.literal(false), throwOnSideEffect: z.literal(false) }).strict()),
   command("Target.setAutoAttach", z.object({ autoAttach: z.literal(true), waitForDebuggerOnStart: z.literal(true),
     flatten: z.literal(true), filter: z.tuple([z.object({ type: z.literal("worker"), exclude: z.literal(false) }).strict(),
       z.object({ exclude: z.literal(true) }).strict()]) }).strict()),
@@ -44,6 +56,30 @@ const schema: z.ZodType<CurrentPcbWorkerStartupCommand> = z.union([
 ]);
 /* oxlint-enable unicorn/max-nested-calls */
 function fail(): never { throw new Error("PCB_WORKER_STARTUP_WIRE"); }
+function plain(value: unknown): value is Record<string, unknown> {
+  return value !== null && typeof value === "object" && !types.isProxy(value) && !Array.isArray(value) &&
+    (Object.getPrototypeOf(value) === Object.prototype || Object.getPrototypeOf(value) === null);
+}
+/** The fixed opener exceeds the generic reply text ceiling. Replace only its
+ * exact own-data literal during inert capture, then restore it locally; caller
+ * strings and the shared reply-capture limits are not broadened. */
+function captureWire(raw: unknown): unknown {
+  if (!plain(raw)) { return captureCurrentPcbStringClockReply(raw).value; }
+  const params = Object.getOwnPropertyDescriptor(raw, "params");
+  const original: unknown = params?.value;
+  if (params === undefined || !Object.hasOwn(params, "value") || !plain(original)) { return captureCurrentPcbStringClockReply(raw).value; }
+  const functionField = Object.getOwnPropertyDescriptor(original, "functionDeclaration");
+  if (functionField === undefined || !Object.hasOwn(functionField, "value") || functionField.value !== CURRENT_PCB_DIAGNOSTIC_OPENING_FUNCTION) {
+    return captureCurrentPcbStringClockReply(raw).value;
+  }
+  const descriptors = Object.getOwnPropertyDescriptors(original);
+  descriptors["functionDeclaration"] = { ...functionField, value: "fixed-startup-opening" };
+  const outer = Object.getOwnPropertyDescriptors(raw);
+  outer["params"] = { ...params, value: Object.create(null, descriptors) as unknown };
+  const captured = captureCurrentPcbStringClockReply(Object.create(null, outer)).value;
+  if (!plain(captured) || !plain(captured["params"])) { return fail(); }
+  return { ...captured, params: { ...captured["params"], functionDeclaration: CURRENT_PCB_DIAGNOSTIC_OPENING_FUNCTION } };
+}
 
 /** Decodes only inert own-data input before any schema/property inspection.
  * Native code independently reconstructs these phases from identifiers. */
@@ -52,9 +88,14 @@ export function currentPcbWorkerStartupWire(raw: unknown, id: number): Readonly<
   request: Readonly<Record<string, string | number>>;
 }> {
   if (!Number.isSafeInteger(id) || id < 1 || id > CURRENT_PCB_WORKER_STARTUP_REQUEST_LIMIT) { return fail(); }
-  const parsed = schema.parse(captureCurrentPcbStringClockReply(raw).value);
+  const parsed = schema.parse(captureWire(raw));
   let fields: Record<string, string | number>;
+  let action = "worker-startup-send";
   switch (parsed.method) {
+    case "Target.getTargets": { action = "worker-startup-parent"; fields = { parentPhase: "targets" }; break; }
+    case "Page.getFrameTree": { action = "worker-startup-parent"; fields = { parentPhase: "frames" }; break; }
+    case "DOM.getFrameOwner": { action = "worker-startup-parent"; fields = { parentPhase: "frame-owner", frameId: parsed.params.frameId }; break; }
+    case "DOM.describeNode": { action = "worker-startup-parent"; fields = { parentPhase: "describe-owner", backendNodeId: parsed.params.backendNodeId }; break; }
     case "Target.setAutoAttach": {
       if (JSON.stringify(parsed.params) !== JSON.stringify(CURRENT_PCB_WORKER_STARTUP_ATTACH)) { return fail(); }
       fields = { startupPhase: "attach" }; break;
@@ -78,12 +119,25 @@ export function currentPcbWorkerStartupWire(raw: unknown, id: number): Readonly<
     }
     case "Runtime.getProperties": { fields = { startupPhase: "properties", objectId: parsed.params.objectId }; break; }
     case "Runtime.callFunctionOn": {
+      if ("uniqueContextId" in parsed.params) {
+        const [target, phase] = parsed.params.arguments;
+        action = "worker-startup-parent";
+        fields = { parentPhase: phase.value, uniqueContextId: parsed.params.uniqueContextId,
+          targetRawWindowsPath: target.value.rawWindowsPath, targetProjectUuid: target.value.projectUuid,
+          targetBranchUuid: target.value.branchUuid, targetDocumentUuid: target.value.documentUuid,
+          targetExpectedSourceSha256: target.value.expectedSourceSha256 };
+        break;
+      }
       const assignment = Object.entries(CURRENT_PCB_WORKER_CONSTRUCTION_ASSIGNMENT_CALLS)
         .find(([, value]) => value.program === parsed.params.functionDeclaration);
       if (assignment === undefined) {
-        if (parsed.params.functionDeclaration !== CURRENT_PCB_WORKER_CONSTRUCTION_SAME && parsed.params.functionDeclaration !== CURRENT_PCB_WORKER_CONSTRUCTION_PROJECT ||
+        if (parsed.params.functionDeclaration !== CURRENT_PCB_WORKER_CONSTRUCTION_SAME && parsed.params.functionDeclaration !== CURRENT_PCB_WORKER_CONSTRUCTION_PROJECT &&
+            parsed.params.functionDeclaration !== CURRENT_PCB_WORKER_CONSTRUCTION_IDENTITY ||
             parsed.params.arguments.length !== 1 || !parsed.params.returnByValue) { return fail(); }
-        fields = { startupPhase: parsed.params.functionDeclaration === CURRENT_PCB_WORKER_CONSTRUCTION_SAME ? "same" : "project", objectId: parsed.params.objectId };
+        let phase = "identity";
+        if (parsed.params.functionDeclaration === CURRENT_PCB_WORKER_CONSTRUCTION_SAME) { phase = "same"; }
+        else if (parsed.params.functionDeclaration === CURRENT_PCB_WORKER_CONSTRUCTION_PROJECT) { phase = "project"; }
+        fields = { startupPhase: phase, objectId: parsed.params.objectId };
       } else {
         const [phase, expected] = assignment;
         if (parsed.params.arguments.length !== expected.arguments || parsed.params.returnByValue !== expected.returnByValue) { return fail(); }
@@ -95,6 +149,6 @@ export function currentPcbWorkerStartupWire(raw: unknown, id: number): Readonly<
     case "Runtime.releaseObjectGroup": { fields = { startupPhase: "release" }; break; }
     default: { return fail(); }
   }
-  return freezeDeep({ command: { id, ...parsed }, request: { action: "worker-startup-send", requestId: id,
-    method: parsed.method, sessionId: parsed.sessionId, ...fields } });
+  return freezeDeep({ command: { id, ...parsed }, request: { action, requestId: id,
+    method: parsed.method, ...(parsed.sessionId === undefined ? {} : { sessionId: parsed.sessionId }), ...fields } });
 }

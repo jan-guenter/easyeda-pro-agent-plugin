@@ -4,7 +4,7 @@
  * release path first proves original root and complete Job termination.
  * Browser discovery grants no frame, worker, script or CAD execution authority. */
 /* oxlint-disable import/max-dependencies -- This owner composes separately audited native installation, fixed protocol, identity observation and original process/pipe cleanup boundaries. */
-/* oxlint-disable max-classes-per-file -- Two fixed-purpose exported facades share an unexported retained owner core; exporting a configurable core would expose a purpose-selection bypass. */
+/* oxlint-disable max-classes-per-file -- Three fixed-purpose exported facades share an unexported retained owner core; exporting a configurable core would expose a purpose-selection bypass. */
 import { spawn } from "node:child_process";
 import type { ChildProcessWithoutNullStreams } from "node:child_process";
 import { createHash, randomBytes } from "node:crypto";
@@ -14,7 +14,7 @@ import { PassThrough, Writable } from "node:stream";
 import { setTimeout as delay } from "node:timers/promises";
 import { fileURLToPath } from "node:url";
 import { canonicalJson, sha256Json } from "./core.ts";
-import { CurrentPcbDiagnosticPipe, CurrentPcbStringPrecreatePipe, decodeCurrentPcbDiagnosticJson } from "./current-pcb-diagnostic-pipe.ts";
+import { CurrentPcbDiagnosticPipe, CurrentPcbStringPrecreatePipe, CurrentPcbWorkerStartupDiscoveryPipe, decodeCurrentPcbDiagnosticJson } from "./current-pcb-diagnostic-pipe.ts";
 import type { CurrentPcbDiagnosticFailureObservation } from "./current-pcb-diagnostic-pipe.ts";
 import { diagnosticNativeRequest, stringPrecreateNativeRequest } from "./current-pcb-diagnostic-protocol.ts";
 import { CurrentPcbDiagnosticContext, diagnosticBoundedObservation, diagnosticTargetInventory, diagnosticTargetSummary,
@@ -52,15 +52,35 @@ import { CurrentPcbStringNativeClockIssuer } from "./current-pcb-string-native-c
 import { captureCurrentPcbStringClockReply } from "./current-pcb-string-clock-reply.ts";
 import type { CurrentPcbStringNativeClockObservation, CurrentPcbStringNativeClockPhase } from "./current-pcb-string-native-clock.ts";
 import { freezeDeep } from "./sqlite-inventory-core.ts";
+import { CurrentPcbWorkerStartupChannel } from "./current-pcb-worker-startup-channel.ts";
+import type { CurrentPcbWorkerStartupNativeDependency, CurrentPcbWorkerStartupParent } from "./current-pcb-worker-startup-channel.ts";
+import type { CurrentPcbWorkerStartupDependency } from "./current-pcb-worker-startup-contract.ts";
 
-const HELPER_SHA256 = "54c7b075e6db450f9db5f1dca5a6ecf6b0ba16a1c30133dfa0af8b637ca1fbd0";
-const HELPER_BYTES = 711_460;
+const HELPER_SHA256 = "31bb4410ac8db5a423e4ef8c061405348d44fbf042dd3ce4002bfb858dd8175c";
+const HELPER_BYTES = 760_485;
 const MAX_LINE = 100_000;
 // 64 MiB native bytes need at most 85.34 MiB base64 plus bounded poll envelopes.
 const MAX_TOTAL = 96 * 1024 * 1024;
 // Original helper owners remain reachable after caller exceptions.
 const retainedOwners = new Set<object>();
 type RecordValue = Record<string, unknown>;
+type OwnerPurpose = "diagnostic" | "string-precreate" | "worker-startup";
+export interface CurrentPcbWorkerStartupOpeningBinding {
+  readonly context: () => Readonly<{ sessionId: string; uniqueContextId: string }>;
+  readonly reprove: () => Promise<void>;
+  readonly begin: (target: CurrentDisposableOpenSealedTarget,
+    titleProof: Readonly<{ initialTitle: string; expectedOpenedTitle: string }>) => Readonly<{ sessionId: string; uniqueContextId: string }>;
+  readonly finish: (targets: RecordValue, frames: RecordValue) => void;
+  readonly observeParent: (targets: RecordValue, frames: RecordValue) => void;
+  readonly ancillaryFrame: () => string | null;
+  readonly observeAncillary: (owner: RecordValue, node: RecordValue) => void;
+  readonly ancillaryObservation: () => RecordValue | null;
+}
+export interface CurrentPcbWorkerStartupHandoff {
+  readonly channel: CurrentPcbWorkerStartupChannel;
+  readonly dependency: CurrentPcbWorkerStartupDependency;
+  readonly opening: CurrentPcbWorkerStartupOpeningBinding;
+}
 interface Binding { readonly helperInstance: string; readonly jobId: string; readonly rootPid: number; readonly rootCreated: string }
 export interface CurrentPcbDiagnosticNoProcessRelease {
   readonly launchRequestOutcome: "not-issued" | "native-refused";
@@ -105,7 +125,7 @@ function noProcessState(value: RecordValue, released: boolean): Readonly<NoProce
 }
 
 /** Test seams supply a real retained child, never process IDs or an attach path.
- * Only the two fixed owner factories check packaged helper source. Neither
+ * Only the three fixed owner factories check packaged helper source. Neither
  * constructor nor successful discovery grants current runtime admission. */
 class CurrentPcbRetainedOwnerCore {
   readonly #child: ChildProcessWithoutNullStreams;
@@ -114,8 +134,14 @@ class CurrentPcbRetainedOwnerCore {
   readonly #installation: CurrentPcbDiagnosticInstallation | null;
   readonly #input = new PassThrough({ autoDestroy: false });
   readonly #output: Writable;
-  readonly #pipe: CurrentPcbDiagnosticPipe | CurrentPcbStringPrecreatePipe;
+  readonly #pipe: CurrentPcbDiagnosticPipe | CurrentPcbStringPrecreatePipe | CurrentPcbWorkerStartupDiscoveryPipe;
   readonly #stringPurpose: boolean;
+  readonly #purpose: OwnerPurpose;
+  #startupHandoffConsumed = false;
+  #startupParent: CurrentPcbWorkerStartupParent | null = null;
+  #startupChannel: CurrentPcbWorkerStartupChannel | null = null;
+  #startupHandoff: CurrentPcbWorkerStartupHandoff | null = null;
+  #nativeTail: Promise<void> = Promise.resolve();
   readonly #closed = Promise.withResolvers<null>();
   #pending: Pending | null = null;
   #buffer = Buffer.alloc(0);
@@ -172,16 +198,17 @@ class CurrentPcbRetainedOwnerCore {
   #terminationObservation: Readonly<TerminationObservation> | null = null;
 
   public constructor(child: ChildProcessWithoutNullStreams, verify: () => Promise<void>,
-    installation: CurrentPcbDiagnosticInstallation | null, verifyInstallation: () => Promise<void>, stringPurpose: boolean) {
+    installation: CurrentPcbDiagnosticInstallation | null, verifyInstallation: () => Promise<void>, purpose: OwnerPurpose) {
     this.#child = child; this.#verify = verify; this.#installation = installation; this.#verifyInstallation = verifyInstallation;
-    this.#stringPurpose = stringPurpose;
+    this.#purpose = purpose; this.#stringPurpose = purpose === "string-precreate";
     this.#output = new Writable({ autoDestroy: false,
       // oxlint-disable-next-line promise/prefer-await-to-callbacks -- Writable requires its original callback, acknowledged only after native WriteFile.
       write: (chunk: unknown, _encoding, callback): void => {
         this.#send = this.#sendFrame(chunk, callback);
       },
     });
-    this.#pipe = stringPurpose ? new CurrentPcbStringPrecreatePipe(this.#input, this.#output) : new CurrentPcbDiagnosticPipe(this.#input, this.#output);
+    if (purpose === "worker-startup") { this.#pipe = new CurrentPcbWorkerStartupDiscoveryPipe(this.#input, this.#output); }
+    else { this.#pipe = this.#stringPurpose ? new CurrentPcbStringPrecreatePipe(this.#input, this.#output) : new CurrentPcbDiagnosticPipe(this.#input, this.#output); }
   }
 
   /** Retain the object before attaching listeners; failures preserve its child. */
@@ -208,7 +235,7 @@ class CurrentPcbRetainedOwnerCore {
     projectOpeningConsumed: boolean; projectOpeningResult: CurrentPcbDiagnosticOpeningResult | null; modelObservationConsumed: boolean;
     pcbOpeningConsumed: boolean; pcbOpeningResult: CurrentPcbDiagnosticPcbOpeningResult | null;
     pcbObservationConsumed: boolean; pcbFrameObservation: CurrentPcbDiagnosticPcbOpeningResult | null; pcbSourceQualified: boolean;
-    stringPrecreateConsumed: boolean; commonBaselineConsumed?: boolean; profile: "diagnostic" | "string-precreate" }> {
+    stringPrecreateConsumed: boolean; commonBaselineConsumed?: boolean; profile: OwnerPurpose; workerStartupHandoffConsumed?: boolean }> {
     return Object.freeze({ helperPid: this.#child.pid ?? null, binding: this.#binding, failure: this.#failure,
       busy: this.#busy, launchConsumed: this.#launchConsumed, closeConsumed: this.#closeConsumed,
       released: this.#released, helperClosed: this.#childClosed, cleanupOnly: this.#binding !== null && !this.#launchSucceeded,
@@ -222,7 +249,7 @@ class CurrentPcbRetainedOwnerCore {
       pcbOpeningConsumed: this.#pcbOpeningConsumed, pcbOpeningResult: this.#pcbOpeningResult,
       pcbObservationConsumed: this.#pcbObservationConsumed, pcbFrameObservation: this.#pcbFrameObservation, pcbSourceQualified: this.#pcbSourceQualified,
       stringPrecreateConsumed: this.#stringPrecreateConsumed, commonBaselineConsumed: this.#commonBaselineConsumed,
-      profile: this.#stringPurpose ? "string-precreate" : "diagnostic" });
+      profile: this.#purpose, workerStartupHandoffConsumed: this.#startupHandoffConsumed });
   }
 
   public async launch(input: Readonly<{ executable: string; executableSha256: string; confirmDiagnosticLaunch: true }>): Promise<Binding> {
@@ -309,6 +336,7 @@ class CurrentPcbRetainedOwnerCore {
    * neither URL/path matching nor source bytes authorize any JavaScript/CAD. */
   public async inspectScript(frameId: string, input: DiagnosticScriptProfile): Promise<Readonly<RecordValue>> {
     const context = this.#stagedContext, profile = validateDiagnosticScriptProfile(input);
+    if (this.#purpose === "worker-startup" && profile.family !== "ui") { throw error("STARTUP_UI_SOURCE_ONLY"); }
     if (this.#scriptConsumed || context === null || !this.#framesConsumed || this.#inspectionConsumed) { throw error("SCRIPT_INSPECTION_UNAVAILABLE"); }
     this.#enter(true); this.#scriptConsumed = true;
     try {
@@ -325,6 +353,7 @@ class CurrentPcbRetainedOwnerCore {
    * reproof callback, after durable intent. No ordinary launcher is borrowed.
    * Even a refused preflight consumes this overall stage; cleanup stays usable. */
   public async openProject(input: CurrentDisposableOpenSealedTarget, reverify: () => Promise<void>): Promise<CurrentPcbDiagnosticOpeningResult> {
+    if (this.#purpose === "worker-startup") { throw error("STARTUP_LEGACY_ROUTE"); }
     const context = this.#stagedContext, target = currentDisposableOpenSealedTargetSchema.parse(input);
     currentPcbDiagnosticOpeningArguments(target, "preflight");
     if (this.#projectOpeningConsumed || context === null || !this.#scriptConsumed || this.#inspectionConsumed ||
@@ -376,6 +405,7 @@ class CurrentPcbRetainedOwnerCore {
   /** Opens only the PCB sealed by this owner's original accepted project open.
    * Acknowledgment is retained before independent frame/source qualification. */
   public async openPcb(input: CurrentDisposableOpenSealedTarget, reverify: () => Promise<void>): Promise<CurrentPcbDiagnosticPcbOpeningResult> {
+    if (this.#purpose === "worker-startup") { throw error("STARTUP_LEGACY_ROUTE"); }
     const context = this.#stagedContext, target = currentDisposableOpenSealedTargetSchema.parse(input);
     currentPcbDiagnosticPcbOpeningArguments(target, "preflight");
     if (context === null || !this.#scriptConsumed || this.#inspectionConsumed || this.#workersConsumed || this.#workerContext !== null ||
@@ -410,6 +440,7 @@ class CurrentPcbRetainedOwnerCore {
 
   /** Fixed UI/frame/DOM/source observations, never another navigation attempt. */
   public async observePcbOpening(input: CurrentDisposableOpenSealedTarget, inputProfile: DiagnosticScriptProfile): Promise<Readonly<RecordValue>> {
+    if (this.#purpose === "worker-startup") { throw error("STARTUP_LEGACY_ROUTE"); }
     const context = this.#stagedContext, profile = validateDiagnosticScriptProfile(inputProfile);
     const target = currentDisposableOpenSealedTargetSchema.parse(input);
     if (context === null || this.#pcbObservationConsumed || this.#pcbOpeningResult?.ok !== true ||
@@ -454,6 +485,7 @@ class CurrentPcbRetainedOwnerCore {
   /** Fixed parent-only child reporting. The optional profile is an internal
    * synthetic-test seam, never part of the public lifecycle request. */
   public async inspectWorkers(profile?: DiagnosticWorkerScriptProfile): Promise<Readonly<RecordValue>> {
+    if (this.#purpose === "worker-startup") { throw error("STARTUP_LEGACY_ROUTE"); }
     const attachment = this.#stagedAttachment;
     if (this.#workersConsumed || this.#stagedContext === null || attachment === null || this.#inspectionConsumed ||
         this.#modelConsumed || (this.#stringPurpose ? !this.#pcbSourceQualified : this.#pcbOpeningConsumed)) {
@@ -493,6 +525,7 @@ class CurrentPcbRetainedOwnerCore {
 
   /** One fixed side-effect-checked sample. No caller code or context selector. */
   public async observeWorkerState(): Promise<Readonly<RecordValue>> {
+    if (this.#purpose === "worker-startup") { throw error("STARTUP_LEGACY_ROUTE"); }
     const context = this.#workerContext;
     if (this.#stringPurpose || this.#workerStateConsumed || context === null || !this.#workerScriptConsumed) { throw error("WORKER_STATE_UNAVAILABLE"); }
     this.#enter(true); this.#workerStateConsumed = true;
@@ -507,6 +540,7 @@ class CurrentPcbRetainedOwnerCore {
   /** Fixed read-only scope path in an already source-qualified PCB context.
    * No opened UI/worker or caller-provided handle can substitute for it. */
   public async observeModelState(): Promise<CurrentPcbDiagnosticModelObservation> {
+    if (this.#purpose === "worker-startup") { throw error("STARTUP_LEGACY_ROUTE"); }
     const context = this.#stagedContext;
     if (this.#stringPurpose || this.#modelConsumed || context === null || !this.#scriptConsumed || this.#inspectionConsumed ||
         this.#workersConsumed || this.#workerContext !== null ||
@@ -748,9 +782,92 @@ class CurrentPcbRetainedOwnerCore {
     context.assertCurrent(); return context.finish(source, targets, frameTree);
   }
 
+  /** Transfer the original source-qualified parent and pipe budget once. The
+   * durable lifecycle owns intent; this capability cannot be recreated from
+   * its journal. No project or worker is opened by the handoff itself. */
+  public async handoffWorkerStartup(): Promise<CurrentPcbWorkerStartupHandoff> {
+    const attachment = this.#stagedAttachment, context = this.#stagedContext, original = this.#binding;
+    if (this.#purpose !== "worker-startup" || !(this.#pipe instanceof CurrentPcbWorkerStartupDiscoveryPipe) ||
+        this.#startupHandoffConsumed || context === null || attachment === null || original === null ||
+        !this.#scriptConsumed || this.#inspectionConsumed || this.#projectOpeningConsumed || this.#pcbOpeningConsumed ||
+        this.#workersConsumed || this.#workerContext !== null || this.#modelConsumed || !this.#launchSucceeded) {
+      throw error("STARTUP_HANDOFF_UNAVAILABLE");
+    }
+    this.#enter(true); this.#startupHandoffConsumed = true;
+    try {
+      await this.#verifyInstallation(); await this.#verify(); this.#available();
+      await this.#observeParent(); await this.#observeOpeningAncillary();
+      const selected = context.openingContext();
+      if (selected.sessionId !== attachment.sessionId || this.#binding !== original || this.#pending !== null || this.#buffer.length > 0) {
+        throw error("STARTUP_HANDOFF_CHANGED");
+      }
+      const prior = this.#pipe.handoff();
+      if (prior.sessionId !== attachment.sessionId) { throw error("STARTUP_HANDOFF_SESSION"); }
+      const parent = Object.freeze({ ...attachment, nextRequestId: prior.nextRequestId });
+      this.#startupParent = parent;
+      const current = (): void => {
+        this.#available();
+        if (this.#binding !== original || this.#startupParent !== parent || !this.#launchSucceeded ||
+            this.#terminationObserved || this.#releaseConsumed || this.#closeConsumed) { throw error("STARTUP_OWNER_CHANGED"); }
+        const observed = context.openingContext();
+        if (observed.sessionId !== selected.sessionId || observed.uniqueContextId !== selected.uniqueContextId) { throw error("STARTUP_PARENT_CHANGED"); }
+      };
+      const reprove = async (): Promise<void> => {
+        current(); await this.#verifyInstallation(); current(); await this.#verify(); current();
+      };
+      const native = Object.freeze<CurrentPcbWorkerStartupNativeDependency>({
+        requireOriginalParent: async (): Promise<CurrentPcbWorkerStartupParent> => { await reprove(); return parent; },
+        assertOriginalTermination: async (): Promise<void> => {
+          this.#available();
+          if (this.#binding !== original || this.#startupParent !== parent) { throw error("STARTUP_OWNER_CHANGED"); }
+          await this.#verify(); this.#available();
+          const observed = terminationObservation(await this.#request({ action: "termination" }));
+          await this.#verify(); this.#available();
+          if (this.#binding !== original || !observed.terminated) { throw error("RETAIN_LIVE_OWNER"); }
+          this.#terminationObservation = observed; this.#terminationObserved = true;
+        },
+        observeOriginalParentEvent: (event): void => { current(); context.observeEvent(event); current(); },
+        exchange: async (request): Promise<unknown> => {
+          // Poll and allocation cleanup remain usable after a semantic context
+          // Refusal. They retain only the same original process/pipe handles.
+          this.#available();
+          if (this.#binding !== original || this.#startupParent !== parent || this.#released) { throw error("STARTUP_OWNER_CHANGED"); }
+          await this.#verify(); this.#available();
+          const result = await this.#request({ ...request });
+          await this.#verify(); this.#available();
+          if (this.#binding !== original || this.#startupParent !== parent) { throw error("STARTUP_OWNER_CHANGED"); }
+          return result;
+        },
+      });
+      const channel = new CurrentPcbWorkerStartupChannel(native, { receivedBytes: prior.receivedBytes,
+        eventCount: prior.eventCount, eventBytes: prior.eventBytes });
+      this.#startupChannel = channel;
+      const dependency = await channel.start(); current();
+      const opening = Object.freeze<CurrentPcbWorkerStartupOpeningBinding>({
+        context: (): Readonly<{ sessionId: string; uniqueContextId: string }> => { current(); return selected; }, reprove,
+        begin: (input, titleProof): Readonly<{ sessionId: string; uniqueContextId: string }> => {
+          current();
+          if (this.#projectOpeningConsumed) { throw error("PROJECT_OPENING_UNAVAILABLE"); }
+          const target = currentDisposableOpenSealedTargetSchema.parse(input);
+          currentPcbDiagnosticOpeningArguments(target, "preflight");
+          this.#projectOpeningConsumed = true; this.#projectOpeningTarget = Object.freeze(target);
+          return context.beginOpeningTransition(target.projectUuid, titleProof);
+        },
+        finish: (targets, frames): void => { current(); context.finishOpeningTransition(targets, frames); current(); },
+        observeParent: (targets, frames): void => { current(); context.observeTarget(targets); context.observeFrames(frames); current(); },
+        ancillaryFrame: (): string | null => { current(); return context.openingAncillaryFrame(); },
+        observeAncillary: (owner, node): void => { current(); context.observeOpeningAncillaryOwner(owner, node); current(); },
+        ancillaryObservation: (): RecordValue | null => { current(); return context.ancillaryObservation(); },
+      });
+      this.#startupHandoff = Object.freeze({ channel, dependency, opening });
+      return this.#startupHandoff;
+    } finally { this.#busy = false; }
+  }
+
   /** One fixed identity-only attachment. Expectations are comparison inputs,
    * not native installation, project-worker or CAD execution authority. */
   public async inspectFrameIdentity(input: DiagnosticFrameExpectation): Promise<Readonly<Record<string, unknown>>> {
+    if (this.#purpose === "worker-startup") { throw error("STARTUP_STAGED_QUALIFICATION_REQUIRED"); }
     const expected = validateDiagnosticFrameExpectation(input);
     if (this.#inspectionConsumed || this.#browserObservationConsumed) { throw error("INSPECTION_CONSUMED"); }
     this.#enter(true); this.#inspectionConsumed = true;
@@ -875,6 +992,10 @@ class CurrentPcbRetainedOwnerCore {
       if (!unlaunched) {
         const termination = terminationObservation(await this.#request({ action: "termination" }));
         if (!termination.terminated) { throw error("RETAIN_LIVE_OWNER"); }
+        this.#terminationObservation = termination; this.#terminationObserved = true;
+        if (this.#startupChannel !== null && !this.#startupChannel.status().released) {
+          await this.#startupChannel.releaseAfterTermination();
+        }
       }
       this.#releaseConsumed = true;
       // Native release independently observes original root and Job again.
@@ -913,6 +1034,7 @@ class CurrentPcbRetainedOwnerCore {
     finally { this.#busy = false; }
   }
   async #transfer(request: () => Promise<RecordValue>): Promise<RecordValue> {
+    if (this.#startupParent !== null) { throw error("STARTUP_LEGACY_TRANSFER_DISABLED"); }
     try {
       if (!this.#launchSucceeded) { throw error("CLEANUP_ONLY"); }
       await this.#verify(); this.#available();
@@ -963,20 +1085,34 @@ class CurrentPcbRetainedOwnerCore {
     }
   }
   #request(request: RecordValue): Promise<RecordValue> {
+    if (this.#startupParent === null) { return this.#requestNow(request); }
+    // The startup channel polls independently of lifecycle cleanup. Serialize
+    // Both against the same retained helper, never a second poll owner.
+    const next = (async (): Promise<RecordValue> => { await this.#nativeTail; return this.#requestNow(request); })();
+    this.#nativeTail = (async (): Promise<void> => {
+      try { await next; } catch {
+        // The original caller retains the refusal.
+      }
+    })();
+    return next;
+  }
+  #requestNow(request: RecordValue): Promise<RecordValue> {
     this.#available();
     if (this.#pending !== null) { throw error("REQUEST_PENDING"); }
     const deferred = Promise.withResolvers<RecordValue>(), id = randomBytes(16).toString("hex");
     const launch = request["action"] === "launch";
-    const pending: Pending = { id, resolve: deferred.resolve, reject: deferred.reject, launch, send: request["action"] === "send", written: false, reply: null,
+    const pending: Pending = { id, resolve: deferred.resolve, reject: deferred.reject, launch,
+      send: request["action"] === "send" || request["action"] === "worker-startup-send" || request["action"] === "worker-startup-parent", written: false, reply: null,
       timer: setTimeout(() => { this.#fail("HELPER_DEADLINE"); }, 15_000) };
     this.#pending = pending;
     if (launch) { this.#launchRequestIssued = true; }
     try {
       const data = `${JSON.stringify({ ...this.#binding, ...request, id })}\n`;
-      const maximum = request["action"] === "send" && request["method"] === "Runtime.callFunctionOn" &&
+      const maximum = request["method"] === "Runtime.callFunctionOn" && (request["action"] === "worker-startup-parent" &&
+        (request["parentPhase"] === "preflight" || request["parentPhase"] === "open-project") || request["action"] === "send" &&
         (request["openingPhase"] === "preflight" || request["openingPhase"] === "open-project" ||
           request["pcbOpeningPhase"] === "preflight" || request["pcbOpeningPhase"] === "open-document" ||
-          request["pcbOpeningPhase"] === "observe") ? 32_768 : 4096;
+          request["pcbOpeningPhase"] === "observe")) ? 32_768 : 4096;
       if (Buffer.byteLength(data) > maximum) { throw error("REQUEST_SIZE"); }
       this.#child.stdin.write(data, cause => {
         if (cause !== null && cause !== undefined) { this.#fail("HELPER_WRITE"); }
@@ -1036,7 +1172,7 @@ class CurrentPcbRetainedOwnerCore {
 export class CurrentPcbDiagnosticOwner extends CurrentPcbRetainedOwnerCore {
   public constructor(child: ChildProcessWithoutNullStreams, verify: () => Promise<void>,
     installation: CurrentPcbDiagnosticInstallation | null = null, verifyInstallation: () => Promise<void> = (): Promise<void> => Promise.resolve()) {
-    super(child, verify, installation, verifyInstallation, false);
+    super(child, verify, installation, verifyInstallation, "diagnostic");
   }
 }
 
@@ -1044,20 +1180,32 @@ export class CurrentPcbDiagnosticOwner extends CurrentPcbRetainedOwnerCore {
 export class CurrentPcbStringPrecreateOwner extends CurrentPcbRetainedOwnerCore {
   public constructor(child: ChildProcessWithoutNullStreams, verify: () => Promise<void>,
     installation: CurrentPcbDiagnosticInstallation | null = null, verifyInstallation: () => Promise<void> = (): Promise<void> => Promise.resolve()) {
-    super(child, verify, installation, verifyInstallation, true);
+    super(child, verify, installation, verifyInstallation, "string-precreate");
+  }
+}
+
+/** Private launch-sealed constructor-capture owner. No ordinary diagnostic or
+ * String owner can be upgraded to this purpose after process allocation. */
+export class CurrentPcbWorkerStartupOwner extends CurrentPcbRetainedOwnerCore {
+  public constructor(child: ChildProcessWithoutNullStreams, verify: () => Promise<void>,
+    installation: CurrentPcbDiagnosticInstallation | null = null, verifyInstallation: () => Promise<void> = (): Promise<void> => Promise.resolve()) {
+    super(child, verify, installation, verifyInstallation, "worker-startup");
   }
 }
 
 // Only the validation lifecycle allocates this owner. It supplies no ordinary
 // Windows runtime authority, bridge authentication or connected qualification.
 export function startCurrentPcbDiagnosticOwner(options: CurrentPcbDiagnosticInstallationOptions): Promise<CurrentPcbDiagnosticOwner> {
-  return startFixedOwner(options, false);
+  return startFixedOwner(options, "diagnostic");
 }
 /** Called only by the separate String lifecycle, never diagnostic requests. */
 export function startCurrentPcbStringPrecreateOwner(options: CurrentPcbDiagnosticInstallationOptions): Promise<CurrentPcbStringPrecreateOwner> {
-  return startFixedOwner(options, true);
+  return startFixedOwner(options, "string-precreate");
 }
-async function startFixedOwner(options: CurrentPcbDiagnosticInstallationOptions, stringPurpose: boolean): Promise<CurrentPcbDiagnosticOwner | CurrentPcbStringPrecreateOwner> {
+export function startCurrentPcbWorkerStartupOwner(options: CurrentPcbDiagnosticInstallationOptions): Promise<CurrentPcbWorkerStartupOwner> {
+  return startFixedOwner(options, "worker-startup");
+}
+async function startFixedOwner(options: CurrentPcbDiagnosticInstallationOptions, purpose: OwnerPurpose): Promise<CurrentPcbDiagnosticOwner | CurrentPcbStringPrecreateOwner | CurrentPcbWorkerStartupOwner> {
   const sealedOptions = Object.freeze({ ...options });
   const installation = await verifyCurrentPcbDiagnosticInstallation(sealedOptions);
   if (fileURLToPath(new URL("../..", import.meta.url)) !== `${sealedOptions.pluginRoot}/`) { throw error("INSTALLATION_PLUGIN"); }
@@ -1087,20 +1235,25 @@ async function startFixedOwner(options: CurrentPcbDiagnosticInstallationOptions,
   // PowerShell executes exactly the bytes hashed through this retained file.
   // A short encoded bootstrap avoids the Windows command-length limit for the
   // Entire native helper and avoids reopening a pathname after byte admission.
+  let purposeSwitch = "";
+  if (purpose === "worker-startup") { purposeSwitch = " -WorkerStartup"; }
+  else if (purpose === "string-precreate") { purposeSwitch = " -StringPrecreate"; }
   const bootstrap = `$ErrorActionPreference='Stop';$ProgressPreference='SilentlyContinue';` +
     `$file=[IO.File]::Open('${windowsPath.replaceAll("'", "''")}',[IO.FileMode]::Open,[IO.FileAccess]::Read,[IO.FileShare]::Read);` +
     `try{if($file.Length -ne ${HELPER_BYTES}){throw 'pcb-diagnostic-helper-size'};$bytes=New-Object byte[] ([int]$file.Length);$offset=0;` +
     `while($offset -lt $bytes.Length){$count=$file.Read($bytes,$offset,$bytes.Length-$offset);if($count -le 0){throw 'pcb-diagnostic-helper-eof'};$offset+=$count};` +
     `$hash=[Security.Cryptography.SHA256]::Create();try{$digest=([BitConverter]::ToString($hash.ComputeHash($bytes))).Replace('-','').ToLowerInvariant()}finally{$hash.Dispose()};` +
     `if($digest -cne '${HELPER_SHA256}'){throw 'pcb-diagnostic-helper-hash'};` +
-    `$decoder=New-Object Text.UTF8Encoding($false,$true);& ([ScriptBlock]::Create($decoder.GetString($bytes)))${stringPurpose ? " -StringPrecreate" : ""}}finally{$file.Dispose()}`;
+    `$decoder=New-Object Text.UTF8Encoding($false,$true);& ([ScriptBlock]::Create($decoder.GetString($bytes)))${purposeSwitch}}finally{$file.Dispose()}`;
   const encoded = Buffer.from(bootstrap, "utf16le").toString("base64");
   if (encoded.length > 16_000) { throw error("BOOTSTRAP_BOUND"); }
   const child = spawn(installation.paths.powershellExecutable,
     ["-NoLogo", "-NoProfile", "-NonInteractive", "-ExecutionPolicy", "Bypass", "-EncodedCommand", encoded],
     { stdio: ["pipe", "pipe", "pipe"], windowsHide: true });
-  const owner = stringPurpose ? new CurrentPcbStringPrecreateOwner(child, verify, installation, verifyInstallation) :
-    new CurrentPcbDiagnosticOwner(child, verify, installation, verifyInstallation);
+  let owner: CurrentPcbRetainedOwnerCore;
+  if (purpose === "worker-startup") { owner = new CurrentPcbWorkerStartupOwner(child, verify, installation, verifyInstallation); }
+  else if (purpose === "string-precreate") { owner = new CurrentPcbStringPrecreateOwner(child, verify, installation, verifyInstallation); }
+  else { owner = new CurrentPcbDiagnosticOwner(child, verify, installation, verifyInstallation); }
   retainedOwners.add(owner); owner.start();
   return owner;
 }
