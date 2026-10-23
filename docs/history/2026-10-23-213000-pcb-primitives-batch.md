@@ -109,3 +109,27 @@ The first aggregate `verify` stopped at a test-only wildcard re-export whose
 dependency graph now exceeded Oxlint's barrel threshold. The shim now re-exports
 only its four unchanged core dependencies; no lint rule was relaxed. The
 failed log is retained and the complete frozen verification is being rerun.
+
+## First CI candidate and current-adapter review
+
+PR108 candidate`6925f2bb04a34ba40d632562e8c26b531ab88519` passed Windows
+recovery/compile CI40028249006 and Linux build checks. Linux shard1 in
+CI40028249007 refused the changed configured-font adapter's deliberately pinned
+current source review. Its1498tests had1497passes and one failure. The local
+aggregate run was interrupted before changing that review record; it is not a
+completed successful verification. Its private log and the CI failure remain
+retained.
+
+Root and independent review compared the complete configured-font adapter with
+its historical implementation. The only implementation change adds an explicit
+host-schema`title.length <= 1024`refinement to retain the native UTF-16 bound
+under Zod4.6.7; the generated native expression, context/receiver checks,
+512row/131072aggregate limits and operation authority are unchanged. The
+supplementary-Unicode boundary tests are in the
+[immutable candidate](https://github.com/jan-guenter/easyeda-pro-agent-plugin/blob/6925f2bb04a34ba40d632562e8c26b531ab88519/plugins/easyeda-pro-control/server/tests/configured-font-read.test.ts).
+The new current source review uses date2026-10-23 and digest
+`d0d2aabee1d9c6e14672b60972d388b340969a5f7e82a526d8e68f3ddafbd73f`.
+The historical font binding remains
+`d662d4aeb294b779494ba63ca89c7bb9a2446d430f36302b2463cc96d2e8a1c1`;
+all original generations, R01–R09cases and their immutable commitment remain
+unchanged. This source review transfers no live evidence to the new generation.

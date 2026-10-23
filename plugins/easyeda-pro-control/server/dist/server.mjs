@@ -10,7 +10,7 @@ const require = function __easyedaGuardedRequire(specifier) { if (typeof specifi
 	const __easyedaPublicationLockPath = __easyedaJoin(__easyedaPublicationDirectory, ".bundle-publication.lock");
 const __easyedaAssertNoPublication = () => { try { __easyedaLstatSync(__easyedaPublicationLockPath); throw new Error("The facade bundle is undergoing a fail-closed publication transaction."); } catch (__easyedaPublicationError) { if (!__easyedaPublicationError || typeof __easyedaPublicationError !== "object" || !("code" in __easyedaPublicationError) || __easyedaPublicationError.code !== "ENOENT") throw __easyedaPublicationError; } };
 __easyedaAssertNoPublication();
-const __easyedaBundlePairId = "4e38cad471cdfb5032700279c41155a721f7b1bc80242c69c09f8a6015ae1369";
+const __easyedaBundlePairId = "cb4e5cf6ef61e859827591797335a04c5c6a54c34dc83f0f11ba1eb0de0a72db";
 if (__easyedaBasename(import.meta.filename) === "server.mjs") {
   const __easyedaPeerPath = __easyedaJoin(import.meta.dirname, "upstream-supervisor.mjs");
   const __easyedaPeerPathBefore = __easyedaLstatSync(__easyedaPeerPath, { bigint: true });
@@ -58845,16 +58845,21 @@ var init_sdk_read_validation_history = __esm({
       }
     ];
     sourceReviews = [
-      { path: sharedPath, sha256: reviewedSharedSha256 },
-      ...pcbBindings,
-      schematicBinding,
-      fontBinding
-    ].map(({ path: path6, sha256 }) => ({
-      path: path6,
-      reviewedSha256: sha256,
-      reviewedOn: "2026-10-12",
-      scope: "historical-case-index-review-only;no-live-evidence-transfer"
-    }));
+      ...[{ path: sharedPath, sha256: reviewedSharedSha256 }, ...pcbBindings, schematicBinding].map(({ path: path6, sha256 }) => ({
+        path: path6,
+        reviewedSha256: sha256,
+        reviewedOn: "2026-10-12",
+        scope: "historical-case-index-review-only;no-live-evidence-transfer"
+      })),
+      // Compatibility source review only: preserve the native UTF-16 title bound
+      // Under Zod's code-point max. The fixed native reader and R09 evidence are unchanged.
+      {
+        path: fontBinding.path,
+        reviewedSha256: "d0d2aabee1d9c6e14672b60972d388b340969a5f7e82a526d8e68f3ddafbd73f",
+        reviewedOn: "2026-10-23",
+        scope: "historical-case-index-review-only;no-live-evidence-transfer"
+      }
+    ];
     readStages = ["two-matching-observations", "independent-receipt-review", "complete-source-correlation", "immutable-checkpoint-review"];
     commonExclusions = [
       "no-current-generation-or-whole-method-validation",
