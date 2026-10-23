@@ -9,6 +9,7 @@ import { createContext, runInContext } from "node:vm";
 import { z } from "zod";
 import { createOperation, loadOperation, operationPath, updateOperation, writePhaseArtifact } from "../src/artifacts.ts";
 import { OPERATION_SCHEMA, buildPlanHash, canonicalJson, isRecord, newOperationId, sha256Json } from "../src/core.ts";
+import { currentSymbolMetadataPreparationRequestSchema } from "../src/current-symbol-metadata-preparation.ts";
 
 type Bag = Record<string, unknown>;
 type Failure = "none" | "launch-clock" | "admission" | "close-ack" | "transfer" | "adoption-result" | "created-disk-drift" | "created-memory-drift";
@@ -51,7 +52,9 @@ async function baselineFixture(failure: Failure = "none"): Promise<{
   const program = stripTypeScriptTypes(await readFile(new URL("../src/current-symbol-baseline-runtime.ts", import.meta.url), "utf8"))
     .replaceAll(/^import[\s\S]*?;\n/gmu, "").replaceAll(/\bexport (?=(?:async )?(?:class|function|const))/gu, "");
   const context = createContext({ Object, Map, WeakMap, Date, Promise, structuredClone, z, canonicalJson, isRecord, sha256Json,
-    OPERATION_SCHEMA, buildPlanHash, currentSymbolMetadataPreparationRequestSchema: z.object({}),
+    // The real schema retains observationProjection for the coordinator's omit;
+    // Only native/ownership boundaries are synthetic, not schema construction.
+    OPERATION_SCHEMA, buildPlanHash, currentSymbolMetadataPreparationRequestSchema,
     CurrentAgedSqlReferenceStage: function CurrentAgedSqlReferenceStage(): void { noop(); }, assertWindowsRuntimeValidator: noop,
     assertCurrentSymbolInverseBaselineOwner: (value: unknown): unknown => { assert.equal(value, owner); return original; },
     revalidateCurrentSymbolInverseBaselineOwner: (value: unknown): Promise<unknown> => { assert.equal(value, owner); return Promise.resolve(original); },

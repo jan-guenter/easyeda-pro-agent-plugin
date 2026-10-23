@@ -133,3 +133,17 @@ The historical font binding remains
 `d662d4aeb294b779494ba63ca89c7bb9a2446d430f36302b2463cc96d2e8a1c1`;
 all original generations, R01–R09cases and their immutable commitment remain
 unchanged. This source review transfers no live evidence to the new generation.
+
+## Second CI candidate: inverse test fixture
+
+Candidate`9d69992d2edeb1d24fbced0b65d61b76880af963` passed Windows CI40029809243,
+Linux build checks and seven of eight facade shards in CI40029809256. The
+remaining shard had1178tests:1168passed, nine failed and one platform skip.
+All nine failures occurred while constructing the inverse test VM: its empty
+replacement metadata-preparation schema omitted the production
+`observationProjection`field, which Zod4.6.7now checks when `.omit()`runs.
+The actual production schema already contains that field. This is a test-fixture
+initialization mismatch, not evidence that the production inverse ran or failed.
+The local aggregate was interrupted before editing the fixture; its partial run
+is not a final verification. Production source, bundles and pins remain frozen
+for this test-only correction. The failed CI and local logs are retained.
