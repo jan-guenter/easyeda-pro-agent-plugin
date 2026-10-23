@@ -148,3 +148,14 @@ expectations. The first full suite was stopped before changing files; its
 partial log is retained and is not a completed verification. Both validators
 now require that additional check and its exact check/update commands. The
 final unchanged payload must pass a new complete suite.
+
+PR106 candidate60f5626b90bd09430187f3ab6204fcb94da6cf83 passed Windows
+run40015577068 and the build plus seven shards in Linux run40015577033.
+Shard3 retained two stale assertions: the former two-purpose native guard
+string and the former four-route network count. Its1224 tests had1222 passes
+and2 failures, with no skips or cancellations. The runtime behavior was not
+changed to satisfy those expectations. Both assertions were updated to the
+already-reviewed three-purpose guard and six metadata routes. The second
+local suite was stopped before this test-source correction; its partial log
+is retained, not counted as a completed verification. Final CI and a fresh
+full local verification remain required on the corrected commit.
