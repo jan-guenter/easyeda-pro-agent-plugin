@@ -1076,11 +1076,11 @@ void test("every coverage input-discovery request resolves to an actual strict a
     assert.ok(isRecord(request));
     const result = queryOfflineApi(apiRequestSchema.parse(request)).result;
     assert.ok(isRecord(result));
-    if (["project-symbol-operation", "disposable-symbol-copy", "disposable-pcb-rename", "disposable-schematic-rename", "project-schematic-operation"].includes(String(request["action"]))) {
+    if (["project-symbol-operation", "disposable-symbol-copy", "disposable-pcb-rename", "disposable-schematic-rename", "project-schematic-operation", "pcb209-opening"].includes(String(request["action"]))) {
       assert.ok(isRecord(result["inputSchema"]));
-      // The ordinary SCH route exposes its opening/lifecycle union at the root;
+      // The ordinary SCH and 209 opening routes expose their lifecycle union at the root;
       // Existing routes still promise a separate phase schema as well.
-      if (request["action"] !== "project-schematic-operation") { assert.ok(isRecord(result["stepSchema"])); }
+      if (request["action"] !== "project-schematic-operation" && request["action"] !== "pcb209-opening") { assert.ok(isRecord(result["stepSchema"])); }
       assert.equal(result["executionAuthorized"], false);
     } else {
       const entries = result["entries"];

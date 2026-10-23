@@ -108,6 +108,18 @@ validator also closed during the concurrent bundle-build interval; stable
 post-build runs with both022 and077 umasks passed. No inference about a live
 application or design follows from these offline checks.
 
+Commit `489dbffb4457f2e093a673ff5c8aaa2497e8756d` corrected that extraction
+test; its CI40000673962 shard1 passed. Shard4 then exposed another existing
+test assumption: the exhaustive coverage-discovery checker recognized only
+older root-schema responses, so it incorrectly expected an `entries` array
+from `pcb209-opening`. The correction adds that exact action to the root-schema
+forms, retains the `executionAuthorized:false` assertion and does not require
+an unrelated `stepSchema`. No runtime source, generated catalog, bundle or
+compatibility pin changes were needed. The second local full run was stopped
+before altering the test; its log is retained. The entire affected coverage
+suite and related registration/lifecycle suites are checked before the next
+frozen run, not just the newly added coverage case.
+
 After a fresh session admits the installed candidate, qualify the new209
 opening/normal-cleanup path on an explicitly disposable checkpoint and inspect
 one shortcut diagnostic result. Never repeat the old consumed calls.
