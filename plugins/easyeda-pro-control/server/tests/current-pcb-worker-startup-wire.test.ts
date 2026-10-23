@@ -4,6 +4,7 @@ import { test } from "node:test";
 import { currentPcbWorkerStartupNativeCases, currentPcbWorkerStartupNativeParentCases, currentPcbWorkerStartupNativeSource } from "../src/current-pcb-worker-startup-native.ts";
 import { currentPcbWorkerStartupWire } from "../src/current-pcb-worker-startup-wire.ts";
 import { CURRENT_PCB_WORKER_STARTUP_WORKER_ACTOR_CLOCK_FUNCTION, currentPcbWorkerStartupUiActorCommand } from "../src/current-pcb-worker-startup-actor.ts";
+import { CURRENT_PCB_WORKER_STARTUP_CHANNEL_CALLS } from "../src/current-pcb-worker-startup-channel-observation.ts";
 
 const samples = currentPcbWorkerStartupNativeCases();
 void test("startup parent grammar retains browser-global reads and exact sealed opener, never caller code", () => {
@@ -32,7 +33,7 @@ void test("startup parent grammar retains browser-global reads and exact sealed 
   }
 });
 void test("startup wire preserves every fixed command and strips native program text", () => {
-  assert.equal(samples.length, 37);
+  assert.equal(samples.length, 40);
   for (const sample of samples) {
     const wire = currentPcbWorkerStartupWire(sample, 1);
     assert.deepEqual(wire.command, { id: 1, ...sample });
@@ -42,6 +43,22 @@ void test("startup wire preserves every fixed command and strips native program 
       assert.ok(!Object.hasOwn(wire.request, key));
     }
     assert.ok(Object.isFrozen(wire) && Object.isFrozen(wire.command.params) && Object.isFrozen(wire.request));
+  }
+});
+void test("startup channel wire reconstructs only the three fixed observation programs", () => {
+  for (const [phase, expected] of Object.entries(CURRENT_PCB_WORKER_STARTUP_CHANNEL_CALLS)) {
+    const sample = samples.find(value => value.method === "Runtime.callFunctionOn" && value.params.functionDeclaration === expected.program);
+    assert.ok(sample?.method === "Runtime.callFunctionOn");
+    const wire = currentPcbWorkerStartupWire(sample, 175);
+    assert.equal(wire.request["startupPhase"], `channel-${phase}`);
+    assert.equal(wire.request["action"], "worker-startup-send");
+    assert.equal(sample.params.arguments.length, expected.arguments);
+    assert.equal(sample.params.returnByValue, expected.returnByValue);
+    assert.equal(Object.hasOwn(wire.request, "functionDeclaration"), false);
+    for (const patch of [{ uniqueContextId: "caller-context" }, { arguments: [{ value: "caller-receiver" }] },
+      { objectGroup: "foreign-group" }, { awaitPromise: true }, { throwOnSideEffect: false }]) {
+      assert.throws(() => currentPcbWorkerStartupWire({ ...sample, params: { ...sample.params, ...patch } }, 175));
+    }
   }
 });
 void test("startup actor wire admits only exact fixed UI and original-receiver worker programs", () => {

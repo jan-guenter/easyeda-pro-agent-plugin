@@ -56,7 +56,7 @@ export type CurrentPcbWorkerConstructionCommand =
     generatePreview: false; throwOnSideEffect: true; includeCommandLineAPI: false }> }>
   | Readonly<{ method: "Runtime.getProperties"; params: Readonly<{ objectId: string; ownProperties: true; generatePreview: false }> }>
   | Readonly<{ method: "Runtime.callFunctionOn"; params: Readonly<{ objectId: string;
-    /** Only fixed construction, assignment and original-worker actor reads. The
+    /** Only fixed construction, assignment, actor and current-channel reads. The
      * native boundary must reject every other string before forwarding. */
     functionDeclaration: string;
     arguments: readonly Readonly<{ objectId: string }>[]; objectGroup: typeof CURRENT_PCB_WORKER_CONSTRUCTION_SOURCE.group;

@@ -11,6 +11,7 @@ import { CURRENT_PCB_WORKER_STARTUP_REQUEST_LIMIT, currentPcbWorkerStartupWire }
 import { freezeDeep } from "./sqlite-inventory-core.ts";
 import { CURRENT_PCB_WORKER_STARTUP_UI_ACTOR_CLOCK_FUNCTION, CURRENT_PCB_WORKER_STARTUP_WORKER_ACTOR_CLOCK_FUNCTION,
   currentPcbWorkerStartupUiActorCommand } from "./current-pcb-worker-startup-actor.ts";
+import { CURRENT_PCB_WORKER_STARTUP_CHANNEL_CALLS } from "./current-pcb-worker-startup-channel-observation.ts";
 
 const group = CURRENT_PCB_WORKER_CONSTRUCTION_SOURCE.group;
 const placeholder = (name: string): string => `__startup_${name}__`;
@@ -43,7 +44,8 @@ export function currentPcbWorkerStartupNativeCases(): readonly CurrentPcbWorkerS
     { program: CURRENT_PCB_WORKER_CONSTRUCTION_PROJECT, arguments: 1, returnByValue: true },
     { program: CURRENT_PCB_WORKER_CONSTRUCTION_IDENTITY, arguments: 1, returnByValue: true },
     { program: CURRENT_PCB_WORKER_STARTUP_WORKER_ACTOR_CLOCK_FUNCTION, arguments: 1, returnByValue: true },
-    ...Object.values(CURRENT_PCB_WORKER_CONSTRUCTION_ASSIGNMENT_CALLS)]) {
+    ...Object.values(CURRENT_PCB_WORKER_CONSTRUCTION_ASSIGNMENT_CALLS),
+    ...Object.values(CURRENT_PCB_WORKER_STARTUP_CHANNEL_CALLS)]) {
     commands.push({ method: "Runtime.callFunctionOn", params: { ...effects, objectId: placeholder("objectId"),
       functionDeclaration: entry.program, returnByValue: entry.returnByValue,
       arguments: Array.from({ length: entry.arguments }, (_, index) => ({ objectId: placeholder(`argument${index}`) })) }, sessionId });

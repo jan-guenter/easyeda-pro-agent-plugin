@@ -9,7 +9,7 @@ import { workerConstructionFixtureSource } from "./current-pcb-worker-constructi
 
 /** This launches only this test's synthetic Node process, never EasyEDA or a
  * plugin facade. Its ordinary OS process is not native runtime admission. */
-export async function constructionInspector(context: TestContext, loseAtPause = 0): Promise<Readonly<{
+export async function constructionInspector(context: TestContext, loseAtPause = 0, publisherMethods = false): Promise<Readonly<{
   transport: CurrentPcbWorkerConstructionTransport; commands: string[];
   counts: () => Readonly<{ pauses: number; resumes: number }>; lose: () => void;
   run: () => Promise<unknown>; completed: () => Promise<boolean>; interrupt: () => Promise<void>;
@@ -52,7 +52,7 @@ export async function constructionInspector(context: TestContext, loseAtPause = 
   };
   await request("Debugger.enable", {}); await request("Runtime.enable", {});
   const compiled = z.object({ scriptId: z.string() }).strict().parse(await request("Runtime.compileScript", {
-    expression: workerConstructionFixtureSource(), sourceURL: "worker-construction-synthetic.js", persistScript: true,
+    expression: workerConstructionFixtureSource(publisherMethods), sourceURL: "worker-construction-synthetic.js", persistScript: true,
   }));
   const transport: CurrentPcbWorkerConstructionTransport = {
     scriptId: compiled.scriptId,

@@ -14,6 +14,8 @@ import type { CurrentPcbWorkerStartupOpeningResult } from "../src/current-pcb-wo
 import type { CurrentPcbWorkerConstructionAssignments } from "../src/current-pcb-worker-construction-assignment.ts";
 import { CurrentPcbWorkerStartupActorRunner } from "../src/current-pcb-worker-startup-actor-runner.ts";
 import type { CurrentPcbWorkerStartupActorPacket } from "../src/current-pcb-worker-startup-actor-runner.ts";
+import { CURRENT_PCB_WORKER_STARTUP_CHANNEL_OBSERVATION_LIMITS, currentPcbWorkerStartupChannelPacketSchema } from "../src/current-pcb-worker-startup-channel-observation.ts";
+import type { CurrentPcbWorkerStartupChannelPacket } from "../src/current-pcb-worker-startup-channel-observation.ts";
 import { createCurrentPcbDiagnosticInstallationPlan } from "../src/current-pcb-diagnostic-installation.ts";
 import type { CurrentPcbDiagnosticInstallation } from "../src/current-pcb-diagnostic-installation.ts";
 import { CurrentPcbDiagnosticLifecycle, CurrentPcbStringPrecreateLifecycle, CurrentPcbWorkerStartupLifecycle } from "../src/current-pcb-diagnostic-lifecycle.ts";
@@ -362,8 +364,27 @@ async function successfulStartupHandoff(context: TestContext, value: ReturnType<
 function startupActorReply(sample: unknown): Promise<unknown> {
   return Promise.resolve({ result: { type: "string", value: JSON.stringify(sample) } });
 }
+/** Synthetic coordinator packet only. The separate channel collector tests
+ * qualify original V8 methods; this fixture supplies no connected evidence. */
+function startupChannelPacket(identity: CurrentPcbWorkerStartupOpeningResult["workerIdentity"]): CurrentPcbWorkerStartupChannelPacket {
+  const publisherSenderUuid = "12345678-1234-4234-8234-123456789abc";
+  const gates = JSON.stringify({ schema: "easyeda-pro-control.pcb-string-worker-gates.v1", identity,
+    raw: { isTemporary: false, isHistoryBack: false, isV2Format: false, isReady: true,
+      isSyncing: { state: "absent", value: null }, privateMode: false },
+    predicates: { isReadOnly: false, canWsPublish: false, cooperationCallbackGateOpen: true, structureCallbackStateGateOpen: true },
+    privateModeSource: "jr=L1.IS_PRIVATE", gateMethodReferencesMatched: true,
+    publisher: { senderUuid: publisherSenderUuid, methodChainReferencesMatched: true, nativeChannelVerified: false,
+      nativeOnMessageReceiverVerified: false, completePublishersVerified: false },
+    hiddenCallbackReceiversVerified: false, writeDestinationsContained: false, atomicSample: false });
+  const body = { profile: "private.current-pcb-worker-startup-channel-observation.v1", identity,
+    originalRunnerIssued: true, originalConstructorChannelRelationsObserved: true, currentPublisherMethodRelationsQualified: true,
+    pairedGateSamplesMatched: true, channelRelationChecks: 2, requestCount: 18,
+    qualifiedMethodKinds: ["readOnly", "format", "canPublish", "publish", "broadcast", "post", "message", "received"],
+    gateReplies: [gates, gates], publisherSenderUuid, ...CURRENT_PCB_WORKER_STARTUP_CHANNEL_OBSERVATION_LIMITS };
+  return Object.freeze(currentPcbWorkerStartupChannelPacketSchema.parse({ ...body, packetSha256: sha256Json(body) }));
+}
 function startupOpeningFixture(value: ReturnType<typeof fixture>, handoff: CurrentPcbWorkerStartupHandoff,
-  failAfterDispatch = false, assignmentsFailure?: "prove" | "reproof" | "actor-prove" | "actor-reproof"): Readonly<{ owner: CurrentPcbWorkerStartupOpeningCoordinator; result: CurrentPcbWorkerStartupOpeningResult;
+  failAfterDispatch = false, assignmentsFailure?: "prove" | "reproof" | "actor-prove" | "actor-reproof" | "channel-prove" | "channel-reproof"): Readonly<{ owner: CurrentPcbWorkerStartupOpeningCoordinator; result: CurrentPcbWorkerStartupOpeningResult;
     transport: CurrentPcbWorkerStartupTransport }> {
   const result: CurrentPcbWorkerStartupOpeningResult = Object.freeze({ opening: OPEN_RESULT, construction: Object.freeze({
     profile: "private.current-pcb-worker-construction.v1", pauses: 9, originalConstructorAndFactoryEventsRetained: true,
@@ -381,6 +402,7 @@ function startupOpeningFixture(value: ReturnType<typeof fixture>, handoff: Curre
   });
   let dispatched = false;
   let actor: CurrentPcbWorkerStartupActorRunner | null = null, actorPacket: CurrentPcbWorkerStartupActorPacket | null = null;
+  let channelPacket: CurrentPcbWorkerStartupChannelPacket | null = null;
   const owner: CurrentPcbWorkerStartupOpeningCoordinator = {
     open: async (target, reverify): Promise<CurrentPcbWorkerStartupOpeningResult> => {
       value.calls.push("startup-preflight");
@@ -397,7 +419,7 @@ function startupOpeningFixture(value: ReturnType<typeof fixture>, handoff: Curre
     },
     status: () => ({ consumed: dispatched, settled: dispatched, openingAttempted: dispatched, openingResultRetained: dispatched,
       constructionRetained: dispatched && !failAfterDispatch, completed: dispatched && !failAfterDispatch,
-      diagnostics: { stage: "idle", step: "idle", failure: null }, executionAuthorized: false }),
+      transport: transport.status(), diagnostics: { stage: "idle", step: "idle", failure: null }, executionAuthorized: false }),
     retainedOpeningResult: (): CurrentPcbDiagnosticOpeningResult | null => dispatched ? OPEN_RESULT : null,
     requireOriginal: (selected): Promise<CurrentPcbWorkerStartupTransport> => {
       assert.equal(selected, result); assert.equal(dispatched && !failAfterDispatch, true); value.calls.push("startup-require");
@@ -443,6 +465,23 @@ function startupOpeningFixture(value: ReturnType<typeof fixture>, handoff: Curre
       value.calls.push("startup-actor-require");
       if (assignmentsFailure === "actor-reproof") { throw new Error("synthetic actor reproof failure"); }
       await actor.requireOriginal(packet);
+    },
+    retainedChannelObservation: (): Readonly<Record<string, unknown>> | null => channelPacket === null ? null :
+      { status: { phase: "completed" }, gateReplies: channelPacket.gateReplies },
+    observeCurrentChannel: async (selected, observed): Promise<CurrentPcbWorkerStartupChannelPacket> => {
+      assert.equal(selected, result); assert.equal(observed, assignments); value.calls.push("startup-channel-observe");
+      const operations = await readCurrentPcbDiagnosticLifecycles();
+      const operation = operations.at(-1);
+      const intent = operation?.records["worker-startup-channel-intent.json"]; assert.ok(intent);
+      assert.equal(intent.assignmentsResultSha256, sha256Json(operation?.records["worker-startup-assignments-result.json"]));
+      assert.equal(operation?.records["worker-startup-actor-intent.json"], undefined);
+      if (assignmentsFailure === "channel-prove") { throw new Error("synthetic channel observation failure"); }
+      channelPacket = startupChannelPacket(result.workerIdentity); return channelPacket;
+    },
+    requireCurrentChannel: async (selected, observed, packet): Promise<void> => {
+      await Promise.resolve(); assert.equal(selected, result); assert.equal(observed, assignments); assert.equal(packet, channelPacket);
+      value.calls.push("startup-channel-require");
+      if (assignmentsFailure === "channel-reproof") { throw new Error("synthetic channel reproof failure"); }
     },
     releaseAfterTermination: (): Promise<void> => {
       assert.equal(value.state.terminated, true); assert.equal(value.state.released, false);
@@ -591,6 +630,84 @@ for (const outcome of ["success", "intent-publication", "result-publication", "p
     await assert.rejects(historical.observeWorkerStartupActor(id, binding), /ORIGINAL_STARTUP_ASSIGNMENTS_REQUIRED/u);
     await value.request("normal-close", { hwnd: "12345", confirmNormalClose: true });
     await assert.rejects(value.coordinator.observeWorkerStartupActor(id, binding), /ORIGINAL_STARTUP_ASSIGNMENTS_REQUIRED/u);
+    value.state.terminated = true; await value.request("observe-termination"); await value.request("release-closed");
+    assert.ok(value.calls.indexOf("startup-release") < value.calls.indexOf("release"));
+    await assertNoUnresolvedCurrentPcbDiagnosticLaunches();
+  });
+}
+
+for (const outcome of ["success", "intent-publication", "result-publication", "prove", "reproof"] as const) {
+  void test(`startup channel ${outcome} retains original stage and never replays samples during settlement`, async context => {
+    const id = `worker-startup-test-channel-${outcome}`;
+    let original: ReturnType<typeof startupOpeningFixture> | null = null, refuse = true;
+    const value = fixture(context, id, {
+      createStartupOpening: () => { assert.ok(original); return original.owner; },
+      publishRecord: async (operationId, name, record) => {
+        if (refuse && (outcome === "intent-publication" && name === "worker-startup-channel-intent.json" ||
+          outcome === "result-publication" && name === "worker-startup-channel-result.json")) {
+          refuse = false; throw new Error("synthetic channel publication failure");
+        }
+        await publishCurrentPcbDiagnosticLifecycleRecord(operationId, name, record);
+      },
+    });
+    const handoff = await successfulStartupHandoff(context, value);
+    const failure = outcome === "prove" || outcome === "reproof" ? `channel-${outcome}` as const : undefined;
+    original = startupOpeningFixture(value, handoff, false, failure);
+    await readyForOpening(id, value); assert.ok(value.coordinator instanceof CurrentPcbWorkerStartupLifecycle);
+    const before = await value.coordinator.run({ action: "inspect", operationId: id });
+    const binding = before["bindingSha256"]; assert.ok(typeof binding === "string");
+    await value.coordinator.captureWorkerStartup(id, binding, STARTUP_OPEN_INPUT);
+    await assert.rejects(value.coordinator.observeWorkerStartupChannel(id, binding), /ORIGINAL_STARTUP_ASSIGNMENTS_REQUIRED/u);
+    await value.coordinator.observeWorkerStartupAssignments(id, binding);
+    if (outcome === "success") {
+      const observed = await value.coordinator.observeWorkerStartupChannel(id, binding);
+      assert.equal(observed["pointInTimeObservation"], true); assert.equal(observed["saveAuthorized"], false);
+      assert.equal(observed["executionAuthorized"], false);
+      const result = observed["result"]; assert.ok(result !== null && typeof result === "object");
+      assert.equal(Reflect.get(result, "pairedGateSamplesMatched"), true);
+      for (const field of ["continuousObservation", "nativeIntrinsicsVerified", "nativeChannelIntrinsicAndPeerOwnershipVerified", "completePublishersVerified",
+        "queueCompletionVerified", "writeDestinationsContained", "atomicSnapshotVerified"]) {
+        assert.equal(Reflect.get(result, field), false);
+      }
+    } else { await assert.rejects(value.coordinator.observeWorkerStartupChannel(id, binding), /synthetic channel/u); }
+    await assert.rejects(value.coordinator.observeWorkerStartupChannel(id, binding), /WORKER_STARTUP_CHANNEL_CONSUMED/u);
+    let inspected = await value.coordinator.run({ action: "inspect", operationId: id });
+    assert.equal(inspected["workerStartupChannelAttemptConsumed"], true);
+    assert.equal(inspected["workerStartupChannelResultRetained"], outcome !== "prove" && outcome !== "intent-publication");
+    assert.equal(inspected["workerStartupChannelResultPublished"], outcome === "success");
+    const count = value.calls.length;
+    await value.coordinator.run({ action: "settle-records", operationId: id, expectedIntentSha256: before["intentSha256"] });
+    assert.equal(value.calls.slice(count).some(call => call.startsWith("startup-channel")), false);
+    inspected = await value.coordinator.run({ action: "inspect", operationId: id });
+    assert.equal(inspected["workerStartupChannelResultPublished"], outcome === "success" || outcome === "result-publication");
+    if (outcome === "success" || outcome === "result-publication") {
+      const summary = inspected["workerStartupChannelResult"]; assert.ok(summary !== null && typeof summary === "object");
+      assert.equal(Reflect.get(summary, "summaryOnly"), true); assert.equal(Reflect.get(summary, "sampleCount"), 2);
+      assert.equal(Reflect.has(summary, "gateReplies"), false);
+    }
+    assert.equal(value.calls.filter(call => call === "startup-channel-observe").length, outcome === "intent-publication" ? 0 : 1);
+    assert.equal(value.calls.filter(call => call === "startup-dispatch").length, 1);
+    if (outcome === "success") {
+      const path = join(directory(id), "worker-startup-channel-intent.json"), text = await readFile(path, "utf8");
+      const recorded = diagnosticLifecycleRecordSchemas["worker-startup-channel-intent.json"].parse(JSON.parse(text) as unknown);
+      try {
+        await writeFile(path, JSON.stringify({ ...recorded, assignmentsResultSha256: "f".repeat(64) }), { mode: 0o600 });
+        await assert.rejects(readCurrentPcbDiagnosticLifecycles(), /WORKER_STARTUP_CHANNEL_CHAIN/u);
+      } finally { await writeFile(path, text, { mode: 0o600 }); }
+      const resultPath = join(directory(id), "worker-startup-channel-result.json"), resultText = await readFile(resultPath, "utf8");
+      const result = diagnosticLifecycleRecordSchemas["worker-startup-channel-result.json"].parse(JSON.parse(resultText) as unknown);
+      try {
+        await writeFile(resultPath, JSON.stringify({ ...result, intentSha256: "f".repeat(64) }), { mode: 0o600 });
+        await assert.rejects(readCurrentPcbDiagnosticLifecycles(), /WORKER_STARTUP_CHANNEL_RESULT_CHAIN/u);
+        const foreign = startupChannelPacket({ ...original.result.workerIdentity, branchUuid: "f".repeat(32) });
+        await writeFile(resultPath, JSON.stringify({ ...result, result: foreign }), { mode: 0o600 });
+        await assert.rejects(readCurrentPcbDiagnosticLifecycles(), /WORKER_STARTUP_CHANNEL_RESULT_CHAIN/u);
+      } finally { await writeFile(resultPath, resultText, { mode: 0o600 }); }
+    }
+    const historical = new CurrentPcbWorkerStartupLifecycle(value.options);
+    await assert.rejects(historical.observeWorkerStartupChannel(id, binding), /ORIGINAL_STARTUP_ASSIGNMENTS_REQUIRED/u);
+    await value.request("normal-close", { hwnd: "12345", confirmNormalClose: true });
+    await assert.rejects(value.coordinator.observeWorkerStartupChannel(id, binding), /ORIGINAL_STARTUP_ASSIGNMENTS_REQUIRED/u);
     value.state.terminated = true; await value.request("observe-termination"); await value.request("release-closed");
     assert.ok(value.calls.indexOf("startup-release") < value.calls.indexOf("release"));
     await assertNoUnresolvedCurrentPcbDiagnosticLaunches();
