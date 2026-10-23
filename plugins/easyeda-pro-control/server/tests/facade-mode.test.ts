@@ -37,14 +37,18 @@ void test("restricted registration admits scoped metadata and disposable opening
   }
 });
 
-void test("exact209 selectors expose eleven scoped tools without inheriting unreviewed old routes", () => {
+void test("exact209 selectors expose thirteen scoped tools without inheriting unreviewed old routes", () => {
   assert.equal(configuredFacadeMode({ EASYEDA_PCB_BUNDLE_VERSION: "3.2.195.6b67774e",
     EASYEDA_PUBLIC_API_BUNDLE_VERSION: "0.3.59.1ca9efb5" }), "public-utilities-only");
-  assert.equal(PUBLIC_UTILITIES_ONLY_TOOLS.length, 11);
+  assert.equal(PUBLIC_UTILITIES_ONLY_TOOLS.length, 13);
   assert.equal(facadeToolRegistered("legacy-reviewed", "easyeda_control_public_readers"), false);
   assert.equal(facadeToolRegistered("calculation-only", "easyeda_control_public_readers"), false);
   assert.equal(facadeToolRegistered("legacy-reviewed", "easyeda_control_catalog_footprint"), false);
   assert.equal(facadeToolRegistered("calculation-only", "easyeda_control_catalog_footprint"), false);
+  for (const tool of ["easyeda_control_catalog_components", "easyeda_control_pcb209_opening"]) {
+    assert.equal(facadeToolRegistered("legacy-reviewed", tool), false);
+    assert.equal(facadeToolRegistered("calculation-only", tool), false);
+  }
   for (const name of PUBLIC_UTILITIES_ONLY_TOOLS) { assert.equal(facadeToolRegistered("public-utilities-only", name), true); }
   for (const name of CALCULATION_ONLY_TOOLS.filter((entry) => !PUBLIC_UTILITIES_ONLY_TOOLS.includes(entry))) {
     assert.equal(facadeToolRegistered("public-utilities-only", name), false);
@@ -53,7 +57,7 @@ void test("exact209 selectors expose eleven scoped tools without inheriting unre
     assert.equal(facadeToolRegistered("public-utilities-only", name), false);
   }
   const capabilities = publicUtilitiesOnlyCapabilities();
-  assert.deepEqual(capabilities["navigation"], { enabled: false });
+  assert.deepEqual(capabilities["navigation"], { enabled: true, scope: "original-owner-disposable209-opening-only" });
   assert.deepEqual(capabilities["designAccess"], { enabled: false, scope: "design-content-routes" });
   assert.equal(Object.hasOwn(capabilities, "projectSymbolMetadata"), false);
 });

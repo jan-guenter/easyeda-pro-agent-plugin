@@ -22,7 +22,7 @@ import { CurrentPcbDiagnosticContext, diagnosticBoundedObservation, diagnosticTa
 import type { DiagnosticFrameExpectation, DiagnosticScriptProfile } from "./current-pcb-diagnostic-context.ts";
 import { CurrentPcbDiagnosticWorkerContext } from "./current-pcb-diagnostic-worker-context.ts";
 import type { DiagnosticWorkerScriptProfile } from "./current-pcb-diagnostic-worker-context.ts";
-import { verifyCurrentPcbDiagnosticFacade, verifyCurrentPcbDiagnosticInstallation } from "./current-pcb-diagnostic-installation.ts";
+import { verifyCurrentPcb209DiagnosticInstallation, verifyCurrentPcbDiagnosticFacade, verifyCurrentPcbDiagnosticInstallation } from "./current-pcb-diagnostic-installation.ts";
 import type { CurrentPcbDiagnosticInstallation, CurrentPcbDiagnosticInstallationOptions } from "./current-pcb-diagnostic-installation.ts";
 import { currentDisposableOpenSealedTargetSchema } from "./current-disposable-open.ts";
 import type { CurrentDisposableOpenSealedTarget } from "./current-disposable-open.ts";
@@ -1246,6 +1246,11 @@ export class CurrentPcbWorkerStartupOwner extends CurrentPcbRetainedOwnerCore {
 export function startCurrentPcbDiagnosticOwner(options: CurrentPcbDiagnosticInstallationOptions): Promise<CurrentPcbDiagnosticOwner> {
   return startFixedOwner(options, "diagnostic");
 }
+/** Separate 209 opening-only allocator. No existing owner can be upgraded and
+ * the fixed native diagnostic command vocabulary and budget are unchanged. */
+export function startCurrentPcb209DiagnosticOwner(options: CurrentPcbDiagnosticInstallationOptions): Promise<CurrentPcbDiagnosticOwner> {
+  return startFixedOwner(options, "diagnostic", "209-opening");
+}
 /** Called only by the separate String lifecycle, never diagnostic requests. */
 export function startCurrentPcbStringPrecreateOwner(options: CurrentPcbDiagnosticInstallationOptions): Promise<CurrentPcbStringPrecreateOwner> {
   return startFixedOwner(options, "string-precreate");
@@ -1253,12 +1258,15 @@ export function startCurrentPcbStringPrecreateOwner(options: CurrentPcbDiagnosti
 export function startCurrentPcbWorkerStartupOwner(options: CurrentPcbDiagnosticInstallationOptions): Promise<CurrentPcbWorkerStartupOwner> {
   return startFixedOwner(options, "worker-startup");
 }
-async function startFixedOwner(options: CurrentPcbDiagnosticInstallationOptions, purpose: OwnerPurpose): Promise<CurrentPcbDiagnosticOwner | CurrentPcbStringPrecreateOwner | CurrentPcbWorkerStartupOwner> {
+async function startFixedOwner(options: CurrentPcbDiagnosticInstallationOptions, purpose: OwnerPurpose,
+  generation: "206" | "209-opening" = "206"): Promise<CurrentPcbDiagnosticOwner | CurrentPcbStringPrecreateOwner | CurrentPcbWorkerStartupOwner> {
   const sealedOptions = Object.freeze({ ...options });
-  const installation = await verifyCurrentPcbDiagnosticInstallation(sealedOptions);
+  if (generation === "209-opening" && purpose !== "diagnostic") { throw error("INSTALLATION_PURPOSE"); }
+  const verifier = generation === "209-opening" ? verifyCurrentPcb209DiagnosticInstallation : verifyCurrentPcbDiagnosticInstallation;
+  const installation = await verifier(sealedOptions);
   if (fileURLToPath(new URL("../..", import.meta.url)) !== `${sealedOptions.pluginRoot}/`) { throw error("INSTALLATION_PLUGIN"); }
   const verifyInstallation = async (): Promise<void> => {
-    const current = await verifyCurrentPcbDiagnosticInstallation(sealedOptions);
+    const current = await verifier(sealedOptions);
     if (current.facadeSha256 !== installation.facadeSha256 || JSON.stringify(current.plan) !== JSON.stringify(installation.plan)) { throw error("INSTALLATION_CHANGED"); }
   };
   const verifyStartupFacade = async (): Promise<void> => {

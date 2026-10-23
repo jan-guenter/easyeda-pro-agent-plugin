@@ -1,6 +1,6 @@
 /** Original-owner validation lifecycle with one checkpoint-bound disposable
  * opening. No generic debugger command, CAD writer or historical owner recreation. */
-/* oxlint-disable max-classes-per-file, import/max-dependencies -- Three fixed facades share one private cleanup/journal core; keeping the purpose selector unexported prevents a caller-selectable upgrade API. */
+/* oxlint-disable max-classes-per-file, import/max-dependencies -- Four fixed facades share one private cleanup/journal core; keeping the purpose selector unexported prevents a caller-selectable upgrade API. */
 import type { z } from "zod";
 import { join } from "node:path";
 import { controlDataDirectory } from "./artifacts.ts";
@@ -10,11 +10,13 @@ import type { CurrentDisposableOpenSealedTarget } from "./current-disposable-ope
 import { prepareCurrentDisposableOpenCheckpoint, readCurrentPcbCommonOpenInventory, verifyCurrentDisposableOpenCheckpoint, verifyHistoricalCurrentDisposableOpenCheckpoint } from "./current-disposable-open-checkpoint.ts";
 import type { CurrentDisposableOpenCheckpoint } from "./current-disposable-open-checkpoint.ts";
 import { assertNoUnresolvedOrdinaryLaunches } from "./ordinary-launch.ts";
-import { startCurrentPcbDiagnosticOwner, startCurrentPcbStringPrecreateOwner, startCurrentPcbWorkerStartupOwner } from "./current-pcb-diagnostic-owner.ts";
+import { startCurrentPcb209DiagnosticOwner, startCurrentPcbDiagnosticOwner, startCurrentPcbStringPrecreateOwner, startCurrentPcbWorkerStartupOwner } from "./current-pcb-diagnostic-owner.ts";
 import type { CurrentPcbDiagnosticOwner, CurrentPcbStringPrecreateOwner, CurrentPcbWorkerStartupHandoff, CurrentPcbWorkerStartupOwner } from "./current-pcb-diagnostic-owner.ts";
-import { verifyCurrentPcbDiagnosticInstallation } from "./current-pcb-diagnostic-installation.ts";
+import { verifyCurrentPcb209DiagnosticInstallation, verifyCurrentPcbDiagnosticInstallation } from "./current-pcb-diagnostic-installation.ts";
 import type { CurrentPcbDiagnosticInstallation, CurrentPcbDiagnosticInstallationOptions } from "./current-pcb-diagnostic-installation.ts";
 import { CURRENT_PCB_DIAGNOSTIC_SCRIPTS } from "./current-pcb-diagnostic-profile.ts";
+import { CURRENT_PCB_209_OPENING_PROFILE, CURRENT_PCB_209_OPENING_SCRIPTS } from "./current-pcb-209-opening-profile.ts";
+import { currentPcb209OpeningRequestSchema } from "./current-pcb-209-opening-validation.ts";
 import { currentPcbDiagnosticValidationRequestSchema } from "./current-pcb-diagnostic-validation.ts";
 import type { CurrentPcbDiagnosticValidationRequest as Request } from "./current-pcb-diagnostic-validation.ts";
 import { CURRENT_PCB_STRING_PRECREATE_OPERATION_PREFIX, currentPcbStringPrecreateRequestSchema, currentPcbStringPrecreateStages } from "./current-pcb-string-precreate-validation.ts";
@@ -179,10 +181,11 @@ function publicStartupChannelResult(operationId: string,
       published, sha256: sha256Json(record), bytes: Buffer.byteLength(canonicalJson(record)) } };
 }
 
-/** Shared cleanup and journal machinery. Only the three fixed exported facades
+/** Shared cleanup and journal machinery. Only the four fixed exported facades
  * construct it; neither public requests nor dependency seams select purpose. */
 class CurrentPcbLifecycleCore {
   readonly #purpose: CurrentPcbDiagnosticLifecyclePurpose;
+  readonly #generation: "206" | "209-opening";
   readonly #stringPurpose: boolean;
   readonly #stages: readonly ObservationStage[];
   readonly #options: CurrentPcbDiagnosticLifecycleOptions;
@@ -226,16 +229,20 @@ class CurrentPcbLifecycleCore {
 
   public constructor(options: CurrentPcbDiagnosticLifecycleOptions,
     dependencies: CurrentPcbDiagnosticLifecycleDependencies | CurrentPcbStringPrecreateLifecycleDependencies | CurrentPcbWorkerStartupLifecycleDependencies,
-    purpose: CurrentPcbDiagnosticLifecyclePurpose) {
+    purpose: CurrentPcbDiagnosticLifecyclePurpose, generation: "206" | "209-opening" = "206") {
     const stringPurpose = purpose === "string-precreate";
+    requireValue(generation !== "209-opening" || purpose === "diagnostic", "GENERATION_PURPOSE");
+    this.#generation = generation;
     this.#purpose = purpose;
     this.#stringPurpose = stringPurpose;
-    this.#stages = { diagnostic: diagnosticObservationStageSchema.options, "string-precreate": currentPcbStringPrecreateStages,
-      "worker-startup": startupStages }[purpose];
+    this.#stages = generation === "209-opening" ? ["browser", "frames", "script", "pcb-opening"] :
+      { diagnostic: diagnosticObservationStageSchema.options, "string-precreate": currentPcbStringPrecreateStages,
+        "worker-startup": startupStages }[purpose];
     this.#options = Object.freeze({ ...options });
-    this.#verify = dependencies.verifyInstallation ?? verifyCurrentPcbDiagnosticInstallation;
-    this.#allocate = dependencies.allocateOwner ?? { diagnostic: startCurrentPcbDiagnosticOwner, "string-precreate": startCurrentPcbStringPrecreateOwner,
-      "worker-startup": startCurrentPcbWorkerStartupOwner }[purpose];
+    this.#verify = dependencies.verifyInstallation ?? (generation === "209-opening" ? verifyCurrentPcb209DiagnosticInstallation : verifyCurrentPcbDiagnosticInstallation);
+    this.#allocate = dependencies.allocateOwner ?? (generation === "209-opening" ? startCurrentPcb209DiagnosticOwner :
+      { diagnostic: startCurrentPcbDiagnosticOwner, "string-precreate": startCurrentPcbStringPrecreateOwner,
+        "worker-startup": startCurrentPcbWorkerStartupOwner }[purpose]);
     this.#publish = dependencies.publishRecord ?? publishCurrentPcbDiagnosticLifecycleRecord;
     this.#prepareCheckpoint = dependencies.prepareCheckpoint ?? prepareCurrentDisposableOpenCheckpoint;
     this.#verifyCheckpoint = dependencies.verifyCheckpoint ?? verifyCurrentDisposableOpenCheckpoint;
@@ -246,8 +253,9 @@ class CurrentPcbLifecycleCore {
   }
 
   public async run(input: unknown): Promise<Record<string, unknown>> {
-    const request: LifecycleRequest = { diagnostic: currentPcbDiagnosticValidationRequestSchema, "string-precreate": currentPcbStringPrecreateRequestSchema,
-      "worker-startup": currentPcbWorkerStartupLifecycleRequestSchema }[this.#purpose].parse(input);
+    const request: LifecycleRequest = this.#generation === "209-opening" ? currentPcb209OpeningRequestSchema.parse(input) :
+      { diagnostic: currentPcbDiagnosticValidationRequestSchema, "string-precreate": currentPcbStringPrecreateRequestSchema,
+        "worker-startup": currentPcbWorkerStartupLifecycleRequestSchema }[this.#purpose].parse(input);
     if (request.action === "inspect") {
       const operations = await readCurrentPcbDiagnosticLifecycles();
       const operation = operations.find(value => value.operationId === request.operationId);
@@ -718,6 +726,7 @@ class CurrentPcbLifecycleCore {
     if (operationId.startsWith(CURRENT_PCB_STRING_PRECREATE_OPERATION_PREFIX)) { idPurpose = "string-precreate"; }
     else if (operationId.startsWith(CURRENT_PCB_WORKER_STARTUP_OPERATION_PREFIX)) { idPurpose = "worker-startup"; }
     const expectedSchema = launchPurposeFields[this.#purpose].schema;
+    requireValue(operationId.startsWith(CURRENT_PCB_209_OPENING_PROFILE.operationPrefix) === (this.#generation === "209-opening"), "GENERATION_MISMATCH");
     requireValue(idPurpose === this.#purpose && (intent === undefined || intent.schema === expectedSchema), "PURPOSE_MISMATCH");
   }
   #assertOwner(retained: Retained): void {
@@ -1093,7 +1102,11 @@ class CurrentPcbLifecycleCore {
     try {
     if (request.action === "browser-observation") { result = await retained.methods.browserObservation.call(retained.owner); }
     else if (request.action === "inspect-frames") { result = await retained.methods.inspectFrames.call(retained.owner, request.targetId); }
-    else if (request.action === "inspect-script") { result = await retained.methods.inspectScript.call(retained.owner, request.frameId, CURRENT_PCB_DIAGNOSTIC_SCRIPTS[request.family]); }
+    else if (request.action === "inspect-script") {
+      requireValue(this.#generation !== "209-opening" || request.family === "ui", "GENERATION_SCRIPT_FAMILY");
+      const script = this.#generation === "209-opening" ? CURRENT_PCB_209_OPENING_SCRIPTS.ui : CURRENT_PCB_DIAGNOSTIC_SCRIPTS[request.family];
+      result = await retained.methods.inspectScript.call(retained.owner, request.frameId, script);
+    }
     else if (request.action === "inspect-workers") { result = await retained.methods.inspectWorkers.call(retained.owner); }
     else if (request.action === "inspect-worker-script") { result = await retained.methods.inspectWorkerScript.call(retained.owner, request.targetId); }
     else if (request.action === "observe-model-state") { result = await retained.methods.observeModelState.call(retained.owner); }
@@ -1106,7 +1119,8 @@ class CurrentPcbLifecycleCore {
     }
     else if (request.action === "observe-pcb-opening") {
       const preparation = this.#originalProjectOpening(operation);
-      result = await retained.methods.observePcbOpening.call(retained.owner, preparation.sealedTarget, CURRENT_PCB_DIAGNOSTIC_SCRIPTS.pcb);
+      result = await retained.methods.observePcbOpening.call(retained.owner, preparation.sealedTarget,
+        this.#generation === "209-opening" ? CURRENT_PCB_209_OPENING_SCRIPTS.pcb : CURRENT_PCB_DIAGNOSTIC_SCRIPTS.pcb);
     }
     else { result = await retained.methods.observeWorkerState.call(retained.owner); }
     } catch (caughtError) {
@@ -1409,6 +1423,15 @@ class CurrentPcbLifecycleCore {
 export class CurrentPcbDiagnosticLifecycle extends CurrentPcbLifecycleCore {
   public constructor(options: CurrentPcbDiagnosticLifecycleOptions, dependencies: CurrentPcbDiagnosticLifecycleDependencies = {}) {
     super(options, dependencies, "diagnostic");
+  }
+}
+
+/** New source-qualified disposable project/PCB opening subset. A new instance
+ * owns a separate pcb209-* lifetime; no legacy owner or serialized record can
+ * select a different generation or enable the old model/worker vocabulary. */
+export class CurrentPcb209DiagnosticLifecycle extends CurrentPcbLifecycleCore {
+  public constructor(options: CurrentPcbDiagnosticLifecycleOptions, dependencies: CurrentPcbDiagnosticLifecycleDependencies = {}) {
+    super(options, dependencies, "diagnostic", "209-opening");
   }
 }
 

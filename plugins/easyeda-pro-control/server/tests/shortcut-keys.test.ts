@@ -2,7 +2,7 @@ import assert from "node:assert/strict";
 import { test } from "node:test";
 import { createContext, runInContext } from "node:vm";
 import { decodeExactReadEnvelope } from "../src/exact-readers.ts";
-import { SHORTCUT_KEYS_METHOD, buildShortcutKeys209Program, buildShortcutKeysProgram, parseShortcutKeysRequest, queryShortcutKeys,
+import { SHORTCUT_KEYS_209_REFUSAL_STAGES, SHORTCUT_KEYS_METHOD, buildShortcutKeys209Program, buildShortcutKeysProgram, parseShortcutKeysRequest, queryShortcutKeys,
   validateShortcutKeys209Result, validateShortcutKeysArguments, validateShortcutKeysResult } from "../src/shortcut-keys.ts";
 
 const request = { method: SHORTCUT_KEYS_METHOD, arguments: {} };
@@ -130,11 +130,93 @@ void test("209 fixed shortcut program preserves UI scopes 11-14 but refuses out-
   assert.deepEqual(result["shortcuts"], rows); assert.equal(result["declarationScopeConformanceVerified"], false);
   assert.equal(fixture.evaluate("calls"), 2);
   for (const options of [
-    { before: "rows[0].documentType=[15];" },
-    { afterRead: "globalThis.PRO_EDITOR_MODE='CLIENT-OFFLINE-EASYEDA-PCB-SCH-PANEL-SIM';" },
-    { afterRead: "globalThis.UI={gVars:globalThis.gVars};" },
+    { before: "rows[0].documentType=[15];", expectedStage: "result-document-types" },
+    { afterRead: "globalThis.PRO_EDITOR_MODE='CLIENT-OFFLINE-EASYEDA-PCB-SCH-PANEL-SIM';", expectedStage: "editor-mode" },
+    { afterRead: "globalThis.UI={gVars:globalThis.gVars};", expectedStage: "api-owner" },
   ]) {
     const rejected = environment(rows, { ...options, generation209: true });
-    await assert.rejects(rejected.run(), { message: "SHORTCUT_KEYS_READ_FAILED" }); assert.equal(rejected.evaluate("calls"), 1);
+    const refusal = validateShortcutKeys209Result(request, decodeExactReadEnvelope(await rejected.run()));
+    assert.equal(refusal["ok"], false); assert.equal(refusal["stage"], options.expectedStage); assert.equal(rejected.evaluate("calls"), 1);
   }
+});
+
+void test("209 shortcut refusal stages identify failed guards without leaking raw values or partial shortcut data", async () => {
+  const cases = [
+    { before: "delete globalThis.PRO_EDITOR_MODE;", stage: "initial-environment", calls: 0 },
+    { before: "delete eda.sys_ShortcutKey;", stage: "public-method", calls: 0 },
+    { before: "delete Bus.prototype.rpcCall;", stage: "rpc-method", calls: 0 },
+    { before: "Locale._cache=Object.create(null);", stage: "locale-cache", calls: 0 },
+    { before: "Locale.i18n='PRIVATE';", stage: "locale-methods", calls: 0 },
+    { before: "globalThis.setTimeout='PRIVATE';", stage: "timer-owner", calls: 0 },
+    { before: "document.URL='PRIVATE';", stage: "frame-owner", calls: 0 },
+    { before: "eda.extensionUuid='PRIVATE';", stage: "api-owner", calls: 0 },
+    { before: "gVars.extensionApiMessageBus2={};", stage: "rpc-owner", calls: 0 },
+    { afterRead: "Locale._cache.en={};", stage: "locale-owner", calls: 1 },
+    { afterRead: "Locale.i18n=()=>'';", stage: "locale-method-owner", calls: 1 },
+    { afterRead: "throw new Error('PRIVATE_VENDOR_ERROR');", stage: "public-call", calls: 1 },
+    { before: "rows={secret:'PRIVATE'};", stage: "result-array", calls: 1 },
+    { before: "rows[0].extra='PRIVATE';", stage: "result-record", calls: 1 },
+    { before: "rows[0].shortcutKey='PRIVATE';", stage: "result-keys", calls: 1 },
+    { before: "rows[0].shortcutKey=['x'.repeat(33)];", stage: "result-key-token", calls: 1 },
+    { before: "Object.defineProperty(rows[0],'title',{get(){getterReads++;throw new Error('PRIVATE_ACCESSOR');}});", stage: "result-title", calls: 1 },
+    { before: "rows[0].documentType=[15];", stage: "result-document-types", calls: 1 },
+    { before: "rows[0].scene=[0];", stage: "result-scenes", calls: 1 },
+    { before: "rows=Array.from({length:300},()=>({...rows[0],title:'x'.repeat(1024)}));", stage: "sample-size", calls: 1 },
+    { afterRead: "if(calls===2)rows[0].documentType.push(0);", stage: "sample-equality", calls: 2 },
+    { before: "rows=Array.from({length:240},()=>({...rows[0],title:'\\\"'.repeat(500)}));", stage: "result-envelope", calls: 2 },
+    { afterRead: "return await new Promise(()=>{});", fastDeadline: true, stage: "deadline", calls: 1 },
+    { before: "const originalClear=clearTimeout;globalThis.clearTimeout=timer=>{originalClear(timer);throw new Error('PRIVATE_CLEAR');};", stage: "timer-cleanup", calls: 2 },
+  ];
+  const observed = new Set<string>();
+  for (const options of cases) {
+    const fixture = environment([row()], { ...options, generation209: true });
+    const raw = decodeExactReadEnvelope(await fixture.run()), result = validateShortcutKeys209Result(request, raw);
+    assert.equal(result["ok"], false); assert.equal(result["stage"], options.stage); observed.add(options.stage);
+    assert.equal(result["code"], "SHORTCUT_KEYS_209_READ_REFUSED"); assert.equal(result["publicCallsAttempted"], options.calls);
+    assert.equal(result["cleanupFailed"], options.stage === "timer-cleanup");
+    assert.equal(result["observationSucceeded"], false); assert.equal(result["partialResultsReturned"], false);
+    assert.equal(result["shortcuts"], undefined); assert.equal(fixture.evaluate("calls"), options.calls); assert.equal(fixture.evaluate("getterReads"), 0);
+    assert.doesNotMatch(JSON.stringify(raw), /PRIVATE|Raw shortcut|Page Down/u);
+    assert.throws(() => validateShortcutKeysResult(request, raw));
+  }
+  // Editor-mode is covered by the preceding existing 209 regression.
+  observed.add("editor-mode");
+  assert.deepEqual([...observed].toSorted(), [...SHORTCUT_KEYS_209_REFUSAL_STAGES].toSorted());
+});
+
+void test("209 shortcut cleanup failure retains the first public-call failure stage", async () => {
+  const fixture = environment([row()], { generation209: true,
+    before: "const originalClear=clearTimeout;globalThis.clearTimeout=timer=>{originalClear(timer);throw new Error('PRIVATE_CLEAR');};",
+    afterRead: "throw new Error('PRIVATE_VENDOR_ERROR');" });
+  const raw = decodeExactReadEnvelope(await fixture.run()), result = validateShortcutKeys209Result(request, raw);
+  assert.equal(result["ok"], false); assert.equal(result["stage"], "public-call"); assert.equal(result["cleanupFailed"], true);
+  assert.equal(result["sample"], 1); assert.equal(result["publicCallsAttempted"], 1); assert.equal(fixture.evaluate("calls"), 1);
+  assert.equal(result["partialResultsReturned"], false); assert.equal(result["shortcuts"], undefined);
+  assert.doesNotMatch(JSON.stringify(raw), /PRIVATE|Raw shortcut|Page Down/u);
+});
+
+void test("209 shortcut diagnostics accept only their fixed code/stage/counters and preserve current RPC prototype guards", async () => {
+  const failed = environment([row()], { generation209: true, afterRead: "throw new Error('PRIVATE_VENDOR_ERROR');" });
+  const raw: unknown = decodeExactReadEnvelope(await failed.run()); assert.ok(raw !== null && typeof raw === "object");
+  for (const change of [{ code: "PRIVATE_VENDOR_ERROR" }, { stage: "PRIVATE_OWNER" }, { sample: 3 }, { publicCallsAttempted: -1 },
+    { sample: 0, publicCallsAttempted: 1 }, { cleanupFailed: undefined }, { cleanupFailed: "false" }, { cleanupFailed: 0 },
+    { partialResultsReturned: true }, { includeSystem: true }, { keyboardExecutionAuthorized: true },
+    { message: "PRIVATE" }, { shortcuts: [] }]) {
+    assert.throws(() => validateShortcutKeys209Result(request, { ...raw, ...change }));
+  }
+  // API e7c31b0d: xae extends p4; rpcCall belongs to p4.prototype. This
+  // Source-shaped inert fixture proves the third-node path was already valid.
+  const thirdPrototype = "const base={rpcCall:Bus.prototype.rpcCall};delete Bus.prototype.rpcCall;Object.setPrototypeOf(Bus.prototype,base);";
+  const valid = environment([row()], { generation209: true, before: thirdPrototype });
+  const validPayload = decodeExactReadEnvelope(await valid.run());
+  assert.equal(validateShortcutKeys209Result(request, validPayload)["ok"], true);
+  const changed = environment([row()], { generation209: true, before: thirdPrototype, afterRead: "base.rpcCall=async()=>rows;" });
+  const changedPayload = decodeExactReadEnvelope(await changed.run());
+  assert.equal(validateShortcutKeys209Result(request, changedPayload)["stage"], "rpc-owner");
+  assert.equal(changed.evaluate("calls"), 1);
+  const tooDeep = environment([row()], { generation209: true,
+    before: `${thirdPrototype}Object.setPrototypeOf(Bus.prototype,{});Object.setPrototypeOf(Object.getPrototypeOf(Bus.prototype),base);` });
+  const deepPayload = decodeExactReadEnvelope(await tooDeep.run());
+  assert.equal(validateShortcutKeys209Result(request, deepPayload)["stage"], "rpc-method");
+  assert.equal(tooDeep.evaluate("calls"), 0);
 });

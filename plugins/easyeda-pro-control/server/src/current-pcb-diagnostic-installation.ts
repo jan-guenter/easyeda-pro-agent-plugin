@@ -11,6 +11,9 @@ import path from "node:path";
 import { assertSubset, canonicalJson, controlImplementationFingerprint, loadReviewedCompatibilityManifest,
   reviewedCompatibilityManifestFingerprint } from "./core.ts";
 import { ORDINARY_LAUNCH_PROFILE, verifyOrdinaryLaunchInstallation } from "./ordinary-launch.ts";
+import { ORDINARY_LAUNCH_209_PROFILE } from "./ordinary-launch-209-profile.ts";
+import { CURRENT_PCB_209_OPENING_PROFILE } from "./current-pcb-209-opening-profile.ts";
+import { isPublicUtilities209Configured } from "./sdk-public-utilities-profile.ts";
 import { deriveWindowsRuntimePaths } from "./windows-runtime.ts";
 import type { WindowsRuntimePaths } from "./windows-runtime.ts";
 
@@ -54,10 +57,23 @@ function windowsPath(host: string): string {
 export function createCurrentPcbDiagnosticInstallationPlan(options: CurrentPcbDiagnosticInstallationOptions): Readonly<{
   paths: WindowsRuntimePaths; plan: CurrentPcbDiagnosticInstallationPlan;
 }> {
+  return createFixedInstallationPlan(options, ORDINARY_LAUNCH_PROFILE.installedFiles);
+}
+/** Fixed 209 plan, not a caller-selectable compatibility override. The native
+ * helper retains its original five installation leases and 103-request budget. */
+export function createCurrentPcb209DiagnosticInstallationPlan(options: CurrentPcbDiagnosticInstallationOptions): Readonly<{
+  paths: WindowsRuntimePaths; plan: CurrentPcbDiagnosticInstallationPlan;
+}> {
+  return createFixedInstallationPlan(options, ORDINARY_LAUNCH_209_PROFILE.installedFiles);
+}
+function createFixedInstallationPlan(options: CurrentPcbDiagnosticInstallationOptions,
+  pins: typeof ORDINARY_LAUNCH_PROFILE.installedFiles | typeof ORDINARY_LAUNCH_209_PROFILE.installedFiles): Readonly<{
+    paths: WindowsRuntimePaths; plan: CurrentPcbDiagnosticInstallationPlan;
+  }> {
   if (!/^[a-f\d]{64}$/u.test(options.powershellSha256) || !Number.isSafeInteger(options.powershellBytes) ||
       options.powershellBytes < 1 || options.powershellBytes > 16_777_216) { refuse(); }
   const paths = Object.freeze(deriveWindowsRuntimePaths({ ...options, powershellExecutable: POWERSHELL }));
-  const files: CurrentPcbDiagnosticInstallationFile[] = ORDINARY_LAUNCH_PROFILE.installedFiles.map(pin => Object.freeze({
+  const files: CurrentPcbDiagnosticInstallationFile[] = pins.map(pin => Object.freeze({
     windowsPath: windowsPath(path.posix.resolve(paths.assetsRoot, pin.relativePath)), bytes: pin.bytes, sha256: pin.sha256,
   }));
   files.push(Object.freeze({ windowsPath: windowsPath(POWERSHELL), bytes: options.powershellBytes, sha256: options.powershellSha256 }));
@@ -73,8 +89,11 @@ function sameFacadeHelper(left: BigIntStats, right: BigIntStats): boolean {
 }
 /** Read-only exact descriptor proof. Native image/ancestor leases remain separate. */
 export async function verifyCurrentPcbDiagnosticPowerShell(hostPath: string, expected: Readonly<{ bytes: number; sha256: string }>): Promise<void> {
+  await verifyPinnedInstallationFile(hostPath, expected, 16_777_216);
+}
+async function verifyPinnedInstallationFile(hostPath: string, expected: Readonly<{ bytes: number; sha256: string }>, maxBytes: number): Promise<void> {
   if (path.posix.resolve(hostPath) !== hostPath || await realpath(hostPath) !== hostPath ||
-      !Number.isSafeInteger(expected.bytes) || expected.bytes < 1 || expected.bytes > 16_777_216 || !/^[a-f\d]{64}$/u.test(expected.sha256)) { refuse(); }
+      !Number.isSafeInteger(expected.bytes) || expected.bytes < 1 || expected.bytes > maxBytes || !/^[a-f\d]{64}$/u.test(expected.sha256)) { refuse(); }
   // oxlint-disable-next-line no-bitwise -- Read-only no-follow open; reject nonregular descriptors without blocking.
   const handle = await open(hostPath, constants.O_RDONLY | constants.O_NOFOLLOW | constants.O_NONBLOCK);
   try {
@@ -114,6 +133,31 @@ export async function verifyCurrentPcbDiagnosticInstallation(options: CurrentPcb
  * function. It is never a timestamp/cache admission or a historical token. */
 export async function verifyCurrentPcbDiagnosticFacade(options: CurrentPcbDiagnosticInstallationOptions): Promise<CurrentPcbDiagnosticInstallation> {
   const original = createCurrentPcbDiagnosticInstallationPlan(options);
+  const verified = await verifyFixedFacade(options, original);
+  return verified;
+}
+/** Source-qualified 209 opening only. Assets are freshly descriptor-hashed;
+ * renderer source is independently compared again through the original pipe.
+ * Unlike the five native installation files, these asset reads are not retained
+ * Windows deny-write leases and do not prove a continuous source interval. */
+export async function verifyCurrentPcb209DiagnosticInstallation(options: CurrentPcbDiagnosticInstallationOptions): Promise<CurrentPcbDiagnosticInstallation> {
+  if (!isPublicUtilities209Configured(process.env)) { refuse(); }
+  const original = createCurrentPcb209DiagnosticInstallationPlan(options);
+  const verified = await verifyFixedFacade(options, original);
+  for (const pin of CURRENT_PCB_209_OPENING_PROFILE.installedFiles) {
+    await verifyPinnedInstallationFile(path.posix.resolve(options.assetsRoot, pin.relativePath), pin, 268_435_456);
+  }
+  await verifyCurrentPcbDiagnosticPowerShell(original.paths.powershellExecutable, {
+    bytes: options.powershellBytes, sha256: options.powershellSha256,
+  });
+  if (!isPublicUtilities209Configured(process.env)) { refuse(); }
+  const after = await verifyFixedFacade(options, original);
+  if (canonicalJson(after) !== canonicalJson(verified)) { refuse(); }
+  return verified;
+}
+async function verifyFixedFacade(options: CurrentPcbDiagnosticInstallationOptions, original: Readonly<{
+  paths: WindowsRuntimePaths; plan: CurrentPcbDiagnosticInstallationPlan;
+}>): Promise<CurrentPcbDiagnosticInstallation> {
   if (path.posix.resolve(options.pluginRoot) !== options.pluginRoot || await realpath(options.pluginRoot) !== options.pluginRoot ||
       await realpath(options.assetsRoot) !== options.assetsRoot) { refuse(); }
   const manifestIdentity = reviewedCompatibilityManifestFingerprint();

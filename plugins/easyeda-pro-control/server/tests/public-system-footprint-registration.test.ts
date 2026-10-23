@@ -94,5 +94,5 @@ void test("catalog footprint coverage labels vendor HTTP separately and retains 
   const summary = extensionApiCoverageSummary();
   const states = summary["executionRoutes"];
   assert.ok(typeof states === "object" && states !== null && "available-with-network-guards" in states);
-  assert.equal(states["available-with-network-guards"], 1);
+  assert.equal(states["available-with-network-guards"], 4);
 });

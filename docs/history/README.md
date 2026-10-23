@@ -45,6 +45,9 @@ layout. The connected ledger retains its generation and case anchors.
 
 | Record | Former path |
 | --- | --- |
+| [2026-10-23-175500-catalog-opening-release.md](2026-10-23-175500-catalog-opening-release.md) | Installed143500 reader results and combined catalog/opening/diagnostic release handoff |
+| [2026-10-23-public-catalog-expansion.md](2026-10-23-public-catalog-expansion.md) | Anonymous footprint search, symbol/device metadata and retained projection correction |
+| [2026-10-23-generation209-startup-batch.md](2026-10-23-generation209-startup-batch.md) | Separately pinned209 disposable opening with original native-owner cleanup |
 | [2026-10-23-generation209-ratline-capture.md](2026-10-23-generation209-ratline-capture.md) | New generation source research and dormant finite-role comparison |
 | [2026-10-23-generation209-utilities-and-installation-drift.md](2026-10-23-generation209-utilities-and-installation-drift.md) | Installation drift, narrow utility/launch migration and release handoff |
 | [2026-10-23-installed-209-declaration-inventory.md](2026-10-23-installed-209-declaration-inventory.md) | Separate installed declaration snapshot,835-method union and61 concrete omissions |

@@ -119,3 +119,114 @@ the startup test still expected the former six-tool catalog. All were corrected
 without changing runtime authority. The first full run was interrupted after
 that stale assertion failed; its private log is retained and is not a passing
 verification claim. The final unchanged candidate is verified separately.
+
+## Final verification, publication and installation
+
+Final PR payload `e6614b835869dba485a485e7e3bdea46e48d871a` passed required
+CI39971250334, including all eight facade shards, build/package/repository
+checks and the `test-build` aggregate. Windows39971250123 also passed.
+[PR104](https://github.com/jan-guenter/easyeda-pro-agent-plugin/pull/104) merged
+through protected main as `aa79950c067e026896ed2f061e819ebccbd32056`.
+Both complete repository trees are `024842a792dac4904c3f7bf13520166182570140`;
+the merge changed no payload bytes. No branch-protection bypass was used.
+
+Final local `npm run verify` passed on the unchanged candidate:12,424 facade
+tests passed, four skipped, zero failed/cancelled;424 bridge tests passed.
+Exact Node24.18.0/npm11.16.0 and zero core limit were used. `npm ci`, full
+dependency listing,151 registry signatures/40 attestations, vulnerability audit,
+sanitizer, strict types/lint, coverage, build, compatibility and all repository,
+plugin and skill checks passed. All seven skills passed the installed official
+quick validator; no separate official plugin validator was available. Repeated
+builds reproduced both committed bundles. External compatibility pins stayed
+unchanged; only facade source/bundle projections and review time refreshed.
+
+Final source projection:629 files,
+`0ed520a4cdc03b0104dc2ee1f52d0591813334ee396dc446d4108b26497233ae`.
+Bundle projection:
+`f724d2983119e972e997840f44d7a545b174b6ec84bfd5eb80ac28ab392536bc`.
+Server SHA-256:
+`9898de958056dda68a6a7f49837a2bcfcfdde15a1dc775783a4b253185da59c6`.
+Supervisor SHA-256:
+`f6d8242f6a431e96542df651806010fad09fe156ef06a2ccc10eb17524cdfbb3`.
+
+The official CLI ran from a neutral private directory with umask022. One
+marketplace upgrade refreshed the configured Git source
+`https://github.com/jan-guenter/easyeda-pro-agent-plugin.git` and installed/
+enabled `0.3.0+codex.20261023143500`. No extra add, retry, manual cache edit or
+host-owner termination occurred. Marketplace HEAD equals merged mainaa79950.
+Read-only installed comparison verified1,791 files,42 directories and37,871,296
+bytes with exact committed modes. Plugin tree:
+`90aac214a5fd24616b410f5df842798d91c5cf47`; inventory SHA-256:
+`102f0589a7a7df12e62b901834a89dfaa1e60e53d92f1df5f058d4f4651cebe4`.
+
+The installed dependency-free offline probe passed26 tools/10 queries using its
+deliberately synthetic206 profile. It sampled no upstream descendants or
+non-stdio sockets, then observed clean EOF/exit0 and unchanged private control
+roster. This is not actual209 host admission or continuous isolation. Separately,
+the packaged209 startup test verified the eleven-tool catalog and no upstream/
+socket startup. The already-running host remains the old094500 generation;
+no live calls were made after installation. A fresh Codex session must load and
+admit143500 before the new editor readers are exercised.
+
+Private evidence file SHA-256 values:
+
+- Final verification log: `d7458ba2f6fce23486f202a4d1ad3aeb406b3b1b47b581c3ed4ec87d54cbdecc`.
+- Installed payload proof: `467a4e910351e92ef41c1f25621832915f3ba470c9e56d3429f7aef7cf08c973`.
+- Offline package probe: `37d75c6bdaeb68a6e0958525f43021cf948dd57b70456bb7f2fdbb0aebd7a996`.
+
+Main Windows39974098529 passed. Main CI39974098805 is still running at this
+append; the exact PR payload already passed its required complete CI.
+
+## Remaining work, ordered into coherent batches
+
+1. Fresh-session pickup and focused live checks of the newly installed209
+   language/viewport and shell/context/shortcut readers. The ordinary launch
+   from this turn is terminal; do not replay its ID, close request or utilities.
+   The app was closed normally with original root/Job termination observed.
+2. A209-only disposable project→PCB→ratline-delivery lifecycle. Existing
+   `CurrentPcbWorkerStartupOpening.open/proveCurrentAssignments`,
+   `CurrentPcbWorkerStartupLifecycle.captureWorkerStartup` and original-owner
+   cleanup already exist. Reuse them; earlier claims that all integration is
+   missing are stale. Separately qualify the209 native executable/selectors,
+   UI/PCB and project worker, and requalify constructor capture locations.
+   Current `pro-mgr/3.2.185.bf63a159/js/project-worker.js` is2,181,308 bytes,
+   SHA-256 `0e7a474385029ac4f69dac08abdfd8beec7346aea8c2a4f71d5afb78bb454046`;
+   this is source evidence, not permission for a checksum-only pin replacement.
+3. Wire the dormant same-owner `prepareWorkerStartupPcbSession`/
+   `openAndQualify` continuation with instrumentation armed before one PCB
+   opening. Implement native Worker/bridge/onmessage capture, separate startup/
+   subordinate ratline roles, original project-canvas receiver binding, result
+   publication→PCB delivery correlation and attributed late-event cleanup.
+   Reuse `current-pcb-209-ratline-source/model`; preserve the old256-request
+   purpose and derive the new budget from actual phases, not speculative3868.
+   Keep startup completion false until dynamic copper is accounted for.
+4. Then complete full PCB/common/actor/clock/source/SQL baseline, contained
+   write destinations and create/Save/closed-reopened proof on disposable data.
+   This is implementation work, not merely missing tests. Wider schematic,
+   PCB, component-definition, routing/rules and export adapters remain backlog.
+5. A separate useful library batch: bounded public footprint search (fixed
+   system component search, explicit page,≤20 candidates), device metadata/
+   symbol-footprint associations, and plain-symbol metadata. Keep vendor HTTP
+   labels and explicit network confirmation. Symbol/device anonymous positive
+   responses still need verification. Their SDK getters construct drawing
+   managers and must not be inferred harmless from metadata-shaped returns.
+   Geometry follows later: fixed vendor CDN policy, identity/version binding,
+   AES-GCM/gzip bounds and supported source/pad formats. UI source pointers are
+   search6180786/routes6073155, device6165784/projection6145081/routes6072582,
+   symbol6167610/projection6145560, source6068941/decrypt6067953/inflate6032956.
+
+The exhaustive inventory retains509 omitted paths and79 blocked implementations
+across all snapshots. Those aggregate categories are not current209 tool counts.
+All61 newly inventoried vendor-missing methods have concrete reasons; resolving
+them needs a functioning backend or a separately qualified task equivalent.
+No user design was deliberately opened, inspected or edited in this work.
+
+## Terminal main-CI observation
+
+Main CI39974098805 subsequently completed successfully, including all eight
+facade shards and `test-build`; Windows39974098529 also passed. Publication,
+installation and offline package verification are complete. The post-release
+append above is retained locally for the next batched documentation commit;
+the released plugin payload remains exactly mainaa79950. Do not republish a
+plugin merely to commit this installation evidence. Fresh-session admission
+and new-reader live checks remain explicitly pending.

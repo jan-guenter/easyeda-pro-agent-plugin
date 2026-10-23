@@ -6,13 +6,15 @@ import { stripTypeScriptTypes } from "node:module";
 import { test } from "node:test";
 import vm from "node:vm";
 import { z } from "zod";
-import { CurrentPcbWorkerStartupLifecycle } from "../src/current-pcb-diagnostic-lifecycle.ts";
+import { CurrentPcb209DiagnosticLifecycle, CurrentPcbDiagnosticLifecycle, CurrentPcbWorkerStartupLifecycle } from "../src/current-pcb-diagnostic-lifecycle.ts";
 import type { CurrentPcbDiagnosticLifecycleOptions } from "../src/current-pcb-diagnostic-lifecycle.ts";
 import { CURRENT_PCB_DIAGNOSTIC_PROFILE } from "../src/current-pcb-diagnostic-profile.ts";
 import { currentPcbDiagnosticToolRequestSchema, currentPcbDiagnosticValidationRequestSchema,
   queryCurrentPcbDiagnosticValidation, validateCurrentPcbDiagnosticValidationArguments } from "../src/current-pcb-diagnostic-validation.ts";
 import { currentPcbWorkerStartupValidationRequestSchema, queryCurrentPcbWorkerStartupValidation } from "../src/current-pcb-worker-startup-validation.ts";
 import { apiRequestSchema, queryOfflineApi } from "../src/offline-api.ts";
+import { currentPcb209OpeningRequestSchema } from "../src/current-pcb-209-opening-validation.ts";
+import { facadeToolRegistered } from "../src/facade-mode.ts";
 
 const operationId = "worker-startup-contract";
 const expectedBindingSha256 = "a".repeat(64);
@@ -69,7 +71,7 @@ void test("startup schema keeps its purpose, pause confirmation and disposable t
 
 void test("startup public registration binds the actual inherited methods, fixed pins and reciprocal launch exclusions", async () => {
   const source = await readFile(new URL("../src/index.ts", import.meta.url), "utf8");
-  const start = source.indexOf('if (facadeToolRegistered(facadeMode, "easyeda_control_pcb_diagnostic_validation"))');
+  const start = source.indexOf('if (facadeToolRegistered(facadeMode, "easyeda_control_pcb_diagnostic_validation") ||');
   const end = source.indexOf('registerFacadeTool(\n  "easyeda_control_launch",', start + 1);
   const helpers = source.slice(source.indexOf("function disposableOwnData("), source.indexOf("function disposableIndexMethods("));
   assert.ok(start > 0 && end > start);
@@ -107,10 +109,11 @@ void test("startup public registration binds the actual inherited methods, fixed
   const upstream = {};
   const engine = { upstream, executionAuthorityValidator: {}, controlFingerprintPromise: Promise.resolve({ sha256: "a".repeat(64) }),
     assertDiagnosticLaunchOtherOperationsSettled: (): Promise<void> => { checks += 1; return Promise.resolve(); } };
-  const scope = vm.createContext({ z, currentPcbDiagnosticToolRequestSchema, CURRENT_PCB_DIAGNOSTIC_PROFILE,
+  const scope = vm.createContext({ z, currentPcbDiagnosticToolRequestSchema, currentPcb209OpeningRequestSchema, CURRENT_PCB_DIAGNOSTIC_PROFILE,
+    CurrentPcbDiagnosticLifecycle, CurrentPcb209DiagnosticLifecycle,
     CurrentPcbWorkerStartupLifecycle: Coordinator, currentPcbWorkerStartupLifecycle: undefined,
     currentPcbDiagnosticLifecycle: undefined, currentPcbStringPrecreateLifecycle: undefined, process: { env: environment }, engine, upstream,
-    facadeMode: "calculation-only", facadeToolRegistered: (): boolean => true,
+    facadeMode: "calculation-only", facadeToolRegistered,
     bridgeGate: { run: (handler: () => Promise<unknown>): Promise<unknown> => { gateCalls += 1; return handler(); } },
     retainedControlRoot: { path: "/synthetic/control" }, controlDataDirectory: (): string => "/synthetic/control",
     resolve: (): string => "/synthetic/plugin", currentSymbolOperationToolOutputSchema: z.object({ result: z.unknown() }),

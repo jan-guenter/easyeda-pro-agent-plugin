@@ -16,9 +16,10 @@ import { CurrentPcbWorkerStartupActorRunner } from "../src/current-pcb-worker-st
 import type { CurrentPcbWorkerStartupActorPacket } from "../src/current-pcb-worker-startup-actor-runner.ts";
 import { CURRENT_PCB_WORKER_STARTUP_CHANNEL_OBSERVATION_LIMITS, currentPcbWorkerStartupChannelPacketSchema } from "../src/current-pcb-worker-startup-channel-observation.ts";
 import type { CurrentPcbWorkerStartupChannelPacket } from "../src/current-pcb-worker-startup-channel-observation.ts";
-import { createCurrentPcbDiagnosticInstallationPlan } from "../src/current-pcb-diagnostic-installation.ts";
+import { createCurrentPcb209DiagnosticInstallationPlan, createCurrentPcbDiagnosticInstallationPlan } from "../src/current-pcb-diagnostic-installation.ts";
 import type { CurrentPcbDiagnosticInstallation } from "../src/current-pcb-diagnostic-installation.ts";
-import { CurrentPcbDiagnosticLifecycle, CurrentPcbStringPrecreateLifecycle, CurrentPcbWorkerStartupLifecycle } from "../src/current-pcb-diagnostic-lifecycle.ts";
+import { CurrentPcb209DiagnosticLifecycle, CurrentPcbDiagnosticLifecycle, CurrentPcbStringPrecreateLifecycle, CurrentPcbWorkerStartupLifecycle } from "../src/current-pcb-diagnostic-lifecycle.ts";
+import { CURRENT_PCB_209_OPENING_SCRIPTS } from "../src/current-pcb-209-opening-profile.ts";
 import type { CurrentPcbDiagnosticLifecycleDependencies, CurrentPcbDiagnosticLifecycleOptions, CurrentPcbDiagnosticLifecycleOwner,
   CurrentPcbStringPrecreateLifecycleDependencies, CurrentPcbStringPrecreateLifecycleOwner, CurrentPcbWorkerStartupLifecycleDependencies,
   CurrentPcbWorkerStartupLifecycleOwner, CurrentPcbWorkerStartupOpeningCoordinator } from "../src/current-pcb-diagnostic-lifecycle.ts";
@@ -74,7 +75,7 @@ const PCB_SOURCE_RESULT = { family: "pcb", projectUuid: OPEN_TARGET.projectUuid,
 
 function directory(id: string): string {
   const root = process.env["EASYEDA_CONTROL_DATA_DIR"];
-  assert.ok(root !== undefined && root.includes("easyeda-test-control-")); assert.match(id, /^(?:diagnostic-test|string-precreate-test|worker-startup-test)-[a-z0-9-]+$/u);
+  assert.ok(root !== undefined && root.includes("easyeda-test-control-")); assert.match(id, /^(?:diagnostic-test|pcb209-test|string-precreate-test|worker-startup-test)-[a-z0-9-]+$/u);
   return join(root, "pcb-diagnostic-lifecycle-v1", id);
 }
 function launch(id: string): Record<string, unknown> {
@@ -102,6 +103,7 @@ function fixture(context: TestContext, id: string, dependencies: FixtureDependen
   });
   const stringPurpose = id.startsWith("string-precreate-");
   const startupPurpose = id.startsWith("worker-startup-");
+  const opening209 = id.startsWith("pcb209-");
   let ownerPurpose: "diagnostic" | "string-precreate" | "worker-startup" = "diagnostic";
   if (stringPurpose) { ownerPurpose = "string-precreate"; }
   else if (startupPurpose) { ownerPurpose = "worker-startup"; }
@@ -157,6 +159,7 @@ function fixture(context: TestContext, id: string, dependencies: FixtureDependen
     inspectFrames: targetId => { calls.push("frames"); assert.equal(targetId, "target-1"); return Promise.resolve({ frames: [{ id: "frame-1" }], executionAuthorized: false }); },
     inspectScript: (frameId, profile) => {
       calls.push("script"); assert.equal(frameId, "frame-1");
+      if (opening209) { assert.equal(profile, CURRENT_PCB_209_OPENING_SCRIPTS.ui); }
       return Promise.resolve({ sourceVerified: true, family: profile.family, executionAuthorized: false });
     },
     inspectWorkers: () => {
@@ -226,6 +229,7 @@ function fixture(context: TestContext, id: string, dependencies: FixtureDependen
     },
     observePcbOpening: (target, profile) => {
       calls.push("pcb-observation");
+      if (opening209) { assert.equal(profile, CURRENT_PCB_209_OPENING_SCRIPTS.pcb); }
       assert.deepEqual(target, { ...OPEN_TARGET, branchUuid: OPEN_CHECKPOINT.targetEvidence.branchUuid }); assert.equal(profile.family, "pcb");
       return Promise.resolve(structuredClone(PCB_SOURCE_RESULT));
     },
@@ -241,7 +245,7 @@ function fixture(context: TestContext, id: string, dependencies: FixtureDependen
     ...(sharedAdmission === undefined ? {} : { assertAllowed: sharedAdmission, assertOtherLaunchesSettled: sharedAdmission }),
   };
   const commonDependencies: FixtureDependencies = {
-    verifyInstallation: (): Promise<CurrentPcbDiagnosticInstallation> => Promise.resolve({ ...createCurrentPcbDiagnosticInstallationPlan(options), facadeSha256: (state.installationDrift ? "e" : "a").repeat(64) }),
+    verifyInstallation: (): Promise<CurrentPcbDiagnosticInstallation> => Promise.resolve({ ...(opening209 ? createCurrentPcb209DiagnosticInstallationPlan(options) : createCurrentPcbDiagnosticInstallationPlan(options)), facadeSha256: (state.installationDrift ? "e" : "a").repeat(64) }),
     allocateOwner: (): Promise<CurrentPcbDiagnosticLifecycleOwner> => { calls.push("allocate"); return Promise.resolve(owner); },
     prepareCheckpoint: async (target): Promise<CurrentDisposableOpenCheckpoint> => {
       calls.push("prepare-checkpoint"); assert.deepEqual(target, OPEN_TARGET);
@@ -265,7 +269,8 @@ function fixture(context: TestContext, id: string, dependencies: FixtureDependen
     ...dependencies,
   };
   let coordinator: CurrentPcbDiagnosticLifecycle = new CurrentPcbDiagnosticLifecycle(options, commonDependencies);
-  if (stringPurpose) { coordinator = new CurrentPcbStringPrecreateLifecycle(options, { ...commonDependencies,
+  if (opening209) { coordinator = new CurrentPcb209DiagnosticLifecycle(options, commonDependencies); }
+  else if (stringPurpose) { coordinator = new CurrentPcbStringPrecreateLifecycle(options, { ...commonDependencies,
     readCommonInventory: (prepared): ReturnType<NonNullable<CurrentPcbStringPrecreateLifecycleDependencies["readCommonInventory"]>> => {
       calls.push("common-inventory"); assert.equal(prepared, originalCheckpoint); assert.ok(originalInventory); return Promise.resolve(originalInventory);
     },
@@ -1173,6 +1178,44 @@ void test("original PCB opening is two one-shot stages before separate model obs
   assert.equal(value.calls.filter(action => action === "pcb-dispatch").length, 1);
   assert.equal(value.calls.filter(action => action === "verify-checkpoint").length, 2);
   assert.equal(value.calls.filter(action => action === "verify-historical-checkpoint").length, 1);
+});
+void test("209 original lifecycle composes fixed project and PCB opens with separate source profiles and normal cleanup", async context => {
+  const id = "pcb209-test-open", value = fixture(context, id);
+  await readyForOpening(id, value);
+  await value.request("open-project", OPEN_INPUT);
+  await value.request("open-pcb", { acceptNormalOpenEffects: true });
+  const observed = await value.request("observe-pcb-opening");
+  assert.deepEqual(observed["result"], PCB_SOURCE_RESULT);
+  assert.equal(observed["startupQualified"], false);
+  assert.equal(observed["designExecutionAuthorized"], false);
+  for (const action of ["inspect-workers", "observe-worker-state", "observe-model-state", "observe-string-precreate"]) {
+    await assert.rejects(value.request(action));
+  }
+  await assert.rejects(value.request("open-pcb", { acceptNormalOpenEffects: true }), /PCB_OPENING_CONSUMED/u);
+  await assert.rejects(value.request("observe-pcb-opening"), /OBSERVATION_CONSUMED/u);
+  await value.request("observe-window");
+  await value.request("normal-close", { hwnd: "12345", confirmNormalClose: true });
+  value.state.terminated = true;
+  await value.request("observe-termination");
+  const released = await value.request("release-closed");
+  assert.equal(released["state"], "released");
+  assert.equal(value.calls.filter(action => action === "open-dispatch").length, 1);
+  assert.equal(value.calls.filter(action => action === "pcb-dispatch").length, 1);
+  assert.equal(value.calls.filter(action => action === "release").length, 1);
+});
+void test("209 ambiguous PCB opening remains consumed and retains original cleanup without model fallback", async context => {
+  const id = "pcb209-test-ambiguous", value = fixture(context, id);
+  const original = value.owner.openPcb;
+  value.owner.openPcb = async (target, reverify): Promise<CurrentPcbDiagnosticPcbOpeningResult> => {
+    await original.call(value.owner, target, reverify); throw new Error("synthetic209 lost PCB acknowledgement");
+  };
+  await readyForOpening(id, value); await value.request("open-project", OPEN_INPUT);
+  await assert.rejects(value.request("open-pcb", { acceptNormalOpenEffects: true }), /lost PCB acknowledgement/u);
+  await assert.rejects(value.request("open-pcb", { acceptNormalOpenEffects: true }), /PCB_OPENING_CONSUMED/u);
+  assert.equal(value.calls.filter(action => action === "pcb-dispatch").length, 1);
+  const retained = await value.coordinator.run({ action: "inspect", operationId: id });
+  assert.equal(retained["pcbOpeningAttemptConsumed"], true);
+  assert.equal(retained["pcbOpeningResultPublished"], false);
 });
 void test("worker inspection excludes the PCB document branch", async context => {
   const id = "diagnostic-test-pcb-worker-exclusive", value = fixture(context, id);

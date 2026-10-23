@@ -10,10 +10,11 @@ export const PUBLIC_UTILITIES_ONLY_TOOLS = Object.freeze([
   "easyeda_control_api", "easyeda_control_discover", "easyeda_control_status",
   "easyeda_control_calculate", "easyeda_control_system", "easyeda_control_launch",
   "easyeda_control_public_readers",
-  "easyeda_control_catalog_footprint", "easyeda_control_editor_shell",
+  "easyeda_control_catalog_footprint", "easyeda_control_catalog_components", "easyeda_control_editor_shell",
   "easyeda_control_editor_context", "easyeda_control_shortcuts",
+  "easyeda_control_pcb209_opening",
 ]);
-export const PUBLIC_UTILITIES_ONLY_SCOPE = "EasyEDA 3.2.209 scoped Math, Unit, Environment, language, API-page viewport, tab-count, active-identity and shortcut observations, plus ordinary launch. Separate catalog-footprint performs an explicitly confirmed credential-free vendor HTTPS lookup without EasyEDA or SDK execution. No project opening, design-content read/write, Save, recovery or PCB-worker route is registered. Source review and synthetic tests are not connected execution validation. Identity observations and launch do not prove isolation or readiness.";
+export const PUBLIC_UTILITIES_ONLY_SCOPE = "EasyEDA 3.2.209 scoped Math, Unit, Environment, language, API-page viewport, tab-count, active-identity and shortcut observations, plus ordinary launch. Separate catalog tools perform explicitly confirmed credential-free vendor HTTPS metadata queries without EasyEDA or SDK execution. The separate pcb209_opening route owns one disposable project/PCB opening and UI/PCB source/identity checks through original normal cleanup; ordinary opening can migrate data and automatically Save. No general design-content read/write, explicit Save, recovery or PCB-worker route is registered. Source review and synthetic tests are not connected execution validation. Identity observations and launch do not prove isolation or readiness.";
 
 export function publicUtilitiesOnlyCapabilities(): Record<string, unknown> {
   return {
@@ -23,12 +24,16 @@ export function publicUtilitiesOnlyCapabilities(): Record<string, unknown> {
       scope: "supported-languages-and-api-page-viewport" },
     catalogFootprint: { tool: "easyeda_control_catalog_footprint", runtimeAdmissionRequired: false, connectedValidation: false,
       implementation: "vendor-http-task-equivalent", networkConfirmationRequired: true, publicSdkMethodExecuted: false },
+    catalogComponents: { tool: "easyeda_control_catalog_components", runtimeAdmissionRequired: false, connectedValidation: false,
+      implementation: "vendor-http-task-equivalent", networkConfirmationRequired: true, publicSdkMethodExecuted: false },
     editorShell: { tool: "easyeda_control_editor_shell", runtimeAdmissionRequired: true, readinessProof: false },
     editorContext: { tool: "easyeda_control_editor_context", runtimeAdmissionRequired: true, identityOnly: true, cadAuthority: false },
     shortcutKeys: { tool: "easyeda_control_shortcuts", runtimeAdmissionRequired: true, keyboardExecution: false },
     ordinaryLaunch: { tool: "easyeda_control_launch", installedIdentityAdmissionRequired: true, profileIsolation: false, connectedValidation: false },
-    designAccess: { enabled: false, scope: "design-content-routes" }, navigation: { enabled: false },
-    save: { enabled: false }, recovery: { enabled: false }, nativeAdapters: { enabled: true, scope: "shell-and-identity-observations-only" },
+    disposableOpening: { tool: "easyeda_control_pcb209_opening", validationOnly: true, connectedValidation: false,
+      runtimeAdmissionRequired: true, startupCompletionVerified: false, cadAuthority: false },
+    designAccess: { enabled: false, scope: "design-content-routes" }, navigation: { enabled: true, scope: "original-owner-disposable209-opening-only" },
+    save: { enabled: false }, recovery: { enabled: false }, nativeAdapters: { enabled: true, scope: "identity-observations-and-disposable209-opening-only" },
   };
 }
 
@@ -63,7 +68,8 @@ export function configuredFacadeMode(environment: Readonly<Record<string, string
 }
 
 export function facadeToolRegistered(mode: FacadeMode, name: string): boolean {
-  if (name === "easyeda_control_public_readers" || name === "easyeda_control_catalog_footprint") { return mode === "public-utilities-only"; }
+  if (name === "easyeda_control_public_readers" || name === "easyeda_control_catalog_footprint" ||
+      name === "easyeda_control_catalog_components" || name === "easyeda_control_pcb209_opening") { return mode === "public-utilities-only"; }
   return mode === "legacy-reviewed" ||
     (mode === "public-utilities-only" ? PUBLIC_UTILITIES_ONLY_TOOLS : CALCULATION_ONLY_TOOLS).includes(name);
 }

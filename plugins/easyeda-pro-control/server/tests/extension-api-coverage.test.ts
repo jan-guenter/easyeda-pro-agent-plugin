@@ -42,8 +42,8 @@ void test("all eight legacy project-structure writer routes remain blocked witho
     "eda.lib_Footprint.create", "eda.lib_Footprint.modify", "eda.lib_Device.create", "eda.lib_Device.modify"]) {
     const row = rows.get(path); assert.ok(row); assert.notEqual(row.status, "implemented-but-blocked");
     for (const route of row.routes) {
-      if (route.tool === "easyeda_control_catalog_footprint") {
-        assert.equal(path, "eda.lib_Footprint.get"); assert.equal(route.implementation, "vendor-http-task-equivalent");
+      if (route.tool === "easyeda_control_catalog_footprint" || route.tool === "easyeda_control_catalog_components") {
+        assert.equal(route.implementation, "vendor-http-task-equivalent");
         assert.equal(route.executionState, "available-with-network-guards");
       } else { assert.equal(route.executionState, "available-with-runtime-guards"); }
       assert.equal(route.blockedReason, undefined);
@@ -52,6 +52,32 @@ void test("all eight legacy project-structure writer routes remain blocked witho
   }
 });
 
+
+void test("209 disposable opening coverage discovers native owner stages without promoting completion or writer authority", () => {
+  const rows = inventoryExtensionApiCoverage();
+  for (const [path, action] of [["eda.dmt_Project.openProject", "open-project"], ["eda.dmt_EditorControl.openDocument", "open-pcb"]] as const) {
+    const row = rows.find(entry => entry.path === path); assert.ok(row);
+    const route = row.routes.find(entry => entry.tool === "easyeda_control_pcb209_opening"); assert.ok(route);
+    assert.equal(route.selector, action); assert.equal(route.implementation, "native-task-equivalent");
+    assert.equal(route.executionState, "available-with-runtime-guards"); assert.equal(route.validation, "offline-regression;current-live-unclaimed");
+    assert.equal(row.currentGenerationLiveValidation, "not-recorded"); assert.equal(row.completeDeclaredContractSupported, false);
+    assert.deepEqual(route.documentTypes, [3]);
+    for (const required of ["installed209 validation-only", "not public SDK execution", "registered disposable project/checkpoint",
+      "automatic Save", "not unchanged-storage proof", "do not prove startup completion", "persistence or writer authority", "without replay"]) {
+      assert.ok(route.scope.includes(required));
+    }
+    assert.ok(row.routes.some(entry => entry.tool === "easyeda_control_project_open"));
+    assert.ok(route.inputDiscovery);
+    const discovery = queryOfflineApi(apiRequestSchema.parse(route.inputDiscovery.arguments["request"]));
+    assert.equal(discovery.offline, true); assert.ok(isRecord(discovery.result));
+    assert.equal(discovery.result["tool"], "easyeda_control_pcb209_opening");
+    for (const flag of ["connectedValidation", "startupCompletionVerified", "completeLiveBaselineVerified", "executionAuthorized", "saveAuthorized"]) {
+      assert.equal(discovery.result[flag], false);
+    }
+    const actions = discovery.result["actions"]; assert.ok(Array.isArray(actions)); assert.ok(actions.includes(action));
+    assert.equal(actions.includes("worker-startup"), false); assert.equal(actions.includes("observe-model-state"), false);
+  }
+});
 
 void test("project board coverage exposes bounded observed metadata without public parity or writer authority", () => {
   const rows = inventoryExtensionApiCoverage();
@@ -402,7 +428,7 @@ void test("NetGroup and filtered PCB membership reads expose narrow native route
   assert.match(route.scope, /not public primitive instances/u); assert.match(route.scope, /explicit nonempty unique filters/u);
   assert.match(route.scope, /source\/inventory\/source/u);
   assert.deepEqual(extensionApiCoverageSummary()["statuses"], {
-    "implemented-public-subset": 213, "implemented-native-equivalent": 34, "implemented-vendor-http-equivalent": 0, "internal-lifecycle-only": 0, "implemented-but-blocked": 79, omitted: 509,
+    "implemented-public-subset": 213, "implemented-native-equivalent": 34, "implemented-vendor-http-equivalent": 1, "internal-lifecycle-only": 0, "implemented-but-blocked": 79, omitted: 508,
   });
 });
 
@@ -1050,11 +1076,11 @@ void test("every coverage input-discovery request resolves to an actual strict a
     assert.ok(isRecord(request));
     const result = queryOfflineApi(apiRequestSchema.parse(request)).result;
     assert.ok(isRecord(result));
-    if (["project-symbol-operation", "disposable-symbol-copy", "disposable-pcb-rename", "disposable-schematic-rename", "project-schematic-operation"].includes(String(request["action"]))) {
+    if (["project-symbol-operation", "disposable-symbol-copy", "disposable-pcb-rename", "disposable-schematic-rename", "project-schematic-operation", "pcb209-opening"].includes(String(request["action"]))) {
       assert.ok(isRecord(result["inputSchema"]));
-      // The ordinary SCH route exposes its opening/lifecycle union at the root;
+      // The ordinary SCH and 209 opening routes expose their lifecycle union at the root;
       // Existing routes still promise a separate phase schema as well.
-      if (request["action"] !== "project-schematic-operation") { assert.ok(isRecord(result["stepSchema"])); }
+      if (request["action"] !== "project-schematic-operation" && request["action"] !== "pcb209-opening") { assert.ok(isRecord(result["stepSchema"])); }
       assert.equal(result["executionAuthorized"], false);
     } else {
       const entries = result["entries"];
