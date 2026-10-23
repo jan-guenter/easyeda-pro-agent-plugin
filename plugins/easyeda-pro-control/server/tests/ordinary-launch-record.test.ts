@@ -11,8 +11,10 @@ import { createContext, runInContext } from "node:vm";
 import { z } from "zod";
 import { canonicalJson, isRecord, sha256Json, sha256Text } from "../src/core.ts";
 import { assertNoUnresolvedCurrentPcbDiagnosticLaunches, withCurrentPcbDiagnosticLaunchExclusion } from "../src/current-pcb-diagnostic-lifecycle-journal.ts";
+import { ORDINARY_LAUNCH_209_PROFILE } from "../src/ordinary-launch-209-profile.ts";
 import { ordinaryLaunchRecoveryObservationSchema, recordedOrdinaryLaunchRecoveryObservationSchema } from "../src/ordinary-launch-recovery.ts";
 import { OrdinaryLaunchTimings } from "../src/ordinary-launch-timings.ts";
+import { isPublicUtilities209Configured } from "../src/sdk-public-utilities-profile.ts";
 
 type Bag = Record<string, unknown>;
 function bag(value: unknown): Bag { assert.ok(isRecord(value)); return value; }
@@ -41,6 +43,9 @@ async function fixture(options: Readonly<{ injected?: boolean; holdPublication?:
   const program = stripTypeScriptTypes(await readFile(new URL("../src/ordinary-launch.ts", import.meta.url), "utf8"))
     .replaceAll(/^import[\s\S]*?;\n/gmu, "").replaceAll(/\bexport (?=(?:async )?(?:class|function|const))/gu, "");
   const context = createContext({ z, Object, Reflect, Buffer, join, canonicalJson, sha256Json, sha256Text, OrdinaryLaunchTimings,
+    ORDINARY_LAUNCH_209_PROFILE, isPublicUtilities209Configured,
+    // Keep the original generation206 fixture independent of ambient machine selectors.
+    process: { env: Object.freeze({ EASYEDA_PCB_BUNDLE_VERSION: "3.2.193.682ed44e", EASYEDA_PUBLIC_API_BUNDLE_VERSION: "0.3.50.ab46409c" }) },
     assertNoUnresolvedCurrentPcbDiagnosticLaunches, withCurrentPcbDiagnosticLaunchExclusion,
     ordinaryLaunchRecoveryObservationSchema, recordedOrdinaryLaunchRecoveryObservationSchema, WindowsControlRuntime: SyntheticRuntime,
     observeOrdinaryLaunchRecovery: (): never => { throw new Error("Unexpected recovery"); },
@@ -78,7 +83,7 @@ async function fixture(options: Readonly<{ injected?: boolean; holdPublication?:
   // Boundary substitution exists only in this private source realm. The real
   // Module's lexical map and publication/installation implementations are intact.
   const api = bag(runInContext(`${program}
-inventory=testInventory;publish=testPublish;hashPinnedFile=testHash;verifyOrdinaryLaunchInstallation=testVerify;
+inventory=testInventory;publish=testPublish;hashPinnedFile=testHash;verifyInstalledProfile=testVerify;
 const coordinator=new OrdinaryLaunchCoordinator(testOptions,testInjected?{verifyInstallation:testVerify}:{});
 ({launch:()=>coordinator.run({action:'launch',operationId:'${id}',confirmLaunch:true,acceptExistingProfileEffects:true}),
 observe:()=>coordinator.run({action:'observe-termination',operationId:'${id}'}),

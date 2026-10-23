@@ -135,6 +135,28 @@ and is not substituted for this3.2.209 launcher.
    implementations and449documented omissions; new-generation utility admission
    does not complete those families.
 
+### Next declaration and public-read batch
+
+A read-only audit of the exact installed0.3.59 declaration file found844mounted
+signatures,811distinct method paths and113namespaces. Of those paths,61are
+absent from both bundled declaration snapshots:47source-design methods,
+fourproject/document readiness methods,fivePCB auto-job methods andfive
+raytracer methods. Adding that separately named snapshot would expand the
+current774-method union to835. Against reference0.4.26,109shared paths have
+different raw signature sets; lexical differences alone are not semantic
+compatibility findings. Keep the older and latest reference snapshots intact.
+
+The next bounded public-read candidates are
+[`sys_I18n.getAllSupportedLanguages`](https://prodocs.easyeda.com/en/api/reference/pro-api.sys_i18n.getallsupportedlanguages.html),
+[`sys_I18n.isLanguageSupported`](https://prodocs.easyeda.com/en/api/reference/pro-api.sys_i18n.islanguagesupported.html)
+and [`sys_Window.getViewportSize`](https://prodocs.easyeda.com/en/api/reference/pro-api.sys_window.getviewportsize.html).
+The reviewed installed closures copy/check a fixed52-language list or return
+page viewport dimensions; they do not establish current connected support.
+Preserve exact case-sensitive language matching and bounded finite dimensions,
+and never label page dimensions as PCB or OS geometry. `sys_Help.help` is not
+a no-network candidate: its installed implementation reads or fetches schema
+files. This audit changed no code, application or project state.
+
 ## Verification and publication
 
 Implementation and independent focused reviews are complete. The frozen build,
@@ -150,3 +172,20 @@ now lists both exact generations and the new profile/test provenance. The first
 full suite was deliberately stopped before these source changes and is retained
 as an incomplete, superseded run, not a passing final-payload result. Only the
 owned verification process group was stopped; the offline host remained intact.
+
+### First frozen verification result
+
+Payload `8d82f348f673d173cb13e007225294ed01fefcf1` failed final local facade
+verification:12,395tests,12,386passes,fivefailures,fourskips. CI39935001855
+also found the stale calculation-scope assertion and three ordinary-launch
+VM-fixture failures. The assertion still required the former206-only wording;
+the VM fixture lacked the newly imported profile selector and injected verifier.
+These are test integration defects, not passing evidence for this payload.
+
+The fifth local failure was the unchanged packet reader's1,000ms wall-clock
+guard, with the final exception stack identifying `budget` during UTF-8 size
+checking. A single isolated run passed allfourpacket tests. Local default
+file concurrency followed the32available CPUs; `npm test` now caps it atfour
+to reduce contention. CI keeps its existing one-file-per-shard bound. No
+production deadline, packet limit or test assertion was weakened. The corrected
+payload requires a new frozen verification and exact-payload CI run.

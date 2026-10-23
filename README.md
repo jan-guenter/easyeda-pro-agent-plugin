@@ -172,8 +172,9 @@ npm run repository:validate
 ```
 
 `verify` checks types, lint, coverage generation, builds, compatibility, facade
-and bridge tests, skills and the MCP contract. For focused facade tests, retain
-the isolation preload:
+and bridge tests, skills and the MCP contract. Local facade tests run at most
+four files concurrently to limit scheduling contention around real-time guards;
+CI runs one file per shard. For focused facade tests, retain the isolation preload:
 
 ```bash
 node --import ./scripts/test-isolation.ts --test server/tests/validation-registry.test.ts

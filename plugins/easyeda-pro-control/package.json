@@ -26,7 +26,7 @@
     "sql:reader:update": "node scripts/generate-sqlite-inventory-program.ts --write",
     "startup:protocol:check": "node scripts/generate-worker-startup-protocol.ts --check",
     "startup:protocol:update": "node scripts/generate-worker-startup-protocol.ts --write",
-    "test": "node --import ./scripts/test-isolation.ts --test server/tests/*.test.ts",
+    "test": "node --import ./scripts/test-isolation.ts --test --test-concurrency=4 server/tests/*.test.ts",
     "validate": "node scripts/validate-plugin.ts",
     "skills:validate": "node scripts/validate-skills.ts",
     "api:coverage:check": "node scripts/generate-api-coverage.ts --check",
