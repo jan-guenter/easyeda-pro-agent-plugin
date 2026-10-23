@@ -39,7 +39,7 @@ type ExistingWorker = Readonly<{ targetId: string; title: string; url: string }>
 const eventMethods = ["Target.attachedToTarget", "Target.detachedFromTarget", "Target.targetDestroyed", "Target.targetInfoChanged",
   "Runtime.executionContextCreated", "Runtime.executionContextDestroyed", "Runtime.executionContextsCleared", "Runtime.exceptionThrown",
   "Runtime.consoleAPICalled", "Debugger.scriptParsed", "Debugger.paused", "Debugger.resumed"] as const;
-const eventReasons = ["EVENT_BUDGET", "ATTACHMENT", "EXISTING_WORKER_CHANGED", "EXISTING_WORKER_PAUSED", "WORKER_NOT_WAITING",
+const eventReasons = ["EVENT_BUDGET", "ATTACHMENT", "EXISTING_WORKER_CHANGED", "EXISTING_WORKER_SELECTED", "EXISTING_WORKER_PAUSED", "WORKER_NOT_WAITING",
   "EXTRA_WORKER", "WORKER_URL", "WORKER_TITLE", "EVENT_SESSION", "CONTEXT", "SCRIPT", "UNEXPECTED_PAUSE",
   "UNEXPECTED_RESUME", "UNEXPECTED_EVENT"] as const;
 type EventMethod = typeof eventMethods[number] | "other" | "unparsed";
@@ -158,7 +158,10 @@ export class CurrentPcbWorkerStartupTransport {
   /** The private opener supplies its fresh, original Target.getTargets reply.
    * Auto-attach also reports existing workers; waitForDebuggerOnStart applies
    * only to new workers. Existing running workers are never debugged, resumed
-   * or treated as the selected project worker. The snapshot is not atomic. */
+   * or treated as the selected project worker. Browser-created dedicated-worker
+   * placeholders can still have empty URL/title until renderer child reporting;
+   * their original target ID, not those empty fields, binds the later attachment.
+   * The snapshot is not atomic. */
   public bindExistingWorkers(input: unknown): void {
     if (this.#started || this.#expectedProject === null || this.#existingWorkers !== null || this.#failure !== null || this.#released) {
       throw failure("EXISTING_WORKERS_CONSUMED");
@@ -237,17 +240,25 @@ export class CurrentPcbWorkerStartupTransport {
           this.#workers.size >= 16) { throw failure("ATTACHMENT"); }
       const worker = Object.freeze({ sessionId: params.sessionId, target: params.targetInfo, waitingForDebugger: params.waitingForDebugger });
       this.#workers.set(worker.sessionId, worker);
+      const expected = this.#expectedProject;
       const existing = this.#existingWorkers?.get(worker.target.targetId);
       if (existing !== undefined) {
         if (worker.waitingForDebugger) { void observe(this.#runWaiting(worker)); throw failure("EXISTING_WORKER_PAUSED"); }
-        if (worker.target.title !== existing.title || worker.target.url !== existing.url) { throw failure("EXISTING_WORKER_CHANGED"); }
+        if (expected !== null && worker.target.title === `project_${expected.projectUuid}_${expected.windowTabId}` ||
+            this.#sourceUrl(worker.target.url)) { throw failure("EXISTING_WORKER_SELECTED"); }
+        // Chromium146 WorkerDevToolsManager creates the same token with empty
+        // URL/name. Renderer ChildTargetCreated fills both before attachment.
+        // Permit only that initial metadata population, never changes to an
+        // Already populated inventory. The original parent session and target
+        // ID above remain mandatory; neither field qualifies worker source.
+        if ((existing.title !== "" || existing.url !== "") &&
+            (worker.target.title !== existing.title || worker.target.url !== existing.url)) { throw failure("EXISTING_WORKER_CHANGED"); }
         this.#backgroundWorkers.add(worker.sessionId); return;
       }
       if (!worker.waitingForDebugger) { throw failure("WORKER_NOT_WAITING"); }
       if (this.#worker !== null) { void observe(this.#runWaiting(worker)); throw failure("EXTRA_WORKER"); }
       this.#worker = worker;
       if (!this.#sourceUrl(worker.target.url)) { void observe(this.#runWaiting(worker)); throw failure("WORKER_URL"); }
-      const expected = this.#expectedProject;
       if (expected !== null && worker.target.title !== `project_${expected.projectUuid}_${expected.windowTabId}`) {
         void observe(this.#runWaiting(worker)); throw failure("WORKER_TITLE");
       }

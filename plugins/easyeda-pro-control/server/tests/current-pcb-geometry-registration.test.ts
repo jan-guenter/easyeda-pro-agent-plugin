@@ -53,6 +53,8 @@ void test("PCB geometry registration preserves strict target requests and the se
     { ...request, method: "eda.pcb_PrimitiveDimension.get", arguments: { primitiveIds: ["one"], primitiveLock: false } },
     { ...request, method: "eda.pcb_PrimitiveImage.getAll", arguments: { layer: 13 } },
     { ...request, method: "eda.pcb_PrimitiveImage.get", arguments: { primitiveIds: "one" } },
+    { ...request, method: "eda.pcb_SelectControl.getSelectedPrimitives", arguments: { families: ["Line"] } },
+    { ...request, method: "eda.pcb_SelectControl.getSelectedPrimitives", arguments: { primitiveIds: ["one"] } },
     { ...request, method: "eda.pcb_PrimitiveComponent.getAllPinsByPrimitiveId", arguments: { primitiveId: ["one"] } }]) {
     assert.equal(requestSchema.safeParse(invalid).success, false);
   }
@@ -72,5 +74,8 @@ void test("PCB geometry registration preserves strict target requests and the se
   assert.equal(calls.at(-1), association);
   assert.ok(associationResult !== null && typeof associationResult === "object" && "result" in associationResult);
   assert.equal(associationResult.result, observed);
-  assert.equal(calls.length, 19);
+  const selection: unknown = requestSchema.parse({ ...request, method: "eda.pcb_SelectControl.getSelectedPrimitives" });
+  const selectionResult: unknown = await invoke({ request: selection, expectedFingerprint });
+  assert.equal(calls.at(-1), selection); assert.ok(selectionResult !== null && typeof selectionResult === "object" && "result" in selectionResult);
+  assert.equal(selectionResult.result, observed); assert.equal(calls.length, 20);
 });

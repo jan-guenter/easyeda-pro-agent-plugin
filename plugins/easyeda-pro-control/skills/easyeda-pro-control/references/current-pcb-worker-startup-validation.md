@@ -40,9 +40,12 @@ schema, then validate assembled requests with
    with the fixed project opener. Do not open the project manually or through
    another route first: that loses the original constructor observation.
    The final pre-open target inventory also binds existing running workers.
-   Only matching, previously observed background workers may attach without
-   waiting. They are not selected, inspected, resumed or treated as qualified
-   project workers. A pre-existing project worker or changed inventory refuses.
+   Only previously observed background workers on the original parent may
+   attach without waiting. Target IDs must match. Populated URL/title must
+   remain exact; a pair that was entirely empty may initialize at attachment.
+   Selected project names and pinned project-worker source paths still refuse.
+   Background workers are not inspected, resumed or treated as qualified project
+   workers. Unknown, paused, duplicate or replacement workers refuse.
 5. Inspect the returned data and retained records. The expected worker name is
    bound before capture; the retained PROJECT receiver must subsequently match
    the selected project, derived branch and original UI window. Full worker

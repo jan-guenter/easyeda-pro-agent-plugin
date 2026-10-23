@@ -9,6 +9,7 @@ import type { CurrentPcbGeometryRequest } from "../src/current-pcb-geometry.ts";
 import { buildCurrentPcbGeometryProgram } from "../src/current-pcb-geometry-program.ts";
 import { decodeExactReadEnvelope } from "../src/exact-readers.ts";
 import { CURRENT_UI_IMPLEMENTATION } from "../src/current-ui-implementation.ts";
+import { CURRENT_PCB_SELECTED_GEOMETRY_METHOD, CURRENT_PCB_SELECTION_FAMILIES } from "../src/current-pcb-selection.ts";
 
 const target = { projectUuid: "a".repeat(64), branchUuid: "b".repeat(32), documentUuid: "c".repeat(16),
   tabId: `${"c".repeat(16)}@${"a".repeat(64)}` };
@@ -19,7 +20,8 @@ function inputFor(method: CurrentPcbGeometryRequest["method"] = methods[0], prim
 }
 const track = { globalIndex: "line-b", net: "MixedCase", locked: false, layerId: 1,
   startX: 1.1234567, startY: -2, endX: 3, endY: 4, width: 10 };
-const defaults = { Dimension: [
+const defaults = { Image: [{ globalIndex: "image-a", imageType: "Picture", locked: false, layerId: 3,
+  start: { x: 1, y: 2 }, width: 40, height: 20, rotation: 90, mirror: false }], Dimension: [
   { globalIndex: "dimension-length", dimensionType: "Length Dimension", layerId: 13, locked: false,
     coordinateSet: [10.1234567, -20, 10, -30, 100, -30, 100, -20], width: 6.1234567, precision: 4, unit: "mm" },
   { globalIndex: "dimension-radius", dimensionType: "Radius Dimension", layerId: 3, locked: true,
@@ -49,20 +51,20 @@ function environment(options: Options = {}): { run: () => Promise<unknown>; eval
   const input = options.input ?? inputFor();
   const childContext = createContext({ checkCall: (topic: unknown, arg: unknown, timeout: unknown): void => {
     assert.equal(timeout, 0);
-    if (topic === "getTabIdAndDocType") { assert.equal(arg, undefined); }
+    if (topic === "getTabIdAndDocType" || topic === "pcb/extensionAPI/selectcontrol-getAllSelectedPrimitiveIds") { assert.equal(arg, undefined); }
     else if (topic === "pcb/extensionAPI/component-getAllPinsByPrimitiveId") {
       assert.ok("primitiveId" in input.arguments); assert.equal(arg, input.arguments.primitiveId);
     }
     else {
       assert.ok(topic === "pcb/extensionAPI/track-getAll" || topic === "pcb/extensionAPI/arc-getAll" || topic === "pcb/extensionAPI/via-getAll" ||
-        topic === "pcb/extensionAPI/component-getAll" || topic === "pcb/extensionAPI/pad-getAll" || topic === "pcb/extensionAPI/string-getAll" || topic === "pcb/extensionAPI/attribute-getAll" || topic === "pcb/extensionAPI/dimension-getAll");
+        topic === "pcb/extensionAPI/component-getAll" || topic === "pcb/extensionAPI/pad-getAll" || topic === "pcb/extensionAPI/string-getAll" || topic === "pcb/extensionAPI/attribute-getAll" || topic === "pcb/extensionAPI/dimension-getAll" || topic === "pcb/extensionAPI/image-getAll");
       assert.ok(arg !== null && typeof arg === "object"); assert.deepEqual(Object.keys(arg), []);
     }
   } });
   runInContext(`globalThis.rows=${JSON.stringify(defaults)};rows.Attribute=[{parentPrimitiveId:'component-b',attrs:[{...rows.String[0],globalIndex:'attribute-b',key:'Name',value:'ABC-1',formulaName:'={Manufacturer Part}'}]},{parentPrimitiveId:'empty-parent',attrs:[]},{parentPrimitiveId:'component-a',attrs:[{...rows.String[1],globalIndex:'attribute-a'}]}];globalThis.children=[{...rows.Pad[1]},{...rows.Pad[0]}];globalThis.calls=0;globalThis.dataReads=0;globalThis.getterReads=0;
-globalThis.identity={tabId:${JSON.stringify(input.target.tabId)},docType:3};
-globalThis.topics={'pcb/extensionAPI/track-getAll':'Line','pcb/extensionAPI/arc-getAll':'Arc','pcb/extensionAPI/via-getAll':'Via','pcb/extensionAPI/component-getAll':'Component','pcb/extensionAPI/pad-getAll':'Pad','pcb/extensionAPI/string-getAll':'String','pcb/extensionAPI/attribute-getAll':'Attribute','pcb/extensionAPI/dimension-getAll':'Dimension'};
-class Bus {async rpcCall(topic,arg,timeout){if(this!==MSG_BUS_PCB.messageBus)throw new Error('PRIVATE_RECEIVER');checkCall(topic,arg,timeout);calls++;await Promise.resolve();if(topic!=='getTabIdAndDocType')dataReads++;${options.afterCall ?? ""}return {message:topic==='getTabIdAndDocType'?identity:topic==='pcb/extensionAPI/component-getAllPinsByPrimitiveId'?children:rows[topics[topic]],bridge:undefined,source:undefined};}}
+globalThis.identity={tabId:${JSON.stringify(input.target.tabId)},docType:3};globalThis.selected=['string-b','line-a','attribute-b','pad-b','image-a','dimension-radius'];globalThis.callTopics=[];
+globalThis.topics={'pcb/extensionAPI/track-getAll':'Line','pcb/extensionAPI/arc-getAll':'Arc','pcb/extensionAPI/via-getAll':'Via','pcb/extensionAPI/component-getAll':'Component','pcb/extensionAPI/pad-getAll':'Pad','pcb/extensionAPI/string-getAll':'String','pcb/extensionAPI/attribute-getAll':'Attribute','pcb/extensionAPI/dimension-getAll':'Dimension','pcb/extensionAPI/image-getAll':'Image'};
+class Bus {async rpcCall(topic,arg,timeout){if(this!==MSG_BUS_PCB.messageBus)throw new Error('PRIVATE_RECEIVER');checkCall(topic,arg,timeout);calls++;callTopics.push(topic);await Promise.resolve();if(topic!=='getTabIdAndDocType')dataReads++;${options.afterCall ?? ""}return {message:topic==='getTabIdAndDocType'?identity:topic==='pcb/extensionAPI/component-getAllPinsByPrimitiveId'?children:topic==='pcb/extensionAPI/selectcontrol-getAllSelectedPrimitiveIds'?selected:rows[topics[topic]],bridge:undefined,source:undefined};}}
 globalThis.MSG_BUS_PCB={messageBus:new Bus()};${options.beforeChild ?? ""}`, childContext, { timeout: 1000 });
   const child: unknown = runInContext("globalThis", childContext);
   const context = createContext({ child, TextEncoder, setTimeout: options.fastDeadline === true
@@ -97,6 +99,82 @@ void test("current geometry reader admits the target project fragment and reject
   const changed = environment({ before, afterCall: "parent.location.href='https://client/editor?cll=warn#id='+parent.target.projectUuid;parent.document.URL=parent.location.href;" });
   await assert.rejects(changed.run(), { message: "CURRENT_PCB_GEOMETRY_READ_FAILED" });
   assert.equal(changed.evaluateChild("calls"), 1);
+});
+
+void test("selected PCB geometry returns every supported selected view in native order with complete family evidence", async () => {
+  const input = inputFor(CURRENT_PCB_SELECTED_GEOMETRY_METHOD);
+  const fixture = environment({ input });
+  const raw: unknown = decodeExactReadEnvelope(await fixture.run());
+  const result = validateCurrentPcbGeometryResult(input, raw);
+  assert.deepEqual(result["selectedPrimitiveIds"], ["string-b", "line-a", "attribute-b", "pad-b", "image-a", "dimension-radius"]);
+  const rows = result["value"]; assert.ok(Array.isArray(rows));
+  assert.deepEqual(rows.map((row: Record<string, unknown>) => row["primitiveType"]), ["String", "Line", "Attribute", "Pad", "Image", "Dimension"]);
+  assert.equal(result["returnedRowCount"], 6); assert.equal(result["observedRowCount"], 16);
+  assert.equal(result["selectionEvidence"], "native-ordered-selection-and-complete-family-projections");
+  const families = z.array(z.object({ family: z.string() })).parse(result["observedFamilies"]);
+  assert.deepEqual(families.map(entry => entry.family), CURRENT_PCB_SELECTION_FAMILIES);
+  assert.equal(fixture.evaluateChild("calls"), 26);
+  const topics: unknown = fixture.evaluateChild("JSON.stringify(callTopics)"); assert.equal(typeof topics, "string");
+  assert.ok(!String(topics).includes("selectcontrol-getAllSelectedPrimitives\""));
+  const selection = "pcb/extensionAPI/selectcontrol-getAllSelectedPrimitiveIds";
+  assert.equal(fixture.evaluateChild(`callTopics.filter(topic=>topic===${JSON.stringify(selection)}).length`), 4);
+  assert.equal(fixture.evaluateChild("callTopics[0]"), "getTabIdAndDocType");
+  assert.equal(fixture.evaluateChild("callTopics[12]"), "getTabIdAndDocType");
+  assert.match(String(result["limitations"]), /showNet/u);
+  const catalogue = queryCurrentPcbGeometry({ method: CURRENT_PCB_SELECTED_GEOMETRY_METHOD, includeSchemas: true });
+  const entries = catalogue["entries"]; assert.ok(Array.isArray(entries)); const entry: unknown = entries[0];
+  assert.ok(isRecord(entry) && isRecord(entry["resultSchema"]));
+  const publicResult = { ...result, observationSha256: "a".repeat(64), runtimeAdmission: {
+    profile: "easyeda-pro-control.current-pcb-geometry-runtime.v1", fingerprintSha256: "b".repeat(64), uiImplementation: CURRENT_UI_IMPLEMENTATION,
+    beforeAndAfterChecked: true, scope: "explicit-current-pcb-loaded-view-geometry-only", designExecutionAuthorized: false,
+    persistenceVerified: false, liveValidation: "not-recorded" } };
+  assert.equal(z.fromJSONSchema(entry["resultSchema"]).safeParse(publicResult).success, true);
+});
+
+void test("empty PCB selection is bracketed without serializing any geometry family", async () => {
+  const input = inputFor(CURRENT_PCB_SELECTED_GEOMETRY_METHOD);
+  const fixture = environment({ input, beforeChild: "selected=[];rows=null;" });
+  const result = validateCurrentPcbGeometryResult(input, decodeExactReadEnvelope(await fixture.run()));
+  assert.deepEqual(result["value"], []); assert.deepEqual(result["observedFamilies"], []);
+  assert.deepEqual(result["attributeParentGroups"], []); assert.equal(result["observedRowCount"], 0);
+  assert.equal(fixture.evaluateChild("calls"), 8); assert.equal(fixture.evaluateChild("dataReads"), 4);
+});
+
+void test("selected PCB geometry refuses unsupported, missing, duplicate and unstable selections without lossy raw serialization", async () => {
+  const input = inputFor(CURRENT_PCB_SELECTED_GEOMETRY_METHOD);
+  for (const beforeChild of ["selected=['unsupported-fill'];", "selected=['line-a','missing'];", "selected=['line-a','line-a'];",
+    "selected=undefined;", "selected=[''];", "selected=['line-a'];selected.extra=true;", "selected=new Array(1);",
+    "rows.Arc[0].globalIndex='line-a';", "rows.Line[0].width=NaN;", "rows.Image[0].imageType='unknown';",
+    "rows.Attribute[0].attrs[0].globalIndex='pad-b';", "Object.defineProperty(selected,'0',{get(){getterReads++;throw new Error('PRIVATE_SELECTION');}});",
+    "selected=Array.from({length:257},(_,i)=>String(i));"]) {
+    const fixture = environment({ input, beforeChild });
+    await assert.rejects(fixture.run(), { message: "CURRENT_PCB_GEOMETRY_READ_FAILED" });
+    assert.equal(fixture.evaluateChild("getterReads"), 0);
+  }
+  for (const afterCall of [
+    "if(topic==='pcb/extensionAPI/track-getAll')selected.reverse();",
+    "if(calls===14)selected.reverse();",
+    "if(calls===14)rows.Line[0].width++;",
+    "if(calls===5)parent.gVars.currentProject={...parent.gVars.currentProject};",
+    "if(calls===9)MSG_BUS_PCB.messageBus=new Bus();",
+    "if(calls===8)identity.docType=4;",
+  ]) { await assert.rejects(environment({ input, afterCall }).run(), { message: "CURRENT_PCB_GEOMETRY_READ_FAILED" }); }
+});
+
+void test("host independently refuses forged selected geometry membership, order and Attribute associations", async () => {
+  const input = inputFor(CURRENT_PCB_SELECTED_GEOMETRY_METHOD), raw: unknown = decodeExactReadEnvelope(await environment({ input }).run());
+  assert.ok(isRecord(raw) && Array.isArray(raw["rows"]) && Array.isArray(raw["observedFamilies"]));
+  const families = z.array(z.record(z.string(), z.unknown())).parse(raw["observedFamilies"]);
+  const rows = z.array(z.record(z.string(), z.unknown())).parse(raw["rows"]);
+  for (const invalid of [{ ...raw, selectedPrimitiveIds: ["missing"] }, { ...raw, rows: rows.toReversed() },
+    { ...raw, observedFamilies: families.slice(1) }, { ...raw, observedFamilies: families.toReversed() },
+    { ...raw, observedFamilies: families.map(family => family["family"] === "String" ? Object.assign(structuredClone(family), { ids: [] }) : family) },
+    { ...raw, observedFamilies: families.map(family => family["family"] === "Via" ? Object.assign(structuredClone(family), { ids: ["line-a"] }) : family) },
+    { ...raw, attributeParentGroups: [] },
+    { ...raw, rows: rows.map(row => row["primitiveType"] === "Attribute" ? Object.assign(structuredClone(row), { parentPrimitiveId: "wrong" }) : row) },
+    { ...raw, selectedPrimitiveIds: [], rows: [] }, { ...raw, extra: true }]) {
+    assert.throws(() => validateCurrentPcbGeometryResult(input, invalid));
+  }
 });
 
 void test("current geometry copies ordered cross-realm native fields without public rounding or point getters", async () => {
@@ -147,7 +225,7 @@ void test("current geometry schemas limit input and retain empty collection and 
     { ...input, method: "eda.pcb_PrimitiveLine.get" }, { ...input, target: { ...target, tabId: "wrong" } }]) {
     assert.throws(() => buildCurrentPcbGeometryProgram(invalid)); assert.equal(validateCurrentPcbGeometryArguments(invalid)["valid"], false);
   }
-  assert.equal(queryCurrentPcbGeometry({ includeSchemas: true })["total"], 19);
+  assert.equal(queryCurrentPcbGeometry({ includeSchemas: true })["total"], 20);
   assert.match(JSON.stringify(queryCurrentPcbGeometry({ method: methods[0], includeSchemas: true })), /inputSchema/u);
   for (const method of methods) {
     const request = inputFor(method);
@@ -170,7 +248,7 @@ void test("current geometry schemas limit input and retain empty collection and 
 void test("geometry discovery returns bounded method-specific successful result schemas and discloses remaining parser refinements", async () => {
   const catalog = queryCurrentPcbGeometry({ includeSchemas: true }), entries = catalog["entries"];
   assert.equal(catalog["offline"], true); assert.equal(catalog["invocationEnabledByDiscovery"], false);
-  assert.ok(Array.isArray(entries)); assert.equal(entries.length, 19);
+  assert.ok(Array.isArray(entries)); assert.equal(entries.length, 20);
   assert.ok(Buffer.byteLength(JSON.stringify(catalog), "utf8") < 1024 * 1024);
   for (const rawEntry of entries) {
     const entry: unknown = rawEntry; assert.ok(isRecord(entry));
@@ -179,12 +257,19 @@ void test("geometry discovery returns bounded method-specific successful result 
     const properties = schema["properties"]; assert.ok(isRecord(properties));
     const methodSchema = properties["method"], values = properties["value"];
     assert.ok(isRecord(methodSchema) && isRecord(values) && isRecord(values["items"]));
-    const rowProperties = values["items"]["properties"]; assert.ok(isRecord(rowProperties));
-    const family = rowProperties["primitiveType"]; assert.ok(isRecord(family));
-    assert.equal(methodSchema["const"], method);
-    assert.equal(family["const"], method.endsWith("getAllPinsByPrimitiveId") ? "Pad" : method.slice("eda.pcb_Primitive".length).split(".")[0]);
-    assert.equal(schema["additionalProperties"], false); assert.equal(properties["rows"], undefined);
-    assert.equal(Object.hasOwn(properties, "returnedRowCount"), method.endsWith(".get") || method.endsWith("getAllPinsByPrimitiveId"));
+    if (method === CURRENT_PCB_SELECTED_GEOMETRY_METHOD) {
+      assert.ok(Array.isArray(values["items"]["oneOf"]));
+      assert.equal(values["items"]["oneOf"].length, CURRENT_PCB_SELECTION_FAMILIES.length);
+      assert.equal(methodSchema["const"], method); assert.ok(Object.hasOwn(properties, "returnedRowCount"));
+      assert.equal(schema["additionalProperties"], false);
+    } else {
+      const rowProperties = values["items"]["properties"]; assert.ok(isRecord(rowProperties));
+      const family = rowProperties["primitiveType"]; assert.ok(isRecord(family));
+      assert.equal(methodSchema["const"], method);
+      assert.equal(family["const"], method.endsWith("getAllPinsByPrimitiveId") ? "Pad" : method.slice("eda.pcb_Primitive".length).split(".")[0]);
+      assert.equal(schema["additionalProperties"], false); assert.equal(properties["rows"], undefined);
+      assert.equal(Object.hasOwn(properties, "returnedRowCount"), method.endsWith(".get") || method.endsWith("getAllPinsByPrimitiveId"));
+    }
     assert.equal(entry["resultSchemaScope"], "successful-tool-result;not-error-envelope");
     assert.match(String(entry["resultSchemaLimitations"]), /polygon command grammar.*exact request target.*no runtime admission/u);
   }

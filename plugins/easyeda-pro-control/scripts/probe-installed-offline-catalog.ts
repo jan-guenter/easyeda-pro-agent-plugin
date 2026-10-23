@@ -282,7 +282,7 @@ async function catalogChecks(child: OfflineChild, sample: () => Promise<void>): 
   }).toSorted();
   requireCheck(JSON.stringify(names) === JSON.stringify(EXPECTED_TOOLS), "Offline tool names changed.");
   await sample();
-  for (const [action, total] of [["calculations", 16], ["system", 18], ["pcb-geometry", 19], ["project-schematic", 4]] as const) {
+  for (const [action, total] of [["calculations", 16], ["system", 18], ["pcb-geometry", 20], ["project-schematic", 4]] as const) {
     const result = await offlineApi(child, { action, query: { includeSchemas: true } });
     requireCheck(result["total"] === total && result["invocationEnabledByDiscovery"] === false,
       "Offline operation discovery changed or implies invocation authority.");

@@ -253,6 +253,30 @@ not verified manufacturer part identity or schematic linkage. Other Component
 attributes and library enrichment remain omitted. For observed child membership,
 use the separate component method below.
 
+### Selected PCB objects
+
+Use `eda.pcb_SelectControl.getSelectedPrimitives` with empty `arguments` on
+`easyeda_control_pcb_geometry` for the current selection. Keep the exact active
+PCB target and authenticated fingerprint. The result contains the nine supported
+geometry families' plain DTOs in selection order, not executable SDK instances.
+Every selected ID must belong to exactly one observed family. Unsupported
+objects, missing IDs and ambiguous membership refuse the whole request.
+
+Each compound sample reads selected IDs before and after the family projections.
+Two complete samples must match, including ordered family ID rosters and
+Attribute parent groups. Nonempty selection uses26 fixed native RPCs; empty
+selection uses eight and skips family enumeration. `observedRowCount` counts
+all scanned rows, while `returnedRowCount` counts selected DTOs. The existing
+256-row limit applies to each family and the selection, with one shared384KiB
+envelope bound. A selected-ID request does not make a large family cheap to read.
+
+The native raw selected-object serializer can omit unsupported objects and
+overwrite net values with display nets. This route does not call it. It keeps
+each admitted family reader's existing field and unit semantics. Fill, Polyline
+and Region remain excluded. Matching samples are not an atomic lock, complete
+saved membership, connectivity, rendering or writer authority. This addition
+has source and isolated-test evidence; connected validation is pending.
+
 ### PCB text
 
 Use `eda.pcb_PrimitiveString.getAll` for the complete supported loaded collection

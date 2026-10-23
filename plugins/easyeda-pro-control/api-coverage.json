@@ -7,13 +7,13 @@
     "latestDistinctMethods": 773,
     "statuses": {
       "implemented-public-subset": 212,
-      "implemented-native-equivalent": 33,
+      "implemented-native-equivalent": 34,
       "internal-lifecycle-only": 0,
       "implemented-but-blocked": 79,
-      "omitted": 450
+      "omitted": 449
     },
     "executionRoutes": {
-      "available-with-runtime-guards": 357,
+      "available-with-runtime-guards": 358,
       "blocked": 94,
       "partially-blocked": 2
     },
@@ -33,7 +33,6 @@
       "layer-selection-collateral-state": 1,
       "lossy-heterogeneous-primitive-projection": 2,
       "lossy-logging-selection-reader": 1,
-      "lossy-selected-object-projection": 1,
       "managed-file-contract-needed": 39,
       "multi-object-electrical-effect": 7,
       "navigation-or-viewport-adapter-needed": 14,
@@ -23285,14 +23284,46 @@
         }
       ],
       "reviewedRuntimeDeclaration": true,
-      "status": "omitted",
-      "routes": [],
-      "omission": {
-        "code": "lossy-selected-object-projection",
-        "reason": "The installed raw selection projection drops selected objects without toJSON, so its returned list can silently omit valid selected primitives.",
-        "nextRequirement": "Bind complete selected IDs first, project every supported object type, and prove identity parity across both samples; reject unknown selected object types instead of dropping them.",
-        "evidence": []
-      },
+      "status": "implemented-native-equivalent",
+      "routes": [
+        {
+          "tool": "easyeda_control_pcb_geometry",
+          "selector": "eda.pcb_SelectControl.getSelectedPrimitives",
+          "implementation": "native-task-equivalent",
+          "scope": "Separately pinned current API/UI/PCB equivalent on one explicit active ordinary type-3 target. Captured frame/receiver and native identity checks around every awaited boundary. getSelectedPrimitives is a native loaded-view geometry equivalent with empty arguments. Each complete sample brackets the nine existing family projections with the entire ordered native selected-ID list; two compound samples must match. Returns every selected object in selected order or refuses the whole request when an ID is missing, ambiguous or unsupported. Fill, Polyline, Region, Pour, Poured, Object and inherited String views outside these family readers are unsupported, never silently dropped. Nonempty selection observes every family under its existing bounds, including unselected rows; the combined byte bound still applies. Empty selection skips family serialization but retains both selection brackets and native identity checks. observedFamilies preserves complete family ID order and Attribute groups preserve observed associations, not reciprocal ownership or saved membership. The raw selected-object serializer is never called: it filters objects without toJSON and can substitute showNet. This equivalent uses the existing family DTO net fields instead, without claiming full public result parity. Selection itself is not changed; sampled stability is not atomic isolation or a writer baseline. Each family/selection/group is bounded to256 rows, identities256characters, combined evidence393216bytes; existing field bounds and projections apply. At most2304 observed family rows and256 returned rows. Native enumeration/serialization precedes bounds and is not cancelled by deadline. No selection, navigation, write, source export, Save or current connected validation.",
+          "source": [
+            "current-pcb-selection.ts",
+            "current-pcb-geometry.ts",
+            "current-pcb-geometry-program.ts",
+            "current-pcb-geometry-runtime.ts",
+            "current-pcb-layers.ts",
+            "sdk-local-runtime.ts"
+          ],
+          "tests": [
+            "current-pcb-geometry.test.ts",
+            "current-pcb-geometry-registration.test.ts",
+            "extension-api-coverage.test.ts"
+          ],
+          "documentTypes": [
+            3
+          ],
+          "validation": "offline-regression;current-live-unclaimed",
+          "executionState": "available-with-runtime-guards",
+          "inputDiscovery": {
+            "tool": "easyeda_control_api",
+            "arguments": {
+              "request": {
+                "action": "pcb-geometry",
+                "query": {
+                  "method": "eda.pcb_SelectControl.getSelectedPrimitives",
+                  "includeSchemas": true
+                }
+              }
+            }
+          }
+        }
+      ],
+      "omission": null,
       "completeDeclaredContractSupported": false,
       "currentGenerationLiveValidation": "not-recorded",
       "runtimeAdmission": "not-granted-by-inventory"

@@ -5,6 +5,8 @@ import { CURRENT_PCB_PAD_POLYGON_LIMITATION, createCurrentPcbPadPolygonPathSchem
 import { currentPcbLayersRequestSchema } from "./current-pcb-layers.ts";
 import { CURRENT_UI_IMPLEMENTATION } from "./current-ui-implementation.ts";
 import { SDK_LOCAL_RUNTIME_PROFILE } from "./sdk-local-runtime.ts";
+import { CURRENT_PCB_SELECTED_GEOMETRY_METHOD, CURRENT_PCB_SELECTION_FAMILIES, CURRENT_PCB_SELECTION_LIMITATION,
+  createCurrentPcbSelectionFields, validateCurrentPcbSelection } from "./current-pcb-selection.ts";
 
 export const CURRENT_PCB_GEOMETRY_MAX_BYTES = 384 * 1024;
 export const CURRENT_PCB_GEOMETRY_MAX_ROWS = 256;
@@ -16,7 +18,8 @@ const selectedMethods = ["eda.pcb_PrimitiveLine.get", "eda.pcb_PrimitiveArc.get"
 const componentPadsMethod = "eda.pcb_PrimitiveComponent.getAllPinsByPrimitiveId";
 const attributeCollectionMethod = "eda.pcb_PrimitiveAttribute.getAll";
 const attributeSelectedMethod = "eda.pcb_PrimitiveAttribute.get";
-const methods = [...collectionMethods, ...selectedMethods, componentPadsMethod, attributeCollectionMethod, attributeSelectedMethod] as const;
+const methods = [...collectionMethods, ...selectedMethods, componentPadsMethod, attributeCollectionMethod, attributeSelectedMethod,
+  CURRENT_PCB_SELECTED_GEOMETRY_METHOD] as const;
 const targetSchema = currentPcbLayersRequestSchema.shape.target;
 const numberSchema = z.number().min(-CURRENT_PCB_GEOMETRY_MAX_NUMBER).max(CURRENT_PCB_GEOMETRY_MAX_NUMBER)
   .refine((value) => !Object.is(value, -0), "Signed zero is not supported by this JSON observation.");
@@ -92,6 +95,7 @@ export const currentPcbGeometryRequestSchema = z.discriminatedUnion("method", [
   z.object({ method: z.literal(componentPadsMethod), arguments: z.object({ primitiveId: idSchema }).strict(), target: targetSchema }).strict(),
   z.object({ method: z.literal(attributeCollectionMethod), arguments: z.object({}).strict(), target: targetSchema }).strict(),
   z.object({ method: z.literal(attributeSelectedMethod), arguments: z.object({ primitiveIds: requestedIdsSchema }).strict(), target: targetSchema }).strict(),
+  z.object({ method: z.literal(CURRENT_PCB_SELECTED_GEOMETRY_METHOD), arguments: z.object({}).strict(), target: targetSchema }).strict(),
 ]);
 export type CurrentPcbGeometryRequest = z.infer<typeof currentPcbGeometryRequestSchema>;
 export const currentPcbGeometryQuerySchema = z.object({ method: z.enum(methods).optional(), includeSchemas: z.boolean().default(false) }).strict();
@@ -101,6 +105,8 @@ const resultShape = { ok: z.literal(true), kind: z.literal("current-pcb-geometry
   persistenceVerified: z.literal(false), sourceMembershipVerified: z.literal(false) };
 const attributeResultShape = { ...resultShape, rows: z.array(attributeSchema).max(CURRENT_PCB_GEOMETRY_MAX_ROWS),
   attributeParentGroups: attributeGroupsSchema, relationshipEvidence: z.literal("native-component-attribute-groups"), reciprocalParentVerified: z.literal(false) };
+const selectedRowSchema = z.discriminatedUnion("primitiveType", [lineSchema, arcSchema, viaSchema, componentSchema, padSchema,
+  stringSchema, attributeSchema, dimensionSchema, imageSchema]);
 export const currentPcbGeometryResultSchema = z.discriminatedUnion("method", [
   z.object({ ...resultShape, method: z.enum(collectionMethods) }).strict(),
   z.object({ ...resultShape, method: z.enum(selectedMethods), observedRowCount: z.number().int().min(1).max(CURRENT_PCB_GEOMETRY_MAX_ROWS) }).strict(),
@@ -111,11 +117,15 @@ export const currentPcbGeometryResultSchema = z.discriminatedUnion("method", [
     reciprocalParentVerified: z.literal(false), symbolPinMappingVerified: z.literal(false) }).strict(),
   z.object({ ...attributeResultShape, method: z.literal(attributeCollectionMethod) }).strict(),
   z.object({ ...attributeResultShape, method: z.literal(attributeSelectedMethod), observedRowCount: z.number().int().min(1).max(CURRENT_PCB_GEOMETRY_MAX_ROWS) }).strict(),
+  z.object({ ...resultShape, method: z.literal(CURRENT_PCB_SELECTED_GEOMETRY_METHOD), rows: z.array(selectedRowSchema).max(CURRENT_PCB_GEOMETRY_MAX_ROWS),
+    ...createCurrentPcbSelectionFields(idSchema, CURRENT_PCB_GEOMETRY_MAX_ROWS), attributeParentGroups: attributeGroupsSchema,
+    reciprocalParentVerified: z.literal(false) }).strict(),
 ]);
 
 const limitations = [
   CURRENT_PCB_IMAGE_GEOMETRY_LIMITATION,
   CURRENT_PCB_PAD_POLYGON_LIMITATION,
+  CURRENT_PCB_SELECTION_LIMITATION,
   "Only the exact active ordinary project-owned type-3 PCB is admitted. The retained frame, local receiver and complete target are rechecked around awaits, with native tab/type identity bracketing each sample. This is not an atomic lock or proof against switching away and back between observations.",
   "This is an explicit native loaded-view geometry projection, not public class instances, complete native/source records, saved membership, ownership, connectivity, DRC or persistence proof. Loaded views may include inherited, generated and in-progress objects. Native display nets are copied without case conversion; empty string and null remain distinct, while undefined refuses.",
   "Unfiltered getAll accepts empty arguments. The narrower get equivalent accepts only 1 to 256 distinct primitiveIds in an array, returns DTOs in caller order and refuses the entire request if any ID is unavailable in the observed family. Scalar input and the public method's missing-ID skipping are not supported. This does not change editor selection or prove absence from saved source.",
@@ -135,7 +145,7 @@ const limitations = [
 ] as const;
 
 export function parseCurrentPcbGeometryRequest(input: unknown): CurrentPcbGeometryRequest { return currentPcbGeometryRequestSchema.parse(input); }
-export function currentPcbGeometryFamily(request: Pick<CurrentPcbGeometryRequest, "method">): "Line" | "Arc" | "Via" | "Component" | "Pad" | "String" | "Attribute" | "Dimension" | "Image" {
+export function currentPcbGeometryFamily(request: Pick<CurrentPcbGeometryRequest, "method">): "Line" | "Arc" | "Via" | "Component" | "Pad" | "String" | "Attribute" | "Dimension" | "Image" | "Selected" {
   switch (request.method) {
     case "eda.pcb_PrimitiveLine.getAll":
     case "eda.pcb_PrimitiveLine.get": { return "Line"; }
@@ -156,6 +166,7 @@ export function currentPcbGeometryFamily(request: Pick<CurrentPcbGeometryRequest
     case "eda.pcb_PrimitiveDimension.get": { return "Dimension"; }
     case "eda.pcb_PrimitiveImage.getAll":
     case "eda.pcb_PrimitiveImage.get": { return "Image"; }
+    case CURRENT_PCB_SELECTED_GEOMETRY_METHOD: { return "Selected"; }
     default: { throw new Error("Unsupported current PCB geometry method."); }
   }
 }
@@ -167,8 +178,9 @@ function discoveryResultSchema(method: CurrentPcbGeometryRequest["method"]): z.Z
   const native = currentPcbGeometryResultSchema.options.find(option => option.shape.method.safeParse(method).success);
   if (native === undefined) { throw new Error("Unsupported current PCB geometry result method."); }
   const row = { Line: lineSchema, Arc: arcSchema, Via: viaSchema, Component: componentSchema, Pad: padSchema,
-    String: stringSchema, Attribute: attributeSchema, Dimension: dimensionSchema, Image: imageSchema }[currentPcbGeometryFamily({ method })];
+    String: stringSchema, Attribute: attributeSchema, Dimension: dimensionSchema, Image: imageSchema, Selected: selectedRowSchema }[currentPcbGeometryFamily({ method })];
   const selected = method.endsWith(".get");
+  const selection = method === CURRENT_PCB_SELECTED_GEOMETRY_METHOD;
   const count = z.number().int().min(selected ? 1 : 0).max(CURRENT_PCB_GEOMETRY_MAX_ROWS);
   const hash = z.string().regex(/^[a-f0-9]{64}$/u);
   const uiImplementation = z.object({ version: z.literal(CURRENT_UI_IMPLEMENTATION.version), relativePath: z.literal(CURRENT_UI_IMPLEMENTATION.relativePath),
@@ -178,7 +190,8 @@ function discoveryResultSchema(method: CurrentPcbGeometryRequest["method"]): z.Z
     designExecutionAuthorized: z.literal(false), persistenceVerified: z.literal(false), liveValidation: z.literal("not-recorded") }).strict();
   const projection = z.object(native.shape).omit({ rows: true });
   return projection.extend({ method: z.literal(method), value: z.array(row).max(CURRENT_PCB_GEOMETRY_MAX_ROWS),
-    observedRowCount: count, ...(selected || method === componentPadsMethod ? { returnedRowCount: count } : {}),
+    observedRowCount: selection ? z.number().int().min(0).max(CURRENT_PCB_GEOMETRY_MAX_ROWS * CURRENT_PCB_SELECTION_FAMILIES.length) : count,
+    ...(selected || selection || method === componentPadsMethod ? { returnedRowCount: count } : {}),
     units: z.object({ linear: z.literal("mil"), arcAngle: z.literal("degrees"), rotation: z.literal("degrees") }).strict(),
     effect: z.literal("current-pcb-loaded-view-geometry-read"), encoding: z.literal("native-getter-projection-without-public-wrapper-rounding"),
     authority: z.literal("explicit-target-loaded-view-geometry-only;not-design-or-persistence-authority"),
@@ -215,7 +228,7 @@ export function validateCurrentPcbGeometryArguments(input: unknown): Record<stri
   };
 }
 function assertAttributeGroups(payload: z.infer<typeof currentPcbGeometryResultSchema>): void {
-  if (!("attributeParentGroups" in payload)) { return; }
+  if (!("attributeParentGroups" in payload) || payload.method === CURRENT_PCB_SELECTED_GEOMETRY_METHOD) { return; }
   const memberships = new Map<string, string>(), orderedIds: string[] = [], parents = new Set<string>();
   for (const group of payload.attributeParentGroups) {
     if (parents.has(group.parentPrimitiveId)) { throw new Error("PCB Attribute groups contain duplicate parents."); }
@@ -242,12 +255,16 @@ export function validateCurrentPcbGeometryResult(input: unknown, raw: unknown): 
   if (Buffer.byteLength(JSON.stringify(payload), "utf8") > CURRENT_PCB_GEOMETRY_MAX_BYTES) { throw new Error("PCB geometry result exceeds its byte bound."); }
   const expectedFamily = currentPcbGeometryFamily(request), seen = new Set<string>();
   for (const row of payload.rows) {
-    if (row.primitiveType !== expectedFamily || seen.has(row.primitiveId)) { throw new Error("PCB geometry result contains duplicate or unexpected family identities."); }
+    if (expectedFamily !== "Selected" && row.primitiveType !== expectedFamily || seen.has(row.primitiveId)) { throw new Error("PCB geometry result contains duplicate or unexpected family identities."); }
     seen.add(row.primitiveId);
   }
   assertAttributeGroups(payload);
   const { rows, ...metadata } = payload;
   const counts: Record<string, number> = { observedRowCount: rows.length };
+  if (payload.method === CURRENT_PCB_SELECTED_GEOMETRY_METHOD) {
+    counts["observedRowCount"] = validateCurrentPcbSelection(payload, CURRENT_PCB_GEOMETRY_MAX_ROWS);
+    counts["returnedRowCount"] = rows.length;
+  }
   if ("primitiveIds" in request.arguments) {
     if (!("observedRowCount" in payload) || payload.observedRowCount < rows.length ||
       canonicalJson(rows.map((row) => row.primitiveId)) !== canonicalJson(request.arguments.primitiveIds)) {
