@@ -12,6 +12,7 @@ import { canonicalJson, sha256Json } from "./core.ts";
 import { currentDisposableOpenPreparationCheckpointSchema, currentDisposableOpenSealedTargetSchema } from "./current-disposable-open.ts";
 import { CURRENT_PCB_STRING_PRECREATE_OPERATION_PREFIX, currentPcbStringPrecreateIdSchema } from "./current-pcb-string-precreate-validation.ts";
 import { CURRENT_PCB_WORKER_STARTUP_OPERATION_PREFIX, currentPcbWorkerStartupLifecycleIdSchema } from "./current-pcb-worker-startup-validation.ts";
+import { currentPcbWorkerStartupActorPacketSchema } from "./current-pcb-worker-startup-actor-runner.ts";
 import { currentPcbObservationFailureSchema } from "./current-pcb-observation-failure.ts";
 import { assertNoUnresolvedCurrentPcbStringLedgers } from "./current-pcb-string-ledger-exclusion.ts";
 import { CURRENT_PCB_COMMON_FAILURE_MAX_BYTES, currentPcbCommonBaselineFailureSchema, currentPcbCommonBaselineResultSchema } from "./current-pcb-common-baseline-validation.ts";
@@ -281,6 +282,37 @@ const workerStartupOpeningResultSchema = z.object({
   operationId: currentPcbWorkerStartupLifecycleIdSchema, intentSha256: diagnosticLifecycleDigestSchema,
   result: workerStartupResultSchema, executionAuthorized: z.literal(false),
 }).strict().refine(value => Buffer.byteLength(canonicalJson(value.result)) <= DIAGNOSTIC_OBSERVATION_MAX_BYTES, "Startup opening result exceeds its bound.");
+const workerStartupAssignmentsIntentSchema = z.object({
+  schema: z.literal("easyeda-pro-control.pcb-worker-startup-assignments-intent.v1"), ...base,
+  operationId: currentPcbWorkerStartupLifecycleIdSchema, bindingSha256: diagnosticLifecycleDigestSchema,
+  openingResultSha256: diagnosticLifecycleDigestSchema,
+}).strict();
+const workerStartupAssignmentsSchema = z.object({
+  profile: z.literal("private.current-pcb-worker-construction-assignments.v1"),
+  callbackKinds: z.tuple([z.literal("uploadStructure"), z.literal("structure"), z.literal("cooperation"), z.literal("upload")]),
+  originalConstructionCallbacksMatched: z.literal(true), originalCallbackReceiversVerified: z.literal(true),
+  currentProjectWrapperRelationsVerified: z.literal(true), continuousAssignmentOwnershipVerified: z.literal(false),
+  nativeChannelIntrinsicAndPeerOwnershipVerified: z.literal(false), completePublishersVerified: z.literal(false),
+  writeDestinationsContained: z.literal(false), atomicSnapshotVerified: z.literal(false),
+  queueCompletionVerified: z.literal(false), executionAuthorized: z.literal(false),
+}).strict();
+const workerStartupAssignmentsResultSchema = z.object({
+  schema: z.literal("easyeda-pro-control.pcb-worker-startup-assignments-result.v1"), ...base,
+  operationId: currentPcbWorkerStartupLifecycleIdSchema, intentSha256: diagnosticLifecycleDigestSchema,
+  result: workerStartupAssignmentsSchema, pointInTimeObservation: z.literal(true),
+  executionAuthorized: z.literal(false), saveAuthorized: z.literal(false),
+}).strict();
+const workerStartupActorIntentSchema = z.object({
+  schema: z.literal("easyeda-pro-control.pcb-worker-startup-actor-intent.v1"), ...base,
+  operationId: currentPcbWorkerStartupLifecycleIdSchema, bindingSha256: diagnosticLifecycleDigestSchema,
+  assignmentsResultSha256: diagnosticLifecycleDigestSchema,
+}).strict();
+const workerStartupActorResultSchema = z.object({
+  schema: z.literal("easyeda-pro-control.pcb-worker-startup-actor-result.v1"), ...base,
+  operationId: currentPcbWorkerStartupLifecycleIdSchema, intentSha256: diagnosticLifecycleDigestSchema,
+  result: currentPcbWorkerStartupActorPacketSchema, pointInTimeObservation: z.literal(true),
+  executionAuthorized: z.literal(false), saveAuthorized: z.literal(false),
+}).strict().refine(value => Buffer.byteLength(canonicalJson(value.result)) <= DIAGNOSTIC_OBSERVATION_MAX_BYTES, "Startup actor result exceeds its bound.");
 const pcbOpenIntentSchema = z.object({
   schema: z.literal("easyeda-pro-control.pcb-diagnostic-pcb-open-intent.v1"), ...base,
   bindingSha256: diagnosticLifecycleDigestSchema, projectOpeningIntentSha256: diagnosticLifecycleDigestSchema,
@@ -313,6 +345,10 @@ export const diagnosticLifecycleRecordSchemas = {
   "worker-startup-handoff-result.json": workerStartupHandoffResultSchema,
   "worker-startup-opening-intent.json": workerStartupOpeningIntentSchema,
   "worker-startup-opening-result.json": workerStartupOpeningResultSchema,
+  "worker-startup-assignments-intent.json": workerStartupAssignmentsIntentSchema,
+  "worker-startup-assignments-result.json": workerStartupAssignmentsResultSchema,
+  "worker-startup-actor-intent.json": workerStartupActorIntentSchema,
+  "worker-startup-actor-result.json": workerStartupActorResultSchema,
   "observation-failure.json": observationFailureSchema,
 } as const;
 export type DiagnosticLifecycleRecords = { readonly [Key in keyof typeof diagnosticLifecycleRecordSchemas]?: z.infer<(typeof diagnosticLifecycleRecordSchemas)[Key]> };
@@ -427,6 +463,16 @@ function validateChain(operation: DiagnosticLifecycleOperation): void {
     startupOpened.result.workerIdentity.projectUuid === startupOpening.target.projectUuid &&
     startupOpened.result.workerIdentity.branchUuid === startupOpening.target.branchUuid &&
     startupOpened.result.workerIdentity.windowTabId === startupOpened.result.opening.observation.windowTabId, "WORKER_STARTUP_OPENING_RESULT_CHAIN");
+  const assigned = records["worker-startup-assignments-result.json"], assignments = records["worker-startup-assignments-intent.json"];
+  requireValue(assignments === undefined || startupPurpose && startupOpened !== undefined && binding !== undefined &&
+    assignments.openingResultSha256 === sha256Json(startupOpened) && assignments.bindingSha256 === sha256Json(binding), "WORKER_STARTUP_ASSIGNMENTS_CHAIN");
+  requireValue(assigned === undefined || assignments !== undefined && assigned.intentSha256 === sha256Json(assignments),
+    "WORKER_STARTUP_ASSIGNMENTS_RESULT_CHAIN");
+  const actor = records["worker-startup-actor-intent.json"], actorResult = records["worker-startup-actor-result.json"];
+  requireValue(actor === undefined || startupPurpose && assigned !== undefined && binding !== undefined &&
+    actor.assignmentsResultSha256 === sha256Json(assigned) && actor.bindingSha256 === sha256Json(binding), "WORKER_STARTUP_ACTOR_CHAIN");
+  requireValue(actorResult === undefined || actor !== undefined && startupOpened !== undefined && actorResult.intentSha256 === sha256Json(actor) &&
+    canonicalJson(actorResult.result.identity) === canonicalJson(startupOpened.result.workerIdentity), "WORKER_STARTUP_ACTOR_RESULT_CHAIN");
   for (const stage of lifecycleObservationStages) {
     const observation = records[`${stage}-intent.json`], result = records[`${stage}-result.json`];
     requireValue(observation === undefined || binding !== undefined && observation.stage === stage &&

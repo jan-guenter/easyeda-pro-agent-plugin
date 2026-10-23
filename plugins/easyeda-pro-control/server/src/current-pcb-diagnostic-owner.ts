@@ -22,7 +22,7 @@ import { CurrentPcbDiagnosticContext, diagnosticBoundedObservation, diagnosticTa
 import type { DiagnosticFrameExpectation, DiagnosticScriptProfile } from "./current-pcb-diagnostic-context.ts";
 import { CurrentPcbDiagnosticWorkerContext } from "./current-pcb-diagnostic-worker-context.ts";
 import type { DiagnosticWorkerScriptProfile } from "./current-pcb-diagnostic-worker-context.ts";
-import { verifyCurrentPcbDiagnosticInstallation } from "./current-pcb-diagnostic-installation.ts";
+import { verifyCurrentPcbDiagnosticFacade, verifyCurrentPcbDiagnosticInstallation } from "./current-pcb-diagnostic-installation.ts";
 import type { CurrentPcbDiagnosticInstallation, CurrentPcbDiagnosticInstallationOptions } from "./current-pcb-diagnostic-installation.ts";
 import { currentDisposableOpenSealedTargetSchema } from "./current-disposable-open.ts";
 import type { CurrentDisposableOpenSealedTarget } from "./current-disposable-open.ts";
@@ -56,8 +56,8 @@ import { CurrentPcbWorkerStartupChannel } from "./current-pcb-worker-startup-cha
 import type { CurrentPcbWorkerStartupNativeDependency, CurrentPcbWorkerStartupParent } from "./current-pcb-worker-startup-channel.ts";
 import type { CurrentPcbWorkerStartupDependency } from "./current-pcb-worker-startup-contract.ts";
 
-const HELPER_SHA256 = "31bb4410ac8db5a423e4ef8c061405348d44fbf042dd3ce4002bfb858dd8175c";
-const HELPER_BYTES = 760_485;
+const HELPER_SHA256 = "aa88123f3835a79c32d149126dce1b5d5b441b6f23c1770a72d4484f094f3e83";
+const HELPER_BYTES = 785_985;
 const MAX_LINE = 100_000;
 // 64 MiB native bytes need at most 85.34 MiB base64 plus bounded poll envelopes.
 const MAX_TOTAL = 96 * 1024 * 1024;
@@ -131,6 +131,7 @@ class CurrentPcbRetainedOwnerCore {
   readonly #child: ChildProcessWithoutNullStreams;
   readonly #verify: () => Promise<void>;
   readonly #verifyInstallation: () => Promise<void>;
+  readonly #verifyStartupFacade: () => Promise<void>;
   readonly #installation: CurrentPcbDiagnosticInstallation | null;
   readonly #input = new PassThrough({ autoDestroy: false });
   readonly #output: Writable;
@@ -198,8 +199,10 @@ class CurrentPcbRetainedOwnerCore {
   #terminationObservation: Readonly<TerminationObservation> | null = null;
 
   public constructor(child: ChildProcessWithoutNullStreams, verify: () => Promise<void>,
-    installation: CurrentPcbDiagnosticInstallation | null, verifyInstallation: () => Promise<void>, purpose: OwnerPurpose) {
+    installation: CurrentPcbDiagnosticInstallation | null, verifyInstallation: () => Promise<void>, purpose: OwnerPurpose,
+    verifyStartupFacade: () => Promise<void> = verifyInstallation) {
     this.#child = child; this.#verify = verify; this.#installation = installation; this.#verifyInstallation = verifyInstallation;
+    this.#verifyStartupFacade = verifyStartupFacade;
     this.#purpose = purpose; this.#stringPurpose = purpose === "string-precreate";
     this.#output = new Writable({ autoDestroy: false,
       // oxlint-disable-next-line promise/prefer-await-to-callbacks -- Writable requires its original callback, acknowledged only after native WriteFile.
@@ -230,6 +233,7 @@ class CurrentPcbRetainedOwnerCore {
     nativeLaunchError: string | null; nativeSendError: string | null; createProcessError: number | null;
     browserObservationConsumed: boolean; frameInspectionConsumed: boolean; scriptInspectionConsumed: boolean; diagnosticFailure: string | null;
     diagnosticFailureObservation: CurrentPcbDiagnosticFailureObservation | null;
+    workerStartupChannel?: ReturnType<CurrentPcbWorkerStartupChannel["status"]> | null;
     observationFailure?: CurrentPcbObservationFailure | null;
     lastTerminationObservation?: Readonly<TerminationObservation> | null;
     projectOpeningConsumed: boolean; projectOpeningResult: CurrentPcbDiagnosticOpeningResult | null; modelObservationConsumed: boolean;
@@ -243,6 +247,7 @@ class CurrentPcbRetainedOwnerCore {
       nativeLaunchError: this.#nativeLaunchError, nativeSendError: this.#nativeSendError, createProcessError: this.#noProcessProof?.createProcessError ?? null,
       frameInspectionConsumed: this.#framesConsumed, scriptInspectionConsumed: this.#scriptConsumed, diagnosticFailure: this.#pipe.status().failure,
       diagnosticFailureObservation: this.#pipe.status().failureObservation,
+      workerStartupChannel: this.#startupChannel?.status() ?? null,
       observationFailure: this.#observationFailure,
       lastTerminationObservation: this.#terminationObservation,
       projectOpeningConsumed: this.#projectOpeningConsumed, projectOpeningResult: this.#projectOpeningResult, modelObservationConsumed: this.#modelConsumed,
@@ -813,7 +818,16 @@ class CurrentPcbRetainedOwnerCore {
         if (observed.sessionId !== selected.sessionId || observed.uniqueContextId !== selected.uniqueContextId) { throw error("STARTUP_PARENT_CHANGED"); }
       };
       const reprove = async (): Promise<void> => {
-        current(); await this.#verifyInstallation(); current(); await this.#verify(); current();
+        // The original native owner holds deny-write/delete installation and
+        // Ancestor leases from full launch admission. Reprove those live leases
+        // Around fresh facade/helper bytes; never adopt a returned JSON proof.
+        current(); await this.#verify(); current();
+        const before = await this.#request({ action: "worker-startup-reprove" });
+        if (!exact(before, ["current"]) || before["current"] !== true) { throw error("STARTUP_NATIVE_REPROOF"); }
+        current(); await this.#verifyStartupFacade(); current(); await this.#verify(); current();
+        const after = await this.#request({ action: "worker-startup-reprove" });
+        if (!exact(after, ["current"]) || after["current"] !== true) { throw error("STARTUP_NATIVE_REPROOF"); }
+        current();
       };
       const native = Object.freeze<CurrentPcbWorkerStartupNativeDependency>({
         requireOriginalParent: async (): Promise<CurrentPcbWorkerStartupParent> => { await reprove(); return parent; },
@@ -1188,8 +1202,9 @@ export class CurrentPcbStringPrecreateOwner extends CurrentPcbRetainedOwnerCore 
  * String owner can be upgraded to this purpose after process allocation. */
 export class CurrentPcbWorkerStartupOwner extends CurrentPcbRetainedOwnerCore {
   public constructor(child: ChildProcessWithoutNullStreams, verify: () => Promise<void>,
-    installation: CurrentPcbDiagnosticInstallation | null = null, verifyInstallation: () => Promise<void> = (): Promise<void> => Promise.resolve()) {
-    super(child, verify, installation, verifyInstallation, "worker-startup");
+    installation: CurrentPcbDiagnosticInstallation | null = null, verifyInstallation: () => Promise<void> = (): Promise<void> => Promise.resolve(),
+    verifyStartupFacade: () => Promise<void> = verifyInstallation) {
+    super(child, verify, installation, verifyInstallation, "worker-startup", verifyStartupFacade);
   }
 }
 
@@ -1212,6 +1227,12 @@ async function startFixedOwner(options: CurrentPcbDiagnosticInstallationOptions,
   const verifyInstallation = async (): Promise<void> => {
     const current = await verifyCurrentPcbDiagnosticInstallation(sealedOptions);
     if (current.facadeSha256 !== installation.facadeSha256 || JSON.stringify(current.plan) !== JSON.stringify(installation.plan)) { throw error("INSTALLATION_CHANGED"); }
+  };
+  const verifyStartupFacade = async (): Promise<void> => {
+    const current = await verifyCurrentPcbDiagnosticFacade(sealedOptions);
+    if (current.facadeSha256 !== installation.facadeSha256 || canonicalJson(current.plan) !== canonicalJson(installation.plan)) {
+      throw error("INSTALLATION_CHANGED");
+    }
   };
   const helperPath = fileURLToPath(new URL("../../scripts/pcb-diagnostic-owner.ps1", import.meta.url));
   const before = await lstat(helperPath);
@@ -1251,7 +1272,7 @@ async function startFixedOwner(options: CurrentPcbDiagnosticInstallationOptions,
     ["-NoLogo", "-NoProfile", "-NonInteractive", "-ExecutionPolicy", "Bypass", "-EncodedCommand", encoded],
     { stdio: ["pipe", "pipe", "pipe"], windowsHide: true });
   let owner: CurrentPcbRetainedOwnerCore;
-  if (purpose === "worker-startup") { owner = new CurrentPcbWorkerStartupOwner(child, verify, installation, verifyInstallation); }
+  if (purpose === "worker-startup") { owner = new CurrentPcbWorkerStartupOwner(child, verify, installation, verifyInstallation, verifyStartupFacade); }
   else if (purpose === "string-precreate") { owner = new CurrentPcbStringPrecreateOwner(child, verify, installation, verifyInstallation); }
   else { owner = new CurrentPcbDiagnosticOwner(child, verify, installation, verifyInstallation); }
   retainedOwners.add(owner); owner.start();

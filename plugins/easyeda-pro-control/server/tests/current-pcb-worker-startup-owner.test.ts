@@ -15,10 +15,12 @@ const UI_PROFILE = { family: "ui", relativePath: "pro-ui/test-version/js/ui.js",
 const LAUNCH = { executable: "C:\\Reviewed\\easyeda-pro.exe", executableSha256: "c".repeat(64), confirmDiagnosticLaunch: true } as const;
 function record(value: unknown): value is Record<string, unknown> { return value !== null && typeof value === "object" && !Array.isArray(value); }
 function fixture(context: TestContext, scenario = "opening-worker-startup",
-  Owner = CurrentPcbWorkerStartupOwner): Readonly<{ owner: CurrentPcbWorkerStartupOwner; source: { valid: boolean }; requests: Record<string, unknown>[] }> {
+  Owner = CurrentPcbWorkerStartupOwner): Readonly<{ owner: CurrentPcbWorkerStartupOwner; source: { valid: boolean };
+    proof: { full: number; facade: number; valid: boolean; nativeProofsAtFacade: number[] }; requests: Record<string, unknown>[] }> {
   const child = spawn(process.execPath, [fileURLToPath(new URL("helpers/current-pcb-diagnostic-helper-fixture.ts", import.meta.url)), scenario],
     { stdio: ["pipe", "pipe", "pipe"] });
   const requests: Record<string, unknown>[] = [], source = { valid: true };
+  const proof = { full: 0, facade: 0, valid: true, nativeProofsAtFacade: [] as number[] };
   const originalWrite = child.stdin.write.bind(child.stdin);
   context.mock.method(child.stdin, "write", (...args: Parameters<typeof child.stdin.write>) => {
     const first: unknown = args[0];
@@ -28,7 +30,12 @@ function fixture(context: TestContext, scenario = "opening-worker-startup",
     }
     return originalWrite(...args);
   });
-  const owner = new Owner(child, () => source.valid ? Promise.resolve() : Promise.reject(new Error("synthetic source changed")));
+  const owner = new Owner(child, () => source.valid ? Promise.resolve() : Promise.reject(new Error("synthetic source changed")), null,
+    (): Promise<void> => { proof.full += 1; return Promise.resolve(); },
+    (): Promise<void> => {
+      proof.facade += 1; proof.nativeProofsAtFacade.push(requests.filter(request => request["action"] === "worker-startup-reprove").length);
+      return proof.valid ? Promise.resolve() : Promise.reject(new Error("synthetic facade changed"));
+    });
   owner.start();
   context.after(async () => {
     if (!owner.status().helperClosed) {
@@ -37,7 +44,7 @@ function fixture(context: TestContext, scenario = "opening-worker-startup",
       child.stdin.end(); await closed;
     }
   });
-  return { owner, source, requests };
+  return { owner, source, proof, requests };
 }
 async function qualify(value: ReturnType<typeof fixture>): Promise<void> {
   await value.owner.launch(LAUNCH);
@@ -52,12 +59,14 @@ async function close(owner: CurrentPcbWorkerStartupOwner): Promise<void> {
 
 void test("startup owner irreversibly hands off one original source-qualified parent and shared request counter", async context => {
   const value = fixture(context); await qualify(value);
+  assert.equal(value.owner.status().workerStartupChannel, null);
   const handoff = await value.owner.handoffWorkerStartup();
   assert.equal(Object.isFrozen(handoff), true); assert.equal(Object.isFrozen(handoff.opening), true);
   assert.equal(value.owner.status().profile, "worker-startup");
   const count = value.requests.filter(request => request["action"] === "send").length;
   assert.equal(handoff.channel.status().nextRequestId, count + 1);
   assert.ok(handoff.channel.status().receivedBytes > Buffer.byteLength(SOURCE));
+  assert.deepEqual(value.owner.status().workerStartupChannel, handoff.channel.status());
   const events: string[] = [];
   handoff.dependency.subscribe(event => { events.push(event.method); });
   assert.deepEqual(await handoff.dependency.request({ method: "Target.setAutoAttach", sessionId: "session-1", params: CURRENT_PCB_WORKER_STARTUP_ATTACH }), {});
@@ -69,6 +78,7 @@ void test("startup owner irreversibly hands off one original source-qualified pa
   await assert.rejects(handoff.channel.releaseAfterTermination(), /RETAIN_LIVE_OWNER/u);
   assert.equal(handoff.channel.status().released, false);
   await close(value.owner); assert.equal(handoff.channel.status().released, true);
+  assert.equal(value.owner.status().workerStartupChannel?.released, true);
 });
 
 void test("startup owner refuses unqualified handoff and cannot upgrade either older purpose", async context => {
@@ -110,5 +120,38 @@ void test("startup capability rechecks original helper source before later work 
   await assert.rejects(handoff.opening.reprove(), /synthetic source changed/u);
   await assert.rejects(handoff.dependency.assertOriginalOwner(), /synthetic source changed/u);
   assert.equal(value.requests.length, count); value.source.valid = true;
+  await close(value.owner);
+});
+
+void test("startup reproof brackets each fresh facade check with active native leases without repeating full installation reads", async context => {
+  const value = fixture(context); await qualify(value);
+  const fullBeforeHandoff = value.proof.full;
+  const handoff = await value.owner.handoffWorkerStartup();
+  assert.equal(value.proof.full, fullBeforeHandoff + 1);
+  assert.ok(value.proof.facade > 0);
+  const facade = value.proof.facade, full = value.proof.full, sent = value.requests.length;
+  await handoff.opening.reprove();
+  assert.equal(value.proof.full, full); assert.equal(value.proof.facade, facade + 1);
+  assert.deepEqual(value.requests.slice(sent).map(request => request["action"]), ["worker-startup-reprove", "worker-startup-reprove"]);
+  assert.equal(value.proof.nativeProofsAtFacade.at(-1), value.requests.filter(request => request["action"] === "worker-startup-reprove").length - 1);
+  await close(value.owner);
+});
+
+void test("changed facade refuses startup continuation after one live lease assertion and before any CDP dispatch", async context => {
+  const value = fixture(context); await qualify(value);
+  const handoff = await value.owner.handoffWorkerStartup();
+  value.proof.valid = false;
+  const sent = value.requests.length;
+  await assert.rejects(handoff.opening.reprove(), /synthetic facade changed/u);
+  assert.deepEqual(value.requests.slice(sent).map(request => request["action"]), ["worker-startup-reprove"]);
+  value.proof.valid = true; await close(value.owner);
+});
+
+void test("native startup reproof refusal prevents fresh facade checks and retains normal cleanup", async context => {
+  const value = fixture(context, "opening-worker-startup-reproof-refused"); await qualify(value);
+  await assert.rejects(value.owner.handoffWorkerStartup(), /STARTUP_NATIVE_REPROOF/u);
+  assert.equal(value.proof.facade, 0);
+  assert.equal(value.requests.filter(request => request["action"] === "worker-startup-reprove").length, 1);
+  assert.equal(value.requests.some(request => request["action"] === "worker-startup-send"), false);
   await close(value.owner);
 });

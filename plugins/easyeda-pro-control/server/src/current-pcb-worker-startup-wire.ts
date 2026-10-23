@@ -11,6 +11,7 @@ import { freezeDeep } from "./sqlite-inventory-core.ts";
 import { CURRENT_PCB_WORKER_CONSTRUCTION_ASSIGNMENT_CALLS } from "./current-pcb-worker-construction-assignment.ts";
 import { CURRENT_PCB_DIAGNOSTIC_OPENING_FUNCTION } from "./current-pcb-diagnostic-opening.ts";
 import { currentDisposableOpenSealedTargetSchema } from "./current-disposable-open.ts";
+import { CURRENT_PCB_WORKER_STARTUP_UI_ACTOR_CLOCK_FUNCTION, CURRENT_PCB_WORKER_STARTUP_WORKER_ACTOR_CLOCK_FUNCTION } from "./current-pcb-worker-startup-actor.ts";
 
 export const CURRENT_PCB_WORKER_STARTUP_REQUEST_LIMIT = 256;
 const handle = z.string().min(1).max(256).regex(/^[A-Za-z\d_.:-]+$/u);
@@ -27,6 +28,9 @@ const schema: z.ZodType<CurrentPcbWorkerStartupCommand> = z.union([
   command("Page.getFrameTree", empty),
   command("DOM.getFrameOwner", z.object({ frameId: sessionId }).strict()),
   command("DOM.describeNode", z.object({ backendNodeId: z.number().int().min(1).max(2_147_483_647), depth: z.literal(0), pierce: z.literal(false) }).strict()),
+  command("Runtime.callFunctionOn", z.object({ functionDeclaration: z.literal(CURRENT_PCB_WORKER_STARTUP_UI_ACTOR_CLOCK_FUNCTION),
+    uniqueContextId: sessionId, arguments: z.tuple([]), returnByValue: z.literal(true), throwOnSideEffect: z.literal(true),
+    silent: z.literal(true), awaitPromise: z.literal(false), generatePreview: z.literal(false), userGesture: z.literal(false) }).strict()),
   command("Runtime.callFunctionOn", z.object({ functionDeclaration: z.literal(CURRENT_PCB_DIAGNOSTIC_OPENING_FUNCTION),
     uniqueContextId: sessionId, arguments: z.tuple([z.object({ value: currentDisposableOpenSealedTargetSchema }).strict(),
       z.object({ value: z.enum(["preflight", "open-project"]) }).strict()]),
@@ -120,8 +124,11 @@ export function currentPcbWorkerStartupWire(raw: unknown, id: number): Readonly<
     case "Runtime.getProperties": { fields = { startupPhase: "properties", objectId: parsed.params.objectId }; break; }
     case "Runtime.callFunctionOn": {
       if ("uniqueContextId" in parsed.params) {
-        const [target, phase] = parsed.params.arguments;
         action = "worker-startup-parent";
+        if (parsed.params.arguments.length === 0) {
+          fields = { parentPhase: "actor-clock", uniqueContextId: parsed.params.uniqueContextId }; break;
+        }
+        const [target, phase] = parsed.params.arguments;
         fields = { parentPhase: phase.value, uniqueContextId: parsed.params.uniqueContextId,
           targetRawWindowsPath: target.value.rawWindowsPath, targetProjectUuid: target.value.projectUuid,
           targetBranchUuid: target.value.branchUuid, targetDocumentUuid: target.value.documentUuid,
@@ -132,11 +139,12 @@ export function currentPcbWorkerStartupWire(raw: unknown, id: number): Readonly<
         .find(([, value]) => value.program === parsed.params.functionDeclaration);
       if (assignment === undefined) {
         if (parsed.params.functionDeclaration !== CURRENT_PCB_WORKER_CONSTRUCTION_SAME && parsed.params.functionDeclaration !== CURRENT_PCB_WORKER_CONSTRUCTION_PROJECT &&
-            parsed.params.functionDeclaration !== CURRENT_PCB_WORKER_CONSTRUCTION_IDENTITY ||
+            parsed.params.functionDeclaration !== CURRENT_PCB_WORKER_CONSTRUCTION_IDENTITY && parsed.params.functionDeclaration !== CURRENT_PCB_WORKER_STARTUP_WORKER_ACTOR_CLOCK_FUNCTION ||
             parsed.params.arguments.length !== 1 || !parsed.params.returnByValue) { return fail(); }
         let phase = "identity";
         if (parsed.params.functionDeclaration === CURRENT_PCB_WORKER_CONSTRUCTION_SAME) { phase = "same"; }
         else if (parsed.params.functionDeclaration === CURRENT_PCB_WORKER_CONSTRUCTION_PROJECT) { phase = "project"; }
+        else if (parsed.params.functionDeclaration === CURRENT_PCB_WORKER_STARTUP_WORKER_ACTOR_CLOCK_FUNCTION) { phase = "actor-clock"; }
         fields = { startupPhase: phase, objectId: parsed.params.objectId };
       } else {
         const [phase, expected] = assignment;

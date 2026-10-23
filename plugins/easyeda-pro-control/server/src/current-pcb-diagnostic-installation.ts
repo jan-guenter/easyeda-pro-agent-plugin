@@ -8,6 +8,8 @@ import { constants } from "node:fs";
 import type { BigIntStats } from "node:fs";
 import { lstat, open, realpath } from "node:fs/promises";
 import path from "node:path";
+import { assertSubset, canonicalJson, controlImplementationFingerprint, loadReviewedCompatibilityManifest,
+  reviewedCompatibilityManifestFingerprint } from "./core.ts";
 import { ORDINARY_LAUNCH_PROFILE, verifyOrdinaryLaunchInstallation } from "./ordinary-launch.ts";
 import { deriveWindowsRuntimePaths } from "./windows-runtime.ts";
 import type { WindowsRuntimePaths } from "./windows-runtime.ts";
@@ -66,6 +68,9 @@ export function createCurrentPcbDiagnosticInstallationPlan(options: CurrentPcbDi
 function same(left: BigIntStats, right: BigIntStats): boolean {
   return (["dev", "ino", "size", "mode", "nlink", "mtimeNs", "ctimeNs"] as const).every(key => left[key] === right[key]);
 }
+function sameFacadeHelper(left: BigIntStats, right: BigIntStats): boolean {
+  return same(left, right) && left.uid === right.uid && left.gid === right.gid;
+}
 /** Read-only exact descriptor proof. Native image/ancestor leases remain separate. */
 export async function verifyCurrentPcbDiagnosticPowerShell(hostPath: string, expected: Readonly<{ bytes: number; sha256: string }>): Promise<void> {
   if (path.posix.resolve(hostPath) !== hostPath || await realpath(hostPath) !== hostPath ||
@@ -100,4 +105,44 @@ export async function verifyCurrentPcbDiagnosticInstallation(options: CurrentPcb
     bytes: options.powershellBytes, sha256: options.powershellSha256,
   });
   return Object.freeze({ ...original, facadeSha256 });
+}
+
+/** Fresh facade and its fixed Windows-authority helper bytes. This does not
+ * verify installed application/PowerShell bytes or grant launch authority.
+ * Startup alone may pair it with active native deny-write/delete leases on
+ * the original complete installation plan, reproved before and after this
+ * function. It is never a timestamp/cache admission or a historical token. */
+export async function verifyCurrentPcbDiagnosticFacade(options: CurrentPcbDiagnosticInstallationOptions): Promise<CurrentPcbDiagnosticInstallation> {
+  const original = createCurrentPcbDiagnosticInstallationPlan(options);
+  if (path.posix.resolve(options.pluginRoot) !== options.pluginRoot || await realpath(options.pluginRoot) !== options.pluginRoot ||
+      await realpath(options.assetsRoot) !== options.assetsRoot) { refuse(); }
+  const manifestIdentity = reviewedCompatibilityManifestFingerprint();
+  const manifest = loadReviewedCompatibilityManifest();
+  const actual = await controlImplementationFingerprint();
+  assertSubset({ version: actual.version, operationSchema: actual.operationSchema, sha256: actual.sha256, fileCount: actual.files.length,
+    files: actual.files.map(({ relativePath, bytes, sha256 }) => ({ relativePath, bytes, sha256 })) },
+  manifest.facadeImplementation[actual.mode], "Diagnostic startup facade identity");
+  await verifyFacadeHelper(path.posix.join(options.pluginRoot, ORDINARY_LAUNCH_PROFILE.helper.relativePath));
+  if (canonicalJson(manifestIdentity) !== canonicalJson(reviewedCompatibilityManifestFingerprint()) ||
+      await realpath(options.pluginRoot) !== options.pluginRoot || await realpath(options.assetsRoot) !== options.assetsRoot) { refuse(); }
+  return Object.freeze({ ...original, facadeSha256: actual.sha256 });
+}
+
+async function verifyFacadeHelper(hostPath: string): Promise<void> {
+  if (await realpath(hostPath) !== hostPath) { refuse(); }
+  // oxlint-disable-next-line no-bitwise -- The fixed facade helper must remain a bounded ordinary no-follow file.
+  const handle = await open(hostPath, constants.O_RDONLY | constants.O_NOFOLLOW | constants.O_NONBLOCK);
+  try {
+    const before = await handle.stat({ bigint: true });
+    if (!before.isFile() || before.nlink !== 1n || before.size < 1n || before.size > 65_536n) { refuse(); }
+    const buffer = Buffer.alloc(Number(before.size) + 1);
+    let count = 0;
+    while (count < buffer.length) {
+      const result = await handle.read(buffer, count, buffer.length - count, count);
+      if (result.bytesRead === 0) { break; } count += result.bytesRead;
+    }
+    if (count !== Number(before.size) || createHash("sha256").update(buffer.subarray(0, count)).digest("hex") !== ORDINARY_LAUNCH_PROFILE.helper.sha256 ||
+        !sameFacadeHelper(before, await handle.stat({ bigint: true })) || !sameFacadeHelper(before, await lstat(hostPath, { bigint: true })) ||
+        await realpath(hostPath) !== hostPath) { refuse(); }
+  } finally { await handle.close(); }
 }

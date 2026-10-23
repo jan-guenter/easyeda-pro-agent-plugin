@@ -1,6 +1,7 @@
 /** Private original-owner choreography. The lifecycle must publish the sealed
  * checkpoint intent before calling open(). This module supplies no journal,
  * owner adoption, public writer or saved-state authority. */
+/* oxlint-disable import/max-dependencies -- This coordinator joins the fixed parent opener, original construction owner and actor observers without exporting their native capabilities to another owner. */
 import { types } from "node:util";
 import { z } from "zod";
 import { currentDisposableOpenSealedTargetSchema } from "./current-disposable-open.ts";
@@ -10,8 +11,12 @@ import { CURRENT_PCB_DIAGNOSTIC_OPENING_FUNCTION, decodeCurrentPcbDiagnosticOpen
 import type { CurrentPcbDiagnosticOpeningPhase, CurrentPcbDiagnosticOpeningResult } from "./current-pcb-diagnostic-opening.ts";
 import { captureCurrentPcbStringClockReply } from "./current-pcb-string-clock-reply.ts";
 import type { CurrentPcbWorkerConstructionPacket, CurrentPcbWorkerConstructionProjectIdentity } from "./current-pcb-worker-construction-runner.ts";
+import type { CurrentPcbWorkerConstructionAssignments } from "./current-pcb-worker-construction-assignment.ts";
 import type { CurrentPcbWorkerStartupCommand, CurrentPcbWorkerStartupDependency } from "./current-pcb-worker-startup-contract.ts";
 import { CurrentPcbWorkerStartupTransport } from "./current-pcb-worker-startup-transport.ts";
+import { currentPcbWorkerStartupUiActorCommand } from "./current-pcb-worker-startup-actor.ts";
+import { CurrentPcbWorkerStartupActorRunner } from "./current-pcb-worker-startup-actor-runner.ts";
+import type { CurrentPcbWorkerStartupActorPacket } from "./current-pcb-worker-startup-actor-runner.ts";
 
 type Row = Record<string, unknown>;
 const recordSchema = z.record(z.string(), z.unknown());
@@ -20,6 +25,26 @@ const contextSchema = z.object({ sessionId: z.string().min(1).max(128).regex(/^[
 const openingMethods = ["context", "reprove", "begin", "finish", "observeParent", "ancillaryFrame",
   "observeAncillary", "ancillaryObservation"] as const;
 function fail(code: string): Error { return new Error(`PCB_WORKER_STARTUP_OPENING_${code}`); }
+const deadlineErrors = new WeakSet<Error>();
+function deadline(): Error {
+  const error = fail("DEADLINE"); deadlineErrors.add(error); return error;
+}
+type OpeningStage = "idle" | "target-validation" | "parent-before-preflight" | "ancillary-before-preflight" |
+  "preflight" | "checkpoint-reverification" | "parent-before-open" | "ancillary-before-open" | "worker-auto-attach" |
+  "begin-open" | "open-project" | "parent-after-open" | "ancillary-after-open" | "worker-construction" |
+  "worker-project-identity" | "complete";
+type OpeningStep = "idle" | "validate-target" | "opening-context" | "opening-owner-reproof" | "native-owner-reproof" |
+  "browser-targets" | "parent-frames" | "parent-observation" | "ancillary-frame" | "ancillary-node" |
+  "ancillary-observation" | "preflight-request" | "preflight-decode" | "checkpoint-reverification" |
+  "bind-project" | "worker-arming" | "begin-open" | "open-project-request" | "open-project-decode" |
+  "construction-completion" | "construction-owner" | "worker-project-identity" | "complete";
+export interface CurrentPcbWorkerStartupOpeningDiagnostics {
+  readonly stage: OpeningStage;
+  readonly step: OpeningStep;
+  /** First capture failure, before cleanup. No arbitrary native error, path,
+   * source or actor value is copied into this bounded status record. */
+  readonly failure: Readonly<{ stage: OpeningStage; step: OpeningStep; kind: "deadline" | "refused" }> | null;
+}
 function retainedMethods(value: object, keys: readonly string[]): readonly unknown[] {
   if (types.isProxy(value) || !Object.isFrozen(value) || Object.getPrototypeOf(value) !== Object.prototype ||
       Reflect.ownKeys(value).length !== keys.length) { throw fail("DEPENDENCY"); }
@@ -36,7 +61,7 @@ async function observe(work: Promise<unknown>): Promise<void> {
 }
 async function bounded<T>(work: Promise<T>, milliseconds = 2000): Promise<T> {
   const expired = Promise.withResolvers<never>();
-  const timer = setTimeout(() => { expired.reject(fail("DEADLINE")); }, milliseconds);
+  const timer = setTimeout(() => { expired.reject(deadline()); }, milliseconds);
   try { return await Promise.race([work, expired.promise]); } finally { clearTimeout(timer); }
 }
 
@@ -67,6 +92,14 @@ export class CurrentPcbWorkerStartupOpening {
   #construction: CurrentPcbWorkerConstructionPacket | null = null;
   #workerIdentity: CurrentPcbWorkerConstructionProjectIdentity | null = null;
   #completed: CurrentPcbWorkerStartupOpeningResult | null = null;
+  #assignmentsConsumed = false;
+  #assignments: CurrentPcbWorkerConstructionAssignments | null = null;
+  #actorAttempted = false;
+  #actor: CurrentPcbWorkerStartupActorRunner | null = null;
+  #actorPacket: CurrentPcbWorkerStartupActorPacket | null = null;
+  #stage: OpeningStage = "idle";
+  #step: OpeningStep = "idle";
+  #failure: CurrentPcbWorkerStartupOpeningDiagnostics["failure"] = null;
 
   public constructor(handoff: Pick<CurrentPcbWorkerStartupHandoff, "dependency" | "opening">) {
     this.#dependency = handoff.dependency; this.#opening = handoff.opening;
@@ -78,10 +111,12 @@ export class CurrentPcbWorkerStartupOpening {
     this.#transport = new CurrentPcbWorkerStartupTransport(this.#dependency);
   }
   public status(): Readonly<{ consumed: boolean; settled: boolean; openingAttempted: boolean;
-    openingResultRetained: boolean; constructionRetained: boolean; completed: boolean; executionAuthorized: false }> {
+    openingResultRetained: boolean; constructionRetained: boolean; completed: boolean;
+    diagnostics: CurrentPcbWorkerStartupOpeningDiagnostics; executionAuthorized: false }> {
     return Object.freeze({ consumed: this.#consumed, settled: this.#settled, openingAttempted: this.#openingAttempted,
       openingResultRetained: this.#openingResult !== null, constructionRetained: this.#construction !== null,
-      completed: this.#completed !== null, executionAuthorized: false });
+      completed: this.#completed !== null,
+      diagnostics: Object.freeze({ stage: this.#stage, step: this.#step, failure: this.#failure }), executionAuthorized: false });
   }
   public retainedOpeningResult(): CurrentPcbDiagnosticOpeningResult | null { return this.#openingResult; }
   #same(): void {
@@ -95,29 +130,35 @@ export class CurrentPcbWorkerStartupOpening {
     return context;
   }
   async #current(): Promise<void> {
-    this.#context(); await bounded(this.#opening.reprove()); this.#context();
-    await bounded(this.#assertOwner.call(this.#dependency)); this.#context();
+    this.#step = "opening-context"; this.#context();
+    this.#step = "opening-owner-reproof"; await bounded(this.#opening.reprove());
+    this.#step = "opening-context"; this.#context();
+    this.#step = "native-owner-reproof"; await bounded(this.#assertOwner.call(this.#dependency));
+    this.#step = "opening-context"; this.#context();
   }
-  async #send(command: CurrentPcbWorkerStartupCommand): Promise<Row> {
+  async #send(command: CurrentPcbWorkerStartupCommand, step: OpeningStep): Promise<Row> {
     await this.#current();
+    this.#step = step;
     const raw = await bounded(this.#request.call(this.#dependency, command));
     const reply = recordSchema.parse(captureCurrentPcbStringClockReply(raw).value);
     await this.#current(); return reply;
   }
   async #parent(finish = false): Promise<void> {
-    const targets = await this.#send({ method: "Target.getTargets", params: {} });
-    const frames = await this.#send({ method: "Page.getFrameTree", params: {}, sessionId: this.#context().sessionId });
+    const targets = await this.#send({ method: "Target.getTargets", params: {} }, "browser-targets");
+    const frames = await this.#send({ method: "Page.getFrameTree", params: {}, sessionId: this.#context().sessionId }, "parent-frames");
+    this.#step = "parent-observation";
     if (finish) { this.#opening.finish(targets, frames); } else { this.#opening.observeParent(targets, frames); }
     await this.#current();
   }
   async #ancillary(): Promise<void> {
     await this.#current(); const frameId = this.#opening.ancillaryFrame();
     if (frameId === null) { return; }
-    const owner = await this.#send({ method: "DOM.getFrameOwner", params: { frameId }, sessionId: this.#context().sessionId });
+    const owner = await this.#send({ method: "DOM.getFrameOwner", params: { frameId }, sessionId: this.#context().sessionId }, "ancillary-frame");
     if (this.#opening.ancillaryFrame() !== frameId) { throw fail("ANCILLARY_CHANGED"); }
     const backendNodeId = z.number().int().min(1).max(2_147_483_647).parse(owner["backendNodeId"]);
     const node = await this.#send({ method: "DOM.describeNode", params: { backendNodeId, depth: 0, pierce: false },
-      sessionId: this.#context().sessionId });
+      sessionId: this.#context().sessionId }, "ancillary-node");
+    this.#step = "ancillary-observation";
     if (this.#opening.ancillaryFrame() !== frameId) { throw fail("ANCILLARY_CHANGED"); }
     this.#opening.observeAncillary(owner, node); await this.#current();
   }
@@ -128,42 +169,63 @@ export class CurrentPcbWorkerStartupOpening {
         arguments: [{ value: target }, { value: phase }], returnByValue: true, awaitPromise: true,
         silent: true, generatePreview: false, userGesture: false, throwOnSideEffect: false } };
     if (phase === "open-project") { this.#openingAttempted = true; }
+    this.#step = phase === "preflight" ? "preflight-request" : "open-project-request";
     const reply = await bounded(this.#request.call(this.#dependency, command), phase === "preflight" ? 15_000 : 70_000);
     // Retain the decoded reply before a later owner/checkpoint failure. No
     // Timeout or missing reply permits this command to be sent again.
+    this.#step = phase === "preflight" ? "preflight-decode" : "open-project-decode";
     const result = decodeCurrentPcbDiagnosticOpeningReply(reply, target, phase); this.#openingResult = result;
     await this.#current(); return result;
   }
   public async open(input: CurrentDisposableOpenSealedTarget, reverify: () => Promise<void>): Promise<CurrentPcbWorkerStartupOpeningResult> {
     if (this.#consumed) { throw fail("CONSUMED"); } this.#consumed = true;
     try {
+      this.#stage = "target-validation"; this.#step = "validate-target";
       const target = Object.freeze(currentDisposableOpenSealedTargetSchema.parse(captureCurrentPcbStringClockReply(input).value));
       if (typeof reverify !== "function") { throw fail("CHECKPOINT_CALLBACK"); }
-      await this.#parent(); await this.#ancillary();
+      this.#stage = "parent-before-preflight"; await this.#parent();
+      this.#stage = "ancillary-before-preflight"; await this.#ancillary();
+      this.#stage = "preflight";
       const preflight = await this.#callOpening(target, "preflight"), title = preflight.observation;
+      this.#step = "preflight-decode";
       if (!preflight.ok || title === null) { throw fail("PREFLIGHT_REFUSED"); }
-      await reverify(); await this.#current(); await this.#parent(); await this.#ancillary();
+      this.#stage = "checkpoint-reverification"; this.#step = "checkpoint-reverification";
+      await reverify(); await this.#current();
+      this.#stage = "parent-before-open"; await this.#parent();
+      this.#stage = "ancillary-before-open"; await this.#ancillary();
+      this.#stage = "worker-auto-attach"; this.#step = "bind-project";
       this.#transport.bindExpectedProject({ projectUuid: target.projectUuid, branchUuid: target.branchUuid, windowTabId: title.windowTabId });
       const capture = this.#transport.capture(); this.#capture = capture; void observe(capture);
+      this.#step = "worker-arming";
       await this.#transport.whenArmed(); await this.#current();
+      this.#stage = "begin-open"; this.#step = "begin-open";
       this.#opening.begin(target, { initialTitle: title.initialTitle, expectedOpenedTitle: title.expectedOpenedTitle });
       // The worker must run its bounded capture while the parent opener is
       // Awaiting startup. Waiting for the opener before capture would deadlock.
+      this.#stage = "open-project";
       const result = await this.#callOpening(target, "open-project");
+      this.#step = "open-project-decode";
       if (!result.ok || result.observation?.initialTitle !== title.initialTitle ||
           result.observation.expectedOpenedTitle !== title.expectedOpenedTitle ||
           result.observation.windowTabId !== title.windowTabId) { throw fail("OPEN_REFUSED"); }
-      await this.#parent(true); await this.#ancillary();
+      this.#stage = "parent-after-open"; await this.#parent(true);
+      this.#stage = "ancillary-after-open"; await this.#ancillary();
+      this.#stage = "worker-construction"; this.#step = "construction-completion";
       this.#construction = await capture; await this.#current();
+      this.#step = "construction-owner";
       const runner = await this.#transport.requireOriginal(this.#construction); await this.#current();
+      this.#stage = "worker-project-identity"; this.#step = "worker-project-identity";
       const identity = await runner.proveProjectIdentity(this.#construction); this.#workerIdentity = identity;
       if (identity.projectUuid !== target.projectUuid || identity.branchUuid !== target.branchUuid ||
           identity.windowTabId !== title.windowTabId) { throw fail("WORKER_PROJECT_IDENTITY"); }
       await this.#current();
       this.#completed = Object.freeze({ opening: result, construction: this.#construction,
         workerIdentity: identity, ancillaryFrame: this.#opening.ancillaryObservation(), executionAuthorized: false, persistenceVerified: false });
+      this.#stage = "complete"; this.#step = "complete";
       return this.#completed;
     } catch (error) {
+      this.#failure ??= Object.freeze({ stage: this.#stage, step: this.#step,
+        kind: error instanceof Error && deadlineErrors.has(error) ? "deadline" : "refused" });
       if (this.#capture !== null) {
         try { await this.#transport.abort(); }
         catch (cleanupError) { throw new AggregateError([error, cleanupError], "PCB_WORKER_STARTUP_OPENING_FAILED", { cause: cleanupError }); }
@@ -173,9 +235,53 @@ export class CurrentPcbWorkerStartupOpening {
     } finally { this.#settled = true; }
   }
   public async requireOriginal(result: CurrentPcbWorkerStartupOpeningResult): Promise<CurrentPcbWorkerStartupTransport> {
-    if (result !== this.#completed || !this.#settled || this.#workerIdentity === null || result.workerIdentity !== this.#workerIdentity) { throw fail("ORIGINAL_RESULT"); }
+    if (result !== this.#completed || !this.#settled || this.#released || this.#releasing ||
+        this.#workerIdentity === null || result.workerIdentity !== this.#workerIdentity) { throw fail("ORIGINAL_RESULT"); }
     await this.#current(); const runner = await this.#transport.requireOriginal(result.construction); await this.#current();
     await runner.requireProjectIdentity(result.construction, this.#workerIdentity); await this.#current(); return this.#transport;
+  }
+  /** These sequential reads associate current wrappers with the retained
+   * constructor callbacks. They do not prove continuous or atomic ownership. */
+  public async proveCurrentAssignments(result: CurrentPcbWorkerStartupOpeningResult): Promise<CurrentPcbWorkerConstructionAssignments> {
+    if (this.#assignmentsConsumed) { throw fail("ASSIGNMENTS_CONSUMED"); } this.#assignmentsConsumed = true;
+    const transport = await this.requireOriginal(result);
+    const runner = await transport.requireOriginal(result.construction); await this.#current();
+    const assignments = await runner.proveCurrentAssignments(result.construction);
+    this.#assignments = assignments; await this.#current(); return assignments;
+  }
+  public async requireCurrentAssignments(result: CurrentPcbWorkerStartupOpeningResult,
+    assignments: CurrentPcbWorkerConstructionAssignments): Promise<void> {
+    if (assignments !== this.#assignments || this.#assignments === null) { throw fail("ORIGINAL_ASSIGNMENTS"); }
+    const transport = await this.requireOriginal(result);
+    const runner = await transport.requireOriginal(result.construction); await this.#current();
+    await runner.requireCurrentAssignments(result.construction, assignments); await this.#current();
+  }
+  public retainedActorObservation(): Readonly<Record<string, unknown>> | null {
+    return this.#actor === null ? null : Object.freeze({ status: this.#actor.status(), samples: this.#actor.retainedSamples() });
+  }
+  public async observeActorClock(result: CurrentPcbWorkerStartupOpeningResult,
+    assignments: CurrentPcbWorkerConstructionAssignments): Promise<CurrentPcbWorkerStartupActorPacket> {
+    if (this.#actorAttempted) { throw fail("ACTOR_CONSUMED"); } this.#actorAttempted = true;
+    await this.requireCurrentAssignments(result, assignments);
+    const transport = await this.requireOriginal(result);
+    const runner = await transport.requireOriginal(result.construction); await this.#current();
+    const actor = new CurrentPcbWorkerStartupActorRunner(Object.freeze({
+      observeUi: async (): Promise<unknown> => {
+        await this.#current(); const context = this.#context();
+        const raw = await bounded(this.#request.call(this.#dependency,
+          currentPcbWorkerStartupUiActorCommand(context.sessionId, context.uniqueContextId)));
+        const captured = captureCurrentPcbStringClockReply(raw); await this.#current(); return captured.value;
+      },
+      observeWorker: (): Promise<unknown> => runner.observeActorClock(result.construction, assignments),
+      assertCurrent: (): Promise<void> => this.requireCurrentAssignments(result, assignments),
+    }), result.workerIdentity);
+    this.#actor = actor;
+    const packet = await actor.observe(); this.#actorPacket = packet; await this.#current(); return packet;
+  }
+  public async requireActorClock(result: CurrentPcbWorkerStartupOpeningResult,
+    assignments: CurrentPcbWorkerConstructionAssignments, packet: CurrentPcbWorkerStartupActorPacket): Promise<void> {
+    if (packet !== this.#actorPacket || this.#actor === null) { throw fail("ORIGINAL_ACTOR_PACKET"); }
+    await this.requireCurrentAssignments(result, assignments); await this.#actor.requireOriginal(packet); await this.#current();
   }
   public async releaseAfterTermination(): Promise<void> {
     if (!this.#settled || this.#released || this.#releasing) { throw fail("RELEASE_STATE"); }
