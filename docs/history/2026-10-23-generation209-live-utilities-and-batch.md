@@ -111,3 +111,11 @@ and [the editor-reader review](2026-10-23-generation209-editor-readers.md).
 
 The combined release candidate is `0.3.0+codex.20261023143500`. Final frozen
 verification, protected publication and official installation are pending.
+
+Pre-release checks caught three integration issues before final verification:
+the offline-router lint suppression needed to move with the new imports; the
+manifest needed to retain its existing explicit legacy-admission wording; and
+the startup test still expected the former six-tool catalog. All were corrected
+without changing runtime authority. The first full run was interrupted after
+that stale assertion failed; its private log is retained and is not a passing
+verification claim. The final unchanged candidate is verified separately.

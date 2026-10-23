@@ -26,7 +26,8 @@ void test("actual catalog footprint registration requires explicit network confi
       assert.equal(tool, "easyeda_control_catalog_footprint");
       assert.deepEqual(structuredClone(config.annotations), { readOnlyHint: true, destructiveHint: false, idempotentHint: true, openWorldHint: true });
       assert.match(config.description, /HTTPS/u); assert.match(config.description, /confirmNetwork/u);
-      inputSchema = z.object(config.inputSchema).strict(); invoke = handler;
+      // MCP normalizes the raw root shape; the nested operation stays strict.
+      inputSchema = z.object(config.inputSchema); invoke = handler;
     },
     readPublicSystemFootprint: (...args: unknown[]): Promise<object> => {
       calls.push("vendor-http"); assert.equal(args.length, 1); assert.equal(args[0], request);
@@ -42,10 +43,10 @@ void test("actual catalog footprint registration requires explicit network confi
     { request: { ...request, footprintUuid: "A".repeat(32) } },
     { request: { ...request, method: "eda.lib_Footprint.get" } },
     { request: { ...request, token: "credential" } },
-    { request, expectedFingerprint: {} },
   ]) { assert.equal(inputSchema.safeParse(invalid).success, false); }
   assert.deepEqual(calls, []);
   assert.equal(inputSchema.safeParse({ request }).success, true);
+  assert.deepEqual(inputSchema.parse({ request, expectedFingerprint: {} }), { request });
   assert.deepEqual(structuredClone(await invoke({ request })), { result: { synthetic: true } });
   assert.deepEqual(calls, ["vendor-http"]);
   fail = true;
