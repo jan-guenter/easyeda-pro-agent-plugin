@@ -118,3 +118,23 @@ the three-bundle projection is
 `84f08b72f2788388e41f7dbad3f1a6d3a212ad0f9eef375188647d1b47ac2a82`.
 Final suite results, publication and installation are still pending at this
 freeze point. The current host remains installed213000.
+
+## Verification execution policy
+
+Candidate `067b19912da64ca5305bdbd4a90dd6fb9dedffe0` passed every check in
+[Linux CI40043582129](https://github.com/jan-guenter/easyeda-pro-agent-plugin/actions/runs/40043582129)
+and [Windows CI40043582185](https://github.com/jan-guenter/easyeda-pro-agent-plugin/actions/runs/40043582185).
+The complete facade suite ran across all eight CI shards, and the complete
+bridge suite passed in the build job. The redundant local facade run was still
+progressing without reported failures and was intentionally interrupted by
+SIGINT to its identified isolated test coordinator. Its log and interruption
+receipt are retained privately. Local `npm run verify` is incomplete, not a pass.
+
+Following the user's request to reduce excessive testing, the lasting
+verification rule now permits complete suite evidence from exact-final-commit
+CI. Independent review confirms unchanged test selection and coverage: every
+shard, build and Windows job must pass, source/bundle pins must match, and all
+non-suite local checks remain mandatory. CI shard concurrency does not validate
+local concurrency4. No runtime guard, test or source/bundle pin changes with
+this policy correction. Final CI must run again for the policy/documentation
+commit before release; the earlier green commit alone does not satisfy it.

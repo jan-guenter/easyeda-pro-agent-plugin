@@ -112,7 +112,20 @@ From `plugins/easyeda-pro-control`, require Linux x86_64, Node exactly `24.18.0`
 npm exactly `11.16.0`, and soft `RLIMIT_CORE` zero. Set `ulimit -c 0` and verify it
 and both tool versions. For runtime or build changes, run `npm ci`, `npm ls --all`,
 `npm audit signatures`, `npm audit --audit-level=moderate`,
-`npm run sanitizer:check`, then `npm run verify`.
+and `npm run sanitizer:check`. Run `npm run verify` locally, or run its
+non-suite phases locally and use exact-commit GitHub CI for the complete facade
+and bridge suites. The local non-suite phases are typecheck, bridge:typecheck,
+bridge:lint, lint, api:coverage:check, build, compatibility:check, skills:validate
+and validate. Keep relevant focused regression checks during implementation.
+
+CI satisfies the complete suites only when every facade shard, build check and
+Windows native job succeeds for the exact final commit, source/bundle pins match
+the reviewed local payload, and no intervening change affects that evidence.
+Preserve test selection, isolation and expected platform skips; never filter
+tests or relax guards to obtain a pass. Do not duplicate a full local suite when
+this CI evidence already satisfies it. Record an interrupted local run as
+incomplete and retain its log. Run all other mandatory local checks separately;
+CI does not establish connected validation or untested local concurrency behavior.
 
 For documentation changes, check local links, history placement and preservation,
 and run repository, MCP-contract and all-skill validation. If moving evidence
