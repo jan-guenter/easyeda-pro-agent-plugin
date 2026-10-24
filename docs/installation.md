@@ -179,7 +179,7 @@ PCB/API files, keeps a byte-exact private backup and changes only two bundle
 selectors. The control root, Node, upstream, credentials and journals stay
 unchanged. It never promotes an existing process or updates the legacy global
 compatibility profile. Restart Codex afterward. The new `public-utilities-only`
-mode registers thirteen tools, with separate runtime admission for 16 Math, 18
+mode registers fourteen tools, with separate runtime admission for 16 Math, 18
 Unit/Environment operations, three language/API-page viewport readers,
 tab-count/active-identity/shortcut observations and ordinary launch. A separate
 public catalog lookup/search requires explicit network confirmation but no
@@ -187,7 +187,10 @@ application, bridge or SDK execution. A separately pinned disposable project/PCB
 opener retains its original native process through normal cleanup. Ordinary
 opening can migrate data, replay caches and automatically Save; it does not
 establish a complete baseline or writer authority. No general design-content,
-worker/model, explicit Save or design-recovery route is registered. Read the
+PCB-worker/model, explicit Save or design-recovery route is registered. A
+separate [project-worker startup route](../plugins/easyeda-pro-control/skills/easyeda-pro-control/references/current-pcb209-worker-startup.md)
+captures original constructors and bounded assignment/channel/actor observations
+on disposable data; it requires explicit acceptance of debugger pauses. Read the
 [209 opening contract](../plugins/easyeda-pro-control/skills/easyeda-pro-control/references/current-pcb209-opening.md)
 before using it.
 Source/synthetic verification is not connected validation.

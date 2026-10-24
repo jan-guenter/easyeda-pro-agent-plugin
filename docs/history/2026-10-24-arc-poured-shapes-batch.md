@@ -141,3 +141,74 @@ source admission, both new readers and normal cleanup. Test output SHA-256:
 Only the faulty test input changed. Complete final-head facade/bridge suites
 and reproducible bundles will be required in GitHub CI before protected merge;
 no duplicate broad local campaign is needed.
+
+## Terminal publication and installation — 2026-10-24
+
+Final head `169d2726e53f19db526921492c7c0d62b12abc05` passed
+[Linux CI40071248373](https://github.com/jan-guenter/easyeda-pro-agent-plugin/actions/runs/40071248373)
+and [Windows CI40071248408](https://github.com/jan-guenter/easyeda-pro-agent-plugin/actions/runs/40071248408).
+All eleven jobs passed. Complete facade suites recorded12606 tests:12601 passed,
+five expected platform skips, zero failures/cancellations/todo. All424 bridge
+tests in28 files passed. Reproducible bundles, dependencies, strict type-aware
+lint, native recovery/all-purpose compilation and suspended synthetic-child
+admission passed. These CI results do not validate new connected readers.
+
+Independent audit compared all1838 committed plugin files and executable bits
+with the clean worktree, reconstructing the exact642-source and three-bundle
+projections. External compatibility pins remained unchanged.
+[PR114](https://github.com/jan-guenter/easyeda-pro-agent-plugin/pull/114)
+merged normally through protected main at06:53:58UTC as
+`12fe7f3eb7830201aed16e34f5abd1d53fd8b9bf`. The entire merged tree
+`53f3d155feeaa8e0b70f4e913448132b887bbc8d` and plugin subtree
+`b2869fc3306229b8b04ec1463fd07c13a818f583` exactly match the tested head.
+Automatic main Windows CI40072013737 passed. Main Linux CI40072013712 was
+still running at this receipt; the completed final PR checks qualify the
+identical payload. The pending automatic run is not claimed successful.
+
+The official CLI upgraded the existing Git marketplace
+`https://github.com/jan-guenter/easyeda-pro-agent-plugin.git` with installer
+umask022 and reported no upgrade errors. It installed and enabled
+`0.3.0+codex.20261024063500`. The configured marketplace snapshot HEAD equals
+merged main. A maintained full comparison proved all1838 files,42 directories,
+39579100 bytes and committed755/644 modes exact. Inventory SHA-256:
+`c7a8a2b5f5877faf19fc9f4ed715ace9e80f435ce5db7ff1d1cfe217c4f47821`.
+The CLI's preexisting stale arg0 temporary-directory cleanup warning remains;
+no cache edit, redundant add, gateway termination or manual repair occurred.
+
+The maintained installed offline probe passed once under pinned Node24.18.0
+with core0. Its synthetic legacy profile exposed26 tools and passed10 offline
+queries through the actual configured startup. Both isolation samples found
+no descendants or non-stdio sockets; continuous isolation was not claimed.
+Its own child closed by stdin EOF with exit0 and empty stderr, and its private
+control roster remained correct. This is dependency-free package startup,
+not actual host admission, the current209 catalog or connected validation.
+The existing host still belongs to the previous22500 snapshot. Do not hotpatch
+it or repeat the terminal live case.
+
+A fresh Codex chat must load and admit063500 before its first Arc/Poured live
+case. Use the registered disposable fixture and the two needed stages only,
+then original normal close, retained termination, release and historical
+queries. Populated versus empty coverage must remain explicit. Production
+CAD and its history remain untouched.
+
+The next writer batch should combine209 pre-open worker/ratline capture,
+terminal effect accounting, complete live/source/SQL baseline and actor/native
+clock ownership. A private read-only plan names existing reusable modules and
+corrects an old planning assumption: the current common reader's maximum is
+3090 transport requests before enclosing reproofs, not18. It cannot be inserted
+into the existing256-request startup purpose. Derive a separate fixed bounded
+contained purpose or a tighter complete protocol without changing the existing
+103/256 contracts or resetting counters. Existing dated ratline/common/finite-
+effect plans remain the starting evidence, not current execution authority.
+
+This terminal appendix is retained locally and posted on PR114 for inclusion
+with the next useful batch. It does not trigger another version or installation.
+
+Private receipt commitments:
+
+- `linux-ci.json`: `379a8268e52e492213c3c42002194ec087686793c03bec52c42484c95e947d10`.
+- `windows-ci.json`: `97b08a9f4f8362ca821f1db245270dd16c627cf818bbeb79b6b766e8493d086e`.
+- `ci-counts.json`: `5bf998ead709e0e79c466a74c9fdd1f7273c4536eda5aeb49696a34a7b6cecb5`.
+- `installed-payload.json`: `a5032d7c2b002ce0bf0301b63d707379bb97b9d29e2e1e2526ed37e4a0ab70fa`.
+- `installed-offline-probe.json`: `ff8bdcc886373b019fa09feda7d43f25379d2225895416d912d735652001e2a9`.
+- `next-writer-batch.md`: `5f86e8f55e8c0b684d7780a9ce6afa5428e8354b2cbe28c8d97d351d1ca42ed4`.

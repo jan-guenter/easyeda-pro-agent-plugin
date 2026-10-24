@@ -7,10 +7,13 @@ import { once } from "node:events";
 import type { TestContext } from "node:test";
 import { WebSocket } from "ws";
 import { z } from "zod";
+import { CURRENT_PCB_209_WORKER_STARTUP_SOURCE } from "../../src/current-pcb-209-worker-startup-profile.ts";
 import type { CurrentPcbWorkerStartupDependency, CurrentPcbWorkerStartupEvent } from "../../src/current-pcb-worker-startup-contract.ts";
+import { worker209ConstructionFixtureSource } from "./current-pcb-209-worker-construction-fixture.ts";
+// oxlint-disable-next-line import/max-dependencies -- Preserve the actual inspector fixture and both fixed generation source locations in one helper.
 import { workerConstructionFixtureSource } from "./current-pcb-worker-construction-fixture.ts";
 
-export async function workerStartupInspector(context: TestContext): Promise<Readonly<{
+async function workerStartupInspectorSource(context: TestContext, relativePath: string, source: string): Promise<Readonly<{
   dependency: CurrentPcbWorkerStartupDependency;
   profile: Readonly<{ relativePath: string; scriptBytes: number; scriptSha256: string }>;
   commands: string[];
@@ -29,7 +32,7 @@ export async function workerStartupInspector(context: TestContext): Promise<Read
   const commands: string[] = [], pending = new Map<number, PromiseWithResolvers<unknown>>();
   const subscribers = new Set<(event: CurrentPcbWorkerStartupEvent) => void>();
   const scriptIds = new Set<string>();
-  const relativePath = "synthetic/project-worker.js", source = workerConstructionFixtureSource(), url = `file:///${relativePath}`;
+  const url = `file:///${relativePath}`;
   const completion = Promise.withResolvers<unknown>(); let contextId = 0, contextUniqueId = "", instrumented = false, nextId = 1;
   const emit = (method: string, params: Readonly<Record<string, unknown>>, sessionId = "worker-session"): void => {
     for (const subscriber of subscribers) { subscriber({ method, params, sessionId }); }
@@ -97,4 +100,13 @@ export async function workerStartupInspector(context: TestContext): Promise<Read
       .parse(await request("Runtime.evaluate", { expression: "globalThis.CONSTRUCTION_COMPLETE===true", returnByValue: true })).result.value,
     stopped: async (): Promise<void> => { const exited = once(child, "exit"); child.kill(); await exited; },
   };
+}
+
+export function workerStartupInspector(context: TestContext): ReturnType<typeof workerStartupInspectorSource> {
+  return workerStartupInspectorSource(context, "synthetic/project-worker.js", workerConstructionFixtureSource());
+}
+/** Actual V8 instrumentation at209 positions, deliberately not a matching full
+ * vendor source. The fixed209 owner must refuse this inert substitute. */
+export function worker209StartupInspector(context: TestContext): ReturnType<typeof workerStartupInspectorSource> {
+  return workerStartupInspectorSource(context, CURRENT_PCB_209_WORKER_STARTUP_SOURCE.relativePath, worker209ConstructionFixtureSource());
 }

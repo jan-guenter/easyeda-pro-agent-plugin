@@ -8,7 +8,10 @@ older 3.2.206 diagnostic, worker, model or writer routes.
 
 Discover `pcb209-opening` with `query:{includeSchemas:true}` and validate each
 inner request with `pcb209-opening-validate`. The registered request grammar,
-not the larger older diagnostic catalog, determines available actions.
+not the larger older diagnostic catalog, determines available actions. For
+project-worker constructor capture use the separate
+[startup workflow](current-pcb209-worker-startup.md). Neither owner can become
+the other purpose after launch.
 
 The `easyeda_control_api` tool takes this complete offline validation wrapper.
 Replace the inner `query.request` with the proposed opening action. This example
@@ -33,7 +36,8 @@ an `arguments` wrapper. A `valid:true` response grants no execution authority.
 
 ## Fixed sequence
 
-1. `launch` takes a unique `pcb209-*` operation ID and
+1. `launch` takes a unique `pcb209-*` operation ID outside the reserved
+   `pcb209-startup-*` prefix and
    `confirmValidationOnly:true`, `confirmDiagnosticLaunch:true`, and
    `acceptExistingProfileEffects:true`. Existing or unresolved owners block it.
    Keep this Codex session alive through final helper release.

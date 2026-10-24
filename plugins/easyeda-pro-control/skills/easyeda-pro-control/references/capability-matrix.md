@@ -2,10 +2,11 @@
 
 Use supported typed APIs first. Native controls cover genuine API stubs and dialogs. This matrix describes the current source package; an older installed snapshot may not contain these tools. Historical external-tuple admission and installed-generation evidence do not admit this new source. Exact reads and typed operations still require their pinned implementation identities and operation-specific proof.
 
-The separate EasyEDA3.2.209 profile registers thirteen tools: API reference,
+The separate EasyEDA3.2.209 profile registers fourteen tools: API reference,
 local discovery, status, calculations, system observations, language/viewport
 readers, tab-count/active-identity/shortcut observations, public catalog queries,
-ordinary launch and disposable project/PCB opening with layer and primitive observations.
+ordinary launch, disposable project/PCB opening with layer and primitive observations,
+and a separate original project-worker startup capture.
 It admits the source-reviewed fixed16Math and18Unit/Environment subsets through
 their own exact runtime checks. Two utility argument sets passed on the prior
 installed release; that does not validate every method or this source payload.
@@ -53,7 +54,10 @@ native fill IDs, parent associations and serialized contours. Its distances
 remain ten mil per unit; serializer omissions prevent exact ellipse, topology
 or fabrication claims. It rebuilds no copper and proves no freshness. Both
 stages use six local RPCs, 256 rows and 384 KiB aggregate output; their source
-and offline checks are not live validation.
+and offline checks do not validate populated geometry. Installed063500 passed
+one [empty Arc/Poured case](https://github.com/jan-guenter/easyeda-pro-agent-plugin/blob/main/docs/history/2026-10-24-063500-connected-arc-poured-queries.md)
+with original normal cleanup and repeatable historical queries. No populated
+shape or later-payload admission follows.
 There are eight optional readers. Opening plus all eight uses 79 transport
 requests without ancillary checks, but would need 121 with all ancillary checks
 against the unchanged 103-request cap. Arc/Poured require nine remaining
@@ -67,8 +71,17 @@ Arc queries retain matching descriptors. Poured queries use native fill IDs
 and preserve the complete observed parent roster even when rows are filtered.
 These disk-only historical projections do not dispatch CAD calls, adopt an owner
 or establish current state. See [recorded observation queries](current-pcb209-opening.md#query-a-recorded-observation).
-The new ratline source verifier and finite-role
-model are dormant implementation groundwork, not an executable capture route.
+The separate [209 project-worker startup route](current-pcb209-worker-startup.md)
+captures original constructor callbacks and project identity before opening.
+It then offers current wrapper assignments, channel/publisher relations and
+bracketed UI/worker actor/local-Date observations. It retains the original
+native process, Job, pipe and fixed256-command budget. These observations do
+not establish continuous publisher ownership, peer containment, server clock
+provenance, complete startup or writer eligibility. The route requires connected
+validation after installation. The209 common-state reader, SQL comparison and
+six-sample actor adapter are implemented privately but lack an integrated native
+route. The ratline source verifier and finite-role model remain groundwork;
+no PCB-worker/ratline capture route is enabled.
 The [public catalog queries](current-system-library.md) require explicit network
 confirmation and use fixed credential-free vendor endpoints, without local
 application/database access. Footprint/symbol/device search, symbol/device

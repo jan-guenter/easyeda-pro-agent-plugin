@@ -1,5 +1,6 @@
 /** Generates the independent native fixed-command encoder from literal command
  * cases. Values supplied at runtime are identifiers, never programs or params. */
+/* oxlint-disable import/max-dependencies -- This generator compares both fixed source profiles and every literal command family at one native protocol boundary. */
 import { CURRENT_PCB_WORKER_CONSTRUCTION_ASSIGNMENT_CALLS } from "./current-pcb-worker-construction-assignment.ts";
 import { CURRENT_PCB_WORKER_CONSTRUCTION_IDENTITY, CURRENT_PCB_WORKER_CONSTRUCTION_PROJECT, CURRENT_PCB_WORKER_CONSTRUCTION_SAME,
   CURRENT_PCB_WORKER_CONSTRUCTION_SITES, CURRENT_PCB_WORKER_CONSTRUCTION_SOURCE } from "./current-pcb-worker-construction-contract.ts";
@@ -8,17 +9,18 @@ import type { CurrentPcbWorkerStartupParentCommand, CurrentPcbWorkerStartupWorke
 import { CURRENT_PCB_DIAGNOSTIC_OPENING_FUNCTION } from "./current-pcb-diagnostic-opening.ts";
 import { CURRENT_PCB_DIAGNOSTIC_PCB_OPENING_FUNCTION } from "./current-pcb-diagnostic-pcb-opening.ts";
 import { sha256Text } from "./core.ts";
-import { CURRENT_PCB_WORKER_STARTUP_REQUEST_LIMIT, currentPcbWorkerStartupWire } from "./current-pcb-worker-startup-wire.ts";
+import { CURRENT_PCB_WORKER_STARTUP_REQUEST_LIMIT, currentPcb209WorkerStartupWire, currentPcbWorkerStartupWire } from "./current-pcb-worker-startup-wire.ts";
 import { freezeDeep } from "./sqlite-inventory-core.ts";
 import { CURRENT_PCB_WORKER_STARTUP_UI_ACTOR_CLOCK_FUNCTION, CURRENT_PCB_WORKER_STARTUP_WORKER_ACTOR_CLOCK_FUNCTION,
   currentPcbWorkerStartupUiActorCommand } from "./current-pcb-worker-startup-actor.ts";
 import { CURRENT_PCB_WORKER_STARTUP_CHANNEL_CALLS } from "./current-pcb-worker-startup-channel-observation.ts";
+import { CURRENT_PCB_209_WORKER_CONSTRUCTION_SITES } from "./current-pcb-209-worker-startup-profile.ts";
 
 const group = CURRENT_PCB_WORKER_CONSTRUCTION_SOURCE.group;
 const placeholder = (name: string): string => `__startup_${name}__`;
 const effects = { objectGroup: group, silent: true, generatePreview: false, throwOnSideEffect: true,
   awaitPromise: false, userGesture: false } as const;
-export function currentPcbWorkerStartupNativeCases(): readonly CurrentPcbWorkerStartupWorkerCommand[] {
+function nativeCases(sites: Readonly<Record<string, Readonly<{ lineNumber: number; columnNumber: number }>>>): readonly CurrentPcbWorkerStartupWorkerCommand[] {
   const sessionId = "original-session";
   const commands: CurrentPcbWorkerStartupWorkerCommand[] = [
     { method: "Target.setAutoAttach", params: CURRENT_PCB_WORKER_STARTUP_ATTACH, sessionId },
@@ -32,7 +34,7 @@ export function currentPcbWorkerStartupNativeCases(): readonly CurrentPcbWorkerS
     { method: "Runtime.getProperties", params: { objectId: placeholder("objectId"), ownProperties: true, generatePreview: false }, sessionId },
     { method: "Runtime.releaseObjectGroup", params: { objectGroup: group }, sessionId },
   ];
-  for (const site of Object.values(CURRENT_PCB_WORKER_CONSTRUCTION_SITES)) {
+  for (const site of Object.values(sites)) {
     commands.push({ method: "Debugger.setBreakpoint", params: { location: { scriptId: placeholder("scriptId"),
       lineNumber: site.lineNumber, columnNumber: site.columnNumber } }, sessionId });
   }
@@ -52,6 +54,12 @@ export function currentPcbWorkerStartupNativeCases(): readonly CurrentPcbWorkerS
       arguments: Array.from({ length: entry.arguments }, (_, index) => ({ objectId: placeholder(`argument${index}`) })) }, sessionId });
   }
   return freezeDeep(commands);
+}
+export function currentPcbWorkerStartupNativeCases(): readonly CurrentPcbWorkerStartupWorkerCommand[] {
+  return nativeCases(CURRENT_PCB_WORKER_CONSTRUCTION_SITES);
+}
+export function currentPcb209WorkerStartupNativeCases(): readonly CurrentPcbWorkerStartupWorkerCommand[] {
+  return nativeCases(CURRENT_PCB_209_WORKER_CONSTRUCTION_SITES);
 }
 const literal = (value: string): string => `@"${value.replaceAll('"', '""')}"`;
 /** Synthetic, path-hash-consistent protocol fixtures; never project authority. */
@@ -80,34 +88,58 @@ export function currentPcbWorkerStartupNativeParentCases(): readonly CurrentPcbW
 }
 
 export function currentPcbWorkerStartupNativeSource(): string {
-  const rows = currentPcbWorkerStartupNativeCases().map(sample => {
+  const currentCases = currentPcb209WorkerStartupNativeCases(), legacyCases = currentPcbWorkerStartupNativeCases();
+  let changedCases = 0;
+  function variant(index: number, sample: CurrentPcbWorkerStartupWorkerCommand): CurrentPcbWorkerStartupWorkerCommand {
+    const current = currentCases[index];
+    if (current === undefined || JSON.stringify(currentPcb209WorkerStartupWire(current, 1).request) !==
+      JSON.stringify(currentPcbWorkerStartupWire(sample, 1).request)) { throw new Error("WORKER_STARTUP_NATIVE_GENERATION_WIRE"); }
+    if (JSON.stringify(current) !== JSON.stringify(sample) &&
+      (sample.method !== "Debugger.setBreakpoint" || current.method !== "Debugger.setBreakpoint" ||
+        sample.params.location.lineNumber !== 108 || sample.params.location.columnNumber !== 145_558 ||
+        current.params.location.lineNumber !== 108 || current.params.location.columnNumber !== 145_582)) {
+      throw new Error("WORKER_STARTUP_NATIVE_GENERATION_DIFFERENCE");
+    }
+    return current;
+  }
+  const rows = legacyCases.map((sample, index) => {
+    const current = variant(index, sample);
     const request = currentPcbWorkerStartupWire(sample, 1).request;
     const fields = Object.entries(request).filter(([key]) => !["action", "requestId", "method", "sessionId", "startupPhase"].includes(key));
     const fixed = fields.filter(([key]) => key === "site" || key === "selector");
     const dynamic = fields.filter(([key]) => key !== "site" && key !== "selector");
-    const template = JSON.stringify(sample.params);
-    for (const [key, value] of dynamic) {
-      if (value !== placeholder(key) || !template.includes(JSON.stringify(value))) { throw new Error("WORKER_STARTUP_NATIVE_TEMPLATE"); }
-    }
     const condition = [`phase==${literal(String(request["startupPhase"]))}`, ...fixed.map(([key, value]) => `Field(fields,${literal(key)})==${literal(String(value))}`)].join(" && ");
     // Concatenate original literal segments once. Repeated Replace would let
     // An identifier equal to another placeholder redirect that later field.
-    const segments: string[] = []; let previous = 0;
-    for (const match of template.matchAll(/"__startup_([A-Za-z\d]+)__"/gu)) {
-      const key = match[1];
-      if (key === undefined || !dynamic.some(([name]) => name === key)) { throw new Error("WORKER_STARTUP_NATIVE_PLACEHOLDER"); }
-      segments.push(literal(template.slice(previous, match.index)), literal('"'), `Handle(Field(fields,${literal(key)}),256)`, literal('"'));
-      previous = match.index + match[0].length;
+    function expression(parameters: CurrentPcbWorkerStartupWorkerCommand["params"]): string {
+      const template = JSON.stringify(parameters);
+      for (const [key, value] of dynamic) {
+        if (value !== placeholder(key) || !template.includes(JSON.stringify(value))) { throw new Error("WORKER_STARTUP_NATIVE_TEMPLATE"); }
+      }
+      const segments: string[] = []; let previous = 0;
+      for (const match of template.matchAll(/"__startup_([A-Za-z\d]+)__"/gu)) {
+        const key = match[1];
+        if (key === undefined || !dynamic.some(([name]) => name === key)) { throw new Error("WORKER_STARTUP_NATIVE_PLACEHOLDER"); }
+        segments.push(literal(template.slice(previous, match.index)), literal('"'), `Handle(Field(fields,${literal(key)}),256)`, literal('"'));
+        previous = match.index + match[0].length;
+      }
+      segments.push(literal(template.slice(previous))); return segments.join("+");
     }
-    segments.push(literal(template.slice(previous)));
-    return `    if(${condition}) {\n      Need(method==${literal(sample.method)},"method");\n      Keys(fields,new string[]{${fields.map(([key]) => literal(key)).join(",")}});\n      parameters=${segments.join("+")};\n    }`;
+    const currentExpression = expression(current.params), legacy = expression(sample.params);
+    let parameters = legacy;
+    if (currentExpression !== legacy) { changedCases += 1; parameters = `workerStartup209?${currentExpression}:${legacy}`; }
+    return `    if(${condition}) {\n      Need(method==${literal(sample.method)},"method");\n      Keys(fields,new string[]{${fields.map(([key]) => literal(key)).join(",")}});\n      parameters=${parameters};\n    }`;
   });
-  const smoke = currentPcbWorkerStartupNativeCases().map(sample => {
+  if (changedCases !== 1 || legacyCases.length !== currentCases.length) { throw new Error("WORKER_STARTUP_NATIVE_GENERATION_COUNT"); }
+  const smoke = legacyCases.map((sample, index) => {
+    const current = variant(index, sample);
     const request = currentPcbWorkerStartupWire(sample, 1).request;
     const fields = Object.entries(request).filter(([key]) => !["action", "requestId", "method", "sessionId", "startupPhase"].includes(key));
     const expected = JSON.stringify({ id: 1, method: sample.method, params: sample.params, sessionId: sample.sessionId });
+    const currentExpected = JSON.stringify({ id: 1, method: current.method, params: current.params, sessionId: current.sessionId });
+    const expectedExpression = expected === currentExpected ? literal(expected) : `(workerStartup209?${literal(currentExpected)}:${literal(expected)})`;
     return `    fields.Clear();\n${fields.map(([key, value]) => `    fields.Add(${literal(key)},${literal(String(value))});`).join("\n")}\n` +
-      `    Need(Encode(1,${literal(sample.method)},${literal(sample.sessionId)},${literal(String(request["startupPhase"]))},fields)==${literal(expected)}+"\\0","smoke-parity");`;
+      `    Need(EncodeCore(1,${literal(sample.method)},${literal(sample.sessionId)},${literal(String(request["startupPhase"]))},fields,workerStartup209)==${expectedExpression}+"\\0","smoke-parity");`;
   }).join("\n");
   const parentSmoke = currentPcbWorkerStartupNativeParentCases().map(sample => {
     const request = currentPcbWorkerStartupWire(sample, 256).request;
@@ -135,6 +167,12 @@ public static class EasyedaWorkerStartupProtocol {
     Need(value!=null && value.Length<=limit && System.Text.RegularExpressions.Regex.IsMatch(value,@"\\A[A-Za-z0-9_.:-]+\\z"),"handle");return value;
   }
   public static string Encode(int id,string method,string sessionId,string phase,System.Collections.IDictionary fields) {
+    return EncodeCore(id,method,sessionId,phase,fields,false);
+  }
+  public static string Encode209(int id,string method,string sessionId,string phase,System.Collections.IDictionary fields) {
+    return EncodeCore(id,method,sessionId,phase,fields,true);
+  }
+  static string EncodeCore(int id,string method,string sessionId,string phase,System.Collections.IDictionary fields,bool workerStartup209) {
     Need(id>=1 && id<=${CURRENT_PCB_WORKER_STARTUP_REQUEST_LIMIT},"id");Handle(sessionId,128);
     string parameters=null;
 ${rows.join(" else\n")}
@@ -142,17 +180,19 @@ ${rows.join(" else\n")}
     string result="{\\"id\\":"+id.ToString(System.Globalization.CultureInfo.InvariantCulture)+",\\"method\\":\\""+method+"\\",\\"params\\":"+parameters+",\\"sessionId\\":\\""+sessionId+"\\"}\\0";
     Need(System.Text.Encoding.UTF8.GetByteCount(result)<=65536,"size");return result;
   }
-  public static void VerifySmoke() {
+  public static void VerifySmoke() { VerifySmokeCore(false); }
+  public static void Verify209Smoke() { VerifySmokeCore(true); }
+  static void VerifySmokeCore(bool workerStartup209) {
     System.Collections.Hashtable fields=new System.Collections.Hashtable(System.StringComparer.Ordinal);
 ${smoke}
 ${parentSmoke}
     fields.Clear();fields.Add("objectId","__startup_argument0__");fields.Add("argument0","other");
-    string collision=Encode(256,"Runtime.callFunctionOn","s","same",fields);
+    string collision=EncodeCore(256,"Runtime.callFunctionOn","s","same",fields,workerStartup209);
     Need(collision.Contains(@"""objectId"":""__startup_argument0__""") && collision.Contains(@"""objectId"":""other"""),"smoke-placeholder");
-    foreach(int id in new int[]{0,257}) {bool refused=false;try{Encode(id,"Runtime.callFunctionOn","s","same",fields);}catch(System.InvalidOperationException){refused=true;}Need(refused,"smoke-budget");}
-    foreach(object bad in new object[]{null,"",7,"bad\\nhandle"}) {fields["argument0"]=bad;bool refused=false;try{Encode(1,"Runtime.callFunctionOn","s","same",fields);}catch(System.InvalidOperationException){refused=true;}Need(refused,"smoke-handle");}
+    foreach(int id in new int[]{0,257}) {bool refused=false;try{EncodeCore(id,"Runtime.callFunctionOn","s","same",fields,workerStartup209);}catch(System.InvalidOperationException){refused=true;}Need(refused,"smoke-budget");}
+    foreach(object bad in new object[]{null,"",7,"bad\\nhandle"}) {fields["argument0"]=bad;bool refused=false;try{EncodeCore(1,"Runtime.callFunctionOn","s","same",fields,workerStartup209);}catch(System.InvalidOperationException){refused=true;}Need(refused,"smoke-handle");}
     fields["argument0"]="other";fields.Add("expression","arbitrary");
-    bool extra=false;try{Encode(1,"Runtime.callFunctionOn","s","same",fields);}catch(System.InvalidOperationException){extra=true;}Need(extra,"smoke-extra");
+    bool extra=false;try{EncodeCore(1,"Runtime.callFunctionOn","s","same",fields,workerStartup209);}catch(System.InvalidOperationException){extra=true;}Need(extra,"smoke-extra");
   }
 }
 // END GENERATED WORKER STARTUP PROTOCOL`;

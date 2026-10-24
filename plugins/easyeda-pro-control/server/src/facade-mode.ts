@@ -12,9 +12,9 @@ export const PUBLIC_UTILITIES_ONLY_TOOLS = Object.freeze([
   "easyeda_control_public_readers",
   "easyeda_control_catalog_footprint", "easyeda_control_catalog_components", "easyeda_control_editor_shell",
   "easyeda_control_editor_context", "easyeda_control_shortcuts",
-  "easyeda_control_pcb209_opening",
+  "easyeda_control_pcb209_opening", "easyeda_control_pcb209_worker_startup",
 ]);
-export const PUBLIC_UTILITIES_ONLY_SCOPE = "EasyEDA 3.2.209 scoped Math, Unit, Environment, language, API-page viewport, tab-count, active-identity and shortcut observations, plus ordinary launch. Separate catalog tools perform explicitly confirmed credential-free vendor HTTPS metadata queries without EasyEDA or SDK execution. The separate pcb209_opening route owns one disposable project/PCB opening, UI/PCB source/identity checks, bounded layer/copper-count and Line/Arc/Via/parentless-String/Component/Pad/Attribute/Dimension/Image loaded-view observations through original normal cleanup. Its selection/relations stage also captures selected IDs and requested component child-pad IDs. A separate Pad stage observes native top/inner/bottom special style groups without expanding physical layers. An Image stage retains bounded serialized vector paths or opaque Picture references without loading assets. Arc observations add native center, radius, endpoint angles and direction. Poured observations retain existing native fill contours and parent associations without rebuilding or qualifying copper. Digest-bound historical queries read published observations without live RPCs or owner adoption; they do not describe current state. Ordinary opening can migrate data and automatically Save. No general geometry read/write, explicit Save, recovery or PCB-worker route is registered. Source review and synthetic tests are not connected execution validation. These observations and launch do not prove isolation, complete-board membership, reciprocal ownership, connectivity, saved state, physical stackup or readiness.";
+export const PUBLIC_UTILITIES_ONLY_SCOPE = "EasyEDA 3.2.209 scoped Math, Unit, Environment, language, API-page viewport, tab-count, active-identity and shortcut observations, plus ordinary launch. Separate catalog tools perform explicitly confirmed credential-free vendor HTTPS metadata queries without EasyEDA or SDK execution. The separate pcb209_opening route owns one disposable project/PCB opening, UI/PCB source/identity checks, bounded layer/copper-count and Line/Arc/Via/parentless-String/Component/Pad/Attribute/Dimension/Image loaded-view observations through original normal cleanup. Its selection/relations stage also captures selected IDs and requested component child-pad IDs. A separate Pad stage observes native top/inner/bottom special style groups without expanding physical layers. An Image stage retains bounded serialized vector paths or opaque Picture references without loading assets. Arc observations add native center, radius, endpoint angles and direction. Poured observations retain existing native fill contours and parent associations without rebuilding or qualifying copper. Digest-bound historical queries read published observations without live RPCs or owner adoption; they do not describe current state. Ordinary opening can migrate data and automatically Save. The separate pcb209_worker_startup route captures original project-worker constructors, current wrapper/channel relations and bracketed actor/local-Date observations on a disposable project. No general geometry read/write, explicit Save, recovery or PCB-worker/ratline route is registered. Source review and synthetic tests are not connected execution validation. These observations and launch do not prove isolation, complete-board membership, reciprocal ownership, connectivity, saved state, physical stackup or readiness.";
 
 export function publicUtilitiesOnlyCapabilities(): Record<string, unknown> {
   return {
@@ -39,6 +39,9 @@ export function publicUtilitiesOnlyCapabilities(): Record<string, unknown> {
       arcShapeObservation: "native-centers-radii-endpoint-radians-and-direction;no-rendered-circle-proof",
       pouredShapeObservation: "serialized-loaded-copper-fill-contours-and-parent-groups;no-rebuild-or-freshness-proof",
       historicalQuery: "digest-bound-published-snapshot;no-live-rpc-owner-adoption-or-current-state-proof" },
+    disposableWorkerStartup: { tool: "easyeda_control_pcb209_worker_startup", validationOnly: true, connectedValidation: false,
+      runtimeAdmissionRequired: true, debuggerPauseAcceptanceRequired: true, startupCompletionVerified: false,
+      completeLiveBaselineVerified: false, serverClockProvenanceVerified: false, cadAuthority: false },
     designAccess: { enabled: false, scope: "general-geometry-and-writers;disposable-bounded-observations-and-historical-queries-only" }, navigation: { enabled: true, scope: "original-owner-disposable209-opening-only" },
     save: { enabled: false }, recovery: { enabled: false }, nativeAdapters: { enabled: true, scope: "identity-observations-and-disposable209-opening-layer-primitive-selection-relations-only" },
   };
@@ -76,7 +79,7 @@ export function configuredFacadeMode(environment: Readonly<Record<string, string
 
 export function facadeToolRegistered(mode: FacadeMode, name: string): boolean {
   if (name === "easyeda_control_public_readers" || name === "easyeda_control_catalog_footprint" ||
-      name === "easyeda_control_catalog_components" || name === "easyeda_control_pcb209_opening") { return mode === "public-utilities-only"; }
+      name === "easyeda_control_catalog_components" || name === "easyeda_control_pcb209_opening" || name === "easyeda_control_pcb209_worker_startup") { return mode === "public-utilities-only"; }
   return mode === "legacy-reviewed" ||
     (mode === "public-utilities-only" ? PUBLIC_UTILITIES_ONLY_TOOLS : CALCULATION_ONLY_TOOLS).includes(name);
 }

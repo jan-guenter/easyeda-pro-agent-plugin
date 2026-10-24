@@ -1,13 +1,15 @@
+/* oxlint-disable eslint/max-classes-per-file -- Keep the private core with its fixed-generation wrappers so no caller-selectable profile or decoder constructor is exported. */
 /** Dormant original-event capture. No native transport, startup registration,
  * peer exclusion, create/Save or writer permit is implemented by this class. */
 import { z } from "zod";
 import { types } from "node:util";
+import { CURRENT_PCB_209_WORKER_CONSTRUCTION_SITES } from "./current-pcb-209-worker-startup-profile.ts";
 import { captureCurrentPcbStringClockReply } from "./current-pcb-string-clock-reply.ts";
-import { decodeCurrentPcbStringProducerCallbackFunction, decodeCurrentPcbStringProducerCallbackScopeList } from "./current-pcb-string-producer-callback-scope.ts";
+import { decodeCurrentPcb209WorkerCallbackFunction, decodeCurrentPcb209WorkerCallbackScopeList, decodeCurrentPcbStringProducerCallbackFunction, decodeCurrentPcbStringProducerCallbackScopeList } from "./current-pcb-string-producer-callback-scope.ts";
 import type { CurrentPcbStringProducerCallbackKind } from "./current-pcb-string-producer-callback-scope.ts";
-import { decodeCurrentPcbStringProducerFunction, decodeCurrentPcbStringProducerScopeList,
+import { decodeCurrentPcb209WorkerProducerFunction, decodeCurrentPcb209WorkerProducerScopeList, decodeCurrentPcb209WorkerProducerScopes, decodeCurrentPcbStringProducerFunction, decodeCurrentPcbStringProducerScopeList,
   decodeCurrentPcbStringProducerScopes } from "./current-pcb-string-producer-scope.ts";
-import type { CurrentPcbStringProducerKind } from "./current-pcb-string-producer-scope.ts";
+import type { CurrentPcb209WorkerProducerKind } from "./current-pcb-string-producer-scope.ts";
 import { CURRENT_PCB_WORKER_CONSTRUCTION_ASSIGNMENT_RECHECK, CURRENT_PCB_WORKER_CONSTRUCTION_ASSIGNMENT_RELATIONS,
   CURRENT_PCB_WORKER_CONSTRUCTION_ASSIGNMENT_SELECTORS, CURRENT_PCB_WORKER_CONSTRUCTION_DEBOUNCE_RELATION } from "./current-pcb-worker-construction-assignment.ts";
 import type { CurrentPcbWorkerConstructionAssignment, CurrentPcbWorkerConstructionAssignments } from "./current-pcb-worker-construction-assignment.ts";
@@ -21,7 +23,8 @@ import { CURRENT_PCB_WORKER_STARTUP_WORKER_ACTOR_CLOCK_FUNCTION,
 import { CURRENT_PCB_WORKER_STARTUP_CHANNEL_CALLS } from "./current-pcb-worker-startup-channel-observation.ts";
 import type { CurrentPcbWorkerStartupChannelObservationCommand,
   CurrentPcbWorkerStartupChannelPacket } from "./current-pcb-worker-startup-channel-observation.ts";
-import { CurrentPcbWorkerStartupChannelObservationRunner } from "./current-pcb-worker-startup-channel-observation-runner.ts";
+// oxlint-disable-next-line import/max-dependencies -- Generation-specific coordinates must be imported alongside the unchanged ownership and cleanup contracts.
+import { CurrentPcb209WorkerStartupChannelObservationRunner, CurrentPcbWorkerStartupChannelObservationRunner } from "./current-pcb-worker-startup-channel-observation-runner.ts";
 
 const GROUP = CURRENT_PCB_WORKER_CONSTRUCTION_SOURCE.group;
 const token = z.string().min(1).max(256).regex(/^[A-Za-z\d_.:-]+$/u);
@@ -53,8 +56,9 @@ interface RetainedBreakpoint {
   removal: Promise<void> | null;
   removed: boolean;
 }
-export interface CurrentPcbWorkerConstructionPacket {
-  readonly profile: "private.current-pcb-worker-construction.v1";
+type PacketProfile = "private.current-pcb-worker-construction.v1" | "private.current-pcb209-worker-construction.v1";
+interface ConstructionPacket<P extends PacketProfile> {
+  readonly profile: P;
   readonly pauses: 9;
   readonly originalConstructorAndFactoryEventsRetained: true;
   readonly originalProjectReceiverMatched: true;
@@ -64,6 +68,8 @@ export interface CurrentPcbWorkerConstructionPacket {
   readonly writeDestinationsContained: false;
   readonly executionAuthorized: false;
 }
+export type CurrentPcbWorkerConstructionPacket = ConstructionPacket<"private.current-pcb-worker-construction.v1">;
+export type CurrentPcb209WorkerConstructionPacket = ConstructionPacket<"private.current-pcb209-worker-construction.v1">;
 export interface CurrentPcbWorkerConstructionIdentities {
   readonly project: string;
   readonly channelBus: string;
@@ -75,8 +81,9 @@ export interface CurrentPcbWorkerConstructionIdentities {
   readonly structure: string;
   readonly structureDebounce: string;
 }
-const issued = new WeakMap<CurrentPcbWorkerConstructionPacket, CurrentPcbWorkerConstructionRunner>();
-const assignmentsIssued = new WeakMap<CurrentPcbWorkerConstructionAssignments, CurrentPcbWorkerConstructionRunner>();
+const INTERNAL_PROFILE = Symbol("fixed-worker-construction-profile");
+const issued = new WeakMap<ConstructionPacket<PacketProfile>, CurrentPcbWorkerConstructionCore<PacketProfile>>();
+const assignmentsIssued = new WeakMap<CurrentPcbWorkerConstructionAssignments, CurrentPcbWorkerConstructionCore<PacketProfile>>();
 function fail(code: string): Error { return new Error(`PCB_WORKER_CONSTRUCTION_${code}`); }
 async function bounded<T>(promise: Promise<T>, duration = REQUEST_MS): Promise<T> {
   let timer: ReturnType<typeof setTimeout> | undefined;
@@ -103,7 +110,17 @@ function transportMembers(transport: CurrentPcbWorkerConstructionTransport): rea
   });
 }
 
-export class CurrentPcbWorkerConstructionRunner {
+interface ConstructionDecoders {
+  readonly callbackFunction: typeof decodeCurrentPcbStringProducerCallbackFunction;
+  readonly callbackScopeList: typeof decodeCurrentPcbStringProducerCallbackScopeList;
+  readonly producerFunction: typeof decodeCurrentPcb209WorkerProducerFunction;
+  readonly producerScopeList: typeof decodeCurrentPcb209WorkerProducerScopeList;
+  readonly producerScopes: typeof decodeCurrentPcb209WorkerProducerScopes;
+}
+class CurrentPcbWorkerConstructionCore<P extends PacketProfile> {
+  readonly #profile: P;
+  readonly #sites: typeof CURRENT_PCB_WORKER_CONSTRUCTION_SITES | typeof CURRENT_PCB_209_WORKER_CONSTRUCTION_SITES;
+  readonly #decoders: ConstructionDecoders;
   readonly #transport: CurrentPcbWorkerConstructionTransport;
   readonly #send: CurrentPcbWorkerConstructionTransport["request"];
   readonly #assertOwner: CurrentPcbWorkerConstructionTransport["assertOriginalPinnedWorker"];
@@ -121,7 +138,7 @@ export class CurrentPcbWorkerConstructionRunner {
   #failed: Error | null = null;
   #released = false;
   #releaseConsumed = false;
-  #packet: CurrentPcbWorkerConstructionPacket | null = null;
+  #packet: ConstructionPacket<P> | null = null;
   #assignmentConsumed = false;
   #assignments: CurrentPcbWorkerConstructionAssignments | null = null;
   #assignedWrappers: Readonly<Record<CurrentPcbWorkerConstructionAssignment, string>> | null = null;
@@ -133,7 +150,10 @@ export class CurrentPcbWorkerConstructionRunner {
   #channel: CurrentPcbWorkerStartupChannelObservationRunner | null = null;
   #channelPacket: CurrentPcbWorkerStartupChannelPacket | null = null;
 
-  public constructor(transport: CurrentPcbWorkerConstructionTransport) {
+  public constructor(internal: typeof INTERNAL_PROFILE, transport: CurrentPcbWorkerConstructionTransport, profile: P,
+    sites: typeof CURRENT_PCB_WORKER_CONSTRUCTION_SITES | typeof CURRENT_PCB_209_WORKER_CONSTRUCTION_SITES, decoders: ConstructionDecoders) {
+    if (internal !== INTERNAL_PROFILE) { throw fail("INTERNAL_PROFILE"); }
+    this.#profile = profile; this.#sites = sites; this.#decoders = Object.freeze(decoders);
     transportMembers(transport);
     this.#transport = transport; this.#scriptId = token.parse(transport.scriptId);
     this.#send = transport.request; this.#assertOwner = transport.assertOriginalPinnedWorker; this.#subscribe = transport.subscribe;
@@ -222,8 +242,8 @@ export class CurrentPcbWorkerConstructionRunner {
     else { await this.#same(original, current); }
   }
   async #arrow(callFrameId: string, expression: "e" | "t", kind: CurrentPcbStringProducerCallbackKind): Promise<string> {
-    const original = decodeCurrentPcbStringProducerCallbackFunction(await this.#select(callFrameId, expression), kind);
-    decodeCurrentPcbStringProducerCallbackScopeList(await this.#request({ method: "Runtime.getProperties",
+    const original = this.#decoders.callbackFunction(await this.#select(callFrameId, expression), kind);
+    this.#decoders.callbackScopeList(await this.#request({ method: "Runtime.getProperties",
       params: { objectId: original, ownProperties: true, generatePreview: false } }), this.#scriptId, kind);
     return original;
   }
@@ -231,7 +251,7 @@ export class CurrentPcbWorkerConstructionRunner {
     if (paused.captureError !== null) { throw new Error("PCB_WORKER_CONSTRUCTION_EVENT_CAPTURE", { cause: paused.captureError }); }
     const event = pauseSchema.parse(paused.raw), site = CURRENT_PCB_WORKER_CONSTRUCTION_SEQUENCE[index];
     if (site === undefined) { throw fail("EXTRA_PAUSE"); }
-    const target = CURRENT_PCB_WORKER_CONSTRUCTION_SITES[site], top = event.callFrames[0];
+    const target = this.#sites[site], top = event.callFrames[0];
     if (top === undefined || event.hitBreakpoints[0] !== this.#breakpoints.get(site)?.id || top.functionName !== target.name ||
         top.location.scriptId !== this.#scriptId || top.location.lineNumber !== target.lineNumber || top.location.columnNumber !== target.columnNumber) {
       throw fail("PAUSE_LOCATION");
@@ -249,7 +269,7 @@ export class CurrentPcbWorkerConstructionRunner {
       if (original === undefined || bus === undefined) { throw fail("MISSING_OWNER"); }
       await this.#same(original, bus, true);
     } else {
-      const caller = event.callFrames[1], expected = site === "upload" ? CURRENT_PCB_WORKER_CONSTRUCTION_SITES.base : CURRENT_PCB_WORKER_CONSTRUCTION_SITES.project;
+      const caller = event.callFrames[1], expected = site === "upload" ? this.#sites.base : this.#sites.project;
       const startColumn = expected.columnNumber - (expected.offset - expected.start);
       if (caller === undefined || caller.functionName !== expected.name || caller.location.scriptId !== this.#scriptId ||
           caller.location.lineNumber !== expected.lineNumber || caller.location.columnNumber < startColumn ||
@@ -259,7 +279,7 @@ export class CurrentPcbWorkerConstructionRunner {
       else if (site === "cooperation") { this.#identities.cooperation = await this.#arrow(top.callFrameId, "e", "cooperation"); }
       else if (site === "debounce") { this.#identities.structure = await this.#arrow(top.callFrameId, "e", "structure"); }
       else if (index === 4) { this.#identities.uploadStructure = await this.#arrow(top.callFrameId, "e", "uploadStructure"); }
-      else { this.#identities.structureDebounce = decodeCurrentPcbStringProducerFunction(await this.#select(top.callFrameId, "e"), "debounce"); }
+      else { this.#identities.structureDebounce = this.#decoders.producerFunction(await this.#select(top.callFrameId, "e"), "debounce"); }
     }
   }
   async #removeBreakpoints(): Promise<void> {
@@ -277,7 +297,7 @@ export class CurrentPcbWorkerConstructionRunner {
   }
   async #arm(site: CurrentPcbWorkerConstructionSite): Promise<void> {
     await this.#current();
-    const target = CURRENT_PCB_WORKER_CONSTRUCTION_SITES[site];
+    const target = this.#sites[site];
     const point = { scriptId: this.#scriptId, lineNumber: target.lineNumber, columnNumber: target.columnNumber };
     this.#uncertainBreakpoint = true;
     const pending = (async (): Promise<void> => {
@@ -290,7 +310,7 @@ export class CurrentPcbWorkerConstructionRunner {
     })();
     await bounded(pending); await this.#current();
   }
-  public async capture(): Promise<CurrentPcbWorkerConstructionPacket> {
+  public async capture(): Promise<ConstructionPacket<P>> {
     if (this.#consumed) { throw fail("CONSUMED"); } this.#consumed = true;
     try {
       await this.#current();
@@ -308,7 +328,7 @@ export class CurrentPcbWorkerConstructionRunner {
       }
       await this.#removeBreakpoints(); await this.#current();
       if (Object.keys(this.#identities).length !== 9) { throw fail("MISSING_IDENTITY"); }
-      const packet: CurrentPcbWorkerConstructionPacket = Object.freeze({ profile: "private.current-pcb-worker-construction.v1", pauses: 9,
+      const packet: ConstructionPacket<P> = Object.freeze({ profile: this.#profile, pauses: 9,
         originalConstructorAndFactoryEventsRetained: true, originalProjectReceiverMatched: true,
         channelNativeIntrinsicAndPeerOwnershipVerified: false, wrapperAssignmentRelationVerified: false,
         nativeStartupIntegrationVerified: false, writeDestinationsContained: false, executionAuthorized: false });
@@ -320,7 +340,7 @@ export class CurrentPcbWorkerConstructionRunner {
       throw errors.length === 1 ? error : new AggregateError(errors, "PCB_WORKER_CONSTRUCTION_FAILED", { cause: error });
     } finally { this.#settled = true; }
   }
-  public async requireOriginal(packet: CurrentPcbWorkerConstructionPacket): Promise<Readonly<CurrentPcbWorkerConstructionIdentities>> {
+  public async requireOriginal(packet: ConstructionPacket<P>): Promise<Readonly<CurrentPcbWorkerConstructionIdentities>> {
     if (packet !== this.#packet || issued.get(packet) !== this) { throw fail("ORIGINAL_PACKET"); }
     await this.#current();
     return Object.freeze(z.object({ project: token, channelBus: token, channel: token, onmessage: token,
@@ -333,7 +353,7 @@ export class CurrentPcbWorkerConstructionRunner {
   }
   /** Same original PROJECT receiver and bus, not a title-derived association.
    * The opener separately compares these fields with its checkpoint target. */
-  public async proveProjectIdentity(packet: CurrentPcbWorkerConstructionPacket): Promise<CurrentPcbWorkerConstructionProjectIdentity> {
+  public async proveProjectIdentity(packet: ConstructionPacket<P>): Promise<CurrentPcbWorkerConstructionProjectIdentity> {
     const original = await this.requireOriginal(packet);
     if (this.#projectIdentityConsumed) { throw fail("PROJECT_IDENTITY_CONSUMED"); } this.#projectIdentityConsumed = true;
     try {
@@ -342,7 +362,7 @@ export class CurrentPcbWorkerConstructionRunner {
       await this.requireOriginal(packet); this.#projectIdentity = observed; return observed;
     } catch (error) { this.#failed ??= fail("PROJECT_IDENTITY_FAILED"); throw error; }
   }
-  public async requireProjectIdentity(packet: CurrentPcbWorkerConstructionPacket, identity: CurrentPcbWorkerConstructionProjectIdentity): Promise<void> {
+  public async requireProjectIdentity(packet: ConstructionPacket<P>, identity: CurrentPcbWorkerConstructionProjectIdentity): Promise<void> {
     if (identity !== this.#projectIdentity || this.#projectIdentity === null) { throw fail("ORIGINAL_PROJECT_IDENTITY"); }
     const original = await this.requireOriginal(packet);
     try {
@@ -354,10 +374,10 @@ export class CurrentPcbWorkerConstructionRunner {
       await this.requireOriginal(packet);
     } catch (error) { this.#failed ??= fail("PROJECT_IDENTITY_CHANGED"); throw error; }
   }
-  async #assignmentScopes(original: string, kind: CurrentPcbStringProducerKind): Promise<readonly string[]> {
-    const list = decodeCurrentPcbStringProducerScopeList(await this.#request({ method: "Runtime.getProperties",
+  async #assignmentScopes(original: string, kind: CurrentPcb209WorkerProducerKind): Promise<readonly string[]> {
+    const list = this.#decoders.producerScopeList(await this.#request({ method: "Runtime.getProperties",
       params: { objectId: original, ownProperties: true, generatePreview: false } }), this.#scriptId, kind);
-    return decodeCurrentPcbStringProducerScopes(await this.#request({ method: "Runtime.getProperties",
+    return this.#decoders.producerScopes(await this.#request({ method: "Runtime.getProperties",
       params: { objectId: list, ownProperties: true, generatePreview: false } }), kind);
   }
   async #assignmentRecheck(original: Readonly<CurrentPcbWorkerConstructionIdentities>,
@@ -369,14 +389,14 @@ export class CurrentPcbWorkerConstructionRunner {
    * callback argument comes from the retained constructor pauses. Current
    * wrappers are independently source/location-qualified in the same worker.
    * It neither observes continuous ownership nor admits a pending writer. */
-  public async proveCurrentAssignments(packet: CurrentPcbWorkerConstructionPacket): Promise<CurrentPcbWorkerConstructionAssignments> {
+  public async proveCurrentAssignments(packet: ConstructionPacket<P>): Promise<CurrentPcbWorkerConstructionAssignments> {
     const original = await this.requireOriginal(packet);
     if (this.#assignmentConsumed) { throw fail("ASSIGNMENTS_CONSUMED"); } this.#assignmentConsumed = true;
     try {
       const wrappers: Partial<Record<CurrentPcbWorkerConstructionAssignment, string>> = {};
       for (const field of ["uploadStructure", "structure", "cooperation", "upload"] as const) {
         const kind = field === "uploadStructure" || field === "structure" ? "serial" : field;
-        const wrapper = decodeCurrentPcbStringProducerFunction(await this.#assignmentCall(original.project,
+        const wrapper = this.#decoders.producerFunction(await this.#assignmentCall(original.project,
           CURRENT_PCB_WORKER_CONSTRUCTION_ASSIGNMENT_SELECTORS[field], [], false), kind);
         const scopes = await this.#assignmentScopes(wrapper, kind);
         const scope = scopes[0];
@@ -408,7 +428,7 @@ export class CurrentPcbWorkerConstructionRunner {
   /** Reprove current PROJECT and all four field assignments, not only that a
    * historical report once existed. Constant callback bindings were qualified
    * from the pinned wrapper source in proveCurrentAssignments. */
-  public async requireCurrentAssignments(packet: CurrentPcbWorkerConstructionPacket,
+  public async requireCurrentAssignments(packet: ConstructionPacket<P>,
     assignments: CurrentPcbWorkerConstructionAssignments): Promise<void> {
     if (assignments !== this.#assignments || assignmentsIssued.get(assignments) !== this || this.#assignedWrappers === null) {
       throw fail("ORIGINAL_ASSIGNMENTS");
@@ -420,7 +440,7 @@ export class CurrentPcbWorkerConstructionRunner {
   /** Two worker samples for the separate four-read startup actor bracket. Each
    * request retains the original constructor PROJECT and bus, not a later
    * global lookup or caller-provided remote handle. Failure consumes the read. */
-  public async observeActorClock(packet: CurrentPcbWorkerConstructionPacket,
+  public async observeActorClock(packet: ConstructionPacket<P>,
     assignments: CurrentPcbWorkerConstructionAssignments): Promise<unknown> {
     if (this.#actorSampleAttempts >= 2 || this.#actorSampleBusy || this.#projectIdentity === null) { throw fail("ACTOR_SAMPLES_CONSUMED"); }
     this.#actorSampleAttempts += 1; this.#actorSampleBusy = true;
@@ -462,14 +482,16 @@ export class CurrentPcbWorkerConstructionRunner {
   /** Full wrapper association is checked on both sides of this consumed stage.
    * Each internal await rechecks the same worker/source owner. Samples cannot
    * establish continuous assignment, native peers or destination containment. */
-  public async observeCurrentChannel(packet: CurrentPcbWorkerConstructionPacket,
+  public async observeCurrentChannel(packet: ConstructionPacket<P>,
     assignments: CurrentPcbWorkerConstructionAssignments): Promise<CurrentPcbWorkerStartupChannelPacket> {
     if (this.#channelAttempted || this.#projectIdentity === null) { throw fail("CHANNEL_CONSUMED"); }
     this.#channelAttempted = true;
     try {
       await this.requireCurrentAssignments(packet, assignments);
       const original = await this.requireOriginal(packet);
-      const channel = new CurrentPcbWorkerStartupChannelObservationRunner(Object.freeze({ scriptId: this.#scriptId,
+      const Runner = this.#profile === "private.current-pcb209-worker-construction.v1"
+        ? CurrentPcb209WorkerStartupChannelObservationRunner : CurrentPcbWorkerStartupChannelObservationRunner;
+      const channel = new Runner(Object.freeze({ scriptId: this.#scriptId,
         request: (command: CurrentPcbWorkerStartupChannelObservationCommand): Promise<unknown> => this.#channelRequest(original, command),
         assertCurrent: (): Promise<void> => this.#current(),
       }), this.#projectIdentity);
@@ -478,7 +500,7 @@ export class CurrentPcbWorkerConstructionRunner {
       await this.requireCurrentAssignments(packet, assignments); return observation;
     } catch (error) { this.#failed ??= fail("CHANNEL_OBSERVATION_FAILED"); throw error; }
   }
-  public async requireCurrentChannel(packet: CurrentPcbWorkerConstructionPacket,
+  public async requireCurrentChannel(packet: ConstructionPacket<P>,
     assignments: CurrentPcbWorkerConstructionAssignments, channelPacket: CurrentPcbWorkerStartupChannelPacket): Promise<void> {
     if (channelPacket !== this.#channelPacket || this.#channel === null) { throw fail("ORIGINAL_CHANNEL_PACKET"); }
     try {
@@ -513,5 +535,28 @@ export class CurrentPcbWorkerConstructionRunner {
     if (paused !== null && !paused.resumeObserved) { await this.#cleanupPause(paused); }
     // A second pause while cleaning up is not a reason to detach the owner.
     if (this.#pause !== paused || paused !== null && !paused.resumeObserved) { throw fail("RETAIN_PAUSED_OWNER"); }
+  }
+}
+
+/** Fixed legacy construction API. Its source, locations and decoders remain
+ * unchanged; the implementation core is private and cannot accept an override. */
+export class CurrentPcbWorkerConstructionRunner extends CurrentPcbWorkerConstructionCore<"private.current-pcb-worker-construction.v1"> {
+  public constructor(transport: CurrentPcbWorkerConstructionTransport) {
+    super(INTERNAL_PROFILE, transport, "private.current-pcb-worker-construction.v1", CURRENT_PCB_WORKER_CONSTRUCTION_SITES, {
+      callbackFunction: decodeCurrentPcbStringProducerCallbackFunction, callbackScopeList: decodeCurrentPcbStringProducerCallbackScopeList,
+      producerFunction: decodeCurrentPcbStringProducerFunction, producerScopeList: decodeCurrentPcbStringProducerScopeList,
+      producerScopes: decodeCurrentPcbStringProducerScopes,
+    });
+  }
+}
+/** Generation209 uses actual209 debugger locations and original owner events.
+ * No location rewriting, supplied-proof adoption or native transport is added. */
+export class CurrentPcb209WorkerConstructionRunner extends CurrentPcbWorkerConstructionCore<"private.current-pcb209-worker-construction.v1"> {
+  public constructor(transport: CurrentPcbWorkerConstructionTransport) {
+    super(INTERNAL_PROFILE, transport, "private.current-pcb209-worker-construction.v1", CURRENT_PCB_209_WORKER_CONSTRUCTION_SITES, {
+      callbackFunction: decodeCurrentPcb209WorkerCallbackFunction, callbackScopeList: decodeCurrentPcb209WorkerCallbackScopeList,
+      producerFunction: decodeCurrentPcb209WorkerProducerFunction, producerScopeList: decodeCurrentPcb209WorkerProducerScopeList,
+      producerScopes: decodeCurrentPcb209WorkerProducerScopes,
+    });
   }
 }

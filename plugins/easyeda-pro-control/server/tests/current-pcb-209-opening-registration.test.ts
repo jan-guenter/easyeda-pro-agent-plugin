@@ -1,36 +1,46 @@
 /** Executes the actual public registration/callback with isolated collaborators.
  * The 209 lifecycle uses its real inherited run and default dependencies; no
  * native launch is attempted because the original engine admission refuses. */
+// oxlint-disable-next-line eslint/max-classes-per-file -- Keep both actual lifecycle allocations in the same isolated registration scope.
 import assert from "node:assert/strict";
 import { readFile } from "node:fs/promises";
 import { stripTypeScriptTypes } from "node:module";
 import { test } from "node:test";
 import vm from "node:vm";
 import { z } from "zod";
-import { CurrentPcb209DiagnosticLifecycle } from "../src/current-pcb-diagnostic-lifecycle.ts";
+import { CurrentPcb209DiagnosticLifecycle, CurrentPcb209WorkerStartupLifecycle } from "../src/current-pcb-diagnostic-lifecycle.ts";
 import type { CurrentPcbDiagnosticLifecycleOptions } from "../src/current-pcb-diagnostic-lifecycle.ts";
 import { CURRENT_PCB_DIAGNOSTIC_PROFILE } from "../src/current-pcb-diagnostic-profile.ts";
 import { currentPcbDiagnosticToolRequestSchema } from "../src/current-pcb-diagnostic-validation.ts";
 import { currentPcb209OpeningRequestSchema } from "../src/current-pcb-209-opening-validation.ts";
-// oxlint-disable-next-line import/max-dependencies -- Keep actual mode selection, schemas and lifecycle together at this registration boundary.
+// oxlint-disable-next-line import/max-dependencies -- Keep actual mode selection, schemas and both lifecycles together at this registration boundary.
+import { sha256Text } from "../src/core.ts";
+import { currentPcb209WorkerStartupValidationRequestSchema } from "../src/current-pcb-209-worker-startup-validation.ts";
 import { facadeToolRegistered } from "../src/facade-mode.ts";
 
 function forbiddenLegacyLifecycle(): never { assert.fail("209 registration selected a legacy diagnostic or worker-startup lifecycle"); }
 
-void test("209 public opening callback selects the original 209 lifecycle and rejects wider/caller-selected routes before allocation", async () => {
+void test("209 public opening and startup callbacks select original lifecycles and reject wider/caller-selected routes before allocation", async () => {
   const source = await readFile(new URL("../src/index.ts", import.meta.url), "utf8");
   const start = source.indexOf('if (facadeToolRegistered(facadeMode, "easyeda_control_pcb_diagnostic_validation") ||');
   const end = source.indexOf('registerFacadeTool(\n  "easyeda_control_launch",', start + 1);
   const helpers = source.slice(source.indexOf("function disposableOwnData("), source.indexOf("function disposableIndexMethods("));
   assert.ok(start > 0 && end > start);
   type Invoke = (input: { request: unknown; extra?: boolean }) => Promise<unknown>;
-  let inputSchema: z.ZodType | undefined, invoke: Invoke | undefined, options: CurrentPcbDiagnosticLifecycleOptions | undefined;
+  const registrations = new Map<string, { inputSchema: z.ZodType; invoke: Invoke }>();
+  let options: CurrentPcbDiagnosticLifecycleOptions | undefined, startupOptions: CurrentPcbDiagnosticLifecycleOptions | undefined;
+  let startupAllocations = 0;
   let allocations = 0, checks = 0, gateCalls = 0, wrappers = 0;
   let blocked = true;
   let pendingAdmission: Promise<null> | undefined;
   class Selected209Lifecycle extends CurrentPcb209DiagnosticLifecycle {
     public constructor(input: CurrentPcbDiagnosticLifecycleOptions) { super(input); allocations += 1; options = input; }
   }
+  class Selected209StartupLifecycle extends CurrentPcb209WorkerStartupLifecycle {
+    public constructor(input: CurrentPcbDiagnosticLifecycleOptions) { super(input); startupAllocations += 1; startupOptions = input; }
+  }
+  assert.equal(Object.hasOwn(Selected209StartupLifecycle.prototype, "run"), false);
+  assert.equal(Object.hasOwn(CurrentPcb209WorkerStartupLifecycle.prototype, "run"), false);
   assert.equal(Object.hasOwn(Selected209Lifecycle.prototype, "run"), false);
   assert.equal(Object.hasOwn(CurrentPcb209DiagnosticLifecycle.prototype, "run"), false);
   const environment = { EASYEDA_ASSETS_ROOT: "/mnt/c/Reviewed/EasyEDA/resources/app/assets", WSL_DISTRO_NAME: "Ubuntu" };
@@ -40,8 +50,9 @@ void test("209 public opening callback selects the original 209 lifecycle and re
       checks += 1; if (blocked) { throw new Error("synthetic unresolved engine journal"); }
       if (pendingAdmission !== undefined) { await pendingAdmission; }
     } };
-  const scope = vm.createContext({ z, currentPcb209OpeningRequestSchema, currentPcbDiagnosticToolRequestSchema,
+  const scope = vm.createContext({ z, currentPcb209OpeningRequestSchema, currentPcbDiagnosticToolRequestSchema, currentPcb209WorkerStartupValidationRequestSchema,
     CURRENT_PCB_DIAGNOSTIC_PROFILE, CurrentPcb209DiagnosticLifecycle: Selected209Lifecycle,
+    CurrentPcb209WorkerStartupLifecycle: Selected209StartupLifecycle,
     CurrentPcbDiagnosticLifecycle: forbiddenLegacyLifecycle, CurrentPcbWorkerStartupLifecycle: forbiddenLegacyLifecycle,
     currentPcbDiagnosticLifecycle: undefined, currentPcbStringPrecreateLifecycle: undefined, currentPcbWorkerStartupLifecycle: undefined,
     process: { env: environment }, engine, upstream, facadeMode: "public-utilities-only", facadeToolRegistered,
@@ -57,13 +68,17 @@ void test("209 public opening callback selects the original 209 lifecycle and re
     },
     server: { registerTool: (name: string, configuration: { inputSchema: z.ZodType;
       annotations: { readOnlyHint: boolean; destructiveHint: boolean; idempotentHint: boolean; openWorldHint: boolean } }, handler: Invoke): void => {
-      assert.equal(name, "easyeda_control_pcb209_opening"); inputSchema = configuration.inputSchema; invoke = handler;
+      assert.ok(["easyeda_control_pcb209_opening", "easyeda_control_pcb209_worker_startup"].includes(name));
+      assert.equal(registrations.has(name), false); registrations.set(name, { inputSchema: configuration.inputSchema, invoke: handler });
       assert.equal(configuration.annotations.readOnlyHint, false); assert.equal(configuration.annotations.destructiveHint, false);
       assert.equal(configuration.annotations.idempotentHint, false); assert.equal(configuration.annotations.openWorldHint, true);
     } },
   });
   vm.runInContext(stripTypeScriptTypes(`${helpers}\n${source.slice(start, end)}`).replaceAll("import.meta.dirname", '"/synthetic/server/src"'), scope);
-  assert.ok(invoke !== undefined && inputSchema !== undefined); assert.equal(wrappers, 1);
+  const openingRegistration = registrations.get("easyeda_control_pcb209_opening");
+  const startupRegistration = registrations.get("easyeda_control_pcb209_worker_startup");
+  assert.ok(openingRegistration && startupRegistration); assert.equal(registrations.size, 2); assert.equal(wrappers, 2);
+  const { inputSchema, invoke } = openingRegistration;
   const expectedBindingSha256 = "a".repeat(64), operationId = "pcb209-registration";
   const launch = { action: "launch", operationId, confirmValidationOnly: true, confirmDiagnosticLaunch: true, acceptExistingProfileEffects: true };
   const invalid = [
@@ -128,4 +143,51 @@ void test("209 public opening callback selects the original 209 lifecycle and re
     } finally { Object.defineProperty(core, name, descriptor); }
   }
   options.assertLocalAllowed(); assert.equal(allocations, 1);
+
+  // Exercise the dedicated startup callback with its real lifecycle. Missing
+  // Ownership rejects before native allocation, even for specialized methods.
+  const startupId = "pcb209-startup-registration", startupInvoke = startupRegistration.invoke;
+  const startupLaunch = { ...launch, operationId: startupId };
+  const rawWindowsPath = String.raw`C:\Disposable\registration.eprj2`;
+  const target = { rawWindowsPath, projectUuid: sha256Text(rawWindowsPath),
+    documentUuid: "b".repeat(32), expectedSourceSha256: expectedBindingSha256 };
+  const capture = { action: "capture-project", operationId: startupId, expectedBindingSha256, target,
+    confirmDisposableProject: true, acceptNormalOpenEffects: true, acceptDebuggerPauseEffects: true };
+  for (const request of [launch, { ...startupLaunch, generation: "206" }, { ...startupLaunch, allocateOwner: "caller" },
+    { ...startupLaunch, code: "caller-code" }, { ...capture, acceptDebuggerPauseEffects: false },
+    { ...capture, profile: "206" }, { action: "open-pcb", operationId: startupId, expectedBindingSha256 },
+    { action: "inspect-workers", operationId: startupId, expectedBindingSha256 },
+    { action: "inspect-script", operationId: startupId, expectedBindingSha256, frameId: "frame", family: "pcb" }]) {
+    assert.equal(startupRegistration.inputSchema.safeParse({ request }).success, false);
+    await assert.rejects(startupInvoke({ request }));
+  }
+  assert.equal(startupAllocations, 0); assert.equal(allocations, 1);
+  const counts = (): Readonly<{ checks: number; gateCalls: number }> => ({ checks, gateCalls });
+  const beforeStartup = counts();
+  const startupInspection = await startupInvoke({ request: { action: "inspect", operationId: startupId } });
+  assert.match(JSON.stringify(startupInspection), /not-found/u);
+  assert.equal(startupAllocations, 1); assert.equal(allocations, 1); assert.equal(checks, beforeStartup.checks); assert.equal(gateCalls, beforeStartup.gateCalls);
+  assert.ok(startupOptions); assert.ok(scope["currentPcbWorkerStartupLifecycle"] instanceof Selected209StartupLifecycle);
+  assert.equal(startupOptions.powershellSha256, CURRENT_PCB_DIAGNOSTIC_PROFILE.powershell.sha256);
+  assert.equal(startupOptions.powershellBytes, CURRENT_PCB_DIAGNOSTIC_PROFILE.powershell.bytes);
+  blocked = true; await assert.rejects(startupInvoke({ request: startupLaunch }), /unresolved engine journal/u);
+  assert.equal(checks, beforeStartup.checks + 1); assert.equal(gateCalls, beforeStartup.gateCalls + 1);
+  const startupBound = { operationId: startupId, expectedBindingSha256 };
+  for (const { request, error } of [
+    { request: capture, error: /ORIGINAL_OWNER_REQUIRED/u },
+    { request: { ...startupBound, action: "observe-current-assignments" }, error: /ORIGINAL_STARTUP_RESULT_REQUIRED/u },
+    { request: { ...startupBound, action: "observe-actor-clock" }, error: /ORIGINAL_STARTUP_ASSIGNMENTS_REQUIRED/u },
+    { request: { ...startupBound, action: "observe-current-channel" }, error: /ORIGINAL_STARTUP_ASSIGNMENTS_REQUIRED/u },
+  ]) {
+    assert.equal(startupRegistration.inputSchema.safeParse({ request }).success, true);
+    await assert.rejects(startupInvoke({ request }), error);
+  }
+  assert.equal(gateCalls, beforeStartup.gateCalls + 5); assert.equal(checks, beforeStartup.checks + 1);
+  await assert.rejects(startupInvoke({ request: { action: "normal-close", operationId: startupId, expectedBindingSha256,
+    hwnd: "123", confirmNormalClose: true } }), /ORIGINAL_OWNER_REQUIRED/u);
+  assert.equal(gateCalls, beforeStartup.gateCalls + 6);
+  const startupOwner = scope["currentPcbWorkerStartupLifecycle"]; scope["currentPcbWorkerStartupLifecycle"] = {};
+  await assert.rejects(startupInvoke({ request: { action: "inspect", operationId: startupId } }), /original index owner/u);
+  scope["currentPcbWorkerStartupLifecycle"] = startupOwner;
+  startupOptions.assertLocalAllowed(); options.assertLocalAllowed(); assert.equal(startupAllocations, 1); assert.equal(allocations, 1);
 });

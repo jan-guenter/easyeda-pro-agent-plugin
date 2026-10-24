@@ -45,6 +45,10 @@ layout. The connected ledger retains its generation and case anchors.
 
 | Record | Former path |
 | --- | --- |
+| [2026-10-24-startup-baseline-clock-batch.md](2026-10-24-startup-baseline-clock-batch.md) | Separate209 project-worker lifecycle and private baseline/clock adapters, review and remaining integration |
+| [2026-10-24-generation209-common-baseline.md](2026-10-24-generation209-common-baseline.md) | Exact209 semantic bindings, retained scope reader and original SQL comparison for the empty-target subset |
+| [2026-10-24-063500-connected-arc-poured-queries.md](2026-10-24-063500-connected-arc-poured-queries.md) | Installed063500 empty Arc/Poured observations, historical queries, original cleanup and independent evidence review |
+| [2026-10-24-generation209-actor-clock-source.md](2026-10-24-generation209-actor-clock-source.md) | Exact five-asset actor/server/backend clock source closure and private 209 adapters without native-owner admission |
 | [2026-10-24-arc-poured-shapes-batch.md](2026-10-24-arc-poured-shapes-batch.md) | Combined Arc/Poured readers, historical queries, fixed native packing and request/capacity fixes |
 | [2026-10-24-22500-connected-shape-queries.md](2026-10-24-22500-connected-shape-queries.md) | Installed22500 Pad/Image observations, historical queries, original cleanup and closed-file checks |
 | [2026-10-24-pcb209-arc-shapes-research.md](2026-10-24-pcb209-arc-shapes-research.md) | Native Arc center/radius/angle arithmetic and full-circle limitations |

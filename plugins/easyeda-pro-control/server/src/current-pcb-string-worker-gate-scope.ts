@@ -3,6 +3,7 @@
 import { createHash } from "node:crypto";
 import { types } from "node:util";
 import { z } from "zod";
+import { CURRENT_PCB_209_WORKER_GATE_PROFILES } from "./current-pcb-209-worker-startup-profile.ts";
 import { freezeDeep } from "./sqlite-inventory-core.ts";
 
 export const CURRENT_PCB_STRING_WORKER_GATE_PROFILES = freezeDeep({
@@ -67,8 +68,9 @@ function copyData(input: unknown, depth: number, budget: { nodes: number; bytes:
   }
   if (array && items.length !== input.length) { return refuse(); } return array ? items : object;
 }
-function method(value: z.infer<typeof remote>, kind: CurrentPcbStringWorkerGateKind): string {
-  const expected = CURRENT_PCB_STRING_WORKER_GATE_PROFILES[kind], source = value.description;
+type GateProfiles = typeof CURRENT_PCB_STRING_WORKER_GATE_PROFILES | typeof CURRENT_PCB_209_WORKER_GATE_PROFILES;
+function method(value: z.infer<typeof remote>, expected: GateProfiles[CurrentPcbStringWorkerGateKind]): string {
+  const source = value.description;
   if (value.type !== "function" || value.className !== "Function" || value.subtype !== undefined || value.value !== undefined ||
       value.objectId === undefined || source === undefined || Buffer.byteLength(source) !== expected.sourceBytes ||
       createHash("sha256").update(source).digest("hex") !== expected.sourceSha256) { return refuse(); }
@@ -90,7 +92,7 @@ export function decodeCurrentPcbStringWorkerGateBundle(input: unknown): string {
   } catch { return refuse(); }
 }
 /** Exact eight-element selector result, including each method's source bytes. */
-export function decodeCurrentPcbStringWorkerGateTuple(input: unknown): readonly string[] {
+function decodeTuple(input: unknown, profiles: GateProfiles): readonly string[] {
   try {
     const reply = z.object({ result: z.array(property).length(9), internalProperties: z.array(internal).length(1) }).strict().parse(data(input));
     const values = new Map(reply.result.map(item => [item.name, item]));
@@ -103,7 +105,7 @@ export function decodeCurrentPcbStringWorkerGateTuple(input: unknown): readonly 
     const handles = CURRENT_PCB_STRING_WORKER_GATE_ORDER.map((kind, index) => {
       const item = values.get(String(index));
       if (item === undefined || !item.writable || !item.configurable || !item.enumerable) { return refuse(); }
-      return method(item.value, kind);
+      return method(item.value, profiles[kind]);
     });
     if (new Set(handles).size !== handles.length) { return refuse(); } return Object.freeze(handles);
   } catch { return refuse(); }
@@ -111,11 +113,10 @@ export function decodeCurrentPcbStringWorkerGateTuple(input: unknown): readonly 
 
 /** Fresh own-properties of an original selector method. The returned scope list
  * is useful only for canWsPublish. No method or getter is called. */
-export function decodeCurrentPcbStringWorkerGateProperties(input: unknown, scriptId: string,
-  kind: CurrentPcbStringWorkerGateKind): Readonly<{ scopesId: string; methodReceiverVerified: false }> {
+function decodeProperties(input: unknown, scriptId: string,
+  expected: GateProfiles[CurrentPcbStringWorkerGateKind]): Readonly<{ scopesId: string; methodReceiverVerified: false }> {
   try {
     token.parse(scriptId);
-    const expected = CURRENT_PCB_STRING_WORKER_GATE_PROFILES[kind];
     const reply = z.object({ result: z.array(property).length(2), internalProperties: z.array(internal).length(3) }).strict().parse(data(input));
     const values = new Map(reply.result.map(item => [item.name, item]));
     if (values.size !== 2) { return refuse(); }
@@ -155,4 +156,19 @@ export function decodeCurrentPcbStringWorkerGateScope(input: unknown): string {
     if (first?.description !== "Closure" || first.objectId === undefined || reply.result.at(-1)?.value.description !== "Global") { return refuse(); }
     return first.objectId;
   } catch { return refuse(); }
+}
+
+export function decodeCurrentPcbStringWorkerGateTuple(input: unknown): readonly string[] {
+  return decodeTuple(input, CURRENT_PCB_STRING_WORKER_GATE_PROFILES);
+}
+export function decodeCurrentPcb209WorkerGateTuple(input: unknown): readonly string[] {
+  return decodeTuple(input, CURRENT_PCB_209_WORKER_GATE_PROFILES);
+}
+export function decodeCurrentPcbStringWorkerGateProperties(input: unknown, scriptId: string,
+  kind: CurrentPcbStringWorkerGateKind): Readonly<{ scopesId: string; methodReceiverVerified: false }> {
+  return decodeProperties(input, scriptId, CURRENT_PCB_STRING_WORKER_GATE_PROFILES[kind]);
+}
+export function decodeCurrentPcb209WorkerGateProperties(input: unknown, scriptId: string,
+  kind: CurrentPcbStringWorkerGateKind): Readonly<{ scopesId: string; methodReceiverVerified: false }> {
+  return decodeProperties(input, scriptId, CURRENT_PCB_209_WORKER_GATE_PROFILES[kind]);
 }

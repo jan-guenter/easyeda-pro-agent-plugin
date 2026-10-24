@@ -8,7 +8,7 @@ and dialogs.
 
 Support depends on the exact application version and operation. General
 schematic, PCB and library writers remain disabled on EasyEDA Pro 3.2.206.
-EasyEDA Pro 3.2.209 has a separate thirteen-tool profile: API reference, local
+EasyEDA Pro 3.2.209 has a separate fourteen-tool profile: API reference, local
 discovery, status, bounded calculations/system and language/viewport readers,
 tab-count/active-identity/shortcut observations, public catalog metadata/search,
 ordinary launch and a separate disposable project/PCB opening lifecycle with
@@ -24,14 +24,17 @@ without reopening EasyEDA; these describe the captured snapshot, not the current
 board. Pad style groups do not describe every physical layer, and an image
 reference does not verify the referenced asset's bytes or availability. Arc
 angles do not establish full-circle rendering, and Poured contours prove neither
-fresh copper nor fabrication geometry. Arc/Poured have source and offline
-validation only; earlier live cases do not validate them.
+fresh copper nor fabrication geometry. Arc/Poured passed a live empty-collection
+case; populated shapes still need connected validation.
 Catalog queries require explicit network confirmation and run without the
 application; they are not SDK execution. Disposable opening retains its original
 process through cleanup and can trigger ordinary migration/cache/automatic-Save
 effects. Primitive observations include existing native views only, not complete
 board membership. Layer observations do not prove physical stackup or saved contents;
-general geometry operations, writers and explicit Save remain disabled.
+general geometry operations, writers and explicit Save remain disabled. A
+separate disposable project-worker startup tool captures original constructors,
+current wrapper/channel relations and actor/local-Date observations. It does
+not establish PCB-worker completion or enable writers.
 On eligible 3.2.206 profiles, the ordinary symbol-metadata route allows forward name/description edits of
 unused project-local symbols with eligible history. Disposable validation
 routes have separate gates. Check the
