@@ -4,8 +4,11 @@ import { z } from "zod";
 import { sha256Text } from "../src/core.ts";
 import { currentDisposableOpenSealedTargetSchema } from "../src/current-disposable-open.ts";
 import { decodeCurrentPcb209PrimitivesReply } from "../src/current-pcb-209-primitives.ts";
+import { decodeCurrentPcb209ImageShapesReply } from "../src/current-pcb-209-image-shapes.ts";
+import { decodeCurrentPcb209PadShapesReply } from "../src/current-pcb-209-pad-shapes.ts";
 import { decodeCurrentPcb209ExtendedPrimitivesReply } from "../src/current-pcb-209-extended-primitives.ts";
 import { decodeCurrentPcb209SelectionRelationsReply } from "../src/current-pcb-209-selection-relations.ts";
+// oxlint-disable-next-line import/max-dependencies -- Historical reconstruction verifies all five original decoders together without replacing their behavior with mocks.
 import { currentPcb209ObservationQuerySchema, queryCurrentPcb209Observation } from "../src/current-pcb-209-observation-query.ts";
 
 const path = String.raw`C:\Reviewed\HistoricalQueryFixture.eprj2`;
@@ -15,7 +18,7 @@ const projectedTarget = { projectUuid: target.projectUuid, branchUuid: target.br
   tabId: `${target.documentUuid}@${target.projectUuid}` };
 const componentIds = ["component-a", "component-b"];
 const records = z.array(z.record(z.string(), z.unknown()));
-type Stage = "primitives209" | "extended-primitives209" | "selection-relations209";
+type Stage = "primitives209" | "extended-primitives209" | "selection-relations209" | "pad-shapes209" | "image-shapes209";
 function fixture(stage: Stage): Readonly<Record<string, unknown>> {
   const line = { primitiveId: "line-a", primitiveType: "Line", primitiveLock: false, net: "", layer: 1, startX: 0, startY: 1, endX: 2, endY: 3, lineWidth: 4 };
   const pad = { primitiveId: "pad-a", primitiveType: "Pad", primitiveLock: false, net: null, layer: 12, padNumber: "1", x: 1, y: 2, rotation: 0,
@@ -57,6 +60,29 @@ function fixture(stage: Stage): Readonly<Record<string, unknown>> {
     manufacturer: "absent", manufacturerPart: "absent", supplier: "absent", supplierPart: "absent" } }));
   const scalarRows = pads.toReversed().map(row => ({ primitiveId: row.primitiveId, padNumber: row.padNumber, net: row.net, layer: row.layer,
     primitiveLock: row.primitiveLock, metallization: row.metallization, padType: row.padType }));
+  if (stage === "pad-shapes209") {
+    return decodeCurrentPcb209PadShapesReply({ result: { type: "string", value: JSON.stringify({ ok: true,
+      kind: "pcb209-original-pad-shapes-observation", target: projectedTarget,
+      observation: observations.find(entry => entry.method === "eda.pcb_PrimitivePad.getAll"),
+      specialShapeGroups: pads.map(row => ({ primitiveId: row.primitiveId, groups: row.primitiveId === "pad-a" ? [] : [
+        { nativeStartLayer: 1, nativeEndLayer: 1, shape: { shape: "RECT", width: 10, height: 12, cornerRatioPercent: 15 } },
+        { nativeStartLayer: 1, nativeEndLayer: 2, shape: { shape: "ELLIPSE", width: 9, height: 11 } },
+        { nativeStartLayer: 2, nativeEndLayer: 2, shape: { shape: "OVAL", width: 8, height: 10 } },
+      ] })),
+    }) } }, target);
+  }
+  if (stage === "image-shapes209") {
+    const image = { primitiveId: "image-a", primitiveType: "Image", primitiveLock: false, imageType: "Image", layer: 3,
+      x: 1, y: 2, width: 3, height: 4, rotation: 0, horizonMirror: false };
+    return decodeCurrentPcb209ImageShapesReply({ result: { type: "string", value: JSON.stringify({ ok: true,
+      kind: "pcb209-original-image-shapes-observation", target: projectedTarget,
+      observation: { ok: true, kind: "current-pcb-geometry-observation", method: "eda.pcb_PrimitiveImage.getAll", target: projectedTarget,
+        rows: [image, { ...image, primitiveId: "picture-a", imageType: "Picture", layer: 4 }], samples: 2,
+        implementationKind: "native-task-equivalent", cadAuthority: false, persistenceVerified: false, sourceMembershipVerified: false },
+      imageShapes: [{ primitiveId: "image-a", imageType: "Image", pathString: "M 0 1 L 2 3", silkColor: null },
+        { primitiveId: "picture-a", imageType: "Picture", assetReference: "opaque-reference" }],
+    }) } }, target);
+  }
   const base = { ok: true, target: projectedTarget, observations };
   let packet: Record<string, unknown>;
   if (stage === "primitives209") { packet = { ...base, kind: "pcb209-original-primitives-observation" }; }
@@ -175,4 +201,42 @@ void test("209 historical query rejects target provenance Unicode and byte-bound
   }
   assert.equal(currentPcb209ObservationQuerySchema.safeParse({ kind: "family", family: "Line", primitiveIds: ["quote\"slash\\newline\n", "😀".repeat(128)] }).success, true);
   assert.throws(() => query("primitives209", { kind: "family", family: "Line" }, { ...result, huge: "x".repeat(393_216) }), /PCB209_QUERY_SOURCE_BOUND/u);
+});
+
+void test("209 historical Pad shape queries preserve requested row order and complete corresponding style groups", () => {
+  const result = query("pad-shapes209", { kind: "family", family: "Pad", primitiveIds: ["pad-b", "pad-a"] });
+  assert.deepEqual(result["primitiveIds"], ["pad-b", "pad-a"]);
+  const groups = records.parse(result["specialShapeGroups"]);
+  assert.deepEqual(groups.map(group => group["primitiveId"]), ["pad-b", "pad-a"]);
+  assert.equal(records.parse(groups[0]?.["groups"]).length, 3); assert.deepEqual(groups[1]?.["groups"], []);
+  assert.equal(result["specialShapeScope"], "native-top-inner-bottom-style-groups");
+  assert.equal(result["physicalLayerExpansionVerified"], false);
+  assert.deepEqual(query("pad-shapes209", { kind: "family", family: "Pad", where: { net: "missing" } })["specialShapeGroups"], []);
+  assert.throws(() => query("pad-shapes209", { kind: "family", family: "Component" }), /PCB209_QUERY_FAMILY_UNAVAILABLE/u);
+  assert.throws(() => query("pad-shapes209", { kind: "selection" }), /PCB209_QUERY_RELATIONS_UNAVAILABLE/u);
+  assert.throws(() => query("pad-shapes209", { kind: "family", family: "Pad", primitiveIds: ["absent"], where: { net: "missing" } }), /PCB209_QUERY_ID_MISSING/u);
+  for (const changed of [{ physicalLayerExpansionVerified: true }, { specialShapeGroups: [] }, { projectionSha256: "0".repeat(64) },
+    { specialShapeScope: "physical-stack" }]) {
+    assert.throws(() => query("pad-shapes209", { kind: "family", family: "Pad" }, { ...fixture("pad-shapes209"), ...changed }));
+  }
+  assert.equal(Object.hasOwn(query("extended-primitives209", { kind: "family", family: "Pad" }), "specialShapeGroups"), false);
+});
+
+void test("209 historical Image shapes retain native path units and opaque references in requested order", () => {
+  const result = query("image-shapes209", { kind: "family", family: "Image", primitiveIds: ["picture-a", "image-a"] });
+  assert.deepEqual(result["primitiveIds"], ["picture-a", "image-a"]);
+  const shapes = records.parse(result["imageShapes"]);
+  assert.deepEqual(shapes.map(shape => shape["primitiveId"]), ["picture-a", "image-a"]);
+  assert.equal(shapes[0]?.["assetReference"], "opaque-reference"); assert.equal(shapes[1]?.["pathString"], "M 0 1 L 2 3");
+  assert.equal(result["imageShapeScope"], "native-image-path-and-picture-reference");
+  assert.deepEqual(result["units"], { placementLinear: "mil", rotation: "degrees", vectorPathLinear: "native-distance;10-mil-per-unit", vectorPathYAxis: "inverted-board-y" });
+  assert.equal(result["renderedGeometryVerified"], false); assert.equal(result["assetContentVerified"], false);
+  assert.deepEqual(query("image-shapes209", { kind: "family", family: "Image", where: { layer: 9 } })["imageShapes"], []);
+  assert.throws(() => query("image-shapes209", { kind: "family", family: "Pad" }), /PCB209_QUERY_FAMILY_UNAVAILABLE/u);
+  assert.throws(() => query("image-shapes209", { kind: "selection" }), /PCB209_QUERY_RELATIONS_UNAVAILABLE/u);
+  for (const changed of [{ renderedGeometryVerified: true }, { assetContentVerified: true }, { imageShapes: [] },
+    { units: { vectorPathLinear: "mil" } }, { imageShapeScope: "rendered-svg" }]) {
+    assert.throws(() => query("image-shapes209", { kind: "family", family: "Image" }, { ...fixture("image-shapes209"), ...changed }));
+  }
+  assert.equal(Object.hasOwn(query("extended-primitives209", { kind: "family", family: "Image" }), "imageShapes"), false);
 });

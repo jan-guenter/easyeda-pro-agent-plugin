@@ -87,6 +87,30 @@ void test("209 extended collections accept no caller target, filter, family or n
     observation: "extended-primitives209" }).success, true);
 });
 
+void test("209 Pad style collections accept no caller target, filter, family or native topic", () => {
+  const request = { action: "observe-pad-shapes", ...bound };
+  assert.deepEqual(currentPcb209OpeningRequestSchema.parse(request), request);
+  assert.equal(currentPcbDiagnosticValidationRequestSchema.safeParse(request).success, false);
+  for (const extra of [{ target: {} }, { topic: "pcb/getAllComponent" }, { code: "1" }, { ids: [] },
+    { family: "Pad" }, { filter: {} }, { limit: 1 }]) {
+    assert.equal(currentPcb209OpeningRequestSchema.safeParse({ ...request, ...extra }).success, false);
+  }
+  assert.equal(currentPcb209OpeningRequestSchema.safeParse({ action: "inspect", operationId: bound.operationId,
+    observation: "pad-shapes209" }).success, true);
+});
+
+void test("209 Image shape collections accept no caller target, filter, family or native topic", () => {
+  const request = { action: "observe-image-shapes", ...bound };
+  assert.deepEqual(currentPcb209OpeningRequestSchema.parse(request), request);
+  assert.equal(currentPcbDiagnosticValidationRequestSchema.safeParse(request).success, false);
+  for (const extra of [{ target: {} }, { topic: "pcb/getAllComponent" }, { code: "1" }, { ids: [] },
+    { family: "Pad" }, { filter: {} }, { limit: 1 }]) {
+    assert.equal(currentPcb209OpeningRequestSchema.safeParse({ ...request, ...extra }).success, false);
+  }
+  assert.equal(currentPcb209OpeningRequestSchema.safeParse({ action: "inspect", operationId: bound.operationId,
+    observation: "image-shapes209" }).success, true);
+});
+
 void test("209 selection and relations normalize an omitted bounded component list and reject executable selectors", () => {
   const request = { action: "observe-selection-relations", ...bound };
   assert.deepEqual(currentPcb209OpeningRequestSchema.parse(request), { ...request, componentIds: [] });

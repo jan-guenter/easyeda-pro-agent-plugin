@@ -40,7 +40,7 @@ function fixture(context: TestContext, scenario = "normal", stringPurpose = fals
     return originalWrite(...args);
   });
   let Owner = stringPurpose ? CurrentPcbStringPrecreateOwner : CurrentPcbDiagnosticOwner;
-  if (scenario.startsWith("opening-pcb-layers209") || scenario.startsWith("opening-pcb-primitives209") || scenario.startsWith("opening-pcb-extended-primitives209") || scenario.startsWith("opening-pcb-selection-relations209")) { Owner = CurrentPcb209DiagnosticOwner; }
+  if (scenario.startsWith("opening-pcb-layers209") || scenario.startsWith("opening-pcb-primitives209") || scenario.startsWith("opening-pcb-extended-primitives209") || scenario.startsWith("opening-pcb-selection-relations209") || scenario.startsWith("opening-pcb-pad-shapes209") || scenario.startsWith("opening-pcb-image-shapes209")) { Owner = CurrentPcb209DiagnosticOwner; }
   const owner = new Owner(child, () => source.valid ? Promise.resolve() : Promise.reject(new Error("source changed")), null,
     () => installation.valid ? Promise.resolve() : Promise.reject(new Error("installation changed")));
   owner.start();
@@ -722,6 +722,105 @@ void test("209 extended reader admission drift consumes the stage before downstr
     await assert.rejects(value.owner.observeExtendedPrimitives209(OPEN_TARGET), new RegExp(`${scope} changed`, "u"));
     value[scope].valid = true;
     await assert.rejects(value.owner.observeExtendedPrimitives209(OPEN_TARGET), /EXTENDED_PRIMITIVES209_UNAVAILABLE/u);
+    assert.equal(value.actions.filter(action => action === "send").length, sent);
+    await close(value);
+  }
+});
+
+void test("209 Pad style reader consumes one original qualified stage and all five readers fit the unchanged request budget", async context => {
+  for (const scenario of ["opening-pcb-pad-shapes209", "opening-pcb-pad-shapes209-ancillary",
+    "opening-pcb-pad-shapes209-refused", "opening-pcb-pad-shapes209-wrong-target"]) {
+    const value = await openingFixture(context, scenario);
+    assert.equal(value.owner.status().profile, "diagnostic209");
+    await assert.rejects(value.owner.observePadShapes209(OPEN_TARGET), /PAD_SHAPES209_UNAVAILABLE/u);
+    await value.owner.openProject(OPEN_TARGET, () => Promise.resolve());
+    await value.owner.openPcb(OPEN_TARGET, () => Promise.resolve());
+    await assert.rejects(value.owner.observePadShapes209(OPEN_TARGET), /PAD_SHAPES209_UNAVAILABLE/u);
+    await value.owner.observePcbOpening(OPEN_TARGET, SCRIPT_PROFILE);
+    await assert.rejects(value.owner.observePadShapes209({ ...OPEN_TARGET, branchUuid: "f".repeat(32) }), /PAD_SHAPES209_UNAVAILABLE/u);
+    if (scenario.endsWith("refused") || scenario.endsWith("wrong-target")) { await assert.rejects(value.owner.observePadShapes209(OPEN_TARGET)); }
+    else {
+      const result = await value.owner.observePadShapes209(OPEN_TARGET);
+      assert.equal(result["schema"], "easyeda-pro-control.pcb209-pad-shapes-observation.v1");
+      assert.equal(result["samples"], 2); assert.equal(result["completeLiveBaselineVerified"], false);
+      assert.equal(result["executionAuthorized"], false); assert.equal(result["saveAuthorized"], false);
+      assert.equal(value.actions.filter(action => action === "send").length, scenario.endsWith("ancillary") ? 58 : 44);
+      await value.owner.observeSelectionRelations209(OPEN_TARGET, []);
+      await value.owner.observeExtendedPrimitives209(OPEN_TARGET);
+      await value.owner.observePrimitives209(OPEN_TARGET);
+      await value.owner.observeLayers209(OPEN_TARGET);
+      assert.equal(value.actions.filter(action => action === "send").length, scenario.endsWith("ancillary") ? 94 : 64);
+      await assert.rejects(value.owner.observePrimitives209(OPEN_TARGET), /PRIMITIVES209_UNAVAILABLE/u);
+      await assert.rejects(value.owner.observeLayers209(OPEN_TARGET), /LAYERS209_UNAVAILABLE/u);
+    }
+    await assert.rejects(value.owner.observePadShapes209(OPEN_TARGET), /PAD_SHAPES209_UNAVAILABLE/u);
+    await close(value);
+  }
+  const legacy = await openingFixture(context, "opening-pcb");
+  await assert.rejects(legacy.owner.observePadShapes209(OPEN_TARGET), /PAD_SHAPES209_UNAVAILABLE/u); await close(legacy);
+});
+
+void test("209 Pad style reader admission drift consumes the stage before downstream CDP", async context => {
+  for (const scope of ["source", "installation"] as const) {
+    const value = await openingFixture(context, "opening-pcb-pad-shapes209");
+    await value.owner.openProject(OPEN_TARGET, () => Promise.resolve());
+    await value.owner.openPcb(OPEN_TARGET, () => Promise.resolve());
+    await value.owner.observePcbOpening(OPEN_TARGET, SCRIPT_PROFILE);
+    const sent = value.actions.filter(action => action === "send").length;
+    value[scope].valid = false;
+    await assert.rejects(value.owner.observePadShapes209(OPEN_TARGET), new RegExp(`${scope} changed`, "u"));
+    value[scope].valid = true;
+    await assert.rejects(value.owner.observePadShapes209(OPEN_TARGET), /PAD_SHAPES209_UNAVAILABLE/u);
+    assert.equal(value.actions.filter(action => action === "send").length, sent);
+    await close(value);
+  }
+});
+
+void test("209 Image shape reader consumes one original qualified stage and all six readers fit the unchanged request budget", async context => {
+  for (const scenario of ["opening-pcb-image-shapes209", "opening-pcb-image-shapes209-ancillary",
+    "opening-pcb-image-shapes209-refused", "opening-pcb-image-shapes209-wrong-target"]) {
+    const value = await openingFixture(context, scenario);
+    assert.equal(value.owner.status().profile, "diagnostic209");
+    await assert.rejects(value.owner.observeImageShapes209(OPEN_TARGET), /IMAGE_SHAPES209_UNAVAILABLE/u);
+    await value.owner.openProject(OPEN_TARGET, () => Promise.resolve());
+    await value.owner.openPcb(OPEN_TARGET, () => Promise.resolve());
+    await assert.rejects(value.owner.observeImageShapes209(OPEN_TARGET), /IMAGE_SHAPES209_UNAVAILABLE/u);
+    await value.owner.observePcbOpening(OPEN_TARGET, SCRIPT_PROFILE);
+    await assert.rejects(value.owner.observeImageShapes209({ ...OPEN_TARGET, branchUuid: "f".repeat(32) }), /IMAGE_SHAPES209_UNAVAILABLE/u);
+    if (scenario.endsWith("refused") || scenario.endsWith("wrong-target")) { await assert.rejects(value.owner.observeImageShapes209(OPEN_TARGET)); }
+    else {
+      const result = await value.owner.observeImageShapes209(OPEN_TARGET);
+      assert.equal(result["schema"], "easyeda-pro-control.pcb209-image-shapes-observation.v1");
+      assert.equal(result["samples"], 2); assert.equal(result["completeLiveBaselineVerified"], false);
+      assert.equal(result["executionAuthorized"], false); assert.equal(result["saveAuthorized"], false);
+      assert.equal(value.actions.filter(action => action === "send").length, scenario.endsWith("ancillary") ? 58 : 44);
+      await value.owner.observePadShapes209(OPEN_TARGET);
+      await value.owner.observeSelectionRelations209(OPEN_TARGET, []);
+      await value.owner.observeExtendedPrimitives209(OPEN_TARGET);
+      await value.owner.observePrimitives209(OPEN_TARGET);
+      await value.owner.observeLayers209(OPEN_TARGET);
+      assert.equal(value.actions.filter(action => action === "send").length, scenario.endsWith("ancillary") ? 103 : 69);
+      await assert.rejects(value.owner.observePrimitives209(OPEN_TARGET), /PRIMITIVES209_UNAVAILABLE/u);
+      await assert.rejects(value.owner.observeLayers209(OPEN_TARGET), /LAYERS209_UNAVAILABLE/u);
+    }
+    await assert.rejects(value.owner.observeImageShapes209(OPEN_TARGET), /IMAGE_SHAPES209_UNAVAILABLE/u);
+    await close(value);
+  }
+  const legacy = await openingFixture(context, "opening-pcb");
+  await assert.rejects(legacy.owner.observeImageShapes209(OPEN_TARGET), /IMAGE_SHAPES209_UNAVAILABLE/u); await close(legacy);
+});
+
+void test("209 Image shape reader admission drift consumes the stage before downstream CDP", async context => {
+  for (const scope of ["source", "installation"] as const) {
+    const value = await openingFixture(context, "opening-pcb-image-shapes209");
+    await value.owner.openProject(OPEN_TARGET, () => Promise.resolve());
+    await value.owner.openPcb(OPEN_TARGET, () => Promise.resolve());
+    await value.owner.observePcbOpening(OPEN_TARGET, SCRIPT_PROFILE);
+    const sent = value.actions.filter(action => action === "send").length;
+    value[scope].valid = false;
+    await assert.rejects(value.owner.observeImageShapes209(OPEN_TARGET), new RegExp(`${scope} changed`, "u"));
+    value[scope].valid = true;
+    await assert.rejects(value.owner.observeImageShapes209(OPEN_TARGET), /IMAGE_SHAPES209_UNAVAILABLE/u);
     assert.equal(value.actions.filter(action => action === "send").length, sent);
     await close(value);
   }

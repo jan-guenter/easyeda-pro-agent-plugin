@@ -34,8 +34,15 @@ reads. Optional `componentIds` requests up to 16 ordered child-pad groups. It
 resolves every selected ID or refuses, and compares child IDs/scalars with
 global Pad DTOs. This adds no reciprocal ownership, symbol-pin mapping or
 child-handler geometry proof. The stage uses one CDP call, up to 58 local RPCs,
-256 rows per family and 384 KiB aggregate output. Its connected validation is
-pending.
+256 rows per family and 384 KiB aggregate output. Installed011500 passed one
+disposable case with two populated component child lists and empty selection;
+that scoped historical result does not admit another payload or populated selection.
+The separate `observe-pad-shapes` and `observe-image-shapes` stages retain
+complete supported Pad/Image rows with native style groups or image descriptors.
+They use six local RPCs each and retain the 256-row/384 KiB bounds. Special Pad
+groups are top/inner/bottom style selectors, not physical-layer expansion.
+Vector paths and opaque Picture references establish neither rendered geometry
+nor asset availability. These new stages still need connected validation.
 Repeatable `query-observation` reads published primitive snapshots by exact
 result-record digest. Family queries support IDs and documented exact filters;
 selection and component-pad queries require the corresponding recorded stage.

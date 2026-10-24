@@ -66,8 +66,11 @@ an `arguments` wrapper. A `valid:true` response grants no execution authority.
    no selectors. A fourth stage, `observe-selection-relations`, captures all nine
    families, selected IDs and child-pad lists for up to 16 requested Component
    IDs. Its optional `componentIds` defaults to `[]`; IDs must be unique and are
-   preserved in request order. Use only the readers needed for the task; all four
-   can share the original owner within the existing transport budget.
+   preserved in request order. Separate `observe-pad-shapes` and
+   `observe-image-shapes` stages add the descriptors explained below. These
+   two stages accept only the original operation ID and binding. Use only the
+   readers needed for the task; all six can share the original owner within
+   the existing transport budget.
 7. Use `observe-window`, then one `normal-close` with its observed `hwnd` and
    `confirmNormalClose:true`. Observe original root/Job termination with
    `observe-termination`, then call `release-closed`. Finish any offered
@@ -197,6 +200,55 @@ ordering or excess output refuses without truncation. Existing family omissions,
 serializer effects and the ten-second non-cancelling deadline still apply.
 This reader supplies no complete-board, connectivity, saved-state or writer proof.
 
+## Pad style groups
+
+`observe-pad-shapes` returns the existing supported Pad fields plus an ordered
+`specialShapeGroups` entry for every observed Pad ID. Each entry contains either
+no groups or the three exact native selector pairs `[1,1]`, `[1,2]`, `[2,2]`.
+These describe top, inner and bottom styles. They are not an expanded physical
+layer stack; an empty group list proves only that the serializer emitted none.
+
+Special shapes support ELLIPSE, OVAL and RECT. Dimensions are already rounded
+to 0.1 mil by EasyEDA, and the RECT corner value is a percentage. Partial,
+reordered or unsupported groups refuse the whole observation. NGON, special
+POLYGON shapes and inner-only Pad layers remain unsupported because the pinned
+native serializer does not provide the required geometry. Default POLYGON
+shapes retain their existing native-pad-style path coordinates.
+
+The stage brackets each of two complete Pad reads with native identity checks,
+six local RPCs in one CDP call. It retains the original receiver and source
+checks, 256-Pad and 393216-byte bounds, and the ten-second non-cancelling
+deadline. It proves no rendered geometry, physical-layer expansion or writer
+baseline. Existing observation versions keep their original meaning.
+
+## Image paths and references
+
+`observe-image-shapes` retains the existing Image/Picture placement fields and
+adds one matching `imageShapes` descriptor per ID. Vector Image descriptors
+contain the native `pathString` and serialized `silkColor`. Picture descriptors
+contain an opaque `assetReference`; this is the native `hashId` field, not a
+verified digest, URL or filename. The reader does not retrieve asset bytes.
+
+The vector path already includes EasyEDA's template, placement, scale, effective
+mirror and rotation transforms. Keep its M/L/A source string unchanged. Its
+coordinates use native distance units, ten mil per unit, with board Y negated.
+Placement fields remain in mil. Do not apply those placement transforms again.
+The native serializer can round values, sample curves into lines and join
+disconnected segments. It emits no explicit close command. The path therefore
+does not prove exact source curves, topology, closure, fill or rendered bounds.
+
+The accepted grammar is bounded to 65536 path characters and 8192 tokens, with
+finite bounded numbers and fixed arc flags. Other commands refuse. Raw color
+strings are not validated as CSS. Empty paths and asset references remain
+explicit empty observations; they establish neither asset availability nor
+absence of design content.
+
+Two complete ordered Image/Picture samples must match. Six local RPCs share one
+CDP call, with the same original-owner checks, 256-object and 393216-byte bounds,
+and ten-second non-cancelling deadline. Native path serialization can allocate
+geometry before these bounds. This reader supplies no image decode, network
+fetch, rendered geometry or writer baseline.
+
 ## Query a recorded observation
 
 Use `inspect` with the original operation ID and observation stage to obtain
@@ -227,6 +279,8 @@ Choose the observation that actually contains the requested data:
 | `primitives209` | Family queries for Line, Arc, Via and String |
 | `extended-primitives209` | Family queries for Component, Pad, Attribute, Dimension and Image |
 | `selection-relations209` | All nine families, `{"kind":"selection"}`, and `{"kind":"component-pads","componentId":"observed-id"}` |
+| `pad-shapes209` | Pad family queries with matching native style groups |
+| `image-shapes209` | Image family queries with matching path or asset-reference descriptors |
 
 A family query may include `primitiveIds` and `where`. IDs are a nonempty list
 of at most 256 unique exact IDs. Every requested ID must exist in that observed
@@ -257,12 +311,18 @@ revalidates the whole snapshot before querying; the result remains bounded to
 393216 bytes. None of this establishes present editor state, saved membership,
 connectivity, owner authority or a baseline for editing.
 
+Queries of the two shape stages return their extra descriptors in returned-ID
+order, with the original units and scope. They cannot enrich an older snapshot
+or fetch omitted asset bytes. Filtered rows still require reconstruction and
+validation of the entire original recorded observation.
+
 ## Failure and cleanup
 
 After an error or lost reply, use `inspect`; never repeat navigation under the
 same or a new ID. Optional inspection stages are only `browser`, `frames`,
 `script`, `pcb-opening`, `layers209`, `primitives209`,
-`extended-primitives209` and `selection-relations209`. Inspection returns the
+`extended-primitives209`, `selection-relations209`, `pad-shapes209` and
+`image-shapes209`. Inspection returns the
 retained attempt; it does not dispatch another read. Workers and the complete native
 geometry/model baseline remain unavailable.
 Original normal cleanup remains available after a failed observation and does

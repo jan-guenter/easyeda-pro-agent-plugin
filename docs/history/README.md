@@ -45,6 +45,10 @@ layout. The connected ledger retains its generation and case anchors.
 
 | Record | Former path |
 | --- | --- |
+| [2026-10-24-pad-image-shapes-batch.md](2026-10-24-pad-image-shapes-batch.md) | Combined native Pad/Image shape readers, historical queries, verification and handoff |
+| [2026-10-24-011500-connected-selection-queries.md](2026-10-24-011500-connected-selection-queries.md) | Installed011500 selection/child-pad observations, post-release historical queries and original cleanup |
+| [2026-10-24-pcb209-pad-special-shapes-research.md](2026-10-24-pcb209-pad-special-shapes-research.md) | Native top/inner/bottom Pad style groups and concrete shape/layer omissions |
+| [2026-10-24-pcb209-image-shapes-research.md](2026-10-24-pcb209-image-shapes-research.md) | Native serialized vector paths, opaque Picture references, units and asset omissions |
 | [2026-10-24-011500-selection-query-batch.md](2026-10-24-011500-selection-query-batch.md) | Combined209 selection, child-pad and historical-query implementation, verification and handoff |
 | [2026-10-24-pcb209-selection-query-research.md](2026-10-24-pcb209-selection-query-research.md) | Exact native selection/child-pad source research and pure historical query contracts |
 | [2026-10-24-000500-connected-extended-pcb-readers.md](2026-10-24-000500-connected-extended-pcb-readers.md) | Installed000500 Component/Pad/Attribute populated and Dimension/Image empty observations, original cleanup and terminal main CI |

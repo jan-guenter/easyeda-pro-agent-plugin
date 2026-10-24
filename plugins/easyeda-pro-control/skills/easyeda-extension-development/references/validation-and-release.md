@@ -173,6 +173,13 @@ evidence validators intact when adding a new runtime profile; reproduce the
 new helper separately in CI. Passing schema/compiler tests does not establish
 that its process can start on the installed application version.
 
+When changing `pcb-diagnostic-owner.ps1`, synchronize its reviewed size/hash
+in both `current-pcb-diagnostic-owner.ts` and the separate
+`pcb-diagnostic-launch-smoke.ps1`. Include the existing
+`current-pcb-diagnostic-native.test.ts` in focused verification; it checks both
+consumers against actual helper bytes. CompileOnly alone does not exercise the
+synthetic launch script's independent source pin.
+
 Compatibility can be capability-specific. The supplied-coordinate math profile
 admits its reviewed API 0.3.50 closure without changing the older design tuple.
 The local environment/unit profile shares exact identity checks but fixes its
