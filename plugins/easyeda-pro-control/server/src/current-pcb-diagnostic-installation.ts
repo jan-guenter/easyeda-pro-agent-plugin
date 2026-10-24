@@ -15,8 +15,10 @@ import { ORDINARY_LAUNCH_209_PROFILE } from "./ordinary-launch-209-profile.ts";
 import { CURRENT_PCB_209_OPENING_PROFILE } from "./current-pcb-209-opening-profile.ts";
 import { CURRENT_PCB_209_ACTOR_CLOCK_SOURCE_PROFILE, qualifyCurrentPcb209ActorClockSources } from "./current-pcb-209-actor-clock-source.ts";
 import type { CurrentPcb209ActorClockSourceQualification, CurrentPcb209ActorClockSources } from "./current-pcb-209-actor-clock-source.ts";
+import { CURRENT_PCB_209_WORKER_BOOTSTRAP_SOURCE_PROFILE, qualifyCurrentPcb209WorkerBootstrapSources } from "./current-pcb-209-worker-bootstrap-source.ts";
+import type { CurrentPcb209WorkerBootstrapSources } from "./current-pcb-209-worker-bootstrap-source.ts";
+// oxlint-disable-next-line import/max-dependencies -- Fixed209 actor/bootstrap qualifiers share this private descriptor reader; exporting a caller-selected path reader would widen the installation boundary.
 import { isPublicUtilities209Configured } from "./sdk-public-utilities-profile.ts";
-// oxlint-disable-next-line import/max-dependencies -- The fixed209 actor qualifier shares this private descriptor reader; exporting a caller-selected path reader would widen the installation boundary.
 import { deriveWindowsRuntimePaths } from "./windows-runtime.ts";
 import type { WindowsRuntimePaths } from "./windows-runtime.ts";
 
@@ -137,6 +139,22 @@ export async function qualifyCurrentPcb209StartupActorInstallation(options: Curr
     if (text === null) { refuse(); } sources[kind] = text;
   }
   return qualifyCurrentPcb209ActorClockSources(sources);
+}
+
+/** Snapshot the fixed bootstrap generator and its imports before allocating a
+ * native owner. Each paused runtime script is qualified separately before its
+ * normal resume. These descriptor reads do not create continuous asset leases. */
+export async function verifyCurrentPcb209WorkerBootstrapInstallation(options: CurrentPcbDiagnosticInstallationOptions): Promise<void> {
+  const original = createCurrentPcb209DiagnosticInstallationPlan(options);
+  const sources: Record<keyof CurrentPcb209WorkerBootstrapSources, string> = {
+    backend: "", editorConfig: "", version: "", manager: "", preload: "", project: "",
+  };
+  for (const kind of ["backend", "editorConfig", "version", "manager", "preload", "project"] as const) {
+    const pin = CURRENT_PCB_209_WORKER_BOOTSTRAP_SOURCE_PROFILE[kind];
+    const text = await readPinnedInstallationFile(path.posix.resolve(original.paths.assetsRoot, pin.relativePath), pin, 32 * 1024 * 1024, true);
+    if (text === null) { refuse(); } sources[kind] = text;
+  }
+  qualifyCurrentPcb209WorkerBootstrapSources(sources);
 }
 
 export async function verifyCurrentPcbDiagnosticInstallation(options: CurrentPcbDiagnosticInstallationOptions): Promise<CurrentPcbDiagnosticInstallation> {

@@ -7,13 +7,12 @@ import { once } from "node:events";
 import type { TestContext } from "node:test";
 import { WebSocket } from "ws";
 import { z } from "zod";
-import { CURRENT_PCB_209_WORKER_STARTUP_SOURCE } from "../../src/current-pcb-209-worker-startup-profile.ts";
+import { CURRENT_PCB_209_WORKER_BOOTSTRAP_SOURCES, CURRENT_PCB_209_WORKER_BOOTSTRAP_SOURCE_PROFILE } from "../../src/current-pcb-209-worker-bootstrap-source.ts";
 import type { CurrentPcbWorkerStartupDependency, CurrentPcbWorkerStartupEvent } from "../../src/current-pcb-worker-startup-contract.ts";
-import { worker209ConstructionFixtureSource } from "./current-pcb-209-worker-construction-fixture.ts";
-// oxlint-disable-next-line import/max-dependencies -- Preserve the actual inspector fixture and both fixed generation source locations in one helper.
 import { workerConstructionFixtureSource } from "./current-pcb-worker-construction-fixture.ts";
 
-async function workerStartupInspectorSource(context: TestContext, relativePath: string, source: string): Promise<Readonly<{
+async function workerStartupInspectorSource(context: TestContext, relativePath: string, source: string,
+  bootstrap?: Readonly<{ url: string; title: string; importedUrls: readonly string[] }>): Promise<Readonly<{
   dependency: CurrentPcbWorkerStartupDependency;
   profile: Readonly<{ relativePath: string; scriptBytes: number; scriptSha256: string }>;
   commands: string[];
@@ -21,7 +20,11 @@ async function workerStartupInspectorSource(context: TestContext, relativePath: 
   completed: () => Promise<boolean>;
   stopped: () => Promise<void>;
 }>> {
-  const child = spawn(process.execPath, ["--inspect=127.0.0.1:0", "--input-type=commonjs", "-e", "setInterval(()=>{},1000)"], { stdio: ["pipe", "pipe", "pipe"] });
+  // Only the exact small generated bootstrap executes. Both imported programs
+  // Are inert fixtures; the real fixed source check must refuse the preload.
+  const setup = bootstrap === undefined ? "" : `const vm=require("node:vm");globalThis.self=globalThis;
+globalThis.IMPORTED_ROLES=[];globalThis.importScripts=url=>new vm.Script("globalThis.IMPORTED_ROLES.push("+JSON.stringify(url)+")",{filename:url}).runInThisContext();`;
+  const child = spawn(process.execPath, ["--inspect=127.0.0.1:0", "--input-type=commonjs", "-e", `${setup}setInterval(()=>{},1000)`], { stdio: ["pipe", "pipe", "pipe"] });
   const address = Promise.withResolvers<string>(); let stderr = "";
   child.stderr.on("data", (bytes: Buffer) => {
     stderr += bytes.toString("utf8"); const match = /ws:\/\/127\.0\.0\.1:\d+\/[a-f\d-]+/u.exec(stderr);
@@ -32,7 +35,8 @@ async function workerStartupInspectorSource(context: TestContext, relativePath: 
   const commands: string[] = [], pending = new Map<number, PromiseWithResolvers<unknown>>();
   const subscribers = new Set<(event: CurrentPcbWorkerStartupEvent) => void>();
   const scriptIds = new Set<string>();
-  const url = `file:///${relativePath}`;
+  const title = bootstrap?.title ?? "synthetic", url = bootstrap?.url ?? `file:///${relativePath}`;
+  const acceptedUrls = new Set([url, ...bootstrap?.importedUrls ?? []]);
   const completion = Promise.withResolvers<unknown>(); let contextId = 0, contextUniqueId = "", instrumented = false, nextId = 1;
   const emit = (method: string, params: Readonly<Record<string, unknown>>, sessionId = "worker-session"): void => {
     for (const subscriber of subscribers) { subscriber({ method, params, sessionId }); }
@@ -55,7 +59,7 @@ async function workerStartupInspectorSource(context: TestContext, relativePath: 
       contextId = parsed.context.id; contextUniqueId = parsed.context.uniqueId; return;
     }
     if (message.method === "Debugger.scriptParsed") {
-      if (message.params["url"] === url) {
+      if (typeof message.params["url"] === "string" && acceptedUrls.has(message.params["url"])) {
         scriptIds.add(z.string().parse(message.params["scriptId"])); emit(message.method, message.params);
       } else if (instrumented && message.params["url"] === "" && scriptIds.size > 0) { emit(message.method, message.params); }
       return;
@@ -75,11 +79,11 @@ async function workerStartupInspectorSource(context: TestContext, relativePath: 
       commands.push(command.method);
       if (command.method === "Target.setAutoAttach") {
         emit("Target.attachedToTarget", { sessionId: "worker-session", waitingForDebugger: true,
-          targetInfo: { targetId: "worker-target", attached: true, type: "worker", title: "synthetic", url } }, "parent-session"); return {};
+          targetInfo: { targetId: "worker-target", attached: true, type: "worker", title, url } }, "parent-session"); return {};
       }
       if (command.method === "Runtime.enable") {
         const reply = await request(command.method, command.params);
-        emit("Runtime.executionContextCreated", { context: { id: contextId, uniqueId: contextUniqueId, name: "synthetic", origin: url } }); return reply;
+        emit("Runtime.executionContextCreated", { context: { id: contextId, uniqueId: contextUniqueId, name: title, origin: url } }); return reply;
       }
       if (command.method === "Runtime.runIfWaitingForDebugger") {
         const running = (async (): Promise<void> => {
@@ -105,8 +109,15 @@ async function workerStartupInspectorSource(context: TestContext, relativePath: 
 export function workerStartupInspector(context: TestContext): ReturnType<typeof workerStartupInspectorSource> {
   return workerStartupInspectorSource(context, "synthetic/project-worker.js", workerConstructionFixtureSource());
 }
-/** Actual V8 instrumentation at209 positions, deliberately not a matching full
- * vendor source. The fixed209 owner must refuse this inert substitute. */
-export function worker209StartupInspector(context: TestContext): ReturnType<typeof workerStartupInspectorSource> {
-  return workerStartupInspectorSource(context, CURRENT_PCB_209_WORKER_STARTUP_SOURCE.relativePath, worker209ConstructionFixtureSource());
+export const PCB209_STARTUP_FIXTURE_IDENTITY = Object.freeze({ projectUuid: "a".repeat(64), branchUuid: "b".repeat(32), windowTabId: "fixture_tab" });
+/** Real V8 generated-bootstrap and imported-script pauses. The imported source
+ * is deliberately inert and must fail the fixed complete-source comparison. */
+export function worker209BootstrapInspector(context: TestContext): ReturnType<typeof workerStartupInspectorSource> {
+  const source = CURRENT_PCB_209_WORKER_BOOTSTRAP_SOURCES[0]; assert.ok(source !== undefined);
+  const base = "https://modules.lceda.cn/pro-mgr/3.2.185.bf63a159/js/";
+  return workerStartupInspectorSource(context, CURRENT_PCB_209_WORKER_BOOTSTRAP_SOURCE_PROFILE.project.relativePath, source, {
+    url: "https://client/editor?entry=mgr-project-worker.js&cll=warn&debugOpen=0",
+    title: `project_${PCB209_STARTUP_FIXTURE_IDENTITY.projectUuid}_${PCB209_STARTUP_FIXTURE_IDENTITY.windowTabId}`,
+    importedUrls: [`${base}preload.js`, `${base}project-worker.js`],
+  });
 }

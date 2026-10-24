@@ -45,6 +45,11 @@ layout. The connected ledger retains its generation and case anchors.
 
 | Record | Former path |
 | --- | --- |
+| [2026-10-24-generation209-worker-bootstrap-source.md](2026-10-24-generation209-worker-bootstrap-source.md) | Fixed generated-worker/import sources, canonical target URLs and preload log callsite |
+| [2026-10-24-worker-bootstrap-root-batch.md](2026-10-24-worker-bootstrap-root-batch.md) | Combined bootstrap repair, raw-root baseline and ratline capture release work |
+| [2026-10-24-132442-connected-worker-startup.md](2026-10-24-132442-connected-worker-startup.md) | Actual startup refusal, bootstrap diagnosis, original normal cleanup and terminal prior-release CI |
+| [2026-10-24-generation209-empty-root-baseline.md](2026-10-24-generation209-empty-root-baseline.md) | Raw empty-manager, spatial and board/panel checks around the original common/SQL join |
+| [2026-10-24-generation209-ratline-event-capture.md](2026-10-24-generation209-ratline-event-capture.md) | Fixed original constructor, factory and callback capture with explicit native integration gaps |
 | [2026-10-24-startup-baseline-clock-batch.md](2026-10-24-startup-baseline-clock-batch.md) | Separate209 project-worker lifecycle and private baseline/clock adapters, review and remaining integration |
 | [2026-10-24-generation209-common-baseline.md](2026-10-24-generation209-common-baseline.md) | Exact209 semantic bindings, retained scope reader and original SQL comparison for the empty-target subset |
 | [2026-10-24-063500-connected-arc-poured-queries.md](2026-10-24-063500-connected-arc-poured-queries.md) | Installed063500 empty Arc/Poured observations, historical queries, original cleanup and independent evidence review |

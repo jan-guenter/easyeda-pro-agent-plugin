@@ -20,8 +20,8 @@ type Row = Record<string, unknown>;
 type ModelContext = ReturnType<CurrentPcbDiagnosticContext["modelContext"]>;
 type Phase = "ready" | "preflight" | "checkpoint" | "opening" | "source" | "identity" | "completed" | "failed";
 /** Twenty fixed commands, at most two original identity checks per command,
- * plus initial/checkpoint/final checks. The existing full startup maximum174,
- * owner factory proof and this session therefore use at most239 of256 requests.
+ * plus initial/checkpoint/final checks. The three-script209 startup maximum178,
+ * owner factory proof and this session therefore use at most243 of256 requests.
  * Later consumer proofs spend the remaining budget. No common reader fits
  * this contract; a later combined launch purpose needs its own fixed budget. */
 export const CURRENT_PCB_209_WORKER_STARTUP_PCB_COMMAND_LIMIT = 20;

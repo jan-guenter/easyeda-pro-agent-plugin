@@ -7,6 +7,8 @@ import { createHash } from "node:crypto";
 import { types } from "node:util";
 import { z } from "zod";
 import { CURRENT_PCB_209_WORKER_STARTUP_SOURCE } from "./current-pcb-209-worker-startup-profile.ts";
+import { CURRENT_PCB_209_WORKER_BOOTSTRAP_ROLES, CURRENT_PCB_209_WORKER_PRELOAD_LOG, currentPcb209StartupScriptRole,
+  isCurrentPcb209BootstrapTargetUrl, qualifyCurrentPcb209StartupScriptSource } from "./current-pcb-209-worker-bootstrap-source.ts";
 import { captureCurrentPcbStringClockReply } from "./current-pcb-string-clock-reply.ts";
 import { CURRENT_PCB_DIAGNOSTIC_WORKER_SCRIPT } from "./current-pcb-diagnostic-worker-context.ts";
 import type { DiagnosticWorkerScriptProfile } from "./current-pcb-diagnostic-worker-context.ts";
@@ -36,6 +38,12 @@ const initialFrameSchema = z.looseObject({ location: z.looseObject({ scriptId: t
 const initialPauseSchema = z.looseObject({ reason: z.literal("instrumentation"),
   data: z.looseObject({ scriptId: token }), hitBreakpoints: z.array(token).max(1),
   callFrames: z.array(initialFrameSchema).min(1).max(16) });
+const preloadArgumentSchema = z.object({ type: z.literal("string"), value: z.literal(CURRENT_PCB_209_WORKER_PRELOAD_LOG.message) }).strict();
+const preloadLogFrameSchema = z.looseObject({ functionName: z.string().max(256), scriptId: token,
+  url: z.string().max(8192), lineNumber: z.number().int().nonnegative(), columnNumber: z.number().int().nonnegative() });
+const preloadLogStackSchema = z.looseObject({ callFrames: z.array(preloadLogFrameSchema).min(1).max(16) });
+const preloadLogSchema = z.object({ type: z.literal("log"), args: z.tuple([preloadArgumentSchema]),
+  executionContextId: z.number().int().positive(), timestamp: z.number().nonnegative(), stackTrace: preloadLogStackSchema }).strict();
 const PAUSE_MS = 5000, REQUEST_MS = 2000, WAIT_MS = 15_000;
 type Worker = Readonly<{ sessionId: string; target: z.infer<typeof targetSchema>; waitingForDebugger: boolean }>;
 type ExistingWorker = Readonly<{ targetId: string; title: string; url: string }>;
@@ -47,7 +55,23 @@ const eventReasons = ["EVENT_BUDGET", "ATTACHMENT", "EXISTING_WORKER_CHANGED", "
   "UNEXPECTED_RESUME", "UNEXPECTED_EVENT"] as const;
 type EventMethod = typeof eventMethods[number] | "other" | "unparsed";
 type EventReason = typeof eventReasons[number] | "MALFORMED_EVENT";
-type EventFailure = Readonly<{ method: EventMethod; reason: EventReason }>;
+type RejectedTarget = Readonly<{ targetId: string; sessionId: string; waitingForDebugger: boolean;
+  urlSha256: string; urlBytes: number; urlRole: "bootstrap" | "preload" | "project" | "other";
+  urlProtocol: string | null; urlHostname: string | null; urlPathname: string | null;
+  urlQueryKeys: readonly string[]; titleSha256: string; titleMatchesExpected: boolean }>;
+type EventFailure = Readonly<{ method: EventMethod; reason: EventReason; target?: RejectedTarget }>;
+type StartupRole = typeof CURRENT_PCB_209_WORKER_BOOTSTRAP_ROLES[number];
+interface BootstrapStage {
+  readonly role: StartupRole;
+  readonly paused: PromiseWithResolvers<unknown>;
+  readonly resumed: PromiseWithResolvers<null>;
+  script: z.infer<typeof scriptSchema> | null;
+  pauseSeen: boolean;
+  sourceQualified: boolean;
+  resume: Promise<void> | null;
+  resumeSeen: boolean;
+  watchdog: ReturnType<typeof setTimeout> | undefined;
+}
 type Subscriber = Parameters<CurrentPcbWorkerConstructionTransport["subscribe"]>[0];
 function failure(code: string): Error { return new Error(`PCB_WORKER_STARTUP_${code}`); }
 function eventReason(error: unknown): EventReason {
@@ -99,6 +123,10 @@ class CurrentPcbWorkerStartupTransportCore<Packet extends ConstructionPacket, Ru
   readonly #parentSession: string;
   readonly #parentTarget: string;
   readonly #profile: DiagnosticWorkerScriptProfile;
+  readonly #bootstrap209: boolean;
+  readonly #bootstrapStages: readonly BootstrapStage[];
+  #bootstrapIndex = 0;
+  #preloadLogSeen = false;
   readonly #attached = Promise.withResolvers<Worker>();
   readonly #armed = Promise.withResolvers<null>();
   readonly #initialPaused = Promise.withResolvers<unknown>();
@@ -135,7 +163,8 @@ class CurrentPcbWorkerStartupTransportCore<Packet extends ConstructionPacket, Ru
   #cleanup: Promise<void> | null = null;
 
   public constructor(internal: typeof INTERNAL_PROFILE, dependency: CurrentPcbWorkerStartupDependency,
-    profile: DiagnosticWorkerScriptProfile, createRunner: (transport: CurrentPcbWorkerConstructionTransport) => Runner) {
+    profile: DiagnosticWorkerScriptProfile, createRunner: (transport: CurrentPcbWorkerConstructionTransport) => Runner,
+    bootstrap209 = false) {
     if (internal !== INTERNAL_PROFILE) { throw failure("INTERNAL_PROFILE"); } this.#createRunner = createRunner;
     this.#originalMembers = members(dependency); this.#dependency = dependency;
     this.#parentSession = sessionToken.parse(dependency.parentSessionId); this.#parentTarget = sessionToken.parse(dependency.parentTargetId);
@@ -143,20 +172,30 @@ class CurrentPcbWorkerStartupTransportCore<Packet extends ConstructionPacket, Ru
     this.#assertTermination = dependency.assertOriginalTermination; this.#subscribe = dependency.subscribe;
     this.#profile = Object.freeze(z.object({ relativePath: z.string().max(512).regex(/^[A-Za-z\d_.-]+(?:\/[A-Za-z\d_.-]+)+\.js$/u),
       scriptBytes: z.number().int().min(1).max(4 * 1024 * 1024), scriptSha256: z.string().regex(/^[a-f\d]{64}$/u) }).strict().parse(profile));
+    this.#bootstrap209 = bootstrap209;
+    this.#bootstrapStages = bootstrap209 ? CURRENT_PCB_209_WORKER_BOOTSTRAP_ROLES.map(role => ({ role,
+      paused: Promise.withResolvers<unknown>(), resumed: Promise.withResolvers<null>(), script: null,
+      pauseSeen: false, sourceQualified: false, resume: null, resumeSeen: false, watchdog: undefined })) : [];
+    for (const stage of this.#bootstrapStages) { void observe(stage.paused.promise); void observe(stage.resumed.promise); }
     void observe(this.#attached.promise); void observe(this.#armed.promise);
     void observe(this.#initialPaused.promise); void observe(this.#initialResumed.promise);
   }
   public status(): Readonly<{ started: boolean; settled: boolean; failed: boolean; sourceQualified: boolean;
     initialPauseSeen: boolean; initialResumeAttempted: boolean; initialResumeSeen: boolean;
     unresolvedInstrumentation: boolean; attachedWorkers: number; released: boolean;
-    existingWorkersBound: boolean; existingWorkersObserved: number; existingWorkersAttached: number; firstEventFailure: EventFailure | null }> {
+    existingWorkersBound: boolean; existingWorkersObserved: number; existingWorkersAttached: number; firstEventFailure: EventFailure | null;
+    bootstrapStages: readonly Readonly<{ role: StartupRole; parsed: boolean; pauseSeen: boolean;
+      sourceQualified: boolean; resumeAttempted: boolean; resumeSeen: boolean }>[]; preloadLogSeen: boolean; requests: number }> {
     return Object.freeze({ started: this.#started, settled: this.#settled, failed: this.#failure !== null,
       sourceQualified: this.#sourceQualified, initialPauseSeen: this.#initialPauseSeen,
-      initialResumeAttempted: this.#initialResume !== null, initialResumeSeen: this.#initialResumeSeen,
+      initialResumeAttempted: this.#initialResume !== null || this.#bootstrapStages.some(stage => stage.resume !== null), initialResumeSeen: this.#initialResumeSeen,
       unresolvedInstrumentation: this.#instrumentationUncertain || this.#instrumentation !== null && !this.#instrumentationRemoved,
       attachedWorkers: this.#workers.size, released: this.#released, existingWorkersBound: this.#existingWorkers !== null,
       existingWorkersObserved: this.#existingWorkers?.size ?? 0, existingWorkersAttached: this.#backgroundWorkers.size,
-      firstEventFailure: this.#firstEventFailure });
+      firstEventFailure: this.#firstEventFailure, requests: this.#requests, preloadLogSeen: this.#preloadLogSeen,
+      bootstrapStages: Object.freeze(this.#bootstrapStages.map(stage => Object.freeze({ role: stage.role,
+        parsed: stage.script !== null, pauseSeen: stage.pauseSeen, sourceQualified: stage.sourceQualified,
+        resumeAttempted: stage.resume !== null, resumeSeen: stage.resumeSeen }))) });
   }
   /** The private opener supplies its checkpoint-selected project and original
    * UI window before auto-attach. This title check is only an early selector;
@@ -190,7 +229,7 @@ class CurrentPcbWorkerStartupTransportCore<Packet extends ConstructionPacket, Ru
           if (target.type !== "page" || !target.attached) { throw failure("EXISTING_WORKERS_PARENT"); } parentFound = true;
         }
         if (target.type === "worker") {
-          if (target.attached || existing.size >= 15 || target.title === expectedTitle || this.#sourceUrl(target.url)) {
+          if (target.attached || existing.size >= 15 || target.title === expectedTitle || this.#targetUrl(target.url)) {
             throw failure("EXISTING_WORKERS_INVENTORY");
           }
           existing.set(target.targetId, Object.freeze({ targetId: target.targetId, title: target.title, url: target.url }));
@@ -203,6 +242,7 @@ class CurrentPcbWorkerStartupTransportCore<Packet extends ConstructionPacket, Ru
   #poison(code: string): void {
     this.#failure ??= failure(code); this.#attached.reject(this.#failure); this.#initialPaused.reject(this.#failure);
     this.#armed.reject(this.#failure);
+    for (const stage of this.#bootstrapStages) { stage.paused.reject(this.#failure); }
     this.#subscriber?.lost();
   }
   /** The project opener may dispatch only after the original auto-attach reply
@@ -231,31 +271,34 @@ class CurrentPcbWorkerStartupTransportCore<Packet extends ConstructionPacket, Ru
   readonly #event = (input: CurrentPcbWorkerStartupEvent): void => {
     if (this.#released) { return; }
     let method: EventMethod = "unparsed";
+    let rejectedTarget: RejectedTarget | null = null;
     try {
       const captured = captureCurrentPcbStringClockReply(input);
       this.#events += 1; this.#eventBytes += Buffer.byteLength(captured.text);
       if (this.#events > 4096 || this.#eventBytes > 8 * 1024 * 1024) { throw failure("EVENT_BUDGET"); }
       const event = z.object({ method: z.string().max(128), sessionId: sessionToken, params: z.record(z.string(), z.unknown()) }).strict().parse(captured.value);
       method = eventMethods.find(value => value === event.method) ?? "other";
-      this.#acceptEvent(event);
+      this.#acceptEvent(event, worker => { rejectedTarget = this.#bootstrap209 ? this.#targetMetadata(worker) : null; });
     } catch (error) {
-      this.#firstEventFailure ??= Object.freeze({ method, reason: eventReason(error) }); this.#poison("EVENT");
+      this.#firstEventFailure ??= Object.freeze({ method, reason: eventReason(error),
+        ...(rejectedTarget === null ? {} : { target: rejectedTarget }) }); this.#poison("EVENT");
     }
   };
-  #acceptEvent(event: CurrentPcbWorkerStartupEvent): void {
+  #acceptEvent(event: CurrentPcbWorkerStartupEvent, retainTarget: (worker: Worker) => void): void {
     if (event.sessionId === this.#parentSession && event.method === "Target.attachedToTarget") {
       const params = z.object({ sessionId: sessionToken, targetInfo: targetSchema, waitingForDebugger: z.boolean() }).strict().parse(event.params);
       if (params.sessionId === this.#parentSession || params.targetInfo.targetId === this.#parentTarget ||
           this.#workers.has(params.sessionId) || [...this.#workers.values()].some(value => value.target.targetId === params.targetInfo.targetId) ||
           this.#workers.size >= 16) { throw failure("ATTACHMENT"); }
       const worker = Object.freeze({ sessionId: params.sessionId, target: params.targetInfo, waitingForDebugger: params.waitingForDebugger });
+      retainTarget(worker);
       this.#workers.set(worker.sessionId, worker);
       const expected = this.#expectedProject;
       const existing = this.#existingWorkers?.get(worker.target.targetId);
       if (existing !== undefined) {
-        if (worker.waitingForDebugger) { void observe(this.#runWaiting(worker)); throw failure("EXISTING_WORKER_PAUSED"); }
+        if (worker.waitingForDebugger) { this.#releaseRejectedWorker(worker); throw failure("EXISTING_WORKER_PAUSED"); }
         if (expected !== null && worker.target.title === `project_${expected.projectUuid}_${expected.windowTabId}` ||
-            this.#sourceUrl(worker.target.url)) { throw failure("EXISTING_WORKER_SELECTED"); }
+            this.#targetUrl(worker.target.url)) { throw failure("EXISTING_WORKER_SELECTED"); }
         // Chromium146 WorkerDevToolsManager creates the same token with empty
         // URL/name. Renderer ChildTargetCreated fills both before attachment.
         // Permit only that initial metadata population, never changes to an
@@ -266,11 +309,11 @@ class CurrentPcbWorkerStartupTransportCore<Packet extends ConstructionPacket, Ru
         this.#backgroundWorkers.add(worker.sessionId); return;
       }
       if (!worker.waitingForDebugger) { throw failure("WORKER_NOT_WAITING"); }
-      if (this.#worker !== null) { void observe(this.#runWaiting(worker)); throw failure("EXTRA_WORKER"); }
+      if (this.#worker !== null) { this.#releaseRejectedWorker(worker); throw failure("EXTRA_WORKER"); }
       this.#worker = worker;
-      if (!this.#sourceUrl(worker.target.url)) { void observe(this.#runWaiting(worker)); throw failure("WORKER_URL"); }
+      if (!this.#targetUrl(worker.target.url)) { this.#releaseRejectedWorker(worker); throw failure("WORKER_URL"); }
       if (expected !== null && worker.target.title !== `project_${expected.projectUuid}_${expected.windowTabId}`) {
-        void observe(this.#runWaiting(worker)); throw failure("WORKER_TITLE");
+        this.#releaseRejectedWorker(worker); throw failure("WORKER_TITLE");
       }
       // Autoattach can have succeeded before its reply was lost. A later first
       // Attachment still belongs to this original owner and must not remain
@@ -290,10 +333,14 @@ class CurrentPcbWorkerStartupTransportCore<Packet extends ConstructionPacket, Ru
       // Fixed callFunctionOn programs can produce anonymous parsed scripts.
       // They cannot replace the admitted bootstrap or introduce another world.
       if (this.#sourceQualified && script.url === "" && script.executionContextId === this.#context?.id) { return; }
+      if (this.#bootstrap209) { this.#bootstrapScript(script); return; }
       if (this.#script !== null || !this.#sourceUrl(script.url) || script.url !== worker.target.url) { throw failure("SCRIPT"); }
       this.#script = script; return;
     }
     if (event.method === "Debugger.paused") {
+      if (this.#bootstrap209 && this.#bootstrapIndex < this.#bootstrapStages.length) {
+        this.#bootstrapPaused(event.params); return;
+      }
       if (!this.#initialPauseSeen) {
         this.#initialPauseSeen = true;
         this.#initialPauseWatchdog = setTimeout(() => { this.#poison("INITIAL_PAUSE_DEADLINE"); void observe(this.cleanup()); }, PAUSE_MS);
@@ -305,6 +352,9 @@ class CurrentPcbWorkerStartupTransportCore<Packet extends ConstructionPacket, Ru
     }
     if (event.method === "Debugger.resumed") {
       empty.parse(event.params);
+      if (this.#bootstrap209 && this.#bootstrapIndex < this.#bootstrapStages.length) {
+        this.#bootstrapResumed(); return;
+      }
       if (!this.#initialResumeSeen) {
         if (this.#initialResume === null) { throw failure("UNEXPECTED_RESUME"); }
         this.#initialResumeSeen = true; clearTimeout(this.#initialPauseWatchdog); this.#initialResumed.resolve(null); return;
@@ -312,10 +362,82 @@ class CurrentPcbWorkerStartupTransportCore<Packet extends ConstructionPacket, Ru
       if (this.#subscriber === null) { throw failure("UNEXPECTED_RESUME"); }
       this.#subscriber.resumed(); return;
     }
-    if (event.method === "Runtime.consoleAPICalled" && this.#sourceQualified) { return; }
+    if (event.method === "Runtime.consoleAPICalled") {
+      if (this.#sourceQualified) { return; }
+      if (this.#bootstrap209) { this.#preloadLog(event.params); return; }
+    }
     // No context replacement, foreign scripts, worker loss or silent console
     // Exception is accepted by this startup-purpose owner.
     throw failure("UNEXPECTED_EVENT");
+  }
+  #targetMetadata(worker: Worker): RejectedTarget {
+    const value = worker.target.url;
+    const role = currentPcb209StartupScriptRole(value);
+    let hostname: string | null = null, pathname: string | null = null, protocol: string | null = null;
+    let queryKeys: readonly string[] = [];
+    try {
+      const url = new URL(value); protocol = /^(?:https?|file|blob|data):$/u.test(url.protocol) ? url.protocol : "other";
+      hostname = ["client", "modules.lceda.cn", ""].includes(url.hostname) ? url.hostname : "other";
+      const paths = { bootstrap: "/editor", preload: "/preload.js", project: "/project-worker.js" } as const;
+      pathname = role === null ? "other" : paths[role];
+      queryKeys = Object.freeze([...url.searchParams.keys()].slice(0, 8).map(key =>
+        ["entry", "cll", "debugOpen"].includes(key) ? key : "other"));
+    } catch {
+      // The digest retains malformed URL identity without exposing URL values.
+    }
+    const expected = this.#expectedProject;
+    return Object.freeze({ targetId: worker.target.targetId, sessionId: worker.sessionId, waitingForDebugger: worker.waitingForDebugger,
+      urlSha256: createHash("sha256").update(value).digest("hex"), urlBytes: Buffer.byteLength(value), urlRole: role ?? "other",
+      urlProtocol: protocol, urlHostname: hostname, urlPathname: pathname, urlQueryKeys: queryKeys,
+      titleSha256: createHash("sha256").update(worker.target.title).digest("hex"),
+      titleMatchesExpected: expected !== null && worker.target.title === `project_${expected.projectUuid}_${expected.windowTabId}` });
+  }
+  #targetUrl(value: string): boolean {
+    return this.#bootstrap209 ? isCurrentPcb209BootstrapTargetUrl(value) : this.#sourceUrl(value);
+  }
+  #releaseRejectedWorker(worker: Worker): void {
+    // Preserve the refusal and its target metadata before cleanup can deliver
+    // Synchronous nested events. The original waiting attempt remains consumed.
+    if (this.#bootstrap209) {
+      void observe((async (): Promise<void> => { await Promise.resolve(); await this.#runWaiting(worker); })());
+    }
+    else { void observe(this.#runWaiting(worker)); }
+  }
+  #bootstrapScript(script: z.infer<typeof scriptSchema>): void {
+    const stage = this.#bootstrapStages[this.#bootstrapIndex], worker = this.#worker;
+    if (stage === undefined || worker === null || stage.script !== null || script.executionContextId !== this.#context?.id ||
+        currentPcb209StartupScriptRole(script.url) !== stage.role || stage.role === "bootstrap" && script.url !== worker.target.url) {
+      throw failure("SCRIPT");
+    }
+    stage.script = script;
+    if (stage.role === "project") { this.#script = script; }
+  }
+  #bootstrapPaused(params: Readonly<Record<string, unknown>>): void {
+    const stage = this.#bootstrapStages[this.#bootstrapIndex];
+    if (stage === undefined || stage.pauseSeen) { throw failure("UNEXPECTED_PAUSE"); }
+    stage.pauseSeen = true; this.#initialPauseSeen = true;
+    stage.watchdog = setTimeout(() => { this.#poison("INITIAL_PAUSE_DEADLINE"); void observe(this.cleanup()); }, PAUSE_MS);
+    stage.paused.resolve(params);
+    if (this.#failure !== null) { void observe(this.#cleanupInitialPause()); }
+  }
+  #bootstrapResumed(): void {
+    const stage = this.#bootstrapStages[this.#bootstrapIndex];
+    if (stage === undefined || stage.resume === null || !stage.pauseSeen || stage.resumeSeen) { throw failure("UNEXPECTED_RESUME"); }
+    stage.resumeSeen = true; clearTimeout(stage.watchdog); stage.resumed.resolve(null); this.#bootstrapIndex += 1;
+    if (this.#bootstrapIndex === this.#bootstrapStages.length) { this.#initialResumeSeen = true; }
+  }
+  #preloadLog(params: Readonly<Record<string, unknown>>): void {
+    const profile = CURRENT_PCB_209_WORKER_PRELOAD_LOG, stage = this.#bootstrapStages[1];
+    if (this.#preloadLogSeen || stage?.role !== "preload" || !stage.sourceQualified || stage.resume === null || stage.script === null) {
+      throw failure("UNEXPECTED_EVENT");
+    }
+    const log = preloadLogSchema.parse(params);
+    const frame = log.stackTrace.callFrames[0];
+    if (log.executionContextId !== this.#context?.id || frame?.scriptId !== stage.script.scriptId || frame.url !== stage.script.url ||
+        frame.functionName !== profile.functionName || frame.lineNumber !== profile.lineNumber || frame.columnNumber !== profile.columnNumber) {
+      throw failure("UNEXPECTED_EVENT");
+    }
+    this.#preloadLogSeen = true;
   }
   #sourceUrl(value: string): boolean {
     if (!value.isWellFormed() || /[\\\s?#@]/u.test(value) || /\/(?:\.|\.\.)(?:\/|$)/u.test(value)) { return false; }
@@ -347,6 +469,10 @@ class CurrentPcbWorkerStartupTransportCore<Packet extends ConstructionPacket, Ru
     return this.#removeInstrumentation;
   }
   #resumeInitialPause(): Promise<void> {
+    if (this.#bootstrap209) {
+      const stage = this.#bootstrapStages.find(value => value.pauseSeen && !value.resumeSeen);
+      return stage === undefined ? Promise.resolve() : this.#resumeBootstrapStage(stage);
+    }
     if (this.#initialResume !== null) { return this.#initialResume; }
     const worker = this.#worker; if (worker === null || !this.#initialPauseSeen) { return Promise.resolve(); }
     // Publish the consumed promise before the send: a dependency can deliver the
@@ -362,6 +488,23 @@ class CurrentPcbWorkerStartupTransportCore<Packet extends ConstructionPacket, Ru
     })();
     return work;
   }
+  #resumeBootstrapStage(stage: BootstrapStage): Promise<void> {
+    if (stage.resume !== null) { return stage.resume; }
+    const worker = this.#worker;
+    if (worker === null || !stage.pauseSeen || stage.resumeSeen) { return Promise.reject(failure("INITIAL_PAUSE_IDENTITY")); }
+    // Publish each original attempt before dispatch. Resumed and the following
+    // Script's parsed/paused events can arrive before this command's reply.
+    const completion = Promise.withResolvers<null>(), work = withoutValue(completion.promise);
+    stage.resume = work;
+    void (async (): Promise<void> => {
+      try {
+        empty.parse(captureCurrentPcbStringClockReply(await this.#request({ method: "Debugger.resume", params: {},
+          sessionId: worker.sessionId }, true)).value);
+        await bounded(stage.resumed.promise); completion.resolve(null);
+      } catch (error) { completion.reject(error); }
+    })();
+    return work;
+  }
   async #cleanupInitialPause(): Promise<void> {
     const failures: unknown[] = [];
     try { await this.#removeInitialBreakpoint(); } catch (error) { failures.push(error); }
@@ -369,7 +512,9 @@ class CurrentPcbWorkerStartupTransportCore<Packet extends ConstructionPacket, Ru
     if (failures.length > 0) { throw new AggregateError(failures, "PCB_WORKER_STARTUP_PAUSE_CLEANUP"); }
   }
   async #armInstrumentation(worker: Worker): Promise<void> {
-    await this.#current(); this.#requests += 1;
+    await this.#current();
+    if (this.#requests >= 224) { this.#poison("REQUEST_BUDGET"); throw failure("REQUEST_BUDGET"); }
+    this.#requests += 1;
     this.#instrumentationUncertain = true;
     const pending = (async (): Promise<void> => {
       const raw = await this.#send.call(this.#dependency, { method: "Debugger.setInstrumentationBreakpoint",
@@ -405,9 +550,44 @@ class CurrentPcbWorkerStartupTransportCore<Packet extends ConstructionPacket, Ru
         Buffer.byteLength(source) !== this.#profile.scriptBytes || createHash("sha256").update(source).digest("hex") !== this.#profile.scriptSha256) { throw failure("SOURCE"); }
     this.#sourceQualified = true;
   }
+  async #qualifyBootstrapStages(worker: Worker): Promise<z.infer<typeof scriptSchema>> {
+    for (const stage of this.#bootstrapStages) {
+      const paused = initialPauseSchema.parse(await bounded(stage.paused.promise, WAIT_MS));
+      const context = this.#context, script = stage.script;
+      if (context === null || script === null || script.executionContextId !== context.id ||
+          paused.data.scriptId !== script.scriptId || paused.data["url"] !== script.url ||
+          paused.callFrames[0]?.location.scriptId !== script.scriptId ||
+          paused.hitBreakpoints.length === 1 && paused.hitBreakpoints[0] !== this.#instrumentation) {
+        throw failure("INITIAL_PAUSE_IDENTITY");
+      }
+      await this.#current();
+      if (this.#requests >= 224) { this.#poison("REQUEST_BUDGET"); throw failure("REQUEST_BUDGET"); }
+      this.#requests += 1;
+      // Source replies exceed the small event capture bound. Qualify the own
+      // Data string before any following awaited owner reproof.
+      qualifyCurrentPcb209StartupScriptSource(stage.role, await bounded(this.#send.call(this.#dependency,
+        { method: "Debugger.getScriptSource", params: { scriptId: script.scriptId }, sessionId: worker.sessionId })));
+      stage.sourceQualified = true; await this.#current();
+      if (stage.role === "project") { this.#sourceQualified = true; return script; }
+      await this.#resumeBootstrapStage(stage); await this.#current();
+    }
+    throw failure("INITIAL_PAUSE_IDENTITY");
+  }
+  async #qualifyLegacyInitialSource(worker: Worker): Promise<z.infer<typeof scriptSchema>> {
+    const paused = initialPauseSchema.parse(await bounded(this.#initialPaused.promise, WAIT_MS));
+    const context = this.#context, script = this.#script;
+    if (context === null || script === null || script.executionContextId !== context.id ||
+        paused.data.scriptId !== script.scriptId || paused.callFrames[0]?.location.scriptId !== script.scriptId ||
+        paused.hitBreakpoints.length === 1 && paused.hitBreakpoints[0] !== this.#instrumentation) { throw failure("INITIAL_PAUSE_IDENTITY"); }
+    this.#requests += 1;
+    this.#qualifySource(await bounded(this.#send.call(this.#dependency, { method: "Debugger.getScriptSource",
+      params: { scriptId: script.scriptId }, sessionId: worker.sessionId })));
+    await this.#current(); return script;
+  }
   public async capture(): Promise<Packet> {
     if (this.#started) { throw failure("CONSUMED"); } this.#started = true;
     try {
+      if (this.#bootstrap209 && (this.#expectedProject === null || this.#existingWorkers === null)) { throw failure("EXPECTED_PROJECT_REQUIRED"); }
       await this.#current(); this.#unsubscribe = this.#subscribe.call(this.#dependency, this.#event);
       empty.parse(captureCurrentPcbStringClockReply(await this.#request({ method: "Target.setAutoAttach",
         params: CURRENT_PCB_WORKER_STARTUP_ATTACH, sessionId: this.#parentSession })).value);
@@ -417,16 +597,7 @@ class CurrentPcbWorkerStartupTransportCore<Packet extends ConstructionPacket, Ru
       z.object({ debuggerId: token }).strict().parse(captureCurrentPcbStringClockReply(await this.#request({ method: "Debugger.enable",
         params: { maxScriptsCacheSize: 33_554_432 }, sessionId: worker.sessionId })).value);
       await this.#armInstrumentation(worker); await this.#runWaiting(worker);
-      const paused = initialPauseSchema.parse(await bounded(this.#initialPaused.promise, WAIT_MS));
-      const context = this.#context, script = this.#script;
-      if (context === null || script === null || script.executionContextId !== context.id ||
-          paused.data.scriptId !== script.scriptId || paused.callFrames[0]?.location.scriptId !== script.scriptId ||
-          paused.hitBreakpoints.length === 1 && paused.hitBreakpoints[0] !== this.#instrumentation) { throw failure("INITIAL_PAUSE_IDENTITY"); }
-      // Capture the large source before the following awaited owner callback.
-      this.#requests += 1;
-      this.#qualifySource(await bounded(this.#send.call(this.#dependency, { method: "Debugger.getScriptSource",
-        params: { scriptId: script.scriptId }, sessionId: worker.sessionId })));
-      await this.#current();
+      const script = this.#bootstrap209 ? await this.#qualifyBootstrapStages(worker) : await this.#qualifyLegacyInitialSource(worker);
       const transport: CurrentPcbWorkerConstructionTransport = Object.freeze({ scriptId: script.scriptId,
         assertOriginalPinnedWorker: (): Promise<void> => this.#current(),
         request: (command: CurrentPcbWorkerConstructionCommand): Promise<unknown> => this.#constructionRequest(command, worker),
@@ -488,7 +659,9 @@ class CurrentPcbWorkerStartupTransportCore<Packet extends ConstructionPacket, Ru
   public async releaseAfterTermination(): Promise<void> {
     if (!this.#settled || this.#released) { throw failure("RELEASE_STATE"); }
     this.#sameDependency(); await bounded(this.#assertTermination.call(this.#dependency)); this.#sameDependency();
-    clearTimeout(this.#initialPauseWatchdog); this.#unsubscribe?.(); this.#unsubscribe = null; this.#released = true;
+    clearTimeout(this.#initialPauseWatchdog);
+    for (const stage of this.#bootstrapStages) { clearTimeout(stage.watchdog); }
+    this.#unsubscribe?.(); this.#unsubscribe = null; this.#released = true;
   }
 }
 
@@ -506,6 +679,6 @@ export class CurrentPcb209WorkerStartupTransport extends CurrentPcbWorkerStartup
   public constructor(dependency: CurrentPcbWorkerStartupDependency) {
     const source = CURRENT_PCB_209_WORKER_STARTUP_SOURCE;
     super(INTERNAL_PROFILE, dependency, { relativePath: source.relativePath, scriptBytes: source.bytes, scriptSha256: source.sha256 },
-      transport => new CurrentPcb209WorkerConstructionRunner(transport));
+      transport => new CurrentPcb209WorkerConstructionRunner(transport), true);
   }
 }

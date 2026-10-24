@@ -40,7 +40,10 @@ Validation is offline. It neither creates a journal nor grants authority.
    The path must identify the registered disposable file; its exact raw-path
    hash identifies the project. The document is an existing checkpoint-member
    PCB. The coordinator derives the branch and creates its own checkpoint.
-   It arms original worker capture before the single project opening.
+   It arms original worker capture before the single project opening. The
+   target is the generated editor bootstrap, followed by the preload and
+   project-worker imports. Each paused script is qualified separately; the
+   constructor breakpoints are armed before the project script resumes.
 4. After successful published capture, `observe-current-assignments` checks
    the current wrappers against retained constructor callbacks. After that
    published result, `observe-current-channel` and `observe-actor-clock` are
@@ -56,7 +59,8 @@ Validation is offline. It neither creates a journal nor grants authority.
 The parent discovery and startup channel share one monotonic request counter
 with a fixed256-command limit. Handoff does not reset it. This is sufficient
 for the defined startup stages; it does not admit the private common-state
-reader, whose complete bounded sequence needs up to3090 commands.
+reader, whose complete bounded sequence needs up to3090 commands, or its
+empty-root bracket, which raises that private sequence to3099 commands.
 
 ## Interpreting results and failures
 
@@ -80,6 +84,11 @@ Do not disable threading or use another launch purpose to evade that result.
 
 After a timeout or lost reply, use `inspect`; do not repeat capture or the
 consumed observation. Retain the original process owner for supported cleanup.
+Phase diagnostics distinguish the bootstrap, preload and project script. A
+target failure records bounded URL/name classifications and digests rather
+than a private URL. Generic project-opening consumption remains true through
+cleanup and historical inspection, including when constructor capture failed.
+Consumption does not imply a published successful opening result.
 Normal close does not prove discard or unchanged files. Leave Save/Discard
 prompts unanswered. Do not restart Codex while a live owner still needs cleanup.
 Source tests and a successful installation are separate from connected

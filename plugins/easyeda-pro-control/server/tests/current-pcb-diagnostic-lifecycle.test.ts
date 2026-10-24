@@ -1082,6 +1082,8 @@ for (const outcome of ["success", "capture-success", "result-publication", "nati
     const inspected = await value.coordinator.run({ action: "inspect", operationId: id });
     assert.equal(inspected["workerStartupOpeningResultPublished"], outcome !== "native-failure");
     assert.equal(inspected["workerStartupOpeningAttemptConsumed"], true);
+    assert.equal(inspected["projectOpeningAttemptConsumed"], true);
+    assert.equal(inspected["projectOpeningResultPublished"], false);
     assert.deepEqual(inspected["workerStartupOpeningNativeReply"], OPEN_RESULT);
     if (outcome === "success") {
       const path = join(directory(id), "worker-startup-opening-result.json"), text = await readFile(path, "utf8");
@@ -1092,11 +1094,19 @@ for (const outcome of ["success", "capture-success", "result-publication", "nati
         await assert.rejects(readCurrentPcbDiagnosticLifecycles(), /WORKER_STARTUP_OPENING_RESULT_CHAIN/u);
       } finally { await writeFile(path, text, { mode: 0o600 }); }
     }
-    await value.request("normal-close", { hwnd: "12345", confirmNormalClose: true });
-    value.state.terminated = true; await value.request("observe-termination"); await value.request("release-closed");
+    const closed = await value.request("normal-close", { hwnd: "12345", confirmNormalClose: true });
+    assert.equal(closed["projectOpeningAttemptConsumed"], true);
+    value.state.terminated = true;
+    const terminated = await value.request("observe-termination");
+    assert.equal(terminated["projectOpeningAttemptConsumed"], true);
+    const released = await value.request("release-closed");
+    assert.equal(released["projectOpeningAttemptConsumed"], true);
     assert.ok(value.calls.indexOf("startup-release") < value.calls.indexOf("release"));
     await assertNoUnresolvedCurrentPcbDiagnosticLaunches();
     const historical = new CurrentPcbWorkerStartupLifecycle(value.options);
+    const restored = await historical.run({ action: "inspect", operationId: id });
+    assert.equal(restored["projectOpeningAttemptConsumed"], true);
+    assert.equal(restored["projectOpeningResultPublished"], false);
     await assert.rejects(historical.openWorkerStartup(id, binding, STARTUP_OPEN_INPUT), /ORIGINAL_OWNER_REQUIRED/u);
     await assert.rejects(historical.requireWorkerStartup(id, binding, original.result), /ORIGINAL_STARTUP_RESULT_REQUIRED/u);
   });
