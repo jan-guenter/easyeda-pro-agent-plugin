@@ -86,3 +86,33 @@ void test("209 extended collections accept no caller target, filter, family or n
   assert.equal(currentPcb209OpeningRequestSchema.safeParse({ action: "inspect", operationId: bound.operationId,
     observation: "extended-primitives209" }).success, true);
 });
+
+void test("209 selection and relations normalize an omitted bounded component list and reject executable selectors", () => {
+  const request = { action: "observe-selection-relations", ...bound };
+  assert.deepEqual(currentPcb209OpeningRequestSchema.parse(request), { ...request, componentIds: [] });
+  assert.equal(currentPcbDiagnosticValidationRequestSchema.safeParse(request).success, false);
+  for (const componentIds of [["same", "same"], [""], ["\uD800"], Array.from({ length: 17 }, (_, index) => String(index))]) {
+    assert.equal(currentPcb209OpeningRequestSchema.safeParse({ ...request, componentIds }).success, false);
+  }
+  for (const extra of [{ code: "1" }, { family: "Pad" }, { target: {} }, { topic: "pcb/getSelectedIds" }, { selection: [] }]) {
+    assert.equal(currentPcb209OpeningRequestSchema.safeParse({ ...request, ...extra }).success, false);
+  }
+  assert.equal(currentPcb209OpeningRequestSchema.safeParse({ action: "inspect", operationId: bound.operationId,
+    observation: "selection-relations209" }).success, true);
+});
+
+void test("209 historical queries require published-record provenance and allow only bounded data selectors", () => {
+  const request = { action: "query-observation", operationId: bound.operationId, observation: "selection-relations209",
+    expectedResultRecordSha256: "b".repeat(64), query: { kind: "family", family: "Pad", primitiveIds: ["pad-a"], where: { net: null, layer: 12 } } };
+  assert.deepEqual(currentPcb209OpeningRequestSchema.parse(request), request);
+  assert.equal(currentPcbDiagnosticValidationRequestSchema.safeParse(request).success, false);
+  for (const extra of [{ expectedBindingSha256: bound.expectedBindingSha256 }, { path: "/private/result.json" }, { result: {} },
+    { target: {} }, { code: "1" }, { expectedResultRecordSha256: undefined }, { observation: "layers209" }]) {
+    assert.equal(currentPcb209OpeningRequestSchema.safeParse({ ...request, ...extra }).success, false);
+  }
+  for (const query of [{ kind: "family", family: "Pad", primitiveIds: ["same", "same"] },
+    { kind: "family", family: "Via", where: { layer: 1 } }, { kind: "selection", filter: {} },
+    { kind: "component-pads", componentId: "" }, { kind: "family", family: "Pad", where: { net: { regex: ".*" } } }]) {
+    assert.equal(currentPcb209OpeningRequestSchema.safeParse({ ...request, query }).success, false);
+  }
+});

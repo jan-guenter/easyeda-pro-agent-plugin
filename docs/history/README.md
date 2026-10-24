@@ -45,6 +45,9 @@ layout. The connected ledger retains its generation and case anchors.
 
 | Record | Former path |
 | --- | --- |
+| [2026-10-24-011500-selection-query-batch.md](2026-10-24-011500-selection-query-batch.md) | Combined209 selection, child-pad and historical-query implementation, verification and handoff |
+| [2026-10-24-pcb209-selection-query-research.md](2026-10-24-pcb209-selection-query-research.md) | Exact native selection/child-pad source research and pure historical query contracts |
+| [2026-10-24-000500-connected-extended-pcb-readers.md](2026-10-24-000500-connected-extended-pcb-readers.md) | Installed000500 Component/Pad/Attribute populated and Dimension/Image empty observations, original cleanup and terminal main CI |
 | [2026-10-24-000500-extended-pcb-readers-batch.md](2026-10-24-000500-extended-pcb-readers-batch.md) | Five-family209 reader batch, dependency fixes and pending release handoff |
 | [2026-10-24-213000-connected-pcb-primitives.md](2026-10-24-213000-connected-pcb-primitives.md) | Installed213000 Line/Via populated and Arc/String empty loaded-view observations with original cleanup |
 | [2026-10-24-dependency-advisory-updates.md](2026-10-24-dependency-advisory-updates.md) | body-parser/qs and fast-uri security updates, compatibility review and focused checks |

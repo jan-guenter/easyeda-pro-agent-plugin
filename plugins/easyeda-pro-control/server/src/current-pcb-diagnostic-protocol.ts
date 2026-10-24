@@ -25,6 +25,7 @@ import type { CurrentPcbDiagnosticPcbOpeningPhase } from "./current-pcb-diagnost
 import { CURRENT_PCB_209_LAYERS_FUNCTION } from "./current-pcb-209-layers.ts";
 import { CURRENT_PCB_209_PRIMITIVES_FUNCTION } from "./current-pcb-209-primitives.ts";
 import { CURRENT_PCB_209_EXTENDED_PRIMITIVES_FUNCTION } from "./current-pcb-209-extended-primitives.ts";
+import { CURRENT_PCB_209_SELECTION_RELATIONS_FUNCTION, currentPcb209SelectionRelationsComponentIdsSchema } from "./current-pcb-209-selection-relations.ts";
 import { CURRENT_PCB_STRING_PRECREATE_REQUEST_LIMIT, currentPcbStringScopeCommand, currentPcbStringWorkerCommand } from "./current-pcb-string-commands.ts";
 import type { CurrentPcbStringPrecreateCommand } from "./current-pcb-string-commands.ts";
 import { currentPcbStringActorClockWire } from "./current-pcb-string-actor-clock-wire.ts";
@@ -71,6 +72,14 @@ export function diagnosticPrimitives209Params(uniqueContextId: string, target: C
 export function diagnosticExtendedPrimitives209Params(uniqueContextId: string, target: CurrentDisposableOpenSealedTarget): ReturnType<typeof diagnosticOpeningParams> {
   const fixed = diagnosticPcbOpeningParams(uniqueContextId, target, "observe");
   return Object.freeze({ ...fixed, functionDeclaration: CURRENT_PCB_209_EXTENDED_PRIMITIVES_FUNCTION });
+}
+
+export function diagnosticSelectionRelations209Params(uniqueContextId: string, target: CurrentDisposableOpenSealedTarget,
+  componentIds: readonly string[]): ReturnType<typeof diagnosticOpeningParams> {
+  const fixed = diagnosticPcbOpeningParams(uniqueContextId, target, "observe");
+  const ids = Object.freeze(currentPcb209SelectionRelationsComponentIdsSchema.parse(componentIds));
+  return Object.freeze({ ...fixed, functionDeclaration: CURRENT_PCB_209_SELECTION_RELATIONS_FUNCTION,
+    arguments: Object.freeze([...fixed.arguments, Object.freeze({ value: ids })]) });
 }
 
 export const DIAGNOSTIC_WORKER_ATTACH_PARAMS = Object.freeze({ autoAttach: true, waitForDebuggerOnStart: false, flatten: true,
@@ -408,7 +417,8 @@ function fixedNativeRequest(chunk: Buffer, stringPurpose: boolean): Readonly<Rec
       request = { action: "send", requestId: id, method, sessionId, uniqueContextId: params["uniqueContextId"] };
     } else if (method === "Runtime.callFunctionOn") {
       const args = params["arguments"];
-      if (!diagnosticToken(params["uniqueContextId"]) || !Array.isArray(args) || args.length !== 2 ||
+      const selectionRelations209 = params["functionDeclaration"] === CURRENT_PCB_209_SELECTION_RELATIONS_FUNCTION;
+      if (!diagnosticToken(params["uniqueContextId"]) || !Array.isArray(args) || args.length !== (selectionRelations209 ? 3 : 2) ||
           !diagnosticRecord(args[0]) || !diagnosticExact(args[0], ["value"]) ||
           !diagnosticRecord(args[1]) || !diagnosticExact(args[1], ["value"])) { return fail(); }
       const phase = args[1]["value"], target = args[0]["value"];
@@ -418,8 +428,17 @@ function fixedNativeRequest(chunk: Buffer, stringPurpose: boolean): Readonly<Rec
       const layers209 = params["functionDeclaration"] === CURRENT_PCB_209_LAYERS_FUNCTION;
       const primitives209 = params["functionDeclaration"] === CURRENT_PCB_209_PRIMITIVES_FUNCTION;
       const extendedPrimitives209 = params["functionDeclaration"] === CURRENT_PCB_209_EXTENDED_PRIMITIVES_FUNCTION;
+      let componentIds: string[] = [];
+      if (selectionRelations209) {
+        const argument: unknown = args[2];
+        if (!diagnosticRecord(argument) || !diagnosticExact(argument, ["value"])) { return fail(); }
+        componentIds = currentPcb209SelectionRelationsComponentIdsSchema.parse(argument["value"]);
+      }
       let fixed: ReturnType<typeof diagnosticOpeningParams>;
-      if (extendedPrimitives209) {
+      if (selectionRelations209) {
+        if (phase !== "observe") { return fail(); }
+        fixed = diagnosticSelectionRelations209Params(params["uniqueContextId"], selected, componentIds);
+      } else if (extendedPrimitives209) {
         if (phase !== "observe") { return fail(); }
         fixed = diagnosticExtendedPrimitives209Params(params["uniqueContextId"], selected);
       } else if (primitives209) {
@@ -438,7 +457,8 @@ function fixedNativeRequest(chunk: Buffer, stringPurpose: boolean): Readonly<Rec
       if (JSON.stringify(params) !== JSON.stringify(fixed)) { return fail(); }
       command = { id, method, params: fixed, sessionId };
       let selectedPhase: Record<string, unknown> = { openingPhase: phase };
-      if (extendedPrimitives209) { selectedPhase = { pcbExtendedPrimitives209Phase: phase }; }
+      if (selectionRelations209) { selectedPhase = { pcbSelectionRelations209Phase: phase, componentIds }; }
+      else if (extendedPrimitives209) { selectedPhase = { pcbExtendedPrimitives209Phase: phase }; }
       else if (primitives209) { selectedPhase = { pcbPrimitives209Phase: phase }; }
       else if (layers209) { selectedPhase = { pcbLayers209Phase: phase }; }
       else if (pcb) { selectedPhase = { pcbOpeningPhase: phase }; }

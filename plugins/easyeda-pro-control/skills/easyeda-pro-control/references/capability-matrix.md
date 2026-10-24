@@ -20,14 +20,27 @@ The separate `observe-primitives` stage returns two matching Line/Arc/Via and
 parentless String loaded-view projections with ordered IDs. Its256-row per-family
 and384KiB aggregate bounds refuse excess output. It does not include raw models
 without views, other families or complete connectivity, and is not SDK-instance
-parity. The primitive route has source/offline evidence only; installed live
-validation remains pending.
+parity. Scoped connected cases on earlier installed generations do not admit
+this source payload or untested family shapes.
 The separate `observe-extended-primitives` stage adds Component, Pad, Attribute,
 Dimension and Image projections with ordered IDs, Attribute parent groups and
 explicit Component metadata presence states. Its limits are 256 rows per family,
 256 Attribute groups and 384 KiB aggregate output. No child-pad or reciprocal
 ownership, complete asset, rendered geometry, source or saved-state proof follows.
-This new stage has no connected validation yet.
+Earlier connected cases likewise do not transfer to this source payload.
+The separate `observe-selection-relations` stage reads all nine families and
+brackets each of two matching snapshots with native identity and selected-ID
+reads. Optional `componentIds` requests up to 16 ordered child-pad groups. It
+resolves every selected ID or refuses, and compares child IDs/scalars with
+global Pad DTOs. This adds no reciprocal ownership, symbol-pin mapping or
+child-handler geometry proof. The stage uses one CDP call, up to 58 local RPCs,
+256 rows per family and 384 KiB aggregate output. Its connected validation is
+pending.
+Repeatable `query-observation` reads published primitive snapshots by exact
+result-record digest. Family queries support IDs and documented exact filters;
+selection and component-pad queries require the corresponding recorded stage.
+These disk-only historical projections do not dispatch CAD calls, adopt an owner
+or establish current state. See [recorded observation queries](current-pcb209-opening.md#query-a-recorded-observation).
 The new ratline source verifier and finite-role
 model are dormant implementation groundwork, not an executable capture route.
 The [public catalog queries](current-system-library.md) require explicit network

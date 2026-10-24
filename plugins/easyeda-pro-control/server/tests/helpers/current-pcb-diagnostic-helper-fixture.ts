@@ -60,7 +60,7 @@ let sent = Buffer.alloc(0), terminated = false;
 let terminationReads = 0;
 const lines = createInterface({ input: process.stdin });
 function layers209Response(request: object & Record<"pcbLayers209Phase", unknown>): unknown {
-  assert.equal(scenario?.startsWith("opening-pcb-layers209") === true || scenario?.startsWith("opening-pcb-primitives209") === true || scenario?.startsWith("opening-pcb-extended-primitives209") === true, true);
+  assert.equal(scenario?.startsWith("opening-pcb-layers209") === true || scenario?.startsWith("opening-pcb-primitives209") === true || scenario?.startsWith("opening-pcb-extended-primitives209") === true || scenario?.startsWith("opening-pcb-selection-relations209") === true, true);
   assert.equal(pcbSourceRead, true); assert.equal(request.pcbLayers209Phase, "observe");
   assert.ok("uniqueContextId" in request); assert.equal(request.uniqueContextId, "unique-context-1");
   if (scenario === "opening-pcb-layers209-refused") { return { result: { type: "undefined" } }; }
@@ -72,7 +72,7 @@ function layers209Response(request: object & Record<"pcbLayers209Phase", unknown
 }
 function primitives209Response(request: object & Record<"pcbPrimitives209Phase", unknown>): unknown {
   assert.ok(scenario !== undefined);
-  assert.equal(scenario.startsWith("opening-pcb-primitives209") || scenario.startsWith("opening-pcb-extended-primitives209"), true);
+  assert.equal(scenario.startsWith("opening-pcb-primitives209") || scenario.startsWith("opening-pcb-extended-primitives209") || scenario.startsWith("opening-pcb-selection-relations209"), true);
   assert.equal(pcbSourceRead, true); assert.equal(request.pcbPrimitives209Phase, "observe");
   assert.ok("uniqueContextId" in request); assert.equal(request.uniqueContextId, "unique-context-1");
   if (scenario.endsWith("refused")) { return { result: { type: "undefined" } }; }
@@ -84,7 +84,8 @@ function primitives209Response(request: object & Record<"pcbPrimitives209Phase",
     target: scenario.endsWith("wrong-target") ? { ...identity, branchUuid: "f".repeat(32) } : identity, observations }) } };
 }
 function extendedPrimitives209Response(request: object & Record<"pcbExtendedPrimitives209Phase", unknown>): unknown {
-  assert.equal(scenario?.startsWith("opening-pcb-extended-primitives209"), true);
+  assert.ok(scenario !== undefined);
+  assert.equal(scenario.startsWith("opening-pcb-extended-primitives209") || scenario.startsWith("opening-pcb-selection-relations209"), true);
   assert.equal(pcbSourceRead, true); assert.equal(request.pcbExtendedPrimitives209Phase, "observe");
   assert.ok("uniqueContextId" in request); assert.equal(request.uniqueContextId, "unique-context-1");
   if (scenario.endsWith("refused")) { return { result: { type: "undefined" } }; }
@@ -103,7 +104,29 @@ function extendedPrimitives209Response(request: object & Record<"pcbExtendedPrim
     target: scenario.endsWith("wrong-target") ? { ...identity, branchUuid: "f".repeat(32) } : identity,
     observations, componentMetadataStates: [] }) } };
 }
+function selectionRelations209Response(request: object & Record<"pcbSelectionRelations209Phase", unknown>): unknown {
+  assert.equal(scenario?.startsWith("opening-pcb-selection-relations209"), true);
+  assert.equal(pcbSourceRead, true); assert.equal(request.pcbSelectionRelations209Phase, "observe");
+  assert.ok("uniqueContextId" in request); assert.equal(request.uniqueContextId, "unique-context-1");
+  assert.ok("componentIds" in request); assert.ok(Array.isArray(request.componentIds));
+  if (scenario.endsWith("refused")) { return { result: { type: "undefined" } }; }
+  const identity = { projectUuid, branchUuid, documentUuid: pcbDocumentUuid, tabId: pcbTabId };
+  const observations = ["Line", "Arc", "Via", "Component", "Pad", "String", "Attribute", "Dimension", "Image"].map(family => {
+    const observation: Record<string, unknown> = { ok: true, kind: "current-pcb-geometry-observation",
+      method: `eda.pcb_Primitive${family}.getAll`, target: identity, rows: [], samples: 2,
+      implementationKind: "native-task-equivalent", cadAuthority: false, persistenceVerified: false, sourceMembershipVerified: false };
+    if (family === "Attribute") {
+      observation["attributeParentGroups"] = []; observation["relationshipEvidence"] = "native-component-attribute-groups";
+      observation["reciprocalParentVerified"] = false;
+    }
+    return observation;
+  });
+  return { result: { type: "string", value: JSON.stringify({ ok: true, kind: "pcb209-original-selection-relations-observation",
+    target: scenario.endsWith("wrong-target") ? { ...identity, branchUuid: "f".repeat(32) } : identity,
+    observations, componentMetadataStates: [], selectedPrimitiveIds: [], requestedComponentIds: request.componentIds, componentPadGroups: [] }) } };
+}
 function openingOrLayerResponse(request: object, events: unknown[]): unknown {
+  if ("pcbSelectionRelations209Phase" in request) { return selectionRelations209Response(request); }
   if ("pcbExtendedPrimitives209Phase" in request) { return extendedPrimitives209Response(request); }
   if ("pcbPrimitives209Phase" in request) { return primitives209Response(request); }
   if ("pcbLayers209Phase" in request) { return layers209Response(request); }

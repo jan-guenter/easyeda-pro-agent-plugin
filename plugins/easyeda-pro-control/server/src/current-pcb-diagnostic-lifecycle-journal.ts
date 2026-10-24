@@ -17,6 +17,7 @@ import { currentPcbWorkerStartupChannelPacketSchema } from "./current-pcb-worker
 import { currentPcbObservationFailureSchema } from "./current-pcb-observation-failure.ts";
 import { CURRENT_PCB_209_PRIMITIVES_RESULT_BYTES } from "./current-pcb-209-primitives.ts";
 import { CURRENT_PCB_209_EXTENDED_PRIMITIVES_RESULT_BYTES } from "./current-pcb-209-extended-primitives.ts";
+import { CURRENT_PCB_209_SELECTION_RELATIONS_RESULT_BYTES, currentPcb209SelectionRelationsComponentIdsSchema } from "./current-pcb-209-selection-relations.ts";
 import { assertNoUnresolvedCurrentPcbStringLedgers } from "./current-pcb-string-ledger-exclusion.ts";
 import { CURRENT_PCB_COMMON_FAILURE_MAX_BYTES, currentPcbCommonBaselineFailureSchema, currentPcbCommonBaselineResultSchema } from "./current-pcb-common-baseline-validation.ts";
 
@@ -118,13 +119,18 @@ const noProcessReleasedSchema = z.object({ schema: z.literal("easyeda-pro-contro
   noProcessReleaseIntentSha256: diagnosticLifecycleDigestSchema, proof: diagnosticLifecycleNoProcessReleaseProofSchema,
 }).strict();
 export const diagnosticObservationStageSchema = z.enum(["browser", "frames", "script", "workers", "worker-script", "worker-state", "pcb-opening", "model-state"]);
-const extendedObservationStageSchema = z.enum([...diagnosticObservationStageSchema.options, "layers209", "primitives209", "extended-primitives209"]);
+const extendedObservationStageSchema = z.enum([...diagnosticObservationStageSchema.options, "layers209", "primitives209", "extended-primitives209", "selection-relations209"]);
 export const lifecycleObservationStages = [...extendedObservationStageSchema.options, "common-baseline", "string-precreate"] as const;
 const observationIntentSchema = z.object({ schema: z.literal("easyeda-pro-control.pcb-diagnostic-observation-intent.v1"), ...base,
   bindingSha256: diagnosticLifecycleDigestSchema, stage: extendedObservationStageSchema,
   targetId: z.string().regex(/^[A-Za-z\d_.:-]{1,128}$/u).optional(), frameId: z.string().regex(/^[A-Za-z\d_.:-]{1,128}$/u).optional(),
   family: z.enum(["ui", "pcb", "public-api"]).optional(),
+  componentIds: currentPcb209SelectionRelationsComponentIdsSchema.optional(),
 }).strict().refine(value => {
+  if (value.stage === "selection-relations209") {
+    return value.componentIds !== undefined && value.targetId === undefined && value.frameId === undefined && value.family === undefined;
+  }
+  if (value.componentIds !== undefined) { return false; }
   if (value.stage === "browser" || value.stage === "workers" || value.stage === "worker-state" || value.stage === "model-state" || value.stage === "pcb-opening" || value.stage === "layers209" || value.stage === "primitives209" || value.stage === "extended-primitives209") {
     return value.targetId === undefined && value.frameId === undefined && value.family === undefined;
   }
@@ -137,7 +143,8 @@ const observationResultSchema = z.object({ schema: z.literal("easyeda-pro-contro
 }).strict().refine(value => {
   const ordinaryLimit = value.stage === "primitives209" ? CURRENT_PCB_209_PRIMITIVES_RESULT_BYTES : DIAGNOSTIC_OBSERVATION_MAX_BYTES;
   const limit = value.stage === "extended-primitives209" ? CURRENT_PCB_209_EXTENDED_PRIMITIVES_RESULT_BYTES : ordinaryLimit;
-  return Buffer.byteLength(canonicalJson(value.result)) <= limit;
+  return Buffer.byteLength(canonicalJson(value.result)) <=
+    (value.stage === "selection-relations209" ? CURRENT_PCB_209_SELECTION_RELATIONS_RESULT_BYTES : limit);
 }, "Observation result exceeds its bound.");
 const stringPrecreateIntentSchema = z.object({
   schema: z.literal("easyeda-pro-control.pcb-string-precreate-observation-intent.v1"), ...base,
@@ -360,6 +367,7 @@ export const diagnosticLifecycleRecordSchemas = {
   "layers209-intent.json": observationIntentSchema, "layers209-result.json": observationResultSchema,
   "primitives209-intent.json": observationIntentSchema, "primitives209-result.json": observationResultSchema,
   "extended-primitives209-intent.json": observationIntentSchema, "extended-primitives209-result.json": observationResultSchema,
+  "selection-relations209-intent.json": observationIntentSchema, "selection-relations209-result.json": observationResultSchema,
   "string-precreate-intent.json": stringPrecreateIntentSchema, "string-precreate-result.json": stringPrecreateResultSchema,
   "common-baseline-intent.json": commonBaselineIntentSchema, "common-baseline-result.json": commonBaselineResultSchema,
   "common-baseline-failure.json": commonBaselineFailureSchema,
@@ -388,12 +396,15 @@ function requireValue(condition: boolean, message: string): asserts condition {
 function absent(value: unknown): boolean { return value instanceof Error && "code" in value && value.code === "ENOENT"; }
 function recordName(value: string): value is RecordName { return Object.hasOwn(diagnosticLifecycleRecordSchemas, value); }
 function recordBound(name: RecordName): number {
+  // Six JSON bytes per UTF-16 code unit covers control-character escapes in16 IDs.
+  if (name === "selection-relations209-intent.json") { return MAX_BYTES + 16 * 256 * 6; }
   // Two 4096-unit paths can each require six JSON bytes per UTF-16 unit;
   // The remaining schema-bounded fields fit within the ordinary 8 KiB envelope.
   if (name === "project-opening-intent.json" || name === "worker-startup-opening-intent.json") { return 64 * 1024; }
   if (name === "string-precreate-result.json") { return STRING_PRECREATE_OBSERVATION_MAX_BYTES + MAX_BYTES; }
   if (name === "primitives209-result.json") { return CURRENT_PCB_209_PRIMITIVES_RESULT_BYTES + MAX_BYTES; }
   if (name === "extended-primitives209-result.json") { return CURRENT_PCB_209_EXTENDED_PRIMITIVES_RESULT_BYTES + MAX_BYTES; }
+  if (name === "selection-relations209-result.json") { return CURRENT_PCB_209_SELECTION_RELATIONS_RESULT_BYTES + MAX_BYTES; }
   if (name === "common-baseline-failure.json") { return CURRENT_PCB_COMMON_FAILURE_MAX_BYTES + MAX_BYTES; }
   return name.endsWith("-result.json") ? DIAGNOSTIC_OBSERVATION_MAX_BYTES + MAX_BYTES : MAX_BYTES;
 }
@@ -533,6 +544,12 @@ function validateChain(operation: DiagnosticLifecycleOperation): void {
   requireValue(records["extended-primitives209-intent.json"] === undefined || operation.operationId.startsWith("pcb209-") && pcbObserved !== undefined &&
     pcbObserved.result["sourceVerified"] === true && records["workers-intent.json"] === undefined && records["model-state-intent.json"] === undefined,
   "EXTENDED_PRIMITIVES209_CHAIN");
+  const selectionIntent = records["selection-relations209-intent.json"], selectionResult = records["selection-relations209-result.json"];
+  requireValue(selectionIntent === undefined || operation.operationId.startsWith("pcb209-") && pcbObserved !== undefined &&
+    pcbObserved.result["sourceVerified"] === true && records["workers-intent.json"] === undefined && records["model-state-intent.json"] === undefined,
+  "SELECTION_RELATIONS209_CHAIN");
+  requireValue(selectionResult === undefined || selectionIntent !== undefined && Array.isArray(selectionResult.result["requestedComponentIds"]) &&
+    canonicalJson(selectionResult.result["requestedComponentIds"]) === canonicalJson(selectionIntent.componentIds), "SELECTION_RELATIONS209_REQUEST");
   requireValue(pcbOpen === undefined || binding !== undefined && pcbOpen.bindingSha256 === sha256Json(binding) &&
     opening !== undefined && pcbOpen.projectOpeningIntentSha256 === sha256Json(opening) && opened !== undefined &&
     pcbOpen.projectOpeningResultSha256 === sha256Json(opened) && opened.result["ok"] === true &&

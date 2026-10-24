@@ -131,6 +131,24 @@ for (const [family, detail] of [
   } });
 }
 
+for (const [namespace, methods] of [
+  ["pcb_SelectControl", ["getSelectedPrimitives", "getAllSelectedPrimitives", "getAllSelectedPrimitives_PrimitiveId"]],
+  ["pcb_PrimitiveComponent", ["getAllPinsByPrimitiveId"]],
+] as const) {
+  groups.push({ namespace, methods, route: {
+    tool: "easyeda_control_pcb209_opening", selector: "observe-selection-relations", implementation: "native-task-equivalent",
+    scope: "Separately pinned installed209 original-owner disposable observation, not public SDK execution or instance parity. One consumed stage combines nine supported loaded-view families, complete ordered selected IDs and0..16 explicitly requested Component child-pad lists. Each selected ID must resolve exactly once or the whole result refuses; unsupported selected types and parented String are never dropped. Native child lists preserve empty versus null, request/child order and complete IDs, with number/net/layer/lock/metallization/type correlated to global Pad DTOs. Child geometry is not used because its units and rounding differ. Duplicate assignments across requested parents refuse without proving reciprocal ownership or unrequested parents. Two matching samples bracket selection and native identity, rechecking the original target/receiver around every await. At most256 rows per family/selection/child references and393216 UTF-8 bytes per native/final packet. Existing projection omissions and serializer effects remain; sequential matching is not atomic or complete stored membership. The original normal-close/root/Job/release lifecycle remains required. No selection change, edit, Save, connectivity, symbol-pin mapping, persistence or writer authority. Separate query-observation reads one published historical snapshot by exact record digest; it is not fresh get/getAll execution and does not combine stages or grant live ownership.",
+    source: ["current-pcb-209-selection-relations.ts", "current-pcb-209-opening-validation.ts", "current-pcb-diagnostic-lifecycle.ts",
+      "current-pcb-diagnostic-lifecycle-journal.ts", "current-pcb-diagnostic-owner.ts", "current-pcb-diagnostic-pipe.ts",
+      "current-pcb-diagnostic-protocol.ts", "../../scripts/pcb-diagnostic-owner.ps1"],
+    tests: ["current-pcb-209-selection-relations.test.ts", "current-pcb-209-selection-relations-native.test.ts",
+      "current-pcb-209-opening.test.ts", "current-pcb-diagnostic-lifecycle.test.ts", "current-pcb-diagnostic-owner.test.ts",
+      "current-pcb-diagnostic-pipe.test.ts", "extension-api-coverage.test.ts"],
+    documentTypes: [3], validation: "offline-regression;current-live-unclaimed", executionState: "available-with-runtime-guards",
+    inputDiscovery: { tool: "easyeda_control_api", arguments: { request: { action: "pcb209-opening", query: { includeSchemas: true } } } },
+  } });
+}
+
 function add(namespace: string, methods: readonly string[], tool: string, selector: string,
   implementation: ApiCoverageRoute["implementation"], scope: string, source: readonly string[], tests: readonly string[], admittedDocumentTypes?: readonly number[]): void {
   let inputDiscovery: ApiCoverageRoute["inputDiscovery"];

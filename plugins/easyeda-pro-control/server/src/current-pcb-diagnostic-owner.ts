@@ -61,9 +61,10 @@ import { CurrentPcbWorkerStartupPcbSession } from "./current-pcb-worker-startup-
 import { decodeCurrentPcb209LayersReply } from "./current-pcb-209-layers.ts";
 import { decodeCurrentPcb209PrimitivesReply } from "./current-pcb-209-primitives.ts";
 import { decodeCurrentPcb209ExtendedPrimitivesReply } from "./current-pcb-209-extended-primitives.ts";
+import { currentPcb209SelectionRelationsComponentIdsSchema, decodeCurrentPcb209SelectionRelationsReply } from "./current-pcb-209-selection-relations.ts";
 
-const HELPER_SHA256 = "45c5cb0e50383bc31de0ad5ce18653391791fa59a9ef798d43c0de10a103f8e6";
-const HELPER_BYTES = 936_177;
+const HELPER_SHA256 = "7068a383a7d0ad5a0e3e930cfc134240dac322efb8739943e9c3096656950bed";
+const HELPER_BYTES = 967_711;
 const MAX_LINE = 100_000;
 // 64 MiB native bytes need at most 85.34 MiB base64 plus bounded poll envelopes.
 const MAX_TOTAL = 96 * 1024 * 1024;
@@ -195,6 +196,7 @@ class CurrentPcbRetainedOwnerCore {
   #layers209Consumed = false;
   #primitives209Consumed = false;
   #extendedPrimitives209Consumed = false;
+  #selectionRelations209Consumed = false;
   #modelConsumed = false;
   #stringPrecreateConsumed = false;
   #commonBaselineConsumed = false;
@@ -576,6 +578,33 @@ class CurrentPcbRetainedOwnerCore {
       await this.#verifyInstallation(); reprove(); await this.#verify(); reprove();
       return result;
     } catch (caughtError) { this.#input.emit("error", error("EXTENDED_PRIMITIVES209_FAILED")); throw caughtError; }
+    finally { this.#busy = false; }
+  }
+
+  /** One fixed selection and component-pad association read from the original
+   * qualified209 child. Component IDs select relations, never native programs. */
+  public async observeSelectionRelations209(input: CurrentDisposableOpenSealedTarget, inputComponentIds: readonly string[]): Promise<Readonly<RecordValue>> {
+    const context = this.#stagedContext, profile = this.#pcbSourceProfile, target = currentDisposableOpenSealedTargetSchema.parse(input);
+    const componentIds = Object.freeze(currentPcb209SelectionRelationsComponentIdsSchema.parse(inputComponentIds));
+    if (this.#purpose !== "diagnostic209" || context === null || this.#selectionRelations209Consumed || !this.#pcbSourceQualified ||
+        profile === null || this.#pcbFrameObservation?.ok !== true || this.#workersConsumed || this.#modelConsumed ||
+        JSON.stringify(target) !== JSON.stringify(this.#projectOpeningTarget)) { throw error("SELECTION_RELATIONS209_UNAVAILABLE"); }
+    this.#enter(true); this.#selectionRelations209Consumed = true;
+    try {
+      const pcb = context.modelContext(), selected = context.pcbOpeningContext();
+      const reprove = (): void => {
+        this.#available(); context.pcbScript(profile);
+        if (JSON.stringify(context.pcbOpeningContext()) !== JSON.stringify(selected) ||
+            JSON.stringify(context.modelContext()) !== JSON.stringify(pcb)) { throw error("SELECTION_RELATIONS209_CONTEXT"); }
+      };
+      await this.#verifyInstallation(); reprove(); await this.#verify(); reprove();
+      await this.#observeParent(); reprove(); await this.#observeOpeningAncillary(); reprove();
+      const result = decodeCurrentPcb209SelectionRelationsReply(
+        await this.#transfer(() => this.#pipe.observeSelectionRelations209(selected.uniqueContextId, target, componentIds)), target, componentIds);
+      reprove(); await this.#observeParent(); reprove(); await this.#observeOpeningAncillary(); reprove();
+      await this.#verifyInstallation(); reprove(); await this.#verify(); reprove();
+      return result;
+    } catch (caughtError) { this.#input.emit("error", error("SELECTION_RELATIONS209_FAILED")); throw caughtError; }
     finally { this.#busy = false; }
   }
 
