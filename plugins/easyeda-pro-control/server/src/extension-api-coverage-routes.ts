@@ -131,6 +131,30 @@ for (const [family, detail] of [
   } });
 }
 
+groups.push({ namespace: "pcb_PrimitivePad", methods: ["getAll", "getAllPrimitiveId"], route: {
+  tool: "easyeda_control_pcb209_opening", selector: "observe-pad-shapes", implementation: "native-task-equivalent",
+  scope: "Separately pinned installed209 original-owner disposable Pad observation. Two matching complete loaded-view Pad collections retain the unchanged supported Pad DTO plus per-ID native special top/inner/bottom style groups. Empty groups mean only that the native serializer emitted none. Nonempty groups require exactly ordered native selectors[1,1],[1,2],[2,2] and supported ELLIPSE/OVAL/RECT dimensions with rectangle corner percent. These selectors are style groups, not physical layer intervals. NGON, incomplete polygon special groups and inner-only handler gaps remain unsupported. At most256 Pad rows and393216 UTF-8 bytes in native/final results; bounded output does not cancel preceding vendor enumeration. Exact original PCB source/target/receiver and normal cleanup remain required. No public SDK instance/getState parity, physical stack expansion, reciprocal parent proof, connectivity, saved geometry, edit, Save or writer baseline. Existing v1 results/decoders remain unchanged. Digest-bound historical Pad queries preserve the selected rows' observed groups without fresh RPCs or present-state authority.",
+  source: ["current-pcb-209-pad-shapes.ts", "current-pcb-209-observation-query.ts", "current-pcb-209-opening-validation.ts",
+    "current-pcb-diagnostic-lifecycle.ts", "current-pcb-diagnostic-lifecycle-journal.ts", "current-pcb-diagnostic-owner.ts",
+    "current-pcb-diagnostic-pipe.ts", "current-pcb-diagnostic-protocol.ts", "../../scripts/pcb-diagnostic-owner.ps1"],
+  tests: ["current-pcb-209-pad-shapes.test.ts", "current-pcb-209-pad-shapes-native.test.ts", "current-pcb-209-observation-query.test.ts",
+    "current-pcb-209-opening.test.ts", "current-pcb-diagnostic-owner.test.ts", "current-pcb-diagnostic-pipe.test.ts",
+    "current-pcb-diagnostic-lifecycle.test.ts", "extension-api-coverage.test.ts"],
+  documentTypes: [3], validation: "offline-regression;current-live-unclaimed", executionState: "available-with-runtime-guards",
+  inputDiscovery: { tool: "easyeda_control_api", arguments: { request: { action: "pcb209-opening", query: { includeSchemas: true } } } },
+} }, { namespace: "pcb_PrimitiveImage", methods: ["getAll", "getAllPrimitiveId"], route: {
+  tool: "easyeda_control_pcb209_opening", selector: "observe-image-shapes", implementation: "native-task-equivalent",
+  scope: "Separately pinned installed209 original-owner disposable Image/Picture observation. Two matching native loaded-view collections retain placement/display DTOs and exact per-ID association to bounded serialized vector paths or opaque Picture asset references. Vector paths accept only the reviewed native command grammar and retain native coordinates/color; no SVG parser, image loader or filesystem/network read is provided. Picture references are opaque data, never resolved paths or authority to load an asset. At most256 rows and393216 UTF-8 bytes per native/final result; serializer work precedes these bounds. Exact original PCB source/target/receiver and one-shot cleanup remain required. No public SDK instance parity, asset content/availability/ownership, rendered boundaries, saved membership, edit, Save or writer authority. Existing v1 observations remain unchanged. Historical Image queries preserve only the selected rows' descriptors and grant no present-state proof.",
+  source: ["current-pcb-209-image-shapes.ts", "current-pcb-209-observation-query.ts", "current-pcb-209-opening-validation.ts",
+    "current-pcb-diagnostic-lifecycle.ts", "current-pcb-diagnostic-lifecycle-journal.ts", "current-pcb-diagnostic-owner.ts",
+    "current-pcb-diagnostic-pipe.ts", "current-pcb-diagnostic-protocol.ts", "../../scripts/pcb-diagnostic-owner.ps1"],
+  tests: ["current-pcb-209-image-shapes.test.ts", "current-pcb-209-image-shapes-native.test.ts", "current-pcb-209-observation-query.test.ts",
+    "current-pcb-209-opening.test.ts", "current-pcb-diagnostic-owner.test.ts", "current-pcb-diagnostic-pipe.test.ts",
+    "current-pcb-diagnostic-lifecycle.test.ts", "extension-api-coverage.test.ts"],
+  documentTypes: [3], validation: "offline-regression;current-live-unclaimed", executionState: "available-with-runtime-guards",
+  inputDiscovery: { tool: "easyeda_control_api", arguments: { request: { action: "pcb209-opening", query: { includeSchemas: true } } } },
+} });
+
 for (const [namespace, methods] of [
   ["pcb_SelectControl", ["getSelectedPrimitives", "getAllSelectedPrimitives", "getAllSelectedPrimitives_PrimitiveId"]],
   ["pcb_PrimitiveComponent", ["getAllPinsByPrimitiveId"]],

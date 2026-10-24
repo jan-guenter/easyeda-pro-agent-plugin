@@ -1240,3 +1240,22 @@ void test("committed machine-readable inventory matches current declarations, ro
   const actual: unknown = JSON.parse(await readFile(resolve(import.meta.dirname, "../../api-coverage.json"), "utf8"));
   assert.deepEqual(actual, expected);
 });
+
+void test("209 detailed Pad and Image routes keep native scope without claiming new public getters", () => {
+  const rows = inventoryExtensionApiCoverage();
+  for (const [family, selector] of [["Pad", "observe-pad-shapes"], ["Image", "observe-image-shapes"]] as const) {
+    const selected = rows.filter(row => row.routes.some(route => route.selector === selector));
+    assert.deepEqual(selected.map(row => row.path).toSorted(), [`eda.pcb_Primitive${family}.getAll`, `eda.pcb_Primitive${family}.getAllPrimitiveId`]);
+    for (const row of selected) {
+      const route = row.routes.find(entry => entry.selector === selector); assert.ok(route);
+      assert.equal(route.implementation, "native-task-equivalent"); assert.equal(route.validation, "offline-regression;current-live-unclaimed");
+      assert.equal(row.completeDeclaredContractSupported, false); assert.equal(row.currentGenerationLiveValidation, "not-recorded");
+      assert.deepEqual(route.documentTypes, [3]); assert.ok(route.inputDiscovery);
+      const discovery = queryOfflineApi(apiRequestSchema.parse(route.inputDiscovery.arguments["request"]));
+      assert.ok(isRecord(discovery.result)); assert.ok(Array.isArray(discovery.result["actions"]));
+      assert.ok(discovery.result["actions"].includes(selector));
+    }
+    const getter = rows.find(row => row.path === `eda.pcb_Primitive${family}.get`); assert.ok(getter);
+    assert.equal(getter.routes.some(route => route.tool === "easyeda_control_pcb209_opening"), false);
+  }
+});

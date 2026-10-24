@@ -98,12 +98,18 @@ The fourth live stage, `observe-selection-relations`, captures all nine
 families, bracketed selection IDs and child-pad lists for up to 16 requested
 Component IDs. It resolves selected objects and compares child scalar fields
 with global Pad rows; it does not prove reciprocal ownership or child geometry.
-All live stages are once-only under the original owner.
+Separate `observe-pad-shapes` and `observe-image-shapes` stages add native pad
+style groups and image path/reference descriptors. They retain the original
+Pad/Image row fields and have their own versioned results; earlier observations
+are not enriched retroactively. Read the workflow for supported encodings and
+coordinate units. All live stages are once-only under the original owner.
 
 Use `query-observation` on the same tool for repeatable ID lookup and exact field
 filters over published `primitives209`, `extended-primitives209` or
-`selection-relations209` snapshots. The last also supports captured selection
-and requested component-pad queries. Supply `expectedResultRecordSha256` from
+`selection-relations209` snapshots. The selection stage also supports captured
+selection and requested component-pad queries. `pad-shapes209` and
+`image-shapes209` support family queries only for Pad and Image respectively,
+retaining their extra descriptors in returned-ID order. Supply `expectedResultRecordSha256` from
 `inspect`. These are historical disk reads, with no live dispatch, owner adoption
 or current-state claim. See [the query grammar](current-pcb209-opening.md#query-a-recorded-observation)
 and [the complete offline validation wrapper](current-pcb209-opening.md)

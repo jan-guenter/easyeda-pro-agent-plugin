@@ -151,3 +151,73 @@ The other focused reader/query/native/protocol/coverage/registration checks
 passed in the retained combined run; corrected facade metadata checks passed
 in the affected run. Earlier failed attempts remain described above. The
 complete final facade and bridge suites remain delegated to exact-commit CI.
+
+## Protected publication and official installation
+
+[PR112](https://github.com/jan-guenter/easyeda-pro-agent-plugin/pull/112)
+merged reviewed head `cdb6fd9257ecf412ffd1aa4ff7da2da1596326f6` to main
+`a9f44a98b80cd257f0ecfdcccb1aae978421ef4d` at2026-10-24T01:38:07Z.
+All final-head [Linux CI40049509150](https://github.com/jan-guenter/easyeda-pro-agent-plugin/actions/runs/40049509150)
+and [Windows CI40049509164](https://github.com/jan-guenter/easyeda-pro-agent-plugin/actions/runs/40049509164)
+jobs passed, including the protected aggregate check and committed-bundle
+reproducibility. Facade:12538 passed,5 expected platform skips,0 failures or
+cancellations. Bridge:424 passed across28 files. The private independently
+reviewed CI summary SHA-256 is
+`a1f25839356a15ce3a42978b2c5afd3e116f186d2a7b3a3dd4a12d1b47688e38`.
+No guard, test selection or branch protection was bypassed.
+
+Merged main and the tested head have identical full tree
+`39b96fbd5d77801ef7b6858ca1fa5b83bcbdfb57` and plugin subtree
+`bf4ac540c1b0c4cab103eab66f5461ebce6c612c`. The automatic main follow-up
+[Windows40050687870](https://github.com/jan-guenter/easyeda-pro-agent-plugin/actions/runs/40050687870)
+has passed; [Linux40050687858](https://github.com/jan-guenter/easyeda-pro-agent-plugin/actions/runs/40050687858)
+is still running at this terminal observation. Its later outcome must be read
+separately; no second complete local suite was run to duplicate CI.
+
+The official CLI, run from a neutral directory with installer umask022,
+upgraded only Git marketplace
+`https://github.com/jan-guenter/easyeda-pro-agent-plugin.git` and reported no
+upgrade errors. Its final listing confirms011500 installed and enabled.
+Cached marketplace HEAD equals merged main; its only untracked file is the
+CLI-owned marketplace-install metadata. No cache file or active host was patched.
+The CLI emitted its existing stale-arg0-directory permission warning; this did
+not prevent the successful upgrade or exact verification.
+
+The maintained installed verifier matched all1819 files/42 directories,
+39160444bytes and modes against merged main. Inventory SHA-256:
+`ab44104c7ad1e2e2a1236510d1eb8a941092893df8e8c13eb153caa2f925c14c`.
+Private receipt SHA-256:
+`a666f542972e2f793f7a00a56344b228a92aa2ec3e65450566a7362d92c1672f`.
+
+The installed offline probe passed under pinned Node24.18.0 using only its own
+synthetic profile/control root:26 tools,10 catalog queries,12 replies, no stderr,
+normal EOF/exit0 and no sampled descendants or non-stdio sockets. This is the
+probe's synthetic legacy selector, not the actual209 host's13-tool admission.
+No live control root, CAD call or upstream process was selected, and continuous
+isolation is not claimed. Probe receipt SHA-256:
+`473c04d397efee85d26842d19128e23c1318bebe8df6c8def38c369cef2b3d8c`.
+
+GitHub's push warning still listed old fast-uri3.1.8/body-parser2.3.0 alerts.
+Both the fetched base main and released lockfile already contain patched
+fast-uri3.1.9/body-parser2.4.0; the local audit is clean. No alert was dismissed.
+
+## Fresh-session handoff
+
+Publication and installation in remaining-work item1 are complete. Actual
+011500 host admission and the new connected selection/relations case remain
+pending. The current retained host is still000500; its original process start
+identity remains unchanged. Do not invoke the new live stage through it,
+hotpatch its files or terminate/rebind it. Start a fresh Codex session, inspect
+its actual installed payload, then use a new disposable operation with the
+maintained original-owner lifecycle. The completed000500 case is terminal and
+must never be replayed. No CAD operation or journal recovery is pending.
+
+Items2–6 above remain the implementation/validation backlog. A small optional
+future CI improvement is to extract two repeatedly transformed test fixture
+factories; a read-only audit found no duplicate test-entry imports to remove.
+No timing improvement is claimed. Batch these follow-ups with useful capability
+work, preserving current v1 historical decoders.
+
+This terminal appendix is retained locally and published with the PR release
+record. Include it in the next grouped source change; do not manufacture a new
+plugin version or repeat a release solely to commit post-install receipts.

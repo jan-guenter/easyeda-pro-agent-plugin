@@ -5,6 +5,8 @@ import { canonicalJson } from "./core.ts";
 import { currentDisposableOpenSealedTargetSchema } from "./current-disposable-open.ts";
 import { CURRENT_PCB_GEOMETRY_MAX_BYTES, CURRENT_PCB_GEOMETRY_MAX_ROWS } from "./current-pcb-geometry.ts";
 import { decodeCurrentPcb209PrimitivesReply } from "./current-pcb-209-primitives.ts";
+import { decodeCurrentPcb209ImageShapesReply } from "./current-pcb-209-image-shapes.ts";
+import { decodeCurrentPcb209PadShapesReply } from "./current-pcb-209-pad-shapes.ts";
 import { decodeCurrentPcb209ExtendedPrimitivesReply } from "./current-pcb-209-extended-primitives.ts";
 import { currentPcb209SelectionRelationsComponentIdsSchema, decodeCurrentPcb209SelectionRelationsReply } from "./current-pcb-209-selection-relations.ts";
 import { freezeDeep } from "./sqlite-inventory-core.ts";
@@ -40,7 +42,7 @@ const familyQuery = z.discriminatedUnion("family", [
 ]);
 export const currentPcb209ObservationQuerySchema = z.union([familyQuery,
   z.object({ kind: z.literal("selection") }).strict(), z.object({ kind: z.literal("component-pads"), componentId: id }).strict()]);
-export const currentPcb209ObservationQueryStageSchema = z.enum(["primitives209", "extended-primitives209", "selection-relations209"]);
+export const currentPcb209ObservationQueryStageSchema = z.enum(["primitives209", "extended-primitives209", "selection-relations209", "pad-shapes209", "image-shapes209"]);
 export const currentPcb209ObservationQueryProvenanceSchema = z.object({ operationId: z.string().max(80).regex(/^pcb209-[a-z0-9][a-z0-9_-]*$/u),
   stage: currentPcb209ObservationQueryStageSchema, resultRecordSha256: z.string().regex(/^[a-f\d]{64}$/u), observedAt: z.iso.datetime() }).strict();
 const recordSchema = z.record(z.string(), z.unknown());
@@ -65,6 +67,14 @@ function reconstruct(result: RecordValue, target: unknown, stage: z.infer<typeof
   if (stage === "primitives209") { packet = { ...base, kind: "pcb209-original-primitives-observation" }; }
   else if (stage === "extended-primitives209") {
     packet = { ...base, kind: "pcb209-original-extended-primitives-observation", componentMetadataStates: result["componentMetadataStates"] };
+  } else if (stage === "pad-shapes209") {
+    if (observations.length !== 1) { throw new Error("PCB209_QUERY_PAD_FAMILY_COUNT"); }
+    packet = { ok: true, kind: "pcb209-original-pad-shapes-observation", target: result["target"],
+      observation: observations[0], specialShapeGroups: result["specialShapeGroups"] };
+  } else if (stage === "image-shapes209") {
+    if (observations.length !== 1) { throw new Error("PCB209_QUERY_IMAGE_FAMILY_COUNT"); }
+    packet = { ok: true, kind: "pcb209-original-image-shapes-observation", target: result["target"],
+      observation: observations[0], imageShapes: result["imageShapes"] };
   } else {
     // IDs come from the original published intent independently of this result.
     // An empty list is still explicit.
@@ -77,9 +87,19 @@ function reconstruct(result: RecordValue, target: unknown, stage: z.infer<typeof
   let decoded: Readonly<RecordValue>;
   if (stage === "primitives209") { decoded = decodeCurrentPcb209PrimitivesReply(reply, target); }
   else if (stage === "extended-primitives209") { decoded = decodeCurrentPcb209ExtendedPrimitivesReply(reply, target); }
+  else if (stage === "pad-shapes209") { decoded = decodeCurrentPcb209PadShapesReply(reply, target); }
+  else if (stage === "image-shapes209") { decoded = decodeCurrentPcb209ImageShapesReply(reply, target); }
   else { decoded = decodeCurrentPcb209SelectionRelationsReply(reply, target, originalComponentIds); }
   if (canonicalJson(decoded) !== canonicalJson(result)) { throw new Error("PCB209_QUERY_RECONSTRUCTION_MISMATCH"); }
   return decoded;
+}
+
+function orderedDescriptors(input: unknown, rows: readonly RecordValue[]): RecordValue[] {
+  const byId = new Map(recordsSchema.parse(input).map(entry => [entry["primitiveId"], entry]));
+  return rows.map(row => {
+    const entry = byId.get(row["primitiveId"]);
+    if (entry === undefined) { throw new Error("PCB209_QUERY_ASSOCIATION_MISSING"); } return entry;
+  });
 }
 
 /** Provenance is supplied by the bounded journal reader, not authenticated here.
@@ -142,6 +162,14 @@ export function queryCurrentPcb209Observation(resultInput: unknown, targetInput:
     attributeParentGroups: includeAttributes ? recordsSchema.parse(attributes?.["attributeParentGroups"]) : [],
     attributeGroupScope: includeAttributes ? "complete-observed-component-roster;returned-rows-may-be-filtered" : "not-requested",
     componentPadGroups, componentPadGroupScope: query.kind === "component-pads" ? "complete-observed-requested-child-list" : "not-requested",
+    ...(provenance.stage === "pad-shapes209" ? {
+      specialShapeGroups: orderedDescriptors(source["specialShapeGroups"], rows),
+      specialShapeScope: source["specialShapeScope"], units: source["units"], physicalLayerExpansionVerified: false,
+    } : {}),
+    ...(provenance.stage === "image-shapes209" ? {
+      imageShapes: orderedDescriptors(source["imageShapes"], rows),
+      imageShapeScope: source["imageShapeScope"], units: source["units"], renderedGeometryVerified: false, assetContentVerified: false,
+    } : {}),
     historical: true, freshObservation: false, implementationKind: "retained-observation-projection",
     sourceMembershipVerified: false, reciprocalParentVerified: false, symbolPinMappingVerified: false, connectivityVerified: false,
     persistenceVerified: false, executionAuthorized: false, saveAuthorized: false,

@@ -61,10 +61,12 @@ import { CurrentPcbWorkerStartupPcbSession } from "./current-pcb-worker-startup-
 import { decodeCurrentPcb209LayersReply } from "./current-pcb-209-layers.ts";
 import { decodeCurrentPcb209PrimitivesReply } from "./current-pcb-209-primitives.ts";
 import { decodeCurrentPcb209ExtendedPrimitivesReply } from "./current-pcb-209-extended-primitives.ts";
+import { decodeCurrentPcb209ImageShapesReply } from "./current-pcb-209-image-shapes.ts";
+import { decodeCurrentPcb209PadShapesReply } from "./current-pcb-209-pad-shapes.ts";
 import { currentPcb209SelectionRelationsComponentIdsSchema, decodeCurrentPcb209SelectionRelationsReply } from "./current-pcb-209-selection-relations.ts";
 
-const HELPER_SHA256 = "7068a383a7d0ad5a0e3e930cfc134240dac322efb8739943e9c3096656950bed";
-const HELPER_BYTES = 967_711;
+const HELPER_SHA256 = "b3e1aae0f9197497ef3c85abf6707215b9351b936c547ac9cc18cb649eca9b95";
+const HELPER_BYTES = 1_003_912;
 const MAX_LINE = 100_000;
 // 64 MiB native bytes need at most 85.34 MiB base64 plus bounded poll envelopes.
 const MAX_TOTAL = 96 * 1024 * 1024;
@@ -196,6 +198,8 @@ class CurrentPcbRetainedOwnerCore {
   #layers209Consumed = false;
   #primitives209Consumed = false;
   #extendedPrimitives209Consumed = false;
+  #padShapes209Consumed = false;
+  #imageShapes209Consumed = false;
   #selectionRelations209Consumed = false;
   #modelConsumed = false;
   #stringPrecreateConsumed = false;
@@ -578,6 +582,58 @@ class CurrentPcbRetainedOwnerCore {
       await this.#verifyInstallation(); reprove(); await this.#verify(); reprove();
       return result;
     } catch (caughtError) { this.#input.emit("error", error("EXTENDED_PRIMITIVES209_FAILED")); throw caughtError; }
+    finally { this.#busy = false; }
+  }
+
+  /** One fixed Pad style209 DTO read through the original qualified child.
+   * It grants no complete-board, source, parent ownership or writer authority. */
+  public async observePadShapes209(input: CurrentDisposableOpenSealedTarget): Promise<Readonly<RecordValue>> {
+    const context = this.#stagedContext, profile = this.#pcbSourceProfile, target = currentDisposableOpenSealedTargetSchema.parse(input);
+    if (this.#purpose !== "diagnostic209" || context === null || this.#padShapes209Consumed || !this.#pcbSourceQualified ||
+        profile === null || this.#pcbFrameObservation?.ok !== true || this.#workersConsumed || this.#modelConsumed ||
+        JSON.stringify(target) !== JSON.stringify(this.#projectOpeningTarget)) { throw error("PAD_SHAPES209_UNAVAILABLE"); }
+    this.#enter(true); this.#padShapes209Consumed = true;
+    try {
+      const pcb = context.modelContext(), selected = context.pcbOpeningContext();
+      const reprove = (): void => {
+        this.#available(); context.pcbScript(profile);
+        if (JSON.stringify(context.pcbOpeningContext()) !== JSON.stringify(selected) ||
+            JSON.stringify(context.modelContext()) !== JSON.stringify(pcb)) { throw error("PAD_SHAPES209_CONTEXT"); }
+      };
+      await this.#verifyInstallation(); reprove(); await this.#verify(); reprove();
+      await this.#observeParent(); reprove(); await this.#observeOpeningAncillary(); reprove();
+      const result = decodeCurrentPcb209PadShapesReply(
+        await this.#transfer(() => this.#pipe.observePadShapes209(selected.uniqueContextId, target)), target);
+      reprove(); await this.#observeParent(); reprove(); await this.#observeOpeningAncillary(); reprove();
+      await this.#verifyInstallation(); reprove(); await this.#verify(); reprove();
+      return result;
+    } catch (caughtError) { this.#input.emit("error", error("PAD_SHAPES209_FAILED")); throw caughtError; }
+    finally { this.#busy = false; }
+  }
+
+  /** One fixed Image shape209 DTO read through the original qualified child.
+   * It grants no complete-board, source, parent ownership or writer authority. */
+  public async observeImageShapes209(input: CurrentDisposableOpenSealedTarget): Promise<Readonly<RecordValue>> {
+    const context = this.#stagedContext, profile = this.#pcbSourceProfile, target = currentDisposableOpenSealedTargetSchema.parse(input);
+    if (this.#purpose !== "diagnostic209" || context === null || this.#imageShapes209Consumed || !this.#pcbSourceQualified ||
+        profile === null || this.#pcbFrameObservation?.ok !== true || this.#workersConsumed || this.#modelConsumed ||
+        JSON.stringify(target) !== JSON.stringify(this.#projectOpeningTarget)) { throw error("IMAGE_SHAPES209_UNAVAILABLE"); }
+    this.#enter(true); this.#imageShapes209Consumed = true;
+    try {
+      const pcb = context.modelContext(), selected = context.pcbOpeningContext();
+      const reprove = (): void => {
+        this.#available(); context.pcbScript(profile);
+        if (JSON.stringify(context.pcbOpeningContext()) !== JSON.stringify(selected) ||
+            JSON.stringify(context.modelContext()) !== JSON.stringify(pcb)) { throw error("IMAGE_SHAPES209_CONTEXT"); }
+      };
+      await this.#verifyInstallation(); reprove(); await this.#verify(); reprove();
+      await this.#observeParent(); reprove(); await this.#observeOpeningAncillary(); reprove();
+      const result = decodeCurrentPcb209ImageShapesReply(
+        await this.#transfer(() => this.#pipe.observeImageShapes209(selected.uniqueContextId, target)), target);
+      reprove(); await this.#observeParent(); reprove(); await this.#observeOpeningAncillary(); reprove();
+      await this.#verifyInstallation(); reprove(); await this.#verify(); reprove();
+      return result;
+    } catch (caughtError) { this.#input.emit("error", error("IMAGE_SHAPES209_FAILED")); throw caughtError; }
     finally { this.#busy = false; }
   }
 

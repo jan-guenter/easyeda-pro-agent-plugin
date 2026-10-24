@@ -15,9 +15,11 @@ ordinary launch and a separate disposable project/PCB opening lifecycle with
 bounded layer metadata, copper count, Line/Arc/Via/standalone-text observations,
 and grouped component/pad/attribute/dimension/image observations. A separate
 reader captures selection and requested component child-pad IDs alongside all
-nine families. Recorded observations support repeatable ID and field queries
+nine families. Separate readers expose native pad style groups and image path
+or asset-reference descriptors. Recorded observations support repeatable ID and field queries
 without reopening EasyEDA; these describe the captured snapshot, not the current
-board.
+board. Pad style groups do not describe every physical layer, and an image
+reference does not verify the referenced asset's bytes or availability.
 Catalog queries require explicit network confirmation and run without the
 application; they are not SDK execution. Disposable opening retains its original
 process through cleanup and can trigger ordinary migration/cache/automatic-Save

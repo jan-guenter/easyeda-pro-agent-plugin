@@ -3,8 +3,8 @@
     "source-tree": {
       "version": "0.3.0",
       "operationSchema": "easyeda-pro-control.operation.v2",
-      "sha256": "a30c9cd0514f07f12b1b0d27e32baba5c9d0e4810239708f0e2ebfe91e8219cd",
-      "fileCount": 638,
+      "sha256": "5603d8db67ada8b43e9bf892dd9800a1603700712e32c89a38c42e2ad5e08aad",
+      "fileCount": 640,
       "files": [
         {
           "relativePath": "aged-symbol-witness.ts",
@@ -532,14 +532,19 @@
           "sha256": "c33ed1d36d75be9a5869863937abeee4caee22ff195e2ba736aab689be1e3676"
         },
         {
+          "relativePath": "current-pcb-209-image-shapes.ts",
+          "bytes": 19979,
+          "sha256": "d2b81220211c8c2453870b7606132c4f370fd44ca061cb5bcc4025628553386a"
+        },
+        {
           "relativePath": "current-pcb-209-layers.ts",
           "bytes": 12006,
           "sha256": "5963cdbb50fd5221aa1a88e7ff35154bddf18bf9eb3aa5a9e588467fb0fdbb7e"
         },
         {
           "relativePath": "current-pcb-209-observation-query.ts",
-          "bytes": 12287,
-          "sha256": "b83e1f8e6c8e563c8334f497d970e21baf1ea2d1785e64b012b4f7c0f3d7c2d5"
+          "bytes": 14233,
+          "sha256": "e8f2dd00f980b8f3fbdddf9686a0357cedce43becf6376c42d84efa681171945"
         },
         {
           "relativePath": "current-pcb-209-opening-profile.ts",
@@ -548,8 +553,13 @@
         },
         {
           "relativePath": "current-pcb-209-opening-validation.ts",
-          "bytes": 8124,
-          "sha256": "53219f04f86a26d43c2bb127512dade9436b440ef4406d9d7b22a3249d9befd6"
+          "bytes": 9072,
+          "sha256": "4dde26c98badbb6e272fcae5622deeaebeb0a6506eb76de1e8ef52375a0e1c45"
+        },
+        {
+          "relativePath": "current-pcb-209-pad-shapes.ts",
+          "bytes": 19765,
+          "sha256": "3b04c16467c6fb9d2226e6be526c1df60025c9fda3e72940d06517e3cd86de88"
         },
         {
           "relativePath": "current-pcb-209-primitives.ts",
@@ -683,13 +693,13 @@
         },
         {
           "relativePath": "current-pcb-diagnostic-lifecycle-journal.ts",
-          "bytes": 61013,
-          "sha256": "e3f92d13bab2c51327da4c0f54f242c0ee12f1807d3ee004a88da479ec0d4860"
+          "bytes": 62623,
+          "sha256": "500611bedfc80088dcc65074190ec18a4840c82f7fb22f454ca735167598b378"
         },
         {
           "relativePath": "current-pcb-diagnostic-lifecycle.ts",
-          "bytes": 133224,
-          "sha256": "005b233f13246a4501923c01f2ce9d051f6ac133be688cf3ce4b1b8692031c89"
+          "bytes": 135834,
+          "sha256": "7a21aa1de37757e369afc0dcb16a2449c6db55eb574fcd67b7bf4b31a2de8743"
         },
         {
           "relativePath": "current-pcb-diagnostic-model-program.ts",
@@ -713,8 +723,8 @@
         },
         {
           "relativePath": "current-pcb-diagnostic-owner.ts",
-          "bytes": 100068,
-          "sha256": "2cf71d996076f76a8b3768ad1ce101c094d7dcd92101e8dc2d7c7845b296318b"
+          "bytes": 104206,
+          "sha256": "f1ebd19b56783342772258722b9201c8d9af8a99f14d11173ddbcba722a6c824"
         },
         {
           "relativePath": "current-pcb-diagnostic-pcb-opening.ts",
@@ -728,8 +738,8 @@
         },
         {
           "relativePath": "current-pcb-diagnostic-pipe.ts",
-          "bytes": 37984,
-          "sha256": "ee34d3a7b912e3c5f5cbefa6829479af973c5d0be84d19158ff578d6f36fbf73"
+          "bytes": 39026,
+          "sha256": "3ced2eb2808d4c74640e89204039871de36ea9e70f425c915be7fe6ca7ac3c55"
         },
         {
           "relativePath": "current-pcb-diagnostic-profile.ts",
@@ -738,8 +748,8 @@
         },
         {
           "relativePath": "current-pcb-diagnostic-protocol.ts",
-          "bytes": 39269,
-          "sha256": "dd7a8c8f66b673c563fccf88c1a8213177794d51c710a22fb3c06600ba38ab43"
+          "bytes": 40835,
+          "sha256": "8362e403cd0dfa5e8bc6983ea2e5fc05ddd693c024c2e9e83bed3df33ed4753a"
         },
         {
           "relativePath": "current-pcb-diagnostic-raw-strings.ts",
@@ -2163,8 +2173,8 @@
         },
         {
           "relativePath": "extension-api-coverage-routes.ts",
-          "bytes": 105022,
-          "sha256": "e02a43a511514ae7330bdf1b18eabbb9a4a53a1cd1a481747b42c6790287a4b9"
+          "bytes": 109526,
+          "sha256": "c968b9ac0ceadd592918c968b2c3500d5c2ddd4c643db174ccaaf6c065a08143"
         },
         {
           "relativePath": "extension-api-coverage.ts",
@@ -2188,8 +2198,8 @@
         },
         {
           "relativePath": "facade-mode.ts",
-          "bytes": 6494,
-          "sha256": "d3091c0c2c6ca78e1d50bfb605987c22e65922e8bce9018550f5592f1bba1b76"
+          "bytes": 6978,
+          "sha256": "f508b4fc7b9c0ec9f1d1edaa9e67c25f6493fdbfbdd4a3d5f08653092fdbea97"
         },
         {
           "relativePath": "flat-display-binding.ts",
@@ -2298,8 +2308,8 @@
         },
         {
           "relativePath": "index.ts",
-          "bytes": 236942,
-          "sha256": "a8136b0139f57f28360cecfe1dc649dd300d05f29d99c7ddab8b90308dfef07c"
+          "bytes": 237260,
+          "sha256": "75df61cb7df16a1ba02a185df3ab06c9c4ab17aa761a83ff7f38db0df2fb757e"
         },
         {
           "relativePath": "lease.ts",
@@ -3201,7 +3211,7 @@
     "bundle": {
       "version": "0.3.0",
       "operationSchema": "easyeda-pro-control.operation.v2",
-      "sha256": "19dcd70eebd0d15caea257f822c59f80bdeba71f340de2cf3a412a90c77da406",
+      "sha256": "10245e2b529cd38671bc80548e4528a974ce092498bdc6fa91c81330a4ca228f",
       "fileCount": 3,
       "files": [
         {
@@ -3211,19 +3221,19 @@
         },
         {
           "relativePath": "server.mjs",
-          "bytes": 10975127,
-          "sha256": "6b7fe71d0333dbfffed5e0d5ac0f3331798b6b556cf4efb89f823ab3d4cd110f"
+          "bytes": 11035091,
+          "sha256": "4216644d04c5c97842e9d605fddc00756f2ff19ffa2a291548bbb0834ff60315"
         },
         {
           "relativePath": "upstream-supervisor.mjs",
           "bytes": 1000587,
-          "sha256": "31895f576efbee890f11aadce9e3b65b95f28980d53fa6e32c9f309725e92918"
+          "sha256": "7c10c476108d765835abdb57a6aec8160c8bd0f3a6c1d10159ea0536ef7306c6"
         }
       ]
     }
   },
   "schema": "easyeda-pro-control.reviewed-compatibility.v1",
-  "reviewedAt": "2026-10-24T01:20:20.979Z",
+  "reviewedAt": "2026-10-24T02:25:40.611Z",
   "upstream": {
     "serverVersion": "1.0.0-rc.1",
     "launcher": {
