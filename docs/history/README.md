@@ -45,6 +45,7 @@ layout. The connected ledger retains its generation and case anchors.
 
 | Record | Former path |
 | --- | --- |
+| [2026-10-24-empty-baseline-integration-batch.md](2026-10-24-empty-baseline-integration-batch.md) | Original171142 constructor refusal and cleanup; separate native empty-baseline and ratline integration |
 | [2026-10-24-preload-generated-script-phases.md](2026-10-24-preload-generated-script-phases.md) | Four fixed preload function copies, original creator/caller checks and generated-code inventory |
 | [2026-10-24-capture-integration-batch.md](2026-10-24-capture-integration-batch.md) | Combined preload helper correction, SQL-reader continuation and ratline creation integration |
 | [2026-10-24-generation209-ratline-creation-boundary.md](2026-10-24-generation209-ratline-creation-boundary.md) | Original Worker constructor bracket, correlated waiting child and shared one-shot cleanup |

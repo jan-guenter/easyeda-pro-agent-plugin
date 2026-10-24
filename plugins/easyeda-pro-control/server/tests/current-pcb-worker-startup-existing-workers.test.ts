@@ -1,4 +1,5 @@
 import assert from "node:assert/strict";
+import { createHash } from "node:crypto";
 import { test } from "node:test";
 import { setImmediate } from "node:timers/promises";
 import { CurrentPcbWorkerStartupChannel } from "../src/current-pcb-worker-startup-channel.ts";
@@ -183,7 +184,10 @@ void test("background context, detach and replacement events stay refused with b
     const event = { method, sessionId: "background-session-0", params: { privatePayload: "do-not-retain" } };
     value.state.listener?.(event); value.state.listener?.({ ...event, method: "Debugger.paused" }); await rejected;
     const diagnostic = value.owner.status().firstEventFailure;
-    assert.deepEqual(diagnostic, { method: method === "private-payload-method" ? "other" : method, reason: "EVENT_SESSION" });
+    assert.deepEqual(diagnostic, { method: method === "private-payload-method" ? "other" : method, reason: "EVENT_SESSION",
+      ...(method === "private-payload-method" ? { unhandled: { methodSha256: createHash("sha256").update(method).digest("hex"), methodBytes: Buffer.byteLength(method),
+        session: "background-worker", bootstrapStage: null, sourceQualified: false, constructionStarted: false,
+        constructionSubscribed: false, lastCommand: "Target.setAutoAttach", requestCount: 1 } } : {}) });
     assert.equal(JSON.stringify(diagnostic).includes("private"), false); assert.equal(JSON.stringify(diagnostic).includes("do-not-retain"), false);
     assert.equal(value.commands.length, 1); await value.owner.releaseAfterTermination();
   }

@@ -64,7 +64,12 @@ globalThis.IMPORTED_ROLES=[];globalThis.importScripts=url=>new vm.Script("global
       } else if (instrumented && message.params["url"] === "" && scriptIds.size > 0) { emit(message.method, message.params); }
       return;
     }
-    if (message.method === "Debugger.paused" || message.method === "Debugger.resumed") { emit(message.method, message.params); }
+    if (message.method === "Debugger.paused" || message.method === "Debugger.resumed" ||
+        scriptIds.size > 0 && (message.method.startsWith("Debugger.") || message.method.startsWith("Runtime."))) {
+      // Forward unexpected events once the synthetic target exists. Silently
+      // Dropping them would hide production transport refusals from this fixture.
+      emit(message.method, message.params);
+    }
   });
   const request = (method: string, params: object): Promise<unknown> => {
     const id = nextId; nextId += 1; const entry = Promise.withResolvers<unknown>(); pending.set(id, entry);

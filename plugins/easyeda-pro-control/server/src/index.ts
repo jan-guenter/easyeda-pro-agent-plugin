@@ -123,11 +123,12 @@ import { editorShellRequestSchema } from "./editor-shell.ts";
 import { editorContextRequestSchema } from "./editor-context.ts";
 import { readEditorContext, readEditorShell } from "./editor-shell-runtime.ts";
 import { OrdinaryLaunchCoordinator, ordinaryLaunchRequestSchema } from "./ordinary-launch.ts";
-import { CurrentPcb209DiagnosticLifecycle, CurrentPcb209WorkerStartupLifecycle, CurrentPcbDiagnosticLifecycle, CurrentPcbStringPrecreateLifecycle, CurrentPcbWorkerStartupLifecycle } from "./current-pcb-diagnostic-lifecycle.ts";
+import { CurrentPcb209DiagnosticLifecycle, CurrentPcb209EmptyStartupLifecycle, CurrentPcb209WorkerStartupLifecycle, CurrentPcbDiagnosticLifecycle, CurrentPcbStringPrecreateLifecycle, CurrentPcbWorkerStartupLifecycle } from "./current-pcb-diagnostic-lifecycle.ts";
 import { currentPcbDiagnosticToolRequestSchema } from "./current-pcb-diagnostic-validation.ts";
 import { currentPcb209OpeningRequestSchema } from "./current-pcb-209-opening-validation.ts";
 import type { CurrentPcbWorkerStartupValidationRequest } from "./current-pcb-worker-startup-validation.ts";
-import { currentPcb209WorkerStartupValidationRequestSchema } from "./current-pcb-209-worker-startup-validation.ts";
+import { currentPcb209WorkerStartupToolRequestSchema } from "./current-pcb-209-empty-startup-validation.ts";
+import type { CurrentPcb209EmptyStartupValidationRequest } from "./current-pcb-209-empty-startup-validation.ts";
 import type { CurrentPcb209WorkerStartupValidationRequest } from "./current-pcb-209-worker-startup-validation.ts";
 import { currentPcbStringPrecreateRequestSchema } from "./current-pcb-string-precreate-validation.ts";
 import { CURRENT_PCB_DIAGNOSTIC_PROFILE } from "./current-pcb-diagnostic-profile.ts";
@@ -199,7 +200,7 @@ let ordinaryLaunchCoordinator: OrdinaryLaunchCoordinator | undefined;
 let ordinaryLaunchRuntime: WindowsControlRuntime | undefined;
 let currentPcbDiagnosticLifecycle: CurrentPcbDiagnosticLifecycle | CurrentPcb209DiagnosticLifecycle | undefined;
 let currentPcbStringPrecreateLifecycle: CurrentPcbStringPrecreateLifecycle | undefined;
-let currentPcbWorkerStartupLifecycle: CurrentPcbWorkerStartupLifecycle | CurrentPcb209WorkerStartupLifecycle | undefined;
+let currentPcbWorkerStartupLifecycle: CurrentPcbWorkerStartupLifecycle | CurrentPcb209WorkerStartupLifecycle | CurrentPcb209EmptyStartupLifecycle | undefined;
 let currentDisposableOpenCoordinator: CurrentDisposableOpenCoordinator | undefined;
 let currentPcbRenameOperationCoordinator: CurrentPcbRenameOperationCoordinator | undefined;
 let currentSchematicRenameOperationCoordinator: CurrentSchematicRenameOperationCoordinator | undefined;
@@ -2513,13 +2514,27 @@ if (facadeToolRegistered(facadeMode, "easyeda_control_pcb_diagnostic_validation"
   const inputSchema = z.object({ request: z.unknown().pipe(diagnostic209 ? currentPcb209OpeningRequestSchema : currentPcbDiagnosticToolRequestSchema) }).strict();
   let original: { readonly owner: CurrentPcbDiagnosticLifecycle | CurrentPcb209DiagnosticLifecycle; readonly run: CurrentPcbDiagnosticLifecycle["run"];
     readonly assertLocal: () => void } | undefined;
-  const StartupLifecycle = diagnostic209 ? CurrentPcb209WorkerStartupLifecycle : CurrentPcbWorkerStartupLifecycle;
-  let startupOriginal: { readonly owner: CurrentPcbWorkerStartupLifecycle | CurrentPcb209WorkerStartupLifecycle; readonly run: CurrentPcbWorkerStartupLifecycle["run"];
+  let startupOriginal: { readonly owner: CurrentPcbWorkerStartupLifecycle | CurrentPcb209WorkerStartupLifecycle | CurrentPcb209EmptyStartupLifecycle; readonly run: CurrentPcbWorkerStartupLifecycle["run"];
     readonly capture: CurrentPcbWorkerStartupLifecycle["captureWorkerStartup"];
     readonly assignments: CurrentPcbWorkerStartupLifecycle["observeWorkerStartupAssignments"];
     readonly actor: CurrentPcbWorkerStartupLifecycle["observeWorkerStartupActor"];
-    readonly channel: CurrentPcbWorkerStartupLifecycle["observeWorkerStartupChannel"]; readonly assertLocal: () => void } | undefined;
-  const runStartup = (request: CurrentPcbWorkerStartupValidationRequest | CurrentPcb209WorkerStartupValidationRequest): Promise<{ result: Record<string, unknown> }> => {
+    readonly channel: CurrentPcbWorkerStartupLifecycle["observeWorkerStartupChannel"];
+    readonly empty: CurrentPcb209EmptyStartupLifecycle["observeWorkerStartupEmpty"] | undefined; readonly reserved: CurrentPcbWorkerStartupLifecycle["hasActiveReservation"];
+    readonly emptyPurpose: boolean; readonly assertLocal: () => void } | undefined;
+  let startupCalls = 0;
+  const runStartup = (request: CurrentPcbWorkerStartupValidationRequest | CurrentPcb209WorkerStartupValidationRequest | CurrentPcb209EmptyStartupValidationRequest, emptyPurpose = false): Promise<{ result: Record<string, unknown> }> => {
+    let StartupLifecycle = diagnostic209 ? CurrentPcb209WorkerStartupLifecycle : CurrentPcbWorkerStartupLifecycle;
+    if (emptyPurpose) { StartupLifecycle = CurrentPcb209EmptyStartupLifecycle; }
+    if (emptyPurpose && !diagnostic209) { throw new Error("Empty worker startup requires the 209 route."); }
+    if (startupOriginal !== undefined && startupOriginal.emptyPurpose !== emptyPurpose) {
+      startupOriginal.assertLocal();
+      // A queued launch has no core lease yet. Retain its coordinator until
+      // Every admitted call settles, and retain every pending cleanup lease.
+      if (startupCalls !== 0 || startupOriginal.reserved.call(startupOriginal.owner)) {
+        throw new Error("Worker startup purpose cannot change while an original call or reservation remains.");
+      }
+      startupOriginal = undefined;
+    }
     if (startupOriginal === undefined) {
       const environment = process.env;
       const assetsRoot = environment["EASYEDA_ASSETS_ROOT"], wslDistribution = environment["WSL_DISTRO_NAME"];
@@ -2531,7 +2546,8 @@ if (facadeToolRegistered(facadeMode, "easyeda_control_pcb_diagnostic_validation"
         disposableOwnerMethod(engine, "assertDiagnosticLaunchOtherOperationsSettled"),
         ...["run", "captureWorkerStartup", "handoffWorkerStartup", "openWorkerStartup", "handoffStartup", "openStartup", "requireStartup",
           "observeWorkerStartupAssignments", "observeStartupAssignments", "requireStartupAssignments", "observeWorkerStartupActor", "observeStartupActor",
-          "observeWorkerStartupChannel", "observeStartupChannel", "hasActiveReservation"]
+          "observeWorkerStartupChannel", "observeStartupChannel", "hasActiveReservation",
+          ...(emptyPurpose ? ["observeWorkerStartupEmpty", "observeStartupEmpty", "prepareWorkerStartupEmpty", "prepareStartupEmpty"] : [])]
           .map(key => disposableOwnerMethod(StartupLifecycle.prototype, key))];
       const capturedMethods = methodIdentities();
       const assertLocal = (): void => {
@@ -2546,7 +2562,9 @@ if (facadeToolRegistered(facadeMode, "easyeda_control_pcb_diagnostic_validation"
               startupOriginal.owner.captureWorkerStartup !== startupOriginal.capture ||
               startupOriginal.owner.observeWorkerStartupAssignments !== startupOriginal.assignments ||
               startupOriginal.owner.observeWorkerStartupActor !== startupOriginal.actor ||
-              startupOriginal.owner.observeWorkerStartupChannel !== startupOriginal.channel)) { throw new Error("Worker startup original index owner, environment or methods changed."); }
+              startupOriginal.owner.observeWorkerStartupChannel !== startupOriginal.channel ||
+              startupOriginal.owner.hasActiveReservation !== startupOriginal.reserved ||
+              startupOriginal.owner instanceof CurrentPcb209EmptyStartupLifecycle && startupOriginal.owner.observeWorkerStartupEmpty !== startupOriginal.empty)) { throw new Error("Worker startup original index owner, environment or methods changed."); }
       };
       const assertUnreserved = (): void => {
         assertLocal();
@@ -2568,13 +2586,24 @@ if (facadeToolRegistered(facadeMode, "easyeda_control_pcb_diagnostic_validation"
       // oxlint-disable-next-line typescript/unbound-method -- Retain exact methods; dispatch always uses their original receiver.
       startupOriginal = { owner, run: owner.run, capture: owner.captureWorkerStartup,
         assignments: owner.observeWorkerStartupAssignments, actor: owner.observeWorkerStartupActor,
-        channel: owner.observeWorkerStartupChannel, assertLocal };
+        channel: owner.observeWorkerStartupChannel,
+        // oxlint-disable-next-line typescript/unbound-method -- The purpose-switch guard invokes this retained private-field method only with the original lifecycle receiver.
+        reserved: owner.hasActiveReservation,
+        // oxlint-disable-next-line typescript/unbound-method -- Retain the exact original method; the sole dispatch supplies its retained private-field receiver.
+        empty: owner instanceof CurrentPcb209EmptyStartupLifecycle ? owner.observeWorkerStartupEmpty : undefined, emptyPurpose, assertLocal };
     }
     const retained = startupOriginal; retained.assertLocal();
-    const run = async (): Promise<{ result: Record<string, unknown> }> => {
+    const assertRetained = (): void => {
+      if (startupOriginal !== retained) { throw new Error("Worker startup original index coordinator changed."); }
       retained.assertLocal();
+    };
+    const run = async (): Promise<{ result: Record<string, unknown> }> => {
+      assertRetained();
       let result: Record<string, unknown>;
-      if (request.action === "capture-project") {
+      if (request.action === "observe-empty-baseline") {
+        if (!(retained.owner instanceof CurrentPcb209EmptyStartupLifecycle) || retained.empty === undefined || !retained.emptyPurpose) { throw new Error("Original empty-baseline launch purpose required."); }
+        result = await retained.empty.call(retained.owner, request.operationId, request.expectedBindingSha256);
+      } else if (request.action === "capture-project") {
         const { action: _action, operationId, expectedBindingSha256, ...input } = request;
         result = await retained.capture.call(retained.owner, operationId, expectedBindingSha256, input);
       } else if (request.action === "observe-current-assignments") {
@@ -2584,18 +2613,25 @@ if (facadeToolRegistered(facadeMode, "easyeda_control_pcb_diagnostic_validation"
       } else if (request.action === "observe-current-channel") {
         result = await retained.channel.call(retained.owner, request.operationId, request.expectedBindingSha256);
       } else { result = await retained.run.call(retained.owner, request); }
-      retained.assertLocal(); return { result };
+      assertRetained(); return { result };
     };
-    return request.action === "inspect" ? run() : bridgeGate.run(run);
+    startupCalls += 1;
+    try {
+      const pending = request.action === "inspect" ? run() : bridgeGate.run(run);
+      return pending.finally(() => { startupCalls -= 1; });
+    } catch (error) { startupCalls -= 1; throw error; }
   };
   if (facadeToolRegistered(facadeMode, "easyeda_control_pcb209_worker_startup")) {
-    const startupSchema = z.object({ request: z.unknown().pipe(currentPcb209WorkerStartupValidationRequestSchema) }).strict();
+    const startupSchema = z.object({ request: z.unknown().pipe(currentPcb209WorkerStartupToolRequestSchema) }).strict();
     server.registerTool("easyeda_control_pcb209_worker_startup", {
       title: "Capture a disposable EasyEDA 3.2.209 project worker startup",
-      description: "Separate validation-only pcb209-startup-* lifetime. Query pcb209-worker-startup and pcb209-worker-startup-validate first. Launch, qualify browser/frame/UI source, then capture-project once for an exact disposable checkpoint. The original native owner arms fixed debugger breakpoints before opening and retains constructor callbacks, project/branch/window identity and cleanup. Explicit debugger-pause acceptance is required. After capture, observe-current-assignments checks current wrappers; observe-current-channel checks fixed publisher relations and paired gate samples; observe-actor-clock compares a UI/worker/worker/UI actor and local-Date bracket. Observations are sequential and point-in-time. They do not establish native channel peers, contained destinations, server-clock provenance, PCB-worker/ratline completion, complete live/source/SQL baseline, writer eligibility or durability. No caller JavaScript, CDP commands, explicit Save or CAD writer. Existing-profile launch/open can restore tabs, migrate, replay caches and automatically Save. Every stage is consumed once. Inspect after uncertainty; retain the same owner through normal close, original root/Job termination, helper release and record settlement. No historical-owner adoption, retry of navigation, force exit or Save/Discard choice.",
+      description: "Separate validation-only pcb209-startup-* lifetime. Query pcb209-worker-startup and pcb209-worker-startup-validate first. The empty-baseline wrapper selects a separate pcb209-empty-* launch from creation; query pcb209-empty-baseline and pcb209-empty-baseline-validate. After its original capture, observe-empty-baseline durably records intent before opening the retained PCB and joining fixed common data with the original completed SQL checkpoint, bracketed by empty raw-manager samples. It refuses populated targets and cannot upgrade an existing startup owner. The larger fixed budget remains anchored to the original launch. This is sequential observation, not full baseline/startup completion or writer authority. Launch, qualify browser/frame/UI source, then capture-project once for an exact disposable checkpoint. The original native owner arms fixed debugger breakpoints before opening and retains constructor callbacks, project/branch/window identity and cleanup. Explicit debugger-pause acceptance is required. After capture, observe-current-assignments checks current wrappers; observe-current-channel checks fixed publisher relations and paired gate samples; observe-actor-clock compares a UI/worker/worker/UI actor and local-Date bracket. Observations are sequential and point-in-time. They do not establish native channel peers, contained destinations, server-clock provenance, PCB-worker/ratline completion, complete live/source/SQL baseline, writer eligibility or durability. No caller JavaScript, CDP commands, explicit Save or CAD writer. Existing-profile launch/open can restore tabs, migrate, replay caches and automatically Save. Every stage is consumed once. Inspect after uncertainty; retain the same owner through normal close, original root/Job termination, helper release and record settlement. No historical-owner adoption, retry of navigation, force exit or Save/Discard choice.",
       inputSchema: startupSchema, outputSchema: currentSymbolOperationToolOutputSchema,
       annotations: { readOnlyHint: false, destructiveHint: false, idempotentHint: false, openWorldHint: true },
-    }, guarded((input: z.infer<typeof startupSchema>) => runStartup(startupSchema.parse(input).request)));
+    }, guarded((input: z.infer<typeof startupSchema>) => {
+      const request = startupSchema.parse(input).request;
+      return request.action === "empty-baseline" ? runStartup(request.request, true) : runStartup(request);
+    }));
   }
   server.registerTool(diagnosticTool, {
     title: diagnostic209 ? "Open and qualify a disposable EasyEDA 3.2.209 PCB session" : "Validate a contained native EasyEDA diagnostic session",

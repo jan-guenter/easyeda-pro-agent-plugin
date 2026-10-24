@@ -25,7 +25,7 @@ async function deadline<T>(work: Promise<T>, phase: string, milliseconds = 10_00
  * does not attest an EasyEDA native source, process, Worker or message peer. */
 export async function ratlineCaptureInspector(context: TestContext, role: CurrentPcb209RatlineCaptureRole,
   loseAtPause = 0, pauseAtFinalReproof = false, exitBeforeAddress = false): Promise<Readonly<{ transport: CurrentPcb209RatlineCaptureTransport; commands: string[];
-    run: () => Promise<unknown>; lose: () => void; regain: () => void; terminate: () => Promise<void>; counts: () => Readonly<{ pauses: number; resumes: number; subscribers: number }> }>> {
+    request: (method: string, params: object) => Promise<unknown>; run: () => Promise<unknown>; lose: () => void; regain: () => void; terminate: () => Promise<void>; counts: () => Readonly<{ pauses: number; resumes: number; subscribers: number }> }>> {
   // The hostile case is an owned child that exits normally before advertising
   // Any inspector. The old unbounded address wait could never settle here.
   const args = exitBeforeAddress ? ["--input-type=commonjs", "-e", "process.exitCode=0"] :
@@ -122,7 +122,7 @@ export async function ratlineCaptureInspector(context: TestContext, role: Curren
     request: command => request(command.method, command.params),
     subscribe: events => { subscribers.add(events); return (): void => { subscribers.delete(events); }; },
   };
-  return { transport, commands, lose: (): void => { ownerCurrent = false; }, regain: (): void => { ownerCurrent = true; }, run: (): Promise<unknown> => request("Runtime.runScript", { scriptId: compiled.scriptId, returnByValue: true }),
+  return { transport, commands, request, lose: (): void => { ownerCurrent = false; }, regain: (): void => { ownerCurrent = true; }, run: (): Promise<unknown> => request("Runtime.runScript", { scriptId: compiled.scriptId, returnByValue: true }),
     counts: (): Readonly<{ pauses: number; resumes: number; subscribers: number }> => ({ pauses, resumes, subscribers: subscribers.size }),
     terminate };
 }

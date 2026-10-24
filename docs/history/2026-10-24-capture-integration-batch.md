@@ -124,3 +124,57 @@ test run exposed that the WebSocket callback supplies null on success. That
 failure was retained, the callback check was corrected, and the final nine-case
 run passed. Root and independent review accepted the bounded fixture cleanup.
 The preceding CI cancellation remains a failure; new exact-commit CI is required.
+
+## Publication and installation result
+
+Final payload `428690f5907bb5bc2982bc6d0bb431133686d94b` merged through protected
+[PR117](https://github.com/jan-guenter/easyeda-pro-agent-plugin/pull/117) as main
+`906c6a7aee17358d39ab967e56e173ebad2d3bdf` at 18:10:54 UTC. The merged root and
+plugin trees exactly match the tested candidate. All eight facade shards, build
+and aggregate checks passed in
+[CI40118340783](https://github.com/jan-guenter/easyeda-pro-agent-plugin/actions/runs/40118340783);
+the [Windows job40118340772](https://github.com/jan-guenter/easyeda-pro-agent-plugin/actions/runs/40118340772)
+also passed. Logs report 12,669 facade passes, five existing platform-dependent
+skips, zero failures/cancellations, and 424 bridge passes. The nine capture-fixture
+cases all passed in CI. Final full type-aware lint has zero warnings. The original
+CI cancellation and intermediate fixture failure remain retained separately.
+
+The official CLI upgraded the existing Git marketplace
+`https://github.com/jan-guenter/easyeda-pro-agent-plugin.git`. Version
+`0.3.0+codex.20261024171142` is installed and enabled. The final marketplace
+checkout equals merged main. All 1,887 packaged files, 42 directories and 40,247,197 bytes
+match committed contents and modes; inventory SHA-256:
+`f0417c2c4fb3a9182b38d0d84a1032ea5433fb9a6cc8f8afd9bcbabc9873f2f4`.
+No installed cache was patched.
+
+The maintained installed-package probe passed under Node 24.18.0 with 26 exposed
+tools and 10 offline queries. It used a synthetic profile, selected no live
+control root, and observed its own process exit normally after stdin EOF. Its
+no-descendant/socket samples do not establish continuous isolation or actual
+host admission. Source and bundle projections remain those recorded above.
+
+The host still uses the previous 161458 snapshot; no live call followed the upgrade.
+A fresh Codex session must load and admit 171142 before the next disposable case.
+The earlier connected case is terminal/released and must never be replayed.
+The production project was not accessed. Native PCB/baseline/ratline integration, complete source
+and producer proofs, clocks, contained writers and the remaining API families
+listed above remain open. Private implementation maps retain exact next entrypoints.
+
+At handoff, merged-main
+[Windows40119520485](https://github.com/jan-guenter/easyeda-pro-agent-plugin/actions/runs/40119520485)
+had passed; [Linux CI40119520480](https://github.com/jan-guenter/easyeda-pro-agent-plugin/actions/runs/40119520480)
+was still running. This status is separate from the successful final PR checks.
+This terminal appendix is local release evidence to carry into the next batch;
+it does not change the published plugin payload.
+
+## Subsequent admission and main CI correction
+
+On the next session, both merged-main workflows had succeeded: Linux
+[40119520480](https://github.com/jan-guenter/easyeda-pro-agent-plugin/actions/runs/40119520480)
+and Windows
+[40119520485](https://github.com/jan-guenter/easyeda-pro-agent-plugin/actions/runs/40119520485).
+Actual host admission matched the installed171142 payload and original process,
+with all1,887 packaged files and recorded source/bundle projections unchanged.
+The subsequent disposable case and larger implementation batch are recorded in
+[the empty-baseline integration report](2026-10-24-empty-baseline-integration-batch.md).
+The earlier pending-main-CI observation remains historical evidence.

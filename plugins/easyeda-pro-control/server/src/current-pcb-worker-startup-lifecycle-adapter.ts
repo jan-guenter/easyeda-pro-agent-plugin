@@ -8,7 +8,9 @@ import type { CurrentPcbWorkerStartupChannelPacket } from "./current-pcb-worker-
 import type { CurrentPcbWorkerStartupOpening, CurrentPcbWorkerStartupOpeningResult } from "./current-pcb-worker-startup-opening.ts";
 import type { CurrentPcb209WorkerStartupTransport, CurrentPcbWorkerStartupTransport } from "./current-pcb-worker-startup-transport.ts";
 import type { CurrentPcb209WorkerStartupActorPacket } from "./current-pcb-209-worker-startup-actor.ts";
-import type { CurrentPcb209WorkerStartupOpening, CurrentPcb209WorkerStartupOpeningResult } from "./current-pcb-209-worker-startup-opening.ts";
+import { CurrentPcb209WorkerStartupOpening } from "./current-pcb-209-worker-startup-opening.ts";
+import type { CurrentPcb209WorkerStartupOpeningResult } from "./current-pcb-209-worker-startup-opening.ts";
+import { types } from "node:util";
 
 export type CurrentPcbStartupOpeningResult = CurrentPcbWorkerStartupOpeningResult | CurrentPcb209WorkerStartupOpeningResult;
 export type CurrentPcbStartupActorPacket = CurrentPcbWorkerStartupActorPacket | CurrentPcb209WorkerStartupActorPacket;
@@ -37,8 +39,14 @@ export interface CurrentPcbStartupLifecycleAdapter extends Coordinator<CurrentPc
   readonly assertOriginalMethodsCurrent: () => void;
 }
 function refuse(): never { throw new Error("PCB_WORKER_STARTUP_LIFECYCLE_ORIGINAL_ADAPTER"); }
+const original209 = new WeakMap<CurrentPcbStartupLifecycleAdapter, Readonly<{
+  owner: CurrentPcb209WorkerStartupOpening;
+  result: (input: CurrentPcbStartupOpeningResult) => CurrentPcb209WorkerStartupOpeningResult;
+}>>();
+// oxlint-disable-next-line typescript/unbound-method -- Private-field brand check always supplies the original instance as receiver.
+const status209 = CurrentPcb209WorkerStartupOpening.prototype.status;
 function adapt<R extends CurrentPcbStartupOpeningResult, A extends CurrentPcbStartupActorPacket, T extends CurrentPcbStartupTransport>(
-  owner: Coordinator<R, A, T>): CurrentPcbStartupLifecycleAdapter {
+  owner: Coordinator<R, A, T>): Readonly<{ adapter: CurrentPcbStartupLifecycleAdapter; original: (result: CurrentPcbStartupOpeningResult) => R }> {
   const methods = Object.freeze({ open: owner.open, status: owner.status, retainedOpeningResult: owner.retainedOpeningResult,
     requireOriginal: owner.requireOriginal, proveCurrentAssignments: owner.proveCurrentAssignments,
     requireCurrentAssignments: owner.requireCurrentAssignments, retainedActorObservation: owner.retainedActorObservation,
@@ -71,11 +79,29 @@ function adapt<R extends CurrentPcbStartupOpeningResult, A extends CurrentPcbSta
     requireCurrentChannel: (result, assignments, packet) => methods.requireCurrentChannel.call(owner, original(result), assignments, packet),
     releaseAfterTermination: () => { current(); return methods.releaseAfterTermination.call(owner); },
   };
-  return Object.freeze(adapter);
+  return Object.freeze({ adapter: Object.freeze(adapter), original });
 }
 export function adaptCurrentPcbWorkerStartupLifecycle(owner: CurrentPcbWorkerStartupOpeningCoordinator): CurrentPcbStartupLifecycleAdapter {
-  return adapt(owner);
+  return adapt(owner).adapter;
 }
 export function adaptCurrentPcb209WorkerStartupLifecycle(owner: CurrentPcb209WorkerStartupOpeningCoordinator): CurrentPcbStartupLifecycleAdapter {
-  return adapt(owner);
+  const retained = adapt(owner);
+  // Structural fixture coordinators cannot supply the private-field opening.
+  if (!types.isProxy(owner) && Object.getPrototypeOf(owner) === CurrentPcb209WorkerStartupOpening.prototype &&
+      owner instanceof CurrentPcb209WorkerStartupOpening) {
+    status209.call(owner);
+    original209.set(retained.adapter, Object.freeze({ owner, result: retained.original }));
+  }
+  return retained.adapter;
+}
+
+/** Original in-memory forwarding only. No native proof or navigation occurs;
+ * the retained owner must separately issue the broader native dependency. */
+export function requireCurrentPcb209StartupOpening(adapter: CurrentPcbStartupLifecycleAdapter,
+  result: CurrentPcbStartupOpeningResult): Readonly<{ opening: CurrentPcb209WorkerStartupOpening; result: CurrentPcb209WorkerStartupOpeningResult }> {
+  const retained = original209.get(adapter);
+  if (retained === undefined || Object.getPrototypeOf(retained.owner) !== CurrentPcb209WorkerStartupOpening.prototype ||
+      CurrentPcb209WorkerStartupOpening.prototype.status !== status209) { return refuse(); }
+  status209.call(retained.owner);
+  return Object.freeze({ opening: retained.owner, result: retained.result(result) });
 }

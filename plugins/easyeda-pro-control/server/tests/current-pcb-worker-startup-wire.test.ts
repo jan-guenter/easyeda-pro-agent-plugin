@@ -159,7 +159,8 @@ void test("native 209 launch fixes its encoder without a caller generation field
   assert.ok(generated.includes("return EncodeCore(id,method,sessionId,phase,fields,true);"));
   assert.ok(native.includes("readonly bool workerStartup209;"));
   assert.ok(native.includes("if ($WorkerStartup209 -and ($StringPrecreate -or $WorkerStartup -or $Layers209))"));
-  assert.ok(native.includes("$owner=if ($WorkerStartup209) {[EasyedaDiagnosticOwner]::CreateWorkerStartup209()}"));
+  assert.ok(native.includes("$owner=if ($WorkerStartupEmpty209) {[EasyedaDiagnosticOwner]::CreateWorkerStartupEmpty209()} elseif ($WorkerStartup209) {[EasyedaDiagnosticOwner]::CreateWorkerStartup209()}"));
+  assert.ok(native.includes("if ($WorkerStartupEmpty209 -and ($StringPrecreate -or $WorkerStartup -or $Layers209 -or $WorkerStartup209))"));
   assert.ok(native.includes("workerStartup209?EasyedaWorkerStartupProtocol.Encode209("));
   assert.ok(native.includes("[EasyedaWorkerStartupProtocol]::Verify209Smoke()"));
   assert.ok(native.includes('owner.RequestLimit!=256 || owner.nextRequest!=1'));

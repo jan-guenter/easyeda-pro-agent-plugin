@@ -309,7 +309,17 @@ async function catalogChecks(child: OfflineChild, sample: () => Promise<void>): 
     requireCheck(result["valid"] === valid && result["executionAuthorized"] === false,
       "String precreate exact-argument validation changed or implies execution authority.");
   }
-  return { tools: tools.length, queries: 10 };
+  const empty = await offlineApi(child, { action: "pcb209-empty-baseline", query: { includeSchemas: true } });
+  requireCheck(empty["toolWrapperAction"] === "empty-baseline" && empty["executionAuthorized"] === false &&
+    empty["saveAuthorized"] === false && empty["connectedValidation"] === false && Array.isArray(record(empty["inputSchema"])["oneOf"]),
+  "Empty baseline discovery or its schema changed.");
+  const emptyLaunch = { ...launch, operationId: "pcb209-empty-offline-catalog" };
+  for (const [request, valid] of [[emptyLaunch, true], [{ ...emptyLaunch, requestLimit: 9999 }, false]] as const) {
+    const result = await offlineApi(child, { action: "pcb209-empty-baseline-validate", query: { request } });
+    requireCheck(result["valid"] === valid && result["executionAuthorized"] === false,
+      "Empty baseline validation accepted a caller budget or implied execution authority.");
+  }
+  return { tools: tools.length, queries: 13 };
 }
 
 export async function probeInstalledOfflineCatalog(installedRoot: string): Promise<Record<string, unknown>> {

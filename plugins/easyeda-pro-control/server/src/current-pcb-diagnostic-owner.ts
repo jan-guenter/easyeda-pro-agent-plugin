@@ -61,6 +61,9 @@ import { CurrentPcbWorkerStartupPcbSession } from "./current-pcb-worker-startup-
 import { CurrentPcb209WorkerStartupOpening } from "./current-pcb-209-worker-startup-opening.ts";
 import type { CurrentPcb209WorkerStartupOpeningResult } from "./current-pcb-209-worker-startup-opening.ts";
 import { CurrentPcb209WorkerStartupPcbSession } from "./current-pcb-209-worker-startup-pcb-session.ts";
+import type { CurrentPcb209EmptyNativeDependency } from "./current-pcb-209-worker-startup-empty-session.ts";
+import { CurrentPcb209EmptyStartupBudgetAnchor, CurrentPcb209EmptyStartupChannel } from "./current-pcb-209-empty-startup-channel.ts";
+import { CURRENT_PCB_209_EMPTY_NATIVE_PROFILE } from "./current-pcb-209-empty-native-profile.ts";
 import { requireCurrentPcb209ActorClockSourceQualification } from "./current-pcb-209-actor-clock-source.ts";
 import type { CurrentPcb209ActorClockSourceQualification } from "./current-pcb-209-actor-clock-source.ts";
 import { decodeCurrentPcb209LayersReply } from "./current-pcb-209-layers.ts";
@@ -72,15 +75,15 @@ import { decodeCurrentPcb209PouredShapesReply } from "./current-pcb-209-poured-s
 import { decodeCurrentPcb209PadShapesReply } from "./current-pcb-209-pad-shapes.ts";
 import { currentPcb209SelectionRelationsComponentIdsSchema, decodeCurrentPcb209SelectionRelationsReply } from "./current-pcb-209-selection-relations.ts";
 
-const HELPER_SHA256 = "af9b4eb08558f57bcd745eef26f70b03861045fb68c4537c1dc9027c3eef6ba2";
-const HELPER_BYTES = 982_022;
+const HELPER_SHA256 = "2932a3294ededec8c8acd9a0e5c3592838a6b22669eca025aed8bd94caa1018b";
+const HELPER_BYTES = 1_030_837;
 const MAX_LINE = 100_000;
 // 64 MiB native bytes need at most 85.34 MiB base64 plus bounded poll envelopes.
 const MAX_TOTAL = 96 * 1024 * 1024;
 // Original helper owners remain reachable after caller exceptions.
 const retainedOwners = new Set<object>();
 type RecordValue = Record<string, unknown>;
-type OwnerPurpose = "diagnostic" | "diagnostic209" | "string-precreate" | "worker-startup" | "worker-startup209";
+type OwnerPurpose = "diagnostic" | "diagnostic209" | "string-precreate" | "worker-startup" | "worker-startup209" | "worker-startup-empty209";
 export interface CurrentPcbWorkerStartupOpeningBinding {
   readonly context: () => Readonly<{ sessionId: string; uniqueContextId: string }>;
   readonly reprove: () => Promise<void>;
@@ -93,7 +96,7 @@ export interface CurrentPcbWorkerStartupOpeningBinding {
   readonly ancillaryObservation: () => RecordValue | null;
 }
 export interface CurrentPcbWorkerStartupHandoff {
-  readonly channel: CurrentPcbWorkerStartupChannel | CurrentPcb209WorkerStartupChannel;
+  readonly channel: CurrentPcbWorkerStartupChannel | CurrentPcb209WorkerStartupChannel | CurrentPcb209EmptyStartupChannel;
   readonly actorClockSourceQualification?: CurrentPcb209ActorClockSourceQualification;
   readonly dependency: CurrentPcbWorkerStartupDependency;
   readonly opening: CurrentPcbWorkerStartupOpeningBinding;
@@ -159,7 +162,12 @@ class CurrentPcbRetainedOwnerCore {
   readonly #purpose: OwnerPurpose;
   #startupHandoffConsumed = false;
   #startupParent: CurrentPcbWorkerStartupParent | null = null;
-  #startupChannel: CurrentPcbWorkerStartupChannel | CurrentPcb209WorkerStartupChannel | null = null;
+  #startupChannel: CurrentPcbWorkerStartupChannel | CurrentPcb209WorkerStartupChannel | CurrentPcb209EmptyStartupChannel | null = null;
+  readonly #emptyAnchor: CurrentPcb209EmptyStartupBudgetAnchor | null;
+  #emptyPolls = 0;
+  #emptyControls = 0;
+  #startupEmptyDependency: CurrentPcb209EmptyNativeDependency | null = null;
+  #startupEmptyPcbContext: Readonly<{ sessionId: string; uniqueContextId: string }> | null = null;
   #startupHandoff: CurrentPcbWorkerStartupHandoff | null = null;
   #startupPcbConsumed = false;
   #startupPcbSession: CurrentPcbWorkerStartupPcbSession | CurrentPcb209WorkerStartupPcbSession | null = null;
@@ -230,13 +238,16 @@ class CurrentPcbRetainedOwnerCore {
 
   public constructor(child: ChildProcessWithoutNullStreams, verify: () => Promise<void>,
     installation: CurrentPcbDiagnosticInstallation | null, verifyInstallation: () => Promise<void>, purpose: OwnerPurpose,
-    verifyStartupFacade: () => Promise<void> = verifyInstallation, actorClockSource: CurrentPcb209ActorClockSourceQualification | null = null) {
+    verifyStartupFacade: () => Promise<void> = verifyInstallation, actorClockSource: CurrentPcb209ActorClockSourceQualification | null = null,
+    emptyAnchor: CurrentPcb209EmptyStartupBudgetAnchor | null = null) {
     this.#actorClockSource = actorClockSource;
-    if (purpose === "worker-startup209") {
+    this.#emptyAnchor = emptyAnchor;
+    if ((purpose === "worker-startup-empty209") !== (emptyAnchor !== null)) { throw error("STARTUP_EMPTY_ANCHOR"); }
+    if (purpose === "worker-startup209" || purpose === "worker-startup-empty209") {
       if (actorClockSource === null) { throw error("STARTUP209_ACTOR_SOURCE"); }
       requireCurrentPcb209ActorClockSourceQualification(actorClockSource);
     } else if (actorClockSource !== null) { throw error("STARTUP209_PURPOSE"); }
-    this.#startupPurpose = purpose === "worker-startup" || purpose === "worker-startup209";
+    this.#startupPurpose = purpose === "worker-startup" || purpose === "worker-startup209" || purpose === "worker-startup-empty209";
     this.#child = child; this.#verify = verify; this.#installation = installation; this.#verifyInstallation = verifyInstallation;
     this.#verifyStartupFacade = verifyStartupFacade;
     this.#purpose = purpose; this.#stringPurpose = purpose === "string-precreate";
@@ -1058,6 +1069,9 @@ class CurrentPcbRetainedOwnerCore {
       }
       const prior = this.#pipe.handoff();
       if (prior.sessionId !== attachment.sessionId) { throw error("STARTUP_HANDOFF_SESSION"); }
+      if (this.#purpose === "worker-startup-empty209" && prior.nextRequestId > CURRENT_PCB_209_EMPTY_NATIVE_PROFILE.startupDerivation.discovery + 1) {
+        throw error("STARTUP_EMPTY_DISCOVERY_BOUND");
+      }
       const parent = Object.freeze({ ...attachment, nextRequestId: prior.nextRequestId });
       this.#startupParent = parent;
       const current = (): void => {
@@ -1104,10 +1118,33 @@ class CurrentPcbRetainedOwnerCore {
         },
       });
       const priorUsage = { receivedBytes: prior.receivedBytes, eventCount: prior.eventCount, eventBytes: prior.eventBytes };
-      const channel = this.#purpose === "worker-startup209" ? new CurrentPcb209WorkerStartupChannel(native, priorUsage) :
-        new CurrentPcbWorkerStartupChannel(native, priorUsage);
+      const requireOriginalPcbContext = async (): Promise<Readonly<{ sessionId: string; uniqueContextId: string }>> => {
+        if (this.#purpose !== "worker-startup-empty209" || !(this.#startupPcbSession instanceof CurrentPcb209WorkerStartupPcbSession) ||
+            this.#startupPcbSession.status().phase !== "completed") { throw error("STARTUP_EMPTY_PCB_REQUIRED"); }
+        const pcb = this.#startupPcbSession;
+        current(); await reprove(); current();
+        if (this.#startupPcbSession !== pcb || pcb.status().phase !== "completed" || this.#stagedContext !== context) { throw error("STARTUP_EMPTY_PCB_CHANGED"); }
+        const model = context.modelContext();
+        if (model.sessionId !== parent.sessionId) { throw error("STARTUP_EMPTY_PCB_SESSION"); }
+        const selectedModel = Object.freeze({ sessionId: model.sessionId, uniqueContextId: model.uniqueContextId });
+        this.#startupEmptyPcbContext ??= selectedModel;
+        if (canonicalJson(this.#startupEmptyPcbContext) !== canonicalJson(selectedModel)) { throw error("STARTUP_EMPTY_PCB_CHANGED"); }
+        return this.#startupEmptyPcbContext;
+      };
+      let channel: CurrentPcbWorkerStartupChannel | CurrentPcb209WorkerStartupChannel | CurrentPcb209EmptyStartupChannel;
+      if (this.#purpose === "worker-startup-empty209") {
+        if (this.#emptyAnchor === null) { throw error("STARTUP_EMPTY_ANCHOR"); }
+        channel = new CurrentPcb209EmptyStartupChannel(native, { ...priorUsage, pollCount: this.#emptyPolls }, this.#emptyAnchor, requireOriginalPcbContext);
+      } else {
+        channel = this.#purpose === "worker-startup209" ? new CurrentPcb209WorkerStartupChannel(native, priorUsage) :
+          new CurrentPcbWorkerStartupChannel(native, priorUsage);
+      }
       this.#startupChannel = channel;
-      const dependency = await channel.start(); current();
+      let dependency: CurrentPcbWorkerStartupDependency;
+      if (channel instanceof CurrentPcb209EmptyStartupChannel) {
+        const emptyDependency = await channel.start(); this.#startupEmptyDependency = emptyDependency; dependency = emptyDependency;
+      } else { dependency = await channel.start(); }
+      current();
       const opening = Object.freeze<CurrentPcbWorkerStartupOpeningBinding>({
         context: (): Readonly<{ sessionId: string; uniqueContextId: string }> => { current(); return selected; }, reprove,
         begin: (input, titleProof): Readonly<{ sessionId: string; uniqueContextId: string }> => {
@@ -1128,6 +1165,24 @@ class CurrentPcbRetainedOwnerCore {
         ...(this.#actorClockSource === null ? {} : { actorClockSourceQualification: this.#actorClockSource }) });
       return this.#startupHandoff;
     } finally { this.#busy = false; }
+  }
+
+  /** Return only the same dependency issued at the original broader handoff.
+   * Old256 purposes refuse before any native call, PCB factory or SQL reread. */
+  public requireWorkerStartupEmptyDependency209(): Promise<CurrentPcb209EmptyNativeDependency> {
+    this.#available();
+    const dependency = this.#startupEmptyDependency, handoff = this.#startupHandoff;
+    if (this.#purpose !== "worker-startup-empty209" || dependency === null || handoff === null || handoff.dependency !== dependency ||
+        !(this.#startupChannel instanceof CurrentPcb209EmptyStartupChannel) || handoff.channel !== this.#startupChannel) {
+      throw error("STARTUP_EMPTY_NATIVE_PURPOSE_REQUIRED");
+    }
+    return (async (): Promise<CurrentPcb209EmptyNativeDependency> => {
+      await dependency.assertOriginalOwner(); this.#available();
+      if (this.#startupEmptyDependency !== dependency || this.#startupHandoff !== handoff || handoff.channel !== this.#startupChannel) {
+        throw error("STARTUP_EMPTY_DEPENDENCY_CHANGED");
+      }
+      return dependency;
+    })();
   }
 
   /** Private preparation for the same constructor-captured project's PCB.
@@ -1157,11 +1212,10 @@ class CurrentPcbRetainedOwnerCore {
     } finally { this.#busy = false; }
   }
 
-  /** Private preparation for the same constructor-captured project's PCB.
-   * No public action invokes this yet. Its caller must durably consume PCB
-   * navigation intent before openAndQualify; preparation itself sends no open.
-   * The actual context stays with its original native owner, never caller JSON.
-   * The callback must return the lifecycle's original completed preparation
+  /** Prepare the same constructor-captured project's PCB. The purpose-specific
+   * lifecycle must durably consume navigation intent before openAndQualify;
+   * preparation itself sends no open. The actual context stays with its original
+   * native owner. The callback returns the lifecycle's original completed preparation
    * inventory after verifying its managed checkpoint receipt and sealed target.
    * A new reader or equality with the live source hash is not a substitute. */
   public async prepareWorkerStartupPcbSession209(opening: CurrentPcb209WorkerStartupOpening,
@@ -1169,13 +1223,16 @@ class CurrentPcbRetainedOwnerCore {
     reverifyCheckpoint: () => Promise<Awaited<ReturnType<typeof readExactSqlInventory>>>): Promise<CurrentPcb209WorkerStartupPcbSession> {
     const context = this.#stagedContext, handoff = this.#startupHandoff;
     const target = currentDisposableOpenSealedTargetSchema.parse(captureCurrentPcbStringClockReply(input).value);
-    if (this.#purpose !== "worker-startup209" || handoff === null || context === null || this.#startupPcbConsumed ||
+    if (this.#purpose !== "worker-startup209" && this.#purpose !== "worker-startup-empty209" || handoff === null || context === null || this.#startupPcbConsumed ||
         this.#startupPcbSession !== null || this.#projectOpeningTarget === null ||
         canonicalJson(target) !== canonicalJson(this.#projectOpeningTarget) || typeof reverifyCheckpoint !== "function") {
       throw error("STARTUP_PCB_UNAVAILABLE");
     }
     this.#enter(true); this.#startupPcbConsumed = true;
     try {
+      const dependency = await this.requireWorkerStartupEmptyDependency209();
+      this.#available();
+      if (dependency !== handoff.dependency) { throw error("STARTUP_EMPTY_ORIGINAL_DEPENDENCY_REQUIRED"); }
       await CurrentPcb209WorkerStartupOpening.prototype.requireOriginalPcbDependency.call(opening, result, handoff.dependency, target);
       this.#available();
       const parent = context.openingContext();
@@ -1422,10 +1479,26 @@ class CurrentPcbRetainedOwnerCore {
   #requestNow(request: RecordValue): Promise<RecordValue> {
     this.#available();
     if (this.#pending !== null) { throw error("REQUEST_PENDING"); }
+    if (this.#purpose === "worker-startup-empty209") {
+      if (request["action"] === "poll") {
+        if (this.#emptyPolls >= CURRENT_PCB_209_EMPTY_NATIVE_PROFILE.polling.limit) { throw error("STARTUP_EMPTY_POLL_BOUND"); }
+        this.#emptyPolls += 1;
+      } else {
+        const action = request["action"], phase = request["startupPhase"];
+        const cleanup = typeof action === "string" && ["identity", "window", "normal-close", "termination", "release", "release-unlaunched", "no-process-proof", "release-no-process"].includes(action) ||
+          action === "worker-startup-send" && typeof phase === "string" && ["release", "remove", "resume", "start"].includes(phase) ||
+          request["action"] === "worker-startup-empty-common" && request["commonPhase"] === "release" ||
+          request["action"] === "worker-startup-empty-root" && request["rootPhase"] === "release";
+        const maximum = CURRENT_PCB_209_EMPTY_NATIVE_PROFILE.helperControlMessages - (cleanup ? 0 : 128);
+        if (this.#emptyControls >= maximum) { throw error("STARTUP_EMPTY_HELPER_BOUND"); }
+        this.#emptyControls += 1;
+      }
+    }
     const deferred = Promise.withResolvers<RecordValue>(), id = randomBytes(16).toString("hex");
     const launch = request["action"] === "launch";
     const pending: Pending = { id, resolve: deferred.resolve, reject: deferred.reject, launch,
-      send: request["action"] === "send" || request["action"] === "worker-startup-send" || request["action"] === "worker-startup-parent", written: false, reply: null,
+      send: request["action"] === "send" || request["action"] === "worker-startup-send" || request["action"] === "worker-startup-parent" ||
+        request["action"] === "worker-startup-empty-common" || request["action"] === "worker-startup-empty-root", written: false, reply: null,
       timer: setTimeout(() => { this.#fail("HELPER_DEADLINE"); }, 15_000) };
     this.#pending = pending;
     if (launch) { this.#launchRequestIssued = true; }
@@ -1475,7 +1548,8 @@ class CurrentPcbRetainedOwnerCore {
   }
   readonly #data = (chunk: unknown): void => {
     if (this.#failure !== null) { return; }
-    if (!Buffer.isBuffer(chunk) || chunk.length > MAX_LINE || this.#total + chunk.length > MAX_TOTAL || this.#buffer.length + chunk.length > MAX_LINE) { this.#fail("HELPER_BOUND"); return; }
+    const maximum = this.#purpose === "worker-startup-empty209" ? CURRENT_PCB_209_EMPTY_NATIVE_PROFILE.bytes.helperStdout : MAX_TOTAL;
+    if (!Buffer.isBuffer(chunk) || chunk.length > MAX_LINE || this.#total + chunk.length > maximum || this.#buffer.length + chunk.length > MAX_LINE) { this.#fail("HELPER_BOUND"); return; }
     this.#total += chunk.length; this.#buffer = Buffer.concat([this.#buffer, chunk]);
     const newline = this.#buffer.indexOf(10);
     if (newline === -1) { return; }
@@ -1539,6 +1613,17 @@ export class CurrentPcb209WorkerStartupOwner extends CurrentPcbRetainedOwnerCore
   }
 }
 
+/** Separate fixed launch purpose for the complete empty-baseline vocabulary.
+ * Its original monotonic anchor predates helper spawn and cannot be replaced. */
+export class CurrentPcb209EmptyStartupOwner extends CurrentPcbRetainedOwnerCore {
+  public constructor(child: ChildProcessWithoutNullStreams, verify: () => Promise<void>,
+    actorClockSource: CurrentPcb209ActorClockSourceQualification, anchor: CurrentPcb209EmptyStartupBudgetAnchor,
+    installation: CurrentPcbDiagnosticInstallation | null = null, verifyInstallation: () => Promise<void> = (): Promise<void> => Promise.resolve(),
+    verifyStartupFacade: () => Promise<void> = verifyInstallation) {
+    super(child, verify, installation, verifyInstallation, "worker-startup-empty209", verifyStartupFacade, actorClockSource, anchor);
+  }
+}
+
 // Only the validation lifecycle allocates this owner. It supplies no ordinary
 // Windows runtime authority, bridge authentication or connected qualification.
 export function startCurrentPcbDiagnosticOwner(options: CurrentPcbDiagnosticInstallationOptions): Promise<CurrentPcbDiagnosticOwner> {
@@ -1559,10 +1644,14 @@ export function startCurrentPcbWorkerStartupOwner(options: CurrentPcbDiagnosticI
 export function startCurrentPcb209WorkerStartupOwner(options: CurrentPcbDiagnosticInstallationOptions): Promise<CurrentPcb209WorkerStartupOwner> {
   return startFixedOwner(options, "worker-startup209", "209-startup");
 }
+export function startCurrentPcb209EmptyStartupOwner(options: CurrentPcbDiagnosticInstallationOptions): Promise<CurrentPcb209EmptyStartupOwner> {
+  return startFixedOwner(options, "worker-startup-empty209", "209-startup");
+}
 async function startFixedOwner(options: CurrentPcbDiagnosticInstallationOptions, purpose: OwnerPurpose,
   generation: "206" | "209-opening" | "209-startup" = "206"): Promise<CurrentPcbDiagnosticOwner | CurrentPcbStringPrecreateOwner | CurrentPcbWorkerStartupOwner> {
   const sealedOptions = Object.freeze({ ...options });
-  if ((generation === "209-opening") !== (purpose === "diagnostic209") || (generation === "209-startup") !== (purpose === "worker-startup209")) { throw error("INSTALLATION_PURPOSE"); }
+  const startup209 = purpose === "worker-startup209" || purpose === "worker-startup-empty209";
+  if ((generation === "209-opening") !== (purpose === "diagnostic209") || (generation === "209-startup") !== startup209) { throw error("INSTALLATION_PURPOSE"); }
   const verifier = generation === "206" ? verifyCurrentPcbDiagnosticInstallation : verifyCurrentPcb209DiagnosticInstallation;
   const installation = await verifier(sealedOptions);
   if (fileURLToPath(new URL("../..", import.meta.url)) !== `${sealedOptions.pluginRoot}/`) { throw error("INSTALLATION_PLUGIN"); }
@@ -1576,8 +1665,8 @@ async function startFixedOwner(options: CurrentPcbDiagnosticInstallationOptions,
       throw error("INSTALLATION_CHANGED");
     }
   };
-  const actorClockSource = purpose === "worker-startup209" ? await qualifyCurrentPcb209StartupActorInstallation(sealedOptions) : null;
-  if (purpose === "worker-startup209") { await verifyCurrentPcb209WorkerBootstrapInstallation(sealedOptions); }
+  const actorClockSource = startup209 ? await qualifyCurrentPcb209StartupActorInstallation(sealedOptions) : null;
+  if (startup209) { await verifyCurrentPcb209WorkerBootstrapInstallation(sealedOptions); }
   const helperPath = fileURLToPath(new URL("../../scripts/pcb-diagnostic-owner.ps1", import.meta.url));
   const before = await lstat(helperPath);
   const verify = async (): Promise<void> => {
@@ -1601,7 +1690,8 @@ async function startFixedOwner(options: CurrentPcbDiagnosticInstallationOptions,
   // A short encoded bootstrap avoids the Windows command-length limit for the
   // Entire native helper and avoids reopening a pathname after byte admission.
   let purposeSwitch = "";
-  if (purpose === "worker-startup209") { purposeSwitch = " -WorkerStartup209"; }
+  if (purpose === "worker-startup-empty209") { purposeSwitch = " -WorkerStartupEmpty209"; }
+  else if (purpose === "worker-startup209") { purposeSwitch = " -WorkerStartup209"; }
   else if (purpose === "worker-startup") { purposeSwitch = " -WorkerStartup"; }
   else if (purpose === "string-precreate") { purposeSwitch = " -StringPrecreate"; }
   else if (purpose === "diagnostic209") { purposeSwitch = " -Layers209"; }
@@ -1614,11 +1704,16 @@ async function startFixedOwner(options: CurrentPcbDiagnosticInstallationOptions,
     `$decoder=New-Object Text.UTF8Encoding($false,$true);& ([ScriptBlock]::Create($decoder.GetString($bytes)))${purposeSwitch}}finally{$file.Dispose()}`;
   const encoded = Buffer.from(bootstrap, "utf16le").toString("base64");
   if (encoded.length > 16_000) { throw error("BOOTSTRAP_BOUND"); }
+  const emptyAnchor = purpose === "worker-startup-empty209" ? new CurrentPcb209EmptyStartupBudgetAnchor() : null;
   const child = spawn(installation.paths.powershellExecutable,
     ["-NoLogo", "-NoProfile", "-NonInteractive", "-ExecutionPolicy", "Bypass", "-EncodedCommand", encoded],
     { stdio: ["pipe", "pipe", "pipe"], windowsHide: true });
   let owner: CurrentPcbRetainedOwnerCore;
-  if (purpose === "worker-startup209") {
+  if (purpose === "worker-startup-empty209") {
+    if (actorClockSource === null || emptyAnchor === null) { throw error("STARTUP_EMPTY_ALLOCATION"); }
+    owner = new CurrentPcb209EmptyStartupOwner(child, verify, actorClockSource, emptyAnchor, installation, verifyInstallation, verifyStartupFacade);
+  }
+  else if (purpose === "worker-startup209") {
     if (actorClockSource === null) { throw error("STARTUP209_ACTOR_SOURCE"); }
     owner = new CurrentPcb209WorkerStartupOwner(child, verify, actorClockSource, installation, verifyInstallation, verifyStartupFacade);
   }

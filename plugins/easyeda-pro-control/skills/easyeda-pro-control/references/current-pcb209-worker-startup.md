@@ -62,7 +62,10 @@ The parent discovery and startup channel share one monotonic request counter
 with a fixed256-command limit. Handoff does not reset it. This is sufficient
 for the defined startup stages; it does not admit the private common-state
 reader, whose complete bounded sequence needs up to3090 commands, or its
-empty-root bracket, which raises that private sequence to3099 commands.
+empty-root bracket, which raises that sequence to3099 commands. Use the
+[separate empty-baseline purpose](current-pcb209-empty-baseline.md) when that
+observation is needed; choose it before launch. This constructor owner cannot
+be upgraded.
 
 Use the inspected channel's `nextRequestId` to choose optional observations.
 Keep normal work through request224, leaving32 slots for cleanup. Assignments,
@@ -96,7 +99,9 @@ After a timeout or lost reply, use `inspect`; do not repeat capture or the
 consumed observation. Retain the original process owner for supported cleanup.
 Phase diagnostics distinguish bootstrap, preload, four helper copies and the
 project script. Failed target and script events retain bounded classifications
-and digests rather than private URLs or source text. The preload-log flag now
+and digests rather than private URLs or source text. Unsupported events retain
+a fixed method classification or method digest, session relation, startup phase
+and last fixed command. These diagnostics do not make the event acceptable. The preload-log flag now
 requires all four helper phases to have completed without a prior failure.
 Older snapshots could set it during cleanup; do not apply the new meaning to
 their historical results. The flag alone does not prove constructor capture.
