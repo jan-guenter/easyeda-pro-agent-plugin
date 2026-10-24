@@ -4,20 +4,21 @@
  * native adapter adopts it. Callback promises alone do not qualify child source. */
 import { types } from "node:util";
 import { CurrentPcb209RatlineEventDispatcher } from "./current-pcb-209-ratline-event-dispatcher.ts";
+import { CurrentPcb209RatlineChildStartGate } from "./current-pcb-209-ratline-child-start-gate.ts";
+import type { CurrentPcb209RatlineBootstrapOwner } from "./current-pcb-209-ratline-bootstrap-owner.ts";
 import type { CurrentPcb209RatlineRealmDependency } from "./current-pcb-209-ratline-event-dispatcher.ts";
-import type { CurrentPcb209RatlineCreationPacket, CurrentPcb209RatlinePcbCreation, CurrentPcb209RatlineWorkerCreation } from "./current-pcb-209-ratline-creation-runner.ts";
+import type { CurrentPcb209RatlineCreationPacket } from "./current-pcb-209-ratline-creation-runner.ts";
 import type { CurrentPcb209RatlineCapturePacket } from "./current-pcb-209-ratline-capture-runner.ts";
 
 type Role = "pcb" | "worker";
-type Creation = CurrentPcb209RatlinePcbCreation | CurrentPcb209RatlineWorkerCreation;
 export interface CurrentPcb209RatlineStartupDependency {
   readonly realm: CurrentPcb209RatlineRealmDependency;
   /** Release the original source pause once after all fixed observers arm.
    * This acknowledges only source continuation, not the whole application run. */
   readonly releaseOriginalPinnedSource: () => Promise<void>;
-  /** Arm the original waiting child's bootstrap observers before its sole start.
-   * The actual construction owner and its issued packet remain mandatory. */
-  readonly armOriginalChildBootstrap: (creation: Creation, packet: CurrentPcb209RatlineCreationPacket) => Promise<void>;
+  /** The actual source owner exists before source continuation. The gate binds
+   * the original construction packet and intercepts normal and abort starts. */
+  readonly childBootstrapOwner: CurrentPcb209RatlineBootstrapOwner;
 }
 export interface CurrentPcb209RatlineStartupPacket {
   readonly profile: "private.current-pcb209-ratline-composite.v1";
@@ -49,17 +50,17 @@ async function bounded<T>(work: Promise<T>): Promise<T> {
 }
 function members(value: CurrentPcb209RatlineStartupDependency): readonly unknown[] {
   need(value !== null && typeof value === "object" && !types.isProxy(value) && Object.getPrototypeOf(value) === Object.prototype, "DEPENDENCY");
-  const keys = ["realm", "releaseOriginalPinnedSource", "armOriginalChildBootstrap"] as const;
+  const keys = ["realm", "releaseOriginalPinnedSource", "childBootstrapOwner"] as const;
   need(Reflect.ownKeys(value).length === keys.length, "DEPENDENCY");
   return keys.map((key, index) => { const descriptor = Object.getOwnPropertyDescriptor(value, key);
-    need(descriptor !== undefined && Object.hasOwn(descriptor, "value") && typeof descriptor.value === (index === 0 ? "object" : "function"), "DEPENDENCY");
+    need(descriptor !== undefined && Object.hasOwn(descriptor, "value") && typeof descriptor.value === (index === 1 ? "function" : "object"), "DEPENDENCY");
     return descriptor.value as unknown; });
 }
 class CurrentPcb209RatlineStartupCore {
   readonly #dependency: CurrentPcb209RatlineStartupDependency;
   readonly #original: readonly unknown[];
   readonly #releaseSource: CurrentPcb209RatlineStartupDependency["releaseOriginalPinnedSource"];
-  readonly #armChild: CurrentPcb209RatlineStartupDependency["armOriginalChildBootstrap"];
+  readonly #childGate: CurrentPcb209RatlineChildStartGate;
   readonly #dispatcher: CurrentPcb209RatlineEventDispatcher;
   readonly #stages: ReturnType<CurrentPcb209RatlineEventDispatcher["claimOriginalStages"]>;
   readonly #role: Role;
@@ -75,8 +76,9 @@ class CurrentPcb209RatlineStartupCore {
   #packet: CurrentPcb209RatlineStartupPacket | null = null;
   public constructor(key: typeof INTERNAL, role: Role, dependency: CurrentPcb209RatlineStartupDependency) {
     need(key === INTERNAL, "PROFILE"); this.#original = members(dependency); this.#dependency = dependency; this.#role = role;
-    this.#releaseSource = dependency.releaseOriginalPinnedSource; this.#armChild = dependency.armOriginalChildBootstrap;
-    this.#dispatcher = new CurrentPcb209RatlineEventDispatcher(role, dependency.realm); this.#stages = this.#dispatcher.claimOriginalStages();
+    this.#releaseSource = dependency.releaseOriginalPinnedSource;
+    this.#childGate = new CurrentPcb209RatlineChildStartGate(role, dependency.realm, dependency.childBootstrapOwner);
+    this.#dispatcher = new CurrentPcb209RatlineEventDispatcher(role, this.#childGate.claimOriginalRealm()); this.#stages = this.#dispatcher.claimOriginalStages();
   }
   public status(): Readonly<Record<string, unknown>> {
     return Object.freeze({ consumed: this.#consumed, settled: this.#settled, failed: this.#failed, released: this.#released,
@@ -101,7 +103,7 @@ class CurrentPcb209RatlineStartupCore {
       const construction = await this.#construction; await this.#current();
       if (this.#role === "pcb") { this.#startCapture(); await this.#stages.capture.whenArmed(); await this.#current(); }
       await this.#stages.creation.requireOriginal(construction); this.#childArmed = true;
-      await bounded(this.#armChild.call(this.#dependency, this.#stages.creation, construction)); await this.#current();
+      await bounded(this.#childGate.armOriginalChildBootstrap(this.#stages.creation, construction)); await this.#current();
       // Success and abort cleanup share the creation owner's retained start
       // Promise. No second dispatcher or raw child-start request is introduced.
       await this.#stages.creation.continueOriginalParent(construction); await this.#current();
@@ -121,7 +123,7 @@ class CurrentPcb209RatlineStartupCore {
     } finally { this.#settled = true; }
   }
   async #cleanup(): Promise<void> {
-    this.#dispatcher.abort(); const work: Promise<void>[] = [];
+    const work: Promise<void>[] = [this.#childGate.abort()]; this.#dispatcher.abort();
     if (this.#construction !== null) { work.push(this.#stages.creation.abort()); }
     if (this.#capture !== null) { work.push(this.#stages.capture.abort()); }
     const results = await Promise.allSettled(work); const errors: unknown[] = [];
@@ -139,7 +141,7 @@ class CurrentPcb209RatlineStartupCore {
       this.#same();
       if (this.#construction !== null) { await this.#stages.creation.releaseAfterTermination(); }
       if (this.#capture !== null) { await this.#stages.capture.releaseAfterTermination(); }
-      await this.#dispatcher.releaseAfterTermination(); this.#released = true;
+      await this.#dispatcher.releaseAfterTermination(); await this.#childGate.releaseAfterTermination(); this.#released = true;
     } finally { this.#releaseStarted = false; }
   }
 }

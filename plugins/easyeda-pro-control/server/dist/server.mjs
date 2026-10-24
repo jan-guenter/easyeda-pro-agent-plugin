@@ -10,7 +10,7 @@ const require = function __easyedaGuardedRequire(specifier) { if (typeof specifi
 	const __easyedaPublicationLockPath = __easyedaJoin(__easyedaPublicationDirectory, ".bundle-publication.lock");
 const __easyedaAssertNoPublication = () => { try { __easyedaLstatSync(__easyedaPublicationLockPath); throw new Error("The facade bundle is undergoing a fail-closed publication transaction."); } catch (__easyedaPublicationError) { if (!__easyedaPublicationError || typeof __easyedaPublicationError !== "object" || !("code" in __easyedaPublicationError) || __easyedaPublicationError.code !== "ENOENT") throw __easyedaPublicationError; } };
 __easyedaAssertNoPublication();
-const __easyedaBundlePairId = "c3b8b93842184dfe2a8855a20de90343be68c0dfde1156e6c803a359baba1d25";
+const __easyedaBundlePairId = "93c4f49e155a1c5f4c15ddd152c15bd9860640282755703eccff4ce765030fef";
 if (__easyedaBasename(import.meta.filename) === "server.mjs") {
   const __easyedaPeerPath = __easyedaJoin(import.meta.dirname, "upstream-supervisor.mjs");
   const __easyedaPeerPathBefore = __easyedaLstatSync(__easyedaPeerPath, { bigint: true });
@@ -38331,13 +38331,13 @@ var init_mcp = __esm({
         }
         return registeredPrompt;
       }
-      _createRegisteredTool(name6, title17, description2, inputSchema6, outputSchema2, annotations, execution, _meta, handler2) {
+      _createRegisteredTool(name6, title17, description2, inputSchema6, outputSchema3, annotations, execution, _meta, handler2) {
         validateAndWarnToolName(name6);
         const registeredTool = {
           title: title17,
           description: description2,
           inputSchema: getZodSchemaObject(inputSchema6),
-          outputSchema: getZodSchemaObject(outputSchema2),
+          outputSchema: getZodSchemaObject(outputSchema3),
           annotations,
           execution,
           _meta,
@@ -38388,7 +38388,7 @@ var init_mcp = __esm({
         }
         let description2;
         let inputSchema6;
-        let outputSchema2;
+        let outputSchema3;
         let annotations;
         if (typeof rest[0] === "string") {
           description2 = rest.shift();
@@ -38408,7 +38408,7 @@ var init_mcp = __esm({
           }
         }
         const callback = rest[0];
-        return this._createRegisteredTool(name6, void 0, description2, inputSchema6, outputSchema2, annotations, { taskSupport: "forbidden" }, void 0, callback);
+        return this._createRegisteredTool(name6, void 0, description2, inputSchema6, outputSchema3, annotations, { taskSupport: "forbidden" }, void 0, callback);
       }
       /**
        * Registers a tool with a config object and callback.
@@ -38417,8 +38417,8 @@ var init_mcp = __esm({
         if (this._registeredTools[name6]) {
           throw new Error(`Tool ${name6} is already registered`);
         }
-        const { title: title17, description: description2, inputSchema: inputSchema6, outputSchema: outputSchema2, annotations, _meta } = config2;
-        return this._createRegisteredTool(name6, title17, description2, inputSchema6, outputSchema2, annotations, { taskSupport: "forbidden" }, _meta, cb);
+        const { title: title17, description: description2, inputSchema: inputSchema6, outputSchema: outputSchema3, annotations, _meta } = config2;
+        return this._createRegisteredTool(name6, title17, description2, inputSchema6, outputSchema3, annotations, { taskSupport: "forbidden" }, _meta, cb);
       }
       prompt(name6, ...rest) {
         if (this._registeredPrompts[name6]) {
@@ -44480,10 +44480,13 @@ async function acquireFacadeLeaseWithCapability(root2) {
         existing.record.pid,
         existing.record.pidStartTime
       )) {
-        throw new Error(
-          `Another EasyEDA control facade owns ${path6} (pid ${existing.record.pid}). Reuse that MCP connection or close it first.`,
-          { cause: error63 }
-        );
+        if (existing.record.pidStartTime === void 0) {
+          throw new Error(
+            `Another EasyEDA control facade owns ${path6} (pid ${existing.record.pid}). Reuse that MCP connection or close it first.`,
+            { cause: error63 }
+          );
+        }
+        throw new FacadeLeaseContentionError(path6, existing.record.pid, { cause: error63 });
       }
       if (existing.record.pidStartTime === void 0 && existing.record.childPid === void 0) {
         throw new Error(
@@ -44754,11 +44757,19 @@ async function acquireFacadeLease(input2) {
     throw error63;
   }
 }
-var MAXIMUM_LEASE_RECORD_BYTES;
+var MAXIMUM_LEASE_RECORD_BYTES, FacadeLeaseContentionError;
 var init_lease = __esm({
   "server/src/lease.ts"() {
     init_control_root();
     MAXIMUM_LEASE_RECORD_BYTES = 4096n;
+    FacadeLeaseContentionError = class extends Error {
+      observedOwnerPid;
+      constructor(path6, observedOwnerPid, options) {
+        super(`Another EasyEDA control facade owns ${path6} (pid ${observedOwnerPid}). Reuse that MCP connection or close it first.`, options);
+        this.name = "FacadeLeaseContentionError";
+        this.observedOwnerPid = observedOwnerPid;
+      }
+    };
   }
 });
 
@@ -78984,8 +78995,8 @@ function capture(value2, operationId16, generation5, attempt2) {
   const processes2 = a["processes"];
   need15(Array.isArray(processes2) && processes2.length > 0 && processes2.length <= 512);
   let previous = 0, root2 = 0;
-  for (const process21 of processes2) {
-    const p = exact10(process21, ["pid", "role", "startIdentity"]);
+  for (const process22 of processes2) {
+    const p = exact10(process22, ["pid", "role", "startIdentity"]);
     const pid2 = p["pid"];
     const identity37 = p["startIdentity"];
     need15(typeof pid2 === "number" && Number.isSafeInteger(pid2) && pid2 > previous && pid2 <= 2147483647 && typeof identity37 === "string" && new RegExp(`^win32:\\d{15,20}:job:${generation5.jobId}$`, "u").test(identity37));
@@ -88157,8 +88168,8 @@ function capture2(value2, operationId16, generation5, attempt2) {
   const processes2 = a["processes"];
   need43(Array.isArray(processes2) && processes2.length > 0 && processes2.length <= 512);
   let previous = 0, root2 = 0;
-  for (const process21 of processes2) {
-    const p = exact15(process21, ["pid", "role", "startIdentity"]);
+  for (const process22 of processes2) {
+    const p = exact15(process22, ["pid", "role", "startIdentity"]);
     const pid2 = p["pid"];
     const identity37 = p["startIdentity"];
     need43(typeof pid2 === "number" && Number.isSafeInteger(pid2) && pid2 > previous && pid2 <= 2147483647 && typeof identity37 === "string" && new RegExp(`^win32:\\d{15,20}:job:${generation5.jobId}$`, "u").test(identity37));
@@ -128927,10 +128938,10 @@ function closure(events, operationId16, final, launch) {
   const authority2 = sealed2(capture4["executionAuthority"], "authoritySha256");
   const processes2 = external_exports.array(external_exports.record(external_exports.string(), external_exports.unknown())).min(1).max(512).parse(authority2["processes"]);
   need58(authority2["schema"] === "easyeda-pro-control.execution-authority.v1" && authority2["processTreeSha256"] === sha256Json(processes2) && intent["captureBindingSha256"] === authority2["bindingSha256"], "captured authority binding differs");
-  same42(processes2.filter((process21) => process21["role"] === "easyeda-main"), [launch["root"]], "captured root differs");
+  same42(processes2.filter((process22) => process22["role"] === "easyeda-main"), [launch["root"]], "captured root differs");
   const jobId = external_exports.string().regex(/^[a-f0-9]{32}$/u).parse(launch["jobId"]);
   const helperInstance = external_exports.string().regex(/^[a-f0-9]{32}$/u).parse(launch["helperInstance"]);
-  need58(processes2.every((process21) => typeof process21["startIdentity"] === "string" && process21["startIdentity"].endsWith(`:job:${jobId}`)), "captured Job differs");
+  need58(processes2.every((process22) => typeof process22["startIdentity"] === "string" && process22["startIdentity"].endsWith(`:job:${jobId}`)), "captured Job differs");
   for (const [key, value2] of Object.entries({
     operationId: operationId16,
     phase: phase5,
@@ -130456,7 +130467,7 @@ function executionAuthorityPayload(value2, expectedBindingSha256) {
       startIdentity: candidate["startIdentity"]
     };
   });
-  if (new Set(processes2.map((process21) => process21.pid)).size !== processes2.length) {
+  if (new Set(processes2.map((process22) => process22.pid)).size !== processes2.length) {
     throw new Error(
       "The execution-authority process tree contains duplicate process IDs."
     );
@@ -137286,6 +137297,82 @@ var init_native_close_recovery = __esm({
   }
 });
 
+// server/src/ownership-conflict-startup.ts
+import process10 from "node:process";
+async function serveOwnershipConflict(conflict) {
+  const snapshot8 = Object.freeze(outputSchema2.parse({
+    ok: false,
+    mode: "ownership-conflict",
+    observation: "startup-snapshot",
+    observedAt: (/* @__PURE__ */ new Date()).toISOString(),
+    observedOwnerPid: conflict.observedOwnerPid,
+    leaseAcquired: false,
+    liveControlAvailable: false,
+    automaticRetry: false,
+    guidance
+  }));
+  const server2 = new McpServer(
+    { name: "easyeda-pro-control", version: CONTROL_VERSION },
+    { capabilities: { tools: {} }, instructions: guidance }
+  );
+  server2.registerTool("easyeda_control_status", {
+    title: "Explain the EasyEDA ownership conflict",
+    description: "Startup-only diagnostic: another live facade held the sole control lease. Returns that recorded conflict only. No application access, live process recheck, lease retry, control takeover or other tools are available on this connection.",
+    inputSchema: external_exports.object({}).strict(),
+    outputSchema: outputSchema2,
+    annotations: { readOnlyHint: true, destructiveHint: false, idempotentHint: true, openWorldHint: false }
+  }, () => ({ isError: true, structuredContent: snapshot8, content: [{ type: "text", text: JSON.stringify(snapshot8) }] }));
+  const done = Promise.withResolvers();
+  const close = () => {
+    done.resolve(null);
+  };
+  process10.stdin.once("end", close);
+  process10.once("SIGINT", close);
+  process10.once("SIGTERM", close);
+  try {
+    await server2.connect(new StdioServerTransport());
+    await done.promise;
+  } finally {
+    process10.stdin.removeListener("end", close);
+    process10.removeListener("SIGINT", close);
+    process10.removeListener("SIGTERM", close);
+    await server2.close();
+  }
+}
+async function acquireFacadeLeaseOrDiagnose(root2) {
+  try {
+    return await acquireFacadeLease(root2);
+  } catch (error63) {
+    if (!(error63 instanceof FacadeLeaseContentionError)) {
+      throw error63;
+    }
+    await serveOwnershipConflict(error63);
+    return null;
+  }
+}
+var guidance, outputSchema2;
+var init_ownership_conflict_startup = __esm({
+  "server/src/ownership-conflict-startup.ts"() {
+    init_mcp();
+    init_stdio2();
+    init_zod();
+    init_core3();
+    init_lease();
+    guidance = "Another EasyEDA control connection owned the live facade at startup. Use that original connection. This connection exposes only the recorded ownership conflict and cannot control EasyEDA. After the original connection releases its owner normally, open a fresh MCP connection. This snapshot does not prove the owner is still alive and does not authorize terminating it or removing its lease.";
+    outputSchema2 = external_exports.object({
+      ok: external_exports.literal(false),
+      mode: external_exports.literal("ownership-conflict"),
+      observation: external_exports.literal("startup-snapshot"),
+      observedAt: external_exports.iso.datetime(),
+      observedOwnerPid: external_exports.number().int().positive(),
+      leaseAcquired: external_exports.literal(false),
+      liveControlAvailable: external_exports.literal(false),
+      automaticRetry: external_exports.literal(false),
+      guidance: external_exports.literal(guidance)
+    }).strict();
+  }
+});
+
 // node_modules/@modelcontextprotocol/sdk/dist/esm/experimental/tasks/client.js
 var ExperimentalClientTasks;
 var init_client = __esm({
@@ -141670,7 +141757,7 @@ var init_wrapper = __esm({
 
 // server/src/backend-listener-authority.ts
 import { readFile as readFile6, readdir as readdir4, readlink, stat as statPath } from "node:fs/promises";
-import process10 from "node:process";
+import process11 from "node:process";
 function processStartTime(stat3) {
   const closingParenthesis = stat3.lastIndexOf(")");
   if (closingParenthesis < 1) {
@@ -141687,18 +141774,18 @@ async function readProcessStartTime(pid2) {
   return processStartTime(await readFile6(`/proc/${pid2}/stat`, "utf8"));
 }
 function assertLinuxProcessOwnership(status3) {
-  if (typeof process10.getuid !== "function") {
+  if (typeof process11.getuid !== "function") {
     throw new TypeError(
       "Backend socket ownership requires a numeric local user ID."
     );
   }
   const match2 = /^Uid:\s+(\d+)\s+/mu.exec(status3);
-  if (match2?.[1] === void 0 || Number(match2[1]) !== process10.getuid()) {
+  if (match2?.[1] === void 0 || Number(match2[1]) !== process11.getuid()) {
     throw new Error("The supervised backend process is not owned by this user.");
   }
 }
 async function captureBackendProcessAuthority(pid2) {
-  if (process10.platform !== "linux") {
+  if (process11.platform !== "linux") {
     throw new Error(
       "Authenticated backend socket ownership is currently supported only on Linux."
     );
@@ -142964,7 +143051,7 @@ import { createHash as createHash67 } from "node:crypto";
 import { constants as fsConstants7 } from "node:fs";
 import { lstat as lstat37, open as open34 } from "node:fs/promises";
 import { basename as basename25, dirname as dirname23, join as join60 } from "node:path";
-import process11 from "node:process";
+import process12 from "node:process";
 function isRecord5(value2) {
   return typeof value2 === "object" && value2 !== null && !Array.isArray(value2);
 }
@@ -142972,12 +143059,12 @@ function sameIdentity3(left, right) {
   return left.dev === right.dev && left.ino === right.ino;
 }
 function assertPrivateOwnedFile(stat3, label) {
-  if (!stat3.isFile() || stat3.nlink !== 1 || stat3.mode % 512 !== 384 || typeof process11.getuid === "function" && stat3.uid !== process11.getuid()) {
+  if (!stat3.isFile() || stat3.nlink !== 1 || stat3.mode % 512 !== 384 || typeof process12.getuid === "function" && stat3.uid !== process12.getuid()) {
     throw new Error(`${label} must be an owner-owned mode-0600 single-link file.`);
   }
 }
 function assertPrivateOwnedDirectory(stat3, label) {
-  if (!stat3.isDirectory() || stat3.mode % 512 !== 448 || typeof process11.getuid === "function" && stat3.uid !== process11.getuid()) {
+  if (!stat3.isDirectory() || stat3.mode % 512 !== 448 || typeof process12.getuid === "function" && stat3.uid !== process12.getuid()) {
     throw new Error(`${label} must be an owner-owned mode-0700 directory.`);
   }
 }
@@ -143009,7 +143096,7 @@ async function readStablePrivateChildFile(parent, name6, maximumBytes2, label) {
   }
 }
 async function loadAuthenticatedBridgeBuildIdentity(authenticationKey, controlRoot) {
-  const configuredControlRoot = process11.env["EASYEDA_CONTROL_DATA_DIR"];
+  const configuredControlRoot = process12.env["EASYEDA_CONTROL_DATA_DIR"];
   if (configuredControlRoot !== controlRoot.path) {
     throw new Error(
       "EASYEDA_CONTROL_DATA_DIR must match the retained control-root capability before bridge admission."
@@ -143112,10 +143199,10 @@ import {
   resolve as resolve16,
   sep as sep4
 } from "node:path";
-import process12 from "node:process";
+import process13 from "node:process";
 function configuredControlRootDirectory() {
   return resolve16(
-    process12.env["EASYEDA_CONTROL_DATA_DIR"] ?? join61(process12.env["HOME"] ?? "/tmp", ".easyeda-pro-control")
+    process13.env["EASYEDA_CONTROL_DATA_DIR"] ?? join61(process13.env["HOME"] ?? "/tmp", ".easyeda-pro-control")
   );
 }
 function isWithin3(root2, candidate) {
@@ -143138,7 +143225,7 @@ async function bindPrivateUpstreamDataDirectory(controlRoot, dataDirectory, capa
   const directory4 = await capability.openDirectory(dataDirectory);
   try {
     const information = await directory4.handle.stat({ bigint: true });
-    if (!information.isDirectory() || Number(information.mode % 512n) !== 448 || typeof process12.getuid === "function" && information.uid !== BigInt(process12.getuid())) {
+    if (!information.isDirectory() || Number(information.mode % 512n) !== 448 || typeof process13.getuid === "function" && information.uid !== BigInt(process13.getuid())) {
       throw new Error(
         "EASYEDA_UPSTREAM_DATA_DIR must be an owner-owned mode-0700 directory."
       );
@@ -143152,7 +143239,7 @@ async function bindPrivateUpstreamDataDirectory(controlRoot, dataDirectory, capa
   }
 }
 function assertPrivateFileMode(mode) {
-  if (process12.platform !== "win32" && (mode & 63) !== 0) {
+  if (process13.platform !== "win32" && (mode & 63) !== 0) {
     throw new Error(
       "EASYEDA_BRIDGE_TOKEN_FILE must not grant group or other permissions."
     );
@@ -143192,7 +143279,7 @@ async function readBoundBridgeTokenFile(configuredPath, capability) {
         }
         const currentPath = `/proc/self/fd/${currentDirectory.handle.fd}/${basename26(path6)}`;
         const currentInfo = await lstat38(currentPath);
-        if (currentInfo.isSymbolicLink() || !currentInfo.isFile() || currentInfo.dev !== openedInfo.dev || currentInfo.ino !== openedInfo.ino || currentInfo.nlink !== 1 || currentInfo.size !== openedInfo.size || currentInfo.mtimeMs !== openedInfo.mtimeMs || currentInfo.ctimeMs !== openedInfo.ctimeMs || typeof process12.getuid === "function" && currentInfo.uid !== process12.getuid()) {
+        if (currentInfo.isSymbolicLink() || !currentInfo.isFile() || currentInfo.dev !== openedInfo.dev || currentInfo.ino !== openedInfo.ino || currentInfo.nlink !== 1 || currentInfo.size !== openedInfo.size || currentInfo.mtimeMs !== openedInfo.mtimeMs || currentInfo.ctimeMs !== openedInfo.ctimeMs || typeof process13.getuid === "function" && currentInfo.uid !== process13.getuid()) {
           throw new Error("EASYEDA_BRIDGE_TOKEN_FILE changed while being read.");
         }
         assertPrivateFileMode(currentInfo.mode);
@@ -143214,7 +143301,7 @@ async function readBridgeTokenFileHandle(handle14, pathInfo) {
       "EASYEDA_BRIDGE_TOKEN_FILE must be a single-link regular non-symlink file."
     );
   }
-  if (typeof process12.getuid === "function" && pathInfo.uid !== process12.getuid()) {
+  if (typeof process13.getuid === "function" && pathInfo.uid !== process13.getuid()) {
     throw new Error("EASYEDA_BRIDGE_TOKEN_FILE must be owned by this user.");
   }
   assertPrivateFileMode(pathInfo.mode);
@@ -143238,7 +143325,7 @@ async function readBridgeTokenFileHandle(handle14, pathInfo) {
   return token21;
 }
 function configuredBridgeAuthenticationKey(capability) {
-  const configuredPath = process12.env["EASYEDA_BRIDGE_TOKEN_FILE"];
+  const configuredPath = process13.env["EASYEDA_BRIDGE_TOKEN_FILE"];
   if (configuredPath === void 0 || configuredPath.length === 0) {
     throw new Error(
       "EASYEDA_BRIDGE_TOKEN_FILE is required; unauthenticated bridge startup is prohibited."
@@ -143252,7 +143339,7 @@ async function prepareBoundUpstreamEnvironment(command2, privateBridge, controlR
   if (!isAbsolute24(command2)) {
     throw new Error("The reviewed upstream command must be absolute.");
   }
-  if (process12.env["EASYEDA_BRIDGE_TOKEN_FILE"] === void 0 || process12.env["EASYEDA_BRIDGE_TOKEN_FILE"]?.length === 0) {
+  if (process13.env["EASYEDA_BRIDGE_TOKEN_FILE"] === void 0 || process13.env["EASYEDA_BRIDGE_TOKEN_FILE"]?.length === 0) {
     throw new Error(
       "EASYEDA_BRIDGE_TOKEN_FILE is required; unauthenticated bridge startup is prohibited."
     );
@@ -143267,7 +143354,7 @@ async function prepareBoundUpstreamEnvironment(command2, privateBridge, controlR
   }
   const controlRoot = configuredControlRootDirectory();
   const dataDirectory = resolve16(
-    process12.env["EASYEDA_UPSTREAM_DATA_DIR"] ?? join61(controlRoot, "upstream")
+    process13.env["EASYEDA_UPSTREAM_DATA_DIR"] ?? join61(controlRoot, "upstream")
   );
   if (!isWithin3(controlRoot, dataDirectory)) {
     throw new Error(
@@ -143285,10 +143372,10 @@ async function prepareBoundUpstreamEnvironment(command2, privateBridge, controlR
     AI_PROVIDER: "none",
     BRIDGE_HOST: privateBridge.host,
     BRIDGE_HOT_SWAP_ENABLED: "false",
-    BRIDGE_MAX_PAYLOAD_SIZE: process12.env["EASYEDA_BRIDGE_MAX_PAYLOAD_SIZE"] ?? "10485760",
+    BRIDGE_MAX_PAYLOAD_SIZE: process13.env["EASYEDA_BRIDGE_MAX_PAYLOAD_SIZE"] ?? "10485760",
     BRIDGE_PORT: String(privateBridge.port),
     BRIDGE_PORT_SCAN: String(privateBridge.port),
-    BRIDGE_RAW_EXEC_ENABLED: process12.env["EASYEDA_RAW_EXEC_ENABLED"] ?? "true",
+    BRIDGE_RAW_EXEC_ENABLED: process13.env["EASYEDA_RAW_EXEC_ENABLED"] ?? "true",
     BRIDGE_TOKEN: privateBridge.sessionToken,
     DATA_DIR: UPSTREAM_SANDBOX_DATA_DIRECTORY,
     DIGIKEY_ENABLED: "false",
@@ -143302,10 +143389,10 @@ async function prepareBoundUpstreamEnvironment(command2, privateBridge, controlR
     KEYLESS_SOURCING_ENABLED: "false",
     LANG: "C.UTF-8",
     LC_ALL: "C.UTF-8",
-    LOG_LEVEL: process12.env["EASYEDA_UPSTREAM_LOG_LEVEL"] ?? "warn",
+    LOG_LEVEL: process13.env["EASYEDA_UPSTREAM_LOG_LEVEL"] ?? "warn",
     LOGNAME: "easyeda-pro-control",
     MCP_BRIDGE_BACKEND: "local_bridge",
-    MCP_RAW_EXEC_EXPERIMENTAL: process12.env["EASYEDA_RAW_EXEC_EXPERIMENTAL"] ?? "true",
+    MCP_RAW_EXEC_EXPERIMENTAL: process13.env["EASYEDA_RAW_EXEC_EXPERIMENTAL"] ?? "true",
     MOUSER_ENABLED: "false",
     // The pinned upstream deliberately disables its raw-exec tool in production.
     // The private stdio child exposes it only to facade-generated authenticated calls.
@@ -143316,7 +143403,7 @@ async function prepareBoundUpstreamEnvironment(command2, privateBridge, controlR
     PATH: "/runtime",
     SHELL: "",
     TERM: "dumb",
-    TOOL_PROFILE: process12.env["EASYEDA_TOOL_PROFILE"] ?? "dev",
+    TOOL_PROFILE: process13.env["EASYEDA_TOOL_PROFILE"] ?? "dev",
     TRANSPORT: "stdio",
     TZ: "UTC",
     USER: "easyeda-pro-control"
@@ -143324,7 +143411,7 @@ async function prepareBoundUpstreamEnvironment(command2, privateBridge, controlR
   const assertCurrent = async () => {
     await controlRootCapability2.assertCurrent();
     const retained2 = await boundDataDirectory.handle.stat({ bigint: true });
-    if (retained2.dev !== boundDataDirectory.info.dev || retained2.ino !== boundDataDirectory.info.ino || !retained2.isDirectory() || Number(retained2.mode % 512n) !== 448 || typeof process12.getuid === "function" && retained2.uid !== BigInt(process12.getuid())) {
+    if (retained2.dev !== boundDataDirectory.info.dev || retained2.ino !== boundDataDirectory.info.ino || !retained2.isDirectory() || Number(retained2.mode % 512n) !== 448 || typeof process13.getuid === "function" && retained2.uid !== BigInt(process13.getuid())) {
       throw new Error(
         "The retained upstream data-directory capability changed before spawn."
       );
@@ -149757,7 +149844,7 @@ import {
   realpath as realpath24
 } from "node:fs/promises";
 import { dirname as dirname26, isAbsolute as isAbsolute26, join as join62, relative as relative8, resolve as resolve18, sep as sep6 } from "node:path";
-import process13 from "node:process";
+import process14 from "node:process";
 function boundedTimingInteger(value2) {
   return Math.min(Number.MAX_SAFE_INTEGER, Math.max(0, Math.floor(value2)));
 }
@@ -149774,7 +149861,7 @@ function isStringArray3(value2) {
   return Array.isArray(value2) && value2.every((item2) => typeof item2 === "string");
 }
 function configuredUpstreamArgs() {
-  const raw = process13.env["EASYEDA_UPSTREAM_ARGS_JSON"];
+  const raw = process14.env["EASYEDA_UPSTREAM_ARGS_JSON"];
   if (raw === void 0 || raw.length === 0) {
     throw new Error(
       "EASYEDA_UPSTREAM_ARGS_JSON must configure exactly one absolute Node entrypoint."
@@ -149789,14 +149876,14 @@ function configuredUpstreamArgs() {
   return parsed2;
 }
 function configuredUpstreamCommand() {
-  const command2 = process13.env["EASYEDA_UPSTREAM_COMMAND"];
+  const command2 = process14.env["EASYEDA_UPSTREAM_COMMAND"];
   if (command2 === void 0 || command2.length === 0 || !isAbsolute26(command2)) {
     throw new Error("EASYEDA_UPSTREAM_COMMAND must be an absolute path.");
   }
   return resolve18(command2);
 }
 function configuredUpstreamCwd() {
-  const cwd = process13.env["EASYEDA_UPSTREAM_CWD"];
+  const cwd = process14.env["EASYEDA_UPSTREAM_CWD"];
   if (cwd === void 0 || cwd.length === 0 || !isAbsolute26(cwd)) {
     throw new Error("EASYEDA_UPSTREAM_CWD must be an absolute path.");
   }
@@ -149807,7 +149894,7 @@ function isWithin5(root2, candidate) {
   return relativePath.length === 0 || relativePath !== ".." && !relativePath.startsWith(`..${sep6}`) && !isAbsolute26(relativePath);
 }
 function assertTrustedOwnership(path6, info, allowRootOwner = false) {
-  if (typeof process13.getuid === "function" && info.uid !== process13.getuid() && !(allowRootOwner && info.uid === 0)) {
+  if (typeof process14.getuid === "function" && info.uid !== process14.getuid() && !(allowRootOwner && info.uid === 0)) {
     throw new Error(`Trusted upstream path is owned by another user: ${path6}`);
   }
   if (!info.isSymbolicLink() && (info.mode & 18) !== 0) {
@@ -150069,7 +150156,7 @@ async function captureTrustedFile(path6, allowRootOwner = false) {
   };
 }
 function configuredSandboxCommand() {
-  const command2 = process13.env["EASYEDA_BWRAP_COMMAND"] ?? DEFAULT_SANDBOX_COMMAND;
+  const command2 = process14.env["EASYEDA_BWRAP_COMMAND"] ?? DEFAULT_SANDBOX_COMMAND;
   if (!isAbsolute26(command2)) {
     throw new Error("EASYEDA_BWRAP_COMMAND must be an absolute path.");
   }
@@ -150140,7 +150227,7 @@ async function openReviewedExecutable(path6, expectedSha256, label, allowRootOwn
       assertCurrent,
       descriptor: handle14.fd,
       dispose,
-      executionPath: `/proc/${process13.pid}/fd/${handle14.fd}`,
+      executionPath: `/proc/${process14.pid}/fd/${handle14.fd}`,
       handle: handle14
     };
   } catch (error63) {
@@ -150269,7 +150356,7 @@ function openReviewedDescriptorSanitizerExecutable() {
 }
 async function captureLauncherFingerprintAt(commandPath, args, cwd, timings) {
   const commandRealPath = await realpath24(commandPath);
-  const currentNodeRealPath = await realpath24(process13.execPath);
+  const currentNodeRealPath = await realpath24(process14.execPath);
   if (commandRealPath !== currentNodeRealPath) {
     throw new Error(
       "The reviewed upstream command must be the same Node executable running the facade."
@@ -150402,7 +150489,7 @@ async function captureLauncherAdmissionAt(expected3, command2, cwd, entrypoint) 
       "The configured sandbox-launcher identity differs from review."
     );
   }
-  if (await realpath24(normalizedCommand) !== await realpath24(process13.execPath)) {
+  if (await realpath24(normalizedCommand) !== await realpath24(process14.execPath)) {
     throw new Error(
       "The reviewed upstream command must be the Node executable running the facade."
     );
@@ -150729,7 +150816,7 @@ var init_upstream_bootstrap = __esm({
 import { createHash as createHash70, randomUUID as randomUUID9 } from "node:crypto";
 import { constants as fsConstants11 } from "node:fs";
 import { open as open38, unlink as unlink4 } from "node:fs/promises";
-import process14 from "node:process";
+import process15 from "node:process";
 function permissionMode2(mode) {
   return Number(mode % 512n);
 }
@@ -150769,14 +150856,14 @@ async function writeExact(handle14, bytes2) {
   }
 }
 async function stagePrivateRuntimePayload(source6, privateDirectory) {
-  if (process14.platform !== "linux") {
+  if (process15.platform !== "linux") {
     throw new Error("Private runtime payload staging requires Linux descriptors.");
   }
   if (source6.length === 0 || source6.length > 16 * 1024 * 1024) {
     throw new Error("Private runtime payload has an unsupported byte length.");
   }
   const directoryInformation = await privateDirectory.stat({ bigint: true });
-  if (!directoryInformation.isDirectory() || permissionMode2(directoryInformation.mode) !== 448 || typeof process14.getuid === "function" && directoryInformation.uid !== BigInt(process14.getuid())) {
+  if (!directoryInformation.isDirectory() || permissionMode2(directoryInformation.mode) !== 448 || typeof process15.getuid === "function" && directoryInformation.uid !== BigInt(process15.getuid())) {
     throw new Error("Runtime payload directory must be owner-owned mode 0700.");
   }
   const path6 = `/proc/self/fd/${privateDirectory.fd}/.${randomUUID9()}.graph`;
@@ -150792,7 +150879,7 @@ async function stagePrivateRuntimePayload(source6, privateDirectory) {
     await writable.sync();
     await writable.chmod(256);
     const written = await writable.stat({ bigint: true });
-    if (!written.isFile() || written.size !== BigInt(source6.length) || written.nlink !== 1n || permissionMode2(written.mode) !== 256 || typeof process14.getuid === "function" && written.uid !== BigInt(process14.getuid())) {
+    if (!written.isFile() || written.size !== BigInt(source6.length) || written.nlink !== 1n || permissionMode2(written.mode) !== 256 || typeof process15.getuid === "function" && written.uid !== BigInt(process15.getuid())) {
       throw new Error("Private runtime payload publication is not owner-only.");
     }
     readable = writable;
@@ -151729,7 +151816,7 @@ import {
   realpath as realpath25
 } from "node:fs/promises";
 import { basename as basename27, join as join63, resolve as resolve19 } from "node:path";
-import process15 from "node:process";
+import process16 from "node:process";
 function bundledSupervisorPath() {
   const bundleDirectory = basename27(import.meta.filename) === "server.mjs" ? import.meta.dirname : resolve19(import.meta.dirname, "..", "dist");
   return join63(bundleDirectory, SUPERVISOR_BUNDLE_NAME);
@@ -151800,7 +151887,7 @@ async function captureReviewedSupervisor(sourcePath, expected3) {
       "The upstream supervisor source must be a regular non-symlink file."
     );
   }
-  if (typeof process15.getuid === "function" && pathInfo.uid !== BigInt(process15.getuid())) {
+  if (typeof process16.getuid === "function" && pathInfo.uid !== BigInt(process16.getuid())) {
     throw new Error("The upstream supervisor source is not owned by this user.");
   }
   if (isGroupOrOtherWritable(pathInfo.mode)) {
@@ -151827,7 +151914,7 @@ async function captureReviewedSupervisor(sourcePath, expected3) {
   }
 }
 async function stageReviewedSupervisorExecution(privateDirectory, options = {}) {
-  if (process15.platform !== "linux") {
+  if (process16.platform !== "linux") {
     throw new Error(
       "Descriptor-bound upstream supervisor staging requires Linux /proc file descriptors."
     );
@@ -151852,7 +151939,7 @@ async function stageReviewedSupervisorExecution(privateDirectory, options = {}) 
       bytes: payload.bytes,
       descriptor: payload.descriptor,
       dispose: payload.dispose,
-      path: `/proc/${process15.pid}/fd/${payload.descriptor}`,
+      path: `/proc/${process16.pid}/fd/${payload.descriptor}`,
       sha256: expected3.sha256
     };
   } catch (error63) {
@@ -151881,7 +151968,7 @@ var init_supervisor_execution = __esm({
 
 // server/src/upstream-seccomp.ts
 import { endianness } from "node:os";
-import process16 from "node:process";
+import process17 from "node:process";
 function encodeInstruction(output2, index2, instruction) {
   const offset9 = index2 * 8;
   output2.writeUInt16LE(instruction.code, offset9);
@@ -151890,7 +151977,7 @@ function encodeInstruction(output2, index2, instruction) {
   output2.writeUInt32LE(instruction.value, offset9 + 4);
 }
 function createReviewedUpstreamSeccompProgram() {
-  if (process16.platform !== "linux" || process16.arch !== "x64" || endianness() !== "LE") {
+  if (process17.platform !== "linux" || process17.arch !== "x64" || endianness() !== "LE") {
     throw new Error(
       "The reviewed upstream seccomp program requires little-endian Linux x86_64."
     );
@@ -151996,7 +152083,7 @@ import { createHash as createHash72, randomBytes as randomBytes11 } from "node:c
 import { createReadStream } from "node:fs";
 import { stat } from "node:fs/promises";
 import { join as join64, resolve as resolve20 } from "node:path";
-import process17 from "node:process";
+import process18 from "node:process";
 function startupFailureWithStderr(error63, diagnosticBytes, diagnosticSha256, startupDiagnostics) {
   return diagnosticBytes === 0 && startupDiagnostics === void 0 ? error63 : new UpstreamStartupError(
     error63,
@@ -152051,12 +152138,12 @@ async function prepareAuthenticatedBridgeGateway(testingPublicPort, controlRoot)
     controlRoot
   );
   const authenticatedBuildIdentity = await loadAuthenticatedBridgeBuildIdentity(authenticationKey, controlRoot);
-  const publicHost = process17.env["EASYEDA_BRIDGE_HOST"] ?? "127.0.0.1";
+  const publicHost = process18.env["EASYEDA_BRIDGE_HOST"] ?? "127.0.0.1";
   if (publicHost !== "127.0.0.1") {
     throw new Error("The authenticated EasyEDA bridge must bind IPv4 loopback.");
   }
   const configuredPublicPort = Number(
-    process17.env["EASYEDA_BRIDGE_PORT"] ?? "49621"
+    process18.env["EASYEDA_BRIDGE_PORT"] ?? "49621"
   );
   const publicPort = testingPublicPort ?? configuredPublicPort;
   if (!Number.isSafeInteger(publicPort) || publicPort < 0 || publicPort > 65535 || testingPublicPort === void 0 && publicPort !== 49621) {
@@ -152064,12 +152151,12 @@ async function prepareAuthenticatedBridgeGateway(testingPublicPort, controlRoot)
       "The production authenticated bridge endpoint is exactly 127.0.0.1:49621."
     );
   }
-  const configuredScan = process17.env["EASYEDA_BRIDGE_PORT_SCAN"] ?? "49621";
+  const configuredScan = process18.env["EASYEDA_BRIDGE_PORT_SCAN"] ?? "49621";
   if (testingPublicPort === void 0 && configuredScan !== "49621") {
     throw new Error("Authenticated bridge adjacent-port scanning is prohibited.");
   }
   const maximumPayloadBytes = Number(
-    process17.env["EASYEDA_BRIDGE_MAX_PAYLOAD_SIZE"] ?? "10485760"
+    process18.env["EASYEDA_BRIDGE_MAX_PAYLOAD_SIZE"] ?? "10485760"
   );
   const backendPort = await allocatePrivateLoopbackPort(publicPort);
   const backendSessionToken = randomBytes11(48).toString("base64url");
@@ -152635,14 +152722,14 @@ var init_upstream = __esm({
       }
       async installedEasyedaBundles() {
         const assetsRoot = resolve20(
-          process17.env["EASYEDA_ASSETS_ROOT"] ?? "/mnt/c/Program Files/easyeda-pro/resources/app/assets"
+          process18.env["EASYEDA_ASSETS_ROOT"] ?? "/mnt/c/Program Files/easyeda-pro/resources/app/assets"
         );
         const pcbVersion = requireVersionSegment(
-          process17.env["EASYEDA_PCB_BUNDLE_VERSION"],
+          process18.env["EASYEDA_PCB_BUNDLE_VERSION"],
           "EASYEDA_PCB_BUNDLE_VERSION"
         );
         const apiVersion = requireVersionSegment(
-          process17.env["EASYEDA_PUBLIC_API_BUNDLE_VERSION"],
+          process18.env["EASYEDA_PUBLIC_API_BUNDLE_VERSION"],
           "EASYEDA_PUBLIC_API_BUNDLE_VERSION"
         );
         const pcbImplementation = join64(
@@ -160668,7 +160755,7 @@ var init_current_pcb_209_empty_startup_channel = __esm({
 import { spawn as spawn9 } from "node:child_process";
 import { createHash as createHash74, randomBytes as randomBytes12 } from "node:crypto";
 import { lstat as lstat43, readFile as readFile8, realpath as realpath27 } from "node:fs/promises";
-import process18 from "node:process";
+import process19 from "node:process";
 import { PassThrough as PassThrough2, Writable as Writable2 } from "node:stream";
 import { setTimeout as delay3 } from "node:timers/promises";
 import { fileURLToPath as fileURLToPath4 } from "node:url";
@@ -160760,7 +160847,7 @@ async function startFixedOwner(options, purpose, generation5 = "206") {
     }
   };
   await verify();
-  const distro = sealedOptions.wslDistribution ?? process18.env["WSL_DISTRO_NAME"];
+  const distro = sealedOptions.wslDistribution ?? process19.env["WSL_DISTRO_NAME"];
   let windowsPath4;
   if (/^\/mnt\/[a-z]\//u.test(helperPath)) {
     windowsPath4 = `${helperPath[5]?.toUpperCase()}:\\${helperPath.slice(7).replaceAll("/", "\\")}`;
@@ -165994,7 +166081,7 @@ import { createHash as createHash75 } from "node:crypto";
 import { constants as constants28 } from "node:fs";
 import { lstat as lstat44, open as open42 } from "node:fs/promises";
 import { basename as basename28, dirname as dirname27, isAbsolute as isAbsolute27, join as join67, relative as relative9, resolve as resolve21, sep as sep7 } from "node:path";
-import process19 from "node:process";
+import process20 from "node:process";
 function need70(condition) {
   if (!condition) {
     throw new Error("Current symbol copy checkpoint identity, scope or stability is not proven.");
@@ -166076,7 +166163,7 @@ async function prepareCurrentSymbolCopyCheckpoint(input2) {
     const boundPath = `/proc/self/fd/${String(directory4.handle.fd)}/${basename28(request13.checkpoint.checkpoint)}`;
     await noSidecars3(boundPath);
     const expected3 = request13.checkpoint.checkpointIdentity, named = await lstat44(boundPath, { bigint: true });
-    need70(named.isFile() && !named.isSymbolicLink() && named.nlink === 1n && named.mode % 64n === 0n && named.size > 0n && named.size <= BigInt(maximumBytes) && (typeof process19.getuid !== "function" || named.uid === BigInt(process19.getuid())) && expected3.dev === String(named.dev) && expected3.ino === String(named.ino) && expected3.birthtimeNs === String(named.birthtimeNs) && expected3.ctimeNs === String(named.ctimeNs));
+    need70(named.isFile() && !named.isSymbolicLink() && named.nlink === 1n && named.mode % 64n === 0n && named.size > 0n && named.size <= BigInt(maximumBytes) && (typeof process20.getuid !== "function" || named.uid === BigInt(process20.getuid())) && expected3.dev === String(named.dev) && expected3.ino === String(named.ino) && expected3.birthtimeNs === String(named.birthtimeNs) && expected3.ctimeNs === String(named.ctimeNs));
     const file3 = await open42(boundPath, constants28.O_RDONLY | constants28.O_NOFOLLOW | constants28.O_NONBLOCK);
     try {
       const before = await file3.stat({ bigint: true });
@@ -167826,8 +167913,8 @@ function authority(value2, launch) {
   need76(value2.schema === "easyeda-pro-control.execution-authority.v1" && typeof hash45 === "string" && HASH16.test(hash45) && hash45 === sha256Json(payload) && typeof value2.bindingSha256 === "string" && HASH16.test(value2.bindingSha256) && typeof value2.policySha256 === "string" && HASH16.test(value2.policySha256) && typeof value2.policyId === "string" && /^[a-z0-9][a-z0-9._:-]{0,127}$/iu.test(value2.policyId) && typeof value2.capturedAt === "string" && Number.isFinite(Date.parse(value2.capturedAt)), "execution authority");
   need76(typeof launch.jobId === "string" && /^[a-f0-9]{32}$/u.test(launch.jobId) && typeof launch.helperInstance === "string" && /^[a-f0-9]{32}$/u.test(launch.helperInstance) && launch.root.role === "easyeda-main", "launch");
   const processes2 = value2.processes;
-  need76(Array.isArray(processes2) && processes2.length > 0 && processes2.length <= 512 && processes2.every((process21) => typeof process21.pid === "number" && Number.isSafeInteger(process21.pid) && process21.pid > 0 && typeof process21.role === "string" && /^[a-z0-9][a-z0-9._:-]{0,63}$/iu.test(process21.role) && typeof process21.startIdentity === "string" && /^win32:[0-9]{15,20}:job:[a-f0-9]{32}$/u.test(process21.startIdentity) && process21.startIdentity.endsWith(`:job:${launch.jobId}`)) && new Set(processes2.map((process21) => process21.pid)).size === processes2.length && value2.processTreeSha256 === sha256Json(processes2), "process tree");
-  const roots2 = processes2.filter((process21) => process21.role === "easyeda-main");
+  need76(Array.isArray(processes2) && processes2.length > 0 && processes2.length <= 512 && processes2.every((process22) => typeof process22.pid === "number" && Number.isSafeInteger(process22.pid) && process22.pid > 0 && typeof process22.role === "string" && /^[a-z0-9][a-z0-9._:-]{0,63}$/iu.test(process22.role) && typeof process22.startIdentity === "string" && /^win32:[0-9]{15,20}:job:[a-f0-9]{32}$/u.test(process22.startIdentity) && process22.startIdentity.endsWith(`:job:${launch.jobId}`)) && new Set(processes2.map((process22) => process22.pid)).size === processes2.length && value2.processTreeSha256 === sha256Json(processes2), "process tree");
+  const roots2 = processes2.filter((process22) => process22.role === "easyeda-main");
   need76(roots2.length === 1 && isDeepStrictEqual(roots2[0], launch.root), "root or Job");
 }
 function assertCurrentSymbolCacheMark(before, marked2, expected3) {
@@ -167854,7 +167941,7 @@ function assertCurrentSymbolCacheMark(before, marked2, expected3) {
     bridgeSession: session,
     bridgeDispatch,
     runtimeIdentity: runtime
-  }) && evidence3.policyId === capture4.executionAuthority.policyId && evidence3.policySha256 === capture4.executionAuthority.policySha256 && (runtime.processId === null || evidence3.processes.some((process21) => process21.pid === runtime.processId && process21.role === "renderer")), "authority binding");
+  }) && evidence3.policyId === capture4.executionAuthority.policyId && evidence3.policySha256 === capture4.executionAuthority.policySha256 && (runtime.processId === null || evidence3.processes.some((process22) => process22.pid === runtime.processId && process22.role === "renderer")), "authority binding");
 }
 function assertCurrentSymbolCacheClear(marked2, cleared, expectedPhase) {
   seal(marked2);
@@ -168409,7 +168496,7 @@ async function prepareCurrentSymbolTransactionClock(input2) {
   sameCapture(capture4, armed);
   const root2 = launch.token.base["root"];
   const processes2 = capture4.token.base["processes"];
-  need79(isRecord(root2) && root2["role"] === "easyeda-main" && Array.isArray(processes2) && processes2.some((process21) => canonicalJson(process21) === canonicalJson(root2)), "Original launch root is absent from the capture.");
+  need79(isRecord(root2) && root2["role"] === "easyeda-main" && Array.isArray(processes2) && processes2.some((process22) => canonicalJson(process22) === canonicalJson(root2)), "Original launch root is absent from the capture.");
   bracket(document3, before, armed);
   need79(
     maximum(armed) - minimum(before) <= COLLECTION_MS && BigInt(armed.after.qpcAfter) - BigInt(before.before.qpcBefore) <= BigInt(before.before.qpcFrequency) * 10n,
@@ -171082,7 +171169,7 @@ var init_current_symbol_writer_runtime = __esm({
           return;
         }
         const observe9 = this.engine.upstream.assertClosedAuthenticatedBridgeDispatchReleased;
-        need88(prior !== void 0 && dispatch !== void 0 && authority2 !== void 0 && observe9 !== void 0 && canonicalJson(prior) === canonicalJson(original2.capture.bridgeSession) && authority2.processes.some((process21) => canonicalJson(process21) === canonicalJson(original2.launch.root)) && authority2.processes.every((process21) => process21.startIdentity.endsWith(`:job:${original2.launch.jobId}`)));
+        need88(prior !== void 0 && dispatch !== void 0 && authority2 !== void 0 && observe9 !== void 0 && canonicalJson(prior) === canonicalJson(original2.capture.bridgeSession) && authority2.processes.some((process22) => canonicalJson(process22) === canonicalJson(original2.launch.root)) && authority2.processes.every((process22) => process22.startIdentity.endsWith(`:job:${original2.launch.jobId}`)));
         const closed = observe9.call(this.engine.upstream, dispatch, prior);
         need88(isRecord(closed) && closed["sessionId"] === prior.sessionId && closed["sequence"] === prior.sequence && closed["authenticationReceiptSha256"] === prior.authenticationReceiptSha256 && closed["authenticatedAtEpochMs"] === prior.authenticatedAtEpochMs && typeof closed["closedAtEpochMs"] === "number" && Number.isSafeInteger(closed["closedAtEpochMs"]) && closed["closedAtEpochMs"] >= prior.authenticatedAtEpochMs);
       }
@@ -171888,8 +171975,8 @@ var init_current_symbol_verification_runtime = __esm({
             slot.captureText = canonicalJson(capture4);
             this.current(slot, scopeText);
             need91(capture4.operationId === operationId16 && capture4.phase === "closed-verification" && capture4.challengeAttempt === 1 && canonicalJson(capture4.bridgeSession) === slot.sessionText && lease.gatewayInstanceId === capture4.bridgeSession.gatewayInstanceId && lease.sessionId === capture4.bridgeSession.sessionId && lease.sessionSequence === capture4.bridgeSession.sequence);
-            const roots2 = capture4.executionAuthority.processes.filter((process21) => process21.role === "easyeda-main");
-            need91(slot.launch !== void 0 && roots2.length === 1 && canonicalJson(roots2[0]) === canonicalJson(slot.launch.root) && capture4.executionAuthority.processes.every((process21) => process21.startIdentity.endsWith(`:job:${slot.launch?.jobId ?? ""}`)));
+            const roots2 = capture4.executionAuthority.processes.filter((process22) => process22.role === "easyeda-main");
+            need91(slot.launch !== void 0 && roots2.length === 1 && canonicalJson(roots2[0]) === canonicalJson(slot.launch.root) && capture4.executionAuthority.processes.every((process22) => process22.startIdentity.endsWith(`:job:${slot.launch?.jobId ?? ""}`)));
             const identity37 = await this.engine.runtimeIdentity(lease);
             await this.unchanged(slot, scopeText);
             need91(canonicalJson(identity37) === canonicalJson(capture4.runtimeIdentity));
@@ -172401,7 +172488,7 @@ var init_current_symbol_verification_runtime = __esm({
           return;
         }
         const observe9 = this.engine.upstream.assertClosedAuthenticatedBridgeDispatchReleased;
-        need91(prior !== void 0 && dispatch !== void 0 && authority2 !== void 0 && observe9 !== void 0 && canonicalJson(prior) === canonicalJson(capture4.bridgeSession) && authority2.processes.some((process21) => canonicalJson(process21) === canonicalJson(launch.root)) && authority2.processes.every((process21) => process21.startIdentity.endsWith(`:job:${launch.jobId}`)));
+        need91(prior !== void 0 && dispatch !== void 0 && authority2 !== void 0 && observe9 !== void 0 && canonicalJson(prior) === canonicalJson(capture4.bridgeSession) && authority2.processes.some((process22) => canonicalJson(process22) === canonicalJson(launch.root)) && authority2.processes.every((process22) => process22.startIdentity.endsWith(`:job:${launch.jobId}`)));
         const closed = observe9.call(this.engine.upstream, dispatch, prior);
         need91(isRecord(closed) && closed["sessionId"] === prior.sessionId && closed["sequence"] === prior.sequence && closed["authenticationReceiptSha256"] === prior.authenticationReceiptSha256 && closed["authenticatedAtEpochMs"] === prior.authenticatedAtEpochMs && typeof closed["closedAtEpochMs"] === "number" && Number.isSafeInteger(closed["closedAtEpochMs"]) && closed["closedAtEpochMs"] >= prior.authenticatedAtEpochMs);
       }
@@ -173771,9 +173858,9 @@ var init_current_symbol_baseline_runtime = __esm({
           };
           inside();
           need96(capture4.operationId === owner2.operationId && capture4.phase === "closed-baseline" && capture4.challengeAttempt === 1 && canonicalJson(capture4.bridgeSession) === canonicalJson(source6.bridgeSession), "Current symbol baseline capture binding differs.");
-          const launch = source6.launchProjection, roots2 = capture4.executionAuthority.processes.filter((process21) => process21.role === "easyeda-main");
+          const launch = source6.launchProjection, roots2 = capture4.executionAuthority.processes.filter((process22) => process22.role === "easyeda-main");
           need96(
-            roots2.length === 1 && canonicalJson(roots2[0]) === canonicalJson(launch.root) && capture4.executionAuthority.processes.every((process21) => process21.startIdentity.endsWith(`:job:${launch.jobId}`)),
+            roots2.length === 1 && canonicalJson(roots2[0]) === canonicalJson(launch.root) && capture4.executionAuthority.processes.every((process22) => process22.startIdentity.endsWith(`:job:${launch.jobId}`)),
             "Current symbol baseline capture differs from its original root or Job."
           );
           await this.unchanged(slot);
@@ -174349,9 +174436,9 @@ var init_current_symbol_baseline_runtime = __esm({
             await current10(scopeText);
             captured();
             need96(capture4.operationId === operationId16 && capture4.phase === "closed-edit" && capture4.challengeAttempt === 1 && canonicalJson(capture4.bridgeSession) === sessionText, "Current symbol admission capture identity differs.");
-            const roots2 = capture4.executionAuthority.processes.filter((process21) => process21.role === "easyeda-main");
+            const roots2 = capture4.executionAuthority.processes.filter((process22) => process22.role === "easyeda-main");
             need96(
-              roots2.length === 1 && canonicalJson(roots2[0]) === canonicalJson(launch.root) && capture4.executionAuthority.processes.every((process21) => process21.startIdentity.endsWith(`:job:${launch.jobId}`)),
+              roots2.length === 1 && canonicalJson(roots2[0]) === canonicalJson(launch.root) && capture4.executionAuthority.processes.every((process22) => process22.startIdentity.endsWith(`:job:${launch.jobId}`)),
               "Current symbol admission capture differs from its relaunched root or Job."
             );
             const identity37 = await this.engine.runtimeIdentity(binding10);
@@ -175197,7 +175284,7 @@ var init_current_symbol_baseline_runtime = __esm({
               return;
             }
             need96(
-              dispatch !== void 0 && prior !== void 0 && authority2 !== void 0 && observeClosure !== void 0 && this.engine.upstream.assertClosedAuthenticatedBridgeDispatchReleased === observeClosure && canonicalJson(prior) === canonicalJson(capture4.bridgeSession) && authority2.processes.some((process21) => process21.role === "easyeda-main" && process21.pid === launch.root.pid && process21.startIdentity === launch.root.startIdentity) && authority2.processes.every((process21) => process21.startIdentity.endsWith(`:job:${launch.jobId}`)),
+              dispatch !== void 0 && prior !== void 0 && authority2 !== void 0 && observeClosure !== void 0 && this.engine.upstream.assertClosedAuthenticatedBridgeDispatchReleased === observeClosure && canonicalJson(prior) === canonicalJson(capture4.bridgeSession) && authority2.processes.some((process22) => process22.role === "easyeda-main" && process22.pid === launch.root.pid && process22.startIdentity === launch.root.startIdentity) && authority2.processes.every((process22) => process22.startIdentity.endsWith(`:job:${launch.jobId}`)),
               "Current symbol finish lacks its exact last-dispatch capture and session binding."
             );
             const current10 = closedSessionSchema.parse(observeClosure.call(this.engine.upstream, dispatch, prior));
@@ -176943,7 +177030,7 @@ async function prepareCurrentSymbolCopyClock(input2) {
   sameCapture2(capture4, armed);
   const root2 = launch.token.base["root"];
   const processes2 = capture4.token.base["processes"];
-  need100(isRecord(root2) && root2["role"] === "easyeda-main" && Array.isArray(processes2) && processes2.some((process21) => canonicalJson(process21) === canonicalJson(root2)), "Original launch root is absent from the capture.");
+  need100(isRecord(root2) && root2["role"] === "easyeda-main" && Array.isArray(processes2) && processes2.some((process22) => canonicalJson(process22) === canonicalJson(root2)), "Original launch root is absent from the capture.");
   bracket2(document3, before, armed);
   need100(
     maximum2(armed) - minimum2(before) <= COLLECTION_MS2 && BigInt(armed.after.qpcAfter) - BigInt(before.before.qpcBefore) <= BigInt(before.before.qpcFrequency) * 10n,
@@ -178664,7 +178751,7 @@ var init_current_symbol_copy_writer_runtime = __esm({
           return;
         }
         const observe9 = this.engine.upstream.assertClosedAuthenticatedBridgeDispatchReleased;
-        need102(prior !== void 0 && dispatch !== void 0 && authority2 !== void 0 && observe9 !== void 0 && canonicalJson(prior) === canonicalJson(original2.capture.bridgeSession) && authority2.processes.some((process21) => canonicalJson(process21) === canonicalJson(original2.launch.root)) && authority2.processes.every((process21) => process21.startIdentity.endsWith(`:job:${original2.launch.jobId}`)));
+        need102(prior !== void 0 && dispatch !== void 0 && authority2 !== void 0 && observe9 !== void 0 && canonicalJson(prior) === canonicalJson(original2.capture.bridgeSession) && authority2.processes.some((process22) => canonicalJson(process22) === canonicalJson(original2.launch.root)) && authority2.processes.every((process22) => process22.startIdentity.endsWith(`:job:${original2.launch.jobId}`)));
         const closed = observe9.call(this.engine.upstream, dispatch, prior);
         need102(isRecord(closed) && closed["sessionId"] === prior.sessionId && closed["sequence"] === prior.sequence && closed["authenticationReceiptSha256"] === prior.authenticationReceiptSha256 && closed["authenticatedAtEpochMs"] === prior.authenticatedAtEpochMs && typeof closed["closedAtEpochMs"] === "number" && Number.isSafeInteger(closed["closedAtEpochMs"]) && closed["closedAtEpochMs"] >= prior.authenticatedAtEpochMs);
       }
@@ -179330,8 +179417,8 @@ var init_current_symbol_copy_verification_runtime = __esm({
             slot.captureText = canonicalJson(capture4);
             this.current(slot, scopeText);
             need105(capture4.operationId === operationId16 && capture4.phase === "closed-verification" && capture4.challengeAttempt === 1 && canonicalJson(capture4.bridgeSession) === slot.sessionText && lease.gatewayInstanceId === capture4.bridgeSession.gatewayInstanceId && lease.sessionId === capture4.bridgeSession.sessionId && lease.sessionSequence === capture4.bridgeSession.sequence);
-            const roots2 = capture4.executionAuthority.processes.filter((process21) => process21.role === "easyeda-main");
-            need105(slot.launch !== void 0 && roots2.length === 1 && canonicalJson(roots2[0]) === canonicalJson(slot.launch.root) && capture4.executionAuthority.processes.every((process21) => process21.startIdentity.endsWith(`:job:${slot.launch?.jobId ?? ""}`)));
+            const roots2 = capture4.executionAuthority.processes.filter((process22) => process22.role === "easyeda-main");
+            need105(slot.launch !== void 0 && roots2.length === 1 && canonicalJson(roots2[0]) === canonicalJson(slot.launch.root) && capture4.executionAuthority.processes.every((process22) => process22.startIdentity.endsWith(`:job:${slot.launch?.jobId ?? ""}`)));
             const identity37 = await this.engine.runtimeIdentity(lease);
             await this.unchanged(slot, scopeText);
             need105(canonicalJson(identity37) === canonicalJson(capture4.runtimeIdentity));
@@ -179767,7 +179854,7 @@ var init_current_symbol_copy_verification_runtime = __esm({
           return;
         }
         const observe9 = this.engine.upstream.assertClosedAuthenticatedBridgeDispatchReleased;
-        need105(prior !== void 0 && dispatch !== void 0 && authority2 !== void 0 && observe9 !== void 0 && canonicalJson(prior) === canonicalJson(capture4.bridgeSession) && authority2.processes.some((process21) => canonicalJson(process21) === canonicalJson(launch.root)) && authority2.processes.every((process21) => process21.startIdentity.endsWith(`:job:${launch.jobId}`)));
+        need105(prior !== void 0 && dispatch !== void 0 && authority2 !== void 0 && observe9 !== void 0 && canonicalJson(prior) === canonicalJson(capture4.bridgeSession) && authority2.processes.some((process22) => canonicalJson(process22) === canonicalJson(launch.root)) && authority2.processes.every((process22) => process22.startIdentity.endsWith(`:job:${launch.jobId}`)));
         const closed = observe9.call(this.engine.upstream, dispatch, prior);
         need105(isRecord(closed) && closed["sessionId"] === prior.sessionId && closed["sequence"] === prior.sequence && closed["authenticationReceiptSha256"] === prior.authenticationReceiptSha256 && closed["authenticatedAtEpochMs"] === prior.authenticatedAtEpochMs && typeof closed["closedAtEpochMs"] === "number" && Number.isSafeInteger(closed["closedAtEpochMs"]) && closed["closedAtEpochMs"] >= prior.authenticatedAtEpochMs);
       }
@@ -181872,7 +181959,7 @@ var init_current_disposable_open_runtime = __esm({
         const { engine: engine2 } = this.options, { runtime, journal } = slot;
         const authority2 = journal.executionAuthorityBeforeOrphan, binding10 = journal.bridgeDispatchBeforeOrphan, prior = journal.bridgeSessionBeforeOrphan;
         requireValue17(
-          prior !== void 0 && binding10 !== void 0 && authority2 !== void 0 && authority2.processes.some((process21) => process21.pid === slot.launch.root.pid && process21.startIdentity === slot.launch.root.startIdentity && process21.role === "easyeda-main") && authority2.processes.every((process21) => process21.startIdentity.endsWith(`:job:${slot.launch.jobId}`)),
+          prior !== void 0 && binding10 !== void 0 && authority2 !== void 0 && authority2.processes.some((process22) => process22.pid === slot.launch.root.pid && process22.startIdentity === slot.launch.root.startIdentity && process22.role === "easyeda-main") && authority2.processes.every((process22) => process22.startIdentity.endsWith(`:job:${slot.launch.jobId}`)),
           "Current normal close lacks the operation's original retained launch/capture binding."
         );
         const { normalClose: close, observeApplicationWindow: observeWindow, status: status3 } = slot.nativeCleanup;
@@ -181955,7 +182042,7 @@ var init_current_disposable_open_runtime = __esm({
         this.currentUntransferred(slot);
         const authority2 = journal.executionAuthorityBeforeOrphan, binding10 = journal.bridgeDispatchBeforeOrphan, prior = journal.bridgeSessionBeforeOrphan;
         requireValue17(
-          prior !== void 0 && binding10 !== void 0 && authority2 !== void 0 && authority2.processes.some((process21) => process21.pid === slot.launch.root.pid && process21.startIdentity === slot.launch.root.startIdentity && process21.role === "easyeda-main") && authority2.processes.every((process21) => process21.startIdentity.endsWith(`:job:${slot.launch.jobId}`)),
+          prior !== void 0 && binding10 !== void 0 && authority2 !== void 0 && authority2.processes.some((process22) => process22.pid === slot.launch.root.pid && process22.startIdentity === slot.launch.root.startIdentity && process22.role === "easyeda-main") && authority2.processes.every((process22) => process22.startIdentity.endsWith(`:job:${slot.launch.jobId}`)),
           "Retirement lacks the operation's original retained launch/capture binding."
         );
         const observeClosure = engine2.upstream.assertClosedAuthenticatedBridgeDispatchReleased;
@@ -183866,9 +183953,9 @@ var init_current_pcb_rename_baseline_runtime = __esm({
               executionAuthority: capture4.executionAuthority
             };
             inside();
-            const launch = original2.source.launchProjection, roots2 = capture4.executionAuthority.processes.filter((process21) => process21.role === "easyeda-main");
+            const launch = original2.source.launchProjection, roots2 = capture4.executionAuthority.processes.filter((process22) => process22.role === "easyeda-main");
             need109(
-              capture4.operationId === owner2.operationId && capture4.phase === "closed-baseline" && capture4.challengeAttempt === 1 && canonicalJson(capture4.bridgeSession) === canonicalJson(session) && roots2.length === 1 && canonicalJson(roots2[0]) === canonicalJson(launch.root) && capture4.executionAuthority.processes.every((process21) => process21.startIdentity.endsWith(`:job:${launch.jobId}`)),
+              capture4.operationId === owner2.operationId && capture4.phase === "closed-baseline" && capture4.challengeAttempt === 1 && canonicalJson(capture4.bridgeSession) === canonicalJson(session) && roots2.length === 1 && canonicalJson(roots2[0]) === canonicalJson(launch.root) && capture4.executionAuthority.processes.every((process22) => process22.startIdentity.endsWith(`:job:${launch.jobId}`)),
               "captured original process/Job/session differs"
             );
             await this.unchanged(slot);
@@ -185016,8 +185103,8 @@ var init_current_pcb_rename_generation_runtime = __esm({
             slot.capture = capture4;
             await this.unchanged(slot, scopeText);
             need112(capture4.operationId === operationId16 && capture4.phase === "closed-edit" && capture4.challengeAttempt === 1 && canonicalJson(capture4.bridgeSession) === canonicalJson(session), "admission capture identity differs");
-            const roots2 = capture4.executionAuthority.processes.filter((process21) => process21.role === "easyeda-main");
-            need112(roots2.length === 1 && canonicalJson(roots2[0]) === canonicalJson(launch.root) && capture4.executionAuthority.processes.every((process21) => process21.startIdentity.endsWith(`:job:${launch.jobId}`)), "admission captured another Job/root");
+            const roots2 = capture4.executionAuthority.processes.filter((process22) => process22.role === "easyeda-main");
+            need112(roots2.length === 1 && canonicalJson(roots2[0]) === canonicalJson(launch.root) && capture4.executionAuthority.processes.every((process22) => process22.startIdentity.endsWith(`:job:${launch.jobId}`)), "admission captured another Job/root");
             const identity37 = await this.engine.runtimeIdentity(dispatch);
             await this.unchanged(slot, scopeText);
             need112(canonicalJson(identity37) === canonicalJson(capture4.runtimeIdentity), "admission runtime identity differs");
@@ -185455,7 +185542,7 @@ var init_current_pcb_rename_generation_runtime = __esm({
               return;
             }
             const reader = this.engine.upstream.assertClosedAuthenticatedBridgeDispatchReleased;
-            need112(slot.capture !== void 0 && authority2 !== void 0 && dispatch !== void 0 && prior !== void 0 && reader !== void 0 && canonicalJson(prior) === canonicalJson(slot.capture.bridgeSession) && authority2.processes.some((process21) => process21.role === "easyeda-main" && process21.pid === slot.launch?.root.pid && process21.startIdentity === slot.launch.root.startIdentity) && authority2.processes.every((process21) => process21.startIdentity.endsWith(`:job:${slot.launch?.jobId}`)), "cleanup lacks original tracked authority");
+            need112(slot.capture !== void 0 && authority2 !== void 0 && dispatch !== void 0 && prior !== void 0 && reader !== void 0 && canonicalJson(prior) === canonicalJson(slot.capture.bridgeSession) && authority2.processes.some((process22) => process22.role === "easyeda-main" && process22.pid === slot.launch?.root.pid && process22.startIdentity === slot.launch.root.startIdentity) && authority2.processes.every((process22) => process22.startIdentity.endsWith(`:job:${slot.launch?.jobId}`)), "cleanup lacks original tracked authority");
             const closed = closedSchema.parse(reader.call(this.engine.upstream, dispatch, prior));
             const { closeReason: _reason, closedAtEpochMs, ...identity37 } = closed, { gatewayInstanceId: _gateway, ...expected3 } = prior;
             need112(canonicalJson(identity37) === canonicalJson(expected3) && closedAtEpochMs >= prior.authenticatedAtEpochMs, "tracked dispatch was not exactly released");
@@ -188119,7 +188206,7 @@ async function prepareCurrentPcbRenameClock(input2) {
   sameCapture3(capture4, armed);
   const processes2 = capture4.token.base["processes"], root2 = launch.token.base["root"];
   need124(
-    isRecord(root2) && root2["role"] === "easyeda-main" && Array.isArray(processes2) && processes2.some((process21) => canonicalJson(process21) === canonicalJson(root2)),
+    isRecord(root2) && root2["role"] === "easyeda-main" && Array.isArray(processes2) && processes2.some((process22) => canonicalJson(process22) === canonicalJson(root2)),
     "Original launch root is absent from the capture."
   );
   need124(
@@ -189204,7 +189291,7 @@ var init_current_pcb_rename_writer_runtime = __esm({
           return;
         }
         const observe9 = this.engine.upstream.assertClosedAuthenticatedBridgeDispatchReleased;
-        need125(prior !== void 0 && dispatch !== void 0 && authority2 !== void 0 && observe9 !== void 0 && canonicalJson(prior) === canonicalJson(original2.capture.bridgeSession) && authority2.processes.some((process21) => canonicalJson(process21) === canonicalJson(original2.launch.root)) && authority2.processes.every((process21) => process21.startIdentity.endsWith(`:job:${original2.launch.jobId}`)));
+        need125(prior !== void 0 && dispatch !== void 0 && authority2 !== void 0 && observe9 !== void 0 && canonicalJson(prior) === canonicalJson(original2.capture.bridgeSession) && authority2.processes.some((process22) => canonicalJson(process22) === canonicalJson(original2.launch.root)) && authority2.processes.every((process22) => process22.startIdentity.endsWith(`:job:${original2.launch.jobId}`)));
         const closed = observe9.call(this.engine.upstream, dispatch, prior);
         need125(isRecord(closed) && closed["sessionId"] === prior.sessionId && closed["sequence"] === prior.sequence && closed["authenticationReceiptSha256"] === prior.authenticationReceiptSha256 && closed["authenticatedAtEpochMs"] === prior.authenticatedAtEpochMs && typeof closed["closedAtEpochMs"] === "number" && Number.isSafeInteger(closed["closedAtEpochMs"]) && closed["closedAtEpochMs"] >= prior.authenticatedAtEpochMs);
       }
@@ -189896,8 +189983,8 @@ var init_current_pcb_rename_verification_runtime = __esm({
             slot.captureText = canonicalJson(capture4);
             this.current(slot, scopeText);
             need128(capture4.operationId === operationId16 && capture4.phase === "closed-verification" && capture4.challengeAttempt === 1 && canonicalJson(capture4.bridgeSession) === slot.sessionText && lease.gatewayInstanceId === capture4.bridgeSession.gatewayInstanceId && lease.sessionId === capture4.bridgeSession.sessionId && lease.sessionSequence === capture4.bridgeSession.sequence);
-            const roots2 = capture4.executionAuthority.processes.filter((process21) => process21.role === "easyeda-main");
-            need128(slot.launch !== void 0 && roots2.length === 1 && canonicalJson(roots2[0]) === canonicalJson(slot.launch.root) && capture4.executionAuthority.processes.every((process21) => process21.startIdentity.endsWith(`:job:${slot.launch?.jobId ?? ""}`)));
+            const roots2 = capture4.executionAuthority.processes.filter((process22) => process22.role === "easyeda-main");
+            need128(slot.launch !== void 0 && roots2.length === 1 && canonicalJson(roots2[0]) === canonicalJson(slot.launch.root) && capture4.executionAuthority.processes.every((process22) => process22.startIdentity.endsWith(`:job:${slot.launch?.jobId ?? ""}`)));
             const identity37 = await this.engine.runtimeIdentity(lease);
             await this.unchanged(slot, scopeText);
             need128(canonicalJson(identity37) === canonicalJson(capture4.runtimeIdentity));
@@ -190382,7 +190469,7 @@ var init_current_pcb_rename_verification_runtime = __esm({
           return;
         }
         const observe9 = this.engine.upstream.assertClosedAuthenticatedBridgeDispatchReleased;
-        need128(prior !== void 0 && dispatch !== void 0 && authority2 !== void 0 && observe9 !== void 0 && canonicalJson(prior) === canonicalJson(capture4.bridgeSession) && authority2.processes.some((process21) => canonicalJson(process21) === canonicalJson(launch.root)) && authority2.processes.every((process21) => process21.startIdentity.endsWith(`:job:${launch.jobId}`)));
+        need128(prior !== void 0 && dispatch !== void 0 && authority2 !== void 0 && observe9 !== void 0 && canonicalJson(prior) === canonicalJson(capture4.bridgeSession) && authority2.processes.some((process22) => canonicalJson(process22) === canonicalJson(launch.root)) && authority2.processes.every((process22) => process22.startIdentity.endsWith(`:job:${launch.jobId}`)));
         const closed = observe9.call(this.engine.upstream, dispatch, prior);
         need128(isRecord(closed) && closed["sessionId"] === prior.sessionId && closed["sequence"] === prior.sequence && closed["authenticationReceiptSha256"] === prior.authenticationReceiptSha256 && closed["authenticatedAtEpochMs"] === prior.authenticatedAtEpochMs && typeof closed["closedAtEpochMs"] === "number" && Number.isSafeInteger(closed["closedAtEpochMs"]) && closed["closedAtEpochMs"] >= prior.authenticatedAtEpochMs);
       }
@@ -191639,9 +191726,9 @@ var init_current_schematic_rename_baseline_runtime = __esm({
               executionAuthority: capture4.executionAuthority
             };
             inside();
-            const launch = original2.source.launchProjection, roots2 = capture4.executionAuthority.processes.filter((process21) => process21.role === "easyeda-main");
+            const launch = original2.source.launchProjection, roots2 = capture4.executionAuthority.processes.filter((process22) => process22.role === "easyeda-main");
             need132(
-              capture4.operationId === owner2.operationId && capture4.phase === "closed-baseline" && capture4.challengeAttempt === 1 && canonicalJson(capture4.bridgeSession) === canonicalJson(session) && roots2.length === 1 && canonicalJson(roots2[0]) === canonicalJson(launch.root) && capture4.executionAuthority.processes.every((process21) => process21.startIdentity.endsWith(`:job:${launch.jobId}`)),
+              capture4.operationId === owner2.operationId && capture4.phase === "closed-baseline" && capture4.challengeAttempt === 1 && canonicalJson(capture4.bridgeSession) === canonicalJson(session) && roots2.length === 1 && canonicalJson(roots2[0]) === canonicalJson(launch.root) && capture4.executionAuthority.processes.every((process22) => process22.startIdentity.endsWith(`:job:${launch.jobId}`)),
               "captured original process/Job/session differs"
             );
             await this.unchanged(slot);
@@ -191969,10 +192056,10 @@ function need133(condition, message) {
 function closure5(input2, phase5) {
   const { baseline: baseline3, capture: capture4, intent, closeReceipt, proof, launch } = input2, operationId16 = baseline3.owner.operationId;
   const authority2 = capture4.executionAuthority, { authoritySha256, ...authorityPayload } = authority2;
-  const roots2 = authority2.processes.filter((process21) => process21.role === "easyeda-main");
+  const roots2 = authority2.processes.filter((process22) => process22.role === "easyeda-main");
   const { closeIntentSha256, ...intentPayload } = intent, { closeReceiptSha256, ...receiptPayload } = closeReceipt;
   need133(
-    capture4.operationId === operationId16 && capture4.phase === phase5 && capture4.challengeAttempt === 1 && authoritySha256 === sha256Json(authorityPayload) && authority2.processTreeSha256 === sha256Json(authority2.processes) && roots2.length === 1 && canonicalJson(roots2[0]) === canonicalJson(launch.root) && authority2.processes.every((process21) => process21.startIdentity.endsWith(`:job:${launch.jobId}`)) && intent.schema === "easyeda-pro-control.closed-session-close-intent.v1" && closeIntentSha256 === sha256Json(intentPayload) && intent.operationId === operationId16 && intent.phase === phase5 && intent["challengeAttempt"] === 1 && intent.authoritySha256 === authority2.authoritySha256 && intent["captureBindingSha256"] === authority2.bindingSha256 && intent.launchSha256 === sha256Json(launch) && intent.bridgeSessionSha256 === sha256Json(capture4.bridgeSession) && intent.runtimeIdentitySha256 === sha256Json(capture4.runtimeIdentity) && intent.helperInstance === launch.helperInstance && intent.jobId === launch.jobId && intent.policyId === authority2.policyId && intent.policySha256 === authority2.policySha256 && closeReceipt.schema === "easyeda-pro-control.closed-session-close-dispatch.v1" && closeReceiptSha256 === sha256Json(receiptPayload) && closeReceipt.closeIntentSha256 === closeIntentSha256 && closeReceipt.closeDispatched && !closeReceipt.saveOrDiscardSelected && !closeReceipt.terminationProved && proof["operationId"] === operationId16 && proof["phase"] === phase5 && proof["challengeAttempt"] === 1 && proof.closeIntentSha256 === closeIntentSha256 && proof.closeReceiptSha256 === closeReceiptSha256 && proof.authoritySha256 === authority2.authoritySha256 && proof.launchSha256 === intent.launchSha256 && proof["bridgeSessionSha256"] === intent.bridgeSessionSha256 && proof["runtimeIdentitySha256"] === intent.runtimeIdentitySha256 && proof["helperInstance"] === launch.helperInstance && proof["jobId"] === launch.jobId && proof["policyId"] === authority2.policyId && proof["policySha256"] === authority2.policySha256,
+    capture4.operationId === operationId16 && capture4.phase === phase5 && capture4.challengeAttempt === 1 && authoritySha256 === sha256Json(authorityPayload) && authority2.processTreeSha256 === sha256Json(authority2.processes) && roots2.length === 1 && canonicalJson(roots2[0]) === canonicalJson(launch.root) && authority2.processes.every((process22) => process22.startIdentity.endsWith(`:job:${launch.jobId}`)) && intent.schema === "easyeda-pro-control.closed-session-close-intent.v1" && closeIntentSha256 === sha256Json(intentPayload) && intent.operationId === operationId16 && intent.phase === phase5 && intent["challengeAttempt"] === 1 && intent.authoritySha256 === authority2.authoritySha256 && intent["captureBindingSha256"] === authority2.bindingSha256 && intent.launchSha256 === sha256Json(launch) && intent.bridgeSessionSha256 === sha256Json(capture4.bridgeSession) && intent.runtimeIdentitySha256 === sha256Json(capture4.runtimeIdentity) && intent.helperInstance === launch.helperInstance && intent.jobId === launch.jobId && intent.policyId === authority2.policyId && intent.policySha256 === authority2.policySha256 && closeReceipt.schema === "easyeda-pro-control.closed-session-close-dispatch.v1" && closeReceiptSha256 === sha256Json(receiptPayload) && closeReceipt.closeIntentSha256 === closeIntentSha256 && closeReceipt.closeDispatched && !closeReceipt.saveOrDiscardSelected && !closeReceipt.terminationProved && proof["operationId"] === operationId16 && proof["phase"] === phase5 && proof["challengeAttempt"] === 1 && proof.closeIntentSha256 === closeIntentSha256 && proof.closeReceiptSha256 === closeReceiptSha256 && proof.authoritySha256 === authority2.authoritySha256 && proof.launchSha256 === intent.launchSha256 && proof["bridgeSessionSha256"] === intent.bridgeSessionSha256 && proof["runtimeIdentitySha256"] === intent.runtimeIdentitySha256 && proof["helperInstance"] === launch.helperInstance && proof["jobId"] === launch.jobId && proof["policyId"] === authority2.policyId && proof["policySha256"] === authority2.policySha256,
     "original operation, capture, launch or close evidence differs"
   );
 }
@@ -192800,8 +192887,8 @@ var init_current_schematic_rename_generation_runtime = __esm({
             slot.capture = capture4;
             await this.unchanged(slot, scopeText);
             need135(capture4.operationId === operationId16 && capture4.phase === "closed-edit" && capture4.challengeAttempt === 1 && canonicalJson(capture4.bridgeSession) === canonicalJson(session), "admission capture identity differs");
-            const roots2 = capture4.executionAuthority.processes.filter((process21) => process21.role === "easyeda-main");
-            need135(roots2.length === 1 && canonicalJson(roots2[0]) === canonicalJson(launch.root) && capture4.executionAuthority.processes.every((process21) => process21.startIdentity.endsWith(`:job:${launch.jobId}`)), "admission captured another Job/root");
+            const roots2 = capture4.executionAuthority.processes.filter((process22) => process22.role === "easyeda-main");
+            need135(roots2.length === 1 && canonicalJson(roots2[0]) === canonicalJson(launch.root) && capture4.executionAuthority.processes.every((process22) => process22.startIdentity.endsWith(`:job:${launch.jobId}`)), "admission captured another Job/root");
             const identity37 = await this.engine.runtimeIdentity(dispatch);
             await this.unchanged(slot, scopeText);
             need135(canonicalJson(identity37) === canonicalJson(capture4.runtimeIdentity), "admission runtime identity differs");
@@ -193246,7 +193333,7 @@ var init_current_schematic_rename_generation_runtime = __esm({
               return;
             }
             const reader = this.engine.upstream.assertClosedAuthenticatedBridgeDispatchReleased;
-            need135(slot.capture !== void 0 && authority2 !== void 0 && dispatch !== void 0 && prior !== void 0 && reader !== void 0 && canonicalJson(prior) === canonicalJson(slot.capture.bridgeSession) && authority2.processes.some((process21) => process21.role === "easyeda-main" && process21.pid === slot.launch?.root.pid && process21.startIdentity === slot.launch.root.startIdentity) && authority2.processes.every((process21) => process21.startIdentity.endsWith(`:job:${slot.launch?.jobId}`)), "cleanup lacks original tracked authority");
+            need135(slot.capture !== void 0 && authority2 !== void 0 && dispatch !== void 0 && prior !== void 0 && reader !== void 0 && canonicalJson(prior) === canonicalJson(slot.capture.bridgeSession) && authority2.processes.some((process22) => process22.role === "easyeda-main" && process22.pid === slot.launch?.root.pid && process22.startIdentity === slot.launch.root.startIdentity) && authority2.processes.every((process22) => process22.startIdentity.endsWith(`:job:${slot.launch?.jobId}`)), "cleanup lacks original tracked authority");
             const closed = closedSchema2.parse(reader.call(this.engine.upstream, dispatch, prior));
             const { closeReason: _reason, closedAtEpochMs, ...identity37 } = closed, { gatewayInstanceId: _gateway, ...expected3 } = prior;
             need135(canonicalJson(identity37) === canonicalJson(expected3) && closedAtEpochMs >= prior.authenticatedAtEpochMs, "tracked dispatch was not exactly released");
@@ -195730,7 +195817,7 @@ async function prepareCurrentSchematicRenameClock(input2) {
   sameCapture4(capture4, armed);
   const processes2 = capture4.token.base["processes"], root2 = launch.token.base["root"];
   need145(
-    isRecord(root2) && root2["role"] === "easyeda-main" && Array.isArray(processes2) && processes2.some((process21) => canonicalJson(process21) === canonicalJson(root2)),
+    isRecord(root2) && root2["role"] === "easyeda-main" && Array.isArray(processes2) && processes2.some((process22) => canonicalJson(process22) === canonicalJson(root2)),
     "Original launch root is absent from the capture."
   );
   need145(
@@ -197084,7 +197171,7 @@ var init_current_schematic_rename_writer_runtime = __esm({
           return;
         }
         const observe9 = this.engine.upstream.assertClosedAuthenticatedBridgeDispatchReleased;
-        need147(prior !== void 0 && dispatch !== void 0 && authority2 !== void 0 && observe9 !== void 0 && canonicalJson(prior) === canonicalJson(original2.capture.bridgeSession) && authority2.processes.some((process21) => canonicalJson(process21) === canonicalJson(original2.launch.root)) && authority2.processes.every((process21) => process21.startIdentity.endsWith(`:job:${original2.launch.jobId}`)));
+        need147(prior !== void 0 && dispatch !== void 0 && authority2 !== void 0 && observe9 !== void 0 && canonicalJson(prior) === canonicalJson(original2.capture.bridgeSession) && authority2.processes.some((process22) => canonicalJson(process22) === canonicalJson(original2.launch.root)) && authority2.processes.every((process22) => process22.startIdentity.endsWith(`:job:${original2.launch.jobId}`)));
         const closed = observe9.call(this.engine.upstream, dispatch, prior);
         need147(isRecord(closed) && closed["sessionId"] === prior.sessionId && closed["sequence"] === prior.sequence && closed["authenticationReceiptSha256"] === prior.authenticationReceiptSha256 && closed["authenticatedAtEpochMs"] === prior.authenticatedAtEpochMs && typeof closed["closedAtEpochMs"] === "number" && Number.isSafeInteger(closed["closedAtEpochMs"]) && closed["closedAtEpochMs"] >= prior.authenticatedAtEpochMs);
       }
@@ -197779,8 +197866,8 @@ var init_current_schematic_rename_verification_runtime = __esm({
             slot.captureText = canonicalJson(capture4);
             this.current(slot, scopeText);
             need150(capture4.operationId === operationId16 && capture4.phase === "closed-verification" && capture4.challengeAttempt === 1 && canonicalJson(capture4.bridgeSession) === slot.sessionText && lease.gatewayInstanceId === capture4.bridgeSession.gatewayInstanceId && lease.sessionId === capture4.bridgeSession.sessionId && lease.sessionSequence === capture4.bridgeSession.sequence);
-            const roots2 = capture4.executionAuthority.processes.filter((process21) => process21.role === "easyeda-main");
-            need150(slot.launch !== void 0 && roots2.length === 1 && canonicalJson(roots2[0]) === canonicalJson(slot.launch.root) && capture4.executionAuthority.processes.every((process21) => process21.startIdentity.endsWith(`:job:${slot.launch?.jobId ?? ""}`)));
+            const roots2 = capture4.executionAuthority.processes.filter((process22) => process22.role === "easyeda-main");
+            need150(slot.launch !== void 0 && roots2.length === 1 && canonicalJson(roots2[0]) === canonicalJson(slot.launch.root) && capture4.executionAuthority.processes.every((process22) => process22.startIdentity.endsWith(`:job:${slot.launch?.jobId ?? ""}`)));
             const identity37 = await this.engine.runtimeIdentity(lease);
             await this.unchanged(slot, scopeText);
             need150(canonicalJson(identity37) === canonicalJson(capture4.runtimeIdentity));
@@ -198266,7 +198353,7 @@ var init_current_schematic_rename_verification_runtime = __esm({
           return;
         }
         const observe9 = this.engine.upstream.assertClosedAuthenticatedBridgeDispatchReleased;
-        need150(prior !== void 0 && dispatch !== void 0 && authority2 !== void 0 && observe9 !== void 0 && canonicalJson(prior) === canonicalJson(capture4.bridgeSession) && authority2.processes.some((process21) => canonicalJson(process21) === canonicalJson(launch.root)) && authority2.processes.every((process21) => process21.startIdentity.endsWith(`:job:${launch.jobId}`)));
+        need150(prior !== void 0 && dispatch !== void 0 && authority2 !== void 0 && observe9 !== void 0 && canonicalJson(prior) === canonicalJson(capture4.bridgeSession) && authority2.processes.some((process22) => canonicalJson(process22) === canonicalJson(launch.root)) && authority2.processes.every((process22) => process22.startIdentity.endsWith(`:job:${launch.jobId}`)));
         const closed = observe9.call(this.engine.upstream, dispatch, prior);
         need150(isRecord(closed) && closed["sessionId"] === prior.sessionId && closed["sequence"] === prior.sequence && closed["authenticationReceiptSha256"] === prior.authenticationReceiptSha256 && closed["authenticatedAtEpochMs"] === prior.authenticatedAtEpochMs && typeof closed["closedAtEpochMs"] === "number" && Number.isSafeInteger(closed["closedAtEpochMs"]) && closed["closedAtEpochMs"] >= prior.authenticatedAtEpochMs);
       }
@@ -199957,7 +200044,7 @@ import {
   resolve as resolve25,
   sep as sep8
 } from "node:path";
-import process20 from "node:process";
+import process21 from "node:process";
 import { inflateSync } from "node:zlib";
 function ownedWindowsRuntime() {
   if (windowsRuntime === void 0) {
@@ -200085,7 +200172,7 @@ async function runClosedSymbolTool(input2, mode) {
     if (executionAuthority === null || typeof executionAuthority !== "object") {
       throw new Error("Disposable index engine authority owner differs.");
     }
-    const environment = process20.env;
+    const environment = process21.env;
     const reservation = {
       engine,
       upstream,
@@ -200115,7 +200202,7 @@ async function runClosedSymbolTool(input2, mode) {
     closedSymbolIndexReservation = reservation;
     activeReservation = reservation;
     const current10 = () => {
-      if (closedSymbolIndexReservation !== reservation || reservation.engine !== engine || reservation.upstream !== upstream || reservation.gate !== bridgeGate || disposableOwnData(engine, "upstream") !== upstream || disposableOwnData(engine, "controlFingerprintPromise") !== facadePromise || reservation.facadePromise !== facadePromise || disposableOwnData(engine, "executionAuthorityValidator") !== reservation.executionAuthority || reservation.environment !== process20.env || process20.env["EASYEDA_ASSETS_ROOT"] !== reservation.assetsRoot || process20.env["WSL_DISTRO_NAME"] !== reservation.wslDistribution || controlDataDirectory() !== reservation.controlPath || retainedControlRoot2.path !== reservation.controlPath || resolve25(import.meta.dirname, "../..") !== reservation.pluginRoot || scheduledShutdown !== void 0 || canonicalJson((mode === "validation" ? parseClosedSymbolDisposableInput(input2) : parseClosedSymbolOperationInput(input2)).request) !== requestText) {
+      if (closedSymbolIndexReservation !== reservation || reservation.engine !== engine || reservation.upstream !== upstream || reservation.gate !== bridgeGate || disposableOwnData(engine, "upstream") !== upstream || disposableOwnData(engine, "controlFingerprintPromise") !== facadePromise || reservation.facadePromise !== facadePromise || disposableOwnData(engine, "executionAuthorityValidator") !== reservation.executionAuthority || reservation.environment !== process21.env || process21.env["EASYEDA_ASSETS_ROOT"] !== reservation.assetsRoot || process21.env["WSL_DISTRO_NAME"] !== reservation.wslDistribution || controlDataDirectory() !== reservation.controlPath || retainedControlRoot2.path !== reservation.controlPath || resolve25(import.meta.dirname, "../..") !== reservation.pluginRoot || scheduledShutdown !== void 0 || canonicalJson((mode === "validation" ? parseClosedSymbolDisposableInput(input2) : parseClosedSymbolOperationInput(input2)).request) !== requestText) {
         throw new Error("Disposable index reservation, request, configuration or shutdown state changed.");
       }
       const methods23 = disposableIndexMethods();
@@ -200895,13 +200982,13 @@ function registerFacadeTool(name6, config2, handler2) {
   if (!facadeToolRegistered(facadeMode, name6)) {
     return;
   }
-  const outputSchema2 = toolOutputSchemas[name6];
-  if (outputSchema2 === void 0) {
+  const outputSchema3 = toolOutputSchemas[name6];
+  if (outputSchema3 === void 0) {
     throw new Error(`No reviewed output schema is registered for ${name6}.`);
   }
   server.registerTool(
     name6,
-    { outputSchema: outputSchema2, ...config2 },
+    { outputSchema: outputSchema3, ...config2 },
     handler2
   );
 }
@@ -200939,7 +201026,7 @@ var init_src = __esm({
     init_native_ui_admission();
     init_native_close_recovery();
     init_exact_readers();
-    init_lease();
+    init_ownership_conflict_startup();
     init_reviewed_upstream_tools();
     init_runtime_scripts();
     init_upstream();
@@ -201014,7 +201101,7 @@ var init_src = __esm({
     init_current_project_only_symbol_preflight();
     init_current_project_only_symbol_runtime();
     init_historical_abandonment();
-    facadeMode = configuredFacadeMode(process20.env);
+    facadeMode = configuredFacadeMode(process21.env);
     MAX_INLINE_RESULT_BYTES = 256 * 1024;
     MAX_CAPTURE_PNG_BYTES = 16 * 1024 * 1024;
     MAX_CAPTURE_BASE64_CHARACTERS = Math.ceil(MAX_CAPTURE_PNG_BYTES / 3) * 4;
@@ -201038,7 +201125,10 @@ var init_src = __esm({
     await assertSelfSoftCoreLimitZero();
     await ensureManagedDirectory(controlDataDirectory());
     retainedControlRoot2 = await controlRootCapability();
-    facadeLease = await acquireFacadeLease(retainedControlRoot2);
+    facadeLease = await acquireFacadeLeaseOrDiagnose(retainedControlRoot2);
+    if (facadeLease === null) {
+      process21.exit(0);
+    }
     upstream = new UpstreamEasyedaClient({
       controlRoot: retainedControlRoot2,
       onChildStarted: (pid2) => facadeLease.bindChild(pid2)
@@ -201776,7 +201866,7 @@ var init_src = __esm({
         annotations: { readOnlyHint: false, destructiveHint: true, idempotentHint: false }
       },
       serializedGuarded(({ request: request13 }) => {
-        const assetsRoot = process20.env["EASYEDA_ASSETS_ROOT"];
+        const assetsRoot = process21.env["EASYEDA_ASSETS_ROOT"];
         if (assetsRoot === void 0) {
           throw new Error("Configure the machine's installed EasyEDA assets first.");
         }
@@ -201821,7 +201911,7 @@ var init_src = __esm({
         }
         if (request13.action === "launch-contained") {
           assertOrdinaryRuntimeAllocationAllowed();
-          const assetsRoot = process20.env["EASYEDA_ASSETS_ROOT"];
+          const assetsRoot = process21.env["EASYEDA_ASSETS_ROOT"];
           if (assetsRoot === void 0) {
             throw new Error("Configure the machine's installed EasyEDA assets first.");
           }
@@ -202165,7 +202255,7 @@ var init_src = __esm({
       }, guarded((input2) => {
         const { request: request13 } = inputSchema6.parse(input2);
         if (original2 === void 0) {
-          const environment = process20.env;
+          const environment = process21.env;
           const assetsRoot = environment["EASYEDA_ASSETS_ROOT"], wslDistribution = environment["WSL_DISTRO_NAME"];
           const originalEngine = engine, originalGate = bridgeGate, originalUpstream = upstream;
           const facadePromise = disposableOwnData(engine, "controlFingerprintPromise");
@@ -202180,7 +202270,7 @@ var init_src = __esm({
           const capturedMethods = methodIdentities();
           const assertLocal = () => {
             const currentMethods = methodIdentities();
-            if (engine !== originalEngine || upstream !== originalUpstream || bridgeGate !== originalGate || disposableOwnData(engine, "upstream") !== originalUpstream || disposableOwnData(engine, "controlFingerprintPromise") !== facadePromise || disposableOwnData(engine, "executionAuthorityValidator") !== authority2 || process20.env !== environment || environment["EASYEDA_ASSETS_ROOT"] !== assetsRoot || environment["WSL_DISTRO_NAME"] !== wslDistribution || controlDataDirectory() !== controlPath || retainedControlRoot2.path !== controlPath || resolve25(import.meta.dirname, "../..") !== pluginRoot || capturedMethods.some((method7, index2) => method7 !== currentMethods[index2]) || original2 !== void 0 && (currentPcbStringPrecreateLifecycle !== original2.owner || original2.owner.run !== original2.run)) {
+            if (engine !== originalEngine || upstream !== originalUpstream || bridgeGate !== originalGate || disposableOwnData(engine, "upstream") !== originalUpstream || disposableOwnData(engine, "controlFingerprintPromise") !== facadePromise || disposableOwnData(engine, "executionAuthorityValidator") !== authority2 || process21.env !== environment || environment["EASYEDA_ASSETS_ROOT"] !== assetsRoot || environment["WSL_DISTRO_NAME"] !== wslDistribution || controlDataDirectory() !== controlPath || retainedControlRoot2.path !== controlPath || resolve25(import.meta.dirname, "../..") !== pluginRoot || capturedMethods.some((method7, index2) => method7 !== currentMethods[index2]) || original2 !== void 0 && (currentPcbStringPrecreateLifecycle !== original2.owner || original2.owner.run !== original2.run)) {
               throw new Error("String precreate original index owner, environment or methods changed.");
             }
           };
@@ -202243,7 +202333,7 @@ var init_src = __esm({
           startupOriginal = void 0;
         }
         if (startupOriginal === void 0) {
-          const environment = process20.env;
+          const environment = process21.env;
           const assetsRoot = environment["EASYEDA_ASSETS_ROOT"], wslDistribution = environment["WSL_DISTRO_NAME"];
           const originalEngine = engine, originalGate = bridgeGate, originalUpstream = upstream;
           const facadePromise = disposableOwnData(engine, "controlFingerprintPromise");
@@ -202274,7 +202364,7 @@ var init_src = __esm({
           const capturedMethods = methodIdentities();
           const assertLocal = () => {
             const currentMethods = methodIdentities();
-            if (engine !== originalEngine || upstream !== originalUpstream || bridgeGate !== originalGate || disposableOwnData(engine, "upstream") !== originalUpstream || disposableOwnData(engine, "controlFingerprintPromise") !== facadePromise || disposableOwnData(engine, "executionAuthorityValidator") !== authority2 || process20.env !== environment || environment["EASYEDA_ASSETS_ROOT"] !== assetsRoot || environment["WSL_DISTRO_NAME"] !== wslDistribution || controlDataDirectory() !== controlPath || retainedControlRoot2.path !== controlPath || resolve25(import.meta.dirname, "../..") !== pluginRoot || capturedMethods.some((method7, index2) => method7 !== currentMethods[index2]) || startupOriginal !== void 0 && (currentPcbWorkerStartupLifecycle !== startupOriginal.owner || startupOriginal.owner.run !== startupOriginal.run || startupOriginal.owner.captureWorkerStartup !== startupOriginal.capture || startupOriginal.owner.observeWorkerStartupAssignments !== startupOriginal.assignments || startupOriginal.owner.observeWorkerStartupActor !== startupOriginal.actor || startupOriginal.owner.observeWorkerStartupChannel !== startupOriginal.channel || startupOriginal.owner.hasActiveReservation !== startupOriginal.reserved || startupOriginal.owner instanceof CurrentPcb209EmptyStartupLifecycle && startupOriginal.owner.observeWorkerStartupEmpty !== startupOriginal.empty)) {
+            if (engine !== originalEngine || upstream !== originalUpstream || bridgeGate !== originalGate || disposableOwnData(engine, "upstream") !== originalUpstream || disposableOwnData(engine, "controlFingerprintPromise") !== facadePromise || disposableOwnData(engine, "executionAuthorityValidator") !== authority2 || process21.env !== environment || environment["EASYEDA_ASSETS_ROOT"] !== assetsRoot || environment["WSL_DISTRO_NAME"] !== wslDistribution || controlDataDirectory() !== controlPath || retainedControlRoot2.path !== controlPath || resolve25(import.meta.dirname, "../..") !== pluginRoot || capturedMethods.some((method7, index2) => method7 !== currentMethods[index2]) || startupOriginal !== void 0 && (currentPcbWorkerStartupLifecycle !== startupOriginal.owner || startupOriginal.owner.run !== startupOriginal.run || startupOriginal.owner.captureWorkerStartup !== startupOriginal.capture || startupOriginal.owner.observeWorkerStartupAssignments !== startupOriginal.assignments || startupOriginal.owner.observeWorkerStartupActor !== startupOriginal.actor || startupOriginal.owner.observeWorkerStartupChannel !== startupOriginal.channel || startupOriginal.owner.hasActiveReservation !== startupOriginal.reserved || startupOriginal.owner instanceof CurrentPcb209EmptyStartupLifecycle && startupOriginal.owner.observeWorkerStartupEmpty !== startupOriginal.empty)) {
               throw new Error("Worker startup original index owner, environment or methods changed.");
             }
           };
@@ -202382,7 +202472,7 @@ var init_src = __esm({
           return runStartup(request13.request);
         }
         if (original2 === void 0) {
-          const environment = process20.env;
+          const environment = process21.env;
           const assetsRoot = environment["EASYEDA_ASSETS_ROOT"], wslDistribution = environment["WSL_DISTRO_NAME"];
           const originalEngine = engine, originalGate = bridgeGate, originalUpstream = upstream;
           const facadePromise = disposableOwnData(engine, "controlFingerprintPromise");
@@ -202397,7 +202487,7 @@ var init_src = __esm({
           const capturedMethods = methodIdentities();
           const assertLocal = () => {
             const currentMethods = methodIdentities();
-            if (engine !== originalEngine || upstream !== originalUpstream || bridgeGate !== originalGate || disposableOwnData(engine, "upstream") !== originalUpstream || disposableOwnData(engine, "controlFingerprintPromise") !== facadePromise || disposableOwnData(engine, "executionAuthorityValidator") !== authority2 || process20.env !== environment || environment["EASYEDA_ASSETS_ROOT"] !== assetsRoot || environment["WSL_DISTRO_NAME"] !== wslDistribution || controlDataDirectory() !== controlPath || retainedControlRoot2.path !== controlPath || resolve25(import.meta.dirname, "../..") !== pluginRoot || capturedMethods.some((method7, index2) => method7 !== currentMethods[index2]) || original2 !== void 0 && (currentPcbDiagnosticLifecycle !== original2.owner || original2.owner.run !== original2.run)) {
+            if (engine !== originalEngine || upstream !== originalUpstream || bridgeGate !== originalGate || disposableOwnData(engine, "upstream") !== originalUpstream || disposableOwnData(engine, "controlFingerprintPromise") !== facadePromise || disposableOwnData(engine, "executionAuthorityValidator") !== authority2 || process21.env !== environment || environment["EASYEDA_ASSETS_ROOT"] !== assetsRoot || environment["WSL_DISTRO_NAME"] !== wslDistribution || controlDataDirectory() !== controlPath || retainedControlRoot2.path !== controlPath || resolve25(import.meta.dirname, "../..") !== pluginRoot || capturedMethods.some((method7, index2) => method7 !== currentMethods[index2]) || original2 !== void 0 && (currentPcbDiagnosticLifecycle !== original2.owner || original2.owner.run !== original2.run)) {
               throw new Error("Diagnostic original index owner, environment or methods changed.");
             }
           };
@@ -202446,13 +202536,13 @@ var init_src = __esm({
       },
       serializedGuarded(async ({ request: request13 }) => {
         if (ordinaryLaunchCoordinator === void 0) {
-          const assetsRoot = process20.env["EASYEDA_ASSETS_ROOT"];
+          const assetsRoot = process21.env["EASYEDA_ASSETS_ROOT"];
           if (assetsRoot === void 0) {
             throw new Error("Configure the installed EasyEDA assets before ordinary launch.");
           }
           const pluginRoot = resolve25(import.meta.dirname, "../..");
           const assertLocalAllowed = () => {
-            if (closedSymbolIndexReservation !== void 0 || scheduledShutdown !== void 0 || windowsRuntime !== ordinaryLaunchRuntime || process20.env["EASYEDA_ASSETS_ROOT"] !== assetsRoot) {
+            if (closedSymbolIndexReservation !== void 0 || scheduledShutdown !== void 0 || windowsRuntime !== ordinaryLaunchRuntime || process21.env["EASYEDA_ASSETS_ROOT"] !== assetsRoot) {
               throw new Error("Ordinary launch runtime allocation is unavailable or changed.");
             }
           };
@@ -202490,9 +202580,9 @@ var init_src = __esm({
       },
       serializedGuarded(async ({ request: request13, expectedFingerprint }) => {
         if (currentDisposableOpenCoordinator === void 0) {
-          const assetsRoot = process20.env["EASYEDA_ASSETS_ROOT"];
+          const assetsRoot = process21.env["EASYEDA_ASSETS_ROOT"];
           const assertOwner = () => {
-            if (closedSymbolIndexReservation !== void 0 || scheduledShutdown !== void 0 || ordinaryLaunchRuntime === void 0 || windowsRuntime !== ordinaryLaunchRuntime || ordinaryLaunchRuntime.status().state !== "owned" || assetsRoot === void 0 || process20.env["EASYEDA_ASSETS_ROOT"] !== assetsRoot) {
+            if (closedSymbolIndexReservation !== void 0 || scheduledShutdown !== void 0 || ordinaryLaunchRuntime === void 0 || windowsRuntime !== ordinaryLaunchRuntime || ordinaryLaunchRuntime.status().state !== "owned" || assetsRoot === void 0 || process21.env["EASYEDA_ASSETS_ROOT"] !== assetsRoot) {
               throw new Error("Disposable opening requires this facade's unchanged retained ordinary launch.");
             }
           };
@@ -203679,9 +203769,9 @@ var init_src = __esm({
         },
         serializedGuarded(async ({ request: request13, expectedFingerprint }) => {
           if (currentDisposableOpenCoordinator === void 0) {
-            const assetsRoot = process20.env["EASYEDA_ASSETS_ROOT"];
+            const assetsRoot = process21.env["EASYEDA_ASSETS_ROOT"];
             const assertOwner = () => {
-              if (closedSymbolIndexReservation !== void 0 || scheduledShutdown !== void 0 || ordinaryLaunchRuntime === void 0 || windowsRuntime !== ordinaryLaunchRuntime || ordinaryLaunchRuntime.status().state !== "owned" || assetsRoot === void 0 || process20.env["EASYEDA_ASSETS_ROOT"] !== assetsRoot) {
+              if (closedSymbolIndexReservation !== void 0 || scheduledShutdown !== void 0 || ordinaryLaunchRuntime === void 0 || windowsRuntime !== ordinaryLaunchRuntime || ordinaryLaunchRuntime.status().state !== "owned" || assetsRoot === void 0 || process21.env["EASYEDA_ASSETS_ROOT"] !== assetsRoot) {
                 throw new Error("Symbol metadata requires this facade's unchanged retained ordinary launch.");
               }
             };
@@ -203708,9 +203798,9 @@ var init_src = __esm({
         annotations: { readOnlyHint: false, destructiveHint: true, idempotentHint: false }
       }, serializedGuarded(async ({ request: request13 }) => {
         if (currentDisposableOpenCoordinator === void 0) {
-          const assetsRoot = process20.env["EASYEDA_ASSETS_ROOT"];
+          const assetsRoot = process21.env["EASYEDA_ASSETS_ROOT"];
           const assertOwner = () => {
-            if (closedSymbolIndexReservation !== void 0 || scheduledShutdown !== void 0 || ordinaryLaunchRuntime === void 0 || windowsRuntime !== ordinaryLaunchRuntime || ordinaryLaunchRuntime.status().state !== "owned" || assetsRoot === void 0 || process20.env["EASYEDA_ASSETS_ROOT"] !== assetsRoot) {
+            if (closedSymbolIndexReservation !== void 0 || scheduledShutdown !== void 0 || ordinaryLaunchRuntime === void 0 || windowsRuntime !== ordinaryLaunchRuntime || ordinaryLaunchRuntime.status().state !== "owned" || assetsRoot === void 0 || process21.env["EASYEDA_ASSETS_ROOT"] !== assetsRoot) {
               throw new Error("Disposable symbol copy requires this facade's unchanged retained launch.");
             }
           };
@@ -203801,9 +203891,9 @@ var init_src = __esm({
             throw new Error("Ordinary schematic rename requires this facade's retained original opener and coordinator; journals cannot reconstruct ownership.");
           }
           if (currentDisposableOpenCoordinator === void 0) {
-            const assetsRoot = process20.env["EASYEDA_ASSETS_ROOT"];
+            const assetsRoot = process21.env["EASYEDA_ASSETS_ROOT"];
             const assertOwner = () => {
-              if (closedSymbolIndexReservation !== void 0 || scheduledShutdown !== void 0 || ordinaryLaunchRuntime === void 0 || windowsRuntime !== ordinaryLaunchRuntime || ordinaryLaunchRuntime.status().state !== "owned" || assetsRoot === void 0 || process20.env["EASYEDA_ASSETS_ROOT"] !== assetsRoot) {
+              if (closedSymbolIndexReservation !== void 0 || scheduledShutdown !== void 0 || ordinaryLaunchRuntime === void 0 || windowsRuntime !== ordinaryLaunchRuntime || ordinaryLaunchRuntime.status().state !== "owned" || assetsRoot === void 0 || process21.env["EASYEDA_ASSETS_ROOT"] !== assetsRoot) {
                 throw new Error("Ordinary schematic rename requires this facade's unchanged retained ordinary launch.");
               }
             };
@@ -203833,19 +203923,19 @@ var init_src = __esm({
     shutdownAndExit = async () => {
       try {
         await shutdown();
-        process20.exit(0);
+        process21.exit(0);
       } catch {
-        process20.stderr.write("EasyEDA control shutdown was incomplete.\n");
-        process20.exit(1);
+        process21.stderr.write("EasyEDA control shutdown was incomplete.\n");
+        process21.exit(1);
       }
     };
     scheduleShutdown = () => {
       scheduledShutdown ??= shutdownAndExit();
       void scheduledShutdown;
     };
-    process20.once("SIGINT", scheduleShutdown);
-    process20.once("SIGTERM", scheduleShutdown);
-    process20.stdin.once("end", scheduleShutdown);
+    process21.once("SIGINT", scheduleShutdown);
+    process21.once("SIGTERM", scheduleShutdown);
+    process21.stdin.once("end", scheduleShutdown);
     await server.connect(transport);
   }
 });

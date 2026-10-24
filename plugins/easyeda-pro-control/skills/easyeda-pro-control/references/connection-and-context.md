@@ -38,6 +38,20 @@ For a non-orphan pending project-open failure, `inspect-editor-tabs` with that o
 
 ## Setup and startup diagnosis
 
+### Another chat owns the facade
+
+When an exact live facade already holds the control lease, a second connection
+exposes only `easyeda_control_status` with `mode:"ownership-conflict"`. Its
+owner PID and timestamp describe startup, not current process liveness. This
+connection cannot read designs, launch EasyEDA, retry the lease or take over
+control. Corrupt, stale-ambiguous and failed-cleanup leases still fail startup.
+
+Continue live work through the original owning connection. Keep it alive while
+it retains an unfinished operation or native cleanup. After it releases normally,
+open a fresh MCP connection for live control. The diagnostic connection never
+promotes itself, even if the original owner later exits. Older plugin versions
+may instead disappear from the tool list when this conflict occurs.
+
 ### Ordinary application startup on the current tuple
 
 When startup is within the user's task, prefer `easyeda_control_launch` over

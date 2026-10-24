@@ -4,6 +4,7 @@ import { createHash } from "node:crypto";
 import { readFile } from "node:fs/promises";
 import { createRequire } from "node:module";
 import { test } from "node:test";
+import { setImmediate as immediate } from "node:timers/promises";
 import type { TestContext } from "node:test";
 import { runInThisContext } from "node:vm";
 import { transform } from "esbuild";
@@ -200,8 +201,13 @@ void test("late instrumentation acknowledgement is retained and removed once aft
   const f = await fixture(context, { delayedAllocation: true });
   await assert.rejects(f.owner.armOriginalChildBootstrap(f.creation, f.packet), /DEADLINE/u);
   assert.equal(f.owner.status()["unresolvedInstrumentation"], true);
-  await assert.rejects(f.owner.abort(), /UNRESOLVED_ALLOCATION/u); f.acknowledge();
-  await f.whenRemoved();
+  await assert.rejects(f.owner.abort(), /UNRESOLVED_ALLOCATION/u);
+  await assert.rejects(f.owner.settleOriginalInstrumentationAfterAbort(f.creation, { ...f.packet }), /CLEANUP_OWNER/u);
+  let settled = false;
+  const cleanup = (async (): Promise<void> => { await f.owner.settleOriginalInstrumentationAfterAbort(f.creation, f.packet); settled = true; })();
+  await immediate(); assert.equal(settled, false); assert.equal(f.counts().removals, 0);
+  f.acknowledge(); await cleanup; await f.whenRemoved();
+  await assert.rejects(f.owner.requireOriginalChildStartReady(f.creation, f.packet));
   await f.finish(); assert.equal(f.counts().removals, 1); assert.equal(f.counts().resumes, 0);
 });
 

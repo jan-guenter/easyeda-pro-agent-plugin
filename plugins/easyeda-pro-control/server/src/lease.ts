@@ -57,6 +57,17 @@ export interface FacadeLease {
   releaseSync: () => void;
 }
 
+/** Only a parsed lease whose exact process is alive produces this refusal.
+ * Stale, corrupt and ambiguous leases must retain their existing hard failure. */
+export class FacadeLeaseContentionError extends Error {
+  public readonly observedOwnerPid: number;
+  public constructor(path: string, observedOwnerPid: number, options: ErrorOptions) {
+    super(`Another EasyEDA control facade owns ${path} (pid ${observedOwnerPid}). Reuse that MCP connection or close it first.`, options);
+    this.name = "FacadeLeaseContentionError";
+    this.observedOwnerPid = observedOwnerPid;
+  }
+}
+
 function isRecord(value: unknown): value is Record<string, unknown> {
   return typeof value === "object" && value !== null && !Array.isArray(value);
 }
@@ -681,10 +692,13 @@ async function acquireFacadeLeaseWithCapability(
           existing.record.pidStartTime,
         )
       ) {
-        throw new Error(
-          `Another EasyEDA control facade owns ${path} (pid ${existing.record.pid}). Reuse that MCP connection or close it first.`,
-          { cause: error },
-        );
+        if (existing.record.pidStartTime === undefined) {
+          throw new Error(
+            `Another EasyEDA control facade owns ${path} (pid ${existing.record.pid}). Reuse that MCP connection or close it first.`,
+            { cause: error },
+          );
+        }
+        throw new FacadeLeaseContentionError(path, existing.record.pid, { cause: error });
       }
       if (
         existing.record.pidStartTime === undefined &&

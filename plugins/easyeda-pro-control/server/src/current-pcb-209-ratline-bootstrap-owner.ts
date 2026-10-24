@@ -117,6 +117,7 @@ export class CurrentPcb209RatlineBootstrapOwner {
   #continuationConsumed = false;
   #instrumentation: string | null = null;
   #allocationUncertain = false;
+  #allocation: Promise<void> | null = null;
   #removal: Promise<void> | null = null;
   #removed = false;
   #unsubscribe: (() => void) | null = null;
@@ -276,7 +277,8 @@ export class CurrentPcb209RatlineBootstrapOwner {
     try {
       need(creation !== null && typeof creation === "object" && !types.isProxy(creation) &&
         (Object.getPrototypeOf(creation) === CurrentPcb209RatlinePcbCreation.prototype || Object.getPrototypeOf(creation) === CurrentPcb209RatlineWorkerCreation.prototype), "CREATION_OWNER");
-      await bounded(requireCreation.call(creation, packet)); this.#creation = creation; this.#construction = packet; await this.#current();
+      this.#creation = creation; this.#construction = packet;
+      await bounded(requireCreation.call(creation, packet)); await this.#current();
       this.#unsubscribe = this.#dependency.subscribe({ event: this.#event, lost: this.#lost }); need(typeof this.#unsubscribe === "function", "SUBSCRIPTION");
       const sessionId = packet.childSessionId;
       const attachReply = await bounded(this.#send({ method: "Target.setAutoAttach", sessionId, params: CURRENT_PCB_WORKER_STARTUP_ATTACH }));
@@ -286,12 +288,16 @@ export class CurrentPcb209RatlineBootstrapOwner {
       const debuggerReply = await bounded(this.#send({ method: "Debugger.enable", sessionId, params: { maxScriptsCacheSize: 33_554_432 } }));
       z.object({ debuggerId: token }).strict().parse(captureCurrentPcbStringClockReply(debuggerReply).value);
       this.#allocationUncertain = true;
-      const allocation = (async (): Promise<void> => {
-        const reply = z.object({ breakpointId: token }).strict().parse(captureCurrentPcbStringClockReply(await this.#send({
-          method: "Debugger.setInstrumentationBreakpoint", sessionId, params: { instrumentation: "beforeScriptExecution" } })).value);
-        this.#instrumentation = reply.breakpointId; this.#allocationUncertain = false;
-        if (this.#failed) { await this.#remove(); }
-      })(); await bounded(allocation); await this.#current(); this.#armed = true;
+      const allocated = Promise.withResolvers<null>(); this.#allocation = withoutValue(allocated.promise); void observed(this.#allocation);
+      void observed((async (): Promise<void> => {
+        try {
+          const reply = z.object({ breakpointId: token }).strict().parse(captureCurrentPcbStringClockReply(await this.#send({
+            method: "Debugger.setInstrumentationBreakpoint", sessionId, params: { instrumentation: "beforeScriptExecution" } })).value);
+          this.#instrumentation = reply.breakpointId; this.#allocationUncertain = false;
+          if (this.#failed) { await this.#remove(); }
+          allocated.resolve(null);
+        } catch (error) { allocated.reject(error); }
+      })()); await bounded(this.#allocation); await this.#current(); this.#armed = true;
       this.#capture = this.#qualify(); void observed(this.#capture);
     } catch (error) { this.#poison(); throw error; }
   }
@@ -334,8 +340,15 @@ export class CurrentPcb209RatlineBootstrapOwner {
   /** The containing original native adapter must call this before permitting
    * creation.startOriginalChild, including after an ambiguous arm failure. */
   public async requireOriginalChildStartReady(creation: Creation, packet: CurrentPcb209RatlineCreationPacket): Promise<void> {
+    this.assertOriginalChildStartStillReady(creation, packet); await this.#current();
+    this.assertOriginalChildStartStillReady(creation, packet);
+  }
+  /** Recheck private child state after the containing gate's final await and
+   * directly before original dispatch. This performs no native operation. */
+  public assertOriginalChildStartStillReady(creation: Creation, packet: CurrentPcb209RatlineCreationPacket): void {
+    this.#same();
     need(creation === this.#creation && packet === this.#construction && this.#armed && !this.#allocationUncertain &&
-      this.#instrumentation !== null && !this.#removed, "CHILD_START_NOT_READY"); await this.#current();
+      this.#instrumentation !== null && !this.#removed && !this.#failed && !this.#released && !this.#releaseStarted, "CHILD_START_NOT_READY");
   }
   #realmListener(): RealmEvents {
     const events = this.#realmEvents; need(events !== null && this.#realmEventMembers !== null, "REALM_SUBSCRIPTION");
@@ -391,6 +404,16 @@ export class CurrentPcb209RatlineBootstrapOwner {
   /** Remove only this owner's instrumentation. A refused source remains held
    * for original process termination; this method grants no unqualified resume. */
   public async abort(): Promise<void> { this.#poison(); await this.#remove(); }
+  /** Executable cleanup barrier for the containing original child-start gate.
+   * A late allocation retains its original handle and removal promise. This
+   * never makes a failed child ready to start or releases an unqualified pause. */
+  public async settleOriginalInstrumentationAfterAbort(creation: Creation, packet: CurrentPcb209RatlineCreationPacket): Promise<void> {
+    need(creation === this.#creation && packet === this.#construction && this.#consumed && !this.#released, "CLEANUP_OWNER");
+    this.#same(); this.#poison();
+    if (this.#allocation !== null) { await bounded(this.#allocation); }
+    await this.#remove(); this.#same();
+    need(!this.#allocationUncertain && (this.#instrumentation === null || this.#removed) && !this.#released, "CLEANUP_UNSETTLED");
+  }
   public async releaseAfterTermination(): Promise<void> {
     need(!this.#releaseStarted && !this.#released, "RELEASE_CONSUMED"); this.#releaseStarted = true;
     try { this.#same(); await bounded(this.#dependency.assertOriginalTermination()); this.#same(); this.#poison();
