@@ -3,7 +3,9 @@
  * original execution contexts and installation leases remain owner duties. */
 import { createHash } from "node:crypto";
 import { types } from "node:util";
+import { z } from "zod";
 import { canonicalJson } from "./core.ts";
+import { captureCurrentPcbStringClockReply } from "./current-pcb-string-clock-reply.ts";
 import { freezeDeep } from "./sqlite-inventory-core.ts";
 
 export const CURRENT_PCB_209_WORKER_BOOTSTRAP_SOURCE_PROFILE = freezeDeep({
@@ -23,10 +25,70 @@ export const CURRENT_PCB_209_WORKER_BOOTSTRAP_SOURCE_PROFILE = freezeDeep({
 export type CurrentPcb209WorkerBootstrapSourceKind = keyof typeof CURRENT_PCB_209_WORKER_BOOTSTRAP_SOURCE_PROFILE;
 export type CurrentPcb209WorkerBootstrapSources = Readonly<Record<CurrentPcb209WorkerBootstrapSourceKind, string>>;
 const sourceKinds = ["backend", "editorConfig", "version", "manager", "preload", "project"] as const;
-export const CURRENT_PCB_209_WORKER_BOOTSTRAP_ROLES = Object.freeze(["bootstrap", "preload", "project"] as const);
+export const CURRENT_PCB_209_WORKER_BOOTSTRAP_ROLES = Object.freeze([
+  "bootstrap", "preload", "preload-copy-1", "preload-copy-2", "preload-copy-3", "preload-copy-4", "project",
+] as const);
 export type CurrentPcb209StartupScriptRole = typeof CURRENT_PCB_209_WORKER_BOOTSTRAP_ROLES[number];
 export const CURRENT_PCB_209_WORKER_PRELOAD_URL = "https://modules.lceda.cn/pro-mgr/3.2.185.bf63a159/js/preload.js";
 export const CURRENT_PCB_209_PROJECT_WORKER_URL = "https://modules.lceda.cn/pro-mgr/3.2.185.bf63a159/js/project-worker.js";
+/** Four original top-level initializers copy the same Is sorting function by
+ * indirect eval. Only the parenthesized function is evaluated, never called.
+ * Parsing these anonymous scripts precedes the preload's later Zf log. Each
+ * script requires its original preload creator and distinct ordered caller. */
+export const CURRENT_PCB_209_PRELOAD_COPY_SOURCE = freezeDeep({
+  functionSpan: { start: 217_968, end: 218_612, bytes: 644,
+    sha256: "2d5e02e944e9e1892c6166201678a02f72db441f9a58e2f300ed43536748d370" },
+  generatedBytes: 646, generatedSha256: "447abb67bca110f9560c4a4c8d4c370018a59a012cfb1098e561f7e3686f178b",
+  methodSpan: { start: 220_925, end: 220_981, bytes: 56,
+    sha256: "da37f021b5e2ebf10ee80e9ba885b2e93373f0f096c8ac6fc38d1f6f12f2ccc4" },
+  creator: { functionName: "funcCopy", lineNumber: 7, columnNumber: 42_723 },
+  callBytes: 15, callSha256: "67475c7d3c4548bd6fe3d1d7d0b575f8e1d63976acf27bf47848e2f6ceb90db7",
+} as const);
+export const CURRENT_PCB_209_PRELOAD_COPY_CALLERS = freezeDeep({
+  "preload-copy-1": { start: 340_896, end: 340_911, lineNumber: 8, columnNumber: 102_962 },
+  "preload-copy-2": { start: 349_724, end: 349_739, lineNumber: 8, columnNumber: 111_790 },
+  "preload-copy-3": { start: 349_743, end: 349_758, lineNumber: 8, columnNumber: 111_809 },
+  "preload-copy-4": { start: 349_762, end: 349_777, lineNumber: 8, columnNumber: 111_828 },
+} as const);
+export function currentPcb209PreloadCopyCaller(role: CurrentPcb209StartupScriptRole):
+  typeof CURRENT_PCB_209_PRELOAD_COPY_CALLERS[keyof typeof CURRENT_PCB_209_PRELOAD_COPY_CALLERS] | null {
+  switch (role) {
+    case "preload-copy-1": case "preload-copy-2": case "preload-copy-3": case "preload-copy-4": {
+      return CURRENT_PCB_209_PRELOAD_COPY_CALLERS[role];
+    }
+    case "bootstrap": case "preload": case "project": { return null; }
+    default: { throw new Error("PCB209_WORKER_BOOTSTRAP_SOURCE"); }
+  }
+}
+const copyToken = z.string().min(1).max(256).regex(/^[A-Za-z\d_.:-]+$/u);
+const copyLocation = z.looseObject({ scriptId: copyToken, lineNumber: z.number().int().nonnegative(),
+  columnNumber: z.number().int().nonnegative() });
+const copyStackFrame = z.looseObject({ functionName: z.string().max(256), scriptId: copyToken,
+  url: z.string().max(8192), lineNumber: z.number().int().nonnegative(), columnNumber: z.number().int().nonnegative() });
+const copyPauseFrame = z.looseObject({ functionName: z.string().max(256), location: copyLocation });
+/** Shape/origin checks only. The transport supplies its already source-qualified
+ * original preload script and context; these helpers issue no ownership token. */
+export function qualifyCurrentPcb209PreloadCopyCreator(preloadScriptId: string, input: unknown): void {
+  const script = z.looseObject({ url: z.literal(""), hasSourceURL: z.literal(false).optional(), isLiveEdit: z.literal(false).optional(),
+    stackTrace: z.object({ callFrames: z.tuple([copyStackFrame]) }).strict() }).parse(captureCurrentPcbStringClockReply(input).value);
+  const creator = script.stackTrace.callFrames[0], expected = CURRENT_PCB_209_PRELOAD_COPY_SOURCE.creator;
+  need(creator.scriptId === preloadScriptId && creator.url === CURRENT_PCB_209_WORKER_PRELOAD_URL &&
+    creator.functionName === expected.functionName && creator.lineNumber === expected.lineNumber && creator.columnNumber === expected.columnNumber);
+}
+export function qualifyCurrentPcb209PreloadCopyPause(role: CurrentPcb209StartupScriptRole, copyScriptId: string,
+  preloadScriptId: string, input: unknown): void {
+  const caller = currentPcb209PreloadCopyCaller(role); need(caller !== null);
+  const pause = z.looseObject({ reason: z.literal("instrumentation"), data: z.looseObject({ scriptId: copyToken, url: z.literal("") }),
+    hitBreakpoints: z.array(copyToken).length(0), callFrames: z.array(copyPauseFrame).min(3).max(16) })
+    .parse(captureCurrentPcbStringClockReply(input).value);
+  const [evaluated, creator, originalCaller] = pause.callFrames, expected = CURRENT_PCB_209_PRELOAD_COPY_SOURCE.creator;
+  need(pause.data.scriptId === copyScriptId && evaluated?.functionName === "" && evaluated.location.scriptId === copyScriptId &&
+    evaluated.location.lineNumber === 0 && evaluated.location.columnNumber === 0 &&
+    creator?.functionName === expected.functionName && creator.location.scriptId === preloadScriptId &&
+    creator.location.lineNumber === expected.lineNumber && creator.location.columnNumber === expected.columnNumber &&
+    originalCaller?.functionName === "" && originalCaller.location.scriptId === preloadScriptId &&
+    originalCaller.location.lineNumber === caller.lineNumber && originalCaller.location.columnNumber === caller.columnNumber);
+}
 // The source call expression begins at column43500. A real V8 console event
 // Reports the member call at column43508; these are distinct coordinate uses.
 export const CURRENT_PCB_209_WORKER_PRELOAD_LOG = freezeDeep({
@@ -71,10 +133,18 @@ function qualifiedSource(source: string, kind: CurrentPcb209WorkerBootstrapSourc
   const pin = CURRENT_PCB_209_WORKER_BOOTSTRAP_SOURCE_PROFILE[kind];
   need(source.length <= pin.bytes && Buffer.byteLength(source) === pin.bytes && digest(source) === pin.sha256);
   if (kind === "preload") {
-    for (const span of [CURRENT_PCB_209_WORKER_PRELOAD_LOG.sourceSpan, CURRENT_PCB_209_WORKER_PRELOAD_LOG.rootCallSpan]) {
+    const copy = CURRENT_PCB_209_PRELOAD_COPY_SOURCE;
+    for (const span of [CURRENT_PCB_209_WORKER_PRELOAD_LOG.sourceSpan, CURRENT_PCB_209_WORKER_PRELOAD_LOG.rootCallSpan,
+      copy.functionSpan, copy.methodSpan]) {
       const text = source.slice(span.start, span.end);
       need(Buffer.byteLength(text) === span.bytes && digest(text) === span.sha256);
     }
+    for (const caller of Object.values(CURRENT_PCB_209_PRELOAD_COPY_CALLERS)) {
+      const text = source.slice(caller.start, caller.end);
+      need(Buffer.byteLength(text) === copy.callBytes && digest(text) === copy.callSha256);
+    }
+    const generated = `(${source.slice(copy.functionSpan.start, copy.functionSpan.end)})`;
+    need(Buffer.byteLength(generated) === copy.generatedBytes && digest(generated) === copy.generatedSha256);
   }
 }
 
@@ -86,7 +156,7 @@ export function isCurrentPcb209BootstrapTargetUrl(url: string): boolean {
   const match = /^https:\/\/client\/editor\?entry=mgr-project-worker\.js&cll=(?:trace|debug|info|warn|error|off|)&debugOpen=[01]$/u.exec(url);
   return match !== null && match[0] === url;
 }
-export function currentPcb209StartupScriptRole(url: string): CurrentPcb209StartupScriptRole | null {
+export function currentPcb209StartupScriptRole(url: string): "bootstrap" | "preload" | "project" | null {
   if (isCurrentPcb209BootstrapTargetUrl(url)) { return "bootstrap"; }
   if (url === CURRENT_PCB_209_WORKER_PRELOAD_URL) { return "preload"; }
   if (url === CURRENT_PCB_209_PROJECT_WORKER_URL) { return "project"; }
@@ -99,7 +169,11 @@ export function qualifyCurrentPcb209StartupScriptSource(role: CurrentPcb209Start
   need(keys.length === 1 && keys[0] === "scriptSource");
   const source = sourceProperty(input, "scriptSource");
   if (role === "bootstrap") { need(CURRENT_PCB_209_WORKER_BOOTSTRAP_SOURCES.includes(source)); }
-  else { qualifiedSource(source, role); }
+  else if (role === "preload" || role === "project") { qualifiedSource(source, role); }
+  else {
+    const copy = CURRENT_PCB_209_PRELOAD_COPY_SOURCE;
+    need(Buffer.byteLength(source) === copy.generatedBytes && digest(source) === copy.generatedSha256);
+  }
 }
 /** Fixed descriptor-captured installation closure. This module opens no files. */
 export function qualifyCurrentPcb209WorkerBootstrapSources(input: CurrentPcb209WorkerBootstrapSources): CurrentPcb209WorkerBootstrapSourceQualification {

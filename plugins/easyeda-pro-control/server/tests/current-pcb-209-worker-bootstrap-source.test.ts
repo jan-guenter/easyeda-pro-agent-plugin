@@ -32,7 +32,7 @@ void test("209 Worker target is the exact client bootstrap URL, separate from im
 });
 
 void test("209 bootstrap source admits only the three exact backend-generated mode variants", () => {
-  assert.deepEqual(CURRENT_PCB_209_WORKER_BOOTSTRAP_ROLES, ["bootstrap", "preload", "project"]);
+  assert.deepEqual(CURRENT_PCB_209_WORKER_BOOTSTRAP_ROLES, ["bootstrap", "preload", "preload-copy-1", "preload-copy-2", "preload-copy-3", "preload-copy-4", "project"]);
   assert.equal(CURRENT_PCB_209_WORKER_BOOTSTRAP_SOURCES.length, 3);
   assert.ok(Object.isFrozen(CURRENT_PCB_209_WORKER_BOOTSTRAP_SOURCES));
   for (const [index, mode] of ["ONLINE", "HALF_OFFLINE", "OFFLINE"].entries()) {

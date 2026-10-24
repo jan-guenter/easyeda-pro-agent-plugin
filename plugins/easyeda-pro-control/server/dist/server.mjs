@@ -10,7 +10,7 @@ const require = function __easyedaGuardedRequire(specifier) { if (typeof specifi
 	const __easyedaPublicationLockPath = __easyedaJoin(__easyedaPublicationDirectory, ".bundle-publication.lock");
 const __easyedaAssertNoPublication = () => { try { __easyedaLstatSync(__easyedaPublicationLockPath); throw new Error("The facade bundle is undergoing a fail-closed publication transaction."); } catch (__easyedaPublicationError) { if (!__easyedaPublicationError || typeof __easyedaPublicationError !== "object" || !("code" in __easyedaPublicationError) || __easyedaPublicationError.code !== "ENOENT") throw __easyedaPublicationError; } };
 __easyedaAssertNoPublication();
-const __easyedaBundlePairId = "805af4488560a7b540c3bcc6ed7ab0ca1b1437828ac56a9dfed53a28c8022016";
+const __easyedaBundlePairId = "8ae45210c9e9c3c49282b63f70273b726c039bb3d8ce0073e78e9932c4172931";
 if (__easyedaBasename(import.meta.filename) === "server.mjs") {
   const __easyedaPeerPath = __easyedaJoin(import.meta.dirname, "upstream-supervisor.mjs");
   const __easyedaPeerPathBefore = __easyedaLstatSync(__easyedaPeerPath, { bigint: true });
@@ -102810,7 +102810,7 @@ function queryCurrentPcb209WorkerStartupValidation(includeSchemas) {
     limitations: [
       "Launch a separate pcb209-startup-* original owner; ordinary diagnostic and String owners cannot be upgraded or adopted.",
       "After browser, frame and pinned UI-source admission, capture-project consumes one checkpoint-bound disposable opening. It durably hands off the original pipe, arms debugger auto-attachment before opening, captures constructors and checks the original worker project, branch and window. Debugger pauses affect application timing; explicit acceptance is mandatory.",
-      "The worker target is a generated editor bootstrap, followed by pinned preload and project-worker imports. Each paused script is source-qualified before normal resume; constructor breakpoints are armed on the project script. Source snapshots are not continuous installation leases. Inspect retains bounded target and phase diagnostics after failure.",
+      "The worker target is a generated editor bootstrap, followed by pinned preload, four fixed helper-copy scripts and the project-worker import. Each paused script is source-qualified before normal resume; helper copies also require their original preload creator and ordered caller location. Constructor breakpoints are armed on the project script. Source snapshots are not continuous installation leases. Inspect retains bounded target, script and phase diagnostics after failure.",
       "Existing-profile launch and opening may restore designs, migrate files, replay caches, use the network and automatically persist data. No profile isolation or zero-write claim is made.",
       "After the original capture result is published, observe-current-assignments consumes one journaled read of the four current PROJECT wrappers and their original constructor callbacks. It rechecks those same assignments before publication; the result is a point-in-time, non-atomic observation, not an execution token.",
       "After the assignment result is published, observe-actor-clock consumes one UI/worker/worker/UI bracket on those original owners. It compares the retained account values and local Date readings, not a PCB realm, Windows/server clock, backend actor, future Save or continuous publication interval.",
@@ -148546,6 +148546,46 @@ var init_current_pcb_diagnostic_worker_context = __esm({
 // server/src/current-pcb-209-worker-bootstrap-source.ts
 import { createHash as createHash69 } from "node:crypto";
 import { types as types30 } from "node:util";
+function currentPcb209PreloadCopyCaller(role) {
+  switch (role) {
+    case "preload-copy-1":
+    case "preload-copy-2":
+    case "preload-copy-3":
+    case "preload-copy-4": {
+      return CURRENT_PCB_209_PRELOAD_COPY_CALLERS[role];
+    }
+    case "bootstrap":
+    case "preload":
+    case "project": {
+      return null;
+    }
+    default: {
+      throw new Error("PCB209_WORKER_BOOTSTRAP_SOURCE");
+    }
+  }
+}
+function qualifyCurrentPcb209PreloadCopyCreator(preloadScriptId, input2) {
+  const script = external_exports.looseObject({
+    url: external_exports.literal(""),
+    hasSourceURL: external_exports.literal(false).optional(),
+    isLiveEdit: external_exports.literal(false).optional(),
+    stackTrace: external_exports.object({ callFrames: external_exports.tuple([copyStackFrame]) }).strict()
+  }).parse(captureCurrentPcbStringClockReply(input2).value);
+  const creator = script.stackTrace.callFrames[0], expected3 = CURRENT_PCB_209_PRELOAD_COPY_SOURCE.creator;
+  need54(creator.scriptId === preloadScriptId && creator.url === CURRENT_PCB_209_WORKER_PRELOAD_URL && creator.functionName === expected3.functionName && creator.lineNumber === expected3.lineNumber && creator.columnNumber === expected3.columnNumber);
+}
+function qualifyCurrentPcb209PreloadCopyPause(role, copyScriptId, preloadScriptId, input2) {
+  const caller = currentPcb209PreloadCopyCaller(role);
+  need54(caller !== null);
+  const pause = external_exports.looseObject({
+    reason: external_exports.literal("instrumentation"),
+    data: external_exports.looseObject({ scriptId: copyToken, url: external_exports.literal("") }),
+    hitBreakpoints: external_exports.array(copyToken).length(0),
+    callFrames: external_exports.array(copyPauseFrame).min(3).max(16)
+  }).parse(captureCurrentPcbStringClockReply(input2).value);
+  const [evaluated, creator, originalCaller] = pause.callFrames, expected3 = CURRENT_PCB_209_PRELOAD_COPY_SOURCE.creator;
+  need54(pause.data.scriptId === copyScriptId && evaluated?.functionName === "" && evaluated.location.scriptId === copyScriptId && evaluated.location.lineNumber === 0 && evaluated.location.columnNumber === 0 && creator?.functionName === expected3.functionName && creator.location.scriptId === preloadScriptId && creator.location.lineNumber === expected3.lineNumber && creator.location.columnNumber === expected3.columnNumber && originalCaller?.functionName === "" && originalCaller.location.scriptId === preloadScriptId && originalCaller.location.lineNumber === caller.lineNumber && originalCaller.location.columnNumber === caller.columnNumber);
+}
 function need54(value2) {
   if (!value2) {
     throw new Error("PCB209_WORKER_BOOTSTRAP_SOURCE");
@@ -148568,10 +148608,22 @@ function qualifiedSource(source6, kind) {
   const pin4 = CURRENT_PCB_209_WORKER_BOOTSTRAP_SOURCE_PROFILE[kind];
   need54(source6.length <= pin4.bytes && Buffer.byteLength(source6) === pin4.bytes && digest12(source6) === pin4.sha256);
   if (kind === "preload") {
-    for (const span of [CURRENT_PCB_209_WORKER_PRELOAD_LOG.sourceSpan, CURRENT_PCB_209_WORKER_PRELOAD_LOG.rootCallSpan]) {
+    const copy3 = CURRENT_PCB_209_PRELOAD_COPY_SOURCE;
+    for (const span of [
+      CURRENT_PCB_209_WORKER_PRELOAD_LOG.sourceSpan,
+      CURRENT_PCB_209_WORKER_PRELOAD_LOG.rootCallSpan,
+      copy3.functionSpan,
+      copy3.methodSpan
+    ]) {
       const text50 = source6.slice(span.start, span.end);
       need54(Buffer.byteLength(text50) === span.bytes && digest12(text50) === span.sha256);
     }
+    for (const caller of Object.values(CURRENT_PCB_209_PRELOAD_COPY_CALLERS)) {
+      const text50 = source6.slice(caller.start, caller.end);
+      need54(Buffer.byteLength(text50) === copy3.callBytes && digest12(text50) === copy3.callSha256);
+    }
+    const generated = `(${source6.slice(copy3.functionSpan.start, copy3.functionSpan.end)})`;
+    need54(Buffer.byteLength(generated) === copy3.generatedBytes && digest12(generated) === copy3.generatedSha256);
   }
 }
 function isCurrentPcb209BootstrapTargetUrl(url2) {
@@ -148601,8 +148653,11 @@ function qualifyCurrentPcb209StartupScriptSource(role, input2) {
   const source6 = sourceProperty(input2, "scriptSource");
   if (role === "bootstrap") {
     need54(CURRENT_PCB_209_WORKER_BOOTSTRAP_SOURCES.includes(source6));
-  } else {
+  } else if (role === "preload" || role === "project") {
     qualifiedSource(source6, role);
+  } else {
+    const copy3 = CURRENT_PCB_209_PRELOAD_COPY_SOURCE;
+    need54(Buffer.byteLength(source6) === copy3.generatedBytes && digest12(source6) === copy3.generatedSha256);
   }
 }
 function qualifyCurrentPcb209WorkerBootstrapSources(input2) {
@@ -148624,10 +148679,12 @@ function qualifyCurrentPcb209WorkerBootstrapSources(input2) {
   issued8.add(qualification);
   return qualification;
 }
-var CURRENT_PCB_209_WORKER_BOOTSTRAP_SOURCE_PROFILE, sourceKinds, CURRENT_PCB_209_WORKER_BOOTSTRAP_ROLES, CURRENT_PCB_209_WORKER_PRELOAD_URL, CURRENT_PCB_209_PROJECT_WORKER_URL, CURRENT_PCB_209_WORKER_PRELOAD_LOG, CURRENT_PCB_209_WORKER_BOOTSTRAP_SOURCES, limits3, issued8;
+var CURRENT_PCB_209_WORKER_BOOTSTRAP_SOURCE_PROFILE, sourceKinds, CURRENT_PCB_209_WORKER_BOOTSTRAP_ROLES, CURRENT_PCB_209_WORKER_PRELOAD_URL, CURRENT_PCB_209_PROJECT_WORKER_URL, CURRENT_PCB_209_PRELOAD_COPY_SOURCE, CURRENT_PCB_209_PRELOAD_COPY_CALLERS, copyToken, copyLocation, copyStackFrame, copyPauseFrame, CURRENT_PCB_209_WORKER_PRELOAD_LOG, CURRENT_PCB_209_WORKER_BOOTSTRAP_SOURCES, limits3, issued8;
 var init_current_pcb_209_worker_bootstrap_source = __esm({
   "server/src/current-pcb-209-worker-bootstrap-source.ts"() {
+    init_zod();
     init_core3();
+    init_current_pcb_string_clock_reply();
     init_sqlite_inventory_core();
     CURRENT_PCB_209_WORKER_BOOTSTRAP_SOURCE_PROFILE = freezeDeep({
       backend: {
@@ -148662,9 +148719,56 @@ var init_current_pcb_209_worker_bootstrap_source = __esm({
       }
     });
     sourceKinds = ["backend", "editorConfig", "version", "manager", "preload", "project"];
-    CURRENT_PCB_209_WORKER_BOOTSTRAP_ROLES = Object.freeze(["bootstrap", "preload", "project"]);
+    CURRENT_PCB_209_WORKER_BOOTSTRAP_ROLES = Object.freeze([
+      "bootstrap",
+      "preload",
+      "preload-copy-1",
+      "preload-copy-2",
+      "preload-copy-3",
+      "preload-copy-4",
+      "project"
+    ]);
     CURRENT_PCB_209_WORKER_PRELOAD_URL = "https://modules.lceda.cn/pro-mgr/3.2.185.bf63a159/js/preload.js";
     CURRENT_PCB_209_PROJECT_WORKER_URL = "https://modules.lceda.cn/pro-mgr/3.2.185.bf63a159/js/project-worker.js";
+    CURRENT_PCB_209_PRELOAD_COPY_SOURCE = freezeDeep({
+      functionSpan: {
+        start: 217968,
+        end: 218612,
+        bytes: 644,
+        sha256: "2d5e02e944e9e1892c6166201678a02f72db441f9a58e2f300ed43536748d370"
+      },
+      generatedBytes: 646,
+      generatedSha256: "447abb67bca110f9560c4a4c8d4c370018a59a012cfb1098e561f7e3686f178b",
+      methodSpan: {
+        start: 220925,
+        end: 220981,
+        bytes: 56,
+        sha256: "da37f021b5e2ebf10ee80e9ba885b2e93373f0f096c8ac6fc38d1f6f12f2ccc4"
+      },
+      creator: { functionName: "funcCopy", lineNumber: 7, columnNumber: 42723 },
+      callBytes: 15,
+      callSha256: "67475c7d3c4548bd6fe3d1d7d0b575f8e1d63976acf27bf47848e2f6ceb90db7"
+    });
+    CURRENT_PCB_209_PRELOAD_COPY_CALLERS = freezeDeep({
+      "preload-copy-1": { start: 340896, end: 340911, lineNumber: 8, columnNumber: 102962 },
+      "preload-copy-2": { start: 349724, end: 349739, lineNumber: 8, columnNumber: 111790 },
+      "preload-copy-3": { start: 349743, end: 349758, lineNumber: 8, columnNumber: 111809 },
+      "preload-copy-4": { start: 349762, end: 349777, lineNumber: 8, columnNumber: 111828 }
+    });
+    copyToken = external_exports.string().min(1).max(256).regex(/^[A-Za-z\d_.:-]+$/u);
+    copyLocation = external_exports.looseObject({
+      scriptId: copyToken,
+      lineNumber: external_exports.number().int().nonnegative(),
+      columnNumber: external_exports.number().int().nonnegative()
+    });
+    copyStackFrame = external_exports.looseObject({
+      functionName: external_exports.string().max(256),
+      scriptId: copyToken,
+      url: external_exports.string().max(8192),
+      lineNumber: external_exports.number().int().nonnegative(),
+      columnNumber: external_exports.number().int().nonnegative()
+    });
+    copyPauseFrame = external_exports.looseObject({ functionName: external_exports.string().max(256), location: copyLocation });
     CURRENT_PCB_209_WORKER_PRELOAD_LOG = freezeDeep({
       message: "common init----------------",
       functionName: "Zf",
@@ -154604,6 +154708,7 @@ var init_current_pcb_worker_startup_transport = __esm({
         }
         let method7 = "unparsed";
         let rejectedTarget = null;
+        let rejectedScript = null;
         try {
           const captured = captureCurrentPcbStringClockReply(input2);
           this.#events += 1;
@@ -154613,19 +154718,26 @@ var init_current_pcb_worker_startup_transport = __esm({
           }
           const event4 = external_exports.object({ method: external_exports.string().max(128), sessionId: sessionToken, params: external_exports.record(external_exports.string(), external_exports.unknown()) }).strict().parse(captured.value);
           method7 = eventMethods.find((value2) => value2 === event4.method) ?? "other";
-          this.#acceptEvent(event4, (worker2) => {
-            rejectedTarget = this.#bootstrap209 ? this.#targetMetadata(worker2) : null;
-          });
+          this.#acceptEvent(
+            event4,
+            (worker2) => {
+              rejectedTarget = this.#bootstrap209 ? this.#targetMetadata(worker2) : null;
+            },
+            (script) => {
+              rejectedScript = this.#bootstrap209 ? this.#scriptMetadata(script) : null;
+            }
+          );
         } catch (error63) {
           this.#firstEventFailure ??= Object.freeze({
             method: method7,
             reason: eventReason(error63),
-            ...rejectedTarget === null ? {} : { target: rejectedTarget }
+            ...rejectedTarget === null ? {} : { target: rejectedTarget },
+            ...rejectedScript === null ? {} : { script: rejectedScript }
           });
           this.#poison("EVENT");
         }
       };
-      #acceptEvent(event4, retainTarget) {
+      #acceptEvent(event4, retainTarget, retainScript) {
         if (event4.sessionId === this.#parentSession && event4.method === "Target.attachedToTarget") {
           const params = external_exports.object({ sessionId: sessionToken, targetInfo: targetSchema22, waitingForDebugger: external_exports.boolean() }).strict().parse(event4.params);
           if (params.sessionId === this.#parentSession || params.targetInfo.targetId === this.#parentTarget || this.#workers.has(params.sessionId) || [...this.#workers.values()].some((value2) => value2.target.targetId === params.targetInfo.targetId) || this.#workers.size >= 16) {
@@ -154687,6 +154799,7 @@ var init_current_pcb_worker_startup_transport = __esm({
         }
         if (event4.method === "Debugger.scriptParsed") {
           const script = scriptSchema.parse(event4.params);
+          retainScript(script);
           if (this.#sourceQualified && script.url === "" && script.executionContextId === this.#context?.id) {
             return;
           }
@@ -154788,6 +154901,31 @@ var init_current_pcb_worker_startup_transport = __esm({
       #targetUrl(value2) {
         return this.#bootstrap209 ? isCurrentPcb209BootstrapTargetUrl(value2) : this.#sourceUrl(value2);
       }
+      #scriptMetadata(script) {
+        const preload = this.#bootstrapStages[1], reportedHash = script["hash"];
+        let creatorMatchesPreloadCopy = false;
+        if (preload?.script !== null && preload?.script !== void 0) {
+          try {
+            qualifyCurrentPcb209PreloadCopyCreator(preload.script.scriptId, script);
+            creatorMatchesPreloadCopy = true;
+          } catch {
+          }
+        }
+        return Object.freeze({
+          scriptId: script.scriptId,
+          executionContextId: script.executionContextId,
+          contextMatchesExpected: script.executionContextId === this.#context?.id,
+          expectedStage: this.#bootstrapStages[this.#bootstrapIndex]?.role ?? null,
+          urlSha256: createHash72("sha256").update(script.url).digest("hex"),
+          urlBytes: Buffer.byteLength(script.url),
+          urlRole: script.url === "" ? "anonymous" : currentPcb209StartupScriptRole(script.url) ?? "other",
+          // V8 hashes UTF-16 script units. Retain the reported token only; source
+          // Qualification separately hashes the complete UTF-8 getScriptSource text.
+          reportedScriptHash: typeof reportedHash === "string" && /^[a-f\d]{64}$/iu.test(reportedHash) ? reportedHash : null,
+          creatorMatchesPreloadCopy,
+          priorScriptId: this.#bootstrapStages.some((stage) => stage.script?.scriptId === script.scriptId)
+        });
+      }
       #releaseRejectedWorker(worker2) {
         if (this.#bootstrap209) {
           void observe5((async () => {
@@ -154800,7 +154938,20 @@ var init_current_pcb_worker_startup_transport = __esm({
       }
       #bootstrapScript(script) {
         const stage = this.#bootstrapStages[this.#bootstrapIndex], worker2 = this.#worker;
-        if (stage === void 0 || worker2 === null || stage.script !== null || script.executionContextId !== this.#context?.id || currentPcb209StartupScriptRole(script.url) !== stage.role || stage.role === "bootstrap" && script.url !== worker2.target.url) {
+        if (stage === void 0 || worker2 === null || stage.script !== null || script.executionContextId !== this.#context?.id || this.#bootstrapStages.some((value2) => value2.script?.scriptId === script.scriptId)) {
+          throw failure3("SCRIPT");
+        }
+        if (currentPcb209PreloadCopyCaller(stage.role) !== null) {
+          const preload = this.#bootstrapStages[1];
+          if (preload?.script === null || preload?.script === void 0 || !preload.sourceQualified || !preload.resumeSeen) {
+            throw failure3("SCRIPT");
+          }
+          try {
+            qualifyCurrentPcb209PreloadCopyCreator(preload.script.scriptId, script);
+          } catch {
+            throw failure3("SCRIPT");
+          }
+        } else if (currentPcb209StartupScriptRole(script.url) !== stage.role || stage.role === "bootstrap" && script.url !== worker2.target.url) {
           throw failure3("SCRIPT");
         }
         stage.script = script;
@@ -154839,7 +154990,7 @@ var init_current_pcb_worker_startup_transport = __esm({
       }
       #preloadLog(params) {
         const profile = CURRENT_PCB_209_WORKER_PRELOAD_LOG, stage = this.#bootstrapStages[1];
-        if (this.#preloadLogSeen || stage?.role !== "preload" || !stage.sourceQualified || stage.resume === null || stage.script === null) {
+        if (this.#failure !== null || this.#preloadLogSeen || stage?.role !== "preload" || !stage.sourceQualified || stage.resume === null || stage.script === null || this.#bootstrapStages[this.#bootstrapIndex]?.role !== "project" || this.#bootstrapStages.some((value2) => currentPcb209PreloadCopyCaller(value2.role) !== null && (!value2.sourceQualified || !value2.resumeSeen))) {
           throw failure3("UNEXPECTED_EVENT");
         }
         const log = preloadLogSchema.parse(params);
@@ -155027,6 +155178,13 @@ var init_current_pcb_worker_startup_transport = __esm({
           const context4 = this.#context, script = stage.script;
           if (context4 === null || script === null || script.executionContextId !== context4.id || paused.data.scriptId !== script.scriptId || paused.data["url"] !== script.url || paused.callFrames[0]?.location.scriptId !== script.scriptId || paused.hitBreakpoints.length === 1 && paused.hitBreakpoints[0] !== this.#instrumentation) {
             throw failure3("INITIAL_PAUSE_IDENTITY");
+          }
+          if (currentPcb209PreloadCopyCaller(stage.role) !== null) {
+            const preload = this.#bootstrapStages[1]?.script;
+            if (preload === null || preload === void 0) {
+              throw failure3("INITIAL_PAUSE_IDENTITY");
+            }
+            qualifyCurrentPcb209PreloadCopyPause(stage.role, script.scriptId, preload.scriptId, paused);
           }
           await this.#current();
           if (this.#requests >= 224) {
@@ -156520,6 +156678,7 @@ var init_current_pcb_209_worker_startup_pcb_session = __esm({
     init_current_pcb_string_clock_reply();
     init_current_pcb_209_worker_startup_opening();
     init_sqlite_inventory_core();
+    init_sqlite_inventory();
     CURRENT_PCB_209_WORKER_STARTUP_PCB_COMMAND_LIMIT = 20;
     contextKeys2 = Object.getOwnPropertyNames(CurrentPcbDiagnosticContext.prototype).filter((key) => key !== "constructor");
     requireOpening2 = CurrentPcb209WorkerStartupOpening.prototype.requireOriginalPcbDependency;
@@ -156541,6 +156700,8 @@ var init_current_pcb_209_worker_startup_pcb_session = __esm({
       #context;
       #target;
       #reverify;
+      #before = null;
+      #completion = null;
       #phase = "ready";
       #transitionStarted = false;
       #commands = 0;
@@ -156576,6 +156737,7 @@ var init_current_pcb_209_worker_startup_pcb_session = __esm({
       }
       #same() {
         need64(this.#phase !== "failed" && Object.getPrototypeOf(this.#context) === CurrentPcbDiagnosticContext.prototype && Object.getPrototypeOf(this.#opening) === CurrentPcb209WorkerStartupOpening.prototype && this.#dependency.request === this.#request && Object.isFrozen(this.#dependency) && !types49.isProxy(this.#dependency), "original lifetime changed");
+        need64(this.#before === null || readerCompletion(this.#before) === this.#completion, "original SQL reader changed");
         for (const key of contextKeys2) {
           need64(!Object.hasOwn(this.#context, key) && Object.getOwnPropertyDescriptor(CurrentPcbDiagnosticContext.prototype, key)?.value === originalContext2[key], "original context method changed");
         }
@@ -156659,8 +156821,11 @@ var init_current_pcb_209_worker_startup_pcb_session = __esm({
           await this.#call("preflight");
           this.#phase = "checkpoint";
           await this.#current();
-          await this.#reverify();
+          const before = await this.#reverify(), completion2 = readerCompletion(before);
+          need64(completion2.observedChildClose && completion2.exitCode === 0 && completion2.exitSignal === null, "original completed SQL reader required");
           await this.#current();
+          this.#before = before;
+          this.#completion = completion2;
           this.#observeParent(await this.#parent());
           await this.#ancillary();
           this.#context.beginPcbOpeningTransition(this.#target.projectUuid, this.#target.documentUuid);
@@ -156713,6 +156878,32 @@ var init_current_pcb_209_worker_startup_pcb_session = __esm({
           await this.#current();
           need64(canonicalJson(this.#context.modelContext()) === canonicalJson(this.#model), "original PCB context changed");
           return this.#model;
+        } catch (error63) {
+          this.#phase = "failed";
+          throw error63;
+        }
+      }
+      /** Read-only private continuations retain this exact dependency. Matching
+       * model tuples or request functions cannot replace the original channel. */
+      assertOriginalDependencyCurrent(packet, dependency) {
+        return this.#originalDependency(packet, dependency);
+      }
+      #originalDependency(packet, dependency) {
+        need64(this.#phase === "completed" && packet === this.#packet && this.#model !== null && this.#before !== null && dependency === this.#dependency, "original completed dependency required");
+        try {
+          this.#same();
+          need64(canonicalJson(this.#context.modelContext()) === canonicalJson(this.#model), "original PCB context changed");
+          return Object.freeze({ model: this.#model, before: this.#before });
+        } catch (error63) {
+          this.#phase = "failed";
+          throw error63;
+        }
+      }
+      async requireOriginalDependency(packet, dependency) {
+        this.#originalDependency(packet, dependency);
+        try {
+          await this.#current();
+          return this.#originalDependency(packet, dependency);
         } catch (error63) {
           this.#phase = "failed";
           throw error63;
@@ -158427,7 +158618,10 @@ var init_current_pcb_diagnostic_owner = __esm({
       /** Private preparation for the same constructor-captured project's PCB.
        * No public action invokes this yet. Its caller must durably consume PCB
        * navigation intent before openAndQualify; preparation itself sends no open.
-       * The actual context stays with its original native owner, never caller JSON. */
+       * The actual context stays with its original native owner, never caller JSON.
+       * The callback must return the lifecycle's original completed preparation
+       * inventory after verifying its managed checkpoint receipt and sealed target.
+       * A new reader or equality with the live source hash is not a substitute. */
       async prepareWorkerStartupPcbSession209(opening, result, input2, reverifyCheckpoint) {
         const context4 = this.#stagedContext, handoff2 = this.#startupHandoff;
         const target9 = currentDisposableOpenSealedTargetSchema.parse(captureCurrentPcbStringClockReply(input2).value);

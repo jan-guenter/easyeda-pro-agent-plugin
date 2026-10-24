@@ -41,9 +41,11 @@ Validation is offline. It neither creates a journal nor grants authority.
    hash identifies the project. The document is an existing checkpoint-member
    PCB. The coordinator derives the branch and creates its own checkpoint.
    It arms original worker capture before the single project opening. The
-   target is the generated editor bootstrap, followed by the preload and
-   project-worker imports. Each paused script is qualified separately; the
-   constructor breakpoints are armed before the project script resumes.
+   target is the generated editor bootstrap. The preload import creates four
+   fixed anonymous helper scripts before the project-worker import. All seven
+   phases need separate paused-source qualification. Each helper must also
+   match its original preload creator and ordered caller location. Constructor
+   breakpoints are armed before the project script resumes.
 4. After successful published capture, `observe-current-assignments` checks
    the current wrappers against retained constructor callbacks. After that
    published result, `observe-current-channel` and `observe-actor-clock` are
@@ -61,6 +63,14 @@ with a fixed256-command limit. Handoff does not reset it. This is sufficient
 for the defined startup stages; it does not admit the private common-state
 reader, whose complete bounded sequence needs up to3090 commands, or its
 empty-root bracket, which raises that private sequence to3099 commands.
+
+Use the inspected channel's `nextRequestId` to choose optional observations.
+Keep normal work through request224, leaving32 slots for cleanup. Assignments,
+channel and actor stages cost23,24 and35 requests respectively, including their
+final owner checks. At next ID `N`, require `N + cost - 1 <= 224`, then inspect
+again after the stage. All three fit only when `N <= 143`. The seven-phase
+startup's source-derived maximum is186 requests; actual usage can be lower.
+These counts are not measured timing or permission to reset the counter.
 
 ## Interpreting results and failures
 
@@ -84,9 +94,13 @@ Do not disable threading or use another launch purpose to evade that result.
 
 After a timeout or lost reply, use `inspect`; do not repeat capture or the
 consumed observation. Retain the original process owner for supported cleanup.
-Phase diagnostics distinguish the bootstrap, preload and project script. A
-target failure records bounded URL/name classifications and digests rather
-than a private URL. Generic project-opening consumption remains true through
+Phase diagnostics distinguish bootstrap, preload, four helper copies and the
+project script. Failed target and script events retain bounded classifications
+and digests rather than private URLs or source text. The preload-log flag now
+requires all four helper phases to have completed without a prior failure.
+Older snapshots could set it during cleanup; do not apply the new meaning to
+their historical results. The flag alone does not prove constructor capture.
+Generic project-opening consumption remains true through
 cleanup and historical inspection, including when constructor capture failed.
 Consumption does not imply a published successful opening result.
 Normal close does not prove discard or unchanged files. Leave Save/Discard

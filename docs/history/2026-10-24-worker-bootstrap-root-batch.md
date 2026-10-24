@@ -102,3 +102,66 @@ reported zero warnings. No lint category or global configuration was relaxed.
 The full facade/bridge suites and Windows native jobs remain assigned to the
 exact final GitHub commit. Publication and installation are not claimed by
 these local checks.
+
+## Publication and installation result
+
+PR [116](https://github.com/jan-guenter/easyeda-pro-agent-plugin/pull/116)
+reviewed head `3c529ed1c6a822acde07249ec6552f44c8fe9e40` passed Linux
+[40111073217](https://github.com/jan-guenter/easyeda-pro-agent-plugin/actions/runs/40111073217)
+and Windows [40111073222](https://github.com/jan-guenter/easyeda-pro-agent-plugin/actions/runs/40111073222).
+All eight facade shards and the required aggregate passed:12,654 tests passed,
+five expected skips and zero failures. All424 bridge tests passed.
+
+Protected merge produced main `cd2ab88c39aff06ac2921ade99eebfcbf1659d51`.
+Its complete root tree equals the reviewed PR tree
+`fd09581c52357ebcbcc42d00c6c92dda449cefd7`; its plugin tree is
+`b92b1d6bff911a43f35eedba0f4de4afa2381a66`. The second build reproduced both
+runtime bundles byte for byte. Two generated working-tree bundle permissions
+were normalized from0600 to committed0644 before commit; bytes were unchanged.
+The official plugin validator also passed.
+
+The official CLI upgraded the configured Git marketplace
+`https://github.com/jan-guenter/easyeda-pro-agent-plugin.git` to merged main and
+installed/enabled `0.3.0+codex.20261024161458`. The expected snapshot existed
+after upgrade and final listing, so no redundant plugin-add or cache repair was
+needed. Exact comparison verified1,878 packaged files,42 directories and
+40,140,079 bytes, including all committed755/644 modes. Inventory SHA-256:
+`bee84a36c93f8d43090c96daed036525f153c3701cdfd0d9e9b9441f43585aca`.
+Marketplace HEAD equals merged main.
+
+The installed configured offline startup passed under Node24.18.0 without
+source dependencies or a live control root. Its synthetic catalog exposed26
+tools, completed10 queries, and closed its own child through stdin EOF with
+exit0 and no stderr. Two isolation samples found no descendant or non-stdio
+socket; this is not continuous isolation or actual host admission.
+
+At installation, main Windows
+[40112183062](https://github.com/jan-guenter/easyeda-pro-agent-plugin/actions/runs/40112183062)
+was successful and main Linux
+[40112183086](https://github.com/jan-guenter/easyeda-pro-agent-plugin/actions/runs/40112183086)
+had passed its build job while facade shards were still running. Preserve this
+pending statement until a terminal observation is appended. The payload is
+identical to the fully passing PR payload.
+
+A fresh Codex session is required to load and admit this installed snapshot.
+The current session retains132442; no gateway was killed, rebound or patched.
+The next case is a new disposable startup operation, never a replay of the
+terminal132442 failure. The private next-session plan records fresh request
+placeholders, the23/24/35-command optional-stage costs and original cleanup.
+PCB/raw-root/ratline native integration and the broader writer/API backlog
+remain as listed above. No production project was accessed.
+
+## Terminal main CI and fresh host admission
+
+Main Linux [40112183086](https://github.com/jan-guenter/easyeda-pro-agent-plugin/actions/runs/40112183086)
+completed successfully on `cd2ab88c39aff06ac2921ade99eebfcbf1659d51`, including
+the build, all eight facade shards and the aggregate. Together with the already
+successful Windows run, this resolves the pending main CI statement above.
+
+The next Codex session independently admitted the actual161458 facade and its
+original Codex parent, pinned Node24.18.0, arguments, working directory,
+machine-launch environment and zero core limit. Its complete1,878-file package,
+modes and665-source/three-bundle projections match this release. Admission
+receipt SHA-256:
+`8020b0a796b47badf5de573b635a8cfc87b5b1a23b0023db76cdbdcee046ccbb`.
+This is host/package admission; connected startup still needs its own result.

@@ -3,26 +3,28 @@ import { setTimeout as delay } from "node:timers/promises";
 import { test } from "node:test";
 import { bootstrapLifecycleFixture } from "./helpers/current-pcb-209-bootstrap-lifecycle-fixture.ts";
 
-void test("209 original transport binds all three script roles before arming construction and consumes each pause once", async () => {
+const roles = ["bootstrap", "preload", "preload-copy-1", "preload-copy-2", "preload-copy-3", "preload-copy-4", "project"] as const;
+
+void test("209 original transport binds all seven script roles before arming construction and consumes each pause once", async () => {
   const value = await bootstrapLifecycleFixture();
   const packet = await value.owner.capture();
-  assert.deepEqual(value.qualified, ["bootstrap", "preload", "project"]);
+  assert.deepEqual(value.qualified, roles);
   assert.equal(value.constructed(), 1); assert.equal(value.owner.status().sourceQualified, true);
   assert.equal(value.owner.status().preloadLogSeen, true);
   assert.deepEqual(value.owner.status().bootstrapStages.map(stage => [stage.role, stage.sourceQualified, stage.resumeSeen]),
-    [["bootstrap", true, true], ["preload", true, true], ["project", true, true]]);
-  assert.equal(value.commands.length, 12);
+    roles.map(role => [role, true, true]));
+  assert.equal(value.commands.length, 20);
   assert.deepEqual(value.commands.filter(command => command.method === "Debugger.getScriptSource").map(command => command.params.scriptId),
-    ["bootstrap-script", "preload-script", "project-script"]);
-  assert.equal(value.commands.filter(command => command.method === "Debugger.resume").length, 3);
+    roles.map(role => `${role}-script`));
+  assert.equal(value.commands.filter(command => command.method === "Debugger.resume").length, 7);
   assert.equal(value.commands.filter(command => command.method === "Debugger.removeBreakpoint").length, 1);
   await value.owner.requireOriginal(packet); await value.owner.cleanup();
-  assert.equal(value.commands.length, 12);
+  assert.equal(value.commands.length, 20);
   await assert.rejects(value.owner.releaseAfterTermination()); value.terminate(); await value.owner.releaseAfterTermination();
 });
 
 void test("209 source refusal and post-source owner loss never reach construction or replay cleanup", async () => {
-  for (const role of ["bootstrap", "preload", "project"] as const) {
+  for (const role of roles) {
     for (const mode of ["source", "owner"] as const) {
       const value = await bootstrapLifecycleFixture(mode === "source" ? { badSource: role } : { ownerLossAt: role });
       await assert.rejects(value.owner.capture(), /SOURCE_REFUSAL|OWNER_LOST/u);
@@ -30,7 +32,7 @@ void test("209 source refusal and post-source owner loss never reach constructio
       await value.owner.cleanup(); assert.equal(value.commands.length, count);
       assert.equal(value.commands.filter(command => command.method === "Debugger.removeBreakpoint").length, 1);
       assert.equal(value.commands.filter(command => command.method === "Debugger.resume").length,
-        ["bootstrap", "preload", "project"].indexOf(role) + 1);
+        roles.indexOf(role) + 1);
       await assert.rejects(value.owner.capture(), /CONSUMED/u);
       value.terminate(); await value.owner.releaseAfterTermination();
     }
@@ -38,12 +40,12 @@ void test("209 source refusal and post-source owner loss never reach constructio
 });
 
 void test("209 lost resume acknowledgement cannot resume the same original stage twice", async () => {
-  for (const role of [0, 1, 2]) {
+  for (const role of [0, 1, 2, 3, 4, 5, 6]) {
     const value = await bootstrapLifecycleFixture({ loseResumeReply: role });
     await assert.rejects(value.owner.capture(), /LOST_RESUME_REPLY/u);
     const count = value.commands.filter(command => command.method === "Debugger.resume").length;
     await value.owner.cleanup(); assert.equal(value.commands.filter(command => command.method === "Debugger.resume").length, count);
-    assert.ok(count <= 3); value.terminate(); await value.owner.releaseAfterTermination();
+    assert.ok(count <= 7); value.terminate(); await value.owner.releaseAfterTermination();
   }
 });
 

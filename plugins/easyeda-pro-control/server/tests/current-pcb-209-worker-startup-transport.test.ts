@@ -7,6 +7,7 @@ import { CurrentPcb209WorkerStartupChannel } from "../src/current-pcb-worker-sta
 import type { CurrentPcbWorkerStartupNativeDependency } from "../src/current-pcb-worker-startup-channel.ts";
 import { CurrentPcb209WorkerStartupChannelObservationRunner } from "../src/current-pcb-worker-startup-channel-observation-runner.ts";
 import { CURRENT_PCB_WORKER_STARTUP_ATTACH } from "../src/current-pcb-worker-startup-contract.ts";
+import type { CurrentPcbWorkerStartupDependency, CurrentPcbWorkerStartupEvent } from "../src/current-pcb-worker-startup-contract.ts";
 import { currentPcbWorkerStartupNativeCases, currentPcbWorkerStartupNativeParentCases } from "../src/current-pcb-worker-startup-native.ts";
 import { CurrentPcb209WorkerStartupTransport } from "../src/current-pcb-worker-startup-transport.ts";
 // oxlint-disable-next-line import/max-dependencies -- This integration test checks fixed-profile ownership across the wire, channel, transport and construction boundaries together.
@@ -92,4 +93,61 @@ void test("fixed209 wrappers reject reflected private-core profile and decoder i
     const core: unknown = Object.getPrototypeOf(Wrapper); assert.ok(typeof core === "function");
     assert.throws(() => Reflect.construct(core, [Symbol("foreign"), {}, {}, (): null => null]), /INTERNAL_PROFILE|internal fixed profile/u);
   }
+});
+
+void test("refused209 parsed script retains bounded classifications and cleans its original pause once", async () => {
+  const commands: string[] = [], targetUrl = "https://client/editor?entry=mgr-project-worker.js&cll=warn&debugOpen=0";
+  const title = `project_${PCB209_STARTUP_FIXTURE_IDENTITY.projectUuid}_${PCB209_STARTUP_FIXTURE_IDENTITY.windowTabId}`;
+  const privateUrl = "https://private.invalid/design-secret.js?key=hidden";
+  let observer: ((event: CurrentPcbWorkerStartupEvent) => void) | null = null, terminated = false;
+  const emit = (method: string, params: Readonly<Record<string, unknown>>, sessionId = "worker-session"): void => { observer?.({ method, params, sessionId }); };
+  const dependency: CurrentPcbWorkerStartupDependency = {
+    parentTargetId: "parent", parentSessionId: "parent-session",
+    assertOriginalOwner: (): Promise<void> => Promise.resolve(),
+    assertOriginalTermination: (): Promise<void> => { assert.equal(terminated, true); return Promise.resolve(); },
+    subscribe: event => { observer = event; return (): void => { observer = null; }; },
+    request: command => {
+      commands.push(command.method);
+      switch (command.method) {
+        case "Target.setAutoAttach": {
+          emit("Target.attachedToTarget", { sessionId: "worker-session", waitingForDebugger: true,
+            targetInfo: { targetId: "worker", type: "worker", attached: true, title, url: targetUrl } }, "parent-session"); break;
+        }
+        case "Runtime.enable": {
+          emit("Runtime.executionContextCreated", { context: { id: 1, uniqueId: "context", name: title, origin: targetUrl } }); break;
+        }
+        case "Debugger.enable": { return Promise.resolve({ debuggerId: "debugger" }); }
+        case "Debugger.setInstrumentationBreakpoint": { return Promise.resolve({ breakpointId: "initial" }); }
+        case "Runtime.runIfWaitingForDebugger": {
+          emit("Debugger.scriptParsed", { scriptId: "refused", executionContextId: 1, url: privateUrl, hash: "A".repeat(64) });
+          emit("Debugger.paused", { reason: "instrumentation", data: { scriptId: "refused", url: privateUrl },
+            hitBreakpoints: [], callFrames: [{ location: { scriptId: "refused" } }] }); break;
+        }
+        case "Debugger.resume": { emit("Debugger.resumed", {}); break; }
+        case "Debugger.removeBreakpoint": { break; }
+        case "DOM.describeNode": case "DOM.getFrameOwner": case "Debugger.evaluateOnCallFrame":
+        case "Debugger.getScriptSource": case "Debugger.setBreakpoint": case "Page.getFrameTree":
+        case "Runtime.callFunctionOn": case "Runtime.getProperties": case "Runtime.releaseObjectGroup": case "Target.getTargets": {
+          throw new Error(`Unexpected command ${command.method}`);
+        }
+        default: { throw new Error("Invalid fixture command"); }
+      }
+      return Promise.resolve({});
+    },
+  };
+  const owner = new CurrentPcb209WorkerStartupTransport(dependency);
+  owner.bindExpectedProject(PCB209_STARTUP_FIXTURE_IDENTITY);
+  owner.bindExistingWorkers({ targetInfos: [{ targetId: "parent", type: "page", attached: true, title: "fixture", url: "https://client/" }] });
+  await assert.rejects(owner.capture(), /STARTUP_EVENT/u); await owner.cleanup();
+  const status = owner.status();
+  const diagnostic = status.firstEventFailure?.script;
+  assert.equal(status.firstEventFailure?.reason, "SCRIPT"); assert.ok(diagnostic !== undefined);
+  assert.equal(diagnostic.expectedStage, "bootstrap"); assert.equal(diagnostic.urlRole, "other");
+  assert.equal(diagnostic.urlBytes, Buffer.byteLength(privateUrl)); assert.equal(diagnostic.reportedScriptHash, "A".repeat(64));
+  assert.equal(diagnostic.contextMatchesExpected, true); assert.equal(diagnostic.creatorMatchesPreloadCopy, false);
+  assert.equal(JSON.stringify(status).includes("private.invalid"), false); assert.equal(JSON.stringify(status).includes("hidden"), false);
+  assert.equal(commands.filter(method => method === "Debugger.getScriptSource").length, 0);
+  assert.equal(commands.filter(method => method === "Debugger.resume").length, 1);
+  assert.equal(status.bootstrapStages[0]?.resumeSeen, true); assert.equal(status.bootstrapStages[6]?.parsed, false);
+  terminated = true; await owner.releaseAfterTermination();
 });
