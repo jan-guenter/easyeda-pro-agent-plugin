@@ -85,6 +85,9 @@ void test("209 public opening callback selects the original 209 lifecycle and re
   assert.equal(allocations, 0); assert.equal(gateCalls, 0); assert.equal(checks, 0);
   const inspected = await invoke({ request: { action: "inspect", operationId } });
   assert.match(JSON.stringify(inspected), /not-found/u); assert.equal(allocations, 1); assert.equal(gateCalls, 0); assert.equal(checks, 0);
+  await assert.rejects(invoke({ request: { action: "query-observation", operationId, observation: "primitives209",
+    expectedResultRecordSha256: "a".repeat(64), query: { kind: "family", family: "Line" } } }), /QUERY_PUBLISHED_RESULT_REQUIRED/u);
+  assert.equal(allocations, 1); assert.equal(gateCalls, 0); assert.equal(checks, 0);
   assert.ok(options); assert.ok(scope["currentPcbDiagnosticLifecycle"] instanceof Selected209Lifecycle);
   assert.equal(options.powershellSha256, CURRENT_PCB_DIAGNOSTIC_PROFILE.powershell.sha256);
   assert.equal(options.powershellBytes, CURRENT_PCB_DIAGNOSTIC_PROFILE.powershell.bytes);

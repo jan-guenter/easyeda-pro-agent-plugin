@@ -1863,6 +1863,318 @@ check();const timeout=new Promise((resolve,reject)=>{timer=apply(set,root,[()=>{
 }";
   const string ExtendedPrimitives209FunctionSha256="5ae0fa27a7475f96aaad549a7c029ea165fe78788cb8ab0187dcaae86c2e7a63";
   // END GENERATED PCB209 EXTENDED PRIMITIVES PROGRAM
+  // BEGIN GENERATED PCB209 SELECTION RELATIONS PROGRAM
+  const string SelectionRelations209Function=@"async function(sealed,phase,componentIds){
+""use strict"";
+let timer,clear,expired=false;
+try{
+const root=globalThis,apply=Reflect.apply,bad=()=>{throw new Error(""PCB209_SELECTION_RELATIONS_REFUSED"");};
+const own=(o,k)=>{if(o===null||(typeof o!==""object""&&typeof o!==""function""))bad();const d=Object.getOwnPropertyDescriptor(o,k);if(!d||!Object.hasOwn(d,""value""))bad();return d.value;};
+const object=o=>o!==null&&typeof o===""object""&&!Array.isArray(o);
+const plain=o=>{if(!object(o)||Object.getPrototypeOf(o)!==Object.prototype)bad();return o;};
+const absent=(o,k)=>{const d=Object.getOwnPropertyDescriptor(o,k);if(d&&(!Object.hasOwn(d,""value"")||d.value!==undefined))bad();};
+const fn=(o,k)=>{const f=own(o,k);if(typeof f!==""function"")bad();return f;};
+plain(sealed);if(phase!==""observe""||Reflect.ownKeys(sealed).length!==5)bad();
+for(const k of [""rawWindowsPath"",""projectUuid"",""documentUuid"",""expectedSourceSha256"",""branchUuid""])if(typeof own(sealed,k)!==""string"")bad();
+const match=(s,re)=>{const m=re.exec(s);return m!==null&&m[0]===s;};
+if(!match(sealed.projectUuid,/^[a-f0-9]{64}$/)||!match(sealed.branchUuid,/^[a-f0-9]{32}$/)||!match(sealed.documentUuid,/^(?:[a-f0-9]{16}|[a-f0-9]{32})$/)||!match(sealed.expectedSourceSha256,/^[a-f0-9]{64}$/))bad();
+const target={projectUuid:sealed.projectUuid,branchUuid:sealed.branchUuid,documentUuid:sealed.documentUuid,tabId:sealed.documentUuid+""@""+sealed.projectUuid};
+const parseProjectUrl=(value,projectUuid,activeTabId)=>{
+ if(typeof value!=='string'||value.length>32768||typeof projectUuid!=='string')bad();
+ const projectMatch=/^(?:[a-f0-9]{32}|[a-f0-9]{64})$/.exec(projectUuid);if(!projectMatch||projectMatch[0]!==projectUuid)bad();
+ const pieces=value.split('#');if(pieces.length>2)bad();const base=pieces[0];
+ const baseMatch=/^https:\/\/client\/editor\?cll=(?:trace|debug|info|warn|error)$/.exec(base);if(!baseMatch||baseMatch[0]!==base)bad();
+ const fragment=pieces.length===1?'':pieces[1];
+ if(fragment==='')return{base,empty:true,tabIds:[],activeTabId:null};
+ const prefix='id='+projectUuid;if(fragment===prefix)return{base,empty:false,tabIds:[],activeTabId:null};
+ if(!fragment.startsWith(prefix+',tab='))bad();const entries=fragment.slice(prefix.length+5).split('|');
+ if(entries.length<1||entries.length>256)bad();const tabIds=[],seen=new Set();let markedTabId=null;
+ for(const entry of entries){
+  const match=/^(\*?)([a-f0-9]{16}|[a-f0-9]{32})@([a-f0-9]{32}|[a-f0-9]{64})$/.exec(entry);
+  if(!match||match[0]!==entry||match[3]!==projectUuid)bad();const tabId=match[2]+'@'+match[3];if(seen.has(tabId))bad();seen.add(tabId);tabIds.push(tabId);
+  if(match[1]==='*'){if(markedTabId!==null||(activeTabId!==undefined&&activeTabId!==null&&activeTabId!==tabId))bad();markedTabId=tabId;}
+ }
+ return{base,empty:false,tabIds,activeTabId:markedTabId};
+};
+const location=root.location,href=location?.href,document=root.document,ui=own(root,""UI""),host=own(root,""gVars""),mode=own(root,""PRO_EDITOR_MODE"");
+const project=plain(own(host,""currentProject"")),tabs=own(ui,""tabBar"");
+if(typeof tabs!==""function""||Object.getPrototypeOf(tabs)!==Function.prototype)bad();
+const active=fn(tabs,""getActiveTab""),getTab=fn(tabs,""getTabById""),select=document?.querySelectorAll;
+if(typeof select!==""function"")bad();
+const tab=plain(apply(getTab,tabs,[target.tabId])),data=plain(own(tab,""data""));
+const found=apply(select,document,['[id=""frame_'+target.tabId+'""]']);if(found.length!==1)bad();
+const frame=found[0],child=frame?.contentWindow,childDocument=child?.document,parent=frame?.parentElement;
+const native=own(child,""MSG_BUS_PCB""),channel=own(native,""messageBus""),childObject=own(child,""Object""),childArray=own(child,""Array"");
+const childObjectPrototype=own(childObject,""prototype""),childArrayPrototype=own(childArray,""prototype"");
+const attr=frame?.getAttribute,has=frame?.hasAttribute,classes=frame?.classList,contains=classes?.contains,parentAttr=parent?.getAttribute;
+if(typeof attr!==""function""||typeof has!==""function""||typeof contains!==""function""||typeof parentAttr!==""function"")bad();
+const chain=[channel];let rpc,rpcOwner;
+for(let i=0;i<3;i++){const node=chain[i];if(!object(node))bad();const d=Object.getOwnPropertyDescriptor(node,""rpcCall"");if(d){if(!Object.hasOwn(d,""value"")||typeof d.value!==""function"")bad();rpc=d.value;rpcOwner=node;break;}chain.push(Object.getPrototypeOf(node));}
+if(typeof rpc!==""function"")bad();
+const set=fn(root,""setTimeout"");clear=fn(root,""clearTimeout"");
+const check=()=>{
+if(expired||root.window!==root||root.top!==root||root.location!==location||root.document!==document||document?.defaultView!==root||document?.nodeType!==9||document?.URL!==href||location?.href!==href||location?.origin!==""https://client"")bad();
+parseProjectUrl(href,target.projectUuid,target.tabId);
+if(own(root,""PRO_EDITOR_MODE"")!==mode||![""CLIENT-HALF_OFFLINE-EASYEDA-PCB-SCH-PANEL-SIM"",""CLIENT-OFFLINE-EASYEDA-PCB-SCH-PANEL-SIM""].includes(mode))bad();
+if(own(root,""UI"")!==ui||own(root,""gVars"")!==host||own(ui,""gVars"")!==host||own(host,""currentProject"")!==project||own(ui,""tabBar"")!==tabs)bad();
+if(own(project,""projectId"")!==target.projectUuid||own(project,""branchUuid"")!==target.branchUuid||own(project,""isV2Format"")!==false||own(host,""isHistoryMode"")!==false)bad();
+if(fn(tabs,""getActiveTab"")!==active||fn(tabs,""getTabById"")!==getTab||apply(active,tabs,[])!==target.tabId||apply(getTab,tabs,[target.tabId])!==tab||own(tab,""data"")!==data)bad();
+if(own(tab,""tabId"")!==target.tabId||own(data,""doctype"")!==3||own(data,""pid"")!==target.projectUuid)bad();absent(tab,""parentLibraryUuid"");
+if(document.querySelectorAll!==select)bad();const current=apply(select,document,['[id=""frame_'+target.tabId+'""]']);if(current.length!==1||current[0]!==frame)bad();
+if(frame.tagName!==""IFRAME""||frame.id!==""frame_""+target.tabId||frame.ownerDocument!==document||frame.isConnected!==true||frame.parentElement!==parent||frame.classList!==classes||classes.contains!==contains||frame.getAttribute!==attr||frame.hasAttribute!==has||parent.getAttribute!==parentAttr||!apply(contains,classes,[""editframe""])||apply(parentAttr,parent,[""uuid""])!==target.tabId)bad();
+for(const [k,v] of [[""c_dbid"",target.tabId],[""c_doctype"",""3""],[""src"",""editor?entry=pcb""],[""pcb-canvas"",""true""]])if(apply(attr,frame,[k])!==v)bad();
+for(const k of [""blankIframe"",""fromFile"",""jsonCacheReady""])if(apply(has,frame,[k]))bad();
+if(frame.contentWindow!==child||child.document!==childDocument||childDocument?.defaultView!==child||childDocument?.nodeType!==9||child.frameElement!==frame||child.parent!==root||child.top!==root||child.location?.href!==""https://client/editor?entry=pcb""||own(child,""MSG_BUS_PCB"")!==native||own(native,""messageBus"")!==channel)bad();
+if(own(child,""Object"")!==childObject||own(childObject,""prototype"")!==childObjectPrototype||own(child,""Array"")!==childArray||own(childArray,""prototype"")!==childArrayPrototype)bad();
+for(let i=0;i<chain.length;i++){const node=chain[i];if(i>0&&Object.getPrototypeOf(chain[i-1])!==node)bad();if(node===rpcOwner){if(own(node,""rpcCall"")!==rpc)bad();}else if(Object.hasOwn(node,""rpcCall""))bad();}
+if(fn(root,""setTimeout"")!==set||fn(root,""clearTimeout"")!==clear)bad();
+};
+const childPlain=o=>{if(!object(o))bad();const p=Object.getPrototypeOf(o);if(p!==Object.prototype&&p!==childObjectPrototype)bad();return o;};
+const exact=(o,keys)=>{childPlain(o);const actual=Reflect.ownKeys(o);if(actual.length!==keys.length||actual.some(k=>!keys.includes(k)))bad();};
+const num=v=>{if(typeof v!==""number""||!Number.isFinite(v)||Object.is(v,-0)||Math.abs(v)>1000000000000)bad();return v;};
+const integer=v=>{num(v);if(!Number.isInteger(v))bad();return v;};
+const layer=v=>{integer(v);if(v<0||v>65535)bad();return v;};
+const bool=v=>{if(typeof v!==""boolean"")bad();return v;};
+const text=(v,max,nullable=false)=>{if(v===null&&nullable)return v;if(typeof v!==""string""||v.length>max||!v.isWellFormed())bad();return v;};
+const point=v=>{if(!object(v))bad();const keys=Reflect.ownKeys(v);if(!keys.includes(""x"")||!keys.includes(""y"")||keys.some(k=>k!==""x""&&k!==""y""&&k!==""_hashed""))bad();return{x:num(own(v,""x"")),y:num(own(v,""y""))};};
+const length=v=>{if(!Array.isArray(v)||![Array.prototype,childArrayPrototype].includes(Object.getPrototypeOf(v)))bad();const n=own(v,""length"");if(n<0||n>256||Reflect.ownKeys(v).length!==n+1)bad();return n;};
+const copyIds=raw=>{const ids=[],seen=new Set();for(let i=0,n=length(raw);i<n;i++){const id=text(own(raw,String(i)),256);if(id.length===0||seen.has(id))bad();seen.add(id);ids.push(id);}return ids;};
+const requestedComponentIds=copyIds(componentIds);if(requestedComponentIds.length>16)bad();
+// PCB a8405930@7408336 clones raw attrsMap. Keep absent/undefined/present
+// separately; values are only projected for the six explicitly supported keys.
+const componentMetadata=(row,id,statesList)=>{
+const attrs=childPlain(own(row,""attrsMap"")),result={},states={};
+for(const [key,field] of [[""Designator"",""designator""],[""Name"",""name""],[""Manufacturer"",""manufacturer""],[""Manufacturer Part"",""manufacturerPart""],[""Supplier"",""supplier""],[""Supplier Part"",""supplierPart""]]){
+const d=Object.getOwnPropertyDescriptor(attrs,key);if(!d){if(key in attrs)bad();states[field]=""absent"";continue;}
+if(!Object.hasOwn(d,""value""))bad();if(d.value===undefined){states[field]=""undefined"";continue;}
+result[field]=text(d.value,1024);states[field]=""present"";
+}statesList.push({primitiveId:id,states});return result;
+};
+const hole=row=>{
+const tuple=own(row,""holeAspect"");if(tuple===null)return null;
+const n=length(tuple),shape=own(tuple,""0"");if((shape===""ROUND""&&n!==2)||(shape===""SLOT""&&n!==3)||![""ROUND"",""SLOT""].includes(shape))bad();
+const diameter=num(own(tuple,""1"")),offset=point(own(row,""holeOffset""));if(diameter<0)bad();
+const result={shape,diameter,offsetX:offset.x,offsetY:offset.y,rotation:num(own(row,""holeRotation""))};
+if(shape===""SLOT""){const value=num(own(tuple,""2""));if(value<0)bad();result.length=value;}return result;
+};
+
+const padPolygonPath=value=>{
+ const prototype=Object.getPrototypeOf(value??{});
+ if(!Array.isArray(value)||(prototype!==Array.prototype&&prototype!==childArrayPrototype))bad();
+ const length=own(value,'length');
+ if(!Number.isInteger(length)||length<0||length>2048||Reflect.ownKeys(value).length!==length+1)bad();
+ const path=[];
+ for(let i=0;i<length;i++){
+  const token=own(value,String(i));
+  if(typeof token==='number')path.push(num(token));
+  else if(token==='L'||token==='ARC'||token==='CARC'||token==='C'||token==='CIRCLE')path.push(token);
+  else bad();
+ }
+ if(length===0)return path;
+ if(path[0]==='CIRCLE'){
+  if(length!==4||!path.slice(1).every(token=>typeof token==='number')||path[3]<0)bad();
+  return path;
+ }
+ if(typeof path[0]!=='number'||typeof path[1]!=='number')bad();
+ let offset=2;
+ while(offset<length){
+  const command=path[offset];if(command!=='L'&&command!=='ARC'&&command!=='CARC'&&command!=='C')bad();
+  offset++;const start=offset;while(typeof path[offset]==='number')offset++;
+  const count=offset-start;
+  if(command==='ARC'||command==='CARC'){if(count!==3)bad();}
+  else if(count<2||count%2!==0)bad();
+ }
+ if(offset===2)bad();return path;
+};
+
+// PCB a8405930@10301575 selects the default native pad style. The shared
+// polygon fragment is pure grammar validation, not legacy runtime admission.
+const defaultCopperShape=row=>{
+const tuple=own(row,""defaultPadShapeAspect""),n=length(tuple),shape=own(tuple,""0"");
+if(shape===""POLYGON""){if(n!==2)bad();return{shape,pathSource:padPolygonPath(own(tuple,""1"")),coordinateSpace:""native-pad-style""};}
+if((shape===""RECT""&&n!==4)||((shape===""ELLIPSE""||shape===""OVAL"")&&n!==3)||![""RECT"",""ELLIPSE"",""OVAL""].includes(shape))bad();
+const result={shape,width:num(own(tuple,""1"")),height:num(own(tuple,""2""))};if(shape===""RECT"")result.cornerRatioPercent=num(own(tuple,""3""));return result;
+};
+const maskExpansion=row=>{
+const mode=integer(own(row,""expansionType""));if(mode!==1&&mode!==2)bad();
+return{mode,topSolder:num(own(row,""topSolderExpansion"")),bottomSolder:num(own(row,""bottomSolderExpansion"")),paste:num(own(row,""pasteExpansion""))};
+};
+const thermal=row=>{
+const rule=own(row,""padRule"");if(rule===null)return null;if(!object(rule))bad();
+const mode=integer(own(rule,""connectMode""));if(mode===1||mode===2)return{mode};if(mode!==0)bad();
+return{mode,clearance:num(num(own(rule,""lineClearance""))*10),spokeWidth:num(num(own(rule,""lineWidth""))*10),angle:num(num(own(rule,""lineAngle""))/Math.PI*180)};
+};
+const rows=(raw,family,seen,metadataStates)=>{
+const n=length(raw),result=[];
+for(let i=0;i<n;i++){
+const row=childPlain(own(raw,String(i))),id=text(own(row,""globalIndex""),256);if(id.length===0||seen.has(id))bad();seen.add(id);
+const base={primitiveId:id,primitiveType:family,primitiveLock:bool(own(row,""locked""))};
+if(family===""Component""){
+const p=point(own(row,""position"")),l=layer(own(row,""layerId""));if(l!==1&&l!==2)bad();
+result.push({...base,layer:l,x:p.x,y:p.y,rotation:num(own(row,""rotation"")),...componentMetadata(row,id,metadataStates)});continue;
+}
+if(family===""Pad""){
+const p=point(own(row,""center"")),l=layer(own(row,""layerId"")),padType=integer(own(row,""padTypeAspect""));if(![1,2,12].includes(l)||![0,1,2].includes(padType))bad();
+result.push({...base,net:text(own(row,""net""),1024,true),layer:l,padNumber:text(own(row,""num""),1024),x:p.x,y:p.y,rotation:num(own(row,""rotation"")),
+metallization:bool(own(row,""plated"")),padType,hole:hole(row),defaultCopperShape:defaultCopperShape(row),maskExpansion:maskExpansion(row),thermal:thermal(row)});continue;
+}
+if(family===""Attribute""){
+const p=point(own(row,""position"")),alignMode=integer(own(row,""origin""));if(alignMode<1||alignMode>9)bad();
+const silkColor=text(own(row,""silkColor""),128,true);if(silkColor==="""")bad();
+result.push({...base,layer:layer(own(row,""layerId"")),x:num(p.x*10),y:num(p.y*10),value:text(own(row,""value""),65536),
+fontFamily:text(own(row,""fontFamily""),1024),fontSize:num(num(own(row,""fontSize""))*10),lineWidth:num(num(own(row,""strokeWidth""))*10),
+alignMode,rotation:num(num(own(row,""rotation""))*180/Math.PI),reverse:bool(own(row,""reverse"")),expansion:num(num(own(row,""reverseExpansion""))*10),
+mirror:bool(own(row,""mirror"")),key:text(own(row,""key""),1024),keyVisible:bool(own(row,""showKey"")),valueVisible:bool(own(row,""showValue"")),
+positionIsNull:bool(own(row,""positionIsNull"")),silkColor});continue;
+}
+if(family===""Dimension""){
+const dimensionType=text(own(row,""dimensionType""),32);if(![""Length Dimension"",""Radius Dimension"",""Protractor Dimension""].includes(dimensionType))bad();
+const coordinates=own(row,""coordinateSet""),count=length(coordinates);if(count!==(dimensionType===""Length Dimension""?8:6))bad();
+const coordinateSet=[];for(let j=0;j<count;j++)coordinateSet.push(num(own(coordinates,String(j))));
+const canvasUnit=text(own(row,""unit""),4),lineWidth=num(own(row,""width"")),precision=integer(own(row,""precision""));
+if(![""mm"",""cm"",""inch"",""mil""].includes(canvasUnit)||lineWidth<0||precision<0||precision>4)bad();
+result.push({...base,layer:layer(own(row,""layerId"")),dimensionType,coordinateSet,canvasUnit,lineWidth,precision});continue;
+}
+if(family!==""Image"")bad();
+const imageType=text(own(row,""imageType""),7),p=point(own(row,""start"")),width=num(own(row,""width"")),height=num(own(row,""height""));
+if(![""Image"",""Picture""].includes(imageType)||width<0||height<0)bad();
+result.push({...base,imageType,layer:layer(own(row,""layerId"")),x:p.x,y:p.y,width,height,rotation:num(own(row,""rotation"")),horizonMirror:bool(own(row,""mirror""))});
+}return result;
+};
+// Both handlers use the exact same gr.getAllItem() manager order. Each group
+// contains Le.attributes in Object.values(this.attrs) order, including empty
+// groups. This association is not a reciprocal parent/model ownership proof.
+const attributeGroups=(raw,components,seen)=>{
+const n=length(raw);if(n!==components.length)bad();const groups=[],attributeParentGroups=[],result=[];
+let total=0;
+for(let i=0;i<n;i++){
+const group=own(raw,String(i));exact(group,[""attrs"",""parentPrimitiveId""]);
+const parentPrimitiveId=text(own(group,""parentPrimitiveId""),256),attrs=own(group,""attrs""),count=length(attrs);
+if(parentPrimitiveId!==components[i].primitiveId||total+count>256)bad();total+=count;groups.push({parentPrimitiveId,attrs});
+}
+for(const group of groups){const children=rows(group.attrs,""Attribute"",seen,[]),ids=[];
+for(const child of children){ids.push(child.primitiveId);result.push({...child,parentPrimitiveId:group.parentPrimitiveId});}
+attributeParentGroups.push({parentPrimitiveId:group.parentPrimitiveId,ids});
+}return{rows:result,attributeParentGroups,relationshipEvidence:""native-component-attribute-groups"",reciprocalParentVerified:false};
+};
+const basicRows=(raw,family,seen)=>{
+const n=length(raw),result=[];
+for(let i=0;i<n;i++){
+const row=childPlain(own(raw,String(i))),id=text(own(row,""globalIndex""),256);if(id.length===0||seen.has(id))bad();seen.add(id);
+const base={primitiveId:id,primitiveType:family,primitiveLock:bool(own(row,""locked""))};
+// PCB6b67774e@10401031 filters parentless String views. yr.toJSON@7394676
+// reads existing font caches; its color.toString()||null is not raw model color.
+if(family===""String""){
+const p=point(own(row,""position"")),alignMode=integer(own(row,""origin""));if(alignMode<1||alignMode>9)bad();
+const silkColor=text(own(row,""silkColor""),128,true);if(silkColor==="""")bad();
+result.push({...base,layer:layer(own(row,""layerId"")),x:num(p.x*10),y:num(p.y*10),text:text(own(row,""value""),65536),
+fontFamily:text(own(row,""fontFamily""),1024),fontSize:num(num(own(row,""fontSize""))*10),lineWidth:num(num(own(row,""strokeWidth""))*10),
+alignMode,rotation:num(num(own(row,""rotation""))*180/Math.PI),reverse:bool(own(row,""reverse"")),expansion:num(num(own(row,""reverseExpansion""))*10),
+mirror:bool(own(row,""mirror"")),key:text(own(row,""key""),1024),showKey:bool(own(row,""showKey"")),showValue:bool(own(row,""showValue"")),positionIsNull:bool(own(row,""positionIsNull"")),silkColor});continue;
+}
+base.net=text(own(row,""net""),1024,true);
+// Native Via callback already scales center and radii to mil. Keep its
+// precision; API1ca9efb5@1356367 rounds radii before multiplying by two.
+if(family===""Via""){
+const p=point(own(row,""center"")),viaType=integer(own(row,""type""));if(![0,1,2].includes(viaType))bad();
+result.push({...base,x:p.x,y:p.y,holeDiameter:num(num(own(row,""holeRadius""))*2),diameter:num(num(own(row,""radius""))*2),viaType,
+designRuleBlindViaName:text(own(row,""name""),1024,true),startLayer:layer(own(row,""startLayer"")),endLayer:layer(own(row,""endLayer"")),
+maskExpansionMode:integer(own(row,""expansion"")),topMaskExpansion:num(num(own(row,""topExpansion""))*10),bottomMaskExpansion:num(num(own(row,""bottomExpansion""))*10)});continue;
+}
+// Native track/arc callbacks return mil endpoints/width and degree arcAngle.
+// Arc center/radius/sweep remain omitted; endpoints are not full geometry.
+const track={...base,layer:layer(own(row,""layerId"")),startX:num(own(row,""startX"")),startY:num(own(row,""startY"")),endX:num(own(row,""endX"")),endY:num(own(row,""endY"")),lineWidth:num(own(row,""width""))};
+if(family===""Arc""){const interactiveMode=integer(own(row,""arcType""));if(![1,2].includes(interactiveMode))bad();result.push({...track,arcAngle:num(own(row,""arcAngle"")),interactiveMode});}else result.push(track);
+}return result;
+};
+// Selection IDs are complete native order, unlike the raw selected serializer.
+// PCB a8405930@10410445 only reads the existing selection manager here.
+const topics=[[""Line"",""track""],[""Arc"",""arc""],[""Via"",""via""],[""Component"",""component""],[""Pad"",""pad""],[""String"",""string""],[""Attribute"",""attribute""],[""Dimension"",""dimension""],[""Image"",""image""]];
+const call=async(topic,arg)=>{check();const reply=await apply(rpc,channel,[topic,arg,0]);check();childPlain(reply);return own(reply,""message"");};
+const identity=async()=>{const value=await call(""getTabIdAndDocType"",undefined);check();exact(value,[""tabId"",""docType""]);if(own(value,""tabId"")!==target.tabId||own(value,""docType"")!==3)bad();};
+const bounded=value=>{const json=JSON.stringify(value);if(new TextEncoder().encode(json).byteLength>393216)bad();return json;};
+const selectedIds=async()=>copyIds(await call(""pcb/extensionAPI/selectcontrol-getAllSelectedPrimitiveIds"",undefined));
+// PCB a8405930@10340883 supplies ordered full child IDs and these scalars.
+// Child geometry has different units/rounding; global pad-getAll supplies it.
+const childGroup=(raw,parentPrimitiveId,padById,assigned)=>{
+const ids=[],scalarRows=[];for(let i=0,n=length(raw);i<n;i++){
+const row=childPlain(own(raw,String(i))),id=text(own(row,""globalIndex""),256),pad=padById.get(id);
+if(id.length===0||pad===undefined||assigned.has(id)||assigned.size>=256)bad();assigned.add(id);
+const scalar={primitiveId:id,padNumber:text(own(row,""num""),1024),net:text(own(row,""net""),1024,true),
+layer:layer(own(row,""layerId"")),primitiveLock:bool(own(row,""locked"")),metallization:bool(own(row,""plated"")),padType:integer(own(row,""padTypeAspect""))};
+for(const key of Object.keys(scalar))if(scalar[key]!==pad[key])bad();ids.push(id);scalarRows.push(scalar);
+}return{parentPrimitiveId,ids,scalarRows};
+};
+const read=async()=>{
+await identity();const selectedPrimitiveIds=await selectedIds();check();
+const observations=[],seen=new Set(),componentMetadataStates=[],byId=new Map();let components,pads;
+for(const [family,topic] of topics){
+const raw=await call(""pcb/extensionAPI/""+topic+""-getAll"",{});check();
+const projected=family===""Attribute""?attributeGroups(raw,components,seen):{rows:[""Line"",""Arc"",""Via"",""String""].includes(family)?basicRows(raw,family,seen):rows(raw,family,seen,componentMetadataStates)};
+if(family===""Component"")components=projected.rows;if(family===""Pad"")pads=projected.rows;
+for(const row of projected.rows)byId.set(row.primitiveId,row);
+observations.push({ok:true,kind:""current-pcb-geometry-observation"",method:""eda.pcb_Primitive""+family+"".getAll"",target,...projected,
+samples:2,implementationKind:""native-task-equivalent"",cadAuthority:false,persistenceVerified:false,sourceMembershipVerified:false});
+bounded({observations,componentMetadataStates,selectedPrimitiveIds});
+}
+for(const id of selectedPrimitiveIds)if(!byId.has(id))bad();
+const componentSet=new Set(components.map(row=>row.primitiveId)),padById=new Map(pads.map(row=>[row.primitiveId,row])),assigned=new Set(),componentPadGroups=[];
+for(const id of requestedComponentIds){if(!componentSet.has(id))bad();const raw=await call(""pcb/extensionAPI/component-getAllPinsByPrimitiveId"",id);check();
+componentPadGroups.push(childGroup(raw,id,padById,assigned));bounded({observations,componentMetadataStates,selectedPrimitiveIds,requestedComponentIds,componentPadGroups});}
+const after=await selectedIds();if(JSON.stringify(after)!==JSON.stringify(selectedPrimitiveIds))bad();await identity();check();
+return{observations,componentMetadataStates,selectedPrimitiveIds,requestedComponentIds,componentPadGroups};
+};
+const run=async()=>{const first=await read(),json=bounded(first),second=await read();check();if(bounded(second)!==json)bad();
+return bounded({ok:true,kind:""pcb209-original-selection-relations-observation"",target,...first});};
+check();const timeout=new Promise((resolve,reject)=>{timer=apply(set,root,[()=>{expired=true;reject(new Error(""PCB209_SELECTION_RELATIONS_REFUSED""));},10000]);});return await Promise.race([run(),timeout]);
+}catch{throw new Error(""PCB209_SELECTION_RELATIONS_REFUSED"");}finally{if(timer!==undefined&&typeof clear===""function""){try{Reflect.apply(clear,globalThis,[timer]);}catch{throw new Error(""PCB209_SELECTION_RELATIONS_REFUSED"");}}}
+}";
+  const string SelectionRelations209FunctionSha256="6a0ab1809fb746a478be73cad8d5e1cd75f23e343ad760963ba609dcd50f6aa1";
+  // END GENERATED PCB209 SELECTION RELATIONS PROGRAM
+  public static string SelectionRelations209ProtocolMessage(int id,string sessionId,string uniqueContextId,string phase,
+    string path,string project,string branch,string document,string source,string[] componentIds) {
+    return OpeningProtocolMessageCore(true,id,sessionId,uniqueContextId,phase,path,project,branch,document,source,false,false,false,false,false,true,componentIds);
+  }
+  static string SelectionRelations209Ids(string[] values) {
+    if(values==null || values.Length>16) throw Error("selection-relations209-ids");
+    HashSet<string> seen=new HashSet<string>(StringComparer.Ordinal);List<string> json=new List<string>();
+    foreach(string value in values) {
+      if(value==null || value.Length<1 || value.Length>256 || !seen.Add(value)) throw Error("selection-relations209-ids");
+      new UTF8Encoding(false,true).GetBytes(value);json.Add(JsonString(value));
+    }
+    return "["+String.Join(",",json.ToArray())+"]";
+  }
+  public static void VerifySelectionRelations209Smoke() {
+    string path=@"C:\Reviewed\SelectionRelationsFixture.eprj2",project;
+    using(SHA256 hash=SHA256.Create()) {
+      string program=BitConverter.ToString(hash.ComputeHash(Encoding.UTF8.GetBytes(SelectionRelations209Function))).Replace("-","").ToLowerInvariant();
+      if(program!=SelectionRelations209FunctionSha256) throw Error("selection-relations209-program");
+      project=BitConverter.ToString(hash.ComputeHash(Encoding.UTF8.GetBytes(path))).Replace("-","").ToLowerInvariant();
+    }
+    string[] ids=new string[]{"component-2","component-1"};
+    string message=SelectionRelations209ProtocolMessage(103,"original-session","original-context","observe",path,project,new string('a',32),new string('b',16),new string('c',64),ids);
+    if(message.IndexOf("\"method\":\"Runtime.callFunctionOn\"",StringComparison.Ordinal)<0 || message.IndexOf("\"uniqueContextId\":\"original-context\"",StringComparison.Ordinal)<0 ||
+      message.IndexOf("{\"value\":[\"component-2\",\"component-1\"]}",StringComparison.Ordinal)<0 ||
+      message.IndexOf("\"awaitPromise\":true",StringComparison.Ordinal)<0 || message.IndexOf("\"userGesture\":false",StringComparison.Ordinal)<0) throw Error("selection-relations209-command");
+    if(SelectionRelations209Ids(new string[0])!="[]") throw Error("selection-relations209-empty");
+    foreach(string[] invalid in new string[][]{null,new string[]{"x","x"},new string[]{""},new string[]{null},new string[]{new string('x',257)},new string[]{"\ud800"},new string[17]}) {
+      bool rejected=false;try {SelectionRelations209Ids(invalid);} catch {rejected=true;}
+      if(!rejected) throw Error("selection-relations209-invalid-ids");
+    }
+    bool refused=false;
+    try {SelectionRelations209ProtocolMessage(104,"s","c","observe",path,project,new string('a',32),new string('b',16),new string('c',64),ids);} catch {refused=true;}
+    if(!refused) throw Error("selection-relations209-budget");
+    refused=false;try {SelectionRelations209ProtocolMessage(1,"s","c","open-document",path,project,new string('a',32),new string('b',16),new string('c',64),ids);} catch {refused=true;}
+    if(!refused) throw Error("selection-relations209-phase");
+    foreach(EasyedaDiagnosticOwner legacy in new EasyedaDiagnosticOwner[]{new EasyedaDiagnosticOwner(),CreateStringPrecreate(),CreateWorkerStartup()}) {
+      refused=false;try {legacy.SendSelectionRelations209(1,"s","c","observe",path,project,new string('a',32),new string('b',16),new string('c',64),ids);} catch(Exception failure) {refused=failure.Message=="pcb-diagnostic-selection-relations209-purpose";}
+      if(!refused) throw Error("selection-relations209-legacy-purpose");
+    }
+    for(int purpose=0;purpose<3;purpose++) {
+      refused=false;try {OpeningProtocolMessageCore(true,1,"s","c","observe",path,project,new string('a',32),new string('b',16),new string('c',64),false,false,purpose==0,purpose==1,purpose==2,true,ids);} catch {refused=true;}
+      if(!refused) throw Error("selection-relations209-exclusive-purpose");
+    }
+  }
   public static string ExtendedPrimitives209ProtocolMessage(int id,string sessionId,string uniqueContextId,string phase,
     string path,string project,string branch,string document,string source) {
     return OpeningProtocolMessageCore(true,id,sessionId,uniqueContextId,phase,path,project,branch,document,source,false,false,false,false,true);
@@ -1953,11 +2265,13 @@ check();const timeout=new Promise((resolve,reject)=>{timer=apply(set,root,[()=>{
     return OpeningProtocolMessageCore(true,id,sessionId,uniqueContextId,phase,path,project,branch,document,source,false);
   }
   static string OpeningProtocolMessageCore(bool pcb,int id,string sessionId,string uniqueContextId,string phase,
-    string path,string project,string branch,string document,string source,bool stringPurpose,bool startupPurpose=false,bool layers209Purpose=false,bool primitives209Purpose=false,bool extendedPrimitives209Purpose=false) {
+    string path,string project,string branch,string document,string source,bool stringPurpose,bool startupPurpose=false,bool layers209Purpose=false,bool primitives209Purpose=false,bool extendedPrimitives209Purpose=false,bool selectionRelations209Purpose=false,string[] componentIds=null) {
     Func<string,string,bool> matches=(value,pattern)=>value!=null && System.Text.RegularExpressions.Regex.IsMatch(value,pattern);
     if(startupPurpose && stringPurpose || layers209Purpose && primitives209Purpose ||
       extendedPrimitives209Purpose && (layers209Purpose || primitives209Purpose) ||
-      (layers209Purpose || primitives209Purpose || extendedPrimitives209Purpose) && (startupPurpose || stringPurpose || !pcb || phase!="observe")) throw Error("opening-purpose");
+      selectionRelations209Purpose && (layers209Purpose || primitives209Purpose || extendedPrimitives209Purpose) ||
+      !selectionRelations209Purpose && componentIds!=null ||
+      (layers209Purpose || primitives209Purpose || extendedPrimitives209Purpose || selectionRelations209Purpose) && (startupPurpose || stringPurpose || !pcb || phase!="observe")) throw Error("opening-purpose");
     if(id<1 || id>(startupPurpose?256:stringPurpose?3309:103) || !matches(sessionId,@"\A[A-Za-z0-9_.:-]{1,128}\z") || !matches(uniqueContextId,@"\A[A-Za-z0-9_.:-]{1,128}\z") ||
       (pcb?(phase!="preflight" && phase!="open-document" && phase!="observe"):(phase!="preflight" && phase!="open-project")) ||
       path==null || path.Length<12 || path.Length>4096 ||
@@ -1974,9 +2288,10 @@ check();const timeout=new Promise((resolve,reject)=>{timer=apply(set,root,[()=>{
     }
     string target="{\"rawWindowsPath\":"+JsonString(path)+",\"projectUuid\":"+JsonString(project)+
       ",\"documentUuid\":"+JsonString(document)+",\"expectedSourceSha256\":"+JsonString(source)+",\"branchUuid\":"+JsonString(branch)+"}";
+    string relationArgument=selectionRelations209Purpose?",{\"value\":"+SelectionRelations209Ids(componentIds)+"}":"";
     string message="{\"id\":"+id.ToString(CultureInfo.InvariantCulture)+",\"method\":\"Runtime.callFunctionOn\",\"params\":{\"functionDeclaration\":"+
-      JsonString(extendedPrimitives209Purpose?ExtendedPrimitives209Function:primitives209Purpose?Primitives209Function:layers209Purpose?Layers209Function:pcb?(startupPurpose?EasyedaWorkerStartupProtocol.PcbOpeningFunction:PcbOpeningFunction):OpeningFunction)+",\"uniqueContextId\":"+JsonString(uniqueContextId)+",\"arguments\":[{\"value\":"+target+"},{\"value\":"+JsonString(phase)+
-      "}],\"returnByValue\":true,\"awaitPromise\":true,\"silent\":true,\"generatePreview\":false,\"userGesture\":false,\"throwOnSideEffect\":false},\"sessionId\":"+JsonString(sessionId)+"}\0";
+      JsonString(selectionRelations209Purpose?SelectionRelations209Function:extendedPrimitives209Purpose?ExtendedPrimitives209Function:primitives209Purpose?Primitives209Function:layers209Purpose?Layers209Function:pcb?(startupPurpose?EasyedaWorkerStartupProtocol.PcbOpeningFunction:PcbOpeningFunction):OpeningFunction)+",\"uniqueContextId\":"+JsonString(uniqueContextId)+",\"arguments\":[{\"value\":"+target+"},{\"value\":"+JsonString(phase)+
+      "}"+relationArgument+"],\"returnByValue\":true,\"awaitPromise\":true,\"silent\":true,\"generatePreview\":false,\"userGesture\":false,\"throwOnSideEffect\":false},\"sessionId\":"+JsonString(sessionId)+"}\0";
     if(Encoding.UTF8.GetByteCount(message)>65536) throw Error("opening-send-size");
     return message;
   }
@@ -4478,6 +4793,10 @@ return JSON.stringify({schema:""easyeda-pro-control.pcb-string-producer-markers.
     if(!layers209 || stringPrecreate || workerStartup) throw Error("extended-primitives209-purpose");
     SendMessage(id,ExtendedPrimitives209ProtocolMessage(id,sessionId,uniqueContextId,phase,path,project,branch,document,source));
   }
+  public void SendSelectionRelations209(int id,string sessionId,string uniqueContextId,string phase,string path,string project,string branch,string document,string source,string[] componentIds) {
+    if(!layers209 || stringPrecreate || workerStartup) throw Error("selection-relations209-purpose");
+    SendMessage(id,SelectionRelations209ProtocolMessage(id,sessionId,uniqueContextId,phase,path,project,branch,document,source,componentIds));
+  }
   public void SendModel(int id,string method,string sessionId,string phase,object uniqueContextId,object objectId,object callbackObjectId,object constructorObjectId,object teardropObjectId) {
     SendMessage(id,ModelProtocolMessageCore(id,method,sessionId,phase,OptionalText(uniqueContextId),OptionalText(objectId),OptionalText(callbackObjectId),OptionalText(constructorObjectId),stringPrecreate,OptionalText(teardropObjectId)));
   }
@@ -6651,7 +6970,19 @@ try {
     [EasyedaDiagnosticOwner]::VerifyLayers209Smoke()
     [EasyedaDiagnosticOwner]::VerifyPrimitives209Smoke()
     [EasyedaDiagnosticOwner]::VerifyExtendedPrimitives209Smoke()
+    [EasyedaDiagnosticOwner]::VerifySelectionRelations209Smoke()
     [EasyedaDiagnosticOwner]::VerifyStringClockSmoke()
+    $selectionSmokePath='C:\Reviewed\SelectionRelationsFixture.eprj2'
+    $selectionSmokeHasher=[Security.Cryptography.SHA256]::Create()
+    try {$selectionSmokeProject=([BitConverter]::ToString($selectionSmokeHasher.ComputeHash([Text.Encoding]::UTF8.GetBytes($selectionSmokePath)))).Replace('-','').ToLowerInvariant()}
+    finally {$selectionSmokeHasher.Dispose()}
+    foreach ($selectionSmokeJson in @('{"componentIds":[]}','{"componentIds":["component-2","component-1"]}')) {
+      $selectionSmokeRequest=ConvertFrom-Json -InputObject $selectionSmokeJson
+      if ($selectionSmokeRequest.componentIds -isnot [array]) {throw 'pcb-diagnostic-selection-relations209-bound-array'}
+      $selectionSmokeMessage=[EasyedaDiagnosticOwner]::SelectionRelations209ProtocolMessage(103,'s','c','observe',$selectionSmokePath,$selectionSmokeProject,('a'*32),('b'*16),('c'*64),[string[]]$selectionSmokeRequest.componentIds)
+      $selectionSmokeExpected=if ($selectionSmokeRequest.componentIds.Length -eq 0) {'{"value":[]}'} else {'{"value":["component-2","component-1"]}'}
+      if ($selectionSmokeMessage.IndexOf($selectionSmokeExpected,[StringComparison]::Ordinal) -lt 0) {throw 'pcb-diagnostic-selection-relations209-bound-ids'}
+    }
     # Exercise the actual PowerShell-to-.NET binder used by Send/SendModel.
     # Direct C# null literals cannot detect PowerShell's string coercion.
     $browser=[EasyedaDiagnosticOwner]::BoundProtocolMessage(1,'Browser.getVersion',$null,$null,$null,$null)
@@ -6912,7 +7243,7 @@ try {
             'Runtime.evaluate' {$fields+=@('sessionId','uniqueContextId')}
             'Runtime.callFunctionOn' {
               $fields+=@('sessionId','uniqueContextId','targetRawWindowsPath','targetProjectUuid','targetBranchUuid','targetDocumentUuid','targetExpectedSourceSha256')
-              if ($null -ne $request.pcbExtendedPrimitives209Phase) {if (-not $Layers209) {throw 'pcb-diagnostic-extended-primitives209-purpose'};$fields+=@('pcbExtendedPrimitives209Phase')} elseif ($null -ne $request.pcbPrimitives209Phase) {if (-not $Layers209) {throw 'pcb-diagnostic-primitives209-purpose'};$fields+=@('pcbPrimitives209Phase')} elseif ($null -ne $request.pcbLayers209Phase) {if (-not $Layers209) {throw 'pcb-diagnostic-layers209-purpose'};$fields+=@('pcbLayers209Phase')} elseif ($null -ne $request.pcbOpeningPhase) {$fields+=@('pcbOpeningPhase')} else {$fields+=@('openingPhase')}
+              if ($null -ne $request.pcbSelectionRelations209Phase) {if (-not $Layers209) {throw 'pcb-diagnostic-selection-relations209-purpose'};$fields+=@('pcbSelectionRelations209Phase','componentIds')} elseif ($null -ne $request.pcbExtendedPrimitives209Phase) {if (-not $Layers209) {throw 'pcb-diagnostic-extended-primitives209-purpose'};$fields+=@('pcbExtendedPrimitives209Phase')} elseif ($null -ne $request.pcbPrimitives209Phase) {if (-not $Layers209) {throw 'pcb-diagnostic-primitives209-purpose'};$fields+=@('pcbPrimitives209Phase')} elseif ($null -ne $request.pcbLayers209Phase) {if (-not $Layers209) {throw 'pcb-diagnostic-layers209-purpose'};$fields+=@('pcbLayers209Phase')} elseif ($null -ne $request.pcbOpeningPhase) {$fields+=@('pcbOpeningPhase')} else {$fields+=@('openingPhase')}
             }
             'Debugger.enable' {$fields+=@('sessionId')}
             'Debugger.getScriptSource' {$fields+=@('sessionId','scriptId')}
@@ -6926,6 +7257,10 @@ try {
           if ($null -ne $request.pcbLayers209Phase -and $request.pcbLayers209Phase -isnot [string]) {throw 'pcb-diagnostic-layers209-field'}
           if ($null -ne $request.pcbPrimitives209Phase -and $request.pcbPrimitives209Phase -isnot [string]) {throw 'pcb-diagnostic-primitives209-field'}
           if ($null -ne $request.pcbExtendedPrimitives209Phase -and $request.pcbExtendedPrimitives209Phase -isnot [string]) {throw 'pcb-diagnostic-extended-primitives209-field'}
+          if ($null -ne $request.pcbSelectionRelations209Phase) {
+            if ($request.pcbSelectionRelations209Phase -isnot [string] -or $request.componentIds -isnot [array] -or $request.componentIds.Length -gt 16) {throw 'pcb-diagnostic-selection-relations209-field'}
+            foreach ($componentId in $request.componentIds) {if ($componentId -isnot [string]) {throw 'pcb-diagnostic-selection-relations209-id'}}
+          }
           foreach ($field in @('movePhase','moveArgument0','moveArgument1','moveArgument2')) {if ($null -ne $request.$field -and $request.$field -isnot [string]) {throw 'pcb-diagnostic-move-producer-field'}}
           if ($null -ne $request.movePhase) {
             $moveArguments=$null
@@ -6960,7 +7295,9 @@ try {
           } elseif ($request.method -ceq 'DOM.getFrameOwner' -or $request.method -ceq 'DOM.describeNode') {
             $owner.SendDom([int]$request.requestId,$request.method,$request.sessionId,$request.frameId,$request.backendNodeId)
           } elseif ($request.method -ceq 'Runtime.callFunctionOn') {
-            if ($null -ne $request.pcbExtendedPrimitives209Phase) {
+            if ($null -ne $request.pcbSelectionRelations209Phase) {
+              $owner.SendSelectionRelations209([int]$request.requestId,$request.sessionId,$request.uniqueContextId,$request.pcbSelectionRelations209Phase,$request.targetRawWindowsPath,$request.targetProjectUuid,$request.targetBranchUuid,$request.targetDocumentUuid,$request.targetExpectedSourceSha256,[string[]]$request.componentIds)
+            } elseif ($null -ne $request.pcbExtendedPrimitives209Phase) {
               $owner.SendExtendedPrimitives209([int]$request.requestId,$request.sessionId,$request.uniqueContextId,$request.pcbExtendedPrimitives209Phase,$request.targetRawWindowsPath,$request.targetProjectUuid,$request.targetBranchUuid,$request.targetDocumentUuid,$request.targetExpectedSourceSha256)
             } elseif ($null -ne $request.pcbPrimitives209Phase) {
               $owner.SendPrimitives209([int]$request.requestId,$request.sessionId,$request.uniqueContextId,$request.pcbPrimitives209Phase,$request.targetRawWindowsPath,$request.targetProjectUuid,$request.targetBranchUuid,$request.targetDocumentUuid,$request.targetExpectedSourceSha256)

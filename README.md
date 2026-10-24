@@ -13,7 +13,11 @@ discovery, status, bounded calculations/system and language/viewport readers,
 tab-count/active-identity/shortcut observations, public catalog metadata/search,
 ordinary launch and a separate disposable project/PCB opening lifecycle with
 bounded layer metadata, copper count, Line/Arc/Via/standalone-text observations,
-and grouped component/pad/attribute/dimension/image observations.
+and grouped component/pad/attribute/dimension/image observations. A separate
+reader captures selection and requested component child-pad IDs alongside all
+nine families. Recorded observations support repeatable ID and field queries
+without reopening EasyEDA; these describe the captured snapshot, not the current
+board.
 Catalog queries require explicit network confirmation and run without the
 application; they are not SDK execution. Disposable opening retains its original
 process through cleanup and can trigger ordinary migration/cache/automatic-Save

@@ -20,6 +20,8 @@ import { currentPcb209OpeningRequestSchema } from "./current-pcb-209-opening-val
 import type { CurrentPcb209OpeningRequest } from "./current-pcb-209-opening-validation.ts";
 import { CURRENT_PCB_209_PRIMITIVES_RESULT_BYTES } from "./current-pcb-209-primitives.ts";
 import { CURRENT_PCB_209_EXTENDED_PRIMITIVES_RESULT_BYTES } from "./current-pcb-209-extended-primitives.ts";
+import { CURRENT_PCB_209_SELECTION_RELATIONS_RESULT_BYTES } from "./current-pcb-209-selection-relations.ts";
+import { queryCurrentPcb209Observation } from "./current-pcb-209-observation-query.ts";
 import { currentPcbDiagnosticValidationRequestSchema } from "./current-pcb-diagnostic-validation.ts";
 import type { CurrentPcbDiagnosticValidationRequest as Request } from "./current-pcb-diagnostic-validation.ts";
 import { CURRENT_PCB_STRING_PRECREATE_OPERATION_PREFIX, currentPcbStringPrecreateRequestSchema, currentPcbStringPrecreateStages } from "./current-pcb-string-precreate-validation.ts";
@@ -55,14 +57,14 @@ const startupOpeningMethods = ["open", "status", "retainedOpeningResult", "requi
   "retainedActorObservation", "observeActorClock", "requireActorClock", "retainedChannelObservation", "observeCurrentChannel", "requireCurrentChannel",
   "releaseAfterTermination"] as const;
 export type CurrentPcbWorkerStartupOpeningCoordinator = Pick<CurrentPcbWorkerStartupOpening, (typeof startupOpeningMethods)[number]>;
-type CleanupRequest = Exclude<LifecycleRequest, { action: "launch" | "inspect" | "settle-records" | "cleanup-unlaunched" | "cleanup-no-process" }>;
-type ObservationRequest = Extract<LifecycleRequest, { action: "browser-observation" | "inspect-frames" | "inspect-script" | "inspect-workers" | "inspect-worker-script" | "observe-worker-state" | "observe-model-state" | "observe-pcb-opening" | "observe-string-precreate" | "observe-layers" | "observe-primitives" | "observe-extended-primitives" }>;
-type ObservationStage = z.infer<typeof diagnosticObservationStageSchema> | "common-baseline" | "string-precreate" | "layers209" | "primitives209" | "extended-primitives209";
+type CleanupRequest = Exclude<LifecycleRequest, { action: "launch" | "inspect" | "query-observation" | "settle-records" | "cleanup-unlaunched" | "cleanup-no-process" }>;
+type ObservationRequest = Extract<LifecycleRequest, { action: "browser-observation" | "inspect-frames" | "inspect-script" | "inspect-workers" | "inspect-worker-script" | "observe-worker-state" | "observe-model-state" | "observe-pcb-opening" | "observe-string-precreate" | "observe-layers" | "observe-primitives" | "observe-extended-primitives" | "observe-selection-relations" }>;
+type ObservationStage = z.infer<typeof diagnosticObservationStageSchema> | "common-baseline" | "string-precreate" | "layers209" | "primitives209" | "extended-primitives209" | "selection-relations209";
 const methods = ["launch", "status", "observeApplicationWindow", "requestNormalClose", "observeTermination", "releaseClosed", "releaseUnlaunched",
   "releaseNoProcess", "browserObservation", "inspectFrames", "inspectScript", "inspectWorkers", "inspectWorkerScript", "observeWorkerState", "observeModelState", "openProject",
   "openPcb", "observePcbOpening"] as const;
 export type CurrentPcbDiagnosticLifecycleOwner = Pick<CurrentPcbDiagnosticOwner, (typeof methods)[number]> &
-  Partial<Pick<CurrentPcbDiagnosticOwner, "observeLayers209" | "observePrimitives209" | "observeExtendedPrimitives209">>;
+  Partial<Pick<CurrentPcbDiagnosticOwner, "observeLayers209" | "observePrimitives209" | "observeExtendedPrimitives209" | "observeSelectionRelations209">>;
 type StringOwnerMethods = Pick<CurrentPcbStringPrecreateOwner, "observeStringPrecreate" | "observeCommonBaseline" | "retainedCommonBaselineFailure">;
 type StartupOwnerMethods = Pick<CurrentPcbWorkerStartupOwner, "handoffWorkerStartup">;
 export type CurrentPcbStringPrecreateLifecycleOwner = CurrentPcbDiagnosticLifecycleOwner & StringOwnerMethods;
@@ -239,7 +241,7 @@ class CurrentPcbLifecycleCore {
     this.#generation = generation;
     this.#purpose = purpose;
     this.#stringPurpose = stringPurpose;
-    this.#stages = generation === "209-opening" ? ["browser", "frames", "script", "pcb-opening", "layers209", "primitives209", "extended-primitives209"] :
+    this.#stages = generation === "209-opening" ? ["browser", "frames", "script", "pcb-opening", "layers209", "primitives209", "extended-primitives209", "selection-relations209"] :
       { diagnostic: diagnosticObservationStageSchema.options, "string-precreate": currentPcbStringPrecreateStages,
         "worker-startup": startupStages }[purpose];
     this.#options = Object.freeze({ ...options });
@@ -260,6 +262,22 @@ class CurrentPcbLifecycleCore {
     const request: LifecycleRequest = this.#generation === "209-opening" ? currentPcb209OpeningRequestSchema.parse(input) :
       { diagnostic: currentPcbDiagnosticValidationRequestSchema, "string-precreate": currentPcbStringPrecreateRequestSchema,
         "worker-startup": currentPcbWorkerStartupLifecycleRequestSchema }[this.#purpose].parse(input);
+    if (request.action === "query-observation") {
+      const operations = await readCurrentPcbDiagnosticLifecycles();
+      const operation = operations.find(value => value.operationId === request.operationId);
+      this.#assertPurpose(request.operationId, operation);
+      const record = operation?.records[`${request.observation}-result.json`];
+      const opening = operation?.records["project-opening-intent.json"];
+      const selection = operation?.records["selection-relations209-intent.json"];
+      requireValue(record !== undefined && opening !== undefined &&
+        sha256Json(record) === request.expectedResultRecordSha256, "QUERY_PUBLISHED_RESULT_REQUIRED");
+      const result = queryCurrentPcb209Observation(record.result, opening.target, request.query, {
+        operationId: request.operationId, stage: request.observation, resultRecordSha256: request.expectedResultRecordSha256,
+        observedAt: record.createdAt,
+      }, request.observation === "selection-relations209" ? selection?.componentIds : undefined);
+      await assertSnapshot(operations);
+      return result;
+    }
     if (request.action === "inspect") {
       const operations = await readCurrentPcbDiagnosticLifecycles();
       const operation = operations.find(value => value.operationId === request.operationId);
@@ -283,6 +301,9 @@ class CurrentPcbLifecycleCore {
         const retained = pending === undefined ? undefined : diagnosticLifecycleRecordSchemas[`${stage}-result.json`].parse(JSON.parse(pending) as unknown);
         return { stage, consumed: operation?.records[`${stage}-intent.json`] !== undefined || original && this.#observationConsumed.has(stage),
           resultRetained: original && this.#observations.has(stage), published: record !== undefined,
+          ...(record === undefined || this.#generation !== "209-opening" ||
+            !["primitives209", "extended-primitives209", "selection-relations209"].includes(stage) ? {} :
+            { resultRecordSha256: sha256Json(record), observedAt: record.createdAt }),
           result: stage === selectedStage ? publicObservationResult(request.operationId, stage, (record ?? retained)?.result, record !== undefined) : undefined };
       });
       const openingPending = original ? this.#pending.get("project-opening-result.json") : undefined;
@@ -742,7 +763,8 @@ class CurrentPcbLifecycleCore {
       (this.#generation !== "209-opening" || typeof retained.methods.observeLayers209 === "function" &&
         retained.owner.observeLayers209 === retained.methods.observeLayers209 &&
         typeof retained.methods.observePrimitives209 === "function" && retained.owner.observePrimitives209 === retained.methods.observePrimitives209 &&
-        typeof retained.methods.observeExtendedPrimitives209 === "function" && retained.owner.observeExtendedPrimitives209 === retained.methods.observeExtendedPrimitives209) &&
+        typeof retained.methods.observeExtendedPrimitives209 === "function" && retained.owner.observeExtendedPrimitives209 === retained.methods.observeExtendedPrimitives209 &&
+        typeof retained.methods.observeSelectionRelations209 === "function" && retained.owner.observeSelectionRelations209 === retained.methods.observeSelectionRelations209) &&
       (!this.#stringPurpose || typeof retained.methods.observeStringPrecreate === "function" &&
         retained.owner.observeStringPrecreate === retained.methods.observeStringPrecreate &&
         typeof retained.methods.observeCommonBaseline === "function" && retained.owner.observeCommonBaseline === retained.methods.observeCommonBaseline &&
@@ -924,7 +946,7 @@ class CurrentPcbLifecycleCore {
       observeModelState: owner.observeModelState, openProject: owner.openProject,
       openPcb: owner.openPcb, observePcbOpening: owner.observePcbOpening,
       ...(this.#generation === "209-opening" ? { observeLayers209: owner.observeLayers209, observePrimitives209: owner.observePrimitives209,
-        observeExtendedPrimitives209: owner.observeExtendedPrimitives209 } : {}),
+        observeExtendedPrimitives209: owner.observeExtendedPrimitives209, observeSelectionRelations209: owner.observeSelectionRelations209 } : {}),
       ...(this.#stringPurpose ? { observeStringPrecreate: owner.observeStringPrecreate, observeCommonBaseline: owner.observeCommonBaseline,
         retainedCommonBaselineFailure: owner.retainedCommonBaselineFailure } : {}),
       ...(this.#purpose === "worker-startup" ? { handoffWorkerStartup: owner.handoffWorkerStartup } : {}) });
@@ -982,7 +1004,7 @@ class CurrentPcbLifecycleCore {
     if (request.action === "observe-common-baseline") { return this.#observeCommonBaseline(request, operation, operations, retained); }
     if (request.action === "browser-observation" || request.action === "inspect-frames" || request.action === "inspect-script" ||
         request.action === "inspect-workers" || request.action === "inspect-worker-script" || request.action === "observe-worker-state" ||
-        request.action === "observe-model-state" || request.action === "observe-pcb-opening" || request.action === "observe-string-precreate" || request.action === "observe-layers" || request.action === "observe-primitives" || request.action === "observe-extended-primitives") {
+        request.action === "observe-model-state" || request.action === "observe-pcb-opening" || request.action === "observe-string-precreate" || request.action === "observe-layers" || request.action === "observe-primitives" || request.action === "observe-extended-primitives" || request.action === "observe-selection-relations") {
       return this.#observe(request, operation, operations, retained);
     }
     if (request.action === "observe-window") {
@@ -1042,6 +1064,7 @@ class CurrentPcbLifecycleCore {
     if (request.action === "observe-layers") { stage = "layers209"; }
     if (request.action === "observe-primitives") { stage = "primitives209"; }
     if (request.action === "observe-extended-primitives") { stage = "extended-primitives209"; }
+    if (request.action === "observe-selection-relations") { stage = "selection-relations209"; }
     requireValue(operation.records["binding.json"]?.launchAcknowledged === true && retained.binding?.rootCreated !== "0" &&
       operation.records["close-intent.json"] === undefined && operation.records["terminated.json"] === undefined, "OBSERVATION_UNAVAILABLE");
     requireValue(!this.#observationConsumed.has(stage) && operation.records[`${stage}-intent.json`] === undefined, "OBSERVATION_CONSUMED");
@@ -1063,6 +1086,11 @@ class CurrentPcbLifecycleCore {
     if (stage === "extended-primitives209") {
       requireValue(this.#generation === "209-opening" && retained.methods.observeExtendedPrimitives209 !== undefined &&
         !this.#observationConsumed.has("workers") && !this.#observationConsumed.has("model-state"), "EXTENDED_PRIMITIVES209_PURPOSE");
+      this.#originalPcbSource(operation);
+    }
+    if (stage === "selection-relations209") {
+      requireValue(this.#generation === "209-opening" && retained.methods.observeSelectionRelations209 !== undefined &&
+        !this.#observationConsumed.has("workers") && !this.#observationConsumed.has("model-state"), "SELECTION_RELATIONS209_PURPOSE");
       this.#originalPcbSource(operation);
     }
     if (stage === "model-state") {
@@ -1121,6 +1149,7 @@ class CurrentPcbLifecycleCore {
       bindingSha256: request.expectedBindingSha256, stage,
       ...(request.action === "inspect-frames" || request.action === "inspect-worker-script" ? { targetId: request.targetId } : {}),
       ...(request.action === "inspect-script" ? { frameId: request.frameId, family: request.family } : {}),
+      ...(request.action === "observe-selection-relations" ? { componentIds: [...request.componentIds] } : {}),
     };
     this.#observationConsumed.add(stage); await this.#record(request.operationId, `${stage}-intent.json`, intent);
     const updated = { ...operation, records: { ...operation.records, [`${stage}-intent.json`]: intent } };
@@ -1160,6 +1189,11 @@ class CurrentPcbLifecycleCore {
       requireValue(before !== null, "STRING_ORIGINAL_SQL_REQUIRED");
       result = await observe.call(retained.owner, before);
     }
+    else if (request.action === "observe-selection-relations") {
+      const observe = retained.methods.observeSelectionRelations209;
+      requireValue(this.#generation === "209-opening" && observe !== undefined, "SELECTION_RELATIONS209_PURPOSE");
+      result = await observe.call(retained.owner, this.#originalProjectOpening(operation).sealedTarget, request.componentIds);
+    }
     else if (request.action === "observe-pcb-opening") {
       const preparation = this.#originalProjectOpening(operation);
       result = await retained.methods.observePcbOpening.call(retained.owner, preparation.sealedTarget,
@@ -1190,7 +1224,12 @@ class CurrentPcbLifecycleCore {
     this.#observations.set(stage, result);
     const observationLimit = stage === "primitives209" ? CURRENT_PCB_209_PRIMITIVES_RESULT_BYTES : DIAGNOSTIC_OBSERVATION_MAX_BYTES;
     const extendedLimit = stage === "extended-primitives209" ? CURRENT_PCB_209_EXTENDED_PRIMITIVES_RESULT_BYTES : observationLimit;
-    requireValue(Buffer.byteLength(canonicalJson(result)) <= (stage === "string-precreate" ? STRING_PRECREATE_OBSERVATION_MAX_BYTES : extendedLimit), "OBSERVATION_BOUND");
+    const selectionLimit = stage === "selection-relations209" ? CURRENT_PCB_209_SELECTION_RELATIONS_RESULT_BYTES : extendedLimit;
+    requireValue(Buffer.byteLength(canonicalJson(result)) <= (stage === "string-precreate" ? STRING_PRECREATE_OBSERVATION_MAX_BYTES : selectionLimit), "OBSERVATION_BOUND");
+    if (request.action === "observe-selection-relations") {
+      requireValue(Array.isArray(result["requestedComponentIds"]) &&
+        canonicalJson(result["requestedComponentIds"]) === canonicalJson(request.componentIds), "SELECTION_RELATIONS209_REQUEST");
+    }
     if (stage === "string-precreate") {
       const observed = stringPrecreateObservationResultSchema.parse(result), target = this.#projectPreparation?.sealedTarget;
       requireValue(target !== undefined && stringPrecreateTargetMatches(observed, target, this.#openingResult,

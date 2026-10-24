@@ -94,6 +94,20 @@ worker, model and writer contracts below do not transfer to that route.
 The separate `observe-extended-primitives` stage covers Component, Pad,
 Attribute, Dimension and Image collections, including observed Attribute parent
 groups. It adds no filters, requested-ID lookup, selection or ownership proof.
+The fourth live stage, `observe-selection-relations`, captures all nine
+families, bracketed selection IDs and child-pad lists for up to 16 requested
+Component IDs. It resolves selected objects and compares child scalar fields
+with global Pad rows; it does not prove reciprocal ownership or child geometry.
+All live stages are once-only under the original owner.
+
+Use `query-observation` on the same tool for repeatable ID lookup and exact field
+filters over published `primitives209`, `extended-primitives209` or
+`selection-relations209` snapshots. The last also supports captured selection
+and requested component-pad queries. Supply `expectedResultRecordSha256` from
+`inspect`. These are historical disk reads, with no live dispatch, owner adoption
+or current-state claim. See [the query grammar](current-pcb209-opening.md#query-a-recorded-observation)
+and [the complete offline validation wrapper](current-pcb209-opening.md)
+before calling either tool.
 
 For current-version disposable project/PCB opening, query `project-open` with
 `includeSchemas:true` and validate with `project-open-validate`. Read

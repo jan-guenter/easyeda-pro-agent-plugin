@@ -20,6 +20,9 @@ import { createCurrentPcb209DiagnosticInstallationPlan, createCurrentPcbDiagnost
 import type { CurrentPcbDiagnosticInstallation } from "../src/current-pcb-diagnostic-installation.ts";
 import { CurrentPcb209DiagnosticLifecycle, CurrentPcbDiagnosticLifecycle, CurrentPcbStringPrecreateLifecycle, CurrentPcbWorkerStartupLifecycle } from "../src/current-pcb-diagnostic-lifecycle.ts";
 import { CURRENT_PCB_209_OPENING_SCRIPTS } from "../src/current-pcb-209-opening-profile.ts";
+import { decodeCurrentPcb209PrimitivesReply } from "../src/current-pcb-209-primitives.ts";
+import { decodeCurrentPcb209ExtendedPrimitivesReply } from "../src/current-pcb-209-extended-primitives.ts";
+import { decodeCurrentPcb209SelectionRelationsReply } from "../src/current-pcb-209-selection-relations.ts";
 import type { CurrentPcbDiagnosticLifecycleDependencies, CurrentPcbDiagnosticLifecycleOptions, CurrentPcbDiagnosticLifecycleOwner,
   CurrentPcbStringPrecreateLifecycleDependencies, CurrentPcbStringPrecreateLifecycleOwner, CurrentPcbWorkerStartupLifecycleDependencies,
   CurrentPcbWorkerStartupLifecycleOwner, CurrentPcbWorkerStartupOpeningCoordinator } from "../src/current-pcb-diagnostic-lifecycle.ts";
@@ -72,6 +75,42 @@ const PCB_OBSERVATION: CurrentPcbDiagnosticPcbOpeningResult = { ...PCB_OPEN_RESU
   dispatchAttempted: false, publicResult: null, nativeWorkMayRemain: false, frameObserved: true };
 const PCB_SOURCE_RESULT = { family: "pcb", projectUuid: OPEN_TARGET.projectUuid, documentUuid: OPEN_TARGET.documentUuid,
   tabId: PCB_OPEN_RESULT.tabId, sourceVerified: true, domOwnerVerified: true, openingObservation: PCB_OBSERVATION, executionAuthorized: false };
+
+function historicalObservationFixture(stage: "primitives209" | "extended-primitives209" | "selection-relations209"): Readonly<Record<string, unknown>> {
+  const target = { ...OPEN_TARGET, branchUuid: OPEN_CHECKPOINT.targetEvidence.branchUuid };
+  const projected = { projectUuid: target.projectUuid, branchUuid: target.branchUuid, documentUuid: target.documentUuid, tabId: PCB_OPEN_RESULT.tabId };
+  let families = ["Line", "Arc", "Via", "Component", "Pad", "String", "Attribute", "Dimension", "Image"];
+  if (stage === "primitives209") { families = ["Line", "Arc", "Via", "String"]; }
+  if (stage === "extended-primitives209") { families = ["Component", "Pad", "Attribute", "Dimension", "Image"]; }
+  const observations = families.map(family => {
+    const rows: Record<string, unknown>[] = [];
+    if (family === "Line") { rows.push({ primitiveId: "query-line", primitiveType: "Line", primitiveLock: false, net: "", layer: 1,
+      startX: 0, startY: 1, endX: 2, endY: 3, lineWidth: 4 }); }
+    if (family === "Component") { rows.push({ primitiveId: "query-component", primitiveType: "Component", primitiveLock: false,
+      layer: 1, x: 0, y: 0, rotation: 0 }); }
+    const observation: Record<string, unknown> = { ok: true, kind: "current-pcb-geometry-observation", method: `eda.pcb_Primitive${family}.getAll`, target: projected, rows,
+      samples: 2, implementationKind: "native-task-equivalent", cadAuthority: false, persistenceVerified: false, sourceMembershipVerified: false,
+    };
+    if (family === "Attribute") {
+      Object.assign(observation, { attributeParentGroups: [{ parentPrimitiveId: "query-component", ids: [] }],
+        relationshipEvidence: "native-component-attribute-groups", reciprocalParentVerified: false });
+    }
+    return observation;
+  });
+  const metadata = [{ primitiveId: "query-component", states: { designator: "absent", name: "absent", manufacturer: "absent",
+    manufacturerPart: "absent", supplier: "absent", supplierPart: "absent" } }];
+  let kind = "pcb209-original-selection-relations-observation";
+  if (stage === "primitives209") { kind = "pcb209-original-primitives-observation"; }
+  if (stage === "extended-primitives209") { kind = "pcb209-original-extended-primitives-observation"; }
+  const packet = { ok: true, target: projected, observations, kind,
+    ...(stage === "primitives209" ? {} : { componentMetadataStates: metadata }),
+    ...(stage === "selection-relations209" ? { selectedPrimitiveIds: ["query-component"], requestedComponentIds: ["query-component"],
+      componentPadGroups: [{ parentPrimitiveId: "query-component", ids: [], scalarRows: [] }] } : {}) };
+  const reply = { result: { type: "string", value: JSON.stringify(packet) } };
+  if (stage === "primitives209") { return decodeCurrentPcb209PrimitivesReply(reply, target); }
+  if (stage === "extended-primitives209") { return decodeCurrentPcb209ExtendedPrimitivesReply(reply, target); }
+  return decodeCurrentPcb209SelectionRelationsReply(reply, target, ["query-component"]);
+}
 
 function directory(id: string): string {
   const root = process.env["EASYEDA_CONTROL_DATA_DIR"];
@@ -255,6 +294,15 @@ function fixture(context: TestContext, id: string, dependencies: FixtureDependen
       assert.match(await readFile(intentPath, "utf8"), /"stage":"extended-primitives209"/u);
       calls.push("extended-primitives209"); return { samples: 2, reciprocalParentVerified: false, executionAuthorized: false };
     },
+    async observeSelectionRelations209(target, componentIds): Promise<Readonly<Record<string, unknown>>> {
+      assert.equal(this, owner); assert.equal(opening209, true);
+      assert.deepEqual(target, { ...OPEN_TARGET, branchUuid: OPEN_CHECKPOINT.targetEvidence.branchUuid });
+      const raw = await readFile(join(directory(id), "selection-relations209-intent.json"), "utf8");
+      const intent = diagnosticLifecycleRecordSchemas["selection-relations209-intent.json"].parse(JSON.parse(raw) as unknown);
+      assert.equal(intent.stage, "selection-relations209"); assert.deepEqual(intent.componentIds, componentIds);
+      calls.push("selection-relations209");
+      return { samples: 2, requestedComponentIds: [...componentIds], reciprocalParentVerified: false, executionAuthorized: false };
+    },
   };
   const options: CurrentPcbDiagnosticLifecycleOptions = {
     pluginRoot: "/mnt/c/Reviewed/Plugin", assetsRoot: "/mnt/c/Reviewed/EasyEDA/resources/app/assets",
@@ -335,6 +383,78 @@ async function readyForOpening(id: string, value: ReturnType<typeof fixture>): P
   await value.request("inspect-frames", { targetId: "target-1" });
   await value.request("inspect-script", { frameId: "frame-1", family: "ui" });
 }
+
+void test("209 historical queries bind published records and survive owner release without native admission", async context => {
+  const id = "pcb209-test-query-published", value = fixture(context, id);
+  value.owner.observePrimitives209 = (): Promise<Readonly<Record<string, unknown>>> => Promise.resolve(historicalObservationFixture("primitives209"));
+  value.owner.observeExtendedPrimitives209 = (): Promise<Readonly<Record<string, unknown>>> => Promise.resolve(historicalObservationFixture("extended-primitives209"));
+  value.owner.observeSelectionRelations209 = (): Promise<Readonly<Record<string, unknown>>> => Promise.resolve(historicalObservationFixture("selection-relations209"));
+  await readyForOpening(id, value); await value.request("open-project", OPEN_INPUT);
+  await value.request("open-pcb", { acceptNormalOpenEffects: true }); await value.request("observe-pcb-opening");
+  await value.request("observe-primitives"); await value.request("observe-extended-primitives");
+  await value.request("observe-selection-relations", { componentIds: ["query-component"] });
+  await value.request("normal-close", { hwnd: "12345", confirmNormalClose: true });
+  value.state.terminated = true; await value.request("observe-termination"); await value.request("release-closed");
+  const failNative = (): never => { assert.fail(`Historical query ${id} must not enter native or installation admission`); };
+  const historical = new CurrentPcb209DiagnosticLifecycle({ ...value.options, assertLocalAllowed: failNative,
+    assertAllowed: failNative, assertOtherLaunchesSettled: failNative }, { allocateOwner: failNative, verifyInstallation: failNative });
+  const before = canonicalJson(await readCurrentPcbDiagnosticLifecycles()), calls = [...value.calls];
+  for (const observation of ["primitives209", "extended-primitives209", "selection-relations209"] as const) {
+    const inspected = await historical.run({ action: "inspect", operationId: id, observation });
+    const observations: unknown = inspected["observations"]; assert.ok(Array.isArray(observations));
+    const selected: unknown = observations.find((entry: unknown) => entry !== null && typeof entry === "object" && "stage" in entry && entry.stage === observation);
+    assert.ok(selected !== null && typeof selected === "object" && "published" in selected && "resultRecordSha256" in selected && "observedAt" in selected);
+    assert.equal(selected.published, true);
+    const recordPath = join(directory(id), `${observation}-result.json`);
+    const recordRaw = await readFile(recordPath, "utf8");
+    const record = diagnosticLifecycleRecordSchemas[`${observation}-result.json`].parse(JSON.parse(recordRaw) as unknown);
+    assert.equal(selected.resultRecordSha256, sha256Json(record)); assert.equal(selected.observedAt, record.createdAt);
+    const request = { action: "query-observation", operationId: id, observation, expectedResultRecordSha256: selected.resultRecordSha256,
+      query: { kind: "family", family: observation === "extended-primitives209" ? "Component" : "Line" } };
+    const result = await historical.run(request);
+    assert.equal(result["historical"], true); assert.equal(result["freshObservation"], false); assert.equal(result["returnedRowCount"], 1);
+    assert.deepEqual(result["provenance"], { operationId: id, stage: observation, resultRecordSha256: selected.resultRecordSha256, observedAt: record.createdAt });
+    await assert.rejects(historical.run({ ...request, expectedResultRecordSha256: "f".repeat(64) }), /QUERY_PUBLISHED_RESULT_REQUIRED/u);
+    await assert.rejects(historical.run({ ...request, operationId: "pcb209-test-query-missing" }), /QUERY_PUBLISHED_RESULT_REQUIRED/u);
+    if (observation === "selection-relations209") {
+      const selection = await historical.run({ ...request, query: { kind: "selection" } });
+      assert.deepEqual(selection["primitiveIds"], ["query-component"]);
+      const pads = await historical.run({ ...request, query: { kind: "component-pads", componentId: "query-component" } });
+      assert.deepEqual(pads["primitiveIds"], []);
+      await assert.rejects(historical.run({ ...request, query: { kind: "component-pads", componentId: "unobserved" } }), /PCB209_QUERY_COMPONENT_NOT_OBSERVED/u);
+      const path = join(directory(id), `${observation}-result.json`);
+      const original = await readFile(path);
+      try {
+        const changed = { ...record, result: { ...record.result, matchingSamples: false } };
+        await writeFile(path, canonicalJson(changed));
+        await assert.rejects(historical.run({ ...request, expectedResultRecordSha256: sha256Json(changed) }), /PCB209_QUERY_RECONSTRUCTION_MISMATCH/u);
+      } finally { await writeFile(path, original); }
+    }
+  }
+  assert.equal(historical.hasActiveReservation(), false); assert.deepEqual(value.calls, calls);
+  assert.equal(canonicalJson(await readCurrentPcbDiagnosticLifecycles()), before);
+});
+
+void test("209 historical query refuses retained unpublished results without settling or recreating ownership", async context => {
+  const id = "pcb209-test-query-unpublished";
+  let failPublication = true;
+  const value = fixture(context, id, { publishRecord: async (operationId, name, record) => {
+    if (name === "primitives209-result.json" && failPublication) { throw new Error("synthetic unpublished query source"); }
+    await publishCurrentPcbDiagnosticLifecycleRecord(operationId, name, record);
+  } });
+  value.owner.observePrimitives209 = (): Promise<Readonly<Record<string, unknown>>> => Promise.resolve(historicalObservationFixture("primitives209"));
+  await readyForOpening(id, value); await value.request("open-project", OPEN_INPUT);
+  await value.request("open-pcb", { acceptNormalOpenEffects: true }); await value.request("observe-pcb-opening");
+  await assert.rejects(value.request("observe-primitives"), /synthetic unpublished query source/u);
+  const calls = [...value.calls];
+  await assert.rejects(value.coordinator.run({ action: "query-observation", operationId: id, observation: "primitives209",
+    expectedResultRecordSha256: "f".repeat(64), query: { kind: "family", family: "Line" } }), /QUERY_PUBLISHED_RESULT_REQUIRED/u);
+  assert.deepEqual(value.calls, calls);
+  failPublication = false;
+  const inspected = await value.coordinator.run({ action: "inspect", operationId: id });
+  await value.coordinator.run({ action: "settle-records", operationId: id, expectedIntentSha256: inspected["intentSha256"] });
+});
+
 async function readyForString(id: string, value: ReturnType<typeof fixture>): Promise<void> {
   await readyForOpening(id, value); await value.request("open-project", OPEN_INPUT);
   await value.request("open-pcb", { acceptNormalOpenEffects: true }); await value.request("observe-pcb-opening");
@@ -1207,6 +1327,7 @@ void test("209 original lifecycle composes fixed project and PCB opens with sepa
   await assert.rejects(value.request("observe-layers"), /PROJECT_OPENING_UNCONFIRMED/u);
   await assert.rejects(value.request("observe-primitives"), /PROJECT_OPENING_UNCONFIRMED/u);
   await assert.rejects(value.request("observe-extended-primitives"), /PROJECT_OPENING_UNCONFIRMED/u);
+  await assert.rejects(value.request("observe-selection-relations"), /PROJECT_OPENING_UNCONFIRMED/u);
   await value.request("open-project", OPEN_INPUT);
   await value.request("open-pcb", { acceptNormalOpenEffects: true });
   const observed = await value.request("observe-pcb-opening");
@@ -1225,6 +1346,11 @@ void test("209 original lifecycle composes fixed project and PCB opens with sepa
   assert.equal(extended["stage"], "extended-primitives209");
   assert.deepEqual(extended["result"], { samples: 2, reciprocalParentVerified: false, executionAuthorized: false });
   await assert.rejects(value.request("observe-extended-primitives"), /OBSERVATION_CONSUMED/u);
+  const selection = await value.request("observe-selection-relations", { componentIds: ["component-b", "component-a"] });
+  assert.equal(selection["stage"], "selection-relations209");
+  assert.deepEqual(selection["result"], { samples: 2, requestedComponentIds: ["component-b", "component-a"],
+    reciprocalParentVerified: false, executionAuthorized: false });
+  await assert.rejects(value.request("observe-selection-relations", { componentIds: ["component-c"] }), /OBSERVATION_CONSUMED/u);
   for (const action of ["inspect-workers", "observe-worker-state", "observe-model-state", "observe-string-precreate"]) {
     await assert.rejects(value.request(action));
   }
@@ -1242,6 +1368,73 @@ void test("209 original lifecycle composes fixed project and PCB opens with sepa
   assert.equal(value.calls.filter(action => action === "layers209").length, 1);
   assert.equal(value.calls.filter(action => action === "primitives209").length, 1);
   assert.equal(value.calls.filter(action => action === "extended-primitives209").length, 1);
+  assert.equal(value.calls.filter(action => action === "selection-relations209").length, 1);
+});
+void test("209 selection request is consumed after lost or contradictory replies and keeps normal cleanup", async context => {
+  for (const mode of ["lost", "wrong-request"] as const) {
+    const id = `pcb209-test-selection-${mode}`, value = fixture(context, id);
+    const original = value.owner.observeSelectionRelations209; assert.ok(original);
+    value.owner.observeSelectionRelations209 = async (target, ids): Promise<Readonly<Record<string, unknown>>> => {
+      const observed = await original.call(value.owner, target, ids);
+      if (mode === "lost") { throw new Error("synthetic lost selection result"); }
+      return { ...observed, requestedComponentIds: ["different-component"] };
+    };
+    await readyForOpening(id, value); await value.request("open-project", OPEN_INPUT);
+    await value.request("open-pcb", { acceptNormalOpenEffects: true }); await value.request("observe-pcb-opening");
+    await assert.rejects(value.request("observe-selection-relations"), mode === "lost" ? /lost selection/u : /SELECTION_RELATIONS209_REQUEST/u);
+    await assert.rejects(value.request("observe-selection-relations"), /OBSERVATION_CONSUMED/u);
+    assert.equal(value.calls.filter(action => action === "selection-relations209").length, 1);
+    await value.request("observe-window"); await value.request("normal-close", { hwnd: "12345", confirmNormalClose: true });
+    value.state.terminated = true; await value.request("observe-termination"); await value.request("release-closed");
+  }
+});
+void test("209 selection retains its original method, request and bounded result through publication failure", async context => {
+  const id = "pcb209-test-selection-settle";
+  let fail = true;
+  const value = fixture(context, id, { publishRecord: async (operationId, name, record) => {
+    if (name === "selection-relations209-result.json" && fail) { fail = false; throw new Error("synthetic selection publication failure"); }
+    await publishCurrentPcbDiagnosticLifecycleRecord(operationId, name, record);
+  } });
+  const original = value.owner.observeSelectionRelations209; assert.ok(original);
+  const reader: typeof original = async (target, ids): Promise<Readonly<Record<string, unknown>>> =>
+    ({ ...await original.call(value.owner, target, ids), synthetic: "x".repeat(160 * 1024) });
+  value.owner.observeSelectionRelations209 = reader;
+  await readyForOpening(id, value); await value.request("open-project", OPEN_INPUT);
+  await value.request("open-pcb", { acceptNormalOpenEffects: true }); await value.request("observe-pcb-opening");
+  value.owner.observeSelectionRelations209 = original;
+  await assert.rejects(value.request("observe-selection-relations"), /OWNER_PURPOSE_CHANGED/u);
+  assert.equal(value.calls.includes("selection-relations209"), false);
+  value.owner.observeSelectionRelations209 = reader;
+  await assert.rejects(value.request("observe-selection-relations", { componentIds: ["original-component"] }), /selection publication failure/u);
+  const inspected = await value.coordinator.run({ action: "inspect", operationId: id });
+  await value.coordinator.run({ action: "settle-records", operationId: id, expectedIntentSha256: inspected["intentSha256"] });
+  await value.request("observe-window");
+  const records = await readCurrentPcbDiagnosticLifecycles();
+  const operation = records.find(entry => entry.operationId === id), result = operation?.records["selection-relations209-result.json"];
+  assert.deepEqual(operation?.records["selection-relations209-intent.json"]?.componentIds, ["original-component"]);
+  assert.deepEqual(result?.result["requestedComponentIds"], ["original-component"]);
+  assert.equal(diagnosticLifecycleRecordSchemas["layers209-result.json"].safeParse({ ...result, stage: "layers209" }).success, false);
+  assert.equal(diagnosticLifecycleRecordSchemas["selection-relations209-result.json"].safeParse({ ...result,
+    result: { synthetic: "x".repeat(384 * 1024) } }).success, false);
+  await assert.rejects(value.request("observe-selection-relations"), /OBSERVATION_CONSUMED/u);
+  assert.equal(value.calls.filter(action => action === "selection-relations209").length, 1);
+  await value.request("normal-close", { hwnd: "12345", confirmNormalClose: true });
+  value.state.terminated = true; await value.request("observe-termination"); await value.request("release-closed");
+});
+void test("209 selection journals the largest escaped component list without enlarging other intent contracts", async context => {
+  const id = "pcb209-test-selection-large-intent", value = fixture(context, id);
+  const componentIds = Array.from({ length: 16 }, (_, index) => String(index).padStart(2, "0") + "\u0001".repeat(254));
+  await readyForOpening(id, value); await value.request("open-project", OPEN_INPUT);
+  await value.request("open-pcb", { acceptNormalOpenEffects: true }); await value.request("observe-pcb-opening");
+  await value.request("observe-selection-relations", { componentIds });
+  const raw = await readFile(join(directory(id), "selection-relations209-intent.json"), "utf8");
+  assert.ok(Buffer.byteLength(raw) > 8192 && Buffer.byteLength(raw) <= 32_768);
+  const intent = diagnosticLifecycleRecordSchemas["selection-relations209-intent.json"].parse(JSON.parse(raw) as unknown);
+  assert.deepEqual(intent.componentIds, componentIds);
+  assert.equal(diagnosticLifecycleRecordSchemas["layers209-intent.json"].safeParse({ ...intent, stage: "layers209" }).success, false);
+  assert.equal(diagnosticLifecycleRecordSchemas["selection-relations209-intent.json"].safeParse({ ...intent, componentIds: undefined }).success, false);
+  await value.request("observe-window"); await value.request("normal-close", { hwnd: "12345", confirmNormalClose: true });
+  value.state.terminated = true; await value.request("observe-termination"); await value.request("release-closed");
 });
 void test("209 extended reader loses no original cleanup or one-shot guard after an ambiguous result", async context => {
   const id = "pcb209-test-extended-lost", value = fixture(context, id);

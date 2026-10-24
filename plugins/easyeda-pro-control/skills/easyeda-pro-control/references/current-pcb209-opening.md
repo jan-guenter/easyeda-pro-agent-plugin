@@ -1,13 +1,35 @@
 # Disposable project/PCB opening and bounded readers on 3.2.209
 
-Use `easyeda_control_pcb209_opening` only for an explicitly disposable,
-already-registered local project and an existing PCB. It owns a separate native
-launch through cleanup. It cannot adopt an ordinary launch or enable the older
-3.2.206 diagnostic, worker, model or writer routes.
+Use `easyeda_control_pcb209_opening` for an explicitly disposable,
+already-registered local project and an existing PCB. Live actions own a separate
+native launch through cleanup. Historical queries only read that operation's
+published snapshots. Neither path can adopt an ordinary launch or enable the
+older 3.2.206 diagnostic, worker, model or writer routes.
 
 Discover `pcb209-opening` with `query:{includeSchemas:true}` and validate each
 inner request with `pcb209-opening-validate`. The registered request grammar,
 not the larger older diagnostic catalog, determines available actions.
+
+The `easyeda_control_api` tool takes this complete offline validation wrapper.
+Replace the inner `query.request` with the proposed opening action. This example
+validates an inspection request without opening a journal or starting EasyEDA.
+
+```json
+{
+  "request": {
+    "action": "pcb209-opening-validate",
+    "query": {
+      "request": {
+        "action": "inspect",
+        "operationId": "pcb209-example-01"
+      }
+    }
+  }
+}
+```
+
+The inner action does not belong directly in `query`, and the API does not take
+an `arguments` wrapper. A `valid:true` response grants no execution authority.
 
 ## Fixed sequence
 
@@ -41,8 +63,11 @@ not the larger older diagnostic catalog, determines available actions.
    once-only stage with the same binding and no family, filter or ID arguments.
    `observe-extended-primitives` is a third once-only stage for Component, Pad,
    Attribute, Dimension and Image. It has the same original binding and accepts
-   no selectors. Use only the readers needed for the task; all three can share
-   the original owner within the existing transport budget.
+   no selectors. A fourth stage, `observe-selection-relations`, captures all nine
+   families, selected IDs and child-pad lists for up to 16 requested Component
+   IDs. Its optional `componentIds` defaults to `[]`; IDs must be unique and are
+   preserved in request order. Use only the readers needed for the task; all four
+   can share the original owner within the existing transport budget.
 7. Use `observe-window`, then one `normal-close` with its observed `hwnd` and
    `confirmNormalClose:true`. Observe original root/Job termination with
    `observe-termination`, then call `release-closed`. Finish any offered
@@ -140,12 +165,104 @@ length-cache singleton. There is no geometry edit, source export or explicit
 Save. The ten-second deadline does not cancel an already dispatched vendor
 callback. Samples are sequential, not atomic, and grant no writer baseline.
 
+## Selection and component-pad result
+
+`observe-selection-relations` requires the same accepted original PCB opening,
+operation ID and binding. It is consumed once, independently of the other
+readers. It reads Line, Arc, Via, Component, Pad, parentless String, Attribute,
+Dimension and Image in that order. Two complete snapshots must match. Native
+identity checks bracket each snapshot, selected IDs are read before and after
+its collections, and the captured receiver is checked around every await.
+The fixed program uses one CDP call and up to 58 local RPCs when all 16 requested
+component child lists are included. It does not change the selection.
+
+The result retains every selected ID in native order and resolves it to a DTO
+from the nine families. An unsupported or missing selected object refuses the
+whole observation; it is never silently dropped. Parented String views remain
+unsupported. The result is an observation of loaded views, not SDK instances.
+
+For each requested `componentIds` entry, the Component must occur in the same
+snapshot. Its complete observed child-pad ID list preserves native order and
+valid empty groups. Each child must occur in the global Pad collection, with
+matching number, net, layer, lock, metallization and pad type. Duplicate child
+assignment across requested parents refuses. This does not prove exclusivity
+across unrequested parents, reciprocal ownership or symbol-pin mapping.
+Child-handler geometry has different units and rounding and is not returned.
+Any geometry in the corresponding Pad DTO comes from the global Pad reader.
+
+Limits remain 256 rows per family, 256 selected IDs, 256 Attribute parent groups,
+16 requested component groups, 256 child IDs across those groups and 393216
+UTF-8 bytes for the native packet and final result. Unsupported data, changed
+ordering or excess output refuses without truncation. Existing family omissions,
+serializer effects and the ten-second non-cancelling deadline still apply.
+This reader supplies no complete-board, connectivity, saved-state or writer proof.
+
+## Query a recorded observation
+
+Use `inspect` with the original operation ID and observation stage to obtain
+its published result-record digest. Pass that exact digest as
+`expectedResultRecordSha256` to `query-observation` through
+`easyeda_control_pcb209_opening`. This action reads the journal snapshot on disk;
+it makes no live RPC, starts no process and cannot adopt an old owner. It is
+repeatable, including after original cleanup, and needs no binding token.
+An unpublished, failed, altered or incompatible observation refuses.
+
+The inner request has this shape. Replace the example ID and digest with those
+from the original inspection before calling the tool.
+
+```json
+{
+  "action": "query-observation",
+  "operationId": "pcb209-example-01",
+  "observation": "selection-relations209",
+  "expectedResultRecordSha256": "0000000000000000000000000000000000000000000000000000000000000000",
+  "query": { "kind": "family", "family": "Pad", "where": { "net": "GND" } }
+}
+```
+
+Choose the observation that actually contains the requested data:
+
+| Observation | Available families and queries |
+|---|---|
+| `primitives209` | Family queries for Line, Arc, Via and String |
+| `extended-primitives209` | Family queries for Component, Pad, Attribute, Dimension and Image |
+| `selection-relations209` | All nine families, `{"kind":"selection"}`, and `{"kind":"component-pads","componentId":"observed-id"}` |
+
+A family query may include `primitiveIds` and `where`. IDs are a nonempty list
+of at most 256 unique exact IDs. Every requested ID must exist in that observed
+family before filters run. Results preserve request order when IDs are supplied
+and source order otherwise. Filters combine by exact equality; case, empty
+strings and null remain distinct. Only these fields are supported:
+
+| Field | Families |
+|---|---|
+| `primitiveLock` | All nine |
+| `layer` | All except Via |
+| `net`, including null | Line, Arc, Via, Pad |
+| `designator` | Component |
+| `padNumber`, `padType` | Pad |
+| `parentPrimitiveId` | Attribute |
+
+Selection queries retain the captured selection order. A component-pad query
+requires a component group requested in the original live stage, including an
+observed empty group; it cannot fetch an unobserved component. It returns the
+corresponding global Pad DTOs in observed child order.
+
+Results identify `historical:true` and `freshObservation:false`, the original
+record provenance, target and projection digest, ordered rows and IDs, and
+source/candidate/returned counts. Relevant Component metadata presence states
+are retained. Attribute queries retain the complete observed parent roster,
+explicitly labeled even when returned rows are filtered. The original decoder
+revalidates the whole snapshot before querying; the result remains bounded to
+393216 bytes. None of this establishes present editor state, saved membership,
+connectivity, owner authority or a baseline for editing.
+
 ## Failure and cleanup
 
 After an error or lost reply, use `inspect`; never repeat navigation under the
 same or a new ID. Optional inspection stages are only `browser`, `frames`,
-`script`, `pcb-opening`, `layers209`, `primitives209` and
-`extended-primitives209`. Inspection returns the
+`script`, `pcb-opening`, `layers209`, `primitives209`,
+`extended-primitives209` and `selection-relations209`. Inspection returns the
 retained attempt; it does not dispatch another read. Workers and the complete native
 geometry/model baseline remain unavailable.
 Original normal cleanup remains available after a failed observation and does

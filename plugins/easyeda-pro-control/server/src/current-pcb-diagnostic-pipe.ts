@@ -10,7 +10,7 @@
 /* oxlint-disable import/max-dependencies -- Fixed transport composes independent model/common/worker/actor grammars without merging their source or authority boundaries. */
 import type { Readable, Writable } from "node:stream";
 import { DIAGNOSTIC_REQUEST_LIMIT, DIAGNOSTIC_SESSION_BYTES, DIAGNOSTIC_SOURCE_FRAME_BYTES, DIAGNOSTIC_WORKER_ATTACH_PARAMS,
-  diagnosticExact, diagnosticExtendedPrimitives209Params, diagnosticLayers209Params, diagnosticOpeningParams, diagnosticPcbOpeningParams, diagnosticPrimitives209Params, diagnosticToken, diagnosticWorkerEvaluationParams } from "./current-pcb-diagnostic-protocol.ts";
+  diagnosticExact, diagnosticExtendedPrimitives209Params, diagnosticLayers209Params, diagnosticOpeningParams, diagnosticPcbOpeningParams, diagnosticPrimitives209Params, diagnosticSelectionRelations209Params, diagnosticToken, diagnosticWorkerEvaluationParams } from "./current-pcb-diagnostic-protocol.ts";
 import type { DiagnosticCommand, DiagnosticEvent } from "./current-pcb-diagnostic-protocol.ts";
 import { decodeCurrentPcbDiagnosticJson } from "./current-pcb-diagnostic-json.ts";
 import type { CurrentDisposableOpenSealedTarget } from "./current-disposable-open.ts";
@@ -42,7 +42,7 @@ type FailureReason = Failure | "empty-frame" | "nonobject-frame" | "reply-unsoli
   "event-budget-or-handler" | "event-envelope" | "event-session" | "worker-attachment" | "worker-handler" | "event-callback" | "unsolicited-data" |
   "trailing-reply-data" | "attachment-result" | "worker-discovery-result";
 type RequestPhase = "discovery" | "frame-owner" | "worker-discovery" | "worker-state" |
-  `project-${CurrentPcbDiagnosticOpeningPhase}` | `pcb-${CurrentPcbDiagnosticPcbOpeningPhase}` | "layers209" | "primitives209" | "extended-primitives209" |
+  `project-${CurrentPcbDiagnosticOpeningPhase}` | `pcb-${CurrentPcbDiagnosticPcbOpeningPhase}` | "layers209" | "primitives209" | "extended-primitives209" | "selection-relations209" |
   `model-${CurrentPcbDiagnosticModelCommand["modelPhase"]}` | `string-${CurrentPcbStringPrecreatePhase}` |
   `common-${CurrentPcbCommonBaselineCommand["commonPhase"]}` | `worker-producer-${CurrentPcbStringWorkerProducerCommand["workerProducerPhase"]}` |
   `actor-clock-${CurrentPcbStringActorClockCommand["actorClockPhase"]}` | `move-${CurrentPcbStringMoveCommand["movePhase"]}`;
@@ -53,7 +53,7 @@ const REQUEST_METHODS = [
 ] as const satisfies readonly DiagnosticCommand["method"][];
 const REQUEST_PHASES = [
   "discovery", "frame-owner", "worker-discovery", "worker-state", "project-preflight", "project-open-project",
-  "pcb-preflight", "pcb-open-document", "pcb-observe", "layers209", "primitives209", "extended-primitives209", "model-wrapper", "model-properties", "model-handler",
+  "pcb-preflight", "pcb-open-document", "pcb-observe", "layers209", "primitives209", "extended-primitives209", "selection-relations209", "model-wrapper", "model-properties", "model-handler",
   "model-constructors-diagnostic", "model-constructors-precreate",
   "model-teardrop-callbacks", "model-teardrop-owner",
   "model-snapshot", "model-pending", "model-raw-strings", "model-root-inventory", "model-release",
@@ -337,6 +337,11 @@ class CurrentPcbFixedPipeCore {
     if (this.#sessionId === null || this.#workerEvent !== null) { return Promise.reject(new Error("PCB209_EXTENDED_PRIMITIVES_PIPE_INPUT")); }
     return this.#request({ id: this.#nextId, method: "Runtime.callFunctionOn",
       params: diagnosticExtendedPrimitives209Params(uniqueContextId, target), sessionId: this.#sessionId }, "extended-primitives209");
+  }
+  public observeSelectionRelations209(uniqueContextId: string, target: CurrentDisposableOpenSealedTarget, componentIds: readonly string[]): Promise<Reply> {
+    if (this.#sessionId === null || this.#workerEvent !== null) { return Promise.reject(new Error("PCB209_SELECTION_RELATIONS_PIPE_INPUT")); }
+    return this.#request({ id: this.#nextId, method: "Runtime.callFunctionOn",
+      params: diagnosticSelectionRelations209Params(uniqueContextId, target, componentIds), sessionId: this.#sessionId }, "selection-relations209");
   }
   #workerSession(): string {
     if (!this.#workerDiscoverySettled || this.#selectedWorkerSession === null ||
