@@ -83,8 +83,12 @@ original managed SQL reader with fixed common data and empty raw-root samples.
 It has its own launch-sealed native budget and durable PCB navigation intent;
 connected acceptance remains pending. It admits neither populated geometry nor
 complete startup, source membership or saved-state proof. The six-sample actor
-adapter remains private. Ratline construction/capture composites have inert V8
-coverage, but no native PCB-worker/ratline capture route is enabled.
+adapter remains private. Ratline construction/capture composites, original child
+source qualification and fixed native command encoding have offline coverage.
+The source owner holds the imported script before handing its original event
+authority to the successor. Native pre-execution PCB integration, cross-owner
+child-start cleanup and cumulative budgets remain unfinished; no native
+PCB-worker/ratline capture route is enabled.
 The [public catalog queries](current-system-library.md) require explicit network
 confirmation and use fixed credential-free vendor endpoints, without local
 application/database access. Footprint/symbol/device search, symbol/device
