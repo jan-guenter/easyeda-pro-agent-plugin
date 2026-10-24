@@ -66,11 +66,13 @@ an `arguments` wrapper. A `valid:true` response grants no execution authority.
    no selectors. A fourth stage, `observe-selection-relations`, captures all nine
    families, selected IDs and child-pad lists for up to 16 requested Component
    IDs. Its optional `componentIds` defaults to `[]`; IDs must be unique and are
-   preserved in request order. Separate `observe-pad-shapes` and
-   `observe-image-shapes` stages add the descriptors explained below. These
-   two stages accept only the original operation ID and binding. Use only the
-   readers needed for the task; all six can share the original owner within
-   the existing transport budget.
+   preserved in request order. Separate `observe-pad-shapes`,
+   `observe-image-shapes`, `observe-arc-shapes` and `observe-poured-shapes`
+   stages add the descriptors explained below. These four stages accept only
+   the original operation ID and binding. Across eight optional readers, ten
+   primitive families are available; Poured occurs only in its own stage.
+   Choose the readers needed for the task before dispatch and check the
+   [transport budget](#transport-budget). All eight do not always fit.
 7. Use `observe-window`, then one `normal-close` with its observed `hwnd` and
    `confirmNormalClose:true`. Observe original root/Job termination with
    `observe-termination`, then call `release-closed`. Finish any offered
@@ -249,6 +251,64 @@ and ten-second non-cancelling deadline. Native path serialization can allocate
 geometry before these bounds. This reader supplies no image decode, network
 fetch, rendered geometry or writer baseline.
 
+## Arc centers and directed angles
+
+`observe-arc-shapes` retains the existing Arc fields and adds one matching
+`arcShapes` descriptor per ID. `centerX`, `centerY` and `radius` use mil.
+`startAngleRadians` and `endAngleRadians` preserve native angles in the inclusive
+range zero to two pi; `sweep` is `0` for clockwise or `1` for counterclockwise.
+The existing `arcAngle` remains degrees. No public-wrapper rounding is applied.
+
+The reader correlates native endpoints and degree angle with center, radius and
+directed angles. The decoder checks endpoints independently, allowing only the
+bounded floating arithmetic error from scaling native coordinates to mil.
+It repairs no geometry. Equal endpoints or a zero `arcAngle` do not establish
+a full circle or its rendering; native geometry paths interpret coincident
+angles differently. Signed-zero numeric observations refuse.
+
+Two complete ordered Arc samples must match. Six local RPCs share one CDP call,
+with original receiver/source checks, 256 rows, 393216-byte packet/result limits
+and a ten-second non-cancelling deadline. Only existing `stateWatcher` views are
+included. This provides no track traversal, adjacency, complete source membership,
+rendering, connectivity, saved-state or writer baseline. Live validation of this
+stage remains pending.
+
+## Existing Poured fills
+
+`observe-poured-shapes` returns the separate `Poured` family. Its `primitiveId`
+is the native fill's `globalIndex`, not the public API's parent-group ID.
+`pourPrimitiveId` identifies the observed parent. `parentGroups` preserves those
+associations and fill-ID order; it proves no reciprocal ownership or saved
+membership. Only fills with existing `stateWatcher` views are enumerated.
+
+Rows retain `partition`, `layerId`, nullable `net`, style, widths, clearance,
+optimization state and all supported serialized contours in `copperPath`.
+Styles remain `solid`, `90grid`, `45grid` or `none`. Optimization distinguishes
+a present boolean, null, undefined and absence. An empty `copperPath` collection
+remains explicit; empty individual contours refuse.
+
+Coordinates, grid-line width, clearance and optimization width use native
+distance units, **ten mil per unit**, without conversion to mil. Paths preserve
+`L`, `ARC`, `C` and `CIRCLE` tokens. ARC sweeps use degrees; `C` retains a variable
+number of control points and must not be treated as a fixed cubic. The pinned
+serializer can omit tiny or unsupported segments and split a counterclockwise
+full circle. CIRCLE retains only the first radius; ARC retains endpoints and
+sweep. Arbitrary ellipses cannot be reconstructed. Contour order proves no hole
+topology, winding, closure or complete physical boundary.
+
+Two complete ordered samples must match, with native identity checks around
+each sample. Six local RPCs share one CDP call. Limits are 256 fills, 256 contours
+per fill, 8192 tokens per contour, 32768 tokens across the observation and
+393216 bytes for the complete native packet and final result. Enumeration and
+serialization precede these bounds; the ten-second deadline cannot cancel
+dispatched work. Unsupported or excess data refuses the whole observation.
+
+This stage performs no copper rebuild and establishes no copper freshness,
+connectivity, rendered or fabrication geometry, complete board membership,
+saved state or writer baseline. It does not pass paths to a polygon constructor.
+Live validation remains pending; earlier Pad/Image cases do not validate Poured
+or Arc descriptors.
+
 ## Query a recorded observation
 
 Use `inspect` with the original operation ID and observation stage to obtain
@@ -281,6 +341,8 @@ Choose the observation that actually contains the requested data:
 | `selection-relations209` | All nine families, `{"kind":"selection"}`, and `{"kind":"component-pads","componentId":"observed-id"}` |
 | `pad-shapes209` | Pad family queries with matching native style groups |
 | `image-shapes209` | Image family queries with matching path or asset-reference descriptors |
+| `arc-shapes209` | Arc family queries with matching center/radius/directed-angle descriptors |
+| `poured-shapes209` | Poured family queries with native fill IDs, contours and the complete observed parent roster |
 
 A family query may include `primitiveIds` and `where`. IDs are a nonempty list
 of at most 256 unique exact IDs. Every requested ID must exist in that observed
@@ -290,12 +352,13 @@ strings and null remain distinct. Only these fields are supported:
 
 | Field | Families |
 |---|---|
-| `primitiveLock` | All nine |
-| `layer` | All except Via |
-| `net`, including null | Line, Arc, Via, Pad |
+| `primitiveLock` | The original nine families, excluding Poured |
+| `layer` | The original nine except Via |
+| `net`, including null | Line, Arc, Via, Pad, Poured |
 | `designator` | Component |
 | `padNumber`, `padType` | Pad |
 | `parentPrimitiveId` | Attribute |
+| `layerId`, `pourPrimitiveId`, `style` | Poured |
 
 Selection queries retain the captured selection order. A component-pad query
 requires a component group requested in the original live stage, including an
@@ -311,18 +374,22 @@ revalidates the whole snapshot before querying; the result remains bounded to
 393216 bytes. None of this establishes present editor state, saved membership,
 connectivity, owner authority or a baseline for editing.
 
-Queries of the two shape stages return their extra descriptors in returned-ID
-order, with the original units and scope. They cannot enrich an older snapshot
-or fetch omitted asset bytes. Filtered rows still require reconstruction and
-validation of the entire original recorded observation.
+Pad, Image and Arc shape queries return their extra descriptors in returned-ID
+order, with the original units and scope. Poured queries retain contours on
+each returned row and the complete observed parent roster, explicitly labeled
+`complete-observed-native-fill-parent-roster;returned-rows-may-be-filtered`.
+Poured ID selection uses native fill IDs; parent IDs are a separate filter.
+These queries cannot enrich an older snapshot, refresh copper or fetch omitted
+asset bytes. Filtered rows still require reconstruction and validation of the
+entire original recorded observation.
 
 ## Failure and cleanup
 
 After an error or lost reply, use `inspect`; never repeat navigation under the
 same or a new ID. Optional inspection stages are only `browser`, `frames`,
 `script`, `pcb-opening`, `layers209`, `primitives209`,
-`extended-primitives209`, `selection-relations209`, `pad-shapes209` and
-`image-shapes209`. Inspection returns the
+`extended-primitives209`, `selection-relations209`, `pad-shapes209`,
+`image-shapes209`, `arc-shapes209` and `poured-shapes209`. Inspection returns the
 retained attempt; it does not dispatch another read. Workers and the complete native
 geometry/model baseline remain unavailable.
 Original normal cleanup remains available after a failed observation and does
@@ -336,9 +403,27 @@ force exit, recreate ownership from journal JSON, choose prompts or use another
 launcher. Detailed retained cleanup semantics are shared with
 [native diagnostic validation](current-pcb-diagnostic-validation.md#lost-replies-and-failures).
 
-The fixed transport remains bounded to 103 requests and 64 MiB; callers cannot
-choose a command, expression, debugger pause, source pin or budget. UI and PCB
-source are verified in the original renderer context; installed selectors,
+## Transport budget
+
+The fixed transport remains bounded to 103 requests and 64 MiB. The standard
+opening sequence plus all eight readers uses 79 requests without ancillary
+frame checks. With every ancillary check it would require 121 requests and
+cannot complete within that cap. Select the needed readers; there is no
+all-eight guarantee or caller-selected budget.
+
+Before an Arc or Poured stage dispatches, the original pipe must have room for
+the stage's fixed worst case of nine requests: two parent and two ancillary
+checks before and after the one observation. This preflight changes no counter
+and sends nothing. The lifecycle has already recorded and consumed the stage's
+intent, so a capacity refusal cannot be retried. Inspect it and use original
+normal cleanup. Never reset the counter, recreate ownership or relaunch merely
+to bypass a refusal.
+
+Exact PCB209 observation requests allow up to 32768 UTF-8 bytes for the entire
+helper message, including its sealed target and selectors. This aggregate bound
+accommodates valid Unicode paths; it does not grant arbitrary code or unbounded
+arguments. Callers cannot choose a command, expression, debugger pause or source
+pin. UI and PCB source are verified in the original renderer context; installed selectors,
 manager and project-worker files are separately hashed. Asset hashes are not
 continuous file leases or proof of every transitive module. Ratline capture and
 the complete write/save/reopen lifecycle remain separate work.

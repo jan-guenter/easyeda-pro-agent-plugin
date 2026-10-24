@@ -42,10 +42,29 @@ complete supported Pad/Image rows with native style groups or image descriptors.
 They use six local RPCs each and retain the 256-row/384 KiB bounds. Special Pad
 groups are top/inner/bottom style selectors, not physical-layer expansion.
 Vector paths and opaque Picture references establish neither rendered geometry
-nor asset availability. These new stages still need connected validation.
+nor asset availability. Installed22500 passed four RECT Pads with empty special
+groups and an empty Image collection, followed by original normal closure and
+historical queries. That [scoped live case](https://github.com/jan-guenter/easyeda-pro-agent-plugin/blob/main/docs/history/2026-10-24-22500-connected-shape-queries.md)
+does not validate populated special groups, image paths/assets or a later payload.
+The separate `observe-arc-shapes` stage adds correlated native centers/radii in
+mil and directed endpoint angles in radians. Equal angles do not establish a
+full-circle interpretation. `observe-poured-shapes` adds a tenth family with
+native fill IDs, parent associations and serialized contours. Its distances
+remain ten mil per unit; serializer omissions prevent exact ellipse, topology
+or fabrication claims. It rebuilds no copper and proves no freshness. Both
+stages use six local RPCs, 256 rows and 384 KiB aggregate output; their source
+and offline checks are not live validation.
+There are eight optional readers. Opening plus all eight uses 79 transport
+requests without ancillary checks, but would need 121 with all ancillary checks
+against the unchanged 103-request cap. Arc/Poured require nine remaining
+requests before stage dispatch. A capacity refusal sends nothing but consumes
+the recorded lifecycle intent. Choose the required subset and retain original
+cleanup; no all-eight completion guarantee follows.
 Repeatable `query-observation` reads published primitive snapshots by exact
 result-record digest. Family queries support IDs and documented exact filters;
 selection and component-pad queries require the corresponding recorded stage.
+Arc queries retain matching descriptors. Poured queries use native fill IDs
+and preserve the complete observed parent roster even when rows are filtered.
 These disk-only historical projections do not dispatch CAD calls, adopt an owner
 or establish current state. See [recorded observation queries](current-pcb209-opening.md#query-a-recorded-observation).
 The new ratline source verifier and finite-role

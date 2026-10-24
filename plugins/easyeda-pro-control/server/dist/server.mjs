@@ -10,7 +10,7 @@ const require = function __easyedaGuardedRequire(specifier) { if (typeof specifi
 	const __easyedaPublicationLockPath = __easyedaJoin(__easyedaPublicationDirectory, ".bundle-publication.lock");
 const __easyedaAssertNoPublication = () => { try { __easyedaLstatSync(__easyedaPublicationLockPath); throw new Error("The facade bundle is undergoing a fail-closed publication transaction."); } catch (__easyedaPublicationError) { if (!__easyedaPublicationError || typeof __easyedaPublicationError !== "object" || !("code" in __easyedaPublicationError) || __easyedaPublicationError.code !== "ENOENT") throw __easyedaPublicationError; } };
 __easyedaAssertNoPublication();
-const __easyedaBundlePairId = "4334dce518c5f8c334c2cdf2d396b3c63d0975e2289d900bb798a51ca0124366";
+const __easyedaBundlePairId = "933e8b9187b21b8072868fcc3b4f27a70f1af8acbfd7bbf64dc0eaf4fdfa4037";
 if (__easyedaBasename(import.meta.filename) === "server.mjs") {
   const __easyedaPeerPath = __easyedaJoin(import.meta.dirname, "upstream-supervisor.mjs");
   const __easyedaPeerPathBefore = __easyedaLstatSync(__easyedaPeerPath, { bigint: true });
@@ -19558,27 +19558,27 @@ function convertBaseSchema(schema10, ctx) {
     }
     case "number":
     case "integer": {
-      let numberSchema2 = type2 === "integer" ? z.number().int() : z.number();
+      let numberSchema4 = type2 === "integer" ? z.number().int() : z.number();
       if (typeof schema10.minimum === "number" && schema10.exclusiveMinimum !== true) {
-        numberSchema2 = numberSchema2.min(schema10.minimum);
+        numberSchema4 = numberSchema4.min(schema10.minimum);
       }
       if (typeof schema10.maximum === "number" && schema10.exclusiveMaximum !== true) {
-        numberSchema2 = numberSchema2.max(schema10.maximum);
+        numberSchema4 = numberSchema4.max(schema10.maximum);
       }
       if (typeof schema10.exclusiveMinimum === "number") {
-        numberSchema2 = numberSchema2.gt(schema10.exclusiveMinimum);
+        numberSchema4 = numberSchema4.gt(schema10.exclusiveMinimum);
       } else if (schema10.exclusiveMinimum === true && typeof schema10.minimum === "number") {
-        numberSchema2 = numberSchema2.gt(schema10.minimum);
+        numberSchema4 = numberSchema4.gt(schema10.minimum);
       }
       if (typeof schema10.exclusiveMaximum === "number") {
-        numberSchema2 = numberSchema2.lt(schema10.exclusiveMaximum);
+        numberSchema4 = numberSchema4.lt(schema10.exclusiveMaximum);
       } else if (schema10.exclusiveMaximum === true && typeof schema10.maximum === "number") {
-        numberSchema2 = numberSchema2.lt(schema10.maximum);
+        numberSchema4 = numberSchema4.lt(schema10.maximum);
       }
       if (typeof schema10.multipleOf === "number") {
-        numberSchema2 = numberSchema2.multipleOf(schema10.multipleOf);
+        numberSchema4 = numberSchema4.multipleOf(schema10.multipleOf);
       }
-      zodSchema = numberSchema2;
+      zodSchema = numberSchema4;
       break;
     }
     case "boolean": {
@@ -45873,6 +45873,54 @@ var init_extension_api_coverage_routes = __esm({
       executionState: "available-with-runtime-guards",
       inputDiscovery: { tool: "easyeda_control_api", arguments: { request: { action: "pcb209-opening", query: { includeSchemas: true } } } }
     } });
+    for (const [family2, selector7, module, methods22, scope6] of [
+      [
+        "Arc",
+        "observe-arc-shapes",
+        "arc-shapes",
+        ["getAll", "getAllPrimitiveId"],
+        "Complete supported Arc DTOs plus ordered native center/radius in mil, inclusive zero-to-two-pi endpoint radians and direction. Native endpoint and modulo-angle arithmetic is checked before projection, then independently correlated after unit conversion. Coincident endpoints and modulo angle zero do not establish full-circle rendering."
+      ],
+      [
+        "Poured",
+        "observe-poured-shapes",
+        "poured-shapes",
+        ["getAll"],
+        "Existing loaded native copper fill rows retain their own IDs, first-appearance parent groups, every serialized contour, raw style and optimization presence states. Fill IDs are not the public parent's primitiveId. Coordinates and dimensions use native ten-mil units; ARC sweeps use degrees. The serializer can omit tiny segments or an ellipse's second radius. No public grouped-instance parity, getAllPrimitiveId ordering, copper rebuild, freshness or fabrication geometry is claimed."
+      ]
+    ]) {
+      groups2.push({ namespace: `pcb_Primitive${family2}`, methods: methods22, route: {
+        tool: "easyeda_control_pcb209_opening",
+        selector: selector7,
+        implementation: "native-task-equivalent",
+        scope: `Separately pinned installed209 original-owner disposable observation. ${scope6} Two complete ordered samples must match; exact target/source/frame/receiver checks run around each await. At most256 rows and393216 UTF-8 bytes per packet/result. Native enumeration precedes bounds and the ten-second deadline does not cancel vendor work. Native dispatch requires nine commands remaining in the unchanged103-command original transport budget; capacity refusal still consumes the lifecycle intent. Digest-bound historical queries preserve descriptors, groups, units and scope. No complete source membership, connectivity, persistence, editing, Save or writer baseline. Existing observation versions remain unchanged.`,
+        source: [
+          `current-pcb-209-${module}.ts`,
+          "current-pcb-209-observation-query.ts",
+          "current-pcb-209-opening-validation.ts",
+          "current-pcb-diagnostic-lifecycle.ts",
+          "current-pcb-diagnostic-lifecycle-journal.ts",
+          "current-pcb-diagnostic-owner.ts",
+          "current-pcb-diagnostic-pipe.ts",
+          "current-pcb-diagnostic-protocol.ts",
+          "../../scripts/pcb-diagnostic-owner.ps1"
+        ],
+        tests: [
+          `current-pcb-209-${module}.test.ts`,
+          `current-pcb-209-${module}-native.test.ts`,
+          "current-pcb-209-observation-query.test.ts",
+          "current-pcb-209-opening.test.ts",
+          "current-pcb-diagnostic-owner.test.ts",
+          "current-pcb-diagnostic-pipe.test.ts",
+          "current-pcb-diagnostic-lifecycle.test.ts",
+          "extension-api-coverage.test.ts"
+        ],
+        documentTypes: [3],
+        validation: "offline-regression;current-live-unclaimed",
+        executionState: "available-with-runtime-guards",
+        inputDiscovery: { tool: "easyeda_control_api", arguments: { request: { action: "pcb209-opening", query: { includeSchemas: true } } } }
+      } });
+    }
     for (const [namespace, methods22] of [
       ["pcb_SelectControl", ["getSelectedPrimitives", "getAllSelectedPrimitives", "getAllSelectedPrimitives_PrimitiveId"]],
       ["pcb_PrimitiveComponent", ["getAllPinsByPrimitiveId"]]
@@ -105157,19 +105205,19 @@ var init_current_pcb_observation_failure = __esm({
 });
 
 // server/src/current-pcb-image-geometry.ts
-function createCurrentPcbImageSchema(numberSchema2, layerSchema3, idSchema7) {
-  const dimension2 = numberSchema2.refine((value2) => value2 >= 0, "Negative native image dimension.");
+function createCurrentPcbImageSchema(numberSchema4, layerSchema3, idSchema8) {
+  const dimension2 = numberSchema4.refine((value2) => value2 >= 0, "Negative native image dimension.");
   return external_exports.object({
-    primitiveId: idSchema7,
+    primitiveId: idSchema8,
     primitiveType: external_exports.literal("Image"),
     primitiveLock: external_exports.boolean(),
     imageType: external_exports.enum(["Image", "Picture"]),
     layer: layerSchema3,
-    x: numberSchema2,
-    y: numberSchema2,
+    x: numberSchema4,
+    y: numberSchema4,
     width: dimension2,
     height: dimension2,
-    rotation: numberSchema2,
+    rotation: numberSchema4,
     horizonMirror: external_exports.boolean()
   }).strict();
 }
@@ -105225,8 +105273,8 @@ function currentPcbPadPolygonGrammar(path6) {
   }
   return offset9 > 2;
 }
-function createCurrentPcbPadPolygonPathSchema(numberSchema2) {
-  return external_exports.array(external_exports.union([numberSchema2, external_exports.enum(["L", "ARC", "CARC", "C", "CIRCLE"])])).max(CURRENT_PCB_PAD_POLYGON_MAX_TOKENS).refine(currentPcbPadPolygonGrammar, "Unsupported native pad polygon token sequence.");
+function createCurrentPcbPadPolygonPathSchema(numberSchema4) {
+  return external_exports.array(external_exports.union([numberSchema4, external_exports.enum(["L", "ARC", "CARC", "C", "CIRCLE"])])).max(CURRENT_PCB_PAD_POLYGON_MAX_TOKENS).refine(currentPcbPadPolygonGrammar, "Unsupported native pad polygon token sequence.");
 }
 var CURRENT_PCB_PAD_POLYGON_MAX_TOKENS, CURRENT_PCB_PAD_POLYGON_PROGRAM, CURRENT_PCB_PAD_POLYGON_LIMITATION;
 var init_current_pcb_pad_polygon = __esm({
@@ -106518,6 +106566,476 @@ check();const timeout=new Promise((resolve,reject)=>{timer=apply(set,root,[()=>{
   }
 });
 
+// server/src/current-pcb-209-arc-shapes.ts
+function decodeCurrentPcb209ArcShapesReply(raw, targetInput3) {
+  const target9 = currentDisposableOpenSealedTargetSchema.parse(targetInput3);
+  const reply3 = external_exports.object({ result: external_exports.object({ type: external_exports.literal("string"), value: external_exports.string() }).strict() }).strict().parse(raw);
+  if (Buffer.byteLength(reply3.result.value) > CURRENT_PCB_209_ARC_SHAPES_NATIVE_BYTES) {
+    throw new Error("PCB209_ARC_SHAPES_BOUND");
+  }
+  const native = packetSchema3.parse(decodeCurrentPcbDiagnosticJson(Buffer.from(reply3.result.value)));
+  const expected3 = {
+    projectUuid: target9.projectUuid,
+    branchUuid: target9.branchUuid,
+    documentUuid: target9.documentUuid,
+    tabId: `${target9.documentUuid}@${target9.projectUuid}`
+  };
+  if (canonicalJson(native.target) !== canonicalJson(expected3)) {
+    throw new Error("PCB209_ARC_SHAPES_TARGET");
+  }
+  if (native.observation.method !== "eda.pcb_PrimitiveArc.getAll") {
+    throw new Error("PCB209_ARC_SHAPES_FAMILY");
+  }
+  const validated = validateCurrentPcbGeometryResult({ method: "eda.pcb_PrimitiveArc.getAll", arguments: {}, target: expected3 }, native.observation);
+  const primitiveIds2 = native.observation.rows.map((row10) => row10.primitiveId);
+  if (canonicalJson(primitiveIds2) !== canonicalJson(native.arcShapes.map((row10) => row10.primitiveId))) {
+    throw new Error("PCB209_ARC_SHAPES_ASSOCIATION");
+  }
+  for (const [index2, row10] of native.observation.rows.entries()) {
+    const shape2 = native.arcShapes[index2];
+    if (row10.primitiveType !== "Arc" || !row10.primitiveId.isWellFormed() || row10.net !== null && !row10.net.isWellFormed() || shape2 === void 0) {
+      throw new Error("PCB209_ARC_SHAPES_TEXT");
+    }
+    const turn = Math.PI * 2;
+    const angle3 = shape2.sweep === 1 ? (shape2.endAngleRadians + turn - shape2.startAngleRadians) % turn : -(shape2.startAngleRadians + turn - shape2.endAngleRadians) % turn;
+    const tolerance = Number.EPSILON * 16 * Math.max(
+      1,
+      Math.abs(shape2.centerX),
+      Math.abs(shape2.centerY),
+      shape2.radius,
+      Math.abs(row10.startX),
+      Math.abs(row10.startY),
+      Math.abs(row10.endX),
+      Math.abs(row10.endY)
+    );
+    if (row10.arcAngle !== angle3 * 180 / Math.PI || Math.abs(row10.startX - (shape2.centerX + Math.cos(shape2.startAngleRadians) * shape2.radius)) > tolerance || Math.abs(row10.startY - (shape2.centerY + Math.sin(shape2.startAngleRadians) * shape2.radius)) > tolerance || Math.abs(row10.endX - (shape2.centerX + Math.cos(shape2.endAngleRadians) * shape2.radius)) > tolerance || Math.abs(row10.endY - (shape2.centerY + Math.sin(shape2.endAngleRadians) * shape2.radius)) > tolerance) {
+      throw new Error("PCB209_ARC_SHAPES_GEOMETRY");
+    }
+  }
+  const result = {
+    schema: "easyeda-pro-control.pcb209-arc-shapes-observation.v1",
+    target: expected3,
+    families: [{ family: "Arc", method: "eda.pcb_PrimitiveArc.getAll", primitiveIds: primitiveIds2, rows: validated["value"], observedRowCount: primitiveIds2.length }],
+    arcShapes: native.arcShapes,
+    arcShapeScope: "native-center-radius-directed-endpoint-angles",
+    fullCircleInterpretationVerified: false,
+    projectionSha256: sha256Json({ observation: native.observation, arcShapes: native.arcShapes }),
+    samples: 2,
+    matchingSamples: true,
+    units: { linear: "mil", arcAngle: "degrees", endpointAngles: "radians", sweep: "native-enum-0-CW-1-CCW" },
+    implementationKind: "native-task-equivalent",
+    originalReceiverRechecked: true,
+    membershipScope: "existing-stateWatcher-Arc-views",
+    startupCompletionVerified: false,
+    completeLiveBaselineVerified: false,
+    sourceMembershipVerified: false,
+    connectivityVerified: false,
+    persistenceVerified: false,
+    executionAuthorized: false,
+    saveAuthorized: false,
+    limitations: [
+      "Two complete ordered Arc projections must match. The native collection enumerates loaded stateWatcher views; it does not prove complete board/source membership, connectivity, SDK instances or saved contents.",
+      "Center coordinates and radius are multiplied by ten from native distance units to mil. Endpoints and lineWidth are already mil. Native start/end angles retain inclusive zero-to-two-pi radians; sweep retains 0=CW and 1=CCW. No public-wrapper precision rounding is applied.",
+      "The native arcAngle getter uses signed modulo one revolution, while other native geometry paths treat coincident angles differently. Equal endpoints or arcAngle zero are not a verified full-circle/rendering interpretation. Signed-zero numeric observations refuse rather than being silently normalized by JSON.",
+      "Native endpoints and degree angle must match the captured center/radius/angles before projection. Independent decoded endpoint checks allow only the bounded floating arithmetic error from scaling center/radius to mil; no geometry is repaired or inferred.",
+      "No adjacency or entire-track traversal, rendered geometry, source export, edit, Save or writer baseline is supplied. Samples are sequential, not atomic. Native allocation precedes bounds and the ten-second deadline does not cancel its work. Local RPC bookkeeping and possible identity-environment initialization remain incidental."
+    ]
+  };
+  if (Buffer.byteLength(canonicalJson(result)) > CURRENT_PCB_209_ARC_SHAPES_RESULT_BYTES) {
+    throw new Error("PCB209_ARC_SHAPES_RESULT_BOUND");
+  }
+  return freezeDeep(result);
+}
+var CURRENT_PCB_209_ARC_SHAPES_NATIVE_BYTES, CURRENT_PCB_209_ARC_SHAPES_RESULT_BYTES, targetSchema11, numberSchema2, angleSchema, radiusSchema, sweepSchema, arcShapesSchema, packetSchema3, CURRENT_PCB_209_ARC_SHAPES_FUNCTION;
+var init_current_pcb_209_arc_shapes = __esm({
+  "server/src/current-pcb-209-arc-shapes.ts"() {
+    init_zod();
+    init_core3();
+    init_current_disposable_open();
+    init_current_pcb_diagnostic_json();
+    init_current_pcb_geometry();
+    init_current_project_url();
+    init_sqlite_inventory_core();
+    CURRENT_PCB_209_ARC_SHAPES_NATIVE_BYTES = CURRENT_PCB_GEOMETRY_MAX_BYTES;
+    CURRENT_PCB_209_ARC_SHAPES_RESULT_BYTES = CURRENT_PCB_GEOMETRY_MAX_BYTES;
+    targetSchema11 = external_exports.object({ projectUuid: external_exports.string(), branchUuid: external_exports.string(), documentUuid: external_exports.string(), tabId: external_exports.string() }).strict();
+    numberSchema2 = external_exports.number().min(-CURRENT_PCB_GEOMETRY_MAX_NUMBER).max(CURRENT_PCB_GEOMETRY_MAX_NUMBER).refine((value2) => !Object.is(value2, -0), "Signed zero is not supported by this JSON observation.");
+    angleSchema = numberSchema2.refine((value2) => value2 >= 0 && value2 <= Math.PI * 2, "Expected native normalized radians.");
+    radiusSchema = numberSchema2.refine((value2) => value2 >= 0);
+    sweepSchema = external_exports.union([external_exports.literal(0), external_exports.literal(1)]);
+    arcShapesSchema = external_exports.array(external_exports.object({
+      primitiveId: external_exports.string().min(1).max(256).refine((value2) => value2.length <= 256 && value2.isWellFormed()),
+      centerX: numberSchema2,
+      centerY: numberSchema2,
+      radius: radiusSchema,
+      startAngleRadians: angleSchema,
+      endAngleRadians: angleSchema,
+      sweep: sweepSchema
+    }).strict()).max(CURRENT_PCB_GEOMETRY_MAX_ROWS);
+    packetSchema3 = external_exports.object({
+      ok: external_exports.literal(true),
+      kind: external_exports.literal("pcb209-original-arc-shapes-observation"),
+      target: targetSchema11,
+      observation: currentPcbGeometryResultSchema,
+      arcShapes: arcShapesSchema
+    }).strict();
+    CURRENT_PCB_209_ARC_SHAPES_FUNCTION = `async function(sealed,phase){
+"use strict";
+let timer,clear,expired=false;
+try{
+const root=globalThis,apply=Reflect.apply,bad=()=>{throw new Error("PCB209_ARC_SHAPES_REFUSED");};
+const own=(o,k)=>{if(o===null||(typeof o!=="object"&&typeof o!=="function"))bad();const d=Object.getOwnPropertyDescriptor(o,k);if(!d||!Object.hasOwn(d,"value"))bad();return d.value;};
+const object=o=>o!==null&&typeof o==="object"&&!Array.isArray(o);
+const plain=o=>{if(!object(o)||Object.getPrototypeOf(o)!==Object.prototype)bad();return o;};
+const absent=(o,k)=>{const d=Object.getOwnPropertyDescriptor(o,k);if(d&&(!Object.hasOwn(d,"value")||d.value!==undefined))bad();};
+const fn=(o,k)=>{const f=own(o,k);if(typeof f!=="function")bad();return f;};
+plain(sealed);if(phase!=="observe"||Reflect.ownKeys(sealed).length!==5)bad();
+for(const k of ["rawWindowsPath","projectUuid","documentUuid","expectedSourceSha256","branchUuid"])if(typeof own(sealed,k)!=="string")bad();
+const match=(s,re)=>{const m=re.exec(s);return m!==null&&m[0]===s;};
+if(!match(sealed.projectUuid,/^[a-f0-9]{64}$/)||!match(sealed.branchUuid,/^[a-f0-9]{32}$/)||!match(sealed.documentUuid,/^(?:[a-f0-9]{16}|[a-f0-9]{32})$/)||!match(sealed.expectedSourceSha256,/^[a-f0-9]{64}$/))bad();
+const target={projectUuid:sealed.projectUuid,branchUuid:sealed.branchUuid,documentUuid:sealed.documentUuid,tabId:sealed.documentUuid+"@"+sealed.projectUuid};
+${buildCurrentProjectUrlGuard()}
+const location=root.location,href=location?.href,document=root.document,ui=own(root,"UI"),host=own(root,"gVars"),mode=own(root,"PRO_EDITOR_MODE");
+const project=plain(own(host,"currentProject")),tabs=own(ui,"tabBar");
+if(typeof tabs!=="function"||Object.getPrototypeOf(tabs)!==Function.prototype)bad();
+const active=fn(tabs,"getActiveTab"),getTab=fn(tabs,"getTabById"),select=document?.querySelectorAll;
+if(typeof select!=="function")bad();
+const tab=plain(apply(getTab,tabs,[target.tabId])),data=plain(own(tab,"data"));
+const found=apply(select,document,['[id="frame_'+target.tabId+'"]']);if(found.length!==1)bad();
+const frame=found[0],child=frame?.contentWindow,childDocument=child?.document,parent=frame?.parentElement;
+const native=own(child,"MSG_BUS_PCB"),channel=own(native,"messageBus"),childObject=own(child,"Object"),childArray=own(child,"Array");
+const childObjectPrototype=own(childObject,"prototype"),childArrayPrototype=own(childArray,"prototype");
+const attr=frame?.getAttribute,has=frame?.hasAttribute,classes=frame?.classList,contains=classes?.contains,parentAttr=parent?.getAttribute;
+if(typeof attr!=="function"||typeof has!=="function"||typeof contains!=="function"||typeof parentAttr!=="function")bad();
+const chain=[channel];let rpc,rpcOwner;
+for(let i=0;i<3;i++){const node=chain[i];if(!object(node))bad();const d=Object.getOwnPropertyDescriptor(node,"rpcCall");if(d){if(!Object.hasOwn(d,"value")||typeof d.value!=="function")bad();rpc=d.value;rpcOwner=node;break;}chain.push(Object.getPrototypeOf(node));}
+if(typeof rpc!=="function")bad();
+const set=fn(root,"setTimeout");clear=fn(root,"clearTimeout");
+const check=()=>{
+if(expired||root.window!==root||root.top!==root||root.location!==location||root.document!==document||document?.defaultView!==root||document?.nodeType!==9||document?.URL!==href||location?.href!==href||location?.origin!=="https://client")bad();
+parseProjectUrl(href,target.projectUuid,target.tabId);
+if(own(root,"PRO_EDITOR_MODE")!==mode||!["CLIENT-HALF_OFFLINE-EASYEDA-PCB-SCH-PANEL-SIM","CLIENT-OFFLINE-EASYEDA-PCB-SCH-PANEL-SIM"].includes(mode))bad();
+if(own(root,"UI")!==ui||own(root,"gVars")!==host||own(ui,"gVars")!==host||own(host,"currentProject")!==project||own(ui,"tabBar")!==tabs)bad();
+if(own(project,"projectId")!==target.projectUuid||own(project,"branchUuid")!==target.branchUuid||own(project,"isV2Format")!==false||own(host,"isHistoryMode")!==false)bad();
+if(fn(tabs,"getActiveTab")!==active||fn(tabs,"getTabById")!==getTab||apply(active,tabs,[])!==target.tabId||apply(getTab,tabs,[target.tabId])!==tab||own(tab,"data")!==data)bad();
+if(own(tab,"tabId")!==target.tabId||own(data,"doctype")!==3||own(data,"pid")!==target.projectUuid)bad();absent(tab,"parentLibraryUuid");
+if(document.querySelectorAll!==select)bad();const current=apply(select,document,['[id="frame_'+target.tabId+'"]']);if(current.length!==1||current[0]!==frame)bad();
+if(frame.tagName!=="IFRAME"||frame.id!=="frame_"+target.tabId||frame.ownerDocument!==document||frame.isConnected!==true||frame.parentElement!==parent||frame.classList!==classes||classes.contains!==contains||frame.getAttribute!==attr||frame.hasAttribute!==has||parent.getAttribute!==parentAttr||!apply(contains,classes,["editframe"])||apply(parentAttr,parent,["uuid"])!==target.tabId)bad();
+for(const [k,v] of [["c_dbid",target.tabId],["c_doctype","3"],["src","editor?entry=pcb"],["pcb-canvas","true"]])if(apply(attr,frame,[k])!==v)bad();
+for(const k of ["blankIframe","fromFile","jsonCacheReady"])if(apply(has,frame,[k]))bad();
+if(frame.contentWindow!==child||child.document!==childDocument||childDocument?.defaultView!==child||childDocument?.nodeType!==9||child.frameElement!==frame||child.parent!==root||child.top!==root||child.location?.href!=="https://client/editor?entry=pcb"||own(child,"MSG_BUS_PCB")!==native||own(native,"messageBus")!==channel)bad();
+if(own(child,"Object")!==childObject||own(childObject,"prototype")!==childObjectPrototype||own(child,"Array")!==childArray||own(childArray,"prototype")!==childArrayPrototype)bad();
+for(let i=0;i<chain.length;i++){const node=chain[i];if(i>0&&Object.getPrototypeOf(chain[i-1])!==node)bad();if(node===rpcOwner){if(own(node,"rpcCall")!==rpc)bad();}else if(Object.hasOwn(node,"rpcCall"))bad();}
+if(fn(root,"setTimeout")!==set||fn(root,"clearTimeout")!==clear)bad();
+};
+const childPlain=o=>{if(!object(o))bad();const p=Object.getPrototypeOf(o);if(p!==Object.prototype&&p!==childObjectPrototype)bad();return o;};
+const exact=(o,keys)=>{childPlain(o);const actual=Reflect.ownKeys(o);if(actual.length!==keys.length||actual.some(k=>!keys.includes(k)))bad();};
+const num=v=>{if(typeof v!=="number"||!Number.isFinite(v)||Object.is(v,-0)||Math.abs(v)>${CURRENT_PCB_GEOMETRY_MAX_NUMBER})bad();return v;};
+const integer=v=>{num(v);if(!Number.isInteger(v))bad();return v;};
+const layer=v=>{integer(v);if(v<0||v>65535)bad();return v;};
+const bool=v=>{if(typeof v!=="boolean")bad();return v;};
+const text=(v,max,nullable=false)=>{if(v===null&&nullable)return v;if(typeof v!=="string"||v.length>max||!v.isWellFormed())bad();return v;};
+const point=v=>{if(!object(v))bad();const keys=Reflect.ownKeys(v);if(!keys.includes("x")||!keys.includes("y")||keys.some(k=>k!=="x"&&k!=="y"&&k!=="_hashed"))bad();return{x:num(own(v,"x")),y:num(own(v,"y"))};};
+const length=v=>{if(!Array.isArray(v)||![Array.prototype,childArrayPrototype].includes(Object.getPrototypeOf(v)))bad();const n=own(v,"length");if(n<0||n>${CURRENT_PCB_GEOMETRY_MAX_ROWS}||Reflect.ownKeys(v).length!==n+1)bad();return n;};
+// PCB a8405930 arc-getAll keeps center/radius in native 10mil units, while
+// endpoints and width are already mil. Native endpoint angles are radians.
+const rows=raw=>{
+const n=length(raw),result=[],arcShapes=[],seen=new Set();
+for(let i=0;i<n;i++){
+const row=childPlain(own(raw,String(i))),id=text(own(row,"globalIndex"),256);if(id.length===0||seen.has(id))bad();seen.add(id);
+const p=point(own(row,"center")),radius=num(own(row,"radius")),startAngleRadians=num(own(row,"startAngle")),endAngleRadians=num(own(row,"endAngle")),sweep=integer(own(row,"sweep"));
+if(radius<0||startAngleRadians<0||startAngleRadians>Math.PI*2||endAngleRadians<0||endAngleRadians>Math.PI*2||![0,1].includes(sweep))bad();
+const interactiveMode=integer(own(row,"arcType"));if(![1,2].includes(interactiveMode))bad();
+const projected={primitiveId:id,primitiveType:"Arc",primitiveLock:bool(own(row,"locked")),net:text(own(row,"net"),1024,true),layer:layer(own(row,"layerId")),
+startX:num(own(row,"startX")),startY:num(own(row,"startY")),endX:num(own(row,"endX")),endY:num(own(row,"endY")),lineWidth:num(own(row,"width")),arcAngle:num(own(row,"arcAngle")),interactiveMode};
+// Match the captured callback's arithmetic before the unit conversion changes
+// evaluation order. The public angle is modulo a revolution, not a circle flag.
+const turn=Math.PI*2,angle=sweep===1?(endAngleRadians+turn-startAngleRadians)%turn:-(startAngleRadians+turn-endAngleRadians)%turn;
+if(projected.startX!==(p.x+Math.cos(startAngleRadians)*radius)*10||projected.startY!==(p.y+Math.sin(startAngleRadians)*radius)*10||
+projected.endX!==(p.x+Math.cos(endAngleRadians)*radius)*10||projected.endY!==(p.y+Math.sin(endAngleRadians)*radius)*10||projected.arcAngle!==angle*180/Math.PI)bad();
+result.push(projected);arcShapes.push({primitiveId:id,centerX:num(p.x*10),centerY:num(p.y*10),radius:num(radius*10),startAngleRadians,endAngleRadians,sweep});
+}return{rows:result,arcShapes};
+};
+const call=async(topic,arg)=>{check();const reply=await apply(rpc,channel,[topic,arg,0]);check();childPlain(reply);return own(reply,"message");};
+const identity=async()=>{const value=await call("getTabIdAndDocType",undefined);check();exact(value,["tabId","docType"]);if(own(value,"tabId")!==target.tabId||own(value,"docType")!==3)bad();};
+const bounded=value=>{const json=JSON.stringify(value);if(new TextEncoder().encode(json).byteLength>${CURRENT_PCB_209_ARC_SHAPES_NATIVE_BYTES})bad();return json;};
+const read=async()=>{
+await identity();check();const raw=await call("pcb/extensionAPI/arc-getAll",{});check();const projected=rows(raw);
+const observation={ok:true,kind:"current-pcb-geometry-observation",method:"eda.pcb_PrimitiveArc.getAll",target,rows:projected.rows,
+samples:2,implementationKind:"native-task-equivalent",cadAuthority:false,persistenceVerified:false,sourceMembershipVerified:false};
+const result={observation,arcShapes:projected.arcShapes};bounded(result);await identity();check();return result;
+};
+const run=async()=>{const first=await read(),json=bounded(first),second=await read();check();if(bounded(second)!==json)bad();
+return bounded({ok:true,kind:"pcb209-original-arc-shapes-observation",target,...first});};
+check();const timeout=new Promise((resolve,reject)=>{timer=apply(set,root,[()=>{expired=true;reject(new Error("PCB209_ARC_SHAPES_REFUSED"));},10000]);});return await Promise.race([run(),timeout]);
+}catch{throw new Error("PCB209_ARC_SHAPES_REFUSED");}finally{if(timer!==undefined&&typeof clear==="function"){try{Reflect.apply(clear,globalThis,[timer]);}catch{throw new Error("PCB209_ARC_SHAPES_REFUSED");}}}
+}`;
+  }
+});
+
+// server/src/current-pcb-209-poured-shapes.ts
+function validCurrentPcb209PouredPath(path6) {
+  if (path6[0] === "CIRCLE") {
+    return path6.length === 4 && path6.slice(1).every((value2) => typeof value2 === "number") && typeof path6[3] === "number" && path6[3] >= 0;
+  }
+  if (typeof path6[0] !== "number" || typeof path6[1] !== "number") {
+    return false;
+  }
+  let offset9 = 2;
+  while (offset9 < path6.length) {
+    const command2 = path6[offset9];
+    if (command2 !== "L" && command2 !== "ARC" && command2 !== "C") {
+      return false;
+    }
+    offset9 += 1;
+    const start = offset9;
+    while (typeof path6[offset9] === "number") {
+      offset9 += 1;
+    }
+    const count3 = offset9 - start;
+    if (command2 === "ARC" ? count3 !== 3 : count3 < 2 || count3 % 2 !== 0) {
+      return false;
+    }
+  }
+  return offset9 > 2;
+}
+function decodeCurrentPcb209PouredShapesReply(raw, targetInput3) {
+  const target9 = currentDisposableOpenSealedTargetSchema.parse(targetInput3);
+  const reply3 = external_exports.object({ result: external_exports.object({ type: external_exports.literal("string"), value: external_exports.string() }).strict() }).strict().parse(raw);
+  if (Buffer.byteLength(reply3.result.value) > CURRENT_PCB_209_POURED_SHAPES_NATIVE_BYTES) {
+    throw new Error("PCB209_POURED_SHAPES_BOUND");
+  }
+  const native = currentPcb209PouredShapesPacketSchema.parse(decodeCurrentPcbDiagnosticJson(Buffer.from(reply3.result.value)));
+  const expected3 = {
+    projectUuid: target9.projectUuid,
+    branchUuid: target9.branchUuid,
+    documentUuid: target9.documentUuid,
+    tabId: `${target9.documentUuid}@${target9.projectUuid}`
+  };
+  if (canonicalJson(native.target) !== canonicalJson(expected3) || canonicalJson(native.observation.target) !== canonicalJson(expected3)) {
+    throw new Error("PCB209_POURED_SHAPES_TARGET");
+  }
+  const groups3 = /* @__PURE__ */ new Map(), ids3 = /* @__PURE__ */ new Set();
+  let tokens = 0;
+  for (const row10 of native.observation.rows) {
+    if (ids3.has(row10.primitiveId)) {
+      throw new Error("PCB209_POURED_SHAPES_DUPLICATE");
+    }
+    ids3.add(row10.primitiveId);
+    for (const path6 of row10.copperPath) {
+      tokens += path6.length;
+    }
+    let group2 = groups3.get(row10.pourPrimitiveId);
+    if (group2 === void 0) {
+      group2 = { pourPrimitiveId: row10.pourPrimitiveId, primitiveIds: [] };
+      groups3.set(row10.pourPrimitiveId, group2);
+    }
+    group2.primitiveIds.push(row10.primitiveId);
+  }
+  if (tokens > CURRENT_PCB_209_POURED_TOTAL_TOKENS) {
+    throw new Error("PCB209_POURED_SHAPES_TOKENS");
+  }
+  if (canonicalJson([...groups3.values()]) !== canonicalJson(native.parentGroups)) {
+    throw new Error("PCB209_POURED_SHAPES_ASSOCIATION");
+  }
+  const primitiveIds2 = [...ids3];
+  const result = {
+    schema: "easyeda-pro-control.pcb209-poured-shapes-observation.v1",
+    target: expected3,
+    families: [{ family: "Poured", method: "eda.pcb_PrimitivePoured.getAll", primitiveIds: primitiveIds2, rows: native.observation.rows, observedRowCount: primitiveIds2.length }],
+    parentGroups: native.parentGroups,
+    parentGroupScope: "observed-native-fill-parent-identifiers",
+    primitiveIdScope: "native-fill-globalIndex-not-public-parent-id",
+    projectionSha256: sha256Json({ observation: native.observation, parentGroups: native.parentGroups }),
+    samples: 2,
+    matchingSamples: true,
+    units: { linear: "native-distance-10mil-per-unit", pathCoordinates: "native-distance-10mil-per-unit", pathSweep: "degrees" },
+    implementationKind: "native-task-equivalent",
+    originalReceiverRechecked: true,
+    membershipScope: "existing-stateWatcher-Poured-views",
+    startupCompletionVerified: false,
+    completeLiveBaselineVerified: false,
+    sourceMembershipVerified: false,
+    reciprocalParentVerified: false,
+    copperRebuildPerformed: false,
+    copperFreshnessVerified: false,
+    connectivityVerified: false,
+    fabricationGeometryVerified: false,
+    persistenceVerified: false,
+    executionAuthorized: false,
+    saveAuthorized: false,
+    limitations: [
+      "Two complete ordered native fill projections must match. Models without existing stateWatcher views are absent. Native fill IDs differ from the public API's parent-group primitive IDs; the ordered parent groups are observed associations only, not reciprocal ownership or saved membership.",
+      "All serialized contours are retained in native units of ten mil per unit. ARC sweep tokens are degrees; C retains variable-degree control points. Coordinates and width/clearance values are not converted to mil. Path tokens are never passed to a polygon constructor or rebuilt into copper.",
+      "The pinned df serializer omits tiny or unsupported segments and may split a counterclockwise full circle. CIRCLE retains only rx and ARC retains endpoints/sweep, so arbitrary elliptical geometry cannot be reconstructed. Contour order does not prove hole topology, winding, closure or a complete physical boundary.",
+      "Style preserves solid, 90grid, 45grid and none without the public wrapper's fill/line-width projection. Optimization distinguishes present boolean, null, undefined and absent fields; missing values are not coerced to false. Partition is the native inherited string projection.",
+      "No copper rebuild, freshness, connectivity, rendered or fabrication geometry, edit, explicit Save or writer baseline is proved. Reads are sequential, not atomic. Native enumeration/serialization precedes bounds and is not cancelled by the ten-second deadline. Local RPC bookkeeping and possible identity-environment initialization remain incidental."
+    ]
+  };
+  if (Buffer.byteLength(canonicalJson(result)) > CURRENT_PCB_209_POURED_SHAPES_RESULT_BYTES) {
+    throw new Error("PCB209_POURED_SHAPES_RESULT_BOUND");
+  }
+  return freezeDeep(result);
+}
+var CURRENT_PCB_209_POURED_SHAPES_NATIVE_BYTES, CURRENT_PCB_209_POURED_SHAPES_RESULT_BYTES, CURRENT_PCB_209_POURED_PATH_MAX_TOKENS, CURRENT_PCB_209_POURED_MAX_CONTOURS, CURRENT_PCB_209_POURED_TOTAL_TOKENS, numberSchema3, dimensionSchema3, idSchema5, textSchema, targetSchema12, pathSchema2, currentPcb209PouredRowSchema, parentGroupSchema, currentPcb209PouredShapesPacketSchema, CURRENT_PCB_209_POURED_SHAPES_FUNCTION;
+var init_current_pcb_209_poured_shapes = __esm({
+  "server/src/current-pcb-209-poured-shapes.ts"() {
+    init_zod();
+    init_core3();
+    init_current_disposable_open();
+    init_current_pcb_diagnostic_json();
+    init_current_pcb_geometry();
+    init_current_project_url();
+    init_sqlite_inventory_core();
+    CURRENT_PCB_209_POURED_SHAPES_NATIVE_BYTES = CURRENT_PCB_GEOMETRY_MAX_BYTES;
+    CURRENT_PCB_209_POURED_SHAPES_RESULT_BYTES = CURRENT_PCB_GEOMETRY_MAX_BYTES;
+    CURRENT_PCB_209_POURED_PATH_MAX_TOKENS = 8192;
+    CURRENT_PCB_209_POURED_MAX_CONTOURS = 256;
+    CURRENT_PCB_209_POURED_TOTAL_TOKENS = 32768;
+    numberSchema3 = external_exports.number().min(-CURRENT_PCB_GEOMETRY_MAX_NUMBER).max(CURRENT_PCB_GEOMETRY_MAX_NUMBER).refine((value2) => !Object.is(value2, -0), "Signed zero is not supported by this JSON observation.");
+    dimensionSchema3 = numberSchema3.refine((value2) => value2 >= 0, "Native dimension is negative.");
+    idSchema5 = external_exports.string().min(1).max(256).refine((value2) => value2.length <= 256 && value2.isWellFormed());
+    textSchema = external_exports.string().max(1024).refine((value2) => value2.length <= 1024 && value2.isWellFormed());
+    targetSchema12 = external_exports.object({ projectUuid: external_exports.string(), branchUuid: external_exports.string(), documentUuid: external_exports.string(), tabId: external_exports.string() }).strict();
+    pathSchema2 = external_exports.array(external_exports.union([numberSchema3, external_exports.enum(["L", "ARC", "C", "CIRCLE"])])).max(CURRENT_PCB_209_POURED_PATH_MAX_TOKENS).refine(validCurrentPcb209PouredPath, "Unsupported native Poured path.");
+    currentPcb209PouredRowSchema = external_exports.object({
+      primitiveType: external_exports.literal("Poured"),
+      primitiveId: idSchema5,
+      pourPrimitiveId: idSchema5,
+      partition: textSchema,
+      layerId: external_exports.number().int().min(0).max(65535).refine((value2) => !Object.is(value2, -0)),
+      net: textSchema.nullable(),
+      style: external_exports.enum(["solid", "90grid", "45grid", "none"]),
+      gridLineWidth: dimensionSchema3,
+      clearance: dimensionSchema3,
+      optimization: external_exports.boolean().nullable(),
+      optimizationState: external_exports.enum(["present", "undefined", "absent", "null"]),
+      optimizationWidth: dimensionSchema3,
+      copperPath: external_exports.array(pathSchema2).max(CURRENT_PCB_209_POURED_MAX_CONTOURS)
+    }).strict().refine(
+      (row10) => row10.optimizationState === "present" ? typeof row10.optimization === "boolean" : row10.optimization === null,
+      "Optimization value and state disagree."
+    );
+    parentGroupSchema = external_exports.object({ pourPrimitiveId: idSchema5, primitiveIds: external_exports.array(idSchema5).min(1).max(CURRENT_PCB_GEOMETRY_MAX_ROWS) }).strict();
+    currentPcb209PouredShapesPacketSchema = external_exports.object({
+      ok: external_exports.literal(true),
+      kind: external_exports.literal("pcb209-original-poured-shapes-observation"),
+      target: targetSchema12,
+      observation: external_exports.object({
+        ok: external_exports.literal(true),
+        kind: external_exports.literal("current-pcb-poured-source-observation"),
+        method: external_exports.literal("eda.pcb_PrimitivePoured.getAll"),
+        target: targetSchema12,
+        rows: external_exports.array(currentPcb209PouredRowSchema).max(CURRENT_PCB_GEOMETRY_MAX_ROWS),
+        samples: external_exports.literal(2),
+        implementationKind: external_exports.literal("native-task-equivalent"),
+        cadAuthority: external_exports.literal(false),
+        persistenceVerified: external_exports.literal(false),
+        sourceMembershipVerified: external_exports.literal(false),
+        copperRebuildPerformed: external_exports.literal(false)
+      }).strict(),
+      parentGroups: external_exports.array(parentGroupSchema).max(CURRENT_PCB_GEOMETRY_MAX_ROWS)
+    }).strict();
+    CURRENT_PCB_209_POURED_SHAPES_FUNCTION = `async function(sealed,phase){
+"use strict";
+let timer,clear,expired=false;
+try{
+const root=globalThis,apply=Reflect.apply,bad=()=>{throw new Error("PCB209_POURED_SHAPES_REFUSED");};
+const own=(o,k)=>{if(o===null||(typeof o!=="object"&&typeof o!=="function"))bad();const d=Object.getOwnPropertyDescriptor(o,k);if(!d||!Object.hasOwn(d,"value"))bad();return d.value;};
+const object=o=>o!==null&&typeof o==="object"&&!Array.isArray(o);
+const plain=o=>{if(!object(o)||Object.getPrototypeOf(o)!==Object.prototype)bad();return o;};
+const absent=(o,k)=>{const d=Object.getOwnPropertyDescriptor(o,k);if(d&&(!Object.hasOwn(d,"value")||d.value!==undefined))bad();};
+const fn=(o,k)=>{const f=own(o,k);if(typeof f!=="function")bad();return f;};
+plain(sealed);if(phase!=="observe"||Reflect.ownKeys(sealed).length!==5)bad();
+for(const k of ["rawWindowsPath","projectUuid","documentUuid","expectedSourceSha256","branchUuid"])if(typeof own(sealed,k)!=="string")bad();
+const match=(s,re)=>{const m=re.exec(s);return m!==null&&m[0]===s;};
+if(!match(sealed.projectUuid,/^[a-f0-9]{64}$/)||!match(sealed.branchUuid,/^[a-f0-9]{32}$/)||!match(sealed.documentUuid,/^(?:[a-f0-9]{16}|[a-f0-9]{32})$/)||!match(sealed.expectedSourceSha256,/^[a-f0-9]{64}$/))bad();
+const target={projectUuid:sealed.projectUuid,branchUuid:sealed.branchUuid,documentUuid:sealed.documentUuid,tabId:sealed.documentUuid+"@"+sealed.projectUuid};
+${buildCurrentProjectUrlGuard()}
+const location=root.location,href=location?.href,document=root.document,ui=own(root,"UI"),host=own(root,"gVars"),mode=own(root,"PRO_EDITOR_MODE");
+const project=plain(own(host,"currentProject")),tabs=own(ui,"tabBar");
+if(typeof tabs!=="function"||Object.getPrototypeOf(tabs)!==Function.prototype)bad();
+const active=fn(tabs,"getActiveTab"),getTab=fn(tabs,"getTabById"),select=document?.querySelectorAll;
+if(typeof select!=="function")bad();
+const tab=plain(apply(getTab,tabs,[target.tabId])),data=plain(own(tab,"data"));
+const found=apply(select,document,['[id="frame_'+target.tabId+'"]']);if(found.length!==1)bad();
+const frame=found[0],child=frame?.contentWindow,childDocument=child?.document,parent=frame?.parentElement;
+const native=own(child,"MSG_BUS_PCB"),channel=own(native,"messageBus"),childObject=own(child,"Object"),childArray=own(child,"Array");
+const childObjectPrototype=own(childObject,"prototype"),childArrayPrototype=own(childArray,"prototype");
+const attr=frame?.getAttribute,has=frame?.hasAttribute,classes=frame?.classList,contains=classes?.contains,parentAttr=parent?.getAttribute;
+if(typeof attr!=="function"||typeof has!=="function"||typeof contains!=="function"||typeof parentAttr!=="function")bad();
+const chain=[channel];let rpc,rpcOwner;
+for(let i=0;i<3;i++){const node=chain[i];if(!object(node))bad();const d=Object.getOwnPropertyDescriptor(node,"rpcCall");if(d){if(!Object.hasOwn(d,"value")||typeof d.value!=="function")bad();rpc=d.value;rpcOwner=node;break;}chain.push(Object.getPrototypeOf(node));}
+if(typeof rpc!=="function")bad();
+const set=fn(root,"setTimeout");clear=fn(root,"clearTimeout");
+const check=()=>{
+if(expired||root.window!==root||root.top!==root||root.location!==location||root.document!==document||document?.defaultView!==root||document?.nodeType!==9||document?.URL!==href||location?.href!==href||location?.origin!=="https://client")bad();
+parseProjectUrl(href,target.projectUuid,target.tabId);
+if(own(root,"PRO_EDITOR_MODE")!==mode||!["CLIENT-HALF_OFFLINE-EASYEDA-PCB-SCH-PANEL-SIM","CLIENT-OFFLINE-EASYEDA-PCB-SCH-PANEL-SIM"].includes(mode))bad();
+if(own(root,"UI")!==ui||own(root,"gVars")!==host||own(ui,"gVars")!==host||own(host,"currentProject")!==project||own(ui,"tabBar")!==tabs)bad();
+if(own(project,"projectId")!==target.projectUuid||own(project,"branchUuid")!==target.branchUuid||own(project,"isV2Format")!==false||own(host,"isHistoryMode")!==false)bad();
+if(fn(tabs,"getActiveTab")!==active||fn(tabs,"getTabById")!==getTab||apply(active,tabs,[])!==target.tabId||apply(getTab,tabs,[target.tabId])!==tab||own(tab,"data")!==data)bad();
+if(own(tab,"tabId")!==target.tabId||own(data,"doctype")!==3||own(data,"pid")!==target.projectUuid)bad();absent(tab,"parentLibraryUuid");
+if(document.querySelectorAll!==select)bad();const current=apply(select,document,['[id="frame_'+target.tabId+'"]']);if(current.length!==1||current[0]!==frame)bad();
+if(frame.tagName!=="IFRAME"||frame.id!=="frame_"+target.tabId||frame.ownerDocument!==document||frame.isConnected!==true||frame.parentElement!==parent||frame.classList!==classes||classes.contains!==contains||frame.getAttribute!==attr||frame.hasAttribute!==has||parent.getAttribute!==parentAttr||!apply(contains,classes,["editframe"])||apply(parentAttr,parent,["uuid"])!==target.tabId)bad();
+for(const [k,v] of [["c_dbid",target.tabId],["c_doctype","3"],["src","editor?entry=pcb"],["pcb-canvas","true"]])if(apply(attr,frame,[k])!==v)bad();
+for(const k of ["blankIframe","fromFile","jsonCacheReady"])if(apply(has,frame,[k]))bad();
+if(frame.contentWindow!==child||child.document!==childDocument||childDocument?.defaultView!==child||childDocument?.nodeType!==9||child.frameElement!==frame||child.parent!==root||child.top!==root||child.location?.href!=="https://client/editor?entry=pcb"||own(child,"MSG_BUS_PCB")!==native||own(native,"messageBus")!==channel)bad();
+if(own(child,"Object")!==childObject||own(childObject,"prototype")!==childObjectPrototype||own(child,"Array")!==childArray||own(childArray,"prototype")!==childArrayPrototype)bad();
+for(let i=0;i<chain.length;i++){const node=chain[i];if(i>0&&Object.getPrototypeOf(chain[i-1])!==node)bad();if(node===rpcOwner){if(own(node,"rpcCall")!==rpc)bad();}else if(Object.hasOwn(node,"rpcCall"))bad();}
+if(fn(root,"setTimeout")!==set||fn(root,"clearTimeout")!==clear)bad();
+};
+const childPlain=o=>{if(!object(o))bad();const p=Object.getPrototypeOf(o);if(p!==Object.prototype&&p!==childObjectPrototype)bad();return o;};
+const exact=(o,keys)=>{childPlain(o);const actual=Reflect.ownKeys(o);if(actual.length!==keys.length||actual.some(k=>!keys.includes(k)))bad();};
+const num=v=>{if(typeof v!=="number"||!Number.isFinite(v)||Object.is(v,-0)||Math.abs(v)>${CURRENT_PCB_GEOMETRY_MAX_NUMBER})bad();return v;};
+const integer=v=>{num(v);if(!Number.isInteger(v))bad();return v;};
+const layer=v=>{integer(v);if(v<0||v>65535)bad();return v;};
+const bool=v=>{if(typeof v!=="boolean")bad();return v;};
+const text=(v,max,nullable=false)=>{if(v===null&&nullable)return v;if(typeof v!=="string"||v.length>max||!v.isWellFormed())bad();return v;};
+const point=v=>{if(!object(v))bad();const keys=Reflect.ownKeys(v);if(!keys.includes("x")||!keys.includes("y")||keys.some(k=>k!=="x"&&k!=="y"&&k!=="_hashed"))bad();return{x:num(own(v,"x")),y:num(own(v,"y"))};};
+const length=(v,max)=>{if(!Array.isArray(v)||![Array.prototype,childArrayPrototype].includes(Object.getPrototypeOf(v)))bad();const n=own(v,"length");if(n<0||n>max||Reflect.ownKeys(v).length!==n+1)bad();return n;};
+const path=value=>{
+const n=length(value,${CURRENT_PCB_209_POURED_PATH_MAX_TOKENS}),out=[];
+for(let i=0;i<n;i++){const token=own(value,String(i));if(typeof token==="number")out.push(num(token));else if(["L","ARC","C","CIRCLE"].includes(token))out.push(token);else bad();}
+if(out[0]==="CIRCLE"){if(n!==4||!out.slice(1).every(v=>typeof v==="number")||out[3]<0)bad();return out;}
+if(typeof out[0]!=="number"||typeof out[1]!=="number")bad();let offset=2;
+while(offset<n){const command=out[offset];if(!["L","ARC","C"].includes(command))bad();offset++;const start=offset;while(typeof out[offset]==="number")offset++;const count=offset-start;
+if(command==="ARC"?count!==3:count<2||count%2!==0)bad();}if(offset===2)bad();return out;
+};
+const rows=value=>{
+const n=length(value,${CURRENT_PCB_GEOMETRY_MAX_ROWS}),out=[],ids=new Set(),groups=new Map();let tokens=0;
+for(let i=0;i<n;i++){
+const row=own(value,String(i));childPlain(row);const keys=Reflect.ownKeys(row),required=["globalIndex","partition","layerId","net","style","gridLineWidth","clearance","copperPath","optimizationWidth","pourPrimitiveId"];
+if(keys.some(k=>!required.includes(k)&&k!=="optimization")||required.some(k=>!keys.includes(k)))bad();
+const id=text(own(row,"globalIndex"),256),parentId=text(own(row,"pourPrimitiveId"),256);if(!id||!parentId||ids.has(id))bad();ids.add(id);
+const style=own(row,"style");if(!["solid","90grid","45grid","none"].includes(style))bad();
+const widths=["gridLineWidth","clearance","optimizationWidth"].map(k=>{const v=num(own(row,k));if(v<0)bad();return v;});
+let optimization=null,optimizationState="absent";const opt=Object.getOwnPropertyDescriptor(row,"optimization");
+if(opt){if(!Object.hasOwn(opt,"value"))bad();if(opt.value===undefined)optimizationState="undefined";else if(opt.value===null)optimizationState="null";else{optimization=bool(opt.value);optimizationState="present";}}
+const contours=own(row,"copperPath"),count=length(contours,${CURRENT_PCB_209_POURED_MAX_CONTOURS}),copperPath=[];
+for(let j=0;j<count;j++){const contour=path(own(contours,String(j)));tokens+=contour.length;if(tokens>${CURRENT_PCB_209_POURED_TOTAL_TOKENS})bad();copperPath.push(contour);}
+out.push({primitiveType:"Poured",primitiveId:id,pourPrimitiveId:parentId,partition:text(own(row,"partition"),1024),layerId:layer(own(row,"layerId")),
+net:text(own(row,"net"),1024,true),style,gridLineWidth:widths[0],clearance:widths[1],optimization,optimizationState,optimizationWidth:widths[2],copperPath});
+let group=groups.get(parentId);if(group===undefined){group={pourPrimitiveId:parentId,primitiveIds:[]};groups.set(parentId,group);}group.primitiveIds.push(id);
+}return{rows:out,parentGroups:Array.from(groups.values())};
+};
+const bounded=value=>{const json=JSON.stringify(value);if(typeof json!=="string"||json.length>${CURRENT_PCB_209_POURED_SHAPES_NATIVE_BYTES}||new TextEncoder().encode(json).byteLength>${CURRENT_PCB_209_POURED_SHAPES_NATIVE_BYTES})bad();return json;};
+const call=async(topic,arg)=>{check();const reply=await apply(rpc,channel,[topic,arg,0]);check();childPlain(reply);return own(reply,"message");};
+const identity=async()=>{const row=await call("getTabIdAndDocType",undefined);exact(row,["tabId","docType"]);if(own(row,"tabId")!==target.tabId||own(row,"docType")!==3)bad();};
+const read=async()=>{
+await identity();check();const raw=await call("pcb/extensionAPI/poured-getAll",{});check();const projected=rows(raw);
+const observation={ok:true,kind:"current-pcb-poured-source-observation",method:"eda.pcb_PrimitivePoured.getAll",target,rows:projected.rows,
+samples:2,implementationKind:"native-task-equivalent",cadAuthority:false,persistenceVerified:false,sourceMembershipVerified:false,copperRebuildPerformed:false};
+const result={observation,parentGroups:projected.parentGroups};bounded(result);await identity();check();return result;
+};
+const run=async()=>{const first=await read(),json=bounded(first),second=await read();check();if(bounded(second)!==json)bad();
+return bounded({ok:true,kind:"pcb209-original-poured-shapes-observation",target,...first});};
+check();const timeout=new Promise((resolve,reject)=>{timer=apply(set,root,[()=>{expired=true;reject(new Error("PCB209_POURED_SHAPES_REFUSED"));},10000]);});return await Promise.race([run(),timeout]);
+}catch{throw new Error("PCB209_POURED_SHAPES_REFUSED");}finally{if(timer!==undefined&&typeof clear==="function"){try{Reflect.apply(clear,globalThis,[timer]);}catch{throw new Error("PCB209_POURED_SHAPES_REFUSED");}}}
+}`;
+  }
+});
+
 // server/src/current-pcb-209-pad-shapes.ts
 function decodeCurrentPcb209PadShapesReply(raw, targetInput3) {
   const target9 = currentDisposableOpenSealedTargetSchema.parse(targetInput3);
@@ -106525,7 +107043,7 @@ function decodeCurrentPcb209PadShapesReply(raw, targetInput3) {
   if (Buffer.byteLength(reply3.result.value) > CURRENT_PCB_209_PAD_SHAPES_NATIVE_BYTES) {
     throw new Error("PCB209_PAD_SHAPES_BOUND");
   }
-  const native = packetSchema3.parse(decodeCurrentPcbDiagnosticJson(Buffer.from(reply3.result.value)));
+  const native = packetSchema4.parse(decodeCurrentPcbDiagnosticJson(Buffer.from(reply3.result.value)));
   const expected3 = {
     projectUuid: target9.projectUuid,
     branchUuid: target9.branchUuid,
@@ -106583,7 +107101,7 @@ function decodeCurrentPcb209PadShapesReply(raw, targetInput3) {
   }
   return freezeDeep(result);
 }
-var CURRENT_PCB_209_PAD_SHAPES_NATIVE_BYTES, CURRENT_PCB_209_PAD_SHAPES_RESULT_BYTES, targetSchema11, dimensionSchema3, shapeSchema, groupSchema2, groupsSchema, specialShapeGroupsSchema, packetSchema3, CURRENT_PCB_209_PAD_SHAPES_FUNCTION;
+var CURRENT_PCB_209_PAD_SHAPES_NATIVE_BYTES, CURRENT_PCB_209_PAD_SHAPES_RESULT_BYTES, targetSchema13, dimensionSchema4, shapeSchema, groupSchema2, groupsSchema, specialShapeGroupsSchema, packetSchema4, CURRENT_PCB_209_PAD_SHAPES_FUNCTION;
 var init_current_pcb_209_pad_shapes = __esm({
   "server/src/current-pcb-209-pad-shapes.ts"() {
     init_zod();
@@ -106596,16 +107114,16 @@ var init_current_pcb_209_pad_shapes = __esm({
     init_sqlite_inventory_core();
     CURRENT_PCB_209_PAD_SHAPES_NATIVE_BYTES = CURRENT_PCB_GEOMETRY_MAX_BYTES;
     CURRENT_PCB_209_PAD_SHAPES_RESULT_BYTES = CURRENT_PCB_GEOMETRY_MAX_BYTES;
-    targetSchema11 = external_exports.object({ projectUuid: external_exports.string(), branchUuid: external_exports.string(), documentUuid: external_exports.string(), tabId: external_exports.string() }).strict();
-    dimensionSchema3 = external_exports.number().min(0).max(CURRENT_PCB_GEOMETRY_MAX_NUMBER).refine((value2) => !Object.is(value2, -0), "Signed zero is not supported by this JSON observation.");
+    targetSchema13 = external_exports.object({ projectUuid: external_exports.string(), branchUuid: external_exports.string(), documentUuid: external_exports.string(), tabId: external_exports.string() }).strict();
+    dimensionSchema4 = external_exports.number().min(0).max(CURRENT_PCB_GEOMETRY_MAX_NUMBER).refine((value2) => !Object.is(value2, -0), "Signed zero is not supported by this JSON observation.");
     shapeSchema = external_exports.discriminatedUnion("shape", [
-      external_exports.object({ shape: external_exports.literal("ELLIPSE"), width: dimensionSchema3, height: dimensionSchema3 }).strict(),
-      external_exports.object({ shape: external_exports.literal("OVAL"), width: dimensionSchema3, height: dimensionSchema3 }).strict(),
+      external_exports.object({ shape: external_exports.literal("ELLIPSE"), width: dimensionSchema4, height: dimensionSchema4 }).strict(),
+      external_exports.object({ shape: external_exports.literal("OVAL"), width: dimensionSchema4, height: dimensionSchema4 }).strict(),
       external_exports.object({
         shape: external_exports.literal("RECT"),
-        width: dimensionSchema3,
-        height: dimensionSchema3,
-        cornerRatioPercent: dimensionSchema3.refine((value2) => value2 <= 100, "Corner ratio exceeds 100 percent.")
+        width: dimensionSchema4,
+        height: dimensionSchema4,
+        cornerRatioPercent: dimensionSchema4.refine((value2) => value2 <= 100, "Corner ratio exceeds 100 percent.")
       }).strict()
     ]);
     groupSchema2 = external_exports.object({
@@ -106621,10 +107139,10 @@ var init_current_pcb_209_pad_shapes = __esm({
       primitiveId: external_exports.string().min(1).max(256).refine((value2) => value2.length <= 256 && value2.isWellFormed()),
       groups: groupsSchema
     }).strict()).max(CURRENT_PCB_GEOMETRY_MAX_ROWS);
-    packetSchema3 = external_exports.object({
+    packetSchema4 = external_exports.object({
       ok: external_exports.literal(true),
       kind: external_exports.literal("pcb209-original-pad-shapes-observation"),
-      target: targetSchema11,
+      target: targetSchema13,
       observation: currentPcbGeometryResultSchema,
       specialShapeGroups: specialShapeGroupsSchema
     }).strict();
@@ -106896,7 +107414,7 @@ function decodeCurrentPcb209SelectionRelationsReply(raw, targetInput3, component
   }
   return freezeDeep(result);
 }
-var CURRENT_PCB_209_SELECTION_RELATIONS_NATIVE_BYTES, CURRENT_PCB_209_SELECTION_RELATIONS_RESULT_BYTES, CURRENT_PCB_209_SELECTION_RELATIONS_FAMILIES, nativeText5, idSchema5, currentPcb209SelectionRelationsComponentIdsSchema, idsSchema, targetSchema12, metadataStateSchema2, metadataStatesSchema2, childScalarSchema, childGroupSchema, currentPcb209SelectionRelationsPacketSchema, CURRENT_PCB_209_SELECTION_RELATIONS_FUNCTION;
+var CURRENT_PCB_209_SELECTION_RELATIONS_NATIVE_BYTES, CURRENT_PCB_209_SELECTION_RELATIONS_RESULT_BYTES, CURRENT_PCB_209_SELECTION_RELATIONS_FAMILIES, nativeText5, idSchema6, currentPcb209SelectionRelationsComponentIdsSchema, idsSchema, targetSchema14, metadataStateSchema2, metadataStatesSchema2, childScalarSchema, childGroupSchema, currentPcb209SelectionRelationsPacketSchema, CURRENT_PCB_209_SELECTION_RELATIONS_FUNCTION;
 var init_current_pcb_209_selection_relations = __esm({
   "server/src/current-pcb-209-selection-relations.ts"() {
     init_zod();
@@ -106915,13 +107433,13 @@ var init_current_pcb_209_selection_relations = __esm({
         context4.issues.push({ code: "custom", message: "Invalid bounded UTF-16 string.", input: context4.value });
       }
     });
-    idSchema5 = nativeText5(256).min(1);
-    currentPcb209SelectionRelationsComponentIdsSchema = external_exports.array(idSchema5).max(16).refine((ids3) => new Set(ids3).size === ids3.length, "Duplicate component IDs.");
-    idsSchema = external_exports.array(idSchema5).max(CURRENT_PCB_GEOMETRY_MAX_ROWS);
-    targetSchema12 = external_exports.object({ projectUuid: external_exports.string(), branchUuid: external_exports.string(), documentUuid: external_exports.string(), tabId: external_exports.string() }).strict();
+    idSchema6 = nativeText5(256).min(1);
+    currentPcb209SelectionRelationsComponentIdsSchema = external_exports.array(idSchema6).max(16).refine((ids3) => new Set(ids3).size === ids3.length, "Duplicate component IDs.");
+    idsSchema = external_exports.array(idSchema6).max(CURRENT_PCB_GEOMETRY_MAX_ROWS);
+    targetSchema14 = external_exports.object({ projectUuid: external_exports.string(), branchUuid: external_exports.string(), documentUuid: external_exports.string(), tabId: external_exports.string() }).strict();
     metadataStateSchema2 = external_exports.enum(["absent", "undefined", "present"]);
     metadataStatesSchema2 = external_exports.array(external_exports.object({
-      primitiveId: idSchema5,
+      primitiveId: idSchema6,
       states: external_exports.object({
         designator: metadataStateSchema2,
         name: metadataStateSchema2,
@@ -106932,7 +107450,7 @@ var init_current_pcb_209_selection_relations = __esm({
       }).strict()
     }).strict()).max(CURRENT_PCB_GEOMETRY_MAX_ROWS);
     childScalarSchema = external_exports.object({
-      primitiveId: idSchema5,
+      primitiveId: idSchema6,
       padNumber: nativeText5(1024),
       net: nativeText5(1024).nullable(),
       layer: external_exports.union([external_exports.literal(1), external_exports.literal(2), external_exports.literal(12)]),
@@ -106941,14 +107459,14 @@ var init_current_pcb_209_selection_relations = __esm({
       padType: external_exports.union([external_exports.literal(0), external_exports.literal(1), external_exports.literal(2)])
     }).strict();
     childGroupSchema = external_exports.object({
-      parentPrimitiveId: idSchema5,
+      parentPrimitiveId: idSchema6,
       ids: idsSchema,
       scalarRows: external_exports.array(childScalarSchema).max(CURRENT_PCB_GEOMETRY_MAX_ROWS)
     }).strict();
     currentPcb209SelectionRelationsPacketSchema = external_exports.object({
       ok: external_exports.literal(true),
       kind: external_exports.literal("pcb209-original-selection-relations-observation"),
-      target: targetSchema12,
+      target: targetSchema14,
       observations: external_exports.array(currentPcbGeometryResultSchema).length(CURRENT_PCB_209_SELECTION_RELATIONS_FAMILIES.length),
       componentMetadataStates: metadataStatesSchema2,
       selectedPrimitiveIds: idsSchema,
@@ -109373,6 +109891,12 @@ function recordBound(name6) {
   if (name6 === "image-shapes209-result.json") {
     return CURRENT_PCB_209_IMAGE_SHAPES_RESULT_BYTES + MAX_BYTES7;
   }
+  if (name6 === "arc-shapes209-result.json") {
+    return CURRENT_PCB_209_ARC_SHAPES_RESULT_BYTES + MAX_BYTES7;
+  }
+  if (name6 === "poured-shapes209-result.json") {
+    return CURRENT_PCB_209_POURED_SHAPES_RESULT_BYTES + MAX_BYTES7;
+  }
   if (name6 === "pad-shapes209-result.json") {
     return CURRENT_PCB_209_PAD_SHAPES_RESULT_BYTES + MAX_BYTES7;
   }
@@ -109517,6 +110041,14 @@ function validateChain(operation) {
   requireValue14(
     records2["image-shapes209-intent.json"] === void 0 || operation.operationId.startsWith("pcb209-") && pcbObserved !== void 0 && pcbObserved.result["sourceVerified"] === true && records2["workers-intent.json"] === void 0 && records2["model-state-intent.json"] === void 0,
     "IMAGE_SHAPES209_CHAIN"
+  );
+  requireValue14(
+    records2["arc-shapes209-intent.json"] === void 0 || operation.operationId.startsWith("pcb209-") && pcbObserved !== void 0 && pcbObserved.result["sourceVerified"] === true && records2["workers-intent.json"] === void 0 && records2["model-state-intent.json"] === void 0,
+    "ARC_SHAPES209_CHAIN"
+  );
+  requireValue14(
+    records2["poured-shapes209-intent.json"] === void 0 || operation.operationId.startsWith("pcb209-") && pcbObserved !== void 0 && pcbObserved.result["sourceVerified"] === true && records2["workers-intent.json"] === void 0 && records2["model-state-intent.json"] === void 0,
+    "POURED_SHAPES209_CHAIN"
   );
   const selectionIntent = records2["selection-relations209-intent.json"], selectionResult = records2["selection-relations209-result.json"];
   requireValue14(
@@ -109663,6 +110195,8 @@ var init_current_pcb_diagnostic_lifecycle_journal = __esm({
     init_current_pcb_209_primitives();
     init_current_pcb_209_extended_primitives();
     init_current_pcb_209_image_shapes();
+    init_current_pcb_209_arc_shapes();
+    init_current_pcb_209_poured_shapes();
     init_current_pcb_209_pad_shapes();
     init_current_pcb_209_selection_relations();
     init_current_pcb_string_ledger_exclusion();
@@ -109830,7 +110364,7 @@ var init_current_pcb_diagnostic_lifecycle_journal = __esm({
       proof: diagnosticLifecycleNoProcessReleaseProofSchema
     }).strict();
     diagnosticObservationStageSchema = external_exports.enum(["browser", "frames", "script", "workers", "worker-script", "worker-state", "pcb-opening", "model-state"]);
-    extendedObservationStageSchema = external_exports.enum([...diagnosticObservationStageSchema.options, "layers209", "primitives209", "extended-primitives209", "selection-relations209", "pad-shapes209", "image-shapes209"]);
+    extendedObservationStageSchema = external_exports.enum([...diagnosticObservationStageSchema.options, "layers209", "primitives209", "extended-primitives209", "selection-relations209", "pad-shapes209", "image-shapes209", "arc-shapes209", "poured-shapes209"]);
     lifecycleObservationStages = [...extendedObservationStageSchema.options, "common-baseline", "string-precreate"];
     observationIntentSchema = external_exports.object({
       schema: external_exports.literal("easyeda-pro-control.pcb-diagnostic-observation-intent.v1"),
@@ -109848,7 +110382,7 @@ var init_current_pcb_diagnostic_lifecycle_journal = __esm({
       if (value2.componentIds !== void 0) {
         return false;
       }
-      if (value2.stage === "browser" || value2.stage === "workers" || value2.stage === "worker-state" || value2.stage === "model-state" || value2.stage === "pcb-opening" || value2.stage === "layers209" || value2.stage === "primitives209" || value2.stage === "extended-primitives209" || value2.stage === "pad-shapes209" || value2.stage === "image-shapes209") {
+      if (value2.stage === "browser" || value2.stage === "workers" || value2.stage === "worker-state" || value2.stage === "model-state" || value2.stage === "pcb-opening" || value2.stage === "layers209" || value2.stage === "primitives209" || value2.stage === "extended-primitives209" || value2.stage === "pad-shapes209" || value2.stage === "image-shapes209" || value2.stage === "arc-shapes209" || value2.stage === "poured-shapes209") {
         return value2.targetId === void 0 && value2.frameId === void 0 && value2.family === void 0;
       }
       if (value2.stage === "frames" || value2.stage === "worker-script") {
@@ -109867,7 +110401,9 @@ var init_current_pcb_diagnostic_lifecycle_journal = __esm({
       const ordinaryLimit = value2.stage === "primitives209" ? CURRENT_PCB_209_PRIMITIVES_RESULT_BYTES : DIAGNOSTIC_OBSERVATION_MAX_BYTES;
       const extendedLimit = value2.stage === "extended-primitives209" ? CURRENT_PCB_209_EXTENDED_PRIMITIVES_RESULT_BYTES : ordinaryLimit;
       const padLimit = value2.stage === "pad-shapes209" ? CURRENT_PCB_209_PAD_SHAPES_RESULT_BYTES : extendedLimit;
-      const limit = value2.stage === "image-shapes209" ? CURRENT_PCB_209_IMAGE_SHAPES_RESULT_BYTES : padLimit;
+      const imageLimit = value2.stage === "image-shapes209" ? CURRENT_PCB_209_IMAGE_SHAPES_RESULT_BYTES : padLimit;
+      const arcLimit = value2.stage === "arc-shapes209" ? CURRENT_PCB_209_ARC_SHAPES_RESULT_BYTES : imageLimit;
+      const limit = value2.stage === "poured-shapes209" ? CURRENT_PCB_209_POURED_SHAPES_RESULT_BYTES : arcLimit;
       return Buffer.byteLength(canonicalJson(value2.result)) <= (value2.stage === "selection-relations209" ? CURRENT_PCB_209_SELECTION_RELATIONS_RESULT_BYTES : limit);
     }, "Observation result exceeds its bound.");
     stringPrecreateIntentSchema = external_exports.object({
@@ -110238,6 +110774,10 @@ var init_current_pcb_diagnostic_lifecycle_journal = __esm({
       "pad-shapes209-result.json": observationResultSchema,
       "image-shapes209-intent.json": observationIntentSchema,
       "image-shapes209-result.json": observationResultSchema,
+      "arc-shapes209-intent.json": observationIntentSchema,
+      "arc-shapes209-result.json": observationResultSchema,
+      "poured-shapes209-intent.json": observationIntentSchema,
+      "poured-shapes209-result.json": observationResultSchema,
       "string-precreate-intent.json": stringPrecreateIntentSchema,
       "string-precreate-result.json": stringPrecreateResultSchema,
       "common-baseline-intent.json": commonBaselineIntentSchema,
@@ -112110,6 +112650,9 @@ function reconstruct(result, target9, stage, originalComponentIds) {
       persistenceVerified: false,
       sourceMembershipVerified: false
     };
+    if (family2["family"] === "Poured") {
+      Object.assign(observation3, { kind: "current-pcb-poured-source-observation", copperRebuildPerformed: false });
+    }
     if (family2["family"] === "Attribute") {
       Object.assign(observation3, {
         attributeParentGroups: family2["attributeParentGroups"],
@@ -112147,6 +112690,28 @@ function reconstruct(result, target9, stage, originalComponentIds) {
       observation: observations2[0],
       imageShapes: result["imageShapes"]
     };
+  } else if (stage === "arc-shapes209") {
+    if (observations2.length !== 1) {
+      throw new Error("PCB209_QUERY_ARC_FAMILY_COUNT");
+    }
+    packet = {
+      ok: true,
+      kind: "pcb209-original-arc-shapes-observation",
+      target: result["target"],
+      observation: observations2[0],
+      arcShapes: result["arcShapes"]
+    };
+  } else if (stage === "poured-shapes209") {
+    if (observations2.length !== 1) {
+      throw new Error("PCB209_QUERY_POURED_FAMILY_COUNT");
+    }
+    packet = {
+      ok: true,
+      kind: "pcb209-original-poured-shapes-observation",
+      target: result["target"],
+      observation: observations2[0],
+      parentGroups: result["parentGroups"]
+    };
   } else {
     currentPcb209SelectionRelationsComponentIdsSchema.parse(originalComponentIds);
     packet = {
@@ -112171,6 +112736,10 @@ function reconstruct(result, target9, stage, originalComponentIds) {
     decoded = decodeCurrentPcb209PadShapesReply(reply3, target9);
   } else if (stage === "image-shapes209") {
     decoded = decodeCurrentPcb209ImageShapesReply(reply3, target9);
+  } else if (stage === "arc-shapes209") {
+    decoded = decodeCurrentPcb209ArcShapesReply(reply3, target9);
+  } else if (stage === "poured-shapes209") {
+    decoded = decodeCurrentPcb209PouredShapesReply(reply3, target9);
   } else {
     decoded = decodeCurrentPcb209SelectionRelationsReply(reply3, target9, originalComponentIds);
   }
@@ -112293,6 +112862,22 @@ function queryCurrentPcb209Observation(resultInput, targetInput3, queryInput, pr
       renderedGeometryVerified: false,
       assetContentVerified: false
     } : {},
+    ...provenance2.stage === "arc-shapes209" ? {
+      arcShapes: orderedDescriptors(source6["arcShapes"], rows2),
+      arcShapeScope: source6["arcShapeScope"],
+      units: source6["units"],
+      fullCircleInterpretationVerified: false
+    } : {},
+    ...provenance2.stage === "poured-shapes209" ? {
+      parentGroups: recordsSchema.parse(source6["parentGroups"]),
+      parentGroupScope: "complete-observed-native-fill-parent-roster;returned-rows-may-be-filtered",
+      sourceParentGroupScope: source6["parentGroupScope"],
+      primitiveIdScope: source6["primitiveIdScope"],
+      units: source6["units"],
+      copperRebuildPerformed: false,
+      copperFreshnessVerified: false,
+      fabricationGeometryVerified: false
+    } : {},
     historical: true,
     freshObservation: false,
     implementationKind: "retained-observation-projection",
@@ -112314,13 +112899,15 @@ function queryCurrentPcb209Observation(resultInput, targetInput3, queryInput, pr
   }
   return freezeDeep(result);
 }
-var text32, id9, ids2, primitiveLock, layer4, net3, locked, layered, routed, componentWhere, padWhere, attributeWhere, familyBase, familyQuery, currentPcb209ObservationQuerySchema, currentPcb209ObservationQueryStageSchema, currentPcb209ObservationQueryProvenanceSchema, recordSchema, recordsSchema;
+var text32, id9, ids2, primitiveLock, layer4, net3, locked, layered, routed, componentWhere, padWhere, attributeWhere, pouredWhere, familyBase, familyQuery, currentPcb209ObservationQuerySchema, currentPcb209ObservationQueryStageSchema, currentPcb209ObservationQueryProvenanceSchema, recordSchema, recordsSchema;
 var init_current_pcb_209_observation_query = __esm({
   "server/src/current-pcb-209-observation-query.ts"() {
     init_zod();
     init_core3();
     init_current_disposable_open();
     init_current_pcb_geometry();
+    init_current_pcb_209_arc_shapes();
+    init_current_pcb_209_poured_shapes();
     init_current_pcb_209_primitives();
     init_current_pcb_209_image_shapes();
     init_current_pcb_209_pad_shapes();
@@ -112347,6 +112934,12 @@ var init_current_pcb_209_observation_query = __esm({
       padType: external_exports.union([external_exports.literal(0), external_exports.literal(1), external_exports.literal(2)]).optional()
     }).strict().optional();
     attributeWhere = external_exports.object({ ...layered, parentPrimitiveId: id9.optional() }).strict().optional();
+    pouredWhere = external_exports.object({
+      layerId: layer4,
+      net: net3,
+      pourPrimitiveId: id9.optional(),
+      style: external_exports.enum(["solid", "90grid", "45grid", "none"]).optional()
+    }).strict().optional();
     familyBase = { kind: external_exports.literal("family"), primitiveIds: ids2.optional() };
     familyQuery = external_exports.discriminatedUnion("family", [
       external_exports.object({ ...familyBase, family: external_exports.literal("Line"), where: external_exports.object(routed).strict().optional() }).strict(),
@@ -112357,14 +112950,15 @@ var init_current_pcb_209_observation_query = __esm({
       external_exports.object({ ...familyBase, family: external_exports.literal("String"), where: external_exports.object(layered).strict().optional() }).strict(),
       external_exports.object({ ...familyBase, family: external_exports.literal("Attribute"), where: attributeWhere }).strict(),
       external_exports.object({ ...familyBase, family: external_exports.literal("Dimension"), where: external_exports.object(layered).strict().optional() }).strict(),
-      external_exports.object({ ...familyBase, family: external_exports.literal("Image"), where: external_exports.object(layered).strict().optional() }).strict()
+      external_exports.object({ ...familyBase, family: external_exports.literal("Image"), where: external_exports.object(layered).strict().optional() }).strict(),
+      external_exports.object({ ...familyBase, family: external_exports.literal("Poured"), where: pouredWhere }).strict()
     ]);
     currentPcb209ObservationQuerySchema = external_exports.union([
       familyQuery,
       external_exports.object({ kind: external_exports.literal("selection") }).strict(),
       external_exports.object({ kind: external_exports.literal("component-pads"), componentId: id9 }).strict()
     ]);
-    currentPcb209ObservationQueryStageSchema = external_exports.enum(["primitives209", "extended-primitives209", "selection-relations209", "pad-shapes209", "image-shapes209"]);
+    currentPcb209ObservationQueryStageSchema = external_exports.enum(["primitives209", "extended-primitives209", "selection-relations209", "pad-shapes209", "image-shapes209", "arc-shapes209", "poured-shapes209"]);
     currentPcb209ObservationQueryProvenanceSchema = external_exports.object({
       operationId: external_exports.string().max(80).regex(/^pcb209-[a-z0-9][a-z0-9_-]*$/u),
       stage: currentPcb209ObservationQueryStageSchema,
@@ -112402,6 +112996,9 @@ function queryCurrentPcb209Opening(input2 = {}) {
       "The separate observe-selection-relations stage compares two complete nine-family projections bracketed by selected-ID lists and native identity reads. Optional componentIds requests at most16 observed Component child-pad groups, correlated with global Pad rows using identity and raw scalar fields. Selection order and child order are preserved; unsupported or missing selected objects and inconsistent child groups refuse. This is observed membership, not reciprocal ownership, electrical pin mapping or saved state.",
       "observe-pad-shapes separately observes complete supported Pad rows and native top/inner/bottom special style groups twice. Groups retain exact native selectors; they are not physical layer expansion. Unsupported or incomplete groups refuse whole. Empty groups mean only that the native serializer emitted none. This stage preserves existing decoder versions and provides no fabrication or saved-state proof.",
       "observe-image-shapes separately observes Image/Picture rows with their serialized vector paths or opaque asset references. It accepts a bounded native path grammar, retains per-ID association and compares two matching samples. No asset content, font, rendered boundary, filesystem loading or public SDK instance parity is supplied.",
+      "observe-arc-shapes adds native center/radius in mil and directed endpoint angles in radians to the existing Arc DTO. It does not infer full-circle rendering from equal endpoints or modulo arcAngle.",
+      "observe-poured-shapes retains existing loaded native fill IDs, ordered parent groups and all serialized contours. Native coordinates and dimensions use ten mil per unit; ARC sweeps use degrees. No copper rebuild, freshness, connectivity, arbitrary ellipse completeness or fabrication proof is supplied.",
+      "Eight optional readers share the unchanged103-command budget. All eight require79 commands without ancillary frames and121 with them; select relevant stages. Arc/Poured check nine remaining commands before native dispatch. A refused capacity preflight still consumes its lifecycle intent and grants no retry under that operation.",
       "query-observation projects one published primitive observation by its exact result-record hash and original journal target. It performs no live read, requires no current native owner, and cannot reopen an attempt or establish freshness. Exact IDs and supported scalar filters retain historical scope; unavailable families, missing IDs and unobserved component groups refuse.",
       "The 103-request and 64MiB diagnostic transport budgets are unchanged. No ratline worker capture, debugger pause or user-selected native command is exposed."
     ],
@@ -112437,7 +113034,7 @@ var init_current_pcb_209_opening_validation = __esm({
         confirmDiagnosticLaunch: external_exports.literal(true),
         acceptExistingProfileEffects: external_exports.literal(true)
       }).strict(),
-      external_exports.object({ action: external_exports.literal("inspect"), operationId: operationId5, observation: external_exports.enum(["browser", "frames", "script", "pcb-opening", "layers209", "primitives209", "extended-primitives209", "selection-relations209", "pad-shapes209", "image-shapes209"]).optional() }).strict(),
+      external_exports.object({ action: external_exports.literal("inspect"), operationId: operationId5, observation: external_exports.enum(["browser", "frames", "script", "pcb-opening", "layers209", "primitives209", "extended-primitives209", "selection-relations209", "pad-shapes209", "image-shapes209", "arc-shapes209", "poured-shapes209"]).optional() }).strict(),
       external_exports.object({
         action: external_exports.literal("query-observation"),
         operationId: operationId5,
@@ -112455,6 +113052,8 @@ var init_current_pcb_209_opening_validation = __esm({
       external_exports.object({ action: external_exports.literal("observe-extended-primitives"), ...bound4 }).strict(),
       external_exports.object({ action: external_exports.literal("observe-pad-shapes"), ...bound4 }).strict(),
       external_exports.object({ action: external_exports.literal("observe-image-shapes"), ...bound4 }).strict(),
+      external_exports.object({ action: external_exports.literal("observe-arc-shapes"), ...bound4 }).strict(),
+      external_exports.object({ action: external_exports.literal("observe-poured-shapes"), ...bound4 }).strict(),
       external_exports.object({
         action: external_exports.literal("observe-selection-relations"),
         ...bound4,
@@ -112634,7 +113233,7 @@ function validateCurrentPcbIdentitiesResult(input2, raw) {
     limitations: [...limitations13]
   };
 }
-var CURRENT_PCB_IDENTITIES_MAX_BYTES, CURRENT_PCB_IDENTITIES_MAX_IDS, CURRENT_PCB_IDENTITIES_MAX_SELECTED_IDS, CURRENT_PCB_IDENTITIES_MAX_ID_LENGTH, CURRENT_PCB_IDENTITY_TYPE_METHOD, collectionMethods2, methods4, targetSchema13, idSchema6, families2, currentPcbIdentitiesRequestSchema, currentPcbIdentitiesQuerySchema, idsSchema2, attributeParentGroupSchema, observationSchema, currentPcbIdentitiesResultSchema, limitations13;
+var CURRENT_PCB_IDENTITIES_MAX_BYTES, CURRENT_PCB_IDENTITIES_MAX_IDS, CURRENT_PCB_IDENTITIES_MAX_SELECTED_IDS, CURRENT_PCB_IDENTITIES_MAX_ID_LENGTH, CURRENT_PCB_IDENTITY_TYPE_METHOD, collectionMethods2, methods4, targetSchema15, idSchema7, families2, currentPcbIdentitiesRequestSchema, currentPcbIdentitiesQuerySchema, idsSchema2, attributeParentGroupSchema, observationSchema, currentPcbIdentitiesResultSchema, limitations13;
 var init_current_pcb_identities = __esm({
   "server/src/current-pcb-identities.ts"() {
     init_zod();
@@ -112660,16 +113259,16 @@ var init_current_pcb_identities = __esm({
       "eda.pcb_PrimitiveAttribute.getAllPrimitiveId"
     ];
     methods4 = [...collectionMethods2, CURRENT_PCB_IDENTITY_TYPE_METHOD];
-    targetSchema13 = currentPcbLayersRequestSchema.shape.target;
-    idSchema6 = external_exports.string().min(1).max(CURRENT_PCB_IDENTITIES_MAX_ID_LENGTH);
+    targetSchema15 = currentPcbLayersRequestSchema.shape.target;
+    idSchema7 = external_exports.string().min(1).max(CURRENT_PCB_IDENTITIES_MAX_ID_LENGTH);
     families2 = ["selected", "Line", "Arc", "Via", "Component", "Pad", "String", "Dimension", "Image"];
     currentPcbIdentitiesRequestSchema = external_exports.discriminatedUnion("method", [
-      external_exports.object({ method: external_exports.enum(collectionMethods2), arguments: external_exports.object({}).strict(), target: targetSchema13 }).strict(),
-      external_exports.object({ method: external_exports.literal(CURRENT_PCB_IDENTITY_TYPE_METHOD), arguments: external_exports.object({ id: idSchema6 }).strict(), target: targetSchema13 }).strict()
+      external_exports.object({ method: external_exports.enum(collectionMethods2), arguments: external_exports.object({}).strict(), target: targetSchema15 }).strict(),
+      external_exports.object({ method: external_exports.literal(CURRENT_PCB_IDENTITY_TYPE_METHOD), arguments: external_exports.object({ id: idSchema7 }).strict(), target: targetSchema15 }).strict()
     ]);
     currentPcbIdentitiesQuerySchema = external_exports.object({ method: external_exports.enum(methods4).optional(), includeSchemas: external_exports.boolean().default(false) }).strict();
-    idsSchema2 = external_exports.array(idSchema6).max(CURRENT_PCB_IDENTITIES_MAX_IDS);
-    attributeParentGroupSchema = external_exports.object({ parentPrimitiveId: idSchema6, ids: idsSchema2 }).strict();
+    idsSchema2 = external_exports.array(idSchema7).max(CURRENT_PCB_IDENTITIES_MAX_IDS);
+    attributeParentGroupSchema = external_exports.object({ parentPrimitiveId: idSchema7, ids: idsSchema2 }).strict();
     observationSchema = external_exports.discriminatedUnion("family", [
       external_exports.object({ family: external_exports.enum(families2), ids: idsSchema2 }).strict(),
       external_exports.object({
@@ -112682,7 +113281,7 @@ var init_current_pcb_identities = __esm({
       ok: external_exports.literal(true),
       kind: external_exports.literal("current-pcb-identity-observation"),
       method: external_exports.enum(methods4),
-      target: targetSchema13,
+      target: targetSchema15,
       observations: external_exports.array(observationSchema).min(1).max(3),
       samples: external_exports.literal(2),
       implementationKind: external_exports.literal("native-task-equivalent"),
@@ -112799,7 +113398,7 @@ function decodeCurrentProjectPcbMetadataReply(raw, input2) {
   }
   return resultFor(input2, decodeExactReadEnvelope(envelope4));
 }
-var CURRENT_PROJECT_PCB_METADATA_MAX_BYTES, CURRENT_PROJECT_PCB_METADATA_TIMEOUT_MS, method3, inventoryMethod, CURRENT_PROJECT_PCB_METADATA_MAX_ITEMS, documentId3, projectId3, branchId, integer6, projectTargetSchema, targetSchema14, currentProjectPcbMetadataRequestSchema, currentProjectPcbMetadataQuerySchema, valueSchema3, currentProjectPcbMetadataResultSchema, currentProjectPcbInventoryResultSchema, observationSchema2, limitations14;
+var CURRENT_PROJECT_PCB_METADATA_MAX_BYTES, CURRENT_PROJECT_PCB_METADATA_TIMEOUT_MS, method3, inventoryMethod, CURRENT_PROJECT_PCB_METADATA_MAX_ITEMS, documentId3, projectId3, branchId, integer6, projectTargetSchema, targetSchema16, currentProjectPcbMetadataRequestSchema, currentProjectPcbMetadataQuerySchema, valueSchema3, currentProjectPcbMetadataResultSchema, currentProjectPcbInventoryResultSchema, observationSchema2, limitations14;
 var init_current_project_pcb_metadata = __esm({
   "server/src/current-project-pcb-metadata.ts"() {
     init_zod();
@@ -112817,9 +113416,9 @@ var init_current_project_pcb_metadata = __esm({
     branchId = external_exports.string().regex(/^[a-f0-9]{32}$/u);
     integer6 = external_exports.number().int().nonnegative().max(Number.MAX_SAFE_INTEGER).refine((value2) => !Object.is(value2, -0));
     projectTargetSchema = external_exports.object({ projectUuid: projectId3, branchUuid: branchId }).strict();
-    targetSchema14 = projectTargetSchema.extend({ pcbUuid: documentId3 }).strict();
+    targetSchema16 = projectTargetSchema.extend({ pcbUuid: documentId3 }).strict();
     currentProjectPcbMetadataRequestSchema = external_exports.discriminatedUnion("method", [
-      external_exports.object({ method: external_exports.literal(method3), target: targetSchema14 }).strict(),
+      external_exports.object({ method: external_exports.literal(method3), target: targetSchema16 }).strict(),
       external_exports.object({ method: external_exports.literal(inventoryMethod), target: projectTargetSchema }).strict()
     ]);
     currentProjectPcbMetadataQuerySchema = external_exports.object({ method: external_exports.enum([method3, inventoryMethod]).optional(), includeSchemas: external_exports.boolean().default(false) }).strict();
@@ -112841,7 +113440,7 @@ var init_current_project_pcb_metadata = __esm({
       ok: external_exports.literal(true),
       kind: external_exports.literal("current-project-pcb-metadata-observation"),
       method: external_exports.literal(method3),
-      target: targetSchema14,
+      target: targetSchema16,
       value: valueSchema3,
       samples: external_exports.literal(2),
       currentTabId: external_exports.enum(["tab_page1", "0"]),
@@ -113391,7 +113990,7 @@ function decodeCurrentPcbRenamePreflightReply(raw, expected3) {
   }
   return validateCurrentPcbRenamePreflightResult(expected3, decodeExactReadEnvelope(envelope4));
 }
-var CURRENT_PCB_RENAME_PREFLIGHT_MAX_BYTES, CURRENT_PCB_RENAME_PREFLIGHT_TIMEOUT_MS, CURRENT_PCB_RENAME_PREFLIGHT_MAX_PEERS, id10, targetSchema15, metadataSchema3, beforeSchema, title7, currentPcbRenamePreflightRequestSchema, limitations17, limitationSchema, currentPcbRenamePreflightResultSchema, notes, CURRENT_PCB_RENAME_PREFLIGHT_LIMITATIONS;
+var CURRENT_PCB_RENAME_PREFLIGHT_MAX_BYTES, CURRENT_PCB_RENAME_PREFLIGHT_TIMEOUT_MS, CURRENT_PCB_RENAME_PREFLIGHT_MAX_PEERS, id10, targetSchema17, metadataSchema3, beforeSchema, title7, currentPcbRenamePreflightRequestSchema, limitations17, limitationSchema, currentPcbRenamePreflightResultSchema, notes, CURRENT_PCB_RENAME_PREFLIGHT_LIMITATIONS;
 var init_current_pcb_rename_preflight = __esm({
   "server/src/current-pcb-rename-preflight.ts"() {
     init_zod();
@@ -113403,7 +114002,7 @@ var init_current_pcb_rename_preflight = __esm({
     CURRENT_PCB_RENAME_PREFLIGHT_TIMEOUT_MS = 1e4;
     CURRENT_PCB_RENAME_PREFLIGHT_MAX_PEERS = 4096;
     id10 = external_exports.string().regex(/^(?:[a-f0-9]{16}|[a-f0-9]{32})$/u);
-    targetSchema15 = external_exports.object({
+    targetSchema17 = external_exports.object({
       projectUuid: external_exports.string().regex(/^[a-f0-9]{64}$/u),
       branchUuid: external_exports.string().regex(/^[a-f0-9]{32}$/u),
       pcbUuid: id10,
@@ -113412,7 +114011,7 @@ var init_current_pcb_rename_preflight = __esm({
     metadataSchema3 = currentProjectPcbMetadataResultSchema.shape.value.omit({ projectUuid: true, ownerUuid: true });
     beforeSchema = metadataSchema3.omit({ uuid: true }).extend({ parentUuid: external_exports.literal(""), source: external_exports.literal("") }).strict();
     title7 = external_exports.string().min(1).max(512).refine((value2) => value2.trim() === value2 && !new RegExp("\\p{Cc}", "u").test(value2));
-    currentPcbRenamePreflightRequestSchema = external_exports.object({ target: targetSchema15, expectedBefore: beforeSchema, desiredTitle: title7 }).strict().refine((value2) => value2.desiredTitle !== value2.expectedBefore.displayTitle);
+    currentPcbRenamePreflightRequestSchema = external_exports.object({ target: targetSchema17, expectedBefore: beforeSchema, desiredTitle: title7 }).strict().refine((value2) => value2.desiredTitle !== value2.expectedBefore.displayTitle);
     limitations17 = {
       permissionVerified: false,
       backendActorVerified: false,
@@ -113444,7 +114043,7 @@ var init_current_pcb_rename_preflight = __esm({
     currentPcbRenamePreflightResultSchema = limitationSchema.extend({
       ok: external_exports.literal(true),
       kind: external_exports.literal("current-pcb-rename-preflight"),
-      target: targetSchema15,
+      target: targetSchema17,
       expectedBefore: beforeSchema,
       desiredTitle: title7,
       samples: external_exports.literal(2),
@@ -114385,7 +114984,7 @@ function decodeCurrentProjectOnlySymbolPreflightReply(raw, expected3) {
   }
   return Object.freeze(result);
 }
-var CURRENT_PROJECT_ONLY_SYMBOL_PREFLIGHT_TIMEOUT_MS, CURRENT_PROJECT_ONLY_SYMBOL_PREFLIGHT_MAX_BYTES, targetSchema16, beforeSchema2, currentProjectOnlySymbolPreflightRequestSchema, ticketSchema, currentProjectOnlySymbolPreflightResultSchema, limitations19;
+var CURRENT_PROJECT_ONLY_SYMBOL_PREFLIGHT_TIMEOUT_MS, CURRENT_PROJECT_ONLY_SYMBOL_PREFLIGHT_MAX_BYTES, targetSchema18, beforeSchema2, currentProjectOnlySymbolPreflightRequestSchema, ticketSchema, currentProjectOnlySymbolPreflightResultSchema, limitations19;
 var init_current_project_only_symbol_preflight = __esm({
   "server/src/current-project-only-symbol-preflight.ts"() {
     init_zod();
@@ -114396,19 +114995,19 @@ var init_current_project_only_symbol_preflight = __esm({
     init_current_project_only_symbol_guard();
     CURRENT_PROJECT_ONLY_SYMBOL_PREFLIGHT_TIMEOUT_MS = 1e4;
     CURRENT_PROJECT_ONLY_SYMBOL_PREFLIGHT_MAX_BYTES = CURRENT_SYMBOL_METADATA_MAX_BYTES;
-    targetSchema16 = external_exports.object({
+    targetSchema18 = external_exports.object({
       projectUuid: external_exports.string().regex(/^[a-f0-9]{64}$/u),
       branchUuid: external_exports.string().regex(/^[a-f0-9]{32}$/u),
       symbolUuid: external_exports.string().regex(/^(?:[a-f0-9]{16}|[a-f0-9]{32})$/u),
       ownerUuid: external_exports.string().regex(/^[a-f0-9]{32}$/u)
     }).strict();
     beforeSchema2 = currentSymbolMetadataResultSchema.shape.value.omit({ uuid: true, projectUuid: true, ownerUuid: true });
-    currentProjectOnlySymbolPreflightRequestSchema = external_exports.object({ target: targetSchema16, expectedBefore: beforeSchema2 }).strict();
+    currentProjectOnlySymbolPreflightRequestSchema = external_exports.object({ target: targetSchema18, expectedBefore: beforeSchema2 }).strict();
     ticketSchema = beforeSchema2.shape.ticket;
     currentProjectOnlySymbolPreflightResultSchema = external_exports.object({
       ok: external_exports.literal(true),
       kind: external_exports.literal("current-project-only-symbol-preflight"),
-      target: targetSchema16,
+      target: targetSchema18,
       expectedBefore: beforeSchema2,
       samples: external_exports.literal(2),
       currentTabId: external_exports.enum(["tab_page1", "0"]),
@@ -122538,7 +123137,7 @@ async function archiveNativeCapture(request13, payload, bytes2) {
     throw error63;
   }
 }
-var SCHEMA, MAX_RESPONSE, handleSchema2, textSchema, bindingSchema3, nativeUiAppBindingSchema, bound5, windowSelection, selection, confirmed, nativeUiRequestSchema, responseSchema2, discoverySchema, failedSchema, WindowsNativeUiController;
+var SCHEMA, MAX_RESPONSE, handleSchema2, textSchema2, bindingSchema3, nativeUiAppBindingSchema, bound5, windowSelection, selection, confirmed, nativeUiRequestSchema, responseSchema2, discoverySchema, failedSchema, WindowsNativeUiController;
 var init_windows_native_ui = __esm({
   "server/src/windows-native-ui.ts"() {
     init_zod();
@@ -122548,7 +123147,7 @@ var init_windows_native_ui = __esm({
     SCHEMA = "easyeda-pro-control.windows-native-ui.v1";
     MAX_RESPONSE = 24 * 1024 * 1024;
     handleSchema2 = external_exports.string().regex(/^[1-9][0-9]{0,18}$/u);
-    textSchema = external_exports.string().max(4096).refine((value2) => !value2.includes("\0"), "NUL is not native UI text.");
+    textSchema2 = external_exports.string().max(4096).refine((value2) => !value2.includes("\0"), "NUL is not native UI text.");
     bindingSchema3 = external_exports.object({
       rootPid: external_exports.number().int().positive(),
       rootStartTicks: external_exports.string().regex(/^[0-9]{15,20}$/u),
@@ -122558,7 +123157,7 @@ var init_windows_native_ui = __esm({
     nativeUiAppBindingSchema = bindingSchema3.extend({ authority: external_exports.literal("observed-unowned") });
     bound5 = { appBinding: nativeUiAppBindingSchema.optional() };
     windowSelection = { windowHandle: handleSchema2, ...bound5 };
-    selection = { ...windowSelection, name: textSchema.optional(), automationId: textSchema.optional() };
+    selection = { ...windowSelection, name: textSchema2.optional(), automationId: textSchema2.optional() };
     confirmed = { confirmUIWrite: external_exports.literal(true) };
     nativeUiRequestSchema = external_exports.discriminatedUnion("action", [
       external_exports.object({ action: external_exports.literal("discover") }).strict(),
@@ -122569,10 +123168,10 @@ var init_windows_native_ui = __esm({
       external_exports.object({ action: external_exports.literal("focus"), ...windowSelection, ...confirmed }).strict(),
       external_exports.object({ action: external_exports.literal("normal-close"), ...windowSelection, ...confirmed }).strict(),
       external_exports.object({ action: external_exports.literal("invoke"), ...selection, ...confirmed }).strict(),
-      external_exports.object({ action: external_exports.literal("setvalue"), ...selection, text: textSchema, ...confirmed }).strict(),
-      external_exports.object({ action: external_exports.literal("filename"), ...windowSelection, controlHandle: handleSchema2, text: textSchema, ...confirmed }).strict(),
+      external_exports.object({ action: external_exports.literal("setvalue"), ...selection, text: textSchema2, ...confirmed }).strict(),
+      external_exports.object({ action: external_exports.literal("filename"), ...windowSelection, controlHandle: handleSchema2, text: textSchema2, ...confirmed }).strict(),
       external_exports.object({ action: external_exports.enum(["click", "doubleclick", "rightclick", "hover"]), ...windowSelection, x: external_exports.number().int().min(-32768).max(32767), y: external_exports.number().int().min(-32768).max(32767), ...confirmed }).strict(),
-      external_exports.object({ action: external_exports.literal("keys"), ...windowSelection, text: textSchema, ...confirmed }).strict()
+      external_exports.object({ action: external_exports.literal("keys"), ...windowSelection, text: textSchema2, ...confirmed }).strict()
     ]);
     responseSchema2 = external_exports.object({ schema: external_exports.literal(SCHEMA), binding: bindingSchema3, action: external_exports.string(), result: external_exports.record(external_exports.string(), external_exports.json()) }).strict();
     discoverySchema = external_exports.object({ schema: external_exports.literal(SCHEMA), action: external_exports.literal("discover"), observations: external_exports.array(nativeUiAppBindingSchema).max(16) }).strict();
@@ -122901,7 +123500,7 @@ async function discardCloseConfirmation(input2, controller, dependencies3 = {}) 
     throw transactionError(error63, { operationId: journal.operationId, state: String(journal["state"]), orphanedCallPossible: false, nextSafeAction: String(journal["nextSafeAction"]) });
   }
 }
-var hash36, targetSchema17, buttonSchema, dialogSchema, recoveryBaseSchema, closeConfirmationRequestSchema, warningButtonSchema, warningDialogSchema, saveWarningRequestSchema, nativeCloseRecoveryRequestSchema;
+var hash36, targetSchema19, buttonSchema, dialogSchema, recoveryBaseSchema, closeConfirmationRequestSchema, warningButtonSchema, warningDialogSchema, saveWarningRequestSchema, nativeCloseRecoveryRequestSchema;
 var init_native_close_recovery = __esm({
   "server/src/native-close-recovery.ts"() {
     init_zod();
@@ -122912,7 +123511,7 @@ var init_native_close_recovery = __esm({
     init_windows_native_ui();
     init_transaction_error();
     hash36 = external_exports.string().regex(/^[a-f0-9]{64}$/u);
-    targetSchema17 = external_exports.object({ projectUuid: external_exports.string().min(1).max(256), documentUuid: external_exports.string().min(1).max(256), documentType: external_exports.union([external_exports.literal(1), external_exports.literal(2), external_exports.literal(3), external_exports.literal(4)]) }).strict();
+    targetSchema19 = external_exports.object({ projectUuid: external_exports.string().min(1).max(256), documentUuid: external_exports.string().min(1).max(256), documentType: external_exports.union([external_exports.literal(1), external_exports.literal(2), external_exports.literal(3), external_exports.literal(4)]) }).strict();
     buttonSchema = external_exports.object({ label: external_exports.literal("Leave this page"), x: external_exports.number().int().min(-32768).max(32767), y: external_exports.number().int().min(-32768).max(32767) }).strict();
     dialogSchema = external_exports.object({ title: external_exports.literal("Confirm Close"), onlyUnsavedTarget: external_exports.literal(true), targetName: external_exports.string().min(1).max(512), discardButton: buttonSchema }).strict();
     recoveryBaseSchema = external_exports.object({
@@ -122922,7 +123521,7 @@ var init_native_close_recovery = __esm({
       confirmUIWrite: external_exports.literal(true),
       discardOwnUnsavedChanges: external_exports.literal(true),
       acknowledgeDurableChanges: external_exports.boolean().optional(),
-      target: targetSchema17,
+      target: targetSchema19,
       capture: external_exports.object({ receiptPath: external_exports.string().min(1), receiptSha256: hash36, imageSha256: hash36 }).strict()
     }).strict();
     closeConfirmationRequestSchema = recoveryBaseSchema.extend({ action: external_exports.literal("discard-close-confirmation"), observedDialog: dialogSchema }).strict();
@@ -139081,10 +139680,12 @@ function publicUtilitiesOnlyCapabilities() {
       startupCompletionVerified: false,
       cadAuthority: false,
       layerObservation: "double-sampled-metadata-and-copper-count",
-      observationStages: ["observe-layers", "observe-primitives", "observe-extended-primitives", "observe-selection-relations", "observe-pad-shapes", "observe-image-shapes"],
+      observationStages: ["observe-layers", "observe-primitives", "observe-extended-primitives", "observe-selection-relations", "observe-pad-shapes", "observe-image-shapes", "observe-arc-shapes", "observe-poured-shapes"],
       primitiveObservation: "nine-loaded-view-families;ordered-selection-and-requested-component-child-pad-lists",
       padShapeObservation: "native-top-inner-bottom-style-groups;no-physical-layer-expansion",
       imageShapeObservation: "bounded-native-vector-paths-and-opaque-picture-references;no-asset-loading-or-rendered-proof",
+      arcShapeObservation: "native-centers-radii-endpoint-radians-and-direction;no-rendered-circle-proof",
+      pouredShapeObservation: "serialized-loaded-copper-fill-contours-and-parent-groups;no-rebuild-or-freshness-proof",
       historicalQuery: "digest-bound-published-snapshot;no-live-rpc-owner-adoption-or-current-state-proof"
     },
     designAccess: { enabled: false, scope: "general-geometry-and-writers;disposable-bounded-observations-and-historical-queries-only" },
@@ -139125,7 +139726,7 @@ var init_facade_mode = __esm({
       "easyeda_control_shortcuts",
       "easyeda_control_pcb209_opening"
     ]);
-    PUBLIC_UTILITIES_ONLY_SCOPE = "EasyEDA 3.2.209 scoped Math, Unit, Environment, language, API-page viewport, tab-count, active-identity and shortcut observations, plus ordinary launch. Separate catalog tools perform explicitly confirmed credential-free vendor HTTPS metadata queries without EasyEDA or SDK execution. The separate pcb209_opening route owns one disposable project/PCB opening, UI/PCB source/identity checks, bounded layer/copper-count and Line/Arc/Via/parentless-String/Component/Pad/Attribute/Dimension/Image loaded-view observations through original normal cleanup. Its selection/relations stage also captures selected IDs and requested component child-pad IDs. A separate Pad stage observes native top/inner/bottom special style groups without expanding physical layers. An Image stage retains bounded serialized vector paths or opaque Picture references without loading assets. Digest-bound historical queries read published observations without live RPCs or owner adoption; they do not describe current state. Ordinary opening can migrate data and automatically Save. No general geometry read/write, explicit Save, recovery or PCB-worker route is registered. Source review and synthetic tests are not connected execution validation. These observations and launch do not prove isolation, complete-board membership, reciprocal ownership, connectivity, saved state, physical stackup or readiness.";
+    PUBLIC_UTILITIES_ONLY_SCOPE = "EasyEDA 3.2.209 scoped Math, Unit, Environment, language, API-page viewport, tab-count, active-identity and shortcut observations, plus ordinary launch. Separate catalog tools perform explicitly confirmed credential-free vendor HTTPS metadata queries without EasyEDA or SDK execution. The separate pcb209_opening route owns one disposable project/PCB opening, UI/PCB source/identity checks, bounded layer/copper-count and Line/Arc/Via/parentless-String/Component/Pad/Attribute/Dimension/Image loaded-view observations through original normal cleanup. Its selection/relations stage also captures selected IDs and requested component child-pad IDs. A separate Pad stage observes native top/inner/bottom special style groups without expanding physical layers. An Image stage retains bounded serialized vector paths or opaque Picture references without loading assets. Arc observations add native center, radius, endpoint angles and direction. Poured observations retain existing native fill contours and parent associations without rebuilding or qualifying copper. Digest-bound historical queries read published observations without live RPCs or owner adoption; they do not describe current state. Ordinary opening can migrate data and automatically Save. No general geometry read/write, explicit Save, recovery or PCB-worker route is registered. Source review and synthetic tests are not connected execution validation. These observations and launch do not prove isolation, complete-board membership, reciprocal ownership, connectivity, saved state, physical stackup or readiness.";
     CALCULATION_ONLY_TOOLS = Object.freeze([
       "easyeda_control_api",
       "easyeda_control_discover",
@@ -139703,7 +140304,7 @@ function parseCurrentSchematicRenamePreflightRequest(input2) {
   Object.freeze(result.expectedBefore);
   return Object.freeze(result);
 }
-var CURRENT_SCHEMATIC_RENAME_PREFLIGHT_MAX_BYTES, CURRENT_SCHEMATIC_RENAME_PREFLIGHT_MAX_PEERS, id11, integer9, title8, targetSchema18, currentSchematicRenamePeerSchema, beforeSchema3, currentSchematicRenamePreflightRequestSchema;
+var CURRENT_SCHEMATIC_RENAME_PREFLIGHT_MAX_BYTES, CURRENT_SCHEMATIC_RENAME_PREFLIGHT_MAX_PEERS, id11, integer9, title8, targetSchema20, currentSchematicRenamePeerSchema, beforeSchema3, currentSchematicRenamePreflightRequestSchema;
 var init_current_schematic_rename_preflight = __esm({
   "server/src/current-schematic-rename-preflight.ts"() {
     init_zod();
@@ -139715,7 +140316,7 @@ var init_current_schematic_rename_preflight = __esm({
       (value2) => value2.trim() === value2 && /^[\u0020-\u007E]+$/u.test(value2) && !value2.includes("I"),
       "locale-invariant printable ASCII without capital I required"
     );
-    targetSchema18 = external_exports.object({
+    targetSchema20 = external_exports.object({
       projectUuid: external_exports.string().regex(/^[a-f0-9]{64}$/u),
       branchUuid: external_exports.string().regex(/^[a-f0-9]{32}$/u),
       schematicUuid: id11,
@@ -139732,7 +140333,7 @@ var init_current_schematic_rename_preflight = __esm({
       updateTime: integer9.max(864e13)
     }).strict();
     beforeSchema3 = currentSchematicRenamePeerSchema.omit({ uuid: true });
-    currentSchematicRenamePreflightRequestSchema = external_exports.object({ target: targetSchema18, expectedBefore: beforeSchema3, desiredTitle: title8 }).strict().refine((value2) => value2.expectedBefore.name === value2.expectedBefore.displayName.toLowerCase() && value2.desiredTitle.toLowerCase() !== value2.expectedBefore.name, "native name projection or normalized title change differs");
+    currentSchematicRenamePreflightRequestSchema = external_exports.object({ target: targetSchema20, expectedBefore: beforeSchema3, desiredTitle: title8 }).strict().refine((value2) => value2.expectedBefore.name === value2.expectedBefore.displayName.toLowerCase() && value2.desiredTitle.toLowerCase() !== value2.expectedBefore.name, "native name projection or normalized title change differs");
   }
 });
 
@@ -144219,6 +144820,14 @@ function diagnosticImageShapes209Params(uniqueContextId, target9) {
   const fixed = diagnosticPcbOpeningParams(uniqueContextId, target9, "observe");
   return Object.freeze({ ...fixed, functionDeclaration: CURRENT_PCB_209_IMAGE_SHAPES_FUNCTION });
 }
+function diagnosticArcShapes209Params(uniqueContextId, target9) {
+  const fixed = diagnosticPcbOpeningParams(uniqueContextId, target9, "observe");
+  return Object.freeze({ ...fixed, functionDeclaration: CURRENT_PCB_209_ARC_SHAPES_FUNCTION });
+}
+function diagnosticPouredShapes209Params(uniqueContextId, target9) {
+  const fixed = diagnosticPcbOpeningParams(uniqueContextId, target9, "observe");
+  return Object.freeze({ ...fixed, functionDeclaration: CURRENT_PCB_209_POURED_SHAPES_FUNCTION });
+}
 function diagnosticSelectionRelations209Params(uniqueContextId, target9, componentIds) {
   const fixed = diagnosticPcbOpeningParams(uniqueContextId, target9, "observe");
   const ids3 = Object.freeze(currentPcb209SelectionRelationsComponentIdsSchema.parse(componentIds));
@@ -144717,6 +145326,8 @@ function fixedNativeRequest(chunk, stringPurpose) {
       const layers209 = params["functionDeclaration"] === CURRENT_PCB_209_LAYERS_FUNCTION;
       const primitives209 = params["functionDeclaration"] === CURRENT_PCB_209_PRIMITIVES_FUNCTION;
       const imageShapes209 = params["functionDeclaration"] === CURRENT_PCB_209_IMAGE_SHAPES_FUNCTION;
+      const arcShapes209 = params["functionDeclaration"] === CURRENT_PCB_209_ARC_SHAPES_FUNCTION;
+      const pouredShapes209 = params["functionDeclaration"] === CURRENT_PCB_209_POURED_SHAPES_FUNCTION;
       const padShapes209 = params["functionDeclaration"] === CURRENT_PCB_209_PAD_SHAPES_FUNCTION;
       const extendedPrimitives209 = params["functionDeclaration"] === CURRENT_PCB_209_EXTENDED_PRIMITIVES_FUNCTION;
       let componentIds = [];
@@ -144738,6 +145349,16 @@ function fixedNativeRequest(chunk, stringPurpose) {
           return fail15();
         }
         fixed = diagnosticImageShapes209Params(params["uniqueContextId"], selected3);
+      } else if (arcShapes209) {
+        if (phase5 !== "observe") {
+          return fail15();
+        }
+        fixed = diagnosticArcShapes209Params(params["uniqueContextId"], selected3);
+      } else if (pouredShapes209) {
+        if (phase5 !== "observe") {
+          return fail15();
+        }
+        fixed = diagnosticPouredShapes209Params(params["uniqueContextId"], selected3);
       } else if (padShapes209) {
         if (phase5 !== "observe") {
           return fail15();
@@ -144778,6 +145399,10 @@ function fixedNativeRequest(chunk, stringPurpose) {
         selectedPhase = { pcbSelectionRelations209Phase: phase5, componentIds };
       } else if (imageShapes209) {
         selectedPhase = { pcbImageShapes209Phase: phase5 };
+      } else if (arcShapes209) {
+        selectedPhase = { pcbArcShapes209Phase: phase5 };
+      } else if (pouredShapes209) {
+        selectedPhase = { pcbPouredShapes209Phase: phase5 };
       } else if (padShapes209) {
         selectedPhase = { pcbPadShapes209Phase: phase5 };
       } else if (extendedPrimitives209) {
@@ -144835,6 +145460,8 @@ var init_current_pcb_diagnostic_protocol = __esm({
     init_current_pcb_209_layers();
     init_current_pcb_209_primitives();
     init_current_pcb_209_image_shapes();
+    init_current_pcb_209_arc_shapes();
+    init_current_pcb_209_poured_shapes();
     init_current_pcb_209_pad_shapes();
     init_current_pcb_209_extended_primitives();
     init_current_pcb_209_selection_relations();
@@ -144928,6 +145555,8 @@ var init_current_pcb_diagnostic_pipe = __esm({
       "selection-relations209",
       "pad-shapes209",
       "image-shapes209",
+      "arc-shapes209",
+      "poured-shapes209",
       "model-wrapper",
       "model-properties",
       "model-handler",
@@ -145333,6 +145962,42 @@ var init_current_pcb_diagnostic_pipe = __esm({
           params: diagnosticImageShapes209Params(uniqueContextId, target9),
           sessionId: this.#sessionId
         }, "image-shapes209");
+      }
+      /** The owner serializes the complete shape stage. Its fixed worst case is
+       * two parent and two ancillary checks on each side plus the native read.
+       * Refuse before any stage dispatch; do not reset or expose the pipe counter. */
+      assertPcb209ShapeStageCapacity() {
+        if (this.#stringPurpose || this.#startupPurpose || !this.#started || this.#released || this.#handedOff || this.#sessionId === null || this.#pending !== null || this.#workerEvent !== null) {
+          throw new Error("PCB209_SHAPE_STAGE_CAPACITY_UNAVAILABLE");
+        }
+        if (this.#failure !== null) {
+          throw failureError(this.#failure);
+        }
+        if (DIAGNOSTIC_REQUEST_LIMIT - (this.#nextId - 1) < 9) {
+          throw new Error("PCB209_SHAPE_STAGE_REQUEST_BUDGET");
+        }
+      }
+      observeArcShapes209(uniqueContextId, target9) {
+        if (this.#sessionId === null || this.#workerEvent !== null) {
+          return Promise.reject(new Error("PCB209_ARC_SHAPES_PIPE_INPUT"));
+        }
+        return this.#request({
+          id: this.#nextId,
+          method: "Runtime.callFunctionOn",
+          params: diagnosticArcShapes209Params(uniqueContextId, target9),
+          sessionId: this.#sessionId
+        }, "arc-shapes209");
+      }
+      observePouredShapes209(uniqueContextId, target9) {
+        if (this.#sessionId === null || this.#workerEvent !== null) {
+          return Promise.reject(new Error("PCB209_POURED_SHAPES_PIPE_INPUT"));
+        }
+        return this.#request({
+          id: this.#nextId,
+          method: "Runtime.callFunctionOn",
+          params: diagnosticPouredShapes209Params(uniqueContextId, target9),
+          sessionId: this.#sessionId
+        }, "poured-shapes209");
       }
       observeSelectionRelations209(uniqueContextId, target9, componentIds) {
         if (this.#sessionId === null || this.#workerEvent !== null) {
@@ -150013,7 +150678,7 @@ var init_current_pcb_string_create = __esm({
 });
 
 // server/src/current-pcb-string-create-observation.ts
-var LIMITS16, targetSchema19, sampleCount, primitiveId3, resultSchema6;
+var LIMITS16, targetSchema21, sampleCount, primitiveId3, resultSchema6;
 var init_current_pcb_string_create_observation = __esm({
   "server/src/current-pcb-string-create-observation.ts"() {
     init_zod();
@@ -150039,7 +150704,7 @@ var init_current_pcb_string_create_observation = __esm({
       writerSupported: false,
       executionAuthorized: false
     });
-    targetSchema19 = currentPcbLayersRequestSchema.shape.target.refine(
+    targetSchema21 = currentPcbLayersRequestSchema.shape.target.refine(
       (value2) => [32, 64].includes(value2.projectUuid.length) && value2.branchUuid.length === 32 && [16, 32].includes(value2.documentUuid.length),
       "Exact hexadecimal identity lengths are required."
     );
@@ -152491,7 +153156,7 @@ function members3(dependency) {
     return descriptor10.value;
   });
 }
-var token16, sessionToken, expectedProjectSchema, empty9, targetSchema20, inventoryTargetSchema, inventorySchema3, contextSchema2, scriptSchema, initialFrameSchema, initialPauseSchema, PAUSE_MS2, REQUEST_MS2, WAIT_MS2, eventMethods, eventReasons, CurrentPcbWorkerStartupTransport;
+var token16, sessionToken, expectedProjectSchema, empty9, targetSchema22, inventoryTargetSchema, inventorySchema3, contextSchema2, scriptSchema, initialFrameSchema, initialPauseSchema, PAUSE_MS2, REQUEST_MS2, WAIT_MS2, eventMethods, eventReasons, CurrentPcbWorkerStartupTransport;
 var init_current_pcb_worker_startup_transport = __esm({
   "server/src/current-pcb-worker-startup-transport.ts"() {
     init_zod();
@@ -152507,7 +153172,7 @@ var init_current_pcb_worker_startup_transport = __esm({
       windowTabId: external_exports.string().regex(/^[A-Za-z\d_-]{1,128}$/u)
     }).strict();
     empty9 = external_exports.object({}).strict();
-    targetSchema20 = external_exports.looseObject({
+    targetSchema22 = external_exports.looseObject({
       targetId: token16,
       type: external_exports.literal("worker"),
       attached: external_exports.literal(true),
@@ -152785,7 +153450,7 @@ var init_current_pcb_worker_startup_transport = __esm({
       };
       #acceptEvent(event4) {
         if (event4.sessionId === this.#parentSession && event4.method === "Target.attachedToTarget") {
-          const params = external_exports.object({ sessionId: sessionToken, targetInfo: targetSchema20, waitingForDebugger: external_exports.boolean() }).strict().parse(event4.params);
+          const params = external_exports.object({ sessionId: sessionToken, targetInfo: targetSchema22, waitingForDebugger: external_exports.boolean() }).strict().parse(event4.params);
           if (params.sessionId === this.#parentSession || params.targetInfo.targetId === this.#parentTarget || this.#workers.has(params.sessionId) || [...this.#workers.values()].some((value2) => value2.target.targetId === params.targetInfo.targetId) || this.#workers.size >= 16) {
             throw failure3("ATTACHMENT");
           }
@@ -154112,10 +154777,12 @@ var init_current_pcb_diagnostic_owner = __esm({
     init_current_pcb_209_primitives();
     init_current_pcb_209_extended_primitives();
     init_current_pcb_209_image_shapes();
+    init_current_pcb_209_arc_shapes();
+    init_current_pcb_209_poured_shapes();
     init_current_pcb_209_pad_shapes();
     init_current_pcb_209_selection_relations();
-    HELPER_SHA256 = "b3e1aae0f9197497ef3c85abf6707215b9351b936c547ac9cc18cb649eca9b95";
-    HELPER_BYTES = 1003912;
+    HELPER_SHA256 = "56fd190617f658d8a5f1d83094c6bfb14c678d9a66f00705873e6e620f18c91e";
+    HELPER_BYTES = 977767;
     MAX_LINE = 1e5;
     MAX_TOTAL = 96 * 1024 * 1024;
     retainedOwners = /* @__PURE__ */ new Set();
@@ -154183,6 +154850,8 @@ var init_current_pcb_diagnostic_owner = __esm({
       #extendedPrimitives209Consumed = false;
       #padShapes209Consumed = false;
       #imageShapes209Consumed = false;
+      #arcShapes209Consumed = false;
+      #pouredShapes209Consumed = false;
       #selectionRelations209Consumed = false;
       #modelConsumed = false;
       #stringPrecreateConsumed = false;
@@ -154879,6 +155548,102 @@ var init_current_pcb_diagnostic_owner = __esm({
           return result;
         } catch (caughtError) {
           this.#input.emit("error", error62("IMAGE_SHAPES209_FAILED"));
+          throw caughtError;
+        } finally {
+          this.#busy = false;
+        }
+      }
+      /** One fixed Arc shape209 DTO read through the original qualified child.
+       * It grants no complete-board, source, parent ownership or writer authority. */
+      async observeArcShapes209(input2) {
+        const context4 = this.#stagedContext, profile = this.#pcbSourceProfile, target9 = currentDisposableOpenSealedTargetSchema.parse(input2);
+        if (this.#purpose !== "diagnostic209" || context4 === null || this.#arcShapes209Consumed || !this.#pcbSourceQualified || profile === null || this.#pcbFrameObservation?.ok !== true || this.#workersConsumed || this.#modelConsumed || JSON.stringify(target9) !== JSON.stringify(this.#projectOpeningTarget)) {
+          throw error62("ARC_SHAPES209_UNAVAILABLE");
+        }
+        this.#pipe.assertPcb209ShapeStageCapacity();
+        this.#enter(true);
+        this.#arcShapes209Consumed = true;
+        try {
+          const pcb6 = context4.modelContext(), selected3 = context4.pcbOpeningContext();
+          const reprove = () => {
+            this.#available();
+            context4.pcbScript(profile);
+            if (JSON.stringify(context4.pcbOpeningContext()) !== JSON.stringify(selected3) || JSON.stringify(context4.modelContext()) !== JSON.stringify(pcb6)) {
+              throw error62("ARC_SHAPES209_CONTEXT");
+            }
+          };
+          await this.#verifyInstallation();
+          reprove();
+          await this.#verify();
+          reprove();
+          await this.#observeParent();
+          reprove();
+          await this.#observeOpeningAncillary();
+          reprove();
+          const result = decodeCurrentPcb209ArcShapesReply(
+            await this.#transfer(() => this.#pipe.observeArcShapes209(selected3.uniqueContextId, target9)),
+            target9
+          );
+          reprove();
+          await this.#observeParent();
+          reprove();
+          await this.#observeOpeningAncillary();
+          reprove();
+          await this.#verifyInstallation();
+          reprove();
+          await this.#verify();
+          reprove();
+          return result;
+        } catch (caughtError) {
+          this.#input.emit("error", error62("ARC_SHAPES209_FAILED"));
+          throw caughtError;
+        } finally {
+          this.#busy = false;
+        }
+      }
+      /** One fixed Poured shape209 DTO read through the original qualified child.
+       * It grants no complete-board, source, parent ownership or writer authority. */
+      async observePouredShapes209(input2) {
+        const context4 = this.#stagedContext, profile = this.#pcbSourceProfile, target9 = currentDisposableOpenSealedTargetSchema.parse(input2);
+        if (this.#purpose !== "diagnostic209" || context4 === null || this.#pouredShapes209Consumed || !this.#pcbSourceQualified || profile === null || this.#pcbFrameObservation?.ok !== true || this.#workersConsumed || this.#modelConsumed || JSON.stringify(target9) !== JSON.stringify(this.#projectOpeningTarget)) {
+          throw error62("POURED_SHAPES209_UNAVAILABLE");
+        }
+        this.#pipe.assertPcb209ShapeStageCapacity();
+        this.#enter(true);
+        this.#pouredShapes209Consumed = true;
+        try {
+          const pcb6 = context4.modelContext(), selected3 = context4.pcbOpeningContext();
+          const reprove = () => {
+            this.#available();
+            context4.pcbScript(profile);
+            if (JSON.stringify(context4.pcbOpeningContext()) !== JSON.stringify(selected3) || JSON.stringify(context4.modelContext()) !== JSON.stringify(pcb6)) {
+              throw error62("POURED_SHAPES209_CONTEXT");
+            }
+          };
+          await this.#verifyInstallation();
+          reprove();
+          await this.#verify();
+          reprove();
+          await this.#observeParent();
+          reprove();
+          await this.#observeOpeningAncillary();
+          reprove();
+          const result = decodeCurrentPcb209PouredShapesReply(
+            await this.#transfer(() => this.#pipe.observePouredShapes209(selected3.uniqueContextId, target9)),
+            target9
+          );
+          reprove();
+          await this.#observeParent();
+          reprove();
+          await this.#observeOpeningAncillary();
+          reprove();
+          await this.#verifyInstallation();
+          reprove();
+          await this.#verify();
+          reprove();
+          return result;
+        } catch (caughtError) {
+          this.#input.emit("error", error62("POURED_SHAPES209_FAILED"));
           throw caughtError;
         } finally {
           this.#busy = false;
@@ -155858,7 +156623,16 @@ var init_current_pcb_diagnostic_owner = __esm({
         try {
           const data15 = `${JSON.stringify({ ...this.#binding, ...request13, id: id15 })}
 `;
-          const maximum5 = request13["method"] === "Runtime.callFunctionOn" && (request13["action"] === "worker-startup-parent" && (request13["parentPhase"] === "preflight" || request13["parentPhase"] === "open-project" || request13["parentPhase"] === "pcb-preflight" || request13["parentPhase"] === "pcb-open-document" || request13["parentPhase"] === "pcb-observe") || request13["action"] === "send" && (request13["openingPhase"] === "preflight" || request13["openingPhase"] === "open-project" || request13["pcbOpeningPhase"] === "preflight" || request13["pcbOpeningPhase"] === "open-document" || request13["pcbOpeningPhase"] === "observe")) ? 32768 : 4096;
+          const maximum5 = request13["method"] === "Runtime.callFunctionOn" && (request13["action"] === "worker-startup-parent" && (request13["parentPhase"] === "preflight" || request13["parentPhase"] === "open-project" || request13["parentPhase"] === "pcb-preflight" || request13["parentPhase"] === "pcb-open-document" || request13["parentPhase"] === "pcb-observe") || request13["action"] === "send" && (request13["openingPhase"] === "preflight" || request13["openingPhase"] === "open-project" || request13["pcbOpeningPhase"] === "preflight" || request13["pcbOpeningPhase"] === "open-document" || request13["pcbOpeningPhase"] === "observe" || this.#purpose === "diagnostic209" && [
+            "pcbLayers209Phase",
+            "pcbPrimitives209Phase",
+            "pcbExtendedPrimitives209Phase",
+            "pcbSelectionRelations209Phase",
+            "pcbPadShapes209Phase",
+            "pcbImageShapes209Phase",
+            "pcbArcShapes209Phase",
+            "pcbPouredShapes209Phase"
+          ].some((key) => request13[key] === "observe"))) ? 32768 : 4096;
           if (Buffer.byteLength(data15) > maximum5) {
             throw error62("REQUEST_SIZE");
           }
@@ -156117,6 +156891,8 @@ var init_current_pcb_diagnostic_lifecycle = __esm({
     init_current_pcb_209_primitives();
     init_current_pcb_209_extended_primitives();
     init_current_pcb_209_image_shapes();
+    init_current_pcb_209_arc_shapes();
+    init_current_pcb_209_poured_shapes();
     init_current_pcb_209_pad_shapes();
     init_current_pcb_209_selection_relations();
     init_current_pcb_209_observation_query();
@@ -156229,7 +157005,7 @@ var init_current_pcb_diagnostic_lifecycle = __esm({
         this.#generation = generation5;
         this.#purpose = purpose;
         this.#stringPurpose = stringPurpose;
-        this.#stages = generation5 === "209-opening" ? ["browser", "frames", "script", "pcb-opening", "layers209", "primitives209", "extended-primitives209", "selection-relations209", "pad-shapes209", "image-shapes209"] : {
+        this.#stages = generation5 === "209-opening" ? ["browser", "frames", "script", "pcb-opening", "layers209", "primitives209", "extended-primitives209", "selection-relations209", "pad-shapes209", "image-shapes209", "arc-shapes209", "poured-shapes209"] : {
           diagnostic: diagnosticObservationStageSchema.options,
           "string-precreate": currentPcbStringPrecreateStages,
           "worker-startup": startupStages2
@@ -156293,7 +157069,7 @@ var init_current_pcb_diagnostic_lifecycle = __esm({
               consumed: operation?.records[`${stage}-intent.json`] !== void 0 || original2 && this.#observationConsumed.has(stage),
               resultRetained: original2 && this.#observations.has(stage),
               published: record21 !== void 0,
-              ...record21 === void 0 || this.#generation !== "209-opening" || !["primitives209", "extended-primitives209", "selection-relations209", "pad-shapes209", "image-shapes209"].includes(stage) ? {} : { resultRecordSha256: sha256Json(record21), observedAt: record21.createdAt },
+              ...record21 === void 0 || this.#generation !== "209-opening" || !["primitives209", "extended-primitives209", "selection-relations209", "pad-shapes209", "image-shapes209", "arc-shapes209", "poured-shapes209"].includes(stage) ? {} : { resultRecordSha256: sha256Json(record21), observedAt: record21.createdAt },
               result: stage === selectedStage ? publicObservationResult(request13.operationId, stage, (record21 ?? retained2)?.result, record21 !== void 0) : void 0
             };
           });
@@ -156868,7 +157644,7 @@ var init_current_pcb_diagnostic_lifecycle = __esm({
         assertCurrentPcbDiagnosticLaunchExclusion(this.#lease);
         requireValue16(this.#retained === retained2 && methods8.every((name6) => retained2.owner[name6] === retained2.methods[name6]), "OWNER_CHANGED");
         const status3 = retained2.methods.status.call(retained2.owner);
-        requireValue16(status3.profile === (this.#generation === "209-opening" ? "diagnostic209" : this.#purpose) && (this.#generation !== "209-opening" || typeof retained2.methods.observeLayers209 === "function" && retained2.owner.observeLayers209 === retained2.methods.observeLayers209 && typeof retained2.methods.observePrimitives209 === "function" && retained2.owner.observePrimitives209 === retained2.methods.observePrimitives209 && typeof retained2.methods.observeExtendedPrimitives209 === "function" && retained2.owner.observeExtendedPrimitives209 === retained2.methods.observeExtendedPrimitives209 && typeof retained2.methods.observeSelectionRelations209 === "function" && retained2.owner.observeSelectionRelations209 === retained2.methods.observeSelectionRelations209 && typeof retained2.methods.observePadShapes209 === "function" && retained2.owner.observePadShapes209 === retained2.methods.observePadShapes209 && typeof retained2.methods.observeImageShapes209 === "function" && retained2.owner.observeImageShapes209 === retained2.methods.observeImageShapes209) && (!this.#stringPurpose || typeof retained2.methods.observeStringPrecreate === "function" && retained2.owner.observeStringPrecreate === retained2.methods.observeStringPrecreate && typeof retained2.methods.observeCommonBaseline === "function" && retained2.owner.observeCommonBaseline === retained2.methods.observeCommonBaseline && typeof retained2.methods.retainedCommonBaselineFailure === "function" && retained2.owner.retainedCommonBaselineFailure === retained2.methods.retainedCommonBaselineFailure) && (this.#purpose !== "worker-startup" || typeof retained2.methods.handoffWorkerStartup === "function" && retained2.owner.handoffWorkerStartup === retained2.methods.handoffWorkerStartup), "OWNER_PURPOSE_CHANGED");
+        requireValue16(status3.profile === (this.#generation === "209-opening" ? "diagnostic209" : this.#purpose) && (this.#generation !== "209-opening" || typeof retained2.methods.observeLayers209 === "function" && retained2.owner.observeLayers209 === retained2.methods.observeLayers209 && typeof retained2.methods.observePrimitives209 === "function" && retained2.owner.observePrimitives209 === retained2.methods.observePrimitives209 && typeof retained2.methods.observeExtendedPrimitives209 === "function" && retained2.owner.observeExtendedPrimitives209 === retained2.methods.observeExtendedPrimitives209 && typeof retained2.methods.observeSelectionRelations209 === "function" && retained2.owner.observeSelectionRelations209 === retained2.methods.observeSelectionRelations209 && typeof retained2.methods.observePadShapes209 === "function" && retained2.owner.observePadShapes209 === retained2.methods.observePadShapes209 && typeof retained2.methods.observeImageShapes209 === "function" && retained2.owner.observeImageShapes209 === retained2.methods.observeImageShapes209 && typeof retained2.methods.observeArcShapes209 === "function" && retained2.owner.observeArcShapes209 === retained2.methods.observeArcShapes209 && typeof retained2.methods.observePouredShapes209 === "function" && retained2.owner.observePouredShapes209 === retained2.methods.observePouredShapes209) && (!this.#stringPurpose || typeof retained2.methods.observeStringPrecreate === "function" && retained2.owner.observeStringPrecreate === retained2.methods.observeStringPrecreate && typeof retained2.methods.observeCommonBaseline === "function" && retained2.owner.observeCommonBaseline === retained2.methods.observeCommonBaseline && typeof retained2.methods.retainedCommonBaselineFailure === "function" && retained2.owner.retainedCommonBaselineFailure === retained2.methods.retainedCommonBaselineFailure) && (this.#purpose !== "worker-startup" || typeof retained2.methods.handoffWorkerStartup === "function" && retained2.owner.handoffWorkerStartup === retained2.methods.handoffWorkerStartup), "OWNER_PURPOSE_CHANGED");
         requireValue16(retained2.binding === null || canonicalJson(status3.binding) === canonicalJson(retained2.binding), "BINDING_CHANGED");
         requireValue16(this.#startupOpening === null || startupOpeningMethods.every((name6) => this.#startupOpening?.owner[name6] === this.#startupOpening?.methods[name6]), "STARTUP_OPENING_OWNER_CHANGED");
       }
@@ -157097,7 +157873,9 @@ var init_current_pcb_diagnostic_lifecycle = __esm({
             observeExtendedPrimitives209: owner2.observeExtendedPrimitives209,
             observeSelectionRelations209: owner2.observeSelectionRelations209,
             observePadShapes209: owner2.observePadShapes209,
-            observeImageShapes209: owner2.observeImageShapes209
+            observeImageShapes209: owner2.observeImageShapes209,
+            observeArcShapes209: owner2.observeArcShapes209,
+            observePouredShapes209: owner2.observePouredShapes209
           } : {},
           ...this.#stringPurpose ? {
             observeStringPrecreate: owner2.observeStringPrecreate,
@@ -157186,7 +157964,7 @@ var init_current_pcb_diagnostic_lifecycle = __esm({
         if (request13.action === "observe-common-baseline") {
           return this.#observeCommonBaseline(request13, operation, operations, retained2);
         }
-        if (request13.action === "browser-observation" || request13.action === "inspect-frames" || request13.action === "inspect-script" || request13.action === "inspect-workers" || request13.action === "inspect-worker-script" || request13.action === "observe-worker-state" || request13.action === "observe-model-state" || request13.action === "observe-pcb-opening" || request13.action === "observe-string-precreate" || request13.action === "observe-layers" || request13.action === "observe-primitives" || request13.action === "observe-extended-primitives" || request13.action === "observe-selection-relations" || request13.action === "observe-pad-shapes" || request13.action === "observe-image-shapes") {
+        if (request13.action === "browser-observation" || request13.action === "inspect-frames" || request13.action === "inspect-script" || request13.action === "inspect-workers" || request13.action === "inspect-worker-script" || request13.action === "observe-worker-state" || request13.action === "observe-model-state" || request13.action === "observe-pcb-opening" || request13.action === "observe-string-precreate" || request13.action === "observe-layers" || request13.action === "observe-primitives" || request13.action === "observe-extended-primitives" || request13.action === "observe-selection-relations" || request13.action === "observe-pad-shapes" || request13.action === "observe-image-shapes" || request13.action === "observe-arc-shapes" || request13.action === "observe-poured-shapes") {
           return this.#observe(request13, operation, operations, retained2);
         }
         if (request13.action === "observe-window") {
@@ -157306,6 +158084,12 @@ var init_current_pcb_diagnostic_lifecycle = __esm({
         if (request13.action === "observe-image-shapes") {
           stage = "image-shapes209";
         }
+        if (request13.action === "observe-arc-shapes") {
+          stage = "arc-shapes209";
+        }
+        if (request13.action === "observe-poured-shapes") {
+          stage = "poured-shapes209";
+        }
         requireValue16(operation.records["binding.json"]?.launchAcknowledged === true && retained2.binding?.rootCreated !== "0" && operation.records["close-intent.json"] === void 0 && operation.records["terminated.json"] === void 0, "OBSERVATION_UNAVAILABLE");
         requireValue16(!this.#observationConsumed.has(stage) && operation.records[`${stage}-intent.json`] === void 0, "OBSERVATION_CONSUMED");
         requireValue16(stage !== "frames" || operation.records["browser-result.json"] !== void 0, "BROWSER_OBSERVATION_REQUIRED");
@@ -157335,6 +158119,14 @@ var init_current_pcb_diagnostic_lifecycle = __esm({
         }
         if (stage === "image-shapes209") {
           requireValue16(this.#generation === "209-opening" && retained2.methods.observeImageShapes209 !== void 0 && !this.#observationConsumed.has("workers") && !this.#observationConsumed.has("model-state"), "IMAGE_SHAPES209_PURPOSE");
+          this.#originalPcbSource(operation);
+        }
+        if (stage === "arc-shapes209") {
+          requireValue16(this.#generation === "209-opening" && retained2.methods.observeArcShapes209 !== void 0 && !this.#observationConsumed.has("workers") && !this.#observationConsumed.has("model-state"), "ARC_SHAPES209_PURPOSE");
+          this.#originalPcbSource(operation);
+        }
+        if (stage === "poured-shapes209") {
+          requireValue16(this.#generation === "209-opening" && retained2.methods.observePouredShapes209 !== void 0 && !this.#observationConsumed.has("workers") && !this.#observationConsumed.has("model-state"), "POURED_SHAPES209_PURPOSE");
           this.#originalPcbSource(operation);
         }
         if (stage === "model-state") {
@@ -157437,6 +158229,14 @@ var init_current_pcb_diagnostic_lifecycle = __esm({
             const observe7 = retained2.methods.observeImageShapes209;
             requireValue16(this.#generation === "209-opening" && observe7 !== void 0, "IMAGE_SHAPES209_PURPOSE");
             result = await observe7.call(retained2.owner, this.#originalProjectOpening(operation).sealedTarget);
+          } else if (request13.action === "observe-arc-shapes") {
+            const observe7 = retained2.methods.observeArcShapes209;
+            requireValue16(this.#generation === "209-opening" && observe7 !== void 0, "ARC_SHAPES209_PURPOSE");
+            result = await observe7.call(retained2.owner, this.#originalProjectOpening(operation).sealedTarget);
+          } else if (request13.action === "observe-poured-shapes") {
+            const observe7 = retained2.methods.observePouredShapes209;
+            requireValue16(this.#generation === "209-opening" && observe7 !== void 0, "POURED_SHAPES209_PURPOSE");
+            result = await observe7.call(retained2.owner, this.#originalProjectOpening(operation).sealedTarget);
           } else if (request13.action === "observe-string-precreate") {
             const observe7 = retained2.methods.observeStringPrecreate;
             requireValue16(this.#stringPurpose && observe7 !== void 0, "STRING_PURPOSE_REQUIRED");
@@ -157490,7 +158290,9 @@ var init_current_pcb_diagnostic_lifecycle = __esm({
         const selectionLimit = stage === "selection-relations209" ? CURRENT_PCB_209_SELECTION_RELATIONS_RESULT_BYTES : extendedLimit;
         const padShapesLimit = stage === "pad-shapes209" ? CURRENT_PCB_209_PAD_SHAPES_RESULT_BYTES : selectionLimit;
         const imageShapesLimit = stage === "image-shapes209" ? CURRENT_PCB_209_IMAGE_SHAPES_RESULT_BYTES : padShapesLimit;
-        requireValue16(Buffer.byteLength(canonicalJson(result)) <= (stage === "string-precreate" ? STRING_PRECREATE_OBSERVATION_MAX_BYTES : imageShapesLimit), "OBSERVATION_BOUND");
+        const arcShapesLimit = stage === "arc-shapes209" ? CURRENT_PCB_209_ARC_SHAPES_RESULT_BYTES : imageShapesLimit;
+        const pouredShapesLimit = stage === "poured-shapes209" ? CURRENT_PCB_209_POURED_SHAPES_RESULT_BYTES : arcShapesLimit;
+        requireValue16(Buffer.byteLength(canonicalJson(result)) <= (stage === "string-precreate" ? STRING_PRECREATE_OBSERVATION_MAX_BYTES : pouredShapesLimit), "OBSERVATION_BOUND");
         if (request13.action === "observe-selection-relations") {
           requireValue16(Array.isArray(result["requestedComponentIds"]) && canonicalJson(result["requestedComponentIds"]) === canonicalJson(request13.componentIds), "SELECTION_RELATIONS209_REQUEST");
         }
@@ -161206,7 +162008,7 @@ function request3(input2) {
   const value2 = exact6(input2, ["scope", "target", "actor"]);
   return Object.freeze({
     scope: validateClockControlScope(value2["scope"]),
-    target: targetSchema21.parse(exact6(value2["target"], ["projectUuid", "branchUuid"])),
+    target: targetSchema23.parse(exact6(value2["target"], ["projectUuid", "branchUuid"])),
     actor: validateActorProjection(value2["actor"])
   });
 }
@@ -161236,10 +162038,10 @@ function decodeCurrentAgedSqlRendererReply(raw, expected3) {
   const envelope4 = exact6(extractToolPayload(raw), ["schema", "utf8Bytes", "json"]);
   need75(envelope4["schema"] === EXACT_READ_ENVELOPE_SCHEMA && typeof envelope4["json"] === "string" && envelope4["json"].length > 0 && envelope4["json"].length <= MAX_BYTES11 && Buffer.byteLength(JSON.stringify(envelope4)) <= MAX_BYTES11);
   const value2 = exact6(decodeExactReadEnvelope(envelope4), ["profile", "target", "controls", "mutationDispatched", "executionAuthorized"]);
-  need75(value2["profile"] === "private.current-aged-sql-renderer.v1" && value2["mutationDispatched"] === false && value2["executionAuthorized"] === false && canonicalJson(targetSchema21.parse(value2["target"])) === canonicalJson(selected3.target));
+  need75(value2["profile"] === "private.current-aged-sql-renderer.v1" && value2["mutationDispatched"] === false && value2["executionAuthorized"] === false && canonicalJson(targetSchema23.parse(value2["target"])) === canonicalJson(selected3.target));
   return validateCurrentAgedSqlClockControls(value2["controls"], selected3.scope, "renderer");
 }
-var MAX_BYTES11, targetSchema21, OLD_URL_CHECK;
+var MAX_BYTES11, targetSchema23, OLD_URL_CHECK;
 var init_current_aged_sql_renderer_program = __esm({
   "server/src/current-aged-sql-renderer-program.ts"() {
     init_zod();
@@ -161250,7 +162052,7 @@ var init_current_aged_sql_renderer_program = __esm({
     init_symbol_clock_controls();
     init_symbol_dual_actor();
     MAX_BYTES11 = 98304;
-    targetSchema21 = external_exports.object({ projectUuid: external_exports.string().regex(/^[a-f0-9]{64}$/u), branchUuid: external_exports.string().regex(/^[a-f0-9]{32}$/u) }).strict();
+    targetSchema23 = external_exports.object({ projectUuid: external_exports.string().regex(/^[a-f0-9]{64}$/u), branchUuid: external_exports.string().regex(/^[a-f0-9]{32}$/u) }).strict();
     OLD_URL_CHECK = String.raw`if(typeof href!=='string'||!/^https:\/\/client\/editor\?cll=(?:trace|debug|info|warn|error)#?$/.test(href)||location.origin!=='https://client'||!document||document.nodeType!==9||document.defaultView!==root||document.URL!==href)bad();`;
   }
 });
@@ -169522,7 +170324,7 @@ function decodeCurrentSymbolCopySavedReadReply(raw, original2, input2) {
   }
   return Object.freeze(result);
 }
-var actorSchema3, targetSchema22, versionSchema3, beforeSchema5, currentSymbolCopySavedReadRequestSchema, observationSchema7, resultSchema10;
+var actorSchema3, targetSchema24, versionSchema3, beforeSchema5, currentSymbolCopySavedReadRequestSchema, observationSchema7, resultSchema10;
 var init_current_symbol_copy_saved_read_program = __esm({
   "server/src/current-symbol-copy-saved-read-program.ts"() {
     init_zod();
@@ -169540,11 +170342,11 @@ var init_current_symbol_copy_saved_read_program = __esm({
       username: external_exports.string().min(1).max(ACTOR_NAME_MAX_CODE_UNITS),
       nickname: external_exports.string().max(ACTOR_NAME_MAX_CODE_UNITS)
     }).strict();
-    targetSchema22 = currentSavedSymbolReadRequestSchema.shape.target.extend({ symbolUuid: external_exports.string().regex(/^[a-f0-9]{16}$/u) }).strict();
+    targetSchema24 = currentSavedSymbolReadRequestSchema.shape.target.extend({ symbolUuid: external_exports.string().regex(/^[a-f0-9]{16}$/u) }).strict();
     versionSchema3 = external_exports.string().regex(/^[1-9][0-9]{0,15}$/u).refine((value2) => Number.isSafeInteger(Number(value2)) && Number(value2) <= 864e13);
     beforeSchema5 = currentSavedSymbolReadRequestSchema.shape.expectedBefore.extend({ source: external_exports.literal(""), version: versionSchema3 }).strict();
     currentSymbolCopySavedReadRequestSchema = external_exports.object({
-      target: targetSchema22,
+      target: targetSchema24,
       expectedBefore: beforeSchema5,
       expectedActor: actorSchema3,
       maximumTicket: external_exports.number().int().positive().max(Number.MAX_SAFE_INTEGER - 1).refine((value2) => !Object.is(value2, -0)),
@@ -169552,8 +170354,8 @@ var init_current_symbol_copy_saved_read_program = __esm({
     }).strict().refine((value2) => value2.expectedBefore.ticket + 1 === value2.maximumTicket);
     observationSchema7 = external_exports.object({
       profile: external_exports.literal("private.saved-symbol-content-observation.v1"),
-      projectUuid: targetSchema22.shape.projectUuid,
-      targetUuid: targetSchema22.shape.symbolUuid,
+      projectUuid: targetSchema24.shape.projectUuid,
+      targetUuid: targetSchema24.shape.symbolUuid,
       maximumTicket: currentSymbolCopySavedReadRequestSchema.shape.maximumTicket,
       workerClient: external_exports.string().regex(/^[a-f0-9]{16}$/u),
       content: external_exports.string().min(1).max(CURRENT_SAVED_SYMBOL_CONTENT_LIMIT),
@@ -169563,7 +170365,7 @@ var init_current_symbol_copy_saved_read_program = __esm({
     }).strict();
     resultSchema10 = external_exports.object({
       profile: external_exports.literal("private.current-symbol-copy-saved-read-observation.v1"),
-      target: targetSchema22,
+      target: targetSchema24,
       expectedBefore: beforeSchema5,
       expectedActor: actorSchema3,
       observation: observationSchema7,
@@ -170124,7 +170926,7 @@ function decodeCurrentSymbolCopySourceReadReply(raw, original2, input2) {
   Object.freeze(result.observation);
   return Object.freeze(result);
 }
-var actorSchema4, targetSchema23, beforeSchema6, currentSymbolCopySourceReadRequestSchema, observationSchema9, resultSchema12;
+var actorSchema4, targetSchema25, beforeSchema6, currentSymbolCopySourceReadRequestSchema, observationSchema9, resultSchema12;
 var init_current_symbol_copy_source_read_program = __esm({
   "server/src/current-symbol-copy-source-read-program.ts"() {
     init_zod();
@@ -170142,10 +170944,10 @@ var init_current_symbol_copy_source_read_program = __esm({
       username: external_exports.string().min(1).max(ACTOR_NAME_MAX_CODE_UNITS),
       nickname: external_exports.string().max(ACTOR_NAME_MAX_CODE_UNITS)
     }).strict();
-    targetSchema23 = currentSavedSymbolReadRequestSchema.shape.target;
+    targetSchema25 = currentSavedSymbolReadRequestSchema.shape.target;
     beforeSchema6 = currentSavedSymbolReadRequestSchema.shape.expectedBefore;
     currentSymbolCopySourceReadRequestSchema = external_exports.object({
-      target: targetSchema23,
+      target: targetSchema25,
       expectedBefore: beforeSchema6,
       expectedActor: actorSchema4,
       maximumTicket: external_exports.number().int().nonnegative().max(Number.MAX_SAFE_INTEGER - 3).refine((value2) => !Object.is(value2, -0)),
@@ -170153,8 +170955,8 @@ var init_current_symbol_copy_source_read_program = __esm({
     }).strict().refine((value2) => value2.expectedBefore.ticket <= value2.maximumTicket);
     observationSchema9 = external_exports.object({
       profile: external_exports.literal("private.saved-symbol-content-observation.v1"),
-      projectUuid: targetSchema23.shape.projectUuid,
-      targetUuid: targetSchema23.shape.symbolUuid,
+      projectUuid: targetSchema25.shape.projectUuid,
+      targetUuid: targetSchema25.shape.symbolUuid,
       maximumTicket: currentSymbolCopySourceReadRequestSchema.shape.maximumTicket,
       workerClient: external_exports.string().regex(/^[a-f0-9]{16}$/u),
       content: external_exports.string().min(1).max(CURRENT_SAVED_SYMBOL_CONTENT_LIMIT),
@@ -170164,7 +170966,7 @@ var init_current_symbol_copy_source_read_program = __esm({
     }).strict();
     resultSchema12 = external_exports.object({
       profile: external_exports.literal("private.current-symbol-copy-source-read-observation.v1"),
-      target: targetSchema23,
+      target: targetSchema25,
       expectedBefore: beforeSchema6,
       expectedActor: actorSchema4,
       observation: observationSchema9,
@@ -179693,7 +180495,7 @@ async function prepareCurrentPcbRename(input2) {
   const captured = data14(input2, ["before", "target", "desiredTitle", "witness"]);
   const before = input2.before;
   need112(captured["before"] === before, "original SQL inventory changed");
-  const completion2 = readerCompletion(before), target9 = freezeDeep(targetSchema24.parse(data14(captured["target"])));
+  const completion2 = readerCompletion(before), target9 = freezeDeep(targetSchema26.parse(data14(captured["target"])));
   const rawWitness = data14(captured["witness"]), witness = freezeDeep(witnessSchema3.parse({
     ...rawWitness,
     ...rawWitness["agedHead"] === void 0 ? {} : { agedHead: data14(rawWitness["agedHead"]) }
@@ -179770,7 +180572,7 @@ async function bindCurrentPcbRenameTimes(preparation3, input2) {
   need112(preparations3.get(preparation3) === prepared && canonicalJson(preparation3.witness) === canonicalJson(prepared.witness), "original PCB preparation changed");
   return result;
 }
-var identifier24, account, integer26, time13, title14, metadataSchema11, targetSchema24, offset6, witnessSchema3, LIMITATIONS7, preparations3;
+var identifier24, account, integer26, time13, title14, metadataSchema11, targetSchema26, offset6, witnessSchema3, LIMITATIONS7, preparations3;
 var init_current_pcb_rename_preparation = __esm({
   "server/src/current-pcb-rename-preparation.ts"() {
     init_zod();
@@ -179796,7 +180598,7 @@ var init_current_pcb_rename_preparation = __esm({
       board: external_exports.union([external_exports.literal(""), identifier24]),
       zIndex: external_exports.null()
     }).strict();
-    targetSchema24 = external_exports.object({
+    targetSchema26 = external_exports.object({
       projectUuid: external_exports.string().regex(/^(?:[a-f0-9]{32}|[a-f0-9]{64})$/u),
       branchUuid: account,
       ownerUuid: account,
@@ -179804,7 +180606,7 @@ var init_current_pcb_rename_preparation = __esm({
     }).strict();
     offset6 = external_exports.number().int().min(-840).max(840).refine((value2) => !Object.is(value2, -0));
     witnessSchema3 = external_exports.object({
-      projectUuid: targetSchema24.shape.projectUuid,
+      projectUuid: targetSchema26.shape.projectUuid,
       branchUuid: account,
       backendActorUuid: account,
       client: currentPcbStoredHeaderSchema.shape.client,
@@ -194592,7 +195394,7 @@ var init_src = __esm({
       };
       server.registerTool(diagnosticTool, {
         title: diagnostic209 ? "Open and qualify a disposable EasyEDA 3.2.209 PCB session" : "Validate a contained native EasyEDA diagnostic session",
-        description: diagnostic209 ? "Separate EasyEDA3.2.209 validation-only original-owner launch, UI source qualification and one checkpoint-bound disposable project/PCB opening. Query pcb209-opening/pcb209-opening-validate first. After accepted PCB frame/source/identity, observe-layers returns double-sampled layer metadata and copper count. observe-primitives returns matching Line/Arc/Via/parentless-String loaded-view projections and IDs. The separate observe-extended-primitives returns matching Component/Pad/Attribute/Dimension/Image projections, IDs, observed Attribute parent groups and Component metadata presence states. observe-selection-relations combines all nine families with ordered selected IDs and0..16 requested Component child-pad lists, refusing missing or contradictory membership. observe-pad-shapes separately returns supported Pad rows and native top/inner/bottom style groups without physical-layer expansion. observe-image-shapes separately returns Image/Picture rows with bounded serialized vector paths or opaque asset references, without loading asset content or proving rendered boundaries. query-observation reads a published historical result by exact record SHA for family filters, requested IDs, retained selection or observed child pads; it makes no live call and grants no current-state or owner authority. Each object stage has a256-row per-family and384KiB aggregate bound; models without views and unqueried families are excluded. No complete-board, reciprocal ownership, connectivity, physical-stackup, startup, asset/rendering or saved-state proof. Uses fixed209 executable/selectors/UI/PCB pins and pcb209-* IDs; older diagnostic/worker/model purposes cannot be selected. No arbitrary protocol, caller code, target URL, worker inspection, ratline capture, CAD edit or explicit Save. Existing-profile launch/open can restore projects, migrate, replay caches and automatically Save. Keep the original owner alive through one-shot opening/observations, normal close, retained root/Job termination, helper release and receipt settlement. Inspect after lost replies; never replay navigation/observations or choose Save/Discard. No historical-owner adoption, forced exit or new owner after ambiguity." : "Validation-only original-owned native launch, fixed source/frame/worker observations and sampled PCB compiler/pending-work/raw-String reads. Query offline pcb-diagnostic-validation and validate exact arguments first. The separate worker-startup wrapper uses its own fixed owner; capture-project requires an exact disposable target and explicit debugger-pause acceptance, arms capture before opening, and binds retained constructors to the selected project/branch/window. After published capture, observe-current-assignments checks the retained wrappers; observe-actor-clock then compares a UI/worker/worker/UI actor and local-Date bracket. The independent observe-current-channel stage checks original channel relations, fixed publisher-method associations and paired gates after published assignments. These are point-in-time, non-atomic observations, not native peer ownership, contained destinations, clock provenance or Save authority. It cannot upgrade an ordinary owner and grants no writer authority. Startup and opening use the existing profile: restoration, migration, cache replay and automatic Save are possible. Ordinary open-project binds an exact registered disposable file/checkpoint and empty source-qualified UI. After accepted project-only opening choose worker discovery OR open-pcb, not both. open-pcb derives the retained PCB target; observe-pcb-opening separately proves its child frame, DOM owner, complete source and native identity before observe-model-state. Samples are non-atomic and do not prove whole-board membership, continuous publishers, containment, queue completion or saved state. No CAD edits, explicit Save, caller executable, URL, source hash, CDP method or JavaScript. Every opening/observation stage is consumed once; inspect retained outcomes after lost replies. Normal close, proved root/Job termination, helper release and record settlement are separate original-owner steps. No forced exit, implicit Save/Discard or journal-derived ownership. Ambiguous creation or a failed suspended-image check cannot use no-process cleanup.",
+        description: diagnostic209 ? "Separate EasyEDA3.2.209 validation-only original-owner launch, UI source qualification and one checkpoint-bound disposable project/PCB opening. Query pcb209-opening/pcb209-opening-validate first. After accepted PCB frame/source/identity, observe-layers returns double-sampled layer metadata and copper count. observe-primitives returns matching Line/Arc/Via/parentless-String loaded-view projections and IDs. The separate observe-extended-primitives returns matching Component/Pad/Attribute/Dimension/Image projections, IDs, observed Attribute parent groups and Component metadata presence states. observe-selection-relations combines all nine families with ordered selected IDs and0..16 requested Component child-pad lists, refusing missing or contradictory membership. observe-pad-shapes separately returns supported Pad rows and native top/inner/bottom style groups without physical-layer expansion. observe-image-shapes separately returns Image/Picture rows with bounded serialized vector paths or opaque asset references, without loading asset content or proving rendered boundaries. observe-arc-shapes returns native centers/radii in mil, endpoint radians and sweep while keeping the base Arc DTOs. observe-poured-shapes returns existing native fill IDs, parent groups and serialized contours in native ten-mil units, without copper rebuild, freshness or fabrication proof. New stages require enough remaining original transport capacity before native dispatch. query-observation reads a published historical result by exact record SHA for family filters, requested IDs, retained selection or observed child pads; it makes no live call and grants no current-state or owner authority. Each object stage has a256-row per-family and384KiB aggregate bound; models without views and unqueried families are excluded. No complete-board, reciprocal ownership, connectivity, physical-stackup, startup, asset/rendering or saved-state proof. Uses fixed209 executable/selectors/UI/PCB pins and pcb209-* IDs; older diagnostic/worker/model purposes cannot be selected. No arbitrary protocol, caller code, target URL, worker inspection, ratline capture, CAD edit or explicit Save. Existing-profile launch/open can restore projects, migrate, replay caches and automatically Save. Keep the original owner alive through one-shot opening/observations, normal close, retained root/Job termination, helper release and receipt settlement. Inspect after lost replies; never replay navigation/observations or choose Save/Discard. No historical-owner adoption, forced exit or new owner after ambiguity." : "Validation-only original-owned native launch, fixed source/frame/worker observations and sampled PCB compiler/pending-work/raw-String reads. Query offline pcb-diagnostic-validation and validate exact arguments first. The separate worker-startup wrapper uses its own fixed owner; capture-project requires an exact disposable target and explicit debugger-pause acceptance, arms capture before opening, and binds retained constructors to the selected project/branch/window. After published capture, observe-current-assignments checks the retained wrappers; observe-actor-clock then compares a UI/worker/worker/UI actor and local-Date bracket. The independent observe-current-channel stage checks original channel relations, fixed publisher-method associations and paired gates after published assignments. These are point-in-time, non-atomic observations, not native peer ownership, contained destinations, clock provenance or Save authority. It cannot upgrade an ordinary owner and grants no writer authority. Startup and opening use the existing profile: restoration, migration, cache replay and automatic Save are possible. Ordinary open-project binds an exact registered disposable file/checkpoint and empty source-qualified UI. After accepted project-only opening choose worker discovery OR open-pcb, not both. open-pcb derives the retained PCB target; observe-pcb-opening separately proves its child frame, DOM owner, complete source and native identity before observe-model-state. Samples are non-atomic and do not prove whole-board membership, continuous publishers, containment, queue completion or saved state. No CAD edits, explicit Save, caller executable, URL, source hash, CDP method or JavaScript. Every opening/observation stage is consumed once; inspect retained outcomes after lost replies. Normal close, proved root/Job termination, helper release and record settlement are separate original-owner steps. No forced exit, implicit Save/Discard or journal-derived ownership. Ambiguous creation or a failed suspended-image check cannot use no-process cleanup.",
         inputSchema: inputSchema6,
         outputSchema: currentSymbolOperationToolOutputSchema,
         annotations: { readOnlyHint: false, destructiveHint: false, idempotentHint: false, openWorldHint: true }

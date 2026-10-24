@@ -3,12 +3,14 @@ import { test } from "node:test";
 import { z } from "zod";
 import { sha256Text } from "../src/core.ts";
 import { currentDisposableOpenSealedTargetSchema } from "../src/current-disposable-open.ts";
+import { decodeCurrentPcb209ArcShapesReply } from "../src/current-pcb-209-arc-shapes.ts";
+import { decodeCurrentPcb209PouredShapesReply } from "../src/current-pcb-209-poured-shapes.ts";
 import { decodeCurrentPcb209PrimitivesReply } from "../src/current-pcb-209-primitives.ts";
 import { decodeCurrentPcb209ImageShapesReply } from "../src/current-pcb-209-image-shapes.ts";
 import { decodeCurrentPcb209PadShapesReply } from "../src/current-pcb-209-pad-shapes.ts";
+// oxlint-disable-next-line import/max-dependencies -- Historical reconstruction verifies all seven original decoders together without replacing their behavior with mocks.
 import { decodeCurrentPcb209ExtendedPrimitivesReply } from "../src/current-pcb-209-extended-primitives.ts";
 import { decodeCurrentPcb209SelectionRelationsReply } from "../src/current-pcb-209-selection-relations.ts";
-// oxlint-disable-next-line import/max-dependencies -- Historical reconstruction verifies all five original decoders together without replacing their behavior with mocks.
 import { currentPcb209ObservationQuerySchema, queryCurrentPcb209Observation } from "../src/current-pcb-209-observation-query.ts";
 
 const path = String.raw`C:\Reviewed\HistoricalQueryFixture.eprj2`;
@@ -18,7 +20,7 @@ const projectedTarget = { projectUuid: target.projectUuid, branchUuid: target.br
   tabId: `${target.documentUuid}@${target.projectUuid}` };
 const componentIds = ["component-a", "component-b"];
 const records = z.array(z.record(z.string(), z.unknown()));
-type Stage = "primitives209" | "extended-primitives209" | "selection-relations209" | "pad-shapes209" | "image-shapes209";
+type Stage = "primitives209" | "extended-primitives209" | "selection-relations209" | "pad-shapes209" | "image-shapes209" | "arc-shapes209" | "poured-shapes209";
 function fixture(stage: Stage): Readonly<Record<string, unknown>> {
   const line = { primitiveId: "line-a", primitiveType: "Line", primitiveLock: false, net: "", layer: 1, startX: 0, startY: 1, endX: 2, endY: 3, lineWidth: 4 };
   const pad = { primitiveId: "pad-a", primitiveType: "Pad", primitiveLock: false, net: null, layer: 12, padNumber: "1", x: 1, y: 2, rotation: 0,
@@ -81,6 +83,31 @@ function fixture(stage: Stage): Readonly<Record<string, unknown>> {
         implementationKind: "native-task-equivalent", cadAuthority: false, persistenceVerified: false, sourceMembershipVerified: false },
       imageShapes: [{ primitiveId: "image-a", imageType: "Image", pathString: "M 0 1 L 2 3", silkColor: null },
         { primitiveId: "picture-a", imageType: "Picture", assetReference: "opaque-reference" }],
+    }) } }, target);
+  }
+  if (stage === "arc-shapes209") {
+    const shapes = [{ primitiveId: "arc-a", centerX: 10, centerY: 20, radius: 30, startAngleRadians: 0, endAngleRadians: Math.PI / 2, sweep: 1 },
+      { primitiveId: "arc-b", centerX: 11, centerY: 22, radius: 31, startAngleRadians: 0, endAngleRadians: Math.PI / 2, sweep: 1 }];
+    const rows = shapes.map(shape => ({ primitiveId: shape.primitiveId, primitiveType: "Arc", primitiveLock: false, net: "GND", layer: 1,
+      startX: shape.centerX + Math.cos(shape.startAngleRadians) * shape.radius, startY: shape.centerY + Math.sin(shape.startAngleRadians) * shape.radius,
+      endX: shape.centerX + Math.cos(shape.endAngleRadians) * shape.radius, endY: shape.centerY + Math.sin(shape.endAngleRadians) * shape.radius,
+      lineWidth: 1, arcAngle: 90, interactiveMode: 1 }));
+    return decodeCurrentPcb209ArcShapesReply({ result: { type: "string", value: JSON.stringify({ ok: true,
+      kind: "pcb209-original-arc-shapes-observation", target: projectedTarget,
+      observation: { ok: true, kind: "current-pcb-geometry-observation", method: "eda.pcb_PrimitiveArc.getAll", target: projectedTarget,
+        rows, samples: 2, implementationKind: "native-task-equivalent", cadAuthority: false, persistenceVerified: false, sourceMembershipVerified: false }, arcShapes: shapes,
+    }) } }, target);
+  }
+  if (stage === "poured-shapes209") {
+    const fill = { primitiveType: "Poured", primitiveId: "fill-a", pourPrimitiveId: "pour-a", partition: "", layerId: 1, net: "Gnd", style: "solid",
+      gridLineWidth: 0, clearance: 1, optimization: null, optimizationState: "undefined", optimizationWidth: 0.5, copperPath: [["CIRCLE", 1, 2, 3]] };
+    return decodeCurrentPcb209PouredShapesReply({ result: { type: "string", value: JSON.stringify({ ok: true,
+      kind: "pcb209-original-poured-shapes-observation", target: projectedTarget,
+      observation: { ok: true, kind: "current-pcb-poured-source-observation", method: "eda.pcb_PrimitivePoured.getAll", target: projectedTarget,
+        rows: [fill, { ...fill, primitiveId: "fill-b", pourPrimitiveId: "pour-b", net: null, layerId: 2, style: "45grid" },
+          { ...fill, primitiveId: "fill-c", net: "", style: "none" }], samples: 2, implementationKind: "native-task-equivalent", cadAuthority: false,
+        persistenceVerified: false, sourceMembershipVerified: false, copperRebuildPerformed: false },
+      parentGroups: [{ pourPrimitiveId: "pour-a", primitiveIds: ["fill-a", "fill-c"] }, { pourPrimitiveId: "pour-b", primitiveIds: ["fill-b"] }],
     }) } }, target);
   }
   const base = { ok: true, target: projectedTarget, observations };
@@ -239,4 +266,46 @@ void test("209 historical Image shapes retain native path units and opaque refer
     assert.throws(() => query("image-shapes209", { kind: "family", family: "Image" }, { ...fixture("image-shapes209"), ...changed }));
   }
   assert.equal(Object.hasOwn(query("extended-primitives209", { kind: "family", family: "Image" }), "imageShapes"), false);
+});
+
+void test("209 historical Arc shapes retain requested descriptor order units and source interpretation limits", () => {
+  const result = query("arc-shapes209", { kind: "family", family: "Arc", primitiveIds: ["arc-b", "arc-a"] });
+  assert.deepEqual(result["primitiveIds"], ["arc-b", "arc-a"]);
+  assert.deepEqual(records.parse(result["arcShapes"]).map(shape => shape["primitiveId"]), ["arc-b", "arc-a"]);
+  assert.equal(result["arcShapeScope"], "native-center-radius-directed-endpoint-angles");
+  assert.equal(result["fullCircleInterpretationVerified"], false);
+  assert.deepEqual(result["units"], { linear: "mil", arcAngle: "degrees", endpointAngles: "radians", sweep: "native-enum-0-CW-1-CCW" });
+  assert.deepEqual(query("arc-shapes209", { kind: "family", family: "Arc", where: { layer: 2 } })["arcShapes"], []);
+  assert.throws(() => query("arc-shapes209", { kind: "family", family: "Pad" }), /PCB209_QUERY_FAMILY_UNAVAILABLE/u);
+  assert.throws(() => query("arc-shapes209", { kind: "selection" }), /PCB209_QUERY_RELATIONS_UNAVAILABLE/u);
+  for (const changed of [{ fullCircleInterpretationVerified: true }, { arcShapes: [] }, { units: { endpointAngles: "degrees" } },
+    { arcShapeScope: "rendered-circle" }]) { assert.throws(() => query("arc-shapes209", { kind: "family", family: "Arc" }, { ...fixture("arc-shapes209"), ...changed })); }
+  assert.equal(Object.hasOwn(query("primitives209", { kind: "family", family: "Arc" }), "arcShapes"), false);
+});
+
+void test("209 historical Poured queries preserve fill IDs complete parent roster native paths and strict filters", () => {
+  const result = query("poured-shapes209", { kind: "family", family: "Poured", primitiveIds: ["fill-c", "fill-a", "fill-b"], where: { pourPrimitiveId: "pour-a" } });
+  assert.deepEqual(result["primitiveIds"], ["fill-c", "fill-a"]);
+  assert.deepEqual(records.parse(result["rows"])[0]?.["copperPath"], [["CIRCLE", 1, 2, 3]]);
+  assert.deepEqual(result["parentGroups"], [{ pourPrimitiveId: "pour-a", primitiveIds: ["fill-a", "fill-c"] }, { pourPrimitiveId: "pour-b", primitiveIds: ["fill-b"] }]);
+  assert.equal(result["parentGroupScope"], "complete-observed-native-fill-parent-roster;returned-rows-may-be-filtered");
+  assert.equal(result["sourceParentGroupScope"], "observed-native-fill-parent-identifiers");
+  assert.equal(result["primitiveIdScope"], "native-fill-globalIndex-not-public-parent-id");
+  assert.deepEqual(result["units"], { linear: "native-distance-10mil-per-unit", pathCoordinates: "native-distance-10mil-per-unit", pathSweep: "degrees" });
+  for (const field of ["copperRebuildPerformed", "copperFreshnessVerified", "fabricationGeometryVerified", "executionAuthorized", "saveAuthorized"]) { assert.equal(result[field], false); }
+  assert.deepEqual(query("poured-shapes209", { kind: "family", family: "Poured", where: { layerId: 2, net: null, style: "45grid" } })["primitiveIds"], ["fill-b"]);
+  assert.deepEqual(query("poured-shapes209", { kind: "family", family: "Poured", where: { net: "" } })["primitiveIds"], ["fill-c"]);
+  const empty = query("poured-shapes209", { kind: "family", family: "Poured", where: { net: "GND" } });
+  assert.deepEqual(empty["rows"], []); assert.deepEqual(empty["parentGroups"], result["parentGroups"]);
+  for (const where of [{ layer: 1 }, { primitiveLock: false }, { layerId: -0 }, { style: "grid" }, { pourPrimitiveId: "" }]) {
+    assert.equal(currentPcb209ObservationQuerySchema.safeParse({ kind: "family", family: "Poured", where }).success, false);
+  }
+  assert.throws(() => query("poured-shapes209", { kind: "family", family: "Poured", primitiveIds: ["pour-a"], where: { net: "absent" } }), /PCB209_QUERY_ID_MISSING/u);
+  assert.throws(() => query("poured-shapes209", { kind: "family", family: "Poured", where: { style: undefined } }), /PCB209_QUERY_UNDEFINED_FILTER/u);
+  assert.throws(() => query("poured-shapes209", { kind: "selection" }), /PCB209_QUERY_RELATIONS_UNAVAILABLE/u);
+  for (const changed of [{ parentGroups: [] }, { primitiveIdScope: "public-parent-id" }, { copperRebuildPerformed: true }, { copperFreshnessVerified: true },
+    { fabricationGeometryVerified: true }, { units: { linear: "mil" } }]) {
+    assert.throws(() => query("poured-shapes209", { kind: "family", family: "Poured" }, { ...fixture("poured-shapes209"), ...changed }));
+  }
+  assert.equal(Object.hasOwn(query("primitives209", { kind: "family", family: "Line" }), "parentGroups"), false);
 });

@@ -1,3 +1,4 @@
+import { readPackedNativeProgram } from "./helpers/native-packed-program.ts";
 import assert from "node:assert/strict";
 import { createHash } from "node:crypto";
 import { readFile } from "node:fs/promises";
@@ -29,7 +30,7 @@ void test("209 Image shape wire reconstructs only its fixed original-context com
 
 void test("native209 Image shape source embeds the exact fixed program and rejects other owner purposes", async () => {
   const native = await readFile(new URL("../../scripts/pcb-diagnostic-owner.ps1", import.meta.url), "utf8");
-  assert.equal(/const string ImageShapes209Function=@"((?:""|[^"])*)";/u.exec(native)?.[1]?.replaceAll('""', '"'), CURRENT_PCB_209_IMAGE_SHAPES_FUNCTION);
+  assert.equal(readPackedNativeProgram(native, "ImageShapes209Function"), CURRENT_PCB_209_IMAGE_SHAPES_FUNCTION);
   assert.equal(/const string ImageShapes209FunctionSha256="([a-f0-9]{64})";/u.exec(native)?.[1],
     createHash("sha256").update(CURRENT_PCB_209_IMAGE_SHAPES_FUNCTION).digest("hex"));
   assert.ok(native.includes('if(!layers209 || stringPrecreate || workerStartup) throw Error("image-shapes209-purpose")'));

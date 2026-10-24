@@ -62,11 +62,13 @@ import { decodeCurrentPcb209LayersReply } from "./current-pcb-209-layers.ts";
 import { decodeCurrentPcb209PrimitivesReply } from "./current-pcb-209-primitives.ts";
 import { decodeCurrentPcb209ExtendedPrimitivesReply } from "./current-pcb-209-extended-primitives.ts";
 import { decodeCurrentPcb209ImageShapesReply } from "./current-pcb-209-image-shapes.ts";
+import { decodeCurrentPcb209ArcShapesReply } from "./current-pcb-209-arc-shapes.ts";
+import { decodeCurrentPcb209PouredShapesReply } from "./current-pcb-209-poured-shapes.ts";
 import { decodeCurrentPcb209PadShapesReply } from "./current-pcb-209-pad-shapes.ts";
 import { currentPcb209SelectionRelationsComponentIdsSchema, decodeCurrentPcb209SelectionRelationsReply } from "./current-pcb-209-selection-relations.ts";
 
-const HELPER_SHA256 = "b3e1aae0f9197497ef3c85abf6707215b9351b936c547ac9cc18cb649eca9b95";
-const HELPER_BYTES = 1_003_912;
+const HELPER_SHA256 = "56fd190617f658d8a5f1d83094c6bfb14c678d9a66f00705873e6e620f18c91e";
+const HELPER_BYTES = 977_767;
 const MAX_LINE = 100_000;
 // 64 MiB native bytes need at most 85.34 MiB base64 plus bounded poll envelopes.
 const MAX_TOTAL = 96 * 1024 * 1024;
@@ -200,6 +202,8 @@ class CurrentPcbRetainedOwnerCore {
   #extendedPrimitives209Consumed = false;
   #padShapes209Consumed = false;
   #imageShapes209Consumed = false;
+  #arcShapes209Consumed = false;
+  #pouredShapes209Consumed = false;
   #selectionRelations209Consumed = false;
   #modelConsumed = false;
   #stringPrecreateConsumed = false;
@@ -634,6 +638,60 @@ class CurrentPcbRetainedOwnerCore {
       await this.#verifyInstallation(); reprove(); await this.#verify(); reprove();
       return result;
     } catch (caughtError) { this.#input.emit("error", error("IMAGE_SHAPES209_FAILED")); throw caughtError; }
+    finally { this.#busy = false; }
+  }
+
+  /** One fixed Arc shape209 DTO read through the original qualified child.
+   * It grants no complete-board, source, parent ownership or writer authority. */
+  public async observeArcShapes209(input: CurrentDisposableOpenSealedTarget): Promise<Readonly<RecordValue>> {
+    const context = this.#stagedContext, profile = this.#pcbSourceProfile, target = currentDisposableOpenSealedTargetSchema.parse(input);
+    if (this.#purpose !== "diagnostic209" || context === null || this.#arcShapes209Consumed || !this.#pcbSourceQualified ||
+        profile === null || this.#pcbFrameObservation?.ok !== true || this.#workersConsumed || this.#modelConsumed ||
+        JSON.stringify(target) !== JSON.stringify(this.#projectOpeningTarget)) { throw error("ARC_SHAPES209_UNAVAILABLE"); }
+    this.#pipe.assertPcb209ShapeStageCapacity();
+    this.#enter(true); this.#arcShapes209Consumed = true;
+    try {
+      const pcb = context.modelContext(), selected = context.pcbOpeningContext();
+      const reprove = (): void => {
+        this.#available(); context.pcbScript(profile);
+        if (JSON.stringify(context.pcbOpeningContext()) !== JSON.stringify(selected) ||
+            JSON.stringify(context.modelContext()) !== JSON.stringify(pcb)) { throw error("ARC_SHAPES209_CONTEXT"); }
+      };
+      await this.#verifyInstallation(); reprove(); await this.#verify(); reprove();
+      await this.#observeParent(); reprove(); await this.#observeOpeningAncillary(); reprove();
+      const result = decodeCurrentPcb209ArcShapesReply(
+        await this.#transfer(() => this.#pipe.observeArcShapes209(selected.uniqueContextId, target)), target);
+      reprove(); await this.#observeParent(); reprove(); await this.#observeOpeningAncillary(); reprove();
+      await this.#verifyInstallation(); reprove(); await this.#verify(); reprove();
+      return result;
+    } catch (caughtError) { this.#input.emit("error", error("ARC_SHAPES209_FAILED")); throw caughtError; }
+    finally { this.#busy = false; }
+  }
+
+  /** One fixed Poured shape209 DTO read through the original qualified child.
+   * It grants no complete-board, source, parent ownership or writer authority. */
+  public async observePouredShapes209(input: CurrentDisposableOpenSealedTarget): Promise<Readonly<RecordValue>> {
+    const context = this.#stagedContext, profile = this.#pcbSourceProfile, target = currentDisposableOpenSealedTargetSchema.parse(input);
+    if (this.#purpose !== "diagnostic209" || context === null || this.#pouredShapes209Consumed || !this.#pcbSourceQualified ||
+        profile === null || this.#pcbFrameObservation?.ok !== true || this.#workersConsumed || this.#modelConsumed ||
+        JSON.stringify(target) !== JSON.stringify(this.#projectOpeningTarget)) { throw error("POURED_SHAPES209_UNAVAILABLE"); }
+    this.#pipe.assertPcb209ShapeStageCapacity();
+    this.#enter(true); this.#pouredShapes209Consumed = true;
+    try {
+      const pcb = context.modelContext(), selected = context.pcbOpeningContext();
+      const reprove = (): void => {
+        this.#available(); context.pcbScript(profile);
+        if (JSON.stringify(context.pcbOpeningContext()) !== JSON.stringify(selected) ||
+            JSON.stringify(context.modelContext()) !== JSON.stringify(pcb)) { throw error("POURED_SHAPES209_CONTEXT"); }
+      };
+      await this.#verifyInstallation(); reprove(); await this.#verify(); reprove();
+      await this.#observeParent(); reprove(); await this.#observeOpeningAncillary(); reprove();
+      const result = decodeCurrentPcb209PouredShapesReply(
+        await this.#transfer(() => this.#pipe.observePouredShapes209(selected.uniqueContextId, target)), target);
+      reprove(); await this.#observeParent(); reprove(); await this.#observeOpeningAncillary(); reprove();
+      await this.#verifyInstallation(); reprove(); await this.#verify(); reprove();
+      return result;
+    } catch (caughtError) { this.#input.emit("error", error("POURED_SHAPES209_FAILED")); throw caughtError; }
     finally { this.#busy = false; }
   }
 
@@ -1332,7 +1390,10 @@ class CurrentPcbRetainedOwnerCore {
           request["parentPhase"] === "pcb-preflight" || request["parentPhase"] === "pcb-open-document" || request["parentPhase"] === "pcb-observe") || request["action"] === "send" &&
         (request["openingPhase"] === "preflight" || request["openingPhase"] === "open-project" ||
           request["pcbOpeningPhase"] === "preflight" || request["pcbOpeningPhase"] === "open-document" ||
-          request["pcbOpeningPhase"] === "observe")) ? 32_768 : 4096;
+          request["pcbOpeningPhase"] === "observe" || this.#purpose === "diagnostic209" &&
+          ["pcbLayers209Phase", "pcbPrimitives209Phase", "pcbExtendedPrimitives209Phase", "pcbSelectionRelations209Phase",
+            "pcbPadShapes209Phase", "pcbImageShapes209Phase", "pcbArcShapes209Phase", "pcbPouredShapes209Phase"]
+            .some(key => request[key] === "observe"))) ? 32_768 : 4096;
       if (Buffer.byteLength(data) > maximum) { throw error("REQUEST_SIZE"); }
       this.#child.stdin.write(data, cause => {
         if (cause !== null && cause !== undefined) { this.#fail("HELPER_WRITE"); }

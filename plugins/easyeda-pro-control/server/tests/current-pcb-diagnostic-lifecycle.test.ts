@@ -21,6 +21,8 @@ import type { CurrentPcbDiagnosticInstallation } from "../src/current-pcb-diagno
 import { CurrentPcb209DiagnosticLifecycle, CurrentPcbDiagnosticLifecycle, CurrentPcbStringPrecreateLifecycle, CurrentPcbWorkerStartupLifecycle } from "../src/current-pcb-diagnostic-lifecycle.ts";
 import { CURRENT_PCB_209_OPENING_SCRIPTS } from "../src/current-pcb-209-opening-profile.ts";
 import { decodeCurrentPcb209PrimitivesReply } from "../src/current-pcb-209-primitives.ts";
+import { decodeCurrentPcb209ArcShapesReply } from "../src/current-pcb-209-arc-shapes.ts";
+import { decodeCurrentPcb209PouredShapesReply } from "../src/current-pcb-209-poured-shapes.ts";
 import { decodeCurrentPcb209ImageShapesReply } from "../src/current-pcb-209-image-shapes.ts";
 import { decodeCurrentPcb209PadShapesReply } from "../src/current-pcb-209-pad-shapes.ts";
 import { decodeCurrentPcb209ExtendedPrimitivesReply } from "../src/current-pcb-209-extended-primitives.ts";
@@ -78,7 +80,7 @@ const PCB_OBSERVATION: CurrentPcbDiagnosticPcbOpeningResult = { ...PCB_OPEN_RESU
 const PCB_SOURCE_RESULT = { family: "pcb", projectUuid: OPEN_TARGET.projectUuid, documentUuid: OPEN_TARGET.documentUuid,
   tabId: PCB_OPEN_RESULT.tabId, sourceVerified: true, domOwnerVerified: true, openingObservation: PCB_OBSERVATION, executionAuthorized: false };
 
-function historicalObservationFixture(stage: "primitives209" | "extended-primitives209" | "selection-relations209" | "pad-shapes209" | "image-shapes209"): Readonly<Record<string, unknown>> {
+function historicalObservationFixture(stage: "primitives209" | "extended-primitives209" | "selection-relations209" | "pad-shapes209" | "image-shapes209" | "arc-shapes209" | "poured-shapes209"): Readonly<Record<string, unknown>> {
   const target = { ...OPEN_TARGET, branchUuid: OPEN_CHECKPOINT.targetEvidence.branchUuid };
   const projected = { projectUuid: target.projectUuid, branchUuid: target.branchUuid, documentUuid: target.documentUuid, tabId: PCB_OPEN_RESULT.tabId };
   let families = ["Line", "Arc", "Via", "Component", "Pad", "String", "Attribute", "Dimension", "Image"];
@@ -86,6 +88,8 @@ function historicalObservationFixture(stage: "primitives209" | "extended-primiti
   if (stage === "extended-primitives209") { families = ["Component", "Pad", "Attribute", "Dimension", "Image"]; }
   if (stage === "pad-shapes209") { families = ["Pad"]; }
   if (stage === "image-shapes209") { families = ["Image"]; }
+  if (stage === "arc-shapes209") { families = ["Arc"]; }
+  if (stage === "poured-shapes209") { families = ["Poured"]; }
   const observations = families.map(family => {
     const rows: Record<string, unknown>[] = [];
     if (family === "Line") { rows.push({ primitiveId: "query-line", primitiveType: "Line", primitiveLock: false, net: "", layer: 1,
@@ -95,6 +99,7 @@ function historicalObservationFixture(stage: "primitives209" | "extended-primiti
     const observation: Record<string, unknown> = { ok: true, kind: "current-pcb-geometry-observation", method: `eda.pcb_Primitive${family}.getAll`, target: projected, rows,
       samples: 2, implementationKind: "native-task-equivalent", cadAuthority: false, persistenceVerified: false, sourceMembershipVerified: false,
     };
+    if (family === "Poured") { Object.assign(observation, { kind: "current-pcb-poured-source-observation", copperRebuildPerformed: false }); }
     if (family === "Attribute") {
       Object.assign(observation, { attributeParentGroups: [{ parentPrimitiveId: "query-component", ids: [] }],
         relationshipEvidence: "native-component-attribute-groups", reciprocalParentVerified: false });
@@ -108,6 +113,14 @@ function historicalObservationFixture(stage: "primitives209" | "extended-primiti
   if (stage === "image-shapes209") {
     return decodeCurrentPcb209ImageShapesReply({ result: { type: "string", value: JSON.stringify({ ok: true,
       kind: "pcb209-original-image-shapes-observation", target: projected, observation: observations[0], imageShapes: [] }) } }, target);
+  }
+  if (stage === "arc-shapes209") {
+    return decodeCurrentPcb209ArcShapesReply({ result: { type: "string", value: JSON.stringify({ ok: true,
+      kind: "pcb209-original-arc-shapes-observation", target: projected, observation: observations[0], arcShapes: [] }) } }, target);
+  }
+  if (stage === "poured-shapes209") {
+    return decodeCurrentPcb209PouredShapesReply({ result: { type: "string", value: JSON.stringify({ ok: true,
+      kind: "pcb209-original-poured-shapes-observation", target: projected, observation: observations[0], parentGroups: [] }) } }, target);
   }
   const metadata = [{ primitiveId: "query-component", states: { designator: "absent", name: "absent", manufacturer: "absent",
     manufacturerPart: "absent", supplier: "absent", supplierPart: "absent" } }];
@@ -320,6 +333,20 @@ function fixture(context: TestContext, id: string, dependencies: FixtureDependen
       assert.match(await readFile(intentPath, "utf8"), /"stage":"image-shapes209"/u);
       calls.push("image-shapes209"); return { samples: 2, renderedGeometryVerified: false, executionAuthorized: false };
     },
+    async observeArcShapes209(target): Promise<Readonly<Record<string, unknown>>> {
+      assert.equal(this, owner); assert.equal(opening209, true);
+      assert.deepEqual(target, { ...OPEN_TARGET, branchUuid: OPEN_CHECKPOINT.targetEvidence.branchUuid });
+      const intentPath = join(directory(id), "arc-shapes209-intent.json");
+      assert.match(await readFile(intentPath, "utf8"), /"stage":"arc-shapes209"/u);
+      calls.push("arc-shapes209"); return { samples: 2, fullCircleInterpretationVerified: false, executionAuthorized: false };
+    },
+    async observePouredShapes209(target): Promise<Readonly<Record<string, unknown>>> {
+      assert.equal(this, owner); assert.equal(opening209, true);
+      assert.deepEqual(target, { ...OPEN_TARGET, branchUuid: OPEN_CHECKPOINT.targetEvidence.branchUuid });
+      const intentPath = join(directory(id), "poured-shapes209-intent.json");
+      assert.match(await readFile(intentPath, "utf8"), /"stage":"poured-shapes209"/u);
+      calls.push("poured-shapes209"); return { samples: 2, copperFreshnessVerified: false, executionAuthorized: false };
+    },
     async observeSelectionRelations209(target, componentIds): Promise<Readonly<Record<string, unknown>>> {
       assert.equal(this, owner); assert.equal(opening209, true);
       assert.deepEqual(target, { ...OPEN_TARGET, branchUuid: OPEN_CHECKPOINT.targetEvidence.branchUuid });
@@ -417,9 +444,11 @@ void test("209 historical queries bind published records and survive owner relea
   value.owner.observeSelectionRelations209 = (): Promise<Readonly<Record<string, unknown>>> => Promise.resolve(historicalObservationFixture("selection-relations209"));
   value.owner.observePadShapes209 = (): Promise<Readonly<Record<string, unknown>>> => Promise.resolve(historicalObservationFixture("pad-shapes209"));
   value.owner.observeImageShapes209 = (): Promise<Readonly<Record<string, unknown>>> => Promise.resolve(historicalObservationFixture("image-shapes209"));
+  value.owner.observeArcShapes209 = (): Promise<Readonly<Record<string, unknown>>> => Promise.resolve(historicalObservationFixture("arc-shapes209"));
+  value.owner.observePouredShapes209 = (): Promise<Readonly<Record<string, unknown>>> => Promise.resolve(historicalObservationFixture("poured-shapes209"));
   await readyForOpening(id, value); await value.request("open-project", OPEN_INPUT);
   await value.request("open-pcb", { acceptNormalOpenEffects: true }); await value.request("observe-pcb-opening");
-  await value.request("observe-primitives"); await value.request("observe-extended-primitives"); await value.request("observe-pad-shapes"); await value.request("observe-image-shapes");
+  await value.request("observe-primitives"); await value.request("observe-extended-primitives"); await value.request("observe-pad-shapes"); await value.request("observe-image-shapes"); await value.request("observe-arc-shapes"); await value.request("observe-poured-shapes");
   await value.request("observe-selection-relations", { componentIds: ["query-component"] });
   await value.request("normal-close", { hwnd: "12345", confirmNormalClose: true });
   value.state.terminated = true; await value.request("observe-termination"); await value.request("release-closed");
@@ -427,7 +456,7 @@ void test("209 historical queries bind published records and survive owner relea
   const historical = new CurrentPcb209DiagnosticLifecycle({ ...value.options, assertLocalAllowed: failNative,
     assertAllowed: failNative, assertOtherLaunchesSettled: failNative }, { allocateOwner: failNative, verifyInstallation: failNative });
   const before = canonicalJson(await readCurrentPcbDiagnosticLifecycles()), calls = [...value.calls];
-  for (const observation of ["primitives209", "extended-primitives209", "selection-relations209", "pad-shapes209", "image-shapes209"] as const) {
+  for (const observation of ["primitives209", "extended-primitives209", "selection-relations209", "pad-shapes209", "image-shapes209", "arc-shapes209", "poured-shapes209"] as const) {
     const inspected = await historical.run({ action: "inspect", operationId: id, observation });
     const observations: unknown = inspected["observations"]; assert.ok(Array.isArray(observations));
     const selected: unknown = observations.find((entry: unknown) => entry !== null && typeof entry === "object" && "stage" in entry && entry.stage === observation);
@@ -441,10 +470,12 @@ void test("209 historical queries bind published records and survive owner relea
     if (observation === "extended-primitives209") { family = "Component"; }
     if (observation === "pad-shapes209") { family = "Pad"; }
     if (observation === "image-shapes209") { family = "Image"; }
+    if (observation === "arc-shapes209") { family = "Arc"; }
+    if (observation === "poured-shapes209") { family = "Poured"; }
     const request = { action: "query-observation", operationId: id, observation, expectedResultRecordSha256: selected.resultRecordSha256,
       query: { kind: "family", family } };
     const result = await historical.run(request);
-    assert.equal(result["historical"], true); assert.equal(result["freshObservation"], false); assert.equal(result["returnedRowCount"], observation === "pad-shapes209" || observation === "image-shapes209" ? 0 : 1);
+    assert.equal(result["historical"], true); assert.equal(result["freshObservation"], false); assert.equal(result["returnedRowCount"], observation === "pad-shapes209" || observation === "image-shapes209" || observation === "arc-shapes209" || observation === "poured-shapes209" ? 0 : 1);
     assert.deepEqual(result["provenance"], { operationId: id, stage: observation, resultRecordSha256: selected.resultRecordSha256, observedAt: record.createdAt });
     await assert.rejects(historical.run({ ...request, expectedResultRecordSha256: "f".repeat(64) }), /QUERY_PUBLISHED_RESULT_REQUIRED/u);
     await assert.rejects(historical.run({ ...request, operationId: "pcb209-test-query-missing" }), /QUERY_PUBLISHED_RESULT_REQUIRED/u);
@@ -1362,6 +1393,8 @@ void test("209 original lifecycle composes fixed project and PCB opens with sepa
   await assert.rejects(value.request("observe-selection-relations"), /PROJECT_OPENING_UNCONFIRMED/u);
   await assert.rejects(value.request("observe-pad-shapes"), /PROJECT_OPENING_UNCONFIRMED/u);
   await assert.rejects(value.request("observe-image-shapes"), /PROJECT_OPENING_UNCONFIRMED/u);
+  await assert.rejects(value.request("observe-arc-shapes"), /PROJECT_OPENING_UNCONFIRMED/u);
+  await assert.rejects(value.request("observe-poured-shapes"), /PROJECT_OPENING_UNCONFIRMED/u);
   await value.request("open-project", OPEN_INPUT);
   await value.request("open-pcb", { acceptNormalOpenEffects: true });
   const observed = await value.request("observe-pcb-opening");
@@ -1388,6 +1421,14 @@ void test("209 original lifecycle composes fixed project and PCB opens with sepa
   assert.equal(imageShapes["stage"], "image-shapes209");
   assert.deepEqual(imageShapes["result"], { samples: 2, renderedGeometryVerified: false, executionAuthorized: false });
   await assert.rejects(value.request("observe-image-shapes"), /OBSERVATION_CONSUMED/u);
+  const arcShapes = await value.request("observe-arc-shapes");
+  assert.equal(arcShapes["stage"], "arc-shapes209");
+  assert.deepEqual(arcShapes["result"], { samples: 2, fullCircleInterpretationVerified: false, executionAuthorized: false });
+  await assert.rejects(value.request("observe-arc-shapes"), /OBSERVATION_CONSUMED/u);
+  const pouredShapes = await value.request("observe-poured-shapes");
+  assert.equal(pouredShapes["stage"], "poured-shapes209");
+  assert.deepEqual(pouredShapes["result"], { samples: 2, copperFreshnessVerified: false, executionAuthorized: false });
+  await assert.rejects(value.request("observe-poured-shapes"), /OBSERVATION_CONSUMED/u);
   const selection = await value.request("observe-selection-relations", { componentIds: ["component-b", "component-a"] });
   assert.equal(selection["stage"], "selection-relations209");
   assert.deepEqual(selection["result"], { samples: 2, requestedComponentIds: ["component-b", "component-a"],
@@ -1412,6 +1453,8 @@ void test("209 original lifecycle composes fixed project and PCB opens with sepa
   assert.equal(value.calls.filter(action => action === "extended-primitives209").length, 1);
   assert.equal(value.calls.filter(action => action === "pad-shapes209").length, 1);
   assert.equal(value.calls.filter(action => action === "image-shapes209").length, 1);
+  assert.equal(value.calls.filter(action => action === "arc-shapes209").length, 1);
+  assert.equal(value.calls.filter(action => action === "poured-shapes209").length, 1);
   assert.equal(value.calls.filter(action => action === "selection-relations209").length, 1);
 });
 void test("209 selection request is consumed after lost or contradictory replies and keeps normal cleanup", async context => {
@@ -2375,4 +2418,60 @@ void test("uncertain launch intent blocks repetition and can settle original kno
   const inspected = await value.coordinator.run({ action: "inspect", operationId: id });
   const cleaned = await value.coordinator.run({ action: "cleanup-unlaunched", operationId: id, expectedIntentSha256: inspected["intentSha256"] });
   assert.equal(cleaned["state"], "not-dispatched"); await assertNoUnresolvedCurrentPcbDiagnosticLaunches();
+});
+
+void test("209 Arc and Poured lost results or capacity refusal consume published intent and preserve cleanup", async context => {
+  for (const [family, method] of [["arc", "observeArcShapes209"], ["poured", "observePouredShapes209"]] as const) {
+    for (const capacity of [false, true]) {
+      const id = `pcb209-test-${family}-${capacity ? "capacity" : "lost"}`, stage = `${family}-shapes209` as const;
+      const value = fixture(context, id);
+      const original = value.owner[method]; assert.ok(original);
+      value.owner[method] = async (target): Promise<Readonly<Record<string, unknown>>> => {
+        if (capacity) { throw new Error("PCB209_SHAPE_STAGE_REQUEST_BUDGET"); }
+        await original.call(value.owner, target); throw new Error("synthetic lost shape result");
+      };
+      await readyForOpening(id, value); await value.request("open-project", OPEN_INPUT);
+      await value.request("open-pcb", { acceptNormalOpenEffects: true }); await value.request("observe-pcb-opening");
+      await assert.rejects(value.request(`observe-${family}-shapes`), capacity ? /SHAPE_STAGE_REQUEST_BUDGET/u : /lost shape/u);
+      await assert.rejects(value.request(`observe-${family}-shapes`), /OBSERVATION_CONSUMED/u);
+      assert.equal(value.calls.filter(action => action === stage).length, capacity ? 0 : 1);
+      const inspected = await value.coordinator.run({ action: "inspect", operationId: id, observation: stage });
+      assert.ok(Array.isArray(inspected["observations"]));
+      assert.deepEqual(inspected["observations"].find((item: { stage: string }) => item.stage === stage),
+        { stage, consumed: true, resultRetained: false, published: false, result: undefined });
+      await value.request("normal-close", { hwnd: "12345", confirmNormalClose: true });
+      value.state.terminated = true; await value.request("observe-termination"); await value.request("release-closed");
+    }
+  }
+});
+
+void test("209 Arc and Poured retain original method identity and settle bounded results without replay", async context => {
+  for (const [family, method] of [["arc", "observeArcShapes209"], ["poured", "observePouredShapes209"]] as const) {
+    const id = `pcb209-test-${family}-settle`, stage = `${family}-shapes209` as const;
+    let fail = true;
+    const value = fixture(context, id, { publishRecord: async (operationId, name, record) => {
+      if (name === `${stage}-result.json` && fail) { fail = false; throw new Error("synthetic shape publication failure"); }
+      await publishCurrentPcbDiagnosticLifecycleRecord(operationId, name, record);
+    } });
+    const original = value.owner[method]; assert.ok(original);
+    const reader = async (target: Parameters<typeof original>[0]): Promise<Readonly<Record<string, unknown>>> =>
+      ({ ...await original.call(value.owner, target), synthetic: "x".repeat(160 * 1024) });
+    value.owner[method] = reader;
+    await readyForOpening(id, value); await value.request("open-project", OPEN_INPUT);
+    await value.request("open-pcb", { acceptNormalOpenEffects: true }); await value.request("observe-pcb-opening");
+    value.owner[method] = original;
+    await assert.rejects(value.request(`observe-${family}-shapes`), /OWNER_PURPOSE_CHANGED/u);
+    assert.equal(value.calls.includes(stage), false); value.owner[method] = reader;
+    await assert.rejects(value.request(`observe-${family}-shapes`), /shape publication failure/u);
+    const inspected = await value.coordinator.run({ action: "inspect", operationId: id });
+    await value.coordinator.run({ action: "settle-records", operationId: id, expectedIntentSha256: inspected["intentSha256"] });
+    const operations = await readCurrentPcbDiagnosticLifecycles();
+    const record = operations.find(entry => entry.operationId === id)?.records[`${stage}-result.json`]; assert.ok(record);
+    assert.equal(diagnosticLifecycleRecordSchemas[`${stage}-result.json`].safeParse({ ...record,
+      result: { synthetic: "x".repeat(384 * 1024) } }).success, false);
+    await assert.rejects(value.request(`observe-${family}-shapes`), /OBSERVATION_CONSUMED/u);
+    assert.equal(value.calls.filter(action => action === stage).length, 1);
+    await value.request("normal-close", { hwnd: "12345", confirmNormalClose: true });
+    value.state.terminated = true; await value.request("observe-termination"); await value.request("release-closed");
+  }
 });

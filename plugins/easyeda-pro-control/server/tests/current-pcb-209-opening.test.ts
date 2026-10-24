@@ -111,6 +111,18 @@ void test("209 Image shape collections accept no caller target, filter, family o
     observation: "image-shapes209" }).success, true);
 });
 
+void test("209 Arc and Poured shape stages accept only original binding and named historical inspection", () => {
+  for (const [action, observation] of [["observe-arc-shapes", "arc-shapes209"], ["observe-poured-shapes", "poured-shapes209"]]) {
+    const request = { action, ...bound };
+    assert.deepEqual(currentPcb209OpeningRequestSchema.parse(request), request);
+    assert.equal(currentPcbDiagnosticValidationRequestSchema.safeParse(request).success, false);
+    for (const extra of [{ target: {} }, { code: "1" }, { ids: [] }, { family: "Arc" }, { filter: {} }, { limit: 1 }, { rebuild: true }]) {
+      assert.equal(currentPcb209OpeningRequestSchema.safeParse({ ...request, ...extra }).success, false);
+    }
+    assert.equal(currentPcb209OpeningRequestSchema.safeParse({ action: "inspect", operationId: bound.operationId, observation }).success, true);
+  }
+});
+
 void test("209 selection and relations normalize an omitted bounded component list and reject executable selectors", () => {
   const request = { action: "observe-selection-relations", ...bound };
   assert.deepEqual(currentPcb209OpeningRequestSchema.parse(request), { ...request, componentIds: [] });

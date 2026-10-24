@@ -8,7 +8,7 @@ import { setImmediate as yieldToEventLoop } from "node:timers/promises";
 import { CurrentPcbDiagnosticPipe, CurrentPcbStringPrecreatePipe } from "../src/current-pcb-diagnostic-pipe.ts";
 import { CURRENT_PCB_STRING_PRECREATE_REQUEST_LIMIT, currentPcbStringWorkerCommand } from "../src/current-pcb-string-commands.ts";
 import type { DiagnosticEvent } from "../src/current-pcb-diagnostic-protocol.ts";
-import { DIAGNOSTIC_REQUEST_LIMIT, DIAGNOSTIC_WORKER_ATTACH_PARAMS, diagnosticExtendedPrimitives209Params, diagnosticImageShapes209Params, diagnosticNativeRequest, diagnosticPadShapes209Params, diagnosticPrimitives209Params, diagnosticSelectionRelations209Params, diagnosticWorkerEvaluationParams } from "../src/current-pcb-diagnostic-protocol.ts";
+import { DIAGNOSTIC_REQUEST_LIMIT, DIAGNOSTIC_WORKER_ATTACH_PARAMS, diagnosticArcShapes209Params, diagnosticExtendedPrimitives209Params, diagnosticImageShapes209Params, diagnosticNativeRequest, diagnosticPadShapes209Params, diagnosticPouredShapes209Params, diagnosticPrimitives209Params, diagnosticSelectionRelations209Params, diagnosticWorkerEvaluationParams } from "../src/current-pcb-diagnostic-protocol.ts";
 
 /** Real Node byte streams only, with no Windows process, application, bridge,
  * filesystem, socket or native process-owner authority in these tests. */
@@ -135,6 +135,45 @@ void test("209 Image shape pipe binds its fixed original-context command and kee
   retained(value);
   await assert.rejects(value.pipe.observeImageShapes209("ui-original", target), /PIPE_REMOTE-ERROR/u);
   assert.equal(value.sent.length, 2);
+});
+
+void test("209 Arc and Poured pipe binds fixed original-context commands and retains failed streams", async context => {
+  for (const [method, params, phase, key] of [
+    ["observeArcShapes209", diagnosticArcShapes209Params, "arc-shapes209", "pcbArcShapes209Phase"],
+    ["observePouredShapes209", diagnosticPouredShapes209Params, "poured-shapes209", "pcbPouredShapes209Phase"],
+  ] as const) {
+    const path = String.raw`C:\Reviewed\ShapeFixture.eprj2`, value = fixture(context);
+    const target = { rawWindowsPath: path, projectUuid: createHash("sha256").update(path).digest("hex"),
+      documentUuid: "b".repeat(16), expectedSourceSha256: "c".repeat(64), branchUuid: "a".repeat(32) };
+    await assert.rejects(value.pipe[method]("ui-original", target), /SHAPES_PIPE_INPUT/u);
+    assert.equal(value.sent.length, 0);
+    const attachment = value.pipe.attachTarget("original-target", () => { assert.fail("Unexpected diagnostic event"); });
+    value.input.write(wire({ id: 1, result: { sessionId: "original-session" } })); await attachment;
+    const observation = value.pipe[method]("ui-original", target);
+    const command = { id: 2, method: "Runtime.callFunctionOn", params: params("ui-original", target), sessionId: "original-session" };
+    assert.equal(value.sent[1]?.toString(), wire(command).toString());
+    const request = diagnosticNativeRequest(wire(command));
+    assert.equal(request[key], "observe"); assert.equal(Object.hasOwn(request, "functionDeclaration"), false);
+    const refusal = assert.rejects(observation, /PIPE_REMOTE-ERROR/u);
+    value.input.write(wire({ id: 2, sessionId: "original-session", error: { code: -32_000, message: "private" } }));
+    await refusal; assert.equal(value.pipe.status().failureObservation?.request?.phase, phase);
+    retained(value); await assert.rejects(value.pipe[method]("ui-original", target), /PIPE_REMOTE-ERROR/u);
+    assert.equal(value.sent.length, 2);
+  }
+});
+
+void test("209 shape capacity precheck retains nine original requests without dispatch or caller budgets", async context => {
+  const value = fixture(context);
+  assert.throws(() => { value.pipe.assertPcb209ShapeStageCapacity(); }, /CAPACITY_UNAVAILABLE/u);
+  const attachment = value.pipe.attachTarget("original-target", () => { assert.fail("Unexpected diagnostic event"); });
+  value.input.write(wire({ id: 1, result: { sessionId: "original-session" } })); await attachment;
+  for (let id = 2; id <= 95; id += 1) {
+    value.pipe.assertPcb209ShapeStageCapacity();
+    const pending = value.pipe.getVersion(); value.input.write(wire({ id, result: {} })); await pending;
+  }
+  assert.equal(value.pipe.status().requestCount, 95);
+  assert.throws(() => { value.pipe.assertPcb209ShapeStageCapacity(); }, /SHAPE_STAGE_REQUEST_BUDGET/u);
+  assert.equal(value.sent.length, 95); assert.equal(value.pipe.status().failure, null); retained(value);
 });
 
 void test("209 selection relation pipe retains exact component selectors and cleanup streams after failure", async context => {

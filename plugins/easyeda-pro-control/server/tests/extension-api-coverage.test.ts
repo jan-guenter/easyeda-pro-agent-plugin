@@ -1241,14 +1241,20 @@ void test("committed machine-readable inventory matches current declarations, ro
   assert.deepEqual(actual, expected);
 });
 
-void test("209 detailed Pad and Image routes keep native scope without claiming new public getters", () => {
+void test("209 detailed shape routes preserve native geometry scope and Poured fill versus parent identity", () => {
   const rows = inventoryExtensionApiCoverage();
-  for (const [family, selector] of [["Pad", "observe-pad-shapes"], ["Image", "observe-image-shapes"]] as const) {
+  for (const [family, selector, methods] of [
+    ["Pad", "observe-pad-shapes", ["getAll", "getAllPrimitiveId"]],
+    ["Image", "observe-image-shapes", ["getAll", "getAllPrimitiveId"]],
+    ["Arc", "observe-arc-shapes", ["getAll", "getAllPrimitiveId"]],
+    ["Poured", "observe-poured-shapes", ["getAll"]],
+  ] as const) {
     const selected = rows.filter(row => row.routes.some(route => route.selector === selector));
-    assert.deepEqual(selected.map(row => row.path).toSorted(), [`eda.pcb_Primitive${family}.getAll`, `eda.pcb_Primitive${family}.getAllPrimitiveId`]);
+    assert.deepEqual(selected.map(row => row.path).toSorted(), methods.map(method => `eda.pcb_Primitive${family}.${method}`));
     for (const row of selected) {
       const route = row.routes.find(entry => entry.selector === selector); assert.ok(route);
       assert.equal(route.implementation, "native-task-equivalent"); assert.equal(route.validation, "offline-regression;current-live-unclaimed");
+      assert.equal(route.executionState, "available-with-runtime-guards");
       assert.equal(row.completeDeclaredContractSupported, false); assert.equal(row.currentGenerationLiveValidation, "not-recorded");
       assert.deepEqual(route.documentTypes, [3]); assert.ok(route.inputDiscovery);
       const discovery = queryOfflineApi(apiRequestSchema.parse(route.inputDiscovery.arguments["request"]));
@@ -1257,5 +1263,19 @@ void test("209 detailed Pad and Image routes keep native scope without claiming 
     }
     const getter = rows.find(row => row.path === `eda.pcb_Primitive${family}.get`); assert.ok(getter);
     assert.equal(getter.routes.some(route => route.tool === "easyeda_control_pcb209_opening"), false);
+  }
+  const additions = rows.flatMap(row => row.routes.filter(route => route.selector === "observe-arc-shapes" || route.selector === "observe-poured-shapes"));
+  assert.equal(additions.length, 3);
+  const pouredIds = rows.find(row => row.path === "eda.pcb_PrimitivePoured.getAllPrimitiveId"); assert.ok(pouredIds);
+  assert.equal(pouredIds.routes.some(route => route.selector === "observe-poured-shapes"), false);
+  const poured = additions.find(route => route.selector === "observe-poured-shapes"); assert.ok(poured);
+  assert.match(poured.scope, /Fill IDs are not the public parent's primitiveId/u);
+  assert.match(poured.scope, /native ten-mil units/u);
+  assert.match(poured.scope, /No public grouped-instance parity, getAllPrimitiveId ordering, copper rebuild, freshness or fabrication geometry/u);
+  const arc = additions.find(route => route.selector === "observe-arc-shapes"); assert.ok(arc);
+  assert.match(arc.scope, /center\/radius in mil/u); assert.match(arc.scope, /endpoint radians and direction/u);
+  assert.match(arc.scope, /do not establish full-circle rendering/u);
+  for (const route of additions) {
+    assert.match(route.scope, /nine commands remaining/u); assert.match(route.scope, /capacity refusal still consumes the lifecycle intent/u);
   }
 });
