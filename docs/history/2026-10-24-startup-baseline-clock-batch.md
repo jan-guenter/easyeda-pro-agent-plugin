@@ -138,3 +138,27 @@ documentation review found no blocking issue, exposed credential, private design
 artifact or broken local link. Absolute private evidence paths were removed
 from the new source report. Publication and installation results follow only
 after exact-commit CI.
+
+## Pre-publication formatting correction
+
+The staged check exposed an extra blank line at the end of the new startup
+profile. The earlier unstaged check had not included that untracked file.
+Removing only that blank line changed its source fingerprint, so the runtime
+bundles and allowed facade projections were regenerated before publication.
+The previous freeze remains recorded above; the final release commitments are:
+
+- Source: 657 files,
+  `f93479e63103bd3a48ddf53933d443c720e6b35f2c6c09eca11f46093457f15c`.
+- Bundles: three files,
+  `26f2f423d109595f81ff5e536dc14bfa0f3bd6eef9bb053af820e51a267628d4`.
+- Compatibility manifest:
+  `5b5ff21acd5f12c19e9366784665d6888347798cad63e7dd3ec2f602dde360f2`.
+
+This correction changes no executable statement, source span, external pin,
+native helper or tool contract. Reproducibility, TypeScript, targeted strict
+lint and the affected registration/profile checks are repeated for this final
+freeze; exact-commit CI remains the complete-suite requirement.
+
+The final freeze checks passed: reproducible bundles, TypeScript, zero-warning
+strict lint and all six affected registration/profile tests, with no skips.
+The manifest remained unchanged throughout the tests.
