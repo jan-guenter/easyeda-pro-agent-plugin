@@ -85,7 +85,15 @@ void test("native DOS creation verifies the retained original image before one p
   assert.ok(source.includes("QueryFullProcessImageName(process,1,actual,ref count)"));
   assert.ok(source.includes("selected.Mapping+selected.Path.Substring(2)"));
   assert.ok(source.includes("Same(selected.Before,Facts(selected),false); AssertCurrent();"));
-  assert.ok(!source.includes("'resume'"));
+  // Debugger.resume is a fixed startup cleanup phase. It must not expose a
+  // Separate native-thread command or add another call to the Win32 API.
+  const actionSwitch = "switch -CaseSensitive ($request.action) {";
+  const dispatcher = source.slice(source.indexOf(actionSwitch));
+  assert.ok(dispatcher.startsWith(actionSwitch));
+  assert.doesNotMatch(dispatcher, /^\s*(?:['"]resume['"]|resume)\s*\{/mu);
+  assert.doesNotMatch(dispatcher, /\$_\s+-c?eq\s+['"]resume['"]/u);
+  // One P/Invoke declaration plus the image-verified call checked above.
+  assert.equal(source.match(/\bResumeThread\s*\(/gu)?.length, 2);
   assert.ok(!source.includes("OpenProcess("));
   assert.ok(!source.includes("TerminateJobObject"));
 });

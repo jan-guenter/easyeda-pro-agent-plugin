@@ -8,14 +8,14 @@ import { stripTypeScriptTypes } from "node:module";
 import { test } from "node:test";
 import vm from "node:vm";
 import { z } from "zod";
-import { CurrentPcb209DiagnosticLifecycle, CurrentPcb209WorkerStartupLifecycle } from "../src/current-pcb-diagnostic-lifecycle.ts";
+import { CurrentPcb209DiagnosticLifecycle, CurrentPcb209EmptyStartupLifecycle, CurrentPcb209WorkerStartupLifecycle } from "../src/current-pcb-diagnostic-lifecycle.ts";
 import type { CurrentPcbDiagnosticLifecycleOptions } from "../src/current-pcb-diagnostic-lifecycle.ts";
 import { CURRENT_PCB_DIAGNOSTIC_PROFILE } from "../src/current-pcb-diagnostic-profile.ts";
 import { currentPcbDiagnosticToolRequestSchema } from "../src/current-pcb-diagnostic-validation.ts";
 import { currentPcb209OpeningRequestSchema } from "../src/current-pcb-209-opening-validation.ts";
 // oxlint-disable-next-line import/max-dependencies -- Keep actual mode selection, schemas and both lifecycles together at this registration boundary.
 import { sha256Text } from "../src/core.ts";
-import { currentPcb209WorkerStartupValidationRequestSchema } from "../src/current-pcb-209-worker-startup-validation.ts";
+import { currentPcb209WorkerStartupToolRequestSchema } from "../src/current-pcb-209-empty-startup-validation.ts";
 import { facadeToolRegistered } from "../src/facade-mode.ts";
 
 function forbiddenLegacyLifecycle(): never { assert.fail("209 registration selected a legacy diagnostic or worker-startup lifecycle"); }
@@ -50,9 +50,9 @@ void test("209 public opening and startup callbacks select original lifecycles a
       checks += 1; if (blocked) { throw new Error("synthetic unresolved engine journal"); }
       if (pendingAdmission !== undefined) { await pendingAdmission; }
     } };
-  const scope = vm.createContext({ z, currentPcb209OpeningRequestSchema, currentPcbDiagnosticToolRequestSchema, currentPcb209WorkerStartupValidationRequestSchema,
+  const scope = vm.createContext({ z, currentPcb209OpeningRequestSchema, currentPcbDiagnosticToolRequestSchema, currentPcb209WorkerStartupToolRequestSchema,
     CURRENT_PCB_DIAGNOSTIC_PROFILE, CurrentPcb209DiagnosticLifecycle: Selected209Lifecycle,
-    CurrentPcb209WorkerStartupLifecycle: Selected209StartupLifecycle,
+    CurrentPcb209WorkerStartupLifecycle: Selected209StartupLifecycle, CurrentPcb209EmptyStartupLifecycle,
     CurrentPcbDiagnosticLifecycle: forbiddenLegacyLifecycle, CurrentPcbWorkerStartupLifecycle: forbiddenLegacyLifecycle,
     currentPcbDiagnosticLifecycle: undefined, currentPcbStringPrecreateLifecycle: undefined, currentPcbWorkerStartupLifecycle: undefined,
     process: { env: environment }, engine, upstream, facadeMode: "public-utilities-only", facadeToolRegistered,

@@ -122,3 +122,28 @@ and bundle projection is
 `8e99d74901f664598d4173db97649ad5c8a80afe4f65c4bc6bbcb798c47a3260`,
 with the same file counts. The preceding projection remains the pre-staging
 observation; no behavior changed.
+
+## First PR CI correction
+
+PR118 first tested payload `a86852ee44d0bb3db5749e6d362c034ef889c2ef`
+in Linux run40125309670 and Windows run40125309689. Windows, the complete
+build/package checks and all424bridge tests passed. Facade shard1 exposed a
+test-only registration VM scope omission: the extracted real index code used
+`CurrentPcb209EmptyStartupLifecycle`, but the older fixture did not supply it.
+The related209registration fixture also needed the current outer tool schema.
+
+Both fixtures now supply the actual imported class/schema. Every existing
+assertion remains intact; no runtime behavior, budget or guard changed.
+Eleven focused registration/schema/switch tests pass, as do whole-project types
+and strict targeted lint. The failed CI log remains retained. Source and bundle
+projections above are unchanged. A new complete exact-commit CI run is required
+after these test-only corrections; the first run is not accepted as a pass.
+
+Shard7 additionally exposed an overbroad source assertion that rejected every
+quoted `resume` string. The sole new occurrence classifies a debugger cleanup
+phase, not a native thread command. The assertion now checks the actual action
+dispatcher for such a command and requires exactly two `ResumeThread` syntax
+occurrences: its declaration and the existing image-verified call. Original
+creation ordering and the single root-thread call assertion remain. All43
+focused native installation/protocol tests, whole types and strict targeted
+lint pass. Runtime files and compatibility projections remain unchanged.
