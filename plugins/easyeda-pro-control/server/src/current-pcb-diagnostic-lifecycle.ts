@@ -150,7 +150,8 @@ function describe(operationId: string, operation: DiagnosticLifecycleOperation |
     closeAcknowledged: records?.["close-acknowledged.json"] !== undefined, releaseAttemptConsumed: records?.["release-intent.json"] !== undefined,
     noProcessReleaseAttemptConsumed: records?.["no-process-release-intent.json"] !== undefined,
     noProcessReleaseProof: records?.["no-process-released.json"]?.proof,
-    projectOpeningAttemptConsumed: records?.["project-opening-intent.json"] !== undefined,
+    projectOpeningAttemptConsumed: records?.["project-opening-intent.json"] !== undefined ||
+      records?.["worker-startup-opening-intent.json"] !== undefined,
     projectOpeningResultPublished: records?.["project-opening-result.json"] !== undefined,
     pcbOpeningAttemptConsumed: records?.["pcb-open-intent.json"] !== undefined,
     pcbOpeningResultPublished: records?.["pcb-open-result.json"] !== undefined,
@@ -339,7 +340,8 @@ class CurrentPcbLifecycleCore {
       const openingPublished = operation?.records["project-opening-result.json"];
       const openingRecord = openingPending === undefined ? openingPublished :
         diagnosticLifecycleRecordSchemas["project-opening-result.json"].parse(JSON.parse(openingPending) as unknown);
-      const openingConsumed = operation?.records["project-opening-intent.json"] !== undefined || original && this.#openingAttempted;
+      const openingConsumed = operation?.records["project-opening-intent.json"] !== undefined ||
+        operation?.records["worker-startup-opening-intent.json"] !== undefined || original && this.#openingAttempted;
       const openingResult = original && this.#openingResult !== null ? this.#openingResult : openingRecord?.result;
       const pcbOpeningPending = original ? this.#pending.get("pcb-open-result.json") : undefined;
       const pcbOpeningRecord = pcbOpeningPending === undefined ? operation?.records["pcb-open-result.json"] :

@@ -11,7 +11,7 @@ import { currentPcbWorkerStartupNativeCases, currentPcbWorkerStartupNativeParent
 import { CurrentPcb209WorkerStartupTransport } from "../src/current-pcb-worker-startup-transport.ts";
 // oxlint-disable-next-line import/max-dependencies -- This integration test checks fixed-profile ownership across the wire, channel, transport and construction boundaries together.
 import { currentPcb209WorkerStartupWire, currentPcbWorkerStartupWire } from "../src/current-pcb-worker-startup-wire.ts";
-import { worker209StartupInspector } from "./helpers/current-pcb-worker-startup-inspector.ts";
+import { PCB209_STARTUP_FIXTURE_IDENTITY, worker209BootstrapInspector } from "./helpers/current-pcb-worker-startup-inspector.ts";
 
 const serial = { method: "Debugger.setBreakpoint", sessionId: "worker-session", params: { location: {
   scriptId: "script", lineNumber: CURRENT_PCB_209_WORKER_CONSTRUCTION_SITES.serial.lineNumber,
@@ -71,13 +71,18 @@ void test("generation209 channel retains the original native counter and fixed w
   } finally { terminated = true; await channel.releaseAfterTermination(); }
 });
 
-void test("fixed209 startup refuses inert source at the real instrumentation pause and releases only after original termination", { timeout: 30_000 }, async context => {
-  const fixture = await worker209StartupInspector(context), owner = new CurrentPcb209WorkerStartupTransport(fixture.dependency);
+void test("fixed209 startup qualifies its real V8 bootstrap then refuses inert imported preload without replaying either pause", { timeout: 30_000 }, async context => {
+  const fixture = await worker209BootstrapInspector(context), owner = new CurrentPcb209WorkerStartupTransport(fixture.dependency);
+  owner.bindExpectedProject(PCB209_STARTUP_FIXTURE_IDENTITY);
+  owner.bindExistingWorkers({ targetInfos: [{ targetId: "parent-target", type: "page", attached: true, title: "fixture", url: "https://client/" }] });
   await assert.rejects(owner.capture(), /SOURCE/u); await fixture.completion;
-  assert.equal(owner.status().sourceQualified, false); assert.equal(owner.status().initialResumeSeen, true);
+  assert.equal(owner.status().sourceQualified, false);
+  assert.deepEqual(owner.status().bootstrapStages.slice(0, 2).map(stage => ({ role: stage.role, qualified: stage.sourceQualified,
+    resumed: stage.resumeSeen })), [{ role: "bootstrap", qualified: true, resumed: true }, { role: "preload", qualified: false, resumed: true }]);
+  assert.equal(fixture.commands.filter(method => method === "Debugger.getScriptSource").length, 2);
   assert.equal(fixture.commands.filter(method => method === "Debugger.setBreakpoint").length, 0);
-  assert.equal(fixture.commands.filter(method => method === "Debugger.resume").length, 1);
-  await owner.cleanup(); assert.equal(fixture.commands.filter(method => method === "Debugger.resume").length, 1);
+  assert.equal(fixture.commands.filter(method => method === "Debugger.resume").length, 2);
+  await owner.cleanup(); assert.equal(fixture.commands.filter(method => method === "Debugger.resume").length, 2);
   await assert.rejects(owner.releaseAfterTermination()); await fixture.stopped(); await owner.releaseAfterTermination();
 });
 

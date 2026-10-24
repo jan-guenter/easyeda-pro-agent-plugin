@@ -185,3 +185,55 @@ three affected test files; all six tests passed together. Strict lint,
 TypeScript and repository/package/skill checks also passed. This is a test-only
 correction; the final source, bundles, native helper and compatibility manifest
 above are unchanged. The corrected PR head requires a new complete CI run.
+
+## Publication and verified installation
+
+The corrected head `dd69435fc4213531a875050e2615fc53e9b2654e` passed Linux
+[40099864936](https://github.com/jan-guenter/easyeda-pro-agent-plugin/actions/runs/40099864936)
+and Windows
+[40099864854](https://github.com/jan-guenter/easyeda-pro-agent-plugin/actions/runs/40099864854).
+All eleven checks succeeded: build, eight facade shards, the aggregate and
+Windows native checks. Facade totals were 12635 tests, 12630 passes, five
+independently verified platform skips, zero failures and zero cancellations.
+The bridge passed 424 tests across 28 files. Initial failed-run evidence remains
+retained; no test was removed or filtered to obtain this result.
+
+Protected PR115 merged as `e49f765d556dc8767380f25cba9e993bcbbfd6f1`.
+Its complete root tree `e67f495576a9f10c979a7ef57c2a10b2c22ce3d5` matches the
+reviewed PR head exactly. Plugin tree: `b57db86f02ce1719afd83539d6911a3b525095df`.
+The automatic main-branch runs at installation were: CI 40100942430: in_progress; Windows launch recovery 40100942381: success.
+These new main runs are separate from the completed exact-payload PR CI above.
+
+The official CLI refreshed the Git marketplace
+<https://github.com/jan-guenter/easyeda-pro-agent-plugin.git> at merged main
+and installed/enabled `0.3.0+codex.20261024132442`. The first installation
+reported success but its expected version directory was absent when checked;
+both file verification and offline startup refused before reading the package.
+Read-only inspection confirmed an empty plugin directory, the correct marketplace
+commit and enabled configuration. A fresh official install created the snapshot.
+No cache files were patched, copied or moved by the agent. Both attempts and
+verification outcomes remain retained.
+
+The repaired installation matches every committed file and mode: 1861 files,
+42 directories, 39952667 bytes; inventory SHA-256
+`5a435509021011d8a4d260757dce73741387b187c35fd776f5e6e24bf1d05094`.
+The official plugin list confirms enabled state and the Git source; the
+marketplace cache HEAD equals merged main, and the snapshot remained present
+after that query.
+
+The installed offline probe passed ten catalog/schema queries under its
+synthetic legacy selector, listing 26 tools. Its owned child closed normally
+with zero stderr and no sampled descendants or non-stdio sockets. This probe
+is not actual-host admission or connected209 validation. The current209
+fourteen-tool registration was separately checked by the bundled startup tests.
+
+This session still retains the old063500 host. The new startup route must be
+loaded in a fresh Codex session and admitted before its disposable live case.
+No host/gateway was killed, rebound or hotpatched. The prior Arc/Poured case
+remains terminal, and the production project remains untouched. The remaining
+implementation work is listed above; this release completes publication and
+installation, not the worker/baseline/writer backlog.
+
+This terminal appendix is retained locally for the next code batch. The merged
+PR description carries the release/install result now; no additional plugin
+version is created solely for receipt bookkeeping.
