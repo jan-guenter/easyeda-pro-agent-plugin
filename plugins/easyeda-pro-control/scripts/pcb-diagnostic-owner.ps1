@@ -929,6 +929,50 @@ public sealed class EasyedaDiagnosticOwner {
   public string RootCreated { get { return rootCreated.ToString(CultureInfo.InvariantCulture); } }
   public uint? CreateProcessError { get { return createProcessError; } }
   static Exception Error(string reason) { return new InvalidOperationException("pcb-diagnostic-"+reason); }
+  // Only generated, digest-bound constants reach this decoder. It has no
+  // request, file or network input and never changes the executed UTF-8 bytes.
+  static string UnpackFixedProgram(string encoded,int length,string expectedSha256,string compressedSha256) {
+    if(encoded==null || encoded.Length==0 || encoded.Length>87384 || length<1 || length>65536 ||
+       expectedSha256==null || compressedSha256==null ||
+       !System.Text.RegularExpressions.Regex.IsMatch(expectedSha256,@"\A[a-f0-9]{64}\z") ||
+       !System.Text.RegularExpressions.Regex.IsMatch(compressedSha256,@"\A[a-f0-9]{64}\z")) throw Error("packed-program-contract");
+    byte[] compressed=Convert.FromBase64String(encoded);
+    if(compressed.Length<18 || compressed.Length>65536 || Convert.ToBase64String(compressed)!=encoded) throw Error("packed-program-base64");
+    using(SHA256 hash=SHA256.Create()) {
+      if(BitConverter.ToString(hash.ComputeHash(compressed)).Replace("-","").ToLowerInvariant()!=compressedSha256) throw Error("packed-program-compressed-hash");
+    }
+    byte[] bytes=new byte[length];int offset=0;
+    using(MemoryStream input=new MemoryStream(compressed,false)) {
+      using(System.IO.Compression.GZipStream stream=new System.IO.Compression.GZipStream(input,System.IO.Compression.CompressionMode.Decompress,true)) {
+        while(offset<bytes.Length) {
+          int count=stream.Read(bytes,offset,bytes.Length-offset);
+          if(count<=0) throw Error("packed-program-truncated");
+          offset+=count;
+        }
+        if(stream.ReadByte()!=-1 || input.Position!=input.Length) throw Error("packed-program-overflow");
+      }
+    }
+    using(SHA256 hash=SHA256.Create()) {
+      if(BitConverter.ToString(hash.ComputeHash(bytes)).Replace("-","").ToLowerInvariant()!=expectedSha256) throw Error("packed-program-hash");
+    }
+    return new UTF8Encoding(false,true).GetString(bytes);
+  }
+  static void ExpectPackedProgramRefusal(string encoded,int length,string expectedSha256,string compressedSha256) {
+    bool refused=false;try {UnpackFixedProgram(encoded,length,expectedSha256,compressedSha256);} catch {refused=true;}
+    if(!refused) throw Error("packed-program-refusal-smoke");
+  }
+  public static void VerifyPackedProgramSmoke() {
+    const string encoded="H4sIAAAAAAACA0vLrEhNUchLLMksS1UoKMpPL0rM5QIA5H4XCRUAAAA=";
+    const string decodedSha="7aa7553bdb7131a24de959b219ad724a96eb27acb98f963bae73842f702b3a99";
+    const string compressedSha="c69c9d800d7616444935d3ac1cfdb6f290f41e91519c57353babe3eb82622a77";
+    if(UnpackFixedProgram(encoded,21,decodedSha,compressedSha)!="fixed native program\n") throw Error("packed-program-parity-smoke");
+    foreach(int length in new int[]{0,20,22,65537}) ExpectPackedProgramRefusal(encoded,length,decodedSha,compressedSha);
+    ExpectPackedProgramRefusal(encoded,21,new string('0',64),compressedSha);
+    ExpectPackedProgramRefusal(encoded,21,decodedSha,new string('0',64));
+    ExpectPackedProgramRefusal(encoded+" ",21,decodedSha,compressedSha);
+    ExpectPackedProgramRefusal("!"+encoded.Substring(1),21,decodedSha,compressedSha);
+    ExpectPackedProgramRefusal("H4sIAAAAAAACA/sPAAAAAP8BAAAA",1,"a8100ae6aa1940d0b663bb31cd466142ebbdbd5187131b92d93818987832eb89","e34a8da08a5b8db95457a0590eaef0922f506d44be9792f6b30612ee6da302f4");
+  }
   static void Native(bool value) { if(!value) throw Error("native-call"); }
   public EasyedaDiagnosticOwner() { }
   EasyedaDiagnosticOwner(bool stringPrecreatePurpose) { stringPrecreate=stringPrecreatePurpose; }
@@ -1442,980 +1486,44 @@ if(typeof windowTabId!==""string""||!/^[A-Za-z0-9_-]{1,128}$/.test(windowTabId))
 return JSON.stringify({schema:""easyeda-pro-control.pcb-diagnostic-pcb-opening.v1"",phase,projectUuid:target.projectUuid,branchUuid:target.branchUuid,documentUuid:target.documentUuid,tabId:target.documentUuid+""@""+target.projectUuid,...outcome,dispatchAttempted,publicResult,nativeWorkMayRemain:dispatchAttempted,frameObserved,windowTabId});
 }";
   // BEGIN GENERATED PCB209 LAYERS PROGRAM
-  const string Layers209Function=@"async function(sealed,phase){
-""use strict"";
-let timer,clear,expired=false;
-try{
-const root=globalThis,apply=Reflect.apply,bad=()=>{throw new Error(""PCB209_LAYERS_REFUSED"");};
-const own=(o,k)=>{if(o===null||(typeof o!==""object""&&typeof o!==""function""))bad();const d=Object.getOwnPropertyDescriptor(o,k);if(!d||!Object.hasOwn(d,""value""))bad();return d.value;};
-const object=o=>o!==null&&typeof o===""object""&&!Array.isArray(o);
-const plain=o=>{if(!object(o)||Object.getPrototypeOf(o)!==Object.prototype)bad();return o;};
-const absent=(o,k)=>{const d=Object.getOwnPropertyDescriptor(o,k);if(d&&(!Object.hasOwn(d,""value"")||d.value!==undefined))bad();};
-const fn=(o,k)=>{const f=own(o,k);if(typeof f!==""function"")bad();return f;};
-plain(sealed);if(phase!==""observe""||Reflect.ownKeys(sealed).length!==5)bad();
-for(const k of [""rawWindowsPath"",""projectUuid"",""documentUuid"",""expectedSourceSha256"",""branchUuid""])if(typeof own(sealed,k)!==""string"")bad();
-const match=(s,re)=>{const m=re.exec(s);return m!==null&&m[0]===s;};
-if(!match(sealed.projectUuid,/^[a-f0-9]{64}$/)||!match(sealed.branchUuid,/^[a-f0-9]{32}$/)||!match(sealed.documentUuid,/^(?:[a-f0-9]{16}|[a-f0-9]{32})$/)||!match(sealed.expectedSourceSha256,/^[a-f0-9]{64}$/))bad();
-const target={projectUuid:sealed.projectUuid,branchUuid:sealed.branchUuid,documentUuid:sealed.documentUuid,tabId:sealed.documentUuid+""@""+sealed.projectUuid};
-const parseProjectUrl=(value,projectUuid,activeTabId)=>{
- if(typeof value!=='string'||value.length>32768||typeof projectUuid!=='string')bad();
- const projectMatch=/^(?:[a-f0-9]{32}|[a-f0-9]{64})$/.exec(projectUuid);if(!projectMatch||projectMatch[0]!==projectUuid)bad();
- const pieces=value.split('#');if(pieces.length>2)bad();const base=pieces[0];
- const baseMatch=/^https:\/\/client\/editor\?cll=(?:trace|debug|info|warn|error)$/.exec(base);if(!baseMatch||baseMatch[0]!==base)bad();
- const fragment=pieces.length===1?'':pieces[1];
- if(fragment==='')return{base,empty:true,tabIds:[],activeTabId:null};
- const prefix='id='+projectUuid;if(fragment===prefix)return{base,empty:false,tabIds:[],activeTabId:null};
- if(!fragment.startsWith(prefix+',tab='))bad();const entries=fragment.slice(prefix.length+5).split('|');
- if(entries.length<1||entries.length>256)bad();const tabIds=[],seen=new Set();let markedTabId=null;
- for(const entry of entries){
-  const match=/^(\*?)([a-f0-9]{16}|[a-f0-9]{32})@([a-f0-9]{32}|[a-f0-9]{64})$/.exec(entry);
-  if(!match||match[0]!==entry||match[3]!==projectUuid)bad();const tabId=match[2]+'@'+match[3];if(seen.has(tabId))bad();seen.add(tabId);tabIds.push(tabId);
-  if(match[1]==='*'){if(markedTabId!==null||(activeTabId!==undefined&&activeTabId!==null&&activeTabId!==tabId))bad();markedTabId=tabId;}
- }
- return{base,empty:false,tabIds,activeTabId:markedTabId};
-};
-const location=root.location,href=location?.href,document=root.document,ui=own(root,""UI""),host=own(root,""gVars""),mode=own(root,""PRO_EDITOR_MODE"");
-const project=plain(own(host,""currentProject"")),tabs=own(ui,""tabBar"");
-if(typeof tabs!==""function""||Object.getPrototypeOf(tabs)!==Function.prototype)bad();
-const active=fn(tabs,""getActiveTab""),getTab=fn(tabs,""getTabById""),select=document?.querySelectorAll;
-if(typeof select!==""function"")bad();
-const tab=plain(apply(getTab,tabs,[target.tabId])),data=plain(own(tab,""data""));
-const found=apply(select,document,['[id=""frame_'+target.tabId+'""]']);if(found.length!==1)bad();
-const frame=found[0],child=frame?.contentWindow,childDocument=child?.document,parent=frame?.parentElement;
-const native=own(child,""MSG_BUS_PCB""),channel=own(native,""messageBus""),childObject=own(child,""Object""),childArray=own(child,""Array"");
-const childObjectPrototype=own(childObject,""prototype""),childArrayPrototype=own(childArray,""prototype"");
-const attr=frame?.getAttribute,has=frame?.hasAttribute,classes=frame?.classList,contains=classes?.contains,parentAttr=parent?.getAttribute;
-if(typeof attr!==""function""||typeof has!==""function""||typeof contains!==""function""||typeof parentAttr!==""function"")bad();
-const chain=[channel];let rpc,rpcOwner;
-for(let i=0;i<3;i++){const node=chain[i];if(!object(node))bad();const d=Object.getOwnPropertyDescriptor(node,""rpcCall"");if(d){if(!Object.hasOwn(d,""value"")||typeof d.value!==""function"")bad();rpc=d.value;rpcOwner=node;break;}chain.push(Object.getPrototypeOf(node));}
-if(typeof rpc!==""function"")bad();
-const set=fn(root,""setTimeout"");clear=fn(root,""clearTimeout"");
-const check=()=>{
-if(expired||root.window!==root||root.top!==root||root.location!==location||root.document!==document||document?.defaultView!==root||document?.nodeType!==9||document?.URL!==href||location?.href!==href||location?.origin!==""https://client"")bad();
-parseProjectUrl(href,target.projectUuid,target.tabId);
-if(own(root,""PRO_EDITOR_MODE"")!==mode||![""CLIENT-HALF_OFFLINE-EASYEDA-PCB-SCH-PANEL-SIM"",""CLIENT-OFFLINE-EASYEDA-PCB-SCH-PANEL-SIM""].includes(mode))bad();
-if(own(root,""UI"")!==ui||own(root,""gVars"")!==host||own(ui,""gVars"")!==host||own(host,""currentProject"")!==project||own(ui,""tabBar"")!==tabs)bad();
-if(own(project,""projectId"")!==target.projectUuid||own(project,""branchUuid"")!==target.branchUuid||own(project,""isV2Format"")!==false||own(host,""isHistoryMode"")!==false)bad();
-if(fn(tabs,""getActiveTab"")!==active||fn(tabs,""getTabById"")!==getTab||apply(active,tabs,[])!==target.tabId||apply(getTab,tabs,[target.tabId])!==tab||own(tab,""data"")!==data)bad();
-if(own(tab,""tabId"")!==target.tabId||own(data,""doctype"")!==3||own(data,""pid"")!==target.projectUuid)bad();absent(tab,""parentLibraryUuid"");
-if(document.querySelectorAll!==select)bad();const current=apply(select,document,['[id=""frame_'+target.tabId+'""]']);if(current.length!==1||current[0]!==frame)bad();
-if(frame.tagName!==""IFRAME""||frame.id!==""frame_""+target.tabId||frame.ownerDocument!==document||frame.isConnected!==true||frame.parentElement!==parent||frame.classList!==classes||classes.contains!==contains||frame.getAttribute!==attr||frame.hasAttribute!==has||parent.getAttribute!==parentAttr||!apply(contains,classes,[""editframe""])||apply(parentAttr,parent,[""uuid""])!==target.tabId)bad();
-for(const [k,v] of [[""c_dbid"",target.tabId],[""c_doctype"",""3""],[""src"",""editor?entry=pcb""],[""pcb-canvas"",""true""]])if(apply(attr,frame,[k])!==v)bad();
-for(const k of [""blankIframe"",""fromFile"",""jsonCacheReady""])if(apply(has,frame,[k]))bad();
-if(frame.contentWindow!==child||child.document!==childDocument||childDocument?.defaultView!==child||childDocument?.nodeType!==9||child.frameElement!==frame||child.parent!==root||child.top!==root||child.location?.href!==""https://client/editor?entry=pcb""||own(child,""MSG_BUS_PCB"")!==native||own(native,""messageBus"")!==channel)bad();
-if(own(child,""Object"")!==childObject||own(childObject,""prototype"")!==childObjectPrototype||own(child,""Array"")!==childArray||own(childArray,""prototype"")!==childArrayPrototype)bad();
-for(let i=0;i<chain.length;i++){const node=chain[i];if(i>0&&Object.getPrototypeOf(chain[i-1])!==node)bad();if(node===rpcOwner){if(own(node,""rpcCall"")!==rpc)bad();}else if(Object.hasOwn(node,""rpcCall""))bad();}
-if(fn(root,""setTimeout"")!==set||fn(root,""clearTimeout"")!==clear)bad();
-};
-const childPlain=o=>{if(!object(o))bad();const p=Object.getPrototypeOf(o);if(p!==Object.prototype&&p!==childObjectPrototype)bad();return o;};
-const exact=(o,keys)=>{childPlain(o);const actual=Reflect.ownKeys(o);if(actual.length!==keys.length||actual.some(k=>!keys.includes(k)))bad();};
-const text=(v,n,empty=false)=>{if(typeof v!==""string""||v.length>n||(!empty&&v.length===0)||!v.isWellFormed())bad();return v;};
-const num=(v,min=-Number.MAX_VALUE,max=Number.MAX_VALUE)=>{if(typeof v!==""number""||!Number.isFinite(v)||Object.is(v,-0)||v<min||v>max)bad();return v;};
-const bool=v=>{if(typeof v!==""boolean"")bad();return v;};
-const projectRows=raw=>{
-if(!Array.isArray(raw)||![Array.prototype,childArrayPrototype].includes(Object.getPrototypeOf(raw)))bad();
-const n=own(raw,""length"");if(n<1||n>512||Reflect.ownKeys(raw).length!==n+1)bad();const ids=new Set(),rows=[];
-for(let i=0;i<n;i++){const row=own(raw,String(i));exact(row,[""layerId"",""type"",""name"",""order"",""activeColor"",""activeColorAlpha"",""deactiveColor"",""deactiveColorAlpha"",""visible"",""locked"",""active"",""layerStatus""]);
-const id=num(own(row,""layerId""),1,65535),status=num(own(row,""layerStatus""),0,2);if(!Number.isInteger(id)||!Number.isInteger(status)||ids.has(id))bad();ids.add(id);
-rows.push({layerId:id,type:text(own(row,""type""),128),name:text(own(row,""name""),1024,true),order:num(own(row,""order"")),activeColor:text(own(row,""activeColor""),128),activeColorAlpha:num(own(row,""activeColorAlpha""),0,1),deactiveColor:text(own(row,""deactiveColor""),128),deactiveColorAlpha:num(own(row,""deactiveColorAlpha""),0,1),visible:bool(own(row,""visible"")),locked:bool(own(row,""locked"")),active:bool(own(row,""active"")),layerStatus:status});}
-return rows;};
-const call=async topic=>{check();const reply=await apply(rpc,channel,[topic,undefined,0]);check();childPlain(reply);return own(reply,""message"");};
-const identity=async()=>{const value=await call(""getTabIdAndDocType"");check();exact(value,[""tabId"",""docType""]);if(own(value,""tabId"")!==target.tabId||own(value,""docType"")!==3)bad();};
-const read=async()=>{await identity();check();const raw=await call(""pcb/extensionAPI/pcblayer-getAllLayers"");check();const rows=projectRows(raw);await identity();check();return rows;};
-const run=async()=>{const first=await read(),json=JSON.stringify(first);if(new TextEncoder().encode(json).byteLength>65536)bad();
-const second=await read();check();if(JSON.stringify(second)!==json)bad();const result=JSON.stringify({ok:true,kind:""pcb209-original-layer-observation"",target,nativeLayers:first,samples:2,implementationKind:""native-task-equivalent"",cadAuthority:false,persistenceVerified:false,physicalStackVerified:false});
-if(new TextEncoder().encode(result).byteLength>65536)bad();return result;};
-check();const timeout=new Promise((resolve,reject)=>{timer=apply(set,root,[()=>{expired=true;reject(new Error(""PCB209_LAYERS_REFUSED""));},10000]);});return await Promise.race([run(),timeout]);
-}catch{throw new Error(""PCB209_LAYERS_REFUSED"");}finally{if(timer!==undefined&&typeof clear===""function""){try{Reflect.apply(clear,globalThis,[timer]);}catch{throw new Error(""PCB209_LAYERS_REFUSED"");}}}
-}";
+  const string Layers209FunctionGzip="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";
   const string Layers209FunctionSha256="65e4089208affb3e8d3d1fd9a050439b13c5b400ff411f76d7311ff5a3add980";
+  static readonly string Layers209Function=UnpackFixedProgram(Layers209FunctionGzip,10210,Layers209FunctionSha256,"09a5c0fd7cbe1f9435d8d9630a44eb8aaad4ed92cec5801aef4eae33858c8f26");
   // END GENERATED PCB209 LAYERS PROGRAM
   // BEGIN GENERATED PCB209 PRIMITIVES PROGRAM
-  const string Primitives209Function=@"async function(sealed,phase){
-""use strict"";
-let timer,clear,expired=false;
-try{
-const root=globalThis,apply=Reflect.apply,bad=()=>{throw new Error(""PCB209_PRIMITIVES_REFUSED"");};
-const own=(o,k)=>{if(o===null||(typeof o!==""object""&&typeof o!==""function""))bad();const d=Object.getOwnPropertyDescriptor(o,k);if(!d||!Object.hasOwn(d,""value""))bad();return d.value;};
-const object=o=>o!==null&&typeof o===""object""&&!Array.isArray(o);
-const plain=o=>{if(!object(o)||Object.getPrototypeOf(o)!==Object.prototype)bad();return o;};
-const absent=(o,k)=>{const d=Object.getOwnPropertyDescriptor(o,k);if(d&&(!Object.hasOwn(d,""value"")||d.value!==undefined))bad();};
-const fn=(o,k)=>{const f=own(o,k);if(typeof f!==""function"")bad();return f;};
-plain(sealed);if(phase!==""observe""||Reflect.ownKeys(sealed).length!==5)bad();
-for(const k of [""rawWindowsPath"",""projectUuid"",""documentUuid"",""expectedSourceSha256"",""branchUuid""])if(typeof own(sealed,k)!==""string"")bad();
-const match=(s,re)=>{const m=re.exec(s);return m!==null&&m[0]===s;};
-if(!match(sealed.projectUuid,/^[a-f0-9]{64}$/)||!match(sealed.branchUuid,/^[a-f0-9]{32}$/)||!match(sealed.documentUuid,/^(?:[a-f0-9]{16}|[a-f0-9]{32})$/)||!match(sealed.expectedSourceSha256,/^[a-f0-9]{64}$/))bad();
-const target={projectUuid:sealed.projectUuid,branchUuid:sealed.branchUuid,documentUuid:sealed.documentUuid,tabId:sealed.documentUuid+""@""+sealed.projectUuid};
-const parseProjectUrl=(value,projectUuid,activeTabId)=>{
- if(typeof value!=='string'||value.length>32768||typeof projectUuid!=='string')bad();
- const projectMatch=/^(?:[a-f0-9]{32}|[a-f0-9]{64})$/.exec(projectUuid);if(!projectMatch||projectMatch[0]!==projectUuid)bad();
- const pieces=value.split('#');if(pieces.length>2)bad();const base=pieces[0];
- const baseMatch=/^https:\/\/client\/editor\?cll=(?:trace|debug|info|warn|error)$/.exec(base);if(!baseMatch||baseMatch[0]!==base)bad();
- const fragment=pieces.length===1?'':pieces[1];
- if(fragment==='')return{base,empty:true,tabIds:[],activeTabId:null};
- const prefix='id='+projectUuid;if(fragment===prefix)return{base,empty:false,tabIds:[],activeTabId:null};
- if(!fragment.startsWith(prefix+',tab='))bad();const entries=fragment.slice(prefix.length+5).split('|');
- if(entries.length<1||entries.length>256)bad();const tabIds=[],seen=new Set();let markedTabId=null;
- for(const entry of entries){
-  const match=/^(\*?)([a-f0-9]{16}|[a-f0-9]{32})@([a-f0-9]{32}|[a-f0-9]{64})$/.exec(entry);
-  if(!match||match[0]!==entry||match[3]!==projectUuid)bad();const tabId=match[2]+'@'+match[3];if(seen.has(tabId))bad();seen.add(tabId);tabIds.push(tabId);
-  if(match[1]==='*'){if(markedTabId!==null||(activeTabId!==undefined&&activeTabId!==null&&activeTabId!==tabId))bad();markedTabId=tabId;}
- }
- return{base,empty:false,tabIds,activeTabId:markedTabId};
-};
-const location=root.location,href=location?.href,document=root.document,ui=own(root,""UI""),host=own(root,""gVars""),mode=own(root,""PRO_EDITOR_MODE"");
-const project=plain(own(host,""currentProject"")),tabs=own(ui,""tabBar"");
-if(typeof tabs!==""function""||Object.getPrototypeOf(tabs)!==Function.prototype)bad();
-const active=fn(tabs,""getActiveTab""),getTab=fn(tabs,""getTabById""),select=document?.querySelectorAll;
-if(typeof select!==""function"")bad();
-const tab=plain(apply(getTab,tabs,[target.tabId])),data=plain(own(tab,""data""));
-const found=apply(select,document,['[id=""frame_'+target.tabId+'""]']);if(found.length!==1)bad();
-const frame=found[0],child=frame?.contentWindow,childDocument=child?.document,parent=frame?.parentElement;
-const native=own(child,""MSG_BUS_PCB""),channel=own(native,""messageBus""),childObject=own(child,""Object""),childArray=own(child,""Array"");
-const childObjectPrototype=own(childObject,""prototype""),childArrayPrototype=own(childArray,""prototype"");
-const attr=frame?.getAttribute,has=frame?.hasAttribute,classes=frame?.classList,contains=classes?.contains,parentAttr=parent?.getAttribute;
-if(typeof attr!==""function""||typeof has!==""function""||typeof contains!==""function""||typeof parentAttr!==""function"")bad();
-const chain=[channel];let rpc,rpcOwner;
-for(let i=0;i<3;i++){const node=chain[i];if(!object(node))bad();const d=Object.getOwnPropertyDescriptor(node,""rpcCall"");if(d){if(!Object.hasOwn(d,""value"")||typeof d.value!==""function"")bad();rpc=d.value;rpcOwner=node;break;}chain.push(Object.getPrototypeOf(node));}
-if(typeof rpc!==""function"")bad();
-const set=fn(root,""setTimeout"");clear=fn(root,""clearTimeout"");
-const check=()=>{
-if(expired||root.window!==root||root.top!==root||root.location!==location||root.document!==document||document?.defaultView!==root||document?.nodeType!==9||document?.URL!==href||location?.href!==href||location?.origin!==""https://client"")bad();
-parseProjectUrl(href,target.projectUuid,target.tabId);
-if(own(root,""PRO_EDITOR_MODE"")!==mode||![""CLIENT-HALF_OFFLINE-EASYEDA-PCB-SCH-PANEL-SIM"",""CLIENT-OFFLINE-EASYEDA-PCB-SCH-PANEL-SIM""].includes(mode))bad();
-if(own(root,""UI"")!==ui||own(root,""gVars"")!==host||own(ui,""gVars"")!==host||own(host,""currentProject"")!==project||own(ui,""tabBar"")!==tabs)bad();
-if(own(project,""projectId"")!==target.projectUuid||own(project,""branchUuid"")!==target.branchUuid||own(project,""isV2Format"")!==false||own(host,""isHistoryMode"")!==false)bad();
-if(fn(tabs,""getActiveTab"")!==active||fn(tabs,""getTabById"")!==getTab||apply(active,tabs,[])!==target.tabId||apply(getTab,tabs,[target.tabId])!==tab||own(tab,""data"")!==data)bad();
-if(own(tab,""tabId"")!==target.tabId||own(data,""doctype"")!==3||own(data,""pid"")!==target.projectUuid)bad();absent(tab,""parentLibraryUuid"");
-if(document.querySelectorAll!==select)bad();const current=apply(select,document,['[id=""frame_'+target.tabId+'""]']);if(current.length!==1||current[0]!==frame)bad();
-if(frame.tagName!==""IFRAME""||frame.id!==""frame_""+target.tabId||frame.ownerDocument!==document||frame.isConnected!==true||frame.parentElement!==parent||frame.classList!==classes||classes.contains!==contains||frame.getAttribute!==attr||frame.hasAttribute!==has||parent.getAttribute!==parentAttr||!apply(contains,classes,[""editframe""])||apply(parentAttr,parent,[""uuid""])!==target.tabId)bad();
-for(const [k,v] of [[""c_dbid"",target.tabId],[""c_doctype"",""3""],[""src"",""editor?entry=pcb""],[""pcb-canvas"",""true""]])if(apply(attr,frame,[k])!==v)bad();
-for(const k of [""blankIframe"",""fromFile"",""jsonCacheReady""])if(apply(has,frame,[k]))bad();
-if(frame.contentWindow!==child||child.document!==childDocument||childDocument?.defaultView!==child||childDocument?.nodeType!==9||child.frameElement!==frame||child.parent!==root||child.top!==root||child.location?.href!==""https://client/editor?entry=pcb""||own(child,""MSG_BUS_PCB"")!==native||own(native,""messageBus"")!==channel)bad();
-if(own(child,""Object"")!==childObject||own(childObject,""prototype"")!==childObjectPrototype||own(child,""Array"")!==childArray||own(childArray,""prototype"")!==childArrayPrototype)bad();
-for(let i=0;i<chain.length;i++){const node=chain[i];if(i>0&&Object.getPrototypeOf(chain[i-1])!==node)bad();if(node===rpcOwner){if(own(node,""rpcCall"")!==rpc)bad();}else if(Object.hasOwn(node,""rpcCall""))bad();}
-if(fn(root,""setTimeout"")!==set||fn(root,""clearTimeout"")!==clear)bad();
-};
-const childPlain=o=>{if(!object(o))bad();const p=Object.getPrototypeOf(o);if(p!==Object.prototype&&p!==childObjectPrototype)bad();return o;};
-const exact=(o,keys)=>{childPlain(o);const actual=Reflect.ownKeys(o);if(actual.length!==keys.length||actual.some(k=>!keys.includes(k)))bad();};
-const num=v=>{if(typeof v!==""number""||!Number.isFinite(v)||Object.is(v,-0)||Math.abs(v)>1000000000000)bad();return v;};
-const integer=v=>{num(v);if(!Number.isInteger(v))bad();return v;};
-const layer=v=>{integer(v);if(v<0||v>65535)bad();return v;};
-const bool=v=>{if(typeof v!==""boolean"")bad();return v;};
-const text=(v,max,nullable=false)=>{if(v===null&&nullable)return v;if(typeof v!==""string""||v.length>max||!v.isWellFormed())bad();return v;};
-const point=v=>{if(!object(v))bad();const keys=Reflect.ownKeys(v);if(!keys.includes(""x"")||!keys.includes(""y"")||keys.some(k=>k!==""x""&&k!==""y""&&k!==""_hashed""))bad();return{x:num(own(v,""x"")),y:num(own(v,""y""))};};
-const length=v=>{if(!Array.isArray(v)||![Array.prototype,childArrayPrototype].includes(Object.getPrototypeOf(v)))bad();const n=own(v,""length"");if(n<0||n>256||Reflect.ownKeys(v).length!==n+1)bad();return n;};
-const rows=(raw,family,seen)=>{
-const n=length(raw),result=[];
-for(let i=0;i<n;i++){
-const row=childPlain(own(raw,String(i))),id=text(own(row,""globalIndex""),256);if(id.length===0||seen.has(id))bad();seen.add(id);
-const base={primitiveId:id,primitiveType:family,primitiveLock:bool(own(row,""locked""))};
-// PCB6b67774e@10401031 filters parentless String views. yr.toJSON@7394676
-// reads existing font caches; its color.toString()||null is not raw model color.
-if(family===""String""){
-const p=point(own(row,""position"")),alignMode=integer(own(row,""origin""));if(alignMode<1||alignMode>9)bad();
-const silkColor=text(own(row,""silkColor""),128,true);if(silkColor==="""")bad();
-result.push({...base,layer:layer(own(row,""layerId"")),x:num(p.x*10),y:num(p.y*10),text:text(own(row,""value""),65536),
-fontFamily:text(own(row,""fontFamily""),1024),fontSize:num(num(own(row,""fontSize""))*10),lineWidth:num(num(own(row,""strokeWidth""))*10),
-alignMode,rotation:num(num(own(row,""rotation""))*180/Math.PI),reverse:bool(own(row,""reverse"")),expansion:num(num(own(row,""reverseExpansion""))*10),
-mirror:bool(own(row,""mirror"")),key:text(own(row,""key""),1024),showKey:bool(own(row,""showKey"")),showValue:bool(own(row,""showValue"")),positionIsNull:bool(own(row,""positionIsNull"")),silkColor});continue;
-}
-base.net=text(own(row,""net""),1024,true);
-// Native Via callback already scales center and radii to mil. Keep its
-// precision; API1ca9efb5@1356367 rounds radii before multiplying by two.
-if(family===""Via""){
-const p=point(own(row,""center"")),viaType=integer(own(row,""type""));if(![0,1,2].includes(viaType))bad();
-result.push({...base,x:p.x,y:p.y,holeDiameter:num(num(own(row,""holeRadius""))*2),diameter:num(num(own(row,""radius""))*2),viaType,
-designRuleBlindViaName:text(own(row,""name""),1024,true),startLayer:layer(own(row,""startLayer"")),endLayer:layer(own(row,""endLayer"")),
-maskExpansionMode:integer(own(row,""expansion"")),topMaskExpansion:num(num(own(row,""topExpansion""))*10),bottomMaskExpansion:num(num(own(row,""bottomExpansion""))*10)});continue;
-}
-// Native track/arc callbacks return mil endpoints/width and degree arcAngle.
-// Arc center/radius/sweep remain omitted; endpoints are not full geometry.
-const track={...base,layer:layer(own(row,""layerId"")),startX:num(own(row,""startX"")),startY:num(own(row,""startY"")),endX:num(own(row,""endX"")),endY:num(own(row,""endY"")),lineWidth:num(own(row,""width""))};
-if(family===""Arc""){const interactiveMode=integer(own(row,""arcType""));if(![1,2].includes(interactiveMode))bad();result.push({...track,arcAngle:num(own(row,""arcAngle"")),interactiveMode});}else result.push(track);
-}return result;
-};
-const topics=[[""Line"",""track""],[""Arc"",""arc""],[""Via"",""via""],[""String"",""string""]];
-const call=async(topic,arg)=>{check();const reply=await apply(rpc,channel,[topic,arg,0]);check();childPlain(reply);return own(reply,""message"");};
-const identity=async()=>{const value=await call(""getTabIdAndDocType"",undefined);check();exact(value,[""tabId"",""docType""]);if(own(value,""tabId"")!==target.tabId||own(value,""docType"")!==3)bad();};
-const bounded=value=>{const json=JSON.stringify(value);if(new TextEncoder().encode(json).byteLength>393216)bad();return json;};
-const read=async()=>{await identity();check();const observations=[],seen=new Set();for(const [family,topic] of topics){const raw=await call(""pcb/extensionAPI/""+topic+""-getAll"",{});check();
-observations.push({ok:true,kind:""current-pcb-geometry-observation"",method:""eda.pcb_Primitive""+family+"".getAll"",target,rows:rows(raw,family,seen),samples:2,implementationKind:""native-task-equivalent"",cadAuthority:false,persistenceVerified:false,sourceMembershipVerified:false});bounded(observations);}
-await identity();check();return observations;};
-const run=async()=>{const first=await read(),json=bounded(first),second=await read();check();if(bounded(second)!==json)bad();return bounded({ok:true,kind:""pcb209-original-primitives-observation"",target,observations:first});};
-check();const timeout=new Promise((resolve,reject)=>{timer=apply(set,root,[()=>{expired=true;reject(new Error(""PCB209_PRIMITIVES_REFUSED""));},10000]);});return await Promise.race([run(),timeout]);
-}catch{throw new Error(""PCB209_PRIMITIVES_REFUSED"");}finally{if(timer!==undefined&&typeof clear===""function""){try{Reflect.apply(clear,globalThis,[timer]);}catch{throw new Error(""PCB209_PRIMITIVES_REFUSED"");}}}
-}";
+  const string Primitives209FunctionGzip="H4sIAAAAAAACA6U7a3fbtpLf/Sso7h6brGH5lTiNVCRxEufW2zx84jTdHlXNgciRhSuK5AUgyVpT/33P4EGCkpze7vZDKs4Lg8FgZjCAmVzlSTCe54niRR5JYBmkpJwwCfHDXjiXEEgleKLC/l4GKlB8BoIkGTBB4L7kAlI6ZpmE/p4Sq4e9pMilCkRRKHqXFSOWfZlwSVhZZiv6GcYZJKqrv8iIpTSK6YsHNRHFMshhGVwJUYgovHnz+uzk+bebz9cfrr9cf726/fb56t2vt1dvw7i/7tshimVOo4JMUQIfRwWlNJ9nWVVFalVCMQ6KDqVhMfonJCrc3/eBbrZhHI9YGsV9IzGlnzR19w7Up2V+I4oShFq9BZkIXqpC6OH6fBx10qrqWOIJk5+WeZSScMGyOdQyBai5yIO0q8Ge3pqNFvQF6oIqN8pRX+POpRBs1eVS/z8qYiehzBjPUQDOu2PooyKuqkb9G1GoAqV+GkdF3KFuZqWDt5UsGvXYSEKuasv+Xcuk+/vRo5apKmuNDqXzPIUxzyF19qo1GOcbo49psczrEaytxu2FbE1njMK0law/a0bt08YnJIgFhFXlHLJY5r/ASjrqbgb5nZp0KH1qBe+NCxEZbaZBMQ4GoWDL33ieFkt5w9QkJGEpCpz1r3OehiRMi2Q+g9x9wn0JiYL0tpiLBG4n7OzpRUjCkWB5MtE0w7iZG07XbsQpLl6IOzC/c7O0dpoxlUxoJImAxlYzKqAL95BEsjbHrPaz2eBkSCmVaB/0HS3CDtX1JkCO/xywo/HJ0fPhw8WT9X8ex1XVJm4092nPz3bR+rYgx39GL3s1w+nFuvK54x3su2y3rWDbNoqJO1D0wZtTb8c0m1n0tuflq93bNRXFRtc7MYfhq/Bwe7jaw0smJNxYhMhopDcF8TVjieIL+IIj4OLuBY13uB10YLzioKo0xDrti/OzZxc/VpUl9mR6LM5YgdXHEH3QDtVeoPMzb4EunuACGffyBJuQ6AupKv9rcDLsUOozbAzPIQFJzSxkmXEVHfzHgdmzGuWmdtYK1yMmgRqCwcmwloZgN5OJUqXs/XH8x3GSccjVH8eQclWIP14mWUajlz0lWAJVCqP5XcXzcVEtmcgrwDRUzxQFminWoquq/mkmp2nasxoLdocOQVtzoJSevjw46Fm9T1FvPo5qYkoPDmKzbx9QKIFZqVY9JeZg/E32BkPfO3q4s9feUsKY39MDntKDQ8/k/fYghmzHQDqV/8VIaAonqysVE0r+xtUkMkIPD5CdHrRzK+RKcJC04ct4ApbF2ubwaeyWvzqIzUCWz1L8dFpVbciLs6cXrYGM6nQwJBIgp1hV3IKK4j4WLzMmppDq2eiI2N8LmsCOglcY3O0I8cNeEPih9vjP6I8fXsbR49HrVfTXG0cPg7ML6ghcVbPGlTTeQc537xxvqtQQng0PD14dHDouXG6cP+bgSNO55dBQlqYW2jf26pZzOXEgo5oRdYr54uCHg/hBg2rzdepqy/MQP63v77cRJgG1YS3F/LXRiP56L1jvBd/30ZaDeiLW/b063GZFwrBKoFiVdt0XmQgYU/f1soufdcw3pO6LzLkuQRBIwl+vw5hMCqk82N1XJmQYk1mRgge++fzp29Xb6y+fPn/78OntVdiUcGZJqSlSkAEFkjCZCwG5srkhjGOcptQS55yEio1eM4FimnSABK1a6LE6EAmxmnhnCbeKQVcBaovSca45SHgH6tIZOYzJHagvbNRCf2Gj16vrNIyJBKynqDPcy+6/5iBWtxpaiEvccY3mhnhXHVdn8ZG1kD4xRGYobRIyMCm+q91gGMckZYp59lRsREKEhXEtb1zM85QaWWbwesHJ4GDAUxqOBZvBt4NDX/rhQTg8GOoUoCU05eFpW1/NTDXN4GRIkgnPUqqBL7tJkSvIlakZDeqtczb99bJxt5KhEzhO83WVAeLcUDnTi4Qz1dwk/HD7j2+vf739dvPmdRiTZMLyHDJNYGhJOAMp2R28nktNwLP0kz2LNFIMxOH1ycNHa0Djxp6Q2tMacoPQlbFBtcTuYNDwFn3tk0oJZw/0R6UEH80VkAmTDj5hsoEnGZMSapz+fM+lIrgOjOeSWgqzMgixZkcZ1Pxsj+W7LuqzseksZsLkboQbZje2Gfs7+yGZ4MFvYNd2qFOaKBMiyuTTMgdhjikI5fSkz3867/PDw9ieDHIMTVrCgOv84E6OiPi7B2HkIaEokzcsy0Jz8tMp4jtnPzvT5gi4fXwrE+rOy25OFIfqjwSwaX+t1Te5aneMM3Ppr72lEmXyHZNKUBjKTLiWoL7wGRRzFcZ93eJocPqzwdYrAsnUdDFwSNsQqSqdPpZ6r3eoTiYWpoqyDXAJqEPrXGQxLhx0aB1Pq6qJrCmM2TxTXzk0QzRYNMSXVYlmfu7Df/38vkMp5rqqaue+HeBC8DuOmoWmkD62ZXRtw42DTKRzqA2d/mnGj6YmeX0nR3YoxTRaVZ1B+Ob99dXHL0c/X75/9+3Tu3fvrz9eHV1d3v5+9fby6ObN66PbNz8f3Vx+vHp/dHv9ISSO/q9Jh12eJ9k8BRnNPP9vq4aZHmsaXlVbqR7NVUhlMJibd8F3J/WmpGu4XWY3VZHcUMeS100GzLWactPSRmBN7vUXPPoGukHO5dezd4WYMaOkrrP8iXD5M5eqEKsPRQoNiafsI0VDh1JTVVTVzrqhQ6n5rCqTnQ21zfRDT3ftQo7qO/WAsaNR3isFcC8xxTbMqwk0Y7g9FBIgj+7pmKzUofTcR5T8sfWwA5mmmhnHRPr3fCSYWJml0Yq4PbpVMnUoNcVKK0Zbp/p/VTNWhlfPVJWFmbOI5veXF7+7it19ZDMdwa/ffb78cBVWlcHoJoMdNTxs29FQFBjT3+6KbFaCfFPkue73oEHFHBymVQbhFtLfDlsn+A51mb2q7I+ul3rdT8fnJ3j0UqWEQ/n1BO5qJqvKDLrJ1STvquqYBamLCqsDGYTYetCSw2HsPLjhtNUHGYRz0w7ccMTtRuRgShZD3YwchMm3dISNxtYmIBpunZaE5yFCpEiwH6nbIC/1WZOWyUijymR0lLB8wWRIQjR9ONRdSbslUUmtPxlMtXqLR5ujo4zl02szWRKORTF7xzP8+U9Z5G9YMoHPwNJV6ImfMOlJ3/K5VvmM64j1YlXp//mZslVYW/zbR3KmL+PtI5nTDKB1aFxPfzqcWbc6BRugn+YNZCvZbuTU460lMRFmV3WPx2lmwulj9b2eni4TN2LdRp3vzGC+vSF3FO9t2rrsaulpDwiOVH96BNsVfovyZvNE2q5nTflnotV3S1v+4mR/f3eFaMmOTrUL63rRjMVN9UgpdaWnLmi1gdvVbkeTuGsLyCRgv6Rd+G6wOGKbI7fLTR3klU6Pu+pNHdWACWeXdesEdrP7QqiVL0r62O2Q7rPuuCLa3y8fWfFHL4/gniXm7ghWUl9K1OrhQHV/Yc4yunn3YhQxyCYjoSD7VVUWKYsZRFP6oqORdR03jbeukvL5jC6MWVzzHHdePp+NQIRV1fmof3W5fMdzriBaNLdoXEYLcnQSV9UHpiZdNpLRIn5xeuL917bDohmX5wruQOix8/ksWpj+cT3atcFHi/hRERlbWQG8JkYhi59Oqmrx4uLp0/OnjzKPiiLbNXGEA9u8LvMYFdwrGi3IjN0T7NixUQa2yDPSFtS18hw6rqVsDGYvrapq4Xq1M3ZfVZ1Fl8vfIMuw0oQ0etwEZcFz5abh3HrRdmt0gS1XsuZuu0d4j4fQTeAKgRrmvGqKut+H+/v6x8r9+DZhcgLpxvXuw30P1xeDxILgCDFZ+ZBVGMdrb1HNHYCbUvuCF32vMzCwehPuaph4Z5fde3oRt42UU6uOGd+c13N0pBz759v3oAvvCjQ/PG2vUN7MRxRLSSPBlmTMZjxb6Z67Pgy7gY0YJImJADnPFB0MN+N6boJ5I5T6cQNPXmxJbrU7RTyOY8JTip5qj2pLEpqnBtd5CvdhTPBOQKeBtLl1OamquiHOt7vheIu1590rPZSCzzjm1eu0x1NSf2Jp0LOzrYHvi2Taw83VaJQVyVS7y7q/d3wc3Lx5fTG6ePbs2RN4dXry5OT05Pw0GPNMgZC2+ZOBlIGZZbDgsJTdYCW6qviv208fXz07f/7k4tkFihLAUhnAPZcKScdFroIEayrZD7iSQVJkBfJZg8VVhVs14DLICxUItgzwxJtZOp2R9HTw8cGtvWh2a1FSvQmbaZWF5PbpBGEZv8vxKEhdiKrJTOcAW68Y0x0dXt/UHy+eb3RieDZ9gyptLG0ND2NyevYjwcJUi20YKA3rloRxMtMjeuh2u/reQAfTnv7XWyH8xCNfTMwuLrv3P5yeuB1cdlf6C7XptVWyLS2CQfgiJnu4BO+0DTcIGwQqf3L2JCYIuuX/A3oMFylqYsSEcawHzngOv/FUTbZJpRLF1CAd9V5tWCIKpUvNbT6H0Uw/nhzrzHZzjVtzAULChg9bKFoI7kuWy91CDdWVo6g1mnG8R92QaYAocgqb5ppCYyc5KZa/wGqD20KRHX9+xYXYQfLVvsQhzl2v5cd5lm1QtpFapnOptQ6diudz6O+t99CJujmoDdfMQVl9rVfi9vyoq/HgK2dBwrJsxJJpwDLctKtAJiwDGSSQKxABy9NAsJTzQBXBjGfd4BeAEvcwyikFJBzt2Q8ub65PE/YcxqOnr07Pn16cXzwLBN4ySMs/gnEhIJjNM8XLbIVhYbQK1LLY2N5fOfvO3jZqoR0WnGGc297XpmY36XVwQk7JmZeMLFf83a143yu792TVK7srMikyeMvZDBSIbb9C7GeWcjzOxD+cxSR9lFT4ZFYNspeC5Hf553kGrzOep185w7bFhs/leEb1F5HoG+33uyJGg9FbIk93Ujk40uzNmJzWOwN3Z2/LpuBtHKKK8oPPsj1XVZRbW21UKFXM/oLREG3ybnh648D4NGJ6zERSu7EM3IMingWQp9p95PESw5B25hTuBEDARHKZ32XQRWmXKEA71rFZpWO5RC8XMGM8D4oZVwrSfiMvYAJ0phpj1rqDYgZKrLquQEWt6L8d2PWK/XdvI3girMb+vgP7u13fDU6EWMzvWxjN047ZNXppI7V5dtXsx0uRhO4Qi34hTN9zd05lIvnib7/25ttgb8rU9h7U9iNuhdpaOihOZEPc2h10fXlaFh5GrVsYnHc4VUXJE0kHg/A9z0E3lVgy1b2mS92GYiLRXxiXSLjgTH/ZIoS4E8RwWJ92WZZRhi9WIy2bMHFnjpmQTOtyVwA+NmVLxlVgmkt4SWbbIWRQc5KTYdyvWZuKU/M3x9ulhdQNFv8VKk8hV1ytrFbNQzxdI1glUO3INryv08scu016KUnzCrJWRJ+h7Yuwge1K696z5jCNW13Oa4rvtq0tiePVfevNI/II8wik5vVVrT326SgWnl2zBny8MtLM0QGWwRe4V1d5UqQgorgL+leEbHF3tFLw3j5Ge35+dnrRPj8gkXeEAJZ6xjMGc1aNvPWxj2fx6aauYXa98fGao7ZE14utu6TGGd1uE2zZWpwyGR3DvQIdGi9vro/DQ81wGB5hszfLQvKwbrTZ8xWxu6uYmmdaU56nPXfpc4RNVRfEjjyukMxATYq0F0LKumUy+nbjThPhoVH+MOy6sc3aEjxv9fCfrTMXkWxWZiB7Z4TjD+xU6nF+0dqYFuGRYnJ6BP+a8wXL8B6PJCy9nKtJIXj9rqYEIblUkCfwFQQfc0gtRuoHmB8Amxhywss2eh33rS9FvnGw6fXoorot5tF7njHPt3bVmAup7MKh50Qx0a7qRtZ4fIaSFPjSw6Orx+TjyFEbMtwW2nFbXupoNpa1TEZnJ8+PzPmGZUf1EVC2F9cumD+znlZubfZey6uVafNpR74RxYxLiCIBssgWQATgEV+/k8en9/WFD3pDochAW8e9xEdN+4Yj+vce1Mf9NdFNrWHcX9ezN5azunTxkWQ0EPM8ionVdYhxP8EnYn/z+f4YzZatdGcK59N+M+beSui799at/QP+dUHrDwgi80cI3l8ZDLREnMj/RbP1em/9v/aVt70OMQAA";
   const string Primitives209FunctionSha256="e8f6ab0a2b2548d55230ef623e622b02033dfb805d5a3627b81a203e14c5d219";
+  static readonly string Primitives209Function=UnpackFixedProgram(Primitives209FunctionGzip,12558,Primitives209FunctionSha256,"bb3da96e5ab1d4a2ab675eee8623f0c60f994e76006936c2bf39228becef4207");
   // END GENERATED PCB209 PRIMITIVES PROGRAM
   // BEGIN GENERATED PCB209 IMAGE SHAPES PROGRAM
-  const string ImageShapes209Function=@"async function(sealed,phase){
-""use strict"";
-let timer,clear,expired=false;
-try{
-const root=globalThis,apply=Reflect.apply,bad=()=>{throw new Error(""PCB209_IMAGE_SHAPES_REFUSED"");};
-const own=(o,k)=>{if(o===null||(typeof o!==""object""&&typeof o!==""function""))bad();const d=Object.getOwnPropertyDescriptor(o,k);if(!d||!Object.hasOwn(d,""value""))bad();return d.value;};
-const object=o=>o!==null&&typeof o===""object""&&!Array.isArray(o);
-const plain=o=>{if(!object(o)||Object.getPrototypeOf(o)!==Object.prototype)bad();return o;};
-const absent=(o,k)=>{const d=Object.getOwnPropertyDescriptor(o,k);if(d&&(!Object.hasOwn(d,""value"")||d.value!==undefined))bad();};
-const fn=(o,k)=>{const f=own(o,k);if(typeof f!==""function"")bad();return f;};
-plain(sealed);if(phase!==""observe""||Reflect.ownKeys(sealed).length!==5)bad();
-for(const k of [""rawWindowsPath"",""projectUuid"",""documentUuid"",""expectedSourceSha256"",""branchUuid""])if(typeof own(sealed,k)!==""string"")bad();
-const match=(s,re)=>{const m=re.exec(s);return m!==null&&m[0]===s;};
-if(!match(sealed.projectUuid,/^[a-f0-9]{64}$/)||!match(sealed.branchUuid,/^[a-f0-9]{32}$/)||!match(sealed.documentUuid,/^(?:[a-f0-9]{16}|[a-f0-9]{32})$/)||!match(sealed.expectedSourceSha256,/^[a-f0-9]{64}$/))bad();
-const target={projectUuid:sealed.projectUuid,branchUuid:sealed.branchUuid,documentUuid:sealed.documentUuid,tabId:sealed.documentUuid+""@""+sealed.projectUuid};
-const parseProjectUrl=(value,projectUuid,activeTabId)=>{
- if(typeof value!=='string'||value.length>32768||typeof projectUuid!=='string')bad();
- const projectMatch=/^(?:[a-f0-9]{32}|[a-f0-9]{64})$/.exec(projectUuid);if(!projectMatch||projectMatch[0]!==projectUuid)bad();
- const pieces=value.split('#');if(pieces.length>2)bad();const base=pieces[0];
- const baseMatch=/^https:\/\/client\/editor\?cll=(?:trace|debug|info|warn|error)$/.exec(base);if(!baseMatch||baseMatch[0]!==base)bad();
- const fragment=pieces.length===1?'':pieces[1];
- if(fragment==='')return{base,empty:true,tabIds:[],activeTabId:null};
- const prefix='id='+projectUuid;if(fragment===prefix)return{base,empty:false,tabIds:[],activeTabId:null};
- if(!fragment.startsWith(prefix+',tab='))bad();const entries=fragment.slice(prefix.length+5).split('|');
- if(entries.length<1||entries.length>256)bad();const tabIds=[],seen=new Set();let markedTabId=null;
- for(const entry of entries){
-  const match=/^(\*?)([a-f0-9]{16}|[a-f0-9]{32})@([a-f0-9]{32}|[a-f0-9]{64})$/.exec(entry);
-  if(!match||match[0]!==entry||match[3]!==projectUuid)bad();const tabId=match[2]+'@'+match[3];if(seen.has(tabId))bad();seen.add(tabId);tabIds.push(tabId);
-  if(match[1]==='*'){if(markedTabId!==null||(activeTabId!==undefined&&activeTabId!==null&&activeTabId!==tabId))bad();markedTabId=tabId;}
- }
- return{base,empty:false,tabIds,activeTabId:markedTabId};
-};
-const location=root.location,href=location?.href,document=root.document,ui=own(root,""UI""),host=own(root,""gVars""),mode=own(root,""PRO_EDITOR_MODE"");
-const project=plain(own(host,""currentProject"")),tabs=own(ui,""tabBar"");
-if(typeof tabs!==""function""||Object.getPrototypeOf(tabs)!==Function.prototype)bad();
-const active=fn(tabs,""getActiveTab""),getTab=fn(tabs,""getTabById""),select=document?.querySelectorAll;
-if(typeof select!==""function"")bad();
-const tab=plain(apply(getTab,tabs,[target.tabId])),data=plain(own(tab,""data""));
-const found=apply(select,document,['[id=""frame_'+target.tabId+'""]']);if(found.length!==1)bad();
-const frame=found[0],child=frame?.contentWindow,childDocument=child?.document,parent=frame?.parentElement;
-const native=own(child,""MSG_BUS_PCB""),channel=own(native,""messageBus""),childObject=own(child,""Object""),childArray=own(child,""Array"");
-const childObjectPrototype=own(childObject,""prototype""),childArrayPrototype=own(childArray,""prototype"");
-const attr=frame?.getAttribute,has=frame?.hasAttribute,classes=frame?.classList,contains=classes?.contains,parentAttr=parent?.getAttribute;
-if(typeof attr!==""function""||typeof has!==""function""||typeof contains!==""function""||typeof parentAttr!==""function"")bad();
-const chain=[channel];let rpc,rpcOwner;
-for(let i=0;i<3;i++){const node=chain[i];if(!object(node))bad();const d=Object.getOwnPropertyDescriptor(node,""rpcCall"");if(d){if(!Object.hasOwn(d,""value"")||typeof d.value!==""function"")bad();rpc=d.value;rpcOwner=node;break;}chain.push(Object.getPrototypeOf(node));}
-if(typeof rpc!==""function"")bad();
-const set=fn(root,""setTimeout"");clear=fn(root,""clearTimeout"");
-const check=()=>{
-if(expired||root.window!==root||root.top!==root||root.location!==location||root.document!==document||document?.defaultView!==root||document?.nodeType!==9||document?.URL!==href||location?.href!==href||location?.origin!==""https://client"")bad();
-parseProjectUrl(href,target.projectUuid,target.tabId);
-if(own(root,""PRO_EDITOR_MODE"")!==mode||![""CLIENT-HALF_OFFLINE-EASYEDA-PCB-SCH-PANEL-SIM"",""CLIENT-OFFLINE-EASYEDA-PCB-SCH-PANEL-SIM""].includes(mode))bad();
-if(own(root,""UI"")!==ui||own(root,""gVars"")!==host||own(ui,""gVars"")!==host||own(host,""currentProject"")!==project||own(ui,""tabBar"")!==tabs)bad();
-if(own(project,""projectId"")!==target.projectUuid||own(project,""branchUuid"")!==target.branchUuid||own(project,""isV2Format"")!==false||own(host,""isHistoryMode"")!==false)bad();
-if(fn(tabs,""getActiveTab"")!==active||fn(tabs,""getTabById"")!==getTab||apply(active,tabs,[])!==target.tabId||apply(getTab,tabs,[target.tabId])!==tab||own(tab,""data"")!==data)bad();
-if(own(tab,""tabId"")!==target.tabId||own(data,""doctype"")!==3||own(data,""pid"")!==target.projectUuid)bad();absent(tab,""parentLibraryUuid"");
-if(document.querySelectorAll!==select)bad();const current=apply(select,document,['[id=""frame_'+target.tabId+'""]']);if(current.length!==1||current[0]!==frame)bad();
-if(frame.tagName!==""IFRAME""||frame.id!==""frame_""+target.tabId||frame.ownerDocument!==document||frame.isConnected!==true||frame.parentElement!==parent||frame.classList!==classes||classes.contains!==contains||frame.getAttribute!==attr||frame.hasAttribute!==has||parent.getAttribute!==parentAttr||!apply(contains,classes,[""editframe""])||apply(parentAttr,parent,[""uuid""])!==target.tabId)bad();
-for(const [k,v] of [[""c_dbid"",target.tabId],[""c_doctype"",""3""],[""src"",""editor?entry=pcb""],[""pcb-canvas"",""true""]])if(apply(attr,frame,[k])!==v)bad();
-for(const k of [""blankIframe"",""fromFile"",""jsonCacheReady""])if(apply(has,frame,[k]))bad();
-if(frame.contentWindow!==child||child.document!==childDocument||childDocument?.defaultView!==child||childDocument?.nodeType!==9||child.frameElement!==frame||child.parent!==root||child.top!==root||child.location?.href!==""https://client/editor?entry=pcb""||own(child,""MSG_BUS_PCB"")!==native||own(native,""messageBus"")!==channel)bad();
-if(own(child,""Object"")!==childObject||own(childObject,""prototype"")!==childObjectPrototype||own(child,""Array"")!==childArray||own(childArray,""prototype"")!==childArrayPrototype)bad();
-for(let i=0;i<chain.length;i++){const node=chain[i];if(i>0&&Object.getPrototypeOf(chain[i-1])!==node)bad();if(node===rpcOwner){if(own(node,""rpcCall"")!==rpc)bad();}else if(Object.hasOwn(node,""rpcCall""))bad();}
-if(fn(root,""setTimeout"")!==set||fn(root,""clearTimeout"")!==clear)bad();
-};
-const childPlain=o=>{if(!object(o))bad();const p=Object.getPrototypeOf(o);if(p!==Object.prototype&&p!==childObjectPrototype)bad();return o;};
-const exact=(o,keys)=>{childPlain(o);const actual=Reflect.ownKeys(o);if(actual.length!==keys.length||actual.some(k=>!keys.includes(k)))bad();};
-const num=v=>{if(typeof v!==""number""||!Number.isFinite(v)||Object.is(v,-0)||Math.abs(v)>1000000000000)bad();return v;};
-const integer=v=>{num(v);if(!Number.isInteger(v))bad();return v;};
-const layer=v=>{integer(v);if(v<0||v>65535)bad();return v;};
-const bool=v=>{if(typeof v!==""boolean"")bad();return v;};
-const text=(v,max,nullable=false)=>{if(v===null&&nullable)return v;if(typeof v!==""string""||v.length>max||!v.isWellFormed())bad();return v;};
-const point=v=>{if(!object(v))bad();const keys=Reflect.ownKeys(v);if(!keys.includes(""x"")||!keys.includes(""y"")||keys.some(k=>k!==""x""&&k!==""y""&&k!==""_hashed""))bad();return{x:num(own(v,""x"")),y:num(own(v,""y""))};};
-const length=v=>{if(!Array.isArray(v)||![Array.prototype,childArrayPrototype].includes(Object.getPrototypeOf(v)))bad();const n=own(v,""length"");if(n<0||n>256||Reflect.ownKeys(v).length!==n+1)bad();return n;};
-// PCB a8405930@6160126 wE encPt emits only M/L/A. Beziers are sampled into
-// lines before this projection. Coordinates stay in serialized native SVG space.
-const pathString=value=>{
-text(value,65536);if(/[^ MAL0-9eE+.-]/u.test(value))bad();
-const trimmed=value.trim();if(trimmed.length===0)return value;const tokens=trimmed.split(/ +/u);
-if(tokens.length>8192||tokens[0]!=='M')bad();let offset=0,command='';
-const numberPattern=/^-?(?:0|[1-9]\d*)(?:\.\d+)?(?:[eE][+-]?\d+)?$/u;
-while(offset<tokens.length){const token=tokens[offset];if(token==='M'||token==='L'||token==='A'){command=token;offset++;}else if(command!=='L'&&command!=='A')bad();
-const count=command==='A'?7:2;if(offset+count>tokens.length)bad();const numbers=[];
-for(let i=0;i<count;i++){const t=tokens[offset+i];if(typeof t!=='string'||!numberPattern.test(t))bad();const n=Number(t);if(!Number.isFinite(n)||Math.abs(n)>1000000000000)bad();numbers.push(n);}
-if(command==='A'&&(numbers[0]<0||numbers[1]<0||numbers[2]!==0||![0,1].includes(numbers[3])||![0,1].includes(numbers[4])))bad();
-offset+=count;if(command==='M'){if(tokens[offset]!=='L'&&tokens[offset]!=='A')bad();command='';}}if(command==='')bad();return value;
-};
-const rows=raw=>{
-const n=length(raw),result=[],imageShapes=[],seen=new Set();let pictureSeen=false;
-for(let i=0;i<n;i++){
-const row=childPlain(own(raw,String(i))),id=text(own(row,'globalIndex'),256);if(id.length===0||seen.has(id))bad();seen.add(id);
-const imageType=text(own(row,'imageType'),7),p=point(own(row,'start')),width=num(own(row,'width')),height=num(own(row,'height'));
-if(!['Image','Picture'].includes(imageType)||width<0||height<0)bad();
-result.push({primitiveId:id,primitiveType:'Image',primitiveLock:bool(own(row,'locked')),imageType,layer:layer(own(row,'layerId')),
-x:p.x,y:p.y,width,height,rotation:num(own(row,'rotation')),horizonMirror:bool(own(row,'mirror'))});
-if(imageType==='Image'){
-if(pictureSeen)bad();const silkColor=text(own(row,'silkColor'),128,true);if(silkColor==='')bad();
-imageShapes.push({primitiveId:id,imageType,pathString:pathString(own(row,'pathString')),silkColor});
-}else{pictureSeen=true;if(own(row,'pathString')!=='')bad();imageShapes.push({primitiveId:id,imageType,assetReference:text(own(row,'hashId'),1024)});}
-}return{rows:result,imageShapes};
-};
-const call=async(topic,arg)=>{check();const reply=await apply(rpc,channel,[topic,arg,0]);check();childPlain(reply);return own(reply,'message');};
-const identity=async()=>{const value=await call('getTabIdAndDocType',undefined);check();exact(value,['tabId','docType']);if(own(value,'tabId')!==target.tabId||own(value,'docType')!==3)bad();};
-const bounded=value=>{const json=JSON.stringify(value);if(new TextEncoder().encode(json).byteLength>393216)bad();return json;};
-const read=async()=>{await identity();check();const raw=await call('pcb/extensionAPI/image-getAll',{});check();const projected=rows(raw);
-const observation={ok:true,kind:'current-pcb-geometry-observation',method:'eda.pcb_PrimitiveImage.getAll',target,rows:projected.rows,samples:2,
-implementationKind:'native-task-equivalent',cadAuthority:false,persistenceVerified:false,sourceMembershipVerified:false};
-const sample={observation,imageShapes:projected.imageShapes};bounded(sample);await identity();check();return sample;};
-const run=async()=>{const first=await read(),json=bounded(first),second=await read();check();if(bounded(second)!==json)bad();return bounded({ok:true,kind:'pcb209-original-image-shapes-observation',target,...first});};
-check();const timeout=new Promise((resolve,reject)=>{timer=apply(set,root,[()=>{expired=true;reject(new Error('PCB209_IMAGE_SHAPES_REFUSED'));},10000]);});return await Promise.race([run(),timeout]);
-}catch{throw new Error('PCB209_IMAGE_SHAPES_REFUSED');}finally{if(timer!==undefined&&typeof clear==='function'){try{Reflect.apply(clear,globalThis,[timer]);}catch{throw new Error('PCB209_IMAGE_SHAPES_REFUSED');}}}
-}";
+  const string ImageShapes209FunctionGzip="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";
   const string ImageShapes209FunctionSha256="d025d88a6265cf439f4f88e0b64df796aa099e9152c1de489dfd4a114e1362c4";
+  static readonly string ImageShapes209Function=UnpackFixedProgram(ImageShapes209FunctionGzip,12152,ImageShapes209FunctionSha256,"b5eebbe87218a07fe4cdce2e978984eb536aba6e4e9557a2f2987897f762049f");
   // END GENERATED PCB209 IMAGE SHAPES PROGRAM
+  // BEGIN GENERATED PCB209 ARC SHAPES PROGRAM
+  const string ArcShapes209FunctionGzip="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";
+  const string ArcShapes209FunctionSha256="9b41e237b02864dbf9d4074d3f7e8181b90220024da879d2ee3a71126970b8fa";
+  static readonly string ArcShapes209Function=UnpackFixedProgram(ArcShapes209FunctionGzip,11786,ArcShapes209FunctionSha256,"56eef98049b57d9b043789df8db637b49d0582d683f85421eb76c5fedc9055ab");
+  // END GENERATED PCB209 ARC SHAPES PROGRAM
+  // BEGIN GENERATED PCB209 POURED SHAPES PROGRAM
+  const string PouredShapes209FunctionGzip="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";
+  const string PouredShapes209FunctionSha256="b4301c03885b175c7afee5f147642b8f46582e467f1121332b3fe6c50d0c270f";
+  static readonly string PouredShapes209Function=UnpackFixedProgram(PouredShapes209FunctionGzip,12512,PouredShapes209FunctionSha256,"aaca2a9dfe1a0aa28123e8b9467e994fd26923868043c8f088538e70796817e1");
+  // END GENERATED PCB209 POURED SHAPES PROGRAM
   // BEGIN GENERATED PCB209 PAD SHAPES PROGRAM
-  const string PadShapes209Function=@"async function(sealed,phase){
-""use strict"";
-let timer,clear,expired=false;
-try{
-const root=globalThis,apply=Reflect.apply,bad=()=>{throw new Error(""PCB209_PAD_SHAPES_REFUSED"");};
-const own=(o,k)=>{if(o===null||(typeof o!==""object""&&typeof o!==""function""))bad();const d=Object.getOwnPropertyDescriptor(o,k);if(!d||!Object.hasOwn(d,""value""))bad();return d.value;};
-const object=o=>o!==null&&typeof o===""object""&&!Array.isArray(o);
-const plain=o=>{if(!object(o)||Object.getPrototypeOf(o)!==Object.prototype)bad();return o;};
-const absent=(o,k)=>{const d=Object.getOwnPropertyDescriptor(o,k);if(d&&(!Object.hasOwn(d,""value"")||d.value!==undefined))bad();};
-const fn=(o,k)=>{const f=own(o,k);if(typeof f!==""function"")bad();return f;};
-plain(sealed);if(phase!==""observe""||Reflect.ownKeys(sealed).length!==5)bad();
-for(const k of [""rawWindowsPath"",""projectUuid"",""documentUuid"",""expectedSourceSha256"",""branchUuid""])if(typeof own(sealed,k)!==""string"")bad();
-const match=(s,re)=>{const m=re.exec(s);return m!==null&&m[0]===s;};
-if(!match(sealed.projectUuid,/^[a-f0-9]{64}$/)||!match(sealed.branchUuid,/^[a-f0-9]{32}$/)||!match(sealed.documentUuid,/^(?:[a-f0-9]{16}|[a-f0-9]{32})$/)||!match(sealed.expectedSourceSha256,/^[a-f0-9]{64}$/))bad();
-const target={projectUuid:sealed.projectUuid,branchUuid:sealed.branchUuid,documentUuid:sealed.documentUuid,tabId:sealed.documentUuid+""@""+sealed.projectUuid};
-const parseProjectUrl=(value,projectUuid,activeTabId)=>{
- if(typeof value!=='string'||value.length>32768||typeof projectUuid!=='string')bad();
- const projectMatch=/^(?:[a-f0-9]{32}|[a-f0-9]{64})$/.exec(projectUuid);if(!projectMatch||projectMatch[0]!==projectUuid)bad();
- const pieces=value.split('#');if(pieces.length>2)bad();const base=pieces[0];
- const baseMatch=/^https:\/\/client\/editor\?cll=(?:trace|debug|info|warn|error)$/.exec(base);if(!baseMatch||baseMatch[0]!==base)bad();
- const fragment=pieces.length===1?'':pieces[1];
- if(fragment==='')return{base,empty:true,tabIds:[],activeTabId:null};
- const prefix='id='+projectUuid;if(fragment===prefix)return{base,empty:false,tabIds:[],activeTabId:null};
- if(!fragment.startsWith(prefix+',tab='))bad();const entries=fragment.slice(prefix.length+5).split('|');
- if(entries.length<1||entries.length>256)bad();const tabIds=[],seen=new Set();let markedTabId=null;
- for(const entry of entries){
-  const match=/^(\*?)([a-f0-9]{16}|[a-f0-9]{32})@([a-f0-9]{32}|[a-f0-9]{64})$/.exec(entry);
-  if(!match||match[0]!==entry||match[3]!==projectUuid)bad();const tabId=match[2]+'@'+match[3];if(seen.has(tabId))bad();seen.add(tabId);tabIds.push(tabId);
-  if(match[1]==='*'){if(markedTabId!==null||(activeTabId!==undefined&&activeTabId!==null&&activeTabId!==tabId))bad();markedTabId=tabId;}
- }
- return{base,empty:false,tabIds,activeTabId:markedTabId};
-};
-const location=root.location,href=location?.href,document=root.document,ui=own(root,""UI""),host=own(root,""gVars""),mode=own(root,""PRO_EDITOR_MODE"");
-const project=plain(own(host,""currentProject"")),tabs=own(ui,""tabBar"");
-if(typeof tabs!==""function""||Object.getPrototypeOf(tabs)!==Function.prototype)bad();
-const active=fn(tabs,""getActiveTab""),getTab=fn(tabs,""getTabById""),select=document?.querySelectorAll;
-if(typeof select!==""function"")bad();
-const tab=plain(apply(getTab,tabs,[target.tabId])),data=plain(own(tab,""data""));
-const found=apply(select,document,['[id=""frame_'+target.tabId+'""]']);if(found.length!==1)bad();
-const frame=found[0],child=frame?.contentWindow,childDocument=child?.document,parent=frame?.parentElement;
-const native=own(child,""MSG_BUS_PCB""),channel=own(native,""messageBus""),childObject=own(child,""Object""),childArray=own(child,""Array"");
-const childObjectPrototype=own(childObject,""prototype""),childArrayPrototype=own(childArray,""prototype"");
-const attr=frame?.getAttribute,has=frame?.hasAttribute,classes=frame?.classList,contains=classes?.contains,parentAttr=parent?.getAttribute;
-if(typeof attr!==""function""||typeof has!==""function""||typeof contains!==""function""||typeof parentAttr!==""function"")bad();
-const chain=[channel];let rpc,rpcOwner;
-for(let i=0;i<3;i++){const node=chain[i];if(!object(node))bad();const d=Object.getOwnPropertyDescriptor(node,""rpcCall"");if(d){if(!Object.hasOwn(d,""value"")||typeof d.value!==""function"")bad();rpc=d.value;rpcOwner=node;break;}chain.push(Object.getPrototypeOf(node));}
-if(typeof rpc!==""function"")bad();
-const set=fn(root,""setTimeout"");clear=fn(root,""clearTimeout"");
-const check=()=>{
-if(expired||root.window!==root||root.top!==root||root.location!==location||root.document!==document||document?.defaultView!==root||document?.nodeType!==9||document?.URL!==href||location?.href!==href||location?.origin!==""https://client"")bad();
-parseProjectUrl(href,target.projectUuid,target.tabId);
-if(own(root,""PRO_EDITOR_MODE"")!==mode||![""CLIENT-HALF_OFFLINE-EASYEDA-PCB-SCH-PANEL-SIM"",""CLIENT-OFFLINE-EASYEDA-PCB-SCH-PANEL-SIM""].includes(mode))bad();
-if(own(root,""UI"")!==ui||own(root,""gVars"")!==host||own(ui,""gVars"")!==host||own(host,""currentProject"")!==project||own(ui,""tabBar"")!==tabs)bad();
-if(own(project,""projectId"")!==target.projectUuid||own(project,""branchUuid"")!==target.branchUuid||own(project,""isV2Format"")!==false||own(host,""isHistoryMode"")!==false)bad();
-if(fn(tabs,""getActiveTab"")!==active||fn(tabs,""getTabById"")!==getTab||apply(active,tabs,[])!==target.tabId||apply(getTab,tabs,[target.tabId])!==tab||own(tab,""data"")!==data)bad();
-if(own(tab,""tabId"")!==target.tabId||own(data,""doctype"")!==3||own(data,""pid"")!==target.projectUuid)bad();absent(tab,""parentLibraryUuid"");
-if(document.querySelectorAll!==select)bad();const current=apply(select,document,['[id=""frame_'+target.tabId+'""]']);if(current.length!==1||current[0]!==frame)bad();
-if(frame.tagName!==""IFRAME""||frame.id!==""frame_""+target.tabId||frame.ownerDocument!==document||frame.isConnected!==true||frame.parentElement!==parent||frame.classList!==classes||classes.contains!==contains||frame.getAttribute!==attr||frame.hasAttribute!==has||parent.getAttribute!==parentAttr||!apply(contains,classes,[""editframe""])||apply(parentAttr,parent,[""uuid""])!==target.tabId)bad();
-for(const [k,v] of [[""c_dbid"",target.tabId],[""c_doctype"",""3""],[""src"",""editor?entry=pcb""],[""pcb-canvas"",""true""]])if(apply(attr,frame,[k])!==v)bad();
-for(const k of [""blankIframe"",""fromFile"",""jsonCacheReady""])if(apply(has,frame,[k]))bad();
-if(frame.contentWindow!==child||child.document!==childDocument||childDocument?.defaultView!==child||childDocument?.nodeType!==9||child.frameElement!==frame||child.parent!==root||child.top!==root||child.location?.href!==""https://client/editor?entry=pcb""||own(child,""MSG_BUS_PCB"")!==native||own(native,""messageBus"")!==channel)bad();
-if(own(child,""Object"")!==childObject||own(childObject,""prototype"")!==childObjectPrototype||own(child,""Array"")!==childArray||own(childArray,""prototype"")!==childArrayPrototype)bad();
-for(let i=0;i<chain.length;i++){const node=chain[i];if(i>0&&Object.getPrototypeOf(chain[i-1])!==node)bad();if(node===rpcOwner){if(own(node,""rpcCall"")!==rpc)bad();}else if(Object.hasOwn(node,""rpcCall""))bad();}
-if(fn(root,""setTimeout"")!==set||fn(root,""clearTimeout"")!==clear)bad();
-};
-const childPlain=o=>{if(!object(o))bad();const p=Object.getPrototypeOf(o);if(p!==Object.prototype&&p!==childObjectPrototype)bad();return o;};
-const exact=(o,keys)=>{childPlain(o);const actual=Reflect.ownKeys(o);if(actual.length!==keys.length||actual.some(k=>!keys.includes(k)))bad();};
-const num=v=>{if(typeof v!==""number""||!Number.isFinite(v)||Object.is(v,-0)||Math.abs(v)>1000000000000)bad();return v;};
-const integer=v=>{num(v);if(!Number.isInteger(v))bad();return v;};
-const layer=v=>{integer(v);if(v<0||v>65535)bad();return v;};
-const bool=v=>{if(typeof v!==""boolean"")bad();return v;};
-const text=(v,max,nullable=false)=>{if(v===null&&nullable)return v;if(typeof v!==""string""||v.length>max||!v.isWellFormed())bad();return v;};
-const point=v=>{if(!object(v))bad();const keys=Reflect.ownKeys(v);if(!keys.includes(""x"")||!keys.includes(""y"")||keys.some(k=>k!==""x""&&k!==""y""&&k!==""_hashed""))bad();return{x:num(own(v,""x"")),y:num(own(v,""y""))};};
-const length=v=>{if(!Array.isArray(v)||![Array.prototype,childArrayPrototype].includes(Object.getPrototypeOf(v)))bad();const n=own(v,""length"");if(n<0||n>256||Reflect.ownKeys(v).length!==n+1)bad();return n;};
-const hole=row=>{
-const tuple=own(row,""holeAspect"");if(tuple===null)return null;
-const n=length(tuple),shape=own(tuple,""0"");if((shape===""ROUND""&&n!==2)||(shape===""SLOT""&&n!==3)||![""ROUND"",""SLOT""].includes(shape))bad();
-const diameter=num(own(tuple,""1"")),offset=point(own(row,""holeOffset""));if(diameter<0)bad();
-const result={shape,diameter,offsetX:offset.x,offsetY:offset.y,rotation:num(own(row,""holeRotation""))};
-if(shape===""SLOT""){const value=num(own(tuple,""2""));if(value<0)bad();result.length=value;}return result;
-};
-
-const padPolygonPath=value=>{
- const prototype=Object.getPrototypeOf(value??{});
- if(!Array.isArray(value)||(prototype!==Array.prototype&&prototype!==childArrayPrototype))bad();
- const length=own(value,'length');
- if(!Number.isInteger(length)||length<0||length>2048||Reflect.ownKeys(value).length!==length+1)bad();
- const path=[];
- for(let i=0;i<length;i++){
-  const token=own(value,String(i));
-  if(typeof token==='number')path.push(num(token));
-  else if(token==='L'||token==='ARC'||token==='CARC'||token==='C'||token==='CIRCLE')path.push(token);
-  else bad();
- }
- if(length===0)return path;
- if(path[0]==='CIRCLE'){
-  if(length!==4||!path.slice(1).every(token=>typeof token==='number')||path[3]<0)bad();
-  return path;
- }
- if(typeof path[0]!=='number'||typeof path[1]!=='number')bad();
- let offset=2;
- while(offset<length){
-  const command=path[offset];if(command!=='L'&&command!=='ARC'&&command!=='CARC'&&command!=='C')bad();
-  offset++;const start=offset;while(typeof path[offset]==='number')offset++;
-  const count=offset-start;
-  if(command==='ARC'||command==='CARC'){if(count!==3)bad();}
-  else if(count<2||count%2!==0)bad();
- }
- if(offset===2)bad();return path;
-};
-
-// PCB a8405930@10301575 selects the default native pad style. The shared
-// polygon fragment is pure grammar validation, not legacy runtime admission.
-const defaultCopperShape=row=>{
-const tuple=own(row,""defaultPadShapeAspect""),n=length(tuple),shape=own(tuple,""0"");
-if(shape===""POLYGON""){if(n!==2)bad();return{shape,pathSource:padPolygonPath(own(tuple,""1"")),coordinateSpace:""native-pad-style""};}
-if((shape===""RECT""&&n!==4)||((shape===""ELLIPSE""||shape===""OVAL"")&&n!==3)||![""RECT"",""ELLIPSE"",""OVAL""].includes(shape))bad();
-const result={shape,width:num(own(tuple,""1"")),height:num(own(tuple,""2""))};if(shape===""RECT"")result.cornerRatioPercent=num(own(tuple,""3""));return result;
-};
-const maskExpansion=row=>{
-const mode=integer(own(row,""expansionType""));if(mode!==1&&mode!==2)bad();
-return{mode,topSolder:num(own(row,""topSolderExpansion"")),bottomSolder:num(own(row,""bottomSolderExpansion"")),paste:num(own(row,""pasteExpansion""))};
-};
-const thermal=row=>{
-const rule=own(row,""padRule"");if(rule===null)return null;if(!object(rule))bad();
-const mode=integer(own(rule,""connectMode""));if(mode===1||mode===2)return{mode};if(mode!==0)bad();
-return{mode,clearance:num(num(own(rule,""lineClearance""))*10),spokeWidth:num(num(own(rule,""lineWidth""))*10),angle:num(num(own(rule,""lineAngle""))/Math.PI*180)};
-};
-// PCB a8405930@10302253 returns either [] or these three native style groups.
-// The selectors are retained verbatim; they are not expanded physical layers.
-const specialGroups=row=>{
-const raw=own(row,""specialPadShapeAspect""),n=length(raw);if(n!==0&&n!==3)bad();const result=[],selectors=[[1,1],[1,2],[2,2]];
-for(let i=0;i<n;i++){
-const tuple=own(raw,String(i));if(length(tuple)!==3)bad();
-const nativeStartLayer=integer(own(tuple,""0"")),nativeEndLayer=integer(own(tuple,""1""));
-if(nativeStartLayer!==selectors[i][0]||nativeEndLayer!==selectors[i][1])bad();
-const value=own(tuple,""2""),count=length(value),shape=own(value,""0"");
-if((shape===""RECT""&&count!==4)||((shape===""ELLIPSE""||shape===""OVAL"")&&count!==3)||![""RECT"",""ELLIPSE"",""OVAL""].includes(shape))bad();
-const width=num(own(value,""1"")),height=num(own(value,""2""));if(width<0||height<0)bad();const projected={shape,width,height};
-if(shape===""RECT""){const ratio=num(own(value,""3""));if(ratio<0||ratio>100)bad();projected.cornerRatioPercent=ratio;}
-result.push({nativeStartLayer,nativeEndLayer,shape:projected});
-}return result;
-};
-const rows=raw=>{
-const n=length(raw),result=[],specialShapeGroups=[],seen=new Set();
-for(let i=0;i<n;i++){
-const row=childPlain(own(raw,String(i))),id=text(own(row,""globalIndex""),256);if(id.length===0||seen.has(id))bad();seen.add(id);
-const p=point(own(row,""center"")),l=layer(own(row,""layerId"")),padType=integer(own(row,""padTypeAspect""));if(![1,2,12].includes(l)||![0,1,2].includes(padType))bad();
-result.push({primitiveId:id,primitiveType:""Pad"",primitiveLock:bool(own(row,""locked"")),net:text(own(row,""net""),1024,true),layer:l,
-padNumber:text(own(row,""num""),1024),x:p.x,y:p.y,rotation:num(own(row,""rotation"")),metallization:bool(own(row,""plated"")),
-padType,hole:hole(row),defaultCopperShape:defaultCopperShape(row),maskExpansion:maskExpansion(row),thermal:thermal(row)});
-specialShapeGroups.push({primitiveId:id,groups:specialGroups(row)});
-}return{rows:result,specialShapeGroups};
-};
-const call=async(topic,arg)=>{check();const reply=await apply(rpc,channel,[topic,arg,0]);check();childPlain(reply);return own(reply,""message"");};
-const identity=async()=>{const value=await call(""getTabIdAndDocType"",undefined);check();exact(value,[""tabId"",""docType""]);if(own(value,""tabId"")!==target.tabId||own(value,""docType"")!==3)bad();};
-const bounded=value=>{const json=JSON.stringify(value);if(new TextEncoder().encode(json).byteLength>393216)bad();return json;};
-const read=async()=>{
-await identity();check();const raw=await call(""pcb/extensionAPI/pad-getAll"",{});check();const projected=rows(raw);
-const observation={ok:true,kind:""current-pcb-geometry-observation"",method:""eda.pcb_PrimitivePad.getAll"",target,rows:projected.rows,
-samples:2,implementationKind:""native-task-equivalent"",cadAuthority:false,persistenceVerified:false,sourceMembershipVerified:false};
-const result={observation,specialShapeGroups:projected.specialShapeGroups};bounded(result);await identity();check();return result;
-};
-const run=async()=>{const first=await read(),json=bounded(first),second=await read();check();if(bounded(second)!==json)bad();
-return bounded({ok:true,kind:""pcb209-original-pad-shapes-observation"",target,...first});};
-check();const timeout=new Promise((resolve,reject)=>{timer=apply(set,root,[()=>{expired=true;reject(new Error(""PCB209_PAD_SHAPES_REFUSED""));},10000]);});return await Promise.race([run(),timeout]);
-}catch{throw new Error(""PCB209_PAD_SHAPES_REFUSED"");}finally{if(timer!==undefined&&typeof clear===""function""){try{Reflect.apply(clear,globalThis,[timer]);}catch{throw new Error(""PCB209_PAD_SHAPES_REFUSED"");}}}
-}";
+  const string PadShapes209FunctionGzip="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";
   const string PadShapes209FunctionSha256="82cc18f4569a60d05183677463fb8b96ecd3781bba8c2a3d29bed1c9f4cdc9f0";
+  static readonly string PadShapes209Function=UnpackFixedProgram(PadShapes209FunctionGzip,14829,PadShapes209FunctionSha256,"ff84375b6a526b41315f7ba74416c9b2a4e34b446b50fecec9613836bf98a27e");
   // END GENERATED PCB209 PAD SHAPES PROGRAM
   // BEGIN GENERATED PCB209 EXTENDED PRIMITIVES PROGRAM
-  const string ExtendedPrimitives209Function=@"async function(sealed,phase){
-""use strict"";
-let timer,clear,expired=false;
-try{
-const root=globalThis,apply=Reflect.apply,bad=()=>{throw new Error(""PCB209_EXTENDED_PRIMITIVES_REFUSED"");};
-const own=(o,k)=>{if(o===null||(typeof o!==""object""&&typeof o!==""function""))bad();const d=Object.getOwnPropertyDescriptor(o,k);if(!d||!Object.hasOwn(d,""value""))bad();return d.value;};
-const object=o=>o!==null&&typeof o===""object""&&!Array.isArray(o);
-const plain=o=>{if(!object(o)||Object.getPrototypeOf(o)!==Object.prototype)bad();return o;};
-const absent=(o,k)=>{const d=Object.getOwnPropertyDescriptor(o,k);if(d&&(!Object.hasOwn(d,""value"")||d.value!==undefined))bad();};
-const fn=(o,k)=>{const f=own(o,k);if(typeof f!==""function"")bad();return f;};
-plain(sealed);if(phase!==""observe""||Reflect.ownKeys(sealed).length!==5)bad();
-for(const k of [""rawWindowsPath"",""projectUuid"",""documentUuid"",""expectedSourceSha256"",""branchUuid""])if(typeof own(sealed,k)!==""string"")bad();
-const match=(s,re)=>{const m=re.exec(s);return m!==null&&m[0]===s;};
-if(!match(sealed.projectUuid,/^[a-f0-9]{64}$/)||!match(sealed.branchUuid,/^[a-f0-9]{32}$/)||!match(sealed.documentUuid,/^(?:[a-f0-9]{16}|[a-f0-9]{32})$/)||!match(sealed.expectedSourceSha256,/^[a-f0-9]{64}$/))bad();
-const target={projectUuid:sealed.projectUuid,branchUuid:sealed.branchUuid,documentUuid:sealed.documentUuid,tabId:sealed.documentUuid+""@""+sealed.projectUuid};
-const parseProjectUrl=(value,projectUuid,activeTabId)=>{
- if(typeof value!=='string'||value.length>32768||typeof projectUuid!=='string')bad();
- const projectMatch=/^(?:[a-f0-9]{32}|[a-f0-9]{64})$/.exec(projectUuid);if(!projectMatch||projectMatch[0]!==projectUuid)bad();
- const pieces=value.split('#');if(pieces.length>2)bad();const base=pieces[0];
- const baseMatch=/^https:\/\/client\/editor\?cll=(?:trace|debug|info|warn|error)$/.exec(base);if(!baseMatch||baseMatch[0]!==base)bad();
- const fragment=pieces.length===1?'':pieces[1];
- if(fragment==='')return{base,empty:true,tabIds:[],activeTabId:null};
- const prefix='id='+projectUuid;if(fragment===prefix)return{base,empty:false,tabIds:[],activeTabId:null};
- if(!fragment.startsWith(prefix+',tab='))bad();const entries=fragment.slice(prefix.length+5).split('|');
- if(entries.length<1||entries.length>256)bad();const tabIds=[],seen=new Set();let markedTabId=null;
- for(const entry of entries){
-  const match=/^(\*?)([a-f0-9]{16}|[a-f0-9]{32})@([a-f0-9]{32}|[a-f0-9]{64})$/.exec(entry);
-  if(!match||match[0]!==entry||match[3]!==projectUuid)bad();const tabId=match[2]+'@'+match[3];if(seen.has(tabId))bad();seen.add(tabId);tabIds.push(tabId);
-  if(match[1]==='*'){if(markedTabId!==null||(activeTabId!==undefined&&activeTabId!==null&&activeTabId!==tabId))bad();markedTabId=tabId;}
- }
- return{base,empty:false,tabIds,activeTabId:markedTabId};
-};
-const location=root.location,href=location?.href,document=root.document,ui=own(root,""UI""),host=own(root,""gVars""),mode=own(root,""PRO_EDITOR_MODE"");
-const project=plain(own(host,""currentProject"")),tabs=own(ui,""tabBar"");
-if(typeof tabs!==""function""||Object.getPrototypeOf(tabs)!==Function.prototype)bad();
-const active=fn(tabs,""getActiveTab""),getTab=fn(tabs,""getTabById""),select=document?.querySelectorAll;
-if(typeof select!==""function"")bad();
-const tab=plain(apply(getTab,tabs,[target.tabId])),data=plain(own(tab,""data""));
-const found=apply(select,document,['[id=""frame_'+target.tabId+'""]']);if(found.length!==1)bad();
-const frame=found[0],child=frame?.contentWindow,childDocument=child?.document,parent=frame?.parentElement;
-const native=own(child,""MSG_BUS_PCB""),channel=own(native,""messageBus""),childObject=own(child,""Object""),childArray=own(child,""Array"");
-const childObjectPrototype=own(childObject,""prototype""),childArrayPrototype=own(childArray,""prototype"");
-const attr=frame?.getAttribute,has=frame?.hasAttribute,classes=frame?.classList,contains=classes?.contains,parentAttr=parent?.getAttribute;
-if(typeof attr!==""function""||typeof has!==""function""||typeof contains!==""function""||typeof parentAttr!==""function"")bad();
-const chain=[channel];let rpc,rpcOwner;
-for(let i=0;i<3;i++){const node=chain[i];if(!object(node))bad();const d=Object.getOwnPropertyDescriptor(node,""rpcCall"");if(d){if(!Object.hasOwn(d,""value"")||typeof d.value!==""function"")bad();rpc=d.value;rpcOwner=node;break;}chain.push(Object.getPrototypeOf(node));}
-if(typeof rpc!==""function"")bad();
-const set=fn(root,""setTimeout"");clear=fn(root,""clearTimeout"");
-const check=()=>{
-if(expired||root.window!==root||root.top!==root||root.location!==location||root.document!==document||document?.defaultView!==root||document?.nodeType!==9||document?.URL!==href||location?.href!==href||location?.origin!==""https://client"")bad();
-parseProjectUrl(href,target.projectUuid,target.tabId);
-if(own(root,""PRO_EDITOR_MODE"")!==mode||![""CLIENT-HALF_OFFLINE-EASYEDA-PCB-SCH-PANEL-SIM"",""CLIENT-OFFLINE-EASYEDA-PCB-SCH-PANEL-SIM""].includes(mode))bad();
-if(own(root,""UI"")!==ui||own(root,""gVars"")!==host||own(ui,""gVars"")!==host||own(host,""currentProject"")!==project||own(ui,""tabBar"")!==tabs)bad();
-if(own(project,""projectId"")!==target.projectUuid||own(project,""branchUuid"")!==target.branchUuid||own(project,""isV2Format"")!==false||own(host,""isHistoryMode"")!==false)bad();
-if(fn(tabs,""getActiveTab"")!==active||fn(tabs,""getTabById"")!==getTab||apply(active,tabs,[])!==target.tabId||apply(getTab,tabs,[target.tabId])!==tab||own(tab,""data"")!==data)bad();
-if(own(tab,""tabId"")!==target.tabId||own(data,""doctype"")!==3||own(data,""pid"")!==target.projectUuid)bad();absent(tab,""parentLibraryUuid"");
-if(document.querySelectorAll!==select)bad();const current=apply(select,document,['[id=""frame_'+target.tabId+'""]']);if(current.length!==1||current[0]!==frame)bad();
-if(frame.tagName!==""IFRAME""||frame.id!==""frame_""+target.tabId||frame.ownerDocument!==document||frame.isConnected!==true||frame.parentElement!==parent||frame.classList!==classes||classes.contains!==contains||frame.getAttribute!==attr||frame.hasAttribute!==has||parent.getAttribute!==parentAttr||!apply(contains,classes,[""editframe""])||apply(parentAttr,parent,[""uuid""])!==target.tabId)bad();
-for(const [k,v] of [[""c_dbid"",target.tabId],[""c_doctype"",""3""],[""src"",""editor?entry=pcb""],[""pcb-canvas"",""true""]])if(apply(attr,frame,[k])!==v)bad();
-for(const k of [""blankIframe"",""fromFile"",""jsonCacheReady""])if(apply(has,frame,[k]))bad();
-if(frame.contentWindow!==child||child.document!==childDocument||childDocument?.defaultView!==child||childDocument?.nodeType!==9||child.frameElement!==frame||child.parent!==root||child.top!==root||child.location?.href!==""https://client/editor?entry=pcb""||own(child,""MSG_BUS_PCB"")!==native||own(native,""messageBus"")!==channel)bad();
-if(own(child,""Object"")!==childObject||own(childObject,""prototype"")!==childObjectPrototype||own(child,""Array"")!==childArray||own(childArray,""prototype"")!==childArrayPrototype)bad();
-for(let i=0;i<chain.length;i++){const node=chain[i];if(i>0&&Object.getPrototypeOf(chain[i-1])!==node)bad();if(node===rpcOwner){if(own(node,""rpcCall"")!==rpc)bad();}else if(Object.hasOwn(node,""rpcCall""))bad();}
-if(fn(root,""setTimeout"")!==set||fn(root,""clearTimeout"")!==clear)bad();
-};
-const childPlain=o=>{if(!object(o))bad();const p=Object.getPrototypeOf(o);if(p!==Object.prototype&&p!==childObjectPrototype)bad();return o;};
-const exact=(o,keys)=>{childPlain(o);const actual=Reflect.ownKeys(o);if(actual.length!==keys.length||actual.some(k=>!keys.includes(k)))bad();};
-const num=v=>{if(typeof v!==""number""||!Number.isFinite(v)||Object.is(v,-0)||Math.abs(v)>1000000000000)bad();return v;};
-const integer=v=>{num(v);if(!Number.isInteger(v))bad();return v;};
-const layer=v=>{integer(v);if(v<0||v>65535)bad();return v;};
-const bool=v=>{if(typeof v!==""boolean"")bad();return v;};
-const text=(v,max,nullable=false)=>{if(v===null&&nullable)return v;if(typeof v!==""string""||v.length>max||!v.isWellFormed())bad();return v;};
-const point=v=>{if(!object(v))bad();const keys=Reflect.ownKeys(v);if(!keys.includes(""x"")||!keys.includes(""y"")||keys.some(k=>k!==""x""&&k!==""y""&&k!==""_hashed""))bad();return{x:num(own(v,""x"")),y:num(own(v,""y""))};};
-const length=v=>{if(!Array.isArray(v)||![Array.prototype,childArrayPrototype].includes(Object.getPrototypeOf(v)))bad();const n=own(v,""length"");if(n<0||n>256||Reflect.ownKeys(v).length!==n+1)bad();return n;};
-// PCB a8405930@7408336 clones raw attrsMap. Keep absent/undefined/present
-// separately; values are only projected for the six explicitly supported keys.
-const componentMetadata=(row,id,statesList)=>{
-const attrs=childPlain(own(row,""attrsMap"")),result={},states={};
-for(const [key,field] of [[""Designator"",""designator""],[""Name"",""name""],[""Manufacturer"",""manufacturer""],[""Manufacturer Part"",""manufacturerPart""],[""Supplier"",""supplier""],[""Supplier Part"",""supplierPart""]]){
-const d=Object.getOwnPropertyDescriptor(attrs,key);if(!d){if(key in attrs)bad();states[field]=""absent"";continue;}
-if(!Object.hasOwn(d,""value""))bad();if(d.value===undefined){states[field]=""undefined"";continue;}
-result[field]=text(d.value,1024);states[field]=""present"";
-}statesList.push({primitiveId:id,states});return result;
-};
-const hole=row=>{
-const tuple=own(row,""holeAspect"");if(tuple===null)return null;
-const n=length(tuple),shape=own(tuple,""0"");if((shape===""ROUND""&&n!==2)||(shape===""SLOT""&&n!==3)||![""ROUND"",""SLOT""].includes(shape))bad();
-const diameter=num(own(tuple,""1"")),offset=point(own(row,""holeOffset""));if(diameter<0)bad();
-const result={shape,diameter,offsetX:offset.x,offsetY:offset.y,rotation:num(own(row,""holeRotation""))};
-if(shape===""SLOT""){const value=num(own(tuple,""2""));if(value<0)bad();result.length=value;}return result;
-};
-
-const padPolygonPath=value=>{
- const prototype=Object.getPrototypeOf(value??{});
- if(!Array.isArray(value)||(prototype!==Array.prototype&&prototype!==childArrayPrototype))bad();
- const length=own(value,'length');
- if(!Number.isInteger(length)||length<0||length>2048||Reflect.ownKeys(value).length!==length+1)bad();
- const path=[];
- for(let i=0;i<length;i++){
-  const token=own(value,String(i));
-  if(typeof token==='number')path.push(num(token));
-  else if(token==='L'||token==='ARC'||token==='CARC'||token==='C'||token==='CIRCLE')path.push(token);
-  else bad();
- }
- if(length===0)return path;
- if(path[0]==='CIRCLE'){
-  if(length!==4||!path.slice(1).every(token=>typeof token==='number')||path[3]<0)bad();
-  return path;
- }
- if(typeof path[0]!=='number'||typeof path[1]!=='number')bad();
- let offset=2;
- while(offset<length){
-  const command=path[offset];if(command!=='L'&&command!=='ARC'&&command!=='CARC'&&command!=='C')bad();
-  offset++;const start=offset;while(typeof path[offset]==='number')offset++;
-  const count=offset-start;
-  if(command==='ARC'||command==='CARC'){if(count!==3)bad();}
-  else if(count<2||count%2!==0)bad();
- }
- if(offset===2)bad();return path;
-};
-
-// PCB a8405930@10301575 selects the default native pad style. The shared
-// polygon fragment is pure grammar validation, not legacy runtime admission.
-const defaultCopperShape=row=>{
-const tuple=own(row,""defaultPadShapeAspect""),n=length(tuple),shape=own(tuple,""0"");
-if(shape===""POLYGON""){if(n!==2)bad();return{shape,pathSource:padPolygonPath(own(tuple,""1"")),coordinateSpace:""native-pad-style""};}
-if((shape===""RECT""&&n!==4)||((shape===""ELLIPSE""||shape===""OVAL"")&&n!==3)||![""RECT"",""ELLIPSE"",""OVAL""].includes(shape))bad();
-const result={shape,width:num(own(tuple,""1"")),height:num(own(tuple,""2""))};if(shape===""RECT"")result.cornerRatioPercent=num(own(tuple,""3""));return result;
-};
-const maskExpansion=row=>{
-const mode=integer(own(row,""expansionType""));if(mode!==1&&mode!==2)bad();
-return{mode,topSolder:num(own(row,""topSolderExpansion"")),bottomSolder:num(own(row,""bottomSolderExpansion"")),paste:num(own(row,""pasteExpansion""))};
-};
-const thermal=row=>{
-const rule=own(row,""padRule"");if(rule===null)return null;if(!object(rule))bad();
-const mode=integer(own(rule,""connectMode""));if(mode===1||mode===2)return{mode};if(mode!==0)bad();
-return{mode,clearance:num(num(own(rule,""lineClearance""))*10),spokeWidth:num(num(own(rule,""lineWidth""))*10),angle:num(num(own(rule,""lineAngle""))/Math.PI*180)};
-};
-const rows=(raw,family,seen,metadataStates)=>{
-const n=length(raw),result=[];
-for(let i=0;i<n;i++){
-const row=childPlain(own(raw,String(i))),id=text(own(row,""globalIndex""),256);if(id.length===0||seen.has(id))bad();seen.add(id);
-const base={primitiveId:id,primitiveType:family,primitiveLock:bool(own(row,""locked""))};
-if(family===""Component""){
-const p=point(own(row,""position"")),l=layer(own(row,""layerId""));if(l!==1&&l!==2)bad();
-result.push({...base,layer:l,x:p.x,y:p.y,rotation:num(own(row,""rotation"")),...componentMetadata(row,id,metadataStates)});continue;
-}
-if(family===""Pad""){
-const p=point(own(row,""center"")),l=layer(own(row,""layerId"")),padType=integer(own(row,""padTypeAspect""));if(![1,2,12].includes(l)||![0,1,2].includes(padType))bad();
-result.push({...base,net:text(own(row,""net""),1024,true),layer:l,padNumber:text(own(row,""num""),1024),x:p.x,y:p.y,rotation:num(own(row,""rotation"")),
-metallization:bool(own(row,""plated"")),padType,hole:hole(row),defaultCopperShape:defaultCopperShape(row),maskExpansion:maskExpansion(row),thermal:thermal(row)});continue;
-}
-if(family===""Attribute""){
-const p=point(own(row,""position"")),alignMode=integer(own(row,""origin""));if(alignMode<1||alignMode>9)bad();
-const silkColor=text(own(row,""silkColor""),128,true);if(silkColor==="""")bad();
-result.push({...base,layer:layer(own(row,""layerId"")),x:num(p.x*10),y:num(p.y*10),value:text(own(row,""value""),65536),
-fontFamily:text(own(row,""fontFamily""),1024),fontSize:num(num(own(row,""fontSize""))*10),lineWidth:num(num(own(row,""strokeWidth""))*10),
-alignMode,rotation:num(num(own(row,""rotation""))*180/Math.PI),reverse:bool(own(row,""reverse"")),expansion:num(num(own(row,""reverseExpansion""))*10),
-mirror:bool(own(row,""mirror"")),key:text(own(row,""key""),1024),keyVisible:bool(own(row,""showKey"")),valueVisible:bool(own(row,""showValue"")),
-positionIsNull:bool(own(row,""positionIsNull"")),silkColor});continue;
-}
-if(family===""Dimension""){
-const dimensionType=text(own(row,""dimensionType""),32);if(![""Length Dimension"",""Radius Dimension"",""Protractor Dimension""].includes(dimensionType))bad();
-const coordinates=own(row,""coordinateSet""),count=length(coordinates);if(count!==(dimensionType===""Length Dimension""?8:6))bad();
-const coordinateSet=[];for(let j=0;j<count;j++)coordinateSet.push(num(own(coordinates,String(j))));
-const canvasUnit=text(own(row,""unit""),4),lineWidth=num(own(row,""width"")),precision=integer(own(row,""precision""));
-if(![""mm"",""cm"",""inch"",""mil""].includes(canvasUnit)||lineWidth<0||precision<0||precision>4)bad();
-result.push({...base,layer:layer(own(row,""layerId"")),dimensionType,coordinateSet,canvasUnit,lineWidth,precision});continue;
-}
-if(family!==""Image"")bad();
-const imageType=text(own(row,""imageType""),7),p=point(own(row,""start"")),width=num(own(row,""width"")),height=num(own(row,""height""));
-if(![""Image"",""Picture""].includes(imageType)||width<0||height<0)bad();
-result.push({...base,imageType,layer:layer(own(row,""layerId"")),x:p.x,y:p.y,width,height,rotation:num(own(row,""rotation"")),horizonMirror:bool(own(row,""mirror""))});
-}return result;
-};
-// Both handlers use the exact same gr.getAllItem() manager order. Each group
-// contains Le.attributes in Object.values(this.attrs) order, including empty
-// groups. This association is not a reciprocal parent/model ownership proof.
-const attributeGroups=(raw,components,seen)=>{
-const n=length(raw);if(n!==components.length)bad();const groups=[],attributeParentGroups=[],result=[];
-let total=0;
-for(let i=0;i<n;i++){
-const group=own(raw,String(i));exact(group,[""attrs"",""parentPrimitiveId""]);
-const parentPrimitiveId=text(own(group,""parentPrimitiveId""),256),attrs=own(group,""attrs""),count=length(attrs);
-if(parentPrimitiveId!==components[i].primitiveId||total+count>256)bad();total+=count;groups.push({parentPrimitiveId,attrs});
-}
-for(const group of groups){const children=rows(group.attrs,""Attribute"",seen,[]),ids=[];
-for(const child of children){ids.push(child.primitiveId);result.push({...child,parentPrimitiveId:group.parentPrimitiveId});}
-attributeParentGroups.push({parentPrimitiveId:group.parentPrimitiveId,ids});
-}return{rows:result,attributeParentGroups,relationshipEvidence:""native-component-attribute-groups"",reciprocalParentVerified:false};
-};
-const topics=[[""Component"",""component""],[""Pad"",""pad""],[""Attribute"",""attribute""],[""Dimension"",""dimension""],[""Image"",""image""]];
-const call=async(topic,arg)=>{check();const reply=await apply(rpc,channel,[topic,arg,0]);check();childPlain(reply);return own(reply,""message"");};
-const identity=async()=>{const value=await call(""getTabIdAndDocType"",undefined);check();exact(value,[""tabId"",""docType""]);if(own(value,""tabId"")!==target.tabId||own(value,""docType"")!==3)bad();};
-const bounded=value=>{const json=JSON.stringify(value);if(new TextEncoder().encode(json).byteLength>393216)bad();return json;};
-const read=async()=>{
-await identity();check();const observations=[],seen=new Set(),componentMetadataStates=[];let components;
-for(const [family,topic] of topics){
-const raw=await call(""pcb/extensionAPI/""+topic+""-getAll"",{});check();
-const projected=family===""Attribute""?attributeGroups(raw,components,seen):{rows:rows(raw,family,seen,componentMetadataStates)};
-if(family===""Component"")components=projected.rows;
-observations.push({ok:true,kind:""current-pcb-geometry-observation"",method:""eda.pcb_Primitive""+family+"".getAll"",target,...projected,
-samples:2,implementationKind:""native-task-equivalent"",cadAuthority:false,persistenceVerified:false,sourceMembershipVerified:false});
-bounded({observations,componentMetadataStates});
-}
-await identity();check();return{observations,componentMetadataStates};
-};
-const run=async()=>{const first=await read(),json=bounded(first),second=await read();check();if(bounded(second)!==json)bad();
-return bounded({ok:true,kind:""pcb209-original-extended-primitives-observation"",target,...first});};
-check();const timeout=new Promise((resolve,reject)=>{timer=apply(set,root,[()=>{expired=true;reject(new Error(""PCB209_EXTENDED_PRIMITIVES_REFUSED""));},10000]);});return await Promise.race([run(),timeout]);
-}catch{throw new Error(""PCB209_EXTENDED_PRIMITIVES_REFUSED"");}finally{if(timer!==undefined&&typeof clear===""function""){try{Reflect.apply(clear,globalThis,[timer]);}catch{throw new Error(""PCB209_EXTENDED_PRIMITIVES_REFUSED"");}}}
-}";
+  const string ExtendedPrimitives209FunctionGzip="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";
   const string ExtendedPrimitives209FunctionSha256="5ae0fa27a7475f96aaad549a7c029ea165fe78788cb8ab0187dcaae86c2e7a63";
+  static readonly string ExtendedPrimitives209Function=UnpackFixedProgram(ExtendedPrimitives209FunctionGzip,18284,ExtendedPrimitives209FunctionSha256,"17f2f8d6bf8fa86300803b3caffddd208b03b8a276805d83368460d00fbcae54");
   // END GENERATED PCB209 EXTENDED PRIMITIVES PROGRAM
   // BEGIN GENERATED PCB209 SELECTION RELATIONS PROGRAM
-  const string SelectionRelations209Function=@"async function(sealed,phase,componentIds){
-""use strict"";
-let timer,clear,expired=false;
-try{
-const root=globalThis,apply=Reflect.apply,bad=()=>{throw new Error(""PCB209_SELECTION_RELATIONS_REFUSED"");};
-const own=(o,k)=>{if(o===null||(typeof o!==""object""&&typeof o!==""function""))bad();const d=Object.getOwnPropertyDescriptor(o,k);if(!d||!Object.hasOwn(d,""value""))bad();return d.value;};
-const object=o=>o!==null&&typeof o===""object""&&!Array.isArray(o);
-const plain=o=>{if(!object(o)||Object.getPrototypeOf(o)!==Object.prototype)bad();return o;};
-const absent=(o,k)=>{const d=Object.getOwnPropertyDescriptor(o,k);if(d&&(!Object.hasOwn(d,""value"")||d.value!==undefined))bad();};
-const fn=(o,k)=>{const f=own(o,k);if(typeof f!==""function"")bad();return f;};
-plain(sealed);if(phase!==""observe""||Reflect.ownKeys(sealed).length!==5)bad();
-for(const k of [""rawWindowsPath"",""projectUuid"",""documentUuid"",""expectedSourceSha256"",""branchUuid""])if(typeof own(sealed,k)!==""string"")bad();
-const match=(s,re)=>{const m=re.exec(s);return m!==null&&m[0]===s;};
-if(!match(sealed.projectUuid,/^[a-f0-9]{64}$/)||!match(sealed.branchUuid,/^[a-f0-9]{32}$/)||!match(sealed.documentUuid,/^(?:[a-f0-9]{16}|[a-f0-9]{32})$/)||!match(sealed.expectedSourceSha256,/^[a-f0-9]{64}$/))bad();
-const target={projectUuid:sealed.projectUuid,branchUuid:sealed.branchUuid,documentUuid:sealed.documentUuid,tabId:sealed.documentUuid+""@""+sealed.projectUuid};
-const parseProjectUrl=(value,projectUuid,activeTabId)=>{
- if(typeof value!=='string'||value.length>32768||typeof projectUuid!=='string')bad();
- const projectMatch=/^(?:[a-f0-9]{32}|[a-f0-9]{64})$/.exec(projectUuid);if(!projectMatch||projectMatch[0]!==projectUuid)bad();
- const pieces=value.split('#');if(pieces.length>2)bad();const base=pieces[0];
- const baseMatch=/^https:\/\/client\/editor\?cll=(?:trace|debug|info|warn|error)$/.exec(base);if(!baseMatch||baseMatch[0]!==base)bad();
- const fragment=pieces.length===1?'':pieces[1];
- if(fragment==='')return{base,empty:true,tabIds:[],activeTabId:null};
- const prefix='id='+projectUuid;if(fragment===prefix)return{base,empty:false,tabIds:[],activeTabId:null};
- if(!fragment.startsWith(prefix+',tab='))bad();const entries=fragment.slice(prefix.length+5).split('|');
- if(entries.length<1||entries.length>256)bad();const tabIds=[],seen=new Set();let markedTabId=null;
- for(const entry of entries){
-  const match=/^(\*?)([a-f0-9]{16}|[a-f0-9]{32})@([a-f0-9]{32}|[a-f0-9]{64})$/.exec(entry);
-  if(!match||match[0]!==entry||match[3]!==projectUuid)bad();const tabId=match[2]+'@'+match[3];if(seen.has(tabId))bad();seen.add(tabId);tabIds.push(tabId);
-  if(match[1]==='*'){if(markedTabId!==null||(activeTabId!==undefined&&activeTabId!==null&&activeTabId!==tabId))bad();markedTabId=tabId;}
- }
- return{base,empty:false,tabIds,activeTabId:markedTabId};
-};
-const location=root.location,href=location?.href,document=root.document,ui=own(root,""UI""),host=own(root,""gVars""),mode=own(root,""PRO_EDITOR_MODE"");
-const project=plain(own(host,""currentProject"")),tabs=own(ui,""tabBar"");
-if(typeof tabs!==""function""||Object.getPrototypeOf(tabs)!==Function.prototype)bad();
-const active=fn(tabs,""getActiveTab""),getTab=fn(tabs,""getTabById""),select=document?.querySelectorAll;
-if(typeof select!==""function"")bad();
-const tab=plain(apply(getTab,tabs,[target.tabId])),data=plain(own(tab,""data""));
-const found=apply(select,document,['[id=""frame_'+target.tabId+'""]']);if(found.length!==1)bad();
-const frame=found[0],child=frame?.contentWindow,childDocument=child?.document,parent=frame?.parentElement;
-const native=own(child,""MSG_BUS_PCB""),channel=own(native,""messageBus""),childObject=own(child,""Object""),childArray=own(child,""Array"");
-const childObjectPrototype=own(childObject,""prototype""),childArrayPrototype=own(childArray,""prototype"");
-const attr=frame?.getAttribute,has=frame?.hasAttribute,classes=frame?.classList,contains=classes?.contains,parentAttr=parent?.getAttribute;
-if(typeof attr!==""function""||typeof has!==""function""||typeof contains!==""function""||typeof parentAttr!==""function"")bad();
-const chain=[channel];let rpc,rpcOwner;
-for(let i=0;i<3;i++){const node=chain[i];if(!object(node))bad();const d=Object.getOwnPropertyDescriptor(node,""rpcCall"");if(d){if(!Object.hasOwn(d,""value"")||typeof d.value!==""function"")bad();rpc=d.value;rpcOwner=node;break;}chain.push(Object.getPrototypeOf(node));}
-if(typeof rpc!==""function"")bad();
-const set=fn(root,""setTimeout"");clear=fn(root,""clearTimeout"");
-const check=()=>{
-if(expired||root.window!==root||root.top!==root||root.location!==location||root.document!==document||document?.defaultView!==root||document?.nodeType!==9||document?.URL!==href||location?.href!==href||location?.origin!==""https://client"")bad();
-parseProjectUrl(href,target.projectUuid,target.tabId);
-if(own(root,""PRO_EDITOR_MODE"")!==mode||![""CLIENT-HALF_OFFLINE-EASYEDA-PCB-SCH-PANEL-SIM"",""CLIENT-OFFLINE-EASYEDA-PCB-SCH-PANEL-SIM""].includes(mode))bad();
-if(own(root,""UI"")!==ui||own(root,""gVars"")!==host||own(ui,""gVars"")!==host||own(host,""currentProject"")!==project||own(ui,""tabBar"")!==tabs)bad();
-if(own(project,""projectId"")!==target.projectUuid||own(project,""branchUuid"")!==target.branchUuid||own(project,""isV2Format"")!==false||own(host,""isHistoryMode"")!==false)bad();
-if(fn(tabs,""getActiveTab"")!==active||fn(tabs,""getTabById"")!==getTab||apply(active,tabs,[])!==target.tabId||apply(getTab,tabs,[target.tabId])!==tab||own(tab,""data"")!==data)bad();
-if(own(tab,""tabId"")!==target.tabId||own(data,""doctype"")!==3||own(data,""pid"")!==target.projectUuid)bad();absent(tab,""parentLibraryUuid"");
-if(document.querySelectorAll!==select)bad();const current=apply(select,document,['[id=""frame_'+target.tabId+'""]']);if(current.length!==1||current[0]!==frame)bad();
-if(frame.tagName!==""IFRAME""||frame.id!==""frame_""+target.tabId||frame.ownerDocument!==document||frame.isConnected!==true||frame.parentElement!==parent||frame.classList!==classes||classes.contains!==contains||frame.getAttribute!==attr||frame.hasAttribute!==has||parent.getAttribute!==parentAttr||!apply(contains,classes,[""editframe""])||apply(parentAttr,parent,[""uuid""])!==target.tabId)bad();
-for(const [k,v] of [[""c_dbid"",target.tabId],[""c_doctype"",""3""],[""src"",""editor?entry=pcb""],[""pcb-canvas"",""true""]])if(apply(attr,frame,[k])!==v)bad();
-for(const k of [""blankIframe"",""fromFile"",""jsonCacheReady""])if(apply(has,frame,[k]))bad();
-if(frame.contentWindow!==child||child.document!==childDocument||childDocument?.defaultView!==child||childDocument?.nodeType!==9||child.frameElement!==frame||child.parent!==root||child.top!==root||child.location?.href!==""https://client/editor?entry=pcb""||own(child,""MSG_BUS_PCB"")!==native||own(native,""messageBus"")!==channel)bad();
-if(own(child,""Object"")!==childObject||own(childObject,""prototype"")!==childObjectPrototype||own(child,""Array"")!==childArray||own(childArray,""prototype"")!==childArrayPrototype)bad();
-for(let i=0;i<chain.length;i++){const node=chain[i];if(i>0&&Object.getPrototypeOf(chain[i-1])!==node)bad();if(node===rpcOwner){if(own(node,""rpcCall"")!==rpc)bad();}else if(Object.hasOwn(node,""rpcCall""))bad();}
-if(fn(root,""setTimeout"")!==set||fn(root,""clearTimeout"")!==clear)bad();
-};
-const childPlain=o=>{if(!object(o))bad();const p=Object.getPrototypeOf(o);if(p!==Object.prototype&&p!==childObjectPrototype)bad();return o;};
-const exact=(o,keys)=>{childPlain(o);const actual=Reflect.ownKeys(o);if(actual.length!==keys.length||actual.some(k=>!keys.includes(k)))bad();};
-const num=v=>{if(typeof v!==""number""||!Number.isFinite(v)||Object.is(v,-0)||Math.abs(v)>1000000000000)bad();return v;};
-const integer=v=>{num(v);if(!Number.isInteger(v))bad();return v;};
-const layer=v=>{integer(v);if(v<0||v>65535)bad();return v;};
-const bool=v=>{if(typeof v!==""boolean"")bad();return v;};
-const text=(v,max,nullable=false)=>{if(v===null&&nullable)return v;if(typeof v!==""string""||v.length>max||!v.isWellFormed())bad();return v;};
-const point=v=>{if(!object(v))bad();const keys=Reflect.ownKeys(v);if(!keys.includes(""x"")||!keys.includes(""y"")||keys.some(k=>k!==""x""&&k!==""y""&&k!==""_hashed""))bad();return{x:num(own(v,""x"")),y:num(own(v,""y""))};};
-const length=v=>{if(!Array.isArray(v)||![Array.prototype,childArrayPrototype].includes(Object.getPrototypeOf(v)))bad();const n=own(v,""length"");if(n<0||n>256||Reflect.ownKeys(v).length!==n+1)bad();return n;};
-const copyIds=raw=>{const ids=[],seen=new Set();for(let i=0,n=length(raw);i<n;i++){const id=text(own(raw,String(i)),256);if(id.length===0||seen.has(id))bad();seen.add(id);ids.push(id);}return ids;};
-const requestedComponentIds=copyIds(componentIds);if(requestedComponentIds.length>16)bad();
-// PCB a8405930@7408336 clones raw attrsMap. Keep absent/undefined/present
-// separately; values are only projected for the six explicitly supported keys.
-const componentMetadata=(row,id,statesList)=>{
-const attrs=childPlain(own(row,""attrsMap"")),result={},states={};
-for(const [key,field] of [[""Designator"",""designator""],[""Name"",""name""],[""Manufacturer"",""manufacturer""],[""Manufacturer Part"",""manufacturerPart""],[""Supplier"",""supplier""],[""Supplier Part"",""supplierPart""]]){
-const d=Object.getOwnPropertyDescriptor(attrs,key);if(!d){if(key in attrs)bad();states[field]=""absent"";continue;}
-if(!Object.hasOwn(d,""value""))bad();if(d.value===undefined){states[field]=""undefined"";continue;}
-result[field]=text(d.value,1024);states[field]=""present"";
-}statesList.push({primitiveId:id,states});return result;
-};
-const hole=row=>{
-const tuple=own(row,""holeAspect"");if(tuple===null)return null;
-const n=length(tuple),shape=own(tuple,""0"");if((shape===""ROUND""&&n!==2)||(shape===""SLOT""&&n!==3)||![""ROUND"",""SLOT""].includes(shape))bad();
-const diameter=num(own(tuple,""1"")),offset=point(own(row,""holeOffset""));if(diameter<0)bad();
-const result={shape,diameter,offsetX:offset.x,offsetY:offset.y,rotation:num(own(row,""holeRotation""))};
-if(shape===""SLOT""){const value=num(own(tuple,""2""));if(value<0)bad();result.length=value;}return result;
-};
-
-const padPolygonPath=value=>{
- const prototype=Object.getPrototypeOf(value??{});
- if(!Array.isArray(value)||(prototype!==Array.prototype&&prototype!==childArrayPrototype))bad();
- const length=own(value,'length');
- if(!Number.isInteger(length)||length<0||length>2048||Reflect.ownKeys(value).length!==length+1)bad();
- const path=[];
- for(let i=0;i<length;i++){
-  const token=own(value,String(i));
-  if(typeof token==='number')path.push(num(token));
-  else if(token==='L'||token==='ARC'||token==='CARC'||token==='C'||token==='CIRCLE')path.push(token);
-  else bad();
- }
- if(length===0)return path;
- if(path[0]==='CIRCLE'){
-  if(length!==4||!path.slice(1).every(token=>typeof token==='number')||path[3]<0)bad();
-  return path;
- }
- if(typeof path[0]!=='number'||typeof path[1]!=='number')bad();
- let offset=2;
- while(offset<length){
-  const command=path[offset];if(command!=='L'&&command!=='ARC'&&command!=='CARC'&&command!=='C')bad();
-  offset++;const start=offset;while(typeof path[offset]==='number')offset++;
-  const count=offset-start;
-  if(command==='ARC'||command==='CARC'){if(count!==3)bad();}
-  else if(count<2||count%2!==0)bad();
- }
- if(offset===2)bad();return path;
-};
-
-// PCB a8405930@10301575 selects the default native pad style. The shared
-// polygon fragment is pure grammar validation, not legacy runtime admission.
-const defaultCopperShape=row=>{
-const tuple=own(row,""defaultPadShapeAspect""),n=length(tuple),shape=own(tuple,""0"");
-if(shape===""POLYGON""){if(n!==2)bad();return{shape,pathSource:padPolygonPath(own(tuple,""1"")),coordinateSpace:""native-pad-style""};}
-if((shape===""RECT""&&n!==4)||((shape===""ELLIPSE""||shape===""OVAL"")&&n!==3)||![""RECT"",""ELLIPSE"",""OVAL""].includes(shape))bad();
-const result={shape,width:num(own(tuple,""1"")),height:num(own(tuple,""2""))};if(shape===""RECT"")result.cornerRatioPercent=num(own(tuple,""3""));return result;
-};
-const maskExpansion=row=>{
-const mode=integer(own(row,""expansionType""));if(mode!==1&&mode!==2)bad();
-return{mode,topSolder:num(own(row,""topSolderExpansion"")),bottomSolder:num(own(row,""bottomSolderExpansion"")),paste:num(own(row,""pasteExpansion""))};
-};
-const thermal=row=>{
-const rule=own(row,""padRule"");if(rule===null)return null;if(!object(rule))bad();
-const mode=integer(own(rule,""connectMode""));if(mode===1||mode===2)return{mode};if(mode!==0)bad();
-return{mode,clearance:num(num(own(rule,""lineClearance""))*10),spokeWidth:num(num(own(rule,""lineWidth""))*10),angle:num(num(own(rule,""lineAngle""))/Math.PI*180)};
-};
-const rows=(raw,family,seen,metadataStates)=>{
-const n=length(raw),result=[];
-for(let i=0;i<n;i++){
-const row=childPlain(own(raw,String(i))),id=text(own(row,""globalIndex""),256);if(id.length===0||seen.has(id))bad();seen.add(id);
-const base={primitiveId:id,primitiveType:family,primitiveLock:bool(own(row,""locked""))};
-if(family===""Component""){
-const p=point(own(row,""position"")),l=layer(own(row,""layerId""));if(l!==1&&l!==2)bad();
-result.push({...base,layer:l,x:p.x,y:p.y,rotation:num(own(row,""rotation"")),...componentMetadata(row,id,metadataStates)});continue;
-}
-if(family===""Pad""){
-const p=point(own(row,""center"")),l=layer(own(row,""layerId"")),padType=integer(own(row,""padTypeAspect""));if(![1,2,12].includes(l)||![0,1,2].includes(padType))bad();
-result.push({...base,net:text(own(row,""net""),1024,true),layer:l,padNumber:text(own(row,""num""),1024),x:p.x,y:p.y,rotation:num(own(row,""rotation"")),
-metallization:bool(own(row,""plated"")),padType,hole:hole(row),defaultCopperShape:defaultCopperShape(row),maskExpansion:maskExpansion(row),thermal:thermal(row)});continue;
-}
-if(family===""Attribute""){
-const p=point(own(row,""position"")),alignMode=integer(own(row,""origin""));if(alignMode<1||alignMode>9)bad();
-const silkColor=text(own(row,""silkColor""),128,true);if(silkColor==="""")bad();
-result.push({...base,layer:layer(own(row,""layerId"")),x:num(p.x*10),y:num(p.y*10),value:text(own(row,""value""),65536),
-fontFamily:text(own(row,""fontFamily""),1024),fontSize:num(num(own(row,""fontSize""))*10),lineWidth:num(num(own(row,""strokeWidth""))*10),
-alignMode,rotation:num(num(own(row,""rotation""))*180/Math.PI),reverse:bool(own(row,""reverse"")),expansion:num(num(own(row,""reverseExpansion""))*10),
-mirror:bool(own(row,""mirror"")),key:text(own(row,""key""),1024),keyVisible:bool(own(row,""showKey"")),valueVisible:bool(own(row,""showValue"")),
-positionIsNull:bool(own(row,""positionIsNull"")),silkColor});continue;
-}
-if(family===""Dimension""){
-const dimensionType=text(own(row,""dimensionType""),32);if(![""Length Dimension"",""Radius Dimension"",""Protractor Dimension""].includes(dimensionType))bad();
-const coordinates=own(row,""coordinateSet""),count=length(coordinates);if(count!==(dimensionType===""Length Dimension""?8:6))bad();
-const coordinateSet=[];for(let j=0;j<count;j++)coordinateSet.push(num(own(coordinates,String(j))));
-const canvasUnit=text(own(row,""unit""),4),lineWidth=num(own(row,""width"")),precision=integer(own(row,""precision""));
-if(![""mm"",""cm"",""inch"",""mil""].includes(canvasUnit)||lineWidth<0||precision<0||precision>4)bad();
-result.push({...base,layer:layer(own(row,""layerId"")),dimensionType,coordinateSet,canvasUnit,lineWidth,precision});continue;
-}
-if(family!==""Image"")bad();
-const imageType=text(own(row,""imageType""),7),p=point(own(row,""start"")),width=num(own(row,""width"")),height=num(own(row,""height""));
-if(![""Image"",""Picture""].includes(imageType)||width<0||height<0)bad();
-result.push({...base,imageType,layer:layer(own(row,""layerId"")),x:p.x,y:p.y,width,height,rotation:num(own(row,""rotation"")),horizonMirror:bool(own(row,""mirror""))});
-}return result;
-};
-// Both handlers use the exact same gr.getAllItem() manager order. Each group
-// contains Le.attributes in Object.values(this.attrs) order, including empty
-// groups. This association is not a reciprocal parent/model ownership proof.
-const attributeGroups=(raw,components,seen)=>{
-const n=length(raw);if(n!==components.length)bad();const groups=[],attributeParentGroups=[],result=[];
-let total=0;
-for(let i=0;i<n;i++){
-const group=own(raw,String(i));exact(group,[""attrs"",""parentPrimitiveId""]);
-const parentPrimitiveId=text(own(group,""parentPrimitiveId""),256),attrs=own(group,""attrs""),count=length(attrs);
-if(parentPrimitiveId!==components[i].primitiveId||total+count>256)bad();total+=count;groups.push({parentPrimitiveId,attrs});
-}
-for(const group of groups){const children=rows(group.attrs,""Attribute"",seen,[]),ids=[];
-for(const child of children){ids.push(child.primitiveId);result.push({...child,parentPrimitiveId:group.parentPrimitiveId});}
-attributeParentGroups.push({parentPrimitiveId:group.parentPrimitiveId,ids});
-}return{rows:result,attributeParentGroups,relationshipEvidence:""native-component-attribute-groups"",reciprocalParentVerified:false};
-};
-const basicRows=(raw,family,seen)=>{
-const n=length(raw),result=[];
-for(let i=0;i<n;i++){
-const row=childPlain(own(raw,String(i))),id=text(own(row,""globalIndex""),256);if(id.length===0||seen.has(id))bad();seen.add(id);
-const base={primitiveId:id,primitiveType:family,primitiveLock:bool(own(row,""locked""))};
-// PCB6b67774e@10401031 filters parentless String views. yr.toJSON@7394676
-// reads existing font caches; its color.toString()||null is not raw model color.
-if(family===""String""){
-const p=point(own(row,""position"")),alignMode=integer(own(row,""origin""));if(alignMode<1||alignMode>9)bad();
-const silkColor=text(own(row,""silkColor""),128,true);if(silkColor==="""")bad();
-result.push({...base,layer:layer(own(row,""layerId"")),x:num(p.x*10),y:num(p.y*10),text:text(own(row,""value""),65536),
-fontFamily:text(own(row,""fontFamily""),1024),fontSize:num(num(own(row,""fontSize""))*10),lineWidth:num(num(own(row,""strokeWidth""))*10),
-alignMode,rotation:num(num(own(row,""rotation""))*180/Math.PI),reverse:bool(own(row,""reverse"")),expansion:num(num(own(row,""reverseExpansion""))*10),
-mirror:bool(own(row,""mirror"")),key:text(own(row,""key""),1024),showKey:bool(own(row,""showKey"")),showValue:bool(own(row,""showValue"")),positionIsNull:bool(own(row,""positionIsNull"")),silkColor});continue;
-}
-base.net=text(own(row,""net""),1024,true);
-// Native Via callback already scales center and radii to mil. Keep its
-// precision; API1ca9efb5@1356367 rounds radii before multiplying by two.
-if(family===""Via""){
-const p=point(own(row,""center"")),viaType=integer(own(row,""type""));if(![0,1,2].includes(viaType))bad();
-result.push({...base,x:p.x,y:p.y,holeDiameter:num(num(own(row,""holeRadius""))*2),diameter:num(num(own(row,""radius""))*2),viaType,
-designRuleBlindViaName:text(own(row,""name""),1024,true),startLayer:layer(own(row,""startLayer"")),endLayer:layer(own(row,""endLayer"")),
-maskExpansionMode:integer(own(row,""expansion"")),topMaskExpansion:num(num(own(row,""topExpansion""))*10),bottomMaskExpansion:num(num(own(row,""bottomExpansion""))*10)});continue;
-}
-// Native track/arc callbacks return mil endpoints/width and degree arcAngle.
-// Arc center/radius/sweep remain omitted; endpoints are not full geometry.
-const track={...base,layer:layer(own(row,""layerId"")),startX:num(own(row,""startX"")),startY:num(own(row,""startY"")),endX:num(own(row,""endX"")),endY:num(own(row,""endY"")),lineWidth:num(own(row,""width""))};
-if(family===""Arc""){const interactiveMode=integer(own(row,""arcType""));if(![1,2].includes(interactiveMode))bad();result.push({...track,arcAngle:num(own(row,""arcAngle"")),interactiveMode});}else result.push(track);
-}return result;
-};
-// Selection IDs are complete native order, unlike the raw selected serializer.
-// PCB a8405930@10410445 only reads the existing selection manager here.
-const topics=[[""Line"",""track""],[""Arc"",""arc""],[""Via"",""via""],[""Component"",""component""],[""Pad"",""pad""],[""String"",""string""],[""Attribute"",""attribute""],[""Dimension"",""dimension""],[""Image"",""image""]];
-const call=async(topic,arg)=>{check();const reply=await apply(rpc,channel,[topic,arg,0]);check();childPlain(reply);return own(reply,""message"");};
-const identity=async()=>{const value=await call(""getTabIdAndDocType"",undefined);check();exact(value,[""tabId"",""docType""]);if(own(value,""tabId"")!==target.tabId||own(value,""docType"")!==3)bad();};
-const bounded=value=>{const json=JSON.stringify(value);if(new TextEncoder().encode(json).byteLength>393216)bad();return json;};
-const selectedIds=async()=>copyIds(await call(""pcb/extensionAPI/selectcontrol-getAllSelectedPrimitiveIds"",undefined));
-// PCB a8405930@10340883 supplies ordered full child IDs and these scalars.
-// Child geometry has different units/rounding; global pad-getAll supplies it.
-const childGroup=(raw,parentPrimitiveId,padById,assigned)=>{
-const ids=[],scalarRows=[];for(let i=0,n=length(raw);i<n;i++){
-const row=childPlain(own(raw,String(i))),id=text(own(row,""globalIndex""),256),pad=padById.get(id);
-if(id.length===0||pad===undefined||assigned.has(id)||assigned.size>=256)bad();assigned.add(id);
-const scalar={primitiveId:id,padNumber:text(own(row,""num""),1024),net:text(own(row,""net""),1024,true),
-layer:layer(own(row,""layerId"")),primitiveLock:bool(own(row,""locked"")),metallization:bool(own(row,""plated"")),padType:integer(own(row,""padTypeAspect""))};
-for(const key of Object.keys(scalar))if(scalar[key]!==pad[key])bad();ids.push(id);scalarRows.push(scalar);
-}return{parentPrimitiveId,ids,scalarRows};
-};
-const read=async()=>{
-await identity();const selectedPrimitiveIds=await selectedIds();check();
-const observations=[],seen=new Set(),componentMetadataStates=[],byId=new Map();let components,pads;
-for(const [family,topic] of topics){
-const raw=await call(""pcb/extensionAPI/""+topic+""-getAll"",{});check();
-const projected=family===""Attribute""?attributeGroups(raw,components,seen):{rows:[""Line"",""Arc"",""Via"",""String""].includes(family)?basicRows(raw,family,seen):rows(raw,family,seen,componentMetadataStates)};
-if(family===""Component"")components=projected.rows;if(family===""Pad"")pads=projected.rows;
-for(const row of projected.rows)byId.set(row.primitiveId,row);
-observations.push({ok:true,kind:""current-pcb-geometry-observation"",method:""eda.pcb_Primitive""+family+"".getAll"",target,...projected,
-samples:2,implementationKind:""native-task-equivalent"",cadAuthority:false,persistenceVerified:false,sourceMembershipVerified:false});
-bounded({observations,componentMetadataStates,selectedPrimitiveIds});
-}
-for(const id of selectedPrimitiveIds)if(!byId.has(id))bad();
-const componentSet=new Set(components.map(row=>row.primitiveId)),padById=new Map(pads.map(row=>[row.primitiveId,row])),assigned=new Set(),componentPadGroups=[];
-for(const id of requestedComponentIds){if(!componentSet.has(id))bad();const raw=await call(""pcb/extensionAPI/component-getAllPinsByPrimitiveId"",id);check();
-componentPadGroups.push(childGroup(raw,id,padById,assigned));bounded({observations,componentMetadataStates,selectedPrimitiveIds,requestedComponentIds,componentPadGroups});}
-const after=await selectedIds();if(JSON.stringify(after)!==JSON.stringify(selectedPrimitiveIds))bad();await identity();check();
-return{observations,componentMetadataStates,selectedPrimitiveIds,requestedComponentIds,componentPadGroups};
-};
-const run=async()=>{const first=await read(),json=bounded(first),second=await read();check();if(bounded(second)!==json)bad();
-return bounded({ok:true,kind:""pcb209-original-selection-relations-observation"",target,...first});};
-check();const timeout=new Promise((resolve,reject)=>{timer=apply(set,root,[()=>{expired=true;reject(new Error(""PCB209_SELECTION_RELATIONS_REFUSED""));},10000]);});return await Promise.race([run(),timeout]);
-}catch{throw new Error(""PCB209_SELECTION_RELATIONS_REFUSED"");}finally{if(timer!==undefined&&typeof clear===""function""){try{Reflect.apply(clear,globalThis,[timer]);}catch{throw new Error(""PCB209_SELECTION_RELATIONS_REFUSED"");}}}
-}";
+  const string SelectionRelations209FunctionGzip="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";
   const string SelectionRelations209FunctionSha256="6a0ab1809fb746a478be73cad8d5e1cd75f23e343ad760963ba609dcd50f6aa1";
+  static readonly string SelectionRelations209Function=UnpackFixedProgram(SelectionRelations209FunctionGzip,23381,SelectionRelations209FunctionSha256,"93e9ebad8909eff9c2a986ed3617a2b0b33efd688a3e78e00f974fc9a10528d8");
   // END GENERATED PCB209 SELECTION RELATIONS PROGRAM
   public static string SelectionRelations209ProtocolMessage(int id,string sessionId,string uniqueContextId,string phase,
     string path,string project,string branch,string document,string source,string[] componentIds) {
@@ -2459,6 +1567,64 @@ check();const timeout=new Promise((resolve,reject)=>{timer=apply(set,root,[()=>{
     for(int purpose=0;purpose<3;purpose++) {
       refused=false;try {OpeningProtocolMessageCore(true,1,"s","c","observe",path,project,new string('a',32),new string('b',16),new string('c',64),false,false,purpose==0,purpose==1,purpose==2,true,ids);} catch {refused=true;}
       if(!refused) throw Error("selection-relations209-exclusive-purpose");
+    }
+  }
+  public static string ArcShapes209ProtocolMessage(int id,string sessionId,string uniqueContextId,string phase,
+    string path,string project,string branch,string document,string source) {
+    return OpeningProtocolMessageCore(true,id,sessionId,uniqueContextId,phase,path,project,branch,document,source,false,false,false,false,false,false,null,false,false,true);
+  }
+  public static void VerifyArcShapes209Smoke() {
+    string path=@"C:\Reviewed\ArcShapesFixture.eprj2",project;
+    using(SHA256 hash=SHA256.Create()) {
+      string program=BitConverter.ToString(hash.ComputeHash(Encoding.UTF8.GetBytes(ArcShapes209Function))).Replace("-","").ToLowerInvariant();
+      if(program!=ArcShapes209FunctionSha256) throw Error("arc-shapes209-program");
+      project=BitConverter.ToString(hash.ComputeHash(Encoding.UTF8.GetBytes(path))).Replace("-","").ToLowerInvariant();
+    }
+    string message=ArcShapes209ProtocolMessage(103,"original-session","original-context","observe",path,project,new string('a',32),new string('b',16),new string('c',64));
+    if(message.IndexOf("\"method\":\"Runtime.callFunctionOn\"",StringComparison.Ordinal)<0 || message.IndexOf("\"uniqueContextId\":\"original-context\"",StringComparison.Ordinal)<0 ||
+      message.IndexOf("\"awaitPromise\":true",StringComparison.Ordinal)<0 || message.IndexOf("\"userGesture\":false",StringComparison.Ordinal)<0) throw Error("arc-shapes209-command");
+    bool refused=false;
+    try {ArcShapes209ProtocolMessage(104,"s","c","observe",path,project,new string('a',32),new string('b',16),new string('c',64));} catch {refused=true;}
+    if(!refused) throw Error("arc-shapes209-budget");
+    refused=false;try {ArcShapes209ProtocolMessage(1,"s","c","open-document",path,project,new string('a',32),new string('b',16),new string('c',64));} catch {refused=true;}
+    if(!refused) throw Error("arc-shapes209-phase");
+    foreach(EasyedaDiagnosticOwner legacy in new EasyedaDiagnosticOwner[]{new EasyedaDiagnosticOwner(),CreateStringPrecreate(),CreateWorkerStartup()}) {
+      refused=false;try {legacy.SendArcShapes209(1,"s","c","observe",path,project,new string('a',32),new string('b',16),new string('c',64));} catch(Exception failure) {refused=failure.Message=="pcb-diagnostic-arc-shapes209-purpose";}
+      if(!refused) throw Error("arc-shapes209-legacy-purpose");
+    }
+    for(int purpose=0;purpose<6;purpose++) {
+      refused=false;
+      try {OpeningProtocolMessageCore(true,1,"s","c","observe",path,project,new string('a',32),new string('b',16),new string('c',64),false,false,purpose==0,purpose==1,purpose==2,purpose==3,purpose==3?new string[0]:null,purpose==4,purpose==5,true);} catch {refused=true;}
+      if(!refused) throw Error("arc-shapes209-exclusive-purpose");
+    }
+  }
+  public static string PouredShapes209ProtocolMessage(int id,string sessionId,string uniqueContextId,string phase,
+    string path,string project,string branch,string document,string source) {
+    return OpeningProtocolMessageCore(true,id,sessionId,uniqueContextId,phase,path,project,branch,document,source,false,false,false,false,false,false,null,false,false,false,true);
+  }
+  public static void VerifyPouredShapes209Smoke() {
+    string path=@"C:\Reviewed\PouredShapesFixture.eprj2",project;
+    using(SHA256 hash=SHA256.Create()) {
+      string program=BitConverter.ToString(hash.ComputeHash(Encoding.UTF8.GetBytes(PouredShapes209Function))).Replace("-","").ToLowerInvariant();
+      if(program!=PouredShapes209FunctionSha256) throw Error("poured-shapes209-program");
+      project=BitConverter.ToString(hash.ComputeHash(Encoding.UTF8.GetBytes(path))).Replace("-","").ToLowerInvariant();
+    }
+    string message=PouredShapes209ProtocolMessage(103,"original-session","original-context","observe",path,project,new string('a',32),new string('b',16),new string('c',64));
+    if(message.IndexOf("\"method\":\"Runtime.callFunctionOn\"",StringComparison.Ordinal)<0 || message.IndexOf("\"uniqueContextId\":\"original-context\"",StringComparison.Ordinal)<0 ||
+      message.IndexOf("\"awaitPromise\":true",StringComparison.Ordinal)<0 || message.IndexOf("\"userGesture\":false",StringComparison.Ordinal)<0) throw Error("poured-shapes209-command");
+    bool refused=false;
+    try {PouredShapes209ProtocolMessage(104,"s","c","observe",path,project,new string('a',32),new string('b',16),new string('c',64));} catch {refused=true;}
+    if(!refused) throw Error("poured-shapes209-budget");
+    refused=false;try {PouredShapes209ProtocolMessage(1,"s","c","open-document",path,project,new string('a',32),new string('b',16),new string('c',64));} catch {refused=true;}
+    if(!refused) throw Error("poured-shapes209-phase");
+    foreach(EasyedaDiagnosticOwner legacy in new EasyedaDiagnosticOwner[]{new EasyedaDiagnosticOwner(),CreateStringPrecreate(),CreateWorkerStartup()}) {
+      refused=false;try {legacy.SendPouredShapes209(1,"s","c","observe",path,project,new string('a',32),new string('b',16),new string('c',64));} catch(Exception failure) {refused=failure.Message=="pcb-diagnostic-poured-shapes209-purpose";}
+      if(!refused) throw Error("poured-shapes209-legacy-purpose");
+    }
+    for(int purpose=0;purpose<7;purpose++) {
+      refused=false;
+      try {OpeningProtocolMessageCore(true,1,"s","c","observe",path,project,new string('a',32),new string('b',16),new string('c',64),false,false,purpose==0,purpose==1,purpose==2,purpose==3,purpose==3?new string[0]:null,purpose==4,purpose==5,purpose==6,true);} catch {refused=true;}
+      if(!refused) throw Error("poured-shapes209-exclusive-purpose");
     }
   }
   public static string PadShapes209ProtocolMessage(int id,string sessionId,string uniqueContextId,string phase,
@@ -2609,15 +1775,17 @@ check();const timeout=new Promise((resolve,reject)=>{timer=apply(set,root,[()=>{
     return OpeningProtocolMessageCore(true,id,sessionId,uniqueContextId,phase,path,project,branch,document,source,false);
   }
   static string OpeningProtocolMessageCore(bool pcb,int id,string sessionId,string uniqueContextId,string phase,
-    string path,string project,string branch,string document,string source,bool stringPurpose,bool startupPurpose=false,bool layers209Purpose=false,bool primitives209Purpose=false,bool extendedPrimitives209Purpose=false,bool selectionRelations209Purpose=false,string[] componentIds=null,bool padShapes209Purpose=false,bool imageShapes209Purpose=false) {
+    string path,string project,string branch,string document,string source,bool stringPurpose,bool startupPurpose=false,bool layers209Purpose=false,bool primitives209Purpose=false,bool extendedPrimitives209Purpose=false,bool selectionRelations209Purpose=false,string[] componentIds=null,bool padShapes209Purpose=false,bool imageShapes209Purpose=false,bool arcShapes209Purpose=false,bool pouredShapes209Purpose=false) {
     Func<string,string,bool> matches=(value,pattern)=>value!=null && System.Text.RegularExpressions.Regex.IsMatch(value,pattern);
     if(startupPurpose && stringPurpose || layers209Purpose && primitives209Purpose ||
       extendedPrimitives209Purpose && (layers209Purpose || primitives209Purpose) ||
       selectionRelations209Purpose && (layers209Purpose || primitives209Purpose || extendedPrimitives209Purpose) ||
       padShapes209Purpose && (layers209Purpose || primitives209Purpose || extendedPrimitives209Purpose || selectionRelations209Purpose) ||
       imageShapes209Purpose && (layers209Purpose || primitives209Purpose || extendedPrimitives209Purpose || selectionRelations209Purpose || padShapes209Purpose) ||
+      arcShapes209Purpose && (layers209Purpose || primitives209Purpose || extendedPrimitives209Purpose || selectionRelations209Purpose || padShapes209Purpose || imageShapes209Purpose) ||
+      pouredShapes209Purpose && (layers209Purpose || primitives209Purpose || extendedPrimitives209Purpose || selectionRelations209Purpose || padShapes209Purpose || imageShapes209Purpose || arcShapes209Purpose) ||
       !selectionRelations209Purpose && componentIds!=null ||
-      (layers209Purpose || primitives209Purpose || extendedPrimitives209Purpose || selectionRelations209Purpose || padShapes209Purpose || imageShapes209Purpose) && (startupPurpose || stringPurpose || !pcb || phase!="observe")) throw Error("opening-purpose");
+      (layers209Purpose || primitives209Purpose || extendedPrimitives209Purpose || selectionRelations209Purpose || padShapes209Purpose || imageShapes209Purpose || arcShapes209Purpose || pouredShapes209Purpose) && (startupPurpose || stringPurpose || !pcb || phase!="observe")) throw Error("opening-purpose");
     if(id<1 || id>(startupPurpose?256:stringPurpose?3309:103) || !matches(sessionId,@"\A[A-Za-z0-9_.:-]{1,128}\z") || !matches(uniqueContextId,@"\A[A-Za-z0-9_.:-]{1,128}\z") ||
       (pcb?(phase!="preflight" && phase!="open-document" && phase!="observe"):(phase!="preflight" && phase!="open-project")) ||
       path==null || path.Length<12 || path.Length>4096 ||
@@ -2636,7 +1804,7 @@ check();const timeout=new Promise((resolve,reject)=>{timer=apply(set,root,[()=>{
       ",\"documentUuid\":"+JsonString(document)+",\"expectedSourceSha256\":"+JsonString(source)+",\"branchUuid\":"+JsonString(branch)+"}";
     string relationArgument=selectionRelations209Purpose?",{\"value\":"+SelectionRelations209Ids(componentIds)+"}":"";
     string message="{\"id\":"+id.ToString(CultureInfo.InvariantCulture)+",\"method\":\"Runtime.callFunctionOn\",\"params\":{\"functionDeclaration\":"+
-      JsonString(imageShapes209Purpose?ImageShapes209Function:padShapes209Purpose?PadShapes209Function:selectionRelations209Purpose?SelectionRelations209Function:extendedPrimitives209Purpose?ExtendedPrimitives209Function:primitives209Purpose?Primitives209Function:layers209Purpose?Layers209Function:pcb?(startupPurpose?EasyedaWorkerStartupProtocol.PcbOpeningFunction:PcbOpeningFunction):OpeningFunction)+",\"uniqueContextId\":"+JsonString(uniqueContextId)+",\"arguments\":[{\"value\":"+target+"},{\"value\":"+JsonString(phase)+
+      JsonString(pouredShapes209Purpose?PouredShapes209Function:arcShapes209Purpose?ArcShapes209Function:imageShapes209Purpose?ImageShapes209Function:padShapes209Purpose?PadShapes209Function:selectionRelations209Purpose?SelectionRelations209Function:extendedPrimitives209Purpose?ExtendedPrimitives209Function:primitives209Purpose?Primitives209Function:layers209Purpose?Layers209Function:pcb?(startupPurpose?EasyedaWorkerStartupProtocol.PcbOpeningFunction:PcbOpeningFunction):OpeningFunction)+",\"uniqueContextId\":"+JsonString(uniqueContextId)+",\"arguments\":[{\"value\":"+target+"},{\"value\":"+JsonString(phase)+
       "}"+relationArgument+"],\"returnByValue\":true,\"awaitPromise\":true,\"silent\":true,\"generatePreview\":false,\"userGesture\":false,\"throwOnSideEffect\":false},\"sessionId\":"+JsonString(sessionId)+"}\0";
     if(Encoding.UTF8.GetByteCount(message)>65536) throw Error("opening-send-size");
     return message;
@@ -5139,6 +4307,14 @@ return JSON.stringify({schema:""easyeda-pro-control.pcb-string-producer-markers.
     if(!layers209 || stringPrecreate || workerStartup) throw Error("extended-primitives209-purpose");
     SendMessage(id,ExtendedPrimitives209ProtocolMessage(id,sessionId,uniqueContextId,phase,path,project,branch,document,source));
   }
+  public void SendArcShapes209(int id,string sessionId,string uniqueContextId,string phase,string path,string project,string branch,string document,string source) {
+    if(!layers209 || stringPrecreate || workerStartup) throw Error("arc-shapes209-purpose");
+    SendMessage(id,ArcShapes209ProtocolMessage(id,sessionId,uniqueContextId,phase,path,project,branch,document,source));
+  }
+  public void SendPouredShapes209(int id,string sessionId,string uniqueContextId,string phase,string path,string project,string branch,string document,string source) {
+    if(!layers209 || stringPrecreate || workerStartup) throw Error("poured-shapes209-purpose");
+    SendMessage(id,PouredShapes209ProtocolMessage(id,sessionId,uniqueContextId,phase,path,project,branch,document,source));
+  }
   public void SendPadShapes209(int id,string sessionId,string uniqueContextId,string phase,string path,string project,string branch,string document,string source) {
     if(!layers209 || stringPrecreate || workerStartup) throw Error("pad-shapes209-purpose");
     SendMessage(id,PadShapes209ProtocolMessage(id,sessionId,uniqueContextId,phase,path,project,branch,document,source));
@@ -7321,9 +6497,12 @@ try {
     [EasyedaDiagnosticOwner]::VerifyWorkerStartupPurposeSmoke()
     [EasyedaDiagnosticInstallation]::VerifyLeaseSmoke()
     [EasyedaDiagnosticOwner]::VerifyProtocolSmoke()
+    [EasyedaDiagnosticOwner]::VerifyPackedProgramSmoke()
     [EasyedaDiagnosticOwner]::VerifyLayers209Smoke()
     [EasyedaDiagnosticOwner]::VerifyPrimitives209Smoke()
     [EasyedaDiagnosticOwner]::VerifyExtendedPrimitives209Smoke()
+    [EasyedaDiagnosticOwner]::VerifyArcShapes209Smoke()
+    [EasyedaDiagnosticOwner]::VerifyPouredShapes209Smoke()
     [EasyedaDiagnosticOwner]::VerifyPadShapes209Smoke()
     [EasyedaDiagnosticOwner]::VerifyImageShapes209Smoke()
     [EasyedaDiagnosticOwner]::VerifySelectionRelations209Smoke()
@@ -7599,7 +6778,7 @@ try {
             'Runtime.evaluate' {$fields+=@('sessionId','uniqueContextId')}
             'Runtime.callFunctionOn' {
               $fields+=@('sessionId','uniqueContextId','targetRawWindowsPath','targetProjectUuid','targetBranchUuid','targetDocumentUuid','targetExpectedSourceSha256')
-              if ($null -ne $request.pcbImageShapes209Phase) {if (-not $Layers209) {throw 'pcb-diagnostic-image-shapes209-purpose'};$fields+=@('pcbImageShapes209Phase')} elseif ($null -ne $request.pcbPadShapes209Phase) {if (-not $Layers209) {throw 'pcb-diagnostic-pad-shapes209-purpose'};$fields+=@('pcbPadShapes209Phase')} elseif ($null -ne $request.pcbSelectionRelations209Phase) {if (-not $Layers209) {throw 'pcb-diagnostic-selection-relations209-purpose'};$fields+=@('pcbSelectionRelations209Phase','componentIds')} elseif ($null -ne $request.pcbExtendedPrimitives209Phase) {if (-not $Layers209) {throw 'pcb-diagnostic-extended-primitives209-purpose'};$fields+=@('pcbExtendedPrimitives209Phase')} elseif ($null -ne $request.pcbPrimitives209Phase) {if (-not $Layers209) {throw 'pcb-diagnostic-primitives209-purpose'};$fields+=@('pcbPrimitives209Phase')} elseif ($null -ne $request.pcbLayers209Phase) {if (-not $Layers209) {throw 'pcb-diagnostic-layers209-purpose'};$fields+=@('pcbLayers209Phase')} elseif ($null -ne $request.pcbOpeningPhase) {$fields+=@('pcbOpeningPhase')} else {$fields+=@('openingPhase')}
+              if ($null -ne $request.pcbPouredShapes209Phase) {if (-not $Layers209) {throw 'pcb-diagnostic-poured-shapes209-purpose'};$fields+=@('pcbPouredShapes209Phase')} elseif ($null -ne $request.pcbArcShapes209Phase) {if (-not $Layers209) {throw 'pcb-diagnostic-arc-shapes209-purpose'};$fields+=@('pcbArcShapes209Phase')} elseif ($null -ne $request.pcbImageShapes209Phase) {if (-not $Layers209) {throw 'pcb-diagnostic-image-shapes209-purpose'};$fields+=@('pcbImageShapes209Phase')} elseif ($null -ne $request.pcbPadShapes209Phase) {if (-not $Layers209) {throw 'pcb-diagnostic-pad-shapes209-purpose'};$fields+=@('pcbPadShapes209Phase')} elseif ($null -ne $request.pcbSelectionRelations209Phase) {if (-not $Layers209) {throw 'pcb-diagnostic-selection-relations209-purpose'};$fields+=@('pcbSelectionRelations209Phase','componentIds')} elseif ($null -ne $request.pcbExtendedPrimitives209Phase) {if (-not $Layers209) {throw 'pcb-diagnostic-extended-primitives209-purpose'};$fields+=@('pcbExtendedPrimitives209Phase')} elseif ($null -ne $request.pcbPrimitives209Phase) {if (-not $Layers209) {throw 'pcb-diagnostic-primitives209-purpose'};$fields+=@('pcbPrimitives209Phase')} elseif ($null -ne $request.pcbLayers209Phase) {if (-not $Layers209) {throw 'pcb-diagnostic-layers209-purpose'};$fields+=@('pcbLayers209Phase')} elseif ($null -ne $request.pcbOpeningPhase) {$fields+=@('pcbOpeningPhase')} else {$fields+=@('openingPhase')}
             }
             'Debugger.enable' {$fields+=@('sessionId')}
             'Debugger.getScriptSource' {$fields+=@('sessionId','scriptId')}
@@ -7615,6 +6794,8 @@ try {
           if ($null -ne $request.pcbExtendedPrimitives209Phase -and $request.pcbExtendedPrimitives209Phase -isnot [string]) {throw 'pcb-diagnostic-extended-primitives209-field'}
           if ($null -ne $request.pcbPadShapes209Phase -and $request.pcbPadShapes209Phase -isnot [string]) {throw 'pcb-diagnostic-pad-shapes209-field'}
           if ($null -ne $request.pcbImageShapes209Phase -and $request.pcbImageShapes209Phase -isnot [string]) {throw 'pcb-diagnostic-image-shapes209-field'}
+          if ($null -ne $request.pcbArcShapes209Phase -and $request.pcbArcShapes209Phase -isnot [string]) {throw 'pcb-diagnostic-arc-shapes209-field'}
+          if ($null -ne $request.pcbPouredShapes209Phase -and $request.pcbPouredShapes209Phase -isnot [string]) {throw 'pcb-diagnostic-poured-shapes209-field'}
           if ($null -ne $request.pcbSelectionRelations209Phase) {
             if ($request.pcbSelectionRelations209Phase -isnot [string] -or $request.componentIds -isnot [array] -or $request.componentIds.Length -gt 16) {throw 'pcb-diagnostic-selection-relations209-field'}
             foreach ($componentId in $request.componentIds) {if ($componentId -isnot [string]) {throw 'pcb-diagnostic-selection-relations209-id'}}
@@ -7653,7 +6834,11 @@ try {
           } elseif ($request.method -ceq 'DOM.getFrameOwner' -or $request.method -ceq 'DOM.describeNode') {
             $owner.SendDom([int]$request.requestId,$request.method,$request.sessionId,$request.frameId,$request.backendNodeId)
           } elseif ($request.method -ceq 'Runtime.callFunctionOn') {
-            if ($null -ne $request.pcbImageShapes209Phase) {
+            if ($null -ne $request.pcbPouredShapes209Phase) {
+              $owner.SendPouredShapes209([int]$request.requestId,$request.sessionId,$request.uniqueContextId,$request.pcbPouredShapes209Phase,$request.targetRawWindowsPath,$request.targetProjectUuid,$request.targetBranchUuid,$request.targetDocumentUuid,$request.targetExpectedSourceSha256)
+            } elseif ($null -ne $request.pcbArcShapes209Phase) {
+              $owner.SendArcShapes209([int]$request.requestId,$request.sessionId,$request.uniqueContextId,$request.pcbArcShapes209Phase,$request.targetRawWindowsPath,$request.targetProjectUuid,$request.targetBranchUuid,$request.targetDocumentUuid,$request.targetExpectedSourceSha256)
+            } elseif ($null -ne $request.pcbImageShapes209Phase) {
               $owner.SendImageShapes209([int]$request.requestId,$request.sessionId,$request.uniqueContextId,$request.pcbImageShapes209Phase,$request.targetRawWindowsPath,$request.targetProjectUuid,$request.targetBranchUuid,$request.targetDocumentUuid,$request.targetExpectedSourceSha256)
             } elseif ($null -ne $request.pcbPadShapes209Phase) {
               $owner.SendPadShapes209([int]$request.requestId,$request.sessionId,$request.uniqueContextId,$request.pcbPadShapes209Phase,$request.targetRawWindowsPath,$request.targetProjectUuid,$request.targetBranchUuid,$request.targetDocumentUuid,$request.targetExpectedSourceSha256)

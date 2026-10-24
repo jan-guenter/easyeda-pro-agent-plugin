@@ -18,6 +18,8 @@ import { currentPcbObservationFailureSchema } from "./current-pcb-observation-fa
 import { CURRENT_PCB_209_PRIMITIVES_RESULT_BYTES } from "./current-pcb-209-primitives.ts";
 import { CURRENT_PCB_209_EXTENDED_PRIMITIVES_RESULT_BYTES } from "./current-pcb-209-extended-primitives.ts";
 import { CURRENT_PCB_209_IMAGE_SHAPES_RESULT_BYTES } from "./current-pcb-209-image-shapes.ts";
+import { CURRENT_PCB_209_ARC_SHAPES_RESULT_BYTES } from "./current-pcb-209-arc-shapes.ts";
+import { CURRENT_PCB_209_POURED_SHAPES_RESULT_BYTES } from "./current-pcb-209-poured-shapes.ts";
 import { CURRENT_PCB_209_PAD_SHAPES_RESULT_BYTES } from "./current-pcb-209-pad-shapes.ts";
 import { CURRENT_PCB_209_SELECTION_RELATIONS_RESULT_BYTES, currentPcb209SelectionRelationsComponentIdsSchema } from "./current-pcb-209-selection-relations.ts";
 import { assertNoUnresolvedCurrentPcbStringLedgers } from "./current-pcb-string-ledger-exclusion.ts";
@@ -121,7 +123,7 @@ const noProcessReleasedSchema = z.object({ schema: z.literal("easyeda-pro-contro
   noProcessReleaseIntentSha256: diagnosticLifecycleDigestSchema, proof: diagnosticLifecycleNoProcessReleaseProofSchema,
 }).strict();
 export const diagnosticObservationStageSchema = z.enum(["browser", "frames", "script", "workers", "worker-script", "worker-state", "pcb-opening", "model-state"]);
-const extendedObservationStageSchema = z.enum([...diagnosticObservationStageSchema.options, "layers209", "primitives209", "extended-primitives209", "selection-relations209", "pad-shapes209", "image-shapes209"]);
+const extendedObservationStageSchema = z.enum([...diagnosticObservationStageSchema.options, "layers209", "primitives209", "extended-primitives209", "selection-relations209", "pad-shapes209", "image-shapes209", "arc-shapes209", "poured-shapes209"]);
 export const lifecycleObservationStages = [...extendedObservationStageSchema.options, "common-baseline", "string-precreate"] as const;
 const observationIntentSchema = z.object({ schema: z.literal("easyeda-pro-control.pcb-diagnostic-observation-intent.v1"), ...base,
   bindingSha256: diagnosticLifecycleDigestSchema, stage: extendedObservationStageSchema,
@@ -133,7 +135,7 @@ const observationIntentSchema = z.object({ schema: z.literal("easyeda-pro-contro
     return value.componentIds !== undefined && value.targetId === undefined && value.frameId === undefined && value.family === undefined;
   }
   if (value.componentIds !== undefined) { return false; }
-  if (value.stage === "browser" || value.stage === "workers" || value.stage === "worker-state" || value.stage === "model-state" || value.stage === "pcb-opening" || value.stage === "layers209" || value.stage === "primitives209" || value.stage === "extended-primitives209" || value.stage === "pad-shapes209" || value.stage === "image-shapes209") {
+  if (value.stage === "browser" || value.stage === "workers" || value.stage === "worker-state" || value.stage === "model-state" || value.stage === "pcb-opening" || value.stage === "layers209" || value.stage === "primitives209" || value.stage === "extended-primitives209" || value.stage === "pad-shapes209" || value.stage === "image-shapes209" || value.stage === "arc-shapes209" || value.stage === "poured-shapes209") {
     return value.targetId === undefined && value.frameId === undefined && value.family === undefined;
   }
   if (value.stage === "frames" || value.stage === "worker-script") { return value.targetId !== undefined && value.frameId === undefined && value.family === undefined; }
@@ -146,7 +148,9 @@ const observationResultSchema = z.object({ schema: z.literal("easyeda-pro-contro
   const ordinaryLimit = value.stage === "primitives209" ? CURRENT_PCB_209_PRIMITIVES_RESULT_BYTES : DIAGNOSTIC_OBSERVATION_MAX_BYTES;
   const extendedLimit = value.stage === "extended-primitives209" ? CURRENT_PCB_209_EXTENDED_PRIMITIVES_RESULT_BYTES : ordinaryLimit;
   const padLimit = value.stage === "pad-shapes209" ? CURRENT_PCB_209_PAD_SHAPES_RESULT_BYTES : extendedLimit;
-  const limit = value.stage === "image-shapes209" ? CURRENT_PCB_209_IMAGE_SHAPES_RESULT_BYTES : padLimit;
+  const imageLimit = value.stage === "image-shapes209" ? CURRENT_PCB_209_IMAGE_SHAPES_RESULT_BYTES : padLimit;
+  const arcLimit = value.stage === "arc-shapes209" ? CURRENT_PCB_209_ARC_SHAPES_RESULT_BYTES : imageLimit;
+  const limit = value.stage === "poured-shapes209" ? CURRENT_PCB_209_POURED_SHAPES_RESULT_BYTES : arcLimit;
   return Buffer.byteLength(canonicalJson(value.result)) <=
     (value.stage === "selection-relations209" ? CURRENT_PCB_209_SELECTION_RELATIONS_RESULT_BYTES : limit);
 }, "Observation result exceeds its bound.");
@@ -374,6 +378,8 @@ export const diagnosticLifecycleRecordSchemas = {
   "selection-relations209-intent.json": observationIntentSchema, "selection-relations209-result.json": observationResultSchema,
   "pad-shapes209-intent.json": observationIntentSchema, "pad-shapes209-result.json": observationResultSchema,
   "image-shapes209-intent.json": observationIntentSchema, "image-shapes209-result.json": observationResultSchema,
+  "arc-shapes209-intent.json": observationIntentSchema, "arc-shapes209-result.json": observationResultSchema,
+  "poured-shapes209-intent.json": observationIntentSchema, "poured-shapes209-result.json": observationResultSchema,
   "string-precreate-intent.json": stringPrecreateIntentSchema, "string-precreate-result.json": stringPrecreateResultSchema,
   "common-baseline-intent.json": commonBaselineIntentSchema, "common-baseline-result.json": commonBaselineResultSchema,
   "common-baseline-failure.json": commonBaselineFailureSchema,
@@ -411,6 +417,8 @@ function recordBound(name: RecordName): number {
   if (name === "primitives209-result.json") { return CURRENT_PCB_209_PRIMITIVES_RESULT_BYTES + MAX_BYTES; }
   if (name === "extended-primitives209-result.json") { return CURRENT_PCB_209_EXTENDED_PRIMITIVES_RESULT_BYTES + MAX_BYTES; }
   if (name === "image-shapes209-result.json") { return CURRENT_PCB_209_IMAGE_SHAPES_RESULT_BYTES + MAX_BYTES; }
+  if (name === "arc-shapes209-result.json") { return CURRENT_PCB_209_ARC_SHAPES_RESULT_BYTES + MAX_BYTES; }
+  if (name === "poured-shapes209-result.json") { return CURRENT_PCB_209_POURED_SHAPES_RESULT_BYTES + MAX_BYTES; }
   if (name === "pad-shapes209-result.json") { return CURRENT_PCB_209_PAD_SHAPES_RESULT_BYTES + MAX_BYTES; }
   if (name === "selection-relations209-result.json") { return CURRENT_PCB_209_SELECTION_RELATIONS_RESULT_BYTES + MAX_BYTES; }
   if (name === "common-baseline-failure.json") { return CURRENT_PCB_COMMON_FAILURE_MAX_BYTES + MAX_BYTES; }
@@ -558,6 +566,12 @@ function validateChain(operation: DiagnosticLifecycleOperation): void {
   requireValue(records["image-shapes209-intent.json"] === undefined || operation.operationId.startsWith("pcb209-") && pcbObserved !== undefined &&
     pcbObserved.result["sourceVerified"] === true && records["workers-intent.json"] === undefined && records["model-state-intent.json"] === undefined,
   "IMAGE_SHAPES209_CHAIN");
+  requireValue(records["arc-shapes209-intent.json"] === undefined || operation.operationId.startsWith("pcb209-") && pcbObserved !== undefined &&
+    pcbObserved.result["sourceVerified"] === true && records["workers-intent.json"] === undefined && records["model-state-intent.json"] === undefined,
+  "ARC_SHAPES209_CHAIN");
+  requireValue(records["poured-shapes209-intent.json"] === undefined || operation.operationId.startsWith("pcb209-") && pcbObserved !== undefined &&
+    pcbObserved.result["sourceVerified"] === true && records["workers-intent.json"] === undefined && records["model-state-intent.json"] === undefined,
+  "POURED_SHAPES209_CHAIN");
   const selectionIntent = records["selection-relations209-intent.json"], selectionResult = records["selection-relations209-result.json"];
   requireValue(selectionIntent === undefined || operation.operationId.startsWith("pcb209-") && pcbObserved !== undefined &&
     pcbObserved.result["sourceVerified"] === true && records["workers-intent.json"] === undefined && records["model-state-intent.json"] === undefined,

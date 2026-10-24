@@ -45,6 +45,10 @@ layout. The connected ledger retains its generation and case anchors.
 
 | Record | Former path |
 | --- | --- |
+| [2026-10-24-arc-poured-shapes-batch.md](2026-10-24-arc-poured-shapes-batch.md) | Combined Arc/Poured readers, historical queries, fixed native packing and request/capacity fixes |
+| [2026-10-24-22500-connected-shape-queries.md](2026-10-24-22500-connected-shape-queries.md) | Installed22500 Pad/Image observations, historical queries, original cleanup and closed-file checks |
+| [2026-10-24-pcb209-arc-shapes-research.md](2026-10-24-pcb209-arc-shapes-research.md) | Native Arc center/radius/angle arithmetic and full-circle limitations |
+| [2026-10-24-pcb209-poured-shapes-research.md](2026-10-24-pcb209-poured-shapes-research.md) | Native copper-fill IDs, complete serialized contours, units and concrete losses |
 | [2026-10-24-pad-image-shapes-batch.md](2026-10-24-pad-image-shapes-batch.md) | Combined native Pad/Image shape readers, historical queries, verification and handoff |
 | [2026-10-24-011500-connected-selection-queries.md](2026-10-24-011500-connected-selection-queries.md) | Installed011500 selection/child-pad observations, post-release historical queries and original cleanup |
 | [2026-10-24-pcb209-pad-special-shapes-research.md](2026-10-24-pcb209-pad-special-shapes-research.md) | Native top/inner/bottom Pad style groups and concrete shape/layer omissions |

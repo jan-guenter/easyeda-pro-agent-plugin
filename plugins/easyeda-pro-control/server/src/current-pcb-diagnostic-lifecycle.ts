@@ -21,6 +21,8 @@ import type { CurrentPcb209OpeningRequest } from "./current-pcb-209-opening-vali
 import { CURRENT_PCB_209_PRIMITIVES_RESULT_BYTES } from "./current-pcb-209-primitives.ts";
 import { CURRENT_PCB_209_EXTENDED_PRIMITIVES_RESULT_BYTES } from "./current-pcb-209-extended-primitives.ts";
 import { CURRENT_PCB_209_IMAGE_SHAPES_RESULT_BYTES } from "./current-pcb-209-image-shapes.ts";
+import { CURRENT_PCB_209_ARC_SHAPES_RESULT_BYTES } from "./current-pcb-209-arc-shapes.ts";
+import { CURRENT_PCB_209_POURED_SHAPES_RESULT_BYTES } from "./current-pcb-209-poured-shapes.ts";
 import { CURRENT_PCB_209_PAD_SHAPES_RESULT_BYTES } from "./current-pcb-209-pad-shapes.ts";
 import { CURRENT_PCB_209_SELECTION_RELATIONS_RESULT_BYTES } from "./current-pcb-209-selection-relations.ts";
 import { queryCurrentPcb209Observation } from "./current-pcb-209-observation-query.ts";
@@ -60,13 +62,13 @@ const startupOpeningMethods = ["open", "status", "retainedOpeningResult", "requi
   "releaseAfterTermination"] as const;
 export type CurrentPcbWorkerStartupOpeningCoordinator = Pick<CurrentPcbWorkerStartupOpening, (typeof startupOpeningMethods)[number]>;
 type CleanupRequest = Exclude<LifecycleRequest, { action: "launch" | "inspect" | "query-observation" | "settle-records" | "cleanup-unlaunched" | "cleanup-no-process" }>;
-type ObservationRequest = Extract<LifecycleRequest, { action: "browser-observation" | "inspect-frames" | "inspect-script" | "inspect-workers" | "inspect-worker-script" | "observe-worker-state" | "observe-model-state" | "observe-pcb-opening" | "observe-string-precreate" | "observe-layers" | "observe-primitives" | "observe-extended-primitives" | "observe-selection-relations" | "observe-pad-shapes" | "observe-image-shapes" }>;
-type ObservationStage = z.infer<typeof diagnosticObservationStageSchema> | "common-baseline" | "string-precreate" | "layers209" | "primitives209" | "extended-primitives209" | "selection-relations209" | "pad-shapes209" | "image-shapes209";
+type ObservationRequest = Extract<LifecycleRequest, { action: "browser-observation" | "inspect-frames" | "inspect-script" | "inspect-workers" | "inspect-worker-script" | "observe-worker-state" | "observe-model-state" | "observe-pcb-opening" | "observe-string-precreate" | "observe-layers" | "observe-primitives" | "observe-extended-primitives" | "observe-selection-relations" | "observe-pad-shapes" | "observe-image-shapes" | "observe-arc-shapes" | "observe-poured-shapes" }>;
+type ObservationStage = z.infer<typeof diagnosticObservationStageSchema> | "common-baseline" | "string-precreate" | "layers209" | "primitives209" | "extended-primitives209" | "selection-relations209" | "pad-shapes209" | "image-shapes209" | "arc-shapes209" | "poured-shapes209";
 const methods = ["launch", "status", "observeApplicationWindow", "requestNormalClose", "observeTermination", "releaseClosed", "releaseUnlaunched",
   "releaseNoProcess", "browserObservation", "inspectFrames", "inspectScript", "inspectWorkers", "inspectWorkerScript", "observeWorkerState", "observeModelState", "openProject",
   "openPcb", "observePcbOpening"] as const;
 export type CurrentPcbDiagnosticLifecycleOwner = Pick<CurrentPcbDiagnosticOwner, (typeof methods)[number]> &
-  Partial<Pick<CurrentPcbDiagnosticOwner, "observeLayers209" | "observePrimitives209" | "observeExtendedPrimitives209" | "observeSelectionRelations209" | "observePadShapes209" | "observeImageShapes209">>;
+  Partial<Pick<CurrentPcbDiagnosticOwner, "observeLayers209" | "observePrimitives209" | "observeExtendedPrimitives209" | "observeSelectionRelations209" | "observePadShapes209" | "observeImageShapes209" | "observeArcShapes209" | "observePouredShapes209">>;
 type StringOwnerMethods = Pick<CurrentPcbStringPrecreateOwner, "observeStringPrecreate" | "observeCommonBaseline" | "retainedCommonBaselineFailure">;
 type StartupOwnerMethods = Pick<CurrentPcbWorkerStartupOwner, "handoffWorkerStartup">;
 export type CurrentPcbStringPrecreateLifecycleOwner = CurrentPcbDiagnosticLifecycleOwner & StringOwnerMethods;
@@ -243,7 +245,7 @@ class CurrentPcbLifecycleCore {
     this.#generation = generation;
     this.#purpose = purpose;
     this.#stringPurpose = stringPurpose;
-    this.#stages = generation === "209-opening" ? ["browser", "frames", "script", "pcb-opening", "layers209", "primitives209", "extended-primitives209", "selection-relations209", "pad-shapes209", "image-shapes209"] :
+    this.#stages = generation === "209-opening" ? ["browser", "frames", "script", "pcb-opening", "layers209", "primitives209", "extended-primitives209", "selection-relations209", "pad-shapes209", "image-shapes209", "arc-shapes209", "poured-shapes209"] :
       { diagnostic: diagnosticObservationStageSchema.options, "string-precreate": currentPcbStringPrecreateStages,
         "worker-startup": startupStages }[purpose];
     this.#options = Object.freeze({ ...options });
@@ -304,7 +306,7 @@ class CurrentPcbLifecycleCore {
         return { stage, consumed: operation?.records[`${stage}-intent.json`] !== undefined || original && this.#observationConsumed.has(stage),
           resultRetained: original && this.#observations.has(stage), published: record !== undefined,
           ...(record === undefined || this.#generation !== "209-opening" ||
-            !["primitives209", "extended-primitives209", "selection-relations209", "pad-shapes209", "image-shapes209"].includes(stage) ? {} :
+            !["primitives209", "extended-primitives209", "selection-relations209", "pad-shapes209", "image-shapes209", "arc-shapes209", "poured-shapes209"].includes(stage) ? {} :
             { resultRecordSha256: sha256Json(record), observedAt: record.createdAt }),
           result: stage === selectedStage ? publicObservationResult(request.operationId, stage, (record ?? retained)?.result, record !== undefined) : undefined };
       });
@@ -768,7 +770,9 @@ class CurrentPcbLifecycleCore {
         typeof retained.methods.observeExtendedPrimitives209 === "function" && retained.owner.observeExtendedPrimitives209 === retained.methods.observeExtendedPrimitives209 &&
         typeof retained.methods.observeSelectionRelations209 === "function" && retained.owner.observeSelectionRelations209 === retained.methods.observeSelectionRelations209 &&
         typeof retained.methods.observePadShapes209 === "function" && retained.owner.observePadShapes209 === retained.methods.observePadShapes209 &&
-        typeof retained.methods.observeImageShapes209 === "function" && retained.owner.observeImageShapes209 === retained.methods.observeImageShapes209) &&
+        typeof retained.methods.observeImageShapes209 === "function" && retained.owner.observeImageShapes209 === retained.methods.observeImageShapes209 &&
+        typeof retained.methods.observeArcShapes209 === "function" && retained.owner.observeArcShapes209 === retained.methods.observeArcShapes209 &&
+        typeof retained.methods.observePouredShapes209 === "function" && retained.owner.observePouredShapes209 === retained.methods.observePouredShapes209) &&
       (!this.#stringPurpose || typeof retained.methods.observeStringPrecreate === "function" &&
         retained.owner.observeStringPrecreate === retained.methods.observeStringPrecreate &&
         typeof retained.methods.observeCommonBaseline === "function" && retained.owner.observeCommonBaseline === retained.methods.observeCommonBaseline &&
@@ -951,7 +955,7 @@ class CurrentPcbLifecycleCore {
       openPcb: owner.openPcb, observePcbOpening: owner.observePcbOpening,
       ...(this.#generation === "209-opening" ? { observeLayers209: owner.observeLayers209, observePrimitives209: owner.observePrimitives209,
         observeExtendedPrimitives209: owner.observeExtendedPrimitives209, observeSelectionRelations209: owner.observeSelectionRelations209,
-        observePadShapes209: owner.observePadShapes209, observeImageShapes209: owner.observeImageShapes209 } : {}),
+        observePadShapes209: owner.observePadShapes209, observeImageShapes209: owner.observeImageShapes209, observeArcShapes209: owner.observeArcShapes209, observePouredShapes209: owner.observePouredShapes209 } : {}),
       ...(this.#stringPurpose ? { observeStringPrecreate: owner.observeStringPrecreate, observeCommonBaseline: owner.observeCommonBaseline,
         retainedCommonBaselineFailure: owner.retainedCommonBaselineFailure } : {}),
       ...(this.#purpose === "worker-startup" ? { handoffWorkerStartup: owner.handoffWorkerStartup } : {}) });
@@ -1009,7 +1013,7 @@ class CurrentPcbLifecycleCore {
     if (request.action === "observe-common-baseline") { return this.#observeCommonBaseline(request, operation, operations, retained); }
     if (request.action === "browser-observation" || request.action === "inspect-frames" || request.action === "inspect-script" ||
         request.action === "inspect-workers" || request.action === "inspect-worker-script" || request.action === "observe-worker-state" ||
-        request.action === "observe-model-state" || request.action === "observe-pcb-opening" || request.action === "observe-string-precreate" || request.action === "observe-layers" || request.action === "observe-primitives" || request.action === "observe-extended-primitives" || request.action === "observe-selection-relations" || request.action === "observe-pad-shapes" || request.action === "observe-image-shapes") {
+        request.action === "observe-model-state" || request.action === "observe-pcb-opening" || request.action === "observe-string-precreate" || request.action === "observe-layers" || request.action === "observe-primitives" || request.action === "observe-extended-primitives" || request.action === "observe-selection-relations" || request.action === "observe-pad-shapes" || request.action === "observe-image-shapes" || request.action === "observe-arc-shapes" || request.action === "observe-poured-shapes") {
       return this.#observe(request, operation, operations, retained);
     }
     if (request.action === "observe-window") {
@@ -1072,6 +1076,8 @@ class CurrentPcbLifecycleCore {
     if (request.action === "observe-selection-relations") { stage = "selection-relations209"; }
     if (request.action === "observe-pad-shapes") { stage = "pad-shapes209"; }
     if (request.action === "observe-image-shapes") { stage = "image-shapes209"; }
+    if (request.action === "observe-arc-shapes") { stage = "arc-shapes209"; }
+    if (request.action === "observe-poured-shapes") { stage = "poured-shapes209"; }
     requireValue(operation.records["binding.json"]?.launchAcknowledged === true && retained.binding?.rootCreated !== "0" &&
       operation.records["close-intent.json"] === undefined && operation.records["terminated.json"] === undefined, "OBSERVATION_UNAVAILABLE");
     requireValue(!this.#observationConsumed.has(stage) && operation.records[`${stage}-intent.json`] === undefined, "OBSERVATION_CONSUMED");
@@ -1108,6 +1114,16 @@ class CurrentPcbLifecycleCore {
     if (stage === "image-shapes209") {
       requireValue(this.#generation === "209-opening" && retained.methods.observeImageShapes209 !== undefined &&
         !this.#observationConsumed.has("workers") && !this.#observationConsumed.has("model-state"), "IMAGE_SHAPES209_PURPOSE");
+      this.#originalPcbSource(operation);
+    }
+    if (stage === "arc-shapes209") {
+      requireValue(this.#generation === "209-opening" && retained.methods.observeArcShapes209 !== undefined &&
+        !this.#observationConsumed.has("workers") && !this.#observationConsumed.has("model-state"), "ARC_SHAPES209_PURPOSE");
+      this.#originalPcbSource(operation);
+    }
+    if (stage === "poured-shapes209") {
+      requireValue(this.#generation === "209-opening" && retained.methods.observePouredShapes209 !== undefined &&
+        !this.#observationConsumed.has("workers") && !this.#observationConsumed.has("model-state"), "POURED_SHAPES209_PURPOSE");
       this.#originalPcbSource(operation);
     }
     if (stage === "model-state") {
@@ -1209,6 +1225,16 @@ class CurrentPcbLifecycleCore {
       requireValue(this.#generation === "209-opening" && observe !== undefined, "IMAGE_SHAPES209_PURPOSE");
       result = await observe.call(retained.owner, this.#originalProjectOpening(operation).sealedTarget);
     }
+    else if (request.action === "observe-arc-shapes") {
+      const observe = retained.methods.observeArcShapes209;
+      requireValue(this.#generation === "209-opening" && observe !== undefined, "ARC_SHAPES209_PURPOSE");
+      result = await observe.call(retained.owner, this.#originalProjectOpening(operation).sealedTarget);
+    }
+    else if (request.action === "observe-poured-shapes") {
+      const observe = retained.methods.observePouredShapes209;
+      requireValue(this.#generation === "209-opening" && observe !== undefined, "POURED_SHAPES209_PURPOSE");
+      result = await observe.call(retained.owner, this.#originalProjectOpening(operation).sealedTarget);
+    }
     else if (request.action === "observe-string-precreate") {
       const observe = retained.methods.observeStringPrecreate;
       requireValue(this.#stringPurpose && observe !== undefined, "STRING_PURPOSE_REQUIRED");
@@ -1254,7 +1280,9 @@ class CurrentPcbLifecycleCore {
     const selectionLimit = stage === "selection-relations209" ? CURRENT_PCB_209_SELECTION_RELATIONS_RESULT_BYTES : extendedLimit;
     const padShapesLimit = stage === "pad-shapes209" ? CURRENT_PCB_209_PAD_SHAPES_RESULT_BYTES : selectionLimit;
     const imageShapesLimit = stage === "image-shapes209" ? CURRENT_PCB_209_IMAGE_SHAPES_RESULT_BYTES : padShapesLimit;
-    requireValue(Buffer.byteLength(canonicalJson(result)) <= (stage === "string-precreate" ? STRING_PRECREATE_OBSERVATION_MAX_BYTES : imageShapesLimit), "OBSERVATION_BOUND");
+    const arcShapesLimit = stage === "arc-shapes209" ? CURRENT_PCB_209_ARC_SHAPES_RESULT_BYTES : imageShapesLimit;
+    const pouredShapesLimit = stage === "poured-shapes209" ? CURRENT_PCB_209_POURED_SHAPES_RESULT_BYTES : arcShapesLimit;
+    requireValue(Buffer.byteLength(canonicalJson(result)) <= (stage === "string-precreate" ? STRING_PRECREATE_OBSERVATION_MAX_BYTES : pouredShapesLimit), "OBSERVATION_BOUND");
     if (request.action === "observe-selection-relations") {
       requireValue(Array.isArray(result["requestedComponentIds"]) &&
         canonicalJson(result["requestedComponentIds"]) === canonicalJson(request.componentIds), "SELECTION_RELATIONS209_REQUEST");

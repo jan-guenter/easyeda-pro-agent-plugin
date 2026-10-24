@@ -4,10 +4,13 @@ import { z } from "zod";
 import { canonicalJson } from "./core.ts";
 import { currentDisposableOpenSealedTargetSchema } from "./current-disposable-open.ts";
 import { CURRENT_PCB_GEOMETRY_MAX_BYTES, CURRENT_PCB_GEOMETRY_MAX_ROWS } from "./current-pcb-geometry.ts";
+import { decodeCurrentPcb209ArcShapesReply } from "./current-pcb-209-arc-shapes.ts";
+import { decodeCurrentPcb209PouredShapesReply } from "./current-pcb-209-poured-shapes.ts";
 import { decodeCurrentPcb209PrimitivesReply } from "./current-pcb-209-primitives.ts";
 import { decodeCurrentPcb209ImageShapesReply } from "./current-pcb-209-image-shapes.ts";
 import { decodeCurrentPcb209PadShapesReply } from "./current-pcb-209-pad-shapes.ts";
 import { decodeCurrentPcb209ExtendedPrimitivesReply } from "./current-pcb-209-extended-primitives.ts";
+// oxlint-disable-next-line import/max-dependencies -- Historical reconstruction preserves seven separately reviewed decoders instead of merging their contracts.
 import { currentPcb209SelectionRelationsComponentIdsSchema, decodeCurrentPcb209SelectionRelationsReply } from "./current-pcb-209-selection-relations.ts";
 import { freezeDeep } from "./sqlite-inventory-core.ts";
 
@@ -28,6 +31,8 @@ const componentWhere = z.object({ ...layered, designator: text(1024).optional() 
 const padWhere = z.object({ ...routed, padNumber: text(1024).optional(),
   padType: z.union([z.literal(0), z.literal(1), z.literal(2)]).optional() }).strict().optional();
 const attributeWhere = z.object({ ...layered, parentPrimitiveId: id.optional() }).strict().optional();
+const pouredWhere = z.object({ layerId: layer, net, pourPrimitiveId: id.optional(),
+  style: z.enum(["solid", "90grid", "45grid", "none"]).optional() }).strict().optional();
 const familyBase = { kind: z.literal("family"), primitiveIds: ids.optional() };
 const familyQuery = z.discriminatedUnion("family", [
   z.object({ ...familyBase, family: z.literal("Line"), where: z.object(routed).strict().optional() }).strict(),
@@ -39,10 +44,11 @@ const familyQuery = z.discriminatedUnion("family", [
   z.object({ ...familyBase, family: z.literal("Attribute"), where: attributeWhere }).strict(),
   z.object({ ...familyBase, family: z.literal("Dimension"), where: z.object(layered).strict().optional() }).strict(),
   z.object({ ...familyBase, family: z.literal("Image"), where: z.object(layered).strict().optional() }).strict(),
+  z.object({ ...familyBase, family: z.literal("Poured"), where: pouredWhere }).strict(),
 ]);
 export const currentPcb209ObservationQuerySchema = z.union([familyQuery,
   z.object({ kind: z.literal("selection") }).strict(), z.object({ kind: z.literal("component-pads"), componentId: id }).strict()]);
-export const currentPcb209ObservationQueryStageSchema = z.enum(["primitives209", "extended-primitives209", "selection-relations209", "pad-shapes209", "image-shapes209"]);
+export const currentPcb209ObservationQueryStageSchema = z.enum(["primitives209", "extended-primitives209", "selection-relations209", "pad-shapes209", "image-shapes209", "arc-shapes209", "poured-shapes209"]);
 export const currentPcb209ObservationQueryProvenanceSchema = z.object({ operationId: z.string().max(80).regex(/^pcb209-[a-z0-9][a-z0-9_-]*$/u),
   stage: currentPcb209ObservationQueryStageSchema, resultRecordSha256: z.string().regex(/^[a-f\d]{64}$/u), observedAt: z.iso.datetime() }).strict();
 const recordSchema = z.record(z.string(), z.unknown());
@@ -56,6 +62,9 @@ function reconstruct(result: RecordValue, target: unknown, stage: z.infer<typeof
     const observation: RecordValue = { ok: true, kind: "current-pcb-geometry-observation", method: family["method"],
       target: result["target"], rows: family["rows"], samples: 2, implementationKind: "native-task-equivalent", cadAuthority: false,
       persistenceVerified: false, sourceMembershipVerified: false };
+    if (family["family"] === "Poured") {
+      Object.assign(observation, { kind: "current-pcb-poured-source-observation", copperRebuildPerformed: false });
+    }
     if (family["family"] === "Attribute") {
       Object.assign(observation, { attributeParentGroups: family["attributeParentGroups"],
         relationshipEvidence: family["relationshipEvidence"], reciprocalParentVerified: family["reciprocalParentVerified"] });
@@ -75,6 +84,14 @@ function reconstruct(result: RecordValue, target: unknown, stage: z.infer<typeof
     if (observations.length !== 1) { throw new Error("PCB209_QUERY_IMAGE_FAMILY_COUNT"); }
     packet = { ok: true, kind: "pcb209-original-image-shapes-observation", target: result["target"],
       observation: observations[0], imageShapes: result["imageShapes"] };
+  } else if (stage === "arc-shapes209") {
+    if (observations.length !== 1) { throw new Error("PCB209_QUERY_ARC_FAMILY_COUNT"); }
+    packet = { ok: true, kind: "pcb209-original-arc-shapes-observation", target: result["target"],
+      observation: observations[0], arcShapes: result["arcShapes"] };
+  } else if (stage === "poured-shapes209") {
+    if (observations.length !== 1) { throw new Error("PCB209_QUERY_POURED_FAMILY_COUNT"); }
+    packet = { ok: true, kind: "pcb209-original-poured-shapes-observation", target: result["target"],
+      observation: observations[0], parentGroups: result["parentGroups"] };
   } else {
     // IDs come from the original published intent independently of this result.
     // An empty list is still explicit.
@@ -89,6 +106,8 @@ function reconstruct(result: RecordValue, target: unknown, stage: z.infer<typeof
   else if (stage === "extended-primitives209") { decoded = decodeCurrentPcb209ExtendedPrimitivesReply(reply, target); }
   else if (stage === "pad-shapes209") { decoded = decodeCurrentPcb209PadShapesReply(reply, target); }
   else if (stage === "image-shapes209") { decoded = decodeCurrentPcb209ImageShapesReply(reply, target); }
+  else if (stage === "arc-shapes209") { decoded = decodeCurrentPcb209ArcShapesReply(reply, target); }
+  else if (stage === "poured-shapes209") { decoded = decodeCurrentPcb209PouredShapesReply(reply, target); }
   else { decoded = decodeCurrentPcb209SelectionRelationsReply(reply, target, originalComponentIds); }
   if (canonicalJson(decoded) !== canonicalJson(result)) { throw new Error("PCB209_QUERY_RECONSTRUCTION_MISMATCH"); }
   return decoded;
@@ -169,6 +188,16 @@ export function queryCurrentPcb209Observation(resultInput: unknown, targetInput:
     ...(provenance.stage === "image-shapes209" ? {
       imageShapes: orderedDescriptors(source["imageShapes"], rows),
       imageShapeScope: source["imageShapeScope"], units: source["units"], renderedGeometryVerified: false, assetContentVerified: false,
+    } : {}),
+    ...(provenance.stage === "arc-shapes209" ? {
+      arcShapes: orderedDescriptors(source["arcShapes"], rows),
+      arcShapeScope: source["arcShapeScope"], units: source["units"], fullCircleInterpretationVerified: false,
+    } : {}),
+    ...(provenance.stage === "poured-shapes209" ? {
+      parentGroups: recordsSchema.parse(source["parentGroups"]),
+      parentGroupScope: "complete-observed-native-fill-parent-roster;returned-rows-may-be-filtered",
+      sourceParentGroupScope: source["parentGroupScope"], primitiveIdScope: source["primitiveIdScope"], units: source["units"],
+      copperRebuildPerformed: false, copperFreshnessVerified: false, fabricationGeometryVerified: false,
     } : {}),
     historical: true, freshObservation: false, implementationKind: "retained-observation-projection",
     sourceMembershipVerified: false, reciprocalParentVerified: false, symbolPinMappingVerified: false, connectivityVerified: false,

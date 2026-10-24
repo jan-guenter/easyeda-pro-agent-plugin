@@ -40,7 +40,7 @@ function fixture(context: TestContext, scenario = "normal", stringPurpose = fals
     return originalWrite(...args);
   });
   let Owner = stringPurpose ? CurrentPcbStringPrecreateOwner : CurrentPcbDiagnosticOwner;
-  if (scenario.startsWith("opening-pcb-layers209") || scenario.startsWith("opening-pcb-primitives209") || scenario.startsWith("opening-pcb-extended-primitives209") || scenario.startsWith("opening-pcb-selection-relations209") || scenario.startsWith("opening-pcb-pad-shapes209") || scenario.startsWith("opening-pcb-image-shapes209")) { Owner = CurrentPcb209DiagnosticOwner; }
+  if (scenario.startsWith("opening-pcb-layers209") || scenario.startsWith("opening-pcb-primitives209") || scenario.startsWith("opening-pcb-extended-primitives209") || scenario.startsWith("opening-pcb-selection-relations209") || scenario.startsWith("opening-pcb-pad-shapes209") || scenario.startsWith("opening-pcb-image-shapes209") || scenario.startsWith("opening-pcb-arc-shapes209") || scenario.startsWith("opening-pcb-poured-shapes209")) { Owner = CurrentPcb209DiagnosticOwner; }
   const owner = new Owner(child, () => source.valid ? Promise.resolve() : Promise.reject(new Error("source changed")), null,
     () => installation.valid ? Promise.resolve() : Promise.reject(new Error("installation changed")));
   owner.start();
@@ -824,6 +824,88 @@ void test("209 Image shape reader admission drift consumes the stage before down
     assert.equal(value.actions.filter(action => action === "send").length, sent);
     await close(value);
   }
+});
+
+void test("209 Arc and Poured stages preserve qualification, one-shot refusal and original cleanup", async context => {
+  for (const [family, method] of [["arc", "observeArcShapes209"], ["poured", "observePouredShapes209"]] as const) {
+    for (const suffix of ["", "-ancillary", "-refused", "-wrong-target"]) {
+      const value = await openingFixture(context, `opening-pcb-${family}-shapes209${suffix}`);
+      await assert.rejects(value.owner[method](OPEN_TARGET), /SHAPES209_UNAVAILABLE/u);
+      await value.owner.openProject(OPEN_TARGET, () => Promise.resolve());
+      await value.owner.openPcb(OPEN_TARGET, () => Promise.resolve());
+      await assert.rejects(value.owner[method](OPEN_TARGET), /SHAPES209_UNAVAILABLE/u);
+      await value.owner.observePcbOpening(OPEN_TARGET, SCRIPT_PROFILE);
+      await assert.rejects(value.owner[method]({ ...OPEN_TARGET, branchUuid: "f".repeat(32) }), /SHAPES209_UNAVAILABLE/u);
+      if (suffix === "-refused" || suffix === "-wrong-target") { await assert.rejects(value.owner[method](OPEN_TARGET)); }
+      else {
+        const result = await value.owner[method](OPEN_TARGET);
+        assert.equal(result["schema"], `easyeda-pro-control.pcb209-${family}-shapes-observation.v1`);
+        assert.equal(result["samples"], 2); assert.equal(result["executionAuthorized"], false);
+        assert.equal(result["saveAuthorized"], false); assert.equal(result["completeLiveBaselineVerified"], false);
+        assert.equal(value.actions.filter(action => action === "send").length, suffix === "-ancillary" ? 58 : 44);
+      }
+      await assert.rejects(value.owner[method](OPEN_TARGET), /SHAPES209_UNAVAILABLE/u);
+      await close(value);
+    }
+    const legacy = await openingFixture(context, "opening-pcb");
+    await assert.rejects(legacy.owner[method](OPEN_TARGET), /SHAPES209_UNAVAILABLE/u); await close(legacy);
+  }
+});
+
+void test("209 all eight ordinary readers fit 79 requests; ancillary route refuses before an incomplete shape stage", async context => {
+  for (const ancillary of [false, true]) {
+    const value = await openingFixture(context, `opening-pcb-poured-shapes209${ancillary ? "-ancillary" : ""}`);
+    await value.owner.openProject(OPEN_TARGET, () => Promise.resolve());
+    await value.owner.openPcb(OPEN_TARGET, () => Promise.resolve());
+    await value.owner.observePcbOpening(OPEN_TARGET, SCRIPT_PROFILE);
+    await value.owner.observeImageShapes209(OPEN_TARGET); await value.owner.observePadShapes209(OPEN_TARGET);
+    await value.owner.observeSelectionRelations209(OPEN_TARGET, []); await value.owner.observeExtendedPrimitives209(OPEN_TARGET);
+    await value.owner.observePrimitives209(OPEN_TARGET);
+    assert.equal(value.actions.filter(action => action === "send").length, ancillary ? 94 : 64);
+    await value.owner.observeArcShapes209(OPEN_TARGET);
+    if (ancillary) {
+      assert.equal(value.actions.filter(action => action === "send").length, 103);
+      const before = [...value.actions];
+      await assert.rejects(value.owner.observePouredShapes209(OPEN_TARGET), /SHAPE_STAGE_REQUEST_BUDGET/u);
+      assert.deepEqual(value.actions, before);
+      assert.equal(value.owner.status().diagnosticFailure, null);
+    } else {
+      await value.owner.observePouredShapes209(OPEN_TARGET); await value.owner.observeLayers209(OPEN_TARGET);
+      assert.equal(value.actions.filter(action => action === "send").length, 79);
+    }
+    await close(value);
+  }
+});
+
+void test("209 Arc and Poured admission drift consumes its stage before downstream CDP", async context => {
+  for (const [family, method] of [["arc", "observeArcShapes209"], ["poured", "observePouredShapes209"]] as const) {
+    for (const scope of ["source", "installation"] as const) {
+      const value = await openingFixture(context, `opening-pcb-${family}-shapes209`);
+      await value.owner.openProject(OPEN_TARGET, () => Promise.resolve()); await value.owner.openPcb(OPEN_TARGET, () => Promise.resolve());
+      await value.owner.observePcbOpening(OPEN_TARGET, SCRIPT_PROFILE);
+      const before = value.actions.filter(action => action === "send").length;
+      value[scope].valid = false;
+      await assert.rejects(value.owner[method](OPEN_TARGET), new RegExp(`${scope} changed`, "u"));
+      value[scope].valid = true;
+      await assert.rejects(value.owner[method](OPEN_TARGET), /SHAPES209_UNAVAILABLE/u);
+      assert.equal(value.actions.filter(action => action === "send").length, before); await close(value);
+    }
+  }
+});
+
+void test("209 shape owner admits the bounded 4096-character Unicode path through real helper writes", async context => {
+  // The opening contract separately bounds the project basename to256 units.
+  const directories = `${"界".repeat(255)}\\`.repeat(15);
+  const rawWindowsPath = `C:\\${directories}${"界".repeat(238)}\\Selected.eprj2`;
+  assert.equal(rawWindowsPath.length, 4096); assert.ok(Buffer.byteLength(rawWindowsPath) > 4096);
+  assert.ok(rawWindowsPath.slice(3).split("\\").every(component => component.length <= 255));
+  const target = { ...OPEN_TARGET, rawWindowsPath, projectUuid: createHash("sha256").update(rawWindowsPath).digest("hex") };
+  const value = await openingFixture(context, "opening-pcb-poured-shapes209");
+  await value.owner.openProject(target, () => Promise.resolve()); await value.owner.openPcb(target, () => Promise.resolve());
+  await value.owner.observePcbOpening(target, SCRIPT_PROFILE);
+  const arc = await value.owner.observeArcShapes209(target), poured = await value.owner.observePouredShapes209(target);
+  assert.equal(arc["samples"], 2); assert.equal(poured["samples"], 2);
+  await close(value);
 });
 
 void test("209 selection relation stage preserves original admission, once-only reads and all four reader budgets", async context => {

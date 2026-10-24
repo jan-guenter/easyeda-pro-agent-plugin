@@ -25,6 +25,8 @@ import type { CurrentPcbDiagnosticPcbOpeningPhase } from "./current-pcb-diagnost
 import { CURRENT_PCB_209_LAYERS_FUNCTION } from "./current-pcb-209-layers.ts";
 import { CURRENT_PCB_209_PRIMITIVES_FUNCTION } from "./current-pcb-209-primitives.ts";
 import { CURRENT_PCB_209_IMAGE_SHAPES_FUNCTION } from "./current-pcb-209-image-shapes.ts";
+import { CURRENT_PCB_209_ARC_SHAPES_FUNCTION } from "./current-pcb-209-arc-shapes.ts";
+import { CURRENT_PCB_209_POURED_SHAPES_FUNCTION } from "./current-pcb-209-poured-shapes.ts";
 import { CURRENT_PCB_209_PAD_SHAPES_FUNCTION } from "./current-pcb-209-pad-shapes.ts";
 import { CURRENT_PCB_209_EXTENDED_PRIMITIVES_FUNCTION } from "./current-pcb-209-extended-primitives.ts";
 import { CURRENT_PCB_209_SELECTION_RELATIONS_FUNCTION, currentPcb209SelectionRelationsComponentIdsSchema } from "./current-pcb-209-selection-relations.ts";
@@ -84,6 +86,16 @@ export function diagnosticPadShapes209Params(uniqueContextId: string, target: Cu
 export function diagnosticImageShapes209Params(uniqueContextId: string, target: CurrentDisposableOpenSealedTarget): ReturnType<typeof diagnosticOpeningParams> {
   const fixed = diagnosticPcbOpeningParams(uniqueContextId, target, "observe");
   return Object.freeze({ ...fixed, functionDeclaration: CURRENT_PCB_209_IMAGE_SHAPES_FUNCTION });
+}
+
+export function diagnosticArcShapes209Params(uniqueContextId: string, target: CurrentDisposableOpenSealedTarget): ReturnType<typeof diagnosticOpeningParams> {
+  const fixed = diagnosticPcbOpeningParams(uniqueContextId, target, "observe");
+  return Object.freeze({ ...fixed, functionDeclaration: CURRENT_PCB_209_ARC_SHAPES_FUNCTION });
+}
+
+export function diagnosticPouredShapes209Params(uniqueContextId: string, target: CurrentDisposableOpenSealedTarget): ReturnType<typeof diagnosticOpeningParams> {
+  const fixed = diagnosticPcbOpeningParams(uniqueContextId, target, "observe");
+  return Object.freeze({ ...fixed, functionDeclaration: CURRENT_PCB_209_POURED_SHAPES_FUNCTION });
 }
 
 export function diagnosticSelectionRelations209Params(uniqueContextId: string, target: CurrentDisposableOpenSealedTarget,
@@ -440,6 +452,8 @@ function fixedNativeRequest(chunk: Buffer, stringPurpose: boolean): Readonly<Rec
       const layers209 = params["functionDeclaration"] === CURRENT_PCB_209_LAYERS_FUNCTION;
       const primitives209 = params["functionDeclaration"] === CURRENT_PCB_209_PRIMITIVES_FUNCTION;
       const imageShapes209 = params["functionDeclaration"] === CURRENT_PCB_209_IMAGE_SHAPES_FUNCTION;
+      const arcShapes209 = params["functionDeclaration"] === CURRENT_PCB_209_ARC_SHAPES_FUNCTION;
+      const pouredShapes209 = params["functionDeclaration"] === CURRENT_PCB_209_POURED_SHAPES_FUNCTION;
       const padShapes209 = params["functionDeclaration"] === CURRENT_PCB_209_PAD_SHAPES_FUNCTION;
       const extendedPrimitives209 = params["functionDeclaration"] === CURRENT_PCB_209_EXTENDED_PRIMITIVES_FUNCTION;
       let componentIds: string[] = [];
@@ -455,6 +469,12 @@ function fixedNativeRequest(chunk: Buffer, stringPurpose: boolean): Readonly<Rec
       } else if (imageShapes209) {
         if (phase !== "observe") { return fail(); }
         fixed = diagnosticImageShapes209Params(params["uniqueContextId"], selected);
+      } else if (arcShapes209) {
+        if (phase !== "observe") { return fail(); }
+        fixed = diagnosticArcShapes209Params(params["uniqueContextId"], selected);
+      } else if (pouredShapes209) {
+        if (phase !== "observe") { return fail(); }
+        fixed = diagnosticPouredShapes209Params(params["uniqueContextId"], selected);
       } else if (padShapes209) {
         if (phase !== "observe") { return fail(); }
         fixed = diagnosticPadShapes209Params(params["uniqueContextId"], selected);
@@ -479,6 +499,8 @@ function fixedNativeRequest(chunk: Buffer, stringPurpose: boolean): Readonly<Rec
       let selectedPhase: Record<string, unknown> = { openingPhase: phase };
       if (selectionRelations209) { selectedPhase = { pcbSelectionRelations209Phase: phase, componentIds }; }
       else if (imageShapes209) { selectedPhase = { pcbImageShapes209Phase: phase }; }
+      else if (arcShapes209) { selectedPhase = { pcbArcShapes209Phase: phase }; }
+      else if (pouredShapes209) { selectedPhase = { pcbPouredShapes209Phase: phase }; }
       else if (padShapes209) { selectedPhase = { pcbPadShapes209Phase: phase }; }
       else if (extendedPrimitives209) { selectedPhase = { pcbExtendedPrimitives209Phase: phase }; }
       else if (primitives209) { selectedPhase = { pcbPrimitives209Phase: phase }; }

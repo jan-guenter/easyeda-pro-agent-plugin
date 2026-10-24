@@ -145,3 +145,112 @@ termination guards remain unchanged. The existing native regression already
 checks both pin consumers; it is now included in the affected local checks,
 and the reusable release guide calls out that dependency. No new test or
 guard relaxation was needed. Final-head CI must pass separately.
+
+## Terminal publication and installation — 2026-10-24
+
+The corrected final head `93451e921d3cd5785f49c706b94d4f5b66b758aa` passed
+[Linux CI40054602278](https://github.com/jan-guenter/easyeda-pro-agent-plugin/actions/runs/40054602278)
+and [Windows CI40054602309](https://github.com/jan-guenter/easyeda-pro-agent-plugin/actions/runs/40054602309).
+All eleven jobs passed. The complete facade suite recorded 12,576 tests:
+12,571 passed, five expected mounted-Windows/PowerShell skips, and zero
+failures, cancellations or todo cases. The bridge suite passed 424 tests in
+28 files. Committed bundle reproducibility, reviewed facade fingerprints,
+Windows recovery, all-purpose compilation and suspended synthetic-child
+admission passed. Independent comparison checked all 640 source files and
+three bundles against committed Git objects. CI summary SHA-256:
+`daa3a3d4449dfade5cb4c6e2c94338023286ecac041b7150c0d1e4d9bb812b35`.
+
+The initial Linux run40054357106 was cancelled by the corrective push; all
+eight facade shards were cancelled and its aggregate failed. Its successful
+build and the first Windows failure remain retained as nonrelease evidence.
+After the pin correction, the two existing native/smoke regression files
+passed 11/11 checks. No duplicate complete local suite was run.
+
+[PR113](https://github.com/jan-guenter/easyeda-pro-agent-plugin/pull/113)
+merged normally through protected main at 02:46:12 UTC as
+`eaa4c9be57c5f9d4bf6438e434009f5e4c99a43c`. The entire merged tree
+`71f888eb34e62104bad83c6a300acf2af47c022d` and plugin subtree
+`f909a49b2ae6ba82c3f9f2307dd48a7cd39d13da` exactly match the tested head.
+Automatic main Windows CI40055553601 passed; automatic Linux CI40055553573
+was still running at this receipt. The complete final PR evidence above
+qualifies the identical merged payload; do not call the unfinished main run
+successful or start another complete local suite to duplicate it.
+
+The official CLI upgraded the existing Git marketplace
+`https://github.com/jan-guenter/easyeda-pro-agent-plugin.git` with installer
+umask022. It returned no upgrade errors, and its listing confirms
+`0.3.0+codex.20261024022500` installed and enabled. The marketplace checkout
+HEAD equals merged main; its only untracked entry is the CLI-owned install
+marker. A preexisting stale-arg0-directory permission warning remains in the
+CLI log. No cache repair, repeated add or manual installed-file edit occurred.
+
+The maintained installed-payload verifier passed all **1,827 files, 42
+directories and 39,404,708 bytes**, including exact committed modes. Inventory
+SHA-256: `b74f0c08b72a67740155bd1df72c5e7e04f853eb3a433c7fa25e7c14a3a31917`.
+Independent post-install hashing reconfirmed the 640-source/three-bundle
+projections and manifest `e7b4718edbf6b4a80818bd2dfcffe3f63cfee289110b3ddf15eca535824d644f`.
+Private independent receipt SHA-256:
+`6fe5300ab45a15303cb1ab71e2a476f7d81322c9d5a0f89855217fc985bd4417`.
+
+One maintained dependency-free offline probe passed 26 tools and ten queries
+in its private synthetic legacy profile. Its own child1729808 closed on stdin
+EOF with exit0 and no stderr. Two isolation samples found no descendants or
+non-stdio sockets; this was not continuous observation. The probe did not
+select the live control root or admit the actual host. The actual209 profile
+still exposes thirteen tools. Offline probe evidence is retained at
+`/tmp/easyeda-installed-offline-probe-8G1a3m`; release receipts are under
+`/root/.cache/easyeda-011500-live-20261024-uqlRDznG`.
+
+The original host1708551, parent1707264, start ticks10168818 remains alive
+with its011500 command line. Its old working-directory path is now deleted
+by official cache pruning; that does not unload its existing code. No host
+was killed, rebound or hotpatched. **A fresh session must load and admit22500
+before its new live stages are used.** The completed011500 case remains
+terminal; no CAD operation, recovery, edit or Save is pending. The excluded production project was not opened or edited.
+
+This terminal appendix is deliberately retained locally for inclusion in the
+next grouped change, with publication/install results also recorded on PR113.
+It does not justify another release or restart by itself.
+
+## Next grouped work after fresh admission
+
+Publication and installation in remaining-work item1 are complete. First
+admit the actual22500 host and validate its new Pad/Image stages on the
+disposable fixture. Keep populated special groups and Image/Picture paths
+distinct from empty-domain observations. Do not replay the011500 case.
+
+The next useful implementation batch is complete native Arc geometry plus
+serialized Poured copper contours, with historical queries. A private source
+plan is retained at
+`/root/.cache/easyeda-pcb-next-reader-batch-20261024-ij3hemaj/plan.md`, SHA-256
+`c282b2960eaa720eff4849282787a48f0f64aac643d1b8d4f8888b02f4f10b26`.
+Its final audit correction supersedes its initial provisional rule-reader
+recommendation. Current rule getters rewrite shared blind-via `used` flags;
+they need an explicit derived-usage refresh contract and partial-failure
+handling. No default correction was found on that path. Polygon collection
+serializers can create child models/controllers and remain outside passive
+reads. Poured serialization can omit an ellipse's second radius, so preserve
+its projection limits rather than claiming arbitrary geometric completeness.
+
+The helper has 44,664 bytes left under its unchanged1MiB limit. The private
+plan proposes one deterministic, bounded embedded compression mechanism
+that preserves exact decompressed program bytes and hashes; its estimated
+50,648-byte saving excludes decoder overhead. This is an unimplemented
+packaging proposal, not a tested capability or permission to raise limits.
+Review and implement it together with the next useful reader batch.
+
+Remaining-work items2–5 above continue to cover assets and unsupported Pad
+encodings, writer ownership/baselines, consumed Save and complete reopened
+SQL checks, editing/routing/rules, libraries and manufacturing exports. The
+maintained inventory records 506 omissions across project/document73,
+library57, PCB135, schematic94, system146 and panel1 methods. These include
+unavailable vendor methods and stubs; they are not 506 promised feasible
+implementations. Per-method reasons remain in `api-coverage.json`.
+
+The first terminal-note repository check rejected a production-project name
+in this new appendix. It was removed from the public notes; the original
+failed validator log is retained privately. The plugin payload was unaffected.
+The corrected repository/privacy, plugin/MCP and all-seven-skill checks passed;
+`terminal-doc-validation-final.log` retains those results. PR113's body and
+installation comment were updated consistently. Only this terminal history
+appendix remains uncommitted for the next grouped change.

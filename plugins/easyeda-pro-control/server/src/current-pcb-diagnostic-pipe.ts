@@ -9,8 +9,7 @@
 /* oxlint-disable max-classes-per-file -- Three fixed-purpose facades share a private byte-transport core without exposing a caller-selectable purpose or budget. */
 /* oxlint-disable import/max-dependencies -- Fixed transport composes independent model/common/worker/actor grammars without merging their source or authority boundaries. */
 import type { Readable, Writable } from "node:stream";
-import { DIAGNOSTIC_REQUEST_LIMIT, DIAGNOSTIC_SESSION_BYTES, DIAGNOSTIC_SOURCE_FRAME_BYTES, DIAGNOSTIC_WORKER_ATTACH_PARAMS,
-  diagnosticExact, diagnosticExtendedPrimitives209Params, diagnosticImageShapes209Params, diagnosticLayers209Params, diagnosticOpeningParams, diagnosticPadShapes209Params, diagnosticPcbOpeningParams, diagnosticPrimitives209Params, diagnosticSelectionRelations209Params, diagnosticToken, diagnosticWorkerEvaluationParams } from "./current-pcb-diagnostic-protocol.ts";
+import { DIAGNOSTIC_REQUEST_LIMIT, DIAGNOSTIC_SESSION_BYTES, DIAGNOSTIC_SOURCE_FRAME_BYTES, DIAGNOSTIC_WORKER_ATTACH_PARAMS, diagnosticArcShapes209Params, diagnosticExact, diagnosticExtendedPrimitives209Params, diagnosticImageShapes209Params, diagnosticLayers209Params, diagnosticOpeningParams, diagnosticPadShapes209Params, diagnosticPcbOpeningParams, diagnosticPouredShapes209Params, diagnosticPrimitives209Params, diagnosticSelectionRelations209Params, diagnosticToken, diagnosticWorkerEvaluationParams } from "./current-pcb-diagnostic-protocol.ts";
 import type { DiagnosticCommand, DiagnosticEvent } from "./current-pcb-diagnostic-protocol.ts";
 import { decodeCurrentPcbDiagnosticJson } from "./current-pcb-diagnostic-json.ts";
 import type { CurrentDisposableOpenSealedTarget } from "./current-disposable-open.ts";
@@ -42,7 +41,7 @@ type FailureReason = Failure | "empty-frame" | "nonobject-frame" | "reply-unsoli
   "event-budget-or-handler" | "event-envelope" | "event-session" | "worker-attachment" | "worker-handler" | "event-callback" | "unsolicited-data" |
   "trailing-reply-data" | "attachment-result" | "worker-discovery-result";
 type RequestPhase = "discovery" | "frame-owner" | "worker-discovery" | "worker-state" |
-  `project-${CurrentPcbDiagnosticOpeningPhase}` | `pcb-${CurrentPcbDiagnosticPcbOpeningPhase}` | "layers209" | "primitives209" | "extended-primitives209" | "selection-relations209" | "pad-shapes209" | "image-shapes209" |
+  `project-${CurrentPcbDiagnosticOpeningPhase}` | `pcb-${CurrentPcbDiagnosticPcbOpeningPhase}` | "layers209" | "primitives209" | "extended-primitives209" | "selection-relations209" | "pad-shapes209" | "image-shapes209" | "arc-shapes209" | "poured-shapes209" |
   `model-${CurrentPcbDiagnosticModelCommand["modelPhase"]}` | `string-${CurrentPcbStringPrecreatePhase}` |
   `common-${CurrentPcbCommonBaselineCommand["commonPhase"]}` | `worker-producer-${CurrentPcbStringWorkerProducerCommand["workerProducerPhase"]}` |
   `actor-clock-${CurrentPcbStringActorClockCommand["actorClockPhase"]}` | `move-${CurrentPcbStringMoveCommand["movePhase"]}`;
@@ -53,7 +52,7 @@ const REQUEST_METHODS = [
 ] as const satisfies readonly DiagnosticCommand["method"][];
 const REQUEST_PHASES = [
   "discovery", "frame-owner", "worker-discovery", "worker-state", "project-preflight", "project-open-project",
-  "pcb-preflight", "pcb-open-document", "pcb-observe", "layers209", "primitives209", "extended-primitives209", "selection-relations209", "pad-shapes209", "image-shapes209", "model-wrapper", "model-properties", "model-handler",
+  "pcb-preflight", "pcb-open-document", "pcb-observe", "layers209", "primitives209", "extended-primitives209", "selection-relations209", "pad-shapes209", "image-shapes209", "arc-shapes209", "poured-shapes209", "model-wrapper", "model-properties", "model-handler",
   "model-constructors-diagnostic", "model-constructors-precreate",
   "model-teardrop-callbacks", "model-teardrop-owner",
   "model-snapshot", "model-pending", "model-raw-strings", "model-root-inventory", "model-release",
@@ -347,6 +346,27 @@ class CurrentPcbFixedPipeCore {
     if (this.#sessionId === null || this.#workerEvent !== null) { return Promise.reject(new Error("PCB209_IMAGE_SHAPES_PIPE_INPUT")); }
     return this.#request({ id: this.#nextId, method: "Runtime.callFunctionOn",
       params: diagnosticImageShapes209Params(uniqueContextId, target), sessionId: this.#sessionId }, "image-shapes209");
+  }
+  /** The owner serializes the complete shape stage. Its fixed worst case is
+   * two parent and two ancillary checks on each side plus the native read.
+   * Refuse before any stage dispatch; do not reset or expose the pipe counter. */
+  public assertPcb209ShapeStageCapacity(): void {
+    if (this.#stringPurpose || this.#startupPurpose || !this.#started || this.#released || this.#handedOff ||
+        this.#sessionId === null || this.#pending !== null || this.#workerEvent !== null) {
+      throw new Error("PCB209_SHAPE_STAGE_CAPACITY_UNAVAILABLE");
+    }
+    if (this.#failure !== null) { throw failureError(this.#failure); }
+    if (DIAGNOSTIC_REQUEST_LIMIT - (this.#nextId - 1) < 9) { throw new Error("PCB209_SHAPE_STAGE_REQUEST_BUDGET"); }
+  }
+  public observeArcShapes209(uniqueContextId: string, target: CurrentDisposableOpenSealedTarget): Promise<Reply> {
+    if (this.#sessionId === null || this.#workerEvent !== null) { return Promise.reject(new Error("PCB209_ARC_SHAPES_PIPE_INPUT")); }
+    return this.#request({ id: this.#nextId, method: "Runtime.callFunctionOn",
+      params: diagnosticArcShapes209Params(uniqueContextId, target), sessionId: this.#sessionId }, "arc-shapes209");
+  }
+  public observePouredShapes209(uniqueContextId: string, target: CurrentDisposableOpenSealedTarget): Promise<Reply> {
+    if (this.#sessionId === null || this.#workerEvent !== null) { return Promise.reject(new Error("PCB209_POURED_SHAPES_PIPE_INPUT")); }
+    return this.#request({ id: this.#nextId, method: "Runtime.callFunctionOn",
+      params: diagnosticPouredShapes209Params(uniqueContextId, target), sessionId: this.#sessionId }, "poured-shapes209");
   }
   public observeSelectionRelations209(uniqueContextId: string, target: CurrentDisposableOpenSealedTarget, componentIds: readonly string[]): Promise<Reply> {
     if (this.#sessionId === null || this.#workerEvent !== null) { return Promise.reject(new Error("PCB209_SELECTION_RELATIONS_PIPE_INPUT")); }

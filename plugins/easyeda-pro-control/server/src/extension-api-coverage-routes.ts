@@ -155,6 +155,26 @@ groups.push({ namespace: "pcb_PrimitivePad", methods: ["getAll", "getAllPrimitiv
   inputDiscovery: { tool: "easyeda_control_api", arguments: { request: { action: "pcb209-opening", query: { includeSchemas: true } } } },
 } });
 
+for (const [family, selector, module, methods, scope] of [
+  ["Arc", "observe-arc-shapes", "arc-shapes", ["getAll", "getAllPrimitiveId"],
+    "Complete supported Arc DTOs plus ordered native center/radius in mil, inclusive zero-to-two-pi endpoint radians and direction. Native endpoint and modulo-angle arithmetic is checked before projection, then independently correlated after unit conversion. Coincident endpoints and modulo angle zero do not establish full-circle rendering."],
+  ["Poured", "observe-poured-shapes", "poured-shapes", ["getAll"],
+    "Existing loaded native copper fill rows retain their own IDs, first-appearance parent groups, every serialized contour, raw style and optimization presence states. Fill IDs are not the public parent's primitiveId. Coordinates and dimensions use native ten-mil units; ARC sweeps use degrees. The serializer can omit tiny segments or an ellipse's second radius. No public grouped-instance parity, getAllPrimitiveId ordering, copper rebuild, freshness or fabrication geometry is claimed."],
+] as const) {
+  groups.push({ namespace: `pcb_Primitive${family}`, methods, route: {
+    tool: "easyeda_control_pcb209_opening", selector, implementation: "native-task-equivalent",
+    scope: `Separately pinned installed209 original-owner disposable observation. ${scope} Two complete ordered samples must match; exact target/source/frame/receiver checks run around each await. At most256 rows and393216 UTF-8 bytes per packet/result. Native enumeration precedes bounds and the ten-second deadline does not cancel vendor work. Native dispatch requires nine commands remaining in the unchanged103-command original transport budget; capacity refusal still consumes the lifecycle intent. Digest-bound historical queries preserve descriptors, groups, units and scope. No complete source membership, connectivity, persistence, editing, Save or writer baseline. Existing observation versions remain unchanged.`,
+    source: [`current-pcb-209-${module}.ts`, "current-pcb-209-observation-query.ts", "current-pcb-209-opening-validation.ts",
+      "current-pcb-diagnostic-lifecycle.ts", "current-pcb-diagnostic-lifecycle-journal.ts", "current-pcb-diagnostic-owner.ts",
+      "current-pcb-diagnostic-pipe.ts", "current-pcb-diagnostic-protocol.ts", "../../scripts/pcb-diagnostic-owner.ps1"],
+    tests: [`current-pcb-209-${module}.test.ts`, `current-pcb-209-${module}-native.test.ts`, "current-pcb-209-observation-query.test.ts",
+      "current-pcb-209-opening.test.ts", "current-pcb-diagnostic-owner.test.ts", "current-pcb-diagnostic-pipe.test.ts",
+      "current-pcb-diagnostic-lifecycle.test.ts", "extension-api-coverage.test.ts"],
+    documentTypes: [3], validation: "offline-regression;current-live-unclaimed", executionState: "available-with-runtime-guards",
+    inputDiscovery: { tool: "easyeda_control_api", arguments: { request: { action: "pcb209-opening", query: { includeSchemas: true } } } },
+  } });
+}
+
 for (const [namespace, methods] of [
   ["pcb_SelectControl", ["getSelectedPrimitives", "getAllSelectedPrimitives", "getAllSelectedPrimitives_PrimitiveId"]],
   ["pcb_PrimitiveComponent", ["getAllPinsByPrimitiveId"]],
