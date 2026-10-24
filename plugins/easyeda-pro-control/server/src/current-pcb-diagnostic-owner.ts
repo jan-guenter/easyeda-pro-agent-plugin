@@ -1160,10 +1160,13 @@ class CurrentPcbRetainedOwnerCore {
   /** Private preparation for the same constructor-captured project's PCB.
    * No public action invokes this yet. Its caller must durably consume PCB
    * navigation intent before openAndQualify; preparation itself sends no open.
-   * The actual context stays with its original native owner, never caller JSON. */
+   * The actual context stays with its original native owner, never caller JSON.
+   * The callback must return the lifecycle's original completed preparation
+   * inventory after verifying its managed checkpoint receipt and sealed target.
+   * A new reader or equality with the live source hash is not a substitute. */
   public async prepareWorkerStartupPcbSession209(opening: CurrentPcb209WorkerStartupOpening,
     result: CurrentPcb209WorkerStartupOpeningResult, input: CurrentDisposableOpenSealedTarget,
-    reverifyCheckpoint: () => Promise<void>): Promise<CurrentPcb209WorkerStartupPcbSession> {
+    reverifyCheckpoint: () => Promise<Awaited<ReturnType<typeof readExactSqlInventory>>>): Promise<CurrentPcb209WorkerStartupPcbSession> {
     const context = this.#stagedContext, handoff = this.#startupHandoff;
     const target = currentDisposableOpenSealedTargetSchema.parse(captureCurrentPcbStringClockReply(input).value);
     if (this.#purpose !== "worker-startup209" || handoff === null || context === null || this.#startupPcbConsumed ||

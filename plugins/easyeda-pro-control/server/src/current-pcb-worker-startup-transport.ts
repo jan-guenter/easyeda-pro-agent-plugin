@@ -7,8 +7,9 @@ import { createHash } from "node:crypto";
 import { types } from "node:util";
 import { z } from "zod";
 import { CURRENT_PCB_209_WORKER_STARTUP_SOURCE } from "./current-pcb-209-worker-startup-profile.ts";
-import { CURRENT_PCB_209_WORKER_BOOTSTRAP_ROLES, CURRENT_PCB_209_WORKER_PRELOAD_LOG, currentPcb209StartupScriptRole,
-  isCurrentPcb209BootstrapTargetUrl, qualifyCurrentPcb209StartupScriptSource } from "./current-pcb-209-worker-bootstrap-source.ts";
+import { CURRENT_PCB_209_WORKER_BOOTSTRAP_ROLES, CURRENT_PCB_209_WORKER_PRELOAD_LOG, currentPcb209PreloadCopyCaller,
+  currentPcb209StartupScriptRole, isCurrentPcb209BootstrapTargetUrl, qualifyCurrentPcb209PreloadCopyCreator,
+  qualifyCurrentPcb209PreloadCopyPause, qualifyCurrentPcb209StartupScriptSource } from "./current-pcb-209-worker-bootstrap-source.ts";
 import { captureCurrentPcbStringClockReply } from "./current-pcb-string-clock-reply.ts";
 import { CURRENT_PCB_DIAGNOSTIC_WORKER_SCRIPT } from "./current-pcb-diagnostic-worker-context.ts";
 import type { DiagnosticWorkerScriptProfile } from "./current-pcb-diagnostic-worker-context.ts";
@@ -59,7 +60,10 @@ type RejectedTarget = Readonly<{ targetId: string; sessionId: string; waitingFor
   urlSha256: string; urlBytes: number; urlRole: "bootstrap" | "preload" | "project" | "other";
   urlProtocol: string | null; urlHostname: string | null; urlPathname: string | null;
   urlQueryKeys: readonly string[]; titleSha256: string; titleMatchesExpected: boolean }>;
-type EventFailure = Readonly<{ method: EventMethod; reason: EventReason; target?: RejectedTarget }>;
+type RejectedScript = Readonly<{ scriptId: string; executionContextId: number; contextMatchesExpected: boolean;
+  expectedStage: StartupRole | null; urlSha256: string; urlBytes: number; urlRole: "bootstrap" | "preload" | "project" | "anonymous" | "other";
+  reportedScriptHash: string | null; creatorMatchesPreloadCopy: boolean; priorScriptId: boolean }>;
+type EventFailure = Readonly<{ method: EventMethod; reason: EventReason; target?: RejectedTarget; script?: RejectedScript }>;
 type StartupRole = typeof CURRENT_PCB_209_WORKER_BOOTSTRAP_ROLES[number];
 interface BootstrapStage {
   readonly role: StartupRole;
@@ -272,19 +276,23 @@ class CurrentPcbWorkerStartupTransportCore<Packet extends ConstructionPacket, Ru
     if (this.#released) { return; }
     let method: EventMethod = "unparsed";
     let rejectedTarget: RejectedTarget | null = null;
+    let rejectedScript: RejectedScript | null = null;
     try {
       const captured = captureCurrentPcbStringClockReply(input);
       this.#events += 1; this.#eventBytes += Buffer.byteLength(captured.text);
       if (this.#events > 4096 || this.#eventBytes > 8 * 1024 * 1024) { throw failure("EVENT_BUDGET"); }
       const event = z.object({ method: z.string().max(128), sessionId: sessionToken, params: z.record(z.string(), z.unknown()) }).strict().parse(captured.value);
       method = eventMethods.find(value => value === event.method) ?? "other";
-      this.#acceptEvent(event, worker => { rejectedTarget = this.#bootstrap209 ? this.#targetMetadata(worker) : null; });
+      this.#acceptEvent(event, worker => { rejectedTarget = this.#bootstrap209 ? this.#targetMetadata(worker) : null; },
+        script => { rejectedScript = this.#bootstrap209 ? this.#scriptMetadata(script) : null; });
     } catch (error) {
       this.#firstEventFailure ??= Object.freeze({ method, reason: eventReason(error),
-        ...(rejectedTarget === null ? {} : { target: rejectedTarget }) }); this.#poison("EVENT");
+        ...(rejectedTarget === null ? {} : { target: rejectedTarget }),
+        ...(rejectedScript === null ? {} : { script: rejectedScript }) }); this.#poison("EVENT");
     }
   };
-  #acceptEvent(event: CurrentPcbWorkerStartupEvent, retainTarget: (worker: Worker) => void): void {
+  #acceptEvent(event: CurrentPcbWorkerStartupEvent, retainTarget: (worker: Worker) => void,
+    retainScript: (script: z.infer<typeof scriptSchema>) => void): void {
     if (event.sessionId === this.#parentSession && event.method === "Target.attachedToTarget") {
       const params = z.object({ sessionId: sessionToken, targetInfo: targetSchema, waitingForDebugger: z.boolean() }).strict().parse(event.params);
       if (params.sessionId === this.#parentSession || params.targetInfo.targetId === this.#parentTarget ||
@@ -330,6 +338,7 @@ class CurrentPcbWorkerStartupTransportCore<Packet extends ConstructionPacket, Ru
     }
     if (event.method === "Debugger.scriptParsed") {
       const script = scriptSchema.parse(event.params);
+      retainScript(script);
       // Fixed callFunctionOn programs can produce anonymous parsed scripts.
       // They cannot replace the admitted bootstrap or introduce another world.
       if (this.#sourceQualified && script.url === "" && script.executionContextId === this.#context?.id) { return; }
@@ -395,6 +404,24 @@ class CurrentPcbWorkerStartupTransportCore<Packet extends ConstructionPacket, Ru
   #targetUrl(value: string): boolean {
     return this.#bootstrap209 ? isCurrentPcb209BootstrapTargetUrl(value) : this.#sourceUrl(value);
   }
+  #scriptMetadata(script: z.infer<typeof scriptSchema>): RejectedScript {
+    const preload = this.#bootstrapStages[1], reportedHash: unknown = script["hash"];
+    let creatorMatchesPreloadCopy = false;
+    if (preload?.script !== null && preload?.script !== undefined) {
+      try { qualifyCurrentPcb209PreloadCopyCreator(preload.script.scriptId, script); creatorMatchesPreloadCopy = true; } catch {
+        // Only a classification survives. Raw caller names, URLs and source stay private.
+      }
+    }
+    return Object.freeze({ scriptId: script.scriptId, executionContextId: script.executionContextId,
+      contextMatchesExpected: script.executionContextId === this.#context?.id,
+      expectedStage: this.#bootstrapStages[this.#bootstrapIndex]?.role ?? null,
+      urlSha256: createHash("sha256").update(script.url).digest("hex"), urlBytes: Buffer.byteLength(script.url),
+      urlRole: script.url === "" ? "anonymous" : currentPcb209StartupScriptRole(script.url) ?? "other",
+      // V8 hashes UTF-16 script units. Retain the reported token only; source
+      // Qualification separately hashes the complete UTF-8 getScriptSource text.
+      reportedScriptHash: typeof reportedHash === "string" && /^[a-f\d]{64}$/iu.test(reportedHash) ? reportedHash : null,
+      creatorMatchesPreloadCopy, priorScriptId: this.#bootstrapStages.some(stage => stage.script?.scriptId === script.scriptId) });
+  }
   #releaseRejectedWorker(worker: Worker): void {
     // Preserve the refusal and its target metadata before cleanup can deliver
     // Synchronous nested events. The original waiting attempt remains consumed.
@@ -406,7 +433,14 @@ class CurrentPcbWorkerStartupTransportCore<Packet extends ConstructionPacket, Ru
   #bootstrapScript(script: z.infer<typeof scriptSchema>): void {
     const stage = this.#bootstrapStages[this.#bootstrapIndex], worker = this.#worker;
     if (stage === undefined || worker === null || stage.script !== null || script.executionContextId !== this.#context?.id ||
-        currentPcb209StartupScriptRole(script.url) !== stage.role || stage.role === "bootstrap" && script.url !== worker.target.url) {
+        this.#bootstrapStages.some(value => value.script?.scriptId === script.scriptId)) {
+      throw failure("SCRIPT");
+    }
+    if (currentPcb209PreloadCopyCaller(stage.role) !== null) {
+      const preload = this.#bootstrapStages[1];
+      if (preload?.script === null || preload?.script === undefined || !preload.sourceQualified || !preload.resumeSeen) { throw failure("SCRIPT"); }
+      try { qualifyCurrentPcb209PreloadCopyCreator(preload.script.scriptId, script); } catch { throw failure("SCRIPT"); }
+    } else if (currentPcb209StartupScriptRole(script.url) !== stage.role || stage.role === "bootstrap" && script.url !== worker.target.url) {
       throw failure("SCRIPT");
     }
     stage.script = script;
@@ -428,7 +462,9 @@ class CurrentPcbWorkerStartupTransportCore<Packet extends ConstructionPacket, Ru
   }
   #preloadLog(params: Readonly<Record<string, unknown>>): void {
     const profile = CURRENT_PCB_209_WORKER_PRELOAD_LOG, stage = this.#bootstrapStages[1];
-    if (this.#preloadLogSeen || stage?.role !== "preload" || !stage.sourceQualified || stage.resume === null || stage.script === null) {
+    if (this.#failure !== null || this.#preloadLogSeen || stage?.role !== "preload" || !stage.sourceQualified || stage.resume === null || stage.script === null ||
+        this.#bootstrapStages[this.#bootstrapIndex]?.role !== "project" ||
+        this.#bootstrapStages.some(value => currentPcb209PreloadCopyCaller(value.role) !== null && (!value.sourceQualified || !value.resumeSeen))) {
       throw failure("UNEXPECTED_EVENT");
     }
     const log = preloadLogSchema.parse(params);
@@ -559,6 +595,11 @@ class CurrentPcbWorkerStartupTransportCore<Packet extends ConstructionPacket, Ru
           paused.callFrames[0]?.location.scriptId !== script.scriptId ||
           paused.hitBreakpoints.length === 1 && paused.hitBreakpoints[0] !== this.#instrumentation) {
         throw failure("INITIAL_PAUSE_IDENTITY");
+      }
+      if (currentPcb209PreloadCopyCaller(stage.role) !== null) {
+        const preload = this.#bootstrapStages[1]?.script;
+        if (preload === null || preload === undefined) { throw failure("INITIAL_PAUSE_IDENTITY"); }
+        qualifyCurrentPcb209PreloadCopyPause(stage.role, script.scriptId, preload.scriptId, paused);
       }
       await this.#current();
       if (this.#requests >= 224) { this.#poison("REQUEST_BUDGET"); throw failure("REQUEST_BUDGET"); }

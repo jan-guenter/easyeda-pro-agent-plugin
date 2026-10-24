@@ -6,9 +6,11 @@ import { readFile } from "node:fs/promises";
 import { createRequire } from "node:module";
 import { runInThisContext } from "node:vm";
 import { transform } from "esbuild";
-import { CURRENT_PCB_209_PROJECT_WORKER_URL, CURRENT_PCB_209_WORKER_BOOTSTRAP_ROLES, CURRENT_PCB_209_WORKER_BOOTSTRAP_SOURCES,
+import { CURRENT_PCB_209_PRELOAD_COPY_SOURCE, CURRENT_PCB_209_PROJECT_WORKER_URL, CURRENT_PCB_209_WORKER_BOOTSTRAP_ROLES, CURRENT_PCB_209_WORKER_BOOTSTRAP_SOURCES,
   CURRENT_PCB_209_WORKER_PRELOAD_LOG, CURRENT_PCB_209_WORKER_PRELOAD_URL,
-  currentPcb209StartupScriptRole, isCurrentPcb209BootstrapTargetUrl, qualifyCurrentPcb209StartupScriptSource } from "../../src/current-pcb-209-worker-bootstrap-source.ts";
+  currentPcb209PreloadCopyCaller, currentPcb209StartupScriptRole, isCurrentPcb209BootstrapTargetUrl,
+  qualifyCurrentPcb209PreloadCopyCreator, qualifyCurrentPcb209PreloadCopyPause, qualifyCurrentPcb209StartupScriptSource } from "../../src/current-pcb-209-worker-bootstrap-source.ts";
+import type { CurrentPcb209StartupScriptRole } from "../../src/current-pcb-209-worker-bootstrap-source.ts";
 import type { CurrentPcbWorkerStartupCommand, CurrentPcbWorkerStartupDependency, CurrentPcbWorkerStartupEvent } from "../../src/current-pcb-worker-startup-contract.ts";
 import type { CurrentPcbWorkerConstructionTransport } from "../../src/current-pcb-worker-construction-contract.ts";
 import type { CurrentPcb209WorkerStartupTransport } from "../../src/current-pcb-worker-startup-transport.ts";
@@ -17,13 +19,14 @@ export const BOOTSTRAP_IDENTITY = Object.freeze({ projectUuid: "a".repeat(64), b
 export const BOOTSTRAP_URL = "https://client/editor?entry=mgr-project-worker.js&cll=warn&debugOpen=0";
 const bootstrap = Object.freeze({ CURRENT_PCB_209_WORKER_BOOTSTRAP_ROLES, CURRENT_PCB_209_WORKER_BOOTSTRAP_SOURCES,
   CURRENT_PCB_209_WORKER_PRELOAD_LOG, CURRENT_PCB_209_WORKER_PRELOAD_URL, CURRENT_PCB_209_PROJECT_WORKER_URL,
-  currentPcb209StartupScriptRole, isCurrentPcb209BootstrapTargetUrl, qualifyCurrentPcb209StartupScriptSource });
-const urls = [BOOTSTRAP_URL, bootstrap.CURRENT_PCB_209_WORKER_PRELOAD_URL, bootstrap.CURRENT_PCB_209_PROJECT_WORKER_URL] as const;
+  currentPcb209PreloadCopyCaller, currentPcb209StartupScriptRole, isCurrentPcb209BootstrapTargetUrl,
+  qualifyCurrentPcb209PreloadCopyCreator, qualifyCurrentPcb209PreloadCopyPause, qualifyCurrentPcb209StartupScriptSource });
+const urls = [BOOTSTRAP_URL, bootstrap.CURRENT_PCB_209_WORKER_PRELOAD_URL, "", "", "", "", bootstrap.CURRENT_PCB_209_PROJECT_WORKER_URL] as const;
 const path = new URL("../../src/current-pcb-worker-startup-transport.ts", import.meta.url);
 const actualRequire = createRequire(path);
 export interface BootstrapFixtureOptions {
-  readonly badSource?: "bootstrap" | "preload" | "project";
-  readonly ownerLossAt?: "bootstrap" | "preload" | "project";
+  readonly badSource?: CurrentPcb209StartupScriptRole;
+  readonly ownerLossAt?: CurrentPcb209StartupScriptRole;
   readonly loseResumeReply?: number;
   readonly lateSource?: boolean;
   readonly targetUrl?: string;
@@ -50,7 +53,7 @@ export async function bootstrapLifecycleFixture(options: BootstrapFixtureOptions
     readonly #transport: CurrentPcbWorkerConstructionTransport;
     public constructor(transport: CurrentPcbWorkerConstructionTransport) { this.#transport = transport; constructions += 1; }
     public capture(): Promise<Readonly<{ synthetic: true }>> {
-      assert.deepEqual(qualified, ["bootstrap", "preload", "project"]);
+      assert.deepEqual(qualified, ["bootstrap", "preload", "preload-copy-1", "preload-copy-2", "preload-copy-3", "preload-copy-4", "project"]);
       assert.equal(this.#transport.scriptId, "project-script"); return capture.promise;
     }
     public whenArmed(): Promise<void> { return this.#transport.assertOriginalPinnedWorker(); }
@@ -80,10 +83,17 @@ export async function bootstrapLifecycleFixture(options: BootstrapFixtureOptions
   const script = (): void => {
     const role = bootstrap.CURRENT_PCB_209_WORKER_BOOTSTRAP_ROLES[roleIndex], url = urls[roleIndex];
     if (role === undefined || url === undefined) { return; }
-    const scriptId = `${role}-script`;
-    emit("Debugger.scriptParsed", { scriptId, url, executionContextId: 7, hasSourceURL: false, isLiveEdit: false, scriptLanguage: "JavaScript" });
+    const caller = bootstrap.currentPcb209PreloadCopyCaller(role), scriptId = `${role}-script`;
+    const creator = CURRENT_PCB_209_PRELOAD_COPY_SOURCE.creator;
+    const stack = caller === null ? {} : { stackTrace: { callFrames: [{ ...creator, scriptId: "preload-script", url: bootstrap.CURRENT_PCB_209_WORKER_PRELOAD_URL }] } };
+    const frames = caller === null ? [{ location: { scriptId } }] : [
+      { functionName: "", location: { scriptId, lineNumber: 0, columnNumber: 0 } },
+      { functionName: creator.functionName, location: { scriptId: "preload-script", lineNumber: creator.lineNumber, columnNumber: creator.columnNumber } },
+      { functionName: "", location: { scriptId: "preload-script", lineNumber: caller.lineNumber, columnNumber: caller.columnNumber } },
+    ];
+    emit("Debugger.scriptParsed", { scriptId, url, executionContextId: 7, hasSourceURL: false, isLiveEdit: false, scriptLanguage: "JavaScript", ...stack });
     if (instrumented) { emit("Debugger.paused", { reason: "instrumentation", data: { scriptId, url }, hitBreakpoints: [],
-      callFrames: [{ location: { scriptId } }] }); }
+      callFrames: frames }); }
   };
   const log = (): void => {
     const value = bootstrap.CURRENT_PCB_209_WORKER_PRELOAD_LOG;
@@ -120,8 +130,8 @@ export async function bootstrapLifecycleFixture(options: BootstrapFixtureOptions
         case "Debugger.removeBreakpoint": { instrumented = false; break; }
         case "Debugger.resume": {
           const resumedRole = roleIndex; emit("Debugger.resumed", {}); roleIndex += 1;
-          if (resumedRole === 1 && qualified.includes("preload")) { log(); if (options.duplicateLog === true) { log(); } }
-          if (roleIndex === 3) { capture.resolve(packet); } else { script(); }
+          if (resumedRole === 5 && qualified.includes("preload")) { log(); if (options.duplicateLog === true) { log(); } }
+          if (roleIndex === 7) { capture.resolve(packet); } else { script(); }
           if (options.loseResumeReply === resumedRole) { return Promise.reject(new Error("LOST_RESUME_REPLY")); } break;
         }
         case "DOM.describeNode": case "DOM.getFrameOwner": case "Debugger.evaluateOnCallFrame":

@@ -15,15 +15,18 @@ import { CurrentPcb209WorkerStartupOpening } from "./current-pcb-209-worker-star
 import type { CurrentPcb209WorkerStartupOpeningResult } from "./current-pcb-209-worker-startup-opening.ts";
 // oxlint-disable-next-line import/max-dependencies -- This session joins the existing original owner, context, strict opener and their immutable packet without granting any new dispatch family.
 import { freezeDeep } from "./sqlite-inventory-core.ts";
+import { readerCompletion } from "./sqlite-inventory.ts";
+import type { readExactSqlInventory } from "./sqlite-inventory.ts";
 
+type Inventory = Awaited<ReturnType<typeof readExactSqlInventory>>;
 type Row = Record<string, unknown>;
 type ModelContext = ReturnType<CurrentPcbDiagnosticContext["modelContext"]>;
 type Phase = "ready" | "preflight" | "checkpoint" | "opening" | "source" | "identity" | "completed" | "failed";
 /** Twenty fixed commands, at most two original identity checks per command,
- * plus initial/checkpoint/final checks. The three-script209 startup maximum178,
- * owner factory proof and this session therefore use at most243 of256 requests.
- * Later consumer proofs spend the remaining budget. No common reader fits
- * this contract; a later combined launch purpose needs its own fixed budget. */
+ * plus initial/checkpoint/final checks. Startup's source bound186, one factory
+ * proof and this session total251, which exceeds the224 normal-work reservation
+ * within the256 native ceiling. This arithmetic grants no native admission.
+ * A combined launch purpose needs its own complete bound before activation. */
 export const CURRENT_PCB_209_WORKER_STARTUP_PCB_COMMAND_LIMIT = 20;
 export const CURRENT_PCB_209_WORKER_STARTUP_PCB_TOTAL_REQUEST_LIMIT = 64;
 const contextKeys = Object.getOwnPropertyNames(CurrentPcbDiagnosticContext.prototype).filter(key => key !== "constructor");
@@ -83,6 +86,12 @@ export interface CurrentPcb209WorkerStartupPcbPacket {
   readonly executionAuthorized: false;
   readonly saveAuthorized: false;
 }
+export interface CurrentPcb209WorkerStartupPcbDependency {
+  readonly model: ModelContext;
+  /** Original completed reader returned by the retained preparation callback.
+   * Its enclosing lifecycle must bind it to the original managed checkpoint. */
+  readonly before: Inventory;
+}
 
 export class CurrentPcb209WorkerStartupPcbSession {
   readonly #opening: CurrentPcb209WorkerStartupOpening;
@@ -91,7 +100,9 @@ export class CurrentPcb209WorkerStartupPcbSession {
   readonly #request: CurrentPcbWorkerStartupDependency["request"];
   readonly #context: CurrentPcbDiagnosticContext;
   readonly #target: CurrentDisposableOpenSealedTarget;
-  readonly #reverify: () => Promise<void>;
+  readonly #reverify: () => Promise<Inventory>;
+  #before: Inventory | null = null;
+  #completion: ReturnType<typeof readerCompletion> | null = null;
   #phase: Phase = "ready";
   #transitionStarted = false;
   #commands = 0;
@@ -101,7 +112,7 @@ export class CurrentPcb209WorkerStartupPcbSession {
 
   public constructor(opening: CurrentPcb209WorkerStartupOpening, result: CurrentPcb209WorkerStartupOpeningResult,
     dependency: CurrentPcbWorkerStartupDependency, context: CurrentPcbDiagnosticContext,
-    target: CurrentDisposableOpenSealedTarget, reverifyCheckpoint: () => Promise<void>) {
+    target: CurrentDisposableOpenSealedTarget, reverifyCheckpoint: () => Promise<Inventory>) {
     need(!types.isProxy(opening) && Object.getPrototypeOf(opening) === CurrentPcb209WorkerStartupOpening.prototype &&
       !types.isProxy(context) && Object.getPrototypeOf(context) === CurrentPcbDiagnosticContext.prototype &&
       typeof reverifyCheckpoint === "function", "original classes and checkpoint callback required");
@@ -124,6 +135,7 @@ export class CurrentPcb209WorkerStartupPcbSession {
     need(this.#phase !== "failed" && Object.getPrototypeOf(this.#context) === CurrentPcbDiagnosticContext.prototype &&
       Object.getPrototypeOf(this.#opening) === CurrentPcb209WorkerStartupOpening.prototype &&
       this.#dependency.request === this.#request && Object.isFrozen(this.#dependency) && !types.isProxy(this.#dependency), "original lifetime changed");
+    need(this.#before === null || readerCompletion(this.#before) === this.#completion, "original SQL reader changed");
     for (const key of contextKeys) {
       need(!Object.hasOwn(this.#context, key) &&
         Object.getOwnPropertyDescriptor(CurrentPcbDiagnosticContext.prototype, key)?.value === originalContext[key], "original context method changed");
@@ -177,7 +189,10 @@ export class CurrentPcb209WorkerStartupPcbSession {
     need(this.#phase === "ready", "attempt consumed"); this.#phase = "preflight";
     try {
       await this.#current(); this.#observeParent(await this.#parent()); await this.#call("preflight");
-      this.#phase = "checkpoint"; await this.#current(); await this.#reverify(); await this.#current();
+      this.#phase = "checkpoint"; await this.#current();
+      const before = await this.#reverify(), completion = readerCompletion(before);
+      need(completion.observedChildClose && completion.exitCode === 0 && completion.exitSignal === null, "original completed SQL reader required");
+      await this.#current(); this.#before = before; this.#completion = completion;
       this.#observeParent(await this.#parent()); await this.#ancillary();
       this.#context.beginPcbOpeningTransition(this.#target.projectUuid, this.#target.documentUuid);
       this.#transitionStarted = true; this.#phase = "opening"; await this.#call("open-document");
@@ -209,5 +224,26 @@ export class CurrentPcb209WorkerStartupPcbSession {
     try {
       await this.#current(); need(canonicalJson(this.#context.modelContext()) === canonicalJson(this.#model), "original PCB context changed"); return this.#model;
     } catch (error) { this.#phase = "failed"; throw error; }
+  }
+  /** Read-only private continuations retain this exact dependency. Matching
+   * model tuples or request functions cannot replace the original channel. */
+  public assertOriginalDependencyCurrent(packet: CurrentPcb209WorkerStartupPcbPacket,
+    dependency: CurrentPcbWorkerStartupDependency): CurrentPcb209WorkerStartupPcbDependency {
+    return this.#originalDependency(packet, dependency);
+  }
+  #originalDependency(packet: CurrentPcb209WorkerStartupPcbPacket,
+    dependency: CurrentPcbWorkerStartupDependency): CurrentPcb209WorkerStartupPcbDependency {
+    need(this.#phase === "completed" && packet === this.#packet && this.#model !== null && this.#before !== null &&
+      dependency === this.#dependency, "original completed dependency required");
+    try {
+      this.#same(); need(canonicalJson(this.#context.modelContext()) === canonicalJson(this.#model), "original PCB context changed");
+      return Object.freeze({ model: this.#model, before: this.#before });
+    } catch (error) { this.#phase = "failed"; throw error; }
+  }
+  public async requireOriginalDependency(packet: CurrentPcb209WorkerStartupPcbPacket,
+    dependency: CurrentPcbWorkerStartupDependency): Promise<CurrentPcb209WorkerStartupPcbDependency> {
+    this.#originalDependency(packet, dependency);
+    try { await this.#current(); return this.#originalDependency(packet, dependency); }
+    catch (error) { this.#phase = "failed"; throw error; }
   }
 }
