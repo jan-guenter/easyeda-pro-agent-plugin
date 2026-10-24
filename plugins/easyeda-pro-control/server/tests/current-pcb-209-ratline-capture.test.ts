@@ -5,6 +5,10 @@ import { CURRENT_PCB_209_RATLINE_CAPTURE_PROFILES, inspectCurrentPcb209RatlineCa
 import { ratlineCaptureFixtureSource } from "./helpers/current-pcb-209-ratline-capture-fixture.ts";
 import { ratlineCaptureInspector } from "./helpers/current-pcb-209-ratline-capture-inspector.ts";
 
+void test("fixed209 inert capture fixture reports child exit before inspector address instead of waiting indefinitely", async context => {
+  await assert.rejects(ratlineCaptureInspector(context, "pcb", 0, false, true), /RATLINE_FIXTURE_CHILD_EXIT/u);
+});
+
 for (const role of ["pcb", "worker"] as const) {
   void test(`fixed209 ${role} captures actual synthetic V8 factory, result and terminal return pauses`, async context => {
     const fixture = await ratlineCaptureInspector(context, role);

@@ -84,3 +84,43 @@ normalized to the committed0644 modes before publication, without changing
 bytes. Complete facade/bridge and Windows native suites will run against the
 exact final GitHub commit. Publication and installation remain separate from
 these local results.
+
+## Initial CI result: publication held
+
+Candidate commit `99d29dae795aa66e1573c51788945580d9542457` was pushed in
+[PR117](https://github.com/jan-guenter/easyeda-pro-agent-plugin/pull/117).
+The build/bridge check, Windows recovery job and seven facade shards passed.
+Bridge tests reported424 passes. Facade shard4 was cancelled at its30minute
+job limit, so the aggregate check failed and this candidate was not published
+or installed. The failed run is
+[CI40115355941](https://github.com/jan-guenter/easyeda-pro-agent-plugin/actions/runs/40115355941).
+
+The shard's final test result was the last opening-schema case at17:25:02UTC;
+the log then remained silent until cancellation at17:46:34UTC. Its next selected
+file was `current-pcb-209-ratline-capture.test.ts`, an inert V8 test. This is a
+hang investigation, not evidence that the overall suite needs a larger timeout.
+Raw logs and the original failure are retained privately. No workflow rerun,
+merge, installation or further EasyEDA action had occurred at this observation.
+
+## CI fixture correction
+
+The eight original capture cases passed locally in10.1seconds. The exact await
+that stalled in CI remains unidentified. Review found unbounded waits for the
+fixture's inspector address, socket opening, command replies and child exit,
+with no rejection of pending requests on child or socket loss. These files
+were unchanged from the preceding main commit.
+
+The test helper now bounds those waits, rejects pending work on transport loss,
+and observes closure of its own synthetic Node child. One added regression uses
+a child that exits before advertising an inspector and requires prompt rejection;
+the old helper would wait indefinitely. Original capture assertions and production
+timeouts remain unchanged. This correction changes test infrastructure and this
+record only; the frozen production source, runtime bundles and compatibility
+projections above remain unchanged. Final checks and replacement CI are pending.
+
+Final focused verification passed nine cases in10.13seconds; full TypeScript
+checking and targeted strict type-aware lint passed. The initial correction's
+test run exposed that the WebSocket callback supplies null on success. That
+failure was retained, the callback check was corrected, and the final nine-case
+run passed. Root and independent review accepted the bounded fixture cleanup.
+The preceding CI cancellation remains a failure; new exact-commit CI is required.
