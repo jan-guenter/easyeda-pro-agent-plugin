@@ -4,6 +4,7 @@ import { z } from "zod";
 import { CurrentPcb209RatlinePcbStartup, CurrentPcb209RatlineWorkerStartup } from "../src/current-pcb-209-ratline-startup-session.ts";
 import type { CurrentPcb209RatlineStartupDependency } from "../src/current-pcb-209-ratline-startup-session.ts";
 import { CURRENT_PCB_209_RATLINE_CREATION_PROFILES } from "../src/current-pcb-209-ratline-creation-profile.ts";
+import { currentPcb209RatlineNativeWire } from "../src/current-pcb-209-ratline-native-wire.ts";
 import { ratlineCaptureInspector } from "./helpers/current-pcb-209-ratline-capture-inspector.ts";
 
 for (const [role, synchronousResume] of [["pcb", false], ["worker", false], ["pcb", true]] as const) {
@@ -13,6 +14,7 @@ for (const [role, synchronousResume] of [["pcb", false], ["worker", false], ["pc
     const child = { targetId: "child", type: "worker", title: "pcb-ratline-worker", attached: true,
       url: `https://client/editor?entry=pcb-ratline-worker.js${role === "pcb" ? "&cll=0" : ""}` };
     let armedChild = false, childStarts = 0, constructed = false, sourceStarts = 0;
+    let originalRequestId = 301;
     const running: Promise<unknown>[] = [];
     let resumeCallback: (() => void) | null = null, syntheticResumes = 0;
     const frame = z.looseObject({ location: z.looseObject({ lineNumber: z.number(), columnNumber: z.number() }) });
@@ -36,7 +38,10 @@ for (const [role, synchronousResume] of [["pcb", false], ["worker", false], ["pc
           }, resumed: (): void => { if (syntheticResumes > 0) { syntheticResumes -= 1; } else { events.resumed(); } }, lost: events.lost,
           });
         },
-        request: command => {
+        request: input => {
+          // Actual V8 runner commands pass the finite dormant native grammar;
+          // Target attachments and child starts remain synthetic in this test.
+          const command = currentPcb209RatlineNativeWire(role, input, originalRequestId).command; originalRequestId += 1;
           if (command.method === "Target.getTargets") { return Promise.resolve({ targetInfos: constructed ? [parent, child] : [parent] }); }
           if (command.method === "Runtime.runIfWaitingForDebugger") {
             assert.equal(command.sessionId, "child-session"); assert.ok(armedChild); childStarts += 1; return Promise.resolve({});

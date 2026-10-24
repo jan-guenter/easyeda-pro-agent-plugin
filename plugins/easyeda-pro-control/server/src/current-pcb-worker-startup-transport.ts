@@ -50,7 +50,7 @@ type Worker = Readonly<{ sessionId: string; target: z.infer<typeof targetSchema>
 type ExistingWorker = Readonly<{ targetId: string; title: string; url: string }>;
 const eventMethods = ["Target.attachedToTarget", "Target.detachedFromTarget", "Target.targetDestroyed", "Target.targetInfoChanged",
   "Runtime.executionContextCreated", "Runtime.executionContextDestroyed", "Runtime.executionContextsCleared", "Runtime.exceptionThrown",
-  "Runtime.consoleAPICalled", "Debugger.scriptParsed", "Debugger.paused", "Debugger.resumed"] as const;
+  "Runtime.consoleAPICalled", "Debugger.scriptParsed", "Debugger.paused", "Debugger.resumed", "Inspector.workerScriptLoaded"] as const;
 // Diagnostic labels only. These events remain refused by the original owner.
 const unsupportedEventMethods = ["Debugger.breakpointResolved", "Debugger.scriptFailedToParse", "Runtime.exceptionRevoked",
   "Runtime.inspectRequested", "Runtime.bindingCalled"] as const;
@@ -169,6 +169,7 @@ class CurrentPcbWorkerStartupTransportCore<Packet extends ConstructionPacket, Ru
   #started = false;
   #settled = false;
   #sourceQualified = false;
+  #workerScriptLoadedObserved = false;
   #released = false;
   #events = 0;
   #eventBytes = 0;
@@ -198,7 +199,8 @@ class CurrentPcbWorkerStartupTransportCore<Packet extends ConstructionPacket, Ru
     unresolvedInstrumentation: boolean; attachedWorkers: number; released: boolean;
     existingWorkersBound: boolean; existingWorkersObserved: number; existingWorkersAttached: number; firstEventFailure: EventFailure | null;
     bootstrapStages: readonly Readonly<{ role: StartupRole; parsed: boolean; pauseSeen: boolean;
-      sourceQualified: boolean; resumeAttempted: boolean; resumeSeen: boolean }>[]; preloadLogSeen: boolean; requests: number }> {
+      sourceQualified: boolean; resumeAttempted: boolean; resumeSeen: boolean }>[]; preloadLogSeen: boolean;
+    workerScriptLoadedObserved: boolean; requests: number }> {
     return Object.freeze({ started: this.#started, settled: this.#settled, failed: this.#failure !== null,
       sourceQualified: this.#sourceQualified, initialPauseSeen: this.#initialPauseSeen,
       initialResumeAttempted: this.#initialResume !== null || this.#bootstrapStages.some(stage => stage.resume !== null), initialResumeSeen: this.#initialResumeSeen,
@@ -206,6 +208,7 @@ class CurrentPcbWorkerStartupTransportCore<Packet extends ConstructionPacket, Ru
       attachedWorkers: this.#workers.size, released: this.#released, existingWorkersBound: this.#existingWorkers !== null,
       existingWorkersObserved: this.#existingWorkers?.size ?? 0, existingWorkersAttached: this.#backgroundWorkers.size,
       firstEventFailure: this.#firstEventFailure, requests: this.#requests, preloadLogSeen: this.#preloadLogSeen,
+      workerScriptLoadedObserved: this.#workerScriptLoadedObserved,
       bootstrapStages: Object.freeze(this.#bootstrapStages.map(stage => Object.freeze({ role: stage.role,
         parsed: stage.script !== null, pauseSeen: stage.pauseSeen, sourceQualified: stage.sourceQualified,
         resumeAttempted: stage.resume !== null, resumeSeen: stage.resumeSeen }))) });
@@ -360,6 +363,19 @@ class CurrentPcbWorkerStartupTransportCore<Packet extends ConstructionPacket, Ru
     }
     const worker = this.#worker;
     if (worker === null || event.sessionId !== worker.sessionId) { throw failure("EVENT_SESSION"); }
+    if (event.method === "Inspector.workerScriptLoaded") {
+      empty.parse(event.params);
+      // Chromium146 emits this once after top-level evaluation returns, even
+      // When evaluation failed. It grants no constructor or callback completion.
+      // Only the original209 worker whose seven stages resumed can report it.
+      if (!this.#bootstrap209 || this.#failure !== null || this.#workerScriptLoadedObserved || !this.#sourceQualified ||
+          !this.#initialResumeSeen || !this.#preloadLogSeen || this.#bootstrapIndex !== this.#bootstrapStages.length ||
+          this.#runner === null || this.#constructionCapture === null || this.#subscriber === null ||
+          this.#bootstrapStages.some(stage => !stage.sourceQualified || stage.resume === null || !stage.resumeSeen)) {
+        throw failure("UNEXPECTED_EVENT");
+      }
+      this.#workerScriptLoadedObserved = true; return;
+    }
     if (event.method === "Runtime.executionContextCreated") {
       const context = z.object({ context: contextSchema }).strict().parse(event.params).context;
       if (this.#context !== null || context.origin !== worker.target.url || context.name !== worker.target.title) { throw failure("CONTEXT"); }

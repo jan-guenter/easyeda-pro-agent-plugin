@@ -83,6 +83,13 @@ operation prefixes. A successful source comparison proves only the observed
 bytes. A constructor packet remains tied to its original in-memory owner;
 matching JSON and historical receipts cannot recreate it.
 
+The `workerScriptLoadedObserved` diagnostic records one parameterless Chromium
+notification after the original worker completed all seven source resumes.
+Chromium emits it even after failed top-level evaluation. It proves neither
+constructor capture nor callback, startup or persistence completion. Continue
+only from a successful published constructor packet, never from this flag.
+Early, duplicate, malformed and foreign notifications still cause refusal.
+
 Current assignment and channel observations are sequential samples. They do
 not prove continuous wrapper ownership, native BroadcastChannel peers,
 contained publication destinations or queue completion. The actor stage's

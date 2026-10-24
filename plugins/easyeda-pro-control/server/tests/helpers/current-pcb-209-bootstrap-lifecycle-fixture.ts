@@ -1,11 +1,12 @@
-/** Actual transport module in the current realm with two import substitutions:
- * synthetic source replies and a construction observer. Production has no such
- * seam. This tests event/cleanup ownership, not vendor source admission. */
+/** Actual transport module with synthetic source replies. By default the
+ * construction observer is synthetic too; the optional inert inspector uses
+ * the actual construction runner. Production exposes neither test boundary. */
 import assert from "node:assert/strict";
 import { readFile } from "node:fs/promises";
 import { createRequire } from "node:module";
 import { runInThisContext } from "node:vm";
 import { transform } from "esbuild";
+import { z } from "zod";
 import { CURRENT_PCB_209_PRELOAD_COPY_SOURCE, CURRENT_PCB_209_PROJECT_WORKER_URL, CURRENT_PCB_209_WORKER_BOOTSTRAP_ROLES, CURRENT_PCB_209_WORKER_BOOTSTRAP_SOURCES,
   CURRENT_PCB_209_WORKER_PRELOAD_LOG, CURRENT_PCB_209_WORKER_PRELOAD_URL,
   currentPcb209PreloadCopyCaller, currentPcb209StartupScriptRole, isCurrentPcb209BootstrapTargetUrl,
@@ -32,13 +33,16 @@ export interface BootstrapFixtureOptions {
   readonly targetUrl?: string;
   readonly logContext?: number;
   readonly duplicateLog?: boolean;
+  readonly construction?: Readonly<{ transport: CurrentPcbWorkerConstructionTransport; run: () => Promise<unknown> }>;
+  readonly loadedEvent?: Readonly<{ role: CurrentPcb209StartupScriptRole; beforeResume?: boolean;
+    sessionId?: string; params?: Readonly<Record<string, unknown>>; repeat?: boolean }>;
 }
 export async function bootstrapLifecycleFixture(options: BootstrapFixtureOptions = {}): Promise<Readonly<{
   owner: CurrentPcb209WorkerStartupTransport;
   commands: CurrentPcbWorkerStartupCommand[];
   qualified: string[];
   constructed: () => number;
-  emit: (method: string, params: Readonly<Record<string, unknown>>) => void;
+  emit: (method: string, params: Readonly<Record<string, unknown>>, sessionId?: string) => void;
   settleLateSource: () => void;
   terminate: () => void;
 }>> {
@@ -72,7 +76,9 @@ export async function bootstrapLifecycleFixture(options: BootstrapFixtureOptions
         qualified.push(role); if (options.ownerLossAt === role) { current = false; }
       } };
     }
-    if (specifier === "./current-pcb-worker-construction-runner.ts") { return { CurrentPcb209WorkerConstructionRunner: Construction }; }
+    if (specifier === "./current-pcb-worker-construction-runner.ts" && options.construction === undefined) {
+      return { CurrentPcb209WorkerConstructionRunner: Construction };
+    }
     return actualRequire(specifier) as unknown;
   };
   Reflect.apply(evaluate, undefined, [load, loaded, loaded.exports]);
@@ -80,10 +86,22 @@ export async function bootstrapLifecycleFixture(options: BootstrapFixtureOptions
   const emit = (method: string, params: Readonly<Record<string, unknown>>, sessionId = "worker-session"): void => {
     listener?.({ method, sessionId, params });
   };
+  const stopConstructionEvents = options.construction?.transport.subscribe({
+    paused: raw => { emit("Debugger.paused", z.record(z.string(), z.unknown()).parse(raw)); },
+    resumed: () => { emit("Debugger.resumed", {}); },
+    lost: () => { current = false; },
+  });
+  const loadedEvent = (): void => {
+    const selected = options.loadedEvent;
+    if (selected === undefined) { return; }
+    emit("Inspector.workerScriptLoaded", selected.params ?? {}, selected.sessionId);
+    if (selected.repeat === true) { emit("Inspector.workerScriptLoaded", selected.params ?? {}, selected.sessionId); }
+  };
   const script = (): void => {
     const role = bootstrap.CURRENT_PCB_209_WORKER_BOOTSTRAP_ROLES[roleIndex], url = urls[roleIndex];
     if (role === undefined || url === undefined) { return; }
-    const caller = bootstrap.currentPcb209PreloadCopyCaller(role), scriptId = `${role}-script`;
+    const caller = bootstrap.currentPcb209PreloadCopyCaller(role);
+    const scriptId = role === "project" ? options.construction?.transport.scriptId ?? "project-script" : `${role}-script`;
     const creator = CURRENT_PCB_209_PRELOAD_COPY_SOURCE.creator;
     const stack = caller === null ? {} : { stackTrace: { callFrames: [{ ...creator, scriptId: "preload-script", url: bootstrap.CURRENT_PCB_209_WORKER_PRELOAD_URL }] } };
     const frames = caller === null ? [{ location: { scriptId } }] : [
@@ -104,7 +122,8 @@ export async function bootstrapLifecycleFixture(options: BootstrapFixtureOptions
   };
   const dependency: CurrentPcbWorkerStartupDependency = {
     parentTargetId: "parent", parentSessionId: "parent-session",
-    assertOriginalOwner: (): Promise<void> => current ? Promise.resolve() : Promise.reject(new Error("OWNER_LOST")),
+    assertOriginalOwner: (): Promise<void> => current
+      ? options.construction?.transport.assertOriginalPinnedWorker() ?? Promise.resolve() : Promise.reject(new Error("OWNER_LOST")),
     assertOriginalTermination: (): Promise<void> => { assert.ok(terminated); return Promise.resolve(); },
     subscribe: next => { listener = next; return (): void => { listener = null; }; },
     request: (command): Promise<unknown> => {
@@ -127,16 +146,41 @@ export async function bootstrapLifecycleFixture(options: BootstrapFixtureOptions
           const role = bootstrap.CURRENT_PCB_209_WORKER_BOOTSTRAP_ROLES[roleIndex];
           return Promise.resolve({ scriptSource: role === "bootstrap" ? bootstrap.CURRENT_PCB_209_WORKER_BOOTSTRAP_SOURCES[0] : `fixture:${String(role)}` });
         }
-        case "Debugger.removeBreakpoint": { instrumented = false; break; }
+        case "Debugger.removeBreakpoint": {
+          if (command.params.breakpointId !== "instrumentation" && options.construction !== undefined) {
+            return options.construction.transport.request(command);
+          }
+          instrumented = false; break;
+        }
         case "Debugger.resume": {
-          const resumedRole = roleIndex; emit("Debugger.resumed", {}); roleIndex += 1;
+          if (roleIndex >= 7 && options.construction !== undefined) { return options.construction.transport.request(command); }
+          const resumedRole = roleIndex;
+          const injectLoaded = options.loadedEvent?.role === bootstrap.CURRENT_PCB_209_WORKER_BOOTSTRAP_ROLES[resumedRole];
+          if (injectLoaded && options.loadedEvent?.beforeResume === true) { loadedEvent(); }
+          emit("Debugger.resumed", {}); roleIndex += 1;
+          if (injectLoaded && options.loadedEvent?.beforeResume !== true) { loadedEvent(); }
           if (resumedRole === 5 && qualified.includes("preload")) { log(); if (options.duplicateLog === true) { log(); } }
-          if (roleIndex === 7) { capture.resolve(packet); } else { script(); }
+          if (roleIndex === 7) {
+            if (options.construction === undefined) { capture.resolve(packet); }
+            else {
+              const construction = options.construction;
+              void (async (): Promise<void> => { try { await construction.run(); } catch { current = false; } })();
+            }
+          } else { script(); }
           if (options.loseResumeReply === resumedRole) { return Promise.reject(new Error("LOST_RESUME_REPLY")); } break;
         }
-        case "DOM.describeNode": case "DOM.getFrameOwner": case "Debugger.evaluateOnCallFrame":
-        case "Debugger.setBreakpoint": case "Page.getFrameTree": case "Runtime.callFunctionOn":
-        case "Runtime.getProperties": case "Runtime.releaseObjectGroup": case "Target.getTargets": {
+        case "Runtime.callFunctionOn": {
+          const params = command.params;
+          if (!("objectId" in params)) { throw new Error("Unexpected UI actor command in construction fixture"); }
+          if (options.construction !== undefined) { return options.construction.transport.request({ method: command.method, params }); }
+          throw new Error(`unexpected fixture command ${command.method}`);
+        }
+        case "Debugger.evaluateOnCallFrame": case "Debugger.setBreakpoint":
+        case "Runtime.getProperties": case "Runtime.releaseObjectGroup": {
+          if (options.construction !== undefined) { return options.construction.transport.request(command); }
+          throw new Error(`unexpected fixture command ${command.method}`);
+        }
+        case "DOM.describeNode": case "DOM.getFrameOwner": case "Page.getFrameTree": case "Target.getTargets": {
           throw new Error(`unexpected fixture command ${command.method}`);
         }
         default: { assert.fail("unrecognized fixture command"); }
@@ -149,7 +193,7 @@ export async function bootstrapLifecycleFixture(options: BootstrapFixtureOptions
   owner.bindExpectedProject(BOOTSTRAP_IDENTITY);
   owner.bindExistingWorkers({ targetInfos: [{ targetId: "parent", type: "page", attached: true, title: "fixture", url: "https://client/" }] });
   return Object.freeze({ owner, commands, qualified, constructed: (): number => constructions,
-    emit: (method, params): void => { emit(method, params); },
+    emit: (method, params, sessionId): void => { emit(method, params, sessionId); },
     settleLateSource: (): void => { lateSource.resolve({ scriptSource: bootstrap.CURRENT_PCB_209_WORKER_BOOTSTRAP_SOURCES[0] }); },
-    terminate: (): void => { terminated = true; } });
+    terminate: (): void => { terminated = true; stopConstructionEvents?.(); } });
 }

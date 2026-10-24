@@ -3,8 +3,8 @@
     "source-tree": {
       "version": "0.3.0",
       "operationSchema": "easyeda-pro-control.operation.v2",
-      "sha256": "8ec992e729db803acdbefa76b18b60cfcfe58171eb892e0c8cf178f3f062eb0e",
-      "fileCount": 678,
+      "sha256": "ad8ae80a91290c8993f75da3df7a32926d475c2cbe9c8b344d345250a70cf233",
+      "fileCount": 683,
       "files": [
         {
           "relativePath": "aged-symbol-witness.ts",
@@ -672,6 +672,16 @@
           "sha256": "360950d64cd0472a51934be30c569cdb01d5e0471a4f8f7567e69444fd431ff8"
         },
         {
+          "relativePath": "current-pcb-209-ratline-bootstrap-owner.ts",
+          "bytes": 29902,
+          "sha256": "2cdf21ce7a1cdf1e8da5786b037abaebe88373f5c3b93b56cdcfe3684536a828"
+        },
+        {
+          "relativePath": "current-pcb-209-ratline-bootstrap-profile.ts",
+          "bytes": 3511,
+          "sha256": "56c9671537bf116e608f3cc8750ffaa7d972dda5e16287f2d8cbb90fdff051aa"
+        },
+        {
           "relativePath": "current-pcb-209-ratline-capture-profile.ts",
           "bytes": 6675,
           "sha256": "e3daf49b6f257cf54bcc9ecc36dd3440d80ae9dabd087e7b8e1ae50a0704d09e"
@@ -705,6 +715,21 @@
           "relativePath": "current-pcb-209-ratline-model.ts",
           "bytes": 7706,
           "sha256": "4fdf9fe284d70c576a503697f2d3c29558812abe88a3bb71e8d5fad0aee04cf3"
+        },
+        {
+          "relativePath": "current-pcb-209-ratline-native-cases.ts",
+          "bytes": 5693,
+          "sha256": "c91f19d3734175c956fb54a49bf94d5a06edfef05185fb04d46c584dd2a92360"
+        },
+        {
+          "relativePath": "current-pcb-209-ratline-native-wire.ts",
+          "bytes": 4265,
+          "sha256": "8bb3425696c4e5176d432e88f5e7affdb03cce489eb59294ebf516fe6af617e0"
+        },
+        {
+          "relativePath": "current-pcb-209-ratline-native.ts",
+          "bytes": 8183,
+          "sha256": "3117ca17f6ca434b6c9bf009b2cc2a383d50b6a1fcd6c2c0600b998d34d4ec15"
         },
         {
           "relativePath": "current-pcb-209-ratline-source.ts",
@@ -1548,8 +1573,8 @@
         },
         {
           "relativePath": "current-pcb-worker-startup-transport.ts",
-          "bytes": 51813,
-          "sha256": "d698311ea744e5fc45d7f57ccfe341388ac76fd02169ae936df5dd813925c2c1"
+          "bytes": 52898,
+          "sha256": "89eca6859b76f599670e0b9dee502d8af18f008228f56bf340872a19652da0a7"
         },
         {
           "relativePath": "current-pcb-worker-startup-validation.ts",
@@ -3401,7 +3426,7 @@
     "bundle": {
       "version": "0.3.0",
       "operationSchema": "easyeda-pro-control.operation.v2",
-      "sha256": "8e99d74901f664598d4173db97649ad5c8a80afe4f65c4bc6bbcb798c47a3260",
+      "sha256": "0d340a221bd36aac7af1cc74fe63e53ab02a740af3365d55ab05f591cae9d622",
       "fileCount": 3,
       "files": [
         {
@@ -3411,19 +3436,19 @@
         },
         {
           "relativePath": "server.mjs",
-          "bytes": 11429246,
-          "sha256": "23aac33588c3d98633e7a9d491a8533227178ff01ba7813b735896f2ee6ae91d"
+          "bytes": 11430079,
+          "sha256": "ef2d0c47a44e0bc13994c6c70721a55e597e3560755b2583e966d68ef26b3ccb"
         },
         {
           "relativePath": "upstream-supervisor.mjs",
           "bytes": 1000587,
-          "sha256": "e3c55f4f6acd7343e9675153c55461a2c67237113eef674d4f4a83916c615e42"
+          "sha256": "87ff94aeacc03fdbdf4fab947bb3d6a2d7792d595f16d3dedc31ea4a0dae85c1"
         }
       ]
     }
   },
   "schema": "easyeda-pro-control.reviewed-compatibility.v1",
-  "reviewedAt": "2026-10-24T19:25:15.781Z",
+  "reviewedAt": "2026-10-24T22:14:21.752Z",
   "upstream": {
     "serverVersion": "1.0.0-rc.1",
     "launcher": {
