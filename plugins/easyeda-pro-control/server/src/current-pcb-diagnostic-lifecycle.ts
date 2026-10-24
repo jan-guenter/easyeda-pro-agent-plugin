@@ -10,7 +10,7 @@ import type { CurrentDisposableOpenSealedTarget } from "./current-disposable-ope
 import { prepareCurrentDisposableOpenCheckpoint, readCurrentPcbCommonOpenInventory, verifyCurrentDisposableOpenCheckpoint, verifyHistoricalCurrentDisposableOpenCheckpoint } from "./current-disposable-open-checkpoint.ts";
 import type { CurrentDisposableOpenCheckpoint } from "./current-disposable-open-checkpoint.ts";
 import { assertNoUnresolvedOrdinaryLaunches } from "./ordinary-launch.ts";
-import { startCurrentPcb209DiagnosticOwner, startCurrentPcbDiagnosticOwner, startCurrentPcbStringPrecreateOwner, startCurrentPcbWorkerStartupOwner } from "./current-pcb-diagnostic-owner.ts";
+import { startCurrentPcb209DiagnosticOwner, startCurrentPcb209WorkerStartupOwner, startCurrentPcbDiagnosticOwner, startCurrentPcbStringPrecreateOwner, startCurrentPcbWorkerStartupOwner } from "./current-pcb-diagnostic-owner.ts";
 import type { CurrentPcbDiagnosticOwner, CurrentPcbStringPrecreateOwner, CurrentPcbWorkerStartupHandoff, CurrentPcbWorkerStartupOwner } from "./current-pcb-diagnostic-owner.ts";
 import { verifyCurrentPcb209DiagnosticInstallation, verifyCurrentPcbDiagnosticInstallation } from "./current-pcb-diagnostic-installation.ts";
 import type { CurrentPcbDiagnosticInstallation, CurrentPcbDiagnosticInstallationOptions } from "./current-pcb-diagnostic-installation.ts";
@@ -42,12 +42,21 @@ import { readerCompletion } from "./sqlite-inventory.ts";
 import type { readExactSqlInventory } from "./sqlite-inventory.ts";
 import { CurrentPcbWorkerStartupOpening } from "./current-pcb-worker-startup-opening.ts";
 import type { CurrentPcbWorkerStartupOpeningResult } from "./current-pcb-worker-startup-opening.ts";
-import type { CurrentPcbWorkerStartupTransport } from "./current-pcb-worker-startup-transport.ts";
+import type { CurrentPcb209WorkerStartupTransport, CurrentPcbWorkerStartupTransport } from "./current-pcb-worker-startup-transport.ts";
 import type { CurrentPcbWorkerConstructionAssignments } from "./current-pcb-worker-construction-assignment.ts";
-import type { CurrentPcbWorkerStartupActorPacket } from "./current-pcb-worker-startup-actor-runner.ts";
+import { CurrentPcb209WorkerStartupOpening } from "./current-pcb-209-worker-startup-opening.ts";
+import type { CurrentPcb209WorkerStartupOpeningResult } from "./current-pcb-209-worker-startup-opening.ts";
+import { adaptCurrentPcb209WorkerStartupLifecycle, adaptCurrentPcbWorkerStartupLifecycle } from "./current-pcb-worker-startup-lifecycle-adapter.ts";
+import type { CurrentPcb209WorkerStartupOpeningCoordinator, CurrentPcbStartupActorPacket, CurrentPcbStartupLifecycleAdapter,
+  CurrentPcbStartupOpeningResult, CurrentPcbStartupTransport,
+  CurrentPcbWorkerStartupOpeningCoordinator } from "./current-pcb-worker-startup-lifecycle-adapter.ts";
+import { CURRENT_PCB_209_WORKER_STARTUP_OPERATION_PREFIX, currentPcb209WorkerStartupLifecycleIdSchema,
+  currentPcb209WorkerStartupLifecycleRequestSchema } from "./current-pcb-209-worker-startup-validation.ts";
 import type { CurrentPcbWorkerStartupChannelPacket } from "./current-pcb-worker-startup-channel-observation.ts";
 import { CURRENT_PCB_WORKER_STARTUP_OPERATION_PREFIX, currentPcbWorkerStartupCaptureRequestSchema,
   currentPcbWorkerStartupLifecycleIdSchema, currentPcbWorkerStartupLifecycleRequestSchema } from "./current-pcb-worker-startup-validation.ts";
+
+export type { CurrentPcbWorkerStartupOpeningCoordinator } from "./current-pcb-worker-startup-lifecycle-adapter.ts";
 
 type LifecycleRequest = Request | CurrentPcbStringPrecreateRequest | CurrentPcb209OpeningRequest;
 const startupStages = ["browser", "frames", "script"] as const;
@@ -60,7 +69,7 @@ const startupCaptureInputSchema = currentPcbWorkerStartupCaptureRequestSchema.om
 const startupOpeningMethods = ["open", "status", "retainedOpeningResult", "requireOriginal", "proveCurrentAssignments", "requireCurrentAssignments",
   "retainedActorObservation", "observeActorClock", "requireActorClock", "retainedChannelObservation", "observeCurrentChannel", "requireCurrentChannel",
   "releaseAfterTermination"] as const;
-export type CurrentPcbWorkerStartupOpeningCoordinator = Pick<CurrentPcbWorkerStartupOpening, (typeof startupOpeningMethods)[number]>;
+
 type CleanupRequest = Exclude<LifecycleRequest, { action: "launch" | "inspect" | "query-observation" | "settle-records" | "cleanup-unlaunched" | "cleanup-no-process" }>;
 type ObservationRequest = Extract<LifecycleRequest, { action: "browser-observation" | "inspect-frames" | "inspect-script" | "inspect-workers" | "inspect-worker-script" | "observe-worker-state" | "observe-model-state" | "observe-pcb-opening" | "observe-string-precreate" | "observe-layers" | "observe-primitives" | "observe-extended-primitives" | "observe-selection-relations" | "observe-pad-shapes" | "observe-image-shapes" | "observe-arc-shapes" | "observe-poured-shapes" }>;
 type ObservationStage = z.infer<typeof diagnosticObservationStageSchema> | "common-baseline" | "string-precreate" | "layers209" | "primitives209" | "extended-primitives209" | "selection-relations209" | "pad-shapes209" | "image-shapes209" | "arc-shapes209" | "poured-shapes209";
@@ -99,6 +108,9 @@ export interface CurrentPcbWorkerStartupLifecycleDependencies extends Omit<Curre
   readonly allocateOwner?: (options: CurrentPcbDiagnosticInstallationOptions) => Promise<CurrentPcbWorkerStartupLifecycleOwner>;
   readonly readCommonInventory?: typeof readCurrentPcbCommonOpenInventory;
   readonly createStartupOpening?: (handoff: CurrentPcbWorkerStartupHandoff) => CurrentPcbWorkerStartupOpeningCoordinator;
+}
+export interface CurrentPcb209WorkerStartupLifecycleDependencies extends Omit<CurrentPcbWorkerStartupLifecycleDependencies, "createStartupOpening"> {
+  readonly create209StartupOpening?: (handoff: CurrentPcbWorkerStartupHandoff) => CurrentPcb209WorkerStartupOpeningCoordinator;
 }
 interface Retained {
   readonly operationId: string;
@@ -174,8 +186,12 @@ function publicObservationResult(operationId: string, stage: ObservationStage,
 function publicStartupActorResult(operationId: string,
   record: DiagnosticLifecycleRecords["worker-startup-actor-result.json"], published: boolean): Readonly<Record<string, unknown>> | null {
   if (record === undefined) { return null; }
-  const { samples, workerUserText, ...summary } = record.result;
-  return { schema: "easyeda-pro-control.pcb-worker-startup-actor-summary.v1", ...summary,
+  const wrapper = record.result.profile === "private.current-pcb209-worker-startup-actor.v1" ? record.result : null;
+  const original = record.result.profile === "private.current-pcb209-worker-startup-actor.v1" ? record.result.originalActorPacket : record.result;
+  const { samples, workerUserText, ...summary } = original;
+  return { schema: wrapper === null ? "easyeda-pro-control.pcb-worker-startup-actor-summary.v1" : "easyeda-pro-control.pcb209-worker-startup-actor-summary.v1", ...summary,
+    ...(wrapper === null ? {} : { sourceQualification: { profile: wrapper.profile, sourceClosureSha256: wrapper.sourceClosureSha256,
+      packetSha256: wrapper.packetSha256, compatibilityAdmitted: false, nativeSourceContextsOwned: false } }),
     summaryOnly: true, pointInTimeObservation: true, sampleCount: samples.length, workerUserTextSha256: sha256Text(workerUserText),
     record: { path: join(controlDataDirectory(), "pcb-diagnostic-lifecycle-v1", operationId, "worker-startup-actor-result.json"),
       published, sha256: sha256Json(record), bytes: Buffer.byteLength(canonicalJson(record)) } };
@@ -195,7 +211,7 @@ function publicStartupChannelResult(operationId: string,
  * construct it; neither public requests nor dependency seams select purpose. */
 class CurrentPcbLifecycleCore {
   readonly #purpose: CurrentPcbDiagnosticLifecyclePurpose;
-  readonly #generation: "206" | "209-opening";
+  readonly #generation: "206" | "209-opening" | "209-startup";
   readonly #stringPurpose: boolean;
   readonly #stages: readonly ObservationStage[];
   readonly #options: CurrentPcbDiagnosticLifecycleOptions;
@@ -206,7 +222,7 @@ class CurrentPcbLifecycleCore {
   readonly #verifyCheckpoint: typeof verifyCurrentDisposableOpenCheckpoint;
   readonly #verifyHistoricalCheckpoint: typeof verifyHistoricalCurrentDisposableOpenCheckpoint;
   readonly #readCommonInventory: typeof readCurrentPcbCommonOpenInventory;
-  readonly #createStartupOpening: NonNullable<CurrentPcbWorkerStartupLifecycleDependencies["createStartupOpening"]>;
+  readonly #createStartupOpening: (handoff: CurrentPcbWorkerStartupHandoff) => CurrentPcbStartupLifecycleAdapter;
   readonly #pending = new Map<DiagnosticLifecycleRecordName, string>();
   readonly #observations = new Map<ObservationStage, Readonly<Record<string, unknown>>>();
   readonly #observationConsumed = new Set<ObservationStage>();
@@ -227,21 +243,21 @@ class CurrentPcbLifecycleCore {
   #pcbOpeningResult: Readonly<Record<string, unknown>> | null = null;
   #startupHandoffAttempted = false;
   #startupHandoff: CurrentPcbWorkerStartupHandoff | null = null;
-  #startupOpening: Readonly<{ owner: CurrentPcbWorkerStartupOpeningCoordinator; methods: CurrentPcbWorkerStartupOpeningCoordinator }> | null = null;
-  #startupOpeningResult: CurrentPcbWorkerStartupOpeningResult | null = null;
+  #startupOpening: Readonly<{ owner: CurrentPcbStartupLifecycleAdapter; methods: CurrentPcbStartupLifecycleAdapter }> | null = null;
+  #startupOpeningResult: CurrentPcbStartupOpeningResult | null = null;
   #startupOpeningReleased = false;
   #startupAssignmentsAttempted = false;
   #startupAssignments: CurrentPcbWorkerConstructionAssignments | null = null;
   #startupActorAttempted = false;
-  #startupActorPacket: CurrentPcbWorkerStartupActorPacket | null = null;
+  #startupActorPacket: CurrentPcbStartupActorPacket | null = null;
   #startupChannelAttempted = false;
   #startupChannelPacket: CurrentPcbWorkerStartupChannelPacket | null = null;
 
   public constructor(options: CurrentPcbDiagnosticLifecycleOptions,
-    dependencies: CurrentPcbDiagnosticLifecycleDependencies | CurrentPcbStringPrecreateLifecycleDependencies | CurrentPcbWorkerStartupLifecycleDependencies,
-    purpose: CurrentPcbDiagnosticLifecyclePurpose, generation: "206" | "209-opening" = "206") {
+    dependencies: CurrentPcbDiagnosticLifecycleDependencies | CurrentPcbStringPrecreateLifecycleDependencies | CurrentPcbWorkerStartupLifecycleDependencies | CurrentPcb209WorkerStartupLifecycleDependencies,
+    purpose: CurrentPcbDiagnosticLifecyclePurpose, generation: "206" | "209-opening" | "209-startup" = "206") {
     const stringPurpose = purpose === "string-precreate";
-    requireValue(generation !== "209-opening" || purpose === "diagnostic", "GENERATION_PURPOSE");
+    requireValue((generation !== "209-opening" || purpose === "diagnostic") && (generation !== "209-startup" || purpose === "worker-startup"), "GENERATION_PURPOSE");
     this.#generation = generation;
     this.#purpose = purpose;
     this.#stringPurpose = stringPurpose;
@@ -249,23 +265,32 @@ class CurrentPcbLifecycleCore {
       { diagnostic: diagnosticObservationStageSchema.options, "string-precreate": currentPcbStringPrecreateStages,
         "worker-startup": startupStages }[purpose];
     this.#options = Object.freeze({ ...options });
-    this.#verify = dependencies.verifyInstallation ?? (generation === "209-opening" ? verifyCurrentPcb209DiagnosticInstallation : verifyCurrentPcbDiagnosticInstallation);
-    this.#allocate = dependencies.allocateOwner ?? (generation === "209-opening" ? startCurrentPcb209DiagnosticOwner :
-      { diagnostic: startCurrentPcbDiagnosticOwner, "string-precreate": startCurrentPcbStringPrecreateOwner,
-        "worker-startup": startCurrentPcbWorkerStartupOwner }[purpose]);
+    this.#verify = dependencies.verifyInstallation ?? (generation === "206" ? verifyCurrentPcbDiagnosticInstallation : verifyCurrentPcb209DiagnosticInstallation);
+    let allocate = { diagnostic: startCurrentPcbDiagnosticOwner, "string-precreate": startCurrentPcbStringPrecreateOwner,
+      "worker-startup": startCurrentPcbWorkerStartupOwner }[purpose];
+    if (generation === "209-startup") { allocate = startCurrentPcb209WorkerStartupOwner; }
+    else if (generation === "209-opening") { allocate = startCurrentPcb209DiagnosticOwner; }
+    this.#allocate = dependencies.allocateOwner ?? allocate;
     this.#publish = dependencies.publishRecord ?? publishCurrentPcbDiagnosticLifecycleRecord;
     this.#prepareCheckpoint = dependencies.prepareCheckpoint ?? prepareCurrentDisposableOpenCheckpoint;
     this.#verifyCheckpoint = dependencies.verifyCheckpoint ?? verifyCurrentDisposableOpenCheckpoint;
     this.#verifyHistoricalCheckpoint = dependencies.verifyHistoricalCheckpoint ?? verifyHistoricalCurrentDisposableOpenCheckpoint;
     this.#readCommonInventory = "readCommonInventory" in dependencies ? dependencies.readCommonInventory ?? readCurrentPcbCommonOpenInventory : readCurrentPcbCommonOpenInventory;
-    this.#createStartupOpening = "createStartupOpening" in dependencies && dependencies.createStartupOpening !== undefined
-      ? dependencies.createStartupOpening : (handoff): CurrentPcbWorkerStartupOpeningCoordinator => new CurrentPcbWorkerStartupOpening(handoff);
+    if (generation === "209-startup") {
+      const create = "create209StartupOpening" in dependencies ? dependencies.create209StartupOpening : undefined;
+      this.#createStartupOpening = (handoff): CurrentPcbStartupLifecycleAdapter => adaptCurrentPcb209WorkerStartupLifecycle(create === undefined ? new CurrentPcb209WorkerStartupOpening(handoff) : create(handoff));
+    } else {
+      const create = "createStartupOpening" in dependencies ? dependencies.createStartupOpening : undefined;
+      this.#createStartupOpening = (handoff): CurrentPcbStartupLifecycleAdapter => adaptCurrentPcbWorkerStartupLifecycle(create === undefined ? new CurrentPcbWorkerStartupOpening(handoff) : create(handoff));
+    }
   }
 
   public async run(input: unknown): Promise<Record<string, unknown>> {
-    const request: LifecycleRequest = this.#generation === "209-opening" ? currentPcb209OpeningRequestSchema.parse(input) :
-      { diagnostic: currentPcbDiagnosticValidationRequestSchema, "string-precreate": currentPcbStringPrecreateRequestSchema,
-        "worker-startup": currentPcbWorkerStartupLifecycleRequestSchema }[this.#purpose].parse(input);
+    let request: LifecycleRequest;
+    if (this.#generation === "209-startup") { request = currentPcb209WorkerStartupLifecycleRequestSchema.parse(input); }
+    else if (this.#generation === "209-opening") { request = currentPcb209OpeningRequestSchema.parse(input); }
+    else { request = { diagnostic: currentPcbDiagnosticValidationRequestSchema, "string-precreate": currentPcbStringPrecreateRequestSchema,
+      "worker-startup": currentPcbWorkerStartupLifecycleRequestSchema }[this.#purpose].parse(input); }
     if (request.action === "query-observation") {
       const operations = await readCurrentPcbDiagnosticLifecycles();
       const operation = operations.find(value => value.operationId === request.operationId);
@@ -413,7 +438,7 @@ class CurrentPcbLifecycleCore {
    * A failed transfer or publication remains consumed and retains cleanup.
    * The generic run path never returns this object or accepts a replacement. */
   protected async handoffStartup(operationId: string, expectedBindingSha256: string): Promise<CurrentPcbWorkerStartupHandoff> {
-    currentPcbWorkerStartupLifecycleIdSchema.parse(operationId);
+    (this.#generation === "209-startup" ? currentPcb209WorkerStartupLifecycleIdSchema : currentPcbWorkerStartupLifecycleIdSchema).parse(operationId);
     diagnosticLifecycleDigestSchema.parse(expectedBindingSha256);
     this.#options.assertLocalAllowed();
     requireValue(this.#purpose === "worker-startup", "WORKER_STARTUP_PURPOSE_REQUIRED");
@@ -465,8 +490,11 @@ class CurrentPcbLifecycleCore {
     } finally { this.#busy = false; }
   }
 
-  protected async openStartup(operationId: string, expectedBindingSha256: string, input: unknown): Promise<CurrentPcbWorkerStartupOpeningResult> {
-    currentPcbWorkerStartupLifecycleIdSchema.parse(operationId); diagnosticLifecycleDigestSchema.parse(expectedBindingSha256);
+  protected openStartup(operationId: string, expectedBindingSha256: string, input: unknown, generation: "206"): Promise<CurrentPcbWorkerStartupOpeningResult>;
+  protected openStartup(operationId: string, expectedBindingSha256: string, input: unknown, generation: "209-startup"): Promise<CurrentPcb209WorkerStartupOpeningResult>;
+  protected async openStartup(operationId: string, expectedBindingSha256: string, input: unknown, generation: "206" | "209-startup"): Promise<CurrentPcbStartupOpeningResult> {
+    requireValue(this.#generation === generation, "GENERATION_MISMATCH");
+    (this.#generation === "209-startup" ? currentPcb209WorkerStartupLifecycleIdSchema : currentPcbWorkerStartupLifecycleIdSchema).parse(operationId); diagnosticLifecycleDigestSchema.parse(expectedBindingSha256);
     const request = startupCaptureInputSchema.parse(input);
     this.#options.assertLocalAllowed(); requireValue(this.#purpose === "worker-startup", "WORKER_STARTUP_PURPOSE_REQUIRED");
     requireValue(!this.#busy, "BUSY"); this.#busy = true;
@@ -516,7 +544,7 @@ class CurrentPcbLifecycleCore {
       const expected = operations.map(value => value.operationId === operationId ? updated : value);
       await assertSnapshot(expected); this.#assertOwner(retained);
       const owner = this.#createStartupOpening(handoff);
-      const captured = Object.freeze({ open: owner.open, status: owner.status, retainedOpeningResult: owner.retainedOpeningResult,
+      const captured = Object.freeze({ assertOriginalMethodsCurrent: owner.assertOriginalMethodsCurrent, open: owner.open, status: owner.status, retainedOpeningResult: owner.retainedOpeningResult,
         requireOriginal: owner.requireOriginal, proveCurrentAssignments: owner.proveCurrentAssignments,
         requireCurrentAssignments: owner.requireCurrentAssignments, retainedActorObservation: owner.retainedActorObservation,
         observeActorClock: owner.observeActorClock, requireActorClock: owner.requireActorClock,
@@ -536,6 +564,7 @@ class CurrentPcbLifecycleCore {
       // Keep the original packet, not the serialized journal projection. Its
       // Constructor runner retains the live object identity needed by require.
       this.#startupOpeningResult = result;
+      requireValue((result.construction.profile === "private.current-pcb209-worker-construction.v1") === (this.#generation === "209-startup"), "WORKER_STARTUP_CONSTRUCTION_GENERATION");
       requireValue(reverified, "WORKER_STARTUP_REVERIFICATION_REQUIRED");
       this.#assertOwner(retained);
       await captured.requireOriginal.call(owner, result); this.#assertOwner(retained);
@@ -558,9 +587,11 @@ class CurrentPcbLifecycleCore {
 
   /** Only the original successful packet can reach subsequent private
    * constructor observations. Historical JSON and failed publications cannot. */
+  protected requireStartup(operationId: string, expectedBindingSha256: string, result: CurrentPcbWorkerStartupOpeningResult): Promise<CurrentPcbWorkerStartupTransport>;
+  protected requireStartup(operationId: string, expectedBindingSha256: string, result: CurrentPcb209WorkerStartupOpeningResult): Promise<CurrentPcb209WorkerStartupTransport>;
   protected async requireStartup(operationId: string, expectedBindingSha256: string,
-    result: CurrentPcbWorkerStartupOpeningResult): Promise<CurrentPcbWorkerStartupTransport> {
-    currentPcbWorkerStartupLifecycleIdSchema.parse(operationId); diagnosticLifecycleDigestSchema.parse(expectedBindingSha256);
+    result: CurrentPcbStartupOpeningResult): Promise<CurrentPcbStartupTransport> {
+    (this.#generation === "209-startup" ? currentPcb209WorkerStartupLifecycleIdSchema : currentPcbWorkerStartupLifecycleIdSchema).parse(operationId); diagnosticLifecycleDigestSchema.parse(expectedBindingSha256);
     this.#options.assertLocalAllowed(); requireValue(this.#purpose === "worker-startup", "WORKER_STARTUP_PURPOSE_REQUIRED");
     requireValue(!this.#busy, "BUSY"); this.#busy = true;
     try {
@@ -584,7 +615,7 @@ class CurrentPcbLifecycleCore {
   /** One journaled continuation of the original capture. The public response
    * contains data only; its report cannot recreate the runner's lexical token. */
   protected async observeStartupAssignments(operationId: string, expectedBindingSha256: string): Promise<Record<string, unknown>> {
-    currentPcbWorkerStartupLifecycleIdSchema.parse(operationId); diagnosticLifecycleDigestSchema.parse(expectedBindingSha256);
+    (this.#generation === "209-startup" ? currentPcb209WorkerStartupLifecycleIdSchema : currentPcbWorkerStartupLifecycleIdSchema).parse(operationId); diagnosticLifecycleDigestSchema.parse(expectedBindingSha256);
     this.#options.assertLocalAllowed(); requireValue(this.#purpose === "worker-startup", "WORKER_STARTUP_PURPOSE_REQUIRED");
     requireValue(!this.#busy, "BUSY"); this.#busy = true;
     try {
@@ -634,7 +665,7 @@ class CurrentPcbLifecycleCore {
   /** Future private compositions must reprove the current original assignments.
    * No public action accepts a report, token or replacement owner. */
   protected async requireStartupAssignments(operationId: string, expectedBindingSha256: string): Promise<CurrentPcbWorkerConstructionAssignments> {
-    currentPcbWorkerStartupLifecycleIdSchema.parse(operationId); diagnosticLifecycleDigestSchema.parse(expectedBindingSha256);
+    (this.#generation === "209-startup" ? currentPcb209WorkerStartupLifecycleIdSchema : currentPcbWorkerStartupLifecycleIdSchema).parse(operationId); diagnosticLifecycleDigestSchema.parse(expectedBindingSha256);
     this.#options.assertLocalAllowed(); requireValue(this.#purpose === "worker-startup", "WORKER_STARTUP_PURPOSE_REQUIRED");
     requireValue(!this.#busy, "BUSY"); this.#busy = true;
     try {
@@ -656,7 +687,7 @@ class CurrentPcbLifecycleCore {
   }
 
   protected async observeStartupActor(operationId: string, expectedBindingSha256: string): Promise<Record<string, unknown>> {
-    currentPcbWorkerStartupLifecycleIdSchema.parse(operationId); diagnosticLifecycleDigestSchema.parse(expectedBindingSha256);
+    (this.#generation === "209-startup" ? currentPcb209WorkerStartupLifecycleIdSchema : currentPcbWorkerStartupLifecycleIdSchema).parse(operationId); diagnosticLifecycleDigestSchema.parse(expectedBindingSha256);
     this.#options.assertLocalAllowed(); requireValue(this.#purpose === "worker-startup", "WORKER_STARTUP_PURPOSE_REQUIRED");
     requireValue(!this.#busy, "BUSY"); this.#busy = true;
     try {
@@ -685,13 +716,15 @@ class CurrentPcbLifecycleCore {
       await assertSnapshot(expected); this.#assertOwner(retained);
       const packet = await original.methods.observeActorClock.call(original.owner, openingResult, assignments);
       this.#startupActorPacket = packet; this.#assertOwner(retained);
+      requireValue((packet.profile === "private.current-pcb209-worker-startup-actor.v1") === (this.#generation === "209-startup"), "WORKER_STARTUP_ACTOR_GENERATION");
       await original.methods.requireActorClock.call(original.owner, openingResult, assignments, packet); this.#assertOwner(retained);
       const result = diagnosticLifecycleRecordSchemas["worker-startup-actor-result.json"].parse({
         schema: "easyeda-pro-control.pcb-worker-startup-actor-result.v1", operationId, createdAt: new Date().toISOString(),
         intentSha256: sha256Json(intent), result: structuredClone(packet), pointInTimeObservation: true,
         executionAuthorized: false, saveAuthorized: false,
       });
-      requireValue(canonicalJson(result.result.identity) === canonicalJson(openingResult.workerIdentity), "WORKER_STARTUP_ACTOR_IDENTITY");
+      const actorIdentity = result.result.profile === "private.current-pcb209-worker-startup-actor.v1" ? result.result.originalActorPacket.identity : result.result.identity;
+      requireValue(canonicalJson(actorIdentity) === canonicalJson(openingResult.workerIdentity), "WORKER_STARTUP_ACTOR_IDENTITY");
       this.#retainRecord("worker-startup-actor-result.json", result);
       await assertSnapshot(expected); this.#assertOwner(retained);
       await this.#publish(operationId, "worker-startup-actor-result.json", result);
@@ -703,7 +736,7 @@ class CurrentPcbLifecycleCore {
   }
 
   protected async observeStartupChannel(operationId: string, expectedBindingSha256: string): Promise<Record<string, unknown>> {
-    currentPcbWorkerStartupLifecycleIdSchema.parse(operationId); diagnosticLifecycleDigestSchema.parse(expectedBindingSha256);
+    (this.#generation === "209-startup" ? currentPcb209WorkerStartupLifecycleIdSchema : currentPcbWorkerStartupLifecycleIdSchema).parse(operationId); diagnosticLifecycleDigestSchema.parse(expectedBindingSha256);
     this.#options.assertLocalAllowed(); requireValue(this.#purpose === "worker-startup", "WORKER_STARTUP_PURPOSE_REQUIRED");
     requireValue(!this.#busy, "BUSY"); this.#busy = true;
     try {
@@ -753,9 +786,11 @@ class CurrentPcbLifecycleCore {
     const intent = operation?.records["intent.json"];
     let idPurpose: CurrentPcbDiagnosticLifecyclePurpose = "diagnostic";
     if (operationId.startsWith(CURRENT_PCB_STRING_PRECREATE_OPERATION_PREFIX)) { idPurpose = "string-precreate"; }
-    else if (operationId.startsWith(CURRENT_PCB_WORKER_STARTUP_OPERATION_PREFIX)) { idPurpose = "worker-startup"; }
-    const expectedSchema = launchPurposeFields[this.#purpose].schema;
-    requireValue(operationId.startsWith(CURRENT_PCB_209_OPENING_PROFILE.operationPrefix) === (this.#generation === "209-opening"), "GENERATION_MISMATCH");
+    else if (operationId.startsWith(CURRENT_PCB_WORKER_STARTUP_OPERATION_PREFIX) || operationId.startsWith(CURRENT_PCB_209_WORKER_STARTUP_OPERATION_PREFIX)) { idPurpose = "worker-startup"; }
+    const expectedSchema = this.#generation === "209-startup" ? "easyeda-pro-control.pcb209-worker-startup-launch-intent.v1" : launchPurposeFields[this.#purpose].schema;
+    const startup209 = operationId.startsWith(CURRENT_PCB_209_WORKER_STARTUP_OPERATION_PREFIX);
+    requireValue(startup209 === (this.#generation === "209-startup") &&
+      (operationId.startsWith(CURRENT_PCB_209_OPENING_PROFILE.operationPrefix) && !startup209) === (this.#generation === "209-opening"), "GENERATION_MISMATCH");
     requireValue(idPurpose === this.#purpose && (intent === undefined || intent.schema === expectedSchema), "PURPOSE_MISMATCH");
   }
   #assertOwner(retained: Retained): void {
@@ -763,7 +798,8 @@ class CurrentPcbLifecycleCore {
     requireValue(this.#lease !== null, "ORIGINAL_LEASE_REQUIRED"); assertCurrentPcbDiagnosticLaunchExclusion(this.#lease);
     requireValue(this.#retained === retained && methods.every(name => retained.owner[name] === retained.methods[name]), "OWNER_CHANGED");
     const status = retained.methods.status.call(retained.owner);
-    requireValue(status.profile === (this.#generation === "209-opening" ? "diagnostic209" : this.#purpose) &&
+    const expectedProfile = this.#generation === "206" ? this.#purpose : { "209-startup": "worker-startup209", "209-opening": "diagnostic209" }[this.#generation];
+    requireValue(status.profile === expectedProfile &&
       (this.#generation !== "209-opening" || typeof retained.methods.observeLayers209 === "function" &&
         retained.owner.observeLayers209 === retained.methods.observeLayers209 &&
         typeof retained.methods.observePrimitives209 === "function" && retained.owner.observePrimitives209 === retained.methods.observePrimitives209 &&
@@ -782,6 +818,7 @@ class CurrentPcbLifecycleCore {
     requireValue(retained.binding === null || canonicalJson(status.binding) === canonicalJson(retained.binding), "BINDING_CHANGED");
     requireValue(this.#startupOpening === null || startupOpeningMethods.every(name =>
       this.#startupOpening?.owner[name] === this.#startupOpening?.methods[name]), "STARTUP_OPENING_OWNER_CHANGED");
+    this.#startupOpening?.methods.assertOriginalMethodsCurrent();
   }
   async #installation(retained: Retained): Promise<void> {
     this.#assertOwner(retained);
@@ -934,7 +971,7 @@ class CurrentPcbLifecycleCore {
     this.#launchAttempted = true;
     await reserveCurrentPcbDiagnosticLifecycle(request.operationId);
     const intent: NonNullable<DiagnosticLifecycleRecords["intent.json"]> = {
-      ...launchPurposeFields[this.#purpose], operationId: request.operationId, createdAt: new Date().toISOString(),
+      ...(this.#generation === "209-startup" ? { schema: "easyeda-pro-control.pcb209-worker-startup-launch-intent.v1", purpose: "worker-startup" } : launchPurposeFields[this.#purpose]), operationId: request.operationId, createdAt: new Date().toISOString(),
       facadeSha256: installation.facadeSha256, installationSha256: sha256Json(installation),
       confirmValidationOnly: true, confirmDiagnosticLaunch: true, acceptExistingProfileEffects: true,
     };
@@ -1193,9 +1230,12 @@ class CurrentPcbLifecycleCore {
     if (request.action === "browser-observation") { result = await retained.methods.browserObservation.call(retained.owner); }
     else if (request.action === "inspect-frames") { result = await retained.methods.inspectFrames.call(retained.owner, request.targetId); }
     else if (request.action === "inspect-script") {
-      requireValue(this.#generation !== "209-opening" || request.family === "ui", "GENERATION_SCRIPT_FAMILY");
-      const script = this.#generation === "209-opening" ? CURRENT_PCB_209_OPENING_SCRIPTS.ui : CURRENT_PCB_DIAGNOSTIC_SCRIPTS[request.family];
+      requireValue(this.#generation === "206" || request.family === "ui", "GENERATION_SCRIPT_FAMILY");
+      const script = this.#generation === "206" ? CURRENT_PCB_DIAGNOSTIC_SCRIPTS[request.family] : CURRENT_PCB_209_OPENING_SCRIPTS.ui;
       result = await retained.methods.inspectScript.call(retained.owner, request.frameId, script);
+      requireValue(this.#generation !== "209-startup" || result["sourceVerified"] === true && result["family"] === "ui" &&
+        result["sourceSha256"] === script.scriptSha256 && result["sourceBytes"] === script.scriptBytes &&
+        result["relativePath"] === script.relativePath, "WORKER_STARTUP209_UI_SOURCE");
     }
     else if (request.action === "inspect-workers") { result = await retained.methods.inspectWorkers.call(retained.owner); }
     else if (request.action === "inspect-worker-script") { result = await retained.methods.inspectWorkerScript.call(retained.owner, request.targetId); }
@@ -1593,7 +1633,7 @@ export class CurrentPcbWorkerStartupLifecycle extends CurrentPcbLifecycleCore {
     return this.handoffStartup(operationId, expectedBindingSha256);
   }
   public openWorkerStartup(operationId: string, expectedBindingSha256: string, input: unknown): Promise<CurrentPcbWorkerStartupOpeningResult> {
-    return this.openStartup(operationId, expectedBindingSha256, input);
+    return this.openStartup(operationId, expectedBindingSha256, input, "206");
   }
   public requireWorkerStartup(operationId: string, expectedBindingSha256: string,
     result: CurrentPcbWorkerStartupOpeningResult): Promise<CurrentPcbWorkerStartupTransport> {
@@ -1604,7 +1644,42 @@ export class CurrentPcbWorkerStartupLifecycle extends CurrentPcbLifecycleCore {
   public async captureWorkerStartup(operationId: string, expectedBindingSha256: string, input: unknown): Promise<Record<string, unknown>> {
     const request = startupCaptureInputSchema.parse(input);
     await this.handoffStartup(operationId, expectedBindingSha256);
-    const result = await this.openStartup(operationId, expectedBindingSha256, request);
+    const result = await this.openStartup(operationId, expectedBindingSha256, request, "206");
+    return { ...structuredClone(result), operationId, validationOnly: true, saveAuthorized: false };
+  }
+  public observeWorkerStartupAssignments(operationId: string, expectedBindingSha256: string): Promise<Record<string, unknown>> {
+    return this.observeStartupAssignments(operationId, expectedBindingSha256);
+  }
+  public observeWorkerStartupActor(operationId: string, expectedBindingSha256: string): Promise<Record<string, unknown>> {
+    return this.observeStartupActor(operationId, expectedBindingSha256);
+  }
+  public observeWorkerStartupChannel(operationId: string, expectedBindingSha256: string): Promise<Record<string, unknown>> {
+    return this.observeStartupChannel(operationId, expectedBindingSha256);
+  }
+}
+
+/** Fixed209 startup lifecycle. Its data-only capture entry opens a sealed
+ * disposable project; the generic grammar admits no navigation, CAD or Save. */
+export class CurrentPcb209WorkerStartupLifecycle extends CurrentPcbLifecycleCore {
+  public constructor(options: CurrentPcbDiagnosticLifecycleOptions, dependencies: CurrentPcb209WorkerStartupLifecycleDependencies = {}) {
+    super(options, dependencies, "worker-startup", "209-startup");
+  }
+  public handoffWorkerStartup(operationId: string, expectedBindingSha256: string): Promise<CurrentPcbWorkerStartupHandoff> {
+    return this.handoffStartup(operationId, expectedBindingSha256);
+  }
+  public openWorkerStartup(operationId: string, expectedBindingSha256: string, input: unknown): Promise<CurrentPcb209WorkerStartupOpeningResult> {
+    return this.openStartup(operationId, expectedBindingSha256, input, "209-startup");
+  }
+  public requireWorkerStartup(operationId: string, expectedBindingSha256: string,
+    result: CurrentPcb209WorkerStartupOpeningResult): Promise<CurrentPcb209WorkerStartupTransport> {
+    return this.requireStartup(operationId, expectedBindingSha256, result);
+  }
+  /** Data-only validation entrypoint. Native capabilities stay in the original
+   * coordinator, and either stage's consumed intent forbids capture replay. */
+  public async captureWorkerStartup(operationId: string, expectedBindingSha256: string, input: unknown): Promise<Record<string, unknown>> {
+    const request = startupCaptureInputSchema.parse(input);
+    await this.handoffStartup(operationId, expectedBindingSha256);
+    const result = await this.openStartup(operationId, expectedBindingSha256, request, "209-startup");
     return { ...structuredClone(result), operationId, validationOnly: true, saveAuthorized: false };
   }
   public observeWorkerStartupAssignments(operationId: string, expectedBindingSha256: string): Promise<Record<string, unknown>> {

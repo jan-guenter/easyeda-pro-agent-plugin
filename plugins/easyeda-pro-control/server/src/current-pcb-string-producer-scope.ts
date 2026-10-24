@@ -7,6 +7,7 @@
 import { createHash } from "node:crypto";
 import { types } from "node:util";
 import { z } from "zod";
+import { CURRENT_PCB_209_WORKER_PRODUCER_LOCATIONS } from "./current-pcb-209-worker-startup-profile.ts";
 import { freezeDeep } from "./sqlite-inventory-core.ts";
 
 export const CURRENT_PCB_STRING_PRODUCER_LOCATIONS = freezeDeep({
@@ -73,11 +74,14 @@ function copyData(input: unknown, depth: number, budget: { nodes: number; bytes:
 
 /** Only a result of the fixed selector can supply this private handle. The
  * exact returned function bytes are checked in addition to full-file admission. */
-export function decodeCurrentPcbStringProducerFunction(input: unknown, kind: CurrentPcbStringProducerKind): string {
+export type CurrentPcb209WorkerProducerKind = keyof typeof CURRENT_PCB_209_WORKER_PRODUCER_LOCATIONS;
+type ProducerProfile = (typeof CURRENT_PCB_STRING_PRODUCER_LOCATIONS)[CurrentPcbStringProducerKind] |
+  (typeof CURRENT_PCB_209_WORKER_PRODUCER_LOCATIONS)[CurrentPcb209WorkerProducerKind];
+function decodeFunction(input: unknown, expected: ProducerProfile): string {
   try {
     const reply = z.object({ result: z.object({ type: z.literal("function"), className: z.literal("Function"),
       description: text, objectId: token }).strict() }).strict().parse(data(input));
-    const expected = CURRENT_PCB_STRING_PRODUCER_LOCATIONS[kind], source = reply.result.description;
+    const source = reply.result.description;
     if (Buffer.byteLength(source) !== expected.sourceBytes ||
         createHash("sha256").update(source).digest("hex") !== expected.sourceSha256) { return refuse(); }
     return reply.result.objectId;
@@ -87,11 +91,9 @@ export function decodeCurrentPcbStringProducerFunction(input: unknown, kind: Cur
 /** GetProperties(originalFunction), ownProperties:true. Regular non-strict
  * functions carry their native arguments/caller/prototype descriptors; arrow
  * functions do not. No arbitrary additional function properties are admitted. */
-export function decodeCurrentPcbStringProducerScopeList(input: unknown, scriptId: string,
-  kind: CurrentPcbStringProducerKind): string {
+function decodeScopeList(input: unknown, scriptId: string, expected: ProducerProfile): string {
   try {
     token.parse(scriptId);
-    const expected = CURRENT_PCB_STRING_PRODUCER_LOCATIONS[kind];
     const reply = z.object({ result: z.array(property).length(expected.regular ? 5 : 2),
       internalProperties: z.array(z.object({ name: text, value: remote }).strict()).length(3) }).strict().parse(data(input));
     const values = new Map(reply.result.map(item => [item.name, item]));
@@ -129,10 +131,9 @@ export function decodeCurrentPcbStringProducerScopeList(input: unknown, scriptId
 /** Only the fixed leading lexical scopes are returned. QA has a separate
  * default-parameter Closure after its Block. No later/global variable scope is
  * enumerated and no caller-supplied scope index or variable name is accepted. */
-export function decodeCurrentPcbStringProducerScopes(input: unknown, kind: CurrentPcbStringProducerKind): readonly string[] {
+function decodeScopes(input: unknown, expected: readonly string[]): readonly string[] {
   try {
     const reply = z.object({ result: z.array(property).min(2).max(8) }).strict().parse(data(input));
-    const expected = CURRENT_PCB_STRING_PRODUCER_LOCATIONS[kind].scopeDescriptions;
     const seen = new Set<string>();
     for (const [index, item] of reply.result.entries()) {
       if (item.name !== String(index) || !item.writable || !item.configurable || !item.enumerable ||
@@ -144,4 +145,25 @@ export function decodeCurrentPcbStringProducerScopes(input: unknown, kind: Curre
     if (reply.result.length <= expected.length || reply.result.at(-1)?.value.description !== "Global") { return refuse(); }
     return Object.freeze(reply.result.slice(0, expected.length).map(item => item.value.objectId ?? refuse()));
   } catch { return refuse(); }
+}
+
+/** Generation209 admits only project-worker wrappers; its PCB move producer
+ * is outside this source profile and cannot be selected through these exports. */
+export function decodeCurrentPcbStringProducerFunction(input: unknown, kind: CurrentPcbStringProducerKind): string {
+  return decodeFunction(input, CURRENT_PCB_STRING_PRODUCER_LOCATIONS[kind]);
+}
+export function decodeCurrentPcb209WorkerProducerFunction(input: unknown, kind: CurrentPcb209WorkerProducerKind): string {
+  return decodeFunction(input, CURRENT_PCB_209_WORKER_PRODUCER_LOCATIONS[kind]);
+}
+export function decodeCurrentPcbStringProducerScopeList(input: unknown, scriptId: string, kind: CurrentPcbStringProducerKind): string {
+  return decodeScopeList(input, scriptId, CURRENT_PCB_STRING_PRODUCER_LOCATIONS[kind]);
+}
+export function decodeCurrentPcb209WorkerProducerScopeList(input: unknown, scriptId: string, kind: CurrentPcb209WorkerProducerKind): string {
+  return decodeScopeList(input, scriptId, CURRENT_PCB_209_WORKER_PRODUCER_LOCATIONS[kind]);
+}
+export function decodeCurrentPcbStringProducerScopes(input: unknown, kind: CurrentPcbStringProducerKind): readonly string[] {
+  return decodeScopes(input, CURRENT_PCB_STRING_PRODUCER_LOCATIONS[kind].scopeDescriptions);
+}
+export function decodeCurrentPcb209WorkerProducerScopes(input: unknown, kind: CurrentPcb209WorkerProducerKind): readonly string[] {
+  return decodeScopes(input, CURRENT_PCB_209_WORKER_PRODUCER_LOCATIONS[kind].scopeDescriptions);
 }

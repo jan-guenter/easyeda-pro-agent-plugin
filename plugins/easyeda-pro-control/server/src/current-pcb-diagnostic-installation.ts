@@ -13,7 +13,10 @@ import { assertSubset, canonicalJson, controlImplementationFingerprint, loadRevi
 import { ORDINARY_LAUNCH_PROFILE, verifyOrdinaryLaunchInstallation } from "./ordinary-launch.ts";
 import { ORDINARY_LAUNCH_209_PROFILE } from "./ordinary-launch-209-profile.ts";
 import { CURRENT_PCB_209_OPENING_PROFILE } from "./current-pcb-209-opening-profile.ts";
+import { CURRENT_PCB_209_ACTOR_CLOCK_SOURCE_PROFILE, qualifyCurrentPcb209ActorClockSources } from "./current-pcb-209-actor-clock-source.ts";
+import type { CurrentPcb209ActorClockSourceQualification, CurrentPcb209ActorClockSources } from "./current-pcb-209-actor-clock-source.ts";
 import { isPublicUtilities209Configured } from "./sdk-public-utilities-profile.ts";
+// oxlint-disable-next-line import/max-dependencies -- The fixed209 actor qualifier shares this private descriptor reader; exporting a caller-selected path reader would widen the installation boundary.
 import { deriveWindowsRuntimePaths } from "./windows-runtime.ts";
 import type { WindowsRuntimePaths } from "./windows-runtime.ts";
 
@@ -92,6 +95,10 @@ export async function verifyCurrentPcbDiagnosticPowerShell(hostPath: string, exp
   await verifyPinnedInstallationFile(hostPath, expected, 16_777_216);
 }
 async function verifyPinnedInstallationFile(hostPath: string, expected: Readonly<{ bytes: number; sha256: string }>, maxBytes: number): Promise<void> {
+  await readPinnedInstallationFile(hostPath, expected, maxBytes, false);
+}
+async function readPinnedInstallationFile(hostPath: string, expected: Readonly<{ bytes: number; sha256: string }>,
+  maxBytes: number, captureText: boolean): Promise<string | null> {
   if (path.posix.resolve(hostPath) !== hostPath || await realpath(hostPath) !== hostPath ||
       !Number.isSafeInteger(expected.bytes) || expected.bytes < 1 || expected.bytes > maxBytes || !/^[a-f\d]{64}$/u.test(expected.sha256)) { refuse(); }
   // oxlint-disable-next-line no-bitwise -- Read-only no-follow open; reject nonregular descriptors without blocking.
@@ -101,17 +108,35 @@ async function verifyPinnedInstallationFile(hostPath: string, expected: Readonly
     // System executables can have Windows servicing hardlinks. The native lease
     // Denies writes/deletion to the file object, not only one of those names.
     if (!before.isFile() || before.nlink < 1n || before.size !== BigInt(expected.bytes)) { refuse(); }
-    const buffer = Buffer.alloc(65_536), hash = createHash("sha256");
+    const buffer = Buffer.alloc(65_536), chunks: Buffer[] = [], hash = createHash("sha256");
     let total = 0;
     while (total < expected.bytes) {
       const result = await handle.read(buffer, 0, Math.min(buffer.length, expected.bytes - total), total);
       if (result.bytesRead === 0) { refuse(); }
       total += result.bytesRead; hash.update(buffer.subarray(0, result.bytesRead));
+      if (captureText) { chunks.push(Buffer.from(buffer.subarray(0, result.bytesRead))); }
     }
     const eof = await handle.read(buffer, 0, 1, total);
     if (eof.bytesRead !== 0 || hash.digest("hex") !== expected.sha256 || !same(before, await handle.stat({ bigint: true })) ||
         !same(before, await lstat(hostPath, { bigint: true })) || await realpath(hostPath) !== hostPath) { refuse(); }
+    // Source capture uses these exact descriptor-hashed bytes. It grants no
+    // Continuous file lease or ownership of the corresponding runtime realm.
+    return captureText ? new TextDecoder("utf-8", { fatal: true, ignoreBOM: true }).decode(Buffer.concat(chunks)) : null;
   } finally { await handle.close(); }
+}
+
+/** Fixed five-source capture for the separate209 startup owner. The backend's
+ * reviewed ../app.js is resolved from the configured assets root here; callers
+ * cannot supply source paths, digests or an alternate source profile. */
+export async function qualifyCurrentPcb209StartupActorInstallation(options: CurrentPcbDiagnosticInstallationOptions): Promise<CurrentPcb209ActorClockSourceQualification> {
+  const original = createCurrentPcb209DiagnosticInstallationPlan(options);
+  const sources: Record<keyof CurrentPcb209ActorClockSources, string> = { ui: "", worker: "", pcb: "", wsService: "", backend: "" };
+  for (const kind of ["ui", "worker", "pcb", "wsService", "backend"] as const) {
+    const pin = CURRENT_PCB_209_ACTOR_CLOCK_SOURCE_PROFILE[kind];
+    const text = await readPinnedInstallationFile(path.posix.resolve(original.paths.assetsRoot, pin.relativePath), pin, 32 * 1024 * 1024, true);
+    if (text === null) { refuse(); } sources[kind] = text;
+  }
+  return qualifyCurrentPcb209ActorClockSources(sources);
 }
 
 export async function verifyCurrentPcbDiagnosticInstallation(options: CurrentPcbDiagnosticInstallationOptions): Promise<CurrentPcbDiagnosticInstallation> {
@@ -135,6 +160,10 @@ export async function verifyCurrentPcbDiagnosticFacade(options: CurrentPcbDiagno
   const original = createCurrentPcbDiagnosticInstallationPlan(options);
   const verified = await verifyFixedFacade(options, original);
   return verified;
+}
+/** Fixed209 counterpart for reproof paired with the original native leases. */
+export function verifyCurrentPcb209DiagnosticFacade(options: CurrentPcbDiagnosticInstallationOptions): Promise<CurrentPcbDiagnosticInstallation> {
+  return verifyFixedFacade(options, createCurrentPcb209DiagnosticInstallationPlan(options));
 }
 /** Source-qualified 209 opening only. Assets are freshly descriptor-hashed;
  * renderer source is independently compared again through the original pipe.

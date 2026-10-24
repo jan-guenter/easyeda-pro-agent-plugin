@@ -5,11 +5,12 @@ import type { TestContext } from "node:test";
 import { WebSocket } from "ws";
 import { z } from "zod";
 import type { CurrentPcbWorkerConstructionTransport } from "../../src/current-pcb-worker-construction-contract.ts";
+import { worker209ConstructionFixtureSource } from "./current-pcb-209-worker-construction-fixture.ts";
 import { workerConstructionFixtureSource } from "./current-pcb-worker-construction-fixture.ts";
 
 /** This launches only this test's synthetic Node process, never EasyEDA or a
  * plugin facade. Its ordinary OS process is not native runtime admission. */
-export async function constructionInspector(context: TestContext, loseAtPause = 0, publisherMethods = false): Promise<Readonly<{
+async function constructionInspectorSource(context: TestContext, source: string, loseAtPause: number): Promise<Readonly<{
   transport: CurrentPcbWorkerConstructionTransport; commands: string[];
   counts: () => Readonly<{ pauses: number; resumes: number }>; lose: () => void;
   run: () => Promise<unknown>; completed: () => Promise<boolean>; interrupt: () => Promise<void>;
@@ -52,7 +53,7 @@ export async function constructionInspector(context: TestContext, loseAtPause = 
   };
   await request("Debugger.enable", {}); await request("Runtime.enable", {});
   const compiled = z.object({ scriptId: z.string() }).strict().parse(await request("Runtime.compileScript", {
-    expression: workerConstructionFixtureSource(publisherMethods), sourceURL: "worker-construction-synthetic.js", persistScript: true,
+    expression: source, sourceURL: "worker-construction-synthetic.js", persistScript: true,
   }));
   const transport: CurrentPcbWorkerConstructionTransport = {
     scriptId: compiled.scriptId,
@@ -76,4 +77,11 @@ export async function constructionInspector(context: TestContext, loseAtPause = 
     completed: async (): Promise<boolean> => z.object({ result: z.object({ type: z.literal("boolean"), value: z.boolean() }).strict() }).strict()
       .parse(await request("Runtime.evaluate", { expression: "globalThis.CONSTRUCTION_COMPLETE===true", returnByValue: true })).result.value,
   };
+}
+
+export function constructionInspector(context: TestContext, loseAtPause = 0, publisherMethods = false): ReturnType<typeof constructionInspectorSource> {
+  return constructionInspectorSource(context, workerConstructionFixtureSource(publisherMethods), loseAtPause);
+}
+export function construction209Inspector(context: TestContext, loseAtPause = 0, publisherMethods = false): ReturnType<typeof constructionInspectorSource> {
+  return constructionInspectorSource(context, worker209ConstructionFixtureSource(publisherMethods), loseAtPause);
 }

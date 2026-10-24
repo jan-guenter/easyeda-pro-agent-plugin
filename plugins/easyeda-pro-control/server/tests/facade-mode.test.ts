@@ -37,15 +37,15 @@ void test("restricted registration admits scoped metadata and disposable opening
   }
 });
 
-void test("exact209 selectors expose thirteen scoped tools without inheriting unreviewed old routes", () => {
+void test("exact209 selectors expose fourteen scoped tools without inheriting unreviewed old routes", () => {
   assert.equal(configuredFacadeMode({ EASYEDA_PCB_BUNDLE_VERSION: "3.2.195.6b67774e",
     EASYEDA_PUBLIC_API_BUNDLE_VERSION: "0.3.59.1ca9efb5" }), "public-utilities-only");
-  assert.equal(PUBLIC_UTILITIES_ONLY_TOOLS.length, 13);
+  assert.equal(PUBLIC_UTILITIES_ONLY_TOOLS.length, 14);
   assert.equal(facadeToolRegistered("legacy-reviewed", "easyeda_control_public_readers"), false);
   assert.equal(facadeToolRegistered("calculation-only", "easyeda_control_public_readers"), false);
   assert.equal(facadeToolRegistered("legacy-reviewed", "easyeda_control_catalog_footprint"), false);
   assert.equal(facadeToolRegistered("calculation-only", "easyeda_control_catalog_footprint"), false);
-  for (const tool of ["easyeda_control_catalog_components", "easyeda_control_pcb209_opening"]) {
+  for (const tool of ["easyeda_control_catalog_components", "easyeda_control_pcb209_opening", "easyeda_control_pcb209_worker_startup"]) {
     assert.equal(facadeToolRegistered("legacy-reviewed", tool), false);
     assert.equal(facadeToolRegistered("calculation-only", tool), false);
   }

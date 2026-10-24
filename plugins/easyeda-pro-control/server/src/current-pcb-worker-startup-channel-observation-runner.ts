@@ -1,3 +1,4 @@
+/* oxlint-disable eslint/max-classes-per-file -- Keep the private core with its fixed-generation wrappers so no caller-selectable profile or decoder constructor is exported. */
 /** Fixed current-channel and publisher qualification on the original worker.
  * This collector neither opens a channel nor invokes a publisher/subscriber. */
 import { types } from "node:util";
@@ -5,7 +6,7 @@ import { z } from "zod";
 import { canonicalJson, sha256Json } from "./core.ts";
 import { captureCurrentPcbStringClockReply } from "./current-pcb-string-clock-reply.ts";
 import { decodeCurrentPcbStringWorkerGates } from "./current-pcb-string-worker-gate-program.ts";
-import { CURRENT_PCB_STRING_WORKER_GATE_ORDER, decodeCurrentPcbStringWorkerGateBundle,
+import { CURRENT_PCB_STRING_WORKER_GATE_ORDER, decodeCurrentPcb209WorkerGateProperties, decodeCurrentPcb209WorkerGateTuple, decodeCurrentPcbStringWorkerGateBundle,
   decodeCurrentPcbStringWorkerGateProperties, decodeCurrentPcbStringWorkerGateScope,
   decodeCurrentPcbStringWorkerGateTuple } from "./current-pcb-string-worker-gate-scope.ts";
 import { currentPcbWorkerStartupActorIdentitySchema } from "./current-pcb-worker-startup-actor.ts";
@@ -16,6 +17,7 @@ import type { CurrentPcbWorkerStartupChannelObservationCommand, CurrentPcbWorker
   CurrentPcbWorkerStartupChannelPacket } from "./current-pcb-worker-startup-channel-observation.ts";
 import { freezeDeep } from "./sqlite-inventory-core.ts";
 
+const INTERNAL_PROFILE = Symbol("fixed-worker-startup-channel-profile");
 const token = z.string().min(1).max(256).refine(value => /^[A-Za-z\d_.:-]+$/u.exec(value)?.[0] === value);
 const relationReply = z.object({ result: z.object({ type: z.literal("boolean"), value: z.literal(true) }).strict() }).strict();
 const gateReply = z.object({ result: z.object({ type: z.literal("string"), value: z.string().max(16_384)
@@ -37,7 +39,9 @@ function methods(input: CurrentPcbWorkerStartupChannelObservationTransport): rea
   });
 }
 
-export class CurrentPcbWorkerStartupChannelObservationRunner {
+class CurrentPcbWorkerStartupChannelObservationCore {
+  readonly #decodeProperties: typeof decodeCurrentPcbStringWorkerGateProperties;
+  readonly #decodeTuple: typeof decodeCurrentPcbStringWorkerGateTuple;
   readonly #transport: CurrentPcbWorkerStartupChannelObservationTransport;
   readonly #methods: readonly unknown[];
   readonly #send: CurrentPcbWorkerStartupChannelObservationTransport["request"];
@@ -48,7 +52,10 @@ export class CurrentPcbWorkerStartupChannelObservationRunner {
   #phase: Phase = "ready";
   #requests = 0;
   #packet: CurrentPcbWorkerStartupChannelPacket | null = null;
-  public constructor(transport: CurrentPcbWorkerStartupChannelObservationTransport, identity: CurrentPcbWorkerStartupActorIdentity) {
+  public constructor(internal: typeof INTERNAL_PROFILE, transport: CurrentPcbWorkerStartupChannelObservationTransport, identity: CurrentPcbWorkerStartupActorIdentity,
+    decodeProperties: typeof decodeCurrentPcbStringWorkerGateProperties, decodeTuple: typeof decodeCurrentPcbStringWorkerGateTuple) {
+    need(internal === INTERNAL_PROFILE, "internal fixed profile required");
+    this.#decodeProperties = decodeProperties; this.#decodeTuple = decodeTuple;
     this.#methods = methods(transport); this.#transport = transport;
     this.#scriptId = token.parse(transport.scriptId); this.#send = transport.request; this.#assert = transport.assertCurrent;
     this.#identity = freezeDeep(currentPcbWorkerStartupActorIdentitySchema.parse(captureCurrentPcbStringClockReply(identity).value));
@@ -74,7 +81,7 @@ export class CurrentPcbWorkerStartupChannelObservationRunner {
   }
   #properties(objectId: string): Promise<unknown> { return this.#request({ phase: "properties", objectId: token.parse(objectId) }); }
   async #sample(bundle: string, canPublish: string): Promise<ReturnType<typeof decodeCurrentPcbStringWorkerGates>> {
-    const property = decodeCurrentPcbStringWorkerGateProperties(await this.#properties(canPublish), this.#scriptId, "canPublish");
+    const property = this.#decodeProperties(await this.#properties(canPublish), this.#scriptId, "canPublish");
     const scope = decodeCurrentPcbStringWorkerGateScope(await this.#properties(property.scopesId));
     const sample = decodeCurrentPcbStringWorkerGates(await this.#request({ phase: "gates", bundle, scope }));
     need(canonicalJson(sample.identity) === canonicalJson(this.#identity), "sample identity differs"); return sample;
@@ -84,10 +91,10 @@ export class CurrentPcbWorkerStartupChannelObservationRunner {
     try {
       relationReply.parse(await this.#request({ phase: "channel-relation" }));
       const bundle = decodeCurrentPcbStringWorkerGateBundle(await this.#request({ phase: "gate-select" }));
-      const handles = decodeCurrentPcbStringWorkerGateTuple(await this.#properties(bundle));
+      const handles = this.#decodeTuple(await this.#properties(bundle));
       for (const [index, kind] of CURRENT_PCB_STRING_WORKER_GATE_ORDER.entries()) {
         const handle = handles[index]; need(handle !== undefined, "publisher method missing");
-        decodeCurrentPcbStringWorkerGateProperties(await this.#properties(handle), this.#scriptId, kind);
+        this.#decodeProperties(await this.#properties(handle), this.#scriptId, kind);
       }
       const canPublish = handles[2]; need(canPublish !== undefined, "gate method missing");
       const first = await this.#sample(bundle, canPublish), second = await this.#sample(bundle, canPublish);
@@ -107,5 +114,18 @@ export class CurrentPcbWorkerStartupChannelObservationRunner {
   public async requireOriginal(packet: CurrentPcbWorkerStartupChannelPacket): Promise<CurrentPcbWorkerStartupChannelPacket> {
     need(this.#phase === "completed" && this.#packet === packet, "original completed packet required");
     try { await this.#current(); return packet; } catch (error) { this.#phase = "failed"; throw error; }
+  }
+}
+
+/** The two public constructors expose no decoder or profile override. Their
+ * identical packet grammar conveys observations, never generation admission. */
+export class CurrentPcbWorkerStartupChannelObservationRunner extends CurrentPcbWorkerStartupChannelObservationCore {
+  public constructor(transport: CurrentPcbWorkerStartupChannelObservationTransport, identity: CurrentPcbWorkerStartupActorIdentity) {
+    super(INTERNAL_PROFILE, transport, identity, decodeCurrentPcbStringWorkerGateProperties, decodeCurrentPcbStringWorkerGateTuple);
+  }
+}
+export class CurrentPcb209WorkerStartupChannelObservationRunner extends CurrentPcbWorkerStartupChannelObservationCore {
+  public constructor(transport: CurrentPcbWorkerStartupChannelObservationTransport, identity: CurrentPcbWorkerStartupActorIdentity) {
+    super(INTERNAL_PROFILE, transport, identity, decodeCurrentPcb209WorkerGateProperties, decodeCurrentPcb209WorkerGateTuple);
   }
 }

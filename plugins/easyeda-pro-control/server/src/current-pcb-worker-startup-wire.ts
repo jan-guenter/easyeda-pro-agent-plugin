@@ -3,6 +3,7 @@
 /* oxlint-disable import/max-dependencies -- This native boundary compares every fixed program against its original contract literal; splitting those checks would duplicate the admission policy. */
 import { z } from "zod";
 import { types } from "node:util";
+import { CURRENT_PCB_209_WORKER_CONSTRUCTION_SITES } from "./current-pcb-209-worker-startup-profile.ts";
 import { captureCurrentPcbStringClockReply } from "./current-pcb-string-clock-reply.ts";
 import { CURRENT_PCB_WORKER_CONSTRUCTION_IDENTITY, CURRENT_PCB_WORKER_CONSTRUCTION_PROJECT, CURRENT_PCB_WORKER_CONSTRUCTION_SAME,
   CURRENT_PCB_WORKER_CONSTRUCTION_SITES, CURRENT_PCB_WORKER_CONSTRUCTION_SOURCE } from "./current-pcb-worker-construction-contract.ts";
@@ -98,7 +99,8 @@ function captureWire(raw: unknown): unknown {
 
 /** Decodes only inert own-data input before any schema/property inspection.
  * Native code independently reconstructs these phases from identifiers. */
-export function currentPcbWorkerStartupWire(raw: unknown, id: number): Readonly<{
+function startupWire(raw: unknown, id: number,
+  sites: typeof CURRENT_PCB_WORKER_CONSTRUCTION_SITES | typeof CURRENT_PCB_209_WORKER_CONSTRUCTION_SITES): Readonly<{
   command: CurrentPcbWorkerStartupCommand & Readonly<{ id: number }>;
   request: Readonly<Record<string, string | number>>;
 }> {
@@ -127,7 +129,7 @@ export function currentPcbWorkerStartupWire(raw: unknown, id: number): Readonly<
     case "Debugger.removeBreakpoint": { fields = { startupPhase: "remove", breakpointId: parsed.params.breakpointId }; break; }
     case "Debugger.resume": { fields = { startupPhase: "resume" }; break; }
     case "Debugger.setBreakpoint": {
-      const site = Object.entries(CURRENT_PCB_WORKER_CONSTRUCTION_SITES).find(([, value]) =>
+      const site = Object.entries(sites).find(([, value]) =>
         value.lineNumber === parsed.params.location.lineNumber && value.columnNumber === parsed.params.location.columnNumber)?.[0];
       if (site === undefined) { return fail(); }
       fields = { startupPhase: "breakpoint", site, scriptId: parsed.params.location.scriptId }; break;
@@ -181,4 +183,14 @@ export function currentPcbWorkerStartupWire(raw: unknown, id: number): Readonly<
   }
   return freezeDeep({ command: { id, ...parsed }, request: { action, requestId: id,
     method: parsed.method, ...(parsed.sessionId === undefined ? {} : { sessionId: parsed.sessionId }), ...fields } });
+}
+
+export function currentPcbWorkerStartupWire(raw: unknown, id: number): ReturnType<typeof startupWire> {
+  return startupWire(raw, id, CURRENT_PCB_WORKER_CONSTRUCTION_SITES);
+}
+/** Native WorkerStartup209 purpose independently reconstructs the generation's
+ * fixed coordinates. The wire carries a site identifier, never a profile or
+ * caller-selected coordinate. All actions, group and request bounds stay fixed. */
+export function currentPcb209WorkerStartupWire(raw: unknown, id: number): ReturnType<typeof startupWire> {
+  return startupWire(raw, id, CURRENT_PCB_209_WORKER_CONSTRUCTION_SITES);
 }

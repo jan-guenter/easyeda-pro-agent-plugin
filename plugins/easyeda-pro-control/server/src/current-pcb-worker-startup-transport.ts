@@ -1,3 +1,4 @@
+/* oxlint-disable eslint/max-classes-per-file -- Private owner composition and fixed-generation wrappers stay together so native callers cannot inject a runner or source profile. */
 /** Private startup owner composition, allocated only by the separate startup
  * lifecycle. It owns initial waiting/instrumentation cleanup and delegates
  * only the separately reviewed construction vocabulary after complete source
@@ -5,15 +6,17 @@
 import { createHash } from "node:crypto";
 import { types } from "node:util";
 import { z } from "zod";
+import { CURRENT_PCB_209_WORKER_STARTUP_SOURCE } from "./current-pcb-209-worker-startup-profile.ts";
 import { captureCurrentPcbStringClockReply } from "./current-pcb-string-clock-reply.ts";
 import { CURRENT_PCB_DIAGNOSTIC_WORKER_SCRIPT } from "./current-pcb-diagnostic-worker-context.ts";
 import type { DiagnosticWorkerScriptProfile } from "./current-pcb-diagnostic-worker-context.ts";
-import { CurrentPcbWorkerConstructionRunner } from "./current-pcb-worker-construction-runner.ts";
-import type { CurrentPcbWorkerConstructionPacket } from "./current-pcb-worker-construction-runner.ts";
+import { CurrentPcb209WorkerConstructionRunner, CurrentPcbWorkerConstructionRunner } from "./current-pcb-worker-construction-runner.ts";
+import type { CurrentPcb209WorkerConstructionPacket, CurrentPcbWorkerConstructionPacket } from "./current-pcb-worker-construction-runner.ts";
 import type { CurrentPcbWorkerConstructionCommand, CurrentPcbWorkerConstructionTransport } from "./current-pcb-worker-construction-contract.ts";
 import { CURRENT_PCB_WORKER_STARTUP_ATTACH } from "./current-pcb-worker-startup-contract.ts";
 import type { CurrentPcbWorkerStartupCommand, CurrentPcbWorkerStartupDependency, CurrentPcbWorkerStartupEvent } from "./current-pcb-worker-startup-contract.ts";
 
+const INTERNAL_PROFILE = Symbol("fixed-worker-startup-transport-profile");
 const token = z.string().min(1).max(256).regex(/^[A-Za-z\d_.:-]+$/u);
 const sessionToken = token.max(128);
 const expectedProjectSchema = z.object({ projectUuid: z.string().regex(/^[a-f\d]{64}$/u),
@@ -78,7 +81,15 @@ function members(dependency: CurrentPcbWorkerStartupDependency): readonly unknow
   });
 }
 
-export class CurrentPcbWorkerStartupTransport {
+type ConstructionPacket = CurrentPcbWorkerConstructionPacket | CurrentPcb209WorkerConstructionPacket;
+interface ConstructionRunner<Packet extends ConstructionPacket> {
+  readonly capture: () => Promise<Packet>;
+  readonly requireOriginal: (packet: Packet) => ReturnType<CurrentPcbWorkerConstructionRunner["requireOriginal"]>;
+  readonly status: () => ReturnType<CurrentPcbWorkerConstructionRunner["status"]>;
+  readonly whenArmed: () => Promise<void>;
+}
+class CurrentPcbWorkerStartupTransportCore<Packet extends ConstructionPacket, Runner extends ConstructionRunner<Packet>> {
+  readonly #createRunner: (transport: CurrentPcbWorkerConstructionTransport) => Runner;
   readonly #dependency: CurrentPcbWorkerStartupDependency;
   readonly #originalMembers: readonly unknown[];
   readonly #send: CurrentPcbWorkerStartupDependency["request"];
@@ -109,8 +120,8 @@ export class CurrentPcbWorkerStartupTransport {
   #initialPauseSeen = false;
   #initialResumeSeen = false;
   #initialPauseWatchdog: ReturnType<typeof setTimeout> | undefined;
-  #runner: CurrentPcbWorkerConstructionRunner | null = null;
-  #constructionCapture: Promise<CurrentPcbWorkerConstructionPacket> | null = null;
+  #runner: Runner | null = null;
+  #constructionCapture: Promise<Packet> | null = null;
   #subscriber: Subscriber | null = null;
   #unsubscribe: (() => void) | null = null;
   #failure: Error | null = null;
@@ -123,10 +134,9 @@ export class CurrentPcbWorkerStartupTransport {
   #requests = 0;
   #cleanup: Promise<void> | null = null;
 
-  /** The optional profile is an offline synthetic-test seam, never an MCP or
-   * native owner input. Installed integration must use the compiled default. */
-  public constructor(dependency: CurrentPcbWorkerStartupDependency,
-    profile: DiagnosticWorkerScriptProfile = CURRENT_PCB_DIAGNOSTIC_WORKER_SCRIPT) {
+  public constructor(internal: typeof INTERNAL_PROFILE, dependency: CurrentPcbWorkerStartupDependency,
+    profile: DiagnosticWorkerScriptProfile, createRunner: (transport: CurrentPcbWorkerConstructionTransport) => Runner) {
+    if (internal !== INTERNAL_PROFILE) { throw failure("INTERNAL_PROFILE"); } this.#createRunner = createRunner;
     this.#originalMembers = members(dependency); this.#dependency = dependency;
     this.#parentSession = sessionToken.parse(dependency.parentSessionId); this.#parentTarget = sessionToken.parse(dependency.parentTargetId);
     this.#send = dependency.request; this.#assertOwner = dependency.assertOriginalOwner;
@@ -395,7 +405,7 @@ export class CurrentPcbWorkerStartupTransport {
         Buffer.byteLength(source) !== this.#profile.scriptBytes || createHash("sha256").update(source).digest("hex") !== this.#profile.scriptSha256) { throw failure("SOURCE"); }
     this.#sourceQualified = true;
   }
-  public async capture(): Promise<CurrentPcbWorkerConstructionPacket> {
+  public async capture(): Promise<Packet> {
     if (this.#started) { throw failure("CONSUMED"); } this.#started = true;
     try {
       await this.#current(); this.#unsubscribe = this.#subscribe.call(this.#dependency, this.#event);
@@ -425,7 +435,7 @@ export class CurrentPcbWorkerStartupTransport {
           return (): void => { if (this.#subscriber === events) { this.#subscriber = null; } };
         },
       });
-      const runner = new CurrentPcbWorkerConstructionRunner(transport); this.#runner = runner;
+      const runner = this.#createRunner(transport); this.#runner = runner;
       const captured = runner.capture(); this.#constructionCapture = captured; void observe(captured); await runner.whenArmed();
       await this.#removeInitialBreakpoint(); await this.#current(); await this.#resumeInitialPause();
       const packet = await captured; await this.#current(); return packet;
@@ -438,7 +448,7 @@ export class CurrentPcbWorkerStartupTransport {
       throw error;
     } finally { this.#settled = true; }
   }
-  public async requireOriginal(packet: CurrentPcbWorkerConstructionPacket): Promise<CurrentPcbWorkerConstructionRunner> {
+  public async requireOriginal(packet: Packet): Promise<Runner> {
     await this.#current(); const runner = this.#runner; if (runner === null) { throw failure("RUNNER"); }
     await runner.requireOriginal(packet); await this.#current(); return runner;
   }
@@ -479,5 +489,23 @@ export class CurrentPcbWorkerStartupTransport {
     if (!this.#settled || this.#released) { throw failure("RELEASE_STATE"); }
     this.#sameDependency(); await bounded(this.#assertTermination.call(this.#dependency)); this.#sameDependency();
     clearTimeout(this.#initialPauseWatchdog); this.#unsubscribe?.(); this.#unsubscribe = null; this.#released = true;
+  }
+}
+
+/** The legacy optional profile remains its existing offline fixture seam.
+ * Production owners use its compiled default; generation209 has no such seam. */
+export class CurrentPcbWorkerStartupTransport extends CurrentPcbWorkerStartupTransportCore<CurrentPcbWorkerConstructionPacket, CurrentPcbWorkerConstructionRunner> {
+  public constructor(dependency: CurrentPcbWorkerStartupDependency,
+    profile: DiagnosticWorkerScriptProfile = CURRENT_PCB_DIAGNOSTIC_WORKER_SCRIPT) {
+    super(INTERNAL_PROFILE, dependency, profile, transport => new CurrentPcbWorkerConstructionRunner(transport));
+  }
+}
+/** Fixed209 original startup owner. Native ownership, source admission and
+ * initial instrumentation still precede every actual constructor capture. */
+export class CurrentPcb209WorkerStartupTransport extends CurrentPcbWorkerStartupTransportCore<CurrentPcb209WorkerConstructionPacket, CurrentPcb209WorkerConstructionRunner> {
+  public constructor(dependency: CurrentPcbWorkerStartupDependency) {
+    const source = CURRENT_PCB_209_WORKER_STARTUP_SOURCE;
+    super(INTERNAL_PROFILE, dependency, { relativePath: source.relativePath, scriptBytes: source.bytes, scriptSha256: source.sha256 },
+      transport => new CurrentPcb209WorkerConstructionRunner(transport));
   }
 }

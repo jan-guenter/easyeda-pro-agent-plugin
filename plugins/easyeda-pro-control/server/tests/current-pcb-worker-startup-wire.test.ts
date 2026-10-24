@@ -1,8 +1,9 @@
 import assert from "node:assert/strict";
 import { readFile } from "node:fs/promises";
 import { test } from "node:test";
-import { currentPcbWorkerStartupNativeCases, currentPcbWorkerStartupNativeParentCases, currentPcbWorkerStartupNativeSource } from "../src/current-pcb-worker-startup-native.ts";
-import { currentPcbWorkerStartupWire } from "../src/current-pcb-worker-startup-wire.ts";
+import { currentPcb209WorkerStartupNativeCases, currentPcbWorkerStartupNativeCases, currentPcbWorkerStartupNativeParentCases,
+  currentPcbWorkerStartupNativeSource } from "../src/current-pcb-worker-startup-native.ts";
+import { currentPcb209WorkerStartupWire, currentPcbWorkerStartupWire } from "../src/current-pcb-worker-startup-wire.ts";
 import { CURRENT_PCB_WORKER_STARTUP_WORKER_ACTOR_CLOCK_FUNCTION, currentPcbWorkerStartupUiActorCommand } from "../src/current-pcb-worker-startup-actor.ts";
 import { CURRENT_PCB_WORKER_STARTUP_CHANNEL_CALLS } from "../src/current-pcb-worker-startup-channel-observation.ts";
 
@@ -124,5 +125,44 @@ void test("native startup source is generated exactly and keeps the distinct pur
   assert.ok(native.includes("if(!workerStartup || stringPrecreate)throw Error(\"startup-purpose\")"));
   assert.ok(native.includes("if (($StringPrecreate -and $WorkerStartup) -or ($Layers209 -and ($StringPrecreate -or $WorkerStartup)))"));
   assert.ok(native.includes("[EasyedaWorkerStartupProtocol]::VerifySmoke()"));
-  assert.ok(native.includes("if ($WorkerStartup -and @('Browser.getVersion'"));
+  assert.ok(native.includes("if ($startupPurpose -and @('Browser.getVersion'"));
+});
+
+void test("native 209 cases preserve every command except the reviewed serial site and refuse the other generation", () => {
+  const current = currentPcb209WorkerStartupNativeCases(); assert.equal(current.length, samples.length);
+  let differences = 0;
+  for (const [index, legacy] of samples.entries()) {
+    const selected = current[index]; assert.ok(selected !== undefined);
+    assert.deepEqual(currentPcb209WorkerStartupWire(selected, 256).request, currentPcbWorkerStartupWire(legacy, 256).request);
+    if (legacy.method === "Debugger.setBreakpoint" && legacy.params.location.columnNumber === 145_558) {
+      assert.equal(selected.method, "Debugger.setBreakpoint");
+      if (selected.method !== "Debugger.setBreakpoint") { assert.fail("Expected serial breakpoint"); }
+      assert.deepEqual(legacy.params.location, { scriptId: "__startup_scriptId__", lineNumber: 108, columnNumber: 145_558 });
+      assert.deepEqual(selected.params.location, { scriptId: "__startup_scriptId__", lineNumber: 108, columnNumber: 145_582 });
+      assert.throws(() => currentPcb209WorkerStartupWire(legacy, 256));
+      assert.throws(() => currentPcbWorkerStartupWire(selected, 256)); differences += 1;
+    } else { assert.deepEqual(selected, legacy); }
+    assert.throws(() => currentPcb209WorkerStartupWire({ ...selected, generation: "209" }, 256));
+    assert.throws(() => currentPcb209WorkerStartupWire(selected, 257));
+  }
+  assert.equal(differences, 1);
+});
+
+void test("native 209 launch fixes its encoder without a caller generation field or duplicate program table", async () => {
+  const native = await readFile(new URL("../../scripts/pcb-diagnostic-owner.ps1", import.meta.url), "utf8");
+  const generated = currentPcbWorkerStartupNativeSource();
+  assert.equal(generated.split("public static class EasyedaWorkerStartupProtocol").length, 2);
+  assert.ok(generated.includes("public static string Encode209("));
+  assert.ok(generated.includes("static string EncodeCore("));
+  assert.ok(!generated.includes("public static string EncodeCore("));
+  assert.ok(generated.includes("return EncodeCore(id,method,sessionId,phase,fields,false);"));
+  assert.ok(generated.includes("return EncodeCore(id,method,sessionId,phase,fields,true);"));
+  assert.ok(native.includes("readonly bool workerStartup209;"));
+  assert.ok(native.includes("if ($WorkerStartup209 -and ($StringPrecreate -or $WorkerStartup -or $Layers209))"));
+  assert.ok(native.includes("$owner=if ($WorkerStartup209) {[EasyedaDiagnosticOwner]::CreateWorkerStartup209()}"));
+  assert.ok(native.includes("workerStartup209?EasyedaWorkerStartupProtocol.Encode209("));
+  assert.ok(native.includes("[EasyedaWorkerStartupProtocol]::Verify209Smoke()"));
+  assert.ok(native.includes('owner.RequestLimit!=256 || owner.nextRequest!=1'));
+  assert.ok(native.includes('fields.Add("generation","209");bool extra=false;'));
+  assert.ok(Buffer.byteLength(native) < 1_048_576);
 });

@@ -1,3 +1,4 @@
+/* oxlint-disable eslint/max-classes-per-file -- The private core stays with the fixed-generation wrappers; exporting an injectable wire selector would weaken the native boundary. */
 /** Private original-native-channel adapter. The eventual retained owner must
  * irreversibly hand off its original parent attachment and request counter.
  * This module neither launches EasyEDA nor accepts a parent receipt as authority. */
@@ -5,7 +6,7 @@ import { types } from "node:util";
 import { z } from "zod";
 import { decodeCurrentPcbDiagnosticJson } from "./current-pcb-diagnostic-json.ts";
 import { captureCurrentPcbStringClockReply } from "./current-pcb-string-clock-reply.ts";
-import { CURRENT_PCB_WORKER_STARTUP_REQUEST_LIMIT, currentPcbWorkerStartupWire } from "./current-pcb-worker-startup-wire.ts";
+import { CURRENT_PCB_WORKER_STARTUP_REQUEST_LIMIT, currentPcb209WorkerStartupWire, currentPcbWorkerStartupWire } from "./current-pcb-worker-startup-wire.ts";
 import type { CurrentPcbWorkerStartupCommand, CurrentPcbWorkerStartupDependency, CurrentPcbWorkerStartupEvent } from "./current-pcb-worker-startup-contract.ts";
 import { CURRENT_PCB_DIAGNOSTIC_PCB_OPENING_FUNCTION } from "./current-pcb-diagnostic-pcb-opening.ts";
 
@@ -28,6 +29,7 @@ export interface CurrentPcbWorkerStartupPriorUsage {
   readonly eventCount: number;
   readonly eventBytes: number;
 }
+const INTERNAL_PROFILE = Symbol("fixed-worker-startup-channel-wire");
 const token = z.string().min(1).max(128).regex(/^[A-Za-z\d_.:-]+$/u);
 const parentSchema = z.object({ targetId: token, sessionId: token,
   nextRequestId: z.number().int().min(1).max(CURRENT_PCB_WORKER_STARTUP_REQUEST_LIMIT) }).strict();
@@ -76,7 +78,8 @@ async function observe(work: Promise<unknown>): Promise<void> {
   }
 }
 
-export class CurrentPcbWorkerStartupChannel {
+class CurrentPcbWorkerStartupChannelCore {
+  readonly #wire: typeof currentPcbWorkerStartupWire;
   readonly #native: CurrentPcbWorkerStartupNativeDependency;
   readonly #members: readonly unknown[];
   readonly #parentMethod: CurrentPcbWorkerStartupNativeDependency["requireOriginalParent"];
@@ -115,7 +118,9 @@ export class CurrentPcbWorkerStartupChannel {
   #failure: Error | null = null;
   #fatal = false;
 
-  public constructor(native: CurrentPcbWorkerStartupNativeDependency, priorUsage?: CurrentPcbWorkerStartupPriorUsage) {
+  public constructor(internal: typeof INTERNAL_PROFILE, native: CurrentPcbWorkerStartupNativeDependency,
+    wire: typeof currentPcbWorkerStartupWire, priorUsage?: CurrentPcbWorkerStartupPriorUsage) {
+    if (internal !== INTERNAL_PROFILE) { throw fail("INTERNAL_PROFILE"); } this.#wire = wire;
     this.#members = members(native); this.#native = native;
     this.#parentMethod = native.requireOriginalParent; this.#terminate = native.assertOriginalTermination;
     this.#parentEvent = native.observeOriginalParentEvent; this.#exchange = native.exchange;
@@ -211,7 +216,7 @@ export class CurrentPcbWorkerStartupChannel {
   }
   // oxlint-disable-next-line eslint/require-await -- Return the original retained completion, with synchronous guards converted to rejection.
   async #request(raw: CurrentPcbWorkerStartupCommand): Promise<unknown> {
-    const normalized = currentPcbWorkerStartupWire(raw, 1).command;
+    const normalized = this.#wire(raw, 1).command;
     const { id: _id, ...command } = normalized;
     this.#attributed(command);
     if (this.#fatal || this.#failure !== null && !cleanupCommand(command)) { throw this.#failure ?? fail("FATAL"); }
@@ -223,7 +228,7 @@ export class CurrentPcbWorkerStartupChannel {
         if (!cleanupCommand(command)) { await this.#currentWithinQueue(); }
         this.#attributed(command);
         if (this.#fatal || this.#released || this.#nextId > CURRENT_PCB_WORKER_STARTUP_REQUEST_LIMIT) { throw fail("REQUEST_BUDGET"); }
-        const wire = currentPcbWorkerStartupWire(command, this.#nextId); this.#nextId += 1;
+        const wire = this.#wire(command, this.#nextId); this.#nextId += 1;
         pending = { id: wire.command.id, command, completion,
           allocation: command.method === "Debugger.setBreakpoint" || command.method === "Debugger.setInstrumentationBreakpoint",
           written: false, writeFailed: false, replied: false, result: null, remoteError: false, settled: false };
@@ -386,5 +391,16 @@ export class CurrentPcbWorkerStartupChannel {
       if (!pending.settled) { pending.settled = true; pending.completion.reject(fail("TERMINATED")); }
     }
     this.#pending.clear(); this.#listener = null;
+  }
+}
+
+export class CurrentPcbWorkerStartupChannel extends CurrentPcbWorkerStartupChannelCore {
+  public constructor(native: CurrentPcbWorkerStartupNativeDependency, priorUsage?: CurrentPcbWorkerStartupPriorUsage) {
+    super(INTERNAL_PROFILE, native, currentPcbWorkerStartupWire, priorUsage);
+  }
+}
+export class CurrentPcb209WorkerStartupChannel extends CurrentPcbWorkerStartupChannelCore {
+  public constructor(native: CurrentPcbWorkerStartupNativeDependency, priorUsage?: CurrentPcbWorkerStartupPriorUsage) {
+    super(INTERNAL_PROFILE, native, currentPcb209WorkerStartupWire, priorUsage);
   }
 }

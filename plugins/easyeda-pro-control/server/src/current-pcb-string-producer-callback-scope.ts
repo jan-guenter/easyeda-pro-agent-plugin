@@ -5,6 +5,7 @@
 import { createHash } from "node:crypto";
 import { types } from "node:util";
 import { z } from "zod";
+import { CURRENT_PCB_209_WORKER_CALLBACK_LOCATIONS } from "./current-pcb-209-worker-startup-profile.ts";
 import { freezeDeep } from "./sqlite-inventory-core.ts";
 
 export const CURRENT_PCB_STRING_PRODUCER_CALLBACK_LOCATIONS = freezeDeep({
@@ -71,9 +72,10 @@ function copyData(input: unknown, depth: number, budget: { nodes: number; bytes:
   return array ? items : object;
 }
 
-export function decodeCurrentPcbStringProducerCallbackFunction(input: unknown, kind: CurrentPcbStringProducerCallbackKind): string {
+type CallbackProfile = (typeof CURRENT_PCB_STRING_PRODUCER_CALLBACK_LOCATIONS)[CurrentPcbStringProducerCallbackKind] |
+  (typeof CURRENT_PCB_209_WORKER_CALLBACK_LOCATIONS)[CurrentPcbStringProducerCallbackKind];
+function decodeFunction(input: unknown, expected: CallbackProfile): string {
   try {
-    const expected = CURRENT_PCB_STRING_PRODUCER_CALLBACK_LOCATIONS[kind];
     const reply = z.object({ result: z.object({ type: z.literal("function"),
       className: z.literal(expected.async ? "AsyncFunction" : "Function"), description: text, objectId: token }).strict() }).strict().parse(data(input));
     if (Buffer.byteLength(reply.result.description) !== expected.sourceBytes ||
@@ -85,11 +87,10 @@ export function decodeCurrentPcbStringProducerCallbackFunction(input: unknown, k
 /** Fresh getProperties(originalCallback), ownProperties:true. All six are
  * defined within strict class bodies: even regular `o` has no caller/arguments.
  * Matching these supplied metadata does not identify the callback's receiver. */
-export function decodeCurrentPcbStringProducerCallbackScopeList(input: unknown, scriptId: string,
-  kind: CurrentPcbStringProducerCallbackKind): Readonly<{ scopesId: string; lexicalReceiverVerified: false }> {
+function decodeScopeList(input: unknown, scriptId: string,
+  expected: CallbackProfile): Readonly<{ scopesId: string; lexicalReceiverVerified: false }> {
   try {
     token.parse(scriptId);
-    const expected = CURRENT_PCB_STRING_PRODUCER_CALLBACK_LOCATIONS[kind];
     const reply = z.object({ result: z.array(property).length(expected.prototype ? 3 : 2),
       internalProperties: z.array(z.object({ name: text, value: remote }).strict()).length(3) }).strict().parse(data(input));
     const values = new Map(reply.result.map(item => [item.name, item]));
@@ -140,4 +141,20 @@ export function decodeCurrentPcbStringProducerCallbackScope(input: unknown, kind
         reply.result.at(-1)?.value.description !== "Global") { return refuse(); }
     return first.objectId;
   } catch { return refuse(); }
+}
+
+/** Public decoder surfaces select only their compiled generation profile. */
+export function decodeCurrentPcbStringProducerCallbackFunction(input: unknown, kind: CurrentPcbStringProducerCallbackKind): string {
+  return decodeFunction(input, CURRENT_PCB_STRING_PRODUCER_CALLBACK_LOCATIONS[kind]);
+}
+export function decodeCurrentPcb209WorkerCallbackFunction(input: unknown, kind: CurrentPcbStringProducerCallbackKind): string {
+  return decodeFunction(input, CURRENT_PCB_209_WORKER_CALLBACK_LOCATIONS[kind]);
+}
+export function decodeCurrentPcbStringProducerCallbackScopeList(input: unknown, scriptId: string,
+  kind: CurrentPcbStringProducerCallbackKind): Readonly<{ scopesId: string; lexicalReceiverVerified: false }> {
+  return decodeScopeList(input, scriptId, CURRENT_PCB_STRING_PRODUCER_CALLBACK_LOCATIONS[kind]);
+}
+export function decodeCurrentPcb209WorkerCallbackScopeList(input: unknown, scriptId: string,
+  kind: CurrentPcbStringProducerCallbackKind): Readonly<{ scopesId: string; lexicalReceiverVerified: false }> {
+  return decodeScopeList(input, scriptId, CURRENT_PCB_209_WORKER_CALLBACK_LOCATIONS[kind]);
 }
