@@ -129,3 +129,19 @@ and after. Private summary SHA-256:
 `5f5b36bb0e4febe111a224c6ea4280dab74c1c287c1cd45495e9f15d9d18cd9e`.
 The complete facade and bridge suites will use exact-commit CI, as allowed by
 the repository requirements, instead of a duplicate complete local run.
+
+## Initial CI refusal and correction
+
+The first head `e95511475d285b0e92235f9a730bcccf6cc47677` passed Linux build
+verification and Windows compilation/empty-Job checks. Windows CI40054357122
+then refused the synthetic suspended-image launch probe. Its separate smoke
+script still pinned the previous967711-byte helper and old digest, so it
+stopped at the size check before that probe's C# extraction or child creation.
+The raw failed workflow log is retained. This head was not merged or installed.
+
+The correction changes only the smoke script's two reviewed size/hash literals
+to the already reviewed final helper. The1MiB ceiling and all launch/identity/
+termination guards remain unchanged. The existing native regression already
+checks both pin consumers; it is now included in the affected local checks,
+and the reusable release guide calls out that dependency. No new test or
+guard relaxation was needed. Final-head CI must pass separately.
