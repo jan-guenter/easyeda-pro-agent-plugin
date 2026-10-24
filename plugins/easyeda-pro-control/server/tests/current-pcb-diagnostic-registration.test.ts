@@ -4,13 +4,14 @@ import { stripTypeScriptTypes } from "node:module";
 import { test } from "node:test";
 import vm from "node:vm";
 import { z } from "zod";
-import { CurrentPcb209DiagnosticLifecycle, CurrentPcbDiagnosticLifecycle, CurrentPcbStringPrecreateLifecycle } from "../src/current-pcb-diagnostic-lifecycle.ts";
+import { CurrentPcb209DiagnosticLifecycle, CurrentPcbDiagnosticLifecycle, CurrentPcbStringPrecreateLifecycle, CurrentPcbWorkerStartupLifecycle } from "../src/current-pcb-diagnostic-lifecycle.ts";
 import type { CurrentPcbDiagnosticLifecycleOptions } from "../src/current-pcb-diagnostic-lifecycle.ts";
 import { CURRENT_PCB_DIAGNOSTIC_PROFILE } from "../src/current-pcb-diagnostic-profile.ts";
 import { currentPcbDiagnosticToolRequestSchema, currentPcbDiagnosticValidationRequestSchema } from "../src/current-pcb-diagnostic-validation.ts";
 import { currentPcbStringPrecreateRequestSchema } from "../src/current-pcb-string-precreate-validation.ts";
-// oxlint-disable-next-line import/max-dependencies -- Registration must use all three real purpose schemas instead of permissive stand-ins.
+// oxlint-disable-next-line import/max-dependencies -- Registration must use the real purpose schemas and mode selection instead of permissive stand-ins.
 import { currentPcb209OpeningRequestSchema } from "../src/current-pcb-209-opening-validation.ts";
+import { facadeToolRegistered } from "../src/facade-mode.ts";
 
 for (const stringPurpose of [false, true]) {
 void test(`public ${stringPurpose ? "String precreate" : "diagnostic"} registration preserves local inspection/cleanup, fixed pins and reverse-owner exclusions`, async () => {
@@ -49,9 +50,10 @@ void test(`public ${stringPurpose ? "String precreate" : "diagnostic"} registrat
   const scope = vm.createContext({ z, currentPcbDiagnosticToolRequestSchema, currentPcbDiagnosticValidationRequestSchema,
     currentPcbStringPrecreateRequestSchema, currentPcb209OpeningRequestSchema, CURRENT_PCB_DIAGNOSTIC_PROFILE,
     CurrentPcbDiagnosticLifecycle: Coordinator, CurrentPcb209DiagnosticLifecycle, CurrentPcbStringPrecreateLifecycle: Coordinator,
+    CurrentPcbWorkerStartupLifecycle,
     currentPcbDiagnosticLifecycle: undefined, currentPcbStringPrecreateLifecycle: undefined, currentPcbWorkerStartupLifecycle: undefined,
     process: { env: environment }, engine, upstream,
-    facadeMode: "calculation-only", facadeToolRegistered: (): boolean => true,
+    facadeMode: "calculation-only", facadeToolRegistered,
     bridgeGate: { run: (handler: () => Promise<unknown>): Promise<unknown> => { gateCalls += 1; return handler(); } },
     retainedControlRoot: { path: "/synthetic/control" }, controlDataDirectory: (): string => "/synthetic/control",
     resolve: (): string => "/synthetic/plugin", currentSymbolOperationToolOutputSchema: z.object({ result: z.unknown() }),

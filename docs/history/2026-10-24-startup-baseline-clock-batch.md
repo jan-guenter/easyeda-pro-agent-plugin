@@ -162,3 +162,26 @@ freeze; exact-commit CI remains the complete-suite requirement.
 The final freeze checks passed: reproducible bundles, TypeScript, zero-warning
 strict lint and all six affected registration/profile tests, with no skips.
 The manifest remained unchanged throughout the tests.
+
+## First exact-commit CI and legacy fixture correction
+
+PR [115](https://github.com/jan-guenter/easyeda-pro-agent-plugin/pull/115)
+initially tested head `b11187dd2debacc0724c4f5f2b7f5d5e3819e4c4`.
+Windows [40098962901](https://github.com/jan-guenter/easyeda-pro-agent-plugin/actions/runs/40098962901)
+and the Linux build job passed. Linux
+[40098962940](https://github.com/jan-guenter/easyeda-pro-agent-plugin/actions/runs/40098962940)
+found another isolated registration fixture missing the startup constructor
+binding: `current-pcb-diagnostic-registration.test.ts` failed before its
+synthetic callback ran. Shard 3 recorded 1557 tests, 1553 passes, one failure
+and three expected platform skips. This CI failure is retained and is not
+accepted as complete-suite success. The legacy fixture and other extracted
+registration scopes are being checked before the final commit is resubmitted.
+The candidate version and production source/bundle fingerprints are unchanged.
+
+The legacy fixture now supplies the real startup lifecycle class and uses the
+actual facade mode selector instead of an always-true stub. All original
+assertions remain. A search of every index-registration VM extraction found
+three affected test files; all six tests passed together. Strict lint,
+TypeScript and repository/package/skill checks also passed. This is a test-only
+correction; the final source, bundles, native helper and compatibility manifest
+above are unchanged. The corrected PR head requires a new complete CI run.
