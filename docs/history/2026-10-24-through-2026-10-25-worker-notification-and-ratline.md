@@ -154,3 +154,47 @@ metadata. External runtime, bridge, sanitizer and SDK pins remain unchanged.
 All seven official skill validators and the official plugin validator passed.
 Both generated JavaScript bundles reproduced byte-for-byte after the full
 build. These checks establish package consistency, not connected acceptance.
+
+## Publication and official installation
+
+Payload `ea9e031e2fb8025ee984651e41d84fd4a7fae95f` passed all eight facade
+shards, build/package/bridge checks and aggregate gate in
+[Linux CI40137781296](https://github.com/jan-guenter/easyeda-pro-agent-plugin/actions/runs/40137781296).
+[Windows CI40137781398](https://github.com/jan-guenter/easyeda-pro-agent-plugin/actions/runs/40137781398)
+also passed. Protected [PR119](https://github.com/jan-guenter/easyeda-pro-agent-plugin/pull/119)
+merged as `7699355d1a85390d696a0a41e5812ea2930e1697`. The complete merged tree
+`e4dcfa2e1d2e3db67ff95c0a969c65df9898d46a` exactly equals the tested payload.
+Main Windows CI40138635058 passed; automatic main Linux CI40138635110 remains
+in progress at this handoff. There was no intervening payload change.
+
+The official Git marketplace upgrade installed and enabled
+`0.3.0+codex.20261024221337` from
+`https://github.com/jan-guenter/easyeda-pro-agent-plugin.git`. The upgrade
+succeeded on its first invocation. Final registration and marketplace HEAD
+match the merged release. No installed cache was patched.
+
+The maintained verifier matched all 1,916 packaged files and 42 directories,
+40,845,044 bytes, and committed modes. The plugin subtree is
+`7b125cdf30e41ffcfda5a12ffdef325ba4cd6e92`; its inventory SHA-256 is
+`6462b0cf18d4292caa2addfebc8b9d7f5916b3ac6893016b0606c762fbe580d9`.
+Installed offline probing passed 13 queries with 26 tools under an explicitly
+synthetic legacy profile and pinned Node 24.18.0. It closed with exit 0 and no
+stderr. Sampling observed no descendants or non-stdio sockets; continuous
+isolation and connected validation are not claimed.
+
+The current chat still owns the old 191751 facade. A fresh Codex session must
+load and admit the new snapshot before live work. The old disposable case is
+terminal released and must not be replayed. The next live scope is a new
+disposable constructor/empty-baseline case, followed by the implementation
+backlog above. A private handoff identifies the exact ratline insertion points
+and cross-owner cleanup barrier. No production project was accessed.
+
+This publication appendix is retained locally for the next history commit so
+recording the completed release does not change its tested payload.
+
+## 2026-10-25 main CI and next batch
+
+Main Linux CI40138635110 is now completed successfully for
+`7699355d1a85390d696a0a41e5812ea2930e1697`; main Windows already passed.
+The next chat could not obtain live control because another chat owned the
+facade. No new CAD call occurred. See the [next implementation batch](2026-10-25-native-startup-and-ownership-diagnostics.md).

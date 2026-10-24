@@ -85,7 +85,7 @@ import { WindowsNativeUiController, nativeUiRequestSchema } from "./windows-nati
 import { runNativeUiWithOperationAdmission } from "./native-ui-admission.ts";
 import { discardCloseConfirmation, nativeCloseRecoveryRequestSchema } from "./native-close-recovery.ts";
 import { exactReadRequestSchema } from "./exact-readers.ts";
-import { acquireFacadeLease } from "./lease.ts";
+import { acquireFacadeLeaseOrDiagnose } from "./ownership-conflict-startup.ts";
 import { discoverReviewedOrLiveTools } from "./reviewed-upstream-tools.ts";
 import { buildDsnExportCode, wrapWithContextGuard } from "./runtime-scripts.ts";
 import { UpstreamEasyedaClient, UpstreamStartupError } from "./upstream.ts";
@@ -190,7 +190,8 @@ const UI_MUTATING_READ_NAMES = new Set([
 await assertSelfSoftCoreLimitZero();
 await ensureManagedDirectory(controlDataDirectory());
 const retainedControlRoot = await controlRootCapability();
-const facadeLease = await acquireFacadeLease(retainedControlRoot);
+const facadeLease = await acquireFacadeLeaseOrDiagnose(retainedControlRoot);
+if (facadeLease === null) { process.exit(0); }
 const upstream = new UpstreamEasyedaClient({
   controlRoot: retainedControlRoot,
   onChildStarted: (pid): Promise<void> => facadeLease.bindChild(pid),

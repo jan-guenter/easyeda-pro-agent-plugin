@@ -85,10 +85,13 @@ connected acceptance remains pending. It admits neither populated geometry nor
 complete startup, source membership or saved-state proof. The six-sample actor
 adapter remains private. Ratline construction/capture composites, original child
 source qualification and fixed native command encoding have offline coverage.
-The source owner holds the imported script before handing its original event
-authority to the successor. Native pre-execution PCB integration, cross-owner
-child-start cleanup and cumulative budgets remain unfinished; no native
-PCB-worker/ratline capture route is enabled.
+Private PCB source capture now arms before its consumed navigation, qualifies
+all 29 source phases and holds the final import for the actual composite. The
+original child-start guard requires its real bootstrap owner and keeps failed
+children held through cleanup. These pieces have offline composition coverage.
+Native frame/target admission, channel integration, cumulative budgets and
+cross-realm completion remain unfinished; no native PCB-worker/ratline capture
+route is enabled.
 The [public catalog queries](current-system-library.md) require explicit network
 confirmation and use fixed credential-free vendor endpoints, without local
 application/database access. Footprint/symbol/device search, symbol/device
