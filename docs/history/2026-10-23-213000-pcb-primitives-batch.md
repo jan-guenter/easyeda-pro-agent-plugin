@@ -147,3 +147,83 @@ initialization mismatch, not evidence that the production inverse ran or failed.
 The local aggregate was interrupted before editing the fixture; its partial run
 is not a final verification. Production source, bundles and pins remain frozen
 for this test-only correction. The failed CI and local logs are retained.
+
+## Terminal release and installation
+
+2026-10-23 22:44 UTC, 2026-10-24 in the local timezone. This appendix resolves
+the earlier pending release statements without replacing their failure records.
+
+Final PR payload `d9beeb9e7cc7c90b2b3a22b8725371c38e157975` passed the complete
+frozen local verification. The facade suite ran 12,498 tests, with 12,494 passes,
+four platform-specific skips and no failures or cancellations. All 424 bridge
+tests passed. Strict types, type-aware lint with zero warnings, coverage,
+generated protocols, build, compatibility, repository privacy checks, the MCP
+contract and all seven skills passed. The installed skill-creator validator
+also accepted all seven skills. No external official plugin validator was
+available; the mandatory maintained validators passed.
+
+The clean dependency install, dependency tree, 151 registry signatures,
+40 attestations, zero-vulnerability audit and sanitizer check passed under
+Node 24.18.0 and npm 11.16.0 with core dumps disabled. Both generated runtime
+bundles reproduced exactly after the full suite and merge. The facade source
+projection covers 635 files with SHA-256
+`405e1ec86326b31f939df6ab42094ee3cc379d80c7a3ca48da06588b7f3fda53`.
+The three-bundle projection is
+`6e98ff2cc2b8c00f8ed4490b61f03b84741615732a4ad06a07a0691c0ce9a0f7`.
+External upstream, EasyEDA, bridge and installed-bundle pins stayed unchanged.
+
+[PR 108](https://github.com/jan-guenter/easyeda-pro-agent-plugin/pull/108)
+merged normally through branch protection as
+`1363bddb4b9a642cc2ca4d042b5c7f85bafbfc17`. Its exact final payload passed
+[Linux CI 40031752806](https://github.com/jan-guenter/easyeda-pro-agent-plugin/actions/runs/40031752806)
+and [Windows CI 40031752814](https://github.com/jan-guenter/easyeda-pro-agent-plugin/actions/runs/40031752814).
+The PR and main full Git trees both equal
+`4cdb7d9060241068722dafcef308f6f77c15a96c`; the plugin subtree is
+`e110fd085739ab188a7e51b5a189e7a98419bb9e`.
+The same-tree main [Windows follow-up](https://github.com/jan-guenter/easyeda-pro-agent-plugin/actions/runs/40035140373)
+passed. At this cutoff the main [Linux follow-up](https://github.com/jan-guenter/easyeda-pro-agent-plugin/actions/runs/40035140331)
+was still running; the exact-payload PR checks were already green.
+
+The official CLI upgraded the configured Git marketplace
+`https://github.com/jan-guenter/easyeda-pro-agent-plugin.git` from a neutral
+directory with installer umask 022. Its completed result reported no errors.
+A subsequent listing confirmed `0.3.0+codex.20261023213000` installed and enabled;
+the cached marketplace HEAD equals the merged main commit. No redundant add,
+manual cache edit, owner termination or gateway rebinding occurred.
+
+The maintained read-only installed-payload verifier matched all 1,809 files,
+42 directories including the root, 38,746,097 bytes and exact committed modes.
+Inventory SHA-256 is
+`a02861722d5f9378af474885a8a8b123c95edfd33b3e0f4f94ddb622e6190eb4`;
+the private verification receipt hashes to
+`c16a47986643a2ea5d4b77ac5ff7db8e17bd2388ff7487eca2d1803fa5d7ccd8`.
+The installed configured-startup probe passed with 26 exposed tools and ten
+offline catalog queries using a new private synthetic profile. It observed
+normal EOF exit of its own child and sampled no descendants or non-stdio
+sockets. It selected no live control root and ran no upstream implementation or
+EasyEDA process. Continuous isolation and current-generation live admission
+are not claimed. Its private receipt hashes to
+`f87e01b956f2be4be9e8463983cace72c59c3c38b7927147e29b4e11dec8435a`.
+
+## Fresh-session handoff
+
+The current host still runs `0.3.0+codex.20261023195500`. Stop live calls here;
+load the installed `213000` snapshot in a fresh Codex session and admit the
+actual process before the new disposable primitive-reader case. The completed
+layer and shortcut cases are terminal and must not be replayed. No EasyEDA
+Save, restore, design edit or excluded production-project access occurred in
+this batch.
+
+The six remaining-work items above remain open. The next implementation batch
+should group related readers and lifecycle work before another release. An
+empty fixture result must not be presented as populated Line, Arc, Via or text
+coverage. Source/offline tests and installation do not establish that live
+coverage or authorize production writers.
+
+This terminal appendix is retained locally for the next grouped documentation
+commit and published as a comment on PR 108. It changes no installed payload
+and does not require another plugin version.
+
+The initial appendix privacy check rejected a private project name before
+publication. That name was removed, without changing the privacy rule. The
+failed check remains in private evidence; the corrected appendix was rechecked.

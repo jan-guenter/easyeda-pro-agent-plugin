@@ -12,7 +12,8 @@ EasyEDA Pro 3.2.209 has a separate thirteen-tool profile: API reference, local
 discovery, status, bounded calculations/system and language/viewport readers,
 tab-count/active-identity/shortcut observations, public catalog metadata/search,
 ordinary launch and a separate disposable project/PCB opening lifecycle with
-bounded layer metadata, copper count, and Line/Arc/Via/standalone-text observations.
+bounded layer metadata, copper count, Line/Arc/Via/standalone-text observations,
+and grouped component/pad/attribute/dimension/image observations.
 Catalog queries require explicit network confirmation and run without the
 application; they are not SDK execution. Disposable opening retains its original
 process through cleanup and can trigger ordinary migration/cache/automatic-Save

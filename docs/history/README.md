@@ -45,6 +45,10 @@ layout. The connected ledger retains its generation and case anchors.
 
 | Record | Former path |
 | --- | --- |
+| [2026-10-24-000500-extended-pcb-readers-batch.md](2026-10-24-000500-extended-pcb-readers-batch.md) | Five-family209 reader batch, dependency fixes and pending release handoff |
+| [2026-10-24-213000-connected-pcb-primitives.md](2026-10-24-213000-connected-pcb-primitives.md) | Installed213000 Line/Via populated and Arc/String empty loaded-view observations with original cleanup |
+| [2026-10-24-dependency-advisory-updates.md](2026-10-24-dependency-advisory-updates.md) | body-parser/qs and fast-uri security updates, compatibility review and focused checks |
+| [2026-10-24-pcb209-extended-reader-research.md](2026-10-24-pcb209-extended-reader-research.md) | Installed-source semantics and bounded projections for Component/Pad/Attribute/Dimension/Image |
 | [2026-10-23-213000-pcb-primitives-batch.md](2026-10-23-213000-pcb-primitives-batch.md) | Four-family209 native reader batch, coverage, verification and release handoff |
 | [2026-10-23-195500-connected-layers-shortcuts.md](2026-10-23-195500-connected-layers-shortcuts.md) | Installed195500 layer and shortcut observations with original cleanup |
 | [2026-10-23-pcb209-reader-extension-research.md](2026-10-23-pcb209-reader-extension-research.md) | Installed-source semantics for Line/Arc/Via/parentless String projections |

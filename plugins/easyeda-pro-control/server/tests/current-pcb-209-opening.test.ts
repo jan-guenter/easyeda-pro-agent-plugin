@@ -74,3 +74,15 @@ void test("209 primitive reader takes only its original operation binding and re
   }
   assert.equal(currentPcb209OpeningRequestSchema.safeParse({ action: "inspect", operationId: bound.operationId, observation: "primitives209" }).success, true);
 });
+
+void test("209 extended collections accept no caller target, filter, family or native topic", () => {
+  const request = { action: "observe-extended-primitives", ...bound };
+  assert.deepEqual(currentPcb209OpeningRequestSchema.parse(request), request);
+  assert.equal(currentPcbDiagnosticValidationRequestSchema.safeParse(request).success, false);
+  for (const extra of [{ target: {} }, { topic: "pcb/getAllComponent" }, { code: "1" }, { ids: [] },
+    { family: "Pad" }, { filter: {} }, { limit: 1 }]) {
+    assert.equal(currentPcb209OpeningRequestSchema.safeParse({ ...request, ...extra }).success, false);
+  }
+  assert.equal(currentPcb209OpeningRequestSchema.safeParse({ action: "inspect", operationId: bound.operationId,
+    observation: "extended-primitives209" }).success, true);
+});

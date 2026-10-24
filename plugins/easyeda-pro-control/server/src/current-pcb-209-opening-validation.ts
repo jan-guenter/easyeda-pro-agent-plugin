@@ -11,7 +11,7 @@ const bound = { operationId, expectedBindingSha256: digest };
 export const currentPcb209OpeningRequestSchema = z.discriminatedUnion("action", [
   z.object({ action: z.literal("launch"), operationId, confirmValidationOnly: z.literal(true),
     confirmDiagnosticLaunch: z.literal(true), acceptExistingProfileEffects: z.literal(true) }).strict(),
-  z.object({ action: z.literal("inspect"), operationId, observation: z.enum(["browser", "frames", "script", "pcb-opening", "layers209", "primitives209"]).optional() }).strict(),
+  z.object({ action: z.literal("inspect"), operationId, observation: z.enum(["browser", "frames", "script", "pcb-opening", "layers209", "primitives209", "extended-primitives209"]).optional() }).strict(),
   z.object({ action: z.literal("settle-records"), operationId, expectedIntentSha256: digest }).strict(),
   z.object({ action: z.literal("cleanup-unlaunched"), operationId, expectedIntentSha256: digest }).strict(),
   z.object({ action: z.literal("cleanup-no-process"), operationId, expectedIntentSha256: digest }).strict(),
@@ -19,6 +19,7 @@ export const currentPcb209OpeningRequestSchema = z.discriminatedUnion("action", 
   z.object({ action: z.literal("observe-pcb-opening"), ...bound }).strict(),
   z.object({ action: z.literal("observe-layers"), ...bound }).strict(),
   z.object({ action: z.literal("observe-primitives"), ...bound }).strict(),
+  z.object({ action: z.literal("observe-extended-primitives"), ...bound }).strict(),
   z.object({ action: z.literal("observe-window"), ...bound }).strict(),
   z.object({ action: z.literal("observe-termination"), ...bound }).strict(),
   z.object({ action: z.literal("release-closed"), ...bound }).strict(),
@@ -44,6 +45,7 @@ export function queryCurrentPcb209Opening(input: unknown = {}): Record<string, u
       "The existing native helper retains the original process, Job and pipe through normal close, observed original termination and release. No force termination or Save/Discard choice is offered. Restarted hosts cannot reconstruct that ownership from records.",
       "After accepted original PCB opening, observe-layers consumes one double-sampled native layer collection with identity checks before and after both samples. It returns the nine-field getAllLayers projection and enabled native SIGNAL/PLANE count plus two. Raw colors are not repaired. This is not a physical stackup, complete startup, saved state or writer baseline. getCurrentLayer remains excluded.",
       "After accepted original PCB opening, observe-primitives consumes two matching bounded native collections for Line, Arc, Via and parentless String, with ordered IDs and source-derived geometry projections. Only existing native views are included; models without views, component text, other families, complete-board membership, connectivity and saved-state proof are excluded. This native task equivalent is not public SDK instance parity or writer authority.",
+      "The separate observe-extended-primitives stage observes Component, Pad, Attribute, Dimension and Image loaded-view projections and ordered IDs twice. Attribute parent groups retain observed ordering, including empty groups. These samples do not prove reciprocal ownership, symbol-pin mapping, image assets, rendered geometry, saved membership or a complete writer baseline.",
       "The 103-request and 64MiB diagnostic transport budgets are unchanged. No ratline worker capture, debugger pause or user-selected native command is exposed.",
     ], ...(request.includeSchemas ? { inputSchema: z.toJSONSchema(currentPcb209OpeningRequestSchema) } : {}) };
 }

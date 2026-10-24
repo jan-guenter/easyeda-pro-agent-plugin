@@ -12,7 +12,7 @@ against every esbuild input and its installed license during each build.
 - [`ajv` 8.20.0](https://github.com/ajv-validator/ajv), [MIT License](plugins/easyeda-pro-control/licenses/ajv-MIT.txt).
 - [`ajv-formats` 3.0.1](https://github.com/ajv-validator/ajv-formats), [MIT License](plugins/easyeda-pro-control/licenses/ajv-formats-MIT.txt).
 - [`fast-deep-equal` 3.1.3](https://github.com/epoberezkin/fast-deep-equal), [MIT License](plugins/easyeda-pro-control/licenses/fast-deep-equal-MIT.txt).
-- [`fast-uri` 3.1.8](https://github.com/fastify/fast-uri), [BSD 3-Clause License](plugins/easyeda-pro-control/licenses/fast-uri-BSD-3-Clause.txt).
+- [`fast-uri` 3.1.9](https://github.com/fastify/fast-uri), [BSD 3-Clause License](plugins/easyeda-pro-control/licenses/fast-uri-BSD-3-Clause.txt).
 - [`json-schema-traverse` 1.0.0](https://github.com/epoberezkin/json-schema-traverse), [MIT License](plugins/easyeda-pro-control/licenses/json-schema-traverse-MIT.txt).
 - [`ws` 8.21.3](https://github.com/websockets/ws), [MIT License](plugins/easyeda-pro-control/licenses/ws-MIT.txt).
 - [`zod` 4.6.7](https://github.com/colinhacks/zod), [MIT License](plugins/easyeda-pro-control/licenses/zod-MIT.txt).

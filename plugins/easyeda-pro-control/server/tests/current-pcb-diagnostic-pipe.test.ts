@@ -8,7 +8,7 @@ import { setImmediate as yieldToEventLoop } from "node:timers/promises";
 import { CurrentPcbDiagnosticPipe, CurrentPcbStringPrecreatePipe } from "../src/current-pcb-diagnostic-pipe.ts";
 import { CURRENT_PCB_STRING_PRECREATE_REQUEST_LIMIT, currentPcbStringWorkerCommand } from "../src/current-pcb-string-commands.ts";
 import type { DiagnosticEvent } from "../src/current-pcb-diagnostic-protocol.ts";
-import { DIAGNOSTIC_REQUEST_LIMIT, DIAGNOSTIC_WORKER_ATTACH_PARAMS, diagnosticNativeRequest, diagnosticPrimitives209Params, diagnosticWorkerEvaluationParams } from "../src/current-pcb-diagnostic-protocol.ts";
+import { DIAGNOSTIC_REQUEST_LIMIT, DIAGNOSTIC_WORKER_ATTACH_PARAMS, diagnosticExtendedPrimitives209Params, diagnosticNativeRequest, diagnosticPrimitives209Params, diagnosticWorkerEvaluationParams } from "../src/current-pcb-diagnostic-protocol.ts";
 
 /** Real Node byte streams only, with no Windows process, application, bridge,
  * filesystem, socket or native process-owner authority in these tests. */
@@ -65,6 +65,29 @@ void test("209 primitive pipe binds the original attachment and retains streams 
   assert.equal(value.pipe.status().failureObservation?.request?.phase, "primitives209");
   retained(value);
   await assert.rejects(value.pipe.observePrimitives209("ui-original", target), /PIPE_REMOTE-ERROR/u);
+  assert.equal(value.sent.length, 2);
+});
+
+void test("209 extended primitive pipe binds its fixed original-context command and keeps streams after failure", async context => {
+  const path = String.raw`C:\Reviewed\ExtendedPrimitiveFixture.eprj2`, value = fixture(context);
+  const target = { rawWindowsPath: path, projectUuid: createHash("sha256").update(path).digest("hex"),
+    documentUuid: "b".repeat(16), expectedSourceSha256: "c".repeat(64), branchUuid: "a".repeat(32) };
+  await assert.rejects(value.pipe.observeExtendedPrimitives209("ui-original", target), /PCB209_EXTENDED_PRIMITIVES_PIPE_INPUT/u);
+  assert.equal(value.sent.length, 0);
+  const attachment = value.pipe.attachTarget("original-target", () => { assert.fail("Unexpected diagnostic event"); });
+  value.input.write(wire({ id: 1, result: { sessionId: "original-session" } })); await attachment;
+  const observation = value.pipe.observeExtendedPrimitives209("ui-original", target);
+  const command = { id: 2, method: "Runtime.callFunctionOn", params: diagnosticExtendedPrimitives209Params("ui-original", target), sessionId: "original-session" };
+  assert.equal(value.sent[1]?.toString(), wire(command).toString());
+  const request = diagnosticNativeRequest(wire(command));
+  assert.equal(request["pcbExtendedPrimitives209Phase"], "observe");
+  assert.equal(Object.hasOwn(request, "functionDeclaration"), false);
+  const refusal = assert.rejects(observation, /PIPE_REMOTE-ERROR/u);
+  value.input.write(wire({ id: 2, sessionId: "original-session", error: { code: -32_000, message: "private" } }));
+  await refusal;
+  assert.equal(value.pipe.status().failureObservation?.request?.phase, "extended-primitives209");
+  retained(value);
+  await assert.rejects(value.pipe.observeExtendedPrimitives209("ui-original", target), /PIPE_REMOTE-ERROR/u);
   assert.equal(value.sent.length, 2);
 });
 

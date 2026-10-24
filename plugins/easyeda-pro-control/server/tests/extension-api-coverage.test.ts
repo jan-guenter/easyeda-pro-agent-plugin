@@ -124,11 +124,35 @@ void test("209 primitive coverage adds exactly eight bounded native subsets whil
     assert.ok(isRecord(discovery.result)); assert.equal(discovery.result["connectedValidation"], false); assert.equal(discovery.result["executionAuthorized"], false);
     const actions = discovery.result["actions"]; assert.ok(Array.isArray(actions)); assert.ok(actions.includes("observe-primitives"));
   }
-  for (const path of ["eda.pcb_PrimitiveLine.get", "eda.pcb_PrimitiveComponent.getAll", "eda.pcb_PrimitivePad.getAll",
-    "eda.pcb_PrimitiveAttribute.getAll", "eda.pcb_PrimitiveDimension.getAll", "eda.pcb_PrimitiveImage.getAll",
+  for (const path of ["eda.pcb_PrimitiveLine.get",
     "eda.pcb_SelectControl.getSelectedPrimitives", "eda.pcb_Primitive.getPrimitiveTypeByPrimitiveId", "eda.pcb_PrimitiveLine.create"]) {
     const row = rows.find(entry => entry.path === path); assert.ok(row);
     assert.equal(row.routes.some(entry => entry.tool === "easyeda_control_pcb209_opening"), false);
+  }
+});
+
+void test("209 extended collection coverage adds ten scoped routes without enabling filters or writers", () => {
+  const rows = inventoryExtensionApiCoverage();
+  const families = ["Component", "Pad", "Attribute", "Dimension", "Image"];
+  const expected = families.flatMap(family => ["getAll", "getAllPrimitiveId"].map(method => `eda.pcb_Primitive${family}.${method}`));
+  const selected = rows.filter(row => row.routes.some(route => route.tool === "easyeda_control_pcb209_opening" && route.selector === "observe-extended-primitives"));
+  assert.deepEqual(selected.map(row => row.path).toSorted(), expected.toSorted());
+  for (const row of selected) {
+    const route = row.routes.find(entry => entry.selector === "observe-extended-primitives"); assert.ok(route);
+    assert.equal(row.completeDeclaredContractSupported, false);
+    assert.equal(row.currentGenerationLiveValidation, "not-recorded");
+    assert.equal(route.implementation, "native-task-equivalent");
+    assert.equal(route.validation, "offline-regression;current-live-unclaimed");
+    assert.equal(route.executionState, "available-with-runtime-guards");
+    assert.deepEqual(route.documentTypes, [3]);
+    assert.ok(route.inputDiscovery);
+    const discovery = queryOfflineApi(apiRequestSchema.parse(route.inputDiscovery.arguments["request"]));
+    assert.ok(isRecord(discovery.result)); assert.equal(discovery.result["executionAuthorized"], false);
+    const actions = discovery.result["actions"]; assert.ok(Array.isArray(actions)); assert.ok(actions.includes("observe-extended-primitives"));
+  }
+  for (const family of families) {
+    const row = rows.find(entry => entry.path === `eda.pcb_Primitive${family}.get`); assert.ok(row);
+    assert.equal(row.routes.some(route => route.tool === "easyeda_control_pcb209_opening"), false);
   }
 });
 

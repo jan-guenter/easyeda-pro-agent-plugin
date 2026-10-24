@@ -10,7 +10,7 @@ build.
 - `ajv` 8.20.0 — MIT (`licenses/ajv-MIT.txt`)
 - `ajv-formats` 3.0.1 — MIT (`licenses/ajv-formats-MIT.txt`)
 - `fast-deep-equal` 3.1.3 — MIT (`licenses/fast-deep-equal-MIT.txt`)
-- `fast-uri` 3.1.8 — BSD-3-Clause (`licenses/fast-uri-BSD-3-Clause.txt`)
+- `fast-uri` 3.1.9 — BSD-3-Clause (`licenses/fast-uri-BSD-3-Clause.txt`)
 - `json-schema-traverse` 1.0.0 — MIT (`licenses/json-schema-traverse-MIT.txt`)
 - `ws` 8.21.3 — MIT (`licenses/ws-MIT.txt`)
 - `zod` 4.6.7 — MIT (`licenses/zod-MIT.txt`)

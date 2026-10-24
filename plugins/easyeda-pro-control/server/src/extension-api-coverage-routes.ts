@@ -111,6 +111,26 @@ for (const [family, detail] of [
   } });
 }
 
+for (const [family, detail] of [
+  ["Component", "Placement, lock, layer and six selected optional metadata fields, with absent/undefined/present states retained separately. Formula values are not evaluated, and library identity is not verified."],
+  ["Pad", "Native placement, supported copper and hole shapes, masks and thermal parameters. Shape-space polygon paths have no assumed board transform; no resolved physical stack, rule refresh, parent proof or fabrication geometry."],
+  ["Attribute", "Observed component parent groups, including empty groups, and current native attribute text/style. Component/group order and membership are compared, but reciprocal ownership and symbol-pin mapping are not proved."],
+  ["Dimension", "Native Length/Radius/Protractor coordinates and annotation style. Canvas units reflect the current getter's override, not verified stored units or measured rendering."],
+  ["Image", "Combined Image/Picture placement, dimensions and display flags only. Asset paths/content, rendered boundaries and saved ownership remain excluded."],
+] as const) {
+  groups.push({ namespace: `pcb_Primitive${family}`, methods: ["getAll", "getAllPrimitiveId"], route: {
+    tool: "easyeda_control_pcb209_opening", selector: "observe-extended-primitives", implementation: "native-task-equivalent",
+    scope: `Separately pinned installed209 original-owner disposable collection observation, not public SDK instance parity. Two matching complete ordered native projections for Component, Pad, Attribute, Dimension and Image follow exact PCB source/identity admission, retaining the captured receiver and target around every await. ${detail} At most256 rows per family,256 Attribute parent groups and393216 UTF-8 bytes for the whole native/final packet. Only existing loaded views are projected; empty output does not prove an empty board. Unsupported fields/shapes, malformed Unicode, sparse/accessor arrays, non-finite/signed-zero numbers, duplicate IDs and changed samples refuse whole. No caller filters, selected IDs, exact-ID lookup, source export, edits or explicit Save. Observations are sequential and native serialization precedes output bounds. No complete startup, source/SQL baseline, connectivity, persistence or writer authority. The one-shot stage and original normal-close/root/Job/release lifecycle remain mandatory; older206 owners cannot select it.`,
+    source: ["current-pcb-209-extended-primitives.ts", "current-pcb-209-opening-validation.ts", "current-pcb-209-opening-profile.ts",
+      "current-pcb-diagnostic-lifecycle.ts", "current-pcb-diagnostic-lifecycle-journal.ts", "current-pcb-diagnostic-owner.ts",
+      "current-pcb-diagnostic-pipe.ts", "current-pcb-diagnostic-protocol.ts", "current-pcb-geometry.ts", "../../scripts/pcb-diagnostic-owner.ps1"],
+    tests: ["current-pcb-209-extended-primitives.test.ts", "current-pcb-209-extended-primitives-native.test.ts", "current-pcb-209-opening.test.ts",
+      "current-pcb-diagnostic-owner.test.ts", "current-pcb-diagnostic-pipe.test.ts", "current-pcb-diagnostic-lifecycle.test.ts", "extension-api-coverage.test.ts"],
+    documentTypes: [3], validation: "offline-regression;current-live-unclaimed", executionState: "available-with-runtime-guards",
+    inputDiscovery: { tool: "easyeda_control_api", arguments: { request: { action: "pcb209-opening", query: { includeSchemas: true } } } },
+  } });
+}
+
 function add(namespace: string, methods: readonly string[], tool: string, selector: string,
   implementation: ApiCoverageRoute["implementation"], scope: string, source: readonly string[], tests: readonly string[], admittedDocumentTypes?: readonly number[]): void {
   let inputDiscovery: ApiCoverageRoute["inputDiscovery"];

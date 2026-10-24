@@ -22,6 +22,12 @@ and384KiB aggregate bounds refuse excess output. It does not include raw models
 without views, other families or complete connectivity, and is not SDK-instance
 parity. The primitive route has source/offline evidence only; installed live
 validation remains pending.
+The separate `observe-extended-primitives` stage adds Component, Pad, Attribute,
+Dimension and Image projections with ordered IDs, Attribute parent groups and
+explicit Component metadata presence states. Its limits are 256 rows per family,
+256 Attribute groups and 384 KiB aggregate output. No child-pad or reciprocal
+ownership, complete asset, rendered geometry, source or saved-state proof follows.
+This new stage has no connected validation yet.
 The new ratline source verifier and finite-role
 model are dormant implementation groundwork, not an executable capture route.
 The [public catalog queries](current-system-library.md) require explicit network
