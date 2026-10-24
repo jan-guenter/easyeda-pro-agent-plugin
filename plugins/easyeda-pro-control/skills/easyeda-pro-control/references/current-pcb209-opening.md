@@ -39,7 +39,10 @@ not the larger older diagnostic catalog, determines available actions.
    method or existing ordinary owner cannot be substituted.
    For Line, Arc, Via and parentless text, `observe-primitives` is a separate
    once-only stage with the same binding and no family, filter or ID arguments.
-   Either reader may be used independently, or both under this original owner.
+   `observe-extended-primitives` is a third once-only stage for Component, Pad,
+   Attribute, Dimension and Image. It has the same original binding and accepts
+   no selectors. Use only the readers needed for the task; all three can share
+   the original owner within the existing transport budget.
 7. Use `observe-window`, then one `normal-close` with its observed `hwnd` and
    `confirmNormalClose:true`. Observe original root/Job termination with
    `observe-termination`, then call `release-closed`. Finish any offered
@@ -98,11 +101,51 @@ already dispatched callback; failure consumes this stage. No partial family
 result, selected-object query, source export, edit or Save is provided. Use the
 result for its four projected families, not as a complete baseline for writing.
 
+## Extended object result
+
+`observe-extended-primitives` reads Component, Pad, Attribute, Dimension and
+Image in that order. Each of two matching snapshots is bracketed by native
+tab/type observations. Captured frame, project and receiver checks run around
+every awaited call. Limits are 256 rows per family, 256 Attribute parent groups
+and 393216 UTF-8 bytes for the complete native packet and final result. A refusal
+consumes the stage and returns no partial family results.
+
+The result retains ordered IDs and these projected fields:
+
+- Component placement, layer, lock and six optional metadata strings. A separate
+  `componentMetadataStates` array distinguishes absent, undefined and present
+  fields. Empty strings and Name formulas remain unchanged. This is not library,
+  device or 3D enrichment.
+- Pad placement, number/net, null/ROUND/SLOT holes, ELLIPSE/OVAL/RECT/POLYGON
+  default copper shapes, mask expansion and thermal settings. Distances are mil,
+  rotation and thermal angles are degrees, and rectangle corner ratio is percent.
+  Polygon paths remain in native-pad-style space. Do not infer a board transform
+  or complete physical layer stack. Unsupported shapes refuse the whole result.
+- Attribute text, placement, style and display flags, with complete observed
+  component groups including empty groups. Their parent roster must match the
+  same snapshot's Component roster in native order. This establishes that
+  association only, not reciprocal ownership or symbol-pin mapping. Name values
+  may already be formula-expanded; null color can represent an empty native color.
+- Dimension Length/Radius/Protractor coordinates and annotation style. Geometry
+  uses mil; `canvasUnit` is the current document setting returned by the getter,
+  not proof of the stored annotation unit or the rendered measurement.
+- Image and Picture placement, dimensions, rotation and mirror state. No asset
+  bytes, paths, hashes, availability or rendered boundaries are returned.
+
+These are loaded-view projections. Models without existing views are absent.
+Native serializers can round shape parameters or omit small polygon segments;
+the observations do not reconstruct them. Image serialization can allocate
+temporary geometry before bounds, and Component observation can initialize an empty
+length-cache singleton. There is no geometry edit, source export or explicit
+Save. The ten-second deadline does not cancel an already dispatched vendor
+callback. Samples are sequential, not atomic, and grant no writer baseline.
+
 ## Failure and cleanup
 
 After an error or lost reply, use `inspect`; never repeat navigation under the
 same or a new ID. Optional inspection stages are only `browser`, `frames`,
-`script`, `pcb-opening`, `layers209` and `primitives209`. Inspection returns the
+`script`, `pcb-opening`, `layers209`, `primitives209` and
+`extended-primitives209`. Inspection returns the
 retained attempt; it does not dispatch another read. Workers and the complete native
 geometry/model baseline remain unavailable.
 Original normal cleanup remains available after a failed observation and does

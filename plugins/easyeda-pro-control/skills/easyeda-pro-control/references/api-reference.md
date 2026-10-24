@@ -91,6 +91,9 @@ and copper count. `observe-primitives` separately returns Line/Arc/Via/parentles
 String loaded-view projections and IDs. Neither establishes complete-board,
 physical-stackup, saved-state or writer authority. The older opening,
 worker, model and writer contracts below do not transfer to that route.
+The separate `observe-extended-primitives` stage covers Component, Pad,
+Attribute, Dimension and Image collections, including observed Attribute parent
+groups. It adds no filters, requested-ID lookup, selection or ownership proof.
 
 For current-version disposable project/PCB opening, query `project-open` with
 `includeSchemas:true` and validate with `project-open-validate`. Read

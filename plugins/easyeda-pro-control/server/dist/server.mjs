@@ -10,7 +10,7 @@ const require = function __easyedaGuardedRequire(specifier) { if (typeof specifi
 	const __easyedaPublicationLockPath = __easyedaJoin(__easyedaPublicationDirectory, ".bundle-publication.lock");
 const __easyedaAssertNoPublication = () => { try { __easyedaLstatSync(__easyedaPublicationLockPath); throw new Error("The facade bundle is undergoing a fail-closed publication transaction."); } catch (__easyedaPublicationError) { if (!__easyedaPublicationError || typeof __easyedaPublicationError !== "object" || !("code" in __easyedaPublicationError) || __easyedaPublicationError.code !== "ENOENT") throw __easyedaPublicationError; } };
 __easyedaAssertNoPublication();
-const __easyedaBundlePairId = "cb4e5cf6ef61e859827591797335a04c5c6a54c34dc83f0f11ba1eb0de0a72db";
+const __easyedaBundlePairId = "8569bd8a1fd389b0a0ad2fdc9ce73ee3a2146047a4b7e9b94c4426080d2de62d";
 if (__easyedaBasename(import.meta.filename) === "server.mjs") {
   const __easyedaPeerPath = __easyedaJoin(import.meta.dirname, "upstream-supervisor.mjs");
   const __easyedaPeerPathBefore = __easyedaLstatSync(__easyedaPeerPath, { bigint: true });
@@ -32922,6 +32922,37 @@ var require_utils = __commonJS({
       }
       return output2.join("");
     }
+    function removeDotSegmentsRelative(path6) {
+      if (path6 === "" || path6[0] === "/") {
+        return removeDotSegments(path6);
+      }
+      const segments3 = path6.split("/");
+      const last2 = segments3.length - 1;
+      const output2 = [];
+      let trailingDirectory = false;
+      for (let i2 = 0; i2 <= last2; i2++) {
+        const segment2 = segments3[i2];
+        if (segment2 === "." || segment2 === "..") {
+          if (segment2 === "..") {
+            if (output2.length !== 0 && output2[output2.length - 1] !== "..") {
+              output2.pop();
+            } else {
+              output2.push("..");
+            }
+          }
+          trailingDirectory = i2 === last2;
+        } else {
+          output2.push(segment2);
+        }
+      }
+      if (trailingDirectory && output2[output2.length - 1] !== "..") {
+        output2.push("");
+      }
+      if (output2.length === 0 || output2[0] === "" || output2[0].includes(":")) {
+        output2.unshift(".");
+      }
+      return output2.join("/");
+    }
     var HOST_DELIMS = { "@": "%40", "/": "%2F", "?": "%3F", "#": "%23", ":": "%3A" };
     var HOST_DELIM_RE = /[@/?#:]/g;
     var HOST_DELIM_NO_COLON_RE = /[@/?#]/g;
@@ -33182,6 +33213,7 @@ var require_utils = __commonJS({
       encodeFragment,
       escapePreservingEscapes,
       removeDotSegments,
+      removeDotSegmentsRelative,
       isIPv4,
       isUUID,
       normalizeIPv6,
@@ -33405,16 +33437,18 @@ var require_schemes = __commonJS({
 var require_fast_uri = __commonJS({
   "node_modules/fast-uri/index.js"(exports2, module) {
     "use strict";
-    var { normalizeIPv6, removeDotSegments, recomposeAuthority, normalizePercentEncoding, normalizePathEncoding, serializePathEncoding, normalizeQueryFragmentEncoding, encodeQuery, encodeFragment, reescapeHostDelimiters, isIPv4, nonSimpleDomain } = require_utils();
+    var { normalizeIPv6, removeDotSegments, removeDotSegmentsRelative, recomposeAuthority, normalizePercentEncoding, normalizePathEncoding, serializePathEncoding, normalizeQueryFragmentEncoding, encodeQuery, encodeFragment, reescapeHostDelimiters, isIPv4, nonSimpleDomain } = require_utils();
     var { SCHEMES, getSchemeHandler } = require_schemes();
     var VALID_SCHEME = /^[A-Za-z][A-Za-z0-9+.-]*$/u;
     var MALFORMED_SCHEME_ERROR = "URI scheme is malformed.";
-    function decodeValidScheme(scheme) {
-      const decodedScheme = unescape(String(scheme));
-      if (!VALID_SCHEME.test(decodedScheme)) {
+    var MALFORMED_HOST_ERROR = "URI host is malformed.";
+    var FORBIDDEN_DOMAIN_HOST_CHARACTER = /[\0-\x20"#/:<>?@[\\\]^`{|}\x7F]/u;
+    function validateScheme(scheme) {
+      const stringScheme = String(scheme);
+      if (!VALID_SCHEME.test(stringScheme)) {
         throw new TypeError(MALFORMED_SCHEME_ERROR);
       }
-      return decodedScheme;
+      return stringScheme;
     }
     function normalize(uri, options) {
       if (typeof uri === "string") {
@@ -33451,6 +33485,9 @@ var require_fast_uri = __commonJS({
       const resolvedSchemeHandler = getSchemeHandler(options && options.scheme || resolved2.scheme);
       const resolvedHost = resolved2.host;
       const resolvedHostIsIP = resolvedHost !== void 0 && resolvedHost !== "" && (isIPv4(resolvedHost) || normalizeIPv6(resolvedHost).isIPV6);
+      if (hasForbiddenDomainHost(resolved2, options || {}, resolvedSchemeHandler, resolvedHostIsIP)) {
+        throw new Error(MALFORMED_HOST_ERROR);
+      }
       canonicalizeHost(resolved2, options || {}, resolvedSchemeHandler, resolvedHostIsIP);
       const encodedASCIIHost = resolvedHost && resolvedHost.indexOf("%") !== -1 && !new RegExp("\\P{ASCII}", "u").test(resolvedHost);
       if (resolved2.error && !encodedASCIIHost) {
@@ -33492,14 +33529,15 @@ var require_fast_uri = __commonJS({
             if (relative11.path[0] === "/") {
               target9.path = removeDotSegments(relative11.path);
             } else {
-              if ((base9.userinfo !== void 0 || base9.host !== void 0 || base9.port !== void 0) && !base9.path) {
+              const baseHasAuthority = base9.userinfo !== void 0 || base9.host !== void 0 || base9.port !== void 0;
+              if (baseHasAuthority && !base9.path) {
                 target9.path = "/" + relative11.path;
               } else if (!base9.path) {
                 target9.path = relative11.path;
               } else {
                 target9.path = base9.path.slice(0, base9.path.lastIndexOf("/") + 1) + relative11.path;
               }
-              target9.path = removeDotSegments(target9.path);
+              target9.path = base9.scheme === void 0 && !baseHasAuthority && target9.path[0] !== "/" ? removeDotSegmentsRelative(target9.path) : removeDotSegments(target9.path);
             }
             target9.query = relative11.query;
           }
@@ -33537,12 +33575,13 @@ var require_fast_uri = __commonJS({
       const options = Object.assign({}, opts);
       const uriTokens = [];
       if (component3.scheme) {
-        component3.scheme = decodeValidScheme(component3.scheme);
+        component3.scheme = validateScheme(component3.scheme);
       }
       const schemeHandler = getSchemeHandler(options.scheme || component3.scheme);
       if (schemeHandler && schemeHandler.serialize) schemeHandler.serialize(component3, options);
       const hasAuthority = component3.userinfo !== void 0 || component3.host !== void 0 || component3.port !== void 0;
-      const pathNoScheme = !options.skipEscape && component3.scheme === void 0 && !hasAuthority;
+      const schemelessReference = (component3.scheme === void 0 || options.reference === "suffix") && !hasAuthority;
+      const pathNoScheme = !options.skipEscape && schemelessReference;
       if (component3.path !== void 0) {
         if (!options.skipEscape) {
           component3.path = serializePathEncoding(component3.path, pathNoScheme);
@@ -33551,7 +33590,7 @@ var require_fast_uri = __commonJS({
         }
       }
       if (options.reference !== "suffix" && component3.scheme) {
-        component3.scheme = decodeValidScheme(component3.scheme);
+        component3.scheme = validateScheme(component3.scheme);
         uriTokens.push(component3.scheme, ":");
       }
       const authority2 = recomposeAuthority(component3);
@@ -33567,9 +33606,9 @@ var require_fast_uri = __commonJS({
       if (component3.path !== void 0) {
         let s = component3.path;
         if (!options.absolutePath && (!schemeHandler || !schemeHandler.absolutePath)) {
-          s = removeDotSegments(s);
+          s = schemelessReference && s[0] !== "/" ? removeDotSegmentsRelative(s) : removeDotSegments(s);
         }
-        if (pathNoScheme) {
+        if (schemelessReference) {
           s = serializePathEncoding(s, true);
         }
         if (authority2 === void 0 && s[0] === "/" && s[1] === "/") {
@@ -33616,15 +33655,33 @@ var require_fast_uri = __commonJS({
       return hasMalformedPercentEncoding(matches[3]) || host !== void 0 && !isIPLiteral(host) && hasMalformedPercentEncoding(host) || hasMalformedPercentEncoding(matches[6]) || hasMalformedPercentEncoding(matches[7]) || hasMalformedPercentEncoding(matches[8]);
     }
     function canonicalizeHost(parsed2, options, schemeHandler, isIP2) {
+      if (hasForbiddenDomainHost(parsed2, options, schemeHandler, isIP2)) {
+        parsed2.error = parsed2.error || MALFORMED_HOST_ERROR;
+        return true;
+      }
       if (!options.unicodeSupport && (!schemeHandler || !schemeHandler.unicodeSupport) && parsed2.host && !isIPLiteral(parsed2.host) && (options.domainHost || schemeHandler && schemeHandler.domainHost) && isIP2 === false && nonSimpleDomain(parsed2.host)) {
+        let url2;
         try {
-          parsed2.host = new URL("http://" + parsed2.host).hostname;
+          url2 = new URL("http://" + parsed2.host);
         } catch (e) {
           parsed2.error = parsed2.error || "Host's domain name can not be converted to ASCII: " + e;
           return true;
         }
+        if (!isHostOnlyURL(url2)) {
+          parsed2.error = parsed2.error || MALFORMED_HOST_ERROR;
+          return true;
+        }
+        parsed2.host = url2.hostname;
       }
       return false;
+    }
+    function hasForbiddenDomainHost(parsed2, options, schemeHandler, isIP2) {
+      return Boolean(
+        parsed2.host && isIP2 === false && !isIPLiteral(parsed2.host) && (options.domainHost || schemeHandler && schemeHandler.domainHost) && FORBIDDEN_DOMAIN_HOST_CHARACTER.test(parsed2.host)
+      );
+    }
+    function isHostOnlyURL(url2) {
+      return url2.username === "" && url2.password === "" && url2.port === "" && url2.pathname === "/" && url2.search === "" && url2.hash === "" && url2.hostname !== "";
     }
     function parseWithStatus(uri, opts) {
       const options = Object.assign({}, opts);
@@ -33680,9 +33737,8 @@ var require_fast_uri = __commonJS({
         parsed2.query = matches[7];
         parsed2.fragment = matches[8];
         if (parsed2.scheme !== void 0) {
-          const decodedScheme = unescape(parsed2.scheme);
-          if (VALID_SCHEME.test(decodedScheme)) {
-            parsed2.scheme = decodedScheme.toLowerCase();
+          if (VALID_SCHEME.test(parsed2.scheme)) {
+            parsed2.scheme = parsed2.scheme.toLowerCase();
           } else {
             parsed2.error = parsed2.error || MALFORMED_SCHEME_ERROR;
             malformedScheme = true;
@@ -33710,7 +33766,7 @@ var require_fast_uri = __commonJS({
             malformedIPLiteral = hasIPLiteralBracket && (!bracketedIPLiteral || ipv6result.error === true);
             parsed2.host = isIP2 ? ipv6result.host : ipv6result.host.toLowerCase();
             if (malformedIPLiteral) {
-              parsed2.error = parsed2.error || "URI host is malformed.";
+              parsed2.error = parsed2.error || MALFORMED_HOST_ERROR;
               malformedAuthorityOrPort = true;
             }
           } else {
@@ -33738,7 +33794,7 @@ var require_fast_uri = __commonJS({
           if (!isIP2) {
             host = normalizePercentEncoding(host.toLowerCase());
           }
-          parsed2.host = reescapeHostDelimiters(host, isIP2);
+          parsed2.host = isIP2 || options.scheme !== "null" ? reescapeHostDelimiters(host, isIP2) : host;
         }
         if (!schemeHandler || schemeHandler && !schemeHandler.skipNormalize) {
           if (parsed2.path) {
@@ -45705,6 +45761,45 @@ var init_extension_api_coverage_routes = __esm({
         tests: [
           "current-pcb-209-primitives.test.ts",
           "current-pcb-209-primitives-native.test.ts",
+          "current-pcb-209-opening.test.ts",
+          "current-pcb-diagnostic-owner.test.ts",
+          "current-pcb-diagnostic-pipe.test.ts",
+          "current-pcb-diagnostic-lifecycle.test.ts",
+          "extension-api-coverage.test.ts"
+        ],
+        documentTypes: [3],
+        validation: "offline-regression;current-live-unclaimed",
+        executionState: "available-with-runtime-guards",
+        inputDiscovery: { tool: "easyeda_control_api", arguments: { request: { action: "pcb209-opening", query: { includeSchemas: true } } } }
+      } });
+    }
+    for (const [family2, detail] of [
+      ["Component", "Placement, lock, layer and six selected optional metadata fields, with absent/undefined/present states retained separately. Formula values are not evaluated, and library identity is not verified."],
+      ["Pad", "Native placement, supported copper and hole shapes, masks and thermal parameters. Shape-space polygon paths have no assumed board transform; no resolved physical stack, rule refresh, parent proof or fabrication geometry."],
+      ["Attribute", "Observed component parent groups, including empty groups, and current native attribute text/style. Component/group order and membership are compared, but reciprocal ownership and symbol-pin mapping are not proved."],
+      ["Dimension", "Native Length/Radius/Protractor coordinates and annotation style. Canvas units reflect the current getter's override, not verified stored units or measured rendering."],
+      ["Image", "Combined Image/Picture placement, dimensions and display flags only. Asset paths/content, rendered boundaries and saved ownership remain excluded."]
+    ]) {
+      groups2.push({ namespace: `pcb_Primitive${family2}`, methods: ["getAll", "getAllPrimitiveId"], route: {
+        tool: "easyeda_control_pcb209_opening",
+        selector: "observe-extended-primitives",
+        implementation: "native-task-equivalent",
+        scope: `Separately pinned installed209 original-owner disposable collection observation, not public SDK instance parity. Two matching complete ordered native projections for Component, Pad, Attribute, Dimension and Image follow exact PCB source/identity admission, retaining the captured receiver and target around every await. ${detail} At most256 rows per family,256 Attribute parent groups and393216 UTF-8 bytes for the whole native/final packet. Only existing loaded views are projected; empty output does not prove an empty board. Unsupported fields/shapes, malformed Unicode, sparse/accessor arrays, non-finite/signed-zero numbers, duplicate IDs and changed samples refuse whole. No caller filters, selected IDs, exact-ID lookup, source export, edits or explicit Save. Observations are sequential and native serialization precedes output bounds. No complete startup, source/SQL baseline, connectivity, persistence or writer authority. The one-shot stage and original normal-close/root/Job/release lifecycle remain mandatory; older206 owners cannot select it.`,
+        source: [
+          "current-pcb-209-extended-primitives.ts",
+          "current-pcb-209-opening-validation.ts",
+          "current-pcb-209-opening-profile.ts",
+          "current-pcb-diagnostic-lifecycle.ts",
+          "current-pcb-diagnostic-lifecycle-journal.ts",
+          "current-pcb-diagnostic-owner.ts",
+          "current-pcb-diagnostic-pipe.ts",
+          "current-pcb-diagnostic-protocol.ts",
+          "current-pcb-geometry.ts",
+          "../../scripts/pcb-diagnostic-owner.ps1"
+        ],
+        tests: [
+          "current-pcb-209-extended-primitives.test.ts",
+          "current-pcb-209-extended-primitives-native.test.ts",
           "current-pcb-209-opening.test.ts",
           "current-pcb-diagnostic-owner.test.ts",
           "current-pcb-diagnostic-pipe.test.ts",
@@ -105774,6 +105869,305 @@ check();const timeout=new Promise((resolve,reject)=>{timer=apply(set,root,[()=>{
   }
 });
 
+// server/src/current-pcb-209-extended-primitives.ts
+function decodeCurrentPcb209ExtendedPrimitivesReply(raw, targetInput3) {
+  const target9 = currentDisposableOpenSealedTargetSchema.parse(targetInput3);
+  const reply3 = external_exports.object({ result: external_exports.object({ type: external_exports.literal("string"), value: external_exports.string() }).strict() }).strict().parse(raw);
+  if (Buffer.byteLength(reply3.result.value) > CURRENT_PCB_209_EXTENDED_PRIMITIVES_NATIVE_BYTES) {
+    throw new Error("PCB209_EXTENDED_PRIMITIVES_BOUND");
+  }
+  const native = packetSchema2.parse(decodeCurrentPcbDiagnosticJson(Buffer.from(reply3.result.value)));
+  const expected3 = {
+    projectUuid: target9.projectUuid,
+    branchUuid: target9.branchUuid,
+    documentUuid: target9.documentUuid,
+    tabId: `${target9.documentUuid}@${target9.projectUuid}`
+  };
+  if (canonicalJson(native.target) !== canonicalJson(expected3)) {
+    throw new Error("PCB209_EXTENDED_PRIMITIVES_TARGET");
+  }
+  const seen = /* @__PURE__ */ new Set();
+  const families3 = native.observations.map((observation3, index2) => {
+    const family2 = CURRENT_PCB_209_EXTENDED_PRIMITIVE_FAMILIES[index2];
+    if (family2 === void 0 || observation3.method !== `eda.pcb_Primitive${family2}.getAll`) {
+      throw new Error("PCB209_EXTENDED_PRIMITIVES_FAMILY");
+    }
+    const validated = validateCurrentPcbGeometryResult({ method: observation3.method, arguments: {}, target: expected3 }, observation3);
+    const primitiveIds2 = observation3.rows.map((row10) => {
+      if (seen.has(row10.primitiveId)) {
+        throw new Error("PCB209_EXTENDED_PRIMITIVES_DUPLICATE");
+      }
+      seen.add(row10.primitiveId);
+      return row10.primitiveId;
+    });
+    return {
+      family: family2,
+      method: observation3.method,
+      primitiveIds: primitiveIds2,
+      rows: validated["value"],
+      observedRowCount: observation3.rows.length,
+      ..."attributeParentGroups" in observation3 ? {
+        attributeParentGroups: observation3.attributeParentGroups,
+        relationshipEvidence: "native-component-attribute-groups",
+        reciprocalParentVerified: false
+      } : {}
+    };
+  });
+  const attributes3 = native.observations[2], components = native.observations[0];
+  if (components?.method !== "eda.pcb_PrimitiveComponent.getAll" || attributes3?.method !== "eda.pcb_PrimitiveAttribute.getAll" || canonicalJson(components.rows.map((row10) => row10.primitiveId)) !== canonicalJson(attributes3.attributeParentGroups.map((group2) => group2.parentPrimitiveId)) || canonicalJson(components.rows.map((row10) => row10.primitiveId)) !== canonicalJson(native.componentMetadataStates.map((row10) => row10.primitiveId))) {
+    throw new Error("PCB209_EXTENDED_PRIMITIVES_COMPONENT_ASSOCIATION");
+  }
+  for (const [index2, metadata12] of native.componentMetadataStates.entries()) {
+    const component3 = components.rows[index2];
+    if (component3?.primitiveType !== "Component") {
+      throw new Error("PCB209_EXTENDED_PRIMITIVES_COMPONENT_ASSOCIATION");
+    }
+    for (const [field13, state4] of Object.entries(metadata12.states)) {
+      if (Object.hasOwn(component3, field13) !== (state4 === "present")) {
+        throw new Error("PCB209_EXTENDED_PRIMITIVES_METADATA_STATE");
+      }
+    }
+  }
+  const result = {
+    schema: "easyeda-pro-control.pcb209-extended-primitives-observation.v1",
+    target: expected3,
+    families: families3,
+    componentMetadataStates: native.componentMetadataStates,
+    projectionSha256: sha256Json({ observations: native.observations, componentMetadataStates: native.componentMetadataStates }),
+    samples: 2,
+    matchingSamples: true,
+    units: { linear: "mil", rotation: "degrees", thermalAngle: "degrees", dimensionCanvasUnit: "observed-document-setting" },
+    implementationKind: "native-task-equivalent",
+    originalReceiverRechecked: true,
+    membershipScope: "existing-stateWatcher-views;Attribute-only-loaded-component-groups",
+    startupCompletionVerified: false,
+    completeLiveBaselineVerified: false,
+    sourceMembershipVerified: false,
+    reciprocalParentVerified: false,
+    connectivityVerified: false,
+    persistenceVerified: false,
+    executionAuthorized: false,
+    saveAuthorized: false,
+    limitations: [
+      "Two complete ordered projections of five instantiated-view families must match. Models without stateWatcher are excluded. Component and Attribute groups share the observed component roster, not reciprocal ownership or complete stored child membership.",
+      "Component includes placement, lock and six raw metadata strings with separate absent/undefined/present states. Empty strings remain empty; null or other unsupported values refuse. Other metadata, library/device/3D enrichment, pads and source ownership are omitted.",
+      "Pad includes native placement, number/net, hole, default copper shape, mask expansion and thermal configuration. ROUND/SLOT holes and ELLIPSE/OVAL/RECT/POLYGON default shapes are supported; NGON and unknown shapes refuse. Null holes omit hole-only values. Special layer stacks, pad/component ownership and resolved poured connectivity are unverified.",
+      "Native default shape and polygon serialization can round or omit tiny/unsupported segments before observation. RECT cornerRatioPercent is a percentage; polygon coordinates are native-pad-style and retain ordering, not a reconstructed or transformed copper outline.",
+      "Attribute retains ordered parent groups, including empty groups, and current value/style/display scalars. Name can already be formula-expanded; formulaName, font objects and rendered outlines are omitted. Serialized null color can represent an empty native color string.",
+      "Dimension contains eight Length or six Radius/Protractor coordinates in mil, line width and precision. canvasUnit is the document setting placed in the returned DTO, not proof of each model's annotation unit. Rendered measurement, text/font/color and parent state are omitted.",
+      "Image contains vector Image then Picture placement/type, dimensions, rotation and mirror only. Native template/path serialization precedes bounds and can allocate temporary geometry. Asset bytes, paths, Picture hash, silk color, rendered bounds and availability are omitted.",
+      "No filters, requested-ID lookup, selection, child-pad association, source export, edit or Save. Reads are sequential, not atomic. Vendor enumeration/serialization precede bounds and are not cancelled by the deadline. Local RPC bookkeeping, identity initialization and possible empty pad-length singleton allocation remain incidental."
+    ]
+  };
+  if (Buffer.byteLength(canonicalJson(result)) > CURRENT_PCB_209_EXTENDED_PRIMITIVES_RESULT_BYTES) {
+    throw new Error("PCB209_EXTENDED_PRIMITIVES_RESULT_BOUND");
+  }
+  return freezeDeep(result);
+}
+var CURRENT_PCB_209_EXTENDED_PRIMITIVES_NATIVE_BYTES, CURRENT_PCB_209_EXTENDED_PRIMITIVES_RESULT_BYTES, CURRENT_PCB_209_EXTENDED_PRIMITIVE_FAMILIES, targetSchema9, metadataStateSchema, metadataStatesSchema, packetSchema2, CURRENT_PCB_209_EXTENDED_PRIMITIVES_FUNCTION;
+var init_current_pcb_209_extended_primitives = __esm({
+  "server/src/current-pcb-209-extended-primitives.ts"() {
+    init_zod();
+    init_core3();
+    init_current_disposable_open();
+    init_current_pcb_diagnostic_json();
+    init_current_pcb_geometry();
+    init_current_project_url();
+    init_current_pcb_pad_polygon();
+    init_sqlite_inventory_core();
+    CURRENT_PCB_209_EXTENDED_PRIMITIVES_NATIVE_BYTES = CURRENT_PCB_GEOMETRY_MAX_BYTES;
+    CURRENT_PCB_209_EXTENDED_PRIMITIVES_RESULT_BYTES = CURRENT_PCB_GEOMETRY_MAX_BYTES;
+    CURRENT_PCB_209_EXTENDED_PRIMITIVE_FAMILIES = Object.freeze(["Component", "Pad", "Attribute", "Dimension", "Image"]);
+    targetSchema9 = external_exports.object({ projectUuid: external_exports.string(), branchUuid: external_exports.string(), documentUuid: external_exports.string(), tabId: external_exports.string() }).strict();
+    metadataStateSchema = external_exports.enum(["absent", "undefined", "present"]);
+    metadataStatesSchema = external_exports.array(external_exports.object({
+      primitiveId: external_exports.string().min(1).max(256).refine((value2) => value2.length <= 256),
+      states: external_exports.object({
+        designator: metadataStateSchema,
+        name: metadataStateSchema,
+        manufacturer: metadataStateSchema,
+        manufacturerPart: metadataStateSchema,
+        supplier: metadataStateSchema,
+        supplierPart: metadataStateSchema
+      }).strict()
+    }).strict()).max(CURRENT_PCB_GEOMETRY_MAX_ROWS);
+    packetSchema2 = external_exports.object({
+      ok: external_exports.literal(true),
+      kind: external_exports.literal("pcb209-original-extended-primitives-observation"),
+      target: targetSchema9,
+      observations: external_exports.array(currentPcbGeometryResultSchema).length(CURRENT_PCB_209_EXTENDED_PRIMITIVE_FAMILIES.length),
+      componentMetadataStates: metadataStatesSchema
+    }).strict();
+    CURRENT_PCB_209_EXTENDED_PRIMITIVES_FUNCTION = `async function(sealed,phase){
+"use strict";
+let timer,clear,expired=false;
+try{
+const root=globalThis,apply=Reflect.apply,bad=()=>{throw new Error("PCB209_EXTENDED_PRIMITIVES_REFUSED");};
+const own=(o,k)=>{if(o===null||(typeof o!=="object"&&typeof o!=="function"))bad();const d=Object.getOwnPropertyDescriptor(o,k);if(!d||!Object.hasOwn(d,"value"))bad();return d.value;};
+const object=o=>o!==null&&typeof o==="object"&&!Array.isArray(o);
+const plain=o=>{if(!object(o)||Object.getPrototypeOf(o)!==Object.prototype)bad();return o;};
+const absent=(o,k)=>{const d=Object.getOwnPropertyDescriptor(o,k);if(d&&(!Object.hasOwn(d,"value")||d.value!==undefined))bad();};
+const fn=(o,k)=>{const f=own(o,k);if(typeof f!=="function")bad();return f;};
+plain(sealed);if(phase!=="observe"||Reflect.ownKeys(sealed).length!==5)bad();
+for(const k of ["rawWindowsPath","projectUuid","documentUuid","expectedSourceSha256","branchUuid"])if(typeof own(sealed,k)!=="string")bad();
+const match=(s,re)=>{const m=re.exec(s);return m!==null&&m[0]===s;};
+if(!match(sealed.projectUuid,/^[a-f0-9]{64}$/)||!match(sealed.branchUuid,/^[a-f0-9]{32}$/)||!match(sealed.documentUuid,/^(?:[a-f0-9]{16}|[a-f0-9]{32})$/)||!match(sealed.expectedSourceSha256,/^[a-f0-9]{64}$/))bad();
+const target={projectUuid:sealed.projectUuid,branchUuid:sealed.branchUuid,documentUuid:sealed.documentUuid,tabId:sealed.documentUuid+"@"+sealed.projectUuid};
+${buildCurrentProjectUrlGuard()}
+const location=root.location,href=location?.href,document=root.document,ui=own(root,"UI"),host=own(root,"gVars"),mode=own(root,"PRO_EDITOR_MODE");
+const project=plain(own(host,"currentProject")),tabs=own(ui,"tabBar");
+if(typeof tabs!=="function"||Object.getPrototypeOf(tabs)!==Function.prototype)bad();
+const active=fn(tabs,"getActiveTab"),getTab=fn(tabs,"getTabById"),select=document?.querySelectorAll;
+if(typeof select!=="function")bad();
+const tab=plain(apply(getTab,tabs,[target.tabId])),data=plain(own(tab,"data"));
+const found=apply(select,document,['[id="frame_'+target.tabId+'"]']);if(found.length!==1)bad();
+const frame=found[0],child=frame?.contentWindow,childDocument=child?.document,parent=frame?.parentElement;
+const native=own(child,"MSG_BUS_PCB"),channel=own(native,"messageBus"),childObject=own(child,"Object"),childArray=own(child,"Array");
+const childObjectPrototype=own(childObject,"prototype"),childArrayPrototype=own(childArray,"prototype");
+const attr=frame?.getAttribute,has=frame?.hasAttribute,classes=frame?.classList,contains=classes?.contains,parentAttr=parent?.getAttribute;
+if(typeof attr!=="function"||typeof has!=="function"||typeof contains!=="function"||typeof parentAttr!=="function")bad();
+const chain=[channel];let rpc,rpcOwner;
+for(let i=0;i<3;i++){const node=chain[i];if(!object(node))bad();const d=Object.getOwnPropertyDescriptor(node,"rpcCall");if(d){if(!Object.hasOwn(d,"value")||typeof d.value!=="function")bad();rpc=d.value;rpcOwner=node;break;}chain.push(Object.getPrototypeOf(node));}
+if(typeof rpc!=="function")bad();
+const set=fn(root,"setTimeout");clear=fn(root,"clearTimeout");
+const check=()=>{
+if(expired||root.window!==root||root.top!==root||root.location!==location||root.document!==document||document?.defaultView!==root||document?.nodeType!==9||document?.URL!==href||location?.href!==href||location?.origin!=="https://client")bad();
+parseProjectUrl(href,target.projectUuid,target.tabId);
+if(own(root,"PRO_EDITOR_MODE")!==mode||!["CLIENT-HALF_OFFLINE-EASYEDA-PCB-SCH-PANEL-SIM","CLIENT-OFFLINE-EASYEDA-PCB-SCH-PANEL-SIM"].includes(mode))bad();
+if(own(root,"UI")!==ui||own(root,"gVars")!==host||own(ui,"gVars")!==host||own(host,"currentProject")!==project||own(ui,"tabBar")!==tabs)bad();
+if(own(project,"projectId")!==target.projectUuid||own(project,"branchUuid")!==target.branchUuid||own(project,"isV2Format")!==false||own(host,"isHistoryMode")!==false)bad();
+if(fn(tabs,"getActiveTab")!==active||fn(tabs,"getTabById")!==getTab||apply(active,tabs,[])!==target.tabId||apply(getTab,tabs,[target.tabId])!==tab||own(tab,"data")!==data)bad();
+if(own(tab,"tabId")!==target.tabId||own(data,"doctype")!==3||own(data,"pid")!==target.projectUuid)bad();absent(tab,"parentLibraryUuid");
+if(document.querySelectorAll!==select)bad();const current=apply(select,document,['[id="frame_'+target.tabId+'"]']);if(current.length!==1||current[0]!==frame)bad();
+if(frame.tagName!=="IFRAME"||frame.id!=="frame_"+target.tabId||frame.ownerDocument!==document||frame.isConnected!==true||frame.parentElement!==parent||frame.classList!==classes||classes.contains!==contains||frame.getAttribute!==attr||frame.hasAttribute!==has||parent.getAttribute!==parentAttr||!apply(contains,classes,["editframe"])||apply(parentAttr,parent,["uuid"])!==target.tabId)bad();
+for(const [k,v] of [["c_dbid",target.tabId],["c_doctype","3"],["src","editor?entry=pcb"],["pcb-canvas","true"]])if(apply(attr,frame,[k])!==v)bad();
+for(const k of ["blankIframe","fromFile","jsonCacheReady"])if(apply(has,frame,[k]))bad();
+if(frame.contentWindow!==child||child.document!==childDocument||childDocument?.defaultView!==child||childDocument?.nodeType!==9||child.frameElement!==frame||child.parent!==root||child.top!==root||child.location?.href!=="https://client/editor?entry=pcb"||own(child,"MSG_BUS_PCB")!==native||own(native,"messageBus")!==channel)bad();
+if(own(child,"Object")!==childObject||own(childObject,"prototype")!==childObjectPrototype||own(child,"Array")!==childArray||own(childArray,"prototype")!==childArrayPrototype)bad();
+for(let i=0;i<chain.length;i++){const node=chain[i];if(i>0&&Object.getPrototypeOf(chain[i-1])!==node)bad();if(node===rpcOwner){if(own(node,"rpcCall")!==rpc)bad();}else if(Object.hasOwn(node,"rpcCall"))bad();}
+if(fn(root,"setTimeout")!==set||fn(root,"clearTimeout")!==clear)bad();
+};
+const childPlain=o=>{if(!object(o))bad();const p=Object.getPrototypeOf(o);if(p!==Object.prototype&&p!==childObjectPrototype)bad();return o;};
+const exact=(o,keys)=>{childPlain(o);const actual=Reflect.ownKeys(o);if(actual.length!==keys.length||actual.some(k=>!keys.includes(k)))bad();};
+const num=v=>{if(typeof v!=="number"||!Number.isFinite(v)||Object.is(v,-0)||Math.abs(v)>${CURRENT_PCB_GEOMETRY_MAX_NUMBER})bad();return v;};
+const integer=v=>{num(v);if(!Number.isInteger(v))bad();return v;};
+const layer=v=>{integer(v);if(v<0||v>65535)bad();return v;};
+const bool=v=>{if(typeof v!=="boolean")bad();return v;};
+const text=(v,max,nullable=false)=>{if(v===null&&nullable)return v;if(typeof v!=="string"||v.length>max||!v.isWellFormed())bad();return v;};
+const point=v=>{if(!object(v))bad();const keys=Reflect.ownKeys(v);if(!keys.includes("x")||!keys.includes("y")||keys.some(k=>k!=="x"&&k!=="y"&&k!=="_hashed"))bad();return{x:num(own(v,"x")),y:num(own(v,"y"))};};
+const length=v=>{if(!Array.isArray(v)||![Array.prototype,childArrayPrototype].includes(Object.getPrototypeOf(v)))bad();const n=own(v,"length");if(n<0||n>${CURRENT_PCB_GEOMETRY_MAX_ROWS}||Reflect.ownKeys(v).length!==n+1)bad();return n;};
+// PCB a8405930@7408336 clones raw attrsMap. Keep absent/undefined/present
+// separately; values are only projected for the six explicitly supported keys.
+const componentMetadata=(row,id,statesList)=>{
+const attrs=childPlain(own(row,"attrsMap")),result={},states={};
+for(const [key,field] of [["Designator","designator"],["Name","name"],["Manufacturer","manufacturer"],["Manufacturer Part","manufacturerPart"],["Supplier","supplier"],["Supplier Part","supplierPart"]]){
+const d=Object.getOwnPropertyDescriptor(attrs,key);if(!d){if(key in attrs)bad();states[field]="absent";continue;}
+if(!Object.hasOwn(d,"value"))bad();if(d.value===undefined){states[field]="undefined";continue;}
+result[field]=text(d.value,1024);states[field]="present";
+}statesList.push({primitiveId:id,states});return result;
+};
+const hole=row=>{
+const tuple=own(row,"holeAspect");if(tuple===null)return null;
+const n=length(tuple),shape=own(tuple,"0");if((shape==="ROUND"&&n!==2)||(shape==="SLOT"&&n!==3)||!["ROUND","SLOT"].includes(shape))bad();
+const diameter=num(own(tuple,"1")),offset=point(own(row,"holeOffset"));if(diameter<0)bad();
+const result={shape,diameter,offsetX:offset.x,offsetY:offset.y,rotation:num(own(row,"holeRotation"))};
+if(shape==="SLOT"){const value=num(own(tuple,"2"));if(value<0)bad();result.length=value;}return result;
+};
+${CURRENT_PCB_PAD_POLYGON_PROGRAM}
+// PCB a8405930@10301575 selects the default native pad style. The shared
+// polygon fragment is pure grammar validation, not legacy runtime admission.
+const defaultCopperShape=row=>{
+const tuple=own(row,"defaultPadShapeAspect"),n=length(tuple),shape=own(tuple,"0");
+if(shape==="POLYGON"){if(n!==2)bad();return{shape,pathSource:padPolygonPath(own(tuple,"1")),coordinateSpace:"native-pad-style"};}
+if((shape==="RECT"&&n!==4)||((shape==="ELLIPSE"||shape==="OVAL")&&n!==3)||!["RECT","ELLIPSE","OVAL"].includes(shape))bad();
+const result={shape,width:num(own(tuple,"1")),height:num(own(tuple,"2"))};if(shape==="RECT")result.cornerRatioPercent=num(own(tuple,"3"));return result;
+};
+const maskExpansion=row=>{
+const mode=integer(own(row,"expansionType"));if(mode!==1&&mode!==2)bad();
+return{mode,topSolder:num(own(row,"topSolderExpansion")),bottomSolder:num(own(row,"bottomSolderExpansion")),paste:num(own(row,"pasteExpansion"))};
+};
+const thermal=row=>{
+const rule=own(row,"padRule");if(rule===null)return null;if(!object(rule))bad();
+const mode=integer(own(rule,"connectMode"));if(mode===1||mode===2)return{mode};if(mode!==0)bad();
+return{mode,clearance:num(num(own(rule,"lineClearance"))*10),spokeWidth:num(num(own(rule,"lineWidth"))*10),angle:num(num(own(rule,"lineAngle"))/Math.PI*180)};
+};
+const rows=(raw,family,seen,metadataStates)=>{
+const n=length(raw),result=[];
+for(let i=0;i<n;i++){
+const row=childPlain(own(raw,String(i))),id=text(own(row,"globalIndex"),256);if(id.length===0||seen.has(id))bad();seen.add(id);
+const base={primitiveId:id,primitiveType:family,primitiveLock:bool(own(row,"locked"))};
+if(family==="Component"){
+const p=point(own(row,"position")),l=layer(own(row,"layerId"));if(l!==1&&l!==2)bad();
+result.push({...base,layer:l,x:p.x,y:p.y,rotation:num(own(row,"rotation")),...componentMetadata(row,id,metadataStates)});continue;
+}
+if(family==="Pad"){
+const p=point(own(row,"center")),l=layer(own(row,"layerId")),padType=integer(own(row,"padTypeAspect"));if(![1,2,12].includes(l)||![0,1,2].includes(padType))bad();
+result.push({...base,net:text(own(row,"net"),1024,true),layer:l,padNumber:text(own(row,"num"),1024),x:p.x,y:p.y,rotation:num(own(row,"rotation")),
+metallization:bool(own(row,"plated")),padType,hole:hole(row),defaultCopperShape:defaultCopperShape(row),maskExpansion:maskExpansion(row),thermal:thermal(row)});continue;
+}
+if(family==="Attribute"){
+const p=point(own(row,"position")),alignMode=integer(own(row,"origin"));if(alignMode<1||alignMode>9)bad();
+const silkColor=text(own(row,"silkColor"),128,true);if(silkColor==="")bad();
+result.push({...base,layer:layer(own(row,"layerId")),x:num(p.x*10),y:num(p.y*10),value:text(own(row,"value"),65536),
+fontFamily:text(own(row,"fontFamily"),1024),fontSize:num(num(own(row,"fontSize"))*10),lineWidth:num(num(own(row,"strokeWidth"))*10),
+alignMode,rotation:num(num(own(row,"rotation"))*180/Math.PI),reverse:bool(own(row,"reverse")),expansion:num(num(own(row,"reverseExpansion"))*10),
+mirror:bool(own(row,"mirror")),key:text(own(row,"key"),1024),keyVisible:bool(own(row,"showKey")),valueVisible:bool(own(row,"showValue")),
+positionIsNull:bool(own(row,"positionIsNull")),silkColor});continue;
+}
+if(family==="Dimension"){
+const dimensionType=text(own(row,"dimensionType"),32);if(!["Length Dimension","Radius Dimension","Protractor Dimension"].includes(dimensionType))bad();
+const coordinates=own(row,"coordinateSet"),count=length(coordinates);if(count!==(dimensionType==="Length Dimension"?8:6))bad();
+const coordinateSet=[];for(let j=0;j<count;j++)coordinateSet.push(num(own(coordinates,String(j))));
+const canvasUnit=text(own(row,"unit"),4),lineWidth=num(own(row,"width")),precision=integer(own(row,"precision"));
+if(!["mm","cm","inch","mil"].includes(canvasUnit)||lineWidth<0||precision<0||precision>4)bad();
+result.push({...base,layer:layer(own(row,"layerId")),dimensionType,coordinateSet,canvasUnit,lineWidth,precision});continue;
+}
+if(family!=="Image")bad();
+const imageType=text(own(row,"imageType"),7),p=point(own(row,"start")),width=num(own(row,"width")),height=num(own(row,"height"));
+if(!["Image","Picture"].includes(imageType)||width<0||height<0)bad();
+result.push({...base,imageType,layer:layer(own(row,"layerId")),x:p.x,y:p.y,width,height,rotation:num(own(row,"rotation")),horizonMirror:bool(own(row,"mirror"))});
+}return result;
+};
+// Both handlers use the exact same gr.getAllItem() manager order. Each group
+// contains Le.attributes in Object.values(this.attrs) order, including empty
+// groups. This association is not a reciprocal parent/model ownership proof.
+const attributeGroups=(raw,components,seen)=>{
+const n=length(raw);if(n!==components.length)bad();const groups=[],attributeParentGroups=[],result=[];
+let total=0;
+for(let i=0;i<n;i++){
+const group=own(raw,String(i));exact(group,["attrs","parentPrimitiveId"]);
+const parentPrimitiveId=text(own(group,"parentPrimitiveId"),256),attrs=own(group,"attrs"),count=length(attrs);
+if(parentPrimitiveId!==components[i].primitiveId||total+count>256)bad();total+=count;groups.push({parentPrimitiveId,attrs});
+}
+for(const group of groups){const children=rows(group.attrs,"Attribute",seen,[]),ids=[];
+for(const child of children){ids.push(child.primitiveId);result.push({...child,parentPrimitiveId:group.parentPrimitiveId});}
+attributeParentGroups.push({parentPrimitiveId:group.parentPrimitiveId,ids});
+}return{rows:result,attributeParentGroups,relationshipEvidence:"native-component-attribute-groups",reciprocalParentVerified:false};
+};
+const topics=[["Component","component"],["Pad","pad"],["Attribute","attribute"],["Dimension","dimension"],["Image","image"]];
+const call=async(topic,arg)=>{check();const reply=await apply(rpc,channel,[topic,arg,0]);check();childPlain(reply);return own(reply,"message");};
+const identity=async()=>{const value=await call("getTabIdAndDocType",undefined);check();exact(value,["tabId","docType"]);if(own(value,"tabId")!==target.tabId||own(value,"docType")!==3)bad();};
+const bounded=value=>{const json=JSON.stringify(value);if(new TextEncoder().encode(json).byteLength>${CURRENT_PCB_209_EXTENDED_PRIMITIVES_NATIVE_BYTES})bad();return json;};
+const read=async()=>{
+await identity();check();const observations=[],seen=new Set(),componentMetadataStates=[];let components;
+for(const [family,topic] of topics){
+const raw=await call("pcb/extensionAPI/"+topic+"-getAll",{});check();
+const projected=family==="Attribute"?attributeGroups(raw,components,seen):{rows:rows(raw,family,seen,componentMetadataStates)};
+if(family==="Component")components=projected.rows;
+observations.push({ok:true,kind:"current-pcb-geometry-observation",method:"eda.pcb_Primitive"+family+".getAll",target,...projected,
+samples:2,implementationKind:"native-task-equivalent",cadAuthority:false,persistenceVerified:false,sourceMembershipVerified:false});
+bounded({observations,componentMetadataStates});
+}
+await identity();check();return{observations,componentMetadataStates};
+};
+const run=async()=>{const first=await read(),json=bounded(first),second=await read();check();if(bounded(second)!==json)bad();
+return bounded({ok:true,kind:"pcb209-original-extended-primitives-observation",target,...first});};
+check();const timeout=new Promise((resolve,reject)=>{timer=apply(set,root,[()=>{expired=true;reject(new Error("PCB209_EXTENDED_PRIMITIVES_REFUSED"));},10000]);});return await Promise.race([run(),timeout]);
+}catch{throw new Error("PCB209_EXTENDED_PRIMITIVES_REFUSED");}finally{if(timer!==undefined&&typeof clear==="function"){try{Reflect.apply(clear,globalThis,[timer]);}catch{throw new Error("PCB209_EXTENDED_PRIMITIVES_REFUSED");}}}
+}`;
+  }
+});
+
 // server/src/current-pcb-string-ledger-exclusion.ts
 import { opendir as opendir5 } from "node:fs/promises";
 import { join as join52 } from "node:path";
@@ -107960,6 +108354,9 @@ function recordBound(name6) {
   if (name6 === "primitives209-result.json") {
     return CURRENT_PCB_209_PRIMITIVES_RESULT_BYTES + MAX_BYTES7;
   }
+  if (name6 === "extended-primitives209-result.json") {
+    return CURRENT_PCB_209_EXTENDED_PRIMITIVES_RESULT_BYTES + MAX_BYTES7;
+  }
   if (name6 === "common-baseline-failure.json") {
     return CURRENT_PCB_COMMON_FAILURE_MAX_BYTES + MAX_BYTES7;
   }
@@ -108086,6 +108483,10 @@ function validateChain(operation) {
   requireValue14(
     records2["primitives209-intent.json"] === void 0 || operation.operationId.startsWith("pcb209-") && pcbObserved !== void 0 && pcbObserved.result["sourceVerified"] === true && records2["workers-intent.json"] === void 0 && records2["model-state-intent.json"] === void 0,
     "PRIMITIVES209_CHAIN"
+  );
+  requireValue14(
+    records2["extended-primitives209-intent.json"] === void 0 || operation.operationId.startsWith("pcb209-") && pcbObserved !== void 0 && pcbObserved.result["sourceVerified"] === true && records2["workers-intent.json"] === void 0 && records2["model-state-intent.json"] === void 0,
+    "EXTENDED_PRIMITIVES209_CHAIN"
   );
   requireValue14(pcbOpen === void 0 || binding10 !== void 0 && pcbOpen.bindingSha256 === sha256Json(binding10) && opening !== void 0 && pcbOpen.projectOpeningIntentSha256 === sha256Json(opening) && opened !== void 0 && pcbOpen.projectOpeningResultSha256 === sha256Json(opened) && opened.result["ok"] === true && opened.result["status"] === "opened-prefix-observed" && opened.result["failure"] === null && (stringPurpose || records2["workers-intent.json"] === void 0), "PCB_OPEN_CHAIN");
   requireValue14(pcbOpened === void 0 || pcbOpen !== void 0 && pcbOpened.intentSha256 === sha256Json(pcbOpen), "PCB_OPEN_RESULT_CHAIN");
@@ -108224,6 +108625,7 @@ var init_current_pcb_diagnostic_lifecycle_journal = __esm({
     init_current_pcb_worker_startup_channel_observation();
     init_current_pcb_observation_failure();
     init_current_pcb_209_primitives();
+    init_current_pcb_209_extended_primitives();
     init_current_pcb_string_ledger_exclusion();
     init_current_pcb_common_baseline_validation();
     DIRECTORY = "pcb-diagnostic-lifecycle-v1";
@@ -108389,7 +108791,7 @@ var init_current_pcb_diagnostic_lifecycle_journal = __esm({
       proof: diagnosticLifecycleNoProcessReleaseProofSchema
     }).strict();
     diagnosticObservationStageSchema = external_exports.enum(["browser", "frames", "script", "workers", "worker-script", "worker-state", "pcb-opening", "model-state"]);
-    extendedObservationStageSchema = external_exports.enum([...diagnosticObservationStageSchema.options, "layers209", "primitives209"]);
+    extendedObservationStageSchema = external_exports.enum([...diagnosticObservationStageSchema.options, "layers209", "primitives209", "extended-primitives209"]);
     lifecycleObservationStages = [...extendedObservationStageSchema.options, "common-baseline", "string-precreate"];
     observationIntentSchema = external_exports.object({
       schema: external_exports.literal("easyeda-pro-control.pcb-diagnostic-observation-intent.v1"),
@@ -108400,7 +108802,7 @@ var init_current_pcb_diagnostic_lifecycle_journal = __esm({
       frameId: external_exports.string().regex(/^[A-Za-z\d_.:-]{1,128}$/u).optional(),
       family: external_exports.enum(["ui", "pcb", "public-api"]).optional()
     }).strict().refine((value2) => {
-      if (value2.stage === "browser" || value2.stage === "workers" || value2.stage === "worker-state" || value2.stage === "model-state" || value2.stage === "pcb-opening" || value2.stage === "layers209" || value2.stage === "primitives209") {
+      if (value2.stage === "browser" || value2.stage === "workers" || value2.stage === "worker-state" || value2.stage === "model-state" || value2.stage === "pcb-opening" || value2.stage === "layers209" || value2.stage === "primitives209" || value2.stage === "extended-primitives209") {
         return value2.targetId === void 0 && value2.frameId === void 0 && value2.family === void 0;
       }
       if (value2.stage === "frames" || value2.stage === "worker-script") {
@@ -108415,7 +108817,11 @@ var init_current_pcb_diagnostic_lifecycle_journal = __esm({
       stage: extendedObservationStageSchema,
       result: external_exports.record(external_exports.string(), external_exports.unknown()),
       executionAuthorized: external_exports.literal(false)
-    }).strict().refine((value2) => Buffer.byteLength(canonicalJson(value2.result)) <= (value2.stage === "primitives209" ? CURRENT_PCB_209_PRIMITIVES_RESULT_BYTES : DIAGNOSTIC_OBSERVATION_MAX_BYTES), "Observation result exceeds its bound.");
+    }).strict().refine((value2) => {
+      const ordinaryLimit = value2.stage === "primitives209" ? CURRENT_PCB_209_PRIMITIVES_RESULT_BYTES : DIAGNOSTIC_OBSERVATION_MAX_BYTES;
+      const limit = value2.stage === "extended-primitives209" ? CURRENT_PCB_209_EXTENDED_PRIMITIVES_RESULT_BYTES : ordinaryLimit;
+      return Buffer.byteLength(canonicalJson(value2.result)) <= limit;
+    }, "Observation result exceeds its bound.");
     stringPrecreateIntentSchema = external_exports.object({
       schema: external_exports.literal("easyeda-pro-control.pcb-string-precreate-observation-intent.v1"),
       ...base5,
@@ -108776,6 +109182,8 @@ var init_current_pcb_diagnostic_lifecycle_journal = __esm({
       "layers209-result.json": observationResultSchema,
       "primitives209-intent.json": observationIntentSchema,
       "primitives209-result.json": observationResultSchema,
+      "extended-primitives209-intent.json": observationIntentSchema,
+      "extended-primitives209-result.json": observationResultSchema,
       "string-precreate-intent.json": stringPrecreateIntentSchema,
       "string-precreate-result.json": stringPrecreateResultSchema,
       "common-baseline-intent.json": commonBaselineIntentSchema,
@@ -110654,6 +111062,7 @@ function queryCurrentPcb209Opening(input2 = {}) {
       "The existing native helper retains the original process, Job and pipe through normal close, observed original termination and release. No force termination or Save/Discard choice is offered. Restarted hosts cannot reconstruct that ownership from records.",
       "After accepted original PCB opening, observe-layers consumes one double-sampled native layer collection with identity checks before and after both samples. It returns the nine-field getAllLayers projection and enabled native SIGNAL/PLANE count plus two. Raw colors are not repaired. This is not a physical stackup, complete startup, saved state or writer baseline. getCurrentLayer remains excluded.",
       "After accepted original PCB opening, observe-primitives consumes two matching bounded native collections for Line, Arc, Via and parentless String, with ordered IDs and source-derived geometry projections. Only existing native views are included; models without views, component text, other families, complete-board membership, connectivity and saved-state proof are excluded. This native task equivalent is not public SDK instance parity or writer authority.",
+      "The separate observe-extended-primitives stage observes Component, Pad, Attribute, Dimension and Image loaded-view projections and ordered IDs twice. Attribute parent groups retain observed ordering, including empty groups. These samples do not prove reciprocal ownership, symbol-pin mapping, image assets, rendered geometry, saved membership or a complete writer baseline.",
       "The 103-request and 64MiB diagnostic transport budgets are unchanged. No ratline worker capture, debugger pause or user-selected native command is exposed."
     ],
     ...request13.includeSchemas ? { inputSchema: external_exports.toJSONSchema(currentPcb209OpeningRequestSchema) } : {}
@@ -110686,7 +111095,7 @@ var init_current_pcb_209_opening_validation = __esm({
         confirmDiagnosticLaunch: external_exports.literal(true),
         acceptExistingProfileEffects: external_exports.literal(true)
       }).strict(),
-      external_exports.object({ action: external_exports.literal("inspect"), operationId: operationId5, observation: external_exports.enum(["browser", "frames", "script", "pcb-opening", "layers209", "primitives209"]).optional() }).strict(),
+      external_exports.object({ action: external_exports.literal("inspect"), operationId: operationId5, observation: external_exports.enum(["browser", "frames", "script", "pcb-opening", "layers209", "primitives209", "extended-primitives209"]).optional() }).strict(),
       external_exports.object({ action: external_exports.literal("settle-records"), operationId: operationId5, expectedIntentSha256: digest9 }).strict(),
       external_exports.object({ action: external_exports.literal("cleanup-unlaunched"), operationId: operationId5, expectedIntentSha256: digest9 }).strict(),
       external_exports.object({ action: external_exports.literal("cleanup-no-process"), operationId: operationId5, expectedIntentSha256: digest9 }).strict(),
@@ -110694,6 +111103,7 @@ var init_current_pcb_209_opening_validation = __esm({
       external_exports.object({ action: external_exports.literal("observe-pcb-opening"), ...bound4 }).strict(),
       external_exports.object({ action: external_exports.literal("observe-layers"), ...bound4 }).strict(),
       external_exports.object({ action: external_exports.literal("observe-primitives"), ...bound4 }).strict(),
+      external_exports.object({ action: external_exports.literal("observe-extended-primitives"), ...bound4 }).strict(),
       external_exports.object({ action: external_exports.literal("observe-window"), ...bound4 }).strict(),
       external_exports.object({ action: external_exports.literal("observe-termination"), ...bound4 }).strict(),
       external_exports.object({ action: external_exports.literal("release-closed"), ...bound4 }).strict(),
@@ -110868,7 +111278,7 @@ function validateCurrentPcbIdentitiesResult(input2, raw) {
     limitations: [...limitations13]
   };
 }
-var CURRENT_PCB_IDENTITIES_MAX_BYTES, CURRENT_PCB_IDENTITIES_MAX_IDS, CURRENT_PCB_IDENTITIES_MAX_SELECTED_IDS, CURRENT_PCB_IDENTITIES_MAX_ID_LENGTH, CURRENT_PCB_IDENTITY_TYPE_METHOD, collectionMethods2, methods4, targetSchema9, idSchema4, families2, currentPcbIdentitiesRequestSchema, currentPcbIdentitiesQuerySchema, idsSchema, attributeParentGroupSchema, observationSchema, currentPcbIdentitiesResultSchema, limitations13;
+var CURRENT_PCB_IDENTITIES_MAX_BYTES, CURRENT_PCB_IDENTITIES_MAX_IDS, CURRENT_PCB_IDENTITIES_MAX_SELECTED_IDS, CURRENT_PCB_IDENTITIES_MAX_ID_LENGTH, CURRENT_PCB_IDENTITY_TYPE_METHOD, collectionMethods2, methods4, targetSchema10, idSchema4, families2, currentPcbIdentitiesRequestSchema, currentPcbIdentitiesQuerySchema, idsSchema, attributeParentGroupSchema, observationSchema, currentPcbIdentitiesResultSchema, limitations13;
 var init_current_pcb_identities = __esm({
   "server/src/current-pcb-identities.ts"() {
     init_zod();
@@ -110894,12 +111304,12 @@ var init_current_pcb_identities = __esm({
       "eda.pcb_PrimitiveAttribute.getAllPrimitiveId"
     ];
     methods4 = [...collectionMethods2, CURRENT_PCB_IDENTITY_TYPE_METHOD];
-    targetSchema9 = currentPcbLayersRequestSchema.shape.target;
+    targetSchema10 = currentPcbLayersRequestSchema.shape.target;
     idSchema4 = external_exports.string().min(1).max(CURRENT_PCB_IDENTITIES_MAX_ID_LENGTH);
     families2 = ["selected", "Line", "Arc", "Via", "Component", "Pad", "String", "Dimension", "Image"];
     currentPcbIdentitiesRequestSchema = external_exports.discriminatedUnion("method", [
-      external_exports.object({ method: external_exports.enum(collectionMethods2), arguments: external_exports.object({}).strict(), target: targetSchema9 }).strict(),
-      external_exports.object({ method: external_exports.literal(CURRENT_PCB_IDENTITY_TYPE_METHOD), arguments: external_exports.object({ id: idSchema4 }).strict(), target: targetSchema9 }).strict()
+      external_exports.object({ method: external_exports.enum(collectionMethods2), arguments: external_exports.object({}).strict(), target: targetSchema10 }).strict(),
+      external_exports.object({ method: external_exports.literal(CURRENT_PCB_IDENTITY_TYPE_METHOD), arguments: external_exports.object({ id: idSchema4 }).strict(), target: targetSchema10 }).strict()
     ]);
     currentPcbIdentitiesQuerySchema = external_exports.object({ method: external_exports.enum(methods4).optional(), includeSchemas: external_exports.boolean().default(false) }).strict();
     idsSchema = external_exports.array(idSchema4).max(CURRENT_PCB_IDENTITIES_MAX_IDS);
@@ -110916,7 +111326,7 @@ var init_current_pcb_identities = __esm({
       ok: external_exports.literal(true),
       kind: external_exports.literal("current-pcb-identity-observation"),
       method: external_exports.enum(methods4),
-      target: targetSchema9,
+      target: targetSchema10,
       observations: external_exports.array(observationSchema).min(1).max(3),
       samples: external_exports.literal(2),
       implementationKind: external_exports.literal("native-task-equivalent"),
@@ -111033,7 +111443,7 @@ function decodeCurrentProjectPcbMetadataReply(raw, input2) {
   }
   return resultFor(input2, decodeExactReadEnvelope(envelope4));
 }
-var CURRENT_PROJECT_PCB_METADATA_MAX_BYTES, CURRENT_PROJECT_PCB_METADATA_TIMEOUT_MS, method3, inventoryMethod, CURRENT_PROJECT_PCB_METADATA_MAX_ITEMS, documentId3, projectId3, branchId, integer6, projectTargetSchema, targetSchema10, currentProjectPcbMetadataRequestSchema, currentProjectPcbMetadataQuerySchema, valueSchema3, currentProjectPcbMetadataResultSchema, currentProjectPcbInventoryResultSchema, observationSchema2, limitations14;
+var CURRENT_PROJECT_PCB_METADATA_MAX_BYTES, CURRENT_PROJECT_PCB_METADATA_TIMEOUT_MS, method3, inventoryMethod, CURRENT_PROJECT_PCB_METADATA_MAX_ITEMS, documentId3, projectId3, branchId, integer6, projectTargetSchema, targetSchema11, currentProjectPcbMetadataRequestSchema, currentProjectPcbMetadataQuerySchema, valueSchema3, currentProjectPcbMetadataResultSchema, currentProjectPcbInventoryResultSchema, observationSchema2, limitations14;
 var init_current_project_pcb_metadata = __esm({
   "server/src/current-project-pcb-metadata.ts"() {
     init_zod();
@@ -111051,9 +111461,9 @@ var init_current_project_pcb_metadata = __esm({
     branchId = external_exports.string().regex(/^[a-f0-9]{32}$/u);
     integer6 = external_exports.number().int().nonnegative().max(Number.MAX_SAFE_INTEGER).refine((value2) => !Object.is(value2, -0));
     projectTargetSchema = external_exports.object({ projectUuid: projectId3, branchUuid: branchId }).strict();
-    targetSchema10 = projectTargetSchema.extend({ pcbUuid: documentId3 }).strict();
+    targetSchema11 = projectTargetSchema.extend({ pcbUuid: documentId3 }).strict();
     currentProjectPcbMetadataRequestSchema = external_exports.discriminatedUnion("method", [
-      external_exports.object({ method: external_exports.literal(method3), target: targetSchema10 }).strict(),
+      external_exports.object({ method: external_exports.literal(method3), target: targetSchema11 }).strict(),
       external_exports.object({ method: external_exports.literal(inventoryMethod), target: projectTargetSchema }).strict()
     ]);
     currentProjectPcbMetadataQuerySchema = external_exports.object({ method: external_exports.enum([method3, inventoryMethod]).optional(), includeSchemas: external_exports.boolean().default(false) }).strict();
@@ -111075,7 +111485,7 @@ var init_current_project_pcb_metadata = __esm({
       ok: external_exports.literal(true),
       kind: external_exports.literal("current-project-pcb-metadata-observation"),
       method: external_exports.literal(method3),
-      target: targetSchema10,
+      target: targetSchema11,
       value: valueSchema3,
       samples: external_exports.literal(2),
       currentTabId: external_exports.enum(["tab_page1", "0"]),
@@ -111625,7 +112035,7 @@ function decodeCurrentPcbRenamePreflightReply(raw, expected3) {
   }
   return validateCurrentPcbRenamePreflightResult(expected3, decodeExactReadEnvelope(envelope4));
 }
-var CURRENT_PCB_RENAME_PREFLIGHT_MAX_BYTES, CURRENT_PCB_RENAME_PREFLIGHT_TIMEOUT_MS, CURRENT_PCB_RENAME_PREFLIGHT_MAX_PEERS, id9, targetSchema11, metadataSchema3, beforeSchema, title7, currentPcbRenamePreflightRequestSchema, limitations17, limitationSchema, currentPcbRenamePreflightResultSchema, notes, CURRENT_PCB_RENAME_PREFLIGHT_LIMITATIONS;
+var CURRENT_PCB_RENAME_PREFLIGHT_MAX_BYTES, CURRENT_PCB_RENAME_PREFLIGHT_TIMEOUT_MS, CURRENT_PCB_RENAME_PREFLIGHT_MAX_PEERS, id9, targetSchema12, metadataSchema3, beforeSchema, title7, currentPcbRenamePreflightRequestSchema, limitations17, limitationSchema, currentPcbRenamePreflightResultSchema, notes, CURRENT_PCB_RENAME_PREFLIGHT_LIMITATIONS;
 var init_current_pcb_rename_preflight = __esm({
   "server/src/current-pcb-rename-preflight.ts"() {
     init_zod();
@@ -111637,7 +112047,7 @@ var init_current_pcb_rename_preflight = __esm({
     CURRENT_PCB_RENAME_PREFLIGHT_TIMEOUT_MS = 1e4;
     CURRENT_PCB_RENAME_PREFLIGHT_MAX_PEERS = 4096;
     id9 = external_exports.string().regex(/^(?:[a-f0-9]{16}|[a-f0-9]{32})$/u);
-    targetSchema11 = external_exports.object({
+    targetSchema12 = external_exports.object({
       projectUuid: external_exports.string().regex(/^[a-f0-9]{64}$/u),
       branchUuid: external_exports.string().regex(/^[a-f0-9]{32}$/u),
       pcbUuid: id9,
@@ -111646,7 +112056,7 @@ var init_current_pcb_rename_preflight = __esm({
     metadataSchema3 = currentProjectPcbMetadataResultSchema.shape.value.omit({ projectUuid: true, ownerUuid: true });
     beforeSchema = metadataSchema3.omit({ uuid: true }).extend({ parentUuid: external_exports.literal(""), source: external_exports.literal("") }).strict();
     title7 = external_exports.string().min(1).max(512).refine((value2) => value2.trim() === value2 && !new RegExp("\\p{Cc}", "u").test(value2));
-    currentPcbRenamePreflightRequestSchema = external_exports.object({ target: targetSchema11, expectedBefore: beforeSchema, desiredTitle: title7 }).strict().refine((value2) => value2.desiredTitle !== value2.expectedBefore.displayTitle);
+    currentPcbRenamePreflightRequestSchema = external_exports.object({ target: targetSchema12, expectedBefore: beforeSchema, desiredTitle: title7 }).strict().refine((value2) => value2.desiredTitle !== value2.expectedBefore.displayTitle);
     limitations17 = {
       permissionVerified: false,
       backendActorVerified: false,
@@ -111678,7 +112088,7 @@ var init_current_pcb_rename_preflight = __esm({
     currentPcbRenamePreflightResultSchema = limitationSchema.extend({
       ok: external_exports.literal(true),
       kind: external_exports.literal("current-pcb-rename-preflight"),
-      target: targetSchema11,
+      target: targetSchema12,
       expectedBefore: beforeSchema,
       desiredTitle: title7,
       samples: external_exports.literal(2),
@@ -112619,7 +113029,7 @@ function decodeCurrentProjectOnlySymbolPreflightReply(raw, expected3) {
   }
   return Object.freeze(result);
 }
-var CURRENT_PROJECT_ONLY_SYMBOL_PREFLIGHT_TIMEOUT_MS, CURRENT_PROJECT_ONLY_SYMBOL_PREFLIGHT_MAX_BYTES, targetSchema12, beforeSchema2, currentProjectOnlySymbolPreflightRequestSchema, ticketSchema, currentProjectOnlySymbolPreflightResultSchema, limitations19;
+var CURRENT_PROJECT_ONLY_SYMBOL_PREFLIGHT_TIMEOUT_MS, CURRENT_PROJECT_ONLY_SYMBOL_PREFLIGHT_MAX_BYTES, targetSchema13, beforeSchema2, currentProjectOnlySymbolPreflightRequestSchema, ticketSchema, currentProjectOnlySymbolPreflightResultSchema, limitations19;
 var init_current_project_only_symbol_preflight = __esm({
   "server/src/current-project-only-symbol-preflight.ts"() {
     init_zod();
@@ -112630,19 +113040,19 @@ var init_current_project_only_symbol_preflight = __esm({
     init_current_project_only_symbol_guard();
     CURRENT_PROJECT_ONLY_SYMBOL_PREFLIGHT_TIMEOUT_MS = 1e4;
     CURRENT_PROJECT_ONLY_SYMBOL_PREFLIGHT_MAX_BYTES = CURRENT_SYMBOL_METADATA_MAX_BYTES;
-    targetSchema12 = external_exports.object({
+    targetSchema13 = external_exports.object({
       projectUuid: external_exports.string().regex(/^[a-f0-9]{64}$/u),
       branchUuid: external_exports.string().regex(/^[a-f0-9]{32}$/u),
       symbolUuid: external_exports.string().regex(/^(?:[a-f0-9]{16}|[a-f0-9]{32})$/u),
       ownerUuid: external_exports.string().regex(/^[a-f0-9]{32}$/u)
     }).strict();
     beforeSchema2 = currentSymbolMetadataResultSchema.shape.value.omit({ uuid: true, projectUuid: true, ownerUuid: true });
-    currentProjectOnlySymbolPreflightRequestSchema = external_exports.object({ target: targetSchema12, expectedBefore: beforeSchema2 }).strict();
+    currentProjectOnlySymbolPreflightRequestSchema = external_exports.object({ target: targetSchema13, expectedBefore: beforeSchema2 }).strict();
     ticketSchema = beforeSchema2.shape.ticket;
     currentProjectOnlySymbolPreflightResultSchema = external_exports.object({
       ok: external_exports.literal(true),
       kind: external_exports.literal("current-project-only-symbol-preflight"),
-      target: targetSchema12,
+      target: targetSchema13,
       expectedBefore: beforeSchema2,
       samples: external_exports.literal(2),
       currentTabId: external_exports.enum(["tab_page1", "0"]),
@@ -121135,7 +121545,7 @@ async function discardCloseConfirmation(input2, controller, dependencies3 = {}) 
     throw transactionError(error63, { operationId: journal.operationId, state: String(journal["state"]), orphanedCallPossible: false, nextSafeAction: String(journal["nextSafeAction"]) });
   }
 }
-var hash36, targetSchema13, buttonSchema, dialogSchema, recoveryBaseSchema, closeConfirmationRequestSchema, warningButtonSchema, warningDialogSchema, saveWarningRequestSchema, nativeCloseRecoveryRequestSchema;
+var hash36, targetSchema14, buttonSchema, dialogSchema, recoveryBaseSchema, closeConfirmationRequestSchema, warningButtonSchema, warningDialogSchema, saveWarningRequestSchema, nativeCloseRecoveryRequestSchema;
 var init_native_close_recovery = __esm({
   "server/src/native-close-recovery.ts"() {
     init_zod();
@@ -121146,7 +121556,7 @@ var init_native_close_recovery = __esm({
     init_windows_native_ui();
     init_transaction_error();
     hash36 = external_exports.string().regex(/^[a-f0-9]{64}$/u);
-    targetSchema13 = external_exports.object({ projectUuid: external_exports.string().min(1).max(256), documentUuid: external_exports.string().min(1).max(256), documentType: external_exports.union([external_exports.literal(1), external_exports.literal(2), external_exports.literal(3), external_exports.literal(4)]) }).strict();
+    targetSchema14 = external_exports.object({ projectUuid: external_exports.string().min(1).max(256), documentUuid: external_exports.string().min(1).max(256), documentType: external_exports.union([external_exports.literal(1), external_exports.literal(2), external_exports.literal(3), external_exports.literal(4)]) }).strict();
     buttonSchema = external_exports.object({ label: external_exports.literal("Leave this page"), x: external_exports.number().int().min(-32768).max(32767), y: external_exports.number().int().min(-32768).max(32767) }).strict();
     dialogSchema = external_exports.object({ title: external_exports.literal("Confirm Close"), onlyUnsavedTarget: external_exports.literal(true), targetName: external_exports.string().min(1).max(512), discardButton: buttonSchema }).strict();
     recoveryBaseSchema = external_exports.object({
@@ -121156,7 +121566,7 @@ var init_native_close_recovery = __esm({
       confirmUIWrite: external_exports.literal(true),
       discardOwnUnsavedChanges: external_exports.literal(true),
       acknowledgeDurableChanges: external_exports.boolean().optional(),
-      target: targetSchema13,
+      target: targetSchema14,
       capture: external_exports.object({ receiptPath: external_exports.string().min(1), receiptSha256: hash36, imageSha256: hash36 }).strict()
     }).strict();
     closeConfirmationRequestSchema = recoveryBaseSchema.extend({ action: external_exports.literal("discard-close-confirmation"), observedDialog: dialogSchema }).strict();
@@ -137932,7 +138342,7 @@ function parseCurrentSchematicRenamePreflightRequest(input2) {
   Object.freeze(result.expectedBefore);
   return Object.freeze(result);
 }
-var CURRENT_SCHEMATIC_RENAME_PREFLIGHT_MAX_BYTES, CURRENT_SCHEMATIC_RENAME_PREFLIGHT_MAX_PEERS, id10, integer9, title8, targetSchema14, currentSchematicRenamePeerSchema, beforeSchema3, currentSchematicRenamePreflightRequestSchema;
+var CURRENT_SCHEMATIC_RENAME_PREFLIGHT_MAX_BYTES, CURRENT_SCHEMATIC_RENAME_PREFLIGHT_MAX_PEERS, id10, integer9, title8, targetSchema15, currentSchematicRenamePeerSchema, beforeSchema3, currentSchematicRenamePreflightRequestSchema;
 var init_current_schematic_rename_preflight = __esm({
   "server/src/current-schematic-rename-preflight.ts"() {
     init_zod();
@@ -137944,7 +138354,7 @@ var init_current_schematic_rename_preflight = __esm({
       (value2) => value2.trim() === value2 && /^[\u0020-\u007E]+$/u.test(value2) && !value2.includes("I"),
       "locale-invariant printable ASCII without capital I required"
     );
-    targetSchema14 = external_exports.object({
+    targetSchema15 = external_exports.object({
       projectUuid: external_exports.string().regex(/^[a-f0-9]{64}$/u),
       branchUuid: external_exports.string().regex(/^[a-f0-9]{32}$/u),
       schematicUuid: id10,
@@ -137961,7 +138371,7 @@ var init_current_schematic_rename_preflight = __esm({
       updateTime: integer9.max(864e13)
     }).strict();
     beforeSchema3 = currentSchematicRenamePeerSchema.omit({ uuid: true });
-    currentSchematicRenamePreflightRequestSchema = external_exports.object({ target: targetSchema14, expectedBefore: beforeSchema3, desiredTitle: title8 }).strict().refine((value2) => value2.expectedBefore.name === value2.expectedBefore.displayName.toLowerCase() && value2.desiredTitle.toLowerCase() !== value2.expectedBefore.name, "native name projection or normalized title change differs");
+    currentSchematicRenamePreflightRequestSchema = external_exports.object({ target: targetSchema15, expectedBefore: beforeSchema3, desiredTitle: title8 }).strict().refine((value2) => value2.expectedBefore.name === value2.expectedBefore.displayName.toLowerCase() && value2.desiredTitle.toLowerCase() !== value2.expectedBefore.name, "native name projection or normalized title change differs");
   }
 });
 
@@ -142436,6 +142846,10 @@ function diagnosticPrimitives209Params(uniqueContextId, target9) {
   const fixed = diagnosticPcbOpeningParams(uniqueContextId, target9, "observe");
   return Object.freeze({ ...fixed, functionDeclaration: CURRENT_PCB_209_PRIMITIVES_FUNCTION });
 }
+function diagnosticExtendedPrimitives209Params(uniqueContextId, target9) {
+  const fixed = diagnosticPcbOpeningParams(uniqueContextId, target9, "observe");
+  return Object.freeze({ ...fixed, functionDeclaration: CURRENT_PCB_209_EXTENDED_PRIMITIVES_FUNCTION });
+}
 function diagnosticWorkerEvaluationParams(uniqueContextId) {
   if (!diagnosticToken(uniqueContextId)) {
     return fail15();
@@ -142923,8 +143337,14 @@ function fixedNativeRequest(chunk, stringPurpose) {
       const pcb6 = params["functionDeclaration"] === CURRENT_PCB_DIAGNOSTIC_PCB_OPENING_FUNCTION;
       const layers209 = params["functionDeclaration"] === CURRENT_PCB_209_LAYERS_FUNCTION;
       const primitives209 = params["functionDeclaration"] === CURRENT_PCB_209_PRIMITIVES_FUNCTION;
+      const extendedPrimitives209 = params["functionDeclaration"] === CURRENT_PCB_209_EXTENDED_PRIMITIVES_FUNCTION;
       let fixed;
-      if (primitives209) {
+      if (extendedPrimitives209) {
+        if (phase5 !== "observe") {
+          return fail15();
+        }
+        fixed = diagnosticExtendedPrimitives209Params(params["uniqueContextId"], selected3);
+      } else if (primitives209) {
         if (phase5 !== "observe") {
           return fail15();
         }
@@ -142950,7 +143370,9 @@ function fixedNativeRequest(chunk, stringPurpose) {
       }
       command2 = { id: id14, method: method7, params: fixed, sessionId: sessionId2 };
       let selectedPhase = { openingPhase: phase5 };
-      if (primitives209) {
+      if (extendedPrimitives209) {
+        selectedPhase = { pcbExtendedPrimitives209Phase: phase5 };
+      } else if (primitives209) {
         selectedPhase = { pcbPrimitives209Phase: phase5 };
       } else if (layers209) {
         selectedPhase = { pcbLayers209Phase: phase5 };
@@ -143002,6 +143424,7 @@ var init_current_pcb_diagnostic_protocol = __esm({
     init_current_pcb_diagnostic_pcb_opening();
     init_current_pcb_209_layers();
     init_current_pcb_209_primitives();
+    init_current_pcb_209_extended_primitives();
     init_current_pcb_string_commands();
     init_current_pcb_string_actor_clock_wire();
     init_current_pcb_string_worker_producer_wire();
@@ -143088,6 +143511,7 @@ var init_current_pcb_diagnostic_pipe = __esm({
       "pcb-observe",
       "layers209",
       "primitives209",
+      "extended-primitives209",
       "model-wrapper",
       "model-properties",
       "model-handler",
@@ -143460,6 +143884,17 @@ var init_current_pcb_diagnostic_pipe = __esm({
           params: diagnosticPrimitives209Params(uniqueContextId, target9),
           sessionId: this.#sessionId
         }, "primitives209");
+      }
+      observeExtendedPrimitives209(uniqueContextId, target9) {
+        if (this.#sessionId === null || this.#workerEvent !== null) {
+          return Promise.reject(new Error("PCB209_EXTENDED_PRIMITIVES_PIPE_INPUT"));
+        }
+        return this.#request({
+          id: this.#nextId,
+          method: "Runtime.callFunctionOn",
+          params: diagnosticExtendedPrimitives209Params(uniqueContextId, target9),
+          sessionId: this.#sessionId
+        }, "extended-primitives209");
       }
       #workerSession() {
         if (!this.#workerDiscoverySettled || this.#selectedWorkerSession === null || !this.#workerSessions.has(this.#selectedWorkerSession)) {
@@ -148129,7 +148564,7 @@ var init_current_pcb_string_create = __esm({
 });
 
 // server/src/current-pcb-string-create-observation.ts
-var LIMITS16, targetSchema15, sampleCount, primitiveId3, resultSchema6;
+var LIMITS16, targetSchema16, sampleCount, primitiveId3, resultSchema6;
 var init_current_pcb_string_create_observation = __esm({
   "server/src/current-pcb-string-create-observation.ts"() {
     init_zod();
@@ -148155,7 +148590,7 @@ var init_current_pcb_string_create_observation = __esm({
       writerSupported: false,
       executionAuthorized: false
     });
-    targetSchema15 = currentPcbLayersRequestSchema.shape.target.refine(
+    targetSchema16 = currentPcbLayersRequestSchema.shape.target.refine(
       (value2) => [32, 64].includes(value2.projectUuid.length) && value2.branchUuid.length === 32 && [16, 32].includes(value2.documentUuid.length),
       "Exact hexadecimal identity lengths are required."
     );
@@ -150607,7 +151042,7 @@ function members3(dependency) {
     return descriptor10.value;
   });
 }
-var token16, sessionToken, expectedProjectSchema, empty9, targetSchema16, inventoryTargetSchema, inventorySchema3, contextSchema2, scriptSchema, initialFrameSchema, initialPauseSchema, PAUSE_MS2, REQUEST_MS2, WAIT_MS2, eventMethods, eventReasons, CurrentPcbWorkerStartupTransport;
+var token16, sessionToken, expectedProjectSchema, empty9, targetSchema17, inventoryTargetSchema, inventorySchema3, contextSchema2, scriptSchema, initialFrameSchema, initialPauseSchema, PAUSE_MS2, REQUEST_MS2, WAIT_MS2, eventMethods, eventReasons, CurrentPcbWorkerStartupTransport;
 var init_current_pcb_worker_startup_transport = __esm({
   "server/src/current-pcb-worker-startup-transport.ts"() {
     init_zod();
@@ -150623,7 +151058,7 @@ var init_current_pcb_worker_startup_transport = __esm({
       windowTabId: external_exports.string().regex(/^[A-Za-z\d_-]{1,128}$/u)
     }).strict();
     empty9 = external_exports.object({}).strict();
-    targetSchema16 = external_exports.looseObject({
+    targetSchema17 = external_exports.looseObject({
       targetId: token16,
       type: external_exports.literal("worker"),
       attached: external_exports.literal(true),
@@ -150901,7 +151336,7 @@ var init_current_pcb_worker_startup_transport = __esm({
       };
       #acceptEvent(event4) {
         if (event4.sessionId === this.#parentSession && event4.method === "Target.attachedToTarget") {
-          const params = external_exports.object({ sessionId: sessionToken, targetInfo: targetSchema16, waitingForDebugger: external_exports.boolean() }).strict().parse(event4.params);
+          const params = external_exports.object({ sessionId: sessionToken, targetInfo: targetSchema17, waitingForDebugger: external_exports.boolean() }).strict().parse(event4.params);
           if (params.sessionId === this.#parentSession || params.targetInfo.targetId === this.#parentTarget || this.#workers.has(params.sessionId) || [...this.#workers.values()].some((value2) => value2.target.targetId === params.targetInfo.targetId) || this.#workers.size >= 16) {
             throw failure3("ATTACHMENT");
           }
@@ -152226,8 +152661,9 @@ var init_current_pcb_diagnostic_owner = __esm({
     init_current_pcb_worker_startup_pcb_session();
     init_current_pcb_209_layers();
     init_current_pcb_209_primitives();
-    HELPER_SHA256 = "989e51d7328bfad6d0a94c372db5480c884870ccf21b07709f6c312e55ebe7d9";
-    HELPER_BYTES = 912898;
+    init_current_pcb_209_extended_primitives();
+    HELPER_SHA256 = "45c5cb0e50383bc31de0ad5ce18653391791fa59a9ef798d43c0de10a103f8e6";
+    HELPER_BYTES = 936177;
     MAX_LINE = 1e5;
     MAX_TOTAL = 96 * 1024 * 1024;
     retainedOwners = /* @__PURE__ */ new Set();
@@ -152292,6 +152728,7 @@ var init_current_pcb_diagnostic_owner = __esm({
       #pcbSourceProfile = null;
       #layers209Consumed = false;
       #primitives209Consumed = false;
+      #extendedPrimitives209Consumed = false;
       #modelConsumed = false;
       #stringPrecreateConsumed = false;
       #commonBaselineConsumed = false;
@@ -152846,6 +153283,53 @@ var init_current_pcb_diagnostic_owner = __esm({
           return result;
         } catch (caughtError) {
           this.#input.emit("error", error62("PRIMITIVES209_FAILED"));
+          throw caughtError;
+        } finally {
+          this.#busy = false;
+        }
+      }
+      /** One fixed extended209 DTO read through the original qualified child.
+       * It grants no complete-board, source, parent ownership or writer authority. */
+      async observeExtendedPrimitives209(input2) {
+        const context4 = this.#stagedContext, profile = this.#pcbSourceProfile, target9 = currentDisposableOpenSealedTargetSchema.parse(input2);
+        if (this.#purpose !== "diagnostic209" || context4 === null || this.#extendedPrimitives209Consumed || !this.#pcbSourceQualified || profile === null || this.#pcbFrameObservation?.ok !== true || this.#workersConsumed || this.#modelConsumed || JSON.stringify(target9) !== JSON.stringify(this.#projectOpeningTarget)) {
+          throw error62("EXTENDED_PRIMITIVES209_UNAVAILABLE");
+        }
+        this.#enter(true);
+        this.#extendedPrimitives209Consumed = true;
+        try {
+          const pcb6 = context4.modelContext(), selected3 = context4.pcbOpeningContext();
+          const reprove = () => {
+            this.#available();
+            context4.pcbScript(profile);
+            if (JSON.stringify(context4.pcbOpeningContext()) !== JSON.stringify(selected3) || JSON.stringify(context4.modelContext()) !== JSON.stringify(pcb6)) {
+              throw error62("EXTENDED_PRIMITIVES209_CONTEXT");
+            }
+          };
+          await this.#verifyInstallation();
+          reprove();
+          await this.#verify();
+          reprove();
+          await this.#observeParent();
+          reprove();
+          await this.#observeOpeningAncillary();
+          reprove();
+          const result = decodeCurrentPcb209ExtendedPrimitivesReply(
+            await this.#transfer(() => this.#pipe.observeExtendedPrimitives209(selected3.uniqueContextId, target9)),
+            target9
+          );
+          reprove();
+          await this.#observeParent();
+          reprove();
+          await this.#observeOpeningAncillary();
+          reprove();
+          await this.#verifyInstallation();
+          reprove();
+          await this.#verify();
+          reprove();
+          return result;
+        } catch (caughtError) {
+          this.#input.emit("error", error62("EXTENDED_PRIMITIVES209_FAILED"));
           throw caughtError;
         } finally {
           this.#busy = false;
@@ -154033,6 +154517,7 @@ var init_current_pcb_diagnostic_lifecycle = __esm({
     init_current_pcb_209_opening_profile();
     init_current_pcb_209_opening_validation();
     init_current_pcb_209_primitives();
+    init_current_pcb_209_extended_primitives();
     init_current_pcb_diagnostic_validation();
     init_current_pcb_string_precreate_validation();
     init_current_pcb_diagnostic_lifecycle_journal();
@@ -154142,7 +154627,7 @@ var init_current_pcb_diagnostic_lifecycle = __esm({
         this.#generation = generation5;
         this.#purpose = purpose;
         this.#stringPurpose = stringPurpose;
-        this.#stages = generation5 === "209-opening" ? ["browser", "frames", "script", "pcb-opening", "layers209", "primitives209"] : {
+        this.#stages = generation5 === "209-opening" ? ["browser", "frames", "script", "pcb-opening", "layers209", "primitives209", "extended-primitives209"] : {
           diagnostic: diagnosticObservationStageSchema.options,
           "string-precreate": currentPcbStringPrecreateStages,
           "worker-startup": startupStages2
@@ -154763,7 +155248,7 @@ var init_current_pcb_diagnostic_lifecycle = __esm({
         assertCurrentPcbDiagnosticLaunchExclusion(this.#lease);
         requireValue16(this.#retained === retained2 && methods8.every((name6) => retained2.owner[name6] === retained2.methods[name6]), "OWNER_CHANGED");
         const status3 = retained2.methods.status.call(retained2.owner);
-        requireValue16(status3.profile === (this.#generation === "209-opening" ? "diagnostic209" : this.#purpose) && (this.#generation !== "209-opening" || typeof retained2.methods.observeLayers209 === "function" && retained2.owner.observeLayers209 === retained2.methods.observeLayers209 && typeof retained2.methods.observePrimitives209 === "function" && retained2.owner.observePrimitives209 === retained2.methods.observePrimitives209) && (!this.#stringPurpose || typeof retained2.methods.observeStringPrecreate === "function" && retained2.owner.observeStringPrecreate === retained2.methods.observeStringPrecreate && typeof retained2.methods.observeCommonBaseline === "function" && retained2.owner.observeCommonBaseline === retained2.methods.observeCommonBaseline && typeof retained2.methods.retainedCommonBaselineFailure === "function" && retained2.owner.retainedCommonBaselineFailure === retained2.methods.retainedCommonBaselineFailure) && (this.#purpose !== "worker-startup" || typeof retained2.methods.handoffWorkerStartup === "function" && retained2.owner.handoffWorkerStartup === retained2.methods.handoffWorkerStartup), "OWNER_PURPOSE_CHANGED");
+        requireValue16(status3.profile === (this.#generation === "209-opening" ? "diagnostic209" : this.#purpose) && (this.#generation !== "209-opening" || typeof retained2.methods.observeLayers209 === "function" && retained2.owner.observeLayers209 === retained2.methods.observeLayers209 && typeof retained2.methods.observePrimitives209 === "function" && retained2.owner.observePrimitives209 === retained2.methods.observePrimitives209 && typeof retained2.methods.observeExtendedPrimitives209 === "function" && retained2.owner.observeExtendedPrimitives209 === retained2.methods.observeExtendedPrimitives209) && (!this.#stringPurpose || typeof retained2.methods.observeStringPrecreate === "function" && retained2.owner.observeStringPrecreate === retained2.methods.observeStringPrecreate && typeof retained2.methods.observeCommonBaseline === "function" && retained2.owner.observeCommonBaseline === retained2.methods.observeCommonBaseline && typeof retained2.methods.retainedCommonBaselineFailure === "function" && retained2.owner.retainedCommonBaselineFailure === retained2.methods.retainedCommonBaselineFailure) && (this.#purpose !== "worker-startup" || typeof retained2.methods.handoffWorkerStartup === "function" && retained2.owner.handoffWorkerStartup === retained2.methods.handoffWorkerStartup), "OWNER_PURPOSE_CHANGED");
         requireValue16(retained2.binding === null || canonicalJson(status3.binding) === canonicalJson(retained2.binding), "BINDING_CHANGED");
         requireValue16(this.#startupOpening === null || startupOpeningMethods.every((name6) => this.#startupOpening?.owner[name6] === this.#startupOpening?.methods[name6]), "STARTUP_OPENING_OWNER_CHANGED");
       }
@@ -154986,7 +155471,11 @@ var init_current_pcb_diagnostic_lifecycle = __esm({
           openProject: owner2.openProject,
           openPcb: owner2.openPcb,
           observePcbOpening: owner2.observePcbOpening,
-          ...this.#generation === "209-opening" ? { observeLayers209: owner2.observeLayers209, observePrimitives209: owner2.observePrimitives209 } : {},
+          ...this.#generation === "209-opening" ? {
+            observeLayers209: owner2.observeLayers209,
+            observePrimitives209: owner2.observePrimitives209,
+            observeExtendedPrimitives209: owner2.observeExtendedPrimitives209
+          } : {},
           ...this.#stringPurpose ? {
             observeStringPrecreate: owner2.observeStringPrecreate,
             observeCommonBaseline: owner2.observeCommonBaseline,
@@ -155074,7 +155563,7 @@ var init_current_pcb_diagnostic_lifecycle = __esm({
         if (request13.action === "observe-common-baseline") {
           return this.#observeCommonBaseline(request13, operation, operations, retained2);
         }
-        if (request13.action === "browser-observation" || request13.action === "inspect-frames" || request13.action === "inspect-script" || request13.action === "inspect-workers" || request13.action === "inspect-worker-script" || request13.action === "observe-worker-state" || request13.action === "observe-model-state" || request13.action === "observe-pcb-opening" || request13.action === "observe-string-precreate" || request13.action === "observe-layers" || request13.action === "observe-primitives") {
+        if (request13.action === "browser-observation" || request13.action === "inspect-frames" || request13.action === "inspect-script" || request13.action === "inspect-workers" || request13.action === "inspect-worker-script" || request13.action === "observe-worker-state" || request13.action === "observe-model-state" || request13.action === "observe-pcb-opening" || request13.action === "observe-string-precreate" || request13.action === "observe-layers" || request13.action === "observe-primitives" || request13.action === "observe-extended-primitives") {
           return this.#observe(request13, operation, operations, retained2);
         }
         if (request13.action === "observe-window") {
@@ -155182,6 +155671,9 @@ var init_current_pcb_diagnostic_lifecycle = __esm({
         if (request13.action === "observe-primitives") {
           stage = "primitives209";
         }
+        if (request13.action === "observe-extended-primitives") {
+          stage = "extended-primitives209";
+        }
         requireValue16(operation.records["binding.json"]?.launchAcknowledged === true && retained2.binding?.rootCreated !== "0" && operation.records["close-intent.json"] === void 0 && operation.records["terminated.json"] === void 0, "OBSERVATION_UNAVAILABLE");
         requireValue16(!this.#observationConsumed.has(stage) && operation.records[`${stage}-intent.json`] === void 0, "OBSERVATION_CONSUMED");
         requireValue16(stage !== "frames" || operation.records["browser-result.json"] !== void 0, "BROWSER_OBSERVATION_REQUIRED");
@@ -155195,6 +155687,10 @@ var init_current_pcb_diagnostic_lifecycle = __esm({
         }
         if (stage === "primitives209") {
           requireValue16(this.#generation === "209-opening" && retained2.methods.observePrimitives209 !== void 0 && !this.#observationConsumed.has("workers") && !this.#observationConsumed.has("model-state"), "PRIMITIVES209_PURPOSE");
+          this.#originalPcbSource(operation);
+        }
+        if (stage === "extended-primitives209") {
+          requireValue16(this.#generation === "209-opening" && retained2.methods.observeExtendedPrimitives209 !== void 0 && !this.#observationConsumed.has("workers") && !this.#observationConsumed.has("model-state"), "EXTENDED_PRIMITIVES209_PURPOSE");
           this.#originalPcbSource(operation);
         }
         if (stage === "model-state") {
@@ -155284,6 +155780,10 @@ var init_current_pcb_diagnostic_lifecycle = __esm({
             const observe7 = retained2.methods.observePrimitives209;
             requireValue16(this.#generation === "209-opening" && observe7 !== void 0, "PRIMITIVES209_PURPOSE");
             result = await observe7.call(retained2.owner, this.#originalProjectOpening(operation).sealedTarget);
+          } else if (request13.action === "observe-extended-primitives") {
+            const observe7 = retained2.methods.observeExtendedPrimitives209;
+            requireValue16(this.#generation === "209-opening" && observe7 !== void 0, "EXTENDED_PRIMITIVES209_PURPOSE");
+            result = await observe7.call(retained2.owner, this.#originalProjectOpening(operation).sealedTarget);
           } else if (request13.action === "observe-string-precreate") {
             const observe7 = retained2.methods.observeStringPrecreate;
             requireValue16(this.#stringPurpose && observe7 !== void 0, "STRING_PURPOSE_REQUIRED");
@@ -155329,7 +155829,8 @@ var init_current_pcb_diagnostic_lifecycle = __esm({
         }
         this.#observations.set(stage, result);
         const observationLimit = stage === "primitives209" ? CURRENT_PCB_209_PRIMITIVES_RESULT_BYTES : DIAGNOSTIC_OBSERVATION_MAX_BYTES;
-        requireValue16(Buffer.byteLength(canonicalJson(result)) <= (stage === "string-precreate" ? STRING_PRECREATE_OBSERVATION_MAX_BYTES : observationLimit), "OBSERVATION_BOUND");
+        const extendedLimit = stage === "extended-primitives209" ? CURRENT_PCB_209_EXTENDED_PRIMITIVES_RESULT_BYTES : observationLimit;
+        requireValue16(Buffer.byteLength(canonicalJson(result)) <= (stage === "string-precreate" ? STRING_PRECREATE_OBSERVATION_MAX_BYTES : extendedLimit), "OBSERVATION_BOUND");
         if (stage === "string-precreate") {
           const observed2 = stringPrecreateObservationResultSchema.parse(result), target9 = this.#projectPreparation?.sealedTarget;
           requireValue16(target9 !== void 0 && stringPrecreateTargetMatches(
@@ -159042,7 +159543,7 @@ function request3(input2) {
   const value2 = exact6(input2, ["scope", "target", "actor"]);
   return Object.freeze({
     scope: validateClockControlScope(value2["scope"]),
-    target: targetSchema17.parse(exact6(value2["target"], ["projectUuid", "branchUuid"])),
+    target: targetSchema18.parse(exact6(value2["target"], ["projectUuid", "branchUuid"])),
     actor: validateActorProjection(value2["actor"])
   });
 }
@@ -159072,10 +159573,10 @@ function decodeCurrentAgedSqlRendererReply(raw, expected3) {
   const envelope4 = exact6(extractToolPayload(raw), ["schema", "utf8Bytes", "json"]);
   need75(envelope4["schema"] === EXACT_READ_ENVELOPE_SCHEMA && typeof envelope4["json"] === "string" && envelope4["json"].length > 0 && envelope4["json"].length <= MAX_BYTES11 && Buffer.byteLength(JSON.stringify(envelope4)) <= MAX_BYTES11);
   const value2 = exact6(decodeExactReadEnvelope(envelope4), ["profile", "target", "controls", "mutationDispatched", "executionAuthorized"]);
-  need75(value2["profile"] === "private.current-aged-sql-renderer.v1" && value2["mutationDispatched"] === false && value2["executionAuthorized"] === false && canonicalJson(targetSchema17.parse(value2["target"])) === canonicalJson(selected3.target));
+  need75(value2["profile"] === "private.current-aged-sql-renderer.v1" && value2["mutationDispatched"] === false && value2["executionAuthorized"] === false && canonicalJson(targetSchema18.parse(value2["target"])) === canonicalJson(selected3.target));
   return validateCurrentAgedSqlClockControls(value2["controls"], selected3.scope, "renderer");
 }
-var MAX_BYTES11, targetSchema17, OLD_URL_CHECK;
+var MAX_BYTES11, targetSchema18, OLD_URL_CHECK;
 var init_current_aged_sql_renderer_program = __esm({
   "server/src/current-aged-sql-renderer-program.ts"() {
     init_zod();
@@ -159086,7 +159587,7 @@ var init_current_aged_sql_renderer_program = __esm({
     init_symbol_clock_controls();
     init_symbol_dual_actor();
     MAX_BYTES11 = 98304;
-    targetSchema17 = external_exports.object({ projectUuid: external_exports.string().regex(/^[a-f0-9]{64}$/u), branchUuid: external_exports.string().regex(/^[a-f0-9]{32}$/u) }).strict();
+    targetSchema18 = external_exports.object({ projectUuid: external_exports.string().regex(/^[a-f0-9]{64}$/u), branchUuid: external_exports.string().regex(/^[a-f0-9]{32}$/u) }).strict();
     OLD_URL_CHECK = String.raw`if(typeof href!=='string'||!/^https:\/\/client\/editor\?cll=(?:trace|debug|info|warn|error)#?$/.test(href)||location.origin!=='https://client'||!document||document.nodeType!==9||document.defaultView!==root||document.URL!==href)bad();`;
   }
 });
@@ -167358,7 +167859,7 @@ function decodeCurrentSymbolCopySavedReadReply(raw, original2, input2) {
   }
   return Object.freeze(result);
 }
-var actorSchema3, targetSchema18, versionSchema3, beforeSchema5, currentSymbolCopySavedReadRequestSchema, observationSchema7, resultSchema10;
+var actorSchema3, targetSchema19, versionSchema3, beforeSchema5, currentSymbolCopySavedReadRequestSchema, observationSchema7, resultSchema10;
 var init_current_symbol_copy_saved_read_program = __esm({
   "server/src/current-symbol-copy-saved-read-program.ts"() {
     init_zod();
@@ -167376,11 +167877,11 @@ var init_current_symbol_copy_saved_read_program = __esm({
       username: external_exports.string().min(1).max(ACTOR_NAME_MAX_CODE_UNITS),
       nickname: external_exports.string().max(ACTOR_NAME_MAX_CODE_UNITS)
     }).strict();
-    targetSchema18 = currentSavedSymbolReadRequestSchema.shape.target.extend({ symbolUuid: external_exports.string().regex(/^[a-f0-9]{16}$/u) }).strict();
+    targetSchema19 = currentSavedSymbolReadRequestSchema.shape.target.extend({ symbolUuid: external_exports.string().regex(/^[a-f0-9]{16}$/u) }).strict();
     versionSchema3 = external_exports.string().regex(/^[1-9][0-9]{0,15}$/u).refine((value2) => Number.isSafeInteger(Number(value2)) && Number(value2) <= 864e13);
     beforeSchema5 = currentSavedSymbolReadRequestSchema.shape.expectedBefore.extend({ source: external_exports.literal(""), version: versionSchema3 }).strict();
     currentSymbolCopySavedReadRequestSchema = external_exports.object({
-      target: targetSchema18,
+      target: targetSchema19,
       expectedBefore: beforeSchema5,
       expectedActor: actorSchema3,
       maximumTicket: external_exports.number().int().positive().max(Number.MAX_SAFE_INTEGER - 1).refine((value2) => !Object.is(value2, -0)),
@@ -167388,8 +167889,8 @@ var init_current_symbol_copy_saved_read_program = __esm({
     }).strict().refine((value2) => value2.expectedBefore.ticket + 1 === value2.maximumTicket);
     observationSchema7 = external_exports.object({
       profile: external_exports.literal("private.saved-symbol-content-observation.v1"),
-      projectUuid: targetSchema18.shape.projectUuid,
-      targetUuid: targetSchema18.shape.symbolUuid,
+      projectUuid: targetSchema19.shape.projectUuid,
+      targetUuid: targetSchema19.shape.symbolUuid,
       maximumTicket: currentSymbolCopySavedReadRequestSchema.shape.maximumTicket,
       workerClient: external_exports.string().regex(/^[a-f0-9]{16}$/u),
       content: external_exports.string().min(1).max(CURRENT_SAVED_SYMBOL_CONTENT_LIMIT),
@@ -167399,7 +167900,7 @@ var init_current_symbol_copy_saved_read_program = __esm({
     }).strict();
     resultSchema10 = external_exports.object({
       profile: external_exports.literal("private.current-symbol-copy-saved-read-observation.v1"),
-      target: targetSchema18,
+      target: targetSchema19,
       expectedBefore: beforeSchema5,
       expectedActor: actorSchema3,
       observation: observationSchema7,
@@ -167960,7 +168461,7 @@ function decodeCurrentSymbolCopySourceReadReply(raw, original2, input2) {
   Object.freeze(result.observation);
   return Object.freeze(result);
 }
-var actorSchema4, targetSchema19, beforeSchema6, currentSymbolCopySourceReadRequestSchema, observationSchema9, resultSchema12;
+var actorSchema4, targetSchema20, beforeSchema6, currentSymbolCopySourceReadRequestSchema, observationSchema9, resultSchema12;
 var init_current_symbol_copy_source_read_program = __esm({
   "server/src/current-symbol-copy-source-read-program.ts"() {
     init_zod();
@@ -167978,10 +168479,10 @@ var init_current_symbol_copy_source_read_program = __esm({
       username: external_exports.string().min(1).max(ACTOR_NAME_MAX_CODE_UNITS),
       nickname: external_exports.string().max(ACTOR_NAME_MAX_CODE_UNITS)
     }).strict();
-    targetSchema19 = currentSavedSymbolReadRequestSchema.shape.target;
+    targetSchema20 = currentSavedSymbolReadRequestSchema.shape.target;
     beforeSchema6 = currentSavedSymbolReadRequestSchema.shape.expectedBefore;
     currentSymbolCopySourceReadRequestSchema = external_exports.object({
-      target: targetSchema19,
+      target: targetSchema20,
       expectedBefore: beforeSchema6,
       expectedActor: actorSchema4,
       maximumTicket: external_exports.number().int().nonnegative().max(Number.MAX_SAFE_INTEGER - 3).refine((value2) => !Object.is(value2, -0)),
@@ -167989,8 +168490,8 @@ var init_current_symbol_copy_source_read_program = __esm({
     }).strict().refine((value2) => value2.expectedBefore.ticket <= value2.maximumTicket);
     observationSchema9 = external_exports.object({
       profile: external_exports.literal("private.saved-symbol-content-observation.v1"),
-      projectUuid: targetSchema19.shape.projectUuid,
-      targetUuid: targetSchema19.shape.symbolUuid,
+      projectUuid: targetSchema20.shape.projectUuid,
+      targetUuid: targetSchema20.shape.symbolUuid,
       maximumTicket: currentSymbolCopySourceReadRequestSchema.shape.maximumTicket,
       workerClient: external_exports.string().regex(/^[a-f0-9]{16}$/u),
       content: external_exports.string().min(1).max(CURRENT_SAVED_SYMBOL_CONTENT_LIMIT),
@@ -168000,7 +168501,7 @@ var init_current_symbol_copy_source_read_program = __esm({
     }).strict();
     resultSchema12 = external_exports.object({
       profile: external_exports.literal("private.current-symbol-copy-source-read-observation.v1"),
-      target: targetSchema19,
+      target: targetSchema20,
       expectedBefore: beforeSchema6,
       expectedActor: actorSchema4,
       observation: observationSchema9,
@@ -177529,7 +178030,7 @@ async function prepareCurrentPcbRename(input2) {
   const captured = data14(input2, ["before", "target", "desiredTitle", "witness"]);
   const before = input2.before;
   need112(captured["before"] === before, "original SQL inventory changed");
-  const completion2 = readerCompletion(before), target9 = freezeDeep(targetSchema20.parse(data14(captured["target"])));
+  const completion2 = readerCompletion(before), target9 = freezeDeep(targetSchema21.parse(data14(captured["target"])));
   const rawWitness = data14(captured["witness"]), witness = freezeDeep(witnessSchema3.parse({
     ...rawWitness,
     ...rawWitness["agedHead"] === void 0 ? {} : { agedHead: data14(rawWitness["agedHead"]) }
@@ -177606,7 +178107,7 @@ async function bindCurrentPcbRenameTimes(preparation3, input2) {
   need112(preparations3.get(preparation3) === prepared && canonicalJson(preparation3.witness) === canonicalJson(prepared.witness), "original PCB preparation changed");
   return result;
 }
-var identifier24, account, integer26, time13, title14, metadataSchema11, targetSchema20, offset6, witnessSchema3, LIMITATIONS7, preparations3;
+var identifier24, account, integer26, time13, title14, metadataSchema11, targetSchema21, offset6, witnessSchema3, LIMITATIONS7, preparations3;
 var init_current_pcb_rename_preparation = __esm({
   "server/src/current-pcb-rename-preparation.ts"() {
     init_zod();
@@ -177632,7 +178133,7 @@ var init_current_pcb_rename_preparation = __esm({
       board: external_exports.union([external_exports.literal(""), identifier24]),
       zIndex: external_exports.null()
     }).strict();
-    targetSchema20 = external_exports.object({
+    targetSchema21 = external_exports.object({
       projectUuid: external_exports.string().regex(/^(?:[a-f0-9]{32}|[a-f0-9]{64})$/u),
       branchUuid: account,
       ownerUuid: account,
@@ -177640,7 +178141,7 @@ var init_current_pcb_rename_preparation = __esm({
     }).strict();
     offset6 = external_exports.number().int().min(-840).max(840).refine((value2) => !Object.is(value2, -0));
     witnessSchema3 = external_exports.object({
-      projectUuid: targetSchema20.shape.projectUuid,
+      projectUuid: targetSchema21.shape.projectUuid,
       branchUuid: account,
       backendActorUuid: account,
       client: currentPcbStoredHeaderSchema.shape.client,
@@ -192428,7 +192929,7 @@ var init_src = __esm({
       };
       server.registerTool(diagnosticTool, {
         title: diagnostic209 ? "Open and qualify a disposable EasyEDA 3.2.209 PCB session" : "Validate a contained native EasyEDA diagnostic session",
-        description: diagnostic209 ? "Separate EasyEDA3.2.209 validation-only original-owner launch, UI source qualification and one checkpoint-bound disposable project/PCB opening. Query pcb209-opening/pcb209-opening-validate first. After accepted PCB frame/source/identity, observe-layers returns double-sampled layer metadata and copper count. observe-primitives returns two matching bounded Line/Arc/Via/parentless-String loaded-view projections and ordered IDs; models without views and all other families are excluded. No complete-board, connectivity, physical-stackup, startup or saved-state proof. Uses fixed209 executable/selectors/UI/PCB pins and pcb209-* IDs; older diagnostic/worker/model purposes cannot be selected. No arbitrary protocol, caller code, target URL, worker inspection, ratline capture, CAD edit or explicit Save. Existing-profile launch/open can restore projects, migrate, replay caches and automatically Save. Keep the original owner alive through one-shot opening/observations, normal close, retained root/Job termination, helper release and receipt settlement. Inspect after lost replies; never replay navigation/observations or choose Save/Discard. No historical-owner adoption, forced exit or new owner after ambiguity." : "Validation-only original-owned native launch, fixed source/frame/worker observations and sampled PCB compiler/pending-work/raw-String reads. Query offline pcb-diagnostic-validation and validate exact arguments first. The separate worker-startup wrapper uses its own fixed owner; capture-project requires an exact disposable target and explicit debugger-pause acceptance, arms capture before opening, and binds retained constructors to the selected project/branch/window. After published capture, observe-current-assignments checks the retained wrappers; observe-actor-clock then compares a UI/worker/worker/UI actor and local-Date bracket. The independent observe-current-channel stage checks original channel relations, fixed publisher-method associations and paired gates after published assignments. These are point-in-time, non-atomic observations, not native peer ownership, contained destinations, clock provenance or Save authority. It cannot upgrade an ordinary owner and grants no writer authority. Startup and opening use the existing profile: restoration, migration, cache replay and automatic Save are possible. Ordinary open-project binds an exact registered disposable file/checkpoint and empty source-qualified UI. After accepted project-only opening choose worker discovery OR open-pcb, not both. open-pcb derives the retained PCB target; observe-pcb-opening separately proves its child frame, DOM owner, complete source and native identity before observe-model-state. Samples are non-atomic and do not prove whole-board membership, continuous publishers, containment, queue completion or saved state. No CAD edits, explicit Save, caller executable, URL, source hash, CDP method or JavaScript. Every opening/observation stage is consumed once; inspect retained outcomes after lost replies. Normal close, proved root/Job termination, helper release and record settlement are separate original-owner steps. No forced exit, implicit Save/Discard or journal-derived ownership. Ambiguous creation or a failed suspended-image check cannot use no-process cleanup.",
+        description: diagnostic209 ? "Separate EasyEDA3.2.209 validation-only original-owner launch, UI source qualification and one checkpoint-bound disposable project/PCB opening. Query pcb209-opening/pcb209-opening-validate first. After accepted PCB frame/source/identity, observe-layers returns double-sampled layer metadata and copper count. observe-primitives returns matching Line/Arc/Via/parentless-String loaded-view projections and IDs. The separate observe-extended-primitives returns matching Component/Pad/Attribute/Dimension/Image projections, IDs, observed Attribute parent groups and Component metadata presence states. Each object stage has a256-row per-family and384KiB aggregate bound; models without views and unqueried families are excluded. No complete-board, reciprocal ownership, connectivity, physical-stackup, startup, asset/rendering or saved-state proof. Uses fixed209 executable/selectors/UI/PCB pins and pcb209-* IDs; older diagnostic/worker/model purposes cannot be selected. No arbitrary protocol, caller code, target URL, worker inspection, ratline capture, CAD edit or explicit Save. Existing-profile launch/open can restore projects, migrate, replay caches and automatically Save. Keep the original owner alive through one-shot opening/observations, normal close, retained root/Job termination, helper release and receipt settlement. Inspect after lost replies; never replay navigation/observations or choose Save/Discard. No historical-owner adoption, forced exit or new owner after ambiguity." : "Validation-only original-owned native launch, fixed source/frame/worker observations and sampled PCB compiler/pending-work/raw-String reads. Query offline pcb-diagnostic-validation and validate exact arguments first. The separate worker-startup wrapper uses its own fixed owner; capture-project requires an exact disposable target and explicit debugger-pause acceptance, arms capture before opening, and binds retained constructors to the selected project/branch/window. After published capture, observe-current-assignments checks the retained wrappers; observe-actor-clock then compares a UI/worker/worker/UI actor and local-Date bracket. The independent observe-current-channel stage checks original channel relations, fixed publisher-method associations and paired gates after published assignments. These are point-in-time, non-atomic observations, not native peer ownership, contained destinations, clock provenance or Save authority. It cannot upgrade an ordinary owner and grants no writer authority. Startup and opening use the existing profile: restoration, migration, cache replay and automatic Save are possible. Ordinary open-project binds an exact registered disposable file/checkpoint and empty source-qualified UI. After accepted project-only opening choose worker discovery OR open-pcb, not both. open-pcb derives the retained PCB target; observe-pcb-opening separately proves its child frame, DOM owner, complete source and native identity before observe-model-state. Samples are non-atomic and do not prove whole-board membership, continuous publishers, containment, queue completion or saved state. No CAD edits, explicit Save, caller executable, URL, source hash, CDP method or JavaScript. Every opening/observation stage is consumed once; inspect retained outcomes after lost replies. Normal close, proved root/Job termination, helper release and record settlement are separate original-owner steps. No forced exit, implicit Save/Discard or journal-derived ownership. Ambiguous creation or a failed suspended-image check cannot use no-process cleanup.",
         inputSchema: inputSchema6,
         outputSchema: currentSymbolOperationToolOutputSchema,
         annotations: { readOnlyHint: false, destructiveHint: false, idempotentHint: false, openWorldHint: true }

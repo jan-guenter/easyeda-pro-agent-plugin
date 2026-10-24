@@ -15,7 +15,7 @@
       "omitted": 506
     },
     "executionRoutes": {
-      "available-with-runtime-guards": 373,
+      "available-with-runtime-guards": 383,
       "available-with-network-guards": 6,
       "blocked": 94,
       "partially-blocked": 2
@@ -20128,6 +20128,49 @@
       "status": "implemented-public-subset",
       "routes": [
         {
+          "tool": "easyeda_control_pcb209_opening",
+          "selector": "observe-extended-primitives",
+          "implementation": "native-task-equivalent",
+          "scope": "Separately pinned installed209 original-owner disposable collection observation, not public SDK instance parity. Two matching complete ordered native projections for Component, Pad, Attribute, Dimension and Image follow exact PCB source/identity admission, retaining the captured receiver and target around every await. Observed component parent groups, including empty groups, and current native attribute text/style. Component/group order and membership are compared, but reciprocal ownership and symbol-pin mapping are not proved. At most256 rows per family,256 Attribute parent groups and393216 UTF-8 bytes for the whole native/final packet. Only existing loaded views are projected; empty output does not prove an empty board. Unsupported fields/shapes, malformed Unicode, sparse/accessor arrays, non-finite/signed-zero numbers, duplicate IDs and changed samples refuse whole. No caller filters, selected IDs, exact-ID lookup, source export, edits or explicit Save. Observations are sequential and native serialization precedes output bounds. No complete startup, source/SQL baseline, connectivity, persistence or writer authority. The one-shot stage and original normal-close/root/Job/release lifecycle remain mandatory; older206 owners cannot select it.",
+          "source": [
+            "current-pcb-209-extended-primitives.ts",
+            "current-pcb-209-opening-validation.ts",
+            "current-pcb-209-opening-profile.ts",
+            "current-pcb-diagnostic-lifecycle.ts",
+            "current-pcb-diagnostic-lifecycle-journal.ts",
+            "current-pcb-diagnostic-owner.ts",
+            "current-pcb-diagnostic-pipe.ts",
+            "current-pcb-diagnostic-protocol.ts",
+            "current-pcb-geometry.ts",
+            "../../scripts/pcb-diagnostic-owner.ps1"
+          ],
+          "tests": [
+            "current-pcb-209-extended-primitives.test.ts",
+            "current-pcb-209-extended-primitives-native.test.ts",
+            "current-pcb-209-opening.test.ts",
+            "current-pcb-diagnostic-owner.test.ts",
+            "current-pcb-diagnostic-pipe.test.ts",
+            "current-pcb-diagnostic-lifecycle.test.ts",
+            "extension-api-coverage.test.ts"
+          ],
+          "documentTypes": [
+            3
+          ],
+          "validation": "offline-regression;current-live-unclaimed",
+          "executionState": "available-with-runtime-guards",
+          "inputDiscovery": {
+            "tool": "easyeda_control_api",
+            "arguments": {
+              "request": {
+                "action": "pcb209-opening",
+                "query": {
+                  "includeSchemas": true
+                }
+              }
+            }
+          }
+        },
+        {
           "tool": "easyeda_control_pcb_geometry",
           "selector": "eda.pcb_PrimitiveAttribute.getAll",
           "implementation": "native-task-equivalent",
@@ -20242,6 +20285,49 @@
       "installed209Declaration": true,
       "status": "implemented-public-subset",
       "routes": [
+        {
+          "tool": "easyeda_control_pcb209_opening",
+          "selector": "observe-extended-primitives",
+          "implementation": "native-task-equivalent",
+          "scope": "Separately pinned installed209 original-owner disposable collection observation, not public SDK instance parity. Two matching complete ordered native projections for Component, Pad, Attribute, Dimension and Image follow exact PCB source/identity admission, retaining the captured receiver and target around every await. Observed component parent groups, including empty groups, and current native attribute text/style. Component/group order and membership are compared, but reciprocal ownership and symbol-pin mapping are not proved. At most256 rows per family,256 Attribute parent groups and393216 UTF-8 bytes for the whole native/final packet. Only existing loaded views are projected; empty output does not prove an empty board. Unsupported fields/shapes, malformed Unicode, sparse/accessor arrays, non-finite/signed-zero numbers, duplicate IDs and changed samples refuse whole. No caller filters, selected IDs, exact-ID lookup, source export, edits or explicit Save. Observations are sequential and native serialization precedes output bounds. No complete startup, source/SQL baseline, connectivity, persistence or writer authority. The one-shot stage and original normal-close/root/Job/release lifecycle remain mandatory; older206 owners cannot select it.",
+          "source": [
+            "current-pcb-209-extended-primitives.ts",
+            "current-pcb-209-opening-validation.ts",
+            "current-pcb-209-opening-profile.ts",
+            "current-pcb-diagnostic-lifecycle.ts",
+            "current-pcb-diagnostic-lifecycle-journal.ts",
+            "current-pcb-diagnostic-owner.ts",
+            "current-pcb-diagnostic-pipe.ts",
+            "current-pcb-diagnostic-protocol.ts",
+            "current-pcb-geometry.ts",
+            "../../scripts/pcb-diagnostic-owner.ps1"
+          ],
+          "tests": [
+            "current-pcb-209-extended-primitives.test.ts",
+            "current-pcb-209-extended-primitives-native.test.ts",
+            "current-pcb-209-opening.test.ts",
+            "current-pcb-diagnostic-owner.test.ts",
+            "current-pcb-diagnostic-pipe.test.ts",
+            "current-pcb-diagnostic-lifecycle.test.ts",
+            "extension-api-coverage.test.ts"
+          ],
+          "documentTypes": [
+            3
+          ],
+          "validation": "offline-regression;current-live-unclaimed",
+          "executionState": "available-with-runtime-guards",
+          "inputDiscovery": {
+            "tool": "easyeda_control_api",
+            "arguments": {
+              "request": {
+                "action": "pcb209-opening",
+                "query": {
+                  "includeSchemas": true
+                }
+              }
+            }
+          }
+        },
         {
           "tool": "easyeda_control_pcb_identities",
           "selector": "eda.pcb_PrimitiveAttribute.getAllPrimitiveId",
@@ -20672,6 +20758,49 @@
       "status": "implemented-public-subset",
       "routes": [
         {
+          "tool": "easyeda_control_pcb209_opening",
+          "selector": "observe-extended-primitives",
+          "implementation": "native-task-equivalent",
+          "scope": "Separately pinned installed209 original-owner disposable collection observation, not public SDK instance parity. Two matching complete ordered native projections for Component, Pad, Attribute, Dimension and Image follow exact PCB source/identity admission, retaining the captured receiver and target around every await. Placement, lock, layer and six selected optional metadata fields, with absent/undefined/present states retained separately. Formula values are not evaluated, and library identity is not verified. At most256 rows per family,256 Attribute parent groups and393216 UTF-8 bytes for the whole native/final packet. Only existing loaded views are projected; empty output does not prove an empty board. Unsupported fields/shapes, malformed Unicode, sparse/accessor arrays, non-finite/signed-zero numbers, duplicate IDs and changed samples refuse whole. No caller filters, selected IDs, exact-ID lookup, source export, edits or explicit Save. Observations are sequential and native serialization precedes output bounds. No complete startup, source/SQL baseline, connectivity, persistence or writer authority. The one-shot stage and original normal-close/root/Job/release lifecycle remain mandatory; older206 owners cannot select it.",
+          "source": [
+            "current-pcb-209-extended-primitives.ts",
+            "current-pcb-209-opening-validation.ts",
+            "current-pcb-209-opening-profile.ts",
+            "current-pcb-diagnostic-lifecycle.ts",
+            "current-pcb-diagnostic-lifecycle-journal.ts",
+            "current-pcb-diagnostic-owner.ts",
+            "current-pcb-diagnostic-pipe.ts",
+            "current-pcb-diagnostic-protocol.ts",
+            "current-pcb-geometry.ts",
+            "../../scripts/pcb-diagnostic-owner.ps1"
+          ],
+          "tests": [
+            "current-pcb-209-extended-primitives.test.ts",
+            "current-pcb-209-extended-primitives-native.test.ts",
+            "current-pcb-209-opening.test.ts",
+            "current-pcb-diagnostic-owner.test.ts",
+            "current-pcb-diagnostic-pipe.test.ts",
+            "current-pcb-diagnostic-lifecycle.test.ts",
+            "extension-api-coverage.test.ts"
+          ],
+          "documentTypes": [
+            3
+          ],
+          "validation": "offline-regression;current-live-unclaimed",
+          "executionState": "available-with-runtime-guards",
+          "inputDiscovery": {
+            "tool": "easyeda_control_api",
+            "arguments": {
+              "request": {
+                "action": "pcb209-opening",
+                "query": {
+                  "includeSchemas": true
+                }
+              }
+            }
+          }
+        },
+        {
           "tool": "easyeda_control_pcb_geometry",
           "selector": "eda.pcb_PrimitiveComponent.getAll",
           "implementation": "native-task-equivalent",
@@ -20915,6 +21044,49 @@
       "installed209Declaration": true,
       "status": "implemented-public-subset",
       "routes": [
+        {
+          "tool": "easyeda_control_pcb209_opening",
+          "selector": "observe-extended-primitives",
+          "implementation": "native-task-equivalent",
+          "scope": "Separately pinned installed209 original-owner disposable collection observation, not public SDK instance parity. Two matching complete ordered native projections for Component, Pad, Attribute, Dimension and Image follow exact PCB source/identity admission, retaining the captured receiver and target around every await. Placement, lock, layer and six selected optional metadata fields, with absent/undefined/present states retained separately. Formula values are not evaluated, and library identity is not verified. At most256 rows per family,256 Attribute parent groups and393216 UTF-8 bytes for the whole native/final packet. Only existing loaded views are projected; empty output does not prove an empty board. Unsupported fields/shapes, malformed Unicode, sparse/accessor arrays, non-finite/signed-zero numbers, duplicate IDs and changed samples refuse whole. No caller filters, selected IDs, exact-ID lookup, source export, edits or explicit Save. Observations are sequential and native serialization precedes output bounds. No complete startup, source/SQL baseline, connectivity, persistence or writer authority. The one-shot stage and original normal-close/root/Job/release lifecycle remain mandatory; older206 owners cannot select it.",
+          "source": [
+            "current-pcb-209-extended-primitives.ts",
+            "current-pcb-209-opening-validation.ts",
+            "current-pcb-209-opening-profile.ts",
+            "current-pcb-diagnostic-lifecycle.ts",
+            "current-pcb-diagnostic-lifecycle-journal.ts",
+            "current-pcb-diagnostic-owner.ts",
+            "current-pcb-diagnostic-pipe.ts",
+            "current-pcb-diagnostic-protocol.ts",
+            "current-pcb-geometry.ts",
+            "../../scripts/pcb-diagnostic-owner.ps1"
+          ],
+          "tests": [
+            "current-pcb-209-extended-primitives.test.ts",
+            "current-pcb-209-extended-primitives-native.test.ts",
+            "current-pcb-209-opening.test.ts",
+            "current-pcb-diagnostic-owner.test.ts",
+            "current-pcb-diagnostic-pipe.test.ts",
+            "current-pcb-diagnostic-lifecycle.test.ts",
+            "extension-api-coverage.test.ts"
+          ],
+          "documentTypes": [
+            3
+          ],
+          "validation": "offline-regression;current-live-unclaimed",
+          "executionState": "available-with-runtime-guards",
+          "inputDiscovery": {
+            "tool": "easyeda_control_api",
+            "arguments": {
+              "request": {
+                "action": "pcb209-opening",
+                "query": {
+                  "includeSchemas": true
+                }
+              }
+            }
+          }
+        },
         {
           "tool": "easyeda_control_pcb_identities",
           "selector": "eda.pcb_PrimitiveComponent.getAllPrimitiveId",
@@ -21503,6 +21675,49 @@
       "status": "implemented-public-subset",
       "routes": [
         {
+          "tool": "easyeda_control_pcb209_opening",
+          "selector": "observe-extended-primitives",
+          "implementation": "native-task-equivalent",
+          "scope": "Separately pinned installed209 original-owner disposable collection observation, not public SDK instance parity. Two matching complete ordered native projections for Component, Pad, Attribute, Dimension and Image follow exact PCB source/identity admission, retaining the captured receiver and target around every await. Native Length/Radius/Protractor coordinates and annotation style. Canvas units reflect the current getter's override, not verified stored units or measured rendering. At most256 rows per family,256 Attribute parent groups and393216 UTF-8 bytes for the whole native/final packet. Only existing loaded views are projected; empty output does not prove an empty board. Unsupported fields/shapes, malformed Unicode, sparse/accessor arrays, non-finite/signed-zero numbers, duplicate IDs and changed samples refuse whole. No caller filters, selected IDs, exact-ID lookup, source export, edits or explicit Save. Observations are sequential and native serialization precedes output bounds. No complete startup, source/SQL baseline, connectivity, persistence or writer authority. The one-shot stage and original normal-close/root/Job/release lifecycle remain mandatory; older206 owners cannot select it.",
+          "source": [
+            "current-pcb-209-extended-primitives.ts",
+            "current-pcb-209-opening-validation.ts",
+            "current-pcb-209-opening-profile.ts",
+            "current-pcb-diagnostic-lifecycle.ts",
+            "current-pcb-diagnostic-lifecycle-journal.ts",
+            "current-pcb-diagnostic-owner.ts",
+            "current-pcb-diagnostic-pipe.ts",
+            "current-pcb-diagnostic-protocol.ts",
+            "current-pcb-geometry.ts",
+            "../../scripts/pcb-diagnostic-owner.ps1"
+          ],
+          "tests": [
+            "current-pcb-209-extended-primitives.test.ts",
+            "current-pcb-209-extended-primitives-native.test.ts",
+            "current-pcb-209-opening.test.ts",
+            "current-pcb-diagnostic-owner.test.ts",
+            "current-pcb-diagnostic-pipe.test.ts",
+            "current-pcb-diagnostic-lifecycle.test.ts",
+            "extension-api-coverage.test.ts"
+          ],
+          "documentTypes": [
+            3
+          ],
+          "validation": "offline-regression;current-live-unclaimed",
+          "executionState": "available-with-runtime-guards",
+          "inputDiscovery": {
+            "tool": "easyeda_control_api",
+            "arguments": {
+              "request": {
+                "action": "pcb209-opening",
+                "query": {
+                  "includeSchemas": true
+                }
+              }
+            }
+          }
+        },
+        {
           "tool": "easyeda_control_pcb_geometry",
           "selector": "eda.pcb_PrimitiveDimension.getAll",
           "implementation": "native-task-equivalent",
@@ -21617,6 +21832,49 @@
       "installed209Declaration": true,
       "status": "implemented-public-subset",
       "routes": [
+        {
+          "tool": "easyeda_control_pcb209_opening",
+          "selector": "observe-extended-primitives",
+          "implementation": "native-task-equivalent",
+          "scope": "Separately pinned installed209 original-owner disposable collection observation, not public SDK instance parity. Two matching complete ordered native projections for Component, Pad, Attribute, Dimension and Image follow exact PCB source/identity admission, retaining the captured receiver and target around every await. Native Length/Radius/Protractor coordinates and annotation style. Canvas units reflect the current getter's override, not verified stored units or measured rendering. At most256 rows per family,256 Attribute parent groups and393216 UTF-8 bytes for the whole native/final packet. Only existing loaded views are projected; empty output does not prove an empty board. Unsupported fields/shapes, malformed Unicode, sparse/accessor arrays, non-finite/signed-zero numbers, duplicate IDs and changed samples refuse whole. No caller filters, selected IDs, exact-ID lookup, source export, edits or explicit Save. Observations are sequential and native serialization precedes output bounds. No complete startup, source/SQL baseline, connectivity, persistence or writer authority. The one-shot stage and original normal-close/root/Job/release lifecycle remain mandatory; older206 owners cannot select it.",
+          "source": [
+            "current-pcb-209-extended-primitives.ts",
+            "current-pcb-209-opening-validation.ts",
+            "current-pcb-209-opening-profile.ts",
+            "current-pcb-diagnostic-lifecycle.ts",
+            "current-pcb-diagnostic-lifecycle-journal.ts",
+            "current-pcb-diagnostic-owner.ts",
+            "current-pcb-diagnostic-pipe.ts",
+            "current-pcb-diagnostic-protocol.ts",
+            "current-pcb-geometry.ts",
+            "../../scripts/pcb-diagnostic-owner.ps1"
+          ],
+          "tests": [
+            "current-pcb-209-extended-primitives.test.ts",
+            "current-pcb-209-extended-primitives-native.test.ts",
+            "current-pcb-209-opening.test.ts",
+            "current-pcb-diagnostic-owner.test.ts",
+            "current-pcb-diagnostic-pipe.test.ts",
+            "current-pcb-diagnostic-lifecycle.test.ts",
+            "extension-api-coverage.test.ts"
+          ],
+          "documentTypes": [
+            3
+          ],
+          "validation": "offline-regression;current-live-unclaimed",
+          "executionState": "available-with-runtime-guards",
+          "inputDiscovery": {
+            "tool": "easyeda_control_api",
+            "arguments": {
+              "request": {
+                "action": "pcb209-opening",
+                "query": {
+                  "includeSchemas": true
+                }
+              }
+            }
+          }
+        },
         {
           "tool": "easyeda_control_pcb_identities",
           "selector": "eda.pcb_PrimitiveDimension.getAllPrimitiveId",
@@ -22455,6 +22713,49 @@
       "status": "implemented-public-subset",
       "routes": [
         {
+          "tool": "easyeda_control_pcb209_opening",
+          "selector": "observe-extended-primitives",
+          "implementation": "native-task-equivalent",
+          "scope": "Separately pinned installed209 original-owner disposable collection observation, not public SDK instance parity. Two matching complete ordered native projections for Component, Pad, Attribute, Dimension and Image follow exact PCB source/identity admission, retaining the captured receiver and target around every await. Combined Image/Picture placement, dimensions and display flags only. Asset paths/content, rendered boundaries and saved ownership remain excluded. At most256 rows per family,256 Attribute parent groups and393216 UTF-8 bytes for the whole native/final packet. Only existing loaded views are projected; empty output does not prove an empty board. Unsupported fields/shapes, malformed Unicode, sparse/accessor arrays, non-finite/signed-zero numbers, duplicate IDs and changed samples refuse whole. No caller filters, selected IDs, exact-ID lookup, source export, edits or explicit Save. Observations are sequential and native serialization precedes output bounds. No complete startup, source/SQL baseline, connectivity, persistence or writer authority. The one-shot stage and original normal-close/root/Job/release lifecycle remain mandatory; older206 owners cannot select it.",
+          "source": [
+            "current-pcb-209-extended-primitives.ts",
+            "current-pcb-209-opening-validation.ts",
+            "current-pcb-209-opening-profile.ts",
+            "current-pcb-diagnostic-lifecycle.ts",
+            "current-pcb-diagnostic-lifecycle-journal.ts",
+            "current-pcb-diagnostic-owner.ts",
+            "current-pcb-diagnostic-pipe.ts",
+            "current-pcb-diagnostic-protocol.ts",
+            "current-pcb-geometry.ts",
+            "../../scripts/pcb-diagnostic-owner.ps1"
+          ],
+          "tests": [
+            "current-pcb-209-extended-primitives.test.ts",
+            "current-pcb-209-extended-primitives-native.test.ts",
+            "current-pcb-209-opening.test.ts",
+            "current-pcb-diagnostic-owner.test.ts",
+            "current-pcb-diagnostic-pipe.test.ts",
+            "current-pcb-diagnostic-lifecycle.test.ts",
+            "extension-api-coverage.test.ts"
+          ],
+          "documentTypes": [
+            3
+          ],
+          "validation": "offline-regression;current-live-unclaimed",
+          "executionState": "available-with-runtime-guards",
+          "inputDiscovery": {
+            "tool": "easyeda_control_api",
+            "arguments": {
+              "request": {
+                "action": "pcb209-opening",
+                "query": {
+                  "includeSchemas": true
+                }
+              }
+            }
+          }
+        },
+        {
           "tool": "easyeda_control_pcb_geometry",
           "selector": "eda.pcb_PrimitiveImage.getAll",
           "implementation": "native-task-equivalent",
@@ -22571,6 +22872,49 @@
       "installed209Declaration": true,
       "status": "implemented-public-subset",
       "routes": [
+        {
+          "tool": "easyeda_control_pcb209_opening",
+          "selector": "observe-extended-primitives",
+          "implementation": "native-task-equivalent",
+          "scope": "Separately pinned installed209 original-owner disposable collection observation, not public SDK instance parity. Two matching complete ordered native projections for Component, Pad, Attribute, Dimension and Image follow exact PCB source/identity admission, retaining the captured receiver and target around every await. Combined Image/Picture placement, dimensions and display flags only. Asset paths/content, rendered boundaries and saved ownership remain excluded. At most256 rows per family,256 Attribute parent groups and393216 UTF-8 bytes for the whole native/final packet. Only existing loaded views are projected; empty output does not prove an empty board. Unsupported fields/shapes, malformed Unicode, sparse/accessor arrays, non-finite/signed-zero numbers, duplicate IDs and changed samples refuse whole. No caller filters, selected IDs, exact-ID lookup, source export, edits or explicit Save. Observations are sequential and native serialization precedes output bounds. No complete startup, source/SQL baseline, connectivity, persistence or writer authority. The one-shot stage and original normal-close/root/Job/release lifecycle remain mandatory; older206 owners cannot select it.",
+          "source": [
+            "current-pcb-209-extended-primitives.ts",
+            "current-pcb-209-opening-validation.ts",
+            "current-pcb-209-opening-profile.ts",
+            "current-pcb-diagnostic-lifecycle.ts",
+            "current-pcb-diagnostic-lifecycle-journal.ts",
+            "current-pcb-diagnostic-owner.ts",
+            "current-pcb-diagnostic-pipe.ts",
+            "current-pcb-diagnostic-protocol.ts",
+            "current-pcb-geometry.ts",
+            "../../scripts/pcb-diagnostic-owner.ps1"
+          ],
+          "tests": [
+            "current-pcb-209-extended-primitives.test.ts",
+            "current-pcb-209-extended-primitives-native.test.ts",
+            "current-pcb-209-opening.test.ts",
+            "current-pcb-diagnostic-owner.test.ts",
+            "current-pcb-diagnostic-pipe.test.ts",
+            "current-pcb-diagnostic-lifecycle.test.ts",
+            "extension-api-coverage.test.ts"
+          ],
+          "documentTypes": [
+            3
+          ],
+          "validation": "offline-regression;current-live-unclaimed",
+          "executionState": "available-with-runtime-guards",
+          "inputDiscovery": {
+            "tool": "easyeda_control_api",
+            "arguments": {
+              "request": {
+                "action": "pcb209-opening",
+                "query": {
+                  "includeSchemas": true
+                }
+              }
+            }
+          }
+        },
         {
           "tool": "easyeda_control_pcb_identities",
           "selector": "eda.pcb_PrimitiveImage.getAllPrimitiveId",
@@ -24039,6 +24383,49 @@
       "status": "implemented-public-subset",
       "routes": [
         {
+          "tool": "easyeda_control_pcb209_opening",
+          "selector": "observe-extended-primitives",
+          "implementation": "native-task-equivalent",
+          "scope": "Separately pinned installed209 original-owner disposable collection observation, not public SDK instance parity. Two matching complete ordered native projections for Component, Pad, Attribute, Dimension and Image follow exact PCB source/identity admission, retaining the captured receiver and target around every await. Native placement, supported copper and hole shapes, masks and thermal parameters. Shape-space polygon paths have no assumed board transform; no resolved physical stack, rule refresh, parent proof or fabrication geometry. At most256 rows per family,256 Attribute parent groups and393216 UTF-8 bytes for the whole native/final packet. Only existing loaded views are projected; empty output does not prove an empty board. Unsupported fields/shapes, malformed Unicode, sparse/accessor arrays, non-finite/signed-zero numbers, duplicate IDs and changed samples refuse whole. No caller filters, selected IDs, exact-ID lookup, source export, edits or explicit Save. Observations are sequential and native serialization precedes output bounds. No complete startup, source/SQL baseline, connectivity, persistence or writer authority. The one-shot stage and original normal-close/root/Job/release lifecycle remain mandatory; older206 owners cannot select it.",
+          "source": [
+            "current-pcb-209-extended-primitives.ts",
+            "current-pcb-209-opening-validation.ts",
+            "current-pcb-209-opening-profile.ts",
+            "current-pcb-diagnostic-lifecycle.ts",
+            "current-pcb-diagnostic-lifecycle-journal.ts",
+            "current-pcb-diagnostic-owner.ts",
+            "current-pcb-diagnostic-pipe.ts",
+            "current-pcb-diagnostic-protocol.ts",
+            "current-pcb-geometry.ts",
+            "../../scripts/pcb-diagnostic-owner.ps1"
+          ],
+          "tests": [
+            "current-pcb-209-extended-primitives.test.ts",
+            "current-pcb-209-extended-primitives-native.test.ts",
+            "current-pcb-209-opening.test.ts",
+            "current-pcb-diagnostic-owner.test.ts",
+            "current-pcb-diagnostic-pipe.test.ts",
+            "current-pcb-diagnostic-lifecycle.test.ts",
+            "extension-api-coverage.test.ts"
+          ],
+          "documentTypes": [
+            3
+          ],
+          "validation": "offline-regression;current-live-unclaimed",
+          "executionState": "available-with-runtime-guards",
+          "inputDiscovery": {
+            "tool": "easyeda_control_api",
+            "arguments": {
+              "request": {
+                "action": "pcb209-opening",
+                "query": {
+                  "includeSchemas": true
+                }
+              }
+            }
+          }
+        },
+        {
           "tool": "easyeda_control_pcb_geometry",
           "selector": "eda.pcb_PrimitivePad.getAll",
           "implementation": "native-task-equivalent",
@@ -24154,6 +24541,49 @@
       "installed209Declaration": true,
       "status": "implemented-public-subset",
       "routes": [
+        {
+          "tool": "easyeda_control_pcb209_opening",
+          "selector": "observe-extended-primitives",
+          "implementation": "native-task-equivalent",
+          "scope": "Separately pinned installed209 original-owner disposable collection observation, not public SDK instance parity. Two matching complete ordered native projections for Component, Pad, Attribute, Dimension and Image follow exact PCB source/identity admission, retaining the captured receiver and target around every await. Native placement, supported copper and hole shapes, masks and thermal parameters. Shape-space polygon paths have no assumed board transform; no resolved physical stack, rule refresh, parent proof or fabrication geometry. At most256 rows per family,256 Attribute parent groups and393216 UTF-8 bytes for the whole native/final packet. Only existing loaded views are projected; empty output does not prove an empty board. Unsupported fields/shapes, malformed Unicode, sparse/accessor arrays, non-finite/signed-zero numbers, duplicate IDs and changed samples refuse whole. No caller filters, selected IDs, exact-ID lookup, source export, edits or explicit Save. Observations are sequential and native serialization precedes output bounds. No complete startup, source/SQL baseline, connectivity, persistence or writer authority. The one-shot stage and original normal-close/root/Job/release lifecycle remain mandatory; older206 owners cannot select it.",
+          "source": [
+            "current-pcb-209-extended-primitives.ts",
+            "current-pcb-209-opening-validation.ts",
+            "current-pcb-209-opening-profile.ts",
+            "current-pcb-diagnostic-lifecycle.ts",
+            "current-pcb-diagnostic-lifecycle-journal.ts",
+            "current-pcb-diagnostic-owner.ts",
+            "current-pcb-diagnostic-pipe.ts",
+            "current-pcb-diagnostic-protocol.ts",
+            "current-pcb-geometry.ts",
+            "../../scripts/pcb-diagnostic-owner.ps1"
+          ],
+          "tests": [
+            "current-pcb-209-extended-primitives.test.ts",
+            "current-pcb-209-extended-primitives-native.test.ts",
+            "current-pcb-209-opening.test.ts",
+            "current-pcb-diagnostic-owner.test.ts",
+            "current-pcb-diagnostic-pipe.test.ts",
+            "current-pcb-diagnostic-lifecycle.test.ts",
+            "extension-api-coverage.test.ts"
+          ],
+          "documentTypes": [
+            3
+          ],
+          "validation": "offline-regression;current-live-unclaimed",
+          "executionState": "available-with-runtime-guards",
+          "inputDiscovery": {
+            "tool": "easyeda_control_api",
+            "arguments": {
+              "request": {
+                "action": "pcb209-opening",
+                "query": {
+                  "includeSchemas": true
+                }
+              }
+            }
+          }
+        },
         {
           "tool": "easyeda_control_pcb_identities",
           "selector": "eda.pcb_PrimitivePad.getAllPrimitiveId",

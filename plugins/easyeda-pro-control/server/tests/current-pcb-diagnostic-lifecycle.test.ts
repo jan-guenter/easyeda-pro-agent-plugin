@@ -248,6 +248,13 @@ function fixture(context: TestContext, id: string, dependencies: FixtureDependen
       assert.match(await readFile(intentPath, "utf8"), /"stage":"primitives209"/u);
       calls.push("primitives209"); return { samples: 2, completeBoardMembershipVerified: false, executionAuthorized: false };
     },
+    async observeExtendedPrimitives209(target): Promise<Readonly<Record<string, unknown>>> {
+      assert.equal(this, owner); assert.equal(opening209, true);
+      assert.deepEqual(target, { ...OPEN_TARGET, branchUuid: OPEN_CHECKPOINT.targetEvidence.branchUuid });
+      const intentPath = join(directory(id), "extended-primitives209-intent.json");
+      assert.match(await readFile(intentPath, "utf8"), /"stage":"extended-primitives209"/u);
+      calls.push("extended-primitives209"); return { samples: 2, reciprocalParentVerified: false, executionAuthorized: false };
+    },
   };
   const options: CurrentPcbDiagnosticLifecycleOptions = {
     pluginRoot: "/mnt/c/Reviewed/Plugin", assetsRoot: "/mnt/c/Reviewed/EasyEDA/resources/app/assets",
@@ -1199,6 +1206,7 @@ void test("209 original lifecycle composes fixed project and PCB opens with sepa
   await readyForOpening(id, value);
   await assert.rejects(value.request("observe-layers"), /PROJECT_OPENING_UNCONFIRMED/u);
   await assert.rejects(value.request("observe-primitives"), /PROJECT_OPENING_UNCONFIRMED/u);
+  await assert.rejects(value.request("observe-extended-primitives"), /PROJECT_OPENING_UNCONFIRMED/u);
   await value.request("open-project", OPEN_INPUT);
   await value.request("open-pcb", { acceptNormalOpenEffects: true });
   const observed = await value.request("observe-pcb-opening");
@@ -1213,6 +1221,10 @@ void test("209 original lifecycle composes fixed project and PCB opens with sepa
   assert.equal(primitives["stage"], "primitives209");
   assert.deepEqual(primitives["result"], { samples: 2, completeBoardMembershipVerified: false, executionAuthorized: false });
   await assert.rejects(value.request("observe-primitives"), /OBSERVATION_CONSUMED/u);
+  const extended = await value.request("observe-extended-primitives");
+  assert.equal(extended["stage"], "extended-primitives209");
+  assert.deepEqual(extended["result"], { samples: 2, reciprocalParentVerified: false, executionAuthorized: false });
+  await assert.rejects(value.request("observe-extended-primitives"), /OBSERVATION_CONSUMED/u);
   for (const action of ["inspect-workers", "observe-worker-state", "observe-model-state", "observe-string-precreate"]) {
     await assert.rejects(value.request(action));
   }
@@ -1229,6 +1241,60 @@ void test("209 original lifecycle composes fixed project and PCB opens with sepa
   assert.equal(value.calls.filter(action => action === "release").length, 1);
   assert.equal(value.calls.filter(action => action === "layers209").length, 1);
   assert.equal(value.calls.filter(action => action === "primitives209").length, 1);
+  assert.equal(value.calls.filter(action => action === "extended-primitives209").length, 1);
+});
+void test("209 extended reader loses no original cleanup or one-shot guard after an ambiguous result", async context => {
+  const id = "pcb209-test-extended-lost", value = fixture(context, id);
+  const original = value.owner.observeExtendedPrimitives209;
+  assert.ok(original);
+  value.owner.observeExtendedPrimitives209 = async (target): Promise<Readonly<Record<string, unknown>>> => {
+    await original.call(value.owner, target); throw new Error("synthetic lost extended result");
+  };
+  await readyForOpening(id, value); await value.request("open-project", OPEN_INPUT);
+  await value.request("open-pcb", { acceptNormalOpenEffects: true }); await value.request("observe-pcb-opening");
+  await assert.rejects(value.request("observe-extended-primitives"), /lost extended result/u);
+  await assert.rejects(value.request("observe-extended-primitives"), /OBSERVATION_CONSUMED/u);
+  assert.equal(value.calls.filter(action => action === "extended-primitives209").length, 1);
+  const inspected = await value.coordinator.run({ action: "inspect", operationId: id, observation: "extended-primitives209" });
+  assert.ok(Array.isArray(inspected["observations"]));
+  assert.deepEqual(inspected["observations"].find((item: { stage: string }) => item.stage === "extended-primitives209"),
+    { stage: "extended-primitives209", consumed: true, resultRetained: false, published: false, result: undefined });
+  await value.request("observe-window"); await value.request("normal-close", { hwnd: "12345", confirmNormalClose: true });
+  value.state.terminated = true; await value.request("observe-termination");
+  const released = await value.request("release-closed");
+  assert.equal(released["state"], "released");
+});
+void test("209 extended reader identity is retained and its bounded result can settle without replay", async context => {
+  const id = "pcb209-test-extended-settle";
+  let fail = true;
+  const value = fixture(context, id, { publishRecord: async (operationId, name, record) => {
+    if (name === "extended-primitives209-result.json" && fail) { fail = false; throw new Error("synthetic extended publication failure"); }
+    await publishCurrentPcbDiagnosticLifecycleRecord(operationId, name, record);
+  } });
+  const original = value.owner.observeExtendedPrimitives209;
+  assert.ok(original);
+  const reader = async (target: Parameters<typeof original>[0]): Promise<Readonly<Record<string, unknown>>> =>
+    ({ ...await original.call(value.owner, target), synthetic: "x".repeat(160 * 1024) });
+  value.owner.observeExtendedPrimitives209 = reader;
+  await readyForOpening(id, value); await value.request("open-project", OPEN_INPUT);
+  await value.request("open-pcb", { acceptNormalOpenEffects: true }); await value.request("observe-pcb-opening");
+  value.owner.observeExtendedPrimitives209 = original;
+  await assert.rejects(value.request("observe-extended-primitives"), /OWNER_PURPOSE_CHANGED/u);
+  assert.equal(value.calls.includes("extended-primitives209"), false);
+  value.owner.observeExtendedPrimitives209 = reader;
+  await assert.rejects(value.request("observe-extended-primitives"), /extended publication failure/u);
+  const inspected = await value.coordinator.run({ action: "inspect", operationId: id });
+  await value.coordinator.run({ action: "settle-records", operationId: id, expectedIntentSha256: inspected["intentSha256"] });
+  const operations = await readCurrentPcbDiagnosticLifecycles();
+  const record = operations.find(entry => entry.operationId === id)?.records["extended-primitives209-result.json"];
+  assert.ok(record);
+  assert.equal(diagnosticLifecycleRecordSchemas["layers209-result.json"].safeParse({ ...record, stage: "layers209" }).success, false);
+  assert.equal(diagnosticLifecycleRecordSchemas["extended-primitives209-result.json"].safeParse({ ...record,
+    result: { synthetic: "x".repeat(384 * 1024) } }).success, false);
+  await assert.rejects(value.request("observe-extended-primitives"), /OBSERVATION_CONSUMED/u);
+  assert.equal(value.calls.filter(action => action === "extended-primitives209").length, 1);
+  await value.request("normal-close", { hwnd: "12345", confirmNormalClose: true });
+  value.state.terminated = true; await value.request("observe-termination"); await value.request("release-closed");
 });
 void test("209 primitive observation ambiguity consumes the stage and preserves original cleanup", async context => {
   const id = "pcb209-test-primitive-lost", value = fixture(context, id);
