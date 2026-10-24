@@ -250,11 +250,13 @@ void test("native adapter embeds and private fields match TS programs without na
   assert.ok(source.includes(String.raw`",\"documentUuid\":"+JsonString(document)+",\"expectedSourceSha256\":"+JsonString(source)+",\"branchUuid\":"+JsonString(branch)+"}";`));
   assert.ok(source.includes("$requestLimit=if ($StringPrecreate) {3309} else {103}"));
   assert.ok(source.includes("$request.requestId -gt $requestLimit"));
-  assert.ok(source.includes("id!=nextRequest || id>RequestLimit"));
+  assert.ok(source.includes("id!=nextRequest || id>EffectiveRequestLimit"));
   assert.ok(source.includes("int RequestLimit { get { return workerStartup?256:stringPrecreate?3309:103; } }"));
+  assert.ok(source.includes("int EffectiveRequestLimit { get { return workerStartupEmpty209?EasyedaWorkerStartupEmpty209Protocol.RequestLimit:RequestLimit; } }"));
   assert.ok(source.includes("if (($StringPrecreate -and $WorkerStartup) -or ($Layers209 -and ($StringPrecreate -or $WorkerStartup)))"));
-  assert.ok(source.includes("$request.requestId -gt 256) {throw 'pcb-diagnostic-startup-fields'}"));
-  assert.ok(source.includes('if(received+count>64*1024*1024) throw Error("receive-budget")'));
+  assert.ok(source.includes("$startupRequestLimit=if ($WorkerStartupEmpty209) {[EasyedaWorkerStartupEmpty209Protocol]::RequestLimit} else {256}"));
+  assert.ok(source.includes("$request.requestId -gt $startupRequestLimit) {throw 'pcb-diagnostic-startup-fields'}"));
+  assert.ok(source.includes('if((long)received+count>(workerStartupEmpty209?EasyedaWorkerStartupEmpty209Protocol.TotalByteLimit:64L*1024*1024)) throw Error("receive-budget")'));
   assert.ok(source.includes("'snapshot' {$fields+=@('objectId','callbackObjectId')}"));
   assert.ok(source.includes("'pending' {$fields+=@('objectId','callbackObjectId','constructorObjectId','teardropObjectId')}"));
   assert.ok(source.includes("'raw-strings' {$fields+=@('objectId','callbackObjectId')}"));

@@ -13,6 +13,11 @@ const SOURCE = "const syntheticIdentity = true;\n";
 const UI_PROFILE = { family: "ui", relativePath: "pro-ui/test-version/js/ui.js",
   scriptSha256: createHash("sha256").update(SOURCE).digest("hex"), scriptBytes: Buffer.byteLength(SOURCE) } as const;
 const LAUNCH = { executable: "C:\\Reviewed\\easyeda-pro.exe", executableSha256: "c".repeat(64), confirmDiagnosticLaunch: true } as const;
+void test("existing 256-request native owner refuses empty-baseline capability before any helper request", context => {
+  const value = fixture(context);
+  assert.throws(() => value.owner.requireWorkerStartupEmptyDependency209(), /STARTUP_EMPTY_NATIVE_PURPOSE_REQUIRED/u);
+  assert.equal(value.requests.length, 0); assert.equal(value.proof.full, 0); assert.equal(value.proof.facade, 0);
+});
 function record(value: unknown): value is Record<string, unknown> { return value !== null && typeof value === "object" && !Array.isArray(value); }
 function fixture(context: TestContext, scenario = "opening-worker-startup",
   Owner = CurrentPcbWorkerStartupOwner): Readonly<{ owner: CurrentPcbWorkerStartupOwner; source: { valid: boolean };

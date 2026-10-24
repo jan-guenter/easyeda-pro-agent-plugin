@@ -1,8 +1,9 @@
-param([switch]$CompileOnly,[switch]$StringPrecreate,[switch]$WorkerStartup,[switch]$Layers209,[switch]$WorkerStartup209)
+param([switch]$CompileOnly,[switch]$StringPrecreate,[switch]$WorkerStartup,[switch]$Layers209,[switch]$WorkerStartup209,[switch]$WorkerStartupEmpty209)
 $ErrorActionPreference = 'Stop'
 if (($StringPrecreate -and $WorkerStartup) -or ($Layers209 -and ($StringPrecreate -or $WorkerStartup))) {throw 'pcb-diagnostic-conflicting-purpose'}
 if ($WorkerStartup209 -and ($StringPrecreate -or $WorkerStartup -or $Layers209)) {throw 'pcb-diagnostic-conflicting-purpose'}
-$startupPurpose=$WorkerStartup -or $WorkerStartup209
+if ($WorkerStartupEmpty209 -and ($StringPrecreate -or $WorkerStartup -or $Layers209 -or $WorkerStartup209)) {throw 'pcb-diagnostic-conflicting-purpose'}
+$startupPurpose=$WorkerStartup -or $WorkerStartup209 -or $WorkerStartupEmpty209
 [Console]::OutputEncoding = New-Object System.Text.UTF8Encoding($false)
 # Separate diagnostic owner. The ordinary no-argument launcher is unchanged.
 # Electron requests Browser::Quit on pipe disconnect. Never dispose live pipes,
@@ -884,6 +885,245 @@ return JSON.stringify({schema:""easyeda-pro-control.pcb-diagnostic-pcb-opening.v
   }
 }
 // END GENERATED WORKER STARTUP PROTOCOL
+// BEGIN GENERATED WORKER STARTUP EMPTY209 PROTOCOL
+// Generated from current-pcb-209-empty-native.ts. Requires original launch purpose.
+public static class EasyedaWorkerStartupEmpty209Protocol {
+  public const int RequestLimit=3466;
+  public const int NormalRequestLimit=3434;
+  public const long TotalByteLimit=191046656L;
+  public const long NormalByteLimit=157492224L;
+  public const long HelperStdoutByteLimit=522437504L;
+  public const int PollLimit=192848;
+  public const int HelperControlLimit=55584;
+  public const long NormalMilliseconds=3600000L;
+  public const long TotalMilliseconds=3660000L;
+  static void Need(bool value,string code) { if(!value)throw new System.InvalidOperationException("pcb-diagnostic-empty-"+code); }
+  static string Unpack(string encoded,int length,string hash) {
+    Need(length==132412,"template-length");byte[] bytes=new byte[length];int count=0;
+    byte[] packed=System.Convert.FromBase64String(encoded);Need(packed.Length==13536 && System.Convert.ToBase64String(packed)==encoded,"template-base64");
+    using(var input=new System.IO.MemoryStream(packed,false))
+    using(var stream=new System.IO.Compression.GZipStream(input,System.IO.Compression.CompressionMode.Decompress)) {
+      while(count<length) {int read=stream.Read(bytes,count,length-count);if(read==0)break;count+=read;}
+      Need(count==length && stream.ReadByte()==-1,"template-bytes");
+    }
+    using(var sha=System.Security.Cryptography.SHA256.Create()) {
+      string actual=System.BitConverter.ToString(sha.ComputeHash(bytes)).Replace("-","").ToLowerInvariant();Need(actual==hash,"template-hash");
+    }
+    return new System.Text.UTF8Encoding(false,true).GetString(bytes);
+  }
+  static readonly string[] Templates=Unpack(@"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",132412,@"d47dfb86acd8290d03155db2a1afe8f74adf39ae25ffaf8a48722f1ef6caa9de").Split('\0');
+  static EasyedaWorkerStartupEmpty209Protocol() {
+    Need(Templates.Length==19,"template-count");foreach(string template in Templates)Need(System.Text.Encoding.UTF8.GetByteCount(template)<=65536,"template-bound");
+  }
+  static string Field(System.Collections.IDictionary fields,string key) {
+    Need(fields!=null && fields.Contains(key),"field");string result=fields[key] as string;Need(result!=null,"field-type");return result;
+  }
+  static void Keys(System.Collections.IDictionary fields,string[] expected) {
+    Need(fields!=null && fields.Count==expected.Length,"fields");foreach(string key in expected)Need(fields.Contains(key),"fields");
+    foreach(System.Collections.DictionaryEntry field in fields) {
+      string key=field.Key as string;bool found=false;foreach(string name in expected)if(System.String.Equals(key,name,System.StringComparison.Ordinal))found=true;
+      Need(found,"field-name");
+    }
+  }
+  static string Handle(string value,int limit) {
+    Need(value!=null && value.Length<=limit && System.Text.RegularExpressions.Regex.IsMatch(value,@"\A[A-Za-z0-9_.:-]+\z"),"handle");return value;
+  }
+  static string Parameters(string template,System.Collections.IDictionary fields) {
+    var result=new System.Text.StringBuilder();int previous=0;
+    foreach(System.Text.RegularExpressions.Match match in System.Text.RegularExpressions.Regex.Matches(template,"\"__empty209_([A-Za-z0-9]+)__\"")) {
+      string key=match.Groups[1].Value;result.Append(template,previous,match.Index-previous);result.Append('"');
+      result.Append(Handle(Field(fields,key),key=="uniqueContextId"?128:256));result.Append('"');previous=match.Index+match.Length;
+    }
+    result.Append(template,previous,template.Length-previous);return result.ToString();
+  }
+  static string OriginalId(int id,string encoded) {
+    Need(id>=1 && id<=RequestLimit,"id");
+    const string prefix="{\"id\":1,";
+    Need(encoded!=null && encoded.StartsWith(prefix,System.StringComparison.Ordinal) && encoded.EndsWith("}\0",System.StringComparison.Ordinal),"fixed-envelope");
+    // Only the known leading ID from the fixed encoder is replaced. No dynamic
+    // text replacement, counter mutation or downstream call occurs here.
+    string result="{\"id\":"+id.ToString(System.Globalization.CultureInfo.InvariantCulture)+","+encoded.Substring(prefix.Length);
+    Need(System.Text.Encoding.UTF8.GetByteCount(result)<=65536,"size");return result;
+  }
+  public static string EncodeStartup(int id,string method,string sessionId,string phase,System.Collections.IDictionary fields) {
+    Need(id>=1 && id<=RequestLimit,"id");return OriginalId(id,EasyedaWorkerStartupProtocol.Encode209(1,method,sessionId,phase,fields));
+  }
+  public static string EncodeParent(int id,string method,string phase,System.Collections.IDictionary fields) {
+    Need(id>=1 && id<=RequestLimit,"id");return OriginalId(id,EasyedaDiagnosticOwner.WorkerStartupParentProtocolMessage(1,method,phase,fields));
+  }
+  public static string EncodeCommon(int id,string method,string sessionId,string phase,System.Collections.IDictionary fields) {
+    return EncodeBaseline(id,method,sessionId,"common",phase,fields);
+  }
+  public static string EncodeRoot(int id,string method,string sessionId,string phase,System.Collections.IDictionary fields) {
+    return EncodeBaseline(id,method,sessionId,"root",phase,fields);
+  }
+  static string EncodeBaseline(int id,string method,string sessionId,string family,string phase,System.Collections.IDictionary fields) {
+    Need(id>=1 && id<=RequestLimit,"id");Handle(sessionId,128);string parameters=null;
+    if(family==@"common" && phase==@"wrapper") {
+      Need(method==@"Runtime.evaluate","method");Keys(fields,new string[]{@"uniqueContextId"});
+      parameters=Parameters(Templates[0],fields);
+    } else
+    if(family==@"common" && phase==@"properties") {
+      Need(method==@"Runtime.getProperties","method");Keys(fields,new string[]{@"objectId"});
+      parameters=Parameters(Templates[1],fields);
+    } else
+    if(family==@"common" && phase==@"handler") {
+      Need(method==@"Runtime.callFunctionOn","method");Keys(fields,new string[]{@"objectId"});
+      parameters=Parameters(Templates[2],fields);
+    } else
+    if(family==@"common" && phase==@"constructors") {
+      Need(method==@"Runtime.callFunctionOn","method");Keys(fields,new string[]{@"objectId",@"argument0"});
+      parameters=Parameters(Templates[3],fields);
+    } else
+    if(family==@"common" && phase==@"metadata") {
+      Need(method==@"Runtime.callFunctionOn","method");Keys(fields,new string[]{@"objectId",@"argument0"});
+      parameters=Parameters(Templates[4],fields);
+    } else
+    if(family==@"common" && phase==@"assets") {
+      Need(method==@"Runtime.callFunctionOn","method");Keys(fields,new string[]{@"objectId",@"argument0",@"argument1"});
+      parameters=Parameters(Templates[5],fields);
+    } else
+    if(family==@"common" && phase==@"release") {
+      Need(method==@"Runtime.releaseObjectGroup","method");Keys(fields,new string[]{});
+      parameters=Parameters(Templates[6],fields);
+    } else
+    if(family==@"root" && phase==@"wrapper") {
+      Need(method==@"Runtime.evaluate","method");Keys(fields,new string[]{@"uniqueContextId"});
+      parameters=Parameters(Templates[7],fields);
+    } else
+    if(family==@"root" && phase==@"properties") {
+      Need(method==@"Runtime.getProperties","method");Keys(fields,new string[]{@"objectId"});
+      parameters=Parameters(Templates[8],fields);
+    } else
+    if(family==@"root" && phase==@"handler") {
+      Need(method==@"Runtime.callFunctionOn","method");Keys(fields,new string[]{@"objectId"});
+      parameters=Parameters(Templates[9],fields);
+    } else
+    if(family==@"root" && phase==@"before") {
+      Need(method==@"Runtime.callFunctionOn","method");Keys(fields,new string[]{@"objectId",@"argument0"});
+      parameters=Parameters(Templates[10],fields);
+    } else
+    if(family==@"root" && phase==@"after") {
+      Need(method==@"Runtime.callFunctionOn","method");Keys(fields,new string[]{@"objectId",@"argument0"});
+      parameters=Parameters(Templates[11],fields);
+    } else
+    if(family==@"root" && phase==@"release") {
+      Need(method==@"Runtime.releaseObjectGroup","method");Keys(fields,new string[]{});
+      parameters=Parameters(Templates[12],fields);
+    } else
+    if(family==@"common" && phase==@"presentation-seed") {
+      Need(method==@"Runtime.callFunctionOn","method");Keys(fields,new string[]{@"objectId",@"argument0",@"argument1"});
+      parameters=Parameters(Templates[13],fields);
+    } else
+    if(family==@"common" && phase==@"rules-seed") {
+      Need(method==@"Runtime.callFunctionOn","method");Keys(fields,new string[]{@"objectId",@"argument0",@"argument1"});
+      parameters=Parameters(Templates[14],fields);
+    } else
+    if(family==@"common" && phase==@"preference-seed") {
+      Need(method==@"Runtime.callFunctionOn","method");Keys(fields,new string[]{@"objectId",@"argument0",@"argument1"});
+      parameters=Parameters(Templates[15],fields);
+    } else
+    if(family==@"common" && phase==@"packet-advance") {
+      Need(method==@"Runtime.callFunctionOn","method");Keys(fields,new string[]{@"objectId"});
+      parameters=Parameters(Templates[16],fields);
+    } else
+    if(family==@"common" && phase==@"packet-read") {
+      Need(method==@"Runtime.callFunctionOn","method");Keys(fields,new string[]{@"objectId"});
+      parameters=Parameters(Templates[17],fields);
+    } else
+    if(family==@"common" && phase==@"packet-result") {
+      Need(method==@"Runtime.callFunctionOn","method");Keys(fields,new string[]{@"objectId"});
+      parameters=Parameters(Templates[18],fields);
+    }
+    Need(parameters!=null,"phase");
+    string result="{\"id\":"+id.ToString(System.Globalization.CultureInfo.InvariantCulture)+",\"method\":\""+method+"\",\"params\":"+parameters+",\"sessionId\":\""+sessionId+"\"}\0";
+    Need(System.Text.Encoding.UTF8.GetByteCount(result)<=65536,"size");return result;
+  }
+  public static void VerifySmoke() {
+    System.Collections.Hashtable fields=new System.Collections.Hashtable(System.StringComparer.Ordinal);
+    fields.Clear();
+    fields.Add(@"uniqueContextId",@"__empty209_uniqueContextId__");
+    Need(EncodeBaseline(1,@"Runtime.evaluate",@"__empty209_sessionId__",@"common",@"wrapper",fields)==@"{""id"":1,""method"":""Runtime.evaluate"",""params"":"+Templates[0]+@",""sessionId"":""__empty209_sessionId__""}"+"\0","smoke-parity");
+    fields.Clear();
+    fields.Add(@"objectId",@"__empty209_objectId__");
+    Need(EncodeBaseline(1,@"Runtime.getProperties",@"__empty209_sessionId__",@"common",@"properties",fields)==@"{""id"":1,""method"":""Runtime.getProperties"",""params"":"+Templates[1]+@",""sessionId"":""__empty209_sessionId__""}"+"\0","smoke-parity");
+    fields.Clear();
+    fields.Add(@"objectId",@"__empty209_objectId__");
+    Need(EncodeBaseline(1,@"Runtime.callFunctionOn",@"__empty209_sessionId__",@"common",@"handler",fields)==@"{""id"":1,""method"":""Runtime.callFunctionOn"",""params"":"+Templates[2]+@",""sessionId"":""__empty209_sessionId__""}"+"\0","smoke-parity");
+    fields.Clear();
+    fields.Add(@"objectId",@"__empty209_objectId__");
+    fields.Add(@"argument0",@"__empty209_argument0__");
+    Need(EncodeBaseline(1,@"Runtime.callFunctionOn",@"__empty209_sessionId__",@"common",@"constructors",fields)==@"{""id"":1,""method"":""Runtime.callFunctionOn"",""params"":"+Templates[3]+@",""sessionId"":""__empty209_sessionId__""}"+"\0","smoke-parity");
+    fields.Clear();
+    fields.Add(@"objectId",@"__empty209_objectId__");
+    fields.Add(@"argument0",@"__empty209_argument0__");
+    Need(EncodeBaseline(1,@"Runtime.callFunctionOn",@"__empty209_sessionId__",@"common",@"metadata",fields)==@"{""id"":1,""method"":""Runtime.callFunctionOn"",""params"":"+Templates[4]+@",""sessionId"":""__empty209_sessionId__""}"+"\0","smoke-parity");
+    fields.Clear();
+    fields.Add(@"objectId",@"__empty209_objectId__");
+    fields.Add(@"argument0",@"__empty209_argument0__");
+    fields.Add(@"argument1",@"__empty209_argument1__");
+    Need(EncodeBaseline(1,@"Runtime.callFunctionOn",@"__empty209_sessionId__",@"common",@"assets",fields)==@"{""id"":1,""method"":""Runtime.callFunctionOn"",""params"":"+Templates[5]+@",""sessionId"":""__empty209_sessionId__""}"+"\0","smoke-parity");
+    fields.Clear();
+
+    Need(EncodeBaseline(1,@"Runtime.releaseObjectGroup",@"__empty209_sessionId__",@"common",@"release",fields)==@"{""id"":1,""method"":""Runtime.releaseObjectGroup"",""params"":"+Templates[6]+@",""sessionId"":""__empty209_sessionId__""}"+"\0","smoke-parity");
+    fields.Clear();
+    fields.Add(@"uniqueContextId",@"__empty209_uniqueContextId__");
+    Need(EncodeBaseline(1,@"Runtime.evaluate",@"__empty209_sessionId__",@"root",@"wrapper",fields)==@"{""id"":1,""method"":""Runtime.evaluate"",""params"":"+Templates[7]+@",""sessionId"":""__empty209_sessionId__""}"+"\0","smoke-parity");
+    fields.Clear();
+    fields.Add(@"objectId",@"__empty209_objectId__");
+    Need(EncodeBaseline(1,@"Runtime.getProperties",@"__empty209_sessionId__",@"root",@"properties",fields)==@"{""id"":1,""method"":""Runtime.getProperties"",""params"":"+Templates[8]+@",""sessionId"":""__empty209_sessionId__""}"+"\0","smoke-parity");
+    fields.Clear();
+    fields.Add(@"objectId",@"__empty209_objectId__");
+    Need(EncodeBaseline(1,@"Runtime.callFunctionOn",@"__empty209_sessionId__",@"root",@"handler",fields)==@"{""id"":1,""method"":""Runtime.callFunctionOn"",""params"":"+Templates[9]+@",""sessionId"":""__empty209_sessionId__""}"+"\0","smoke-parity");
+    fields.Clear();
+    fields.Add(@"objectId",@"__empty209_objectId__");
+    fields.Add(@"argument0",@"__empty209_argument0__");
+    Need(EncodeBaseline(1,@"Runtime.callFunctionOn",@"__empty209_sessionId__",@"root",@"before",fields)==@"{""id"":1,""method"":""Runtime.callFunctionOn"",""params"":"+Templates[10]+@",""sessionId"":""__empty209_sessionId__""}"+"\0","smoke-parity");
+    fields.Clear();
+    fields.Add(@"objectId",@"__empty209_objectId__");
+    fields.Add(@"argument0",@"__empty209_argument0__");
+    Need(EncodeBaseline(1,@"Runtime.callFunctionOn",@"__empty209_sessionId__",@"root",@"after",fields)==@"{""id"":1,""method"":""Runtime.callFunctionOn"",""params"":"+Templates[11]+@",""sessionId"":""__empty209_sessionId__""}"+"\0","smoke-parity");
+    fields.Clear();
+
+    Need(EncodeBaseline(1,@"Runtime.releaseObjectGroup",@"__empty209_sessionId__",@"root",@"release",fields)==@"{""id"":1,""method"":""Runtime.releaseObjectGroup"",""params"":"+Templates[12]+@",""sessionId"":""__empty209_sessionId__""}"+"\0","smoke-parity");
+    fields.Clear();
+    fields.Add(@"objectId",@"__empty209_objectId__");
+    fields.Add(@"argument0",@"__empty209_argument0__");
+    fields.Add(@"argument1",@"__empty209_argument1__");
+    Need(EncodeBaseline(1,@"Runtime.callFunctionOn",@"__empty209_sessionId__",@"common",@"presentation-seed",fields)==@"{""id"":1,""method"":""Runtime.callFunctionOn"",""params"":"+Templates[13]+@",""sessionId"":""__empty209_sessionId__""}"+"\0","smoke-parity");
+    fields.Clear();
+    fields.Add(@"objectId",@"__empty209_objectId__");
+    fields.Add(@"argument0",@"__empty209_argument0__");
+    fields.Add(@"argument1",@"__empty209_argument1__");
+    Need(EncodeBaseline(1,@"Runtime.callFunctionOn",@"__empty209_sessionId__",@"common",@"rules-seed",fields)==@"{""id"":1,""method"":""Runtime.callFunctionOn"",""params"":"+Templates[14]+@",""sessionId"":""__empty209_sessionId__""}"+"\0","smoke-parity");
+    fields.Clear();
+    fields.Add(@"objectId",@"__empty209_objectId__");
+    fields.Add(@"argument0",@"__empty209_argument0__");
+    fields.Add(@"argument1",@"__empty209_argument1__");
+    Need(EncodeBaseline(1,@"Runtime.callFunctionOn",@"__empty209_sessionId__",@"common",@"preference-seed",fields)==@"{""id"":1,""method"":""Runtime.callFunctionOn"",""params"":"+Templates[15]+@",""sessionId"":""__empty209_sessionId__""}"+"\0","smoke-parity");
+    fields.Clear();
+    fields.Add(@"objectId",@"__empty209_objectId__");
+    Need(EncodeBaseline(1,@"Runtime.callFunctionOn",@"__empty209_sessionId__",@"common",@"packet-advance",fields)==@"{""id"":1,""method"":""Runtime.callFunctionOn"",""params"":"+Templates[16]+@",""sessionId"":""__empty209_sessionId__""}"+"\0","smoke-parity");
+    fields.Clear();
+    fields.Add(@"objectId",@"__empty209_objectId__");
+    Need(EncodeBaseline(1,@"Runtime.callFunctionOn",@"__empty209_sessionId__",@"common",@"packet-read",fields)==@"{""id"":1,""method"":""Runtime.callFunctionOn"",""params"":"+Templates[17]+@",""sessionId"":""__empty209_sessionId__""}"+"\0","smoke-parity");
+    fields.Clear();
+    fields.Add(@"objectId",@"__empty209_objectId__");
+    Need(EncodeBaseline(1,@"Runtime.callFunctionOn",@"__empty209_sessionId__",@"common",@"packet-result",fields)==@"{""id"":1,""method"":""Runtime.callFunctionOn"",""params"":"+Templates[18]+@",""sessionId"":""__empty209_sessionId__""}"+"\0","smoke-parity");
+    fields.Clear();fields.Add("objectId","__empty209_argument0__");fields.Add("argument0","original");
+    string collision=EncodeRoot(RequestLimit,"Runtime.callFunctionOn","s","before",fields);
+    Need(collision.Contains(@"""objectId"":""__empty209_argument0__""") && collision.Contains(@"""objectId"":""original"""),"smoke-placeholder");
+    foreach(int id in new int[]{0,RequestLimit+1}) { bool refused=false;try{EncodeRoot(id,"Runtime.callFunctionOn","s","before",fields);}catch(System.InvalidOperationException){refused=true;}Need(refused,"smoke-id"); }
+    fields.Add("expression","arbitrary");bool extra=false;try{EncodeRoot(1,"Runtime.callFunctionOn","s","before",fields);}catch(System.InvalidOperationException){extra=true;}Need(extra,"smoke-extra");
+    var insensitive=new System.Collections.Hashtable(System.StringComparer.OrdinalIgnoreCase);insensitive.Add("ObjectId","a");insensitive.Add("argument0","b");
+    bool alias=false;try{EncodeRoot(1,"Runtime.callFunctionOn","s","before",insensitive);}catch(System.InvalidOperationException){alias=true;}Need(alias,"smoke-field-name");
+    foreach(object bad in new object[]{null,7,"","bad\nhandle"}) {
+      fields.Clear();fields.Add("objectId","original");fields.Add("argument0",bad);bool refused=false;
+      try{EncodeRoot(1,"Runtime.callFunctionOn","s","before",fields);}catch(System.InvalidOperationException){refused=true;}Need(refused,"smoke-field-type");
+    }
+  }
+}
+// END GENERATED WORKER STARTUP EMPTY209 PROTOCOL
 public sealed class EasyedaDiagnosticOwner {
   [StructLayout(LayoutKind.Sequential)] struct SECURITY_ATTRIBUTES { public int length; public IntPtr descriptor; [MarshalAs(UnmanagedType.Bool)] public bool inherit; }
   [StructLayout(LayoutKind.Sequential)] struct STARTUPINFO { public int cb; public IntPtr reserved, desktop, title; public int x,y,xSize,ySize,xChars,yChars,fill,flags; public short show,reservedSize; public IntPtr reserved2,stdin,stdout,stderr; }
@@ -933,7 +1173,11 @@ public sealed class EasyedaDiagnosticOwner {
   readonly bool layers209;
   readonly bool workerStartup;
   readonly bool workerStartup209;
+  readonly bool workerStartupEmpty209;
+  readonly Stopwatch emptyElapsed;
+  int emptyPolls,emptyControls;long emptyStdout;
   int RequestLimit { get { return workerStartup?256:stringPrecreate?3309:103; } }
+  int EffectiveRequestLimit { get { return workerStartupEmpty209?EasyedaWorkerStartupEmpty209Protocol.RequestLimit:RequestLimit; } }
   public readonly string JobId=Guid.NewGuid().ToString("N");
   public readonly string HelperInstance=Guid.NewGuid().ToString("N");
   public uint RootPid { get { return rootPid; } }
@@ -995,6 +1239,11 @@ public sealed class EasyedaDiagnosticOwner {
     workerStartup=true;workerStartup209=true;
   }
   public static EasyedaDiagnosticOwner CreateWorkerStartup209() { return new EasyedaDiagnosticOwner(false,true,false,true); }
+  EasyedaDiagnosticOwner(bool stringPurpose,bool startupPurpose,bool layersPurpose,bool startup209Purpose,bool empty209Purpose) {
+    if(stringPurpose || !startupPurpose || layersPurpose || !startup209Purpose || !empty209Purpose)throw Error("empty-purpose");
+    workerStartup=true;workerStartup209=true;workerStartupEmpty209=true;emptyElapsed=Stopwatch.StartNew();
+  }
+  public static EasyedaDiagnosticOwner CreateWorkerStartupEmpty209() { return new EasyedaDiagnosticOwner(false,true,false,true,true); }
   EasyedaDiagnosticOwner(bool stringPrecreatePurpose,bool workerStartupPurpose,bool layers209Purpose) { stringPrecreate=stringPrecreatePurpose;workerStartup=workerStartupPurpose;layers209=layers209Purpose; }
   public static EasyedaDiagnosticOwner CreateLayers209() { return new EasyedaDiagnosticOwner(false,false,true); }
   public void Initialize() {
@@ -6231,11 +6480,13 @@ return callback;
   }
   string WorkerStartupProtocolMessage(int id,string method,string sessionId,string phase,System.Collections.IDictionary fields) {
     if(!workerStartup || stringPrecreate)throw Error("startup-purpose");
+    if(workerStartupEmpty209)return EasyedaWorkerStartupEmpty209Protocol.EncodeStartup(id,method,sessionId,phase,fields);
     return workerStartup209?EasyedaWorkerStartupProtocol.Encode209(id,method,sessionId,phase,fields):EasyedaWorkerStartupProtocol.Encode(id,method,sessionId,phase,fields);
   }
   public void SendWorkerStartup(int id,string method,string sessionId,string phase,System.Collections.IDictionary fields) {
     // The original startup transport retains attachment, pause and cleanup
     // ownership. This native boundary reconstructs only fixed reviewed commands.
+    CheckEmptyWork(id,phase=="release" || phase=="remove" || phase=="resume" || phase=="start");
     SendMessage(id,WorkerStartupProtocolMessage(id,method,sessionId,phase,fields));
   }
   // Reprove the original live process, Job, pipes and continuously held
@@ -6294,7 +6545,8 @@ return callback;
   }
   public void SendWorkerStartupParent(int id,string method,string phase,System.Collections.IDictionary fields) {
     if(!workerStartup || stringPrecreate)throw Error("startup-purpose");
-    string message=WorkerStartupParentProtocolMessage(id,method,phase,fields);
+    CheckEmptyWork(id,false);
+    string message=workerStartupEmpty209?EasyedaWorkerStartupEmpty209Protocol.EncodeParent(id,method,phase,fields):WorkerStartupParentProtocolMessage(id,method,phase,fields);
     if(phase=="preflight" || phase=="open-project") {
       // The same complete target/context tuple must survive the once-only
       // preflight and opening. Reservation precedes any potentially partial write.
@@ -6344,8 +6596,104 @@ return callback;
       if(!extra)throw Error("startup-generation-field-smoke");
     }
   }
+  void CheckEmptyWork(int id,bool cleanup) {
+    if(!workerStartupEmpty209)return;
+    if(emptyElapsed==null || id<1 || id>(cleanup?EasyedaWorkerStartupEmpty209Protocol.RequestLimit:EasyedaWorkerStartupEmpty209Protocol.NormalRequestLimit) ||
+      emptyElapsed.ElapsedMilliseconds>(cleanup?EasyedaWorkerStartupEmpty209Protocol.TotalMilliseconds:EasyedaWorkerStartupEmpty209Protocol.NormalMilliseconds) ||
+      !cleanup && received>EasyedaWorkerStartupEmpty209Protocol.NormalByteLimit)throw Error("empty-budget");
+  }
+  public void AdmitEmptyRequest(string action,bool cleanup) {
+    if(!workerStartupEmpty209)throw Error("empty-purpose");
+    if(action=="poll") {if(emptyPolls>=EasyedaWorkerStartupEmpty209Protocol.PollLimit)throw Error("empty-poll-budget");emptyPolls++;}
+    else {
+      int limit=EasyedaWorkerStartupEmpty209Protocol.HelperControlLimit-(cleanup?0:128);
+      if(emptyControls>=limit)throw Error("empty-control-budget");emptyControls++;
+    }
+    // Original process/Job cleanup remains available after the transport deadline.
+    if(!cleanup && action!="poll" && emptyElapsed.ElapsedMilliseconds>EasyedaWorkerStartupEmpty209Protocol.NormalMilliseconds)throw Error("empty-deadline");
+  }
+  public void WriteEmptyReply(string text) {
+    if(!workerStartupEmpty209 || text==null)throw Error("empty-purpose");
+    int bytes=Encoding.UTF8.GetByteCount(text)+2;
+    if(bytes>100000 || emptyStdout+bytes>EasyedaWorkerStartupEmpty209Protocol.HelperStdoutByteLimit)throw Error("empty-output-budget");
+    emptyStdout+=bytes;Console.WriteLine(text);
+  }
+  int emptyRootStep,emptyCommonStep,emptyLeaf,emptyPacketReads;
+  bool emptyRootReleased,emptyCommonReleased,emptyCommonComplete,emptyPacketSeeded,emptyPacketNeedsRead;
+  string emptyPcbContext;
+  void EmptyBaselineSequence(string sessionId,string family,string phase,System.Collections.IDictionary fields) {
+    if(!workerStartupEmpty209 || startupPcbPhase!=4 || startupActorContext==null || sessionId!=startupActorContext.Split('\n')[0])throw Error("empty-original-pcb");
+    if(family=="root") {
+      if(emptyRootReleased)throw Error("empty-root-consumed");
+      if(phase=="release") {if(emptyRootStep==0)throw Error("empty-root-unstarted");emptyRootReleased=true;return;}
+      string[] sequence=new string[]{"wrapper","properties","properties","handler","properties","properties","before","after"};
+      if(emptyRootStep>=sequence.Length || phase!=sequence[emptyRootStep] || phase=="after" && (!emptyCommonComplete || !emptyCommonReleased))throw Error("empty-root-sequence");
+      if(phase=="wrapper")emptyPcbContext=(string)fields["uniqueContextId"];
+      emptyRootStep++;return;
+    }
+    if(family!="common" || emptyCommonReleased)throw Error("empty-common-consumed");
+    if(phase=="release") {if(emptyCommonStep==0)throw Error("empty-common-unstarted");emptyCommonReleased=true;return;}
+    if(emptyRootReleased || emptyRootStep!=7)throw Error("empty-common-root");
+    if(emptyCommonStep<12) {
+      string expected=emptyCommonStep==0?"wrapper":emptyCommonStep==3?"handler":emptyCommonStep==6?"constructors":"properties";
+      if(phase!=expected || phase=="wrapper" && (string)fields["uniqueContextId"]!=emptyPcbContext)throw Error("empty-common-sequence");
+      emptyCommonStep++;return;
+    }
+    if(emptyLeaf<3) {
+      string leaf=new string[]{"presentation-seed","rules-seed","preference-seed"}[emptyLeaf];
+      if(!emptyPacketSeeded) {
+        if(phase!=leaf)throw Error("empty-packet-seed");emptyPacketSeeded=true;emptyPacketNeedsRead=true;emptyPacketReads=0;return;
+      }
+      if(phase=="packet-read") {
+        if(!emptyPacketNeedsRead || emptyPacketReads>=512)throw Error("empty-packet-read");emptyPacketNeedsRead=false;emptyPacketReads++;return;
+      }
+      if(phase=="packet-advance") {
+        if(emptyPacketNeedsRead || emptyPacketReads>=512)throw Error("empty-packet-advance");emptyPacketNeedsRead=true;return;
+      }
+      if(phase!="packet-result" || emptyPacketNeedsRead || emptyPacketReads==0)throw Error("empty-packet-result");
+      emptyLeaf++;emptyPacketSeeded=false;return;
+    }
+    if(emptyCommonStep==12 && phase=="assets") {emptyCommonStep++;return;}
+    if(emptyCommonStep==13 && phase=="metadata") {emptyCommonStep++;emptyCommonComplete=true;return;}
+    throw Error("empty-common-sequence");
+  }
+  public void SendWorkerStartupEmptyBaseline(int id,string method,string sessionId,string family,string phase,System.Collections.IDictionary fields) {
+    if(!workerStartupEmpty209)throw Error("empty-purpose");
+    CheckEmptyWork(id,phase=="release");
+    string message;
+    if(family=="common")message=EasyedaWorkerStartupEmpty209Protocol.EncodeCommon(id,method,sessionId,phase,fields);
+    else if(family=="root")message=EasyedaWorkerStartupEmpty209Protocol.EncodeRoot(id,method,sessionId,phase,fields);
+    else throw Error("empty-family");
+    // Consume original group/phase before the first possibly partial pipe write.
+    EmptyBaselineSequence(sessionId,family,phase,fields);SendMessage(id,message);
+  }
+  public static void VerifyEmpty209PurposeSmoke() {
+    foreach(EasyedaDiagnosticOwner old in new EasyedaDiagnosticOwner[]{new EasyedaDiagnosticOwner(),CreateStringPrecreate(),CreateLayers209(),CreateWorkerStartup(),CreateWorkerStartup209()}) {
+      bool refused=false;try{old.SendWorkerStartupEmptyBaseline(1,"Runtime.releaseObjectGroup","s","root","release",new System.Collections.Hashtable());}
+      catch(InvalidOperationException error){if(error.Message!="pcb-diagnostic-empty-purpose")throw;refused=true;}if(!refused)throw Error("empty-purpose-smoke");
+    }
+    EasyedaDiagnosticOwner owner=CreateWorkerStartupEmpty209();
+    if(!owner.workerStartupEmpty209 || !owner.workerStartup209 || !owner.workerStartup || owner.stringPrecreate || owner.layers209 || owner.EffectiveRequestLimit!=3466 || owner.nextRequest!=1)throw Error("empty-purpose-smoke");
+    bool unstarted=false;try{owner.EmptyBaselineSequence("s","root","wrapper",new System.Collections.Hashtable());}catch(InvalidOperationException){unstarted=true;}
+    if(!unstarted)throw Error("empty-original-smoke");
+    owner.startupPcbPhase=4;owner.startupActorContext="s\nui";
+    var fields=new System.Collections.Hashtable(StringComparer.Ordinal);fields.Add("uniqueContextId","pcb");
+    foreach(string phase in new string[]{"wrapper","properties","properties","handler","properties","properties","before"})owner.EmptyBaselineSequence("s","root",phase,fields);
+    bool early=false;try{owner.EmptyBaselineSequence("s","root","after",fields);}catch(InvalidOperationException){early=true;}if(!early)throw Error("empty-root-early-smoke");
+    foreach(string phase in new string[]{"wrapper","properties","properties","handler","properties","properties","constructors","properties","properties","properties","properties","properties"})owner.EmptyBaselineSequence("s","common",phase,fields);
+    foreach(string seed in new string[]{"presentation-seed","rules-seed","preference-seed"}) {
+      owner.EmptyBaselineSequence("s","common",seed,fields);owner.EmptyBaselineSequence("s","common","packet-read",fields);
+      owner.EmptyBaselineSequence("s","common","packet-advance",fields);owner.EmptyBaselineSequence("s","common","packet-read",fields);
+      owner.EmptyBaselineSequence("s","common","packet-result",fields);
+    }
+    owner.EmptyBaselineSequence("s","common","assets",fields);owner.EmptyBaselineSequence("s","common","metadata",fields);
+    owner.EmptyBaselineSequence("s","common","release",fields);owner.EmptyBaselineSequence("s","root","after",fields);owner.EmptyBaselineSequence("s","root","release",fields);
+    bool repeat=false;try{owner.EmptyBaselineSequence("s","root","release",fields);}catch(InvalidOperationException){repeat=true;}if(!repeat)throw Error("empty-root-replay-smoke");
+    owner.CheckEmptyWork(3434,false);owner.CheckEmptyWork(3466,true);
+    bool reserve=false;try{owner.CheckEmptyWork(3435,false);}catch(InvalidOperationException){reserve=true;}if(!reserve)throw Error("empty-reserve-smoke");
+  }
   void SendMessage(int id,string message) {
-    AssertLive(); if(!launchCompleted || protocolFailed || id!=nextRequest || id>RequestLimit) throw Error("discovery-request");
+    AssertLive(); if(!launchCompleted || protocolFailed || id!=nextRequest || id>EffectiveRequestLimit) throw Error("discovery-request");
     byte[] bytes=Encoding.UTF8.GetBytes(message);
     nextRequest++; // A failed write consumes its ID and the entire diagnostic channel.
     try { uint written; Native(WriteFile(parentWrite,bytes,(uint)bytes.Length,out written,IntPtr.Zero)); if(written!=bytes.Length) throw Error("partial-write"); AssertLive(); }
@@ -6354,9 +6702,10 @@ return callback;
   public string Poll() {
     AssertLive(); if(!launchCompleted || protocolFailed) throw Error("channel-failed");
     try {
+      if(workerStartupEmpty209 && (emptyElapsed==null || emptyElapsed.ElapsedMilliseconds>EasyedaWorkerStartupEmpty209Protocol.TotalMilliseconds))throw Error("empty-deadline");
       uint available; Native(PeekNamedPipe(parentRead,IntPtr.Zero,0,IntPtr.Zero,out available,IntPtr.Zero));
       if(available==0) return "";
-      int count=(int)Math.Min(65536u,available); if(received+count>64*1024*1024) throw Error("receive-budget");
+      int count=(int)Math.Min(65536u,available); if((long)received+count>(workerStartupEmpty209?EasyedaWorkerStartupEmpty209Protocol.TotalByteLimit:64L*1024*1024)) throw Error("receive-budget");
       byte[] bytes=new byte[count]; uint read; Native(ReadFile(parentRead,bytes,(uint)count,out read,IntPtr.Zero));
       if(read==0 || read>count) throw Error("read-size"); received+=checked((int)read); AssertLive(); return Convert.ToBase64String(bytes,0,(int)read);
     } catch { protocolFailed=true; throw; }
@@ -6518,12 +6867,15 @@ return callback;
   }
 }
 '@
-$owner=if ($WorkerStartup209) {[EasyedaDiagnosticOwner]::CreateWorkerStartup209()} elseif ($WorkerStartup) {[EasyedaDiagnosticOwner]::CreateWorkerStartup()} elseif ($StringPrecreate) {[EasyedaDiagnosticOwner]::CreateStringPrecreate()} elseif ($Layers209) {[EasyedaDiagnosticOwner]::CreateLayers209()} else {New-Object EasyedaDiagnosticOwner}
+$owner=if ($WorkerStartupEmpty209) {[EasyedaDiagnosticOwner]::CreateWorkerStartupEmpty209()} elseif ($WorkerStartup209) {[EasyedaDiagnosticOwner]::CreateWorkerStartup209()} elseif ($WorkerStartup) {[EasyedaDiagnosticOwner]::CreateWorkerStartup()} elseif ($StringPrecreate) {[EasyedaDiagnosticOwner]::CreateStringPrecreate()} elseif ($Layers209) {[EasyedaDiagnosticOwner]::CreateLayers209()} else {New-Object EasyedaDiagnosticOwner}
+$startupRequestLimit=if ($WorkerStartupEmpty209) {[EasyedaWorkerStartupEmpty209Protocol]::RequestLimit} else {256}
 try {
   $owner.Initialize()
   if ($CompileOnly) {
     [EasyedaWorkerStartupProtocol]::VerifySmoke()
     [EasyedaWorkerStartupProtocol]::Verify209Smoke()
+    [EasyedaWorkerStartupEmpty209Protocol]::VerifySmoke()
+    [EasyedaDiagnosticOwner]::VerifyEmpty209PurposeSmoke()
     [EasyedaDiagnosticOwner]::VerifyWorkerStartupPurposeSmoke()
     [EasyedaDiagnosticInstallation]::VerifyLeaseSmoke()
     [EasyedaDiagnosticOwner]::VerifyProtocolSmoke()
@@ -6659,6 +7011,14 @@ try {
       if ($request.id -isnot [string] -or $request.id -cnotmatch '^[a-f0-9]{32}$') {throw 'pcb-diagnostic-request-id'}
       $id=$request.id
       if ($launched -and $request.action -cne 'identity' -and ($request.helperInstance -isnot [string] -or $request.jobId -isnot [string] -or $request.rootCreated -isnot [string] -or ($request.rootPid -isnot [int] -and $request.rootPid -isnot [long]) -or $request.helperInstance -cne $owner.HelperInstance -or $request.jobId -cne $owner.JobId -or $request.rootCreated -cne $owner.RootCreated -or $request.rootPid -ne $owner.RootPid)) {throw 'pcb-diagnostic-owner-binding'}
+      if ($WorkerStartupEmpty209) {
+        if ($request.action -isnot [string]) {throw 'pcb-diagnostic-empty-action'}
+        $cleanup=(@('identity','window','normal-close','termination','release','release-unlaunched','no-process-proof','release-no-process') -ccontains $request.action) -or
+          ($request.action -ceq 'worker-startup-send' -and @('release','remove','resume','start') -ccontains $request.startupPhase) -or
+          ($request.action -ceq 'worker-startup-empty-common' -and $request.commonPhase -ceq 'release') -or
+          ($request.action -ceq 'worker-startup-empty-root' -and $request.rootPhase -ceq 'release')
+        $owner.AdmitEmptyRequest($request.action,$cleanup)
+      }
       switch -CaseSensitive ($request.action) {
         'worker-startup-reprove' {
           if (-not $startupPurpose -or -not $launched -or
@@ -6668,7 +7028,7 @@ try {
         }
         'worker-startup-parent' {
           if (-not $startupPurpose -or -not $launched -or $request.method -isnot [string] -or $request.parentPhase -isnot [string] -or
-              ($request.requestId -isnot [int] -and $request.requestId -isnot [long]) -or $request.requestId -lt 1 -or $request.requestId -gt 256) {throw 'pcb-diagnostic-startup-parent-fields'}
+              ($request.requestId -isnot [int] -and $request.requestId -isnot [long]) -or $request.requestId -lt 1 -or $request.requestId -gt $startupRequestLimit) {throw 'pcb-diagnostic-startup-parent-fields'}
           $baseFields=@('action','helperInstance','id','jobId','method','requestId','rootCreated','rootPid','parentPhase')
           $parentFields=@{}
           foreach ($property in $request.PSObject.Properties) {
@@ -6684,7 +7044,7 @@ try {
         'worker-startup-send' {
           if (-not $startupPurpose -or -not $launched -or $request.method -isnot [string] -or $request.sessionId -isnot [string] -or
               $request.startupPhase -isnot [string] -or ($request.requestId -isnot [int] -and $request.requestId -isnot [long]) -or
-              $request.requestId -lt 1 -or $request.requestId -gt 256) {throw 'pcb-diagnostic-startup-fields'}
+              $request.requestId -lt 1 -or $request.requestId -gt $startupRequestLimit) {throw 'pcb-diagnostic-startup-fields'}
           $baseFields=@('action','helperInstance','id','jobId','method','requestId','rootCreated','rootPid','sessionId','startupPhase')
           $startupFields=@{}
           foreach ($property in $request.PSObject.Properties) {
@@ -6696,6 +7056,24 @@ try {
           }
           foreach ($field in $baseFields) {if (@($request.PSObject.Properties.Name) -cnotcontains $field) {throw 'pcb-diagnostic-startup-field'}}
           $owner.SendWorkerStartup([int]$request.requestId,$request.method,$request.sessionId,$request.startupPhase,$startupFields)
+          $result=@{written=$true}
+        }
+        {$_ -ceq 'worker-startup-empty-common' -or $_ -ceq 'worker-startup-empty-root'} {
+          if (-not $WorkerStartupEmpty209 -or -not $launched -or $request.method -isnot [string] -or $request.sessionId -isnot [string] -or
+              ($request.requestId -isnot [int] -and $request.requestId -isnot [long]) -or $request.requestId -lt 1 -or $request.requestId -gt $startupRequestLimit) {throw 'pcb-diagnostic-empty-fields'}
+          $family=if ($request.action -ceq 'worker-startup-empty-common') {'common'} else {'root'}
+          $phaseKey=if ($family -ceq 'common') {'commonPhase'} else {'rootPhase'}
+          if ($request.$phaseKey -isnot [string]) {throw 'pcb-diagnostic-empty-phase'}
+          $baseFields=@('action','helperInstance','id','jobId','method','requestId','rootCreated','rootPid','sessionId',$phaseKey)
+          $baselineFields=@{}
+          foreach ($property in $request.PSObject.Properties) {
+            if ($baseFields -cnotcontains $property.Name) {
+              if (@('uniqueContextId','objectId','argument0','argument1') -cnotcontains $property.Name -or $property.Value -isnot [string]) {throw 'pcb-diagnostic-empty-field'}
+              $baselineFields[$property.Name]=$property.Value
+            }
+          }
+          foreach ($field in $baseFields) {if (@($request.PSObject.Properties.Name) -cnotcontains $field) {throw 'pcb-diagnostic-empty-field'}}
+          $owner.SendWorkerStartupEmptyBaseline([int]$request.requestId,$request.method,$request.sessionId,$family,$request.$phaseKey,$baselineFields)
           $result=@{written=$true}
         }
         'launch' {
@@ -6918,7 +7296,8 @@ try {
         }
         default {throw 'pcb-diagnostic-action'}
       }
-      @{id=$id;ok=$true;result=$result} | ConvertTo-Json -Depth 5 -Compress
+      if ($WorkerStartupEmpty209) {$owner.WriteEmptyReply((@{id=$id;ok=$true;result=$result} | ConvertTo-Json -Depth 5 -Compress))}
+      else {@{id=$id;ok=$true;result=$result} | ConvertTo-Json -Depth 5 -Compress}
     } catch {
       # A post-create exception must not hide the retained process from its
       # original helper. The facade can recover its binding using identity.
@@ -6931,7 +7310,8 @@ try {
         if ($exception.Message -cmatch '^pcb-diagnostic-[a-z-]{1,80}$') {$code=$exception.Message;break}
         $exception=$exception.InnerException
       }
-      @{id=$id;ok=$false;error=$code} | ConvertTo-Json -Compress
+      if ($WorkerStartupEmpty209) {$owner.WriteEmptyReply((@{id=$id;ok=$false;error=$code} | ConvertTo-Json -Compress))}
+      else {@{id=$id;ok=$false;error=$code} | ConvertTo-Json -Compress}
     }
   }
 } finally {$owner.RetainUntilClosed()}

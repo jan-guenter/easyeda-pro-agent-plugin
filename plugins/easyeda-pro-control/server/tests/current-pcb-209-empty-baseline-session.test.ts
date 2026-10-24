@@ -4,6 +4,8 @@
 import assert from "node:assert/strict";
 import { test } from "node:test";
 import { runInContext } from "node:vm";
+import { sha256Text } from "../src/core.ts";
+import { assertEmptyStartupJournal } from "./helpers/current-pcb-209-empty-startup-journal.ts";
 import { PCB209_EMPTY_ROOT_SETUP } from "./helpers/current-pcb-209-empty-root-fixture.ts";
 import { CURRENT_PCB_209_EMPTY_BASELINE_REQUEST_COUNT, CurrentPcb209EmptyBaselineSession } from "../src/current-pcb-209-empty-baseline-session.ts";
 import type { CurrentPcb209EmptyBaselineCommand, CurrentPcb209EmptyBaselineTransport } from "../src/current-pcb-209-empty-baseline-session.ts";
@@ -21,7 +23,8 @@ import { PCB_COMMON_RULE_ENCODING_SETUP, pcbCommonFixture } from "./helpers/curr
 import { callPcbStringObservation, pcbStringReply } from "./helpers/current-pcb-string-observation-fixture.ts";
 import { IDS, encrypted, fixture, inventory, mutate } from "./helpers/symbol-sql-fixture.ts";
 
-const identity = Object.freeze({ projectUuid: IDS.project, branchUuid: IDS.branch, documentUuid: IDS.target });
+const RAW_WINDOWS_PATH = String.raw`C:\Synthetic\empty-baseline.eprj2`;
+const identity = Object.freeze({ projectUuid: sha256Text(RAW_WINDOWS_PATH), branchUuid: IDS.branch, documentUuid: IDS.target });
 const header = JSON.stringify({ docType: "PCB", client: "b".repeat(16), uuid: IDS.target, updateTime: 1, version: "1", editVersion: "3.0" });
 const meta = { title: "Empty PCB", parent: "", source: "", board: "", zIndex: null };
 // The rule-rich common fixture spends40 requests; the original raw-root
@@ -61,8 +64,8 @@ async function setup(changeSql = "", changeLive = "", headerText = header, extra
 }> {
   const context = pcbCommonFixture(`${PCB_COMMON_RULE_ENCODING_SETUP}
 const env=scope.object.x.env,compiler=env._compiler;
-env._id=${JSON.stringify(IDS.target)};env._tabId=${JSON.stringify(`${IDS.target}@${IDS.project}`)};
-compiler.uuid=env._id;compiler.base.uuid=env._id;compiler.base.path=${JSON.stringify(IDS.project)};
+env._id=${JSON.stringify(IDS.target)};env._tabId=${JSON.stringify(`${IDS.target}@${identity.projectUuid}`)};
+compiler.uuid=env._id;compiler.base.uuid=env._id;compiler.base.path=${JSON.stringify(identity.projectUuid)};
 compiler.project=compiler.base.path;compiler.isProject=true;compiler.docDetail=${JSON.stringify(meta)};
 scope.object.Me._prevTrackWidth=1;
 scope.object.Ke.manager.map.set(4,make("WA",{layerId:4,type:"BOTTOM_SILK",name:"Bottom",status:make("Ff",{state:0}),_activeColor:black,deactiveColor:black}));`);
@@ -71,7 +74,8 @@ scope.object.Ke.manager.map.set(4,make("WA",{layerId:4,type:"BOTTOM_SILK",name:"
   const encodedRules = encodeCurrentPcbCommonRulesAndPrimitives(rules, presentation), preference = sample(CURRENT_PCB_COMMON_PREFERENCE_FUNCTION);
   const rows = [...encodeCurrentPcbCommonPresentation(presentation).rows, ...encodedRules.rows,
     ...encodeCurrentPcbCommonPreference(preference, rules).rows, encodedRules.panelize];
-  const base = await fixture(), owner = base.before.tables.find(table => table.name === "history_data"); assert.ok(owner);
+  const base = await fixture({ project: identity.projectUuid, branch: IDS.branch, target: IDS.target });
+  const owner = base.before.tables.find(table => table.name === "history_data"); assert.ok(owner);
   const value = owner.rows[0]?.cells[owner.columns.findIndex(column => column["name"] === "dataStr")]; assert.ok(value?.kind === "text");
   const raw = await decodeNativeHistoryChunk({ historyUuid: IDS.oldHead, keyHex: IDS.oldKey, dataBase64: Buffer.from(value.hex, "hex").toString() });
   const old = raw.split("|\n");
@@ -160,6 +164,7 @@ void test("209 empty baseline brackets genuine common/SQL issuance with all raw 
   assert.equal(packet.completeLiveBaselineVerified, false);
   assert.equal(packet.sourceSerializationObserved, false);
   assert.equal(packet.executionAuthorized, false);
+  await assertEmptyStartupJournal(packet, RAW_WINDOWS_PATH, value.commands.length);
   value.session.requireOriginal(packet);
   assert.throws(() => { value.session.requireOriginal(structuredClone(packet)); }, /ORIGINAL_PACKET/u);
   value.setCurrent(false); assert.throws(() => { value.session.requireOriginal(packet); }, /synthetic owner changed/u);

@@ -74,6 +74,13 @@ async function observed(promise: Promise<unknown>): Promise<void> {
     // The original owner retains the failure.
   }
 }
+async function settle(work: Promise<void>, completion: PromiseWithResolvers<undefined>): Promise<void> {
+  try {
+    await work;
+    // oxlint-disable-next-line unicorn/no-useless-undefined -- Strict PromiseWithResolvers<undefined> requires its resolve argument.
+    completion.resolve(undefined);
+  } catch (error) { completion.reject(error); }
+}
 function members(transport: CurrentPcb209RatlineCaptureTransport): readonly unknown[] {
   need(transport !== null && typeof transport === "object" && !types.isProxy(transport) &&
     (Object.getPrototypeOf(transport) === Object.prototype || Object.getPrototypeOf(transport) === null), "TRANSPORT");
@@ -117,6 +124,8 @@ class CurrentPcb209RatlineCaptureCore {
   #payload: string | null = null;
   #world: z.infer<typeof worldSchema> | null = null;
   #packet: CurrentPcb209RatlineCapturePacket | null = null;
+  #cleanupPending: Promise<void> | null = null;
+  #cleanupRequested = false;
   public constructor(key: typeof INTERNAL, role: CurrentPcb209RatlineCaptureRole, transport: CurrentPcb209RatlineCaptureTransport) {
     need(key === INTERNAL, "FIXED_PROFILE"); this.#role = role; this.#transport = transport; this.#original = members(transport);
     this.#scriptId = token.parse(transport.scriptId); this.#request = transport.request; this.#subscribe = transport.subscribe;
@@ -150,9 +159,9 @@ class CurrentPcb209RatlineCaptureCore {
     let capturedError: unknown = null, event: unknown = null;
     try { event = captureCurrentPcbStringClockReply(input).value; } catch (error) { capturedError = error; }
     const retained: Paused = { event, capturedError, resumed: Promise.withResolvers(), resume: null, observed: false,
-      timer: setTimeout(() => { this.#failed ??= fail("PAUSE_DEADLINE"); void observed(this.#cleanup(retained)); }, 6000) };
+      timer: setTimeout(() => { this.#failed ??= fail("PAUSE_DEADLINE"); void observed(this.#cleanup()); }, 6000) };
     this.#pause = retained; this.#waiting.resolve(retained);
-    if (this.#settled || this.#sequenceExhausted) { this.#failed ??= fail("EXTRA_PAUSE"); void observed(this.#cleanup(retained)); }
+    if (this.#settled || this.#sequenceExhausted) { this.#failed ??= fail("EXTRA_PAUSE"); void observed(this.#cleanup()); }
   };
   readonly #resumed = (): void => {
     const paused = this.#pause;
@@ -160,24 +169,46 @@ class CurrentPcb209RatlineCaptureCore {
     if (paused.resume === null) { this.#failed ??= fail("UNEXPECTED_RESUME"); }
     paused.observed = true; clearTimeout(paused.timer); paused.resumed.resolve(null);
   };
-  readonly #lost = (): void => { this.#failed ??= fail("OWNER_LOST"); this.#waiting.reject(this.#failed); };
+  readonly #lost = (): void => { this.#failed ??= fail("OWNER_LOST"); this.#waiting.reject(this.#failed); this.#armed.reject(this.#failed); void observed(this.#cleanup()); };
   #resume(paused: Paused): Promise<void> {
-    paused.resume ??= (async (): Promise<void> => { await this.#cleanupSend({ method: "Debugger.resume", params: {} }); await bounded(paused.resumed.promise); })();
+    if (paused.resume === null) {
+      const completion = Promise.withResolvers<undefined>(); paused.resume = completion.promise;
+      void settle((async (): Promise<void> => { await this.#cleanupSend({ method: "Debugger.resume", params: {} }); await bounded(paused.resumed.promise); })(), completion);
+    }
     return paused.resume;
+  }
+  #removeBreakpoint(breakpoint: Breakpoint): Promise<void> {
+    if (breakpoint.removal === null) {
+      const completion = Promise.withResolvers<undefined>(); breakpoint.removal = completion.promise;
+      void settle((async (): Promise<void> => {
+        await this.#cleanupSend({ method: "Debugger.removeBreakpoint", params: { breakpointId: breakpoint.id } }); breakpoint.removed = true;
+      })(), completion);
+    }
+    return breakpoint.removal;
   }
   async #remove(): Promise<void> {
     const errors: unknown[] = [];
     for (const breakpoint of this.#breakpoints.values()) {
-      breakpoint.removal ??= (async (): Promise<void> => { await this.#cleanupSend({ method: "Debugger.removeBreakpoint", params: { breakpointId: breakpoint.id } }); breakpoint.removed = true; })();
-      try { await breakpoint.removal; } catch (error) { errors.push(error); }
+      try { await this.#removeBreakpoint(breakpoint); } catch (error) { errors.push(error); }
     }
     if (errors.length > 0) { throw new AggregateError(errors, "PCB209_RATLINE_CAPTURE_REMOVE"); }
   }
-  async #cleanup(paused: Paused | null): Promise<void> {
-    const errors: unknown[] = [];
-    try { await this.#remove(); } catch (error) { errors.push(error); }
-    if (paused !== null && !paused.observed) { try { await this.#resume(paused); } catch (error) { errors.push(error); } }
-    if (errors.length > 0) { throw new AggregateError(errors, "PCB209_RATLINE_CAPTURE_CLEANUP"); }
+  #cleanup(): Promise<void> {
+    if (this.#cleanupPending !== null) { this.#cleanupRequested = true; return this.#cleanupPending; }
+    const completion = Promise.withResolvers<undefined>(); this.#cleanupPending = completion.promise;
+    void settle((async (): Promise<void> => {
+      try {
+        do {
+          this.#cleanupRequested = false;
+          await this.#remove(); need(this.#uncertain === 0, "UNRESOLVED_BREAKPOINTS");
+          if (this.#pause !== null && !this.#pause.observed) { await this.#resume(this.#pause); }
+        } while (this.#cleanupRequested);
+      } finally {
+        this.#cleanupPending = null;
+        if (this.#cleanupRequested) { void observed((async (): Promise<void> => { await Promise.resolve(); await this.#cleanup(); })()); }
+      }
+    })(), completion);
+    return completion.promise;
   }
   async #arm(site: string, point: Readonly<{ lineNumber: number; columnNumber: number }>): Promise<void> {
     await this.#current(); need(this.#commands < 112, "BUDGET"); this.#commands += 1;
@@ -186,7 +217,7 @@ class CurrentPcb209RatlineCaptureCore {
       const raw = await this.#request.call(this.#transport, { method: "Debugger.setBreakpoint", params: { location: requested } });
       const reply = z.object({ breakpointId: token, actualLocation: location }).strict().parse(captureCurrentPcbStringClockReply(raw).value);
       this.#breakpoints.set(site, { id: reply.breakpointId, removal: null, removed: false }); this.#uncertain -= 1;
-      if (this.#failed !== null) { void observed(this.#remove()); }
+      if (this.#failed !== null) { void observed(this.#cleanup()); }
       need(JSON.stringify(reply.actualLocation) === JSON.stringify(requested), "BREAKPOINT_RELOCATED");
     })();
     await bounded(pending); await this.#current();
@@ -304,12 +335,16 @@ class CurrentPcb209RatlineCaptureCore {
       this.#packet = packet; issued.set(packet, this); return packet;
     } catch (error) {
       this.#failed ??= fail("FAILED"); this.#armed.reject(error);
-      try { await this.#cleanup(this.#pause); } catch (cleanupError) { throw new AggregateError([error, cleanupError], "PCB209_RATLINE_CAPTURE_FAILED", { cause: cleanupError }); }
+      try { await this.#cleanup(); } catch (cleanupError) { throw new AggregateError([error, cleanupError], "PCB209_RATLINE_CAPTURE_FAILED", { cause: cleanupError }); }
       throw error;
     } finally { this.#settled = true; }
   }
   public async requireOriginal(packet: CurrentPcb209RatlineCapturePacket): Promise<Readonly<Record<string, string>>> {
     need(packet === this.#packet && issued.get(packet) === this, "ORIGINAL_PACKET"); await this.#current(); return Object.freeze(Object.fromEntries(this.#identities));
+  }
+  /** Abort retains the original allocations and consumes cleanup resumes once. */
+  public async abort(): Promise<void> {
+    need(this.#consumed && !this.#released, "ABORT_STATE"); this.#lost(); await this.#cleanup();
   }
   public async releaseAfterTermination(): Promise<void> {
     need(this.#settled && !this.#released && !this.#releasing, "RELEASE_STATE"); this.#releasing = true;

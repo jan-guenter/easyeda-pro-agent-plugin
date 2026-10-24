@@ -51,10 +51,13 @@ type ExistingWorker = Readonly<{ targetId: string; title: string; url: string }>
 const eventMethods = ["Target.attachedToTarget", "Target.detachedFromTarget", "Target.targetDestroyed", "Target.targetInfoChanged",
   "Runtime.executionContextCreated", "Runtime.executionContextDestroyed", "Runtime.executionContextsCleared", "Runtime.exceptionThrown",
   "Runtime.consoleAPICalled", "Debugger.scriptParsed", "Debugger.paused", "Debugger.resumed"] as const;
+// Diagnostic labels only. These events remain refused by the original owner.
+const unsupportedEventMethods = ["Debugger.breakpointResolved", "Debugger.scriptFailedToParse", "Runtime.exceptionRevoked",
+  "Runtime.inspectRequested", "Runtime.bindingCalled"] as const;
 const eventReasons = ["EVENT_BUDGET", "ATTACHMENT", "EXISTING_WORKER_CHANGED", "EXISTING_WORKER_SELECTED", "EXISTING_WORKER_PAUSED", "WORKER_NOT_WAITING",
   "EXTRA_WORKER", "WORKER_URL", "WORKER_TITLE", "EVENT_SESSION", "CONTEXT", "SCRIPT", "UNEXPECTED_PAUSE",
   "UNEXPECTED_RESUME", "UNEXPECTED_EVENT"] as const;
-type EventMethod = typeof eventMethods[number] | "other" | "unparsed";
+type EventMethod = typeof eventMethods[number] | typeof unsupportedEventMethods[number] | "other" | "unparsed";
 type EventReason = typeof eventReasons[number] | "MALFORMED_EVENT";
 type RejectedTarget = Readonly<{ targetId: string; sessionId: string; waitingForDebugger: boolean;
   urlSha256: string; urlBytes: number; urlRole: "bootstrap" | "preload" | "project" | "other";
@@ -63,7 +66,12 @@ type RejectedTarget = Readonly<{ targetId: string; sessionId: string; waitingFor
 type RejectedScript = Readonly<{ scriptId: string; executionContextId: number; contextMatchesExpected: boolean;
   expectedStage: StartupRole | null; urlSha256: string; urlBytes: number; urlRole: "bootstrap" | "preload" | "project" | "anonymous" | "other";
   reportedScriptHash: string | null; creatorMatchesPreloadCopy: boolean; priorScriptId: boolean }>;
-type EventFailure = Readonly<{ method: EventMethod; reason: EventReason; target?: RejectedTarget; script?: RejectedScript }>;
+type UnhandledEvent = Readonly<{ methodSha256: string; methodBytes: number;
+  session: "parent" | "selected-worker" | "background-worker" | "other";
+  bootstrapStage: StartupRole | null; sourceQualified: boolean; constructionStarted: boolean; constructionSubscribed: boolean;
+  lastCommand: CurrentPcbWorkerStartupCommand["method"] | null; requestCount: number }>;
+type EventFailure = Readonly<{ method: EventMethod; reason: EventReason; target?: RejectedTarget; script?: RejectedScript;
+  unhandled?: UnhandledEvent }>;
 type StartupRole = typeof CURRENT_PCB_209_WORKER_BOOTSTRAP_ROLES[number];
 interface BootstrapStage {
   readonly role: StartupRole;
@@ -140,6 +148,7 @@ class CurrentPcbWorkerStartupTransportCore<Packet extends ConstructionPacket, Ru
   #existingWorkers: ReadonlyMap<string, ExistingWorker> | null = null;
   readonly #backgroundWorkers = new Set<string>();
   #firstEventFailure: EventFailure | null = null;
+  #lastCommand: CurrentPcbWorkerStartupCommand["method"] | null = null;
   #worker: Worker | null = null;
   #expectedProject: z.infer<typeof expectedProjectSchema> | null = null;
   #context: z.infer<typeof contextSchema> | null = null;
@@ -268,27 +277,47 @@ class CurrentPcbWorkerStartupTransportCore<Packet extends ConstructionPacket, Ru
     if (!cleanup) { await this.#current(); }
     if (this.#requests >= (cleanup ? 256 : 224)) { this.#poison("REQUEST_BUDGET"); throw failure("REQUEST_BUDGET"); }
     this.#requests += 1;
-    const result = captureCurrentPcbStringClockReply(await bounded(this.#send.call(this.#dependency, command))).value;
+    const result = captureCurrentPcbStringClockReply(await bounded(this.#sendOriginal(command))).value;
     if (!cleanup) { await this.#current(); }
     return result;
+  }
+  #sendOriginal(command: CurrentPcbWorkerStartupCommand): Promise<unknown> {
+    // Keep only a fixed command literal. No source, arguments, handles or native
+    // Reply data enter this diagnostic, and the original Promise is unchanged.
+    this.#lastCommand = command.method;
+    return this.#send.call(this.#dependency, command);
   }
   readonly #event = (input: CurrentPcbWorkerStartupEvent): void => {
     if (this.#released) { return; }
     let method: EventMethod = "unparsed";
     let rejectedTarget: RejectedTarget | null = null;
     let rejectedScript: RejectedScript | null = null;
+    let unhandled: UnhandledEvent | null = null;
     try {
       const captured = captureCurrentPcbStringClockReply(input);
       this.#events += 1; this.#eventBytes += Buffer.byteLength(captured.text);
       if (this.#events > 4096 || this.#eventBytes > 8 * 1024 * 1024) { throw failure("EVENT_BUDGET"); }
       const event = z.object({ method: z.string().max(128), sessionId: sessionToken, params: z.record(z.string(), z.unknown()) }).strict().parse(captured.value);
-      method = eventMethods.find(value => value === event.method) ?? "other";
+      const supported = eventMethods.find(value => value === event.method);
+      method = supported ?? unsupportedEventMethods.find(value => value === event.method) ?? "other";
+      if (supported === undefined) {
+        let session: UnhandledEvent["session"] = "other";
+        if (event.sessionId === this.#parentSession) { session = "parent"; }
+        else if (event.sessionId === this.#worker?.sessionId) { session = "selected-worker"; }
+        else if (this.#backgroundWorkers.has(event.sessionId)) { session = "background-worker"; }
+        unhandled = Object.freeze({ methodSha256: createHash("sha256").update(event.method).digest("hex"), methodBytes: Buffer.byteLength(event.method),
+          session,
+          bootstrapStage: this.#bootstrap209 ? this.#bootstrapStages[this.#bootstrapIndex]?.role ?? null : null,
+          sourceQualified: this.#sourceQualified, constructionStarted: this.#runner !== null, constructionSubscribed: this.#subscriber !== null,
+          lastCommand: this.#lastCommand, requestCount: this.#requests });
+      }
       this.#acceptEvent(event, worker => { rejectedTarget = this.#bootstrap209 ? this.#targetMetadata(worker) : null; },
         script => { rejectedScript = this.#bootstrap209 ? this.#scriptMetadata(script) : null; });
     } catch (error) {
       this.#firstEventFailure ??= Object.freeze({ method, reason: eventReason(error),
         ...(rejectedTarget === null ? {} : { target: rejectedTarget }),
-        ...(rejectedScript === null ? {} : { script: rejectedScript }) }); this.#poison("EVENT");
+        ...(rejectedScript === null ? {} : { script: rejectedScript }),
+        ...(unhandled === null ? {} : { unhandled }) }); this.#poison("EVENT");
     }
   };
   #acceptEvent(event: CurrentPcbWorkerStartupEvent, retainTarget: (worker: Worker) => void,
@@ -553,7 +582,7 @@ class CurrentPcbWorkerStartupTransportCore<Packet extends ConstructionPacket, Ru
     this.#requests += 1;
     this.#instrumentationUncertain = true;
     const pending = (async (): Promise<void> => {
-      const raw = await this.#send.call(this.#dependency, { method: "Debugger.setInstrumentationBreakpoint",
+      const raw = await this.#sendOriginal({ method: "Debugger.setInstrumentationBreakpoint",
         params: { instrumentation: "beforeScriptExecution" }, sessionId: worker.sessionId });
       this.#instrumentation = z.object({ breakpointId: token }).strict().parse(captureCurrentPcbStringClockReply(raw).value).breakpointId;
       this.#instrumentationUncertain = false;
@@ -573,7 +602,7 @@ class CurrentPcbWorkerStartupTransportCore<Packet extends ConstructionPacket, Ru
       this.#requests += 1;
       // The runner owns this allocation deadline and retains late IDs. An
       // Additional transport timeout would hide its original late reply.
-      return captureCurrentPcbStringClockReply(await this.#send.call(this.#dependency, { ...command, sessionId: worker.sessionId })).value;
+      return captureCurrentPcbStringClockReply(await this.#sendOriginal({ ...command, sessionId: worker.sessionId })).value;
     }
     return this.#request({ ...command, sessionId: worker.sessionId }, command.method === "Debugger.resume" ||
       command.method === "Debugger.removeBreakpoint" || command.method === "Runtime.releaseObjectGroup");
@@ -606,7 +635,7 @@ class CurrentPcbWorkerStartupTransportCore<Packet extends ConstructionPacket, Ru
       this.#requests += 1;
       // Source replies exceed the small event capture bound. Qualify the own
       // Data string before any following awaited owner reproof.
-      qualifyCurrentPcb209StartupScriptSource(stage.role, await bounded(this.#send.call(this.#dependency,
+      qualifyCurrentPcb209StartupScriptSource(stage.role, await bounded(this.#sendOriginal(
         { method: "Debugger.getScriptSource", params: { scriptId: script.scriptId }, sessionId: worker.sessionId })));
       stage.sourceQualified = true; await this.#current();
       if (stage.role === "project") { this.#sourceQualified = true; return script; }
@@ -621,7 +650,7 @@ class CurrentPcbWorkerStartupTransportCore<Packet extends ConstructionPacket, Ru
         paused.data.scriptId !== script.scriptId || paused.callFrames[0]?.location.scriptId !== script.scriptId ||
         paused.hitBreakpoints.length === 1 && paused.hitBreakpoints[0] !== this.#instrumentation) { throw failure("INITIAL_PAUSE_IDENTITY"); }
     this.#requests += 1;
-    this.#qualifySource(await bounded(this.#send.call(this.#dependency, { method: "Debugger.getScriptSource",
+    this.#qualifySource(await bounded(this.#sendOriginal({ method: "Debugger.getScriptSource",
       params: { scriptId: script.scriptId }, sessionId: worker.sessionId })));
     await this.#current(); return script;
   }

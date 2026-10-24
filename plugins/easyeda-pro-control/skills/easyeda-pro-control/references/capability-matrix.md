@@ -78,10 +78,13 @@ bracketed UI/worker actor/local-Date observations. It retains the original
 native process, Job, pipe and fixed256-command budget. These observations do
 not establish continuous publisher ownership, peer containment, server clock
 provenance, complete startup or writer eligibility. The route requires connected
-validation after installation. The209 common-state reader, SQL comparison and
-six-sample actor adapter are implemented privately but lack an integrated native
-route. The ratline source verifier and finite-role model remain groundwork;
-no PCB-worker/ratline capture route is enabled.
+validation after installation. The separate [empty-baseline route](current-pcb209-empty-baseline.md) joins the
+original managed SQL reader with fixed common data and empty raw-root samples.
+It has its own launch-sealed native budget and durable PCB navigation intent;
+connected acceptance remains pending. It admits neither populated geometry nor
+complete startup, source membership or saved-state proof. The six-sample actor
+adapter remains private. Ratline construction/capture composites have inert V8
+coverage, but no native PCB-worker/ratline capture route is enabled.
 The [public catalog queries](current-system-library.md) require explicit network
 confirmation and use fixed credential-free vendor endpoints, without local
 application/database access. Footprint/symbol/device search, symbol/device
