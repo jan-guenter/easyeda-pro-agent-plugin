@@ -14,7 +14,8 @@ export function currentPcb209RatlineNativeSource(): string {
     const wire = currentPcb209RatlineNativeWire(entry.role, entry.command, 2_147_483_647);
     if (wire.request["phase"] !== entry.phase) { throw new Error("PCB209_RATLINE_NATIVE_AMBIGUOUS_CASE"); }
     const fields = Object.entries(wire.request).filter(([key]) => !["action", "requestId", "method", "role", "phase"].includes(key));
-    const template = JSON.stringify(entry.command);
+    const { navigationPhase: _privatePhase, ...nativeCommand } = { navigationPhase: undefined, ...entry.command };
+    const template = JSON.stringify(nativeCommand);
     let bytes = Buffer.byteLength(template) + Buffer.byteLength(JSON.stringify({ id: 2_147_483_647 }));
     for (const [key, value] of fields) {
       if (value !== currentPcb209RatlineNativePlaceholder(key) || !template.includes(JSON.stringify(value))) { throw new Error("PCB209_RATLINE_NATIVE_TEMPLATE"); }

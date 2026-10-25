@@ -8,8 +8,9 @@ export function currentPcb209RatlineNativeParitySource(): string {
   const cases = CURRENT_PCB_209_RATLINE_NATIVE_CASES.map((entry, index) => {
     const id = 301 + index, wire = currentPcb209RatlineNativeWire(entry.role, entry.command, id);
     const fields = Object.entries(wire.request).filter(([key]) => !["action", "requestId", "method", "role", "phase"].includes(key));
+    const { navigationPhase: _privatePhase, ...nativeCommand } = { navigationPhase: undefined, ...entry.command };
     return `    fields.Clear();\n${fields.map(([key, value]) => `    fields.Add(${literal(key)},${literal(String(value))});`).join("\n")}\n` +
-      `    Need(EasyedaRatline209Protocol.Encode(${String(id)},${literal(entry.role)},${literal(entry.phase)},${literal(entry.command.method)},fields)==${literal(JSON.stringify({ id, ...entry.command }))}+"\\0","parity-${String(index)}");\n` +
+      `    Need(EasyedaRatline209Protocol.Encode(${String(id)},${literal(entry.role)},${literal(entry.phase)},${literal(entry.command.method)},fields)==${literal(JSON.stringify({ id, ...nativeCommand }))}+"\\0","parity-${String(index)}");\n` +
       `    Refused(${String(id)},${literal(entry.role)},${literal(entry.phase)},"foreign",fields);\n` +
       `    fields.Add("expression","arbitrary");Refused(${String(id)},${literal(entry.role)},${literal(entry.phase)},${literal(entry.command.method)},fields);`;
   });

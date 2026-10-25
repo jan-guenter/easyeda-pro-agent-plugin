@@ -6,7 +6,9 @@ import { CurrentPcb209RatlineStageDiagnostics, currentPcb209RatlineFailureReason
 void test("ratline stage diagnostics retain only exact owned reasons and preserve the first cause through cleanup", () => {
   for (const reason of ["PCB209_RATLINE_CREATION_CHILD_ORDER", "PCB209_RATLINE_CAPTURE_PAUSE_LOCATION",
     "PCB209_RATLINE_DISPATCH_UNKNOWN_BREAKPOINT", "PCB209_RATLINE_CHILD_GATE_CHILD_HELD", "PCB209_RATLINE_COMPOSITE_DEADLINE",
-    "PCB209_RATLINE_ORIGIN_PARENT_BINDING"]) {
+    "PCB209_RATLINE_ORIGIN_PARENT_BINDING", "PCB209_RATLINE_STARTUP_CHANNEL_CONSTRUCTION_JOIN_BOUNDARY",
+    ...["BRIDGE_FRAME", "CONSTRUCTION_FRAME", "JOIN_HANDLES", "JOIN_STATE", "JOIN_UNCONSUMED", "RELATION", "RELATION_HANDLES",
+      "REPLY_SEQUENCE", "SELECTION", "SESSION"].map(code => `PCB209_RATLINE_HELD_CONSTRUCTION_${code}`)]) {
     const diagnostics = new CurrentPcb209RatlineStageDiagnostics();
     diagnostics.stage = "constructor-before"; diagnostics.step = "native-request"; diagnostics.lastCommand = "Target.getTargets";
     diagnostics.lastEvent = "attached"; diagnostics.record(new Error(reason));
@@ -29,7 +31,8 @@ void test("diagnostic exceptions cannot execute accessors or publish unowned ven
   });
   const proxy = new Proxy({}, { getOwnPropertyDescriptor(): PropertyDescriptor { invoked += 1; throw new Error("Private detail"); } });
   const forgedPrefix = new Error("PCB209_RATLINE_CREATION_PRIVATE_DESIGN_NAME");
-  for (const error of [accessor, proxy, forgedPrefix, new Error("https://private/project?secret=1"), null]) {
+  for (const error of [accessor, proxy, forgedPrefix, new Error("PCB209_RATLINE_HELD_CONSTRUCTION_JOIN_HANDLES_PRIVATE_DESIGN_NAME"),
+    new Error("https://private/project?secret=1"), null]) {
     const diagnostics = new CurrentPcb209RatlineStageDiagnostics(); diagnostics.record(error);
     assert.equal(currentPcb209RatlineFailureReason(error), "UNCLASSIFIED");
     const result = currentPcb209RatlineStageDiagnosticsSchema.parse(diagnostics.snapshot());

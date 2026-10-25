@@ -9,7 +9,7 @@ import { captureCurrentPcbStringClockReply } from "./current-pcb-string-clock-re
 import { CurrentPcb209RatlinePcbCreation, CurrentPcb209RatlineWorkerCreation } from "./current-pcb-209-ratline-creation-runner.ts";
 import type { CurrentPcb209RatlineCreationCommand, CurrentPcb209RatlineCreationTransport } from "./current-pcb-209-ratline-creation-runner.ts";
 import { CurrentPcb209RatlinePcbCapture, CurrentPcb209RatlinePcbHeldCapture, CurrentPcb209RatlineWorkerCapture } from "./current-pcb-209-ratline-capture-runner.ts";
-import type { CurrentPcb209RatlineAnyCapturePacket, CurrentPcb209RatlineCaptureCommand, CurrentPcb209RatlineCapturePacket, CurrentPcb209RatlineCaptureTransport } from "./current-pcb-209-ratline-capture-runner.ts";
+import type { CurrentPcb209RatlineAnyCapturePacket, CurrentPcb209RatlineCaptureCommand, CurrentPcb209RatlineCaptureTransport } from "./current-pcb-209-ratline-capture-runner.ts";
 import { CURRENT_PCB_209_RATLINE_CAPTURE_GROUP as GROUP } from "./current-pcb-209-ratline-capture-profile.ts";
 import type { CurrentPcb209RatlineCaptureScope } from "./current-pcb-209-ratline-capture-profile.ts";
 import { CURRENT_PCB_209_RATLINE_CAPTURE_PROGRAMS as PROGRAMS } from "./current-pcb-209-ratline-capture-program.ts";
@@ -231,12 +231,23 @@ export class CurrentPcb209RatlineEventDispatcher {
   /** Only same-realm retained handles are compared; this establishes no child
    * CDP target identity, cross-realm object equality or callback completion. */
   public async requireOriginalConstruction(creationPacket: Parameters<Creation["requireOriginal"]>[0],
-    capturePacket: CurrentPcb209RatlineCapturePacket): Promise<void> {
-    need(this.#scope === "full" && !this.#constructionComparisonConsumed, "CONSTRUCTION_COMPARISON_CONSUMED"); this.#constructionComparisonConsumed = true;
+    capturePacket: CurrentPcb209RatlineAnyCapturePacket): Promise<void> {
+    need(!this.#constructionComparisonConsumed, "CONSTRUCTION_COMPARISON_CONSUMED"); this.#constructionComparisonConsumed = true;
     await this.requireOriginal();
     const construction = await this.#stages.creation.requireOriginal(creationPacket);
     const captured = await this.requireOriginalCapture(capturePacket);
     await this.requireOriginal();
+    if (this.#scope === "pcb-held-prefix") {
+      const manager = captured["manager"], worker = captured["childWorker"];
+      need(worker !== undefined && manager !== undefined, "ORIGINAL_OBJECTS");
+      const raw = await this.#request.call(this.#dependency, { method: "Runtime.callFunctionOn", sessionId: this.#dependency.parentSessionId,
+        params: { objectId: construction.workerObjectId, functionDeclaration: PROGRAMS.construction,
+          arguments: [worker, construction.managerObjectId, manager].map(objectId => ({ objectId })), objectGroup: GROUP,
+          returnByValue: true, silent: true, throwOnSideEffect: true, generatePreview: false, awaitPromise: false, userGesture: false } });
+      await this.requireOriginal();
+      z.object({ result: z.looseObject({ type: z.literal("boolean"), value: z.literal(true) }) }).strict().parse(captureCurrentPcbStringClockReply(raw).value);
+      return;
+    }
     for (const [first, second] of [[construction.workerObjectId, captured["childWorker"]], [construction.managerObjectId, captured["manager"]]] as const) {
       need(first !== undefined && second !== undefined, "ORIGINAL_OBJECTS");
       const raw = await this.#request.call(this.#dependency, { method: "Runtime.callFunctionOn", sessionId: this.#dependency.parentSessionId,
@@ -246,8 +257,7 @@ export class CurrentPcb209RatlineEventDispatcher {
       reply.parse(captureCurrentPcbStringClockReply(raw).value);
     }
   }
-  /** Each scope accepts only its actual capture owner and original packet.
-   * The held prefix grants no construction-to-bridge object comparison. */
+  /** Each scope accepts only its actual capture owner and original packet. */
   public requireOriginalCapture(packet: CurrentPcb209RatlineAnyCapturePacket): Promise<Readonly<Record<string, string>>> {
     this.#same(); const capture = this.#stages.capture;
     if (packet.profile === "private.current-pcb209-ratline-pcb-held-prefix-capture.v1") {

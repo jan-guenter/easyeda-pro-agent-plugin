@@ -37,7 +37,7 @@ void test("ratline native grammar preserves exact role cases and issued IDs with
       assert.throws(() => currentPcb209RatlineNativeWire(other, entry.command, 301));
     }
   }
-  assert.deepEqual(counts, { pcb: 31, worker: 47 });
+  assert.deepEqual(counts, { pcb: 34, worker: 47 });
 });
 void test("ratline native syntax refuses getters, proxies, inherited fields, sparse arguments and unsafe handles without running hooks", () => {
   const entry = CURRENT_PCB_209_RATLINE_NATIVE_CASES.find(value => value.role === "pcb" && value.phase === "relation-same");
@@ -88,8 +88,9 @@ void test("ratline C# template table preserves every fixed command and exact bou
   assert.equal(decoded.length, Number(match[2])); assert.equal(createHash("sha256").update(decoded).digest("hex"), match[3]);
   assert.deepEqual(decoded.toString("utf8").split("\0").map(row => row.split("\t")), CURRENT_PCB_209_RATLINE_NATIVE_CASES.map(entry => {
     const wire = currentPcb209RatlineNativeWire(entry.role, entry.command, 1);
+    const { navigationPhase: _privatePhase, ...nativeCommand } = { navigationPhase: undefined, ...entry.command };
     return [entry.role, entry.phase, entry.command.method,
-      Object.keys(wire.request).filter(key => !["action", "requestId", "method", "role", "phase"].includes(key)).join(","), JSON.stringify(entry.command)];
+      Object.keys(wire.request).filter(key => !["action", "requestId", "method", "role", "phase"].includes(key)).join(","), JSON.stringify(nativeCommand)];
   }));
   assert.ok(source.includes("new System.Text.UTF8Encoding(false,true)"));
   assert.ok(source.includes("System.Convert.ToBase64String(packed)==encoded"));
@@ -101,7 +102,8 @@ void test("ratline C# template table preserves every fixed command and exact bou
     const raw: unknown = JSON.parse(JSON.stringify(entry.command).replaceAll(/__ratline209_([A-Za-z\d]+)__/gu,
       (_match: string, name: string): string => "x".repeat(name === "sessionId" ? 128 : 256)));
     const encoded = currentPcb209RatlineNativeWire(entry.role, raw, 2_147_483_647);
-    maximum = Math.max(maximum, Buffer.byteLength(`${JSON.stringify(encoded.command)}\0`));
+    const { navigationPhase: _privatePhase, ...nativeCommand } = { navigationPhase: undefined, ...encoded.command };
+    maximum = Math.max(maximum, Buffer.byteLength(`${JSON.stringify(nativeCommand)}\0`));
   }
   assert.equal(maximum, Number(bound));
   // The fixed table and runtime smoke must fit alongside the existing native

@@ -106,7 +106,7 @@ import { isPcbSourceObjectsMethod } from "./pcb-source-objects.ts";
 import { readPcbSourceObjects } from "./pcb-source-objects-read.ts";
 import { PcbSelectedReadTimings } from "./pcb-selected-read-timings.ts";
 import { PCB_ACTIVE_LAYER_METHOD, readPcbActiveLayer } from "./pcb-active-layer-read.ts";
-import { CALCULATION_ONLY_TOOLS, PUBLIC_UTILITIES_ONLY_SCOPE, PUBLIC_UTILITIES_ONLY_TOOLS, configuredFacadeMode, facadeToolRegistered, publicUtilitiesOnlyCapabilities } from "./facade-mode.ts";
+import { CALCULATION_ONLY_TOOLS, PUBLIC_UTILITIES_ONLY_INSTRUCTIONS, PUBLIC_UTILITIES_ONLY_SCOPE, PUBLIC_UTILITIES_ONLY_TOOLS, configuredFacadeMode, facadeToolRegistered, publicUtilitiesOnlyCapabilities } from "./facade-mode.ts";
 import { sdkMathRequestSchema } from "./sdk-math.ts";
 import { calculateSdkMath } from "./sdk-math-runtime.ts";
 import { sdkSystemRequestSchema } from "./sdk-system.ts";
@@ -1973,7 +1973,7 @@ const server = new McpServer(
   { name: "easyeda-pro-control", version: CONTROL_VERSION },
   {
     capabilities: { tools: {} },
-    instructions: facadeMode === "public-utilities-only" ? PUBLIC_UTILITIES_ONLY_SCOPE : previousGenerationInstructions,
+    instructions: facadeMode === "public-utilities-only" ? PUBLIC_UTILITIES_ONLY_INSTRUCTIONS : previousGenerationInstructions,
   },
 );
 

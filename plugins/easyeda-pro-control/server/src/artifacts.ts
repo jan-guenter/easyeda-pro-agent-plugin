@@ -26,6 +26,7 @@ import {
 import type { EvidencePaths, UnknownRecord } from "./core.ts";
 import { openControlRootCapability } from "./control-root.ts";
 import type { ControlRootCapability } from "./control-root.ts";
+import { OPERATION_HASH_STREAMS, settleOperationVerifications } from "./operation-verification-queue.ts";
 
 const configuredControlDataDirectory = process.env["EASYEDA_CONTROL_DATA_DIR"];
 const configuredHomeDirectory = process.env["HOME"];
@@ -63,7 +64,7 @@ const MAX_OPERATION_CACHE_ENTRIES = 512;
 const MAX_OPERATION_PROOF_CACHE_BYTES = 4 * 1024 * 1024;
 const MAX_OPERATION_PROJECTION_CACHE_BYTES = 1024 * 1024;
 const MAX_OPERATION_PROJECTION_BYTES = 32 * 1024;
-const MAX_OPERATION_HASH_STREAMS = 4;
+const MAX_OPERATION_HASH_STREAMS = OPERATION_HASH_STREAMS;
 let activeOperationHashStreams = 0;
 const pendingOperationHashStreams: ((value: true) => void)[] = [];
 let retainedControlRoot: Promise<ControlRootCapability> | undefined;
@@ -2352,8 +2353,8 @@ function retainOperationProjection<T>(
 async function verifiedOperationProjection<T>(
   operationId: string,
   cache: OperationProjectionCache<T> | undefined,
+  projection: OperationProjection<T> | undefined,
 ): Promise<{ value: T | undefined } | undefined> {
-  const projection = cache?.entries.get(operationId);
   const validation = validatedOperationBytes.get(operationId);
   if (projection === undefined) { return undefined; }
   if (validation?.bytesSha256 !== projection.bytesSha256) {
@@ -2376,54 +2377,56 @@ async function scanOperationProjections<T>(
 ): Promise<T[]> {
   const operationIds = await listOperationIds();
   const output: T[] = [];
-  for (let offset = 0; offset < operationIds.length; offset += MAX_OPERATION_HASH_STREAMS) {
-    const batch = operationIds.slice(offset, offset + MAX_OPERATION_HASH_STREAMS);
-    // Only fresh-byte checks overlap. Cold parsing and caller projections stay
-    // Sequential and sorted, retaining at most one newly parsed large journal.
-    // Drain every scheduled check before a projector can throw or a later batch
-    // Starts. Failed checks still become their own unreadable-journal entries.
-    const verified = await Promise.allSettled(batch.map((operationId) => verifiedOperationProjection(operationId, cache)));
-    for (const [index, operationId] of batch.entries()) {
-      let operation: UnknownRecord | undefined;
-      let cached: { value: T | undefined } | undefined;
-      let currentValidation: ValidatedOperationBytes | undefined;
-      try {
-        const result = verified[index];
-        if (result === undefined) { throw new Error("Operation verification batch is incomplete."); }
-        if (result.status === "rejected") { throw toError(result.reason); }
-        cached = result.value;
-        if (cached === undefined) {
-          const loaded = await loadValidatedOperation(operationId);
-          operation = loaded.operation;
-          currentValidation = loaded.validation;
-        }
-      } catch (error) {
-        const journalPath = join(OPERATIONS_DIR, `${operationId}.json`);
-        const message = errorMessage(error);
-        operation = {
-          operationId,
-          state: "journal-unreadable",
-          mutationState: "unknown",
-          hardStop: true,
-          mutationMayHaveOccurred: true,
-          journalPath,
-          lastError: {
-            name: errorName(error).slice(0, 128),
-            message:
-              message.length <= 2048 ? message : `${message.slice(0, 2047)}…`,
-          },
-          nextSafeAction:
-            "Inspect and restore the named managed journal before any new mutation.",
-        };
+  // Only fresh-byte checks overlap. Capture the bounded candidate map before
+  // Any await so concurrent scans cannot expand its retained payload. The
+  // Snapshot and returned clones each fit the existing 1 MiB encoded projection
+  // Allowance, separately from the current cache; this is not a heap-size claim.
+  // Cold parsing and caller projections stay sequential and sorted, retaining
+  // At most one newly parsed large journal.
+  // Drain every verifier before a projector can throw. Failed checks still
+  // Become their own unreadable-journal entries in the original sorted order.
+  const verified = await settleOperationVerifications(operationIds, cache?.entries,
+    (operationId, projection) => verifiedOperationProjection(operationId, cache, projection));
+  for (const [index, operationId] of operationIds.entries()) {
+    let operation: UnknownRecord | undefined;
+    let cached: { value: T | undefined } | undefined;
+    let currentValidation: ValidatedOperationBytes | undefined;
+    try {
+      const result = verified[index];
+      if (result === undefined) { throw new Error("Operation verification queue is incomplete."); }
+      if (result.status === "rejected") { throw toError(result.reason); }
+      cached = result.value;
+      if (cached === undefined) {
+        const loaded = await loadValidatedOperation(operationId);
+        operation = loaded.operation;
+        currentValidation = loaded.validation;
       }
-      // Projection failures are not corrupt-journal observations.
-      const selected = operation === undefined ? cached?.value : select(operation);
-      if (cache !== undefined && currentValidation !== undefined &&
-          validatedOperationBytes.get(operationId)?.bytesSha256 === currentValidation.bytesSha256) {
-        retainOperationProjection(cache, operationId, currentValidation.bytesSha256, selected);
-      }
-      if (selected !== undefined) { output.push(selected); }
+    } catch (error) {
+      const journalPath = join(OPERATIONS_DIR, `${operationId}.json`);
+      const message = errorMessage(error);
+      operation = {
+        operationId,
+        state: "journal-unreadable",
+        mutationState: "unknown",
+        hardStop: true,
+        mutationMayHaveOccurred: true,
+        journalPath,
+        lastError: {
+          name: errorName(error).slice(0, 128),
+          message:
+            message.length <= 2048 ? message : `${message.slice(0, 2047)}…`,
+        },
+        nextSafeAction:
+          "Inspect and restore the named managed journal before any new mutation.",
+      };
     }
+    // Projection failures are not corrupt-journal observations.
+    const selected = operation === undefined ? cached?.value : select(operation);
+    if (cache !== undefined && currentValidation !== undefined &&
+        validatedOperationBytes.get(operationId)?.bytesSha256 === currentValidation.bytesSha256) {
+      retainOperationProjection(cache, operationId, currentValidation.bytesSha256, selected);
+    }
+    if (selected !== undefined) { output.push(selected); }
   }
   return output;
 }

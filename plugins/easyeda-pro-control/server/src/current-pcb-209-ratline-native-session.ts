@@ -27,6 +27,7 @@ import { CurrentPcb209RatlinePcbCreation } from "./current-pcb-209-ratline-creat
 import type { CurrentPcb209RatlineCreationPacket, CurrentPcb209RatlineWorkerCreation } from "./current-pcb-209-ratline-creation-runner.ts";
 import { CurrentPcb209RatlineOrigin } from "./current-pcb-209-ratline-origin.ts";
 import type { CurrentPcb209RatlineOriginEvidence, CurrentPcb209RatlineOriginSummary } from "./current-pcb-209-ratline-origin-observation.ts";
+import type { CurrentPcb209RatlineStopEvidence } from "./current-pcb-209-ratline-stop-observation.ts";
 import { readerCompletion } from "./sqlite-inventory.ts";
 import { currentPcb209RatlineCompositeDiagnosticsSchema, currentPcb209RatlineFailureReason } from "./current-pcb-209-ratline-diagnostics.ts";
 import { CURRENT_PCB_209_RATLINE_NATIVE_PROFILE } from "./current-pcb-209-ratline-budget.ts";
@@ -132,6 +133,7 @@ export class CurrentPcb209RatlineNativeSession {
       pcbContext: this.#router?.status() ?? null, childSource: this.#child?.status() ?? null, composite: this.#composite === null ? null : currentPcb209RatlineCompositeDiagnosticsSchema.parse(this.#composite.status()) });
   }
   public retainedNativeOriginEvidence(): CurrentPcb209RatlineOriginEvidence | null { return this.#origin?.evidence() ?? null; }
+  public retainedRejectedStopEvidence(): CurrentPcb209RatlineStopEvidence | null { return this.#router?.retainedRejectedStopEvidence() ?? null; }
   public retainedOpeningObservation(): CurrentPcbDiagnosticPcbOpeningResult | null { return this.#openingObservation; }
   #same(): void {
     need(this.#phase !== "failed" && this.#phase !== "cleanup" && this.#phase !== "released" && this.#dependency.request === this.#request, "NOT_CURRENT");

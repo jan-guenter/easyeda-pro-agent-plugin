@@ -6,6 +6,7 @@ const number=v=>{if(!Number.isSafeInteger(v)||v<0)bad();return v;};
 const empty=a=>{if(!Array.isArray(a)||own(a,"length")!==0||Reflect.ownKeys(a).length!==1)bad();};`;
 export const CURRENT_PCB_209_RATLINE_CAPTURE_PROGRAMS = Object.freeze({
   same: 'function(other){"use strict";return this===other;}',
+  construction: 'function(worker,manager,capturedManager){"use strict";return this===worker&&manager===capturedManager;}',
   bridge: `function(worker,bus){${prelude}if(own(this,"worker")!==worker||own(this,"bus")!==bus)bad();return true;}`,
   factory: `function(worker,bridge,bus){${prelude}
 const next=number(own(this,"id"));if(next<1)bad();const id=next-1,map=own(this,"map"),bridges=own(this,"busMap");
