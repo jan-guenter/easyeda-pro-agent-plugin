@@ -1,9 +1,11 @@
+/* oxlint-disable import/max-dependencies -- The dispatcher joins actual construction/capture owners, fixed programs, native grammar and their private timing metadata. */
 /** Private same-realm composition of the fixed209 construction and capture
  * owners. It routes original allocated breakpoint IDs, never a supplied trace.
  * The containing native owner still owns its unchanged total request budget. */
 import { types } from "node:util";
 import { CurrentPcb209RatlineStageDiagnostics } from "./current-pcb-209-ratline-diagnostics.ts";
 import { bindCurrentPcb209RatlinePcbTransport } from "./current-pcb-209-ratline-transport-windows.ts";
+import { inheritCurrentPcb209RatlineContinuationTiming } from "./current-pcb-209-ratline-continuation-timing.ts";
 import { z } from "zod";
 import { captureCurrentPcbStringClockReply } from "./current-pcb-string-clock-reply.ts";
 import { CurrentPcb209RatlinePcbCreation, CurrentPcb209RatlineWorkerCreation } from "./current-pcb-209-ratline-creation-runner.ts";
@@ -108,6 +110,8 @@ export class CurrentPcb209RatlineEventDispatcher {
       subscribe: events => this.#subscribe("capture", { ...events, attached: (): void => { this.#poison(new Error("PCB209_RATLINE_DISPATCH_CAPTURE_ATTACHMENT")); } }),
     };
     if (role === "pcb") { bindCurrentPcb209RatlinePcbTransport(creationTransport); bindCurrentPcb209RatlinePcbTransport(captureTransport); }
+    inheritCurrentPcb209RatlineContinuationTiming(dependency, creationTransport);
+    inheritCurrentPcb209RatlineContinuationTiming(dependency, captureTransport);
     this.#stages = Object.freeze(role === "pcb" ? { creation: new CurrentPcb209RatlinePcbCreation(creationTransport), capture: scope === "pcb-held-prefix" ?
       new CurrentPcb209RatlinePcbHeldCapture(captureTransport) : new CurrentPcb209RatlinePcbCapture(captureTransport) } :
       { creation: new CurrentPcb209RatlineWorkerCreation(creationTransport), capture: new CurrentPcb209RatlineWorkerCapture(captureTransport) });

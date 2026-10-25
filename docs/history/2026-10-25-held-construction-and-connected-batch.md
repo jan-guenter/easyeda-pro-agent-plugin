@@ -264,3 +264,100 @@ complete unchanged-payload CI.
 All nine focused artifact-concurrency and rolling-queue tests pass after that
 correction, as do full typecheck and strict type-aware lint. Root review confirms
 that cleanup, error ordering, stream bounds and slot reuse remain asserted.
+
+## Publication and installed snapshot
+
+Protected PR126 merged final head `51741fd644e71145d6ac83ab66c88c8b440cf147`
+as main `71b531ac7d036689d25f9dd20f78e1172a471b24`.
+The merged whole tree `d93b9b7e956f4f1b53b6ee5185c7fa7ccf2ec4ee` and
+plugin tree `e228fbf168ab8048f7984fdf678d6199628f35a1` exactly match the
+reviewed final candidate. Final [Linux CI](https://github.com/jan-guenter/easyeda-pro-agent-plugin/actions/runs/40202450582)
+and [Windows CI](https://github.com/jan-guenter/easyeda-pro-agent-plugin/actions/runs/40202450580)
+passed every required job. Facade results were 12,913 passes, five expected
+platform skips and zero failures or cancellations; all 424 bridge tests passed.
+The ten checkout-bearing logs use tested merge
+`89de1d2c8b7a5973ba9df52884bb770646baa434`, whose tree matches that candidate.
+Independent complete-log review receipt SHA256 is
+`e39653ac0f148882b74b2344c2cd831cefac17adc9675011b897c32ac871e57f`.
+The earlier failed and cancelled runs remain separate evidence.
+
+One official marketplace upgrade installed and enabled
+`0.3.0+codex.20261025140210` from
+`https://github.com/jan-guenter/easyeda-pro-agent-plugin.git` at merged main.
+Both complete installed comparisons, including one after the final CLI list,
+verified 1,980 files, 42 directories and 42,202,327 bytes with committed modes.
+Inventory SHA256 is
+`65a39398d7e43a28c774a089c086b322aeadf6569b9c9ee86f53c9e0c3171576`.
+The 90-byte package difference from the earlier artifact receipt consists of
+the later test correction; runtime source, bundles, helper and manifest stayed
+byte-identical. The marketplace checkout also matches merged main exactly.
+No cache was edited manually and no redundant plugin-add was issued.
+
+The installed configured offline probe passed 22 queries with 26 tools under
+its synthetic profile and pinned Node 24.18.0. Its own child closed through
+stdin EOF with exit zero. Two samples found no descendants or non-stdio
+sockets; they are not continuous isolation evidence. It selected no live
+control root and establishes no connected runtime admission. Probe replies
+SHA256 is `b7403418e811884148211a36f09cbf730fdbc1ae84d69c30b93e183cb3a9be50`.
+
+Automatic post-merge Linux run 40203523817 and Windows run 40203523795 started
+for main; their final status is separate from the accepted identical-tree PR
+checks above. The loaded host still holds `0.3.0+codex.20261025120638`.
+No facade was killed or rebound to load the new snapshot, and no new live probe
+was dispatched after installation. This
+publication appendix is a local handoff to carry into the next source batch,
+without another version or restart solely for the appendix.
+
+## Next fresh session and remaining work
+
+Load and admit the actual installed host before live calls. Recheck the closed
+disposable fixture and use a new operation ID. The seven-reader batch already
+passed; do not repeat it solely for a newer record. No native owner, pending CAD
+action or cleanup remains from this session. The previous diagnostic navigation
+was consumed and must not be replayed.
+
+The immediate disposable case should check navigation-pause completion, or its
+unused state if no such pause occurs; all 29 PCB and seven child source stages;
+the settled composite and completed construction comparison; retained native
+origin evidence; and original-owner cleanup. On refusal, retain the new bounded
+rejected-stop evidence and inspect it instead of repeating navigation.
+
+The next implementation batch should join independent native Worker/CDP identity,
+worker and subordinate continuation, full PCB callback observation, subordinate
+routing and native resource accounting under an explicit fresh-launch
+continuation purpose wherever the live evidence permits.
+`claimOriginalWorkerRealm()` and `releaseOriginalPinnedSource()` already exist,
+but the current held-prefix purpose stops before that continuation. The native
+channel stops after six worker bootstrap resumes and tracks one child. Simply permitting
+another resume does not supply the missing ownership or cleanup.
+
+Callback return, message delivery, canvas publication and asynchronous copper
+completion still need original runtime observations. Join those to complete
+live/source/SQL membership and saved/reopened baselines before broader writers.
+JavaScript reference equality and a matching native constructor stack do not
+establish the custom runtime's complete Worker-to-CDP-target identity mapping.
+
+The broader backlog remains symbol-preview manager/cache cleanup, footprint
+preview after PCB startup, schematic/library/PCB writers, manufacturing exports,
+personal/account catalog routes and unsupported parser formats. The exhaustive
+835-method inventory remains 214 public-method, 34 native-equivalent, six HTTP,
+79 blocked and 502 omitted, with 399 runtime-guarded and nine network-guarded
+routes. These are scoped classifications, not live validation counts. Hidden
+annotation/Save All and unproved structure/SQL lifecycles remain blocked.
+Connected speedup has not been measured for the scheduler or reader batch.
+
+The largest concrete implementation groups in the omitted-method inventory are
+105 scoped-effect adapters, 39 managed-file contracts, 30 account/library routes
+and 27 callback/registration lifecycles. Another 57 methods are absent from the
+reviewed runtime. The 22 unrestricted transport/service methods need narrow
+task adapters rather than general caller-controlled access. Keep these reasons
+separate from vendor stubs and missing backend implementations when choosing
+feasible work.
+
+Independent installation review accepted both complete inventory receipts,
+Git marketplace registration, matching tested/merged trees and the actual
+offline-probe evidence. Receipt SHA256 is
+`ad3ab9b264c78ca86317cfaf88889ab8e41c4d72b40fe4f0edca556318eb0490`.
+The three CLI stderr files retain a stale arg0 temporary-directory cleanup
+warning; every command returned success. No installer or probe was repeated
+to remove that warning. Fresh actual-host admission remains pending.

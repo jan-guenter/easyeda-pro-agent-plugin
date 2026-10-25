@@ -5,6 +5,7 @@ import { CURRENT_PCB_209_RATLINE_NATIVE_PROFILE } from "./current-pcb-209-ratlin
 import { types } from "node:util";
 import { CurrentPcb209RatlineStageDiagnostics } from "./current-pcb-209-ratline-diagnostics.ts";
 import { currentPcb209RatlineTransportRequestMilliseconds } from "./current-pcb-209-ratline-transport-windows.ts";
+import { currentPcb209RatlineContinuationTiming } from "./current-pcb-209-ratline-continuation-timing.ts";
 import { z } from "zod";
 import { captureCurrentPcbStringClockReply } from "./current-pcb-string-clock-reply.ts";
 import { CURRENT_PCB_209_RATLINE_CAPTURE_PROFILES, CURRENT_PCB_209_RATLINE_HELD_CAPTURE_PROFILE, CURRENT_PCB_209_RATLINE_CAPTURE_GROUP as GROUP } from "./current-pcb-209-ratline-capture-profile.ts";
@@ -156,7 +157,8 @@ class CurrentPcb209RatlineCaptureCore<Scope extends CurrentPcb209RatlineCaptureS
     this.#diagnostics.step = "owner-reproof";
     try {
       need(this.#failed === null && !this.#released && !this.#releasing, "FAILED_OR_RELEASED"); this.#same();
-      await bounded(this.#reprove.call(this.#transport, CURRENT_PCB_209_RATLINE_SOURCE_PROFILE[this.#role])); this.#same();
+      await bounded(this.#reprove.call(this.#transport, CURRENT_PCB_209_RATLINE_SOURCE_PROFILE[this.#role]),
+        currentPcb209RatlineContinuationTiming(this.#transport)?.ownerMilliseconds); this.#same();
       need(this.#failed === null && !this.#released && !this.#releasing, "FAILED_OR_RELEASED");
     } catch (error) { this.#poison("OWNER_LOST", error); throw error; }
   }
@@ -179,7 +181,9 @@ class CurrentPcb209RatlineCaptureCore<Scope extends CurrentPcb209RatlineCaptureS
     let capturedError: unknown = null, event: unknown = null;
     try { event = captureCurrentPcbStringClockReply(input).value; } catch (error) { capturedError = error; }
     const retained: Paused = { event, capturedError, resumed: Promise.withResolvers(), resume: null, observed: false,
-      timer: setTimeout(() => { this.#poison("PAUSE_DEADLINE"); void observed(this.#cleanup()); }, this.#role === "pcb" ? CURRENT_PCB_209_RATLINE_NATIVE_PROFILE.elapsed.capturePauseMilliseconds : 6000) };
+      timer: setTimeout(() => { this.#poison("PAUSE_DEADLINE"); void observed(this.#cleanup()); },
+        currentPcb209RatlineContinuationTiming(this.#transport)?.capturePauseMilliseconds ??
+        (this.#role === "pcb" ? CURRENT_PCB_209_RATLINE_NATIVE_PROFILE.elapsed.capturePauseMilliseconds : 6000)) };
     this.#pause = retained; this.#waiting.resolve(retained);
     if (this.#settled || this.#sequenceExhausted) { this.#poison("EXTRA_PAUSE"); void observed(this.#cleanup()); }
   };
@@ -340,7 +344,9 @@ class CurrentPcb209RatlineCaptureCore<Scope extends CurrentPcb209RatlineCaptureS
       this.#diagnostics.stage = "capture";
       for (let index = 0; index < profile.sequence.length; index += 1) {
         this.#diagnostics.step = "pause-wait";
-        const retained = await bounded(this.#waiting.promise, this.#role === "pcb" ? CURRENT_PCB_209_RATLINE_NATIVE_PROFILE.elapsed.captureWaitMilliseconds : 20_000); this.#waiting = Promise.withResolvers(); void observed(this.#waiting.promise);
+        const retained = await bounded(this.#waiting.promise, currentPcb209RatlineContinuationTiming(this.#transport)?.captureWaitMilliseconds ??
+          (this.#role === "pcb" ? CURRENT_PCB_209_RATLINE_NATIVE_PROFILE.elapsed.captureWaitMilliseconds : 20_000));
+        this.#waiting = Promise.withResolvers(); void observed(this.#waiting.promise);
         await this.#current(); await this.#capturePause(retained, index);
         if (index === profile.sequence.length - 1) {
           // Poison a newly delivered pause immediately, including during the

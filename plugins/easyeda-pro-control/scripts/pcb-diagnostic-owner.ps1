@@ -1,10 +1,12 @@
-param([switch]$CompileOnly,[switch]$StringPrecreate,[switch]$WorkerStartup,[switch]$Layers209,[switch]$WorkerStartup209,[switch]$WorkerStartupEmpty209,[switch]$WorkerStartupRatline209)
+param([switch]$CompileOnly,[switch]$StringPrecreate,[switch]$WorkerStartup,[switch]$Layers209,[switch]$WorkerStartup209,[switch]$WorkerStartupEmpty209,[switch]$WorkerStartupRatline209,[switch]$WorkerStartupRatlineContinuation209)
 $ErrorActionPreference = 'Stop'
 if (($StringPrecreate -and $WorkerStartup) -or ($Layers209 -and ($StringPrecreate -or $WorkerStartup))) {throw 'pcb-diagnostic-conflicting-purpose'}
 if ($WorkerStartup209 -and ($StringPrecreate -or $WorkerStartup -or $Layers209)) {throw 'pcb-diagnostic-conflicting-purpose'}
 if ($WorkerStartupEmpty209 -and ($StringPrecreate -or $WorkerStartup -or $Layers209 -or $WorkerStartup209)) {throw 'pcb-diagnostic-conflicting-purpose'}
 if ($WorkerStartupRatline209 -and ($StringPrecreate -or $WorkerStartup -or $Layers209 -or $WorkerStartup209 -or $WorkerStartupEmpty209)) {throw 'pcb-diagnostic-conflicting-purpose'}
-$startupPurpose=$WorkerStartup -or $WorkerStartup209 -or $WorkerStartupEmpty209 -or $WorkerStartupRatline209
+if ($WorkerStartupRatlineContinuation209 -and ($StringPrecreate -or $WorkerStartup -or $Layers209 -or $WorkerStartup209 -or $WorkerStartupEmpty209 -or $WorkerStartupRatline209)) {throw 'pcb-diagnostic-conflicting-purpose'}
+$ratlinePurpose=$WorkerStartupRatline209 -or $WorkerStartupRatlineContinuation209
+$startupPurpose=$WorkerStartup -or $WorkerStartup209 -or $WorkerStartupEmpty209 -or $ratlinePurpose
 [Console]::OutputEncoding = New-Object System.Text.UTF8Encoding($false)
 # Separate diagnostic owner. The ordinary no-argument launcher is unchanged.
 # Electron requests Browser::Quit on pipe disconnect. Never dispose live pipes,
@@ -1158,8 +1160,8 @@ public static class EasyedaRatline209Protocol {
   public const int MaximumEncodedBytes=2499;
   static void Need(bool value,string code) { if(!value)throw new System.InvalidOperationException("pcb-ratline209-"+code); }
   static string Unpack(string encoded,int length,string hash) {
-    Need(length==33067,"template-length");byte[] bytes=new byte[length];int count=0;
-    byte[] packed=System.Convert.FromBase64String(encoded);Need(packed.Length==2375 && System.Convert.ToBase64String(packed)==encoded,"template-base64");
+    Need(length==33378,"template-length");byte[] bytes=new byte[length];int count=0;
+    byte[] packed=System.Convert.FromBase64String(encoded);Need(packed.Length==2387 && System.Convert.ToBase64String(packed)==encoded,"template-base64");
     using(var input=new System.IO.MemoryStream(packed,false))
     using(var stream=new System.IO.Compression.GZipStream(input,System.IO.Compression.CompressionMode.Decompress)) {
       while(count<length) { int read=stream.Read(bytes,count,length-count);if(read==0)break;count+=read; }
@@ -1172,8 +1174,8 @@ public static class EasyedaRatline209Protocol {
   }
   static readonly string[][] Cases=Load();
   static string[][] Load() {
-    string[] rows=Unpack(@"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",33067,@"0a35740a679ec012236ddfb50ad5b889d2710af57194d29aa40e07922b5aceaf").Split('\0');
-    Need(rows.Length==81,"template-count");string[][] result=new string[rows.Length][];
+    string[] rows=Unpack(@"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",33378,@"f78c5e1ecbaa9ff2b05ac95fa5a4ba36768dd9051d99f6a6414888c7abef8f7d").Split('\0');
+    Need(rows.Length==83,"template-count");string[][] result=new string[rows.Length][];
     for(int index=0;index<rows.Length;index++) {
       result[index]=rows[index].Split('\t');Need(result[index].Length==5,"template-columns");
     }
@@ -1224,15 +1226,15 @@ public static class EasyedaRatline209Protocol {
   }
 }
 public static class EasyedaRatline209Limits {
-  public const long RequestLimit=363L;
-  public const long NormalRequestLimit=320L;
+  public const long RequestLimit=365L;
+  public const long NormalRequestLimit=322L;
   public const long CleanupRequestLimit=43L;
-  public const long NormalByteLimit=327503330L;
-  public const long TotalByteLimit=327547362L;
-  public const long NormalPollLimit=185638L;
-  public const long PollLimit=188725L;
-  public const long HelperControlLimit=5936L;
-  public const long HelperStdoutByteLimit=649365947L;
+  public const long NormalByteLimit=327505378L;
+  public const long TotalByteLimit=327549410L;
+  public const long NormalPollLimit=185642L;
+  public const long PollLimit=188729L;
+  public const long HelperControlLimit=5968L;
+  public const long HelperStdoutByteLimit=649405552L;
   public const long NormalMilliseconds=3600000L;
   public const long TotalMilliseconds=3660000L;
 }
@@ -1265,6 +1267,91 @@ public static class EasyedaRatline209Installation {
   }
 }
 // END GENERATED WORKER STARTUP RATLINE209 PROTOCOL
+// BEGIN GENERATED WORKER STARTUP RATLINE CONTINUATION209 PROTOCOL
+// Fixed ratline grammar; no owner, session, launch or budget authority.
+public static class EasyedaRatlineContinuation209Protocol {
+  public const int MaximumEncodedBytes=2499;
+  static void Need(bool value,string code) { if(!value)throw new System.InvalidOperationException("pcb-ratline-continuation209-"+code); }
+  static string Unpack(string encoded,int length,string hash) {
+    Need(length==34214,"template-length");byte[] bytes=new byte[length];int count=0;
+    byte[] packed=System.Convert.FromBase64String(encoded);Need(packed.Length==2398 && System.Convert.ToBase64String(packed)==encoded,"template-base64");
+    using(var input=new System.IO.MemoryStream(packed,false))
+    using(var stream=new System.IO.Compression.GZipStream(input,System.IO.Compression.CompressionMode.Decompress)) {
+      while(count<length) { int read=stream.Read(bytes,count,length-count);if(read==0)break;count+=read; }
+      Need(count==length && stream.ReadByte()==-1,"template-bytes");
+    }
+    using(var sha=System.Security.Cryptography.SHA256.Create()) {
+      Need(System.BitConverter.ToString(sha.ComputeHash(bytes)).Replace("-","").ToLowerInvariant()==hash,"template-hash");
+    }
+    return new System.Text.UTF8Encoding(false,true).GetString(bytes);
+  }
+  static readonly string[][] Cases=Load();
+  static string[][] Load() {
+    string[] rows=Unpack(@"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",34214,@"08a2674208738a77afb0505ee10238b8e5a39547edd6f0a7e50416053acb77cf").Split('\0');
+    Need(rows.Length==90,"template-count");string[][] result=new string[rows.Length][];
+    for(int index=0;index<rows.Length;index++) {
+      result[index]=rows[index].Split('\t');Need(result[index].Length==5,"template-columns");
+    }
+    return result;
+  }
+  static string Field(System.Collections.IDictionary fields,string name) {
+    Need(fields!=null && fields.Contains(name),"field");string value=fields[name] as string;
+    Need(value!=null && value.Length<=(name=="sessionId"?128:256) &&
+      System.Text.RegularExpressions.Regex.IsMatch(value,@"\A[A-Za-z0-9_.:-]+\z"),"handle");return value;
+  }
+  static void Keys(System.Collections.IDictionary fields,string[] names) {
+    Need(fields!=null && fields.Count==names.Length,"fields");foreach(string name in names)Need(fields.Contains(name),"fields");
+    foreach(System.Collections.DictionaryEntry field in fields) {
+      bool found=false;foreach(string name in names)if(System.String.Equals(field.Key as string,name,System.StringComparison.Ordinal))found=true;
+      Need(found,"field-name");
+    }
+  }
+  static string Expand(string template,System.Collections.IDictionary fields) {
+    var output=new System.Text.StringBuilder();int previous=0;
+    foreach(System.Text.RegularExpressions.Match match in System.Text.RegularExpressions.Regex.Matches(template,"\"__ratline209_([A-Za-z0-9]+)__\"")) {
+      output.Append(template,previous,match.Index-previous);output.Append('"');output.Append(Field(fields,match.Groups[1].Value));output.Append('"');
+      previous=match.Index+match.Length;
+    }
+    output.Append(template,previous,template.Length-previous);return output.ToString();
+  }
+  public static string Encode(int id,string role,string phase,string method,System.Collections.IDictionary fields) {
+    // Int32 positivity is only envelope syntax. The original channel/helper
+    // Must enforce its own never-reset lifetime request allowance before use.
+    Need(id>=1,"id");string message=null;
+    foreach(string[] row in Cases) {
+      if(role!=row[0] || phase!=row[1])continue;
+      Need(message==null,"case");Need(method==row[2],"method");
+      Keys(fields,row[3].Length==0?new string[0]:row[3].Split(','));message=Expand(row[4],fields);
+    }
+    Need(message!=null && message.StartsWith("{",System.StringComparison.Ordinal),"case");
+    string result="{\"id\":"+id.ToString(System.Globalization.CultureInfo.InvariantCulture)+","+message.Substring(1)+"\0";
+    Need(System.Text.Encoding.UTF8.GetByteCount(result)<=MaximumEncodedBytes,"size");return result;
+  }
+  public static void VerifySmoke() {
+    var fields=new System.Collections.Hashtable(System.StringComparer.Ordinal);
+    fields.Add("sessionId","s");
+    Need(Encode(301,"pcb","resume","Debugger.resume",fields)==@"{""id"":301,""method"":""Debugger.resume"",""sessionId"":""s"",""params"":{}}"+"\0","smoke-frame");
+    fields.Add("objectId","__ratline209_argument0__");fields.Add("argument0","original");
+    string collision=Encode(301,"pcb","relation-same","Runtime.callFunctionOn",fields);
+    Need(collision.Contains(@"""objectId"":""__ratline209_argument0__""") && collision.Contains(@"""objectId"":""original"""),"smoke-placeholder");
+    var insensitive=new System.Collections.Hashtable(System.StringComparer.OrdinalIgnoreCase);insensitive.Add("SessionId","s");
+    bool alias=false;try{Encode(1,"pcb","resume","Debugger.resume",insensitive);}catch(System.InvalidOperationException){alias=true;}Need(alias,"smoke-field-name");
+  }
+}
+public static class EasyedaRatlineContinuation209Limits {
+  public const long RequestLimit=494L;
+  public const long NormalRequestLimit=438L;
+  public const long CleanupRequestLimit=56L;
+  public const long NormalByteLimit=457024624L;
+  public const long TotalByteLimit=457081968L;
+  public const long NormalPollLimit=187850L;
+  public const long PollLimit=190963L;
+  public const long HelperControlLimit=9904L;
+  public const long HelperStdoutByteLimit=828439667L;
+  public const long NormalMilliseconds=3600000L;
+  public const long TotalMilliseconds=3660000L;
+}
+// END GENERATED WORKER STARTUP RATLINE CONTINUATION209 PROTOCOL
 public sealed class EasyedaDiagnosticOwner {
   [StructLayout(LayoutKind.Sequential)] struct SECURITY_ATTRIBUTES { public int length; public IntPtr descriptor; [MarshalAs(UnmanagedType.Bool)] public bool inherit; }
   [StructLayout(LayoutKind.Sequential)] struct STARTUPINFO { public int cb; public IntPtr reserved, desktop, title; public int x,y,xSize,ySize,xChars,yChars,fill,flags; public short show,reservedSize; public IntPtr reserved2,stdin,stdout,stderr; }
@@ -1316,10 +1403,22 @@ public sealed class EasyedaDiagnosticOwner {
   readonly bool workerStartup209;
   readonly bool workerStartupEmpty209;
   readonly bool workerStartupRatline209;
+  readonly bool workerStartupRatlineContinuation209;
+  long RatlineCleanupRequestLimit { get { return workerStartupRatlineContinuation209?EasyedaRatlineContinuation209Limits.CleanupRequestLimit:EasyedaRatline209Limits.CleanupRequestLimit; } }
+  long RatlineHelperControlLimit { get { return workerStartupRatlineContinuation209?EasyedaRatlineContinuation209Limits.HelperControlLimit:EasyedaRatline209Limits.HelperControlLimit; } }
+  long RatlineHelperStdoutByteLimit { get { return workerStartupRatlineContinuation209?EasyedaRatlineContinuation209Limits.HelperStdoutByteLimit:EasyedaRatline209Limits.HelperStdoutByteLimit; } }
+  long RatlineNormalByteLimit { get { return workerStartupRatlineContinuation209?EasyedaRatlineContinuation209Limits.NormalByteLimit:EasyedaRatline209Limits.NormalByteLimit; } }
+  long RatlineNormalMilliseconds { get { return workerStartupRatlineContinuation209?EasyedaRatlineContinuation209Limits.NormalMilliseconds:EasyedaRatline209Limits.NormalMilliseconds; } }
+  long RatlineNormalPollLimit { get { return workerStartupRatlineContinuation209?EasyedaRatlineContinuation209Limits.NormalPollLimit:EasyedaRatline209Limits.NormalPollLimit; } }
+  long RatlineNormalRequestLimit { get { return workerStartupRatlineContinuation209?EasyedaRatlineContinuation209Limits.NormalRequestLimit:EasyedaRatline209Limits.NormalRequestLimit; } }
+  long RatlinePollLimit { get { return workerStartupRatlineContinuation209?EasyedaRatlineContinuation209Limits.PollLimit:EasyedaRatline209Limits.PollLimit; } }
+  long RatlineRequestLimit { get { return workerStartupRatlineContinuation209?EasyedaRatlineContinuation209Limits.RequestLimit:EasyedaRatline209Limits.RequestLimit; } }
+  long RatlineTotalByteLimit { get { return workerStartupRatlineContinuation209?EasyedaRatlineContinuation209Limits.TotalByteLimit:EasyedaRatline209Limits.TotalByteLimit; } }
+  long RatlineTotalMilliseconds { get { return workerStartupRatlineContinuation209?EasyedaRatlineContinuation209Limits.TotalMilliseconds:EasyedaRatline209Limits.TotalMilliseconds; } }
   readonly Stopwatch emptyElapsed;
   int emptyPolls,emptyControls;long emptyStdout;
   int RequestLimit { get { return workerStartup?256:stringPrecreate?3309:103; } }
-  long EffectiveRequestLimit { get { return workerStartupRatline209?EasyedaRatline209Limits.RequestLimit:workerStartupEmpty209?EasyedaWorkerStartupEmpty209Protocol.RequestLimit:RequestLimit; } }
+  long EffectiveRequestLimit { get { return workerStartupRatline209?RatlineRequestLimit:workerStartupEmpty209?EasyedaWorkerStartupEmpty209Protocol.RequestLimit:RequestLimit; } }
   public readonly string JobId=Guid.NewGuid().ToString("N");
   public readonly string HelperInstance=Guid.NewGuid().ToString("N");
   public uint RootPid { get { return rootPid; } }
@@ -1387,10 +1486,12 @@ public sealed class EasyedaDiagnosticOwner {
   }
   public static EasyedaDiagnosticOwner CreateWorkerStartupEmpty209() { return new EasyedaDiagnosticOwner(false,true,false,true,true); }
   EasyedaDiagnosticOwner(string purpose) {
-    if(purpose!="worker-startup-ratline209")throw Error("ratline-purpose");
+    if(purpose!="worker-startup-ratline209" && purpose!="worker-startup-ratline-continuation209")throw Error("ratline-purpose");
+    workerStartupRatlineContinuation209=purpose=="worker-startup-ratline-continuation209";
     workerStartup=true;workerStartup209=true;workerStartupRatline209=true;emptyElapsed=Stopwatch.StartNew();
   }
   public static EasyedaDiagnosticOwner CreateWorkerStartupRatline209() { return new EasyedaDiagnosticOwner("worker-startup-ratline209"); }
+  public static EasyedaDiagnosticOwner CreateWorkerStartupRatlineContinuation209() { return new EasyedaDiagnosticOwner("worker-startup-ratline-continuation209"); }
   EasyedaDiagnosticOwner(bool stringPrecreatePurpose,bool workerStartupPurpose,bool layers209Purpose) { stringPrecreate=stringPrecreatePurpose;workerStartup=workerStartupPurpose;layers209=layers209Purpose; }
   public static EasyedaDiagnosticOwner CreateLayers209() { return new EasyedaDiagnosticOwner(false,false,true); }
   public void Initialize() {
@@ -6636,8 +6737,9 @@ return callback;
     // ownership. This native boundary reconstructs only fixed reviewed commands.
     CheckEmptyWork(id,phase=="release" || phase=="remove" || phase=="resume" || phase=="start");
     bool cleanup=workerStartupRatline209 && ratlineCleanup && (phase=="release" || phase=="remove" || phase=="resume");
-    if(workerStartupRatline209 && ratlineChildSession!=null && sessionId==ratlineChildSession)throw Error("ratline-child-prefix");
-    if(workerStartupRatline209 && ratlinePcbArm>0 && !cleanup)throw Error("ratline-prefix-consumed");
+    if(workerStartupRatline209 && (ratlineChildSession!=null && sessionId==ratlineChildSession || workerStartupRatlineContinuation209 && (sessionId==continuationSessions[1] || sessionId==continuationSessions[2])))throw Error("ratline-child-prefix");
+    bool finalIdentity=workerStartupRatlineContinuation209 && !cleanup && ContinuationIdentity(method,sessionId,phase,fields);
+    if(workerStartupRatline209 && (workerStartupRatlineContinuation209?continuationArms[0]:ratlinePcbArm)>0 && !cleanup && !finalIdentity)throw Error("ratline-prefix-consumed");
     SendMessage(id,WorkerStartupProtocolMessage(id,method,sessionId,phase,fields),cleanup);
   }
   // Reprove the original live process, Job, pipes and continuously held
@@ -6647,9 +6749,9 @@ return callback;
     if(!workerStartup || stringPrecreate || !launchCompleted || protocolFailed)throw Error("startup-purpose");
     AssertLive();
   }
-  static string RatlineOriginalId(int id,string encoded) {
+  string RatlineOriginalId(int id,string encoded) {
     const string prefix="{\"id\":1,";
-    if(id<1 || id>EasyedaRatline209Limits.RequestLimit || encoded==null || !encoded.StartsWith(prefix,StringComparison.Ordinal) || !encoded.EndsWith("}\0",StringComparison.Ordinal))throw Error("ratline-envelope");
+    if(id<1 || id>RatlineRequestLimit || encoded==null || !encoded.StartsWith(prefix,StringComparison.Ordinal) || !encoded.EndsWith("}\0",StringComparison.Ordinal))throw Error("ratline-envelope");
     string result="{\"id\":"+id.ToString(CultureInfo.InvariantCulture)+","+encoded.Substring(prefix.Length);
     if(Encoding.UTF8.GetByteCount(result)>65536)throw Error("ratline-envelope-size");return result;
   }
@@ -6658,31 +6760,36 @@ return callback;
   bool ratlineOriginConsumed;
   int ratlinePcbArm,ratlineChildArm,ratlinePcbSources,ratlineChildSources,ratlineChildResumes,ratlineCleanupRequests;
   bool ratlineNavigationSource,ratlineNavigationResume;
+  bool ratlineLoaderSource,ratlineLoaderResume;
   void CheckRatlineWork(int id,bool cleanup) {
     if(!workerStartupRatline209)return;
-    if(emptyElapsed==null || cleanup && (!ratlineCleanup || ratlineCleanupRequests>=EasyedaRatline209Limits.CleanupRequestLimit) || id<1 || id>(cleanup?EasyedaRatline209Limits.RequestLimit:EasyedaRatline209Limits.NormalRequestLimit) ||
-       emptyElapsed.ElapsedMilliseconds>(cleanup?EasyedaRatline209Limits.TotalMilliseconds:EasyedaRatline209Limits.NormalMilliseconds) ||
-       !cleanup && (ratlineCleanup || received>EasyedaRatline209Limits.NormalByteLimit))throw Error("ratline-budget");
+    if(emptyElapsed==null || cleanup && (!ratlineCleanup || ratlineCleanupRequests>=RatlineCleanupRequestLimit) || id<1 || id>(cleanup?RatlineRequestLimit:RatlineNormalRequestLimit) ||
+       emptyElapsed.ElapsedMilliseconds>(cleanup?RatlineTotalMilliseconds:RatlineNormalMilliseconds) ||
+       !cleanup && (ratlineCleanup || received>RatlineNormalByteLimit))throw Error("ratline-budget");
   }
   public void AbortWorkerStartupRatline() {
-    if(!workerStartupRatline209 || ratlineCleanup)throw Error("ratline-abort-consumed");
+    if(!workerStartupRatline209 || workerStartupRatlineContinuation209 || ratlineCleanup)throw Error("ratline-abort-consumed");
+    ratlineCleanup=true;
+  }
+  public void AbortWorkerStartupRatlineContinuation() {
+    if(!workerStartupRatlineContinuation209 || ratlineCleanup)throw Error("ratline-continuation-abort-consumed");
     ratlineCleanup=true;
   }
   public void AdmitRatlineRequest(string action,bool cleanup) {
     if(!workerStartupRatline209)throw Error("ratline-purpose");
-    cleanup=cleanup && (ratlineCleanup || action!="worker-startup-send" && action!="worker-startup-ratline") || ratlineCleanup && action=="worker-startup-reprove";
-    if(action=="poll") {if(emptyPolls>=(ratlineCleanup?EasyedaRatline209Limits.PollLimit:EasyedaRatline209Limits.NormalPollLimit))throw Error("ratline-poll-budget");emptyPolls++;}
-    else {if(emptyControls>=EasyedaRatline209Limits.HelperControlLimit-(cleanup?0:128))throw Error("ratline-control-budget");emptyControls++;}
-    if(!cleanup && action!="poll" && emptyElapsed.ElapsedMilliseconds>EasyedaRatline209Limits.NormalMilliseconds)throw Error("ratline-deadline");
+    cleanup=cleanup && (ratlineCleanup || action!="worker-startup-send" && action!="worker-startup-ratline" && action!="worker-startup-ratline-continuation") || ratlineCleanup && action=="worker-startup-reprove";
+    if(action=="poll") {if(emptyPolls>=(ratlineCleanup?RatlinePollLimit:RatlineNormalPollLimit))throw Error("ratline-poll-budget");emptyPolls++;}
+    else {if(emptyControls>=RatlineHelperControlLimit-(cleanup?0:128))throw Error("ratline-control-budget");emptyControls++;}
+    if(!cleanup && action!="poll" && emptyElapsed.ElapsedMilliseconds>RatlineNormalMilliseconds)throw Error("ratline-deadline");
   }
   public void WriteRatlineReply(string text) {
     if(!workerStartupRatline209 || text==null)throw Error("ratline-purpose");
     int bytes=Encoding.UTF8.GetByteCount(text)+2;
-    if(bytes>100000 || emptyStdout+bytes>EasyedaRatline209Limits.HelperStdoutByteLimit)throw Error("ratline-output-budget");
+    if(bytes>100000 || emptyStdout+bytes>RatlineHelperStdoutByteLimit)throw Error("ratline-output-budget");
     emptyStdout+=bytes;Console.WriteLine(text);
   }
   int RatlineReadCount(uint available) {
-    long limit=ratlineCleanup?EasyedaRatline209Limits.TotalByteLimit:EasyedaRatline209Limits.NormalByteLimit;
+    long limit=ratlineCleanup?RatlineTotalByteLimit:RatlineNormalByteLimit;
     if(!workerStartupRatline209 || received>=limit)throw Error("ratline-read-budget");
     return (int)Math.Min(Math.Min(65536u,available),limit-received);
   }
@@ -6723,6 +6830,12 @@ return callback;
       else {if(!ratlineNavigationSource)throw Error("ratline-navigation-sequence");ratlineNavigationResume=true;}
       return;
     }
+    if(phase=="loader-source" || phase=="loader-resume") {
+      if(role!="pcb" || startupPcbPhase!=2 || ratlineCleanup || ratlinePcbSources!=0 || !ratlineNavigationResume || ratlineLoaderResume)throw Error("ratline-loader-sequence");
+      if(phase=="loader-source") {if(ratlineLoaderSource)throw Error("ratline-loader-sequence");ratlineLoaderSource=true;}
+      else {if(!ratlineLoaderSource)throw Error("ratline-loader-sequence");ratlineLoaderResume=true;}
+      return;
+    }
     if(phase=="origin-stack") {
       if(role!="pcb" || ratlineCleanup || ratlineOriginConsumed || ratlinePcbSources!=29 || ratlineChildArm!=5 || !ratlineChildStarted || ratlineChildSources!=1 || ratlineChildResumes!=0)throw Error("ratline-origin-stack");
       // The original TypeScript pipe owner binds both tokens to its first child
@@ -6736,13 +6849,155 @@ return callback;
     if(role!="pcb" || phase.StartsWith("bootstrap-",StringComparison.Ordinal) || phase=="resume" && ratlinePcbSources==0 || phase!="resume" && ratlinePcbSources!=29)throw Error("ratline-pcb-continuation");
   }
   public void SendWorkerStartupRatline(int id,string method,string role,string phase,System.Collections.IDictionary fields) {
-    if(!workerStartupRatline209)throw Error("ratline-purpose");
+    if(!workerStartupRatline209 || workerStartupRatlineContinuation209)throw Error("ratline-purpose");
     if(role=="pcb" && (phase=="value-i" || phase=="relation-same" || phase=="relation-removed" || phase=="relation-payload"))throw Error("ratline-terminal-scope");
     bool cleanup=ratlineCleanup && (phase=="remove" || role=="pcb" && phase=="resume");
     CheckRatlineWork(id,cleanup);string message;
     try {message=EasyedaRatline209Protocol.Encode(id,role,phase,method,fields);}
     catch(InvalidOperationException error) {if(!error.Message.StartsWith("pcb-ratline209-",StringComparison.Ordinal))throw;throw Error("ratline-protocol");}
     RatlineSequence(role,phase,fields);SendMessage(id,message,cleanup);
+  }
+
+  // Fresh-purpose native sequencing. The original TypeScript pipe additionally
+  // binds attachments, source hashes, paused frames and replies to these routes.
+  // This boundary never accepts a caller-provided target/ownership receipt.
+  string continuationOriginalIdentity;
+  bool continuationFinalIdentityConsumed;
+  bool ContinuationIdentity(string method,string sessionId,string phase,System.Collections.IDictionary fields) {
+    if(phase!="identity")return false;
+    if(!workerStartupRatlineContinuation209 || ratlineCleanup || !startupOpeningConsumed || startupActorContext==null)throw Error("continuation-identity-purpose");
+    string encoded=EasyedaWorkerStartupProtocol.Encode209(1,method,sessionId,phase,fields);
+    if(continuationArms[0]==0) {
+      if(continuationOriginalIdentity==null)continuationOriginalIdentity=encoded;
+      if(continuationOriginalIdentity!=encoded)throw Error("continuation-identity-changed");return false;
+    }
+    if(continuationFinalIdentityConsumed || continuationOriginalIdentity==null || encoded!=continuationOriginalIdentity || startupPcbPhase!=2)throw Error("continuation-identity-original");
+    for(int index=0;index<3;index++) {
+      int expected=index==0?29:7;
+      if(continuationSessions[index]==null || continuationSessions[index]==sessionId || continuationSources[index]!=expected || continuationResumes[index]!=expected)throw Error("continuation-identity-boundary");
+    }
+    // A lost reply or partial write consumes the terminal read. The original
+    // channel separately opens this window only after its full packet reproof.
+    continuationFinalIdentityConsumed=true;return true;
+  }
+  readonly string[] continuationSessions=new string[3];
+  readonly int[] continuationArms=new int[3],continuationSources=new int[3],continuationResumes=new int[3];
+  readonly bool[] continuationStarted=new bool[3];
+  void RatlineContinuationSequence(string role,string phase,System.Collections.IDictionary fields) {
+    if(!workerStartupRatlineContinuation209 || !startupOpeningConsumed || startupActorContext==null || startupPcbPhase<1)throw Error("ratline-continuation-original-pcb");
+    int selected=role=="pcb"?0:role=="worker"?1:role=="subordinate"?2:-1;
+    if(selected<0)throw Error("ratline-continuation-role");
+    string parent=startupActorContext.Split('\n')[0];
+    if(continuationSessions[0]==null)continuationSessions[0]=parent;
+    if(continuationSessions[0]!=parent)throw Error("ratline-continuation-parent");
+    int sourceCount=selected==0?29:7;
+    if(phase=="targets") {
+      if(selected==2 || ratlineCleanup || continuationSources[selected]!=sourceCount)throw Error("ratline-continuation-targets");return;
+    }
+    string session=(string)fields["sessionId"];
+    if(phase=="start-child") {
+      int child=selected+1;
+      if(selected==2 || ratlineCleanup || continuationSessions[child]!=session || continuationArms[child]!=5 || continuationStarted[child] || continuationSources[selected]!=sourceCount || continuationResumes[selected]!=sourceCount)throw Error("ratline-continuation-child-start");
+      continuationStarted[child]=true;return;
+    }
+    if(continuationSessions[selected]==null) {
+      int ancestor=selected-1;
+      if(selected==0 || ratlineCleanup || phase!="bootstrap-auto-attach" || continuationSources[ancestor]!=(ancestor==0?29:7) || continuationResumes[ancestor]!=(ancestor==0?29:7))throw Error("ratline-continuation-child-session");
+      foreach(string existing in continuationSessions)if(existing==session)throw Error("ratline-continuation-session-alias");
+      continuationSessions[selected]=session;
+    }
+    if(continuationSessions[selected]!=session)throw Error("ratline-continuation-session");
+    if(ratlineCleanup) {
+      if(phase!="remove" && phase!="resume")throw Error("ratline-continuation-cleanup");return;
+    }
+    if(phase=="remove")return;
+    string[] arms={"bootstrap-auto-attach","bootstrap-runtime","bootstrap-debugger","bootstrap-async-depth","bootstrap-instrument"};
+    int arm=continuationArms[selected];
+    if(arm<5) {
+      if(phase!=arms[arm] || selected==0 && startupPcbPhase!=1)throw Error("ratline-continuation-arm");
+      continuationArms[selected]++;return;
+    }
+    if(phase=="navigation-source" || phase=="navigation-resume" || phase=="loader-source" || phase=="loader-resume") {
+      if(selected!=0 || startupPcbPhase!=2 || continuationSources[0]!=0)throw Error("ratline-continuation-ui-phase");
+      if(phase=="navigation-source") {if(ratlineNavigationSource || ratlineNavigationResume)throw Error("ratline-continuation-navigation");ratlineNavigationSource=true;}
+      else if(phase=="navigation-resume") {if(!ratlineNavigationSource || ratlineNavigationResume)throw Error("ratline-continuation-navigation");ratlineNavigationResume=true;}
+      else if(phase=="loader-source") {if(!ratlineNavigationResume || ratlineLoaderSource || ratlineLoaderResume)throw Error("ratline-continuation-loader");ratlineLoaderSource=true;}
+      else {if(!ratlineLoaderSource || ratlineLoaderResume)throw Error("ratline-continuation-loader");ratlineLoaderResume=true;}
+      return;
+    }
+    if(phase=="origin-stack") {
+      if(selected!=0 || ratlineOriginConsumed || continuationSources[0]!=29 || !continuationStarted[1] || continuationSources[1]!=1 || continuationResumes[1]!=0)throw Error("ratline-continuation-origin");
+      ratlineOriginConsumed=true;return;
+    }
+    if(phase=="bootstrap-source") {
+      if(startupPcbPhase!=2 || continuationSources[selected]>=sourceCount || continuationSources[selected]!=continuationResumes[selected] || selected>0 && !continuationStarted[selected])throw Error("ratline-continuation-source");
+      continuationSources[selected]++;return;
+    }
+    if(phase=="resume" && continuationResumes[selected]<sourceCount) {
+      if(continuationSources[selected]!=continuationResumes[selected]+1 || selected>0 && !continuationStarted[selected])throw Error("ratline-continuation-source-resume");
+      continuationResumes[selected]++;return;
+    }
+    if(selected==2 || phase.StartsWith("bootstrap-",StringComparison.Ordinal) || continuationSources[selected]!=sourceCount)throw Error("ratline-continuation-terminal");
+  }
+  public void SendWorkerStartupRatlineContinuation(int id,string method,string role,string phase,System.Collections.IDictionary fields) {
+    if(!workerStartupRatlineContinuation209)throw Error("ratline-continuation-purpose");
+    bool cleanup=ratlineCleanup && (phase=="remove" || phase=="resume");
+    CheckRatlineWork(id,cleanup);string message;
+    try {message=EasyedaRatlineContinuation209Protocol.Encode(id,role,phase,method,fields);}
+    catch(InvalidOperationException error) {if(!error.Message.StartsWith("pcb-ratline",StringComparison.Ordinal))throw;throw Error("ratline-continuation-protocol");}
+    RatlineContinuationSequence(role,phase,fields);SendMessage(id,message,cleanup);
+  }
+  public static void VerifyRatlineContinuation209PurposeSmoke() {
+    var owner=CreateWorkerStartupRatlineContinuation209();
+    if(!owner.workerStartupRatlineContinuation209 || !owner.workerStartupRatline209 || owner.EffectiveRequestLimit!=494 || owner.nextRequest!=1)throw Error("ratline-continuation-purpose-smoke");
+    Action<Action> refuse=operation=>{bool denied=false;try{operation();}catch(InvalidOperationException){denied=true;}if(!denied)throw Error("ratline-continuation-refusal-smoke");};
+    var fields=new System.Collections.Hashtable(StringComparer.Ordinal);fields.Add("sessionId","parent");
+    refuse(()=>owner.SendWorkerStartupRatline(1,"Runtime.enable","pcb","bootstrap-runtime",fields));
+    refuse(()=>CreateWorkerStartupRatline209().SendWorkerStartupRatlineContinuation(1,"Runtime.enable","pcb","bootstrap-runtime",fields));
+    refuse(()=>owner.AbortWorkerStartupRatline());
+    owner.startupOpeningConsumed=true;owner.startupActorContext="parent\ncontext";owner.startupPcbPhase=1;
+    var identityFields=new System.Collections.Hashtable(StringComparer.Ordinal);identityFields.Add("objectId","original-project");identityFields.Add("argument0","original-bus");
+    if(owner.ContinuationIdentity("Runtime.callFunctionOn","project-worker","identity",identityFields))throw Error("continuation-identity-prelude-smoke");
+    string[] arms={"bootstrap-auto-attach","bootstrap-runtime","bootstrap-debugger","bootstrap-async-depth","bootstrap-instrument"};
+    foreach(string phase in arms)owner.RatlineContinuationSequence("pcb",phase,fields);
+    owner.startupPcbPhase=2;
+    refuse(()=>owner.ContinuationIdentity("Runtime.callFunctionOn","project-worker","identity",identityFields));
+    refuse(()=>owner.RatlineContinuationSequence("pcb","resume",fields));
+    refuse(()=>owner.RatlineContinuationSequence("pcb","loader-source",fields));
+    owner.RatlineContinuationSequence("pcb","navigation-source",fields);owner.RatlineContinuationSequence("pcb","navigation-resume",fields);
+    refuse(()=>owner.RatlineContinuationSequence("pcb","loader-resume",fields));
+    owner.RatlineContinuationSequence("pcb","loader-source",fields);owner.RatlineContinuationSequence("pcb","loader-resume",fields);
+    refuse(()=>owner.RatlineContinuationSequence("pcb","loader-source",fields));
+    for(int index=0;index<29;index++) {owner.RatlineContinuationSequence("pcb","bootstrap-source",fields);owner.RatlineContinuationSequence("pcb","resume",fields);}
+    refuse(()=>owner.RatlineContinuationSequence("pcb","bootstrap-source",fields));
+    refuse(()=>owner.RatlineContinuationSequence("worker","bootstrap-auto-attach",fields));
+    fields["sessionId"]="worker";
+    foreach(string phase in arms)owner.RatlineContinuationSequence("worker",phase,fields);
+    refuse(()=>owner.RatlineContinuationSequence("worker","bootstrap-source",fields));
+    owner.RatlineContinuationSequence("pcb","start-child",fields);
+    refuse(()=>owner.RatlineContinuationSequence("pcb","start-child",fields));
+    for(int index=0;index<7;index++) {
+      owner.RatlineContinuationSequence("worker","bootstrap-source",fields);
+      if(index==0) {fields["sessionId"]="parent";owner.RatlineContinuationSequence("pcb","origin-stack",fields);refuse(()=>owner.RatlineContinuationSequence("pcb","origin-stack",fields));fields["sessionId"]="worker";}
+      owner.RatlineContinuationSequence("worker","resume",fields);
+    }
+    fields["sessionId"]="subordinate";
+    foreach(string phase in arms)owner.RatlineContinuationSequence("subordinate",phase,fields);
+    refuse(()=>owner.RatlineContinuationSequence("subordinate","bootstrap-source",fields));
+    owner.RatlineContinuationSequence("worker","start-child",fields);
+    for(int index=0;index<7;index++) {owner.RatlineContinuationSequence("subordinate","bootstrap-source",fields);owner.RatlineContinuationSequence("subordinate","resume",fields);}
+    foreach(string phase in new string[]{"resume","bootstrap-source","creation-before","capture-bridge","object-this","relation-same","start-child","targets"})refuse(()=>owner.RatlineContinuationSequence("subordinate",phase,fields));
+    refuse(()=>owner.SendWorkerStartup(1,"Debugger.resume","subordinate","resume",new System.Collections.Hashtable()));
+    identityFields["argument0"]="foreign-bus";refuse(()=>owner.ContinuationIdentity("Runtime.callFunctionOn","project-worker","identity",identityFields));identityFields["argument0"]="original-bus";
+    refuse(()=>owner.ContinuationIdentity("Runtime.callFunctionOn","foreign-worker","identity",identityFields));
+    if(!owner.ContinuationIdentity("Runtime.callFunctionOn","project-worker","identity",identityFields))throw Error("continuation-identity-final-smoke");
+    refuse(()=>owner.ContinuationIdentity("Runtime.callFunctionOn","project-worker","identity",identityFields));
+    owner.CheckRatlineWork(438,false);refuse(()=>owner.CheckRatlineWork(439,false));
+    owner.AbortWorkerStartupRatlineContinuation();refuse(()=>owner.AbortWorkerStartupRatlineContinuation());
+    owner.CheckRatlineWork(494,true);refuse(()=>owner.CheckRatlineWork(495,true));
+    owner.RatlineContinuationSequence("subordinate","remove",fields);owner.RatlineContinuationSequence("subordinate","resume",fields);
+    fields["sessionId"]="foreign";refuse(()=>owner.RatlineContinuationSequence("subordinate","resume",fields));
+    owner.ratlineCleanupRequests=56;refuse(()=>owner.CheckRatlineWork(494,true));
   }
   public static void VerifyRatline209PurposeSmoke() {
     var fields=new System.Collections.Hashtable(StringComparer.Ordinal);fields.Add("sessionId","parent");
@@ -6752,12 +7007,12 @@ return callback;
       if(!refused)throw Error("ratline-purpose-smoke");
     }
     EasyedaDiagnosticOwner owner=CreateWorkerStartupRatline209();
-    if(!owner.workerStartupRatline209 || !owner.workerStartup209 || !owner.workerStartup || owner.workerStartupEmpty209 || owner.stringPrecreate || owner.layers209 || owner.RequestLimit!=256 || owner.EffectiveRequestLimit!=363 || owner.nextRequest!=1)throw Error("ratline-purpose-smoke");
+    if(!owner.workerStartupRatline209 || !owner.workerStartup209 || !owner.workerStartup || owner.workerStartupEmpty209 || owner.stringPrecreate || owner.layers209 || owner.RequestLimit!=256 || owner.EffectiveRequestLimit!=365 || owner.nextRequest!=1)throw Error("ratline-purpose-smoke");
     Action<Action> refuse=operation=>{bool denied=false;try{operation();}catch(InvalidOperationException){denied=true;}if(!denied)throw Error("ratline-refusal-smoke");};
-    string envelope=RatlineOriginalId(363,EasyedaWorkerStartupProtocol.Encode209(1,"Runtime.enable","parent","runtime",new System.Collections.Hashtable()));
-    if(!envelope.StartsWith("{\"id\":363,",StringComparison.Ordinal))throw Error("ratline-id-smoke");
-    refuse(()=>RatlineOriginalId(364,envelope));refuse(()=>RatlineOriginalId(1,envelope));
-    owner.CheckRatlineWork(320,false);refuse(()=>owner.CheckRatlineWork(321,false));refuse(()=>owner.CheckRatlineWork(363,true));
+    string envelope=owner.RatlineOriginalId(365,EasyedaWorkerStartupProtocol.Encode209(1,"Runtime.enable","parent","runtime",new System.Collections.Hashtable()));
+    if(!envelope.StartsWith("{\"id\":365,",StringComparison.Ordinal))throw Error("ratline-id-smoke");
+    refuse(()=>owner.RatlineOriginalId(366,envelope));refuse(()=>owner.RatlineOriginalId(1,envelope));
+    owner.CheckRatlineWork(322,false);refuse(()=>owner.CheckRatlineWork(323,false));refuse(()=>owner.CheckRatlineWork(365,true));
     owner.emptyPolls=checked((int)EasyedaRatline209Limits.NormalPollLimit);refuse(()=>owner.AdmitRatlineRequest("poll",false));
     owner.received=checked((int)EasyedaRatline209Limits.NormalByteLimit)-1;
     if(owner.RatlineReadCount(65536)!=1)throw Error("ratline-read-reserve-smoke");
@@ -6768,9 +7023,15 @@ return callback;
     refuse(()=>owner.RatlineSequence("pcb","bootstrap-source",fields));
     refuse(()=>owner.RatlineSequence("pcb","navigation-source",fields));owner.startupPcbPhase=2;
     refuse(()=>owner.RatlineSequence("pcb","navigation-resume",fields));
+    refuse(()=>owner.RatlineSequence("pcb","loader-source",fields));
     owner.RatlineSequence("pcb","navigation-source",fields);refuse(()=>owner.RatlineSequence("pcb","navigation-source",fields));
     owner.RatlineSequence("pcb","navigation-resume",fields);refuse(()=>owner.RatlineSequence("pcb","navigation-resume",fields));
     if(owner.ratlinePcbSources!=0)throw Error("ratline-navigation-source-count");
+    refuse(()=>owner.RatlineSequence("pcb","loader-resume",fields));
+    owner.RatlineSequence("pcb","loader-source",fields);refuse(()=>owner.RatlineSequence("pcb","loader-source",fields));
+    refuse(()=>owner.RatlineSequence("pcb","resume",fields));
+    owner.RatlineSequence("pcb","loader-resume",fields);refuse(()=>owner.RatlineSequence("pcb","loader-resume",fields));
+    if(owner.ratlinePcbSources!=0)throw Error("ratline-loader-source-count");
     for(int index=0;index<29;index++)owner.RatlineSequence("pcb","bootstrap-source",fields);
     refuse(()=>owner.RatlineSequence("pcb","bootstrap-source",fields));fields["sessionId"]="child";
     owner.RatlineSequence("worker","bootstrap-auto-attach",fields);refuse(()=>owner.RatlineSequence("pcb","start-child",fields));
@@ -6790,7 +7051,7 @@ return callback;
     owner.AbortWorkerStartupRatline();refuse(()=>owner.AbortWorkerStartupRatline());refuse(()=>owner.CheckRatlineWork(1,false));
     owner.AdmitRatlineRequest("poll",false);owner.emptyPolls=checked((int)EasyedaRatline209Limits.PollLimit);refuse(()=>owner.AdmitRatlineRequest("poll",false));
     if(owner.RatlineReadCount(65536)!=EasyedaRatline209Limits.TotalByteLimit-EasyedaRatline209Limits.NormalByteLimit)throw Error("ratline-read-cleanup-smoke");
-    owner.CheckRatlineWork(363,true);refuse(()=>owner.CheckRatlineWork(364,true));
+    owner.CheckRatlineWork(365,true);refuse(()=>owner.CheckRatlineWork(366,true));
     owner.ratlineCleanupRequests=43;refuse(()=>owner.CheckRatlineWork(2,true));
     owner.RatlineSequence("worker","remove",fields);refuse(()=>owner.RatlineSequence("pcb","start-child",fields));
     bool held=false;try{owner.SendWorkerStartup(1,"Debugger.resume","child","resume",new System.Collections.Hashtable());}
@@ -6802,6 +7063,7 @@ return callback;
       if(!denied)throw Error("ratline-terminal-smoke");
     }
   }
+
   string startupOpeningIdentity;
   string startupActorContext;
   bool startupOpeningConsumed;
@@ -7011,14 +7273,14 @@ return callback;
   }
   public string Poll() {
     AssertLive(); if(!launchCompleted || protocolFailed) throw Error("channel-failed");
-    long ratlineReadLimit=ratlineCleanup?EasyedaRatline209Limits.TotalByteLimit:EasyedaRatline209Limits.NormalByteLimit;
-    if(workerStartupRatline209 && (emptyElapsed==null || emptyElapsed.ElapsedMilliseconds>(ratlineCleanup?EasyedaRatline209Limits.TotalMilliseconds:EasyedaRatline209Limits.NormalMilliseconds) || received>=ratlineReadLimit))throw Error("ratline-deadline-or-bytes");
+    long ratlineReadLimit=ratlineCleanup?RatlineTotalByteLimit:RatlineNormalByteLimit;
+    if(workerStartupRatline209 && (emptyElapsed==null || emptyElapsed.ElapsedMilliseconds>(ratlineCleanup?RatlineTotalMilliseconds:RatlineNormalMilliseconds) || received>=ratlineReadLimit))throw Error("ratline-deadline-or-bytes");
     try {
       if(workerStartupEmpty209 && (emptyElapsed==null || emptyElapsed.ElapsedMilliseconds>EasyedaWorkerStartupEmpty209Protocol.TotalMilliseconds))throw Error("empty-deadline");
       uint available; Native(PeekNamedPipe(parentRead,IntPtr.Zero,0,IntPtr.Zero,out available,IntPtr.Zero));
       if(available==0) return "";
       int count=workerStartupRatline209?RatlineReadCount(available):(int)Math.Min(65536u,available);
-      if((long)received+count>(workerStartupRatline209?EasyedaRatline209Limits.TotalByteLimit:workerStartupEmpty209?EasyedaWorkerStartupEmpty209Protocol.TotalByteLimit:64L*1024*1024)) throw Error("receive-budget");
+      if((long)received+count>(workerStartupRatline209?RatlineTotalByteLimit:workerStartupEmpty209?EasyedaWorkerStartupEmpty209Protocol.TotalByteLimit:64L*1024*1024)) throw Error("receive-budget");
       byte[] bytes=new byte[count]; uint read; Native(ReadFile(parentRead,bytes,(uint)count,out read,IntPtr.Zero));
       if(read==0 || read>count) throw Error("read-size"); received+=checked((int)read); AssertLive(); return Convert.ToBase64String(bytes,0,(int)read);
     } catch { protocolFailed=true; throw; }
@@ -7180,8 +7442,8 @@ return callback;
   }
 }
 '@
-$owner=if ($WorkerStartupRatline209) {[EasyedaDiagnosticOwner]::CreateWorkerStartupRatline209()} elseif ($WorkerStartupEmpty209) {[EasyedaDiagnosticOwner]::CreateWorkerStartupEmpty209()} elseif ($WorkerStartup209) {[EasyedaDiagnosticOwner]::CreateWorkerStartup209()} elseif ($WorkerStartup) {[EasyedaDiagnosticOwner]::CreateWorkerStartup()} elseif ($StringPrecreate) {[EasyedaDiagnosticOwner]::CreateStringPrecreate()} elseif ($Layers209) {[EasyedaDiagnosticOwner]::CreateLayers209()} else {New-Object EasyedaDiagnosticOwner}
-$startupRequestLimit=if ($WorkerStartupRatline209) {[EasyedaRatline209Limits]::RequestLimit} elseif ($WorkerStartupEmpty209) {[EasyedaWorkerStartupEmpty209Protocol]::RequestLimit} else {256}
+$owner=if ($WorkerStartupRatlineContinuation209) {[EasyedaDiagnosticOwner]::CreateWorkerStartupRatlineContinuation209()} elseif ($WorkerStartupRatline209) {[EasyedaDiagnosticOwner]::CreateWorkerStartupRatline209()} elseif ($WorkerStartupEmpty209) {[EasyedaDiagnosticOwner]::CreateWorkerStartupEmpty209()} elseif ($WorkerStartup209) {[EasyedaDiagnosticOwner]::CreateWorkerStartup209()} elseif ($WorkerStartup) {[EasyedaDiagnosticOwner]::CreateWorkerStartup()} elseif ($StringPrecreate) {[EasyedaDiagnosticOwner]::CreateStringPrecreate()} elseif ($Layers209) {[EasyedaDiagnosticOwner]::CreateLayers209()} else {New-Object EasyedaDiagnosticOwner}
+$startupRequestLimit=if ($WorkerStartupRatlineContinuation209) {[EasyedaRatlineContinuation209Limits]::RequestLimit} elseif ($WorkerStartupRatline209) {[EasyedaRatline209Limits]::RequestLimit} elseif ($WorkerStartupEmpty209) {[EasyedaWorkerStartupEmpty209Protocol]::RequestLimit} else {256}
 try {
   $owner.Initialize()
   if ($CompileOnly) {
@@ -7189,8 +7451,10 @@ try {
     [EasyedaWorkerStartupProtocol]::Verify209Smoke()
     [EasyedaWorkerStartupEmpty209Protocol]::VerifySmoke()
     [EasyedaRatline209Protocol]::VerifySmoke()
+    [EasyedaRatlineContinuation209Protocol]::VerifySmoke()
     [EasyedaRatline209Installation]::VerifySmoke()
     [EasyedaDiagnosticOwner]::VerifyRatline209PurposeSmoke()
+    [EasyedaDiagnosticOwner]::VerifyRatlineContinuation209PurposeSmoke()
     [EasyedaDiagnosticOwner]::VerifyEmpty209PurposeSmoke()
     [EasyedaDiagnosticOwner]::VerifyWorkerStartupPurposeSmoke()
     [EasyedaDiagnosticInstallation]::VerifyLeaseSmoke()
@@ -7335,11 +7599,12 @@ try {
           ($request.action -ceq 'worker-startup-empty-root' -and $request.rootPhase -ceq 'release')
         $owner.AdmitEmptyRequest($request.action,$cleanup)
       }
-      if ($WorkerStartupRatline209) {
+      if ($ratlinePurpose) {
         if ($request.action -isnot [string]) {throw 'pcb-diagnostic-ratline-action'}
-        $cleanup=(@('identity','window','normal-close','termination','release','release-unlaunched','no-process-proof','release-no-process','worker-startup-ratline-abort') -ccontains $request.action) -or
+        $cleanup=(@('identity','window','normal-close','termination','release','release-unlaunched','no-process-proof','release-no-process','worker-startup-ratline-abort','worker-startup-ratline-continuation-abort') -ccontains $request.action) -or
           ($request.action -ceq 'worker-startup-send' -and @('release','remove','resume') -ccontains $request.startupPhase) -or
-          ($request.action -ceq 'worker-startup-ratline' -and ($request.phase -ceq 'remove' -or ($request.role -ceq 'pcb' -and $request.phase -ceq 'resume')))
+          ($request.action -ceq 'worker-startup-ratline' -and ($request.phase -ceq 'remove' -or ($request.role -ceq 'pcb' -and $request.phase -ceq 'resume'))) -or
+          ($WorkerStartupRatlineContinuation209 -and $request.action -ceq 'worker-startup-ratline-continuation' -and @('remove','resume') -ccontains $request.phase)
         $owner.AdmitRatlineRequest($request.action,$cleanup)
       }
       switch -CaseSensitive ($request.action) {
@@ -7361,6 +7626,26 @@ try {
           }
           foreach ($field in $baseFields) {if (@($request.PSObject.Properties.Name) -cnotcontains $field) {throw 'pcb-diagnostic-ratline-field'}}
           $owner.SendWorkerStartupRatline([int]$request.requestId,$request.method,$request.role,$request.phase,$ratlineFields)
+          $result=@{written=$true}
+        }
+        'worker-startup-ratline-continuation-abort' {
+          if (-not $WorkerStartupRatlineContinuation209 -or -not $launched -or
+              (@($request.PSObject.Properties.Name | Sort-Object) -join ',') -cne 'action,helperInstance,id,jobId,rootCreated,rootPid') {throw 'pcb-diagnostic-ratline-abort-fields'}
+          $owner.AbortWorkerStartupRatlineContinuation(); $result=@{aborted=$true}
+        }
+        'worker-startup-ratline-continuation' {
+          if (-not $WorkerStartupRatlineContinuation209 -or -not $launched -or $request.method -isnot [string] -or $request.role -isnot [string] -or $request.phase -isnot [string] -or
+              ($request.requestId -isnot [int] -and $request.requestId -isnot [long]) -or $request.requestId -lt 1 -or $request.requestId -gt $startupRequestLimit) {throw 'pcb-diagnostic-ratline-fields'}
+          $baseFields=@('action','helperInstance','id','jobId','method','requestId','rootCreated','rootPid','role','phase')
+          $ratlineFields=New-Object Collections.Hashtable ([StringComparer]::Ordinal)
+          foreach ($property in $request.PSObject.Properties) {
+            if ($baseFields -cnotcontains $property.Name) {
+              if (@('sessionId','scriptId','breakpointId','callFrameId','objectId','argument0','argument1','argument2','stackTraceId','debuggerId') -cnotcontains $property.Name -or $property.Value -isnot [string]) {throw 'pcb-diagnostic-ratline-field'}
+              $ratlineFields.Add($property.Name,$property.Value)
+            }
+          }
+          foreach ($field in $baseFields) {if (@($request.PSObject.Properties.Name) -cnotcontains $field) {throw 'pcb-diagnostic-ratline-field'}}
+          $owner.SendWorkerStartupRatlineContinuation([int]$request.requestId,$request.method,$request.role,$request.phase,$ratlineFields)
           $result=@{written=$true}
         }
         'worker-startup-reprove' {
@@ -7422,7 +7707,7 @@ try {
         'launch' {
           if ($request.confirmDiagnosticLaunch -isnot [bool] -or $request.confirmDiagnosticLaunch -ne $true -or $launched) {throw 'pcb-diagnostic-launch-approval'}
           $plan=$request.installation
-          $fileCount=if ($WorkerStartupRatline209) {[EasyedaRatline209Installation]::FileCount} else {5}
+          $fileCount=if ($ratlinePurpose) {[EasyedaRatline209Installation]::FileCount} else {5}
           if ($null -eq $plan -or (@($plan.PSObject.Properties.Name | Sort-Object) -join ',') -cne 'files,schema' -or $plan.schema -cne 'easyeda-pro-control.pcb-diagnostic-installation.v1' -or $plan.files -isnot [array] -or $plan.files.Count -ne $fileCount) {throw 'pcb-diagnostic-installation-plan'}
           $paths=New-Object 'string[]' $fileCount
           $sizes=New-Object 'long[]' $fileCount
@@ -7640,7 +7925,7 @@ try {
         }
         default {throw 'pcb-diagnostic-action'}
       }
-      if ($WorkerStartupRatline209) {$owner.WriteRatlineReply((@{id=$id;ok=$true;result=$result} | ConvertTo-Json -Depth 5 -Compress))}
+      if ($ratlinePurpose) {$owner.WriteRatlineReply((@{id=$id;ok=$true;result=$result} | ConvertTo-Json -Depth 5 -Compress))}
       elseif ($WorkerStartupEmpty209) {$owner.WriteEmptyReply((@{id=$id;ok=$true;result=$result} | ConvertTo-Json -Depth 5 -Compress))}
       else {@{id=$id;ok=$true;result=$result} | ConvertTo-Json -Depth 5 -Compress}
     } catch {
@@ -7655,7 +7940,7 @@ try {
         if ($exception.Message -cmatch '^pcb-diagnostic-[a-z-]{1,80}$') {$code=$exception.Message;break}
         $exception=$exception.InnerException
       }
-      if ($WorkerStartupRatline209) {$owner.WriteRatlineReply((@{id=$id;ok=$false;error=$code} | ConvertTo-Json -Compress))}
+      if ($ratlinePurpose) {$owner.WriteRatlineReply((@{id=$id;ok=$false;error=$code} | ConvertTo-Json -Compress))}
       elseif ($WorkerStartupEmpty209) {$owner.WriteEmptyReply((@{id=$id;ok=$false;error=$code} | ConvertTo-Json -Compress))}
       else {@{id=$id;ok=$false;error=$code} | ConvertTo-Json -Compress}
     }

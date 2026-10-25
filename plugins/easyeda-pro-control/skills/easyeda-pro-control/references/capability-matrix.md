@@ -105,9 +105,11 @@ PCB construction and holds the first child after seven qualified source phases.
 It retains a bounded first-child native creation-stack observation and exact
 constructor comparison, with explicit missing/unqualified evidence reasons.
 Connected validation remains pending. Independent JavaScript Worker-to-CDP
-target identity, worker continuation, subordinate completion and cross-realm
-callback/publication completion remain unfinished. This partial diagnostic
-does not enable a PCB writer or establish complete startup.
+target identity, subordinate completion and cross-realm callback/publication
+completion remain unfinished. The separate [fresh continuation route](current-pcb209-ratline-continuation.md)
+joins full PCB/worker capture with seven subordinate source phases and a final
+source resume. Offline composition is not live validation. Both diagnostic
+routes leave complete startup, baseline, PCB writing and Save unavailable.
 The [public catalog queries](current-system-library.md) require explicit network
 confirmation and use fixed credential-free vendor endpoints, without local
 application/database access. Footprint/symbol/device search, symbol lookup by name, symbol/device

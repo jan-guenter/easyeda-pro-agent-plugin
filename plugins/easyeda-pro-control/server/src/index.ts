@@ -126,11 +126,12 @@ import { editorContextRequestSchema } from "./editor-context.ts";
 import { readEditorContext, readEditorShell } from "./editor-shell-runtime.ts";
 import { OrdinaryLaunchCoordinator, ordinaryLaunchRequestSchema } from "./ordinary-launch.ts";
 import type { OrdinaryLaunchRuntime } from "./ordinary-launch.ts";
-import { CurrentPcb209DiagnosticLifecycle, CurrentPcb209EmptyStartupLifecycle, CurrentPcb209RatlineStartupLifecycle, CurrentPcb209WorkerStartupLifecycle, CurrentPcbDiagnosticLifecycle, CurrentPcbStringPrecreateLifecycle, CurrentPcbWorkerStartupLifecycle } from "./current-pcb-diagnostic-lifecycle.ts";
+import { CurrentPcb209DiagnosticLifecycle, CurrentPcb209EmptyStartupLifecycle, CurrentPcb209RatlineContinuationLifecycle, CurrentPcb209RatlineStartupLifecycle, CurrentPcb209WorkerStartupLifecycle, CurrentPcbDiagnosticLifecycle, CurrentPcbStringPrecreateLifecycle, CurrentPcbWorkerStartupLifecycle } from "./current-pcb-diagnostic-lifecycle.ts";
 import { currentPcbDiagnosticToolRequestSchema } from "./current-pcb-diagnostic-validation.ts";
 import { currentPcb209OpeningRequestSchema } from "./current-pcb-209-opening-validation.ts";
 import type { CurrentPcbWorkerStartupValidationRequest } from "./current-pcb-worker-startup-validation.ts";
 import { currentPcb209WorkerStartupToolRequestSchema } from "./current-pcb-209-empty-startup-validation.ts";
+import type { CurrentPcb209RatlineContinuationValidationRequest } from "./current-pcb-209-ratline-continuation-validation.ts";
 import type { CurrentPcb209RatlineStartupValidationRequest } from "./current-pcb-209-ratline-startup-validation.ts";
 import type { CurrentPcb209EmptyStartupValidationRequest } from "./current-pcb-209-empty-startup-validation.ts";
 import type { CurrentPcb209WorkerStartupValidationRequest } from "./current-pcb-209-worker-startup-validation.ts";
@@ -205,7 +206,7 @@ let ordinaryLaunchCoordinator: OrdinaryLaunchCoordinator | undefined;
 let ordinaryLaunchRuntime: WindowsControlRuntime | undefined;
 let currentPcbDiagnosticLifecycle: CurrentPcbDiagnosticLifecycle | CurrentPcb209DiagnosticLifecycle | undefined;
 let currentPcbStringPrecreateLifecycle: CurrentPcbStringPrecreateLifecycle | undefined;
-let currentPcbWorkerStartupLifecycle: CurrentPcbWorkerStartupLifecycle | CurrentPcb209WorkerStartupLifecycle | CurrentPcb209EmptyStartupLifecycle | CurrentPcb209RatlineStartupLifecycle | undefined;
+let currentPcbWorkerStartupLifecycle: CurrentPcbWorkerStartupLifecycle | CurrentPcb209WorkerStartupLifecycle | CurrentPcb209EmptyStartupLifecycle | CurrentPcb209RatlineStartupLifecycle | CurrentPcb209RatlineContinuationLifecycle | undefined;
 let currentDisposableOpenCoordinator: CurrentDisposableOpenCoordinator | undefined;
 let currentPcbRenameOperationCoordinator: CurrentPcbRenameOperationCoordinator | undefined;
 let currentSchematicRenameOperationCoordinator: CurrentSchematicRenameOperationCoordinator | undefined;
@@ -2542,23 +2543,26 @@ if (facadeToolRegistered(facadeMode, "easyeda_control_pcb_diagnostic_validation"
   const inputSchema = z.object({ request: z.unknown().pipe(diagnostic209 ? currentPcb209OpeningRequestSchema : currentPcbDiagnosticToolRequestSchema) }).strict();
   let original: { readonly owner: CurrentPcbDiagnosticLifecycle | CurrentPcb209DiagnosticLifecycle; readonly run: CurrentPcbDiagnosticLifecycle["run"];
     readonly assertLocal: () => void } | undefined;
-  let startupOriginal: { readonly owner: CurrentPcbWorkerStartupLifecycle | CurrentPcb209WorkerStartupLifecycle | CurrentPcb209EmptyStartupLifecycle | CurrentPcb209RatlineStartupLifecycle; readonly run: CurrentPcbWorkerStartupLifecycle["run"];
+  let startupOriginal: { readonly owner: CurrentPcbWorkerStartupLifecycle | CurrentPcb209WorkerStartupLifecycle | CurrentPcb209EmptyStartupLifecycle | CurrentPcb209RatlineStartupLifecycle | CurrentPcb209RatlineContinuationLifecycle; readonly run: CurrentPcbWorkerStartupLifecycle["run"];
     readonly capture: CurrentPcbWorkerStartupLifecycle["captureWorkerStartup"];
     readonly assignments: CurrentPcbWorkerStartupLifecycle["observeWorkerStartupAssignments"];
     readonly actor: CurrentPcbWorkerStartupLifecycle["observeWorkerStartupActor"];
     readonly channel: CurrentPcbWorkerStartupLifecycle["observeWorkerStartupChannel"];
     readonly empty: CurrentPcb209EmptyStartupLifecycle["observeWorkerStartupEmpty"] | undefined; readonly reserved: CurrentPcbWorkerStartupLifecycle["hasActiveReservation"];
     readonly ratline: CurrentPcb209RatlineStartupLifecycle["observeWorkerStartupRatline"] | undefined;
-    readonly emptyPurpose: boolean; readonly ratlinePurpose: boolean; readonly assertLocal: () => void } | undefined;
+    readonly continuation: CurrentPcb209RatlineContinuationLifecycle["observeWorkerStartupRatlineContinuation"] | undefined;
+    readonly emptyPurpose: boolean; readonly ratlinePurpose: boolean; readonly continuationPurpose: boolean; readonly assertLocal: () => void } | undefined;
   let startupCalls = 0;
-  const runStartup = (request: CurrentPcbWorkerStartupValidationRequest | CurrentPcb209WorkerStartupValidationRequest | CurrentPcb209EmptyStartupValidationRequest | CurrentPcb209RatlineStartupValidationRequest, emptyPurpose = false, ratlinePurpose = false): Promise<{ result: Record<string, unknown> }> => {
-    let StartupLifecycle: typeof CurrentPcbWorkerStartupLifecycle | typeof CurrentPcb209WorkerStartupLifecycle | typeof CurrentPcb209EmptyStartupLifecycle | typeof CurrentPcb209RatlineStartupLifecycle = diagnostic209 ? CurrentPcb209WorkerStartupLifecycle : CurrentPcbWorkerStartupLifecycle;
-    if (emptyPurpose && ratlinePurpose) { throw new Error("A launch has one fixed startup purpose."); }
+  const runStartup = (request: CurrentPcbWorkerStartupValidationRequest | CurrentPcb209WorkerStartupValidationRequest | CurrentPcb209EmptyStartupValidationRequest | CurrentPcb209RatlineStartupValidationRequest | CurrentPcb209RatlineContinuationValidationRequest, emptyPurpose = false, ratlinePurpose = false, continuationPurpose = false): Promise<{ result: Record<string, unknown> }> => {
+    let StartupLifecycle: typeof CurrentPcbWorkerStartupLifecycle | typeof CurrentPcb209WorkerStartupLifecycle | typeof CurrentPcb209EmptyStartupLifecycle | typeof CurrentPcb209RatlineStartupLifecycle | typeof CurrentPcb209RatlineContinuationLifecycle = diagnostic209 ? CurrentPcb209WorkerStartupLifecycle : CurrentPcbWorkerStartupLifecycle;
+    if (Number(emptyPurpose) + Number(ratlinePurpose) + Number(continuationPurpose) > 1) { throw new Error("A launch has one fixed startup purpose."); }
     if (emptyPurpose) { StartupLifecycle = CurrentPcb209EmptyStartupLifecycle; }
     if (ratlinePurpose) { StartupLifecycle = CurrentPcb209RatlineStartupLifecycle; }
+    if (continuationPurpose) { StartupLifecycle = CurrentPcb209RatlineContinuationLifecycle; }
+    if (continuationPurpose && !diagnostic209) { throw new Error("Ratline continuation requires the 209 route."); }
     if (ratlinePurpose && !diagnostic209) { throw new Error("Ratline held-import startup requires the 209 route."); }
     if (emptyPurpose && !diagnostic209) { throw new Error("Empty worker startup requires the 209 route."); }
-    if (startupOriginal !== undefined && (startupOriginal.emptyPurpose !== emptyPurpose || startupOriginal.ratlinePurpose !== ratlinePurpose)) {
+    if (startupOriginal !== undefined && (startupOriginal.emptyPurpose !== emptyPurpose || startupOriginal.ratlinePurpose !== ratlinePurpose || startupOriginal.continuationPurpose !== continuationPurpose)) {
       startupOriginal.assertLocal();
       // A queued launch has no core lease yet. Retain its coordinator until
       // Every admitted call settles, and retain every pending cleanup lease.
@@ -2580,7 +2584,8 @@ if (facadeToolRegistered(facadeMode, "easyeda_control_pcb_diagnostic_validation"
           "observeWorkerStartupAssignments", "observeStartupAssignments", "requireStartupAssignments", "observeWorkerStartupActor", "observeStartupActor",
           "observeWorkerStartupChannel", "observeStartupChannel", "hasActiveReservation",
           ...(emptyPurpose ? ["observeWorkerStartupEmpty", "observeStartupEmpty", "prepareWorkerStartupEmpty", "prepareStartupEmpty"] : []),
-          ...(ratlinePurpose ? ["observeWorkerStartupRatline", "observeStartupRatline"] : [])]
+          ...(ratlinePurpose ? ["observeWorkerStartupRatline", "observeStartupRatline"] : []),
+          ...(continuationPurpose ? ["observeWorkerStartupRatlineContinuation", "observeStartupRatlineContinuation"] : [])]
           .map(key => disposableOwnerMethod(StartupLifecycle.prototype, key))];
       const capturedMethods = methodIdentities();
       const assertLocal = (): void => {
@@ -2598,7 +2603,8 @@ if (facadeToolRegistered(facadeMode, "easyeda_control_pcb_diagnostic_validation"
               startupOriginal.owner.observeWorkerStartupChannel !== startupOriginal.channel ||
               startupOriginal.owner.hasActiveReservation !== startupOriginal.reserved ||
               startupOriginal.owner instanceof CurrentPcb209EmptyStartupLifecycle && startupOriginal.owner.observeWorkerStartupEmpty !== startupOriginal.empty ||
-              startupOriginal.owner instanceof CurrentPcb209RatlineStartupLifecycle && startupOriginal.owner.observeWorkerStartupRatline !== startupOriginal.ratline)) { throw new Error("Worker startup original index owner, environment or methods changed."); }
+              startupOriginal.owner instanceof CurrentPcb209RatlineStartupLifecycle && startupOriginal.owner.observeWorkerStartupRatline !== startupOriginal.ratline ||
+              startupOriginal.owner instanceof CurrentPcb209RatlineContinuationLifecycle && startupOriginal.owner.observeWorkerStartupRatlineContinuation !== startupOriginal.continuation)) { throw new Error("Worker startup original index owner, environment or methods changed."); }
       };
       const assertUnreserved = (): void => {
         assertLocal();
@@ -2627,7 +2633,9 @@ if (facadeToolRegistered(facadeMode, "easyeda_control_pcb_diagnostic_validation"
         empty: owner instanceof CurrentPcb209EmptyStartupLifecycle ? owner.observeWorkerStartupEmpty : undefined,
         // oxlint-disable-next-line typescript/unbound-method -- Retain the exact original method and invoke only with its retained lifecycle receiver.
         ratline: owner instanceof CurrentPcb209RatlineStartupLifecycle ? owner.observeWorkerStartupRatline : undefined,
-        emptyPurpose, ratlinePurpose, assertLocal };
+        // oxlint-disable-next-line typescript/unbound-method -- Keep the original purpose method and invoke only with its retained receiver.
+        continuation: owner instanceof CurrentPcb209RatlineContinuationLifecycle ? owner.observeWorkerStartupRatlineContinuation : undefined,
+        emptyPurpose, ratlinePurpose, continuationPurpose, assertLocal };
     }
     const retained = startupOriginal; retained.assertLocal();
     const assertRetained = (): void => {
@@ -2637,7 +2645,10 @@ if (facadeToolRegistered(facadeMode, "easyeda_control_pcb_diagnostic_validation"
     const run = async (): Promise<{ result: Record<string, unknown> }> => {
       assertRetained();
       let result: Record<string, unknown>;
-      if (request.action === "observe-ratline-held-import") {
+      if (request.action === "observe-ratline-continuation") {
+        if (!(retained.owner instanceof CurrentPcb209RatlineContinuationLifecycle) || retained.continuation === undefined || !retained.continuationPurpose) { throw new Error("Original ratline continuation launch purpose required."); }
+        result = await retained.continuation.call(retained.owner, request.operationId, request.expectedBindingSha256);
+      } else if (request.action === "observe-ratline-held-import") {
         if (!(retained.owner instanceof CurrentPcb209RatlineStartupLifecycle) || retained.ratline === undefined || !retained.ratlinePurpose) { throw new Error("Original ratline held-import launch purpose required."); }
         result = await retained.ratline.call(retained.owner, request.operationId, request.expectedBindingSha256);
       } else if (request.action === "observe-empty-baseline") {
@@ -2665,12 +2676,13 @@ if (facadeToolRegistered(facadeMode, "easyeda_control_pcb_diagnostic_validation"
     const startupSchema = z.object({ request: z.unknown().pipe(currentPcb209WorkerStartupToolRequestSchema) }).strict();
     server.registerTool("easyeda_control_pcb209_worker_startup", {
       title: "Capture a disposable EasyEDA 3.2.209 project worker startup",
-      description: "Disposable EasyEDA 3.2.209 startup validation with three separate launch purposes. Query the matching offline catalog and argument validator first: pcb209-worker-startup/-validate, pcb209-empty-baseline/-validate, or pcb209-ratline-held-import/-validate. Each purpose launches its own original owner; an existing owner cannot be upgraded. Launch, qualify browser/frame/UI source, then capture-project once against the exact disposable checkpoint. The default pcb209-startup-* purpose can subsequently observe current assignments, channel relations and a sequential UI/worker actor-clock bracket. The empty-baseline wrapper uses pcb209-empty-* and joins fixed common data with the original completed SQL checkpoint, bracketed by empty raw-manager samples; populated targets refuse. The ratline-held-import wrapper uses pcb209-ratline-* with the original cumulative budget and complete source leases. After capture-project, observe-ratline-held-import journals intent before the sole PCB navigation, qualifies 29 PCB source stages, captures original construction and holds the first ratline child at its seventh qualified source import. It stops before worker continuation, callback return and full startup or baseline completion. Native Worker-object/target identity remains unproved. These sequential observations grant no native channel-peer, server-clock, contained-destination, writer or durability proof. Explicit debugger-pause acceptance is required. Launch/open may restore tabs, migrate, replay caches, use the network and automatically persist files. Every stage is consumed once. Inspect after uncertainty and retain the original owner through abort, normal close, original root/Job termination, helper release and record settlement. No caller JavaScript, CDP commands, explicit Save, CAD writer, historical-owner adoption, navigation retry, force exit or Save/Discard choice.",
+      description: "Disposable EasyEDA 3.2.209 startup validation with four separate launch purposes. Query the matching offline catalog and argument validator first: pcb209-worker-startup/-validate, pcb209-empty-baseline/-validate, pcb209-ratline-held-import/-validate, or pcb209-ratline-continuation/-validate. Each purpose launches its own original owner; an existing owner cannot be upgraded. Launch, qualify browser/frame/UI source, then capture-project once against the exact disposable checkpoint. The default pcb209-startup-* purpose can subsequently observe current assignments, channel relations and a sequential UI/worker actor-clock bracket. The empty-baseline wrapper uses pcb209-empty-* and joins fixed common data with the original completed SQL checkpoint, bracketed by empty raw-manager samples; populated targets refuse. The ratline-held-import wrapper uses pcb209-ratline-* with the original cumulative budget and complete source leases. After capture-project, observe-ratline-held-import journals intent before the sole PCB navigation, qualifies 29 PCB source stages, captures original construction and holds the first ratline child at its seventh qualified source import. It stops before worker continuation, callback return and full startup or baseline completion. The ratline-continuation wrapper uses pcb209-continuation-* and a separately sealed native budget. After capture-project, observe-ratline-continuation qualifies the original PCB, first worker and subordinate sources, continues their fixed imports and observes original PCB/worker capture checkpoints and callback returnsites. Callback completion, publication completion and native Worker-object/target identity remain unproved. These sequential observations grant no native channel-peer, server-clock, contained-destination, writer or durability proof. Explicit debugger-pause acceptance is required. Launch/open may restore tabs, migrate, replay caches, use the network and automatically persist files. Every stage is consumed once. Inspect after uncertainty and retain the original owner through abort, normal close, original root/Job termination, helper release and record settlement. No caller JavaScript, CDP commands, explicit Save, CAD writer, historical-owner adoption, navigation retry, force exit or Save/Discard choice.",
       inputSchema: startupSchema, outputSchema: currentSymbolOperationToolOutputSchema,
       annotations: { readOnlyHint: false, destructiveHint: false, idempotentHint: false, openWorldHint: true },
     }, guarded((input: z.infer<typeof startupSchema>) => {
       const request = startupSchema.parse(input).request;
       if (request.action === "ratline-held-import") { return runStartup(request.request, false, true); }
+      if (request.action === "ratline-continuation") { return runStartup(request.request, false, false, true); }
       return request.action === "empty-baseline" ? runStartup(request.request, true) : runStartup(request);
     }));
   }

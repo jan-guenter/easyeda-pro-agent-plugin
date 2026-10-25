@@ -5,6 +5,7 @@ import { CurrentPcb209RatlineBootstrapOwner } from "./current-pcb-209-ratline-bo
 import type { CurrentPcb209RatlineCreationPacket, CurrentPcb209RatlinePcbCreation, CurrentPcb209RatlineWorkerCreation } from "./current-pcb-209-ratline-creation-runner.ts";
 import type { CurrentPcb209RatlineRealmCommand, CurrentPcb209RatlineRealmDependency } from "./current-pcb-209-ratline-event-dispatcher.ts";
 import { currentPcb209RatlineNativeWire } from "./current-pcb-209-ratline-native-wire.ts";
+import { inheritCurrentPcb209RatlineContinuationTiming } from "./current-pcb-209-ratline-continuation-timing.ts";
 
 type Creation = CurrentPcb209RatlinePcbCreation | CurrentPcb209RatlineWorkerCreation;
 type Role = "pcb" | "worker";
@@ -59,6 +60,7 @@ export class CurrentPcb209RatlineChildStartGate {
         lost: () => { this.#failed = true; events.lost(); },
       }); },
     });
+    inheritCurrentPcb209RatlineContinuationTiming(dependency, this.#realm);
   }
   #same(): void { ownerIdentity(this.#owner); need(members(this.#dependency).every((value, index) => value === this.#members[index]), "DEPENDENCY_CHANGED"); }
   public claimOriginalRealm(): CurrentPcb209RatlineRealmDependency {

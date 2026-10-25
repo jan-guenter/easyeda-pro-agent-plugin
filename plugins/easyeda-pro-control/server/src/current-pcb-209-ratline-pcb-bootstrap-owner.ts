@@ -17,6 +17,7 @@ import { captureCurrentPcbStringClockReply } from "./current-pcb-string-clock-re
 import { currentPcb209RatlineEventKind, currentPcb209RatlineFailureReason } from "./current-pcb-209-ratline-diagnostics.ts";
 import type { CurrentPcb209RatlineEventKind } from "./current-pcb-209-ratline-diagnostics.ts";
 import { retainCurrentPcb209RatlineAllocation } from "./current-pcb-209-ratline-transport-windows.ts";
+import { inheritCurrentPcb209RatlineContinuationTiming } from "./current-pcb-209-ratline-continuation-timing.ts";
 
 export interface CurrentPcb209RatlinePcbBootstrapContext {
   readonly sessionId: string;
@@ -320,7 +321,9 @@ export class CurrentPcb209RatlinePcbBootstrapOwner {
     try {
       for (const [ordinal, stage] of this.#stages.entries()) {
         this.#step = "source-pause-wait";
-        const pause = pauseSchema.parse(await bounded(stage.paused.promise)), script = stage.script;
+        const pauseMilliseconds = ordinal === 0 ? CURRENT_PCB_209_RATLINE_NATIVE_PROFILE.elapsed.pcbBootstrapFirstPauseMilliseconds :
+          CURRENT_PCB_209_RATLINE_NATIVE_PROFILE.elapsed.ordinaryRequestMilliseconds;
+        const pause = pauseSchema.parse(await bounded(stage.paused.promise, pauseMilliseconds)), script = stage.script;
         this.#step = "source-identity";
         need(script !== null && this.#context !== null && this.#frameUrl !== null && pause.data.scriptId === script.scriptId && pause.data.url === script.url &&
           pause.callFrames[0]?.location.scriptId === script.scriptId && script.executionContextId === this.#context.id &&
@@ -355,7 +358,7 @@ export class CurrentPcb209RatlinePcbBootstrapOwner {
   public async claimOriginalPcbRealm(packet: CurrentPcb209RatlinePcbBootstrapPacket): Promise<CurrentPcb209RatlineRealmDependency> {
     need(!this.#realmClaimed && !this.#continuationConsumed, "REALM_CLAIM_CONSUMED"); this.#realmClaimed = true; await this.requireOriginal(packet);
     this.#same(); need(!this.#failed && !this.#released, "NOT_CURRENT");
-    return Object.freeze({ scriptId: packet.scriptId, parentTargetId: packet.parentTargetId, parentSessionId: packet.sessionId,
+    const realm = Object.freeze({ scriptId: packet.scriptId, parentTargetId: packet.parentTargetId, parentSessionId: packet.sessionId,
       assertOriginalPinnedParentAndAutoAttach: async (source: Readonly<{ relativePath: string; bytes: number; sha256: string }>): Promise<void> => {
         need(source === CURRENT_PCB_209_RATLINE_SOURCE_PROFILE.pcb, "REALM_SOURCE"); await this.requireOriginal(packet);
       },
@@ -366,6 +369,7 @@ export class CurrentPcb209RatlinePcbBootstrapOwner {
         this.#realmSubscribed = true; this.#realmEventMembers = realmMembers(events); this.#realmEvents = events;
         return (): void => { need(this.#realmEvents === events, "REALM_SUBSCRIPTION_CHANGED"); this.#realmEvents = null; this.#realmEventMembers = null; };
       } });
+    inheritCurrentPcb209RatlineContinuationTiming(this.#dependency, realm); return realm;
   }
   /** Native debugger identity stays bound to this original PCB source owner. */
   public async requireOriginalDebugger(packet: CurrentPcb209RatlinePcbBootstrapPacket): Promise<string> {

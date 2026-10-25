@@ -12,6 +12,7 @@ import type { CurrentPcb209RatlineRealmDependency } from "./current-pcb-209-ratl
 import type { CurrentPcb209RatlineCreationPacket } from "./current-pcb-209-ratline-creation-runner.ts";
 import type { CurrentPcb209RatlineAnyCapturePacket, CurrentPcb209RatlineCapturePacket, CurrentPcb209RatlineHeldCapturePacket } from "./current-pcb-209-ratline-capture-runner.ts";
 import type { CurrentPcb209RatlineCaptureScope } from "./current-pcb-209-ratline-capture-profile.ts";
+import { currentPcb209RatlineContinuationTiming } from "./current-pcb-209-ratline-continuation-timing.ts";
 
 type Role = "pcb" | "worker";
 export interface CurrentPcb209RatlineStartupDependency {
@@ -102,7 +103,8 @@ class CurrentPcb209RatlineStartupCore<Scope extends CurrentPcb209RatlineCaptureS
   async #current(): Promise<void> {
     this.#diagnostics.step = "owner-reproof";
     this.#same(); need(!this.#failed && !this.#released && !this.#releaseStarted, "NOT_CURRENT");
-    await bounded(this.#dispatcher.requireOriginal()); this.#same(); need(!this.#failed && !this.#released && !this.#releaseStarted, "NOT_CURRENT");
+    await bounded(this.#dispatcher.requireOriginal(), currentPcb209RatlineContinuationTiming(this.#dependency.realm)?.ownerMilliseconds);
+    this.#same(); need(!this.#failed && !this.#released && !this.#releaseStarted, "NOT_CURRENT");
   }
   #startCapture(): void { need(this.#capture === null, "CAPTURE_CONSUMED"); this.#capture = this.#stages.capture.capture(); void observed(this.#capture); }
   public async capture(): Promise<Packets[Scope]> {
@@ -114,13 +116,15 @@ class CurrentPcb209RatlineStartupCore<Scope extends CurrentPcb209RatlineCaptureS
       if (this.#role === "worker") { this.#startCapture(); }
       await this.#stages.creation.whenArmed(); if (this.#role === "worker") { await this.#stages.capture.whenArmed(); }
       this.#diagnostics.stage = "source-continuation"; await this.#current(); this.#sourceReleased = true; await bounded(this.#dispatcher.continueOriginalSource(() => this.#releaseSource.call(this.#dependency)),
-        this.#role === "pcb" ? CURRENT_PCB_209_RATLINE_NATIVE_PROFILE.elapsed.sourceReleaseMilliseconds : CURRENT_PCB_209_RATLINE_NATIVE_PROFILE.elapsed.ordinaryRequestMilliseconds); await this.#current();
+        currentPcb209RatlineContinuationTiming(this.#dependency.realm)?.sourceReleaseMilliseconds ??
+        (this.#role === "pcb" ? CURRENT_PCB_209_RATLINE_NATIVE_PROFILE.elapsed.sourceReleaseMilliseconds : CURRENT_PCB_209_RATLINE_NATIVE_PROFILE.elapsed.ordinaryRequestMilliseconds)); await this.#current();
       const construction = await this.#construction; await this.#current();
       if (this.#role === "pcb") { this.#diagnostics.stage = "capture-arming"; this.#startCapture(); await this.#stages.capture.whenArmed(); await this.#current(); }
       this.#diagnostics.stage = "child-arming";
       await this.#stages.creation.requireOriginal(construction); this.#childArmed = true;
-      await bounded(this.#childGate.armOriginalChildBootstrap(this.#stages.creation, construction), this.#role === "pcb" ?
-        CURRENT_PCB_209_RATLINE_NATIVE_PROFILE.elapsed.childArmMilliseconds : 6 * CURRENT_PCB_209_RATLINE_NATIVE_PROFILE.elapsed.ordinaryRequestMilliseconds); await this.#current();
+      await bounded(this.#childGate.armOriginalChildBootstrap(this.#stages.creation, construction),
+        currentPcb209RatlineContinuationTiming(this.#dependency.realm)?.childArmMilliseconds ?? (this.#role === "pcb" ?
+          CURRENT_PCB_209_RATLINE_NATIVE_PROFILE.elapsed.childArmMilliseconds : 6 * CURRENT_PCB_209_RATLINE_NATIVE_PROFILE.elapsed.ordinaryRequestMilliseconds)); await this.#current();
       // Success and abort cleanup share the creation owner's retained start
       // Promise. No second dispatcher or raw child-start request is introduced.
       this.#diagnostics.stage = "parent-continuation"; await this.#stages.creation.continueOriginalParent(construction); await this.#current();
@@ -134,12 +138,14 @@ class CurrentPcb209RatlineStartupCore<Scope extends CurrentPcb209RatlineCaptureS
       let packet: CurrentPcb209RatlineStartupPacket | CurrentPcb209RatlineHeldStartupPacket;
       if (this.#scope === "pcb-held-prefix") {
         need(capture.profile === "private.current-pcb209-ratline-pcb-held-prefix-capture.v1", "PROFILE");
-        this.#diagnostics.stage = "comparison"; await bounded(this.#dispatcher.requireOriginalConstruction(construction, capture)); await this.#current();
+        this.#diagnostics.stage = "comparison"; await bounded(this.#dispatcher.requireOriginalConstruction(construction, capture),
+          currentPcb209RatlineContinuationTiming(this.#dependency.realm)?.comparisonMilliseconds); await this.#current();
         packet = Object.freeze({ ...common, profile: "private.current-pcb209-ratline-held-prefix-composite.v2", role: "pcb", capture,
           originalConstructionAndBridgeWorkerMatch: true, originalConstructionAndRegistryMatch: true });
       } else {
         need(capture.profile !== "private.current-pcb209-ratline-pcb-held-prefix-capture.v1", "PROFILE");
-        this.#diagnostics.stage = "comparison"; await bounded(this.#dispatcher.requireOriginalConstruction(construction, capture)); await this.#current();
+        this.#diagnostics.stage = "comparison"; await bounded(this.#dispatcher.requireOriginalConstruction(construction, capture),
+          currentPcb209RatlineContinuationTiming(this.#dependency.realm)?.comparisonMilliseconds); await this.#current();
         packet = Object.freeze({ ...common, profile: "private.current-pcb209-ratline-composite.v1", role: this.#role, capture,
           originalConstructionAndBridgeWorkerMatch: true, originalConstructionAndRegistryMatch: true });
       }
