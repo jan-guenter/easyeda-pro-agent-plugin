@@ -152,3 +152,15 @@ Only the facade projections and review time changed in compatibility metadata;
 external pins remain unchanged. Exact-commit CI is the remaining release gate.
 The loaded host remains `0.3.0+codex.20261025022904`; the candidate has not been
 installed or exercised against EasyEDA.
+
+### CI fixture correction
+
+The first PR122 payload, `4cc0a4b0831368eb65565acc970a25de24c4e08b`,
+passed build/bridge and Windows checks but failed facade shard 2. The protocol
+adapter fixture still expected the former 358 total and 315 normal ratline
+requests. Its two assertions now require the derived 361 and 318 limits.
+The affected 11-test suite and strict targeted lint passed. A search of all
+facade and bridge tests found no other stale ratline budget, arm-count or
+helper-pin expectations. Runtime source, bundles, guards and install version
+are unchanged; a new final-commit CI run remains required. The original failure
+log is retained privately.
