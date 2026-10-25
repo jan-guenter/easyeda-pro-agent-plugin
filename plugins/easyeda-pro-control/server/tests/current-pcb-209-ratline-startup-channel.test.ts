@@ -199,6 +199,10 @@ void test("bootstrap acknowledgement enforces its original one-KiB reply class",
     f.frame({ id: request["requestId"], sessionId: request["sessionId"], result: { privateText: "x".repeat(1024) } }); return Promise.resolve({ written: true });
   };
   await assert.rejects(arm(dependency, "pcb")); assert.equal(f.channel.status().fatal, true);
+  const failure = f.channel.status().firstFailure; assert.ok(failure !== null);
+  assert.equal(failure.code, "POLL"); assert.equal(failure.reason, "PCB209_RATLINE_STARTUP_CHANNEL_REPLY");
+  assert.equal(failure.lastCommand, "Target.setAutoAttach"); assert.equal(failure.lastRoute, "pcb");
+  assert.equal(JSON.stringify(failure).includes("privateText"), false); assert.ok(Object.isFrozen(failure));
 });
 void test("wrong native child session and later PCB continuation phases refuse without a write", async context => {
   const f = await fixture(context); const dependency = await prepare(f); await pcb(f, dependency);
@@ -262,6 +266,9 @@ void test("failed project prelude consumes native abort before its original clea
     return Promise.resolve({ written: true });
   };
   await assert.rejects(f.dependency.request({ method: "Runtime.enable", sessionId: "project-session", params: {} }), /REMOTE/u);
+  const failure = f.channel.status().firstFailure; assert.ok(failure !== null);
+  assert.equal(failure.code, "REMOTE"); assert.equal(failure.lastCommand, "Runtime.enable");
+  assert.equal(JSON.stringify(failure).includes("synthetic prelude refusal"), false);
   f.state.onSend = null;
   await f.dependency.request({ method: "Debugger.removeBreakpoint", sessionId: "project-session", params: { breakpointId: "original-prelude" } });
   assert.equal(f.requests.at(-2)?.["action"], "worker-startup-ratline-abort");
@@ -269,6 +276,7 @@ void test("failed project prelude consumes native abort before its original clea
   const sent = f.requests.length;
   await assert.rejects(f.dependency.request({ method: "Runtime.runIfWaitingForDebugger", sessionId: "project-session", params: {} }), /REMOTE/u);
   assert.equal(f.requests.length, sent);
+  assert.equal(f.channel.status().firstFailure, failure);
 });
 
 void test("queued normal work cannot wait on its own later native abort", { timeout: 3000 }, async context => {

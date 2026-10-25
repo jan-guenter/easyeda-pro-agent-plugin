@@ -37,15 +37,15 @@ void test("restricted registration admits scoped metadata and disposable opening
   }
 });
 
-void test("exact209 selectors expose fourteen scoped tools without inheriting unreviewed old routes", () => {
+void test("exact209 selectors expose fifteen scoped tools without inheriting unreviewed old routes", () => {
   assert.equal(configuredFacadeMode({ EASYEDA_PCB_BUNDLE_VERSION: "3.2.195.6b67774e",
     EASYEDA_PUBLIC_API_BUNDLE_VERSION: "0.3.59.1ca9efb5" }), "public-utilities-only");
-  assert.equal(PUBLIC_UTILITIES_ONLY_TOOLS.length, 14);
+  assert.equal(PUBLIC_UTILITIES_ONLY_TOOLS.length, 15);
   assert.equal(facadeToolRegistered("legacy-reviewed", "easyeda_control_public_readers"), false);
   assert.equal(facadeToolRegistered("calculation-only", "easyeda_control_public_readers"), false);
   assert.equal(facadeToolRegistered("legacy-reviewed", "easyeda_control_catalog_footprint"), false);
   assert.equal(facadeToolRegistered("calculation-only", "easyeda_control_catalog_footprint"), false);
-  for (const tool of ["easyeda_control_catalog_components", "easyeda_control_pcb209_opening", "easyeda_control_pcb209_worker_startup"]) {
+  for (const tool of ["easyeda_control_netlist_files", "easyeda_control_catalog_components", "easyeda_control_pcb209_opening", "easyeda_control_pcb209_worker_startup"]) {
     assert.equal(facadeToolRegistered("legacy-reviewed", tool), false);
     assert.equal(facadeToolRegistered("calculation-only", tool), false);
   }
@@ -57,6 +57,10 @@ void test("exact209 selectors expose fourteen scoped tools without inheriting un
     assert.equal(facadeToolRegistered("public-utilities-only", name), false);
   }
   const capabilities = publicUtilitiesOnlyCapabilities();
+  assert.deepEqual(capabilities["netlistFiles"], { tool: "easyeda_control_netlist_files", runtimeAdmissionRequiredForComparison: true,
+    connectedValidation: false, preparation: "exclusive-managed-artifact-from-supplied-ascii", comparison: "allegro-file-memberships-only", cadAuthority: false });
+  assert.deepEqual(capabilities["publicReaders"], { tool: "easyeda_control_public_readers", runtimeAdmissionRequired: true, connectedValidation: false,
+    scope: "supported-languages-api-page-viewport-theme-toolbar-unit-and-fixed-system-library-id" });
   assert.deepEqual(capabilities["navigation"], { enabled: true, scope: "original-owner-disposable209-opening-and-three-separate-startup-purposes-only" });
   assert.deepEqual(capabilities["designAccess"], { enabled: false, scope: "general-geometry-and-writers;disposable-bounded-observations-and-historical-queries-only" });
   const opening = capabilities["disposableOpening"]; assert.ok(typeof opening === "object" && opening !== null && "layerObservation" in opening);

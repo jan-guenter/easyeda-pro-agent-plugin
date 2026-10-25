@@ -16,6 +16,9 @@ import { captureCurrentPcbStringClockReply } from "./current-pcb-string-clock-re
 import type { CurrentPcb209RatlineRealmCommand, CurrentPcb209RatlineRealmDependency } from "./current-pcb-209-ratline-event-dispatcher.ts";
 import { CURRENT_PCB_209_RATLINE_SOURCE_PROFILE } from "./current-pcb-209-ratline-source.ts";
 import { currentPcb209RatlineNativeWire } from "./current-pcb-209-ratline-native-wire.ts";
+import { currentPcb209RatlineEventKind, currentPcb209RatlineFailureReason } from "./current-pcb-209-ratline-diagnostics.ts";
+import type { CurrentPcb209RatlineEventKind } from "./current-pcb-209-ratline-diagnostics.ts";
+import { retainCurrentPcb209RatlineAllocation } from "./current-pcb-209-ratline-transport-windows.ts";
 
 type Creation = CurrentPcb209RatlinePcbCreation | CurrentPcb209RatlineWorkerCreation;
 export type CurrentPcb209RatlineBootstrapCommand = Readonly<{ sessionId: string }> & (
@@ -122,6 +125,13 @@ export class CurrentPcb209RatlineBootstrapOwner {
   #consumed = false;
   #armed = false;
   #failed = false;
+  #firstChild = false;
+  #step = "idle";
+  #lastCommand: CurrentPcb209RatlineBootstrapCommand["method"] | null = null;
+  #lastEvent: CurrentPcb209RatlineEventKind = "unparsed";
+  #firstFailure: Readonly<{ reason: string; step: string; stage: CurrentPcb209RatlineBootstrapRole | null;
+    lastCommand: CurrentPcb209RatlineBootstrapCommand["method"] | null; lastEvent: CurrentPcb209RatlineEventKind;
+    events: number; contextSeen: boolean; scriptSeen: boolean; pauseSeen: boolean; qualified: boolean }> | null = null;
   #released = false;
   #releaseStarted = false;
   #continuationConsumed = false;
@@ -156,28 +166,36 @@ export class CurrentPcb209RatlineBootstrapOwner {
       stage: this.#stages[this.#index]?.role ?? null, qualified: this.#packet !== null, sourceContinuationConsumed: this.#continuationConsumed,
       unresolvedInstrumentation: this.#allocationUncertain || this.#instrumentation !== null && !this.#removed, commands: this.#commands,
       workerRealmClaimed: this.#realmClaimed, workerRealmRequests: this.#realmRequests,
-      workerScriptLoadedObserved: this.#workerScriptLoadedObserved });
+      workerScriptLoadedObserved: this.#workerScriptLoadedObserved, firstFailure: this.#firstFailure, step: this.#step,
+      lastCommand: this.#lastCommand, lastEvent: this.#lastEvent, events: this.#events });
   }
   #same(): void { need(members(this.#dependency).every((value, index) => value === this.#members[index]), "OWNER_CHANGED"); }
   async #current(): Promise<void> {
     this.#same(); need(!this.#failed && !this.#released && this.#creation !== null && this.#construction !== null, "NOT_CURRENT");
     const creation = this.#creation, packet = this.#construction;
-    await bounded(requireCreation.call(creation, packet)); this.#same();
-    await bounded(this.#dependency.assertOriginalChild(creation, packet)); this.#same(); need(!this.#failed && !this.#released, "NOT_CURRENT");
+    this.#step = "creation-reproof"; await bounded(requireCreation.call(creation, packet)); this.#same();
+    this.#step = "child-owner-reproof";
+    await bounded(this.#dependency.assertOriginalChild(creation, packet), (this.#firstChild ? 2 : 1) * CURRENT_PCB_209_RATLINE_NATIVE_PROFILE.elapsed.ordinaryRequestMilliseconds);
+    this.#same(); need(!this.#failed && !this.#released, "NOT_CURRENT");
   }
-  #poison(): void {
-    if (this.#failed) { return; } this.#failed = true;
-    const error = new Error("PCB209_RATLINE_BOOTSTRAP_FAILED"); this.#qualified.reject(error);
+  #poison(cause: unknown = new Error("PCB209_RATLINE_BOOTSTRAP_ABORTED")): void {
+    if (this.#failed) { return; } const active = this.#stages[this.#index];
+    this.#firstFailure = Object.freeze({ reason: currentPcb209RatlineFailureReason(cause), step: this.#step, stage: active?.role ?? null,
+      lastCommand: this.#lastCommand, lastEvent: this.#lastEvent, events: this.#events, contextSeen: this.#context !== null,
+      scriptSeen: active?.script !== null && active?.script !== undefined, pauseSeen: active?.pause !== null && active?.pause !== undefined, qualified: active?.qualified ?? false });
+    this.#failed = true;
+    const error = new Error("PCB209_RATLINE_BOOTSTRAP_FAILED", { cause }); this.#qualified.reject(error);
     for (const stage of this.#stages) { stage.paused.reject(error); stage.resumed.reject(error); }
     this.#realmEvents?.lost();
   }
-  readonly #lost = (): void => { this.#poison(); };
+  readonly #lost = (): void => { this.#poison(new Error("PCB209_RATLINE_BOOTSTRAP_STREAM_LOST")); };
   readonly #event = (input: CurrentPcb209RatlineBootstrapEvent): void => {
     try {
       this.#same(); need(!this.#released && this.#construction !== null, "EVENT_STATE");
       const captured = captureCurrentPcbStringClockReply(input); this.#events += 1; this.#eventBytes += Buffer.byteLength(captured.text);
       need(this.#events <= 128 && this.#eventBytes <= 256 * 1024, "EVENT_BUDGET");
       const event = z.object({ method: z.string().max(128), sessionId: token, params: z.record(z.string(), z.unknown()) }).strict().parse(captured.value);
+      this.#lastEvent = currentPcb209RatlineEventKind(event.method);
       need(event.sessionId === this.#construction.childSessionId, "EVENT_SESSION");
       const stage = this.#stages[this.#index];
       if (event.method === "Inspector.workerScriptLoaded") {
@@ -239,13 +257,18 @@ export class CurrentPcb209RatlineBootstrapOwner {
         this.#realmListener().attached({ sessionId: event.sessionId, params: event.params }); return;
       }
       throw new Error("PCB209_RATLINE_BOOTSTRAP_UNEXPECTED_EVENT");
-    } catch { this.#poison(); }
+    } catch (error) { this.#poison(error); }
   };
-  async #send(command: CurrentPcb209RatlineBootstrapCommand, cleanup = false): Promise<unknown> {
+  async #send(command: CurrentPcb209RatlineBootstrapCommand, cleanup = false,
+    requestMilliseconds: number = CURRENT_PCB_209_RATLINE_NATIVE_PROFILE.elapsed.ordinaryRequestMilliseconds): Promise<unknown> {
     this.#same(); need(!this.#released && this.#construction !== null && command.sessionId === this.#construction.childSessionId, "COMMAND_SESSION");
     if (!cleanup) { await this.#current(); }
     need(this.#commands < 32, "COMMAND_BUDGET"); this.#commands += 1;
-    const raw = await this.#dependency.request(command); this.#same(); need(!this.#released, "RELEASED");
+    this.#lastCommand = command.method; this.#step = "native-request";
+    if (command.method === "Debugger.setInstrumentationBreakpoint") { this.#allocationUncertain = true; }
+    const raw = command.method === "Debugger.setInstrumentationBreakpoint" ? await retainCurrentPcb209RatlineAllocation(() => this.#dependency.request(command),
+      () => { this.#poison(new Error("PCB209_RATLINE_BOOTSTRAP_DEADLINE")); }) : await bounded(this.#dependency.request(command), requestMilliseconds);
+    this.#same(); need(!this.#released, "RELEASED");
     // The caller qualifies the sole large source string synchronously before
     // Its following awaited reproof. Ordinary replies are copied here first.
     if (command.method === "Debugger.getScriptSource") { return raw; }
@@ -275,10 +298,12 @@ export class CurrentPcb209RatlineBootstrapOwner {
       const pending = Promise.withResolvers<null>(); stage.resume = withoutValue(pending.promise); void observed(stage.resume);
       void observed((async (): Promise<void> => {
         try { empty.parse(captureCurrentPcbStringClockReply(await this.#send({ method: "Debugger.resume", params: {}, sessionId: packet.childSessionId }, cleanup)).value);
-          await stage.resumed.promise; pending.resolve(null); } catch (error) { pending.reject(error); }
+          this.#step = "resumed-event-wait"; await bounded(stage.resumed.promise); pending.resolve(null); } catch (error) { pending.reject(error); }
       })());
     }
-    await bounded(stage.resume);
+    const milliseconds = cleanup ? 2 * CURRENT_PCB_209_RATLINE_NATIVE_PROFILE.elapsed.ordinaryRequestMilliseconds :
+      CURRENT_PCB_209_RATLINE_NATIVE_PROFILE.elapsed.childBootstrapResumeMilliseconds;
+    await bounded(stage.resume, this.#firstChild ? milliseconds : CURRENT_PCB_209_RATLINE_NATIVE_PROFILE.elapsed.ordinaryRequestMilliseconds);
   }
   /** Direct adapter for composite.armOriginalChildBootstrap. It never starts
    * the child, resumes the parent, or accepts a copied construction packet. */
@@ -288,18 +313,20 @@ export class CurrentPcb209RatlineBootstrapOwner {
       need(creation !== null && typeof creation === "object" && !types.isProxy(creation) &&
         (Object.getPrototypeOf(creation) === CurrentPcb209RatlinePcbCreation.prototype || Object.getPrototypeOf(creation) === CurrentPcb209RatlineWorkerCreation.prototype), "CREATION_OWNER");
       this.#creation = creation; this.#construction = packet;
+      this.#firstChild = Object.getPrototypeOf(creation) === CurrentPcb209RatlinePcbCreation.prototype;
       await bounded(requireCreation.call(creation, packet)); await this.#current();
       this.#unsubscribe = this.#dependency.subscribe({ event: this.#event, lost: this.#lost }); need(typeof this.#unsubscribe === "function", "SUBSCRIPTION");
       const sessionId = packet.childSessionId;
-      const attachReply = await bounded(this.#send({ method: "Target.setAutoAttach", sessionId, params: CURRENT_PCB_WORKER_STARTUP_ATTACH }));
+      const sendMilliseconds = this.#firstChild ? CURRENT_PCB_209_RATLINE_NATIVE_PROFILE.elapsed.childBootstrapSendMilliseconds :
+        CURRENT_PCB_209_RATLINE_NATIVE_PROFILE.elapsed.ordinaryRequestMilliseconds;
+      const attachReply = await bounded(this.#send({ method: "Target.setAutoAttach", sessionId, params: CURRENT_PCB_WORKER_STARTUP_ATTACH }), sendMilliseconds);
       empty.parse(captureCurrentPcbStringClockReply(attachReply).value);
-      const runtimeReply = await bounded(this.#send({ method: "Runtime.enable", sessionId, params: {} }));
+      const runtimeReply = await bounded(this.#send({ method: "Runtime.enable", sessionId, params: {} }), sendMilliseconds);
       empty.parse(captureCurrentPcbStringClockReply(runtimeReply).value);
-      const debuggerReply = await bounded(this.#send({ method: "Debugger.enable", sessionId, params: { maxScriptsCacheSize: 33_554_432 } }));
+      const debuggerReply = await bounded(this.#send({ method: "Debugger.enable", sessionId, params: { maxScriptsCacheSize: 33_554_432 } }), sendMilliseconds);
       this.#debuggerId = z.object({ debuggerId: token }).strict().parse(captureCurrentPcbStringClockReply(debuggerReply).value).debuggerId;
-      empty.parse(await bounded(this.#send({ method: "Debugger.setAsyncCallStackDepth", sessionId, params: { maxDepth: 1 } })));
+      empty.parse(await bounded(this.#send({ method: "Debugger.setAsyncCallStackDepth", sessionId, params: { maxDepth: 1 } }), sendMilliseconds));
       this.#asyncDepthArmed = true;
-      this.#allocationUncertain = true;
       const allocated = Promise.withResolvers<null>(); this.#allocation = withoutValue(allocated.promise); void observed(this.#allocation);
       void observed((async (): Promise<void> => {
         try {
@@ -309,13 +336,15 @@ export class CurrentPcb209RatlineBootstrapOwner {
           if (this.#failed) { await this.#remove(); }
           allocated.resolve(null);
         } catch (error) { allocated.reject(error); }
-      })()); await bounded(this.#allocation); await this.#current(); this.#armed = true;
+      })()); await bounded(this.#allocation, this.#firstChild ? CURRENT_PCB_209_RATLINE_NATIVE_PROFILE.elapsed.childBootstrapAllocationMilliseconds :
+        CURRENT_PCB_209_RATLINE_NATIVE_PROFILE.elapsed.ordinaryRequestMilliseconds); await this.#current(); this.#armed = true;
       this.#capture = this.#qualify(); void observed(this.#capture);
-    } catch (error) { this.#poison(); throw error; }
+    } catch (error) { this.#poison(error); throw error; }
   }
   async #qualify(): Promise<void> {
     try {
       for (const [ordinal, stage] of this.#stages.entries()) {
+        this.#step = "source-pause-wait";
         const pause = pauseSchema.parse(await bounded(stage.paused.promise)), script = stage.script;
         need(script !== null && this.#context !== null && pause.data.scriptId === script.scriptId && pause.data.url === script.url &&
           pause.callFrames[0]?.location.scriptId === script.scriptId && script.executionContextId === this.#context.id &&
@@ -325,8 +354,11 @@ export class CurrentPcb209RatlineBootstrapOwner {
           qualifyCurrentPcb209PreloadCopyPause(stage.role, script.scriptId, preload.scriptId, pause);
         }
         await this.#current();
-        qualifyCurrentPcb209RatlineBootstrapSource(stage.role, await bounded(this.#send({ method: "Debugger.getScriptSource",
-          sessionId: this.#construction?.childSessionId ?? "", params: { scriptId: script.scriptId } }), currentPcb209RatlineSourceBudget("child", ordinal).deadlineMilliseconds));
+        const sourceMilliseconds = currentPcb209RatlineSourceBudget("child", ordinal).deadlineMilliseconds;
+        const raw = await bounded(this.#send({ method: "Debugger.getScriptSource", sessionId: this.#construction?.childSessionId ?? "",
+          params: { scriptId: script.scriptId } }, false, sourceMilliseconds), sourceMilliseconds +
+          (this.#firstChild ? CURRENT_PCB_209_RATLINE_NATIVE_PROFILE.elapsed.childOwnerMilliseconds : 0));
+        this.#step = "source-qualification"; qualifyCurrentPcb209RatlineBootstrapSource(stage.role, raw);
         stage.qualified = true; await this.#current();
         if (ordinal === 0) {
           need(!this.#firstObservationConsumed && this.#creation !== null && this.#construction !== null, "FIRST_OBSERVATION");
@@ -343,7 +375,7 @@ export class CurrentPcb209RatlineBootstrapOwner {
         }
         await this.#resume(stage); await this.#current();
       }
-    } catch { this.#poison(); }
+    } catch (error) { this.#poison(error); }
   }
   /** Only the actual first held script, after complete source qualification.
    * Copies of construction packets cannot retrieve its native observations. */
@@ -364,7 +396,7 @@ export class CurrentPcb209RatlineBootstrapOwner {
   public async releaseOriginalPinnedSource(packet: CurrentPcb209RatlineBootstrapPacket): Promise<void> {
     need(!this.#continuationConsumed, "CONTINUATION_CONSUMED"); this.#continuationConsumed = true;
     try { await this.requireOriginal(packet); this.#realmListener(); const stage = this.#stages[6]; need(stage !== undefined && this.#removed, "SOURCE_HELD");
-      await this.#resume(stage); await this.#current(); } catch (error) { this.#poison(); throw error; }
+      await this.#resume(stage); await this.#current(); } catch (error) { this.#poison(error); throw error; }
   }
   /** The containing original native adapter must call this before permitting
    * creation.startOriginalChild, including after an ambiguous arm failure. */

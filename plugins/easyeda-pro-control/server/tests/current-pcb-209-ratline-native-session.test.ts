@@ -88,7 +88,7 @@ function pcbReply(): unknown {
     ok: true, status: "ready", failure: null, dispatchAttempted: false, publicResult: null, nativeWorkMayRemain: false,
     frameObserved: false, windowTabId: "window" }) } };
 }
-async function fixture(t: TestContext): Promise<Readonly<{
+async function fixture(t: TestContext, fixtureOptions: Readonly<{ syntheticCheckpoint?: boolean }> = {}): Promise<Readonly<{
   create: (options?: Readonly<{ copyResult?: boolean; copyDependency?: boolean }>) => CurrentPcb209RatlineNativeSession;
   channel: CurrentPcb209RatlineStartupChannel; nativeRequests: Record<string, unknown>[];
   state: { terminated: boolean; checkpointCalls: number }; terminate: () => Promise<void>;
@@ -111,6 +111,7 @@ async function fixture(t: TestContext): Promise<Readonly<{
       if (request["action"] === "worker-startup-ratline-abort") { return Promise.resolve({ aborted: true }); }
       const id = request["requestId"]; assert.ok(typeof id === "number" && channel !== null); budget.consumeRequest(id, channel.classifyPending(id));
       let result: unknown = {};
+      if (request["method"] === "Debugger.enable") { result = { debuggerId: "retained-debugger", unexpected: true }; }
       if (request["method"] === "Target.getTargets") { result = { targetInfos: [{ ...page, attached: true, url: opened ? projectUrl : page.url }] }; }
       else if (request["method"] === "Page.getFrameTree") { result = { frameTree: { frame: { ...root, urlFragment: opened ? `#id=${projectUuid}` : "#" } } }; }
       else if (request["method"] === "Runtime.callFunctionOn") {
@@ -145,7 +146,17 @@ async function fixture(t: TestContext): Promise<Readonly<{
   // oxlint-disable-next-line typescript/no-unsafe-type-assertion -- Actual opening source, with only explicitly labeled construction/source dependencies substituted above.
   const opening = Reflect.construct(Opening, [{ dependency, opening: binding, actorClockSourceQualification: sourceQualification }]) as CurrentPcb209WorkerStartupOpening;
   const result = await opening.open(target, (): Promise<void> => Promise.resolve());
-  const sessionModule = await loadModule("current-pcb-209-ratline-native-session.ts", name => name === "./current-pcb-209-worker-startup-opening.ts" ? openingModule : undefined);
+  const inventory = Object.freeze({ syntheticCompletedInventory: true });
+  const completion = Object.freeze({ observedChildClose: true, exitCode: 0, exitSignal: null });
+  const sessionModule = await loadModule("current-pcb-209-ratline-native-session.ts", name => {
+    if (name === "./current-pcb-209-worker-startup-opening.ts") { return openingModule; }
+    // Only this explicitly selected fixture substitutes SQL completion. The
+    // Actual native session, channel, context router and source owner execute.
+    if (fixtureOptions.syntheticCheckpoint === true && name === "./sqlite-inventory.ts") {
+      return { readerCompletion: (value: unknown): typeof completion => { assert.equal(value, inventory); return completion; } };
+    }
+    return null;
+  });
   const Session = sessionModule["CurrentPcb209RatlineNativeSession"]; assert.ok(typeof Session === "function");
   const sessions: CurrentPcb209RatlineNativeSession[] = [];
   const terminate = async (): Promise<void> => {
@@ -153,7 +164,8 @@ async function fixture(t: TestContext): Promise<Readonly<{
     for (const session of sessions) { if (session.status().phase !== "released") { await session.abort(); await session.releaseAfterTermination(); } }
     await opening.releaseAfterTermination(); await originalChannel.releaseAfterTermination();
   };
-  const checkpoint = (): never => { state.checkpointCalls += 1; throw new Error("SYNTHETIC_CHECKPOINT_CHANGED"); };
+  const checkpoint = (): typeof inventory => { state.checkpointCalls += 1;
+    if (fixtureOptions.syntheticCheckpoint === true) { return inventory; } throw new Error("SYNTHETIC_CHECKPOINT_CHANGED"); };
   return { channel: originalChannel, nativeRequests, state, terminate,
     create: (options = {}): CurrentPcb209RatlineNativeSession => {
       const selectedResult: CurrentPcb209WorkerStartupOpeningResult = options.copyResult === true ? Object.freeze({ ...result }) : result;
@@ -189,5 +201,25 @@ void test("native session original opening reaches fixed PCB preflight then chan
     ["Target.getTargets", "Page.getFrameTree", "Runtime.callFunctionOn", "worker-startup-ratline-abort"]);
   assert.equal(requests[2]?.["parentPhase"], "pcb-preflight"); assert.equal(f.state.checkpointCalls, 1);
   assert.equal(session.status().transitionStarted, false); assert.equal(session.status().packetRetained, false);
-  assert.equal(session.retainedOpeningObservation(), null); await f.terminate();
+  assert.equal(session.retainedOpeningObservation(), null);
+  const failure = session.status().firstFailure;
+  assert.deepEqual(failure, { reason: "UNCLASSIFIED", phase: "preparation", step: "checkpoint-reverification" });
+  assert.equal(session.status().pcbContext, null); assert.equal(session.status().childSource, null);
+  await f.terminate(); assert.equal(session.status().firstFailure, failure);
+});
+
+void test("actual native session inspection retains nested PCB source failure before cleanup and after original release", async t => {
+  const f = await fixture(t, { syntheticCheckpoint: true }); const session = f.create();
+  // The synthetic peer returns the debugger ID plus an unexpected field.
+  // Actual strict source parsing must refuse it before instrumentation/navigation.
+  await assert.rejects(session.captureFirstChildHeld());
+  const state = session.status(); assert.equal(state.firstFailure?.reason, "SCHEMA"); assert.equal(state.firstFailure.step, "pcb-source-arming");
+  assert.equal(state.transitionStarted, false); assert.ok(state.pcbContext !== null);
+  const sourceState = state.pcbContext["sourceOwner"]; assert.ok(sourceState !== null && typeof sourceState === "object");
+  const sourceFailure: unknown = Reflect.get(sourceState, "firstFailure"); assert.ok(sourceFailure !== null && typeof sourceFailure === "object");
+  assert.equal(Reflect.get(sourceFailure, "reason"), "SCHEMA"); assert.equal(Reflect.get(sourceFailure, "lastCommand"), "Debugger.enable");
+  assert.equal(f.nativeRequests.some(request => request["method"] === "Debugger.setInstrumentationBreakpoint"), false);
+  assert.equal(f.nativeRequests.some(request => request["parentPhase"] === "pcb-open-document"), false);
+  await f.terminate(); assert.equal(session.status().firstFailure, state.firstFailure);
+  assert.equal(session.status().pcbContext?.["firstFailure"], state.pcbContext["firstFailure"]);
 });

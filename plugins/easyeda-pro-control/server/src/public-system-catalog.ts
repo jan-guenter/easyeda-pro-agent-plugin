@@ -1,6 +1,7 @@
 import { z } from "zod";
 import { PUBLIC_SYSTEM_FOOTPRINT_LIBRARY, PUBLIC_SYSTEM_FOOTPRINT_MAX_RESULT_BYTES,
   PUBLIC_SYSTEM_FOOTPRINT_ORIGIN } from "./public-system-footprint.ts";
+import { publicSystemSymbolExactRequestSchema, queryPublicSystemSymbolExact, validatePublicSystemSymbolExactResult } from "./public-system-symbol-exact.ts";
 
 const uuid = z.string().regex(/^[a-f0-9]{32}$/u);
 const safeText = (maximum: number): z.ZodString => z.string().max(maximum).refine((value) => value.isWellFormed() && !value.includes("\u0000"));
@@ -14,7 +15,7 @@ const symbolSearchSchema = z.object({ action: z.literal("search-symbols"), ...se
 const deviceSearchSchema = z.object({ action: z.literal("search-devices"), ...searchFields }).strict();
 const symbolSchema = z.object({ action: z.literal("get-symbol"), symbolUuid: uuid, confirmNetwork: z.literal(true) }).strict();
 const deviceSchema = z.object({ action: z.literal("get-device"), deviceUuid: uuid, confirmNetwork: z.literal(true) }).strict();
-export const publicSystemCatalogRequestSchema = z.discriminatedUnion("action", [searchSchema, symbolSearchSchema, deviceSearchSchema, symbolSchema, deviceSchema]);
+export const publicSystemCatalogRequestSchema = z.discriminatedUnion("action", [searchSchema, symbolSearchSchema, deviceSearchSchema, symbolSchema, deviceSchema, publicSystemSymbolExactRequestSchema]);
 export type PublicSystemCatalogRequest = z.infer<typeof publicSystemCatalogRequestSchema>;
 export function parsePublicSystemCatalogRequest(input: unknown): PublicSystemCatalogRequest { return publicSystemCatalogRequestSchema.parse(input); }
 
@@ -43,7 +44,8 @@ export function queryPublicSystemCatalog(input: unknown = {}): Record<string, un
     origin: PUBLIC_SYSTEM_FOOTPRINT_ORIGIN, libraryUuid: PUBLIC_SYSTEM_FOOTPRINT_LIBRARY, invocationEnabledByDiscovery: false,
     ...(query.includeSchemas ? { inputSchema: z.toJSONSchema(schema) } : {}), limitations: [...limitations], provenance: source,
   }); }
-  return { offline: true, invocationEnabledByDiscovery: false, total: 5, entries };
+  entries.push(...queryPublicSystemSymbolExact(query).entries);
+  return { offline: true, invocationEnabledByDiscovery: false, total: entries.length, entries };
 }
 export function validatePublicSystemCatalogArguments(input: unknown): Record<string, unknown> {
   const parsed = publicSystemCatalogRequestSchema.safeParse(input);
@@ -152,6 +154,7 @@ function projectSearch(request: SearchRequest, raw: unknown): Record<string, unk
  * complete component or execute instructions contained in names/descriptions. */
 export function validatePublicSystemCatalogResult(input: unknown, raw: unknown): Record<string, unknown> {
   const request = parsePublicSystemCatalogRequest(input);
+  if (request.action === "search-symbols-by-name") { return validatePublicSystemSymbolExactResult(request, raw); }
   let projected: Record<string, unknown>;
   switch (request.action) {
     case "search-footprints": case "search-symbols": case "search-devices": { projected = projectSearch(request, raw); break; }

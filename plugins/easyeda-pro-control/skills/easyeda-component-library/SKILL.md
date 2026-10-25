@@ -14,6 +14,7 @@ For live application actions, read the sibling [control skill](../easyeda-pro-co
 - For symbols, pin naming, electrical types, multipart units or connector perspective, read [symbols and pin mapping](references/symbols-and-pin-mapping.md).
 - For pads, package geometry, holes, mask, paste, courtyards or mechanical acceptance, read [footprints and assembly](references/footprints-and-assembly.md).
 - For devices, project templates, library updates or model associations, read [device and revision control](references/device-and-revision-control.md).
+- For public system candidates and names, read [catalog metadata](../easyeda-pro-control/references/current-system-library.md). Search results and device associations still need the manufacturer mapping checks below.
 
 Use the manufacturer drawing for the exact package suffix and revision. Record datasheet URL, drawing view, units and the source of each nontrivial dimension. If a dimension or perspective is missing, mark it unresolved rather than guessing from a picture.
 

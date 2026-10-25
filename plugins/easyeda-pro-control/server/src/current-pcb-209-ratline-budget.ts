@@ -84,9 +84,25 @@ const cleanupBytes = cleanupRequests * envelope, totalBytes = normalBytes + clea
 const cleanupMilliseconds = 60 * 1000, normalMilliseconds = 60 * 60 * 1000;
 // These waits cover the fixed awaited sub-operations, while each individual
 // Acknowledgement keeps its ordinary deadline. None extends the launch clock.
-const ancestryProofMilliseconds = 4 * ordinaryRequestMilliseconds;
-const sourceReleaseMilliseconds = ancestryProofMilliseconds + ordinaryRequestMilliseconds;
-const childArmMilliseconds = (5 + 1) * ordinaryRequestMilliseconds;
+// Each ancestry snapshot has owner-before, the native request, owner-after.
+// Source sends run only after that initial proof, so their context check reuses
+// The original completed proof and still rechecks its identity synchronously.
+const ancestryProofMilliseconds = 4 * 3 * ordinaryRequestMilliseconds;
+const pcbBootstrapSendMilliseconds = 3 * ordinaryRequestMilliseconds;
+const pcbBootstrapResumeMilliseconds = pcbBootstrapSendMilliseconds + ordinaryRequestMilliseconds;
+// Two dispatcher owner checks; router owner; fresh ancestry; source-owner
+// Before/resume/after. The resumed event is independently bounded by resume.
+const sourceReleaseMilliseconds = ancestryProofMilliseconds + 5 * ordinaryRequestMilliseconds + pcbBootstrapResumeMilliseconds;
+// First child only: direct creation proof plus the native callback's creation
+// Proof and native owner proof. Worker-parent recursion remains unqualified.
+const childOwnerMilliseconds = 3 * ordinaryRequestMilliseconds;
+const childBootstrapSendMilliseconds = 2 * childOwnerMilliseconds + ordinaryRequestMilliseconds;
+const childBootstrapAllocationMilliseconds = childOwnerMilliseconds + ordinaryRequestMilliseconds;
+const childBootstrapResumeMilliseconds = childBootstrapSendMilliseconds + ordinaryRequestMilliseconds;
+const childArmMilliseconds = ordinaryRequestMilliseconds + 2 * childOwnerMilliseconds +
+  4 * childBootstrapSendMilliseconds + childBootstrapAllocationMilliseconds;
+const pcbRealmAllocationMilliseconds = 2 * ordinaryRequestMilliseconds;
+const pcbChildStartMilliseconds = childOwnerMilliseconds + ordinaryRequestMilliseconds;
 const creationContinuationMilliseconds = (4 + 5 + 2) * ordinaryRequestMilliseconds;
 const capturePauseMilliseconds = requestClasses["pcb-capture"].count * ordinaryRequestMilliseconds;
 const captureWaitMilliseconds = childSources.reduce((sum, slot) => sum + slot.deadlineMilliseconds, 0) +
@@ -119,7 +135,9 @@ export const CURRENT_PCB_209_RATLINE_NATIVE_PROFILE = freezeDeep({
     totalBytes: discoveryEventBytes + startupEventBytes + continuationEventBytes },
   polling: { limit: pollLimit, normalLimit: normalPollLimit, cleanupReserve: cleanupPollReserve, intervalMilliseconds: pollIntervalMilliseconds },
   elapsed: { normalMilliseconds, cleanupMilliseconds, totalMilliseconds: normalMilliseconds + cleanupMilliseconds,
-    ordinaryRequestMilliseconds, ancestryProofMilliseconds, sourceReleaseMilliseconds, childArmMilliseconds,
+    ordinaryRequestMilliseconds, ancestryProofMilliseconds, pcbBootstrapSendMilliseconds, pcbBootstrapResumeMilliseconds, sourceReleaseMilliseconds, childArmMilliseconds,
+    childOwnerMilliseconds, childBootstrapSendMilliseconds, childBootstrapAllocationMilliseconds, childBootstrapResumeMilliseconds,
+    pcbRealmAllocationMilliseconds, pcbChildStartMilliseconds,
     creationContinuationMilliseconds, capturePauseMilliseconds, captureWaitMilliseconds, anchor: "original-monotonic-launch" },
   // One slot stays available for sequential cleanup after normal dispatch fails.
   discoveryRequestLimit: 19, normalPendingRequests: 31, pendingRequests: 32, helperControlMessages, helperNormalControlMessages, helperCleanupControlReserve,

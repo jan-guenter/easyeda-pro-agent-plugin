@@ -19,7 +19,7 @@ const deviceResult = (): Record<string, unknown> => ({ ...metadata(), project_uu
   symbol: { uuid: symbolUuid, display_title: "R" }, footprint: { uuid: footprintUuid, display_title: "R0603" }, product_code: "C12345" });
 const envelope = (result: unknown): Record<string, unknown> => ({ success: true, code: 0, result });
 
-void test("catalog expansion has five strict bounded requests and offline schemas, without destination selection", () => {
+void test("catalog expansion has six strict bounded requests and offline schemas, without destination selection", () => {
   for (const request of [searchRequest, symbolRequest, deviceRequest, { ...searchRequest, action: "search-symbols" }, { ...searchRequest, action: "search-devices" }]) {
     assert.deepEqual(parsePublicSystemCatalogRequest(request), request);
     assert.equal(validatePublicSystemCatalogArguments(request)["valid"], true);
@@ -40,7 +40,7 @@ void test("catalog expansion has five strict bounded requests and offline schema
   }
   assert.equal(validatePublicSystemCatalogArguments({})["valid"], false);
   const catalog = queryPublicSystemCatalog({ includeSchemas: true });
-  assert.equal(catalog["total"], 5); assert.equal(catalog["offline"], true); assert.equal(catalog["invocationEnabledByDiscovery"], false);
+  assert.equal(catalog["total"], 6); assert.equal(catalog["offline"], true); assert.equal(catalog["invocationEnabledByDiscovery"], false);
   assert.match(JSON.stringify(catalog), /inputSchema/u); assert.match(JSON.stringify(catalog), /read-only POST/u);
   assert.throws(() => queryPublicSystemCatalog({ method: "private" }));
 });

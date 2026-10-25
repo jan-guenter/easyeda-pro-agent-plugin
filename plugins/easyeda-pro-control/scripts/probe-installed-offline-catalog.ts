@@ -20,8 +20,8 @@ const NODE_VERSION = "24.18.0";
 const MAX_REPLY_BYTES = 8 * 1024 * 1024;
 const MAX_OUTPUT_BYTES = 16 * 1024 * 1024;
 const REQUEST_TIMEOUT_MS = 15_000;
-// Initialize and tool discovery plus the sixteen fixed catalog requests below.
-const REQUEST_LIMIT = 2 + 16;
+// Initialize and tool discovery plus the nineteen fixed catalog requests below.
+const REQUEST_LIMIT = 2 + 19;
 const EXPECTED_TOOLS = [
   "api", "calculate", "discover", "disposable_pcb_rename", "disposable_schematic_rename", "disposable_symbol_copy",
   "editor_context", "editor_shell", "extensions", "history", "launch", "pcb_diagnostic_validation", "pcb_geometry",
@@ -331,7 +331,22 @@ async function catalogChecks(child: OfflineChild, sample: () => Promise<void>): 
     requireCheck(result["valid"] === valid && result["executionAuthorized"] === false,
       "Ratline held-import validation accepted a caller budget or implied execution authority.");
   }
-  return { tools: tools.length, queries: 16 };
+  const netlist = await offlineApi(child, { action: "netlist-files", query: { includeSchemas: true } });
+  requireCheck(netlist["method"] === "eda.sys_Tool.netlistComparison" && netlist["executionAuthorized"] === false &&
+    netlist["invocationEnabledByDiscovery"] === false && Array.isArray(record(netlist["inputSchema"])["oneOf"]),
+  "Netlist file discovery or its bounded action schema changed.");
+  const readers = await offlineApi(child, { action: "public-readers", query: { includeSchemas: true } });
+  const readerEntries = readers["entries"];
+  requireCheck(readers["total"] === 6 && Array.isArray(readerEntries) && readerEntries.length === 6 &&
+    readerEntries.every((entry: unknown) => isRecord(entry) && isRecord(entry["inputSchema"]) && entry["invocationEnabledByDiscovery"] === false),
+  "Public utility discovery differs from its six bounded readers.");
+  const catalog = await offlineApi(child, { action: "catalog-components", query: { includeSchemas: true } });
+  const catalogEntries = catalog["entries"];
+  requireCheck(catalog["total"] === 6 && Array.isArray(catalogEntries) && catalogEntries.length === 6 &&
+    catalogEntries.some((entry: unknown) => isRecord(entry) && entry["action"] === "search-symbols-by-name" &&
+      entry["publicSdkMethodExecuted"] === false && entry["installedRuntimeAdmission"] === false && isRecord(entry["inputSchema"])),
+  "Catalog discovery lost its separate symbol-name HTTP equivalent.");
+  return { tools: tools.length, queries: 19 };
 }
 
 export async function probeInstalledOfflineCatalog(installedRoot: string): Promise<Record<string, unknown>> {

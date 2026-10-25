@@ -4,8 +4,9 @@ import { lstat, open, realpath } from "node:fs/promises";
 import { isAbsolute, join } from "node:path";
 import { SDK_PUBLIC_UTILITIES_209_PROFILE } from "./sdk-public-utilities-profile.ts";
 
-/** Only shell/context and configured-shortcut observations reviewed against
- * this UI use this pin. It does not replace the legacy native UI profile.
+/** Reviewed shell/context, shortcuts, UI utility getters and the fixed
+ * Allegro File/File comparison closure use this pin. Each route keeps its
+ * own scope and guards; this does not replace the legacy native UI profile.
  */
 export const EDITOR_OBSERVATION_209_UI = Object.freeze({
   version: "3.2.198.2800f583",

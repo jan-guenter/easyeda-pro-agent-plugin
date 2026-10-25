@@ -8,9 +8,9 @@ and dialogs.
 
 Support depends on the exact application version and operation. General
 schematic, PCB and library writers remain disabled on EasyEDA Pro 3.2.206.
-EasyEDA Pro 3.2.209 has a separate fourteen-tool profile: API reference, local
-discovery, status, bounded calculations/system and language/viewport readers,
-tab-count/active-identity/shortcut observations, public catalog metadata/search,
+EasyEDA Pro 3.2.209 has a separate profile: API reference, local
+discovery, status, bounded calculations/system and UI utility readers,
+managed netlist comparison, tab-count/active-identity/shortcut observations, public catalog metadata/search,
 ordinary launch and a separate disposable project/PCB opening lifecycle with
 bounded layer metadata, copper count, Line/Arc/Via/standalone-text observations,
 and grouped component/pad/attribute/dimension/image observations. A separate
@@ -27,7 +27,12 @@ angles do not establish full-circle rendering, and Poured contours prove neither
 fresh copper nor fabrication geometry. Arc/Poured passed a live empty-collection
 case; populated shapes still need connected validation.
 Catalog queries require explicit network confirmation and run without the
-application; they are not SDK execution. Disposable opening retains its original
+application; they are not SDK execution. [Netlist comparison](plugins/easyeda-pro-control/skills/easyeda-pro-control/references/current-netlist-files.md)
+prepares managed Allegro files locally, then uses the authenticated app to compare
+footprint/designator and net/pin memberships. It does not compare component values
+or export a design. [UI utility readers](plugins/easyeda-pro-control/skills/easyeda-pro-control/references/current-utility-readers.md#language-and-api-page-viewport-readers)
+include resolved theme, global toolbar units and the fixed system-library UUID.
+Disposable opening retains its original
 process through cleanup and can trigger ordinary migration/cache/automatic-Save
 effects. Primitive observations include existing native views only, not complete
 board membership. Layer observations do not prove physical stackup or saved contents;

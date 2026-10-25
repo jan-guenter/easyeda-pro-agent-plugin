@@ -16,6 +16,24 @@ interface OmissionGroup {
  */
 const groups: readonly OmissionGroup[] = [
   {
+    paths: ["lib_Device.searchByProperties"],
+    omission: {
+      code: "installed-209-library-routing-unqualified",
+      reason: "API 0.3.59 sends uid without the local device controller's required body/header path. System uid can choose the online proxy only under HALF_OFFLINE plus NETWORK; personal-library handling requires qualified database routing. The wrapper also fetches 3D references through a hidden component search, while footprint/symbol-name filters make separate default-system lookups and use first-result matching. These source findings do not establish an unconditional live failure.",
+      nextRequirement: "Qualify exact owner selection, desktop routing/storage effects and every hidden asset lookup, then add bounded complete response validation. A fixed anonymous system catalog task equivalent does not validate this direct SDK method or personal-library access.",
+      evidence: [...evidence, "docs/history/2026-10-25-netlist-symbol-readers-and-bootstrap.md"],
+    },
+  },
+  {
+    paths: ["lib_LibrariesList.getAllLibrariesList", "lib_LibrariesList.getPersonalLibraryUuid", "lib_LibrariesList.getFavoriteLibraryUuid"],
+    omission: {
+      code: "installed-209-library-discovery-mutates-ui",
+      reason: "The desktop handlers call allLibrariesList/getClientLibList with refresh, rebuild client library lists and classification filters, fetch/search classifications and select a library category. They are not passive owner-ID reads. Desktop CLIENT rows may leave PERSONAL/STAR-specific getters undefined, and the all-libraries handler filters several library categories instead of returning a complete inventory. Backend refresh/storage effects remain unqualified.",
+      nextRequirement: "Model and qualify the library UI changes and backend effects before exposing these getters, or build a separately qualified passive owner reader. The fixed getSystemLibraryUuid route does not enumerate or authorize personal/team/project owners.",
+      evidence: [...evidence, "docs/history/2026-10-25-netlist-symbol-readers-and-bootstrap.md"],
+    },
+  },
+  {
     paths: [
       "dmt_SourceBoard.addBoard", "dmt_SourceBoard.getAllBoards", "dmt_SourceBoard.getBoard", "dmt_SourceBoard.removeBoard",
       "dmt_SourcePcb.addPcb", "dmt_SourcePcb.removePcb", "dmt_SourcePcb.updatePcb",

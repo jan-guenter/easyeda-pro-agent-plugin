@@ -66,10 +66,18 @@ Use the coverage response's summary for current method and route counts.
 They are implementation classifications, not connected validation counts;
 one method can have several routes. Do not add route counts to method counts.
 
-For 3.2.209 language and API-page viewport observations, query `public-readers`
+For 3.2.209 language, API-page viewport, resolved theme, global toolbar unit and
+fixed system-library identity observations, query `public-readers`
 and validate with `public-readers-validate`. Read [the utility contract](current-utility-readers.md#language-and-api-page-viewport-readers)
 before calling the separate `easyeda_control_public_readers` tool. This does not
 enable the older `sdk_read` executor or any design reader.
+
+For supplied Allegro netlists, query `netlist-files` and validate the inner
+request with `netlist-files-validate`. Read [the managed-file contract](current-netlist-files.md)
+before using `easyeda_control_netlist_files`. Local preparation writes an
+exclusive managed artifact without a runtime fingerprint; File/File comparison
+requires the actual authenticated fingerprint. This does not enable netlist
+export, document UUID overloads or generic file reads.
 
 For one known public system-footprint UUID, discover `catalog-footprint`
 and validate with `catalog-footprint-validate`. Read [the catalog contract](current-system-library.md)

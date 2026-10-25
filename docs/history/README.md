@@ -45,6 +45,7 @@ layout. The connected ledger retains its generation and case anchors.
 
 | Record | Former path |
 | --- | --- |
+| [2026-10-25-netlist-symbol-readers-and-bootstrap.md](2026-10-25-netlist-symbol-readers-and-bootstrap.md) | Managed Allegro comparison, system symbol-name lookup, UI utility readers, terminal34840 observation and bootstrap deadline/diagnostic batch |
 | [2026-10-25-ratline-prefix-timing-and-origin.md](2026-10-25-ratline-prefix-timing-and-origin.md) | Installed22904 disposable capture deadline, terminal cleanup, phase timing and native worker-origin batch |
 | [2026-10-25-ratline-native-held-import-integration.md](2026-10-25-ratline-native-held-import-integration.md) | Distinct native ratline purpose, retained source leases, cumulative budgets, context routing and first-child held-import diagnostic |
 | [2026-10-25-native-startup-and-ownership-diagnostics.md](2026-10-25-native-startup-and-ownership-diagnostics.md) | Private PCB pre-navigation source capture, original child-start guard and diagnostic-only facade contention startup |

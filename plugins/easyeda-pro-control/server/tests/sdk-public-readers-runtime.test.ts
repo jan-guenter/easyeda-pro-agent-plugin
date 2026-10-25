@@ -3,11 +3,13 @@ import { test } from "node:test";
 import { loadReviewedCompatibilityManifest, reviewedCompatibilityManifestFingerprint, sha256Json } from "../src/core.ts";
 import type { ExpectedFingerprint } from "../src/core.ts";
 import { encodeExactReadEnvelope } from "../src/exact-readers.ts";
+import { EDITOR_OBSERVATION_209_UI } from "../src/editor-observation209-profile.ts";
 import { SDK_LOCAL_RUNTIME_PROFILE } from "../src/sdk-local-runtime.ts";
-import { readSdkPublicReaders, validateSdkPublicReadersFingerprint } from "../src/sdk-public-readers-runtime.ts";
+import { SDK_PUBLIC_READERS_209_UI_RUNTIME_PROFILE, readSdkPublicReaders, validateSdkPublicReadersFingerprint } from "../src/sdk-public-readers-runtime.ts";
 import type { SdkPublicReadersEngine } from "../src/sdk-public-readers-runtime.ts";
 import { SDK_PUBLIC_READERS_MAX_BYTES } from "../src/sdk-public-readers.ts";
 import { SDK_PUBLIC_UTILITIES_209_PROFILE } from "../src/sdk-public-utilities-profile.ts";
+import { substituteSyntheticUiDigests, uiFixture } from "./sdk-public-readers-runtime-fixtures.ts";
 
 function fingerprint(generation: "206" | "209" = "209"): ExpectedFingerprint {
   const manifest = loadReviewedCompatibilityManifest();
@@ -30,7 +32,7 @@ function fingerprint(generation: "206" | "209" = "209"): ExpectedFingerprint {
 const request = { method: "eda.sys_Window.getViewportSize", arguments: {} };
 const payload = { ok: true, kind: "sdk-public-readers", method: request.method, value: { width: 1920, height: 1080 } };
 const encoded = (value: unknown): unknown => ({ content: [], structuredContent: { ok: true, result: encodeExactReadEnvelope(value) } });
-function runtime(options: { initial?: ExpectedFingerprint; final?: ExpectedFingerprint; quarantineAt?: number; reply?: unknown } = {}): {
+function runtime(options: { initial?: ExpectedFingerprint; final?: ExpectedFingerprint; quarantineAt?: number; reply?: unknown; beforeReply?: () => Promise<void> } = {}): {
   engine: SdkPublicReadersEngine; calls: string[];
 } {
   const calls: string[] = []; let guards = 0, statuses = 0;
@@ -43,11 +45,12 @@ function runtime(options: { initial?: ExpectedFingerprint; final?: ExpectedFinge
       calls.push("status"); statuses += 1;
       return Promise.resolve({ stableFingerprint: structuredClone(statuses > 1 ? options.final ?? options.initial ?? fingerprint() : options.initial ?? fingerprint()) });
     },
-    upstream: { callTool: (name, args, timeoutMs) => {
+    upstream: { callTool: async (name, args, timeoutMs) => {
       calls.push(name); assert.equal(name, "easyeda_execute"); assert.ok(args);
       assert.equal(args["confirmWrite"], true); assert.equal(args["timeoutMs"], 60_000); assert.equal(timeoutMs, 70_000);
-      assert.match(String(args["code"]), /owner=eda\.sys_Window/u);
-      return Promise.resolve(options.reply ?? encoded(payload));
+      assert.match(String(args["code"]), /owner=(?:edaOwner\.sys_Window|data\(edaOwner,"sys_Window"\))/u);
+      await options.beforeReply?.();
+      return options.reply ?? encoded(payload);
     } },
   } };
 }
@@ -62,6 +65,38 @@ void test("public readers require exact 209 admission and dispatch once through 
   assert.deepEqual(fixture.calls, ["guard", "status", "guard", "easyeda_execute", "guard", "status"]);
   assert.deepEqual(value["runtimeAdmission"], { profile: SDK_PUBLIC_UTILITIES_209_PROFILE.schema, fingerprintSha256: sha256Json(fingerprint()),
     beforeAndAfterChecked: true, scope: "fixed-language-catalog-or-extension-page-viewport", liveValidation: "not-recorded" });
+});
+
+const themeRequest = { method: "eda.sys_Window.getCurrentTheme", arguments: {} };
+const themePayload = { ok: true, kind: "sdk-public-readers", method: themeRequest.method, value: "dark" };
+
+void test("UI-backed public readers qualify exact UI and both selectors before and after the sole dispatch", async (context) => {
+  const ui = await uiFixture(fingerprint());
+  const fixture = runtime({ initial: ui.expected, reply: encoded(themePayload) });
+  substituteSyntheticUiDigests(context, ui.substitutions, fixture.calls);
+  const value = await readSdkPublicReaders(fixture.engine, themeRequest, ui.expected);
+  assert.equal(value["value"], "dark");
+  assert.deepEqual(fixture.calls, ["guard", "status", "ui-file-hash", "ui-file-hash", "ui-file-hash", "guard", "easyeda_execute",
+    "ui-file-hash", "ui-file-hash", "ui-file-hash", "guard", "status"]);
+  assert.deepEqual(value["runtimeAdmission"], { profile: SDK_PUBLIC_READERS_209_UI_RUNTIME_PROFILE.schema, fingerprintSha256: sha256Json(ui.expected),
+    uiImplementation: EDITOR_OBSERVATION_209_UI, beforeAndAfterChecked: true, scope: "fixed-ui-theme-toolbar-unit-or-system-library-identity", liveValidation: "not-recorded" });
+});
+
+void test("UI-backed public readers refuse unqualified UI before invoking a public method", async () => {
+  const ui = await uiFixture(fingerprint());
+  const fixture = runtime({ initial: ui.expected, reply: encoded(themePayload) });
+  await assert.rejects(readSdkPublicReaders(fixture.engine, themeRequest, ui.expected), /UI implementation differs/u);
+  assert.deepEqual(fixture.calls, ["guard", "status"]);
+});
+
+void test("UI-backed public readers reject any UI or selector change after dispatch without retry", async (context) => {
+  const ui = await uiFixture(fingerprint()); substituteSyntheticUiDigests(context, ui.substitutions, []);
+  for (let index = 0; index < ui.fileCount; index += 1) {
+    const fixture = runtime({ initial: ui.expected, reply: encoded(themePayload), beforeReply: () => ui.rewrite(index, true) });
+    await assert.rejects(readSdkPublicReaders(fixture.engine, themeRequest, ui.expected), /UI implementation differs/u);
+    assert.equal(fixture.calls.filter((call) => call === "easyeda_execute").length, 1);
+    await ui.rewrite(index, false);
+  }
 });
 
 void test("public readers reject invalid input, non-209 expected/observed tuples and quarantine before dispatch", async () => {

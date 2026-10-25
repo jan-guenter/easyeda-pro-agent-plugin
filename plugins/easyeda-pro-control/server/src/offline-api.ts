@@ -6,9 +6,10 @@ import { operationCatalogQuerySchema, operationValidationRequestSchema, queryOpe
 import { querySdkMathCalculations, sdkMathCatalogQuerySchema, validateSdkMathArguments } from "./sdk-math.ts";
 import { querySdkSystemMethods, sdkSystemCatalogQuerySchema, validateSdkSystemArguments } from "./sdk-system.ts";
 import { querySdkPublicReadersMethods, sdkPublicReadersCatalogQuerySchema, validateSdkPublicReadersArguments } from "./sdk-public-readers.ts";
+import { netlistFilesCatalogQuerySchema, queryNetlistFiles, validateNetlistFilesArguments } from "./netlist-files.ts";
 import { publicSystemFootprintQuerySchema, queryPublicSystemFootprint, validatePublicSystemFootprintArguments } from "./public-system-footprint.ts";
-import { publicSystemCatalogQuerySchema, queryPublicSystemCatalog, validatePublicSystemCatalogArguments } from "./public-system-catalog.ts";
 // oxlint-disable-next-line import/max-dependencies -- This fixed offline router imports each capability's own validator; an intermediary would only hide those dependencies.
+import { publicSystemCatalogQuerySchema, queryPublicSystemCatalog, validatePublicSystemCatalogArguments } from "./public-system-catalog.ts";
 import { queryStartupExtensions, startupExtensionsQuerySchema, validateStartupExtensionsArguments } from "./startup-extensions.ts";
 import { editorShellQuerySchema, queryEditorShell, validateEditorShellArguments } from "./editor-shell.ts";
 import { editorContextQuerySchema, queryEditorContext, validateEditorContextArguments } from "./editor-context.ts";
@@ -57,6 +58,8 @@ export const apiRequestSchema = z.discriminatedUnion("action", [
   z.object({ action: z.literal("system-validate"), query: publicSdkValidationQuerySchema }).strict(),
   z.object({ action: z.literal("public-readers"), query: sdkPublicReadersCatalogQuerySchema.optional() }).strict(),
   z.object({ action: z.literal("public-readers-validate"), query: publicSdkValidationQuerySchema }).strict(),
+  z.object({ action: z.literal("netlist-files"), query: netlistFilesCatalogQuerySchema.optional() }).strict(),
+  z.object({ action: z.literal("netlist-files-validate"), query: publicSdkValidationQuerySchema }).strict(),
   z.object({ action: z.literal("catalog-footprint"), query: publicSystemFootprintQuerySchema.optional() }).strict(),
   z.object({ action: z.literal("catalog-footprint-validate"), query: publicSdkValidationQuerySchema }).strict(),
   z.object({ action: z.literal("catalog-components"), query: publicSystemCatalogQuerySchema.optional() }).strict(),
@@ -171,6 +174,8 @@ export function queryOfflineApi(request: ApiRequest): { offline: true; result: u
     case "system-validate": { result = validateSdkSystemArguments(request.query.request); break; }
     case "public-readers": { result = querySdkPublicReadersMethods(request.query ?? {}); break; }
     case "public-readers-validate": { result = validateSdkPublicReadersArguments(request.query.request); break; }
+    case "netlist-files": { result = queryNetlistFiles(request.query ?? {}); break; }
+    case "netlist-files-validate": { result = validateNetlistFilesArguments(request.query.request); break; }
     case "catalog-footprint": { result = queryPublicSystemFootprint(request.query ?? {}); break; }
     case "catalog-footprint-validate": { result = validatePublicSystemFootprintArguments(request.query.request); break; }
     case "catalog-components": { result = queryPublicSystemCatalog(request.query ?? {}); break; }

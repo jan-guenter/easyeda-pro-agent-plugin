@@ -1,6 +1,6 @@
 import assert from "node:assert/strict";
 import { test } from "node:test";
-import { setImmediate as immediate } from "node:timers/promises";
+import { setTimeout as delay, setImmediate as immediate } from "node:timers/promises";
 import { z } from "zod";
 import { CurrentPcb209RatlinePcbStartup, CurrentPcb209RatlineWorkerStartup } from "../src/current-pcb-209-ratline-startup-session.ts";
 import { CurrentPcb209RatlineBootstrapOwner } from "../src/current-pcb-209-ratline-bootstrap-owner.ts";
@@ -22,15 +22,16 @@ async function rejectedCapture(work: Promise<unknown>, requireFinalGate: boolean
   assert.fail("The original composite must refuse this failed child.");
 }
 
-for (const [role, synchronousResume, failure] of [["pcb", false, null], ["worker", false, null], ["pcb", true, null],
-  ["pcb", false, "late-allocation"], ["worker", false, "child-lost"], ["pcb", false, "failed-removal"], ["pcb", false, "await-gap"]] as const) {
-  void test(`fixed209 ${role} actual composite child gate, synchronous resume ${String(synchronousResume)}, failure ${String(failure)}`, async context => {
+for (const [role, synchronousResume, failure, slowRequest] of [["pcb", false, null], ["worker", false, null], ["pcb", true, null],
+  ["pcb", false, "late-allocation"], ["worker", false, "child-lost"], ["pcb", false, "failed-removal"], ["pcb", false, "await-gap"], ["pcb", false, null, true]] as const) {
+  void test(`fixed209 ${role} actual composite child gate, synchronous resume ${String(synchronousResume)}, failure ${String(failure)}, delayed proofs ${String(slowRequest === true)}`, async context => {
     const fixture = await ratlineCaptureInspector(context, role);
     const parent = { targetId: "parent", type: role === "pcb" ? "page" : "worker", title: "parent", url: "https://client/editor", attached: true };
     const child = { targetId: "child", type: "worker", title: "pcb-ratline-worker", attached: true,
       url: `https://client/editor?entry=pcb-ratline-worker.js${role === "pcb" ? "&cll=0" : ""}` };
     let armedChild = false, childStarts = 0, constructed = false, sourceStarts = 0;
     let childRemovals = 0;
+    let captureProofDelay = false, creationProofDelay = false;
     let childProofsAfterAllocation = 0, scheduledLossDelivered = false;
     const parentCallbacks: { lost: (() => void) | null } = { lost: null };
     let childEvents: Parameters<CurrentPcb209RatlineBootstrapDependency["subscribe"]>[0] | null = null;
@@ -60,13 +61,19 @@ for (const [role, synchronousResume, failure] of [["pcb", false, null], ["worker
           }, resumed: (): void => { if (syntheticResumes > 0) { syntheticResumes -= 1; } else { events.resumed(); } }, lost: events.lost,
           });
         },
-        request: input => {
+        request: async input => {
           // Actual V8 runner commands pass the finite dormant native grammar;
           // Target attachments and child starts remain synthetic in this test.
           const command = currentPcb209RatlineNativeWire(role, input, originalRequestId).command; originalRequestId += 1;
-          if (command.method === "Target.getTargets") { return Promise.resolve({ targetInfos: constructed ? [parent, child] : [parent] }); }
+          if (slowRequest === true && (command.method === "Target.getTargets" && !creationProofDelay || command.method === "Runtime.callFunctionOn" && !captureProofDelay)) {
+            if (command.method === "Target.getTargets") { creationProofDelay = true; } else { captureProofDelay = true; }
+            // Synthetic owner-before/owner-after latency around an immediate
+            // Native reply, exercising both actual dispatcher-created runners.
+            await delay(1500); await delay(1500);
+          }
+          if (command.method === "Target.getTargets") { return { targetInfos: constructed ? [parent, child] : [parent] }; }
           if (command.method === "Runtime.runIfWaitingForDebugger") {
-            assert.equal(command.sessionId, "child-session"); assert.ok(armedChild); childStarts += 1; return Promise.resolve({});
+            assert.equal(command.sessionId, "child-session"); assert.ok(armedChild); childStarts += 1; return {};
           }
           assert.equal(command.sessionId, "parent-session");
           if (command.method === "Debugger.resume" && armedChild && (failure === "child-lost" || failure === "failed-removal")) { childEvents?.lost(); }
@@ -132,6 +139,7 @@ for (const [role, synchronousResume, failure] of [["pcb", false, null], ["worker
       return;
     }
     const packet = await pending; await Promise.all(running);
+    if (slowRequest === true) { assert.equal(creationProofDelay, true); assert.equal(captureProofDelay, true); }
     assert.equal(packet.capture.pauses, role === "pcb" ? 5 : 9); assert.equal(packet.originalConstructionAndBridgeWorkerMatch, true);
     assert.equal(packet.originalConstructionAndRegistryMatch, true); assert.equal(packet.nativePreexecutionSourceOwnershipVerified, false);
     assert.equal(packet.nativeWorkerTargetIdentityVerified, false); assert.equal(packet.childSourceQualified, false);

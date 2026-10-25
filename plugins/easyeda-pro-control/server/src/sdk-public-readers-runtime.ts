@@ -1,10 +1,13 @@
-import { assertSubset, assertUpstreamReplySettled, canonicalJson, extractToolPayload, sha256Json } from "./core.ts";
+import { assertExpectedFingerprint, assertSubset, assertUpstreamReplySettled, canonicalJson, extractToolPayload, sha256Json } from "./core.ts";
+import { EDITOR_OBSERVATION_209_UI, verifyEditorObservation209Ui } from "./editor-observation209-profile.ts";
 import { decodeExactReadEnvelope } from "./exact-readers.ts";
 import type { SdkLocalEngine } from "./sdk-local-runtime.ts";
-import { SDK_PUBLIC_READERS_MAX_BYTES, buildSdkPublicReadersProgram, parseSdkPublicReadersRequest, validateSdkPublicReadersResult } from "./sdk-public-readers.ts";
+import { SDK_PUBLIC_READERS_MAX_BYTES, buildSdkPublicReadersProgram, parseSdkPublicReadersRequest, sdkPublicReaderRequiresUi, validateSdkPublicReadersResult } from "./sdk-public-readers.ts";
 import { SDK_PUBLIC_UTILITIES_209_PROFILE, selectSdkPublicUtilitiesRuntimeProfile } from "./sdk-public-utilities-profile.ts";
 
 export type SdkPublicReadersEngine = SdkLocalEngine;
+export const SDK_PUBLIC_READERS_209_UI_RUNTIME_PROFILE = Object.freeze({ ...SDK_PUBLIC_UTILITIES_209_PROFILE,
+  schema: "easyeda-pro-control.sdk-public-readers-ui-209.v1", uiImplementation: EDITOR_OBSERVATION_209_UI });
 
 /** Common identity checks do not expand this scope to the selector's older
  * 206 branch. These reader closures were reviewed only in installed API0.3.59.
@@ -23,12 +26,15 @@ export function validateSdkPublicReadersFingerprint(fingerprint: unknown): true 
 export async function readSdkPublicReaders(engine: SdkPublicReadersEngine, requestInput: unknown,
   expectedFingerprint: Record<string, unknown>): Promise<Record<string, unknown>> {
   const expected = structuredClone(expectedFingerprint), request = parseSdkPublicReadersRequest(requestInput);
+  const uiBacked = sdkPublicReaderRequiresUi(request);
   validateSdkPublicReadersFingerprint(expected);
   await engine.assertBridgeDispatchAllowed();
   const initialStatus = await engine.status();
   const initial = structuredClone(initialStatus.stableFingerprint);
   validateSdkPublicReadersFingerprint(initial);
+  assertExpectedFingerprint(initial);
   assertSubset(initial, expected, "SDK public readers expected runtime");
+  if (uiBacked) { await verifyEditorObservation209Ui(initial.installedBundles.assetsRoot); }
   await engine.assertBridgeDispatchAllowed();
   const raw = await engine.upstream.callTool("easyeda_execute", {
     code: buildSdkPublicReadersProgram(request), timeoutMs: 60_000, confirmWrite: true,
@@ -39,6 +45,7 @@ export async function readSdkPublicReaders(engine: SdkPublicReadersEngine, reque
     throw new Error("SDK public readers reply exceeds its byte bound.");
   }
   const result = validateSdkPublicReadersResult(request, decodeExactReadEnvelope(envelope));
+  if (uiBacked) { await verifyEditorObservation209Ui(initial.installedBundles.assetsRoot); }
   await engine.assertBridgeDispatchAllowed();
   const finalStatus = await engine.status();
   const finalFingerprint = finalStatus.stableFingerprint;
@@ -47,8 +54,9 @@ export async function readSdkPublicReaders(engine: SdkPublicReadersEngine, reque
     throw new Error("SDK public readers runtime changed around the read.");
   }
   const response = { ...result, runtimeAdmission: {
-    profile: SDK_PUBLIC_UTILITIES_209_PROFILE.schema, fingerprintSha256: sha256Json(initial),
-    beforeAndAfterChecked: true, scope: "fixed-language-catalog-or-extension-page-viewport", liveValidation: "not-recorded",
+    profile: uiBacked ? SDK_PUBLIC_READERS_209_UI_RUNTIME_PROFILE.schema : SDK_PUBLIC_UTILITIES_209_PROFILE.schema,
+    fingerprintSha256: sha256Json(initial), ...(uiBacked ? { uiImplementation: EDITOR_OBSERVATION_209_UI } : {}),
+    beforeAndAfterChecked: true, scope: uiBacked ? "fixed-ui-theme-toolbar-unit-or-system-library-identity" : "fixed-language-catalog-or-extension-page-viewport", liveValidation: "not-recorded",
   } };
   if (Buffer.byteLength(JSON.stringify(response), "utf8") > SDK_PUBLIC_READERS_MAX_BYTES) {
     throw new Error("SDK public readers result exceeds its byte bound.");

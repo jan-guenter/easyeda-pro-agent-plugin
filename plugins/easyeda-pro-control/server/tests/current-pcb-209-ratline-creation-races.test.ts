@@ -1,5 +1,6 @@
 import assert from "node:assert/strict";
 import { test } from "node:test";
+import { setImmediate as immediate } from "node:timers/promises";
 import { CurrentPcb209RatlinePcbCreation } from "../src/current-pcb-209-ratline-creation-runner.ts";
 import type { CurrentPcb209RatlineCreationCommand, CurrentPcb209RatlineCreationTransport } from "../src/current-pcb-209-ratline-creation-runner.ts";
 import { CURRENT_PCB_209_RATLINE_CREATION_PROFILES as PROFILES } from "../src/current-pcb-209-ratline-creation-profile.ts";
@@ -77,4 +78,16 @@ void test("fixed209 creation retains pause and child until a late original break
   fixture.acknowledge(); await refused; await runner.abort();
   assert.deepEqual(fixture.counts(), { starts: 1, resumes: 1, removals: 2 }); assert.equal(runner.status()["unresolvedBreakpoints"], false);
   await runner.releaseAfterTermination();
+});
+
+void test("standalone creation keeps its original ordinary allocation deadline and retains late cleanup", async context => {
+  const original = globalThis.setTimeout; const milliseconds: number[] = [];
+  context.mock.method(globalThis, "setTimeout", (...args: Parameters<typeof setTimeout>): ReturnType<typeof setTimeout> => {
+    if (typeof args[1] === "number") { milliseconds.push(args[1]); args[1] /= 100; } return original(...args);
+  });
+  const fixture = syntheticOwner(true), runner = new CurrentPcb209RatlinePcbCreation(fixture.transport);
+  const refused = assert.rejects(runner.capture()); await fixture.secondAllocation; await refused;
+  assert.ok(milliseconds.includes(2500)); assert.equal(milliseconds.includes(5000), false);
+  fixture.acknowledge(); await immediate(); await runner.abort();
+  assert.equal(runner.status()["unresolvedBreakpoints"], false); assert.equal(fixture.counts().starts, 0); await runner.releaseAfterTermination();
 });

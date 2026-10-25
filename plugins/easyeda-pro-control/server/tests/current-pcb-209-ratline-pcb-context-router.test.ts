@@ -60,7 +60,7 @@ async function routerConstructor(): Promise<typeof CurrentPcb209RatlinePcbContex
   return Constructor as typeof CurrentPcb209RatlinePcbContextRouter;
 }
 type Events = Parameters<CurrentPcb209RatlinePcbContextDependency["subscribe"]>[0];
-async function fixture(options: Readonly<{ badReplay?: boolean; badDom?: boolean; foreignPause?: boolean }> = {}): Promise<Readonly<{
+async function fixture(options: Readonly<{ badReplay?: boolean; badDom?: boolean; foreignPause?: boolean; delayMilliseconds?: number }> = {}): Promise<Readonly<{
   router: CurrentPcb209RatlinePcbContextRouter; owner: CurrentPcb209RatlinePcbBootstrapOwner;
   counts: () => Readonly<{ navigation: number; resumes: number; sources: number; snapshots: number; removals: number }>;
   emit: (value: DiagnosticEvent) => void; finishNavigation: () => void; changeFrame: () => void; terminate: () => Promise<void>;
@@ -75,31 +75,35 @@ async function fixture(options: Readonly<{ badReplay?: boolean; badDom?: boolean
     emit(event("Debugger.paused", { reason: "instrumentation", data: { scriptId: role, url }, hitBreakpoints: ["instrumentation"],
       callFrames: [{ location: { scriptId: options.foreignPause === true ? "ui-script" : role } }] }));
   };
-  function request(command: CurrentPcb209RatlinePcbContextCommand): Promise<unknown> {
+  async function request(command: CurrentPcb209RatlinePcbContextCommand): Promise<unknown> {
+      if (options.delayMilliseconds !== undefined) { const delay = Promise.withResolvers<null>(); setTimeout(() => { delay.resolve(null); }, options.delayMilliseconds); await delay.promise; }
       switch (command.method) {
-        case "Target.setAutoAttach": { return Promise.resolve({}); }
-        case "Runtime.enable": { emit(event("Runtime.executionContextCreated", { context: options.badReplay === true ? { ...uiContext, origin: "https://foreign" } : uiContext })); return Promise.resolve({}); }
-        case "Debugger.enable": { emit(event("Debugger.scriptParsed", uiScript)); return Promise.resolve({ debuggerId: "debugger" }); }
-        case "Debugger.setAsyncCallStackDepth": { assert.equal(command.params.maxDepth, 1); return Promise.resolve({}); }
-        case "Debugger.setInstrumentationBreakpoint": { return Promise.resolve({ breakpointId: "instrumentation" }); }
-        case "Debugger.getScriptSource": { sources += 1; return Promise.resolve({ scriptSource: `synthetic:${String(roles[index])}` }); }
-        case "Debugger.removeBreakpoint": { removals += 1; return Promise.resolve({}); }
-        case "Debugger.resume": { resumes += 1; emit(event("Debugger.resumed", {})); index += 1; pause(); return Promise.resolve({}); }
-        case "Target.getTargets": { snapshots += 1; return Promise.resolve({ targetInfos: [{ ...parent, attached: true, url: openedUrl }] }); }
-        case "Page.getFrameTree": { snapshots += 1; return Promise.resolve({ frameTree: { frame: { ...root, urlFragment: openedUrl.slice(base.length) },
+        case "Target.setAutoAttach": { return ({}); }
+        case "Runtime.enable": { emit(event("Runtime.executionContextCreated", { context: options.badReplay === true ? { ...uiContext, origin: "https://foreign" } : uiContext })); return ({}); }
+        case "Debugger.enable": { emit(event("Debugger.scriptParsed", uiScript)); return ({ debuggerId: "debugger" }); }
+        case "Debugger.setAsyncCallStackDepth": { assert.equal(command.params.maxDepth, 1); return ({}); }
+        case "Debugger.setInstrumentationBreakpoint": { return ({ breakpointId: "instrumentation" }); }
+        case "Debugger.getScriptSource": { sources += 1; return ({ scriptSource: `synthetic:${String(roles[index])}` }); }
+        case "Debugger.removeBreakpoint": { removals += 1; return ({}); }
+        case "Debugger.resume": { resumes += 1; emit(event("Debugger.resumed", {})); index += 1; pause(); return ({}); }
+        case "Target.getTargets": { snapshots += 1; return ({ targetInfos: [{ ...parent, attached: true, url: openedUrl }] }); }
+        case "Page.getFrameTree": { snapshots += 1; return ({ frameTree: { frame: { ...root, urlFragment: openedUrl.slice(base.length) },
           childFrames: [{ frame: { ...pcbFrame, ...(drift ? { loaderId: "replacement" } : {}) } }] } }); }
-        case "DOM.getFrameOwner": { snapshots += 1; assert.equal(command.params.frameId, "pcb-frame"); return Promise.resolve({ backendNodeId: 17 }); }
+        case "DOM.getFrameOwner": { snapshots += 1; assert.equal(command.params.frameId, "pcb-frame"); return ({ backendNodeId: 17 }); }
         case "DOM.describeNode": {
           snapshots += 1; assert.deepEqual(command.params, { backendNodeId: 17, depth: 0, pierce: false });
-          return Promise.resolve({ node: { backendNodeId: 17, nodeType: 1, nodeName: "IFRAME", localName: "iframe", frameId: "pcb-frame",
+          return ({ node: { backendNodeId: 17, nodeType: 1, nodeName: "IFRAME", localName: "iframe", frameId: "pcb-frame",
             attributes: ["id", `frame_${tab}`, "c_dbid", options.badDom === true ? "foreign" : tab, "c_doctype", "3", "src", "editor?entry=pcb", "pcb-canvas", "true", "class", "editframe"] } });
         }
-        case "Debugger.evaluateOnCallFrame": case "Debugger.setBreakpoint": case "Runtime.callFunctionOn": case "Runtime.runIfWaitingForDebugger": { return Promise.reject(new Error("Unexpected synthetic command")); }
-        default: { return Promise.reject(new Error("Unknown synthetic command")); }
+        case "Debugger.evaluateOnCallFrame": case "Debugger.setBreakpoint": case "Runtime.callFunctionOn": case "Runtime.runIfWaitingForDebugger": { throw new Error("Unexpected synthetic command"); }
+        default: { throw new Error("Unknown synthetic command"); }
       }
   }
   const dependency: CurrentPcb209RatlinePcbContextDependency = Object.freeze<CurrentPcb209RatlinePcbContextDependency>({ parentSessionId: "parent-session", parentTargetId: "parent",
-    assertOriginalOwner: (): Promise<void> => { assert.equal(terminated, false); return Promise.resolve(); },
+    assertOriginalOwner: async (): Promise<void> => {
+      assert.equal(terminated, false);
+      if (options.delayMilliseconds !== undefined) { const delay = Promise.withResolvers<null>(); setTimeout(() => { delay.resolve(null); }, options.delayMilliseconds); await delay.promise; }
+    },
     assertOriginalBeforeNavigation: (): Promise<void> => { assert.equal(started, 0); context.openingContext(); return Promise.resolve(); },
     assertOriginalTermination: (): Promise<void> => { assert.equal(terminated, true); return Promise.resolve(); },
     beginOriginalPcbNavigation: (): Promise<void> => {
@@ -133,12 +137,21 @@ void test("actual context/router/source owner retain old enable replay and blank
 });
 void test("changed historical Runtime replay refuses before any PCB navigation or source read", async () => {
   const f = await fixture({ badReplay: true }); await assert.rejects(f.owner.armBeforeNavigation());
+  const state = f.router.status(); const failure = state["firstFailure"]; assert.ok(failure !== null && typeof failure === "object");
+  assert.equal(Reflect.get(failure, "lastEvent"), "Runtime.executionContextCreated");
+  assert.equal(Reflect.get(failure, "transitionStarted"), false); assert.ok(typeof Reflect.get(failure, "reason") === "string");
+  const sourceState = state["sourceOwner"]; assert.ok(sourceState !== null && typeof sourceState === "object");
+  assert.equal(Reflect.get(sourceState, "failed"), true); assert.ok(Object.isFrozen(failure));
   assert.deepEqual(f.counts(), { navigation: 0, resumes: 0, sources: 0, snapshots: 0, removals: 0 }); await f.router.abort(); await f.terminate();
+  assert.equal(f.router.status()["firstFailure"], failure);
 });
 void test("foreign debugger pause and incorrect DOM owner refuse without resuming or reading PCB source", async () => {
   for (const options of [{ foreignPause: true }, { badDom: true }]) {
     const f = await fixture(options); await f.owner.armBeforeNavigation(); await f.owner.startOriginalNavigation(); await assert.rejects(f.owner.whenSourceQualified());
     assert.equal(f.counts().resumes, 0); assert.equal(f.counts().sources, 0); assert.equal(f.router.status()["failed"], true);
+    const failure = f.router.status()["firstFailure"]; assert.ok(failure !== null && typeof failure === "object");
+    if (options.foreignPause === true) { assert.equal(Reflect.get(failure, "reason"), "PCB209_RATLINE_CONTEXT_FOREIGN_PAUSE");
+      assert.equal(Reflect.get(failure, "lastEvent"), "Debugger.paused"); }
     f.finishNavigation(); await assert.rejects(f.owner.whenOriginalNavigationSettled()); await f.router.abort(); await f.terminate();
   }
 });
@@ -146,6 +159,18 @@ void test("fresh parent frame drift blocks final PCB continuation and late navig
   const f = await fixture(); await f.owner.armBeforeNavigation(); await f.owner.startOriginalNavigation(); const packet = await f.owner.whenSourceQualified();
   f.changeFrame(); await assert.rejects(f.router.releaseOriginalPinnedSource(packet)); assert.equal(f.counts().resumes, 28);
   f.finishNavigation(); await assert.rejects(f.owner.whenOriginalNavigationSettled()); await f.router.abort(); await f.terminate();
+});
+
+void test("composed ancestry retains four serial snapshots with individual owner and request deadlines", async context => {
+  const original = globalThis.setTimeout;
+  context.mock.method(globalThis, "setTimeout", (...args: Parameters<typeof setTimeout>): ReturnType<typeof setTimeout> => {
+    if (typeof args[1] === "number") { args[1] /= 100; } return original(...args);
+  });
+  const f = await fixture({ delayMilliseconds: 1200 }); await f.owner.armBeforeNavigation(); await f.owner.startOriginalNavigation();
+  await f.owner.whenSourceQualified(); assert.equal(f.router.status()["proofSets"], 1);
+  assert.equal(f.router.status()["firstFailure"], null); assert.equal(f.owner.status()["firstFailure"], null);
+  assert.deepEqual(f.counts(), { navigation: 1, resumes: 28, sources: 29, snapshots: 4, removals: 1 });
+  f.finishNavigation(); await f.owner.whenOriginalNavigationSettled(); await f.router.abort(); await f.terminate();
 });
 void test("selected context destruction poisons original source while navigation remains pending", async () => {
   const f = await fixture(); await f.owner.armBeforeNavigation(); await f.owner.startOriginalNavigation(); const packet = await f.owner.whenSourceQualified();
