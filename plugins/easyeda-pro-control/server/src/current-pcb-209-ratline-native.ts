@@ -3,7 +3,7 @@
  * cumulative lifetime budgets. The full finite table grants no continuation. */
 import { createHash } from "node:crypto";
 import { gzipSync } from "node:zlib";
-import { CURRENT_PCB_209_RATLINE_NATIVE_CASES, currentPcb209RatlineNativePlaceholder } from "./current-pcb-209-ratline-native-cases.ts";
+import { CURRENT_PCB_209_RATLINE_COORDINATE_FIELDS, CURRENT_PCB_209_RATLINE_NATIVE_CASES, currentPcb209RatlineNativePlaceholder } from "./current-pcb-209-ratline-native-cases.ts";
 import { currentPcb209RatlineNativeWire } from "./current-pcb-209-ratline-native-wire.ts";
 
 function literal(value: string): string { return `@"${value.replaceAll('"', '""')}"`; }
@@ -14,11 +14,11 @@ export function currentPcb209RatlineNativeSource(): string {
     const wire = currentPcb209RatlineNativeWire(entry.role, entry.command, 2_147_483_647);
     if (wire.request["phase"] !== entry.phase) { throw new Error("PCB209_RATLINE_NATIVE_AMBIGUOUS_CASE"); }
     const fields = Object.entries(wire.request).filter(([key]) => !["action", "requestId", "method", "role", "phase"].includes(key));
-    const { navigationPhase: _privatePhase, loaderPhase: _loaderPhase, windowPhase: _windowPhase, ...nativeCommand } = { navigationPhase: undefined, loaderPhase: undefined, windowPhase: undefined, ...entry.command };
+    const { navigationPhase: _privatePhase, loaderPhase: _loaderPhase, windowPhase: _windowPhase, ownershipStage: _ownershipStage, ownershipPhase: _ownershipPhase, ...nativeCommand } = { navigationPhase: undefined, loaderPhase: undefined, windowPhase: undefined, ownershipStage: undefined, ownershipPhase: undefined, ...entry.command };
     const template = JSON.stringify(nativeCommand);
     let bytes = Buffer.byteLength(template) + Buffer.byteLength(JSON.stringify({ id: 2_147_483_647 }));
     for (const [key, value] of fields) {
-      if (value !== currentPcb209RatlineNativePlaceholder(key) || !template.includes(JSON.stringify(value))) { throw new Error("PCB209_RATLINE_NATIVE_TEMPLATE"); }
+      if (value !== currentPcb209RatlineNativePlaceholder(key) && value !== Object.entries(CURRENT_PCB_209_RATLINE_COORDINATE_FIELDS).find(([name]) => name === key)?.[1] || !template.includes(JSON.stringify(value))) { throw new Error("PCB209_RATLINE_NATIVE_TEMPLATE"); }
     }
     for (const match of template.matchAll(/"__ratline209_([A-Za-z\d]+)__"/gu)) {
       const key = match[1];
@@ -75,7 +75,18 @@ public static class EasyedaRatline209Protocol {
       Need(found,"field-name");
     }
   }
+  static string Coordinate(System.Collections.IDictionary fields,string name,int maximum) {
+    object value=fields[name];Need(value is int || value is long,"coordinate-type");
+    long coordinate=System.Convert.ToInt64(value,System.Globalization.CultureInfo.InvariantCulture);
+    Need(coordinate>=0 && coordinate<=maximum,"coordinate-range");return coordinate.ToString(System.Globalization.CultureInfo.InvariantCulture);
+  }
   static string Expand(string template,System.Collections.IDictionary fields) {
+    foreach(string name in new string[]{"lineNumber","columnNumber"}) {
+      if(!fields.Contains(name))continue;int maximum=name=="lineNumber"?65535:1048575;
+      string marker="\\""+name+"\\":"+maximum.ToString(System.Globalization.CultureInfo.InvariantCulture);
+      Need(template.IndexOf(marker,System.StringComparison.Ordinal)>=0,"coordinate-template");
+      template=template.Replace(marker,"\\""+name+"\\":"+Coordinate(fields,name,maximum));
+    }
     var output=new System.Text.StringBuilder();int previous=0;
     foreach(System.Text.RegularExpressions.Match match in System.Text.RegularExpressions.Regex.Matches(template,"\\"__ratline209_([A-Za-z0-9]+)__\\"")) {
       output.Append(template,previous,match.Index-previous);output.Append('"');output.Append(Field(fields,match.Groups[1].Value));output.Append('"');
@@ -103,6 +114,14 @@ public static class EasyedaRatline209Protocol {
     fields.Add("objectId","__ratline209_argument0__");fields.Add("argument0","original");
     string collision=Encode(301,"pcb","relation-same","Runtime.callFunctionOn",fields);
     Need(collision.Contains(@"""objectId"":""__ratline209_argument0__""") && collision.Contains(@"""objectId"":""original"""),"smoke-placeholder");
+    fields.Clear();fields.Add("sessionId","s");fields.Add("scriptId","original");fields.Add("lineNumber",12);fields.Add("columnNumber",34);
+    string ownership=Encode(301,"pcb","ownership-pcb-admission-arm","Debugger.setBreakpoint",fields);
+    Need(ownership.Contains(@"""lineNumber"":12,""columnNumber"":34"),"smoke-coordinate");
+    foreach(object coordinate in new object[]{null,"0",-1,65536,0.5}) {
+      fields["lineNumber"]=coordinate;bool refused=false;
+      try{Encode(301,"pcb","ownership-pcb-admission-arm","Debugger.setBreakpoint",fields);}catch(System.InvalidOperationException){refused=true;}
+      Need(refused,"smoke-coordinate-refusal");
+    }
     var insensitive=new System.Collections.Hashtable(System.StringComparer.OrdinalIgnoreCase);insensitive.Add("SessionId","s");
     bool alias=false;try{Encode(1,"pcb","resume","Debugger.resume",insensitive);}catch(System.InvalidOperationException){alias=true;}Need(alias,"smoke-field-name");
   }

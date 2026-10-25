@@ -2477,6 +2477,40 @@ export async function verifyExactManagedArtifact(
   } finally { await closeManagedFile(opened); }
 }
 
+/** Whole binary read for bounded managed File adapters. Retain the open file
+ * and directory identities through hashing and final path revalidation. */
+export async function readExactBinaryArtifact(
+  descriptor: Readonly<Pick<ArtifactDescriptor, "path" | "bytes" | "sha256">>,
+): Promise<Readonly<{ path: string; bytes: number; sha256: string; content: Buffer }>> {
+  const label = "Exact binary artifact";
+  if (!isRecord(descriptor)) { throw new Error(`${label} descriptor is missing.`); }
+  const own = (key: string): unknown => {
+    const field = Object.getOwnPropertyDescriptor(descriptor, key);
+    if (field === undefined || !Object.hasOwn(field, "value")) { throw new Error(`${label} requires own data descriptor fields.`); }
+    return field.value as unknown;
+  };
+  const path = own("path"); const expectedBytes = own("bytes"); const expectedSha256 = own("sha256");
+  if (typeof path !== "string" || typeof expectedBytes !== "number" || !Number.isSafeInteger(expectedBytes) ||
+      expectedBytes <= 0 || expectedBytes > 4 * 1024 * 1024 || typeof expectedSha256 !== "string" || !/^[a-f0-9]{64}$/u.test(expectedSha256)) {
+    throw new Error(`${label} descriptor or 4-MiB byte bound refused.`);
+  }
+  const absolute = assertManagedPath(path, label);
+  await controlRootCapability(false);
+  const opened = await openSafeManagedFile(absolute, label);
+  try {
+    if (opened.info.size !== expectedBytes) { throw new Error(`${label} expected byte length differs.`); }
+    const content = await readOpenManagedBytes(opened, label, expectedBytes);
+    const after = await opened.handle.stat();
+    assertFileStayedUnchanged(opened.info, after, label); assertManagedFileAuthority(after, label);
+    const sha256 = createHash("sha256").update(content).digest("hex");
+    if (content.length !== expectedBytes || sha256 !== expectedSha256) { throw new Error(`${label} raw bytes failed the expected SHA-256 or length.`); }
+    await assertManagedFilePathCurrent(opened.absolute, opened.directory, after, label);
+    const final = await opened.handle.stat();
+    assertFileStayedUnchanged(after, final, label); assertManagedFileAuthority(final, label);
+    return Object.freeze({ path: opened.absolute, bytes: content.length, sha256, content });
+  } finally { await closeManagedFile(opened); }
+}
+
 /** Whole bounded evidence read. Verify raw bytes before lossless UTF-8 decoding.
  * This does not change the paged display semantics of readArtifact.
  */

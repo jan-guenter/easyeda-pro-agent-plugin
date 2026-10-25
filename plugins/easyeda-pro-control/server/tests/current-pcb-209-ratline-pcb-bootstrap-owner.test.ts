@@ -19,10 +19,14 @@ import { currentPcb209RatlineFailureReason } from "../src/current-pcb-209-ratlin
 
 type Events = Parameters<CurrentPcb209RatlinePcbBootstrapDependency["subscribe"]>[0];
 interface Counts { readonly requests: number; readonly navigation: number; readonly resumes: number; readonly removals: number;
-  readonly childStarts: number; readonly sourceReads: number }
+  readonly childStarts: number; readonly sourceReads: number; readonly ownershipResumes: number; readonly ownershipRemovals: number }
 const roles = CURRENT_PCB_209_RATLINE_PCB_BOOTSTRAP_ROLES;
 const sourceProfile = { CURRENT_PCB_209_RATLINE_PCB_BOOTSTRAP_ROLES, currentPcb209RatlinePcbBootstrapCopy, currentPcb209RatlinePcbBootstrapRoleUrl };
 const frameUrl = "https://client/editor?entry=pcb";
+function sourceFrames(scriptId: string): readonly Readonly<Record<string, unknown>>[] {
+  return [{ functionName: "", url: "", functionLocation: { scriptId, lineNumber: 0, columnNumber: 0 },
+    location: { scriptId, lineNumber: 0, columnNumber: 0 } }];
+}
 /** Actual owner module. Only large source/creator qualification is replaced
  * for synthetic source events; the profile's separate tests qualify real bytes. */
 async function syntheticSourceOwner(): Promise<typeof CurrentPcb209RatlinePcbBootstrapOwner> {
@@ -43,7 +47,8 @@ async function syntheticSourceOwner(): Promise<typeof CurrentPcb209RatlinePcbBoo
 }
 
 async function fixture(context: TestContext, options: Readonly<{ realCapture?: boolean; badSource?: boolean; delayedAllocation?: boolean;
-  prematureContext?: boolean; delayMilliseconds?: number; failAllocationOwner?: boolean; delayedRealmAllocation?: boolean }> = {}): Promise<Readonly<{
+  prematureContext?: boolean; delayMilliseconds?: number; failAllocationOwner?: boolean; delayedRealmAllocation?: boolean;
+  rejectAncestry?: boolean }> = {}): Promise<Readonly<{
   owner: CurrentPcb209RatlinePcbBootstrapOwner;
   dependency: CurrentPcb209RatlinePcbBootstrapDependency;
   counts: () => Counts;
@@ -61,6 +66,7 @@ async function fixture(context: TestContext, options: Readonly<{ realCapture?: b
   const allocation = Promise.withResolvers<unknown>(), navigation = Promise.withResolvers<null>(), removed = Promise.withResolvers<null>();
   const realmAllocation = Promise.withResolvers<unknown>(), realmDispatched = Promise.withResolvers<null>();
   let events: Events | null = null;
+  let ancestryAdmitted = false, ordinarilyPaused = false, ownershipRemovals = 0, ownershipResumes = 0;
   let armedChild = false, childStarts = 0, constructed = false, depthSet = false, index = 0, navigationCalls = 0, ownerAfterDepth = 0, preflights = 0, removals = 0, requests = 0, resumes = 0, sourceReads = 0, terminated = false;
   const parent = { targetId: "parent", type: "page", title: "parent", url: "https://client/editor", attached: true };
   const child = { targetId: "child", type: "worker", title: "pcb-ratline-worker", attached: true, url: "https://client/editor?entry=pcb-ratline-worker.js&cll=0" };
@@ -69,8 +75,9 @@ async function fixture(context: TestContext, options: Readonly<{ realCapture?: b
   const pause = (): void => {
     const role = roles[index]; if (role === undefined) { return; }
     const scriptId = role === "pcb" ? pcbScriptId : role, url = sourceProfile.currentPcb209RatlinePcbBootstrapRoleUrl(role, frameUrl);
-    emit("Debugger.scriptParsed", { scriptId, url, executionContextId: 10, hasSourceURL: false, isLiveEdit: false });
-    emit("Debugger.paused", { reason: "instrumentation", data: { scriptId, url }, hitBreakpoints: ["original-instrument"], callFrames: [{ location: { scriptId } }] });
+    ordinarilyPaused = false;
+    emit("Debugger.scriptParsed", { scriptId, url, executionContextId: 10, hasSourceURL: false, isLiveEdit: false, startLine: 0, startColumn: 0 });
+    emit("Debugger.paused", { reason: "instrumentation", data: { scriptId, url }, hitBreakpoints: ["original-instrument"], callFrames: sourceFrames(scriptId) });
   };
   const frameLocation = z.looseObject({ lineNumber: z.number(), columnNumber: z.number() });
   const frame = z.looseObject({ location: frameLocation }), shape = z.looseObject({ callFrames: z.array(frame).min(1) });
@@ -98,9 +105,15 @@ async function fixture(context: TestContext, options: Readonly<{ realCapture?: b
       }
       return Promise.resolve();
     },
-    assertOriginalPcbContext: (observation): Promise<void> => {
+    assertOriginalPcbContext: (observation, mode): Promise<void> => {
       assert.deepEqual(observation, { sessionId: "parent-session", parentTargetId: "parent", frameId: "pcb-frame", contextId: 10,
-        uniqueContextId: "pcb-context", origin: "https://client", frameUrl: observation.frameUrl === null ? null : frameUrl }); return Promise.resolve();
+        uniqueContextId: "pcb-context", origin: "https://client", frameUrl: observation.frameUrl === null ? null : frameUrl });
+      if (mode === "ancestry" && !ancestryAdmitted) {
+        assert.equal(index, 0); assert.equal(ordinarilyPaused, true, "Initial DOM ancestry must wait for the owned ordinary stop");
+        if (options.rejectAncestry === true) { return Promise.reject(new Error("PCB209_RATLINE_TEST_ANCESTRY_REFUSED")); }
+        ancestryAdmitted = true;
+      }
+      return Promise.resolve();
     },
     beginOriginalPcbNavigation: (): Promise<void> => {
       assert.equal(navigationCalls, 0); navigationCalls += 1;
@@ -116,6 +129,19 @@ async function fixture(context: TestContext, options: Readonly<{ realCapture?: b
       if (command.method === "Target.getTargets") { return ({ targetInfos: constructed ? [parent, child] : [parent] }); }
       if (command.method === "Runtime.runIfWaitingForDebugger") { assert.ok(armedChild); assert.equal(command.sessionId, "child-session"); childStarts += 1; return ({}); }
       assert.equal(command.sessionId, "parent-session");
+      if ("ownershipStage" in command) {
+        assert.equal(command.ownershipStage, index === 0 ? "pcb-admission" : "pcb-release");
+        const breakpointId = `ownership:${command.ownershipStage}`, scriptId = index === 0 ? "bootstrap" : pcbScriptId;
+        if (command.ownershipPhase === "arm") {
+          assert.deepEqual(command.params.location, { scriptId, lineNumber: 0, columnNumber: 0 });
+          return { breakpointId, actualLocation: command.params.location };
+        }
+        if (command.ownershipPhase === "remove") {
+          assert.equal(command.params.breakpointId, breakpointId); ownershipRemovals += 1; return {};
+        }
+        ownershipResumes += 1; emit("Debugger.resumed", {}); ordinarilyPaused = true;
+        emit("Debugger.paused", { reason: "other", hitBreakpoints: [breakpointId], callFrames: sourceFrames(scriptId) }); return {};
+      }
       if (options.delayedRealmAllocation === true && command.method === "Debugger.setBreakpoint") { realmDispatched.resolve(null); return realmAllocation.promise; }
       if (options.delayedRealmAllocation === true && command.method === "Debugger.removeBreakpoint" && command.params.breakpointId === "late-realm") {
         removals += 1; return {};
@@ -144,7 +170,7 @@ async function fixture(context: TestContext, options: Readonly<{ realCapture?: b
   };
   const Constructor = await syntheticSourceOwner(), owner = new Constructor(dependency);
   return { owner, dependency,
-    counts: (): Counts => ({ requests, navigation: navigationCalls, resumes, removals, childStarts, sourceReads }),
+    counts: (): Counts => ({ requests, navigation: navigationCalls, resumes, removals, childStarts, sourceReads, ownershipResumes, ownershipRemovals }),
     acknowledge: (): void => { allocation.resolve({ breakpointId: "original-instrument" }); },
     whenRemoved: async (): Promise<void> => { await removed.promise; }, settleNavigation: (): void => { navigation.resolve(null); },
     terminate: async (): Promise<void> => { unsubscribeNative?.(); await native?.terminate(); terminated = true; await owner.releaseAfterTermination(); },
@@ -163,6 +189,8 @@ void test("PCB source owner arms before one opening, hands retained realm to act
   const f = await fixture(context, { realCapture: true }); await f.owner.armBeforeNavigation(); assert.equal(f.counts().navigation, 0);
   await f.owner.startOriginalNavigation(); const packet = await f.owner.whenSourceQualified();
   assert.equal(f.counts().sourceReads, 29); assert.equal(f.counts().resumes, 28); assert.equal(f.owner.status()["navigationSettled"], false);
+  assert.equal(f.counts().ownershipResumes, 2); assert.equal(f.counts().ownershipRemovals, 2);
+  assert.equal(f.owner.status()["contextProof"], "ancestry"); assert.equal(f.owner.status()["ownershipCommands"], 6);
   assert.equal(packet.nativeFrameAncestryVerified, false); assert.equal(packet.nativeWorkerTargetIdentityVerified, false);
   await assert.rejects(f.owner.requireOriginal({ ...packet }), /ORIGINAL_PACKET/u);
   const realm = await f.owner.claimOriginalPcbRealm(packet); const before = f.counts().requests;
@@ -212,6 +240,15 @@ void test("source failure keeps PCB paused and a late opening completion cannot 
   assert.equal(f.owner.status()["navigationSettled"], true); assert.equal(f.owner.status()["failed"], true);
   assert.equal(f.owner.status()["firstFailure"], failure);
   await assert.rejects(f.owner.startOriginalNavigation(), /NAVIGATION_CONSUMED/u); assert.equal(f.counts().navigation, 1); await f.terminate();
+});
+
+void test("ancestry refusal at the first owned ordinary stop cannot execute the bootstrap source", async context => {
+  const f = await fixture(context, { rejectAncestry: true }); await f.owner.armBeforeNavigation(); await f.owner.startOriginalNavigation();
+  await assert.rejects(f.owner.whenSourceQualified());
+  assert.equal(f.counts().sourceReads, 1); assert.equal(f.counts().resumes, 0); assert.equal(f.counts().ownershipResumes, 1);
+  assert.equal(f.owner.status()["contextProof"], "identity");
+  await f.owner.abort(); assert.equal(f.counts().ownershipRemovals, 1); assert.equal(f.counts().removals, 1);
+  assert.equal(f.counts().resumes, 0); await f.terminate();
 });
 
 void test("late PCB instrumentation allocation is retained and removed once without navigation or source resume", async context => {

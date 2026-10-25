@@ -87,6 +87,8 @@ void test("fresh continuation orders actual V8 captures before original child te
   let detachBeforeParentResume = 0;
   const boundaryResumed = { pcb: false, worker: false };
   const transcript: { role: Role; phase: string }[] = [];
+  let sourcePause: Readonly<Record<string, unknown>> | null = null;
+  const sourceOwnership = new Set<string>();
   const emit = (role: Role, method: string, params: Readonly<Record<string, unknown>>): void => { listener?.event(event(method, params, sessions[role])); };
   const pauseSource = (role: Role): void => {
     const index = progress[role], selectedChild = role === "pcb" ? undefined : childRoles[index], selectedPcb = role === "pcb" ? pcbRoles[index] : undefined;
@@ -100,12 +102,15 @@ void test("fresh continuation orders actual V8 captures before original child te
       emit(role, "Runtime.consoleAPICalled", { type: "log", args: [{ type: "string", value: log.message }], executionContextId: 1, timestamp: 1,
         stackTrace: { callFrames: [{ scriptId: preloadId, url: CURRENT_PCB_209_WORKER_PRELOAD_URL, functionName: log.functionName, lineNumber: log.lineNumber, columnNumber: log.columnNumber }] } });
     }
-    emit(role, "Debugger.scriptParsed", { scriptId, executionContextId: role === "pcb" ? 3 : 1, url, hasSourceURL: false, isLiveEdit: false,
+    emit(role, "Debugger.scriptParsed", { scriptId, executionContextId: role === "pcb" ? 3 : 1, url, hasSourceURL: false, isLiveEdit: false, startLine: 0, startColumn: 0,
       ...(caller === null ? {} : { stackTrace: { callFrames: [{ ...creator, scriptId: preloadId, url: CURRENT_PCB_209_WORKER_PRELOAD_URL }] } }) });
-    const callFrames = caller === null ? [{ location: { scriptId } }] : [{ functionName: "", location: { scriptId, lineNumber: 0, columnNumber: 0 } },
+    const callFrames = caller === null ? [{ functionName: "", url, functionLocation: { scriptId, lineNumber: 0, columnNumber: 0 },
+      location: { scriptId, lineNumber: 0, columnNumber: 0 } }] : [{ functionName: "", location: { scriptId, lineNumber: 0, columnNumber: 0 } },
       { functionName: creator.functionName, location: { scriptId: preloadId, lineNumber: creator.lineNumber, columnNumber: creator.columnNumber } },
       { functionName: "", location: { scriptId: preloadId, lineNumber: caller.lineNumber, columnNumber: caller.columnNumber } }];
-    emit(role, "Debugger.paused", { reason: "instrumentation", data: { scriptId, url }, hitBreakpoints: [], callFrames });
+    const pause = { reason: "instrumentation", data: { scriptId, url }, hitBreakpoints: [], callFrames };
+    if (role === "pcb") { sourcePause = pause; }
+    emit(role, "Debugger.paused", pause);
   };
   const originalParent = Object.freeze({ targetId: "parent", sessionId: "parent-session", nextRequestId: 301 });
   const originalTermination = (): Promise<void> => { assert.ok(terminated); return Promise.resolve(); };
@@ -176,6 +181,17 @@ void test("fresh continuation orders actual V8 captures before original child te
       assert.equal(role === "pcb" ? false : revoked[role], false);
       const wire = currentPcb209RatlineContinuationNativeWire(role, command, transcript.length + 1);
       transcript.push({ role, phase: z.string().parse(wire.request["phase"]) });
+      if ("ownershipPhase" in command) {
+        assert.equal(role, "pcb"); const breakpointId = `owned-${command.ownershipStage}`;
+        if (command.ownershipPhase === "arm") {
+          assert.equal(sourceOwnership.has(breakpointId), false); sourceOwnership.add(breakpointId);
+          return Promise.resolve({ breakpointId, actualLocation: command.params.location });
+        }
+        assert.equal(sourceOwnership.has(breakpointId), true);
+        if (command.ownershipPhase === "remove") { assert.equal(command.params.breakpointId, breakpointId); sourceOwnership.delete(breakpointId); return Promise.resolve({}); }
+        assert.ok(sourcePause !== null); emit(role, "Debugger.resumed", {});
+        emit(role, "Debugger.paused", { ...sourcePause, reason: "other", hitBreakpoints: [breakpointId] }); return Promise.resolve({});
+      }
       if (command.method === "Target.getTargets") {
         const parent = role === "pcb" ? { ...parentTarget, attached: true, url: openedUrl } : workerTarget;
         const child = role === "pcb" ? workerTarget : subordinateTarget;
@@ -224,6 +240,7 @@ void test("fresh continuation orders actual V8 captures before original child te
   assert.equal(session.status()["transitionStarted"], true); assert.ok(subordinateWaitProofs >= 10);
   assert.equal(packet.pcb.role, "pcb"); assert.equal(packet.worker.role, "worker"); assert.equal(packet.subordinate.sourceResumeObserved, true);
   assert.deepEqual(sources, { pcb: 29, worker: 7, subordinate: 7 }); assert.deepEqual(resumes, { pcb: 29, worker: 7, subordinate: 7 });
+  assert.equal(sourceOwnership.size, 0);
   assert.deepEqual(started, { worker: true, subordinate: true }); assert.equal(packet.nativeWorkerTargetIdentityVerified, false);
   assert.equal(packet.callbackReturnCompletionVerified, false); assert.equal(packet.executionAuthorized, false); assert.equal(packet.completeLiveBaselineVerified, false);
   const native = { profile: "private.pcb209-ratline-native-continuation.v1", targetSha256: "a".repeat(64), originalProjectConstructionSha256: "b".repeat(64),

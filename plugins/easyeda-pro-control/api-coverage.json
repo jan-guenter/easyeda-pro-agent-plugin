@@ -8,25 +8,29 @@
     "installed209DistinctMethods": 811,
     "statuses": {
       "implemented-public-subset": 214,
-      "implemented-native-equivalent": 34,
+      "implemented-native-equivalent": 36,
       "implemented-vendor-http-equivalent": 6,
       "internal-lifecycle-only": 0,
       "implemented-but-blocked": 79,
-      "omitted": 502
+      "omitted": 500
     },
     "executionRoutes": {
       "available-with-runtime-guards": 399,
       "available-with-network-guards": 9,
+      "available-with-managed-file-guards": 2,
       "blocked": 94,
       "partially-blocked": 2
     },
     "omissions": {
       "account-or-library-scope-needed": 30,
+      "bom-template-shared-preference-effects": 2,
       "callback-or-registration-lifecycle": 27,
       "canvas-origin-pending-geometry-queues": 1,
       "cross-tab-netlist-export-scope": 1,
       "extension-or-global-settings-state": 15,
       "external-commercial-action": 6,
+      "footprint-copy-default-matching-and-lifecycle": 1,
+      "footprint-delete-unawaited-dispatch-and-project-selector": 1,
       "implicit-annotation-and-save-all": 2,
       "implicit-save-before-export": 5,
       "installed-209-auto-job-backend-absent": 5,
@@ -41,9 +45,10 @@
       "interactive-export-resource-lifecycle": 1,
       "interactive-ui-resource": 36,
       "layer-selection-collateral-state": 1,
+      "library-render-resource-and-failure-lifecycle": 2,
       "lossy-heterogeneous-primitive-projection": 2,
       "lossy-logging-selection-reader": 1,
-      "managed-file-contract-needed": 39,
+      "managed-file-contract-needed": 33,
       "multi-object-electrical-effect": 7,
       "navigation-or-viewport-adapter-needed": 14,
       "non-json-result-or-callback": 5,
@@ -53,7 +58,7 @@
       "panel-context-not-admitted": 1,
       "private-url-state-projection-needed": 2,
       "reviewed-native-stub": 30,
-      "scoped-effect-adapter-needed": 105,
+      "scoped-effect-adapter-needed": 103,
       "selection-marker-or-history-mutation": 8,
       "shared-asset-owner-projection-needed": 3,
       "simulation-editor-not-admitted": 1,
@@ -7360,10 +7365,14 @@
       "status": "omitted",
       "routes": [],
       "omission": {
-        "code": "scoped-effect-adapter-needed",
-        "reason": "lib_Footprint.copy has no maintained complete effect/ownership verifier for its declared mutation or application-state change. The method is not classified as inherently impossible.",
-        "nextRequirement": "Implement strict typed arguments, exact before/after affected state, collateral invariants, durable intent and recovery; design mutations additionally need disposable save/close/reopen and inverse or explicit no-inverse proof.",
-        "evidence": []
+        "code": "footprint-copy-default-matching-and-lifecycle",
+        "reason": "In the inspected 3.2.209 UI, a same-current-project source and target with the same existing nonzero UUID ticket can match the original footprint before naming or creation. The public returned UUID therefore need not identify a new copy. Native clone instead requires a special underscore-containing destination UUID. A separate native-create data plan and necessary closed-history record relation now exist, but grant no dispatch or complete SQL/lifecycle authority.",
+        "nextRequirement": "Complete source-getter serialization and exact raw append/SQL effects, bind an original native owner and new ordinary UUID, observe subscriber/structure completion, and verify saved/reopened content on a disposable project before enabling the independent-copy route. Do not route derived arguments through the default matcher or native clone.",
+        "evidence": [
+          "current-footprint-copy-plan.ts",
+          "current-footprint-copy-plan.test.ts",
+          "docs/history/2026-10-25-current-footprint-copy-preparation.md"
+        ]
       },
       "completeDeclaredContractSupported": false,
       "currentGenerationLiveValidation": "not-recorded",
@@ -7466,10 +7475,12 @@
       "status": "omitted",
       "routes": [],
       "omission": {
-        "code": "scoped-effect-adapter-needed",
-        "reason": "lib_Footprint.delete has no maintained complete effect/ownership verifier for its declared mutation or application-state change. The method is not classified as inherently impossible.",
-        "nextRequirement": "Implement strict typed arguments, exact before/after affected state, collateral invariants, durable intent and recovery; design mutations additionally need disposable save/close/reopen and inverse or explicit no-inverse proof.",
-        "evidence": []
+        "code": "footprint-delete-unawaited-dispatch-and-project-selector",
+        "reason": "The inspected 3.2.209 public wrapper enables project dependency checks only for the literal Project selector; an actual current project ID still selects project storage but skips those checks. Its UI helper calls deleteFootprint in an unawaited forEach and reports success before native completion. The current footprint subscriber removes its cache entry; the adjacent symbol preview/forced-close branch is distinct.",
+        "nextRequirement": "Implement strict project/dependency/editor ownership, an awaited native deletion path, exact tombstone and full-peer/raw/SQL effect comparison, complete subscriber/structure settlement and disposable saved/reopened recovery. The public boolean or older symbol-delete lifecycle assumptions cannot establish footprint completion.",
+        "evidence": [
+          "docs/history/2026-10-25-current-footprint-copy-preparation.md"
+        ]
       },
       "completeDeclaredContractSupported": false,
       "currentGenerationLiveValidation": "not-recorded",
@@ -7639,10 +7650,12 @@
       "status": "omitted",
       "routes": [],
       "omission": {
-        "code": "managed-file-contract-needed",
-        "reason": "lib_Footprint.getRenderImage consumes or produces File/Blob, filesystem paths, project archives or image data without an implemented method-specific managed-artifact contract.",
-        "nextRequirement": "Add bounded hash-bound artifact transfer, exact input ownership/format checks, exclusive output publication and any associated import effect proof. A filename or Blob handle is not a verified file.",
-        "evidence": []
+        "code": "library-render-resource-and-failure-lifecycle",
+        "reason": "The current handler uses shared deviceImgData to generate a footprint image, then Image.onload/canvas.toBlob. It has no Image.onerror or visible terminal resource cleanup. Shared renderer ownership and dependencies are not covered by metadata lookup.",
+        "nextRequirement": "Implement owned source/dependencies and shared-renderer lifecycle, bounded image dimensions/content, image failure settlement and resource retirement. A caller timeout alone is insufficient.",
+        "evidence": [
+          "docs/history/2026-10-25-managed-library-files.md"
+        ]
       },
       "completeDeclaredContractSupported": false,
       "currentGenerationLiveValidation": "not-recorded",
@@ -9256,10 +9269,12 @@
       "status": "omitted",
       "routes": [],
       "omission": {
-        "code": "managed-file-contract-needed",
-        "reason": "lib_Symbol.getRenderImage consumes or produces File/Blob, filesystem paths, project archives or image data without an implemented method-specific managed-artifact contract.",
-        "nextRequirement": "Add bounded hash-bound artifact transfer, exact input ownership/format checks, exclusive output publication and any associated import effect proof. A filename or Blob handle is not a verified file.",
-        "evidence": []
+        "code": "library-render-resource-and-failure-lifecycle",
+        "reason": "The current handler constructs a symbol renderer, resolves library/project and optional subpart, generates an image URL and resolves through Image.onload/canvas.toBlob. It has no Image.onerror or visible terminal renderer cleanup. A timeout cannot prove cancellation or resource retirement.",
+        "nextRequirement": "Implement exact source/subpart/dependency ownership, bounded dimensions/content, image failure settlement and renderer/resource cleanup before returning a managed render artifact.",
+        "evidence": [
+          "docs/history/2026-10-25-managed-library-files.md"
+        ]
       },
       "completeDeclaredContractSupported": false,
       "currentGenerationLiveValidation": "not-recorded",
@@ -16358,10 +16373,12 @@
       "status": "omitted",
       "routes": [],
       "omission": {
-        "code": "managed-file-contract-needed",
-        "reason": "pcb_ManufactureData.getBomTemplateFile consumes or produces File/Blob, filesystem paths, project archives or image data without an implemented method-specific managed-artifact contract.",
-        "nextRequirement": "Add bounded hash-bound artifact transfer, exact input ownership/format checks, exclusive output publication and any associated import effect proof. A filename or Blob handle is not a verified file.",
-        "evidence": []
+        "code": "bom-template-shared-preference-effects",
+        "reason": "The inspected current UI awaits template initialization before selecting a template and producing XLSX. Initialization can migrate template data and changes an invalid or missing selected-template cache through saveToServer(false). The handler also requires active PCB/footprint context. A declared File return does not make this a pure supplied-file read.",
+        "nextRequirement": "Bind shared template/preferences ownership, migration and persistence destinations/effects, plus exact active document and bounded file production. No live settings or network mutation is claimed by this source finding.",
+        "evidence": [
+          "docs/history/2026-10-25-managed-library-files.md"
+        ]
       },
       "completeDeclaredContractSupported": false,
       "currentGenerationLiveValidation": "not-recorded",
@@ -30631,10 +30648,12 @@
       "status": "omitted",
       "routes": [],
       "omission": {
-        "code": "managed-file-contract-needed",
-        "reason": "sch_ManufactureData.getBomTemplateFile consumes or produces File/Blob, filesystem paths, project archives or image data without an implemented method-specific managed-artifact contract.",
-        "nextRequirement": "Add bounded hash-bound artifact transfer, exact input ownership/format checks, exclusive output publication and any associated import effect proof. A filename or Blob handle is not a verified file.",
-        "evidence": []
+        "code": "bom-template-shared-preference-effects",
+        "reason": "The inspected current UI awaits the same effectful template initialization before generating XLSX and requires schematic context. Initialization may migrate templates, replace selected-template cache state and invoke saveToServer(false); a file hash alone cannot prove those effects.",
+        "nextRequirement": "Establish shared template/settings ownership and exact migration/persistence effects before the bounded file-producing adapter. The current offline supplied-file metadata tool does not qualify this getter.",
+        "evidence": [
+          "docs/history/2026-10-25-managed-library-files.md"
+        ]
       },
       "completeDeclaredContractSupported": false,
       "currentGenerationLiveValidation": "not-recorded",
@@ -40584,14 +40603,41 @@
       ],
       "reviewedRuntimeDeclaration": true,
       "installed209Declaration": true,
-      "status": "omitted",
-      "routes": [],
-      "omission": {
-        "code": "managed-file-contract-needed",
-        "reason": "sys_FileManager.extractLibInfo consumes or produces File/Blob, filesystem paths, project archives or image data without an implemented method-specific managed-artifact contract.",
-        "nextRequirement": "Add bounded hash-bound artifact transfer, exact input ownership/format checks, exclusive output publication and any associated import effect proof. A filename or Blob handle is not a verified file.",
-        "evidence": []
-      },
+      "status": "implemented-native-equivalent",
+      "routes": [
+        {
+          "tool": "easyeda_control_library_files",
+          "selector": "extract-library-info",
+          "implementation": "native-task-equivalent",
+          "scope": "Offline supplied-file metadata equivalent available in every facade mode. No public SDK invocation, EasyEDA process, bridge, runtime admission, network, project open, import, conversion or Save. prepare-file validates canonical base64 and the complete admitted bounded file before exclusive managed publication with confirmLocalArtifact:true. Later reads require exact managed path/name/size/SHA-256. Standalone .efoo/.epanl/ordinary-type2 .esym libraries require UTF-8 JSON-line DOCTYPE/HEAD framing; filename SHA-256 supplies UUID, filename stem supplies title, and description/tags are empty. Project .epro/.epro2 ZIP32 archives return title, cbbProject and optional editorVersion from the correct manifest. Every archive member is extent/inflation/CRC checked, with no extraction to disk. 4 MiB input, 8 MiB expanded, 256 members, 256 KiB text/manifest, 8192 records, 16 library files, 64 KiB response. Unknown drawing/manifest data remains unexecuted input; geometry, dependencies, ownership, electrical validity and import suitability are unverified. No storage-ID overload, device/archive library extraction, net flags, ports, ZIP64, encrypted archives, unsafe paths, duplicate names or conflicting manifests. Installed connected SDK execution remains unclaimed.",
+          "source": [
+            "managed-library-files.ts",
+            "managed-library-files-zip.ts",
+            "managed-library-files-runtime.ts",
+            "artifacts.ts",
+            "facade-mode.ts"
+          ],
+          "tests": [
+            "managed-library-files.test.ts",
+            "managed-library-files-registration.test.ts",
+            "facade-mode.test.ts"
+          ],
+          "validation": "offline-regression;current-live-unclaimed",
+          "executionState": "available-with-managed-file-guards",
+          "inputDiscovery": {
+            "tool": "easyeda_control_api",
+            "arguments": {
+              "request": {
+                "action": "library-files",
+                "query": {
+                  "includeSchemas": true
+                }
+              }
+            }
+          }
+        }
+      ],
+      "omission": null,
       "completeDeclaredContractSupported": false,
       "currentGenerationLiveValidation": "not-recorded",
       "runtimeAdmission": "not-granted-by-inventory"
@@ -40625,14 +40671,41 @@
       ],
       "reviewedRuntimeDeclaration": true,
       "installed209Declaration": true,
-      "status": "omitted",
-      "routes": [],
-      "omission": {
-        "code": "managed-file-contract-needed",
-        "reason": "sys_FileManager.extractProjectInfo consumes or produces File/Blob, filesystem paths, project archives or image data without an implemented method-specific managed-artifact contract.",
-        "nextRequirement": "Add bounded hash-bound artifact transfer, exact input ownership/format checks, exclusive output publication and any associated import effect proof. A filename or Blob handle is not a verified file.",
-        "evidence": []
-      },
+      "status": "implemented-native-equivalent",
+      "routes": [
+        {
+          "tool": "easyeda_control_library_files",
+          "selector": "extract-project-info",
+          "implementation": "native-task-equivalent",
+          "scope": "Offline supplied-file metadata equivalent available in every facade mode. No public SDK invocation, EasyEDA process, bridge, runtime admission, network, project open, import, conversion or Save. prepare-file validates canonical base64 and the complete admitted bounded file before exclusive managed publication with confirmLocalArtifact:true. Later reads require exact managed path/name/size/SHA-256. Standalone .efoo/.epanl/ordinary-type2 .esym libraries require UTF-8 JSON-line DOCTYPE/HEAD framing; filename SHA-256 supplies UUID, filename stem supplies title, and description/tags are empty. Project .epro/.epro2 ZIP32 archives return title, cbbProject and optional editorVersion from the correct manifest. Every archive member is extent/inflation/CRC checked, with no extraction to disk. 4 MiB input, 8 MiB expanded, 256 members, 256 KiB text/manifest, 8192 records, 16 library files, 64 KiB response. Unknown drawing/manifest data remains unexecuted input; geometry, dependencies, ownership, electrical validity and import suitability are unverified. No storage-ID overload, device/archive library extraction, net flags, ports, ZIP64, encrypted archives, unsafe paths, duplicate names or conflicting manifests. Installed connected SDK execution remains unclaimed.",
+          "source": [
+            "managed-library-files.ts",
+            "managed-library-files-zip.ts",
+            "managed-library-files-runtime.ts",
+            "artifacts.ts",
+            "facade-mode.ts"
+          ],
+          "tests": [
+            "managed-library-files.test.ts",
+            "managed-library-files-registration.test.ts",
+            "facade-mode.test.ts"
+          ],
+          "validation": "offline-regression;current-live-unclaimed",
+          "executionState": "available-with-managed-file-guards",
+          "inputDiscovery": {
+            "tool": "easyeda_control_api",
+            "arguments": {
+              "request": {
+                "action": "library-files",
+                "query": {
+                  "includeSchemas": true
+                }
+              }
+            }
+          }
+        }
+      ],
+      "omission": null,
       "completeDeclaredContractSupported": false,
       "currentGenerationLiveValidation": "not-recorded",
       "runtimeAdmission": "not-granted-by-inventory"

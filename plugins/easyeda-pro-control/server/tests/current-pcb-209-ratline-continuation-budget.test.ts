@@ -11,19 +11,19 @@ function prefix(): CurrentPcb209RatlineContinuationBudget {
 function consume(budget: CurrentPcb209RatlineContinuationBudget, kind: CurrentPcb209RatlineContinuationReplyKind): void {
   const id = budget.snapshot().requests + 1; budget.consumeRequest(id, kind); budget.consumeReply(id, 1);
 }
-void test("fresh three-realm transcript fits its original ledger and leaves exactly 56 cleanup requests", () => {
-  assert.equal(profile.normalRequestLimit, 444); assert.equal(profile.cleanupRequests, 56); assert.equal(profile.requestLimit, 500);
+void test("fresh three-realm transcript fits its original ledger and leaves exactly 59 cleanup requests", () => {
+  assert.equal(profile.normalRequestLimit, 453); assert.equal(profile.cleanupRequests, 59); assert.equal(profile.requestLimit, 512);
   assert.equal(profile.requestClasses["pcb-capture"].count, 28); assert.equal(profile.requestClasses["worker-capture"].count, 67);
   const budget = prefix();
   for (let count = 1; count < profile.requestClasses.prefix.count; count += 1) { consume(budget, "prefix"); }
   budget.beginContinuation();
-  for (const kind of ["preparation", "navigation", "loader", "initial-window", "document-window", "ancestry", "pcb-source", "child-source", "subordinate-source",
+  for (const kind of ["preparation", "navigation", "loader", "initial-window", "document-window", "ownership", "ancestry", "pcb-source", "child-source", "subordinate-source",
     "pcb-bootstrap", "child-bootstrap", "subordinate-bootstrap", "pcb-construction", "worker-construction", "pcb-capture", "worker-capture", "origin-stack"] as const) {
     for (let count = 0; count < profile.requestClasses[kind].count; count += 1) { consume(budget, kind); }
   }
-  assert.equal(budget.snapshot().requests, 444); budget.beginCleanup();
-  for (let count = 0; count < 56; count += 1) { consume(budget, "cleanup"); }
-  assert.equal(budget.snapshot().requests, 500);
+  assert.equal(budget.snapshot().requests, 453); budget.beginCleanup();
+  for (let count = 0; count < 59; count += 1) { consume(budget, "cleanup"); }
+  assert.equal(budget.snapshot().requests, 512);
   assert.throws(() => { consume(budget, "cleanup"); }, /REQUEST_ID_OR_PHASE/u);
 });
 void test("fresh source reservations retain separate 29/7/7 ordinals and complete frame bounds", () => {
@@ -62,9 +62,9 @@ void test("composed native controls fit their additive cap and leave the cleanup
   // Counts include the existing prefix allowance, actual composed callbacks,
   // Three historical packet rechecks, wrapper, optional origin, four UI pauses
   // And the initial window's two DOM snapshots.
-  const controls = 2976 + 774 + 5752 + 108 + 36 + 24;
+  const controls = 2976 + 801 + 5768 + 108 + 36 + 30;
   for (let count = 0; count < controls; count += 1) { budget.consumeHelperControl(); }
-  assert.equal(budget.snapshot().helperControls, 9670);
+  assert.equal(budget.snapshot().helperControls, 9719);
   assert.throws(() => { budget.consumeHelperControl(); }, /HELPER_CONTROL_BOUND/u);
   budget.beginCleanup();
   for (let count = 0; count < 128; count += 1) { budget.consumeHelperControl(true); }

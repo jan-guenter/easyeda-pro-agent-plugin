@@ -45,6 +45,9 @@ layout. The connected ledger retains its generation and case anchors.
 
 | Record | Former path |
 | --- | --- |
+| [2026-10-25-library-files-and-pcb-dom-ownership.md](2026-10-25-library-files-and-pcb-dom-ownership.md) | Installed180334 admission, disposable DOM ownership refusal, original terminal cleanup and combined backlog |
+| [2026-10-25-managed-library-files.md](2026-10-25-managed-library-files.md) | Offline supplied-file metadata, complete bounded container checks, all-mode integration and concrete BOM/render omissions |
+| [2026-10-25-current-footprint-copy-preparation.md](2026-10-25-current-footprint-copy-preparation.md) | Current-source copy matching/delete findings and strict closed-history preparation without dispatch authority |
 | [2026-10-25-pcb-window-and-worker-retirement.md](2026-10-25-pcb-window-and-worker-retirement.md) | Installed162034 initial-window refusal, original cleanup, window qualification and worker-retirement source work |
 | [2026-10-25-pcb-loader-and-continuation.md](2026-10-25-pcb-loader-and-continuation.md) | Installed140210 navigation handling observed live, retained UI-loader refusal, original cleanup and continuation source work |
 | [2026-10-25-held-construction-and-connected-batch.md](2026-10-25-held-construction-and-connected-batch.md) | Installed120638 seven-reader batch and pending disposable capture, construction join and scan scheduling work |

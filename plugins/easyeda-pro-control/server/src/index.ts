@@ -114,6 +114,8 @@ import { readSdkSystem } from "./sdk-system-runtime.ts";
 import { sdkPublicReadersOperationSchema } from "./sdk-public-readers.ts";
 import { readSdkPublicReaders } from "./sdk-public-readers-runtime.ts";
 import { netlistFilesRequestSchema } from "./netlist-files.ts";
+import { managedLibraryFilesRequestSchema } from "./managed-library-files.ts";
+import { executeManagedLibraryFiles } from "./managed-library-files-runtime.ts";
 import { compareNetlistFiles, prepareNetlistFile } from "./netlist-files-runtime.ts";
 import { publicSystemCatalogRequestSchema } from "./public-system-catalog.ts";
 import { readPublicSystemCatalog } from "./public-system-catalog-runtime.ts";
@@ -1917,6 +1919,7 @@ const toolOutputSchemas: Readonly<Record<string, z.ZodType>> = {
   easyeda_control_system: z.object({ result: z.unknown().optional(), ...optionalFailureOutputShape }).catchall(z.unknown()),
   easyeda_control_public_readers: z.object({ result: z.unknown().optional(), ...optionalFailureOutputShape }).catchall(z.unknown()),
   easyeda_control_netlist_files: z.object({ result: z.unknown().optional(), ...optionalFailureOutputShape }).catchall(z.unknown()),
+  easyeda_control_library_files: z.object({ result: z.unknown().optional(), ...optionalFailureOutputShape }).catchall(z.unknown()),
   easyeda_control_catalog_footprint: z.object({ result: z.unknown().optional(), ...optionalFailureOutputShape }).catchall(z.unknown()),
   easyeda_control_catalog_components: z.object({ result: z.unknown().optional(), ...optionalFailureOutputShape }).catchall(z.unknown()),
   easyeda_control_extensions: z.object({ result: z.unknown().optional(), ...optionalFailureOutputShape }).catchall(z.unknown()),
@@ -2449,6 +2452,17 @@ registerFacadeTool(
       return upstream.withAuthenticatedBridgeDispatchScope(async () => ({ result: await compareNetlistFiles(engine, input.request, expectedFingerprint) }));
     });
   }),
+);
+
+registerFacadeTool(
+  "easyeda_control_library_files",
+  {
+    title: "Prepare library files and read supplied-file metadata",
+    description: "Offline native-task-equivalent metadata extraction for supplied files, available in every facade mode without EasyEDA, bridge or runtime admission. prepare-file requires a bounded ASCII filename, canonical base64 and confirmLocalArtifact:true, validates the full admitted container and writes one exclusive managed input. extract-library-info reads exact prepared .efoo/.epanl/ordinary-type2 .esym descriptors; extract-project-info reads a prepared .epro/.epro2 ZIP32 archive. Later reads require the exact managed path, filename, SHA-256 and byte length. Standalone library UUIDs and titles derive from filename; tags and description are empty. Project metadata is title, cbbProject and optional editorVersion. Bounds are 4 MiB input, 8 MiB expanded, 256 archive members, 256 KiB text/manifest, 8192 records, 16 library files and 64 KiB output. Complete ZIP extents, inflation and CRC are checked. No arbitrary external path, archive extraction to disk, SDK invocation, import, conversion, geometry/dependency/electrical validation, network, project open or Save. Inspect library-files/library-files-validate first; metadata does not establish import suitability.",
+    inputSchema: { request: z.unknown().pipe(managedLibraryFilesRequestSchema) },
+    annotations: { readOnlyHint: false, destructiveHint: false, idempotentHint: false, openWorldHint: false },
+  },
+  guarded(async (input) => ({ result: await executeManagedLibraryFiles(input.request) })),
 );
 
 registerFacadeTool(

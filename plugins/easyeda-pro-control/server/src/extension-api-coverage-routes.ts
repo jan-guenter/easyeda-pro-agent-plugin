@@ -12,7 +12,7 @@ export interface ApiCoverageRoute {
   readonly source: readonly string[];
   readonly tests: readonly string[];
   readonly validation: "offline-regression;current-live-unclaimed";
-  readonly executionState: "available-with-runtime-guards" | "available-with-network-guards" | "blocked" | "partially-blocked";
+  readonly executionState: "available-with-runtime-guards" | "available-with-network-guards" | "available-with-managed-file-guards" | "blocked" | "partially-blocked";
   readonly blockedReason?: string;
   readonly blockedDocumentTypes?: readonly number[];
   readonly inputDiscovery?: { readonly tool: "easyeda_control_api"; readonly arguments: Readonly<Record<string, unknown>> };

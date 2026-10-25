@@ -50,7 +50,7 @@ void test("fresh descendant proofs change orchestration waits while held, cleanu
   assert.equal(native.elapsed.normalMilliseconds, 3_600_000);
   assert.equal(timing.pcb.captureWaitMilliseconds, native.elapsed.normalMilliseconds);
   assert.equal(timing.worker.captureWaitMilliseconds, native.elapsed.normalMilliseconds);
-  assert.equal(native.normalRequestLimit, 444); assert.equal(native.cleanupRequests, 56);
+  assert.equal(native.normalRequestLimit, 453); assert.equal(native.cleanupRequests, 59);
 });
 
 void test("ordered handoff includes terminal-event delivery without changing ordinary pause or native clocks", () => {

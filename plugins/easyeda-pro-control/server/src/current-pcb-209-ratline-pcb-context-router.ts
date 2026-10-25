@@ -24,10 +24,12 @@ import { isCurrentPcb209RatlineWindowScript, qualifyCurrentPcb209RatlineWindowOw
   qualifyCurrentPcb209RatlineWindowSource } from "./current-pcb-209-ratline-window-pause.ts";
 import type { CurrentPcb209RatlineWindowCommand, CurrentPcb209RatlineWindowStage } from "./current-pcb-209-ratline-window-pause.ts";
 import { inheritCurrentPcb209RatlineContinuationTiming } from "./current-pcb-209-ratline-continuation-timing.ts";
+import { CurrentPcb209OwnershipBreakpoint } from "./current-pcb-209-ratline-ownership-breakpoint.ts";
+import type { CurrentPcb209OwnershipCommand } from "./current-pcb-209-ratline-ownership-breakpoint.ts";
 
 type Row = Readonly<Record<string, unknown>>;
 type SourceCommand = Parameters<CurrentPcb209RatlinePcbBootstrapDependency["request"]>[0];
-type NavigationCommand = CurrentPcb209RatlineNavigationCommand | CurrentPcb209RatlineLoaderCommand | CurrentPcb209RatlineWindowCommand;
+type NavigationCommand = CurrentPcb209RatlineNavigationCommand | CurrentPcb209RatlineLoaderCommand | CurrentPcb209RatlineWindowCommand | CurrentPcb209OwnershipCommand;
 export type CurrentPcb209RatlinePcbContextParentCommand =
   Readonly<{ method: "Target.getTargets"; params: Readonly<Record<string, never>> }> |
   Readonly<{ method: "Page.getFrameTree"; sessionId: string; params: Readonly<Record<string, never>> }> |
@@ -106,6 +108,7 @@ export class CurrentPcb209RatlinePcbContextRouter {
       document: { phase: "unused", resumed: false, event: Promise.withResolvers<null>(), complete: Promise.withResolvers<null>() } };
   readonly #windowScripts = new Set<string>();
   #windowFrameId: string | null = null;
+  #windowOwnership: CurrentPcb209OwnershipBreakpoint | null = null;
   readonly #originalUiUniqueContextId: string;
   #rejectedStop: CurrentPcb209RatlineStopEvidence | null = null;
   #listener: SourceEvents | null = null;
@@ -145,7 +148,7 @@ export class CurrentPcb209RatlinePcbContextRouter {
     this.#contexts.set(this.#originalUiContextId, { method: "Runtime.executionContextCreated", sessionId: opening.sessionId, params: { context: retained } });
     const sourceDependency = Object.freeze<CurrentPcb209RatlinePcbBootstrapDependency>({ parentSessionId: dependency.parentSessionId,
       parentTargetId: dependency.parentTargetId, assertOriginalOwner: (): Promise<void> => this.#current(),
-      assertOriginalBeforeNavigation: (): Promise<void> => this.#before(), assertOriginalPcbContext: (value): Promise<void> => this.#proveContext(value),
+      assertOriginalBeforeNavigation: (): Promise<void> => this.#before(), assertOriginalPcbContext: (value, mode): Promise<void> => this.#proveContext(value, mode),
       beginOriginalPcbNavigation: (): Promise<void> => this.#navigate(), assertOriginalTermination: (): Promise<void> => this.#termination(),
       request: (command): Promise<unknown> => this.#sourceRequest(command), subscribe: (events): (() => void) => this.#subscribe(events) });
     inheritCurrentPcb209RatlineContinuationTiming(dependency, sourceDependency);
@@ -215,6 +218,7 @@ export class CurrentPcb209RatlinePcbContextRouter {
       this.#lastEvent = currentPcb209RatlineEventKind(event.method); this.#step = "event-classification";
       need(event.sessionId === this.#dependency.parentSessionId && this.#listener !== null && this.#events < 4096, "EVENT_OWNER"); this.#events += 1;
       const { method, params } = event;
+      if (this.#windowOwnership?.observe(event) === true || this.#sourceOwner.observeOwnershipTransition(event)) { return; }
       if (method === "Debugger.resumed" && this.#navigationPause === "resume" && !this.#navigationResumed) {
         need(Object.keys(params).length === 0, "NAVIGATION_RESUMED"); this.#navigationResumed = true; this.#navigationResumeEvent.resolve(null); return;
       }
@@ -361,15 +365,20 @@ export class CurrentPcb209RatlinePcbContextRouter {
       try {
         await bounded(stage === "initial" ? this.#loaderCompleteEvent.promise : this.#windows.initial.complete.promise);
         await this.#current(); currentWindow(); const sessionId = this.#dependency.parentSessionId;
+        this.#step = `window-${stage}-source`; this.#lastCommand = "Debugger.getScriptSource";
+        const raw = await bounded(this.#dependency.request({ method: "Debugger.getScriptSource", sessionId,
+          windowPhase: `${stage}-source`, params: { scriptId } })); currentWindow(); qualifyCurrentPcb209RatlineWindowSource(raw);
         if (stage === "initial") {
+          need(this.#windowOwnership === null, "WINDOW_OWNERSHIP_CONSUMED");
+          const ownership = new CurrentPcb209OwnershipBreakpoint("initial-window", sessionId, event.params, { lineNumber: 0, columnNumber: 0 });
+          this.#windowOwnership = ownership;
+          await ownership.enter(command => this.#dependency.request(command), async (): Promise<void> => { await this.#current(); currentWindow(); });
           const owner = await this.#snapshot({ method: "DOM.getFrameOwner", sessionId, params: { frameId } }); currentWindow();
           const backendNodeId = z.number().int().positive().max(2_147_483_647).parse(owner["backendNodeId"]);
           const node = await this.#snapshot({ method: "DOM.describeNode", sessionId, params: { backendNodeId, depth: 0, pierce: false } }); currentWindow();
           qualifyCurrentPcb209RatlineWindowOwner(owner, node, frameId, this.#target);
+          await ownership.remove(command => this.#dependency.request(command)); currentWindow();
         }
-        this.#step = `window-${stage}-source`; this.#lastCommand = "Debugger.getScriptSource";
-        const raw = await bounded(this.#dependency.request({ method: "Debugger.getScriptSource", sessionId,
-          windowPhase: `${stage}-source`, params: { scriptId } })); currentWindow(); qualifyCurrentPcb209RatlineWindowSource(raw);
         await this.#current(); currentWindow(); state.phase = "resume"; this.#step = `window-${stage}-resume`; this.#lastCommand = "Debugger.resume";
         const reply = await bounded(this.#dependency.request({ method: "Debugger.resume", sessionId, windowPhase: `${stage}-resume`, params: {} }));
         z.object({}).strict().parse(captureCurrentPcbStringClockReply(reply).value);
@@ -390,7 +399,7 @@ export class CurrentPcb209RatlinePcbContextRouter {
         if (state.phase !== "unused" && state.phase !== "complete") { await bounded(state.complete.promise); this.assertCurrent(); }
       }
     }
-    if (command.method === "Debugger.resume" && this.#resumes === 28) {
+    if (command.method === "Debugger.resume" && !("ownershipPhase" in command) && this.#resumes === 28) {
       need(this.#sourceReleaseArmed && !this.#sourceReleaseConsumed, "SOURCE_CONTINUATION_PROOF"); this.#sourceReleaseConsumed = true;
     }
     const enabling = command.method === "Runtime.enable" || command.method === "Debugger.enable";
@@ -417,12 +426,15 @@ export class CurrentPcb209RatlinePcbContextRouter {
     if (admission) { this.#context.observePcbFrameOwner(owner, node); } else { this.#context.reprovePcbBootstrapOwner(owner, node); }
     this.#context.assertPcbBootstrapContext(selected); this.#proofSets += 1; this.assertCurrent();
   }
-  async #proveContext(value: CurrentPcb209RatlinePcbBootstrapContext): Promise<void> {
+  async #proveContext(value: CurrentPcb209RatlinePcbBootstrapContext, mode: "identity" | "ancestry"): Promise<void> {
     try {
       this.assertCurrent(); const selected = this.#selected;
       need(selected !== null && value.sessionId === selected.sessionId && value.parentTargetId === selected.parentTargetId &&
         value.frameId === selected.frameId && value.contextId === selected.contextId && value.uniqueContextId === selected.uniqueContextId &&
         value.origin === selected.origin && (value.frameUrl === null || value.frameUrl === "https://client/editor?entry=pcb"), "SOURCE_CONTEXT");
+      // Only the first fully pinned source can be read before DOM admission.
+      // The source owner requests ancestry after its ordinary entry breakpoint.
+      if (mode === "identity") { return; }
       if (this.#admission === null) {
         const pending = Promise.withResolvers<null>(); this.#admission = withoutValue(pending.promise); void observed(this.#admission);
         void observed((async (): Promise<void> => { try { await this.#fresh(true); pending.resolve(null); } catch (error) { pending.reject(error); } })());
@@ -448,7 +460,13 @@ export class CurrentPcb209RatlinePcbContextRouter {
     } catch (error) { this.#poison(error); pending.reject(error); throw error; }
   }
   async #termination(): Promise<void> { this.#same(); await bounded(this.#dependency.assertOriginalTermination()); this.#same(); }
-  public async abort(): Promise<void> { this.#poison(); await this.#sourceOwner.abort(); }
+  public async abort(): Promise<void> {
+    this.#poison();
+    const failures: unknown[] = [];
+    try { await this.#windowOwnership?.remove(command => this.#dependency.request(command)); } catch (error) { failures.push(error); }
+    try { await this.#sourceOwner.abort(); } catch (error) { failures.push(error); }
+    if (failures.length > 0) { throw new AggregateError(failures, "PCB209_RATLINE_CONTEXT_CLEANUP"); }
+  }
   public async releaseAfterTermination(): Promise<void> {
     if (this.#release === null) {
       const pending = Promise.withResolvers<null>(); this.#release = withoutValue(pending.promise); void observed(this.#release);
@@ -465,6 +483,7 @@ export class CurrentPcb209RatlinePcbContextRouter {
     navigationPause: this.#navigationPause, navigationResumed: this.#navigationResumed,
     loaderPause: this.#loaderPause, loaderResumed: this.#loaderResumed,
     windowPauses: { initial: this.#windows.initial.phase, document: this.#windows.document.phase },
+    windowOwnership: this.#windowOwnership?.status() ?? null,
     retainedScriptEvidenceBytes: this.#scriptEvidenceBytes, scriptEvidenceExhausted: this.#scriptEvidenceExhausted,
     rejectedStop: this.#rejectedStop === null ? null : summarizeCurrentPcb209RatlineStop(this.#rejectedStop),
     sourceContinuationConsumed: this.#sourceReleaseConsumed, nativeWorkerTargetIdentityVerified: false, executionAuthorized: false }); }

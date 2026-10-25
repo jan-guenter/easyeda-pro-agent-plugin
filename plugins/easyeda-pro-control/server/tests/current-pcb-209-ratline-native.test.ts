@@ -37,7 +37,7 @@ void test("ratline native grammar preserves exact role cases and issued IDs with
       assert.throws(() => currentPcb209RatlineNativeWire(other, entry.command, 301));
     }
   }
-  assert.deepEqual(counts, { pcb: 40, worker: 47 });
+  assert.deepEqual(counts, { pcb: 49, worker: 47 });
 });
 void test("ratline native syntax refuses getters, proxies, inherited fields, sparse arguments and unsafe handles without running hooks", () => {
   const entry = CURRENT_PCB_209_RATLINE_NATIVE_CASES.find(value => value.role === "pcb" && value.phase === "relation-same");
@@ -101,7 +101,7 @@ void test("ratline C# template table preserves every fixed command and exact bou
   assert.equal(decoded.length, Number(match[2])); assert.equal(createHash("sha256").update(decoded).digest("hex"), match[3]);
   assert.deepEqual(decoded.toString("utf8").split("\0").map(row => row.split("\t")), CURRENT_PCB_209_RATLINE_NATIVE_CASES.map(entry => {
     const wire = currentPcb209RatlineNativeWire(entry.role, entry.command, 1);
-    const { navigationPhase: _privatePhase, loaderPhase: _loaderPhase, windowPhase: _windowPhase, ...nativeCommand } = { navigationPhase: undefined, loaderPhase: undefined, windowPhase: undefined, ...entry.command };
+    const { navigationPhase: _privatePhase, loaderPhase: _loaderPhase, windowPhase: _windowPhase, ownershipStage: _ownershipStage, ownershipPhase: _ownershipPhase, ...nativeCommand } = { navigationPhase: undefined, loaderPhase: undefined, windowPhase: undefined, ownershipStage: undefined, ownershipPhase: undefined, ...entry.command };
     return [entry.role, entry.phase, entry.command.method,
       Object.keys(wire.request).filter(key => !["action", "requestId", "method", "role", "phase"].includes(key)).join(","), JSON.stringify(nativeCommand)];
   }));
@@ -115,7 +115,7 @@ void test("ratline C# template table preserves every fixed command and exact bou
     const raw: unknown = JSON.parse(JSON.stringify(entry.command).replaceAll(/__ratline209_([A-Za-z\d]+)__/gu,
       (_match: string, name: string): string => "x".repeat(name === "sessionId" ? 128 : 256)));
     const encoded = currentPcb209RatlineNativeWire(entry.role, raw, 2_147_483_647);
-    const { navigationPhase: _privatePhase, loaderPhase: _loaderPhase, windowPhase: _windowPhase, ...nativeCommand } = { navigationPhase: undefined, loaderPhase: undefined, windowPhase: undefined, ...encoded.command };
+    const { navigationPhase: _privatePhase, loaderPhase: _loaderPhase, windowPhase: _windowPhase, ownershipStage: _ownershipStage, ownershipPhase: _ownershipPhase, ...nativeCommand } = { navigationPhase: undefined, loaderPhase: undefined, windowPhase: undefined, ownershipStage: undefined, ownershipPhase: undefined, ...encoded.command };
     maximum = Math.max(maximum, Buffer.byteLength(`${JSON.stringify(nativeCommand)}\0`));
   }
   assert.equal(maximum, Number(bound));
@@ -133,4 +133,25 @@ void test("ratline exhaustive compiled parity stays outside the helper runtime f
   assert.ok(source.includes("EasyedaRatline209Protocol.VerifySmoke();"));
   assert.ok(source.includes("System.StringComparer.OrdinalIgnoreCase"));
   assert.ok(source.includes('fields.Add("expression","arbitrary")'));
+});
+
+void test("ownership coordinates are bounded only for original admission while window and release stay at zero", () => {
+  const entry = CURRENT_PCB_209_RATLINE_NATIVE_CASES.find(value => value.phase === "ownership-pcb-admission-arm");
+  assert.ok(entry?.command.method === "Debugger.setBreakpoint");
+  const source = entry.command;
+  for (const lineNumber of [0, 12, 65_535]) {
+    const command = { ...source, params: { location: { ...source.params.location, lineNumber, columnNumber: 27 } } };
+    assert.equal(currentPcb209RatlineNativeWire("pcb", command, 301).request["lineNumber"], lineNumber);
+    assert.throws(() => currentPcb209RatlineNativeWire("worker", command, 301));
+  }
+  for (const [key, maximum] of [["lineNumber", 65_535], ["columnNumber", 1_048_575]] as const) {
+    for (const value of [-0, -1, maximum + 1, 0.5, Number.NaN, Number.POSITIVE_INFINITY, "0", null]) {
+      assert.throws(() => currentPcb209RatlineNativeWire("pcb", { ...source,
+        params: { location: { ...source.params.location, [key]: value } } }, 301));
+    }
+  }
+  for (const stage of ["initial-window", "pcb-release"] as const) {
+    assert.throws(() => currentPcb209RatlineNativeWire("pcb", { ...source, ownershipStage: stage,
+      params: { location: { ...source.params.location, lineNumber: 0, columnNumber: 1 } } }, 301));
+  }
 });

@@ -49,6 +49,7 @@ const requestClasses = freezeDeep({
   // Electron window-context hooks: exact six-byte source and resume, once each.
   "initial-window": { count: 2, frameBytes: envelope },
   "document-window": { count: 2, frameBytes: envelope },
+  ownership: { count: 9, frameBytes: envelope },
   ancestry: { count: 3 * 4 + 2, frameBytes: mib },
   "pcb-source": { count: pcbSources.length, frameBytes: Math.max(...pcbSources.map(slot => slot.frameBytes)) },
   "child-source": { count: childSources.length, frameBytes: Math.max(...childSources.map(slot => slot.frameBytes)) },
@@ -65,7 +66,7 @@ const requestClasses = freezeDeep({
   "pcb-capture": { count: 2 + 4 + 2 + 2 + 2 + 1, frameBytes: mib },
   // Original prelude 32; two source instrumentation handles; construction's
   // Two breakpoints and parent pause; five capture breakpoints and one pause.
-  cleanup: { count: 32 + 2 + 2 + 1 + 5 + 1, frameBytes: envelope },
+  cleanup: { count: 32 + 2 + 2 + 1 + 5 + 1 + 3, frameBytes: envelope },
 } as const);
 export type CurrentPcb209RatlineReplyKind = keyof typeof requestClasses;
 const normalRequestLimit = Object.entries(requestClasses).reduce((sum, [kind, profile]) => sum + (kind === "cleanup" ? 0 : profile.count), 0);
@@ -104,7 +105,9 @@ const pcbBootstrapResumeMilliseconds = pcbBootstrapSendMilliseconds + ordinaryRe
 // Navigation acknowledgment overlaps that first sequence. Initial iframe DOM
 // Ownership adds two snapshots, each owner/request/owner. Later PCB source
 // Pauses retain their ordinary deadline; this does not extend the launch clock.
-const pcbBootstrapFirstPauseMilliseconds = (3 + 5 + 5 + 5 + 2 * 3 + 5) * ordinaryRequestMilliseconds;
+// The initial ordinary-stop transfer adds three owner checks, three native
+// Requests and two bounded event waits; source-stage transfers happen later.
+const pcbBootstrapFirstPauseMilliseconds = (3 + 5 + 5 + 5 + 2 * 3 + 5 + 8) * ordinaryRequestMilliseconds;
 // Two dispatcher owner checks; router owner; fresh ancestry; source-owner
 // Before/resume/after. The resumed event is independently bounded by resume.
 const sourceReleaseMilliseconds = ancestryProofMilliseconds + 5 * ordinaryRequestMilliseconds + pcbBootstrapResumeMilliseconds;

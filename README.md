@@ -39,6 +39,11 @@ that the UI language provider succeeded. Up to seven different utility methods
 can run in one bounded batch with a shared ten-second deadline and one runtime
 admission sequence. Two complete ordered passes must match. The observations
 are sequential; a failure returns no partial batch.
+The offline [library-file reader](plugins/easyeda-pro-control/skills/easyeda-pro-control/references/current-library-files.md)
+prepares supplied standalone libraries or project archives as managed inputs and
+extracts bounded metadata in every facade mode. It checks supported file framing
+and archive integrity without opening EasyEDA. It does not import the files or
+validate their geometry, dependencies or electrical correctness.
 After an ordinary session closes and its retained process/Job termination is
 verified, an explicit `release-closed` action frees its helper for another
 workflow. Project workflows that still own that runtime prevent release.

@@ -89,6 +89,41 @@ async function arm(dependency: CurrentPcb209RatlineContinuationChannelDependency
   await dependency.request(role, { method: "Debugger.setInstrumentationBreakpoint", sessionId, params: { instrumentation: "beforeScriptExecution" } });
 }
 function event(f: Fixture, sessionId: string, method: string, params: Record<string, unknown>): void { f.frame({ method, sessionId, params }); }
+function pauseFrames(scriptId: string, count = 1): readonly object[] {
+  return Array.from({ length: count }, (_, index) => ({ functionName: `frame-${String(index)}`, url: "",
+    functionLocation: { scriptId: index === 0 ? scriptId : "ui", lineNumber: 0, columnNumber: 0 },
+    location: { scriptId: index === 0 ? scriptId : "ui", lineNumber: 0, columnNumber: 0 } }));
+}
+async function transfer(f: Fixture, dependency: CurrentPcb209RatlineContinuationChannelDependency, stage: "initial-window" | "pcb-admission" | "pcb-release", scriptId: string, count = 1): Promise<void> {
+  const breakpointId = `owned-${stage}`, previous = f.state.onSend;
+  f.state.onSend = (request): Promise<unknown> => {
+    const phase = request["phase"];
+    if (typeof phase !== "string" || !phase.startsWith(`ownership-${stage}-`)) { assert.ok(previous !== null); return previous(request); }
+    f.frame({ id: request["requestId"], sessionId: request["sessionId"], result: phase.endsWith("-arm") ?
+      { breakpointId, actualLocation: { scriptId, lineNumber: 0, columnNumber: 0 } } : {} });
+    if (phase.endsWith("-enter")) {
+      event(f, "parent-session", "Debugger.resumed", {});
+      event(f, "parent-session", "Debugger.paused", { reason: "other", hitBreakpoints: [breakpointId], callFrames: pauseFrames(scriptId, count) });
+    }
+    return Promise.resolve({ written: true });
+  };
+  try {
+    const dom = { method: "DOM.getFrameOwner", sessionId: "parent-session", params: { frameId: "original-frame" } } as const;
+    if (stage === "initial-window") {
+      const before = f.requests.length; await assert.rejects(dependency.requestParent(dom), /DOM_INSTRUMENTATION_PAUSE/u);
+      assert.equal(f.requests.length, before);
+    }
+    await dependency.request("pcb", { method: "Debugger.setBreakpoint", sessionId: "parent-session", ownershipStage: stage,
+      ownershipPhase: "arm", params: { location: { scriptId, lineNumber: 0, columnNumber: 0 } } });
+    await dependency.request("pcb", { method: "Debugger.resume", sessionId: "parent-session", ownershipStage: stage, ownershipPhase: "enter", params: {} });
+    if (stage === "initial-window") {
+      await dependency.requestParent(dom);
+      await assert.rejects(dependency.request("pcb", { method: "Debugger.removeBreakpoint", sessionId: "parent-session", params: { breakpointId } }), /OWNERSHIP_REMOVE_PHASE/u);
+    }
+    await dependency.request("pcb", { method: "Debugger.removeBreakpoint", sessionId: "parent-session", ownershipStage: stage, ownershipPhase: "remove", params: { breakpointId } });
+  } finally { f.state.onSend = previous; }
+}
+
 
 function respond(f: Fixture, request: Send): Promise<unknown> {
   let result: unknown = ordinaryReply(request);
@@ -100,8 +135,9 @@ function respond(f: Fixture, request: Send): Promise<unknown> {
 async function bootstrap(f: Fixture, dependency: CurrentPcb209RatlineContinuationChannelDependency, role: keyof typeof sessions): Promise<void> {
   const count = role === "pcb" ? 29 : 7, sessionId = sessions[role];
   for (let ordinal = 0; ordinal < count; ordinal += 1) {
-    event(f, sessionId, "Debugger.paused", { reason: "instrumentation", hitBreakpoints: [] });
+    event(f, sessionId, "Debugger.paused", { reason: "instrumentation", hitBreakpoints: [], callFrames: pauseFrames(`${role}-source-${String(ordinal)}`) });
     await dependency.request(role, { method: "Debugger.getScriptSource", sessionId, params: { scriptId: `${role}-source-${String(ordinal)}` } });
+    if (role === "pcb" && (ordinal === 0 || ordinal === 28)) { await transfer(f, dependency, ordinal === 0 ? "pcb-admission" : "pcb-release", `${role}-source-${String(ordinal)}`); }
     await dependency.request(role, { method: "Debugger.resume", sessionId, params: {} });
   }
 }
@@ -184,7 +220,7 @@ async function beginWindowNavigation(f: Fixture, dependency: CurrentPcb209Ratlin
         length: 6, hash: CURRENT_PCB_209_RATLINE_WINDOW_SOURCE_SHA256, scriptLanguage: "JavaScript", sourceMapURL: "" });
     }
     event(f, "parent-session", "Debugger.paused", { reason: "instrumentation", data: { scriptId }, hitBreakpoints: [],
-      callFrames: Array.from({ length: frames }, (_, index) => ({ location: { scriptId: index === 0 ? scriptId : "ui" } })) });
+      callFrames: pauseFrames(scriptId, frames) });
   };
   f.state.onSend = (request): Promise<unknown> => {
     const phase = request["phase"];
@@ -226,6 +262,8 @@ void test("window stages retain separate sources, require prior resume acknowled
   await dependency.request("pcb", windowSource("initial"));
   await assert.rejects(dependency.request("pcb", windowSource("initial")), /WINDOW_SEQUENCE/u);
   await assert.rejects(dependency.request("pcb", plain), /RESUME_SEQUENCE/u);
+  await assert.rejects(dependency.request("pcb", windowResume("initial")), /OWNERSHIP_SEQUENCE/u);
+  await transfer(f, dependency, "initial-window", "window-initial", 6);
   const resumed = dependency.request("pcb", windowResume("initial")); const original = await held.initialResumeIssued;
   await dependency.requestParent({ method: "Page.getFrameTree", sessionId: "parent-session", params: {} });
   const awaitingAck = f.requests.length;
@@ -258,6 +296,7 @@ void test("changed window bytes consume only their own read and cannot dispatch 
     const held = await beginWindowNavigation(f, dependency);
     if (stage === "document") {
       await dependency.request("pcb", windowSource("initial"));
+      await transfer(f, dependency, "initial-window", "window-initial", 6);
       const resumed = dependency.request("pcb", windowResume("initial")); const original = await held.initialResumeIssued;
       f.frame({ id: original["requestId"], sessionId: "parent-session", result: {} }); await resumed;
     }

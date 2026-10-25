@@ -106,13 +106,20 @@ async function fixture(options: Readonly<{ badReplay?: boolean; badDom?: boolean
   const navigationAck = Promise.withResolvers<null>(), navigationResumeRequested = Promise.withResolvers<null>();
   let cleanupCalls = 0, initialWindow = false, loaderResumes = 0, loaderSources = 0, windowResumes = 0, windowSources = 0;
   let drift = false, index = 0, listener: Events | null = null, removals = 0, resumes = 0, snapshots = 0, sources = 0, started = 0, terminated = false;
-  const emit = (value: DiagnosticEvent): void => { listener?.event(value); };
+  let lastPause: DiagnosticEvent | null = null;
+  let instrumentationHeld = false;
+  const ownership = new Map<string, Readonly<{ breakpointId: string; callFrames: unknown }>>();
+  const emit = (value: DiagnosticEvent): void => {
+    if (value.method === "Debugger.paused") { lastPause = value; instrumentationHeld = value.params["reason"] === "instrumentation"; }
+    else if (value.method === "Debugger.resumed") { instrumentationHeld = false; }
+    listener?.event(value);
+  };
   const pause = (): void => {
     const role = roles[index]; if (role === undefined) { return; }
     const url = currentPcb209RatlinePcbBootstrapRoleUrl(role, pcbUrl);
-    emit(event("Debugger.scriptParsed", { scriptId: role, executionContextId: 3, url, hasSourceURL: false, isLiveEdit: false }));
+    emit(event("Debugger.scriptParsed", { scriptId: role, executionContextId: 3, url, hasSourceURL: false, isLiveEdit: false, startLine: 0, startColumn: 0 }));
     emit(event("Debugger.paused", { reason: "instrumentation", data: { scriptId: role, url }, hitBreakpoints: ["instrumentation"],
-      callFrames: [{ location: { scriptId: options.foreignPause === true ? "ui-script" : role } }] }));
+      callFrames: [loaderFrame("", options.foreignPause === true ? "ui-script" : role, 0, 0, 0)] }));
   };
   const emitWindow = (stage: "initial" | "document"): void => {
     const observation = windowObservations(stage);
@@ -140,6 +147,20 @@ async function fixture(options: Readonly<{ badReplay?: boolean; badDom?: boolean
   };
   async function request(command: CurrentPcb209RatlinePcbContextCommand): Promise<unknown> {
       if (options.delayMilliseconds !== undefined) { const delay = Promise.withResolvers<null>(); setTimeout(() => { delay.resolve(null); }, options.delayMilliseconds); await delay.promise; }
+      if ("ownershipPhase" in command) {
+        if (command.method === "Debugger.setBreakpoint") {
+          assert.ok(lastPause); assert.equal(instrumentationHeld, true);
+          const breakpointId = `owned-${command.ownershipStage}`;
+          ownership.set(command.ownershipStage, { breakpointId, callFrames: lastPause.params["callFrames"] });
+          return { breakpointId, actualLocation: { ...command.params.location } };
+        }
+        const current = ownership.get(command.ownershipStage); assert.ok(current);
+        if (command.method === "Debugger.resume") {
+          emit(event("Debugger.resumed", {}));
+          emit(event("Debugger.paused", { reason: "other", hitBreakpoints: [current.breakpointId], callFrames: current.callFrames }));
+        } else { assert.equal(command.params.breakpointId, current.breakpointId); ownership.delete(command.ownershipStage); }
+        return {};
+      }
       switch (command.method) {
         case "Target.setAutoAttach": { return ({}); }
         case "Runtime.enable": { emit(event("Runtime.executionContextCreated", { context: options.badReplay === true ? { ...uiContext, origin: "https://foreign" } : uiContext })); return ({}); }
@@ -176,10 +197,11 @@ async function fixture(options: Readonly<{ badReplay?: boolean; badDom?: boolean
           }
           resumes += 1; emit(event("Debugger.resumed", {})); index += 1; pause(); return ({}); }
         case "Target.getTargets": { snapshots += 1; return ({ targetInfos: [{ ...parent, attached: true, url: openedUrl }] }); }
-        case "Page.getFrameTree": { snapshots += 1; return ({ frameTree: { frame: { ...root, urlFragment: openedUrl.slice(base.length) },
+        case "Page.getFrameTree": { assert.equal(instrumentationHeld, false); snapshots += 1; return ({ frameTree: { frame: { ...root, urlFragment: openedUrl.slice(base.length) },
           childFrames: [{ frame: { ...pcbFrame, ...(drift ? { loaderId: "replacement" } : {}) } }] } }); }
-        case "DOM.getFrameOwner": { snapshots += 1; assert.equal(command.params.frameId, "pcb-frame"); return ({ backendNodeId: 17 }); }
+        case "DOM.getFrameOwner": { assert.equal(instrumentationHeld, false); snapshots += 1; assert.equal(command.params.frameId, "pcb-frame"); return ({ backendNodeId: 17 }); }
         case "DOM.describeNode": {
+          assert.equal(instrumentationHeld, false);
           snapshots += 1; assert.deepEqual(command.params, { backendNodeId: 17, depth: 0, pierce: false });
           return ({ node: { backendNodeId: 17, nodeType: 1, nodeName: "IFRAME", localName: "iframe", frameId: "pcb-frame",
             attributes: ["id", `frame_${tab}`, "c_dbid", options.badDom === true ? "foreign" : tab, "c_doctype", "3", "src", "editor?entry=pcb", ...(initialWindow ? [] : ["pcb-canvas", "true"]), "class", "editframe"] } });
@@ -244,10 +266,12 @@ void test("changed historical Runtime replay refuses before any PCB navigation o
   assert.deepEqual(f.counts(), { navigation: 0, resumes: 0, sources: 0, snapshots: 0, removals: 0 }); await f.router.abort(); await f.terminate();
   assert.equal(f.router.status()["firstFailure"], failure);
 });
-void test("foreign debugger pause and incorrect DOM owner refuse without resuming or reading PCB source", async () => {
+void test("foreign debugger pause and incorrect DOM owner refuse before any source execution", async () => {
   for (const options of [{ foreignPause: true }, { badDom: true }]) {
     const f = await fixture(options); await f.owner.armBeforeNavigation(); await f.owner.startOriginalNavigation(); await assert.rejects(f.owner.whenSourceQualified());
-    assert.equal(f.counts().resumes, 0); assert.equal(f.counts().sources, 0); assert.equal(f.router.status()["failed"], true);
+    // The source-qualified ordinary entry transfer reads the first source before
+    // DOM admission, while its first statement remains paused and unexecuted.
+    assert.equal(f.counts().resumes, 0); assert.equal(f.counts().sources, options.badDom === true ? 1 : 0); assert.equal(f.router.status()["failed"], true);
     const failure = f.router.status()["firstFailure"]; assert.ok(failure !== null && typeof failure === "object");
     if (options.foreignPause === true) { assert.equal(Reflect.get(failure, "reason"), "PCB209_RATLINE_CONTEXT_FOREIGN_PAUSE");
       assert.equal(Reflect.get(failure, "lastEvent"), "Debugger.paused"); }

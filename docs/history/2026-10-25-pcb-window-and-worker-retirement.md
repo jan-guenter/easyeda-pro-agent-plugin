@@ -117,3 +117,47 @@ Failed shard-log SHA256 is
 `72dcbcbbcd574cb02bbaf2dc3e1c2aa73d170c6f432940a87fe806ecfdd92967`.
 The aggregate job correctly failed; this first commit does not provide accepted
 release CI. The corrected final commit must pass all required jobs separately.
+
+## Published and installed
+
+[PR128](https://github.com/jan-guenter/easyeda-pro-agent-plugin/pull/128) merged
+final head `1b3d8f16481c626d4bda8fa6cdd6677ccd274154` as protected main
+`913436f7e7e6a6060334cf5b24f75a58c46d1e2e`. Its tree
+`6b9bbb2728208f6efe1a44b32a293a1483367217` equals the tested merge tree exactly.
+[Final Linux CI](https://github.com/jan-guenter/easyeda-pro-agent-plugin/actions/runs/40221437418)
+and [final Windows CI](https://github.com/jan-guenter/easyeda-pro-agent-plugin/actions/runs/40221437410)
+passed all11 required jobs:12,974 facade passes, five documented platform skips,
+zero failures, and424 bridge passes across28files. Independent full-log review
+SHA256 is `08d549e4be6ca821e54a74f7f2fbf67e13a5e4d21b945eabd00f7a5e0fcb6d26`.
+The initial failed PR run remains retained and is not substituted for this proof.
+
+The official CLI upgraded the Git marketplace
+`https://github.com/jan-guenter/easyeda-pro-agent-plugin.git` once and registered
+`0.3.0+codex.20261025180334` installed/enabled at merged main. Before and after
+the offline probe, maintained comparison verified all2,012 committed files,
+42directories and42,977,229bytes with exact modes. Installed inventory SHA256:
+`20d882eb841afb82b047508d9e0c85358052fd37665baaa3b24c0acc4c1eb622`.
+The private offline current-profile probe checked26tools through25queries and
+27JSON-RPC requests, including continuation discovery. It observed no descendants
+or non-stdio sockets, exited cleanly and verified its marker cleanup. This is
+synthetic installed-package evidence, not actual fresh-host or connected admission.
+
+Facade projections are727source files at
+`68daa61fa7d867fb4a3b6984732bba7db1c7bb0c0147e30e208759323e09d30b` and
+three bundle files at
+`264fc25c7434e92e09dc84c6ce2e235508d9f54da9d8fc4c220d96ff196f6b57`.
+No cache editing, host-gateway replacement or new live CAD call accompanied
+installation. The previous162034 disposable operation is released; never replay
+it. The production project remains excluded and untouched.
+
+A fresh Codex session must admit the newly loaded actual process before one
+new disposable continuation case. Complete its original-owner cleanup, then
+continue the authorized backlog in coherent batches. In parallel with that
+connected case, useful independent source work includes managed library-file
+and export-artifact contracts, project-local library copy/delete lifecycle,
+and compiler-free schematic read/connectivity coverage. Their own connected
+and runtime requirements remain; they are not automatically enabled by this
+release. Independent Worker/CDP identity, callback/canvas/copper completion,
+full live/source/SQL and saved/reopened baselines, remaining writers and
+manufacturing exports still require implementation or validation. Literal
+vendor stubs and missing backends retain their concrete omission reasons.

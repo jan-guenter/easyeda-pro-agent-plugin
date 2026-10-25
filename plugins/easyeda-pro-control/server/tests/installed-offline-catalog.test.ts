@@ -29,9 +29,10 @@ void describe("dependency-free installed package offline catalog probe", () => {
     const result = await probeInstalledOfflineCatalog(root);
     assert.equal(result["ok"], true);
     assert.equal(result["scope"], "synthetic-profile-installed-package-offline-catalog;not-runtime-admission");
-    assert.equal(result["tools"], 26);
-    assert.equal(result["configuredTools"], 51);
-    assert.equal(result["queries"], 22);
+    assert.equal(result["tools"], 27);
+    assert.equal(result["configuredTools"], 52);
+    assert.equal(result["queries"], 27);
+    assert.equal(result["ratlineContinuationDiscoveryChecked"], true);
     assert.equal(result["postCloseMarkerAbsentAndControlRosterVerified"], true);
     assert.equal(result["sampledNoDescendantsOrNonStdioSockets"], true);
     assert.equal(result["continuousIsolationVerified"], false);
