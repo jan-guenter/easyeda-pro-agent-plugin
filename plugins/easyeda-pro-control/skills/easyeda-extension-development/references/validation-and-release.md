@@ -79,6 +79,16 @@ resource, retain the primary error and report required cleanup failures. Keep
 the original process and Job handles until their exit observations are captured.
 An empty Job observation alone does not substitute for the original root's exit.
 
+For debugger-driven startup, derive each pause window from the serial requests
+and original-owner checks that run while execution is held. Include a previous
+resume acknowledgment when the next paused event can arrive first. Keep the
+window anchored to that event, preserve individual request deadlines and record
+the first failed phase/substep before cleanup. Mark cleanup resumes separately;
+a resumed-source flag alone does not establish normal startup progression.
+Native stack lookups need their own response deadline as well as an overall
+launch budget. An uncertain write or timed-out lookup remains consumed. A late
+original reply must close its accounting record without restoring authority.
+
 For post-write reopening, retain the successful operation's actual closed
 checkpoint, raw copy and complete SQL inventory before retiring its owner.
 Revalidate the closed source before releasing captures: release advances the

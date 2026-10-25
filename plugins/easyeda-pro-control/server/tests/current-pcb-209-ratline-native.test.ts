@@ -19,7 +19,7 @@ void test("ratline native grammar preserves exact role cases and issued IDs with
     for (const name of ["params", "expression", "functionDeclaration", "objectGroup", "arguments", "budget", "generation"]) {
       assert.equal(Object.hasOwn(encoded.request, name), false);
     }
-    if (entry.phase.startsWith("creation-") || entry.phase.startsWith("capture-") || entry.phase.startsWith("relation-") ||
+    if (entry.phase === "origin-stack" || entry.phase === "bootstrap-async-depth" || entry.phase.startsWith("creation-") || entry.phase.startsWith("capture-") || entry.phase.startsWith("relation-") ||
         entry.phase.startsWith("object-") || entry.phase.startsWith("value-")) { assert.throws(() => currentPcb209EmptyNativeWire(entry.command, 1)); }
     for (const id of [-0, -1, 0, 1.5, 2_147_483_648, Number.NaN, Number.POSITIVE_INFINITY]) {
       assert.throws(() => currentPcb209RatlineNativeWire(entry.role, entry.command, id));
@@ -37,7 +37,7 @@ void test("ratline native grammar preserves exact role cases and issued IDs with
       assert.throws(() => currentPcb209RatlineNativeWire(other, entry.command, 301));
     }
   }
-  assert.deepEqual(counts, { pcb: 29, worker: 46 });
+  assert.deepEqual(counts, { pcb: 31, worker: 47 });
 });
 void test("ratline native syntax refuses getters, proxies, inherited fields, sparse arguments and unsafe handles without running hooks", () => {
   const entry = CURRENT_PCB_209_RATLINE_NATIVE_CASES.find(value => value.role === "pcb" && value.phase === "relation-same");
@@ -63,6 +63,21 @@ void test("ratline native syntax refuses getters, proxies, inherited fields, spa
     objectId: "__ratline209_argument0__", arguments: [{ objectId: "original" }] } }, 301);
   assert.equal(encoded.request["objectId"], "__ratline209_argument0__"); assert.equal(encoded.request["argument0"], "original");
   assert.equal(hooks, 0);
+});
+void test("origin syntax has separate bounded IDs and fixed depth one without worker lookup or depth reset", () => {
+  const command = { method: "Debugger.getStackTrace", sessionId: "parent", params: { stackTraceId: { id: "stack", debuggerId: "debugger" } } } as const;
+  assert.equal(currentPcb209RatlineNativeWire("pcb", command, 301).request["stackTraceId"], "stack");
+  assert.throws(() => currentPcb209RatlineNativeWire("worker", command, 301));
+  for (const key of ["id", "debuggerId"] as const) {
+    for (const value of ["", "x".repeat(257), "bad\n", null, 3]) {
+      assert.throws(() => currentPcb209RatlineNativeWire("pcb", { ...command, params: { stackTraceId: { ...command.params.stackTraceId, [key]: value } } }, 301));
+    }
+  }
+  for (const role of ["pcb", "worker"] as const) {
+    for (const maxDepth of [0, 2, -1, 1.5]) {
+      assert.throws(() => currentPcb209RatlineNativeWire(role, { method: "Debugger.setAsyncCallStackDepth", sessionId: "s", params: { maxDepth } }, 301));
+    }
+  }
 });
 void test("ratline C# template table preserves every fixed command and exact bounded UTF-8 payload", () => {
   const source = currentPcb209RatlineNativeSource();

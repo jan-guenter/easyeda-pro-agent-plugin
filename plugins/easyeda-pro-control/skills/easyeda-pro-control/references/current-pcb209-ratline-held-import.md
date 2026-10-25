@@ -55,6 +55,30 @@ limits; cleanup has reserved requests, bytes, polls and time. These limits are
 fixed and cannot be selected or reset by a caller. Large source qualification
 can take time; timeout or missing acknowledgment consumes the operation.
 
+## Interpreting native origin evidence
+
+Before either realm executes its relevant source, the diagnostic enables
+async stack capture at fixed depth one. At the first child's first qualified
+script pause, it retains the complete pause and both original PCB constructor
+pauses. If the child's external stack ID names the original PCB debugger, it
+performs one lookup in that original parent session. It does not follow an
+inline stack as a substitute or retry with another ID.
+
+`nativeOrigin.reason` explains the comparison. `matched` means the retained
+native stack and constructor locations satisfy this observation profile.
+Missing IDs, foreign debugger IDs, unsupported frame/scope shapes and location
+mismatches produce explicit diagnostic reasons. Even `matched` leaves
+`nativeWorkerTargetIdentityVerified` and execution authority false. The custom
+EasyEDA runtime still needs connected qualification of the complete link.
+
+The published packet includes `nativeOriginEvidence` and its summary digest.
+Each of the four complete observations has a 64 KiB limit; the complete result
+has a 288 KiB limit. Oversized evidence is rejected, never truncated. Inspect
+returns one raw copy: the durable result when available, or
+`workerStartupRatlineUnpublishedOriginEvidence` from the original retained
+session when no result has been published. Preserve that evidence before ending the
+session. A summary hash alone cannot explain a refused frame or source position.
+
 Normal opening can migrate, replay caches, use network services and persist
 data automatically. Debugger pauses change timing. Never replay launch,
 navigation or capture after uncertainty. Keep the original owner for inspection

@@ -99,7 +99,8 @@ const ratlineChannelCleanup = CurrentPcb209RatlineStartupChannel.prototype.begin
 const ratlineSessionMethods = Object.freeze({ capture: CurrentPcb209RatlineNativeSession.prototype.captureFirstChildHeld,
   require: CurrentPcb209RatlineNativeSession.prototype.requireOriginal, abort: CurrentPcb209RatlineNativeSession.prototype.abort,
   release: CurrentPcb209RatlineNativeSession.prototype.releaseAfterTermination, status: CurrentPcb209RatlineNativeSession.prototype.status,
-  opening: CurrentPcb209RatlineNativeSession.prototype.retainedOpeningObservation });
+  opening: CurrentPcb209RatlineNativeSession.prototype.retainedOpeningObservation,
+  originEvidence: CurrentPcb209RatlineNativeSession.prototype.retainedNativeOriginEvidence });
 // oxlint-enable typescript/unbound-method
 
 type CleanupRequest = Exclude<LifecycleRequest, { action: "launch" | "inspect" | "query-observation" | "settle-records" | "cleanup-unlaunched" | "cleanup-no-process" }>;
@@ -469,6 +470,8 @@ class CurrentPcbLifecycleCore {
         workerStartupRatlineFailed: original && this.#startupRatlineFailed,
         workerStartupRatlineCleanupFailed: original && this.#startupRatlineCleanupFailed,
         workerStartupRatlineState: original && this.#startupRatlineSession !== null ? ratlineSessionMethods.status.call(this.#startupRatlineSession) : null,
+        workerStartupRatlineUnpublishedOriginEvidence: operation?.records["worker-startup-ratline-result.json"] === undefined && original &&
+          this.#startupRatlineSession !== null ? ratlineSessionMethods.originEvidence.call(this.#startupRatlineSession) : null,
         workerStartupRatlineOpening: original && this.#startupRatlineSession !== null ? ratlineSessionMethods.opening.call(this.#startupRatlineSession) : null,
         workerStartupRatlineResult: operation?.records["worker-startup-ratline-result.json"]?.result ?? null,
         workerStartupEmptyAttemptConsumed: operation?.records["worker-startup-empty-intent.json"] !== undefined || original && this.#startupEmptyAttempted,
@@ -1107,7 +1110,8 @@ class CurrentPcbLifecycleCore {
       const session = this.#startupRatlineSession;
       requireValue(session.captureFirstChildHeld === ratlineSessionMethods.capture && session.requireOriginal === ratlineSessionMethods.require &&
         session.abort === ratlineSessionMethods.abort && session.releaseAfterTermination === ratlineSessionMethods.release &&
-        session.status === ratlineSessionMethods.status && session.retainedOpeningObservation === ratlineSessionMethods.opening, "STARTUP_RATLINE_METHODS_CHANGED");
+        session.status === ratlineSessionMethods.status && session.retainedOpeningObservation === ratlineSessionMethods.opening &&
+        session.retainedNativeOriginEvidence === ratlineSessionMethods.originEvidence, "STARTUP_RATLINE_METHODS_CHANGED");
     }
     if (this.#startupEmptyPreparation !== null) {
       const pcb = this.#startupEmptyPreparation.pcb;

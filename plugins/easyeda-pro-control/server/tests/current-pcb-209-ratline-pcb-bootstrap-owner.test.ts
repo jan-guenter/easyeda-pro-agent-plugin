@@ -110,6 +110,7 @@ async function fixture(context: TestContext, options: Readonly<{ realCapture?: b
       if (index >= roles.length) { assert.ok(native !== null); return native.request(command.method, command.params); }
       switch (command.method) {
         case "Target.setAutoAttach": case "Runtime.enable": { return Promise.resolve({}); }
+        case "Debugger.setAsyncCallStackDepth": { assert.equal(command.params.maxDepth, 1); return Promise.resolve({}); }
         case "Debugger.enable": { return Promise.resolve({ debuggerId: "original-debugger" }); }
         case "Debugger.setInstrumentationBreakpoint": { return options.delayedAllocation === true ? allocation.promise : Promise.resolve({ breakpointId: "original-instrument" }); }
         case "Debugger.getScriptSource": { sourceReads += 1; return Promise.resolve({ scriptSource: options.badSource === true ? "bad-source" : `fixture:${String(roles[index])}` }); }
@@ -151,6 +152,7 @@ void test("PCB source owner arms before one opening, hands retained realm to act
   assert.equal(f.counts().requests, before);
   const childBootstrapOwner = new CurrentPcb209RatlineBootstrapOwner({
     assertOriginalChild: async (creation, child): Promise<void> => { await creation.requireOriginal(child); },
+    observeOriginalFirstScript: (): Promise<void> => Promise.resolve(),
     assertOriginalTermination: f.dependency.assertOriginalTermination,
     subscribe: (): (() => void) => (): void => {
       // This fixture holds the synthetic waiting child without source events.
@@ -159,6 +161,7 @@ void test("PCB source owner arms before one opening, hands retained realm to act
       assert.ok("sessionId" in command); assert.equal(command.sessionId, "child-session");
       switch (command.method) {
         case "Target.setAutoAttach": case "Runtime.enable": case "Debugger.removeBreakpoint": { return Promise.resolve({}); }
+        case "Debugger.setAsyncCallStackDepth": { assert.equal(command.params.maxDepth, 1); return Promise.resolve({}); }
         case "Debugger.enable": { return Promise.resolve({ debuggerId: "child-debugger" }); }
         case "Debugger.setInstrumentationBreakpoint": { f.armChild(); return Promise.resolve({ breakpointId: "child-instrument" }); }
         case "Debugger.evaluateOnCallFrame": case "Debugger.getScriptSource": case "Debugger.resume": case "Debugger.setBreakpoint":

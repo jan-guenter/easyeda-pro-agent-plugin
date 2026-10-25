@@ -14,6 +14,7 @@ import { currentPcb209RatlineStartupLifecycleRequestSchema, currentPcb209Ratline
 import { CURRENT_PCB_209_RATLINE_STARTUP_RESULT_MAX_BYTES, currentPcb209RatlineNativePacketSchema } from "../src/current-pcb-209-ratline-startup-packet-schema.ts";
 import { diagnosticLifecycleRecordSchemas, publishCurrentPcbDiagnosticLifecycleRecord,
   readCurrentPcbDiagnosticLifecycles, reserveCurrentPcbDiagnosticLifecycle } from "../src/current-pcb-diagnostic-lifecycle-journal.ts";
+import { captureCurrentPcb209RatlineOriginEvidence, inspectCurrentPcb209RatlineOriginEvidence } from "../src/current-pcb-209-ratline-origin-observation.ts";
 import type { DiagnosticLifecycleRecordName } from "../src/current-pcb-diagnostic-lifecycle-journal.ts";
 
 const digest = "a".repeat(64), operationId = "pcb209-ratline-contract";
@@ -22,7 +23,11 @@ const observe = { action: "observe-ratline-held-import", operationId, expectedBi
   acceptNormalOpenEffects: true, acceptDebuggerPause: true };
 const sourceFlags = { completeImportedSourceQualified: true, importedSourceHeldBeforeExecution: true,
   nativeWorkerTargetIdentityVerified: false, continuousInstallationLeaseVerified: false, executionAuthorized: false };
-const packet = { profile: "private.pcb209-ratline-native-held-import.v1", targetSha256: digest, originalProjectConstructionSha256: digest,
+const nativeOriginEvidence = captureCurrentPcb209RatlineOriginEvidence({ metadata: { parentDebuggerId: "parent-debugger", childDebuggerId: "child-debugger",
+  childUniqueContextId: "child-context", childScriptId: "bootstrap-script", childUrl: "https://client/editor?entry=pcb-ratline-worker.js",
+  parentSessionId: "parent-session", parentScriptId: "pcb-script" }, firstPause: {}, constructorBefore: {}, constructorAfter: {}, stackReply: null });
+const nativeOrigin = inspectCurrentPcb209RatlineOriginEvidence(nativeOriginEvidence);
+const packet = { nativeOrigin, nativeOriginEvidence, profile: "private.pcb209-ratline-native-held-import.v1", targetSha256: digest, originalProjectConstructionSha256: digest,
   pcbSource: { profile: "private.pcb209-ratline-pcb-bootstrap.v1", sessionId: "parent-session", parentTargetId: "parent", frameId: "pcb-frame",
     contextId: 10, uniqueContextId: "pcb-context", origin: "https://client", frameUrl: "https://client/editor?entry=pcb", scriptId: "pcb-script",
     ...sourceFlags, nativeFrameAncestryVerified: false },
@@ -61,6 +66,9 @@ void test("strict held-import packet rejects stronger claims, incomplete sources
   assert.equal(currentPcb209RatlineNativePacketSchema.safeParse(packet).success, true);
   for (const changed of [{ ...packet, nativeWorkerTargetIdentityVerified: true }, { ...packet, completeStartupVerified: true },
     { ...packet, completeLiveBaselineVerified: true }, { ...packet, executionAuthorized: true }, { ...packet, saveAuthorized: true },
+    { ...packet, nativeOrigin: { ...nativeOrigin, evidenceSha256: "f".repeat(64) } },
+    { ...packet, nativeOriginEvidence: { ...nativeOriginEvidence, firstPause: { changed: true } } },
+    { ...packet, nativeOrigin: { ...nativeOrigin, constructorLocationMatched: true } },
     { ...packet, originalFrameProofSets: 2 }, { ...packet, firstChildImportHeld: false }, { ...packet, unknown: true },
     { ...packet, pcbSource: { ...packet.pcbSource, frameUrl: null } },
     { ...packet, pcbSource: { ...packet.pcbSource, nativeFrameAncestryVerified: true } },
@@ -70,7 +78,10 @@ void test("strict held-import packet rejects stronger claims, incomplete sources
     { ...packet, childSource: { ...packet.childSource, unknown: true } }]) {
     assert.equal(currentPcb209RatlineNativePacketSchema.safeParse(changed).success, false);
   }
-  const maximum = currentPcb209RatlineNativePacketSchema.parse({ ...packet,
+  const maximumEvidence = captureCurrentPcb209RatlineOriginEvidence({ ...nativeOriginEvidence,
+    metadata: { ...nativeOriginEvidence.metadata, parentSessionId: "p".repeat(256), parentScriptId: "p".repeat(256), childUniqueContextId: "c".repeat(256) } });
+  const maximum = currentPcb209RatlineNativePacketSchema.parse({ ...packet, nativeOriginEvidence: maximumEvidence,
+    nativeOrigin: inspectCurrentPcb209RatlineOriginEvidence(maximumEvidence),
     pcbSource: { ...packet.pcbSource, sessionId: "p".repeat(256), parentTargetId: "p".repeat(256), frameId: "p".repeat(256),
       contextId: Number.MAX_SAFE_INTEGER, uniqueContextId: "p".repeat(256), scriptId: "p".repeat(256) },
     childSource: { ...packet.childSource, childTargetId: "c".repeat(256), childSessionId: "c".repeat(256),
@@ -127,7 +138,7 @@ void test("ratline durable journal binds original launch, opening and result whi
       result: { ...packet, targetSha256: sha256Json(target), originalProjectConstructionSha256: sha256Json(construction) },
       validationOnly: true, executionAuthorized: false, saveAuthorized: false }));
     const operations = await readCurrentPcbDiagnosticLifecycles();
-    assert.deepEqual(operations.find(value => value.operationId === operationId)?.records["worker-startup-ratline-result.json"], result);
+    assert.equal(sha256Json(operations.find(value => value.operationId === operationId)?.records["worker-startup-ratline-result.json"]), sha256Json(result));
     const path = join(directory, "worker-startup-ratline-result.json");
     for (const change of [{ targetSha256: digest }, { originalProjectConstructionSha256: digest }]) {
       const changed = diagnosticLifecycleRecordSchemas["worker-startup-ratline-result.json"].parse({ ...result, result: { ...result.result, ...change } });

@@ -1,6 +1,6 @@
 /** Private pre-navigation PCB source owner. The containing original native
  * coordinator owns durable intent, frame ancestry, installation leases and
- * cumulative budgets. No native helper or public route adopts this class. */
+ * cumulative budgets through the native ratline held-import boundary. */
 import { types } from "node:util";
 import { CURRENT_PCB_209_RATLINE_NATIVE_PROFILE, currentPcb209RatlineSourceBudget } from "./current-pcb-209-ratline-budget.ts";
 import { z } from "zod";
@@ -106,6 +106,8 @@ export class CurrentPcb209RatlinePcbBootstrapOwner {
   readonly #stages: readonly Stage[];
   readonly #qualified = Promise.withResolvers<CurrentPcb209RatlinePcbBootstrapPacket>();
   #context: z.infer<typeof contextSchema> | null = null;
+  #debuggerId: string | null = null;
+  #asyncDepthArmed = false;
   #frameUrl: string | null = null;
   #index = 0;
   #consumed = false;
@@ -249,7 +251,9 @@ export class CurrentPcb209RatlinePcbBootstrapOwner {
       const sessionId = this.#dependency.parentSessionId;
       empty.parse(await bounded(this.#send({ method: "Target.setAutoAttach", sessionId, params: CURRENT_PCB_WORKER_STARTUP_ATTACH })));
       empty.parse(await bounded(this.#send({ method: "Runtime.enable", sessionId, params: {} })));
-      z.object({ debuggerId: token }).strict().parse(await bounded(this.#send({ method: "Debugger.enable", sessionId, params: { maxScriptsCacheSize: 33_554_432 } })));
+      this.#debuggerId = z.object({ debuggerId: token }).strict().parse(await bounded(this.#send({ method: "Debugger.enable", sessionId, params: { maxScriptsCacheSize: 33_554_432 } }))).debuggerId;
+      empty.parse(await bounded(this.#send({ method: "Debugger.setAsyncCallStackDepth", sessionId, params: { maxDepth: 1 } })));
+      this.#asyncDepthArmed = true;
       this.#allocationUncertain = true;
       const allocation = (async (): Promise<void> => {
         const reply = z.object({ breakpointId: token }).strict().parse(await this.#send({ method: "Debugger.setInstrumentationBreakpoint", sessionId,
@@ -325,9 +329,15 @@ export class CurrentPcb209RatlinePcbBootstrapOwner {
         return (): void => { need(this.#realmEvents === events, "REALM_SUBSCRIPTION_CHANGED"); this.#realmEvents = null; this.#realmEventMembers = null; };
       } });
   }
+  /** Native debugger identity stays bound to this original PCB source owner. */
+  public async requireOriginalDebugger(packet: CurrentPcb209RatlinePcbBootstrapPacket): Promise<string> {
+    await this.requireOriginal(packet);
+    need(this.#debuggerId !== null && this.#asyncDepthArmed, "ORIGINAL_DEBUGGER"); return this.#debuggerId;
+  }
   async #realmRequest(packet: CurrentPcb209RatlinePcbBootstrapPacket, input: CurrentPcb209RatlineRealmCommand): Promise<unknown> {
     const wire = currentPcb209RatlineNativeWire("pcb", input, 1); const phase = wire.request["phase"];
     need(typeof phase === "string" && !phase.startsWith("bootstrap-"), "REALM_COMMAND"); const { id: _validationId, ...command } = wire.command;
+    need(command.method !== "Debugger.getStackTrace", "ORIGIN_COMMAND_OWNER");
     const cleanup = command.method === "Debugger.resume" || command.method === "Debugger.removeBreakpoint" || command.method === "Runtime.runIfWaitingForDebugger";
     this.#same(); need(!this.#released && packet === this.#packet && this.#realmClaimed, "REALM_OWNER"); if (!cleanup) { await this.requireOriginal(packet); }
     this.#same(); need(!this.#released && (cleanup || !this.#failed), "NOT_CURRENT");

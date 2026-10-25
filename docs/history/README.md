@@ -45,6 +45,7 @@ layout. The connected ledger retains its generation and case anchors.
 
 | Record | Former path |
 | --- | --- |
+| [2026-10-25-ratline-prefix-timing-and-origin.md](2026-10-25-ratline-prefix-timing-and-origin.md) | Installed22904 disposable capture deadline, terminal cleanup, phase timing and native worker-origin batch |
 | [2026-10-25-ratline-native-held-import-integration.md](2026-10-25-ratline-native-held-import-integration.md) | Distinct native ratline purpose, retained source leases, cumulative budgets, context routing and first-child held-import diagnostic |
 | [2026-10-25-native-startup-and-ownership-diagnostics.md](2026-10-25-native-startup-and-ownership-diagnostics.md) | Private PCB pre-navigation source capture, original child-start guard and diagnostic-only facade contention startup |
 | [2026-10-24-through-2026-10-25-worker-notification-and-ratline.md](2026-10-24-through-2026-10-25-worker-notification-and-ratline.md) | Terminal191751 capture refusal, pinned worker notification semantics and private ratline source/native integration |

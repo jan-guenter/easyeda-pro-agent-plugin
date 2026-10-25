@@ -40,6 +40,7 @@ void test("composite failure resumes original parent after late cleanup but keep
     realm, releaseOriginalPinnedSource: (): Promise<void> => { sourceStarts += 1; return Promise.resolve(); },
     childBootstrapOwner: new CurrentPcb209RatlineBootstrapOwner({
       assertOriginalChild: (): Promise<void> => Promise.reject(new Error("No child instrumentation after failure")),
+      observeOriginalFirstScript: (): Promise<void> => Promise.resolve(),
       assertOriginalTermination: realm.assertOriginalTermination,
       request: (): Promise<unknown> => Promise.reject(new Error("No child request after failure")),
       subscribe: () => (): void => {

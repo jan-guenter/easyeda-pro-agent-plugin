@@ -3,6 +3,8 @@
  * peer exclusion, create/Save or writer permit is implemented by this class. */
 import { z } from "zod";
 import { types } from "node:util";
+import { CURRENT_PCB_209_STARTUP_TIMING, currentPcbStartupMonotonicMs, currentPcbStartupWindowObservation } from "./current-pcb-209-worker-startup-timing.ts";
+import type { CurrentPcbStartupWindow, CurrentPcbStartupWindowObservation } from "./current-pcb-209-worker-startup-timing.ts";
 import { CURRENT_PCB_209_WORKER_CONSTRUCTION_SITES } from "./current-pcb-209-worker-startup-profile.ts";
 import { captureCurrentPcbStringClockReply } from "./current-pcb-string-clock-reply.ts";
 import { decodeCurrentPcb209WorkerCallbackFunction, decodeCurrentPcb209WorkerCallbackScopeList, decodeCurrentPcbStringProducerCallbackFunction, decodeCurrentPcbStringProducerCallbackScopeList } from "./current-pcb-string-producer-callback-scope.ts";
@@ -20,10 +22,10 @@ import type { CurrentPcbWorkerConstructionCommand, CurrentPcbWorkerConstructionE
   CurrentPcbWorkerConstructionSite, CurrentPcbWorkerConstructionTransport } from "./current-pcb-worker-construction-contract.ts";
 import { CURRENT_PCB_WORKER_STARTUP_WORKER_ACTOR_CLOCK_FUNCTION,
   decodeCurrentPcbWorkerStartupActor } from "./current-pcb-worker-startup-actor.ts";
+// oxlint-disable-next-line import/max-dependencies -- Fixed timing and source coordinates remain separate from the retained channel observer.
 import { CURRENT_PCB_WORKER_STARTUP_CHANNEL_CALLS } from "./current-pcb-worker-startup-channel-observation.ts";
 import type { CurrentPcbWorkerStartupChannelObservationCommand,
   CurrentPcbWorkerStartupChannelPacket } from "./current-pcb-worker-startup-channel-observation.ts";
-// oxlint-disable-next-line import/max-dependencies -- Generation-specific coordinates must be imported alongside the unchanged ownership and cleanup contracts.
 import { CurrentPcb209WorkerStartupChannelObservationRunner, CurrentPcbWorkerStartupChannelObservationRunner } from "./current-pcb-worker-startup-channel-observation-runner.ts";
 
 const GROUP = CURRENT_PCB_WORKER_CONSTRUCTION_SOURCE.group;
@@ -41,8 +43,27 @@ const projectIdentitySchema = z.object({
 }).strict();
 const projectIdentityReply = z.object({ result: z.object({ type: z.literal("object"), value: projectIdentitySchema }).strict() }).strict();
 export type CurrentPcbWorkerConstructionProjectIdentity = Readonly<z.infer<typeof projectIdentitySchema>>;
-const PAUSE_MS = 5000, REQUEST_MS = 2000, WAIT_MS = 15_000;
+const REQUEST_MS = 2000, WAIT_MS = 15_000;
+type ResumeOrigin = "normal" | "cleanup";
+interface ConstructionProgress {
+  readonly step: string;
+  readonly pauseIndex: number | null;
+  readonly window: CurrentPcbStartupWindowObservation | null;
+  readonly lastCommand: CurrentPcbWorkerConstructionCommand["method"] | null;
+}
+interface ConstructionFailure {
+  readonly code: string;
+  readonly step: string;
+  readonly pauseIndex: number | null;
+  readonly window: CurrentPcbStartupWindowObservation | null;
+  readonly resumeOrigin: ResumeOrigin | null;
+  readonly resumeObserved: boolean;
+  readonly lastCommand: CurrentPcbWorkerConstructionCommand["method"] | null;
+}
 interface RetainedPause {
+  readonly index: number;
+  readonly window: CurrentPcbStartupWindow;
+  resumeOrigin: ResumeOrigin | null;
   readonly raw: unknown;
   readonly captureError: unknown;
   readonly resumed: PromiseWithResolvers<null>;
@@ -136,6 +157,12 @@ class CurrentPcbWorkerConstructionCore<P extends PacketProfile> {
   #settled = false;
   #uncertainBreakpoint = false;
   #failed: Error | null = null;
+  #firstFailure: ConstructionFailure | null = null;
+  #step = "not-started";
+  #acceptedPauses = 0;
+  #armingWindow: CurrentPcbStartupWindow | null = null;
+  #armingWatchdog: ReturnType<typeof setTimeout> | undefined;
+  #lastCommand: CurrentPcbWorkerConstructionCommand["method"] | null = null;
   #released = false;
   #releaseConsumed = false;
   #packet: ConstructionPacket<P> | null = null;
@@ -164,55 +191,92 @@ class CurrentPcbWorkerConstructionCore<P extends PacketProfile> {
   }
   public async whenArmed(): Promise<void> { await this.#ready.promise; }
   public status(): Readonly<{ consumed: boolean; failed: boolean; paused: boolean; resumeAttempted: boolean;
-    resumeObserved: boolean; retainedIdentities: number; released: boolean; unresolvedBreakpoints: boolean }> {
-    return Object.freeze({ consumed: this.#consumed, failed: this.#failed !== null,
+    resumeObserved: boolean; retainedIdentities: number; released: boolean; unresolvedBreakpoints: boolean;
+    firstFailure: ConstructionFailure | null; resumeOrigin: ResumeOrigin | null; progress: ConstructionProgress }> {
+    return Object.freeze({ progress: this.#progress(), firstFailure: this.#firstFailure, resumeOrigin: this.#pause?.resumeOrigin ?? null, consumed: this.#consumed, failed: this.#failed !== null,
       paused: this.#pause !== null && !this.#pause.resumeObserved, resumeAttempted: this.#pause?.resumeConsumed ?? false,
       resumeObserved: this.#pause?.resumeObserved ?? false, retainedIdentities: Object.keys(this.#identities).length, released: this.#released,
       unresolvedBreakpoints: this.#uncertainBreakpoint || [...this.#breakpoints.values()].some(value => !value.removed) });
+  }
+  #progress(): ConstructionProgress {
+    const pause = this.#pause, window = this.#armingWindow ?? (pause !== null && !pause.resumeObserved ? pause.window : null);
+    return Object.freeze({ step: this.#step, pauseIndex: pause?.index ?? null,
+      window: window === null ? null : currentPcbStartupWindowObservation(window, currentPcbStartupMonotonicMs()), lastCommand: this.#lastCommand });
+  }
+  #fail(code: string): void {
+    if (this.#failed !== null) { return; }
+    this.#firstFailure = Object.freeze({ code, ...this.#progress(), resumeOrigin: this.#pause?.resumeOrigin ?? null,
+      resumeObserved: this.#pause?.resumeObserved ?? false });
+    this.#failed = fail(code);
+  }
+  #checkWindow(): void {
+    const pause = this.#pause, window = this.#armingWindow ?? (pause !== null && !pause.resumeObserved ? pause.window : null);
+    if (window !== null && currentPcbStartupMonotonicMs() - window.startedAtMs >= window.limitMs) {
+      this.#fail(this.#armingWindow === null ? "PAUSE_DEADLINE" : "ARMING_DEADLINE");
+    }
+    if (this.#failed !== null) { throw this.#failed; }
+  }
+  #sendOriginal(command: CurrentPcbWorkerConstructionCommand): Promise<unknown> {
+    this.#lastCommand = command.method; return this.#send.call(this.#transport, command);
   }
   #sameTransport(): void {
     const fields = transportMembers(this.#transport);
     if (fields[0] !== this.#scriptId || fields[1] !== this.#assertOwner || fields[2] !== this.#send || fields[3] !== this.#subscribe) { throw fail("TRANSPORT_CHANGED"); }
   }
   async #current(): Promise<void> {
-    if (this.#failed !== null || this.#releaseConsumed) { throw this.#failed ?? fail("RELEASED"); }
+    this.#checkWindow();
+    if (this.#releaseConsumed) { throw fail("RELEASED"); }
     try { this.#sameTransport(); await bounded(this.#assertOwner.call(this.#transport)); this.#sameTransport(); }
-    catch (error) { this.#failed ??= fail("OWNER_LOST"); throw error; }
-    if (this.#failed !== null || this.#releaseConsumed) { throw this.#failed ?? fail("OWNER_CHANGED"); }
+    catch (error) { this.#fail("OWNER_LOST"); throw error; }
+    this.#checkWindow();
+    if (this.#releaseConsumed) { throw fail("OWNER_CHANGED"); }
   }
   async #request(command: CurrentPcbWorkerConstructionCommand): Promise<unknown> {
-    await this.#current();
-    const captured = captureCurrentPcbStringClockReply(await bounded(this.#send.call(this.#transport, command)));
-    await this.#current(); return captured.value;
+    if (!this.#settled) { this.#step = "pause-read-owner-before"; } await this.#current();
+    if (!this.#settled) { this.#step = "pause-read-request"; }
+    const captured = captureCurrentPcbStringClockReply(await bounded(this.#sendOriginal(command)));
+    if (!this.#settled) { this.#step = "pause-read-owner-after"; } await this.#current(); return captured.value;
   }
   readonly #onPaused = (input: unknown): void => {
     if (this.#pause !== null && !this.#pause.resumeObserved) {
-      this.#failed ??= fail("DUPLICATE_PAUSE"); return;
+      this.#fail("DUPLICATE_PAUSE"); return;
     }
     let captureError: unknown = null, raw: unknown = null;
     try { raw = captureCurrentPcbStringClockReply(input).value; } catch (error) { captureError = error; }
-    const paused: RetainedPause = { raw, captureError, resumed: Promise.withResolvers(), resumeConsumed: false,
-      resumeObserved: false, resumeResult: null, watchdog: setTimeout(() => {
-        this.#failed ??= fail("PAUSE_DEADLINE"); void observeRejection(this.#cleanupPause(paused));
-      }, PAUSE_MS) };
+    // Event ordinal, not the capture loop index: the next pause may precede
+    // The previous Debugger.resume acknowledgment.
+    const index = this.#acceptedPauses; this.#acceptedPauses += 1;
+    const limitMs = this.#profile === "private.current-pcb209-worker-construction.v1"
+      ? CURRENT_PCB_209_STARTUP_TIMING.constructionPauseMs[index] ?? CURRENT_PCB_209_STARTUP_TIMING.legacyPauseMs
+      : CURRENT_PCB_209_STARTUP_TIMING.legacyPauseMs;
+    const window = Object.freeze({ startedAtMs: currentPcbStartupMonotonicMs(), limitMs });
+    const paused: RetainedPause = { raw, captureError, index, window, resumeOrigin: null,
+      resumed: Promise.withResolvers(), resumeConsumed: false, resumeObserved: false, resumeResult: null,
+      watchdog: setTimeout(() => {
+        this.#fail("PAUSE_DEADLINE"); void observeRejection(this.#cleanupPause(paused));
+      }, limitMs) };
     this.#pause = paused; this.#waiting.resolve(paused);
-    if (this.#settled) { this.#failed ??= fail("EXTRA_PAUSE"); void observeRejection(this.#cleanupPause(paused)); }
+    if (this.#settled) { this.#fail("EXTRA_PAUSE"); void observeRejection(this.#cleanupPause(paused)); }
   };
   readonly #onResumed = (): void => {
     const paused = this.#pause;
-    if (paused === null || paused.resumeObserved) { this.#failed ??= fail("UNEXPECTED_RESUME"); return; }
-    if (!paused.resumeConsumed) { this.#failed ??= fail("UNEXPECTED_RESUME"); }
+    if (paused === null || paused.resumeObserved) { this.#fail("UNEXPECTED_RESUME"); return; }
+    if (!paused.resumeConsumed) { this.#fail("UNEXPECTED_RESUME"); }
+    if (currentPcbStartupMonotonicMs() - paused.window.startedAtMs >= paused.window.limitMs) { this.#fail("PAUSE_DEADLINE"); }
     paused.resumeObserved = true; clearTimeout(paused.watchdog); paused.resumed.resolve(null);
   };
-  readonly #onLost = (): void => { this.#failed ??= fail("OWNER_LOST"); this.#waiting.reject(this.#failed); };
-  #resume(paused: RetainedPause): Promise<void> {
+  readonly #onLost = (): void => { this.#fail("OWNER_LOST"); this.#waiting.reject(this.#failed); };
+  #resume(paused: RetainedPause, origin: ResumeOrigin = "normal"): Promise<void> {
     if (paused.resumeResult !== null) { return paused.resumeResult; }
-    paused.resumeConsumed = true;
+    if (origin === "normal") { this.#checkWindow(); }
+    paused.resumeConsumed = true; paused.resumeOrigin = origin;
     // Cleanup deliberately bypasses a failed source check, never the original
     // Transport/session binding. A lost reply consumes resume, without retry.
     paused.resumeResult = (async (): Promise<void> => {
-      const reply = await bounded(this.#send.call(this.#transport, { method: "Debugger.resume", params: {} }));
+      if (origin === "normal") { this.#step = "pause-resume-request"; }
+      const reply = await bounded(this.#sendOriginal({ method: "Debugger.resume", params: {} }));
       emptyReply.parse(captureCurrentPcbStringClockReply(reply).value);
+      if (origin === "normal") { this.#step = "pause-resume-observation"; }
       await bounded(paused.resumed.promise);
     })();
     return paused.resumeResult;
@@ -220,7 +284,7 @@ class CurrentPcbWorkerConstructionCore<P extends PacketProfile> {
   async #cleanupPause(paused: RetainedPause): Promise<void> {
     const errors: unknown[] = [];
     try { await this.#removeBreakpoints(); } catch (error) { errors.push(error); }
-    if (!paused.resumeObserved) { try { await this.#resume(paused); } catch (error) { errors.push(error); } }
+    if (!paused.resumeObserved) { try { await this.#resume(paused, "cleanup"); } catch (error) { errors.push(error); } }
     if (errors.length > 0) { throw new AggregateError(errors, "PCB_WORKER_CONSTRUCTION_PAUSE_CLEANUP"); }
   }
   #select(callFrameId: string, expression: CurrentPcbWorkerConstructionExpression): Promise<unknown> {
@@ -286,7 +350,7 @@ class CurrentPcbWorkerConstructionCore<P extends PacketProfile> {
     const removals: Promise<void>[] = [];
     for (const breakpoint of this.#breakpoints.values()) {
       breakpoint.removal ??= (async (): Promise<void> => {
-        const reply = await bounded(this.#send.call(this.#transport, { method: "Debugger.removeBreakpoint", params: { breakpointId: breakpoint.id } }));
+        const reply = await bounded(this.#sendOriginal({ method: "Debugger.removeBreakpoint", params: { breakpointId: breakpoint.id } }));
         emptyReply.parse(captureCurrentPcbStringClockReply(reply).value); breakpoint.removed = true;
       })();
       removals.push(breakpoint.removal);
@@ -296,35 +360,48 @@ class CurrentPcbWorkerConstructionCore<P extends PacketProfile> {
     if (failures.length > 0) { throw new AggregateError(failures, "PCB_WORKER_CONSTRUCTION_BREAKPOINT_CLEANUP"); }
   }
   async #arm(site: CurrentPcbWorkerConstructionSite): Promise<void> {
-    await this.#current();
+    this.#step = `arm-${site}-owner-before`; await this.#current();
     const target = this.#sites[site];
     const point = { scriptId: this.#scriptId, lineNumber: target.lineNumber, columnNumber: target.columnNumber };
     this.#uncertainBreakpoint = true;
+    this.#step = `arm-${site}-request`;
     const pending = (async (): Promise<void> => {
-      const raw = await this.#send.call(this.#transport, { method: "Debugger.setBreakpoint", params: { location: point } });
+      const raw = await this.#sendOriginal({ method: "Debugger.setBreakpoint", params: { location: point } });
       const result = z.object({ breakpointId: token, actualLocation: location }).strict().parse(captureCurrentPcbStringClockReply(raw).value);
       // Retain before any owner check, including a late reply after the deadline.
       this.#breakpoints.set(site, { id: result.breakpointId, removal: null, removed: false }); this.#uncertainBreakpoint = false;
       if (this.#failed !== null) { void observeRejection(this.#removeBreakpoints()); }
       if (JSON.stringify(result.actualLocation) !== JSON.stringify(point)) { throw fail("BREAKPOINT_RELOCATED"); }
     })();
-    await bounded(pending); await this.#current();
+    await bounded(pending);
+    this.#step = `arm-${site}-owner-after`; await this.#current();
   }
   public async capture(): Promise<ConstructionPacket<P>> {
     if (this.#consumed) { throw fail("CONSUMED"); } this.#consumed = true;
     try {
+      this.#step = "arming-initial-owner";
+      if (this.#profile === "private.current-pcb209-worker-construction.v1") {
+        const limitMs = CURRENT_PCB_209_STARTUP_TIMING.constructionArmMs;
+        this.#armingWindow = Object.freeze({ startedAtMs: currentPcbStartupMonotonicMs(), limitMs });
+        this.#armingWatchdog = setTimeout(() => {
+          this.#fail("ARMING_DEADLINE"); this.#ready.reject(this.#failed);
+        }, limitMs);
+      }
       await this.#current();
       this.#unsubscribe = this.#subscribe.call(this.#transport, { paused: this.#onPaused, resumed: this.#onResumed, lost: this.#onLost });
       for (const site of new Set(CURRENT_PCB_WORKER_CONSTRUCTION_SEQUENCE)) {
         await this.#arm(site);
       }
-      this.#ready.resolve(null);
+      this.#checkWindow(); clearTimeout(this.#armingWatchdog); this.#armingWindow = null;
+      this.#step = "waiting-construction-pause"; this.#ready.resolve(null);
       for (let index = 0; index < CURRENT_PCB_WORKER_CONSTRUCTION_SEQUENCE.length; index += 1) {
         const paused = await bounded(this.#waiting.promise, WAIT_MS); this.#waiting = Promise.withResolvers<RetainedPause>();
         void observeRejection(this.#waiting.promise);
-        await this.#current(); await this.#capturePause(paused, index);
-        if (index === CURRENT_PCB_WORKER_CONSTRUCTION_SEQUENCE.length - 1) { await this.#removeBreakpoints(); }
-        await this.#resume(paused);
+        this.#step = "pause-owner"; await this.#current();
+        this.#step = "pause-snapshot"; await this.#capturePause(paused, index);
+        if (index === CURRENT_PCB_WORKER_CONSTRUCTION_SEQUENCE.length - 1) { this.#step = "final-breakpoint-removal"; await this.#removeBreakpoints(); }
+        this.#step = "pause-resume"; await this.#resume(paused);
+        this.#step = "waiting-construction-pause";
       }
       await this.#removeBreakpoints(); await this.#current();
       if (Object.keys(this.#identities).length !== 9) { throw fail("MISSING_IDENTITY"); }
@@ -334,11 +411,11 @@ class CurrentPcbWorkerConstructionCore<P extends PacketProfile> {
         nativeStartupIntegrationVerified: false, writeDestinationsContained: false, executionAuthorized: false });
       this.#packet = packet; issued.set(packet, this); return packet;
     } catch (error) {
-      this.#failed ??= fail("FAILED"); this.#ready.reject(error); const errors: unknown[] = [error];
+      this.#fail("FAILED"); clearTimeout(this.#armingWatchdog); this.#ready.reject(error); const errors: unknown[] = [error];
       try { await this.#removeBreakpoints(); } catch (cleanupError) { errors.push(cleanupError); }
-      if (this.#pause !== null && !this.#pause.resumeObserved) { try { await this.#resume(this.#pause); } catch (cleanupError) { errors.push(cleanupError); } }
+      if (this.#pause !== null && !this.#pause.resumeObserved) { try { await this.#resume(this.#pause, "cleanup"); } catch (cleanupError) { errors.push(cleanupError); } }
       throw errors.length === 1 ? error : new AggregateError(errors, "PCB_WORKER_CONSTRUCTION_FAILED", { cause: error });
-    } finally { this.#settled = true; }
+    } finally { clearTimeout(this.#armingWatchdog); this.#armingWindow = null; this.#settled = true; }
   }
   public async requireOriginal(packet: ConstructionPacket<P>): Promise<Readonly<CurrentPcbWorkerConstructionIdentities>> {
     if (packet !== this.#packet || issued.get(packet) !== this) { throw fail("ORIGINAL_PACKET"); }
@@ -360,7 +437,7 @@ class CurrentPcbWorkerConstructionCore<P extends PacketProfile> {
       const reply = await this.#assignmentCall(original.project, CURRENT_PCB_WORKER_CONSTRUCTION_IDENTITY, [original.channelBus]);
       const observed = Object.freeze(projectIdentityReply.parse(reply).result.value);
       await this.requireOriginal(packet); this.#projectIdentity = observed; return observed;
-    } catch (error) { this.#failed ??= fail("PROJECT_IDENTITY_FAILED"); throw error; }
+    } catch (error) { this.#fail("PROJECT_IDENTITY_FAILED"); throw error; }
   }
   public async requireProjectIdentity(packet: ConstructionPacket<P>, identity: CurrentPcbWorkerConstructionProjectIdentity): Promise<void> {
     if (identity !== this.#projectIdentity || this.#projectIdentity === null) { throw fail("ORIGINAL_PROJECT_IDENTITY"); }
@@ -372,7 +449,7 @@ class CurrentPcbWorkerConstructionCore<P extends PacketProfile> {
         throw fail("PROJECT_IDENTITY_CHANGED");
       }
       await this.requireOriginal(packet);
-    } catch (error) { this.#failed ??= fail("PROJECT_IDENTITY_CHANGED"); throw error; }
+    } catch (error) { this.#fail("PROJECT_IDENTITY_CHANGED"); throw error; }
   }
   async #assignmentScopes(original: string, kind: CurrentPcb209WorkerProducerKind): Promise<readonly string[]> {
     const list = this.#decoders.producerScopeList(await this.#request({ method: "Runtime.getProperties",
@@ -423,7 +500,7 @@ class CurrentPcbWorkerConstructionCore<P extends PacketProfile> {
         queueCompletionVerified: false, executionAuthorized: false,
       });
       this.#assignedWrappers = complete; this.#assignments = observation; assignmentsIssued.set(observation, this); return observation;
-    } catch (error) { this.#failed ??= fail("ASSIGNMENTS_FAILED"); throw error; }
+    } catch (error) { this.#fail("ASSIGNMENTS_FAILED"); throw error; }
   }
   /** Reprove current PROJECT and all four field assignments, not only that a
    * historical report once existed. Constant callback bindings were qualified
@@ -435,7 +512,7 @@ class CurrentPcbWorkerConstructionCore<P extends PacketProfile> {
     }
     const original = await this.requireOriginal(packet);
     try { await this.#assignmentRecheck(original, this.#assignedWrappers); }
-    catch (error) { this.#failed ??= fail("ASSIGNMENTS_CHANGED"); throw error; }
+    catch (error) { this.#fail("ASSIGNMENTS_CHANGED"); throw error; }
   }
   /** Two worker samples for the separate four-read startup actor bracket. Each
    * request retains the original constructor PROJECT and bus, not a later
@@ -455,7 +532,7 @@ class CurrentPcbWorkerConstructionCore<P extends PacketProfile> {
         throw fail("ACTOR_IDENTITY");
       }
       await this.requireCurrentAssignments(packet, assignments); return raw;
-    } catch (error) { this.#failed ??= fail("ACTOR_OBSERVATION_FAILED"); throw error; }
+    } catch (error) { this.#fail("ACTOR_OBSERVATION_FAILED"); throw error; }
     finally { this.#actorSampleBusy = false; }
   }
   /** Original private handles are closed over here. The leaf only selects
@@ -498,7 +575,7 @@ class CurrentPcbWorkerConstructionCore<P extends PacketProfile> {
       this.#channel = channel;
       const observation = await channel.observe(); this.#channelPacket = observation;
       await this.requireCurrentAssignments(packet, assignments); return observation;
-    } catch (error) { this.#failed ??= fail("CHANNEL_OBSERVATION_FAILED"); throw error; }
+    } catch (error) { this.#fail("CHANNEL_OBSERVATION_FAILED"); throw error; }
   }
   public async requireCurrentChannel(packet: ConstructionPacket<P>,
     assignments: CurrentPcbWorkerConstructionAssignments, channelPacket: CurrentPcbWorkerStartupChannelPacket): Promise<void> {
@@ -508,7 +585,7 @@ class CurrentPcbWorkerConstructionCore<P extends PacketProfile> {
       const original = await this.requireOriginal(packet);
       resultBoolean.parse(await this.#channelRequest(original, { phase: "channel-relation" }));
       await this.#channel.requireOriginal(channelPacket); await this.#current();
-    } catch (error) { this.#failed ??= fail("CHANNEL_OBSERVATION_CHANGED"); throw error; }
+    } catch (error) { this.#fail("CHANNEL_OBSERVATION_CHANGED"); throw error; }
   }
   public async release(): Promise<void> {
     if (this.#releaseConsumed) { throw fail("RELEASE_CONSUMED"); }
@@ -517,7 +594,7 @@ class CurrentPcbWorkerConstructionCore<P extends PacketProfile> {
     this.#releaseConsumed = true;
     try {
       await this.#removeBreakpoints(); await this.#settleLatePause();
-      const reply = await bounded(this.#send.call(this.#transport, { method: "Runtime.releaseObjectGroup", params: { objectGroup: GROUP } }));
+      const reply = await bounded(this.#sendOriginal({ method: "Runtime.releaseObjectGroup", params: { objectGroup: GROUP } }));
       emptyReply.parse(captureCurrentPcbStringClockReply(reply).value); await this.#settleLatePause();
     } catch (error) {
       try { await this.#settleLatePause(); }

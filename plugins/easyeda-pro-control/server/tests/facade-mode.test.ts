@@ -1,6 +1,6 @@
 import assert from "node:assert/strict";
 import { test } from "node:test";
-import { CALCULATION_ONLY_TOOLS, PUBLIC_UTILITIES_ONLY_TOOLS, configuredFacadeMode, facadeToolRegistered, publicUtilitiesOnlyCapabilities } from "../src/facade-mode.ts";
+import { CALCULATION_ONLY_TOOLS, PUBLIC_UTILITIES_ONLY_SCOPE, PUBLIC_UTILITIES_ONLY_TOOLS, configuredFacadeMode, facadeToolRegistered, publicUtilitiesOnlyCapabilities } from "../src/facade-mode.ts";
 
 void test("only the exact legacy configuration retains legacy tool registration", () => {
   const legacy = { EASYEDA_PCB_BUNDLE_VERSION: "3.2.149.5378b690", EASYEDA_PUBLIC_API_BUNDLE_VERSION: "0.2.53.aee2f57a" };
@@ -57,9 +57,23 @@ void test("exact209 selectors expose fourteen scoped tools without inheriting un
     assert.equal(facadeToolRegistered("public-utilities-only", name), false);
   }
   const capabilities = publicUtilitiesOnlyCapabilities();
-  assert.deepEqual(capabilities["navigation"], { enabled: true, scope: "original-owner-disposable209-opening-only" });
+  assert.deepEqual(capabilities["navigation"], { enabled: true, scope: "original-owner-disposable209-opening-and-three-separate-startup-purposes-only" });
   assert.deepEqual(capabilities["designAccess"], { enabled: false, scope: "general-geometry-and-writers;disposable-bounded-observations-and-historical-queries-only" });
   const opening = capabilities["disposableOpening"]; assert.ok(typeof opening === "object" && opening !== null && "layerObservation" in opening);
   assert.equal(opening.layerObservation, "double-sampled-metadata-and-copper-count");
   assert.equal(Object.hasOwn(capabilities, "projectSymbolMetadata"), false);
+  assert.deepEqual(capabilities["disposableWorkerStartup"], { tool: "easyeda_control_pcb209_worker_startup", validationOnly: true, connectedValidation: false,
+    runtimeAdmissionRequired: true, debuggerPauseAcceptanceRequired: true, startupCompletionVerified: false,
+    scope: "separate-project-worker-constructor-empty-baseline-and-ratline-held-import-purposes;no-complete-startup-or-writer-authority",
+    completeLiveBaselineVerified: false, serverClockProvenanceVerified: false, cadAuthority: false });
+  assert.deepEqual(capabilities["save"], { enabled: false }); assert.deepEqual(capabilities["recovery"], { enabled: false });
+  assert.deepEqual(capabilities["nativeAdapters"], { enabled: true,
+    scope: "identity-and-disposable209-opening-layer-primitive-selection-relations;project-worker-constructor-empty-baseline-and-held-ratline-import-observations-only" });
+  assert.match(PUBLIC_UTILITIES_ONLY_SCOPE, /three distinct disposable launch purposes/u);
+  assert.match(PUBLIC_UTILITIES_ONLY_SCOPE, /empty-baseline purpose joins fixed common data to the original completed SQL checkpoint/u);
+  assert.match(PUBLIC_UTILITIES_ONLY_SCOPE, /ratline-held-import purpose qualifies PCB construction/u);
+  assert.match(PUBLIC_UTILITIES_ONLY_SCOPE, /observes a bounded first-child native creation stack/u);
+  assert.match(PUBLIC_UTILITIES_ONLY_SCOPE, /does not independently associate the JavaScript Worker object with its CDP target/u);
+  assert.match(PUBLIC_UTILITIES_ONLY_SCOPE, /No complete startup or live baseline, general geometry read\/write, explicit Save or recovery is offered/u);
+  assert.doesNotMatch(PUBLIC_UTILITIES_ONLY_SCOPE, /No [^.]*PCB-worker\/ratline route is registered/u);
 });
