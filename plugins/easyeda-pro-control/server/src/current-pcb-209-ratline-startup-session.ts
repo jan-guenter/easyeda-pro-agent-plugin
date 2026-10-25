@@ -10,7 +10,8 @@ import { CurrentPcb209RatlineChildStartGate } from "./current-pcb-209-ratline-ch
 import type { CurrentPcb209RatlineBootstrapOwner } from "./current-pcb-209-ratline-bootstrap-owner.ts";
 import type { CurrentPcb209RatlineRealmDependency } from "./current-pcb-209-ratline-event-dispatcher.ts";
 import type { CurrentPcb209RatlineCreationPacket } from "./current-pcb-209-ratline-creation-runner.ts";
-import type { CurrentPcb209RatlineCapturePacket } from "./current-pcb-209-ratline-capture-runner.ts";
+import type { CurrentPcb209RatlineAnyCapturePacket, CurrentPcb209RatlineCapturePacket, CurrentPcb209RatlineHeldCapturePacket } from "./current-pcb-209-ratline-capture-runner.ts";
+import type { CurrentPcb209RatlineCaptureScope } from "./current-pcb-209-ratline-capture-profile.ts";
 
 type Role = "pcb" | "worker";
 export interface CurrentPcb209RatlineStartupDependency {
@@ -39,6 +40,15 @@ export interface CurrentPcb209RatlineStartupPacket {
   readonly completeLiveBaselineVerified: false;
   readonly executionAuthorized: false;
 }
+export interface CurrentPcb209RatlineHeldStartupPacket extends Omit<CurrentPcb209RatlineStartupPacket,
+  "profile" | "role" | "capture" | "originalConstructionAndBridgeWorkerMatch" | "originalConstructionAndRegistryMatch"> {
+  readonly profile: "private.current-pcb209-ratline-held-prefix-composite.v1";
+  readonly role: "pcb";
+  readonly capture: CurrentPcb209RatlineHeldCapturePacket;
+  readonly originalConstructionAndBridgeWorkerMatch: false;
+  readonly originalConstructionAndRegistryMatch: false;
+}
+interface Packets { readonly full: CurrentPcb209RatlineStartupPacket; readonly "pcb-held-prefix": CurrentPcb209RatlineHeldStartupPacket }
 const INTERNAL = Symbol("fixed209-ratline-composite");
 function need(value: boolean, code: string): asserts value { if (!value) { throw new Error(`PCB209_RATLINE_COMPOSITE_${code}`); } }
 async function observed(work: Promise<unknown>): Promise<void> {
@@ -58,7 +68,7 @@ function members(value: CurrentPcb209RatlineStartupDependency): readonly unknown
     need(descriptor !== undefined && Object.hasOwn(descriptor, "value") && typeof descriptor.value === (index === 1 ? "function" : "object"), "DEPENDENCY");
     return descriptor.value as unknown; });
 }
-class CurrentPcb209RatlineStartupCore {
+class CurrentPcb209RatlineStartupCore<Scope extends CurrentPcb209RatlineCaptureScope> {
   readonly #diagnostics = new CurrentPcb209RatlineStageDiagnostics();
   readonly #dependency: CurrentPcb209RatlineStartupDependency;
   readonly #original: readonly unknown[];
@@ -67,6 +77,7 @@ class CurrentPcb209RatlineStartupCore {
   readonly #dispatcher: CurrentPcb209RatlineEventDispatcher;
   readonly #stages: ReturnType<CurrentPcb209RatlineEventDispatcher["claimOriginalStages"]>;
   readonly #role: Role;
+  readonly #scope: Scope;
   #consumed = false;
   #settled = false;
   #failed = false;
@@ -75,16 +86,17 @@ class CurrentPcb209RatlineStartupCore {
   #sourceReleased = false;
   #childArmed = false;
   #construction: Promise<CurrentPcb209RatlineCreationPacket> | null = null;
-  #capture: Promise<CurrentPcb209RatlineCapturePacket> | null = null;
-  #packet: CurrentPcb209RatlineStartupPacket | null = null;
-  public constructor(key: typeof INTERNAL, role: Role, dependency: CurrentPcb209RatlineStartupDependency) {
-    need(key === INTERNAL, "PROFILE"); this.#original = members(dependency); this.#dependency = dependency; this.#role = role;
+  #capture: Promise<CurrentPcb209RatlineAnyCapturePacket> | null = null;
+  #packet: Packets[Scope] | null = null;
+  public constructor(key: typeof INTERNAL, role: Role, scope: Scope, dependency: CurrentPcb209RatlineStartupDependency) {
+    need(key === INTERNAL && (scope === "full" || scope === "pcb-held-prefix" && role === "pcb"), "PROFILE");
+    this.#original = members(dependency); this.#dependency = dependency; this.#role = role; this.#scope = scope;
     this.#releaseSource = dependency.releaseOriginalPinnedSource;
     this.#childGate = new CurrentPcb209RatlineChildStartGate(role, dependency.realm, dependency.childBootstrapOwner);
-    this.#dispatcher = new CurrentPcb209RatlineEventDispatcher(role, this.#childGate.claimOriginalRealm()); this.#stages = this.#dispatcher.claimOriginalStages();
+    this.#dispatcher = new CurrentPcb209RatlineEventDispatcher(role, this.#childGate.claimOriginalRealm(), scope); this.#stages = this.#dispatcher.claimOriginalStages();
   }
   public status(): Readonly<Record<string, unknown>> {
-    return Object.freeze({ ...this.#diagnostics.snapshot(), consumed: this.#consumed, settled: this.#settled, failed: this.#failed, released: this.#released,
+    return Object.freeze({ ...this.#diagnostics.snapshot(), scope: this.#scope, consumed: this.#consumed, settled: this.#settled, failed: this.#failed, released: this.#released,
       sourceReleaseConsumed: this.#sourceReleased, childInstrumentationConsumed: this.#childArmed,
       creation: this.#stages.creation.status(), capture: this.#stages.capture.status(), dispatcher: this.#dispatcher.status() });
   }
@@ -95,7 +107,7 @@ class CurrentPcb209RatlineStartupCore {
     await bounded(this.#dispatcher.requireOriginal()); this.#same(); need(!this.#failed && !this.#released && !this.#releaseStarted, "NOT_CURRENT");
   }
   #startCapture(): void { need(this.#capture === null, "CAPTURE_CONSUMED"); this.#capture = this.#stages.capture.capture(); void observed(this.#capture); }
-  public async capture(): Promise<CurrentPcb209RatlineStartupPacket> {
+  public async capture(): Promise<Packets[Scope]> {
     need(!this.#consumed, "CONSUMED"); this.#consumed = true;
     try {
       this.#diagnostics.stage = "arming"; await this.#current(); this.#construction = this.#stages.creation.capture(); void observed(this.#construction);
@@ -117,12 +129,24 @@ class CurrentPcb209RatlineStartupCore {
       this.#diagnostics.stage = "child-start"; await this.#stages.creation.startOriginalChild(construction); await this.#current();
       this.#diagnostics.stage = "capture"; this.#diagnostics.step = "pause-wait";
       need(this.#capture !== null, "CAPTURE_MISSING"); const capture = await this.#capture; await this.#current();
-      this.#diagnostics.stage = "comparison"; await bounded(this.#dispatcher.requireOriginalConstruction(construction, capture)); await this.#current();
-      this.#packet = Object.freeze({ profile: "private.current-pcb209-ratline-composite.v1", role: this.#role, construction, capture,
-        originalConstructionAndBridgeWorkerMatch: true, originalConstructionAndRegistryMatch: true, childStartConsumedOnce: true,
+      const common = { construction, childStartConsumedOnce: true,
         nativePreexecutionSourceOwnershipVerified: false, nativeWorkerTargetIdentityVerified: false, childSourceQualified: false,
         callbackReturnCompletionVerified: false, subscribedCanvasPeerOwnershipVerified: false, copperCompletionVerified: false,
-        completeLiveBaselineVerified: false, executionAuthorized: false });
+        completeLiveBaselineVerified: false, executionAuthorized: false } as const;
+      let packet: CurrentPcb209RatlineStartupPacket | CurrentPcb209RatlineHeldStartupPacket;
+      if (this.#scope === "pcb-held-prefix") {
+        need(capture.profile === "private.current-pcb209-ratline-pcb-held-prefix-capture.v1", "PROFILE");
+        await this.#stages.creation.requireOriginal(construction); await this.#dispatcher.requireOriginalCapture(capture); await this.#current();
+        packet = Object.freeze({ ...common, profile: "private.current-pcb209-ratline-held-prefix-composite.v1", role: "pcb", capture,
+          originalConstructionAndBridgeWorkerMatch: false, originalConstructionAndRegistryMatch: false });
+      } else {
+        need(capture.profile !== "private.current-pcb209-ratline-pcb-held-prefix-capture.v1", "PROFILE");
+        this.#diagnostics.stage = "comparison"; await bounded(this.#dispatcher.requireOriginalConstruction(construction, capture)); await this.#current();
+        packet = Object.freeze({ ...common, profile: "private.current-pcb209-ratline-composite.v1", role: this.#role, capture,
+          originalConstructionAndBridgeWorkerMatch: true, originalConstructionAndRegistryMatch: true });
+      }
+      // oxlint-disable-next-line typescript/no-unsafe-type-assertion -- The private scope selects its exact capture discriminator and packet branch above; fixed wrappers choose the scope.
+      this.#packet = packet as Packets[Scope];
       return this.#packet;
     } catch (error) {
       this.#diagnostics.record(error); this.#failed = true;
@@ -138,9 +162,9 @@ class CurrentPcb209RatlineStartupCore {
     for (const result of results) { if (result.status === "rejected") { errors.push(result.reason); } }
     if (errors.length > 0) { throw new AggregateError(errors, "PCB209_RATLINE_COMPOSITE_CLEANUP"); }
   }
-  public async requireOriginal(packet: CurrentPcb209RatlineStartupPacket): Promise<void> {
+  public async requireOriginal(packet: Packets[Scope]): Promise<void> {
     need(packet === this.#packet && this.#packet !== null, "ORIGINAL_PACKET"); await this.#current();
-    await this.#stages.creation.requireOriginal(packet.construction); await this.#stages.capture.requireOriginal(packet.capture); await this.#current();
+    await this.#stages.creation.requireOriginal(packet.construction); await this.#dispatcher.requireOriginalCapture(packet.capture); await this.#current();
   }
   public async abort(): Promise<void> { need(this.#consumed && !this.#released, "ABORT_STATE");
     this.#diagnostics.record(new Error("PCB209_RATLINE_COMPOSITE_ABORTED")); this.#failed = true; await this.#cleanup(); }
@@ -154,9 +178,12 @@ class CurrentPcb209RatlineStartupCore {
     } finally { this.#releaseStarted = false; }
   }
 }
-export class CurrentPcb209RatlinePcbStartup extends CurrentPcb209RatlineStartupCore {
-  public constructor(dependency: CurrentPcb209RatlineStartupDependency) { super(INTERNAL, "pcb", dependency); }
+export class CurrentPcb209RatlinePcbStartup extends CurrentPcb209RatlineStartupCore<"full"> {
+  public constructor(dependency: CurrentPcb209RatlineStartupDependency) { super(INTERNAL, "pcb", "full", dependency); }
 }
-export class CurrentPcb209RatlineWorkerStartup extends CurrentPcb209RatlineStartupCore {
-  public constructor(dependency: CurrentPcb209RatlineStartupDependency) { super(INTERNAL, "worker", dependency); }
+export class CurrentPcb209RatlineWorkerStartup extends CurrentPcb209RatlineStartupCore<"full"> {
+  public constructor(dependency: CurrentPcb209RatlineStartupDependency) { super(INTERNAL, "worker", "full", dependency); }
+}
+export class CurrentPcb209RatlinePcbHeldStartup extends CurrentPcb209RatlineStartupCore<"pcb-held-prefix"> {
+  public constructor(dependency: CurrentPcb209RatlineStartupDependency) { super(INTERNAL, "pcb", "pcb-held-prefix", dependency); }
 }

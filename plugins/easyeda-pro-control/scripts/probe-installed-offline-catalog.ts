@@ -20,8 +20,8 @@ const NODE_VERSION = "24.18.0";
 const MAX_REPLY_BYTES = 8 * 1024 * 1024;
 const MAX_OUTPUT_BYTES = 16 * 1024 * 1024;
 const REQUEST_TIMEOUT_MS = 15_000;
-// Initialize and tool discovery plus the nineteen fixed catalog requests below.
-const REQUEST_LIMIT = 2 + 19;
+// Initialize and tool discovery plus the twenty-two fixed catalog requests below.
+const REQUEST_LIMIT = 2 + 22;
 const EXPECTED_TOOLS = [
   "api", "calculate", "discover", "disposable_pcb_rename", "disposable_schematic_rename", "disposable_symbol_copy",
   "editor_context", "editor_shell", "extensions", "history", "launch", "pcb_diagnostic_validation", "pcb_geometry",
@@ -340,6 +340,19 @@ async function catalogChecks(child: OfflineChild, sample: () => Promise<void>): 
   requireCheck(readers["total"] === 7 && Array.isArray(readerEntries) && readerEntries.length === 7 &&
     readerEntries.every((entry: unknown) => isRecord(entry) && isRecord(entry["inputSchema"]) && entry["invocationEnabledByDiscovery"] === false),
   "Public utility discovery differs from its seven bounded readers.");
+  const readerBatch = record(readers["batch"]);
+  requireCheck(readerBatch["maximumMethods"] === 7 && readerBatch["uniqueMethods"] === true &&
+    readerBatch["completeOrderedPasses"] === 2 && readerBatch["sharedDeadlineMilliseconds"] === 10_000 &&
+    readerBatch["maximumResponseBytes"] === 65_536 && readerBatch["maximumMemberBytes"] === 8192 &&
+    readerBatch["atomicSnapshot"] === false && readerBatch["partialSuccess"] === false &&
+    readerBatch["invocationEnabledByDiscovery"] === false && isRecord(readerBatch["inputSchema"]),
+  "Public utility batch lost its bounds or implies execution authority.");
+  const languageReader = { method: "eda.sys_I18n.getCurrentLanguage", arguments: {} };
+  for (const [requests, valid] of [[[languageReader], true], [[], false], [[languageReader, languageReader], false]] as const) {
+    const result = await offlineApi(child, { action: "public-readers-validate", query: { request: { action: "batch", requests } } });
+    requireCheck(result["valid"] === valid && result["executionAuthorized"] === false,
+      "Public utility batch validation accepted empty/duplicate methods or implied execution authority.");
+  }
   const catalog = await offlineApi(child, { action: "catalog-components", query: { includeSchemas: true } });
   const catalogEntries = catalog["entries"];
   requireCheck(catalog["total"] === 8 && Array.isArray(catalogEntries) && catalogEntries.length === 8 &&
@@ -351,7 +364,7 @@ async function catalogChecks(child: OfflineChild, sample: () => Promise<void>): 
       entry["publicSdkMethodExecuted"] === false && entry["installedRuntimeAdmission"] === false && isRecord(entry["inputSchema"])),
     "Catalog discovery lost an enriched metadata HTTP equivalent.");
   }
-  return { tools: tools.length, queries: 19 };
+  return { tools: tools.length, queries: 22 };
 }
 
 export async function probeInstalledOfflineCatalog(installedRoot: string): Promise<Record<string, unknown>> {

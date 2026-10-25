@@ -261,3 +261,67 @@ Compatibility manifest SHA256 is
 `9eb3e5d80774582c9c0c88331f076b34d249f87dedeb544e581b6d020b52846b`.
 Rebuilding both JavaScript bundles reproduced their bytes. The reviewed
 sanitizer remained unchanged. No connected call used this candidate.
+
+## Publication, installation and continuation
+
+Final PR head `c3c2b4d7b8cb32a8d2718e5aab615babba12ca63` passed
+[Linux CI 40183804005](https://github.com/jan-guenter/easyeda-pro-agent-plugin/actions/runs/40183804005)
+and [Windows CI 40183804009](https://github.com/jan-guenter/easyeda-pro-agent-plugin/actions/runs/40183804009)
+on their first attempts. All eight facade shards, build and aggregate passed.
+Facade totals were 12,873 passed, five expected platform/source-mount skips and
+zero failures; all 424 bridge tests passed. Complete job and step logs are
+retained privately. A monitor receipt's initial aggregate-name assertion was
+corrected against the committed workflow; it was not a GitHub test failure.
+
+Protected [PR 124](https://github.com/jan-guenter/easyeda-pro-agent-plugin/pull/124)
+merged as `90de2c6506019c118ef153c915188f4c124c11aa` at
+2026-10-25T10:27:40Z. The complete merged tree
+`b7e3babfadda03d647a9a3a62405f26da364c2be` and plugin tree
+`33057854fb33249dec321715156f07488a9786e8` exactly match the tested head.
+
+The official CLI upgraded Git marketplace
+`https://github.com/jan-guenter/easyeda-pro-agent-plugin.git` and installed
+and enabled `0.3.0+codex.20261025100748`. The marketplace checkout equals
+merged main. All 1,969 installed files, 42 directories and 42,042,731 bytes
+match committed bytes and exact modes, including after the final CLI listing.
+Installed inventory SHA256 is
+`a6ef83fa7160dac4562f072b2963459437f3f3ffed82b9fbf69f5acbb7492003`.
+
+The installed offline probe passed 19 catalog queries, 21 requests total, using
+pinned Node 24.18.0 and the configured launcher. The synthetic older profile
+exposed 26 tools with 51 explicit approval mappings. It verified clean EOF
+shutdown of its own child and sampled no descendants or non-stdio sockets.
+This is package verification, not continuous isolation, actual-host admission
+or connected execution. No installed cache was patched, host owner terminated,
+bridge key changed or new EasyEDA extension imported.
+
+At handoff, post-merge Windows run `40184864535` passed and Linux run
+`40184864541` was still running. Exact-payload PR CI already satisfies the
+complete-suite requirement. This publication appendix stays local for the next
+batch; it does not justify another release or installation by itself.
+
+The active host still loads `0.3.0+codex.20261025065826`. Load and admit the
+installed version in a fresh Codex session before further live calls. EasyEDA's
+original ordinary root and Job were already observed terminated; the old
+facade still retains its idle helper allocation. No CAD action or Save is
+pending. The attempted PCB case never acquired a native owner or dispatched
+navigation. The excluded production project remains untouched.
+
+Next, validate the new explicit release with a fresh original ordinary owner,
+then start one disposable diagnostic workflow through the same facade. Check
+the new language and both enriched catalog routes separately. PCB worker
+completion, broader writers/exports and the other items above remain backlog.
+Do not repeat the completed utility/netlist/symbol-name cases or upgrade an
+earlier diagnostic owner. No further source change is pending in this batch.
+
+## 2026-10-25 continuation on the installed runtime
+
+Both post-merge workflows completed successfully on main
+`90de2c6506019c118ef153c915188f4c124c11aa`: Linux `40184864541` and
+Windows `40184864535`. The pending statement above is historical. The fresh
+100748 host was admitted. Both enriched catalog routes and the resolved-language
+reader passed their bounded cases. Ordinary release followed by a new diagnostic
+launch and normal cleanup succeeded in one facade session. The combined reader
+batch and held-capture correction continues in
+[the next record](2026-10-25-bounded-readers-and-held-capture.md).
+The original bytes of this report remain unchanged above this appendix.

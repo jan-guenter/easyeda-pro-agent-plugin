@@ -4,6 +4,9 @@ import { EDITOR_OBSERVATION_209_UI } from "./editor-observation209-profile.ts";
 import { SDK_PUBLIC_UTILITIES_209_PROFILE } from "./sdk-public-utilities-profile.ts";
 
 export const SDK_PUBLIC_READERS_MAX_BYTES = 8192;
+export const SDK_PUBLIC_READERS_BATCH_MAX_BYTES = 65_536;
+export const SDK_PUBLIC_READERS_BATCH_MAX_METHODS = 7;
+export const SDK_PUBLIC_READERS_BATCH_DEADLINE_MS = 10_000;
 export const SDK_PUBLIC_READERS_MAX_VIEWPORT_DIMENSION = 1_000_000;
 export const SDK_PUBLIC_READERS_209_SYSTEM_LIBRARY_UUID = "0819f05c4eef4c71ace90d822a990e87";
 // Exact m2 return domain, including the vendor's edition fallback. This is
@@ -31,6 +34,18 @@ export const sdkPublicReadersRequestSchema = z.discriminatedUnion("method", [
   z.object({ method: z.literal("eda.lib_LibrariesList.getSystemLibraryUuid"), arguments: emptyArguments }).strict(),
 ]);
 export type SdkPublicReadersRequest = z.infer<typeof sdkPublicReadersRequestSchema>;
+export const sdkPublicReadersBatchRequestSchema = z.object({ action: z.literal("batch"),
+  requests: z.array(sdkPublicReadersRequestSchema).min(1).max(SDK_PUBLIC_READERS_BATCH_MAX_METHODS),
+}).strict().superRefine((value, context) => {
+  const seen = new Set<SdkPublicReadersRequest["method"]>();
+  for (const [index, request] of value.requests.entries()) {
+    if (seen.has(request.method)) { context.addIssue({ code: "custom", path: ["requests", index, "method"], message: "Batch method names must be unique." }); }
+    seen.add(request.method);
+  }
+});
+export const sdkPublicReadersOperationSchema = z.union([sdkPublicReadersRequestSchema, sdkPublicReadersBatchRequestSchema]);
+export type SdkPublicReadersBatchRequest = z.infer<typeof sdkPublicReadersBatchRequestSchema>;
+export type SdkPublicReadersOperation = z.infer<typeof sdkPublicReadersOperationSchema>;
 type PublicReaderMethod = SdkPublicReadersRequest["method"];
 interface Definition {
   readonly namespace: "sys_I18n" | "sys_Window" | "sys_Unit" | "lib_LibrariesList";
@@ -135,11 +150,16 @@ export function querySdkPublicReadersMethods(input: unknown = {}): Record<string
   const query = sdkPublicReadersCatalogQuerySchema.parse(input);
   const entries = sdkPublicReadersDescriptors().filter((entry) => query.method === undefined || entry.method === query.method)
     .map(({ inputSchema, ...entry }) => query.includeSchemas ? Object.assign(entry, { inputSchema }) : entry);
-  return { offline: true, invocationEnabledByDiscovery: false, total: entries.length, entries };
+  return { offline: true, invocationEnabledByDiscovery: false, total: entries.length, entries,
+    batch: { action: "batch", maximumMethods: SDK_PUBLIC_READERS_BATCH_MAX_METHODS, uniqueMethods: true,
+      completeOrderedPasses: 2, sharedDeadlineMilliseconds: SDK_PUBLIC_READERS_BATCH_DEADLINE_MS,
+      maximumResponseBytes: SDK_PUBLIC_READERS_BATCH_MAX_BYTES, maximumMemberBytes: SDK_PUBLIC_READERS_MAX_BYTES,
+      atomicSnapshot: false, partialSuccess: false, invocationEnabledByDiscovery: false,
+      ...(query.includeSchemas ? { inputSchema: z.toJSONSchema(sdkPublicReadersBatchRequestSchema) } : {}) } };
 }
 
 export function validateSdkPublicReadersArguments(input: unknown): Record<string, unknown> {
-  const result = sdkPublicReadersRequestSchema.safeParse(input);
+  const result = sdkPublicReadersOperationSchema.safeParse(input);
   if (result.success) { return { valid: true, request: result.data, executionAuthorized: false }; }
   return { valid: false, executionAuthorized: false,
     issues: result.error.issues.slice(0, 16).map((issue) => ({ path: issue.path.map(String), message: issue.message.slice(0, 512) })) };
@@ -153,12 +173,7 @@ export function sdkPublicReaderRequiresUi(request: SdkPublicReadersRequest): boo
  * Language uses legacy ur/QFo; its private cached bus cannot be inspected.
  * Retain available identities only; never dispatch directly to either bus.
  */
-const uiOwnerProgram = (methodName: Definition["name"]): string => {
-  const legacy = methodName === "getCurrentLanguage";
-  const rootBusKey = JSON.stringify(legacy ? "_MSG_BUS_" : "_MSG_BUS2_EXTAPI_");
-  const hostBusKey = JSON.stringify(legacy ? "messageBus" : "extensionApiMessageBus2");
-  return `
-const retain=(value,key)=>{
+export const SDK_PUBLIC_READERS_RETAIN_OWNER_PROGRAM = `const retain=(value,key)=>{
  const chain=[];let node=value,method;
  for(let i=0;node!==null&&i<8;i++){
   if(typeof node!=='object'&&typeof node!=='function')fail();
@@ -174,7 +189,14 @@ const retain=(value,key)=>{
   if(!current||current.value!==before.value||current.get!==before.get||current.set!==before.set||current.writable!==before.writable||current.enumerable!==before.enumerable||current.configurable!==before.configurable)fail();
  }}};
 };
-const apply=Reflect.apply,root=globalThis,location=root.location,document=root.document,href=location?.href;
+`;
+
+const uiOwnerProgram = (methodName: Definition["name"], sharedDeadline = false): string => {
+  const legacy = methodName === "getCurrentLanguage";
+  const rootBusKey = JSON.stringify(legacy ? "_MSG_BUS_" : "_MSG_BUS2_EXTAPI_");
+  const hostBusKey = JSON.stringify(legacy ? "messageBus" : "extensionApiMessageBus2");
+  return `
+${SDK_PUBLIC_READERS_RETAIN_OWNER_PROGRAM}const apply=Reflect.apply,root=globalThis,location=root.location,document=root.document,href=location?.href;
 const ui=data(root,'UI'),host=data(root,'gVars'),bus=data(root,${rootBusKey}),mode=data(root,'PRO_EDITOR_MODE');
 if(!bus||typeof bus!=='object')fail();
 ${legacy ? `const bindings=[[root,${rootBusKey}],[host,${hostBusKey}]].map(([object,key])=>({object,key,descriptor:Object.getOwnPropertyDescriptor(object,key)}));
@@ -184,22 +206,39 @@ const sameBusBindings=()=>{for(const {object,key,descriptor:before} of bindings)
 }};` : "const sameBusBindings=()=>{};"}
 const rpc=retain(bus,'rpcCall'),reader=retain(owner,${JSON.stringify(methodName)}),method=reader.method,editorTop=root.EDITOR_TOP;
 if(editorTop!==undefined&&editorTop!==root)fail();
-const clock=root.performance,now=retain(clock,'now'),set=data(root,'setTimeout');readerClear=data(root,'clearTimeout');
+${sharedDeadline ? "" : `const clock=root.performance,now=retain(clock,'now'),set=data(root,'setTimeout');readerClear=data(root,'clearTimeout');
 if(typeof set!=='function'||typeof readerClear!=='function')fail();
 let lastTime=apply(now.method,clock,[]),expired=false;
 if(!Number.isFinite(lastTime)||lastTime<0)fail();const deadline=lastTime+10000;
-const sameUi=()=>{
- if(root.performance!==clock||data(root,'setTimeout')!==set||data(root,'clearTimeout')!==readerClear)fail();
+`}const sameUi=()=>{
+${sharedDeadline ? " readersBatchDeadline();\n" : ` if(root.performance!==clock||data(root,'setTimeout')!==set||data(root,'clearTimeout')!==readerClear)fail();
  now.check();const time=apply(now.method,clock,[]);if(expired||!Number.isFinite(time)||time<lastTime||time>=deadline)fail();lastTime=time;
- if(root.window!==root||root.self!==root||root.top!==root||root.EDITOR_TOP!==editorTop||root.frameElement!==null||root.location!==location||root.document!==document||document?.defaultView!==root||document?.nodeType!==9||document?.URL!==href||location?.href!==href||location?.origin!=='https://client')fail();
+`} if(root.window!==root||root.self!==root||root.top!==root||root.EDITOR_TOP!==editorTop||root.frameElement!==null||root.location!==location||root.document!==document||document?.defaultView!==root||document?.nodeType!==9||document?.URL!==href||location?.href!==href||location?.origin!=='https://client')fail();
  if(typeof href!=='string'||!/^https:\\/\\/client\\/editor\\?cll=(?:trace|debug|info|warn|error)#?$/.test(href))fail();
  if(data(root,'PRO_EDITOR_MODE')!==mode||(mode!=='CLIENT-HALF_OFFLINE-EASYEDA-PCB-SCH-PANEL-SIM'&&mode!=='CLIENT-OFFLINE-EASYEDA-PCB-SCH-PANEL-SIM'))fail();
  if(data(root,'UI')!==ui||data(root,'gVars')!==host||data(ui,'gVars')!==host||data(root,${rootBusKey})!==bus||data(host,${hostBusKey})!==bus||data(edaOwner,'extensionUuid')!=='7e06d286b1ac846ef7eab9c7f2a9ee40')fail();
  sameBusBindings();reader.check();rpc.check();
 };
-sameUi();readerTimer=apply(set,root,[()=>{expired=true;},10000]);
+sameUi();${sharedDeadline ? "" : "readerTimer=apply(set,root,[()=>{expired=true;},10000]);"}
 `;
 };
+
+const readerProjectProgram = (expectedSupported: boolean): string => `const project=value=>{
+ if(kind==='resolved-language'){if(!${JSON.stringify(SDK_PUBLIC_READERS_209_RESOLVED_LANGUAGES)}.includes(value))fail();return value;}
+ if(kind==='theme'){if(value!=='light'&&value!=='dark')fail();return value;}
+ if(kind==='toolbar-unit'){if(value!=='mm'&&value!=='inch'&&value!=='mil')fail();return value;}
+ if(kind==='system-library-uuid'){if(value!==${JSON.stringify(SDK_PUBLIC_READERS_209_SYSTEM_LIBRARY_UUID)})fail();return value;}
+ if(kind==='boolean'){if(typeof value!=='boolean'||value!==${String(expectedSupported)})fail();return value;}
+ if(kind==='languages'){
+  if(!Array.isArray(value)||value.length!==languages.length||Reflect.ownKeys(value).length!==languages.length+1)fail();
+  const copied=[];for(let index=0;index<languages.length;index++){const item=data(value,String(index));if(item!==languages[index])fail();copied.push(item);}return copied;
+ }
+ if(!value||typeof value!=='object'||Array.isArray(value)||Reflect.ownKeys(value).length!==2)fail();
+ const width=data(value,'width'),height=data(value,'height');
+ for(const dimension of [width,height])if(!Number.isInteger(dimension)||dimension<0||dimension>${SDK_PUBLIC_READERS_MAX_VIEWPORT_DIMENSION}||Object.is(dimension,-0))fail();
+ return {width,height};
+};
+`;
 
 /** Only parsed literal methods. None of the caller's values select an
  * object path, property, callback, native command or generated statement.
@@ -220,22 +259,7 @@ const kind=${JSON.stringify(definition.resultKind)},languages=Object.freeze(${JS
 const pageWindow=kind==='viewport'?window:null;
 if(kind==='viewport'&&(!pageWindow||typeof pageWindow!=='object'))fail();
 ${uiBacked ? uiOwnerProgram(definition.name) : "const sameUi=()=>{};"}
-const project=value=>{
- if(kind==='resolved-language'){if(!${JSON.stringify(SDK_PUBLIC_READERS_209_RESOLVED_LANGUAGES)}.includes(value))fail();return value;}
- if(kind==='theme'){if(value!=='light'&&value!=='dark')fail();return value;}
- if(kind==='toolbar-unit'){if(value!=='mm'&&value!=='inch'&&value!=='mil')fail();return value;}
- if(kind==='system-library-uuid'){if(value!==${JSON.stringify(SDK_PUBLIC_READERS_209_SYSTEM_LIBRARY_UUID)})fail();return value;}
- if(kind==='boolean'){if(typeof value!=='boolean'||value!==${String(expectedSupported)})fail();return value;}
- if(kind==='languages'){
-  if(!Array.isArray(value)||value.length!==languages.length||Reflect.ownKeys(value).length!==languages.length+1)fail();
-  const copied=[];for(let index=0;index<languages.length;index++){const item=data(value,String(index));if(item!==languages[index])fail();copied.push(item);}return copied;
- }
- if(!value||typeof value!=='object'||Array.isArray(value)||Reflect.ownKeys(value).length!==2)fail();
- const width=data(value,'width'),height=data(value,'height');
- for(const dimension of [width,height])if(!Number.isInteger(dimension)||dimension<0||dimension>${SDK_PUBLIC_READERS_MAX_VIEWPORT_DIMENSION}||Object.is(dimension,-0))fail();
- return {width,height};
-};
-const sameOwner=()=>{if(eda!==edaOwner||${uiBacked ? `data(edaOwner,${JSON.stringify(definition.namespace)})!==owner` : `edaOwner.${definition.namespace}!==owner||owner.${definition.name}!==method`}||(kind==='viewport'&&window!==pageWindow))fail();sameUi();};
+${readerProjectProgram(expectedSupported)}const sameOwner=()=>{if(eda!==edaOwner||${uiBacked ? `data(edaOwner,${JSON.stringify(definition.namespace)})!==owner` : `edaOwner.${definition.namespace}!==owner||owner.${definition.name}!==method`}||(kind==='viewport'&&window!==pageWindow))fail();sameUi();};
 const read=${uiBacked ? "async " : ""}()=>{sameOwner();const raw=${uiBacked ? "await apply(method,owner,[])" : `method.call(owner,${argumentsCode})`};sameOwner();const value=project(raw);sameOwner();return value;};
 const first=${uiBacked ? "await " : ""}read(),second=${uiBacked ? "await " : ""}read();if(JSON.stringify(first)!==JSON.stringify(second))fail();sameOwner();
 const json=JSON.stringify({ok:true,kind:'sdk-public-readers',method:${JSON.stringify(request.method)},value:first});
@@ -244,6 +268,30 @@ const envelope={schema:${JSON.stringify(EXACT_READ_ENVELOPE_SCHEMA)},utf8Bytes,j
 if(utf8Bytes>${SDK_PUBLIC_READERS_MAX_BYTES}||new TextEncoder().encode(JSON.stringify(envelope)).byteLength>${SDK_PUBLIC_READERS_MAX_BYTES})fail();
 return envelope;
 }catch{throw new Error('SDK_PUBLIC_READERS_READ_FAILED');}${uiBacked ? "finally{if(readerTimer!==undefined&&readerClear){try{Reflect.apply(readerClear,globalThis,[readerTimer]);}catch{throw new Error('SDK_PUBLIC_READERS_READ_FAILED');}}}" : ""}`;
+}
+
+/** Fixed member factory for the batch generator. Its lexical batch checks are
+ * generated by our sibling module, never supplied by a caller or plugin code. */
+export function buildSdkPublicReadersBatchMemberProgram(input: unknown): string {
+  const request = parseSdkPublicReadersRequest(input);
+  const definition = definitions[request.method];
+  const uiBacked = sdkPublicReaderRequiresUi(request);
+  const languageArgument = "language" in request.arguments ? request.arguments.language : undefined;
+  const expectedSupported = SDK_PUBLIC_READERS_209_LANGUAGES.some((entry) => entry === languageArgument);
+  const argumentsCode = languageArgument === undefined ? "" : JSON.stringify(languageArgument);
+  return `(()=>{
+const fail=()=>{throw new Error('SDK_PUBLIC_READERS_INVALID_RESULT');};
+const data=(object,key)=>{const descriptor=Object.getOwnPropertyDescriptor(object,key);if(!descriptor||!Object.hasOwn(descriptor,'value'))fail();return descriptor.value;};
+const edaOwner=eda,owner=data(edaOwner,${JSON.stringify(definition.namespace)});if(!owner)fail();
+const kind=${JSON.stringify(definition.resultKind)},languages=Object.freeze(${JSON.stringify(SDK_PUBLIC_READERS_209_LANGUAGES)});
+const pageWindow=kind==='viewport'?window:null;
+if(kind==='viewport'&&(!pageWindow||typeof pageWindow!=='object'))fail();
+${uiBacked ? uiOwnerProgram(definition.name, true) : `${SDK_PUBLIC_READERS_RETAIN_OWNER_PROGRAM}const reader=retain(owner,${JSON.stringify(definition.name)}),method=reader.method,apply=Reflect.apply;
+const sameUi=()=>{reader.check();readersBatchDeadline();};`}
+${readerProjectProgram(expectedSupported)}const sameOwner=()=>{if(eda!==edaOwner||data(edaOwner,${JSON.stringify(definition.namespace)})!==owner||(kind==='viewport'&&window!==pageWindow))fail();sameUi();};
+const read=${uiBacked ? "async " : ""}()=>{readersBatchCurrent();const raw=${uiBacked ? "await " : ""}apply(method,owner,[${argumentsCode}]);readersBatchCurrent();const value=project(raw);readersBatchCurrent();return {ok:true,kind:'sdk-public-readers',method:${JSON.stringify(request.method)},value};};
+sameOwner();return Object.freeze({sameOwner,read,uiBacked:${String(uiBacked)}});
+})()`;
 }
 
 const dimensionSchema = z.number().int().min(0).max(SDK_PUBLIC_READERS_MAX_VIEWPORT_DIMENSION).refine((value) => !Object.is(value, -0));

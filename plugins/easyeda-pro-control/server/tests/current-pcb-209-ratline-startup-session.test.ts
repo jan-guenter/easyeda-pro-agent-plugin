@@ -3,10 +3,10 @@ import assert from "node:assert/strict";
 import { test } from "node:test";
 import { setTimeout as delay, setImmediate as immediate } from "node:timers/promises";
 import { z } from "zod";
-import { CurrentPcb209RatlinePcbStartup, CurrentPcb209RatlineWorkerStartup } from "../src/current-pcb-209-ratline-startup-session.ts";
+import { CurrentPcb209RatlinePcbHeldStartup, CurrentPcb209RatlinePcbStartup, CurrentPcb209RatlineWorkerStartup } from "../src/current-pcb-209-ratline-startup-session.ts";
 import { CurrentPcb209RatlineBootstrapOwner } from "../src/current-pcb-209-ratline-bootstrap-owner.ts";
 import type { CurrentPcb209RatlineBootstrapDependency } from "../src/current-pcb-209-ratline-bootstrap-owner.ts";
-import type { CurrentPcb209RatlineStartupDependency } from "../src/current-pcb-209-ratline-startup-session.ts";
+import type { CurrentPcb209RatlineHeldStartupPacket, CurrentPcb209RatlineStartupDependency, CurrentPcb209RatlineStartupPacket } from "../src/current-pcb-209-ratline-startup-session.ts";
 import { CURRENT_PCB_209_RATLINE_CREATION_PROFILES } from "../src/current-pcb-209-ratline-creation-profile.ts";
 import { currentPcb209RatlineNativeWire } from "../src/current-pcb-209-ratline-native-wire.ts";
 import { ratlineCaptureInspector } from "./helpers/current-pcb-209-ratline-capture-inspector.ts";
@@ -22,11 +22,21 @@ async function rejectedCapture(work: Promise<unknown>, requireFinalGate: boolean
   }
   assert.fail("The original composite must refuse this failed child.");
 }
+async function requireOriginalSession(session: CurrentPcb209RatlinePcbStartup | CurrentPcb209RatlineWorkerStartup | CurrentPcb209RatlinePcbHeldStartup,
+  packet: CurrentPcb209RatlineStartupPacket | CurrentPcb209RatlineHeldStartupPacket): Promise<void> {
+  if (session instanceof CurrentPcb209RatlinePcbHeldStartup) {
+    assert.equal(packet.profile, "private.current-pcb209-ratline-held-prefix-composite.v1");
+    await session.requireOriginal(packet); return;
+  }
+  assert.equal(packet.profile, "private.current-pcb209-ratline-composite.v1"); await session.requireOriginal(packet);
+}
 
-for (const [role, synchronousResume, failure, slowRequest] of [["pcb", false, null], ["worker", false, null], ["pcb", true, null],
-  ["pcb", false, "late-allocation"], ["worker", false, "child-lost"], ["pcb", false, "failed-removal"], ["pcb", false, "await-gap"], ["pcb", false, null, true]] as const) {
-  void test(`fixed209 ${role} actual composite child gate, synchronous resume ${String(synchronousResume)}, failure ${String(failure)}, delayed proofs ${String(slowRequest === true)}`, async context => {
-    const fixture = await ratlineCaptureInspector(context, role);
+for (const [role, synchronousResume, failure, slowRequest, heldPrefix] of [["pcb", false, null], ["worker", false, null], ["pcb", true, null],
+  ["pcb", false, "late-allocation"], ["worker", false, "child-lost"], ["pcb", false, "failed-removal"], ["pcb", false, "await-gap"], ["pcb", false, null, true],
+  ["pcb", false, null, false, true], ["pcb", true, null, false, true], ["pcb", false, "late-allocation", false, true],
+  ["pcb", false, "failed-removal", false, true], ["pcb", false, "await-gap", false, true]] as const) {
+  void test(`fixed209 ${role} actual composite child gate, synchronous resume ${String(synchronousResume)}, failure ${String(failure)}, delayed proofs ${String(slowRequest === true)}, held prefix ${String(heldPrefix === true)}`, async context => {
+    const fixture = await ratlineCaptureInspector(context, role, 0, false, false, { holdPcbResult: heldPrefix === true });
     const parent = { targetId: "parent", type: role === "pcb" ? "page" : "worker", title: "parent", url: "https://client/editor", attached: true };
     const child = { targetId: "child", type: "worker", title: "pcb-ratline-worker", attached: true,
       url: `https://client/editor?entry=pcb-ratline-worker.js${role === "pcb" ? "&cll=0" : ""}` };
@@ -66,6 +76,9 @@ for (const [role, synchronousResume, failure, slowRequest] of [["pcb", false, nu
           // Actual V8 runner commands pass the finite dormant native grammar;
           // Target attachments and child starts remain synthetic in this test.
           const command = currentPcb209RatlineNativeWire(role, input, originalRequestId).command; originalRequestId += 1;
+          if (heldPrefix === true && command.method === "Runtime.callFunctionOn") {
+            assert.notEqual(command.params.functionDeclaration, 'function(other){"use strict";return this===other;}');
+          }
           if (slowRequest === true && (command.method === "Target.getTargets" && !creationProofDelay || command.method === "Runtime.callFunctionOn" && !captureProofDelay)) {
             if (command.method === "Target.getTargets") { creationProofDelay = true; } else { captureProofDelay = true; }
             // Synthetic owner-before/owner-after latency around an immediate
@@ -122,7 +135,8 @@ for (const [role, synchronousResume, failure, slowRequest] of [["pcb", false, nu
         },
       }),
     };
-    const session = role === "pcb" ? new CurrentPcb209RatlinePcbStartup(dependency) : new CurrentPcb209RatlineWorkerStartup(dependency);
+    const FullSession = role === "pcb" ? CurrentPcb209RatlinePcbStartup : CurrentPcb209RatlineWorkerStartup;
+    const session = heldPrefix === true ? new CurrentPcb209RatlinePcbHeldStartup(dependency) : new FullSession(dependency);
     const pending = session.capture();
     if (failure !== null) {
       const rejected = rejectedCapture(pending, failure === "await-gap");
@@ -145,13 +159,17 @@ for (const [role, synchronousResume, failure, slowRequest] of [["pcb", false, nu
     const diagnostic = currentPcb209RatlineCompositeDiagnosticsSchema.parse(session.status());
     assert.equal(diagnostic.firstFailure, null); assert.equal(diagnostic.creation.firstFailure, null); assert.equal(diagnostic.capture.firstFailure, null); assert.equal(diagnostic.dispatcher.firstFailure, null);
     if (slowRequest === true) { assert.equal(creationProofDelay, true); assert.equal(captureProofDelay, true); }
-    assert.equal(packet.capture.pauses, role === "pcb" ? 5 : 9); assert.equal(packet.originalConstructionAndBridgeWorkerMatch, true);
-    assert.equal(packet.originalConstructionAndRegistryMatch, true); assert.equal(packet.nativePreexecutionSourceOwnershipVerified, false);
+    assert.equal(diagnostic.scope, heldPrefix === true ? "pcb-held-prefix" : "full");
+    assert.equal(diagnostic.capture.scope, diagnostic.scope); assert.equal(diagnostic.dispatcher.scope, diagnostic.scope);
+    const fullPauses = role === "pcb" ? 5 : 9;
+    const expectedPauses = heldPrefix === true ? 2 : fullPauses;
+    assert.equal(packet.capture.pauses, expectedPauses); assert.equal(packet.originalConstructionAndBridgeWorkerMatch, heldPrefix !== true);
+    assert.equal(packet.originalConstructionAndRegistryMatch, heldPrefix !== true); assert.equal(packet.nativePreexecutionSourceOwnershipVerified, false);
     assert.equal(packet.nativeWorkerTargetIdentityVerified, false); assert.equal(packet.childSourceQualified, false);
     assert.equal(packet.callbackReturnCompletionVerified, false); assert.equal(packet.executionAuthorized, false);
-    assert.equal(fixture.counts().pauses, role === "pcb" ? 7 : 11); assert.equal(fixture.counts().resumes, fixture.counts().pauses);
+    assert.equal(fixture.counts().pauses, expectedPauses + 2); assert.equal(fixture.counts().resumes, fixture.counts().pauses);
     assert.equal(sourceStarts, 1); assert.equal(childStarts, 1); assert.equal(fixture.counts().subscribers, 1);
-    await session.requireOriginal(packet); await assert.rejects(session.requireOriginal(structuredClone(packet)), /ORIGINAL_PACKET/u);
+    await requireOriginalSession(session, packet); await assert.rejects(requireOriginalSession(session, structuredClone(packet)), /ORIGINAL_PACKET/u);
     await assert.rejects(session.capture(), /CONSUMED/u); await session.abort(); assert.equal(childStarts, 1); assert.equal(sourceStarts, 1);
     assert.equal(childRemovals, 1);
     await fixture.terminate(); await session.releaseAfterTermination(); assert.equal(fixture.counts().subscribers, 0);

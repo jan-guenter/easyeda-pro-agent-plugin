@@ -35,7 +35,10 @@ footprint/designator and net/pin memberships. It does not compare component valu
 or export a design. [UI utility readers](plugins/easyeda-pro-control/skills/easyeda-pro-control/references/current-utility-readers.md#language-and-api-page-viewport-readers)
 include resolved theme, global toolbar units, the fixed system-library UUID and
 SDK-resolved language. The language result can be a fallback and does not prove
-that the UI language provider succeeded.
+that the UI language provider succeeded. Up to seven different utility methods
+can run in one bounded batch with a shared ten-second deadline and one runtime
+admission sequence. Two complete ordered passes must match. The observations
+are sequential; a failure returns no partial batch.
 After an ordinary session closes and its retained process/Job termination is
 verified, an explicit `release-closed` action frees its helper for another
 workflow. Project workflows that still own that runtime prevent release.
@@ -50,6 +53,8 @@ not establish PCB-worker completion or enable writers.
 Its separate [ratline diagnostic purpose](plugins/easyeda-pro-control/skills/easyeda-pro-control/references/current-pcb209-ratline-held-import.md)
 observes PCB construction and holds the first child's qualified source import.
 It also records native creation-stack evidence for exact constructor comparison.
+The held-import capture settles after its two parent events, without waiting
+for callbacks that require the paused child to continue.
 It retains one process owner, source leases and cumulative limits; connected
 validation, independent Worker-to-target identity and later startup completion
 remain pending.

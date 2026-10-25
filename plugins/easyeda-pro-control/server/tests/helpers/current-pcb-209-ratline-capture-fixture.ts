@@ -70,7 +70,7 @@ const state={projectId:"a".repeat(64),id:"b".repeat(32),compiler:{setHandle:noop
 const $C="rebuildRatlineInWorker",Yi={getInstance:()=>({bindListener:noop})},zs=Yi,Nb=class{},kb=class{},n0=class{},A5=class{};
 class M5{parseFootAndDevice(){return Promise.resolve();}build(){this.netGroupMap=new Map;}}class K1{sycnLayers(){return this;}classify(){return this;}}
 class Bb{generateData(){return [];}stringify(){return "";}}class zb{getCommonSource(){return "";}}const ri={addAll:noop};`;
-export function ratlineCaptureFixtureSource(role: CurrentPcb209RatlineCaptureRole): string {
+export function ratlineCaptureFixtureSource(role: CurrentPcb209RatlineCaptureRole, holdPcbResult = false): string {
  let source = (`${common}${role === "pcb" ? pcbPrelude : workerPrelude}`).replaceAll("\n", " ");
  for (const section of excerpts[role]) {
   const line = source.split("\n").length - 1, newlines = section.line - line;
@@ -79,6 +79,6 @@ export function ratlineCaptureFixtureSource(role: CurrentPcb209RatlineCaptureRol
   if (source.length !== section.start || source.split("\n").length - 1 !== section.line || source.length - source.lastIndexOf("\n") - 1 !== section.column) { throw new Error("Fixture offset"); }
   source += `${section.text};`;
  }
- return source + (role === "pcb" ? `P0=Ew;const manager=Ew.getInstance();manager.addWorker("editor?entry=pcb-ratline-worker.js",false,"pcb-ratline-worker");A.callback(JSON.stringify({ratlineRes:[],workerName:0}));` :
+ return source + (role === "pcb" ? `P0=Ew;const manager=Ew.getInstance();manager.addWorker("editor?entry=pcb-ratline-worker.js",false,"pcb-ratline-worker");${holdPcbResult ? "" : "A.callback(JSON.stringify({ratlineRes:[],workerName:0}));"}` :
  `sp.listeners.get("workerName")(0);sp.services.get($C)({world:{uuid:"b".repeat(32),docType:3,projectId:"a".repeat(64),env:{tabId:"pcb",windowTabId:"window"}}});`);
 }

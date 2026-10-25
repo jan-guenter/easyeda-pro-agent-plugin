@@ -252,9 +252,9 @@ export function inventoryExtensionApiCoverage(): ApiCoverageEntry[] {
   for (const descriptor of sdkPublicReadersDescriptors()) {
     const existing = routes.get(descriptor.path) ?? [];
     routes.set(descriptor.path, [...existing, { tool: "easyeda_control_public_readers", selector: descriptor.path, implementation: "public-method",
-      scope: `Separately reviewed EasyEDA 3.2.209/API 0.3.59 only; older profiles do not register this route. ${descriptor.limitations.join(" ")}`,
-      source: ["sdk-public-readers.ts", "sdk-public-readers-runtime.ts", "sdk-public-utilities-profile.ts", "facade-mode.ts"],
-      tests: ["sdk-public-readers.test.ts", "sdk-public-readers-runtime.test.ts", "sdk-public-readers-ui.test.ts", "sdk-public-readers-registration.test.ts", "facade-mode.test.ts"],
+      scope: `Separately reviewed EasyEDA 3.2.209/API 0.3.59 only; older profiles do not register this route. Single requests or a batch of up to seven unique methods use two matching observations. Batch methods share one ten-second deadline and retain all owners before invocation; two ordered passes are sequential, not atomic. Each member is bounded to 8192 bytes and the complete batch to 65536 bytes. One failed member refuses the whole result; no cached authority or partial success. ${descriptor.limitations.join(" ")}`,
+      source: ["sdk-public-readers.ts", "sdk-public-readers-batch.ts", "sdk-public-readers-runtime.ts", "sdk-public-utilities-profile.ts", "facade-mode.ts"],
+      tests: ["sdk-public-readers.test.ts", "sdk-public-readers-batch.test.ts", "sdk-public-readers-runtime.test.ts", "sdk-public-readers-ui.test.ts", "sdk-public-readers-registration.test.ts", "facade-mode.test.ts"],
       validation: "offline-regression;current-live-unclaimed", executionState: "available-with-runtime-guards",
       inputDiscovery: { tool: "easyeda_control_api", arguments: { request: { action: "public-readers", query: { method: descriptor.path, includeSchemas: true } } } },
     }]);

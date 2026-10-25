@@ -155,6 +155,16 @@ export const CURRENT_PCB_209_RATLINE_CAPTURE_PROFILES = freezeDeep({
     "factoryEnd": 3_969_625
   }
 } as const);
+/** The native held-import purpose ends after these original parent events.
+ * Child callbacks cannot arrive while its final source import remains paused. */
+export const CURRENT_PCB_209_RATLINE_HELD_CAPTURE_PROFILE = freezeDeep({
+  sites: { bridge: CURRENT_PCB_209_RATLINE_CAPTURE_PROFILES.pcb.sites.bridge,
+    factory: CURRENT_PCB_209_RATLINE_CAPTURE_PROFILES.pcb.sites.factory },
+  sequence: ["bridge", "factory"],
+  factoryStart: CURRENT_PCB_209_RATLINE_CAPTURE_PROFILES.pcb.factoryStart,
+  factoryEnd: CURRENT_PCB_209_RATLINE_CAPTURE_PROFILES.pcb.factoryEnd,
+} as const);
+export type CurrentPcb209RatlineCaptureScope = "full" | "pcb-held-prefix";
 export type CurrentPcb209RatlineCaptureRole = keyof typeof CURRENT_PCB_209_RATLINE_CAPTURE_PROFILES;
 export type CurrentPcb209RatlineCaptureSite = "bridge" | "factory" | "received" | "entered" | "returned" | "named" | "canvas" | "initialized" | "publication";
 

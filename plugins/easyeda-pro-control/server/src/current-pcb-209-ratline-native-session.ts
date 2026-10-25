@@ -21,7 +21,8 @@ import type { CurrentPcb209RatlinePcbContextDependency } from "./current-pcb-209
 import type { CurrentPcb209RatlinePcbBootstrapPacket } from "./current-pcb-209-ratline-pcb-bootstrap-owner.ts";
 import { CurrentPcb209RatlineBootstrapOwner } from "./current-pcb-209-ratline-bootstrap-owner.ts";
 import type { CurrentPcb209RatlineBootstrapDependency, CurrentPcb209RatlineBootstrapPacket } from "./current-pcb-209-ratline-bootstrap-owner.ts";
-import { CurrentPcb209RatlinePcbStartup } from "./current-pcb-209-ratline-startup-session.ts";
+import { CurrentPcb209RatlinePcbHeldStartup } from "./current-pcb-209-ratline-startup-session.ts";
+import type { CurrentPcb209RatlineHeldStartupPacket } from "./current-pcb-209-ratline-startup-session.ts";
 import { CurrentPcb209RatlinePcbCreation } from "./current-pcb-209-ratline-creation-runner.ts";
 import type { CurrentPcb209RatlineCreationPacket, CurrentPcb209RatlineWorkerCreation } from "./current-pcb-209-ratline-creation-runner.ts";
 import { CurrentPcb209RatlineOrigin } from "./current-pcb-209-ratline-origin.ts";
@@ -55,11 +56,6 @@ async function boundedOwner(work: Promise<void>): Promise<void> {
 async function observe(work: Promise<unknown>): Promise<void> { try { await work; } catch {
   // The original operation and failure race retain rejection.
 } }
-async function failureOnly(work: Promise<unknown>): Promise<never> {
-  await work;
-  // Complete PCB capture cannot replace child source qualification.
-  return Promise.withResolvers<never>().promise;
-}
 export interface CurrentPcb209RatlineNativePacket {
   readonly profile: "private.pcb209-ratline-native-held-import.v1";
   readonly targetSha256: string;
@@ -97,7 +93,8 @@ export class CurrentPcb209RatlineNativeSession {
   #child: CurrentPcb209RatlineBootstrapOwner | null = null;
   #origin: CurrentPcb209RatlineOrigin | null = null;
   #pcbSource: CurrentPcb209RatlinePcbBootstrapPacket | null = null;
-  #composite: CurrentPcb209RatlinePcbStartup | null = null;
+  #composite: CurrentPcb209RatlinePcbHeldStartup | null = null;
+  #compositePacket: CurrentPcb209RatlineHeldStartupPacket | null = null;
   #compositeWork: Promise<unknown> | null = null;
   #navigation: Promise<void> | null = null;
   #openingObservation: CurrentPcbDiagnosticPcbOpeningResult | null = null;
@@ -128,7 +125,7 @@ export class CurrentPcb209RatlineNativeSession {
     firstFailure: Readonly<{ reason: string; phase: Phase; step: string }> | null;
     pcbContext: ReturnType<CurrentPcb209RatlinePcbContextRouter["status"]> | null;
     childSource: ReturnType<CurrentPcb209RatlineBootstrapOwner["status"]> | null;
-    composite: ReturnType<CurrentPcb209RatlinePcbStartup["status"]> | null }> {
+    composite: ReturnType<CurrentPcb209RatlinePcbHeldStartup["status"]> | null }> {
     return Object.freeze({ phase: this.#phase, transitionStarted: this.#router?.status()["transitionStarted"] === true,
       openingAcknowledged: this.#openingObservation?.phase === "open-document", packetRetained: this.#packet !== null, executionAuthorized: false,
       nativeOrigin: this.#origin?.summary() ?? null, step: this.#step, firstFailure: this.#firstFailure,
@@ -261,12 +258,15 @@ export class CurrentPcb209RatlineNativeSession {
       this.#step = "pcb-source-arming"; await router.sourceOwner.armBeforeNavigation();
       this.#step = "pcb-navigation"; await router.sourceOwner.startOriginalNavigation(); this.#step = "pcb-source-qualification";
       const pcbSource = await router.sourceOwner.whenSourceQualified(); this.#pcbSource = pcbSource; await this.#current(); this.#phase = "construction";
-      this.#step = "pcb-construction"; const composite = new CurrentPcb209RatlinePcbStartup({ realm: await router.sourceOwner.claimOriginalPcbRealm(pcbSource),
+      this.#step = "pcb-construction"; const composite = new CurrentPcb209RatlinePcbHeldStartup({ realm: await router.sourceOwner.claimOriginalPcbRealm(pcbSource),
         releaseOriginalPinnedSource: (): Promise<void> => router.releaseOriginalPinnedSource(pcbSource), childBootstrapOwner: child });
       this.#composite = composite; const work = composite.capture(); this.#compositeWork = work; void this.#observeComposite(work);
-      const failed = failureOnly(work);
-      this.#step = "child-source-qualification"; const childSource = await Promise.race([child.whenSourceQualified(), failed]);
+      /* Both branches must settle. The PCB prefix owns no wait for callbacks
+       * that require the deliberately held child import to continue. */
+      this.#step = "child-and-prefix-qualification";
+      const [childSource, compositePacket] = await Promise.all([child.whenSourceQualified(), work]); this.#compositePacket = compositePacket;
       this.#step = "held-child-reproof";
+      await composite.requireOriginal(compositePacket);
       await router.reproveFirstChildHeld(pcbSource);
       await this.#opening.requireOriginalPcbDependency(this.#result, this.#dependency, this.#target); await child.requireOriginal(childSource); await this.#current();
       const nativeOrigin = this.#origin.summary(), nativeOriginEvidence = this.#origin.evidence();
@@ -286,8 +286,9 @@ export class CurrentPcb209RatlineNativeSession {
     }
   }
   public async requireOriginal(packet: CurrentPcb209RatlineNativePacket): Promise<void> {
-    need(packet === this.#packet && this.#phase === "first-child-held" && this.#child !== null, "ORIGINAL_PACKET");
-    await this.#current(); await this.#child.requireOriginal(packet.childSource); await this.#current();
+    need(packet === this.#packet && this.#phase === "first-child-held" && this.#child !== null && this.#composite !== null && this.#compositePacket !== null, "ORIGINAL_PACKET");
+    await this.#current(); await this.#composite.requireOriginal(this.#compositePacket); await this.#current();
+    await this.#child.requireOriginal(packet.childSource); await this.#current();
   }
   public abort(): Promise<void> {
     if (this.#cleanup !== null) { return this.#cleanup; }

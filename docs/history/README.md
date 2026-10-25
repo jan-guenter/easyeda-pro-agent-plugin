@@ -45,6 +45,7 @@ layout. The connected ledger retains its generation and case anchors.
 
 | Record | Former path |
 | --- | --- |
+| [2026-10-25-bounded-readers-and-held-capture.md](2026-10-25-bounded-readers-and-held-capture.md) | Installed100748 release/language/catalog cases, same-session workflow switch, bounded reader batching and settled PCB held capture |
 | [2026-10-25-runtime-release-language-catalog-batch.md](2026-10-25-runtime-release-language-catalog-batch.md) | Actual65826 admission and utility observations, ordinary release gap, resolved language, enriched catalog lookups and PCB diagnostics |
 | [2026-10-25-netlist-symbol-readers-and-bootstrap.md](2026-10-25-netlist-symbol-readers-and-bootstrap.md) | Managed Allegro comparison, system symbol-name lookup, UI utility readers, terminal34840 observation and bootstrap deadline/diagnostic batch |
 | [2026-10-25-ratline-prefix-timing-and-origin.md](2026-10-25-ratline-prefix-timing-and-origin.md) | Installed22904 disposable capture deadline, terminal cleanup, phase timing and native worker-origin batch |
