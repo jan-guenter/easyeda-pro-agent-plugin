@@ -208,3 +208,16 @@ queries, including the new file readers and continuation discovery, and reject
 malformed child output and unexpected shutdown side effects. This synthetic
 package exercise neither admits the running host nor replaces installation
 verification.
+
+## Retained first CI failure
+
+PR 129's initial head `6b8bffa863c48dd7cb07c52bd8ac95d7d5dc11b3`
+passed build verification and Windows recovery, but facade shard 7 failed one
+aggregate native-adapter assertion. That test still expected the former
+held-import limits 371 total / 328 normal, while the reviewed implementation
+and dedicated protocol tests correctly use 383 / 337. Both stale literals were
+updated; no runtime guard, timeout, budget or test selection changed in response
+to this failure. The original shard log is retained at SHA-256
+`db95c0298bc3eea3747ab113a0ce39e1b2a720457310e2ef0467c652ff3a21fd`.
+That shard recorded 1,927 passed and one failed test; this run is not accepted
+as full-suite verification. A fresh exact-final-head CI result is required.
