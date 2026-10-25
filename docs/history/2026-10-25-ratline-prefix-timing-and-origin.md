@@ -164,3 +164,13 @@ facade and bridge tests found no other stale ratline budget, arm-count or
 helper-pin expectations. Runtime source, bundles, guards and install version
 are unchanged; a new final-commit CI run remains required. The original failure
 log is retained privately.
+
+The next payload, `c606569fab202936a2935f69c4d85f512fe906a1`, passed
+seven facade shards, build/bridge and Windows checks. Shard 3 exposed one
+further stale assertion: a late event after abort now correctly includes
+`priorFailureCode:"ABORTED"`. Its existing-worker fixture now requires that
+field. All nine affected tests and targeted strict lint passed; related
+status/bootstrap/event assertions were audited without further corrections.
+The entire second CI run reached a terminal result, so this correction covers
+its only failing test. Runtime source, bundles, pins and version remain
+unchanged. The final candidate still requires a green exact-commit CI run.

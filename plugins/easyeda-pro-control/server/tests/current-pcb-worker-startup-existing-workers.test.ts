@@ -222,6 +222,7 @@ void test("late paused existing worker receives only its original waiting cleanu
   value.state.listener?.(attachment(0, {}, true)); await setImmediate(); await value.owner.cleanup();
   value.state.listener?.(attachment(0, {}, true)); await value.owner.cleanup();
   assert.equal(value.commands.filter(command => command.method === "Runtime.runIfWaitingForDebugger").length, 1);
-  assert.deepEqual(value.owner.status().firstEventFailure, { method: "Target.attachedToTarget", reason: "EXISTING_WORKER_PAUSED" });
+  assert.deepEqual(value.owner.status().firstEventFailure, { method: "Target.attachedToTarget", reason: "EXISTING_WORKER_PAUSED",
+    priorFailureCode: "ABORTED" });
   await value.owner.releaseAfterTermination();
 });
