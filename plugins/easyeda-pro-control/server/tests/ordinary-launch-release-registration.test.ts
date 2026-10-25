@@ -75,7 +75,7 @@ async function fixture(): Promise<{ invoke: Invoke; startup: () => Promise<unkno
   for (const key of ["captureWorkerStartup", "handoffWorkerStartup", "openWorkerStartup", "handoffStartup", "openStartup", "requireStartup",
     "observeWorkerStartupAssignments", "observeStartupAssignments", "requireStartupAssignments", "observeWorkerStartupActor", "observeStartupActor",
     "observeWorkerStartupChannel", "observeStartupChannel", "observeWorkerStartupEmpty", "observeStartupEmpty", "prepareWorkerStartupEmpty", "prepareStartupEmpty",
-    "observeWorkerStartupRatline", "observeStartupRatline"]) {
+    "observeWorkerStartupRatline", "observeStartupRatline", "observeWorkerStartupRatlineContinuation", "observeStartupRatlineContinuation"]) {
     Object.defineProperty(Diagnostic.prototype, key, { value: (): never => { throw new Error("Unexpected diagnostic operation"); } });
   }
   let invoke: Invoke | undefined;
@@ -86,7 +86,8 @@ async function fixture(): Promise<{ invoke: Invoke; startup: () => Promise<unkno
     assertBridgeDispatchAllowed: (): Promise<void> => Promise.resolve(), assertDiagnosticLaunchOtherOperationsSettled: (): Promise<void> => Promise.resolve() };
   const scope = vm.createContext({ z, ordinaryLaunchRequestSchema, OrdinaryLaunchCoordinator: Coordinator, WindowsControlRuntime: Runtime,
     CurrentPcbDiagnosticLifecycle: Diagnostic, CurrentPcbWorkerStartupLifecycle: Diagnostic, CurrentPcb209WorkerStartupLifecycle: Diagnostic,
-    CurrentPcb209EmptyStartupLifecycle: Diagnostic, CurrentPcb209RatlineStartupLifecycle: Diagnostic, diagnostic209: true,
+    CurrentPcb209EmptyStartupLifecycle: Diagnostic, CurrentPcb209RatlineStartupLifecycle: Diagnostic,
+    CurrentPcb209RatlineContinuationLifecycle: Diagnostic, diagnostic209: true,
     upstream, engine, bridgeGate: { run: async (work: () => Promise<unknown>): Promise<unknown> => { await Promise.resolve(); return work(); } },
     process: { env: { EASYEDA_ASSETS_ROOT: "/synthetic/assets", WSL_DISTRO_NAME: "synthetic" } },
     resolve: (): string => "/synthetic/plugin", controlDataDirectory: (): string => "/synthetic/control", retainedControlRoot: { path: "/synthetic/control" },

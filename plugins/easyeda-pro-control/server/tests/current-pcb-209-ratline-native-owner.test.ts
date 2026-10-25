@@ -17,19 +17,22 @@ void test("native ratline purpose embeds exact finite runtime and fixed cumulati
   assert.deepEqual(Object.fromEntries([...source.slice(start, end).matchAll(/public const long (\w+)=(\d+)L;/gu)].map(match => [match[1], Number(match[2])])), values);
   assert.ok(Buffer.byteLength(source) <= 1_048_576);
   assert.ok(source.includes("workerStartupRatline209=true;emptyElapsed=Stopwatch.StartNew();"));
+  assert.ok(source.includes("readonly bool workerStartupRatlineContinuation209;"));
+  assert.ok(source.includes('workerStartupRatlineContinuation209=purpose=="worker-startup-ratline-continuation209";'));
+  assert.equal([...source.matchAll(/\bworkerStartupRatlineContinuation209\s*=(?!=)/gu)].length, 1);
   for (const limit of ["RequestLimit", "NormalRequestLimit", "CleanupRequestLimit", "NormalByteLimit", "TotalByteLimit", "NormalPollLimit", "PollLimit", "HelperControlLimit",
     "HelperStdoutByteLimit", "NormalMilliseconds", "TotalMilliseconds"]) {
-    assert.ok(source.split(`EasyedaRatline209Limits.${limit}`).length > 1, limit);
+    assert.ok(source.includes(`long Ratline${limit} { get { return workerStartupRatlineContinuation209?EasyedaRatlineContinuation209Limits.${limit}:EasyedaRatline209Limits.${limit}; } }`), limit);
   }
 });
 void test("native ratline activation and cleanup remain separate from old purposes and caller programs", async () => {
   const source = await readFile(sourcePath, "utf8");
   assert.ok(source.includes("if ($WorkerStartupRatline209 -and ($StringPrecreate -or $WorkerStartup -or $Layers209 -or $WorkerStartup209 -or $WorkerStartupEmpty209))"));
-  assert.ok(source.includes('if(!workerStartupRatline209)throw Error("ratline-purpose");'));
+  assert.ok(source.includes('if(!workerStartupRatline209 || workerStartupRatlineContinuation209)throw Error("ratline-purpose");'));
   assert.ok(source.includes("[EasyedaDiagnosticOwner]::VerifyRatline209PurposeSmoke()"));
-  assert.ok(source.includes("cleanup && (!ratlineCleanup || ratlineCleanupRequests>=EasyedaRatline209Limits.CleanupRequestLimit)"));
-  assert.ok(source.includes("!cleanup && (ratlineCleanup || received>EasyedaRatline209Limits.NormalByteLimit)"));
-  assert.ok(source.includes("ratlineCleanup?EasyedaRatline209Limits.PollLimit:EasyedaRatline209Limits.NormalPollLimit"));
+  assert.ok(source.includes("cleanup && (!ratlineCleanup || ratlineCleanupRequests>=RatlineCleanupRequestLimit)"));
+  assert.ok(source.includes("!cleanup && (ratlineCleanup || received>RatlineNormalByteLimit)"));
+  assert.ok(source.includes("ratlineCleanup?RatlinePollLimit:RatlineNormalPollLimit"));
   assert.ok(source.includes("Math.Min(Math.Min(65536u,available),limit-received)"));
   assert.ok(source.includes("worker-startup-ratline-abort"));
   assert.ok(source.includes("$owner.AbortWorkerStartupRatline(); $result=@{aborted=$true}"));
@@ -37,7 +40,7 @@ void test("native ratline activation and cleanup remain separate from old purpos
   assert.ok(source.includes("ratlineChildArm!=5 || ratlineChildStarted || ratlineCleanup"));
   assert.ok(source.includes('ratlineOriginConsumed || ratlinePcbSources!=29 || ratlineChildArm!=5 || !ratlineChildStarted || ratlineChildSources!=1 || ratlineChildResumes!=0'));
   assert.ok(source.includes('ratlineOriginConsumed=true;return;'));
-  assert.ok(source.includes("ratlineChildSession!=null && sessionId==ratlineChildSession)throw Error(\"ratline-child-prefix\")"));
+  assert.ok(source.includes("if(workerStartupRatline209 && (ratlineChildSession!=null && sessionId==ratlineChildSession || workerStartupRatlineContinuation209 && (sessionId==continuationSessions[1] || sessionId==continuationSessions[2])))throw Error(\"ratline-child-prefix\")"));
   assert.ok(source.includes('throw Error("ratline-terminal-scope")'));
   assert.ok(source.includes("if(!error.Message.StartsWith(\"pcb-ratline209-\",StringComparison.Ordinal))throw;throw Error(\"ratline-protocol\")"));
   assert.ok(source.includes("$exception.Message -cmatch '^pcb-diagnostic-[a-z-]{1,80}$'"));

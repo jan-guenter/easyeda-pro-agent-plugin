@@ -252,15 +252,15 @@ void test("native adapter embeds and private fields match TS programs without na
   assert.ok(source.includes("$request.requestId -gt $requestLimit"));
   assert.ok(source.includes("id!=nextRequest || id>EffectiveRequestLimit"));
   assert.ok(source.includes("int RequestLimit { get { return workerStartup?256:stringPrecreate?3309:103; } }"));
-  assert.ok(source.includes("long EffectiveRequestLimit { get { return workerStartupRatline209?EasyedaRatline209Limits.RequestLimit:workerStartupEmpty209?EasyedaWorkerStartupEmpty209Protocol.RequestLimit:RequestLimit; } }"));
+  assert.ok(source.includes("long EffectiveRequestLimit { get { return workerStartupRatline209?RatlineRequestLimit:workerStartupEmpty209?EasyedaWorkerStartupEmpty209Protocol.RequestLimit:RequestLimit; } }"));
   assert.ok(source.includes("public const int RequestLimit=3466;"));
   assert.ok(source.includes("public const long RequestLimit=365L;"));
   assert.ok(source.includes("public const long NormalRequestLimit=322L;"));
   assert.ok(source.includes("if (($StringPrecreate -and $WorkerStartup) -or ($Layers209 -and ($StringPrecreate -or $WorkerStartup)))"));
   assert.ok(source.includes("if ($WorkerStartupRatline209 -and ($StringPrecreate -or $WorkerStartup -or $Layers209 -or $WorkerStartup209 -or $WorkerStartupEmpty209))"));
-  assert.ok(source.includes("$startupRequestLimit=if ($WorkerStartupRatline209) {[EasyedaRatline209Limits]::RequestLimit} elseif ($WorkerStartupEmpty209) {[EasyedaWorkerStartupEmpty209Protocol]::RequestLimit} else {256}"));
+  assert.ok(source.includes("$startupRequestLimit=if ($WorkerStartupRatlineContinuation209) {[EasyedaRatlineContinuation209Limits]::RequestLimit} elseif ($WorkerStartupRatline209) {[EasyedaRatline209Limits]::RequestLimit} elseif ($WorkerStartupEmpty209) {[EasyedaWorkerStartupEmpty209Protocol]::RequestLimit} else {256}"));
   assert.ok(source.includes("$request.requestId -gt $startupRequestLimit) {throw 'pcb-diagnostic-startup-fields'}"));
-  assert.ok(source.includes('if((long)received+count>(workerStartupRatline209?EasyedaRatline209Limits.TotalByteLimit:workerStartupEmpty209?EasyedaWorkerStartupEmpty209Protocol.TotalByteLimit:64L*1024*1024)) throw Error("receive-budget")'));
+  assert.ok(source.includes('if((long)received+count>(workerStartupRatline209?RatlineTotalByteLimit:workerStartupEmpty209?EasyedaWorkerStartupEmpty209Protocol.TotalByteLimit:64L*1024*1024)) throw Error("receive-budget")'));
   assert.ok(source.includes("'snapshot' {$fields+=@('objectId','callbackObjectId')}"));
   assert.ok(source.includes("'pending' {$fields+=@('objectId','callbackObjectId','constructorObjectId','teardropObjectId')}"));
   assert.ok(source.includes("'raw-strings' {$fields+=@('objectId','callbackObjectId')}"));

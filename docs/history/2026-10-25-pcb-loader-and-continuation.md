@@ -176,3 +176,31 @@ artifacts in the 67 changed paths. Its receipt SHA256 is
 Full facade and bridge suites remain assigned to exact-commit GitHub CI before
 merge. Publication and installation are still pending; none of these local
 checks establishes connected execution of the new continuation.
+
+## First CI result and test integration corrections
+
+PR 127 head `69f2229a3b6d5d1800dac81829e4ea65010583d4` passed Windows run
+`40211784891` and the build job in Linux run `40211784935`. The Linux run
+finished with 12 failed tests. Eleven failures came from existing test fixtures
+missing the new lifecycle class or asserting the former native-limit selectors
+and capability wording. The corrections supply those fixture collaborators and
+check the new immutable selectors while preserving the held-mode limits. The
+44 affected existing tests pass in focused isolated runs, with clean type-aware
+lint. No production source, helper or bundle changed for these corrections.
+
+The remaining failure was `RATLINE_FIXTURE_SOCKET_CLOSED` in the real V8 PCB
+bootstrap fixture. Its unchanged focused run passed. The original CI log lacks
+enough context to identify the cause, so this is not classified as a production
+fix or a resolved timing problem. Bounded fixture-only failure diagnostics are
+being added without changing rejection, cleanup, deadlines or acceptance. The
+failed run and complete logs remain retained. The corrected commit still needs
+all required CI jobs before publication.
+
+The diagnostic update is now frozen. It records bounded pending method names,
+counts, child exit/signal, consumed teardown and pause/resume state without raw
+environment or application data. All nine tests in the affected V8 fixture file
+pass after that update; this does not explain the earlier socket closure. The
+complete failed-head review records 12,954 facade tests: 12,937 passed, 12
+failed and five expected platform skips. All 424 bridge tests passed. The
+failed-head review SHA256 is
+`3ebe4a185081fe224ac1f43c47e24255d6820bc8f7d37d471f0e6778e51b5abf`.

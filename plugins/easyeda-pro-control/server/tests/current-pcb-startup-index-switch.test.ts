@@ -1,4 +1,4 @@
-/* oxlint-disable eslint/max-classes-per-file -- The actual extracted index dispatcher selects between these four synthetic lifecycle classes. */
+/* oxlint-disable eslint/max-classes-per-file -- The actual extracted index dispatcher selects between these five synthetic lifecycle classes. */
 import assert from "node:assert/strict";
 import { readFile } from "node:fs/promises";
 import { resolve } from "node:path";
@@ -25,6 +25,7 @@ async function fixture(): Promise<Readonly<{ run: Run; owners: readonly Readonly
   }
   class Owner209 extends Owner {}
   class Empty209 extends Owner {}
+  class Continuation209 extends Owner {}
   class Ratline209 extends Owner {
     public observeWorkerStartupRatline(): Promise<Row> {
       assert.equal(this.hasActiveReservation(), true); return Promise.resolve({ synthetic: true, held: true });
@@ -34,7 +35,8 @@ async function fixture(): Promise<Readonly<{ run: Run; owners: readonly Readonly
   // The unmodified production index can capture and reprove its method graph.
   for (const name of ["captureWorkerStartup", "handoffWorkerStartup", "openWorkerStartup", "handoffStartup", "openStartup", "requireStartup",
     "observeWorkerStartupAssignments", "observeStartupAssignments", "requireStartupAssignments", "observeWorkerStartupActor", "observeStartupActor",
-    "observeWorkerStartupChannel", "observeStartupChannel", "observeWorkerStartupEmpty", "observeStartupEmpty", "prepareWorkerStartupEmpty", "prepareStartupEmpty", "observeWorkerStartupRatline", "observeStartupRatline"]) {
+    "observeWorkerStartupChannel", "observeStartupChannel", "observeWorkerStartupEmpty", "observeStartupEmpty", "prepareWorkerStartupEmpty", "prepareStartupEmpty", "observeWorkerStartupRatline", "observeStartupRatline",
+    "observeWorkerStartupRatlineContinuation", "observeStartupRatlineContinuation"]) {
     Object.defineProperty(Owner.prototype, name, { value: (): never => { throw new Error(`Unexpected synthetic operation ${name}`); } });
   }
   const bridgeGate = { run: <T>(work: () => Promise<T>): Promise<T> => {
@@ -50,7 +52,8 @@ async function fixture(): Promise<Readonly<{ run: Run; owners: readonly Readonly
   },
     assertDiagnosticLaunchOtherOperationsSettled: (): Promise<void> => Promise.resolve() };
   const data = { diagnostic209: true, CurrentPcbWorkerStartupLifecycle: Owner, CurrentPcb209WorkerStartupLifecycle: Owner209,
-    CurrentPcb209EmptyStartupLifecycle: Empty209, CurrentPcb209RatlineStartupLifecycle: Ratline209, engine, bridgeGate, upstream,
+    CurrentPcb209EmptyStartupLifecycle: Empty209, CurrentPcb209RatlineStartupLifecycle: Ratline209,
+    CurrentPcb209RatlineContinuationLifecycle: Continuation209, engine, bridgeGate, upstream,
     retainedControlRoot: Object.freeze({ path: "/synthetic-control" }), controlDataDirectory: (): string => "/synthetic-control", resolve,
     CURRENT_PCB_DIAGNOSTIC_PROFILE: Object.freeze({ powershell: { sha256: "a".repeat(64), bytes: 1 } }),
     windowsRuntime: undefined, ordinaryLaunchRuntime: undefined, currentDisposableOpenCoordinator: undefined,
