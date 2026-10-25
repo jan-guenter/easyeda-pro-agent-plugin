@@ -1,6 +1,7 @@
 /** Bounded classifications only: diagnostic status must never publish native
  * event payloads, exception values, source, URLs or user document identifiers. */
 import { types } from "node:util";
+import { z } from "zod";
 
 const eventMethods = Object.freeze(["Runtime.executionContextCreated", "Runtime.executionContextDestroyed", "Runtime.executionContextsCleared",
   "Runtime.consoleAPICalled", "Runtime.exceptionThrown", "Debugger.scriptParsed", "Debugger.scriptFailedToParse", "Debugger.paused", "Debugger.resumed",
@@ -73,6 +74,41 @@ const failureReasons = new Set([
     "ORIGINAL", "PENDING_ID", "PIPE_BYTES", "POLL_BOUND", "REPLY_BOUND", "REPLY_KIND", "REQUEST_ID_OR_PHASE",
     "REQUEST_LIMIT", "SOURCE_PROFILE", "SOURCE_SLOT", "STARTUP_EVENT_BOUND"
   ].map(code => `PCB209_RATLINE_BUDGET_${code}`),
+  ...[
+    "ABORTED", "ABORT_STATE", "ATTACHMENT", "BREAKPOINT_RELOCATED", "BUDGET", "CHILD_ARGUMENTS", "CHILD_ORDER",
+    "CHILD_OWNER", "CHILD_START_CONSUMED", "CHILD_START_FAILED", "CLEANUP", "CLEANUP_BUDGET", "CONSTRUCTOR_ARGUMENTS",
+    "CONSTRUCTOR_OBSERVATIONS", "CONSUMED", "CONTINUATION_CONSUMED", "CONTINUATION_DEADLINE", "CONTINUATION_FAILED",
+    "DEADLINE", "DUPLICATE_CHILD", "DUPLICATE_PAUSE", "EXISTING_CHILD", "EXTRA_PAUSE", "FAILED", "FAILED_OR_RELEASED",
+    "INVENTORY_CHANGED", "INVENTORY_CHILD", "INVENTORY_DELTA", "INVENTORY_DUPLICATE", "INVENTORY_PARENT", "ORIGINAL_CHILD",
+    "ORIGINAL_PACKET", "OWNER_CHANGED", "OWNER_LOST", "PARENT_NOT_HELD", "PAUSE_CAPTURE", "PAUSE_LOCATION", "PROFILE",
+    "RELEASE_STATE", "REMOVE", "SUBORDINATE_URL", "SUBSCRIPTION", "TRANSPORT", "UNEXPECTED_RESUME",
+    "UNRESOLVED_BREAKPOINTS",
+  ].map(code => `PCB209_RATLINE_CREATION_${code}`),
+  ...[
+    "ABORT_STATE", "BREAKPOINT_RELOCATED", "BRIDGE", "BUDGET", "CANVAS_DOCUMENT", "CLEANUP_BUDGET", "CONSUMED", "DEADLINE",
+    "DUPLICATE_PAUSE", "EVENT_CAPTURE", "EXTRA_PAUSE", "FACTORY_CALLER", "FAILED", "FAILED_OR_RELEASED", "FIXED_PROFILE",
+    "IDENTITY_CHANGED", "IDENTITY_MISSING", "INCOMPLETE", "NONEMPTY_WORK", "ORIGINAL_PACKET", "OWNER_CHANGED", "OWNER_LOST",
+    "PAUSE_DEADLINE", "PAUSE_LOCATION", "PAYLOAD", "RECEIVED_PAYLOAD", "RELEASE_STATE", "REMOVE", "SUBORDINATE_BRIDGE",
+    "SUBORDINATE_ID", "SUBSCRIPTION", "TERMINAL_PAUSE_CHANGED", "TERMINAL_PAYLOAD_CHANGED", "TRANSPORT",
+    "UNEXPECTED_RESUME", "UNRESOLVED_BREAKPOINTS", "WORKER_NAME", "WORKER_RETAINED",
+  ].map(code => `PCB209_RATLINE_CAPTURE_${code}`),
+  ...[
+    "ABORTED", "ALLOCATION_REALM", "CAPTURE_ATTACHMENT", "CONSTRUCTION_COMPARISON_CONSUMED", "CREATION_SUBSCRIBER",
+    "DEPENDENCY", "DUPLICATE_ALLOCATION", "DUPLICATE_PAUSE", "FAILED", "NOT_CURRENT", "ORIGINAL_OBJECTS", "OWNER_CHANGED",
+    "PAUSE_BREAKPOINT", "PAUSE_REALM", "PAUSE_SUBSCRIPTION", "RELEASED", "RELEASE_STATE", "REMOVAL_OWNER",
+    "REMOVED_BREAKPOINT", "RESUME_OWNER", "ROLE", "SOURCE_CONTINUATION_CONSUMED", "SOURCE_NOT_HELD", "STAGES_CHANGED",
+    "STAGES_CONSUMED", "STAGE_FAILED", "STAGE_METHOD", "STAGE_OVERRIDE", "STAGE_PROTOTYPE", "STREAM_LOST", "SUBSCRIPTION",
+    "SUBSCRIPTION_CHANGED", "SUBSCRIPTION_CONSUMED", "TERMINATED", "UNEXPECTED_RESUME", "UNKNOWN_BREAKPOINT",
+  ].map(code => `PCB209_RATLINE_DISPATCH_${code}`),
+  ...[
+    "ABORTED", "ARM_CONSUMED", "BOOTSTRAP_METHOD", "BOOTSTRAP_OWNER", "CHILD_HELD", "DEPENDENCY", "DEPENDENCY_CHANGED",
+    "FAILED", "NOT_CURRENT", "PARENT_SESSION", "REALM_COMMAND", "REALM_CONSUMED", "RELEASED", "ROLE", "STREAM_LOST",
+  ].map(code => `PCB209_RATLINE_CHILD_GATE_${code}`),
+  ...[
+    "ABORTED", "ABORT_STATE", "CAPTURE_CONSUMED", "CAPTURE_MISSING", "CLEANUP", "CONSUMED", "DEADLINE", "DEPENDENCY",
+    "FAILED", "NOT_CURRENT", "ORIGINAL_PACKET", "OWNER_CHANGED", "PROFILE", "RELEASE_STATE",
+  ].map(code => `PCB209_RATLINE_COMPOSITE_${code}`),
+  ...["CONSUMED", "DEADLINE", "DEPENDENCY", "ORIGINAL_OWNERS", "OWNER_CHANGED", "PARENT_BINDING"].map(code => `PCB209_RATLINE_ORIGIN_${code}`),
   "PCB209_RATLINE_NATIVE_SESSION_OWNER_DEADLINE", "PCB209_RATLINE_TRANSPORT_WINDOW_CONSUMED", "PCB209_RATLINE_BOOTSTRAP_SOURCE",
   "PCB209_RATLINE_PCB_BOOTSTRAP_SOURCE", "PCB_DIAGNOSTIC_CONTEXT_IDENTITY", "PCB_DIAGNOSTIC_CONTEXT_INVALIDATED",
 ]);
@@ -87,4 +123,50 @@ export function currentPcb209RatlineFailureReason(error: unknown): string {
   const descriptor = Object.getOwnPropertyDescriptor(error, "message");
   const value: unknown = descriptor !== undefined && Object.hasOwn(descriptor, "value") ? descriptor.value : null;
   return typeof value === "string" && failureReasons.has(value) ? value : "UNCLASSIFIED";
+}
+
+const diagnosticStage = z.enum(["ready", "arming", "creation", "constructor-before", "constructor-after", "child-inventory", "held-constructor",
+  "source-continuation", "capture-arming", "child-arming", "parent-continuation", "child-start", "capture", "comparison", "cleanup", "released"]);
+const diagnosticStep = z.enum(["idle", "owner-reproof", "native-request", "breakpoint-allocation", "pause-wait", "pause-validation",
+  "event-routing", "source-resume", "child-qualification", "cleanup", "settled"]);
+const diagnosticCommand = z.enum(["Target.getTargets", "Debugger.setBreakpoint", "Debugger.removeBreakpoint", "Debugger.resume",
+  "Runtime.runIfWaitingForDebugger", "Debugger.evaluateOnCallFrame", "Runtime.callFunctionOn"]);
+const diagnosticEvent = z.enum(["paused", "resumed", "attached", "lost"]);
+const diagnosticObservation = { stage: diagnosticStage, step: diagnosticStep, lastCommand: diagnosticCommand.nullable(), lastEvent: diagnosticEvent.nullable() };
+export const currentPcb209RatlineStageDiagnosticsSchema = z.object({ ...diagnosticObservation,
+  firstFailure: z.object({ ...diagnosticObservation, reason: z.enum([...failureReasons, "SCHEMA", "UNCLASSIFIED"]) }).strict().nullable() }).strict();
+const count = z.number().int().nonnegative();
+const creationDiagnostics = currentPcb209RatlineStageDiagnosticsSchema.extend({
+  consumed: z.boolean(), settled: z.boolean(), failed: z.boolean(), released: z.boolean(),
+  parentContinued: z.boolean(), childStartRequested: z.boolean(), parentPaused: z.boolean(),
+  retainedChildren: count.max(4), commands: count.max(32), uncertainBreakpoints: count.max(2), unresolvedBreakpoints: z.boolean(),
+});
+const captureDiagnostics = currentPcb209RatlineStageDiagnosticsSchema.extend({
+  role: z.enum(["pcb", "worker"]), consumed: z.boolean(), settled: z.boolean(), failed: z.boolean(), released: z.boolean(),
+  events: count.max(9), commands: count.max(128), paused: z.boolean(), unresolvedBreakpoints: z.boolean(),
+});
+const dispatcherDiagnostics = currentPcb209RatlineStageDiagnosticsSchema.extend({
+  role: z.enum(["pcb", "worker"]), failed: z.boolean(), released: z.boolean(), uncertainBreakpoints: count.max(11), retainedBreakpoints: count.max(11),
+  sourceContinuationConsumed: z.boolean(), sourceResumePending: z.boolean(), paused: z.boolean(), deferredPause: z.boolean(),
+});
+export const currentPcb209RatlineCompositeDiagnosticsSchema = currentPcb209RatlineStageDiagnosticsSchema.extend({
+  consumed: z.boolean(), settled: z.boolean(), failed: z.boolean(), released: z.boolean(),
+  sourceReleaseConsumed: z.boolean(), childInstrumentationConsumed: z.boolean(),
+  creation: creationDiagnostics, capture: captureDiagnostics, dispatcher: dispatcherDiagnostics,
+});
+/** Data-only state of an internal owner. Only closed enums and classified reasons
+ * can enter snapshots; cleanup preserves the first original failure unchanged. */
+export class CurrentPcb209RatlineStageDiagnostics {
+  public stage: z.infer<typeof diagnosticStage> = "ready";
+  public step: z.infer<typeof diagnosticStep> = "idle";
+  public lastCommand: z.infer<typeof diagnosticCommand> | null = null;
+  public lastEvent: z.infer<typeof diagnosticEvent> | null = null;
+  #failure: Readonly<NonNullable<z.infer<typeof currentPcb209RatlineStageDiagnosticsSchema>["firstFailure"]>> | null = null;
+  public record(error: unknown): void {
+    this.#failure ??= Object.freeze({ reason: currentPcb209RatlineFailureReason(error), stage: this.stage, step: this.step,
+      lastCommand: this.lastCommand, lastEvent: this.lastEvent });
+  }
+  public snapshot(): Readonly<z.infer<typeof currentPcb209RatlineStageDiagnosticsSchema>> {
+    return Object.freeze({ stage: this.stage, step: this.step, lastCommand: this.lastCommand, lastEvent: this.lastEvent, firstFailure: this.#failure });
+  }
 }

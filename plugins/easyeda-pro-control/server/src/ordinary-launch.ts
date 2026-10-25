@@ -48,6 +48,8 @@ export const ordinaryLaunchRequestSchema = z.discriminatedUnion("action", [
   z.object({ action: z.literal("inspect"), operationId: operationIdSchema }).strict(),
   z.object({ action: z.literal("observe-application"), operationId: operationIdSchema }).strict(),
   z.object({ action: z.literal("observe-termination"), operationId: operationIdSchema }).strict(),
+  z.object({ action: z.literal("release-closed"), operationId: operationIdSchema, expectedLaunchedSha256: digestSchema,
+    expectedTerminationSha256: digestSchema, confirmReleaseClosed: z.literal(true) }).strict(),
   z.object({ action: z.literal("observe-window"), operationId: operationIdSchema, expectedLaunchedSha256: digestSchema }).strict(),
   z.object({ action: z.literal("normal-close"), operationId: operationIdSchema, expectedLaunchedSha256: digestSchema,
     hwnd: windowHandleSchema, confirmNormalClose: z.literal(true) }).strict(),
@@ -71,6 +73,7 @@ const limitations = [
   "Unknown-launch abandonment requires a reviewed helper-before-intent protocol, the exact intent digest, a fresh coordinator without an allocated runtime, explicit acceptance of unobserved descendants, and two native samples with no other PowerShell process and no same-name application. The separate read-only helper excludes a delayed launch from the old helper; it does not determine whether launch previously occurred or prove descendant termination. Other PowerShell sessions conservatively block recovery. No process is adopted, closed or killed, and no design gate changes.",
   "Window observation requires the original retained launch and exact launch receipt digest. It exposes only a unique eligible root-owned application HWND, or unavailable/ambiguous status. An observation is not a persistent close permission and cannot adopt a historical process.",
   "Confirmed normal close reobserves that HWND, durably consumes one close intent for the original launch, then requests WM_CLOSE once. Missing acknowledgment or timeout never permits another close. No focus, keyboard, forced termination or Save/Discard choice is dispatched. The application may write data or display a prompt; acknowledgment proves neither termination nor saved contents. Inspect and retained termination observation remain available after close uncertainty, subject to unchanged quarantine gates.",
+  "release-closed is a separate confirmed action for the current original ordinary owner after its own recorded root/Job termination. It binds the observed launch and termination digests, consumes one durable release intent and awaits original helper transport closure before releasing matching runtime allocations. Project, writer and allocated diagnostic owners refuse. Failure or lost acknowledgment retains allocation and consumes the attempt; historical JSON cannot release or reconstruct authority. Termination observation alone does not release the helper or its proof issuer.",
   "Launch phase timings are passive diagnostics retained for the first 32 distinct launch requests in this coordinator. Successful launch results and local inspect can expose them after a failure; they are unavailable after a host restart and never authorize execution or retry. Repeated requests do not overwrite the original timings.",
 ] as const;
 const claims = { bridgeAuthentication: "not-observed", startPage: "not-observed", profileIsolated: false,
@@ -78,7 +81,7 @@ const claims = { bridgeAuthentication: "not-observed", startPage: "not-observed"
 
 export function queryOrdinaryLaunch(input: unknown = {}): Record<string, unknown> {
   const parsed = z.object({ includeSchemas: z.boolean().optional() }).strict().parse(input);
-  return { tool: "easyeda_control_launch", actions: ["launch", "inspect", "observe-application", "observe-termination", "observe-window", "normal-close", "abandon-supervision", "abandon-unknown-launch"],
+  return { tool: "easyeda_control_launch", actions: ["launch", "inspect", "observe-application", "observe-termination", "release-closed", "observe-window", "normal-close", "abandon-supervision", "abandon-unknown-launch"],
     effect: "ordinary-existing-profile-application-startup", profile: configuredLaunchProfile(),
     limitations, ...(parsed.includeSchemas === true ? { requestSchema: z.toJSONSchema(ordinaryLaunchRequestSchema) } : {}) };
 }
@@ -96,6 +99,7 @@ export interface OrdinaryLaunchRuntime {
   readonly observeApplicationWindow?: () => Promise<{ jobId: string; helperInstance: string;
     outcome: "available" | "unavailable" | "ambiguous"; hwnd: string | null }>;
   readonly normalClose?: (hwnd: string) => Promise<void>;
+  readonly release?: () => Promise<void>;
 }
 export interface OrdinaryLaunchOptions {
   readonly assetsRoot: string;
@@ -106,6 +110,9 @@ export interface OrdinaryLaunchOptions {
    */
   readonly assertLocalAllowed?: () => void;
   readonly allocateRuntime: (input: { expectedExecutableSha256: string; expectedHelperSha256: string; reviewedExecutionScopeSha256: string }) => OrdinaryLaunchRuntime;
+  /** Registered allocation owners only; neither callback is caller-supplied. */
+  readonly assertReleaseAllowed?: (runtime: OrdinaryLaunchRuntime) => void;
+  readonly completeRuntimeRelease?: (runtime: OrdinaryLaunchRuntime) => void;
 }
 /** Internal offline-test seam, never a tool argument or runtime profile override. */
 export interface OrdinaryLaunchDependencies {
@@ -148,6 +155,11 @@ const closeIntentSchema = z.object({ schema: z.literal("easyeda-pro-control.ordi
   confirmNormalClose: z.literal(true) }).strict();
 const closeAcknowledgmentSchema = z.object({ schema: z.literal("easyeda-pro-control.ordinary-normal-close-acknowledged.v1"), operationId: operationIdSchema,
   closeIntentSha256: digestSchema, requestAcknowledged: z.literal(true), terminationProved: z.literal(false) }).strict();
+const releaseIntentSchema = z.object({ schema: z.literal("easyeda-pro-control.ordinary-release-intent.v1"), operationId: operationIdSchema,
+  intentSha256: digestSchema, launchedSha256: digestSchema, terminationSha256: digestSchema, profileSha256: digestSchema, facadeSha256: digestSchema,
+  jobId: tokenSchema, helperInstance: tokenSchema, createdAt: z.iso.datetime(), confirmReleaseClosed: z.literal(true) }).strict();
+const releasedSchema = z.object({ schema: z.literal("easyeda-pro-control.ordinary-released.v1"), operationId: operationIdSchema,
+  releaseIntentSha256: digestSchema, helperTransportClosed: z.literal(true) }).strict();
 const windowObservationSchema = z.object({ jobId: tokenSchema, helperInstance: tokenSchema,
   outcome: z.enum(["available", "unavailable", "ambiguous"]), hwnd: windowHandleSchema.nullable() }).strict()
   .refine((value) => (value.outcome === "available") === (value.hwnd !== null), "Window outcome and HWND disagree.");
@@ -159,6 +171,8 @@ type Abandoned = z.infer<typeof abandonedSchema>;
 type UnknownAbandoned = z.infer<typeof unknownAbandonedSchema>;
 type CloseIntent = z.infer<typeof closeIntentSchema>;
 type CloseAcknowledgment = z.infer<typeof closeAcknowledgmentSchema>;
+type ReleaseIntent = z.infer<typeof releaseIntentSchema>;
+type Released = z.infer<typeof releasedSchema>;
 interface Operation {
   readonly operationId: string;
   readonly intent?: Intent;
@@ -169,6 +183,8 @@ interface Operation {
   readonly unknownAbandoned?: UnknownAbandoned;
   readonly closeIntent?: CloseIntent;
   readonly closeAcknowledgment?: CloseAcknowledgment;
+  readonly releaseIntent?: ReleaseIntent;
+  readonly released?: Released;
 }
 interface RetainedLaunch {
   readonly operationId: string;
@@ -176,6 +192,7 @@ interface RetainedLaunch {
   readonly launched: Launched;
   readonly observeTermination: OrdinaryLaunchRuntime["observeLaunchTermination"];
   readonly status: WindowsControlRuntime["status"] | undefined;
+  readonly release: OrdinaryLaunchRuntime["release"];
 }
 export interface OriginalRecordedOrdinaryTermination {
   readonly profile: "private.original-recorded-ordinary-termination.v1";
@@ -350,13 +367,14 @@ async function inventory(): Promise<Operation[]> {
       requireValue(entry.isDirectory() && operationIdSchema.safeParse(entry.name).success, "Ordinary launch inventory contains an unknown entry.");
       const slot = await root.openDirectory(join(parent.absolute, entry.name), false);
       try {
-        const records = await boundedEntries(slot, 8);
-        requireValue(records.every((record) => record.isFile() && ["intent.json", "launched.json", "terminated.json", "not-dispatched.json", "abandonment.json", "unknown-abandonment.json", "close-intent.json", "close-acknowledged.json"].includes(record.name)), "Ordinary launch journal contains unknown records.");
+        const records = await boundedEntries(slot, 10);
+        requireValue(records.every((record) => record.isFile() && ["intent.json", "launched.json", "terminated.json", "not-dispatched.json", "abandonment.json", "unknown-abandonment.json", "close-intent.json", "close-acknowledged.json", "release-intent.json", "released.json"].includes(record.name)), "Ordinary launch journal contains unknown records.");
         const intentRaw = await readRecord(slot, "intent.json"), launchedRaw = await readRecord(slot, "launched.json"), terminatedRaw = await readRecord(slot, "terminated.json");
         const refusedRaw = await readRecord(slot, "not-dispatched.json");
         const abandonedRaw = await readRecord(slot, "abandonment.json");
         const unknownAbandonedRaw = await readRecord(slot, "unknown-abandonment.json");
         const closeAcknowledgmentRaw = await readRecord(slot, "close-acknowledged.json"), closeIntentRaw = await readRecord(slot, "close-intent.json");
+        const releaseIntentRaw = await readRecord(slot, "release-intent.json"), releasedRaw = await readRecord(slot, "released.json");
         const intent = intentRaw === null ? undefined : intentSchema.parse(intentRaw);
         const launched = launchedRaw === null ? undefined : launchedSchema.parse(launchedRaw);
         const terminated = terminatedRaw === null ? undefined : terminatedSchema.parse(terminatedRaw);
@@ -365,6 +383,8 @@ async function inventory(): Promise<Operation[]> {
         const unknownAbandoned = unknownAbandonedRaw === null ? undefined : unknownAbandonedSchema.parse(unknownAbandonedRaw);
         const closeIntent = closeIntentRaw === null ? undefined : closeIntentSchema.parse(closeIntentRaw);
         const closeAcknowledgment = closeAcknowledgmentRaw === null ? undefined : closeAcknowledgmentSchema.parse(closeAcknowledgmentRaw);
+        const releaseIntent = releaseIntentRaw === null ? undefined : releaseIntentSchema.parse(releaseIntentRaw);
+        const released = releasedRaw === null ? undefined : releasedSchema.parse(releasedRaw);
         requireValue(intent === undefined || intent.operationId === entry.name, "Ordinary launch intent ID differs.");
         requireValue(launched === undefined || intent !== undefined && launched.operationId === entry.name && launched.intentSha256 === sha256Json(intent), "Ordinary launch result is unbound.");
         requireValue(terminated === undefined || launched !== undefined && terminated.operationId === entry.name && terminated.launchedSha256 === sha256Json(launched) &&
@@ -387,10 +407,19 @@ async function inventory(): Promise<Operation[]> {
           closeIntent.helperInstance === launched.launch.helperInstance, "Ordinary normal-close intent is unbound.");
         requireValue(closeAcknowledgment === undefined || closeIntent !== undefined && closeAcknowledgment.operationId === entry.name &&
           closeAcknowledgment.closeIntentSha256 === sha256Json(closeIntent), "Ordinary normal-close acknowledgment is unbound.");
+        requireValue(releaseIntent === undefined || intent !== undefined && launched !== undefined && terminated !== undefined &&
+          releaseIntent.operationId === entry.name && releaseIntent.intentSha256 === sha256Json(intent) &&
+          releaseIntent.launchedSha256 === sha256Json(launched) && releaseIntent.terminationSha256 === sha256Json(terminated) &&
+          releaseIntent.profileSha256 === intent.profileSha256 && releaseIntent.facadeSha256 === intent.facadeSha256 &&
+          releaseIntent.jobId === launched.launch.jobId && releaseIntent.helperInstance === launched.launch.helperInstance,
+        "Ordinary release intent is unbound or lacks original termination.");
+        requireValue(released === undefined || releaseIntent !== undefined && released.operationId === entry.name &&
+          released.releaseIntentSha256 === sha256Json(releaseIntent), "Ordinary release completion is unbound.");
         operations.push({ operationId: entry.name, ...(intent === undefined ? {} : { intent }), ...(launched === undefined ? {} : { launched }),
           ...(terminated === undefined ? {} : { terminated }), ...(refused === undefined ? {} : { refused }),
           ...(abandoned === undefined ? {} : { abandoned }), ...(closeIntent === undefined ? {} : { closeIntent }),
           ...(unknownAbandoned === undefined ? {} : { unknownAbandoned }),
+          ...(releaseIntent === undefined ? {} : { releaseIntent }), ...(released === undefined ? {} : { released }),
           ...(closeAcknowledgment === undefined ? {} : { closeAcknowledgment }) });
       } finally { await slot.handle.close(); }
     }
@@ -414,12 +443,15 @@ function describe(operationId: string, operation?: Operation): Record<string, un
     if (operation.refused !== undefined) { state = "not-dispatched"; }
     if (operation.abandoned !== undefined) { state = "supervision-abandoned"; }
     if (operation.unknownAbandoned !== undefined) { state = "unknown-launch-abandoned"; }
+    if (operation.released !== undefined) { state = "released"; }
   }
   return { operationId, state, attemptConsumed: operation !== undefined, ...claims, limitations,
   ...(operation?.intent === undefined ? {} : { intentSha256: sha256Json(operation.intent),
     helperBeforeIntentProtocol: describeLaunchProtocol(operation.intent) }),
   ...(operation?.launched === undefined ? {} : { launch: operation.launched.launch, launchedSha256: sha256Json(operation.launched) }),
-  ...(operation?.terminated === undefined ? {} : { termination: operation.terminated }),
+  ...(operation?.terminated === undefined ? {} : { termination: operation.terminated, terminationSha256: sha256Json(operation.terminated) }),
+  ...(operation?.releaseIntent === undefined ? {} : { release: { attemptConsumed: true, intent: operation.releaseIntent,
+    helperTransportClosed: operation.released !== undefined, ...(operation.released === undefined ? {} : { completion: operation.released }) } }),
   ...(operation?.closeIntent === undefined ? {} : { normalClose: { attemptConsumed: true, intent: operation.closeIntent,
     requestAcknowledged: operation.closeAcknowledgment !== undefined, terminationProved: operation.terminated !== undefined,
     ...(operation.closeAcknowledgment === undefined ? {} : { acknowledgment: operation.closeAcknowledgment }) } }),
@@ -430,6 +462,7 @@ function describe(operationId: string, operation?: Operation): Record<string, un
 }
 // Relinquishment permits a new ordinary startup, but never counts as termination.
 function allowsNextLaunch(operation: Operation): boolean {
+  if (operation.releaseIntent !== undefined && operation.released === undefined) { return false; }
   return operation.terminated !== undefined || operation.refused !== undefined || operation.abandoned !== undefined || operation.unknownAbandoned !== undefined;
 }
 
@@ -453,6 +486,7 @@ export class OrdinaryLaunchCoordinator {
   private runtime: OrdinaryLaunchRuntime | undefined;
   private retained: RetainedLaunch | undefined;
   private readonly closeAttempts = new Set<string>();
+  private readonly releaseAttempts = new Set<string>();
   private readonly launchTimings = new Map<string, OrdinaryLaunchTimings>();
   private busy = false;
   private uncertain = false;
@@ -503,6 +537,8 @@ export class OrdinaryLaunchCoordinator {
           ...(this.closeAttempts.has(request.operationId) && operation?.closeIntent === undefined ? {
             normalClose: { attemptConsumed: true, requestAcknowledged: false, intentPublicationUncertain: true,
               terminationProved: operation?.terminated !== undefined },
+          } : {}), ...(this.releaseAttempts.has(request.operationId) && operation?.releaseIntent === undefined ? {
+            release: { attemptConsumed: true, helperTransportClosed: false, intentPublicationUncertain: true },
           } : {}) };
       }
       await measure("admission-initial", () => this.options.assertAllowed());
@@ -511,6 +547,7 @@ export class OrdinaryLaunchCoordinator {
       if (request.action === "observe-termination") {
         const result = await this.observe(request.operationId, operation); terminationCompleted = true; return result;
       }
+      if (request.action === "release-closed") { return await this.releaseClosed(request, operation, operations); }
       if (request.action === "observe-window") {
         const observed = await this.readWindow(request, operation, operations);
         return { action: request.action, operationId: request.operationId, launchedSha256: request.expectedLaunchedSha256,
@@ -533,13 +570,14 @@ export class OrdinaryLaunchCoordinator {
       const runtime = this.runtime;
       const launchRuntime = runtime.launch;
       const observeTermination = runtime.observeLaunchTermination;
+      const release = runtime.release;
       // oxlint-disable-next-line typescript/unbound-method -- Retain identity; later calls use the original runtime receiver.
       const runtimeStatus = runtime instanceof WindowsControlRuntime ? runtime.status : undefined;
       const assertCurrentLaunch = (): void => {
         this.assertProfileCurrent();
         this.options.assertLocalAllowed?.();
         this.assertProfileCurrent();
-        requireValue(this.runtime === runtime && runtime.launch === launchRuntime && runtime.observeLaunchTermination === observeTermination &&
+        requireValue(this.runtime === runtime && runtime.launch === launchRuntime && runtime.observeLaunchTermination === observeTermination && runtime.release === release &&
           (runtimeStatus === undefined || runtime instanceof WindowsControlRuntime && runtime.status === runtimeStatus),
           "Ordinary launch retained runtime or launch method changed before dispatch.");
       };
@@ -568,7 +606,8 @@ export class OrdinaryLaunchCoordinator {
       const current = await measure("inventory-before-dispatch", inventory);
       requireValue(current.length === operations.length + 1 && current.every((candidate) => candidate.operationId === request.operationId ?
         canonicalJson(candidate.intent) === canonicalJson(intent) && candidate.launched === undefined && candidate.terminated === undefined && candidate.refused === undefined &&
-          candidate.abandoned === undefined && candidate.unknownAbandoned === undefined && candidate.closeIntent === undefined && candidate.closeAcknowledgment === undefined : allowsNextLaunch(candidate)),
+          candidate.abandoned === undefined && candidate.unknownAbandoned === undefined && candidate.closeIntent === undefined && candidate.closeAcknowledgment === undefined &&
+          candidate.releaseIntent === undefined && candidate.released === undefined : allowsNextLaunch(candidate)),
       "Ordinary launch intent or inventory changed before dispatch.");
       requireValue(await measure("installation-before-dispatch", () => this.verify(this.options)) === facadeSha256, "Ordinary launch installation changed before dispatch.");
       await measure("admission-before-dispatch", () => this.options.assertAllowed());
@@ -581,7 +620,7 @@ export class OrdinaryLaunchCoordinator {
       const launchCall = (): Promise<WindowsAuthorityLaunch> => launchRuntime.call(runtime);
       const launch = launchSchema.parse(await (timings === undefined ? launchCall() : timings.measure("launch-dispatch", launchCall)));
       const launched: Launched = { schema: "easyeda-pro-control.ordinary-launched.v1", operationId: request.operationId, intentSha256: sha256Json(intent), launch };
-      this.retained = { operationId: request.operationId, launch, launched, observeTermination, status: runtimeStatus };
+      this.retained = { operationId: request.operationId, launch, launched, observeTermination, status: runtimeStatus, release };
       const publishLaunch = (): Promise<void> => publish(request.operationId, "launched.json", launched);
       await (timings === undefined ? publishLaunch() : timings.measure("launched-publication", publishLaunch));
       this.uncertain = false;
@@ -609,6 +648,70 @@ export class OrdinaryLaunchCoordinator {
   private timingSummary(operationId: string): Readonly<Record<string, unknown>> {
     const timings = this.launchTimings.get(operationId);
     return timings === undefined ? {} : { launchTimings: timings.snapshot() };
+  }
+
+  private async releaseClosed(request: Extract<OrdinaryLaunchRequest, { action: "release-closed" }>, operation: Operation | undefined,
+    operations: Operation[]): Promise<Record<string, unknown>> {
+    requireValue(!this.releaseAttempts.has(request.operationId) && operation?.releaseIntent === undefined,
+      "Ordinary release attempt is consumed; do not repeat release.");
+    requireValue(operation?.intent !== undefined && operation.launched !== undefined && operation.terminated !== undefined,
+      "Ordinary release requires a successful launch and recorded original root/Job termination.");
+    const retained = this.retained, runtime = this.runtime;
+    requireValue(this.productionServices && runtime instanceof WindowsControlRuntime && retained !== undefined &&
+      retained.operationId === request.operationId && canonicalJson(operation.launched) === canonicalJson(retained.launched),
+    "Ordinary release requires its current original coordinator and runtime.");
+    const original = recordedTerminations.get(runtime), release = retained.release, status = retained.status;
+    const allowed = this.options.assertReleaseAllowed, complete = this.options.completeRuntimeRelease;
+    requireValue(original !== undefined && release !== undefined && status !== undefined && allowed !== undefined && complete !== undefined,
+      "Ordinary release has no original termination issuer or allocation owner.");
+    requireValue(request.expectedLaunchedSha256 === sha256Json(operation.launched) &&
+      request.expectedTerminationSha256 === sha256Json(operation.terminated) && original.value.launchedSha256 === request.expectedLaunchedSha256 &&
+      original.operationText === canonicalJson(operation) && original.launchText === canonicalJson(retained.launch),
+    "Ordinary release launch, termination or original journal binding differs.");
+    const current = (closed = false): void => {
+      this.assertProfileCurrent(); this.options.assertLocalAllowed?.();
+      requireValue(this.runtime === runtime && this.retained === retained && recordedTerminations.get(runtime) === original &&
+        runtime.release === release && runtime.status === status && runtime.observeLaunchTermination === retained.observeTermination &&
+        this.options.assertReleaseAllowed === allowed && this.options.completeRuntimeRelease === complete &&
+        canonicalJson(retained.launched) === canonicalJson(operation.launched) && canonicalJson(retained.launch) === original.launchText,
+      "Ordinary release retained owner or method changed.");
+      allowed(runtime);
+      const snapshot = status.call(runtime);
+      requireValue(closed ? snapshot.state === "released" && snapshot.launch === null :
+        snapshot.state === "owned" && canonicalJson(snapshot.launch) === original.launchText,
+      "Ordinary release original runtime state differs.");
+    };
+    current();
+    const facadeSha256 = digestSchema.parse(await this.verify(this.options)); current();
+    requireValue(facadeSha256 === operation.intent.facadeSha256 && operation.intent.profileSha256 === sha256Json(this.profile),
+      "Ordinary release installation differs from its original launch.");
+    await this.checked(() => hashPinnedFile(original.value.recordPath, original.value.recordSha256, original.value.recordBytes)); current();
+    requireValue(canonicalJson(await this.checked(inventory)) === canonicalJson(operations), "Ordinary release journal changed."); current();
+    await this.options.assertAllowed(); current();
+    const releaseIntent: ReleaseIntent = { schema: "easyeda-pro-control.ordinary-release-intent.v1", operationId: request.operationId,
+      intentSha256: sha256Json(operation.intent), launchedSha256: request.expectedLaunchedSha256, terminationSha256: request.expectedTerminationSha256,
+      profileSha256: operation.intent.profileSha256, facadeSha256, jobId: retained.launch.jobId, helperInstance: retained.launch.helperInstance,
+      createdAt: new Date().toISOString(), confirmReleaseClosed: true };
+    this.releaseAttempts.add(request.operationId); this.uncertain = true;
+    await this.checked(() => publish(request.operationId, "release-intent.json", releaseIntent)); current();
+    const expected = operations.map(candidate => candidate.operationId === request.operationId ? { ...candidate, releaseIntent } : candidate);
+    requireValue(canonicalJson(await this.checked(inventory)) === canonicalJson(expected), "Ordinary release intent or inventory changed."); current();
+    requireValue(await this.verify(this.options) === facadeSha256, "Ordinary release installation changed before dispatch."); current();
+    await this.options.assertAllowed(); current();
+    // WindowsControlRuntime.release awaits the original supervisor transport's
+    // Child-close promise. A rejected or pending release never clears index ownership.
+    await this.checked(() => release.call(runtime)); current(true);
+    const released: Released = { schema: "easyeda-pro-control.ordinary-released.v1", operationId: request.operationId,
+      releaseIntentSha256: sha256Json(releaseIntent), helperTransportClosed: true };
+    await this.checked(() => publish(request.operationId, "released.json", released)); current(true);
+    const final: Operation[] = [];
+    for (const candidate of expected) { final.push(candidate.operationId === request.operationId ? { ...candidate, released } : candidate); }
+    requireValue(canonicalJson(await this.checked(inventory)) === canonicalJson(final), "Ordinary release completion or inventory changed."); current(true);
+    // No await separates the matching index allocation check/clear and local
+    // Retirement. The existing termination issuer is never called or reissued.
+    complete(runtime);
+    recordedTerminations.delete(runtime); this.runtime = undefined; this.retained = undefined; this.uncertain = false;
+    return { ...describe(request.operationId, { ...operation, releaseIntent, released }), action: "release-closed", indexAllocationReleased: true };
   }
 
   private async readWindow(request: { readonly operationId: string; readonly expectedLaunchedSha256: string },

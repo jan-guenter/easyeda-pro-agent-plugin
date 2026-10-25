@@ -23,11 +23,21 @@ void test("ordinary launcher registration keeps quarantine and exact shared runt
   }
   // oxlint-disable-next-line typescript/no-extraneous-class -- The real callback uses new; this constructor double records identity without acquiring a native resource.
   class Runtime { public constructor(input: unknown) { runtimeOptions.push(input); } }
+  class Diagnostic {
+    private readonly unused = false;
+    public hasActiveReservation(): boolean { return this.unused; }
+    public hasAttemptedNativeOwnerAllocation(): boolean { return this.unused; }
+  }
   const environment = { EASYEDA_ASSETS_ROOT: "/mnt/d/Apps/EasyEDA/resources/app/assets" };
   const scope = vm.createContext({ z, ordinaryLaunchRequestSchema, OrdinaryLaunchCoordinator: Coordinator, WindowsControlRuntime: Runtime,
+    CurrentPcbDiagnosticLifecycle: Diagnostic,
+    disposableOwnerMethod: (owner: object, key: string): unknown => Reflect.get(owner, key) as unknown,
     process: { env: environment }, resolve: (): string => "/synthetic/plugin", upstream: {},
     ordinaryLaunchCoordinator: undefined, ordinaryLaunchRuntime: undefined, windowsRuntime: undefined,
     closedSymbolIndexReservation: undefined, scheduledShutdown: undefined,
+    currentDisposableOpenCoordinator: undefined, currentPcbRenameOperationCoordinator: undefined, currentSchematicRenameOperationCoordinator: undefined,
+    currentPcbDiagnosticLifecycle: undefined, currentPcbStringPrecreateLifecycle: undefined, currentPcbWorkerStartupLifecycle: undefined,
+    closedSymbolUnreservedFailure: { observed: false },
     assertOrdinaryRuntimeAllocationAllowed: (): void => { checks += 1; },
     engine: { assertBridgeDispatchAllowed: async (): Promise<void> => {
       quarantineChecks += 1;
@@ -70,13 +80,14 @@ void test("ordinary launcher registration keeps quarantine and exact shared runt
     { action: "launch", operationId: "fixture", confirmLaunch: true, acceptExistingProfileEffects: true },
     { action: "observe-application", operationId: "fixture" },
     { action: "observe-termination", operationId: "fixture" },
+    { action: "release-closed", operationId: "fixture", expectedLaunchedSha256: digest, expectedTerminationSha256: digest, confirmReleaseClosed: true },
     { action: "observe-window", operationId: "fixture", expectedLaunchedSha256: digest },
     { action: "normal-close", operationId: "fixture", expectedLaunchedSha256: digest, hwnd: "1234", confirmNormalClose: true },
     { action: "abandon-supervision", operationId: "fixture", expectedLaunchedSha256: digest, confirmAbandonSupervision: true, acceptUnobservedDescendants: true },
     { action: "abandon-unknown-launch", operationId: "fixture", expectedIntentSha256: digest, confirmAbandonUnknownLaunch: true, acceptUnobservedDescendants: true },
   ];
   for (const request of guardedRequests) { await assert.rejects(invoke({ request }), /quarantine/u); }
-  assert.equal(quarantineChecks, 7); assert.equal(runtimeOptions.length, 0);
+  assert.equal(quarantineChecks, 8); assert.equal(runtimeOptions.length, 0);
   quarantine = false;
   await invoke({ request: { action: "inspect", operationId: "fixture" } });
   assert.ok(options);

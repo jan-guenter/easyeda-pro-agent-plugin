@@ -48,7 +48,7 @@ function runtime(options: { initial?: ExpectedFingerprint; final?: ExpectedFinge
     upstream: { callTool: async (name, args, timeoutMs) => {
       calls.push(name); assert.equal(name, "easyeda_execute"); assert.ok(args);
       assert.equal(args["confirmWrite"], true); assert.equal(args["timeoutMs"], 60_000); assert.equal(timeoutMs, 70_000);
-      assert.match(String(args["code"]), /owner=(?:edaOwner\.sys_Window|data\(edaOwner,"sys_Window"\))/u);
+      assert.match(String(args["code"]), /owner=(?:edaOwner\.sys_Window|data\(edaOwner,"(?:sys_Window|sys_I18n)"\))/u);
       await options.beforeReply?.();
       return options.reply ?? encoded(payload);
     } },
@@ -87,6 +87,19 @@ void test("UI-backed public readers refuse unqualified UI before invoking a publ
   const fixture = runtime({ initial: ui.expected, reply: encoded(themePayload) });
   await assert.rejects(readSdkPublicReaders(fixture.engine, themeRequest, ui.expected), /UI implementation differs/u);
   assert.deepEqual(fixture.calls, ["guard", "status"]);
+});
+
+void test("SDK-resolved language uses UI admission and preserves fallback limits through transport", async (context) => {
+  const languageRequest = { method: "eda.sys_I18n.getCurrentLanguage", arguments: {} }, ui = await uiFixture(fingerprint());
+  const fixture = runtime({ initial: ui.expected, reply: encoded({ ok: true, kind: "sdk-public-readers", method: languageRequest.method, value: "en" }) });
+  substituteSyntheticUiDigests(context, ui.substitutions, fixture.calls);
+  const value = await readSdkPublicReaders(fixture.engine, languageRequest, ui.expected);
+  assert.equal(value["value"], "en"); assert.equal(value["fallbackPossible"], true);
+  assert.equal(value["providerSuccessVerified"], false); assert.equal(value["cachedMessageBusIdentityVerified"], false);
+  assert.equal(fixture.calls.filter((call) => call === "easyeda_execute").length, 1);
+  assert.equal(fixture.calls.filter((call) => call === "ui-file-hash").length, 6);
+  assert.deepEqual(value["runtimeAdmission"], { profile: SDK_PUBLIC_READERS_209_UI_RUNTIME_PROFILE.schema, fingerprintSha256: sha256Json(ui.expected),
+    uiImplementation: EDITOR_OBSERVATION_209_UI, beforeAndAfterChecked: true, scope: "fixed-sdk-resolved-language-with-fallback", liveValidation: "not-recorded" });
 });
 
 void test("UI-backed public readers reject any UI or selector change after dispatch without retry", async (context) => {

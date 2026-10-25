@@ -13,7 +13,11 @@ On API0.3.59/UI3.2.198, `getCurrentTheme`, `getFrontendDataUnit` and
 an existing active-theme field, the global toolbar unit store and a fixed UUID,
 respectively. They do not resolve a document. This qualifies only those getter
 closures; neighboring library and unit methods can have different effects.
-`getCurrentLanguage` uses a different bus path and is not admitted by that review.
+`getCurrentLanguage` uses a separately reviewed legacy bus path. Its public
+result is an SDK-resolved language, including a fallback when the provider
+returns an unknown or missing value. Keep `fallbackPossible:true`,
+`providerSuccessVerified:false` and `cachedMessageBusIdentityVerified:false`;
+the result does not prove the raw UI preference or provider success.
 
 Pin the API, UI and both module selectors. Retain the extension instance,
 namespace, complete method prototype chain, editor frame/document, UI and host
@@ -21,6 +25,12 @@ objects and shared RPC receiver around each await. Read method data descriptors
 without invoking accessors. A replacement getter can return the same function
 while adding effects, so value equality alone cannot validate an unchanged
 method. Preserve the real receiver when calling the captured public method.
+
+The language reader separately retains the legacy bus association between the
+editor root and host. Its API-private cached bus cannot be inspected directly;
+do not claim that checking the visible association proves the private cache.
+The legacy RPC keeps its own 300-second timeout bookkeeping. An earlier
+outer deadline or successful reply does not cancel that bookkeeping.
 
 The pinned MessageBus2 `rpcCall` defaults to zero timeout. An outer transport
 timeout does not stop its promise or a generated program from making a later

@@ -525,6 +525,9 @@ class CurrentPcbLifecycleCore {
   }
 
   public hasActiveReservation(): boolean { return this.#lease !== null; }
+  /** Monotonic across cleanup: allocationInvoked is set before the sole native
+   * Factory call, including a throw, and the consumed attempt is never reset. */
+  public hasAttemptedNativeOwnerAllocation(): boolean { return this.#attempt?.allocationInvoked === true; }
 
   /** Transfer the original live capability only after its intent is durable.
    * A failed transfer or publication remains consumed and retains cleanup.

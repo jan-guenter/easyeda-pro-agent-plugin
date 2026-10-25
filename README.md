@@ -27,11 +27,18 @@ angles do not establish full-circle rendering, and Poured contours prove neither
 fresh copper nor fabrication geometry. Arc/Poured passed a live empty-collection
 case; populated shapes still need connected validation.
 Catalog queries require explicit network confirmation and run without the
-application; they are not SDK execution. [Netlist comparison](plugins/easyeda-pro-control/skills/easyeda-pro-control/references/current-netlist-files.md)
+application; they are not SDK execution. Footprint-name and LCSC-code lookups
+verify each returned candidate through its vendor metadata, within one bounded
+request budget. [Netlist comparison](plugins/easyeda-pro-control/skills/easyeda-pro-control/references/current-netlist-files.md)
 prepares managed Allegro files locally, then uses the authenticated app to compare
 footprint/designator and net/pin memberships. It does not compare component values
 or export a design. [UI utility readers](plugins/easyeda-pro-control/skills/easyeda-pro-control/references/current-utility-readers.md#language-and-api-page-viewport-readers)
-include resolved theme, global toolbar units and the fixed system-library UUID.
+include resolved theme, global toolbar units, the fixed system-library UUID and
+SDK-resolved language. The language result can be a fallback and does not prove
+that the UI language provider succeeded.
+After an ordinary session closes and its retained process/Job termination is
+verified, an explicit `release-closed` action frees its helper for another
+workflow. Project workflows that still own that runtime prevent release.
 Disposable opening retains its original
 process through cleanup and can trigger ordinary migration/cache/automatic-Save
 effects. Primitive observations include existing native views only, not complete

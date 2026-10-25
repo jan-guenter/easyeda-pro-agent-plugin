@@ -2,6 +2,7 @@
  * owners. It routes original allocated breakpoint IDs, never a supplied trace.
  * The containing native owner still owns its unchanged total request budget. */
 import { types } from "node:util";
+import { CurrentPcb209RatlineStageDiagnostics } from "./current-pcb-209-ratline-diagnostics.ts";
 import { bindCurrentPcb209RatlinePcbTransport } from "./current-pcb-209-ratline-transport-windows.ts";
 import { z } from "zod";
 import { captureCurrentPcbStringClockReply } from "./current-pcb-string-clock-reply.ts";
@@ -62,6 +63,7 @@ function stageIdentities(creation: Creation, capture: Capture): readonly unknown
     ...stageMethods(capture, ["status", "capture", "whenArmed", "requireOriginal", "abort", "releaseAfterTermination"])];
 }
 export class CurrentPcb209RatlineEventDispatcher {
+  readonly #diagnostics = new CurrentPcb209RatlineStageDiagnostics();
   readonly #dependency: CurrentPcb209RatlineRealmDependency;
   readonly #original: readonly unknown[];
   readonly #request: CurrentPcb209RatlineRealmDependency["request"];
@@ -100,7 +102,7 @@ export class CurrentPcb209RatlineEventDispatcher {
     const captureTransport: CurrentPcb209RatlineCaptureTransport = {
       scriptId: dependency.scriptId, assertOriginalPinnedRealm: source => this.#current(source), assertOriginalTermination: () => this.#originalTermination(),
       request: command => this.#send("capture", { ...command, sessionId: dependency.parentSessionId }),
-      subscribe: events => this.#subscribe("capture", { ...events, attached: (): void => { this.#poison(); } }),
+      subscribe: events => this.#subscribe("capture", { ...events, attached: (): void => { this.#poison(new Error("PCB209_RATLINE_DISPATCH_CAPTURE_ATTACHMENT")); } }),
     };
     if (role === "pcb") { bindCurrentPcb209RatlinePcbTransport(creationTransport); bindCurrentPcb209RatlinePcbTransport(captureTransport); }
     this.#stages = Object.freeze(role === "pcb" ? { creation: new CurrentPcb209RatlinePcbCreation(creationTransport), capture: new CurrentPcb209RatlinePcbCapture(captureTransport) } :
@@ -111,6 +113,10 @@ export class CurrentPcb209RatlineEventDispatcher {
     this.#unsubscribe = dependency.subscribe({ paused: this.#paused, resumed: this.#resumed, attached: this.#attached, lost: this.#lost });
     need(typeof this.#unsubscribe === "function", "SUBSCRIPTION");
   }
+  public status(): Readonly<Record<string, unknown>> { return Object.freeze({ ...this.#diagnostics.snapshot(), role: this.#role,
+    failed: this.#failed, released: this.#released, uncertainBreakpoints: this.#uncertain, retainedBreakpoints: this.#allocations.size,
+    sourceContinuationConsumed: this.#sourceContinuationConsumed, sourceResumePending: this.#sourceResumePending,
+    paused: this.#pause !== null, deferredPause: this.#deferredPause !== null }); }
   public claimOriginalStages(): Readonly<{ creation: Creation; capture: Capture }> {
     this.#same(); need(!this.#claimed && !this.#failed && !this.#released, "STAGES_CONSUMED"); this.#claimed = true; return this.#stages;
   }
@@ -120,10 +126,11 @@ export class CurrentPcb209RatlineEventDispatcher {
   }
   public async requireOriginal(): Promise<void> { await this.#current(CURRENT_PCB_209_RATLINE_SOURCE_PROFILE[this.#role]); }
   async #current(source: Readonly<{ relativePath: string; bytes: number; sha256: string }>): Promise<void> {
+    this.#diagnostics.step = "owner-reproof";
     try {
       this.#same(); need(!this.#failed && !this.#released && !this.#releaseStarted && source === CURRENT_PCB_209_RATLINE_SOURCE_PROFILE[this.#role], "NOT_CURRENT");
       await this.#assert.call(this.#dependency, source); this.#same(); need(!this.#failed && !this.#released && !this.#releaseStarted, "NOT_CURRENT");
-    } catch (error) { this.#poison(); throw error; }
+    } catch (error) { this.#poison(error); throw error; }
   }
   async #originalTermination(): Promise<void> { this.#same(); await this.#terminate.call(this.#dependency); this.#same(); }
   #subscribe(stage: Stage, events: Events): () => void {
@@ -134,16 +141,19 @@ export class CurrentPcb209RatlineEventDispatcher {
   #ready(): void {
     if (this.#failed && this.#uncertain === 0 && [...this.#allocations.values()].every(value => value.removed)) { this.#cleanupReady.resolve(null); }
   }
-  #poison(): void {
+  #poison(cause: unknown = new Error("PCB209_RATLINE_DISPATCH_ABORTED")): void {
+    this.#diagnostics.record(cause);
     if (!this.#failed) { this.#failed = true; for (const events of this.#listeners.values()) { events.lost(); } }
     this.#ready();
   }
-  readonly #lost = (): void => { this.#poison(); };
+  readonly #lost = (): void => { this.#diagnostics.lastEvent = "lost"; this.#poison(new Error("PCB209_RATLINE_DISPATCH_STREAM_LOST")); };
   readonly #attached = (event: unknown): void => {
-    const events = this.#listeners.get("creation"); if (events === undefined) { this.#poison(); return; }
+    this.#diagnostics.lastEvent = "attached"; this.#diagnostics.step = "event-routing";
+    const events = this.#listeners.get("creation"); if (events === undefined) { this.#poison(new Error("PCB209_RATLINE_DISPATCH_CREATION_SUBSCRIBER")); return; }
     events.attached(event);
   };
   readonly #paused = (input: unknown): void => {
+    this.#diagnostics.lastEvent = "paused"; this.#diagnostics.step = "event-routing";
     try {
       this.#same(); need(!this.#released && this.#pause === null && this.#deferredPause === null, "DUPLICATE_PAUSE");
       const captured = captureCurrentPcbStringClockReply(input).value, event = pauseSchema.parse(captured);
@@ -152,15 +162,16 @@ export class CurrentPcb209RatlineEventDispatcher {
       if (allocation === undefined && this.#uncertain > 0) { this.#deferredPause = captured; return; }
       need(allocation !== undefined, "UNKNOWN_BREAKPOINT"); const events = this.#listeners.get(allocation.stage); need(events !== undefined, "PAUSE_SUBSCRIPTION");
       this.#pause = { stage: allocation.stage, resumeRequested: false };
-      if (allocation.removed) { this.#poison(); } events.paused(captured);
-    } catch { this.#poison(); }
+      if (allocation.removed) { this.#poison(new Error("PCB209_RATLINE_DISPATCH_REMOVED_BREAKPOINT")); } events.paused(captured);
+    } catch (error) { this.#poison(error); }
   };
   readonly #resumed = (): void => {
+    this.#diagnostics.lastEvent = "resumed"; this.#diagnostics.step = "event-routing";
     if (this.#sourceResumePending && this.#pause === null) {
       this.#sourceResumePending = false; this.#sourceResumed.resolve(null); return;
     }
     const pause = this.#pause;
-    if (pause === null || !pause.resumeRequested) { this.#poison(); return; }
+    if (pause === null || !pause.resumeRequested) { this.#poison(new Error("PCB209_RATLINE_DISPATCH_UNEXPECTED_RESUME")); return; }
     // Clear the realm slot before delivery: the next original pause may arrive
     // Synchronously from the same request, owned by a different stage.
     this.#pause = null; this.#listeners.get(pause.stage)?.resumed();
@@ -169,16 +180,19 @@ export class CurrentPcb209RatlineEventDispatcher {
    * The consumed continuation before dispatch so its synchronous resumed event
    * Is not mistaken for a construction or capture-stage resume. */
   public async continueOriginalSource(releaseOriginal: () => Promise<void>): Promise<void> {
+    this.#diagnostics.stage = "source-continuation"; this.#diagnostics.step = "source-resume";
     need(this.#claimed && !this.#sourceContinuationConsumed, "SOURCE_CONTINUATION_CONSUMED"); this.#sourceContinuationConsumed = true;
     try {
       await this.requireOriginal(); need(this.#pause === null && this.#deferredPause === null, "SOURCE_NOT_HELD");
       this.#sourceResumePending = true;
       await releaseOriginal(); await this.#sourceResumed.promise; await this.requireOriginal();
-    } catch (error) { this.#poison(); throw error; }
+    } catch (error) { this.#poison(error); throw error; }
   }
   async #send(stage: Stage, command: CurrentPcb209RatlineRealmCommand): Promise<unknown> {
+    this.#diagnostics.stage = stage;
+    this.#diagnostics.lastCommand = command.method; this.#diagnostics.step = "native-request";
     this.#same(); need(!this.#released, "RELEASED");
-    if (this.#creationStatus.call(this.#stages.creation)["failed"] === true || this.#captureStatus.call(this.#stages.capture)["failed"] === true) { this.#poison(); }
+    if (this.#creationStatus.call(this.#stages.creation)["failed"] === true || this.#captureStatus.call(this.#stages.capture)["failed"] === true) { this.#poison(new Error("PCB209_RATLINE_DISPATCH_STAGE_FAILED")); }
     const cleanup = command.method === "Debugger.removeBreakpoint" || command.method === "Debugger.resume" || command.method === "Runtime.runIfWaitingForDebugger";
     need(!this.#failed || cleanup, "FAILED");
     if (command.method === "Debugger.resume" || command.method === "Runtime.runIfWaitingForDebugger") {
@@ -198,7 +212,7 @@ export class CurrentPcb209RatlineEventDispatcher {
         // Its allocation acknowledgment can be routed back to it.
         setImmediate(() => { if (this.#deferredPause !== null) { const input = this.#deferredPause; this.#deferredPause = null; this.#paused(input); } });
         this.#ready(); return raw;
-      } catch (error) { this.#poison(); throw error; }
+      } catch (error) { this.#poison(error); throw error; }
     }
     if (command.method === "Debugger.removeBreakpoint") {
       const allocation = this.#allocations.get(command.params.breakpointId);
@@ -206,7 +220,7 @@ export class CurrentPcb209RatlineEventDispatcher {
       try {
         const raw = await this.#request.call(this.#dependency, command); z.object({}).strict().parse(captureCurrentPcbStringClockReply(raw).value);
         allocation.removed = true; this.#ready(); return raw;
-      } catch (error) { this.#poison(); throw error; }
+      } catch (error) { this.#poison(error); throw error; }
     }
     return this.#request.call(this.#dependency, command);
   }

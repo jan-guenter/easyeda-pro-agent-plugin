@@ -116,21 +116,33 @@ On the exact 3.2.209/API0.3.59 profile, query `public-readers` with an exact
 `public-readers-validate`, then pass it and the actual authenticated status
 fingerprint to `easyeda_control_public_readers`.
 
-The six methods have distinct meanings:
+The seven methods have distinct meanings:
 
 | Method | Accepted observation |
 | --- | --- |
 | `eda.sys_I18n.getAllSupportedLanguages` | Complete ordered supported-language identifiers |
 | `eda.sys_I18n.isLanguageSupported` | Exact case-sensitive membership for the supplied `language` |
+| `eda.sys_I18n.getCurrentLanguage` | SDK-resolved language identifier; vendor fallback remains possible |
 | `eda.sys_Window.getViewportSize` | API-page viewport width and height in CSS pixels |
 | `eda.sys_Window.getCurrentTheme` | Resolved `light` or `dark` UI theme |
 | `eda.sys_Unit.getFrontendDataUnit` | Global toolbar selection, `mm`, `inch` or `mil` |
 | `eda.lib_LibrariesList.getSystemLibraryUuid` | The exact returned system-library UUID constant |
 
 Only language membership accepts an argument. Every other request has
-`arguments:{}`. Preserve language identifier order and spelling; no locale
-normalization or current-language lookup is performed. `getCurrentLanguage`
-remains unavailable through this route.
+`arguments:{}`. Preserve language identifier order and spelling. The catalog
+and membership methods perform no locale normalization.
+
+`getCurrentLanguage` observes the public SDK's resolved value in the exact domain
+`zh-Hans`, `zh-Hant`, `en`, `pl`, `ja`, `fr`, `es`, `de`, `sv`, `ru`, `uk`, `vi`,
+`cs`, `pt`. Its UI provider reads the URL language, local preferences and
+environment defaults; the SDK maps provider aliases. Missing or unknown replies
+and caught provider failures can become an edition fallback. Consequently every
+successful result includes `languageScope:"sdk-resolved-language"`,
+`fallbackPossible:true`, `providerSuccessVerified:false` and
+`cachedMessageBusIdentityVerified:false`. Do not present it as proof of the raw
+language preference, the currently rendered UI language, or a successful provider
+read. Even two matching `en` results cannot distinguish a genuine English value
+from fallback. The adapter does not substitute a value after its own refusal.
 
 Viewport width and height are the API page's `window.innerWidth/innerHeight`,
 not Windows screen dimensions, editor zoom, PCB units or rendered-object bounds.
@@ -150,15 +162,24 @@ needed.
 
 The adapter retains the same namespace/method owners, copies complete bounded
 results twice and rejects malformed or changing output without truncation.
-The three UI-backed methods also pin UI3.2.198.2800f583 and both installed module
-selectors, and retain the editor window, document, UI, host and shared RPC owners
-around each await. Replaced method accessors or prototype chains refuse without
-invoking the replacement getter. These getters perform no project, document,
-account, asset, file or network lookup, navigation or settings change.
+The four UI-backed methods also pin UI3.2.198.2800f583 and both installed module
+selectors, and retain the editor window, document, UI, host and method-specific
+RPC owners around each await. Theme, unit and library use MessageBus2. Language
+uses the available root `_MSG_BUS_` and host `messageBus`, retaining both data
+descriptors and the public method and `rpcCall` descriptor chains. The API's
+private cached legacy bus cannot be inspected through this adapter; equality
+with that cached bus is not established. Neither bus is called directly by
+facade-generated code. Replaced method accessors or prototype chains refuse
+without invoking the replacement getter. These getters perform no project,
+document, account, asset, file or network lookup, navigation or settings change.
 
 UI-backed observations have a ten-second monotonic deadline and cooperative
 timer. Expiry prevents another sample or acceptance of a late result; it does not
-cancel an outstanding vendor RPC or interrupt synchronous work. The executor's
+cancel an outstanding vendor RPC or interrupt synchronous work. Language's
+legacy RPC also creates vendor bookkeeping with a 300-second timeout that is
+not cancelled on success. The adapter cannot cancel that vendor timer. Its
+bounded result does not bound the provider's preceding local-preferences parse.
+The executor's
 60-second and transport's 70-second waiting limits are separate. A refusal is
 not an unknown unit, default theme or empty observation. Responses are bounded
 to 8192 UTF-8 bytes. Source and offline tests do not establish connected

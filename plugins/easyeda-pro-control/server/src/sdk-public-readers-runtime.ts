@@ -53,10 +53,12 @@ export async function readSdkPublicReaders(engine: SdkPublicReadersEngine, reque
   if (canonicalJson(finalFingerprint) !== canonicalJson(initial)) {
     throw new Error("SDK public readers runtime changed around the read.");
   }
+  let scope = uiBacked ? "fixed-ui-theme-toolbar-unit-or-system-library-identity" : "fixed-language-catalog-or-extension-page-viewport";
+  if (request.method === "eda.sys_I18n.getCurrentLanguage") { scope = "fixed-sdk-resolved-language-with-fallback"; }
   const response = { ...result, runtimeAdmission: {
     profile: uiBacked ? SDK_PUBLIC_READERS_209_UI_RUNTIME_PROFILE.schema : SDK_PUBLIC_UTILITIES_209_PROFILE.schema,
     fingerprintSha256: sha256Json(initial), ...(uiBacked ? { uiImplementation: EDITOR_OBSERVATION_209_UI } : {}),
-    beforeAndAfterChecked: true, scope: uiBacked ? "fixed-ui-theme-toolbar-unit-or-system-library-identity" : "fixed-language-catalog-or-extension-page-viewport", liveValidation: "not-recorded",
+    beforeAndAfterChecked: true, scope, liveValidation: "not-recorded",
   } };
   if (Buffer.byteLength(JSON.stringify(response), "utf8") > SDK_PUBLIC_READERS_MAX_BYTES) {
     throw new Error("SDK public readers result exceeds its byte bound.");

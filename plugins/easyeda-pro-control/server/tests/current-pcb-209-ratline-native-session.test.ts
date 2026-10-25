@@ -204,7 +204,7 @@ void test("native session original opening reaches fixed PCB preflight then chan
   assert.equal(session.retainedOpeningObservation(), null);
   const failure = session.status().firstFailure;
   assert.deepEqual(failure, { reason: "UNCLASSIFIED", phase: "preparation", step: "checkpoint-reverification" });
-  assert.equal(session.status().pcbContext, null); assert.equal(session.status().childSource, null);
+  assert.equal(session.status().pcbContext, null); assert.equal(session.status().childSource, null); assert.equal(session.status().composite, null);
   await f.terminate(); assert.equal(session.status().firstFailure, failure);
 });
 

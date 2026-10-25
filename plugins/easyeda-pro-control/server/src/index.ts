@@ -125,6 +125,7 @@ import { editorShellRequestSchema } from "./editor-shell.ts";
 import { editorContextRequestSchema } from "./editor-context.ts";
 import { readEditorContext, readEditorShell } from "./editor-shell-runtime.ts";
 import { OrdinaryLaunchCoordinator, ordinaryLaunchRequestSchema } from "./ordinary-launch.ts";
+import type { OrdinaryLaunchRuntime } from "./ordinary-launch.ts";
 import { CurrentPcb209DiagnosticLifecycle, CurrentPcb209EmptyStartupLifecycle, CurrentPcb209RatlineStartupLifecycle, CurrentPcb209WorkerStartupLifecycle, CurrentPcbDiagnosticLifecycle, CurrentPcbStringPrecreateLifecycle, CurrentPcbWorkerStartupLifecycle } from "./current-pcb-diagnostic-lifecycle.ts";
 import { currentPcbDiagnosticToolRequestSchema } from "./current-pcb-diagnostic-validation.ts";
 import { currentPcb209OpeningRequestSchema } from "./current-pcb-209-opening-validation.ts";
@@ -2420,7 +2421,7 @@ registerFacadeTool(
   "easyeda_control_public_readers",
   {
     title: "Read EasyEDA languages, viewport, theme and toolbar units",
-    description: "Six fixed public readers on exact EasyEDA 3.2.209/API 0.3.59: supported languages, language membership, API viewport, current theme, toolbar data unit and fixed system-library UUID. The toolbar unit is not an active-document unit; the fixed UUID does not enumerate personal libraries. Requires the actual authenticated status fingerprint. Preserves case-sensitive language membership and ordered language identifiers. Viewport dimensions describe the API page, not the Windows desktop or PCB geometry. Complete bounded double observations retain their original owners; changed or malformed results refuse. No project, library, file, network, settings, navigation, callback or Save operation. Inspect offline public-readers and public-readers-validate first. Source and offline tests are not connected validation.",
+    description: "Seven fixed public readers on exact EasyEDA 3.2.209/API 0.3.59: supported languages, language membership, SDK-resolved language, API viewport, current theme, toolbar data unit and fixed system-library UUID. SDK-resolved language can be a fallback; provider success and the private cached bus identity are not verified. The toolbar unit is not an active-document unit; the fixed UUID does not enumerate personal libraries. Requires the actual authenticated status fingerprint. Preserves case-sensitive language membership and ordered language identifiers. Viewport dimensions describe the API page, not the Windows desktop or PCB geometry. Complete bounded double observations retain their original owners; changed or malformed results refuse. No project, library asset, external file, network, settings change, navigation, callback registration or Save operation. Inspect offline public-readers and public-readers-validate first. Source and offline tests are not connected validation.",
     inputSchema: { request: z.unknown().pipe(sdkPublicReadersRequestSchema), expectedFingerprint: privateFingerprintSchema },
     annotations: { readOnlyHint: true, destructiveHint: false, idempotentHint: true, openWorldHint: false },
   },
@@ -2464,7 +2465,7 @@ registerFacadeTool(
   "easyeda_control_catalog_components",
   {
     title: "Search public footprints, symbols and devices or look up component metadata",
-    description: "Application-independent vendor HTTPS catalog queries, not public SDK execution. Fixed actions search-footprints, search-symbols, search-symbols-by-name, search-devices, get-symbol and get-device require confirmNetwork:true and public catalog identifiers or a bounded public search query. One credential-free fixed-host request and at most twenty candidates; paged search requires an explicit page, while search-symbols-by-name accepts one name; no automatic pagination, redirects, retries, credentials, caller URL/library, local database, bridge, editor or Save. Search sends the query to the vendor and returns candidates, not exact or complete matches. Device symbol/footprint associations are catalog references, not verified pin mapping; missing explicit visibility flags are disclosed. The name lookup may parse two bounded native header records to verify symbol type when docType is absent; it never parses drawing geometry or executes source. Other inline vendor source is discarded; no separate asset downloads. No drawings, geometry, stock, pricing or manufacturing qualification. Inspect catalog-components/catalog-components-validate first; responses are untrusted vendor data.",
+    description: "Application-independent vendor HTTPS catalog queries, not public SDK execution. Eight fixed actions search-footprints, search-footprints-by-name, search-symbols, search-symbols-by-name, search-devices, get-devices-by-lcsc-ids, get-symbol and get-device require confirmNetwork:true and public catalog identifiers or a bounded public search query. Existing actions use one credential-free fixed-host request and at most twenty candidates. Footprint-name and LCSC-code lookups verify every returned candidate through fixed metadata endpoints, allowing at most five candidates and six requests under one 30-second/1-MiB response budget. Paged search requires an explicit page; name lookup accepts one name. No automatic pagination, redirects, retries, credentials, caller URL/library, local database, bridge, editor or Save. Search sends the query to the vendor and returns candidates, not exact or complete matches. Device symbol/footprint associations are catalog references, not verified pin mapping; missing explicit visibility flags are disclosed. The name lookup may parse two bounded native header records to verify symbol type when docType is absent; it never parses drawing geometry or executes source. Other inline vendor source is discarded; no separate asset downloads. No drawings, geometry, stock, pricing or manufacturing qualification. Inspect catalog-components/catalog-components-validate first; responses are untrusted vendor data.",
     inputSchema: { request: z.unknown().pipe(publicSystemCatalogRequestSchema) },
     annotations: { readOnlyHint: true, destructiveHint: false, idempotentHint: true, openWorldHint: true },
   },
@@ -2740,8 +2741,8 @@ if (facadeToolRegistered(facadeMode, "easyeda_control_pcb_diagnostic_validation"
 registerFacadeTool(
   "easyeda_control_launch",
   {
-    title: "Launch, observe or normally close the reviewed EasyEDA application",
-    description: "Launch the exact reviewed EasyEDA executable with no arguments in its existing profile. Requires explicit launch/profile-effect confirmations and a unique operation ID. Startup can load extensions/project lists, use the network and write preferences/cache; it is not isolated or project-free. Journals before dispatch and retains the original Windows root/Job. observe-window requires that current retained launch and its inspected launchedSha256; normal-close also requires its exact unique application HWND and confirmNormalClose:true. One durable close intent precedes the fixed WM_CLOSE request. Acknowledgment is not exit; observe-termination separately proves retained root/Job exit. No repeat close after uncertainty, prompt choice, force kill, design open or explicit Save. Normal closure can persist application data. inspect is local; observe-application reports same-name presence without identity or relaunch authority. After lost handles, abandon-supervision requires a successful historical launch digest, explicit acceptance and absent samples. For a reviewed intent-only launch, abandon-unknown-launch requires its inspected intentSha256, confirmAbandonUnknownLaunch:true, acceptUnobservedDescendants:true and a fresh coordinator. Its separate read-only helper excludes delayed creation by requiring no other PowerShell process before sampling EasyEDA twice. Both routes record relinquishment without proving termination. Quarantine and design gates remain unchanged. Use offline launch/launch-validate first. Successful startup is not authentication or Start Page readiness.",
+    title: "Launch, observe, normally close or release the reviewed EasyEDA application",
+    description: "Launch the exact reviewed EasyEDA executable with no arguments in its existing profile. Requires explicit launch/profile-effect confirmations and a unique operation ID. Startup can load extensions/project lists, use the network and write preferences/cache; it is not isolated or project-free. Journals before dispatch and retains the original Windows root/Job. observe-window requires that current retained launch and its inspected launchedSha256; normal-close also requires its exact unique application HWND and confirmNormalClose:true. One durable close intent precedes the fixed WM_CLOSE request. Acknowledgment is not exit; observe-termination separately proves retained root/Job exit. Explicit release-closed then requires its observed launchedSha256/terminationSha256 and confirmReleaseClosed:true, consumes one intent and awaits original helper transport closure before clearing matching allocations. Project/writer or allocated diagnostic owners block release; uncertainty retains allocation and cannot be retried or reconstructed from historical JSON. Termination alone preserves the proof issuer. No repeat close after uncertainty, prompt choice, force kill, design open or explicit Save. Normal closure can persist application data. inspect is local; observe-application reports same-name presence without identity or relaunch authority. After lost handles, abandon-supervision requires a successful historical launch digest, explicit acceptance and absent samples. For a reviewed intent-only launch, abandon-unknown-launch requires its inspected intentSha256, confirmAbandonUnknownLaunch:true, acceptUnobservedDescendants:true and a fresh coordinator. Its separate read-only helper excludes delayed creation by requiring no other PowerShell process before sampling EasyEDA twice. Both routes record relinquishment without proving termination. Quarantine and design gates remain unchanged. Use offline launch/launch-validate first. Successful startup is not authentication or Start Page readiness.",
     inputSchema: { request: z.unknown().pipe(ordinaryLaunchRequestSchema) },
     annotations: { readOnlyHint: false, destructiveHint: false, idempotentHint: false },
   },
@@ -2750,11 +2751,38 @@ registerFacadeTool(
       const assetsRoot = process.env["EASYEDA_ASSETS_ROOT"];
       if (assetsRoot === undefined) { throw new Error("Configure the installed EasyEDA assets before ordinary launch."); }
       const pluginRoot = resolve(import.meta.dirname, "../..");
+      // oxlint-disable-next-line typescript/unbound-method -- Inspect exact inherited private-field observers; call only with their original lifecycle receiver.
+      const diagnosticReserved = CurrentPcbDiagnosticLifecycle.prototype.hasActiveReservation;
+      // oxlint-disable-next-line typescript/unbound-method -- This monotonic observer distinguishes never-allocated owners from completed or failed allocations.
+      const diagnosticAllocated = CurrentPcbDiagnosticLifecycle.prototype.hasAttemptedNativeOwnerAllocation;
+      let releaseDiagnostics: readonly (CurrentPcbDiagnosticLifecycle | CurrentPcbStringPrecreateLifecycle | CurrentPcbWorkerStartupLifecycle | undefined)[] | undefined;
       const assertLocalAllowed = (): void => {
         if (closedSymbolIndexReservation !== undefined || scheduledShutdown !== undefined ||
             windowsRuntime !== ordinaryLaunchRuntime || process.env["EASYEDA_ASSETS_ROOT"] !== assetsRoot) {
           throw new Error("Ordinary launch runtime allocation is unavailable or changed.");
         }
+      };
+      const assertReleaseAllowed = (runtime: OrdinaryLaunchRuntime): void => {
+        assertLocalAllowed();
+        if (runtime !== ordinaryLaunchRuntime || runtime !== windowsRuntime || currentDisposableOpenCoordinator !== undefined ||
+            currentPcbRenameOperationCoordinator !== undefined || currentSchematicRenameOperationCoordinator !== undefined ||
+            closedSymbolIndexReservation !== undefined || closedSymbolUnreservedFailure.observed || scheduledShutdown !== undefined ||
+            disposableOwnerMethod(CurrentPcbDiagnosticLifecycle.prototype, "hasActiveReservation") !== diagnosticReserved ||
+            disposableOwnerMethod(CurrentPcbDiagnosticLifecycle.prototype, "hasAttemptedNativeOwnerAllocation") !== diagnosticAllocated) {
+          throw new Error("Ordinary runtime release is reserved by another owner or its observer changed.");
+        }
+        const diagnostics = [currentPcbDiagnosticLifecycle, currentPcbStringPrecreateLifecycle, currentPcbWorkerStartupLifecycle] as const;
+        if (releaseDiagnostics !== undefined && diagnostics.some((owner, index) => owner !== releaseDiagnostics?.[index])) {
+          throw new Error("Ordinary runtime release diagnostic owners changed.");
+        }
+        for (const owner of diagnostics) {
+          if (owner !== undefined && (disposableOwnerMethod(owner, "hasActiveReservation") !== diagnosticReserved ||
+              disposableOwnerMethod(owner, "hasAttemptedNativeOwnerAllocation") !== diagnosticAllocated ||
+              diagnosticReserved.call(owner) || diagnosticAllocated.call(owner))) {
+            throw new Error("Ordinary runtime release requires unreserved diagnostics with no native allocation attempt.");
+          }
+        }
+        releaseDiagnostics ??= diagnostics;
       };
       ordinaryLaunchCoordinator = new OrdinaryLaunchCoordinator({
         assetsRoot, pluginRoot, assertLocalAllowed,
@@ -2770,6 +2798,11 @@ registerFacadeTool(
           ordinaryLaunchRuntime = runtime;
           windowsRuntime = runtime;
           return runtime;
+        },
+        assertReleaseAllowed,
+        completeRuntimeRelease: (runtime): void => {
+          assertReleaseAllowed(runtime);
+          windowsRuntime = undefined; ordinaryLaunchRuntime = undefined; releaseDiagnostics = undefined;
         },
       });
     }

@@ -6,6 +6,11 @@ import { SDK_PUBLIC_UTILITIES_209_PROFILE } from "./sdk-public-utilities-profile
 export const SDK_PUBLIC_READERS_MAX_BYTES = 8192;
 export const SDK_PUBLIC_READERS_MAX_VIEWPORT_DIMENSION = 1_000_000;
 export const SDK_PUBLIC_READERS_209_SYSTEM_LIBRARY_UUID = "0819f05c4eef4c71ace90d822a990e87";
+// Exact m2 return domain, including the vendor's edition fallback. This is
+// Deliberately distinct from the API's supported-language catalog below.
+export const SDK_PUBLIC_READERS_209_RESOLVED_LANGUAGES = Object.freeze([
+  "zh-Hans", "zh-Hant", "en", "pl", "ja", "fr", "es", "de", "sv", "ru", "uk", "vi", "cs", "pt",
+] as const);
 
 // Exact ordered d2 constant from API 0.3.59.1ca9efb5. This comparison is a
 // Completeness guard, not an offline substitute for calling the public method.
@@ -19,6 +24,7 @@ const language = z.string().min(1).max(64).regex(/^[A-Za-z0-9_-]+$/u);
 export const sdkPublicReadersRequestSchema = z.discriminatedUnion("method", [
   z.object({ method: z.literal("eda.sys_I18n.getAllSupportedLanguages"), arguments: emptyArguments }).strict(),
   z.object({ method: z.literal("eda.sys_I18n.isLanguageSupported"), arguments: z.object({ language }).strict() }).strict(),
+  z.object({ method: z.literal("eda.sys_I18n.getCurrentLanguage"), arguments: emptyArguments }).strict(),
   z.object({ method: z.literal("eda.sys_Window.getViewportSize"), arguments: emptyArguments }).strict(),
   z.object({ method: z.literal("eda.sys_Window.getCurrentTheme"), arguments: emptyArguments }).strict(),
   z.object({ method: z.literal("eda.sys_Unit.getFrontendDataUnit"), arguments: emptyArguments }).strict(),
@@ -28,10 +34,10 @@ export type SdkPublicReadersRequest = z.infer<typeof sdkPublicReadersRequestSche
 type PublicReaderMethod = SdkPublicReadersRequest["method"];
 interface Definition {
   readonly namespace: "sys_I18n" | "sys_Window" | "sys_Unit" | "lib_LibrariesList";
-  readonly name: "getAllSupportedLanguages" | "isLanguageSupported" | "getViewportSize" | "getCurrentTheme" | "getFrontendDataUnit" | "getSystemLibraryUuid";
+  readonly name: "getAllSupportedLanguages" | "isLanguageSupported" | "getCurrentLanguage" | "getViewportSize" | "getCurrentTheme" | "getFrontendDataUnit" | "getSystemLibraryUuid";
   readonly parameters: readonly string[];
-  readonly resultKind: "languages" | "boolean" | "viewport" | "theme" | "toolbar-unit" | "system-library-uuid";
-  readonly effect: "language-catalog-read" | "extension-page-viewport-read" | "ui-theme-read" | "ui-toolbar-unit-read" | "system-library-identity-read";
+  readonly resultKind: "languages" | "boolean" | "resolved-language" | "viewport" | "theme" | "toolbar-unit" | "system-library-uuid";
+  readonly effect: "language-catalog-read" | "sdk-resolved-language-read" | "extension-page-viewport-read" | "ui-theme-read" | "ui-toolbar-unit-read" | "system-library-identity-read";
   readonly limitation: string;
   readonly sourceOffsets: readonly number[];
   readonly documentationUrl: string;
@@ -47,6 +53,13 @@ const definitions: Record<PublicReaderMethod, Definition> = {
     namespace: "sys_I18n", name: "isLanguageSupported", parameters: ["language"], resultKind: "boolean", effect: "language-catalog-read",
     limitation: "Exact case-sensitive membership in the reviewed 52-language catalog. Input is 1-64 ASCII letters, digits, hyphens or underscores; no case folding, trimming, alias resolution or locale normalization. A false result is not a current-language observation.",
     sourceOffsets: [468_267, 1_845_521, 1_846_324, 1_847_901], documentationUrl: "https://prodocs.easyeda.com/en/api/reference/pro-api.sys_i18n.islanguagesupported.html",
+  },
+  "eda.sys_I18n.getCurrentLanguage": {
+    namespace: "sys_I18n", name: "getCurrentLanguage", parameters: [], resultKind: "resolved-language", effect: "sdk-resolved-language-read",
+    limitation: "Observes only the SDK-resolved language enum. The legacy provider reads URL language, local preferences and environment defaults; the SDK maps aliases and may return an edition fallback after a missing/unknown reply or a provider exception. Neither provider success nor raw/current UI preference is verified. The available root/host legacy bus is retained, but the API's private cached bus identity is inaccessible and unverified. Legacy RPC bookkeeping includes a 300-second vendor timeout not cancelled on success; the adapter cannot cancel it. The 8192-byte reply bound does not bound the preceding vendor preferences parse.",
+    sourceOffsets: [518_842, 1_523_878, 1_845_491, 1_846_360, 1_847_821],
+    uiSourceOffsets: [1_647_030, 1_650_406, 8_089_452, 8_093_989, 8_791_495, 15_929_245, 15_930_435, 15_997_119, 16_377_407, 16_711_760, 16_738_959, 16_968_247],
+    documentationUrl: "https://prodocs.easyeda.com/en/api/reference/pro-api.sys_i18n.getcurrentlanguage.html",
   },
   "eda.sys_Window.getViewportSize": {
     namespace: "sys_Window", name: "getViewportSize", parameters: [], resultKind: "viewport", effect: "extension-page-viewport-read",
@@ -74,7 +87,7 @@ const definitions: Record<PublicReaderMethod, Definition> = {
 };
 const commonLimitations = [
   "Only the separately hash-admitted EasyEDA 3.2.209 / API 0.3.59 tuple. No admission of older, newer or unknown implementations, native adapters or general SDK dispatch.",
-  "Two complete samples retain the same extension, namespace and method. Viewport reads retain the window object. UI-backed methods additionally require exact UI and selector files and retain the editor window, document, UI, host and shared RPC bus around each await. No project, document, account, file, network, navigation, settings change or Save access is performed by these getters.",
+  "Two complete samples retain the same extension, namespace and method. Viewport reads retain the window object. UI-backed methods additionally require exact UI and selector files and retain the editor window, document, UI, host and method-specific available RPC bus around each await. No project, document, account, file, network, navigation, settings change or Save access is performed by these getters.",
   "Replies are bounded to 8192 UTF-8 bytes. Synchronous methods reject Promises; UI-backed methods await sequentially. Partial or malformed values, changed owners, unstable samples and oversized responses refuse without truncation or automatic retry. Source implementation and synthetic tests do not establish connected validation.",
   "UI-backed reads enforce a 10-second monotonic deadline around every await and before a second sample. The timer is cooperative; it does not cancel an outstanding vendor RPC or synchronous vendor work. The 60-second execution and 70-second transport limits are separate waiting bounds.",
 ] as const;
@@ -136,11 +149,15 @@ export function sdkPublicReaderRequiresUi(request: SdkPublicReadersRequest): boo
   return definitions[request.method].uiSourceOffsets !== undefined;
 }
 
-/** These RPC methods use the same top-editor bus captured by API Z7 and UI
- * LGo. Inspect identities only; do not call the bus or read project/account
- * state. Its immutable ownership references must survive every public await.
+/** Theme, unit and library readers use MessageBus2 captured by Z7/LGo.
+ * Language uses legacy ur/QFo; its private cached bus cannot be inspected.
+ * Retain available identities only; never dispatch directly to either bus.
  */
-const uiOwnerProgram = (methodName: Definition["name"]): string => `
+const uiOwnerProgram = (methodName: Definition["name"]): string => {
+  const legacy = methodName === "getCurrentLanguage";
+  const rootBusKey = JSON.stringify(legacy ? "_MSG_BUS_" : "_MSG_BUS2_EXTAPI_");
+  const hostBusKey = JSON.stringify(legacy ? "messageBus" : "extensionApiMessageBus2");
+  return `
 const retain=(value,key)=>{
  const chain=[];let node=value,method;
  for(let i=0;node!==null&&i<8;i++){
@@ -158,8 +175,13 @@ const retain=(value,key)=>{
  }}};
 };
 const apply=Reflect.apply,root=globalThis,location=root.location,document=root.document,href=location?.href;
-const ui=data(root,'UI'),host=data(root,'gVars'),bus=data(root,'_MSG_BUS2_EXTAPI_'),mode=data(root,'PRO_EDITOR_MODE');
+const ui=data(root,'UI'),host=data(root,'gVars'),bus=data(root,${rootBusKey}),mode=data(root,'PRO_EDITOR_MODE');
 if(!bus||typeof bus!=='object')fail();
+${legacy ? `const bindings=[[root,${rootBusKey}],[host,${hostBusKey}]].map(([object,key])=>({object,key,descriptor:Object.getOwnPropertyDescriptor(object,key)}));
+const sameBusBindings=()=>{for(const {object,key,descriptor:before} of bindings){
+ const current=Object.getOwnPropertyDescriptor(object,key);
+ if(!before||!current||!Object.hasOwn(before,'value')||!Object.hasOwn(current,'value')||current.value!==before.value||current.writable!==before.writable||current.enumerable!==before.enumerable||current.configurable!==before.configurable)fail();
+}};` : "const sameBusBindings=()=>{};"}
 const rpc=retain(bus,'rpcCall'),reader=retain(owner,${JSON.stringify(methodName)}),method=reader.method,editorTop=root.EDITOR_TOP;
 if(editorTop!==undefined&&editorTop!==root)fail();
 const clock=root.performance,now=retain(clock,'now'),set=data(root,'setTimeout');readerClear=data(root,'clearTimeout');
@@ -172,11 +194,12 @@ const sameUi=()=>{
  if(root.window!==root||root.self!==root||root.top!==root||root.EDITOR_TOP!==editorTop||root.frameElement!==null||root.location!==location||root.document!==document||document?.defaultView!==root||document?.nodeType!==9||document?.URL!==href||location?.href!==href||location?.origin!=='https://client')fail();
  if(typeof href!=='string'||!/^https:\\/\\/client\\/editor\\?cll=(?:trace|debug|info|warn|error)#?$/.test(href))fail();
  if(data(root,'PRO_EDITOR_MODE')!==mode||(mode!=='CLIENT-HALF_OFFLINE-EASYEDA-PCB-SCH-PANEL-SIM'&&mode!=='CLIENT-OFFLINE-EASYEDA-PCB-SCH-PANEL-SIM'))fail();
- if(data(root,'UI')!==ui||data(root,'gVars')!==host||data(ui,'gVars')!==host||data(root,'_MSG_BUS2_EXTAPI_')!==bus||data(host,'extensionApiMessageBus2')!==bus||data(edaOwner,'extensionUuid')!=='7e06d286b1ac846ef7eab9c7f2a9ee40')fail();
- reader.check();rpc.check();
+ if(data(root,'UI')!==ui||data(root,'gVars')!==host||data(ui,'gVars')!==host||data(root,${rootBusKey})!==bus||data(host,${hostBusKey})!==bus||data(edaOwner,'extensionUuid')!=='7e06d286b1ac846ef7eab9c7f2a9ee40')fail();
+ sameBusBindings();reader.check();rpc.check();
 };
 sameUi();readerTimer=apply(set,root,[()=>{expired=true;},10000]);
 `;
+};
 
 /** Only parsed literal methods. None of the caller's values select an
  * object path, property, callback, native command or generated statement.
@@ -198,6 +221,7 @@ const pageWindow=kind==='viewport'?window:null;
 if(kind==='viewport'&&(!pageWindow||typeof pageWindow!=='object'))fail();
 ${uiBacked ? uiOwnerProgram(definition.name) : "const sameUi=()=>{};"}
 const project=value=>{
+ if(kind==='resolved-language'){if(!${JSON.stringify(SDK_PUBLIC_READERS_209_RESOLVED_LANGUAGES)}.includes(value))fail();return value;}
  if(kind==='theme'){if(value!=='light'&&value!=='dark')fail();return value;}
  if(kind==='toolbar-unit'){if(value!=='mm'&&value!=='inch'&&value!=='mil')fail();return value;}
  if(kind==='system-library-uuid'){if(value!==${JSON.stringify(SDK_PUBLIC_READERS_209_SYSTEM_LIBRARY_UUID)})fail();return value;}
@@ -242,6 +266,8 @@ export function validateSdkPublicReadersResult(input: unknown, raw: unknown): Re
     }
   } else if (request.method === "eda.sys_Window.getCurrentTheme") {
     value = z.enum(["light", "dark"]).parse(payload.value);
+  } else if (request.method === "eda.sys_I18n.getCurrentLanguage") {
+    value = z.enum(SDK_PUBLIC_READERS_209_RESOLVED_LANGUAGES).parse(payload.value);
   } else if (request.method === "eda.sys_Unit.getFrontendDataUnit") {
     value = z.enum(["mm", "inch", "mil"]).parse(payload.value);
   } else if (request.method === "eda.lib_LibrariesList.getSystemLibraryUuid") {
@@ -250,6 +276,8 @@ export function validateSdkPublicReadersResult(input: unknown, raw: unknown): Re
     value = viewportSchema.parse(payload.value);
   }
   return { ...payload, value, effect: definition.effect,
+    ...(definition.resultKind === "resolved-language" ? { languageScope: "sdk-resolved-language", fallbackPossible: true,
+      providerSuccessVerified: false, cachedMessageBusIdentityVerified: false } : {}),
     ...(definition.resultKind === "viewport" ? { units: "css-pixels", viewportScope: "public-api-extension-page" } : {}),
     ...(sdkPublicReaderRequiresUi(request) ? { uiVersion: EDITOR_OBSERVATION_209_UI.version, uiSha256: EDITOR_OBSERVATION_209_UI.sha256 } : {}),
     authority: "bounded-public-utility-read-only;not-project-state-or-runtime-admission",

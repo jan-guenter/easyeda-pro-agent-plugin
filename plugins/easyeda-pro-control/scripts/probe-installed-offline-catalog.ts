@@ -337,15 +337,20 @@ async function catalogChecks(child: OfflineChild, sample: () => Promise<void>): 
   "Netlist file discovery or its bounded action schema changed.");
   const readers = await offlineApi(child, { action: "public-readers", query: { includeSchemas: true } });
   const readerEntries = readers["entries"];
-  requireCheck(readers["total"] === 6 && Array.isArray(readerEntries) && readerEntries.length === 6 &&
+  requireCheck(readers["total"] === 7 && Array.isArray(readerEntries) && readerEntries.length === 7 &&
     readerEntries.every((entry: unknown) => isRecord(entry) && isRecord(entry["inputSchema"]) && entry["invocationEnabledByDiscovery"] === false),
-  "Public utility discovery differs from its six bounded readers.");
+  "Public utility discovery differs from its seven bounded readers.");
   const catalog = await offlineApi(child, { action: "catalog-components", query: { includeSchemas: true } });
   const catalogEntries = catalog["entries"];
-  requireCheck(catalog["total"] === 6 && Array.isArray(catalogEntries) && catalogEntries.length === 6 &&
+  requireCheck(catalog["total"] === 8 && Array.isArray(catalogEntries) && catalogEntries.length === 8 &&
     catalogEntries.some((entry: unknown) => isRecord(entry) && entry["action"] === "search-symbols-by-name" &&
       entry["publicSdkMethodExecuted"] === false && entry["installedRuntimeAdmission"] === false && isRecord(entry["inputSchema"])),
   "Catalog discovery lost its separate symbol-name HTTP equivalent.");
+  for (const action of ["search-footprints-by-name", "get-devices-by-lcsc-ids"]) {
+    requireCheck(catalogEntries.some((entry: unknown) => isRecord(entry) && entry["action"] === action &&
+      entry["publicSdkMethodExecuted"] === false && entry["installedRuntimeAdmission"] === false && isRecord(entry["inputSchema"])),
+    "Catalog discovery lost an enriched metadata HTTP equivalent.");
+  }
   return { tools: tools.length, queries: 19 };
 }
 

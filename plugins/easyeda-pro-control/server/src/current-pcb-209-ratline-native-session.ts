@@ -27,7 +27,7 @@ import type { CurrentPcb209RatlineCreationPacket, CurrentPcb209RatlineWorkerCrea
 import { CurrentPcb209RatlineOrigin } from "./current-pcb-209-ratline-origin.ts";
 import type { CurrentPcb209RatlineOriginEvidence, CurrentPcb209RatlineOriginSummary } from "./current-pcb-209-ratline-origin-observation.ts";
 import { readerCompletion } from "./sqlite-inventory.ts";
-import { currentPcb209RatlineFailureReason } from "./current-pcb-209-ratline-diagnostics.ts";
+import { currentPcb209RatlineCompositeDiagnosticsSchema, currentPcb209RatlineFailureReason } from "./current-pcb-209-ratline-diagnostics.ts";
 import { CURRENT_PCB_209_RATLINE_NATIVE_PROFILE } from "./current-pcb-209-ratline-budget.ts";
 import type { readExactSqlInventory } from "./sqlite-inventory.ts";
 
@@ -127,11 +127,12 @@ export class CurrentPcb209RatlineNativeSession {
     nativeOrigin: CurrentPcb209RatlineOriginSummary | null; step: string;
     firstFailure: Readonly<{ reason: string; phase: Phase; step: string }> | null;
     pcbContext: ReturnType<CurrentPcb209RatlinePcbContextRouter["status"]> | null;
-    childSource: ReturnType<CurrentPcb209RatlineBootstrapOwner["status"]> | null }> {
+    childSource: ReturnType<CurrentPcb209RatlineBootstrapOwner["status"]> | null;
+    composite: ReturnType<CurrentPcb209RatlinePcbStartup["status"]> | null }> {
     return Object.freeze({ phase: this.#phase, transitionStarted: this.#router?.status()["transitionStarted"] === true,
       openingAcknowledged: this.#openingObservation?.phase === "open-document", packetRetained: this.#packet !== null, executionAuthorized: false,
       nativeOrigin: this.#origin?.summary() ?? null, step: this.#step, firstFailure: this.#firstFailure,
-      pcbContext: this.#router?.status() ?? null, childSource: this.#child?.status() ?? null });
+      pcbContext: this.#router?.status() ?? null, childSource: this.#child?.status() ?? null, composite: this.#composite === null ? null : currentPcb209RatlineCompositeDiagnosticsSchema.parse(this.#composite.status()) });
   }
   public retainedNativeOriginEvidence(): CurrentPcb209RatlineOriginEvidence | null { return this.#origin?.evidence() ?? null; }
   public retainedOpeningObservation(): CurrentPcbDiagnosticPcbOpeningResult | null { return this.#openingObservation; }

@@ -20,6 +20,7 @@ import { currentPcb209RatlineEventKind, currentPcb209RatlineFailureReason } from
 import type { CurrentPcb209RatlineEventKind } from "./current-pcb-209-ratline-diagnostics.ts";
 import { retainCurrentPcb209RatlineAllocation } from "./current-pcb-209-ratline-transport-windows.ts";
 
+const monotonic = process.hrtime.bigint.bind(process.hrtime);
 type Creation = CurrentPcb209RatlinePcbCreation | CurrentPcb209RatlineWorkerCreation;
 export type CurrentPcb209RatlineBootstrapCommand = Readonly<{ sessionId: string }> & (
   | Readonly<{ method: "Target.setAutoAttach"; params: typeof CURRENT_PCB_WORKER_STARTUP_ATTACH }>
@@ -126,6 +127,8 @@ export class CurrentPcb209RatlineBootstrapOwner {
   #armed = false;
   #failed = false;
   #firstChild = false;
+  #firstPauseStartedAt: bigint | null = null;
+  #firstPauseTimer: ReturnType<typeof setTimeout> | null = null;
   #step = "idle";
   #lastCommand: CurrentPcb209RatlineBootstrapCommand["method"] | null = null;
   #lastEvent: CurrentPcb209RatlineEventKind = "unparsed";
@@ -166,7 +169,7 @@ export class CurrentPcb209RatlineBootstrapOwner {
       stage: this.#stages[this.#index]?.role ?? null, qualified: this.#packet !== null, sourceContinuationConsumed: this.#continuationConsumed,
       unresolvedInstrumentation: this.#allocationUncertain || this.#instrumentation !== null && !this.#removed, commands: this.#commands,
       workerRealmClaimed: this.#realmClaimed, workerRealmRequests: this.#realmRequests,
-      workerScriptLoadedObserved: this.#workerScriptLoadedObserved, firstFailure: this.#firstFailure, step: this.#step,
+      workerScriptLoadedObserved: this.#workerScriptLoadedObserved, firstPauseWindowStarted: this.#firstPauseStartedAt !== null, firstFailure: this.#firstFailure, step: this.#step,
       lastCommand: this.#lastCommand, lastEvent: this.#lastEvent, events: this.#events });
   }
   #same(): void { need(members(this.#dependency).every((value, index) => value === this.#members[index]), "OWNER_CHANGED"); }
@@ -179,6 +182,7 @@ export class CurrentPcb209RatlineBootstrapOwner {
     this.#same(); need(!this.#failed && !this.#released, "NOT_CURRENT");
   }
   #poison(cause: unknown = new Error("PCB209_RATLINE_BOOTSTRAP_ABORTED")): void {
+    if (this.#firstPauseTimer !== null) { clearTimeout(this.#firstPauseTimer); this.#firstPauseTimer = null; }
     if (this.#failed) { return; } const active = this.#stages[this.#index];
     this.#firstFailure = Object.freeze({ reason: currentPcb209RatlineFailureReason(cause), step: this.#step, stage: active?.role ?? null,
       lastCommand: this.#lastCommand, lastEvent: this.#lastEvent, events: this.#events, contextSeen: this.#context !== null,
@@ -225,6 +229,11 @@ export class CurrentPcb209RatlineBootstrapOwner {
         stage.script = script; return;
       }
       if (event.method === "Debugger.paused") {
+        if (this.#firstChild && this.#index === 0) {
+          need(this.#firstPauseStartedAt !== null, "CHILD_START_NOT_READY");
+          need(Number(monotonic() - this.#firstPauseStartedAt) / 1_000_000 < CURRENT_PCB_209_RATLINE_NATIVE_PROFILE.elapsed.ordinaryRequestMilliseconds, "DEADLINE");
+          if (this.#firstPauseTimer !== null) { clearTimeout(this.#firstPauseTimer); this.#firstPauseTimer = null; }
+        }
         // The successor owns fixed capture pauses after the sole source continuation.
         if (this.#index === this.#stages.length) { this.#realmListener().paused(event.params); return; }
         need(stage !== undefined && stage.pause === null, "DUPLICATE_PAUSE");
@@ -345,7 +354,7 @@ export class CurrentPcb209RatlineBootstrapOwner {
     try {
       for (const [ordinal, stage] of this.#stages.entries()) {
         this.#step = "source-pause-wait";
-        const pause = pauseSchema.parse(await bounded(stage.paused.promise)), script = stage.script;
+        const pause = pauseSchema.parse(await (this.#firstChild && ordinal === 0 ? stage.paused.promise : bounded(stage.paused.promise))), script = stage.script;
         need(script !== null && this.#context !== null && pause.data.scriptId === script.scriptId && pause.data.url === script.url &&
           pause.callFrames[0]?.location.scriptId === script.scriptId && script.executionContextId === this.#context.id &&
           (pause.hitBreakpoints.length === 0 || pause.hitBreakpoints[0] === this.#instrumentation), "PAUSE_IDENTITY");
@@ -401,12 +410,21 @@ export class CurrentPcb209RatlineBootstrapOwner {
   /** The containing original native adapter must call this before permitting
    * creation.startOriginalChild, including after an ambiguous arm failure. */
   public async requireOriginalChildStartReady(creation: Creation, packet: CurrentPcb209RatlineCreationPacket): Promise<void> {
-    this.assertOriginalChildStartStillReady(creation, packet); await this.#current();
-    this.assertOriginalChildStartStillReady(creation, packet);
+    this.#assertChildStartReady(creation, packet); await this.#current();
+    this.#assertChildStartReady(creation, packet);
   }
-  /** Recheck private child state after the containing gate's final await and
-   * directly before original dispatch. This performs no native operation. */
+  /** The original gate calls this synchronously immediately before its one
+   * child-start dispatch. Listeners already retain even synchronous pauses;
+   * the unchanged first-pause allowance begins only at this boundary. */
   public assertOriginalChildStartStillReady(creation: Creation, packet: CurrentPcb209RatlineCreationPacket): void {
+    this.#assertChildStartReady(creation, packet);
+    if (this.#firstChild && this.#firstPauseStartedAt === null) {
+      this.#firstPauseStartedAt = monotonic(); this.#step = "source-pause-wait";
+      this.#firstPauseTimer = setTimeout(() => { this.#poison(new Error("PCB209_RATLINE_BOOTSTRAP_DEADLINE")); },
+        CURRENT_PCB_209_RATLINE_NATIVE_PROFILE.elapsed.ordinaryRequestMilliseconds);
+    }
+  }
+  #assertChildStartReady(creation: Creation, packet: CurrentPcb209RatlineCreationPacket): void {
     this.#same();
     need(creation === this.#creation && packet === this.#construction && this.#armed && !this.#allocationUncertain &&
       this.#instrumentation !== null && !this.#removed && !this.#failed && !this.#released && !this.#releaseStarted, "CHILD_START_NOT_READY");

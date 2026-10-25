@@ -4,6 +4,7 @@
  * import. Callback promises alone do not qualify child source. */
 import { CURRENT_PCB_209_RATLINE_NATIVE_PROFILE } from "./current-pcb-209-ratline-budget.ts";
 import { types } from "node:util";
+import { CurrentPcb209RatlineStageDiagnostics } from "./current-pcb-209-ratline-diagnostics.ts";
 import { CurrentPcb209RatlineEventDispatcher } from "./current-pcb-209-ratline-event-dispatcher.ts";
 import { CurrentPcb209RatlineChildStartGate } from "./current-pcb-209-ratline-child-start-gate.ts";
 import type { CurrentPcb209RatlineBootstrapOwner } from "./current-pcb-209-ratline-bootstrap-owner.ts";
@@ -58,6 +59,7 @@ function members(value: CurrentPcb209RatlineStartupDependency): readonly unknown
     return descriptor.value as unknown; });
 }
 class CurrentPcb209RatlineStartupCore {
+  readonly #diagnostics = new CurrentPcb209RatlineStageDiagnostics();
   readonly #dependency: CurrentPcb209RatlineStartupDependency;
   readonly #original: readonly unknown[];
   readonly #releaseSource: CurrentPcb209RatlineStartupDependency["releaseOriginalPinnedSource"];
@@ -82,12 +84,13 @@ class CurrentPcb209RatlineStartupCore {
     this.#dispatcher = new CurrentPcb209RatlineEventDispatcher(role, this.#childGate.claimOriginalRealm()); this.#stages = this.#dispatcher.claimOriginalStages();
   }
   public status(): Readonly<Record<string, unknown>> {
-    return Object.freeze({ consumed: this.#consumed, settled: this.#settled, failed: this.#failed, released: this.#released,
+    return Object.freeze({ ...this.#diagnostics.snapshot(), consumed: this.#consumed, settled: this.#settled, failed: this.#failed, released: this.#released,
       sourceReleaseConsumed: this.#sourceReleased, childInstrumentationConsumed: this.#childArmed,
-      creation: this.#stages.creation.status(), capture: this.#stages.capture.status() });
+      creation: this.#stages.creation.status(), capture: this.#stages.capture.status(), dispatcher: this.#dispatcher.status() });
   }
   #same(): void { need(members(this.#dependency).every((value, index) => value === this.#original[index]), "OWNER_CHANGED"); }
   async #current(): Promise<void> {
+    this.#diagnostics.step = "owner-reproof";
     this.#same(); need(!this.#failed && !this.#released && !this.#releaseStarted, "NOT_CURRENT");
     await bounded(this.#dispatcher.requireOriginal()); this.#same(); need(!this.#failed && !this.#released && !this.#releaseStarted, "NOT_CURRENT");
   }
@@ -95,24 +98,26 @@ class CurrentPcb209RatlineStartupCore {
   public async capture(): Promise<CurrentPcb209RatlineStartupPacket> {
     need(!this.#consumed, "CONSUMED"); this.#consumed = true;
     try {
-      await this.#current(); this.#construction = this.#stages.creation.capture(); void observed(this.#construction);
+      this.#diagnostics.stage = "arming"; await this.#current(); this.#construction = this.#stages.creation.capture(); void observed(this.#construction);
       // The worker's self bridge and canvas pauses precede its subordinate
       // Constructor. Both fixed stage observers must exist before source runs.
       if (this.#role === "worker") { this.#startCapture(); }
       await this.#stages.creation.whenArmed(); if (this.#role === "worker") { await this.#stages.capture.whenArmed(); }
-      await this.#current(); this.#sourceReleased = true; await bounded(this.#dispatcher.continueOriginalSource(() => this.#releaseSource.call(this.#dependency)),
+      this.#diagnostics.stage = "source-continuation"; await this.#current(); this.#sourceReleased = true; await bounded(this.#dispatcher.continueOriginalSource(() => this.#releaseSource.call(this.#dependency)),
         this.#role === "pcb" ? CURRENT_PCB_209_RATLINE_NATIVE_PROFILE.elapsed.sourceReleaseMilliseconds : CURRENT_PCB_209_RATLINE_NATIVE_PROFILE.elapsed.ordinaryRequestMilliseconds); await this.#current();
       const construction = await this.#construction; await this.#current();
-      if (this.#role === "pcb") { this.#startCapture(); await this.#stages.capture.whenArmed(); await this.#current(); }
+      if (this.#role === "pcb") { this.#diagnostics.stage = "capture-arming"; this.#startCapture(); await this.#stages.capture.whenArmed(); await this.#current(); }
+      this.#diagnostics.stage = "child-arming";
       await this.#stages.creation.requireOriginal(construction); this.#childArmed = true;
       await bounded(this.#childGate.armOriginalChildBootstrap(this.#stages.creation, construction), this.#role === "pcb" ?
         CURRENT_PCB_209_RATLINE_NATIVE_PROFILE.elapsed.childArmMilliseconds : 6 * CURRENT_PCB_209_RATLINE_NATIVE_PROFILE.elapsed.ordinaryRequestMilliseconds); await this.#current();
       // Success and abort cleanup share the creation owner's retained start
       // Promise. No second dispatcher or raw child-start request is introduced.
-      await this.#stages.creation.continueOriginalParent(construction); await this.#current();
-      await this.#stages.creation.startOriginalChild(construction); await this.#current();
+      this.#diagnostics.stage = "parent-continuation"; await this.#stages.creation.continueOriginalParent(construction); await this.#current();
+      this.#diagnostics.stage = "child-start"; await this.#stages.creation.startOriginalChild(construction); await this.#current();
+      this.#diagnostics.stage = "capture"; this.#diagnostics.step = "pause-wait";
       need(this.#capture !== null, "CAPTURE_MISSING"); const capture = await this.#capture; await this.#current();
-      await bounded(this.#dispatcher.requireOriginalConstruction(construction, capture)); await this.#current();
+      this.#diagnostics.stage = "comparison"; await bounded(this.#dispatcher.requireOriginalConstruction(construction, capture)); await this.#current();
       this.#packet = Object.freeze({ profile: "private.current-pcb209-ratline-composite.v1", role: this.#role, construction, capture,
         originalConstructionAndBridgeWorkerMatch: true, originalConstructionAndRegistryMatch: true, childStartConsumedOnce: true,
         nativePreexecutionSourceOwnershipVerified: false, nativeWorkerTargetIdentityVerified: false, childSourceQualified: false,
@@ -120,7 +125,7 @@ class CurrentPcb209RatlineStartupCore {
         completeLiveBaselineVerified: false, executionAuthorized: false });
       return this.#packet;
     } catch (error) {
-      this.#failed = true;
+      this.#diagnostics.record(error); this.#failed = true;
       try { await this.#cleanup(); } catch (cleanupError) { throw new AggregateError([error, cleanupError], "PCB209_RATLINE_COMPOSITE_FAILED", { cause: cleanupError }); }
       throw error;
     } finally { this.#settled = true; }
@@ -137,7 +142,8 @@ class CurrentPcb209RatlineStartupCore {
     need(packet === this.#packet && this.#packet !== null, "ORIGINAL_PACKET"); await this.#current();
     await this.#stages.creation.requireOriginal(packet.construction); await this.#stages.capture.requireOriginal(packet.capture); await this.#current();
   }
-  public async abort(): Promise<void> { need(this.#consumed && !this.#released, "ABORT_STATE"); this.#failed = true; await this.#cleanup(); }
+  public async abort(): Promise<void> { need(this.#consumed && !this.#released, "ABORT_STATE");
+    this.#diagnostics.record(new Error("PCB209_RATLINE_COMPOSITE_ABORTED")); this.#failed = true; await this.#cleanup(); }
   public async releaseAfterTermination(): Promise<void> {
     need(this.#settled && !this.#released && !this.#releaseStarted, "RELEASE_STATE"); this.#releaseStarted = true;
     try {

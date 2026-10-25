@@ -1,3 +1,4 @@
+import { currentPcb209RatlineCompositeDiagnosticsSchema } from "../src/current-pcb-209-ratline-diagnostics.ts";
 import assert from "node:assert/strict";
 import { test } from "node:test";
 import { setImmediate as immediate } from "node:timers/promises";
@@ -62,6 +63,14 @@ void test("composite failure resumes original parent after late cleanup but keep
   sourceCurrent = false; originalEvents.lost(); await removedCreation.promise;
   assert.equal(removals, 2); assert.equal(resumes, 0); assert.equal(starts, 0); assert.equal(sourceStarts, 0);
   allocation.resolve({ breakpointId: "bridge", actualLocation: delayedLocation }); await rejected;
+  const diagnostic = currentPcb209RatlineCompositeDiagnosticsSchema.parse(session.status());
+  assert.ok(diagnostic.firstFailure !== null); assert.ok(diagnostic.creation.firstFailure !== null);
+  assert.ok(diagnostic.capture.firstFailure !== null); assert.ok(diagnostic.dispatcher.firstFailure !== null);
+  assert.equal(diagnostic.creation.firstFailure.reason, "PCB209_RATLINE_CREATION_CHILD_ORDER");
+  assert.ok(JSON.stringify(diagnostic).length < 5000); assert.equal(JSON.stringify(diagnostic).includes("https://"), false);
   await assert.rejects(session.abort()); assert.equal(removals, 3); assert.equal(resumes, 1); assert.equal(starts, 0); assert.equal(sourceStarts, 0);
   terminated = true; await session.releaseAfterTermination(); assert.equal(events, null);
+  const released = currentPcb209RatlineCompositeDiagnosticsSchema.parse(session.status());
+  assert.deepEqual(released.firstFailure, diagnostic.firstFailure); assert.deepEqual(released.creation.firstFailure, diagnostic.creation.firstFailure);
+  assert.deepEqual(released.capture.firstFailure, diagnostic.capture.firstFailure); assert.deepEqual(released.dispatcher.firstFailure, diagnostic.dispatcher.firstFailure);
 });

@@ -274,3 +274,64 @@ reason. The complete affected startup file passed six tests; the two coverage
 files passed nine. Strict type-aware lint passed without warnings. No runtime
 source, bundle, compatibility pin, approval policy or refusal check changed.
 These local corrections require a new exact-commit full CI result before release.
+
+## Publication, installation and continuation
+
+Final PR head `59514ad3baace7cc0449b96a1de489ff8d154de1` passed Linux
+run `40173610771`, including all eight facade shards, build and aggregate,
+and Windows recovery run `40173610832`. Protected
+[PR 123](https://github.com/jan-guenter/easyeda-pro-agent-plugin/pull/123)
+merged as `a2b1c3fede0f229ab69e8fba346451b1560b04f1` on 2026-10-25.
+The merged full tree `1172267b77d3d94157da98b2b7fb3be74390ec87` and
+plugin tree `d74f6d37e61cffe26a652c9ab9f16ed78e3832ce` exactly match
+the tested payload. The earlier CI failures remain recorded above.
+
+The official CLI upgraded Git marketplace
+`https://github.com/jan-guenter/easyeda-pro-agent-plugin.git` and installed
+and enabled `0.3.0+codex.20261025065826`. The marketplace checkout equals
+merged main. All 1,962 files, 42 directories and 41,867,125 bytes match the
+committed payload and exact modes, including after the final CLI listing.
+Installed inventory SHA256 is
+`8e69cf1cb930e2fe59f773061182332eedab55a95eaf7d5768a3ede7eaa0b6f4`.
+
+The installed offline probe passed all 19 catalog queries, 21 requests total,
+using pinned Node 24.18.0 and the configured launcher. Its synthetic older
+profile exposed 26 tools, with the existing 51 explicit approval mappings.
+The probe observed its own child's clean EOF exit and sampled no upstream
+descendants or bridge sockets. This is offline package verification, not
+continuous isolation or admission of the actual host. No cache was patched,
+host facade killed, bridge key changed or new extension import performed.
+
+At handoff, post-merge Windows run `40174613578` passed and Linux run
+`40174613632` was still running. The exact PR payload already has complete
+passing CI. This publication appendix is retained locally for the next batch;
+it does not change the installed plugin or require another package version.
+
+The actual current Codex host still loads `0.3.0+codex.20261025034840`.
+A fresh Codex session must load and admit the installed version before another
+connected call. The earlier disposable ratline case is terminal and released;
+its complete file bytes remained unchanged. No CAD cleanup or Save is pending,
+and the excluded production project was not opened or edited.
+
+Continue with actual-host admission and one new disposable PCB startup case
+using the bounded first-failure diagnostics. Validate the new netlist and
+public-reader routes separately; the retained HTTP response is not live proof
+of the installed symbol-search route. The PCB, preview, continuation, writer
+and export backlog described above remains open. Do not replay the earlier
+consumed startup or create another release solely for this handoff appendix.
+
+
+## 2026-10-25 post-merge CI completion and next batch
+
+The previously pending post-merge Linux run
+[40174613632](https://github.com/jan-guenter/easyeda-pro-agent-plugin/actions/runs/40174613632)
+fully passed, including the build and all facade shards. Windows recovery run
+[40174613578](https://github.com/jan-guenter/easyeda-pro-agent-plugin/actions/runs/40174613578)
+also passed. Both ran main `a2b1c3fede0f229ab69e8fba346451b1560b04f1`.
+The earlier pending statement and all original evidence above remain unchanged.
+
+Actual installed-host admission, the next bounded connected reads, the refused
+pre-allocation PCB launch, and the combined language/catalog/runtime-release
+follow-up are recorded in
+[the next batch](2026-10-25-runtime-release-language-catalog-batch.md).
+This correction grants no replay or new execution authority.

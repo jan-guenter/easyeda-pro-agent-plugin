@@ -16,6 +16,15 @@ interface OmissionGroup {
  */
 const groups: readonly OmissionGroup[] = [
   {
+    paths: ["sys_IFrame.isIFrameAlreadyExist"],
+    omission: {
+      code: "installed-209-constant-false-stub",
+      reason: "The pinned API 0.3.59 implementation at UTF-16 offset 1850684 checks extension ownership, normalizes the supplied iframe ID, then returns literal false. It never queries iframe existence. Calling this stub would make an existing iframe indistinguishable from an absent one.",
+      nextRequirement: "Review an implementation that actually reads extension-owned iframe state, or qualify a separate bounded native equivalent. A constant false return is not evidence of absence and must not authorize create, replace or close.",
+      evidence,
+    },
+  },
+  {
     paths: ["lib_Device.searchByProperties"],
     omission: {
       code: "installed-209-library-routing-unqualified",

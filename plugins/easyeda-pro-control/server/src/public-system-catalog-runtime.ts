@@ -2,12 +2,14 @@ import { PUBLIC_SYSTEM_FOOTPRINT_LIBRARY, PUBLIC_SYSTEM_FOOTPRINT_MAX_RESPONSE_B
   PUBLIC_SYSTEM_FOOTPRINT_TIMEOUT_MS } from "./public-system-footprint.ts";
 import { parsePublicSystemCatalogRequest, validatePublicSystemCatalogResult } from "./public-system-catalog.ts";
 import { readPublicSystemSymbolExact } from "./public-system-symbol-exact-runtime.ts";
+import { readPublicSystemLibraryLookup } from "./public-system-library-lookups-runtime.ts";
 
 /** Fixed metadata endpoints only. The source defines read-only POST routes;
  * form encoding is qualified by anonymous samples, not the desktop JSON default. */
 export async function readPublicSystemCatalog(input: unknown): Promise<Record<string, unknown>> {
   const request = parsePublicSystemCatalogRequest(input);
   if (request.action === "search-symbols-by-name") { return readPublicSystemSymbolExact(request); }
+  if (request.action === "search-footprints-by-name" || request.action === "get-devices-by-lcsc-ids") { return readPublicSystemLibraryLookup(request); }
   let body: string | undefined, path: string;
   switch (request.action) {
     case "get-symbol": { path = `/api/v2/components/${request.symbolUuid}`; break; }
