@@ -118,3 +118,43 @@ modules do not enable connected ratline execution.
 
 Publication, installation and actual new-host admission remain separate steps.
 No live project or native operation was attempted in this chat.
+
+
+## Published and installed
+
+PR120 merged payload `4079050676a42504b25b801137a6123746c3c9ed` as main
+`ac6635dd4e2a27ab83ecb62d6c4ffcfdee958ac6`. The complete merged tree is
+`fe539c23d5ffdb9b2a1b8ff28f67d1c1d7470ac8`, exactly the reviewed payload;
+plugin subtree `d1ee0464a7b00666c8fdf8bdde81bef51bc7a037` is unchanged by
+merge. PR Linux CI40140751468 passed all eight facade shards, verify-build
+including bridge checks, and aggregate test-build. Windows CI40140751507
+passed. Automatic main Windows CI40141883552 also passed; main Linux
+CI40141883521 was still running after installation. The required exact-tree
+suite evidence is complete from the PR, without another full local run.
+
+The official CLI upgraded Git marketplace
+`https://github.com/jan-guenter/easyeda-pro-agent-plugin.git` at merged main,
+installing and enabling `0.3.0+codex.20261024225513`. All 1,923 files,
+42 directories and 40,946,235 bytes match committed bytes and modes. Inventory
+SHA256 is `3657eb55e417e8c7ae9a6a9307ceeb679d2f869150a550ab7af42bf35a15beab`.
+The configured installed offline probe passed 13 queries against26 tools with
+pinned Node24.18.0, clean EOF/exit0 and zero stderr. It selected a synthetic
+profile/private control root; sampled absence of descendants or non-stdio
+sockets is not continuous isolation or connected admission.
+
+The final registration still points to the Git URL and merged main, and the
+installed snapshot remains present. There was no manual cache edit, owner
+termination, EasyEDA launch, design access, explicit Save or CAD dispatch.
+The current chat still exposes zero EasyEDA tools. A fresh connection must
+load225513 and independently admit its actual owner. If the other chat still
+owns the facade, expect diagnostic status only until that original connection
+releases normally; do not use another agent's catalog or kill the host owner.
+No previous launch, navigation, capture or Save may be repeated.
+
+The next native integration batch must also address the helper's17,739-byte
+headroom before its1MiB limit, pre-existing context events from Runtime.enable,
+and an independent Worker-object-to-native-target association. These are
+concrete remaining constraints, not claims supplied by source hashes or inert
+V8 tests. The private implementation handoff retains the adoption map and
+focused acceptance criteria. Keep the existing legacy and209 purposes unchanged
+while adding a distinct original launch purpose.

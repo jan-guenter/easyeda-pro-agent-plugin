@@ -1,5 +1,6 @@
 /* oxlint-disable import/max-dependencies -- This focused integration test loads the actual owner and dispatcher, real V8 creation fixture, native grammar and synthetic source-only module loader together. */
 import assert from "node:assert/strict";
+import { CURRENT_PCB_209_RATLINE_NATIVE_PROFILE as budgetProfile } from "../src/current-pcb-209-ratline-budget.ts";
 import { createHash } from "node:crypto";
 import { readFile } from "node:fs/promises";
 import { createRequire } from "node:module";
@@ -212,6 +213,10 @@ void test("late instrumentation acknowledgement is retained and removed once aft
 });
 
 void test("synthetic full source chain hands original worker realm to actual dispatcher before one source continuation", async context => {
+  const deadlines: number[] = [], originalSetTimeout = globalThis.setTimeout;
+  context.mock.method(globalThis, "setTimeout", (...args: Parameters<typeof setTimeout>): ReturnType<typeof setTimeout> => {
+    if (typeof args[1] === "number") { deadlines.push(args[1]); } return originalSetTimeout(...args);
+  });
   const f = await fixture(context, { syntheticFullChain: true }); await f.owner.armOriginalChildBootstrap(f.creation, f.packet);
   await f.owner.requireOriginalChildStartReady(f.creation, f.packet); await f.start(); const packet = await f.owner.whenSourceQualified();
   assert.equal(f.counts().sourceReads, 7); assert.equal(f.counts().resumes, 6); assert.equal(packet.nativeWorkerTargetIdentityVerified, false);
@@ -230,6 +235,8 @@ void test("synthetic full source chain hands original worker realm to actual dis
     params: { location: { scriptId: "foreign-script", lineNumber: point.lineNumber, columnNumber: point.columnNumber } } }), /REALM_SCRIPT/u);
   await assert.rejects(realm.request({ method: "Runtime.runIfWaitingForDebugger", sessionId: "unobserved-session", params: {} }), /REALM_CHILD_START/u);
   assert.equal(f.counts().requests, before);
+  for (const slot of budgetProfile.sources.child) { assert.ok(deadlines.includes(slot.deadlineMilliseconds), `Missing source deadline for ${slot.stage}`); }
+  assert.ok(deadlines.includes(budgetProfile.elapsed.ordinaryRequestMilliseconds));
   await f.finish(); await dispatcher.releaseAfterTermination();
 });
 

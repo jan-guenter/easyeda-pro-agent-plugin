@@ -1,6 +1,7 @@
 /** Generates the independent native fixed-command encoder from literal command
  * cases. Values supplied at runtime are identifiers, never programs or params. */
 /* oxlint-disable import/max-dependencies -- This generator compares both fixed source profiles and every literal command family at one native protocol boundary. */
+import { gzipSync } from "node:zlib";
 import { CURRENT_PCB_WORKER_CONSTRUCTION_ASSIGNMENT_CALLS } from "./current-pcb-worker-construction-assignment.ts";
 import { CURRENT_PCB_WORKER_CONSTRUCTION_IDENTITY, CURRENT_PCB_WORKER_CONSTRUCTION_PROJECT, CURRENT_PCB_WORKER_CONSTRUCTION_SAME,
   CURRENT_PCB_WORKER_CONSTRUCTION_SITES, CURRENT_PCB_WORKER_CONSTRUCTION_SOURCE } from "./current-pcb-worker-construction-contract.ts";
@@ -131,13 +132,20 @@ export function currentPcbWorkerStartupNativeSource(): string {
     return `    if(${condition}) {\n      Need(method==${literal(sample.method)},"method");\n      Keys(fields,new string[]{${fields.map(([key]) => literal(key)).join(",")}});\n      parameters=${parameters};\n    }`;
   });
   if (changedCases !== 1 || legacyCases.length !== currentCases.length) { throw new Error("WORKER_STARTUP_NATIVE_GENERATION_COUNT"); }
+  const smokeExpected: string[] = [];
+  function expectedReference(value: string): string {
+    if (value.includes("\0")) { throw new Error("WORKER_STARTUP_NATIVE_SMOKE_DELIMITER"); }
+    const index = smokeExpected.indexOf(value);
+    if (index !== -1) { return `expected[${String(index)}]`; }
+    smokeExpected.push(value); return `expected[${String(smokeExpected.length - 1)}]`;
+  }
   const smoke = legacyCases.map((sample, index) => {
     const current = variant(index, sample);
     const request = currentPcbWorkerStartupWire(sample, 1).request;
     const fields = Object.entries(request).filter(([key]) => !["action", "requestId", "method", "sessionId", "startupPhase"].includes(key));
     const expected = JSON.stringify({ id: 1, method: sample.method, params: sample.params, sessionId: sample.sessionId });
     const currentExpected = JSON.stringify({ id: 1, method: current.method, params: current.params, sessionId: current.sessionId });
-    const expectedExpression = expected === currentExpected ? literal(expected) : `(workerStartup209?${literal(currentExpected)}:${literal(expected)})`;
+    const expectedExpression = expected === currentExpected ? expectedReference(expected) : `(workerStartup209?${expectedReference(currentExpected)}:${expectedReference(expected)})`;
     return `    fields.Clear();\n${fields.map(([key, value]) => `    fields.Add(${literal(key)},${literal(String(value))});`).join("\n")}\n` +
       `    Need(EncodeCore(1,${literal(sample.method)},${literal(sample.sessionId)},${literal(String(request["startupPhase"]))},fields,workerStartup209)==${expectedExpression}+"\\0","smoke-parity");`;
   }).join("\n");
@@ -147,8 +155,12 @@ export function currentPcbWorkerStartupNativeSource(): string {
     const expected = JSON.stringify({ id: 256, method: sample.method, params: sample.params,
       ...(sample.sessionId === undefined ? {} : { sessionId: sample.sessionId }) });
     return `    fields.Clear();\n${fields.map(([key, value]) => `    fields.Add(${literal(key)},${typeof value === "number" ? String(value) : literal(value)});`).join("\n")}\n` +
-      `    Need(EasyedaDiagnosticOwner.WorkerStartupParentProtocolMessage(256,${literal(sample.method)},${literal(String(request["parentPhase"]))},fields)==${literal(expected)}+"\\0","smoke-parent-parity");`;
+      `    Need(EasyedaDiagnosticOwner.WorkerStartupParentProtocolMessage(256,${literal(sample.method)},${literal(String(request["parentPhase"]))},fields)==${expectedReference(expected)}+"\\0","smoke-parent-parity");`;
   }).join("\n");
+  const smokeText = smokeExpected.join("\0");
+  const smokeBytes = Buffer.byteLength(smokeText);
+  // oxlint-disable-next-line node/no-sync -- Deterministic in-memory compression of fixed compile-only expected vectors.
+  const smokePacked = gzipSync(smokeText, { level: 9 });
   return `// BEGIN GENERATED WORKER STARTUP PROTOCOL
 // Generated from current-pcb-worker-startup-native.ts. Do not edit this block.
 public static class EasyedaWorkerStartupProtocol {
@@ -182,7 +194,24 @@ ${rows.join(" else\n")}
   }
   public static void VerifySmoke() { VerifySmokeCore(false); }
   public static void Verify209Smoke() { VerifySmokeCore(true); }
+  static string[] SmokeExpected() {
+    // Test vectors are decoded only by CompileOnly, never normal encoding.
+    const string encoded=${literal(smokePacked.toString("base64"))};
+    byte[] packed=System.Convert.FromBase64String(encoded),bytes=new byte[${String(smokeBytes)}];int count=0;
+    Need(packed.Length==${String(smokePacked.length)} && System.Convert.ToBase64String(packed)==encoded,"smoke-base64");
+    using(var input=new System.IO.MemoryStream(packed,false))
+    using(var stream=new System.IO.Compression.GZipStream(input,System.IO.Compression.CompressionMode.Decompress)) {
+      while(count<bytes.Length) { int read=stream.Read(bytes,count,bytes.Length-count);if(read==0)break;count+=read; }
+      Need(count==bytes.Length && stream.ReadByte()==-1,"smoke-bytes");
+    }
+    using(var hash=System.Security.Cryptography.SHA256.Create()) {
+      Need(System.BitConverter.ToString(hash.ComputeHash(bytes)).Replace("-","").ToLowerInvariant()==${literal(sha256Text(smokeText))},"smoke-hash");
+    }
+    string[] result=new System.Text.UTF8Encoding(false,true).GetString(bytes).Split('\\0');
+    Need(result.Length==${String(smokeExpected.length)},"smoke-count");return result;
+  }
   static void VerifySmokeCore(bool workerStartup209) {
+    string[] expected=SmokeExpected();
     System.Collections.Hashtable fields=new System.Collections.Hashtable(System.StringComparer.Ordinal);
 ${smoke}
 ${parentSmoke}

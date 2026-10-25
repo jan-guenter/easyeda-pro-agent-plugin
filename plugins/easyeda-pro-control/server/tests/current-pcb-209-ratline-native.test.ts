@@ -6,6 +6,7 @@ import { CURRENT_PCB_209_RATLINE_NATIVE_CASES } from "../src/current-pcb-209-rat
 import { currentPcb209RatlineNativeWire } from "../src/current-pcb-209-ratline-native-wire.ts";
 import { currentPcb209RatlineNativeSource } from "../src/current-pcb-209-ratline-native.ts";
 import { currentPcb209EmptyNativeWire } from "../src/current-pcb-209-empty-native-wire.ts";
+import { currentPcb209RatlineNativeParitySource } from "./helpers/current-pcb-209-ratline-native-parity.ts";
 
 void test("ratline native grammar preserves exact role cases and issued IDs without granting existing empty209 admission", () => {
   const counts = { pcb: 0, worker: 0 };
@@ -65,13 +66,20 @@ void test("ratline native syntax refuses getters, proxies, inherited fields, spa
 });
 void test("ratline C# template table preserves every fixed command and exact bounded UTF-8 payload", () => {
   const source = currentPcb209RatlineNativeSource();
-  const match = /static readonly string\[\] Templates=Unpack\(@"([A-Za-z\d+/=]+)",(\d+),@"([a-f\d]{64})"\)/u.exec(source);
+  const match = /string\[\] rows=Unpack\(@"([A-Za-z\d+/=]+)",(\d+),@"([a-f\d]{64})"\)/u.exec(source);
   assert.ok(match !== null && match[1] !== undefined && match[2] !== undefined && match[3] !== undefined);
   // oxlint-disable-next-line node/no-sync -- Bounded in-memory build constant, not a filesystem or runtime compression operation.
   const decoded = gunzipSync(Buffer.from(match[1], "base64"));
   assert.equal(decoded.length, Number(match[2])); assert.equal(createHash("sha256").update(decoded).digest("hex"), match[3]);
-  assert.deepEqual(decoded.toString("utf8").split("\0"), CURRENT_PCB_209_RATLINE_NATIVE_CASES.map(entry => JSON.stringify(entry.command)));
-  assert.equal(source.split('"smoke-parity"').length - 1, CURRENT_PCB_209_RATLINE_NATIVE_CASES.length);
+  assert.deepEqual(decoded.toString("utf8").split("\0").map(row => row.split("\t")), CURRENT_PCB_209_RATLINE_NATIVE_CASES.map(entry => {
+    const wire = currentPcb209RatlineNativeWire(entry.role, entry.command, 1);
+    return [entry.role, entry.phase, entry.command.method,
+      Object.keys(wire.request).filter(key => !["action", "requestId", "method", "role", "phase"].includes(key)).join(","), JSON.stringify(entry.command)];
+  }));
+  assert.ok(source.includes("new System.Text.UTF8Encoding(false,true)"));
+  assert.ok(source.includes("System.Convert.ToBase64String(packed)==encoded"));
+  assert.ok(source.includes("Need(count==length && stream.ReadByte()==-1"));
+  assert.ok(source.includes("System.StringComparison.Ordinal"));
   const bound = /MaximumEncodedBytes=(\d+);/u.exec(source)?.[1]; assert.ok(bound !== undefined);
   let maximum = 0;
   for (const entry of CURRENT_PCB_209_RATLINE_NATIVE_CASES) {
@@ -81,5 +89,18 @@ void test("ratline C# template table preserves every fixed command and exact bou
     maximum = Math.max(maximum, Buffer.byteLength(`${JSON.stringify(encoded.command)}\0`));
   }
   assert.equal(maximum, Number(bound));
-  assert.ok(Buffer.byteLength(source) < 100_000);
+  // The fixed table and runtime smoke must fit alongside the existing native
+  // Owner without its exhaustive test vectors consuming helper headroom.
+  assert.ok(Buffer.byteLength(source) < 10_000);
+  assert.equal(source.includes('"parity-'), false);
+});
+void test("ratline exhaustive compiled parity stays outside the helper runtime fragment", () => {
+  const source = currentPcb209RatlineNativeParitySource();
+  assert.equal(source.match(/"parity-\d+"/gu)?.length, CURRENT_PCB_209_RATLINE_NATIVE_CASES.length);
+  for (const [index, entry] of CURRENT_PCB_209_RATLINE_NATIVE_CASES.entries()) {
+    assert.ok(source.includes(`EasyedaRatline209Protocol.Encode(${String(301 + index)},@"${entry.role}",@"${entry.phase}"`));
+  }
+  assert.ok(source.includes("EasyedaRatline209Protocol.VerifySmoke();"));
+  assert.ok(source.includes("System.StringComparer.OrdinalIgnoreCase"));
+  assert.ok(source.includes('fields.Add("expression","arbitrary")'));
 });

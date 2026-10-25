@@ -67,6 +67,16 @@ the exhaustive Node 24.18.0 descriptor boundary, zero soft core limit, and every
 retained input seal before closing its inherited payload descriptors and
 delivering the ephemeral token.
 
+The disposable ratline diagnostic has a separate Windows launch purpose. Its
+native owner leases the exact application files and source dependency set
+before process creation, while a single ledger accounts for discovery,
+project capture, PCB source loading and the first child's held import. The
+context router transfers the parent event stream once and rechecks native
+frame ancestry before each continuation. Durable intent precedes navigation;
+cleanup reserves remain available after normal work stops. See the
+[ratline workflow](../plugins/easyeda-pro-control/skills/easyeda-pro-control/references/current-pcb209-ratline-held-import.md)
+for the partial observation and remaining identity/completion limits.
+
 Only the dedicated owner-only data directory is writable. The host source tree,
 control-root credentials, host `/proc` and `/etc`, workers, child processes,
 native addons, and WASI are unavailable. The seccomp filter rejects outbound

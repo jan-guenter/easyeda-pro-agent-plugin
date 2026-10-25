@@ -17,7 +17,8 @@ import { CURRENT_PCB_209_ACTOR_CLOCK_SOURCE_PROFILE, qualifyCurrentPcb209ActorCl
 import type { CurrentPcb209ActorClockSourceQualification, CurrentPcb209ActorClockSources } from "./current-pcb-209-actor-clock-source.ts";
 import { CURRENT_PCB_209_WORKER_BOOTSTRAP_SOURCE_PROFILE, qualifyCurrentPcb209WorkerBootstrapSources } from "./current-pcb-209-worker-bootstrap-source.ts";
 import type { CurrentPcb209WorkerBootstrapSources } from "./current-pcb-209-worker-bootstrap-source.ts";
-// oxlint-disable-next-line import/max-dependencies -- Fixed209 actor/bootstrap qualifiers share this private descriptor reader; exporting a caller-selected path reader would widen the installation boundary.
+// oxlint-disable-next-line import/max-dependencies -- Fixed209 actor/bootstrap/ratline profiles share this private descriptor reader; exporting caller-selected paths or pins would widen the installation boundary.
+import { CURRENT_PCB_209_RATLINE_INSTALLATION_PROFILE } from "./current-pcb-209-ratline-installation-profile.ts";
 import { isPublicUtilities209Configured } from "./sdk-public-utilities-profile.ts";
 import { deriveWindowsRuntimePaths } from "./windows-runtime.ts";
 import type { WindowsRuntimePaths } from "./windows-runtime.ts";
@@ -71,8 +72,18 @@ export function createCurrentPcb209DiagnosticInstallationPlan(options: CurrentPc
 }> {
   return createFixedInstallationPlan(options, ORDINARY_LAUNCH_209_PROFILE.installedFiles);
 }
+/** New launch purpose only. Core files remain in the original first five
+ * positions; every additional source is a fixed, deduplicated retained lease. */
+export function createCurrentPcb209RatlineInstallationPlan(options: CurrentPcbDiagnosticInstallationOptions): Readonly<{
+  paths: WindowsRuntimePaths; plan: CurrentPcbDiagnosticInstallationPlan;
+}> {
+  const result = createFixedInstallationPlan(options, CURRENT_PCB_209_RATLINE_INSTALLATION_PROFILE.installedFiles);
+  const files = [...result.plan.files], powershell = files.pop();
+  if (powershell === undefined) { refuse(); } files.splice(4, 0, powershell);
+  return Object.freeze({ paths: result.paths, plan: Object.freeze({ ...result.plan, files: Object.freeze(files) }) });
+}
 function createFixedInstallationPlan(options: CurrentPcbDiagnosticInstallationOptions,
-  pins: typeof ORDINARY_LAUNCH_PROFILE.installedFiles | typeof ORDINARY_LAUNCH_209_PROFILE.installedFiles): Readonly<{
+  pins: readonly Readonly<{ relativePath: string; bytes: number; sha256: string }>[]): Readonly<{
     paths: WindowsRuntimePaths; plan: CurrentPcbDiagnosticInstallationPlan;
   }> {
   if (!/^[a-f\d]{64}$/u.test(options.powershellSha256) || !Number.isSafeInteger(options.powershellBytes) ||
@@ -182,6 +193,22 @@ export async function verifyCurrentPcbDiagnosticFacade(options: CurrentPcbDiagno
 /** Fixed209 counterpart for reproof paired with the original native leases. */
 export function verifyCurrentPcb209DiagnosticFacade(options: CurrentPcbDiagnosticInstallationOptions): Promise<CurrentPcbDiagnosticInstallation> {
   return verifyFixedFacade(options, createCurrentPcb209DiagnosticInstallationPlan(options));
+}
+export function verifyCurrentPcb209RatlineFacade(options: CurrentPcbDiagnosticInstallationOptions): Promise<CurrentPcbDiagnosticInstallation> {
+  return verifyFixedFacade(options, createCurrentPcb209RatlineInstallationPlan(options));
+}
+/** Complete exact source snapshot before allocation. Native launch separately
+ * acquires and retains every file in this plan before starting the process. */
+export async function verifyCurrentPcb209RatlineInstallation(options: CurrentPcbDiagnosticInstallationOptions): Promise<CurrentPcbDiagnosticInstallation> {
+  if (!isPublicUtilities209Configured(process.env)) { refuse(); }
+  const original = createCurrentPcb209RatlineInstallationPlan(options), verified = await verifyFixedFacade(options, original);
+  for (const pin of CURRENT_PCB_209_RATLINE_INSTALLATION_PROFILE.installedFiles) {
+    await verifyPinnedInstallationFile(path.posix.resolve(options.assetsRoot, pin.relativePath), pin, 268_435_456);
+  }
+  await verifyCurrentPcbDiagnosticPowerShell(original.paths.powershellExecutable, { bytes: options.powershellBytes, sha256: options.powershellSha256 });
+  if (!isPublicUtilities209Configured(process.env)) { refuse(); }
+  const after = await verifyFixedFacade(options, original);
+  if (canonicalJson(after) !== canonicalJson(verified)) { refuse(); } return verified;
 }
 /** Source-qualified 209 opening only. Assets are freshly descriptor-hashed;
  * renderer source is independently compared again through the original pipe.

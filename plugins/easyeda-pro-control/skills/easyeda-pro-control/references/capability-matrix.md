@@ -89,9 +89,14 @@ Private PCB source capture now arms before its consumed navigation, qualifies
 all 29 source phases and holds the final import for the actual composite. The
 original child-start guard requires its real bootstrap owner and keeps failed
 children held through cleanup. These pieces have offline composition coverage.
-Native frame/target admission, channel integration, cumulative budgets and
-cross-realm completion remain unfinished; no native PCB-worker/ratline capture
-route is enabled.
+The separate [ratline held-import route](current-pcb209-ratline-held-import.md)
+connects these owners through one original native channel, launch budget and
+complete source lease set. It checks native PCB frame/context ancestry, observes
+PCB construction and holds the first child after seven qualified source phases.
+Connected validation remains pending. Independent JavaScript Worker-to-CDP
+target identity, worker continuation, subordinate completion and cross-realm
+callback/publication completion remain unfinished. This partial diagnostic
+does not enable a PCB writer or establish complete startup.
 The [public catalog queries](current-system-library.md) require explicit network
 confirmation and use fixed credential-free vendor endpoints, without local
 application/database access. Footprint/symbol/device search, symbol/device

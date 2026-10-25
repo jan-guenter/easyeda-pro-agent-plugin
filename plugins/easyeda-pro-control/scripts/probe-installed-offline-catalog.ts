@@ -20,6 +20,8 @@ const NODE_VERSION = "24.18.0";
 const MAX_REPLY_BYTES = 8 * 1024 * 1024;
 const MAX_OUTPUT_BYTES = 16 * 1024 * 1024;
 const REQUEST_TIMEOUT_MS = 15_000;
+// Initialize and tool discovery plus the sixteen fixed catalog requests below.
+const REQUEST_LIMIT = 2 + 16;
 const EXPECTED_TOOLS = [
   "api", "calculate", "discover", "disposable_pcb_rename", "disposable_schematic_rename", "disposable_symbol_copy",
   "editor_context", "editor_shell", "extensions", "history", "launch", "pcb_diagnostic_validation", "pcb_geometry",
@@ -183,7 +185,7 @@ class OfflineChild {
 
   public async request(method: "initialize" | "tools/list" | "tools/call", params: Record<string, unknown>): Promise<Record<string, unknown>> {
     if (this.#failure !== undefined) { throw this.#failure; }
-    requireCheck(!this.#ended && this.#pending === undefined && this.#id < 16, "Offline child is unavailable or exceeded its request bound.");
+    requireCheck(!this.#ended && this.#pending === undefined && this.#id < REQUEST_LIMIT, "Offline child is unavailable or exceeded its request bound.");
     let timer: ReturnType<typeof setTimeout> | undefined;
     try {
       // oxlint-disable-next-line promise/avoid-new -- Match this request's single original JSON-RPC reply or bounded timeout.
@@ -319,7 +321,17 @@ async function catalogChecks(child: OfflineChild, sample: () => Promise<void>): 
     requireCheck(result["valid"] === valid && result["executionAuthorized"] === false,
       "Empty baseline validation accepted a caller budget or implied execution authority.");
   }
-  return { tools: tools.length, queries: 13 };
+  const ratline = await offlineApi(child, { action: "pcb209-ratline-held-import", query: { includeSchemas: true } });
+  requireCheck(ratline["toolWrapperAction"] === "ratline-held-import" && ratline["executionAuthorized"] === false &&
+    ratline["saveAuthorized"] === false && ratline["connectedValidation"] === false && Array.isArray(record(ratline["inputSchema"])["oneOf"]),
+  "Ratline held-import discovery or its schema changed.");
+  const ratlineLaunch = { ...launch, operationId: "pcb209-ratline-offline-catalog" };
+  for (const [request, valid] of [[ratlineLaunch, true], [{ ...ratlineLaunch, requestLimit: 9999 }, false]] as const) {
+    const result = await offlineApi(child, { action: "pcb209-ratline-held-import-validate", query: { request } });
+    requireCheck(result["valid"] === valid && result["executionAuthorized"] === false,
+      "Ratline held-import validation accepted a caller budget or implied execution authority.");
+  }
+  return { tools: tools.length, queries: 16 };
 }
 
 export async function probeInstalledOfflineCatalog(installedRoot: string): Promise<Record<string, unknown>> {

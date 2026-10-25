@@ -2,6 +2,7 @@
 /** Capture the original Worker construction boundary and waiting attachment.
  * Correlation is deliberately not native Worker/target identity: a page session
  * can report children of other frames. No native adapter adopts this stage yet. */
+import { CURRENT_PCB_209_RATLINE_NATIVE_PROFILE } from "./current-pcb-209-ratline-budget.ts";
 import { createHash } from "node:crypto";
 import { types } from "node:util";
 import { z } from "zod";
@@ -60,7 +61,7 @@ interface Child { readonly targetId: string; readonly sessionId: string; readonl
 const INTERNAL = Symbol("fixed209-ratline-creation");
 function fail(code: string): Error { return new Error(`PCB209_RATLINE_CREATION_${code}`); }
 function need(value: boolean, code: string): asserts value { if (!value) { throw fail(code); } }
-async function bounded<T>(work: Promise<T>, milliseconds = 2500): Promise<T> {
+async function bounded<T>(work: Promise<T>, milliseconds: number = CURRENT_PCB_209_RATLINE_NATIVE_PROFILE.elapsed.ordinaryRequestMilliseconds): Promise<T> {
   const deadline = Promise.withResolvers<never>(), timer = setTimeout(() => { deadline.reject(fail("DEADLINE")); }, milliseconds);
   try { return await Promise.race([work, deadline.promise]); } finally { clearTimeout(timer); }
 }
@@ -298,7 +299,7 @@ class CurrentPcb209RatlineCreationCore {
         sourceSha256: CURRENT_PCB_209_RATLINE_SOURCE_PROFILE[this.#role].sha256, constructorBoundaryObserved: true, soleWaitingChildObserved: true,
         requestedUrlSha256: createHash("sha256").update(url).digest("hex"), childTargetId: child.targetId, childSessionId: child.sessionId,
         parentHeldAfterConstruction: true, nativeWorkerTargetIdentityVerified: false, childSourceQualified: false, executionAuthorized: false });
-      this.#watchdog = setTimeout(() => { this.#poison("CONTINUATION_DEADLINE"); void observed(this.#cleanup()); }, 6000);
+      this.#watchdog = setTimeout(() => { this.#poison("CONTINUATION_DEADLINE"); void observed(this.#cleanup()); }, this.#role === "pcb" ? CURRENT_PCB_209_RATLINE_NATIVE_PROFILE.elapsed.creationContinuationMilliseconds : 6000);
       return this.#packet;
     } catch (error) { this.#poison("FAILED");
       try { await this.#cleanup(); } catch (cleanupError) { throw new AggregateError([error, cleanupError], "PCB209_RATLINE_CREATION_FAILED", { cause: cleanupError }); } throw error;

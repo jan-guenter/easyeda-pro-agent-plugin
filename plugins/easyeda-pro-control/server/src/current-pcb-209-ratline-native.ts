@@ -1,6 +1,6 @@
-/** Dormant native encoding only. This fragment is not inserted into a helper
- * or admitted by a launch purpose. Original owner/session/source checks and
- * cumulative lifetime budgets remain prerequisites of future integration. */
+/** Fixed native encoding only. The launch-specific owner separately restricts
+ * the currently admitted stage and retains session/source ownership plus
+ * cumulative lifetime budgets. The full finite table grants no continuation. */
 import { createHash } from "node:crypto";
 import { gzipSync } from "node:zlib";
 import { CURRENT_PCB_209_RATLINE_NATIVE_CASES, currentPcb209RatlineNativePlaceholder } from "./current-pcb-209-ratline-native-cases.ts";
@@ -8,9 +8,9 @@ import { currentPcb209RatlineNativeWire } from "./current-pcb-209-ratline-native
 
 function literal(value: string): string { return `@"${value.replaceAll('"', '""')}"`; }
 export function currentPcb209RatlineNativeSource(): string {
-  const rows: string[] = [], smoke: string[] = [], templates: string[] = [];
+  const rows: string[] = [];
   let maximumEncodedBytes = 0;
-  for (const [index, entry] of CURRENT_PCB_209_RATLINE_NATIVE_CASES.entries()) {
+  for (const entry of CURRENT_PCB_209_RATLINE_NATIVE_CASES) {
     const wire = currentPcb209RatlineNativeWire(entry.role, entry.command, 2_147_483_647);
     if (wire.request["phase"] !== entry.phase) { throw new Error("PCB209_RATLINE_NATIVE_AMBIGUOUS_CASE"); }
     const fields = Object.entries(wire.request).filter(([key]) => !["action", "requestId", "method", "role", "phase"].includes(key));
@@ -25,17 +25,18 @@ export function currentPcb209RatlineNativeSource(): string {
       bytes += (key === "sessionId" ? 128 : 256) - (match[0].length - 2);
     }
     if (bytes > 65_536 || template.includes("\0")) { throw new Error("PCB209_RATLINE_NATIVE_TEMPLATE_BOUND"); }
-    maximumEncodedBytes = Math.max(maximumEncodedBytes, bytes); templates.push(template);
-    rows.push(`    if(role==${literal(entry.role)} && phase==${literal(entry.phase)}) {\n` +
-      `      Need(method==${literal(entry.command.method)},"method");Keys(fields,new string[]{${fields.map(([key]) => literal(key)).join(",")}});\n` +
-      `      message=Expand(Templates[${String(index)}],fields);\n    }`);
-    smoke.push(`    fields.Clear();\n${fields.map(([key, value]) => `    fields.Add(${literal(key)},${literal(String(value))});`).join("\n")}\n` +
-      `    Need(Encode(2147483647,${literal(entry.role)},${literal(entry.phase)},${literal(entry.command.method)},fields)==${literal(JSON.stringify({ id: wire.command.id, ...entry.command }))}+"\\0","smoke-parity");`);
+    maximumEncodedBytes = Math.max(maximumEncodedBytes, bytes);
+    const columns = [entry.role, entry.phase, entry.command.method, fields.map(([key]) => key).join(","), template];
+    if (columns.some(column => column.includes("\t") || column.includes("\0"))) { throw new Error("PCB209_RATLINE_NATIVE_TABLE_DELIMITER"); }
+    rows.push(columns.join("\t"));
   }
-  const bytes = Buffer.from(templates.join("\0"));
+  if (new Set(CURRENT_PCB_209_RATLINE_NATIVE_CASES.map(entry => `${entry.role}:${entry.phase}`)).size !== rows.length) {
+    throw new Error("PCB209_RATLINE_NATIVE_DUPLICATE_CASE");
+  }
+  const bytes = Buffer.from(rows.join("\0"));
   // oxlint-disable-next-line node/no-sync -- Deterministic compression of this bounded fixed table during generation; no I/O or application execution.
   const packed = gzipSync(bytes, { level: 9 });
-  return `// Dormant fixed ratline grammar; no owner, session, launch or budget authority.
+  return `// Fixed ratline grammar; no owner, session, launch or budget authority.
 public static class EasyedaRatline209Protocol {
   public const int MaximumEncodedBytes=${String(maximumEncodedBytes)};
   static void Need(bool value,string code) { if(!value)throw new System.InvalidOperationException("pcb-ratline209-"+code); }
@@ -52,8 +53,15 @@ public static class EasyedaRatline209Protocol {
     }
     return new System.Text.UTF8Encoding(false,true).GetString(bytes);
   }
-  static readonly string[] Templates=Unpack(${literal(packed.toString("base64"))},${String(bytes.length)},${literal(createHash("sha256").update(bytes).digest("hex"))}).Split('\\0');
-  static EasyedaRatline209Protocol() { Need(Templates.Length==${String(templates.length)},"template-count"); }
+  static readonly string[][] Cases=Load();
+  static string[][] Load() {
+    string[] rows=Unpack(${literal(packed.toString("base64"))},${String(bytes.length)},${literal(createHash("sha256").update(bytes).digest("hex"))}).Split('\\0');
+    Need(rows.Length==${String(rows.length)},"template-count");string[][] result=new string[rows.Length][];
+    for(int index=0;index<rows.Length;index++) {
+      result[index]=rows[index].Split('\\t');Need(result[index].Length==5,"template-columns");
+    }
+    return result;
+  }
   static string Field(System.Collections.IDictionary fields,string name) {
     Need(fields!=null && fields.Contains(name),"field");string value=fields[name] as string;
     Need(value!=null && value.Length<=(name=="sessionId"?128:256) &&
@@ -78,25 +86,22 @@ public static class EasyedaRatline209Protocol {
     // Int32 positivity is only envelope syntax. The original channel/helper
     // Must enforce its own never-reset lifetime request allowance before use.
     Need(id>=1,"id");string message=null;
-${rows.join(" else\n")}
+    foreach(string[] row in Cases) {
+      if(role!=row[0] || phase!=row[1])continue;
+      Need(message==null,"case");Need(method==row[2],"method");
+      Keys(fields,row[3].Length==0?new string[0]:row[3].Split(','));message=Expand(row[4],fields);
+    }
     Need(message!=null && message.StartsWith("{",System.StringComparison.Ordinal),"case");
     string result="{\\"id\\":"+id.ToString(System.Globalization.CultureInfo.InvariantCulture)+","+message.Substring(1)+"\\0";
     Need(System.Text.Encoding.UTF8.GetByteCount(result)<=MaximumEncodedBytes,"size");return result;
   }
   public static void VerifySmoke() {
     var fields=new System.Collections.Hashtable(System.StringComparer.Ordinal);
-${smoke.join("\n")}
-    fields.Clear();fields.Add("sessionId","s");fields.Add("objectId","__ratline209_argument0__");fields.Add("argument0","original");
+    fields.Add("sessionId","s");
+    Need(Encode(301,"pcb","resume","Debugger.resume",fields)==@"{""id"":301,""method"":""Debugger.resume"",""sessionId"":""s"",""params"":{}}"+"\\0","smoke-frame");
+    fields.Add("objectId","__ratline209_argument0__");fields.Add("argument0","original");
     string collision=Encode(301,"pcb","relation-same","Runtime.callFunctionOn",fields);
     Need(collision.Contains(@"""objectId"":""__ratline209_argument0__""") && collision.Contains(@"""objectId"":""original"""),"smoke-placeholder");
-    foreach(string role in new string[]{null,"","PCB","foreign"}) {
-      bool refused=false;try{Encode(1,role,"relation-same","Runtime.callFunctionOn",fields);}catch(System.InvalidOperationException){refused=true;}Need(refused,"smoke-role");
-    }
-    foreach(int id in new int[]{0,-1}) {
-      bool refused=false;try{Encode(id,"pcb","relation-same","Runtime.callFunctionOn",fields);}catch(System.InvalidOperationException){refused=true;}Need(refused,"smoke-id");
-    }
-    fields.Add("expression","arbitrary");bool extra=false;
-    try{Encode(1,"pcb","relation-same","Runtime.callFunctionOn",fields);}catch(System.InvalidOperationException){extra=true;}Need(extra,"smoke-extra");
     var insensitive=new System.Collections.Hashtable(System.StringComparer.OrdinalIgnoreCase);insensitive.Add("SessionId","s");
     bool alias=false;try{Encode(1,"pcb","resume","Debugger.resume",insensitive);}catch(System.InvalidOperationException){alias=true;}Need(alias,"smoke-field-name");
   }

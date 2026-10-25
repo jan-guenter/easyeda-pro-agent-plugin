@@ -2,6 +2,7 @@
  * coordinator owns durable intent, frame ancestry, installation leases and
  * cumulative budgets. No native helper or public route adopts this class. */
 import { types } from "node:util";
+import { CURRENT_PCB_209_RATLINE_NATIVE_PROFILE, currentPcb209RatlineSourceBudget } from "./current-pcb-209-ratline-budget.ts";
 import { z } from "zod";
 import { CURRENT_PCB_209_RATLINE_PCB_BOOTSTRAP_ROLES, currentPcb209RatlinePcbBootstrapCopy, currentPcb209RatlinePcbBootstrapRoleUrl,
   qualifyCurrentPcb209RatlinePcbBootstrapCopyCreator, qualifyCurrentPcb209RatlinePcbBootstrapCopyPause, qualifyCurrentPcb209RatlinePcbBootstrapSource } from "./current-pcb-209-ratline-pcb-bootstrap-profile.ts";
@@ -80,8 +81,8 @@ async function observed(work: Promise<unknown>): Promise<void> {
   }
 }
 async function withoutValue(work: Promise<null>): Promise<void> { await work; }
-async function bounded<T>(work: Promise<T>): Promise<T> {
-  const expired = Promise.withResolvers<never>(), timer = setTimeout(() => { expired.reject(new Error("PCB209_RATLINE_PCB_BOOTSTRAP_DEADLINE")); }, 2500);
+async function bounded<T>(work: Promise<T>, milliseconds: number = CURRENT_PCB_209_RATLINE_NATIVE_PROFILE.elapsed.ordinaryRequestMilliseconds): Promise<T> {
+  const expired = Promise.withResolvers<never>(), timer = setTimeout(() => { expired.reject(new Error("PCB209_RATLINE_PCB_BOOTSTRAP_DEADLINE")); }, milliseconds);
   try { return await Promise.race([work, expired.promise]); } finally { clearTimeout(timer); }
 }
 function members(value: CurrentPcb209RatlinePcbBootstrapDependency): readonly unknown[] {
@@ -154,7 +155,7 @@ export class CurrentPcb209RatlinePcbBootstrapOwner {
   async #current(): Promise<void> {
     this.#same(); need(!this.#failed && !this.#released, "NOT_CURRENT");
     await bounded(this.#dependency.assertOriginalOwner()); this.#same(); need(!this.#failed && !this.#released, "NOT_CURRENT");
-    if (this.#context !== null) { await bounded(this.#dependency.assertOriginalPcbContext(this.#contextObservation())); this.#same(); }
+    if (this.#context !== null) { await bounded(this.#dependency.assertOriginalPcbContext(this.#contextObservation()), CURRENT_PCB_209_RATLINE_NATIVE_PROFILE.elapsed.ancestryProofMilliseconds); this.#same(); }
     need(!this.#failed && !this.#released, "NOT_CURRENT");
   }
   #poison(): void { if (this.#failed) { return; } this.#failed = true; const error = new Error("PCB209_RATLINE_PCB_BOOTSTRAP_FAILED");
@@ -279,7 +280,7 @@ export class CurrentPcb209RatlinePcbBootstrapOwner {
   }
   async #qualify(): Promise<void> {
     try {
-      for (const stage of this.#stages) {
+      for (const [ordinal, stage] of this.#stages.entries()) {
         const pause = pauseSchema.parse(await bounded(stage.paused.promise)), script = stage.script;
         need(script !== null && this.#context !== null && this.#frameUrl !== null && pause.data.scriptId === script.scriptId && pause.data.url === script.url &&
           pause.callFrames[0]?.location.scriptId === script.scriptId && script.executionContextId === this.#context.id &&
@@ -288,7 +289,7 @@ export class CurrentPcb209RatlinePcbBootstrapOwner {
         if (copy !== null) { const parent = this.#stages.find(value => value.role === copy.ownerRole)?.script;
           need(parent !== null && parent !== undefined, "COPY_PARENT"); qualifyCurrentPcb209RatlinePcbBootstrapCopyPause(stage.role, script.scriptId, parent.scriptId, pause); }
         await this.#current(); qualifyCurrentPcb209RatlinePcbBootstrapSource(stage.role, await bounded(this.#send({
-          method: "Debugger.getScriptSource", sessionId: this.#dependency.parentSessionId, params: { scriptId: script.scriptId } })));
+          method: "Debugger.getScriptSource", sessionId: this.#dependency.parentSessionId, params: { scriptId: script.scriptId } }), currentPcb209RatlineSourceBudget("pcb", ordinal).deadlineMilliseconds));
         stage.qualified = true; await this.#current();
         if (stage.role === "pcb") {
           await this.#remove(); await this.#current(); this.#packet = Object.freeze({ ...this.#contextObservation(), profile: "private.pcb209-ratline-pcb-bootstrap.v1",
