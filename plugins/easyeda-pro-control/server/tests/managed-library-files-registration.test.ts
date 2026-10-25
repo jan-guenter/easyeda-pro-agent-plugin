@@ -42,7 +42,10 @@ async function registration(mode: FacadeMode): Promise<{ calls: unknown[]; invok
   });
   assert.ok(handler); assert.ok(inputSchema);
   const invoke = handler, schema = inputSchema;
-  return { calls, invoke: input => invoke(schema.parse(input)) };
+  return { calls, invoke: async input => {
+    const result = await invoke(schema.parse(input));
+    return result;
+  } };
 }
 
 void test("managed file tool prepares and extracts supplied bytes in every facade mode without app machinery", async () => {

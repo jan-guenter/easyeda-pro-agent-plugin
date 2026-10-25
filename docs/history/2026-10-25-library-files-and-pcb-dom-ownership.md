@@ -221,3 +221,22 @@ to this failure. The original shard log is retained at SHA-256
 `db95c0298bc3eea3747ab113a0ce39e1b2a720457310e2ef0467c652ff3a21fd`.
 That shard recorded 1,927 passed and one failed test; this run is not accepted
 as full-suite verification. A fresh exact-final-head CI result is required.
+
+The original run's shard 4 subsequently reported two test defects: the
+calculation-mode tool-list expectation omitted the new library-file tool, and
+the registration fixture threw schema errors synchronously despite declaring
+a Promise-returning handler. The fixture now consistently returns a Promise,
+so its existing rejection checks exercise invalid input correctly; the tool
+expectation includes the all-mode reader. Runtime behavior is unchanged.
+The original shard log is retained at SHA-256
+`23fdf8737d1d7978e3c02b2172092b1514f9828da1c5837b332d9221b2262af8`:
+1,913 tests passed and two failed. The earlier focused checks did not establish
+success for this final registration-test fixture.
+
+The earlier 61-pass registration/mode/coverage run preceded a lint cleanup that
+removed the fixture's `async` boundary without rerunning registration. Its
+pass claim is withdrawn for the submitted fixture. After correction, all six
+bundled-startup cases and three registration cases passed; the exact final
+registration fixture then passed again with strict lint and types. The eleven
+aggregate native-adapter tests also passed. Compatibility projections and
+runtime bundles remain unchanged through these test-only corrections.
