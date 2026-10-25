@@ -70,8 +70,17 @@ const state={projectId:"a".repeat(64),id:"b".repeat(32),compiler:{setHandle:noop
 const $C="rebuildRatlineInWorker",Yi={getInstance:()=>({bindListener:noop})},zs=Yi,Nb=class{},kb=class{},n0=class{},A5=class{};
 class M5{parseFootAndDevice(){return Promise.resolve();}build(){this.netGroupMap=new Map;}}class K1{sycnLayers(){return this;}classify(){return this;}}
 class Bb{generateData(){return [];}stringify(){return "";}}class zb{getCommonSource(){return "";}}const ri={addAll:noop};`;
-export function ratlineCaptureFixtureSource(role: CurrentPcb209RatlineCaptureRole, holdPcbResult = false): string {
- let source = (`${common}${role === "pcb" ? pcbPrelude : workerPrelude}`).replaceAll("\n", " ");
+export interface RatlineCaptureFixtureOptions {
+  readonly signalWorkerTermination?: boolean;
+  readonly world?: Readonly<{ documentUuid: string; projectUuid: string; tabId: string; windowTabId: string }>;
+}
+export function ratlineCaptureFixtureSource(role: CurrentPcb209RatlineCaptureRole, holdPcbResult = false, options: RatlineCaptureFixtureOptions = {}): string {
+ const world = options.world ?? { documentUuid: "b".repeat(32), projectUuid: "a".repeat(64), tabId: "pcb", windowTabId: "window" };
+ const prelude = workerPrelude.replace('projectId:"a".repeat(64),id:"b".repeat(32)', `projectId:${JSON.stringify(world.projectUuid)},id:${JSON.stringify(world.documentUuid)}`)
+   .replace('_TAB_ID_:"window"', `_TAB_ID_:${JSON.stringify(world.windowTabId)}`)
+   .replace('globalThis.CAPTURE_DONE=true;', options.signalWorkerTermination === true ? 'globalThis.CAPTURE_DONE=true;process.send({kind:"publication"});' : 'globalThis.CAPTURE_DONE=true;');
+ const shared = options.signalWorkerTermination === true ? common.replace('terminate(){}', 'terminate(){process.send({kind:"worker-termination"});}') : common;
+ let source = (`${shared}${role === "pcb" ? pcbPrelude : prelude}`).replaceAll("\n", " ");
  for (const section of excerpts[role]) {
   const line = source.split("\n").length - 1, newlines = section.line - line;
   source += newlines === 0 ? " ".repeat(section.start - source.length) :
@@ -80,5 +89,5 @@ export function ratlineCaptureFixtureSource(role: CurrentPcb209RatlineCaptureRol
   source += `${section.text};`;
  }
  return source + (role === "pcb" ? `P0=Ew;const manager=Ew.getInstance();manager.addWorker("editor?entry=pcb-ratline-worker.js",false,"pcb-ratline-worker");${holdPcbResult ? "" : "A.callback(JSON.stringify({ratlineRes:[],workerName:0}));"}` :
- `sp.listeners.get("workerName")(0);sp.services.get($C)({world:{uuid:"b".repeat(32),docType:3,projectId:"a".repeat(64),env:{tabId:"pcb",windowTabId:"window"}}});`);
+ `sp.listeners.get("workerName")(0);sp.services.get($C)({world:${JSON.stringify({ uuid: world.documentUuid, docType: 3, projectId: world.projectUuid, env: { tabId: world.tabId, windowTabId: world.windowTabId } })}});`);
 }

@@ -26,6 +26,8 @@ import type { CurrentPcb209RatlineSubordinateContinuationPacket } from "./curren
 import type { CurrentPcb209RatlineOriginCommand } from "./current-pcb-209-ratline-origin.ts";
 import { CurrentPcb209RatlineOrigin } from "./current-pcb-209-ratline-origin.ts";
 import type { CurrentPcb209RatlineOriginEvidence, CurrentPcb209RatlineOriginSummary } from "./current-pcb-209-ratline-origin-observation.ts";
+import { CurrentPcb209RatlineContinuationHandoff, bindCurrentPcb209RatlineContinuationHandoff } from "./current-pcb-209-ratline-continuation-handoff.ts";
+import { CURRENT_PCB_209_RATLINE_SOURCE_PROFILE } from "./current-pcb-209-ratline-source.ts";
 
 type Creation = CurrentPcb209RatlinePcbCreation | CurrentPcb209RatlineWorkerCreation;
 type ChildEvents = Parameters<CurrentPcb209RatlineBootstrapDependency["subscribe"]>[0];
@@ -41,8 +43,10 @@ export interface CurrentPcb209RatlineContinuationDependency extends CurrentPcb20
   readonly request: (role: CurrentPcb209RatlineContinuationRole, command: Request) => Promise<unknown>;
   readonly requestParent: CurrentPcb209RatlinePcbContextDependency["requestParent"];
   readonly beginCleanup: () => Promise<void>;
+  readonly retireOriginalRealm: (role: "worker" | "subordinate", sessionId: string) => void;
 }
 export interface CurrentPcb209RatlineContinuationPacket {
+  readonly retirements: ReturnType<CurrentPcb209RatlineContinuationHandoff["evidence"]>;
   readonly profile: "private.pcb209-ratline-fresh-continuation.v1";
   readonly pcbSource: CurrentPcb209RatlinePcbBootstrapPacket;
   readonly workerSource: CurrentPcb209RatlineBootstrapPacket;
@@ -72,7 +76,7 @@ interface Child {
 }
 type Phase = "ready" | "pcb-source" | "worker-source" | "subordinate-source" | "callbacks" | "captured" | "failed" | "cleanup" | "released";
 const keys = ["requireOriginalParent", "assertOriginalTermination", "subscribe", "assertOriginalBeforeNavigation",
-  "beginOriginalPcbNavigation", "request", "requestParent", "beginCleanup"] as const;
+  "beginOriginalPcbNavigation", "request", "requestParent", "beginCleanup", "retireOriginalRealm"] as const;
 function need(value: boolean, code: string): asserts value { if (!value) { throw new Error(`PCB209_RATLINE_CONTINUATION_${code}`); } }
 function members(value: CurrentPcb209RatlineContinuationDependency): readonly unknown[] {
   need(value !== null && typeof value === "object" && !types.isProxy(value) && Object.isFrozen(value) && Object.getPrototypeOf(value) === Object.prototype, "DEPENDENCY");
@@ -93,6 +97,7 @@ export class CurrentPcb209RatlineContinuationSession {
   readonly #context: CurrentPcbDiagnosticContext;
   readonly #target: CurrentDisposableOpenSealedTarget;
   readonly #routing: CurrentPcb209RatlineContinuationRouter;
+  readonly #handoff: CurrentPcb209RatlineContinuationHandoff;
   readonly #worker: Child = { role: "worker", owner: null, realm: null, creation: null, construction: null, events: null };
   readonly #subordinate: Child = { role: "subordinate", owner: null, realm: null, creation: null, construction: null, events: null };
   readonly #failure = Promise.withResolvers<never>();
@@ -121,8 +126,11 @@ export class CurrentPcb209RatlineContinuationSession {
     this.#members = members(dependency); this.#dependency = dependency; this.#context = context;
     this.#target = Object.freeze(currentDisposableOpenSealedTargetSchema.parse(captureCurrentPcbStringClockReply(target).value));
     need(!types.isProxy(context) && Object.getPrototypeOf(context) === CurrentPcbDiagnosticContext.prototype, "ORIGINAL_CONTEXT");
+    this.#handoff = new CurrentPcb209RatlineContinuationHandoff(() => this.#current(), (role, sessionId): void => {
+      this.#same(); this.#dependency.retireOriginalRealm(role, sessionId); this.#routing.retireOriginalRealm(role, sessionId);
+    });
     this.#routing = new CurrentPcb209RatlineContinuationRouter({ requireOriginalParent: (): ReturnType<typeof dependency.requireOriginalParent> => dependency.requireOriginalParent(),
-      assertOriginalTermination: (): Promise<void> => dependency.assertOriginalTermination(), subscribe: (events): (() => void) => dependency.subscribe(events) });
+      assertOriginalTermination: (): Promise<void> => dependency.assertOriginalTermination(), subscribe: (events): (() => void) => dependency.subscribe(events) }, this.#handoff);
     void observed(this.#failure.promise);
   }
   #same(): void {
@@ -135,6 +143,7 @@ export class CurrentPcb209RatlineContinuationSession {
   #lost(error: unknown = new Error("PCB209_RATLINE_CONTINUATION_STREAM_LOST")): void {
     if (this.#firstFailure !== null || this.#phase === "released") { return; }
     this.#firstFailure = error; if (this.#phase !== "cleanup") { this.#phase = "failed"; }
+    this.#handoff.abort();
     void this.#beginCleanupAdmission(); this.#failure.reject(error); this.#parentEvents?.lost(); this.#worker.events?.lost(); this.#subordinate.events?.lost();
   }
   #beginCleanupAdmission(): Promise<void> {
@@ -219,22 +228,28 @@ export class CurrentPcb209RatlineContinuationSession {
       const subordinate = this.#childOwner(this.#subordinate, () => this.#worker.realm), worker = this.#childOwner(this.#worker, () => this.#pcbRealm);
       await this.#wait(contextRouter.sourceOwner.armBeforeNavigation()); await this.#wait(contextRouter.sourceOwner.startOriginalNavigation());
       const pcbSource = await this.#wait(contextRouter.sourceOwner.whenSourceQualified()); this.#pcbSource = pcbSource; await this.#current();
-      this.#pcb = new CurrentPcb209RatlinePcbStartup({ realm: await contextRouter.sourceOwner.claimOriginalPcbRealm(pcbSource),
+      const pcbRealm = await contextRouter.sourceOwner.claimOriginalPcbRealm(pcbSource); bindCurrentPcb209RatlineContinuationHandoff(pcbRealm, this.#handoff, "pcb");
+      this.#pcb = new CurrentPcb209RatlinePcbStartup({ realm: pcbRealm,
         releaseOriginalPinnedSource: (): Promise<void> => contextRouter.releaseOriginalPinnedSource(pcbSource), childBootstrapOwner: worker });
       this.#phase = "worker-source"; this.#pcbWork = this.#pcb.capture(); void observed(this.#wait(this.#pcbWork));
       const workerSource = await this.#wait(worker.whenSourceQualified()); await this.#current(); await contextRouter.reproveFirstChildHeld(pcbSource);
-      this.#workerStartup = new CurrentPcb209RatlineWorkerStartup({ realm: await worker.claimOriginalWorkerRealm(workerSource),
+      this.#handoff.register("worker", worker, workerSource, pcbSource.sessionId, CURRENT_PCB_209_RATLINE_SOURCE_PROFILE.worker.sha256);
+      const workerRealm = await worker.claimOriginalWorkerRealm(workerSource); bindCurrentPcb209RatlineContinuationHandoff(workerRealm, this.#handoff, "worker");
+      const workerStartup = new CurrentPcb209RatlineWorkerStartup({ realm: workerRealm,
         releaseOriginalPinnedSource: (): Promise<void> => worker.releaseOriginalPinnedSource(workerSource), childBootstrapOwner: subordinate });
-      this.#phase = "subordinate-source"; this.#workerWork = this.#workerStartup.capture(); void observed(this.#wait(this.#workerWork));
+      this.#workerStartup = workerStartup;
+      this.#phase = "subordinate-source"; this.#workerWork = (async (): Promise<CurrentPcb209RatlineStartupPacket> => {
+        const packet = await workerStartup.capture(); await this.#handoff.sealWorker(workerStartup, packet); return packet;
+      })(); void observed(this.#wait(this.#workerWork));
       const subordinateSource = await this.#wait(subordinate.whenSourceQualified()); await this.#current();
+      this.#handoff.register("subordinate", subordinate, subordinateSource, workerSource.childSessionId, CURRENT_PCB_209_RATLINE_SOURCE_PROFILE.worker.sha256);
       this.#subordinateObserver = new CurrentPcb209RatlineSubordinateContinuation(subordinate, subordinateSource, (): Promise<void> => this.#dependency.assertOriginalTermination());
-      const continuation = await this.#wait(this.#subordinateObserver.continue()); this.#phase = "callbacks";
+      const continuation = await this.#wait(this.#subordinateObserver.continue()); await this.#handoff.sealSubordinate(); this.#phase = "callbacks";
       const [pcbPacket, workerPacket] = await this.#wait(Promise.all([this.#pcbWork, this.#workerWork]));
-      await this.#pcb.requireOriginal(pcbPacket); await this.#workerStartup.requireOriginal(workerPacket);
-      await this.#subordinateObserver.requireOriginal(continuation); await this.#current();
+      await this.#pcb.requireOriginal(pcbPacket); await this.#handoff.requireOriginalHistory(); await this.#current();
       const nativeOrigin = this.#origin.summary(), nativeOriginEvidence = this.#origin.evidence(); need(nativeOrigin !== null && nativeOriginEvidence !== null, "ORIGIN_REQUIRED");
       this.#packet = Object.freeze({ profile: "private.pcb209-ratline-fresh-continuation.v1", pcbSource, workerSource, subordinateSource,
-        pcb: pcbPacket, worker: workerPacket, subordinate: continuation, nativeOrigin, nativeOriginEvidence, allThreeOriginalSourcesQualified: true,
+        pcb: pcbPacket, worker: workerPacket, subordinate: continuation, nativeOrigin, nativeOriginEvidence, retirements: this.#handoff.evidence(), allThreeOriginalSourcesQualified: true,
         nativeWorkerTargetIdentityVerified: false, callbackReturnCompletionVerified: false, subscribedCanvasPeerOwnershipVerified: false,
         copperCompletionVerified: false, completeStartupVerified: false, completeLiveBaselineVerified: false, executionAuthorized: false, saveAuthorized: false });
       this.#phase = "captured"; return this.#packet;
@@ -246,13 +261,12 @@ export class CurrentPcb209RatlineContinuationSession {
   }
   public async requireOriginal(packet: CurrentPcb209RatlineContinuationPacket): Promise<void> {
     need(packet === this.#packet && this.#phase === "captured" && this.#pcb !== null && this.#workerStartup !== null && this.#subordinateObserver !== null, "ORIGINAL_PACKET");
-    await this.#current(); await this.#pcb.requireOriginal(packet.pcb); await this.#workerStartup.requireOriginal(packet.worker);
-    await this.#subordinateObserver.requireOriginal(packet.subordinate); await this.#current();
+    await this.#current(); await this.#pcb.requireOriginal(packet.pcb); await this.#handoff.requireOriginalHistory(); await this.#current();
   }
   public abort(): Promise<void> {
     if (this.#cleanup !== null) { return this.#cleanup; } need(this.#phase !== "released", "RELEASED"); this.#phase = "cleanup";
     this.#cleanup = (async (): Promise<void> => {
-      const admission = this.#beginCleanupAdmission(); this.#subordinateObserver?.abort(); this.#routing.abort();
+      const admission = this.#beginCleanupAdmission(); this.#handoff.abort(); this.#subordinateObserver?.abort(); this.#routing.abort();
       const work = [this.#contextRouter?.abort(), this.#pcb?.abort(), this.#workerStartup?.abort(), this.#worker.owner?.abort(), this.#subordinate.owner?.abort()]
         .filter(value => value !== undefined);
       const results = await Promise.allSettled([admission, ...work]);
@@ -275,7 +289,7 @@ export class CurrentPcb209RatlineContinuationSession {
   public status(): Readonly<Record<string, unknown>> {
     return Object.freeze({ phase: this.#phase, firstFailure: this.#firstFailure === null ? null : currentPcb209RatlineFailureReason(this.#firstFailure),
       transitionStarted: this.#contextRouter?.status()["transitionStarted"] === true,
-      releaseStarted: this.#releaseStarted, cleanupAdmitted: this.#cleanupAdmitted, routing: this.#routing.status(), pcbSource: this.#contextRouter?.status() ?? null, workerSource: this.#worker.owner?.status() ?? null,
+      releaseStarted: this.#releaseStarted, cleanupAdmitted: this.#cleanupAdmitted, routing: this.#routing.status(), handoff: this.#handoff.status(), pcbSource: this.#contextRouter?.status() ?? null, workerSource: this.#worker.owner?.status() ?? null,
       subordinateSource: this.#subordinate.owner?.status() ?? null, pcb: this.#pcb?.status() ?? null, worker: this.#workerStartup?.status() ?? null,
       subordinate: this.#subordinateObserver?.status() ?? null, nativeWorkerTargetIdentityVerified: false, executionAuthorized: false });
   }

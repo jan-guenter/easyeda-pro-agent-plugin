@@ -1,3 +1,4 @@
+/* oxlint-disable import/max-dependencies -- The composite retains its separate creation, capture, child gate, dispatcher and private completed-capture seal contracts. */
 /* oxlint-disable eslint/max-classes-per-file -- Fixed PCB and worker wrappers share one closed composite lifecycle. */
 /** Join actual construction and bridge/result owners before either continuation.
  * The native adapter adopts the PCB stage only through the first held child
@@ -13,6 +14,8 @@ import type { CurrentPcb209RatlineCreationPacket } from "./current-pcb-209-ratli
 import type { CurrentPcb209RatlineAnyCapturePacket, CurrentPcb209RatlineCapturePacket, CurrentPcb209RatlineHeldCapturePacket } from "./current-pcb-209-ratline-capture-runner.ts";
 import type { CurrentPcb209RatlineCaptureScope } from "./current-pcb-209-ratline-capture-profile.ts";
 import { currentPcb209RatlineContinuationTiming } from "./current-pcb-209-ratline-continuation-timing.ts";
+import { isCurrentPcb209CompletedCaptureSeal, issueCurrentPcb209CompletedCaptureSeal } from "./current-pcb-209-ratline-continuation-handoff.ts";
+import type { CurrentPcb209CompletedCaptureSeal } from "./current-pcb-209-ratline-continuation-handoff.ts";
 
 type Role = "pcb" | "worker";
 export interface CurrentPcb209RatlineStartupDependency {
@@ -87,6 +90,8 @@ class CurrentPcb209RatlineStartupCore<Scope extends CurrentPcb209RatlineCaptureS
   #construction: Promise<CurrentPcb209RatlineCreationPacket> | null = null;
   #capture: Promise<CurrentPcb209RatlineAnyCapturePacket> | null = null;
   #packet: Packets[Scope] | null = null;
+  #sealConsumed = false;
+  #completedSeal: CurrentPcb209CompletedCaptureSeal | null = null;
   public constructor(key: typeof INTERNAL, role: Role, scope: Scope, dependency: CurrentPcb209RatlineStartupDependency) {
     need(key === INTERNAL && (scope === "full" || scope === "pcb-held-prefix" && role === "pcb"), "PROFILE");
     this.#original = members(dependency); this.#dependency = dependency; this.#role = role; this.#scope = scope;
@@ -169,6 +174,21 @@ class CurrentPcb209RatlineStartupCore<Scope extends CurrentPcb209RatlineCaptureS
   public async requireOriginal(packet: Packets[Scope]): Promise<void> {
     need(packet === this.#packet && this.#packet !== null, "ORIGINAL_PACKET"); await this.#current();
     await this.#stages.creation.requireOriginal(packet.construction); await this.#dispatcher.requireOriginalCapture(packet.capture); await this.#current();
+  }
+  /** Seals the actual full worker observation before its parent resumes into
+   * deletion. The historical accessor deliberately performs no realm request. */
+  public async sealOriginalCompletedCapture(packet: CurrentPcb209RatlineStartupPacket): Promise<CurrentPcb209CompletedCaptureSeal> {
+    need(this.#role === "worker" && this.#scope === "full" && currentPcb209RatlineContinuationTiming(this.#dependency.realm) !== null &&
+      !this.#sealConsumed && packet === this.#packet, "SEAL_CONSUMED"); this.#sealConsumed = true;
+    need(this.#packet !== null, "ORIGINAL_PACKET"); await this.requireOriginal(this.#packet);
+    const capture = this.#stages.capture.status(), dispatcher = this.#dispatcher.status();
+    need(this.#settled && capture["unresolvedBreakpoints"] === false && capture["paused"] === false &&
+      dispatcher["uncertainBreakpoints"] === 0 && dispatcher["paused"] === false && dispatcher["deferredPause"] === false, "SEAL_INCOMPLETE");
+    this.#completedSeal = issueCurrentPcb209CompletedCaptureSeal(this, packet); return this.#completedSeal;
+  }
+  public requireOriginalSealedCapture(seal: CurrentPcb209CompletedCaptureSeal): void {
+    this.#same(); need(!this.#failed && !this.#released && this.#completedSeal === seal && this.#packet === seal.packet &&
+      isCurrentPcb209CompletedCaptureSeal(seal, this, seal.packet), "ORIGINAL_CAPTURE_SEAL");
   }
   public async abort(): Promise<void> { need(this.#consumed && !this.#released, "ABORT_STATE");
     this.#diagnostics.record(new Error("PCB209_RATLINE_COMPOSITE_ABORTED")); this.#failed = true; await this.#cleanup(); }

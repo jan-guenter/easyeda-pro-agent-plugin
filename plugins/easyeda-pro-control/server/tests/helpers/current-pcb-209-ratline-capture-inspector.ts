@@ -9,6 +9,7 @@ import type { CurrentPcb209RatlineCaptureRole } from "../../src/current-pcb-209-
 import type { CurrentPcb209RatlineCaptureTransport } from "../../src/current-pcb-209-ratline-capture-runner.ts";
 import { CURRENT_PCB_209_RATLINE_SOURCE_PROFILE } from "../../src/current-pcb-209-ratline-source.ts";
 import { ratlineCaptureFixtureSource } from "./current-pcb-209-ratline-capture-fixture.ts";
+import type { RatlineCaptureFixtureOptions } from "./current-pcb-209-ratline-capture-fixture.ts";
 
 async function observed(work: Promise<unknown>): Promise<void> {
   try { await work; } catch {
@@ -25,13 +26,15 @@ async function deadline<T>(work: Promise<T>, phase: string, milliseconds = 10_00
  * does not attest an EasyEDA native source, process, Worker or message peer. */
 export async function ratlineCaptureInspector(context: TestContext, role: CurrentPcb209RatlineCaptureRole,
   loseAtPause = 0, pauseAtFinalReproof = false, exitBeforeAddress = false,
-  options: Readonly<{ holdPcbResult?: boolean; expectedPauses?: number; onScriptParsed?: (params: unknown) => void }> = {}): Promise<Readonly<{ transport: CurrentPcb209RatlineCaptureTransport; commands: string[];
+  options: Readonly<{ holdPcbResult?: boolean; expectedPauses?: number; onScriptParsed?: (params: unknown) => void; onWorkerTermination?: () => void; onPublication?: () => void; world?: RatlineCaptureFixtureOptions["world"] }> = {}): Promise<Readonly<{ transport: CurrentPcb209RatlineCaptureTransport; commands: string[];
     request: (method: string, params: object) => Promise<unknown>; run: () => Promise<unknown>; lose: () => void; regain: () => void; terminate: () => Promise<void>; counts: () => Readonly<{ pauses: number; resumes: number; subscribers: number }> }>> {
   // The hostile case is an owned child that exits normally before advertising
   // Any inspector. The old unbounded address wait could never settle here.
   const args = exitBeforeAddress ? ["--input-type=commonjs", "-e", "process.exitCode=0"] :
     ["--inspect=127.0.0.1:0", "--input-type=commonjs", "-e", "setInterval(()=>{},1000)"];
-  const child = spawn(process.execPath, args, { stdio: ["pipe", "pipe", "pipe"] });
+  const child = spawn(process.execPath, args, { stdio: ["pipe", "pipe", "pipe", "ipc"] });
+  child.on("message", message => { const value = z.object({ kind: z.enum(["worker-termination", "publication"]) }).strict().parse(message);
+    if (value.kind === "worker-termination") { options.onWorkerTermination?.(); } else { options.onPublication?.(); } });
   const address = Promise.withResolvers<string>(), closed = Promise.withResolvers<null>(), exited = Promise.withResolvers<null>();
   const pending = new Map<number, Readonly<{ method: string; reply: PromiseWithResolvers<unknown>; timer: ReturnType<typeof setTimeout> }>>();
   const subscribers = new Set<Parameters<CurrentPcb209RatlineCaptureTransport["subscribe"]>[0]>();
@@ -61,7 +64,7 @@ export async function ratlineCaptureInspector(context: TestContext, role: Curren
     if (failureBeforeTeardown) { context.diagnostic(JSON.stringify({ event: "ratline-fixture-child-close", ...failureContext() })); }
     closed.resolve(null);
   });
-  child.stderr.on("data", (data: Buffer) => {
+  assert.ok(child.stderr !== null); child.stderr.on("data", (data: Buffer) => {
     stderr += data.toString("utf8");
     if (stderr.length > 32_768) { fail(new Error("RATLINE_FIXTURE_STDERR_BOUND")); return; }
     const match = /ws:\/\/127\.0\.0\.1:\d+\/[a-f\d-]+/u.exec(stderr); if (match !== null) { address.resolve(match[0]); }
@@ -121,7 +124,7 @@ export async function ratlineCaptureInspector(context: TestContext, role: Curren
   };
   await request("Debugger.enable", {}); await request("Runtime.enable", {});
   const compiled = z.object({ scriptId: z.string() }).strict().parse(await request("Runtime.compileScript", {
-    expression: ratlineCaptureFixtureSource(role, options.holdPcbResult), sourceURL: `ratline-${role}-synthetic.js`, persistScript: true,
+    expression: ratlineCaptureFixtureSource(role, options.holdPcbResult, { signalWorkerTermination: options.onWorkerTermination !== undefined, ...(options.world === undefined ? {} : { world: options.world }) }), sourceURL: `ratline-${role}-synthetic.js`, persistScript: true,
   }));
   const transport: CurrentPcb209RatlineCaptureTransport = {
     scriptId: compiled.scriptId,

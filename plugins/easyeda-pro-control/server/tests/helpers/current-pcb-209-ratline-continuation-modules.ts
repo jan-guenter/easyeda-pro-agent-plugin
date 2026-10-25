@@ -14,6 +14,7 @@ import type { CurrentPcb209RatlineSubordinateContinuation } from "../../src/curr
 import type { CurrentPcb209RatlineBootstrapOwner } from "../../src/current-pcb-209-ratline-bootstrap-owner.ts";
 import type { ratlineCaptureInspector } from "./current-pcb-209-ratline-capture-inspector.ts";
 import { ratlineCaptureFixtureSource } from "./current-pcb-209-ratline-capture-fixture.ts";
+import type { RatlineCaptureFixtureOptions } from "./current-pcb-209-ratline-capture-fixture.ts";
 
 export async function loadRatlineContinuationFixtureModule(path: URL, replacements: ReadonlyMap<string, unknown>): Promise<Record<string, unknown>> {
   const actualRequire = createRequire(path), loaded: { exports: Record<string, unknown> } = { exports: {} };
@@ -43,8 +44,8 @@ export async function ratlineContinuationModules(): Promise<Readonly<{
     const file = `current-pcb-209-ratline-${name}.ts`; modules.set(`./${file}`, await loadRatlineContinuationFixtureModule(new URL(`../../src/${file}`, import.meta.url), modules));
   }
   const inspect = await loadRatlineContinuationFixtureModule(new URL("current-pcb-209-ratline-capture-inspector.ts", import.meta.url), new Map([["./current-pcb-209-ratline-capture-fixture.ts", {
-    ratlineCaptureFixtureSource: (role: "pcb" | "worker", hold = false): string => {
-      const source = ratlineCaptureFixtureSource(role, hold); if (role === "pcb") { return source; }
+    ratlineCaptureFixtureSource: (role: "pcb" | "worker", hold = false, options: RatlineCaptureFixtureOptions = {}): string => {
+      const source = ratlineCaptureFixtureSource(role, hold, options); if (role === "pcb") { return source; }
       const after = "return globalThis.fixtureRpc();", before = "return Promise.resolve({message:[]});";
       assert.equal(source.split(before).length, 2); assert.ok(after.length <= before.length);
       // Preserve every excerpt offset while making the synthetic RPC depend on

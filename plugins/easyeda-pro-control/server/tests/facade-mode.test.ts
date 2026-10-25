@@ -62,7 +62,7 @@ void test("exact209 selectors expose fifteen scoped tools without inheriting unr
   assert.deepEqual(capabilities["publicReaders"], { tool: "easyeda_control_public_readers", runtimeAdmissionRequired: true, connectedValidation: false,
     batch: { maximumMethods: 7, sharedDeadlineMilliseconds: 10_000, atomicSnapshot: false, partialSuccess: false },
     scope: "supported-and-sdk-resolved-languages-api-page-viewport-theme-toolbar-unit-and-fixed-system-library-id" });
-  assert.deepEqual(capabilities["navigation"], { enabled: true, scope: "original-owner-disposable209-opening-and-three-separate-startup-purposes-only" });
+  assert.deepEqual(capabilities["navigation"], { enabled: true, scope: "original-owner-disposable209-opening-and-four-separate-startup-purposes-only" });
   assert.deepEqual(capabilities["designAccess"], { enabled: false, scope: "general-geometry-and-writers;disposable-bounded-observations-and-historical-queries-only" });
   const opening = capabilities["disposableOpening"]; assert.ok(typeof opening === "object" && opening !== null && "layerObservation" in opening);
   assert.equal(opening.layerObservation, "double-sampled-metadata-and-copper-count");
@@ -73,7 +73,7 @@ void test("exact209 selectors expose fifteen scoped tools without inheriting unr
     completeLiveBaselineVerified: false, serverClockProvenanceVerified: false, cadAuthority: false });
   assert.deepEqual(capabilities["save"], { enabled: false }); assert.deepEqual(capabilities["recovery"], { enabled: false });
   assert.deepEqual(capabilities["nativeAdapters"], { enabled: true,
-    scope: "identity-and-disposable209-opening-layer-primitive-selection-relations;project-worker-constructor-empty-baseline-and-held-ratline-import-observations-only" });
+    scope: "identity-and-disposable209-opening-layer-primitive-selection-relations;project-worker-constructor-empty-baseline-held-ratline-import-and-ratline-continuation-observations-only" });
   assert.match(PUBLIC_UTILITIES_ONLY_SCOPE, /four distinct disposable launch purposes/u);
   assert.match(PUBLIC_UTILITIES_ONLY_SCOPE, /empty-baseline purpose joins fixed common data to the original completed SQL checkpoint/u);
   assert.match(PUBLIC_UTILITIES_ONLY_SCOPE, /ratline-held-import purpose qualifies PCB construction/u);

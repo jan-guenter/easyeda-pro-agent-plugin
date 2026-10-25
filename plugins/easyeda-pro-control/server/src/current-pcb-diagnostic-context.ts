@@ -560,6 +560,24 @@ export class CurrentPcbDiagnosticContext {
         !diagnosticToken(context["uniqueId"]) || !integer(context["id"])) { return this.#refuse(); }
     return clone(context);
   }
+  /** The Electron window-context hook may precede the initial child commit.
+   * Classify only the retained new direct PCB child; this does not select its
+   * source, establish DOM ownership or admit an unobserved replacement. */
+  public pcbWindowBootstrapContext(contextId: number, initial: boolean): Row {
+    this.pcbOpeningContext();
+    const context = this.#contexts.get(contextId), pcb = this.#pcbOpening;
+    const aux = context?.["auxData"];
+    if (pcb === null || pcb.childId === null || pcb.navigation === null || context === undefined ||
+        !diagnosticRecord(aux) || aux["frameId"] !== pcb.childId || aux["isDefault"] !== true || aux["type"] !== "default" ||
+        context["origin"] !== "https://client" || !diagnosticToken(context["uniqueId"]) ||
+        initial && (pcb.navigation.committedLoader !== null || !pcb.initialChildContexts.has(contextId)) ||
+        !initial && this.pcbBootstrapEventContext(contextId) === null) { return this.#refuse(); }
+    const matching = [...this.#contexts.values()].filter(value => {
+      const data = value["auxData"]; return diagnosticRecord(data) && data["frameId"] === pcb.childId && data["isDefault"] === true;
+    });
+    if (matching.length !== 1 || matching[0] !== context) { return this.#refuse(); }
+    return clone(context);
+  }
   /** Repeat full snapshots against the initially consumed source-held proof.
    * Unknown fields and attributes remain exact; no transition is reset. */
   public reprovePcbBootstrapFrames(targetReply: Row, frameReply: Row): void {

@@ -204,3 +204,41 @@ complete failed-head review records 12,954 facade tests: 12,937 passed, 12
 failed and five expected platform skips. All 424 bridge tests passed. The
 failed-head review SHA256 is
 `3ebe4a185081fe224ac1f43c47e24255d6820bc8f7d37d471f0e6778e51b5abf`.
+
+## Published and installed
+
+Corrected PR 127 head `86c2715bc1c6b1efecc63e5439de04844fb404e8` passed all
+11 required jobs in Linux run `40213134732` and Windows run `40213134734`.
+The final facade result is 12,949 passed, five expected platform skips and zero
+failures; all 424 bridge tests passed. Strict lint reports zero warnings. The
+earlier V8 socket closure did not recur, but its cause remains unestablished.
+Its retained failure and added diagnostics are not a production-fix claim.
+Independent final CI review SHA256 is
+`c7ee2aa0abdacbbc1b998abddb6b414a3fc4ac81a958147ac6da7d5695bfefac`.
+
+[PR 127](https://github.com/jan-guenter/easyeda-pro-agent-plugin/pull/127)
+merged as `4bb9d781635991e71ad2a80358c2ad92260e1b18`. Its complete tree
+`a81e9548a5f9f289e8a57b38e176d2e74d00aefb` and plugin tree
+`9668da787459646ef33244042eea5045294e1dfe` match the tested candidate.
+The batch changes 75 repository paths. Automatic post-merge runs `40214223025`
+and `40214223028` were still running at the installation handoff; the accepted
+PR runs already cover the identical payload.
+
+The official CLI upgraded the Git marketplace
+`https://github.com/jan-guenter/easyeda-pro-agent-plugin.git` once, with
+installer umask 022. Version `0.3.0+codex.20261025162034` is installed and enabled;
+the marketplace checkout points to the merged commit. Before and after the
+offline probe, all 2,005 files, 42 directories and 42,781,300 bytes match the
+committed payload and modes. The installed inventory SHA256 is
+`77b79840b210a3ade496dd5c1b3370c0af6d0ef91a1be991cf42d167f38b7f5f`.
+All 25 offline catalog queries pass, including continuation discovery, exact
+argument validation and refusal of a caller-supplied budget. The synthetic
+probe closed normally without starting an upstream child or bridge socket.
+This is installation proof, not admission of a live EasyEDA operation.
+
+The existing facade still runs snapshot `140210` with its original process
+identity. It was not killed, rebound or patched. Start a fresh Codex session
+before admitting snapshot `162034` and dispatching one new disposable
+continuation. The prior operation is fully released and must not be replayed.
+No EasyEDA action, explicit Save or production-project edit followed publication.
+The remaining work list above still applies.

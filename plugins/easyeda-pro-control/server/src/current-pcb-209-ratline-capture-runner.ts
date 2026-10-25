@@ -1,3 +1,4 @@
+/* oxlint-disable import/max-dependencies -- The capture owner integrates the fixed source/value programs, native bounds, and private continuation handoff without merging their authority. */
 /* oxlint-disable eslint/max-classes-per-file -- A private fixed-profile core keeps both realm wrappers closed to caller-selected capture plans. */
 /** Original pause/event capture for the empty209 ratline startup branch.
  * The native held-import adapter adopts only the fixed PCB prefix. */
@@ -6,6 +7,7 @@ import { types } from "node:util";
 import { CurrentPcb209RatlineStageDiagnostics } from "./current-pcb-209-ratline-diagnostics.ts";
 import { currentPcb209RatlineTransportRequestMilliseconds } from "./current-pcb-209-ratline-transport-windows.ts";
 import { currentPcb209RatlineContinuationTiming } from "./current-pcb-209-ratline-continuation-timing.ts";
+import { acknowledgeCurrentPcb209RatlineCaptureResume, beforeCurrentPcb209RatlineCaptureResume, isCurrentPcb209RatlineCaptureHandoff, observeCurrentPcb209RatlineCaptureResume, requestCurrentPcb209RatlineCaptureResume } from "./current-pcb-209-ratline-continuation-handoff.ts";
 import { z } from "zod";
 import { captureCurrentPcbStringClockReply } from "./current-pcb-string-clock-reply.ts";
 import { CURRENT_PCB_209_RATLINE_CAPTURE_PROFILES, CURRENT_PCB_209_RATLINE_HELD_CAPTURE_PROFILE, CURRENT_PCB_209_RATLINE_CAPTURE_GROUP as GROUP } from "./current-pcb-209-ratline-capture-profile.ts";
@@ -72,7 +74,7 @@ export type CurrentPcb209RatlineAnyCapturePacket = CurrentPcb209RatlineCapturePa
 interface Packets { readonly full: CurrentPcb209RatlineCapturePacket; readonly "pcb-held-prefix": CurrentPcb209RatlineHeldCapturePacket }
 interface Breakpoint { readonly id: string; removal: Promise<void> | null; removed: boolean }
 interface Paused { readonly event: unknown; readonly capturedError: unknown; readonly resumed: PromiseWithResolvers<null>;
-  readonly timer: ReturnType<typeof setTimeout>; resume: Promise<void> | null; observed: boolean }
+  timer: ReturnType<typeof setTimeout>; resume: Promise<void> | null; handoffResume: boolean; observed: boolean }
 const INTERNAL = Symbol("fixed209-ratline-capture");
 const issued = new WeakMap<CurrentPcb209RatlineAnyCapturePacket, object>();
 function fail(code: string): Error { return new Error(`PCB209_RATLINE_CAPTURE_${code}`); }
@@ -180,7 +182,7 @@ class CurrentPcb209RatlineCaptureCore<Scope extends CurrentPcb209RatlineCaptureS
     if (this.#pause !== null && !this.#pause.observed) { this.#poison("DUPLICATE_PAUSE"); return; }
     let capturedError: unknown = null, event: unknown = null;
     try { event = captureCurrentPcbStringClockReply(input).value; } catch (error) { capturedError = error; }
-    const retained: Paused = { event, capturedError, resumed: Promise.withResolvers(), resume: null, observed: false,
+    const retained: Paused = { event, capturedError, resumed: Promise.withResolvers(), resume: null, handoffResume: false, observed: false,
       timer: setTimeout(() => { this.#poison("PAUSE_DEADLINE"); void observed(this.#cleanup()); },
         currentPcb209RatlineContinuationTiming(this.#transport)?.capturePauseMilliseconds ??
         (this.#role === "pcb" ? CURRENT_PCB_209_RATLINE_NATIVE_PROFILE.elapsed.capturePauseMilliseconds : 6000)) };
@@ -191,14 +193,16 @@ class CurrentPcb209RatlineCaptureCore<Scope extends CurrentPcb209RatlineCaptureS
     this.#diagnostics.lastEvent = "resumed";
     const paused = this.#pause;
     if (paused === null || paused.observed) { this.#poison("UNEXPECTED_RESUME"); return; }
-    if (paused.resume === null) { this.#poison("UNEXPECTED_RESUME"); }
+    const requested = paused.resume !== null;
+    if (!requested) { this.#poison("UNEXPECTED_RESUME"); }
     paused.observed = true; clearTimeout(paused.timer); paused.resumed.resolve(null);
+    if (requested && paused.handoffResume) { observeCurrentPcb209RatlineCaptureResume(this.#transport, paused); }
   };
   readonly #lost = (): void => { this.#diagnostics.lastEvent = "lost"; this.#poison("OWNER_LOST"); this.#waiting.reject(this.#failed); this.#armed.reject(this.#failed); void observed(this.#cleanup()); };
-  #resume(paused: Paused): Promise<void> {
+  #resume(paused: Paused, normal = false): Promise<void> {
     if (paused.resume === null) {
-      const completion = Promise.withResolvers<undefined>(); paused.resume = completion.promise;
-      void settle((async (): Promise<void> => { await this.#cleanupSend({ method: "Debugger.resume", params: {} }); await bounded(paused.resumed.promise); })(), completion);
+      const completion = Promise.withResolvers<undefined>(); paused.resume = completion.promise; paused.handoffResume = normal;
+      void settle((async (): Promise<void> => { if (paused.handoffResume) { requestCurrentPcb209RatlineCaptureResume(this.#transport, paused); } await this.#cleanupSend({ method: "Debugger.resume", params: {} }); await bounded(paused.resumed.promise); if (paused.handoffResume) { acknowledgeCurrentPcb209RatlineCaptureResume(this.#transport, paused); } })(), completion);
     }
     return paused.resume;
   }
@@ -348,12 +352,20 @@ class CurrentPcb209RatlineCaptureCore<Scope extends CurrentPcb209RatlineCaptureS
           (this.#role === "pcb" ? CURRENT_PCB_209_RATLINE_NATIVE_PROFILE.elapsed.captureWaitMilliseconds : 20_000));
         this.#waiting = Promise.withResolvers(); void observed(this.#waiting.promise);
         await this.#current(); await this.#capturePause(retained, index);
+        const site = profile.sequence[index]; need(site !== undefined, "EXTRA_PAUSE");
+        if (isCurrentPcb209RatlineCaptureHandoff(this.#transport, site)) {
+          if (this.#role === "pcb" && site === "received") {
+            const handoff = currentPcb209RatlineContinuationTiming(this.#transport)?.captureHandoffMilliseconds; need(handoff !== undefined, "HANDOFF_TIMING");
+            clearTimeout(retained.timer); retained.timer = setTimeout(() => { this.#poison("PAUSE_DEADLINE"); void observed(this.#cleanup()); }, handoff);
+          }
+          await beforeCurrentPcb209RatlineCaptureResume(this.#transport, site, retained, retained.event); await this.#current();
+        }
         if (index === profile.sequence.length - 1) {
           // Poison a newly delivered pause immediately, including during the
           // Last resume and final awaited realm reproof before settlement.
           this.#sequenceExhausted = true; terminalPause = retained; await this.#remove();
         }
-        await this.#resume(retained);
+        await this.#resume(retained, true);
       }
       await this.#current();
       need(terminalPause !== null && this.#pause === terminalPause && terminalPause.observed &&

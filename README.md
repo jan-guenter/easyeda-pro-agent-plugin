@@ -57,7 +57,9 @@ The held-import capture settles after its two parent events, without waiting
 for callbacks that require the paused child to continue.
 It retains one process owner, source leases and cumulative limits; connected
 validation, independent Worker-to-target identity and later startup completion
-remain pending.
+remain pending. A separate [fresh continuation route](plugins/easyeda-pro-control/skills/easyeda-pro-control/references/current-pcb209-ratline-continuation.md)
+observes full PCB/worker captures and ordered worker retirement on disposable
+projects; it does not enable editing or establish complete startup.
 On eligible 3.2.206 profiles, the ordinary symbol-metadata route allows forward name/description edits of
 unused project-local symbols with eligible history. Disposable validation
 routes have separate gates. Check the

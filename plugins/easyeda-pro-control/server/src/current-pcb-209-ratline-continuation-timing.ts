@@ -21,6 +21,7 @@ export interface CurrentPcb209RatlineContinuationTiming {
   readonly childStartRequestMilliseconds: number;
   readonly capturePauseMilliseconds: number;
   readonly captureWaitMilliseconds: number;
+  readonly captureHandoffMilliseconds: number;
   readonly creationNextPauseMilliseconds: number;
   readonly creationContinuationMilliseconds: number;
   readonly comparisonMilliseconds: number;
@@ -62,6 +63,12 @@ function profile(role: CurrentPcb209RatlineContinuationTimingRole): CurrentPcb20
     // Native launch clock still expires at its original start, even if this
     // Local wait began later. No per-request timeout or native budget changes.
     captureWaitMilliseconds: native.elapsed.normalMilliseconds,
+    // A source-qualified PCB received pause can arrive before the worker's
+    // Terminal return pause. That event already has the full capture-wait
+    // Allowance; pause-processing/comparison sums do not bound its delivery.
+    // Only that ordered handoff uses this window. The original native launch
+    // Ledger expires from launch, so a later local timer cannot renew it.
+    captureHandoffMilliseconds: native.elapsed.normalMilliseconds,
     creationNextPauseMilliseconds: sourceRelease + 3 * source + (role === "worker" ? captureArm + earlyCapture : 0),
     creationContinuationMilliseconds: armChild + 5 * source + (role === "pcb" ? captureArm : 0),
     comparisonMilliseconds: 10 * source + 2 * ordinary,

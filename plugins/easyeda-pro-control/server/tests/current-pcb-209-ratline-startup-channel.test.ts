@@ -15,6 +15,8 @@ import { currentPcb209RatlineNativeWire } from "../src/current-pcb-209-ratline-n
 import type { CurrentPcb209RatlineNativeCommand } from "../src/current-pcb-209-ratline-native-cases.ts";
 import { CURRENT_PCB_209_RATLINE_LOADER_SOURCE } from "../src/current-pcb-209-ratline-loader-pause.ts";
 
+import { CURRENT_PCB_209_RATLINE_WINDOW_SOURCE, CURRENT_PCB_209_RATLINE_WINDOW_SOURCE_SHA256 } from "../src/current-pcb-209-ratline-window-pause.ts";
+
 type Send = Readonly<Record<string, unknown>>;
 function ordinaryReply(request: Send): Readonly<Record<string, unknown>> {
   return request["method"] === "Debugger.enable" ? { debuggerId: `debugger-${String(request["role"])}` } : {};
@@ -253,13 +255,14 @@ void test(`native held construction join retains original replies, lost acknowle
   await (lostAcknowledgment ? assert.rejects(dependency.request("pcb", join)) : dependency.request("pcb", join));
   assert.equal(f.budget.remainingRequests("pcb-capture"), remaining - 1);
   await assert.rejects(dependency.request("pcb", join), /JOIN_STATE/u); assert.equal(f.requests.length, before + 1);
-  assert.equal(PROFILE.requestClasses["pcb-capture"].count, 13); assert.equal(PROFILE.normalRequestLimit, 322);
+  assert.equal(PROFILE.requestClasses["pcb-capture"].count, 13); assert.equal(PROFILE.normalRequestLimit, 328);
 });
 }
 
 void test("exhausted ancestry class preserves the next original ID and the reserved native cleanup", async context => {
   const f = await fixture(context); const dependency = await prepare(f); await arm(dependency, "pcb"); await dependency.requestParent(opening(true, "open-document"));
-  for (let index = 0; index < 12; index += 1) { await dependency.requestParent({ method: "Page.getFrameTree", sessionId: "parent-session", params: {} }); }
+  // Three four-command ancestry proofs plus the initial-window DOM pair.
+  for (let index = 0; index < 14; index += 1) { await dependency.requestParent({ method: "Page.getFrameTree", sessionId: "parent-session", params: {} }); }
   const next = f.channel.status().nextRequestId;
   await assert.rejects(dependency.requestParent({ method: "Page.getFrameTree", sessionId: "parent-session", params: {} }), /REQUEST_CLASS_BUDGET/u);
   assert.equal(f.channel.status().nextRequestId, next); await f.channel.beginCleanup();
@@ -457,4 +460,109 @@ void test("changed loader source consumes its read and refuses every later resum
   await assert.rejects(dependency.request("pcb", loaderSourceCommand)); await assert.rejects(dependency.request("pcb", loaderResumeCommand));
   await assert.rejects(dependency.request("pcb", plainResumeCommand)); assert.equal(f.requests.length, consumed);
   assert.equal(f.budget.remainingRequests("loader"), 1); assert.equal(f.budget.remainingRequests("pcb-source"), 29); await openingRejected;
+});
+
+const windowSource = (stage: "initial" | "document"): Readonly<{ method: "Debugger.getScriptSource"; sessionId: string; windowPhase: "initial-source" | "document-source"; params: Readonly<{ scriptId: string }> }> =>
+  ({ method: "Debugger.getScriptSource", sessionId: "parent-session", windowPhase: `${stage}-source`, params: { scriptId: `window-${stage}` } });
+const windowResume = (stage: "initial" | "document"): Readonly<{ method: "Debugger.resume"; sessionId: string; windowPhase: "initial-resume" | "document-resume"; params: Readonly<Record<string, never>> }> =>
+  ({ method: "Debugger.resume", sessionId: "parent-session", windowPhase: `${stage}-resume`, params: {} });
+async function beginWindowNavigation(f: Fixture, dependency: CurrentPcb209RatlineStartupDependency): Promise<Readonly<{
+  openingRequest: Send; openingWork: Promise<unknown>; initialResumeIssued: Promise<Send>; documentResumeIssued: Promise<Send>;
+}>> {
+  const documentResumeIssued = Promise.withResolvers<Send>(), initialResumeIssued = Promise.withResolvers<Send>(), openingIssued = Promise.withResolvers<Send>();
+  const pause = (scriptId: string, frames: number): void => {
+    if (scriptId.startsWith("window-")) {
+      event(f, "parent-session", "Debugger.scriptParsed", { scriptId, executionContextId: scriptId === "window-initial" ? 2 : 3,
+        url: "", hasSourceURL: false, isLiveEdit: false, isModule: false, startLine: 0, startColumn: 0, endLine: 0, endColumn: 6,
+        length: 6, hash: CURRENT_PCB_209_RATLINE_WINDOW_SOURCE_SHA256, scriptLanguage: "JavaScript", sourceMapURL: "" });
+    }
+    event(f, "parent-session", "Debugger.paused", { reason: "instrumentation", data: { scriptId }, hitBreakpoints: [],
+      callFrames: Array.from({ length: frames }, (_, index) => ({ location: { scriptId: index === 0 ? scriptId : "ui" } })) });
+  };
+  f.state.onSend = (request): Promise<unknown> => {
+    const phase = request["phase"];
+    if (request["parentPhase"] === "pcb-open-document") { openingIssued.resolve(request); return Promise.resolve({ written: true }); }
+    if (phase === "window-initial-resume") { initialResumeIssued.resolve(request); }
+    else if (phase === "window-document-resume") { documentResumeIssued.resolve(request); }
+    else {
+      let result: unknown = {};
+      if (phase === "navigation-source") { result = { scriptSource: `(${CURRENT_PCB_DIAGNOSTIC_PCB_OPENING_FUNCTION})` }; }
+      else if (phase === "loader-source") { result = { scriptSource: CURRENT_PCB_209_RATLINE_LOADER_SOURCE }; }
+      else if (phase === "window-initial-source" || phase === "window-document-source") { result = { scriptSource: CURRENT_PCB_209_RATLINE_WINDOW_SOURCE }; }
+      f.frame({ id: request["requestId"], sessionId: request["sessionId"], result });
+    }
+    if (request["method"] === "Debugger.resume") { event(f, "parent-session", "Debugger.resumed", {}); }
+    if (phase === "navigation-resume") { pause("loader", 3); }
+    else if (phase === "loader-resume") { pause("window-initial", 6); }
+    else if (phase === "window-initial-resume") { pause("window-document", 1); }
+    else if (phase === "window-document-resume") { pause("pcb-bootstrap", 1); }
+    return Promise.resolve({ written: true });
+  };
+  const openingWork = dependency.requestParent(opening(true, "open-document")); const openingRequest = await openingIssued.promise;
+  pause("nav-script", 1);
+  await dependency.requestParent({ method: "Page.getFrameTree", sessionId: "parent-session", params: {} });
+  await dependency.request("pcb", { method: "Debugger.getScriptSource", sessionId: "parent-session", navigationPhase: "source", params: { scriptId: "nav-script" } });
+  await dependency.request("pcb", { method: "Debugger.resume", sessionId: "parent-session", navigationPhase: "resume", params: {} });
+  await dependency.request("pcb", { method: "Debugger.getScriptSource", sessionId: "parent-session", loaderPhase: "source", params: { scriptId: "loader" } });
+  await dependency.request("pcb", { method: "Debugger.resume", sessionId: "parent-session", loaderPhase: "resume", params: {} });
+  return { openingRequest, openingWork, initialResumeIssued: initialResumeIssued.promise, documentResumeIssued: documentResumeIssued.promise };
+}
+void test("window stages retain separate sources, require prior resume acknowledgment and refuse replay or ordinary aliases", async context => {
+  const f = await fixture(context); const dependency = await prepare(f); await arm(dependency, "pcb");
+  const held = await beginWindowNavigation(f, dependency); const plain = { method: "Debugger.resume", sessionId: "parent-session", params: {} } as const;
+  const before = f.requests.length;
+  await assert.rejects(dependency.request("pcb", windowSource("document")), /WINDOW_SEQUENCE/u);
+  await assert.rejects(dependency.request("pcb", { method: "Debugger.getScriptSource", sessionId: "parent-session", params: { scriptId: "window-initial" } }), /WINDOW|SOURCE_SEQUENCE/u);
+  await assert.rejects(dependency.request("pcb", { ...windowSource("initial"), params: { scriptId: "foreign" } }), /WINDOW_SEQUENCE/u);
+  await assert.rejects(dependency.request("pcb", windowResume("initial")), /WINDOW_SEQUENCE/u);
+  await assert.rejects(dependency.request("pcb", plain), /RESUME_SEQUENCE/u); assert.equal(f.requests.length, before);
+  await dependency.request("pcb", windowSource("initial"));
+  await assert.rejects(dependency.request("pcb", windowSource("initial")), /WINDOW_SEQUENCE/u);
+  await assert.rejects(dependency.request("pcb", plain), /RESUME_SEQUENCE/u);
+  const resumed = dependency.request("pcb", windowResume("initial")); const original = await held.initialResumeIssued;
+  await dependency.requestParent({ method: "Page.getFrameTree", sessionId: "parent-session", params: {} });
+  const awaitingAck = f.requests.length;
+  await assert.rejects(dependency.request("pcb", windowSource("document")), /WINDOW_SEQUENCE/u);
+  assert.equal(f.requests.length, awaitingAck);
+  f.frame({ id: original["requestId"], sessionId: "parent-session", result: {} }); await resumed;
+  await assert.rejects(dependency.request("pcb", windowResume("initial")), /WINDOW_SEQUENCE/u);
+  const beforeDocument = f.requests.length;
+  await assert.rejects(dependency.request("pcb", { method: "Debugger.getScriptSource", sessionId: "parent-session", params: { scriptId: "window-document" } }), /WINDOW|SOURCE_SEQUENCE/u);
+  assert.equal(f.requests.length, beforeDocument);
+  await dependency.request("pcb", windowSource("document"));
+  await assert.rejects(dependency.request("pcb", windowSource("document")), /WINDOW_SEQUENCE/u);
+  await assert.rejects(dependency.request("pcb", plain), /RESUME_SEQUENCE/u);
+  const documentResume = dependency.request("pcb", windowResume("document")); const documentRequest = await held.documentResumeIssued;
+  await dependency.requestParent({ method: "Page.getFrameTree", sessionId: "parent-session", params: {} });
+  const awaitingDocumentAck = f.requests.length;
+  await assert.rejects(dependency.request("pcb", { method: "Debugger.getScriptSource", sessionId: "parent-session", params: { scriptId: "pcb-bootstrap" } }), /WINDOW_SEQUENCE/u);
+  assert.equal(f.requests.length, awaitingDocumentAck); assert.equal(f.budget.remainingRequests("pcb-source"), 29);
+  f.frame({ id: documentRequest["requestId"], sessionId: "parent-session", result: {} }); await documentResume;
+  await assert.rejects(dependency.request("pcb", windowResume("document")), /WINDOW_SEQUENCE/u);
+  assert.equal(f.budget.remainingRequests("initial-window"), 0); assert.equal(f.budget.remainingRequests("document-window"), 0);
+  assert.equal(f.budget.remainingRequests("pcb-source"), 29);
+  await dependency.request("pcb", { method: "Debugger.getScriptSource", sessionId: "parent-session", params: { scriptId: "pcb-bootstrap" } });
+  assert.equal(f.budget.remainingRequests("pcb-source"), 28);
+  f.frame({ id: held.openingRequest["requestId"], sessionId: "parent-session", result: {} }); await held.openingWork;
+});
+void test("changed window bytes consume only their own read and cannot dispatch any resume", async context => {
+  for (const stage of ["initial", "document"] as const) {
+    const f = await fixture(context); const dependency = await prepare(f); await arm(dependency, "pcb");
+    const held = await beginWindowNavigation(f, dependency);
+    if (stage === "document") {
+      await dependency.request("pcb", windowSource("initial"));
+      const resumed = dependency.request("pcb", windowResume("initial")); const original = await held.initialResumeIssued;
+      f.frame({ id: original["requestId"], sessionId: "parent-session", result: {} }); await resumed;
+    }
+    const openingRejected = assert.rejects(held.openingWork);
+    f.state.onSend = (request): Promise<unknown> => {
+      f.frame({ id: request["requestId"], sessionId: request["sessionId"], result: { scriptSource: `${CURRENT_PCB_209_RATLINE_WINDOW_SOURCE}\n` } });
+      return Promise.resolve({ written: true });
+    };
+    await assert.rejects(dependency.request("pcb", windowSource(stage))); const consumed = f.requests.length;
+    await assert.rejects(dependency.request("pcb", windowSource(stage))); await assert.rejects(dependency.request("pcb", windowResume(stage)));
+    await assert.rejects(dependency.request("pcb", { method: "Debugger.resume", sessionId: "parent-session", params: {} }));
+    assert.equal(f.requests.length, consumed); assert.equal(f.budget.remainingRequests(stage === "initial" ? "initial-window" : "document-window"), 1);
+    assert.equal(f.budget.remainingRequests("pcb-source"), 29); await openingRejected;
+  }
 });

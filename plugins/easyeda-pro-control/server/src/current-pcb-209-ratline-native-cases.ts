@@ -1,3 +1,4 @@
+/* oxlint-disable import/max-dependencies -- Finite native syntax composes the fixed creation, capture, bootstrap and window-context contracts without runtime authority. */
 /** Finite native syntax for the two original ratline parent realms. These
  * templates issue no source, session, target, lifecycle or budget authority. */
 import { CURRENT_PCB_209_RATLINE_CREATION_PROFILES as CREATION, CURRENT_PCB_209_RATLINE_CREATION_GROUP as CREATION_GROUP } from "./current-pcb-209-ratline-creation-profile.ts";
@@ -10,10 +11,11 @@ import type { CurrentPcb209RatlineRealmCommand } from "./current-pcb-209-ratline
 import { freezeDeep } from "./sqlite-inventory-core.ts";
 
 import type { CurrentPcb209RatlineNavigationCommand } from "./current-pcb-209-ratline-navigation-pause.ts";
+import type { CurrentPcb209RatlineWindowCommand } from "./current-pcb-209-ratline-window-pause.ts";
 import type { CurrentPcb209RatlineLoaderCommand } from "./current-pcb-209-ratline-loader-pause.ts";
 
 export type CurrentPcb209RatlineNativeRole = "pcb" | "worker";
-export type CurrentPcb209RatlineNativeCommand = CurrentPcb209RatlineRealmCommand | CurrentPcb209RatlineBootstrapCommand | CurrentPcb209RatlineOriginCommand | CurrentPcb209RatlineNavigationCommand | CurrentPcb209RatlineLoaderCommand;
+export type CurrentPcb209RatlineNativeCommand = CurrentPcb209RatlineRealmCommand | CurrentPcb209RatlineBootstrapCommand | CurrentPcb209RatlineOriginCommand | CurrentPcb209RatlineNavigationCommand | CurrentPcb209RatlineLoaderCommand | CurrentPcb209RatlineWindowCommand;
 export interface CurrentPcb209RatlineNativeCase {
   readonly role: CurrentPcb209RatlineNativeRole;
   readonly phase: string;
@@ -41,6 +43,10 @@ for (const role of ["pcb", "worker"] as const) {
     put("navigation-resume", { method: "Debugger.resume", sessionId, navigationPhase: "resume", params: {} });
     put("loader-source", { method: "Debugger.getScriptSource", sessionId, loaderPhase: "source", params: { scriptId } });
     put("loader-resume", { method: "Debugger.resume", sessionId, loaderPhase: "resume", params: {} });
+    for (const stage of ["initial", "document"] as const) {
+      put(`window-${stage}-source`, { method: "Debugger.getScriptSource", sessionId, windowPhase: `${stage}-source`, params: { scriptId } });
+      put(`window-${stage}-resume`, { method: "Debugger.resume", sessionId, windowPhase: `${stage}-resume`, params: {} });
+    }
     put("origin-stack", { method: "Debugger.getStackTrace", sessionId,
       params: { stackTraceId: { id: placeholder("stackTraceId"), debuggerId: placeholder("debuggerId") } } });
   }

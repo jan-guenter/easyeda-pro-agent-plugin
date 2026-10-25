@@ -50,8 +50,8 @@ export function publicUtilitiesOnlyCapabilities(): Record<string, unknown> {
       runtimeAdmissionRequired: true, debuggerPauseAcceptanceRequired: true, startupCompletionVerified: false,
       scope: "separate-project-worker-constructor-empty-baseline-ratline-held-import-and-continuation-purposes;no-complete-startup-or-writer-authority",
       completeLiveBaselineVerified: false, serverClockProvenanceVerified: false, cadAuthority: false },
-    designAccess: { enabled: false, scope: "general-geometry-and-writers;disposable-bounded-observations-and-historical-queries-only" }, navigation: { enabled: true, scope: "original-owner-disposable209-opening-and-three-separate-startup-purposes-only" },
-    save: { enabled: false }, recovery: { enabled: false }, nativeAdapters: { enabled: true, scope: "identity-and-disposable209-opening-layer-primitive-selection-relations;project-worker-constructor-empty-baseline-and-held-ratline-import-observations-only" },
+    designAccess: { enabled: false, scope: "general-geometry-and-writers;disposable-bounded-observations-and-historical-queries-only" }, navigation: { enabled: true, scope: "original-owner-disposable209-opening-and-four-separate-startup-purposes-only" },
+    save: { enabled: false }, recovery: { enabled: false }, nativeAdapters: { enabled: true, scope: "identity-and-disposable209-opening-layer-primitive-selection-relations;project-worker-constructor-empty-baseline-held-ratline-import-and-ratline-continuation-observations-only" },
   };
 }
 

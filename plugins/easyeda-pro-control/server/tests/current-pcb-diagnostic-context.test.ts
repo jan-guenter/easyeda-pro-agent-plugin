@@ -392,6 +392,45 @@ void test("child context destruction requires its original unique ID and exclude
   assert.throws(() => { reused.observeEvent(event("Runtime.executionContextDestroyed",
     { executionContextId: 8, executionContextUniqueId: "reused-child" })); }, /INVALIDATED/u);
 });
+function initialWindowContext(context: CurrentPcbDiagnosticContext, patch: Readonly<Record<string, unknown>> = {}): void {
+  context.observeEvent(event("Runtime.executionContextCreated", { context: { ...UI_CONTEXT, id: 8, uniqueId: "initial-window",
+    auxData: { ...UI_CONTEXT.auxData, frameId: "pcb-frame" }, ...patch } }));
+}
+void test("window bootstrap context distinguishes the retained initial child from its committed replacement", () => {
+  const context = pcbOpeningFixture(); within(context, { url: PCB_URL });
+  context.observeEvent(event("Page.frameAttached", { frameId: "pcb-frame", parentFrameId: "frame-1" }));
+  initialWindowContext(context);
+  assert.equal(context.pcbWindowBootstrapContext(8, true)["uniqueId"], "initial-window");
+  assert.equal(context.pcbBootstrapEventContext(8), null);
+  context.observeEvent(event("Runtime.executionContextDestroyed", { executionContextId: 8, executionContextUniqueId: "initial-window" }));
+  context.observeEvent(event("Page.frameNavigated", { frame: PCB_CHILD, type: "Navigation" }));
+  initialWindowContext(context, { uniqueId: "committed-window" });
+  assert.equal(context.pcbWindowBootstrapContext(8, false)["uniqueId"], "committed-window");
+  assert.throws(() => context.pcbWindowBootstrapContext(8, true), /IDENTITY/u);
+});
+void test("window bootstrap classification rejects preexisting, foreign, ambiguous and destroyed contexts", () => {
+  for (const patch of [{ origin: "https://foreign" }, { auxData: { ...UI_CONTEXT.auxData, frameId: "frame-1" } },
+    { auxData: { ...UI_CONTEXT.auxData, frameId: "pcb-frame", isDefault: false } },
+    { auxData: { ...UI_CONTEXT.auxData, frameId: "pcb-frame", type: "isolated" } }]) {
+    const context = pcbOpeningFixture();
+    context.observeEvent(event("Page.frameAttached", { frameId: "pcb-frame", parentFrameId: "frame-1" })); initialWindowContext(context, patch);
+    assert.throws(() => context.pcbWindowBootstrapContext(8, true), /IDENTITY/u);
+  }
+  const preexisting = pcbOpeningFixture(); initialWindowContext(preexisting);
+  preexisting.observeEvent(event("Page.frameAttached", { frameId: "pcb-frame", parentFrameId: "frame-1" }));
+  assert.throws(() => preexisting.pcbWindowBootstrapContext(8, true), /IDENTITY/u);
+  const earlyDocument = pcbOpeningFixture();
+  earlyDocument.observeEvent(event("Page.frameAttached", { frameId: "pcb-frame", parentFrameId: "frame-1" })); initialWindowContext(earlyDocument);
+  assert.throws(() => earlyDocument.pcbWindowBootstrapContext(8, false), /IDENTITY/u);
+  const duplicate = pcbOpeningFixture();
+  duplicate.observeEvent(event("Page.frameAttached", { frameId: "pcb-frame", parentFrameId: "frame-1" })); initialWindowContext(duplicate);
+  initialWindowContext(duplicate, { id: 9, uniqueId: "another-window" });
+  assert.throws(() => duplicate.pcbWindowBootstrapContext(8, true), /IDENTITY/u);
+  const destroyed = pcbOpeningFixture();
+  destroyed.observeEvent(event("Page.frameAttached", { frameId: "pcb-frame", parentFrameId: "frame-1" })); initialWindowContext(destroyed);
+  destroyed.observeEvent(event("Runtime.executionContextDestroyed", { executionContextId: 8, executionContextUniqueId: "initial-window" }));
+  assert.throws(() => destroyed.pcbWindowBootstrapContext(8, true), /IDENTITY/u);
+});
 void test("PCB branch rejects second child, root replacement and foreign navigation", () => {
   for (const item of [
     event("Page.frameAttached", { frameId: "another", parentFrameId: "frame-1" }),

@@ -20,11 +20,14 @@ import { qualifyCurrentPcb209RatlineNavigationPause, qualifyCurrentPcb209Ratline
 import type { CurrentPcb209RatlineNavigationCommand } from "./current-pcb-209-ratline-navigation-pause.ts";
 import { qualifyCurrentPcb209RatlineLoaderPause, qualifyCurrentPcb209RatlineLoaderSource } from "./current-pcb-209-ratline-loader-pause.ts";
 import type { CurrentPcb209RatlineLoaderCommand } from "./current-pcb-209-ratline-loader-pause.ts";
+import { isCurrentPcb209RatlineWindowScript, qualifyCurrentPcb209RatlineWindowOwner, qualifyCurrentPcb209RatlineWindowPause,
+  qualifyCurrentPcb209RatlineWindowSource } from "./current-pcb-209-ratline-window-pause.ts";
+import type { CurrentPcb209RatlineWindowCommand, CurrentPcb209RatlineWindowStage } from "./current-pcb-209-ratline-window-pause.ts";
 import { inheritCurrentPcb209RatlineContinuationTiming } from "./current-pcb-209-ratline-continuation-timing.ts";
 
 type Row = Readonly<Record<string, unknown>>;
 type SourceCommand = Parameters<CurrentPcb209RatlinePcbBootstrapDependency["request"]>[0];
-type NavigationCommand = CurrentPcb209RatlineNavigationCommand | CurrentPcb209RatlineLoaderCommand;
+type NavigationCommand = CurrentPcb209RatlineNavigationCommand | CurrentPcb209RatlineLoaderCommand | CurrentPcb209RatlineWindowCommand;
 export type CurrentPcb209RatlinePcbContextParentCommand =
   Readonly<{ method: "Target.getTargets"; params: Readonly<Record<string, never>> }> |
   Readonly<{ method: "Page.getFrameTree"; sessionId: string; params: Readonly<Record<string, never>> }> |
@@ -96,6 +99,13 @@ export class CurrentPcb209RatlinePcbContextRouter {
   #loaderPause: "unused" | "source" | "resume" | "complete" = "unused";
   #loaderResumed = false;
   readonly #loaderResumeEvent = Promise.withResolvers<null>();
+  readonly #loaderCompleteEvent = Promise.withResolvers<null>();
+  readonly #windows: Record<CurrentPcb209RatlineWindowStage, { phase: "unused" | "source" | "resume" | "complete"; resumed: boolean;
+    event: PromiseWithResolvers<null>; complete: PromiseWithResolvers<null> }> = {
+      initial: { phase: "unused", resumed: false, event: Promise.withResolvers<null>(), complete: Promise.withResolvers<null>() },
+      document: { phase: "unused", resumed: false, event: Promise.withResolvers<null>(), complete: Promise.withResolvers<null>() } };
+  readonly #windowScripts = new Set<string>();
+  #windowFrameId: string | null = null;
   readonly #originalUiUniqueContextId: string;
   #rejectedStop: CurrentPcb209RatlineStopEvidence | null = null;
   #listener: SourceEvents | null = null;
@@ -211,6 +221,17 @@ export class CurrentPcb209RatlinePcbContextRouter {
       if (method === "Debugger.resumed" && this.#loaderPause === "resume" && !this.#loaderResumed) {
         need(Object.keys(params).length === 0, "LOADER_RESUMED"); this.#loaderResumed = true; this.#loaderResumeEvent.resolve(null); return;
       }
+      if (method === "Debugger.resumed") {
+        for (const state of Object.values(this.#windows)) {
+          if (state.phase === "resume" && !state.resumed) {
+            need(Object.keys(params).length === 0, "WINDOW_RESUMED"); state.resumed = true; state.event.resolve(null); return;
+          }
+        }
+      }
+      if (method === "Debugger.paused") {
+        const scriptId = z.looseObject({ data: z.looseObject({ scriptId: token }).optional() }).parse(params).data?.scriptId;
+        if (scriptId !== undefined && this.#windowScripts.has(scriptId)) { this.#windowStop(event, this.#selected === null ? "initial" : "document"); return; }
+      }
       if (method === "Debugger.paused" && this.#selected === null) {
         if (this.#navigationPause === "unused") { this.#navigationStop(event); }
         else { this.#loaderStop(event); }
@@ -243,6 +264,9 @@ export class CurrentPcb209RatlinePcbContextRouter {
         }
         this.#scriptEvents.set(script.scriptId, captured); this.#scriptEvidenceBytes += captured.bytes ?? 0;
         if (this.#transition && this.#navigationPending && this.#selected === null) { this.#navigationScriptEvents.add(script.scriptId); }
+        if (this.#transition && this.#navigationPending && isCurrentPcb209RatlineWindowScript(event)) {
+          need(this.#windowScripts.size < 2, "WINDOW_SCRIPT_LIMIT"); this.#windowScripts.add(script.scriptId); return;
+        }
         if (this.#selectedEvent(script.executionContextId)) { this.#listener.event(event); } return;
       }
       if (method === "Runtime.consoleAPICalled") {
@@ -313,7 +337,43 @@ export class CurrentPcb209RatlinePcbContextRouter {
         const reply = await bounded(this.#dependency.request({ method: "Debugger.resume", sessionId: this.#dependency.parentSessionId,
           loaderPhase: "resume", params: {} }));
         z.object({}).strict().parse(captureCurrentPcbStringClockReply(reply).value);
-        await bounded(this.#loaderResumeEvent.promise); this.assertCurrent(); this.#loaderPause = "complete";
+        await bounded(this.#loaderResumeEvent.promise); this.assertCurrent(); this.#loaderPause = "complete"; this.#loaderCompleteEvent.resolve(null);
+      } catch (error) { this.#retainStop(event, event, true); this.#poison(error); }
+    })());
+  }
+  #windowStop(event: DiagnosticEvent, stage: CurrentPcb209RatlineWindowStage): void {
+    const state = this.#windows[stage];
+    need(this.#transition && this.#navigationPending && this.#loaderResumed && state.phase === "unused" &&
+      (stage === "initial" ? this.#selected === null : this.#selected !== null && this.#windows.initial.resumed), "WINDOW_PHASE");
+    const top = z.looseObject({ data: z.looseObject({ scriptId: token }) }).parse(event.params);
+    const contextId = this.#scripts.get(top.data.scriptId), script = this.#scriptEvents.get(top.data.scriptId);
+    need(script?.status === "captured" && contextId !== undefined, "WINDOW_SCRIPT_EVENT");
+    const context = this.#context.pcbWindowBootstrapContext(contextId, stage === "initial"), uniqueId = context["uniqueId"];
+    const frameId = token.parse(row.parse(context["auxData"])["frameId"]);
+    if (stage === "initial") { need(this.#windowFrameId === null, "WINDOW_FRAME_REUSED"); this.#windowFrameId = frameId; }
+    else { need(this.#windowFrameId === frameId, "WINDOW_FRAME_CHANGED"); }
+    const scriptId = qualifyCurrentPcb209RatlineWindowPause(event, eventSchema.parse(script.value),
+      this.#dependency.parentSessionId, contextId, this.#originalUiScriptId, stage);
+    const currentWindow = (): void => { this.assertCurrent(); need(this.#navigationPending &&
+      this.#context.pcbWindowBootstrapContext(contextId, stage === "initial")["uniqueId"] === uniqueId, "WINDOW_CHANGED"); };
+    state.phase = "source";
+    void observed((async (): Promise<void> => {
+      try {
+        await bounded(stage === "initial" ? this.#loaderCompleteEvent.promise : this.#windows.initial.complete.promise);
+        await this.#current(); currentWindow(); const sessionId = this.#dependency.parentSessionId;
+        if (stage === "initial") {
+          const owner = await this.#snapshot({ method: "DOM.getFrameOwner", sessionId, params: { frameId } }); currentWindow();
+          const backendNodeId = z.number().int().positive().max(2_147_483_647).parse(owner["backendNodeId"]);
+          const node = await this.#snapshot({ method: "DOM.describeNode", sessionId, params: { backendNodeId, depth: 0, pierce: false } }); currentWindow();
+          qualifyCurrentPcb209RatlineWindowOwner(owner, node, frameId, this.#target);
+        }
+        this.#step = `window-${stage}-source`; this.#lastCommand = "Debugger.getScriptSource";
+        const raw = await bounded(this.#dependency.request({ method: "Debugger.getScriptSource", sessionId,
+          windowPhase: `${stage}-source`, params: { scriptId } })); currentWindow(); qualifyCurrentPcb209RatlineWindowSource(raw);
+        await this.#current(); currentWindow(); state.phase = "resume"; this.#step = `window-${stage}-resume`; this.#lastCommand = "Debugger.resume";
+        const reply = await bounded(this.#dependency.request({ method: "Debugger.resume", sessionId, windowPhase: `${stage}-resume`, params: {} }));
+        z.object({}).strict().parse(captureCurrentPcbStringClockReply(reply).value);
+        await bounded(state.event.promise); this.assertCurrent(); state.phase = "complete"; state.complete.resolve(null);
       } catch (error) { this.#retainStop(event, event, true); this.#poison(error); }
     })());
   }
@@ -321,7 +381,15 @@ export class CurrentPcb209RatlinePcbContextRouter {
   async #sourceRequest(command: SourceCommand): Promise<unknown> {
     this.#same(); need(!this.#released, "RELEASED");
     const cleanup = command.method === "Debugger.removeBreakpoint";
-    if (!cleanup) { this.assertCurrent(); }
+    if (!cleanup) {
+      this.assertCurrent();
+      // The next script pause can precede the window hook's resume reply.
+      // Retain it, then require both original acknowledgment and event before
+      // The first PCB source request can consume an ordinal.
+      for (const state of Object.values(this.#windows)) {
+        if (state.phase !== "unused" && state.phase !== "complete") { await bounded(state.complete.promise); this.assertCurrent(); }
+      }
+    }
     if (command.method === "Debugger.resume" && this.#resumes === 28) {
       need(this.#sourceReleaseArmed && !this.#sourceReleaseConsumed, "SOURCE_CONTINUATION_PROOF"); this.#sourceReleaseConsumed = true;
     }
@@ -331,7 +399,7 @@ export class CurrentPcb209RatlinePcbContextRouter {
     try { return await this.#dependency.request(command); } finally { if (enabling) { this.#enable = null; } }
   }
   async #snapshot(command: CurrentPcb209RatlinePcbContextParentCommand): Promise<Row> {
-    await this.#current(); need(this.#commands < 12, "PROOF_COMMAND_BUDGET"); this.#commands += 1;
+    await this.#current(); need(this.#commands < 14, "PROOF_COMMAND_BUDGET"); this.#commands += 1;
     this.#lastCommand = command.method; this.#step = "ancestry-request";
     const raw = await bounded(this.#dependency.requestParent(command));
     const reply = row.parse(captureCurrentPcbStringClockReply(raw).value);
@@ -396,6 +464,7 @@ export class CurrentPcb209RatlinePcbContextRouter {
     firstFailure: this.#firstFailure, step: this.#step, lastCommand: this.#lastCommand, lastEvent: this.#lastEvent, sourceOwner: this.#sourceOwner.status(),
     navigationPause: this.#navigationPause, navigationResumed: this.#navigationResumed,
     loaderPause: this.#loaderPause, loaderResumed: this.#loaderResumed,
+    windowPauses: { initial: this.#windows.initial.phase, document: this.#windows.document.phase },
     retainedScriptEvidenceBytes: this.#scriptEvidenceBytes, scriptEvidenceExhausted: this.#scriptEvidenceExhausted,
     rejectedStop: this.#rejectedStop === null ? null : summarizeCurrentPcb209RatlineStop(this.#rejectedStop),
     sourceContinuationConsumed: this.#sourceReleaseConsumed, nativeWorkerTargetIdentityVerified: false, executionAuthorized: false }); }
