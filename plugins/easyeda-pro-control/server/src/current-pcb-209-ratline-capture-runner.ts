@@ -1,14 +1,14 @@
 /* oxlint-disable eslint/max-classes-per-file -- A private fixed-profile core keeps both realm wrappers closed to caller-selected capture plans. */
 /** Original pause/event capture for the empty209 ratline startup branch.
- * No native adapter or public registration adopts this private transport yet. */
+ * The native held-import adapter adopts only the fixed PCB prefix. */
 import { CURRENT_PCB_209_RATLINE_NATIVE_PROFILE } from "./current-pcb-209-ratline-budget.ts";
 import { types } from "node:util";
 import { CurrentPcb209RatlineStageDiagnostics } from "./current-pcb-209-ratline-diagnostics.ts";
 import { currentPcb209RatlineTransportRequestMilliseconds } from "./current-pcb-209-ratline-transport-windows.ts";
 import { z } from "zod";
 import { captureCurrentPcbStringClockReply } from "./current-pcb-string-clock-reply.ts";
-import { CURRENT_PCB_209_RATLINE_CAPTURE_PROFILES, CURRENT_PCB_209_RATLINE_CAPTURE_GROUP as GROUP } from "./current-pcb-209-ratline-capture-profile.ts";
-import type { CurrentPcb209RatlineCaptureRole, CurrentPcb209RatlineCaptureSite } from "./current-pcb-209-ratline-capture-profile.ts";
+import { CURRENT_PCB_209_RATLINE_CAPTURE_PROFILES, CURRENT_PCB_209_RATLINE_HELD_CAPTURE_PROFILE, CURRENT_PCB_209_RATLINE_CAPTURE_GROUP as GROUP } from "./current-pcb-209-ratline-capture-profile.ts";
+import type { CurrentPcb209RatlineCaptureRole, CurrentPcb209RatlineCaptureScope, CurrentPcb209RatlineCaptureSite } from "./current-pcb-209-ratline-capture-profile.ts";
 import { CURRENT_PCB_209_RATLINE_CAPTURE_PROGRAMS as PROGRAMS } from "./current-pcb-209-ratline-capture-program.ts";
 import type { CurrentPcb209RatlineCaptureProgram } from "./current-pcb-209-ratline-capture-program.ts";
 import { CURRENT_PCB_209_RATLINE_SOURCE_PROFILE } from "./current-pcb-209-ratline-source.ts";
@@ -61,11 +61,19 @@ export interface CurrentPcb209RatlineCapturePacket {
   readonly completeLiveBaselineVerified: false;
   readonly executionAuthorized: false;
 }
+export interface CurrentPcb209RatlineHeldCapturePacket extends Omit<CurrentPcb209RatlineCapturePacket,
+  "profile" | "pauses" | "resultPayload" | "world" | "originalTerminalReturnPauseRetained"> {
+  readonly profile: "private.current-pcb209-ratline-pcb-held-prefix-capture.v1";
+  readonly pauses: 2;
+  readonly originalFactoryPauseReleased: true;
+}
+export type CurrentPcb209RatlineAnyCapturePacket = CurrentPcb209RatlineCapturePacket | CurrentPcb209RatlineHeldCapturePacket;
+interface Packets { readonly full: CurrentPcb209RatlineCapturePacket; readonly "pcb-held-prefix": CurrentPcb209RatlineHeldCapturePacket }
 interface Breakpoint { readonly id: string; removal: Promise<void> | null; removed: boolean }
 interface Paused { readonly event: unknown; readonly capturedError: unknown; readonly resumed: PromiseWithResolvers<null>;
   readonly timer: ReturnType<typeof setTimeout>; resume: Promise<void> | null; observed: boolean }
 const INTERNAL = Symbol("fixed209-ratline-capture");
-const issued = new WeakMap<CurrentPcb209RatlineCapturePacket, CurrentPcb209RatlineCaptureCore>();
+const issued = new WeakMap<CurrentPcb209RatlineAnyCapturePacket, object>();
 function fail(code: string): Error { return new Error(`PCB209_RATLINE_CAPTURE_${code}`); }
 function need(value: boolean, code: string): asserts value { if (!value) { throw fail(code); } }
 async function bounded<T>(promise: Promise<T>, milliseconds: number = CURRENT_PCB_209_RATLINE_NATIVE_PROFILE.elapsed.ordinaryRequestMilliseconds): Promise<T> {
@@ -98,7 +106,7 @@ function payloadValue(input: unknown, expected: number | null): string {
   const value = payloadSchema.parse(JSON.parse(input) as unknown);
   need(expected !== null && value.workerName === expected && JSON.stringify(value) === input, "PAYLOAD"); return input;
 }
-class CurrentPcb209RatlineCaptureCore {
+class CurrentPcb209RatlineCaptureCore<Scope extends CurrentPcb209RatlineCaptureScope> {
   readonly #diagnostics = new CurrentPcb209RatlineStageDiagnostics();
   readonly #role: CurrentPcb209RatlineCaptureRole;
   readonly #transport: CurrentPcb209RatlineCaptureTransport;
@@ -127,16 +135,18 @@ class CurrentPcb209RatlineCaptureCore {
   #selfId: number | null = null;
   #payload: string | null = null;
   #world: z.infer<typeof worldSchema> | null = null;
-  #packet: CurrentPcb209RatlineCapturePacket | null = null;
+  readonly #scope: Scope;
+  #packet: Packets[Scope] | null = null;
   #cleanupPending: Promise<void> | null = null;
   #cleanupRequested = false;
-  public constructor(key: typeof INTERNAL, role: CurrentPcb209RatlineCaptureRole, transport: CurrentPcb209RatlineCaptureTransport) {
-    need(key === INTERNAL, "FIXED_PROFILE"); this.#role = role; this.#transport = transport; this.#original = members(transport);
+  public constructor(key: typeof INTERNAL, role: CurrentPcb209RatlineCaptureRole, scope: Scope, transport: CurrentPcb209RatlineCaptureTransport) {
+    need(key === INTERNAL && (scope === "full" || scope === "pcb-held-prefix" && role === "pcb"), "FIXED_PROFILE");
+    this.#role = role; this.#scope = scope; this.#transport = transport; this.#original = members(transport);
     this.#scriptId = token.parse(transport.scriptId); this.#request = transport.request; this.#subscribe = transport.subscribe;
     this.#reprove = transport.assertOriginalPinnedRealm; this.#terminate = transport.assertOriginalTermination;
     void observed(this.#waiting.promise); void observed(this.#armed.promise);
   }
-  public status(): Readonly<Record<string, unknown>> { return Object.freeze({ ...this.#diagnostics.snapshot(), role: this.#role, consumed: this.#consumed,
+  public status(): Readonly<Record<string, unknown>> { return Object.freeze({ ...this.#diagnostics.snapshot(), role: this.#role, scope: this.#scope, consumed: this.#consumed,
     settled: this.#settled, failed: this.#failed !== null, released: this.#released, events: this.#events, commands: this.#commands,
     paused: this.#pause !== null && !this.#pause.observed, unresolvedBreakpoints: this.#uncertain > 0 || [...this.#breakpoints.values()].some(value => !value.removed) }); }
   public async whenArmed(): Promise<void> { await this.#armed.promise; await this.#current(); }
@@ -255,7 +265,7 @@ class CurrentPcb209RatlineCaptureCore {
   async #capturePause(retained: Paused, index: number): Promise<void> {
     this.#diagnostics.step = "pause-validation";
     need(retained.capturedError === null, "EVENT_CAPTURE"); const event = pause.parse(retained.event);
-    const profile = CURRENT_PCB_209_RATLINE_CAPTURE_PROFILES[this.#role], site = profile.sequence[index]; need(site !== undefined, "EXTRA_PAUSE");
+    const profile = this.#profile(), site = profile.sequence[index]; need(site !== undefined, "EXTRA_PAUSE");
     const sites: Readonly<Partial<Record<CurrentPcb209RatlineCaptureSite, Readonly<{ name: string; lineNumber: number; columnNumber: number }>>>> = profile.sites;
     const expected = sites[site], top = event.callFrames[0];
     need(expected !== undefined && top !== undefined && event.hitBreakpoints[0] === this.#breakpoints.get(site)?.id &&
@@ -314,12 +324,15 @@ class CurrentPcb209RatlineCaptureCore {
     }
     this.#events += 1;
   }
-  public async capture(): Promise<CurrentPcb209RatlineCapturePacket> {
+  #profile(): typeof CURRENT_PCB_209_RATLINE_CAPTURE_PROFILES[CurrentPcb209RatlineCaptureRole] | typeof CURRENT_PCB_209_RATLINE_HELD_CAPTURE_PROFILE {
+    return this.#scope === "pcb-held-prefix" ? CURRENT_PCB_209_RATLINE_HELD_CAPTURE_PROFILE : CURRENT_PCB_209_RATLINE_CAPTURE_PROFILES[this.#role];
+  }
+  public async capture(): Promise<Packets[Scope]> {
     need(!this.#consumed, "CONSUMED"); this.#consumed = true;
     try {
       this.#diagnostics.stage = "capture-arming"; await this.#current(); this.#unsubscribe = this.#subscribe.call(this.#transport, { paused: this.#paused, resumed: this.#resumed, lost: this.#lost });
       need(typeof this.#unsubscribe === "function", "SUBSCRIPTION");
-      const profile = CURRENT_PCB_209_RATLINE_CAPTURE_PROFILES[this.#role];
+      const profile = this.#profile();
       let terminalPause: Paused | null = null;
       const sites: Readonly<Record<string, Readonly<{ lineNumber: number; columnNumber: number }>>> = profile.sites;
       for (const [site, point] of Object.entries(sites)) { await this.#arm(site, point); }
@@ -339,22 +352,30 @@ class CurrentPcb209RatlineCaptureCore {
       await this.#current();
       need(terminalPause !== null && this.#pause === terminalPause && terminalPause.observed &&
         terminalPause.resume !== null && this.#events === profile.sequence.length, "TERMINAL_PAUSE_CHANGED");
-      need(this.#workerId !== null && this.#payload !== null, "INCOMPLETE");
-      const packet: CurrentPcb209RatlineCapturePacket = Object.freeze({
-        profile: this.#role === "pcb" ? "private.current-pcb209-ratline-pcb-capture.v1" : "private.current-pcb209-ratline-worker-capture.v1",
-        sourceSha256: CURRENT_PCB_209_RATLINE_SOURCE_PROFILE[this.#role].sha256, pauses: this.#events,
-        nativeWorkerId: this.#workerId, resultPayload: this.#payload, world: this.#world === null ? null : Object.freeze({ ...this.#world }),
-        originalFactoryAndBridgeEventsRetained: true, originalTerminalReturnPauseRetained: true,
+      need(this.#workerId !== null, "INCOMPLETE");
+      const common = {
+        sourceSha256: CURRENT_PCB_209_RATLINE_SOURCE_PROFILE[this.#role].sha256, nativeWorkerId: this.#workerId,
+        originalFactoryAndBridgeEventsRetained: true,
         callbackReturnCompletionVerified: false, nativeWorkerTargetIdentityVerified: false, subscribedCanvasPeerOwnershipVerified: false,
-        copperCompletionVerified: false, completeLiveBaselineVerified: false, executionAuthorized: false });
-      this.#packet = packet; issued.set(packet, this); return packet;
+        copperCompletionVerified: false, completeLiveBaselineVerified: false, executionAuthorized: false } as const;
+      let packet: CurrentPcb209RatlineAnyCapturePacket;
+      if (this.#scope === "pcb-held-prefix") {
+        need(this.#events === 2 && this.#payload === null && this.#world === null, "INCOMPLETE");
+        packet = Object.freeze({ ...common, profile: "private.current-pcb209-ratline-pcb-held-prefix-capture.v1", pauses: 2, originalFactoryPauseReleased: true });
+      } else {
+        need(this.#payload !== null, "INCOMPLETE");
+        packet = Object.freeze({ ...common, profile: this.#role === "pcb" ? "private.current-pcb209-ratline-pcb-capture.v1" : "private.current-pcb209-ratline-worker-capture.v1",
+          pauses: this.#events, resultPayload: this.#payload, world: this.#world === null ? null : Object.freeze({ ...this.#world }), originalTerminalReturnPauseRetained: true });
+      }
+      // oxlint-disable-next-line typescript/no-unsafe-type-assertion -- The private scope selects both its fixed sequence and exact packet branch above; public wrappers cannot choose a different scope.
+      this.#packet = packet as Packets[Scope]; issued.set(this.#packet, this); return this.#packet;
     } catch (error) {
       this.#poison("FAILED", error); this.#armed.reject(error);
       try { await this.#cleanup(); } catch (cleanupError) { throw new AggregateError([error, cleanupError], "PCB209_RATLINE_CAPTURE_FAILED", { cause: cleanupError }); }
       throw error;
     } finally { this.#settled = true; }
   }
-  public async requireOriginal(packet: CurrentPcb209RatlineCapturePacket): Promise<Readonly<Record<string, string>>> {
+  public async requireOriginal(packet: Packets[Scope]): Promise<Readonly<Record<string, string>>> {
     need(packet === this.#packet && issued.get(packet) === this, "ORIGINAL_PACKET"); await this.#current(); return Object.freeze(Object.fromEntries(this.#identities));
   }
   /** Abort retains the original allocations and consumes cleanup resumes once. */
@@ -369,9 +390,12 @@ class CurrentPcb209RatlineCaptureCore {
     } finally { this.#releasing = false; }
   }
 }
-export class CurrentPcb209RatlinePcbCapture extends CurrentPcb209RatlineCaptureCore {
-  public constructor(transport: CurrentPcb209RatlineCaptureTransport) { super(INTERNAL, "pcb", transport); }
+export class CurrentPcb209RatlinePcbCapture extends CurrentPcb209RatlineCaptureCore<"full"> {
+  public constructor(transport: CurrentPcb209RatlineCaptureTransport) { super(INTERNAL, "pcb", "full", transport); }
 }
-export class CurrentPcb209RatlineWorkerCapture extends CurrentPcb209RatlineCaptureCore {
-  public constructor(transport: CurrentPcb209RatlineCaptureTransport) { super(INTERNAL, "worker", transport); }
+export class CurrentPcb209RatlineWorkerCapture extends CurrentPcb209RatlineCaptureCore<"full"> {
+  public constructor(transport: CurrentPcb209RatlineCaptureTransport) { super(INTERNAL, "worker", "full", transport); }
+}
+export class CurrentPcb209RatlinePcbHeldCapture extends CurrentPcb209RatlineCaptureCore<"pcb-held-prefix"> {
+  public constructor(transport: CurrentPcb209RatlineCaptureTransport) { super(INTERNAL, "pcb", "pcb-held-prefix", transport); }
 }

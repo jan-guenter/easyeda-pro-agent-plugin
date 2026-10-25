@@ -111,7 +111,7 @@ import { sdkMathRequestSchema } from "./sdk-math.ts";
 import { calculateSdkMath } from "./sdk-math-runtime.ts";
 import { sdkSystemRequestSchema } from "./sdk-system.ts";
 import { readSdkSystem } from "./sdk-system-runtime.ts";
-import { sdkPublicReadersRequestSchema } from "./sdk-public-readers.ts";
+import { sdkPublicReadersOperationSchema } from "./sdk-public-readers.ts";
 import { readSdkPublicReaders } from "./sdk-public-readers-runtime.ts";
 import { netlistFilesRequestSchema } from "./netlist-files.ts";
 import { compareNetlistFiles, prepareNetlistFile } from "./netlist-files-runtime.ts";
@@ -2421,8 +2421,8 @@ registerFacadeTool(
   "easyeda_control_public_readers",
   {
     title: "Read EasyEDA languages, viewport, theme and toolbar units",
-    description: "Seven fixed public readers on exact EasyEDA 3.2.209/API 0.3.59: supported languages, language membership, SDK-resolved language, API viewport, current theme, toolbar data unit and fixed system-library UUID. SDK-resolved language can be a fallback; provider success and the private cached bus identity are not verified. The toolbar unit is not an active-document unit; the fixed UUID does not enumerate personal libraries. Requires the actual authenticated status fingerprint. Preserves case-sensitive language membership and ordered language identifiers. Viewport dimensions describe the API page, not the Windows desktop or PCB geometry. Complete bounded double observations retain their original owners; changed or malformed results refuse. No project, library asset, external file, network, settings change, navigation, callback registration or Save operation. Inspect offline public-readers and public-readers-validate first. Source and offline tests are not connected validation.",
-    inputSchema: { request: z.unknown().pipe(sdkPublicReadersRequestSchema), expectedFingerprint: privateFingerprintSchema },
+    description: "Seven fixed public readers on exact EasyEDA 3.2.209/API 0.3.59: supported languages, language membership, SDK-resolved language, API viewport, current theme, toolbar data unit and fixed system-library UUID. SDK-resolved language can be a fallback; provider success and the private cached bus identity are not verified. The toolbar unit is not an active-document unit; the fixed UUID does not enumerate personal libraries. Requires the actual authenticated status fingerprint. Preserves case-sensitive language membership and ordered language identifiers. Viewport dimensions describe the API page, not the Windows desktop or PCB geometry. Complete bounded double observations retain their original owners; changed or malformed results refuse. Optional action:batch accepts one to seven unique reviewed methods under one ten-second deadline, with two complete ordered passes and no partial results. Batch observations are sequential, not atomic. Members retain the 8192-byte bound and the complete batch is limited to 65536 bytes. No project, library asset, external file, network, settings change, navigation, callback registration or Save operation. Inspect offline public-readers and public-readers-validate first. Source and offline tests are not connected validation.",
+    inputSchema: { request: z.unknown().pipe(sdkPublicReadersOperationSchema), expectedFingerprint: privateFingerprintSchema },
     annotations: { readOnlyHint: true, destructiveHint: false, idempotentHint: true, openWorldHint: false },
   },
   serializedLiveGuarded(async (input) => ({ result: await readSdkPublicReaders(engine, input.request, input.expectedFingerprint) })),

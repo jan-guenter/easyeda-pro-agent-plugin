@@ -136,21 +136,22 @@ const diagnosticObservation = { stage: diagnosticStage, step: diagnosticStep, la
 export const currentPcb209RatlineStageDiagnosticsSchema = z.object({ ...diagnosticObservation,
   firstFailure: z.object({ ...diagnosticObservation, reason: z.enum([...failureReasons, "SCHEMA", "UNCLASSIFIED"]) }).strict().nullable() }).strict();
 const count = z.number().int().nonnegative();
+const captureScope = z.enum(["full", "pcb-held-prefix"]);
 const creationDiagnostics = currentPcb209RatlineStageDiagnosticsSchema.extend({
   consumed: z.boolean(), settled: z.boolean(), failed: z.boolean(), released: z.boolean(),
   parentContinued: z.boolean(), childStartRequested: z.boolean(), parentPaused: z.boolean(),
   retainedChildren: count.max(4), commands: count.max(32), uncertainBreakpoints: count.max(2), unresolvedBreakpoints: z.boolean(),
 });
 const captureDiagnostics = currentPcb209RatlineStageDiagnosticsSchema.extend({
-  role: z.enum(["pcb", "worker"]), consumed: z.boolean(), settled: z.boolean(), failed: z.boolean(), released: z.boolean(),
+  role: z.enum(["pcb", "worker"]), scope: captureScope, consumed: z.boolean(), settled: z.boolean(), failed: z.boolean(), released: z.boolean(),
   events: count.max(9), commands: count.max(128), paused: z.boolean(), unresolvedBreakpoints: z.boolean(),
 });
 const dispatcherDiagnostics = currentPcb209RatlineStageDiagnosticsSchema.extend({
-  role: z.enum(["pcb", "worker"]), failed: z.boolean(), released: z.boolean(), uncertainBreakpoints: count.max(11), retainedBreakpoints: count.max(11),
+  role: z.enum(["pcb", "worker"]), scope: captureScope, failed: z.boolean(), released: z.boolean(), uncertainBreakpoints: count.max(11), retainedBreakpoints: count.max(11),
   sourceContinuationConsumed: z.boolean(), sourceResumePending: z.boolean(), paused: z.boolean(), deferredPause: z.boolean(),
 });
 export const currentPcb209RatlineCompositeDiagnosticsSchema = currentPcb209RatlineStageDiagnosticsSchema.extend({
-  consumed: z.boolean(), settled: z.boolean(), failed: z.boolean(), released: z.boolean(),
+  scope: captureScope, consumed: z.boolean(), settled: z.boolean(), failed: z.boolean(), released: z.boolean(),
   sourceReleaseConsumed: z.boolean(), childInstrumentationConsumed: z.boolean(),
   creation: creationDiagnostics, capture: captureDiagnostics, dispatcher: dispatcherDiagnostics,
 });

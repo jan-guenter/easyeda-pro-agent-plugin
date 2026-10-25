@@ -1,13 +1,13 @@
 import assert from "node:assert/strict";
 import { test } from "node:test";
-import { loadReviewedCompatibilityManifest, reviewedCompatibilityManifestFingerprint, sha256Json } from "../src/core.ts";
+import { isRecord, loadReviewedCompatibilityManifest, reviewedCompatibilityManifestFingerprint, sha256Json } from "../src/core.ts";
 import type { ExpectedFingerprint } from "../src/core.ts";
 import { encodeExactReadEnvelope } from "../src/exact-readers.ts";
 import { EDITOR_OBSERVATION_209_UI } from "../src/editor-observation209-profile.ts";
 import { SDK_LOCAL_RUNTIME_PROFILE } from "../src/sdk-local-runtime.ts";
 import { SDK_PUBLIC_READERS_209_UI_RUNTIME_PROFILE, readSdkPublicReaders, validateSdkPublicReadersFingerprint } from "../src/sdk-public-readers-runtime.ts";
 import type { SdkPublicReadersEngine } from "../src/sdk-public-readers-runtime.ts";
-import { SDK_PUBLIC_READERS_MAX_BYTES } from "../src/sdk-public-readers.ts";
+import { SDK_PUBLIC_READERS_BATCH_MAX_BYTES, SDK_PUBLIC_READERS_MAX_BYTES } from "../src/sdk-public-readers.ts";
 import { SDK_PUBLIC_UTILITIES_209_PROFILE } from "../src/sdk-public-utilities-profile.ts";
 import { substituteSyntheticUiDigests, uiFixture } from "./sdk-public-readers-runtime-fixtures.ts";
 
@@ -69,6 +69,50 @@ void test("public readers require exact 209 admission and dispatch once through 
 
 const themeRequest = { method: "eda.sys_Window.getCurrentTheme", arguments: {} };
 const themePayload = { ok: true, kind: "sdk-public-readers", method: themeRequest.method, value: "dark" };
+const batchRequest = { action: "batch", requests: [request, themeRequest] };
+const batchPayload = { ok: true, kind: "sdk-public-readers-batch", results: [payload, themePayload], samplesMatched: true,
+  observationOrder: "two-complete-ordered-passes", atomicSnapshot: false };
+
+void test("mixed public reader batch uses one outer admission and dispatch while retaining UI qualification", async (context) => {
+  const ui = await uiFixture(fingerprint());
+  const fixture = runtime({ initial: ui.expected, reply: encoded(batchPayload) });
+  substituteSyntheticUiDigests(context, ui.substitutions, fixture.calls);
+  const value = await readSdkPublicReaders(fixture.engine, batchRequest, ui.expected);
+  const results = value["results"]; assert.ok(Array.isArray(results) && results.every((member) => isRecord(member)));
+  assert.deepEqual(results.map((member) => member["value"]), [payload.value, "dark"]);
+  assert.equal(value["atomicSnapshot"], false);
+  assert.deepEqual(fixture.calls, ["guard", "status", "ui-file-hash", "ui-file-hash", "ui-file-hash", "guard", "easyeda_execute",
+    "ui-file-hash", "ui-file-hash", "ui-file-hash", "guard", "status"]);
+  const admission = value["runtimeAdmission"]; assert.ok(isRecord(admission));
+  assert.equal(admission["scope"], "fixed-public-utility-batch-with-independent-member-limits");
+});
+
+void test("batch refuses malformed membership and unqualified UI before dispatch", async () => {
+  for (const invalid of [{ action: "batch", requests: [] }, { action: "batch", requests: [request, request] },
+    { ...batchRequest, timeoutMs: 100_000 }, { action: "batch", requests: [request, { method: "eda.sys_Window.open", arguments: {} }] }]) {
+    const fixture = runtime(); await assert.rejects(readSdkPublicReaders(fixture.engine, invalid, fingerprint())); assert.deepEqual(fixture.calls, []);
+  }
+  const ui = await uiFixture(fingerprint());
+  const fixture = runtime({ initial: ui.expected });
+  await assert.rejects(readSdkPublicReaders(fixture.engine, batchRequest, ui.expected), /UI implementation differs/u);
+  assert.deepEqual(fixture.calls, ["guard", "status"]);
+});
+
+void test("batch transport and final owner refusals return no partial result and never retry", async () => {
+  const localPayload = { ...batchPayload, results: [payload] }, localRequest = { action: "batch", requests: [request] };
+  for (const reply of [encoded({ ...localPayload, results: [themePayload] }), encoded({ ...localPayload, partial: true }),
+    encoded({ ...localPayload, results: [{ ...payload, value: "x".repeat(SDK_PUBLIC_READERS_MAX_BYTES) }] }),
+    encoded({ ...localPayload, hidden: "x".repeat(SDK_PUBLIC_READERS_BATCH_MAX_BYTES) })]) {
+    const fixture = runtime({ reply }); await assert.rejects(readSdkPublicReaders(fixture.engine, localRequest, fingerprint()));
+    assert.deepEqual(fixture.calls, ["guard", "status", "guard", "easyeda_execute"]);
+  }
+  const final = fingerprint(); final.installedBundles.assetsRoot = "/opt/changed";
+  for (const options of [{ final }, { quarantineAt: 3 }]) {
+    const fixture = runtime({ ...options, reply: encoded(localPayload) });
+    await assert.rejects(readSdkPublicReaders(fixture.engine, localRequest, fingerprint()));
+    assert.equal(fixture.calls.filter((call) => call === "easyeda_execute").length, 1);
+  }
+});
 
 void test("UI-backed public readers qualify exact UI and both selectors before and after the sole dispatch", async (context) => {
   const ui = await uiFixture(fingerprint());

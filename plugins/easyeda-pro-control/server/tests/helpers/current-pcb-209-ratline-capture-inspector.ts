@@ -24,7 +24,8 @@ async function deadline<T>(work: Promise<T>, phase: string, milliseconds = 10_00
 /** Actual V8 pause delivery in a synthetic Node child. This owner deliberately
  * does not attest an EasyEDA native source, process, Worker or message peer. */
 export async function ratlineCaptureInspector(context: TestContext, role: CurrentPcb209RatlineCaptureRole,
-  loseAtPause = 0, pauseAtFinalReproof = false, exitBeforeAddress = false): Promise<Readonly<{ transport: CurrentPcb209RatlineCaptureTransport; commands: string[];
+  loseAtPause = 0, pauseAtFinalReproof = false, exitBeforeAddress = false,
+  options: Readonly<{ holdPcbResult?: boolean; expectedPauses?: number }> = {}): Promise<Readonly<{ transport: CurrentPcb209RatlineCaptureTransport; commands: string[];
     request: (method: string, params: object) => Promise<unknown>; run: () => Promise<unknown>; lose: () => void; regain: () => void; terminate: () => Promise<void>; counts: () => Readonly<{ pauses: number; resumes: number; subscribers: number }> }>> {
   // The hostile case is an owned child that exits normally before advertising
   // Any inspector. The old unbounded address wait could never settle here.
@@ -34,7 +35,7 @@ export async function ratlineCaptureInspector(context: TestContext, role: Curren
   const address = Promise.withResolvers<string>(), closed = Promise.withResolvers<null>(), exited = Promise.withResolvers<null>();
   const pending = new Map<number, Readonly<{ reply: PromiseWithResolvers<unknown>; timer: ReturnType<typeof setTimeout> }>>();
   const subscribers = new Set<Parameters<CurrentPcb209RatlineCaptureTransport["subscribe"]>[0]>();
-  const expectedPauses = CURRENT_PCB_209_RATLINE_CAPTURE_PROFILES[role].sequence.length, extraPause = Promise.withResolvers<null>();
+  const expectedPauses = options.expectedPauses ?? CURRENT_PCB_209_RATLINE_CAPTURE_PROFILES[role].sequence.length, extraPause = Promise.withResolvers<null>();
   let extraPauseRequested = false;
   let nextId = 1, ownerCurrent = true, pauses = 0, resumes = 0, terminated = false;
   let failure: Error | null = null, socket: WebSocket | null = null, teardown: Promise<void> | null = null;
@@ -108,7 +109,7 @@ export async function ratlineCaptureInspector(context: TestContext, role: Curren
   };
   await request("Debugger.enable", {}); await request("Runtime.enable", {});
   const compiled = z.object({ scriptId: z.string() }).strict().parse(await request("Runtime.compileScript", {
-    expression: ratlineCaptureFixtureSource(role), sourceURL: `ratline-${role}-synthetic.js`, persistScript: true,
+    expression: ratlineCaptureFixtureSource(role, options.holdPcbResult), sourceURL: `ratline-${role}-synthetic.js`, persistScript: true,
   }));
   const transport: CurrentPcb209RatlineCaptureTransport = {
     scriptId: compiled.scriptId,

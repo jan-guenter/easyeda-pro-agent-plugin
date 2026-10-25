@@ -10,7 +10,7 @@ const require = function __easyedaGuardedRequire(specifier) { if (typeof specifi
 	const __easyedaPublicationLockPath = __easyedaJoin(__easyedaPublicationDirectory, ".bundle-publication.lock");
 const __easyedaAssertNoPublication = () => { try { __easyedaLstatSync(__easyedaPublicationLockPath); throw new Error("The facade bundle is undergoing a fail-closed publication transaction."); } catch (__easyedaPublicationError) { if (!__easyedaPublicationError || typeof __easyedaPublicationError !== "object" || !("code" in __easyedaPublicationError) || __easyedaPublicationError.code !== "ENOENT") throw __easyedaPublicationError; } };
 __easyedaAssertNoPublication();
-const __easyedaBundlePairId = "3de4b5131b381426c7d17965b4a98d6a11023ce426d27b42e25fe8fa125e84fb";
+const __easyedaBundlePairId = "4878eb380b72359a81bf18a5c4469217ac876c385a93cd626df17ae8c0468470";
 if (__easyedaBasename(import.meta.filename) === "server.mjs") {
   const __easyedaPeerPath = __easyedaJoin(import.meta.dirname, "upstream-supervisor.mjs");
   const __easyedaPeerPathBefore = __easyedaLstatSync(__easyedaPeerPath, { bigint: true });
@@ -58463,10 +58463,28 @@ function sdkPublicReadersDescriptors() {
 function querySdkPublicReadersMethods(input2 = {}) {
   const query = sdkPublicReadersCatalogQuerySchema.parse(input2);
   const entries6 = sdkPublicReadersDescriptors().filter((entry) => query.method === void 0 || entry.method === query.method).map(({ inputSchema: inputSchema6, ...entry }) => query.includeSchemas ? Object.assign(entry, { inputSchema: inputSchema6 }) : entry);
-  return { offline: true, invocationEnabledByDiscovery: false, total: entries6.length, entries: entries6 };
+  return {
+    offline: true,
+    invocationEnabledByDiscovery: false,
+    total: entries6.length,
+    entries: entries6,
+    batch: {
+      action: "batch",
+      maximumMethods: SDK_PUBLIC_READERS_BATCH_MAX_METHODS,
+      uniqueMethods: true,
+      completeOrderedPasses: 2,
+      sharedDeadlineMilliseconds: SDK_PUBLIC_READERS_BATCH_DEADLINE_MS,
+      maximumResponseBytes: SDK_PUBLIC_READERS_BATCH_MAX_BYTES,
+      maximumMemberBytes: SDK_PUBLIC_READERS_MAX_BYTES,
+      atomicSnapshot: false,
+      partialSuccess: false,
+      invocationEnabledByDiscovery: false,
+      ...query.includeSchemas ? { inputSchema: external_exports.toJSONSchema(sdkPublicReadersBatchRequestSchema) } : {}
+    }
+  };
 }
 function validateSdkPublicReadersArguments(input2) {
-  const result = sdkPublicReadersRequestSchema.safeParse(input2);
+  const result = sdkPublicReadersOperationSchema.safeParse(input2);
   if (result.success) {
     return { valid: true, request: result.data, executionAuthorized: false };
   }
@@ -58495,22 +58513,7 @@ const kind=${JSON.stringify(definition.resultKind)},languages=Object.freeze(${JS
 const pageWindow=kind==='viewport'?window:null;
 if(kind==='viewport'&&(!pageWindow||typeof pageWindow!=='object'))fail();
 ${uiBacked ? uiOwnerProgram(definition.name) : "const sameUi=()=>{};"}
-const project=value=>{
- if(kind==='resolved-language'){if(!${JSON.stringify(SDK_PUBLIC_READERS_209_RESOLVED_LANGUAGES)}.includes(value))fail();return value;}
- if(kind==='theme'){if(value!=='light'&&value!=='dark')fail();return value;}
- if(kind==='toolbar-unit'){if(value!=='mm'&&value!=='inch'&&value!=='mil')fail();return value;}
- if(kind==='system-library-uuid'){if(value!==${JSON.stringify(SDK_PUBLIC_READERS_209_SYSTEM_LIBRARY_UUID)})fail();return value;}
- if(kind==='boolean'){if(typeof value!=='boolean'||value!==${String(expectedSupported)})fail();return value;}
- if(kind==='languages'){
-  if(!Array.isArray(value)||value.length!==languages.length||Reflect.ownKeys(value).length!==languages.length+1)fail();
-  const copied=[];for(let index=0;index<languages.length;index++){const item=data(value,String(index));if(item!==languages[index])fail();copied.push(item);}return copied;
- }
- if(!value||typeof value!=='object'||Array.isArray(value)||Reflect.ownKeys(value).length!==2)fail();
- const width=data(value,'width'),height=data(value,'height');
- for(const dimension of [width,height])if(!Number.isInteger(dimension)||dimension<0||dimension>${SDK_PUBLIC_READERS_MAX_VIEWPORT_DIMENSION}||Object.is(dimension,-0))fail();
- return {width,height};
-};
-const sameOwner=()=>{if(eda!==edaOwner||${uiBacked ? `data(edaOwner,${JSON.stringify(definition.namespace)})!==owner` : `edaOwner.${definition.namespace}!==owner||owner.${definition.name}!==method`}||(kind==='viewport'&&window!==pageWindow))fail();sameUi();};
+${readerProjectProgram(expectedSupported)}const sameOwner=()=>{if(eda!==edaOwner||${uiBacked ? `data(edaOwner,${JSON.stringify(definition.namespace)})!==owner` : `edaOwner.${definition.namespace}!==owner||owner.${definition.name}!==method`}||(kind==='viewport'&&window!==pageWindow))fail();sameUi();};
 const read=${uiBacked ? "async " : ""}()=>{sameOwner();const raw=${uiBacked ? "await apply(method,owner,[])" : `method.call(owner,${argumentsCode})`};sameOwner();const value=project(raw);sameOwner();return value;};
 const first=${uiBacked ? "await " : ""}read(),second=${uiBacked ? "await " : ""}read();if(JSON.stringify(first)!==JSON.stringify(second))fail();sameOwner();
 const json=JSON.stringify({ok:true,kind:'sdk-public-readers',method:${JSON.stringify(request13.method)},value:first});
@@ -58519,6 +58522,27 @@ const envelope={schema:${JSON.stringify(EXACT_READ_ENVELOPE_SCHEMA)},utf8Bytes,j
 if(utf8Bytes>${SDK_PUBLIC_READERS_MAX_BYTES}||new TextEncoder().encode(JSON.stringify(envelope)).byteLength>${SDK_PUBLIC_READERS_MAX_BYTES})fail();
 return envelope;
 }catch{throw new Error('SDK_PUBLIC_READERS_READ_FAILED');}${uiBacked ? "finally{if(readerTimer!==undefined&&readerClear){try{Reflect.apply(readerClear,globalThis,[readerTimer]);}catch{throw new Error('SDK_PUBLIC_READERS_READ_FAILED');}}}" : ""}`;
+}
+function buildSdkPublicReadersBatchMemberProgram(input2) {
+  const request13 = parseSdkPublicReadersRequest(input2);
+  const definition = definitions4[request13.method];
+  const uiBacked = sdkPublicReaderRequiresUi(request13);
+  const languageArgument = "language" in request13.arguments ? request13.arguments.language : void 0;
+  const expectedSupported = SDK_PUBLIC_READERS_209_LANGUAGES.some((entry) => entry === languageArgument);
+  const argumentsCode = languageArgument === void 0 ? "" : JSON.stringify(languageArgument);
+  return `(()=>{
+const fail=()=>{throw new Error('SDK_PUBLIC_READERS_INVALID_RESULT');};
+const data=(object,key)=>{const descriptor=Object.getOwnPropertyDescriptor(object,key);if(!descriptor||!Object.hasOwn(descriptor,'value'))fail();return descriptor.value;};
+const edaOwner=eda,owner=data(edaOwner,${JSON.stringify(definition.namespace)});if(!owner)fail();
+const kind=${JSON.stringify(definition.resultKind)},languages=Object.freeze(${JSON.stringify(SDK_PUBLIC_READERS_209_LANGUAGES)});
+const pageWindow=kind==='viewport'?window:null;
+if(kind==='viewport'&&(!pageWindow||typeof pageWindow!=='object'))fail();
+${uiBacked ? uiOwnerProgram(definition.name, true) : `${SDK_PUBLIC_READERS_RETAIN_OWNER_PROGRAM}const reader=retain(owner,${JSON.stringify(definition.name)}),method=reader.method,apply=Reflect.apply;
+const sameUi=()=>{reader.check();readersBatchDeadline();};`}
+${readerProjectProgram(expectedSupported)}const sameOwner=()=>{if(eda!==edaOwner||data(edaOwner,${JSON.stringify(definition.namespace)})!==owner||(kind==='viewport'&&window!==pageWindow))fail();sameUi();};
+const read=${uiBacked ? "async " : ""}()=>{readersBatchCurrent();const raw=${uiBacked ? "await " : ""}apply(method,owner,[${argumentsCode}]);readersBatchCurrent();const value=project(raw);readersBatchCurrent();return {ok:true,kind:'sdk-public-readers',method:${JSON.stringify(request13.method)},value};};
+sameOwner();return Object.freeze({sameOwner,read,uiBacked:${String(uiBacked)}});
+})()`;
 }
 function validateSdkPublicReadersResult(input2, raw) {
   const request13 = parseSdkPublicReadersRequest(input2);
@@ -58563,7 +58587,7 @@ function validateSdkPublicReadersResult(input2, raw) {
     limitations: [...commonLimitations3, definition.limitation]
   };
 }
-var SDK_PUBLIC_READERS_MAX_BYTES, SDK_PUBLIC_READERS_MAX_VIEWPORT_DIMENSION, SDK_PUBLIC_READERS_209_SYSTEM_LIBRARY_UUID, SDK_PUBLIC_READERS_209_RESOLVED_LANGUAGES, SDK_PUBLIC_READERS_209_LANGUAGES, emptyArguments4, language, sdkPublicReadersRequestSchema, definitions4, commonLimitations3, provenance, sdkPublicReadersCatalogQuerySchema, uiOwnerProgram, dimensionSchema, viewportSchema, languagesSchema, payloadSchema5;
+var SDK_PUBLIC_READERS_MAX_BYTES, SDK_PUBLIC_READERS_BATCH_MAX_BYTES, SDK_PUBLIC_READERS_BATCH_MAX_METHODS, SDK_PUBLIC_READERS_BATCH_DEADLINE_MS, SDK_PUBLIC_READERS_MAX_VIEWPORT_DIMENSION, SDK_PUBLIC_READERS_209_SYSTEM_LIBRARY_UUID, SDK_PUBLIC_READERS_209_RESOLVED_LANGUAGES, SDK_PUBLIC_READERS_209_LANGUAGES, emptyArguments4, language, sdkPublicReadersRequestSchema, sdkPublicReadersBatchRequestSchema, sdkPublicReadersOperationSchema, definitions4, commonLimitations3, provenance, sdkPublicReadersCatalogQuerySchema, SDK_PUBLIC_READERS_RETAIN_OWNER_PROGRAM, uiOwnerProgram, readerProjectProgram, dimensionSchema, viewportSchema, languagesSchema, payloadSchema5;
 var init_sdk_public_readers = __esm({
   "server/src/sdk-public-readers.ts"() {
     init_zod();
@@ -58571,6 +58595,9 @@ var init_sdk_public_readers = __esm({
     init_editor_observation209_profile();
     init_sdk_public_utilities_profile();
     SDK_PUBLIC_READERS_MAX_BYTES = 8192;
+    SDK_PUBLIC_READERS_BATCH_MAX_BYTES = 65536;
+    SDK_PUBLIC_READERS_BATCH_MAX_METHODS = 7;
+    SDK_PUBLIC_READERS_BATCH_DEADLINE_MS = 1e4;
     SDK_PUBLIC_READERS_MAX_VIEWPORT_DIMENSION = 1e6;
     SDK_PUBLIC_READERS_209_SYSTEM_LIBRARY_UUID = "0819f05c4eef4c71ace90d822a990e87";
     SDK_PUBLIC_READERS_209_RESOLVED_LANGUAGES = Object.freeze([
@@ -58654,6 +58681,19 @@ var init_sdk_public_readers = __esm({
       external_exports.object({ method: external_exports.literal("eda.sys_Unit.getFrontendDataUnit"), arguments: emptyArguments4 }).strict(),
       external_exports.object({ method: external_exports.literal("eda.lib_LibrariesList.getSystemLibraryUuid"), arguments: emptyArguments4 }).strict()
     ]);
+    sdkPublicReadersBatchRequestSchema = external_exports.object({
+      action: external_exports.literal("batch"),
+      requests: external_exports.array(sdkPublicReadersRequestSchema).min(1).max(SDK_PUBLIC_READERS_BATCH_MAX_METHODS)
+    }).strict().superRefine((value2, context4) => {
+      const seen = /* @__PURE__ */ new Set();
+      for (const [index2, request13] of value2.requests.entries()) {
+        if (seen.has(request13.method)) {
+          context4.addIssue({ code: "custom", path: ["requests", index2, "method"], message: "Batch method names must be unique." });
+        }
+        seen.add(request13.method);
+      }
+    });
+    sdkPublicReadersOperationSchema = external_exports.union([sdkPublicReadersRequestSchema, sdkPublicReadersBatchRequestSchema]);
     definitions4 = {
       "eda.sys_I18n.getAllSupportedLanguages": {
         namespace: "sys_I18n",
@@ -58747,12 +58787,7 @@ var init_sdk_public_readers = __esm({
       method: external_exports.enum(sdkPublicReadersRequestSchema.options.map((schema11) => schema11.shape.method.value)).optional(),
       includeSchemas: external_exports.boolean().default(false)
     }).strict();
-    uiOwnerProgram = (methodName) => {
-      const legacy = methodName === "getCurrentLanguage";
-      const rootBusKey = JSON.stringify(legacy ? "_MSG_BUS_" : "_MSG_BUS2_EXTAPI_");
-      const hostBusKey = JSON.stringify(legacy ? "messageBus" : "extensionApiMessageBus2");
-      return `
-const retain=(value,key)=>{
+    SDK_PUBLIC_READERS_RETAIN_OWNER_PROGRAM = `const retain=(value,key)=>{
  const chain=[];let node=value,method;
  for(let i=0;node!==null&&i<8;i++){
   if(typeof node!=='object'&&typeof node!=='function')fail();
@@ -58768,7 +58803,13 @@ const retain=(value,key)=>{
   if(!current||current.value!==before.value||current.get!==before.get||current.set!==before.set||current.writable!==before.writable||current.enumerable!==before.enumerable||current.configurable!==before.configurable)fail();
  }}};
 };
-const apply=Reflect.apply,root=globalThis,location=root.location,document=root.document,href=location?.href;
+`;
+    uiOwnerProgram = (methodName, sharedDeadline = false) => {
+      const legacy = methodName === "getCurrentLanguage";
+      const rootBusKey = JSON.stringify(legacy ? "_MSG_BUS_" : "_MSG_BUS2_EXTAPI_");
+      const hostBusKey = JSON.stringify(legacy ? "messageBus" : "extensionApiMessageBus2");
+      return `
+${SDK_PUBLIC_READERS_RETAIN_OWNER_PROGRAM}const apply=Reflect.apply,root=globalThis,location=root.location,document=root.document,href=location?.href;
 const ui=data(root,'UI'),host=data(root,'gVars'),bus=data(root,${rootBusKey}),mode=data(root,'PRO_EDITOR_MODE');
 if(!bus||typeof bus!=='object')fail();
 ${legacy ? `const bindings=[[root,${rootBusKey}],[host,${hostBusKey}]].map(([object,key])=>({object,key,descriptor:Object.getOwnPropertyDescriptor(object,key)}));
@@ -58778,22 +58819,38 @@ const sameBusBindings=()=>{for(const {object,key,descriptor:before} of bindings)
 }};` : "const sameBusBindings=()=>{};"}
 const rpc=retain(bus,'rpcCall'),reader=retain(owner,${JSON.stringify(methodName)}),method=reader.method,editorTop=root.EDITOR_TOP;
 if(editorTop!==undefined&&editorTop!==root)fail();
-const clock=root.performance,now=retain(clock,'now'),set=data(root,'setTimeout');readerClear=data(root,'clearTimeout');
+${sharedDeadline ? "" : `const clock=root.performance,now=retain(clock,'now'),set=data(root,'setTimeout');readerClear=data(root,'clearTimeout');
 if(typeof set!=='function'||typeof readerClear!=='function')fail();
 let lastTime=apply(now.method,clock,[]),expired=false;
 if(!Number.isFinite(lastTime)||lastTime<0)fail();const deadline=lastTime+10000;
-const sameUi=()=>{
- if(root.performance!==clock||data(root,'setTimeout')!==set||data(root,'clearTimeout')!==readerClear)fail();
+`}const sameUi=()=>{
+${sharedDeadline ? " readersBatchDeadline();\n" : ` if(root.performance!==clock||data(root,'setTimeout')!==set||data(root,'clearTimeout')!==readerClear)fail();
  now.check();const time=apply(now.method,clock,[]);if(expired||!Number.isFinite(time)||time<lastTime||time>=deadline)fail();lastTime=time;
- if(root.window!==root||root.self!==root||root.top!==root||root.EDITOR_TOP!==editorTop||root.frameElement!==null||root.location!==location||root.document!==document||document?.defaultView!==root||document?.nodeType!==9||document?.URL!==href||location?.href!==href||location?.origin!=='https://client')fail();
+`} if(root.window!==root||root.self!==root||root.top!==root||root.EDITOR_TOP!==editorTop||root.frameElement!==null||root.location!==location||root.document!==document||document?.defaultView!==root||document?.nodeType!==9||document?.URL!==href||location?.href!==href||location?.origin!=='https://client')fail();
  if(typeof href!=='string'||!/^https:\\/\\/client\\/editor\\?cll=(?:trace|debug|info|warn|error)#?$/.test(href))fail();
  if(data(root,'PRO_EDITOR_MODE')!==mode||(mode!=='CLIENT-HALF_OFFLINE-EASYEDA-PCB-SCH-PANEL-SIM'&&mode!=='CLIENT-OFFLINE-EASYEDA-PCB-SCH-PANEL-SIM'))fail();
  if(data(root,'UI')!==ui||data(root,'gVars')!==host||data(ui,'gVars')!==host||data(root,${rootBusKey})!==bus||data(host,${hostBusKey})!==bus||data(edaOwner,'extensionUuid')!=='7e06d286b1ac846ef7eab9c7f2a9ee40')fail();
  sameBusBindings();reader.check();rpc.check();
 };
-sameUi();readerTimer=apply(set,root,[()=>{expired=true;},10000]);
+sameUi();${sharedDeadline ? "" : "readerTimer=apply(set,root,[()=>{expired=true;},10000]);"}
 `;
     };
+    readerProjectProgram = (expectedSupported) => `const project=value=>{
+ if(kind==='resolved-language'){if(!${JSON.stringify(SDK_PUBLIC_READERS_209_RESOLVED_LANGUAGES)}.includes(value))fail();return value;}
+ if(kind==='theme'){if(value!=='light'&&value!=='dark')fail();return value;}
+ if(kind==='toolbar-unit'){if(value!=='mm'&&value!=='inch'&&value!=='mil')fail();return value;}
+ if(kind==='system-library-uuid'){if(value!==${JSON.stringify(SDK_PUBLIC_READERS_209_SYSTEM_LIBRARY_UUID)})fail();return value;}
+ if(kind==='boolean'){if(typeof value!=='boolean'||value!==${String(expectedSupported)})fail();return value;}
+ if(kind==='languages'){
+  if(!Array.isArray(value)||value.length!==languages.length||Reflect.ownKeys(value).length!==languages.length+1)fail();
+  const copied=[];for(let index=0;index<languages.length;index++){const item=data(value,String(index));if(item!==languages[index])fail();copied.push(item);}return copied;
+ }
+ if(!value||typeof value!=='object'||Array.isArray(value)||Reflect.ownKeys(value).length!==2)fail();
+ const width=data(value,'width'),height=data(value,'height');
+ for(const dimension of [width,height])if(!Number.isInteger(dimension)||dimension<0||dimension>${SDK_PUBLIC_READERS_MAX_VIEWPORT_DIMENSION}||Object.is(dimension,-0))fail();
+ return {width,height};
+};
+`;
     dimensionSchema = external_exports.number().int().min(0).max(SDK_PUBLIC_READERS_MAX_VIEWPORT_DIMENSION).refine((value2) => !Object.is(value2, -0));
     viewportSchema = external_exports.object({ width: dimensionSchema, height: dimensionSchema }).strict();
     languagesSchema = external_exports.array(language).length(SDK_PUBLIC_READERS_209_LANGUAGES.length).refine((value2) => value2.every((entry, index2) => entry === SDK_PUBLIC_READERS_209_LANGUAGES[index2]));
@@ -58950,9 +59007,9 @@ function inventoryExtensionApiCoverage() {
       tool: "easyeda_control_public_readers",
       selector: descriptor10.path,
       implementation: "public-method",
-      scope: `Separately reviewed EasyEDA 3.2.209/API 0.3.59 only; older profiles do not register this route. ${descriptor10.limitations.join(" ")}`,
-      source: ["sdk-public-readers.ts", "sdk-public-readers-runtime.ts", "sdk-public-utilities-profile.ts", "facade-mode.ts"],
-      tests: ["sdk-public-readers.test.ts", "sdk-public-readers-runtime.test.ts", "sdk-public-readers-ui.test.ts", "sdk-public-readers-registration.test.ts", "facade-mode.test.ts"],
+      scope: `Separately reviewed EasyEDA 3.2.209/API 0.3.59 only; older profiles do not register this route. Single requests or a batch of up to seven unique methods use two matching observations. Batch methods share one ten-second deadline and retain all owners before invocation; two ordered passes are sequential, not atomic. Each member is bounded to 8192 bytes and the complete batch to 65536 bytes. One failed member refuses the whole result; no cached authority or partial success. ${descriptor10.limitations.join(" ")}`,
+      source: ["sdk-public-readers.ts", "sdk-public-readers-batch.ts", "sdk-public-readers-runtime.ts", "sdk-public-utilities-profile.ts", "facade-mode.ts"],
+      tests: ["sdk-public-readers.test.ts", "sdk-public-readers-batch.test.ts", "sdk-public-readers-runtime.test.ts", "sdk-public-readers-ui.test.ts", "sdk-public-readers-registration.test.ts", "facade-mode.test.ts"],
       validation: "offline-regression;current-live-unclaimed",
       executionState: "available-with-runtime-guards",
       inputDiscovery: { tool: "easyeda_control_api", arguments: { request: { action: "public-readers", query: { method: descriptor10.path, includeSchemas: true } } } }
@@ -155373,6 +155430,7 @@ function publicUtilitiesOnlyCapabilities() {
       tool: "easyeda_control_public_readers",
       runtimeAdmissionRequired: true,
       connectedValidation: false,
+      batch: { maximumMethods: 7, sharedDeadlineMilliseconds: 1e4, atomicSnapshot: false, partialSuccess: false },
       scope: "supported-and-sdk-resolved-languages-api-page-viewport-theme-toolbar-unit-and-fixed-system-library-id"
     },
     netlistFiles: {
@@ -155471,7 +155529,7 @@ var init_facade_mode = __esm({
       "easyeda_control_pcb209_opening",
       "easyeda_control_pcb209_worker_startup"
     ]);
-    PUBLIC_UTILITIES_ONLY_SCOPE = "EasyEDA 3.2.209 scoped Math, Unit, Environment, supported and SDK-resolved language, API-page viewport, theme, toolbar-unit, fixed system-library-ID, tab-count, active-identity and shortcut observations, plus ordinary launch and bounded managed Allegro-file membership comparison. SDK-resolved language may be a fallback and does not verify provider success. File preparation stays local; SDK comparison requires runtime admission and does not compare component values or prove circuit equivalence. Separate catalog tools perform explicitly confirmed credential-free vendor HTTPS metadata queries without EasyEDA or SDK execution. The separate pcb209_opening route owns one disposable project/PCB opening, UI/PCB source/identity checks, bounded layer/copper-count and Line/Arc/Via/parentless-String/Component/Pad/Attribute/Dimension/Image loaded-view observations through original normal cleanup. Its selection/relations stage also captures selected IDs and requested component child-pad IDs. A separate Pad stage observes native top/inner/bottom special style groups without expanding physical layers. An Image stage retains bounded serialized vector paths or opaque Picture references without loading assets. Arc observations add native center, radius, endpoint angles and direction. Poured observations retain existing native fill contours and parent associations without rebuilding or qualifying copper. Digest-bound historical queries read published observations without live RPCs or owner adoption; they do not describe current state. Ordinary opening can migrate data and automatically Save. The separate pcb209_worker_startup route has three distinct disposable launch purposes. The default purpose captures original project-worker constructors, current wrapper/channel relations and bracketed actor/local-Date observations. The empty-baseline purpose joins fixed common data to the original completed SQL checkpoint between empty raw-manager samples. The ratline-held-import purpose qualifies PCB construction and the first ratline child through seven source phases and observes a bounded first-child native creation stack, leaving its final import held. It does not independently associate the JavaScript Worker object with its CDP target, continue that import or prove subordinate-worker, callback or publication completion. Each purpose retains its own original owner and requires explicit debugger-pause acceptance; existing owners cannot be upgraded. No complete startup or live baseline, general geometry read/write, explicit Save or recovery is offered. Source review and synthetic tests are not connected execution validation. These observations and launch do not prove isolation, complete-board membership, reciprocal ownership, connectivity, saved state, physical stackup or readiness.";
+    PUBLIC_UTILITIES_ONLY_SCOPE = "EasyEDA 3.2.209 scoped Math, Unit, Environment, supported and SDK-resolved language, API-page viewport, theme, toolbar-unit, fixed system-library-ID, tab-count, active-identity and shortcut observations, plus ordinary launch and bounded managed Allegro-file membership comparison. SDK-resolved language may be a fallback and does not verify provider success. Up to seven unique public utility methods can share one admission sequence and ten-second deadline; two ordered passes must match and failures return no partial batch. File preparation stays local; SDK comparison requires runtime admission and does not compare component values or prove circuit equivalence. Separate catalog tools perform explicitly confirmed credential-free vendor HTTPS metadata queries without EasyEDA or SDK execution. The separate pcb209_opening route owns one disposable project/PCB opening, UI/PCB source/identity checks, bounded layer/copper-count and Line/Arc/Via/parentless-String/Component/Pad/Attribute/Dimension/Image loaded-view observations through original normal cleanup. Its selection/relations stage also captures selected IDs and requested component child-pad IDs. A separate Pad stage observes native top/inner/bottom special style groups without expanding physical layers. An Image stage retains bounded serialized vector paths or opaque Picture references without loading assets. Arc observations add native center, radius, endpoint angles and direction. Poured observations retain existing native fill contours and parent associations without rebuilding or qualifying copper. Digest-bound historical queries read published observations without live RPCs or owner adoption; they do not describe current state. Ordinary opening can migrate data and automatically Save. The separate pcb209_worker_startup route has three distinct disposable launch purposes. The default purpose captures original project-worker constructors, current wrapper/channel relations and bracketed actor/local-Date observations. The empty-baseline purpose joins fixed common data to the original completed SQL checkpoint between empty raw-manager samples. The ratline-held-import purpose qualifies PCB construction and the first ratline child through seven source phases and observes a bounded first-child native creation stack, leaving its final import held. It does not independently associate the JavaScript Worker object with its CDP target, continue that import or prove subordinate-worker, callback or publication completion. Each purpose retains its own original owner and requires explicit debugger-pause acceptance; existing owners cannot be upgraded. No complete startup or live baseline, general geometry read/write, explicit Save or recovery is offered. Source review and synthetic tests are not connected execution validation. These observations and launch do not prove isolation, complete-board membership, reciprocal ownership, connectivity, saved state, physical stackup or readiness.";
     CALCULATION_ONLY_TOOLS = Object.freeze([
       "easyeda_control_api",
       "easyeda_control_discover",
@@ -155619,6 +155677,101 @@ var init_sdk_system_runtime = __esm({
   }
 });
 
+// server/src/sdk-public-readers-batch.ts
+function buildSdkPublicReadersBatchProgram(input2) {
+  const request13 = sdkPublicReadersBatchRequestSchema.parse(input2);
+  return `let batchTimer,batchClear,batchApply,batchRoot;try{
+const fail=()=>{throw new Error('SDK_PUBLIC_READERS_BATCH_INVALID_RESULT');};
+const data=(object,key)=>{const descriptor=Object.getOwnPropertyDescriptor(object,key);if(!descriptor||!Object.hasOwn(descriptor,'value'))fail();return descriptor.value;};
+${SDK_PUBLIC_READERS_RETAIN_OWNER_PROGRAM}
+batchRoot=globalThis;batchApply=Reflect.apply;
+const clock=batchRoot.performance,now=retain(clock,'now'),set=data(batchRoot,'setTimeout');batchClear=data(batchRoot,'clearTimeout');
+if(typeof set!=='function'||typeof batchClear!=='function')fail();
+let lastTime=batchApply(now.method,clock,[]),expired=false;
+if(!Number.isFinite(lastTime)||lastTime<0)fail();const deadline=lastTime+${SDK_PUBLIC_READERS_BATCH_DEADLINE_MS};
+const readersBatchDeadline=()=>{
+ if(globalThis!==batchRoot||batchRoot.performance!==clock||data(batchRoot,'setTimeout')!==set||data(batchRoot,'clearTimeout')!==batchClear)fail();
+ now.check();const time=batchApply(now.method,clock,[]);
+ if(expired||!Number.isFinite(time)||time<lastTime||time>=deadline)fail();lastTime=time;
+};
+readersBatchDeadline();batchTimer=batchApply(set,batchRoot,[()=>{expired=true;},${SDK_PUBLIC_READERS_BATCH_DEADLINE_MS}]);
+const readers=[${request13.requests.map(buildSdkPublicReadersBatchMemberProgram).join(",\n")}];
+const readersBatchCurrent=()=>{readersBatchDeadline();for(const reader of readers)reader.sameOwner();readersBatchDeadline();};
+const passes=[[],[]];
+for(let sample=0;sample<passes.length;sample++){
+ const pass=passes[sample];
+ for(let index=0;index<readers.length;index++){
+  const reader=readers[index];
+  readersBatchCurrent();const value=reader.uiBacked?await reader.read():reader.read();readersBatchCurrent();
+  if(new TextEncoder().encode(JSON.stringify(value)).byteLength>${SDK_PUBLIC_READERS_MAX_BYTES})fail();
+  if(sample===1&&JSON.stringify(value)!==JSON.stringify(passes[0][index]))fail();pass.push(value);
+ }
+}
+if(JSON.stringify(passes[0])!==JSON.stringify(passes[1]))fail();readersBatchCurrent();
+const json=JSON.stringify({ok:true,kind:'sdk-public-readers-batch',results:passes[0],samplesMatched:true,
+ observationOrder:'two-complete-ordered-passes',atomicSnapshot:false});
+const utf8Bytes=new TextEncoder().encode(json).byteLength;
+const envelope={schema:${JSON.stringify(EXACT_READ_ENVELOPE_SCHEMA)},utf8Bytes,json};
+if(utf8Bytes>${SDK_PUBLIC_READERS_BATCH_MAX_BYTES}||new TextEncoder().encode(JSON.stringify(envelope)).byteLength>${SDK_PUBLIC_READERS_BATCH_MAX_BYTES})fail();
+readersBatchCurrent();return envelope;
+}catch{throw new Error('SDK_PUBLIC_READERS_BATCH_READ_FAILED');}finally{
+ if(batchTimer!==undefined&&batchClear&&batchApply){try{batchApply(batchClear,batchRoot,[batchTimer]);}catch{throw new Error('SDK_PUBLIC_READERS_BATCH_READ_FAILED');}}
+}`;
+}
+function validateSdkPublicReadersBatchResult(input2, raw) {
+  const request13 = sdkPublicReadersBatchRequestSchema.parse(input2);
+  if (Buffer.byteLength(JSON.stringify(raw), "utf8") > SDK_PUBLIC_READERS_BATCH_MAX_BYTES) {
+    throw new Error("Public reader batch payload exceeds its byte bound.");
+  }
+  const payload = batchPayloadSchema.parse(raw);
+  if (payload.results.length !== request13.requests.length) {
+    throw new Error("Public reader batch result membership differs.");
+  }
+  const results = request13.requests.map((member4, index2) => {
+    const value2 = payload.results[index2];
+    if (Buffer.byteLength(JSON.stringify(value2), "utf8") > SDK_PUBLIC_READERS_MAX_BYTES) {
+      throw new Error("Public reader batch member exceeds its byte bound.");
+    }
+    const result2 = validateSdkPublicReadersResult(member4, value2);
+    if (Buffer.byteLength(JSON.stringify(result2), "utf8") > SDK_PUBLIC_READERS_MAX_BYTES) {
+      throw new Error("Public reader batch result member exceeds its byte bound.");
+    }
+    return result2;
+  });
+  const result = {
+    ...payload,
+    results,
+    sharedDeadlineMilliseconds: SDK_PUBLIC_READERS_BATCH_DEADLINE_MS,
+    authority: "bounded-public-utility-batch-read-only;not-project-state-or-runtime-admission",
+    limitations: [
+      "One to seven unique reviewed methods, each sampled twice in two complete ordered passes. All owners are retained before the first invocation and rechecked around every await. The result is sequential, not an atomic snapshot or a guarantee of later stability.",
+      "All methods share one ten-second monotonic deadline and cooperative timer. Expiry prevents further calls or acceptance, but does not cancel an outstanding vendor RPC, its bookkeeping or synchronous work. No retry, partial success or proof caching.",
+      "Each member retains its single-reader meaning and limits. SDK-resolved language can be a fallback; toolbar units are not document units; the fixed library UUID does not enumerate libraries. API viewport is not desktop or PCB geometry.",
+      "The complete response is bounded to 65536 UTF-8 bytes and each member to 8192 bytes. A failure discards the entire returned batch; it does not undo already performed reads. No design, navigation, network, settings change or Save operation is introduced."
+    ]
+  };
+  if (Buffer.byteLength(JSON.stringify(result), "utf8") > SDK_PUBLIC_READERS_BATCH_MAX_BYTES) {
+    throw new Error("Public reader batch result exceeds its byte bound.");
+  }
+  return result;
+}
+var batchPayloadSchema;
+var init_sdk_public_readers_batch = __esm({
+  "server/src/sdk-public-readers-batch.ts"() {
+    init_zod();
+    init_exact_readers();
+    init_sdk_public_readers();
+    batchPayloadSchema = external_exports.object({
+      ok: external_exports.literal(true),
+      kind: external_exports.literal("sdk-public-readers-batch"),
+      results: external_exports.array(external_exports.unknown()).min(1).max(SDK_PUBLIC_READERS_BATCH_MAX_METHODS),
+      samplesMatched: external_exports.literal(true),
+      observationOrder: external_exports.literal("two-complete-ordered-passes"),
+      atomicSnapshot: external_exports.literal(false)
+    }).strict();
+  }
+});
+
 // server/src/sdk-public-readers-runtime.ts
 function validateSdkPublicReadersFingerprint(fingerprint) {
   if (selectSdkPublicUtilitiesRuntimeProfile(fingerprint) !== SDK_PUBLIC_UTILITIES_209_PROFILE) {
@@ -155627,8 +155780,9 @@ function validateSdkPublicReadersFingerprint(fingerprint) {
   return true;
 }
 async function readSdkPublicReaders(engine2, requestInput2, expectedFingerprint) {
-  const expected3 = structuredClone(expectedFingerprint), request13 = parseSdkPublicReadersRequest(requestInput2);
-  const uiBacked = sdkPublicReaderRequiresUi(request13);
+  const expected3 = structuredClone(expectedFingerprint), request13 = sdkPublicReadersOperationSchema.parse(requestInput2);
+  const batch = "action" in request13, maximumBytes2 = batch ? SDK_PUBLIC_READERS_BATCH_MAX_BYTES : SDK_PUBLIC_READERS_MAX_BYTES;
+  const uiBacked = batch ? request13.requests.some(sdkPublicReaderRequiresUi) : sdkPublicReaderRequiresUi(request13);
   validateSdkPublicReadersFingerprint(expected3);
   await engine2.assertBridgeDispatchAllowed();
   const initialStatus = await engine2.status();
@@ -155641,16 +155795,17 @@ async function readSdkPublicReaders(engine2, requestInput2, expectedFingerprint)
   }
   await engine2.assertBridgeDispatchAllowed();
   const raw = await engine2.upstream.callTool("easyeda_execute", {
-    code: buildSdkPublicReadersProgram(request13),
+    code: batch ? buildSdkPublicReadersBatchProgram(request13) : buildSdkPublicReadersProgram(request13),
     timeoutMs: 6e4,
     confirmWrite: true
   }, 7e4);
   assertUpstreamReplySettled(raw);
   const envelope7 = extractToolPayload(raw);
-  if (Buffer.byteLength(JSON.stringify(envelope7), "utf8") > SDK_PUBLIC_READERS_MAX_BYTES) {
+  if (Buffer.byteLength(JSON.stringify(envelope7), "utf8") > maximumBytes2) {
     throw new Error("SDK public readers reply exceeds its byte bound.");
   }
-  const result = validateSdkPublicReadersResult(request13, decodeExactReadEnvelope(envelope7));
+  const decoded = decodeExactReadEnvelope(envelope7);
+  const result = batch ? validateSdkPublicReadersBatchResult(request13, decoded) : validateSdkPublicReadersResult(request13, decoded);
   if (uiBacked) {
     await verifyEditorObservation209Ui(initial.installedBundles.assetsRoot);
   }
@@ -155662,7 +155817,9 @@ async function readSdkPublicReaders(engine2, requestInput2, expectedFingerprint)
     throw new Error("SDK public readers runtime changed around the read.");
   }
   let scope7 = uiBacked ? "fixed-ui-theme-toolbar-unit-or-system-library-identity" : "fixed-language-catalog-or-extension-page-viewport";
-  if (request13.method === "eda.sys_I18n.getCurrentLanguage") {
+  if (batch) {
+    scope7 = "fixed-public-utility-batch-with-independent-member-limits";
+  } else if (request13.method === "eda.sys_I18n.getCurrentLanguage") {
     scope7 = "fixed-sdk-resolved-language-with-fallback";
   }
   const response3 = { ...result, runtimeAdmission: {
@@ -155673,7 +155830,7 @@ async function readSdkPublicReaders(engine2, requestInput2, expectedFingerprint)
     scope: scope7,
     liveValidation: "not-recorded"
   } };
-  if (Buffer.byteLength(JSON.stringify(response3), "utf8") > SDK_PUBLIC_READERS_MAX_BYTES) {
+  if (Buffer.byteLength(JSON.stringify(response3), "utf8") > maximumBytes2) {
     throw new Error("SDK public readers result exceeds its byte bound.");
   }
   return response3;
@@ -155685,6 +155842,7 @@ var init_sdk_public_readers_runtime = __esm({
     init_editor_observation209_profile();
     init_exact_readers();
     init_sdk_public_readers();
+    init_sdk_public_readers_batch();
     init_sdk_public_utilities_profile();
     SDK_PUBLIC_READERS_209_UI_RUNTIME_PROFILE = Object.freeze({
       ...SDK_PUBLIC_UTILITIES_209_PROFILE,
@@ -164192,7 +164350,7 @@ var init_current_pcb_209_ratline_budget = __esm({
 });
 
 // server/src/current-pcb-209-ratline-capture-profile.ts
-var CURRENT_PCB_209_RATLINE_CAPTURE_GROUP, CURRENT_PCB_209_RATLINE_CAPTURE_PROFILES;
+var CURRENT_PCB_209_RATLINE_CAPTURE_GROUP, CURRENT_PCB_209_RATLINE_CAPTURE_PROFILES, CURRENT_PCB_209_RATLINE_HELD_CAPTURE_PROFILE;
 var init_current_pcb_209_ratline_capture_profile = __esm({
   "server/src/current-pcb-209-ratline-capture-profile.ts"() {
     init_current_pcb_209_ratline_source();
@@ -164346,6 +164504,15 @@ var init_current_pcb_209_ratline_capture_profile = __esm({
         "factoryStart": 3969352,
         "factoryEnd": 3969625
       }
+    });
+    CURRENT_PCB_209_RATLINE_HELD_CAPTURE_PROFILE = freezeDeep({
+      sites: {
+        bridge: CURRENT_PCB_209_RATLINE_CAPTURE_PROFILES.pcb.sites.bridge,
+        factory: CURRENT_PCB_209_RATLINE_CAPTURE_PROFILES.pcb.sites.factory
+      },
+      sequence: ["bridge", "factory"],
+      factoryStart: CURRENT_PCB_209_RATLINE_CAPTURE_PROFILES.pcb.factoryStart,
+      factoryEnd: CURRENT_PCB_209_RATLINE_CAPTURE_PROFILES.pcb.factoryEnd
     });
   }
 });
@@ -164582,7 +164749,7 @@ function currentPcb209RatlineFailureReason(error63) {
   const value2 = descriptor10 !== void 0 && Object.hasOwn(descriptor10, "value") ? descriptor10.value : null;
   return typeof value2 === "string" && failureReasons.has(value2) ? value2 : "UNCLASSIFIED";
 }
-var eventMethods2, failureReasons, diagnosticStage, diagnosticStep, diagnosticCommand, diagnosticEvent, diagnosticObservation, currentPcb209RatlineStageDiagnosticsSchema, count5, creationDiagnostics, captureDiagnostics, dispatcherDiagnostics, currentPcb209RatlineCompositeDiagnosticsSchema, CurrentPcb209RatlineStageDiagnostics;
+var eventMethods2, failureReasons, diagnosticStage, diagnosticStep, diagnosticCommand, diagnosticEvent, diagnosticObservation, currentPcb209RatlineStageDiagnosticsSchema, count5, captureScope, creationDiagnostics, captureDiagnostics, dispatcherDiagnostics, currentPcb209RatlineCompositeDiagnosticsSchema, CurrentPcb209RatlineStageDiagnostics;
 var init_current_pcb_209_ratline_diagnostics = __esm({
   "server/src/current-pcb-209-ratline-diagnostics.ts"() {
     init_zod();
@@ -165091,6 +165258,7 @@ var init_current_pcb_209_ratline_diagnostics = __esm({
       firstFailure: external_exports.object({ ...diagnosticObservation, reason: external_exports.enum([...failureReasons, "SCHEMA", "UNCLASSIFIED"]) }).strict().nullable()
     }).strict();
     count5 = external_exports.number().int().nonnegative();
+    captureScope = external_exports.enum(["full", "pcb-held-prefix"]);
     creationDiagnostics = currentPcb209RatlineStageDiagnosticsSchema.extend({
       consumed: external_exports.boolean(),
       settled: external_exports.boolean(),
@@ -165106,6 +165274,7 @@ var init_current_pcb_209_ratline_diagnostics = __esm({
     });
     captureDiagnostics = currentPcb209RatlineStageDiagnosticsSchema.extend({
       role: external_exports.enum(["pcb", "worker"]),
+      scope: captureScope,
       consumed: external_exports.boolean(),
       settled: external_exports.boolean(),
       failed: external_exports.boolean(),
@@ -165117,6 +165286,7 @@ var init_current_pcb_209_ratline_diagnostics = __esm({
     });
     dispatcherDiagnostics = currentPcb209RatlineStageDiagnosticsSchema.extend({
       role: external_exports.enum(["pcb", "worker"]),
+      scope: captureScope,
       failed: external_exports.boolean(),
       released: external_exports.boolean(),
       uncertainBreakpoints: count5.max(11),
@@ -165127,6 +165297,7 @@ var init_current_pcb_209_ratline_diagnostics = __esm({
       deferredPause: external_exports.boolean()
     });
     currentPcb209RatlineCompositeDiagnosticsSchema = currentPcb209RatlineStageDiagnosticsSchema.extend({
+      scope: captureScope,
       consumed: external_exports.boolean(),
       settled: external_exports.boolean(),
       failed: external_exports.boolean(),
@@ -168603,7 +168774,7 @@ function payloadValue(input2, expected3) {
   need74(expected3 !== null && value2.workerName === expected3 && JSON.stringify(value2) === input2, "PAYLOAD");
   return input2;
 }
-var token30, location5, frame2, pause, emptyReply5, remoteObject, byValue, nativeId5, payloadSchema9, worldSchema, INTERNAL2, issued14, CurrentPcb209RatlineCaptureCore, CurrentPcb209RatlinePcbCapture, CurrentPcb209RatlineWorkerCapture;
+var token30, location5, frame2, pause, emptyReply5, remoteObject, byValue, nativeId5, payloadSchema9, worldSchema, INTERNAL2, issued14, CurrentPcb209RatlineCaptureCore, CurrentPcb209RatlinePcbCapture, CurrentPcb209RatlineWorkerCapture, CurrentPcb209RatlinePcbHeldCapture;
 var init_current_pcb_209_ratline_capture_runner = __esm({
   "server/src/current-pcb-209-ratline-capture-runner.ts"() {
     init_current_pcb_209_ratline_budget();
@@ -168660,12 +168831,14 @@ var init_current_pcb_209_ratline_capture_runner = __esm({
       #selfId = null;
       #payload = null;
       #world = null;
+      #scope;
       #packet = null;
       #cleanupPending = null;
       #cleanupRequested = false;
-      constructor(key, role, transport2) {
-        need74(key === INTERNAL2, "FIXED_PROFILE");
+      constructor(key, role, scope7, transport2) {
+        need74(key === INTERNAL2 && (scope7 === "full" || scope7 === "pcb-held-prefix" && role === "pcb"), "FIXED_PROFILE");
         this.#role = role;
+        this.#scope = scope7;
         this.#transport = transport2;
         this.#original = members11(transport2);
         this.#scriptId = token30.parse(transport2.scriptId);
@@ -168680,6 +168853,7 @@ var init_current_pcb_209_ratline_capture_runner = __esm({
         return Object.freeze({
           ...this.#diagnostics.snapshot(),
           role: this.#role,
+          scope: this.#scope,
           consumed: this.#consumed,
           settled: this.#settled,
           failed: this.#failed !== null,
@@ -168924,7 +169098,7 @@ var init_current_pcb_209_ratline_capture_runner = __esm({
         this.#diagnostics.step = "pause-validation";
         need74(retained2.capturedError === null, "EVENT_CAPTURE");
         const event4 = pause.parse(retained2.event);
-        const profile = CURRENT_PCB_209_RATLINE_CAPTURE_PROFILES[this.#role], site = profile.sequence[index2];
+        const profile = this.#profile(), site = profile.sequence[index2];
         need74(site !== void 0, "EXTRA_PAUSE");
         const sites = profile.sites;
         const expected3 = sites[site], top = event4.callFrames[0];
@@ -168991,6 +169165,9 @@ var init_current_pcb_209_ratline_capture_runner = __esm({
         }
         this.#events += 1;
       }
+      #profile() {
+        return this.#scope === "pcb-held-prefix" ? CURRENT_PCB_209_RATLINE_HELD_CAPTURE_PROFILE : CURRENT_PCB_209_RATLINE_CAPTURE_PROFILES[this.#role];
+      }
       async capture() {
         need74(!this.#consumed, "CONSUMED");
         this.#consumed = true;
@@ -168999,7 +169176,7 @@ var init_current_pcb_209_ratline_capture_runner = __esm({
           await this.#current();
           this.#unsubscribe = this.#subscribe.call(this.#transport, { paused: this.#paused, resumed: this.#resumed, lost: this.#lost });
           need74(typeof this.#unsubscribe === "function", "SUBSCRIPTION");
-          const profile = CURRENT_PCB_209_RATLINE_CAPTURE_PROFILES[this.#role];
+          const profile = this.#profile();
           let terminalPause = null;
           const sites = profile.sites;
           for (const [site, point7] of Object.entries(sites)) {
@@ -169023,26 +169200,36 @@ var init_current_pcb_209_ratline_capture_runner = __esm({
           }
           await this.#current();
           need74(terminalPause !== null && this.#pause === terminalPause && terminalPause.observed && terminalPause.resume !== null && this.#events === profile.sequence.length, "TERMINAL_PAUSE_CHANGED");
-          need74(this.#workerId !== null && this.#payload !== null, "INCOMPLETE");
-          const packet = Object.freeze({
-            profile: this.#role === "pcb" ? "private.current-pcb209-ratline-pcb-capture.v1" : "private.current-pcb209-ratline-worker-capture.v1",
+          need74(this.#workerId !== null, "INCOMPLETE");
+          const common7 = {
             sourceSha256: CURRENT_PCB_209_RATLINE_SOURCE_PROFILE[this.#role].sha256,
-            pauses: this.#events,
             nativeWorkerId: this.#workerId,
-            resultPayload: this.#payload,
-            world: this.#world === null ? null : Object.freeze({ ...this.#world }),
             originalFactoryAndBridgeEventsRetained: true,
-            originalTerminalReturnPauseRetained: true,
             callbackReturnCompletionVerified: false,
             nativeWorkerTargetIdentityVerified: false,
             subscribedCanvasPeerOwnershipVerified: false,
             copperCompletionVerified: false,
             completeLiveBaselineVerified: false,
             executionAuthorized: false
-          });
+          };
+          let packet;
+          if (this.#scope === "pcb-held-prefix") {
+            need74(this.#events === 2 && this.#payload === null && this.#world === null, "INCOMPLETE");
+            packet = Object.freeze({ ...common7, profile: "private.current-pcb209-ratline-pcb-held-prefix-capture.v1", pauses: 2, originalFactoryPauseReleased: true });
+          } else {
+            need74(this.#payload !== null, "INCOMPLETE");
+            packet = Object.freeze({
+              ...common7,
+              profile: this.#role === "pcb" ? "private.current-pcb209-ratline-pcb-capture.v1" : "private.current-pcb209-ratline-worker-capture.v1",
+              pauses: this.#events,
+              resultPayload: this.#payload,
+              world: this.#world === null ? null : Object.freeze({ ...this.#world }),
+              originalTerminalReturnPauseRetained: true
+            });
+          }
           this.#packet = packet;
-          issued14.set(packet, this);
-          return packet;
+          issued14.set(this.#packet, this);
+          return this.#packet;
         } catch (error63) {
           this.#poison("FAILED", error63);
           this.#armed.reject(error63);
@@ -169085,12 +169272,17 @@ var init_current_pcb_209_ratline_capture_runner = __esm({
     };
     CurrentPcb209RatlinePcbCapture = class extends CurrentPcb209RatlineCaptureCore {
       constructor(transport2) {
-        super(INTERNAL2, "pcb", transport2);
+        super(INTERNAL2, "pcb", "full", transport2);
       }
     };
     CurrentPcb209RatlineWorkerCapture = class extends CurrentPcb209RatlineCaptureCore {
       constructor(transport2) {
-        super(INTERNAL2, "worker", transport2);
+        super(INTERNAL2, "worker", "full", transport2);
+      }
+    };
+    CurrentPcb209RatlinePcbHeldCapture = class extends CurrentPcb209RatlineCaptureCore {
+      constructor(transport2) {
+        super(INTERNAL2, "pcb", "pcb-held-prefix", transport2);
       }
     };
   }
@@ -169165,6 +169357,7 @@ var init_current_pcb_209_ratline_event_dispatcher = __esm({
       #assert;
       #terminate;
       #role;
+      #scope;
       #listeners = /* @__PURE__ */ new Map();
       #allocations = /* @__PURE__ */ new Map();
       #cleanupReady = Promise.withResolvers();
@@ -169184,9 +169377,10 @@ var init_current_pcb_209_ratline_event_dispatcher = __esm({
       #sourceContinuationConsumed = false;
       #sourceResumePending = false;
       #constructionComparisonConsumed = false;
-      constructor(role, dependency) {
-        need75(role === "pcb" || role === "worker", "ROLE");
+      constructor(role, dependency, scope7 = "full") {
+        need75((role === "pcb" || role === "worker") && (scope7 === "full" || scope7 === "pcb-held-prefix" && role === "pcb"), "ROLE");
         this.#role = role;
+        this.#scope = scope7;
         this.#dependency = dependency;
         this.#original = members12(dependency);
         token31.parse(dependency.scriptId);
@@ -169219,7 +169413,7 @@ var init_current_pcb_209_ratline_event_dispatcher = __esm({
           bindCurrentPcb209RatlinePcbTransport(creationTransport);
           bindCurrentPcb209RatlinePcbTransport(captureTransport);
         }
-        this.#stages = Object.freeze(role === "pcb" ? { creation: new CurrentPcb209RatlinePcbCreation(creationTransport), capture: new CurrentPcb209RatlinePcbCapture(captureTransport) } : { creation: new CurrentPcb209RatlineWorkerCreation(creationTransport), capture: new CurrentPcb209RatlineWorkerCapture(captureTransport) });
+        this.#stages = Object.freeze(role === "pcb" ? { creation: new CurrentPcb209RatlinePcbCreation(creationTransport), capture: scope7 === "pcb-held-prefix" ? new CurrentPcb209RatlinePcbHeldCapture(captureTransport) : new CurrentPcb209RatlinePcbCapture(captureTransport) } : { creation: new CurrentPcb209RatlineWorkerCreation(creationTransport), capture: new CurrentPcb209RatlineWorkerCapture(captureTransport) });
         this.#creationStatus = this.#stages.creation.status;
         this.#captureStatus = this.#stages.capture.status;
         this.#stageIdentities = stageIdentities(this.#stages.creation, this.#stages.capture);
@@ -169230,6 +169424,7 @@ var init_current_pcb_209_ratline_event_dispatcher = __esm({
         return Object.freeze({
           ...this.#diagnostics.snapshot(),
           role: this.#role,
+          scope: this.#scope,
           failed: this.#failed,
           released: this.#released,
           uncertainBreakpoints: this.#uncertain,
@@ -169438,11 +169633,11 @@ var init_current_pcb_209_ratline_event_dispatcher = __esm({
       /** Only same-realm retained handles are compared; this establishes no child
        * CDP target identity, cross-realm object equality or callback completion. */
       async requireOriginalConstruction(creationPacket, capturePacket) {
-        need75(!this.#constructionComparisonConsumed, "CONSTRUCTION_COMPARISON_CONSUMED");
+        need75(this.#scope === "full" && !this.#constructionComparisonConsumed, "CONSTRUCTION_COMPARISON_CONSUMED");
         this.#constructionComparisonConsumed = true;
         await this.requireOriginal();
         const construction = await this.#stages.creation.requireOriginal(creationPacket);
-        const captured = await this.#stages.capture.requireOriginal(capturePacket);
+        const captured = await this.requireOriginalCapture(capturePacket);
         await this.requireOriginal();
         for (const [first, second] of [[construction.workerObjectId, captured["childWorker"]], [construction.managerObjectId, captured["manager"]]]) {
           need75(first !== void 0 && second !== void 0, "ORIGINAL_OBJECTS");
@@ -169466,6 +169661,18 @@ var init_current_pcb_209_ratline_event_dispatcher = __esm({
           const reply3 = external_exports.object({ result: external_exports.looseObject({ type: external_exports.literal("boolean"), value: external_exports.literal(true) }) }).strict();
           reply3.parse(captureCurrentPcbStringClockReply(raw).value);
         }
+      }
+      /** Each scope accepts only its actual capture owner and original packet.
+       * The held prefix grants no construction-to-bridge object comparison. */
+      requireOriginalCapture(packet) {
+        this.#same();
+        const capture4 = this.#stages.capture;
+        if (packet.profile === "private.current-pcb209-ratline-pcb-held-prefix-capture.v1") {
+          need75(this.#scope === "pcb-held-prefix" && capture4 instanceof CurrentPcb209RatlinePcbHeldCapture, "ORIGINAL_OBJECTS");
+          return capture4.requireOriginal(packet);
+        }
+        need75(this.#scope === "full" && !(capture4 instanceof CurrentPcb209RatlinePcbHeldCapture), "ORIGINAL_OBJECTS");
+        return capture4.requireOriginal(packet);
       }
       abort() {
         this.#poison();
@@ -169713,7 +169920,7 @@ function members14(value2) {
     return descriptor10.value;
   });
 }
-var INTERNAL3, CurrentPcb209RatlineStartupCore, CurrentPcb209RatlinePcbStartup;
+var INTERNAL3, CurrentPcb209RatlineStartupCore, CurrentPcb209RatlinePcbHeldStartup;
 var init_current_pcb_209_ratline_startup_session = __esm({
   "server/src/current-pcb-209-ratline-startup-session.ts"() {
     init_current_pcb_209_ratline_budget();
@@ -169730,6 +169937,7 @@ var init_current_pcb_209_ratline_startup_session = __esm({
       #dispatcher;
       #stages;
       #role;
+      #scope;
       #consumed = false;
       #settled = false;
       #failed = false;
@@ -169740,19 +169948,21 @@ var init_current_pcb_209_ratline_startup_session = __esm({
       #construction = null;
       #capture = null;
       #packet = null;
-      constructor(key, role, dependency) {
-        need77(key === INTERNAL3, "PROFILE");
+      constructor(key, role, scope7, dependency) {
+        need77(key === INTERNAL3 && (scope7 === "full" || scope7 === "pcb-held-prefix" && role === "pcb"), "PROFILE");
         this.#original = members14(dependency);
         this.#dependency = dependency;
         this.#role = role;
+        this.#scope = scope7;
         this.#releaseSource = dependency.releaseOriginalPinnedSource;
         this.#childGate = new CurrentPcb209RatlineChildStartGate(role, dependency.realm, dependency.childBootstrapOwner);
-        this.#dispatcher = new CurrentPcb209RatlineEventDispatcher(role, this.#childGate.claimOriginalRealm());
+        this.#dispatcher = new CurrentPcb209RatlineEventDispatcher(role, this.#childGate.claimOriginalRealm(), scope7);
         this.#stages = this.#dispatcher.claimOriginalStages();
       }
       status() {
         return Object.freeze({
           ...this.#diagnostics.snapshot(),
+          scope: this.#scope,
           consumed: this.#consumed,
           settled: this.#settled,
           failed: this.#failed,
@@ -169827,16 +170037,8 @@ var init_current_pcb_209_ratline_startup_session = __esm({
           need77(this.#capture !== null, "CAPTURE_MISSING");
           const capture4 = await this.#capture;
           await this.#current();
-          this.#diagnostics.stage = "comparison";
-          await bounded14(this.#dispatcher.requireOriginalConstruction(construction, capture4));
-          await this.#current();
-          this.#packet = Object.freeze({
-            profile: "private.current-pcb209-ratline-composite.v1",
-            role: this.#role,
+          const common7 = {
             construction,
-            capture: capture4,
-            originalConstructionAndBridgeWorkerMatch: true,
-            originalConstructionAndRegistryMatch: true,
             childStartConsumedOnce: true,
             nativePreexecutionSourceOwnershipVerified: false,
             nativeWorkerTargetIdentityVerified: false,
@@ -169846,7 +170048,36 @@ var init_current_pcb_209_ratline_startup_session = __esm({
             copperCompletionVerified: false,
             completeLiveBaselineVerified: false,
             executionAuthorized: false
-          });
+          };
+          let packet;
+          if (this.#scope === "pcb-held-prefix") {
+            need77(capture4.profile === "private.current-pcb209-ratline-pcb-held-prefix-capture.v1", "PROFILE");
+            await this.#stages.creation.requireOriginal(construction);
+            await this.#dispatcher.requireOriginalCapture(capture4);
+            await this.#current();
+            packet = Object.freeze({
+              ...common7,
+              profile: "private.current-pcb209-ratline-held-prefix-composite.v1",
+              role: "pcb",
+              capture: capture4,
+              originalConstructionAndBridgeWorkerMatch: false,
+              originalConstructionAndRegistryMatch: false
+            });
+          } else {
+            need77(capture4.profile !== "private.current-pcb209-ratline-pcb-held-prefix-capture.v1", "PROFILE");
+            this.#diagnostics.stage = "comparison";
+            await bounded14(this.#dispatcher.requireOriginalConstruction(construction, capture4));
+            await this.#current();
+            packet = Object.freeze({
+              ...common7,
+              profile: "private.current-pcb209-ratline-composite.v1",
+              role: this.#role,
+              capture: capture4,
+              originalConstructionAndBridgeWorkerMatch: true,
+              originalConstructionAndRegistryMatch: true
+            });
+          }
+          this.#packet = packet;
           return this.#packet;
         } catch (error63) {
           this.#diagnostics.record(error63);
@@ -169885,7 +170116,7 @@ var init_current_pcb_209_ratline_startup_session = __esm({
         need77(packet === this.#packet && this.#packet !== null, "ORIGINAL_PACKET");
         await this.#current();
         await this.#stages.creation.requireOriginal(packet.construction);
-        await this.#stages.capture.requireOriginal(packet.capture);
+        await this.#dispatcher.requireOriginalCapture(packet.capture);
         await this.#current();
       }
       async abort() {
@@ -169913,9 +170144,9 @@ var init_current_pcb_209_ratline_startup_session = __esm({
         }
       }
     };
-    CurrentPcb209RatlinePcbStartup = class extends CurrentPcb209RatlineStartupCore {
+    CurrentPcb209RatlinePcbHeldStartup = class extends CurrentPcb209RatlineStartupCore {
       constructor(dependency) {
-        super(INTERNAL3, "pcb", dependency);
+        super(INTERNAL3, "pcb", "pcb-held-prefix", dependency);
       }
     };
   }
@@ -170044,10 +170275,6 @@ async function observe10(work) {
   } catch {
   }
 }
-async function failureOnly(work) {
-  await work;
-  return Promise.withResolvers().promise;
-}
 var ownerMethods2, handle14, row11, attached, CurrentPcb209RatlineNativeSession;
 var init_current_pcb_209_ratline_native_session = __esm({
   "server/src/current-pcb-209-ratline-native-session.ts"() {
@@ -170101,6 +170328,7 @@ var init_current_pcb_209_ratline_native_session = __esm({
       #origin = null;
       #pcbSource = null;
       #composite = null;
+      #compositePacket = null;
       #compositeWork = null;
       #navigation = null;
       #openingObservation = null;
@@ -170349,7 +170577,7 @@ var init_current_pcb_209_ratline_native_session = __esm({
           await this.#current();
           this.#phase = "construction";
           this.#step = "pcb-construction";
-          const composite = new CurrentPcb209RatlinePcbStartup({
+          const composite = new CurrentPcb209RatlinePcbHeldStartup({
             realm: await router.sourceOwner.claimOriginalPcbRealm(pcbSource2),
             releaseOriginalPinnedSource: () => router.releaseOriginalPinnedSource(pcbSource2),
             childBootstrapOwner: child
@@ -170358,10 +170586,11 @@ var init_current_pcb_209_ratline_native_session = __esm({
           const work = composite.capture();
           this.#compositeWork = work;
           void this.#observeComposite(work);
-          const failed = failureOnly(work);
-          this.#step = "child-source-qualification";
-          const childSource2 = await Promise.race([child.whenSourceQualified(), failed]);
+          this.#step = "child-and-prefix-qualification";
+          const [childSource2, compositePacket] = await Promise.all([child.whenSourceQualified(), work]);
+          this.#compositePacket = compositePacket;
           this.#step = "held-child-reproof";
+          await composite.requireOriginal(compositePacket);
           await router.reproveFirstChildHeld(pcbSource2);
           await this.#opening.requireOriginalPcbDependency(this.#result, this.#dependency, this.#target);
           await child.requireOriginal(childSource2);
@@ -170399,7 +170628,9 @@ var init_current_pcb_209_ratline_native_session = __esm({
         }
       }
       async requireOriginal(packet) {
-        need79(packet === this.#packet && this.#phase === "first-child-held" && this.#child !== null, "ORIGINAL_PACKET");
+        need79(packet === this.#packet && this.#phase === "first-child-held" && this.#child !== null && this.#composite !== null && this.#compositePacket !== null, "ORIGINAL_PACKET");
+        await this.#current();
+        await this.#composite.requireOriginal(this.#compositePacket);
         await this.#current();
         await this.#child.requireOriginal(packet.childSource);
         await this.#current();
@@ -212285,8 +212516,8 @@ var init_src = __esm({
       "easyeda_control_public_readers",
       {
         title: "Read EasyEDA languages, viewport, theme and toolbar units",
-        description: "Seven fixed public readers on exact EasyEDA 3.2.209/API 0.3.59: supported languages, language membership, SDK-resolved language, API viewport, current theme, toolbar data unit and fixed system-library UUID. SDK-resolved language can be a fallback; provider success and the private cached bus identity are not verified. The toolbar unit is not an active-document unit; the fixed UUID does not enumerate personal libraries. Requires the actual authenticated status fingerprint. Preserves case-sensitive language membership and ordered language identifiers. Viewport dimensions describe the API page, not the Windows desktop or PCB geometry. Complete bounded double observations retain their original owners; changed or malformed results refuse. No project, library asset, external file, network, settings change, navigation, callback registration or Save operation. Inspect offline public-readers and public-readers-validate first. Source and offline tests are not connected validation.",
-        inputSchema: { request: external_exports.unknown().pipe(sdkPublicReadersRequestSchema), expectedFingerprint: privateFingerprintSchema },
+        description: "Seven fixed public readers on exact EasyEDA 3.2.209/API 0.3.59: supported languages, language membership, SDK-resolved language, API viewport, current theme, toolbar data unit and fixed system-library UUID. SDK-resolved language can be a fallback; provider success and the private cached bus identity are not verified. The toolbar unit is not an active-document unit; the fixed UUID does not enumerate personal libraries. Requires the actual authenticated status fingerprint. Preserves case-sensitive language membership and ordered language identifiers. Viewport dimensions describe the API page, not the Windows desktop or PCB geometry. Complete bounded double observations retain their original owners; changed or malformed results refuse. Optional action:batch accepts one to seven unique reviewed methods under one ten-second deadline, with two complete ordered passes and no partial results. Batch observations are sequential, not atomic. Members retain the 8192-byte bound and the complete batch is limited to 65536 bytes. No project, library asset, external file, network, settings change, navigation, callback registration or Save operation. Inspect offline public-readers and public-readers-validate first. Source and offline tests are not connected validation.",
+        inputSchema: { request: external_exports.unknown().pipe(sdkPublicReadersOperationSchema), expectedFingerprint: privateFingerprintSchema },
         annotations: { readOnlyHint: true, destructiveHint: false, idempotentHint: true, openWorldHint: false }
       },
       serializedLiveGuarded(async (input2) => ({ result: await readSdkPublicReaders(engine, input2.request, input2.expectedFingerprint) }))

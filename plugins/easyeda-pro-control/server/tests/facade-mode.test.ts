@@ -60,6 +60,7 @@ void test("exact209 selectors expose fifteen scoped tools without inheriting unr
   assert.deepEqual(capabilities["netlistFiles"], { tool: "easyeda_control_netlist_files", runtimeAdmissionRequiredForComparison: true,
     connectedValidation: false, preparation: "exclusive-managed-artifact-from-supplied-ascii", comparison: "allegro-file-memberships-only", cadAuthority: false });
   assert.deepEqual(capabilities["publicReaders"], { tool: "easyeda_control_public_readers", runtimeAdmissionRequired: true, connectedValidation: false,
+    batch: { maximumMethods: 7, sharedDeadlineMilliseconds: 10_000, atomicSnapshot: false, partialSuccess: false },
     scope: "supported-and-sdk-resolved-languages-api-page-viewport-theme-toolbar-unit-and-fixed-system-library-id" });
   assert.deepEqual(capabilities["navigation"], { enabled: true, scope: "original-owner-disposable209-opening-and-three-separate-startup-purposes-only" });
   assert.deepEqual(capabilities["designAccess"], { enabled: false, scope: "general-geometry-and-writers;disposable-bounded-observations-and-historical-queries-only" });

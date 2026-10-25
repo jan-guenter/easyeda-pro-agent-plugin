@@ -55,6 +55,16 @@ limits; cleanup has reserved requests, bytes, polls and time. These limits are
 fixed and cannot be selected or reset by a caller. Large source qualification
 can take time; timeout or missing acknowledgment consumes the operation.
 
+The held-import purpose completes a fixed PCB capture of the original bridge
+and factory pauses before returning. It removes both owned breakpoints and
+observes both parent resumes. Its capture and composite diagnostics report
+`scope:"pcb-held-prefix"` and `settled:true`. The original capture handles and
+owners remain bound to later inspection and cleanup. No wait for the child's
+result callbacks remains active while the final import is held. Constructor
+objects and bridge objects have not been independently compared in this scope;
+their same-object and complete Worker-target claims remain false. The separate
+full capture still requires its result and return events.
+
 After a refusal, inspect the original owner's `firstFailure` chain through
 the native session, PCB context/source owner, child source owner and startup channel. It retains
 fixed reason codes, stage/step, last command/event classes and bounded counters.

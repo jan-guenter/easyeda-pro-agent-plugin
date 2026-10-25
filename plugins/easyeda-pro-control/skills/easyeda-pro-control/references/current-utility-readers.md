@@ -132,6 +132,38 @@ Only language membership accepts an argument. Every other request has
 `arguments:{}`. Preserve language identifier order and spelling. The catalog
 and membership methods perform no locale normalization.
 
+To observe several of these values together, pass the following inner request
+to the same tool, with the fresh authenticated `expectedFingerprint`:
+
+```json
+{"action":"batch","requests":[{"method":"eda.sys_Window.getViewportSize","arguments":{}},{"method":"eda.sys_Window.getCurrentTheme","arguments":{}},{"method":"eda.sys_Unit.getFrontendDataUnit","arguments":{}}]}
+```
+
+A batch accepts one to seven unique method names from the table; even membership
+checks with different language arguments cannot repeat a method. Empty batches,
+unknown methods, extra fields and caller-selected deadlines refuse before
+execution. `public-readers` includes batch limits and, with
+`includeSchemas:true`, its input schema. `public-readers-validate` validates
+either shape offline without granting execution authority. Existing single
+requests and their result shape remain supported.
+
+The fixed batch program captures every requested owner before calling any
+method. It performs two complete passes in request order, checking every
+retained owner around each await. All members share one ten-second monotonic
+deadline and cooperative timer. A changed owner, malformed value, expired
+deadline or unequal second sample stops further reads and refuses the entire
+batch. There is no partial success or retry; refusal does not undo earlier
+reads or cancel an outstanding vendor RPC. The result is a sequential
+observation, not an atomic snapshot or a promise that values remain stable.
+
+Batch `results` preserve request order and every single-reader limitation,
+including the language fallback flags. Each member is bounded to 8192 UTF-8
+bytes and the complete response to 65536 bytes. One runtime admission sequence
+and one generated execution cover the batch; any UI-backed member requires
+the existing before/after UI and selector hashes. No owner or admission proof
+is cached. This reduces repeated guard and status calls in source; connected
+latency improvement has not been measured.
+
 `getCurrentLanguage` observes the public SDK's resolved value in the exact domain
 `zh-Hans`, `zh-Hant`, `en`, `pl`, `ja`, `fr`, `es`, `de`, `sv`, `ru`, `uk`, `vi`,
 `cs`, `pt`. Its UI provider reads the URL language, local preferences and

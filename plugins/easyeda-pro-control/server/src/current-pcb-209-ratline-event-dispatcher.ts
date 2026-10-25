@@ -8,9 +8,10 @@ import { z } from "zod";
 import { captureCurrentPcbStringClockReply } from "./current-pcb-string-clock-reply.ts";
 import { CurrentPcb209RatlinePcbCreation, CurrentPcb209RatlineWorkerCreation } from "./current-pcb-209-ratline-creation-runner.ts";
 import type { CurrentPcb209RatlineCreationCommand, CurrentPcb209RatlineCreationTransport } from "./current-pcb-209-ratline-creation-runner.ts";
-import { CurrentPcb209RatlinePcbCapture, CurrentPcb209RatlineWorkerCapture } from "./current-pcb-209-ratline-capture-runner.ts";
-import type { CurrentPcb209RatlineCaptureCommand, CurrentPcb209RatlineCaptureTransport } from "./current-pcb-209-ratline-capture-runner.ts";
+import { CurrentPcb209RatlinePcbCapture, CurrentPcb209RatlinePcbHeldCapture, CurrentPcb209RatlineWorkerCapture } from "./current-pcb-209-ratline-capture-runner.ts";
+import type { CurrentPcb209RatlineAnyCapturePacket, CurrentPcb209RatlineCaptureCommand, CurrentPcb209RatlineCapturePacket, CurrentPcb209RatlineCaptureTransport } from "./current-pcb-209-ratline-capture-runner.ts";
 import { CURRENT_PCB_209_RATLINE_CAPTURE_GROUP as GROUP } from "./current-pcb-209-ratline-capture-profile.ts";
+import type { CurrentPcb209RatlineCaptureScope } from "./current-pcb-209-ratline-capture-profile.ts";
 import { CURRENT_PCB_209_RATLINE_CAPTURE_PROGRAMS as PROGRAMS } from "./current-pcb-209-ratline-capture-program.ts";
 import { CURRENT_PCB_209_RATLINE_SOURCE_PROFILE } from "./current-pcb-209-ratline-source.ts";
 
@@ -26,7 +27,7 @@ type Stage = "creation" | "capture";
 type Role = "pcb" | "worker";
 type Events = Parameters<CurrentPcb209RatlineCreationTransport["subscribe"]>[0];
 type Creation = CurrentPcb209RatlinePcbCreation | CurrentPcb209RatlineWorkerCreation;
-type Capture = CurrentPcb209RatlinePcbCapture | CurrentPcb209RatlineWorkerCapture;
+type Capture = CurrentPcb209RatlinePcbCapture | CurrentPcb209RatlineWorkerCapture | CurrentPcb209RatlinePcbHeldCapture;
 const token = z.string().regex(/^[A-Za-z\d_.:-]{1,256}$/u);
 const breakpointReply = z.object({ breakpointId: token, actualLocation: z.object({ scriptId: token,
   lineNumber: z.number().int().nonnegative(), columnNumber: z.number().int().nonnegative() }).strict() }).strict();
@@ -70,6 +71,7 @@ export class CurrentPcb209RatlineEventDispatcher {
   readonly #assert: CurrentPcb209RatlineRealmDependency["assertOriginalPinnedParentAndAutoAttach"];
   readonly #terminate: CurrentPcb209RatlineRealmDependency["assertOriginalTermination"];
   readonly #role: Role;
+  readonly #scope: CurrentPcb209RatlineCaptureScope;
   readonly #listeners = new Map<Stage, Events>();
   readonly #allocations = new Map<string, Allocation>();
   readonly #cleanupReady = Promise.withResolvers<null>();
@@ -89,8 +91,9 @@ export class CurrentPcb209RatlineEventDispatcher {
   #sourceContinuationConsumed = false;
   #sourceResumePending = false;
   #constructionComparisonConsumed = false;
-  public constructor(role: Role, dependency: CurrentPcb209RatlineRealmDependency) {
-    need(role === "pcb" || role === "worker", "ROLE"); this.#role = role; this.#dependency = dependency; this.#original = members(dependency);
+  public constructor(role: Role, dependency: CurrentPcb209RatlineRealmDependency, scope: CurrentPcb209RatlineCaptureScope = "full") {
+    need((role === "pcb" || role === "worker") && (scope === "full" || scope === "pcb-held-prefix" && role === "pcb"), "ROLE");
+    this.#role = role; this.#scope = scope; this.#dependency = dependency; this.#original = members(dependency);
     token.parse(dependency.scriptId); token.parse(dependency.parentSessionId); token.parse(dependency.parentTargetId);
     this.#request = dependency.request; this.#assert = dependency.assertOriginalPinnedParentAndAutoAttach; this.#terminate = dependency.assertOriginalTermination;
     void observed(this.#cleanupReady.promise); void observed(this.#sourceResumed.promise);
@@ -105,7 +108,8 @@ export class CurrentPcb209RatlineEventDispatcher {
       subscribe: events => this.#subscribe("capture", { ...events, attached: (): void => { this.#poison(new Error("PCB209_RATLINE_DISPATCH_CAPTURE_ATTACHMENT")); } }),
     };
     if (role === "pcb") { bindCurrentPcb209RatlinePcbTransport(creationTransport); bindCurrentPcb209RatlinePcbTransport(captureTransport); }
-    this.#stages = Object.freeze(role === "pcb" ? { creation: new CurrentPcb209RatlinePcbCreation(creationTransport), capture: new CurrentPcb209RatlinePcbCapture(captureTransport) } :
+    this.#stages = Object.freeze(role === "pcb" ? { creation: new CurrentPcb209RatlinePcbCreation(creationTransport), capture: scope === "pcb-held-prefix" ?
+      new CurrentPcb209RatlinePcbHeldCapture(captureTransport) : new CurrentPcb209RatlinePcbCapture(captureTransport) } :
       { creation: new CurrentPcb209RatlineWorkerCreation(creationTransport), capture: new CurrentPcb209RatlineWorkerCapture(captureTransport) });
     // oxlint-disable-next-line typescript/unbound-method -- Retain exact methods for identity checks; every invocation below uses the original receiver via call.
     this.#creationStatus = this.#stages.creation.status; this.#captureStatus = this.#stages.capture.status;
@@ -113,7 +117,7 @@ export class CurrentPcb209RatlineEventDispatcher {
     this.#unsubscribe = dependency.subscribe({ paused: this.#paused, resumed: this.#resumed, attached: this.#attached, lost: this.#lost });
     need(typeof this.#unsubscribe === "function", "SUBSCRIPTION");
   }
-  public status(): Readonly<Record<string, unknown>> { return Object.freeze({ ...this.#diagnostics.snapshot(), role: this.#role,
+  public status(): Readonly<Record<string, unknown>> { return Object.freeze({ ...this.#diagnostics.snapshot(), role: this.#role, scope: this.#scope,
     failed: this.#failed, released: this.#released, uncertainBreakpoints: this.#uncertain, retainedBreakpoints: this.#allocations.size,
     sourceContinuationConsumed: this.#sourceContinuationConsumed, sourceResumePending: this.#sourceResumePending,
     paused: this.#pause !== null, deferredPause: this.#deferredPause !== null }); }
@@ -227,11 +231,11 @@ export class CurrentPcb209RatlineEventDispatcher {
   /** Only same-realm retained handles are compared; this establishes no child
    * CDP target identity, cross-realm object equality or callback completion. */
   public async requireOriginalConstruction(creationPacket: Parameters<Creation["requireOriginal"]>[0],
-    capturePacket: Parameters<Capture["requireOriginal"]>[0]): Promise<void> {
-    need(!this.#constructionComparisonConsumed, "CONSTRUCTION_COMPARISON_CONSUMED"); this.#constructionComparisonConsumed = true;
+    capturePacket: CurrentPcb209RatlineCapturePacket): Promise<void> {
+    need(this.#scope === "full" && !this.#constructionComparisonConsumed, "CONSTRUCTION_COMPARISON_CONSUMED"); this.#constructionComparisonConsumed = true;
     await this.requireOriginal();
     const construction = await this.#stages.creation.requireOriginal(creationPacket);
-    const captured = await this.#stages.capture.requireOriginal(capturePacket);
+    const captured = await this.requireOriginalCapture(capturePacket);
     await this.requireOriginal();
     for (const [first, second] of [[construction.workerObjectId, captured["childWorker"]], [construction.managerObjectId, captured["manager"]]] as const) {
       need(first !== undefined && second !== undefined, "ORIGINAL_OBJECTS");
@@ -241,6 +245,17 @@ export class CurrentPcb209RatlineEventDispatcher {
       await this.requireOriginal(); const reply = z.object({ result: z.looseObject({ type: z.literal("boolean"), value: z.literal(true) }) }).strict();
       reply.parse(captureCurrentPcbStringClockReply(raw).value);
     }
+  }
+  /** Each scope accepts only its actual capture owner and original packet.
+   * The held prefix grants no construction-to-bridge object comparison. */
+  public requireOriginalCapture(packet: CurrentPcb209RatlineAnyCapturePacket): Promise<Readonly<Record<string, string>>> {
+    this.#same(); const capture = this.#stages.capture;
+    if (packet.profile === "private.current-pcb209-ratline-pcb-held-prefix-capture.v1") {
+      need(this.#scope === "pcb-held-prefix" && capture instanceof CurrentPcb209RatlinePcbHeldCapture, "ORIGINAL_OBJECTS");
+      return capture.requireOriginal(packet);
+    }
+    need(this.#scope === "full" && !(capture instanceof CurrentPcb209RatlinePcbHeldCapture), "ORIGINAL_OBJECTS");
+    return capture.requireOriginal(packet);
   }
   public abort(): void { this.#poison(); }
   public async releaseAfterTermination(): Promise<void> {
