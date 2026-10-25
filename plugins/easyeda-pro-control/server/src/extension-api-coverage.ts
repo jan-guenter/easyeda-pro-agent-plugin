@@ -296,6 +296,19 @@ export function inventoryExtensionApiCoverage(): ApiCoverageEntry[] {
     validation: "offline-regression;current-live-unclaimed", executionState: "available-with-network-guards",
     inputDiscovery: { tool: "easyeda_control_api", arguments: { request: { action: "catalog-components", query: { includeSchemas: true } } } },
   }]);
+  for (const [path, selector, desktopLimit] of [
+    ["eda.lib_Footprint.searchByProperties", "search-footprints-by-name", "Direct SDK execution remains unqualified: the desktop controller requires body/header path, while the name wrapper supplies titles/docType without that path. Failed responses can collapse to an empty SDK list."],
+    ["eda.lib_Device.getByLcscIds", "get-devices-by-lcsc-ids", "Direct SDK execution remains unqualified: concurrent library refresh and desktop local-library fallback can touch library state. This fixed remote-only equivalent does not qualify those effects or implement every SDK overload."],
+  ] as const) {
+    routes.set(path, [{
+      tool: "easyeda_control_catalog_components", selector, implementation: "vendor-http-task-equivalent",
+      scope: `Application-independent anonymous system-catalog lookup with bounded metadata enrichment; not public SDK execution or installed runtime admission. Explicit confirmNetwork:true discloses one bounded footprint name or one to five distinct uppercase LCSC C numbers. All returned candidates require exact fixed-URL metadata GETs: at most five candidates and six total requests share one 30-second deadline and 1 MiB aggregate decoded-body budget. Complete candidate and metadata lists must agree on UUID, system owner and supported identity/type fields; LCSC Supplier Part and symbol/footprint references must also agree. Overflow, contradiction, missing witnesses or later failure refuses the entire result without filtering or partial success. All matching LCSC candidates are preserved. No credentials, arbitrary URLs/owners, redirects, retries, pagination, linked assets, stock, prices, CAD, pin mapping, persistence or exhaustive/atomic snapshot claim. Initial lookup endpoint samples did not validate this composed route; installed/live enrichment remains unvalidated. ${desktopLimit}`,
+      source: ["public-system-library-lookups.ts", "public-system-library-lookups-runtime.ts", "public-system-catalog.ts", "public-system-catalog-runtime.ts", "facade-mode.ts"],
+      tests: ["public-system-library-lookups.test.ts", "public-system-library-lookups-runtime.test.ts", "public-system-catalog-registration.test.ts"],
+      validation: "offline-regression;current-live-unclaimed", executionState: "available-with-network-guards",
+      inputDiscovery: { tool: "easyeda_control_api", arguments: { request: { action: "catalog-components", query: { includeSchemas: true } } } },
+    }]);
+  }
   for (const descriptor of publicSdkReadDescriptors()) {
     const existing = routes.get(descriptor.path) ?? [];
     routes.set(descriptor.path, [...existing, {

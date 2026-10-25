@@ -1,3 +1,4 @@
+import { currentPcb209RatlineCompositeDiagnosticsSchema } from "../src/current-pcb-209-ratline-diagnostics.ts";
 import assert from "node:assert/strict";
 import { test } from "node:test";
 import { setTimeout as delay, setImmediate as immediate } from "node:timers/promises";
@@ -131,14 +132,18 @@ for (const [role, synchronousResume, failure, slowRequest] of [["pcb", false, nu
         allocation.resolve({ breakpointId: "child-instrument" });
       }
       await rejected; await Promise.allSettled(running);
+      const diagnostic = currentPcb209RatlineCompositeDiagnosticsSchema.parse(session.status()); assert.ok(diagnostic.firstFailure !== null);
       if (failure === "await-gap") { assert.equal(scheduledLossDelivered, true); }
       assert.equal(childStarts, 0); assert.equal(childRemovals, 1);
       assert.equal(dependency.childBootstrapOwner.status()["unresolvedInstrumentation"], failure === "failed-removal");
       await assert.rejects(session.abort()); assert.equal(childStarts, 0); assert.equal(childRemovals, 1);
       await fixture.terminate(); await session.releaseAfterTermination(); assert.equal(fixture.counts().subscribers, 0); assert.equal(childEvents, null);
+      assert.deepEqual(currentPcb209RatlineCompositeDiagnosticsSchema.parse(session.status()).firstFailure, diagnostic.firstFailure);
       return;
     }
     const packet = await pending; await Promise.all(running);
+    const diagnostic = currentPcb209RatlineCompositeDiagnosticsSchema.parse(session.status());
+    assert.equal(diagnostic.firstFailure, null); assert.equal(diagnostic.creation.firstFailure, null); assert.equal(diagnostic.capture.firstFailure, null); assert.equal(diagnostic.dispatcher.firstFailure, null);
     if (slowRequest === true) { assert.equal(creationProofDelay, true); assert.equal(captureProofDelay, true); }
     assert.equal(packet.capture.pauses, role === "pcb" ? 5 : 9); assert.equal(packet.originalConstructionAndBridgeWorkerMatch, true);
     assert.equal(packet.originalConstructionAndRegistryMatch, true); assert.equal(packet.nativePreexecutionSourceOwnershipVerified, false);

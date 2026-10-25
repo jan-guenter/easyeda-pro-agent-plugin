@@ -44,8 +44,8 @@ void test("all three public readers preserve the exact receiver and positional a
 });
 
 void test("public reader catalog exposes exact schemas and reviewed source offsets without execution authority", () => {
-  assert.equal(sdkPublicReadersDescriptors().length, 6);
-  assert.equal(querySdkPublicReadersMethods()["total"], 6);
+  assert.equal(sdkPublicReadersDescriptors().length, 7);
+  assert.equal(querySdkPublicReadersMethods()["total"], 7);
   assert.equal(JSON.stringify(querySdkPublicReadersMethods()).includes("inputSchema"), false);
   const filtered = querySdkPublicReadersMethods({ method: viewportRequest.method, includeSchemas: true });
   assert.equal(filtered["total"], 1); assert.match(JSON.stringify(filtered), /inputSchema/u);
@@ -59,7 +59,7 @@ void test("public reader catalog exposes exact schemas and reviewed source offse
   assert.equal(validateSdkPublicReadersArguments(supportRequest("en"))["executionAuthorized"], false);
   for (const request of [supportRequest(""), supportRequest(" en"), supportRequest("en\n"), supportRequest("a".repeat(65)),
     { ...viewportRequest, arguments: { code: "private()" } }, { ...languageRequest, private: true },
-    { method: "eda.sys_I18n.getCurrentLanguage", arguments: {} }, { method: "eda.sys_Window.open", arguments: {} }]) {
+    { method: "eda.sys_I18n.text", arguments: {} }, { method: "eda.sys_Window.open", arguments: {} }]) {
     assert.throws(() => parseSdkPublicReadersRequest(request)); assert.throws(() => buildSdkPublicReadersProgram(request));
     assert.equal(validateSdkPublicReadersArguments(request)["valid"], false);
   }

@@ -94,7 +94,7 @@ void test("catalog footprint coverage labels vendor HTTP separately and retains 
   const summary = extensionApiCoverageSummary();
   const states = summary["executionRoutes"];
   assert.ok(typeof states === "object" && states !== null && "available-with-network-guards" in states);
-  assert.equal(states["available-with-network-guards"], 7);
+  assert.equal(states["available-with-network-guards"], 9);
   const symbolTitle = inventoryExtensionApiCoverage().find((entry) => entry.path === "eda.lib_Symbol.searchByProperties");
   assert.ok(symbolTitle); assert.equal(symbolTitle.routes.length, 1);
   const titleRoute = symbolTitle.routes[0]; assert.ok(titleRoute);

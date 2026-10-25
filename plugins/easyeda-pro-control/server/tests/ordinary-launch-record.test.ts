@@ -18,16 +18,21 @@ import { isPublicUtilities209Configured } from "../src/sdk-public-utilities-prof
 
 type Bag = Record<string, unknown>;
 function bag(value: unknown): Bag { assert.ok(isRecord(value)); return value; }
-async function fixture(options: Readonly<{ injected?: boolean; holdPublication?: boolean; failPublication?: boolean; wrongTermination?: boolean }> = {}): Promise<{
+async function fixture(options: Readonly<{ injected?: boolean; holdPublication?: boolean; failPublication?: boolean; wrongTermination?: boolean;
+  holdRelease?: boolean; failRelease?: boolean; failIndexClear?: boolean; failReleaseRecord?: "release-intent.json" | "released.json" }> = {}): Promise<{
   launch: () => Promise<unknown>; observe: () => Promise<unknown>; recorded: (wrongRuntime?: boolean, wrongLaunch?: boolean) => Promise<unknown>;
   original: (value: unknown) => unknown; release: () => void; drift: (kind: "status" | "observer" | "launch" | "record" | "format") => void;
-  state: { terminated: boolean; publishing: boolean; observerCalls: number; hashes: number; statusCalls: number };
+  releaseClosed: (override?: Bag, historical?: boolean) => Promise<unknown>; finishRelease: () => void; inspect: () => Promise<unknown>;
+  state: { terminated: boolean; publishing: boolean; observerCalls: number; hashes: number; statusCalls: number;
+    releaseCalls: number; releaseSettled: boolean; indexClears: number; projectOwned: boolean };
 }> {
   const facadeSha256 = "a".repeat(64), id = "ordinary-synthetic-record", jobId = "b".repeat(32);
   const originalLaunch = { jobId, helperInstance: "c".repeat(32), root: { pid: 42, role: "easyeda-main", startIdentity: `win32:123456789012345:job:${jobId}` } };
   let currentLaunch = originalLaunch;
-  const barrier = Promise.withResolvers<boolean>(), records = new Map<string, string>();
-  const state = { terminated: false, publishing: false, observerCalls: 0, hashes: 0, statusCalls: 0 };
+  const barrier = Promise.withResolvers<boolean>(), records = new Map<string, string>(), releaseBarrier = Promise.withResolvers<boolean>();
+  const state = { terminated: false, publishing: false, observerCalls: 0, hashes: 0, statusCalls: 0,
+    releaseCalls: 0, releaseSettled: false, indexClears: 0, projectOwned: false };
+  let released = false;
   class SyntheticRuntime {
     private readonly observations = state;
     public launch(): Promise<typeof originalLaunch> { assert.equal(this.observations, state); return Promise.resolve(originalLaunch); }
@@ -37,7 +42,15 @@ async function fixture(options: Readonly<{ injected?: boolean; holdPublication?:
       return Promise.resolve({ jobId: options.wrongTermination === true ? "f".repeat(32) : jobId,
         helperInstance: originalLaunch.helperInstance, terminated: state.terminated });
     }
-    public status(): Bag { assert.equal(this.observations, state); state.statusCalls += 1; return { state: "owned", launch: currentLaunch }; }
+    public status(): Bag { assert.equal(this.observations, state); state.statusCalls += 1;
+      return { state: released ? "released" : "owned", launch: released ? null : currentLaunch }; }
+    public async release(): Promise<void> {
+      assert.equal(this.observations, state); state.releaseCalls += 1; released = true;
+      assert.ok(records.has("release-intent.json")); assert.equal(state.indexClears, 0);
+      if (options.holdRelease === true) { await releaseBarrier.promise; }
+      if (options.failRelease === true) { throw new Error("Synthetic helper closure failure"); }
+      state.releaseSettled = true;
+    }
   }
   const root = "/synthetic/control", runtime = new SyntheticRuntime();
   const program = stripTypeScriptTypes(await readFile(new URL("../src/ordinary-launch.ts", import.meta.url), "utf8"))
@@ -58,11 +71,12 @@ async function fixture(options: Readonly<{ injected?: boolean; holdPublication?:
     testInventory: (): Promise<Bag[]> => {
       if (records.size === 0) { return Promise.resolve([]); }
       const value: Bag = { operationId: id };
-      for (const [name, text] of records) { value[name.slice(0, -5)] = JSON.parse(text) as unknown; }
+      for (const [name, text] of records) { value[name === "release-intent.json" ? "releaseIntent" : name.slice(0, -5)] = JSON.parse(text) as unknown; }
       return Promise.resolve([value]);
     },
     testPublish: async (operationId: string, name: string, value: unknown): Promise<void> => {
       assert.equal(operationId, id); assert.equal(records.has(name), false);
+      if (name === options.failReleaseRecord) { throw new Error("Synthetic release publication failure"); }
       if (name === "terminated.json") {
         state.publishing = true;
         if (options.holdPublication === true) { await barrier.promise; }
@@ -78,7 +92,10 @@ async function fixture(options: Readonly<{ injected?: boolean; holdPublication?:
     },
     testRuntime: runtime, testLaunch: originalLaunch, testInjected: options.injected === true,
     testOptions: { assetsRoot: "/synthetic/assets", pluginRoot: "/synthetic/plugin", assertAllowed: (): Promise<void> => Promise.resolve(),
-      allocateRuntime: (): SyntheticRuntime => runtime },
+      allocateRuntime: (): SyntheticRuntime => runtime,
+      assertReleaseAllowed: (): void => { assert.equal(state.projectOwned, false, "Synthetic project still owns runtime"); },
+      completeRuntimeRelease: (): void => { assert.equal(state.releaseSettled, true); assert.equal(state.projectOwned, false);
+        if (options.failIndexClear === true) { throw new Error("Synthetic allocation clear failure"); } state.indexClears += 1; } },
   });
   // Boundary substitution exists only in this private source realm. The real
   // Module's lexical map and publication/installation implementations are intact.
@@ -87,11 +104,18 @@ inventory=testInventory;publish=testPublish;hashPinnedFile=testHash;verifyInstal
 const coordinator=new OrdinaryLaunchCoordinator(testOptions,testInjected?{verifyInstallation:testVerify}:{});
 ({launch:()=>coordinator.run({action:'launch',operationId:'${id}',confirmLaunch:true,acceptExistingProfileEffects:true}),
 observe:()=>coordinator.run({action:'observe-termination',operationId:'${id}'}),
+inspect:()=>coordinator.run({action:'inspect',operationId:'${id}'}),
+releaseClosed:async(override={},historical=false)=>{const seen=await coordinator.run({action:'inspect',operationId:'${id}'});
+return (historical?new OrdinaryLaunchCoordinator(testOptions):coordinator).run({action:'release-closed',operationId:'${id}',
+expectedLaunchedSha256:seen.launchedSha256,expectedTerminationSha256:seen.terminationSha256??'0'.repeat(64),confirmReleaseClosed:true,...override});},
 recorded:(wrongRuntime,wrongLaunch)=>assertOriginalRecordedOrdinaryTermination(wrongRuntime?{}:testRuntime,wrongLaunch?{...testLaunch,root:{...testLaunch.root,pid:99}}:testLaunch),
 original:value=>assertOriginalOrdinaryTerminationRecord(value,testRuntime,testLaunch)});`, context));
   const invoke = (name: string, args: unknown[] = []): unknown => { const method = api[name]; assert.ok(typeof method === "function");
     return Reflect.apply(method, undefined, args) as unknown; };
   return { state, launch: async (): Promise<unknown> => await invoke("launch"), observe: async (): Promise<unknown> => await invoke("observe"),
+    inspect: async (): Promise<unknown> => await invoke("inspect"),
+    releaseClosed: async (override = {}, historical = false): Promise<unknown> => await invoke("releaseClosed", [override, historical]),
+    finishRelease: (): void => { releaseBarrier.resolve(true); },
     recorded: async (wrongRuntime = false, wrongLaunch = false): Promise<unknown> => await invoke("recorded", [wrongRuntime, wrongLaunch]),
     original: (value): unknown => invoke("original", [value]), release: (): void => { barrier.resolve(true); },
     drift: (kind): void => {
@@ -121,6 +145,41 @@ void test("ordinary termination issues an original token only after native exit,
   await assert.rejects(f.recorded(true), /no original published record/u); await assert.rejects(f.recorded(false, true), /complete launch/u);
   await f.observe(); assert.equal(await f.recorded(), value); assert.equal(f.state.observerCalls, 2);
   assert.equal(f.state.hashes, 3);
+});
+
+void test("explicit ordinary release waits for original helper closure before clearing its allocation and invalidates its issuer", async () => {
+  const f = await fixture({ holdRelease: true }); await f.launch(); f.state.terminated = true; const observed = bag(await f.observe());
+  assert.match(String(observed["terminationSha256"]), /^[a-f0-9]{64}$/u);
+  const token = await f.recorded(); assert.equal(f.state.releaseCalls, 0); assert.equal(f.state.indexClears, 0);
+  const pending = f.releaseClosed();
+  for (let index = 0; index < 1000 && f.state.releaseCalls === 0; index += 1) { await Promise.resolve(); }
+  assert.equal(f.state.releaseCalls, 1); assert.equal(f.state.indexClears, 0); assert.equal(f.state.releaseSettled, false);
+  f.finishRelease(); const result = bag(await pending);
+  assert.equal(result["state"], "released"); assert.equal(result["indexAllocationReleased"], true); assert.equal(f.state.indexClears, 1);
+  assert.throws(() => f.original(token), /original recorded runtime/u); await assert.rejects(f.recorded(), /no original published record/u);
+  await assert.rejects(f.releaseClosed(), /consumed/u); assert.equal(f.state.releaseCalls, 1);
+});
+
+void test("ordinary release refuses running, historical, mismatched and project-owned requests before helper dispatch", async () => {
+  const running = await fixture(); await running.launch(); await assert.rejects(running.releaseClosed(), /recorded original/u);
+  assert.equal(running.state.releaseCalls, 0);
+  const f = await fixture(); await f.launch(); f.state.terminated = true; await f.observe();
+  await assert.rejects(f.releaseClosed({}, true), /current original coordinator/u);
+  for (const override of [{ expectedLaunchedSha256: "0".repeat(64) }, { expectedTerminationSha256: "0".repeat(64) },
+    { confirmReleaseClosed: false }, { pid: 42 }, { termination: {} }]) { await assert.rejects(f.releaseClosed(override)); }
+  f.state.projectOwned = true; await assert.rejects(f.releaseClosed(), /project still owns/u);
+  assert.equal(f.state.releaseCalls, 0); assert.equal(f.state.indexClears, 0);
+});
+
+void test("ordinary release uncertainty preserves consumed intent and allocation without replay", async () => {
+  for (const options of [{ failRelease: true }, { failReleaseRecord: "release-intent.json" }, { failReleaseRecord: "released.json" }, { failIndexClear: true }] as const) {
+    const f = await fixture(options); await f.launch(); f.state.terminated = true; await f.observe();
+    await assert.rejects(f.releaseClosed(), /closure failure|publication failure|allocation clear failure/u);
+    assert.equal(f.state.indexClears, 0);
+    const inspected = bag(await f.inspect()); assert.equal(bag(inspected["release"])["attemptConsumed"], true);
+    const calls = f.state.releaseCalls; await assert.rejects(f.releaseClosed(), /uncertain|consumed/u); assert.equal(f.state.releaseCalls, calls);
+    await assert.rejects(f.recorded(), /incomplete or changed|prior launch/u);
+  }
 });
 
 void test("ordinary termination never issues from injected coordinators, failed publication or another native Job", async () => {

@@ -66,11 +66,12 @@ Use the coverage response's summary for current method and route counts.
 They are implementation classifications, not connected validation counts;
 one method can have several routes. Do not add route counts to method counts.
 
-For 3.2.209 language, API-page viewport, resolved theme, global toolbar unit and
+For 3.2.209 supported/SDK-resolved language, API-page viewport, resolved theme, global toolbar unit and
 fixed system-library identity observations, query `public-readers`
 and validate with `public-readers-validate`. Read [the utility contract](current-utility-readers.md#language-and-api-page-viewport-readers)
 before calling the separate `easyeda_control_public_readers` tool. This does not
-enable the older `sdk_read` executor or any design reader.
+enable the older `sdk_read` executor or any design reader. SDK-resolved language
+can be a fallback; it does not prove provider success or the raw UI preference.
 
 For supplied Allegro netlists, query `netlist-files` and validate the inner
 request with `netlist-files-validate`. Read [the managed-file contract](current-netlist-files.md)

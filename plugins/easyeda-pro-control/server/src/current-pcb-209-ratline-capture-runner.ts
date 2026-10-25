@@ -3,6 +3,7 @@
  * No native adapter or public registration adopts this private transport yet. */
 import { CURRENT_PCB_209_RATLINE_NATIVE_PROFILE } from "./current-pcb-209-ratline-budget.ts";
 import { types } from "node:util";
+import { CurrentPcb209RatlineStageDiagnostics } from "./current-pcb-209-ratline-diagnostics.ts";
 import { currentPcb209RatlineTransportRequestMilliseconds } from "./current-pcb-209-ratline-transport-windows.ts";
 import { z } from "zod";
 import { captureCurrentPcbStringClockReply } from "./current-pcb-string-clock-reply.ts";
@@ -98,6 +99,7 @@ function payloadValue(input: unknown, expected: number | null): string {
   need(expected !== null && value.workerName === expected && JSON.stringify(value) === input, "PAYLOAD"); return input;
 }
 class CurrentPcb209RatlineCaptureCore {
+  readonly #diagnostics = new CurrentPcb209RatlineStageDiagnostics();
   readonly #role: CurrentPcb209RatlineCaptureRole;
   readonly #transport: CurrentPcb209RatlineCaptureTransport;
   readonly #original: readonly unknown[];
@@ -134,45 +136,51 @@ class CurrentPcb209RatlineCaptureCore {
     this.#reprove = transport.assertOriginalPinnedRealm; this.#terminate = transport.assertOriginalTermination;
     void observed(this.#waiting.promise); void observed(this.#armed.promise);
   }
-  public status(): Readonly<Record<string, unknown>> { return Object.freeze({ role: this.#role, consumed: this.#consumed,
+  public status(): Readonly<Record<string, unknown>> { return Object.freeze({ ...this.#diagnostics.snapshot(), role: this.#role, consumed: this.#consumed,
     settled: this.#settled, failed: this.#failed !== null, released: this.#released, events: this.#events, commands: this.#commands,
     paused: this.#pause !== null && !this.#pause.observed, unresolvedBreakpoints: this.#uncertain > 0 || [...this.#breakpoints.values()].some(value => !value.removed) }); }
   public async whenArmed(): Promise<void> { await this.#armed.promise; await this.#current(); }
   #same(): void { need(members(this.#transport).every((value, index) => value === this.#original[index]), "OWNER_CHANGED"); }
+  #poison(code: string, cause: unknown = fail(code)): void { this.#diagnostics.record(cause); this.#failed ??= fail(code); }
   async #current(): Promise<void> {
+    this.#diagnostics.step = "owner-reproof";
     try {
       need(this.#failed === null && !this.#released && !this.#releasing, "FAILED_OR_RELEASED"); this.#same();
       await bounded(this.#reprove.call(this.#transport, CURRENT_PCB_209_RATLINE_SOURCE_PROFILE[this.#role])); this.#same();
       need(this.#failed === null && !this.#released && !this.#releasing, "FAILED_OR_RELEASED");
-    } catch (error) { this.#failed ??= fail("OWNER_LOST"); throw error; }
+    } catch (error) { this.#poison("OWNER_LOST", error); throw error; }
   }
   async #send(command: CurrentPcb209RatlineCaptureCommand): Promise<unknown> {
     await this.#current(); need(this.#commands < 112, "BUDGET"); this.#commands += 1;
+    this.#diagnostics.lastCommand = command.method; this.#diagnostics.step = "native-request";
     const value = captureCurrentPcbStringClockReply(await bounded(this.#request.call(this.#transport, command),
       currentPcb209RatlineTransportRequestMilliseconds(this.#transport, command.method))).value;
     await this.#current(); return value;
   }
   async #cleanupSend(command: CurrentPcb209RatlineCaptureCommand): Promise<void> {
     this.#same(); need(this.#commands < 128, "CLEANUP_BUDGET"); this.#commands += 1;
+    this.#diagnostics.lastCommand = command.method; this.#diagnostics.step = "cleanup";
     const reply = await bounded(this.#request.call(this.#transport, command), currentPcb209RatlineTransportRequestMilliseconds(this.#transport, command.method));
     emptyReply.parse(captureCurrentPcbStringClockReply(reply).value); this.#same();
   }
   readonly #paused = (input: unknown): void => {
-    if (this.#pause !== null && !this.#pause.observed) { this.#failed ??= fail("DUPLICATE_PAUSE"); return; }
+    this.#diagnostics.lastEvent = "paused";
+    if (this.#pause !== null && !this.#pause.observed) { this.#poison("DUPLICATE_PAUSE"); return; }
     let capturedError: unknown = null, event: unknown = null;
     try { event = captureCurrentPcbStringClockReply(input).value; } catch (error) { capturedError = error; }
     const retained: Paused = { event, capturedError, resumed: Promise.withResolvers(), resume: null, observed: false,
-      timer: setTimeout(() => { this.#failed ??= fail("PAUSE_DEADLINE"); void observed(this.#cleanup()); }, this.#role === "pcb" ? CURRENT_PCB_209_RATLINE_NATIVE_PROFILE.elapsed.capturePauseMilliseconds : 6000) };
+      timer: setTimeout(() => { this.#poison("PAUSE_DEADLINE"); void observed(this.#cleanup()); }, this.#role === "pcb" ? CURRENT_PCB_209_RATLINE_NATIVE_PROFILE.elapsed.capturePauseMilliseconds : 6000) };
     this.#pause = retained; this.#waiting.resolve(retained);
-    if (this.#settled || this.#sequenceExhausted) { this.#failed ??= fail("EXTRA_PAUSE"); void observed(this.#cleanup()); }
+    if (this.#settled || this.#sequenceExhausted) { this.#poison("EXTRA_PAUSE"); void observed(this.#cleanup()); }
   };
   readonly #resumed = (): void => {
+    this.#diagnostics.lastEvent = "resumed";
     const paused = this.#pause;
-    if (paused === null || paused.observed) { this.#failed ??= fail("UNEXPECTED_RESUME"); return; }
-    if (paused.resume === null) { this.#failed ??= fail("UNEXPECTED_RESUME"); }
+    if (paused === null || paused.observed) { this.#poison("UNEXPECTED_RESUME"); return; }
+    if (paused.resume === null) { this.#poison("UNEXPECTED_RESUME"); }
     paused.observed = true; clearTimeout(paused.timer); paused.resumed.resolve(null);
   };
-  readonly #lost = (): void => { this.#failed ??= fail("OWNER_LOST"); this.#waiting.reject(this.#failed); this.#armed.reject(this.#failed); void observed(this.#cleanup()); };
+  readonly #lost = (): void => { this.#diagnostics.lastEvent = "lost"; this.#poison("OWNER_LOST"); this.#waiting.reject(this.#failed); this.#armed.reject(this.#failed); void observed(this.#cleanup()); };
   #resume(paused: Paused): Promise<void> {
     if (paused.resume === null) {
       const completion = Promise.withResolvers<undefined>(); paused.resume = completion.promise;
@@ -216,6 +224,7 @@ class CurrentPcb209RatlineCaptureCore {
   async #arm(site: string, point: Readonly<{ lineNumber: number; columnNumber: number }>): Promise<void> {
     await this.#current(); need(this.#commands < 112, "BUDGET"); this.#commands += 1;
     const requested = { scriptId: this.#scriptId, lineNumber: point.lineNumber, columnNumber: point.columnNumber }; this.#uncertain += 1;
+    this.#diagnostics.step = "breakpoint-allocation"; this.#diagnostics.lastCommand = "Debugger.setBreakpoint";
     const pending = (async (): Promise<void> => {
       const raw = await this.#request.call(this.#transport, { method: "Debugger.setBreakpoint", params: { location: requested } });
       const reply = z.object({ breakpointId: token, actualLocation: location }).strict().parse(captureCurrentPcbStringClockReply(raw).value);
@@ -244,6 +253,7 @@ class CurrentPcb209RatlineCaptureCore {
     return original ?? value;
   }
   async #capturePause(retained: Paused, index: number): Promise<void> {
+    this.#diagnostics.step = "pause-validation";
     need(retained.capturedError === null, "EVENT_CAPTURE"); const event = pause.parse(retained.event);
     const profile = CURRENT_PCB_209_RATLINE_CAPTURE_PROFILES[this.#role], site = profile.sequence[index]; need(site !== undefined, "EXTRA_PAUSE");
     const sites: Readonly<Partial<Record<CurrentPcb209RatlineCaptureSite, Readonly<{ name: string; lineNumber: number; columnNumber: number }>>>> = profile.sites;
@@ -307,14 +317,16 @@ class CurrentPcb209RatlineCaptureCore {
   public async capture(): Promise<CurrentPcb209RatlineCapturePacket> {
     need(!this.#consumed, "CONSUMED"); this.#consumed = true;
     try {
-      await this.#current(); this.#unsubscribe = this.#subscribe.call(this.#transport, { paused: this.#paused, resumed: this.#resumed, lost: this.#lost });
+      this.#diagnostics.stage = "capture-arming"; await this.#current(); this.#unsubscribe = this.#subscribe.call(this.#transport, { paused: this.#paused, resumed: this.#resumed, lost: this.#lost });
       need(typeof this.#unsubscribe === "function", "SUBSCRIPTION");
       const profile = CURRENT_PCB_209_RATLINE_CAPTURE_PROFILES[this.#role];
       let terminalPause: Paused | null = null;
       const sites: Readonly<Record<string, Readonly<{ lineNumber: number; columnNumber: number }>>> = profile.sites;
       for (const [site, point] of Object.entries(sites)) { await this.#arm(site, point); }
       this.#armed.resolve(null);
+      this.#diagnostics.stage = "capture";
       for (let index = 0; index < profile.sequence.length; index += 1) {
+        this.#diagnostics.step = "pause-wait";
         const retained = await bounded(this.#waiting.promise, this.#role === "pcb" ? CURRENT_PCB_209_RATLINE_NATIVE_PROFILE.elapsed.captureWaitMilliseconds : 20_000); this.#waiting = Promise.withResolvers(); void observed(this.#waiting.promise);
         await this.#current(); await this.#capturePause(retained, index);
         if (index === profile.sequence.length - 1) {
@@ -337,7 +349,7 @@ class CurrentPcb209RatlineCaptureCore {
         copperCompletionVerified: false, completeLiveBaselineVerified: false, executionAuthorized: false });
       this.#packet = packet; issued.set(packet, this); return packet;
     } catch (error) {
-      this.#failed ??= fail("FAILED"); this.#armed.reject(error);
+      this.#poison("FAILED", error); this.#armed.reject(error);
       try { await this.#cleanup(); } catch (cleanupError) { throw new AggregateError([error, cleanupError], "PCB209_RATLINE_CAPTURE_FAILED", { cause: cleanupError }); }
       throw error;
     } finally { this.#settled = true; }

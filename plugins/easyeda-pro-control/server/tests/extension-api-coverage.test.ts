@@ -531,7 +531,7 @@ void test("NetGroup and filtered PCB membership reads expose narrow native route
   assert.match(route.scope, /not public primitive instances/u); assert.match(route.scope, /explicit nonempty unique filters/u);
   assert.match(route.scope, /source\/inventory\/source/u);
   assert.deepEqual(extensionApiCoverageSummary()["statuses"], {
-    "implemented-public-subset": 214, "implemented-native-equivalent": 34, "implemented-vendor-http-equivalent": 4, "internal-lifecycle-only": 0, "implemented-but-blocked": 79, omitted: 504,
+    "implemented-public-subset": 214, "implemented-native-equivalent": 34, "implemented-vendor-http-equivalent": 6, "internal-lifecycle-only": 0, "implemented-but-blocked": 79, omitted: 502,
   });
 });
 
@@ -1056,12 +1056,20 @@ void test("current Image geometry discovery preserves native Picture scope witho
   }
 });
 
-void test("LCSC catalogue lookup retains the concrete local-library fallback omission", () => {
+void test("LCSC catalogue HTTP lookup retains direct SDK fallback limits without claiming desktop support", () => {
   const row = inventoryExtensionApiCoverage().find((entry) => entry.path === "eda.lib_Device.getByLcscIds");
-  assert.ok(row); assert.equal(row.status, "omitted"); assert.equal(row.routes.length, 0);
-  assert.equal(row.omission?.code, "catalogue-fallback-library-effects");
-  assert.match(row.omission.reason, /Concurrent library refresh/u);
-  assert.match(row.omission.nextRequirement, /remote-only/u);
+  assert.ok(row); assert.equal(row.status, "implemented-vendor-http-equivalent"); assert.equal(row.routes.length, 1);
+  assert.equal(row.omission, null); const route = row.routes[0]; assert.ok(route);
+  assert.match(route.scope, /concurrent library refresh/u); assert.match(route.scope, /remote-only/u);
+  assert.match(route.scope, /six total requests/u); assert.match(route.scope, /entire result/u);
+  assert.equal(route.selector, "get-devices-by-lcsc-ids"); assert.equal(row.currentGenerationLiveValidation, "not-recorded");
+});
+
+void test("iframe existence remains omitted because the installed wrapper returns constant false", () => {
+  const row = inventoryExtensionApiCoverage().find(entry => entry.path === "eda.sys_IFrame.isIFrameAlreadyExist"); assert.ok(row);
+  assert.equal(row.status, "omitted"); assert.equal(row.routes.length, 0);
+  assert.equal(row.omission?.code, "installed-209-constant-false-stub");
+  assert.match(row.omission.reason, /literal false/u); assert.match(row.omission.nextRequirement, /not evidence of absence/u);
 });
 
 void test("omitted heterogeneous geometric getters retain proven projection defects", () => {

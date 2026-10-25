@@ -264,7 +264,7 @@ void test("ordinary launch discovery and validation disclose effects and reject 
   const discovery = queryOrdinaryLaunch({ includeSchemas: true });
   assert.notEqual(discovery["requestSchema"], undefined);
   assert.match(JSON.stringify(discovery["limitations"]), /not an isolated/u);
-  assert.deepEqual(discovery["actions"], ["launch", "inspect", "observe-application", "observe-termination", "observe-window", "normal-close", "abandon-supervision", "abandon-unknown-launch"]);
+  assert.deepEqual(discovery["actions"], ["launch", "inspect", "observe-application", "observe-termination", "release-closed", "observe-window", "normal-close", "abandon-supervision", "abandon-unknown-launch"]);
   const unknown = unknownRequest(id, facadeSha256);
   assert.equal(validateOrdinaryLaunchArguments(unknown)["valid"], true);
   assert.equal(validateOrdinaryLaunchArguments({ ...unknown, confirmAbandonUnknownLaunch: false })["valid"], false);

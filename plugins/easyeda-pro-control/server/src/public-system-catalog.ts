@@ -1,7 +1,11 @@
 import { z } from "zod";
 import { PUBLIC_SYSTEM_FOOTPRINT_LIBRARY, PUBLIC_SYSTEM_FOOTPRINT_MAX_RESULT_BYTES,
-  PUBLIC_SYSTEM_FOOTPRINT_ORIGIN } from "./public-system-footprint.ts";
+  PUBLIC_SYSTEM_FOOTPRINT_ORIGIN, validatePublicSystemFootprintResult } from "./public-system-footprint.ts";
 import { publicSystemSymbolExactRequestSchema, queryPublicSystemSymbolExact, validatePublicSystemSymbolExactResult } from "./public-system-symbol-exact.ts";
+import { PUBLIC_SYSTEM_LIBRARY_LOOKUP_LIMITATIONS, PUBLIC_SYSTEM_LOOKUP_MAX_CANDIDATES, parsePublicSystemLookupCandidates,
+  publicSystemFootprintNameRequestSchema, publicSystemLcscRequestSchema, publicSystemLibraryLookupRequestSchema,
+  queryPublicSystemLibraryLookups } from "./public-system-library-lookups.ts";
+import type { PublicSystemLookupCandidate } from "./public-system-library-lookups.ts";
 
 const uuid = z.string().regex(/^[a-f0-9]{32}$/u);
 const safeText = (maximum: number): z.ZodString => z.string().max(maximum).refine((value) => value.isWellFormed() && !value.includes("\u0000"));
@@ -15,7 +19,8 @@ const symbolSearchSchema = z.object({ action: z.literal("search-symbols"), ...se
 const deviceSearchSchema = z.object({ action: z.literal("search-devices"), ...searchFields }).strict();
 const symbolSchema = z.object({ action: z.literal("get-symbol"), symbolUuid: uuid, confirmNetwork: z.literal(true) }).strict();
 const deviceSchema = z.object({ action: z.literal("get-device"), deviceUuid: uuid, confirmNetwork: z.literal(true) }).strict();
-export const publicSystemCatalogRequestSchema = z.discriminatedUnion("action", [searchSchema, symbolSearchSchema, deviceSearchSchema, symbolSchema, deviceSchema, publicSystemSymbolExactRequestSchema]);
+export const publicSystemCatalogRequestSchema = z.discriminatedUnion("action", [searchSchema, symbolSearchSchema, deviceSearchSchema,
+  symbolSchema, deviceSchema, publicSystemSymbolExactRequestSchema, publicSystemFootprintNameRequestSchema, publicSystemLcscRequestSchema]);
 export type PublicSystemCatalogRequest = z.infer<typeof publicSystemCatalogRequestSchema>;
 export function parsePublicSystemCatalogRequest(input: unknown): PublicSystemCatalogRequest { return publicSystemCatalogRequestSchema.parse(input); }
 
@@ -44,7 +49,7 @@ export function queryPublicSystemCatalog(input: unknown = {}): Record<string, un
     origin: PUBLIC_SYSTEM_FOOTPRINT_ORIGIN, libraryUuid: PUBLIC_SYSTEM_FOOTPRINT_LIBRARY, invocationEnabledByDiscovery: false,
     ...(query.includeSchemas ? { inputSchema: z.toJSONSchema(schema) } : {}), limitations: [...limitations], provenance: source,
   }); }
-  entries.push(...queryPublicSystemSymbolExact(query).entries);
+  entries.push(...queryPublicSystemSymbolExact(query).entries, ...queryPublicSystemLibraryLookups(query).entries);
   return { offline: true, invocationEnabledByDiscovery: false, total: entries.length, entries };
 }
 export function validatePublicSystemCatalogArguments(input: unknown): Record<string, unknown> {
@@ -62,6 +67,7 @@ const metadata = { uuid, owner, display_title: safeText(512), description: safeT
 // An absent project field stays absent; a supplied project scope contradicts this catalog.
 const optionalIdentity = { path: z.literal(PUBLIC_SYSTEM_FOOTPRINT_LIBRARY).optional(), public: z.literal(true).optional(),
   project_uuid: z.literal("").optional(),
+  owner_uuid: z.literal(PUBLIC_SYSTEM_FOOTPRINT_LIBRARY).optional(),
   ownerUuid: z.literal(PUBLIC_SYSTEM_FOOTPRINT_LIBRARY).optional() };
 const symbolResponse = z.object({ success: z.literal(true), code: z.literal(0), result: z.object({ ...metadata,
   path: z.literal(PUBLIC_SYSTEM_FOOTPRINT_LIBRARY), ownerUuid: z.literal(PUBLIC_SYSTEM_FOOTPRINT_LIBRARY).optional(),
@@ -150,11 +156,55 @@ function projectSearch(request: SearchRequest, raw: unknown): Record<string, unk
     exactMatchVerified: false, exhaustiveResultsVerified: false, linkedAssetsFetched: false };
 }
 
+/** The lookup has no authority to fill absent metadata witnesses. Reuse the
+ * full fixed GET validators and require agreement with the initial candidate. */
+export function validatePublicSystemLookupMetadata(input: unknown, candidate: PublicSystemLookupCandidate, raw: unknown): Record<string, unknown> {
+  const request = publicSystemLibraryLookupRequestSchema.parse(input);
+  z.object({ result: z.object({ owner_uuid: z.literal(PUBLIC_SYSTEM_FOOTPRINT_LIBRARY).optional(),
+    ownerUuid: z.literal(PUBLIC_SYSTEM_FOOTPRINT_LIBRARY).optional() }) }).parse(raw);
+  if (request.action === "search-footprints-by-name") {
+    const full = validatePublicSystemFootprintResult({ footprintUuid: candidate.uuid, confirmNetwork: true }, raw);
+    const item = z.object({ footprint: z.record(z.string(), z.unknown()) }).parse(full).footprint;
+    if (item["name"] !== candidate.name || candidate.description !== undefined && item["description"] !== candidate.description) {
+      throw new Error("PUBLIC_SYSTEM_LOOKUP_METADATA_IDENTITY");
+    }
+    return { ...item, displayNameEqualsRequestedName: candidate.name === request.name,
+      systemOwnerVerified: true, documentTypeVerified: true, publicVisibilityFlagVerified: true, responseLibraryPathVerified: true };
+  }
+  const { result } = deviceResponse.parse(raw);
+  if (result.uuid !== candidate.uuid || candidate.lcscId === undefined || !request.lcscIds.includes(candidate.lcscId) ||
+      result.attributes["Supplier Part"] !== candidate.lcscId || result.attributes.Symbol !== candidate.symbolUuid ||
+      result.attributes.Footprint !== candidate.footprintUuid || candidate.name !== undefined && result.display_title !== candidate.name) {
+    throw new Error("PUBLIC_SYSTEM_LOOKUP_METADATA_IDENTITY");
+  }
+  return { ...projectDeviceItem(result), ...deviceVerification(result), lcscId: candidate.lcscId,
+    systemOwnerVerified: true, symbolAndFootprintTypesVerified: true };
+}
+
+function projectLibraryLookup(input: unknown, raw: unknown): Record<string, unknown> {
+  const request = publicSystemLibraryLookupRequestSchema.parse(input);
+  const evidence = z.object({ lookup: z.unknown(), metadata: z.array(z.unknown()).max(PUBLIC_SYSTEM_LOOKUP_MAX_CANDIDATES) }).strict().parse(raw);
+  const initial = parsePublicSystemLookupCandidates(request, evidence.lookup);
+  if (initial.length !== evidence.metadata.length) { throw new Error("PUBLIC_SYSTEM_LOOKUP_METADATA_COUNT"); }
+  const candidates = initial.map((candidate, index) => validatePublicSystemLookupMetadata(request, candidate, evidence.metadata[index]));
+  const output = { ok: true, action: request.action, kind: request.action === "search-footprints-by-name" ? "system-owned-footprint-title-candidates" : "system-owned-lcsc-device-candidates",
+    ...(request.action === "search-footprints-by-name" ? { name: request.name } : { lcscIds: request.lcscIds }), candidates,
+    returnedCount: candidates.length, requestCount: 1 + candidates.length, implementationKind: "vendor-http-task-equivalent",
+    publicSdkMethodExecuted: false, installedRuntimeAdmission: false, origin: PUBLIC_SYSTEM_FOOTPRINT_ORIGIN,
+    anonymousAvailabilityObserved: true, systemOwnerVerified: true, candidateMetadataVerified: true,
+    exactMatchVerified: false, exhaustiveResultsVerified: false, atomicSnapshotVerified: false, backendFreshnessVerified: false,
+    completeAssetVerified: false, linkedAssetsFetched: false, pinToPadMappingVerified: false, persistenceVerified: false, cadAuthority: false,
+    connectedSdkValidation: "not-performed", limitations: [...PUBLIC_SYSTEM_LIBRARY_LOOKUP_LIMITATIONS] };
+  if (Buffer.byteLength(JSON.stringify(output), "utf8") > PUBLIC_SYSTEM_FOOTPRINT_MAX_RESULT_BYTES) { throw new Error("PUBLIC_SYSTEM_LOOKUP_RESULT_SIZE"); }
+  return output;
+}
+
 /** Unknown vendor fields are projected away. Metadata links never establish a
  * complete component or execute instructions contained in names/descriptions. */
 export function validatePublicSystemCatalogResult(input: unknown, raw: unknown): Record<string, unknown> {
   const request = parsePublicSystemCatalogRequest(input);
   if (request.action === "search-symbols-by-name") { return validatePublicSystemSymbolExactResult(request, raw); }
+  if (request.action === "search-footprints-by-name" || request.action === "get-devices-by-lcsc-ids") { return projectLibraryLookup(request, raw); }
   let projected: Record<string, unknown>;
   switch (request.action) {
     case "search-footprints": case "search-symbols": case "search-devices": { projected = projectSearch(request, raw); break; }

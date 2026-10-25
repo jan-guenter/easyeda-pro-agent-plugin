@@ -79,7 +79,8 @@ Every launch consumes a durable intent before dispatch. After an error or lost
 reply, use `inspect` with the original ID, not another launch. `observe-termination`
 can record completion only when the retained helper proves both original root
 exit and an empty Job. It does not request close or choose a prompt. A recorded
-termination permits another uniquely identified launch. An unresolved attempt
+termination permits considering another uniquely identified launch. The original
+runtime remains allocated until `release-closed` completes. An unresolved attempt
 after facade restart stays blocked until the separately authorized supervision
 policy below applies; do not delete its records or switch control roots.
 
@@ -127,6 +128,31 @@ Use `observe-termination` to prove original root exit and an empty retained Job.
 If still running, observe or inspect any actual prompt without guessing a
 default response. Keep this facade alive until termination is recorded.
 Restarted facades cannot recover close authority from receipts or matching PIDs.
+
+After recorded termination, inspect the original operation for `launchedSha256`
+and `terminationSha256`. If no project or writer needs that retained proof,
+validate and call once:
+
+```json
+{"action":"release-closed","operationId":"<launch-id>","expectedLaunchedSha256":"<launchedSha256>","expectedTerminationSha256":"<terminationSha256>","confirmReleaseClosed":true}
+```
+
+This action requires the same coordinator, original runtime and its successful
+termination issuer. It publishes a release intent, awaits the original helper's
+transport closure and records completion before clearing the matching index
+allocations. Only a successful response with `indexAllocationReleased:true`
+establishes that allocation release. Historical JSON, a matching PID or a
+termination receipt from another coordinator cannot release the runtime.
+`observe-termination` does not release automatically because project and metadata
+workflows may still need its original termination proof.
+
+Project, closed-symbol and replacement-writer owners block release. Diagnostic
+objects are allowed only with no active reservation and no native-owner
+allocation attempt, including a failed allocation. The action never launches,
+closes or kills EasyEDA. A pending or failed release retains index ownership and
+consumes the attempt; inspect it without retrying. An incomplete release intent
+also blocks another launch after a restart. Completion proves helper closure,
+not saved contents, discard, a safe profile or permission to replay old work.
 
 ### Lost supervision
 

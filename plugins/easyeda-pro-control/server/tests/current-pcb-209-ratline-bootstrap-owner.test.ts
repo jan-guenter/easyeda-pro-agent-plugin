@@ -63,11 +63,11 @@ async function syntheticSourceOwner(): Promise<typeof CurrentPcb209RatlineBootst
 /** Real V8 parent constructor owner, synthetic CDP child/source replies. The
  * preload intentionally fails whole installed-source qualification. */
 async function fixture(context: TestContext, options: Readonly<{ badBootstrap?: boolean; reentrantRemoval?: boolean; delayedAllocation?: boolean;
-  syntheticFullChain?: boolean; refuseFirstObservation?: boolean; slowChildProof?: boolean; refuseAllocationProof?: boolean }> = {}): Promise<Fixture> {
+  syntheticFullChain?: boolean; refuseFirstObservation?: boolean; slowChildProof?: boolean; refuseAllocationProof?: boolean; suppressFirstPause?: boolean }> = {}): Promise<Fixture> {
   const allocation = Promise.withResolvers<unknown>(), inspector = await ratlineCreationInspector(context, "pcb"), removed = Promise.withResolvers<null>();
   let events: Events | null = null, firstObservations = 0, nestedAbort: Promise<void> | null = null, removals = 0, requests = 0, resumes = 0, sourceReads = 0;
-  const holder: { owner: CurrentPcb209RatlineBootstrapOwner | null } = { owner: null };
-  let breakpoints = 0, childProofs = 0, roleIndex = 0;
+  const holder: { owner: CurrentPcb209RatlineBootstrapOwner | null; packet: CurrentPcb209RatlineCreationPacket | null } = { owner: null, packet: null };
+  let breakpoints = 0, childProofs = 0, roleIndex = 0, starting = false;
   const emit = (method: string, params: Readonly<Record<string, unknown>>, sessionId = "child-session"): void => { events?.event({ method, params, sessionId }); };
   const pause = (scriptId: string, url: string): void => {
     emit("Debugger.scriptParsed", { scriptId, executionContextId: 1, url, hasSourceURL: false, isLiveEdit: false });
@@ -94,13 +94,18 @@ async function fixture(context: TestContext, options: Readonly<{ badBootstrap?: 
     emit("Debugger.paused", { reason: "instrumentation", data: { scriptId, url }, hitBreakpoints: [], callFrames });
   };
   const creation = new CurrentPcb209RatlinePcbCreation({ ...inspector.transport, request: async (command): Promise<unknown> => {
+    if (starting && command.method === "Runtime.runIfWaitingForDebugger") {
+      assert.ok(holder.owner !== null && holder.packet !== null);
+      await holder.owner.requireOriginalChildStartReady(creation, holder.packet);
+      holder.owner.assertOriginalChildStartStillReady(creation, holder.packet);
+    }
     const reply = await inspector.transport.request(command);
-    if (command.method === "Runtime.runIfWaitingForDebugger") {
+    if (starting && command.method === "Runtime.runIfWaitingForDebugger" && options.suppressFirstPause !== true) {
       if (options.syntheticFullChain === true) { fullPause(); } else { pause("bootstrap", targetUrl); }
     }
     return reply;
   } });
-  const pending = creation.capture(); await creation.whenArmed(); const running = inspector.run(); const packet = await pending;
+  const pending = creation.capture(); await creation.whenArmed(); const running = inspector.run(); const packet = await pending; holder.packet = packet;
   const dependency: CurrentPcb209RatlineBootstrapDependency = {
     assertOriginalChild: async (original, result): Promise<void> => {
       assert.equal(original, creation); assert.equal(result, packet); childProofs += 1;
@@ -167,7 +172,7 @@ async function fixture(context: TestContext, options: Readonly<{ badBootstrap?: 
   return { owner, creation, packet, dependency, emit, finish,
     acknowledge: (): void => { allocation.resolve({ breakpointId: "instrument" }); },
     whenRemoved: async (): Promise<void> => { await removed.promise; },
-    start: async (): Promise<void> => { await creation.continueOriginalParent(packet); await creation.startOriginalChild(packet); },
+    start: async (): Promise<void> => { await creation.continueOriginalParent(packet); starting = true; await creation.startOriginalChild(packet); },
     counts: (): Counts => ({ requests, resumes, removals, sourceReads, childStarts: inspector.counts().childStarts, firstObservations }) };
 }
 
@@ -204,6 +209,30 @@ void test("source owner arms before sole creation start, then holds unqualified 
   await f.start(); await assert.rejects(f.owner.whenSourceQualified());
   assert.equal(f.counts().resumes, 1); assert.equal(f.counts().sourceReads, 2); assert.equal(f.counts().childStarts, 1);
   await f.finish(); assert.equal(f.counts().removals, 1); assert.equal(f.counts().resumes, 1); assert.equal(f.counts().childStarts, 1);
+});
+
+void test("first child pause allowance begins at original start after delayed permission and retains immediate pause", async context => {
+  const f = await fixture(context, { syntheticFullChain: true });
+  await f.owner.armOriginalChildBootstrap(f.creation, f.packet);
+  await f.owner.requireOriginalChildStartReady(f.creation, f.packet);
+  assert.equal(f.owner.status()["firstPauseWindowStarted"], false);
+  await delay(budgetProfile.elapsed.ordinaryRequestMilliseconds + 50);
+  assert.equal(f.owner.status()["failed"], false); assert.equal(f.counts().childStarts, 0);
+  await f.start(); const packet = await f.owner.whenSourceQualified();
+  assert.equal(packet.importedSourceHeldBeforeExecution, true);
+  assert.equal(f.owner.status()["firstPauseWindowStarted"], true); assert.equal(f.owner.status()["firstFailure"], null);
+  assert.equal(f.counts().childStarts, 1); assert.equal(f.counts().firstObservations, 1); await f.finish();
+});
+
+void test("first child missing its post-dispatch pause still fails the original finite allowance", async context => {
+  const f = await fixture(context, { suppressFirstPause: true });
+  await f.owner.armOriginalChildBootstrap(f.creation, f.packet);
+  const rejected = assert.rejects(f.owner.whenSourceQualified(), /FAILED/u);
+  await f.start(); await rejected;
+  assert.equal(f.counts().childStarts, 1); assert.equal(f.counts().sourceReads, 0);
+  const failure = f.owner.status()["firstFailure"]; assert.ok(failure !== null && typeof failure === "object");
+  assert.equal(Reflect.get(failure, "reason"), "PCB209_RATLINE_BOOTSTRAP_DEADLINE");
+  await f.finish(); assert.equal(f.owner.status()["firstFailure"], failure); assert.equal(f.counts().childStarts, 1);
 });
 
 void test("changed bootstrap source refuses before its first continuation", async context => {

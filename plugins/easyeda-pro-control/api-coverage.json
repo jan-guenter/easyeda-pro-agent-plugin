@@ -9,28 +9,28 @@
     "statuses": {
       "implemented-public-subset": 214,
       "implemented-native-equivalent": 34,
-      "implemented-vendor-http-equivalent": 4,
+      "implemented-vendor-http-equivalent": 6,
       "internal-lifecycle-only": 0,
       "implemented-but-blocked": 79,
-      "omitted": 504
+      "omitted": 502
     },
     "executionRoutes": {
-      "available-with-runtime-guards": 398,
-      "available-with-network-guards": 7,
+      "available-with-runtime-guards": 399,
+      "available-with-network-guards": 9,
       "blocked": 94,
       "partially-blocked": 2
     },
     "omissions": {
-      "account-or-library-scope-needed": 31,
+      "account-or-library-scope-needed": 30,
       "callback-or-registration-lifecycle": 27,
       "canvas-origin-pending-geometry-queues": 1,
-      "catalogue-fallback-library-effects": 1,
       "cross-tab-netlist-export-scope": 1,
       "extension-or-global-settings-state": 15,
       "external-commercial-action": 6,
       "implicit-annotation-and-save-all": 2,
       "implicit-save-before-export": 5,
       "installed-209-auto-job-backend-absent": 5,
+      "installed-209-constant-false-stub": 1,
       "installed-209-error-stub": 18,
       "installed-209-library-discovery-mutates-ui": 3,
       "installed-209-library-routing-unqualified": 1,
@@ -39,7 +39,7 @@
       "installed-209-source-backend-absent": 29,
       "interactive-engine-lifecycle": 9,
       "interactive-export-resource-lifecycle": 1,
-      "interactive-ui-resource": 37,
+      "interactive-ui-resource": 36,
       "layer-selection-collateral-state": 1,
       "lossy-heterogeneous-primitive-projection": 2,
       "lossy-logging-selection-reader": 1,
@@ -7110,16 +7110,41 @@
       ],
       "reviewedRuntimeDeclaration": true,
       "installed209Declaration": true,
-      "status": "omitted",
-      "routes": [],
-      "omission": {
-        "code": "catalogue-fallback-library-effects",
-        "reason": "The reviewed current desktop API 0.3.50/UI 3.2.196/server searchByCodes path can fall through to a local device-update controller when networking is disabled. Concurrent library refresh can temporarily resolve the fixed system library to a physical database, reaching initialization/migration before lookup failure. A renderer mode/network check cannot atomically exclude that path; failed service responses can also become empty arrays.",
-        "nextRequirement": "Implement a separately reviewed remote-only bounded catalogue route or an explicitly scoped library-effects contract. The current desktop findings do not validate the older declaration tuple or prove that a live mutation occurred.",
-        "evidence": [
-          "docs/history/2026-10-14-system-device-backend-effects.md"
-        ]
-      },
+      "status": "implemented-vendor-http-equivalent",
+      "routes": [
+        {
+          "tool": "easyeda_control_catalog_components",
+          "selector": "get-devices-by-lcsc-ids",
+          "implementation": "vendor-http-task-equivalent",
+          "scope": "Application-independent anonymous system-catalog lookup with bounded metadata enrichment; not public SDK execution or installed runtime admission. Explicit confirmNetwork:true discloses one bounded footprint name or one to five distinct uppercase LCSC C numbers. All returned candidates require exact fixed-URL metadata GETs: at most five candidates and six total requests share one 30-second deadline and 1 MiB aggregate decoded-body budget. Complete candidate and metadata lists must agree on UUID, system owner and supported identity/type fields; LCSC Supplier Part and symbol/footprint references must also agree. Overflow, contradiction, missing witnesses or later failure refuses the entire result without filtering or partial success. All matching LCSC candidates are preserved. No credentials, arbitrary URLs/owners, redirects, retries, pagination, linked assets, stock, prices, CAD, pin mapping, persistence or exhaustive/atomic snapshot claim. Initial lookup endpoint samples did not validate this composed route; installed/live enrichment remains unvalidated. Direct SDK execution remains unqualified: concurrent library refresh and desktop local-library fallback can touch library state. This fixed remote-only equivalent does not qualify those effects or implement every SDK overload.",
+          "source": [
+            "public-system-library-lookups.ts",
+            "public-system-library-lookups-runtime.ts",
+            "public-system-catalog.ts",
+            "public-system-catalog-runtime.ts",
+            "facade-mode.ts"
+          ],
+          "tests": [
+            "public-system-library-lookups.test.ts",
+            "public-system-library-lookups-runtime.test.ts",
+            "public-system-catalog-registration.test.ts"
+          ],
+          "validation": "offline-regression;current-live-unclaimed",
+          "executionState": "available-with-network-guards",
+          "inputDiscovery": {
+            "tool": "easyeda_control_api",
+            "arguments": {
+              "request": {
+                "action": "catalog-components",
+                "query": {
+                  "includeSchemas": true
+                }
+              }
+            }
+          }
+        }
+      ],
+      "omission": null,
       "completeDeclaredContractSupported": false,
       "currentGenerationLiveValidation": "not-recorded",
       "runtimeAdmission": "not-granted-by-inventory"
@@ -7849,14 +7874,41 @@
       ],
       "reviewedRuntimeDeclaration": true,
       "installed209Declaration": true,
-      "status": "omitted",
-      "routes": [],
-      "omission": {
-        "code": "account-or-library-scope-needed",
-        "reason": "lib_Footprint.searchByProperties reaches account, workspace, folder, project or shared-library metadata outside the active disposable document.",
-        "nextRequirement": "Define explicit owner, collection/search bounds and privacy rules; mutations also need cloud/shared-asset authority and a durable independent verifier. Read-only catalog discovery is still feasible without granting writes.",
-        "evidence": []
-      },
+      "status": "implemented-vendor-http-equivalent",
+      "routes": [
+        {
+          "tool": "easyeda_control_catalog_components",
+          "selector": "search-footprints-by-name",
+          "implementation": "vendor-http-task-equivalent",
+          "scope": "Application-independent anonymous system-catalog lookup with bounded metadata enrichment; not public SDK execution or installed runtime admission. Explicit confirmNetwork:true discloses one bounded footprint name or one to five distinct uppercase LCSC C numbers. All returned candidates require exact fixed-URL metadata GETs: at most five candidates and six total requests share one 30-second deadline and 1 MiB aggregate decoded-body budget. Complete candidate and metadata lists must agree on UUID, system owner and supported identity/type fields; LCSC Supplier Part and symbol/footprint references must also agree. Overflow, contradiction, missing witnesses or later failure refuses the entire result without filtering or partial success. All matching LCSC candidates are preserved. No credentials, arbitrary URLs/owners, redirects, retries, pagination, linked assets, stock, prices, CAD, pin mapping, persistence or exhaustive/atomic snapshot claim. Initial lookup endpoint samples did not validate this composed route; installed/live enrichment remains unvalidated. Direct SDK execution remains unqualified: the desktop controller requires body/header path, while the name wrapper supplies titles/docType without that path. Failed responses can collapse to an empty SDK list.",
+          "source": [
+            "public-system-library-lookups.ts",
+            "public-system-library-lookups-runtime.ts",
+            "public-system-catalog.ts",
+            "public-system-catalog-runtime.ts",
+            "facade-mode.ts"
+          ],
+          "tests": [
+            "public-system-library-lookups.test.ts",
+            "public-system-library-lookups-runtime.test.ts",
+            "public-system-catalog-registration.test.ts"
+          ],
+          "validation": "offline-regression;current-live-unclaimed",
+          "executionState": "available-with-network-guards",
+          "inputDiscovery": {
+            "tool": "easyeda_control_api",
+            "arguments": {
+              "request": {
+                "action": "catalog-components",
+                "query": {
+                  "includeSchemas": true
+                }
+              }
+            }
+          }
+        }
+      ],
+      "omission": null,
       "completeDeclaredContractSupported": false,
       "currentGenerationLiveValidation": "not-recorded",
       "runtimeAdmission": "not-granted-by-inventory"
@@ -8147,7 +8199,7 @@
           "tool": "easyeda_control_public_readers",
           "selector": "eda.lib_LibrariesList.getSystemLibraryUuid",
           "implementation": "public-method",
-          "scope": "Separately reviewed EasyEDA 3.2.209/API 0.3.59 only; older profiles do not register this route. Only the separately hash-admitted EasyEDA 3.2.209 / API 0.3.59 tuple. No admission of older, newer or unknown implementations, native adapters or general SDK dispatch. Two complete samples retain the same extension, namespace and method. Viewport reads retain the window object. UI-backed methods additionally require exact UI and selector files and retain the editor window, document, UI, host and shared RPC bus around each await. No project, document, account, file, network, navigation, settings change or Save access is performed by these getters. Replies are bounded to 8192 UTF-8 bytes. Synchronous methods reject Promises; UI-backed methods await sequentially. Partial or malformed values, changed owners, unstable samples and oversized responses refuse without truncation or automatic retry. Source implementation and synthetic tests do not establish connected validation. UI-backed reads enforce a 10-second monotonic deadline around every await and before a second sample. The timer is cooperative; it does not cancel an outstanding vendor RPC or synchronous vendor work. The 60-second execution and 70-second transport limits are separate waiting bounds. Awaits the public method and requires the exact system-library UUID constant in the reviewed UI. The constant is a validation expectation, never a fallback result. No personal, team, favorite or project library enumeration, account lookup, asset retrieval, network request or write is performed. Missing and different values refuse.",
+          "scope": "Separately reviewed EasyEDA 3.2.209/API 0.3.59 only; older profiles do not register this route. Only the separately hash-admitted EasyEDA 3.2.209 / API 0.3.59 tuple. No admission of older, newer or unknown implementations, native adapters or general SDK dispatch. Two complete samples retain the same extension, namespace and method. Viewport reads retain the window object. UI-backed methods additionally require exact UI and selector files and retain the editor window, document, UI, host and method-specific available RPC bus around each await. No project, document, account, file, network, navigation, settings change or Save access is performed by these getters. Replies are bounded to 8192 UTF-8 bytes. Synchronous methods reject Promises; UI-backed methods await sequentially. Partial or malformed values, changed owners, unstable samples and oversized responses refuse without truncation or automatic retry. Source implementation and synthetic tests do not establish connected validation. UI-backed reads enforce a 10-second monotonic deadline around every await and before a second sample. The timer is cooperative; it does not cancel an outstanding vendor RPC or synchronous vendor work. The 60-second execution and 70-second transport limits are separate waiting bounds. Awaits the public method and requires the exact system-library UUID constant in the reviewed UI. The constant is a validation expectation, never a fallback result. No personal, team, favorite or project library enumeration, account lookup, asset retrieval, network request or write is performed. Missing and different values refuse.",
           "source": [
             "sdk-public-readers.ts",
             "sdk-public-readers-runtime.ts",
@@ -42566,7 +42618,7 @@
           "tool": "easyeda_control_public_readers",
           "selector": "eda.sys_I18n.getAllSupportedLanguages",
           "implementation": "public-method",
-          "scope": "Separately reviewed EasyEDA 3.2.209/API 0.3.59 only; older profiles do not register this route. Only the separately hash-admitted EasyEDA 3.2.209 / API 0.3.59 tuple. No admission of older, newer or unknown implementations, native adapters or general SDK dispatch. Two complete samples retain the same extension, namespace and method. Viewport reads retain the window object. UI-backed methods additionally require exact UI and selector files and retain the editor window, document, UI, host and shared RPC bus around each await. No project, document, account, file, network, navigation, settings change or Save access is performed by these getters. Replies are bounded to 8192 UTF-8 bytes. Synchronous methods reject Promises; UI-backed methods await sequentially. Partial or malformed values, changed owners, unstable samples and oversized responses refuse without truncation or automatic retry. Source implementation and synthetic tests do not establish connected validation. UI-backed reads enforce a 10-second monotonic deadline around every await and before a second sample. The timer is cooperative; it does not cancel an outstanding vendor RPC or synchronous vendor work. The 60-second execution and 70-second transport limits are separate waiting bounds. Returns the exact ordered 52-language catalog of API 0.3.59, preserving spelling and case. This is supported-language metadata, not the current UI language or a translation-completeness claim.",
+          "scope": "Separately reviewed EasyEDA 3.2.209/API 0.3.59 only; older profiles do not register this route. Only the separately hash-admitted EasyEDA 3.2.209 / API 0.3.59 tuple. No admission of older, newer or unknown implementations, native adapters or general SDK dispatch. Two complete samples retain the same extension, namespace and method. Viewport reads retain the window object. UI-backed methods additionally require exact UI and selector files and retain the editor window, document, UI, host and method-specific available RPC bus around each await. No project, document, account, file, network, navigation, settings change or Save access is performed by these getters. Replies are bounded to 8192 UTF-8 bytes. Synchronous methods reject Promises; UI-backed methods await sequentially. Partial or malformed values, changed owners, unstable samples and oversized responses refuse without truncation or automatic retry. Source implementation and synthetic tests do not establish connected validation. UI-backed reads enforce a 10-second monotonic deadline around every await and before a second sample. The timer is cooperative; it does not cancel an outstanding vendor RPC or synchronous vendor work. The 60-second execution and 70-second transport limits are separate waiting bounds. Returns the exact ordered 52-language catalog of API 0.3.59, preserving spelling and case. This is supported-language metadata, not the current UI language or a translation-completeness claim.",
           "source": [
             "sdk-public-readers.ts",
             "sdk-public-readers-runtime.ts",
@@ -42664,6 +42716,39 @@
       "installed209Declaration": true,
       "status": "implemented-public-subset",
       "routes": [
+        {
+          "tool": "easyeda_control_public_readers",
+          "selector": "eda.sys_I18n.getCurrentLanguage",
+          "implementation": "public-method",
+          "scope": "Separately reviewed EasyEDA 3.2.209/API 0.3.59 only; older profiles do not register this route. Only the separately hash-admitted EasyEDA 3.2.209 / API 0.3.59 tuple. No admission of older, newer or unknown implementations, native adapters or general SDK dispatch. Two complete samples retain the same extension, namespace and method. Viewport reads retain the window object. UI-backed methods additionally require exact UI and selector files and retain the editor window, document, UI, host and method-specific available RPC bus around each await. No project, document, account, file, network, navigation, settings change or Save access is performed by these getters. Replies are bounded to 8192 UTF-8 bytes. Synchronous methods reject Promises; UI-backed methods await sequentially. Partial or malformed values, changed owners, unstable samples and oversized responses refuse without truncation or automatic retry. Source implementation and synthetic tests do not establish connected validation. UI-backed reads enforce a 10-second monotonic deadline around every await and before a second sample. The timer is cooperative; it does not cancel an outstanding vendor RPC or synchronous vendor work. The 60-second execution and 70-second transport limits are separate waiting bounds. Observes only the SDK-resolved language enum. The legacy provider reads URL language, local preferences and environment defaults; the SDK maps aliases and may return an edition fallback after a missing/unknown reply or a provider exception. Neither provider success nor raw/current UI preference is verified. The available root/host legacy bus is retained, but the API's private cached bus identity is inaccessible and unverified. Legacy RPC bookkeeping includes a 300-second vendor timeout not cancelled on success; the adapter cannot cancel it. The 8192-byte reply bound does not bound the preceding vendor preferences parse.",
+          "source": [
+            "sdk-public-readers.ts",
+            "sdk-public-readers-runtime.ts",
+            "sdk-public-utilities-profile.ts",
+            "facade-mode.ts"
+          ],
+          "tests": [
+            "sdk-public-readers.test.ts",
+            "sdk-public-readers-runtime.test.ts",
+            "sdk-public-readers-ui.test.ts",
+            "sdk-public-readers-registration.test.ts",
+            "facade-mode.test.ts"
+          ],
+          "validation": "offline-regression;current-live-unclaimed",
+          "executionState": "available-with-runtime-guards",
+          "inputDiscovery": {
+            "tool": "easyeda_control_api",
+            "arguments": {
+              "request": {
+                "action": "public-readers",
+                "query": {
+                  "method": "eda.sys_I18n.getCurrentLanguage",
+                  "includeSchemas": true
+                }
+              }
+            }
+          }
+        },
         {
           "tool": "easyeda_control_sdk_read",
           "selector": "eda.sys_I18n.getCurrentLanguage",
@@ -42901,7 +42986,7 @@
           "tool": "easyeda_control_public_readers",
           "selector": "eda.sys_I18n.isLanguageSupported",
           "implementation": "public-method",
-          "scope": "Separately reviewed EasyEDA 3.2.209/API 0.3.59 only; older profiles do not register this route. Only the separately hash-admitted EasyEDA 3.2.209 / API 0.3.59 tuple. No admission of older, newer or unknown implementations, native adapters or general SDK dispatch. Two complete samples retain the same extension, namespace and method. Viewport reads retain the window object. UI-backed methods additionally require exact UI and selector files and retain the editor window, document, UI, host and shared RPC bus around each await. No project, document, account, file, network, navigation, settings change or Save access is performed by these getters. Replies are bounded to 8192 UTF-8 bytes. Synchronous methods reject Promises; UI-backed methods await sequentially. Partial or malformed values, changed owners, unstable samples and oversized responses refuse without truncation or automatic retry. Source implementation and synthetic tests do not establish connected validation. UI-backed reads enforce a 10-second monotonic deadline around every await and before a second sample. The timer is cooperative; it does not cancel an outstanding vendor RPC or synchronous vendor work. The 60-second execution and 70-second transport limits are separate waiting bounds. Exact case-sensitive membership in the reviewed 52-language catalog. Input is 1-64 ASCII letters, digits, hyphens or underscores; no case folding, trimming, alias resolution or locale normalization. A false result is not a current-language observation.",
+          "scope": "Separately reviewed EasyEDA 3.2.209/API 0.3.59 only; older profiles do not register this route. Only the separately hash-admitted EasyEDA 3.2.209 / API 0.3.59 tuple. No admission of older, newer or unknown implementations, native adapters or general SDK dispatch. Two complete samples retain the same extension, namespace and method. Viewport reads retain the window object. UI-backed methods additionally require exact UI and selector files and retain the editor window, document, UI, host and method-specific available RPC bus around each await. No project, document, account, file, network, navigation, settings change or Save access is performed by these getters. Replies are bounded to 8192 UTF-8 bytes. Synchronous methods reject Promises; UI-backed methods await sequentially. Partial or malformed values, changed owners, unstable samples and oversized responses refuse without truncation or automatic retry. Source implementation and synthetic tests do not establish connected validation. UI-backed reads enforce a 10-second monotonic deadline around every await and before a second sample. The timer is cooperative; it does not cancel an outstanding vendor RPC or synchronous vendor work. The 60-second execution and 70-second transport limits are separate waiting bounds. Exact case-sensitive membership in the reviewed 52-language catalog. Input is 1-64 ASCII letters, digits, hyphens or underscores; no case folding, trimming, alias resolution or locale normalization. A false result is not a current-language observation.",
           "source": [
             "sdk-public-readers.ts",
             "sdk-public-readers-runtime.ts",
@@ -43192,10 +43277,14 @@
       "status": "omitted",
       "routes": [],
       "omission": {
-        "code": "interactive-ui-resource",
-        "reason": "sys_IFrame.isIFrameAlreadyExist controls an interactive dialog, menu, frame, notification or panel resource; successful return does not establish completion or user choice.",
-        "nextRequirement": "Add a process-bound typed UI-resource owner, observable result/cancellation and cleanup. Existing native_ui can inspect and operate visible controls but does not implement this API method.",
-        "evidence": []
+        "code": "installed-209-constant-false-stub",
+        "reason": "The pinned API 0.3.59 implementation at UTF-16 offset 1850684 checks extension ownership, normalizes the supplied iframe ID, then returns literal false. It never queries iframe existence. Calling this stub would make an existing iframe indistinguishable from an absent one.",
+        "nextRequirement": "Review an implementation that actually reads extension-owned iframe state, or qualify a separate bounded native equivalent. A constant false return is not evidence of absence and must not authorize create, replace or close.",
+        "evidence": [
+          "docs/history/2026-10-23-installed-209-declaration-inventory.md",
+          "assets/pro-api/0.3.59.1ca9efb5/api.js@sha256:e7c31b0de9dcbe4806e6b3cf8879b31c9e44425361bb8e67c3e8480ae359c8b1",
+          "assets/pro-ui/3.2.198.2800f583/js/ui.js@sha256:3515d4c299b353fa7bcd0d859f0b8b59b7eae39b5dc243b2c27f2e54a60a1ee6"
+        ]
       },
       "completeDeclaredContractSupported": false,
       "currentGenerationLiveValidation": "not-recorded",
@@ -47295,7 +47384,7 @@
           "tool": "easyeda_control_public_readers",
           "selector": "eda.sys_Unit.getFrontendDataUnit",
           "implementation": "public-method",
-          "scope": "Separately reviewed EasyEDA 3.2.209/API 0.3.59 only; older profiles do not register this route. Only the separately hash-admitted EasyEDA 3.2.209 / API 0.3.59 tuple. No admission of older, newer or unknown implementations, native adapters or general SDK dispatch. Two complete samples retain the same extension, namespace and method. Viewport reads retain the window object. UI-backed methods additionally require exact UI and selector files and retain the editor window, document, UI, host and shared RPC bus around each await. No project, document, account, file, network, navigation, settings change or Save access is performed by these getters. Replies are bounded to 8192 UTF-8 bytes. Synchronous methods reject Promises; UI-backed methods await sequentially. Partial or malformed values, changed owners, unstable samples and oversized responses refuse without truncation or automatic retry. Source implementation and synthetic tests do not establish connected validation. UI-backed reads enforce a 10-second monotonic deadline around every await and before a second sample. The timer is cooperative; it does not cancel an outstanding vendor RPC or synchronous vendor work. The 60-second execution and 70-second transport limits are separate waiting bounds. This SDK method is beta. It awaits the global toolbar selection and accepts only mm, inch or mil. The reviewed handler maps unit(mm), unit(inch) and unit(mil) from an existing UI store; it does not resolve a document. This value may reflect the default or a previous selection and never establishes schematic coordinate scale, PCB native units or an active document's settings. Missing or other values refuse.",
+          "scope": "Separately reviewed EasyEDA 3.2.209/API 0.3.59 only; older profiles do not register this route. Only the separately hash-admitted EasyEDA 3.2.209 / API 0.3.59 tuple. No admission of older, newer or unknown implementations, native adapters or general SDK dispatch. Two complete samples retain the same extension, namespace and method. Viewport reads retain the window object. UI-backed methods additionally require exact UI and selector files and retain the editor window, document, UI, host and method-specific available RPC bus around each await. No project, document, account, file, network, navigation, settings change or Save access is performed by these getters. Replies are bounded to 8192 UTF-8 bytes. Synchronous methods reject Promises; UI-backed methods await sequentially. Partial or malformed values, changed owners, unstable samples and oversized responses refuse without truncation or automatic retry. Source implementation and synthetic tests do not establish connected validation. UI-backed reads enforce a 10-second monotonic deadline around every await and before a second sample. The timer is cooperative; it does not cancel an outstanding vendor RPC or synchronous vendor work. The 60-second execution and 70-second transport limits are separate waiting bounds. This SDK method is beta. It awaits the global toolbar selection and accepts only mm, inch or mil. The reviewed handler maps unit(mm), unit(inch) and unit(mil) from an existing UI store; it does not resolve a document. This value may reflect the default or a previous selection and never establishes schematic coordinate scale, PCB native units or an active document's settings. Missing or other values refuse.",
           "source": [
             "sdk-public-readers.ts",
             "sdk-public-readers-runtime.ts",
@@ -48173,7 +48262,7 @@
           "tool": "easyeda_control_public_readers",
           "selector": "eda.sys_Window.getCurrentTheme",
           "implementation": "public-method",
-          "scope": "Separately reviewed EasyEDA 3.2.209/API 0.3.59 only; older profiles do not register this route. Only the separately hash-admitted EasyEDA 3.2.209 / API 0.3.59 tuple. No admission of older, newer or unknown implementations, native adapters or general SDK dispatch. Two complete samples retain the same extension, namespace and method. Viewport reads retain the window object. UI-backed methods additionally require exact UI and selector files and retain the editor window, document, UI, host and shared RPC bus around each await. No project, document, account, file, network, navigation, settings change or Save access is performed by these getters. Replies are bounded to 8192 UTF-8 bytes. Synchronous methods reject Promises; UI-backed methods await sequentially. Partial or malformed values, changed owners, unstable samples and oversized responses refuse without truncation or automatic retry. Source implementation and synthetic tests do not establish connected validation. UI-backed reads enforce a 10-second monotonic deadline around every await and before a second sample. The timer is cooperative; it does not cancel an outstanding vendor RPC or synchronous vendor work. The 60-second execution and 70-second transport limits are separate waiting bounds. Awaits the public method and accepts only the resolved light or dark UI theme. This does not read or change the follow-system preference, OS theme, schematic colors or PCB layer colors. Two matching observations do not guarantee later theme stability.",
+          "scope": "Separately reviewed EasyEDA 3.2.209/API 0.3.59 only; older profiles do not register this route. Only the separately hash-admitted EasyEDA 3.2.209 / API 0.3.59 tuple. No admission of older, newer or unknown implementations, native adapters or general SDK dispatch. Two complete samples retain the same extension, namespace and method. Viewport reads retain the window object. UI-backed methods additionally require exact UI and selector files and retain the editor window, document, UI, host and method-specific available RPC bus around each await. No project, document, account, file, network, navigation, settings change or Save access is performed by these getters. Replies are bounded to 8192 UTF-8 bytes. Synchronous methods reject Promises; UI-backed methods await sequentially. Partial or malformed values, changed owners, unstable samples and oversized responses refuse without truncation or automatic retry. Source implementation and synthetic tests do not establish connected validation. UI-backed reads enforce a 10-second monotonic deadline around every await and before a second sample. The timer is cooperative; it does not cancel an outstanding vendor RPC or synchronous vendor work. The 60-second execution and 70-second transport limits are separate waiting bounds. Awaits the public method and accepts only the resolved light or dark UI theme. This does not read or change the follow-system preference, OS theme, schematic colors or PCB layer colors. Two matching observations do not guarantee later theme stability.",
           "source": [
             "sdk-public-readers.ts",
             "sdk-public-readers-runtime.ts",
@@ -48350,7 +48439,7 @@
           "tool": "easyeda_control_public_readers",
           "selector": "eda.sys_Window.getViewportSize",
           "implementation": "public-method",
-          "scope": "Separately reviewed EasyEDA 3.2.209/API 0.3.59 only; older profiles do not register this route. Only the separately hash-admitted EasyEDA 3.2.209 / API 0.3.59 tuple. No admission of older, newer or unknown implementations, native adapters or general SDK dispatch. Two complete samples retain the same extension, namespace and method. Viewport reads retain the window object. UI-backed methods additionally require exact UI and selector files and retain the editor window, document, UI, host and shared RPC bus around each await. No project, document, account, file, network, navigation, settings change or Save access is performed by these getters. Replies are bounded to 8192 UTF-8 bytes. Synchronous methods reject Promises; UI-backed methods await sequentially. Partial or malformed values, changed owners, unstable samples and oversized responses refuse without truncation or automatic retry. Source implementation and synthetic tests do not establish connected validation. UI-backed reads enforce a 10-second monotonic deadline around every await and before a second sample. The timer is cooperative; it does not cancel an outstanding vendor RPC or synchronous vendor work. The 60-second execution and 70-second transport limits are separate waiting bounds. Reads the public API window's page viewport in CSS pixels, not the OS window, screen, document canvas or PCB geometry. Width and height must be integers 0-1000000. Zero is retained, not interpreted as a visible or ready editor. Two synchronous matching samples do not prove later layout stability.",
+          "scope": "Separately reviewed EasyEDA 3.2.209/API 0.3.59 only; older profiles do not register this route. Only the separately hash-admitted EasyEDA 3.2.209 / API 0.3.59 tuple. No admission of older, newer or unknown implementations, native adapters or general SDK dispatch. Two complete samples retain the same extension, namespace and method. Viewport reads retain the window object. UI-backed methods additionally require exact UI and selector files and retain the editor window, document, UI, host and method-specific available RPC bus around each await. No project, document, account, file, network, navigation, settings change or Save access is performed by these getters. Replies are bounded to 8192 UTF-8 bytes. Synchronous methods reject Promises; UI-backed methods await sequentially. Partial or malformed values, changed owners, unstable samples and oversized responses refuse without truncation or automatic retry. Source implementation and synthetic tests do not establish connected validation. UI-backed reads enforce a 10-second monotonic deadline around every await and before a second sample. The timer is cooperative; it does not cancel an outstanding vendor RPC or synchronous vendor work. The 60-second execution and 70-second transport limits are separate waiting bounds. Reads the public API window's page viewport in CSS pixels, not the OS window, screen, document canvas or PCB geometry. Width and height must be integers 0-1000000. Zero is retained, not interpreted as a visible or ready editor. Two synchronous matching samples do not prove later layout stability.",
           "source": [
             "sdk-public-readers.ts",
             "sdk-public-readers-runtime.ts",

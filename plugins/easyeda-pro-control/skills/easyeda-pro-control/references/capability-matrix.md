@@ -9,7 +9,8 @@ tab-count/active-identity/shortcut observations, public catalog queries,
 ordinary launch, disposable project/PCB opening with layer and primitive observations,
 and a separate original project-worker startup capture.
 The [public utility readers](current-utility-readers.md#language-and-api-page-viewport-readers)
-do not establish document units or account/library contents.
+do not establish document units or account/library contents. SDK-resolved
+language can be a fallback and does not prove provider success.
 [Managed File/File comparison](current-netlist-files.md) accepts a completely
 recognized Allegro subset and compares footprint/designator plus net/pin
 memberships. It does not compare component values, export a project or qualify

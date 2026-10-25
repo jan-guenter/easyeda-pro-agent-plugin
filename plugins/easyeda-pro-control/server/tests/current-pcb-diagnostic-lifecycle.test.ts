@@ -439,6 +439,7 @@ async function readyForOpening(id: string, value: ReturnType<typeof fixture>): P
 
 void test("209 historical queries bind published records and survive owner release without native admission", async context => {
   const id = "pcb209-test-query-published", value = fixture(context, id);
+  assert.equal(value.coordinator.hasAttemptedNativeOwnerAllocation(), false);
   value.owner.observePrimitives209 = (): Promise<Readonly<Record<string, unknown>>> => Promise.resolve(historicalObservationFixture("primitives209"));
   value.owner.observeExtendedPrimitives209 = (): Promise<Readonly<Record<string, unknown>>> => Promise.resolve(historicalObservationFixture("extended-primitives209"));
   value.owner.observeSelectionRelations209 = (): Promise<Readonly<Record<string, unknown>>> => Promise.resolve(historicalObservationFixture("selection-relations209"));
@@ -452,6 +453,8 @@ void test("209 historical queries bind published records and survive owner relea
   await value.request("observe-selection-relations", { componentIds: ["query-component"] });
   await value.request("normal-close", { hwnd: "12345", confirmNormalClose: true });
   value.state.terminated = true; await value.request("observe-termination"); await value.request("release-closed");
+  assert.equal(value.coordinator.hasActiveReservation(), false);
+  assert.equal(value.coordinator.hasAttemptedNativeOwnerAllocation(), true);
   const failNative = (): never => { assert.fail(`Historical query ${id} must not enter native or installation admission`); };
   const historical = new CurrentPcb209DiagnosticLifecycle({ ...value.options, assertLocalAllowed: failNative,
     assertAllowed: failNative, assertOtherLaunchesSettled: failNative }, { allocateOwner: failNative, verifyInstallation: failNative });
@@ -2393,9 +2396,12 @@ void test("failure after helper allocation permits only original proved-unlaunch
     return Promise.resolve({ ...createCurrentPcbDiagnosticInstallationPlan(options), facadeSha256: "a".repeat(64) });
   } });
   await assert.rejects(value.coordinator.run(launch(id)), /pre-dispatch installation failure/u);
+  assert.equal(value.coordinator.hasAttemptedNativeOwnerAllocation(), true);
   const inspected = await value.coordinator.run({ action: "inspect", operationId: id });
   const cleaned = await value.coordinator.run({ action: "cleanup-unlaunched", operationId: id, expectedIntentSha256: inspected["intentSha256"] });
   assert.equal(cleaned["state"], "not-dispatched"); assert.deepEqual(value.calls, ["allocate", "release-unlaunched"]);
+  assert.equal(value.coordinator.hasActiveReservation(), false);
+  assert.equal(value.coordinator.hasAttemptedNativeOwnerAllocation(), true);
   await assertNoUnresolvedCurrentPcbDiagnosticLaunches();
 });
 
