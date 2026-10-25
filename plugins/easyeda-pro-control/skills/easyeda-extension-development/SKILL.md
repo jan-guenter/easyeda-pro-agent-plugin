@@ -12,6 +12,9 @@ Documentation describes a contract, not the installed build's behavior.
 Read [SDK and adapter engineering](references/sdk-and-adapters.md) before adding
 support. Read [validation and release](references/validation-and-release.md)
 before changing compatibility pins, publishing or importing an extension.
+For public utility getters or File-based adapters, also read
+[utility and file adapter boundaries](references/public-utility-and-file-adapters.md)
+for UI receiver qualification, complete parser recognition and timeout limits.
 
 1. Inspect the repository rules, current compatibility tuple and retained
    operation journals. Preserve dirty user changes, credentials and historical

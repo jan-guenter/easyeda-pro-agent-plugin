@@ -531,7 +531,7 @@ void test("NetGroup and filtered PCB membership reads expose narrow native route
   assert.match(route.scope, /not public primitive instances/u); assert.match(route.scope, /explicit nonempty unique filters/u);
   assert.match(route.scope, /source\/inventory\/source/u);
   assert.deepEqual(extensionApiCoverageSummary()["statuses"], {
-    "implemented-public-subset": 213, "implemented-native-equivalent": 34, "implemented-vendor-http-equivalent": 3, "internal-lifecycle-only": 0, "implemented-but-blocked": 79, omitted: 506,
+    "implemented-public-subset": 214, "implemented-native-equivalent": 34, "implemented-vendor-http-equivalent": 4, "internal-lifecycle-only": 0, "implemented-but-blocked": 79, omitted: 504,
   });
 });
 
@@ -1179,11 +1179,11 @@ void test("every coverage input-discovery request resolves to an actual strict a
     assert.ok(isRecord(request));
     const result = queryOfflineApi(apiRequestSchema.parse(request)).result;
     assert.ok(isRecord(result));
-    if (["project-symbol-operation", "disposable-symbol-copy", "disposable-pcb-rename", "disposable-schematic-rename", "project-schematic-operation", "pcb209-opening"].includes(String(request["action"]))) {
+    if (["project-symbol-operation", "disposable-symbol-copy", "disposable-pcb-rename", "disposable-schematic-rename", "project-schematic-operation", "pcb209-opening", "netlist-files"].includes(String(request["action"]))) {
       assert.ok(isRecord(result["inputSchema"]));
       // The ordinary SCH and 209 opening routes expose their lifecycle union at the root;
       // Existing routes still promise a separate phase schema as well.
-      if (request["action"] !== "project-schematic-operation" && request["action"] !== "pcb209-opening") { assert.ok(isRecord(result["stepSchema"])); }
+      if (request["action"] !== "project-schematic-operation" && request["action"] !== "pcb209-opening" && request["action"] !== "netlist-files") { assert.ok(isRecord(result["stepSchema"])); }
       assert.equal(result["executionAuthorized"], false);
     } else {
       const entries = result["entries"];

@@ -55,6 +55,26 @@ limits; cleanup has reserved requests, bytes, polls and time. These limits are
 fixed and cannot be selected or reset by a caller. Large source qualification
 can take time; timeout or missing acknowledgment consumes the operation.
 
+After a refusal, inspect the original owner's `firstFailure` chain through
+the native session, PCB context/source owner, child source owner and startup channel. It retains
+fixed reason codes, stage/step, last command/event classes and bounded counters.
+`SCHEMA` and `UNCLASSIFIED` are diagnostic categories, not permission to retry.
+Remote exception text, URLs, source and document identifiers are omitted.
+The first reason survives later cleanup failures and release. A historical
+generic bootstrap failure cannot be assigned a cause from newer diagnostics.
+
+Aggregate waits account for serial owner/request/owner checks and four ancestry
+snapshots. Individual request and first-pause deadlines, launch limits and
+cleanup reserves remain fixed. A timeout does not cancel the original request.
+Late breakpoint acknowledgments belong to the original cleanup owner and never
+authorize another allocation or capture.
+
+The first-child aggregate also accounts for its serial parent-ownership checks.
+Only actual PCB dispatcher transports and that original first child use these
+composition windows. Standalone and subordinate paths retain their previous
+limits. The creation and capture watchdogs remain independent limits, so a
+larger aggregate arming window does not promise completion before those limits.
+
 ## Interpreting native origin evidence
 
 Before either realm executes its relevant source, the diagnostic enables

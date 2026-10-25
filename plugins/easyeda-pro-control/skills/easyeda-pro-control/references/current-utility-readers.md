@@ -105,7 +105,8 @@ Each method returns two matching synchronous scalar observations, bounded to
 8192 bytes with metadata strings at most 128 printable ASCII characters. Runtime
 admission and authentication match the separately reviewed new tuple. No active
 document, project, selection, private account, file, network, navigation or Save
-is accessed. `getFrontendDataUnit` is excluded because it dispatches to UI state.
+is accessed. `getFrontendDataUnit` belongs to the separate UI-backed public reader
+below, because it dispatches to UI state.
 New system methods are source-tested, not connected-validated.
 
 ## Language and API-page viewport readers
@@ -115,22 +116,53 @@ On the exact 3.2.209/API0.3.59 profile, query `public-readers` with an exact
 `public-readers-validate`, then pass it and the actual authenticated status
 fingerprint to `easyeda_control_public_readers`.
 
-The three methods are `eda.sys_I18n.getAllSupportedLanguages`,
-`eda.sys_I18n.isLanguageSupported` and `eda.sys_Window.getViewportSize`.
-Use the discovered schema for the membership argument; the other two accept
-empty arguments. Preserve language identifier order and spelling. Membership
-is case-sensitive, without locale normalization or a current-language lookup.
+The six methods have distinct meanings:
+
+| Method | Accepted observation |
+| --- | --- |
+| `eda.sys_I18n.getAllSupportedLanguages` | Complete ordered supported-language identifiers |
+| `eda.sys_I18n.isLanguageSupported` | Exact case-sensitive membership for the supplied `language` |
+| `eda.sys_Window.getViewportSize` | API-page viewport width and height in CSS pixels |
+| `eda.sys_Window.getCurrentTheme` | Resolved `light` or `dark` UI theme |
+| `eda.sys_Unit.getFrontendDataUnit` | Global toolbar selection, `mm`, `inch` or `mil` |
+| `eda.lib_LibrariesList.getSystemLibraryUuid` | The exact returned system-library UUID constant |
+
+Only language membership accepts an argument. Every other request has
+`arguments:{}`. Preserve language identifier order and spelling; no locale
+normalization or current-language lookup is performed. `getCurrentLanguage`
+remains unavailable through this route.
 
 Viewport width and height are the API page's `window.innerWidth/innerHeight`,
 not Windows screen dimensions, editor zoom, PCB units or rendered-object bounds.
 Zero is an observation, not proof that the editor is ready or visible. Resizing
 between samples can make the request refuse.
 
+Theme reports the resolved UI value, not the follow-system preference, OS theme,
+schematic colors or PCB layer colors. The beta frontend-unit getter reads an
+existing global toolbar store. Its value can be a default or previous selection;
+never use it as proof of an active document's units or schematic coordinate scale.
+
+The library getter must return `0819f05c4eef4c71ace90d822a990e87` from the
+reviewed UI. That value is an expectation, never a fallback for a failed call.
+It does not enumerate personal/team/project libraries, identify the account or
+retrieve an asset. Use a separate catalog route when public asset metadata is
+needed.
+
 The adapter retains the same namespace/method owners, copies complete bounded
 results twice and rejects malformed or changing output without truncation.
-It does not open a project, inspect a library, change language/settings or access
-files/network. These methods have source and offline tests; connected validation
-is recorded separately. Older profiles do not register this route.
+The three UI-backed methods also pin UI3.2.198.2800f583 and both installed module
+selectors, and retain the editor window, document, UI, host and shared RPC owners
+around each await. Replaced method accessors or prototype chains refuse without
+invoking the replacement getter. These getters perform no project, document,
+account, asset, file or network lookup, navigation or settings change.
+
+UI-backed observations have a ten-second monotonic deadline and cooperative
+timer. Expiry prevents another sample or acceptance of a late result; it does not
+cancel an outstanding vendor RPC or interrupt synchronous work. The executor's
+60-second and transport's 70-second waiting limits are separate. A refusal is
+not an unknown unit, default theme or empty observation. Responses are bounded
+to 8192 UTF-8 bytes. Source and offline tests do not establish connected
+validation. Older profiles do not register this route.
 
 ## Configured shortcut listing on the current tuple
 

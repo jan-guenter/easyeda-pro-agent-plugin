@@ -254,11 +254,19 @@ export function inventoryExtensionApiCoverage(): ApiCoverageEntry[] {
     routes.set(descriptor.path, [...existing, { tool: "easyeda_control_public_readers", selector: descriptor.path, implementation: "public-method",
       scope: `Separately reviewed EasyEDA 3.2.209/API 0.3.59 only; older profiles do not register this route. ${descriptor.limitations.join(" ")}`,
       source: ["sdk-public-readers.ts", "sdk-public-readers-runtime.ts", "sdk-public-utilities-profile.ts", "facade-mode.ts"],
-      tests: ["sdk-public-readers.test.ts", "sdk-public-readers-runtime.test.ts", "facade-mode.test.ts"],
+      tests: ["sdk-public-readers.test.ts", "sdk-public-readers-runtime.test.ts", "sdk-public-readers-ui.test.ts", "sdk-public-readers-registration.test.ts", "facade-mode.test.ts"],
       validation: "offline-regression;current-live-unclaimed", executionState: "available-with-runtime-guards",
       inputDiscovery: { tool: "easyeda_control_api", arguments: { request: { action: "public-readers", query: { method: descriptor.path, includeSchemas: true } } } },
     }]);
   }
+  routes.set("eda.sys_Tool.netlistComparison", [{
+    tool: "easyeda_control_netlist_files", selector: "compare-files", implementation: "public-method",
+    scope: "EasyEDA 3.2.209/API 0.3.59 only: public File/File comparison of two exact managed ASCII Allegro .tel artifacts. Local prepare-file writes supplied text to an exclusive managed artifact without app access. Complete subset recognition and an independent model require every returned footprint-to-designator and net-to-pin difference to agree. Two bounded samples retain their original UI, method, RPC and File owners with a monotonic deadline. Values, properties and circuit correctness are not compared; empty differences establish membership equality only. Document UUID/object overloads, .enet and other formats remain omitted: the UUID path dispatches a project-worker read, .enet can retrieve project library assets, and the object overload has no matching implementation. No arbitrary path, export, navigation, upload, CAD edit or Save. Offline exact-source parser fixtures and runtime regressions are not installed connected validation.",
+    source: ["netlist-files.ts", "netlist-files-program.ts", "netlist-files-runtime.ts", "editor-observation209-profile.ts", "facade-mode.ts"],
+    tests: ["netlist-files.test.ts", "netlist-files-runtime.test.ts", "netlist-files-registration.test.ts", "facade-mode.test.ts"],
+    validation: "offline-regression;current-live-unclaimed", executionState: "available-with-runtime-guards",
+    inputDiscovery: { tool: "easyeda_control_api", arguments: { request: { action: "netlist-files", query: { includeSchemas: true } } } },
+  }]);
   const footprintPath = "eda.lib_Footprint.get";
   routes.set(footprintPath, [...routes.get(footprintPath) ?? [], {
     tool: "easyeda_control_catalog_footprint", selector: "fixed-vendor-system-catalog-footprint", implementation: "vendor-http-task-equivalent",
@@ -280,6 +288,14 @@ export function inventoryExtensionApiCoverage(): ApiCoverageEntry[] {
       inputDiscovery: { tool: "easyeda_control_api", arguments: { request: { action: "catalog-components", query: { includeSchemas: true } } } },
     }]);
   }
+  routes.set("eda.lib_Symbol.searchByProperties", [{
+    tool: "easyeda_control_catalog_components", selector: "search-symbols-by-name", implementation: "vendor-http-task-equivalent",
+    scope: "One explicitly confirmed anonymous system-symbol name lookup on a fixed vendor HTTPS endpoint; not public SDK execution or installed runtime admission. Complete bounded candidate lists retain name equality flags and exact system ownership. Type comes from docType2 or two bounded duplicate-key-checked native header records; no drawing geometry is parsed or executed. Missing visibility/path flags remain unverified. No account owner discovery, credentials, redirects, retries, pagination, linked assets or desktop storage. Direct SDK execution remains omitted on209: the request supplies user_uuids without the desktop controller's required body/header path, and a failed response can collapse to an empty list. This partial routing trace does not establish an unconditional live failure. Desktop path repair needs separate database routing/initialization qualification. Pin mapping, exact matching, exhaustiveness and circuit suitability remain unverified.",
+    source: ["public-system-symbol-exact.ts", "public-system-symbol-exact-runtime.ts", "public-system-catalog.ts", "public-system-catalog-runtime.ts", "facade-mode.ts"],
+    tests: ["public-system-symbol-exact.test.ts", "public-system-symbol-exact-runtime.test.ts", "public-system-catalog-runtime.test.ts", "public-system-catalog-registration.test.ts"],
+    validation: "offline-regression;current-live-unclaimed", executionState: "available-with-network-guards",
+    inputDiscovery: { tool: "easyeda_control_api", arguments: { request: { action: "catalog-components", query: { includeSchemas: true } } } },
+  }]);
   for (const descriptor of publicSdkReadDescriptors()) {
     const existing = routes.get(descriptor.path) ?? [];
     routes.set(descriptor.path, [...existing, {

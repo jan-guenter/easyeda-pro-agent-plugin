@@ -7,6 +7,8 @@ import type { DiagnosticEvent } from "./current-pcb-diagnostic-protocol.ts";
 import { currentDisposableOpenSealedTargetSchema } from "./current-disposable-open.ts";
 import type { CurrentDisposableOpenSealedTarget } from "./current-disposable-open.ts";
 import { captureCurrentPcbStringClockReply } from "./current-pcb-string-clock-reply.ts";
+import { currentPcb209RatlineEventKind, currentPcb209RatlineFailureReason } from "./current-pcb-209-ratline-diagnostics.ts";
+import type { CurrentPcb209RatlineEventKind } from "./current-pcb-209-ratline-diagnostics.ts";
 import { CurrentPcb209RatlinePcbBootstrapOwner } from "./current-pcb-209-ratline-pcb-bootstrap-owner.ts";
 import type { CurrentPcb209RatlinePcbBootstrapContext, CurrentPcb209RatlinePcbBootstrapDependency,
   CurrentPcb209RatlinePcbBootstrapPacket } from "./current-pcb-209-ratline-pcb-bootstrap-owner.ts";
@@ -35,6 +37,9 @@ export interface CurrentPcb209RatlinePcbContextDependency {
   readonly subscribe: (events: Readonly<{ event: (event: DiagnosticEvent) => void; lost: () => void }>) => () => void;
 }
 type SourceEvents = Parameters<CurrentPcb209RatlinePcbBootstrapDependency["subscribe"]>[0];
+type Failure = Readonly<{ reason: string; step: string; lastEvent: CurrentPcb209RatlineEventKind;
+  lastCommand: CurrentPcb209RatlinePcbContextCommand["method"] | null; transitionStarted: boolean; selectedContextObserved: boolean;
+  proofSets: number; proofCommands: number; events: number }>;
 const token = z.string().regex(/^[A-Za-z\d_.:-]{1,256}$/u);
 const eventSchema = z.object({ method: z.string().max(128), sessionId: token, params: z.record(z.string(), z.unknown()) }).strict();
 const contextCreated = z.looseObject({ context: z.looseObject({ id: z.number().int().positive() }) }), row = z.record(z.string(), z.unknown());
@@ -71,6 +76,10 @@ export class CurrentPcb209RatlinePcbContextRouter {
   #unsubscribe: (() => void) | null = null;
   #subscribed = false;
   #failed = false;
+  #firstFailure: Failure | null = null;
+  #step = "idle";
+  #lastEvent: CurrentPcb209RatlineEventKind = "unparsed";
+  #lastCommand: Failure["lastCommand"] = null;
   #released = false;
   #release: Promise<void> | null = null;
   #transition = false;
@@ -112,22 +121,29 @@ export class CurrentPcb209RatlinePcbContextRouter {
     need(context.sessionId === this.#dependency.parentSessionId, "PARENT_CHANGED");
     if (this.#selected !== null && this.#proofSets > 0) { this.#context.assertPcbBootstrapContext(this.#selected); }
   }
-  async #current(): Promise<void> { this.assertCurrent(); await bounded(this.#dependency.assertOriginalOwner()); this.assertCurrent(); }
-  #poison(): void { if (!this.#failed) { this.#failed = true; this.#listener?.lost(); } }
+  async #current(): Promise<void> { this.assertCurrent(); this.#step = "owner-reproof"; await bounded(this.#dependency.assertOriginalOwner()); this.assertCurrent(); }
+  #poison(cause: unknown = new Error("PCB209_RATLINE_CONTEXT_ABORTED")): void {
+    if (!this.#failed) {
+      this.#firstFailure = Object.freeze({ reason: currentPcb209RatlineFailureReason(cause), step: this.#step, lastEvent: this.#lastEvent,
+        lastCommand: this.#lastCommand, transitionStarted: this.#transition, selectedContextObserved: this.#selected !== null,
+        proofSets: this.#proofSets, proofCommands: this.#commands, events: this.#events });
+      this.#failed = true; this.#listener?.lost();
+    }
+  }
   async #before(): Promise<void> {
     try { await this.#current(); need(!this.#transition, "NAVIGATION_CONSUMED");
       await bounded(this.#dependency.assertOriginalBeforeNavigation()); this.assertCurrent(); need(!this.#transition, "NAVIGATION_CONSUMED");
-    } catch (error) { this.#poison(); throw error; }
+    } catch (error) { this.#poison(error); throw error; }
   }
   #navigate(): Promise<void> {
     try { this.assertCurrent(); need(!this.#transition, "NAVIGATION_CONSUMED"); this.#transition = true;
       this.#context.beginPcbOpeningTransition(this.#target.projectUuid, this.#target.documentUuid);
       return this.#dependency.beginOriginalPcbNavigation();
-    } catch (error) { this.#poison(); return Promise.reject(error instanceof Error ? error : new Error("PCB209_RATLINE_CONTEXT_NAVIGATION", { cause: error })); }
+    } catch (error) { this.#poison(error); return Promise.reject(error instanceof Error ? error : new Error("PCB209_RATLINE_CONTEXT_NAVIGATION", { cause: error })); }
   }
   #subscribe(events: SourceEvents): () => void {
     this.assertCurrent(); need(!this.#subscribed, "SUBSCRIPTION_CONSUMED"); this.#subscribed = true; this.#listener = events;
-    this.#unsubscribe = this.#dependency.subscribe({ event: this.#event, lost: (): void => { this.#poison(); } });
+    this.#unsubscribe = this.#dependency.subscribe({ event: this.#event, lost: (): void => { this.#poison(new Error("PCB209_RATLINE_CONTEXT_STREAM_LOST")); } });
     need(typeof this.#unsubscribe === "function", "SUBSCRIPTION");
     return (): void => { need(this.#listener === events, "SUBSCRIPTION_CHANGED"); this.#listener = null; };
   }
@@ -146,6 +162,7 @@ export class CurrentPcb209RatlinePcbContextRouter {
   readonly #event = (input: DiagnosticEvent): void => {
     try {
       this.assertCurrent(); const event = eventSchema.parse(captureCurrentPcbStringClockReply(input).value);
+      this.#lastEvent = currentPcb209RatlineEventKind(event.method); this.#step = "event-classification";
       need(event.sessionId === this.#dependency.parentSessionId && this.#listener !== null && this.#events < 4096, "EVENT_OWNER"); this.#events += 1;
       const { method, params } = event;
       if (method === "Debugger.paused" || method === "Debugger.resumed" || method === "Target.attachedToTarget") {
@@ -174,7 +191,7 @@ export class CurrentPcb209RatlinePcbContextRouter {
         if (this.#selectedEvent(id)) { this.#listener.event(event); }
       }
       this.assertCurrent();
-    } catch { this.#poison(); }
+    } catch (error) { this.#poison(error); }
   };
   async #sourceRequest(command: SourceCommand): Promise<unknown> {
     this.#same(); need(!this.#released, "RELEASED");
@@ -185,10 +202,12 @@ export class CurrentPcb209RatlinePcbContextRouter {
     }
     const enabling = command.method === "Runtime.enable" || command.method === "Debugger.enable";
     if (enabling) { need(!this.#transition && this.#enable === null, "ENABLE_PHASE"); this.#enable = command.method; }
+    this.#lastCommand = command.method; this.#step = "source-request";
     try { return await this.#dependency.request(command); } finally { if (enabling) { this.#enable = null; } }
   }
   async #snapshot(command: CurrentPcb209RatlinePcbContextParentCommand): Promise<Row> {
     await this.#current(); need(this.#commands < 12, "PROOF_COMMAND_BUDGET"); this.#commands += 1;
+    this.#lastCommand = command.method; this.#step = "ancestry-request";
     const raw = await bounded(this.#dependency.requestParent(command));
     const reply = row.parse(captureCurrentPcbStringClockReply(raw).value);
     await this.#current(); return reply;
@@ -216,7 +235,7 @@ export class CurrentPcb209RatlinePcbContextRouter {
         void observed((async (): Promise<void> => { try { await this.#fresh(true); pending.resolve(null); } catch (error) { pending.reject(error); } })());
       }
       await this.#admission; this.assertCurrent(); this.#context.assertPcbBootstrapContext(value);
-    } catch (error) { this.#poison(); throw error; }
+    } catch (error) { this.#poison(error); throw error; }
   }
   public async releaseOriginalPinnedSource(packet: CurrentPcb209RatlinePcbBootstrapPacket): Promise<void> {
     need(this.#continuation === null, "CONTINUATION_CONSUMED"); const pending = Promise.withResolvers<null>(); this.#continuation = withoutValue(pending.promise); void observed(this.#continuation);
@@ -224,7 +243,7 @@ export class CurrentPcb209RatlinePcbContextRouter {
       await this.#sourceOwner.requireOriginal(packet); this.assertCurrent(); need(this.#proofSets === 1 && this.#resumes === 28, "SOURCE_HELD");
       await this.#fresh(false); this.assertCurrent(); this.#sourceReleaseArmed = true;
       await this.#sourceOwner.releaseOriginalPinnedSource(packet); this.assertCurrent(); pending.resolve(null);
-    } catch (error) { this.#poison(); pending.reject(error); throw error; }
+    } catch (error) { this.#poison(error); pending.reject(error); throw error; }
   }
   /** The enclosing coordinator first requires the actual held child packet.
    * This method rechecks its original parent only and grants no child identity. */
@@ -233,7 +252,7 @@ export class CurrentPcb209RatlinePcbContextRouter {
     try {
       await this.#sourceOwner.requireOriginal(packet); this.assertCurrent(); need(this.#proofSets === 2 && this.#sourceReleaseConsumed, "SOURCE_CONTINUATION_REQUIRED");
       await this.#fresh(false); this.assertCurrent(); pending.resolve(null);
-    } catch (error) { this.#poison(); pending.reject(error); throw error; }
+    } catch (error) { this.#poison(error); pending.reject(error); throw error; }
   }
   async #termination(): Promise<void> { this.#same(); await bounded(this.#dependency.assertOriginalTermination()); this.#same(); }
   public async abort(): Promise<void> { this.#poison(); await this.#sourceOwner.abort(); }
@@ -249,5 +268,6 @@ export class CurrentPcb209RatlinePcbContextRouter {
   }
   public status(): Row { return Object.freeze({ failed: this.#failed, released: this.#released, transitionStarted: this.#transition,
     selectedContextObserved: this.#selected !== null, proofSets: this.#proofSets, proofCommands: this.#commands, events: this.#events,
+    firstFailure: this.#firstFailure, step: this.#step, lastCommand: this.#lastCommand, lastEvent: this.#lastEvent, sourceOwner: this.#sourceOwner.status(),
     sourceContinuationConsumed: this.#sourceReleaseConsumed, nativeWorkerTargetIdentityVerified: false, executionAuthorized: false }); }
 }

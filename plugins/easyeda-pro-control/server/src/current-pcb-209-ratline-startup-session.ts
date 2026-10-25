@@ -105,7 +105,8 @@ class CurrentPcb209RatlineStartupCore {
       const construction = await this.#construction; await this.#current();
       if (this.#role === "pcb") { this.#startCapture(); await this.#stages.capture.whenArmed(); await this.#current(); }
       await this.#stages.creation.requireOriginal(construction); this.#childArmed = true;
-      await bounded(this.#childGate.armOriginalChildBootstrap(this.#stages.creation, construction), CURRENT_PCB_209_RATLINE_NATIVE_PROFILE.elapsed.childArmMilliseconds); await this.#current();
+      await bounded(this.#childGate.armOriginalChildBootstrap(this.#stages.creation, construction), this.#role === "pcb" ?
+        CURRENT_PCB_209_RATLINE_NATIVE_PROFILE.elapsed.childArmMilliseconds : 6 * CURRENT_PCB_209_RATLINE_NATIVE_PROFILE.elapsed.ordinaryRequestMilliseconds); await this.#current();
       // Success and abort cleanup share the creation owner's retained start
       // Promise. No second dispatcher or raw child-start request is introduced.
       await this.#stages.creation.continueOriginalParent(construction); await this.#current();

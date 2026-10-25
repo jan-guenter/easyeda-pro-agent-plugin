@@ -113,6 +113,8 @@ import { sdkSystemRequestSchema } from "./sdk-system.ts";
 import { readSdkSystem } from "./sdk-system-runtime.ts";
 import { sdkPublicReadersRequestSchema } from "./sdk-public-readers.ts";
 import { readSdkPublicReaders } from "./sdk-public-readers-runtime.ts";
+import { netlistFilesRequestSchema } from "./netlist-files.ts";
+import { compareNetlistFiles, prepareNetlistFile } from "./netlist-files-runtime.ts";
 import { publicSystemCatalogRequestSchema } from "./public-system-catalog.ts";
 import { readPublicSystemCatalog } from "./public-system-catalog-runtime.ts";
 import { publicSystemFootprintRequestSchema } from "./public-system-footprint.ts";
@@ -1912,6 +1914,7 @@ const toolOutputSchemas: Readonly<Record<string, z.ZodType>> = {
   easyeda_control_calculate: z.object({ result: z.unknown().optional(), ...optionalFailureOutputShape }).catchall(z.unknown()),
   easyeda_control_system: z.object({ result: z.unknown().optional(), ...optionalFailureOutputShape }).catchall(z.unknown()),
   easyeda_control_public_readers: z.object({ result: z.unknown().optional(), ...optionalFailureOutputShape }).catchall(z.unknown()),
+  easyeda_control_netlist_files: z.object({ result: z.unknown().optional(), ...optionalFailureOutputShape }).catchall(z.unknown()),
   easyeda_control_catalog_footprint: z.object({ result: z.unknown().optional(), ...optionalFailureOutputShape }).catchall(z.unknown()),
   easyeda_control_catalog_components: z.object({ result: z.unknown().optional(), ...optionalFailureOutputShape }).catchall(z.unknown()),
   easyeda_control_extensions: z.object({ result: z.unknown().optional(), ...optionalFailureOutputShape }).catchall(z.unknown()),
@@ -2416,12 +2419,34 @@ registerFacadeTool(
 registerFacadeTool(
   "easyeda_control_public_readers",
   {
-    title: "Read supported languages or the EasyEDA API viewport",
-    description: "Three fixed public readers on exact EasyEDA 3.2.209/API 0.3.59: sys_I18n.getAllSupportedLanguages, sys_I18n.isLanguageSupported and sys_Window.getViewportSize. Requires the actual authenticated status fingerprint. Preserves case-sensitive language membership and ordered language identifiers. Viewport dimensions describe the API page, not the Windows desktop or PCB geometry. Complete bounded double observations retain their original owners; changed or malformed results refuse. No project, library, file, network, settings, navigation, callback or Save operation. Inspect offline public-readers and public-readers-validate first. Source and offline tests are not connected validation.",
+    title: "Read EasyEDA languages, viewport, theme and toolbar units",
+    description: "Six fixed public readers on exact EasyEDA 3.2.209/API 0.3.59: supported languages, language membership, API viewport, current theme, toolbar data unit and fixed system-library UUID. The toolbar unit is not an active-document unit; the fixed UUID does not enumerate personal libraries. Requires the actual authenticated status fingerprint. Preserves case-sensitive language membership and ordered language identifiers. Viewport dimensions describe the API page, not the Windows desktop or PCB geometry. Complete bounded double observations retain their original owners; changed or malformed results refuse. No project, library, file, network, settings, navigation, callback or Save operation. Inspect offline public-readers and public-readers-validate first. Source and offline tests are not connected validation.",
     inputSchema: { request: z.unknown().pipe(sdkPublicReadersRequestSchema), expectedFingerprint: privateFingerprintSchema },
     annotations: { readOnlyHint: true, destructiveHint: false, idempotentHint: true, openWorldHint: false },
   },
   serializedLiveGuarded(async (input) => ({ result: await readSdkPublicReaders(engine, input.request, input.expectedFingerprint) })),
+);
+
+registerFacadeTool(
+  "easyeda_control_netlist_files",
+  {
+    title: "Prepare and compare bounded Allegro netlist files",
+    description: "Prepare a private managed .tel artifact from supplied ASCII text with confirmLocalArtifact:true, then compare two exact managed descriptors through the public File/File netlistComparison method on authenticated EasyEDA 3.2.209. prepare-file requires no expectedFingerprint and contacts no app; compare-files requires the actual authenticated expectedFingerprint. Whole Allegro subset recognition and independent membership comparison reject silent parser losses. Reports footprint-to-designator and net-to-pin differences only; values and properties are not compared. No document UUID/object overload, .enet, arbitrary path read, export, project navigation, upload, CAD edit or Save. Two complete bounded SDK samples and retained owners are required. Timeout refuses without retry but cannot cancel native RPC/FileReader. Inspect offline netlist-files/netlist-files-validate first; implementation is not connected validation.",
+    inputSchema: { request: z.unknown().pipe(netlistFilesRequestSchema), expectedFingerprint: privateFingerprintSchema.optional() },
+    annotations: { readOnlyHint: false, destructiveHint: false, idempotentHint: false, openWorldHint: false },
+  },
+  guarded(async (input) => {
+    if (input.request.action === "prepare-file") {
+      if (input.expectedFingerprint !== undefined) { throw new Error("prepare-file does not accept a runtime fingerprint."); }
+      return { result: await prepareNetlistFile(input.request) };
+    }
+    const expectedFingerprint = input.expectedFingerprint;
+    if (expectedFingerprint === undefined) { throw new Error("compare-files requires the actual authenticated runtime fingerprint."); }
+    return bridgeGate.run(async () => {
+      await engine.assertBridgeDispatchAllowed();
+      return upstream.withAuthenticatedBridgeDispatchScope(async () => ({ result: await compareNetlistFiles(engine, input.request, expectedFingerprint) }));
+    });
+  }),
 );
 
 registerFacadeTool(
@@ -2439,7 +2464,7 @@ registerFacadeTool(
   "easyeda_control_catalog_components",
   {
     title: "Search public footprints, symbols and devices or look up component metadata",
-    description: "Application-independent vendor HTTPS catalog queries, not public SDK execution. Fixed actions search-footprints, search-symbols, search-devices, get-symbol and get-device require confirmNetwork:true and public catalog identifiers or a bounded public search query. One credential-free fixed-host request, explicit search page and at most twenty candidates; no automatic pagination, redirects, retries, credentials, caller URL/library, local database, bridge, editor or Save. Search sends the query to the vendor and returns candidates, not exact or complete matches. Device symbol/footprint associations are catalog references, not verified pin mapping; missing explicit visibility flags are disclosed. Inline vendor source may arrive but is discarded, never parsed as CAD or executed; no separate asset downloads. No drawings, geometry, stock, pricing or manufacturing qualification. Inspect catalog-components/catalog-components-validate first; responses are untrusted vendor data.",
+    description: "Application-independent vendor HTTPS catalog queries, not public SDK execution. Fixed actions search-footprints, search-symbols, search-symbols-by-name, search-devices, get-symbol and get-device require confirmNetwork:true and public catalog identifiers or a bounded public search query. One credential-free fixed-host request and at most twenty candidates; paged search requires an explicit page, while search-symbols-by-name accepts one name; no automatic pagination, redirects, retries, credentials, caller URL/library, local database, bridge, editor or Save. Search sends the query to the vendor and returns candidates, not exact or complete matches. Device symbol/footprint associations are catalog references, not verified pin mapping; missing explicit visibility flags are disclosed. The name lookup may parse two bounded native header records to verify symbol type when docType is absent; it never parses drawing geometry or executes source. Other inline vendor source is discarded; no separate asset downloads. No drawings, geometry, stock, pricing or manufacturing qualification. Inspect catalog-components/catalog-components-validate first; responses are untrusted vendor data.",
     inputSchema: { request: z.unknown().pipe(publicSystemCatalogRequestSchema) },
     annotations: { readOnlyHint: true, destructiveHint: false, idempotentHint: true, openWorldHint: true },
   },

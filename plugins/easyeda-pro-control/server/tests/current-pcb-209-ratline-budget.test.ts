@@ -26,9 +26,17 @@ void test("ratline profile derives exact fixed slots, JSON expansion and bounded
       assert.ok(Object.isFrozen(slot));
     }
   }
-  assert.equal(profile.elapsed.ancestryProofMilliseconds, 10_000);
-  assert.equal(profile.elapsed.sourceReleaseMilliseconds, 12_500);
-  assert.equal(profile.elapsed.childArmMilliseconds, 15_000);
+  assert.equal(profile.elapsed.ancestryProofMilliseconds, 30_000);
+  assert.equal(profile.elapsed.pcbBootstrapSendMilliseconds, 7500);
+  assert.equal(profile.elapsed.pcbBootstrapResumeMilliseconds, 10_000);
+  assert.equal(profile.elapsed.sourceReleaseMilliseconds, 52_500);
+  assert.equal(profile.elapsed.childArmMilliseconds, 97_500);
+  assert.equal(profile.elapsed.childOwnerMilliseconds, 7500);
+  assert.equal(profile.elapsed.childBootstrapSendMilliseconds, 17_500);
+  assert.equal(profile.elapsed.childBootstrapAllocationMilliseconds, 10_000);
+  assert.equal(profile.elapsed.childBootstrapResumeMilliseconds, 20_000);
+  assert.equal(profile.elapsed.pcbRealmAllocationMilliseconds, 5000);
+  assert.equal(profile.elapsed.pcbChildStartMilliseconds, 10_000);
   assert.equal(profile.elapsed.creationContinuationMilliseconds, 27_500);
   assert.equal(profile.elapsed.capturePauseMilliseconds, 32_500);
   assert.equal(profile.elapsed.captureWaitMilliseconds, 91_940);

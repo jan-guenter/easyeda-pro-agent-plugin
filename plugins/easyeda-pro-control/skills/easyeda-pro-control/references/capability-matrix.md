@@ -2,11 +2,19 @@
 
 Use supported typed APIs first. Native controls cover genuine API stubs and dialogs. This matrix describes the current source package; an older installed snapshot may not contain these tools. Historical external-tuple admission and installed-generation evidence do not admit this new source. Exact reads and typed operations still require their pinned implementation identities and operation-specific proof.
 
-The separate EasyEDA3.2.209 profile registers fourteen tools: API reference,
-local discovery, status, calculations, system observations, language/viewport
-readers, tab-count/active-identity/shortcut observations, public catalog queries,
+The separate EasyEDA3.2.209 profile registers API reference,
+local discovery, status, calculations, system observations, language/viewport/theme/
+toolbar-unit/system-library-identity readers, managed netlist comparison,
+tab-count/active-identity/shortcut observations, public catalog queries,
 ordinary launch, disposable project/PCB opening with layer and primitive observations,
 and a separate original project-worker startup capture.
+The [public utility readers](current-utility-readers.md#language-and-api-page-viewport-readers)
+do not establish document units or account/library contents.
+[Managed File/File comparison](current-netlist-files.md) accepts a completely
+recognized Allegro subset and compares footprint/designator plus net/pin
+memberships. It does not compare component values, export a project or qualify
+a circuit as electrically correct. Both routes require their own exact runtime
+admission; source and synthetic tests are not connected validation.
 It admits the source-reviewed fixed16Math and18Unit/Environment subsets through
 their own exact runtime checks. Two utility argument sets passed on the prior
 installed release; that does not validate every method or this source payload.
@@ -101,7 +109,7 @@ callback/publication completion remain unfinished. This partial diagnostic
 does not enable a PCB writer or establish complete startup.
 The [public catalog queries](current-system-library.md) require explicit network
 confirmation and use fixed credential-free vendor endpoints, without local
-application/database access. Footprint/symbol/device search, symbol/device
+application/database access. Footprint/symbol/device search, symbol lookup by name, symbol/device
 metadata and known footprint lookup are task equivalents, not SDK execution. Device references
 are not verified pin mappings; search candidates are not exhaustive matches.
 

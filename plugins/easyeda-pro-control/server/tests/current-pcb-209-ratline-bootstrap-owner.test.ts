@@ -5,7 +5,7 @@ import { createHash } from "node:crypto";
 import { readFile } from "node:fs/promises";
 import { createRequire } from "node:module";
 import { test } from "node:test";
-import { setImmediate as immediate } from "node:timers/promises";
+import { setTimeout as delay, setImmediate as immediate } from "node:timers/promises";
 import type { TestContext } from "node:test";
 import { runInThisContext } from "node:vm";
 import { transform } from "esbuild";
@@ -63,11 +63,11 @@ async function syntheticSourceOwner(): Promise<typeof CurrentPcb209RatlineBootst
 /** Real V8 parent constructor owner, synthetic CDP child/source replies. The
  * preload intentionally fails whole installed-source qualification. */
 async function fixture(context: TestContext, options: Readonly<{ badBootstrap?: boolean; reentrantRemoval?: boolean; delayedAllocation?: boolean;
-  syntheticFullChain?: boolean; refuseFirstObservation?: boolean }> = {}): Promise<Fixture> {
+  syntheticFullChain?: boolean; refuseFirstObservation?: boolean; slowChildProof?: boolean; refuseAllocationProof?: boolean }> = {}): Promise<Fixture> {
   const allocation = Promise.withResolvers<unknown>(), inspector = await ratlineCreationInspector(context, "pcb"), removed = Promise.withResolvers<null>();
   let events: Events | null = null, firstObservations = 0, nestedAbort: Promise<void> | null = null, removals = 0, requests = 0, resumes = 0, sourceReads = 0;
   const holder: { owner: CurrentPcb209RatlineBootstrapOwner | null } = { owner: null };
-  let breakpoints = 0, roleIndex = 0;
+  let breakpoints = 0, childProofs = 0, roleIndex = 0;
   const emit = (method: string, params: Readonly<Record<string, unknown>>, sessionId = "child-session"): void => { events?.event({ method, params, sessionId }); };
   const pause = (scriptId: string, url: string): void => {
     emit("Debugger.scriptParsed", { scriptId, executionContextId: 1, url, hasSourceURL: false, isLiveEdit: false });
@@ -102,7 +102,15 @@ async function fixture(context: TestContext, options: Readonly<{ badBootstrap?: 
   } });
   const pending = creation.capture(); await creation.whenArmed(); const running = inspector.run(); const packet = await pending;
   const dependency: CurrentPcb209RatlineBootstrapDependency = {
-    assertOriginalChild: async (original, result): Promise<void> => { assert.equal(original, creation); assert.equal(result, packet); await creation.requireOriginal(result); },
+    assertOriginalChild: async (original, result): Promise<void> => {
+      assert.equal(original, creation); assert.equal(result, packet); childProofs += 1;
+      if (options.refuseAllocationProof === true && childProofs === 10) { throw new Error("Synthetic pre-allocation proof refused"); }
+      // Model the concrete callback's serial creation/native proofs. Neither
+      // Individual segment consumes more than the unchanged ordinary deadline.
+      if (options.slowChildProof === true && childProofs === 1) { await delay(1500); }
+      await creation.requireOriginal(result);
+      if (options.slowChildProof === true && childProofs === 1) { await delay(1500); }
+    },
     observeOriginalFirstScript: async (original, result, owner): Promise<void> => {
       firstObservations += 1; assert.equal(resumes, 0); assert.equal(original, creation); assert.equal(result, packet);
       const first = await owner.requireOriginalFirstScript(original, result);
@@ -207,7 +215,19 @@ void test("changed bootstrap source refuses before its first continuation", asyn
 void test("foreign child event poisons original source owner and changed methods cannot revive it", async context => {
   const f = await fixture(context); await f.owner.armOriginalChildBootstrap(f.creation, f.packet);
   f.emit("Debugger.resumed", {}, "foreign-session"); await assert.rejects(f.owner.whenSourceQualified());
-  assert.equal(f.counts().resumes, 0); await f.finish();
+  const failure = f.owner.status()["firstFailure"]; assert.ok(failure !== null && typeof failure === "object");
+  assert.equal(Reflect.get(failure, "reason"), "PCB209_RATLINE_BOOTSTRAP_EVENT_SESSION");
+  assert.equal(Reflect.get(failure, "lastEvent"), "Debugger.resumed");
+  assert.equal(f.counts().resumes, 0); await f.finish(); assert.equal(f.owner.status()["firstFailure"], failure);
+});
+
+void test("first child accepts serial creation/native proof windows and refuses pre-dispatch allocation loss without ambiguity", async context => {
+  const slow = await fixture(context, { slowChildProof: true });
+  await slow.owner.armOriginalChildBootstrap(slow.creation, slow.packet);
+  assert.equal(slow.owner.status()["armed"], true); assert.equal(slow.owner.status()["firstFailure"], null); await slow.finish();
+  const refused = await fixture(context, { refuseAllocationProof: true });
+  await assert.rejects(refused.owner.armOriginalChildBootstrap(refused.creation, refused.packet), /pre-allocation/u);
+  assert.equal(refused.counts().requests, 4); assert.equal(refused.owner.status()["unresolvedInstrumentation"], false); await refused.finish();
 });
 
 void test("late instrumentation acknowledgement is retained and removed once after arming deadline", async context => {

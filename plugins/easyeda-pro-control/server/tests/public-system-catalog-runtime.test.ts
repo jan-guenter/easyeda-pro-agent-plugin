@@ -17,6 +17,22 @@ function response(body: BodyInit | null = JSON.stringify(symbolRaw), options: { 
   Object.defineProperty(result, "redirected", { value: options.redirected ?? false }); return result;
 }
 
+void test("catalog name action dispatches only the fixed JSON symbol lookup and preserves its complete projection", async (context) => {
+  const name = "R0603", url = `${PUBLIC_SYSTEM_FOOTPRINT_ORIGIN}/api/v2/components/searchByUserUuidAndTitle`;
+  let calls = 0;
+  context.mock.method(globalThis, "fetch", (input: unknown, init: RequestInit): Promise<Response> => {
+    calls += 1; assert.equal(input, url); assert.equal(init.method, "POST");
+    assert.deepEqual(init.headers, { accept: "application/json", "content-type": "application/json" });
+    assert.equal(init.body, JSON.stringify({ titles: [name], docType: 2, user_uuids: [PUBLIC_SYSTEM_FOOTPRINT_LIBRARY] }));
+    return Promise.resolve(response(JSON.stringify({ success: true, code: 0, result: { [name]: [{ ...metadata, docType: 2 }] } }), { url }));
+  });
+  const result = await readPublicSystemCatalog({ action: "search-symbols-by-name", name, confirmNetwork: true });
+  assert.equal(result["returnedCount"], 1); assert.equal(result["publicSdkMethodExecuted"], false);
+  assert.equal(result["exactMatchVerified"], false); assert.equal(calls, 1);
+  await assert.rejects(readPublicSystemCatalog({ action: "search-symbols-by-name", name, confirmNetwork: true, page: 1 }));
+  assert.equal(calls, 1);
+});
+
 void test("catalog transport dispatches one fixed anonymous request per action, using sample-qualified form POST", async (context) => {
   let calls = 0; const signals: AbortSignal[] = [];
   const deviceUrl = `${PUBLIC_SYSTEM_FOOTPRINT_ORIGIN}/api/v2/devices/${assetUuid}`, searchUrl = `${PUBLIC_SYSTEM_FOOTPRINT_ORIGIN}/api/v2/components/search`;

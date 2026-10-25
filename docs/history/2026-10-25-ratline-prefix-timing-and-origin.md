@@ -174,3 +174,97 @@ status/bootstrap/event assertions were audited without further corrections.
 The entire second CI run reached a terminal result, so this correction covers
 its only failing test. Runtime source, bundles, pins and version remain
 unchanged. The final candidate still requires a green exact-commit CI run.
+
+## Publication and installation, 2026-10-25
+
+Final payload `66d09128f38bec71ac7aa8deb7d18bfff2d609a9` passed all
+eight facade shards, build/bridge and aggregate checks in Linux CI
+[`40161489459`](https://github.com/jan-guenter/easyeda-pro-agent-plugin/actions/runs/40161489459),
+and Windows CI
+[`40161489471`](https://github.com/jan-guenter/easyeda-pro-agent-plugin/actions/runs/40161489471).
+[PR122](https://github.com/jan-guenter/easyeda-pro-agent-plugin/pull/122)
+merged through branch protection as main
+`3813f4c77912b3db29a32448ffcd162e9cf0e51a`. Its full tree
+`df27816d71d6f3f35f58c8299b26a53c34a35874` and plugin tree
+`5235188135cbe82dab0e7b7e436b658584ffd209` exactly match the tested payload.
+The two CI fixture corrections changed no runtime source or bundle.
+
+The official CLI upgraded the Git marketplace
+`https://github.com/jan-guenter/easyeda-pro-agent-plugin.git` to that merged
+commit and installed/enabled `0.3.0+codex.20261025034840`. All 1,946 files,
+42 directories including root, and 41,571,788 bytes match committed contents
+and modes. Inventory SHA256 is
+`439ee2d0b38c1590ac7e58b8b6fb18ce0c5212888260ace0ed859b8a8b72f9bf`.
+The comparison passed both before and after the final CLI listing; the
+marketplace still names the merged commit and the installed snapshot remains.
+No cache was patched or host-owned process terminated.
+
+The installed offline probe passed 16 catalog queries with 26 exposed tools,
+using pinned Node 24.18.0. Its process closed on stdin EOF with exit zero and
+empty stderr. It selected a synthetic profile, not the live control root.
+Sampled descendant/socket checks passed; continuous isolation and connected
+execution are not claims of this probe. Fresh admission of the actual host
+and connected execution of the new timing/origin code remain pending.
+
+Post-merge Windows CI `40162315922` passed. Main Linux CI `40162315928` was
+still running when this appendix was written; the exact-payload PR checks
+above are complete. This local publication appendix follows the published
+commit and is to be included with the next batch, without another plugin
+version solely for this record.
+
+## Fresh-session work and remaining backlog
+
+The old host loaded `0.3.0+codex.20261025022904` and was left intact. No
+EasyEDA operation, cleanup or publication is pending. The failed disposable
+attempt above is terminal; do not replay its capture or infer normal source
+progression from cleanup resume flags. Admit the newly loaded installed host
+in a fresh Codex session before the next disposable attempt. Keep the exact
+original owner through normal close, observed termination and release.
+
+The next connected case should inspect the first-failure stage/substep/timing
+if project capture fails. Only a successful original constructor capture
+admits the held-import observation. Preserve complete origin evidence and
+explicit diagnostic refusals; a matching native creation stack still does
+not establish full Worker/CDP identity or authorize continuation and Save.
+The excluded production project remains unopened and unchanged.
+
+Remaining PCB work includes subordinate continuation, independent complete
+Worker/CDP identity, project/canvas producer and cross-realm channel joins,
+callback/publication/copper completion, full assets/producers/queues/clocks
+and persistence baselines, and the blocked structure/SQL writer lifecycles.
+Hidden annotation and Save All paths remain blocked. Broader library,
+schematic, PCB and manufacturing adapters require their own scoped effects
+and saved-result evidence; discovery is not execution support.
+
+Independent API triage identified useful work that can proceed alongside
+PCB startup. Batch these implementations with their focused checks and
+task-skill guidance rather than publishing each diagnostic separately:
+
+- `sys_Tool.netlistComparison`: accept two exact managed File artifacts.
+  String arguments are document UUIDs and can enter PCB worker code; exclude
+  them. Qualify one complete parser first, bound inputs/decoded data/output,
+  and distinguish failed parsing from an empty difference list. Installed
+  result fields differ from the SDK declarations and need explicit handling.
+- Owner-explicit symbol/device searches: require an exact library identity
+  and bounded queries/results. Device search also fetches 3D references;
+  name filters introduce further searches. Footprint search filters by owner
+  only after a wider authenticated response, so it cannot be described as
+  an owner-restricted network read. Owner-list discovery needs its client
+  refresh/cache effects qualified in the same batch.
+- Symbol PNG preview: qualify its temporary schematic manager, preview-cache
+  writes and failure cleanup before adding a managed Blob contract. Validate
+  multipart selection rather than accepting the implementation's silent
+  fallback. Footprint preview creates a PCB iframe and remains dependent on
+  startup work. Archive inspection remains lower priority because expansion,
+  private logging and stream lifetimes need bounded handling.
+
+These are concrete implementation candidates and limitations, not newly
+enabled APIs or connected validation. Preserve the exhaustive coverage
+inventory and update individual reasons only with the corresponding work.
+
+## Follow-up, 2026-10-25
+
+Main Linux CI40162315928 finished successfully. Actual34840 admission, one
+terminal disposable capture and the combined netlist/catalog/reader/bootstrap
+batch are recorded in [the follow-up](2026-10-25-netlist-symbol-readers-and-bootstrap.md).
+The earlier pending statements remain as their original observations.

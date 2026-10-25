@@ -6,6 +6,7 @@
 import { CURRENT_PCB_209_RATLINE_NATIVE_PROFILE } from "./current-pcb-209-ratline-budget.ts";
 import { createHash } from "node:crypto";
 import { types } from "node:util";
+import { currentPcb209RatlineTransportRequestMilliseconds } from "./current-pcb-209-ratline-transport-windows.ts";
 import { z } from "zod";
 import { captureCurrentPcbStringClockReply } from "./current-pcb-string-clock-reply.ts";
 import { CURRENT_PCB_209_RATLINE_CREATION_GROUP as GROUP, CURRENT_PCB_209_RATLINE_CREATION_PROFILES as PROFILES } from "./current-pcb-209-ratline-creation-profile.ts";
@@ -146,12 +147,13 @@ class CurrentPcb209RatlineCreationCore {
   #poison(code: string): void { this.#failure ??= fail(code); this.#waiting.reject(this.#failure); this.#childReady.reject(this.#failure); this.#armed.reject(this.#failure); }
   async #send(command: CurrentPcb209RatlineCreationCommand): Promise<unknown> {
     await this.#current(); need(this.#commands < 24, "BUDGET"); this.#commands += 1;
-    const reply = captureCurrentPcbStringClockReply(await bounded(this.#request.call(this.#transport, command))).value;
+    const reply = captureCurrentPcbStringClockReply(await bounded(this.#request.call(this.#transport, command),
+      currentPcb209RatlineTransportRequestMilliseconds(this.#transport, command.method))).value;
     await this.#current(); return reply;
   }
   async #cleanupSend(command: CurrentPcb209RatlineCreationCommand): Promise<void> {
     this.#same(); need(this.#commands < 32, "CLEANUP_BUDGET"); this.#commands += 1;
-    const reply = await bounded(this.#request.call(this.#transport, command));
+    const reply = await bounded(this.#request.call(this.#transport, command), currentPcb209RatlineTransportRequestMilliseconds(this.#transport, command.method));
     empty.parse(captureCurrentPcbStringClockReply(reply).value); this.#same();
   }
   readonly #paused = (input: unknown): void => {
@@ -246,7 +248,7 @@ class CurrentPcb209RatlineCreationCore {
       this.#breakpoints.set(name, { id: reply.breakpointId, removal: null, removed: false }); this.#uncertain -= 1;
       if (this.#failure !== null) { void observed(this.#cleanup()); }
       need(JSON.stringify(reply.actualLocation) === JSON.stringify(requested), "BREAKPOINT_RELOCATED");
-    })(); await bounded(pending); await this.#current();
+    })(); await bounded(pending, currentPcb209RatlineTransportRequestMilliseconds(this.#transport, "Debugger.setBreakpoint")); await this.#current();
   }
   async #next(name: "before" | "after"): Promise<Readonly<{ retained: Pause; frameId: string }>> {
     const retained = await bounded(this.#waiting.promise, 20_000); this.#waiting = Promise.withResolvers(); void observed(this.#waiting.promise);

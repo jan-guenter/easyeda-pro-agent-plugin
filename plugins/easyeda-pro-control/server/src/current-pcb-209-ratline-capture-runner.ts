@@ -3,6 +3,7 @@
  * No native adapter or public registration adopts this private transport yet. */
 import { CURRENT_PCB_209_RATLINE_NATIVE_PROFILE } from "./current-pcb-209-ratline-budget.ts";
 import { types } from "node:util";
+import { currentPcb209RatlineTransportRequestMilliseconds } from "./current-pcb-209-ratline-transport-windows.ts";
 import { z } from "zod";
 import { captureCurrentPcbStringClockReply } from "./current-pcb-string-clock-reply.ts";
 import { CURRENT_PCB_209_RATLINE_CAPTURE_PROFILES, CURRENT_PCB_209_RATLINE_CAPTURE_GROUP as GROUP } from "./current-pcb-209-ratline-capture-profile.ts";
@@ -147,12 +148,13 @@ class CurrentPcb209RatlineCaptureCore {
   }
   async #send(command: CurrentPcb209RatlineCaptureCommand): Promise<unknown> {
     await this.#current(); need(this.#commands < 112, "BUDGET"); this.#commands += 1;
-    const value = captureCurrentPcbStringClockReply(await bounded(this.#request.call(this.#transport, command))).value;
+    const value = captureCurrentPcbStringClockReply(await bounded(this.#request.call(this.#transport, command),
+      currentPcb209RatlineTransportRequestMilliseconds(this.#transport, command.method))).value;
     await this.#current(); return value;
   }
   async #cleanupSend(command: CurrentPcb209RatlineCaptureCommand): Promise<void> {
     this.#same(); need(this.#commands < 128, "CLEANUP_BUDGET"); this.#commands += 1;
-    const reply = await bounded(this.#request.call(this.#transport, command));
+    const reply = await bounded(this.#request.call(this.#transport, command), currentPcb209RatlineTransportRequestMilliseconds(this.#transport, command.method));
     emptyReply.parse(captureCurrentPcbStringClockReply(reply).value); this.#same();
   }
   readonly #paused = (input: unknown): void => {
@@ -221,7 +223,7 @@ class CurrentPcb209RatlineCaptureCore {
       if (this.#failed !== null) { void observed(this.#cleanup()); }
       need(JSON.stringify(reply.actualLocation) === JSON.stringify(requested), "BREAKPOINT_RELOCATED");
     })();
-    await bounded(pending); await this.#current();
+    await bounded(pending, currentPcb209RatlineTransportRequestMilliseconds(this.#transport, "Debugger.setBreakpoint")); await this.#current();
   }
   #select(callFrameId: string, expression: Expression, returnByValue = false): Promise<unknown> {
     return this.#send({ method: "Debugger.evaluateOnCallFrame", params: { callFrameId, expression, returnByValue, objectGroup: GROUP,

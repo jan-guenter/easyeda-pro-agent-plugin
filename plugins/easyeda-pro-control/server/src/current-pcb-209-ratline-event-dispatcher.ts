@@ -2,6 +2,7 @@
  * owners. It routes original allocated breakpoint IDs, never a supplied trace.
  * The containing native owner still owns its unchanged total request budget. */
 import { types } from "node:util";
+import { bindCurrentPcb209RatlinePcbTransport } from "./current-pcb-209-ratline-transport-windows.ts";
 import { z } from "zod";
 import { captureCurrentPcbStringClockReply } from "./current-pcb-string-clock-reply.ts";
 import { CurrentPcb209RatlinePcbCreation, CurrentPcb209RatlineWorkerCreation } from "./current-pcb-209-ratline-creation-runner.ts";
@@ -101,6 +102,7 @@ export class CurrentPcb209RatlineEventDispatcher {
       request: command => this.#send("capture", { ...command, sessionId: dependency.parentSessionId }),
       subscribe: events => this.#subscribe("capture", { ...events, attached: (): void => { this.#poison(); } }),
     };
+    if (role === "pcb") { bindCurrentPcb209RatlinePcbTransport(creationTransport); bindCurrentPcb209RatlinePcbTransport(captureTransport); }
     this.#stages = Object.freeze(role === "pcb" ? { creation: new CurrentPcb209RatlinePcbCreation(creationTransport), capture: new CurrentPcb209RatlinePcbCapture(captureTransport) } :
       { creation: new CurrentPcb209RatlineWorkerCreation(creationTransport), capture: new CurrentPcb209RatlineWorkerCapture(captureTransport) });
     // oxlint-disable-next-line typescript/unbound-method -- Retain exact methods for identity checks; every invocation below uses the original receiver via call.

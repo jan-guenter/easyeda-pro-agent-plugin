@@ -12,7 +12,9 @@ import { CURRENT_PCB_DIAGNOSTIC_PCB_OPENING_FUNCTION } from "./current-pcb-diagn
 import { CURRENT_PCB_209_RATLINE_NATIVE_PROFILE as PROFILE, assertOriginalCurrentPcb209RatlineBudget, currentPcb209RatlineSourceBudget, isCurrentPcb209RatlineNormalResourceRefusal } from "./current-pcb-209-ratline-budget.ts";
 import type { CurrentPcb209RatlineBudget, CurrentPcb209RatlineReplyKind } from "./current-pcb-209-ratline-budget.ts";
 import { currentPcb209RatlineNativeWire } from "./current-pcb-209-ratline-native-wire.ts";
-// oxlint-disable-next-line import/max-dependencies -- This channel joins the existing prelude vocabulary with the finite ratline encoder and one original launch ledger.
+// oxlint-disable-next-line import/max-dependencies -- This channel joins the prelude vocabulary, finite ratline encoder, original launch ledger and shared bounded diagnostic classifier.
+import { currentPcb209RatlineEventKind, currentPcb209RatlineFailureReason } from "./current-pcb-209-ratline-diagnostics.ts";
+import type { CurrentPcb209RatlineEventKind } from "./current-pcb-209-ratline-diagnostics.ts";
 import type { CurrentPcb209RatlineNativeCommand, CurrentPcb209RatlineNativeRole } from "./current-pcb-209-ratline-native-cases.ts";
 
 export interface CurrentPcb209RatlineStartupNativeDependency {
@@ -34,6 +36,10 @@ type Route = "startup" | "parent" | CurrentPcb209RatlineNativeRole;
 type RatlineEvents = Parameters<CurrentPcb209RatlineStartupDependency["subscribe"]>[0];
 interface Realm { arms: number; armed: boolean; sources: number; resumes: number; scriptId: string | null }
 interface Allocation { readonly sessionId: string; readonly kind: CurrentPcb209RatlineReplyKind; removed: boolean }
+type EventObservation = Readonly<{ kind: CurrentPcb209RatlineEventKind; session: "parent" | "child" | "background" | "other" }>;
+type Failure = Readonly<{ code: string; reason: string | null; phase: "startup" | "preparation" | "ratline";
+  lastCommand: Command["method"] | null; lastRoute: Route | null; lastEvent: EventObservation | null; nextRequestId: number;
+  pendingReplies: number; pcbArms: number; pcbSources: number; pcbResumes: number; childArms: number; childSources: number; childResumes: number }>;
 const token = z.string().min(1).max(128).regex(/^[A-Za-z\d_.:-]+$/u);
 const nativeToken = z.string().min(1).max(256).regex(/^[A-Za-z\d_.:-]+$/u);
 const externalStackSchema = z.object({ id: nativeToken, debuggerId: nativeToken }).strict();
@@ -136,6 +142,10 @@ export class CurrentPcb209RatlineStartupChannel {
   #pcbPreflightConsumed = false;
   #pcbOpeningConsumed = false;
   #failure: Error | null = null;
+  #firstFailure: Failure | null = null;
+  #lastCommand: Command["method"] | null = null;
+  #lastRoute: Route | null = null;
+  #lastEvent: EventObservation | null = null;
   #fatal = false;
 
   public constructor(native: CurrentPcb209RatlineStartupNativeDependency, budget: CurrentPcb209RatlineBudget) {
@@ -146,10 +156,12 @@ export class CurrentPcb209RatlineStartupChannel {
   }
   public status(): Readonly<{ started: boolean; released: boolean; failed: boolean; fatal: boolean;
     pendingReplies: number; nextRequestId: number; phase: "startup" | "preparation" | "ratline"; childStarted: boolean;
-    attachedWorkers: number; receivedBytes: number; pollCount: number; budget: ReturnType<CurrentPcb209RatlineBudget["snapshot"]> }> {
+    attachedWorkers: number; receivedBytes: number; pollCount: number; budget: ReturnType<CurrentPcb209RatlineBudget["snapshot"]>;
+    firstFailure: Failure | null; lastCommand: Command["method"] | null; lastRoute: Route | null; lastEvent: EventObservation | null }> {
     return Object.freeze({ started: this.#started, released: this.#released, failed: this.#failure !== null, fatal: this.#fatal,
       pendingReplies: this.#pending.size, nextRequestId: this.#nextId, phase: this.#phase, childStarted: this.#childStarted,
-      attachedWorkers: this.#workers.size, receivedBytes: this.#budget.snapshot().receivedBytes, pollCount: this.#budget.snapshot().polls, budget: this.#budget.snapshot() });
+      attachedWorkers: this.#workers.size, receivedBytes: this.#budget.snapshot().receivedBytes, pollCount: this.#budget.snapshot().polls, budget: this.#budget.snapshot(),
+      firstFailure: this.#firstFailure, lastCommand: this.#lastCommand, lastRoute: this.#lastRoute, lastEvent: this.#lastEvent });
   }
   #sameMethods(): void {
     assertOriginalCurrentPcb209RatlineBudget(this.#budget);
@@ -163,7 +175,7 @@ export class CurrentPcb209RatlineStartupChannel {
     try {
       this.#sameMethods(); this.#budget.assertNormal(); const parent = await this.#parentMethod.call(this.#native); this.#sameMethods(); this.#budget.assertNormal();
       if (parent !== this.#parent || this.#released || this.#releaseRequested || this.#terminationVerified || this.#failure !== null) { throw fail("ORIGINAL_PARENT"); }
-    } catch (error) { this.#poison("OWNER"); throw error; }
+    } catch (error) { this.#poison("OWNER", false, error); throw error; }
   }
   public async start(): Promise<CurrentPcbWorkerStartupDependency> {
     if (this.#started) { throw fail("START_CONSUMED"); } this.#started = true;
@@ -188,9 +200,13 @@ export class CurrentPcb209RatlineStartupChannel {
       },
     });
   }
-  #poison(code: string, fatal = false): void {
+  #poison(code: string, fatal = false, cause?: unknown): void {
     const first = this.#failure === null; this.#failure ??= fail(code); this.#fatal ||= fatal;
     if (first) {
+      this.#firstFailure = Object.freeze({ code, reason: cause === undefined ? null : currentPcb209RatlineFailureReason(cause), phase: this.#phase,
+        lastCommand: this.#lastCommand, lastRoute: this.#lastRoute, lastEvent: this.#lastEvent, nextRequestId: this.#nextId, pendingReplies: this.#pending.size,
+        pcbArms: this.#realms.pcb.arms, pcbSources: this.#realms.pcb.sources, pcbResumes: this.#realms.pcb.resumes,
+        childArms: this.#realms.worker.arms, childSources: this.#realms.worker.sources, childResumes: this.#realms.worker.resumes });
       try { this.#ratlineListener?.lost(); } catch { this.#fatal = true; }
     }
     for (const pending of this.#pending.values()) {
@@ -273,7 +289,7 @@ export class CurrentPcb209RatlineStartupChannel {
       void observe(this.#queue(async (): Promise<void> => { try {
         z.object({ aborted: z.literal(true) }).strict().parse(captureCurrentPcbStringClockReply(
           await this.#exchange.call(this.#native, { action: "worker-startup-ratline-abort" })).value); this.#abortAcknowledged = true; pending.resolve(null);
-      } catch (error) { this.#poison("CLEANUP_ACK", true); pending.reject(error); } }));
+      } catch (error) { this.#poison("CLEANUP_ACK", true, error); pending.reject(error); } }));
     }
     return this.#cleanup;
   }
@@ -382,6 +398,7 @@ export class CurrentPcb209RatlineStartupChannel {
         }
         else { await this.#currentWithinQueue(); }
         this.#sameMethods();
+        this.#lastCommand = command.method; this.#lastRoute = route;
         if (this.#fatal || this.#released || this.#releaseRequested || this.#pending.size >= (cleanup ? PROFILE.pendingRequests : PROFILE.normalPendingRequests)) { throw fail("REQUEST_BUDGET"); }
         let kind: CurrentPcb209RatlineReplyKind;
         if (route === "startup" || route === "parent") {
@@ -410,7 +427,7 @@ export class CurrentPcb209RatlineStartupChannel {
         if (!pending.classified || this.#budget.snapshot().requests !== id) { throw fail("ORIGINAL_RESERVATION"); }
         pending.written = true; this.#complete(pending);
       } catch (error) {
-        this.#poison("WRITE");
+        this.#poison("WRITE", false, error);
         if (isCurrentPcb209RatlineNormalResourceRefusal(error, this.#budget)) { void observe(this.beginCleanup()); }
         if (pending === null) { completion.reject(error); }
         else { pending.writeFailed = true; this.#complete(pending); }
@@ -489,7 +506,7 @@ export class CurrentPcb209RatlineStartupChannel {
         this.#attachAcknowledged = true;
       }
       try { if (pending.route === "pcb" || pending.route === "worker") { this.#retainRatlineReply(pending); } }
-      catch (error) { this.#poison("ALLOCATION_REPLY", true); pending.completion.reject(error); return; }
+      catch (error) { this.#poison("ALLOCATION_REPLY", true, error); pending.completion.reject(error); return; }
       pending.completion.resolve(pending.result);
     }
   }
@@ -513,8 +530,8 @@ export class CurrentPcb209RatlineStartupChannel {
         this.#chunk(await this.#exchange.call(this.#native, { action: "poll" }));
       } catch (error) {
         if (isCurrentPcb209RatlineNormalResourceRefusal(error, this.#budget)) {
-          this.#poison("POLL_RESOURCE"); void observe(this.beginCleanup());
-        } else { this.#poison("POLL", true); }
+          this.#poison("POLL_RESOURCE", false, error); void observe(this.beginCleanup());
+        } else { this.#poison("POLL", true, error); }
       }
       finally { this.#pollQueued = false; this.#schedulePoll(PROFILE.polling.intervalMilliseconds); }
     });
@@ -569,6 +586,11 @@ export class CurrentPcb209RatlineStartupChannel {
     if (bytes > MAX_FRAME || this.#parent === null) { throw fail("EVENT_BUDGET"); }
     const event = z.object({ method: z.string().min(1).max(128), params: z.record(z.string(), z.unknown()), sessionId: token }).strict()
       .parse(captureCurrentPcbStringClockReply(value).value);
+    let session: EventObservation["session"] = "other";
+    if (event.sessionId === this.#parent.sessionId) { session = "parent"; }
+    else if (event.sessionId === this.#child?.sessionId) { session = "child"; }
+    else if (this.#workers.has(event.sessionId)) { session = "background"; }
+    this.#lastEvent = Object.freeze({ kind: currentPcb209RatlineEventKind(event.method), session });
     if (this.#phase === "ratline" && (event.sessionId === this.#parent.sessionId || event.sessionId === this.#child?.sessionId)) {
       this.#ratlineEvent(event); return;
     }
@@ -597,7 +619,7 @@ export class CurrentPcb209RatlineStartupChannel {
         if (types.isPromise(result)) { void observe(result); }
         throw fail("PARENT_EVENT");
       }
-    } catch { this.#poison("PARENT_EVENT"); }
+    } catch (error) { this.#poison("PARENT_EVENT", false, error); }
   }
   async #originalTermination(): Promise<void> {
     await this.#queue(async (): Promise<void> => {

@@ -179,9 +179,12 @@ PCB/API files, keeps a byte-exact private backup and changes only two bundle
 selectors. The control root, Node, upstream, credentials and journals stay
 unchanged. It never promotes an existing process or updates the legacy global
 compatibility profile. Restart Codex afterward. The new `public-utilities-only`
-mode registers fourteen tools, with separate runtime admission for 16 Math, 18
-Unit/Environment operations, three language/API-page viewport readers,
+mode registers fifteen tools, with separate runtime admission for 16 Math, 18
+Unit/Environment operations, six language/viewport/theme/toolbar-unit/system-ID readers,
 tab-count/active-identity/shortcut observations and ordinary launch. A separate
+managed-file netlist comparison requires runtime admission and compares only
+footprint/designator and net/pin memberships. Local file preparation contacts
+no app. A separate
 public catalog lookup/search requires explicit network confirmation but no
 application, bridge or SDK execution. A separately pinned disposable project/PCB
 opener retains its original native process through normal cleanup. Ordinary
