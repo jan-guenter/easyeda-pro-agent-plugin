@@ -8,7 +8,7 @@ import { stripTypeScriptTypes } from "node:module";
 import { test } from "node:test";
 import vm from "node:vm";
 import { z } from "zod";
-import { CurrentPcb209DiagnosticLifecycle, CurrentPcb209EmptyStartupLifecycle, CurrentPcb209WorkerStartupLifecycle } from "../src/current-pcb-diagnostic-lifecycle.ts";
+import { CurrentPcb209DiagnosticLifecycle, CurrentPcb209EmptyStartupLifecycle, CurrentPcb209RatlineStartupLifecycle, CurrentPcb209WorkerStartupLifecycle } from "../src/current-pcb-diagnostic-lifecycle.ts";
 import type { CurrentPcbDiagnosticLifecycleOptions } from "../src/current-pcb-diagnostic-lifecycle.ts";
 import { CURRENT_PCB_DIAGNOSTIC_PROFILE } from "../src/current-pcb-diagnostic-profile.ts";
 import { currentPcbDiagnosticToolRequestSchema } from "../src/current-pcb-diagnostic-validation.ts";
@@ -19,6 +19,7 @@ import { currentPcb209WorkerStartupToolRequestSchema } from "../src/current-pcb-
 import { facadeToolRegistered } from "../src/facade-mode.ts";
 
 function forbiddenLegacyLifecycle(): never { assert.fail("209 registration selected a legacy diagnostic or worker-startup lifecycle"); }
+function wrapRatline(request: unknown): { request: unknown } { return { request: { action: "ratline-held-import", request } }; }
 
 void test("209 public opening and startup callbacks select original lifecycles and reject wider/caller-selected routes before allocation", async () => {
   const source = await readFile(new URL("../src/index.ts", import.meta.url), "utf8");
@@ -52,7 +53,7 @@ void test("209 public opening and startup callbacks select original lifecycles a
     } };
   const scope = vm.createContext({ z, currentPcb209OpeningRequestSchema, currentPcbDiagnosticToolRequestSchema, currentPcb209WorkerStartupToolRequestSchema,
     CURRENT_PCB_DIAGNOSTIC_PROFILE, CurrentPcb209DiagnosticLifecycle: Selected209Lifecycle,
-    CurrentPcb209WorkerStartupLifecycle: Selected209StartupLifecycle, CurrentPcb209EmptyStartupLifecycle,
+    CurrentPcb209WorkerStartupLifecycle: Selected209StartupLifecycle, CurrentPcb209EmptyStartupLifecycle, CurrentPcb209RatlineStartupLifecycle,
     CurrentPcbDiagnosticLifecycle: forbiddenLegacyLifecycle, CurrentPcbWorkerStartupLifecycle: forbiddenLegacyLifecycle,
     currentPcbDiagnosticLifecycle: undefined, currentPcbStringPrecreateLifecycle: undefined, currentPcbWorkerStartupLifecycle: undefined,
     process: { env: environment }, engine, upstream, facadeMode: "public-utilities-only", facadeToolRegistered,
@@ -190,4 +191,29 @@ void test("209 public opening and startup callbacks select original lifecycles a
   await assert.rejects(startupInvoke({ request: { action: "inspect", operationId: startupId } }), /original index owner/u);
   scope["currentPcbWorkerStartupLifecycle"] = startupOwner;
   startupOptions.assertLocalAllowed(); options.assertLocalAllowed(); assert.equal(startupAllocations, 1); assert.equal(allocations, 1);
+
+  // The new wrapper still selects the real inherited lifecycle. Its distinct
+  // Purpose and pause field are validated before changing the retained owner.
+  const ratlineId = "pcb209-ratline-registration";
+  const ratlineObserve = { action: "observe-ratline-held-import", operationId: ratlineId, expectedBindingSha256,
+    acceptNormalOpenEffects: true, acceptDebuggerPause: true };
+  const beforeRatline = counts();
+  for (const request of [{ ...ratlineObserve, operationId: startupId }, { ...ratlineObserve, acceptDebuggerPause: false },
+    { ...ratlineObserve, acceptDebuggerPauseEffects: true }, { ...ratlineObserve, target },
+    { action: "observe-current-assignments", operationId: ratlineId, expectedBindingSha256 },
+    { ...launch, operationId: ratlineId, generation: "209-startup" }]) {
+    const input = wrapRatline(request);
+    assert.equal(startupRegistration.inputSchema.safeParse(input).success, false); await assert.rejects(startupInvoke(input));
+  }
+  assert.equal(scope["currentPcbWorkerStartupLifecycle"], startupOwner); assert.deepEqual(counts(), beforeRatline);
+  const ratlineInspected = await startupInvoke(wrapRatline({ action: "inspect", operationId: ratlineId }));
+  assert.match(JSON.stringify(ratlineInspected), /not-found/u);
+  assert.ok(scope["currentPcbWorkerStartupLifecycle"] instanceof CurrentPcb209RatlineStartupLifecycle);
+  assert.equal(Object.hasOwn(CurrentPcb209RatlineStartupLifecycle.prototype, "run"), false);
+  assert.deepEqual(counts(), beforeRatline);
+  await assert.rejects(startupInvoke(wrapRatline({ ...launch, operationId: ratlineId })), /unresolved engine journal/u);
+  assert.equal(startupRegistration.inputSchema.safeParse(wrapRatline(ratlineObserve)).success, true);
+  await assert.rejects(startupInvoke(wrapRatline(ratlineObserve)), /ORIGINAL_STARTUP_RATLINE_REQUIRED/u);
+  assert.equal(checks, beforeRatline.checks + 1); assert.equal(gateCalls, beforeRatline.gateCalls + 2);
+  assert.equal(startupAllocations, 1); assert.equal(allocations, 1);
 });

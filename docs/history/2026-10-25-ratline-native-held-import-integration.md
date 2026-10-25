@@ -126,3 +126,20 @@ A second build reproduced both bundles. Only facade projections and review
 time changed in compatibility metadata; external application, upstream,
 dispatcher and bridge pins remain unchanged. Final CI/publication/installation
 remain separate from connected acceptance.
+
+## CI fixture corrections
+
+The first PR CI run, `40155217347` against `c45f727`, found two stale test
+fixtures in facade shard 7. The registration VM had not imported the new
+ratline lifecycle class. The native adapter assertion still expected the
+pre-ratline request-limit expression. The failures are retained; no test was
+filtered or disabled.
+
+The registration fixture now includes the actual class and checks ratline
+schema selection, original lifecycle selection, engine admission and retained
+session refusals. Native adapter assertions retain the legacy limits and check
+the new purpose's distinct request and byte limits. Both affected test files
+pass their focused checks, and strict type-aware lint is clean. These are
+test-only corrections; the candidate version, native helper, 694-file source
+projection and three bundle entries above remain unchanged. The corrected
+commit must pass the complete CI matrix before publication.
