@@ -61,9 +61,14 @@ while the original `open-document` request remains pending, in its original UI
 context, with the original script/stop events and byte-exact generated function
 source. It retains PCB instrumentation and consumes neither a PCB source slot
 nor a PCB bootstrap resume. Any different or unqualified stop still refuses.
-These two fixed operations have their own two-request class: the normal limit
-is 320, with the unchanged 43-request cleanup reserve (363 total). Existing
-source slots, individual deadlines and cleanup time remain unchanged. Actual
+These two fixed operations have their own two-request class. The subsequent
+UI loader can construct one default empty callback before creating the PCB
+frame. That pause has its own two-request source/resume class. It requires the
+original three-frame creator stack, UI script/context, complete generated source
+and pending opening. A pause arriving before the navigation resume reply waits
+for that original acknowledgment. Neither UI pause advances PCB source ordinals.
+The normal limit is 322, with the unchanged 43-request cleanup reserve
+(365 total). Existing source slots, individual deadlines and cleanup time remain unchanged. Actual
 V8 fixture reproduction validates this compilation case; it does not establish
 the cause of a historical EasyEDA refusal whose original pause was unavailable.
 
@@ -98,8 +103,9 @@ provenance cannot qualify navigation. Raw evidence is private inspection data,
 never an execution token, and survives original cleanup without replacement.
 
 Aggregate waits account for serial owner/request/owner checks and four ancestry
-snapshots. Individual request and first-pause deadlines, launch limits and
-cleanup reserves remain fixed. A timeout does not cancel the original request.
+snapshots. The first PCB source pause also allows the two preceding UI pause
+sequences. Later source-pause deadlines, individual request deadlines, launch
+limits and cleanup reserves remain fixed. A timeout does not cancel the original request.
 Late breakpoint acknowledgments belong to the original cleanup owner and never
 authorize another allocation or capture.
 
@@ -140,6 +146,8 @@ and cleanup; leave Save/Discard prompts unanswered unless authorized. Normal
 exit proves neither discard nor unchanged storage.
 
 This purpose offers no actor/channel observation, empty baseline, geometry
-editing or Save. Remaining work includes independent Worker-target association,
-worker and subordinate continuation, callback return, publication completion,
-complete live/source/SQL membership and saved/reopened persistence.
+editing or Save. The separate [fresh continuation purpose](current-pcb209-ratline-continuation.md)
+can observe both worker imports and full capture packets; it cannot upgrade this retained owner.
+Independent Worker-target association, callback completion, publication
+completion, complete live/source/SQL membership and saved/reopened persistence
+remain separate work.

@@ -10,9 +10,10 @@ import type { CurrentPcb209RatlineRealmCommand } from "./current-pcb-209-ratline
 import { freezeDeep } from "./sqlite-inventory-core.ts";
 
 import type { CurrentPcb209RatlineNavigationCommand } from "./current-pcb-209-ratline-navigation-pause.ts";
+import type { CurrentPcb209RatlineLoaderCommand } from "./current-pcb-209-ratline-loader-pause.ts";
 
 export type CurrentPcb209RatlineNativeRole = "pcb" | "worker";
-export type CurrentPcb209RatlineNativeCommand = CurrentPcb209RatlineRealmCommand | CurrentPcb209RatlineBootstrapCommand | CurrentPcb209RatlineOriginCommand | CurrentPcb209RatlineNavigationCommand;
+export type CurrentPcb209RatlineNativeCommand = CurrentPcb209RatlineRealmCommand | CurrentPcb209RatlineBootstrapCommand | CurrentPcb209RatlineOriginCommand | CurrentPcb209RatlineNavigationCommand | CurrentPcb209RatlineLoaderCommand;
 export interface CurrentPcb209RatlineNativeCase {
   readonly role: CurrentPcb209RatlineNativeRole;
   readonly phase: string;
@@ -38,6 +39,8 @@ for (const role of ["pcb", "worker"] as const) {
   if (role === "pcb") {
     put("navigation-source", { method: "Debugger.getScriptSource", sessionId, navigationPhase: "source", params: { scriptId } });
     put("navigation-resume", { method: "Debugger.resume", sessionId, navigationPhase: "resume", params: {} });
+    put("loader-source", { method: "Debugger.getScriptSource", sessionId, loaderPhase: "source", params: { scriptId } });
+    put("loader-resume", { method: "Debugger.resume", sessionId, loaderPhase: "resume", params: {} });
     put("origin-stack", { method: "Debugger.getStackTrace", sessionId,
       params: { stackTraceId: { id: placeholder("stackTraceId"), debuggerId: placeholder("debuggerId") } } });
   }

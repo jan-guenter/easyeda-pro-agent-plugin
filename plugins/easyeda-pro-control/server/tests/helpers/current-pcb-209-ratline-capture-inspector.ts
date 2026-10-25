@@ -33,15 +33,20 @@ export async function ratlineCaptureInspector(context: TestContext, role: Curren
     ["--inspect=127.0.0.1:0", "--input-type=commonjs", "-e", "setInterval(()=>{},1000)"];
   const child = spawn(process.execPath, args, { stdio: ["pipe", "pipe", "pipe"] });
   const address = Promise.withResolvers<string>(), closed = Promise.withResolvers<null>(), exited = Promise.withResolvers<null>();
-  const pending = new Map<number, Readonly<{ reply: PromiseWithResolvers<unknown>; timer: ReturnType<typeof setTimeout> }>>();
+  const pending = new Map<number, Readonly<{ method: string; reply: PromiseWithResolvers<unknown>; timer: ReturnType<typeof setTimeout> }>>();
   const subscribers = new Set<Parameters<CurrentPcb209RatlineCaptureTransport["subscribe"]>[0]>();
   const expectedPauses = options.expectedPauses ?? CURRENT_PCB_209_RATLINE_CAPTURE_PROFILES[role].sequence.length, extraPause = Promise.withResolvers<null>();
   let extraPauseRequested = false;
   let nextId = 1, ownerCurrent = true, pauses = 0, resumes = 0, terminated = false;
-  let failure: Error | null = null, socket: WebSocket | null = null, teardown: Promise<void> | null = null;
+  let failure: Error | null = null, failureBeforeTeardown = false, socket: WebSocket | null = null, teardown: Promise<void> | null = null;
   let stderr = "";
   const commands: string[] = [];
+  const failureContext = (): Readonly<Record<string, unknown>> => Object.freeze({ pendingRequestCount: pending.size,
+    pendingMethods: [...pending.values()].slice(0, 16).map(value => value.method.slice(0, 80)), pendingMethodsTruncated: pending.size > 16,
+    childExitCode: child.exitCode, childSignalCode: child.signalCode, teardownConsumed: teardown !== null,
+    pauses, resumes, subscribers: subscribers.size });
   const fail = (error: Error): void => {
+    if (failure === null) { failureBeforeTeardown = teardown === null; }
     failure ??= error; ownerCurrent = false; address.reject(failure); extraPause.reject(failure);
     for (const value of pending.values()) { clearTimeout(value.timer); value.reply.reject(failure); } pending.clear();
     for (const subscriber of subscribers) { subscriber.lost(); }
@@ -49,8 +54,13 @@ export async function ratlineCaptureInspector(context: TestContext, role: Curren
   void observed(address.promise); void observed(extraPause.promise);
   child.once("error", error => { fail(error); });
   child.once("exit", (code, signal) => { terminated = true; exited.resolve(null);
-    fail(new Error(`RATLINE_FIXTURE_CHILD_EXIT_${String(code)}_${String(signal)}`)); });
-  child.once("close", () => { closed.resolve(null); });
+    fail(new Error(`RATLINE_FIXTURE_CHILD_EXIT_${String(code)}_${String(signal)}`, { cause: failureContext() })); });
+  child.once("close", () => {
+    // The socket can fail before Node reports why the original child exited.
+    // Keep that later observation without changing the first rejection.
+    if (failureBeforeTeardown) { context.diagnostic(JSON.stringify({ event: "ratline-fixture-child-close", ...failureContext() })); }
+    closed.resolve(null);
+  });
   child.stderr.on("data", (data: Buffer) => {
     stderr += data.toString("utf8");
     if (stderr.length > 32_768) { fail(new Error("RATLINE_FIXTURE_STDERR_BOUND")); return; }
@@ -78,7 +88,7 @@ export async function ratlineCaptureInspector(context: TestContext, role: Curren
   context.after(terminate);
   const originalSocket = new WebSocket(await deadline(address.promise, "ADDRESS")); socket = originalSocket;
   originalSocket.on("error", error => { fail(error); });
-  originalSocket.once("close", () => { fail(new Error("RATLINE_FIXTURE_SOCKET_CLOSED")); });
+  originalSocket.once("close", () => { fail(new Error("RATLINE_FIXTURE_SOCKET_CLOSED", { cause: failureContext() })); });
   await deadline(once(originalSocket, "open"), "SOCKET_OPEN");
   originalSocket.on("message", bytes => {
     let buffer: Buffer;
@@ -105,7 +115,7 @@ export async function ratlineCaptureInspector(context: TestContext, role: Curren
     if (failure !== null) { return Promise.reject(failure); }
     const id = nextId; nextId += 1; const reply = Promise.withResolvers<unknown>();
     const timer = setTimeout(() => { fail(new Error(`RATLINE_FIXTURE_REQUEST_DEADLINE_${method}`)); }, 10_000);
-    pending.set(id, { reply, timer }); commands.push(method);
+    pending.set(id, { method, reply, timer }); commands.push(method);
     // oxlint-disable-next-line promise/prefer-await-to-callbacks -- ws reports asynchronous send failure through this callback; retain it in the original pending-request owner.
     originalSocket.send(JSON.stringify({ id, method, params }), error => { if (error) { fail(error); } }); return reply.promise;
   };

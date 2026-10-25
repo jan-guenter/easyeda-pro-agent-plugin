@@ -19,6 +19,8 @@ import { currentPcb209RatlineNativeWire } from "./current-pcb-209-ratline-native
 import { currentPcb209RatlineEventKind, currentPcb209RatlineFailureReason } from "./current-pcb-209-ratline-diagnostics.ts";
 import type { CurrentPcb209RatlineEventKind } from "./current-pcb-209-ratline-diagnostics.ts";
 import { retainCurrentPcb209RatlineAllocation } from "./current-pcb-209-ratline-transport-windows.ts";
+import { currentPcb209RatlineContinuationTiming, inheritCurrentPcb209RatlineContinuationTiming } from "./current-pcb-209-ratline-continuation-timing.ts";
+import type { CurrentPcb209RatlineContinuationTiming } from "./current-pcb-209-ratline-continuation-timing.ts";
 
 const monotonic = process.hrtime.bigint.bind(process.hrtime);
 type Creation = CurrentPcb209RatlinePcbCreation | CurrentPcb209RatlineWorkerCreation;
@@ -114,6 +116,7 @@ function isCopy(role: CurrentPcb209RatlineBootstrapRole): boolean { return role 
 export class CurrentPcb209RatlineBootstrapOwner {
   readonly #dependency: CurrentPcb209RatlineBootstrapDependency;
   readonly #members: readonly unknown[];
+  readonly #timing: CurrentPcb209RatlineContinuationTiming | null;
   readonly #stages: readonly Stage[];
   readonly #qualified = Promise.withResolvers<CurrentPcb209RatlineBootstrapPacket>();
   #creation: Creation | null = null;
@@ -159,6 +162,7 @@ export class CurrentPcb209RatlineBootstrapOwner {
   readonly #subordinates = new Map<string, { readonly targetId: string; startConsumed: boolean }>();
   public constructor(dependency: CurrentPcb209RatlineBootstrapDependency) {
     this.#members = members(dependency); this.#dependency = dependency;
+    this.#timing = currentPcb209RatlineContinuationTiming(dependency); inheritCurrentPcb209RatlineContinuationTiming(dependency, this);
     this.#stages = CURRENT_PCB_209_RATLINE_BOOTSTRAP_ROLES.map(role => ({ role, paused: Promise.withResolvers(), resumed: Promise.withResolvers(),
       script: null, pause: null, qualified: false, resume: null, resumeSeen: false }));
     void observed(this.#qualified.promise);
@@ -176,9 +180,10 @@ export class CurrentPcb209RatlineBootstrapOwner {
   async #current(): Promise<void> {
     this.#same(); need(!this.#failed && !this.#released && this.#creation !== null && this.#construction !== null, "NOT_CURRENT");
     const creation = this.#creation, packet = this.#construction;
-    this.#step = "creation-reproof"; await bounded(requireCreation.call(creation, packet)); this.#same();
+    this.#step = "creation-reproof"; await bounded(requireCreation.call(creation, packet), this.#timing?.parentOwnerMilliseconds); this.#same();
     this.#step = "child-owner-reproof";
-    await bounded(this.#dependency.assertOriginalChild(creation, packet), (this.#firstChild ? 2 : 1) * CURRENT_PCB_209_RATLINE_NATIVE_PROFILE.elapsed.ordinaryRequestMilliseconds);
+    await bounded(this.#dependency.assertOriginalChild(creation, packet), this.#timing?.childDependencyMilliseconds ??
+      (this.#firstChild ? 2 : 1) * CURRENT_PCB_209_RATLINE_NATIVE_PROFILE.elapsed.ordinaryRequestMilliseconds);
     this.#same(); need(!this.#failed && !this.#released, "NOT_CURRENT");
   }
   #poison(cause: unknown = new Error("PCB209_RATLINE_BOOTSTRAP_ABORTED")): void {
@@ -229,7 +234,7 @@ export class CurrentPcb209RatlineBootstrapOwner {
         stage.script = script; return;
       }
       if (event.method === "Debugger.paused") {
-        if (this.#firstChild && this.#index === 0) {
+        if ((this.#firstChild || this.#timing !== null) && this.#index === 0) {
           need(this.#firstPauseStartedAt !== null, "CHILD_START_NOT_READY");
           need(Number(monotonic() - this.#firstPauseStartedAt) / 1_000_000 < CURRENT_PCB_209_RATLINE_NATIVE_PROFILE.elapsed.ordinaryRequestMilliseconds, "DEADLINE");
           if (this.#firstPauseTimer !== null) { clearTimeout(this.#firstPauseTimer); this.#firstPauseTimer = null; }
@@ -312,7 +317,8 @@ export class CurrentPcb209RatlineBootstrapOwner {
     }
     const milliseconds = cleanup ? 2 * CURRENT_PCB_209_RATLINE_NATIVE_PROFILE.elapsed.ordinaryRequestMilliseconds :
       CURRENT_PCB_209_RATLINE_NATIVE_PROFILE.elapsed.childBootstrapResumeMilliseconds;
-    await bounded(stage.resume, this.#firstChild ? milliseconds : CURRENT_PCB_209_RATLINE_NATIVE_PROFILE.elapsed.ordinaryRequestMilliseconds);
+    await bounded(stage.resume, this.#timing?.bootstrapResumeMilliseconds ??
+      (this.#firstChild ? milliseconds : CURRENT_PCB_209_RATLINE_NATIVE_PROFILE.elapsed.ordinaryRequestMilliseconds));
   }
   /** Direct adapter for composite.armOriginalChildBootstrap. It never starts
    * the child, resumes the parent, or accepts a copied construction packet. */
@@ -323,11 +329,11 @@ export class CurrentPcb209RatlineBootstrapOwner {
         (Object.getPrototypeOf(creation) === CurrentPcb209RatlinePcbCreation.prototype || Object.getPrototypeOf(creation) === CurrentPcb209RatlineWorkerCreation.prototype), "CREATION_OWNER");
       this.#creation = creation; this.#construction = packet;
       this.#firstChild = Object.getPrototypeOf(creation) === CurrentPcb209RatlinePcbCreation.prototype;
-      await bounded(requireCreation.call(creation, packet)); await this.#current();
+      await bounded(requireCreation.call(creation, packet), this.#timing?.parentOwnerMilliseconds); await this.#current();
       this.#unsubscribe = this.#dependency.subscribe({ event: this.#event, lost: this.#lost }); need(typeof this.#unsubscribe === "function", "SUBSCRIPTION");
       const sessionId = packet.childSessionId;
-      const sendMilliseconds = this.#firstChild ? CURRENT_PCB_209_RATLINE_NATIVE_PROFILE.elapsed.childBootstrapSendMilliseconds :
-        CURRENT_PCB_209_RATLINE_NATIVE_PROFILE.elapsed.ordinaryRequestMilliseconds;
+      const sendMilliseconds = this.#timing?.bootstrapSendMilliseconds ?? (this.#firstChild ? CURRENT_PCB_209_RATLINE_NATIVE_PROFILE.elapsed.childBootstrapSendMilliseconds :
+        CURRENT_PCB_209_RATLINE_NATIVE_PROFILE.elapsed.ordinaryRequestMilliseconds);
       const attachReply = await bounded(this.#send({ method: "Target.setAutoAttach", sessionId, params: CURRENT_PCB_WORKER_STARTUP_ATTACH }), sendMilliseconds);
       empty.parse(captureCurrentPcbStringClockReply(attachReply).value);
       const runtimeReply = await bounded(this.#send({ method: "Runtime.enable", sessionId, params: {} }), sendMilliseconds);
@@ -345,8 +351,8 @@ export class CurrentPcb209RatlineBootstrapOwner {
           if (this.#failed) { await this.#remove(); }
           allocated.resolve(null);
         } catch (error) { allocated.reject(error); }
-      })()); await bounded(this.#allocation, this.#firstChild ? CURRENT_PCB_209_RATLINE_NATIVE_PROFILE.elapsed.childBootstrapAllocationMilliseconds :
-        CURRENT_PCB_209_RATLINE_NATIVE_PROFILE.elapsed.ordinaryRequestMilliseconds); await this.#current(); this.#armed = true;
+      })()); await bounded(this.#allocation, this.#timing?.allocationMilliseconds ?? (this.#firstChild ? CURRENT_PCB_209_RATLINE_NATIVE_PROFILE.elapsed.childBootstrapAllocationMilliseconds :
+        CURRENT_PCB_209_RATLINE_NATIVE_PROFILE.elapsed.ordinaryRequestMilliseconds)); await this.#current(); this.#armed = true;
       this.#capture = this.#qualify(); void observed(this.#capture);
     } catch (error) { this.#poison(error); throw error; }
   }
@@ -354,7 +360,7 @@ export class CurrentPcb209RatlineBootstrapOwner {
     try {
       for (const [ordinal, stage] of this.#stages.entries()) {
         this.#step = "source-pause-wait";
-        const pause = pauseSchema.parse(await (this.#firstChild && ordinal === 0 ? stage.paused.promise : bounded(stage.paused.promise))), script = stage.script;
+        const pause = pauseSchema.parse(await ((this.#firstChild || this.#timing !== null) && ordinal === 0 ? stage.paused.promise : bounded(stage.paused.promise))), script = stage.script;
         need(script !== null && this.#context !== null && pause.data.scriptId === script.scriptId && pause.data.url === script.url &&
           pause.callFrames[0]?.location.scriptId === script.scriptId && script.executionContextId === this.#context.id &&
           (pause.hitBreakpoints.length === 0 || pause.hitBreakpoints[0] === this.#instrumentation), "PAUSE_IDENTITY");
@@ -366,7 +372,7 @@ export class CurrentPcb209RatlineBootstrapOwner {
         const sourceMilliseconds = currentPcb209RatlineSourceBudget("child", ordinal).deadlineMilliseconds;
         const raw = await bounded(this.#send({ method: "Debugger.getScriptSource", sessionId: this.#construction?.childSessionId ?? "",
           params: { scriptId: script.scriptId } }, false, sourceMilliseconds), sourceMilliseconds +
-          (this.#firstChild ? CURRENT_PCB_209_RATLINE_NATIVE_PROFILE.elapsed.childOwnerMilliseconds : 0));
+          (this.#timing?.sourceOwnerExtraMilliseconds ?? (this.#firstChild ? CURRENT_PCB_209_RATLINE_NATIVE_PROFILE.elapsed.childOwnerMilliseconds : 0)));
         this.#step = "source-qualification"; qualifyCurrentPcb209RatlineBootstrapSource(stage.role, raw);
         stage.qualified = true; await this.#current();
         if (ordinal === 0) {
@@ -418,7 +424,7 @@ export class CurrentPcb209RatlineBootstrapOwner {
    * the unchanged first-pause allowance begins only at this boundary. */
   public assertOriginalChildStartStillReady(creation: Creation, packet: CurrentPcb209RatlineCreationPacket): void {
     this.#assertChildStartReady(creation, packet);
-    if (this.#firstChild && this.#firstPauseStartedAt === null) {
+    if ((this.#firstChild || this.#timing !== null) && this.#firstPauseStartedAt === null) {
       this.#firstPauseStartedAt = monotonic(); this.#step = "source-pause-wait";
       this.#firstPauseTimer = setTimeout(() => { this.#poison(new Error("PCB209_RATLINE_BOOTSTRAP_DEADLINE")); },
         CURRENT_PCB_209_RATLINE_NATIVE_PROFILE.elapsed.ordinaryRequestMilliseconds);
@@ -439,7 +445,7 @@ export class CurrentPcb209RatlineBootstrapOwner {
   public async claimOriginalWorkerRealm(packet: CurrentPcb209RatlineBootstrapPacket): Promise<CurrentPcb209RatlineRealmDependency> {
     need(!this.#realmClaimed && !this.#continuationConsumed, "REALM_CLAIM_CONSUMED"); this.#realmClaimed = true;
     await this.requireOriginal(packet);
-    return Object.freeze({ scriptId: packet.scriptId, parentTargetId: packet.childTargetId, parentSessionId: packet.childSessionId,
+    const realm = Object.freeze({ scriptId: packet.scriptId, parentTargetId: packet.childTargetId, parentSessionId: packet.childSessionId,
       assertOriginalPinnedParentAndAutoAttach: async (source: Readonly<{ relativePath: string; bytes: number; sha256: string }>): Promise<void> => {
         need(source === CURRENT_PCB_209_RATLINE_SOURCE_PROFILE.worker, "REALM_SOURCE"); await this.requireOriginal(packet);
       },
@@ -451,6 +457,7 @@ export class CurrentPcb209RatlineBootstrapOwner {
         return (): void => { need(this.#realmEvents === events, "REALM_SUBSCRIPTION_CHANGED"); this.#realmEvents = null; this.#realmEventMembers = null; };
       },
     });
+    inheritCurrentPcb209RatlineContinuationTiming(this.#dependency, realm); return realm;
   }
   async #realmRequest(packet: CurrentPcb209RatlineBootstrapPacket, input: CurrentPcb209RatlineRealmCommand): Promise<unknown> {
     // Finite native syntax is a second gate here; the typed union alone cannot
@@ -490,7 +497,7 @@ export class CurrentPcb209RatlineBootstrapOwner {
   public async settleOriginalInstrumentationAfterAbort(creation: Creation, packet: CurrentPcb209RatlineCreationPacket): Promise<void> {
     need(creation === this.#creation && packet === this.#construction && this.#consumed && !this.#released, "CLEANUP_OWNER");
     this.#same(); this.#poison();
-    if (this.#allocation !== null) { await bounded(this.#allocation); }
+    if (this.#allocation !== null) { await bounded(this.#allocation, this.#timing?.allocationMilliseconds); }
     await this.#remove(); this.#same();
     need(!this.#allocationUncertain && (this.#instrumentation === null || this.#removed) && !this.#released, "CLEANUP_UNSETTLED");
   }

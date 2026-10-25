@@ -68,6 +68,9 @@ import { CURRENT_PCB_209_RATLINE_NATIVE_PROFILE, CurrentPcb209RatlineBudget, ass
 import { CurrentPcb209RatlineStartupChannel } from "./current-pcb-209-ratline-startup-channel.ts";
 import type { CurrentPcb209RatlineStartupNativeDependency } from "./current-pcb-209-ratline-startup-channel.ts";
 import { CurrentPcb209RatlineNativeSession } from "./current-pcb-209-ratline-native-session.ts";
+import { CURRENT_PCB_209_RATLINE_CONTINUATION_NATIVE_PROFILE, CurrentPcb209RatlineContinuationBudget, assertOriginalCurrentPcb209RatlineContinuationBudget } from "./current-pcb-209-ratline-continuation-budget.ts";
+import { CurrentPcb209RatlineContinuationChannel } from "./current-pcb-209-ratline-continuation-channel.ts";
+import { CurrentPcb209RatlineContinuationNativeSession } from "./current-pcb-209-ratline-continuation-native-session.ts";
 import { requireCurrentPcb209ActorClockSourceQualification } from "./current-pcb-209-actor-clock-source.ts";
 import type { CurrentPcb209ActorClockSourceQualification } from "./current-pcb-209-actor-clock-source.ts";
 import { decodeCurrentPcb209LayersReply } from "./current-pcb-209-layers.ts";
@@ -79,15 +82,15 @@ import { decodeCurrentPcb209PouredShapesReply } from "./current-pcb-209-poured-s
 import { decodeCurrentPcb209PadShapesReply } from "./current-pcb-209-pad-shapes.ts";
 import { currentPcb209SelectionRelationsComponentIdsSchema, decodeCurrentPcb209SelectionRelationsReply } from "./current-pcb-209-selection-relations.ts";
 
-const HELPER_SHA256 = "78f6e386dd07e068db9a4177a893655f15a5288fa25d6d829eb3dbcb7662a323";
-const HELPER_BYTES = 931_464;
+const HELPER_SHA256 = "beceee03b6e16f3dc29439e9f30a88a92c2a299eeae0014c0cb153f5df5babdd";
+const HELPER_BYTES = 959_037;
 const MAX_LINE = 100_000;
 // 64 MiB native bytes need at most 85.34 MiB base64 plus bounded poll envelopes.
 const MAX_TOTAL = 96 * 1024 * 1024;
 // Original helper owners remain reachable after caller exceptions.
 const retainedOwners = new Set<object>();
 type RecordValue = Record<string, unknown>;
-type OwnerPurpose = "diagnostic" | "diagnostic209" | "string-precreate" | "worker-startup" | "worker-startup209" | "worker-startup-empty209" | "worker-startup-ratline209";
+type OwnerPurpose = "diagnostic" | "diagnostic209" | "string-precreate" | "worker-startup" | "worker-startup209" | "worker-startup-empty209" | "worker-startup-ratline209" | "worker-startup-ratline-continuation209";
 export interface CurrentPcbWorkerStartupOpeningBinding {
   readonly context: () => Readonly<{ sessionId: string; uniqueContextId: string }>;
   readonly reprove: () => Promise<void>;
@@ -100,7 +103,7 @@ export interface CurrentPcbWorkerStartupOpeningBinding {
   readonly ancillaryObservation: () => RecordValue | null;
 }
 export interface CurrentPcbWorkerStartupHandoff {
-  readonly channel: CurrentPcbWorkerStartupChannel | CurrentPcb209WorkerStartupChannel | CurrentPcb209EmptyStartupChannel | CurrentPcb209RatlineStartupChannel;
+  readonly channel: CurrentPcbWorkerStartupChannel | CurrentPcb209WorkerStartupChannel | CurrentPcb209EmptyStartupChannel | CurrentPcb209RatlineContinuationChannel | CurrentPcb209RatlineStartupChannel;
   readonly actorClockSourceQualification?: CurrentPcb209ActorClockSourceQualification;
   readonly dependency: CurrentPcbWorkerStartupDependency;
   readonly opening: CurrentPcbWorkerStartupOpeningBinding;
@@ -123,11 +126,12 @@ function error(code: string): Error { return new Error(`PCB_DIAGNOSTIC_OWNER_${c
 function ratlineCleanupControl(request: RecordValue, cleanupPhase: boolean): boolean {
   const action = request["action"];
   if (["identity", "window", "normal-close", "termination", "release", "release-unlaunched", "no-process-proof", "release-no-process",
-    "worker-startup-ratline-abort"].includes(typeof action === "string" ? action : "")) { return true; }
+    "worker-startup-ratline-abort", "worker-startup-ratline-continuation-abort"].includes(typeof action === "string" ? action : "")) { return true; }
   if (!cleanupPhase) { return false; }
   if (action === "worker-startup-reprove") { return true; }
   const phase = request["startupPhase"];
   if (action === "worker-startup-send") { return typeof phase === "string" && ["release", "remove", "resume"].includes(phase); }
+  if (action === "worker-startup-ratline-continuation") { return request["phase"] === "remove" || request["phase"] === "resume"; }
   return action === "worker-startup-ratline" && (request["phase"] === "remove" || request["role"] === "pcb" && request["phase"] === "resume");
 }
 interface TerminationObservation { readonly originalRootExited: boolean | null; readonly originalJobEmpty: boolean | null; readonly terminated: boolean }
@@ -176,16 +180,17 @@ class CurrentPcbRetainedOwnerCore {
   readonly #purpose: OwnerPurpose;
   #startupHandoffConsumed = false;
   #startupParent: CurrentPcbWorkerStartupParent | null = null;
-  #startupChannel: CurrentPcbWorkerStartupChannel | CurrentPcb209WorkerStartupChannel | CurrentPcb209EmptyStartupChannel | CurrentPcb209RatlineStartupChannel | null = null;
+  #startupChannel: CurrentPcbWorkerStartupChannel | CurrentPcb209WorkerStartupChannel | CurrentPcb209EmptyStartupChannel | CurrentPcb209RatlineContinuationChannel | CurrentPcb209RatlineStartupChannel | null = null;
   readonly #emptyAnchor: CurrentPcb209EmptyStartupBudgetAnchor | null;
   readonly #ratlineBudget: CurrentPcb209RatlineBudget | null;
+  readonly #continuationBudget: CurrentPcb209RatlineContinuationBudget | null;
   #emptyPolls = 0;
   #emptyControls = 0;
   #startupEmptyDependency: CurrentPcb209EmptyNativeDependency | null = null;
   #startupEmptyPcbContext: Readonly<{ sessionId: string; uniqueContextId: string }> | null = null;
   #startupHandoff: CurrentPcbWorkerStartupHandoff | null = null;
   #startupPcbConsumed = false;
-  #startupPcbSession: CurrentPcbWorkerStartupPcbSession | CurrentPcb209WorkerStartupPcbSession | CurrentPcb209RatlineNativeSession | null = null;
+  #startupPcbSession: CurrentPcbWorkerStartupPcbSession | CurrentPcb209WorkerStartupPcbSession | CurrentPcb209RatlineContinuationNativeSession | CurrentPcb209RatlineNativeSession | null = null;
   #nativeTail: Promise<void> = Promise.resolve();
   readonly #closed = Promise.withResolvers<null>();
   #pending: Pending | null = null;
@@ -254,18 +259,20 @@ class CurrentPcbRetainedOwnerCore {
   public constructor(child: ChildProcessWithoutNullStreams, verify: () => Promise<void>,
     installation: CurrentPcbDiagnosticInstallation | null, verifyInstallation: () => Promise<void>, purpose: OwnerPurpose,
     verifyStartupFacade: () => Promise<void> = verifyInstallation, actorClockSource: CurrentPcb209ActorClockSourceQualification | null = null,
-    emptyAnchor: CurrentPcb209EmptyStartupBudgetAnchor | null = null, ratlineBudget: CurrentPcb209RatlineBudget | null = null) {
+    emptyAnchor: CurrentPcb209EmptyStartupBudgetAnchor | null = null, ratlineBudget: CurrentPcb209RatlineBudget | null = null, continuationBudget: CurrentPcb209RatlineContinuationBudget | null = null) {
     this.#actorClockSource = actorClockSource;
     this.#emptyAnchor = emptyAnchor;
-    this.#ratlineBudget = ratlineBudget;
+    this.#ratlineBudget = ratlineBudget; this.#continuationBudget = continuationBudget;
+    if ((purpose === "worker-startup-ratline-continuation209") !== (continuationBudget !== null)) { throw error("CONTINUATION_BUDGET"); }
+    if (continuationBudget !== null) { assertOriginalCurrentPcb209RatlineContinuationBudget(continuationBudget); }
     if ((purpose === "worker-startup-ratline209") !== (ratlineBudget !== null)) { throw error("RATLINE_BUDGET"); }
     if (ratlineBudget !== null) { assertOriginalCurrentPcb209RatlineBudget(ratlineBudget); }
     if ((purpose === "worker-startup-empty209") !== (emptyAnchor !== null)) { throw error("STARTUP_EMPTY_ANCHOR"); }
-    if (purpose === "worker-startup209" || purpose === "worker-startup-empty209" || purpose === "worker-startup-ratline209") {
+    if (purpose === "worker-startup209" || purpose === "worker-startup-empty209" || purpose === "worker-startup-ratline209" || purpose === "worker-startup-ratline-continuation209") {
       if (actorClockSource === null) { throw error("STARTUP209_ACTOR_SOURCE"); }
       requireCurrentPcb209ActorClockSourceQualification(actorClockSource);
     } else if (actorClockSource !== null) { throw error("STARTUP209_PURPOSE"); }
-    this.#startupPurpose = purpose === "worker-startup" || purpose === "worker-startup209" || purpose === "worker-startup-empty209" || purpose === "worker-startup-ratline209";
+    this.#startupPurpose = purpose === "worker-startup" || purpose === "worker-startup209" || purpose === "worker-startup-empty209" || purpose === "worker-startup-ratline209" || purpose === "worker-startup-ratline-continuation209";
     this.#child = child; this.#verify = verify; this.#installation = installation; this.#verifyInstallation = verifyInstallation;
     this.#verifyStartupFacade = verifyStartupFacade;
     this.#purpose = purpose; this.#stringPurpose = purpose === "string-precreate";
@@ -1149,8 +1156,11 @@ class CurrentPcbRetainedOwnerCore {
         if (canonicalJson(this.#startupEmptyPcbContext) !== canonicalJson(selectedModel)) { throw error("STARTUP_EMPTY_PCB_CHANGED"); }
         return this.#startupEmptyPcbContext;
       };
-      let channel: CurrentPcbWorkerStartupChannel | CurrentPcb209WorkerStartupChannel | CurrentPcb209EmptyStartupChannel | CurrentPcb209RatlineStartupChannel;
-      if (this.#purpose === "worker-startup-ratline209") {
+      let channel: CurrentPcbWorkerStartupChannel | CurrentPcb209WorkerStartupChannel | CurrentPcb209EmptyStartupChannel | CurrentPcb209RatlineContinuationChannel | CurrentPcb209RatlineStartupChannel;
+      if (this.#purpose === "worker-startup-ratline-continuation209") {
+        if (this.#continuationBudget === null) { throw error("CONTINUATION_BUDGET"); }
+        this.#continuationBudget.closeDiscovery(prior.nextRequestId); channel = new CurrentPcb209RatlineContinuationChannel(native, this.#continuationBudget);
+      } else if (this.#purpose === "worker-startup-ratline209") {
         if (this.#ratlineBudget === null) { throw error("RATLINE_BUDGET"); }
         this.#ratlineBudget.closeDiscovery(prior.nextRequestId);
         channel = new CurrentPcb209RatlineStartupChannel(native, this.#ratlineBudget);
@@ -1282,6 +1292,24 @@ class CurrentPcbRetainedOwnerCore {
       this.#available();
       if (this.#startupHandoff !== handoff || this.#stagedContext !== context || this.#startupChannel !== channel) { throw error("RATLINE_OWNER_CHANGED"); }
       this.#startupPcbSession = new CurrentPcb209RatlineNativeSession(opening, result, handoff.dependency, channel, context, target, reverifyCheckpoint);
+      return this.#startupPcbSession;
+    } finally { this.#busy = false; }
+  }
+
+  public prepareWorkerStartupRatlineContinuationSession209(opening: CurrentPcb209WorkerStartupOpening,
+    result: CurrentPcb209WorkerStartupOpeningResult, input: CurrentDisposableOpenSealedTarget,
+    reverifyCheckpoint: () => Promise<Awaited<ReturnType<typeof readExactSqlInventory>>>): CurrentPcb209RatlineContinuationNativeSession {
+    const channel = this.#startupChannel, context = this.#stagedContext, handoff = this.#startupHandoff;
+    const target = currentDisposableOpenSealedTargetSchema.parse(captureCurrentPcbStringClockReply(input).value);
+    if (this.#purpose !== "worker-startup-ratline-continuation209" || handoff === null || context === null || this.#startupPcbConsumed ||
+        this.#startupPcbSession !== null || !(channel instanceof CurrentPcb209RatlineContinuationChannel) ||
+        handoff.channel !== channel || this.#projectOpeningTarget === null || canonicalJson(target) !== canonicalJson(this.#projectOpeningTarget) ||
+        typeof reverifyCheckpoint !== "function") { throw error("RATLINE_ORIGINAL_PURPOSE"); }
+    this.#enter(true); this.#startupPcbConsumed = true;
+    try {
+      this.#available();
+      if (this.#startupHandoff !== handoff || this.#stagedContext !== context || this.#startupChannel !== channel) { throw error("RATLINE_OWNER_CHANGED"); }
+      this.#startupPcbSession = new CurrentPcb209RatlineContinuationNativeSession(opening, result, handoff.dependency, channel, context, target, reverifyCheckpoint);
       return this.#startupPcbSession;
     } finally { this.#busy = false; }
   }
@@ -1535,6 +1563,20 @@ class CurrentPcbRetainedOwnerCore {
         } else { this.#ratlineBudget.consumeDiscoveryRequest(requestId); }
       }
     }
+    if (this.#continuationBudget !== null) {
+      assertOriginalCurrentPcb209RatlineContinuationBudget(this.#continuationBudget);
+      if (request["action"] === "launch") { this.#continuationBudget.assertNormal(); }
+      if (request["action"] === "poll") { this.#continuationBudget.consumePoll(); }
+      else { this.#continuationBudget.consumeHelperControl(ratlineCleanupControl(request, this.#continuationBudget.snapshot().phase === "cleanup")); }
+      if (request["action"] === "worker-startup-ratline-continuation-abort") { this.#continuationBudget.beginCleanup(); }
+      const requestId = request["requestId"];
+      if (requestId !== undefined) {
+        if (typeof requestId !== "number") { throw error("RATLINE_REQUEST_ID"); }
+        if (this.#startupChannel instanceof CurrentPcb209RatlineContinuationChannel) {
+          this.#continuationBudget.consumeRequest(requestId, this.#startupChannel.classifyPending(requestId));
+        } else { this.#continuationBudget.consumeDiscoveryRequest(requestId); }
+      }
+    }
     if (this.#purpose === "worker-startup-empty209") {
       if (request["action"] === "poll") {
         if (this.#emptyPolls >= CURRENT_PCB_209_EMPTY_NATIVE_PROFILE.polling.limit) { throw error("STARTUP_EMPTY_POLL_BOUND"); }
@@ -1555,7 +1597,7 @@ class CurrentPcbRetainedOwnerCore {
     const pending: Pending = { id, resolve: deferred.resolve, reject: deferred.reject, launch, poll: request["action"] === "poll",
       send: request["action"] === "send" || request["action"] === "worker-startup-send" || request["action"] === "worker-startup-parent" ||
         request["action"] === "worker-startup-empty-common" || request["action"] === "worker-startup-empty-root" ||
-        request["action"] === "worker-startup-ratline", written: false, reply: null,
+        request["action"] === "worker-startup-ratline" || request["action"] === "worker-startup-ratline-continuation", written: false, reply: null,
       timer: setTimeout(() => { this.#fail("HELPER_DEADLINE"); }, 15_000) };
     this.#pending = pending;
     if (launch) { this.#launchRequestIssued = true; }
@@ -1596,11 +1638,12 @@ class CurrentPcbRetainedOwnerCore {
       else if (record(reply["result"])) {
         const result = reply["result"];
         const bytes = result["bytes"];
-        if (this.#ratlineBudget !== null && pending.poll) {
+        const ratlineBudget = this.#continuationBudget ?? this.#ratlineBudget;
+        if (ratlineBudget !== null && pending.poll) {
           if (typeof bytes !== "string" || !exact(result, ["bytes"])) { pending.reject(error("RATLINE_PIPE_CHUNK")); return; }
           const decoded = Buffer.from(bytes, "base64");
           if (decoded.length > 65_536 || decoded.toString("base64") !== bytes) { this.#fail("RATLINE_PIPE_CHUNK"); pending.reject(error("RATLINE_PIPE_CHUNK")); return; }
-          try { this.#ratlineBudget.consumePipeBytes(decoded.length); }
+          try { ratlineBudget.consumePipeBytes(decoded.length); }
           catch (budgetError) { pending.reject(budgetError instanceof Error ? budgetError : new Error("PCB_DIAGNOSTIC_OWNER_RATLINE_PIPE_BUDGET", { cause: budgetError })); return; }
         }
         pending.resolve(result);
@@ -1619,10 +1662,12 @@ class CurrentPcbRetainedOwnerCore {
     let maximum = MAX_TOTAL;
     if (this.#purpose === "worker-startup-empty209") { maximum = CURRENT_PCB_209_EMPTY_NATIVE_PROFILE.bytes.helperStdout; }
     if (this.#ratlineBudget !== null) { maximum = CURRENT_PCB_209_RATLINE_NATIVE_PROFILE.bytes.helperStdout; }
+    if (this.#continuationBudget !== null) { maximum = CURRENT_PCB_209_RATLINE_CONTINUATION_NATIVE_PROFILE.bytes.helperStdout; }
     if (!Buffer.isBuffer(chunk) || chunk.length > MAX_LINE || this.#total + chunk.length > maximum || this.#buffer.length + chunk.length > MAX_LINE) { this.#fail("HELPER_BOUND"); return; }
     this.#total += chunk.length; this.#buffer = Buffer.concat([this.#buffer, chunk]);
-    if (this.#ratlineBudget !== null) {
-      try { this.#ratlineBudget.consumeHelperStdout(chunk.length); } catch { this.#fail("RATLINE_HELPER_STDOUT"); return; }
+    const ratlineBudget = this.#continuationBudget ?? this.#ratlineBudget;
+    if (ratlineBudget !== null) {
+      try { ratlineBudget.consumeHelperStdout(chunk.length); } catch { this.#fail("RATLINE_HELPER_STDOUT"); return; }
     }
     const newline = this.#buffer.indexOf(10);
     if (newline === -1) { return; }
@@ -1708,6 +1753,15 @@ export class CurrentPcb209RatlineStartupOwner extends CurrentPcbRetainedOwnerCor
   }
 }
 
+export class CurrentPcb209RatlineContinuationOwner extends CurrentPcbRetainedOwnerCore {
+  public constructor(child: ChildProcessWithoutNullStreams, verify: () => Promise<void>,
+    actorClockSource: CurrentPcb209ActorClockSourceQualification, budget: CurrentPcb209RatlineContinuationBudget,
+    installation: CurrentPcbDiagnosticInstallation | null = null, verifyInstallation: () => Promise<void> = (): Promise<void> => Promise.resolve(),
+    verifyStartupFacade: () => Promise<void> = verifyInstallation) {
+    super(child, verify, installation, verifyInstallation, "worker-startup-ratline-continuation209", verifyStartupFacade, actorClockSource, null, null, budget);
+  }
+}
+
 // Only the validation lifecycle allocates this owner. It supplies no ordinary
 // Windows runtime authority, bridge authentication or connected qualification.
 export function startCurrentPcbDiagnosticOwner(options: CurrentPcbDiagnosticInstallationOptions): Promise<CurrentPcbDiagnosticOwner> {
@@ -1734,13 +1788,16 @@ export function startCurrentPcb209EmptyStartupOwner(options: CurrentPcbDiagnosti
 export function startCurrentPcb209RatlineStartupOwner(options: CurrentPcbDiagnosticInstallationOptions): Promise<CurrentPcb209RatlineStartupOwner> {
   return startFixedOwner(options, "worker-startup-ratline209", "209-startup");
 }
+export function startCurrentPcb209RatlineContinuationOwner(options: CurrentPcbDiagnosticInstallationOptions): Promise<CurrentPcb209RatlineContinuationOwner> {
+  return startFixedOwner(options, "worker-startup-ratline-continuation209", "209-startup");
+}
 async function startFixedOwner(options: CurrentPcbDiagnosticInstallationOptions, purpose: OwnerPurpose,
   generation: "206" | "209-opening" | "209-startup" = "206"): Promise<CurrentPcbDiagnosticOwner | CurrentPcbStringPrecreateOwner | CurrentPcbWorkerStartupOwner> {
   const sealedOptions = Object.freeze({ ...options });
-  const startup209 = purpose === "worker-startup209" || purpose === "worker-startup-empty209" || purpose === "worker-startup-ratline209";
+  const startup209 = purpose === "worker-startup209" || purpose === "worker-startup-empty209" || purpose === "worker-startup-ratline209" || purpose === "worker-startup-ratline-continuation209";
   if ((generation === "209-opening") !== (purpose === "diagnostic209") || (generation === "209-startup") !== startup209) { throw error("INSTALLATION_PURPOSE"); }
   let verifier = generation === "206" ? verifyCurrentPcbDiagnosticInstallation : verifyCurrentPcb209DiagnosticInstallation;
-  if (purpose === "worker-startup-ratline209") { verifier = verifyCurrentPcb209RatlineInstallation; }
+  if (purpose === "worker-startup-ratline209" || purpose === "worker-startup-ratline-continuation209") { verifier = verifyCurrentPcb209RatlineInstallation; }
   const installation = await verifier(sealedOptions);
   if (fileURLToPath(new URL("../..", import.meta.url)) !== `${sealedOptions.pluginRoot}/`) { throw error("INSTALLATION_PLUGIN"); }
   const verifyInstallation = async (): Promise<void> => {
@@ -1749,7 +1806,7 @@ async function startFixedOwner(options: CurrentPcbDiagnosticInstallationOptions,
   };
   const verifyStartupFacade = async (): Promise<void> => {
     let facadeVerifier = generation === "206" ? verifyCurrentPcbDiagnosticFacade : verifyCurrentPcb209DiagnosticFacade;
-    if (purpose === "worker-startup-ratline209") { facadeVerifier = verifyCurrentPcb209RatlineFacade; }
+    if (purpose === "worker-startup-ratline209" || purpose === "worker-startup-ratline-continuation209") { facadeVerifier = verifyCurrentPcb209RatlineFacade; }
     const current = await facadeVerifier(sealedOptions);
     if (current.facadeSha256 !== installation.facadeSha256 || canonicalJson(current.plan) !== canonicalJson(installation.plan)) {
       throw error("INSTALLATION_CHANGED");
@@ -1780,7 +1837,8 @@ async function startFixedOwner(options: CurrentPcbDiagnosticInstallationOptions,
   // A short encoded bootstrap avoids the Windows command-length limit for the
   // Entire native helper and avoids reopening a pathname after byte admission.
   let purposeSwitch = "";
-  if (purpose === "worker-startup-ratline209") { purposeSwitch = " -WorkerStartupRatline209"; }
+  if (purpose === "worker-startup-ratline-continuation209") { purposeSwitch = " -WorkerStartupRatlineContinuation209"; }
+  else if (purpose === "worker-startup-ratline209") { purposeSwitch = " -WorkerStartupRatline209"; }
   else if (purpose === "worker-startup-empty209") { purposeSwitch = " -WorkerStartupEmpty209"; }
   else if (purpose === "worker-startup209") { purposeSwitch = " -WorkerStartup209"; }
   else if (purpose === "worker-startup") { purposeSwitch = " -WorkerStartup"; }
@@ -1797,11 +1855,15 @@ async function startFixedOwner(options: CurrentPcbDiagnosticInstallationOptions,
   if (encoded.length > 16_000) { throw error("BOOTSTRAP_BOUND"); }
   const emptyAnchor = purpose === "worker-startup-empty209" ? new CurrentPcb209EmptyStartupBudgetAnchor() : null;
   const ratlineBudget = purpose === "worker-startup-ratline209" ? new CurrentPcb209RatlineBudget() : null;
+  const continuationBudget = purpose === "worker-startup-ratline-continuation209" ? new CurrentPcb209RatlineContinuationBudget() : null;
   const child = spawn(installation.paths.powershellExecutable,
     ["-NoLogo", "-NoProfile", "-NonInteractive", "-ExecutionPolicy", "Bypass", "-EncodedCommand", encoded],
     { stdio: ["pipe", "pipe", "pipe"], windowsHide: true });
   let owner: CurrentPcbRetainedOwnerCore;
-  if (purpose === "worker-startup-ratline209") {
+  if (purpose === "worker-startup-ratline-continuation209") {
+    if (actorClockSource === null || continuationBudget === null) { throw error("CONTINUATION_ALLOCATION"); }
+    owner = new CurrentPcb209RatlineContinuationOwner(child, verify, actorClockSource, continuationBudget, installation, verifyInstallation, verifyStartupFacade);
+  } else if (purpose === "worker-startup-ratline209") {
     if (actorClockSource === null || ratlineBudget === null) { throw error("RATLINE_ALLOCATION"); }
     owner = new CurrentPcb209RatlineStartupOwner(child, verify, actorClockSource, ratlineBudget, installation, verifyInstallation, verifyStartupFacade);
   }

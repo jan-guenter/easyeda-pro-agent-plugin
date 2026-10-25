@@ -45,6 +45,7 @@ layout. The connected ledger retains its generation and case anchors.
 
 | Record | Former path |
 | --- | --- |
+| [2026-10-25-pcb-loader-and-continuation.md](2026-10-25-pcb-loader-and-continuation.md) | Installed140210 navigation handling observed live, retained UI-loader refusal, original cleanup and continuation source work |
 | [2026-10-25-held-construction-and-connected-batch.md](2026-10-25-held-construction-and-connected-batch.md) | Installed120638 seven-reader batch and pending disposable capture, construction join and scan scheduling work |
 | [2026-10-25-bounded-readers-and-held-capture.md](2026-10-25-bounded-readers-and-held-capture.md) | Installed100748 release/language/catalog cases, same-session workflow switch, bounded reader batching and settled PCB held capture |
 | [2026-10-25-runtime-release-language-catalog-batch.md](2026-10-25-runtime-release-language-catalog-batch.md) | Actual65826 admission and utility observations, ordinary release gap, resolved language, enriched catalog lookups and PCB diagnostics |

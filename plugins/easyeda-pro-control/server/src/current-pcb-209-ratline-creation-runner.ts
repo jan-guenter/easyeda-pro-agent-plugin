@@ -8,6 +8,7 @@ import { createHash } from "node:crypto";
 import { CurrentPcb209RatlineStageDiagnostics } from "./current-pcb-209-ratline-diagnostics.ts";
 import { types } from "node:util";
 import { currentPcb209RatlineTransportRequestMilliseconds } from "./current-pcb-209-ratline-transport-windows.ts";
+import { currentPcb209RatlineContinuationTiming } from "./current-pcb-209-ratline-continuation-timing.ts";
 import { z } from "zod";
 import { captureCurrentPcbStringClockReply } from "./current-pcb-string-clock-reply.ts";
 import { CURRENT_PCB_209_RATLINE_CREATION_GROUP as GROUP, CURRENT_PCB_209_RATLINE_CREATION_PROFILES as PROFILES } from "./current-pcb-209-ratline-creation-profile.ts";
@@ -143,7 +144,8 @@ class CurrentPcb209RatlineCreationCore {
   async #current(): Promise<void> {
     this.#diagnostics.step = "owner-reproof";
     try { this.#same(); need(this.#failure === null && !this.#released && !this.#releaseStarted, "FAILED_OR_RELEASED");
-      await bounded(this.#assert.call(this.#transport, CURRENT_PCB_209_RATLINE_SOURCE_PROFILE[this.#role])); this.#same();
+      await bounded(this.#assert.call(this.#transport, CURRENT_PCB_209_RATLINE_SOURCE_PROFILE[this.#role]),
+        currentPcb209RatlineContinuationTiming(this.#transport)?.ownerMilliseconds); this.#same();
       need(this.#failure === null && !this.#released && !this.#releaseStarted, "FAILED_OR_RELEASED");
     } catch (error) { this.#poison("OWNER_LOST", error); void observed(this.#cleanup()); throw error; }
   }
@@ -261,7 +263,8 @@ class CurrentPcb209RatlineCreationCore {
   }
   async #next(name: "before" | "after"): Promise<Readonly<{ retained: Pause; frameId: string }>> {
     this.#diagnostics.step = "pause-wait";
-    const retained = await bounded(this.#waiting.promise, 20_000); this.#waiting = Promise.withResolvers(); void observed(this.#waiting.promise);
+    const retained = await bounded(this.#waiting.promise, currentPcb209RatlineContinuationTiming(this.#transport)?.creationNextPauseMilliseconds ?? 20_000);
+    this.#waiting = Promise.withResolvers(); void observed(this.#waiting.promise);
     await this.#current(); need(retained.error === null, "PAUSE_CAPTURE");
     this.#diagnostics.step = "pause-validation";
     const event = pauseSchema.parse(retained.event), point = PROFILES[this.#role][name], top = event.callFrames[0];
@@ -317,7 +320,9 @@ class CurrentPcb209RatlineCreationCore {
         requestedUrlSha256: createHash("sha256").update(url).digest("hex"), childTargetId: child.targetId, childSessionId: child.sessionId,
         parentHeldAfterConstruction: true, nativeWorkerTargetIdentityVerified: false, childSourceQualified: false, executionAuthorized: false });
       this.#diagnostics.stage = "held-constructor"; this.#diagnostics.step = "settled";
-      this.#watchdog = setTimeout(() => { this.#poison("CONTINUATION_DEADLINE"); void observed(this.#cleanup()); }, this.#role === "pcb" ? CURRENT_PCB_209_RATLINE_NATIVE_PROFILE.elapsed.creationContinuationMilliseconds : 6000);
+      this.#watchdog = setTimeout(() => { this.#poison("CONTINUATION_DEADLINE"); void observed(this.#cleanup()); },
+        currentPcb209RatlineContinuationTiming(this.#transport)?.creationContinuationMilliseconds ??
+        (this.#role === "pcb" ? CURRENT_PCB_209_RATLINE_NATIVE_PROFILE.elapsed.creationContinuationMilliseconds : 6000));
       return this.#packet;
     } catch (error) { this.#poison("FAILED", error);
       try { await this.#cleanup(); } catch (cleanupError) { throw new AggregateError([error, cleanupError], "PCB209_RATLINE_CREATION_FAILED", { cause: cleanupError }); } throw error;

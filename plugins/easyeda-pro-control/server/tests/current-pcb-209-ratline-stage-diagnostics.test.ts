@@ -6,6 +6,10 @@ import { CurrentPcb209RatlineStageDiagnostics, currentPcb209RatlineFailureReason
 void test("ratline stage diagnostics retain only exact owned reasons and preserve the first cause through cleanup", () => {
   for (const reason of ["PCB209_RATLINE_CREATION_CHILD_ORDER", "PCB209_RATLINE_CAPTURE_PAUSE_LOCATION",
     "PCB209_RATLINE_DISPATCH_UNKNOWN_BREAKPOINT", "PCB209_RATLINE_CHILD_GATE_CHILD_HELD", "PCB209_RATLINE_COMPOSITE_DEADLINE",
+    "PCB209_RATLINE_CONTINUATION_CHANNEL_SOURCE_BOUNDARY", "PCB209_RATLINE_CONTINUATION_BUDGET_SOURCE_SLOT",
+    "PCB209_RATLINE_CONTINUATION_ROUTER_SUBSCRIPTION_UNCERTAIN", "PCB209_RATLINE_CONTINUATION_CLEANUP_COMMAND",
+    "PCB209_RATLINE_CONTINUATION_NATIVE_ORIGINAL_SQL_READER", "PCB209_RATLINE_CONTINUATION_NATIVE_WIRE",
+    "PCB209_RATLINE_SUBORDINATE_CONTINUATION_UNSUBSCRIBE_FAILED", "PCB209_RATLINE_CONTINUATION_TIMING_BINDING",
     "PCB209_RATLINE_ORIGIN_PARENT_BINDING", "PCB209_RATLINE_STARTUP_CHANNEL_CONSTRUCTION_JOIN_BOUNDARY",
     ...["BRIDGE_FRAME", "CONSTRUCTION_FRAME", "JOIN_HANDLES", "JOIN_STATE", "JOIN_UNCONSUMED", "RELATION", "RELATION_HANDLES",
       "REPLY_SEQUENCE", "SELECTION", "SESSION"].map(code => `PCB209_RATLINE_HELD_CONSTRUCTION_${code}`)]) {
@@ -32,6 +36,9 @@ void test("diagnostic exceptions cannot execute accessors or publish unowned ven
   const proxy = new Proxy({}, { getOwnPropertyDescriptor(): PropertyDescriptor { invoked += 1; throw new Error("Private detail"); } });
   const forgedPrefix = new Error("PCB209_RATLINE_CREATION_PRIVATE_DESIGN_NAME");
   for (const error of [accessor, proxy, forgedPrefix, new Error("PCB209_RATLINE_HELD_CONSTRUCTION_JOIN_HANDLES_PRIVATE_DESIGN_NAME"),
+    new Error("PCB209_RATLINE_CONTINUATION_CHANNEL_SOURCE_BOUNDARY_PRIVATE_DESIGN_NAME"),
+    new Error("PCB209_RATLINE_CONTINUATION_ROUTER_PRIVATE_DESIGN_NAME"),
+    new Error("PCB209_RATLINE_SUBORDINATE_CONTINUATION_UNSUBSCRIBE_FAILED\nprivate detail"),
     new Error("https://private/project?secret=1"), null]) {
     const diagnostics = new CurrentPcb209RatlineStageDiagnostics(); diagnostics.record(error);
     assert.equal(currentPcb209RatlineFailureReason(error), "UNCLASSIFIED");

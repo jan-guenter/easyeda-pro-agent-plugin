@@ -92,6 +92,14 @@ uses fixed anonymous vendor HTTPS endpoints, not desktop SDK getters. Read
 [the catalog contract](current-system-library.md) for candidate pagination,
 visibility evidence and association limits.
 
+For disposable PCB/worker continuation observations, discover
+`pcb209-ratline-continuation` and validate with
+`pcb209-ratline-continuation-validate`. Read [the fresh-launch workflow](current-pcb209-ratline-continuation.md)
+before selecting the `ratline-continuation` action in
+`easyeda_control_pcb209_worker_startup`. It cannot continue an existing
+held-import owner or establish complete startup, callback completion or Save
+authority.
+
 For the3.2.209 disposable project/PCB route, discover `pcb209-opening` and
 validate with `pcb209-opening-validate`; read [its workflow](current-pcb209-opening.md).
 It has its own strict action set and retained process owner. After original

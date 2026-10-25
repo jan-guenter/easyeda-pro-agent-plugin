@@ -14,6 +14,8 @@ import { currentPcb209RatlinePcbBootstrapCopy, currentPcb209RatlinePcbBootstrapR
   CURRENT_PCB_209_RATLINE_PCB_BOOTSTRAP_ROLES as roles } from "../src/current-pcb-209-ratline-pcb-bootstrap-profile.ts";
 
 import { CURRENT_PCB_209_RATLINE_NAVIGATION_SOURCE as navigationSource } from "../src/current-pcb-209-ratline-navigation-pause.ts";
+import { CURRENT_PCB_209_RATLINE_LOADER_SOURCE_SHA256 as loaderHash, CURRENT_PCB_209_RATLINE_LOADER_SOURCE as loaderSource } from "../src/current-pcb-209-ratline-loader-pause.ts";
+import { CURRENT_PCB_209_OPENING_SCRIPTS } from "../src/current-pcb-209-opening-profile.ts";
 
 const source = "const retainedUi = true;";
 const rawWindowsPath = String.raw`C:\Disposable\Router.eprj2`;
@@ -28,6 +30,17 @@ const uiScript = { scriptId: "ui-script", executionContextId: 1, url: "https://c
 const pcbFrame = { id: "pcb-frame", parentId: "root", loaderId: "pcb-loader", url: pcbUrl, securityOrigin: "https://client" };
 const pcbContext = { id: 3, uniqueId: "pcb-context", origin: "https://client", name: "", auxData: { frameId: "pcb-frame", isDefault: true, type: "default" } };
 function event(method: string, params: Record<string, unknown>): DiagnosticEvent { return { method, params, sessionId: "parent-session" }; }
+function loaderFrame(functionName: string, scriptId: string, lineNumber: number, start: number, stopped: number): object {
+  return { functionName, url: "", functionLocation: { scriptId, lineNumber, columnNumber: start }, location: { scriptId, lineNumber, columnNumber: stopped } };
+}
+function loaderObservations(): Readonly<{ script: DiagnosticEvent; paused: DiagnosticEvent }> {
+  return { script: event("Debugger.scriptParsed", { scriptId: "loader", executionContextId: 1, url: "", hasSourceURL: false, isLiveEdit: false,
+    isModule: false, startLine: 0, startColumn: 0, endLine: 3, endColumn: 2, length: 28, hash: loaderHash,
+    scriptLanguage: "JavaScript", sourceMapURL: "", stackTrace: { callFrames: [{ functionName: "by", scriptId: "ui-script",
+      url: `https://modules.lceda.cn/${CURRENT_PCB_209_OPENING_SCRIPTS.ui.relativePath}`, lineNumber: 1923, columnNumber: 75_140 }] } }),
+    paused: event("Debugger.paused", { reason: "instrumentation", data: { scriptId: "loader", url: "" }, hitBreakpoints: [],
+      callFrames: [loaderFrame("", "loader", 0, 0, 0), loaderFrame("by", "ui-script", 1923, 75_126, 75_140), loaderFrame("", "ui-script", 1931, 3752, 4009)] }) };
+}
 function originalContext(): CurrentPcbDiagnosticContext {
   const context = new CurrentPcbDiagnosticContext("parent"); context.selectTarget({ targetInfos: [parent] }); context.bindSession("parent-session");
   context.observeFrames({ frameTree: { frame: root } }); context.selectFrame("root", { family: "ui", relativePath: "pro-ui/fixture/js/ui.js",
@@ -62,12 +75,19 @@ async function routerConstructor(): Promise<typeof CurrentPcb209RatlinePcbContex
   return Constructor as typeof CurrentPcb209RatlinePcbContextRouter;
 }
 type Events = Parameters<CurrentPcb209RatlinePcbContextDependency["subscribe"]>[0];
-async function fixture(options: Readonly<{ badReplay?: boolean; badDom?: boolean; foreignPause?: boolean; delayMilliseconds?: number; navigationPause?: "valid" | "source-change" | "foreign-context" | "lost-resume-ack" | "historical-script" }> = {}): Promise<Readonly<{
+async function fixture(options: Readonly<{ badReplay?: boolean; badDom?: boolean; foreignPause?: boolean; delayMilliseconds?: number;
+  navigationPause?: "valid" | "source-change" | "foreign-context" | "lost-resume-ack" | "historical-script";
+  loaderPause?: "valid" | "source-change" | "historical-script" | "settled-navigation" | "duplicate"; holdNavigationAck?: boolean;
+  cleanupFailure?: boolean; lateCleanupEvents?: boolean; beforeInitialSource?: (phase: "navigation" | "loader") => Promise<unknown> }> = {}): Promise<Readonly<{
   router: CurrentPcb209RatlinePcbContextRouter; owner: CurrentPcb209RatlinePcbBootstrapOwner;
   counts: () => Readonly<{ navigation: number; resumes: number; sources: number; snapshots: number; removals: number }>;
   emit: (value: DiagnosticEvent) => void; finishNavigation: () => void; changeFrame: () => void; terminate: () => Promise<void>;
+  navigationResumeRequested: Promise<null>; acknowledgeNavigationResume: () => void; loaderCounts: () => Readonly<{ sources: number; resumes: number }>;
+  cleanupCount: () => number;
 }>> {
   const Constructor = await routerConstructor(), context = originalContext(), navigation = Promise.withResolvers<null>();
+  const navigationAck = Promise.withResolvers<null>(), navigationResumeRequested = Promise.withResolvers<null>();
+  let cleanupCalls = 0, loaderResumes = 0, loaderSources = 0;
   let drift = false, index = 0, listener: Events | null = null, removals = 0, resumes = 0, snapshots = 0, sources = 0, started = 0, terminated = false;
   const emit = (value: DiagnosticEvent): void => { listener?.event(value); };
   const pause = (): void => {
@@ -94,15 +114,31 @@ async function fixture(options: Readonly<{ badReplay?: boolean; badDom?: boolean
       switch (command.method) {
         case "Target.setAutoAttach": { return ({}); }
         case "Runtime.enable": { emit(event("Runtime.executionContextCreated", { context: options.badReplay === true ? { ...uiContext, origin: "https://foreign" } : uiContext })); return ({}); }
-        case "Debugger.enable": { emit(event("Debugger.scriptParsed", uiScript)); if (options.navigationPause === "historical-script") { emitNavigationScript(); } return ({ debuggerId: "debugger" }); }
+        case "Debugger.enable": { emit(event("Debugger.scriptParsed", uiScript)); if (options.navigationPause === "historical-script") { emitNavigationScript(); }
+          if (options.loaderPause === "historical-script") { emit(loaderObservations().script); } return ({ debuggerId: "debugger" }); }
         case "Debugger.setAsyncCallStackDepth": { assert.equal(command.params.maxDepth, 1); return ({}); }
         case "Debugger.setInstrumentationBreakpoint": { return ({ breakpointId: "instrumentation" }); }
-        case "Debugger.getScriptSource": { if ("navigationPhase" in command) { assert.notEqual(options.navigationPause, "foreign-context"); assert.notEqual(options.navigationPause, "historical-script"); return { scriptSource: navigationSource + (options.navigationPause === "source-change" ? " " : "") }; } sources += 1; return ({ scriptSource: `synthetic:${String(roles[index])}` }); }
+        case "Debugger.getScriptSource": { if ("navigationPhase" in command) {
+            assert.notEqual(options.navigationPause, "foreign-context"); assert.notEqual(options.navigationPause, "historical-script");
+            await options.beforeInitialSource?.("navigation"); return { scriptSource: navigationSource + (options.navigationPause === "source-change" ? " " : "") };
+          }
+          if ("loaderPhase" in command) { loaderSources += 1; await options.beforeInitialSource?.("loader"); return { scriptSource: loaderSource + (options.loaderPause === "source-change" ? " " : "") }; }
+          sources += 1; return ({ scriptSource: `synthetic:${String(roles[index])}` }); }
         case "Debugger.removeBreakpoint": { removals += 1; return ({}); }
         case "Debugger.resume": { if ("navigationPhase" in command) {
           if (options.navigationPause === "lost-resume-ack") { listener?.lost(); throw new Error("lost native resume acknowledgement"); }
-          emit(event("Debugger.resumed", {})); beginPcb(); return {};
-        } resumes += 1; emit(event("Debugger.resumed", {})); index += 1; pause(); return ({}); }
+          emit(event("Debugger.resumed", {}));
+          if (options.loaderPause === undefined) { beginPcb(); } else {
+            const loader = loaderObservations(); if (options.loaderPause !== "historical-script") { emit(loader.script); }
+            emit(loader.paused); if (options.loaderPause === "duplicate") { emit(loader.paused); }
+          }
+          navigationResumeRequested.resolve(null);
+          if (options.holdNavigationAck === true) { await navigationAck.promise; }
+          if (options.loaderPause === "settled-navigation") { navigation.resolve(null); }
+          return {};
+        }
+          if ("loaderPhase" in command) { loaderResumes += 1; emit(event("Debugger.resumed", {})); beginPcb(); return {}; }
+          resumes += 1; emit(event("Debugger.resumed", {})); index += 1; pause(); return ({}); }
         case "Target.getTargets": { snapshots += 1; return ({ targetInfos: [{ ...parent, attached: true, url: openedUrl }] }); }
         case "Page.getFrameTree": { snapshots += 1; return ({ frameTree: { frame: { ...root, urlFragment: openedUrl.slice(base.length) },
           childFrames: [{ frame: { ...pcbFrame, ...(drift ? { loaderId: "replacement" } : {}) } }] } }); }
@@ -133,12 +169,20 @@ async function fixture(options: Readonly<{ badReplay?: boolean; badDom?: boolean
         emit(event("Debugger.paused", { reason: "instrumentation", data: { scriptId: "navigation", url: "" }, hitBreakpoints: [],
           callFrames: [{ functionName: "", url: "", location, functionLocation: { ...location } }] }));
       } return (async (): Promise<void> => { await navigation.promise; })();
-    }, subscribe: (events: Events): (() => void) => { assert.equal(listener, null); listener = events; return (): void => { listener = null; }; },
+    }, subscribe: (events: Events): (() => void) => { assert.equal(listener, null); listener = events; return (): void => {
+      cleanupCalls += 1;
+      if (options.lateCleanupEvents === true) { events.lost(); events.event(event("Debugger.paused", {})); }
+      if (options.cleanupFailure === true) { throw new Error("synthetic disposer outcome uncertain"); }
+      listener = null;
+    }; },
     request, requestParent: request,
   });
   const router = new Constructor(context, target, dependency);
   return { router, owner: router.sourceOwner, counts: (): Readonly<{ navigation: number; resumes: number; sources: number; snapshots: number; removals: number }> =>
     ({ navigation: started, resumes, sources, snapshots, removals }), emit, finishNavigation: (): void => { navigation.resolve(null); }, changeFrame: (): void => { drift = true; },
+    navigationResumeRequested: navigationResumeRequested.promise, acknowledgeNavigationResume: (): void => { navigationAck.resolve(null); },
+    loaderCounts: (): Readonly<{ sources: number; resumes: number }> => ({ sources: loaderSources, resumes: loaderResumes }),
+    cleanupCount: (): number => cleanupCalls,
     terminate: async (): Promise<void> => { terminated = true; await router.releaseAfterTermination(); } };
 }
 void test("actual context/router/source owner retain old enable replay and blank teardown, qualify held PCB with pending navigation and exactly three proof sets", async () => {
@@ -240,4 +284,57 @@ void test("bounded recent script provenance evicts old captures and retains a ne
   const bytes = f.router.status()["retainedScriptEvidenceBytes"]; assert.ok(typeof bytes === "number" && bytes <= 131_072);
   await f.owner.startOriginalNavigation(); await f.owner.whenSourceQualified(); assert.equal(f.router.status()["navigationPause"], "complete");
   f.finishNavigation(); await f.owner.whenOriginalNavigationSettled(); await f.router.abort(); await f.terminate();
+});
+void test("loader pause preceding navigation resume acknowledgement waits for that original reply without advancing PCB ordinals", async () => {
+  const f = await fixture({ navigationPause: "valid", loaderPause: "valid", holdNavigationAck: true });
+  try {
+    await f.owner.armBeforeNavigation(); await f.owner.startOriginalNavigation(); await f.navigationResumeRequested;
+    assert.equal(f.router.status()["navigationPause"], "resume"); assert.equal(f.router.status()["loaderPause"], "source");
+    assert.deepEqual(f.loaderCounts(), { sources: 0, resumes: 0 }); assert.equal(f.counts().sources, 0); assert.equal(f.counts().resumes, 0);
+    f.acknowledgeNavigationResume(); await f.owner.whenSourceQualified();
+    assert.equal(f.router.status()["navigationPause"], "complete"); assert.equal(f.router.status()["loaderPause"], "complete");
+    assert.deepEqual(f.loaderCounts(), { sources: 1, resumes: 1 });
+    assert.deepEqual(f.counts(), { navigation: 1, resumes: 28, sources: 29, snapshots: 4, removals: 1 });
+    assert.equal(f.owner.status()["navigationSettled"], false);
+    f.finishNavigation(); await f.owner.whenOriginalNavigationSettled();
+  } finally { f.acknowledgeNavigationResume(); f.finishNavigation(); await f.router.abort(); await f.terminate(); }
+});
+void test("first PCB pause allows composed navigation and loader source waits while each retains its individual deadline", async context => {
+  const loaderEntered = Promise.withResolvers<null>(), loaderRelease = Promise.withResolvers<null>();
+  const navigationEntered = Promise.withResolvers<null>(), navigationRelease = Promise.withResolvers<null>();
+  const f = await fixture({ navigationPause: "valid", loaderPause: "valid", beforeInitialSource: phase => {
+    if (phase === "navigation") { navigationEntered.resolve(null); return navigationRelease.promise; }
+    loaderEntered.resolve(null); return loaderRelease.promise;
+  } });
+  context.mock.timers.enable({ apis: ["setTimeout"] });
+  try {
+    await f.owner.armBeforeNavigation(); await f.owner.startOriginalNavigation(); await navigationEntered.promise;
+    context.mock.timers.tick(2000); navigationRelease.resolve(null); await loaderEntered.promise;
+    context.mock.timers.tick(2000); loaderRelease.resolve(null); await f.owner.whenSourceQualified();
+    assert.equal(f.router.status()["loaderPause"], "complete"); assert.deepEqual(f.loaderCounts(), { sources: 1, resumes: 1 });
+    assert.equal(f.counts().sources, 29); assert.equal(f.counts().resumes, 28);
+    f.finishNavigation(); await f.owner.whenOriginalNavigationSettled();
+  } finally { navigationRelease.resolve(null); loaderRelease.resolve(null); f.finishNavigation(); await f.router.abort(); await f.terminate(); }
+});
+void test("changed loader source, stale provenance, settled opener and duplicate pause cannot resume or start PCB source reads", async () => {
+  for (const loaderPause of ["source-change", "historical-script", "settled-navigation", "duplicate"] as const) {
+    const f = await fixture({ navigationPause: "valid", loaderPause });
+    try {
+      await f.owner.armBeforeNavigation(); await f.owner.startOriginalNavigation(); await assert.rejects(f.owner.whenSourceQualified());
+      assert.deepEqual(f.loaderCounts(), { sources: loaderPause === "source-change" ? 1 : 0, resumes: 0 });
+      assert.equal(f.counts().sources, 0); assert.equal(f.counts().resumes, 0); assert.equal(f.router.status()["failed"], true);
+      const evidence = f.router.retainedRejectedStopEvidence(); assert.ok(evidence !== null); assert.equal(evidence.event.status, "captured");
+    } finally { f.finishNavigation(); await f.router.abort(); await f.terminate(); }
+  }
+});
+void test("router cleanup reports disposal failure without replay and ignores terminal callback traffic", async () => {
+  for (const cleanupFailure of [false, true]) {
+    const f = await fixture({ cleanupFailure, lateCleanupEvents: true }); await f.owner.armBeforeNavigation();
+    if (cleanupFailure) {
+      await assert.rejects(f.terminate(), /synthetic disposer outcome uncertain/u);
+      assert.equal(f.router.status()["released"], false); assert.throws(() => { f.router.assertCurrent(); }, /NOT_CURRENT/u);
+      await assert.rejects(f.terminate(), /synthetic disposer outcome uncertain/u);
+    } else { await f.terminate(); assert.equal(f.router.status()["released"], true); assert.equal(f.router.status()["failed"], false); }
+    assert.equal(f.cleanupCount(), 1);
+  }
 });

@@ -44,6 +44,8 @@ const requestClasses = freezeDeep({
   preparation: { count: 10, frameBytes: mib },
   // Exact original navigation program compilation: one source read and resume.
   navigation: { count: 2, frameBytes: mib },
+  // One pinned UI loader default callback: complete 28-byte source and resume.
+  loader: { count: 2, frameBytes: envelope },
   ancestry: { count: 3 * 4, frameBytes: mib },
   "pcb-source": { count: pcbSources.length, frameBytes: Math.max(...pcbSources.map(slot => slot.frameBytes)) },
   "child-source": { count: childSources.length, frameBytes: Math.max(...childSources.map(slot => slot.frameBytes)) },
@@ -93,6 +95,12 @@ const cleanupMilliseconds = 60 * 1000, normalMilliseconds = 60 * 60 * 1000;
 const ancestryProofMilliseconds = 4 * 3 * ordinaryRequestMilliseconds;
 const pcbBootstrapSendMilliseconds = 3 * ordinaryRequestMilliseconds;
 const pcbBootstrapResumeMilliseconds = pcbBootstrapSendMilliseconds + ordinaryRequestMilliseconds;
+// Stage zero includes the original opening's owner check, native write and
+// First pause delivery, followed by two UI pauses. Each UI pause awaits owner,
+// Source, owner, resume reply and resumed event. The loader's wait for the
+// Navigation acknowledgment overlaps that first sequence. Later PCB source
+// Pauses retain their ordinary deadline; this does not extend the launch clock.
+const pcbBootstrapFirstPauseMilliseconds = (3 + 5 + 5) * ordinaryRequestMilliseconds;
 // Two dispatcher owner checks; router owner; fresh ancestry; source-owner
 // Before/resume/after. The resumed event is independently bounded by resume.
 const sourceReleaseMilliseconds = ancestryProofMilliseconds + 5 * ordinaryRequestMilliseconds + pcbBootstrapResumeMilliseconds;
@@ -138,7 +146,7 @@ export const CURRENT_PCB_209_RATLINE_NATIVE_PROFILE = freezeDeep({
     totalBytes: discoveryEventBytes + startupEventBytes + continuationEventBytes },
   polling: { limit: pollLimit, normalLimit: normalPollLimit, cleanupReserve: cleanupPollReserve, intervalMilliseconds: pollIntervalMilliseconds },
   elapsed: { normalMilliseconds, cleanupMilliseconds, totalMilliseconds: normalMilliseconds + cleanupMilliseconds,
-    ordinaryRequestMilliseconds, ancestryProofMilliseconds, pcbBootstrapSendMilliseconds, pcbBootstrapResumeMilliseconds, sourceReleaseMilliseconds, childArmMilliseconds,
+    ordinaryRequestMilliseconds, ancestryProofMilliseconds, pcbBootstrapSendMilliseconds, pcbBootstrapResumeMilliseconds, pcbBootstrapFirstPauseMilliseconds, sourceReleaseMilliseconds, childArmMilliseconds,
     childOwnerMilliseconds, childBootstrapSendMilliseconds, childBootstrapAllocationMilliseconds, childBootstrapResumeMilliseconds,
     pcbRealmAllocationMilliseconds, pcbChildStartMilliseconds,
     creationContinuationMilliseconds, capturePauseMilliseconds, captureWaitMilliseconds, anchor: "original-monotonic-launch" },

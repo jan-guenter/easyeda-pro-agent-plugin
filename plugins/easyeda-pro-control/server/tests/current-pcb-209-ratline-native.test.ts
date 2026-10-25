@@ -37,7 +37,7 @@ void test("ratline native grammar preserves exact role cases and issued IDs with
       assert.throws(() => currentPcb209RatlineNativeWire(other, entry.command, 301));
     }
   }
-  assert.deepEqual(counts, { pcb: 34, worker: 47 });
+  assert.deepEqual(counts, { pcb: 36, worker: 47 });
 });
 void test("ratline native syntax refuses getters, proxies, inherited fields, sparse arguments and unsafe handles without running hooks", () => {
   const entry = CURRENT_PCB_209_RATLINE_NATIVE_CASES.find(value => value.role === "pcb" && value.phase === "relation-same");
@@ -79,6 +79,19 @@ void test("origin syntax has separate bounded IDs and fixed depth one without wo
     }
   }
 });
+void test("loader source and resume have distinct PCB phases without a worker or mixed-phase alias", () => {
+  for (const command of [
+    { method: "Debugger.getScriptSource", sessionId: "parent", loaderPhase: "source", params: { scriptId: "loader" } },
+    { method: "Debugger.resume", sessionId: "parent", loaderPhase: "resume", params: {} },
+  ] as const) {
+    const encoded = currentPcb209RatlineNativeWire("pcb", command, 301);
+    assert.equal(encoded.request["phase"], `loader-${command.loaderPhase}`);
+    assert.equal(Object.hasOwn(encoded.request, "loaderPhase"), false);
+    assert.throws(() => currentPcb209RatlineNativeWire("worker", command, 301));
+    assert.throws(() => currentPcb209RatlineNativeWire("pcb", { ...command, navigationPhase: command.loaderPhase }, 301));
+    assert.throws(() => currentPcb209EmptyNativeWire(command, 301));
+  }
+});
 void test("ratline C# template table preserves every fixed command and exact bounded UTF-8 payload", () => {
   const source = currentPcb209RatlineNativeSource();
   const match = /string\[\] rows=Unpack\(@"([A-Za-z\d+/=]+)",(\d+),@"([a-f\d]{64})"\)/u.exec(source);
@@ -88,7 +101,7 @@ void test("ratline C# template table preserves every fixed command and exact bou
   assert.equal(decoded.length, Number(match[2])); assert.equal(createHash("sha256").update(decoded).digest("hex"), match[3]);
   assert.deepEqual(decoded.toString("utf8").split("\0").map(row => row.split("\t")), CURRENT_PCB_209_RATLINE_NATIVE_CASES.map(entry => {
     const wire = currentPcb209RatlineNativeWire(entry.role, entry.command, 1);
-    const { navigationPhase: _privatePhase, ...nativeCommand } = { navigationPhase: undefined, ...entry.command };
+    const { navigationPhase: _privatePhase, loaderPhase: _loaderPhase, ...nativeCommand } = { navigationPhase: undefined, loaderPhase: undefined, ...entry.command };
     return [entry.role, entry.phase, entry.command.method,
       Object.keys(wire.request).filter(key => !["action", "requestId", "method", "role", "phase"].includes(key)).join(","), JSON.stringify(nativeCommand)];
   }));
@@ -102,7 +115,7 @@ void test("ratline C# template table preserves every fixed command and exact bou
     const raw: unknown = JSON.parse(JSON.stringify(entry.command).replaceAll(/__ratline209_([A-Za-z\d]+)__/gu,
       (_match: string, name: string): string => "x".repeat(name === "sessionId" ? 128 : 256)));
     const encoded = currentPcb209RatlineNativeWire(entry.role, raw, 2_147_483_647);
-    const { navigationPhase: _privatePhase, ...nativeCommand } = { navigationPhase: undefined, ...encoded.command };
+    const { navigationPhase: _privatePhase, loaderPhase: _loaderPhase, ...nativeCommand } = { navigationPhase: undefined, loaderPhase: undefined, ...encoded.command };
     maximum = Math.max(maximum, Buffer.byteLength(`${JSON.stringify(nativeCommand)}\0`));
   }
   assert.equal(maximum, Number(bound));

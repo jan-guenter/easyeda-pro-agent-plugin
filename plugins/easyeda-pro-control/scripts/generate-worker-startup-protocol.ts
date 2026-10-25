@@ -4,6 +4,8 @@ import { currentPcb209EmptyNativeSource } from "../server/src/current-pcb-209-em
 import { currentPcb209RatlineNativeSource } from "../server/src/current-pcb-209-ratline-native.ts";
 import { CURRENT_PCB_209_RATLINE_NATIVE_PROFILE as ratline } from "../server/src/current-pcb-209-ratline-budget.ts";
 import { CURRENT_PCB_209_RATLINE_INSTALLATION_PROFILE as installation } from "../server/src/current-pcb-209-ratline-installation-profile.ts";
+import { currentPcb209RatlineContinuationNativeSource } from "../server/src/current-pcb-209-ratline-continuation-native.ts";
+import { CURRENT_PCB_209_RATLINE_CONTINUATION_NATIVE_PROFILE as continuation } from "../server/src/current-pcb-209-ratline-continuation-budget.ts";
 
 const quote = (text: string): string => `@"${text.replaceAll('"', '""')}"`;
 function installationSource(): string {
@@ -56,7 +58,8 @@ async function main(): Promise<void> {
   let next = source;
   for (const [name, generated] of [["WORKER STARTUP", currentPcbWorkerStartupNativeSource()],
     ["WORKER STARTUP EMPTY209", currentPcb209EmptyNativeSource()],
-    ["WORKER STARTUP RATLINE209", ratlineSource()]] as const) {
+    ["WORKER STARTUP RATLINE209", ratlineSource()],
+    ["WORKER STARTUP RATLINE CONTINUATION209", continuationSource()]] as const) {
     const begin = `// BEGIN GENERATED ${name} PROTOCOL`, end = `// END GENERATED ${name} PROTOCOL`;
     const start = next.indexOf(begin), stop = next.indexOf(end);
     if (start === -1 || stop < start || next.includes(begin, start + begin.length) || next.includes(end, stop + end.length)) {
@@ -67,6 +70,15 @@ async function main(): Promise<void> {
   if (Buffer.byteLength(next) > 1_048_576) { throw new Error("Native startup helper exceeds its fixed byte bound"); }
   if (action === "--write") { await writeFile(path, next); }
   else if (next !== source) { throw new Error("Generated native startup protocol differs"); }
+}
+function continuationSource(): string {
+  const limits = { RequestLimit: continuation.requestLimit, NormalRequestLimit: continuation.normalRequestLimit, CleanupRequestLimit: continuation.cleanupRequests,
+    NormalByteLimit: continuation.bytes.normal, TotalByteLimit: continuation.bytes.total, NormalPollLimit: continuation.polling.normalLimit, PollLimit: continuation.polling.limit,
+    HelperControlLimit: continuation.helperControlMessages, HelperStdoutByteLimit: continuation.bytes.helperStdout,
+    NormalMilliseconds: continuation.elapsed.normalMilliseconds, TotalMilliseconds: continuation.elapsed.totalMilliseconds };
+  return `// BEGIN GENERATED WORKER STARTUP RATLINE CONTINUATION209 PROTOCOL\n${currentPcb209RatlineContinuationNativeSource()}\n` +
+    `public static class EasyedaRatlineContinuation209Limits {\n${Object.entries(limits).map(([key, value]) => `  public const long ${key}=${String(value)}L;`).join("\n")}\n}\n` +
+    "// END GENERATED WORKER STARTUP RATLINE CONTINUATION209 PROTOCOL";
 }
 // oxlint-disable-next-line node/no-top-level-await -- ESM-only build command; never loaded by require().
 await main();

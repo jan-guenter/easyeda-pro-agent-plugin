@@ -1,3 +1,4 @@
+/* oxlint-disable import/max-dependencies -- The channel integration binds the original opening program, loader bytes, native grammar and cumulative budget in one fixture. */
 import assert from "node:assert/strict";
 import { test } from "node:test";
 import type { TestContext } from "node:test";
@@ -12,6 +13,7 @@ import { CURRENT_PCB_209_RATLINE_NATIVE_CASES } from "../src/current-pcb-209-rat
 import type { CurrentPcb209RatlineOriginCommand } from "../src/current-pcb-209-ratline-origin.ts";
 import { currentPcb209RatlineNativeWire } from "../src/current-pcb-209-ratline-native-wire.ts";
 import type { CurrentPcb209RatlineNativeCommand } from "../src/current-pcb-209-ratline-native-cases.ts";
+import { CURRENT_PCB_209_RATLINE_LOADER_SOURCE } from "../src/current-pcb-209-ratline-loader-pause.ts";
 
 type Send = Readonly<Record<string, unknown>>;
 function ordinaryReply(request: Send): Readonly<Record<string, unknown>> {
@@ -251,7 +253,7 @@ void test(`native held construction join retains original replies, lost acknowle
   await (lostAcknowledgment ? assert.rejects(dependency.request("pcb", join)) : dependency.request("pcb", join));
   assert.equal(f.budget.remainingRequests("pcb-capture"), remaining - 1);
   await assert.rejects(dependency.request("pcb", join), /JOIN_STATE/u); assert.equal(f.requests.length, before + 1);
-  assert.equal(PROFILE.requestClasses["pcb-capture"].count, 13); assert.equal(PROFILE.normalRequestLimit, 320);
+  assert.equal(PROFILE.requestClasses["pcb-capture"].count, 13); assert.equal(PROFILE.normalRequestLimit, 322);
 });
 }
 
@@ -379,4 +381,80 @@ void test("navigation source lost write acknowledgement is consumed and cannot d
   await assert.rejects(dependency.request("pcb", source));
   await assert.rejects(dependency.request("pcb", { method: "Debugger.resume", sessionId: "parent-session", navigationPhase: "resume", params: {} }));
   assert.equal(f.requests.length, count); assert.equal(f.budget.remainingRequests("navigation"), 1); await openingWork;
+});
+const loaderSourceCommand = { method: "Debugger.getScriptSource", sessionId: "parent-session", loaderPhase: "source", params: { scriptId: "loader" } } as const;
+const loaderResumeCommand = { method: "Debugger.resume", sessionId: "parent-session", loaderPhase: "resume", params: {} } as const;
+const plainResumeCommand = { method: "Debugger.resume", sessionId: "parent-session", params: {} } as const;
+async function holdLoaderBeforeNavigationReply(f: Fixture, dependency: CurrentPcb209RatlineStartupDependency): Promise<Readonly<{
+  openingRequest: Send; openingWork: Promise<unknown>; navigationResumeRequest: Send; navigationResumeWork: Promise<unknown>;
+}>> {
+  const openingIssued = Promise.withResolvers<Send>(), resumeIssued = Promise.withResolvers<Send>();
+  f.state.onSend = (request): Promise<unknown> => {
+    if (request["parentPhase"] === "pcb-open-document") { openingIssued.resolve(request); return Promise.resolve({ written: true }); }
+    if (request["phase"] === "navigation-resume") {
+      resumeIssued.resolve(request); event(f, "parent-session", "Debugger.resumed", {});
+      event(f, "parent-session", "Debugger.paused", { reason: "instrumentation", data: { scriptId: "loader" }, hitBreakpoints: [],
+        callFrames: [{ location: { scriptId: "loader" } }, { location: { scriptId: "ui" } }, { location: { scriptId: "ui" } }] });
+      return Promise.resolve({ written: true });
+    }
+    let result: unknown = {};
+    if (request["phase"] === "navigation-source") { result = { scriptSource: `(${CURRENT_PCB_DIAGNOSTIC_PCB_OPENING_FUNCTION})` }; }
+    else if (request["phase"] === "loader-source") { result = { scriptSource: CURRENT_PCB_209_RATLINE_LOADER_SOURCE }; }
+    f.frame({ id: request["requestId"], sessionId: request["sessionId"], result });
+    if (request["method"] === "Debugger.resume") { event(f, "parent-session", "Debugger.resumed", {}); }
+    return Promise.resolve({ written: true });
+  };
+  const openingWork = dependency.requestParent(opening(true, "open-document"));
+  const openingRequest = await openingIssued.promise;
+  event(f, "parent-session", "Debugger.paused", { reason: "instrumentation", data: { scriptId: "nav-script" }, hitBreakpoints: [],
+    callFrames: [{ location: { scriptId: "nav-script" } }] });
+  await dependency.requestParent({ method: "Page.getFrameTree", sessionId: "parent-session", params: {} });
+  await dependency.request("pcb", { method: "Debugger.getScriptSource", sessionId: "parent-session", navigationPhase: "source", params: { scriptId: "nav-script" } });
+  const navigationResumeWork = dependency.request("pcb", { method: "Debugger.resume", sessionId: "parent-session", navigationPhase: "resume", params: {} });
+  const navigationResumeRequest = await resumeIssued.promise;
+  await dependency.requestParent({ method: "Page.getFrameTree", sessionId: "parent-session", params: {} });
+  return { openingRequest, openingWork, navigationResumeRequest, navigationResumeWork };
+}
+void test("loader commands require the original navigation reply and pending opener, never alias ordinary resume or advance PCB ordinals", async context => {
+  for (const settleOpener of [false, true]) {
+    const f = await fixture(context); const dependency = await prepare(f); await arm(dependency, "pcb");
+    const beforeOpening = f.requests.length;
+    await assert.rejects(dependency.request("pcb", loaderSourceCommand), /LOADER_SEQUENCE/u);
+    await assert.rejects(dependency.request("pcb", loaderResumeCommand), /LOADER_SEQUENCE/u); assert.equal(f.requests.length, beforeOpening);
+    const held = await holdLoaderBeforeNavigationReply(f, dependency); const beforeAcknowledgment = f.requests.length;
+    await assert.rejects(dependency.request("pcb", loaderSourceCommand), /LOADER_SEQUENCE/u);
+    await assert.rejects(dependency.request("pcb", plainResumeCommand), /RESUME_SEQUENCE/u); assert.equal(f.requests.length, beforeAcknowledgment);
+    f.frame({ id: held.navigationResumeRequest["requestId"], sessionId: "parent-session", result: {} }); await held.navigationResumeWork;
+    if (settleOpener) {
+      f.frame({ id: held.openingRequest["requestId"], sessionId: "parent-session", result: {} }); await held.openingWork;
+      const before = f.requests.length; await assert.rejects(dependency.request("pcb", loaderSourceCommand), /LOADER_SEQUENCE/u);
+      assert.equal(f.requests.length, before); assert.equal(f.budget.remainingRequests("loader"), 2);
+    } else {
+      await assert.rejects(dependency.request("pcb", loaderResumeCommand), /LOADER_SEQUENCE/u);
+      await assert.rejects(dependency.request("pcb", { ...loaderSourceCommand, params: { scriptId: "foreign" } }), /LOADER_SEQUENCE/u);
+      await dependency.request("pcb", loaderSourceCommand);
+      await assert.rejects(dependency.request("pcb", loaderSourceCommand), /LOADER_SEQUENCE/u);
+      await assert.rejects(dependency.request("pcb", plainResumeCommand), /RESUME_SEQUENCE/u);
+      await dependency.request("pcb", loaderResumeCommand); await assert.rejects(dependency.request("pcb", loaderResumeCommand), /LOADER_SEQUENCE/u);
+      event(f, "parent-session", "Debugger.paused", { reason: "instrumentation" });
+      await dependency.request("pcb", { method: "Debugger.getScriptSource", sessionId: "parent-session", params: { scriptId: "pcb-bootstrap" } });
+      assert.equal(f.budget.remainingRequests("pcb-source"), 28); assert.equal(f.budget.remainingRequests("navigation"), 0);
+      assert.equal(f.budget.remainingRequests("loader"), 0); assert.equal(PROFILE.cleanupRequests, 43);
+      f.frame({ id: held.openingRequest["requestId"], sessionId: "parent-session", result: {} }); await held.openingWork;
+    }
+  }
+});
+void test("changed loader source consumes its read and refuses every later resume without dispatch", async context => {
+  const f = await fixture(context); const dependency = await prepare(f); await arm(dependency, "pcb");
+  const held = await holdLoaderBeforeNavigationReply(f, dependency);
+  f.frame({ id: held.navigationResumeRequest["requestId"], sessionId: "parent-session", result: {} }); await held.navigationResumeWork;
+  const openingRejected = assert.rejects(held.openingWork);
+  f.state.onSend = (request): Promise<unknown> => {
+    f.frame({ id: request["requestId"], sessionId: request["sessionId"], result: { scriptSource: `${CURRENT_PCB_209_RATLINE_LOADER_SOURCE} ` } });
+    return Promise.resolve({ written: true });
+  };
+  await assert.rejects(dependency.request("pcb", loaderSourceCommand)); const consumed = f.requests.length;
+  await assert.rejects(dependency.request("pcb", loaderSourceCommand)); await assert.rejects(dependency.request("pcb", loaderResumeCommand));
+  await assert.rejects(dependency.request("pcb", plainResumeCommand)); assert.equal(f.requests.length, consumed);
+  assert.equal(f.budget.remainingRequests("loader"), 1); assert.equal(f.budget.remainingRequests("pcb-source"), 29); await openingRejected;
 });

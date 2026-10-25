@@ -8,7 +8,7 @@ import { stripTypeScriptTypes } from "node:module";
 import { test } from "node:test";
 import vm from "node:vm";
 import { z } from "zod";
-import { CurrentPcb209DiagnosticLifecycle, CurrentPcb209EmptyStartupLifecycle, CurrentPcb209RatlineStartupLifecycle, CurrentPcb209WorkerStartupLifecycle } from "../src/current-pcb-diagnostic-lifecycle.ts";
+import { CurrentPcb209DiagnosticLifecycle, CurrentPcb209EmptyStartupLifecycle, CurrentPcb209RatlineContinuationLifecycle, CurrentPcb209RatlineStartupLifecycle, CurrentPcb209WorkerStartupLifecycle } from "../src/current-pcb-diagnostic-lifecycle.ts";
 import type { CurrentPcbDiagnosticLifecycleOptions } from "../src/current-pcb-diagnostic-lifecycle.ts";
 import { CURRENT_PCB_DIAGNOSTIC_PROFILE } from "../src/current-pcb-diagnostic-profile.ts";
 import { currentPcbDiagnosticToolRequestSchema } from "../src/current-pcb-diagnostic-validation.ts";
@@ -53,7 +53,7 @@ void test("209 public opening and startup callbacks select original lifecycles a
     } };
   const scope = vm.createContext({ z, currentPcb209OpeningRequestSchema, currentPcbDiagnosticToolRequestSchema, currentPcb209WorkerStartupToolRequestSchema,
     CURRENT_PCB_DIAGNOSTIC_PROFILE, CurrentPcb209DiagnosticLifecycle: Selected209Lifecycle,
-    CurrentPcb209WorkerStartupLifecycle: Selected209StartupLifecycle, CurrentPcb209EmptyStartupLifecycle, CurrentPcb209RatlineStartupLifecycle,
+    CurrentPcb209WorkerStartupLifecycle: Selected209StartupLifecycle, CurrentPcb209EmptyStartupLifecycle, CurrentPcb209RatlineStartupLifecycle, CurrentPcb209RatlineContinuationLifecycle,
     CurrentPcbDiagnosticLifecycle: forbiddenLegacyLifecycle, CurrentPcbWorkerStartupLifecycle: forbiddenLegacyLifecycle,
     currentPcbDiagnosticLifecycle: undefined, currentPcbStringPrecreateLifecycle: undefined, currentPcbWorkerStartupLifecycle: undefined,
     process: { env: environment }, engine, upstream, facadeMode: "public-utilities-only", facadeToolRegistered,

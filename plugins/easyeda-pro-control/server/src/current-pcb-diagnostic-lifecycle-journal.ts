@@ -14,6 +14,8 @@ import { CURRENT_PCB_STRING_PRECREATE_OPERATION_PREFIX, currentPcbStringPrecreat
 import { CURRENT_PCB_WORKER_STARTUP_OPERATION_PREFIX, currentPcbWorkerStartupLifecycleIdSchema } from "./current-pcb-worker-startup-validation.ts";
 import { CURRENT_PCB_209_WORKER_STARTUP_OPERATION_PREFIX, currentPcb209WorkerStartupLifecycleIdSchema } from "./current-pcb-209-worker-startup-validation.ts";
 import { CURRENT_PCB_209_RATLINE_STARTUP_OPERATION_PREFIX, currentPcb209RatlineStartupIdSchema } from "./current-pcb-209-ratline-startup-validation.ts";
+import { CURRENT_PCB_209_RATLINE_CONTINUATION_OPERATION_PREFIX, currentPcb209RatlineContinuationIdSchema } from "./current-pcb-209-ratline-continuation-validation.ts";
+import { CURRENT_PCB_209_RATLINE_CONTINUATION_RESULT_MAX_BYTES, currentPcb209RatlineContinuationNativePacketSchema } from "./current-pcb-209-ratline-continuation-packet-schema.ts";
 import { CURRENT_PCB_209_RATLINE_STARTUP_RESULT_MAX_BYTES, currentPcb209RatlineNativePacketSchema } from "./current-pcb-209-ratline-startup-packet-schema.ts";
 import { CURRENT_PCB_209_EMPTY_STARTUP_OPERATION_PREFIX, currentPcb209EmptyStartupIdSchema } from "./current-pcb-209-empty-startup-validation.ts";
 import { CURRENT_PCB_209_EMPTY_STARTUP_RESULT_MAX_BYTES, currentPcb209WorkerStartupEmptyPacketSchema,
@@ -91,10 +93,13 @@ const workerStartupEmpty209IntentSchema = workerStartupIntentSchema.extend({
 const workerStartupRatline209IntentSchema = workerStartupIntentSchema.extend({
   schema: z.literal("easyeda-pro-control.pcb209-ratline-startup-launch-intent.v1"), operationId: currentPcb209RatlineStartupIdSchema,
 });
+const workerStartupContinuation209IntentSchema = workerStartupIntentSchema.extend({
+  schema: z.literal("easyeda-pro-control.pcb209-ratline-continuation-launch-intent.v1"), operationId: currentPcb209RatlineContinuationIdSchema,
+});
 const startupId = z.union([currentPcbWorkerStartupLifecycleIdSchema, currentPcb209WorkerStartupLifecycleIdSchema]);
-const startupOpeningId = z.union([startupId, currentPcb209EmptyStartupIdSchema, currentPcb209RatlineStartupIdSchema]);
+const startupOpeningId = z.union([startupId, currentPcb209EmptyStartupIdSchema, currentPcb209RatlineStartupIdSchema, currentPcb209RatlineContinuationIdSchema]);
 const intentSchema = z.discriminatedUnion("schema", [diagnosticIntentSchema, stringIntentSchema, workerStartupIntentSchema,
-  workerStartup209IntentSchema, workerStartupEmpty209IntentSchema, workerStartupRatline209IntentSchema]);
+  workerStartup209IntentSchema, workerStartupEmpty209IntentSchema, workerStartupRatline209IntentSchema, workerStartupContinuation209IntentSchema]);
 const workerStartupHandoffIntentSchema = z.object({ schema: z.literal("easyeda-pro-control.pcb-worker-startup-handoff-intent.v1"), ...base,
   operationId: startupOpeningId, bindingSha256: diagnosticLifecycleDigestSchema,
   scriptResultSha256: diagnosticLifecycleDigestSchema,
@@ -328,7 +333,7 @@ const workerStartupOpeningResultSchema = z.object({
   operationId: startupOpeningId, intentSha256: diagnosticLifecycleDigestSchema,
   result: z.union([workerStartupResultSchema, workerStartup209ResultSchema]), executionAuthorized: z.literal(false),
 }).strict().refine(value => Buffer.byteLength(canonicalJson(value.result)) <= DIAGNOSTIC_OBSERVATION_MAX_BYTES &&
-  (value.operationId.startsWith(CURRENT_PCB_209_WORKER_STARTUP_OPERATION_PREFIX) || value.operationId.startsWith(CURRENT_PCB_209_EMPTY_STARTUP_OPERATION_PREFIX) || value.operationId.startsWith(CURRENT_PCB_209_RATLINE_STARTUP_OPERATION_PREFIX)) ===
+  (value.operationId.startsWith(CURRENT_PCB_209_WORKER_STARTUP_OPERATION_PREFIX) || value.operationId.startsWith(CURRENT_PCB_209_EMPTY_STARTUP_OPERATION_PREFIX) || value.operationId.startsWith(CURRENT_PCB_209_RATLINE_STARTUP_OPERATION_PREFIX) || value.operationId.startsWith(CURRENT_PCB_209_RATLINE_CONTINUATION_OPERATION_PREFIX)) ===
     (value.result.construction.profile === "private.current-pcb209-worker-construction.v1"), "Startup opening generation or bound differs.");
 const workerStartupEmptyIntentSchema = z.object({
   schema: z.literal("easyeda-pro-control.pcb209-worker-startup-empty-intent.v1"), ...base,
@@ -359,6 +364,18 @@ const workerStartupRatlineResultSchema = z.object({
   validationOnly: z.literal(true), executionAuthorized: z.literal(false), saveAuthorized: z.literal(false),
 }).strict().refine(value => Buffer.byteLength(canonicalJson(value)) + 1 <= CURRENT_PCB_209_RATLINE_STARTUP_RESULT_MAX_BYTES,
   "Ratline held-import result exceeds its byte bound.");
+const workerStartupContinuationIntentSchema = z.object({
+  schema: z.literal("easyeda-pro-control.pcb209-worker-startup-continuation-intent.v1"), ...base,
+  operationId: currentPcb209RatlineContinuationIdSchema, bindingSha256: diagnosticLifecycleDigestSchema,
+  openingIntentSha256: diagnosticLifecycleDigestSchema, openingResultSha256: diagnosticLifecycleDigestSchema,
+  acceptNormalOpenEffects: z.literal(true), acceptDebuggerPause: z.literal(true),
+}).strict();
+const workerStartupContinuationResultSchema = z.object({
+  schema: z.literal("easyeda-pro-control.pcb209-worker-startup-continuation-result.v1"), ...base,
+  operationId: currentPcb209RatlineContinuationIdSchema, intentSha256: diagnosticLifecycleDigestSchema, result: currentPcb209RatlineContinuationNativePacketSchema,
+  validationOnly: z.literal(true), executionAuthorized: z.literal(false), saveAuthorized: z.literal(false),
+}).strict().refine(value => Buffer.byteLength(canonicalJson(value)) + 1 <= CURRENT_PCB_209_RATLINE_CONTINUATION_RESULT_MAX_BYTES,
+  "Ratline continuation result exceeds its byte bound.");
 const workerStartupAssignmentsIntentSchema = z.object({
   schema: z.literal("easyeda-pro-control.pcb-worker-startup-assignments-intent.v1"), ...base,
   operationId: startupId, bindingSha256: diagnosticLifecycleDigestSchema,
@@ -447,6 +464,8 @@ export const diagnosticLifecycleRecordSchemas = {
   "worker-startup-empty-result.json": workerStartupEmptyResultSchema,
   "worker-startup-ratline-intent.json": workerStartupRatlineIntentSchema,
   "worker-startup-ratline-result.json": workerStartupRatlineResultSchema,
+  "worker-startup-continuation-intent.json": workerStartupContinuationIntentSchema,
+  "worker-startup-continuation-result.json": workerStartupContinuationResultSchema,
   "worker-startup-assignments-intent.json": workerStartupAssignmentsIntentSchema,
   "worker-startup-assignments-result.json": workerStartupAssignmentsResultSchema,
   "worker-startup-actor-intent.json": workerStartupActorIntentSchema,
@@ -482,6 +501,7 @@ function recordBound(name: RecordName): number {
   if (name === "pad-shapes209-result.json") { return CURRENT_PCB_209_PAD_SHAPES_RESULT_BYTES + MAX_BYTES; }
   if (name === "selection-relations209-result.json") { return CURRENT_PCB_209_SELECTION_RELATIONS_RESULT_BYTES + MAX_BYTES; }
   if (name === "common-baseline-failure.json") { return CURRENT_PCB_COMMON_FAILURE_MAX_BYTES + MAX_BYTES; }
+  if (name === "worker-startup-continuation-result.json") { return CURRENT_PCB_209_RATLINE_CONTINUATION_RESULT_MAX_BYTES; }
   if (name === "worker-startup-ratline-result.json") { return CURRENT_PCB_209_RATLINE_STARTUP_RESULT_MAX_BYTES; }
   if (name === "worker-startup-empty-result.json") { return CURRENT_PCB_209_EMPTY_STARTUP_RESULT_MAX_BYTES; }
   return name.endsWith("-result.json") ? DIAGNOSTIC_OBSERVATION_MAX_BYTES + MAX_BYTES : MAX_BYTES;
@@ -548,7 +568,8 @@ function validateChain(operation: DiagnosticLifecycleOperation): void {
   const startupEmpty209 = intent?.schema === "easyeda-pro-control.pcb209-empty-startup-launch-intent.v1";
   const startupLegacy209 = intent?.schema === "easyeda-pro-control.pcb209-worker-startup-launch-intent.v1";
   const startupRatline209 = intent?.schema === "easyeda-pro-control.pcb209-ratline-startup-launch-intent.v1";
-  const startup209 = startupLegacy209 || startupEmpty209 || startupRatline209;
+  const startupContinuation209 = intent?.schema === "easyeda-pro-control.pcb209-ratline-continuation-launch-intent.v1";
+  const startup209 = startupLegacy209 || startupEmpty209 || startupRatline209 || startupContinuation209;
   const startup206 = intent?.schema === "easyeda-pro-control.pcb-worker-startup-launch-intent.v1";
   const startupPurpose = startup206 || startup209;
   requireValue(!stringPurpose || operation.operationId.startsWith(CURRENT_PCB_STRING_PRECREATE_OPERATION_PREFIX), "STRING_PURPOSE_ID");
@@ -560,6 +581,10 @@ function validateChain(operation: DiagnosticLifecycleOperation): void {
   requireValue(intent === undefined || startupRatline209 || !operation.operationId.startsWith(CURRENT_PCB_209_RATLINE_STARTUP_OPERATION_PREFIX), "RESERVED_WORKER_STARTUP_RATLINE209_PURPOSE_ID");
   requireValue(startupRatline209 || records["worker-startup-ratline-intent.json"] === undefined && records["worker-startup-ratline-result.json"] === undefined,
     "WORKER_STARTUP_RATLINE209_PURPOSE_REQUIRED");
+  requireValue(!startupContinuation209 || operation.operationId.startsWith(CURRENT_PCB_209_RATLINE_CONTINUATION_OPERATION_PREFIX), "WORKER_STARTUP_CONTINUATION209_PURPOSE_ID");
+  requireValue(intent === undefined || startupContinuation209 || !operation.operationId.startsWith(CURRENT_PCB_209_RATLINE_CONTINUATION_OPERATION_PREFIX), "RESERVED_WORKER_STARTUP_CONTINUATION209_PURPOSE_ID");
+  requireValue(startupContinuation209 || records["worker-startup-continuation-intent.json"] === undefined && records["worker-startup-continuation-result.json"] === undefined,
+    "WORKER_STARTUP_CONTINUATION209_PURPOSE_REQUIRED");
   requireValue(intent === undefined || startup206 || !operation.operationId.startsWith(CURRENT_PCB_WORKER_STARTUP_OPERATION_PREFIX), "RESERVED_WORKER_STARTUP_PURPOSE_ID");
   requireValue(intent === undefined || startupLegacy209 || !operation.operationId.startsWith(CURRENT_PCB_209_WORKER_STARTUP_OPERATION_PREFIX), "RESERVED_WORKER_STARTUP209_PURPOSE_ID");
   requireValue(intent === undefined || startupEmpty209 || !operation.operationId.startsWith(CURRENT_PCB_209_EMPTY_STARTUP_OPERATION_PREFIX), "RESERVED_WORKER_STARTUP_EMPTY209_PURPOSE_ID");
@@ -620,6 +645,13 @@ function validateChain(operation: DiagnosticLifecycleOperation): void {
   requireValue(ratlineResult === undefined || ratline !== undefined && startupOpening !== undefined && startupOpened !== undefined &&
     ratlineResult.intentSha256 === sha256Json(ratline) && ratlineResult.result.targetSha256 === sha256Json(startupOpening.target) &&
     ratlineResult.result.originalProjectConstructionSha256 === sha256Json(startupOpened.result.construction), "WORKER_STARTUP_RATLINE209_RESULT_CHAIN");
+  const continuation = records["worker-startup-continuation-intent.json"], continuationResult = records["worker-startup-continuation-result.json"];
+  requireValue(continuation === undefined || startupContinuation209 && binding !== undefined && startupOpening !== undefined && startupOpened !== undefined &&
+    continuation.bindingSha256 === sha256Json(binding) && continuation.openingIntentSha256 === sha256Json(startupOpening) &&
+    continuation.openingResultSha256 === sha256Json(startupOpened), "WORKER_STARTUP_CONTINUATION209_CHAIN");
+  requireValue(continuationResult === undefined || continuation !== undefined && startupOpening !== undefined && startupOpened !== undefined &&
+    continuationResult.intentSha256 === sha256Json(continuation) && continuationResult.result.targetSha256 === sha256Json(startupOpening.target) &&
+    continuationResult.result.originalProjectConstructionSha256 === sha256Json(startupOpened.result.construction), "WORKER_STARTUP_CONTINUATION209_RESULT_CHAIN");
   const assigned = records["worker-startup-assignments-result.json"], assignments = records["worker-startup-assignments-intent.json"];
   requireValue(assignments === undefined || startupPurpose && startupOpened !== undefined && binding !== undefined &&
     assignments.openingResultSha256 === sha256Json(startupOpened) && assignments.bindingSha256 === sha256Json(binding), "WORKER_STARTUP_ASSIGNMENTS_CHAIN");

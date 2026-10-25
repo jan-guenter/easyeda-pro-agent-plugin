@@ -13,7 +13,7 @@ function consume(budget: CurrentPcb209RatlineBudget, kind: CurrentPcb209RatlineR
   const id = budget.snapshot().requests + 1; budget.consumeRequest(id, kind); budget.consumeReply(id, 1);
 }
 void test("ratline profile derives exact fixed slots, JSON expansion and bounded staged availability", () => {
-  assert.equal(profile.normalRequestLimit, 320); assert.equal(profile.cleanupRequests, 43); assert.equal(profile.requestLimit, 363);
+  assert.equal(profile.normalRequestLimit, 322); assert.equal(profile.cleanupRequests, 43); assert.equal(profile.requestLimit, 365);
   assert.equal(profile.sources.pcb.length, 29); assert.equal(profile.sources.child.length, 7);
   assert.equal(profile.bytes.sources, 132_203_004); assert.equal(profile.frames.source, 65_949_670);
   assert.ok(profile.frames.source > 32 * 1024 * 1024);
@@ -29,6 +29,7 @@ void test("ratline profile derives exact fixed slots, JSON expansion and bounded
   assert.equal(profile.elapsed.ancestryProofMilliseconds, 30_000);
   assert.equal(profile.elapsed.pcbBootstrapSendMilliseconds, 7500);
   assert.equal(profile.elapsed.pcbBootstrapResumeMilliseconds, 10_000);
+  assert.equal(profile.elapsed.pcbBootstrapFirstPauseMilliseconds, 32_500);
   assert.equal(profile.elapsed.sourceReleaseMilliseconds, 52_500);
   assert.equal(profile.elapsed.childArmMilliseconds, 97_500);
   assert.equal(profile.elapsed.childOwnerMilliseconds, 7500);
@@ -100,7 +101,7 @@ void test("all fixed normal classes leave their separate cleanup request reserva
   const budget = prefix();
   for (let count = 1; count < profile.requestClasses.prefix.count; count += 1) { consume(budget, "prefix"); }
   budget.beginContinuation();
-  for (const kind of ["preparation", "navigation", "ancestry", "pcb-source", "child-source", "pcb-bootstrap", "child-bootstrap", "pcb-construction", "pcb-capture", "origin-stack"] as const) {
+  for (const kind of ["preparation", "navigation", "loader", "ancestry", "pcb-source", "child-source", "pcb-bootstrap", "child-bootstrap", "pcb-construction", "pcb-capture", "origin-stack"] as const) {
     for (let count = 0; count < profile.requestClasses[kind].count; count += 1) { consume(budget, kind); }
   }
   assert.equal(budget.snapshot().requests, profile.normalRequestLimit);

@@ -45,7 +45,8 @@ void test("native ratline acquisition checks the exact extended table before ret
   assert.ok(source.includes("if(workerStartupRatline209)installation.AdmitRatline(paths,sizes,hashes);else installation.Admit(paths,sizes,hashes);"));
   for (const pin of CURRENT_PCB_209_RATLINE_INSTALLATION_PROFILE.installedFiles) { assert.ok(source.includes(pin.sha256)); }
   assert.ok(source.includes("[EasyedaRatline209Installation]::VerifySmoke()"));
-  assert.ok(source.includes("$fileCount=if ($WorkerStartupRatline209) {[EasyedaRatline209Installation]::FileCount} else {5}"));
+  assert.ok(source.includes("$ratlinePurpose=$WorkerStartupRatline209 -or $WorkerStartupRatlineContinuation209"));
+  assert.ok(source.includes("$fileCount=if ($ratlinePurpose) {[EasyedaRatline209Installation]::FileCount} else {5}"));
 });
 for (const assetsRoot of ["/mnt/c/CON/resources/app/assets", "/mnt/c/Valid./resources/app/assets", "/mnt/c/Valid /resources/app/assets",
   "/mnt/c/Bad:stream/resources/app/assets", "/mnt/c/Bad\u007F/resources/app/assets", "/mnt/c/A?B/resources/app/assets",
