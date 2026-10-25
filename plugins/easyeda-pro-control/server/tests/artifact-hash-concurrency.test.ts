@@ -134,7 +134,7 @@ void test("warm scans overlap four journals while journal and phase readers shar
     assert.equal(inspection.active, 4); assert.equal(inspection.peak, 4);
     releaseJournals.resolve(true); await waitForGate(phasesEntered.promise); await nextTurn();
     assert.equal(inspection.active, 4); assert.equal(inspection.peak, 4);
-    assert.equal(journals.size, 4, "the next journal batch waits for every current phase reader");
+    assert.equal(journals.size, 4, "later journals wait while all four verifiers are blocked on phases");
     releasePhases.resolve(true); assert.deepEqual(await pending, ids);
     assert.equal(journals.size, 6); assert.equal(phases.size, 36);
     assert.equal(inspection.active, 0); assert.equal(inspection.peak, 4);
@@ -171,8 +171,8 @@ void test("warm scan failures drain sibling cleanup before sorted projector fail
     assert.deepEqual(projected, [ids[0]]);
     assert.equal(inspection.active, 0); assert.ok(inspection.peak <= 4);
     assert.deepEqual(inspection.closed.toSorted(), inspection.opened.toSorted());
-    const nextBatchPath = join(root, "operations", `${String(ids[4])}.json`);
-    assert.equal(inspection.opened.includes(nextBatchPath), false);
+    const laterJournalPath = join(root, "operations", `${String(ids[4])}.json`);
+    assert.equal(inspection.opened.includes(laterJournalPath), true, "rolling verification settles every warm candidate before sorted projection");
   } finally { release.resolve(true); await rejected; inspection.restore(); }
   failUnreadable = false;
   await waitForGate(scan());

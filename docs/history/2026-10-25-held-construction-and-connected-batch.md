@@ -245,3 +245,22 @@ That failed commit is not accepted for publication. Final verification belongs
 to the corrected commit and will be recorded separately.
 The corrected protocol-adapter file passes all eleven focused tests. Full
 typecheck, strict lint and skill/plugin/repository validation pass again.
+
+The same original run also failed shard three at an old grouped-scheduler
+expectation: it required the fifth journal to remain unopened after an earlier
+verification failed. The rolling scheduler deliberately verifies all warm
+candidates before sorted projection, so that journal now opens and drains.
+The test correction retains the original error, no projection before cleanup,
+four-stream bound, complete descriptor closure and subsequent scanner reuse
+checks. Runtime scheduling remains unchanged. The shard reported 1,796 passes
+and one failure across 1,797 tests; its complete log SHA256 is
+`7f8dcb5e502d462f83971e03927404e0799981e665635dd8099327189231b5cb`.
+All original shard summaries were inspected and contained no other failures.
+GitHub marked shards two and five cancelled despite their zero-failure test
+summaries, so they are not accepted. The intermediate correction's pending
+Linux run 40202099844 was cancelled before another full campaign; its Windows
+run 40202099769 passed. Final acceptance requires the combined correction's
+complete unchanged-payload CI.
+All nine focused artifact-concurrency and rolling-queue tests pass after that
+correction, as do full typecheck and strict type-aware lint. Root review confirms
+that cleanup, error ordering, stream bounds and slot reuse remain asserted.
