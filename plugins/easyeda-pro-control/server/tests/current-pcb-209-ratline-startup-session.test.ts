@@ -25,7 +25,7 @@ async function rejectedCapture(work: Promise<unknown>, requireFinalGate: boolean
 async function requireOriginalSession(session: CurrentPcb209RatlinePcbStartup | CurrentPcb209RatlineWorkerStartup | CurrentPcb209RatlinePcbHeldStartup,
   packet: CurrentPcb209RatlineStartupPacket | CurrentPcb209RatlineHeldStartupPacket): Promise<void> {
   if (session instanceof CurrentPcb209RatlinePcbHeldStartup) {
-    assert.equal(packet.profile, "private.current-pcb209-ratline-held-prefix-composite.v1");
+    assert.equal(packet.profile, "private.current-pcb209-ratline-held-prefix-composite.v2");
     await session.requireOriginal(packet); return;
   }
   assert.equal(packet.profile, "private.current-pcb209-ratline-composite.v1"); await session.requireOriginal(packet);
@@ -34,7 +34,7 @@ async function requireOriginalSession(session: CurrentPcb209RatlinePcbStartup | 
 for (const [role, synchronousResume, failure, slowRequest, heldPrefix] of [["pcb", false, null], ["worker", false, null], ["pcb", true, null],
   ["pcb", false, "late-allocation"], ["worker", false, "child-lost"], ["pcb", false, "failed-removal"], ["pcb", false, "await-gap"], ["pcb", false, null, true],
   ["pcb", false, null, false, true], ["pcb", true, null, false, true], ["pcb", false, "late-allocation", false, true],
-  ["pcb", false, "failed-removal", false, true], ["pcb", false, "await-gap", false, true]] as const) {
+  ["pcb", false, "failed-removal", false, true], ["pcb", false, "await-gap", false, true], ["pcb", false, "construction-mismatch", false, true]] as const) {
   void test(`fixed209 ${role} actual composite child gate, synchronous resume ${String(synchronousResume)}, failure ${String(failure)}, delayed proofs ${String(slowRequest === true)}, held prefix ${String(heldPrefix === true)}`, async context => {
     const fixture = await ratlineCaptureInspector(context, role, 0, false, false, { holdPcbResult: heldPrefix === true });
     const parent = { targetId: "parent", type: role === "pcb" ? "page" : "worker", title: "parent", url: "https://client/editor", attached: true };
@@ -75,7 +75,7 @@ for (const [role, synchronousResume, failure, slowRequest, heldPrefix] of [["pcb
         request: async input => {
           // Actual V8 runner commands pass the finite dormant native grammar;
           // Target attachments and child starts remain synthetic in this test.
-          const command = currentPcb209RatlineNativeWire(role, input, originalRequestId).command; originalRequestId += 1;
+          const wire = currentPcb209RatlineNativeWire(role, input, originalRequestId); const command = wire.command; originalRequestId += 1;
           if (heldPrefix === true && command.method === "Runtime.callFunctionOn") {
             assert.notEqual(command.params.functionDeclaration, 'function(other){"use strict";return this===other;}');
           }
@@ -90,6 +90,13 @@ for (const [role, synchronousResume, failure, slowRequest, heldPrefix] of [["pcb
             assert.equal(command.sessionId, "child-session"); assert.ok(armedChild); childStarts += 1; return {};
           }
           assert.equal(command.sessionId, "parent-session");
+          if (failure === "construction-mismatch" && command.method === "Runtime.callFunctionOn" &&
+              wire.request["phase"] === "relation-construction") {
+            // The actual V8 comparison must reject a different object for the
+            // Manager pair, independently of the synthetic native transcript.
+            const argumentsWithWrongManager = command.params.arguments.map((argument, index) => index === 2 ? { objectId: command.params.objectId } : argument);
+            return fixture.request(command.method, { ...command.params, arguments: argumentsWithWrongManager });
+          }
           if (command.method === "Debugger.resume" && armedChild && (failure === "child-lost" || failure === "failed-removal")) { childEvents?.lost(); }
           if (synchronousResume && command.method === "Debugger.resume") {
             // Deliver a synthetic immediate acknowledgment before the actual
@@ -148,9 +155,11 @@ for (const [role, synchronousResume, failure, slowRequest, heldPrefix] of [["pcb
       await rejected; await Promise.allSettled(running);
       const diagnostic = currentPcb209RatlineCompositeDiagnosticsSchema.parse(session.status()); assert.ok(diagnostic.firstFailure !== null);
       if (failure === "await-gap") { assert.equal(scheduledLossDelivered, true); }
-      assert.equal(childStarts, 0); assert.equal(childRemovals, 1);
+      const expectedStarts = failure === "construction-mismatch" ? 1 : 0;
+      assert.equal(childStarts, expectedStarts); assert.equal(childRemovals, 1);
       assert.equal(dependency.childBootstrapOwner.status()["unresolvedInstrumentation"], failure === "failed-removal");
-      await assert.rejects(session.abort()); assert.equal(childStarts, 0); assert.equal(childRemovals, 1);
+      await (failure === "construction-mismatch" ? session.abort() : assert.rejects(session.abort()));
+      assert.equal(childStarts, expectedStarts); assert.equal(childRemovals, 1);
       await fixture.terminate(); await session.releaseAfterTermination(); assert.equal(fixture.counts().subscribers, 0); assert.equal(childEvents, null);
       assert.deepEqual(currentPcb209RatlineCompositeDiagnosticsSchema.parse(session.status()).firstFailure, diagnostic.firstFailure);
       return;
@@ -163,8 +172,8 @@ for (const [role, synchronousResume, failure, slowRequest, heldPrefix] of [["pcb
     assert.equal(diagnostic.capture.scope, diagnostic.scope); assert.equal(diagnostic.dispatcher.scope, diagnostic.scope);
     const fullPauses = role === "pcb" ? 5 : 9;
     const expectedPauses = heldPrefix === true ? 2 : fullPauses;
-    assert.equal(packet.capture.pauses, expectedPauses); assert.equal(packet.originalConstructionAndBridgeWorkerMatch, heldPrefix !== true);
-    assert.equal(packet.originalConstructionAndRegistryMatch, heldPrefix !== true); assert.equal(packet.nativePreexecutionSourceOwnershipVerified, false);
+    assert.equal(packet.capture.pauses, expectedPauses); assert.equal(packet.originalConstructionAndBridgeWorkerMatch, true);
+    assert.equal(packet.originalConstructionAndRegistryMatch, true); assert.equal(packet.nativePreexecutionSourceOwnershipVerified, false);
     assert.equal(packet.nativeWorkerTargetIdentityVerified, false); assert.equal(packet.childSourceQualified, false);
     assert.equal(packet.callbackReturnCompletionVerified, false); assert.equal(packet.executionAuthorized, false);
     assert.equal(fixture.counts().pauses, expectedPauses + 2); assert.equal(fixture.counts().resumes, fixture.counts().pauses);

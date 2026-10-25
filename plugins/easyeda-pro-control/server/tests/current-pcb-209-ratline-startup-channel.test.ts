@@ -10,6 +10,8 @@ import { currentPcbWorkerStartupNativeParentCases } from "../src/current-pcb-wor
 import { CURRENT_PCB_DIAGNOSTIC_PCB_OPENING_FUNCTION } from "../src/current-pcb-diagnostic-pcb-opening.ts";
 import { CURRENT_PCB_209_RATLINE_NATIVE_CASES } from "../src/current-pcb-209-ratline-native-cases.ts";
 import type { CurrentPcb209RatlineOriginCommand } from "../src/current-pcb-209-ratline-origin.ts";
+import { currentPcb209RatlineNativeWire } from "../src/current-pcb-209-ratline-native-wire.ts";
+import type { CurrentPcb209RatlineNativeCommand } from "../src/current-pcb-209-ratline-native-cases.ts";
 
 type Send = Readonly<Record<string, unknown>>;
 function ordinaryReply(request: Send): Readonly<Record<string, unknown>> {
@@ -213,6 +215,46 @@ void test("wrong native child session and later PCB continuation phases refuse w
   assert.equal(f.requests.length, before);
 });
 
+function retainedCommand(phase: string, fields: Readonly<Record<string, string>> = {}): CurrentPcb209RatlineNativeCommand {
+  const selected = CURRENT_PCB_209_RATLINE_NATIVE_CASES.find(value => value.role === "pcb" && value.phase === phase); assert.ok(selected !== undefined);
+  const handles = new Map(Object.entries({ sessionId: "parent-session", callFrameId: "original-frame", ...fields }));
+  const raw: unknown = JSON.parse(JSON.stringify(selected.command).replaceAll(/__ratline209_([A-Za-z\d]+)__/gu, (_match, name: string): string => {
+    const value = handles.get(name); assert.ok(value !== undefined); return value;
+  }));
+  const { id: _validation, ...result } = currentPcb209RatlineNativeWire("pcb", raw, 1).command; return result;
+}
+for (const lostAcknowledgment of [false, true]) {
+void test(`native held construction join retains original replies, lost acknowledgment ${String(lostAcknowledgment)}`, async context => {
+  const f = await fixture(context); const dependency = await prepare(f); await firstChild(f, dependency, originalStack);
+  const fields = { objectId: "constructed", argument0: "captured", argument1: "constructor-manager", argument2: "factory-manager" };
+  const initial = f.requests.length, join = retainedCommand("relation-construction", fields);
+  await assert.rejects(dependency.request("pcb", join), /JOIN_STATE/u); assert.equal(f.requests.length, initial);
+  const rows = [["creation-worker", {}, "constructed"], ["creation-this", {}, "constructor-manager"],
+    ["object-this", {}, "bridge"], ["object-t", {}, "captured"], ["object-o", {}, "bus"],
+    ["relation-bridge", { objectId: "bridge", argument0: "captured", argument1: "bus" }, null], ["object-this", {}, "factory-manager"],
+    ["relation-factory", { objectId: "factory-manager", argument0: "captured", argument1: "bridge", argument2: "bus" }, null]] as const;
+  for (const [phase, handles, objectId] of rows) {
+    f.state.onSend = (request): Promise<unknown> => {
+      let result: object = { type: "object", objectId };
+      if (objectId === null) { result = phase === "relation-factory" ? { type: "object", value: { nativeWorkerId: 0 } } : { type: "boolean", value: true }; }
+      f.frame({ id: request["requestId"], sessionId: request["sessionId"], result: { result } }); return Promise.resolve({ written: true });
+    };
+    await dependency.request("pcb", retainedCommand(phase, handles));
+  }
+  const before = f.requests.length, remaining = f.budget.remainingRequests("pcb-capture");
+  await assert.rejects(dependency.request("pcb", retainedCommand("relation-construction", { ...fields, argument0: "foreign" })), /JOIN_HANDLES/u);
+  assert.equal(f.requests.length, before);
+  f.state.onSend = (request): Promise<unknown> => {
+    if (lostAcknowledgment) { return Promise.reject(new Error("Lost original construction join write acknowledgment")); }
+    f.frame({ id: request["requestId"], sessionId: request["sessionId"], result: { result: { type: "boolean", value: true } } }); return Promise.resolve({ written: true });
+  };
+  await (lostAcknowledgment ? assert.rejects(dependency.request("pcb", join)) : dependency.request("pcb", join));
+  assert.equal(f.budget.remainingRequests("pcb-capture"), remaining - 1);
+  await assert.rejects(dependency.request("pcb", join), /JOIN_STATE/u); assert.equal(f.requests.length, before + 1);
+  assert.equal(PROFILE.requestClasses["pcb-capture"].count, 13); assert.equal(PROFILE.normalRequestLimit, 320);
+});
+}
+
 void test("exhausted ancestry class preserves the next original ID and the reserved native cleanup", async context => {
   const f = await fixture(context); const dependency = await prepare(f); await arm(dependency, "pcb"); await dependency.requestParent(opening(true, "open-document"));
   for (let index = 0; index < 12; index += 1) { await dependency.requestParent({ method: "Page.getFrameTree", sessionId: "parent-session", params: {} }); }
@@ -294,4 +336,47 @@ void test("queued normal work cannot wait on its own later native abort", { time
   await Promise.all([first, queued, cleanup]);
   assert.equal(f.channel.status().nextRequestId, next);
   assert.equal(f.requests.filter(request => request["action"] === "worker-startup-ratline-abort").length, 1);
+});
+
+void test("navigation source/resume bind the pending original opener and do not consume PCB bootstrap ordinals", async context => {
+  const f = await fixture(context); const dependency = await prepare(f); await arm(dependency, "pcb");
+  const source = { method: "Debugger.getScriptSource", sessionId: "parent-session", navigationPhase: "source", params: { scriptId: "nav-script" } } as const;
+  const resume = { method: "Debugger.resume", sessionId: "parent-session", navigationPhase: "resume", params: {} } as const;
+  await assert.rejects(dependency.request("pcb", source), /NAVIGATION_SEQUENCE/u);
+  const issued = Promise.withResolvers<Send>();
+  f.state.onSend = (request): Promise<unknown> => {
+    if (request["parentPhase"] === "pcb-open-document") { issued.resolve(request); return Promise.resolve({ written: true }); }
+    f.frame({ id: request["requestId"], sessionId: request["sessionId"], result: request["phase"] === "navigation-source" ?
+      { scriptSource: `(${CURRENT_PCB_DIAGNOSTIC_PCB_OPENING_FUNCTION})` } : {} });
+    if (request["method"] === "Debugger.resume") { event(f, "parent-session", "Debugger.resumed", {}); }
+    return Promise.resolve({ written: true });
+  };
+  const openingWork = dependency.requestParent(opening(true, "open-document")), original = await issued.promise;
+  const paused = f.state.ratlineEvents + 1; event(f, "parent-session", "Debugger.paused", { reason: "instrumentation", data: { scriptId: "nav-script" }, hitBreakpoints: [], callFrames: [{ location: { scriptId: "nav-script" } }] });
+  while (f.state.ratlineEvents < paused) { const wait = Promise.withResolvers<null>(); setTimeout(() => { wait.resolve(null); }, 5); await wait.promise; }
+  await assert.rejects(dependency.request("pcb", resume), /NAVIGATION_SEQUENCE/u);
+  await assert.rejects(dependency.request("pcb", { ...source, params: { scriptId: "other-script" } }), /NAVIGATION_SEQUENCE/u);
+  await dependency.request("pcb", source); await assert.rejects(dependency.request("pcb", source), /NAVIGATION_SEQUENCE/u);
+  await dependency.request("pcb", resume); await assert.rejects(dependency.request("pcb", resume), /NAVIGATION_SEQUENCE/u);
+  // The first genuine PCB source remains ordinal zero after the navigation resume.
+  event(f, "parent-session", "Debugger.paused", { reason: "instrumentation" });
+  await dependency.request("pcb", { method: "Debugger.getScriptSource", sessionId: "parent-session", params: { scriptId: "pcb-bootstrap" } });
+  assert.equal(f.budget.remainingRequests("pcb-source"), 28); assert.equal(f.budget.remainingRequests("navigation"), 0);
+  f.frame({ id: original["requestId"], sessionId: "parent-session", result: {} }); await openingWork;
+});
+void test("navigation source lost write acknowledgement is consumed and cannot dispatch a resume", async context => {
+  const f = await fixture(context); const dependency = await prepare(f); await arm(dependency, "pcb");
+  const issued = Promise.withResolvers<Send>();
+  f.state.onSend = (request): Promise<unknown> => {
+    if (request["parentPhase"] === "pcb-open-document") { issued.resolve(request); return Promise.resolve({ written: true }); }
+    return Promise.reject(new Error("lost original navigation source write acknowledgement"));
+  };
+  const openingWork = assert.rejects(dependency.requestParent(opening(true, "open-document"))); await issued.promise;
+  const paused = f.state.ratlineEvents + 1; event(f, "parent-session", "Debugger.paused", { reason: "instrumentation", data: { scriptId: "navigation" }, hitBreakpoints: [], callFrames: [{ location: { scriptId: "navigation" } }] });
+  while (f.state.ratlineEvents < paused) { const wait = Promise.withResolvers<null>(); setTimeout(() => { wait.resolve(null); }, 5); await wait.promise; }
+  const source = { method: "Debugger.getScriptSource", sessionId: "parent-session", navigationPhase: "source", params: { scriptId: "navigation" } } as const;
+  await assert.rejects(dependency.request("pcb", source)); const count = f.requests.length;
+  await assert.rejects(dependency.request("pcb", source));
+  await assert.rejects(dependency.request("pcb", { method: "Debugger.resume", sessionId: "parent-session", navigationPhase: "resume", params: {} }));
+  assert.equal(f.requests.length, count); assert.equal(f.budget.remainingRequests("navigation"), 1); await openingWork;
 });

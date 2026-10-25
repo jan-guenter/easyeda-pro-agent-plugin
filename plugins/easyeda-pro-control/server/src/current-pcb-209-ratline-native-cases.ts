@@ -9,8 +9,10 @@ import { CURRENT_PCB_WORKER_STARTUP_ATTACH } from "./current-pcb-worker-startup-
 import type { CurrentPcb209RatlineRealmCommand } from "./current-pcb-209-ratline-event-dispatcher.ts";
 import { freezeDeep } from "./sqlite-inventory-core.ts";
 
+import type { CurrentPcb209RatlineNavigationCommand } from "./current-pcb-209-ratline-navigation-pause.ts";
+
 export type CurrentPcb209RatlineNativeRole = "pcb" | "worker";
-export type CurrentPcb209RatlineNativeCommand = CurrentPcb209RatlineRealmCommand | CurrentPcb209RatlineBootstrapCommand | CurrentPcb209RatlineOriginCommand;
+export type CurrentPcb209RatlineNativeCommand = CurrentPcb209RatlineRealmCommand | CurrentPcb209RatlineBootstrapCommand | CurrentPcb209RatlineOriginCommand | CurrentPcb209RatlineNavigationCommand;
 export interface CurrentPcb209RatlineNativeCase {
   readonly role: CurrentPcb209RatlineNativeRole;
   readonly phase: string;
@@ -34,6 +36,8 @@ for (const role of ["pcb", "worker"] as const) {
   put("bootstrap-instrument", { method: "Debugger.setInstrumentationBreakpoint", sessionId, params: { instrumentation: "beforeScriptExecution" } });
   put("bootstrap-source", { method: "Debugger.getScriptSource", sessionId, params: { scriptId } });
   if (role === "pcb") {
+    put("navigation-source", { method: "Debugger.getScriptSource", sessionId, navigationPhase: "source", params: { scriptId } });
+    put("navigation-resume", { method: "Debugger.resume", sessionId, navigationPhase: "resume", params: {} });
     put("origin-stack", { method: "Debugger.getStackTrace", sessionId,
       params: { stackTraceId: { id: placeholder("stackTraceId"), debuggerId: placeholder("debuggerId") } } });
   }
@@ -64,9 +68,9 @@ for (const role of ["pcb", "worker"] as const) {
     put(`value-${expression}`, { method: "Debugger.evaluateOnCallFrame", sessionId,
       params: { ...common, callFrameId, expression, objectGroup: CAPTURE_GROUP, returnByValue: true, includeCommandLineAPI: false } });
   }
-  const programs = role === "pcb" ? ["same", "bridge", "factory", "removed", "payload"] as const :
+  const programs = role === "pcb" ? ["same", "construction", "bridge", "factory", "removed", "payload"] as const :
     ["same", "bridge", "factory", "removed", "name", "world", "canvas", "empty"] as const;
-  const arity = { same: 1, bridge: 2, factory: 3, removed: 0, payload: 0, name: 0, world: 0, canvas: 2, empty: 0 } as const;
+  const arity = { same: 1, construction: 3, bridge: 2, factory: 3, removed: 0, payload: 0, name: 0, world: 0, canvas: 2, empty: 0 } as const;
   for (const name of programs) {
     put(`relation-${name}`, { method: "Runtime.callFunctionOn", sessionId, params: { ...common, objectId,
       functionDeclaration: PROGRAMS[name], arguments: Array.from({ length: arity[name] }, (_, index) => ({ objectId: placeholder(`argument${String(index)}`) })),

@@ -207,3 +207,62 @@ all424bridge tests and Windows recovery passed. The complete rejected-run
 receipt SHA256 is
 `477bd81accf160c2ad869e26c79891c522d12e55fdaea9bdda0d11a66f77f891`.
 The corrected payload requires a separate successful exact-head run.
+
+## Publication, installation and fresh-session continuation
+
+Final head `a4d52c7a3903b91e5f2a92601c70fdcaf82000fb` passed
+[Linux CI 40193220584](https://github.com/jan-guenter/easyeda-pro-agent-plugin/actions/runs/40193220584)
+and [Windows CI 40193220580](https://github.com/jan-guenter/easyeda-pro-agent-plugin/actions/runs/40193220580).
+All eleven required jobs passed: build verification, eight facade shards,
+aggregate and Windows recovery. Final totals were 12,893 facade passes,
+five expected platform/source-mount skips, zero failures or cancellations,
+and all 424 bridge tests passed. The complete accepted-CI receipt SHA256 is
+`ce21eb984a25ed67e67e48d15f8894263134a319418f10bda786272f02e41488`.
+Official external Codex validators were unavailable on CI; all seven skill
+validators and the official plugin validator had passed locally. Mandatory
+repository/MCP/skill checks passed in both places.
+
+Protected [PR 125](https://github.com/jan-guenter/easyeda-pro-agent-plugin/pull/125)
+merged at 2026-10-25T12:43:24Z as
+`577d6e8845593721b45a66ead54feef874faf3b6`. Its complete tree
+`3b231d4fe1007d58fccbf5c08f60b20d70c681f6` and plugin tree
+`4f556d3815727874dfb89f4a1c22330065a06e8e` match the tested head exactly.
+No implementation, bundle or compatibility pin changed after that successful CI.
+
+The official CLI upgraded the Git marketplace
+`https://github.com/jan-guenter/easyeda-pro-agent-plugin.git`, then confirmed
+`0.3.0+codex.20261025120638` installed and enabled. Marketplace HEAD equals
+merged main. All 1,972 installed files, 42 directories and 42,108,823 bytes match
+committed bytes and exact modes, including after the final CLI listing.
+Installed inventory SHA256:
+`02d8d7e3cbdf9d86b03e9b2e2228ff478261b62e1c0e4494f5417ae9a5399a25`.
+The maintained comparison receipt SHA256 is
+`e5c82c692087599c9445952b61bf4b5b381a56ec224cee211a29f15d1f0d2cb5`;
+installation-check receipt SHA256 is
+`a057266f5cfc5ca93c6fd60118dbbe7479e2d74cd79b7a1caa702458ffc1cc21`.
+No installed cache was edited manually and no host facade was killed or rebound.
+
+The installed configured launcher passed 22 offline catalog queries, 24 requests
+including initialization/tool listing, with pinned Node 24.18.0. Its synthetic
+older profile exposed 26 tools and 51 configured mappings. The probe observed
+clean EOF shutdown of its own child, zero stderr and no sampled descendants
+or non-stdio sockets. It selected no live control root and granted no execution
+authority. This is package verification, not continuous isolation or actual
+fresh-host admission. Probe receipt SHA256:
+`0de836d91cf2849329454168d639b986bc213f9c0fca2983ddb88483d7480d2b`.
+
+Post-merge Windows 40194378451 passed; duplicate Linux 40194378417 was still
+running at the final snapshot. The successful exact-payload PR run already
+satisfies the full-suite requirement. The publication appendix remains local
+for the next batch; it does not justify another release by itself.
+
+The current host still loads 100748. A fresh Codex session must load and admit
+120638 before further live use. Both EasyEDA launches in this session were
+normally closed, observed terminated and released through their original
+owners. No CAD action, native helper, journal repair or live tool call is pending.
+Do not repeat the completed HTTP, language or ordinary-release checks merely
+to obtain another success. The next useful work is one bounded utility batch,
+then one new disposable ratline held-import case using the corrected capture.
+Broader Worker/CDP identity, continuation/completion, preview cleanup, writers
+and exports remain as listed above. The excluded production project remains
+untouched. No extension re-import or bridge-key change was performed.

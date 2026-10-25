@@ -123,6 +123,7 @@ async function fixture(context: TestContext, mode: "prepare-fails" | "intent-cha
     public requireOriginal(): never { assert.equal(this.#consumed, true); return unused(); }
     public status(): Row { return { synthetic: true, consumed: this.#consumed }; }
     public retainedOpeningObservation(): null { assert.equal(typeof this.#consumed, "boolean"); return null; }
+    public retainedRejectedStopEvidence(): null { assert.equal(typeof this.#consumed, "boolean"); return null; }
     public retainedNativeOriginEvidence(): null { assert.equal(typeof this.#consumed, "boolean"); return null; }
     public abort(): Promise<void> { assert.equal(this.#consumed, true); assert.ok(originalFixture); counters.abort += 1; originalFixture.calls.push("ratline-abort"); return Promise.resolve(); }
     public releaseAfterTermination(): Promise<void> {

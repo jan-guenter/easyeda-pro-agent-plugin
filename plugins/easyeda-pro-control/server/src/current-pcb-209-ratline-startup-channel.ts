@@ -16,6 +16,9 @@ import { currentPcb209RatlineNativeWire } from "./current-pcb-209-ratline-native
 import { currentPcb209RatlineEventKind, currentPcb209RatlineFailureReason } from "./current-pcb-209-ratline-diagnostics.ts";
 import type { CurrentPcb209RatlineEventKind } from "./current-pcb-209-ratline-diagnostics.ts";
 import type { CurrentPcb209RatlineNativeCommand, CurrentPcb209RatlineNativeRole } from "./current-pcb-209-ratline-native-cases.ts";
+import { CurrentPcb209RatlineHeldConstruction } from "./current-pcb-209-ratline-held-construction.ts";
+
+import { qualifyCurrentPcb209RatlineNavigationSource } from "./current-pcb-209-ratline-navigation-pause.ts";
 
 export interface CurrentPcb209RatlineStartupNativeDependency {
   readonly requireOriginalParent: () => Promise<CurrentPcbWorkerStartupParent>;
@@ -94,6 +97,7 @@ async function observe(work: Promise<unknown>): Promise<void> {
 
 export class CurrentPcb209RatlineStartupChannel {
   readonly #budget: CurrentPcb209RatlineBudget;
+  readonly #heldConstruction = new CurrentPcb209RatlineHeldConstruction();
   readonly #allocations = new Map<string, Allocation>();
   readonly #paused = new Map<string, CurrentPcb209RatlineReplyKind>();
   readonly #resumeIssued = new Set<string>();
@@ -141,6 +145,10 @@ export class CurrentPcb209RatlineStartupChannel {
   #actorReads = 0;
   #pcbPreflightConsumed = false;
   #pcbOpeningConsumed = false;
+  #navigationPausedScript: string | null = null;
+  #navigationSourceConsumed = false;
+  #navigationSourceQualified = false;
+  #navigationResumeConsumed = false;
   #failure: Error | null = null;
   #firstFailure: Failure | null = null;
   #lastCommand: Command["method"] | null = null;
@@ -310,6 +318,18 @@ export class CurrentPcb209RatlineStartupChannel {
       return bootstrap;
     }
     if (!realm.armed) { throw fail("BOOTSTRAP_REQUIRED"); }
+    if (phase === "navigation-source" || phase === "navigation-resume") {
+      const originalPending = [...this.#pending.values()].some(pending => pending.route === "parent" && pending.written && !pending.writeFailed && !pending.replied &&
+        pending.command.method === "Runtime.callFunctionOn" && "uniqueContextId" in pending.command.params &&
+        pending.command.params.functionDeclaration === CURRENT_PCB_DIAGNOSTIC_PCB_OPENING_FUNCTION &&
+        pending.command.params.uniqueContextId === this.#openingContext && pending.command.params.arguments[1]?.value === "open-document");
+      if (role !== "pcb" || !this.#pcbOpeningConsumed || !originalPending || realm.sources !== 0 || realm.resumes !== 0 ||
+          this.#resumeIssued.has(command.sessionId ?? "") || this.#navigationResumeConsumed) { throw fail("NAVIGATION_SEQUENCE"); }
+      if (phase === "navigation-source" ? command.method !== "Debugger.getScriptSource" || this.#navigationPausedScript === null ||
+          command.params.scriptId !== this.#navigationPausedScript || this.#navigationSourceConsumed || this.#paused.get(command.sessionId ?? "") !== "pcb-bootstrap" :
+          !this.#navigationSourceQualified || this.#paused.get(command.sessionId ?? "") !== "navigation") { throw fail("NAVIGATION_SEQUENCE"); }
+      return "navigation";
+    }
     if (phase === "bootstrap-source") {
       if (!this.#pcbOpeningConsumed || role === "worker" && !this.#childStarted || realm.sources >= (role === "pcb" ? 29 : 7) || realm.sources !== realm.resumes) { throw fail("SOURCE_SEQUENCE"); }
       return role === "pcb" ? "pcb-source" : "child-source";
@@ -336,6 +356,12 @@ export class CurrentPcb209RatlineStartupChannel {
           this.#childStarted || !this.#realms.worker.armed) { throw fail("CHILD_START"); }
       return "pcb-construction";
     }
+    if (phase === "relation-construction") {
+      if (!this.#childStarted || this.#paused.has(this.#parent.sessionId) || this.#resumeIssued.has(this.#parent.sessionId) ||
+          [...this.#allocations.values()].some(allocation => allocation.sessionId === this.#parent?.sessionId &&
+            allocation.kind === "pcb-capture" && !allocation.removed)) { throw fail("CONSTRUCTION_JOIN_BOUNDARY"); }
+      this.#heldConstruction.assertOriginalJoin(command); return "pcb-capture";
+    }
     if (phase === "targets" || phase.startsWith("creation-")) { return "pcb-construction"; }
     if (phase.startsWith("capture-") || ["object-this", "object-t", "object-o", "relation-bridge", "relation-factory"].includes(phase)) { return "pcb-capture"; }
     throw fail("HELD_CHILD_BOUNDARY");
@@ -347,17 +373,25 @@ export class CurrentPcb209RatlineStartupChannel {
   #consumeRatline(role: CurrentPcb209RatlineNativeRole, command: Command, phase: string): void {
     const realm = this.#realms[role];
     if (phase.startsWith("bootstrap-") && phase !== "bootstrap-source") { realm.arms += 1; }
-    if (command.method === "Debugger.getScriptSource") { realm.sources += 1; realm.scriptId = command.params.scriptId; }
+    if (command.method === "Debugger.getScriptSource" && phase === "bootstrap-source") { realm.sources += 1; realm.scriptId = command.params.scriptId; }
     if (command.method === "Debugger.resume") { this.#resumeIssued.add(command.sessionId); }
     if (command.method === "Debugger.removeBreakpoint") { this.#allocation(command.sessionId, command.params.breakpointId).removed = true; }
     if (phase === "start-child") { this.#childStarted = true; }
     // Attempt consumption precedes the possibly partial write. Neither a lost
     // Acknowledgement nor a late reply grants another lookup or a new ID.
     if (phase === "origin-stack") { this.#originStackConsumed = true; }
+    if (phase === "navigation-source") { this.#navigationSourceConsumed = true; this.#paused.set(command.sessionId ?? "", "navigation"); }
+    if (phase === "navigation-resume") { this.#navigationResumeConsumed = true; }
+    if (phase === "relation-construction") { this.#heldConstruction.consumeOriginalJoin(command); }
     if (command.method === "Debugger.setBreakpoint" && command.params.location.scriptId !== realm.scriptId) { throw fail("SOURCE_SCRIPT"); }
   }
   #retainRatlineReply(pending: Pending): void {
     if (pending.route !== "pcb" && pending.route !== "worker") { throw fail("REPLY_ROLE"); }
+    if (pending.route === "pcb") {
+      if (pending.phase === "relation-construction") { this.#heldConstruction.observeOriginalJoinReply(pending.result); }
+      else { this.#heldConstruction.observeReply(pending.phase, pending.command, pending.result); }
+    }
+    if (pending.phase === "navigation-source") { qualifyCurrentPcb209RatlineNavigationSource(pending.result); this.#navigationSourceQualified = true; }
     if (pending.phase === "bootstrap-debugger" && pending.route === "pcb") {
       this.#parentDebuggerId = z.looseObject({ debuggerId: nativeToken }).parse(pending.result).debuggerId;
     }
@@ -470,6 +504,12 @@ export class CurrentPcb209RatlineStartupChannel {
             this.#realms.worker.sources === 0 && this.#realms.worker.resumes === 0 && external.success) {
           this.#childExternalStack = Object.freeze(external.data);
         }
+      }
+      if (parent && !this.#navigationSourceConsumed) {
+        const location = z.looseObject({ scriptId: nativeToken });
+        const stopped = z.looseObject({ reason: z.literal("instrumentation"), data: location,
+          hitBreakpoints: z.tuple([]), callFrames: z.tuple([z.looseObject({ location })]) }).safeParse(event.params);
+        this.#navigationPausedScript = stopped.success && stopped.data.data.scriptId === stopped.data.callFrames[0].location.scriptId ? stopped.data.data.scriptId : null;
       }
       const kind: CurrentPcb209RatlineReplyKind = parent ? "pcb-bootstrap" : "child-bootstrap";
       if (event.params["reason"] === "instrumentation") { this.#paused.set(event.sessionId, kind); }

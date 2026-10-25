@@ -100,7 +100,8 @@ const ratlineSessionMethods = Object.freeze({ capture: CurrentPcb209RatlineNativ
   require: CurrentPcb209RatlineNativeSession.prototype.requireOriginal, abort: CurrentPcb209RatlineNativeSession.prototype.abort,
   release: CurrentPcb209RatlineNativeSession.prototype.releaseAfterTermination, status: CurrentPcb209RatlineNativeSession.prototype.status,
   opening: CurrentPcb209RatlineNativeSession.prototype.retainedOpeningObservation,
-  originEvidence: CurrentPcb209RatlineNativeSession.prototype.retainedNativeOriginEvidence });
+  originEvidence: CurrentPcb209RatlineNativeSession.prototype.retainedNativeOriginEvidence,
+  rejectedStopEvidence: CurrentPcb209RatlineNativeSession.prototype.retainedRejectedStopEvidence });
 // oxlint-enable typescript/unbound-method
 
 type CleanupRequest = Exclude<LifecycleRequest, { action: "launch" | "inspect" | "query-observation" | "settle-records" | "cleanup-unlaunched" | "cleanup-no-process" }>;
@@ -472,6 +473,8 @@ class CurrentPcbLifecycleCore {
         workerStartupRatlineState: original && this.#startupRatlineSession !== null ? ratlineSessionMethods.status.call(this.#startupRatlineSession) : null,
         workerStartupRatlineUnpublishedOriginEvidence: operation?.records["worker-startup-ratline-result.json"] === undefined && original &&
           this.#startupRatlineSession !== null ? ratlineSessionMethods.originEvidence.call(this.#startupRatlineSession) : null,
+        workerStartupRatlineRejectedStopEvidence: original && this.#startupRatlineSession !== null ?
+          ratlineSessionMethods.rejectedStopEvidence.call(this.#startupRatlineSession) : null,
         workerStartupRatlineOpening: original && this.#startupRatlineSession !== null ? ratlineSessionMethods.opening.call(this.#startupRatlineSession) : null,
         workerStartupRatlineResult: operation?.records["worker-startup-ratline-result.json"]?.result ?? null,
         workerStartupEmptyAttemptConsumed: operation?.records["worker-startup-empty-intent.json"] !== undefined || original && this.#startupEmptyAttempted,
@@ -1114,7 +1117,8 @@ class CurrentPcbLifecycleCore {
       requireValue(session.captureFirstChildHeld === ratlineSessionMethods.capture && session.requireOriginal === ratlineSessionMethods.require &&
         session.abort === ratlineSessionMethods.abort && session.releaseAfterTermination === ratlineSessionMethods.release &&
         session.status === ratlineSessionMethods.status && session.retainedOpeningObservation === ratlineSessionMethods.opening &&
-        session.retainedNativeOriginEvidence === ratlineSessionMethods.originEvidence, "STARTUP_RATLINE_METHODS_CHANGED");
+        session.retainedNativeOriginEvidence === ratlineSessionMethods.originEvidence &&
+        session.retainedRejectedStopEvidence === ratlineSessionMethods.rejectedStopEvidence, "STARTUP_RATLINE_METHODS_CHANGED");
     }
     if (this.#startupEmptyPreparation !== null) {
       const pcb = this.#startupEmptyPreparation.pcb;

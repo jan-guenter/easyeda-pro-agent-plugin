@@ -13,6 +13,8 @@ import type { CurrentPcb209RatlinePcbContextCommand, CurrentPcb209RatlinePcbCont
 import { currentPcb209RatlinePcbBootstrapCopy, currentPcb209RatlinePcbBootstrapRoleUrl,
   CURRENT_PCB_209_RATLINE_PCB_BOOTSTRAP_ROLES as roles } from "../src/current-pcb-209-ratline-pcb-bootstrap-profile.ts";
 
+import { CURRENT_PCB_209_RATLINE_NAVIGATION_SOURCE as navigationSource } from "../src/current-pcb-209-ratline-navigation-pause.ts";
+
 const source = "const retainedUi = true;";
 const rawWindowsPath = String.raw`C:\Disposable\Router.eprj2`;
 const documentUuid = "d".repeat(16), projectUuid = createHash("sha256").update(rawWindowsPath).digest("hex");
@@ -60,7 +62,7 @@ async function routerConstructor(): Promise<typeof CurrentPcb209RatlinePcbContex
   return Constructor as typeof CurrentPcb209RatlinePcbContextRouter;
 }
 type Events = Parameters<CurrentPcb209RatlinePcbContextDependency["subscribe"]>[0];
-async function fixture(options: Readonly<{ badReplay?: boolean; badDom?: boolean; foreignPause?: boolean; delayMilliseconds?: number }> = {}): Promise<Readonly<{
+async function fixture(options: Readonly<{ badReplay?: boolean; badDom?: boolean; foreignPause?: boolean; delayMilliseconds?: number; navigationPause?: "valid" | "source-change" | "foreign-context" | "lost-resume-ack" | "historical-script" }> = {}): Promise<Readonly<{
   router: CurrentPcb209RatlinePcbContextRouter; owner: CurrentPcb209RatlinePcbBootstrapOwner;
   counts: () => Readonly<{ navigation: number; resumes: number; sources: number; snapshots: number; removals: number }>;
   emit: (value: DiagnosticEvent) => void; finishNavigation: () => void; changeFrame: () => void; terminate: () => Promise<void>;
@@ -75,17 +77,32 @@ async function fixture(options: Readonly<{ badReplay?: boolean; badDom?: boolean
     emit(event("Debugger.paused", { reason: "instrumentation", data: { scriptId: role, url }, hitBreakpoints: ["instrumentation"],
       callFrames: [{ location: { scriptId: options.foreignPause === true ? "ui-script" : role } }] }));
   };
+  const beginPcb = (): void => {
+      emit(event("Page.navigatedWithinDocument", { frameId: "root", url: openedUrl, navigationType: "fragment" }));
+      emit(event("Page.frameAttached", { frameId: "pcb-frame", parentFrameId: "root" }));
+      emit(event("Runtime.executionContextCreated", { context: { ...pcbContext, id: 2, uniqueId: "initial-blank" } }));
+      emit(event("Runtime.executionContextDestroyed", { executionContextId: 2, executionContextUniqueId: "initial-blank" }));
+      emit(event("Page.frameNavigated", { frame: pcbFrame, type: "Navigation" }));
+      emit(event("Runtime.executionContextCreated", { context: pcbContext })); pause();
+  };
+  const emitNavigationScript = (): void => {
+    emit(event("Debugger.scriptParsed", { scriptId: "navigation", executionContextId: options.navigationPause === "foreign-context" ? 2 : 1,
+      url: "", hasSourceURL: false, isLiveEdit: false, startLine: 0, startColumn: 0, length: navigationSource.length }));
+  };
   async function request(command: CurrentPcb209RatlinePcbContextCommand): Promise<unknown> {
       if (options.delayMilliseconds !== undefined) { const delay = Promise.withResolvers<null>(); setTimeout(() => { delay.resolve(null); }, options.delayMilliseconds); await delay.promise; }
       switch (command.method) {
         case "Target.setAutoAttach": { return ({}); }
         case "Runtime.enable": { emit(event("Runtime.executionContextCreated", { context: options.badReplay === true ? { ...uiContext, origin: "https://foreign" } : uiContext })); return ({}); }
-        case "Debugger.enable": { emit(event("Debugger.scriptParsed", uiScript)); return ({ debuggerId: "debugger" }); }
+        case "Debugger.enable": { emit(event("Debugger.scriptParsed", uiScript)); if (options.navigationPause === "historical-script") { emitNavigationScript(); } return ({ debuggerId: "debugger" }); }
         case "Debugger.setAsyncCallStackDepth": { assert.equal(command.params.maxDepth, 1); return ({}); }
         case "Debugger.setInstrumentationBreakpoint": { return ({ breakpointId: "instrumentation" }); }
-        case "Debugger.getScriptSource": { sources += 1; return ({ scriptSource: `synthetic:${String(roles[index])}` }); }
+        case "Debugger.getScriptSource": { if ("navigationPhase" in command) { assert.notEqual(options.navigationPause, "foreign-context"); assert.notEqual(options.navigationPause, "historical-script"); return { scriptSource: navigationSource + (options.navigationPause === "source-change" ? " " : "") }; } sources += 1; return ({ scriptSource: `synthetic:${String(roles[index])}` }); }
         case "Debugger.removeBreakpoint": { removals += 1; return ({}); }
-        case "Debugger.resume": { resumes += 1; emit(event("Debugger.resumed", {})); index += 1; pause(); return ({}); }
+        case "Debugger.resume": { if ("navigationPhase" in command) {
+          if (options.navigationPause === "lost-resume-ack") { listener?.lost(); throw new Error("lost native resume acknowledgement"); }
+          emit(event("Debugger.resumed", {})); beginPcb(); return {};
+        } resumes += 1; emit(event("Debugger.resumed", {})); index += 1; pause(); return ({}); }
         case "Target.getTargets": { snapshots += 1; return ({ targetInfos: [{ ...parent, attached: true, url: openedUrl }] }); }
         case "Page.getFrameTree": { snapshots += 1; return ({ frameTree: { frame: { ...root, urlFragment: openedUrl.slice(base.length) },
           childFrames: [{ frame: { ...pcbFrame, ...(drift ? { loaderId: "replacement" } : {}) } }] } }); }
@@ -108,12 +125,14 @@ async function fixture(options: Readonly<{ badReplay?: boolean; badDom?: boolean
     assertOriginalTermination: (): Promise<void> => { assert.equal(terminated, true); return Promise.resolve(); },
     beginOriginalPcbNavigation: (): Promise<void> => {
       assert.equal(started, 0); started += 1;
-      emit(event("Page.navigatedWithinDocument", { frameId: "root", url: openedUrl, navigationType: "fragment" }));
-      emit(event("Page.frameAttached", { frameId: "pcb-frame", parentFrameId: "root" }));
-      emit(event("Runtime.executionContextCreated", { context: { ...pcbContext, id: 2, uniqueId: "initial-blank" } }));
-      emit(event("Runtime.executionContextDestroyed", { executionContextId: 2, executionContextUniqueId: "initial-blank" }));
-      emit(event("Page.frameNavigated", { frame: pcbFrame, type: "Navigation" }));
-      emit(event("Runtime.executionContextCreated", { context: pcbContext })); pause(); return (async (): Promise<void> => { await navigation.promise; })();
+      if (options.navigationPause === undefined) { beginPcb(); } else {
+        if (options.navigationPause === "foreign-context") { emit(event("Runtime.executionContextCreated", { context: { ...uiContext, id: 2, uniqueId: "isolated-context",
+          auxData: { frameId: "root", isDefault: false, type: "isolated" } } })); }
+        if (options.navigationPause !== "historical-script") { emitNavigationScript(); }
+        const location = { scriptId: "navigation", lineNumber: 0, columnNumber: 0 };
+        emit(event("Debugger.paused", { reason: "instrumentation", data: { scriptId: "navigation", url: "" }, hitBreakpoints: [],
+          callFrames: [{ functionName: "", url: "", location, functionLocation: { ...location } }] }));
+      } return (async (): Promise<void> => { await navigation.promise; })();
     }, subscribe: (events: Events): (() => void) => { assert.equal(listener, null); listener = events; return (): void => { listener = null; }; },
     request, requestParent: request,
   });
@@ -177,4 +196,48 @@ void test("selected context destruction poisons original source while navigation
   f.emit(event("Runtime.executionContextDestroyed", { executionContextId: 3, executionContextUniqueId: "pcb-context" }));
   await assert.rejects(f.owner.requireOriginal(packet)); await assert.rejects(f.router.releaseOriginalPinnedSource(packet)); assert.equal(f.counts().resumes, 28);
   f.finishNavigation(); await assert.rejects(f.owner.whenOriginalNavigationSettled()); await f.router.abort(); await f.terminate();
+});
+
+void test("original navigation instrumentation is qualified and resumed once without consuming PCB bootstrap ordinals", async () => {
+  const f = await fixture({ navigationPause: "valid" }); await f.owner.armBeforeNavigation(); await f.owner.startOriginalNavigation();
+  await f.owner.whenSourceQualified(); assert.equal(f.router.status()["navigationPause"], "complete");
+  assert.deepEqual(f.counts(), { navigation: 1, resumes: 28, sources: 29, snapshots: 4, removals: 1 });
+  assert.equal(f.router.retainedRejectedStopEvidence(), null);
+  f.finishNavigation(); await f.owner.whenOriginalNavigationSettled(); await f.router.abort(); await f.terminate();
+});
+void test("navigation source mismatch and lost resume acknowledgement retain the original bounded rejected stop without source continuation", async () => {
+  for (const navigationPause of ["source-change", "lost-resume-ack"] as const) {
+    const f = await fixture({ navigationPause }); await f.owner.armBeforeNavigation(); await f.owner.startOriginalNavigation();
+    await assert.rejects(f.owner.whenSourceQualified()); assert.equal(f.counts().sources, 0); assert.equal(f.counts().resumes, 0);
+    const retained = f.router.retainedRejectedStopEvidence(); assert.ok(retained !== null); assert.equal(retained.event.status, "captured");
+    assert.equal(retained.script.status, "captured"); assert.equal(retained.context.status, "captured");
+    assert.equal(retained.metadata.observedTopScriptContextId, 1); assert.equal(retained.executionAuthorized, false);
+    f.emit(event("Debugger.paused", { reason: "other", callFrames: [] })); assert.equal(f.router.retainedRejectedStopEvidence(), retained);
+    f.finishNavigation(); await assert.rejects(f.owner.whenOriginalNavigationSettled()); await f.router.abort(); await f.terminate();
+    assert.equal(f.router.retainedRejectedStopEvidence(), retained);
+  }
+});
+
+void test("foreign UI context and historical identical script refuse navigation source/resume before dispatch", async () => {
+  for (const navigationPause of ["foreign-context", "historical-script"] as const) {
+    const f = await fixture({ navigationPause }); await f.owner.armBeforeNavigation(); await f.owner.startOriginalNavigation();
+    await assert.rejects(f.owner.whenSourceQualified()); assert.equal(f.counts().sources, 0); assert.equal(f.counts().resumes, 0);
+    const evidence = f.router.retainedRejectedStopEvidence(); assert.ok(evidence !== null);
+    assert.equal(evidence.event.status, "captured"); assert.equal(evidence.context.status, "captured");
+    assert.equal(evidence.metadata.observedTopScriptContextId, navigationPause === "foreign-context" ? 2 : 1);
+    const failure = f.router.status()["firstFailure"]; assert.ok(failure !== null && typeof failure === "object");
+    assert.equal(Reflect.get(failure, "reason"), navigationPause === "foreign-context" ? "PCB209_RATLINE_NAVIGATION_PAUSE" : "PCB209_RATLINE_CONTEXT_NAVIGATION_SCRIPT_EVENT");
+    f.finishNavigation(); await assert.rejects(f.owner.whenOriginalNavigationSettled()); await f.router.abort(); await f.terminate();
+  }
+});
+void test("bounded recent script provenance evicts old captures and retains a newly issued navigation script", async () => {
+  const f = await fixture({ navigationPause: "valid" }); await f.owner.armBeforeNavigation();
+  for (let index = 0; index < 40; index += 1) {
+    f.emit(event("Debugger.scriptParsed", { scriptId: `old-${String(index)}`, executionContextId: 1,
+      url: "", hasSourceURL: false, isLiveEdit: false, diagnosticPadding: "x".repeat(10_000) }));
+  }
+  assert.equal(f.router.status()["scriptEvidenceExhausted"], true);
+  const bytes = f.router.status()["retainedScriptEvidenceBytes"]; assert.ok(typeof bytes === "number" && bytes <= 131_072);
+  await f.owner.startOriginalNavigation(); await f.owner.whenSourceQualified(); assert.equal(f.router.status()["navigationPause"], "complete");
+  f.finishNavigation(); await f.owner.whenOriginalNavigationSettled(); await f.router.abort(); await f.terminate();
 });

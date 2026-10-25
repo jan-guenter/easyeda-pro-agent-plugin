@@ -55,23 +55,47 @@ limits; cleanup has reserved requests, bytes, polls and time. These limits are
 fixed and cannot be selected or reset by a caller. Large source qualification
 can take time; timeout or missing acknowledgment consumes the operation.
 
+Before the PCB frame exists, the fixed navigation function itself can trigger
+`beforeScriptExecution`. The router may read and resume that one pause only
+while the original `open-document` request remains pending, in its original UI
+context, with the original script/stop events and byte-exact generated function
+source. It retains PCB instrumentation and consumes neither a PCB source slot
+nor a PCB bootstrap resume. Any different or unqualified stop still refuses.
+These two fixed operations have their own two-request class: the normal limit
+is 320, with the unchanged 43-request cleanup reserve (363 total). Existing
+source slots, individual deadlines and cleanup time remain unchanged. Actual
+V8 fixture reproduction validates this compilation case; it does not establish
+the cause of a historical EasyEDA refusal whose original pause was unavailable.
+
 The held-import purpose completes a fixed PCB capture of the original bridge
 and factory pauses before returning. It removes both owned breakpoints and
 observes both parent resumes. Its capture and composite diagnostics report
 `scope:"pcb-held-prefix"` and `settled:true`. The original capture handles and
 owners remain bound to later inspection and cleanup. No wait for the child's
-result callbacks remains active while the final import is held. Constructor
-objects and bridge objects have not been independently compared in this scope;
-their same-object and complete Worker-target claims remain false. The separate
-full capture still requires its result and return events.
+result callbacks remains active while the final import is held. A single fixed
+comparison then joins the original constructor's Worker and manager objects to
+the bridge and registry captures in that same JavaScript realm. It requires the
+ordered original handle replies and consumes one existing capture request.
+The held composite v2 records those two object matches. It does not associate
+the JavaScript Worker with the native CDP target or authorize child continuation.
+The separate full capture still requires its result and return events.
 
 After a refusal, inspect the original owner's `firstFailure` chain through
 the native session, PCB context/source owner, child source owner and startup channel. It retains
 fixed reason codes, stage/step, last command/event classes and bounded counters.
 `SCHEMA` and `UNCLASSIFIED` are diagnostic categories, not permission to retry.
-Remote exception text, URLs, source and document identifiers are omitted.
+These summary fields omit remote exception text, URLs, source and document identifiers.
 The first reason survives later cleanup failures and release. A historical
 generic bootstrap failure cannot be assigned a cause from newer diagnostics.
+
+Original-owner inspection also exposes `workerStartupRatlineRejectedStopEvidence`
+for the first refused parent stop: the complete bounded event (32 KiB), matching
+script record (16 KiB) and original context record (8 KiB), plus a digest-only
+status summary. Each record explicitly reports captured, malformed, oversized
+or unavailable; nothing is truncated into authority. Script provenance retains
+at most the most recent 32 records and 128 KiB in total. Missing or evicted
+provenance cannot qualify navigation. Raw evidence is private inspection data,
+never an execution token, and survives original cleanup without replacement.
 
 Aggregate waits account for serial owner/request/owner checks and four ancestry
 snapshots. Individual request and first-pause deadlines, launch limits and

@@ -42,6 +42,8 @@ const requestClasses = freezeDeep({
   // At handoff. Its original pipe retains its own reply/event validation.
   prefix: { count: 186, frameBytes: 32 * mib },
   preparation: { count: 10, frameBytes: mib },
+  // Exact original navigation program compilation: one source read and resume.
+  navigation: { count: 2, frameBytes: mib },
   ancestry: { count: 3 * 4, frameBytes: mib },
   "pcb-source": { count: pcbSources.length, frameBytes: Math.max(...pcbSources.map(slot => slot.frameBytes)) },
   "child-source": { count: childSources.length, frameBytes: Math.max(...childSources.map(slot => slot.frameBytes)) },
@@ -52,9 +54,10 @@ const requestClasses = freezeDeep({
   // Two breakpoints; URL/name; two inventories; two object handles;
   // Before/after resumes; two removals; one guarded child start.
   "pcb-construction": { count: 2 + 2 + 2 + 2 + 2 + 2 + 1, frameBytes: mib },
-  // Five fixed capture breakpoints; bridge's three handles+relation;
-  // Factory's handle+relation; two resumes. No callback/publication stage.
-  "pcb-capture": { count: 5 + 4 + 2 + 2, frameBytes: mib },
+  // Held prefix: two breakpoints; bridge's three handles+relation; factory's
+  // Handle+relation; two removals/resumes; one retained construction join.
+  // The existing 13-request cap is unchanged. No callback/publication stage.
+  "pcb-capture": { count: 2 + 4 + 2 + 2 + 2 + 1, frameBytes: mib },
   // Original prelude 32; two source instrumentation handles; construction's
   // Two breakpoints and parent pause; five capture breakpoints and one pause.
   cleanup: { count: 32 + 2 + 2 + 1 + 5 + 1, frameBytes: envelope },

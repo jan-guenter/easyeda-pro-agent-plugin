@@ -41,12 +41,10 @@ export interface CurrentPcb209RatlineStartupPacket {
   readonly executionAuthorized: false;
 }
 export interface CurrentPcb209RatlineHeldStartupPacket extends Omit<CurrentPcb209RatlineStartupPacket,
-  "profile" | "role" | "capture" | "originalConstructionAndBridgeWorkerMatch" | "originalConstructionAndRegistryMatch"> {
-  readonly profile: "private.current-pcb209-ratline-held-prefix-composite.v1";
+  "profile" | "role" | "capture"> {
+  readonly profile: "private.current-pcb209-ratline-held-prefix-composite.v2";
   readonly role: "pcb";
   readonly capture: CurrentPcb209RatlineHeldCapturePacket;
-  readonly originalConstructionAndBridgeWorkerMatch: false;
-  readonly originalConstructionAndRegistryMatch: false;
 }
 interface Packets { readonly full: CurrentPcb209RatlineStartupPacket; readonly "pcb-held-prefix": CurrentPcb209RatlineHeldStartupPacket }
 const INTERNAL = Symbol("fixed209-ratline-composite");
@@ -136,9 +134,9 @@ class CurrentPcb209RatlineStartupCore<Scope extends CurrentPcb209RatlineCaptureS
       let packet: CurrentPcb209RatlineStartupPacket | CurrentPcb209RatlineHeldStartupPacket;
       if (this.#scope === "pcb-held-prefix") {
         need(capture.profile === "private.current-pcb209-ratline-pcb-held-prefix-capture.v1", "PROFILE");
-        await this.#stages.creation.requireOriginal(construction); await this.#dispatcher.requireOriginalCapture(capture); await this.#current();
-        packet = Object.freeze({ ...common, profile: "private.current-pcb209-ratline-held-prefix-composite.v1", role: "pcb", capture,
-          originalConstructionAndBridgeWorkerMatch: false, originalConstructionAndRegistryMatch: false });
+        this.#diagnostics.stage = "comparison"; await bounded(this.#dispatcher.requireOriginalConstruction(construction, capture)); await this.#current();
+        packet = Object.freeze({ ...common, profile: "private.current-pcb209-ratline-held-prefix-composite.v2", role: "pcb", capture,
+          originalConstructionAndBridgeWorkerMatch: true, originalConstructionAndRegistryMatch: true });
       } else {
         need(capture.profile !== "private.current-pcb209-ratline-pcb-held-prefix-capture.v1", "PROFILE");
         this.#diagnostics.stage = "comparison"; await bounded(this.#dispatcher.requireOriginalConstruction(construction, capture)); await this.#current();

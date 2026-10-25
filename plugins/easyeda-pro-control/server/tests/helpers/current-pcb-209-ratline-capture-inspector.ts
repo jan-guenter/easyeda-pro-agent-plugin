@@ -25,7 +25,7 @@ async function deadline<T>(work: Promise<T>, phase: string, milliseconds = 10_00
  * does not attest an EasyEDA native source, process, Worker or message peer. */
 export async function ratlineCaptureInspector(context: TestContext, role: CurrentPcb209RatlineCaptureRole,
   loseAtPause = 0, pauseAtFinalReproof = false, exitBeforeAddress = false,
-  options: Readonly<{ holdPcbResult?: boolean; expectedPauses?: number }> = {}): Promise<Readonly<{ transport: CurrentPcb209RatlineCaptureTransport; commands: string[];
+  options: Readonly<{ holdPcbResult?: boolean; expectedPauses?: number; onScriptParsed?: (params: unknown) => void }> = {}): Promise<Readonly<{ transport: CurrentPcb209RatlineCaptureTransport; commands: string[];
     request: (method: string, params: object) => Promise<unknown>; run: () => Promise<unknown>; lose: () => void; regain: () => void; terminate: () => Promise<void>; counts: () => Readonly<{ pauses: number; resumes: number; subscribers: number }> }>> {
   // The hostile case is an owned child that exits normally before advertising
   // Any inspector. The old unbounded address wait could never settle here.
@@ -91,6 +91,8 @@ export async function ratlineCaptureInspector(context: TestContext, role: Curren
     if (event.id !== undefined) {
       const entry = pending.get(event.id); pending.delete(event.id); if (entry !== undefined) { clearTimeout(entry.timer); }
       if (event.error === undefined) { entry?.reply.resolve(event.result); } else { entry?.reply.reject(new Error(JSON.stringify(event.error))); }
+    } else if (event.method === "Debugger.scriptParsed") {
+      options.onScriptParsed?.(event.params);
     } else if (event.method === "Debugger.paused") {
       pauses += 1; if (pauses === loseAtPause) { ownerCurrent = false; }
       for (const subscriber of subscribers) { subscriber.paused(event.params); }
