@@ -73,6 +73,14 @@ before calling the separate `easyeda_control_public_readers` tool. This does not
 enable the older `sdk_read` executor or any design reader. SDK-resolved language
 can be a fallback; it does not prove provider success or the raw UI preference.
 
+For supplied `.efoo`, ordinary `.esym`, `.epanl`, `.epro` or `.epro2` metadata,
+query `library-files` and validate with `library-files-validate`. Read
+[the supplied-file contract](current-library-files.md). The separate
+`easyeda_control_library_files` tool works offline in every facade mode.
+Preparation publishes a private managed input; extraction requires its exact
+descriptor. This is a native-task-equivalent metadata projection, with no
+SDK execution, runtime admission, import or geometry/dependency validation.
+
 For supplied Allegro netlists, query `netlist-files` and validate the inner
 request with `netlist-files-validate`. Read [the managed-file contract](current-netlist-files.md)
 before using `easyeda_control_netlist_files`. Local preparation writes an

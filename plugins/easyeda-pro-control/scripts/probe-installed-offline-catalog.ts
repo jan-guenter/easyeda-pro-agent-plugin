@@ -20,11 +20,11 @@ const NODE_VERSION = "24.18.0";
 const MAX_REPLY_BYTES = 8 * 1024 * 1024;
 const MAX_OUTPUT_BYTES = 16 * 1024 * 1024;
 const REQUEST_TIMEOUT_MS = 15_000;
-// Initialize and tool discovery plus the twenty-two fixed catalog requests below.
-const REQUEST_LIMIT = 2 + 22;
+// Initialize and tool discovery plus the twenty-seven fixed catalog requests below.
+const REQUEST_LIMIT = 2 + 27;
 const EXPECTED_TOOLS = [
   "api", "calculate", "discover", "disposable_pcb_rename", "disposable_schematic_rename", "disposable_symbol_copy",
-  "editor_context", "editor_shell", "extensions", "history", "launch", "pcb_diagnostic_validation", "pcb_geometry",
+  "editor_context", "editor_shell", "extensions", "history", "launch", "library_files", "pcb_diagnostic_validation", "pcb_geometry",
   "pcb_identities", "pcb_layers", "pcb_string_precreate_validation", "project_board", "project_open", "project_pcb", "project_schematic",
   "project_schematic_rename", "project_symbol", "project_symbol_metadata", "shortcuts", "status", "system",
 ].map(name => `easyeda_control_${name}`).toSorted();
@@ -265,7 +265,7 @@ async function offlineApi(child: OfflineChild, request: Record<string, unknown>)
   return record(content["result"]);
 }
 
-async function catalogChecks(child: OfflineChild, sample: () => Promise<void>): Promise<{ readonly tools: number; readonly queries: number }> {
+async function catalogChecks(child: OfflineChild, sample: () => Promise<void>): Promise<{ readonly tools: number; readonly queries: number; readonly ratlineContinuationDiscoveryChecked: true }> {
   const initialized = await child.request("initialize", {
     protocolVersion: "2024-11-05", capabilities: {}, clientInfo: { name: "easyeda-installed-offline-probe", version: "1.0.0" },
   });
@@ -331,6 +331,21 @@ async function catalogChecks(child: OfflineChild, sample: () => Promise<void>): 
     requireCheck(result["valid"] === valid && result["executionAuthorized"] === false,
       "Ratline held-import validation accepted a caller budget or implied execution authority.");
   }
+  const continuation = await offlineApi(child, { action: "pcb209-ratline-continuation", query: { includeSchemas: true } });
+  const continuationActions = continuation["actions"];
+  requireCheck(continuation["wrapperAction"] === "pcb209-ratline-continuation" &&
+    continuation["toolWrapperAction"] === "ratline-continuation" && continuation["validationOnly"] === true &&
+    continuation["executionAuthorized"] === false && continuation["saveAuthorized"] === false &&
+    continuation["connectedValidation"] === false && Array.isArray(continuationActions) &&
+    continuationActions.includes("observe-ratline-continuation") && Array.isArray(record(continuation["inputSchema"])["oneOf"]),
+  "Ratline continuation discovery or its schema changed.");
+  const continuationRequest = { action: "observe-ratline-continuation", operationId: "pcb209-continuation-offline-catalog",
+    expectedBindingSha256: "a".repeat(64), acceptNormalOpenEffects: true, acceptDebuggerPause: true };
+  for (const [request, valid] of [[continuationRequest, true], [{ ...continuationRequest, requestLimit: 9999 }, false]] as const) {
+    const result = await offlineApi(child, { action: "pcb209-ratline-continuation-validate", query: { request } });
+    requireCheck(result["valid"] === valid && result["validationOnly"] === true && result["executionAuthorized"] === false,
+      "Ratline continuation validation accepted a caller budget or implied execution authority.");
+  }
   const netlist = await offlineApi(child, { action: "netlist-files", query: { includeSchemas: true } });
   requireCheck(netlist["method"] === "eda.sys_Tool.netlistComparison" && netlist["executionAuthorized"] === false &&
     netlist["invocationEnabledByDiscovery"] === false && Array.isArray(record(netlist["inputSchema"])["oneOf"]),
@@ -364,7 +379,17 @@ async function catalogChecks(child: OfflineChild, sample: () => Promise<void>): 
       entry["publicSdkMethodExecuted"] === false && entry["installedRuntimeAdmission"] === false && isRecord(entry["inputSchema"])),
     "Catalog discovery lost an enriched metadata HTTP equivalent.");
   }
-  return { tools: tools.length, queries: 22 };
+  const libraryFiles = await offlineApi(child, { action: "library-files", query: { includeSchemas: true } });
+  requireCheck(libraryFiles["offline"] === true && libraryFiles["publicSdkMethodExecuted"] === false &&
+    libraryFiles["installedRuntimeAdmission"] === false && libraryFiles["executionAuthorized"] === false &&
+    Array.isArray(record(libraryFiles["inputSchema"])["oneOf"]), "Managed library-file discovery lost offline scope or exact schemas.");
+  const fileValidation = await offlineApi(child, { action: "library-files-validate", query: { request: {
+    action: "prepare-file", name: "probe.efoo", base64: Buffer.from('["DOCTYPE","FOOTPRINT","1.0"]\n["HEAD",{}]\n').toString("base64"), confirmLocalArtifact: true,
+  } } });
+  requireCheck(fileValidation["valid"] === true && fileValidation["executionAuthorized"] === false &&
+    record(fileValidation["requestSummary"])["base64Echoed"] === false && !Object.hasOwn(fileValidation, "request"),
+  "Managed library-file validation echoed source or implied execution authority.");
+  return { tools: tools.length, queries: 27, ratlineContinuationDiscoveryChecked: true };
 }
 
 export async function probeInstalledOfflineCatalog(installedRoot: string): Promise<Record<string, unknown>> {

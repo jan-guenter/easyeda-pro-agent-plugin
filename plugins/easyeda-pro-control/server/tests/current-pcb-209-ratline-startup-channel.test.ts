@@ -83,6 +83,41 @@ async function arm(dependency: CurrentPcb209RatlineStartupDependency, role: "pcb
   await dependency.request(role, { method: "Debugger.setInstrumentationBreakpoint", sessionId, params: { instrumentation: "beforeScriptExecution" } });
 }
 function event(f: Fixture, sessionId: string, method: string, params: Record<string, unknown>): void { f.frame({ method, sessionId, params }); }
+function pauseFrames(scriptId: string, count = 1): readonly object[] {
+  return Array.from({ length: count }, (_, index) => ({ functionName: `frame-${String(index)}`, url: "",
+    functionLocation: { scriptId: index === 0 ? scriptId : "ui", lineNumber: 0, columnNumber: 0 },
+    location: { scriptId: index === 0 ? scriptId : "ui", lineNumber: 0, columnNumber: 0 } }));
+}
+async function transfer(f: Fixture, dependency: CurrentPcb209RatlineStartupDependency, stage: "initial-window" | "pcb-admission" | "pcb-release", scriptId: string, count = 1): Promise<void> {
+  const breakpointId = `owned-${stage}`, previous = f.state.onSend;
+  f.state.onSend = (request): Promise<unknown> => {
+    const phase = request["phase"];
+    if (typeof phase !== "string" || !phase.startsWith(`ownership-${stage}-`)) { assert.ok(previous !== null); return previous(request); }
+    f.frame({ id: request["requestId"], sessionId: request["sessionId"], result: phase.endsWith("-arm") ?
+      { breakpointId, actualLocation: { scriptId, lineNumber: 0, columnNumber: 0 } } : {} });
+    if (phase.endsWith("-enter")) {
+      event(f, "parent-session", "Debugger.resumed", {});
+      event(f, "parent-session", "Debugger.paused", { reason: "other", hitBreakpoints: [breakpointId], callFrames: pauseFrames(scriptId, count) });
+    }
+    return Promise.resolve({ written: true });
+  };
+  try {
+    const dom = { method: "DOM.getFrameOwner", sessionId: "parent-session", params: { frameId: "original-frame" } } as const;
+    if (stage === "initial-window") {
+      const before = f.requests.length; await assert.rejects(dependency.requestParent(dom), /DOM_INSTRUMENTATION_PAUSE/u);
+      assert.equal(f.requests.length, before);
+    }
+    await dependency.request("pcb", { method: "Debugger.setBreakpoint", sessionId: "parent-session", ownershipStage: stage,
+      ownershipPhase: "arm", params: { location: { scriptId, lineNumber: 0, columnNumber: 0 } } });
+    await dependency.request("pcb", { method: "Debugger.resume", sessionId: "parent-session", ownershipStage: stage, ownershipPhase: "enter", params: {} });
+    if (stage === "initial-window") {
+      await dependency.requestParent(dom);
+      await assert.rejects(dependency.request("pcb", { method: "Debugger.removeBreakpoint", sessionId: "parent-session", params: { breakpointId } }), /OWNERSHIP_REMOVE_PHASE/u);
+    }
+    await dependency.request("pcb", { method: "Debugger.removeBreakpoint", sessionId: "parent-session", ownershipStage: stage, ownershipPhase: "remove", params: { breakpointId } });
+  } finally { f.state.onSend = previous; }
+}
+
 async function pcb(f: Fixture, dependency: CurrentPcb209RatlineStartupDependency): Promise<void> {
   await arm(dependency, "pcb"); await dependency.requestParent(opening(true, "open-document"));
   f.state.onSend = (request): Promise<unknown> => {
@@ -91,8 +126,9 @@ async function pcb(f: Fixture, dependency: CurrentPcb209RatlineStartupDependency
     return Promise.resolve({ written: true });
   };
   for (let index = 0; index < 29; index += 1) {
-    event(f, "parent-session", "Debugger.paused", { reason: "instrumentation", hitBreakpoints: [] });
+    event(f, "parent-session", "Debugger.paused", { reason: "instrumentation", hitBreakpoints: [], callFrames: pauseFrames(`pcb-${String(index)}`) });
     await dependency.request("pcb", { method: "Debugger.getScriptSource", sessionId: "parent-session", params: { scriptId: `pcb-${String(index)}` } });
+    if (index === 0 || index === 28) { await transfer(f, dependency, index === 0 ? "pcb-admission" : "pcb-release", `pcb-${String(index)}`); }
     await dependency.request("pcb", { method: "Debugger.resume", sessionId: "parent-session", params: {} });
   }
   f.state.onSend = null;
@@ -255,7 +291,7 @@ void test(`native held construction join retains original replies, lost acknowle
   await (lostAcknowledgment ? assert.rejects(dependency.request("pcb", join)) : dependency.request("pcb", join));
   assert.equal(f.budget.remainingRequests("pcb-capture"), remaining - 1);
   await assert.rejects(dependency.request("pcb", join), /JOIN_STATE/u); assert.equal(f.requests.length, before + 1);
-  assert.equal(PROFILE.requestClasses["pcb-capture"].count, 13); assert.equal(PROFILE.normalRequestLimit, 328);
+  assert.equal(PROFILE.requestClasses["pcb-capture"].count, 13); assert.equal(PROFILE.normalRequestLimit, 337);
 });
 }
 
@@ -442,7 +478,7 @@ void test("loader commands require the original navigation reply and pending ope
       event(f, "parent-session", "Debugger.paused", { reason: "instrumentation" });
       await dependency.request("pcb", { method: "Debugger.getScriptSource", sessionId: "parent-session", params: { scriptId: "pcb-bootstrap" } });
       assert.equal(f.budget.remainingRequests("pcb-source"), 28); assert.equal(f.budget.remainingRequests("navigation"), 0);
-      assert.equal(f.budget.remainingRequests("loader"), 0); assert.equal(PROFILE.cleanupRequests, 43);
+      assert.equal(f.budget.remainingRequests("loader"), 0); assert.equal(PROFILE.cleanupRequests, 46);
       f.frame({ id: held.openingRequest["requestId"], sessionId: "parent-session", result: {} }); await held.openingWork;
     }
   }
@@ -477,7 +513,7 @@ async function beginWindowNavigation(f: Fixture, dependency: CurrentPcb209Ratlin
         length: 6, hash: CURRENT_PCB_209_RATLINE_WINDOW_SOURCE_SHA256, scriptLanguage: "JavaScript", sourceMapURL: "" });
     }
     event(f, "parent-session", "Debugger.paused", { reason: "instrumentation", data: { scriptId }, hitBreakpoints: [],
-      callFrames: Array.from({ length: frames }, (_, index) => ({ location: { scriptId: index === 0 ? scriptId : "ui" } })) });
+      callFrames: pauseFrames(scriptId, frames) });
   };
   f.state.onSend = (request): Promise<unknown> => {
     const phase = request["phase"];
@@ -519,6 +555,8 @@ void test("window stages retain separate sources, require prior resume acknowled
   await dependency.request("pcb", windowSource("initial"));
   await assert.rejects(dependency.request("pcb", windowSource("initial")), /WINDOW_SEQUENCE/u);
   await assert.rejects(dependency.request("pcb", plain), /RESUME_SEQUENCE/u);
+  await assert.rejects(dependency.request("pcb", windowResume("initial")), /OWNERSHIP_SEQUENCE/u);
+  await transfer(f, dependency, "initial-window", "window-initial", 6);
   const resumed = dependency.request("pcb", windowResume("initial")); const original = await held.initialResumeIssued;
   await dependency.requestParent({ method: "Page.getFrameTree", sessionId: "parent-session", params: {} });
   const awaitingAck = f.requests.length;
@@ -551,6 +589,7 @@ void test("changed window bytes consume only their own read and cannot dispatch 
     const held = await beginWindowNavigation(f, dependency);
     if (stage === "document") {
       await dependency.request("pcb", windowSource("initial"));
+      await transfer(f, dependency, "initial-window", "window-initial", 6);
       const resumed = dependency.request("pcb", windowResume("initial")); const original = await held.initialResumeIssued;
       f.frame({ id: original["requestId"], sessionId: "parent-session", result: {} }); await resumed;
     }
@@ -565,4 +604,29 @@ void test("changed window bytes consume only their own read and cannot dispatch 
     assert.equal(f.requests.length, consumed); assert.equal(f.budget.remainingRequests(stage === "initial" ? "initial-window" : "document-window"), 1);
     assert.equal(f.budget.remainingRequests("pcb-source"), 29); await openingRejected;
   }
+});
+void test("moved ownership allocation never resumes and its original handle remains available to cleanup once", async context => {
+  const f = await fixture(context); const dependency = await prepare(f); await arm(dependency, "pcb");
+  const held = await beginWindowNavigation(f, dependency); await dependency.request("pcb", windowSource("initial"));
+  const openingRejected = assert.rejects(held.openingWork);
+  f.state.onSend = (request): Promise<unknown> => {
+    f.frame({ id: request["requestId"], sessionId: request["sessionId"], result: request["method"] === "Debugger.setBreakpoint" ?
+      { breakpointId: "moved-owned", actualLocation: { scriptId: "window-initial", lineNumber: 0, columnNumber: 1 } } : {} });
+    return Promise.resolve({ written: true });
+  };
+  await dependency.request("pcb", { method: "Debugger.setBreakpoint", sessionId: "parent-session", ownershipStage: "initial-window", ownershipPhase: "arm",
+    params: { location: { scriptId: "window-initial", lineNumber: 0, columnNumber: 0 } } });
+  const enter = { method: "Debugger.resume", sessionId: "parent-session", ownershipStage: "initial-window", ownershipPhase: "enter", params: {} } as const;
+  const before = f.requests.length; await assert.rejects(dependency.request("pcb", enter), /OWNERSHIP_SEQUENCE/u);
+  assert.equal(f.requests.length, before); await f.channel.beginCleanup(); await openingRejected;
+  await assert.rejects(dependency.request("pcb", enter), /CLEANUP_COMMAND/u);
+  const remove = { method: "Debugger.removeBreakpoint", sessionId: "parent-session", ownershipStage: "initial-window", ownershipPhase: "remove", params: { breakpointId: "moved-owned" } } as const;
+  const beforeRemoval = f.requests.length;
+  await assert.rejects(dependency.request("pcb", { ...remove, ownershipStage: "pcb-release" }), /OWNERSHIP_SEQUENCE/u);
+  await assert.rejects(dependency.request("pcb", { ...remove, params: { breakpointId: "instrument-pcb" } }), /OWNERSHIP_SEQUENCE/u);
+  assert.equal(f.requests.length, beforeRemoval);
+  await dependency.request("pcb", remove); const removed = f.requests.length;
+  await assert.rejects(dependency.request("pcb", remove), /OWNERSHIP_SEQUENCE/u); assert.equal(f.requests.length, removed);
+  assert.equal(f.requests.filter(request => request["phase"] === "ownership-initial-window-enter").length, 0);
+  assert.equal(f.requests.filter(request => request["phase"] === "ownership-initial-window-remove").length, 1);
 });

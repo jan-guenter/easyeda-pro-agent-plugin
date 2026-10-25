@@ -75,9 +75,16 @@ frame and its actual committed context. The complete source is read before
 resuming. These hooks consume no PCB source ordinals. Unknown, repeated or
 changed hooks refuse without a manual resume.
 
-The normal limit is 328, with the unchanged 43-request cleanup reserve
-(371 total). The initial DOM check adds two ancestry requests; fixed aggregate
-waits include all four UI/window phases. Existing source slots, individual
+The normal limit is 337, with a 46-request cleanup reserve (383 total).
+The initial window and first/final PCB sources each transfer to an ordinary
+breakpoint at their qualified source location before DOM ancestry queries.
+Each transfer requires its original resume acknowledgment, unchanged stack
+and sole owned breakpoint hit, followed by one breakpoint removal. These nine
+requests and three cleanup removals have separate finite phases and consume
+no source ordinals. Only inline source admission uses its original script
+event's absolute start location; no caller location is accepted. Instrumentation
+pauses cannot service the DOM queries. Fixed aggregate waits include all four
+UI/window phases and these transfers. Existing source slots, individual
 request deadlines and cleanup time remain unchanged. Actual
 V8 fixture reproduction validates this compilation case; it does not establish
 the cause of a historical EasyEDA refusal whose original pause was unavailable.

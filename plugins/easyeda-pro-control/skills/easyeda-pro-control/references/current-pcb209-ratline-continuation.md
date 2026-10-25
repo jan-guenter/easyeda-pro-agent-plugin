@@ -52,7 +52,7 @@ concurrently with subordinate qualification. The subordinate route permits
 source handling and its final source resume only. It cannot evaluate arbitrary
 code, create another child or run the parent's capture commands.
 
-The fresh launch has 444 normal requests and 56 cleanup requests, 500 total,
+The fresh launch has 453 normal requests and 59 cleanup requests, 512 total,
 with separate source, event, byte and timing limits. Original session ownership
 and command use remain cumulative across phases. Fixed aggregate waits cover
 the serial ownership checks and concurrent source loading; individual native
@@ -63,6 +63,16 @@ Initial and committed Electron window-context hooks have separate fixed source
 and resume phases. The initial hook also requires the selected iframe DOM
 binding and pinned UI caller stack. Neither hook consumes PCB source ordinals.
 An unknown pause remains a refusal; do not manually resume it.
+
+Before the initial window's DOM checks, first PCB source admission and final
+PCB source release, the source owner transfers its instrumentation pause to an
+ordinary breakpoint at the same qualified source location. It requires the
+original resume acknowledgment, exact stack and sole owned breakpoint hit
+before DOM requests. Instrumentation pauses cannot service those requests.
+The temporary breakpoint is removed once; the original owner retains its
+final resume. These three transitions add nine requests without consuming
+PCB source ordinals. Only the inline admission source can use a nonzero start
+location, taken from its original script event; callers cannot choose it.
 
 The original coordinator seals subordinate observations before the worker can
 terminate that subordinate. It then holds the PCB received pause until the

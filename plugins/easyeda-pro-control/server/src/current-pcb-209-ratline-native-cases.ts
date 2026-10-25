@@ -13,15 +13,19 @@ import { freezeDeep } from "./sqlite-inventory-core.ts";
 import type { CurrentPcb209RatlineNavigationCommand } from "./current-pcb-209-ratline-navigation-pause.ts";
 import type { CurrentPcb209RatlineWindowCommand } from "./current-pcb-209-ratline-window-pause.ts";
 import type { CurrentPcb209RatlineLoaderCommand } from "./current-pcb-209-ratline-loader-pause.ts";
+import type { CurrentPcb209OwnershipCommand } from "./current-pcb-209-ratline-ownership-breakpoint.ts";
 
 export type CurrentPcb209RatlineNativeRole = "pcb" | "worker";
-export type CurrentPcb209RatlineNativeCommand = CurrentPcb209RatlineRealmCommand | CurrentPcb209RatlineBootstrapCommand | CurrentPcb209RatlineOriginCommand | CurrentPcb209RatlineNavigationCommand | CurrentPcb209RatlineLoaderCommand | CurrentPcb209RatlineWindowCommand;
+export type CurrentPcb209RatlineNativeCommand = CurrentPcb209RatlineRealmCommand | CurrentPcb209RatlineBootstrapCommand | CurrentPcb209RatlineOriginCommand | CurrentPcb209RatlineNavigationCommand | CurrentPcb209RatlineLoaderCommand | CurrentPcb209RatlineWindowCommand | CurrentPcb209OwnershipCommand;
 export interface CurrentPcb209RatlineNativeCase {
   readonly role: CurrentPcb209RatlineNativeRole;
   readonly phase: string;
   readonly command: CurrentPcb209RatlineNativeCommand;
 }
 export const currentPcb209RatlineNativePlaceholder = (name: string): string => `__ratline209_${name}__`;
+// Valid bounded sample values used only in the one admission-arm template.
+// The original channel/helper bind actual coordinates to its captured source.
+export const CURRENT_PCB_209_RATLINE_COORDINATE_FIELDS = Object.freeze({ lineNumber: 65_535, columnNumber: 1_048_575 });
 const placeholder = currentPcb209RatlineNativePlaceholder;
 const callFrameId = placeholder("callFrameId"), objectId = placeholder("objectId"), scriptId = placeholder("scriptId"), sessionId = placeholder("sessionId");
 const cases: CurrentPcb209RatlineNativeCase[] = [];
@@ -39,6 +43,12 @@ for (const role of ["pcb", "worker"] as const) {
   put("bootstrap-instrument", { method: "Debugger.setInstrumentationBreakpoint", sessionId, params: { instrumentation: "beforeScriptExecution" } });
   put("bootstrap-source", { method: "Debugger.getScriptSource", sessionId, params: { scriptId } });
   if (role === "pcb") {
+    for (const ownershipStage of ["initial-window", "pcb-admission", "pcb-release"] as const) {
+      const location = ownershipStage === "pcb-admission" ? { scriptId, ...CURRENT_PCB_209_RATLINE_COORDINATE_FIELDS } : { scriptId, lineNumber: 0, columnNumber: 0 };
+      put(`ownership-${ownershipStage}-arm`, { method: "Debugger.setBreakpoint", sessionId, ownershipStage, ownershipPhase: "arm", params: { location } });
+      put(`ownership-${ownershipStage}-enter`, { method: "Debugger.resume", sessionId, ownershipStage, ownershipPhase: "enter", params: {} });
+      put(`ownership-${ownershipStage}-remove`, { method: "Debugger.removeBreakpoint", sessionId, ownershipStage, ownershipPhase: "remove", params: { breakpointId: placeholder("breakpointId") } });
+    }
     put("navigation-source", { method: "Debugger.getScriptSource", sessionId, navigationPhase: "source", params: { scriptId } });
     put("navigation-resume", { method: "Debugger.resume", sessionId, navigationPhase: "resume", params: {} });
     put("loader-source", { method: "Debugger.getScriptSource", sessionId, loaderPhase: "source", params: { scriptId } });

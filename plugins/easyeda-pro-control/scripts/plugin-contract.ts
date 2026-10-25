@@ -5,6 +5,7 @@ export const FACADE_TOOL_NAMES = [
   "easyeda_control_sdk_read",
   "easyeda_control_calculate",
   "easyeda_control_system",
+  "easyeda_control_library_files",
   "easyeda_control_extensions",
   "easyeda_control_launch",
   "easyeda_control_pcb_diagnostic_validation",

@@ -18,6 +18,9 @@ import { currentPcb209RatlineEventKind, currentPcb209RatlineFailureReason } from
 import type { CurrentPcb209RatlineEventKind } from "./current-pcb-209-ratline-diagnostics.ts";
 import { retainCurrentPcb209RatlineAllocation } from "./current-pcb-209-ratline-transport-windows.ts";
 import { inheritCurrentPcb209RatlineContinuationTiming } from "./current-pcb-209-ratline-continuation-timing.ts";
+import { CurrentPcb209OwnershipBreakpoint } from "./current-pcb-209-ratline-ownership-breakpoint.ts";
+import type { CurrentPcb209OwnershipCommand } from "./current-pcb-209-ratline-ownership-breakpoint.ts";
+import type { DiagnosticEvent } from "./current-pcb-diagnostic-protocol.ts";
 
 export interface CurrentPcb209RatlinePcbBootstrapContext {
   readonly sessionId: string;
@@ -35,14 +38,14 @@ export interface CurrentPcb209RatlinePcbBootstrapDependency {
   /** Reprove original opening, checkpoint, durable navigation intent and no
    * previous PCB open. This callback must not dispatch navigation. */
   readonly assertOriginalBeforeNavigation: () => Promise<void>;
-  /** Bind these original observations to the actual new PCB frame and DOM
-   * ancestry. It must work while source is paused and navigation is pending. */
-  readonly assertOriginalPcbContext: (context: CurrentPcb209RatlinePcbBootstrapContext) => Promise<void>;
+  /** Identity checks may run at an instrumentation stop. Full DOM ancestry
+   * requires the owned ordinary stop before the first source executes. */
+  readonly assertOriginalPcbContext: (context: CurrentPcb209RatlinePcbBootstrapContext, mode: "identity" | "ancestry") => Promise<void>;
   /** The original one-shot PCB opener. Its promise may stay pending while the
    * source owner holds the import; completion cannot replay navigation. */
   readonly beginOriginalPcbNavigation: () => Promise<void>;
   readonly assertOriginalTermination: () => Promise<void>;
-  readonly request: (command: CurrentPcb209RatlineBootstrapCommand | CurrentPcb209RatlineRealmCommand) => Promise<unknown>;
+  readonly request: (command: CurrentPcb209RatlineBootstrapCommand | CurrentPcb209RatlineRealmCommand | CurrentPcb209OwnershipCommand) => Promise<unknown>;
   /** Original selected-frame events plus all unexpected pauses/loss. Existing
    * UI/ancillary events stay with the containing owner; it cannot discard an
    * unrelated pause merely to satisfy this selected-frame subscription. */
@@ -118,6 +121,10 @@ export class CurrentPcb209RatlinePcbBootstrapOwner {
   #debuggerId: string | null = null;
   #asyncDepthArmed = false;
   #frameUrl: string | null = null;
+  #contextMode: "identity" | "ancestry" = "identity";
+  #ownership: CurrentPcb209OwnershipBreakpoint | null = null;
+  readonly #ownershipTransfers: CurrentPcb209OwnershipBreakpoint[] = [];
+  #ownershipCommands = 0;
   #index = 0;
   #consumed = false;
   #armed = false;
@@ -160,7 +167,9 @@ export class CurrentPcb209RatlinePcbBootstrapOwner {
     released: this.#released, navigationConsumed: this.#navigationConsumed, navigationDispatched: this.#navigationDispatched, navigationSettled: this.#navigationSettled,
     stage: this.#stages[this.#index]?.role ?? null, sourceQualified: this.#packet !== null, sourceContinuationConsumed: this.#continuationConsumed,
     unresolvedInstrumentation: this.#allocationUncertain || this.#instrumentation !== null && !this.#removed,
-    commands: this.#commands, realmClaimed: this.#realmClaimed, realmRequests: this.#realmRequests,
+    commands: this.#commands, ownershipCommands: this.#ownershipCommands,
+    ownershipTransitions: this.#ownershipTransfers.map(value => value.status()), contextProof: this.#contextMode,
+    realmClaimed: this.#realmClaimed, realmRequests: this.#realmRequests,
     step: this.#step, firstFailure: this.#firstFailure, lastCommand: this.#lastCommand, lastEvent: this.#lastEvent,
     events: this.#events, eventBytes: this.#eventBytes }); }
   #same(): void { need(members(this.#dependency).every((value, index) => value === this.#members[index]), "OWNER_CHANGED"); }
@@ -169,11 +178,11 @@ export class CurrentPcb209RatlinePcbBootstrapOwner {
     return Object.freeze({ sessionId: this.#dependency.parentSessionId, parentTargetId: this.#dependency.parentTargetId,
       frameId: context.auxData.frameId, contextId: context.id, uniqueContextId: context.uniqueId, origin: context.origin, frameUrl: this.#frameUrl });
   }
-  async #current(): Promise<void> {
+  async #current(mode: "identity" | "ancestry" = this.#contextMode): Promise<void> {
     this.#same(); need(!this.#failed && !this.#released, "NOT_CURRENT");
     this.#step = "owner-reproof"; await bounded(this.#dependency.assertOriginalOwner()); this.#same(); need(!this.#failed && !this.#released, "NOT_CURRENT");
     if (this.#context !== null) { this.#step = "context-reproof";
-      await bounded(this.#dependency.assertOriginalPcbContext(this.#contextObservation()), CURRENT_PCB_209_RATLINE_NATIVE_PROFILE.elapsed.ancestryProofMilliseconds); this.#same(); }
+      await bounded(this.#dependency.assertOriginalPcbContext(this.#contextObservation(), mode), CURRENT_PCB_209_RATLINE_NATIVE_PROFILE.elapsed.ancestryProofMilliseconds); this.#same(); }
     need(!this.#failed && !this.#released, "NOT_CURRENT");
   }
   #poison(cause: unknown = new Error("PCB209_RATLINE_PCB_BOOTSTRAP_ABORTED")): void {
@@ -187,6 +196,12 @@ export class CurrentPcb209RatlinePcbBootstrapOwner {
   readonly #lost = (): void => { this.#poison(new Error("PCB209_RATLINE_PCB_BOOTSTRAP_STREAM_LOST")); };
   #realmListener(): RealmEvents { const events = this.#realmEvents; need(events !== null && this.#realmEventMembers !== null, "REALM_SUBSCRIPTION");
     need(realmMembers(events).every((value, index) => value === this.#realmEventMembers?.[index]), "REALM_SUBSCRIPTION_CHANGED"); return events; }
+  /** The original router consumes auxiliary transfer events before counting
+   * source resumes. Direct subscriptions use the same hook below. */
+  public observeOwnershipTransition(event: DiagnosticEvent): boolean {
+    try { this.#same(); need(!this.#released, "EVENT_STATE"); return this.#ownership?.observe(event) ?? false; }
+    catch (error) { this.#poison(error); throw error; }
+  }
   readonly #event = (input: CurrentPcb209RatlineBootstrapEvent): void => {
     try {
       this.#same(); need(!this.#released, "EVENT_STATE");
@@ -196,6 +211,7 @@ export class CurrentPcb209RatlinePcbBootstrapOwner {
       this.#lastEvent = currentPcb209RatlineEventKind(event.method);
       need(this.#navigationDispatched, "EVENT_STATE");
       need(event.sessionId === this.#dependency.parentSessionId, "EVENT_SESSION"); const stage = this.#stages[this.#index];
+      if (this.observeOwnershipTransition(event)) { return; }
       if (event.method === "Runtime.executionContextCreated") {
         need(this.#context === null && this.#index === 0, "CONTEXT"); this.#context = z.object({ context: contextSchema }).strict().parse(event.params).context; return;
       }
@@ -280,6 +296,26 @@ export class CurrentPcb209RatlinePcbBootstrapOwner {
       } catch (error) { pending.reject(error); } })());
     } await bounded(stage.resume, CURRENT_PCB_209_RATLINE_NATIVE_PROFILE.elapsed.pcbBootstrapResumeMilliseconds);
   }
+  readonly #ownershipRequest = async (command: CurrentPcb209OwnershipCommand): Promise<unknown> => {
+    this.#same(); need(!this.#released && (command.ownershipPhase === "remove" || !this.#failed), "NOT_CURRENT");
+    need(command.sessionId === this.#dependency.parentSessionId && command.ownershipStage !== "initial-window" &&
+      this.#ownershipCommands < 6, "OWNERSHIP_COMMAND"); this.#ownershipCommands += 1;
+    this.#lastCommand = command.method; this.#step = "ownership-request";
+    // The helper retains the actual allocation/removal promise through its own
+    // Deadline. Racing it here would lose a late owned breakpoint handle.
+    const result = await this.#dependency.request(command); this.#same(); need(!this.#released, "RELEASED"); return result;
+  };
+  async #ordinaryOwnershipStop(stage: Stage, script: z.infer<typeof scriptSchema>): Promise<void> {
+    need(stage.qualified && this.#ownership === null && (stage.role === "bootstrap" || stage.role === "pcb"), "OWNERSHIP_STAGE");
+    const entry = stage.role === "bootstrap" ? z.looseObject({ startLine: z.number().int().min(0).max(65_535),
+      startColumn: z.number().int().min(0).max(1_048_575) }).parse(script) : { startLine: 0, startColumn: 0 };
+    const transfer = new CurrentPcb209OwnershipBreakpoint(stage.role === "bootstrap" ? "pcb-admission" : "pcb-release",
+      this.#dependency.parentSessionId, stage.pause, { lineNumber: entry.startLine, columnNumber: entry.startColumn });
+    this.#ownership = transfer; this.#ownershipTransfers.push(transfer);
+    await transfer.enter(this.#ownershipRequest, (): Promise<void> => this.#current("identity"));
+    this.#step = "ordinary-context-reproof"; await this.#current("ancestry"); this.#contextMode = "ancestry";
+    await transfer.remove(this.#ownershipRequest); this.#ownership = null;
+  }
   public async armBeforeNavigation(): Promise<void> {
     need(!this.#consumed, "ARM_CONSUMED"); this.#consumed = true;
     try {
@@ -335,7 +371,9 @@ export class CurrentPcb209RatlinePcbBootstrapOwner {
         const raw = await bounded(this.#send({ method: "Debugger.getScriptSource", sessionId: this.#dependency.parentSessionId,
           params: { scriptId: script.scriptId } }, false, sourceMilliseconds), sourceMilliseconds + CURRENT_PCB_209_RATLINE_NATIVE_PROFILE.elapsed.ordinaryRequestMilliseconds);
         this.#step = "source-qualification"; qualifyCurrentPcb209RatlinePcbBootstrapSource(stage.role, raw);
-        stage.qualified = true; await this.#current();
+        stage.qualified = true;
+        if (stage.role === "bootstrap" || stage.role === "pcb") { await this.#ordinaryOwnershipStop(stage, script); }
+        await this.#current();
         if (stage.role === "pcb") {
           await this.#remove(); await this.#current(); this.#packet = Object.freeze({ ...this.#contextObservation(), profile: "private.pcb209-ratline-pcb-bootstrap.v1",
             scriptId: script.scriptId, completeImportedSourceQualified: true, importedSourceHeldBeforeExecution: true, nativeFrameAncestryVerified: false,
@@ -405,7 +443,11 @@ export class CurrentPcb209RatlinePcbBootstrapOwner {
   }
   /** Failed or unqualified source stays paused. Only acknowledged original
    * instrumentation is removed; process termination owns the remaining stop. */
-  public async abort(): Promise<void> { this.#poison(); await this.#remove(); }
+  public async abort(): Promise<void> {
+    this.#poison();
+    try { await this.#ownership?.remove(this.#ownershipRequest); }
+    finally { await this.#remove(); }
+  }
   public async releaseAfterTermination(): Promise<void> {
     need(!this.#released && !this.#releaseStarted, "RELEASE_CONSUMED"); this.#releaseStarted = true;
     try { this.#same(); await bounded(this.#dependency.assertOriginalTermination()); this.#same(); this.#poison();

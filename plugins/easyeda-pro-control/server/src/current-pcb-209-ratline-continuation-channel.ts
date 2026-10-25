@@ -20,6 +20,7 @@ import type { CurrentPcb209RatlineContinuationNativeCommand, CurrentPcb209Ratlin
 import { qualifyCurrentPcb209RatlineNavigationSource } from "./current-pcb-209-ratline-navigation-pause.ts";
 import { qualifyCurrentPcb209RatlineLoaderSource } from "./current-pcb-209-ratline-loader-pause.ts";
 import { isCurrentPcb209RatlineWindowScript, qualifyCurrentPcb209RatlineWindowSource } from "./current-pcb-209-ratline-window-pause.ts";
+import { CurrentPcb209RatlineOwnershipChannel } from "./current-pcb-209-ratline-ownership-channel.ts";
 
 export interface CurrentPcb209RatlineContinuationChannelNativeDependency {
   readonly requireOriginalParent: () => Promise<CurrentPcbWorkerStartupParent>;
@@ -100,6 +101,8 @@ async function observe(work: Promise<unknown>): Promise<void> {
 
 export class CurrentPcb209RatlineContinuationChannel {
   readonly #budget: CurrentPcb209RatlineContinuationBudget;
+  readonly #instrumentationPaused = new Set<string>();
+  readonly #ownership = new CurrentPcb209RatlineOwnershipChannel();
   readonly #allocations = new Map<string, Allocation>();
   readonly #paused = new Map<string, CurrentPcb209RatlineContinuationReplyKind>();
   readonly #resumeIssued = new Set<string>();
@@ -255,6 +258,10 @@ export class CurrentPcb209RatlineContinuationChannel {
       return;
     }
     if (parentCommand(command)) {
+      if (command.method === "DOM.getFrameOwner" || command.method === "DOM.describeNode") {
+        if (this.#instrumentationPaused.has(this.#parent.sessionId)) { throw fail("DOM_INSTRUMENTATION_PAUSE"); }
+        this.#ownership.assertDomReady();
+      }
       if (command.method !== "Target.getTargets" && command.sessionId !== this.#parent.sessionId) { throw fail("PARENT_SESSION"); }
       if (command.method === "Debugger.getScriptSource") { throw fail("PCB_SOURCE_SEQUENCE"); }
       if (command.method === "Runtime.callFunctionOn" && "uniqueContextId" in command.params) {
@@ -386,10 +393,21 @@ export class CurrentPcb209RatlineContinuationChannel {
     if (sessionId !== undefined && this.#retiredSessions.has(sessionId) || command.sessionId !== undefined && this.#retiredSessions.has(command.sessionId)) { throw fail("REALM_RETIRED"); }
     if (command.method !== "Target.getTargets" && (sessionId === undefined || command.sessionId !== sessionId && phase !== "start-child")) { throw fail("RATLINE_SESSION"); }
     if (this.#budget.snapshot().phase === "cleanup") {
+      if ("ownershipStage" in command) {
+        if (command.ownershipPhase !== "remove") { throw fail("CLEANUP_COMMAND"); }
+        this.#ownership.checkCleanupRemoval(command);
+      }
       if (command.method !== "Debugger.removeBreakpoint" && command.method !== "Debugger.resume") { throw fail("CLEANUP_COMMAND"); }
       if (command.method === "Debugger.removeBreakpoint") { this.#allocation(command.sessionId, command.params.breakpointId); }
       else if (!this.#paused.has(command.sessionId) || this.#resumeIssued.has(command.sessionId)) { throw fail("CLEANUP_PAUSE"); }
       return "cleanup";
+    }
+    if ("ownershipStage" in command) {
+      if (sessionId === undefined || this.#resumeIssued.has(sessionId)) { throw fail("OWNERSHIP_SEQUENCE"); }
+      this.#ownership.check(command, { role, sessionId, sources: realm.sources, resumes: realm.resumes,
+        scriptId: realm.scriptId, pausedKind: this.#paused.get(sessionId), initialScriptId: this.#windowStages.initial.scriptId,
+        initialSourceQualified: this.#windowStages.initial.sourceQualified });
+      return "ownership";
     }
     const bootstrap = CurrentPcb209RatlineContinuationChannel.#bootstrapKind(role);
     if (phase.startsWith("bootstrap-") && phase !== "bootstrap-source") {
@@ -427,18 +445,27 @@ export class CurrentPcb209RatlineContinuationChannel {
       if (phase.endsWith("-source") ? command.method !== "Debugger.getScriptSource" || state.scriptId === null ||
           command.params.scriptId !== state.scriptId || state.sourceConsumed || this.#paused.get(command.sessionId ?? "") !== "pcb-bootstrap" :
           !state.sourceQualified || this.#paused.get(command.sessionId ?? "") !== kind) { throw fail("WINDOW_SEQUENCE"); }
+      if (phase === "window-initial-resume") { this.#ownership.assertFinalResume("initial-window"); }
       return kind;
     }
     if (phase === "bootstrap-source") {
+      this.#ownership.assertNoPending();
       if (role === "pcb" && Object.values(this.#windowStages).some(state => state.scriptId !== null && (!state.resumed || !state.resumeQualified))) { throw fail("WINDOW_SEQUENCE"); }
       if (!this.#pcbOpeningConsumed || role === "worker" && !this.#childStarted || role === "subordinate" && !this.#subordinateStarted ||
           realm.sources >= (role === "pcb" ? 29 : 7) || realm.sources !== realm.resumes) { throw fail("SOURCE_SEQUENCE"); }
       if (role === "pcb") { return "pcb-source"; }
       return role === "worker" ? "child-source" : "subordinate-source";
     }
-    if (phase === "remove" && command.method === "Debugger.removeBreakpoint") { return this.#allocation(command.sessionId, command.params.breakpointId).kind; }
+    if (phase === "remove" && command.method === "Debugger.removeBreakpoint") {
+      const kind = this.#allocation(command.sessionId, command.params.breakpointId).kind;
+      if (kind === "ownership") { throw fail("OWNERSHIP_REMOVE_PHASE"); } return kind;
+    }
     if (phase === "resume" && command.method === "Debugger.resume") {
       const kind = this.#paused.get(command.sessionId);
+      this.#ownership.assertNoPending();
+      if (role === "pcb" && kind === "pcb-bootstrap" && (realm.sources === 1 || realm.sources === 29)) {
+        this.#ownership.assertFinalResume(realm.sources === 1 ? "pcb-admission" : "pcb-release");
+      }
       if (kind === undefined || kind === "navigation" || kind === "loader" || kind === "initial-window" || kind === "document-window" || this.#resumeIssued.has(command.sessionId) ||
           (kind === "pcb-bootstrap" || kind === "child-bootstrap" || kind === "subordinate-bootstrap") &&
           (realm.sources <= realm.resumes || realm.resumes >= (role === "pcb" ? 29 : 7))) { throw fail("RESUME_SEQUENCE"); }
@@ -473,6 +500,10 @@ export class CurrentPcb209RatlineContinuationChannel {
   }
   #consumeRatline(role: CurrentPcb209RatlineContinuationNativeRole, command: Command, phase: string): void {
     const realm = this.#realms[role];
+    if ("ownershipStage" in command) {
+      this.#ownership.consume(command);
+      if (command.ownershipPhase === "enter") { this.#paused.set(command.sessionId, "ownership"); }
+    }
     if (phase.startsWith("bootstrap-") && phase !== "bootstrap-source") { realm.arms += 1; }
     if (command.method === "Debugger.getScriptSource" && phase === "bootstrap-source") { realm.sources += 1; realm.scriptId = command.params.scriptId; }
     if (command.method === "Debugger.resume") { this.#resumeIssued.add(command.sessionId); }
@@ -489,10 +520,14 @@ export class CurrentPcb209RatlineContinuationChannel {
       if (phase === `window-${stage}-source`) { this.#windowStages[stage].sourceConsumed = true; this.#paused.set(command.sessionId ?? "", stage === "initial" ? "initial-window" : "document-window"); }
       if (phase === `window-${stage}-resume`) { this.#windowStages[stage].resumeConsumed = true; }
     }
-    if (command.method === "Debugger.setBreakpoint" && command.params.location.scriptId !== realm.scriptId) { throw fail("SOURCE_SCRIPT"); }
+    if (command.method === "Debugger.setBreakpoint" && !("ownershipStage" in command) && command.params.location.scriptId !== realm.scriptId) { throw fail("SOURCE_SCRIPT"); }
   }
   #retainRatlineReply(pending: Pending): void {
     if (pending.route !== "pcb" && pending.route !== "worker" && pending.route !== "subordinate") { throw fail("REPLY_ROLE"); }
+    if ("ownershipStage" in pending.command) {
+      const base = this.#ownership.reply(pending.command, pending.result);
+      if (base !== null && this.#paused.get(pending.command.sessionId) === "ownership") { this.#paused.set(pending.command.sessionId, base); }
+    }
     if (pending.phase === "navigation-source") { qualifyCurrentPcb209RatlineNavigationSource(pending.result); this.#navigationSourceQualified = true; }
     if (pending.phase === "navigation-resume") { z.object({}).strict().parse(captureCurrentPcbStringClockReply(pending.result).value); this.#navigationResumeQualified = true; }
     if (pending.phase === "loader-source") { qualifyCurrentPcb209RatlineLoaderSource(pending.result); this.#loaderSourceQualified = true; }
@@ -623,6 +658,9 @@ export class CurrentPcb209RatlineContinuationChannel {
       this.#windowParsedScripts.add(scriptId);
     }
     if (event.method === "Debugger.paused") {
+      this.#ownership.observeInstrumentation(event);
+      if (event.params["reason"] === "instrumentation") { this.#instrumentationPaused.add(event.sessionId); }
+      else { this.#instrumentationPaused.delete(event.sessionId); }
       if (this.#paused.has(event.sessionId) || this.#resumeIssued.has(event.sessionId)) { throw fail("DUPLICATE_PAUSE"); }
       if (role === "worker" && !this.#childFirstPauseObserved) {
         this.#childFirstPauseObserved = true;
@@ -660,13 +698,15 @@ export class CurrentPcb209RatlineContinuationChannel {
         const hit = z.array(z.string()).length(1).parse(event.params["hitBreakpoints"])[0];
         const allocation = hit === undefined ? undefined : this.#allocations.get(`${event.sessionId}\0${hit}`);
         if (allocation === undefined || allocation.removed || allocation.sessionId !== event.sessionId) { throw fail("PAUSE_ALLOCATION"); }
+        if (allocation.kind === "ownership") { this.#ownership.observeOrdinary(event); }
         this.#paused.set(event.sessionId, allocation.kind);
       }
     }
     if (event.method === "Debugger.resumed") {
       const kind = this.#paused.get(event.sessionId);
       if (kind === undefined || !this.#resumeIssued.delete(event.sessionId) || !exact(event.params, [])) { throw fail("UNEXPECTED_RESUME"); }
-      this.#paused.delete(event.sessionId);
+      this.#paused.delete(event.sessionId); this.#instrumentationPaused.delete(event.sessionId);
+      if (kind === "ownership") { this.#ownership.observeEnterResume(event.sessionId); }
       if (kind === "navigation") { this.#navigationResumeObserved = true; }
       if (kind === "loader") { this.#loaderResumeObserved = true; }
       if (kind === "initial-window") { this.#windowStages.initial.resumed = true; }
