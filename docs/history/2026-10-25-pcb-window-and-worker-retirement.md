@@ -104,3 +104,16 @@ suites will use exact-payload GitHub CI instead of a duplicate local campaign.
 Publication, installation and fresh connected validation remain pending at this
 checkpoint. Earlier pending source/native checks above are completed by this
 section; the connected and implementation backlog remains open.
+
+## First PR CI and test expectation correction
+
+PR128 initially tested commit `7513afe1fe09e9ee6c1e77fc541545b59c9d879a`.
+Windows run40220277116 and the build job passed; seven facade shards passed.
+Linux run40220277161 failed shard5 on the protocol adapter test's stale held
+request limit of365 (its neighboring normal limit still said322). The reviewed
+generated limits are371 and328. This is a test expectation correction only;
+runtime source, helper bytes, bundles and compatibility projections are unchanged.
+Failed shard-log SHA256 is
+`72dcbcbbcd574cb02bbaf2dc3e1c2aa73d170c6f432940a87fe806ecfdd92967`.
+The aggregate job correctly failed; this first commit does not provide accepted
+release CI. The corrected final commit must pass all required jobs separately.
