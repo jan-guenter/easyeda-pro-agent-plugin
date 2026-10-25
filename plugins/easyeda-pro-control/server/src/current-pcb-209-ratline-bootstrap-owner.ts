@@ -1,6 +1,6 @@
 /* oxlint-disable import/max-dependencies -- The original child owner joins fixed source qualification, creation ownership, native grammar and the cumulative source deadline profile. */
-/** Original waiting-child source owner. No native helper or public route adopts
- * this class. The creation owner alone consumes the child's initial start. */
+/** Original waiting-child source owner. The native ratline purpose adopts it
+ * through the held import. Creation alone consumes the child's initial start. */
 import { types } from "node:util";
 import { CURRENT_PCB_209_RATLINE_NATIVE_PROFILE, currentPcb209RatlineSourceBudget } from "./current-pcb-209-ratline-budget.ts";
 import { z } from "zod";
@@ -22,6 +22,7 @@ export type CurrentPcb209RatlineBootstrapCommand = Readonly<{ sessionId: string 
   | Readonly<{ method: "Target.setAutoAttach"; params: typeof CURRENT_PCB_WORKER_STARTUP_ATTACH }>
   | Readonly<{ method: "Runtime.enable" | "Debugger.resume"; params: Readonly<Record<string, never>> }>
   | Readonly<{ method: "Debugger.enable"; params: Readonly<{ maxScriptsCacheSize: 33_554_432 }> }>
+  | Readonly<{ method: "Debugger.setAsyncCallStackDepth"; params: Readonly<{ maxDepth: 1 }> }>
   | Readonly<{ method: "Debugger.setInstrumentationBreakpoint"; params: Readonly<{ instrumentation: "beforeScriptExecution" }> }>
   | Readonly<{ method: "Debugger.getScriptSource"; params: Readonly<{ scriptId: string }> }>
   | Readonly<{ method: "Debugger.removeBreakpoint"; params: Readonly<{ breakpointId: string }> }>
@@ -36,6 +37,10 @@ export interface CurrentPcb209RatlineBootstrapDependency {
    * waiting child. A matching target name or URL is insufficient. */
   readonly assertOriginalChild: (creation: Creation, packet: CurrentPcb209RatlineCreationPacket) => Promise<void>;
   readonly assertOriginalTermination: () => Promise<void>;
+  /** Observe the first qualified script while its original pause is still held.
+   * The callback grants no imported-source continuation or target identity. */
+  readonly observeOriginalFirstScript: (creation: Creation, packet: CurrentPcb209RatlineCreationPacket,
+    owner: CurrentPcb209RatlineBootstrapOwner) => Promise<void>;
   readonly request: (command: CurrentPcb209RatlineBootstrapCommand | CurrentPcb209RatlineRealmCommand) => Promise<unknown>;
   /** Only this original child's events, including loss from its parent, may
    * enter this subscription. The containing owner keeps its cumulative budget. */
@@ -95,7 +100,7 @@ async function bounded<T>(work: Promise<T>, milliseconds: number = CURRENT_PCB_2
 }
 function members(value: CurrentPcb209RatlineBootstrapDependency): readonly unknown[] {
   need(value !== null && typeof value === "object" && !types.isProxy(value) && Object.getPrototypeOf(value) === Object.prototype, "DEPENDENCY");
-  const keys = ["assertOriginalChild", "assertOriginalTermination", "request", "subscribe"] as const;
+  const keys = ["assertOriginalChild", "assertOriginalTermination", "observeOriginalFirstScript", "request", "subscribe"] as const;
   need(Reflect.ownKeys(value).length === keys.length, "DEPENDENCY");
   return keys.map(key => { const descriptor = Object.getOwnPropertyDescriptor(value, key);
     need(descriptor !== undefined && Object.hasOwn(descriptor, "value") && typeof descriptor.value === "function", "DEPENDENCY"); return descriptor.value as unknown; });
@@ -110,6 +115,9 @@ export class CurrentPcb209RatlineBootstrapOwner {
   #creation: Creation | null = null;
   #construction: CurrentPcb209RatlineCreationPacket | null = null;
   #context: z.infer<typeof contextSchema> | null = null;
+  #debuggerId: string | null = null;
+  #asyncDepthArmed = false;
+  #firstObservationConsumed = false;
   #index = 0;
   #consumed = false;
   #armed = false;
@@ -288,7 +296,9 @@ export class CurrentPcb209RatlineBootstrapOwner {
       const runtimeReply = await bounded(this.#send({ method: "Runtime.enable", sessionId, params: {} }));
       empty.parse(captureCurrentPcbStringClockReply(runtimeReply).value);
       const debuggerReply = await bounded(this.#send({ method: "Debugger.enable", sessionId, params: { maxScriptsCacheSize: 33_554_432 } }));
-      z.object({ debuggerId: token }).strict().parse(captureCurrentPcbStringClockReply(debuggerReply).value);
+      this.#debuggerId = z.object({ debuggerId: token }).strict().parse(captureCurrentPcbStringClockReply(debuggerReply).value).debuggerId;
+      empty.parse(await bounded(this.#send({ method: "Debugger.setAsyncCallStackDepth", sessionId, params: { maxDepth: 1 } })));
+      this.#asyncDepthArmed = true;
       this.#allocationUncertain = true;
       const allocated = Promise.withResolvers<null>(); this.#allocation = withoutValue(allocated.promise); void observed(this.#allocation);
       void observed((async (): Promise<void> => {
@@ -318,6 +328,11 @@ export class CurrentPcb209RatlineBootstrapOwner {
         qualifyCurrentPcb209RatlineBootstrapSource(stage.role, await bounded(this.#send({ method: "Debugger.getScriptSource",
           sessionId: this.#construction?.childSessionId ?? "", params: { scriptId: script.scriptId } }), currentPcb209RatlineSourceBudget("child", ordinal).deadlineMilliseconds));
         stage.qualified = true; await this.#current();
+        if (ordinal === 0) {
+          need(!this.#firstObservationConsumed && this.#creation !== null && this.#construction !== null, "FIRST_OBSERVATION");
+          this.#firstObservationConsumed = true;
+          await this.#dependency.observeOriginalFirstScript(this.#creation, this.#construction, this); await this.#current();
+        }
         if (stage.role === "worker") {
           need(this.#logSeen && this.#construction !== null, "PRELOAD_LOG_REQUIRED");
           await this.#remove(); await this.#current();
@@ -329,6 +344,18 @@ export class CurrentPcb209RatlineBootstrapOwner {
         await this.#resume(stage); await this.#current();
       }
     } catch { this.#poison(); }
+  }
+  /** Only the actual first held script, after complete source qualification.
+   * Copies of construction packets cannot retrieve its native observations. */
+  public async requireOriginalFirstScript(creation: Creation, packet: CurrentPcb209RatlineCreationPacket): Promise<Readonly<{
+    debuggerId: string; uniqueContextId: string; scriptId: string; url: string; pause: unknown;
+  }>> {
+    await this.#current(); const stage = this.#stages[0];
+    need(creation === this.#creation && packet === this.#construction && this.#firstObservationConsumed && this.#asyncDepthArmed &&
+      this.#debuggerId !== null && this.#context !== null && this.#index === 0 && stage !== undefined && stage.qualified &&
+      stage.script !== null && stage.pause !== null && stage.resume === null, "FIRST_SCRIPT_OWNER");
+    return Object.freeze({ debuggerId: this.#debuggerId, uniqueContextId: this.#context.uniqueId, scriptId: stage.script.scriptId,
+      url: stage.script.url, pause: stage.pause });
   }
   public async whenSourceQualified(): Promise<CurrentPcb209RatlineBootstrapPacket> { const packet = await this.#qualified.promise; await this.requireOriginal(packet); return packet; }
   public async requireOriginal(packet: CurrentPcb209RatlineBootstrapPacket): Promise<void> {
@@ -382,6 +409,7 @@ export class CurrentPcb209RatlineBootstrapOwner {
     const phase = wire.request["phase"];
     need(typeof phase === "string" && !phase.startsWith("bootstrap-"), "REALM_COMMAND");
     const { id: _validationId, ...command } = wire.command;
+    need(command.method !== "Debugger.getStackTrace", "ORIGIN_COMMAND_OWNER");
     const cleanup = command.method === "Debugger.resume" || command.method === "Debugger.removeBreakpoint" || command.method === "Runtime.runIfWaitingForDebugger";
     this.#same(); need(!this.#released && packet === this.#packet && this.#realmClaimed, "REALM_OWNER");
     if (!cleanup) { await this.requireOriginal(packet); }

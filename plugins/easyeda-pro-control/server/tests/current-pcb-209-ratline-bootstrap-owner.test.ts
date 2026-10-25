@@ -28,7 +28,7 @@ const targetUrl = "https://client/editor?entry=pcb-ratline-worker.js&cll=0";
 const bootstrap = CURRENT_PCB_209_RATLINE_BOOTSTRAP_SOURCES[0]; assert.ok(bootstrap !== undefined);
 const profile = Object.freeze({ CURRENT_PCB_209_RATLINE_BOOTSTRAP_ROLES, CURRENT_PCB_209_RATLINE_BOOTSTRAP_SOURCES,
   CURRENT_PCB_209_RATLINE_WORKER_URL, currentPcb209RatlineBootstrapRoleUrl, qualifyCurrentPcb209RatlineBootstrapSource, qualifyCurrentPcb209RatlineBootstrapUrl });
-interface Counts { readonly requests: number; readonly resumes: number; readonly removals: number; readonly sourceReads: number; readonly childStarts: number }
+interface Counts { readonly requests: number; readonly resumes: number; readonly removals: number; readonly sourceReads: number; readonly childStarts: number; readonly firstObservations: number }
 interface Fixture {
   readonly owner: CurrentPcb209RatlineBootstrapOwner;
   readonly creation: CurrentPcb209RatlinePcbCreation;
@@ -63,9 +63,9 @@ async function syntheticSourceOwner(): Promise<typeof CurrentPcb209RatlineBootst
 /** Real V8 parent constructor owner, synthetic CDP child/source replies. The
  * preload intentionally fails whole installed-source qualification. */
 async function fixture(context: TestContext, options: Readonly<{ badBootstrap?: boolean; reentrantRemoval?: boolean; delayedAllocation?: boolean;
-  syntheticFullChain?: boolean }> = {}): Promise<Fixture> {
+  syntheticFullChain?: boolean; refuseFirstObservation?: boolean }> = {}): Promise<Fixture> {
   const allocation = Promise.withResolvers<unknown>(), inspector = await ratlineCreationInspector(context, "pcb"), removed = Promise.withResolvers<null>();
-  let events: Events | null = null, nestedAbort: Promise<void> | null = null, removals = 0, requests = 0, resumes = 0, sourceReads = 0;
+  let events: Events | null = null, firstObservations = 0, nestedAbort: Promise<void> | null = null, removals = 0, requests = 0, resumes = 0, sourceReads = 0;
   const holder: { owner: CurrentPcb209RatlineBootstrapOwner | null } = { owner: null };
   let breakpoints = 0, roleIndex = 0;
   const emit = (method: string, params: Readonly<Record<string, unknown>>, sessionId = "child-session"): void => { events?.event({ method, params, sessionId }); };
@@ -103,6 +103,17 @@ async function fixture(context: TestContext, options: Readonly<{ badBootstrap?: 
   const pending = creation.capture(); await creation.whenArmed(); const running = inspector.run(); const packet = await pending;
   const dependency: CurrentPcb209RatlineBootstrapDependency = {
     assertOriginalChild: async (original, result): Promise<void> => { assert.equal(original, creation); assert.equal(result, packet); await creation.requireOriginal(result); },
+    observeOriginalFirstScript: async (original, result, owner): Promise<void> => {
+      firstObservations += 1; assert.equal(resumes, 0); assert.equal(original, creation); assert.equal(result, packet);
+      const first = await owner.requireOriginalFirstScript(original, result);
+      assert.equal(first.debuggerId, "child-debugger"); assert.equal(first.uniqueContextId, "child-context");
+      assert.equal(first.scriptId, "bootstrap");
+      await assert.rejects(owner.requireOriginalFirstScript(original, { ...result }), /FIRST_SCRIPT_OWNER/u);
+      const constructor = await creation.requireOriginalConstructor(result); assert.equal(constructor.parentSessionId, "parent-session");
+      assert.equal(constructor.scriptId, inspector.transport.scriptId);
+      await assert.rejects(creation.requireOriginalConstructor({ ...result }), /ORIGINAL_PACKET/u);
+      if (options.refuseFirstObservation === true) { throw new Error("Original origin observer failed"); }
+    },
     assertOriginalTermination: inspector.transport.assertOriginalTermination,
     request: command => {
       requests += 1;
@@ -113,6 +124,7 @@ async function fixture(context: TestContext, options: Readonly<{ badBootstrap?: 
           emit("Runtime.executionContextCreated", { context: { id: 1, uniqueId: "child-context", name: "pcb-ratline-worker", origin: targetUrl } });
           return Promise.resolve({});
         }
+        case "Debugger.setAsyncCallStackDepth": { assert.equal(command.params.maxDepth, 1); return Promise.resolve({}); }
         case "Debugger.enable": { return Promise.resolve({ debuggerId: "child-debugger" }); }
         case "Debugger.setInstrumentationBreakpoint": { return options.delayedAllocation === true ? allocation.promise : Promise.resolve({ breakpointId: "instrument" }); }
         case "Debugger.getScriptSource": {
@@ -148,7 +160,7 @@ async function fixture(context: TestContext, options: Readonly<{ badBootstrap?: 
     acknowledge: (): void => { allocation.resolve({ breakpointId: "instrument" }); },
     whenRemoved: async (): Promise<void> => { await removed.promise; },
     start: async (): Promise<void> => { await creation.continueOriginalParent(packet); await creation.startOriginalChild(packet); },
-    counts: (): Counts => ({ requests, resumes, removals, sourceReads, childStarts: inspector.counts().childStarts }) };
+    counts: (): Counts => ({ requests, resumes, removals, sourceReads, childStarts: inspector.counts().childStarts, firstObservations }) };
 }
 
 void test("fixed ratline bootstrap derives exact imports and refuses altered source, hostile replies and URL aliases", () => {
@@ -265,4 +277,11 @@ void test("ratline loaded notification leaves actual capture pending and refuses
       await stages.capture.releaseAfterTermination(); await dispatcher.releaseAfterTermination();
     });
   }
+});
+
+void test("original first-script observer runs before any import resume and refuses copied owners without replay", async context => {
+  const f = await fixture(context, { refuseFirstObservation: true }); await f.owner.armOriginalChildBootstrap(f.creation, f.packet);
+  await f.start(); await assert.rejects(f.owner.whenSourceQualified());
+  assert.equal(f.counts().firstObservations, 1); assert.equal(f.counts().sourceReads, 1); assert.equal(f.counts().resumes, 0);
+  assert.equal(f.counts().childStarts, 1); await f.finish(); assert.equal(f.counts().resumes, 0);
 });

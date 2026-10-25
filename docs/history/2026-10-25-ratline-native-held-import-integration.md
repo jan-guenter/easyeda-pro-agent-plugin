@@ -143,3 +143,52 @@ pass their focused checks, and strict type-aware lint is clean. These are
 test-only corrections; the candidate version, native helper, 694-file source
 projection and three bundle entries above remain unchanged. The corrected
 commit must pass the complete CI matrix before publication.
+
+## Publication and installed snapshot
+
+[PR 121](https://github.com/jan-guenter/easyeda-pro-agent-plugin/pull/121)
+published corrected payload `d04554ec3a9e4a257c90c1ba3987184cfe7379f1` as
+main `6ea779df32877160707d2e7b538d733f4540c46b`. The merged tree
+`6009c0a886fa96f1173f49eb73dfc11740b02f99` equals the reviewed payload tree;
+the plugin subtree is `5f623c42030ff9ecc2d8dafa716cc4e4c4bce8d6`.
+Required PR Linux CI `40155989060` passed its build, all eight facade shards
+and aggregate job. Windows CI `40155989046` passed. The earlier failed run
+and both corrected fixture checks remain retained. Source, native helper and
+bundle hashes above are unchanged by the test-only correction.
+
+The official CLI upgraded the Git marketplace
+`https://github.com/jan-guenter/easyeda-pro-agent-plugin.git` and reports
+`0.3.0+codex.20261025022904` installed and enabled. Marketplace HEAD equals
+merged main. All 1,940 committed files, 42 directories and 41,455,999 bytes
+match the installed snapshot, including exact permissions. Inventory SHA256
+is `9e0d5992a4f0196d6efeea7d14e4cb7c3b9a8ecb6a8c2c7c957fe861265f0526`.
+The final registration check retained the new cache. No cache was patched.
+
+The installed synthetic-profile probe passed 16 fixed offline queries and
+exposed 26 tools in that synthetic profile. It used pinned Node24.18.0 and
+the exact server bundle, exited normally after stdin EOF, and produced no
+stderr. Samples found no descendants or non-stdio sockets; this was not
+continuous isolation proof. It selected no live control root and established
+no connected validation or execution authority.
+
+The actual host remains PID1945091/startTicks18695421 on the previous
+`0.3.0+codex.20261024225513` snapshot. The official updater pruned that old
+cache, but its process remains alive; it was neither killed nor rebound.
+Do not make further live calls through it. Restart Codex, admit the actual new
+host, then perform the fresh disposable case under Remaining work. No EasyEDA
+launch, project navigation, explicit Save or production-project access occurred
+in this release session. No native operation or cleanup remains pending.
+
+Automatic merged-main Windows CI `40156758052` passed. Merged-main Linux CI
+`40156758076` was still running at handoff; the complete exact-payload PR checks
+above already passed. This post-publication appendix is retained locally for
+the next batch rather than creating another release solely for its result.
+
+## Restarted-host continuation
+
+Merged-main Linux CI `40156758076` subsequently passed. The restarted host
+loaded the installed update and passed independent package/process admission.
+Its fresh disposable capture, terminal cleanup and following implementation
+batch are recorded in
+[prefix timing and origin observations](2026-10-25-ratline-prefix-timing-and-origin.md).
+The old-host and pending-CI statements above retain their handoff-time meaning.

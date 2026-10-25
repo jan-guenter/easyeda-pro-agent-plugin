@@ -1,7 +1,8 @@
 /* oxlint-disable eslint/max-classes-per-file -- Two fixed role wrappers share one private constructor-boundary owner. */
 /** Capture the original Worker construction boundary and waiting attachment.
  * Correlation is deliberately not native Worker/target identity: a page session
- * can report children of other frames. No native adapter adopts this stage yet. */
+ * can report children of other frames. The native held-import adapter retains
+ * this owner and observes independent async-origin evidence separately. */
 import { CURRENT_PCB_209_RATLINE_NATIVE_PROFILE } from "./current-pcb-209-ratline-budget.ts";
 import { createHash } from "node:crypto";
 import { types } from "node:util";
@@ -119,6 +120,7 @@ class CurrentPcb209RatlineCreationCore {
   #packet: CurrentPcb209RatlineCreationPacket | null = null;
   #worker: string | null = null;
   #manager: string | null = null;
+  #constructorPauses: Readonly<{ before: unknown; after: unknown }> | null = null;
   #watchdog: ReturnType<typeof setTimeout> | null = null;
   #cleanupPending: Promise<void> | null = null;
   #cleanupRequested = false;
@@ -285,6 +287,7 @@ class CurrentPcb209RatlineCreationCore {
       need(!inventory.some(value => value.targetId !== this.#target && value.type === "worker" && (value.title === name || value.url === resolved)), "EXISTING_CHILD");
       this.#bracket = true; await this.#resume(before.retained);
       const after = await this.#next("after"); this.#worker = await this.#object(after.frameId, profile.worker); this.#manager = await this.#object(after.frameId, "this");
+      this.#constructorPauses = Object.freeze({ before: before.retained.event, after: after.retained.event });
       const child = await bounded(this.#childReady.promise); await this.#current();
       need(child.url === resolved && child.title === name && this.#children.size === 1, "CHILD_ARGUMENTS");
       const final = await this.#inventory(), prior = new Map(inventory.map(value => [value.targetId, value]));
@@ -308,6 +311,13 @@ class CurrentPcb209RatlineCreationCore {
   public async requireOriginal(packet: CurrentPcb209RatlineCreationPacket): Promise<Readonly<{ workerObjectId: string; managerObjectId: string; childSessionId: string }>> {
     need(this.#packet !== null && packet === this.#packet && this.#worker !== null && this.#manager !== null, "ORIGINAL_PACKET"); await this.#current();
     return Object.freeze({ workerObjectId: this.#worker, managerObjectId: this.#manager, childSessionId: packet.childSessionId });
+  }
+  /** Retained complete observations, never reconstructed from a packet. */
+  public async requireOriginalConstructor(packet: CurrentPcb209RatlineCreationPacket): Promise<Readonly<{
+    before: unknown; after: unknown; parentSessionId: string; scriptId: string;
+  }>> {
+    await this.requireOriginal(packet); need(this.#constructorPauses !== null, "CONSTRUCTOR_OBSERVATIONS");
+    return Object.freeze({ ...this.#constructorPauses, parentSessionId: this.#parent, scriptId: this.#scriptId });
   }
   /** The next original stage must arm its factory/bridge observers before this
    * continuation. Child execution stays held for its separate source qualifier. */

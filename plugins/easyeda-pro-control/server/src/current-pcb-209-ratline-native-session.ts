@@ -22,7 +22,10 @@ import type { CurrentPcb209RatlinePcbBootstrapPacket } from "./current-pcb-209-r
 import { CurrentPcb209RatlineBootstrapOwner } from "./current-pcb-209-ratline-bootstrap-owner.ts";
 import type { CurrentPcb209RatlineBootstrapDependency, CurrentPcb209RatlineBootstrapPacket } from "./current-pcb-209-ratline-bootstrap-owner.ts";
 import { CurrentPcb209RatlinePcbStartup } from "./current-pcb-209-ratline-startup-session.ts";
-import type { CurrentPcb209RatlineCreationPacket, CurrentPcb209RatlinePcbCreation, CurrentPcb209RatlineWorkerCreation } from "./current-pcb-209-ratline-creation-runner.ts";
+import { CurrentPcb209RatlinePcbCreation } from "./current-pcb-209-ratline-creation-runner.ts";
+import type { CurrentPcb209RatlineCreationPacket, CurrentPcb209RatlineWorkerCreation } from "./current-pcb-209-ratline-creation-runner.ts";
+import { CurrentPcb209RatlineOrigin } from "./current-pcb-209-ratline-origin.ts";
+import type { CurrentPcb209RatlineOriginEvidence, CurrentPcb209RatlineOriginSummary } from "./current-pcb-209-ratline-origin-observation.ts";
 import { readerCompletion } from "./sqlite-inventory.ts";
 import type { readExactSqlInventory } from "./sqlite-inventory.ts";
 
@@ -55,6 +58,8 @@ export interface CurrentPcb209RatlineNativePacket {
   readonly originalProjectConstructionSha256: string;
   readonly pcbSource: CurrentPcb209RatlinePcbBootstrapPacket;
   readonly childSource: CurrentPcb209RatlineBootstrapPacket;
+  readonly nativeOrigin: CurrentPcb209RatlineOriginSummary;
+  readonly nativeOriginEvidence: CurrentPcb209RatlineOriginEvidence;
   readonly originalFrameProofSets: 3;
   readonly pcbNavigationAcknowledged: boolean;
   readonly firstChildImportHeld: true;
@@ -80,6 +85,8 @@ export class CurrentPcb209RatlineNativeSession {
   #routing: NativeRouting | null = null;
   #router: CurrentPcb209RatlinePcbContextRouter | null = null;
   #child: CurrentPcb209RatlineBootstrapOwner | null = null;
+  #origin: CurrentPcb209RatlineOrigin | null = null;
+  #pcbSource: CurrentPcb209RatlinePcbBootstrapPacket | null = null;
   #composite: CurrentPcb209RatlinePcbStartup | null = null;
   #compositeWork: Promise<unknown> | null = null;
   #navigation: Promise<void> | null = null;
@@ -106,10 +113,13 @@ export class CurrentPcb209RatlineNativeSession {
     this.#channel = channel; this.#context = context; this.#reverify = reverifyCheckpoint;
     this.#target = Object.freeze(currentDisposableOpenSealedTargetSchema.parse(captureCurrentPcbStringClockReply(target).value));
   }
-  public status(): Readonly<{ phase: Phase; transitionStarted: boolean; openingAcknowledged: boolean; packetRetained: boolean; executionAuthorized: false }> {
+  public status(): Readonly<{ phase: Phase; transitionStarted: boolean; openingAcknowledged: boolean; packetRetained: boolean; executionAuthorized: false;
+    nativeOrigin: CurrentPcb209RatlineOriginSummary | null }> {
     return Object.freeze({ phase: this.#phase, transitionStarted: this.#router?.status()["transitionStarted"] === true,
-      openingAcknowledged: this.#openingObservation?.phase === "open-document", packetRetained: this.#packet !== null, executionAuthorized: false });
+      openingAcknowledged: this.#openingObservation?.phase === "open-document", packetRetained: this.#packet !== null, executionAuthorized: false,
+      nativeOrigin: this.#origin?.summary() ?? null });
   }
+  public retainedNativeOriginEvidence(): CurrentPcb209RatlineOriginEvidence | null { return this.#origin?.evidence() ?? null; }
   public retainedOpeningObservation(): CurrentPcbDiagnosticPcbOpeningResult | null { return this.#openingObservation; }
   #same(): void {
     need(this.#phase !== "failed" && this.#phase !== "cleanup" && this.#phase !== "released" && this.#dependency.request === this.#request, "NOT_CURRENT");
@@ -191,6 +201,11 @@ export class CurrentPcb209RatlineNativeSession {
         need(this.#creation === creation && this.#construction === packet, "CHILD_CONSTRUCTION");
       },
       assertOriginalTermination: (): Promise<void> => routing.assertOriginalTermination(),
+      observeOriginalFirstScript: async (creation, packet, owner): Promise<void> => {
+        await this.#current(); need(this.#router !== null && this.#origin !== null && this.#pcbSource !== null && owner === this.#child &&
+          creation instanceof CurrentPcb209RatlinePcbCreation, "ORIGIN_OWNERS");
+        await this.#origin.capture(this.#router.sourceOwner, this.#pcbSource, creation, packet, owner); await this.#current();
+      },
       request: command => routing.request("worker", command),
       subscribe: (events: ChildEvents): (() => void) => {
         need(this.#childEvents === null && this.#construction !== null, "CHILD_SUBSCRIBER"); this.#childEvents = events;
@@ -220,9 +235,11 @@ export class CurrentPcb209RatlineNativeSession {
         requestParent: command => routing.requestParent(command),
         subscribe: events => this.#subscribeParent(events, routing),
       })); this.#router = router;
+      this.#origin = new CurrentPcb209RatlineOrigin({ assertOriginalOwner: (): Promise<void> => this.#current(),
+        request: (command): Promise<unknown> => routing.request("pcb", command) });
       const child = this.#childOwner(routing); this.#child = child; this.#phase = "pcb-source";
       await router.sourceOwner.armBeforeNavigation(); await router.sourceOwner.startOriginalNavigation();
-      const pcbSource = await router.sourceOwner.whenSourceQualified(); await this.#current(); this.#phase = "construction";
+      const pcbSource = await router.sourceOwner.whenSourceQualified(); this.#pcbSource = pcbSource; await this.#current(); this.#phase = "construction";
       const composite = new CurrentPcb209RatlinePcbStartup({ realm: await router.sourceOwner.claimOriginalPcbRealm(pcbSource),
         releaseOriginalPinnedSource: (): Promise<void> => router.releaseOriginalPinnedSource(pcbSource), childBootstrapOwner: child });
       this.#composite = composite; const work = composite.capture(); this.#compositeWork = work; void this.#observeComposite(work);
@@ -230,8 +247,10 @@ export class CurrentPcb209RatlineNativeSession {
       const childSource = await Promise.race([child.whenSourceQualified(), failed]);
       await router.reproveFirstChildHeld(pcbSource);
       await this.#opening.requireOriginalPcbDependency(this.#result, this.#dependency, this.#target); await child.requireOriginal(childSource); await this.#current();
+      const nativeOrigin = this.#origin.summary(), nativeOriginEvidence = this.#origin.evidence();
+      need(nativeOrigin !== null && nativeOriginEvidence !== null, "ORIGIN_OBSERVATION_REQUIRED");
       this.#packet = Object.freeze({ profile: "private.pcb209-ratline-native-held-import.v1", targetSha256: sha256Json(this.#target),
-        originalProjectConstructionSha256: sha256Json(this.#result.construction), pcbSource, childSource, originalFrameProofSets: 3,
+        originalProjectConstructionSha256: sha256Json(this.#result.construction), pcbSource, childSource, nativeOrigin, nativeOriginEvidence, originalFrameProofSets: 3,
         pcbNavigationAcknowledged: this.#openingObservation?.phase === "open-document", firstChildImportHeld: true,
         nativeWorkerTargetIdentityVerified: false, completeStartupVerified: false, completeLiveBaselineVerified: false,
         executionAuthorized: false, saveAuthorized: false }); this.#phase = "first-child-held"; return this.#packet;

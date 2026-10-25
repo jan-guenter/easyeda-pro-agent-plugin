@@ -13,7 +13,7 @@ function plain(value: unknown): value is Record<string, unknown> {
 }
 function match(raw: unknown, template: unknown, fields: Record<string, string>): boolean {
   if (typeof template === "string") {
-    const dynamic = /^__ratline209_(sessionId|scriptId|callFrameId|breakpointId|objectId|argument0|argument1|argument2)__$/u.exec(template)?.[1];
+    const dynamic = /^__ratline209_(sessionId|scriptId|callFrameId|breakpointId|objectId|argument0|argument1|argument2|stackTraceId|debuggerId)__$/u.exec(template)?.[1];
     if (dynamic === undefined) { return raw === template; }
     const limit = dynamic === "sessionId" ? 128 : 256;
     if (typeof raw !== "string" || raw.length > limit || !/^[A-Za-z\d_.:-]+$/u.test(raw)) { return false; }
@@ -35,7 +35,7 @@ function match(raw: unknown, template: unknown, fields: Record<string, string>):
 }
 function instantiate(template: unknown, fields: Readonly<Record<string, string>>): unknown {
   if (typeof template === "string") {
-    const dynamic = /^__ratline209_(sessionId|scriptId|callFrameId|breakpointId|objectId|argument0|argument1|argument2)__$/u.exec(template)?.[1];
+    const dynamic = /^__ratline209_(sessionId|scriptId|callFrameId|breakpointId|objectId|argument0|argument1|argument2|stackTraceId|debuggerId)__$/u.exec(template)?.[1];
     return dynamic === undefined ? template : fields[dynamic];
   }
   if (template === null || typeof template !== "object") { return template; }

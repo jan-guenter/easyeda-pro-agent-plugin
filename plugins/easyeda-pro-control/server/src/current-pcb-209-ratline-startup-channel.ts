@@ -35,6 +35,8 @@ type RatlineEvents = Parameters<CurrentPcb209RatlineStartupDependency["subscribe
 interface Realm { arms: number; armed: boolean; sources: number; resumes: number; scriptId: string | null }
 interface Allocation { readonly sessionId: string; readonly kind: CurrentPcb209RatlineReplyKind; removed: boolean }
 const token = z.string().min(1).max(128).regex(/^[A-Za-z\d_.:-]+$/u);
+const nativeToken = z.string().min(1).max(256).regex(/^[A-Za-z\d_.:-]+$/u);
+const externalStackSchema = z.object({ id: nativeToken, debuggerId: nativeToken }).strict();
 const parentSchema = z.object({ targetId: token, sessionId: token, nextRequestId: z.number().int().min(1).max(PROFILE.requestLimit) }).strict();
 const ackSchema = z.object({ written: z.literal(true) }).strict();
 const MAX_FRAME = PROFILE.frames.ordinary;
@@ -98,6 +100,10 @@ export class CurrentPcb209RatlineStartupChannel {
   #routingClaimed = false;
   #child: Readonly<{ targetId: string; sessionId: string }> | null = null;
   #childStarted = false;
+  #parentDebuggerId: string | null = null;
+  #childFirstPauseObserved = false;
+  #childExternalStack: Readonly<{ id: string; debuggerId: string }> | null = null;
+  #originStackConsumed = false;
   #cleanup: Promise<void> | null = null;
   #abortAcknowledged = false;
   readonly #native: CurrentPcb209RatlineStartupNativeDependency;
@@ -283,7 +289,7 @@ export class CurrentPcb209RatlineStartupChannel {
     }
     const bootstrap: CurrentPcb209RatlineReplyKind = role === "pcb" ? "pcb-bootstrap" : "child-bootstrap";
     if (phase.startsWith("bootstrap-") && phase !== "bootstrap-source") {
-      const expected = ["bootstrap-auto-attach", "bootstrap-runtime", "bootstrap-debugger", "bootstrap-instrument"][realm.arms];
+      const expected = ["bootstrap-auto-attach", "bootstrap-runtime", "bootstrap-debugger", "bootstrap-async-depth", "bootstrap-instrument"][realm.arms];
       if (phase !== expected || role === "pcb" && (!this.#pcbPreflightConsumed || this.#pcbOpeningConsumed) || role === "worker" && this.#childStarted) { throw fail("BOOTSTRAP_ARM_SEQUENCE"); }
       return bootstrap;
     }
@@ -300,6 +306,15 @@ export class CurrentPcb209RatlineStartupChannel {
       return kind;
     }
     if (role !== "pcb" || realm.sources !== 29) { throw fail("HELD_CHILD_BOUNDARY"); }
+    if (phase === "origin-stack") {
+      const child = this.#child, observed = this.#childExternalStack;
+      if (command.method !== "Debugger.getStackTrace" || this.#originStackConsumed || observed === null || child === null ||
+          observed.debuggerId !== this.#parentDebuggerId || command.params.stackTraceId.id !== observed.id ||
+          command.params.stackTraceId.debuggerId !== observed.debuggerId || !this.#childStarted || !this.#realms.worker.armed ||
+          this.#realms.worker.sources !== 1 || this.#realms.worker.resumes !== 0 ||
+          this.#paused.get(child.sessionId) !== "child-bootstrap" || this.#resumeIssued.has(child.sessionId)) { throw fail("ORIGIN_STACK"); }
+      return "origin-stack";
+    }
     if (phase === "start-child") {
       if (command.method !== "Runtime.runIfWaitingForDebugger" || this.#child === null || command.sessionId !== this.#child.sessionId ||
           this.#childStarted || !this.#realms.worker.armed) { throw fail("CHILD_START"); }
@@ -320,10 +335,16 @@ export class CurrentPcb209RatlineStartupChannel {
     if (command.method === "Debugger.resume") { this.#resumeIssued.add(command.sessionId); }
     if (command.method === "Debugger.removeBreakpoint") { this.#allocation(command.sessionId, command.params.breakpointId).removed = true; }
     if (phase === "start-child") { this.#childStarted = true; }
+    // Attempt consumption precedes the possibly partial write. Neither a lost
+    // Acknowledgement nor a late reply grants another lookup or a new ID.
+    if (phase === "origin-stack") { this.#originStackConsumed = true; }
     if (command.method === "Debugger.setBreakpoint" && command.params.location.scriptId !== realm.scriptId) { throw fail("SOURCE_SCRIPT"); }
   }
   #retainRatlineReply(pending: Pending): void {
     if (pending.route !== "pcb" && pending.route !== "worker") { throw fail("REPLY_ROLE"); }
+    if (pending.phase === "bootstrap-debugger" && pending.route === "pcb") {
+      this.#parentDebuggerId = z.looseObject({ debuggerId: nativeToken }).parse(pending.result).debuggerId;
+    }
     if (pending.allocation) {
       const result = z.looseObject({ breakpointId: z.string().regex(/^[A-Za-z\d_.:-]{1,256}$/u) }).parse(pending.result);
       if (this.#allocations.has(result.breakpointId) || pending.command.sessionId === undefined) { throw fail("ALLOCATION_REPLY"); }
@@ -423,6 +444,16 @@ export class CurrentPcb209RatlineStartupChannel {
     }
     if (event.method === "Debugger.paused") {
       if (this.#paused.has(event.sessionId) || this.#resumeIssued.has(event.sessionId)) { throw fail("DUPLICATE_PAUSE"); }
+      if (!parent && !this.#childFirstPauseObserved) {
+        this.#childFirstPauseObserved = true;
+        // Missing or incompatible optional origin data preserves held-source
+        // Diagnostics but cannot authorize a lookup from a later event.
+        const external = externalStackSchema.safeParse(event.params["asyncStackTraceId"]);
+        if (event.params["reason"] === "instrumentation" && this.#childStarted &&
+            this.#realms.worker.sources === 0 && this.#realms.worker.resumes === 0 && external.success) {
+          this.#childExternalStack = Object.freeze(external.data);
+        }
+      }
       const kind: CurrentPcb209RatlineReplyKind = parent ? "pcb-bootstrap" : "child-bootstrap";
       if (event.params["reason"] === "instrumentation") { this.#paused.set(event.sessionId, kind); }
       else {
@@ -444,7 +475,9 @@ export class CurrentPcb209RatlineStartupChannel {
     if (!pending.replied) { return; }
     // An allocation ID remains useful cleanup evidence even when WriteFile's
     // Acknowledgment was lost. The poisoned owner prevents further arming.
-    if (!pending.written && !(pending.allocation && pending.writeFailed)) { return; }
+    // A failed non-allocation write has already rejected its waiter, but its
+    // Late original reply still closes the pending record without authority.
+    if (!pending.written && !pending.writeFailed) { return; }
     this.#pending.delete(pending.id);
     if (pending.settled) { return; }
     pending.settled = true;

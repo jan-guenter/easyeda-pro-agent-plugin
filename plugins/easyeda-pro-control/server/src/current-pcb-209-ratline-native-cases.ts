@@ -4,12 +4,13 @@ import { CURRENT_PCB_209_RATLINE_CREATION_PROFILES as CREATION, CURRENT_PCB_209_
 import { CURRENT_PCB_209_RATLINE_CAPTURE_PROFILES as CAPTURE, CURRENT_PCB_209_RATLINE_CAPTURE_GROUP as CAPTURE_GROUP } from "./current-pcb-209-ratline-capture-profile.ts";
 import { CURRENT_PCB_209_RATLINE_CAPTURE_PROGRAMS as PROGRAMS } from "./current-pcb-209-ratline-capture-program.ts";
 import type { CurrentPcb209RatlineBootstrapCommand } from "./current-pcb-209-ratline-bootstrap-owner.ts";
+import type { CurrentPcb209RatlineOriginCommand } from "./current-pcb-209-ratline-origin.ts";
 import { CURRENT_PCB_WORKER_STARTUP_ATTACH } from "./current-pcb-worker-startup-contract.ts";
 import type { CurrentPcb209RatlineRealmCommand } from "./current-pcb-209-ratline-event-dispatcher.ts";
 import { freezeDeep } from "./sqlite-inventory-core.ts";
 
 export type CurrentPcb209RatlineNativeRole = "pcb" | "worker";
-export type CurrentPcb209RatlineNativeCommand = CurrentPcb209RatlineRealmCommand | CurrentPcb209RatlineBootstrapCommand;
+export type CurrentPcb209RatlineNativeCommand = CurrentPcb209RatlineRealmCommand | CurrentPcb209RatlineBootstrapCommand | CurrentPcb209RatlineOriginCommand;
 export interface CurrentPcb209RatlineNativeCase {
   readonly role: CurrentPcb209RatlineNativeRole;
   readonly phase: string;
@@ -29,8 +30,13 @@ for (const role of ["pcb", "worker"] as const) {
   put("bootstrap-auto-attach", { method: "Target.setAutoAttach", sessionId, params: CURRENT_PCB_WORKER_STARTUP_ATTACH });
   put("bootstrap-runtime", { method: "Runtime.enable", sessionId, params: {} });
   put("bootstrap-debugger", { method: "Debugger.enable", sessionId, params: { maxScriptsCacheSize: 33_554_432 } });
+  put("bootstrap-async-depth", { method: "Debugger.setAsyncCallStackDepth", sessionId, params: { maxDepth: 1 } });
   put("bootstrap-instrument", { method: "Debugger.setInstrumentationBreakpoint", sessionId, params: { instrumentation: "beforeScriptExecution" } });
   put("bootstrap-source", { method: "Debugger.getScriptSource", sessionId, params: { scriptId } });
+  if (role === "pcb") {
+    put("origin-stack", { method: "Debugger.getStackTrace", sessionId,
+      params: { stackTraceId: { id: placeholder("stackTraceId"), debuggerId: placeholder("debuggerId") } } });
+  }
   for (const site of ["before", "after"] as const) {
     const point = CREATION[role][site];
     put(`creation-${site}`, { method: "Debugger.setBreakpoint", sessionId,

@@ -92,6 +92,7 @@ for (const [role, synchronousResume, failure] of [["pcb", false, null], ["worker
             }); }; loss(5);
           }
         },
+        observeOriginalFirstScript: (): Promise<void> => Promise.resolve(),
         assertOriginalTermination: fixture.transport.assertOriginalTermination,
         subscribe: events => { childEvents = events; return (): void => { childEvents = null; }; },
         request: command => {
@@ -100,7 +101,8 @@ for (const [role, synchronousResume, failure] of [["pcb", false, null], ["worker
           switch (command.method) {
             case "Target.setAutoAttach": case "Runtime.enable": { return Promise.resolve({}); }
             case "Debugger.removeBreakpoint": { childRemovals += 1; return failure === "failed-removal" ? Promise.reject(new Error("Original removal failed")) : Promise.resolve({}); }
-            case "Debugger.enable": { return Promise.resolve({ debuggerId: "child-debugger" }); }
+            case "Debugger.setAsyncCallStackDepth": { assert.equal(command.params.maxDepth, 1); return Promise.resolve({}); }
+        case "Debugger.enable": { return Promise.resolve({ debuggerId: "child-debugger" }); }
             case "Debugger.setInstrumentationBreakpoint": {
               assert.equal(armedChild, false); armedChild = true; allocating.resolve(null);
               return failure === "late-allocation" ? allocation.promise : Promise.resolve({ breakpointId: "child-instrument" });

@@ -80,6 +80,7 @@ async function fixture(options: Readonly<{ badReplay?: boolean; badDom?: boolean
         case "Target.setAutoAttach": { return Promise.resolve({}); }
         case "Runtime.enable": { emit(event("Runtime.executionContextCreated", { context: options.badReplay === true ? { ...uiContext, origin: "https://foreign" } : uiContext })); return Promise.resolve({}); }
         case "Debugger.enable": { emit(event("Debugger.scriptParsed", uiScript)); return Promise.resolve({ debuggerId: "debugger" }); }
+        case "Debugger.setAsyncCallStackDepth": { assert.equal(command.params.maxDepth, 1); return Promise.resolve({}); }
         case "Debugger.setInstrumentationBreakpoint": { return Promise.resolve({ breakpointId: "instrumentation" }); }
         case "Debugger.getScriptSource": { sources += 1; return Promise.resolve({ scriptSource: `synthetic:${String(roles[index])}` }); }
         case "Debugger.removeBreakpoint": { removals += 1; return Promise.resolve({}); }

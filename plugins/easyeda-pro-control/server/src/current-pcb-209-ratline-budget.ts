@@ -45,8 +45,10 @@ const requestClasses = freezeDeep({
   ancestry: { count: 3 * 4, frameBytes: mib },
   "pcb-source": { count: pcbSources.length, frameBytes: Math.max(...pcbSources.map(slot => slot.frameBytes)) },
   "child-source": { count: childSources.length, frameBytes: Math.max(...childSources.map(slot => slot.frameBytes)) },
-  "pcb-bootstrap": { count: 4 + pcbSources.length + 1, frameBytes: envelope },
-  "child-bootstrap": { count: 4 + childSources.length - 1 + 1, frameBytes: envelope },
+  "pcb-bootstrap": { count: 5 + pcbSources.length + 1, frameBytes: envelope },
+  "child-bootstrap": { count: 5 + childSources.length - 1 + 1, frameBytes: envelope },
+  // One original first-child external creation stack, resolved only in PCB.
+  "origin-stack": { count: 1, frameBytes: mib },
   // Two breakpoints; URL/name; two inventories; two object handles;
   // Before/after resumes; two removals; one guarded child start.
   "pcb-construction": { count: 2 + 2 + 2 + 2 + 2 + 2 + 1, frameBytes: mib },
@@ -84,11 +86,11 @@ const cleanupMilliseconds = 60 * 1000, normalMilliseconds = 60 * 60 * 1000;
 // Acknowledgement keeps its ordinary deadline. None extends the launch clock.
 const ancestryProofMilliseconds = 4 * ordinaryRequestMilliseconds;
 const sourceReleaseMilliseconds = ancestryProofMilliseconds + ordinaryRequestMilliseconds;
-const childArmMilliseconds = (4 + 1) * ordinaryRequestMilliseconds;
+const childArmMilliseconds = (5 + 1) * ordinaryRequestMilliseconds;
 const creationContinuationMilliseconds = (4 + 5 + 2) * ordinaryRequestMilliseconds;
 const capturePauseMilliseconds = requestClasses["pcb-capture"].count * ordinaryRequestMilliseconds;
 const captureWaitMilliseconds = childSources.reduce((sum, slot) => sum + slot.deadlineMilliseconds, 0) +
-  requestClasses["child-bootstrap"].count * ordinaryRequestMilliseconds + capturePauseMilliseconds;
+  (requestClasses["child-bootstrap"].count + requestClasses["origin-stack"].count) * ordinaryRequestMilliseconds + capturePauseMilliseconds;
 const normalPollLimit = Math.ceil(normalMilliseconds / pollIntervalMilliseconds) +
   2 * normalRequestLimit + Math.ceil(normalBytes / chunkBytes);
 const cleanupPollReserve = Math.ceil(cleanupMilliseconds / pollIntervalMilliseconds) +

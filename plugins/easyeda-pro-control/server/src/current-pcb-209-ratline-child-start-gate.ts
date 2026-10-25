@@ -79,7 +79,8 @@ export class CurrentPcb209RatlineChildStartGate {
     need(typeof phase === "string" && !phase.startsWith("bootstrap-"), "REALM_COMMAND");
     const { id: _validationId, ...command } = wire.command;
     need(command.method !== "Target.setAutoAttach" && command.method !== "Runtime.enable" && command.method !== "Debugger.enable" &&
-      command.method !== "Debugger.setInstrumentationBreakpoint" && command.method !== "Debugger.getScriptSource", "REALM_COMMAND");
+      command.method !== "Debugger.setInstrumentationBreakpoint" && command.method !== "Debugger.getScriptSource" &&
+      command.method !== "Debugger.setAsyncCallStackDepth" && command.method !== "Debugger.getStackTrace", "REALM_COMMAND");
     if (command.method === "Runtime.runIfWaitingForDebugger") {
       need(!this.#failed && !this.#startConsumed && this.#creation !== null && this.#packet !== null &&
         command.sessionId === this.#packet.childSessionId, "CHILD_HELD"); this.#startConsumed = true;

@@ -6,6 +6,8 @@
 import { createHash } from "node:crypto";
 import { types } from "node:util";
 import { z } from "zod";
+import { CURRENT_PCB_209_STARTUP_TIMING, currentPcbStartupMonotonicMs, currentPcbStartupWindowObservation } from "./current-pcb-209-worker-startup-timing.ts";
+import type { CurrentPcbStartupWindow, CurrentPcbStartupWindowObservation } from "./current-pcb-209-worker-startup-timing.ts";
 import { CURRENT_PCB_209_WORKER_STARTUP_SOURCE } from "./current-pcb-209-worker-startup-profile.ts";
 import { CURRENT_PCB_209_WORKER_BOOTSTRAP_ROLES, CURRENT_PCB_209_WORKER_PRELOAD_LOG, currentPcb209PreloadCopyCaller,
   currentPcb209StartupScriptRole, isCurrentPcb209BootstrapTargetUrl, qualifyCurrentPcb209PreloadCopyCreator,
@@ -16,6 +18,7 @@ import type { DiagnosticWorkerScriptProfile } from "./current-pcb-diagnostic-wor
 import { CurrentPcb209WorkerConstructionRunner, CurrentPcbWorkerConstructionRunner } from "./current-pcb-worker-construction-runner.ts";
 import type { CurrentPcb209WorkerConstructionPacket, CurrentPcbWorkerConstructionPacket } from "./current-pcb-worker-construction-runner.ts";
 import type { CurrentPcbWorkerConstructionCommand, CurrentPcbWorkerConstructionTransport } from "./current-pcb-worker-construction-contract.ts";
+// oxlint-disable-next-line import/max-dependencies -- Fixed timing data is separate from the original transport and source contracts.
 import { CURRENT_PCB_WORKER_STARTUP_ATTACH } from "./current-pcb-worker-startup-contract.ts";
 import type { CurrentPcbWorkerStartupCommand, CurrentPcbWorkerStartupDependency, CurrentPcbWorkerStartupEvent } from "./current-pcb-worker-startup-contract.ts";
 
@@ -71,7 +74,13 @@ type UnhandledEvent = Readonly<{ methodSha256: string; methodBytes: number;
   bootstrapStage: StartupRole | null; sourceQualified: boolean; constructionStarted: boolean; constructionSubscribed: boolean;
   lastCommand: CurrentPcbWorkerStartupCommand["method"] | null; requestCount: number }>;
 type EventFailure = Readonly<{ method: EventMethod; reason: EventReason; target?: RejectedTarget; script?: RejectedScript;
-  unhandled?: UnhandledEvent }>;
+  unhandled?: UnhandledEvent; priorFailureCode?: string }>;
+type ResumeOrigin = "normal" | "cleanup";
+type StartupFailure = Readonly<{ code: string; step: string; bootstrapStage: StartupRole | null;
+  window: CurrentPcbStartupWindowObservation | null; sourceQualified: boolean; resumeOrigin: ResumeOrigin | null;
+  resumeSeen: boolean; lastCommand: CurrentPcbWorkerStartupCommand["method"] | null; requestCount: number;
+  constructionFailure: ReturnType<CurrentPcbWorkerConstructionRunner["status"]>["firstFailure"];
+  constructionProgress: ReturnType<CurrentPcbWorkerConstructionRunner["status"]>["progress"] | null }>;
 type StartupRole = typeof CURRENT_PCB_209_WORKER_BOOTSTRAP_ROLES[number];
 interface BootstrapStage {
   readonly role: StartupRole;
@@ -82,6 +91,8 @@ interface BootstrapStage {
   sourceQualified: boolean;
   resume: Promise<void> | null;
   resumeSeen: boolean;
+  resumeOrigin: ResumeOrigin | null;
+  window: CurrentPcbStartupWindow | null;
   watchdog: ReturnType<typeof setTimeout> | undefined;
 }
 type Subscriber = Parameters<CurrentPcbWorkerConstructionTransport["subscribe"]>[0];
@@ -166,6 +177,8 @@ class CurrentPcbWorkerStartupTransportCore<Packet extends ConstructionPacket, Ru
   #subscriber: Subscriber | null = null;
   #unsubscribe: (() => void) | null = null;
   #failure: Error | null = null;
+  #firstFailure: StartupFailure | null = null;
+  #step = "not-started";
   #started = false;
   #settled = false;
   #sourceQualified = false;
@@ -189,7 +202,7 @@ class CurrentPcbWorkerStartupTransportCore<Packet extends ConstructionPacket, Ru
     this.#bootstrap209 = bootstrap209;
     this.#bootstrapStages = bootstrap209 ? CURRENT_PCB_209_WORKER_BOOTSTRAP_ROLES.map(role => ({ role,
       paused: Promise.withResolvers<unknown>(), resumed: Promise.withResolvers<null>(), script: null,
-      pauseSeen: false, sourceQualified: false, resume: null, resumeSeen: false, watchdog: undefined })) : [];
+      pauseSeen: false, sourceQualified: false, resume: null, resumeSeen: false, resumeOrigin: null, window: null, watchdog: undefined })) : [];
     for (const stage of this.#bootstrapStages) { void observe(stage.paused.promise); void observe(stage.resumed.promise); }
     void observe(this.#attached.promise); void observe(this.#armed.promise);
     void observe(this.#initialPaused.promise); void observe(this.#initialResumed.promise);
@@ -199,9 +212,9 @@ class CurrentPcbWorkerStartupTransportCore<Packet extends ConstructionPacket, Ru
     unresolvedInstrumentation: boolean; attachedWorkers: number; released: boolean;
     existingWorkersBound: boolean; existingWorkersObserved: number; existingWorkersAttached: number; firstEventFailure: EventFailure | null;
     bootstrapStages: readonly Readonly<{ role: StartupRole; parsed: boolean; pauseSeen: boolean;
-      sourceQualified: boolean; resumeAttempted: boolean; resumeSeen: boolean }>[]; preloadLogSeen: boolean;
-    workerScriptLoadedObserved: boolean; requests: number }> {
-    return Object.freeze({ started: this.#started, settled: this.#settled, failed: this.#failure !== null,
+      sourceQualified: boolean; resumeAttempted: boolean; resumeSeen: boolean; resumeOrigin: ResumeOrigin | null }>[]; preloadLogSeen: boolean;
+    workerScriptLoadedObserved: boolean; requests: number; firstFailure: StartupFailure | null }> {
+    return Object.freeze({ firstFailure: this.#firstFailure, started: this.#started, settled: this.#settled, failed: this.#failure !== null,
       sourceQualified: this.#sourceQualified, initialPauseSeen: this.#initialPauseSeen,
       initialResumeAttempted: this.#initialResume !== null || this.#bootstrapStages.some(stage => stage.resume !== null), initialResumeSeen: this.#initialResumeSeen,
       unresolvedInstrumentation: this.#instrumentationUncertain || this.#instrumentation !== null && !this.#instrumentationRemoved,
@@ -211,7 +224,7 @@ class CurrentPcbWorkerStartupTransportCore<Packet extends ConstructionPacket, Ru
       workerScriptLoadedObserved: this.#workerScriptLoadedObserved,
       bootstrapStages: Object.freeze(this.#bootstrapStages.map(stage => Object.freeze({ role: stage.role,
         parsed: stage.script !== null, pauseSeen: stage.pauseSeen, sourceQualified: stage.sourceQualified,
-        resumeAttempted: stage.resume !== null, resumeSeen: stage.resumeSeen }))) });
+        resumeAttempted: stage.resume !== null, resumeSeen: stage.resumeSeen, resumeOrigin: stage.resumeOrigin }))) });
   }
   /** The private opener supplies its checkpoint-selected project and original
    * UI window before auto-attach. This title check is only an early selector;
@@ -256,7 +269,16 @@ class CurrentPcbWorkerStartupTransportCore<Packet extends ConstructionPacket, Ru
     } catch (error) { this.#poison("EXISTING_WORKERS_INVENTORY"); throw error; }
   }
   #poison(code: string): void {
-    this.#failure ??= failure(code); this.#attached.reject(this.#failure); this.#initialPaused.reject(this.#failure);
+    if (this.#failure === null) {
+      const stage = this.#bootstrapStages.find(value => value.pauseSeen && !value.resumeSeen);
+      this.#firstFailure = Object.freeze({ code, step: this.#step, bootstrapStage: stage?.role ?? null,
+        window: stage?.window === null || stage?.window === undefined ? null : currentPcbStartupWindowObservation(stage.window, currentPcbStartupMonotonicMs()),
+        sourceQualified: stage?.sourceQualified ?? this.#sourceQualified, resumeOrigin: stage?.resumeOrigin ?? null,
+        resumeSeen: stage?.resumeSeen ?? this.#initialResumeSeen, lastCommand: this.#lastCommand, requestCount: this.#requests,
+        constructionFailure: this.#runner?.status().firstFailure ?? null, constructionProgress: this.#runner?.status().progress ?? null });
+      this.#failure = failure(code);
+    }
+    this.#attached.reject(this.#failure); this.#initialPaused.reject(this.#failure);
     this.#armed.reject(this.#failure);
     for (const stage of this.#bootstrapStages) { stage.paused.reject(this.#failure); }
     this.#subscriber?.lost();
@@ -271,9 +293,18 @@ class CurrentPcbWorkerStartupTransportCore<Packet extends ConstructionPacket, Ru
   #sameDependency(): void {
     if (members(this.#dependency).some((value, index) => value !== this.#originalMembers[index])) { throw failure("DEPENDENCY_CHANGED"); }
   }
+  #checkWindow(): void {
+    const stage = this.#bootstrapStages.find(value => value.pauseSeen && !value.resumeSeen);
+    const window = stage?.window;
+    if (window !== undefined && window !== null && currentPcbStartupMonotonicMs() - window.startedAtMs >= window.limitMs) {
+      this.#poison("INITIAL_PAUSE_DEADLINE");
+    }
+  }
   async #current(): Promise<void> {
+    this.#checkWindow();
     if (this.#failure !== null || this.#released) { throw this.#failure ?? failure("RELEASED"); }
     this.#sameDependency(); await bounded(this.#assertOwner.call(this.#dependency)); this.#sameDependency();
+    this.#checkWindow();
     if (this.#failure !== null || this.#released) { throw this.#failure ?? failure("OWNER_CHANGED"); }
   }
   async #request(command: CurrentPcbWorkerStartupCommand, cleanup = false): Promise<unknown> {
@@ -318,6 +349,7 @@ class CurrentPcbWorkerStartupTransportCore<Packet extends ConstructionPacket, Ru
         script => { rejectedScript = this.#bootstrap209 ? this.#scriptMetadata(script) : null; });
     } catch (error) {
       this.#firstEventFailure ??= Object.freeze({ method, reason: eventReason(error),
+        ...(this.#firstFailure === null ? {} : { priorFailureCode: this.#firstFailure.code }),
         ...(rejectedTarget === null ? {} : { target: rejectedTarget }),
         ...(rejectedScript === null ? {} : { script: rejectedScript }),
         ...(unhandled === null ? {} : { unhandled }) }); this.#poison("EVENT");
@@ -495,13 +527,19 @@ class CurrentPcbWorkerStartupTransportCore<Packet extends ConstructionPacket, Ru
     const stage = this.#bootstrapStages[this.#bootstrapIndex];
     if (stage === undefined || stage.pauseSeen) { throw failure("UNEXPECTED_PAUSE"); }
     stage.pauseSeen = true; this.#initialPauseSeen = true;
-    stage.watchdog = setTimeout(() => { this.#poison("INITIAL_PAUSE_DEADLINE"); void observe(this.cleanup()); }, PAUSE_MS);
+    const timing = CURRENT_PCB_209_STARTUP_TIMING;
+    let limitMs = timing.sourcePauseMs;
+    if (stage.role === "bootstrap") { limitMs = timing.bootstrapPauseMs; }
+    else if (stage.role === "project") { limitMs = timing.projectPauseMs; }
+    stage.window = Object.freeze({ startedAtMs: currentPcbStartupMonotonicMs(), limitMs });
+    stage.watchdog = setTimeout(() => { this.#poison("INITIAL_PAUSE_DEADLINE"); void observe(this.cleanup()); }, limitMs);
     stage.paused.resolve(params);
     if (this.#failure !== null) { void observe(this.#cleanupInitialPause()); }
   }
   #bootstrapResumed(): void {
     const stage = this.#bootstrapStages[this.#bootstrapIndex];
     if (stage === undefined || stage.resume === null || !stage.pauseSeen || stage.resumeSeen) { throw failure("UNEXPECTED_RESUME"); }
+    this.#checkWindow();
     stage.resumeSeen = true; clearTimeout(stage.watchdog); stage.resumed.resolve(null); this.#bootstrapIndex += 1;
     if (this.#bootstrapIndex === this.#bootstrapStages.length) { this.#initialResumeSeen = true; }
   }
@@ -549,10 +587,10 @@ class CurrentPcbWorkerStartupTransportCore<Packet extends ConstructionPacket, Ru
     })();
     return this.#removeInstrumentation;
   }
-  #resumeInitialPause(): Promise<void> {
+  #resumeInitialPause(origin: ResumeOrigin = "normal"): Promise<void> {
     if (this.#bootstrap209) {
       const stage = this.#bootstrapStages.find(value => value.pauseSeen && !value.resumeSeen);
-      return stage === undefined ? Promise.resolve() : this.#resumeBootstrapStage(stage);
+      return stage === undefined ? Promise.resolve() : this.#resumeBootstrapStage(stage, origin);
     }
     if (this.#initialResume !== null) { return this.#initialResume; }
     const worker = this.#worker; if (worker === null || !this.#initialPauseSeen) { return Promise.resolve(); }
@@ -569,14 +607,15 @@ class CurrentPcbWorkerStartupTransportCore<Packet extends ConstructionPacket, Ru
     })();
     return work;
   }
-  #resumeBootstrapStage(stage: BootstrapStage): Promise<void> {
+  #resumeBootstrapStage(stage: BootstrapStage, origin: ResumeOrigin = "normal"): Promise<void> {
     if (stage.resume !== null) { return stage.resume; }
     const worker = this.#worker;
     if (worker === null || !stage.pauseSeen || stage.resumeSeen) { return Promise.reject(failure("INITIAL_PAUSE_IDENTITY")); }
     // Publish each original attempt before dispatch. Resumed and the following
     // Script's parsed/paused events can arrive before this command's reply.
     const completion = Promise.withResolvers<null>(), work = withoutValue(completion.promise);
-    stage.resume = work;
+    if (origin === "normal") { this.#checkWindow(); if (this.#failure !== null) { return Promise.reject(this.#failure); } }
+    stage.resumeOrigin = origin; stage.resume = work;
     void (async (): Promise<void> => {
       try {
         empty.parse(captureCurrentPcbStringClockReply(await this.#request({ method: "Debugger.resume", params: {},
@@ -589,7 +628,7 @@ class CurrentPcbWorkerStartupTransportCore<Packet extends ConstructionPacket, Ru
   async #cleanupInitialPause(): Promise<void> {
     const failures: unknown[] = [];
     try { await this.#removeInitialBreakpoint(); } catch (error) { failures.push(error); }
-    try { await this.#resumeInitialPause(); } catch (error) { failures.push(error); }
+    try { await this.#resumeInitialPause("cleanup"); } catch (error) { failures.push(error); }
     if (failures.length > 0) { throw new AggregateError(failures, "PCB_WORKER_STARTUP_PAUSE_CLEANUP"); }
   }
   async #armInstrumentation(worker: Worker): Promise<void> {
@@ -605,7 +644,7 @@ class CurrentPcbWorkerStartupTransportCore<Packet extends ConstructionPacket, Ru
       if (this.#failure !== null) {
         void observe((async (): Promise<void> => {
           await this.#removeInitialBreakpoint(); await this.#runWaiting(worker);
-          if (this.#initialPauseSeen && !this.#initialResumeSeen) { await this.#resumeInitialPause(); }
+          if (this.#initialPauseSeen && !this.#initialResumeSeen) { await this.#resumeInitialPause("cleanup"); }
         })());
       }
     })();
@@ -633,7 +672,9 @@ class CurrentPcbWorkerStartupTransportCore<Packet extends ConstructionPacket, Ru
   }
   async #qualifyBootstrapStages(worker: Worker): Promise<z.infer<typeof scriptSchema>> {
     for (const stage of this.#bootstrapStages) {
+      this.#step = "source-pause-wait";
       const paused = initialPauseSchema.parse(await bounded(stage.paused.promise, WAIT_MS));
+      this.#step = "source-identity";
       const context = this.#context, script = stage.script;
       if (context === null || script === null || script.executionContextId !== context.id ||
           paused.data.scriptId !== script.scriptId || paused.data["url"] !== script.url ||
@@ -646,16 +687,18 @@ class CurrentPcbWorkerStartupTransportCore<Packet extends ConstructionPacket, Ru
         if (preload === null || preload === undefined) { throw failure("INITIAL_PAUSE_IDENTITY"); }
         qualifyCurrentPcb209PreloadCopyPause(stage.role, script.scriptId, preload.scriptId, paused);
       }
-      await this.#current();
+      this.#step = "source-owner-before"; await this.#current();
       if (this.#requests >= 224) { this.#poison("REQUEST_BUDGET"); throw failure("REQUEST_BUDGET"); }
       this.#requests += 1;
       // Source replies exceed the small event capture bound. Qualify the own
       // Data string before any following awaited owner reproof.
+      this.#step = "source-read";
       qualifyCurrentPcb209StartupScriptSource(stage.role, await bounded(this.#sendOriginal(
         { method: "Debugger.getScriptSource", params: { scriptId: script.scriptId }, sessionId: worker.sessionId })));
-      stage.sourceQualified = true; await this.#current();
+      stage.sourceQualified = true; this.#step = "source-owner-after"; await this.#current();
       if (stage.role === "project") { this.#sourceQualified = true; return script; }
-      await this.#resumeBootstrapStage(stage); await this.#current();
+      this.#step = "source-resume"; await this.#resumeBootstrapStage(stage);
+      this.#step = "source-resume-owner-after"; await this.#current();
     }
     throw failure("INITIAL_PAUSE_IDENTITY");
   }
@@ -693,8 +736,12 @@ class CurrentPcbWorkerStartupTransportCore<Packet extends ConstructionPacket, Ru
         },
       });
       const runner = this.#createRunner(transport); this.#runner = runner;
+      this.#step = "construction-arming";
       const captured = runner.capture(); this.#constructionCapture = captured; void observe(captured); await runner.whenArmed();
-      await this.#removeInitialBreakpoint(); await this.#current(); await this.#resumeInitialPause();
+      this.#step = "instrumentation-removal"; await this.#removeInitialBreakpoint();
+      this.#step = "project-resume-owner"; await this.#current();
+      this.#step = "project-resume"; await this.#resumeInitialPause();
+      this.#step = "construction-capture";
       const packet = await captured; await this.#current(); return packet;
     } catch (error) {
       this.#poison("CAPTURE");
@@ -736,7 +783,7 @@ class CurrentPcbWorkerStartupTransportCore<Packet extends ConstructionPacket, Ru
         try { await this.#runWaiting(worker); } catch (error) { failures.push(error); }
       }
       if (this.#initialPauseSeen && !this.#initialResumeSeen) {
-        try { await this.#resumeInitialPause(); } catch (error) { failures.push(error); }
+        try { await this.#resumeInitialPause("cleanup"); } catch (error) { failures.push(error); }
       }
       if (failures.length > 0) { throw new AggregateError(failures, "PCB_WORKER_STARTUP_CLEANUP"); }
   }

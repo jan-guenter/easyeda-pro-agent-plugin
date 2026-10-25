@@ -37,6 +37,7 @@ current wrapper/channel relations and actor/local-Date observations. It does
 not establish PCB-worker completion or enable writers.
 Its separate [ratline diagnostic purpose](plugins/easyeda-pro-control/skills/easyeda-pro-control/references/current-pcb209-ratline-held-import.md)
 observes PCB construction and holds the first child's qualified source import.
+It also records native creation-stack evidence for exact constructor comparison.
 It retains one process owner, source leases and cumulative limits; connected
 validation, independent Worker-to-target identity and later startup completion
 remain pending.

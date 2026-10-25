@@ -9,8 +9,12 @@ import { CURRENT_PCB_WORKER_STARTUP_ATTACH } from "../src/current-pcb-worker-sta
 import { currentPcbWorkerStartupNativeParentCases } from "../src/current-pcb-worker-startup-native.ts";
 import { CURRENT_PCB_DIAGNOSTIC_PCB_OPENING_FUNCTION } from "../src/current-pcb-diagnostic-pcb-opening.ts";
 import { CURRENT_PCB_209_RATLINE_NATIVE_CASES } from "../src/current-pcb-209-ratline-native-cases.ts";
+import type { CurrentPcb209RatlineOriginCommand } from "../src/current-pcb-209-ratline-origin.ts";
 
 type Send = Readonly<Record<string, unknown>>;
+function ordinaryReply(request: Send): Readonly<Record<string, unknown>> {
+  return request["method"] === "Debugger.enable" ? { debuggerId: `debugger-${String(request["role"])}` } : {};
+}
 async function fixture(context: TestContext): Promise<Readonly<{
   channel: CurrentPcb209RatlineStartupChannel; dependency: Awaited<ReturnType<CurrentPcb209RatlineStartupChannel["start"]>>;
   budget: CurrentPcb209RatlineBudget; aborted: Promise<null>; requests: Send[]; frame: (value: unknown) => void;
@@ -42,7 +46,7 @@ async function fixture(context: TestContext): Promise<Readonly<{
         frame({ method: "Target.attachedToTarget", sessionId: "parent-session", params: { sessionId: "project-session", waitingForDebugger: true,
           targetInfo: { targetId: "project-worker", type: "worker", attached: true, title: "project", url: "file:///project-worker.js" } } });
       }
-      const result = request["method"] === "Debugger.setInstrumentationBreakpoint" ? { breakpointId: `instrument-${String(request["role"])}` } : {};
+      const result = request["method"] === "Debugger.setInstrumentationBreakpoint" ? { breakpointId: `instrument-${String(request["role"])}` } : ordinaryReply(request);
       frame({ id, sessionId: request["sessionId"], result }); return Promise.resolve({ written: true });
     },
   };
@@ -69,13 +73,14 @@ async function arm(dependency: CurrentPcb209RatlineStartupDependency, role: "pcb
   await dependency.request(role, { method: "Target.setAutoAttach", sessionId, params: CURRENT_PCB_WORKER_STARTUP_ATTACH });
   await dependency.request(role, { method: "Runtime.enable", sessionId, params: {} });
   await dependency.request(role, { method: "Debugger.enable", sessionId, params: { maxScriptsCacheSize: 33_554_432 } });
+  await dependency.request(role, { method: "Debugger.setAsyncCallStackDepth", sessionId, params: { maxDepth: 1 } });
   await dependency.request(role, { method: "Debugger.setInstrumentationBreakpoint", sessionId, params: { instrumentation: "beforeScriptExecution" } });
 }
 function event(f: Fixture, sessionId: string, method: string, params: Record<string, unknown>): void { f.frame({ method, sessionId, params }); }
 async function pcb(f: Fixture, dependency: CurrentPcb209RatlineStartupDependency): Promise<void> {
   await arm(dependency, "pcb"); await dependency.requestParent(opening(true, "open-document"));
   f.state.onSend = (request): Promise<unknown> => {
-    f.frame({ id: request["requestId"], sessionId: request["sessionId"], result: {} });
+    f.frame({ id: request["requestId"], sessionId: request["sessionId"], result: ordinaryReply(request) });
     if (request["method"] === "Debugger.resume") { event(f, "parent-session", "Debugger.resumed", {}); }
     return Promise.resolve({ written: true });
   };
@@ -89,14 +94,67 @@ async function pcb(f: Fixture, dependency: CurrentPcb209RatlineStartupDependency
     targetInfo: { targetId: "ratline-worker", type: "worker", attached: true, title: "pcb-ratline-worker", url: "https://client/editor?entry=pcb-ratline-worker.js" } });
   await dependency.requestParent({ method: "Page.getFrameTree", sessionId: "parent-session", params: {} });
 }
+const originalStack = { id: "original-external-stack", debuggerId: "debugger-pcb" } as const;
+function stackCommand(stackTraceId: Readonly<{ id: string; debuggerId: string }> = originalStack): CurrentPcb209RatlineOriginCommand {
+  return { method: "Debugger.getStackTrace", sessionId: "parent-session", params: { stackTraceId } } as const;
+}
+async function firstChild(f: Fixture, dependency: CurrentPcb209RatlineStartupDependency, external: unknown): Promise<void> {
+  await pcb(f, dependency); await arm(dependency, "worker");
+  await dependency.request("pcb", { method: "Runtime.runIfWaitingForDebugger", sessionId: "ratline-session", params: {} });
+  event(f, "ratline-session", "Debugger.paused", { reason: "instrumentation", hitBreakpoints: [], ...(external === undefined ? {} : { asyncStackTraceId: external }) });
+  // Drain the actual first pause before issuing its source read, as the real
+  // Bootstrap observer does; this is not a caller assertion of pause state.
+  await dependency.requestParent({ method: "Page.getFrameTree", sessionId: "parent-session", params: {} });
+  await dependency.request("worker", { method: "Debugger.getScriptSource", sessionId: "ratline-session", params: { scriptId: "child-original-bootstrap" } });
+}
+void test("origin lookup requires the first original child pause and exact retained PCB debugger then consumes once", async context => {
+  const f = await fixture(context); const dependency = await prepare(f); await firstChild(f, dependency, originalStack);
+  const before = f.requests.length;
+  for (const command of [stackCommand({ ...originalStack, id: "foreign" }), stackCommand({ ...originalStack, debuggerId: "foreign" }),
+    { ...stackCommand(), sessionId: "ratline-session" }]) {
+    await assert.rejects(dependency.request("pcb", command), /ORIGIN_STACK|RATLINE_SESSION/u);
+  }
+  await assert.rejects(dependency.request("worker", { ...stackCommand(), sessionId: "ratline-session" }), /NATIVE_WIRE/u);
+  assert.equal(f.requests.length, before);
+  await dependency.request("pcb", stackCommand());
+  const sent = f.requests.at(-1);
+  assert.equal(sent?.["phase"], "origin-stack"); assert.equal(sent?.["stackTraceId"], originalStack.id);
+  assert.equal(sent?.["debuggerId"], originalStack.debuggerId); assert.equal(f.budget.remainingRequests("origin-stack"), 0);
+  await assert.rejects(dependency.request("pcb", stackCommand()), /ORIGIN_STACK/u);
+  assert.equal(f.requests.length, before + 1);
+});
+void test("missing or foreign first-pause origin cannot authorize a lookup or spend its request", async context => {
+  for (const external of [undefined, { id: originalStack.id }, { ...originalStack, debuggerId: "foreign" }, { ...originalStack, id: "bad\n" }]) {
+    const f = await fixture(context); const dependency = await prepare(f); await firstChild(f, dependency, external);
+    const before = f.requests.length;
+    await assert.rejects(dependency.request("pcb", stackCommand()), /ORIGIN_STACK/u);
+    assert.equal(f.requests.length, before); assert.equal(f.budget.remainingRequests("origin-stack"), 1);
+    assert.equal(f.channel.status().failed, false);
+    f.state.terminated = true; await f.channel.releaseAfterTermination();
+  }
+});
+void test("uncertain origin write never replays and its late reply stays accounted during cleanup", async context => {
+  const f = await fixture(context); const dependency = await prepare(f); await firstChild(f, dependency, originalStack);
+  let issued: Send | null = null;
+  f.state.onSend = (request): Promise<unknown> => { issued = request; return Promise.reject(new Error("Lost native origin acknowledgment")); };
+  await assert.rejects(dependency.request("pcb", stackCommand()), /WRITE/u);
+  assert.equal(f.channel.status().pendingReplies, 1); assert.equal(f.budget.remainingRequests("origin-stack"), 0);
+  await f.channel.beginCleanup(); const before = f.requests.length;
+  await assert.rejects(dependency.request("pcb", stackCommand()), /CLEANUP_COMMAND/u);
+  assert.equal(f.requests.length, before); assert.ok(issued !== null);
+  f.frame({ id: issued["requestId"], sessionId: "parent-session", result: { stackTrace: { description: "late" } } });
+  f.state.onSend = null;
+  await dependency.request("worker", { method: "Debugger.removeBreakpoint", sessionId: "ratline-session", params: { breakpointId: "instrument-worker" } });
+  assert.equal(f.channel.status().pendingReplies, 0); assert.equal(f.budget.snapshot().pendingReplies, 0);
+});
 void test("ratline channel retains launch IDs and ledger while transferring all parent events once and retaining project-worker routing", async context => {
   const f = await fixture(context); const dependency = await prepare(f);
   event(f, "parent-session", "Runtime.consoleAPICalled", { executionContextId: 1 });
   event(f, "project-session", "Runtime.consoleAPICalled", { executionContextId: 2 });
   await arm(dependency, "pcb");
   assert.equal(f.state.parentEvents, 0); assert.equal(f.state.startupEvents, 2); assert.equal(f.state.ratlineEvents, 1);
-  assert.equal(f.budget.snapshot().prefixRequests, 6); assert.equal(f.budget.snapshot().requests, 11);
-  assert.deepEqual(f.requests.filter(value => typeof value["requestId"] === "number").map(value => value["requestId"]), [4, 5, 6, 7, 8, 9, 10, 11]);
+  assert.equal(f.budget.snapshot().prefixRequests, 6); assert.equal(f.budget.snapshot().requests, 12);
+  assert.deepEqual(f.requests.filter(value => typeof value["requestId"] === "number").map(value => value["requestId"]), [4, 5, 6, 7, 8, 9, 10, 11, 12]);
   await assert.rejects(f.channel.claimRatlineRouting(), /ROUTING_STATE/u);
   assert.throws(() => f.channel.classifyPending(11), /PENDING_CLASS/u);
 });
@@ -104,7 +162,7 @@ void test("ratline channel reaches seven original child source replies but refus
   const f = await fixture(context); const dependency = await prepare(f); await pcb(f, dependency); await arm(dependency, "worker");
   await dependency.request("pcb", { method: "Runtime.runIfWaitingForDebugger", sessionId: "ratline-session", params: {} });
   f.state.onSend = (request): Promise<unknown> => {
-    f.frame({ id: request["requestId"], sessionId: request["sessionId"], result: {} });
+    f.frame({ id: request["requestId"], sessionId: request["sessionId"], result: ordinaryReply(request) });
     if (request["method"] === "Debugger.resume") { event(f, "ratline-session", "Debugger.resumed", {}); }
     return Promise.resolve({ written: true });
   };
@@ -124,7 +182,7 @@ void test("ambiguous native allocation acknowledgment retains the original late 
   const allocated = Promise.withResolvers<Send>(), delayed = Promise.withResolvers<unknown>();
   f.state.onSend = (request): Promise<unknown> => {
     if (request["method"] === "Debugger.setInstrumentationBreakpoint") { allocated.resolve(request); return delayed.promise; }
-    f.frame({ id: request["requestId"], sessionId: request["sessionId"], result: {} }); return Promise.resolve({ written: true });
+    f.frame({ id: request["requestId"], sessionId: request["sessionId"], result: ordinaryReply(request) }); return Promise.resolve({ written: true });
   };
   const armed = arm(dependency, "pcb");
   const retained = await allocated.promise;
@@ -164,7 +222,7 @@ void test("original process termination settles retained allocation before chann
   const f = await fixture(context); const dependency = await prepare(f); const allocated = Promise.withResolvers<null>();
   f.state.onSend = (request): Promise<unknown> => {
     if (request["method"] === "Debugger.setInstrumentationBreakpoint") { allocated.resolve(null); }
-    else { f.frame({ id: request["requestId"], sessionId: request["sessionId"], result: {} }); }
+    else { f.frame({ id: request["requestId"], sessionId: request["sessionId"], result: ordinaryReply(request) }); }
     return Promise.resolve({ written: true });
   };
   const pending = arm(dependency, "pcb"), refusal = assert.rejects(pending, /TERMINATED/u);
@@ -218,7 +276,7 @@ void test("queued normal work cannot wait on its own later native abort", { time
   await f.dependency.request({ method: "Target.setAutoAttach", sessionId: "parent-session", params: CURRENT_PCB_WORKER_STARTUP_ATTACH });
   const acknowledgment = Promise.withResolvers<unknown>(), issued = Promise.withResolvers<null>();
   f.state.onSend = (request): Promise<unknown> => {
-    f.frame({ id: request["requestId"], sessionId: request["sessionId"], result: {} }); issued.resolve(null); return acknowledgment.promise;
+    f.frame({ id: request["requestId"], sessionId: request["sessionId"], result: ordinaryReply(request) }); issued.resolve(null); return acknowledgment.promise;
   };
   const first = assert.rejects(f.dependency.request({ method: "Runtime.enable", sessionId: "project-session", params: {} }), /CLEANUP/u);
   await issued.promise;

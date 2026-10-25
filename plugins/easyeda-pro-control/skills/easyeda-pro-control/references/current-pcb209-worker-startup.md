@@ -104,6 +104,18 @@ Do not disable threading or use another launch purpose to evade that result.
 
 After a timeout or lost reply, use `inspect`; do not repeat capture or the
 consumed observation. Retain the original process owner for supported cleanup.
+`firstFailure` preserves the first error's stage, substep, elapsed/allowed
+pause time and construction progress before cleanup. A later
+`firstEventFailure.priorFailureCode` identifies an event rejected after an
+existing failure; do not treat it as the original cause. Per-stage
+`resumeOrigin` distinguishes normal and cleanup resume attempts. A source marked
+qualified and resumed can still belong to a failed capture.
+
+The 209 pause windows account for serial owner checks, source reads and
+breakpoint allocation. They remain fixed absolute windows. Individual request
+limits, overall launch limits and the separate project-open deadline still
+apply; these windows do not extend them. The 206 pause limits are unchanged.
+
 Phase diagnostics distinguish bootstrap, preload, four helper copies and the
 project script. Failed target and script events retain bounded classifications
 and digests rather than private URLs or source text. Unsupported events retain

@@ -34,7 +34,9 @@ void test("native ratline activation and cleanup remain separate from old purpos
   assert.ok(source.includes("worker-startup-ratline-abort"));
   assert.ok(source.includes("$owner.AbortWorkerStartupRatline(); $result=@{aborted=$true}"));
   assert.ok(source.includes("ratlineCleanup || !ratlineChildStarted || ratlineChildResumes>=6"));
-  assert.ok(source.includes("ratlineChildArm!=4 || ratlineChildStarted || ratlineCleanup"));
+  assert.ok(source.includes("ratlineChildArm!=5 || ratlineChildStarted || ratlineCleanup"));
+  assert.ok(source.includes('ratlineOriginConsumed || ratlinePcbSources!=29 || ratlineChildArm!=5 || !ratlineChildStarted || ratlineChildSources!=1 || ratlineChildResumes!=0'));
+  assert.ok(source.includes('ratlineOriginConsumed=true;return;'));
   assert.ok(source.includes("ratlineChildSession!=null && sessionId==ratlineChildSession)throw Error(\"ratline-child-prefix\")"));
   assert.ok(source.includes('throw Error("ratline-terminal-scope")'));
   assert.ok(source.includes("if(!error.Message.StartsWith(\"pcb-ratline209-\",StringComparison.Ordinal))throw;throw Error(\"ratline-protocol\")"));

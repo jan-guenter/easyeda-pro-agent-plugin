@@ -26,6 +26,7 @@ const urls = [BOOTSTRAP_URL, bootstrap.CURRENT_PCB_209_WORKER_PRELOAD_URL, "", "
 const path = new URL("../../src/current-pcb-worker-startup-transport.ts", import.meta.url);
 const actualRequire = createRequire(path);
 export interface BootstrapFixtureOptions {
+  readonly timing?: Readonly<{ now: () => number; beforeSource?: () => void; beforeConstructionArmed?: () => void }>;
   readonly badSource?: CurrentPcb209StartupScriptRole;
   readonly ownerLossAt?: CurrentPcb209StartupScriptRole;
   readonly loseResumeReply?: number;
@@ -60,7 +61,7 @@ export async function bootstrapLifecycleFixture(options: BootstrapFixtureOptions
       assert.deepEqual(qualified, ["bootstrap", "preload", "preload-copy-1", "preload-copy-2", "preload-copy-3", "preload-copy-4", "project"]);
       assert.equal(this.#transport.scriptId, "project-script"); return capture.promise;
     }
-    public whenArmed(): Promise<void> { return this.#transport.assertOriginalPinnedWorker(); }
+    public whenArmed(): Promise<void> { options.timing?.beforeConstructionArmed?.(); return this.#transport.assertOriginalPinnedWorker(); }
     public requireOriginal(value: unknown): Promise<void> { assert.equal(value, packet); return this.#transport.assertOriginalPinnedWorker(); }
     public status(): Readonly<{ unresolvedBreakpoints: false }> { assert.equal(this.#transport.scriptId, "project-script"); return { unresolvedBreakpoints: false }; }
   }
@@ -68,6 +69,9 @@ export async function bootstrapLifecycleFixture(options: BootstrapFixtureOptions
   const evaluate: unknown = runInThisContext(`(function(require,module,exports){${program}\n})`);
   assert.ok(typeof evaluate === "function");
   const load = (specifier: string): unknown => {
+    if (specifier === "./current-pcb-209-worker-startup-timing.ts" && options.timing !== undefined) {
+      return { ...z.record(z.string(), z.unknown()).parse(actualRequire(specifier)), currentPcbStartupMonotonicMs: options.timing.now };
+    }
     if (specifier === "./current-pcb-209-worker-bootstrap-source.ts") {
       return { ...bootstrap, qualifyCurrentPcb209StartupScriptSource: (role: string, raw: unknown): void => {
         assert.deepEqual(raw, { scriptSource: role === "bootstrap" ? bootstrap.CURRENT_PCB_209_WORKER_BOOTSTRAP_SOURCES[0] : `fixture:${role}` });
@@ -142,6 +146,7 @@ export async function bootstrapLifecycleFixture(options: BootstrapFixtureOptions
         case "Debugger.setInstrumentationBreakpoint": { instrumented = true; return Promise.resolve({ breakpointId: "instrumentation" }); }
         case "Runtime.runIfWaitingForDebugger": { script(); break; }
         case "Debugger.getScriptSource": {
+          options.timing?.beforeSource?.();
           if (options.lateSource === true && roleIndex === 0) { return lateSource.promise; }
           const role = bootstrap.CURRENT_PCB_209_WORKER_BOOTSTRAP_ROLES[roleIndex];
           return Promise.resolve({ scriptSource: role === "bootstrap" ? bootstrap.CURRENT_PCB_209_WORKER_BOOTSTRAP_SOURCES[0] : `fixture:${String(role)}` });

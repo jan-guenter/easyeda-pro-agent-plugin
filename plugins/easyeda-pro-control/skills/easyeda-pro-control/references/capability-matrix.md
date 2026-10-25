@@ -93,6 +93,8 @@ The separate [ratline held-import route](current-pcb209-ratline-held-import.md)
 connects these owners through one original native channel, launch budget and
 complete source lease set. It checks native PCB frame/context ancestry, observes
 PCB construction and holds the first child after seven qualified source phases.
+It retains a bounded first-child native creation-stack observation and exact
+constructor comparison, with explicit missing/unqualified evidence reasons.
 Connected validation remains pending. Independent JavaScript Worker-to-CDP
 target identity, worker continuation, subordinate completion and cross-realm
 callback/publication completion remain unfinished. This partial diagnostic
