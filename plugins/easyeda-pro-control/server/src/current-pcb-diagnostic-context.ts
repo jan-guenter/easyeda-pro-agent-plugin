@@ -578,6 +578,22 @@ export class CurrentPcbDiagnosticContext {
     if (matching.length !== 1 || matching[0] !== context) { return this.#refuse(); }
     return clone(context);
   }
+  /** Retain the actual pre-commit context for a paused initial-window hook.
+   * Chromium can commit the same-origin child while its original Window stays
+   * alive. Reproof follows only that same stored context across the already
+   * checked child commit; it cannot issue an initial binding after commit or
+   * adopt a replacement with matching numeric/unique IDs. Initial-context
+   * teardown remains forbidden after the commit by the ordinary event policy.
+   */
+  public retainInitialPcbWindowBootstrapContext(contextId: number): Readonly<{ context: Row; assertCurrent: () => void }> {
+    const context = this.pcbWindowBootstrapContext(contextId, true), opening = this.#pcbOpening, original = this.#contexts.get(contextId);
+    if (original === undefined || opening === null) { return this.#refuse(); }
+    return Object.freeze({ context, assertCurrent: (): void => {
+      this.pcbOpeningContext();
+      if (this.#pcbOpening !== opening || this.#contexts.get(contextId) !== original || opening.navigation === null) { this.#refuse(); }
+      this.pcbWindowBootstrapContext(contextId, opening.navigation.committedLoader === null);
+    } });
+  }
   /** Repeat full snapshots against the initially consumed source-held proof.
    * Unknown fields and attributes remain exact; no transition is reset. */
   public reprovePcbBootstrapFrames(targetReply: Row, frameReply: Row): void {

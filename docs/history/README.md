@@ -45,6 +45,8 @@ layout. The connected ledger retains its generation and case anchors.
 
 | Record | Former path |
 | --- | --- |
+| [2026-10-25-pcb-continuation-and-footprint-sql-batch.md](2026-10-25-pcb-continuation-and-footprint-sql-batch.md) | Installed193803 admission, original disposable continuation and combined footprint/verification work |
+| [2026-10-25-current-footprint-copy-sql.md](2026-10-25-current-footprint-copy-sql.md) | Exact current footprint getter/append and complete SQL comparison without runtime execution |
 | [2026-10-25-library-files-and-pcb-dom-ownership.md](2026-10-25-library-files-and-pcb-dom-ownership.md) | Installed180334 admission, disposable DOM ownership refusal, original terminal cleanup and combined backlog |
 | [2026-10-25-managed-library-files.md](2026-10-25-managed-library-files.md) | Offline supplied-file metadata, complete bounded container checks, all-mode integration and concrete BOM/render omissions |
 | [2026-10-25-current-footprint-copy-preparation.md](2026-10-25-current-footprint-copy-preparation.md) | Current-source copy matching/delete findings and strict closed-history preparation without dispatch authority |

@@ -269,7 +269,9 @@ export class CurrentPcb209RatlinePcbContextRouter {
         this.#scriptEvents.set(script.scriptId, captured); this.#scriptEvidenceBytes += captured.bytes ?? 0;
         if (this.#transition && this.#navigationPending && this.#selected === null) { this.#navigationScriptEvents.add(script.scriptId); }
         if (this.#transition && this.#navigationPending && isCurrentPcb209RatlineWindowScript(event)) {
-          need(this.#windowScripts.size < 2, "WINDOW_SCRIPT_LIMIT"); this.#windowScripts.add(script.scriptId); return;
+          need(this.#windowScripts.size < 2, "WINDOW_SCRIPT_LIMIT"); this.#windowScripts.add(script.scriptId);
+          // Same-origin Window reuse emits no context creation; the existing committed-frame classifier must still select it.
+          this.#selectedEvent(script.executionContextId); return;
         }
         if (this.#selectedEvent(script.executionContextId)) { this.#listener.event(event); } return;
       }
@@ -352,14 +354,18 @@ export class CurrentPcb209RatlinePcbContextRouter {
     const top = z.looseObject({ data: z.looseObject({ scriptId: token }) }).parse(event.params);
     const contextId = this.#scripts.get(top.data.scriptId), script = this.#scriptEvents.get(top.data.scriptId);
     need(script?.status === "captured" && contextId !== undefined, "WINDOW_SCRIPT_EVENT");
-    const context = this.#context.pcbWindowBootstrapContext(contextId, stage === "initial"), uniqueId = context["uniqueId"];
+    const initial = stage === "initial" ? this.#context.retainInitialPcbWindowBootstrapContext(contextId) : null;
+    const context = initial?.context ?? this.#context.pcbWindowBootstrapContext(contextId, false), uniqueId = context["uniqueId"];
     const frameId = token.parse(row.parse(context["auxData"])["frameId"]);
     if (stage === "initial") { need(this.#windowFrameId === null, "WINDOW_FRAME_REUSED"); this.#windowFrameId = frameId; }
     else { need(this.#windowFrameId === frameId, "WINDOW_FRAME_CHANGED"); }
     const scriptId = qualifyCurrentPcb209RatlineWindowPause(event, eventSchema.parse(script.value),
       this.#dependency.parentSessionId, contextId, this.#originalUiScriptId, stage);
-    const currentWindow = (): void => { this.assertCurrent(); need(this.#navigationPending &&
-      this.#context.pcbWindowBootstrapContext(contextId, stage === "initial")["uniqueId"] === uniqueId, "WINDOW_CHANGED"); };
+    const currentWindow = (): void => {
+      this.assertCurrent(); this.#step = `window-${stage}-identity`; need(this.#navigationPending, "WINDOW_CHANGED");
+      if (initial === null) { need(this.#context.pcbWindowBootstrapContext(contextId, false)["uniqueId"] === uniqueId, "WINDOW_CHANGED"); }
+      else { initial.assertCurrent(); }
+    };
     state.phase = "source";
     void observed((async (): Promise<void> => {
       try {
