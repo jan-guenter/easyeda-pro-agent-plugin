@@ -204,7 +204,26 @@ void test("hashing overlaps four phase readers with bounded buffers and closes e
   }
 });
 
-void test("hash failures drain the complete batch and select the first descriptor-order error", async (context) => {
+void test("phase hashing starts later descriptors while the first reader is held", async (context) => {
+  const { id } = await fixture();
+  const later = Promise.withResolvers<true>(), releaseFirst = Promise.withResolvers<true>();
+  const inspection = interceptPhaseReads(context, async (index) => {
+    if (index === 1) { await releaseFirst.promise; }
+    if (index === 5) { later.resolve(true); }
+  });
+  const pending = artifacts.loadOperation(id);
+  try {
+    await waitForGate(later.promise);
+    assert.ok(inspection.opened.includes(1) && inspection.opened.includes(5));
+    assert.equal(inspection.closed.includes(1), false);
+    assert.ok(inspection.opened.length - inspection.closed.length <= 4);
+    releaseFirst.resolve(true); await pending;
+    assert.deepEqual(inspection.opened.toSorted((left, right) => left - right), [1, 2, 3, 4, 5, 6]);
+    assert.deepEqual(inspection.closed.toSorted((left, right) => left - right), [1, 2, 3, 4, 5, 6]);
+  } finally { releaseFirst.resolve(true); await drainFixture(pending); inspection.restore(); }
+});
+
+void test("hash failures drain all started readers and select the first descriptor-order error", async (context) => {
   const { id } = await fixture();
   const entered = Promise.withResolvers<true>(), first = Promise.withResolvers<true>(), third = Promise.withResolvers<true>();
   const readers = new Set<number>();
@@ -227,8 +246,9 @@ void test("hash failures drain the complete batch and select the first descripto
     first.resolve(true); await nextTurn();
     assert.equal(settled, false, "failure must wait for the still-running third descriptor");
     third.resolve(true); await rejected;
-    assert.deepEqual(inspection.opened.toSorted((left, right) => left - right), [1, 2, 3, 4]);
-    assert.deepEqual(inspection.closed.toSorted((left, right) => left - right), [1, 2, 3, 4]);
+    assert.ok([1, 2, 3, 4].every((index) => inspection.opened.includes(index)));
+    assert.equal(new Set(inspection.opened).size, inspection.opened.length);
+    assert.deepEqual(inspection.closed.toSorted((left, right) => left - right), inspection.opened.toSorted((left, right) => left - right));
   } finally {
     first.resolve(true); third.resolve(true); await rejected; inspection.restore();
   }
@@ -259,8 +279,9 @@ void test("concurrent fresh-byte scans reject corruption, path replacement and n
       } else { await link(target.path, `${target.path}.alias`); }
       release.resolve(true);
       assert.deepEqual(await pending, ["journal-unreadable"]);
-      assert.deepEqual(inspection.opened.toSorted((left, right) => left - right), [1, 2, 3, 4]);
-      assert.deepEqual(inspection.closed.toSorted((left, right) => left - right), [1, 2, 3, 4]);
+      assert.ok(inspection.opened.includes(3));
+      assert.equal(new Set(inspection.opened).size, inspection.opened.length);
+      assert.deepEqual(inspection.closed.toSorted((left, right) => left - right), inspection.opened.toSorted((left, right) => left - right));
     } finally {
       release.resolve(true); await drainFixture(pending); inspection.restore();
     }

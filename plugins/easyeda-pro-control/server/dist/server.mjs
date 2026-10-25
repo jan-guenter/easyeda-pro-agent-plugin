@@ -10,7 +10,7 @@ const require = function __easyedaGuardedRequire(specifier) { if (typeof specifi
 	const __easyedaPublicationLockPath = __easyedaJoin(__easyedaPublicationDirectory, ".bundle-publication.lock");
 const __easyedaAssertNoPublication = () => { try { __easyedaLstatSync(__easyedaPublicationLockPath); throw new Error("The facade bundle is undergoing a fail-closed publication transaction."); } catch (__easyedaPublicationError) { if (!__easyedaPublicationError || typeof __easyedaPublicationError !== "object" || !("code" in __easyedaPublicationError) || __easyedaPublicationError.code !== "ENOENT") throw __easyedaPublicationError; } };
 __easyedaAssertNoPublication();
-const __easyedaBundlePairId = "a2a07bc292b4a7c679943fa8aa9263661422ab5341633947354ece750a8a9204";
+const __easyedaBundlePairId = "53fab2910085de5a6be6eccb26086d91f146a91d5a04cc4420af6b6b6860a784";
 if (__easyedaBasename(import.meta.filename) === "server.mjs") {
   const __easyedaPeerPath = __easyedaJoin(import.meta.dirname, "upstream-supervisor.mjs");
   const __easyedaPeerPathBefore = __easyedaLstatSync(__easyedaPeerPath, { bigint: true });
@@ -42064,6 +42064,47 @@ var init_operation_verification_queue = __esm({
   }
 });
 
+// server/src/operation-artifact-queue.ts
+async function verifyOperationArtifactQueue(descriptors, verify) {
+  const count6 = descriptors.length;
+  let nextIndex2 = 0;
+  const state4 = { failure: void 0 };
+  const recordFailure = (failure5) => {
+    if (state4.failure === void 0 || failure5.index < state4.failure.index) {
+      state4.failure = failure5;
+    }
+  };
+  const work = async () => {
+    while (state4.failure === void 0 && nextIndex2 < count6) {
+      const index2 = nextIndex2;
+      nextIndex2 += 1;
+      try {
+        const descriptor10 = descriptors[index2];
+        if (descriptor10 === void 0) {
+          throw new Error("Operation phase-artifact descriptor is missing.");
+        }
+        await verify(descriptor10);
+      } catch (error63) {
+        recordFailure({ index: index2, reason: error63 });
+      }
+    }
+  };
+  const workers = await Promise.allSettled(Array.from({ length: Math.min(OPERATION_HASH_STREAMS, count6) }, work));
+  for (const worker2 of workers) {
+    if (worker2.status === "rejected") {
+      throw worker2.reason;
+    }
+  }
+  if (state4.failure !== void 0) {
+    throw state4.failure.reason;
+  }
+}
+var init_operation_artifact_queue = __esm({
+  "server/src/operation-artifact-queue.ts"() {
+    init_operation_verification_queue();
+  }
+});
+
 // server/src/artifacts.ts
 import { createHash as createHash3, randomUUID as randomUUID2 } from "node:crypto";
 import { constants as fsConstants3 } from "node:fs";
@@ -43599,20 +43640,15 @@ function parseOperationJournal(operationId18, bytes2, previouslyValidated) {
   };
 }
 async function verifyOperationArtifacts(operationId18, artifacts) {
-  const concurrency = MAX_OPERATION_HASH_STREAMS;
-  for (let offset9 = 0; offset9 < artifacts.length; offset9 += concurrency) {
-    const results = await Promise.allSettled(artifacts.slice(offset9, offset9 + concurrency).map(async (descriptor10) => {
+  try {
+    await verifyOperationArtifactQueue(artifacts, async (descriptor10) => {
       const actual = await hashManagedJsonFile(descriptor10.path, "Operation phase artifact");
       if (actual.bytes !== descriptor10.bytes || actual.sha256 !== descriptor10.sha256) {
         throw new Error(`Operation ${operationId18} phase artifact failed hash verification.`);
       }
-    }));
-    for (const result2 of results) {
-      if (result2.status === "rejected") {
-        const reason = result2.reason;
-        throw toError(reason);
-      }
-    }
+    });
+  } catch (error63) {
+    throw toError(error63);
   }
 }
 function forgetOperationValidation(operationId18) {
@@ -44046,6 +44082,7 @@ var init_artifacts = __esm({
     init_core3();
     init_control_root();
     init_operation_verification_queue();
+    init_operation_artifact_queue();
     configuredControlDataDirectory = process4.env["EASYEDA_CONTROL_DATA_DIR"];
     configuredHomeDirectory = process4.env["HOME"];
     CONTROL_DATA_DIR = resolve4(
@@ -122229,6 +122266,26 @@ var init_current_pcb_diagnostic_context = __esm({
         }
         return clone2(context4);
       }
+      /** Retain the actual pre-commit context for a paused initial-window hook.
+       * Chromium can commit the same-origin child while its original Window stays
+       * alive. Reproof follows only that same stored context across the already
+       * checked child commit; it cannot issue an initial binding after commit or
+       * adopt a replacement with matching numeric/unique IDs. Initial-context
+       * teardown remains forbidden after the commit by the ordinary event policy.
+       */
+      retainInitialPcbWindowBootstrapContext(contextId) {
+        const context4 = this.pcbWindowBootstrapContext(contextId, true), opening = this.#pcbOpening, original2 = this.#contexts.get(contextId);
+        if (original2 === void 0 || opening === null) {
+          return this.#refuse();
+        }
+        return Object.freeze({ context: context4, assertCurrent: () => {
+          this.pcbOpeningContext();
+          if (this.#pcbOpening !== opening || this.#contexts.get(contextId) !== original2 || opening.navigation === null) {
+            this.#refuse();
+          }
+          this.pcbWindowBootstrapContext(contextId, opening.navigation.committedLoader === null);
+        } });
+      }
       /** Repeat full snapshots against the initially consumed source-held proof.
        * Unknown fields and attributes remain exact; no transition is reset. */
       reprovePcbBootstrapFrames(targetReply, frameReply) {
@@ -170608,6 +170665,7 @@ var init_current_pcb_209_ratline_pcb_context_router = __esm({
             if (this.#transition && this.#navigationPending && isCurrentPcb209RatlineWindowScript(event4)) {
               need78(this.#windowScripts.size < 2, "WINDOW_SCRIPT_LIMIT");
               this.#windowScripts.add(script.scriptId);
+              this.#selectedEvent(script.executionContextId);
               return;
             }
             if (this.#selectedEvent(script.executionContextId)) {
@@ -170750,7 +170808,8 @@ var init_current_pcb_209_ratline_pcb_context_router = __esm({
         const top = external_exports.looseObject({ data: external_exports.looseObject({ scriptId: token35 }) }).parse(event4.params);
         const contextId = this.#scripts.get(top.data.scriptId), script = this.#scriptEvents.get(top.data.scriptId);
         need78(script?.status === "captured" && contextId !== void 0, "WINDOW_SCRIPT_EVENT");
-        const context4 = this.#context.pcbWindowBootstrapContext(contextId, stage === "initial"), uniqueId = context4["uniqueId"];
+        const initial = stage === "initial" ? this.#context.retainInitialPcbWindowBootstrapContext(contextId) : null;
+        const context4 = initial?.context ?? this.#context.pcbWindowBootstrapContext(contextId, false), uniqueId = context4["uniqueId"];
         const frameId = token35.parse(row10.parse(context4["auxData"])["frameId"]);
         if (stage === "initial") {
           need78(this.#windowFrameId === null, "WINDOW_FRAME_REUSED");
@@ -170768,7 +170827,13 @@ var init_current_pcb_209_ratline_pcb_context_router = __esm({
         );
         const currentWindow = () => {
           this.assertCurrent();
-          need78(this.#navigationPending && this.#context.pcbWindowBootstrapContext(contextId, stage === "initial")["uniqueId"] === uniqueId, "WINDOW_CHANGED");
+          this.#step = `window-${stage}-identity`;
+          need78(this.#navigationPending, "WINDOW_CHANGED");
+          if (initial === null) {
+            need78(this.#context.pcbWindowBootstrapContext(contextId, false)["uniqueId"] === uniqueId, "WINDOW_CHANGED");
+          } else {
+            initial.assertCurrent();
+          }
         };
         state4.phase = "source";
         void observed4((async () => {

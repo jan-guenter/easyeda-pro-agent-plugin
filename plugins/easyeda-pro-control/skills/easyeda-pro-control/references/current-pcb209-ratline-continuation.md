@@ -74,6 +74,13 @@ final resume. These three transitions add nine requests without consuming
 PCB source ordinals. Only the inline admission source can use a nonzero start
 location, taken from its original script event; callers cannot choose it.
 
+The initial hook retains its actual pre-commit Window context. If the already
+tracked same-origin child navigation commits while that hook is paused,
+reproof follows that same context through the commit. A new initial binding
+after commit, a destroyed context or a replacement context still refuses.
+The next document hook selects a reused context through the committed-frame
+checks even when Chromium emits no second context-created event.
+
 The original coordinator seals subordinate observations before the worker can
 terminate that subordinate. It then holds the PCB received pause until the
 worker terminal capture, breakpoint removals and resume acknowledgments are

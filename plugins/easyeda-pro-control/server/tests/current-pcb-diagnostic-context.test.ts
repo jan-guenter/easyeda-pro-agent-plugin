@@ -408,6 +408,41 @@ void test("window bootstrap context distinguishes the retained initial child fro
   assert.equal(context.pcbWindowBootstrapContext(8, false)["uniqueId"], "committed-window");
   assert.throws(() => context.pcbWindowBootstrapContext(8, true), /IDENTITY/u);
 });
+function retainedInitialWindow(): Readonly<{ context: CurrentPcbDiagnosticContext;
+  retained: ReturnType<CurrentPcbDiagnosticContext["retainInitialPcbWindowBootstrapContext"]> }> {
+  const context = pcbOpeningFixture(); within(context, { url: PCB_URL });
+  context.observeEvent(event("Page.frameAttached", { frameId: "pcb-frame", parentFrameId: "frame-1" }));
+  initialWindowContext(context);
+  return { context, retained: context.retainInitialPcbWindowBootstrapContext(8) };
+}
+void test("retained initial Window follows the same stored context through only its qualified commit", () => {
+  const { context, retained } = retainedInitialWindow();
+  assert.equal(retained.context["uniqueId"], "initial-window"); retained.assertCurrent();
+  context.observeEvent(event("Page.frameNavigated", { frame: PCB_CHILD, type: "Navigation" }));
+  retained.assertCurrent(); assert.equal(context.pcbWindowBootstrapContext(8, false)["uniqueId"], "initial-window");
+  assert.throws(() => context.retainInitialPcbWindowBootstrapContext(8), /IDENTITY/u);
+});
+void test("retained initial Window cannot adopt a destroyed or recreated context even with identical IDs", () => {
+  for (const replacement of [null, "initial-window", "replacement-window"]) {
+    const { context, retained } = retainedInitialWindow();
+    context.observeEvent(event("Runtime.executionContextDestroyed", { executionContextId: 8, executionContextUniqueId: "initial-window" }));
+    if (replacement !== null) { initialWindowContext(context, { uniqueId: replacement }); }
+    context.observeEvent(event("Page.frameNavigated", { frame: PCB_CHILD, type: "Navigation" }));
+    assert.throws(() => { retained.assertCurrent(); }, /IDENTITY/u);
+  }
+});
+void test("retained initial Window still rejects foreign frames, second commits and post-commit destruction", () => {
+  const foreign = retainedInitialWindow();
+  assert.throws(() => { foreign.context.observeEvent(event("Page.frameNavigated", { frame: { ...PCB_CHILD, id: "foreign" }, type: "Navigation" })); }, /INVALIDATED/u);
+  assert.throws(() => { foreign.retained.assertCurrent(); }, /IDENTITY/u);
+  for (const forbidden of [event("Page.frameNavigated", { frame: PCB_CHILD, type: "Navigation" }),
+    event("Runtime.executionContextDestroyed", { executionContextId: 8, executionContextUniqueId: "initial-window" })]) {
+    const { context, retained } = retainedInitialWindow();
+    context.observeEvent(event("Page.frameNavigated", { frame: PCB_CHILD, type: "Navigation" })); retained.assertCurrent();
+    assert.throws(() => { context.observeEvent(forbidden); }, /INVALIDATED/u);
+    assert.throws(() => { retained.assertCurrent(); }, /IDENTITY/u);
+  }
+});
 void test("window bootstrap classification rejects preexisting, foreign, ambiguous and destroyed contexts", () => {
   for (const patch of [{ origin: "https://foreign" }, { auxData: { ...UI_CONTEXT.auxData, frameId: "frame-1" } },
     { auxData: { ...UI_CONTEXT.auxData, frameId: "pcb-frame", isDefault: false } },

@@ -240,3 +240,65 @@ bundled-startup cases and three registration cases passed; the exact final
 registration fixture then passed again with strict lint and types. The eleven
 aggregate native-adapter tests also passed. Compatibility projections and
 runtime bundles remain unchanged through these test-only corrections.
+
+## Publication and official installation — 2026-10-25
+
+Final payload `9ec5009d7f21a77089b1357c208ab451ef6dda42` merged through
+[PR 129](https://github.com/jan-guenter/easyeda-pro-agent-plugin/pull/129) as
+main `847e1e7cad833b601fd4dd5bf59c32a510d16a3d`. Both share reviewed tree
+`37839c22432c9f463c5a0fe485dcda08ef5a7fbd`.
+
+All eleven required exact-head jobs passed in
+[CI 40228411180](https://github.com/jan-guenter/easyeda-pro-agent-plugin/actions/runs/40228411180)
+and [Windows 40228411137](https://github.com/jan-guenter/easyeda-pro-agent-plugin/actions/runs/40228411137):
+13,000 facade tests passed, five documented platform skips, zero failures;
+424 bridge tests passed across 28 files. The independent CI receipt is
+`6fcc2be1a91a90c1020776c7f40b99922fab73363fb5ae3fbe007cc2337db7b8`.
+Root separately verified all eleven jobs, unchanged PR base and exact head/tree.
+The original failed and superseded runs remain retained and unaccepted.
+
+The official CLI performed one marketplace upgrade from
+`https://github.com/jan-guenter/easyeda-pro-agent-plugin.git`, with installer
+umask 022 and private evidence mode 0600. It registered and enabled
+`0.3.0+codex.20261025193803`; the marketplace checkout matches merged main.
+Two maintained comparisons, before and after the offline probe and final
+registration, proved all 2,023 files, 42 directories and 43,211,820 bytes with
+exact committed modes. Inventory SHA-256 is
+`ca26543bac83401a7d617db75665005301774f74c9f9ed5e328ced23c80a901d`.
+Installation receipt SHA-256 is
+`01847238d925408608e856daa8f5f010bc936ef5fe607c1d32d0dd4d5fb39b99`.
+
+The maintained synthetic-profile probe passed 27 queries / 29 JSON-RPC
+requests, including file-reader validation and continuation discovery. It
+observed 27 tools for that synthetic profile and 52 manifest declarations
+across modes, no sampled upstream child or non-stdio sockets, no live control
+root selection and clean EOF exit. This is installed offline evidence, not
+actual-host admission or connected EasyEDA validation. Probe receipt SHA-256
+is `50fe5227a1d816cdc8b2a53f59a26a4bb90a21638e80836366c8bd7d79389c00`.
+No installed cache was manually patched and no host-owned process was stopped.
+
+The automatic follow-on main Windows run 40229713900 passed. Main CI
+40229714081 was still running when this installation record was written;
+the accepted PR checks cover the exact merged payload tree. No extra full
+local suite or manual CI rerun was started. This post-installation appendix
+is a local history update for the next source batch; it is outside the
+already-installed, immutable plugin payload.
+
+## Open work after this release
+
+- Start a fresh Codex session and admit the actual installed snapshot before
+  one new disposable continuation case. The previous case is terminal and
+  must never be replayed. The new ordinary-breakpoint correction has offline
+  proof, not a connected success yet.
+- Complete Worker/CDP identity, callback/canvas/copper completion and full
+  live/source/SQL plus saved/reopened PCB baseline proof before editing.
+- Extend footprint preparation into a complete append/SQL comparison and
+  separate owned creation/reopen lifecycle; dependency-aware deletion and
+  delayed structure/subscriber completion remain unfinished.
+- Continue schematic connectivity, remaining scoped writers, other library
+  lifecycles and manufacturing exports. Rendering cleanup, BOM-template
+  settings effects, archive dependencies and vendor stubs retain their
+  concrete method-specific limitations in the coverage inventory.
+
+The production project remains excluded and was neither opened nor edited.
+No Save, restore, library mutation or manufacturing action was performed.

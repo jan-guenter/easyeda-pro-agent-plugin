@@ -27,6 +27,7 @@ import type { EvidencePaths, UnknownRecord } from "./core.ts";
 import { openControlRootCapability } from "./control-root.ts";
 import type { ControlRootCapability } from "./control-root.ts";
 import { OPERATION_HASH_STREAMS, settleOperationVerifications } from "./operation-verification-queue.ts";
+import { verifyOperationArtifactQueue } from "./operation-artifact-queue.ts";
 
 const configuredControlDataDirectory = process.env["EASYEDA_CONTROL_DATA_DIR"];
 const configuredHomeDirectory = process.env["HOME"];
@@ -2115,24 +2116,17 @@ async function verifyOperationArtifacts(
   operationId: string,
   artifacts: readonly ArtifactDescriptor[],
 ): Promise<void> {
-  // Keep journal parsing sequential and share four 1 MiB hashing buffers with
-  // Other journal/phase batches. Settle the complete batch and cleanup before
-  // Throwing its first failure in descriptor order or starting another batch.
-  const concurrency = MAX_OPERATION_HASH_STREAMS;
-  for (let offset = 0; offset < artifacts.length; offset += concurrency) {
-    const results = await Promise.allSettled(artifacts.slice(offset, offset + concurrency).map(async (descriptor) => {
+  // Cold journal parsing remains sequential. Rolling phase workers share the
+  // Existing global four-stream limit and drain all started descriptor cleanup
+  // Before reporting the earliest failed descriptor or admitting this journal.
+  try {
+    await verifyOperationArtifactQueue(artifacts, async (descriptor) => {
       const actual = await hashManagedJsonFile(descriptor.path, "Operation phase artifact");
       if (actual.bytes !== descriptor.bytes || actual.sha256 !== descriptor.sha256) {
         throw new Error(`Operation ${operationId} phase artifact failed hash verification.`);
       }
-    }));
-    for (const result of results) {
-      if (result.status === "rejected") {
-        const reason: unknown = result.reason;
-        throw toError(reason);
-      }
-    }
-  }
+    });
+  } catch (error) { throw toError(error); }
 }
 
 function forgetOperationValidation(operationId: string): void {

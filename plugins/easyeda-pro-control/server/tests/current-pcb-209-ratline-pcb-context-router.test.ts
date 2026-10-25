@@ -95,6 +95,7 @@ async function fixture(options: Readonly<{ badReplay?: boolean; badDom?: boolean
   navigationPause?: "valid" | "source-change" | "foreign-context" | "lost-resume-ack" | "historical-script";
   loaderPause?: "valid" | "source-change" | "historical-script" | "settled-navigation" | "duplicate"; holdNavigationAck?: boolean;
   windowPause?: "valid" | "source-change" | "duplicate" | "foreign-context" | "lost-resume-ack";
+  initialOwnershipCommit?: "reuse" | "destroy" | "replace-identical";
   cleanupFailure?: boolean; lateCleanupEvents?: boolean; beforeInitialSource?: (phase: "navigation" | "loader") => Promise<unknown> }> = {}): Promise<Readonly<{
   router: CurrentPcb209RatlinePcbContextRouter; owner: CurrentPcb209RatlinePcbBootstrapOwner;
   counts: () => Readonly<{ navigation: number; resumes: number; sources: number; snapshots: number; removals: number }>;
@@ -107,7 +108,8 @@ async function fixture(options: Readonly<{ badReplay?: boolean; badDom?: boolean
   let cleanupCalls = 0, initialWindow = false, loaderResumes = 0, loaderSources = 0, windowResumes = 0, windowSources = 0;
   let drift = false, index = 0, listener: Events | null = null, removals = 0, resumes = 0, snapshots = 0, sources = 0, started = 0, terminated = false;
   let lastPause: DiagnosticEvent | null = null;
-  let instrumentationHeld = false;
+  let committedDuringOwnership = false, instrumentationHeld = false;
+  const activePcbContext = options.initialOwnershipCommit === undefined ? pcbContext : { ...pcbContext, id: 2, uniqueId: "initial-blank" };
   const ownership = new Map<string, Readonly<{ breakpointId: string; callFrames: unknown }>>();
   const emit = (value: DiagnosticEvent): void => {
     if (value.method === "Debugger.paused") { lastPause = value; instrumentationHeld = value.params["reason"] === "instrumentation"; }
@@ -117,22 +119,26 @@ async function fixture(options: Readonly<{ badReplay?: boolean; badDom?: boolean
   const pause = (): void => {
     const role = roles[index]; if (role === undefined) { return; }
     const url = currentPcb209RatlinePcbBootstrapRoleUrl(role, pcbUrl);
-    emit(event("Debugger.scriptParsed", { scriptId: role, executionContextId: 3, url, hasSourceURL: false, isLiveEdit: false, startLine: 0, startColumn: 0 }));
+    emit(event("Debugger.scriptParsed", { scriptId: role, executionContextId: activePcbContext.id, url, hasSourceURL: false, isLiveEdit: false, startLine: 0, startColumn: 0 }));
     emit(event("Debugger.paused", { reason: "instrumentation", data: { scriptId: role, url }, hitBreakpoints: ["instrumentation"],
       callFrames: [loaderFrame("", options.foreignPause === true ? "ui-script" : role, 0, 0, 0)] }));
   };
   const emitWindow = (stage: "initial" | "document"): void => {
     const observation = windowObservations(stage);
-    const script = options.windowPause === "foreign-context" && stage === "initial" ?
-      { ...observation.script, params: { ...observation.script.params, executionContextId: 1 } } : observation.script;
+    let script = observation.script;
+    if (options.windowPause === "foreign-context" && stage === "initial") {
+      script = { ...script, params: { ...script.params, executionContextId: 1 } };
+    } else if (stage === "document") { script = { ...script, params: { ...script.params, executionContextId: activePcbContext.id } }; }
     emit(script); emit(observation.paused);
     if (options.windowPause === "duplicate") { emit(observation.paused); }
   };
   const commitPcb = (): void => {
     initialWindow = false;
-    emit(event("Runtime.executionContextDestroyed", { executionContextId: 2, executionContextUniqueId: "initial-blank" }));
-    emit(event("Page.frameNavigated", { frame: pcbFrame, type: "Navigation" }));
-    emit(event("Runtime.executionContextCreated", { context: pcbContext }));
+    if (!committedDuringOwnership) {
+      emit(event("Runtime.executionContextDestroyed", { executionContextId: 2, executionContextUniqueId: "initial-blank" }));
+      emit(event("Page.frameNavigated", { frame: pcbFrame, type: "Navigation" }));
+      emit(event("Runtime.executionContextCreated", { context: pcbContext }));
+    }
     if (options.windowPause === undefined) { pause(); } else { emitWindow("document"); }
   };
   const beginPcb = (): void => {
@@ -144,6 +150,13 @@ async function fixture(options: Readonly<{ badReplay?: boolean; badDom?: boolean
   const emitNavigationScript = (): void => {
     emit(event("Debugger.scriptParsed", { scriptId: "navigation", executionContextId: options.navigationPause === "foreign-context" ? 2 : 1,
       url: "", hasSourceURL: false, isLiveEdit: false, startLine: 0, startColumn: 0, length: navigationSource.length }));
+  };
+  const commitDuringOwnership = (): void => {
+    if (options.initialOwnershipCommit !== "reuse") {
+      emit(event("Runtime.executionContextDestroyed", { executionContextId: 2, executionContextUniqueId: "initial-blank" }));
+      if (options.initialOwnershipCommit === "replace-identical") { emit(event("Runtime.executionContextCreated", { context: activePcbContext })); }
+    }
+    emit(event("Page.frameNavigated", { frame: pcbFrame, type: "Navigation" })); committedDuringOwnership = true;
   };
   async function request(command: CurrentPcb209RatlinePcbContextCommand): Promise<unknown> {
       if (options.delayMilliseconds !== undefined) { const delay = Promise.withResolvers<null>(); setTimeout(() => { delay.resolve(null); }, options.delayMilliseconds); await delay.promise; }
@@ -158,6 +171,9 @@ async function fixture(options: Readonly<{ badReplay?: boolean; badDom?: boolean
         if (command.method === "Debugger.resume") {
           emit(event("Debugger.resumed", {}));
           emit(event("Debugger.paused", { reason: "other", hitBreakpoints: [current.breakpointId], callFrames: current.callFrames }));
+          if (command.ownershipStage === "initial-window" && options.initialOwnershipCommit !== undefined) {
+            commitDuringOwnership();
+          }
         } else { assert.equal(command.params.breakpointId, current.breakpointId); ownership.delete(command.ownershipStage); }
         return {};
       }
@@ -399,8 +415,10 @@ void test("router cleanup reports disposal failure without replay and ignores te
   }
 });
 
-void test("both Electron window hooks preserve PCB bootstrap ordinals and initial DOM binding across context teardown", async () => {
-  const f = await fixture({ navigationPause: "valid", loaderPause: "valid", windowPause: "valid" });
+for (const initialOwnershipCommit of [undefined, "reuse"] as const) {
+void test(`both Electron hooks preserve PCB ordinals with ${initialOwnershipCommit === undefined ? "ordinary teardown" : "original Window reuse during ownership"}`, async () => {
+  const f = await fixture({ navigationPause: "valid", loaderPause: "valid", windowPause: "valid",
+    ...(initialOwnershipCommit === undefined ? {} : { initialOwnershipCommit }) });
   try {
     await f.owner.armBeforeNavigation(); await f.owner.startOriginalNavigation(); const packet = await f.owner.whenSourceQualified();
     assert.deepEqual(f.router.status()["windowPauses"], { initial: "complete", document: "complete" });
@@ -412,6 +430,22 @@ void test("both Electron window hooks preserve PCB bootstrap ordinals and initia
     await f.router.releaseOriginalPinnedSource(packet); await f.router.reproveFirstChildHeld(packet);
     assert.equal(f.router.status()["proofCommands"], 14); assert.equal(f.router.status()["proofSets"], 3);
   } finally { f.finishNavigation(); await f.router.abort(); await f.terminate(); }
+});
+}
+void test("initial ownership loses authority after context destruction or replacement before commit", async () => {
+  for (const initialOwnershipCommit of ["destroy", "replace-identical"] as const) {
+    const f = await fixture({ navigationPause: "valid", loaderPause: "valid", windowPause: "valid", initialOwnershipCommit });
+    try {
+      await f.owner.armBeforeNavigation(); await f.owner.startOriginalNavigation(); await assert.rejects(f.owner.whenSourceQualified());
+      assert.deepEqual(f.windowCounts(), { sources: 1, resumes: 0 });
+      assert.deepEqual(f.counts(), { navigation: 1, resumes: 0, sources: 0, snapshots: 0, removals: 0 });
+      const firstFailure = f.router.status()["firstFailure"]; assert.ok(firstFailure !== null && typeof firstFailure === "object");
+      assert.equal(Reflect.get(firstFailure, "reason"), "PCB_DIAGNOSTIC_CONTEXT_IDENTITY");
+      assert.equal(Reflect.get(firstFailure, "step"), "window-initial-identity");
+      assert.ok(f.router.retainedRejectedStopEvidence());
+      f.emit(event("Debugger.paused", {})); assert.equal(f.router.status()["firstFailure"], firstFailure);
+    } finally { f.finishNavigation(); await f.router.abort(); await f.terminate(); }
+  }
 });
 void test("initial window source, context, duplicate and missing resume acknowledgement cannot continue PCB imports", async () => {
   for (const windowPause of ["source-change", "foreign-context", "duplicate", "lost-resume-ack"] as const) {
