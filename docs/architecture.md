@@ -76,6 +76,9 @@ frame ancestry before each continuation. Durable intent precedes navigation;
 cleanup reserves remain available after normal work stops. See the
 [ratline workflow](../plugins/easyeda-pro-control/skills/easyeda-pro-control/references/current-pcb209-ratline-held-import.md)
 for the partial observation and remaining identity/completion limits.
+The separate [fresh continuation workflow](../plugins/easyeda-pro-control/skills/easyeda-pro-control/references/current-pcb209-ratline-continuation.md)
+seals worker observations before source-qualified retirement, revokes child
+commands and checks publication/receipt and original target consistency.
 
 Only the dedicated owner-only data directory is writable. The host source tree,
 control-root credentials, host `/proc` and `/etc`, workers, child processes,

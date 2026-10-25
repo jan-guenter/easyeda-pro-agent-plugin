@@ -17,6 +17,8 @@ import { CURRENT_PCB_209_RATLINE_NAVIGATION_SOURCE as navigationSource } from ".
 import { CURRENT_PCB_209_RATLINE_LOADER_SOURCE_SHA256 as loaderHash, CURRENT_PCB_209_RATLINE_LOADER_SOURCE as loaderSource } from "../src/current-pcb-209-ratline-loader-pause.ts";
 import { CURRENT_PCB_209_OPENING_SCRIPTS } from "../src/current-pcb-209-opening-profile.ts";
 
+import { CURRENT_PCB_209_RATLINE_WINDOW_SOURCE_SHA256 as windowHash } from "../src/current-pcb-209-ratline-window-pause.ts";
+
 const source = "const retainedUi = true;";
 const rawWindowsPath = String.raw`C:\Disposable\Router.eprj2`;
 const documentUuid = "d".repeat(16), projectUuid = createHash("sha256").update(rawWindowsPath).digest("hex");
@@ -40,6 +42,20 @@ function loaderObservations(): Readonly<{ script: DiagnosticEvent; paused: Diagn
       url: `https://modules.lceda.cn/${CURRENT_PCB_209_OPENING_SCRIPTS.ui.relativePath}`, lineNumber: 1923, columnNumber: 75_140 }] } }),
     paused: event("Debugger.paused", { reason: "instrumentation", data: { scriptId: "loader", url: "" }, hitBreakpoints: [],
       callFrames: [loaderFrame("", "loader", 0, 0, 0), loaderFrame("by", "ui-script", 1923, 75_126, 75_140), loaderFrame("", "ui-script", 1931, 3752, 4009)] }) };
+}
+function windowObservations(stage: "initial" | "document"): Readonly<{ script: DiagnosticEvent; paused: DiagnosticEvent }> {
+  const scriptId = `window-${stage}`, top = loaderFrame("", scriptId, 0, 0, 0);
+  const points = [["", 1931, 1315, 1931, 1320], ["n", 1923, 80_850, 1931, 91], ["create", 1923, 80_633, 1931, 1313],
+    ["create", 1923, 80_386, 1923, 80_406], ["by", 1923, 75_126, 1923, 76_601]] as const;
+  const callers = points.map(([functionName, line, column, stoppedLine, stoppedColumn]) => ({ functionName, url: "",
+    functionLocation: { scriptId: "ui-script", lineNumber: line, columnNumber: column },
+    location: { scriptId: "ui-script", lineNumber: stoppedLine, columnNumber: stoppedColumn } }));
+  return { script: event("Debugger.scriptParsed", { scriptId, executionContextId: stage === "initial" ? 2 : 3, url: "", hasSourceURL: false,
+    isLiveEdit: false, isModule: false, startLine: 0, startColumn: 0, endLine: 0, endColumn: 6, length: 6, hash: windowHash,
+    scriptLanguage: "JavaScript", sourceMapURL: "", ...(stage === "initial" ? { stackTrace: { callFrames: [{ functionName: "", scriptId: "ui-script",
+      url: `https://modules.lceda.cn/${CURRENT_PCB_209_OPENING_SCRIPTS.ui.relativePath}`, lineNumber: 1931, columnNumber: 1320 }], parentId: { id: "3" } } } : {}) }),
+    paused: event("Debugger.paused", { reason: "instrumentation", data: { scriptId, url: "" }, hitBreakpoints: [],
+      callFrames: stage === "initial" ? [top, ...callers] : [top] }) };
 }
 function originalContext(): CurrentPcbDiagnosticContext {
   const context = new CurrentPcbDiagnosticContext("parent"); context.selectTarget({ targetInfos: [parent] }); context.bindSession("parent-session");
@@ -78,16 +94,17 @@ type Events = Parameters<CurrentPcb209RatlinePcbContextDependency["subscribe"]>[
 async function fixture(options: Readonly<{ badReplay?: boolean; badDom?: boolean; foreignPause?: boolean; delayMilliseconds?: number;
   navigationPause?: "valid" | "source-change" | "foreign-context" | "lost-resume-ack" | "historical-script";
   loaderPause?: "valid" | "source-change" | "historical-script" | "settled-navigation" | "duplicate"; holdNavigationAck?: boolean;
+  windowPause?: "valid" | "source-change" | "duplicate" | "foreign-context" | "lost-resume-ack";
   cleanupFailure?: boolean; lateCleanupEvents?: boolean; beforeInitialSource?: (phase: "navigation" | "loader") => Promise<unknown> }> = {}): Promise<Readonly<{
   router: CurrentPcb209RatlinePcbContextRouter; owner: CurrentPcb209RatlinePcbBootstrapOwner;
   counts: () => Readonly<{ navigation: number; resumes: number; sources: number; snapshots: number; removals: number }>;
   emit: (value: DiagnosticEvent) => void; finishNavigation: () => void; changeFrame: () => void; terminate: () => Promise<void>;
   navigationResumeRequested: Promise<null>; acknowledgeNavigationResume: () => void; loaderCounts: () => Readonly<{ sources: number; resumes: number }>;
-  cleanupCount: () => number;
+  cleanupCount: () => number; windowCounts: () => Readonly<{ sources: number; resumes: number }>;
 }>> {
   const Constructor = await routerConstructor(), context = originalContext(), navigation = Promise.withResolvers<null>();
   const navigationAck = Promise.withResolvers<null>(), navigationResumeRequested = Promise.withResolvers<null>();
-  let cleanupCalls = 0, loaderResumes = 0, loaderSources = 0;
+  let cleanupCalls = 0, initialWindow = false, loaderResumes = 0, loaderSources = 0, windowResumes = 0, windowSources = 0;
   let drift = false, index = 0, listener: Events | null = null, removals = 0, resumes = 0, snapshots = 0, sources = 0, started = 0, terminated = false;
   const emit = (value: DiagnosticEvent): void => { listener?.event(value); };
   const pause = (): void => {
@@ -97,13 +114,25 @@ async function fixture(options: Readonly<{ badReplay?: boolean; badDom?: boolean
     emit(event("Debugger.paused", { reason: "instrumentation", data: { scriptId: role, url }, hitBreakpoints: ["instrumentation"],
       callFrames: [{ location: { scriptId: options.foreignPause === true ? "ui-script" : role } }] }));
   };
+  const emitWindow = (stage: "initial" | "document"): void => {
+    const observation = windowObservations(stage);
+    const script = options.windowPause === "foreign-context" && stage === "initial" ?
+      { ...observation.script, params: { ...observation.script.params, executionContextId: 1 } } : observation.script;
+    emit(script); emit(observation.paused);
+    if (options.windowPause === "duplicate") { emit(observation.paused); }
+  };
+  const commitPcb = (): void => {
+    initialWindow = false;
+    emit(event("Runtime.executionContextDestroyed", { executionContextId: 2, executionContextUniqueId: "initial-blank" }));
+    emit(event("Page.frameNavigated", { frame: pcbFrame, type: "Navigation" }));
+    emit(event("Runtime.executionContextCreated", { context: pcbContext }));
+    if (options.windowPause === undefined) { pause(); } else { emitWindow("document"); }
+  };
   const beginPcb = (): void => {
       emit(event("Page.navigatedWithinDocument", { frameId: "root", url: openedUrl, navigationType: "fragment" }));
       emit(event("Page.frameAttached", { frameId: "pcb-frame", parentFrameId: "root" }));
       emit(event("Runtime.executionContextCreated", { context: { ...pcbContext, id: 2, uniqueId: "initial-blank" } }));
-      emit(event("Runtime.executionContextDestroyed", { executionContextId: 2, executionContextUniqueId: "initial-blank" }));
-      emit(event("Page.frameNavigated", { frame: pcbFrame, type: "Navigation" }));
-      emit(event("Runtime.executionContextCreated", { context: pcbContext })); pause();
+      if (options.windowPause === undefined) { commitPcb(); } else { initialWindow = true; emitWindow("initial"); }
   };
   const emitNavigationScript = (): void => {
     emit(event("Debugger.scriptParsed", { scriptId: "navigation", executionContextId: options.navigationPause === "foreign-context" ? 2 : 1,
@@ -123,6 +152,7 @@ async function fixture(options: Readonly<{ badReplay?: boolean; badDom?: boolean
             await options.beforeInitialSource?.("navigation"); return { scriptSource: navigationSource + (options.navigationPause === "source-change" ? " " : "") };
           }
           if ("loaderPhase" in command) { loaderSources += 1; await options.beforeInitialSource?.("loader"); return { scriptSource: loaderSource + (options.loaderPause === "source-change" ? " " : "") }; }
+          if ("windowPhase" in command) { windowSources += 1; return { scriptSource: options.windowPause === "source-change" ? "void 1" : "void 0" }; }
           sources += 1; return ({ scriptSource: `synthetic:${String(roles[index])}` }); }
         case "Debugger.removeBreakpoint": { removals += 1; return ({}); }
         case "Debugger.resume": { if ("navigationPhase" in command) {
@@ -138,6 +168,12 @@ async function fixture(options: Readonly<{ badReplay?: boolean; badDom?: boolean
           return {};
         }
           if ("loaderPhase" in command) { loaderResumes += 1; emit(event("Debugger.resumed", {})); beginPcb(); return {}; }
+          if ("windowPhase" in command) {
+            windowResumes += 1;
+            if (options.windowPause === "lost-resume-ack") { listener?.lost(); throw new Error("window resume acknowledgment lost"); }
+            emit(event("Debugger.resumed", {}));
+            if (command.windowPhase === "initial-resume") { commitPcb(); } else { pause(); } return {};
+          }
           resumes += 1; emit(event("Debugger.resumed", {})); index += 1; pause(); return ({}); }
         case "Target.getTargets": { snapshots += 1; return ({ targetInfos: [{ ...parent, attached: true, url: openedUrl }] }); }
         case "Page.getFrameTree": { snapshots += 1; return ({ frameTree: { frame: { ...root, urlFragment: openedUrl.slice(base.length) },
@@ -146,7 +182,7 @@ async function fixture(options: Readonly<{ badReplay?: boolean; badDom?: boolean
         case "DOM.describeNode": {
           snapshots += 1; assert.deepEqual(command.params, { backendNodeId: 17, depth: 0, pierce: false });
           return ({ node: { backendNodeId: 17, nodeType: 1, nodeName: "IFRAME", localName: "iframe", frameId: "pcb-frame",
-            attributes: ["id", `frame_${tab}`, "c_dbid", options.badDom === true ? "foreign" : tab, "c_doctype", "3", "src", "editor?entry=pcb", "pcb-canvas", "true", "class", "editframe"] } });
+            attributes: ["id", `frame_${tab}`, "c_dbid", options.badDom === true ? "foreign" : tab, "c_doctype", "3", "src", "editor?entry=pcb", ...(initialWindow ? [] : ["pcb-canvas", "true"]), "class", "editframe"] } });
         }
         case "Debugger.evaluateOnCallFrame": case "Debugger.setBreakpoint": case "Runtime.callFunctionOn": case "Runtime.runIfWaitingForDebugger": { throw new Error("Unexpected synthetic command"); }
         default: { throw new Error("Unknown synthetic command"); }
@@ -182,7 +218,7 @@ async function fixture(options: Readonly<{ badReplay?: boolean; badDom?: boolean
     ({ navigation: started, resumes, sources, snapshots, removals }), emit, finishNavigation: (): void => { navigation.resolve(null); }, changeFrame: (): void => { drift = true; },
     navigationResumeRequested: navigationResumeRequested.promise, acknowledgeNavigationResume: (): void => { navigationAck.resolve(null); },
     loaderCounts: (): Readonly<{ sources: number; resumes: number }> => ({ sources: loaderSources, resumes: loaderResumes }),
-    cleanupCount: (): number => cleanupCalls,
+    cleanupCount: (): number => cleanupCalls, windowCounts: (): Readonly<{ sources: number; resumes: number }> => ({ sources: windowSources, resumes: windowResumes }),
     terminate: async (): Promise<void> => { terminated = true; await router.releaseAfterTermination(); } };
 }
 void test("actual context/router/source owner retain old enable replay and blank teardown, qualify held PCB with pending navigation and exactly three proof sets", async () => {
@@ -336,5 +372,32 @@ void test("router cleanup reports disposal failure without replay and ignores te
       await assert.rejects(f.terminate(), /synthetic disposer outcome uncertain/u);
     } else { await f.terminate(); assert.equal(f.router.status()["released"], true); assert.equal(f.router.status()["failed"], false); }
     assert.equal(f.cleanupCount(), 1);
+  }
+});
+
+void test("both Electron window hooks preserve PCB bootstrap ordinals and initial DOM binding across context teardown", async () => {
+  const f = await fixture({ navigationPause: "valid", loaderPause: "valid", windowPause: "valid" });
+  try {
+    await f.owner.armBeforeNavigation(); await f.owner.startOriginalNavigation(); const packet = await f.owner.whenSourceQualified();
+    assert.deepEqual(f.router.status()["windowPauses"], { initial: "complete", document: "complete" });
+    assert.deepEqual(f.windowCounts(), { sources: 2, resumes: 2 });
+    assert.deepEqual(f.counts(), { navigation: 1, resumes: 28, sources: 29, snapshots: 6, removals: 1 });
+    const realm = await f.owner.claimOriginalPcbRealm(packet); realm.subscribe({ paused: (): never => { throw new Error("Unexpected successor pause"); },
+      resumed: (): void => { assert.equal(f.counts().resumes, 29); }, attached: (): never => { throw new Error("Unexpected child"); },
+      lost: (): void => { assert.equal(f.router.status()["failed"], true); } });
+    await f.router.releaseOriginalPinnedSource(packet); await f.router.reproveFirstChildHeld(packet);
+    assert.equal(f.router.status()["proofCommands"], 14); assert.equal(f.router.status()["proofSets"], 3);
+  } finally { f.finishNavigation(); await f.router.abort(); await f.terminate(); }
+});
+void test("initial window source, context, duplicate and missing resume acknowledgement cannot continue PCB imports", async () => {
+  for (const windowPause of ["source-change", "foreign-context", "duplicate", "lost-resume-ack"] as const) {
+    const f = await fixture({ navigationPause: "valid", loaderPause: "valid", windowPause });
+    try {
+      await f.owner.armBeforeNavigation(); await f.owner.startOriginalNavigation(); await assert.rejects(f.owner.whenSourceQualified());
+      assert.equal(f.counts().sources, 0); assert.equal(f.counts().resumes, 0);
+      assert.ok(f.router.retainedRejectedStopEvidence());
+      assert.deepEqual(f.windowCounts(), { sources: ["source-change", "lost-resume-ack"].includes(windowPause) ? 1 : 0,
+        resumes: windowPause === "lost-resume-ack" ? 1 : 0 });
+    } finally { f.finishNavigation(); await f.router.abort(); await f.terminate(); }
   }
 });

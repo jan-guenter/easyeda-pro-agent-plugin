@@ -6,6 +6,7 @@ import { types } from "node:util";
 import { CurrentPcb209RatlineStageDiagnostics } from "./current-pcb-209-ratline-diagnostics.ts";
 import { bindCurrentPcb209RatlinePcbTransport } from "./current-pcb-209-ratline-transport-windows.ts";
 import { inheritCurrentPcb209RatlineContinuationTiming } from "./current-pcb-209-ratline-continuation-timing.ts";
+import { inheritCurrentPcb209RatlineContinuationHandoff } from "./current-pcb-209-ratline-continuation-handoff.ts";
 import { z } from "zod";
 import { captureCurrentPcbStringClockReply } from "./current-pcb-string-clock-reply.ts";
 import { CurrentPcb209RatlinePcbCreation, CurrentPcb209RatlineWorkerCreation } from "./current-pcb-209-ratline-creation-runner.ts";
@@ -112,6 +113,7 @@ export class CurrentPcb209RatlineEventDispatcher {
     if (role === "pcb") { bindCurrentPcb209RatlinePcbTransport(creationTransport); bindCurrentPcb209RatlinePcbTransport(captureTransport); }
     inheritCurrentPcb209RatlineContinuationTiming(dependency, creationTransport);
     inheritCurrentPcb209RatlineContinuationTiming(dependency, captureTransport);
+    inheritCurrentPcb209RatlineContinuationHandoff(dependency, captureTransport);
     this.#stages = Object.freeze(role === "pcb" ? { creation: new CurrentPcb209RatlinePcbCreation(creationTransport), capture: scope === "pcb-held-prefix" ?
       new CurrentPcb209RatlinePcbHeldCapture(captureTransport) : new CurrentPcb209RatlinePcbCapture(captureTransport) } :
       { creation: new CurrentPcb209RatlineWorkerCreation(creationTransport), capture: new CurrentPcb209RatlineWorkerCapture(captureTransport) });

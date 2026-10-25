@@ -67,8 +67,18 @@ frame. That pause has its own two-request source/resume class. It requires the
 original three-frame creator stack, UI script/context, complete generated source
 and pending opening. A pause arriving before the navigation resume reply waits
 for that original acknowledgment. Neither UI pause advances PCB source ordinals.
-The normal limit is 322, with the unchanged 43-request cleanup reserve
-(365 total). Existing source slots, individual deadlines and cleanup time remain unchanged. Actual
+Electron can then run its exact six-byte window-context hook for the initial
+iframe and the committed document. Each has a separate one-use source/resume
+class. The initial hook requires the retained child context, selected iframe
+DOM owner and pinned UI caller stack; the committed hook requires that same
+frame and its actual committed context. The complete source is read before
+resuming. These hooks consume no PCB source ordinals. Unknown, repeated or
+changed hooks refuse without a manual resume.
+
+The normal limit is 328, with the unchanged 43-request cleanup reserve
+(371 total). The initial DOM check adds two ancestry requests; fixed aggregate
+waits include all four UI/window phases. Existing source slots, individual
+request deadlines and cleanup time remain unchanged. Actual
 V8 fixture reproduction validates this compilation case; it does not establish
 the cause of a historical EasyEDA refusal whose original pause was unavailable.
 
@@ -103,7 +113,7 @@ provenance cannot qualify navigation. Raw evidence is private inspection data,
 never an execution token, and survives original cleanup without replacement.
 
 Aggregate waits account for serial owner/request/owner checks and four ancestry
-snapshots. The first PCB source pause also allows the two preceding UI pause
+snapshots. The first PCB source pause also allows the four preceding UI/window pause
 sequences. Later source-pause deadlines, individual request deadlines, launch
 limits and cleanup reserves remain fixed. A timeout does not cancel the original request.
 Late breakpoint acknowledgments belong to the original cleanup owner and never

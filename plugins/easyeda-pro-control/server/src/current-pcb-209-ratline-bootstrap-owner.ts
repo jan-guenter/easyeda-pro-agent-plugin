@@ -4,6 +4,8 @@
 import { types } from "node:util";
 import { CURRENT_PCB_209_RATLINE_NATIVE_PROFILE, currentPcb209RatlineSourceBudget } from "./current-pcb-209-ratline-budget.ts";
 import { z } from "zod";
+import { isCurrentPcb209ContinuedSourceSeal, issueCurrentPcb209ContinuedSourceSeal } from "./current-pcb-209-ratline-continuation-handoff.ts";
+import type { CurrentPcb209ContinuedSourceSeal } from "./current-pcb-209-ratline-continuation-handoff.ts";
 import { CurrentPcb209RatlinePcbCreation, CurrentPcb209RatlineWorkerCreation } from "./current-pcb-209-ratline-creation-runner.ts";
 import type { CurrentPcb209RatlineCreationPacket } from "./current-pcb-209-ratline-creation-runner.ts";
 import { CURRENT_PCB_209_RATLINE_BOOTSTRAP_ROLES, currentPcb209RatlineBootstrapRoleUrl,
@@ -139,8 +141,12 @@ export class CurrentPcb209RatlineBootstrapOwner {
     lastCommand: CurrentPcb209RatlineBootstrapCommand["method"] | null; lastEvent: CurrentPcb209RatlineEventKind;
     events: number; contextSeen: boolean; scriptSeen: boolean; pauseSeen: boolean; qualified: boolean }> | null = null;
   #released = false;
+  #retired = false;
+  #sealConsumed = false;
+  #continuedSeal: CurrentPcb209ContinuedSourceSeal | null = null;
   #releaseStarted = false;
   #continuationConsumed = false;
+  #continuationCompleted = false;
   #instrumentation: string | null = null;
   #allocationUncertain = false;
   #allocation: Promise<void> | null = null;
@@ -169,7 +175,7 @@ export class CurrentPcb209RatlineBootstrapOwner {
     for (const stage of this.#stages) { void observed(stage.paused.promise); void observed(stage.resumed.promise); }
   }
   public status(): Readonly<Record<string, unknown>> {
-    return Object.freeze({ consumed: this.#consumed, armed: this.#armed, failed: this.#failed, released: this.#released,
+    return Object.freeze({ consumed: this.#consumed, armed: this.#armed, failed: this.#failed, released: this.#released, retired: this.#retired,
       stage: this.#stages[this.#index]?.role ?? null, qualified: this.#packet !== null, sourceContinuationConsumed: this.#continuationConsumed,
       unresolvedInstrumentation: this.#allocationUncertain || this.#instrumentation !== null && !this.#removed, commands: this.#commands,
       workerRealmClaimed: this.#realmClaimed, workerRealmRequests: this.#realmRequests,
@@ -178,13 +184,13 @@ export class CurrentPcb209RatlineBootstrapOwner {
   }
   #same(): void { need(members(this.#dependency).every((value, index) => value === this.#members[index]), "OWNER_CHANGED"); }
   async #current(): Promise<void> {
-    this.#same(); need(!this.#failed && !this.#released && this.#creation !== null && this.#construction !== null, "NOT_CURRENT");
+    this.#same(); need(!this.#failed && !this.#released && !this.#retired && this.#creation !== null && this.#construction !== null, "NOT_CURRENT");
     const creation = this.#creation, packet = this.#construction;
     this.#step = "creation-reproof"; await bounded(requireCreation.call(creation, packet), this.#timing?.parentOwnerMilliseconds); this.#same();
     this.#step = "child-owner-reproof";
     await bounded(this.#dependency.assertOriginalChild(creation, packet), this.#timing?.childDependencyMilliseconds ??
       (this.#firstChild ? 2 : 1) * CURRENT_PCB_209_RATLINE_NATIVE_PROFILE.elapsed.ordinaryRequestMilliseconds);
-    this.#same(); need(!this.#failed && !this.#released, "NOT_CURRENT");
+    this.#same(); need(!this.#failed && !this.#released && !this.#retired, "NOT_CURRENT");
   }
   #poison(cause: unknown = new Error("PCB209_RATLINE_BOOTSTRAP_ABORTED")): void {
     if (this.#firstPauseTimer !== null) { clearTimeout(this.#firstPauseTimer); this.#firstPauseTimer = null; }
@@ -200,7 +206,7 @@ export class CurrentPcb209RatlineBootstrapOwner {
   readonly #lost = (): void => { this.#poison(new Error("PCB209_RATLINE_BOOTSTRAP_STREAM_LOST")); };
   readonly #event = (input: CurrentPcb209RatlineBootstrapEvent): void => {
     try {
-      this.#same(); need(!this.#released && this.#construction !== null, "EVENT_STATE");
+      this.#same(); need(!this.#released && !this.#retired && this.#construction !== null, "EVENT_STATE");
       const captured = captureCurrentPcbStringClockReply(input); this.#events += 1; this.#eventBytes += Buffer.byteLength(captured.text);
       need(this.#events <= 128 && this.#eventBytes <= 256 * 1024, "EVENT_BUDGET");
       const event = z.object({ method: z.string().max(128), sessionId: token, params: z.record(z.string(), z.unknown()) }).strict().parse(captured.value);
@@ -408,10 +414,25 @@ export class CurrentPcb209RatlineBootstrapOwner {
   public async requireOriginal(packet: CurrentPcb209RatlineBootstrapPacket): Promise<void> {
     need(this.#packet !== null && packet === this.#packet, "ORIGINAL_PACKET"); await this.#current();
   }
+  /** A fresh continuation can retain completed source observations before the
+   * exact parent deletion path. This seal carries no live request authority. */
+  public async sealOriginalContinuedSource(packet: CurrentPcb209RatlineBootstrapPacket): Promise<CurrentPcb209ContinuedSourceSeal> {
+    need(this.#timing !== null && !this.#sealConsumed, "SEAL_CONSUMED"); this.#sealConsumed = true;
+    await this.requireOriginal(packet); need(this.#context !== null && this.#continuationCompleted && this.#removed &&
+      !this.#allocationUncertain && this.#index === this.#stages.length && this.#stages.every(stage => stage.qualified && stage.resume !== null && stage.resumeSeen), "SEAL_INCOMPLETE");
+    this.#continuedSeal = issueCurrentPcb209ContinuedSourceSeal(this, packet, this.#context.id); return this.#continuedSeal;
+  }
+  public requireOriginalSealedSource(seal: CurrentPcb209ContinuedSourceSeal): void {
+    this.#same(); need(!this.#failed && !this.#released && this.#continuedSeal === seal && this.#packet !== null &&
+      isCurrentPcb209ContinuedSourceSeal(seal, this, this.#packet), "ORIGINAL_SOURCE_SEAL");
+  }
+  public retireOriginalSealedSource(seal: CurrentPcb209ContinuedSourceSeal): void {
+    this.requireOriginalSealedSource(seal); need(!this.#retired, "RETIREMENT_CONSUMED"); this.#retired = true;
+  }
   public async releaseOriginalPinnedSource(packet: CurrentPcb209RatlineBootstrapPacket): Promise<void> {
     need(!this.#continuationConsumed, "CONTINUATION_CONSUMED"); this.#continuationConsumed = true;
     try { await this.requireOriginal(packet); this.#realmListener(); const stage = this.#stages[6]; need(stage !== undefined && this.#removed, "SOURCE_HELD");
-      await this.#resume(stage); await this.#current(); } catch (error) { this.#poison(error); throw error; }
+      await this.#resume(stage); await this.#current(); this.#continuationCompleted = true; } catch (error) { this.#poison(error); throw error; }
   }
   /** The containing original native adapter must call this before permitting
    * creation.startOriginalChild, including after an ambiguous arm failure. */

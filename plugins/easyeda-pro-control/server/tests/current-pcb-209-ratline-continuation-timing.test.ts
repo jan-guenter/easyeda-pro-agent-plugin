@@ -50,5 +50,18 @@ void test("fresh descendant proofs change orchestration waits while held, cleanu
   assert.equal(native.elapsed.normalMilliseconds, 3_600_000);
   assert.equal(timing.pcb.captureWaitMilliseconds, native.elapsed.normalMilliseconds);
   assert.equal(timing.worker.captureWaitMilliseconds, native.elapsed.normalMilliseconds);
-  assert.equal(native.normalRequestLimit, 438); assert.equal(native.cleanupRequests, 56);
+  assert.equal(native.normalRequestLimit, 444); assert.equal(native.cleanupRequests, 56);
+});
+
+void test("ordered handoff includes terminal-event delivery without changing ordinary pause or native clocks", () => {
+  // PCB received may run concurrently with the worker's still-pending terminal
+  // Event. A sum of active pause/comparison work would omit that event's wait.
+  assert.equal(timing.pcb.captureHandoffMilliseconds, timing.worker.captureWaitMilliseconds);
+  assert.equal(timing.pcb.captureHandoffMilliseconds, native.elapsed.normalMilliseconds);
+  assert.ok(timing.pcb.captureHandoffMilliseconds > timing.worker.capturePauseMilliseconds + timing.worker.comparisonMilliseconds);
+  assert.equal(timing.pcb.capturePauseMilliseconds, 70_000);
+  assert.equal(timing.worker.capturePauseMilliseconds, 510_000);
+  assert.equal(native.elapsed.ordinaryRequestMilliseconds, 2500);
+  assert.equal(native.elapsed.normalMilliseconds, 3_600_000);
+  assert.equal(read({ captureHandoffMilliseconds: timing.pcb.captureHandoffMilliseconds }), null);
 });

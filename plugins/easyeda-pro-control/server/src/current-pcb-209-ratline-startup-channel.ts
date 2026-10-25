@@ -20,6 +20,7 @@ import { CurrentPcb209RatlineHeldConstruction } from "./current-pcb-209-ratline-
 
 import { qualifyCurrentPcb209RatlineNavigationSource } from "./current-pcb-209-ratline-navigation-pause.ts";
 import { qualifyCurrentPcb209RatlineLoaderSource } from "./current-pcb-209-ratline-loader-pause.ts";
+import { isCurrentPcb209RatlineWindowScript, qualifyCurrentPcb209RatlineWindowSource } from "./current-pcb-209-ratline-window-pause.ts";
 
 export interface CurrentPcb209RatlineStartupNativeDependency {
   readonly requireOriginalParent: () => Promise<CurrentPcbWorkerStartupParent>;
@@ -156,6 +157,13 @@ export class CurrentPcb209RatlineStartupChannel {
   #loaderSourceConsumed = false;
   #loaderSourceQualified = false;
   #loaderResumeConsumed = false;
+  #loaderResumeQualified = false;
+  #loaderResumeObserved = false;
+  readonly #windowParsedScripts = new Set<string>();
+  readonly #windowStages = {
+    initial: { scriptId: null as string | null, sourceConsumed: false, sourceQualified: false, resumeConsumed: false, resumeQualified: false, resumed: false },
+    document: { scriptId: null as string | null, sourceConsumed: false, sourceQualified: false, resumeConsumed: false, resumeQualified: false, resumed: false },
+  };
   #failure: Error | null = null;
   #firstFailure: Failure | null = null;
   #lastCommand: Command["method"] | null = null;
@@ -347,14 +355,29 @@ export class CurrentPcb209RatlineStartupChannel {
           !this.#loaderSourceQualified || this.#paused.get(command.sessionId ?? "") !== "loader") { throw fail("LOADER_SEQUENCE"); }
       return "loader";
     }
+    if (phase.startsWith("window-")) {
+      let stage: "initial" | "document" | null = null;
+      if (phase === "window-initial-source" || phase === "window-initial-resume") { stage = "initial"; }
+      if (phase === "window-document-source" || phase === "window-document-resume") { stage = "document"; }
+      if (stage === null) { throw fail("WINDOW_PHASE"); }
+      const kind = stage === "initial" ? "initial-window" : "document-window", state = this.#windowStages[stage];
+      if (role !== "pcb" || !this.#pcbOpeningConsumed || !this.#originalNavigationPending() || realm.sources !== 0 || realm.resumes !== 0 ||
+          !this.#loaderResumeQualified || !this.#loaderResumeObserved || this.#resumeIssued.has(command.sessionId ?? "") || state.resumeConsumed ||
+          stage === "document" && (!this.#windowStages.initial.resumeQualified || !this.#windowStages.initial.resumed)) { throw fail("WINDOW_SEQUENCE"); }
+      if (phase.endsWith("-source") ? command.method !== "Debugger.getScriptSource" || state.scriptId === null ||
+          command.params.scriptId !== state.scriptId || state.sourceConsumed || this.#paused.get(command.sessionId ?? "") !== "pcb-bootstrap" :
+          !state.sourceQualified || this.#paused.get(command.sessionId ?? "") !== kind) { throw fail("WINDOW_SEQUENCE"); }
+      return kind;
+    }
     if (phase === "bootstrap-source") {
+      if (role === "pcb" && Object.values(this.#windowStages).some(state => state.scriptId !== null && (!state.resumed || !state.resumeQualified))) { throw fail("WINDOW_SEQUENCE"); }
       if (!this.#pcbOpeningConsumed || role === "worker" && !this.#childStarted || realm.sources >= (role === "pcb" ? 29 : 7) || realm.sources !== realm.resumes) { throw fail("SOURCE_SEQUENCE"); }
       return role === "pcb" ? "pcb-source" : "child-source";
     }
     if (phase === "remove" && command.method === "Debugger.removeBreakpoint") { return this.#allocation(command.sessionId, command.params.breakpointId).kind; }
     if (phase === "resume" && command.method === "Debugger.resume") {
       const kind = this.#paused.get(command.sessionId);
-      if (kind === undefined || kind === "navigation" || kind === "loader" || this.#resumeIssued.has(command.sessionId) || role === "worker" && realm.resumes >= 6 ||
+      if (kind === undefined || kind === "navigation" || kind === "loader" || kind === "initial-window" || kind === "document-window" || this.#resumeIssued.has(command.sessionId) || role === "worker" && realm.resumes >= 6 ||
           (kind === "pcb-bootstrap" || kind === "child-bootstrap") && realm.sources <= realm.resumes) { throw fail("RESUME_SEQUENCE"); }
       return kind;
     }
@@ -401,6 +424,10 @@ export class CurrentPcb209RatlineStartupChannel {
     if (phase === "navigation-resume") { this.#navigationResumeConsumed = true; }
     if (phase === "loader-source") { this.#loaderSourceConsumed = true; this.#paused.set(command.sessionId ?? "", "loader"); }
     if (phase === "loader-resume") { this.#loaderResumeConsumed = true; }
+    for (const stage of ["initial", "document"] as const) {
+      if (phase === `window-${stage}-source`) { this.#windowStages[stage].sourceConsumed = true; this.#paused.set(command.sessionId ?? "", stage === "initial" ? "initial-window" : "document-window"); }
+      if (phase === `window-${stage}-resume`) { this.#windowStages[stage].resumeConsumed = true; }
+    }
     if (phase === "relation-construction") { this.#heldConstruction.consumeOriginalJoin(command); }
     if (command.method === "Debugger.setBreakpoint" && command.params.location.scriptId !== realm.scriptId) { throw fail("SOURCE_SCRIPT"); }
   }
@@ -413,6 +440,11 @@ export class CurrentPcb209RatlineStartupChannel {
     if (pending.phase === "navigation-source") { qualifyCurrentPcb209RatlineNavigationSource(pending.result); this.#navigationSourceQualified = true; }
     if (pending.phase === "navigation-resume") { z.object({}).strict().parse(captureCurrentPcbStringClockReply(pending.result).value); this.#navigationResumeQualified = true; }
     if (pending.phase === "loader-source") { qualifyCurrentPcb209RatlineLoaderSource(pending.result); this.#loaderSourceQualified = true; }
+    if (pending.phase === "loader-resume") { z.object({}).strict().parse(captureCurrentPcbStringClockReply(pending.result).value); this.#loaderResumeQualified = true; }
+    for (const stage of ["initial", "document"] as const) {
+      if (pending.phase === `window-${stage}-source`) { qualifyCurrentPcb209RatlineWindowSource(pending.result); this.#windowStages[stage].sourceQualified = true; }
+      if (pending.phase === `window-${stage}-resume`) { z.object({}).strict().parse(captureCurrentPcbStringClockReply(pending.result).value); this.#windowStages[stage].resumeQualified = true; }
+    }
     if (pending.phase === "bootstrap-debugger" && pending.route === "pcb") {
       this.#parentDebuggerId = z.looseObject({ debuggerId: nativeToken }).parse(pending.result).debuggerId;
     }
@@ -514,6 +546,11 @@ export class CurrentPcb209RatlineStartupChannel {
       if (sessionId === this.#parent.sessionId || this.#workers.has(sessionId) || targetId === this.#parent.targetId || [...this.#workers.values()].includes(targetId)) { throw fail("RATLINE_ATTACHMENT"); }
       this.#child = Object.freeze({ sessionId, targetId });
     }
+    if (parent && this.#pcbOpeningConsumed && this.#realms.pcb.sources === 0 && isCurrentPcb209RatlineWindowScript(event)) {
+      const scriptId = nativeToken.parse(event.params["scriptId"]);
+      if (this.#windowParsedScripts.has(scriptId) || this.#windowParsedScripts.size >= 2) { throw fail("WINDOW_SCRIPT_LIMIT"); }
+      this.#windowParsedScripts.add(scriptId);
+    }
     if (event.method === "Debugger.paused") {
       if (this.#paused.has(event.sessionId) || this.#resumeIssued.has(event.sessionId)) { throw fail("DUPLICATE_PAUSE"); }
       if (!parent && !this.#childFirstPauseObserved) {
@@ -538,6 +575,14 @@ export class CurrentPcb209RatlineStartupChannel {
           hitBreakpoints: z.tuple([]), callFrames: z.tuple([z.looseObject({ location }), z.looseObject({ location }), z.looseObject({ location })]) }).safeParse(event.params);
         this.#loaderPausedScript = stopped.success && stopped.data.data.scriptId === stopped.data.callFrames[0].location.scriptId ? stopped.data.data.scriptId : null;
       }
+      if (parent && this.#loaderResumeObserved && this.#realms.pcb.sources === 0) {
+        const state = this.#windowStages.initial.resumed ? this.#windowStages.document : this.#windowStages.initial;
+        const location = z.looseObject({ scriptId: nativeToken });
+        const stopped = z.looseObject({ reason: z.literal("instrumentation"), data: location, hitBreakpoints: z.tuple([]),
+          callFrames: z.array(z.looseObject({ location })).length(this.#windowStages.initial.resumed ? 1 : 6) }).safeParse(event.params);
+        if (!state.sourceConsumed) { state.scriptId = stopped.success && this.#windowParsedScripts.has(stopped.data.data.scriptId) &&
+          stopped.data.data.scriptId === stopped.data.callFrames[0]?.location.scriptId ? stopped.data.data.scriptId : null; }
+      }
       const kind: CurrentPcb209RatlineReplyKind = parent ? "pcb-bootstrap" : "child-bootstrap";
       if (event.params["reason"] === "instrumentation") { this.#paused.set(event.sessionId, kind); }
       else {
@@ -552,6 +597,9 @@ export class CurrentPcb209RatlineStartupChannel {
       if (kind === undefined || !this.#resumeIssued.delete(event.sessionId) || !exact(event.params, [])) { throw fail("UNEXPECTED_RESUME"); }
       this.#paused.delete(event.sessionId);
       if (kind === "navigation") { this.#navigationResumeObserved = true; }
+      if (kind === "loader") { this.#loaderResumeObserved = true; }
+      if (kind === "initial-window") { this.#windowStages.initial.resumed = true; }
+      if (kind === "document-window") { this.#windowStages.document.resumed = true; }
       if (kind === "pcb-bootstrap" || kind === "child-bootstrap") { this.#realms[parent ? "pcb" : "worker"].resumes += 1; }
     }
     this.#ratlineListener.event(event);

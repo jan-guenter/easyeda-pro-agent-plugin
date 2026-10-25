@@ -16,6 +16,7 @@ import { CurrentPcb209RatlineContinuationSession } from "./current-pcb-209-ratli
 import type { CurrentPcb209RatlineContinuationDependency, CurrentPcb209RatlineContinuationPacket } from "./current-pcb-209-ratline-continuation-session.ts";
 import { readerCompletion } from "./sqlite-inventory.ts";
 import type { readExactSqlInventory } from "./sqlite-inventory.ts";
+import { currentPcb209RatlineContinuationMatchesTarget } from "./current-pcb-209-ratline-continuation-semantics.ts";
 
 type Inventory = Awaited<ReturnType<typeof readExactSqlInventory>>;
 type Phase = "ready" | "preparation" | "continuation" | "captured" | "failed" | "cleanup" | "released";
@@ -134,8 +135,11 @@ export class CurrentPcb209RatlineContinuationNativeSession {
         beginOriginalPcbNavigation: (): Promise<void> => this.#navigate(routing),
         request: (role, command): Promise<unknown> => routing.request(role, command), requestParent: command => routing.requestParent(command),
         beginCleanup: (): Promise<void> => this.#channel.beginCleanup(),
+        retireOriginalRealm: (role, sessionId): void => { routing.retireOriginalRealm(role, sessionId); },
       })); this.#phase = "continuation"; this.#work = this.#session.capture(); void observed(this.#work);
       const continuation = await this.#work; await this.#session.requireOriginal(continuation); await this.#current();
+      need(currentPcb209RatlineContinuationMatchesTarget(continuation.pcb.capture, continuation.worker.capture,
+        this.#target, this.#result.workerIdentity.windowTabId), "SEMANTIC_TARGET");
       this.#channel.beginOriginalProjectIdentityReproof();
       await this.#opening.requireOriginalPcbDependency(this.#result, this.#dependency, this.#target); await this.#current();
       this.#packet = Object.freeze({ profile: "private.pcb209-ratline-native-continuation.v1", targetSha256: sha256Json(this.#target),

@@ -6,6 +6,8 @@ import { z } from "zod";
 import { captureCurrentPcbStringClockReply } from "./current-pcb-string-clock-reply.ts";
 import type { CurrentPcbWorkerStartupParent } from "./current-pcb-worker-startup-channel.ts";
 import type { CurrentPcbWorkerStartupEvent } from "./current-pcb-worker-startup-contract.ts";
+import { currentPcb209RatlineRetirementConsumer } from "./current-pcb-209-ratline-continuation-handoff.ts";
+import type { CurrentPcb209RatlineContinuationHandoff } from "./current-pcb-209-ratline-continuation-handoff.ts";
 
 export type CurrentPcb209RatlineContinuationRole = "pcb" | "worker" | "subordinate";
 export interface CurrentPcb209RatlineContinuationRealm {
@@ -56,6 +58,9 @@ export class CurrentPcb209RatlineContinuationRouter {
   readonly #dependency: CurrentPcb209RatlineContinuationRoutingDependency;
   readonly #members: readonly unknown[];
   readonly #realms = new Map<CurrentPcb209RatlineContinuationRole, Realm>();
+  readonly #retiring = new Set<CurrentPcb209RatlineContinuationRole>();
+  readonly #handoff: CurrentPcb209RatlineContinuationHandoff | null;
+  readonly #consumeRetirement: ((event: CurrentPcbWorkerStartupEvent) => boolean) | null;
   #parent: CurrentPcbWorkerStartupParent | null = null;
   #started = false;
   #failure: string | null = null;
@@ -67,8 +72,8 @@ export class CurrentPcb209RatlineContinuationRouter {
   #unsubscribeConsumed = false;
   #terminationVerified = false;
   #cleanupFailure: "SUBSCRIPTION_UNCERTAIN" | "UNSUBSCRIBE_FAILED" | null = null;
-  public constructor(dependency: CurrentPcb209RatlineContinuationRoutingDependency) {
-    this.#members = members(dependency, dependencyKeys); this.#dependency = dependency;
+  public constructor(dependency: CurrentPcb209RatlineContinuationRoutingDependency, handoff: CurrentPcb209RatlineContinuationHandoff | null = null) {
+    this.#members = members(dependency, dependencyKeys); this.#dependency = dependency; this.#handoff = handoff; this.#consumeRetirement = handoff === null ? null : currentPcb209RatlineRetirementConsumer(handoff);
   }
   #same(): void { need(members(this.#dependency, dependencyKeys).every((value, index) => value === this.#members[index]), "DEPENDENCY_CHANGED"); }
   #active(): void { this.#same(); need(this.#started && this.#parent !== null && !this.#released && !this.#releasing && !this.#terminationVerified && this.#cleanupFailure === null && this.#failure === null, "NOT_CURRENT"); }
@@ -114,9 +119,14 @@ export class CurrentPcb209RatlineContinuationRouter {
     need(child !== undefined, "ORIGINAL_ATTACHMENT"); this.#listen(child, listener); return child.handle;
   }
   public async requireOriginal(handle: CurrentPcb209RatlineContinuationRealm): Promise<void> {
-    try { this.#active(); const realm = this.#original(handle); const original = await bounded(this.#dependency.requireOriginalParent());
+    try { this.#active(); need(!this.#retiring.has(handle.role), "REALM_RETIRED"); const realm = this.#original(handle); const original = await bounded(this.#dependency.requireOriginalParent());
       this.#active(); need(original === this.#parent && this.#original(handle) === realm, "ORIGINAL_PARENT");
+      need(!this.#retiring.has(handle.role), "REALM_RETIRED");
     } catch (error) { this.#poison("OWNER_CHANGED"); throw error; }
+  }
+  public retireOriginalRealm(role: "worker" | "subordinate", sessionId: string): void {
+    this.#active(); const realm = this.#realms.get(role);
+    need(this.#handoff !== null && realm?.handle.sessionId === sessionId && !this.#retiring.has(role), "RETIREMENT_STATE"); this.#retiring.add(role);
   }
   readonly #event = (input: CurrentPcbWorkerStartupEvent): void => {
     if (this.#terminationVerified) { return; }
@@ -125,6 +135,8 @@ export class CurrentPcb209RatlineContinuationRouter {
       const realm = [...this.#realms.values()].find(value => value.handle.sessionId === event.sessionId); need(realm !== undefined, "EVENT_SESSION");
       realm.events += 1; realm.bytes += Buffer.byteLength(captured.text);
       need(realm.events <= limits[realm.handle.role].events && realm.bytes <= limits[realm.handle.role].bytes, "EVENT_BUDGET");
+      if (this.#consumeRetirement?.(event) === true) { this.#active(); return; }
+      need(!this.#retiring.has(realm.handle.role), "RETIRED_REALM_EVENT");
       const listener = realm.listener; need(listener !== null && realm.members !== null, "LISTENER_REQUIRED");
       need(members(listener, listenerKeys).every((value, index) => value === realm.members?.[index]), "LISTENER_CHANGED");
       if (event.method === "Target.attachedToTarget") {

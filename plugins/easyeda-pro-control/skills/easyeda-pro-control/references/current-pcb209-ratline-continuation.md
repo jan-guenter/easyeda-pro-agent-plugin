@@ -52,15 +52,28 @@ concurrently with subordinate qualification. The subordinate route permits
 source handling and its final source resume only. It cannot evaluate arbitrary
 code, create another child or run the parent's capture commands.
 
-The fresh launch has 438 normal requests and 56 cleanup requests, 494 total,
+The fresh launch has 444 normal requests and 56 cleanup requests, 500 total,
 with separate source, event, byte and timing limits. Original session ownership
 and command use remain cumulative across phases. Fixed aggregate waits cover
 the serial ownership checks and concurrent source loading; individual native
 requests retain their deadlines. Limits are internal to the selected launch
 and cannot be reset or chosen by a caller.
 
-A successful packet establishes the captured observations and the subordinate
-source resume. It keeps these claims false:
+Initial and committed Electron window-context hooks have separate fixed source
+and resume phases. The initial hook also requires the selected iframe DOM
+binding and pinned UI caller stack. Neither hook consumes PCB source ordinals.
+An unknown pause remains a refusal; do not manually resume it.
+
+The original coordinator seals subordinate observations before the worker can
+terminate that subordinate. It then holds the PCB received pause until the
+worker terminal capture, breakpoint removals and resume acknowledgments are
+sealed. Only matching expected retirement events are accepted; retired child
+owners cannot issue further commands. These historical seals do not recreate
+live ownership. Worker publication must match PCB receipt and the original
+project, document and window bindings.
+
+A successful packet establishes the captured observations, source continuation
+and source-qualified retirement observations. It keeps these claims false:
 
 - Independent JavaScript Worker-object to CDP-target identity.
 - Callback completion and subscribed canvas-peer ownership.

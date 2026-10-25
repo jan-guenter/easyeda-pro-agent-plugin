@@ -10,6 +10,7 @@ import type { CurrentPcb209RatlineContinuationDependency, CurrentPcb209RatlineCo
 import { currentPcb209RatlinePcbBootstrapRoleUrl, CURRENT_PCB_209_RATLINE_PCB_BOOTSTRAP_ROLES as pcbRoles } from "../src/current-pcb-209-ratline-pcb-bootstrap-profile.ts";
 import { CURRENT_PCB_209_RATLINE_BOOTSTRAP_ROLES as childRoles, currentPcb209RatlineBootstrapRoleUrl } from "../src/current-pcb-209-ratline-bootstrap-profile.ts";
 import { CURRENT_PCB_209_PRELOAD_COPY_SOURCE, CURRENT_PCB_209_WORKER_PRELOAD_LOG, CURRENT_PCB_209_WORKER_PRELOAD_URL, currentPcb209PreloadCopyCaller } from "../src/current-pcb-209-worker-bootstrap-source.ts";
+import { CURRENT_PCB_209_RATLINE_CAPTURE_PROFILES } from "../src/current-pcb-209-ratline-capture-profile.ts";
 import { CURRENT_PCB_209_RATLINE_CREATION_PROFILES } from "../src/current-pcb-209-ratline-creation-profile.ts";
 import { currentPcb209RatlineContinuationNativeWire } from "../src/current-pcb-209-ratline-continuation-native-wire.ts";
 import { currentPcb209RatlineContinuationNativePacketSchema } from "../src/current-pcb-209-ratline-continuation-packet-schema.ts";
@@ -55,8 +56,15 @@ const frameProof = (method: string): unknown => {
     throw new Error("Unexpected frame proof");
   };
 
-void test("fresh continuation composes actual source owners and actual V8 captures across three original routed realms", async context => {
-  const modules = await ratlineContinuationModules(), pcb = await modules.inspector(context, "pcb", 0, false, false, { holdPcbResult: true }), worker = await modules.inspector(context, "worker");
+void test("fresh continuation orders actual V8 captures before original child termination and preserves sealed history", { timeout: 60_000 }, async context => {
+  const modules = await ratlineContinuationModules();
+  const signals: { terminate: (role: "worker" | "subordinate") => void; publication: () => void } = {
+    terminate: (): never => { throw new Error("Fixture termination before original routing"); }, publication: (): never => { throw new Error("Fixture publication before original routing"); },
+  };
+  const pcb = await modules.inspector(context, "pcb", 0, false, false, { holdPcbResult: true, onWorkerTermination: (): void => { signals.terminate("worker"); } });
+  const worker = await modules.inspector(context, "worker", 0, false, false, { world: { documentUuid, projectUuid, tabId: tab, windowTabId: "window" },
+    onWorkerTermination: (): void => { signals.terminate("subordinate"); }, onPublication: (): void => { signals.publication(); } });
+  const subordinate = await modules.inspector(context, "worker");
   await worker.request("Runtime.evaluate", { expression: "globalThis.fixtureRpc = () => globalThis.fixtureRpcPromise; globalThis.fixtureRpcPromise = new Promise(resolve => { globalThis.releaseFixtureRpc=resolve; });", returnByValue: true });
   type Role = "pcb" | "worker" | "subordinate";
   let listener: Parameters<CurrentPcb209RatlineContinuationDependency["subscribe"]>[0] | null = null;
@@ -71,6 +79,13 @@ void test("fresh continuation composes actual source owners and actual V8 captur
   const workerTarget = { targetId: "worker", type: "worker", title: "pcb-ratline-worker", attached: true, url: urls.worker };
   const subordinateTarget = { ...workerTarget, targetId: "subordinate", url: urls.subordinate };
   const running: Promise<unknown>[] = [];
+  const childExited = { worker: false, subordinate: false }, revoked = { worker: false, subordinate: false };
+  const disposeFixture = new Map<string, () => void>();
+  let pcbReceivedDuringWorkerPause = false, workerTerminalPaused = false;
+  const received = Promise.withResolvers<null>(), workerReturned = Promise.withResolvers<null>();
+  const deferredResumes = new Map<"pcb" | "worker", () => void>();
+  let detachBeforeParentResume = 0;
+  const boundaryResumed = { pcb: false, worker: false };
   const transcript: { role: Role; phase: string }[] = [];
   const emit = (role: Role, method: string, params: Readonly<Record<string, unknown>>): void => { listener?.event(event(method, params, sessions[role])); };
   const pauseSource = (role: Role): void => {
@@ -95,20 +110,31 @@ void test("fresh continuation composes actual source owners and actual V8 captur
   const originalParent = Object.freeze({ targetId: "parent", sessionId: "parent-session", nextRequestId: 301 });
   const originalTermination = (): Promise<void> => { assert.ok(terminated); return Promise.resolve(); };
   const run = (role: "pcb" | "worker"): void => { const work = (role === "pcb" ? pcb : worker).run(); running.push(work); void observe(work); };
-  const publishResult = async (): Promise<void> => {
-    await worker.request("Runtime.evaluate", { expression: "globalThis.releaseFixtureRpc({message:[]})", returnByValue: true });
-    for (let index = 0; index < 100; index += 1) {
-      const value = await worker.request("Runtime.evaluate", { expression: "globalThis.CAPTURE_DONE", returnByValue: true });
-      if (z.looseObject({ result: z.looseObject({ value: z.boolean() }) }).parse(value).result.value) {
-        await pcb.request("Runtime.evaluate", { expression: "A.callback(JSON.stringify({ratlineRes:[],workerName:0}))", returnByValue: true }); return;
-      }
-      await delay(10);
-    }
-    throw new Error("Synthetic publication was not observed");
+  signals.terminate = (role): void => {
+    assert.equal(revoked[role], true); assert.equal(childExited[role], false);
+    disposeFixture.get(role)?.();
+    const work = (async (): Promise<void> => {
+      await (role === "worker" ? worker : subordinate).terminate(); childExited[role] = true;
+      emit(role, "Runtime.executionContextDestroyed", { executionContextId: 1, executionContextUniqueId: `${role}-context` });
+      const parentRole = role === "worker" ? "pcb" : "worker";
+      if (!boundaryResumed[parentRole]) { detachBeforeParentResume += 1; }
+      emit(parentRole, "Target.detachedFromTarget", { sessionId: sessions[role], targetId: role });
+      const resumed = deferredResumes.get(parentRole); if (resumed !== undefined) { deferredResumes.delete(parentRole); resumed(); }
+    })(); running.push(work); void observe(work);
   };
+  signals.publication = (): void => {
+    const work = (async (): Promise<unknown> => { await workerReturned.promise;
+      return pcb.request("Runtime.evaluate", { expression: "A.callback(JSON.stringify({ratlineRes:[],workerName:0}))", returnByValue: true }); })();
+    running.push(work); void observe(work);
+  };
+  const publishResult = (): Promise<unknown> => worker.request("Runtime.evaluate", { expression: "globalThis.releaseFixtureRpc({message:[]})", returnByValue: true });
   const subscribeFixture = (role: "pcb" | "worker"): void => {
     const fixture = role === "pcb" ? pcb : worker;
-    fixture.transport.subscribe({ lost: (): void => { listener?.lost(); }, resumed: (): void => { emit(role, "Debugger.resumed", {}); },
+    disposeFixture.set(role, fixture.transport.subscribe({ lost: (): void => { listener?.lost(); }, resumed: (): void => {
+      const child = role === "pcb" ? "worker" : "subordinate";
+      if (role === "worker" && revoked[child] && !childExited[child]) { assert.equal(deferredResumes.has(role), false); deferredResumes.set(role, (): void => { boundaryResumed[role] = true; emit(role, "Debugger.resumed", {}); }); }
+      else { if (revoked[child]) { boundaryResumed[role] = true; } emit(role, "Debugger.resumed", {}); }
+    },
       paused: input => {
         const top = pauseFrame.parse(input).callFrames[0], value = row.parse(input);
         const point = CURRENT_PCB_209_RATLINE_CREATION_PROFILES[role].after;
@@ -117,9 +143,13 @@ void test("fresh continuation composes actual source owners and actual V8 captur
           emit(role, "Target.attachedToTarget", { sessionId: role === "pcb" ? sessions.worker : sessions.subordinate,
             targetInfo: role === "pcb" ? workerTarget : subordinateTarget, waitingForDebugger: true });
         }
+        if (role === "worker" && top?.location.lineNumber === CURRENT_PCB_209_RATLINE_CAPTURE_PROFILES.worker.sites.returned.lineNumber && top.location.columnNumber === CURRENT_PCB_209_RATLINE_CAPTURE_PROFILES.worker.sites.returned.columnNumber) { workerTerminalPaused = true; workerReturned.resolve(null); }
+        if (role === "pcb" && top?.location.lineNumber === CURRENT_PCB_209_RATLINE_CAPTURE_PROFILES.pcb.sites.received.lineNumber && top.location.columnNumber === CURRENT_PCB_209_RATLINE_CAPTURE_PROFILES.pcb.sites.received.columnNumber) {
+          pcbReceivedDuringWorkerPause = workerTerminalPaused; received.resolve(null);
+        }
         emit(role, "Debugger.paused", value);
       },
-    });
+    }));
   };
   subscribeFixture("pcb"); subscribeFixture("worker");
   const dependency: CurrentPcb209RatlineContinuationDependency = Object.freeze<CurrentPcb209RatlineContinuationDependency>({
@@ -131,6 +161,7 @@ void test("fresh continuation composes actual source owners and actual V8 captur
       }
       return originalParent;
     }, assertOriginalTermination: originalTermination,
+    retireOriginalRealm: (role, sessionId): void => { assert.equal(sessionId, sessions[role]); assert.equal(revoked[role], false); revoked[role] = true; },
     assertOriginalBeforeNavigation: (): Promise<void> => { assert.equal(navigation, 0); return Promise.resolve(); },
     beginOriginalPcbNavigation: (): Promise<void> => {
       navigation += 1; assert.equal(navigation, 1); emit("pcb", "Page.navigatedWithinDocument", { frameId: "root", url: openedUrl, navigationType: "fragment" });
@@ -142,6 +173,7 @@ void test("fresh continuation composes actual source owners and actual V8 captur
     beginCleanup: (): Promise<void> => { cleanup = true; return Promise.resolve(); },
     requestParent: (command): Promise<unknown> => { parentRequests += 1; return Promise.resolve(frameProof(command.method)); },
     request: (role, command): Promise<unknown> => {
+      assert.equal(role === "pcb" ? false : revoked[role], false);
       const wire = currentPcb209RatlineContinuationNativeWire(role, command, transcript.length + 1);
       transcript.push({ role, phase: z.string().parse(wire.request["phase"]) });
       if (command.method === "Target.getTargets") {
@@ -176,13 +208,19 @@ void test("fresh continuation composes actual source owners and actual V8 captur
         } else { pauseSource(role); }
         return Promise.resolve({});
       }
-      assert.notEqual(role, "subordinate"); return (role === "pcb" ? pcb : worker).request(command.method, command.params);
+      assert.notEqual(role, "subordinate");
+      if (role === "worker" && workerTerminalPaused && command.method === "Debugger.evaluateOnCallFrame") {
+        return (async (): Promise<unknown> => { await received.promise; return worker.request(command.method, command.params); })();
+      }
+      return (role === "pcb" ? pcb : worker).request(command.method, command.params);
     },
   });
   const localTarget = { ...target }, session = new modules.Session(originalContext(), localTarget, dependency); holder.session = session;
+  try {
   let packet; const capture = session.capture(); localTarget.documentUuid = "e".repeat(16);
-  try { packet = await capture; } catch (error) { context.diagnostic(JSON.stringify(session.status())); throw error; }
+  try { packet = await capture; } catch (error) { context.diagnostic(JSON.stringify(session.status())); context.diagnostic(String(error)); throw error; }
   const captureParentProofs = parentProofs;
+  assert.deepEqual(childExited, { worker: true, subordinate: true }); assert.deepEqual(revoked, childExited); assert.ok(pcbReceivedDuringWorkerPause); assert.equal(detachBeforeParentResume, 1);
   assert.equal(session.status()["transitionStarted"], true); assert.ok(subordinateWaitProofs >= 10);
   assert.equal(packet.pcb.role, "pcb"); assert.equal(packet.worker.role, "worker"); assert.equal(packet.subordinate.sourceResumeObserved, true);
   assert.deepEqual(sources, { pcb: 29, worker: 7, subordinate: 7 }); assert.deepEqual(resumes, { pcb: 29, worker: 7, subordinate: 7 });
@@ -198,13 +236,17 @@ void test("fresh continuation composes actual source owners and actual V8 captur
   const counts = new Map<string, number>(); for (const item of transcript) { const key = `${item.role}:${item.phase}`; counts.set(key, (counts.get(key) ?? 0) + 1); }
   context.diagnostic(JSON.stringify(Object.fromEntries(counts)));
   await session.requireOriginal(packet);
-  assert.ok(captureParentProofs <= nativeProfile.helperControlDerivation.captureParentProofs);
-  assert.ok(parentProofs - captureParentProofs <= nativeProfile.helperControlDerivation.packetRecheckParentProofs);
   context.diagnostic(JSON.stringify({ helperControlAccounting: { captureParentProofs, recheckParentProofs: parentProofs - captureParentProofs,
     parentRequests, continuationCommands: transcript.length, finalParentProofs: parentProofs } }));
+  assert.ok(captureParentProofs <= nativeProfile.helperControlDerivation.captureParentProofs);
+  assert.ok(parentProofs - captureParentProofs <= nativeProfile.helperControlDerivation.packetRecheckParentProofs);
   await assert.rejects(session.requireOriginal({ ...packet }), /ORIGINAL_PACKET/u);
-  await session.abort(); assert.ok(cleanup); await Promise.all(running); await Promise.all([pcb.terminate(), worker.terminate()]); terminated = true;
-  await session.releaseAfterTermination(); assert.equal(session.status()["phase"], "released"); assert.equal(unsubscriptions, 1);
+  } finally {
+    received.resolve(null); workerReturned.resolve(null); await session.abort(); assert.ok(cleanup);
+    await Promise.all([pcb.terminate(), worker.terminate(), subordinate.terminate()]); terminated = true;
+    await Promise.allSettled(running); await session.releaseAfterTermination();
+  }
+  assert.equal(session.status()["phase"], "released"); assert.equal(unsubscriptions, 1);
 });
 
 void test("failed native cleanup admission still settles local source waits and never dispatches cleanup commands", async () => {
@@ -213,6 +255,7 @@ void test("failed native cleanup admission still settles local source waits and 
   let listener: Parameters<CurrentPcb209RatlineContinuationDependency["subscribe"]>[0] | null = null;
   const dependency: CurrentPcb209RatlineContinuationDependency = Object.freeze<CurrentPcb209RatlineContinuationDependency>({
     requireOriginalParent: (): Promise<typeof parent> => Promise.resolve(parent),
+    retireOriginalRealm: (): never => { throw new Error("No retirement expected"); },
     assertOriginalTermination: (): Promise<void> => { assert.ok(terminated); return Promise.resolve(); },
     subscribe: events => { listener = events; return (): void => { unsubscribed = true; }; },
     assertOriginalBeforeNavigation: (): Promise<void> => Promise.resolve(),

@@ -46,7 +46,10 @@ const requestClasses = freezeDeep({
   navigation: { count: 2, frameBytes: mib },
   // One pinned UI loader default callback: complete 28-byte source and resume.
   loader: { count: 2, frameBytes: envelope },
-  ancestry: { count: 3 * 4, frameBytes: mib },
+  // Electron window-context hooks: exact six-byte source and resume, once each.
+  "initial-window": { count: 2, frameBytes: envelope },
+  "document-window": { count: 2, frameBytes: envelope },
+  ancestry: { count: 3 * 4 + 2, frameBytes: mib },
   "pcb-source": { count: pcbSources.length, frameBytes: Math.max(...pcbSources.map(slot => slot.frameBytes)) },
   "child-source": { count: childSources.length, frameBytes: Math.max(...childSources.map(slot => slot.frameBytes)) },
   "pcb-bootstrap": { count: 5 + pcbSources.length + 1, frameBytes: envelope },
@@ -102,18 +105,19 @@ const cleanupPollReserve = Math.ceil(cleanupMilliseconds / pollIntervalMilliseco
   2 * cleanupRequests + Math.ceil(cleanupBytes / chunkBytes);
 const pollLimit = normalPollLimit + cleanupPollReserve;
 // Preserve the original prefix allowance. The actual composed capture makes
-// 2829 original-parent callbacks; its fixed packet recheck makes 39 and runs
+// 2849 original-parent callbacks; its fixed packet recheck makes 9 and runs
 // Once in the native wrapper and twice in the lifecycle. Every parent callback
 // Performs two native reproof exchanges. Each channel command adds one owner
 // Callback and its own exchange; polling has its separate original ledger.
 const helperControlDerivation = Object.freeze({ prefixControlsPerRequest: 16,
-  captureParentProofs: 2829, packetRecheckParentProofs: 39, packetRechecks: 3,
+  captureParentProofs: 2849, packetRecheckParentProofs: 9, packetRechecks: 3,
   // Two opening proofs: 15 callbacks each. Wrapper, routing claim, navigation
   // Guard and the two lifecycle wrapper rechecks add another 24 callbacks.
   wrapperParentProofs: 2 * 15 + 24,
-  // Optional stack lookup repeats a nine-callback owner proof twice. The two
-  // UI source/resume phases each have two additional owner callbacks.
-  originParentProofs: 2 * 9, uiParentProofs: 2 * 2,
+  // Optional stack lookup repeats a nine-callback owner proof twice.
+  // Four UI source/resume phases each have two additional owner callbacks;
+  // The initial window's two DOM snapshots each have owner-before/after.
+  originParentProofs: 2 * 9, uiParentProofs: 4 * 2 + 2 * 2,
   controlsPerParentProof: 2, controlsPerChannelRequest: 3,
 });
 const helperCleanupControlReserve = 128;
