@@ -1,6 +1,8 @@
+/* oxlint-disable import/max-dependencies -- The original child owner joins fixed source qualification, creation ownership, native grammar and the cumulative source deadline profile. */
 /** Original waiting-child source owner. No native helper or public route adopts
  * this class. The creation owner alone consumes the child's initial start. */
 import { types } from "node:util";
+import { CURRENT_PCB_209_RATLINE_NATIVE_PROFILE, currentPcb209RatlineSourceBudget } from "./current-pcb-209-ratline-budget.ts";
 import { z } from "zod";
 import { CurrentPcb209RatlinePcbCreation, CurrentPcb209RatlineWorkerCreation } from "./current-pcb-209-ratline-creation-runner.ts";
 import type { CurrentPcb209RatlineCreationPacket } from "./current-pcb-209-ratline-creation-runner.ts";
@@ -87,8 +89,8 @@ async function observed(work: Promise<unknown>): Promise<void> {
   }
 }
 async function withoutValue(work: Promise<null>): Promise<void> { await work; }
-async function bounded<T>(work: Promise<T>): Promise<T> {
-  const expired = Promise.withResolvers<never>(), timer = setTimeout(() => { expired.reject(new Error("PCB209_RATLINE_BOOTSTRAP_DEADLINE")); }, 2500);
+async function bounded<T>(work: Promise<T>, milliseconds: number = CURRENT_PCB_209_RATLINE_NATIVE_PROFILE.elapsed.ordinaryRequestMilliseconds): Promise<T> {
+  const expired = Promise.withResolvers<never>(), timer = setTimeout(() => { expired.reject(new Error("PCB209_RATLINE_BOOTSTRAP_DEADLINE")); }, milliseconds);
   try { return await Promise.race([work, expired.promise]); } finally { clearTimeout(timer); }
 }
 function members(value: CurrentPcb209RatlineBootstrapDependency): readonly unknown[] {
@@ -303,7 +305,7 @@ export class CurrentPcb209RatlineBootstrapOwner {
   }
   async #qualify(): Promise<void> {
     try {
-      for (const stage of this.#stages) {
+      for (const [ordinal, stage] of this.#stages.entries()) {
         const pause = pauseSchema.parse(await bounded(stage.paused.promise)), script = stage.script;
         need(script !== null && this.#context !== null && pause.data.scriptId === script.scriptId && pause.data.url === script.url &&
           pause.callFrames[0]?.location.scriptId === script.scriptId && script.executionContextId === this.#context.id &&
@@ -314,7 +316,7 @@ export class CurrentPcb209RatlineBootstrapOwner {
         }
         await this.#current();
         qualifyCurrentPcb209RatlineBootstrapSource(stage.role, await bounded(this.#send({ method: "Debugger.getScriptSource",
-          sessionId: this.#construction?.childSessionId ?? "", params: { scriptId: script.scriptId } })));
+          sessionId: this.#construction?.childSessionId ?? "", params: { scriptId: script.scriptId } }), currentPcb209RatlineSourceBudget("child", ordinal).deadlineMilliseconds));
         stage.qualified = true; await this.#current();
         if (stage.role === "worker") {
           need(this.#logSeen && this.#construction !== null, "PRELOAD_LOG_REQUIRED");

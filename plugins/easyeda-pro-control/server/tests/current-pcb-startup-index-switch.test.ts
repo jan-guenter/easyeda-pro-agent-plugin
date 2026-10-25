@@ -1,4 +1,4 @@
-/* oxlint-disable eslint/max-classes-per-file -- The actual extracted index dispatcher selects between these three synthetic lifecycle classes. */
+/* oxlint-disable eslint/max-classes-per-file -- The actual extracted index dispatcher selects between these four synthetic lifecycle classes. */
 import assert from "node:assert/strict";
 import { readFile } from "node:fs/promises";
 import { resolve } from "node:path";
@@ -7,7 +7,7 @@ import { runInThisContext } from "node:vm";
 import { transform } from "esbuild";
 
 type Row = Record<string, unknown>;
-type Run = (request: Readonly<{ action: string }>, empty?: boolean) => Promise<Readonly<{ result: Row }>>;
+type Run = (request: Readonly<{ action: string }>, empty?: boolean, ratline?: boolean) => Promise<Readonly<{ result: Row }>>;
 async function fixture(): Promise<Readonly<{ run: Run; owners: readonly Readonly<{ hasActiveReservation: () => boolean }>[]; flush: () => Promise<void>;
   state: { holdInspect: Promise<unknown> | null; blockGate: boolean; rejectEnqueue: boolean } }>> {
   const owners: Owner[] = [], state = { holdInspect: null as Promise<unknown> | null, blockGate: false, rejectEnqueue: false };
@@ -25,11 +25,16 @@ async function fixture(): Promise<Readonly<{ run: Run; owners: readonly Readonly
   }
   class Owner209 extends Owner {}
   class Empty209 extends Owner {}
+  class Ratline209 extends Owner {
+    public observeWorkerStartupRatline(): Promise<Row> {
+      assert.equal(this.hasActiveReservation(), true); return Promise.resolve({ synthetic: true, held: true });
+    }
+  }
   // None of these startup operations is invoked. Stable methods exist only so
   // The unmodified production index can capture and reprove its method graph.
   for (const name of ["captureWorkerStartup", "handoffWorkerStartup", "openWorkerStartup", "handoffStartup", "openStartup", "requireStartup",
     "observeWorkerStartupAssignments", "observeStartupAssignments", "requireStartupAssignments", "observeWorkerStartupActor", "observeStartupActor",
-    "observeWorkerStartupChannel", "observeStartupChannel", "observeWorkerStartupEmpty", "observeStartupEmpty", "prepareWorkerStartupEmpty", "prepareStartupEmpty"]) {
+    "observeWorkerStartupChannel", "observeStartupChannel", "observeWorkerStartupEmpty", "observeStartupEmpty", "prepareWorkerStartupEmpty", "prepareStartupEmpty", "observeWorkerStartupRatline", "observeStartupRatline"]) {
     Object.defineProperty(Owner.prototype, name, { value: (): never => { throw new Error(`Unexpected synthetic operation ${name}`); } });
   }
   const bridgeGate = { run: <T>(work: () => Promise<T>): Promise<T> => {
@@ -45,7 +50,7 @@ async function fixture(): Promise<Readonly<{ run: Run; owners: readonly Readonly
   },
     assertDiagnosticLaunchOtherOperationsSettled: (): Promise<void> => Promise.resolve() };
   const data = { diagnostic209: true, CurrentPcbWorkerStartupLifecycle: Owner, CurrentPcb209WorkerStartupLifecycle: Owner209,
-    CurrentPcb209EmptyStartupLifecycle: Empty209, engine, bridgeGate, upstream,
+    CurrentPcb209EmptyStartupLifecycle: Empty209, CurrentPcb209RatlineStartupLifecycle: Ratline209, engine, bridgeGate, upstream,
     retainedControlRoot: Object.freeze({ path: "/synthetic-control" }), controlDataDirectory: (): string => "/synthetic-control", resolve,
     CURRENT_PCB_DIAGNOSTIC_PROFILE: Object.freeze({ powershell: { sha256: "a".repeat(64), bytes: 1 } }),
     windowsRuntime: undefined, ordinaryLaunchRuntime: undefined, currentDisposableOpenCoordinator: undefined,
@@ -73,7 +78,7 @@ async function fixture(): Promise<Readonly<{ run: Run; owners: readonly Readonly
   const create = loaded.exports["create"]; assert.ok(typeof create === "function");
   const run: unknown = Reflect.apply(create, undefined, [data]); assert.ok(typeof run === "function");
   // oxlint-disable-next-line typescript/no-unsafe-type-assertion -- The checked callable is the unchanged actual index function, whose public promise result is asserted in every case below.
-  const dispatch: Run = (request, empty): ReturnType<Run> => Reflect.apply(run, undefined, [request, empty]) as ReturnType<Run>;
+  const dispatch: Run = (request, empty, ratline): ReturnType<Run> => Reflect.apply(run, undefined, [request, empty, ratline]) as ReturnType<Run>;
   return { run: dispatch, owners, state, flush: async (): Promise<void> => { const job = queue.shift(); assert.ok(job); await job(); } };
 }
 
@@ -106,4 +111,21 @@ void test("actual startup dispatcher clears admitted-call count after synchronou
   assert.equal(value.owners[0]?.hasActiveReservation(), false);
   const changed = await value.run({ action: "inspect" }, true); assert.deepEqual(changed.result, { synthetic: true, active: false });
   assert.equal(value.owners.length, 2);
+});
+
+void test("actual startup dispatcher keeps the ratline purpose distinct across queued and released owners", async () => {
+  const value = await fixture();
+  await value.run({ action: "inspect" }, true);
+  await value.run({ action: "inspect" }, false, true); assert.equal(value.owners.length, 2);
+  assert.throws(() => value.run({ action: "inspect" }, true, true), /one fixed startup purpose/u);
+  value.state.blockGate = true;
+  const launch = value.run({ action: "launch" }, false, true);
+  assert.throws(() => value.run({ action: "inspect" }, true), /original call or reservation remains/u);
+  await value.flush(); await launch;
+  assert.throws(() => value.run({ action: "inspect" }), /original call or reservation remains/u);
+  value.state.blockGate = false;
+  const observed = await value.run({ action: "observe-ratline-held-import" }, false, true);
+  assert.deepEqual(observed.result, { synthetic: true, held: true });
+  await value.run({ action: "release-closed" }, false, true);
+  await value.run({ action: "inspect" }); assert.equal(value.owners.length, 3);
 });

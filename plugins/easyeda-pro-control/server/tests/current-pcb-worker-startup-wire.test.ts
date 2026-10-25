@@ -1,6 +1,8 @@
 import assert from "node:assert/strict";
+import { createHash } from "node:crypto";
 import { readFile } from "node:fs/promises";
 import { test } from "node:test";
+import { gunzipSync } from "node:zlib";
 import { currentPcb209WorkerStartupNativeCases, currentPcbWorkerStartupNativeCases, currentPcbWorkerStartupNativeParentCases,
   currentPcbWorkerStartupNativeSource } from "../src/current-pcb-worker-startup-native.ts";
 import { currentPcb209WorkerStartupWire, currentPcbWorkerStartupWire } from "../src/current-pcb-worker-startup-wire.ts";
@@ -159,11 +161,42 @@ void test("native 209 launch fixes its encoder without a caller generation field
   assert.ok(generated.includes("return EncodeCore(id,method,sessionId,phase,fields,true);"));
   assert.ok(native.includes("readonly bool workerStartup209;"));
   assert.ok(native.includes("if ($WorkerStartup209 -and ($StringPrecreate -or $WorkerStartup -or $Layers209))"));
-  assert.ok(native.includes("$owner=if ($WorkerStartupEmpty209) {[EasyedaDiagnosticOwner]::CreateWorkerStartupEmpty209()} elseif ($WorkerStartup209) {[EasyedaDiagnosticOwner]::CreateWorkerStartup209()}"));
+  assert.ok(native.includes("elseif ($WorkerStartupEmpty209) {[EasyedaDiagnosticOwner]::CreateWorkerStartupEmpty209()} elseif ($WorkerStartup209) {[EasyedaDiagnosticOwner]::CreateWorkerStartup209()}"));
   assert.ok(native.includes("if ($WorkerStartupEmpty209 -and ($StringPrecreate -or $WorkerStartup -or $Layers209 -or $WorkerStartup209))"));
   assert.ok(native.includes("workerStartup209?EasyedaWorkerStartupProtocol.Encode209("));
   assert.ok(native.includes("[EasyedaWorkerStartupProtocol]::Verify209Smoke()"));
   assert.ok(native.includes('owner.RequestLimit!=256 || owner.nextRequest!=1'));
   assert.ok(native.includes('fields.Add("generation","209");bool extra=false;'));
   assert.ok(Buffer.byteLength(native) < 1_048_576);
+});
+
+void test("startup compile-only packing retains every legacy,209 and parent expected command byte", () => {
+  const generated = currentPcbWorkerStartupNativeSource();
+  const begin = generated.indexOf("static string[] SmokeExpected()"),
+    end = generated.indexOf("static void VerifySmokeCore(bool workerStartup209)");
+  assert.ok(begin > 0 && end > begin);
+  const decoder = generated.slice(begin, end), encoded = /const string encoded=@"([A-Za-z\d+/=]+)";/u.exec(decoder)?.[1];
+  assert.ok(encoded !== undefined);
+  // oxlint-disable-next-line node/no-sync -- Decodes one bounded deterministic test-only generated constant in memory.
+  const decoded = gunzipSync(Buffer.from(encoded, "base64"));
+  assert.equal(/bytes=new byte\[(\d+)\]/u.exec(decoder)?.[1], String(decoded.length));
+  assert.ok(decoder.includes(createHash("sha256").update(decoded).digest("hex")));
+  assert.ok(decoder.includes("System.Convert.ToBase64String(packed)==encoded"));
+  assert.ok(decoder.includes("new System.Text.UTF8Encoding(false,true)"));
+  const commands = decoded.toString("utf8").split("\0"), expected: string[] = [];
+  for (const [index, sample] of samples.entries()) {
+    const current = currentPcb209WorkerStartupNativeCases()[index]; assert.ok(current !== undefined);
+    for (const value of [current, sample]) {
+      const text = JSON.stringify({ id: 1, method: value.method, params: value.params, sessionId: value.sessionId });
+      if (!expected.includes(text)) { expected.push(text); }
+    }
+  }
+  for (const sample of currentPcbWorkerStartupNativeParentCases()) {
+    expected.push(JSON.stringify({ id: 256, method: sample.method, params: sample.params,
+      ...(sample.sessionId === undefined ? {} : { sessionId: sample.sessionId }) }));
+  }
+  assert.deepEqual(commands, expected);
+  assert.equal(generated.match(/"smoke-parity"/gu)?.length, samples.length);
+  assert.equal(generated.match(/"smoke-parent-parity"/gu)?.length, currentPcbWorkerStartupNativeParentCases().length);
+  assert.equal(generated.split("SmokeExpected()").length - 1, 2);
 });

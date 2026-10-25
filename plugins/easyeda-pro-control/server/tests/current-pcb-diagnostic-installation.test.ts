@@ -4,7 +4,9 @@ import { chmod, link, mkdir, mkdtemp, readFile, symlink, writeFile } from "node:
 import { tmpdir } from "node:os";
 import path from "node:path";
 import { test } from "node:test";
-import { createCurrentPcbDiagnosticInstallationPlan, verifyCurrentPcbDiagnosticPowerShell } from "../src/current-pcb-diagnostic-installation.ts";
+import { createCurrentPcb209DiagnosticInstallationPlan, createCurrentPcb209RatlineInstallationPlan,
+  createCurrentPcbDiagnosticInstallationPlan, verifyCurrentPcbDiagnosticPowerShell } from "../src/current-pcb-diagnostic-installation.ts";
+import { CURRENT_PCB_209_RATLINE_INSTALLATION_PROFILE } from "../src/current-pcb-209-ratline-installation-profile.ts";
 
 const OPTIONS = Object.freeze({ pluginRoot: "/mnt/c/Plugins/control", assetsRoot: "/mnt/c/Reviewed/EasyEDA/resources/app/assets",
   powershellSha256: "a".repeat(64), powershellBytes: 1234 });
@@ -20,6 +22,30 @@ void test("diagnostic installation plan derives five fixed pins and cannot selec
   assert.equal(value.paths.powershellExecutable, "/mnt/c/Windows/System32/WindowsPowerShell/v1.0/powershell.exe");
   assert.ok(Object.isFrozen(value) && Object.isFrozen(value.paths) && Object.isFrozen(value.plan) && Object.isFrozen(value.plan.files));
   assert.ok(value.plan.files.every(Object.isFrozen));
+});
+void test("ratline installation extends only its fixed launch plan with every qualified creator and imported source", () => {
+  const ordinary = createCurrentPcb209DiagnosticInstallationPlan(OPTIONS), ratline = createCurrentPcb209RatlineInstallationPlan(OPTIONS);
+  assert.equal(ordinary.plan.files.length, 5); assert.equal(ratline.plan.files.length, 17);
+  assert.deepEqual(ratline.plan.files.slice(0, 5), ordinary.plan.files);
+  assert.equal(new Set(ratline.plan.files.map(pin => pin.windowsPath)).size, 17);
+  assert.ok(Object.isFrozen(ratline.plan.files) && ratline.plan.files.every(Object.isFrozen));
+  assert.deepEqual(CURRENT_PCB_209_RATLINE_INSTALLATION_PROFILE.installedFiles.slice(4).map(pin => pin.relativePath), [
+    "pro-versions/3.2.209.8a704eab/editor.ini", "pro-ui/3.2.198.2800f583/js/ui.js", "pro-pcb/3.2.195.6b67774e/js/pcb.js",
+    "pro-mgr/3.2.185.bf63a159/js/pro-mgr.js", "pro-mgr/3.2.185.bf63a159/js/project-worker.js", "../version.txt",
+    "pro-mgr/3.2.185.bf63a159/js/preload.js", "pro-mgr/3.2.185.bf63a159/js/define-top.js", "pro-api/0.3.59.1ca9efb5/api.js",
+    "smt-gl-engine/3.2.56.b216263a/smt-gl-engine.js", "pro-pcb/3.2.195.6b67774e/js/ratlineworker.js", "pro-mgr/3.2.185.bf63a159/js/ws-service.js",
+  ]);
+});
+void test("native ratline acquisition checks the exact extended table before retaining all source leases or creating a process", async () => {
+  const source = await readFile(new URL("../../scripts/pcb-diagnostic-owner.ps1", import.meta.url), "utf8");
+  const admission = source.slice(source.indexOf("public void AdmitRatline("), source.indexOf("public void AssertCurrent()"));
+  assert.ok(admission.startsWith("public void AdmitRatline("));
+  assert.ok(admission.indexOf("EasyedaRatline209Installation.Validate(paths,sizes,hashes)") < admission.indexOf("Admit(corePaths,coreSizes,coreHashes)"));
+  assert.ok(admission.includes("for(int index=5;index<paths.Length;index++)Pin(paths[index],sizes[index],hashes[index]);"));
+  assert.ok(source.includes("if(workerStartupRatline209)installation.AdmitRatline(paths,sizes,hashes);else installation.Admit(paths,sizes,hashes);"));
+  for (const pin of CURRENT_PCB_209_RATLINE_INSTALLATION_PROFILE.installedFiles) { assert.ok(source.includes(pin.sha256)); }
+  assert.ok(source.includes("[EasyedaRatline209Installation]::VerifySmoke()"));
+  assert.ok(source.includes("$fileCount=if ($WorkerStartupRatline209) {[EasyedaRatline209Installation]::FileCount} else {5}"));
 });
 for (const assetsRoot of ["/mnt/c/CON/resources/app/assets", "/mnt/c/Valid./resources/app/assets", "/mnt/c/Valid /resources/app/assets",
   "/mnt/c/Bad:stream/resources/app/assets", "/mnt/c/Bad\u007F/resources/app/assets", "/mnt/c/A?B/resources/app/assets",

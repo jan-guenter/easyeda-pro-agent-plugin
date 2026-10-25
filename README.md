@@ -35,6 +35,11 @@ general geometry operations, writers and explicit Save remain disabled. A
 separate disposable project-worker startup tool captures original constructors,
 current wrapper/channel relations and actor/local-Date observations. It does
 not establish PCB-worker completion or enable writers.
+Its separate [ratline diagnostic purpose](plugins/easyeda-pro-control/skills/easyeda-pro-control/references/current-pcb209-ratline-held-import.md)
+observes PCB construction and holds the first child's qualified source import.
+It retains one process owner, source leases and cumulative limits; connected
+validation, independent Worker-to-target identity and later startup completion
+remain pending.
 On eligible 3.2.206 profiles, the ordinary symbol-metadata route allows forward name/description edits of
 unused project-local symbols with eligible history. Disposable validation
 routes have separate gates. Check the

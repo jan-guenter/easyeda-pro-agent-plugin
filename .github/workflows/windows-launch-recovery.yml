@@ -106,7 +106,7 @@ jobs:
           $ErrorActionPreference = 'Stop'
           Set-StrictMode -Version Latest
           $script = Join-Path $env:GITHUB_WORKSPACE 'plugins\easyeda-pro-control\scripts\pcb-diagnostic-owner.ps1'
-          foreach ($purpose in @('', '-StringPrecreate', '-WorkerStartup', '-Layers209', '-WorkerStartup209')) {
+          foreach ($purpose in @('', '-StringPrecreate', '-WorkerStartup', '-Layers209', '-WorkerStartup209', '-WorkerStartupEmpty209', '-WorkerStartupRatline209')) {
           $child = [Diagnostics.Process]::new()
           $child.StartInfo.FileName = Join-Path $PSHOME 'powershell.exe'
           $child.StartInfo.Arguments = '-NoLogo -NoProfile -NonInteractive -ExecutionPolicy Bypass -File "' + $script + '" -CompileOnly ' + $purpose

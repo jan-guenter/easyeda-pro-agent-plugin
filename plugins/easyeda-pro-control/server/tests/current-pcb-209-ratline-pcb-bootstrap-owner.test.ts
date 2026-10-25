@@ -1,5 +1,6 @@
 /* oxlint-disable import/max-dependencies -- This source-owner integration test joins the actual finite dispatcher, inert V8 capture fixture and one labeled source-qualifier substitution. */
 import assert from "node:assert/strict";
+import { CURRENT_PCB_209_RATLINE_NATIVE_PROFILE as budgetProfile } from "../src/current-pcb-209-ratline-budget.ts";
 import { readFile } from "node:fs/promises";
 import { createRequire } from "node:module";
 import { test } from "node:test";
@@ -136,6 +137,10 @@ async function fixture(context: TestContext, options: Readonly<{ realCapture?: b
 }
 
 void test("PCB source owner arms before one opening, hands retained realm to actual V8 composite and settles original navigation", async context => {
+  const deadlines: number[] = [], originalSetTimeout = globalThis.setTimeout;
+  context.mock.method(globalThis, "setTimeout", (...args: Parameters<typeof setTimeout>): ReturnType<typeof setTimeout> => {
+    if (typeof args[1] === "number") { deadlines.push(args[1]); } return originalSetTimeout(...args);
+  });
   const f = await fixture(context, { realCapture: true }); await f.owner.armBeforeNavigation(); assert.equal(f.counts().navigation, 0);
   await f.owner.startOriginalNavigation(); const packet = await f.owner.whenSourceQualified();
   assert.equal(f.counts().sourceReads, 29); assert.equal(f.counts().resumes, 28); assert.equal(f.owner.status()["navigationSettled"], false);
@@ -169,6 +174,10 @@ void test("PCB source owner arms before one opening, hands retained realm to act
   assert.equal(f.counts().navigation, 1); assert.equal(f.counts().resumes, 29); assert.equal(f.counts().childStarts, 1);
   await assert.rejects(f.owner.startOriginalNavigation(), /NAVIGATION_CONSUMED/u);
   await assert.rejects(f.owner.releaseOriginalPinnedSource(packet), /CONTINUATION_CONSUMED/u);
+  for (const slot of budgetProfile.sources.pcb) { assert.ok(deadlines.includes(slot.deadlineMilliseconds), `Missing source deadline for ${slot.stage}`); }
+  for (const milliseconds of [budgetProfile.elapsed.ordinaryRequestMilliseconds, budgetProfile.elapsed.ancestryProofMilliseconds,
+    budgetProfile.elapsed.sourceReleaseMilliseconds, budgetProfile.elapsed.childArmMilliseconds, budgetProfile.elapsed.creationContinuationMilliseconds,
+    budgetProfile.elapsed.capturePauseMilliseconds, budgetProfile.elapsed.captureWaitMilliseconds]) { assert.ok(deadlines.includes(milliseconds)); }
   await session.abort(); await f.owner.abort(); await f.terminate(); await session.releaseAfterTermination();
 });
 

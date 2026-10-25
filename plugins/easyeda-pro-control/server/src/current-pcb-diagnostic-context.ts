@@ -24,7 +24,7 @@ interface PcbOpeningTransition {
   readonly originalRoot: Row; readonly uiIdentity: Readonly<{ scriptId: string; contextId: number; uniqueContextId: string }>;
   childId: string | null; child: Row | null; navigation: CurrentPcbDiagnosticChildNavigation | null;
   readonly initialChildContexts: Set<number>;
-  domBackendNodeId: number | null; profile: DiagnosticScriptProfile | null;
+  domBackendNodeId: number | null; domObservation: Row | null; profile: DiagnosticScriptProfile | null;
   sourceIdentity: Readonly<{ scriptId: string; contextId: number; uniqueContextId: string }> | null;
   completed: boolean;
 }
@@ -429,7 +429,7 @@ export class CurrentPcbDiagnosticContext {
     const tabId = `${documentUuid}@${projectUuid}`;
     this.#pcbOpening = { projectUuid, documentUuid, tabId, url: `${base}#id=${projectUuid},tab=*${tabId}`,
       originalRoot: this.#frame, uiIdentity: this.#sourceIdentity, childId: null, child: null, navigation: null, initialChildContexts: new Set(),
-      domBackendNodeId: null, profile: null, sourceIdentity: null, completed: false };
+      domBackendNodeId: null, domObservation: null, profile: null, sourceIdentity: null, completed: false };
     this.#priorRootNavigation = this.#rootNavigation;
     this.#rootNavigation = new CurrentPcbDiagnosticSameDocument(String(this.#frame["id"]), this.#pcbOpening.url);
     return selected;
@@ -521,7 +521,63 @@ export class CurrentPcbDiagnosticContext {
         attributes.get("c_doctype") !== "3" || attributes.get("src") !== "editor?entry=pcb" ||
         attributes.get("pcb-canvas") !== "true" || attributes.get("class")?.split(/\s+/u).includes("editframe") !== true ||
         ["blankIframe", "fromFile", "jsonCacheReady"].some(name => attributes.has(name.toLowerCase()))) { this.#refuse(); }
-    pcb.domBackendNodeId = backend;
+    pcb.domBackendNodeId = backend; pcb.domObservation = clone({ ownerReply, describeReply });
+  }
+  /** Exact historical replay is admitted only by the dedicated bootstrap
+   * adapter while its original Runtime/Debugger enable request is pending.
+   * The ordinary observer still rejects duplicate identities. */
+  public observePcbBootstrapEnableReplay(event: DiagnosticEvent): boolean {
+    this.openingContext();
+    if (this.#pcbOpening !== null || event.sessionId !== this.#sessionId) { return this.#refuse(); }
+    const context = event.params["context"];
+    let retained: Row | undefined;
+    if (event.method === "Runtime.executionContextCreated") {
+      if (!diagnosticExact(event.params, ["context"]) || !diagnosticRecord(context) || !integer(context["id"])) { return this.#refuse(); }
+      retained = this.#contexts.get(context["id"]);
+    } else if (event.method === "Debugger.scriptParsed") {
+      if (!diagnosticToken(event.params["scriptId"])) { return this.#refuse(); }
+      retained = this.#scripts.get(event.params["scriptId"]);
+    } else { return this.#refuse(); }
+    if (retained === undefined) { return false; }
+    if (this.#events.length >= 4096 || !equal(retained, event.method === "Runtime.executionContextCreated" ? context : event.params)) { return this.#refuse(); }
+    this.#events.push({ method: event.method, params: {}, sessionId: event.sessionId }); return true;
+  }
+  /** Classify an actually observed context against the retained frame roster.
+   * A newly attached initial blank child is observed but never selected until
+   * the PCB loader commits. This grants no source or completed-model authority. */
+  public pcbBootstrapEventContext(contextId: number): Row | null {
+    this.assertCurrent(); this.#uiSourceContext();
+    const context = this.#contexts.get(contextId);
+    const aux = context?.["auxData"], pcb = this.#pcbOpening;
+    if (context === undefined || !diagnosticRecord(aux)) { return this.#refuse(); }
+    if (aux["frameId"] === this.#frame?.["id"] || aux["frameId"] === this.#ancillaryFrame?.["id"]) { return null; }
+    if (pcb === null || pcb.childId === null || aux["frameId"] !== pcb.childId || pcb.navigation === null) { return this.#refuse(); }
+    if (pcb.navigation.committedLoader === null) { return null; }
+    const matching = [...this.#contexts.values()].filter(value => {
+      const data = value["auxData"]; return diagnosticRecord(data) && data["frameId"] === pcb.childId && data["isDefault"] === true && data["type"] === "default";
+    });
+    if (matching.length !== 1 || matching[0] !== context || context["origin"] !== "https://client" ||
+        !diagnosticToken(context["uniqueId"]) || !integer(context["id"])) { return this.#refuse(); }
+    return clone(context);
+  }
+  /** Repeat full snapshots against the initially consumed source-held proof.
+   * Unknown fields and attributes remain exact; no transition is reset. */
+  public reprovePcbBootstrapFrames(targetReply: Row, frameReply: Row): void {
+    this.pcbOpeningContext(); const pcb = this.#pcbOpening;
+    if (pcb?.child === null || pcb?.child === undefined || pcb.navigation === null || pcb.domBackendNodeId === null) { return this.#refuse(); }
+    pcb.navigation.assertReady(); this.observeFrames(frameReply); this.observeTarget(targetReply);
+  }
+  public reprovePcbBootstrapOwner(ownerReply: Row, describeReply: Row): void {
+    this.pcbOpeningContext(); const pcb = this.#pcbOpening;
+    if (pcb?.domObservation === null || pcb?.domObservation === undefined || !equal(pcb.domObservation, { ownerReply, describeReply })) { this.#refuse(); }
+  }
+  public assertPcbBootstrapContext(observed: Readonly<{ sessionId: string; parentTargetId: string; frameId: string;
+    contextId: number; uniqueContextId: string; origin: string; frameUrl: string | null }>): void {
+    this.pcbOpeningContext(); const context = this.pcbBootstrapEventContext(observed.contextId), pcb = this.#pcbOpening;
+    if (pcb?.child === null || pcb?.child === undefined || pcb.domBackendNodeId === null || context === null ||
+        observed.sessionId !== this.#sessionId || observed.parentTargetId !== this.#targetId || observed.frameId !== pcb.childId ||
+        observed.uniqueContextId !== context["uniqueId"] || observed.origin !== context["origin"] ||
+        observed.frameUrl !== null && observed.frameUrl !== pcb.child["url"]) { this.#refuse(); }
   }
   public pcbScript(input: DiagnosticScriptProfile): Readonly<{ scriptId: string; context: Row; parsed: Row }> {
     this.pcbOpeningContext();

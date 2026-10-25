@@ -10,9 +10,9 @@ import type { CurrentDisposableOpenSealedTarget } from "./current-disposable-ope
 import { prepareCurrentDisposableOpenCheckpoint, readCurrentPcbCommonOpenInventory, verifyCurrentDisposableOpenCheckpoint, verifyHistoricalCurrentDisposableOpenCheckpoint } from "./current-disposable-open-checkpoint.ts";
 import type { CurrentDisposableOpenCheckpoint } from "./current-disposable-open-checkpoint.ts";
 import { assertNoUnresolvedOrdinaryLaunches } from "./ordinary-launch.ts";
-import { startCurrentPcb209DiagnosticOwner, startCurrentPcb209EmptyStartupOwner, startCurrentPcb209WorkerStartupOwner, startCurrentPcbDiagnosticOwner, startCurrentPcbStringPrecreateOwner, startCurrentPcbWorkerStartupOwner } from "./current-pcb-diagnostic-owner.ts";
-import type { CurrentPcb209WorkerStartupOwner, CurrentPcbDiagnosticOwner, CurrentPcbStringPrecreateOwner, CurrentPcbWorkerStartupHandoff, CurrentPcbWorkerStartupOwner } from "./current-pcb-diagnostic-owner.ts";
-import { verifyCurrentPcb209DiagnosticInstallation, verifyCurrentPcbDiagnosticInstallation } from "./current-pcb-diagnostic-installation.ts";
+import { startCurrentPcb209DiagnosticOwner, startCurrentPcb209EmptyStartupOwner, startCurrentPcb209RatlineStartupOwner, startCurrentPcb209WorkerStartupOwner, startCurrentPcbDiagnosticOwner, startCurrentPcbStringPrecreateOwner, startCurrentPcbWorkerStartupOwner } from "./current-pcb-diagnostic-owner.ts";
+import type { CurrentPcb209RatlineStartupOwner, CurrentPcb209WorkerStartupOwner, CurrentPcbDiagnosticOwner, CurrentPcbStringPrecreateOwner, CurrentPcbWorkerStartupHandoff, CurrentPcbWorkerStartupOwner } from "./current-pcb-diagnostic-owner.ts";
+import { verifyCurrentPcb209DiagnosticInstallation, verifyCurrentPcb209RatlineInstallation, verifyCurrentPcbDiagnosticInstallation } from "./current-pcb-diagnostic-installation.ts";
 import type { CurrentPcbDiagnosticInstallation, CurrentPcbDiagnosticInstallationOptions } from "./current-pcb-diagnostic-installation.ts";
 import { CURRENT_PCB_DIAGNOSTIC_SCRIPTS } from "./current-pcb-diagnostic-profile.ts";
 import { CURRENT_PCB_209_OPENING_PROFILE, CURRENT_PCB_209_OPENING_SCRIPTS } from "./current-pcb-209-opening-profile.ts";
@@ -58,6 +58,11 @@ import type { CurrentPcb209WorkerStartupOpeningCoordinator, CurrentPcbStartupAct
 import { CURRENT_PCB_209_EMPTY_STARTUP_OPERATION_PREFIX, currentPcb209EmptyStartupIdSchema, currentPcb209EmptyStartupLifecycleRequestSchema } from "./current-pcb-209-empty-startup-validation.ts";
 import { CURRENT_PCB_209_WORKER_STARTUP_OPERATION_PREFIX, currentPcb209WorkerStartupLifecycleIdSchema,
   currentPcb209WorkerStartupLifecycleRequestSchema } from "./current-pcb-209-worker-startup-validation.ts";
+import { CURRENT_PCB_209_RATLINE_STARTUP_OPERATION_PREFIX, currentPcb209RatlineStartupIdSchema,
+  currentPcb209RatlineStartupLifecycleRequestSchema } from "./current-pcb-209-ratline-startup-validation.ts";
+import { CurrentPcb209RatlineStartupChannel } from "./current-pcb-209-ratline-startup-channel.ts";
+import { CurrentPcb209RatlineNativeSession } from "./current-pcb-209-ratline-native-session.ts";
+import type { CurrentPcb209RatlineNativePacket } from "./current-pcb-209-ratline-native-session.ts";
 import type { CurrentPcbWorkerStartupChannelPacket } from "./current-pcb-worker-startup-channel-observation.ts";
 import { CURRENT_PCB_WORKER_STARTUP_OPERATION_PREFIX, currentPcbWorkerStartupCaptureRequestSchema,
   currentPcbWorkerStartupLifecycleIdSchema, currentPcbWorkerStartupLifecycleRequestSchema } from "./current-pcb-worker-startup-validation.ts";
@@ -65,8 +70,8 @@ import { CURRENT_PCB_WORKER_STARTUP_OPERATION_PREFIX, currentPcbWorkerStartupCap
 export type { CurrentPcbWorkerStartupOpeningCoordinator } from "./current-pcb-worker-startup-lifecycle-adapter.ts";
 
 type LifecycleRequest = Request | CurrentPcbStringPrecreateRequest | CurrentPcb209OpeningRequest;
-type LifecycleGeneration = "206" | "209-opening" | "209-startup" | "209-startup-empty";
-function startup209(generation: LifecycleGeneration): boolean { return generation === "209-startup" || generation === "209-startup-empty"; }
+type LifecycleGeneration = "206" | "209-opening" | "209-startup" | "209-startup-empty" | "209-startup-ratline";
+function startup209(generation: LifecycleGeneration): boolean { return generation === "209-startup" || generation === "209-startup-empty" || generation === "209-startup-ratline"; }
 const startupStages = ["browser", "frames", "script"] as const;
 const launchPurposeFields = {
   diagnostic: { schema: "easyeda-pro-control.pcb-diagnostic-launch-intent.v1" },
@@ -74,7 +79,8 @@ const launchPurposeFields = {
   "worker-startup": { schema: "easyeda-pro-control.pcb-worker-startup-launch-intent.v1", purpose: "worker-startup" },
 } as const;
 function launchFields(purpose: CurrentPcbDiagnosticLifecyclePurpose, generation: LifecycleGeneration):
-  typeof launchPurposeFields[CurrentPcbDiagnosticLifecyclePurpose] | Readonly<{ schema: "easyeda-pro-control.pcb209-worker-startup-launch-intent.v1" | "easyeda-pro-control.pcb209-empty-startup-launch-intent.v1"; purpose: "worker-startup" }> {
+  typeof launchPurposeFields[CurrentPcbDiagnosticLifecyclePurpose] | Readonly<{ schema: "easyeda-pro-control.pcb209-worker-startup-launch-intent.v1" | "easyeda-pro-control.pcb209-empty-startup-launch-intent.v1" | "easyeda-pro-control.pcb209-ratline-startup-launch-intent.v1"; purpose: "worker-startup" }> {
+  if (generation === "209-startup-ratline") { return { schema: "easyeda-pro-control.pcb209-ratline-startup-launch-intent.v1", purpose: "worker-startup" }; }
   if (generation === "209-startup-empty") { return { schema: "easyeda-pro-control.pcb209-empty-startup-launch-intent.v1", purpose: "worker-startup" }; }
   if (generation === "209-startup") { return { schema: "easyeda-pro-control.pcb209-worker-startup-launch-intent.v1", purpose: "worker-startup" }; }
   return launchPurposeFields[purpose];
@@ -89,6 +95,11 @@ const emptySessionMethods = Object.freeze({ openPcb: CurrentPcb209WorkerStartupP
   pcbStatus: CurrentPcb209WorkerStartupPcbSession.prototype.status, pcbObservation: CurrentPcb209WorkerStartupPcbSession.prototype.retainedOpeningObservation,
   observe: CurrentPcb209WorkerStartupEmptySession.prototype.observeAndJoin, require: CurrentPcb209WorkerStartupEmptySession.prototype.requireOriginal,
   status: CurrentPcb209WorkerStartupEmptySession.prototype.status });
+const ratlineChannelCleanup = CurrentPcb209RatlineStartupChannel.prototype.beginCleanup;
+const ratlineSessionMethods = Object.freeze({ capture: CurrentPcb209RatlineNativeSession.prototype.captureFirstChildHeld,
+  require: CurrentPcb209RatlineNativeSession.prototype.requireOriginal, abort: CurrentPcb209RatlineNativeSession.prototype.abort,
+  release: CurrentPcb209RatlineNativeSession.prototype.releaseAfterTermination, status: CurrentPcb209RatlineNativeSession.prototype.status,
+  opening: CurrentPcb209RatlineNativeSession.prototype.retainedOpeningObservation });
 // oxlint-enable typescript/unbound-method
 
 type CleanupRequest = Exclude<LifecycleRequest, { action: "launch" | "inspect" | "query-observation" | "settle-records" | "cleanup-unlaunched" | "cleanup-no-process" }>;
@@ -101,10 +112,11 @@ export type CurrentPcbDiagnosticLifecycleOwner = Pick<CurrentPcbDiagnosticOwner,
   Partial<Pick<CurrentPcbDiagnosticOwner, "observeLayers209" | "observePrimitives209" | "observeExtendedPrimitives209" | "observeSelectionRelations209" | "observePadShapes209" | "observeImageShapes209" | "observeArcShapes209" | "observePouredShapes209">>;
 type StringOwnerMethods = Pick<CurrentPcbStringPrecreateOwner, "observeStringPrecreate" | "observeCommonBaseline" | "retainedCommonBaselineFailure">;
 type StartupOwnerMethods = Pick<CurrentPcbWorkerStartupOwner, "handoffWorkerStartup">;
+type StartupRatlineOwnerMethods = Pick<CurrentPcb209RatlineStartupOwner, "prepareWorkerStartupRatlineSession209">;
 type StartupEmptyOwnerMethods = Pick<CurrentPcb209WorkerStartupOwner, "requireWorkerStartupEmptyDependency209" | "prepareWorkerStartupPcbSession209">;
 export type CurrentPcbStringPrecreateLifecycleOwner = CurrentPcbDiagnosticLifecycleOwner & StringOwnerMethods;
-export type CurrentPcbWorkerStartupLifecycleOwner = CurrentPcbDiagnosticLifecycleOwner & StartupOwnerMethods & Partial<StartupEmptyOwnerMethods>;
-type LifecycleOwner = CurrentPcbDiagnosticLifecycleOwner & Partial<StringOwnerMethods & StartupOwnerMethods & StartupEmptyOwnerMethods>;
+export type CurrentPcbWorkerStartupLifecycleOwner = CurrentPcbDiagnosticLifecycleOwner & StartupOwnerMethods & Partial<StartupEmptyOwnerMethods & StartupRatlineOwnerMethods>;
+type LifecycleOwner = CurrentPcbDiagnosticLifecycleOwner & Partial<StringOwnerMethods & StartupOwnerMethods & StartupEmptyOwnerMethods & StartupRatlineOwnerMethods>;
 export interface CurrentPcb209StartupEmptyPreparation {
   /** The enclosing lifecycle must durably consume PCB navigation intent before
    * calling openAndQualify. This private preparation does not publish that intent. */
@@ -298,6 +310,13 @@ class CurrentPcbLifecycleCore {
   #startupEmptySession: CurrentPcb209WorkerStartupEmptySession | null = null;
   #startupEmptyPacket: CurrentPcb209WorkerStartupEmptyPacket | null = null;
   #startupEmptyFailed = false;
+  #startupRatlineAttempted = false;
+  #startupRatlineFailed = false;
+  #startupRatlineSession: CurrentPcb209RatlineNativeSession | null = null;
+  #startupRatlinePacket: CurrentPcb209RatlineNativePacket | null = null;
+  #startupRatlineCleanup: Promise<void> | null = null;
+  #startupRatlineCleanupFailed = false;
+  #startupRatlineReleased = false;
 
   public constructor(options: CurrentPcbDiagnosticLifecycleOptions,
     dependencies: CurrentPcbDiagnosticLifecycleDependencies | CurrentPcbStringPrecreateLifecycleDependencies | CurrentPcbWorkerStartupLifecycleDependencies | CurrentPcb209WorkerStartupLifecycleDependencies,
@@ -311,10 +330,13 @@ class CurrentPcbLifecycleCore {
       { diagnostic: diagnosticObservationStageSchema.options, "string-precreate": currentPcbStringPrecreateStages,
         "worker-startup": startupStages }[purpose];
     this.#options = Object.freeze({ ...options });
-    this.#verify = dependencies.verifyInstallation ?? (generation === "206" ? verifyCurrentPcbDiagnosticInstallation : verifyCurrentPcb209DiagnosticInstallation);
+    let verify = generation === "206" ? verifyCurrentPcbDiagnosticInstallation : verifyCurrentPcb209DiagnosticInstallation;
+    if (generation === "209-startup-ratline") { verify = verifyCurrentPcb209RatlineInstallation; }
+    this.#verify = dependencies.verifyInstallation ?? verify;
     let allocate = { diagnostic: startCurrentPcbDiagnosticOwner, "string-precreate": startCurrentPcbStringPrecreateOwner,
       "worker-startup": startCurrentPcbWorkerStartupOwner }[purpose];
-    if (generation === "209-startup-empty") { allocate = startCurrentPcb209EmptyStartupOwner; }
+    if (generation === "209-startup-ratline") { allocate = startCurrentPcb209RatlineStartupOwner; }
+    else if (generation === "209-startup-empty") { allocate = startCurrentPcb209EmptyStartupOwner; }
     else if (generation === "209-startup") { allocate = startCurrentPcb209WorkerStartupOwner; }
     else if (generation === "209-opening") { allocate = startCurrentPcb209DiagnosticOwner; }
     this.#allocate = dependencies.allocateOwner ?? allocate;
@@ -334,7 +356,8 @@ class CurrentPcbLifecycleCore {
 
   public async run(input: unknown): Promise<Record<string, unknown>> {
     let request: LifecycleRequest;
-    if (this.#generation === "209-startup-empty") { request = currentPcb209EmptyStartupLifecycleRequestSchema.parse(input); }
+    if (this.#generation === "209-startup-ratline") { request = currentPcb209RatlineStartupLifecycleRequestSchema.parse(input); }
+    else if (this.#generation === "209-startup-empty") { request = currentPcb209EmptyStartupLifecycleRequestSchema.parse(input); }
     else if (this.#generation === "209-startup") { request = currentPcb209WorkerStartupLifecycleRequestSchema.parse(input); }
     else if (this.#generation === "209-opening") { request = currentPcb209OpeningRequestSchema.parse(input); }
     else { request = { diagnostic: currentPcbDiagnosticValidationRequestSchema, "string-precreate": currentPcbStringPrecreateRequestSchema,
@@ -440,6 +463,14 @@ class CurrentPcbLifecycleCore {
         workerStartupChannelObservation: original && this.#startupOpening !== null ?
           this.#startupOpening.methods.retainedChannelObservation.call(this.#startupOpening.owner) : null,
         workerStartupChannelResult: publicStartupChannelResult(request.operationId, channelRecord, channelPublished !== undefined),
+        workerStartupRatlineAttemptConsumed: operation?.records["worker-startup-ratline-intent.json"] !== undefined || original && this.#startupRatlineAttempted,
+        workerStartupRatlineResultPublished: operation?.records["worker-startup-ratline-result.json"] !== undefined,
+        workerStartupRatlineResultRetained: original && this.#startupRatlinePacket !== null,
+        workerStartupRatlineFailed: original && this.#startupRatlineFailed,
+        workerStartupRatlineCleanupFailed: original && this.#startupRatlineCleanupFailed,
+        workerStartupRatlineState: original && this.#startupRatlineSession !== null ? ratlineSessionMethods.status.call(this.#startupRatlineSession) : null,
+        workerStartupRatlineOpening: original && this.#startupRatlineSession !== null ? ratlineSessionMethods.opening.call(this.#startupRatlineSession) : null,
+        workerStartupRatlineResult: operation?.records["worker-startup-ratline-result.json"]?.result ?? null,
         workerStartupEmptyAttemptConsumed: operation?.records["worker-startup-empty-intent.json"] !== undefined || original && this.#startupEmptyAttempted,
         workerStartupEmptyResultPublished: operation?.records["worker-startup-empty-result.json"] !== undefined,
         workerStartupEmptyResultRetained: original && this.#startupEmptyPacket !== null,
@@ -549,8 +580,8 @@ class CurrentPcbLifecycleCore {
   }
 
   protected openStartup(operationId: string, expectedBindingSha256: string, input: unknown, generation: "206"): Promise<CurrentPcbWorkerStartupOpeningResult>;
-  protected openStartup(operationId: string, expectedBindingSha256: string, input: unknown, generation: "209-startup" | "209-startup-empty"): Promise<CurrentPcb209WorkerStartupOpeningResult>;
-  protected async openStartup(operationId: string, expectedBindingSha256: string, input: unknown, generation: "206" | "209-startup" | "209-startup-empty"): Promise<CurrentPcbStartupOpeningResult> {
+  protected openStartup(operationId: string, expectedBindingSha256: string, input: unknown, generation: "209-startup" | "209-startup-empty" | "209-startup-ratline"): Promise<CurrentPcb209WorkerStartupOpeningResult>;
+  protected async openStartup(operationId: string, expectedBindingSha256: string, input: unknown, generation: "206" | "209-startup" | "209-startup-empty" | "209-startup-ratline"): Promise<CurrentPcbStartupOpeningResult> {
     requireValue(this.#generation === generation, "GENERATION_MISMATCH");
     this.#startupId(operationId); diagnosticLifecycleDigestSchema.parse(expectedBindingSha256);
     const request = startupCaptureInputSchema.parse(input);
@@ -784,6 +815,73 @@ class CurrentPcbLifecycleCore {
     finally { this.#busy = false; }
   }
 
+  /** One held-import observation, retaining its actual launch, original reader
+   * and source session. The durable intent precedes preparation and navigation. */
+  protected async observeStartupRatline(operationId: string, expectedBindingSha256: string): Promise<Record<string, unknown>> {
+    this.#startupId(operationId); diagnosticLifecycleDigestSchema.parse(expectedBindingSha256); this.#options.assertLocalAllowed();
+    requireValue(this.#generation === "209-startup-ratline" && !this.#busy, "STARTUP_RATLINE_PURPOSE");
+    requireValue(!this.#startupRatlineAttempted, "STARTUP_RATLINE_CONSUMED"); this.#startupRatlineAttempted = true; this.#busy = true;
+    try {
+      const operations = await readCurrentPcbDiagnosticLifecycles(), retained = this.#retained;
+      const operation = operations.find(value => value.operationId === operationId); this.#assertPurpose(operationId, operation);
+      const handoff = this.#startupHandoff, openedResult = this.#startupOpeningResult, original = this.#startupOpening, preparation = this.#projectPreparation;
+      const openingIntent = operation?.records["worker-startup-opening-intent.json"], openingResult = operation?.records["worker-startup-opening-result.json"];
+      requireValue(operation !== undefined && retained !== null && retained.operationId === operationId && original !== null && openedResult !== null &&
+        preparation !== null && handoff !== null && openingIntent !== undefined && openingResult !== undefined &&
+        sha256Json(operation.records["binding.json"]) === expectedBindingSha256 &&
+        this.#pending.get("worker-startup-opening-intent.json") === canonicalJson(openingIntent) &&
+        this.#pending.get("worker-startup-opening-result.json") === canonicalJson(openingResult) &&
+        canonicalJson(openingResult.result) === canonicalJson(openedResult) && operation.records["worker-startup-ratline-intent.json"] === undefined,
+      "ORIGINAL_STARTUP_RATLINE_REQUIRED");
+      const prepare = retained.methods.prepareWorkerStartupRatlineSession209;
+      requireValue(typeof prepare === "function", "STARTUP_RATLINE_OWNER_REQUIRED");
+      const openingIntentText = canonicalJson(openingIntent), openingResultText = canonicalJson(openingResult);
+      const current = (): void => {
+        this.#assertOwner(retained);
+        requireValue(this.#startupOpening === original && this.#startupOpeningResult === openedResult && this.#projectPreparation === preparation &&
+          this.#startupHandoff === handoff && !this.#startupOpeningReleased && !this.#closeAttempted && !this.#releaseAttempted &&
+          retained.owner.prepareWorkerStartupRatlineSession209 === prepare &&
+          this.#pending.get("worker-startup-opening-intent.json") === openingIntentText &&
+          this.#pending.get("worker-startup-opening-result.json") === openingResultText, "STARTUP_RATLINE_OWNER_CHANGED");
+      };
+      current(); await this.#installation(retained); current(); await assertSnapshot(operations); current();
+      const intent: NonNullable<DiagnosticLifecycleRecords["worker-startup-ratline-intent.json"]> = {
+        schema: "easyeda-pro-control.pcb209-worker-startup-ratline-intent.v1", operationId, createdAt: new Date().toISOString(),
+        bindingSha256: expectedBindingSha256, openingIntentSha256: sha256Json(openingIntent), openingResultSha256: sha256Json(openingResult),
+        acceptNormalOpenEffects: true, acceptDebuggerPause: true,
+      };
+      await this.#record(operationId, "worker-startup-ratline-intent.json", intent);
+      const intentText = canonicalJson(intent), updated = { ...operation, records: { ...operation.records, "worker-startup-ratline-intent.json": intent } };
+      const expected = operations.map(value => value.operationId === operationId ? updated : value);
+      const assertOriginal = async (): Promise<void> => {
+        current(); requireValue(this.#pending.get("worker-startup-ratline-intent.json") === intentText, "STARTUP_RATLINE_INTENT_CHANGED");
+        await assertSnapshot(expected); current(); await this.#installation(retained); current();
+        requireValue(this.#pending.get("worker-startup-ratline-intent.json") === intentText, "STARTUP_RATLINE_INTENT_CHANGED");
+        await assertSnapshot(expected); current();
+      };
+      await assertOriginal();
+      const opened = requireCurrentPcb209StartupOpening(original.owner, openedResult);
+      const reverify = currentPcb209StartupCheckpointCallback(preparation, openingIntent,
+        Object.freeze({ assertOriginal, verifyHistorical: this.#verifyHistoricalCheckpoint }));
+      const session = prepare.call(retained.owner, opened.opening, opened.result, preparation.sealedTarget, reverify);
+      this.#startupRatlineSession = session; await assertOriginal();
+      const packet = await ratlineSessionMethods.capture.call(session); this.#startupRatlinePacket = packet; current();
+      await ratlineSessionMethods.require.call(session, packet); await assertOriginal();
+      const result = diagnosticLifecycleRecordSchemas["worker-startup-ratline-result.json"].parse({
+        schema: "easyeda-pro-control.pcb209-worker-startup-ratline-result.v1", operationId, createdAt: new Date().toISOString(),
+        intentSha256: sha256Json(intent), result: packet, validationOnly: true, executionAuthorized: false, saveAuthorized: false,
+      });
+      this.#retainRecord("worker-startup-ratline-result.json", result); await this.#publish(operationId, "worker-startup-ratline-result.json", result);
+      const completed = { ...updated, records: { ...updated.records, "worker-startup-ratline-result.json": result } };
+      await assertSnapshot(expected.map(value => value.operationId === operationId ? completed : value)); current();
+      await ratlineSessionMethods.require.call(session, packet); current();
+      return { operationId, result: structuredClone(result.result), firstChildImportHeld: true, validationOnly: true,
+        nativeWorkerTargetIdentityVerified: false, completeStartupVerified: false, completeLiveBaselineVerified: false,
+        executionAuthorized: false, saveAuthorized: false };
+    } catch (error) { this.#startupRatlineFailed = true; throw error; }
+    finally { this.#busy = false; }
+  }
+
   /** One journaled continuation of the original capture. The public response
    * contains data only; its report cannot recreate the runner's lexical token. */
   protected async observeStartupAssignments(operationId: string, expectedBindingSha256: string): Promise<Record<string, unknown>> {
@@ -955,20 +1053,21 @@ class CurrentPcbLifecycleCore {
   }
 
   #startupId(operationId: string): void {
-    if (this.#generation === "209-startup-empty") { currentPcb209EmptyStartupIdSchema.parse(operationId); }
+    if (this.#generation === "209-startup-ratline") { currentPcb209RatlineStartupIdSchema.parse(operationId); }
+    else if (this.#generation === "209-startup-empty") { currentPcb209EmptyStartupIdSchema.parse(operationId); }
     else if (this.#generation === "209-startup") { currentPcb209WorkerStartupLifecycleIdSchema.parse(operationId); }
     else { currentPcbWorkerStartupLifecycleIdSchema.parse(operationId); }
   }
   #assertPurpose(operationId: string, operation?: DiagnosticLifecycleOperation): void {
     const intent = operation?.records["intent.json"];
     let idPurpose: CurrentPcbDiagnosticLifecyclePurpose = "diagnostic";
-    const empty209 = operationId.startsWith(CURRENT_PCB_209_EMPTY_STARTUP_OPERATION_PREFIX);
+    const empty209 = operationId.startsWith(CURRENT_PCB_209_EMPTY_STARTUP_OPERATION_PREFIX), ratline209 = operationId.startsWith(CURRENT_PCB_209_RATLINE_STARTUP_OPERATION_PREFIX);
     const project209 = operationId.startsWith(CURRENT_PCB_209_WORKER_STARTUP_OPERATION_PREFIX);
     if (operationId.startsWith(CURRENT_PCB_STRING_PRECREATE_OPERATION_PREFIX)) { idPurpose = "string-precreate"; }
-    else if (operationId.startsWith(CURRENT_PCB_WORKER_STARTUP_OPERATION_PREFIX) || project209 || empty209) { idPurpose = "worker-startup"; }
+    else if (operationId.startsWith(CURRENT_PCB_WORKER_STARTUP_OPERATION_PREFIX) || project209 || empty209 || ratline209) { idPurpose = "worker-startup"; }
     const expectedSchema = launchFields(this.#purpose, this.#generation).schema;
-    requireValue(project209 === (this.#generation === "209-startup") && empty209 === (this.#generation === "209-startup-empty") &&
-      (operationId.startsWith(CURRENT_PCB_209_OPENING_PROFILE.operationPrefix) && !project209 && !empty209) === (this.#generation === "209-opening"), "GENERATION_MISMATCH");
+    requireValue(ratline209 === (this.#generation === "209-startup-ratline") && project209 === (this.#generation === "209-startup") && empty209 === (this.#generation === "209-startup-empty") &&
+      (operationId.startsWith(CURRENT_PCB_209_OPENING_PROFILE.operationPrefix) && !project209 && !empty209 && !ratline209) === (this.#generation === "209-opening"), "GENERATION_MISMATCH");
     requireValue(idPurpose === this.#purpose && (intent === undefined || intent.schema === expectedSchema), "PURPOSE_MISMATCH");
   }
   #assertOwner(retained: Retained): void {
@@ -976,7 +1075,7 @@ class CurrentPcbLifecycleCore {
     requireValue(this.#lease !== null, "ORIGINAL_LEASE_REQUIRED"); assertCurrentPcbDiagnosticLaunchExclusion(this.#lease);
     requireValue(this.#retained === retained && methods.every(name => retained.owner[name] === retained.methods[name]), "OWNER_CHANGED");
     const status = retained.methods.status.call(retained.owner);
-    const expectedProfile = this.#generation === "206" ? this.#purpose : { "209-startup": "worker-startup209", "209-startup-empty": "worker-startup-empty209", "209-opening": "diagnostic209" }[this.#generation];
+    const expectedProfile = this.#generation === "206" ? this.#purpose : { "209-startup": "worker-startup209", "209-startup-empty": "worker-startup-empty209", "209-startup-ratline": "worker-startup-ratline209", "209-opening": "diagnostic209" }[this.#generation];
     requireValue(status.profile === expectedProfile &&
       (this.#generation !== "209-opening" || typeof retained.methods.observeLayers209 === "function" &&
         retained.owner.observeLayers209 === retained.methods.observeLayers209 &&
@@ -1000,6 +1099,16 @@ class CurrentPcbLifecycleCore {
     requireValue(this.#startupOpening === null || startupOpeningMethods.every(name =>
       this.#startupOpening?.owner[name] === this.#startupOpening?.methods[name]), "STARTUP_OPENING_OWNER_CHANGED");
     this.#startupOpening?.methods.assertOriginalMethodsCurrent();
+    if (this.#generation === "209-startup-ratline") {
+      requireValue(typeof retained.methods.prepareWorkerStartupRatlineSession209 === "function" &&
+        retained.owner.prepareWorkerStartupRatlineSession209 === retained.methods.prepareWorkerStartupRatlineSession209, "STARTUP_RATLINE_OWNER_CHANGED");
+    }
+    if (this.#startupRatlineSession !== null) {
+      const session = this.#startupRatlineSession;
+      requireValue(session.captureFirstChildHeld === ratlineSessionMethods.capture && session.requireOriginal === ratlineSessionMethods.require &&
+        session.abort === ratlineSessionMethods.abort && session.releaseAfterTermination === ratlineSessionMethods.release &&
+        session.status === ratlineSessionMethods.status && session.retainedOpeningObservation === ratlineSessionMethods.opening, "STARTUP_RATLINE_METHODS_CHANGED");
+    }
     if (this.#startupEmptyPreparation !== null) {
       const pcb = this.#startupEmptyPreparation.pcb;
       requireValue(pcb.openAndQualify === emptySessionMethods.openPcb && pcb.status === emptySessionMethods.pcbStatus &&
@@ -1187,6 +1296,7 @@ class CurrentPcbLifecycleCore {
       ...(this.#stringPurpose ? { observeStringPrecreate: owner.observeStringPrecreate, observeCommonBaseline: owner.observeCommonBaseline,
         retainedCommonBaselineFailure: owner.retainedCommonBaselineFailure } : {}),
       ...(this.#purpose === "worker-startup" ? { handoffWorkerStartup: owner.handoffWorkerStartup } : {}),
+      ...(this.#generation === "209-startup-ratline" ? { prepareWorkerStartupRatlineSession209: owner.prepareWorkerStartupRatlineSession209 } : {}),
       ...(startup209(this.#generation) ? { requireWorkerStartupEmptyDependency209: owner.requireWorkerStartupEmptyDependency209,
         prepareWorkerStartupPcbSession209: owner.prepareWorkerStartupPcbSession209 } : {}) });
     const retained: Retained = { operationId: request.operationId, owner, methods: captured, installation: installationText,
@@ -1280,6 +1390,18 @@ class CurrentPcbLifecycleCore {
     const updated = { ...operation, records: { ...operation.records, "close-intent.json": intent } };
     this.#options.assertLocalAllowed();
     await assertSnapshot(operations.map(value => value.operationId === operation.operationId ? updated : value)); this.#assertOwner(retained);
+    if (this.#generation === "209-startup-ratline" && this.#startupRatlineSession === null && this.#startupHandoff !== null) {
+      const { channel } = this.#startupHandoff;
+      requireValue(channel instanceof CurrentPcb209RatlineStartupChannel && channel.beginCleanup === ratlineChannelCleanup, "STARTUP_RATLINE_CHANNEL_CHANGED");
+      this.#startupRatlineCleanup ??= ratlineChannelCleanup.call(channel);
+      try { await this.#startupRatlineCleanup; } catch { this.#startupRatlineCleanupFailed = true; }
+      this.#assertOwner(retained);
+    }
+    if (this.#startupRatlineSession !== null) {
+      this.#startupRatlineCleanup ??= ratlineSessionMethods.abort.call(this.#startupRatlineSession);
+      try { await this.#startupRatlineCleanup; } catch { this.#startupRatlineCleanupFailed = true; }
+      this.#assertOwner(retained);
+    }
     await retained.methods.requestNormalClose.call(retained.owner, request.hwnd); this.#assertOwner(retained);
     await assertSnapshot(operations.map(value => value.operationId === operation.operationId ? updated : value)); this.#assertOwner(retained);
     const acknowledged: NonNullable<DiagnosticLifecycleRecords["close-acknowledged.json"]> = {
@@ -1774,6 +1896,11 @@ class CurrentPcbLifecycleCore {
     if (original === undefined) { await this.#record(operation.operationId, "release-intent.json", intent); }
     const updated = { ...operation, records: { ...operation.records, "release-intent.json": intent } };
     await assertSnapshot(operations.map(value => value.operationId === operation.operationId ? updated : value)); this.#assertOwner(retained);
+    if (this.#startupRatlineSession !== null && !this.#startupRatlineReleased) {
+      this.#startupRatlineCleanup ??= ratlineSessionMethods.abort.call(this.#startupRatlineSession);
+      try { await this.#startupRatlineCleanup; } catch { this.#startupRatlineCleanupFailed = true; }
+      await ratlineSessionMethods.release.call(this.#startupRatlineSession); this.#startupRatlineReleased = true; this.#assertOwner(retained);
+    }
     if (this.#startupOpening !== null && !this.#startupOpeningReleased) {
       const opening = this.#startupOpening;
       await opening.methods.releaseAfterTermination.call(opening.owner);
@@ -1930,5 +2057,42 @@ export class CurrentPcb209EmptyStartupLifecycle extends CurrentPcbLifecycleCore 
   }
   public observeWorkerStartupEmpty(operationId: string, expectedBindingSha256: string): Promise<Record<string, unknown>> {
     return this.observeStartupEmpty(operationId, expectedBindingSha256);
+  }
+}
+
+/** Separate launch-sealed ratline held-import purpose; never upgrades a retained owner. */
+export class CurrentPcb209RatlineStartupLifecycle extends CurrentPcbLifecycleCore {
+  public constructor(options: CurrentPcbDiagnosticLifecycleOptions, dependencies: CurrentPcb209WorkerStartupLifecycleDependencies = {}) {
+    super(options, dependencies, "worker-startup", "209-startup-ratline");
+  }
+  public handoffWorkerStartup(operationId: string, expectedBindingSha256: string): Promise<CurrentPcbWorkerStartupHandoff> {
+    return this.handoffStartup(operationId, expectedBindingSha256);
+  }
+  public openWorkerStartup(operationId: string, expectedBindingSha256: string, input: unknown): Promise<CurrentPcb209WorkerStartupOpeningResult> {
+    return this.openStartup(operationId, expectedBindingSha256, input, "209-startup-ratline");
+  }
+  public requireWorkerStartup(operationId: string, expectedBindingSha256: string,
+    result: CurrentPcb209WorkerStartupOpeningResult): Promise<CurrentPcb209WorkerStartupTransport> {
+    return this.requireStartup(operationId, expectedBindingSha256, result);
+  }
+  /** Data-only validation entrypoint. Native capabilities stay in the original
+   * coordinator, and either stage's consumed intent forbids capture replay. */
+  public async captureWorkerStartup(operationId: string, expectedBindingSha256: string, input: unknown): Promise<Record<string, unknown>> {
+    const request = startupCaptureInputSchema.parse(input);
+    await this.handoffStartup(operationId, expectedBindingSha256);
+    const result = await this.openStartup(operationId, expectedBindingSha256, request, "209-startup-ratline");
+    return { ...structuredClone(result), operationId, validationOnly: true, saveAuthorized: false };
+  }
+  public observeWorkerStartupAssignments(operationId: string, expectedBindingSha256: string): Promise<Record<string, unknown>> {
+    return this.observeStartupAssignments(operationId, expectedBindingSha256);
+  }
+  public observeWorkerStartupActor(operationId: string, expectedBindingSha256: string): Promise<Record<string, unknown>> {
+    return this.observeStartupActor(operationId, expectedBindingSha256);
+  }
+  public observeWorkerStartupChannel(operationId: string, expectedBindingSha256: string): Promise<Record<string, unknown>> {
+    return this.observeStartupChannel(operationId, expectedBindingSha256);
+  }
+  public observeWorkerStartupRatline(operationId: string, expectedBindingSha256: string): Promise<Record<string, unknown>> {
+    return this.observeStartupRatline(operationId, expectedBindingSha256);
   }
 }

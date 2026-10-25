@@ -1,7 +1,8 @@
 /* oxlint-disable eslint/max-classes-per-file -- Fixed PCB and worker wrappers share one closed composite lifecycle. */
 /** Join actual construction and bridge/result owners before either continuation.
- * This private stage is executable with original authority callbacks, but no
- * native adapter adopts it. Callback promises alone do not qualify child source. */
+ * The native adapter adopts the PCB stage only through the first held child
+ * import. Callback promises alone do not qualify child source. */
+import { CURRENT_PCB_209_RATLINE_NATIVE_PROFILE } from "./current-pcb-209-ratline-budget.ts";
 import { types } from "node:util";
 import { CurrentPcb209RatlineEventDispatcher } from "./current-pcb-209-ratline-event-dispatcher.ts";
 import { CurrentPcb209RatlineChildStartGate } from "./current-pcb-209-ratline-child-start-gate.ts";
@@ -44,8 +45,8 @@ async function observed(work: Promise<unknown>): Promise<void> {
     // The original attempt reports this failure.
   }
 }
-async function bounded<T>(work: Promise<T>): Promise<T> {
-  const expired = Promise.withResolvers<never>(), timer = setTimeout(() => { expired.reject(new Error("PCB209_RATLINE_COMPOSITE_DEADLINE")); }, 2500);
+async function bounded<T>(work: Promise<T>, milliseconds: number = CURRENT_PCB_209_RATLINE_NATIVE_PROFILE.elapsed.ordinaryRequestMilliseconds): Promise<T> {
+  const expired = Promise.withResolvers<never>(), timer = setTimeout(() => { expired.reject(new Error("PCB209_RATLINE_COMPOSITE_DEADLINE")); }, milliseconds);
   try { return await Promise.race([work, expired.promise]); } finally { clearTimeout(timer); }
 }
 function members(value: CurrentPcb209RatlineStartupDependency): readonly unknown[] {
@@ -99,11 +100,12 @@ class CurrentPcb209RatlineStartupCore {
       // Constructor. Both fixed stage observers must exist before source runs.
       if (this.#role === "worker") { this.#startCapture(); }
       await this.#stages.creation.whenArmed(); if (this.#role === "worker") { await this.#stages.capture.whenArmed(); }
-      await this.#current(); this.#sourceReleased = true; await bounded(this.#dispatcher.continueOriginalSource(() => this.#releaseSource.call(this.#dependency))); await this.#current();
+      await this.#current(); this.#sourceReleased = true; await bounded(this.#dispatcher.continueOriginalSource(() => this.#releaseSource.call(this.#dependency)),
+        this.#role === "pcb" ? CURRENT_PCB_209_RATLINE_NATIVE_PROFILE.elapsed.sourceReleaseMilliseconds : CURRENT_PCB_209_RATLINE_NATIVE_PROFILE.elapsed.ordinaryRequestMilliseconds); await this.#current();
       const construction = await this.#construction; await this.#current();
       if (this.#role === "pcb") { this.#startCapture(); await this.#stages.capture.whenArmed(); await this.#current(); }
       await this.#stages.creation.requireOriginal(construction); this.#childArmed = true;
-      await bounded(this.#childGate.armOriginalChildBootstrap(this.#stages.creation, construction)); await this.#current();
+      await bounded(this.#childGate.armOriginalChildBootstrap(this.#stages.creation, construction), CURRENT_PCB_209_RATLINE_NATIVE_PROFILE.elapsed.childArmMilliseconds); await this.#current();
       // Success and abort cleanup share the creation owner's retained start
       // Promise. No second dispatcher or raw child-start request is introduced.
       await this.#stages.creation.continueOriginalParent(construction); await this.#current();

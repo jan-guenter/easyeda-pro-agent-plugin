@@ -1,6 +1,7 @@
 /* oxlint-disable eslint/max-classes-per-file -- A private fixed-profile core keeps both realm wrappers closed to caller-selected capture plans. */
 /** Original pause/event capture for the empty209 ratline startup branch.
  * No native adapter or public registration adopts this private transport yet. */
+import { CURRENT_PCB_209_RATLINE_NATIVE_PROFILE } from "./current-pcb-209-ratline-budget.ts";
 import { types } from "node:util";
 import { z } from "zod";
 import { captureCurrentPcbStringClockReply } from "./current-pcb-string-clock-reply.ts";
@@ -65,7 +66,7 @@ const INTERNAL = Symbol("fixed209-ratline-capture");
 const issued = new WeakMap<CurrentPcb209RatlineCapturePacket, CurrentPcb209RatlineCaptureCore>();
 function fail(code: string): Error { return new Error(`PCB209_RATLINE_CAPTURE_${code}`); }
 function need(value: boolean, code: string): asserts value { if (!value) { throw fail(code); } }
-async function bounded<T>(promise: Promise<T>, milliseconds = 2500): Promise<T> {
+async function bounded<T>(promise: Promise<T>, milliseconds: number = CURRENT_PCB_209_RATLINE_NATIVE_PROFILE.elapsed.ordinaryRequestMilliseconds): Promise<T> {
   const deadline = Promise.withResolvers<never>(); const timer = setTimeout(() => { deadline.reject(fail("DEADLINE")); }, milliseconds);
   try { return await Promise.race([promise, deadline.promise]); } finally { clearTimeout(timer); }
 }
@@ -159,7 +160,7 @@ class CurrentPcb209RatlineCaptureCore {
     let capturedError: unknown = null, event: unknown = null;
     try { event = captureCurrentPcbStringClockReply(input).value; } catch (error) { capturedError = error; }
     const retained: Paused = { event, capturedError, resumed: Promise.withResolvers(), resume: null, observed: false,
-      timer: setTimeout(() => { this.#failed ??= fail("PAUSE_DEADLINE"); void observed(this.#cleanup()); }, 6000) };
+      timer: setTimeout(() => { this.#failed ??= fail("PAUSE_DEADLINE"); void observed(this.#cleanup()); }, this.#role === "pcb" ? CURRENT_PCB_209_RATLINE_NATIVE_PROFILE.elapsed.capturePauseMilliseconds : 6000) };
     this.#pause = retained; this.#waiting.resolve(retained);
     if (this.#settled || this.#sequenceExhausted) { this.#failed ??= fail("EXTRA_PAUSE"); void observed(this.#cleanup()); }
   };
@@ -312,7 +313,7 @@ class CurrentPcb209RatlineCaptureCore {
       for (const [site, point] of Object.entries(sites)) { await this.#arm(site, point); }
       this.#armed.resolve(null);
       for (let index = 0; index < profile.sequence.length; index += 1) {
-        const retained = await bounded(this.#waiting.promise, 20_000); this.#waiting = Promise.withResolvers(); void observed(this.#waiting.promise);
+        const retained = await bounded(this.#waiting.promise, this.#role === "pcb" ? CURRENT_PCB_209_RATLINE_NATIVE_PROFILE.elapsed.captureWaitMilliseconds : 20_000); this.#waiting = Promise.withResolvers(); void observed(this.#waiting.promise);
         await this.#current(); await this.#capturePause(retained, index);
         if (index === profile.sequence.length - 1) {
           // Poison a newly delivered pause immediately, including during the
