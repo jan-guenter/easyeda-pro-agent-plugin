@@ -48,6 +48,13 @@ function exactKeys(value: Data, names: readonly string[]): void {
 function integer(value: unknown): number {
   need(typeof value === "number" && Number.isSafeInteger(value) && value >= 0 && !Object.is(value, -0), "native integer refused"); return value;
 }
+function ordinaryAtomId(value: unknown): value is string {
+  // Ni copies atoms through object keys. Only canonical array indices reorder
+  // Ahead of ordinary insertion-order keys; leading-digit hex IDs do not.
+  return typeof value === "string" && /^[A-Za-z0-9_][A-Za-z0-9_-]{0,255}$/u.test(value) &&
+    !["__proto__", "prototype", "constructor"].includes(value) &&
+    !(/^(?:0|[1-9][0-9]{0,9})$/u.test(value) && Number(value) <= 4_294_967_294);
+}
 function head(target: string, client: string, ticket: number, stored: Data, editVersion: string): string {
   return `${JSON.stringify({ type: "DOCHEAD", ticket })}||${JSON.stringify({ docType: "FOOTPRINT", client, uuid: target,
     updateTime: stored["updateTime"], version: stored["version"], editVersion, user: stored["user"] })}`;
@@ -63,8 +70,8 @@ function retained(original: CurrentFootprintCopyAppendPlan): Retained {
 
 /** The single-fragment restriction makes first-arrival ordering independent of
  * concurrent cache reads. Explicit DOCHEAD.user keeps raw replay and the
- * per-FOOTPRINT cache's synthesized EDIT_HEAD actor equivalent. NET and integer
- * or prototype-like IDs are deliberately outside this first serializer model.
+ * per-FOOTPRINT cache's synthesized EDIT_HEAD actor equivalent. NET, canonical
+ * array-index and prototype-like IDs remain outside this serializer model.
  */
 export async function prepareCurrentFootprintCopyAppendPlan(before: Inventory,
   copyPlan: CurrentFootprintCopyPlan): Promise<CurrentFootprintCopyAppendPlan> {
@@ -84,8 +91,7 @@ export async function prepareCurrentFootprintCopyAppendPlan(before: Inventory,
       } else if (selected && type !== "EDIT_HEAD") {
         exactKeys(row.header, ["type", "ticket", "id"]);
         const id = row.header["id"], ticket = integer(row.header["ticket"]);
-        need(typeof id === "string" && /^[A-Za-z_][A-Za-z0-9_-]{0,255}$/u.test(id) &&
-          !["__proto__", "prototype", "constructor"].includes(id) && !ids.has(id), "unique nonnumeric ordinary atom IDs required");
+        need(ordinaryAtomId(id) && !ids.has(id), "unique ordinary non-array-index atom IDs required");
         ids.add(id); sourceMetadataTicket = Math.max(sourceMetadataTicket, ticket);
         need(row.body !== null, "source tombstone refused");
         if (type === "META") { need(id === "META", "canonical META identity required"); }

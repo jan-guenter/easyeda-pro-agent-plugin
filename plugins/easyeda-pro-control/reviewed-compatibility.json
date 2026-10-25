@@ -3,7 +3,7 @@
     "source-tree": {
       "version": "0.3.0",
       "operationSchema": "easyeda-pro-control.operation.v2",
-      "sha256": "ba0560725df8737d47f8df1601a7d68f0522462fe90ab1ce8695d43fb81b41af",
+      "sha256": "2480ae1e063f93ad551d97d79caef42abc8a4105b6b4b96f81464397591c17b9",
       "fileCount": 737,
       "files": [
         {
@@ -523,8 +523,8 @@
         },
         {
           "relativePath": "current-footprint-copy-append.ts",
-          "bytes": 11820,
-          "sha256": "ab1de755c5d484154d8f5c5f0a22ee43556e8e53ca93865254898e49e35a7c1d"
+          "bytes": 12154,
+          "sha256": "4289c3711d5cf6756b6127c5a7b3ed28125f1456db8f7cee3c717b42ddfd7256"
         },
         {
           "relativePath": "current-footprint-copy-plan.ts",
@@ -3718,7 +3718,7 @@
     }
   },
   "schema": "easyeda-pro-control.reviewed-compatibility.v1",
-  "reviewedAt": "2026-10-25T22:20:02.894Z",
+  "reviewedAt": "2026-10-25T22:33:44.119Z",
   "upstream": {
     "serverVersion": "1.0.0-rc.1",
     "launcher": {

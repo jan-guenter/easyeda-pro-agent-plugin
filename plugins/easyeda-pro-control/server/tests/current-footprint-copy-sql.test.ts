@@ -87,6 +87,35 @@ void test("footprint full SQL preserves all structure rows, sequence state and c
   await assert.rejects(verifyCurrentFootprintCopySqlEffect(sqlPlan, structuredClone(after), { returnedUuid: DESTINATION }), /original/u);
 });
 
+void test("footprint native hex and non-index numeric-looking IDs preserve exact getter, append and SQL order", async () => {
+  for (const [pad, line] of [["0a123456789bcdef", "9b123456789abcde"], ["4294967295", "4294967296"],
+    ["01", "00"], ["1234567890123456", "0000000000000000"]] as const) {
+    const renamed = (value: string): string => value.replaceAll('"id":"pad"', `"id":"${pad}"`).replaceAll('"id":"line"', `"id":"${line}"`);
+    const input = await baseline(renamed(RAW)), { appendPlan, sqlPlan } = await prepare(input);
+    const canvas = CANVAS.map(value => renamed(value));
+    const ordered = Object.fromEntries(["META", "canvas", pad, line].map(id => [id, true]));
+    assert.deepEqual(Object.keys(ordered), ["META", "canvas", pad, line]);
+    assert.deepEqual(currentFootprintCopySourceRows(appendPlan), [row("META", 90, "META", META), ...canvas]);
+    assert.equal(expectedCurrentFootprintCopySource(appendPlan, CLIENT, "create-source"),
+      [header(102, 100, IDS.target, "3.2.209", true), row("META", 90, "META", META),
+        header(100, 100, IDS.target, "3.2.198", true), ...canvas].join("|\n"));
+    const appended = renamed(append()); assert.equal(verifyCurrentFootprintCopyAppend(appendPlan, DESTINATION, appended).rawAppendRecordsVerified, true);
+    assert.throws(() => verifyCurrentFootprintCopyAppend(appendPlan, DESTINATION,
+      appended.replace(canvas.join("|\n"), canvas.toReversed().join("|\n"))), /differs/u);
+    complete(input.path, appended);
+    const effect = await verifyCurrentFootprintCopySqlEffect(sqlPlan, await inventory(input.path), { returnedUuid: DESTINATION });
+    assert.equal(effect["exactLogicalSqlEffect"], true); assert.equal(effect["executionAuthorized"], false);
+  }
+});
+
+void test("footprint atom IDs still refuse array-index boundaries, prototype keys and unsupported spellings", async () => {
+  for (const id of ["0", "1", "4294967294", "prototype", "constructor", "__proto__", "-1", "1.5", `1${"a".repeat(256)}`]) {
+    const input = await baseline(RAW.replace('"id":"pad"', `"id":"${id}"`));
+    const copy = await prepareCurrentFootprintCopyPlan(input.before, SOURCE);
+    await assert.rejects(prepareCurrentFootprintCopyAppendPlan(input.before, copy), /ordinary non-array-index/u);
+  }
+});
+
 void test("footprint source refuses uncertain cache ordering, duplicate IDs, NET normalization and implicit actors", async () => {
   for (const raw of [RAW.replace(`,"user":${JSON.stringify(ACTOR)}`, ""),
     RAW.replace(CANVAS[0] ?? "", `${header(100, 100, IDS.target, "3.2.198", true)}|\n${CANVAS[0]}`),

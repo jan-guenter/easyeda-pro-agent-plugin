@@ -183,3 +183,36 @@ The three-file runtime projection is
 The full facade/bridge suites and Windows job will run in exact-commit CI;
 they have not been duplicated locally. This is source/package verification,
 not connected success for the new context correction or footprint lifecycle.
+
+## Native ID correction before publication
+
+Review while PR130 CI was running found a concrete coverage defect in the new
+footprint append model. Its alphabetic/underscore-leading ID restriction also
+rejected valid native pad IDs. The pinned native allocator emits sixteen
+lowercase hexadecimal characters without requiring an alphabetic prefix.
+Leading-digit hex IDs containing letters preserve object-key insertion order.
+
+The correction admits bounded ordinary IDs and rejects canonical array-index
+keys from 0 through 4,294,967,294, plus the existing prototype-sensitive names.
+It preserves exact ID bytes and record order. No runtime writer is enabled.
+The earlier commit `ea4d17eb05c92a88f40f0a73781a598d0fe2677e` and its CI are
+superseded, not accepted as final release evidence. The version remains
+`0.3.0+codex.20261025221649` because it has not yet been published or installed.
+The final source/bundle projections and corrected-commit checks follow below.
+
+The corrected footprint snapshot passed thirteen focused SQL/readback tests,
+full types and strict targeted lint. The initial negative-test setup failure
+and its correction are preserved in the footprint record. Final receipt is
+`5644f6ecd0420446beb6f3a917a832a673095b2bfc6f2539e2d61253a66af749`.
+The combined changed paths now have 88 passing focused checks.
+
+Final local types, strict full-project lint, build, compatibility, MCP contract
+and repository/privacy checks passed after this correction. Both bundles again
+reproduced byte-for-byte. Unchanged bridge, dependency and skill checks retain
+their earlier passing evidence; corrected exact-commit CI covers the complete
+payload. Final source737 projection is
+`2480ae1e063f93ad551d97d79caef42abc8a4105b6b4b96f81464397591c17b9`.
+The runtime projection remains
+`a455fae89de334a4ec01850d6776fd1eaffee21822ec6c1d08ff5f885cde9488`
+because the footprint models are not registered runtime routes. External pins
+remain unchanged.

@@ -263,3 +263,58 @@ Final added code SHA-256 values:
 
 Execution, producer provenance, cache-branch observation, completion and reopened
 claims remain false on both the descriptor and successful content comparison.
+
+## Same-batch correction: ordinary native atom IDs
+
+Review before publication found that the initial alphabetic/underscore-leading
+ID restriction was stricter than the documented nonnumeric-key scope. It
+rejected leading-digit hexadecimal IDs containing letters. Those are ordinary
+object keys, not array indices, and the current native PAD allocator can emit
+them. The earlier subset and its test hashes above remain historical evidence;
+this correction supersedes that specific restriction before release.
+
+The independently rehashed current PCB asset
+`assets/pro-pcb/3.2.195.6b67774e/js/pcb.js` has SHA-256
+`a84059304d32d4f0feb768d6c5baf00d72a954643ac62299f2c46c08fa68fd0b`.
+Its PAD constructor calls `cr()`, which returns `Wg()`. That allocator formats
+eight random bytes as sixteen lowercase hexadecimal characters, with no
+alphabetic prefix. This is source evidence of ordinary native IDs, not a live
+footprint observation. CANVAS uses its fixed `CANVAS` identity.
+
+| Current PCB source | UTF-16 interval | SHA-256 |
+| --- | --- | --- |
+| `Wg` allocator | 2753632:2753760 | `c617ada35c4ba3ea6c9eb3cba47df8edac6fe30404b02ac94ad8c170bc9b427d` |
+| `cr` forwarding helper | 3242527:3242556 | `14dc6416eb91e9fee0b6bef8be03a99ec48358712c16e1c74ea944774a93bae1` |
+| Native PAD allocation | 7959607:7960288 | `3aaf5fcc56cd7bff1d29f6ac2f78f091bdc2245fd97c3e05dbcb92fb01520d0a` |
+
+The getter now accepts bounded alphanumeric/underscore-leading IDs, retaining
+the previous hyphen allowance after the first character. It rejects canonical
+JavaScript array-index keys from `0` through `4294967294`, and still rejects
+`__proto__`, `prototype` and `constructor`. `4294967295`, longer decimal keys,
+leading-zero keys and native leading-digit hex keys preserve insertion order.
+No identifier bytes are normalized. The worker's previously reviewed
+object-key copy relation, exact raw body/order comparison, original WeakMap
+relationships, actors, clocks and complete SQL collateral checks are unchanged.
+
+New synthetic regressions exercise exact getter/append/full-SQL relations for
+leading-digit native PAD/LINE IDs and both sides of the array-index boundary.
+They reject changed row order, canonical index keys and prototype-sensitive
+names. The first run passed twelve of thirteen groups; the failed negative
+case used an empty ID, which the existing history decoder rejected before the
+new guard. That redundant setup case was removed. Two test-only lint findings
+were corrected without exceptions or rule changes. The final unchanged
+source/test snapshot passed all thirteen focused SQL and saved-source groups,
+full project type checking and selected strict type-aware lint. There were no
+failures, skips or warnings in those final checks.
+
+Final append source SHA-256 is
+`4289c3711d5cf6756b6127c5a7b3ed28125f1456db8f7cee3c717b42ddfd7256`;
+SQL tests SHA-256 is
+`17827fb1fcfd1e81adb8024227db8465a0e03314084612defe15942c57d16017`.
+The private final validation receipt SHA-256 is
+`5644f6ecd0420446beb6f3a917a832a673095b2bfc6f2539e2d61253a66af749`,
+and the allocator source receipt SHA-256 is
+`78f273899cde226111b82631343ddea0e8bcf0d4c81da1ccd7723129dfd6bf3e`.
+
+These remain pure relations. No native collector, writer, persistence or
+saved/reopened capability is enabled by this identifier correction.
