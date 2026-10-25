@@ -94,5 +94,13 @@ void test("catalog footprint coverage labels vendor HTTP separately and retains 
   const summary = extensionApiCoverageSummary();
   const states = summary["executionRoutes"];
   assert.ok(typeof states === "object" && states !== null && "available-with-network-guards" in states);
-  assert.equal(states["available-with-network-guards"], 6);
+  assert.equal(states["available-with-network-guards"], 7);
+  const symbolTitle = inventoryExtensionApiCoverage().find((entry) => entry.path === "eda.lib_Symbol.searchByProperties");
+  assert.ok(symbolTitle); assert.equal(symbolTitle.routes.length, 1);
+  const titleRoute = symbolTitle.routes[0]; assert.ok(titleRoute);
+  assert.equal(titleRoute.tool, "easyeda_control_catalog_components"); assert.equal(titleRoute.selector, "search-symbols-by-name");
+  assert.equal(titleRoute.implementation, "vendor-http-task-equivalent"); assert.equal(titleRoute.executionState, "available-with-network-guards");
+  assert.equal(titleRoute.validation, "offline-regression;current-live-unclaimed");
+  assert.equal(symbolTitle.currentGenerationLiveValidation, "not-recorded"); assert.equal(symbolTitle.runtimeAdmission, "not-granted-by-inventory");
+  assert.equal(symbolTitle.completeDeclaredContractSupported, false);
 });

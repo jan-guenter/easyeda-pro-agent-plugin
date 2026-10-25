@@ -255,3 +255,22 @@ Independent review rehashed the complete source/bundle rosters and confirmed
 that only allowed facade projections and review time changed. Upstream,
 SDK/UI/bridge/runtime and sanitizer pins are unchanged. No new connected
 validation is claimed by these package checks.
+
+## Initial CI failure and catalog assertion corrections
+
+PR 123's initial head `f3ac8afc8e1bef21a8c7c6d02668fd4edaa09a86`
+passed the Windows recovery job in run `40172351826`. Linux run `40172351806`
+passed the build checks and six of eight facade shards. Shards 4 and 7 failed
+three stale catalog assertions: packaged startup still expected fourteen tools,
+the network-route total still expected six, and the system-library getter still
+expected one route. The latter test also retained the older generic reason for
+omitting account-library discovery. The complete failure logs are retained.
+
+The corrected tests require all fifteen packaged tools, seven network routes,
+and both system-library readers. They check the new symbol-name route's HTTP
+classification, the separate reader profiles and regression evidence, and the
+three account getters' continued exclusion with their concrete UI-mutation
+reason. The complete affected startup file passed six tests; the two coverage
+files passed nine. Strict type-aware lint passed without warnings. No runtime
+source, bundle, compatibility pin, approval policy or refusal check changed.
+These local corrections require a new exact-commit full CI result before release.

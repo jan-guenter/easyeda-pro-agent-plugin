@@ -124,7 +124,7 @@ async function assertNoLiveStartup(options: BundledFixture, pid: number): Promis
 }
 
 void describe("self-contained packaged machine startup", () => {
-  void test("209 configuration registers fourteen scoped tools and refuses design routes before upstream startup", async (context) => {
+  void test("209 configuration registers fifteen scoped tools and refuses design routes before upstream startup", async (context) => {
     const options = await fixture(context, "public-utilities");
     const transport = new StdioClientTransport({ command: options.bootstrapNode,
       args: [options.bundle, "--machine-launch"], cwd: options.root, env: options.environment, stderr: "pipe" });
@@ -135,7 +135,7 @@ void describe("self-contained packaged machine startup", () => {
     const listed = await client.listTools();
     assert.deepEqual(listed.tools.map((tool) => tool.name).toSorted(), ["easyeda_control_api", "easyeda_control_calculate",
       "easyeda_control_catalog_components", "easyeda_control_catalog_footprint", "easyeda_control_discover", "easyeda_control_editor_context", "easyeda_control_editor_shell",
-      "easyeda_control_launch", "easyeda_control_pcb209_opening", "easyeda_control_pcb209_worker_startup", "easyeda_control_public_readers", "easyeda_control_shortcuts", "easyeda_control_status", "easyeda_control_system"]);
+      "easyeda_control_launch", "easyeda_control_netlist_files", "easyeda_control_pcb209_opening", "easyeda_control_pcb209_worker_startup", "easyeda_control_public_readers", "easyeda_control_shortcuts", "easyeda_control_status", "easyeda_control_system"]);
     const startup = await api(client, { action: "pcb209-worker-startup", query: { includeSchemas: true } });
     assert.equal(startup["executionAuthorized"], false); assert.equal(startup["saveAuthorized"], false);
     const startupRequest = await api(client, { action: "pcb209-worker-startup-validate", query: { request: {

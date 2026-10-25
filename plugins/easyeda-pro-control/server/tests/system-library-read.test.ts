@@ -70,16 +70,26 @@ void test("system-library reader and independent host validation reject missing 
   await assert.rejects(run(code, SYSTEM_UUID, true), { message: `Public SDK read could not produce a complete bounded observation; method=${METHOD}|stage=call|code=native-error|getter=none` });
 });
 
-void test("coverage promotes only the system-library getter without changing account omissions or claiming live validation", () => {
+void test("coverage retains both system-library getter routes while account discovery stays omitted and live validation unclaimed", () => {
   const rows = new Map(inventoryExtensionApiCoverage().map((row) => [row.path, row]));
   const current = rows.get(METHOD); assert.ok(current);
   assert.equal(current.status, "implemented-public-subset"); assert.equal(current.omission, null);
   assert.equal(current.currentGenerationLiveValidation, "not-recorded"); assert.equal(current.runtimeAdmission, "not-granted-by-inventory");
-  assert.equal(current.routes.length, 1); assert.equal(current.routes[0]?.tool, "easyeda_control_sdk_read");
-  assert.deepEqual(current.routes[0]?.tests, ["system-library-read.test.ts"]);
+  assert.deepEqual(current.routes.map((route) => route.tool).toSorted(), ["easyeda_control_public_readers", "easyeda_control_sdk_read"]);
+  const legacy = current.routes.find((route) => route.tool === "easyeda_control_sdk_read"); assert.ok(legacy);
+  assert.deepEqual(legacy.tests, ["system-library-read.test.ts"]);
+  const installed = current.routes.find((route) => route.tool === "easyeda_control_public_readers"); assert.ok(installed);
+  assert.deepEqual(installed.tests, ["sdk-public-readers.test.ts", "sdk-public-readers-runtime.test.ts", "sdk-public-readers-ui.test.ts", "sdk-public-readers-registration.test.ts", "facade-mode.test.ts"]);
+  assert.match(installed.scope, /EasyEDA 3\.2\.209\/API 0\.3\.59 only; older profiles do not register this route/u);
+  for (const route of [legacy, installed]) {
+    assert.equal(route.selector, METHOD); assert.equal(route.implementation, "public-method");
+    assert.equal(route.executionState, "available-with-runtime-guards"); assert.equal(route.validation, "offline-regression;current-live-unclaimed");
+  }
   for (const method of ["getAllLibrariesList", "getPersonalLibraryUuid", "getFavoriteLibraryUuid"]) {
     const row = rows.get(`eda.lib_LibrariesList.${method}`); assert.ok(row);
-    assert.equal(row.status, "omitted"); assert.equal(row.omission?.code, "account-or-library-scope-needed");
+    assert.equal(row.status, "omitted"); assert.deepEqual(row.routes, []); assert.ok(row.omission);
+    assert.equal(row.omission.code, "installed-209-library-discovery-mutates-ui");
+    assert.match(row.omission.reason, /not passive owner-ID reads/u);
   }
 });
 
