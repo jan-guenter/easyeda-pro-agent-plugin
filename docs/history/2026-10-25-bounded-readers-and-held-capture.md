@@ -186,3 +186,24 @@ Local bundle mode0600 does not stand in for committed/install mode0644; final
 package verification checks the installed modes separately. Exact-payload CI,
 publication and installation evidence will be appended. The installed 100748 host remains the live owner for this
 session; this candidate needs a fresh host before connected use.
+
+## Initial CI coverage-fixture correction
+
+Initial PR125 head `8ba4c061f788f9b38d467589594d787ba46ae1df` passed build
+verification and Windows recovery, but facade shard5 failed a coverage-metadata
+expectation. `system-library-read.test.ts` still expected the pre-batch list of
+regression files. The actual route correctly included
+`sdk-public-readers-batch.test.ts`. Its exact expected list was updated to match;
+no assertion, runtime guard, source adapter, bundle or compatibility pin changed.
+The failing log is retained with SHA256
+`e17bc85a414c8f2d260f99a452a15ee95e76a95919a74b024e0daf4b7b96c331`.
+All six tests in the affected file and strict targeted lint passed. Final CI
+must pass the corrected commit. This is a test-fixture correction,
+not connected validation of either new feature.
+
+That initial CI run finished with 12,892 facade tests passed, one stale-metadata
+failure and five expected platform/source-mount skips. Every other shard,
+all424bridge tests and Windows recovery passed. The complete rejected-run
+receipt SHA256 is
+`477bd81accf160c2ad869e26c79891c522d12e55fdaea9bdda0d11a66f77f891`.
+The corrected payload requires a separate successful exact-head run.
