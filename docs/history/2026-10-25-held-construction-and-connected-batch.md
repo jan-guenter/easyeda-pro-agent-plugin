@@ -229,3 +229,19 @@ Artifact review receipt SHA256 is
 The 835-method inventory retains its prior scoped counts. This batch implements
 startup prerequisites and runtime efficiency improvements, not broader writer,
 export or account/catalog execution.
+
+## Initial CI failure and assertion correction
+
+PR126 first tested head `913636bfc104b21db6b48f6395636cb18521980a`.
+Linux run 40201104995 failed facade shard seven because the existing native
+protocol parity test still expected total361 and normal318 requests. The
+approved navigation source/resume operations already changed those limits to
+363 and 320. Both stale assertions are corrected; runtime source, generated
+helper, bundles, compatibility pins and cleanup limits remain unchanged.
+The failing shard reported 1,399 passes, one failure and one platform skip
+across 1,401 tests. Its complete retained log SHA256 is
+`01ddc64f5ce3c09f318a2dbd0cbd3c3dab04137236c6bdf1033dbb4c65362e10`.
+That failed commit is not accepted for publication. Final verification belongs
+to the corrected commit and will be recorded separately.
+The corrected protocol-adapter file passes all eleven focused tests. Full
+typecheck, strict lint and skill/plugin/repository validation pass again.
