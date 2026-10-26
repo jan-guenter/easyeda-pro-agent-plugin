@@ -132,7 +132,12 @@ async function fixture(context: TestContext, mode: "prepare-fails" | "intent-cha
     }
   }
   const classes = new Map<string, unknown>([["./current-pcb-209-worker-startup-opening.ts", { CurrentPcb209WorkerStartupOpening: Opening }],
-    ["./current-pcb-209-ratline-native-session.ts", { CurrentPcb209RatlineNativeSession: Session }]]);
+    ["./current-pcb-209-ratline-native-session.ts", { CurrentPcb209RatlineNativeSession: Session }],
+    /* Held-import qualification does not run the empty-only continuation filter,
+     * even when that separate filter would reject this target as populated. */
+    ["./current-pcb-209-ratline-checkpoint.ts", { rejectCurrentPcb209RatlineCheckpointPopulation: (): never => {
+      throw new Error("PCB209_RATLINE_CHECKPOINT_KNOWN_POPULATED");
+    } }]]);
   const adapter = await loadFile("../src/current-pcb-worker-startup-lifecycle-adapter.ts", classes);
   classes.set("./current-pcb-worker-startup-lifecycle-adapter.ts", adapter);
   const lifecycle = await loadFile("../src/current-pcb-diagnostic-lifecycle.ts", classes);

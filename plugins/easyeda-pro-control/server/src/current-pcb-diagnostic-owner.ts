@@ -82,8 +82,8 @@ import { decodeCurrentPcb209PouredShapesReply } from "./current-pcb-209-poured-s
 import { decodeCurrentPcb209PadShapesReply } from "./current-pcb-209-pad-shapes.ts";
 import { currentPcb209SelectionRelationsComponentIdsSchema, decodeCurrentPcb209SelectionRelationsReply } from "./current-pcb-209-selection-relations.ts";
 
-const HELPER_SHA256 = "1c6c334b773c4219a4683b4325c75d4b5d1445b0050217286195dba2bacb5f58";
-const HELPER_BYTES = 1_018_642;
+const HELPER_SHA256 = "6888ed8b0dcf680a20fb759878eb212492eb50c5c240f5607a602ffe39b16a43";
+const HELPER_BYTES = 1_019_062;
 const MAX_LINE = 100_000;
 // 64 MiB native bytes need at most 85.34 MiB base64 plus bounded poll envelopes.
 const MAX_TOTAL = 96 * 1024 * 1024;

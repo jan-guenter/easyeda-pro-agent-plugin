@@ -22,7 +22,19 @@ if(Reflect.ownKeys(env).length!==2)bad();return {documentUuid:own(this,"uuid"),p
   canvas: `function(request,reply){${prelude}const docs=own(request,"doc");
 if(Reflect.ownKeys(request).length!==1||!Array.isArray(docs)||own(docs,"length")!==1||Reflect.ownKeys(docs).length!==2||own(reply,"success")!==true)bad();
 return {documentUuid:own(docs,"0")};}`,
-  empty: `function(){${prelude}empty(this);return true;}`,
+  /* Keep the exact empty-only contract. Rejected queue shape is bounded evidence,
+   * never payload content or permission to execute a serialized empty batch. */
+  empty: `function(){"use strict";
+const fail=(reason,details)=>{throw new Error("PCB209_RATLINE_CAPTURE_RELATION "+JSON.stringify({reason,...details}));};
+if(!Array.isArray(this))fail("not-array",{});
+const length=Object.getOwnPropertyDescriptor(this,"length");
+if(!length||!Object.hasOwn(length,"value")||!Number.isSafeInteger(length.value)||length.value<0)fail("length-descriptor",{});
+if(length.value!==0){
+const first=Object.getOwnPropertyDescriptor(this,"0"),data=first!==undefined&&Object.hasOwn(first,"value"),value=data?first.value:undefined;
+fail("nonzero-length",{length:length.value,firstSlot:first===undefined?"absent":!data?"accessor":value===null?"null":typeof value,
+firstStringLength:typeof value==="string"?value.length:null,firstIsEmptyJson:value==="[]"});}
+if(Reflect.ownKeys(this).length!==1)fail("extra-own-keys",{});
+return true;}`,
   payload: `function(){${prelude}if(Reflect.ownKeys(this).length!==2)bad();empty(own(this,"ratlineRes"));return {ratlineRes:[],workerName:number(own(this,"workerName"))};}`,
 });
 export type CurrentPcb209RatlineCaptureProgram = typeof CURRENT_PCB_209_RATLINE_CAPTURE_PROGRAMS[keyof typeof CURRENT_PCB_209_RATLINE_CAPTURE_PROGRAMS];

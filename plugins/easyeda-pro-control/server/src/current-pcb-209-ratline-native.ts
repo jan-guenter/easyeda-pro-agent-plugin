@@ -37,6 +37,8 @@ export function currentPcb209RatlineNativeSource(): string {
   const bytes = Buffer.from(rows.join("\0"));
   // oxlint-disable-next-line node/no-sync -- Deterministic compression of this bounded fixed table during generation; no I/O or application execution.
   const packed = gzipSync(bytes, { level: 9 });
+  /* All C# literals below occupy one line. Strip only source indentation from
+   * the generated fragment to preserve its existing 10,000-byte size bound. */
   return `// Fixed ratline grammar; no owner, session, launch or budget authority.
 public static class EasyedaRatline209Protocol {
   public const int MaximumEncodedBytes=${String(maximumEncodedBytes)};
@@ -125,5 +127,5 @@ public static class EasyedaRatline209Protocol {
     var insensitive=new System.Collections.Hashtable(System.StringComparer.OrdinalIgnoreCase);insensitive.Add("SessionId","s");
     bool alias=false;try{Encode(1,"pcb","resume","Debugger.resume",insensitive);}catch(System.InvalidOperationException){alias=true;}Need(alias,"smoke-field-name");
   }
-}`;
+}`.replaceAll(/^ +/gmu, "");
 }

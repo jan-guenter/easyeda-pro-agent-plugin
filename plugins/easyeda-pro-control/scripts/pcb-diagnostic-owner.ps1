@@ -1305,92 +1305,92 @@ public static class EasyedaWorkerStartupEmpty209Protocol {
 // BEGIN GENERATED WORKER STARTUP RATLINE209 PROTOCOL
 // Fixed ratline grammar; no owner, session, launch or budget authority.
 public static class EasyedaRatline209Protocol {
-  public const int MaximumEncodedBytes=2499;
-  static void Need(bool value,string code) { if(!value)throw new System.InvalidOperationException("pcb-ratline209-"+code); }
-  static string Unpack(string encoded,int length,string hash) {
-    Need(length==35865,"template-length");byte[] bytes=new byte[length];int count=0;
-    byte[] packed=System.Convert.FromBase64String(encoded);Need(packed.Length==2520 && System.Convert.ToBase64String(packed)==encoded,"template-base64");
-    using(var input=new System.IO.MemoryStream(packed,false))
-    using(var stream=new System.IO.Compression.GZipStream(input,System.IO.Compression.CompressionMode.Decompress)) {
-      while(count<length) { int read=stream.Read(bytes,count,length-count);if(read==0)break;count+=read; }
-      Need(count==length && stream.ReadByte()==-1,"template-bytes");
-    }
-    using(var sha=System.Security.Cryptography.SHA256.Create()) {
-      Need(System.BitConverter.ToString(sha.ComputeHash(bytes)).Replace("-","").ToLowerInvariant()==hash,"template-hash");
-    }
-    return new System.Text.UTF8Encoding(false,true).GetString(bytes);
-  }
-  static readonly string[][] Cases=Load();
-  static string[][] Load() {
-    string[] rows=Unpack(@"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",35865,@"9cbee32b99ff2deee924c4c4c6e02e9b22e72619e97deabe75cd09dd5e699235").Split('\0');
-    Need(rows.Length==96,"template-count");string[][] result=new string[rows.Length][];
-    for(int index=0;index<rows.Length;index++) {
-      result[index]=rows[index].Split('\t');Need(result[index].Length==5,"template-columns");
-    }
-    return result;
-  }
-  static string Field(System.Collections.IDictionary fields,string name) {
-    Need(fields!=null && fields.Contains(name),"field");string value=fields[name] as string;
-    Need(value!=null && value.Length<=(name=="sessionId"?128:256) &&
-      System.Text.RegularExpressions.Regex.IsMatch(value,@"\A[A-Za-z0-9_.:-]+\z"),"handle");return value;
-  }
-  static void Keys(System.Collections.IDictionary fields,string[] names) {
-    Need(fields!=null && fields.Count==names.Length,"fields");foreach(string name in names)Need(fields.Contains(name),"fields");
-    foreach(System.Collections.DictionaryEntry field in fields) {
-      bool found=false;foreach(string name in names)if(System.String.Equals(field.Key as string,name,System.StringComparison.Ordinal))found=true;
-      Need(found,"field-name");
-    }
-  }
-  static string Coordinate(System.Collections.IDictionary fields,string name,int maximum) {
-    object value=fields[name];Need(value is int || value is long,"coordinate-type");
-    long coordinate=System.Convert.ToInt64(value,System.Globalization.CultureInfo.InvariantCulture);
-    Need(coordinate>=0 && coordinate<=maximum,"coordinate-range");return coordinate.ToString(System.Globalization.CultureInfo.InvariantCulture);
-  }
-  static string Expand(string template,System.Collections.IDictionary fields) {
-    foreach(string name in new string[]{"lineNumber","columnNumber"}) {
-      if(!fields.Contains(name))continue;int maximum=name=="lineNumber"?65535:1048575;
-      string marker="\""+name+"\":"+maximum.ToString(System.Globalization.CultureInfo.InvariantCulture);
-      Need(template.IndexOf(marker,System.StringComparison.Ordinal)>=0,"coordinate-template");
-      template=template.Replace(marker,"\""+name+"\":"+Coordinate(fields,name,maximum));
-    }
-    var output=new System.Text.StringBuilder();int previous=0;
-    foreach(System.Text.RegularExpressions.Match match in System.Text.RegularExpressions.Regex.Matches(template,"\"__ratline209_([A-Za-z0-9]+)__\"")) {
-      output.Append(template,previous,match.Index-previous);output.Append('"');output.Append(Field(fields,match.Groups[1].Value));output.Append('"');
-      previous=match.Index+match.Length;
-    }
-    output.Append(template,previous,template.Length-previous);return output.ToString();
-  }
-  public static string Encode(int id,string role,string phase,string method,System.Collections.IDictionary fields) {
-    // Int32 positivity is only envelope syntax. The original channel/helper
-    // Must enforce its own never-reset lifetime request allowance before use.
-    Need(id>=1,"id");string message=null;
-    foreach(string[] row in Cases) {
-      if(role!=row[0] || phase!=row[1])continue;
-      Need(message==null,"case");Need(method==row[2],"method");
-      Keys(fields,row[3].Length==0?new string[0]:row[3].Split(','));message=Expand(row[4],fields);
-    }
-    Need(message!=null && message.StartsWith("{",System.StringComparison.Ordinal),"case");
-    string result="{\"id\":"+id.ToString(System.Globalization.CultureInfo.InvariantCulture)+","+message.Substring(1)+"\0";
-    Need(System.Text.Encoding.UTF8.GetByteCount(result)<=MaximumEncodedBytes,"size");return result;
-  }
-  public static void VerifySmoke() {
-    var fields=new System.Collections.Hashtable(System.StringComparer.Ordinal);
-    fields.Add("sessionId","s");
-    Need(Encode(301,"pcb","resume","Debugger.resume",fields)==@"{""id"":301,""method"":""Debugger.resume"",""sessionId"":""s"",""params"":{}}"+"\0","smoke-frame");
-    fields.Add("objectId","__ratline209_argument0__");fields.Add("argument0","original");
-    string collision=Encode(301,"pcb","relation-same","Runtime.callFunctionOn",fields);
-    Need(collision.Contains(@"""objectId"":""__ratline209_argument0__""") && collision.Contains(@"""objectId"":""original"""),"smoke-placeholder");
-    fields.Clear();fields.Add("sessionId","s");fields.Add("scriptId","original");fields.Add("lineNumber",12);fields.Add("columnNumber",34);
-    string ownership=Encode(301,"pcb","ownership-pcb-admission-arm","Debugger.setBreakpoint",fields);
-    Need(ownership.Contains(@"""lineNumber"":12,""columnNumber"":34"),"smoke-coordinate");
-    foreach(object coordinate in new object[]{null,"0",-1,65536,0.5}) {
-      fields["lineNumber"]=coordinate;bool refused=false;
-      try{Encode(301,"pcb","ownership-pcb-admission-arm","Debugger.setBreakpoint",fields);}catch(System.InvalidOperationException){refused=true;}
-      Need(refused,"smoke-coordinate-refusal");
-    }
-    var insensitive=new System.Collections.Hashtable(System.StringComparer.OrdinalIgnoreCase);insensitive.Add("SessionId","s");
-    bool alias=false;try{Encode(1,"pcb","resume","Debugger.resume",insensitive);}catch(System.InvalidOperationException){alias=true;}Need(alias,"smoke-field-name");
-  }
+public const int MaximumEncodedBytes=2499;
+static void Need(bool value,string code) { if(!value)throw new System.InvalidOperationException("pcb-ratline209-"+code); }
+static string Unpack(string encoded,int length,string hash) {
+Need(length==36266,"template-length");byte[] bytes=new byte[length];int count=0;
+byte[] packed=System.Convert.FromBase64String(encoded);Need(packed.Length==2806 && System.Convert.ToBase64String(packed)==encoded,"template-base64");
+using(var input=new System.IO.MemoryStream(packed,false))
+using(var stream=new System.IO.Compression.GZipStream(input,System.IO.Compression.CompressionMode.Decompress)) {
+while(count<length) { int read=stream.Read(bytes,count,length-count);if(read==0)break;count+=read; }
+Need(count==length && stream.ReadByte()==-1,"template-bytes");
+}
+using(var sha=System.Security.Cryptography.SHA256.Create()) {
+Need(System.BitConverter.ToString(sha.ComputeHash(bytes)).Replace("-","").ToLowerInvariant()==hash,"template-hash");
+}
+return new System.Text.UTF8Encoding(false,true).GetString(bytes);
+}
+static readonly string[][] Cases=Load();
+static string[][] Load() {
+string[] rows=Unpack(@"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",36266,@"af00874e7eeb52ce56bb779d0c6953b25338d984e81e1ad045df68ea404ab169").Split('\0');
+Need(rows.Length==96,"template-count");string[][] result=new string[rows.Length][];
+for(int index=0;index<rows.Length;index++) {
+result[index]=rows[index].Split('\t');Need(result[index].Length==5,"template-columns");
+}
+return result;
+}
+static string Field(System.Collections.IDictionary fields,string name) {
+Need(fields!=null && fields.Contains(name),"field");string value=fields[name] as string;
+Need(value!=null && value.Length<=(name=="sessionId"?128:256) &&
+System.Text.RegularExpressions.Regex.IsMatch(value,@"\A[A-Za-z0-9_.:-]+\z"),"handle");return value;
+}
+static void Keys(System.Collections.IDictionary fields,string[] names) {
+Need(fields!=null && fields.Count==names.Length,"fields");foreach(string name in names)Need(fields.Contains(name),"fields");
+foreach(System.Collections.DictionaryEntry field in fields) {
+bool found=false;foreach(string name in names)if(System.String.Equals(field.Key as string,name,System.StringComparison.Ordinal))found=true;
+Need(found,"field-name");
+}
+}
+static string Coordinate(System.Collections.IDictionary fields,string name,int maximum) {
+object value=fields[name];Need(value is int || value is long,"coordinate-type");
+long coordinate=System.Convert.ToInt64(value,System.Globalization.CultureInfo.InvariantCulture);
+Need(coordinate>=0 && coordinate<=maximum,"coordinate-range");return coordinate.ToString(System.Globalization.CultureInfo.InvariantCulture);
+}
+static string Expand(string template,System.Collections.IDictionary fields) {
+foreach(string name in new string[]{"lineNumber","columnNumber"}) {
+if(!fields.Contains(name))continue;int maximum=name=="lineNumber"?65535:1048575;
+string marker="\""+name+"\":"+maximum.ToString(System.Globalization.CultureInfo.InvariantCulture);
+Need(template.IndexOf(marker,System.StringComparison.Ordinal)>=0,"coordinate-template");
+template=template.Replace(marker,"\""+name+"\":"+Coordinate(fields,name,maximum));
+}
+var output=new System.Text.StringBuilder();int previous=0;
+foreach(System.Text.RegularExpressions.Match match in System.Text.RegularExpressions.Regex.Matches(template,"\"__ratline209_([A-Za-z0-9]+)__\"")) {
+output.Append(template,previous,match.Index-previous);output.Append('"');output.Append(Field(fields,match.Groups[1].Value));output.Append('"');
+previous=match.Index+match.Length;
+}
+output.Append(template,previous,template.Length-previous);return output.ToString();
+}
+public static string Encode(int id,string role,string phase,string method,System.Collections.IDictionary fields) {
+// Int32 positivity is only envelope syntax. The original channel/helper
+// Must enforce its own never-reset lifetime request allowance before use.
+Need(id>=1,"id");string message=null;
+foreach(string[] row in Cases) {
+if(role!=row[0] || phase!=row[1])continue;
+Need(message==null,"case");Need(method==row[2],"method");
+Keys(fields,row[3].Length==0?new string[0]:row[3].Split(','));message=Expand(row[4],fields);
+}
+Need(message!=null && message.StartsWith("{",System.StringComparison.Ordinal),"case");
+string result="{\"id\":"+id.ToString(System.Globalization.CultureInfo.InvariantCulture)+","+message.Substring(1)+"\0";
+Need(System.Text.Encoding.UTF8.GetByteCount(result)<=MaximumEncodedBytes,"size");return result;
+}
+public static void VerifySmoke() {
+var fields=new System.Collections.Hashtable(System.StringComparer.Ordinal);
+fields.Add("sessionId","s");
+Need(Encode(301,"pcb","resume","Debugger.resume",fields)==@"{""id"":301,""method"":""Debugger.resume"",""sessionId"":""s"",""params"":{}}"+"\0","smoke-frame");
+fields.Add("objectId","__ratline209_argument0__");fields.Add("argument0","original");
+string collision=Encode(301,"pcb","relation-same","Runtime.callFunctionOn",fields);
+Need(collision.Contains(@"""objectId"":""__ratline209_argument0__""") && collision.Contains(@"""objectId"":""original"""),"smoke-placeholder");
+fields.Clear();fields.Add("sessionId","s");fields.Add("scriptId","original");fields.Add("lineNumber",12);fields.Add("columnNumber",34);
+string ownership=Encode(301,"pcb","ownership-pcb-admission-arm","Debugger.setBreakpoint",fields);
+Need(ownership.Contains(@"""lineNumber"":12,""columnNumber"":34"),"smoke-coordinate");
+foreach(object coordinate in new object[]{null,"0",-1,65536,0.5}) {
+fields["lineNumber"]=coordinate;bool refused=false;
+try{Encode(301,"pcb","ownership-pcb-admission-arm","Debugger.setBreakpoint",fields);}catch(System.InvalidOperationException){refused=true;}
+Need(refused,"smoke-coordinate-refusal");
+}
+var insensitive=new System.Collections.Hashtable(System.StringComparer.OrdinalIgnoreCase);insensitive.Add("SessionId","s");
+bool alias=false;try{Encode(1,"pcb","resume","Debugger.resume",insensitive);}catch(System.InvalidOperationException){alias=true;}Need(alias,"smoke-field-name");
+}
 }
 public static class EasyedaRatline209Limits {
   public const long RequestLimit=383L;
@@ -1440,8 +1440,8 @@ public static class EasyedaRatlineContinuation209Protocol {
   public const int MaximumEncodedBytes=2499;
   static void Need(bool value,string code) { if(!value)throw new System.InvalidOperationException("pcb-ratline-continuation209-"+code); }
   static string Unpack(string encoded,int length,string hash) {
-    Need(length==36701,"template-length");byte[] bytes=new byte[length];int count=0;
-    byte[] packed=System.Convert.FromBase64String(encoded);Need(packed.Length==2530 && System.Convert.ToBase64String(packed)==encoded,"template-base64");
+    Need(length==37102,"template-length");byte[] bytes=new byte[length];int count=0;
+    byte[] packed=System.Convert.FromBase64String(encoded);Need(packed.Length==2817 && System.Convert.ToBase64String(packed)==encoded,"template-base64");
     using(var input=new System.IO.MemoryStream(packed,false))
     using(var stream=new System.IO.Compression.GZipStream(input,System.IO.Compression.CompressionMode.Decompress)) {
       while(count<length) { int read=stream.Read(bytes,count,length-count);if(read==0)break;count+=read; }
@@ -1454,7 +1454,7 @@ public static class EasyedaRatlineContinuation209Protocol {
   }
   static readonly string[][] Cases=Load();
   static string[][] Load() {
-    string[] rows=Unpack(@"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",36701,@"997fcf33261868bc29240f0a2dad9b804fce346ddaa34f5ab513a0f09952c3cb").Split('\0');
+    string[] rows=Unpack(@"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",37102,@"1c1dfe752b5e49ffdfb0bb1bb28fd124ae34d4e86f67cb51a978bfb7ea237ac2").Split('\0');
     Need(rows.Length==103,"template-count");string[][] result=new string[rows.Length][];
     for(int index=0;index<rows.Length;index++) {
       result[index]=rows[index].Split('\t');Need(result[index].Length==5,"template-columns");

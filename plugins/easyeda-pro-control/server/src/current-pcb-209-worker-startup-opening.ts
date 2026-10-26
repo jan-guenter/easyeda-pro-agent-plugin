@@ -21,7 +21,7 @@ import type { CurrentPcbWorkerStartupCommand, CurrentPcbWorkerStartupDependency 
 import { CurrentPcb209WorkerStartupTransport } from "./current-pcb-worker-startup-transport.ts";
 import { currentPcbWorkerStartupUiActorCommand } from "./current-pcb-worker-startup-actor.ts";
 import { CurrentPcb209WorkerStartupActorRunner } from "./current-pcb-209-worker-startup-actor.ts";
-import type { CurrentPcb209WorkerStartupActorPacket } from "./current-pcb-209-worker-startup-actor.ts";
+import type { CurrentPcb209OriginalStartupActorObservation, CurrentPcb209WorkerStartupActorPacket } from "./current-pcb-209-worker-startup-actor.ts";
 import { requireCurrentPcb209ActorClockSourceQualification } from "./current-pcb-209-actor-clock-source.ts";
 import type { CurrentPcb209ActorClockSourceQualification } from "./current-pcb-209-actor-clock-source.ts";
 import type { CurrentPcbWorkerStartupChannelPacket } from "./current-pcb-worker-startup-channel-observation.ts";
@@ -32,6 +32,8 @@ const contextSchema = z.object({ sessionId: z.string().min(1).max(128).regex(/^[
   uniqueContextId: z.string().min(1).max(128).regex(/^[A-Za-z\d_.:-]+$/u) }).strict();
 const openingMethods = ["context", "reprove", "begin", "finish", "observeParent", "ancillaryFrame",
   "observeAncillary", "ancillaryObservation"] as const;
+// oxlint-disable-next-line typescript/unbound-method -- Called only with the retained private-field actor owner, never a caller callback.
+const originalActorObservation = CurrentPcb209WorkerStartupActorRunner.prototype.originalObservation;
 function fail(code: string): Error { return new Error(`PCB209_WORKER_STARTUP_OPENING_${code}`); }
 const deadlineErrors = new WeakSet<Error>();
 function deadline(): Error {
@@ -376,6 +378,19 @@ export class CurrentPcb209WorkerStartupOpening {
     assignments: CurrentPcbWorkerConstructionAssignments, packet: CurrentPcb209WorkerStartupActorPacket): Promise<void> {
     if (packet !== this.#actorPacket || this.#actor === null) { throw fail("ORIGINAL_ACTOR_PACKET"); }
     await this.requireCurrentAssignments(result, assignments); await this.#actor.requireOriginal(packet); await this.#current();
+  }
+  /** Retains the original actor issuer for internal compositions. Matching JSON
+   * cannot retrieve it; local Date samples still establish no server clock. */
+  public async originalActorObservation(result: CurrentPcb209WorkerStartupOpeningResult,
+    assignments: CurrentPcbWorkerConstructionAssignments, packet: CurrentPcb209WorkerStartupActorPacket): Promise<CurrentPcb209OriginalStartupActorObservation> {
+    if (packet !== this.#actorPacket || this.#actor === null ||
+      CurrentPcb209WorkerStartupActorRunner.prototype.originalObservation !== originalActorObservation) { throw fail("ORIGINAL_ACTOR_PACKET"); }
+    const actor = this.#actor;
+    await this.requireCurrentAssignments(result, assignments);
+    const observation = await originalActorObservation.call(actor, packet);
+    if (actor !== this.#actor || packet !== this.#actorPacket || observation.packet !== packet.originalActorPacket ||
+      CurrentPcb209WorkerStartupActorRunner.prototype.originalObservation !== originalActorObservation) { throw fail("ORIGINAL_ACTOR_PACKET"); }
+    await this.#current(); return observation;
   }
   public retainedChannelObservation(): Readonly<Record<string, unknown>> | null {
     return this.#channelRunner?.retainedChannelObservation() ?? null;
