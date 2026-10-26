@@ -239,3 +239,41 @@ The combined release candidate is `0.3.0+codex.20261026212700`. Required local
 checks, exact-commit CI, protected publication and official Git marketplace
 installation are pending at this source freeze. Their terminal results will be
 appended separately. The current installed runtime remains191500 until then.
+
+
+## First candidate CI refusal
+
+Candidate `f51c4c389f812096397abb75c07df8e6a3fb2f70` passed all20 required
+local non-suite phases, native helper pin checks and the CI build/Windows jobs.
+Linux CI40404844941 shard3 then failed the existing C# template-size regression:
+the generated held-import source was10,176 bytes, exceeding its strict10,000-byte
+bound. The continuation template was10,214 bytes. This was not a native
+execution or persistence failure. The complete failed log remains retained,
+SHA-256 `763ce1830113443a6e0cd710ca515e7dc7f8cb27c249732fa1827429332d7367`.
+The candidate was not merged or installed. Its successful build and artifact
+review do not constitute release acceptance. The correction will compact the
+fixed diagnostic encoding while preserving the bound and empty-only semantics;
+final unchanged-source checks and CI must cover the corrected payload.
+
+
+## Template-size correction
+
+The final correction removes344 leading spaces from the generated held-import
+C# fragment, reducing it from10,176 to9,832 bytes. Maintained source remains
+readable. All C# literals occupy one line, so the emitted tokens, literal values,
+packed command table and diagnostic JavaScript are unchanged. The entire native
+helper differs from the failed candidate only by that indentation removal.
+The original strict10,000-byte test and all runtime guards remain unchanged.
+
+Sixteen focused native grammar/template, diagnostics and helper-pin checks
+passed, including the formerly failing named case. Generator verification and
+strict targeted lint passed. Independent source review confirmed the exact
+whitespace-only delta and both consumer pins. The helper is now1,019,062 bytes,
+SHA-256 `6888ed8b0dcf680a20fb759878eb212492eb50c5c240f5607a602ffe39b16a43`.
+The fixed1,048,576-byte bound leaves29,514 bytes of headroom.
+
+The first candidate's full CI is terminal: seven facade shards, the build and
+Windows job passed; shard3 had the single template-size failure, and its aggregate
+job failed accordingly. No test was filtered or bound raised. The corrected
+candidate retains the same uninstalled212700 version and requires its own local
+checks and complete exact-commit CI. No new connected validation is claimed.
