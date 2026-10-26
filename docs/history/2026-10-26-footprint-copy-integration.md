@@ -138,3 +138,20 @@ The next implementation batch must connect asynchronous completion and
 reciprocal destination evidence, the transaction-clock native transport, one
 journaled create, full effect/SQL checks, one Save and separate saved-generation
 verification. None of those remaining writer steps is enabled by this release.
+
+## First CI attempt and fixture correction
+
+Payload `b59494bfe486d50fb609107acf3c36ca8b5ce475`, PR138, ran Linux
+CI40418594700 and Windows40418594742. Build, bundle reproducibility, 424 bridge
+tests and Windows native checks passed. The facade shards reported 13,239
+passes, six failures and five expected platform skips. The failures were in
+three fixtures extracting the shared startup dispatcher: one retained a
+20,000-character extraction ceiling, and all three omitted the newly referenced
+footprint lifecycle class from their VM globals. These failures occurred before
+the intended callback behavior could run.
+
+The fixture ceiling now matches the existing 24,000-character bound; the
+missing class bindings and inert method vocabulary were added. All original
+behavior assertions remain. The affected files pass their eight focused tests.
+No production source, compatibility pin, bundle or test selection changed in
+this correction. Full exact-commit CI will run again before publication.

@@ -1,4 +1,4 @@
-/* oxlint-disable eslint/max-classes-per-file -- The actual extracted index dispatcher selects between these five synthetic lifecycle classes. */
+/* oxlint-disable eslint/max-classes-per-file -- The actual extracted index dispatcher selects between these six synthetic lifecycle classes. */
 import assert from "node:assert/strict";
 import { readFile } from "node:fs/promises";
 import { resolve } from "node:path";
@@ -26,6 +26,7 @@ async function fixture(): Promise<Readonly<{ run: Run; owners: readonly Readonly
   class Owner209 extends Owner {}
   class Empty209 extends Owner {}
   class Continuation209 extends Owner {}
+  class Footprint209 extends Owner {}
   class Ratline209 extends Owner {
     public observeWorkerStartupRatline(): Promise<Row> {
       assert.equal(this.hasActiveReservation(), true); return Promise.resolve({ synthetic: true, held: true });
@@ -37,6 +38,10 @@ async function fixture(): Promise<Readonly<{ run: Run; owners: readonly Readonly
     "observeWorkerStartupAssignments", "observeStartupAssignments", "requireStartupAssignments", "observeWorkerStartupFootprint", "observeStartupFootprint", "observeWorkerStartupActor", "observeStartupActor",
     "observeWorkerStartupFootprintSource", "observeStartupFootprintSource",
     "prepareWorkerStartupFootprintCopy", "prepareStartupFootprintCopy",
+    "prepareWorkerStartupFootprintBindings", "prepareStartupFootprintCopyBindings",
+    "observeWorkerStartupFootprintUi", "observeStartupFootprintCopyUi",
+    "prepareWorkerStartupFootprintDependencies", "prepareStartupFootprintCopyDependencies",
+    "observeWorkerStartupFootprintManagerRoute", "observeStartupFootprintCopyManagerRoute",
     "observeWorkerStartupChannel", "observeStartupChannel", "observeWorkerStartupEmpty", "observeStartupEmpty", "prepareWorkerStartupEmpty", "prepareStartupEmpty", "observeWorkerStartupRatline", "observeStartupRatline",
     "observeWorkerStartupRatlineContinuation", "observeStartupRatlineContinuation"]) {
     Object.defineProperty(Owner.prototype, name, { value: (): never => { throw new Error(`Unexpected synthetic operation ${name}`); } });
@@ -55,7 +60,7 @@ async function fixture(): Promise<Readonly<{ run: Run; owners: readonly Readonly
     assertDiagnosticLaunchOtherOperationsSettled: (): Promise<void> => Promise.resolve() };
   const data = { diagnostic209: true, CurrentPcbWorkerStartupLifecycle: Owner, CurrentPcb209WorkerStartupLifecycle: Owner209,
     CurrentPcb209EmptyStartupLifecycle: Empty209, CurrentPcb209RatlineStartupLifecycle: Ratline209,
-    CurrentPcb209RatlineContinuationLifecycle: Continuation209, engine, bridgeGate, upstream,
+    CurrentPcb209RatlineContinuationLifecycle: Continuation209, CurrentFootprintCopyPreparationLifecycle: Footprint209, engine, bridgeGate, upstream,
     retainedControlRoot: Object.freeze({ path: "/synthetic-control" }), controlDataDirectory: (): string => "/synthetic-control", resolve,
     CURRENT_PCB_DIAGNOSTIC_PROFILE: Object.freeze({ powershell: { sha256: "a".repeat(64), bytes: 1 } }),
     windowsRuntime: undefined, ordinaryLaunchRuntime: undefined, currentDisposableOpenCoordinator: undefined,
@@ -64,9 +69,9 @@ async function fixture(): Promise<Readonly<{ run: Run; owners: readonly Readonly
     currentPcbDiagnosticLifecycle: undefined, currentPcbStringPrecreateLifecycle: undefined };
   const source = await readFile(new URL("../src/index.ts", import.meta.url), "utf8");
   const begin = source.indexOf("  let startupOriginal:"), end = source.indexOf("\n  if (facadeToolRegistered", begin);
-  // The preparation route extends this actual source slice beyond 15,000 characters.
+  // The preparation route extends this actual source slice beyond 20,000 characters.
   // Match the bounded extraction used by the ordinary-release registration fixture.
-  assert.ok(begin > 0 && end > begin && end - begin < 20_000);
+  assert.ok(begin > 0 && end > begin && end - begin < 24_000);
   const helpersBegin = source.indexOf("function disposableOwnData("), helpersEnd = source.indexOf("\n}", source.indexOf("function disposableOwnerMethod(", helpersBegin)) + 2;
   assert.ok(helpersBegin > 0 && helpersEnd > helpersBegin && helpersEnd - helpersBegin < 2500);
   // Evaluate the actual source bodies unchanged, supplying only synthetic
