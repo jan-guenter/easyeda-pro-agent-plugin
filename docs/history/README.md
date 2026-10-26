@@ -45,6 +45,7 @@ layout. The connected ledger retains its generation and case anchors.
 
 | Record | Former path |
 | --- | --- |
+| [2026-10-26-pcb-opening-and-footprint-copy-batch.md](2026-10-26-pcb-opening-and-footprint-copy-batch.md) | Two terminal disposable cases, successful project capture, bounded PCB opening, retained assignment diagnostics and footprint copy-v2 preparation. |
 | [2026-10-26-startup-deadline-and-footprint-source.md](2026-10-26-startup-deadline-and-footprint-source.md) | Restart admission, consumed disposable opening timeout, terminal cleanup, source-derived deadline correction and footprint source integration. |
 | [2026-10-26-pcb-bootstrap-and-footprint-state.md](2026-10-26-pcb-bootstrap-and-footprint-state.md) | Installed221649 terminal continuation, bootstrap root phases, retained ancestry replies and footprint-state batch |
 | [2026-10-25-pcb-continuation-and-footprint-sql-batch.md](2026-10-25-pcb-continuation-and-footprint-sql-batch.md) | Installed193803 admission, original disposable continuation and combined footprint/verification work |

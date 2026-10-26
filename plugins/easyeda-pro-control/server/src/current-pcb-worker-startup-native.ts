@@ -15,8 +15,9 @@ import type { CurrentPcbWorkerStartupParentCommand, CurrentPcbWorkerStartupWorke
 import { CURRENT_PCB_DIAGNOSTIC_OPENING_FUNCTION } from "./current-pcb-diagnostic-opening.ts";
 import { CURRENT_PCB_209_STARTUP_OPENING_FUNCTION } from "./current-pcb-209-startup-opening-program.ts";
 import { CURRENT_PCB_DIAGNOSTIC_PCB_OPENING_FUNCTION } from "./current-pcb-diagnostic-pcb-opening.ts";
+import { CURRENT_PCB_209_RATLINE_OPENING_FUNCTION } from "./current-pcb-209-ratline-opening-program.ts";
 import { sha256Text } from "./core.ts";
-import { CURRENT_PCB_WORKER_STARTUP_REQUEST_LIMIT, currentPcb209WorkerStartupWire, currentPcbWorkerStartupWire } from "./current-pcb-worker-startup-wire.ts";
+import { CURRENT_PCB_WORKER_STARTUP_REQUEST_LIMIT, currentPcb209RatlineWorkerStartupWire, currentPcb209WorkerStartupWire, currentPcbWorkerStartupWire } from "./current-pcb-worker-startup-wire.ts";
 import { freezeDeep } from "./sqlite-inventory-core.ts";
 import { CURRENT_PCB_WORKER_STARTUP_UI_ACTOR_CLOCK_FUNCTION, CURRENT_PCB_WORKER_STARTUP_WORKER_ACTOR_CLOCK_FUNCTION,
   currentPcbWorkerStartupUiActorCommand } from "./current-pcb-worker-startup-actor.ts";
@@ -114,9 +115,23 @@ export function currentPcb209WorkerStartupNativeParentCases(): readonly CurrentP
     command.method === "Runtime.callFunctionOn" && command.params.awaitPromise && command.params.functionDeclaration === CURRENT_PCB_DIAGNOSTIC_OPENING_FUNCTION ?
       { method: command.method, sessionId: command.sessionId, params: { ...command.params, functionDeclaration: CURRENT_PCB_209_STARTUP_OPENING_FUNCTION } } : command));
 }
+export function currentPcb209RatlineWorkerStartupNativeParentCases(): readonly CurrentPcbWorkerStartupParentCommand[] {
+  return freezeDeep(currentPcb209WorkerStartupNativeParentCases().filter(command =>
+    command.method !== "Runtime.callFunctionOn" || command.params.arguments[1]?.value !== "observe").map(command =>
+    command.method === "Runtime.callFunctionOn" && command.params.awaitPromise && command.params.functionDeclaration === CURRENT_PCB_DIAGNOSTIC_PCB_OPENING_FUNCTION ?
+      { method: command.method, sessionId: command.sessionId,
+        params: { ...command.params, functionDeclaration: CURRENT_PCB_209_RATLINE_OPENING_FUNCTION } } : command));
+}
 
 export function currentPcbWorkerStartupNativeSource(): string {
   const currentCases = currentPcb209WorkerStartupNativeCases(), legacyCases = currentPcbWorkerStartupNativeCases();
+  const parameterTexts = new Map<string, string>();
+  function parameterText(value: string): string {
+    if (Buffer.byteLength(value) < 1024) { return literal(value); }
+    const retained = parameterTexts.get(value);
+    if (retained !== undefined) { return retained; }
+    const name = `ParameterText${String(parameterTexts.size)}`; parameterTexts.set(value, name); return name;
+  }
   let changedCases = 0;
   function variant(index: number, sample: CurrentPcbWorkerStartupWorkerCommand): CurrentPcbWorkerStartupWorkerCommand {
     const current = currentCases[index];
@@ -152,10 +167,10 @@ export function currentPcbWorkerStartupNativeSource(): string {
       for (const match of template.matchAll(/"__startup_([A-Za-z\d]+)__"/gu)) {
         const key = match[1];
         if (key === undefined || !dynamic.some(([name]) => name === key)) { throw new Error("WORKER_STARTUP_NATIVE_PLACEHOLDER"); }
-        segments.push(literal(template.slice(previous, match.index)), literal('"'), `Handle(Field(fields,${literal(key)}),256)`, literal('"'));
+        segments.push(parameterText(template.slice(previous, match.index)), literal('"'), `Handle(Field(fields,${literal(key)}),256)`, literal('"'));
         previous = match.index + match[0].length;
       }
-      segments.push(literal(template.slice(previous))); return segments.join("+");
+      segments.push(parameterText(template.slice(previous))); return segments.join("+");
     }
     const currentExpression = expression(current.params), legacy = expression(sample.params);
     let parameters = legacy;
@@ -205,6 +220,17 @@ export function currentPcbWorkerStartupNativeSource(): string {
     return `    fields.Clear();\n${fields.map(([key, value]) => `    fields.Add(${literal(key)},${typeof value === "number" ? String(value) : literal(value)});`).join("\n")}\n` +
       `    Need((workerStartup209?EasyedaDiagnosticOwner.WorkerStartup209ParentProtocolMessage(256,${literal(sample.method)},${literal(String(request["parentPhase"]))},fields):EasyedaDiagnosticOwner.WorkerStartupParentProtocolMessage(256,${literal(sample.method)},${literal(String(request["parentPhase"]))},fields))==${expectedExpression}+"\\0","smoke-parent-parity");`;
   }).join("\n");
+  const ratlineParentSmoke = currentPcb209RatlineWorkerStartupNativeParentCases().map(sample => {
+    const request = currentPcb209RatlineWorkerStartupWire(sample, 256).request;
+    const fields = Object.entries(request).filter(([key]) => !["action", "requestId", "method", "parentPhase"].includes(key));
+    const opening = sample.method === "Runtime.callFunctionOn" && sample.params.functionDeclaration === CURRENT_PCB_209_RATLINE_OPENING_FUNCTION;
+    const remaining = request["parentPhase"] === "pcb-open-document" ? 1234 : 0;
+    const params = opening ? { ...sample.params, arguments: [...sample.params.arguments, { value: remaining }] } : sample.params;
+    const expected = JSON.stringify({ id: 256, method: sample.method, params,
+      ...(sample.sessionId === undefined ? {} : { sessionId: sample.sessionId }) });
+    return `    fields.Clear();\n${fields.map(([key, value]) => `    fields.Add(${literal(key)},${typeof value === "number" ? String(value) : literal(value)});`).join("\n")}\n` +
+      `    Need(EasyedaDiagnosticOwner.WorkerStartupRatline209ParentProtocolMessage(256,${literal(sample.method)},${literal(String(request["parentPhase"]))},fields,${String(remaining)})==${expectedReference(expected)}+"\\0","smoke-ratline-parent-parity");`;
+  }).join("\n");
   const smokeText = smokeExpected.join("\0");
   const smokeBytes = Buffer.byteLength(smokeText);
   // oxlint-disable-next-line node/no-sync -- Deterministic in-memory compression of fixed compile-only expected vectors.
@@ -213,9 +239,11 @@ export function currentPcbWorkerStartupNativeSource(): string {
 // Generated from current-pcb-worker-startup-native.ts. Do not edit this block.
 public static class EasyedaWorkerStartupProtocol {
   public const string UiActorClockFunction=${literal(CURRENT_PCB_WORKER_STARTUP_UI_ACTOR_CLOCK_FUNCTION)};
-  public const string PcbOpeningFunction=${literal(CURRENT_PCB_DIAGNOSTIC_PCB_OPENING_FUNCTION)};
+${packedProgram("PcbOpeningFunction", CURRENT_PCB_DIAGNOSTIC_PCB_OPENING_FUNCTION, true)}
 ${packedProgram("ProjectOpening209Function", CURRENT_PCB_209_STARTUP_OPENING_FUNCTION, true)}
+${packedProgram("RatlinePcbOpening209Function", CURRENT_PCB_209_RATLINE_OPENING_FUNCTION, true)}
 ${packedProgram("FootprintSourceFunctionJson", JSON.stringify(currentFootprintCopySourceNativeSample().params.functionDeclaration))}
+${[...parameterTexts].map(([value, name]) => packedProgram(name, value)).join("\n")}
   static void Need(bool condition,string code) { if(!condition)throw new System.InvalidOperationException("pcb-diagnostic-startup-"+code); }
   static string UnpackFixedProgram(string encoded,int packedBytes,int expectedBytes,string expectedHash) {
     Need(expectedBytes>0 && expectedBytes<=65536 && packedBytes>0 && packedBytes<=65536,"program-bound");
@@ -281,6 +309,7 @@ ${rows.join(" else\n")}
 ${smoke}
 ${footprintSmoke}
 ${parentSmoke}
+${ratlineParentSmoke}
     fields.Clear();fields.Add("objectId","__startup_argument0__");fields.Add("argument0","other");
     string collision=EncodeCore(256,"Runtime.callFunctionOn","s","same",fields,workerStartup209);
     Need(collision.Contains(@"""objectId"":""__startup_argument0__""") && collision.Contains(@"""objectId"":""other"""),"smoke-placeholder");

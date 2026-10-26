@@ -5,10 +5,10 @@ import { types } from "node:util";
 import { z } from "zod";
 import { decodeCurrentPcbDiagnosticJson } from "./current-pcb-diagnostic-json.ts";
 import { captureCurrentPcbStringClockReply } from "./current-pcb-string-clock-reply.ts";
-import { currentPcb209WorkerStartupWire } from "./current-pcb-worker-startup-wire.ts";
+import { currentPcb209RatlineWorkerStartupWire } from "./current-pcb-worker-startup-wire.ts";
 import type { CurrentPcbWorkerStartupCommand, CurrentPcbWorkerStartupDependency, CurrentPcbWorkerStartupEvent, CurrentPcbWorkerStartupParentCommand } from "./current-pcb-worker-startup-contract.ts";
 import type { CurrentPcbWorkerStartupParent } from "./current-pcb-worker-startup-channel.ts";
-import { CURRENT_PCB_DIAGNOSTIC_PCB_OPENING_FUNCTION } from "./current-pcb-diagnostic-pcb-opening.ts";
+import { CURRENT_PCB_209_RATLINE_OPENING_FUNCTION } from "./current-pcb-209-ratline-opening-program.ts";
 import { CURRENT_PCB_209_RATLINE_NATIVE_PROFILE as PROFILE, assertOriginalCurrentPcb209RatlineBudget, currentPcb209RatlineSourceBudget, isCurrentPcb209RatlineNormalResourceRefusal } from "./current-pcb-209-ratline-budget.ts";
 import type { CurrentPcb209RatlineBudget, CurrentPcb209RatlineReplyKind } from "./current-pcb-209-ratline-budget.ts";
 import { currentPcb209RatlineNativeWire } from "./current-pcb-209-ratline-native-wire.ts";
@@ -264,7 +264,7 @@ export class CurrentPcb209RatlineStartupChannel {
         }
         const identity = JSON.stringify([command.params.uniqueContextId, command.params.arguments[0].value]);
         const phase = command.params.arguments[1].value;
-        if (command.params.functionDeclaration === CURRENT_PCB_DIAGNOSTIC_PCB_OPENING_FUNCTION) {
+        if (command.params.functionDeclaration === CURRENT_PCB_209_RATLINE_OPENING_FUNCTION) {
           if (!this.#openingConsumed || this.#openingIdentity !== identity ||
               phase === "preflight" && this.#pcbPreflightConsumed ||
               phase === "open-document" && (!this.#pcbPreflightConsumed || this.#pcbOpeningConsumed) ||
@@ -326,7 +326,7 @@ export class CurrentPcb209RatlineStartupChannel {
   #originalNavigationPending(): boolean {
     return [...this.#pending.values()].some(pending => pending.route === "parent" && pending.written && !pending.writeFailed && !pending.replied &&
       pending.command.method === "Runtime.callFunctionOn" && "uniqueContextId" in pending.command.params &&
-      pending.command.params.functionDeclaration === CURRENT_PCB_DIAGNOSTIC_PCB_OPENING_FUNCTION &&
+      pending.command.params.functionDeclaration === CURRENT_PCB_209_RATLINE_OPENING_FUNCTION &&
       pending.command.params.uniqueContextId === this.#openingContext && pending.command.params.arguments[1]?.value === "open-document");
   }
   #ratlineKind(role: CurrentPcb209RatlineNativeRole, command: Command, phase: string): CurrentPcb209RatlineReplyKind {
@@ -491,7 +491,7 @@ export class CurrentPcb209RatlineStartupChannel {
     }
   }
   async #request(route: Route, raw: Command): Promise<unknown> {
-    const normalized = route === "startup" || route === "parent" ? currentPcb209WorkerStartupWire(raw, 1) : currentPcb209RatlineNativeWire(route, raw, 1);
+    const normalized = route === "startup" || route === "parent" ? currentPcb209RatlineWorkerStartupWire(raw, 1) : currentPcb209RatlineNativeWire(route, raw, 1);
     const { id: _validationId, ...command } = normalized.command;
     const phase = typeof normalized.request["phase"] === "string" ? normalized.request["phase"] : "";
     if (route === "startup" || route === "parent") {
@@ -561,7 +561,7 @@ export class CurrentPcb209RatlineStartupChannel {
     if (command.method === "Target.setAutoAttach") { this.#attachIssued = true; }
     if (command.method !== "Runtime.callFunctionOn" || !("uniqueContextId" in command.params)) { return; }
     if (command.params.arguments.length === 0) { this.#actorReads += 1; }
-    else if (command.params.functionDeclaration === CURRENT_PCB_DIAGNOSTIC_PCB_OPENING_FUNCTION) {
+    else if (command.params.functionDeclaration === CURRENT_PCB_209_RATLINE_OPENING_FUNCTION) {
       if (command.params.arguments[1].value === "preflight") { this.#pcbPreflightConsumed = true; } else { this.#pcbOpeningConsumed = true; }
     } else if (command.params.arguments[1].value === "preflight") {
       this.#openingIdentity = JSON.stringify([command.params.uniqueContextId, command.params.arguments[0].value]); this.#openingContext = command.params.uniqueContextId;

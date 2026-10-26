@@ -5,11 +5,14 @@ import { sha256Text } from "../src/core.ts";
 import { CURRENT_PCB_DIAGNOSTIC_PCB_OPENING_FUNCTION, CURRENT_PCB_DIAGNOSTIC_PCB_OPENING_FUNCTION_SHA256,
   currentPcbDiagnosticPcbOpeningArguments, decodeCurrentPcbDiagnosticPcbOpeningReply } from "../src/current-pcb-diagnostic-pcb-opening.ts";
 import type { CurrentPcbDiagnosticPcbOpeningPhase, CurrentPcbDiagnosticPcbOpeningResult } from "../src/current-pcb-diagnostic-pcb-opening.ts";
+import { CURRENT_PCB_209_RATLINE_OPENING_FUNCTION, CURRENT_PCB_209_RATLINE_OPENING_MAX_MS,
+  currentPcb209RatlineOpeningAcknowledged } from "../src/current-pcb-209-ratline-opening-program.ts";
 
 const rawWindowsPath = String.raw`C:\Disposable\Selected.eprj2`;
 const target = { rawWindowsPath, projectUuid: sha256Text(rawWindowsPath), branchUuid: "b".repeat(32),
   documentUuid: "d".repeat(16), expectedSourceSha256: "e".repeat(64) };
-interface Options { readonly before?: string; readonly afterRegistry?: string; readonly openBody?: string; readonly nativeBody?: string; readonly fastDeadline?: boolean; }
+interface Options { readonly before?: string; readonly afterRegistry?: string; readonly openBody?: string; readonly nativeBody?: string; readonly fastDeadline?: boolean;
+  readonly program?: string; readonly nativeRemainingMilliseconds?: number; }
 function fixture(options: Options = {}): Readonly<{
   run: (phase: CurrentPcbDiagnosticPcbOpeningPhase) => Promise<CurrentPcbDiagnosticPcbOpeningResult>;
   evaluate: (source: string) => unknown;
@@ -47,13 +50,53 @@ child.document={defaultView:child,nodeType:9};frame.contentWindow=child;frames.p
 ${options.before ?? ""}`, context, { timeout: 1000 });
   return {
     run: async (phase): Promise<CurrentPcbDiagnosticPcbOpeningResult> => {
-      const value: unknown = await (runInContext(`(${CURRENT_PCB_DIAGNOSTIC_PCB_OPENING_FUNCTION})(target,${JSON.stringify(phase)})`,
+      const value: unknown = await (runInContext(`(${options.program ?? CURRENT_PCB_DIAGNOSTIC_PCB_OPENING_FUNCTION})(target,${JSON.stringify(phase)},${String(options.nativeRemainingMilliseconds)})`,
         context, { timeout: 1000 }) as unknown);
       return decodeCurrentPcbDiagnosticPcbOpeningReply({ result: { type: "string", value } }, target, phase);
     },
     evaluate: (source): unknown => runInContext(source, context, { timeout: 1000 }) as unknown,
   };
 }
+
+void test("ratline opening survives deliberate pauses beyond45s using only the native remaining allowance", async context => {
+  context.mock.timers.enable({ apis: ["setTimeout"] });
+  const env = fixture({ program: CURRENT_PCB_209_RATLINE_OPENING_FUNCTION, nativeRemainingMilliseconds: 60_000,
+    openBody: "await new Promise(resolve=>setTimeout(resolve,46000));opened();return tabId;" });
+  const work = env.run("open-document");
+  // The synthetic API must be entered before advancing the browser timer.
+  for (let index = 0; index < 20 && env.evaluate("documentCalls") === 0; index += 1) { await Promise.resolve(); }
+  assert.equal(env.evaluate("documentCalls"), 1); await Promise.resolve();
+  context.mock.timers.tick(45_000); await Promise.resolve();
+  context.mock.timers.tick(1000); const result = await work;
+  assert.equal(result.ok, true); assert.equal(currentPcb209RatlineOpeningAcknowledged(result), true);
+  assert.equal(env.evaluate("documentCalls"), 1);
+});
+
+void test("aged ratline navigation times out once and refused replies are never acknowledged", async context => {
+  context.mock.timers.enable({ apis: ["setTimeout"] });
+  const env = fixture({ program: CURRENT_PCB_209_RATLINE_OPENING_FUNCTION, nativeRemainingMilliseconds: 1234,
+    openBody: "await new Promise(()=>{});" });
+  const work = env.run("open-document");
+  for (let index = 0; index < 20 && env.evaluate("documentCalls") === 0; index += 1) { await Promise.resolve(); }
+  assert.equal(env.evaluate("documentCalls"), 1); context.mock.timers.tick(1234);
+  const result = await work; assert.equal(result.ok, false); assert.equal(result.failure?.code, "TIMEOUT");
+  assert.equal(result.dispatchAttempted, true); assert.equal(result.nativeWorkMayRemain, true);
+  assert.equal(currentPcb209RatlineOpeningAcknowledged(result), false);
+  assert.equal(currentPcb209RatlineOpeningAcknowledged(null), false); assert.equal(env.evaluate("documentCalls"), 1);
+});
+
+void test("ratline native deadline data refuses missing, expired, oversized and wrong-phase grants before dispatch", async () => {
+  for (const nativeRemainingMilliseconds of [undefined, 0, -1, 1.5, Number.NaN, Number.POSITIVE_INFINITY, CURRENT_PCB_209_RATLINE_OPENING_MAX_MS + 1]) {
+    const env = fixture({ program: CURRENT_PCB_209_RATLINE_OPENING_FUNCTION, ...(nativeRemainingMilliseconds === undefined ? {} : { nativeRemainingMilliseconds }) });
+    const result = await env.run("open-document"); assert.equal(result.ok, false); assert.equal(result.dispatchAttempted, false);
+    assert.equal(env.evaluate("documentCalls+registryCalls"), 0);
+  }
+  const env = fixture({ program: CURRENT_PCB_209_RATLINE_OPENING_FUNCTION, nativeRemainingMilliseconds: 1234 });
+  const wrongPhase = await env.run("preflight"); assert.equal(wrongPhase.ok, false); assert.equal(env.evaluate("registryCalls"), 0);
+  const preflight = fixture({ program: CURRENT_PCB_209_RATLINE_OPENING_FUNCTION, nativeRemainingMilliseconds: 0 });
+  const ready = await preflight.run("preflight"); assert.equal(ready.ok, true);
+  assert.equal(currentPcb209RatlineOpeningAcknowledged(ready), false);
+});
 
 void test("fixed PCB opening separates empty-editor preflight, one dispatch and native frame observation", async () => {
   const env = fixture(), preflight = await env.run("preflight");

@@ -59,6 +59,13 @@ the serial ownership checks and concurrent source loading; individual native
 requests retain their deadlines. Limits are internal to the selected launch
 and cannot be reset or chosen by a caller.
 
+PCB navigation under either ratline purpose uses the time remaining on the
+original native launch stopwatch. The native encoder supplies this value; the
+tool accepts no timeout argument. Opening does not start another launch budget
+or consume the cleanup reserve. A refused or timed-out opening remains consumed
+and reports `openingAcknowledged: false`; inspect and finish original-owner
+cleanup without replaying navigation.
+
 Initial and committed Electron window-context hooks have separate fixed source
 and resume phases. The initial hook also requires the selected iframe DOM
 binding and pinned UI caller stack. Neither hook consumes PCB source ordinals.

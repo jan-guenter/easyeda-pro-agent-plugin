@@ -1,7 +1,7 @@
 import assert from "node:assert/strict";
 import { test } from "node:test";
 import { z } from "zod";
-import { CURRENT_PCB_DIAGNOSTIC_PCB_OPENING_FUNCTION } from "../src/current-pcb-diagnostic-pcb-opening.ts";
+import { CURRENT_PCB_209_RATLINE_OPENING_FUNCTION } from "../src/current-pcb-209-ratline-opening-program.ts";
 import {
   CURRENT_PCB_209_RATLINE_NAVIGATION_SOURCE,
   qualifyCurrentPcb209RatlineNavigationPause,
@@ -32,7 +32,7 @@ void test("actual V8 navigation instrumentation matches the fixed pause and comp
   // Only an inert Node global is targeted. The exact app function fails its own
   // Environment checks after the observed resume; it cannot open a project.
   const call = fixture.request("Runtime.callFunctionOn", { objectId: remote.result.objectId,
-    functionDeclaration: CURRENT_PCB_DIAGNOSTIC_PCB_OPENING_FUNCTION,
+    functionDeclaration: CURRENT_PCB_209_RATLINE_OPENING_FUNCTION,
     arguments: [{ value: { projectUuid: "a".repeat(64), branchUuid: "b".repeat(32), documentUuid: "c".repeat(16) } }, { value: "open-document" }],
     returnByValue: true, awaitPromise: true, silent: true, generatePreview: false, userGesture: false, throwOnSideEffect: false });
   const pause = z.record(z.string(), z.unknown()).parse(await Promise.race([stopped.promise,
