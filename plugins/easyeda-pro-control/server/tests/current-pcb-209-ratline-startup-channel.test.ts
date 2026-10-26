@@ -7,7 +7,7 @@ import type { CurrentPcb209RatlineStartupDependency, CurrentPcb209RatlineStartup
 import { CurrentPcb209RatlineBudget, CURRENT_PCB_209_RATLINE_NATIVE_PROFILE as PROFILE } from "../src/current-pcb-209-ratline-budget.ts";
 import type { CurrentPcbWorkerStartupParentCommand } from "../src/current-pcb-worker-startup-contract.ts";
 import { CURRENT_PCB_WORKER_STARTUP_ATTACH } from "../src/current-pcb-worker-startup-contract.ts";
-import { currentPcbWorkerStartupNativeParentCases } from "../src/current-pcb-worker-startup-native.ts";
+import { currentPcb209WorkerStartupNativeParentCases } from "../src/current-pcb-worker-startup-native.ts";
 import { CURRENT_PCB_DIAGNOSTIC_PCB_OPENING_FUNCTION } from "../src/current-pcb-diagnostic-pcb-opening.ts";
 import { CURRENT_PCB_209_RATLINE_NATIVE_CASES } from "../src/current-pcb-209-ratline-native-cases.ts";
 import type { CurrentPcb209RatlineOriginCommand } from "../src/current-pcb-209-ratline-origin.ts";
@@ -63,7 +63,7 @@ async function fixture(context: TestContext): Promise<Readonly<{
 }
 type Fixture = Awaited<ReturnType<typeof fixture>>;
 function opening(pcbOpening: boolean, phase: "preflight" | "open-project" | "open-document"): CurrentPcbWorkerStartupParentCommand {
-  const command = currentPcbWorkerStartupNativeParentCases().find(value => value.method === "Runtime.callFunctionOn" && value.params.arguments.length === 2 &&
+  const command = currentPcb209WorkerStartupNativeParentCases().find(value => value.method === "Runtime.callFunctionOn" && value.params.arguments.length === 2 &&
     value.params.arguments[1].value === phase && (value.params.functionDeclaration === CURRENT_PCB_DIAGNOSTIC_PCB_OPENING_FUNCTION) === pcbOpening);
   assert.ok(command?.method === "Runtime.callFunctionOn"); return { ...command, sessionId: "parent-session" };
 }

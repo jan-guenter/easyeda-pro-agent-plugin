@@ -19,11 +19,11 @@ void test("footprint state comes from original constructor handles, preserves ow
   // Runtime.runScript belongs to this synthetic harness, not the constructor
   // Transport. Count its actual CDP requests separately from fixture setup.
   const constructorCommands = peer.commands.slice(captureStart).filter(method => method !== "Runtime.runScript");
-  assert.equal(constructorCommands.length, 54);
+  assert.equal(constructorCommands.length, 55);
   assert.deepEqual(Object.fromEntries(["Debugger.setBreakpoint", "Debugger.evaluateOnCallFrame", "Runtime.callFunctionOn",
     "Runtime.getProperties", "Debugger.resume", "Debugger.removeBreakpoint"].map(method =>
     [method, constructorCommands.filter(value => value === method).length])), {
-    "Debugger.setBreakpoint": 8, "Debugger.evaluateOnCallFrame": 16, "Runtime.callFunctionOn": 9,
+    "Debugger.setBreakpoint": 8, "Debugger.evaluateOnCallFrame": 16, "Runtime.callFunctionOn": 10,
     "Runtime.getProperties": 4, "Debugger.resume": 9, "Debugger.removeBreakpoint": 8,
   });
   await peer.syntheticEvaluate(SETUP);

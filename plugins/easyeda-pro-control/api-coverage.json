@@ -8,14 +8,14 @@
     "installed209DistinctMethods": 811,
     "statuses": {
       "implemented-public-subset": 214,
-      "implemented-native-equivalent": 36,
+      "implemented-native-equivalent": 37,
       "implemented-vendor-http-equivalent": 6,
       "internal-lifecycle-only": 0,
       "implemented-but-blocked": 79,
-      "omitted": 500
+      "omitted": 499
     },
     "executionRoutes": {
-      "available-with-runtime-guards": 399,
+      "available-with-runtime-guards": 400,
       "available-with-network-guards": 9,
       "available-with-managed-file-guards": 2,
       "blocked": 94,
@@ -52,7 +52,7 @@
       "multi-object-electrical-effect": 7,
       "navigation-or-viewport-adapter-needed": 14,
       "non-json-result-or-callback": 5,
-      "not-in-reviewed-runtime": 57,
+      "not-in-reviewed-runtime": 56,
       "pad-pair-group-replacement-effects": 1,
       "page-order-partial-write-lifecycle": 1,
       "panel-context-not-admitted": 1,
@@ -7603,17 +7603,45 @@
       ],
       "reviewedRuntimeDeclaration": false,
       "installed209Declaration": true,
-      "status": "omitted",
-      "routes": [],
-      "omission": {
-        "code": "not-in-reviewed-runtime",
-        "reason": "lib_Footprint.getDocumentSource is absent from the legacy reviewed-installed declaration. Its presence in a newer reference and the separately cataloged installed-209 declaration does not admit that backend or method.",
-        "nextRequirement": "Review and admit a newer installed implementation, then implement and test a scoped adapter; changing a declaration checksum does not admit a runtime.",
-        "evidence": [
-          "reviewed-compatibility.json",
-          "extension-api-catalog-data.ts"
-        ]
-      },
+      "status": "implemented-native-equivalent",
+      "routes": [
+        {
+          "tool": "easyeda_control_pcb209_worker_startup",
+          "selector": "observe-footprint-source",
+          "implementation": "native-task-equivalent",
+          "scope": "Disposable original209 startup owner only, after published construction, assignments and footprint state. One footprintUuid from the original whole-project checkpoint; single stored fragment with CANVAS/PAD/LINE atoms, explicit stored header actor and ordinary IDs. The fixed native reader reconstructs source from current consistency entries and existing native Cache chunks. Two matching source reads and four state samples require exact independent checkpoint-derived source equality. Source is bounded to 2MiB, cached history to 64 keys and 8MiB, and drawing atoms to 4096; separate encoding bounds can refuse heavily escaped content. Requires 65 remaining normal requests and preserves 32 cleanup slots. A cache miss refuses without fetch, parser replay, cache warming or network fallback. The installed SDK stub calls a LIB_Footprint.getDocumentSource UI handler that is absent from the pinned registration, so public-wrapper execution and its returned format are not verified. This route is a scoped source-inspection task equivalent. No public wrapper or Tg.getStr dispatch, arbitrary library/path, copy/delete, saved/reopened proof, current connected validation or complete declared-contract claim.",
+          "source": [
+            "current-footprint-copy-cache-source-read.ts",
+            "current-footprint-copy-source-command.ts",
+            "current-footprint-copy-source-read-runner.ts",
+            "current-pcb-worker-construction-runner.ts",
+            "current-pcb-209-worker-startup-opening.ts",
+            "current-pcb-diagnostic-lifecycle.ts",
+            "current-pcb-diagnostic-lifecycle-journal.ts"
+          ],
+          "tests": [
+            "current-footprint-copy-source-read.test.ts",
+            "current-pcb-209-worker-startup-lifecycle.test.ts"
+          ],
+          "documentTypes": [
+            4
+          ],
+          "validation": "offline-regression;current-live-unclaimed",
+          "executionState": "available-with-runtime-guards",
+          "inputDiscovery": {
+            "tool": "easyeda_control_api",
+            "arguments": {
+              "request": {
+                "action": "pcb209-worker-startup",
+                "query": {
+                  "includeSchemas": true
+                }
+              }
+            }
+          }
+        }
+      ],
+      "omission": null,
       "completeDeclaredContractSupported": false,
       "currentGenerationLiveValidation": "not-recorded",
       "runtimeAdmission": "not-granted-by-inventory"

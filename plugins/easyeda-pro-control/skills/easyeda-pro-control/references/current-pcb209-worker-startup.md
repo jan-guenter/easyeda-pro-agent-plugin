@@ -58,7 +58,19 @@ Validation is offline. It neither creates a journal nor grants authority.
    16-character client and an unchanged maximum ticket. Constructor identities
    are retained from fixed lexical reads on the original project constructor
    frame; matching names or copied packets cannot replace them.
-5. Use `observe-window`, then one `normal-close` with the observed `hwnd` and
+5. After a published footprint-state result, `observe-footprint-source` takes
+   the same ID and binding plus `footprintUuid`. The footprint must belong to
+   the original completed checkpoint. The current profile supports one stored
+   fragment with CANVAS, PAD and LINE records, an explicit stored header actor,
+   ordinary atom IDs and complete metadata. It refuses other source encodings
+   before native dispatch. Two reads reconstruct source from the original live
+   consistency entries and existing native Cache chunks. Four state samples
+   bracket those reads, and the complete source must equal the independent
+   checkpoint projection. The result identifies `native-cache-equivalent`;
+   it does not dispatch `Tg.getStr`, a parser, cache writes or a network fallback.
+   A missing cache entry refuses. This is source inspection, with no copy,
+   delete, Save or persistence authority.
+6. Use `observe-window`, then one `normal-close` with the observed `hwnd` and
    `confirmNormalClose:true`. Separately call `observe-termination` and
    `release-closed`. Complete any offered `settle-records` using the retained
    intent digest. Release requires original root exit and an empty original Job.
@@ -77,10 +89,20 @@ Keep normal work through request224, leaving32 slots for cleanup. Assignments,
 channel, actor and footprint-state stages cost23,24,35 and15 requests respectively,
 including their final owner checks. At next ID `N`, require `N + cost - 1 <= 224`, then inspect
 again after the stage. The first three fit only when `N <= 143`; all four require `N <= 128`. The seven-phase
-startup's conservative bound remains186 requests. The three new constructor
-reads consume three existing reserve slots; the reserve is77 instead of80.
+startup's conservative bound remains186 requests. Four footprint constructor
+reads consume four existing reserve slots; the reserve is76 instead of80.
 Actual usage can be lower. These counts are not measured timing or permission
 to reset the counter.
+
+The source stage needs 65 additional requests, including original method and
+native-intrinsic qualification. Its capacity check requires `nextRequestId <= 160`
+before recording intent and again before dispatch. Choose source inspection
+before spending the budget on optional channel or actor observations. There is
+no guarantee that every optional stage fits one launch. The reader caps source
+at 2MiB, cached history at 64 keys and 8MiB total, and drawing atoms at 4,096.
+Its JSON observation has a separate bound, so heavily escaped source can refuse
+below the content limit. It retains complete evidence or refuses; it never
+returns a truncated source as success.
 
 ## Interpreting results and failures
 
@@ -103,8 +125,12 @@ contained publication destinations or queue completion. The actor stage's
 local Date bracket is not a native/server clock proof or a future Save clock.
 Footprint state does not call the asynchronous source getter or prove its cache
 branch, backend actor, copy/delete completion, closed SQL or saved/reopened data.
-The source getter leaf is not wired to a native route; no footprint writer is
-admitted by this observation.
+The optional native-cache source reader uses current consistency links rather
+than invoking that vendor getter. It proves the observed source equivalence
+only for its supported profile. Neither route enables a footprint writer.
+The installed SDK declares `lib_Footprint.getDocumentSource`, but its RPC handler
+is absent from the pinned UI registration. This source-inspection task equivalent
+does not establish that wrapper's output format or make the public call usable.
 
 Project opening can restore tabs, migrate files, replay caches, use network
 services and automatically persist or Save. Debugger pauses alter application
@@ -123,9 +149,15 @@ existing failure; do not treat it as the original cause. Per-stage
 qualified and resumed can still belong to a failed capture.
 
 The 209 pause windows account for serial owner checks, source reads and
-breakpoint allocation. They remain fixed absolute windows. Individual request
-limits, overall launch limits and the separate project-open deadline still
-apply; these windows do not extend them. The 206 pause limits are unchanged.
+breakpoint allocation. The project opener now adds the finite deliberate
+capture graph to its ordinary opening allowance: 651 seconds for capture,
+45 seconds for opening and 25 seconds for delivery give a 696-second native
+deadline and 721-second host wait. The subsequent original-owner checks remain
+inside the original one-hour launch deadline. Individual request limits and
+the 60-second cleanup reserve are unchanged. These are conservative source
+bounds, not measured completion times. A native opening timeout now identifies
+`native-open-project`; it does not report the last root-binding check as the
+awaited operation. The generic opener and 206 pause limits are unchanged.
 
 Phase diagnostics distinguish bootstrap, preload, four helper copies and the
 project script. Failed target and script events retain bounded classifications

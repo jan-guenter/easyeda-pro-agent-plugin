@@ -3,6 +3,10 @@
 /* oxlint-disable import/max-dependencies -- This native boundary compares every fixed program against its original contract literal; splitting those checks would duplicate the admission policy. */
 import { z } from "zod";
 import { CURRENT_FOOTPRINT_COPY_CONSTRUCTORS_EXPRESSION, CURRENT_FOOTPRINT_COPY_STATE_CALLS } from "./current-footprint-copy-state.ts";
+import { currentFootprintCopySourceCommandParamsSchema } from "./current-footprint-copy-source-command.ts";
+import { CURRENT_FOOTPRINT_COPY_METHOD_CALLS } from "./current-footprint-copy-method-bindings.ts";
+import { CURRENT_FOOTPRINT_COPY_CACHE_FACTORY_CALLS } from "./current-footprint-copy-cache-factory.ts";
+import { CURRENT_FOOTPRINT_COPY_CACHE_SOURCE_READ_FUNCTION } from "./current-footprint-copy-cache-source-read.ts";
 import { types } from "node:util";
 import { CURRENT_PCB_209_WORKER_CONSTRUCTION_SITES } from "./current-pcb-209-worker-startup-profile.ts";
 import { captureCurrentPcbStringClockReply } from "./current-pcb-string-clock-reply.ts";
@@ -13,6 +17,7 @@ import type { CurrentPcbWorkerStartupCommand } from "./current-pcb-worker-startu
 import { freezeDeep } from "./sqlite-inventory-core.ts";
 import { CURRENT_PCB_WORKER_CONSTRUCTION_ASSIGNMENT_CALLS } from "./current-pcb-worker-construction-assignment.ts";
 import { CURRENT_PCB_DIAGNOSTIC_OPENING_FUNCTION } from "./current-pcb-diagnostic-opening.ts";
+import { CURRENT_PCB_209_STARTUP_OPENING_FUNCTION } from "./current-pcb-209-startup-opening-program.ts";
 import { CURRENT_PCB_DIAGNOSTIC_PCB_OPENING_FUNCTION } from "./current-pcb-diagnostic-pcb-opening.ts";
 import { currentDisposableOpenSealedTargetSchema } from "./current-disposable-open.ts";
 import { CURRENT_PCB_WORKER_STARTUP_UI_ACTOR_CLOCK_FUNCTION, CURRENT_PCB_WORKER_STARTUP_WORKER_ACTOR_CLOCK_FUNCTION } from "./current-pcb-worker-startup-actor.ts";
@@ -29,6 +34,7 @@ const command = <Method extends CurrentPcbWorkerStartupCommand["method"], Params
   z.object({ method: z.literal(method), params, sessionId }).strict();
 /* oxlint-disable unicorn/max-nested-calls -- Keep each exact protocol shape together in this declarative schema union. */
 const schema: z.ZodType<CurrentPcbWorkerStartupCommand> = z.union([
+  command("Runtime.callFunctionOn", currentFootprintCopySourceCommandParamsSchema),
   z.object({ method: z.literal("Target.getTargets"), params: empty }).strict(),
   command("Page.getFrameTree", empty),
   command("DOM.getFrameOwner", z.object({ frameId: sessionId }).strict()),
@@ -36,7 +42,7 @@ const schema: z.ZodType<CurrentPcbWorkerStartupCommand> = z.union([
   command("Runtime.callFunctionOn", z.object({ functionDeclaration: z.literal(CURRENT_PCB_WORKER_STARTUP_UI_ACTOR_CLOCK_FUNCTION),
     uniqueContextId: sessionId, arguments: z.tuple([]), returnByValue: z.literal(true), throwOnSideEffect: z.literal(true),
     silent: z.literal(true), awaitPromise: z.literal(false), generatePreview: z.literal(false), userGesture: z.literal(false) }).strict()),
-  command("Runtime.callFunctionOn", z.object({ functionDeclaration: z.literal(CURRENT_PCB_DIAGNOSTIC_OPENING_FUNCTION),
+  command("Runtime.callFunctionOn", z.object({ functionDeclaration: z.enum([CURRENT_PCB_DIAGNOSTIC_OPENING_FUNCTION, CURRENT_PCB_209_STARTUP_OPENING_FUNCTION]),
     uniqueContextId: sessionId, arguments: z.tuple([z.object({ value: currentDisposableOpenSealedTargetSchema }).strict(),
       z.object({ value: z.enum(["preflight", "open-project"]) }).strict()]),
     returnByValue: z.literal(true), awaitPromise: z.literal(true), silent: z.literal(true), generatePreview: z.literal(false),
@@ -75,8 +81,8 @@ function plain(value: unknown): value is Record<string, unknown> {
   return value !== null && typeof value === "object" && !types.isProxy(value) && !Array.isArray(value) &&
     (Object.getPrototypeOf(value) === Object.prototype || Object.getPrototypeOf(value) === null);
 }
-/** The fixed opener exceeds the generic reply text ceiling. Replace only its
- * exact own-data literal during inert capture, then restore it locally; caller
+/** Fixed opening/source programs can exceed the generic reply text ceiling.
+ * Replace only exact own-data literals during inert capture, then restore them; caller
  * strings and the shared reply-capture limits are not broadened. */
 function captureWire(raw: unknown): unknown {
   if (!plain(raw)) { return captureCurrentPcbStringClockReply(raw).value; }
@@ -86,7 +92,8 @@ function captureWire(raw: unknown): unknown {
   const functionField = Object.getOwnPropertyDescriptor(original, "functionDeclaration");
   const sourceText: unknown = functionField?.value;
   if (functionField === undefined || !Object.hasOwn(functionField, "value") || typeof sourceText !== "string" ||
-      sourceText !== CURRENT_PCB_DIAGNOSTIC_OPENING_FUNCTION && sourceText !== CURRENT_PCB_DIAGNOSTIC_PCB_OPENING_FUNCTION) {
+      sourceText !== CURRENT_PCB_DIAGNOSTIC_OPENING_FUNCTION && sourceText !== CURRENT_PCB_209_STARTUP_OPENING_FUNCTION &&
+      sourceText !== CURRENT_PCB_DIAGNOSTIC_PCB_OPENING_FUNCTION && sourceText !== CURRENT_FOOTPRINT_COPY_CACHE_SOURCE_READ_FUNCTION) {
     return captureCurrentPcbStringClockReply(raw).value;
   }
   const descriptors = Object.getOwnPropertyDescriptors(original);
@@ -148,6 +155,9 @@ function startupWire(raw: unknown, id: number,
           fields = { parentPhase: "actor-clock", uniqueContextId: parsed.params.uniqueContextId }; break;
         }
         const [target, phase] = parsed.params.arguments;
+        if (parsed.params.functionDeclaration !== CURRENT_PCB_DIAGNOSTIC_PCB_OPENING_FUNCTION &&
+            parsed.params.functionDeclaration !== (sites === CURRENT_PCB_209_WORKER_CONSTRUCTION_SITES ?
+              CURRENT_PCB_209_STARTUP_OPENING_FUNCTION : CURRENT_PCB_DIAGNOSTIC_OPENING_FUNCTION)) { return fail(); }
         fields = { parentPhase: parsed.params.functionDeclaration === CURRENT_PCB_DIAGNOSTIC_PCB_OPENING_FUNCTION ? `pcb-${phase.value}` : phase.value,
           uniqueContextId: parsed.params.uniqueContextId,
           targetRawWindowsPath: target.value.rawWindowsPath, targetProjectUuid: target.value.projectUuid,
@@ -155,7 +165,20 @@ function startupWire(raw: unknown, id: number,
           targetExpectedSourceSha256: target.value.expectedSourceSha256 };
         break;
       }
-      const footprint = Object.entries(CURRENT_FOOTPRINT_COPY_STATE_CALLS)
+      if (parsed.params.awaitPromise) {
+        if (sites !== CURRENT_PCB_209_WORKER_CONSTRUCTION_SITES) { return fail(); }
+        const [project, bus, consistency, selected, constructors, methods] = parsed.params.arguments;
+        fields = { startupPhase: "footprint-source-read", objectId: parsed.params.objectId,
+          argument0: project.objectId, argument1: bus.objectId, argument2: consistency.objectId,
+          argument4: constructors.objectId, argument5: methods.objectId,
+          projectUuid: selected.value.identity.projectUuid, branchUuid: selected.value.identity.branchUuid,
+          windowTabId: selected.value.identity.windowTabId, footprintUuid: selected.value.footprintUuid,
+          client: selected.value.client, maximumTicket: String(selected.value.maximumTicket) };
+        break;
+      }
+      const footprint = [...Object.entries(CURRENT_FOOTPRINT_COPY_STATE_CALLS),
+        ...Object.entries(CURRENT_FOOTPRINT_COPY_METHOD_CALLS).map(([key, value]) => [`methods-${key}`, value] as const),
+        ...Object.entries(CURRENT_FOOTPRINT_COPY_CACHE_FACTORY_CALLS).map(([key, value]) => [`cache-factory-${key}`, value] as const)]
         .find(([, value]) => value.program === parsed.params.functionDeclaration);
       const assignment = Object.entries(CURRENT_PCB_WORKER_CONSTRUCTION_ASSIGNMENT_CALLS)
         .find(([, value]) => value.program === parsed.params.functionDeclaration);

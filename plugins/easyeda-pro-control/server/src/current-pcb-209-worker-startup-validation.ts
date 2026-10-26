@@ -24,10 +24,18 @@ export const currentPcb209WorkerStartupCaptureRequestSchema = z.object({ action:
 export const currentPcb209WorkerStartupAssignmentsRequestSchema = z.object({ action: z.literal("observe-current-assignments"), ...bound }).strict();
 export const currentPcb209WorkerStartupActorRequestSchema = z.object({ action: z.literal("observe-actor-clock"), ...bound }).strict();
 export const currentPcb209WorkerStartupFootprintStateRequestSchema = z.object({ action: z.literal("observe-footprint-state"), ...bound }).strict();
+export const currentPcb209WorkerStartupFootprintSourceInputSchema = z.object({
+  footprintUuid: z.string().refine(value => /^(?:[a-f0-9]{16}|[a-f0-9]{32})$/u.exec(value)?.[0] === value),
+}).strict();
+export const currentPcb209WorkerStartupFootprintSourceRequestSchema = z.object({
+  action: z.literal("observe-footprint-source"), ...bound,
+  ...currentPcb209WorkerStartupFootprintSourceInputSchema.shape,
+}).strict();
 export const currentPcb209WorkerStartupChannelRequestSchema = z.object({ action: z.literal("observe-current-channel"), ...bound }).strict();
 export const currentPcb209WorkerStartupValidationRequestSchema = z.discriminatedUnion("action", [
   ...currentPcb209WorkerStartupLifecycleRequestSchema.options, currentPcb209WorkerStartupCaptureRequestSchema,
   currentPcb209WorkerStartupAssignmentsRequestSchema, currentPcb209WorkerStartupActorRequestSchema, currentPcb209WorkerStartupChannelRequestSchema, currentPcb209WorkerStartupFootprintStateRequestSchema,
+  currentPcb209WorkerStartupFootprintSourceRequestSchema,
 ]);
 export type CurrentPcb209WorkerStartupValidationRequest = z.infer<typeof currentPcb209WorkerStartupValidationRequestSchema>;
 export function queryCurrentPcb209WorkerStartupValidation(includeSchemas: boolean): Record<string, unknown> {
@@ -43,6 +51,7 @@ export function queryCurrentPcb209WorkerStartupValidation(includeSchemas: boolea
       "After the assignment result is published, observe-actor-clock consumes one UI/worker/worker/UI bracket on those original owners. It compares the retained account values and local Date readings, not a PCB realm, Windows/server clock, backend actor, future Save or continuous publication interval.",
       "After the assignment result is published, observe-current-channel independently consumes one bounded original-channel relation and publisher-method observation with paired gate samples. It does not call publisher methods or establish native channel peers, continuous ownership, contained destinations or queue completion; it does not require the actor stage.",
       "After the assignment result is published, observe-footprint-state consumes one pair of synchronous reads from the original constructor-captured footprint and consistency managers. It checks the own undefined captured user, shared client and unchanged maximum ticket. No getter, copy, cache completion, actor provenance, Save or persistence claim follows.",
+      "After the footprint-state result is published, observe-footprint-source selects one footprintUuid from the original completed project checkpoint. It reconstructs source from the original live consistency entries and existing native Cache chunks, with two matching source reads, four state samples and exact checkpoint-derived source equality. This is a native equivalent, not a GET_STR dispatch. Missing cache entries refuse without fetch, parser replay, cache warming or copy. The bounded single-fragment CANVAS/PAD/LINE profile requires 65 remaining requests through normal request 224 and retains 32 cleanup slots. Cache reads are limited to 64 keys and 8MiB, source to 2MiB, and complete evidence to its separate serialization bound. No saved/reopened or writer claim follows.",
       "Constructor and current-assignment observations are not continuous channel/publisher ownership, destination containment, full startup completion, stable baseline, create/Save authority or saved-content proof. No writer or explicit Save is offered.",
       "Every stage is consumed once. Inspect retained outcomes after uncertainty; do not repeat capture-project. Original normal close, root/Job termination, helper release and exact record settlement remain separate. Historical records never recreate a native owner.",
     ], ...(includeSchemas ? { inputSchema: z.toJSONSchema(currentPcb209WorkerStartupValidationRequestSchema) } : {}) };

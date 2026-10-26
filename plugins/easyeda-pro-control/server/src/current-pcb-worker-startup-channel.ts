@@ -6,6 +6,7 @@ import { types } from "node:util";
 import { z } from "zod";
 import { decodeCurrentPcbDiagnosticJson } from "./current-pcb-diagnostic-json.ts";
 import { captureCurrentPcbStringClockReply } from "./current-pcb-string-clock-reply.ts";
+import { CURRENT_FOOTPRINT_COPY_SOURCE_FRAME_BYTES } from "./current-footprint-copy-source-command.ts";
 import { CURRENT_PCB_WORKER_STARTUP_REQUEST_LIMIT, currentPcb209WorkerStartupWire, currentPcbWorkerStartupWire } from "./current-pcb-worker-startup-wire.ts";
 import type { CurrentPcbWorkerStartupCommand, CurrentPcbWorkerStartupDependency, CurrentPcbWorkerStartupEvent } from "./current-pcb-worker-startup-contract.ts";
 import { CURRENT_PCB_DIAGNOSTIC_PCB_OPENING_FUNCTION } from "./current-pcb-diagnostic-pcb-opening.ts";
@@ -36,6 +37,11 @@ const parentSchema = z.object({ targetId: token, sessionId: token,
 const ackSchema = z.object({ written: z.literal(true) }).strict();
 const MAX_BYTES = 64 * 1024 * 1024, MAX_EVENTS = 4096, MAX_EVENT_BYTES = 8 * 1024 * 1024;
 const MAX_FRAME = 1024 * 1024, MAX_POLLS = 8192, SOURCE_FRAME = 32 * 1024 * 1024;
+function replyFrameLimit(command: CurrentPcbWorkerStartupCommand): number {
+  if (command.method === "Debugger.getScriptSource") { return SOURCE_FRAME; }
+  return command.method === "Runtime.callFunctionOn" && "objectId" in command.params && command.params.awaitPromise ?
+    CURRENT_FOOTPRINT_COPY_SOURCE_FRAME_BYTES : MAX_FRAME;
+}
 interface Pending {
   readonly id: number;
   readonly command: CurrentPcbWorkerStartupCommand;
@@ -308,7 +314,7 @@ class CurrentPcbWorkerStartupChannelCore {
       const zero = bytes.indexOf(0, start);
       const end = zero === -1 ? bytes.length : zero;
       const required = this.#used + end - start;
-      const limit = [...this.#pending.values()].some(pending => pending.command.method === "Debugger.getScriptSource") ? SOURCE_FRAME : MAX_FRAME;
+      const limit = Math.max(MAX_FRAME, ...[...this.#pending.values()].map(pending => replyFrameLimit(pending.command)));
       if (required > limit) { throw fail("FRAME_BUDGET"); }
       if (required > this.#buffer.length) {
         const replacement = Buffer.alloc(Math.min(limit, Math.max(required, this.#buffer.length * 2)));
@@ -330,7 +336,7 @@ class CurrentPcbWorkerStartupChannelCore {
     const sessionKeys = pending?.command.sessionId === undefined ? [] : ["sessionId"];
     if (pending === undefined || pending.replied || value["sessionId"] !== pending.command.sessionId ||
         !exact(value, ["id", ...sessionKeys, Object.hasOwn(value, "result") ? "result" : "error"]) ||
-        !record(value["result"] ?? value["error"]) || bytes.length > (pending.command.method === "Debugger.getScriptSource" ? SOURCE_FRAME : MAX_FRAME)) {
+        !record(value["result"] ?? value["error"]) || bytes.length > replyFrameLimit(pending.command)) {
       throw fail("REPLY");
     }
     pending.replied = true; pending.remoteError = Object.hasOwn(value, "error");

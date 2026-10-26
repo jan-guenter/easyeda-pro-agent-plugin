@@ -98,7 +98,7 @@ public static class EasyedaWorkerStartupEmpty209Protocol {
     Need(id>=1 && id<=RequestLimit,"id");return OriginalId(id,EasyedaWorkerStartupProtocol.Encode209(1,method,sessionId,phase,fields));
   }
   public static string EncodeParent(int id,string method,string phase,System.Collections.IDictionary fields) {
-    Need(id>=1 && id<=RequestLimit,"id");return OriginalId(id,EasyedaDiagnosticOwner.WorkerStartupParentProtocolMessage(1,method,phase,fields));
+    Need(id>=1 && id<=RequestLimit,"id");return OriginalId(id,EasyedaDiagnosticOwner.WorkerStartup209ParentProtocolMessage(1,method,phase,fields));
   }
   public static string EncodeCommon(int id,string method,string sessionId,string phase,System.Collections.IDictionary fields) {
     return EncodeBaseline(id,method,sessionId,"common",phase,fields);

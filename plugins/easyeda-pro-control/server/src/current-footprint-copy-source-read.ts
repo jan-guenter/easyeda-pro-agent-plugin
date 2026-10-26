@@ -29,8 +29,14 @@ const sourceObservation = currentFootprintCopySourceReadRequestSchema.extend({
   capturedUser: z.literal("own-undefined"),
   content: z.string().min(1).max(CURRENT_FOOTPRINT_COPY_SOURCE_READ_LIMITS.contentBytes)
     .refine(value => value.isWellFormed() && Buffer.byteLength(value) <= CURRENT_FOOTPRINT_COPY_SOURCE_READ_LIMITS.contentBytes),
-  cacheEffectsPossible: z.literal(true), executionAuthorized: z.literal(false), persistenceVerified: z.literal(false),
-}).strict();
+  route: z.enum(["native-get-str", "native-cache-equivalent"]), sourceGetterDispatched: z.boolean(),
+  cacheRead: z.object({ keys: z.number().int().min(0).max(64), bytes: z.number().int().min(0).max(8_388_608),
+    atoms: z.number().int().min(0).max(4096) }).strict().optional(), cacheWrites: z.literal(0).optional(), networkRequests: z.literal(0).optional(),
+  cacheEffectsPossible: z.boolean(), executionAuthorized: z.literal(false), persistenceVerified: z.literal(false),
+}).strict().refine(value => value.sourceGetterDispatched === (value.route === "native-get-str") &&
+  value.cacheEffectsPossible === (value.route === "native-get-str") && (value.route === "native-cache-equivalent" ?
+    value.cacheRead !== undefined && value.cacheWrites === 0 && value.networkRequests === 0 :
+    value.cacheRead === undefined && value.cacheWrites === undefined && value.networkRequests === undefined), "Source route and effects differ.");
 export type CurrentFootprintCopySourceReadSample = Readonly<z.infer<typeof sourceObservation>>;
 
 function envelopeOwn(value: unknown, keys: readonly string[], key: string): unknown {
@@ -109,7 +115,7 @@ let expired=false,timer;
 const check=()=>{if(expired)bad();for(const [o,p]of prototypes)if(Object.getPrototypeOf(o)!==p)bad();for(const [o,k,d]of descriptors){const n=Object.getOwnPropertyDescriptor(o,k);if(d===undefined?n!==undefined:!n||d.enumerable!==n.enumerable||d.configurable!==n.configurable||d.writable!==n.writable||d.get!==n.get||d.set!==n.set||!Object.is(d.value,n.value)||Object.hasOwn(d,"value")!==Object.hasOwn(n,"value"))bad();}};
 try{
  check();const deadline=new Promise((resolve,reject)=>{timer=Reflect.apply(set,globalThis,[()=>{expired=true;reject(new Error("CURRENT_FOOTPRINT_COPY_SOURCE_READ_DEADLINE"));},${CURRENT_FOOTPRINT_COPY_SOURCE_READ_LIMITS.nativeTimeoutMs}]);});
- const read=async()=>{check();const raw=await Reflect.apply(getStr,this,[footprintUuid]);check();exact(raw,["success","result"]);if(own(raw,"success")!==true)bad();const content=own(raw,"result");if(typeof content!=="string"||content.length===0||content.length>${CURRENT_FOOTPRINT_COPY_SOURCE_READ_LIMITS.contentBytes}||!content.isWellFormed()||new TextEncoder().encode(content).byteLength>${CURRENT_FOOTPRINT_COPY_SOURCE_READ_LIMITS.contentBytes})bad();check();return JSON.stringify({schema:"easyeda-pro-control.current-footprint-copy-source-read.v1",identity:{projectUuid,branchUuid,windowTabId},footprintUuid,client,maximumTicket,capturedUser:"own-undefined",content,cacheEffectsPossible:true,executionAuthorized:false,persistenceVerified:false});};
+ const read=async()=>{check();const raw=await Reflect.apply(getStr,this,[footprintUuid]);check();exact(raw,["success","result"]);if(own(raw,"success")!==true)bad();const content=own(raw,"result");if(typeof content!=="string"||content.length===0||content.length>${CURRENT_FOOTPRINT_COPY_SOURCE_READ_LIMITS.contentBytes}||!content.isWellFormed()||new TextEncoder().encode(content).byteLength>${CURRENT_FOOTPRINT_COPY_SOURCE_READ_LIMITS.contentBytes})bad();check();const encoded=JSON.stringify({schema:"easyeda-pro-control.current-footprint-copy-source-read.v1",identity:{projectUuid,branchUuid,windowTabId},footprintUuid,client,maximumTicket,capturedUser:"own-undefined",content,route:"native-get-str",sourceGetterDispatched:true,cacheEffectsPossible:true,executionAuthorized:false,persistenceVerified:false});if(new TextEncoder().encode(encoded).byteLength>${CURRENT_FOOTPRINT_COPY_SOURCE_READ_LIMITS.contentBytes * 2 + 4096})bad();return encoded;};
  return await Promise.race([read(),deadline]);
 }finally{if(timer!==undefined)Reflect.apply(clear,globalThis,[timer]);}
 }`;

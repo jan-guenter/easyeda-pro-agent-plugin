@@ -190,3 +190,93 @@ An intermediate duplicate fixture getter was caught by lint and removed; both
 tests and lint then passed on the final fixture files. No runtime source,
 bundle or compatibility pin changed. Version `0.3.0+codex.20261026084540` remains
 unpublished. Corrected-commit CI must pass before publication.
+
+## Publication and official installation
+
+Corrected payload `2d11047fc8a2f7bd77023b05bd1660d60df7da2e` merged through
+[PR131](https://github.com/jan-guenter/easyeda-pro-agent-plugin/pull/131) as
+main `2997c462290452cd6222c78565b740dd5d265ba1`. Both have tree
+`b4e3941d948042163b1e73edec65fb853ce99259`. Independent review checked the
+sole squash parent, GitHub commit/PR metadata, remote and local main, exact
+tested tree and unchanged runtime pins. Merge review receipt SHA-256 is
+`2130b2ec03ca4747a246ad3f161efcdb5b8cd86175379dd8018469f9f8a33f31`.
+
+All eleven required jobs passed in
+[CI40298331198](https://github.com/jan-guenter/easyeda-pro-agent-plugin/actions/runs/40298331198)
+and [Windows40298331248](https://github.com/jan-guenter/easyeda-pro-agent-plugin/actions/runs/40298331248).
+The facade suite passed 13,046 tests with five expected platform skips and zero
+failures, cancellations or todos. Bridge tests passed 424 cases in 28 files.
+All 25 new or renamed top-level tests appear as successes, and all three Windows
+native checks passed. The independent review also matched the CI archive's
+complete bytes and 644/755 modes to the committed inventory. Existing local
+checkout mode differences were recorded separately and were not accepted as
+installed-mode proof. Corrected local types, strict lint, compatibility, MCP
+contracts, skills and repository validation passed.
+
+Independent CI review SHA-256 is
+`f3bda24d24ef3f49ca20363e18d99e31a44c0a18bd02bdcafd200999f0de2645`;
+accepted CI receipt is
+`3fb1132ec0ecd750e326156bf35f638de9b8f98153d3bf93dabfb6f2ec6b00c7`.
+The initial failed run remains retained and is superseded only by this complete
+corrected-commit result. No test was removed or guard relaxed.
+
+The official CLI performed one marketplace upgrade from
+`https://github.com/jan-guenter/easyeda-pro-agent-plugin.git` with umask022.
+It installed and enabled `0.3.0+codex.20261026084540`. Two maintained comparisons
+proved all 2,035 files, 42 directories, 43,443,483 bytes and exact committed
+modes. Marketplace HEAD equals merged main. Inventory SHA-256 is
+`a0345ccc56ccac7426eac4a3b14f7288e941245ca3d58204f1f2be7fef54bbbd`;
+installation receipt is
+`6df4840c76921142f611409e22c3865dfd822a2f4aa9dc8bea33ece13661dcec`.
+
+The installed synthetic-profile probe passed 27 catalog queries across 29
+JSON-RPC requests, observing 27 tools and 52 manifest declarations across
+modes. It used no live control root, sampled no descendants or non-stdio
+sockets, and observed clean EOF termination without a signal. Probe receipt
+SHA-256 is
+`95d4af4cd11e4c4776d5c03304104a61727897bf8d4df8996b346a2cabd3e32f`.
+These are package and offline checks, not actual fresh-host admission or live
+validation of the new operations. No cache was manually patched and no
+host-owned facade was terminated.
+
+Automatic main Windows40300265901 passed. Main CI40300265753 was still running
+at handoff; the accepted PR checks cover its identical payload tree. No manual
+CI rerun or additional full local suite was started. This installation appendix
+is retained locally for the next source batch, outside the installed payload.
+
+## Next session and remaining backlog
+
+- Restart Codex and admit the actual installed `20261026084540` process, source,
+  bundles and upstream graph. The original host remains on `20261025221649`.
+  Its disposable continuation is terminal and closed; never replay its launch,
+  capture, navigation, close or release.
+- Run one fresh disposable PCB continuation for the bootstrap correction.
+  Complete Worker/CDP association, callback/canvas/copper completion and the
+  full live/source/SQL plus saved/reopened baseline before enabling writers.
+- Validate `observe-footprint-state` under its separate default startup purpose.
+  Integrate source-qualified method bindings and the complete GET_STR producer
+  chain, native asynchronous transport, durable dispatch intent and cache-effect
+  checks. The packaged source reader and runner remain dormant.
+- Finish backend actor/native-clock binding, one-shot footprint creation,
+  buffered-upload completion and replay exclusion, full SQL invariants, fresh
+  saved-source readback and final copy/reopen/closure. Then implement
+  dependency-aware footprint deletion.
+- Continue schematic connectivity, other scoped writers and library lifecycles,
+  and manufacturing exports. Retain the inventory's concrete unsupported-format,
+  vendor-stub and settings/rendering omissions. Batch related implementation
+  before the next publication where feasible.
+
+The excluded production project was neither opened nor read. The disposable
+fixture remains closed and byte-identical. No explicit Save, CAD writer,
+restoration, prompt choice or manufacturing action occurred.
+
+## Subsequent admission and continuation
+
+Automatic main [CI40300265753](https://github.com/jan-guenter/easyeda-pro-agent-plugin/actions/runs/40300265753)
+also completed successfully. The actual restarted installation was admitted
+and the next disposable attempt was consumed and cleaned up; see the
+[startup deadline and footprint source record](2026-10-26-startup-deadline-and-footprint-source.md).
+Its retained timeout does not establish successful PCB continuation or
+footprint-state validation. The earlier handoff's running-CI and fresh-process
+requirements are historical; the remaining implementation backlog is carried
+forward in that record.

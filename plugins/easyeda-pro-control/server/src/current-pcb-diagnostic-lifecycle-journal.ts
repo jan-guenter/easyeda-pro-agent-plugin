@@ -7,13 +7,15 @@ import { lstat, mkdir, open, opendir } from "node:fs/promises";
 import { join } from "node:path";
 import { z } from "zod";
 import { currentFootprintCopyStatePacketSchema } from "./current-footprint-copy-state.ts";
+import { currentFootprintCopySourceReadPacketSchema } from "./current-footprint-copy-source-read-runner.ts";
 import { controlDataDirectory, controlRootCapability, publishManagedAttachmentExclusive } from "./artifacts.ts";
 import type { ControlRootDirectory } from "./control-root.ts";
 import { canonicalJson, sha256Json } from "./core.ts";
 import { currentDisposableOpenPreparationCheckpointSchema, currentDisposableOpenSealedTargetSchema } from "./current-disposable-open.ts";
 import { CURRENT_PCB_STRING_PRECREATE_OPERATION_PREFIX, currentPcbStringPrecreateIdSchema } from "./current-pcb-string-precreate-validation.ts";
 import { CURRENT_PCB_WORKER_STARTUP_OPERATION_PREFIX, currentPcbWorkerStartupLifecycleIdSchema } from "./current-pcb-worker-startup-validation.ts";
-import { CURRENT_PCB_209_WORKER_STARTUP_OPERATION_PREFIX, currentPcb209WorkerStartupLifecycleIdSchema } from "./current-pcb-209-worker-startup-validation.ts";
+import { CURRENT_PCB_209_WORKER_STARTUP_OPERATION_PREFIX, currentPcb209WorkerStartupFootprintSourceInputSchema,
+  currentPcb209WorkerStartupLifecycleIdSchema } from "./current-pcb-209-worker-startup-validation.ts";
 import { CURRENT_PCB_209_RATLINE_STARTUP_OPERATION_PREFIX, currentPcb209RatlineStartupIdSchema } from "./current-pcb-209-ratline-startup-validation.ts";
 import { CURRENT_PCB_209_RATLINE_CONTINUATION_OPERATION_PREFIX, currentPcb209RatlineContinuationIdSchema } from "./current-pcb-209-ratline-continuation-validation.ts";
 import { CURRENT_PCB_209_RATLINE_CONTINUATION_RESULT_MAX_BYTES, currentPcb209RatlineContinuationNativePacketSchema } from "./current-pcb-209-ratline-continuation-packet-schema.ts";
@@ -432,6 +434,25 @@ const workerStartupFootprintResultSchema = z.object({
   result: currentFootprintCopyStatePacketSchema, pointInTimeObservation: z.literal(true),
   executionAuthorized: z.literal(false), saveAuthorized: z.literal(false),
 }).strict();
+const workerStartupFootprintSourceIntentSchema = z.object({
+  schema: z.literal("easyeda-pro-control.pcb209-footprint-source-intent.v1"), ...base,
+  operationId: currentPcb209WorkerStartupLifecycleIdSchema, bindingSha256: diagnosticLifecycleDigestSchema,
+  stateResultSha256: diagnosticLifecycleDigestSchema, beforeSqlSha256: diagnosticLifecycleDigestSchema,
+  checkpointSha256: diagnosticLifecycleDigestSchema, appendPlanSha256: diagnosticLifecycleDigestSchema,
+  ...currentPcb209WorkerStartupFootprintSourceInputSchema.shape,
+}).strict();
+// The native observation already caps its JSON encoding near 4MiB. This bound
+// Includes the durable packet and chain metadata; it does not change any other
+// Journal family's allowance or permit truncating source/effect evidence.
+const FOOTPRINT_SOURCE_RESULT_MAX_BYTES = 4 * 1024 * 1024 + 64 * 1024;
+const workerStartupFootprintSourceResultSchema = z.object({
+  schema: z.literal("easyeda-pro-control.pcb209-footprint-source-result.v1"), ...base,
+  operationId: currentPcb209WorkerStartupLifecycleIdSchema, intentSha256: diagnosticLifecycleDigestSchema,
+  result: currentFootprintCopySourceReadPacketSchema,
+  executionAuthorized: z.literal(false), saveAuthorized: z.literal(false),
+}).strict().refine(value => value.result.route === "native-cache-equivalent" &&
+  Buffer.byteLength(canonicalJson(value)) + 1 <= FOOTPRINT_SOURCE_RESULT_MAX_BYTES,
+  "Footprint source result exceeds its complete evidence bound.");
 const pcbOpenIntentSchema = z.object({
   schema: z.literal("easyeda-pro-control.pcb-diagnostic-pcb-open-intent.v1"), ...base,
   bindingSha256: diagnosticLifecycleDigestSchema, projectOpeningIntentSha256: diagnosticLifecycleDigestSchema,
@@ -484,6 +505,8 @@ export const diagnosticLifecycleRecordSchemas = {
   "worker-startup-actor-result.json": workerStartupActorResultSchema,
   "worker-startup-footprint-intent.json": workerStartupFootprintIntentSchema,
   "worker-startup-footprint-result.json": workerStartupFootprintResultSchema,
+  "worker-startup-footprint-source-intent.json": workerStartupFootprintSourceIntentSchema,
+  "worker-startup-footprint-source-result.json": workerStartupFootprintSourceResultSchema,
   "worker-startup-channel-intent.json": workerStartupChannelIntentSchema,
   "worker-startup-channel-result.json": workerStartupChannelResultSchema,
   "observation-failure.json": observationFailureSchema,
@@ -516,6 +539,7 @@ function recordBound(name: RecordName): number {
   if (name === "selection-relations209-result.json") { return CURRENT_PCB_209_SELECTION_RELATIONS_RESULT_BYTES + MAX_BYTES; }
   if (name === "common-baseline-failure.json") { return CURRENT_PCB_COMMON_FAILURE_MAX_BYTES + MAX_BYTES; }
   if (name === "worker-startup-continuation-result.json") { return CURRENT_PCB_209_RATLINE_CONTINUATION_RESULT_MAX_BYTES; }
+  if (name === "worker-startup-footprint-source-result.json") { return FOOTPRINT_SOURCE_RESULT_MAX_BYTES; }
   if (name === "worker-startup-ratline-result.json") { return CURRENT_PCB_209_RATLINE_STARTUP_RESULT_MAX_BYTES; }
   if (name === "worker-startup-empty-result.json") { return CURRENT_PCB_209_EMPTY_STARTUP_RESULT_MAX_BYTES; }
   return name.endsWith("-result.json") ? DIAGNOSTIC_OBSERVATION_MAX_BYTES + MAX_BYTES : MAX_BYTES;
@@ -684,6 +708,19 @@ function validateChain(operation: DiagnosticLifecycleOperation): void {
   requireValue(footprintResult === undefined || footprint !== undefined && startupOpened !== undefined &&
     footprintResult.intentSha256 === sha256Json(footprint) && canonicalJson(footprintResult.result.identity) === canonicalJson(startupOpened.result.workerIdentity),
   "WORKER_STARTUP_FOOTPRINT_RESULT_CHAIN");
+  const footprintSource = records["worker-startup-footprint-source-intent.json"], footprintSourceResult = records["worker-startup-footprint-source-result.json"];
+  requireValue(footprintSource === undefined || startup209 && startupPurpose && footprintResult !== undefined &&
+    binding !== undefined && startupOpening !== undefined && footprintSource.bindingSha256 === sha256Json(binding) &&
+    footprintSource.stateResultSha256 === sha256Json(footprintResult) &&
+    footprintSource.beforeSqlSha256 === startupOpening.beforeSqlSha256 &&
+    footprintSource.checkpointSha256 === startupOpening.preparationCheckpoint.sha256, "WORKER_STARTUP_FOOTPRINT_SOURCE_CHAIN");
+  requireValue(footprintSourceResult === undefined || footprintSource !== undefined && footprintResult !== undefined &&
+    footprintSourceResult.intentSha256 === sha256Json(footprintSource) &&
+    footprintSourceResult.result.request.footprintUuid === footprintSource.footprintUuid &&
+    footprintSourceResult.result.request.client === footprintResult.result.client &&
+    footprintSourceResult.result.request.maximumTicket === footprintResult.result.maximumTicket &&
+    canonicalJson(footprintSourceResult.result.request.identity) === canonicalJson(footprintResult.result.identity),
+  "WORKER_STARTUP_FOOTPRINT_SOURCE_RESULT_CHAIN");
   const channel = records["worker-startup-channel-intent.json"], channelResult = records["worker-startup-channel-result.json"];
   requireValue(channel === undefined || startupPurpose && assigned !== undefined && binding !== undefined &&
     channel.assignmentsResultSha256 === sha256Json(assigned) && channel.bindingSha256 === sha256Json(binding), "WORKER_STARTUP_CHANNEL_CHAIN");

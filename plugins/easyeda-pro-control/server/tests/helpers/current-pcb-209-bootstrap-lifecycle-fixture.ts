@@ -176,7 +176,7 @@ export async function bootstrapLifecycleFixture(options: BootstrapFixtureOptions
         }
         case "Runtime.callFunctionOn": {
           const params = command.params;
-          if (!("objectId" in params)) { throw new Error("Unexpected UI actor command in construction fixture"); }
+          if (!("objectId" in params) || params.awaitPromise) { throw new Error("Unexpected async command in construction fixture"); }
           if (options.construction !== undefined) { return options.construction.transport.request({ method: command.method, params }); }
           throw new Error(`unexpected fixture command ${command.method}`);
         }

@@ -30,7 +30,7 @@ export class CurrentPcb209RatlineHeldConstruction {
     this.#session = command.sessionId;
     const index = this.#next;
     if (index === 5 || index === 7) {
-      need(command.method === "Runtime.callFunctionOn" && "objectId" in command.params, "RELATION");
+      need(command.method === "Runtime.callFunctionOn" && "objectId" in command.params && !command.params.awaitPromise, "RELATION");
       const expected = index === 5 ? [2, 3, 4] : [6, 3, 2, 4];
       const actual = [command.params.objectId, ...command.params.arguments.map(argument => argument.objectId)];
       need(command.params.functionDeclaration === (index === 5 ? PROGRAMS.bridge : PROGRAMS.factory) &&
@@ -48,7 +48,7 @@ export class CurrentPcb209RatlineHeldConstruction {
   }
   public assertOriginalJoin(command: Command): void {
     need(!this.#consumed && this.#next === phases.length && command.method === "Runtime.callFunctionOn" &&
-      command.sessionId === this.#session && "objectId" in command.params && command.params.functionDeclaration === PROGRAMS.construction,
+      command.sessionId === this.#session && "objectId" in command.params && !command.params.awaitPromise && command.params.functionDeclaration === PROGRAMS.construction,
     "JOIN_STATE");
     const actual = [command.params.objectId, ...command.params.arguments.map(argument => argument.objectId)], expected = [0, 3, 1, 6];
     need(expected.length === actual.length && expected.every((slot, index) => this.#handles.get(slot) === actual[index]), "JOIN_HANDLES");

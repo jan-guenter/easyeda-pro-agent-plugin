@@ -1,3 +1,4 @@
+/* oxlint-disable import/max-dependencies -- Original startup transport binds fixed source, construction, timing and result envelopes at the sole native request boundary. */
 /* oxlint-disable eslint/max-classes-per-file -- Private owner composition and fixed-generation wrappers stay together so native callers cannot inject a runner or source profile. */
 /** Private startup owner composition, allocated only by the separate startup
  * lifecycle. It owns initial waiting/instrumentation cleanup and delegates
@@ -13,12 +14,12 @@ import { CURRENT_PCB_209_WORKER_BOOTSTRAP_ROLES, CURRENT_PCB_209_WORKER_PRELOAD_
   currentPcb209StartupScriptRole, isCurrentPcb209BootstrapTargetUrl, qualifyCurrentPcb209PreloadCopyCreator,
   qualifyCurrentPcb209PreloadCopyPause, qualifyCurrentPcb209StartupScriptSource } from "./current-pcb-209-worker-bootstrap-source.ts";
 import { captureCurrentPcbStringClockReply } from "./current-pcb-string-clock-reply.ts";
+import { CURRENT_FOOTPRINT_COPY_SOURCE_READ_LIMITS, captureCurrentFootprintCopySourceReadReply } from "./current-footprint-copy-source-read.ts";
 import { CURRENT_PCB_DIAGNOSTIC_WORKER_SCRIPT } from "./current-pcb-diagnostic-worker-context.ts";
 import type { DiagnosticWorkerScriptProfile } from "./current-pcb-diagnostic-worker-context.ts";
 import { CurrentPcb209WorkerConstructionRunner, CurrentPcbWorkerConstructionRunner } from "./current-pcb-worker-construction-runner.ts";
 import type { CurrentPcb209WorkerConstructionPacket, CurrentPcbWorkerConstructionPacket } from "./current-pcb-worker-construction-runner.ts";
 import type { CurrentPcbWorkerConstructionCommand, CurrentPcbWorkerConstructionTransport } from "./current-pcb-worker-construction-contract.ts";
-// oxlint-disable-next-line import/max-dependencies -- Fixed timing data is separate from the original transport and source contracts.
 import { CURRENT_PCB_WORKER_STARTUP_ATTACH } from "./current-pcb-worker-startup-contract.ts";
 import type { CurrentPcbWorkerStartupCommand, CurrentPcbWorkerStartupDependency, CurrentPcbWorkerStartupEvent } from "./current-pcb-worker-startup-contract.ts";
 
@@ -311,7 +312,9 @@ class CurrentPcbWorkerStartupTransportCore<Packet extends ConstructionPacket, Ru
     if (!cleanup) { await this.#current(); }
     if (this.#requests >= (cleanup ? 256 : 224)) { this.#poison("REQUEST_BUDGET"); throw failure("REQUEST_BUDGET"); }
     this.#requests += 1;
-    const result = captureCurrentPcbStringClockReply(await bounded(this.#sendOriginal(command))).value;
+    const sourceRead = command.method === "Runtime.callFunctionOn" && "objectId" in command.params && command.params.awaitPromise;
+    const raw = await bounded(this.#sendOriginal(command), sourceRead ? CURRENT_FOOTPRINT_COPY_SOURCE_READ_LIMITS.hostTimeoutMs : REQUEST_MS);
+    const result = sourceRead ? captureCurrentFootprintCopySourceReadReply(raw) : captureCurrentPcbStringClockReply(raw).value;
     if (!cleanup) { await this.#current(); }
     return result;
   }

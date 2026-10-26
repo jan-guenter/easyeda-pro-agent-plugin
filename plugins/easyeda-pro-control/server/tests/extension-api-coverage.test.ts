@@ -531,7 +531,7 @@ void test("NetGroup and filtered PCB membership reads expose narrow native route
   assert.match(route.scope, /not public primitive instances/u); assert.match(route.scope, /explicit nonempty unique filters/u);
   assert.match(route.scope, /source\/inventory\/source/u);
   assert.deepEqual(extensionApiCoverageSummary()["statuses"], {
-    "implemented-public-subset": 214, "implemented-native-equivalent": 36, "implemented-vendor-http-equivalent": 6, "internal-lifecycle-only": 0, "implemented-but-blocked": 79, omitted: 500,
+    "implemented-public-subset": 214, "implemented-native-equivalent": 37, "implemented-vendor-http-equivalent": 6, "internal-lifecycle-only": 0, "implemented-but-blocked": 79, omitted: 499,
   });
 });
 
@@ -1187,11 +1187,11 @@ void test("every coverage input-discovery request resolves to an actual strict a
     assert.ok(isRecord(request));
     const result = queryOfflineApi(apiRequestSchema.parse(request)).result;
     assert.ok(isRecord(result));
-    if (["project-symbol-operation", "disposable-symbol-copy", "disposable-pcb-rename", "disposable-schematic-rename", "project-schematic-operation", "pcb209-opening", "netlist-files", "library-files"].includes(String(request["action"]))) {
+    if (["project-symbol-operation", "disposable-symbol-copy", "disposable-pcb-rename", "disposable-schematic-rename", "project-schematic-operation", "pcb209-opening", "pcb209-worker-startup", "netlist-files", "library-files"].includes(String(request["action"]))) {
       assert.ok(isRecord(result["inputSchema"]));
       // The ordinary SCH and 209 opening routes expose their lifecycle union at the root;
       // Existing routes still promise a separate phase schema as well.
-      if (!["project-schematic-operation", "pcb209-opening", "netlist-files", "library-files"].includes(String(request["action"]))) { assert.ok(isRecord(result["stepSchema"])); }
+      if (!["project-schematic-operation", "pcb209-opening", "pcb209-worker-startup", "netlist-files", "library-files"].includes(String(request["action"]))) { assert.ok(isRecord(result["stepSchema"])); }
       assert.equal(result["executionAuthorized"], false);
     } else {
       const entries = result["entries"];
@@ -1286,4 +1286,18 @@ void test("209 detailed shape routes preserve native geometry scope and Poured f
   for (const route of additions) {
     assert.match(route.scope, /nine commands remaining/u); assert.match(route.scope, /capacity refusal still consumes the lifecycle intent/u);
   }
+});
+
+void test("footprint source coverage is a scoped cache equivalent despite the absent public UI handler", () => {
+  const row = inventoryExtensionApiCoverage().find(entry => entry.path === "eda.lib_Footprint.getDocumentSource");
+  assert.ok(row); assert.equal(row.status, "implemented-native-equivalent");
+  assert.equal(row.completeDeclaredContractSupported, false); assert.equal(row.currentGenerationLiveValidation, "not-recorded");
+  assert.equal(row.routes.length, 1);
+  const route = row.routes[0]; assert.ok(route);
+  assert.equal(route.tool, "easyeda_control_pcb209_worker_startup"); assert.equal(route.selector, "observe-footprint-source");
+  assert.equal(route.implementation, "native-task-equivalent"); assert.deepEqual(route.documentTypes, [4]);
+  assert.match(route.scope, /handler that is absent/u);
+  assert.match(route.scope, /without fetch, parser replay, cache warming or network fallback/u);
+  assert.match(route.scope, /No public wrapper or Tg\.getStr dispatch/u);
+  assert.ok(route.source.includes("current-footprint-copy-cache-source-read.ts"));
 });

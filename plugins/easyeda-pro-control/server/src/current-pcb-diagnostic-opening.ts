@@ -21,7 +21,7 @@ const stages = ["setup", "registration-before", "subscribe", "dispatch", "acknow
   "prefix", "registration-after", "observe", "output", "cleanup"] as const;
 const substages = ["setup", "root-binding", "project-identity", "title", "container-roster",
   "container-tree", "tab-roster", "url", "registration", "listener", "event-shape",
-  "acknowledgement", "output", "cleanup"] as const;
+  "acknowledgement", "native-open-project", "output", "cleanup"] as const;
 const codes = ["GUARD", "FIELD", "OBJECT", "ARRAY", "TEXT", "METHOD", "BINDING", "URL", "PROJECT",
   "BRANCH", "FORMAT", "HISTORY", "TAB", "REGISTRY", "OWNERS", "PREFIX", "TITLE", "ACK", "TIMEOUT", "EXCEPTION", "CLEANUP"] as const;
 

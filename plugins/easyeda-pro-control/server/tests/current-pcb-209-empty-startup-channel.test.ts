@@ -7,7 +7,7 @@ import type { CurrentPcbWorkerStartupNativeDependency } from "../src/current-pcb
 import { CURRENT_PCB_209_EMPTY_NATIVE_CASES } from "../src/current-pcb-209-empty-native-cases.ts";
 import { CURRENT_PCB_209_EMPTY_NATIVE_PROFILE as PROFILE } from "../src/current-pcb-209-empty-native-profile.ts";
 import { CURRENT_PCB_WORKER_STARTUP_ATTACH } from "../src/current-pcb-worker-startup-contract.ts";
-import { currentPcbWorkerStartupNativeParentCases } from "../src/current-pcb-worker-startup-native.ts";
+import { currentPcb209WorkerStartupNativeParentCases } from "../src/current-pcb-worker-startup-native.ts";
 import { CURRENT_PCB_DIAGNOSTIC_PCB_OPENING_FUNCTION } from "../src/current-pcb-diagnostic-pcb-opening.ts";
 
 type Send = Readonly<Record<string, string | number>>;
@@ -62,7 +62,7 @@ function baseline(family: "common" | "root", phase: string): typeof CURRENT_PCB_
   return { ...value, sessionId: "parent-session" };
 }
 async function open(value: Awaited<ReturnType<typeof fixture>>): Promise<void> {
-  const samples = currentPcbWorkerStartupNativeParentCases();
+  const samples = currentPcb209WorkerStartupNativeParentCases();
   for (const [pcb, phase] of [[false, "preflight"], [false, "open-project"], [true, "preflight"], [true, "open-document"], [true, "observe"]] as const) {
     if (phase === "open-project") { await value.dependency.request({ method: "Target.setAutoAttach", params: CURRENT_PCB_WORKER_STARTUP_ATTACH, sessionId: "parent-session" }); }
     if (phase === "observe") { await value.dependency.request({ method: "Debugger.getScriptSource", pcbPhase: "source", sessionId: "parent-session", params: { scriptId: "pcb-script" } }); }
