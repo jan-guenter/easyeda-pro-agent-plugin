@@ -108,7 +108,36 @@ void test("original owner loss after the final identity reply prevents issuing t
   assert.equal(state.runner.status().failed, true); await state.runner.release();
 });
 
-void test("209 rejected QA metadata remains inspectable without accepting strict-function descriptors or retrying", { timeout: 30_000 }, async context => {
+void test("209 exact three-own-property QA completes current assignments and excludes replay", { timeout: 30_000 }, async context => {
+  const fixture = await construction209Inspector(context);
+  let observing = false, qaObserved = false, requests = 0;
+  const descriptor = z.looseObject({ name: z.string() });
+  const metadataSchema = z.looseObject({ result: z.array(descriptor).length(3) });
+  const runner = new CurrentPcb209WorkerConstructionRunner({ ...fixture.transport, request: async (command): Promise<unknown> => {
+    const reply = await fixture.transport.request(command);
+    if (observing) { requests += 1; }
+    if (observing && requests === 9) {
+      assert.equal(command.method, "Runtime.getProperties");
+      const metadata = metadataSchema.parse(reply);
+      assert.deepEqual(metadata.result.map(item => item.name), ["length", "name", "prototype"]); qaObserved = true;
+    }
+    return reply;
+  } });
+  const captured = runner.capture(); void retainRejection(captured); await runner.whenArmed();
+  const running = fixture.run(); const packet = await captured; await running; observing = true;
+  const before = fixture.commands.length; const assignments = await runner.proveCurrentAssignments(packet);
+  assert.equal(qaObserved, true); assert.equal(requests, CURRENT_PCB_WORKER_CONSTRUCTION_ASSIGNMENT_REQUEST_COUNT);
+  assert.equal(fixture.commands.length - before, CURRENT_PCB_WORKER_CONSTRUCTION_ASSIGNMENT_REQUEST_COUNT);
+  assert.equal(assignments.currentProjectWrapperRelationsVerified, true); assert.equal(assignments.originalCallbackReceiversVerified, true);
+  assert.equal(runner.status().assignments.completed, true); assert.equal(runner.status().failed, false);
+  assert.equal(assignments.queueCompletionVerified, false); assert.equal(assignments.executionAuthorized, false);
+  const consumedCount = fixture.commands.length;
+  await assert.rejects(runner.proveCurrentAssignments(packet), /ASSIGNMENTS_CONSUMED/u);
+  assert.equal(fixture.commands.length, consumedCount);
+  await runner.requireCurrentAssignments(packet, assignments); await runner.release();
+});
+
+void test("209 malformed three-property QA metadata remains inspectable without relaxing descriptors or retrying", { timeout: 30_000 }, async context => {
   const fixture = await construction209Inspector(context);
   let observing = false, replacement: unknown = null, requests = 0;
   const descriptor = z.looseObject({ name: z.string() });
@@ -119,9 +148,10 @@ void test("209 rejected QA metadata remains inspectable without accepting strict
     if (!observing || requests !== 9) { return reply; }
     assert.equal(command.method, "Runtime.getProperties");
     const changed = metadata.parse(reply);
-    // A synthetic three-property regular function is deliberately rejected.
-    // This is not a claim about the unretained live EasyEDA descriptor shape.
-    changed.result = changed.result.filter(item => item.name !== "arguments" && item.name !== "caller");
+    // Three own fields are the pinned current V8 shape. The prototype still
+    // Must be the exact writable own data property, never a looser equivalent.
+    const prototype = changed.result.find(item => item.name === "prototype"); assert.ok(prototype);
+    prototype["writable"] = false;
     assert.equal(changed.result.length, 3); replacement = changed; return changed;
   } });
   const captured = runner.capture(); void retainRejection(captured);

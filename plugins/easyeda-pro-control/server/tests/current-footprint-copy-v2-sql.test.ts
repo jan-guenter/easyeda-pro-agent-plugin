@@ -44,16 +44,16 @@ function append(): string {
   return [edit(TIMES.edit), header(101, TIMES.document, DESTINATION), row("META", 101, "META", { ...META, title: "Source_1", source: "" }),
     header(102, TIMES.document + 1, DESTINATION), ...ROWS].join("|\n");
 }
-async function baseline(extraSql = ""): Promise<Awaited<ReturnType<typeof fixture>>> {
+async function baseline(extraSql = "", sourceRaw = RAW): Promise<Awaited<ReturnType<typeof fixture>>> {
   const original = await fixture();
-  mutate(original.path, `UPDATE history_data SET dataStr='${encrypted(RAW, IDS.oldHead, IDS.oldKey)}' WHERE uuid='${IDS.oldHead}';${extraSql}`);
+  mutate(original.path, `UPDATE history_data SET dataStr='${encrypted(sourceRaw, IDS.oldHead, IDS.oldKey)}' WHERE uuid='${IDS.oldHead}';${extraSql}`);
   return { path: original.path, before: await inventory(original.path) };
 }
-async function prepare(input: Awaited<ReturnType<typeof fixture>>, witness = CURRENT): Promise<Readonly<{
+async function prepare(input: Awaited<ReturnType<typeof fixture>>, witness = CURRENT, content = OBSERVED): Promise<Readonly<{
   copyPlan: Awaited<ReturnType<typeof prepareCurrentFootprintCopyV2Plan>>; sqlPlan: Awaited<ReturnType<typeof prepareCurrentFootprintCopyV2SqlPlan>>;
 }>> {
   const sourcePlan = await prepareCurrentFootprintSourcePlan(input.before, SOURCE);
-  const copyPlan = await prepareCurrentFootprintCopyV2Plan(input.before, sourcePlan, { client: CLIENT, content: OBSERVED });
+  const copyPlan = await prepareCurrentFootprintCopyV2Plan(input.before, sourcePlan, { client: CLIENT, content });
   return { copyPlan, sqlPlan: await prepareCurrentFootprintCopyV2SqlPlan({ before: input.before, copyPlan, witness }) };
 }
 function complete(path: string, raw = append()): void {
@@ -109,17 +109,67 @@ void test("footprint copy-v2 full SQL rejects altered body bytes, dropped tombst
 });
 
 void test("footprint copy-v2 SQL binds the source client, original inventory and bounded data-only clock witness", async () => {
-  const input = await baseline(), { copyPlan } = await prepare(input);
+  const input = await baseline(), { copyPlan, sqlPlan } = await prepare(input);
   await assert.rejects(prepareCurrentFootprintCopyV2SqlPlan({ before: structuredClone(input.before), copyPlan, witness: CURRENT }), /original/u);
   await assert.rejects(prepareCurrentFootprintCopyV2SqlPlan({ before: input.before, copyPlan: structuredClone(copyPlan), witness: CURRENT }), /original/u);
   for (const witness of [{ ...CURRENT, preDispatchMaxTicket: 99 }, { ...CURRENT, client: "b".repeat(16) },
-    { ...CURRENT, extra: true }, { ...CURRENT, documentClockMaxMs: CURRENT.documentClockMinMs + 60_001 }]) {
+    { ...CURRENT, extra: true }, { ...CURRENT, backendActorUuid: `${IDS.actor}\n` },
+    { ...CURRENT, documentClockMaxMs: CURRENT.documentClockMinMs + 60_001 }]) {
     await assert.rejects(prepareCurrentFootprintCopyV2SqlPlan({ before: input.before, copyPlan, witness }));
   }
   let invoked = false;
   const accessor = Object.defineProperty({ ...CURRENT }, "client", { get(): string { invoked = true; return CLIENT; } });
   await assert.rejects(prepareCurrentFootprintCopyV2SqlPlan({ before: input.before, copyPlan, witness: accessor }), /accessors/u);
   assert.equal(invoked, false);
+  let calls = 0;
+  const traps = {
+    getPrototypeOf(): object { calls += 1; return Object.prototype; },
+    ownKeys(): string[] { calls += 1; return []; },
+    getOwnPropertyDescriptor(): PropertyDescriptor { calls += 1; return { value: "forged", configurable: true }; },
+    get(): unknown { calls += 1; return undefined; },
+  };
+  const wrapper = { before: input.before, copyPlan, witness: CURRENT };
+  await assert.rejects(prepareCurrentFootprintCopyV2SqlPlan(new Proxy(wrapper, traps)), /plain input/u);
+  await assert.rejects(prepareCurrentFootprintCopyV2SqlPlan({ ...wrapper, witness: new Proxy(CURRENT, traps) }), /plain input/u);
+  const scalarProxy = new Proxy({}, traps);
+  for (const name of ["client", "documentClockMinMs"]) {
+    const witness = Object.defineProperty({ ...CURRENT }, name, { value: scalarProxy });
+    await assert.rejects(prepareCurrentFootprintCopyV2SqlPlan({ ...wrapper, witness }), /primitive witness fields/u);
+  }
+  const age = Object.defineProperty({ createdAtLiteral: "2026-10-12 12:33:55", nativeParsedLocalMs: 1, nativeTimezoneOffsetMinutes: -120 },
+    "nativeParsedLocalMs", { value: scalarProxy });
+  await assert.rejects(prepareCurrentFootprintCopyV2SqlPlan({ ...wrapper, witness: { ...CURRENT, agedHead: age } }), /primitive aged-head fields/u);
+  const returned = Object.defineProperty({ returnedUuid: DESTINATION }, "returnedUuid", { value: scalarProxy });
+  await assert.rejects(verifyCurrentFootprintCopyV2SqlEffect(sqlPlan, input.before, returned), /primitive returned UUID/u);
+  assert.equal(calls, 0);
+});
+
+void test("footprint copy-v2 SQL reserves both exact saved-source maxima and refuses zero clock windows before copy", async () => {
+  const input = await baseline(), { copyPlan, sqlPlan } = await prepare(input);
+  assert.equal(sqlPlan.positiveDocumentClockWindow, true);
+  const time = CURRENT.documentClockMaxMs;
+  for (const [actor, limit] of [[ACTOR, sqlPlan.maximumSavedRawSourceBytes],
+    [{ uuid: DESTINATION }, sqlPlan.maximumSavedCacheSourceBytes]] as const) {
+    const head = (ticket: number): string => `${JSON.stringify({ type: "DOCHEAD", ticket })}||${JSON.stringify({
+      docType: "FOOTPRINT", client: CLIENT, uuid: DESTINATION, updateTime: time, version: String(time), editVersion: "3.2.209", user: actor })}`;
+    const source = [head(103), row("META", 101, "META", { ...META, title: "Source_1", source: "" }),
+      head(102), CANVAS, LAYER, PAD, TOMBSTONE, FILL].join("|\n");
+    assert.equal(limit, Buffer.byteLength(source)); assert.ok(limit <= 2_097_152);
+  }
+  await assert.rejects(prepareCurrentFootprintCopyV2SqlPlan({ before: input.before, copyPlan,
+    witness: { ...CURRENT, documentClockMinMs: 0, documentClockMaxMs: 10 } }), /positive document clock window required before copy/u);
+});
+
+void test("footprint copy-v2 SQL rejects saved-getter growth beyond two MiB before any effect", async () => {
+  const empty = JSON.stringify({ number: "1", payload: "" });
+  const units = 2_097_152 - 1024 - Buffer.byteLength(OBSERVED.replace(PAD_BODY, empty));
+  const padded = JSON.stringify({ number: "1", payload: "x".repeat(units) });
+  const content = OBSERVED.replace(PAD_BODY, padded);
+  assert.equal(Buffer.byteLength(content), 2_097_152 - 1024);
+  // The source's recorded actor is short. The backend's independently captured
+  // Actor names would add more than the remaining capacity in two fresh headers.
+  const input = await baseline(`UPDATE users SET username='${"u".repeat(1024)}',nickname='${"n".repeat(1024)}'`, RAW.replace(PAD_BODY, padded));
+  await assert.rejects(prepare(input, CURRENT, content), /saved getter byte capacity exceeded before copy/u);
 });
 
 void test("footprint copy-v2 SQL rejects escaped document and backend clock windows", async () => {

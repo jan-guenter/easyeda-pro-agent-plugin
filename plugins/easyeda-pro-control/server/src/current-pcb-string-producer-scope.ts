@@ -88,13 +88,14 @@ function decodeFunction(input: unknown, expected: ProducerProfile): string {
   } catch { return refuse(); }
 }
 
-/** GetProperties(originalFunction), ownProperties:true. Regular non-strict
- * functions carry their native arguments/caller/prototype descriptors; arrow
- * functions do not. No arbitrary additional function properties are admitted. */
-function decodeScopeList(input: unknown, scriptId: string, expected: ProducerProfile): string {
+/** GetProperties(originalFunction), ownProperties:true. The fixed206 runtime
+ * has five regular-function own fields. Current209's V8 14.6 build keeps
+ * arguments/caller on Function.prototype, leaving length/name/prototype here.
+ * This is a runtime descriptor profile, not a strict-mode inference. */
+function decodeScopeList(input: unknown, scriptId: string, expected: ProducerProfile, regularOwnCount: 3 | 5): string {
   try {
     token.parse(scriptId);
-    const reply = z.object({ result: z.array(property).length(expected.regular ? 5 : 2),
+    const reply = z.object({ result: z.array(property).length(expected.regular ? regularOwnCount : 2),
       internalProperties: z.array(z.object({ name: text, value: remote }).strict()).length(3) }).strict().parse(data(input));
     const values = new Map(reply.result.map(item => [item.name, item]));
     if (values.size !== reply.result.length) { return refuse(); }
@@ -105,12 +106,14 @@ function decodeScopeList(input: unknown, scriptId: string, expected: ProducerPro
           item.value.value !== (name === "length" ? expected.parameterCount : "") || Object.is(item.value.value, -0) ||
           item.value.objectId !== undefined) { return refuse(); }
     }
-    if (expected.regular) {
+    if (expected.regular && regularOwnCount === 5) {
       for (const name of ["arguments", "caller"]) {
         const item = values.get(name);
         if (item?.value.type !== "object" || item.value.subtype !== "null" || item.value.value !== null ||
             item.value.objectId !== undefined || item.writable || item.configurable || item.enumerable) { return refuse(); }
       }
+    }
+    if (expected.regular) {
       const prototype = values.get("prototype");
       if (prototype?.value.type !== "object" || prototype.value.className !== "Object" ||
           prototype.value.objectId === undefined || !prototype.writable || prototype.configurable || prototype.enumerable) { return refuse(); }
@@ -156,10 +159,10 @@ export function decodeCurrentPcb209WorkerProducerFunction(input: unknown, kind: 
   return decodeFunction(input, CURRENT_PCB_209_WORKER_PRODUCER_LOCATIONS[kind]);
 }
 export function decodeCurrentPcbStringProducerScopeList(input: unknown, scriptId: string, kind: CurrentPcbStringProducerKind): string {
-  return decodeScopeList(input, scriptId, CURRENT_PCB_STRING_PRODUCER_LOCATIONS[kind]);
+  return decodeScopeList(input, scriptId, CURRENT_PCB_STRING_PRODUCER_LOCATIONS[kind], 5);
 }
 export function decodeCurrentPcb209WorkerProducerScopeList(input: unknown, scriptId: string, kind: CurrentPcb209WorkerProducerKind): string {
-  return decodeScopeList(input, scriptId, CURRENT_PCB_209_WORKER_PRODUCER_LOCATIONS[kind]);
+  return decodeScopeList(input, scriptId, CURRENT_PCB_209_WORKER_PRODUCER_LOCATIONS[kind], 3);
 }
 export function decodeCurrentPcbStringProducerScopes(input: unknown, kind: CurrentPcbStringProducerKind): readonly string[] {
   return decodeScopes(input, CURRENT_PCB_STRING_PRODUCER_LOCATIONS[kind].scopeDescriptions);

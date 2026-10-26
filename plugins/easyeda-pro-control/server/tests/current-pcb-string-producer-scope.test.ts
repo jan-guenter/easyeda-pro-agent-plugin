@@ -2,8 +2,10 @@ import assert from "node:assert/strict";
 import { Session } from "node:inspector/promises";
 import { test } from "node:test";
 import { createContext, runInContext } from "node:vm";
-import { CURRENT_PCB_STRING_PRODUCER_LOCATIONS, decodeCurrentPcbStringProducerFunction,
-  decodeCurrentPcbStringProducerScopeList, decodeCurrentPcbStringProducerScopes } from "../src/current-pcb-string-producer-scope.ts";
+import { z } from "zod";
+import { CURRENT_PCB_STRING_PRODUCER_LOCATIONS, decodeCurrentPcb209WorkerProducerScopeList,
+  decodeCurrentPcbStringProducerFunction, decodeCurrentPcbStringProducerScopeList,
+  decodeCurrentPcbStringProducerScopes } from "../src/current-pcb-string-producer-scope.ts";
 import type { CurrentPcbStringProducerKind } from "../src/current-pcb-string-producer-scope.ts";
 
 /** Exact small returned-function excerpts from the pinned sources. Their factory
@@ -49,6 +51,16 @@ void test("five pinned producer wrappers expose their fixed original V8 scopes w
         assert.throws(() => decodeCurrentPcbStringProducerScopeList(JSON.parse(zero) as unknown, originalScript, kind), /PRODUCER_SCOPE/u);
       }
       const list = decodeCurrentPcbStringProducerScopeList(descriptors, scriptId, kind);
+      if (kind === "debounce") {
+        const descriptor = z.looseObject({ name: z.string() }), originalScript = scriptId;
+        const modern = z.looseObject({ result: z.array(descriptor) }).parse(descriptors);
+        assert.equal(modern.result.length, 5);
+        modern.result = modern.result.filter(item => item.name !== "arguments" && item.name !== "caller");
+        assert.equal(modern.result.length, 3);
+        assert.equal(decodeCurrentPcb209WorkerProducerScopeList(modern, originalScript, "debounce"), list);
+        assert.throws(() => decodeCurrentPcb209WorkerProducerScopeList(descriptors, originalScript, "debounce"), /PRODUCER_SCOPE/u);
+        assert.throws(() => decodeCurrentPcbStringProducerScopeList(modern, originalScript, "debounce"), /PRODUCER_SCOPE/u);
+      }
       const scopes = decodeCurrentPcbStringProducerScopes(await properties(list), kind);
       assert.equal(scopes.length, kind === "debounce" ? 2 : 1);
       assert.throws(() => decodeCurrentPcbStringProducerScopeList(descriptors, "foreign-script", kind), /PRODUCER_SCOPE/u);

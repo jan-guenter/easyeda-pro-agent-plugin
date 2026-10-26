@@ -152,3 +152,50 @@ External upstream, app, dispatcher, bridge and installed-bundle pins are unchang
 
 Batch these implementations where feasible. A published package, offline test
 or historical success does not qualify a current live writer.
+
+## Publication and installation result
+
+PR133 merged tested head `65f5fd03f52ca763fb95868b5c3a99c8ac21d708` through the
+protected workflow as main `e2927e88784993f64c8bd6de85f3d4e994f64c1a`. The sole
+parent is `babc5da5cda9684a2df9717386cb43989ab3557b`; the merged tree exactly
+matches tested tree `89fa0d392c3299eb184b5e7ef5c5d142bf0b4d79`.
+
+All 11 required PR jobs passed: Linux CI40345581617 attempt2 and Windows
+CI40345581588. The facade had 13,120 tests, 13,115 passes, five expected platform
+skips and zero failures/cancellations. All 424 bridge tests and all 16 new named
+regressions passed. Independent CI review is
+`2e735aebf828215a08e2610d6c5995737cbf63ae929630dc7fd8ae95a932d6ca`;
+root acceptance is
+`bba56cdbc5417a69510839b0818218524a1fc0979b0a0ac6349a40129fcce9bc`.
+
+Attempt1 had two dependency-setup stalls during `apt-get update`, before build
+or test execution. After the six running shards passed, root requested normal
+cancellation and one unsuccessful-job retry on the same head. Normal cancellation
+finished before a proposed force-cancel precheck, so no force-cancel was issued.
+The successful build and six shards carried over with identical steps, execution
+timestamps and full log bytes. Both fresh shards and the aggregate then passed.
+Original cancelled logs remain retained; no test selection or timeout was relaxed.
+Bounded/reliable CI mirror setup is a further maintenance item for a future batch.
+
+One official Git marketplace upgrade installed and enabled
+`0.3.0+codex.20261026145538` from
+`https://github.com/jan-guenter/easyeda-pro-agent-plugin.git` at merged main.
+Both maintained comparisons verified all 2,059 files, 42 directories and
+43,936,754 bytes against committed contents and modes. The installed inventory
+digest is `53690b302e927e4b05c999f2a7be73fd409481d38f8b1dde585134537643108d`.
+The installed synthetic offline probe passed 27 queries/29 JSON-RPC requests,
+then closed its own child. It establishes no live admission or writer validation.
+Installation receipt:
+`281cddf271a6a09fd6a672467cfd5a1caa0e1ca2346742d12f59d8a6d6ff88e0`.
+
+The original113627 facade, Bubblewrap and upstream process start identities
+remain unchanged after installation. No live plugin tool was called afterward,
+and no host-owned process or cache was patched. A fresh Codex chat is required
+to load145538 and admit its actual runtime before the two new live cases.
+Main's automatically triggered Windows CI40351551805 passed; Linux CI40351551698
+was still running at this handoff. Exact tested-tree PR CI already qualified
+publication. Check the main run at the next continuation without duplicating it.
+
+This append-only result is retained locally for the next substantive batch,
+avoiding a new plugin version solely for publication metadata. Earlier failures
+and limits above remain intact. Production designs remain excluded.

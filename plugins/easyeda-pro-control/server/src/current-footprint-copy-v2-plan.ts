@@ -1,6 +1,7 @@
 /** Pure copy preparation from a complete checkpoint and supplied source order.
  * The current209 Ni/oO projection is modeled separately from the source reader.
  * This does not bind a native observation, dispatch, dependencies or clocks. */
+import { types } from "node:util";
 import { z } from "zod";
 import { isRecord, sha256Json, sha256Text } from "./core.ts";
 import { yieldProofEventLoop } from "./cooperative-proof.ts";
@@ -8,7 +9,6 @@ import { deriveCurrentSymbolCopyName } from "./current-symbol-copy-name.ts";
 import { isNativeDocumentDeleted } from "./native-history.ts";
 import { assertCurrentFootprintSourcePlanInventory, verifyCurrentFootprintSource } from "./current-footprint-source-plan.ts";
 import type { CurrentFootprintSourcePlan } from "./current-footprint-source-plan.ts";
-import { captureCurrentPcbStringClockReply } from "./current-pcb-string-clock-reply.ts";
 import { readerCompletion } from "./sqlite-inventory.ts";
 import type { readExactSqlInventory } from "./sqlite-inventory.ts";
 import { freezeDeep } from "./sqlite-inventory-core.ts";
@@ -53,6 +53,24 @@ interface Retained { readonly before: Inventory; readonly sourcePlan: CurrentFoo
 const originals = new WeakMap<object, Retained>();
 function need(condition: boolean, detail: string): asserts condition {
   if (!condition) { throw new Error(`Current footprint copy v2: ${detail}`); }
+}
+function captureInput(input: unknown): z.infer<typeof inputSchema> {
+  need(!types.isProxy(input) && isRecord(input) &&
+    (Object.getPrototypeOf(input) === Object.prototype || Object.getPrototypeOf(input) === null), "plain source input required");
+  const names = ["client", "content"]; const keys = Reflect.ownKeys(input);
+  need(keys.length === names.length && keys.every(key => typeof key === "string" && names.includes(key)), "exact source input fields required");
+  const value: Record<string, unknown> = {};
+  for (const name of names) {
+    const descriptor = Object.getOwnPropertyDescriptor(input, name);
+    need(descriptor !== undefined && Object.hasOwn(descriptor, "value"), "source input accessors refused");
+    Object.defineProperty(value, name, { value: descriptor.value as unknown, enumerable: true });
+  }
+  // Zod's invalid-type formatter inspects object prototypes. Reject object
+  // Scalars here so even a nested Proxy cannot execute a formatting trap.
+  need(typeof value["client"] === "string" && typeof value["content"] === "string", "primitive source strings required");
+  // Source transport supports two MiB. The shared clock-reply capture has a
+  // Smaller scalar limit and must not silently narrow this content contract.
+  return inputSchema.parse(value);
 }
 function original(plan: CurrentFootprintCopyV2Plan): Retained {
   const value = originals.get(plan); need(value !== undefined, "original plan required");
@@ -109,7 +127,7 @@ function projection(content: string): Readonly<{ rows: readonly string[]; metada
 export async function prepareCurrentFootprintCopyV2Plan(before: Inventory, sourcePlan: CurrentFootprintSourcePlan,
   input: Readonly<{ client: string; content: string }>): Promise<CurrentFootprintCopyV2Plan> {
   assertCurrentFootprintSourcePlanInventory(sourcePlan, before); const completion = readerCompletion(before);
-  const supplied = inputSchema.parse(captureCurrentPcbStringClockReply(input).value);
+  const supplied = captureInput(input);
   const source = verifyCurrentFootprintSource(sourcePlan, supplied.client, supplied.content);
   const projected = projection(supplied.content);
   need(projected.rows.length === sourcePlan.canvasRecords + 1 && projected.tombstones === sourcePlan.tombstones,

@@ -71,6 +71,14 @@ and resume phases. The initial hook also requires the selected iframe DOM
 binding and pinned UI caller stack. Neither hook consumes PCB source ordinals.
 An unknown pause remains a refusal; do not manually resume it.
 
+With async-stack capture enabled, a generated preload helper can carry a
+`stackTrace.parentId`. The ratline owner admits that field only when both its ID
+and debugger ID match the original child's retained bootstrap pause. Exact
+preload creator, ordered caller and source checks remain required. On an event
+refusal, `workerSource.firstRejectedEvent` or the subordinate source state retains
+the first bounded raw event; `firstFailure.step` identifies the parsing stage.
+Inspect that evidence before proposing a schema correction.
+
 Before the initial window's DOM checks, first PCB source admission and final
 PCB source release, the source owner transfers its instrumentation pause to an
 ordinary breakpoint at the same qualified source location. It requires the

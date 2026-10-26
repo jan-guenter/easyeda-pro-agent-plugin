@@ -63,7 +63,8 @@ async function syntheticSourceOwner(): Promise<typeof CurrentPcb209RatlineBootst
 /** Real V8 parent constructor owner, synthetic CDP child/source replies. The
  * preload intentionally fails whole installed-source qualification. */
 async function fixture(context: TestContext, options: Readonly<{ badBootstrap?: boolean; reentrantRemoval?: boolean; delayedAllocation?: boolean;
-  syntheticFullChain?: boolean; refuseFirstObservation?: boolean; slowChildProof?: boolean; refuseAllocationProof?: boolean; suppressFirstPause?: boolean }> = {}): Promise<Fixture> {
+  syntheticFullChain?: boolean; refuseFirstObservation?: boolean; slowChildProof?: boolean; refuseAllocationProof?: boolean; suppressFirstPause?: boolean;
+  copyAsyncOrigin?: "matched" | "foreign" | "missing-bootstrap" | "extra-stack" | "newline-id" | "newline-debugger" }> = {}): Promise<Fixture> {
   const allocation = Promise.withResolvers<unknown>(), inspector = await ratlineCreationInspector(context, "pcb"), removed = Promise.withResolvers<null>();
   let events: Events | null = null, firstObservations = 0, nestedAbort: Promise<void> | null = null, removals = 0, requests = 0, resumes = 0, sourceReads = 0;
   const holder: { owner: CurrentPcb209RatlineBootstrapOwner | null; packet: CurrentPcb209RatlineCreationPacket | null } = { owner: null, packet: null };
@@ -84,14 +85,23 @@ async function fixture(context: TestContext, options: Readonly<{ badBootstrap?: 
           lineNumber: log.lineNumber, columnNumber: log.columnNumber }] } });
     }
     const caller = role === "worker" ? null : currentPcb209PreloadCopyCaller(role), creator = CURRENT_PCB_209_PRELOAD_COPY_SOURCE.creator;
-    const stackTrace = caller === null ? {} : { stackTrace: { callFrames: [{ ...creator, scriptId: "preload", url: CURRENT_PCB_209_WORKER_PRELOAD_URL }] } };
+    const originalAsyncId = { id: options.copyAsyncOrigin === "newline-id" ? "1\n" : "1",
+      debuggerId: options.copyAsyncOrigin === "newline-debugger" ? "parent-debugger\n" : "parent-debugger" };
+    const stackTrace = caller === null ? {} : { stackTrace: {
+      callFrames: [{ ...creator, scriptId: "preload", url: CURRENT_PCB_209_WORKER_PRELOAD_URL }],
+      ...(options.copyAsyncOrigin === undefined ? {} : { parentId: {
+        ...originalAsyncId, ...(options.copyAsyncOrigin === "foreign" ? { debuggerId: "foreign-debugger" } : {}),
+      } }),
+      ...(options.copyAsyncOrigin === "extra-stack" ? { parent: { callFrames: [] } } : {}),
+    } };
     emit("Debugger.scriptParsed", { scriptId, url, executionContextId: 1, hasSourceURL: false, isLiveEdit: false, ...stackTrace });
     const callFrames = caller === null ? [{ location: { scriptId } }] : [
       { functionName: "", location: { scriptId, lineNumber: 0, columnNumber: 0 } },
       { functionName: creator.functionName, location: { scriptId: "preload", lineNumber: creator.lineNumber, columnNumber: creator.columnNumber } },
       { functionName: "", location: { scriptId: "preload", lineNumber: caller.lineNumber, columnNumber: caller.columnNumber } },
     ];
-    emit("Debugger.paused", { reason: "instrumentation", data: { scriptId, url }, hitBreakpoints: [], callFrames });
+    emit("Debugger.paused", { reason: "instrumentation", data: { scriptId, url }, hitBreakpoints: [], callFrames,
+      ...(options.copyAsyncOrigin === undefined || options.copyAsyncOrigin === "missing-bootstrap" ? {} : { asyncStackTraceId: originalAsyncId }) });
   };
   const creation = new CurrentPcb209RatlinePcbCreation({ ...inspector.transport, request: async (command): Promise<unknown> => {
     if (starting && command.method === "Runtime.runIfWaitingForDebugger") {
@@ -209,6 +219,38 @@ void test("source owner arms before sole creation start, then holds unqualified 
   await f.start(); await assert.rejects(f.owner.whenSourceQualified());
   assert.equal(f.counts().resumes, 1); assert.equal(f.counts().sourceReads, 2); assert.equal(f.counts().childStarts, 1);
   await f.finish(); assert.equal(f.counts().removals, 1); assert.equal(f.counts().resumes, 1); assert.equal(f.counts().childStarts, 1);
+});
+
+void test("ratline preload copies bind their async parent to the retained original bootstrap pause", async context => {
+  const f = await fixture(context, { syntheticFullChain: true, copyAsyncOrigin: "matched" });
+  await f.owner.armOriginalChildBootstrap(f.creation, f.packet); await f.start();
+  const packet = await f.owner.whenSourceQualified();
+  assert.equal(f.counts().sourceReads, 7); assert.equal(f.counts().resumes, 6);
+  assert.equal(packet.nativeWorkerTargetIdentityVerified, false);
+  assert.equal(f.owner.status()["firstRejectedEvent"], null); await f.finish();
+});
+
+void test("ratline preload rejects foreign or unproved async ancestry and retains its first complete event", async context => {
+  for (const copyAsyncOrigin of ["foreign", "missing-bootstrap", "extra-stack", "newline-id", "newline-debugger"] as const) {
+    await context.test(copyAsyncOrigin, async child => {
+      const f = await fixture(child, { syntheticFullChain: true, copyAsyncOrigin });
+      await f.owner.armOriginalChildBootstrap(f.creation, f.packet); await f.start();
+      await assert.rejects(f.owner.whenSourceQualified());
+      assert.equal(f.counts().sourceReads, 2); assert.equal(f.counts().resumes, 2);
+      const failure = f.owner.status()["firstFailure"], retained = f.owner.status()["firstRejectedEvent"];
+      assert.ok(failure !== null && typeof failure === "object");
+      assert.equal(Reflect.get(failure, "step"), "copy-creator-metadata");
+      assert.equal(Reflect.get(failure, "stage"), "preload-copy-1");
+      assert.ok(retained !== null && typeof retained === "object"); assert.equal(Reflect.get(retained, "status"), "captured");
+      const event: unknown = Reflect.get(retained, "value"); assert.ok(event !== null && typeof event === "object");
+      assert.equal(Reflect.get(event, "method"), "Debugger.scriptParsed"); assert.ok(Object.isFrozen(event));
+      const text = JSON.stringify(event); assert.equal(Reflect.get(retained, "bytes"), Buffer.byteLength(text));
+      assert.equal(Reflect.get(retained, "sha256"), createHash("sha256").update(text).digest("hex"));
+      f.emit("Runtime.exceptionThrown", { laterCleanup: true });
+      assert.equal(f.owner.status()["firstRejectedEvent"], retained); assert.equal(f.owner.status()["firstFailure"], failure);
+      await f.finish(); assert.equal(f.counts().sourceReads, 2); assert.equal(f.counts().resumes, 2);
+    });
+  }
 });
 
 void test("first child pause allowance begins at original start after delayed permission and retains immediate pause", async context => {

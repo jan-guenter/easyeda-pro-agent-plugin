@@ -75,6 +75,18 @@ must not be reported as measured connected latency improvements.
 
 ## Narrow execution contract
 
+Match inspector descriptors to the embedded engine as well as the application
+source. V8 builds can move legacy function properties between the function and
+its prototype without changing the function's JavaScript. The209 debounce
+profile has three own properties; the older profile has five. Keep each exact
+contract and retain source/location checks. A test running on the facade's
+pinned Node version does not establish the embedded browser's property roster.
+
+For data-only input capture, reject proxies before reflection and check scalar
+types before passing them to schema validation. Even error formatting can
+inspect a rejected object's prototype. Keep source-content limits separate from
+small clock-packet limits so valid large drawings are not rejected accidentally.
+
 Use literal action discriminators, bounded strings/arrays/numbers, strict nested
 objects and explicit units. Preserve native empty-string versus null semantics.
 Validate compound refinements with the exact parser; JSON Schema alone omits
@@ -571,3 +583,13 @@ The installed SDK stub declares `lib_Footprint.getDocumentSource`, but the pinne
 UI does not register its RPC handler. Report the cache reader as a scoped native
 task equivalent. Its source equivalence does not validate that missing wrapper
 or establish the full declared contract.
+
+Copy-v2 preparation separately models ordinary records, tombstones and native
+integer-key ordering. Filter the actual META record when deriving destination
+canvas content; numeric IDs can sort before it. Its saved-source projection is
+bound to an original successful complete-SQL comparison and preserves both
+fresh-history and native chunk-cache actor serializations as exact alternatives.
+Before a future copy dispatch, reserve the complete saved-getter size for both
+alternatives and require positive document-clock bounds. Pure comparison inputs
+do not establish native actor/clock provenance, completion, generation closure,
+replay exclusion or a reopened result. No copy writer is enabled by these models.
