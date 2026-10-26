@@ -10,6 +10,8 @@ import { currentPcb209RatlineContinuationTiming } from "./current-pcb-209-ratlin
 import { acknowledgeCurrentPcb209RatlineCaptureResume, beforeCurrentPcb209RatlineCaptureResume, isCurrentPcb209RatlineCaptureHandoff, observeCurrentPcb209RatlineCaptureResume, requestCurrentPcb209RatlineCaptureResume } from "./current-pcb-209-ratline-continuation-handoff.ts";
 import { z } from "zod";
 import { captureCurrentPcbStringClockReply } from "./current-pcb-string-clock-reply.ts";
+import { captureCurrentPcb209RatlineCaptureReply } from "./current-pcb-209-ratline-capture-reply.ts";
+import type { CurrentPcb209RatlineCaptureReplyEvidence } from "./current-pcb-209-ratline-capture-reply.ts";
 import { CURRENT_PCB_209_RATLINE_CAPTURE_PROFILES, CURRENT_PCB_209_RATLINE_HELD_CAPTURE_PROFILE, CURRENT_PCB_209_RATLINE_CAPTURE_GROUP as GROUP } from "./current-pcb-209-ratline-capture-profile.ts";
 import type { CurrentPcb209RatlineCaptureRole, CurrentPcb209RatlineCaptureScope, CurrentPcb209RatlineCaptureSite } from "./current-pcb-209-ratline-capture-profile.ts";
 import { CURRENT_PCB_209_RATLINE_CAPTURE_PROGRAMS as PROGRAMS } from "./current-pcb-209-ratline-capture-program.ts";
@@ -28,6 +30,7 @@ const payloadSchema = z.object({ ratlineRes: z.array(z.never()).length(0), worke
 const worldSchema = z.object({ documentUuid: z.string().regex(/^(?:[a-f\d]{16}|[a-f\d]{32})$/u),
   projectUuid: z.string().regex(/^(?:[a-f\d]{32}|[a-f\d]{64})$/u),
   tabId: z.string().min(1).max(256), windowTabId: z.string().regex(/^[A-Za-z\d_-]{1,128}$/u) }).strict();
+const programNames = ["same", "construction", "bridge", "factory", "removed", "name", "world", "canvas", "empty", "payload"] as const;
 type Expression = "this" | "o" | "t" | "e" | "a" | "l" | "i" | "f" | "c" | "h" | "u" | "_" | "O" | "y" | "iY" | "self";
 export type CurrentPcb209RatlineCaptureCommand =
   | Readonly<{ method: "Debugger.setBreakpoint"; params: Readonly<{ location: z.infer<typeof location> }> }>
@@ -142,6 +145,10 @@ class CurrentPcb209RatlineCaptureCore<Scope extends CurrentPcb209RatlineCaptureS
   #packet: Packets[Scope] | null = null;
   #cleanupPending: Promise<void> | null = null;
   #cleanupRequested = false;
+  #captureSite: CurrentPcb209RatlineCaptureSite | null = null;
+  #pauseIndex: number | null = null;
+  #lastReply: CurrentPcb209RatlineCaptureReplyEvidence | null = null;
+  #rejectedReply: CurrentPcb209RatlineCaptureReplyEvidence | null = null;
   public constructor(key: typeof INTERNAL, role: CurrentPcb209RatlineCaptureRole, scope: Scope, transport: CurrentPcb209RatlineCaptureTransport) {
     need(key === INTERNAL && (scope === "full" || scope === "pcb-held-prefix" && role === "pcb"), "FIXED_PROFILE");
     this.#role = role; this.#scope = scope; this.#transport = transport; this.#original = members(transport);
@@ -153,6 +160,7 @@ class CurrentPcb209RatlineCaptureCore<Scope extends CurrentPcb209RatlineCaptureS
     settled: this.#settled, failed: this.#failed !== null, released: this.#released, events: this.#events, commands: this.#commands,
     paused: this.#pause !== null && !this.#pause.observed, unresolvedBreakpoints: this.#uncertain > 0 || [...this.#breakpoints.values()].some(value => !value.removed) }); }
   public async whenArmed(): Promise<void> { await this.#armed.promise; await this.#current(); }
+  public retainedRejectedReplyEvidence(): CurrentPcb209RatlineCaptureReplyEvidence | null { return this.#rejectedReply; }
   #same(): void { need(members(this.#transport).every((value, index) => value === this.#original[index]), "OWNER_CHANGED"); }
   #poison(code: string, cause: unknown = fail(code)): void { this.#diagnostics.record(cause); this.#failed ??= fail(code); }
   async #current(): Promise<void> {
@@ -167,9 +175,19 @@ class CurrentPcb209RatlineCaptureCore<Scope extends CurrentPcb209RatlineCaptureS
   async #send(command: CurrentPcb209RatlineCaptureCommand): Promise<unknown> {
     await this.#current(); need(this.#commands < 112, "BUDGET"); this.#commands += 1;
     this.#diagnostics.lastCommand = command.method; this.#diagnostics.step = "native-request";
-    const value = captureCurrentPcbStringClockReply(await bounded(this.#request.call(this.#transport, command),
-      currentPcb209RatlineTransportRequestMilliseconds(this.#transport, command.method))).value;
-    await this.#current(); return value;
+    const raw = await bounded(this.#request.call(this.#transport, command),
+      currentPcb209RatlineTransportRequestMilliseconds(this.#transport, command.method));
+    const program = command.method === "Runtime.callFunctionOn" ?
+      programNames.find(key => PROGRAMS[key] === command.params.functionDeclaration) ?? null : null;
+    this.#lastReply = captureCurrentPcb209RatlineCaptureReply(raw, { role: this.#role, scope: this.#scope,
+      pauseIndex: this.#pauseIndex, site: this.#captureSite, requestNumber: this.#commands, command: command.method,
+      expression: command.method === "Debugger.evaluateOnCallFrame" ? command.params.expression : null, program });
+    this.#diagnostics.step = "reply-validation";
+    const value = captureCurrentPcbStringClockReply(raw).value;
+    await this.#current();
+    // The following envelope/value checks belong to this arrived reply. The
+    // Preceding owner callback must not mislabel their failures as owner loss.
+    this.#diagnostics.step = "reply-validation"; return value;
   }
   async #cleanupSend(command: CurrentPcb209RatlineCaptureCommand): Promise<void> {
     this.#same(); need(this.#commands < 128, "CLEANUP_BUDGET"); this.#commands += 1;
@@ -272,8 +290,10 @@ class CurrentPcb209RatlineCaptureCore<Scope extends CurrentPcb209RatlineCaptureS
   }
   async #capturePause(retained: Paused, index: number): Promise<void> {
     this.#diagnostics.step = "pause-validation";
+    this.#lastReply = null; this.#pauseIndex = index;
     need(retained.capturedError === null, "EVENT_CAPTURE"); const event = pause.parse(retained.event);
     const profile = this.#profile(), site = profile.sequence[index]; need(site !== undefined, "EXTRA_PAUSE");
+    this.#captureSite = site;
     const sites: Readonly<Partial<Record<CurrentPcb209RatlineCaptureSite, Readonly<{ name: string; lineNumber: number; columnNumber: number }>>>> = profile.sites;
     const expected = sites[site], top = event.callFrames[0];
     need(expected !== undefined && top !== undefined && event.hitBreakpoints[0] === this.#breakpoints.get(site)?.id &&
@@ -330,7 +350,7 @@ class CurrentPcb209RatlineCaptureCore<Scope extends CurrentPcb209RatlineCaptureS
       // Survive; never replace them with inferred or newly supplied objects.
       need(await this.#call(this.#get("manager"), PROGRAMS.removed) === true, "WORKER_RETAINED");
     }
-    this.#events += 1;
+    this.#events += 1; this.#lastReply = null;
   }
   #profile(): typeof CURRENT_PCB_209_RATLINE_CAPTURE_PROFILES[CurrentPcb209RatlineCaptureRole] | typeof CURRENT_PCB_209_RATLINE_HELD_CAPTURE_PROFILE {
     return this.#scope === "pcb-held-prefix" ? CURRENT_PCB_209_RATLINE_HELD_CAPTURE_PROFILE : CURRENT_PCB_209_RATLINE_CAPTURE_PROFILES[this.#role];
@@ -388,6 +408,7 @@ class CurrentPcb209RatlineCaptureCore<Scope extends CurrentPcb209RatlineCaptureS
       // oxlint-disable-next-line typescript/no-unsafe-type-assertion -- The private scope selects both its fixed sequence and exact packet branch above; public wrappers cannot choose a different scope.
       this.#packet = packet as Packets[Scope]; issued.set(this.#packet, this); return this.#packet;
     } catch (error) {
+      if (this.#diagnostics.step === "reply-validation") { this.#rejectedReply ??= this.#lastReply; }
       this.#poison("FAILED", error); this.#armed.reject(error);
       try { await this.#cleanup(); } catch (cleanupError) { throw new AggregateError([error, cleanupError], "PCB209_RATLINE_CAPTURE_FAILED", { cause: cleanupError }); }
       throw error;

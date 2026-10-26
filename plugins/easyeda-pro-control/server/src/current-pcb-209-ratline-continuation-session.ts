@@ -286,6 +286,13 @@ export class CurrentPcb209RatlineContinuationSession {
   }
   public retainedNativeOriginEvidence(): CurrentPcb209RatlineOriginEvidence | null { return this.#origin?.evidence() ?? null; }
   public retainedRejectedStopEvidence(): ReturnType<CurrentPcb209RatlinePcbContextRouter["retainedRejectedStopEvidence"]> { return this.#contextRouter?.retainedRejectedStopEvidence() ?? null; }
+  public retainedRejectedCaptureReplyEvidence(): Readonly<{
+    pcb: ReturnType<CurrentPcb209RatlinePcbStartup["retainedRejectedCaptureReplyEvidence"]>;
+    worker: ReturnType<CurrentPcb209RatlineWorkerStartup["retainedRejectedCaptureReplyEvidence"]>;
+  }> {
+    return Object.freeze({ pcb: this.#pcb?.retainedRejectedCaptureReplyEvidence() ?? null,
+      worker: this.#workerStartup?.retainedRejectedCaptureReplyEvidence() ?? null });
+  }
   public retainedAncestryEvidence(): ReturnType<CurrentPcb209RatlinePcbContextRouter["retainedAncestryEvidence"]> | null { return this.#contextRouter?.retainedAncestryEvidence() ?? null; }
   public status(): Readonly<Record<string, unknown>> {
     return Object.freeze({ phase: this.#phase, firstFailure: this.#firstFailure === null ? null : currentPcb209RatlineFailureReason(this.#firstFailure),

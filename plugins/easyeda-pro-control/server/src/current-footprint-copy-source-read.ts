@@ -76,6 +76,9 @@ export function captureCurrentFootprintCopySourceReadReply(input: unknown): Read
  * maxTicket getter, Vc.getMaxTicket, Lg.getCanvasByConsistency and Lg.compress.
  * These five bindings do not qualify the transitive cache/compressor call graph;
  * that remains a native coordinator obligation before any route is enabled.
+ * Only the timer pair may be inherited through at most three prototype links,
+ * as on worker globals. Retain every absent shadow, link and final data
+ * descriptor for the same across-await reproof; never invoke a timer getter.
  */
 export const CURRENT_FOOTPRINT_COPY_SOURCE_READ_FUNCTION = `async function(project,bus,consistency,selected,constructors,methods){
 "use strict";
@@ -110,7 +113,12 @@ const ticketGetter=descriptor(footprintChain[2],"maxTicket");if(!ticketGetter||t
 const data=plain(own(this,"data")),metadata=plain(own(data,footprintUuid));
 for(const key of ["isDelete","ticket","creator","createTime","modifier","updateTime","version","title","description","tags","source"]){const d=descriptor(metadata,key);if(d===undefined){if(key in metadata)bad();}else if(!Object.hasOwn(d,"value"))bad();}
 const deleted=Object.getOwnPropertyDescriptor(metadata,"isDelete");if(deleted&&deleted.value!==undefined&&deleted.value!==false)bad();
-const set=own(globalThis,"setTimeout"),clear=own(globalThis,"clearTimeout");if(typeof set!=="function"||typeof clear!=="function")bad();
+const timerFunctions=()=>{let owner=globalThis;for(let depth=0;depth<4;depth++){
+ const set=descriptor(owner,"setTimeout"),clear=descriptor(owner,"clearTimeout");
+ if(set!==undefined||clear!==undefined){if(!set||!clear||!Object.hasOwn(set,"value")||!Object.hasOwn(clear,"value")||typeof set.value!=="function"||typeof clear.value!=="function")bad();return[set.value,clear.value];}
+ owner=proto(owner);if(owner===null||owner===Object.prototype)bad();
+}bad();};
+const [set,clear]=timerFunctions();
 let expired=false,timer;
 const check=()=>{if(expired)bad();for(const [o,p]of prototypes)if(Object.getPrototypeOf(o)!==p)bad();for(const [o,k,d]of descriptors){const n=Object.getOwnPropertyDescriptor(o,k);if(d===undefined?n!==undefined:!n||d.enumerable!==n.enumerable||d.configurable!==n.configurable||d.writable!==n.writable||d.get!==n.get||d.set!==n.set||!Object.is(d.value,n.value)||Object.hasOwn(d,"value")!==Object.hasOwn(n,"value"))bad();}};
 try{

@@ -46,6 +46,10 @@ import type { CurrentPcb209WorkerStartupTransport, CurrentPcbWorkerStartupTransp
 import type { CurrentPcbWorkerConstructionAssignments } from "./current-pcb-worker-construction-assignment.ts";
 import { CurrentPcb209WorkerStartupOpening } from "./current-pcb-209-worker-startup-opening.ts";
 import type { CurrentFootprintCopyStatePacket } from "./current-footprint-copy-state.ts";
+import { CURRENT_FOOTPRINT_COPY_PREPARATION_REQUESTS } from "./current-footprint-copy-preparation.ts";
+import type { CurrentFootprintCopyPreparation } from "./current-footprint-copy-preparation.ts";
+import { prepareCurrentFootprintCopyOwned, requireCurrentFootprintCopyOwned } from "./current-footprint-copy-preparation-runtime.ts";
+import type { CurrentFootprintSourcePlan } from "./current-footprint-source-plan.ts";
 import { prepareCurrentFootprintSourcePlan } from "./current-footprint-source-plan.ts";
 import type { CurrentFootprintSourceReadPacket } from "./current-footprint-source-read-runner.ts";
 import { CURRENT_FOOTPRINT_COPY_SOURCE_STAGE_REQUESTS } from "./current-footprint-copy-source-read-runner.ts";
@@ -123,6 +127,7 @@ const continuationSessionMethods = Object.freeze({ capture: CurrentPcb209Ratline
   opening: CurrentPcb209RatlineContinuationNativeSession.prototype.retainedOpeningObservation,
   originEvidence: CurrentPcb209RatlineContinuationNativeSession.prototype.retainedNativeOriginEvidence,
   rejectedStopEvidence: CurrentPcb209RatlineContinuationNativeSession.prototype.retainedRejectedStopEvidence,
+  rejectedCaptureReplyEvidence: CurrentPcb209RatlineContinuationNativeSession.prototype.retainedRejectedCaptureReplyEvidence,
   ancestryEvidence: CurrentPcb209RatlineContinuationNativeSession.prototype.retainedAncestryEvidence });
 // oxlint-enable typescript/unbound-method
 
@@ -230,6 +235,8 @@ function describe(operationId: string, operation: DiagnosticLifecycleOperation |
     workerStartupFootprintResultPublished: records?.["worker-startup-footprint-result.json"] !== undefined,
     workerStartupFootprintSourceAttemptConsumed: records?.["worker-startup-footprint-source-intent.json"] !== undefined,
     workerStartupFootprintSourceResultPublished: records?.["worker-startup-footprint-source-result.json"] !== undefined,
+    workerStartupFootprintPreparationAttemptConsumed: records?.["worker-startup-footprint-preparation-intent.json"] !== undefined,
+    workerStartupFootprintPreparationResultPublished: records?.["worker-startup-footprint-preparation-result.json"] !== undefined,
     workerStartupActorAttemptConsumed: records?.["worker-startup-actor-intent.json"] !== undefined,
     workerStartupActorResultPublished: records?.["worker-startup-actor-result.json"] !== undefined,
     workerStartupChannelAttemptConsumed: records?.["worker-startup-channel-intent.json"] !== undefined,
@@ -334,6 +341,9 @@ class CurrentPcbLifecycleCore {
   #startupFootprintOpening: CurrentPcb209WorkerStartupOpening | null = null;
   #startupFootprintSourceAttempted = false;
   #startupFootprintSourcePacket: CurrentFootprintSourceReadPacket | null = null;
+  #startupFootprintSourcePlan: CurrentFootprintSourcePlan | null = null;
+  #startupFootprintPreparationAttempted = false;
+  #startupFootprintPreparation: CurrentFootprintCopyPreparation | null = null;
   #startupActorAttempted = false;
   #startupActorPacket: CurrentPcbStartupActorPacket | null = null;
   #startupChannelAttempted = false;
@@ -506,6 +516,9 @@ class CurrentPcbLifecycleCore {
         workerStartupFootprintSourceObservation: original && this.#startupFootprintOpening !== null ?
           footprintSourceMethods.retained.call(this.#startupFootprintOpening) : null,
         workerStartupFootprintSourceResult: operation?.records["worker-startup-footprint-source-result.json"]?.result ?? null,
+        workerStartupFootprintPreparationAttemptConsumed: operation?.records["worker-startup-footprint-preparation-intent.json"] !== undefined || original && this.#startupFootprintPreparationAttempted,
+        workerStartupFootprintPreparationRetained: original && this.#startupFootprintPreparation !== null,
+        workerStartupFootprintPreparationResult: operation?.records["worker-startup-footprint-preparation-result.json"]?.result ?? null,
         workerStartupActorAttemptConsumed: operation?.records["worker-startup-actor-intent.json"] !== undefined || original && this.#startupActorAttempted,
         workerStartupActorResultRetained: original && this.#startupActorPacket !== null,
         workerStartupActorObservation: original && this.#startupOpening !== null ?
@@ -539,6 +552,8 @@ class CurrentPcbLifecycleCore {
           this.#startupContinuationSession !== null ? continuationSessionMethods.originEvidence.call(this.#startupContinuationSession) : null,
         workerStartupContinuationRejectedStopEvidence: original && this.#startupContinuationSession !== null ?
           continuationSessionMethods.rejectedStopEvidence.call(this.#startupContinuationSession) : null,
+        workerStartupContinuationRejectedCaptureReplyEvidence: original && this.#startupContinuationSession !== null ?
+          continuationSessionMethods.rejectedCaptureReplyEvidence.call(this.#startupContinuationSession) : null,
         workerStartupContinuationAncestryEvidence: original && this.#startupContinuationSession !== null ?
           continuationSessionMethods.ancestryEvidence.call(this.#startupContinuationSession) : null,
         workerStartupContinuationOpening: original && this.#startupContinuationSession !== null ? continuationSessionMethods.opening.call(this.#startupContinuationSession) : null,
@@ -1211,6 +1226,7 @@ class CurrentPcbLifecycleCore {
       capacity();
       const opened = requireCurrentPcb209StartupOpening(original.owner, openingResult);
       requireValue(opened.opening === this.#startupFootprintOpening, "ORIGINAL_FOOTPRINT_STATE_OWNER");
+      this.#startupFootprintSourcePlan = plan;
       const packet = await footprintSourceMethods.observe.call(opened.opening, opened.result, assignments, state, plan);
       this.#startupFootprintSourcePacket = packet; current();
       await footprintSourceMethods.require.call(opened.opening, opened.result, assignments, state, plan, packet); current();
@@ -1225,6 +1241,75 @@ class CurrentPcbLifecycleCore {
       await assertSnapshot(expected.map(value => value.operationId === operationId ? completed : value)); current();
       return { operationId, result: structuredClone(result.result), validationOnly: true,
         executionAuthorized: false, saveAuthorized: false, persistenceVerified: false };
+    } finally { this.#busy = false; }
+  }
+
+  /** Pure copy modeling belongs to the source's original observation lifecycle.
+   * This action reserves only owner reproofs; it cannot upgrade launch purpose. */
+  protected async prepareStartupFootprintCopy(operationId: string, expectedBindingSha256: string): Promise<Record<string, unknown>> {
+    this.#startupId(operationId); diagnosticLifecycleDigestSchema.parse(expectedBindingSha256);
+    this.#options.assertLocalAllowed();
+    requireValue(this.#generation === "209-startup" && this.#purpose === "worker-startup", "WORKER_STARTUP_FOOTPRINT_PURPOSE_REQUIRED");
+    requireValue(!this.#busy, "BUSY"); this.#busy = true;
+    try {
+      const operations = await readCurrentPcbDiagnosticLifecycles();
+      const operation = operations.find(value => value.operationId === operationId), retained = this.#retained;
+      this.#assertPurpose(operationId, operation);
+      const assignments = this.#startupAssignments, openingResult = this.#startupOpeningResult, original = this.#startupOpening;
+      const source = this.#startupFootprintSourcePacket, sourcePlan = this.#startupFootprintSourcePlan, state = this.#startupFootprintPacket;
+      const checkpoint = this.#projectPreparation, record = operation?.records["worker-startup-footprint-source-result.json"];
+      requireValue(operation !== undefined && retained !== null && retained.operationId === operationId && original !== null &&
+        openingResult !== null && assignments !== null && state !== null && source !== null && sourcePlan !== null &&
+        checkpoint !== null && checkpoint.commonInventory !== null && !this.#startupOpeningReleased && !this.#closeAttempted &&
+        operation.records["close-intent.json"] === undefined && operation.records["terminated.json"] === undefined &&
+        sha256Json(operation.records["binding.json"]) === expectedBindingSha256 && record !== undefined &&
+        this.#pending.get("worker-startup-footprint-source-result.json") === canonicalJson(record) &&
+        canonicalJson(record.result) === canonicalJson(source), "ORIGINAL_FOOTPRINT_SOURCE_REQUIRED");
+      this.#assertOwner(retained);
+      requireValue(!this.#startupFootprintPreparationAttempted && operation.records["worker-startup-footprint-preparation-intent.json"] === undefined,
+        "WORKER_STARTUP_FOOTPRINT_PREPARATION_CONSUMED");
+      this.#startupFootprintPreparationAttempted = true;
+      const before = checkpoint.commonInventory, completion = readerCompletion(before);
+      const current = (): void => {
+        this.#assertOwner(retained);
+        requireValue(this.#projectPreparation === checkpoint && checkpoint.commonInventory === before && readerCompletion(before) === completion &&
+          canonicalJson(checkpoint.prepared) === checkpoint.preparedText && this.#startupFootprintSourcePacket === source &&
+          this.#startupFootprintSourcePlan === sourcePlan, "FOOTPRINT_PREPARATION_INPUT_CHANGED");
+      };
+      const capacity = (): void => {
+        current(); const channel = retained.methods.status.call(retained.owner).workerStartupChannel;
+        requireValue(channel !== undefined && channel !== null && channel.started && !channel.failed && !channel.released &&
+          channel.pendingReplies === 0 && Number.isSafeInteger(channel.nextRequestId) && channel.nextRequestId >= 1 &&
+          channel.nextRequestId + CURRENT_FOOTPRINT_COPY_PREPARATION_REQUESTS - 1 <= 224, "FOOTPRINT_PREPARATION_CAPACITY");
+      };
+      await this.#installation(retained); current();
+      await this.#verifyHistoricalCheckpoint(checkpoint.prepared, checkpoint.originalTarget); current();
+      await assertSnapshot(operations); capacity();
+      const intent: NonNullable<DiagnosticLifecycleRecords["worker-startup-footprint-preparation-intent.json"]> = {
+        schema: "easyeda-pro-control.pcb209-footprint-preparation-intent.v1", operationId, createdAt: new Date().toISOString(),
+        bindingSha256: expectedBindingSha256, sourceResultSha256: sha256Json(record),
+      };
+      await this.#record(operationId, "worker-startup-footprint-preparation-intent.json", intent); current();
+      const updated = { ...operation, records: { ...operation.records, "worker-startup-footprint-preparation-intent.json": intent } };
+      const expected = operations.map(value => value.operationId === operationId ? updated : value);
+      await assertSnapshot(expected); capacity();
+      const opened = requireCurrentPcb209StartupOpening(original.owner, openingResult);
+      requireValue(opened.opening === this.#startupFootprintOpening, "ORIGINAL_FOOTPRINT_STATE_OWNER");
+      const prepared = await prepareCurrentFootprintCopyOwned(Object.freeze({ opening: opened.opening, result: opened.result,
+        assignments, state, sourcePlan, source, before }));
+      this.#startupFootprintPreparation = prepared; current();
+      await requireCurrentFootprintCopyOwned(prepared, opened.opening); current();
+      const result = diagnosticLifecycleRecordSchemas["worker-startup-footprint-preparation-result.json"].parse({
+        schema: "easyeda-pro-control.pcb209-footprint-preparation-result.v1", operationId, createdAt: new Date().toISOString(),
+        intentSha256: sha256Json(intent), result: prepared, executionAuthorized: false, saveAuthorized: false,
+      });
+      this.#retainRecord("worker-startup-footprint-preparation-result.json", result);
+      await assertSnapshot(expected); current();
+      await this.#publish(operationId, "worker-startup-footprint-preparation-result.json", result); current();
+      const completed = { ...updated, records: { ...updated.records, "worker-startup-footprint-preparation-result.json": result } };
+      await assertSnapshot(expected.map(value => value.operationId === operationId ? completed : value)); current();
+      return { operationId, result: structuredClone(result.result), preparationPublished: true,
+        validationOnly: true, executionAuthorized: false, saveAuthorized: false, persistenceVerified: false };
     } finally { this.#busy = false; }
   }
 
@@ -1397,6 +1482,7 @@ class CurrentPcbLifecycleCore {
         session.status === continuationSessionMethods.status && session.retainedOpeningObservation === continuationSessionMethods.opening &&
         session.retainedNativeOriginEvidence === continuationSessionMethods.originEvidence &&
         session.retainedRejectedStopEvidence === continuationSessionMethods.rejectedStopEvidence &&
+        session.retainedRejectedCaptureReplyEvidence === continuationSessionMethods.rejectedCaptureReplyEvidence &&
         session.retainedAncestryEvidence === continuationSessionMethods.ancestryEvidence, "STARTUP_RATLINE_METHODS_CHANGED");
     }
     if (this.#startupEmptyPreparation !== null) {
@@ -2324,6 +2410,10 @@ export class CurrentPcb209WorkerStartupLifecycle extends CurrentPcbLifecycleCore
   public observeWorkerStartupFootprintSource(operationId: string, expectedBindingSha256: string, input: unknown): Promise<Record<string, unknown>> {
     return this.observeStartupFootprintSource(operationId, expectedBindingSha256, input);
   }
+  public prepareWorkerStartupFootprintCopy(operationId: string, expectedBindingSha256: string): Promise<Record<string, unknown>> {
+    return this.prepareStartupFootprintCopy(operationId, expectedBindingSha256);
+  }
+
   public observeWorkerStartupActor(operationId: string, expectedBindingSha256: string): Promise<Record<string, unknown>> {
     return this.observeStartupActor(operationId, expectedBindingSha256);
   }

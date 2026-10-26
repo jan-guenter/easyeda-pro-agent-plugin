@@ -192,3 +192,17 @@ void test("durable footprint source rejects changed bytes and dormant GET_STR cl
   assert.equal(schema.safeParse({ ...record, result: { ...dormant, route: "native-get-str",
     sourceGetterDispatched: true, cacheEffectsPossible: true } }).success, false);
 });
+
+void test("footprint preparation accepts no supplied plan, source or native authority and cannot adopt historical records", async () => {
+  const action = { action: "prepare-footprint-copy", operationId: id, expectedBindingSha256: digest };
+  assert.equal(validateCurrentPcb209WorkerStartupArguments(action)["valid"], true);
+  for (const extra of [{ operationId: "pcb209-empty-other" }, { operationId: "pcb209-continuation-other" },
+    { plan: {} }, { source: "supplied" }, { footprintUuid: "1234567890abcdef" }, { confirmWrite: true }, { nativeCreate: true }]) {
+    assert.equal(validateCurrentPcb209WorkerStartupArguments({ ...action, ...extra })["valid"], false);
+  }
+  const options: CurrentPcbDiagnosticLifecycleOptions = { pluginRoot: "/synthetic/plugin", assetsRoot: "/synthetic/assets",
+    powershellSha256: digest, powershellBytes: 1, assertAllowed: unused, assertLocalAllowed: (): void => undefined,
+    assertOtherLaunchesSettled: unused };
+  const owner = new CurrentPcb209WorkerStartupLifecycle(options, { allocateOwner: unused, verifyInstallation: unused });
+  await assert.rejects(owner.prepareWorkerStartupFootprintCopy(id, digest), /ORIGINAL_FOOTPRINT_SOURCE_REQUIRED/u);
+});

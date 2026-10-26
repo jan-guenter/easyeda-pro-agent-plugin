@@ -190,7 +190,7 @@ export function currentPcb209RatlineFailureReason(error: unknown): string {
 
 const diagnosticStage = z.enum(["ready", "arming", "creation", "constructor-before", "constructor-after", "child-inventory", "held-constructor",
   "source-continuation", "capture-arming", "child-arming", "parent-continuation", "child-start", "capture", "comparison", "cleanup", "released"]);
-const diagnosticStep = z.enum(["idle", "owner-reproof", "native-request", "breakpoint-allocation", "pause-wait", "pause-validation",
+const diagnosticStep = z.enum(["idle", "owner-reproof", "native-request", "reply-validation", "breakpoint-allocation", "pause-wait", "pause-validation",
   "event-routing", "source-resume", "child-qualification", "cleanup", "settled"]);
 const diagnosticCommand = z.enum(["Target.getTargets", "Debugger.setBreakpoint", "Debugger.removeBreakpoint", "Debugger.resume",
   "Runtime.runIfWaitingForDebugger", "Debugger.evaluateOnCallFrame", "Runtime.callFunctionOn"]);

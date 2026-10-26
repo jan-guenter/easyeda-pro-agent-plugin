@@ -45,6 +45,7 @@ layout. The connected ledger retains its generation and case anchors.
 
 | Record | Former path |
 | --- | --- |
+| [2026-10-26-footprint-source-and-preparation.md](2026-10-26-footprint-source-and-preparation.md) | Installed180000 source failure diagnosis, original-owned copy preparation, native producer effects and method binding. |
 | [2026-10-26-footprint-owned-lifecycle.md](2026-10-26-footprint-owned-lifecycle.md) | Original-owner footprint preparation, bounded native arguments and metadata, saved-specific cache reader, and explicit unmounted lifecycle backlog. |
 | [2026-10-26-footprint-replay-and-startup-compatibility.md](2026-10-26-footprint-replay-and-startup-compatibility.md) | Two terminal disposable cases, embedded V8 descriptor correction, ratline async ancestry, footprint saved-source preparation and bounded CI setup. |
 | [2026-10-26-pcb-opening-and-footprint-copy-batch.md](2026-10-26-pcb-opening-and-footprint-copy-batch.md) | Two terminal disposable cases, successful project capture, bounded PCB opening, retained assignment diagnostics and footprint copy-v2 preparation. |

@@ -220,3 +220,62 @@ implied by these focused checks.
 The [coverage inventory](../../plugins/easyeda-pro-control/skills/easyeda-pro-control/references/capability-matrix.md)
 and registered operation schemas remain the execution contracts. API discovery
 and these implementation prerequisites do not enable additional methods.
+
+## Publication and installation result
+
+PR135 merged the corrected payload `411babb6327df4d1669add882a853fd6b3dbd701`
+through the protected workflow as main `7902b7809f5d228d63c74cdbbcf2195a3499d52e`.
+Its tree equals the tested tree `8a2668a843041211e04ce74438be9b0e0d90b7f1`.
+Linux CI40373066914 and Windows CI40373066892 passed all11 required jobs for
+that exact head. The facade had13,156 passes, five expected platform skips and
+zero failures or cancellations; all424 bridge tests passed. All19 added
+top-level regressions appeared in the complete run. No full local suite was
+duplicated. The25 local release phases passed, followed by the required
+documentation checks for the corrected default-purpose timing description.
+
+Final independent CI review SHA-256:
+`08c10be1fa34c72e921f5d2a8e4f98f9c35c15a2d69b2f5f1fe1fff7b5baf77e`.
+Root acceptance SHA-256:
+`fd80c71712aa970043e95768b3eb1451e018dda321d72db4ff464776b50876b1`.
+The CI artifact matched all2,077 committed plugin files,42 directories and
+44,102,300 bytes with exact644/755 archive modes. Existing local checkout mode
+differences were recorded separately; they were not treated as installed proof.
+
+One official upgrade from Git marketplace
+`https://github.com/jan-guenter/easyeda-pro-agent-plugin.git` installed and enabled
+`0.3.0+codex.20261026180000`. Both maintained installed-payload comparisons
+matched all2,077 files and modes. Installed inventory SHA-256:
+`16da9cfa62a10d0554882c6ffba36640bfc9a57ad971012388797bc42ca05e00`.
+The isolated offline probe passed27 queries/29 requests and closed its own child
+through stdin EOF. Installation receipt SHA-256:
+`b30efcd488294cd473d08fb6df0dfeed9b374f54ee33c889960a4a6af7941bbe`.
+The original164500 host and upstream processes remained unchanged. No cache
+was patched or host-owned gateway terminated. Actual180000 runtime admission
+and connected validation remain pending a fresh Codex session.
+
+The final763 source files project to
+`7b11e60f7902780db36d97cd43947ade851984ec0ddc080c0c18bf84b94efee3`;
+the three runtime files project to
+`f4d10f585a1b303bdcc1f4ab02ff1bbc5a64a6fba792cc6d069d4a51900bbfa4`.
+Manifest SHA-256:
+`0673847ed29bf004f57c4dbd3c28570b5e68d3788a09bc87556b49cf41b06656`.
+External application, upstream and bridge pins are unchanged.
+
+Automatic main Windows CI40375843884 passed; Linux CI40375843855 was running
+at handoff. Exact tested-tree PR CI already qualified publication. Check the
+automatic run on continuation without starting another campaign.
+
+Next, admit the actual180000 host, then validate source capture and the separate
+PCB continuation on disposable projects. The earlier footprint reply remains
+unexplained; inspect the new transport diagnostic before proposing a correction.
+Both original validation cases are terminal and must not be replayed. Continue
+the implementation backlog above after these observations. This result appendix
+is retained locally for the next substantive batch, avoiding a metadata-only
+plugin release. Production designs remain untouched and excluded.
+
+## Continuation
+
+Automatic main Linux CI40375843855 subsequently completed successfully.
+No additional campaign was started. The
+[next combined batch](2026-10-26-footprint-source-and-preparation.md) records
+actual180000 admission, new disposable observations and further implementation.
