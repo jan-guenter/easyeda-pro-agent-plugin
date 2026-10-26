@@ -101,6 +101,13 @@ reads consume four existing reserve slots; the reserve is76 instead of80.
 Actual usage can be lower. These counts are not measured timing or permission
 to reset the counter.
 
+The default startup channel counts data, pending-reply and empty idle polls
+separately. Empty idle polling backs off to250ms; new requests wake it immediately.
+The channel has a non-resettable one-hour lifetime starting at its construction.
+This is separate from native launch timing. Inspect `failureCode` and the three
+poll counters before attributing a failure to a budget. Expiry stops channel
+commands; original native normal-close, termination and release remain available.
+
 The source stage needs 65 additional requests, including original method and
 native-intrinsic qualification. Its capacity check requires `nextRequestId <= 160`
 before recording intent and again before dispatch. Choose source inspection
@@ -154,6 +161,9 @@ pause time and construction progress before cleanup. A later
 existing failure; do not treat it as the original cause. Per-stage
 `resumeOrigin` distinguishes normal and cleanup resume attempts. A source marked
 qualified and resumed can still belong to a failed capture.
+For source-transfer failures, `firstFailure.reason` distinguishes a deadline
+from refused source bytes. `sourceTransfer` records the selected delivery limit
+and remaining original pause time. A late reply does not revive the attempt.
 
 For a failed assignment observation, inspect `constructionAssignments` in the
 startup transport status. It retains the fixed step, completed reply count and
@@ -161,6 +171,13 @@ last bounded immutable reply with its digest and byte length, captured before
 decoding and the following owner check. The step distinguishes function metadata,
 scope enumeration and callback-relation checks. A retained reply is diagnostic
 evidence; it neither qualifies the assignment nor permits another attempt.
+
+For a failed footprint source capture, inspect `firstRejectedSourceReply` in
+the retained source observation. It preserves the first rejected reply before
+strict parsing, or explicitly reports that the reply was malformed or too large
+to retain. It supplies diagnostic evidence only. A later channel failure does
+not establish why an earlier source reply failed, and a missing raw reply cannot
+be reconstructed from the error label.
 
 The209 function-metadata profile requires the three own properties reported by
 its V8 build for the regular debounce wrapper: `length`, `name` and `prototype`.
@@ -174,8 +191,12 @@ breakpoint allocation. The project opener now adds the finite deliberate
 capture graph to its ordinary opening allowance: 651 seconds for capture,
 45 seconds for opening and 25 seconds for delivery give a 696-second native
 deadline and 721-second host wait. The subsequent original-owner checks remain
-inside the original one-hour launch deadline. Individual request limits and
-the 60-second cleanup reserve are unchanged. These are conservative source
+inside the original one-hour launch deadline. Small control requests and owner
+checks retain their two-second limits. The209 script-transfer limit derives from
+the pinned source size, JSON framing and native64KiB polling, capped by the
+remaining original pause. The project script's ceiling is6,540ms. This does not
+extend the stage or launch clocks or promise that every subordinate maximum fits.
+The60-second cleanup reserve is unchanged. These are conservative source
 bounds, not measured completion times. A native opening timeout now identifies
 `native-open-project`; it does not report the last root-binding check as the
 awaited operation. The generic opener and 206 pause limits are unchanged.

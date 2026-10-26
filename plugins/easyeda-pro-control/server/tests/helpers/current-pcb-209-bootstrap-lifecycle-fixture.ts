@@ -31,6 +31,7 @@ export interface BootstrapFixtureOptions {
   readonly ownerLossAt?: CurrentPcb209StartupScriptRole;
   readonly loseResumeReply?: number;
   readonly lateSource?: boolean;
+  readonly sourceReply?: (role: CurrentPcb209StartupScriptRole, reply: Readonly<{ scriptSource: string }>) => Promise<unknown>;
   readonly targetUrl?: string;
   readonly logContext?: number;
   readonly duplicateLog?: boolean;
@@ -149,7 +150,10 @@ export async function bootstrapLifecycleFixture(options: BootstrapFixtureOptions
           options.timing?.beforeSource?.();
           if (options.lateSource === true && roleIndex === 0) { return lateSource.promise; }
           const role = bootstrap.CURRENT_PCB_209_WORKER_BOOTSTRAP_ROLES[roleIndex];
-          return Promise.resolve({ scriptSource: role === "bootstrap" ? bootstrap.CURRENT_PCB_209_WORKER_BOOTSTRAP_SOURCES[0] : `fixture:${String(role)}` });
+          assert.ok(role !== undefined);
+          const scriptSource = role === "bootstrap" ? bootstrap.CURRENT_PCB_209_WORKER_BOOTSTRAP_SOURCES[0] : `fixture:${role}`;
+          assert.ok(typeof scriptSource === "string"); const reply = { scriptSource };
+          return options.sourceReply?.(role, reply) ?? Promise.resolve(reply);
         }
         case "Debugger.removeBreakpoint": {
           if (command.params.breakpointId !== "instrumentation" && options.construction !== undefined) {

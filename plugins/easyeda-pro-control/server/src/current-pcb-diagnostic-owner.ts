@@ -305,7 +305,8 @@ class CurrentPcbRetainedOwnerCore {
     nativeLaunchError: string | null; nativeSendError: string | null; createProcessError: number | null;
     browserObservationConsumed: boolean; frameInspectionConsumed: boolean; scriptInspectionConsumed: boolean; diagnosticFailure: string | null;
     diagnosticFailureObservation: CurrentPcbDiagnosticFailureObservation | null;
-    workerStartupChannel?: ReturnType<CurrentPcbWorkerStartupChannel["status"]> | ReturnType<CurrentPcb209RatlineStartupChannel["status"]> | null;
+    workerStartupChannel?: ReturnType<CurrentPcbWorkerStartupChannel["status"]> | ReturnType<CurrentPcb209EmptyStartupChannel["status"]> |
+      ReturnType<CurrentPcb209RatlineStartupChannel["status"]> | ReturnType<CurrentPcb209RatlineContinuationChannel["status"]> | null;
     observationFailure?: CurrentPcbObservationFailure | null;
     lastTerminationObservation?: Readonly<TerminationObservation> | null;
     projectOpeningConsumed: boolean; projectOpeningResult: CurrentPcbDiagnosticOpeningResult | null; modelObservationConsumed: boolean;

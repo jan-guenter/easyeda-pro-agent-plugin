@@ -10,6 +10,7 @@ import { z } from "zod";
 import { CURRENT_PCB_209_STARTUP_TIMING, currentPcbStartupMonotonicMs, currentPcbStartupWindowObservation } from "./current-pcb-209-worker-startup-timing.ts";
 import type { CurrentPcbStartupWindow, CurrentPcbStartupWindowObservation } from "./current-pcb-209-worker-startup-timing.ts";
 import { CURRENT_PCB_209_WORKER_STARTUP_SOURCE } from "./current-pcb-209-worker-startup-profile.ts";
+import { currentPcb209StartupSourceTransfer } from "./current-pcb-209-startup-source-transfer.ts";
 import { CURRENT_PCB_209_WORKER_BOOTSTRAP_ROLES, CURRENT_PCB_209_WORKER_PRELOAD_LOG, currentPcb209PreloadCopyCaller,
   currentPcb209StartupScriptRole, isCurrentPcb209BootstrapTargetUrl, qualifyCurrentPcb209PreloadCopyCreator,
   qualifyCurrentPcb209PreloadCopyPause, qualifyCurrentPcb209StartupScriptSource } from "./current-pcb-209-worker-bootstrap-source.ts";
@@ -77,11 +78,14 @@ type UnhandledEvent = Readonly<{ methodSha256: string; methodBytes: number;
 type EventFailure = Readonly<{ method: EventMethod; reason: EventReason; target?: RejectedTarget; script?: RejectedScript;
   unhandled?: UnhandledEvent; priorFailureCode?: string }>;
 type ResumeOrigin = "normal" | "cleanup";
+type FailureReason = "deadline" | "source-refused" | "request-or-capture-failed";
+type SourceTransfer = Readonly<{ role: StartupRole; limitMs: number; stageRemainingMs: number }>;
 type StartupFailure = Readonly<{ code: string; step: string; bootstrapStage: StartupRole | null;
   window: CurrentPcbStartupWindowObservation | null; sourceQualified: boolean; resumeOrigin: ResumeOrigin | null;
   resumeSeen: boolean; lastCommand: CurrentPcbWorkerStartupCommand["method"] | null; requestCount: number;
   constructionFailure: ReturnType<CurrentPcbWorkerConstructionRunner["status"]>["firstFailure"];
-  constructionProgress: ReturnType<CurrentPcbWorkerConstructionRunner["status"]>["progress"] | null }>;
+  constructionProgress: ReturnType<CurrentPcbWorkerConstructionRunner["status"]>["progress"] | null;
+  reason: FailureReason | null; sourceTransfer: SourceTransfer | null }>;
 type StartupRole = typeof CURRENT_PCB_209_WORKER_BOOTSTRAP_ROLES[number];
 interface BootstrapStage {
   readonly role: StartupRole;
@@ -98,6 +102,12 @@ interface BootstrapStage {
 }
 type Subscriber = Parameters<CurrentPcbWorkerConstructionTransport["subscribe"]>[0];
 function failure(code: string): Error { return new Error(`PCB_WORKER_STARTUP_${code}`); }
+function failureReason(input: unknown): FailureReason {
+  if (input === null || typeof input !== "object" || types.isProxy(input)) { return "request-or-capture-failed"; }
+  const message: unknown = Object.getOwnPropertyDescriptor(input, "message")?.value;
+  if (message === "PCB_WORKER_STARTUP_DEADLINE" || message === "PCB_WORKER_STARTUP_INITIAL_PAUSE_DEADLINE") { return "deadline"; }
+  return message === "PCB209_WORKER_BOOTSTRAP_SOURCE" ? "source-refused" : "request-or-capture-failed";
+}
 function eventReason(error: unknown): EventReason {
   if (error === null || typeof error !== "object" || types.isProxy(error)) { return "MALFORMED_EVENT"; }
   const message: unknown = Object.getOwnPropertyDescriptor(error, "message")?.value;
@@ -161,6 +171,7 @@ class CurrentPcbWorkerStartupTransportCore<Packet extends ConstructionPacket, Ru
   readonly #backgroundWorkers = new Set<string>();
   #firstEventFailure: EventFailure | null = null;
   #lastCommand: CurrentPcbWorkerStartupCommand["method"] | null = null;
+  #lastSourceTransfer: SourceTransfer | null = null;
   #worker: Worker | null = null;
   #expectedProject: z.infer<typeof expectedProjectSchema> | null = null;
   #context: z.infer<typeof contextSchema> | null = null;
@@ -271,14 +282,15 @@ class CurrentPcbWorkerStartupTransportCore<Packet extends ConstructionPacket, Ru
       this.#existingWorkers = existing;
     } catch (error) { this.#poison("EXISTING_WORKERS_INVENTORY"); throw error; }
   }
-  #poison(code: string): void {
+  #poison(code: string, cause?: unknown): void {
     if (this.#failure === null) {
       const stage = this.#bootstrapStages.find(value => value.pauseSeen && !value.resumeSeen);
       this.#firstFailure = Object.freeze({ code, step: this.#step, bootstrapStage: stage?.role ?? null,
         window: stage?.window === null || stage?.window === undefined ? null : currentPcbStartupWindowObservation(stage.window, currentPcbStartupMonotonicMs()),
         sourceQualified: stage?.sourceQualified ?? this.#sourceQualified, resumeOrigin: stage?.resumeOrigin ?? null,
         resumeSeen: stage?.resumeSeen ?? this.#initialResumeSeen, lastCommand: this.#lastCommand, requestCount: this.#requests,
-        constructionFailure: this.#runner?.status().firstFailure ?? null, constructionProgress: this.#runner?.status().progress ?? null });
+        constructionFailure: this.#runner?.status().firstFailure ?? null, constructionProgress: this.#runner?.status().progress ?? null,
+        reason: cause === undefined ? null : failureReason(cause), sourceTransfer: this.#lastSourceTransfer });
       this.#failure = failure(code);
     }
     this.#attached.reject(this.#failure); this.#initialPaused.reject(this.#failure);
@@ -698,8 +710,16 @@ class CurrentPcbWorkerStartupTransportCore<Packet extends ConstructionPacket, Ru
       // Source replies exceed the small event capture bound. Qualify the own
       // Data string before any following awaited owner reproof.
       this.#step = "source-read";
+      const window = stage.window;
+      if (window === null) { throw failure("INITIAL_PAUSE_IDENTITY"); }
+      const remaining = Math.floor(window.limitMs - (currentPcbStartupMonotonicMs() - window.startedAtMs));
+      if (remaining < 1) { this.#poison("INITIAL_PAUSE_DEADLINE"); throw failure("INITIAL_PAUSE_DEADLINE"); }
+      const limit = Math.min(currentPcb209StartupSourceTransfer(stage.role).deadlineMilliseconds, remaining);
+      this.#lastSourceTransfer = Object.freeze({ role: stage.role, limitMs: limit, stageRemainingMs: remaining });
+      // Only209 script delivery gets this source-sized ceiling. The original
+      // Stage watchdog, owner checks, launch caps and pending reply stay live.
       qualifyCurrentPcb209StartupScriptSource(stage.role, await bounded(this.#sendOriginal(
-        { method: "Debugger.getScriptSource", params: { scriptId: script.scriptId }, sessionId: worker.sessionId })));
+        { method: "Debugger.getScriptSource", params: { scriptId: script.scriptId }, sessionId: worker.sessionId }), limit));
       stage.sourceQualified = true; this.#step = "source-owner-after"; await this.#current();
       if (stage.role === "project") { this.#sourceQualified = true; return script; }
       this.#step = "source-resume"; await this.#resumeBootstrapStage(stage);
@@ -749,7 +769,7 @@ class CurrentPcbWorkerStartupTransportCore<Packet extends ConstructionPacket, Ru
       this.#step = "construction-capture";
       const packet = await captured; await this.#current(); return packet;
     } catch (error) {
-      this.#poison("CAPTURE");
+      this.#poison("CAPTURE", error);
       // A failed startup must settle the retained construction listener too.
       // Its lost event unwinds the current bounded request/pause without retry.
       if (this.#constructionCapture !== null) { await observe(bounded(this.#constructionCapture, WAIT_MS)); }

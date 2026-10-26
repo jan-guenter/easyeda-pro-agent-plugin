@@ -127,3 +127,56 @@ and copper completion, complete baseline and saved/reopened evidence. Schematic
 connectivity, other library writers and manufacturing exports remain backlog.
 Direct GET_STR/parser replay, missing-cache fallback and the absent public SDK
 source handler remain concrete omissions.
+
+## Publication and installation result
+
+PR134 merged tested head `a21a5ef3dddfd5b2c45d147c4d583ab1455c6f3d` through
+the protected workflow as main `0c963c287774853e625a7f5ee32a3a49e32a2ed2`.
+Its sole parent is the reviewed base `e2927e88784993f64c8bd6de85f3d4e994f64c1a`;
+the merged tree equals tested tree `2bc42908522b128ce73f4ea083f99b2c74eca1c0`.
+
+Linux CI40359893222 and Windows CI40359893709 passed all11 required jobs on
+the first attempt. The facade had13,136 tests:13,131 passes, five exact expected
+platform skips, and zero failures/cancellations. All424 bridge tests and all12
+added or renamed top-level regressions passed. The CI artifact matched all2,062
+committed plugin files and their644/755 modes. New dependency setup completed
+across all9 Linux jobs: apt10–110 seconds and Bubblewrap1–4 seconds, within the
+five-minute step limits. This is one CI result, not a broader performance claim.
+Independent final review SHA-256:
+`66526dbcad843ed7233274900d0313fa0ceb60b4e9c4a5c8fc2f1a4eb775fe4c`.
+Root acceptance SHA-256:
+`84dc7fa879e77e32e77f47bfbbdd06656684d74830f7b1be91fc2606ee908564`.
+
+One official Git marketplace upgrade installed and enabled
+`0.3.0+codex.20261026164500` from
+`https://github.com/jan-guenter/easyeda-pro-agent-plugin.git` at merged main.
+Both maintained comparisons verified all2,062 files,42 directories and43,987,378
+bytes against committed contents and modes. Installed inventory SHA-256:
+`bcb7abd7f58e6bb6a4c7d3c639805787e2dddcea9272b1e0e7170b693171e924`.
+The synthetic offline probe passed27 queries/29 JSON-RPC requests and closed
+its own child normally. Installation receipt SHA-256:
+`011d5c3409ec1800bd599b77b2eb8950021301f40450505f88bf73779a62e057`.
+These results establish installation, not fresh host admission or connected
+writer validation. No installed cache was patched or host-owned process replaced.
+
+Main's automatic Windows CI40362267463 passed; Linux CI40362269980 was still
+running at this handoff. Exact tested-tree PR CI already qualified publication.
+Check that automatic run on continuation without starting a duplicate campaign.
+
+The next batch should validate assignments, footprint state and footprint source
+under one original owner, then batch the writer's preparation, producer/clock
+binding, one-shot create, closed SQL and fresh saved-read verification. Native
+create's internal GET_STR effects still need qualification. Copied destinations
+need a saved-specific reader because their omitted-user/equal-clock headers do
+not satisfy the generic source-plan profile. Do not loosen that shared reader.
+
+This append-only result is retained locally for the next substantive batch,
+avoiding another plugin version solely for publication metadata. Earlier failures
+and limits remain intact. Production designs remain excluded.
+
+## Continuation result
+
+Automatic main CI40362269980 subsequently passed for
+`0c963c287774853e625a7f5ee32a3a49e32a2ed2`. No duplicate run was requested.
+Fresh runtime admission and the next combined implementation batch are recorded
+in [footprint owned-lifecycle prerequisites](2026-10-26-footprint-owned-lifecycle.md).
