@@ -15,6 +15,8 @@ import type { CurrentPcb209StartupScriptRole } from "../../src/current-pcb-209-w
 import type { CurrentPcbWorkerStartupCommand, CurrentPcbWorkerStartupDependency, CurrentPcbWorkerStartupEvent } from "../../src/current-pcb-worker-startup-contract.ts";
 import type { CurrentPcbWorkerConstructionTransport } from "../../src/current-pcb-worker-construction-contract.ts";
 import type { CurrentPcb209WorkerStartupTransport } from "../../src/current-pcb-worker-startup-transport.ts";
+// oxlint-disable-next-line import/max-dependencies -- The composed capture regression sends the maintained fixed source command through the actual startup transport; no copied command or test-only production port.
+import { currentFootprintCopySourceNativeSample } from "../../src/current-footprint-copy-source-native.ts";
 
 export const BOOTSTRAP_IDENTITY = Object.freeze({ projectUuid: "a".repeat(64), branchUuid: "b".repeat(32), windowTabId: "fixture_tab" });
 export const BOOTSTRAP_URL = "https://client/editor?entry=mgr-project-worker.js&cll=warn&debugOpen=0";
@@ -31,6 +33,8 @@ export interface BootstrapFixtureOptions {
   readonly ownerLossAt?: CurrentPcb209StartupScriptRole;
   readonly loseResumeReply?: number;
   readonly lateSource?: boolean;
+  readonly sourceReply?: (role: CurrentPcb209StartupScriptRole, reply: Readonly<{ scriptSource: string }>) => Promise<unknown>;
+  readonly footprintSourceReply?: () => Promise<unknown>;
   readonly targetUrl?: string;
   readonly logContext?: number;
   readonly duplicateLog?: boolean;
@@ -45,6 +49,7 @@ export async function bootstrapLifecycleFixture(options: BootstrapFixtureOptions
   constructed: () => number;
   emit: (method: string, params: Readonly<Record<string, unknown>>, sessionId?: string) => void;
   settleLateSource: () => void;
+  readFootprintSource: () => Promise<unknown>;
   terminate: () => void;
 }>> {
   const transformed = await transform(await readFile(path, "utf8"), { loader: "ts", format: "cjs", target: "node24" });
@@ -53,10 +58,11 @@ export async function bootstrapLifecycleFixture(options: BootstrapFixtureOptions
   const capture = Promise.withResolvers<Readonly<{ synthetic: true }>>(), lateSource = Promise.withResolvers<unknown>();
   const packet = Object.freeze({ synthetic: true as const });
   let listener: ((event: CurrentPcbWorkerStartupEvent) => void) | null = null;
+  let originalConstruction: CurrentPcbWorkerConstructionTransport | null = null;
   let constructions = 0, current = true, instrumented = false, roleIndex = 0, terminated = false;
   class Construction {
     readonly #transport: CurrentPcbWorkerConstructionTransport;
-    public constructor(transport: CurrentPcbWorkerConstructionTransport) { this.#transport = transport; constructions += 1; }
+    public constructor(transport: CurrentPcbWorkerConstructionTransport) { this.#transport = transport; originalConstruction = transport; constructions += 1; }
     public capture(): Promise<Readonly<{ synthetic: true }>> {
       assert.deepEqual(qualified, ["bootstrap", "preload", "preload-copy-1", "preload-copy-2", "preload-copy-3", "preload-copy-4", "project"]);
       assert.equal(this.#transport.scriptId, "project-script"); return capture.promise;
@@ -149,7 +155,10 @@ export async function bootstrapLifecycleFixture(options: BootstrapFixtureOptions
           options.timing?.beforeSource?.();
           if (options.lateSource === true && roleIndex === 0) { return lateSource.promise; }
           const role = bootstrap.CURRENT_PCB_209_WORKER_BOOTSTRAP_ROLES[roleIndex];
-          return Promise.resolve({ scriptSource: role === "bootstrap" ? bootstrap.CURRENT_PCB_209_WORKER_BOOTSTRAP_SOURCES[0] : `fixture:${String(role)}` });
+          assert.ok(role !== undefined);
+          const scriptSource = role === "bootstrap" ? bootstrap.CURRENT_PCB_209_WORKER_BOOTSTRAP_SOURCES[0] : `fixture:${role}`;
+          assert.ok(typeof scriptSource === "string"); const reply = { scriptSource };
+          return options.sourceReply?.(role, reply) ?? Promise.resolve(reply);
         }
         case "Debugger.removeBreakpoint": {
           if (command.params.breakpointId !== "instrumentation" && options.construction !== undefined) {
@@ -176,6 +185,9 @@ export async function bootstrapLifecycleFixture(options: BootstrapFixtureOptions
         }
         case "Runtime.callFunctionOn": {
           const params = command.params;
+          if ("objectId" in params && params.awaitPromise && options.footprintSourceReply !== undefined) {
+            return options.footprintSourceReply();
+          }
           if (!("objectId" in params) || params.awaitPromise) { throw new Error("Unexpected async command in construction fixture"); }
           if (options.construction !== undefined) { return options.construction.transport.request({ method: command.method, params }); }
           throw new Error(`unexpected fixture command ${command.method}`);
@@ -200,5 +212,8 @@ export async function bootstrapLifecycleFixture(options: BootstrapFixtureOptions
   return Object.freeze({ owner, commands, qualified, constructed: (): number => constructions,
     emit: (method, params, sessionId): void => { emit(method, params, sessionId); },
     settleLateSource: (): void => { lateSource.resolve({ scriptSource: bootstrap.CURRENT_PCB_209_WORKER_BOOTSTRAP_SOURCES[0] }); },
+    readFootprintSource: (): Promise<unknown> => {
+      assert.ok(originalConstruction !== null); return originalConstruction.request(currentFootprintCopySourceNativeSample());
+    },
     terminate: (): void => { terminated = true; stopConstructionEvents?.(); } });
 }

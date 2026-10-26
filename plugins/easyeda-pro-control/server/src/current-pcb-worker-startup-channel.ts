@@ -3,6 +3,7 @@
  * irreversibly hand off its original parent attachment and request counter.
  * This module neither launches EasyEDA nor accepts a parent receipt as authority. */
 import { types } from "node:util";
+import process from "node:process";
 import { z } from "zod";
 import { decodeCurrentPcbDiagnosticJson } from "./current-pcb-diagnostic-json.ts";
 import { captureCurrentPcbStringClockReply } from "./current-pcb-string-clock-reply.ts";
@@ -36,7 +37,11 @@ const parentSchema = z.object({ targetId: token, sessionId: token,
   nextRequestId: z.number().int().min(1).max(CURRENT_PCB_WORKER_STARTUP_REQUEST_LIMIT) }).strict();
 const ackSchema = z.object({ written: z.literal(true) }).strict();
 const MAX_BYTES = 64 * 1024 * 1024, MAX_EVENTS = 4096, MAX_EVENT_BYTES = 8 * 1024 * 1024;
-const MAX_FRAME = 1024 * 1024, MAX_POLLS = 8192, SOURCE_FRAME = 32 * 1024 * 1024;
+const MAX_FRAME = 1024 * 1024, SOURCE_FRAME = 32 * 1024 * 1024;
+const ACTIVE_POLL_MS = 20, IDLE_POLL_MS = 250, LIFETIME_MS = 60 * 60 * 1000;
+const MAX_DATA_POLLS = 8192, MAX_IDLE_POLLS = LIFETIME_MS / IDLE_POLL_MS, MAX_WAIT_POLLS = 8192;
+const monotonicNow = process.hrtime.bigint.bind(process.hrtime);
+const failureCodes = new WeakMap<Error, string>();
 function replyFrameLimit(command: CurrentPcbWorkerStartupCommand): number {
   if (command.method === "Debugger.getScriptSource") { return SOURCE_FRAME; }
   return command.method === "Runtime.callFunctionOn" && "objectId" in command.params && command.params.awaitPromise ?
@@ -54,7 +59,9 @@ interface Pending {
   remoteError: boolean;
   settled: boolean;
 }
-function fail(code: string): Error { return new Error(`PCB_WORKER_STARTUP_CHANNEL_${code}`); }
+function fail(code: string): Error {
+  const error = new Error(`PCB_WORKER_STARTUP_CHANNEL_${code}`); failureCodes.set(error, code); return error;
+}
 function record(value: unknown): value is Record<string, unknown> { return value !== null && typeof value === "object" && !Array.isArray(value); }
 function exact(value: object, keys: readonly string[]): boolean { return Object.keys(value).toSorted().join(",") === [...keys].toSorted().join(","); }
 function cleanupCommand(command: CurrentPcbWorkerStartupCommand): boolean {
@@ -94,6 +101,7 @@ class CurrentPcbWorkerStartupChannelCore {
   readonly #exchange: CurrentPcbWorkerStartupNativeDependency["exchange"];
   readonly #pending = new Map<number, Pending>();
   readonly #workers = new Map<string, string>();
+  readonly #created = monotonicNow();
   #parent: CurrentPcbWorkerStartupParent | null = null;
   #listener: ((event: CurrentPcbWorkerStartupEvent) => void) | null = null;
   #tail: Promise<void> = Promise.resolve();
@@ -104,6 +112,10 @@ class CurrentPcbWorkerStartupChannelCore {
   #events = 0;
   #eventBytes = 0;
   #polls = 0;
+  #dataPolls = 0;
+  #waitPolls = 0;
+  #idlePolls = 0;
+  #nextPollDelay = ACTIVE_POLL_MS;
   #pollTimer: ReturnType<typeof setTimeout> | null = null;
   #pollQueued = false;
   #started = false;
@@ -122,6 +134,7 @@ class CurrentPcbWorkerStartupChannelCore {
   #pcbSourceConsumed = false;
   #pcbObservationConsumed = false;
   #failure: Error | null = null;
+  #failureCode: string | null = null;
   #fatal = false;
 
   public constructor(internal: typeof INTERNAL_PROFILE, native: CurrentPcbWorkerStartupNativeDependency,
@@ -138,10 +151,18 @@ class CurrentPcbWorkerStartupChannelCore {
     }
   }
   public status(): Readonly<{ started: boolean; released: boolean; failed: boolean; fatal: boolean;
-    pendingReplies: number; nextRequestId: number; receivedBytes: number; pollCount: number; attachedWorkers: number }> {
+    pendingReplies: number; nextRequestId: number; receivedBytes: number; pollCount: number; attachedWorkers: number;
+    dataPollCount: number; waitingPollCount: number; idlePollCount: number; failureCode: string | null }> {
     return Object.freeze({ started: this.#started, released: this.#released, failed: this.#failure !== null, fatal: this.#fatal,
       pendingReplies: this.#pending.size, nextRequestId: this.#nextId, receivedBytes: this.#bytes,
-      pollCount: this.#polls, attachedWorkers: this.#workers.size });
+      pollCount: this.#polls, attachedWorkers: this.#workers.size, dataPollCount: this.#dataPolls,
+      waitingPollCount: this.#waitPolls, idlePollCount: this.#idlePolls, failureCode: this.#failureCode });
+  }
+  #withinLifetime(): void {
+    const age = monotonicNow() - this.#created;
+    if (age < 0n || age >= BigInt(LIFETIME_MS) * 1_000_000n) {
+      this.#poison("LIFETIME", true); throw this.#failure ?? fail("LIFETIME");
+    }
   }
   #sameMethods(): void {
     if (members(this.#native).some((value, index) => value !== this.#members[index])) { throw fail("DEPENDENCY_CHANGED"); }
@@ -152,14 +173,18 @@ class CurrentPcbWorkerStartupChannelCore {
   async #currentWithinQueue(): Promise<void> {
     if (this.#released || this.#releaseRequested || this.#terminationVerified || this.#failure !== null) { throw this.#failure ?? fail("RELEASED"); }
     try {
+      this.#withinLifetime();
       this.#sameMethods(); const parent = await this.#parentMethod.call(this.#native); this.#sameMethods();
+      this.#withinLifetime();
       if (parent !== this.#parent || this.#released || this.#releaseRequested || this.#terminationVerified || this.#failure !== null) { throw fail("ORIGINAL_PARENT"); }
     } catch (error) { this.#poison("OWNER"); throw error; }
   }
   public async start(): Promise<CurrentPcbWorkerStartupDependency> {
     if (this.#started) { throw fail("START_CONSUMED"); } this.#started = true;
     await this.#queue(async (): Promise<void> => {
+      this.#withinLifetime();
       this.#sameMethods(); const original = await this.#parentMethod.call(this.#native); this.#sameMethods();
+      this.#withinLifetime();
       if (!record(original) || types.isProxy(original) || !Object.isFrozen(original)) { throw fail("PARENT"); }
       const parent = parentSchema.parse(captureCurrentPcbStringClockReply(original).value);
       if (this.#released || this.#releaseRequested || this.#terminationVerified) { throw fail("START_CLOSING"); }
@@ -179,7 +204,7 @@ class CurrentPcbWorkerStartupChannelCore {
     });
   }
   #poison(code: string, fatal = false): void {
-    this.#failure ??= fail(code); this.#fatal ||= fatal;
+    this.#failure ??= fail(code); this.#failureCode ??= code; this.#fatal ||= fatal;
     for (const pending of this.#pending.values()) {
       if (!pending.allocation && !pending.settled) { pending.settled = true; pending.completion.reject(this.#failure); }
     }
@@ -225,6 +250,7 @@ class CurrentPcbWorkerStartupChannelCore {
     const normalized = this.#wire(raw, 1).command;
     const { id: _id, ...command } = normalized;
     this.#attributed(command);
+    this.#withinLifetime();
     if (this.#fatal || this.#failure !== null && !cleanupCommand(command)) { throw this.#failure ?? fail("FATAL"); }
     if (this.#queuedRequests >= 32) { throw fail("QUEUE_BUDGET"); } this.#queuedRequests += 1;
     const completion = Promise.withResolvers<unknown>();
@@ -233,6 +259,7 @@ class CurrentPcbWorkerStartupChannelCore {
       try {
         if (!cleanupCommand(command)) { await this.#currentWithinQueue(); }
         this.#attributed(command);
+        this.#withinLifetime();
         if (this.#fatal || this.#released || this.#nextId > CURRENT_PCB_WORKER_STARTUP_REQUEST_LIMIT) { throw fail("REQUEST_BUDGET"); }
         const wire = this.#wire(command, this.#nextId); this.#nextId += 1;
         pending = { id: wire.command.id, command, completion,
@@ -283,7 +310,13 @@ class CurrentPcbWorkerStartupChannelCore {
   }
   #schedulePoll(milliseconds: number): void {
     if (this.#released || this.#releaseRequested || this.#terminationVerified || this.#fatal ||
-        this.#listener === null && this.#pending.size === 0 || this.#pollQueued || this.#pollTimer !== null) { return; }
+        this.#listener === null && this.#pending.size === 0 || this.#pollQueued) { return; }
+    if (this.#pollTimer !== null) {
+      if (milliseconds !== 0) { return; }
+      // A new command wakes an idle listener immediately. Keep one serialized
+      // Poll owner and all cumulative counters; only the pending timer changes.
+      clearTimeout(this.#pollTimer); this.#pollTimer = null;
+    }
     this.#pollTimer = setTimeout(() => { this.#pollTimer = null; this.#poll(); }, milliseconds);
   }
   #poll(): void {
@@ -292,15 +325,17 @@ class CurrentPcbWorkerStartupChannelCore {
     const work = this.#queue(async (): Promise<void> => {
       try {
         if (this.#released || this.#releaseRequested || this.#terminationVerified || this.#fatal) { return; }
-        if (this.#polls >= MAX_POLLS) { throw fail("POLL_BUDGET"); } this.#polls += 1;
+        this.#withinLifetime(); this.#polls += 1;
+        const waiting = this.#pending.size > 0 || this.#queuedRequests !== 0 || this.#used !== 0;
         // Native chunks may be64KiB, larger than generic clock text fields.
-        this.#chunk(await this.#exchange.call(this.#native, { action: "poll" }));
-      } catch { this.#poison("POLL", true); }
-      finally { this.#pollQueued = false; this.#schedulePoll(20); }
+        const raw = await this.#exchange.call(this.#native, { action: "poll" });
+        this.#withinLifetime(); this.#chunk(raw, waiting);
+      } catch (error) { this.#poison(error instanceof Error ? failureCodes.get(error) ?? "POLL" : "POLL", true); }
+      finally { this.#pollQueued = false; this.#schedulePoll(this.#nextPollDelay); }
     });
     void observe(work);
   }
-  #chunk(raw: unknown): void {
+  #chunk(raw: unknown, waiting: boolean): void {
     if (!record(raw) || types.isProxy(raw) || Reflect.ownKeys(raw).join(",") !== "bytes" ||
         Object.getPrototypeOf(raw) !== Object.prototype && Object.getPrototypeOf(raw) !== null) { throw fail("CHUNK"); }
     const descriptor = Object.getOwnPropertyDescriptor(raw, "bytes"), text: unknown = descriptor?.value;
@@ -308,6 +343,19 @@ class CurrentPcbWorkerStartupChannelCore {
         !/^(?:[A-Za-z\d+/]{4})*(?:[A-Za-z\d+/]{2}==|[A-Za-z\d+/]{3}=)?$/u.test(text)) { throw fail("CHUNK"); }
     const bytes = Buffer.from(text, "base64");
     if (bytes.length > 65_536 || bytes.toString("base64") !== text) { throw fail("CHUNK"); }
+    // Empty idle checks observe unsolicited events, but consume no data or
+    // Request-wait allowance. Bound all three forms separately and never reset
+    // A count after progress. The nonrenewable monotonic lifetime caps idle time.
+    if (bytes.length > 0) {
+      if (this.#dataPolls >= MAX_DATA_POLLS) { throw fail("DATA_POLL_BUDGET"); }
+      this.#dataPolls += 1; this.#nextPollDelay = ACTIVE_POLL_MS;
+    } else if (waiting) {
+      if (this.#waitPolls >= MAX_WAIT_POLLS) { throw fail("WAIT_POLL_BUDGET"); }
+      this.#waitPolls += 1; this.#nextPollDelay = ACTIVE_POLL_MS;
+    } else {
+      if (this.#idlePolls >= MAX_IDLE_POLLS) { throw fail("IDLE_POLL_BUDGET"); }
+      this.#idlePolls += 1; this.#nextPollDelay = IDLE_POLL_MS;
+    }
     this.#bytes += bytes.length; if (this.#bytes > MAX_BYTES) { throw fail("BYTE_BUDGET"); }
     let start = 0;
     while (start < bytes.length) {

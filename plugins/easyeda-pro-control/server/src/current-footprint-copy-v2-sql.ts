@@ -279,6 +279,16 @@ export async function prepareCurrentFootprintCopyV2SqlPlan(input: Readonly<{ bef
     headEligibility: eligibility, maximumPlaintextBytes, ...savedCapacity, ...capacity, executionAuthorized: false, producerBindingVerified: false });
   plans.set(plan, prepared); return plan;
 }
+
+/** Private identity relation for pre-dispatch envelope reservation. Matching
+ * JSON or hashes cannot adopt a separately prepared copy or checkpoint. */
+export function assertCurrentFootprintCopyV2SqlInputs(plan: CurrentFootprintCopyV2SqlPlan,
+  copyPlan: CurrentFootprintCopyV2Plan, before: Inventory): void {
+  const original = plans.get(plan);
+  need(original !== undefined && original.copy === copyPlan && original.before === before,
+    "original SQL plan, copy plan and checkpoint required");
+  assertCurrentFootprintCopyV2Inventory(copyPlan, before);
+}
 function newRow(owner: SqlTable, id: bigint): SqlRow {
   const matches = owner.rows.filter((row) => integer(field(owner, row, "id")) === id);
   need(matches.length === 1 && matches[0] !== undefined, "exact newly allocated row missing"); return matches[0];

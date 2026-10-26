@@ -58,6 +58,14 @@ function original(plan: CurrentFootprintCopyV2SavedProjection): Retained {
   need(completedCurrentFootprintCopyV2SqlSource(state.sqlPlan, state.effect, state.after) === state.source,
     "original completed SQL relation changed"); return state;
 }
+/** Original SQL relationship only. This does not issue a reopened owner. */
+export function currentFootprintCopyV2SavedTarget(plan: CurrentFootprintCopyV2SavedProjection): Readonly<{
+  projectUuid: string; branchUuid: string; footprintUuid: string;
+}> {
+  const { source } = original(plan);
+  return Object.freeze({ projectUuid: source.copyPlan.source.projectUuid, branchUuid: source.copyPlan.source.branchUuid,
+    footprintUuid: source.append.targetUuid });
+}
 function body(raw: string | undefined): Data {
   need(raw !== undefined, "creation row missing"); const parsed = parseNativeRecords(raw);
   need(parsed.length === 1 && parsed[0]?.body !== null && parsed[0]?.body !== undefined, "one complete creation body required");

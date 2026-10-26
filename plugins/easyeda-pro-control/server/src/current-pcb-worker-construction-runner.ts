@@ -11,7 +11,8 @@ import { CURRENT_FOOTPRINT_COPY_CACHE_FACTORY_CALLS, decodeCurrentFootprintCopyC
   decodeCurrentFootprintCopyCacheFactoryProperties } from "./current-footprint-copy-cache-factory.ts";
 import type { CurrentFootprintSourcePlan } from "./current-footprint-source-plan.ts";
 import { currentFootprintCopySourceCommand } from "./current-footprint-copy-source-command.ts";
-import { CURRENT_FOOTPRINT_COPY_SOURCE_READ_LIMITS, captureCurrentFootprintCopySourceReadReply } from "./current-footprint-copy-source-read.ts";
+import { CURRENT_FOOTPRINT_COPY_SOURCE_READ_LIMITS } from "./current-footprint-copy-source-read.ts";
+import { CurrentFootprintSourceReplyCapture } from "./current-footprint-source-reply-capture.ts";
 import type { CurrentFootprintCopySourceReadRequest } from "./current-footprint-copy-source-read.ts";
 import { CurrentFootprintSourceReadRunner } from "./current-footprint-source-read-runner.ts";
 import type { CurrentFootprintSourceReadPacket } from "./current-footprint-source-read-runner.ts";
@@ -205,6 +206,7 @@ class CurrentPcbWorkerConstructionCore<P extends PacketProfile> {
   #footprintSourcePlan: CurrentFootprintSourcePlan | null = null;
   #footprintSourcePacket: CurrentFootprintSourceReadPacket | null = null;
   readonly #footprintSourceReplies: unknown[] = [];
+  readonly #footprintSourceCapture = new CurrentFootprintSourceReplyCapture();
   #channelAttempted = false;
   #channel: CurrentPcbWorkerStartupChannelObservationRunner | null = null;
   #channelPacket: CurrentPcbWorkerStartupChannelPacket | null = null;
@@ -676,7 +678,8 @@ class CurrentPcbWorkerConstructionCore<P extends PacketProfile> {
   public retainedFootprintSource(): Readonly<Record<string, unknown>> | null {
     return this.#footprintSourceAttempted ? Object.freeze({ attempted: true, completed: this.#footprintSourcePacket !== null,
       status: this.#footprintSourceRunner?.status() ?? null, replies: this.#footprintSourceRunner?.retainedReplies() ?? [],
-      originalSourceReplies: Object.freeze([...this.#footprintSourceReplies]), methodObservation: this.retainedFootprintState() }) : null;
+      originalSourceReplies: Object.freeze([...this.#footprintSourceReplies]), firstRejectedSourceReply: this.#footprintSourceCapture.firstRejected(),
+      methodObservation: this.retainedFootprintState() }) : null;
   }
   /** Exactly61 worker requests after the already published state observation.
    * The lifecycle reserves the shared parent/worker budget before its intent.
@@ -704,7 +707,7 @@ class CurrentPcbWorkerConstructionCore<P extends PacketProfile> {
           const command = currentFootprintCopySourceCommand({ project: original.project, bus: original.channelBus,
             manager: this.#footprintManager, consistency: this.#footprintConsistency,
             constructors: this.#footprintConstructors, methods: this.#footprintMethods }, selected);
-          const raw = captureCurrentFootprintCopySourceReadReply(await bounded(this.#sendOriginal(command), CURRENT_FOOTPRINT_COPY_SOURCE_READ_LIMITS.hostTimeoutMs));
+          const raw = this.#footprintSourceCapture.capture(await bounded(this.#sendOriginal(command), CURRENT_FOOTPRINT_COPY_SOURCE_READ_LIMITS.hostTimeoutMs));
           this.#footprintSourceReplies.push(raw); await this.#current();
           await this.requireCurrentAssignments(packet, assignments); await this.#requireFootprintMethods(original); return raw;
         },

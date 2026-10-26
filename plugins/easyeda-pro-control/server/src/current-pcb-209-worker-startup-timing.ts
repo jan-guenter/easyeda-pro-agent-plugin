@@ -1,6 +1,8 @@
-/** Fixed 3.2.209 serial await graph, not caller-selectable timeouts. Each owner
- * proof and request keeps its original two-second ceiling. The pause budget
- * includes acknowledgments which can arrive after the next paused event. */
+/** Fixed 3.2.209 serial await graph, not caller-selectable timeouts. Small
+ * commands and owner proofs keep their original two-second ceilings. The
+ * source-transfer leaf has separate byte-derived delivery allowances inside
+ * these unchanged stage/launch caps; not every subordinate maximum is promised
+ * to fit. Pause caps include acknowledgments arriving after the next pause. */
 import { performance } from "node:perf_hooks";
 
 const REQUEST_MS = 2000;
@@ -30,7 +32,7 @@ const captureCompletionMs = 2 * OWNER_MS;
 const captureMs = attachmentAndPauseWaitMs + workerSetupMs + sourceCaptureMs + constructionCaptureMs + captureCompletionMs;
 const ordinaryOpeningMs = 45_000;
 // Preserve the existing 70s host versus 45s native reply allowance. This is
-// Delivery grace, not an extension of any 2s request or owner deadline.
+// Delivery grace, not an extension of small-command or owner deadlines.
 const openingReplyGraceMs = 70_000 - ordinaryOpeningMs;
 const openingOwnerMs = 2 * OWNER_MS;
 const openingSendMs = 2 * openingOwnerMs + REQUEST_MS;
