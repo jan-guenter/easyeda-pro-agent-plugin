@@ -104,6 +104,11 @@ order. Missing cache entries refuse without network fallback or parser replay.
 This is a native task equivalent,
 with no GET_STR dispatch, copy/delete or saved-state claim. It needs 65 remaining
 normal requests and preserves the original cleanup reserve.
+The separate [footprint preparation purpose](current-footprint-copy-preparation.md)
+mounts producer/actor bindings, 53 dependency functions and initialized UI/manager
+route readers under a distinct launch budget. It does not dispatch a copy or
+Save. Reciprocal worker peers, asynchronous completion, native clock transport
+and saved-result proof remain open; its offline checks are not live validation.
 The startup route retains the original
 native process, Job, pipe and fixed256-command budget. These observations do
 not establish continuous publisher ownership, peer containment, server clock

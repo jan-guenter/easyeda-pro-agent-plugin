@@ -710,6 +710,7 @@ function pairIdentity(
       esbuildVersion,
       format: "esm",
       legalComments: "eof",
+      minifyWhitespace: true,
       platform: "node",
       publicationSchema: PUBLICATION_SCHEMA,
       sourcemap: false,
@@ -2159,6 +2160,9 @@ export async function buildServer(
     format: "esm",
     legalComments: "eof",
     metafile: true,
+    // Keep identifiers and syntax intact. Only generated formatting is compacted;
+    // Embedded reviewed program strings and the admission banner retain their bytes.
+    minifyWhitespace: true,
     nodePaths: [join(pluginRoot, "node_modules")],
     outdir: outputRoot,
     outExtension: { ".js": ".mjs" },

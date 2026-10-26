@@ -1,10 +1,14 @@
 import { readFile, writeFile } from "node:fs/promises";
+import { currentFootprintCopyManagerRouteNativeSource } from "../server/src/current-footprint-copy-manager-route-native.ts";
+import { currentFootprintCopyUiNativeSource } from "../server/src/current-footprint-copy-ui-native.ts";
+import { CURRENT_FOOTPRINT_COPY_PREPARATION_PROFILE as footprint } from "../server/src/current-footprint-copy-preparation-profile.ts";
 import { currentPcbWorkerStartupNativeSource } from "../server/src/current-pcb-worker-startup-native.ts";
 import { currentPcb209EmptyNativeSource } from "../server/src/current-pcb-209-empty-native.ts";
 import { currentPcb209RatlineNativeSource } from "../server/src/current-pcb-209-ratline-native.ts";
 import { CURRENT_PCB_209_RATLINE_NATIVE_PROFILE as ratline } from "../server/src/current-pcb-209-ratline-budget.ts";
 import { CURRENT_PCB_209_RATLINE_INSTALLATION_PROFILE as installation } from "../server/src/current-pcb-209-ratline-installation-profile.ts";
 import { currentPcb209RatlineContinuationNativeSource } from "../server/src/current-pcb-209-ratline-continuation-native.ts";
+// oxlint-disable-next-line import/max-dependencies -- This generator assembles five independently bounded protocol families and their exact limit tables.
 import { CURRENT_PCB_209_RATLINE_CONTINUATION_NATIVE_PROFILE as continuation } from "../server/src/current-pcb-209-ratline-continuation-budget.ts";
 
 const quote = (text: string): string => `@"${text.replaceAll('"', '""')}"`;
@@ -59,7 +63,8 @@ async function main(): Promise<void> {
   for (const [name, generated] of [["WORKER STARTUP", currentPcbWorkerStartupNativeSource()],
     ["WORKER STARTUP EMPTY209", currentPcb209EmptyNativeSource()],
     ["WORKER STARTUP RATLINE209", ratlineSource()],
-    ["WORKER STARTUP RATLINE CONTINUATION209", continuationSource()]] as const) {
+    ["WORKER STARTUP RATLINE CONTINUATION209", continuationSource()],
+    ["FOOTPRINT COPY PREPARATION", footprintSource()]] as const) {
     const begin = `// BEGIN GENERATED ${name} PROTOCOL`, end = `// END GENERATED ${name} PROTOCOL`;
     const start = next.indexOf(begin), stop = next.indexOf(end);
     if (start === -1 || stop < start || next.includes(begin, start + begin.length) || next.includes(end, stop + end.length)) {
@@ -79,6 +84,11 @@ function continuationSource(): string {
   return `// BEGIN GENERATED WORKER STARTUP RATLINE CONTINUATION209 PROTOCOL\n${currentPcb209RatlineContinuationNativeSource()}\n` +
     `public static class EasyedaRatlineContinuation209Limits {\n${Object.entries(limits).map(([key, value]) => `  public const long ${key}=${String(value)}L;`).join("\n")}\n}\n` +
     "// END GENERATED WORKER STARTUP RATLINE CONTINUATION209 PROTOCOL";
+}
+function footprintSource(): string {
+  return `// BEGIN GENERATED FOOTPRINT COPY PREPARATION PROTOCOL\n${currentFootprintCopyUiNativeSource()}\n${currentFootprintCopyManagerRouteNativeSource()}\n` +
+    `public static class EasyedaFootprintPreparationLimits { public const int Requests=${String(footprint.requestLimit)}; public const int NormalRequests=${String(footprint.normalRequestLimit)}; public const long NormalMilliseconds=${String(footprint.normalMilliseconds)}L; public const long TotalMilliseconds=${String(footprint.normalMilliseconds + footprint.cleanupMilliseconds)}L; }\n` +
+    "// END GENERATED FOOTPRINT COPY PREPARATION PROTOCOL";
 }
 // oxlint-disable-next-line node/no-top-level-await -- ESM-only build command; never loaded by require().
 await main();

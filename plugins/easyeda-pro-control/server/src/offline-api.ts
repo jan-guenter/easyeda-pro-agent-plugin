@@ -1,4 +1,5 @@
 import { z } from "zod";
+import { queryCurrentFootprintCopyPreparation, validateCurrentFootprintCopyPreparationArguments } from "./current-footprint-copy-preparation-validation.ts";
 import { extensionApiCatalogInputSchema, queryExtensionApiCatalog } from "./extension-api-catalog.ts";
 import { extensionApiCoverageInputSchema, queryExtensionApiCoverage } from "./extension-api-coverage.ts";
 import { publicSdkCatalogQuerySchema, publicSdkValidationQuerySchema, queryPublicSdkReads, validatePublicSdkArguments } from "./public-sdk-catalog.ts";
@@ -7,8 +8,8 @@ import { querySdkMathCalculations, sdkMathCatalogQuerySchema, validateSdkMathArg
 import { querySdkSystemMethods, sdkSystemCatalogQuerySchema, validateSdkSystemArguments } from "./sdk-system.ts";
 import { querySdkPublicReadersMethods, sdkPublicReadersCatalogQuerySchema, validateSdkPublicReadersArguments } from "./sdk-public-readers.ts";
 import { netlistFilesCatalogQuerySchema, queryNetlistFiles, validateNetlistFilesArguments } from "./netlist-files.ts";
-import { managedLibraryFilesCatalogQuerySchema, queryManagedLibraryFiles, validateManagedLibraryFilesArguments } from "./managed-library-files.ts";
 // oxlint-disable-next-line import/max-dependencies -- This fixed offline router imports each capability's own validator; an intermediary would only hide those dependencies.
+import { managedLibraryFilesCatalogQuerySchema, queryManagedLibraryFiles, validateManagedLibraryFilesArguments } from "./managed-library-files.ts";
 import { publicSystemFootprintQuerySchema, queryPublicSystemFootprint, validatePublicSystemFootprintArguments } from "./public-system-footprint.ts";
 import { publicSystemCatalogQuerySchema, queryPublicSystemCatalog, validatePublicSystemCatalogArguments } from "./public-system-catalog.ts";
 import { queryStartupExtensions, startupExtensionsQuerySchema, validateStartupExtensionsArguments } from "./startup-extensions.ts";
@@ -120,6 +121,8 @@ export const apiRequestSchema = z.discriminatedUnion("action", [
   z.object({ action: z.literal("pcb-diagnostic-validation-validate"), query: publicSdkValidationQuerySchema }).strict(),
   z.object({ action: z.literal("pcb209-opening"), query: currentPcbDiagnosticValidationQuerySchema.optional() }).strict(),
   z.object({ action: z.literal("pcb209-opening-validate"), query: publicSdkValidationQuerySchema }).strict(),
+  z.object({ action: z.literal("footprint-copy-preparation"), query: currentPcbDiagnosticValidationQuerySchema.optional() }).strict(),
+  z.object({ action: z.literal("footprint-copy-preparation-validate"), query: publicSdkValidationQuerySchema }).strict(),
   z.object({ action: z.literal("pcb209-ratline-continuation"), query: currentPcbDiagnosticValidationQuerySchema.optional() }).strict(),
   z.object({ action: z.literal("pcb209-ratline-continuation-validate"), query: publicSdkValidationQuerySchema }).strict(),
   z.object({ action: z.literal("pcb209-ratline-held-import"), query: currentPcbDiagnosticValidationQuerySchema.optional() }).strict(),
@@ -162,6 +165,8 @@ export function queryOfflineApi(request: ApiRequest): { offline: true; result: u
     case "pcb-diagnostic-validation-validate": { result = validateCurrentPcbDiagnosticValidationArguments(request.query.request); break; }
     case "pcb209-opening": { result = queryCurrentPcb209Opening(request.query ?? {}); break; }
     case "pcb209-opening-validate": { result = validateCurrentPcb209OpeningArguments(request.query.request); break; }
+    case "footprint-copy-preparation": { result = queryCurrentFootprintCopyPreparation(request.query?.includeSchemas ?? false); break; }
+    case "footprint-copy-preparation-validate": { result = validateCurrentFootprintCopyPreparationArguments(request.query.request); break; }
     case "pcb209-ratline-continuation": { result = queryCurrentPcb209RatlineContinuationValidation(request.query?.includeSchemas ?? false); break; }
     case "pcb209-ratline-continuation-validate": { result = validateCurrentPcb209RatlineContinuationArguments(request.query.request); break; }
     case "pcb209-ratline-held-import": { result = queryCurrentPcb209RatlineStartupValidation(request.query?.includeSchemas ?? false); break; }

@@ -1300,6 +1300,30 @@ void describe("bundled runtime license attribution", () => {
     );
   });
 
+  void test("whitespace-only bundles preserve program text, callable names and the exact admission banner", async () => {
+    const { root } = await buildFixture("whitespace-program-identity");
+    const program = 'function reviewedProgram(){\n  return " a  b ";\n}\n// literal spacing stays exact\n';
+    const source = `const embeddedProgram = ${JSON.stringify(program)};
+function ReviewedCallable(value: number) {
+  return value + 1;
+}
+class ReviewedClass {}
+globalThis.__easyedaBuildFixture = JSON.stringify({ program: embeddedProgram, callable: ReviewedCallable.name, constructor: ReviewedClass.name, value: ReviewedCallable(4) });
+`;
+    await writeFile(join(root, "server", "src", "index.ts"), source, "utf8");
+    await buildServer(root);
+    const [main, supervisor] = await readOutputPair(root);
+    const marker = /const __easyedaBundlePairId = "([a-f0-9]{64})";/u;
+    const pairId = marker.exec(main.toString("utf8"))?.[1];
+    assert.ok(pairId !== undefined);
+    assert.equal(marker.exec(supervisor.toString("utf8"))?.[1], pairId);
+    const bundleUrl = pathToFileURL(join(root, "server", "dist", "server.mjs")).href;
+    const result = await runChild(process.execPath, ["--input-type=module", "-e",
+      `await import(${JSON.stringify(bundleUrl)}); process.stdout.write(globalThis.__easyedaBuildFixture);`]);
+    assert.equal(result.code, 0, result.stderr);
+    assert.deepEqual(JSON.parse(result.stdout), { program, callable: "ReviewedCallable", constructor: "ReviewedClass", value: 5 });
+  });
+
   void test("runtime pair identity includes raw output and build configuration", async () => {
     const first = await buildFixture("same-pair-source");
     const second = await buildFixture("same-pair-source");

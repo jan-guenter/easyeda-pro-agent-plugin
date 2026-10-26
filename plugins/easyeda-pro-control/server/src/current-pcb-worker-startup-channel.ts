@@ -1,4 +1,5 @@
 /* oxlint-disable eslint/max-classes-per-file -- The private core stays with the fixed-generation wrappers; exporting an injectable wire selector would weaken the native boundary. */
+/* oxlint-disable import/max-dependencies -- The shared original channel joins fixed legacy,209 and copy-purpose grammars with one reply/event owner. */
 /** Private original-native-channel adapter. The eventual retained owner must
  * irreversibly hand off its original parent attachment and request counter.
  * This module neither launches EasyEDA nor accepts a parent receipt as authority. */
@@ -8,7 +9,12 @@ import { z } from "zod";
 import { decodeCurrentPcbDiagnosticJson } from "./current-pcb-diagnostic-json.ts";
 import { captureCurrentPcbStringClockReply } from "./current-pcb-string-clock-reply.ts";
 import { CURRENT_FOOTPRINT_COPY_SOURCE_FRAME_BYTES } from "./current-footprint-copy-source-command.ts";
-import { CURRENT_PCB_WORKER_STARTUP_REQUEST_LIMIT, currentPcb209WorkerStartupWire, currentPcbWorkerStartupWire } from "./current-pcb-worker-startup-wire.ts";
+import { CURRENT_PCB_WORKER_STARTUP_REQUEST_LIMIT, currentFootprintCopyPreparationWire, currentPcb209WorkerStartupWire, currentPcbWorkerStartupWire } from "./current-pcb-worker-startup-wire.ts";
+import { currentFootprintCopyManagerRouteWire } from "./current-footprint-copy-manager-route-wire.ts";
+import type { CurrentFootprintCopyManagerRouteCommand } from "./current-footprint-copy-manager-route-command.ts";
+import { currentFootprintCopyUiWire } from "./current-footprint-copy-ui-wire.ts";
+import type { CurrentFootprintCopyUiCommand } from "./current-footprint-copy-ui-command.ts";
+import { CURRENT_FOOTPRINT_COPY_PREPARATION_PROFILE } from "./current-footprint-copy-preparation-profile.ts";
 import type { CurrentPcbWorkerStartupCommand, CurrentPcbWorkerStartupDependency, CurrentPcbWorkerStartupEvent } from "./current-pcb-worker-startup-contract.ts";
 import { CURRENT_PCB_DIAGNOSTIC_PCB_OPENING_FUNCTION } from "./current-pcb-diagnostic-pcb-opening.ts";
 
@@ -32,6 +38,11 @@ export interface CurrentPcbWorkerStartupPriorUsage {
   readonly eventBytes: number;
 }
 const INTERNAL_PROFILE = Symbol("fixed-worker-startup-channel-wire");
+const footprintDependencies = new WeakSet<CurrentPcbWorkerStartupDependency>();
+/** This marker is issued only by the separate channel, never by receipt data. */
+export function isOriginalFootprintPreparationDependency(dependency: CurrentPcbWorkerStartupDependency): boolean {
+  return footprintDependencies.has(dependency);
+}
 const token = z.string().min(1).max(128).regex(/^[A-Za-z\d_.:-]+$/u);
 const parentSchema = z.object({ targetId: token, sessionId: token,
   nextRequestId: z.number().int().min(1).max(CURRENT_PCB_WORKER_STARTUP_REQUEST_LIMIT) }).strict();
@@ -42,14 +53,15 @@ const ACTIVE_POLL_MS = 20, IDLE_POLL_MS = 250, LIFETIME_MS = 60 * 60 * 1000;
 const MAX_DATA_POLLS = 8192, MAX_IDLE_POLLS = LIFETIME_MS / IDLE_POLL_MS, MAX_WAIT_POLLS = 8192;
 const monotonicNow = process.hrtime.bigint.bind(process.hrtime);
 const failureCodes = new WeakMap<Error, string>();
-function replyFrameLimit(command: CurrentPcbWorkerStartupCommand): number {
+type ChannelCommand = CurrentPcbWorkerStartupCommand | CurrentFootprintCopyUiCommand | CurrentFootprintCopyManagerRouteCommand;
+function replyFrameLimit(command: ChannelCommand): number {
   if (command.method === "Debugger.getScriptSource") { return SOURCE_FRAME; }
   return command.method === "Runtime.callFunctionOn" && "objectId" in command.params && command.params.awaitPromise ?
     CURRENT_FOOTPRINT_COPY_SOURCE_FRAME_BYTES : MAX_FRAME;
 }
 interface Pending {
   readonly id: number;
-  readonly command: CurrentPcbWorkerStartupCommand;
+  readonly command: ChannelCommand;
   readonly completion: PromiseWithResolvers<unknown>;
   readonly allocation: boolean;
   written: boolean;
@@ -64,7 +76,7 @@ function fail(code: string): Error {
 }
 function record(value: unknown): value is Record<string, unknown> { return value !== null && typeof value === "object" && !Array.isArray(value); }
 function exact(value: object, keys: readonly string[]): boolean { return Object.keys(value).toSorted().join(",") === [...keys].toSorted().join(","); }
-function cleanupCommand(command: CurrentPcbWorkerStartupCommand): boolean {
+function cleanupCommand(command: ChannelCommand): boolean {
   return command.method === "Debugger.removeBreakpoint" || command.method === "Debugger.resume" ||
     command.method === "Runtime.runIfWaitingForDebugger" || command.method === "Runtime.releaseObjectGroup";
 }
@@ -93,6 +105,8 @@ async function observe(work: Promise<unknown>): Promise<void> {
 
 class CurrentPcbWorkerStartupChannelCore {
   readonly #wire: typeof currentPcbWorkerStartupWire;
+  readonly #footprintPurpose: boolean;
+  readonly #requestLimit: number;
   readonly #native: CurrentPcbWorkerStartupNativeDependency;
   readonly #members: readonly unknown[];
   readonly #parentMethod: CurrentPcbWorkerStartupNativeDependency["requireOriginalParent"];
@@ -129,6 +143,11 @@ class CurrentPcbWorkerStartupChannelCore {
   #openingContext: string | null = null;
   #openingConsumed = false;
   #actorReads = 0;
+  #footprintUiStarted = false;
+  #footprintUiReleased = false;
+  #footprintManagerStarted = false;
+  #footprintManagerSourceConsumed = false;
+  #footprintManagerReleased = false;
   #pcbPreflightConsumed = false;
   #pcbOpeningConsumed = false;
   #pcbSourceConsumed = false;
@@ -140,6 +159,8 @@ class CurrentPcbWorkerStartupChannelCore {
   public constructor(internal: typeof INTERNAL_PROFILE, native: CurrentPcbWorkerStartupNativeDependency,
     wire: typeof currentPcbWorkerStartupWire, priorUsage?: CurrentPcbWorkerStartupPriorUsage) {
     if (internal !== INTERNAL_PROFILE) { throw fail("INTERNAL_PROFILE"); } this.#wire = wire;
+    this.#footprintPurpose = wire === currentFootprintCopyPreparationWire;
+    this.#requestLimit = this.#footprintPurpose ? CURRENT_FOOTPRINT_COPY_PREPARATION_PROFILE.requestLimit : CURRENT_PCB_WORKER_STARTUP_REQUEST_LIMIT;
     this.#members = members(native); this.#native = native;
     this.#parentMethod = native.requireOriginalParent; this.#terminate = native.assertOriginalTermination;
     this.#parentEvent = native.observeOriginalParentEvent; this.#exchange = native.exchange;
@@ -158,11 +179,16 @@ class CurrentPcbWorkerStartupChannelCore {
       pollCount: this.#polls, attachedWorkers: this.#workers.size, dataPollCount: this.#dataPolls,
       waitingPollCount: this.#waitPolls, idlePollCount: this.#idlePolls, failureCode: this.#failureCode });
   }
-  #withinLifetime(): void {
+  #withinLifetime(cleanup = false): void {
     const age = monotonicNow() - this.#created;
-    if (age < 0n || age >= BigInt(LIFETIME_MS) * 1_000_000n) {
+    const normal = this.#footprintPurpose ? CURRENT_FOOTPRINT_COPY_PREPARATION_PROFILE.normalMilliseconds : LIFETIME_MS;
+    const total = normal + (this.#footprintPurpose ? CURRENT_FOOTPRINT_COPY_PREPARATION_PROFILE.cleanupMilliseconds : 0);
+    if (age < 0n || age >= BigInt(total) * 1_000_000n) {
       this.#poison("LIFETIME", true); throw this.#failure ?? fail("LIFETIME");
     }
+    // Reject new normal work without poisoning the retained pipe. Original
+    // Cleanup and reply polling remain available during the sealed reserve.
+    if (!cleanup && age >= BigInt(normal) * 1_000_000n) { throw fail("NORMAL_LIFETIME"); }
   }
   #sameMethods(): void {
     if (members(this.#native).some((value, index) => value !== this.#members[index])) { throw fail("DEPENDENCY_CHANGED"); }
@@ -177,7 +203,10 @@ class CurrentPcbWorkerStartupChannelCore {
       this.#sameMethods(); const parent = await this.#parentMethod.call(this.#native); this.#sameMethods();
       this.#withinLifetime();
       if (parent !== this.#parent || this.#released || this.#releaseRequested || this.#terminationVerified || this.#failure !== null) { throw fail("ORIGINAL_PARENT"); }
-    } catch (error) { this.#poison("OWNER"); throw error; }
+    } catch (error) {
+      if (!(error instanceof Error && failureCodes.get(error) === "NORMAL_LIFETIME")) { this.#poison("OWNER"); }
+      throw error;
+    }
   }
   public async start(): Promise<CurrentPcbWorkerStartupDependency> {
     if (this.#started) { throw fail("START_CONSUMED"); } this.#started = true;
@@ -186,13 +215,14 @@ class CurrentPcbWorkerStartupChannelCore {
       this.#sameMethods(); const original = await this.#parentMethod.call(this.#native); this.#sameMethods();
       this.#withinLifetime();
       if (!record(original) || types.isProxy(original) || !Object.isFrozen(original)) { throw fail("PARENT"); }
-      const parent = parentSchema.parse(captureCurrentPcbStringClockReply(original).value);
+      const parent = (this.#footprintPurpose ? parentSchema.extend({ nextRequestId: z.number().int().min(1).max(this.#requestLimit) }) : parentSchema)
+        .parse(captureCurrentPcbStringClockReply(original).value);
       if (this.#released || this.#releaseRequested || this.#terminationVerified) { throw fail("START_CLOSING"); }
       this.#parent = original; this.#nextId = parent.nextRequestId;
     });
     const parent = this.#parent;
     if (parent === null || this.#released || this.#releaseRequested || this.#terminationVerified) { throw fail("START_CLOSING"); }
-    return Object.freeze({ parentTargetId: parent.targetId, parentSessionId: parent.sessionId,
+    const dependency = Object.freeze({ parentTargetId: parent.targetId, parentSessionId: parent.sessionId,
       assertOriginalOwner: (): Promise<void> => this.#current(),
       assertOriginalTermination: (): Promise<void> => this.#originalTermination(),
       request: (command: CurrentPcbWorkerStartupCommand): Promise<unknown> => this.#request(command),
@@ -202,6 +232,8 @@ class CurrentPcbWorkerStartupChannelCore {
         return (): void => { if (this.#listener === listener) { this.#listener = null; } };
       },
     });
+    if (this.#footprintPurpose) { footprintDependencies.add(dependency); }
+    return dependency;
   }
   #poison(code: string, fatal = false): void {
     this.#failure ??= fail(code); this.#failureCode ??= code; this.#fatal ||= fatal;
@@ -214,8 +246,23 @@ class CurrentPcbWorkerStartupChannelCore {
     const next = (async (): Promise<void> => { await previous; await work(); })();
     this.#tail = observe(next); return next;
   }
-  #attributed(command: CurrentPcbWorkerStartupCommand): void {
+  #attributed(command: ChannelCommand, manager = false): void {
     if (this.#parent === null || this.#released || this.#releaseRequested || this.#terminationVerified) { throw fail("NOT_STARTED"); }
+    if (manager) {
+      if (!("phase" in command) || !this.#footprintPurpose || !this.#openingConsumed || !this.#footprintUiStarted || this.#footprintUiReleased && command.phase !== "release" ||
+          command.sessionId !== this.#parent.sessionId || this.#footprintManagerReleased ||
+          (command.phase === "initial" ? this.#footprintManagerStarted : !this.#footprintManagerStarted) ||
+          command.phase === "source" && this.#footprintManagerSourceConsumed) { throw fail("FOOTPRINT_MANAGER_ROUTE_SEQUENCE"); }
+      return;
+    }
+    if ("phase" in command) {
+      if (!this.#footprintPurpose || !this.#openingConsumed || command.sessionId !== this.#parent.sessionId || this.#footprintUiReleased ||
+          (command.phase === "initial" ? this.#footprintUiStarted : !this.#footprintUiStarted)) { throw fail("FOOTPRINT_UI_SEQUENCE"); }
+      if (command.method === "Runtime.callFunctionOn" && "uniqueContextId" in command.params && command.params.uniqueContextId !== this.#openingContext) {
+        throw fail("FOOTPRINT_UI_CONTEXT");
+      }
+      return;
+    }
     if (command.method === "Target.setAutoAttach") {
       if (command.sessionId !== this.#parent.sessionId || this.#attachIssued) { throw fail("ATTACHMENT"); }
       return;
@@ -246,11 +293,16 @@ class CurrentPcbWorkerStartupChannelCore {
     if (!this.#workers.has(command.sessionId)) { throw fail("WORKER_SESSION"); }
   }
   // oxlint-disable-next-line eslint/require-await -- Return the original retained completion, with synchronous guards converted to rejection.
-  async #request(raw: CurrentPcbWorkerStartupCommand): Promise<unknown> {
-    const normalized = this.#wire(raw, 1).command;
+  async #request(raw: ChannelCommand, manager = false): Promise<unknown> {
+    // Select the fixed grammar only after rejecting prototype/proxy traps.
+    if (!record(raw) || types.isProxy(raw) ||
+      Object.getPrototypeOf(raw) !== Object.prototype && Object.getPrototypeOf(raw) !== null) { throw fail("COMMAND"); }
+    if ("phase" in raw && !this.#footprintPurpose) { throw fail("FOOTPRINT_UI_PURPOSE"); }
+    const copyWire = manager ? currentFootprintCopyManagerRouteWire : currentFootprintCopyUiWire;
+    const normalized = ("phase" in raw ? copyWire(raw, 1) : this.#wire(raw, 1)).command;
     const { id: _id, ...command } = normalized;
-    this.#attributed(command);
-    this.#withinLifetime();
+    this.#attributed(command, manager);
+    this.#withinLifetime(cleanupCommand(command));
     if (this.#fatal || this.#failure !== null && !cleanupCommand(command)) { throw this.#failure ?? fail("FATAL"); }
     if (this.#queuedRequests >= 32) { throw fail("QUEUE_BUDGET"); } this.#queuedRequests += 1;
     const completion = Promise.withResolvers<unknown>();
@@ -258,17 +310,26 @@ class CurrentPcbWorkerStartupChannelCore {
       let pending: Pending | null = null;
       try {
         if (!cleanupCommand(command)) { await this.#currentWithinQueue(); }
-        this.#attributed(command);
-        this.#withinLifetime();
-        if (this.#fatal || this.#released || this.#nextId > CURRENT_PCB_WORKER_STARTUP_REQUEST_LIMIT) { throw fail("REQUEST_BUDGET"); }
-        const wire = this.#wire(command, this.#nextId); this.#nextId += 1;
+        this.#attributed(command, manager);
+        this.#withinLifetime(cleanupCommand(command));
+        const limit = this.#footprintPurpose && !cleanupCommand(command) ? CURRENT_FOOTPRINT_COPY_PREPARATION_PROFILE.normalRequestLimit : this.#requestLimit;
+        if (this.#fatal || this.#released || this.#nextId > limit) { throw fail("REQUEST_BUDGET"); }
+        const wire = "phase" in command ? copyWire(command, this.#nextId) : this.#wire(command, this.#nextId); this.#nextId += 1;
         pending = { id: wire.command.id, command, completion,
           allocation: command.method === "Debugger.setBreakpoint" || command.method === "Debugger.setInstrumentationBreakpoint",
           written: false, writeFailed: false, replied: false, result: null, remoteError: false, settled: false };
         this.#pending.set(pending.id, pending);
         if (command.method === "Target.setAutoAttach") { this.#attachIssued = true; }
         if (command.method === "Debugger.getScriptSource" && "pcbPhase" in command) { this.#pcbSourceConsumed = true; }
-        if (command.method === "Runtime.callFunctionOn" && "uniqueContextId" in command.params) {
+        if (manager && "phase" in command) {
+          if (command.phase === "initial") { this.#footprintManagerStarted = true; }
+          if (command.phase === "source") { this.#footprintManagerSourceConsumed = true; }
+          if (command.phase === "release") { this.#footprintManagerReleased = true; }
+        } else if ("phase" in command) {
+          if (command.phase === "initial") { this.#footprintUiStarted = true; }
+          if (command.phase === "release") { this.#footprintUiReleased = true; }
+        }
+        if (!("phase" in command) && command.method === "Runtime.callFunctionOn" && "uniqueContextId" in command.params) {
           if (command.params.arguments.length === 0) { this.#actorReads += 1; }
           else if (command.params.functionDeclaration === CURRENT_PCB_DIAGNOSTIC_PCB_OPENING_FUNCTION) {
             if (command.params.arguments[1].value === "preflight") { this.#pcbPreflightConsumed = true; }
@@ -283,12 +344,22 @@ class CurrentPcbWorkerStartupChannelCore {
         ackSchema.parse(captureCurrentPcbStringClockReply(await this.#exchange.call(this.#native, wire.request)).value);
         pending.written = true; this.#complete(pending);
       } catch (error) {
-        this.#poison("WRITE");
+        if (!(error instanceof Error && failureCodes.get(error) === "NORMAL_LIFETIME" && pending === null)) { this.#poison("WRITE"); }
         if (pending === null) { completion.reject(error); }
         else { pending.writeFailed = true; this.#complete(pending); }
       } finally { this.#queuedRequests -= 1; this.#schedulePoll(0); }
     });
     void observe(queued); return completion.promise;
+  }
+  /** Fixed copy-purpose parent requests share the original counter, stream and
+   * attachment. Other purposes refuse before dispatch. */
+  public requestFootprintUi(command: CurrentFootprintCopyUiCommand): Promise<unknown> {
+    if (!this.#footprintPurpose) { return Promise.reject(fail("FOOTPRINT_UI_PURPOSE")); }
+    return this.#request(command);
+  }
+  public requestFootprintManagerRoute(command: CurrentFootprintCopyManagerRouteCommand): Promise<unknown> {
+    if (!this.#footprintPurpose) { return Promise.reject(fail("FOOTPRINT_MANAGER_ROUTE_PURPOSE")); }
+    return this.#request(command, true);
   }
   #complete(pending: Pending): void {
     if (!pending.replied) { return; }
@@ -325,11 +396,11 @@ class CurrentPcbWorkerStartupChannelCore {
     const work = this.#queue(async (): Promise<void> => {
       try {
         if (this.#released || this.#releaseRequested || this.#terminationVerified || this.#fatal) { return; }
-        this.#withinLifetime(); this.#polls += 1;
+        this.#withinLifetime(true); this.#polls += 1;
         const waiting = this.#pending.size > 0 || this.#queuedRequests !== 0 || this.#used !== 0;
         // Native chunks may be64KiB, larger than generic clock text fields.
         const raw = await this.#exchange.call(this.#native, { action: "poll" });
-        this.#withinLifetime(); this.#chunk(raw, waiting);
+        this.#withinLifetime(true); this.#chunk(raw, waiting);
       } catch (error) { this.#poison(error instanceof Error ? failureCodes.get(error) ?? "POLL" : "POLL", true); }
       finally { this.#pollQueued = false; this.#schedulePoll(this.#nextPollDelay); }
     });
@@ -456,5 +527,11 @@ export class CurrentPcbWorkerStartupChannel extends CurrentPcbWorkerStartupChann
 export class CurrentPcb209WorkerStartupChannel extends CurrentPcbWorkerStartupChannelCore {
   public constructor(native: CurrentPcbWorkerStartupNativeDependency, priorUsage?: CurrentPcbWorkerStartupPriorUsage) {
     super(INTERNAL_PROFILE, native, currentPcb209WorkerStartupWire, priorUsage);
+  }
+}
+/** A separately constructed channel; the old256 owners retain their bounds. */
+export class CurrentFootprintCopyPreparationChannel extends CurrentPcbWorkerStartupChannelCore {
+  public constructor(native: CurrentPcbWorkerStartupNativeDependency, priorUsage?: CurrentPcbWorkerStartupPriorUsage) {
+    super(INTERNAL_PROFILE, native, currentFootprintCopyPreparationWire, priorUsage);
   }
 }

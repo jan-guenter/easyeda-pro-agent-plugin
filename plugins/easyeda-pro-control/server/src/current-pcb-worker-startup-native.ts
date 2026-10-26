@@ -2,6 +2,7 @@
  * cases. Values supplied at runtime are identifiers, never programs or params. */
 /* oxlint-disable import/max-dependencies -- This generator compares both fixed source profiles and every literal command family at one native protocol boundary. */
 import { gzipSync } from "node:zlib";
+import { CURRENT_FOOTPRINT_COPY_DEPENDENCY_CALLS } from "./current-footprint-copy-dependency-bindings.ts";
 import { CURRENT_FOOTPRINT_COPY_CONSTRUCTORS_EXPRESSION, CURRENT_FOOTPRINT_COPY_STATE_CALLS } from "./current-footprint-copy-state.ts";
 import { CURRENT_FOOTPRINT_COPY_METHOD_CALLS } from "./current-footprint-copy-method-bindings.ts";
 import { CURRENT_FOOTPRINT_COPY_CACHE_FACTORY_CALLS } from "./current-footprint-copy-cache-factory.ts";
@@ -17,7 +18,7 @@ import { CURRENT_PCB_209_STARTUP_OPENING_FUNCTION } from "./current-pcb-209-star
 import { CURRENT_PCB_DIAGNOSTIC_PCB_OPENING_FUNCTION } from "./current-pcb-diagnostic-pcb-opening.ts";
 import { CURRENT_PCB_209_RATLINE_OPENING_FUNCTION } from "./current-pcb-209-ratline-opening-program.ts";
 import { sha256Text } from "./core.ts";
-import { CURRENT_PCB_WORKER_STARTUP_REQUEST_LIMIT, currentPcb209RatlineWorkerStartupWire, currentPcb209WorkerStartupWire, currentPcbWorkerStartupWire } from "./current-pcb-worker-startup-wire.ts";
+import { CURRENT_PCB_WORKER_STARTUP_REQUEST_LIMIT, currentFootprintCopyPreparationWire, currentPcb209RatlineWorkerStartupWire, currentPcb209WorkerStartupWire, currentPcbWorkerStartupWire } from "./current-pcb-worker-startup-wire.ts";
 import { freezeDeep } from "./sqlite-inventory-core.ts";
 import { CURRENT_PCB_WORKER_STARTUP_UI_ACTOR_CLOCK_FUNCTION, CURRENT_PCB_WORKER_STARTUP_WORKER_ACTOR_CLOCK_FUNCTION,
   currentPcbWorkerStartupUiActorCommand } from "./current-pcb-worker-startup-actor.ts";
@@ -78,6 +79,13 @@ export function currentPcbWorkerStartupNativeCases(): readonly CurrentPcbWorkerS
 export function currentPcb209WorkerStartupNativeCases(): readonly CurrentPcbWorkerStartupWorkerCommand[] {
   return nativeCases(CURRENT_PCB_209_WORKER_CONSTRUCTION_SITES);
 }
+/** Fixed preparation-only dependency cases. Native owner purpose gates them
+ * before calling this lower encoder; old TS startup wires refuse them. */
+export function currentFootprintCopyDependencyNativeCases(): readonly CurrentPcbWorkerStartupWorkerCommand[] {
+  return freezeDeep(Object.values(CURRENT_FOOTPRINT_COPY_DEPENDENCY_CALLS).map(entry => ({ method: "Runtime.callFunctionOn" as const,
+    params: { ...effects, objectId: placeholder("objectId"), functionDeclaration: entry.program, returnByValue: entry.returnByValue,
+      arguments: Array.from({ length: entry.arguments }, (_, index) => ({ objectId: placeholder(`argument${index}`) })) }, sessionId: "original-session" })));
+}
 const literal = (value: string): string => `@"${value.replaceAll('"', '""')}"`;
 function packedProgram(name: string, value: string, exposed = false): string {
   const bytes = Buffer.byteLength(value);
@@ -85,6 +93,30 @@ function packedProgram(name: string, value: string, exposed = false): string {
   // oxlint-disable-next-line node/no-sync -- Deterministic in-memory compression of one fixed generated program.
   const packed = gzipSync(value, { level: 9 });
   return `  ${exposed ? "public " : ""}static readonly string ${name}=UnpackFixedProgram(${literal(packed.toString("base64"))},${String(packed.length)},${String(bytes)},${literal(sha256Text(value))});`;
+}
+/** Pack repeated fixed segments together while keeping each independently
+ * decoded table within the existing65536-byte bound. The aliases keep every
+ * encoder expression unchanged; NUL is a build-only unambiguous separator. */
+function packedParameterTexts(parameters: ReadonlyMap<string, string>): string {
+  const groups: { values: string[]; names: string[]; bytes: number }[] = [];
+  for (const [value, name] of parameters) {
+    const bytes = Buffer.byteLength(value);
+    if (bytes < 1 || bytes > 65_536 || value.includes("\0")) { throw new Error("WORKER_STARTUP_NATIVE_SEGMENT_TABLE"); }
+    let table = groups.at(-1);
+    if (table === undefined || table.bytes + 1 + bytes > 65_536) {
+      table = { values: [], names: [], bytes: 0 }; groups.push(table);
+    }
+    table.bytes += bytes + (table.values.length === 0 ? 0 : 1); table.values.push(value); table.names.push(name);
+  }
+  const counts: string[] = [], declarations: string[] = [];
+  for (const [index, table] of groups.entries()) {
+    const name = `ParameterTextTable${String(index)}`;
+    const declaration = packedProgram(name, table.values.join("\0"));
+    declarations.push(declaration.replace("static readonly string ", "static readonly string[] ").replace(/;$/u, String.raw`.Split('\0');`), ...table.names.map((alias, position) => `  static readonly string ${alias}=${name}[${String(position)}];`));
+    counts.push(`Need(${name}.Length==${String(table.values.length)},"parameter-count");`);
+  }
+  declarations.push(`  static EasyedaWorkerStartupProtocol(){${counts.join("")}}`);
+  return declarations.join("\n");
 }
 /** Synthetic, path-hash-consistent protocol fixtures; never project authority. */
 export function currentPcbWorkerStartupNativeParentCases(): readonly CurrentPcbWorkerStartupParentCommand[] {
@@ -145,10 +177,12 @@ export function currentPcbWorkerStartupNativeSource(): string {
     }
     return current;
   }
-  const entries = [...legacyCases.map((sample, index) => ({ sample, current: variant(index, sample), currentOnly: false })),
-    ...currentCases.slice(legacyCases.length).map(sample => ({ sample, current: sample, currentOnly: true }))];
-  const rows = entries.map(({ sample, current, currentOnly }) => {
-    const request = (currentOnly ? currentPcb209WorkerStartupWire : currentPcbWorkerStartupWire)(sample, 1).request;
+  const entries = [...legacyCases.map((sample, index) => ({ sample, current: variant(index, sample), currentOnly: false, preparationOnly: false })),
+    ...currentCases.slice(legacyCases.length).map(sample => ({ sample, current: sample, currentOnly: true, preparationOnly: false })),
+    ...currentFootprintCopyDependencyNativeCases().map(sample => ({ sample, current: sample, currentOnly: true, preparationOnly: true }))];
+  const rows = entries.map(({ sample, current, currentOnly, preparationOnly }) => {
+    const wire = preparationOnly ? currentFootprintCopyPreparationWire : currentPcb209WorkerStartupWire;
+    const request = (currentOnly ? wire : currentPcbWorkerStartupWire)(sample, 1).request;
     const fields = Object.entries(request).filter(([key]) => !["action", "requestId", "method", "sessionId", "startupPhase"].includes(key));
     const fixed = fields.filter(([key]) => key === "site" || key === "selector");
     const dynamic = fields.filter(([key]) => key !== "site" && key !== "selector");
@@ -196,8 +230,8 @@ export function currentPcbWorkerStartupNativeSource(): string {
     return `    fields.Clear();\n${fields.map(([key, value]) => `    fields.Add(${literal(key)},${literal(String(value))});`).join("\n")}\n` +
       `    Need(EncodeCore(1,${literal(sample.method)},${literal(sample.sessionId)},${literal(String(request["startupPhase"]))},fields,workerStartup209)==${expectedExpression}+"\\0","smoke-parity");`;
   }).join("\n");
-  const footprintSmoke = currentCases.slice(legacyCases.length).map(sample => {
-    const request = currentPcb209WorkerStartupWire(sample, 1).request;
+  const footprintSmoke = [...currentCases.slice(legacyCases.length), ...currentFootprintCopyDependencyNativeCases()].map(sample => {
+    const request = currentFootprintCopyPreparationWire(sample, 1).request;
     const fields = Object.entries(request).filter(([key]) => !["action", "requestId", "method", "sessionId", "startupPhase"].includes(key));
     const expected = JSON.stringify({ id: 1, method: sample.method, params: sample.params, sessionId: sample.sessionId });
     return `    fields.Clear();\n${fields.map(([key, value]) => `    fields.Add(${literal(key)},${literal(String(value))});`).join("\n")}\n` +
@@ -243,7 +277,7 @@ ${packedProgram("PcbOpeningFunction", CURRENT_PCB_DIAGNOSTIC_PCB_OPENING_FUNCTIO
 ${packedProgram("ProjectOpening209Function", CURRENT_PCB_209_STARTUP_OPENING_FUNCTION, true)}
 ${packedProgram("RatlinePcbOpening209Function", CURRENT_PCB_209_RATLINE_OPENING_FUNCTION, true)}
 ${packedProgram("FootprintSourceFunctionJson", JSON.stringify(currentFootprintCopySourceNativeSample().params.functionDeclaration))}
-${[...parameterTexts].map(([value, name]) => packedProgram(name, value)).join("\n")}
+${packedParameterTexts(parameterTexts)}
   static void Need(bool condition,string code) { if(!condition)throw new System.InvalidOperationException("pcb-diagnostic-startup-"+code); }
   static string UnpackFixedProgram(string encoded,int packedBytes,int expectedBytes,string expectedHash) {
     Need(expectedBytes>0 && expectedBytes<=65536 && packedBytes>0 && packedBytes<=65536,"program-bound");

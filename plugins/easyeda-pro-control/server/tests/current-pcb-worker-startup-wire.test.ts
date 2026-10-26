@@ -3,7 +3,7 @@ import { createHash } from "node:crypto";
 import { readFile } from "node:fs/promises";
 import { test } from "node:test";
 import { gunzipSync } from "node:zlib";
-import { currentPcb209RatlineWorkerStartupNativeParentCases, currentPcb209WorkerStartupNativeCases, currentPcb209WorkerStartupNativeParentCases, currentPcbWorkerStartupNativeCases, currentPcbWorkerStartupNativeParentCases,
+import { currentFootprintCopyDependencyNativeCases, currentPcb209RatlineWorkerStartupNativeParentCases, currentPcb209WorkerStartupNativeCases, currentPcb209WorkerStartupNativeParentCases, currentPcbWorkerStartupNativeCases, currentPcbWorkerStartupNativeParentCases,
   currentPcbWorkerStartupNativeSource } from "../src/current-pcb-worker-startup-native.ts";
 import { currentPcb209RatlineWorkerStartupWire, currentPcb209WorkerStartupWire, currentPcbWorkerStartupWire } from "../src/current-pcb-worker-startup-wire.ts";
 import { CURRENT_PCB_209_RATLINE_OPENING_FUNCTION } from "../src/current-pcb-209-ratline-opening-program.ts";
@@ -211,7 +211,7 @@ void test("startup compile-only packing retains every legacy,209 and parent expe
       if (!expected.includes(text)) { expected.push(text); }
     }
   }
-  for (const sample of currentPcb209WorkerStartupNativeCases().slice(samples.length)) {
+  for (const sample of [...currentPcb209WorkerStartupNativeCases().slice(samples.length), ...currentFootprintCopyDependencyNativeCases()]) {
     expected.push(JSON.stringify({ id: 1, method: sample.method, params: sample.params, sessionId: sample.sessionId }));
   }
   for (const [index, sample] of currentPcbWorkerStartupNativeParentCases().entries()) {
@@ -271,21 +271,36 @@ void test("native packed programs retain exact opener and source JSON bytes with
   assert.ok(generated.includes('+FootprintSourceFunctionJson+'));
 });
 
-void test("packed encoder segments remain exact parts of the fixed parameter grammar", () => {
+void test("packed encoder tables retain every exact fixed segment and preserve each bounded decoder", () => {
   const generated = currentPcbWorkerStartupNativeSource();
-  const templates = [...currentPcbWorkerStartupNativeCases(), ...currentPcb209WorkerStartupNativeCases()].map(sample => JSON.stringify(sample.params));
-  const matches = [...generated.matchAll(/static readonly string (ParameterText\d+)=UnpackFixedProgram\(@"([A-Za-z\d+/=]+)",(\d+),(\d+),@"([a-f\d]{64})"\);/gu)];
+  const templates = [...currentPcbWorkerStartupNativeCases(), ...currentPcb209WorkerStartupNativeCases(), ...currentFootprintCopyDependencyNativeCases()]
+    .map(sample => JSON.stringify(sample.params));
+  const matches = [...generated.matchAll(/static readonly string\[\] (ParameterTextTable\d+)=UnpackFixedProgram\(@"([A-Za-z\d+/=]+)",(\d+),(\d+),@"([a-f\d]{64})"\)\.Split\('\\0'\);/gu)];
   assert.ok(matches.length > 0);
-  const decodedTexts = new Set<string>();
+  const decodedTexts = new Set<string>(), tables = new Map<string, readonly string[]>();
   for (const match of matches) {
     const [name, encoded, packedLength, decodedLength, hash] = match.slice(1); assert.ok(name !== undefined && encoded !== undefined);
     const packed = Buffer.from(encoded, "base64"); assert.equal(String(packed.length), packedLength);
-    // oxlint-disable-next-line node/no-sync -- One bounded deterministic encoder segment, checked against independent fixed command cases.
-    const decoded = gunzipSync(packed), text = decoded.toString("utf8");
-    assert.equal(String(decoded.length), decodedLength); assert.equal(createHash("sha256").update(decoded).digest("hex"), hash);
-    assert.ok(templates.some(template => template.includes(text))); assert.equal(decodedTexts.has(text), false); decodedTexts.add(text);
+    // oxlint-disable-next-line node/no-sync -- One bounded deterministic encoder table, checked against independent fixed command cases.
+    const decoded = gunzipSync(packed);
+    assert.equal(String(decoded.length), decodedLength); assert.ok(decoded.length <= 65_536);
+    assert.equal(createHash("sha256").update(decoded).digest("hex"), hash);
+    const texts = decoded.toString("utf8").split("\0"); tables.set(name, texts);
+    assert.ok(generated.includes(`Need(${name}.Length==${String(texts.length)},"parameter-count")`));
+    for (const text of texts) {
+      assert.ok(templates.some(template => template.includes(text))); assert.equal(decodedTexts.has(text), false); decodedTexts.add(text);
+    }
+  }
+  const aliases = [...generated.matchAll(/static readonly string (ParameterText\d+)=(ParameterTextTable\d+)\[(\d+)\];/gu)];
+  assert.equal(aliases.length, decodedTexts.size);
+  const indices = new Set<string>();
+  for (const alias of aliases) {
+    const [name, table, index] = alias.slice(1); assert.ok(name !== undefined && table !== undefined && index !== undefined);
+    const text = tables.get(table)?.[Number(index)]; assert.ok(text !== undefined && decodedTexts.has(text));
+    const key = `${table}:${index}`; assert.equal(indices.has(key), false); indices.add(key);
     assert.ok(generated.includes(`parameters=${name}`) || generated.includes(`+${name}`));
   }
+  assert.ok(generated.includes('expectedBytes>0 && expectedBytes<=65536 && packedBytes>0 && packedBytes<=65536,"program-bound"'));
 });
 
 void test("current209 footprint phases preserve fixed flags and refuse legacy, altered programs or argument counts", () => {

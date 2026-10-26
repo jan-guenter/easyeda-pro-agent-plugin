@@ -1,5 +1,6 @@
 /** Separate fixed-purpose empty209 lifecycle; importing this contract allocates no owner. */
 import { z } from "zod";
+import { currentFootprintCopyPreparationValidationRequestSchema } from "./current-footprint-copy-preparation-validation.ts";
 import { currentPcb209RatlineContinuationValidationRequestSchema } from "./current-pcb-209-ratline-continuation-validation.ts";
 import { currentPcb209RatlineStartupValidationRequestSchema } from "./current-pcb-209-ratline-startup-validation.ts";
 import { currentPcb209WorkerStartupCaptureRequestSchema, currentPcb209WorkerStartupLifecycleRequestSchema,
@@ -26,6 +27,7 @@ export const currentPcb209WorkerStartupToolRequestSchema = z.discriminatedUnion(
   z.object({ action: z.literal("empty-baseline"), request: currentPcb209EmptyStartupValidationRequestSchema }).strict(),
   z.object({ action: z.literal("ratline-held-import"), request: currentPcb209RatlineStartupValidationRequestSchema }).strict(),
   z.object({ action: z.literal("ratline-continuation"), request: currentPcb209RatlineContinuationValidationRequestSchema }).strict(),
+  z.object({ action: z.literal("footprint-copy-preparation"), request: currentFootprintCopyPreparationValidationRequestSchema }).strict(),
 ]);
 export function queryCurrentPcb209EmptyStartupValidation(includeSchemas: boolean): Record<string, unknown> {
   return { wrapperAction: "pcb209-empty-baseline", toolWrapperAction: "empty-baseline", validationOnly: true,

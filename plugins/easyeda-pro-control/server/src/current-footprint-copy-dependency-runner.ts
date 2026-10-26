@@ -1,0 +1,117 @@
+/** One original worker's selected dependency closure. This does not execute any
+ * producer or establish remote peers, parser subscribers or queued uploads. */
+import { types } from "node:util";
+import { z } from "zod";
+import { decodeCurrentFootprintCopyDependencies, decodeCurrentFootprintCopyDependencyFunction } from "./current-footprint-copy-dependency-bindings.ts";
+import { CURRENT_FOOTPRINT_COPY_DEPENDENCY_PROFILES } from "./current-footprint-copy-dependency-profiles.ts";
+import { decodeCurrentFootprintCopyProducerArray, decodeCurrentFootprintCopyProducerFunction, decodeCurrentFootprintCopyProducerScope } from "./current-footprint-copy-producer-scope.ts";
+import { captureCurrentPcbStringClockReply } from "./current-pcb-string-clock-reply.ts";
+
+export const CURRENT_FOOTPRINT_COPY_DEPENDENCY_REQUESTS = 64;
+export const CURRENT_FOOTPRINT_COPY_DEPENDENCY_REPROOF_REQUESTS = 3;
+export const CURRENT_FOOTPRINT_COPY_DEPENDENCY_OWNER_REQUESTS = Object.freeze({ observeMaximum: 76, requireMaximum: 9 });
+export interface CurrentFootprintCopyDependencyTransport {
+  readonly lexicalBundleObjectId: string;
+  readonly assertCurrent: () => void;
+  readonly properties: (objectId: string) => Promise<unknown>;
+  readonly capture: (scopeId: string) => Promise<unknown>;
+  readonly recheck: (scopeId: string, bundleId: string) => Promise<unknown>;
+}
+export const currentFootprintCopyDependencyObservationSchema = z.object({
+  profile: z.literal("private.current-footprint-copy-dependencies.v1"), selectedFunctionCount: z.literal(53), freshDirectScopeCount: z.literal(3),
+  originalSelectedIdentitiesRechecked: z.literal(true), initializedNotificationBusRetained: z.literal(true), originalCacheObjectsRetained: z.literal(true),
+  parserSubscriberCallbacksBound: z.literal(false), uploadCallbacksBound: z.literal(false), transitiveProducerClosuresBound: z.literal(false),
+  notificationPeerOwnershipVerified: z.literal(false), clockProvenanceVerified: z.literal(false), executionAuthorized: z.literal(false),
+}).strict();
+export type CurrentFootprintCopyDependencyObservation = z.infer<typeof currentFootprintCopyDependencyObservationSchema>;
+
+const handle = z.string().regex(/^[A-Za-z\d_.:-]{1,256}$/u);
+const array = z.object({ result: z.object({ type: z.literal("object"), subtype: z.literal("array"), className: z.literal("Array"),
+  description: z.literal("Array(56)"), objectId: handle }).strict() }).strict();
+const yes = z.object({ result: z.object({ type: z.literal("boolean"), value: z.literal(true) }).strict() }).strict();
+const scopeValue = z.looseObject({ objectId: handle.optional() });
+const scopeInternal = z.looseObject({ name: z.string(), value: scopeValue });
+const scopeMetadata = z.looseObject({ internalProperties: z.array(scopeInternal) });
+const fields = ["lexicalBundleObjectId", "assertCurrent", "properties", "capture", "recheck"] as const;
+function need(condition: boolean): asserts condition { if (!condition) { throw new Error("FOOTPRINT_COPY_DEPENDENCY_OWNER"); } }
+function methods(transport: CurrentFootprintCopyDependencyTransport): readonly unknown[] {
+  need(transport !== null && typeof transport === "object" && !types.isProxy(transport) &&
+    (Object.getPrototypeOf(transport) === Object.prototype || Object.getPrototypeOf(transport) === null) && Reflect.ownKeys(transport).length === fields.length);
+  return fields.map((name, index) => {
+    const descriptor = Object.getOwnPropertyDescriptor(transport, name);
+    need(descriptor !== undefined && Object.hasOwn(descriptor, "value") && typeof descriptor.value === (index === 0 ? "string" : "function"));
+    return descriptor.value as unknown;
+  });
+}
+export class CurrentFootprintCopyDependencyRunner {
+  readonly #transport: CurrentFootprintCopyDependencyTransport;
+  readonly #methods: readonly unknown[];
+  readonly #scriptId: string;
+  readonly #replies: unknown[] = [];
+  #attempted = false;
+  #failed = false;
+  #requests = 0;
+  #reproofAttempted = false;
+  #bundleId: string | null = null;
+  #clockFunctionId: string | null = null;
+  #packet: CurrentFootprintCopyDependencyObservation | null = null;
+  public constructor(transport: CurrentFootprintCopyDependencyTransport, scriptId: string) {
+    this.#methods = methods(transport); this.#transport = transport; this.#scriptId = handle.parse(scriptId);
+    handle.parse(transport.lexicalBundleObjectId);
+  }
+  #current(): void { need(!this.#failed && methods(this.#transport).every((method, index) => method === this.#methods[index])); this.#transport.assertCurrent(); }
+  async #request(operation: () => Promise<unknown>, reproof = false): Promise<unknown> {
+    this.#current(); need(this.#requests < CURRENT_FOOTPRINT_COPY_DEPENDENCY_REQUESTS + (reproof ? CURRENT_FOOTPRINT_COPY_DEPENDENCY_REPROOF_REQUESTS : 0));
+    this.#requests += 1;
+    const raw = captureCurrentPcbStringClockReply(await operation()).value; this.#replies.push(raw); this.#current(); return raw;
+  }
+  async #scope(objectId: string, index: number, reproof = false): Promise<string> {
+    const input = await this.#request(() => this.#transport.properties(objectId), reproof);
+    // Existing direct-source decoder verifies the function's exact source in
+    // The original lexical array; its metadata establishes this fresh scope.
+    decodeCurrentFootprintCopyProducerFunction(input, this.#scriptId, index);
+    const metadata = scopeMetadata.parse(input);
+    const scopesId = metadata.internalProperties.find(item => item.name === "[[Scopes]]")?.value.objectId; need(scopesId !== undefined);
+    return decodeCurrentFootprintCopyProducerScope(await this.#request(() => this.#transport.properties(scopesId), reproof));
+  }
+  public async observe(): Promise<CurrentFootprintCopyDependencyObservation> {
+    need(!this.#attempted); this.#attempted = true;
+    try {
+      const direct = decodeCurrentFootprintCopyProducerArray(await this.#request(() => this.#transport.properties(this.#transport.lexicalBundleObjectId)));
+      const clock = direct[2]; need(clock !== undefined); this.#clockFunctionId = clock;
+      for (const index of [2, 4, 5]) {
+        const objectId = direct[index]; need(objectId !== undefined);
+        const scopeId = await this.#scope(objectId, index);
+        if (this.#bundleId === null) {
+          const captured = array.parse(await this.#request(() => this.#transport.capture(scopeId)));
+          this.#bundleId = captured.result.objectId;
+          const functions = decodeCurrentFootprintCopyDependencies(await this.#request(() => this.#transport.properties(captured.result.objectId)));
+          for (const [position, id] of functions.entries()) {
+            decodeCurrentFootprintCopyDependencyFunction(await this.#request(() => this.#transport.properties(id)), this.#scriptId, position);
+          }
+        } else {
+          const bundle = this.#bundleId; yes.parse(await this.#request(() => this.#transport.recheck(scopeId, bundle)));
+        }
+      }
+      need(this.#requests === CURRENT_FOOTPRINT_COPY_DEPENDENCY_REQUESTS && CURRENT_FOOTPRINT_COPY_DEPENDENCY_PROFILES.length === 53);
+      this.#packet = Object.freeze({ profile: "private.current-footprint-copy-dependencies.v1", selectedFunctionCount: 53, freshDirectScopeCount: 3,
+        originalSelectedIdentitiesRechecked: true, initializedNotificationBusRetained: true, originalCacheObjectsRetained: true,
+        parserSubscriberCallbacksBound: false, uploadCallbacksBound: false, transitiveProducerClosuresBound: false,
+        notificationPeerOwnershipVerified: false, clockProvenanceVerified: false, executionAuthorized: false });
+      return this.#packet;
+    } catch (error) { this.#failed = true; throw error; }
+  }
+  public async requireOriginal(packet: CurrentFootprintCopyDependencyObservation): Promise<void> {
+    need(packet === this.#packet && this.#packet !== null && !this.#reproofAttempted && this.#clockFunctionId !== null && this.#bundleId !== null);
+    this.#reproofAttempted = true;
+    try {
+      const bundle = this.#bundleId, scopeId = await this.#scope(this.#clockFunctionId, 2, true);
+      yes.parse(await this.#request(() => this.#transport.recheck(scopeId, bundle), true)); this.#current();
+    } catch (error) { this.#failed = true; throw error; }
+  }
+  public retained(): Readonly<{ attempted: boolean; failed: boolean; completed: boolean; requests: number;
+    originalBundleRetained: boolean; reproofAttempted: boolean; replies: readonly unknown[] }> {
+    return Object.freeze({ attempted: this.#attempted, failed: this.#failed, completed: this.#packet !== null, requests: this.#requests,
+      originalBundleRetained: this.#bundleId !== null, reproofAttempted: this.#reproofAttempted, replies: Object.freeze([...this.#replies]) });
+  }
+}

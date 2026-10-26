@@ -1,5 +1,6 @@
 /** Actual opening coordinator with inert constructor/actor boundaries. This
  * counts delegation, not native construction, checkpoint or source authority. */
+/* oxlint-disable max-classes-per-file -- Two inert class boundaries exercise the actual opening coordinator and captured construction prototypes together. */
 import assert from "node:assert/strict";
 import { readFile } from "node:fs/promises";
 import { createRequire } from "node:module";
@@ -22,6 +23,8 @@ void test("actual209 source delegates each reprove original project identity and
   const identity = Object.freeze({ projectUuid: target.projectUuid, branchUuid: target.branchUuid, windowTabId: "original-window" });
   const assignments = Object.freeze({ synthetic: "assignments" }), construction = Object.freeze({ synthetic: "construction" });
   const source = Object.freeze({ synthetic: "source" }), state = Object.freeze({ synthetic: "state" });
+  const producers = Object.freeze({ synthetic: "producers" });
+  const dependencies = Object.freeze({ synthetic: "dependencies" });
   const runner = Object.freeze({
     proveProjectIdentity: (): Promise<typeof identity> => Promise.resolve(identity),
     requireProjectIdentity: (packet: unknown, selected: unknown): Promise<void> => {
@@ -35,6 +38,26 @@ void test("actual209 source delegates each reprove original project identity and
     observeFootprintSource: (): Promise<typeof source> => Promise.resolve(source),
     requireFootprintSource: (): Promise<void> => Promise.resolve(),
   });
+  class ProducerRunner {
+    public observeFootprintProducers(selected: unknown, assigned: unknown, observed: unknown): Promise<typeof producers> {
+      assert.equal(this, runner); assert.equal(selected, construction); assert.equal(assigned, assignments); assert.equal(observed, state);
+      checks.push("producers-observe"); return Promise.resolve(producers);
+    }
+    public requireFootprintProducers(selected: unknown, assigned: unknown, observed: unknown, packet: unknown): Promise<void> {
+      assert.equal(this, runner); assert.equal(selected, construction); assert.equal(assigned, assignments); assert.equal(observed, state);
+      assert.equal(packet, producers); checks.push("producers-require"); return Promise.resolve();
+    }
+    public retainedFootprintProducers(): Readonly<Record<string, unknown>> { assert.equal(this, runner); return producers; }
+    public observeFootprintDependencies(selected: unknown, assigned: unknown, observed: unknown, producerInput: unknown): Promise<typeof dependencies> {
+      assert.equal(this, runner); assert.equal(selected, construction); assert.equal(assigned, assignments); assert.equal(observed, state);
+      assert.equal(producerInput, producers); checks.push("dependencies-observe"); return Promise.resolve(dependencies);
+    }
+    public requireFootprintDependencies(selected: unknown, assigned: unknown, observed: unknown, producerInput: unknown, packet: unknown): Promise<void> {
+      assert.equal(this, runner); assert.equal(selected, construction); assert.equal(assigned, assignments); assert.equal(observed, state);
+      assert.equal(producerInput, producers); assert.equal(packet, dependencies); checks.push("dependencies-require"); return Promise.resolve();
+    }
+    public retainedFootprintDependencies(): Readonly<Record<string, unknown>> { assert.equal(this, runner); return dependencies; }
+  }
   class Transport {
     readonly #packet = construction;
     #identityBound = false;
@@ -50,6 +73,7 @@ void test("actual209 source delegates each reprove original project identity and
   const evaluate: unknown = runInThisContext(`(function(require,module,exports){${program.code}\n})`);
   assert.ok(typeof evaluate === "function");
   Reflect.apply(evaluate, undefined, [(specifier: string): unknown => {
+    if (specifier === "./current-pcb-worker-construction-runner.ts") { return { CurrentPcb209WorkerConstructionRunner: ProducerRunner }; }
     if (specifier === "./current-pcb-worker-startup-transport.ts") { return { CurrentPcb209WorkerStartupTransport: Transport }; }
     if (specifier === "./current-pcb-209-actor-clock-source.ts") {
       return { requireCurrentPcb209ActorClockSourceQualification: (): void => undefined };
@@ -89,4 +113,26 @@ void test("actual209 source delegates each reprove original project identity and
   assert.deepEqual(checks, ["identity", "assignments"]);
   await owner.requireFootprintSource(opened, assigned, observed, plan, packet);
   assert.deepEqual(checks, ["identity", "assignments", "identity", "assignments"]);
+  checks.length = 0;
+  const producerPacket = await owner.observeFootprintProducers(opened, assigned, observed);
+  assert.deepEqual(checks, ["identity", "assignments", "producers-observe"]);
+  assert.equal(owner.retainedFootprintProducers(), producers);
+  await owner.requireFootprintProducers(opened, assigned, observed, producerPacket);
+  assert.deepEqual(checks, ["identity", "assignments", "producers-observe", "identity", "assignments", "producers-require"]);
+  await assert.rejects(owner.requireFootprintProducers(opened, assigned, observed, structuredClone(producerPacket)), /ORIGINAL_FOOTPRINT_PRODUCER_PACKET/u);
+  await assert.rejects(owner.observeFootprintProducers(opened, assigned, observed), /FOOTPRINT_PRODUCER_CONSUMED/u);
+  checks.length = 0;
+  const dependencyPacket = await owner.observeFootprintDependencies(opened, assigned, observed, producerPacket);
+  assert.deepEqual(checks, ["identity", "assignments", "dependencies-observe"]);
+  assert.equal(owner.retainedFootprintDependencies(), dependencies);
+  await owner.requireFootprintDependencies(opened, assigned, observed, producerPacket, dependencyPacket);
+  assert.deepEqual(checks, ["identity", "assignments", "dependencies-observe", "identity", "assignments", "dependencies-require"]);
+  await assert.rejects(owner.requireFootprintDependencies(opened, assigned, observed, producerPacket, structuredClone(dependencyPacket)), /ORIGINAL_FOOTPRINT_DEPENDENCY_PACKET/u);
+  await assert.rejects(owner.observeFootprintDependencies(opened, assigned, observed, producerPacket), /FOOTPRINT_DEPENDENCY_CONSUMED/u);
+  ProducerRunner.prototype.requireFootprintDependencies = (): never => assert.fail("A substituted dependency method must not execute");
+  await assert.rejects(owner.requireFootprintDependencies(opened, assigned, observed, producerPacket, dependencyPacket), /FOOTPRINT_DEPENDENCY_METHOD_CHANGED/u);
+  const before = checks.length;
+  ProducerRunner.prototype.requireFootprintProducers = (): never => assert.fail("A substituted method must not execute");
+  await assert.rejects(owner.requireFootprintProducers(opened, assigned, observed, producerPacket), /FOOTPRINT_PRODUCER_METHOD_CHANGED/u);
+  assert.equal(checks.length, before);
 });
