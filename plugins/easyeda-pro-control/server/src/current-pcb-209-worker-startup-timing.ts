@@ -11,7 +11,8 @@ const BREAKPOINTS = 8;
 const ARM_MS = OWNER_MS + BREAKPOINTS * READ_MS;
 const SOURCE_MS = OWNER_MS + REQUEST_MS + OWNER_MS;
 const SOURCE_CARRY_MS = REQUEST_MS + OWNER_MS;
-const constructionReads = [3, 3, 2, 4, 4, 4, 3, 2, 1] as const;
+// Project-end adds one fixed lexical-constructor capture and two own manager selectors.
+const constructionReads = [3, 3, 2, 4, 4, 4, 3, 5, 1] as const;
 
 export const CURRENT_PCB_209_STARTUP_TIMING = Object.freeze({
   requestMs: REQUEST_MS,

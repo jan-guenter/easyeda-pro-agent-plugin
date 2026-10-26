@@ -131,7 +131,7 @@ void test("native startup source is generated exactly and keeps the distinct pur
 });
 
 void test("native 209 cases preserve every command except the reviewed serial site and refuse the other generation", () => {
-  const current = currentPcb209WorkerStartupNativeCases(); assert.equal(current.length, samples.length);
+  const current = currentPcb209WorkerStartupNativeCases(); assert.equal(current.length, samples.length + 4);
   let differences = 0;
   for (const [index, legacy] of samples.entries()) {
     const selected = current[index]; assert.ok(selected !== undefined);
@@ -191,6 +191,9 @@ void test("startup compile-only packing retains every legacy,209 and parent expe
       if (!expected.includes(text)) { expected.push(text); }
     }
   }
+  for (const sample of currentPcb209WorkerStartupNativeCases().slice(samples.length)) {
+    expected.push(JSON.stringify({ id: 1, method: sample.method, params: sample.params, sessionId: sample.sessionId }));
+  }
   for (const sample of currentPcbWorkerStartupNativeParentCases()) {
     expected.push(JSON.stringify({ id: 256, method: sample.method, params: sample.params,
       ...(sample.sessionId === undefined ? {} : { sessionId: sample.sessionId }) }));
@@ -199,4 +202,22 @@ void test("startup compile-only packing retains every legacy,209 and parent expe
   assert.equal(generated.match(/"smoke-parity"/gu)?.length, samples.length);
   assert.equal(generated.match(/"smoke-parent-parity"/gu)?.length, currentPcbWorkerStartupNativeParentCases().length);
   assert.equal(generated.split("SmokeExpected()").length - 1, 2);
+});
+
+void test("current209 footprint phases preserve fixed flags and refuse legacy, altered programs or argument counts", () => {
+  for (const sample of currentPcb209WorkerStartupNativeCases().slice(samples.length)) {
+    const wire = currentPcb209WorkerStartupWire(sample, 250);
+    assert.ok("throwOnSideEffect" in wire.command.params && wire.command.params.throwOnSideEffect);
+    assert.throws(() => currentPcbWorkerStartupWire(sample, 250));
+    if (sample.method === "Runtime.callFunctionOn") {
+      assert.ok(String(wire.request["startupPhase"]).startsWith("footprint-"));
+      for (const patch of [{ arguments: [...sample.params.arguments, { objectId: "foreign" }] },
+        { functionDeclaration: `${sample.params.functionDeclaration} ` }, { throwOnSideEffect: false }, { awaitPromise: true }]) {
+        assert.throws(() => currentPcb209WorkerStartupWire({ ...sample, params: { ...sample.params, ...patch } }, 250));
+      }
+    } else if (sample.method === "Debugger.evaluateOnCallFrame") {
+      assert.equal(wire.request["selector"], "footprint-constructors");
+      assert.throws(() => currentPcb209WorkerStartupWire({ ...sample, params: { ...sample.params, expression: `${sample.params.expression} ` } }, 250));
+    } else { assert.fail("Unexpected footprint command"); }
+  }
 });

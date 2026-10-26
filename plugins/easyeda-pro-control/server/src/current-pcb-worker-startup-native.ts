@@ -2,6 +2,7 @@
  * cases. Values supplied at runtime are identifiers, never programs or params. */
 /* oxlint-disable import/max-dependencies -- This generator compares both fixed source profiles and every literal command family at one native protocol boundary. */
 import { gzipSync } from "node:zlib";
+import { CURRENT_FOOTPRINT_COPY_CONSTRUCTORS_EXPRESSION, CURRENT_FOOTPRINT_COPY_STATE_CALLS } from "./current-footprint-copy-state.ts";
 import { CURRENT_PCB_WORKER_CONSTRUCTION_ASSIGNMENT_CALLS } from "./current-pcb-worker-construction-assignment.ts";
 import { CURRENT_PCB_WORKER_CONSTRUCTION_IDENTITY, CURRENT_PCB_WORKER_CONSTRUCTION_PROJECT, CURRENT_PCB_WORKER_CONSTRUCTION_SAME,
   CURRENT_PCB_WORKER_CONSTRUCTION_SITES, CURRENT_PCB_WORKER_CONSTRUCTION_SOURCE } from "./current-pcb-worker-construction-contract.ts";
@@ -49,10 +50,16 @@ function nativeCases(sites: Readonly<Record<string, Readonly<{ lineNumber: numbe
     { program: CURRENT_PCB_WORKER_CONSTRUCTION_IDENTITY, arguments: 1, returnByValue: true },
     { program: CURRENT_PCB_WORKER_STARTUP_WORKER_ACTOR_CLOCK_FUNCTION, arguments: 1, returnByValue: true },
     ...Object.values(CURRENT_PCB_WORKER_CONSTRUCTION_ASSIGNMENT_CALLS),
-    ...Object.values(CURRENT_PCB_WORKER_STARTUP_CHANNEL_CALLS)]) {
+    ...Object.values(CURRENT_PCB_WORKER_STARTUP_CHANNEL_CALLS),
+    ...(sites === CURRENT_PCB_209_WORKER_CONSTRUCTION_SITES ? Object.values(CURRENT_FOOTPRINT_COPY_STATE_CALLS) : [])]) {
     commands.push({ method: "Runtime.callFunctionOn", params: { ...effects, objectId: placeholder("objectId"),
       functionDeclaration: entry.program, returnByValue: entry.returnByValue,
       arguments: Array.from({ length: entry.arguments }, (_, index) => ({ objectId: placeholder(`argument${index}`) })) }, sessionId });
+  }
+  if (sites === CURRENT_PCB_209_WORKER_CONSTRUCTION_SITES) {
+    commands.push({ method: "Debugger.evaluateOnCallFrame", params: { callFrameId: placeholder("callFrameId"),
+      expression: CURRENT_FOOTPRINT_COPY_CONSTRUCTORS_EXPRESSION, objectGroup: group, silent: true, returnByValue: false,
+      generatePreview: false, throwOnSideEffect: true, includeCommandLineAPI: false }, sessionId });
   }
   return freezeDeep(commands);
 }
@@ -103,13 +110,14 @@ export function currentPcbWorkerStartupNativeSource(): string {
     }
     return current;
   }
-  const rows = legacyCases.map((sample, index) => {
-    const current = variant(index, sample);
-    const request = currentPcbWorkerStartupWire(sample, 1).request;
+  const entries = [...legacyCases.map((sample, index) => ({ sample, current: variant(index, sample), currentOnly: false })),
+    ...currentCases.slice(legacyCases.length).map(sample => ({ sample, current: sample, currentOnly: true }))];
+  const rows = entries.map(({ sample, current, currentOnly }) => {
+    const request = (currentOnly ? currentPcb209WorkerStartupWire : currentPcbWorkerStartupWire)(sample, 1).request;
     const fields = Object.entries(request).filter(([key]) => !["action", "requestId", "method", "sessionId", "startupPhase"].includes(key));
     const fixed = fields.filter(([key]) => key === "site" || key === "selector");
     const dynamic = fields.filter(([key]) => key !== "site" && key !== "selector");
-    const condition = [`phase==${literal(String(request["startupPhase"]))}`, ...fixed.map(([key, value]) => `Field(fields,${literal(key)})==${literal(String(value))}`)].join(" && ");
+    const condition = [...(currentOnly ? ["workerStartup209"] : []), `phase==${literal(String(request["startupPhase"]))}`, ...fixed.map(([key, value]) => `Field(fields,${literal(key)})==${literal(String(value))}`)].join(" && ");
     // Concatenate original literal segments once. Repeated Replace would let
     // An identifier equal to another placeholder redirect that later field.
     function expression(parameters: CurrentPcbWorkerStartupWorkerCommand["params"]): string {
@@ -131,7 +139,7 @@ export function currentPcbWorkerStartupNativeSource(): string {
     if (currentExpression !== legacy) { changedCases += 1; parameters = `workerStartup209?${currentExpression}:${legacy}`; }
     return `    if(${condition}) {\n      Need(method==${literal(sample.method)},"method");\n      Keys(fields,new string[]{${fields.map(([key]) => literal(key)).join(",")}});\n      parameters=${parameters};\n    }`;
   });
-  if (changedCases !== 1 || legacyCases.length !== currentCases.length) { throw new Error("WORKER_STARTUP_NATIVE_GENERATION_COUNT"); }
+  if (changedCases !== 1 || legacyCases.length + Object.keys(CURRENT_FOOTPRINT_COPY_STATE_CALLS).length + 1 !== currentCases.length) { throw new Error("WORKER_STARTUP_NATIVE_GENERATION_COUNT"); }
   const smokeExpected: string[] = [];
   function expectedReference(value: string): string {
     if (value.includes("\0")) { throw new Error("WORKER_STARTUP_NATIVE_SMOKE_DELIMITER"); }
@@ -148,6 +156,14 @@ export function currentPcbWorkerStartupNativeSource(): string {
     const expectedExpression = expected === currentExpected ? expectedReference(expected) : `(workerStartup209?${expectedReference(currentExpected)}:${expectedReference(expected)})`;
     return `    fields.Clear();\n${fields.map(([key, value]) => `    fields.Add(${literal(key)},${literal(String(value))});`).join("\n")}\n` +
       `    Need(EncodeCore(1,${literal(sample.method)},${literal(sample.sessionId)},${literal(String(request["startupPhase"]))},fields,workerStartup209)==${expectedExpression}+"\\0","smoke-parity");`;
+  }).join("\n");
+  const footprintSmoke = currentCases.slice(legacyCases.length).map(sample => {
+    const request = currentPcb209WorkerStartupWire(sample, 1).request;
+    const fields = Object.entries(request).filter(([key]) => !["action", "requestId", "method", "sessionId", "startupPhase"].includes(key));
+    const expected = JSON.stringify({ id: 1, method: sample.method, params: sample.params, sessionId: sample.sessionId });
+    return `    fields.Clear();\n${fields.map(([key, value]) => `    fields.Add(${literal(key)},${literal(String(value))});`).join("\n")}\n` +
+      `    if(workerStartup209)Need(EncodeCore(1,${literal(sample.method)},${literal(sample.sessionId)},${literal(String(request["startupPhase"]))},fields,true)==${expectedReference(expected)}+"\\0","smoke-footprint-parity");\n` +
+      `    else {bool refused=false;try{EncodeCore(1,${literal(sample.method)},${literal(sample.sessionId)},${literal(String(request["startupPhase"]))},fields,false);}catch(System.InvalidOperationException){refused=true;}Need(refused,"smoke-footprint-legacy");}`;
   }).join("\n");
   const parentSmoke = currentPcbWorkerStartupNativeParentCases().map(sample => {
     const request = currentPcbWorkerStartupWire(sample, 256).request;
@@ -214,6 +230,7 @@ ${rows.join(" else\n")}
     string[] expected=SmokeExpected();
     System.Collections.Hashtable fields=new System.Collections.Hashtable(System.StringComparer.Ordinal);
 ${smoke}
+${footprintSmoke}
 ${parentSmoke}
     fields.Clear();fields.Add("objectId","__startup_argument0__");fields.Add("argument0","other");
     string collision=EncodeCore(256,"Runtime.callFunctionOn","s","same",fields,workerStartup209);

@@ -48,11 +48,16 @@ Validation is offline. It neither creates a journal nor grants authority.
    breakpoints are armed before the project script resumes.
 4. After successful published capture, `observe-current-assignments` checks
    the current wrappers against retained constructor callbacks. After that
-   published result, `observe-current-channel` and `observe-actor-clock` are
-   independent optional stages. Each takes only the same ID and binding.
+   published result, `observe-current-channel`, `observe-actor-clock` and
+   `observe-footprint-state` are independent optional stages. Each takes only the same ID and binding.
    The channel stage reads relations, method locations and paired gates; it
    does not invoke publisher methods. The actor stage samples UI, worker,
-   worker, UI identity and local Date values in that order.
+   worker, UI identity and local Date values in that order. The footprint stage
+   compares two own-data samples from the original constructor-captured footprint
+   and consistency managers. It requires an own undefined captured user, the same
+   16-character client and an unchanged maximum ticket. Constructor identities
+   are retained from fixed lexical reads on the original project constructor
+   frame; matching names or copied packets cannot replace them.
 5. Use `observe-window`, then one `normal-close` with the observed `hwnd` and
    `confirmNormalClose:true`. Separately call `observe-termination` and
    `release-closed`. Complete any offered `settle-records` using the retained
@@ -69,11 +74,13 @@ be upgraded.
 
 Use the inspected channel's `nextRequestId` to choose optional observations.
 Keep normal work through request224, leaving32 slots for cleanup. Assignments,
-channel and actor stages cost23,24 and35 requests respectively, including their
-final owner checks. At next ID `N`, require `N + cost - 1 <= 224`, then inspect
-again after the stage. All three fit only when `N <= 143`. The seven-phase
-startup's source-derived maximum is186 requests; actual usage can be lower.
-These counts are not measured timing or permission to reset the counter.
+channel, actor and footprint-state stages cost23,24,35 and15 requests respectively,
+including their final owner checks. At next ID `N`, require `N + cost - 1 <= 224`, then inspect
+again after the stage. The first three fit only when `N <= 143`; all four require `N <= 128`. The seven-phase
+startup's conservative bound remains186 requests. The three new constructor
+reads consume three existing reserve slots; the reserve is77 instead of80.
+Actual usage can be lower. These counts are not measured timing or permission
+to reset the counter.
 
 ## Interpreting results and failures
 
@@ -94,6 +101,10 @@ Current assignment and channel observations are sequential samples. They do
 not prove continuous wrapper ownership, native BroadcastChannel peers,
 contained publication destinations or queue completion. The actor stage's
 local Date bracket is not a native/server clock proof or a future Save clock.
+Footprint state does not call the asynchronous source getter or prove its cache
+branch, backend actor, copy/delete completion, closed SQL or saved/reopened data.
+The source getter leaf is not wired to a native route; no footprint writer is
+admitted by this observation.
 
 Project opening can restore tabs, migrate files, replay caches, use network
 services and automatically persist or Save. Debugger pauses alter application

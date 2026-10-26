@@ -62,8 +62,11 @@ export const CURRENT_PCB_209_EMPTY_NATIVE_PROFILE = freezeDeep({
   purpose: "worker-startup-empty209", requestLimit, normalRequestLimit, cleanupRequests,
   requests: { startup: startupRequests, factory: factoryRequests, pcb: pcbRequests, identity: identityRequests,
     common: CURRENT_PCB_209_COMMON_BASELINE_REQUEST_COUNT, roots: CURRENT_PCB_209_EMPTY_ROOT_REQUEST_COUNT, optional: optionalRequests },
-  startupDerivation: { discovery: 19, bootstrapTransport: 20, constructorCapture: 51, openingCoordinator: 15,
-    publishedIdentity: 1, conservativeReserve: 80 },
+  // Constructor capture has 29 fixed reads, eight breakpoint installs/removals
+  // And nine resumes. The three footprint reads consume the existing reserve;
+  // They do not increase this purpose's request, byte or time ceilings.
+  startupDerivation: { discovery: 19, bootstrapTransport: 20, constructorCapture: 54, openingCoordinator: 15,
+    publishedIdentity: 1, conservativeReserve: 77 },
   bytes: { prefix: prefixBytes, common: commonReplyBytes, roots: rootReplyBytes, continuationEvents: continuationEventBytes,
     normal: normalBytes, cleanup: cleanupBytes, total: totalBytes, helperStdout: helperStdoutBytes },
   frames: { ordinary: mib, source: 32 * mib, packetHandle: handleFrame, envelope, chunk: chunkBytes, outbound: 65_536 },

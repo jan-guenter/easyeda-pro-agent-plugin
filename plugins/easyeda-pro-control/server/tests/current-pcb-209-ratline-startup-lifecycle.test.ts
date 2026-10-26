@@ -125,6 +125,7 @@ async function fixture(context: TestContext, mode: "prepare-fails" | "intent-cha
     public retainedOpeningObservation(): null { assert.equal(typeof this.#consumed, "boolean"); return null; }
     public retainedRejectedStopEvidence(): null { assert.equal(typeof this.#consumed, "boolean"); return null; }
     public retainedNativeOriginEvidence(): null { assert.equal(typeof this.#consumed, "boolean"); return null; }
+    public retainedAncestryEvidence(): null { assert.equal(typeof this.#consumed, "boolean"); return null; }
     public abort(): Promise<void> { assert.equal(this.#consumed, true); assert.ok(originalFixture); counters.abort += 1; originalFixture.calls.push("ratline-abort"); return Promise.resolve(); }
     public releaseAfterTermination(): Promise<void> {
       assert.equal(this.#consumed, true); assert.ok(originalFixture); assert.equal(originalFixture.state.terminated, true); counters.release += 1; originalFixture.calls.push("ratline-release"); return Promise.resolve();

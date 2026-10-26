@@ -2,6 +2,7 @@
  * expression crosses the native boundary. Separate from diagnostic no-pause. */
 /* oxlint-disable import/max-dependencies -- This native boundary compares every fixed program against its original contract literal; splitting those checks would duplicate the admission policy. */
 import { z } from "zod";
+import { CURRENT_FOOTPRINT_COPY_CONSTRUCTORS_EXPRESSION, CURRENT_FOOTPRINT_COPY_STATE_CALLS } from "./current-footprint-copy-state.ts";
 import { types } from "node:util";
 import { CURRENT_PCB_209_WORKER_CONSTRUCTION_SITES } from "./current-pcb-209-worker-startup-profile.ts";
 import { captureCurrentPcbStringClockReply } from "./current-pcb-string-clock-reply.ts";
@@ -58,7 +59,7 @@ const schema: z.ZodType<CurrentPcbWorkerStartupCommand> = z.union([
   command("Debugger.removeBreakpoint", z.object({ breakpointId: handle }).strict()),
   command("Debugger.resume", empty),
   command("Debugger.evaluateOnCallFrame", z.object({ callFrameId: handle,
-    expression: z.enum(["this", "e", "t", "this.bc", "this.bc.onmessage"]), objectGroup: group,
+    expression: z.enum(["this", "e", "t", "this.bc", "this.bc.onmessage", CURRENT_FOOTPRINT_COPY_CONSTRUCTORS_EXPRESSION]), objectGroup: group,
     silent: z.literal(true), returnByValue: z.literal(false), generatePreview: z.literal(false),
     throwOnSideEffect: z.literal(true), includeCommandLineAPI: z.literal(false) }).strict()),
   command("Runtime.getProperties", z.object({ objectId: handle, ownProperties: z.literal(true), generatePreview: z.literal(false) }).strict()),
@@ -135,7 +136,8 @@ function startupWire(raw: unknown, id: number,
       fields = { startupPhase: "breakpoint", site, scriptId: parsed.params.location.scriptId }; break;
     }
     case "Debugger.evaluateOnCallFrame": {
-      const selector = { this: "receiver", e: "argument-e", t: "argument-t", "this.bc": "channel", "this.bc.onmessage": "onmessage" }[parsed.params.expression];
+      if (parsed.params.expression === CURRENT_FOOTPRINT_COPY_CONSTRUCTORS_EXPRESSION && sites !== CURRENT_PCB_209_WORKER_CONSTRUCTION_SITES) { return fail(); }
+      const selector = { [CURRENT_FOOTPRINT_COPY_CONSTRUCTORS_EXPRESSION]: "footprint-constructors", this: "receiver", e: "argument-e", t: "argument-t", "this.bc": "channel", "this.bc.onmessage": "onmessage" }[parsed.params.expression];
       fields = { startupPhase: "select", selector, callFrameId: parsed.params.callFrameId }; break;
     }
     case "Runtime.getProperties": { fields = { startupPhase: "properties", objectId: parsed.params.objectId }; break; }
@@ -153,11 +155,18 @@ function startupWire(raw: unknown, id: number,
           targetExpectedSourceSha256: target.value.expectedSourceSha256 };
         break;
       }
+      const footprint = Object.entries(CURRENT_FOOTPRINT_COPY_STATE_CALLS)
+        .find(([, value]) => value.program === parsed.params.functionDeclaration);
       const assignment = Object.entries(CURRENT_PCB_WORKER_CONSTRUCTION_ASSIGNMENT_CALLS)
         .find(([, value]) => value.program === parsed.params.functionDeclaration);
       const channel = Object.entries(CURRENT_PCB_WORKER_STARTUP_CHANNEL_CALLS)
         .find(([, value]) => value.program === parsed.params.functionDeclaration);
-      if (channel !== undefined) {
+      if (footprint !== undefined) {
+        const [phase, expected] = footprint;
+        if (sites !== CURRENT_PCB_209_WORKER_CONSTRUCTION_SITES || parsed.params.arguments.length !== expected.arguments ||
+            parsed.params.returnByValue !== expected.returnByValue) { return fail(); }
+        fields = { startupPhase: `footprint-${phase}`, objectId: parsed.params.objectId };
+      } else if (channel !== undefined) {
         const [phase, expected] = channel;
         if (parsed.params.arguments.length !== expected.arguments || parsed.params.returnByValue !== expected.returnByValue) { return fail(); }
         fields = { startupPhase: `channel-${phase}`, objectId: parsed.params.objectId };

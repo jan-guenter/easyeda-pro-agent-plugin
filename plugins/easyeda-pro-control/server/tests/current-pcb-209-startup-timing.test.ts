@@ -42,7 +42,7 @@ void test("209 phase windows follow the serial await graph and preserve request 
   assert.equal(CURRENT_PCB_209_STARTUP_TIMING.constructionArmMs, 50_000);
   assert.deepEqual([CURRENT_PCB_209_STARTUP_TIMING.bootstrapPauseMs, CURRENT_PCB_209_STARTUP_TIMING.sourcePauseMs,
     CURRENT_PCB_209_STARTUP_TIMING.projectPauseMs], [12_000, 14_000, 68_000]);
-  assert.deepEqual(CURRENT_PCB_209_STARTUP_TIMING.constructionPauseMs, [24_000, 26_000, 20_000, 32_000, 32_000, 32_000, 26_000, 20_000, 16_000]);
+  assert.deepEqual(CURRENT_PCB_209_STARTUP_TIMING.constructionPauseMs, [24_000, 26_000, 20_000, 32_000, 32_000, 32_000, 26_000, 38_000, 16_000]);
 });
 
 void test("project import can remain paused beyond five seconds for bounded constructor arming", async () => {

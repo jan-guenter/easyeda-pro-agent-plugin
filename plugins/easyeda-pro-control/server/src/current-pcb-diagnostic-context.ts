@@ -21,11 +21,12 @@ export interface DiagnosticScriptProfile {
 }
 interface PcbOpeningTransition {
   readonly projectUuid: string; readonly documentUuid: string; readonly tabId: string; readonly url: string;
-  readonly originalRoot: Row; readonly uiIdentity: Readonly<{ scriptId: string; contextId: number; uniqueContextId: string }>;
+  readonly originalRoot: Row; readonly originalTarget: Row; readonly uiIdentity: Readonly<{ scriptId: string; contextId: number; uniqueContextId: string }>;
   childId: string | null; child: Row | null; navigation: CurrentPcbDiagnosticChildNavigation | null;
   readonly initialChildContexts: Set<number>;
   domBackendNodeId: number | null; domObservation: Row | null; profile: DiagnosticScriptProfile | null;
   sourceIdentity: Readonly<{ scriptId: string; contextId: number; uniqueContextId: string }> | null;
+  bootstrapRootPhase: "project" | "pcb" | null;
   completed: boolean;
 }
 function refuse(): never { throw new Error("PCB_DIAGNOSTIC_CONTEXT_IDENTITY"); }
@@ -428,8 +429,8 @@ export class CurrentPcbDiagnosticContext {
     if (typeof base !== "string" || this.#target["url"] !== `${base}#id=${projectUuid}`) { return this.#refuse(); }
     const tabId = `${documentUuid}@${projectUuid}`;
     this.#pcbOpening = { projectUuid, documentUuid, tabId, url: `${base}#id=${projectUuid},tab=*${tabId}`,
-      originalRoot: this.#frame, uiIdentity: this.#sourceIdentity, childId: null, child: null, navigation: null, initialChildContexts: new Set(),
-      domBackendNodeId: null, domObservation: null, profile: null, sourceIdentity: null, completed: false };
+      originalRoot: this.#frame, originalTarget: this.#target, uiIdentity: this.#sourceIdentity, childId: null, child: null, navigation: null, initialChildContexts: new Set(),
+      domBackendNodeId: null, domObservation: null, profile: null, sourceIdentity: null, bootstrapRootPhase: null, completed: false };
     this.#priorRootNavigation = this.#rootNavigation;
     this.#rootNavigation = new CurrentPcbDiagnosticSameDocument(String(this.#frame["id"]), this.#pcbOpening.url);
     return selected;
@@ -497,6 +498,47 @@ export class CurrentPcbDiagnosticContext {
           !equal({ ...this.#target, url: pcb.url, attached: true }, currentTarget) ||
           child["parentId"] !== root["id"] || child["loaderId"] !== pcb.navigation.committedLoader || child["url"] !== "https://client/editor?entry=pcb" ||
           child["securityOrigin"] !== "https://client" || child["urlFragment"] !== undefined) { this.#refuse(); }
+      pcb.child = child; this.#frames = currentFrames; this.#frame = root;
+      this.#target = Object.freeze({ ...currentTarget, attached: false });
+      return Object.freeze({ frameId: pcb.childId, rootFrameId: String(root["id"]) });
+    } catch { return this.#refuse(); }
+  }
+  /** A held PCB source precedes the UI onload callback's tab activation.
+   * Admit its committed child with either the exact original project root or
+   * the event-proved final tab root. Only the latter seals that transition.
+   * This separate branch does not complete the ordinary document opener. */
+  public observePcbBootstrapFrames(targetReply: Row, frameReply: Row): Readonly<{ frameId: string; rootFrameId: string }> {
+    this.pcbOpeningContext();
+    const pcb = this.#pcbOpening;
+    if (pcb === null || pcb.child !== null || pcb.bootstrapRootPhase !== null) { return this.#refuse(); }
+    return this.#observePcbBootstrapFrames(targetReply, frameReply, false);
+  }
+  #observePcbBootstrapFrames(targetReply: Row, frameReply: Row, reproof: boolean): Readonly<{ frameId: string; rootFrameId: string }> {
+    this.pcbOpeningContext();
+    try {
+      const currentFrames = frames(frameReply), currentTarget = target(targetReply, this.#targetId, true), pcb = this.#pcbOpening;
+      if (pcb === null || pcb.childId === null || pcb.navigation === null || pcb.navigation.committedLoader === null ||
+          this.#rootNavigation === null || currentFrames.length !== (this.#ancillaryFrame === null ? 2 : 3) ||
+          this.#ancillaryFrame !== null && !currentFrames.some(value => equal(value, this.#ancillaryFrame)) ||
+          reproof && (pcb.child === null || pcb.bootstrapRootPhase === null || pcb.domBackendNodeId === null || this.#frames === null)) { this.#refuse(); }
+      pcb.navigation.assertReady();
+      const child = currentFrames.find(value => value["id"] === pcb.childId), root = currentFrames.find(value => value["id"] === pcb.originalRoot["id"]);
+      if (root === undefined || child === undefined) { this.#refuse(); }
+      const { urlFragment: _originalFragment, ...originalFields } = pcb.originalRoot;
+      const { urlFragment, ...currentFields } = root;
+      const finalRoot = urlFragment === pcb.url.slice(String(root["url"]).length);
+      if (!equal(originalFields, currentFields) || !finalRoot && !equal(root, pcb.originalRoot) ||
+          !equal({ ...pcb.originalTarget, url: finalRoot ? pcb.url : pcb.originalTarget["url"], attached: true }, currentTarget) ||
+          child["parentId"] !== root["id"] || child["loaderId"] !== pcb.navigation.committedLoader ||
+          child["url"] !== "https://client/editor?entry=pcb" || child["securityOrigin"] !== "https://client" || child["urlFragment"] !== undefined ||
+          reproof && !equal(currentFrames, this.#frames?.map(value => value["id"] === root["id"] ? root : value))) { this.#refuse(); }
+      if (finalRoot) {
+        if (pcb.bootstrapRootPhase !== "pcb") { this.#rootNavigation.seal(); }
+      } else {
+        if (pcb.bootstrapRootPhase === "pcb") { this.#refuse(); }
+        this.#rootNavigation.assertPendingFragment();
+      }
+      pcb.bootstrapRootPhase = finalRoot ? "pcb" : "project";
       pcb.child = child; this.#frames = currentFrames; this.#frame = root;
       this.#target = Object.freeze({ ...currentTarget, attached: false });
       return Object.freeze({ frameId: pcb.childId, rootFrameId: String(root["id"]) });
@@ -599,6 +641,7 @@ export class CurrentPcbDiagnosticContext {
   public reprovePcbBootstrapFrames(targetReply: Row, frameReply: Row): void {
     this.pcbOpeningContext(); const pcb = this.#pcbOpening;
     if (pcb?.child === null || pcb?.child === undefined || pcb.navigation === null || pcb.domBackendNodeId === null) { return this.#refuse(); }
+    if (pcb.bootstrapRootPhase !== null) { this.#observePcbBootstrapFrames(targetReply, frameReply, true); return; }
     pcb.navigation.assertReady(); this.observeFrames(frameReply); this.observeTarget(targetReply);
   }
   public reprovePcbBootstrapOwner(ownerReply: Row, describeReply: Row): void {
@@ -627,7 +670,8 @@ export class CurrentPcbDiagnosticContext {
   public finishPcbOpening(source: Row, targetReply: Row, frameReply: Row): Readonly<Record<string, unknown>> {
     this.pcbOpeningContext(); this.observeFrames(frameReply); this.observeTarget(targetReply);
     const pcb = this.#pcbOpening;
-    if (pcb === null || pcb.profile === null || pcb.child === null || pcb.domBackendNodeId === null || pcb.sourceIdentity !== null) { return this.#refuse(); }
+    if (pcb === null || pcb.profile === null || pcb.child === null || pcb.domBackendNodeId === null || pcb.sourceIdentity !== null ||
+        pcb.bootstrapRootPhase === "project") { return this.#refuse(); }
     const scriptSource = source["scriptSource"], selected = this.pcbScript(pcb.profile);
     if (!diagnosticExact(source, ["scriptSource"]) || typeof scriptSource !== "string" || !scriptSource.isWellFormed() ||
         Buffer.byteLength(scriptSource, "utf8") !== pcb.profile.scriptBytes ||
@@ -648,7 +692,7 @@ export class CurrentPcbDiagnosticContext {
   public completePcbOpening(): void {
     this.pcbOpeningContext();
     const pcb = this.#pcbOpening;
-    if (pcb === null || pcb.completed || pcb.child === null || pcb.profile === null || pcb.sourceIdentity === null ||
+    if (pcb === null || pcb.completed || pcb.child === null || pcb.profile === null || pcb.sourceIdentity === null || pcb.bootstrapRootPhase === "project" ||
         pcb.domBackendNodeId === null) { this.#refuse(); }
     const selected = this.#scriptFor(pcb.child, pcb.profile);
     if (selected.scriptId !== pcb.sourceIdentity.scriptId || selected.context["id"] !== pcb.sourceIdentity.contextId ||

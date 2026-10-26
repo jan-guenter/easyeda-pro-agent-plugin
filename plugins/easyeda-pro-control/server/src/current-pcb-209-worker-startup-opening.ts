@@ -4,6 +4,7 @@
 /* oxlint-disable import/max-dependencies -- This coordinator joins the fixed parent opener, original construction owner and actor observers without exporting their native capabilities to another owner. */
 import { types } from "node:util";
 import { z } from "zod";
+import type { CurrentFootprintCopyStatePacket } from "./current-footprint-copy-state.ts";
 import { currentDisposableOpenSealedTargetSchema } from "./current-disposable-open.ts";
 import type { CurrentDisposableOpenSealedTarget } from "./current-disposable-open.ts";
 import type { CurrentPcbWorkerStartupHandoff, CurrentPcbWorkerStartupOpeningBinding } from "./current-pcb-diagnostic-owner.ts";
@@ -102,6 +103,9 @@ export class CurrentPcb209WorkerStartupOpening {
   #actorAttempted = false;
   #actor: CurrentPcb209WorkerStartupActorRunner | null = null;
   #actorPacket: CurrentPcb209WorkerStartupActorPacket | null = null;
+  #footprintAttempted = false;
+  #footprintRunner: CurrentPcb209WorkerConstructionRunner | null = null;
+  #footprintPacket: CurrentFootprintCopyStatePacket | null = null;
   #channelAttempted = false;
   #channelRunner: CurrentPcb209WorkerConstructionRunner | null = null;
   #channelPacket: CurrentPcbWorkerStartupChannelPacket | null = null;
@@ -286,6 +290,28 @@ export class CurrentPcb209WorkerStartupOpening {
     const transport = await this.requireOriginal(result);
     const runner = await transport.requireOriginal(result.construction); await this.#current();
     await runner.requireCurrentAssignments(result.construction, assignments); await this.#current();
+  }
+  public retainedFootprintState(): Readonly<Record<string, unknown>> | null {
+    return this.#footprintRunner?.retainedFootprintState() ?? null;
+  }
+  public async observeFootprintState(result: CurrentPcb209WorkerStartupOpeningResult,
+    assignments: CurrentPcbWorkerConstructionAssignments): Promise<CurrentFootprintCopyStatePacket> {
+    if (this.#footprintAttempted) { throw fail("FOOTPRINT_CONSUMED"); } this.#footprintAttempted = true;
+    await this.requireCurrentAssignments(result, assignments);
+    const transport = await this.requireOriginal(result);
+    const runner = await transport.requireOriginal(result.construction); await this.#current();
+    this.#footprintRunner = runner;
+    const packet = await runner.observeFootprintState(result.construction, assignments);
+    this.#footprintPacket = packet; await this.#current(); return packet;
+  }
+  public async requireFootprintState(result: CurrentPcb209WorkerStartupOpeningResult,
+    assignments: CurrentPcbWorkerConstructionAssignments, packet: CurrentFootprintCopyStatePacket): Promise<void> {
+    if (packet !== this.#footprintPacket || this.#footprintRunner === null) { throw fail("ORIGINAL_FOOTPRINT_PACKET"); }
+    await this.requireCurrentAssignments(result, assignments);
+    const transport = await this.requireOriginal(result);
+    const runner = await transport.requireOriginal(result.construction); await this.#current();
+    if (runner !== this.#footprintRunner) { throw fail("ORIGINAL_FOOTPRINT_OWNER"); }
+    await runner.requireFootprintState(result.construction, assignments, packet); await this.#current();
   }
   public retainedActorObservation(): Readonly<Record<string, unknown>> | null {
     return this.#actor === null ? null : Object.freeze({ status: this.#actor.status(), samples: this.#actor.retainedSamples() });

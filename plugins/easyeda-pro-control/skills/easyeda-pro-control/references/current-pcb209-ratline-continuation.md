@@ -81,6 +81,18 @@ after commit, a destroyed context or a replacement context still refuses.
 The next document hook selects a reused context through the committed-frame
 checks even when Chromium emits no second context-created event.
 
+During source-held bootstrap, the root can still have its original project-only
+URL. Native tab activation updates that fragment after iframe onload and frame
+initialization. Bootstrap ancestry retains the original root until its exact
+fragment event, then accepts only the final PCB root. Ordinary completed-opening
+checks still require the final root. Neither phase proves callback completion.
+
+Original-owner inspection includes bounded ancestry replies for Target,
+frame-tree and DOM checks, even when later validation fails. Each capture is
+complete or explicitly unavailable/oversized; limits are 16 KiB per reply and
+64 KiB total. These private historical replies aid diagnosis, grant no owner
+authority and cannot be used to retry a consumed request.
+
 The original coordinator seals subordinate observations before the worker can
 terminate that subordinate. It then holds the PCB received pause until the
 worker terminal capture, breakpoint removals and resume acknowledgments are

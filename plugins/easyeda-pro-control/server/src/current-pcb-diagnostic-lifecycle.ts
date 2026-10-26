@@ -45,6 +45,7 @@ import type { CurrentPcbWorkerStartupOpeningResult } from "./current-pcb-worker-
 import type { CurrentPcb209WorkerStartupTransport, CurrentPcbWorkerStartupTransport } from "./current-pcb-worker-startup-transport.ts";
 import type { CurrentPcbWorkerConstructionAssignments } from "./current-pcb-worker-construction-assignment.ts";
 import { CurrentPcb209WorkerStartupOpening } from "./current-pcb-209-worker-startup-opening.ts";
+import type { CurrentFootprintCopyStatePacket } from "./current-footprint-copy-state.ts";
 import type { CurrentPcb209WorkerStartupOpeningResult } from "./current-pcb-209-worker-startup-opening.ts";
 import { adaptCurrentPcb209WorkerStartupLifecycle, adaptCurrentPcbWorkerStartupLifecycle, requireCurrentPcb209StartupOpening } from "./current-pcb-worker-startup-lifecycle-adapter.ts";
 import { currentPcb209StartupCheckpointCallback } from "./current-pcb-209-startup-checkpoint.ts";
@@ -96,6 +97,8 @@ const startupOpeningMethods = ["open", "status", "retainedOpeningResult", "requi
   "releaseAfterTermination"] as const;
 
 // oxlint-disable typescript/unbound-method -- Retained private-field methods are invoked only with their original session receiver.
+const footprintStateMethods = Object.freeze({ observe: CurrentPcb209WorkerStartupOpening.prototype.observeFootprintState,
+  require: CurrentPcb209WorkerStartupOpening.prototype.requireFootprintState, retained: CurrentPcb209WorkerStartupOpening.prototype.retainedFootprintState });
 const emptySessionMethods = Object.freeze({ openPcb: CurrentPcb209WorkerStartupPcbSession.prototype.openAndQualify,
   pcbStatus: CurrentPcb209WorkerStartupPcbSession.prototype.status, pcbObservation: CurrentPcb209WorkerStartupPcbSession.prototype.retainedOpeningObservation,
   observe: CurrentPcb209WorkerStartupEmptySession.prototype.observeAndJoin, require: CurrentPcb209WorkerStartupEmptySession.prototype.requireOriginal,
@@ -106,14 +109,16 @@ const ratlineSessionMethods = Object.freeze({ capture: CurrentPcb209RatlineNativ
   release: CurrentPcb209RatlineNativeSession.prototype.releaseAfterTermination, status: CurrentPcb209RatlineNativeSession.prototype.status,
   opening: CurrentPcb209RatlineNativeSession.prototype.retainedOpeningObservation,
   originEvidence: CurrentPcb209RatlineNativeSession.prototype.retainedNativeOriginEvidence,
-  rejectedStopEvidence: CurrentPcb209RatlineNativeSession.prototype.retainedRejectedStopEvidence });
+  rejectedStopEvidence: CurrentPcb209RatlineNativeSession.prototype.retainedRejectedStopEvidence,
+  ancestryEvidence: CurrentPcb209RatlineNativeSession.prototype.retainedAncestryEvidence });
 const continuationChannelCleanup = CurrentPcb209RatlineContinuationChannel.prototype.beginCleanup;
 const continuationSessionMethods = Object.freeze({ capture: CurrentPcb209RatlineContinuationNativeSession.prototype.captureContinuation,
   require: CurrentPcb209RatlineContinuationNativeSession.prototype.requireOriginal, abort: CurrentPcb209RatlineContinuationNativeSession.prototype.abort,
   release: CurrentPcb209RatlineContinuationNativeSession.prototype.releaseAfterTermination, status: CurrentPcb209RatlineContinuationNativeSession.prototype.status,
   opening: CurrentPcb209RatlineContinuationNativeSession.prototype.retainedOpeningObservation,
   originEvidence: CurrentPcb209RatlineContinuationNativeSession.prototype.retainedNativeOriginEvidence,
-  rejectedStopEvidence: CurrentPcb209RatlineContinuationNativeSession.prototype.retainedRejectedStopEvidence });
+  rejectedStopEvidence: CurrentPcb209RatlineContinuationNativeSession.prototype.retainedRejectedStopEvidence,
+  ancestryEvidence: CurrentPcb209RatlineContinuationNativeSession.prototype.retainedAncestryEvidence });
 // oxlint-enable typescript/unbound-method
 
 type CleanupRequest = Exclude<LifecycleRequest, { action: "launch" | "inspect" | "query-observation" | "settle-records" | "cleanup-unlaunched" | "cleanup-no-process" }>;
@@ -216,6 +221,8 @@ function describe(operationId: string, operation: DiagnosticLifecycleOperation |
     workerStartupOpeningResultPublished: records?.["worker-startup-opening-result.json"] !== undefined,
     workerStartupAssignmentsAttemptConsumed: records?.["worker-startup-assignments-intent.json"] !== undefined,
     workerStartupAssignmentsResultPublished: records?.["worker-startup-assignments-result.json"] !== undefined,
+    workerStartupFootprintAttemptConsumed: records?.["worker-startup-footprint-intent.json"] !== undefined,
+    workerStartupFootprintResultPublished: records?.["worker-startup-footprint-result.json"] !== undefined,
     workerStartupActorAttemptConsumed: records?.["worker-startup-actor-intent.json"] !== undefined,
     workerStartupActorResultPublished: records?.["worker-startup-actor-result.json"] !== undefined,
     workerStartupChannelAttemptConsumed: records?.["worker-startup-channel-intent.json"] !== undefined,
@@ -315,6 +322,9 @@ class CurrentPcbLifecycleCore {
   #startupOpeningReleased = false;
   #startupAssignmentsAttempted = false;
   #startupAssignments: CurrentPcbWorkerConstructionAssignments | null = null;
+  #startupFootprintAttempted = false;
+  #startupFootprintPacket: CurrentFootprintCopyStatePacket | null = null;
+  #startupFootprintOpening: CurrentPcb209WorkerStartupOpening | null = null;
   #startupActorAttempted = false;
   #startupActorPacket: CurrentPcbStartupActorPacket | null = null;
   #startupChannelAttempted = false;
@@ -477,6 +487,11 @@ class CurrentPcbLifecycleCore {
           original && this.#startupAssignmentsAttempted,
         workerStartupAssignmentsResultRetained: original && this.#startupAssignments !== null,
         workerStartupAssignmentsResult: operation?.records["worker-startup-assignments-result.json"]?.result ?? null,
+        workerStartupFootprintAttemptConsumed: operation?.records["worker-startup-footprint-intent.json"] !== undefined || original && this.#startupFootprintAttempted,
+        workerStartupFootprintResultRetained: original && this.#startupFootprintPacket !== null,
+        workerStartupFootprintObservation: original && this.#startupFootprintOpening !== null ?
+          footprintStateMethods.retained.call(this.#startupFootprintOpening) : null,
+        workerStartupFootprintResult: operation?.records["worker-startup-footprint-result.json"]?.result ?? null,
         workerStartupActorAttemptConsumed: operation?.records["worker-startup-actor-intent.json"] !== undefined || original && this.#startupActorAttempted,
         workerStartupActorResultRetained: original && this.#startupActorPacket !== null,
         workerStartupActorObservation: original && this.#startupOpening !== null ?
@@ -497,6 +512,8 @@ class CurrentPcbLifecycleCore {
           this.#startupRatlineSession !== null ? ratlineSessionMethods.originEvidence.call(this.#startupRatlineSession) : null,
         workerStartupRatlineRejectedStopEvidence: original && this.#startupRatlineSession !== null ?
           ratlineSessionMethods.rejectedStopEvidence.call(this.#startupRatlineSession) : null,
+        workerStartupRatlineAncestryEvidence: original && this.#startupRatlineSession !== null ?
+          ratlineSessionMethods.ancestryEvidence.call(this.#startupRatlineSession) : null,
         workerStartupRatlineOpening: original && this.#startupRatlineSession !== null ? ratlineSessionMethods.opening.call(this.#startupRatlineSession) : null,
         workerStartupContinuationAttemptConsumed: operation?.records["worker-startup-continuation-intent.json"] !== undefined || original && this.#startupContinuationAttempted,
         workerStartupContinuationResultPublished: operation?.records["worker-startup-continuation-result.json"] !== undefined,
@@ -508,6 +525,8 @@ class CurrentPcbLifecycleCore {
           this.#startupContinuationSession !== null ? continuationSessionMethods.originEvidence.call(this.#startupContinuationSession) : null,
         workerStartupContinuationRejectedStopEvidence: original && this.#startupContinuationSession !== null ?
           continuationSessionMethods.rejectedStopEvidence.call(this.#startupContinuationSession) : null,
+        workerStartupContinuationAncestryEvidence: original && this.#startupContinuationSession !== null ?
+          continuationSessionMethods.ancestryEvidence.call(this.#startupContinuationSession) : null,
         workerStartupContinuationOpening: original && this.#startupContinuationSession !== null ? continuationSessionMethods.opening.call(this.#startupContinuationSession) : null,
         workerStartupRatlineResult: operation?.records["worker-startup-ratline-result.json"]?.result ?? null,
         workerStartupEmptyAttemptConsumed: operation?.records["worker-startup-empty-intent.json"] !== undefined || original && this.#startupEmptyAttempted,
@@ -1064,6 +1083,55 @@ class CurrentPcbLifecycleCore {
     } finally { this.#busy = false; }
   }
 
+  protected async observeStartupFootprint(operationId: string, expectedBindingSha256: string): Promise<Record<string, unknown>> {
+    this.#startupId(operationId); diagnosticLifecycleDigestSchema.parse(expectedBindingSha256);
+    this.#options.assertLocalAllowed(); requireValue(this.#generation === "209-startup" && this.#purpose === "worker-startup", "WORKER_STARTUP_FOOTPRINT_PURPOSE_REQUIRED");
+    requireValue(!this.#busy, "BUSY"); this.#busy = true;
+    try {
+      const operations = await readCurrentPcbDiagnosticLifecycles();
+      const operation = operations.find(value => value.operationId === operationId), retained = this.#retained;
+      this.#assertPurpose(operationId, operation);
+      const assignments = this.#startupAssignments, openingResult = this.#startupOpeningResult, original = this.#startupOpening;
+      const openingRecord = operation?.records["worker-startup-opening-result.json"], record = operation?.records["worker-startup-assignments-result.json"];
+      requireValue(operation !== undefined && retained !== null && retained.operationId === operationId && original !== null &&
+        openingResult !== null && assignments !== null && !this.#startupOpeningReleased && !this.#closeAttempted &&
+        operation.records["close-intent.json"] === undefined && operation.records["terminated.json"] === undefined &&
+        sha256Json(operation.records["binding.json"]) === expectedBindingSha256 && openingRecord !== undefined && record !== undefined &&
+        this.#pending.get("worker-startup-opening-result.json") === canonicalJson(openingRecord) &&
+        this.#pending.get("worker-startup-assignments-result.json") === canonicalJson(record), "ORIGINAL_STARTUP_ASSIGNMENTS_REQUIRED");
+      this.#assertOwner(retained);
+      requireValue(!this.#startupFootprintAttempted && operation.records["worker-startup-footprint-intent.json"] === undefined, "WORKER_STARTUP_FOOTPRINT_CONSUMED");
+      await this.#installation(retained); await assertSnapshot(operations); this.#assertOwner(retained);
+      const intent: NonNullable<DiagnosticLifecycleRecords["worker-startup-footprint-intent.json"]> = {
+        schema: "easyeda-pro-control.pcb209-footprint-state-intent.v1", operationId, createdAt: new Date().toISOString(),
+        bindingSha256: expectedBindingSha256, assignmentsResultSha256: sha256Json(record),
+      };
+      this.#startupFootprintAttempted = true;
+      await this.#record(operationId, "worker-startup-footprint-intent.json", intent);
+      const updated = { ...operation, records: { ...operation.records, "worker-startup-footprint-intent.json": intent } };
+      const expected = operations.map(value => value.operationId === operationId ? updated : value);
+      await assertSnapshot(expected); this.#assertOwner(retained);
+      const opened = requireCurrentPcb209StartupOpening(original.owner, openingResult);
+      this.#startupFootprintOpening = opened.opening;
+      const packet = await footprintStateMethods.observe.call(opened.opening, opened.result, assignments);
+      this.#startupFootprintPacket = packet; this.#assertOwner(retained);
+      await footprintStateMethods.require.call(opened.opening, opened.result, assignments, packet); this.#assertOwner(retained);
+      const result = diagnosticLifecycleRecordSchemas["worker-startup-footprint-result.json"].parse({
+        schema: "easyeda-pro-control.pcb209-footprint-state-result.v1", operationId, createdAt: new Date().toISOString(),
+        intentSha256: sha256Json(intent), result: structuredClone(packet), pointInTimeObservation: true,
+        executionAuthorized: false, saveAuthorized: false,
+      });
+      requireValue(canonicalJson(result.result.identity) === canonicalJson(openingResult.workerIdentity), "WORKER_STARTUP_FOOTPRINT_IDENTITY");
+      this.#retainRecord("worker-startup-footprint-result.json", result);
+      await assertSnapshot(expected); this.#assertOwner(retained);
+      await this.#publish(operationId, "worker-startup-footprint-result.json", result);
+      const completed = { ...updated, records: { ...updated.records, "worker-startup-footprint-result.json": result } };
+      await assertSnapshot(expected.map(value => value.operationId === operationId ? completed : value)); this.#assertOwner(retained);
+      return { operationId, result: structuredClone(result.result), pointInTimeObservation: true,
+        validationOnly: true, executionAuthorized: false, saveAuthorized: false };
+    } finally { this.#busy = false; }
+  }
+
   protected async observeStartupActor(operationId: string, expectedBindingSha256: string): Promise<Record<string, unknown>> {
     this.#startupId(operationId); diagnosticLifecycleDigestSchema.parse(expectedBindingSha256);
     this.#options.assertLocalAllowed(); requireValue(this.#purpose === "worker-startup", "WORKER_STARTUP_PURPOSE_REQUIRED");
@@ -1219,7 +1287,8 @@ class CurrentPcbLifecycleCore {
         session.abort === ratlineSessionMethods.abort && session.releaseAfterTermination === ratlineSessionMethods.release &&
         session.status === ratlineSessionMethods.status && session.retainedOpeningObservation === ratlineSessionMethods.opening &&
         session.retainedNativeOriginEvidence === ratlineSessionMethods.originEvidence &&
-        session.retainedRejectedStopEvidence === ratlineSessionMethods.rejectedStopEvidence, "STARTUP_RATLINE_METHODS_CHANGED");
+        session.retainedRejectedStopEvidence === ratlineSessionMethods.rejectedStopEvidence &&
+        session.retainedAncestryEvidence === ratlineSessionMethods.ancestryEvidence, "STARTUP_RATLINE_METHODS_CHANGED");
     }
     if (this.#generation === "209-startup-ratline-continuation") {
       requireValue(typeof retained.methods.prepareWorkerStartupRatlineContinuationSession209 === "function" &&
@@ -1231,7 +1300,8 @@ class CurrentPcbLifecycleCore {
         session.abort === continuationSessionMethods.abort && session.releaseAfterTermination === continuationSessionMethods.release &&
         session.status === continuationSessionMethods.status && session.retainedOpeningObservation === continuationSessionMethods.opening &&
         session.retainedNativeOriginEvidence === continuationSessionMethods.originEvidence &&
-        session.retainedRejectedStopEvidence === continuationSessionMethods.rejectedStopEvidence, "STARTUP_RATLINE_METHODS_CHANGED");
+        session.retainedRejectedStopEvidence === continuationSessionMethods.rejectedStopEvidence &&
+        session.retainedAncestryEvidence === continuationSessionMethods.ancestryEvidence, "STARTUP_RATLINE_METHODS_CHANGED");
     }
     if (this.#startupEmptyPreparation !== null) {
       const pcb = this.#startupEmptyPreparation.pcb;
@@ -2151,6 +2221,9 @@ export class CurrentPcb209WorkerStartupLifecycle extends CurrentPcbLifecycleCore
   }
   public observeWorkerStartupAssignments(operationId: string, expectedBindingSha256: string): Promise<Record<string, unknown>> {
     return this.observeStartupAssignments(operationId, expectedBindingSha256);
+  }
+  public observeWorkerStartupFootprint(operationId: string, expectedBindingSha256: string): Promise<Record<string, unknown>> {
+    return this.observeStartupFootprint(operationId, expectedBindingSha256);
   }
   public observeWorkerStartupActor(operationId: string, expectedBindingSha256: string): Promise<Record<string, unknown>> {
     return this.observeStartupActor(operationId, expectedBindingSha256);

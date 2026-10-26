@@ -101,4 +101,13 @@ export class CurrentPcbDiagnosticSameDocument {
     }
     this.#sealed = true;
   }
+
+  /** A source-held child can precede this root's tab activation. This read
+   * proves only that no fragment event has committed yet; it does not seal,
+   * cancel or reset the original transition or its scheduling observations. */
+  public assertPendingFragment(): void {
+    if (this.#failed || this.#sealed || this.#fragmentCount !== 0) {
+      this.#failed = true; refuse();
+    }
+  }
 }
