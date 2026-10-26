@@ -60,13 +60,20 @@ Validation is offline. It neither creates a journal nor grants authority.
    frame; matching names or copied packets cannot replace them.
 5. After a published footprint-state result, `observe-footprint-source` takes
    the same ID and binding plus `footprintUuid`. The footprint must belong to
-   the original completed checkpoint. The current profile supports one stored
-   fragment with CANVAS, PAD and LINE records, an explicit stored header actor,
-   ordinary atom IDs and complete metadata. It refuses other source encodings
-   before native dispatch. Two reads reconstruct source from the original live
-   consistency entries and existing native Cache chunks. Four state samples
-   bracket those reads, and the complete source must equal the independent
-   checkpoint projection. The result identifies `native-cache-equivalent`;
+   the original completed checkpoint. A separate read-only projection resolves
+   its complete history, including ordinary record families, repeated fragments
+   and tombstones. Ambiguous headers, actors, normalized identities or conflicting
+   winners refuse before native dispatch. Copy/append eligibility is separate.
+   Historical `pend`/`unique` fields and `DELETE_DOC`, `META_CREATE` or
+   `META_MODIFY` effects remain outside this source projection.
+   Two reads reconstruct source from the original live consistency entries and
+   existing native Cache chunks. Four state samples bracket those reads. Every
+   keyed record and exact body byte must match the independent checkpoint fold;
+   the two complete source samples must also match each other's native order.
+   Concurrent cache loading means checkpoint traversal cannot establish that
+   order. The result therefore reports `checkpointByteOrderMatched:false` and
+   `nativeOrderStable:true`, with comparison
+   `complete-checkpoint-records-native-order` and route `native-cache-equivalent`;
    it does not dispatch `Tg.getStr`, a parser, cache writes or a network fallback.
    A missing cache entry refuses. This is source inspection, with no copy,
    delete, Save or persistence authority.

@@ -7609,18 +7609,21 @@
           "tool": "easyeda_control_pcb209_worker_startup",
           "selector": "observe-footprint-source",
           "implementation": "native-task-equivalent",
-          "scope": "Disposable original209 startup owner only, after published construction, assignments and footprint state. One footprintUuid from the original whole-project checkpoint; single stored fragment with CANVAS/PAD/LINE atoms, explicit stored header actor and ordinary IDs. The fixed native reader reconstructs source from current consistency entries and existing native Cache chunks. Two matching source reads and four state samples require exact independent checkpoint-derived source equality. Source is bounded to 2MiB, cached history to 64 keys and 8MiB, and drawing atoms to 4096; separate encoding bounds can refuse heavily escaped content. Requires 65 remaining normal requests and preserves 32 cleanup slots. A cache miss refuses without fetch, parser replay, cache warming or network fallback. The installed SDK stub calls a LIB_Footprint.getDocumentSource UI handler that is absent from the pinned registration, so public-wrapper execution and its returned format are not verified. This route is a scoped source-inspection task equivalent. No public wrapper or Tg.getStr dispatch, arbitrary library/path, copy/delete, saved/reopened proof, current connected validation or complete declared-contract claim.",
+          "scope": "Disposable original209 startup owner only, after published construction, assignments and footprint state. One footprintUuid from the original whole-project checkpoint. A dedicated read-only history fold supports ordinary record families, multiple fragments, opaque body bytes and tombstones when normalized-ID winners and header actors are unambiguous. Historical pend/unique flags and DELETE_DOC/META_CREATE/META_MODIFY effects remain refused. The fixed native reader reconstructs source from current consistency entries and existing native Cache chunks. Two matching source reads and four state samples prove stable observed native order; independent checkpoint verification covers every keyed record and generated header, not checkpoint byte-order equality or copy/append eligibility. Source is bounded to 2MiB, cached history to 64 keys and 8MiB, and drawing atoms to 4096; separate encoding bounds can refuse heavily escaped content. Requires 65 remaining normal requests and preserves 32 cleanup slots. A cache miss refuses without fetch, parser replay, cache warming or network fallback. The installed SDK stub calls a LIB_Footprint.getDocumentSource UI handler that is absent from the pinned registration, so public-wrapper execution and its returned format are not verified. This route is a scoped source-inspection task equivalent. No public wrapper or Tg.getStr dispatch, arbitrary library/path, copy/delete, saved/reopened proof, current connected validation or complete declared-contract claim.",
           "source": [
-            "current-footprint-copy-cache-source-read.ts",
+            "current-footprint-source-plan.ts",
+            "current-footprint-cache-source-read.ts",
             "current-footprint-copy-source-command.ts",
-            "current-footprint-copy-source-read-runner.ts",
+            "current-footprint-source-read-runner.ts",
             "current-pcb-worker-construction-runner.ts",
             "current-pcb-209-worker-startup-opening.ts",
             "current-pcb-diagnostic-lifecycle.ts",
             "current-pcb-diagnostic-lifecycle-journal.ts"
           ],
           "tests": [
-            "current-footprint-copy-source-read.test.ts",
+            "current-footprint-source-plan.test.ts",
+            "current-footprint-cache-source-read.test.ts",
+            "current-footprint-source-read-runner.test.ts",
             "current-pcb-209-worker-startup-lifecycle.test.ts"
           ],
           "documentTypes": [

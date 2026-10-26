@@ -7,7 +7,7 @@ import { test } from "node:test";
 import { runInThisContext } from "node:vm";
 import { transform } from "esbuild";
 import { sha256Text } from "../src/core.ts";
-import type { CurrentFootprintCopyAppendPlan } from "../src/current-footprint-copy-append.ts";
+import type { CurrentFootprintSourcePlan } from "../src/current-footprint-source-plan.ts";
 import type { CurrentPcb209WorkerStartupOpening } from "../src/current-pcb-209-worker-startup-opening.ts";
 import type { CurrentPcbWorkerStartupOpeningBinding } from "../src/current-pcb-diagnostic-owner.ts";
 // oxlint-disable-next-line import/max-dependencies -- The actual source coordinator and its typed boundaries are joined to the existing module-injection test pattern.
@@ -84,7 +84,7 @@ void test("actual209 source delegates each reprove original project identity and
   const assigned = await owner.proveCurrentAssignments(opened), observed = await owner.observeFootprintState(opened, assigned);
   checks.length = 0;
   // oxlint-disable-next-line typescript/no-unsafe-type-assertion -- The inert runner deliberately never interprets this plan; only the actual opening delegate's owner checks are under test.
-  const plan = Object.freeze({}) as CurrentFootprintCopyAppendPlan;
+  const plan = Object.freeze({}) as CurrentFootprintSourcePlan;
   const packet = await owner.observeFootprintSource(opened, assigned, observed, plan);
   assert.deepEqual(checks, ["identity", "assignments"]);
   await owner.requireFootprintSource(opened, assigned, observed, plan, packet);

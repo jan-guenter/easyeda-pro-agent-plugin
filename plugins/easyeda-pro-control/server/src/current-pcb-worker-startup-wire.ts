@@ -6,7 +6,7 @@ import { CURRENT_FOOTPRINT_COPY_CONSTRUCTORS_EXPRESSION, CURRENT_FOOTPRINT_COPY_
 import { currentFootprintCopySourceCommandParamsSchema } from "./current-footprint-copy-source-command.ts";
 import { CURRENT_FOOTPRINT_COPY_METHOD_CALLS } from "./current-footprint-copy-method-bindings.ts";
 import { CURRENT_FOOTPRINT_COPY_CACHE_FACTORY_CALLS } from "./current-footprint-copy-cache-factory.ts";
-import { CURRENT_FOOTPRINT_COPY_CACHE_SOURCE_READ_FUNCTION } from "./current-footprint-copy-cache-source-read.ts";
+import { CURRENT_FOOTPRINT_CACHE_SOURCE_READ_FUNCTION } from "./current-footprint-cache-source-read.ts";
 import { types } from "node:util";
 import { CURRENT_PCB_209_WORKER_CONSTRUCTION_SITES } from "./current-pcb-209-worker-startup-profile.ts";
 import { captureCurrentPcbStringClockReply } from "./current-pcb-string-clock-reply.ts";
@@ -93,7 +93,7 @@ function captureWire(raw: unknown): unknown {
   const sourceText: unknown = functionField?.value;
   if (functionField === undefined || !Object.hasOwn(functionField, "value") || typeof sourceText !== "string" ||
       sourceText !== CURRENT_PCB_DIAGNOSTIC_OPENING_FUNCTION && sourceText !== CURRENT_PCB_209_STARTUP_OPENING_FUNCTION &&
-      sourceText !== CURRENT_PCB_DIAGNOSTIC_PCB_OPENING_FUNCTION && sourceText !== CURRENT_FOOTPRINT_COPY_CACHE_SOURCE_READ_FUNCTION) {
+      sourceText !== CURRENT_PCB_DIAGNOSTIC_PCB_OPENING_FUNCTION && sourceText !== CURRENT_FOOTPRINT_CACHE_SOURCE_READ_FUNCTION) {
     return captureCurrentPcbStringClockReply(raw).value;
   }
   const descriptors = Object.getOwnPropertyDescriptors(original);

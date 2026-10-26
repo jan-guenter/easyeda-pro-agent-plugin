@@ -539,9 +539,22 @@ would reject ordinary stored drawings. A complete direct getter adapter still
 needs those producers and their effects accounted for.
 
 The scoped source-inspection alternative reads the original consistency map and
-its current atom offsets, then reads existing native Cache entries. It reconstructs
-the source from those live inputs and compares it independently with the original
-checkpoint projection. Never send the expected source into the native reader as
+its current atom offsets, then reads existing native Cache entries. Use a separate
+read-only history projection: copy/append restrictions would unnecessarily reject
+ordinary footprint records, edits and actor metadata. Preserve opaque body bytes
+and empty tombstones. Resolve normalized-ID winners from the pinned native fold,
+and refuse contradictory ties or ambiguous header/actor provenance.
+Preserve raw library atom headers through the separately scoped read-only
+decoder; do not change the default writer decoder to admit them. Historical
+pending/unique flags and metadata-effect families need their own native fold
+before this reader can support them.
+
+Native cache segments load concurrently, so SQL traversal order cannot prove
+the consistency map's insertion order. Require two identical complete native
+source samples and independently verify every keyed record and generated header.
+Report native order stability separately from checkpoint record equality; do not
+claim checkpoint byte-order equality or reuse this proof to authorize a copy.
+Never send the expected source into the native reader as
 the observed result. Qualify the original receivers and native method objects,
 recheck them across awaits, and retain the exact source rather than a partial
 projection. Missing cache entries refuse without invoking the vendor parser or

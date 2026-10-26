@@ -4,7 +4,7 @@
 import { z } from "zod";
 import { CURRENT_FOOTPRINT_COPY_SOURCE_READ_LIMITS,
   currentFootprintCopySourceReadRequestSchema } from "./current-footprint-copy-source-read.ts";
-import { CURRENT_FOOTPRINT_COPY_CACHE_SOURCE_READ_FUNCTION } from "./current-footprint-copy-cache-source-read.ts";
+import { CURRENT_FOOTPRINT_CACHE_SOURCE_READ_FUNCTION } from "./current-footprint-cache-source-read.ts";
 import type { CurrentFootprintCopySourceReadRequest } from "./current-footprint-copy-source-read.ts";
 import { freezeDeep } from "./sqlite-inventory-core.ts";
 
@@ -12,7 +12,7 @@ const group = "easyeda-pro-control-worker-construction-v1";
 const handle = z.string().min(1).max(256).regex(/^[A-Za-z\d_.:-]+$/u);
 const object = z.object({ objectId: handle }).strict();
 export const currentFootprintCopySourceCommandParamsSchema = z.object({
-  objectId: handle, functionDeclaration: z.literal(CURRENT_FOOTPRINT_COPY_CACHE_SOURCE_READ_FUNCTION),
+  objectId: handle, functionDeclaration: z.literal(CURRENT_FOOTPRINT_CACHE_SOURCE_READ_FUNCTION),
   arguments: z.tuple([object, object, object,
     z.object({ value: currentFootprintCopySourceReadRequestSchema }).strict(), object, object]),
   objectGroup: z.literal(group), silent: z.literal(true), returnByValue: z.literal(true),
@@ -36,7 +36,7 @@ export function currentFootprintCopySourceCommand(bindings: Readonly<{
   manager: string; project: string; bus: string; consistency: string; constructors: string; methods: string;
 }>, selected: CurrentFootprintCopySourceReadRequest): CurrentFootprintCopySourceCommand {
   return freezeDeep({ method: "Runtime.callFunctionOn", params: currentFootprintCopySourceCommandParamsSchema.parse({
-    objectId: bindings.manager, functionDeclaration: CURRENT_FOOTPRINT_COPY_CACHE_SOURCE_READ_FUNCTION,
+    objectId: bindings.manager, functionDeclaration: CURRENT_FOOTPRINT_CACHE_SOURCE_READ_FUNCTION,
     arguments: [{ objectId: bindings.project }, { objectId: bindings.bus }, { objectId: bindings.consistency },
       { value: selected }, { objectId: bindings.constructors }, { objectId: bindings.methods }],
     objectGroup: group, silent: true, returnByValue: true, generatePreview: false,

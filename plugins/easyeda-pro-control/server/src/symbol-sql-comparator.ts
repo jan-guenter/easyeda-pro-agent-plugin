@@ -171,7 +171,7 @@ function ticketFromRaw(plaintext: string): number {
   return maximum;
 }
 async function selectedHistory(before: Inventory, witness: Pick<SymbolSqlWitness, "projectUuid" | "branchUuid">,
-  project: SqlRow, branch: SqlRow): Promise<DecodedSymbolSqlRawHistory> {
+  project: SqlRow, branch: SqlRow, libraryAtomHeaders?: "preserve"): Promise<DecodedSymbolSqlRawHistory> {
   const histories = table(before, `project_history_${witness.branchUuid}`);
   const data = table(before, "history_data");
   const head = text(field(table(before, "branches"), branch, "history_uuid"));
@@ -206,14 +206,18 @@ async function selectedHistory(before: Inventory, witness: Pick<SymbolSqlWitness
       const encoded = text(field(data, chunk, "dataStr"));
       const decoded = await decodeNativeHistoryChunk({ historyUuid, keyHex, dataBase64: encoded });
       bytes += Buffer.byteLength(decoded); need(bytes <= MAX_PLAINTEXT_BYTES && chunks.length < 4096, "Complete selected history exceeds its proof bound.");
-      maximumTicket = Math.max(maximumTicket, ticketFromRaw(decoded)); chunks.push(decoded);
+      // Only the separate source reader admits the vendor's optional terminal
+      // Delimiter. Existing writer/default-decoder framing stays unchanged.
+      const ticketPlaintext = libraryAtomHeaders === "preserve" && decoded.endsWith("|\n") ? decoded.slice(0, -2) : decoded;
+      maximumTicket = Math.max(maximumTicket, ticketFromRaw(ticketPlaintext)); chunks.push(decoded);
       const chunkRowId = integer(field(data, chunk, "id")).toString(), historyRowId = integer(field(histories, row, "id")).toString();
       const chunkUuid = text(field(data, chunk, "uuid"));
       links.push(Object.freeze({ historyUuid, historyRowId, chunkUuid, chunkRowId, ordinal: index,
         ciphertextBase64Sha256: sha256Text(encoded), plaintextSha256: sha256Text(decoded), plaintextBytes: Buffer.byteLength(decoded) }));
     }
   }
-  const documents = await materializeNativeHistoryCooperatively(chunks, before.checkpointSha256);
+  const documents = await materializeNativeHistoryCooperatively(chunks, before.checkpointSha256,
+    libraryAtomHeaders === undefined ? {} : { libraryAtomHeaders });
   const owner = text(field(table(before, "projects"), project, "owner_uuid"));
   return { maximumTicket, chunks: Object.freeze(chunks), links: Object.freeze(links), history: { profile: "easyeda.native-history.linear-gcm-gzip.v1", projectUuid: witness.projectUuid, projectOwnerUuid: owner,
     branchUuid: witness.branchUuid, headHistoryUuid: head, checkpointSha256: before.checkpointSha256, historyRowCount: rows.length,
@@ -224,8 +228,19 @@ async function selectedHistory(before: Inventory, witness: Pick<SymbolSqlWitness
  * This data-only decoder issues no clock, transaction plan or writer authority.
  * The caller must bind the inventory to its original retained baseline.
  */
-export async function decodeCurrentSymbolPreEditHistory(before: Inventory,
+export function decodeCurrentSymbolPreEditHistory(before: Inventory,
   identity: Readonly<Pick<SymbolSqlWitness, "projectUuid" | "branchUuid">>): Promise<DecodedSymbolSqlRawHistory> {
+  return decodePreEditHistory(before, identity);
+}
+/** Read-only source observation preserves already-supported library atom
+ * headers. It grants no copy, append, clock, transaction or writer authority.
+ * Existing pre-edit/writer callers retain the original stricter decoder. */
+export function decodeCurrentFootprintSourceHistory(before: Inventory,
+  identity: Readonly<Pick<SymbolSqlWitness, "projectUuid" | "branchUuid">>): Promise<DecodedSymbolSqlRawHistory> {
+  return decodePreEditHistory(before, identity, "preserve");
+}
+async function decodePreEditHistory(before: Inventory,
+  identity: Readonly<Pick<SymbolSqlWitness, "projectUuid" | "branchUuid">>, libraryAtomHeaders?: "preserve"): Promise<DecodedSymbolSqlRawHistory> {
   const witness = structuredClone(identity);
   need(Object.keys(witness).length === 2 && typeof witness.projectUuid === "string" && PROJECT_UUID.test(witness.projectUuid) &&
     typeof witness.branchUuid === "string" && UUID.test(witness.branchUuid), "Current pre-edit history identity refused.");
@@ -239,7 +254,7 @@ export async function decodeCurrentSymbolPreEditHistory(before: Inventory,
   need(text(field(projects, project, "branch_uuid")) === witness.branchUuid && text(field(branches, branch, "project_uuid")) === witness.projectUuid &&
     integer(field(branches, branch, "delete_status")) === 0n && integer(field(branches, branch, "node")) === 0n,
     "Current pre-edit project/default-branch association differs.");
-  const decoded = await selectedHistory(before, witness, project, branch);
+  const decoded = await selectedHistory(before, witness, project, branch, libraryAtomHeaders);
   supported(before, witness.branchUuid);
   need(readerCompletion(before) === completion, "Current pre-edit SQL reader changed during decoding.");
   return decoded;

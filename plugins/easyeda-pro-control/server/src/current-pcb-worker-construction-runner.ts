@@ -9,12 +9,12 @@ import { CURRENT_FOOTPRINT_COPY_METHOD_CALLS, decodeCurrentFootprintCopyCacheMet
   decodeCurrentFootprintCopyNativeMethodProperties } from "./current-footprint-copy-method-bindings.ts";
 import { CURRENT_FOOTPRINT_COPY_CACHE_FACTORY_CALLS, decodeCurrentFootprintCopyCacheFactoryArray,
   decodeCurrentFootprintCopyCacheFactoryProperties } from "./current-footprint-copy-cache-factory.ts";
-import type { CurrentFootprintCopyAppendPlan } from "./current-footprint-copy-append.ts";
+import type { CurrentFootprintSourcePlan } from "./current-footprint-source-plan.ts";
 import { currentFootprintCopySourceCommand } from "./current-footprint-copy-source-command.ts";
 import { CURRENT_FOOTPRINT_COPY_SOURCE_READ_LIMITS, captureCurrentFootprintCopySourceReadReply } from "./current-footprint-copy-source-read.ts";
 import type { CurrentFootprintCopySourceReadRequest } from "./current-footprint-copy-source-read.ts";
-import { CurrentFootprintCopySourceReadRunner } from "./current-footprint-copy-source-read-runner.ts";
-import type { CurrentFootprintCopySourceReadPacket } from "./current-footprint-copy-source-read-runner.ts";
+import { CurrentFootprintSourceReadRunner } from "./current-footprint-source-read-runner.ts";
+import type { CurrentFootprintSourceReadPacket } from "./current-footprint-source-read-runner.ts";
 import { types } from "node:util";
 import { CURRENT_PCB_209_STARTUP_TIMING, currentPcbStartupMonotonicMs, currentPcbStartupWindowObservation } from "./current-pcb-209-worker-startup-timing.ts";
 import type { CurrentPcbStartupWindow, CurrentPcbStartupWindowObservation } from "./current-pcb-209-worker-startup-timing.ts";
@@ -197,9 +197,9 @@ class CurrentPcbWorkerConstructionCore<P extends PacketProfile> {
   #footprintCacheFactory: string | null = null;
   #footprintCacheFactoryQualified = false;
   #footprintSourceAttempted = false;
-  #footprintSourceRunner: CurrentFootprintCopySourceReadRunner | null = null;
-  #footprintSourcePlan: CurrentFootprintCopyAppendPlan | null = null;
-  #footprintSourcePacket: CurrentFootprintCopySourceReadPacket | null = null;
+  #footprintSourceRunner: CurrentFootprintSourceReadRunner | null = null;
+  #footprintSourcePlan: CurrentFootprintSourcePlan | null = null;
+  #footprintSourcePacket: CurrentFootprintSourceReadPacket | null = null;
   readonly #footprintSourceReplies: unknown[] = [];
   #channelAttempted = false;
   #channel: CurrentPcbWorkerStartupChannelObservationRunner | null = null;
@@ -663,12 +663,12 @@ class CurrentPcbWorkerConstructionCore<P extends PacketProfile> {
    * The lifecycle reserves the shared parent/worker budget before its intent.
    * Native source replies are retained before any awaited owner reproof. */
   public async observeFootprintSource(packet: ConstructionPacket<P>, assignments: CurrentPcbWorkerConstructionAssignments,
-    state: CurrentFootprintCopyStatePacket, plan: CurrentFootprintCopyAppendPlan): Promise<CurrentFootprintCopySourceReadPacket> {
+    state: CurrentFootprintCopyStatePacket, plan: CurrentFootprintSourcePlan): Promise<CurrentFootprintSourceReadPacket> {
     if (this.#footprintSourceAttempted || state !== this.#footprintPacket || this.#profile !== "private.current-pcb209-worker-construction.v1") { throw fail("FOOTPRINT_SOURCE_CONSUMED"); }
     this.#footprintSourceAttempted = true; this.#footprintSourcePlan = plan;
     try {
       await this.proveFootprintMethods(packet, assignments, state);
-      const runner = new CurrentFootprintCopySourceReadRunner(Object.freeze({
+      const runner = new CurrentFootprintSourceReadRunner(Object.freeze({
         assertOriginalState: async (selected: CurrentFootprintCopyStatePacket): Promise<void> => {
           if (selected !== state || state !== this.#footprintPacket || assignments !== this.#assignments || this.#footprintSourcePlan !== plan) { throw fail("ORIGINAL_FOOTPRINT_SOURCE_STATE"); }
           await this.requireOriginal(packet);
@@ -695,7 +695,7 @@ class CurrentPcbWorkerConstructionCore<P extends PacketProfile> {
     } catch (error) { this.#fail("FOOTPRINT_SOURCE_FAILED"); throw error; }
   }
   public async requireFootprintSource(packet: ConstructionPacket<P>, assignments: CurrentPcbWorkerConstructionAssignments,
-    state: CurrentFootprintCopyStatePacket, plan: CurrentFootprintCopyAppendPlan, source: CurrentFootprintCopySourceReadPacket): Promise<void> {
+    state: CurrentFootprintCopyStatePacket, plan: CurrentFootprintSourcePlan, source: CurrentFootprintSourceReadPacket): Promise<void> {
     if (this.#footprintSourceRunner === null || source !== this.#footprintSourcePacket || plan !== this.#footprintSourcePlan ||
       state !== this.#footprintPacket || assignments !== this.#assignments) { throw fail("ORIGINAL_FOOTPRINT_SOURCE_PACKET"); }
     await this.requireOriginal(packet); await this.#footprintSourceRunner.requireOriginal(source);

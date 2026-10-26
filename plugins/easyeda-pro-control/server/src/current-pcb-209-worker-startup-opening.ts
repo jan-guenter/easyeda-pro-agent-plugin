@@ -5,8 +5,8 @@
 import { types } from "node:util";
 import { z } from "zod";
 import type { CurrentFootprintCopyStatePacket } from "./current-footprint-copy-state.ts";
-import type { CurrentFootprintCopyAppendPlan } from "./current-footprint-copy-append.ts";
-import type { CurrentFootprintCopySourceReadPacket } from "./current-footprint-copy-source-read-runner.ts";
+import type { CurrentFootprintSourcePlan } from "./current-footprint-source-plan.ts";
+import type { CurrentFootprintSourceReadPacket } from "./current-footprint-source-read-runner.ts";
 import { currentDisposableOpenSealedTargetSchema } from "./current-disposable-open.ts";
 import type { CurrentDisposableOpenSealedTarget } from "./current-disposable-open.ts";
 import type { CurrentPcbWorkerStartupHandoff, CurrentPcbWorkerStartupOpeningBinding } from "./current-pcb-diagnostic-owner.ts";
@@ -111,8 +111,8 @@ export class CurrentPcb209WorkerStartupOpening {
   #footprintRunner: CurrentPcb209WorkerConstructionRunner | null = null;
   #footprintPacket: CurrentFootprintCopyStatePacket | null = null;
   #footprintSourceAttempted = false;
-  #footprintSourcePlan: CurrentFootprintCopyAppendPlan | null = null;
-  #footprintSourcePacket: CurrentFootprintCopySourceReadPacket | null = null;
+  #footprintSourcePlan: CurrentFootprintSourcePlan | null = null;
+  #footprintSourcePacket: CurrentFootprintSourceReadPacket | null = null;
   #channelAttempted = false;
   #channelRunner: CurrentPcb209WorkerConstructionRunner | null = null;
   #channelPacket: CurrentPcbWorkerStartupChannelPacket | null = null;
@@ -329,7 +329,7 @@ export class CurrentPcb209WorkerStartupOpening {
    * another construction owner or enables a footprint writer. */
   public async observeFootprintSource(result: CurrentPcb209WorkerStartupOpeningResult,
     assignments: CurrentPcbWorkerConstructionAssignments, state: CurrentFootprintCopyStatePacket,
-    plan: CurrentFootprintCopyAppendPlan): Promise<CurrentFootprintCopySourceReadPacket> {
+    plan: CurrentFootprintSourcePlan): Promise<CurrentFootprintSourceReadPacket> {
     if (this.#footprintSourceAttempted) { throw fail("FOOTPRINT_SOURCE_CONSUMED"); }
     this.#footprintSourceAttempted = true; this.#footprintSourcePlan = plan;
     if (state !== this.#footprintPacket) { throw fail("ORIGINAL_FOOTPRINT_PACKET"); }
@@ -341,7 +341,7 @@ export class CurrentPcb209WorkerStartupOpening {
   }
   public async requireFootprintSource(result: CurrentPcb209WorkerStartupOpeningResult,
     assignments: CurrentPcbWorkerConstructionAssignments, state: CurrentFootprintCopyStatePacket,
-    plan: CurrentFootprintCopyAppendPlan, packet: CurrentFootprintCopySourceReadPacket): Promise<void> {
+    plan: CurrentFootprintSourcePlan, packet: CurrentFootprintSourceReadPacket): Promise<void> {
     if (packet !== this.#footprintSourcePacket || plan !== this.#footprintSourcePlan || state !== this.#footprintPacket) {
       throw fail("ORIGINAL_FOOTPRINT_SOURCE_PACKET");
     }

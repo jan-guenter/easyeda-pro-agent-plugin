@@ -46,9 +46,8 @@ import type { CurrentPcb209WorkerStartupTransport, CurrentPcbWorkerStartupTransp
 import type { CurrentPcbWorkerConstructionAssignments } from "./current-pcb-worker-construction-assignment.ts";
 import { CurrentPcb209WorkerStartupOpening } from "./current-pcb-209-worker-startup-opening.ts";
 import type { CurrentFootprintCopyStatePacket } from "./current-footprint-copy-state.ts";
-import { prepareCurrentFootprintCopyPlan } from "./current-footprint-copy-plan.ts";
-import { prepareCurrentFootprintCopyAppendPlan } from "./current-footprint-copy-append.ts";
-import type { CurrentFootprintCopySourceReadPacket } from "./current-footprint-copy-source-read-runner.ts";
+import { prepareCurrentFootprintSourcePlan } from "./current-footprint-source-plan.ts";
+import type { CurrentFootprintSourceReadPacket } from "./current-footprint-source-read-runner.ts";
 import { CURRENT_FOOTPRINT_COPY_SOURCE_STAGE_REQUESTS } from "./current-footprint-copy-source-read-runner.ts";
 import type { CurrentPcb209WorkerStartupOpeningResult } from "./current-pcb-209-worker-startup-opening.ts";
 import { adaptCurrentPcb209WorkerStartupLifecycle, adaptCurrentPcbWorkerStartupLifecycle, requireCurrentPcb209StartupOpening } from "./current-pcb-worker-startup-lifecycle-adapter.ts";
@@ -334,7 +333,7 @@ class CurrentPcbLifecycleCore {
   #startupFootprintPacket: CurrentFootprintCopyStatePacket | null = null;
   #startupFootprintOpening: CurrentPcb209WorkerStartupOpening | null = null;
   #startupFootprintSourceAttempted = false;
-  #startupFootprintSourcePacket: CurrentFootprintCopySourceReadPacket | null = null;
+  #startupFootprintSourcePacket: CurrentFootprintSourceReadPacket | null = null;
   #startupActorAttempted = false;
   #startupActorPacket: CurrentPcbStartupActorPacket | null = null;
   #startupChannelAttempted = false;
@@ -1183,12 +1182,11 @@ class CurrentPcbLifecycleCore {
       };
       await this.#installation(retained); current();
       await this.#verifyHistoricalCheckpoint(preparation.prepared, preparation.originalTarget); current();
-      const plan = await prepareCurrentFootprintCopyPlan(before, {
+      const plan = await prepareCurrentFootprintSourcePlan(before, {
         projectUuid: preparation.sealedTarget.projectUuid, branchUuid: preparation.sealedTarget.branchUuid,
         footprintUuid: selected.footprintUuid,
       }); current();
-      const append = await prepareCurrentFootprintCopyAppendPlan(before, plan); current();
-      requireValue(append.maximumTicket === state.maximumTicket && plan.beforeSqlSha256 === before.logicalSha256 &&
+      requireValue(plan.maximumTicket === state.maximumTicket && plan.beforeSqlSha256 === before.logicalSha256 &&
         plan.beforeCheckpointSha256 === preparation.prepared.checkpoint.checkpointSha256, "FOOTPRINT_SOURCE_BASELINE_CHANGED");
       await assertSnapshot(operations); current();
       const capacity = (): void => {
@@ -1204,7 +1202,7 @@ class CurrentPcbLifecycleCore {
         schema: "easyeda-pro-control.pcb209-footprint-source-intent.v1", operationId, createdAt: new Date().toISOString(),
         bindingSha256: expectedBindingSha256, stateResultSha256: sha256Json(stateRecord),
         beforeSqlSha256: before.logicalSha256, checkpointSha256: before.checkpointSha256,
-        appendPlanSha256: sha256Json(append), ...selected,
+        sourcePlanSha256: sha256Json(plan), comparison: "complete-checkpoint-records-native-order", ...selected,
       };
       await this.#record(operationId, "worker-startup-footprint-source-intent.json", intent); current();
       const updated = { ...operation, records: { ...operation.records, "worker-startup-footprint-source-intent.json": intent } };
@@ -1213,9 +1211,9 @@ class CurrentPcbLifecycleCore {
       capacity();
       const opened = requireCurrentPcb209StartupOpening(original.owner, openingResult);
       requireValue(opened.opening === this.#startupFootprintOpening, "ORIGINAL_FOOTPRINT_STATE_OWNER");
-      const packet = await footprintSourceMethods.observe.call(opened.opening, opened.result, assignments, state, append);
+      const packet = await footprintSourceMethods.observe.call(opened.opening, opened.result, assignments, state, plan);
       this.#startupFootprintSourcePacket = packet; current();
-      await footprintSourceMethods.require.call(opened.opening, opened.result, assignments, state, append, packet); current();
+      await footprintSourceMethods.require.call(opened.opening, opened.result, assignments, state, plan, packet); current();
       const result = diagnosticLifecycleRecordSchemas["worker-startup-footprint-source-result.json"].parse({
         schema: "easyeda-pro-control.pcb209-footprint-source-result.v1", operationId, createdAt: new Date().toISOString(),
         intentSha256: sha256Json(intent), result: structuredClone(packet), executionAuthorized: false, saveAuthorized: false,

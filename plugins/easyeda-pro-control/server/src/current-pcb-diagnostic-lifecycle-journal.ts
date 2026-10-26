@@ -7,7 +7,7 @@ import { lstat, mkdir, open, opendir } from "node:fs/promises";
 import { join } from "node:path";
 import { z } from "zod";
 import { currentFootprintCopyStatePacketSchema } from "./current-footprint-copy-state.ts";
-import { currentFootprintCopySourceReadPacketSchema } from "./current-footprint-copy-source-read-runner.ts";
+import { currentFootprintSourceReadPacketSchema } from "./current-footprint-source-read-runner.ts";
 import { controlDataDirectory, controlRootCapability, publishManagedAttachmentExclusive } from "./artifacts.ts";
 import type { ControlRootDirectory } from "./control-root.ts";
 import { canonicalJson, sha256Json } from "./core.ts";
@@ -438,7 +438,8 @@ const workerStartupFootprintSourceIntentSchema = z.object({
   schema: z.literal("easyeda-pro-control.pcb209-footprint-source-intent.v1"), ...base,
   operationId: currentPcb209WorkerStartupLifecycleIdSchema, bindingSha256: diagnosticLifecycleDigestSchema,
   stateResultSha256: diagnosticLifecycleDigestSchema, beforeSqlSha256: diagnosticLifecycleDigestSchema,
-  checkpointSha256: diagnosticLifecycleDigestSchema, appendPlanSha256: diagnosticLifecycleDigestSchema,
+  checkpointSha256: diagnosticLifecycleDigestSchema, sourcePlanSha256: diagnosticLifecycleDigestSchema,
+  comparison: z.literal("complete-checkpoint-records-native-order"),
   ...currentPcb209WorkerStartupFootprintSourceInputSchema.shape,
 }).strict();
 // The native observation already caps its JSON encoding near 4MiB. This bound
@@ -448,7 +449,7 @@ const FOOTPRINT_SOURCE_RESULT_MAX_BYTES = 4 * 1024 * 1024 + 64 * 1024;
 const workerStartupFootprintSourceResultSchema = z.object({
   schema: z.literal("easyeda-pro-control.pcb209-footprint-source-result.v1"), ...base,
   operationId: currentPcb209WorkerStartupLifecycleIdSchema, intentSha256: diagnosticLifecycleDigestSchema,
-  result: currentFootprintCopySourceReadPacketSchema,
+  result: currentFootprintSourceReadPacketSchema,
   executionAuthorized: z.literal(false), saveAuthorized: z.literal(false),
 }).strict().refine(value => value.result.route === "native-cache-equivalent" &&
   Buffer.byteLength(canonicalJson(value)) + 1 <= FOOTPRINT_SOURCE_RESULT_MAX_BYTES,
@@ -716,6 +717,7 @@ function validateChain(operation: DiagnosticLifecycleOperation): void {
     footprintSource.checkpointSha256 === startupOpening.preparationCheckpoint.sha256, "WORKER_STARTUP_FOOTPRINT_SOURCE_CHAIN");
   requireValue(footprintSourceResult === undefined || footprintSource !== undefined && footprintResult !== undefined &&
     footprintSourceResult.intentSha256 === sha256Json(footprintSource) &&
+    footprintSourceResult.result.comparison === footprintSource.comparison &&
     footprintSourceResult.result.request.footprintUuid === footprintSource.footprintUuid &&
     footprintSourceResult.result.request.client === footprintResult.result.client &&
     footprintSourceResult.result.request.maximumTicket === footprintResult.result.maximumTicket &&

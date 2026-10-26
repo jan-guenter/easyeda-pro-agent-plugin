@@ -1299,5 +1299,7 @@ void test("footprint source coverage is a scoped cache equivalent despite the ab
   assert.match(route.scope, /handler that is absent/u);
   assert.match(route.scope, /without fetch, parser replay, cache warming or network fallback/u);
   assert.match(route.scope, /No public wrapper or Tg\.getStr dispatch/u);
-  assert.ok(route.source.includes("current-footprint-copy-cache-source-read.ts"));
+  assert.ok(route.source.includes("current-footprint-cache-source-read.ts"));
+  assert.ok(route.source.includes("current-footprint-source-plan.ts"));
+  assert.equal(route.source.includes("current-footprint-copy-append.ts"), false);
 });

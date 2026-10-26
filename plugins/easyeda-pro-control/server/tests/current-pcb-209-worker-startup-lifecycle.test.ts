@@ -169,9 +169,11 @@ void test("footprint source requires a selected original member and cannot dispa
 
 void test("durable footprint source rejects changed bytes and dormant GET_STR claims", () => {
   const content = "synthetic source packet", result = {
-    profile: "private.current-footprint-copy-source-read.v1", request: { identity, footprintUuid: "1234567890abcdef",
+    profile: "private.current-footprint-source-read.v1", request: { identity, footprintUuid: "1234567890abcdef",
       client: "abcdef1234567890", maximumTicket: 7 }, content, sourceSha256: sha256Text(content), sourceSamples: 2, stateSamples: 4,
-    route: "native-cache-equivalent", sourceGetterDispatched: false, sourceGetterEquivalent: true,
+    route: "native-cache-equivalent", sourceGetterDispatched: false,
+    comparison: "complete-checkpoint-records-native-order", checkpointByteOrderMatched: false, nativeOrderStable: true,
+    keyedRecordsSha256: digest, observedOrderSha256: digest, canvasRecords: 2, tombstones: 0, exactKeyedSourceVerified: true,
     cacheRead: { keys: 1, bytes: 100, atoms: 2 }, cacheWrites: 0, networkRequests: 0,
     cacheEffectsPossible: false, cacheBranchObserved: false, producerBindingVerified: false,
     executionAuthorized: false, persistenceVerified: false,
@@ -181,7 +183,9 @@ void test("durable footprint source rejects changed bytes and dormant GET_STR cl
   const schema = diagnosticLifecycleRecordSchemas["worker-startup-footprint-source-result.json"];
   assert.equal(schema.safeParse(record).success, true);
   for (const change of [{ content: "changed" }, { sourceGetterDispatched: true }, { cacheWrites: 1 },
-    { networkRequests: 1 }, { persistenceVerified: true }, { executionAuthorized: true }, { cacheRead: undefined }]) {
+    { networkRequests: 1 }, { persistenceVerified: true }, { executionAuthorized: true }, { cacheRead: undefined },
+    { checkpointByteOrderMatched: true }, { nativeOrderStable: false }, { exactKeyedSourceVerified: false },
+    { sourceGetterEquivalent: true }, { canvasRecords: 1 }, { tombstones: 3 }]) {
     assert.equal(schema.safeParse({ ...record, result: { ...result, ...change } }).success, false);
   }
   const { cacheRead: _cache, cacheWrites: _writes, networkRequests: _network, ...dormant } = result;

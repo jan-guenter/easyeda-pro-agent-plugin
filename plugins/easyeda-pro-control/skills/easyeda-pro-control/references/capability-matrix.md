@@ -95,9 +95,13 @@ wrapper assignments. That stage checks its captured undefined user, client and
 maximum ticket; it does not run GET_STR, copy, delete or prove persistence.
 After that published state, a separate footprint-source observation reconstructs
 one supported checkpoint member from current consistency links and existing
-native Cache chunks. Two source reads must match the independent checkpoint
-projection. The single-fragment CANVAS/PAD/LINE profile refuses missing cache
-entries without network fallback or parser replay. This is a native equivalent,
+native Cache chunks. Two source reads retain identical native order; a separate
+checkpoint projection verifies every keyed record, exact body bytes, tombstones
+and generated headers. Multiple historical fragments and ordinary footprint
+record families are supported when their winners and header actors resolve
+unambiguously. Checkpoint traversal order is not claimed as native insertion
+order. Missing cache entries refuse without network fallback or parser replay.
+This is a native task equivalent,
 with no GET_STR dispatch, copy/delete or saved-state claim. It needs 65 remaining
 normal requests and preserves the original cleanup reserve.
 The startup route retains the original

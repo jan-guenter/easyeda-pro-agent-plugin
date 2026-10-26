@@ -203,3 +203,86 @@ after emitting those failures, so cancellation did not imply a clean partial
 run. Its raw log and the local failure remain retained. Both fixture corrections
 are included before publication; production code and test selection remain
 unchanged. Final CI acceptance must inspect failure output as well as job state.
+
+## Source-only scope correction before publication
+
+Head `bd082ce426283cf3cc924b99695bcd92ec415c04` passed all eleven required CI
+jobs: 13,082 facade tests passed, five expected platform skips, no failures,
+and all 424 bridge tests passed. All seven corrected fixture tests and all
+37 new or renamed tests appeared as passes in the complete logs. Independent
+receipt SHA-256 is
+`54c671346ac7c404a2cc3b02469c5e87c4a9f6deaaa0d10310d9ab86dad73d69`.
+That payload was not published or installed.
+
+During the release wait, the maintained read-only inventory exposed a usability
+gap: neither disposable footprint passed the copy/append profile that the new
+source action reused. The empty footprint lacked drawing/header prerequisites.
+The populated R0603 had seven historical fragments, ordinary layers/fills/
+polygons/placeholders, a deleted LINE and complete actor metadata including
+an avatar. Adding one drawing atom would not resolve those restrictions.
+The refusal and complete unchanged-file evidence remain retained privately;
+diagnosis SHA-256 is
+`559c6f7b55a5b68a9a0e83773edf1e43fec0f976fe2891c39005ef6b8685e461`.
+
+The same unreleased batch now separates source inspection from copy eligibility.
+Its dedicated plan folds the original complete history using native ticket/client
+ordering, preserves raw body bytes and empty tombstones, and checks normalized
+identity collisions and the unique latest dominating header/actor. Ordinary
+record families and multiple fragments are supported. Historical `pend`/`unique`
+fields and `DELETE_DOC`, `META_CREATE` and `META_MODIFY` effects remain explicitly
+refused. A separately named read-only decoder uses the existing library-header
+preservation profile and native terminal delimiter. Default writer decoding and
+the original copy/append plans, copy reader and copy runner remain unchanged.
+
+Native cache segments load concurrently, so SQL traversal cannot establish Map
+insertion order. The new result therefore proves every keyed record and generated
+header against the checkpoint, while two identical complete native samples prove
+their observed order is stable. It explicitly reports
+`comparison:complete-checkpoint-records-native-order`,
+`checkpointByteOrderMatched:false` and `nativeOrderStable:true`, with separate
+source, keyed-record and observed-order hashes. It claims no public GET_STR,
+copy/append, writer or persistence authority. Original state/owner checks,
+intent-before-dispatch, 65 requests and cleanup capacity are unchanged.
+
+The new plan uses indexed clocks, bounded headers/atoms and a pre-intent source
+byte calculation. The fixed reader preserves full bounded actor JSON without
+adding another unqualified encoder call. Eighteen focused plan, runner, command,
+delegate and cache tests passed; types and targeted strict lint were clean.
+Independent upper review SHA-256 is
+`bd573dc4830a895ecb5a60e8544e75153cef9bcb7ca182d5f82e020190fb6f49`;
+lower review is
+`eca4228ab9001c1dab95cee2d22daa4ad0d06b6a6b5e9e3e0b5f80626ab7974b`.
+
+The actual retained R0603 now passes the maintained offline source-plan preflight:
+46 serialized records including one tombstone, seven fragments and maximum
+ticket782. Final eligibility receipt SHA-256 is
+`b04827d35385664d3449f57e0f3901d45162e57b717643213676449cc79204e1`.
+The disposable file remains unchanged; this establishes neither native cache
+availability nor connected source execution. A new frozen build, exact-head CI
+and official installation are required for this expanded payload. The earlier
+single-fragment source restriction and frozen pins above describe the superseded
+candidate, not the final source-only scope.
+
+## Expanded payload freeze
+
+The release version remains `0.3.0+codex.20261026113627`; no intermediate
+candidate was installed. Final source750 is
+`c9e09d260ba4bafa115ae38e0054e2936babfa6cd3319f8dd125f4ad0a9e594a`,
+runtime3 is
+`819682ae496620a392a64b7d355b25e0c429c8ab2190bd13a33dca994277ae24`,
+and manifest is
+`d62abc8c259ec8ad5cffc5394cb9b073185ce3e8f909a24ebbedcefb509bceed`.
+The 1,044,713-byte native helper has SHA-256
+`d6dca3d1dc09f260d74ef034d02306afcf652b25fe86b31827c99ca3e57331b7`
+and remains below its unchanged 1MiB ceiling. External application, upstream,
+bridge and sanitizer compatibility pins remain unchanged.
+
+The expanded payload passed clean dependencies, tree/signature/vulnerability
+checks, sanitizer verification, both type checks, both strict type-aware linters,
+coverage generation/check, build, compatibility and repository/MCP/skill checks.
+All seven official skill validators and the official plugin validator passed.
+Focused source, owner, request-count and native-wire regressions passed. The
+first combined run retained one stale coverage-source filename assertion; it
+was corrected to require the separate source plan/cache reader, and all 56
+coverage regressions then passed. No runtime guard or test selection changed.
+The expanded head still requires its own complete GitHub CI before publication.
