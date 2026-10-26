@@ -529,3 +529,45 @@ into an empty list. Its declared replacement uses the modern selection manager
 and promotes selected wire segments to parent groups. An explicit replacement
 adapter must identify that route, retain the returned group semantics and refuse
 missing results. Never call a swallowed error proof of an empty selection.
+
+## Footprint source inspection without parser replay
+
+On the pinned 3.2.209 implementation, `Tg.getStr` can populate caches, replay
+history through application callbacks and schedule cleanup. An empty
+`ja.historyMap` is normal after construction. Treating it as a permanent omission
+would reject ordinary stored drawings. A complete direct getter adapter still
+needs those producers and their effects accounted for.
+
+The scoped source-inspection alternative reads the original consistency map and
+its current atom offsets, then reads existing native Cache entries. Use a separate
+read-only history projection: copy/append restrictions would unnecessarily reject
+ordinary footprint records, edits and actor metadata. Preserve opaque body bytes
+and empty tombstones. Resolve normalized-ID winners from the pinned native fold,
+and refuse contradictory ties or ambiguous header/actor provenance.
+Preserve raw library atom headers through the separately scoped read-only
+decoder; do not change the default writer decoder to admit them. Historical
+pending/unique flags and metadata-effect families need their own native fold
+before this reader can support them.
+
+Native cache segments load concurrently, so SQL traversal order cannot prove
+the consistency map's insertion order. Require two identical complete native
+source samples and independently verify every keyed record and generated header.
+Report native order stability separately from checkpoint record equality; do not
+claim checkpoint byte-order equality or reuse this proof to authorize a copy.
+Never send the expected source into the native reader as
+the observed result. Qualify the original receivers and native method objects,
+recheck them across awaits, and retain the exact source rather than a partial
+projection. Missing cache entries refuse without invoking the vendor parser or
+falling back to a network request.
+
+Bound the aggregate input, stream-read count, row scan and output encoding
+separately. Index each cache chunk once rather than rescanning it for every atom.
+Yield during long parsing so the fixed deadline can fire, and cancel the original
+stream reader on failure or timeout. Reserve the whole request sequence before
+dispatch while retaining cleanup capacity. A matching source packet grants no
+copy, delete, Save, producer-completion or saved/reopened authority.
+
+The installed SDK stub declares `lib_Footprint.getDocumentSource`, but the pinned
+UI does not register its RPC handler. Report the cache reader as a scoped native
+task equivalent. Its source equivalence does not validate that missing wrapper
+or establish the full declared contract.

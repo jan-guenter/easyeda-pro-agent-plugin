@@ -3,7 +3,7 @@ import { createHash } from "node:crypto";
 import { readFile } from "node:fs/promises";
 import { test } from "node:test";
 import { gunzipSync } from "node:zlib";
-import { currentPcb209WorkerStartupNativeCases, currentPcbWorkerStartupNativeCases, currentPcbWorkerStartupNativeParentCases,
+import { currentPcb209WorkerStartupNativeCases, currentPcb209WorkerStartupNativeParentCases, currentPcbWorkerStartupNativeCases, currentPcbWorkerStartupNativeParentCases,
   currentPcbWorkerStartupNativeSource } from "../src/current-pcb-worker-startup-native.ts";
 import { currentPcb209WorkerStartupWire, currentPcbWorkerStartupWire } from "../src/current-pcb-worker-startup-wire.ts";
 import { CURRENT_PCB_WORKER_STARTUP_WORKER_ACTOR_CLOCK_FUNCTION, currentPcbWorkerStartupUiActorCommand } from "../src/current-pcb-worker-startup-actor.ts";
@@ -131,7 +131,7 @@ void test("native startup source is generated exactly and keeps the distinct pur
 });
 
 void test("native 209 cases preserve every command except the reviewed serial site and refuse the other generation", () => {
-  const current = currentPcb209WorkerStartupNativeCases(); assert.equal(current.length, samples.length + 4);
+  const current = currentPcb209WorkerStartupNativeCases(); assert.equal(current.length, samples.length + 11);
   let differences = 0;
   for (const [index, legacy] of samples.entries()) {
     const selected = current[index]; assert.ok(selected !== undefined);
@@ -194,9 +194,13 @@ void test("startup compile-only packing retains every legacy,209 and parent expe
   for (const sample of currentPcb209WorkerStartupNativeCases().slice(samples.length)) {
     expected.push(JSON.stringify({ id: 1, method: sample.method, params: sample.params, sessionId: sample.sessionId }));
   }
-  for (const sample of currentPcbWorkerStartupNativeParentCases()) {
-    expected.push(JSON.stringify({ id: 256, method: sample.method, params: sample.params,
-      ...(sample.sessionId === undefined ? {} : { sessionId: sample.sessionId }) }));
+  for (const [index, sample] of currentPcbWorkerStartupNativeParentCases().entries()) {
+    const current = currentPcb209WorkerStartupNativeParentCases()[index]; assert.ok(current);
+    for (const value of [current, sample]) {
+      const text = JSON.stringify({ id: 256, method: value.method, params: value.params,
+        ...(value.sessionId === undefined ? {} : { sessionId: value.sessionId }) });
+      if (!expected.includes(text)) { expected.push(text); }
+    }
   }
   assert.deepEqual(commands, expected);
   assert.equal(generated.match(/"smoke-parity"/gu)?.length, samples.length);
@@ -204,18 +208,49 @@ void test("startup compile-only packing retains every legacy,209 and parent expe
   assert.equal(generated.split("SmokeExpected()").length - 1, 2);
 });
 
+void test("native packed programs retain exact opener and source JSON bytes within the fixed helper bound", () => {
+  const generated = currentPcbWorkerStartupNativeSource();
+  const source = currentPcb209WorkerStartupNativeCases().find(command =>
+    command.method === "Runtime.callFunctionOn" && command.params.awaitPromise);
+  const opener = currentPcb209WorkerStartupNativeParentCases().find(command =>
+    command.method === "Runtime.callFunctionOn" && command.params.awaitPromise && command.params.arguments[1]?.value === "open-project");
+  assert.ok(source?.method === "Runtime.callFunctionOn" && opener?.method === "Runtime.callFunctionOn");
+  const expected = new Map([
+    ["ProjectOpening209Function", opener.params.functionDeclaration],
+    ["FootprintSourceFunctionJson", JSON.stringify(source.params.functionDeclaration)],
+  ]);
+  const matches = [...generated.matchAll(/static readonly string (ProjectOpening209Function|FootprintSourceFunctionJson)=UnpackFixedProgram\(@"([A-Za-z\d+/=]+)",(\d+),(\d+),@"([a-f\d]{64})"\);/gu)];
+  assert.equal(matches.length, expected.size);
+  for (const match of matches) {
+    const [name, encoded, compressedLength, decodedLength, hash] = match.slice(1);
+    assert.ok(name !== undefined && encoded !== undefined);
+    const packed = Buffer.from(encoded, "base64");
+    assert.equal(packed.toString("base64"), encoded); assert.equal(String(packed.length), compressedLength);
+    // oxlint-disable-next-line node/no-sync -- Decodes bounded fixed generated constants to compare independent command bytes.
+    const decoded = gunzipSync(packed);
+    assert.equal(String(decoded.length), decodedLength); assert.ok(decoded.length <= 65_536);
+    assert.equal(createHash("sha256").update(decoded).digest("hex"), hash);
+    assert.equal(decoded.toString("utf8"), expected.get(name));
+  }
+  assert.ok(generated.includes('count==bytes.Length && stream.ReadByte()==-1,"program-bytes"'));
+  assert.ok(generated.includes("System.Convert.ToBase64String(packed)==encoded"));
+  assert.ok(generated.includes("new System.Text.UTF8Encoding(false,true).GetString(bytes)"));
+  assert.ok(generated.includes('+FootprintSourceFunctionJson+'));
+});
+
 void test("current209 footprint phases preserve fixed flags and refuse legacy, altered programs or argument counts", () => {
   for (const sample of currentPcb209WorkerStartupNativeCases().slice(samples.length)) {
     const wire = currentPcb209WorkerStartupWire(sample, 250);
-    assert.ok("throwOnSideEffect" in wire.command.params && wire.command.params.throwOnSideEffect);
     assert.throws(() => currentPcbWorkerStartupWire(sample, 250));
     if (sample.method === "Runtime.callFunctionOn") {
       assert.ok(String(wire.request["startupPhase"]).startsWith("footprint-"));
       for (const patch of [{ arguments: [...sample.params.arguments, { objectId: "foreign" }] },
-        { functionDeclaration: `${sample.params.functionDeclaration} ` }, { throwOnSideEffect: false }, { awaitPromise: true }]) {
+        { functionDeclaration: `${sample.params.functionDeclaration} ` }, { throwOnSideEffect: !sample.params.throwOnSideEffect }, { awaitPromise: !sample.params.awaitPromise }]) {
         assert.throws(() => currentPcb209WorkerStartupWire({ ...sample, params: { ...sample.params, ...patch } }, 250));
       }
+      assert.equal(sample.params.throwOnSideEffect, !sample.params.awaitPromise);
     } else if (sample.method === "Debugger.evaluateOnCallFrame") {
+      assert.equal(sample.params.throwOnSideEffect, true);
       assert.equal(wire.request["selector"], "footprint-constructors");
       assert.throws(() => currentPcb209WorkerStartupWire({ ...sample, params: { ...sample.params, expression: `${sample.params.expression} ` } }, 250));
     } else { assert.fail("Unexpected footprint command"); }

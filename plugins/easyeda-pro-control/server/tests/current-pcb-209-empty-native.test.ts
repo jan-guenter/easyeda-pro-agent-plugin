@@ -6,13 +6,13 @@ import { CURRENT_PCB_209_EMPTY_NATIVE_CASES } from "../src/current-pcb-209-empty
 import { currentPcb209EmptyNativeSource } from "../src/current-pcb-209-empty-native.ts";
 import { CURRENT_PCB_209_EMPTY_NATIVE_PROFILE, currentPcb209EmptyNativeReplyFrameBytes } from "../src/current-pcb-209-empty-native-profile.ts";
 import { currentPcb209EmptyNativeWire } from "../src/current-pcb-209-empty-native-wire.ts";
-import { currentPcb209WorkerStartupNativeCases, currentPcbWorkerStartupNativeParentCases } from "../src/current-pcb-worker-startup-native.ts";
+import { currentPcb209WorkerStartupNativeCases, currentPcb209WorkerStartupNativeParentCases } from "../src/current-pcb-worker-startup-native.ts";
 import { currentPcb209WorkerStartupWire } from "../src/current-pcb-worker-startup-wire.ts";
 
 const limit = CURRENT_PCB_209_EMPTY_NATIVE_PROFILE.requestLimit;
 void test("empty209 wire preserves all fixed current startup cases and original actual IDs", () => {
-  const cases = [...currentPcb209WorkerStartupNativeCases(), ...currentPcbWorkerStartupNativeParentCases()];
-  assert.equal(cases.length, 55);
+  const cases = [...currentPcb209WorkerStartupNativeCases(), ...currentPcb209WorkerStartupNativeParentCases()];
+  assert.equal(cases.length, 62);
   for (const sample of cases) {
     const encoded = currentPcb209EmptyNativeWire(sample, limit), old = currentPcb209WorkerStartupWire(sample, 1);
     assert.deepEqual(encoded.command, { ...old.command, id: limit });
@@ -86,7 +86,7 @@ void test("empty209 native compressed table exactly matches all typed programs a
   assert.deepEqual(decoded.toString("utf8").split("\0"), CURRENT_PCB_209_EMPTY_NATIVE_CASES.map(command => JSON.stringify(command.params)));
   assert.ok(Buffer.byteLength(native) < 40_000);
   assert.ok(native.includes("EasyedaWorkerStartupProtocol.Encode209(1,method,sessionId,phase,fields)"));
-  assert.ok(native.includes("EasyedaDiagnosticOwner.WorkerStartupParentProtocolMessage(1,method,phase,fields)"));
+  assert.ok(native.includes("EasyedaDiagnosticOwner.WorkerStartup209ParentProtocolMessage(1,method,phase,fields)"));
   assert.ok(native.includes("encoded.StartsWith(prefix,System.StringComparison.Ordinal)"));
   assert.ok(native.includes("encoded.Substring(prefix.Length)")); assert.equal(native.includes("parameters.Replace("), false);
   assert.ok(native.includes("new System.Text.UTF8Encoding(false,true)"));
@@ -98,8 +98,8 @@ void test("empty209 profile accounts for complete fixed command, framed text, he
   assert.equal(profile.requests.common, 3090); assert.equal(profile.requests.roots, 9);
   assert.equal(profile.normalRequestLimit - profile.requests.optional, 3352);
   assert.equal(profile.normalRequestLimit, 3434); assert.equal(profile.requestLimit, 3466);
-  assert.equal(profile.startupDerivation.constructorCapture, 54);
-  assert.equal(profile.startupDerivation.conservativeReserve, 77);
+  assert.equal(profile.startupDerivation.constructorCapture, 55);
+  assert.equal(profile.startupDerivation.conservativeReserve, 76);
   assert.equal(Object.values(profile.startupDerivation).reduce((sum, value) => sum + value, 0), profile.requests.startup);
   assert.equal(profile.bytes.total, profile.bytes.normal + profile.bytes.cleanup);
   assert.equal(profile.bytes.normal, profile.bytes.prefix + profile.bytes.common + profile.bytes.roots + profile.bytes.continuationEvents);

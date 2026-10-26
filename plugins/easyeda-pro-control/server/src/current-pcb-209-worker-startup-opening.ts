@@ -5,10 +5,14 @@
 import { types } from "node:util";
 import { z } from "zod";
 import type { CurrentFootprintCopyStatePacket } from "./current-footprint-copy-state.ts";
+import type { CurrentFootprintSourcePlan } from "./current-footprint-source-plan.ts";
+import type { CurrentFootprintSourceReadPacket } from "./current-footprint-source-read-runner.ts";
 import { currentDisposableOpenSealedTargetSchema } from "./current-disposable-open.ts";
 import type { CurrentDisposableOpenSealedTarget } from "./current-disposable-open.ts";
 import type { CurrentPcbWorkerStartupHandoff, CurrentPcbWorkerStartupOpeningBinding } from "./current-pcb-diagnostic-owner.ts";
-import { CURRENT_PCB_DIAGNOSTIC_OPENING_FUNCTION, decodeCurrentPcbDiagnosticOpeningReply } from "./current-pcb-diagnostic-opening.ts";
+import { decodeCurrentPcbDiagnosticOpeningReply } from "./current-pcb-diagnostic-opening.ts";
+import { CURRENT_PCB_209_STARTUP_OPENING_FUNCTION } from "./current-pcb-209-startup-opening-program.ts";
+import { CURRENT_PCB_209_STARTUP_OPENING_TIMING } from "./current-pcb-209-worker-startup-timing.ts";
 import type { CurrentPcbDiagnosticOpeningPhase, CurrentPcbDiagnosticOpeningResult } from "./current-pcb-diagnostic-opening.ts";
 import { captureCurrentPcbStringClockReply } from "./current-pcb-string-clock-reply.ts";
 import type { CurrentPcb209WorkerConstructionPacket, CurrentPcb209WorkerConstructionRunner, CurrentPcbWorkerConstructionProjectIdentity } from "./current-pcb-worker-construction-runner.ts";
@@ -106,6 +110,9 @@ export class CurrentPcb209WorkerStartupOpening {
   #footprintAttempted = false;
   #footprintRunner: CurrentPcb209WorkerConstructionRunner | null = null;
   #footprintPacket: CurrentFootprintCopyStatePacket | null = null;
+  #footprintSourceAttempted = false;
+  #footprintSourcePlan: CurrentFootprintSourcePlan | null = null;
+  #footprintSourcePacket: CurrentFootprintSourceReadPacket | null = null;
   #channelAttempted = false;
   #channelRunner: CurrentPcb209WorkerConstructionRunner | null = null;
   #channelPacket: CurrentPcbWorkerStartupChannelPacket | null = null;
@@ -181,12 +188,13 @@ export class CurrentPcb209WorkerStartupOpening {
   async #callOpening(target: CurrentDisposableOpenSealedTarget, phase: CurrentPcbDiagnosticOpeningPhase): Promise<CurrentPcbDiagnosticOpeningResult> {
     await this.#current(); const selected = this.#context();
     const command: CurrentPcbWorkerStartupCommand = { method: "Runtime.callFunctionOn", sessionId: selected.sessionId,
-      params: { functionDeclaration: CURRENT_PCB_DIAGNOSTIC_OPENING_FUNCTION, uniqueContextId: selected.uniqueContextId,
+      params: { functionDeclaration: CURRENT_PCB_209_STARTUP_OPENING_FUNCTION, uniqueContextId: selected.uniqueContextId,
         arguments: [{ value: target }, { value: phase }], returnByValue: true, awaitPromise: true,
         silent: true, generatePreview: false, userGesture: false, throwOnSideEffect: false } };
     if (phase === "open-project") { this.#openingAttempted = true; }
     this.#step = phase === "preflight" ? "preflight-request" : "open-project-request";
-    const reply = await bounded(this.#request.call(this.#dependency, command), phase === "preflight" ? 15_000 : 70_000);
+    const reply = await bounded(this.#request.call(this.#dependency, command),
+      phase === "preflight" ? 15_000 : CURRENT_PCB_209_STARTUP_OPENING_TIMING.hostMs);
     // Retain the decoded reply before a later owner/checkpoint failure. No
     // Timeout or missing reply permits this command to be sent again.
     this.#step = phase === "preflight" ? "preflight-decode" : "open-project-decode";
@@ -312,6 +320,35 @@ export class CurrentPcb209WorkerStartupOpening {
     const runner = await transport.requireOriginal(result.construction); await this.#current();
     if (runner !== this.#footprintRunner) { throw fail("ORIGINAL_FOOTPRINT_OWNER"); }
     await runner.requireFootprintState(result.construction, assignments, packet); await this.#current();
+  }
+  public retainedFootprintSource(): Readonly<Record<string, unknown>> | null {
+    return this.#footprintRunner?.retainedFootprintSource() ?? null;
+  }
+  /** The lifecycle must publish the selected checkpoint member before dispatch.
+   * Neither the plan nor the returned data adopts
+   * another construction owner or enables a footprint writer. */
+  public async observeFootprintSource(result: CurrentPcb209WorkerStartupOpeningResult,
+    assignments: CurrentPcbWorkerConstructionAssignments, state: CurrentFootprintCopyStatePacket,
+    plan: CurrentFootprintSourcePlan): Promise<CurrentFootprintSourceReadPacket> {
+    if (this.#footprintSourceAttempted) { throw fail("FOOTPRINT_SOURCE_CONSUMED"); }
+    this.#footprintSourceAttempted = true; this.#footprintSourcePlan = plan;
+    if (state !== this.#footprintPacket) { throw fail("ORIGINAL_FOOTPRINT_PACKET"); }
+    await this.requireCurrentAssignments(result, assignments);
+    const runner = this.#footprintRunner;
+    if (runner === null) { throw fail("ORIGINAL_FOOTPRINT_OWNER"); }
+    const packet = await runner.observeFootprintSource(result.construction, assignments, state, plan);
+    this.#footprintSourcePacket = packet; await this.#current(); return packet;
+  }
+  public async requireFootprintSource(result: CurrentPcb209WorkerStartupOpeningResult,
+    assignments: CurrentPcbWorkerConstructionAssignments, state: CurrentFootprintCopyStatePacket,
+    plan: CurrentFootprintSourcePlan, packet: CurrentFootprintSourceReadPacket): Promise<void> {
+    if (packet !== this.#footprintSourcePacket || plan !== this.#footprintSourcePlan || state !== this.#footprintPacket) {
+      throw fail("ORIGINAL_FOOTPRINT_SOURCE_PACKET");
+    }
+    await this.requireCurrentAssignments(result, assignments);
+    const runner = this.#footprintRunner;
+    if (runner === null) { throw fail("ORIGINAL_FOOTPRINT_OWNER"); }
+    await runner.requireFootprintSource(result.construction, assignments, state, plan, packet); await this.#current();
   }
   public retainedActorObservation(): Readonly<Record<string, unknown>> | null {
     return this.#actor === null ? null : Object.freeze({ status: this.#actor.status(), samples: this.#actor.retainedSamples() });

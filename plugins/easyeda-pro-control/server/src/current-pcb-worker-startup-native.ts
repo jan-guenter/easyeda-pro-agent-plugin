@@ -3,12 +3,17 @@
 /* oxlint-disable import/max-dependencies -- This generator compares both fixed source profiles and every literal command family at one native protocol boundary. */
 import { gzipSync } from "node:zlib";
 import { CURRENT_FOOTPRINT_COPY_CONSTRUCTORS_EXPRESSION, CURRENT_FOOTPRINT_COPY_STATE_CALLS } from "./current-footprint-copy-state.ts";
+import { CURRENT_FOOTPRINT_COPY_METHOD_CALLS } from "./current-footprint-copy-method-bindings.ts";
+import { CURRENT_FOOTPRINT_COPY_CACHE_FACTORY_CALLS } from "./current-footprint-copy-cache-factory.ts";
+import { CURRENT_FOOTPRINT_COPY_SOURCE_NATIVE_GUARDS, currentFootprintCopySourceNativeParameters,
+  currentFootprintCopySourceNativeSample } from "./current-footprint-copy-source-native.ts";
 import { CURRENT_PCB_WORKER_CONSTRUCTION_ASSIGNMENT_CALLS } from "./current-pcb-worker-construction-assignment.ts";
 import { CURRENT_PCB_WORKER_CONSTRUCTION_IDENTITY, CURRENT_PCB_WORKER_CONSTRUCTION_PROJECT, CURRENT_PCB_WORKER_CONSTRUCTION_SAME,
   CURRENT_PCB_WORKER_CONSTRUCTION_SITES, CURRENT_PCB_WORKER_CONSTRUCTION_SOURCE } from "./current-pcb-worker-construction-contract.ts";
 import { CURRENT_PCB_WORKER_STARTUP_ATTACH } from "./current-pcb-worker-startup-contract.ts";
 import type { CurrentPcbWorkerStartupParentCommand, CurrentPcbWorkerStartupWorkerCommand } from "./current-pcb-worker-startup-contract.ts";
 import { CURRENT_PCB_DIAGNOSTIC_OPENING_FUNCTION } from "./current-pcb-diagnostic-opening.ts";
+import { CURRENT_PCB_209_STARTUP_OPENING_FUNCTION } from "./current-pcb-209-startup-opening-program.ts";
 import { CURRENT_PCB_DIAGNOSTIC_PCB_OPENING_FUNCTION } from "./current-pcb-diagnostic-pcb-opening.ts";
 import { sha256Text } from "./core.ts";
 import { CURRENT_PCB_WORKER_STARTUP_REQUEST_LIMIT, currentPcb209WorkerStartupWire, currentPcbWorkerStartupWire } from "./current-pcb-worker-startup-wire.ts";
@@ -51,7 +56,9 @@ function nativeCases(sites: Readonly<Record<string, Readonly<{ lineNumber: numbe
     { program: CURRENT_PCB_WORKER_STARTUP_WORKER_ACTOR_CLOCK_FUNCTION, arguments: 1, returnByValue: true },
     ...Object.values(CURRENT_PCB_WORKER_CONSTRUCTION_ASSIGNMENT_CALLS),
     ...Object.values(CURRENT_PCB_WORKER_STARTUP_CHANNEL_CALLS),
-    ...(sites === CURRENT_PCB_209_WORKER_CONSTRUCTION_SITES ? Object.values(CURRENT_FOOTPRINT_COPY_STATE_CALLS) : [])]) {
+    ...(sites === CURRENT_PCB_209_WORKER_CONSTRUCTION_SITES ?
+      [...Object.values(CURRENT_FOOTPRINT_COPY_STATE_CALLS), ...Object.values(CURRENT_FOOTPRINT_COPY_METHOD_CALLS),
+        ...Object.values(CURRENT_FOOTPRINT_COPY_CACHE_FACTORY_CALLS)] : [])]) {
     commands.push({ method: "Runtime.callFunctionOn", params: { ...effects, objectId: placeholder("objectId"),
       functionDeclaration: entry.program, returnByValue: entry.returnByValue,
       arguments: Array.from({ length: entry.arguments }, (_, index) => ({ objectId: placeholder(`argument${index}`) })) }, sessionId });
@@ -59,7 +66,8 @@ function nativeCases(sites: Readonly<Record<string, Readonly<{ lineNumber: numbe
   if (sites === CURRENT_PCB_209_WORKER_CONSTRUCTION_SITES) {
     commands.push({ method: "Debugger.evaluateOnCallFrame", params: { callFrameId: placeholder("callFrameId"),
       expression: CURRENT_FOOTPRINT_COPY_CONSTRUCTORS_EXPRESSION, objectGroup: group, silent: true, returnByValue: false,
-      generatePreview: false, throwOnSideEffect: true, includeCommandLineAPI: false }, sessionId });
+      generatePreview: false, throwOnSideEffect: true, includeCommandLineAPI: false }, sessionId },
+    { ...currentFootprintCopySourceNativeSample(), sessionId });
   }
   return freezeDeep(commands);
 }
@@ -70,6 +78,13 @@ export function currentPcb209WorkerStartupNativeCases(): readonly CurrentPcbWork
   return nativeCases(CURRENT_PCB_209_WORKER_CONSTRUCTION_SITES);
 }
 const literal = (value: string): string => `@"${value.replaceAll('"', '""')}"`;
+function packedProgram(name: string, value: string, exposed = false): string {
+  const bytes = Buffer.byteLength(value);
+  if (bytes < 1 || bytes > 65_536) { throw new Error("WORKER_STARTUP_NATIVE_PROGRAM_SIZE"); }
+  // oxlint-disable-next-line node/no-sync -- Deterministic in-memory compression of one fixed generated program.
+  const packed = gzipSync(value, { level: 9 });
+  return `  ${exposed ? "public " : ""}static readonly string ${name}=UnpackFixedProgram(${literal(packed.toString("base64"))},${String(packed.length)},${String(bytes)},${literal(sha256Text(value))});`;
+}
 /** Synthetic, path-hash-consistent protocol fixtures; never project authority. */
 export function currentPcbWorkerStartupNativeParentCases(): readonly CurrentPcbWorkerStartupParentCommand[] {
   const rawWindowsPath = String.raw`C:\Synthetic\worker-startup.eprj2`, sessionId = "original-session";
@@ -93,6 +108,11 @@ export function currentPcbWorkerStartupNativeParentCases(): readonly CurrentPcbW
       silent: true as const, generatePreview: false as const, userGesture: false as const, throwOnSideEffect: false as const,
     }, sessionId })),
   ]);
+}
+export function currentPcb209WorkerStartupNativeParentCases(): readonly CurrentPcbWorkerStartupParentCommand[] {
+  return freezeDeep(currentPcbWorkerStartupNativeParentCases().map(command =>
+    command.method === "Runtime.callFunctionOn" && command.params.awaitPromise && command.params.functionDeclaration === CURRENT_PCB_DIAGNOSTIC_OPENING_FUNCTION ?
+      { method: command.method, sessionId: command.sessionId, params: { ...command.params, functionDeclaration: CURRENT_PCB_209_STARTUP_OPENING_FUNCTION } } : command));
 }
 
 export function currentPcbWorkerStartupNativeSource(): string {
@@ -118,6 +138,9 @@ export function currentPcbWorkerStartupNativeSource(): string {
     const fixed = fields.filter(([key]) => key === "site" || key === "selector");
     const dynamic = fields.filter(([key]) => key !== "site" && key !== "selector");
     const condition = [...(currentOnly ? ["workerStartup209"] : []), `phase==${literal(String(request["startupPhase"]))}`, ...fixed.map(([key, value]) => `Field(fields,${literal(key)})==${literal(String(value))}`)].join(" && ");
+    if (sample.method === "Runtime.callFunctionOn" && sample.params.awaitPromise) {
+      return `    if(${condition}) {\n      Need(method==${literal(sample.method)},"method");\n      Keys(fields,new string[]{${fields.map(([key]) => literal(key)).join(",")}});\n      parameters=${currentFootprintCopySourceNativeParameters()};\n    }`;
+    }
     // Concatenate original literal segments once. Repeated Replace would let
     // An identifier equal to another placeholder redirect that later field.
     function expression(parameters: CurrentPcbWorkerStartupWorkerCommand["params"]): string {
@@ -139,7 +162,8 @@ export function currentPcbWorkerStartupNativeSource(): string {
     if (currentExpression !== legacy) { changedCases += 1; parameters = `workerStartup209?${currentExpression}:${legacy}`; }
     return `    if(${condition}) {\n      Need(method==${literal(sample.method)},"method");\n      Keys(fields,new string[]{${fields.map(([key]) => literal(key)).join(",")}});\n      parameters=${parameters};\n    }`;
   });
-  if (changedCases !== 1 || legacyCases.length + Object.keys(CURRENT_FOOTPRINT_COPY_STATE_CALLS).length + 1 !== currentCases.length) { throw new Error("WORKER_STARTUP_NATIVE_GENERATION_COUNT"); }
+  if (changedCases !== 1 || legacyCases.length + Object.keys(CURRENT_FOOTPRINT_COPY_STATE_CALLS).length +
+      Object.keys(CURRENT_FOOTPRINT_COPY_METHOD_CALLS).length + Object.keys(CURRENT_FOOTPRINT_COPY_CACHE_FACTORY_CALLS).length + 2 !== currentCases.length) { throw new Error("WORKER_STARTUP_NATIVE_GENERATION_COUNT"); }
   const smokeExpected: string[] = [];
   function expectedReference(value: string): string {
     if (value.includes("\0")) { throw new Error("WORKER_STARTUP_NATIVE_SMOKE_DELIMITER"); }
@@ -165,13 +189,21 @@ export function currentPcbWorkerStartupNativeSource(): string {
       `    if(workerStartup209)Need(EncodeCore(1,${literal(sample.method)},${literal(sample.sessionId)},${literal(String(request["startupPhase"]))},fields,true)==${expectedReference(expected)}+"\\0","smoke-footprint-parity");\n` +
       `    else {bool refused=false;try{EncodeCore(1,${literal(sample.method)},${literal(sample.sessionId)},${literal(String(request["startupPhase"]))},fields,false);}catch(System.InvalidOperationException){refused=true;}Need(refused,"smoke-footprint-legacy");}`;
   }).join("\n");
-  const parentSmoke = currentPcbWorkerStartupNativeParentCases().map(sample => {
+  const parentSmoke = currentPcbWorkerStartupNativeParentCases().map((sample, index) => {
     const request = currentPcbWorkerStartupWire(sample, 256).request;
     const fields = Object.entries(request).filter(([key]) => !["action", "requestId", "method", "parentPhase"].includes(key));
     const expected = JSON.stringify({ id: 256, method: sample.method, params: sample.params,
       ...(sample.sessionId === undefined ? {} : { sessionId: sample.sessionId }) });
+    const current = currentPcb209WorkerStartupNativeParentCases()[index];
+    if (current === undefined || JSON.stringify(currentPcb209WorkerStartupWire(current, 256).request) !== JSON.stringify(request)) {
+      throw new Error("WORKER_STARTUP_NATIVE_PARENT_GENERATION");
+    }
+    const currentExpected = JSON.stringify({ id: 256, method: current.method, params: current.params,
+      ...(current.sessionId === undefined ? {} : { sessionId: current.sessionId }) });
+    const expectedExpression = expected === currentExpected ? expectedReference(expected) :
+      `(workerStartup209?${expectedReference(currentExpected)}:${expectedReference(expected)})`;
     return `    fields.Clear();\n${fields.map(([key, value]) => `    fields.Add(${literal(key)},${typeof value === "number" ? String(value) : literal(value)});`).join("\n")}\n` +
-      `    Need(EasyedaDiagnosticOwner.WorkerStartupParentProtocolMessage(256,${literal(sample.method)},${literal(String(request["parentPhase"]))},fields)==${expectedReference(expected)}+"\\0","smoke-parent-parity");`;
+      `    Need((workerStartup209?EasyedaDiagnosticOwner.WorkerStartup209ParentProtocolMessage(256,${literal(sample.method)},${literal(String(request["parentPhase"]))},fields):EasyedaDiagnosticOwner.WorkerStartupParentProtocolMessage(256,${literal(sample.method)},${literal(String(request["parentPhase"]))},fields))==${expectedExpression}+"\\0","smoke-parent-parity");`;
   }).join("\n");
   const smokeText = smokeExpected.join("\0");
   const smokeBytes = Buffer.byteLength(smokeText);
@@ -182,7 +214,23 @@ export function currentPcbWorkerStartupNativeSource(): string {
 public static class EasyedaWorkerStartupProtocol {
   public const string UiActorClockFunction=${literal(CURRENT_PCB_WORKER_STARTUP_UI_ACTOR_CLOCK_FUNCTION)};
   public const string PcbOpeningFunction=${literal(CURRENT_PCB_DIAGNOSTIC_PCB_OPENING_FUNCTION)};
+${packedProgram("ProjectOpening209Function", CURRENT_PCB_209_STARTUP_OPENING_FUNCTION, true)}
+${packedProgram("FootprintSourceFunctionJson", JSON.stringify(currentFootprintCopySourceNativeSample().params.functionDeclaration))}
   static void Need(bool condition,string code) { if(!condition)throw new System.InvalidOperationException("pcb-diagnostic-startup-"+code); }
+  static string UnpackFixedProgram(string encoded,int packedBytes,int expectedBytes,string expectedHash) {
+    Need(expectedBytes>0 && expectedBytes<=65536 && packedBytes>0 && packedBytes<=65536,"program-bound");
+    byte[] packed=System.Convert.FromBase64String(encoded),bytes=new byte[expectedBytes];int count=0;
+    Need(packed.Length==packedBytes && System.Convert.ToBase64String(packed)==encoded,"program-base64");
+    using(var input=new System.IO.MemoryStream(packed,false))
+    using(var stream=new System.IO.Compression.GZipStream(input,System.IO.Compression.CompressionMode.Decompress)) {
+      while(count<bytes.Length) { int read=stream.Read(bytes,count,bytes.Length-count);if(read==0)break;count+=read; }
+      Need(count==bytes.Length && stream.ReadByte()==-1,"program-bytes");
+    }
+    using(var hash=System.Security.Cryptography.SHA256.Create()) {
+      Need(System.BitConverter.ToString(hash.ComputeHash(bytes)).Replace("-","").ToLowerInvariant()==expectedHash,"program-hash");
+    }
+    return new System.Text.UTF8Encoding(false,true).GetString(bytes);
+  }
   static string Field(System.Collections.IDictionary fields,string key) {
     Need(fields!=null && fields.Contains(key),"field");
     string result=fields[key] as string;Need(result!=null,"field-type");return result;
@@ -194,6 +242,7 @@ public static class EasyedaWorkerStartupProtocol {
   static string Handle(string value,int limit) {
     Need(value!=null && value.Length<=limit && System.Text.RegularExpressions.Regex.IsMatch(value,@"\\A[A-Za-z0-9_.:-]+\\z"),"handle");return value;
   }
+${CURRENT_FOOTPRINT_COPY_SOURCE_NATIVE_GUARDS}
   public static string Encode(int id,string method,string sessionId,string phase,System.Collections.IDictionary fields) {
     return EncodeCore(id,method,sessionId,phase,fields,false);
   }

@@ -7,7 +7,7 @@ import type { CurrentPcb209RatlineContinuationChannelDependency, CurrentPcb209Ra
 import { CurrentPcb209RatlineContinuationBudget, CURRENT_PCB_209_RATLINE_CONTINUATION_NATIVE_PROFILE as PROFILE } from "../src/current-pcb-209-ratline-continuation-budget.ts";
 import type { CurrentPcbWorkerStartupParentCommand, CurrentPcbWorkerStartupWorkerCommand } from "../src/current-pcb-worker-startup-contract.ts";
 import { CURRENT_PCB_WORKER_STARTUP_ATTACH } from "../src/current-pcb-worker-startup-contract.ts";
-import { currentPcb209WorkerStartupNativeCases, currentPcbWorkerStartupNativeParentCases } from "../src/current-pcb-worker-startup-native.ts";
+import { currentPcb209WorkerStartupNativeCases, currentPcb209WorkerStartupNativeParentCases } from "../src/current-pcb-worker-startup-native.ts";
 import { CURRENT_PCB_WORKER_CONSTRUCTION_IDENTITY, CURRENT_PCB_WORKER_CONSTRUCTION_SAME } from "../src/current-pcb-worker-construction-contract.ts";
 import { CURRENT_PCB_DIAGNOSTIC_PCB_OPENING_FUNCTION } from "../src/current-pcb-diagnostic-pcb-opening.ts";
 import { CURRENT_PCB_209_RATLINE_CONTINUATION_NATIVE_CASES } from "../src/current-pcb-209-ratline-continuation-native-cases.ts";
@@ -63,14 +63,15 @@ async function fixture(context: TestContext): Promise<Readonly<{
 const sessions = { pcb: "parent-session", worker: "ratline-session", subordinate: "subordinate-session" } as const;
 type Fixture = Awaited<ReturnType<typeof fixture>>;
 function opening(pcbOpening: boolean, phase: "preflight" | "open-project" | "open-document"): CurrentPcbWorkerStartupParentCommand {
-  const command = currentPcbWorkerStartupNativeParentCases().find(value => value.method === "Runtime.callFunctionOn" && value.params.arguments.length === 2 &&
+  const command = currentPcb209WorkerStartupNativeParentCases().find(value => value.method === "Runtime.callFunctionOn" && value.params.arguments.length === 2 &&
     value.params.arguments[1].value === phase && (value.params.functionDeclaration === CURRENT_PCB_DIAGNOSTIC_PCB_OPENING_FUNCTION) === pcbOpening);
   assert.ok(command?.method === "Runtime.callFunctionOn"); return { ...command, sessionId: "parent-session" };
 }
-function projectIdentity(): Extract<CurrentPcbWorkerStartupWorkerCommand, { method: "Runtime.callFunctionOn" }> {
+function projectIdentity(): Extract<CurrentPcbWorkerStartupWorkerCommand, { method: "Runtime.callFunctionOn"; params: { awaitPromise: false } }> {
   const command = currentPcb209WorkerStartupNativeCases().find(value => value.method === "Runtime.callFunctionOn" &&
     value.params.functionDeclaration === CURRENT_PCB_WORKER_CONSTRUCTION_IDENTITY);
-  assert.ok(command?.method === "Runtime.callFunctionOn"); return { ...command, sessionId: "project-session" };
+  assert.ok(command?.method === "Runtime.callFunctionOn" && !command.params.awaitPromise);
+  return { method: command.method, params: command.params, sessionId: "project-session" };
 }
 async function prepare(f: Fixture): Promise<CurrentPcb209RatlineContinuationChannelDependency> {
   await f.dependency.request(opening(false, "preflight"));

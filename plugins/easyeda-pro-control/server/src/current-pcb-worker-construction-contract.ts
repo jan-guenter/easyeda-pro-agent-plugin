@@ -1,6 +1,7 @@
 /** Private pre-bootstrap contract. Existing diagnostic purposes deliberately do
  * not admit these pauses. There is no public caller-selected breakpoint/code. */
 import type { CURRENT_FOOTPRINT_COPY_CONSTRUCTORS_EXPRESSION } from "./current-footprint-copy-state.ts";
+import type { CurrentFootprintCopySourceCommand } from "./current-footprint-copy-source-command.ts";
 import { freezeDeep } from "./sqlite-inventory-core.ts";
 
 export const CURRENT_PCB_WORKER_CONSTRUCTION_SOURCE = Object.freeze({
@@ -49,6 +50,7 @@ const identity={projectUuid:id(own(this,"uuid"),/^(?:[a-f0-9]{32}|[a-f0-9]{64})$
 for(const [o,k,v]of retained){const d=Object.getOwnPropertyDescriptor(o,k);if(!d||!Object.hasOwn(d,"value")||d.value!==v)bad();}
 return identity;}`;
 export type CurrentPcbWorkerConstructionCommand =
+  | CurrentFootprintCopySourceCommand
   | Readonly<{ method: "Debugger.setBreakpoint"; params: Readonly<{ location: Readonly<{ scriptId: string; lineNumber: number; columnNumber: number }> }> }>
   | Readonly<{ method: "Debugger.removeBreakpoint"; params: Readonly<{ breakpointId: string }> }>
   | Readonly<{ method: "Debugger.resume"; params: Readonly<Record<string, never>> }>

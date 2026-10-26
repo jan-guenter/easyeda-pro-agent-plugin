@@ -2,7 +2,7 @@ import assert from "node:assert/strict";
 import { test } from "node:test";
 import type { TestContext } from "node:test";
 import { setTimeout as delay } from "node:timers/promises";
-import { CurrentPcbWorkerStartupChannel } from "../src/current-pcb-worker-startup-channel.ts";
+import { CurrentPcb209WorkerStartupChannel, CurrentPcbWorkerStartupChannel } from "../src/current-pcb-worker-startup-channel.ts";
 import type { CurrentPcbWorkerStartupNativeDependency, CurrentPcbWorkerStartupParent } from "../src/current-pcb-worker-startup-channel.ts";
 import { CURRENT_PCB_WORKER_STARTUP_ATTACH } from "../src/current-pcb-worker-startup-contract.ts";
 import type { CurrentPcbWorkerStartupEvent } from "../src/current-pcb-worker-startup-contract.ts";
@@ -10,10 +10,11 @@ import { CURRENT_PCB_WORKER_CONSTRUCTION_SITES } from "../src/current-pcb-worker
 import { currentPcbWorkerStartupNativeParentCases } from "../src/current-pcb-worker-startup-native.ts";
 import { currentPcbWorkerStartupUiActorCommand } from "../src/current-pcb-worker-startup-actor.ts";
 import { CURRENT_PCB_DIAGNOSTIC_PCB_OPENING_FUNCTION } from "../src/current-pcb-diagnostic-pcb-opening.ts";
+import { currentFootprintCopySourceNativeSample } from "../src/current-footprint-copy-source-native.ts";
 
 type NativeSend = Readonly<Record<string, string | number>>;
-async function fixture(context: TestContext): Promise<Readonly<{
-  channel: CurrentPcbWorkerStartupChannel;
+async function fixture(context: TestContext, current209 = false): Promise<Readonly<{
+  channel: CurrentPcbWorkerStartupChannel | CurrentPcb209WorkerStartupChannel;
   dependency: Awaited<ReturnType<CurrentPcbWorkerStartupChannel["start"]>>;
   native: CurrentPcbWorkerStartupNativeDependency;
   requests: NativeSend[];
@@ -56,7 +57,7 @@ async function fixture(context: TestContext): Promise<Readonly<{
       frame({ id: request["requestId"], sessionId: request["sessionId"], result: {} }); return Promise.resolve({ written: true });
     },
   };
-  const channel = new CurrentPcbWorkerStartupChannel(native), dependency = await channel.start();
+  const channel = current209 ? new CurrentPcb209WorkerStartupChannel(native) : new CurrentPcbWorkerStartupChannel(native), dependency = await channel.start();
   dependency.subscribe(event => { events.push(event); });
   context.after(async () => {
     state.terminated = true;
@@ -67,6 +68,24 @@ async function fixture(context: TestContext): Promise<Readonly<{
 async function attach(value: Awaited<ReturnType<typeof fixture>>): Promise<void> {
   await value.dependency.request({ method: "Target.setAutoAttach", params: CURRENT_PCB_WORKER_STARTUP_ATTACH, sessionId: "parent-session" });
 }
+void test("only the fixed209 footprint source reply receives its dedicated frame bound", async context => {
+  const value = await fixture(context, true); await attach(value);
+  const content = "x".repeat(1024 * 1024 + 1), result = { result: { type: "string", value: content } };
+  value.state.onSend = (request): Promise<unknown> => {
+    value.frame({ id: request["requestId"], sessionId: request["sessionId"], result }); return Promise.resolve({ written: true });
+  };
+  assert.deepEqual(await value.dependency.request({ ...currentFootprintCopySourceNativeSample(), sessionId: "worker-session" }), result);
+  await assert.rejects(value.dependency.request({ method: "Runtime.getProperties", sessionId: "worker-session",
+    params: { objectId: "ordinary", ownProperties: true, generatePreview: false } }), /FRAME_BUDGET|REPLY|POLL/u);
+});
+void test("an oversized event cannot borrow the pending footprint source reply allowance", async context => {
+  const value = await fixture(context, true); await attach(value);
+  value.state.onSend = (): Promise<unknown> => {
+    value.frame({ method: "Runtime.consoleAPICalled", sessionId: "worker-session", params: { text: "x".repeat(1024 * 1024 + 1) } });
+    return Promise.resolve({ written: true });
+  };
+  await assert.rejects(value.dependency.request({ ...currentFootprintCopySourceNativeSample(), sessionId: "worker-session" }), /EVENT_BUDGET|POLL/u);
+});
 void test("parent opening shares IDs, requires acknowledged attachment and cannot replay or change target", async context => {
   const value = await fixture(context);
   const samples = currentPcbWorkerStartupNativeParentCases();

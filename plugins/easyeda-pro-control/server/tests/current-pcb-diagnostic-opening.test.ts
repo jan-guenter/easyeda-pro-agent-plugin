@@ -6,15 +6,34 @@ import { sha256Text } from "../src/core.ts";
 import type { CurrentPcbDiagnosticOpeningPhase, CurrentPcbDiagnosticOpeningResult } from "../src/current-pcb-diagnostic-opening.ts";
 import { CURRENT_PCB_DIAGNOSTIC_OPENING_FUNCTION, CURRENT_PCB_DIAGNOSTIC_OPENING_FUNCTION_SHA256,
   currentPcbDiagnosticOpeningArguments, decodeCurrentPcbDiagnosticOpeningReply } from "../src/current-pcb-diagnostic-opening.ts";
+import { CURRENT_PCB_209_STARTUP_OPENING_FUNCTION } from "../src/current-pcb-209-startup-opening-program.ts";
+import { CURRENT_PCB_209_STARTUP_OPENING_TIMING } from "../src/current-pcb-209-worker-startup-timing.ts";
 
 const rawWindowsPath = String.raw`C:\Disposable\Selected.eprj2`;
 const target = { rawWindowsPath, projectUuid: sha256Text(rawWindowsPath), branchUuid: "b".repeat(32),
   documentUuid: "d".repeat(16), expectedSourceSha256: "e".repeat(64) };
-interface Options { before?: string; afterRegistry?: string; projectBody?: string; projectEvent?: string; subscriptionBody?: string; fastDeadline?: boolean; }
+interface ManualTimers {
+  readonly setTimeout: (callback: () => void, milliseconds: number) => number;
+  readonly clearTimeout: (handle: number) => void;
+  readonly advance: (milliseconds: number) => void;
+}
+function manualTimers(): ManualTimers {
+  let now = 0, pending: Readonly<{ at: number; callback: () => void }> | null = null;
+  return {
+    setTimeout: (callback, milliseconds): number => { assert.equal(pending, null); pending = { at: now + milliseconds, callback }; return 1; },
+    clearTimeout: (handle): void => { assert.equal(handle, 1); pending = null; },
+    advance: (milliseconds): void => {
+      now += milliseconds;
+      if (pending !== null && pending.at <= now) { const original = pending; pending = null; original.callback(); }
+    },
+  };
+}
+interface Options { before?: string; afterRegistry?: string; projectBody?: string; projectEvent?: string; subscriptionBody?: string;
+  fastDeadline?: boolean; startup209?: boolean; timers?: ManualTimers; }
 function fixture(options: Options = {}): { run: (phase: CurrentPcbDiagnosticOpeningPhase) => Promise<CurrentPcbDiagnosticOpeningResult>; evaluate: (source: string) => unknown } {
-  const context = createContext({ clearTimeout, setTimeout: options.fastDeadline === true
+  const context = createContext({ clearTimeout: options.timers?.clearTimeout ?? clearTimeout, setTimeout: options.timers?.setTimeout ?? (options.fastDeadline === true
     // oxlint-disable-next-line promise/prefer-await-to-callbacks -- Preserve the browser timer interface while shortening only the synthetic deadline.
-    ? (callback: () => void): ReturnType<typeof setTimeout> => setTimeout(callback, 1) : setTimeout });
+    ? (callback: () => void): ReturnType<typeof setTimeout> => setTimeout(callback, 1) : setTimeout) });
   runInContext(`globalThis.window=globalThis;globalThis.top=globalThis;globalThis.target=${JSON.stringify(target)};
 globalThis.location={href:'https://client/editor?cll=warn#',origin:'https://client'};
 globalThis.document={defaultView:globalThis,nodeType:9,URL:location.href,title:'EasyEDA Pro - V3.2.196',querySelector(selector){if(selector!=='meta[name="editorMainVersion"]')throw new Error('PRIVATE_SELECTOR');return meta;}};
@@ -35,13 +54,56 @@ globalThis.openedProject=()=>{gVars.currentProject={projectId:target.projectUuid
 ${options.before ?? ""}`, context, { timeout: 1000 });
   return {
     run: async (phase): Promise<CurrentPcbDiagnosticOpeningResult> => {
-      const value: unknown = await (runInContext(`(${CURRENT_PCB_DIAGNOSTIC_OPENING_FUNCTION})(target,${JSON.stringify(phase)})`, context, { timeout: 1000 }) as unknown);
+      const program = options.startup209 === true ? CURRENT_PCB_209_STARTUP_OPENING_FUNCTION : CURRENT_PCB_DIAGNOSTIC_OPENING_FUNCTION;
+      const value: unknown = await (runInContext(`(${program})(target,${JSON.stringify(phase)})`, context, { timeout: 1000 }) as unknown);
       return decodeCurrentPcbDiagnosticOpeningReply({ result: { type: "string", value } }, target, phase);
     },
     evaluate: (source): unknown => runInContext(source, context, { timeout: 1000 }) as unknown,
   };
 }
 async function flush(): Promise<void> { for (let i = 0; i < 30; i += 1) { await Promise.resolve(); } }
+
+void test("209 parent permits the finite paused capture graph while generic project opening still expires at45s", async () => {
+  for (const startup209 of [false, true]) {
+    const timers = manualTimers();
+    const env = fixture({ startup209, timers,
+      projectBody: "await new Promise(resolve=>{globalThis.finishCapture=resolve;});openedProject();return true;" });
+    const running = env.run("open-project"); await flush();
+    assert.equal(env.evaluate("projectCalls"), 1);
+    timers.advance(45_001); await flush();
+    if (startup209) {
+      assert.equal(env.evaluate("cancelCalls"), 0);
+      timers.advance(CURRENT_PCB_209_STARTUP_OPENING_TIMING.captureMs - 45_001);
+      await flush(); assert.equal(env.evaluate("cancelCalls"), 0);
+      env.evaluate("finishCapture();");
+      const result = await running;
+      assert.equal(result.ok, true); assert.equal(result.prefixObserved, true);
+      assert.equal(result.observation?.projectPresent, true);
+    } else {
+      const result = await running;
+      assert.deepEqual(result.failure, { stage: "dispatch", code: "TIMEOUT", substage: "root-binding" });
+      assert.equal(result.nativeWorkMayRemain, true);
+      env.evaluate("finishCapture();"); await flush();
+      assert.equal(result.publicResult, null);
+    }
+    assert.equal(env.evaluate("projectCalls"), 1); assert.equal(env.evaluate("cancelCalls"), 1);
+  }
+});
+
+void test("209 opening still refuses at its own finite deadline without replaying late vendor work", async () => {
+  const timers = manualTimers();
+  const env = fixture({ startup209: true, timers,
+    projectBody: "await new Promise(resolve=>{globalThis.finishCapture=resolve;});openedProject();return true;" });
+  const running = env.run("open-project"); await flush();
+  timers.advance(CURRENT_PCB_209_STARTUP_OPENING_TIMING.nativeMs); await flush();
+  const result = await running;
+  assert.equal(result.ok, false); assert.equal(result.failure?.code, "TIMEOUT");
+  assert.equal(result.failure?.substage, "native-open-project");
+  assert.equal(result.dispatchAttempted, true); assert.equal(result.publicResult, null);
+  assert.equal(result.nativeWorkMayRemain, true); assert.equal(result.prefixObserved, false);
+  env.evaluate("finishCapture();"); await flush();
+  assert.equal(env.evaluate("projectCalls"), 1); assert.equal(env.evaluate("cancelCalls"), 1);
+});
 function resultReply(result: CurrentPcbDiagnosticOpeningResult, change: Record<string, unknown> = {}): unknown {
   const { startupQualified: _startup, restorationCompletionVerified: _restoration, persistenceVerified: _persistence,
     compilerOwnerVerified: _compiler, queueCompletionVerified: _queues, executionAuthorized: _execution,

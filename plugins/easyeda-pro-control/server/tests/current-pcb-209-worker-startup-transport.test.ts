@@ -8,7 +8,7 @@ import type { CurrentPcbWorkerStartupNativeDependency } from "../src/current-pcb
 import { CurrentPcb209WorkerStartupChannelObservationRunner } from "../src/current-pcb-worker-startup-channel-observation-runner.ts";
 import { CURRENT_PCB_WORKER_STARTUP_ATTACH } from "../src/current-pcb-worker-startup-contract.ts";
 import type { CurrentPcbWorkerStartupDependency, CurrentPcbWorkerStartupEvent } from "../src/current-pcb-worker-startup-contract.ts";
-import { currentPcbWorkerStartupNativeCases, currentPcbWorkerStartupNativeParentCases } from "../src/current-pcb-worker-startup-native.ts";
+import { currentPcb209WorkerStartupNativeParentCases, currentPcbWorkerStartupNativeCases, currentPcbWorkerStartupNativeParentCases } from "../src/current-pcb-worker-startup-native.ts";
 import { CurrentPcb209WorkerStartupTransport } from "../src/current-pcb-worker-startup-transport.ts";
 // oxlint-disable-next-line import/max-dependencies -- This integration test checks fixed-profile ownership across the wire, channel, transport and construction boundaries together.
 import { currentPcb209WorkerStartupWire, currentPcbWorkerStartupWire } from "../src/current-pcb-worker-startup-wire.ts";
@@ -21,12 +21,21 @@ const serial = { method: "Debugger.setBreakpoint", sessionId: "worker-session", 
 const oldSerial = { ...serial, params: { location: { ...serial.params.location,
   columnNumber: CURRENT_PCB_WORKER_CONSTRUCTION_SITES.serial.columnNumber } } };
 
-void test("generation209 wire changes only its fixed serial coordinates and carries no caller code or profile", () => {
-  const samples = [...currentPcbWorkerStartupNativeCases(), ...currentPcbWorkerStartupNativeParentCases()];
-  for (const sample of samples) {
+void test("generation209 wire fixes its serial coordinates and opening program without caller code or profile", () => {
+  for (const sample of currentPcbWorkerStartupNativeCases()) {
     if (sample.method === "Debugger.setBreakpoint" && sample.params.location.lineNumber === oldSerial.params.location.lineNumber) {
       assert.throws(() => currentPcb209WorkerStartupWire(sample, 1), /STARTUP_WIRE/u);
     } else { assert.deepEqual(currentPcb209WorkerStartupWire(sample, 256), currentPcbWorkerStartupWire(sample, 256)); }
+  }
+  const legacyParents = currentPcbWorkerStartupNativeParentCases();
+  for (const [index, sample] of currentPcb209WorkerStartupNativeParentCases().entries()) {
+    const legacy = legacyParents[index]; assert.ok(legacy !== undefined);
+    assert.deepEqual(currentPcb209WorkerStartupWire(sample, 256).request, currentPcbWorkerStartupWire(legacy, 256).request);
+    if (sample !== legacy && sample.method === "Runtime.callFunctionOn" && legacy.method === "Runtime.callFunctionOn" &&
+      sample.params.functionDeclaration !== legacy.params.functionDeclaration) {
+      assert.throws(() => currentPcbWorkerStartupWire(sample, 256), /STARTUP_WIRE/u);
+      assert.throws(() => currentPcb209WorkerStartupWire(legacy, 256), /STARTUP_WIRE/u);
+    }
   }
   const wire = currentPcb209WorkerStartupWire(serial, 1);
   assert.equal(wire.request["site"], "serial"); assert.equal(wire.request["action"], "worker-startup-send");

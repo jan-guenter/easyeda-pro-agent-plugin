@@ -46,6 +46,9 @@ import type { CurrentPcb209WorkerStartupTransport, CurrentPcbWorkerStartupTransp
 import type { CurrentPcbWorkerConstructionAssignments } from "./current-pcb-worker-construction-assignment.ts";
 import { CurrentPcb209WorkerStartupOpening } from "./current-pcb-209-worker-startup-opening.ts";
 import type { CurrentFootprintCopyStatePacket } from "./current-footprint-copy-state.ts";
+import { prepareCurrentFootprintSourcePlan } from "./current-footprint-source-plan.ts";
+import type { CurrentFootprintSourceReadPacket } from "./current-footprint-source-read-runner.ts";
+import { CURRENT_FOOTPRINT_COPY_SOURCE_STAGE_REQUESTS } from "./current-footprint-copy-source-read-runner.ts";
 import type { CurrentPcb209WorkerStartupOpeningResult } from "./current-pcb-209-worker-startup-opening.ts";
 import { adaptCurrentPcb209WorkerStartupLifecycle, adaptCurrentPcbWorkerStartupLifecycle, requireCurrentPcb209StartupOpening } from "./current-pcb-worker-startup-lifecycle-adapter.ts";
 import { currentPcb209StartupCheckpointCallback } from "./current-pcb-209-startup-checkpoint.ts";
@@ -57,8 +60,8 @@ import type { CurrentPcb209WorkerStartupOpeningCoordinator, CurrentPcbStartupAct
   CurrentPcbStartupOpeningResult, CurrentPcbStartupTransport,
   CurrentPcbWorkerStartupOpeningCoordinator } from "./current-pcb-worker-startup-lifecycle-adapter.ts";
 import { CURRENT_PCB_209_EMPTY_STARTUP_OPERATION_PREFIX, currentPcb209EmptyStartupIdSchema, currentPcb209EmptyStartupLifecycleRequestSchema } from "./current-pcb-209-empty-startup-validation.ts";
-import { CURRENT_PCB_209_WORKER_STARTUP_OPERATION_PREFIX, currentPcb209WorkerStartupLifecycleIdSchema,
-  currentPcb209WorkerStartupLifecycleRequestSchema } from "./current-pcb-209-worker-startup-validation.ts";
+import { CURRENT_PCB_209_WORKER_STARTUP_OPERATION_PREFIX, currentPcb209WorkerStartupFootprintSourceInputSchema,
+  currentPcb209WorkerStartupLifecycleIdSchema, currentPcb209WorkerStartupLifecycleRequestSchema } from "./current-pcb-209-worker-startup-validation.ts";
 import { CURRENT_PCB_209_RATLINE_STARTUP_OPERATION_PREFIX, currentPcb209RatlineStartupIdSchema,
   currentPcb209RatlineStartupLifecycleRequestSchema } from "./current-pcb-209-ratline-startup-validation.ts";
 import { CurrentPcb209RatlineStartupChannel } from "./current-pcb-209-ratline-startup-channel.ts";
@@ -99,6 +102,8 @@ const startupOpeningMethods = ["open", "status", "retainedOpeningResult", "requi
 // oxlint-disable typescript/unbound-method -- Retained private-field methods are invoked only with their original session receiver.
 const footprintStateMethods = Object.freeze({ observe: CurrentPcb209WorkerStartupOpening.prototype.observeFootprintState,
   require: CurrentPcb209WorkerStartupOpening.prototype.requireFootprintState, retained: CurrentPcb209WorkerStartupOpening.prototype.retainedFootprintState });
+const footprintSourceMethods = Object.freeze({ observe: CurrentPcb209WorkerStartupOpening.prototype.observeFootprintSource,
+  require: CurrentPcb209WorkerStartupOpening.prototype.requireFootprintSource, retained: CurrentPcb209WorkerStartupOpening.prototype.retainedFootprintSource });
 const emptySessionMethods = Object.freeze({ openPcb: CurrentPcb209WorkerStartupPcbSession.prototype.openAndQualify,
   pcbStatus: CurrentPcb209WorkerStartupPcbSession.prototype.status, pcbObservation: CurrentPcb209WorkerStartupPcbSession.prototype.retainedOpeningObservation,
   observe: CurrentPcb209WorkerStartupEmptySession.prototype.observeAndJoin, require: CurrentPcb209WorkerStartupEmptySession.prototype.requireOriginal,
@@ -223,6 +228,8 @@ function describe(operationId: string, operation: DiagnosticLifecycleOperation |
     workerStartupAssignmentsResultPublished: records?.["worker-startup-assignments-result.json"] !== undefined,
     workerStartupFootprintAttemptConsumed: records?.["worker-startup-footprint-intent.json"] !== undefined,
     workerStartupFootprintResultPublished: records?.["worker-startup-footprint-result.json"] !== undefined,
+    workerStartupFootprintSourceAttemptConsumed: records?.["worker-startup-footprint-source-intent.json"] !== undefined,
+    workerStartupFootprintSourceResultPublished: records?.["worker-startup-footprint-source-result.json"] !== undefined,
     workerStartupActorAttemptConsumed: records?.["worker-startup-actor-intent.json"] !== undefined,
     workerStartupActorResultPublished: records?.["worker-startup-actor-result.json"] !== undefined,
     workerStartupChannelAttemptConsumed: records?.["worker-startup-channel-intent.json"] !== undefined,
@@ -325,6 +332,8 @@ class CurrentPcbLifecycleCore {
   #startupFootprintAttempted = false;
   #startupFootprintPacket: CurrentFootprintCopyStatePacket | null = null;
   #startupFootprintOpening: CurrentPcb209WorkerStartupOpening | null = null;
+  #startupFootprintSourceAttempted = false;
+  #startupFootprintSourcePacket: CurrentFootprintSourceReadPacket | null = null;
   #startupActorAttempted = false;
   #startupActorPacket: CurrentPcbStartupActorPacket | null = null;
   #startupChannelAttempted = false;
@@ -492,6 +501,11 @@ class CurrentPcbLifecycleCore {
         workerStartupFootprintObservation: original && this.#startupFootprintOpening !== null ?
           footprintStateMethods.retained.call(this.#startupFootprintOpening) : null,
         workerStartupFootprintResult: operation?.records["worker-startup-footprint-result.json"]?.result ?? null,
+        workerStartupFootprintSourceAttemptConsumed: operation?.records["worker-startup-footprint-source-intent.json"] !== undefined || original && this.#startupFootprintSourceAttempted,
+        workerStartupFootprintSourceResultRetained: original && this.#startupFootprintSourcePacket !== null,
+        workerStartupFootprintSourceObservation: original && this.#startupFootprintOpening !== null ?
+          footprintSourceMethods.retained.call(this.#startupFootprintOpening) : null,
+        workerStartupFootprintSourceResult: operation?.records["worker-startup-footprint-source-result.json"]?.result ?? null,
         workerStartupActorAttemptConsumed: operation?.records["worker-startup-actor-intent.json"] !== undefined || original && this.#startupActorAttempted,
         workerStartupActorResultRetained: original && this.#startupActorPacket !== null,
         workerStartupActorObservation: original && this.#startupOpening !== null ?
@@ -1129,6 +1143,88 @@ class CurrentPcbLifecycleCore {
       await assertSnapshot(expected.map(value => value.operationId === operationId ? completed : value)); this.#assertOwner(retained);
       return { operationId, result: structuredClone(result.result), pointInTimeObservation: true,
         validationOnly: true, executionAuthorized: false, saveAuthorized: false };
+    } finally { this.#busy = false; }
+  }
+
+  protected async observeStartupFootprintSource(operationId: string, expectedBindingSha256: string, input: unknown): Promise<Record<string, unknown>> {
+    this.#startupId(operationId); diagnosticLifecycleDigestSchema.parse(expectedBindingSha256);
+    const selected = currentPcb209WorkerStartupFootprintSourceInputSchema.parse(input);
+    this.#options.assertLocalAllowed();
+    requireValue(this.#generation === "209-startup" && this.#purpose === "worker-startup", "WORKER_STARTUP_FOOTPRINT_PURPOSE_REQUIRED");
+    requireValue(!this.#busy, "BUSY"); this.#busy = true;
+    try {
+      const operations = await readCurrentPcbDiagnosticLifecycles();
+      const operation = operations.find(value => value.operationId === operationId), retained = this.#retained;
+      this.#assertPurpose(operationId, operation);
+      const assignments = this.#startupAssignments, openingResult = this.#startupOpeningResult, original = this.#startupOpening;
+      const preparation = this.#projectPreparation, state = this.#startupFootprintPacket;
+      const stateRecord = operation?.records["worker-startup-footprint-result.json"];
+      const openingRecord = operation?.records["worker-startup-opening-result.json"];
+      const assignedRecord = operation?.records["worker-startup-assignments-result.json"];
+      requireValue(operation !== undefined && retained !== null && retained.operationId === operationId && original !== null &&
+        openingResult !== null && assignments !== null && state !== null && preparation !== null && preparation.commonInventory !== null &&
+        !this.#startupOpeningReleased && !this.#closeAttempted && operation.records["close-intent.json"] === undefined &&
+        operation.records["terminated.json"] === undefined && sha256Json(operation.records["binding.json"]) === expectedBindingSha256 &&
+        stateRecord !== undefined && openingRecord !== undefined && assignedRecord !== undefined &&
+        this.#pending.get("worker-startup-footprint-result.json") === canonicalJson(stateRecord) &&
+        this.#pending.get("worker-startup-opening-result.json") === canonicalJson(openingRecord) &&
+        this.#pending.get("worker-startup-assignments-result.json") === canonicalJson(assignedRecord), "ORIGINAL_FOOTPRINT_STATE_REQUIRED");
+      this.#assertOwner(retained);
+      requireValue(!this.#startupFootprintSourceAttempted && operation.records["worker-startup-footprint-source-intent.json"] === undefined,
+        "WORKER_STARTUP_FOOTPRINT_SOURCE_CONSUMED");
+      this.#startupFootprintSourceAttempted = true;
+      const before = preparation.commonInventory, completion = readerCompletion(before);
+      const current = (): void => {
+        this.#assertOwner(retained);
+        requireValue(this.#projectPreparation === preparation && preparation.commonInventory === before &&
+          readerCompletion(before) === completion && canonicalJson(preparation.prepared) === preparation.preparedText,
+        "FOOTPRINT_SOURCE_CHECKPOINT_CHANGED");
+      };
+      await this.#installation(retained); current();
+      await this.#verifyHistoricalCheckpoint(preparation.prepared, preparation.originalTarget); current();
+      const plan = await prepareCurrentFootprintSourcePlan(before, {
+        projectUuid: preparation.sealedTarget.projectUuid, branchUuid: preparation.sealedTarget.branchUuid,
+        footprintUuid: selected.footprintUuid,
+      }); current();
+      requireValue(plan.maximumTicket === state.maximumTicket && plan.beforeSqlSha256 === before.logicalSha256 &&
+        plan.beforeCheckpointSha256 === preparation.prepared.checkpoint.checkpointSha256, "FOOTPRINT_SOURCE_BASELINE_CHANGED");
+      await assertSnapshot(operations); current();
+      const capacity = (): void => {
+        current();
+        const channel = retained.methods.status.call(retained.owner).workerStartupChannel;
+        requireValue(channel !== undefined && channel !== null && channel.started && !channel.failed && !channel.released &&
+          channel.pendingReplies === 0 && Number.isSafeInteger(channel.nextRequestId) && channel.nextRequestId >= 1 &&
+          channel.nextRequestId + CURRENT_FOOTPRINT_COPY_SOURCE_STAGE_REQUESTS - 1 <= 224,
+        "FOOTPRINT_SOURCE_CAPACITY");
+      };
+      capacity();
+      const intent: NonNullable<DiagnosticLifecycleRecords["worker-startup-footprint-source-intent.json"]> = {
+        schema: "easyeda-pro-control.pcb209-footprint-source-intent.v1", operationId, createdAt: new Date().toISOString(),
+        bindingSha256: expectedBindingSha256, stateResultSha256: sha256Json(stateRecord),
+        beforeSqlSha256: before.logicalSha256, checkpointSha256: before.checkpointSha256,
+        sourcePlanSha256: sha256Json(plan), comparison: "complete-checkpoint-records-native-order", ...selected,
+      };
+      await this.#record(operationId, "worker-startup-footprint-source-intent.json", intent); current();
+      const updated = { ...operation, records: { ...operation.records, "worker-startup-footprint-source-intent.json": intent } };
+      const expected = operations.map(value => value.operationId === operationId ? updated : value);
+      await assertSnapshot(expected); current();
+      capacity();
+      const opened = requireCurrentPcb209StartupOpening(original.owner, openingResult);
+      requireValue(opened.opening === this.#startupFootprintOpening, "ORIGINAL_FOOTPRINT_STATE_OWNER");
+      const packet = await footprintSourceMethods.observe.call(opened.opening, opened.result, assignments, state, plan);
+      this.#startupFootprintSourcePacket = packet; current();
+      await footprintSourceMethods.require.call(opened.opening, opened.result, assignments, state, plan, packet); current();
+      const result = diagnosticLifecycleRecordSchemas["worker-startup-footprint-source-result.json"].parse({
+        schema: "easyeda-pro-control.pcb209-footprint-source-result.v1", operationId, createdAt: new Date().toISOString(),
+        intentSha256: sha256Json(intent), result: structuredClone(packet), executionAuthorized: false, saveAuthorized: false,
+      });
+      this.#retainRecord("worker-startup-footprint-source-result.json", result);
+      await assertSnapshot(expected); current();
+      await this.#publish(operationId, "worker-startup-footprint-source-result.json", result); current();
+      const completed = { ...updated, records: { ...updated.records, "worker-startup-footprint-source-result.json": result } };
+      await assertSnapshot(expected.map(value => value.operationId === operationId ? completed : value)); current();
+      return { operationId, result: structuredClone(result.result), validationOnly: true,
+        executionAuthorized: false, saveAuthorized: false, persistenceVerified: false };
     } finally { this.#busy = false; }
   }
 
@@ -2224,6 +2320,9 @@ export class CurrentPcb209WorkerStartupLifecycle extends CurrentPcbLifecycleCore
   }
   public observeWorkerStartupFootprint(operationId: string, expectedBindingSha256: string): Promise<Record<string, unknown>> {
     return this.observeStartupFootprint(operationId, expectedBindingSha256);
+  }
+  public observeWorkerStartupFootprintSource(operationId: string, expectedBindingSha256: string, input: unknown): Promise<Record<string, unknown>> {
+    return this.observeStartupFootprintSource(operationId, expectedBindingSha256, input);
   }
   public observeWorkerStartupActor(operationId: string, expectedBindingSha256: string): Promise<Record<string, unknown>> {
     return this.observeStartupActor(operationId, expectedBindingSha256);
