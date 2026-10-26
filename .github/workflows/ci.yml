@@ -65,11 +65,23 @@ jobs:
             }
           '
 
-      - name: Install SQLite CLI and build reviewed Bubblewrap 0.13.1
+      - name: Install SQLite CLI and native build dependencies
+        timeout-minutes: 5
         shell: bash
         run: |
-          sudo apt-get update
-          sudo apt-get install --yes binutils build-essential git libcap-dev libcap2-bin libselinux1-dev meson ninja-build pkg-config sqlite3
+          # Bound mirror stalls and fail on incomplete indexes instead of using stale ones.
+          apt_options=(
+            -o Acquire::Retries=2
+            -o Acquire::http::Timeout=30
+            -o Acquire::https::Timeout=30
+          )
+          sudo apt-get "${apt_options[@]}" update --error-on=any
+          sudo apt-get "${apt_options[@]}" install --yes binutils build-essential git libcap-dev libcap2-bin libselinux1-dev meson ninja-build pkg-config sqlite3
+
+      - name: Build reviewed Bubblewrap 0.13.1
+        timeout-minutes: 5
+        shell: bash
+        run: |
           bwrap_commit="362936aea0d5c6e70f7af75d2d44b5a914cb4ba2"
           bwrap_source="$(mktemp -d)"
           git -C "${bwrap_source}" init --quiet
@@ -311,11 +323,23 @@ jobs:
             }
           '
 
-      - name: Install SQLite CLI and build reviewed Bubblewrap 0.13.1
+      - name: Install SQLite CLI and native build dependencies
+        timeout-minutes: 5
         shell: bash
         run: |
-          sudo apt-get update
-          sudo apt-get install --yes binutils build-essential git libcap-dev libcap2-bin libselinux1-dev meson ninja-build pkg-config sqlite3
+          # Bound mirror stalls and fail on incomplete indexes instead of using stale ones.
+          apt_options=(
+            -o Acquire::Retries=2
+            -o Acquire::http::Timeout=30
+            -o Acquire::https::Timeout=30
+          )
+          sudo apt-get "${apt_options[@]}" update --error-on=any
+          sudo apt-get "${apt_options[@]}" install --yes binutils build-essential git libcap-dev libcap2-bin libselinux1-dev meson ninja-build pkg-config sqlite3
+
+      - name: Build reviewed Bubblewrap 0.13.1
+        timeout-minutes: 5
+        shell: bash
+        run: |
           bwrap_commit="362936aea0d5c6e70f7af75d2d44b5a914cb4ba2"
           bwrap_source="$(mktemp -d)"
           git -C "${bwrap_source}" init --quiet

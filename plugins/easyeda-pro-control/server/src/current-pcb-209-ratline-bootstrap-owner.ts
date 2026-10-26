@@ -23,6 +23,8 @@ import type { CurrentPcb209RatlineEventKind } from "./current-pcb-209-ratline-di
 import { retainCurrentPcb209RatlineAllocation } from "./current-pcb-209-ratline-transport-windows.ts";
 import { currentPcb209RatlineContinuationTiming, inheritCurrentPcb209RatlineContinuationTiming } from "./current-pcb-209-ratline-continuation-timing.ts";
 import type { CurrentPcb209RatlineContinuationTiming } from "./current-pcb-209-ratline-continuation-timing.ts";
+import { captureCurrentPcb209RatlineStopRecord } from "./current-pcb-209-ratline-stop-observation.ts";
+import type { CurrentPcb209RatlineStopCapture } from "./current-pcb-209-ratline-stop-observation.ts";
 
 const monotonic = process.hrtime.bigint.bind(process.hrtime);
 type Creation = CurrentPcb209RatlinePcbCreation | CurrentPcb209RatlineWorkerCreation;
@@ -71,6 +73,9 @@ const contextSchema = z.object({ id: z.number().int().positive(), uniqueId: toke
   origin: z.string().max(4096) }).strict();
 const scriptSchema = z.looseObject({ scriptId: token, executionContextId: z.number().int().positive(), url: z.string().max(4096),
   hasSourceURL: z.literal(false).optional(), isLiveEdit: z.literal(false).optional() });
+const asyncStackId = z.object({ id: z.string().regex(/^[1-9]\d{0,19}$/u).refine(value => value.trim() === value),
+  debuggerId: token.refine(value => value.trim() === value) }).strict();
+const copyStack = z.object({ callFrames: z.unknown(), parentId: asyncStackId.optional() }).strict();
 const frameSchema = z.looseObject({ location: z.looseObject({ scriptId: token }) });
 const pauseSchema = z.looseObject({ reason: z.literal("instrumentation"), data: z.looseObject({ scriptId: token, url: z.string().max(4096) }),
   hitBreakpoints: z.array(token).max(1), callFrames: z.array(frameSchema).min(1).max(16) });
@@ -140,6 +145,7 @@ export class CurrentPcb209RatlineBootstrapOwner {
   #firstFailure: Readonly<{ reason: string; step: string; stage: CurrentPcb209RatlineBootstrapRole | null;
     lastCommand: CurrentPcb209RatlineBootstrapCommand["method"] | null; lastEvent: CurrentPcb209RatlineEventKind;
     events: number; contextSeen: boolean; scriptSeen: boolean; pauseSeen: boolean; qualified: boolean }> | null = null;
+  #firstRejectedEvent: CurrentPcb209RatlineStopCapture | null = null;
   #released = false;
   #retired = false;
   #sealConsumed = false;
@@ -180,7 +186,7 @@ export class CurrentPcb209RatlineBootstrapOwner {
       unresolvedInstrumentation: this.#allocationUncertain || this.#instrumentation !== null && !this.#removed, commands: this.#commands,
       workerRealmClaimed: this.#realmClaimed, workerRealmRequests: this.#realmRequests,
       workerScriptLoadedObserved: this.#workerScriptLoadedObserved, firstPauseWindowStarted: this.#firstPauseStartedAt !== null, firstFailure: this.#firstFailure, step: this.#step,
-      lastCommand: this.#lastCommand, lastEvent: this.#lastEvent, events: this.#events });
+      firstRejectedEvent: this.#firstRejectedEvent, lastCommand: this.#lastCommand, lastEvent: this.#lastEvent, events: this.#events });
   }
   #same(): void { need(members(this.#dependency).every((value, index) => value === this.#members[index]), "OWNER_CHANGED"); }
   async #current(): Promise<void> {
@@ -192,10 +198,10 @@ export class CurrentPcb209RatlineBootstrapOwner {
       (this.#firstChild ? 2 : 1) * CURRENT_PCB_209_RATLINE_NATIVE_PROFILE.elapsed.ordinaryRequestMilliseconds);
     this.#same(); need(!this.#failed && !this.#released && !this.#retired, "NOT_CURRENT");
   }
-  #poison(cause: unknown = new Error("PCB209_RATLINE_BOOTSTRAP_ABORTED")): void {
+  #poison(cause: unknown = new Error("PCB209_RATLINE_BOOTSTRAP_ABORTED"), step = this.#step): void {
     if (this.#firstPauseTimer !== null) { clearTimeout(this.#firstPauseTimer); this.#firstPauseTimer = null; }
     if (this.#failed) { return; } const active = this.#stages[this.#index];
-    this.#firstFailure = Object.freeze({ reason: currentPcb209RatlineFailureReason(cause), step: this.#step, stage: active?.role ?? null,
+    this.#firstFailure = Object.freeze({ reason: currentPcb209RatlineFailureReason(cause), step, stage: active?.role ?? null,
       lastCommand: this.#lastCommand, lastEvent: this.#lastEvent, events: this.#events, contextSeen: this.#context !== null,
       scriptSeen: active?.script !== null && active?.script !== undefined, pauseSeen: active?.pause !== null && active?.pause !== undefined, qualified: active?.qualified ?? false });
     this.#failed = true;
@@ -204,13 +210,28 @@ export class CurrentPcb209RatlineBootstrapOwner {
     this.#realmEvents?.lost();
   }
   readonly #lost = (): void => { this.#poison(new Error("PCB209_RATLINE_BOOTSTRAP_STREAM_LOST")); };
+  #qualifyCopyCreator(preloadScriptId: string, script: z.infer<typeof scriptSchema>): void {
+    const stack = copyStack.parse(script["stackTrace"]);
+    if (stack.parentId !== undefined) {
+      const first = this.#stages[0];
+      need(this.#asyncDepthArmed && first?.qualified === true && first.pause !== null, "COPY_ASYNC_ORIGIN");
+      const origin = z.looseObject({ asyncStackTraceId: asyncStackId }).parse(first.pause).asyncStackTraceId;
+      need(stack.parentId.id === origin.id && stack.parentId.debuggerId === origin.debuggerId, "COPY_ASYNC_ORIGIN");
+    }
+    // Async-stack depth1 adds the original worker-creation parentId in Chromium.
+    // Bind that sole extra field above; preserve the shared synchronous creator
+    // And source/pause qualification without admitting arbitrary stack parents.
+    qualifyCurrentPcb209PreloadCopyCreator(preloadScriptId, { ...script, stackTrace: { callFrames: stack.callFrames } });
+  }
   readonly #event = (input: CurrentPcb209RatlineBootstrapEvent): void => {
+    let step = "event-envelope";
     try {
       this.#same(); need(!this.#released && !this.#retired && this.#construction !== null, "EVENT_STATE");
       const captured = captureCurrentPcbStringClockReply(input); this.#events += 1; this.#eventBytes += Buffer.byteLength(captured.text);
       need(this.#events <= 128 && this.#eventBytes <= 256 * 1024, "EVENT_BUDGET");
       const event = z.object({ method: z.string().max(128), sessionId: token, params: z.record(z.string(), z.unknown()) }).strict().parse(captured.value);
       this.#lastEvent = currentPcb209RatlineEventKind(event.method);
+      step = "event-session";
       need(event.sessionId === this.#construction.childSessionId, "EVENT_SESSION");
       const stage = this.#stages[this.#index];
       if (event.method === "Inspector.workerScriptLoaded") {
@@ -223,23 +244,27 @@ export class CurrentPcb209RatlineBootstrapOwner {
         this.#realmListener(); this.#workerScriptLoadedObserved = true; return;
       }
       if (event.method === "Runtime.executionContextCreated") {
+        step = "context-metadata";
         need(this.#context === null && this.#index === 0, "CONTEXT");
         const context = z.object({ context: contextSchema }).strict().parse(event.params).context;
         qualifyCurrentPcb209RatlineBootstrapUrl(this.#construction.role, context.origin, this.#construction.requestedUrlSha256);
         this.#context = context; return;
       }
       if (event.method === "Debugger.scriptParsed") {
+        step = "script-metadata";
         const script = scriptSchema.parse(event.params); need(this.#context !== null && script.executionContextId === this.#context.id, "SCRIPT_CONTEXT");
         if (this.#index === this.#stages.length && script.url === "") { return; }
         need(stage !== undefined && stage.script === null && !this.#stages.some(value => value.script?.scriptId === script.scriptId), "SCRIPT_ORDER");
         need(script.url === currentPcb209RatlineBootstrapRoleUrl(stage.role, this.#context.origin), "SCRIPT_URL");
         if (isCopy(stage.role)) {
+          step = "copy-creator-metadata";
           const preload = this.#stages[1]; need(preload?.script !== null && preload?.script !== undefined && preload.qualified && preload.resumeSeen, "COPY_PRELOAD");
-          qualifyCurrentPcb209PreloadCopyCreator(preload.script.scriptId, script);
+          this.#qualifyCopyCreator(preload.script.scriptId, script);
         }
         stage.script = script; return;
       }
       if (event.method === "Debugger.paused") {
+        step = "pause-observation";
         if ((this.#firstChild || this.#timing !== null) && this.#index === 0) {
           need(this.#firstPauseStartedAt !== null, "CHILD_START_NOT_READY");
           need(Number(monotonic() - this.#firstPauseStartedAt) / 1_000_000 < CURRENT_PCB_209_RATLINE_NATIVE_PROFILE.elapsed.ordinaryRequestMilliseconds, "DEADLINE");
@@ -251,6 +276,7 @@ export class CurrentPcb209RatlineBootstrapOwner {
         stage.pause = event.params; stage.paused.resolve(event.params); return;
       }
       if (event.method === "Debugger.resumed") {
+        step = "resume-observation";
         empty.parse(event.params);
         if (this.#index === this.#stages.length) { this.#realmListener().resumed(); return; }
         need(stage !== undefined && stage.pause !== null && stage.resume !== null && !stage.resumeSeen, "UNEXPECTED_RESUME");
@@ -258,6 +284,7 @@ export class CurrentPcb209RatlineBootstrapOwner {
         if (stage.role === "worker") { this.#realmListener().resumed(); } return;
       }
       if (event.method === "Runtime.consoleAPICalled") {
+        step = "console-observation";
         if (this.#index === this.#stages.length) { return; }
         const log = CURRENT_PCB_209_WORKER_PRELOAD_LOG, preload = this.#stages[1];
         need(stage?.role === "worker" && !this.#logSeen && preload?.script !== null && preload?.script !== undefined, "PRELOAD_LOG_ORDER");
@@ -270,6 +297,7 @@ export class CurrentPcb209RatlineBootstrapOwner {
       // Child attachments after the source handoff belong to the successor's
       // Construction owner; detach/context replacement/exception always refuse.
       if (this.#index === this.#stages.length && event.method === "Target.attachedToTarget") {
+        step = "subordinate-attachment";
         const child = childAttachmentSchema.parse(event.params);
         need(child.sessionId !== this.#construction.childSessionId && child.targetInfo.targetId !== this.#construction.childTargetId &&
           this.#subordinates.size === 0, "SUBORDINATE_ATTACHMENT");
@@ -277,7 +305,12 @@ export class CurrentPcb209RatlineBootstrapOwner {
         this.#realmListener().attached({ sessionId: event.sessionId, params: event.params }); return;
       }
       throw new Error("PCB209_RATLINE_BOOTSTRAP_UNEXPECTED_EVENT");
-    } catch (error) { this.#poison(error); }
+    } catch (error) {
+      // Preserve the first complete bounded event before later cleanup events
+      // Can replace its diagnostic context. This supplies no retry authority.
+      if (!this.#failed) { this.#firstRejectedEvent = captureCurrentPcb209RatlineStopRecord(input, 32_768); }
+      this.#poison(error, step);
+    }
   };
   async #send(command: CurrentPcb209RatlineBootstrapCommand, cleanup = false,
     requestMilliseconds: number = CURRENT_PCB_209_RATLINE_NATIVE_PROFILE.elapsed.ordinaryRequestMilliseconds): Promise<unknown> {

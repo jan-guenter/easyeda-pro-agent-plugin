@@ -94,3 +94,34 @@ void test("copy v2 refuses asset branches and prototype-sensitive IDs before pro
       supplied().replaceAll('"type":"PAD"', `"type":"${family}"`)), /asset|projection/u);
   }
 });
+
+void test("copy v2 accepts ordinary source strings above the clock-capture limit and preserves the two-MiB UTF8 bound", async () => {
+  const largePad = JSON.stringify({ number: "1", unknown: "Ω".repeat(20_000) });
+  const content = supplied().replace(PAD, largePad);
+  assert.ok(content.length > 16_384);
+  const { before, plan } = await prepare(RAW.replace(PAD, largePad), content);
+  assert.ok(currentFootprintCopyV2Rows(plan).some(raw => raw.endsWith(largePad)));
+  const sourcePlan = await prepareCurrentFootprintSourcePlan(before, SOURCE);
+  for (const tooLarge of ["x".repeat(2_097_153), "Ω".repeat(1_048_577)]) {
+    await assert.rejects(prepareCurrentFootprintCopyV2Plan(before, sourcePlan, { client: CLIENT, content: tooLarge }), /Too big|Invalid input/u);
+  }
+});
+
+void test("copy v2 refuses proxy and accessor source wrappers without invoking traps", async () => {
+  const { before } = await prepare(), sourcePlan = await prepareCurrentFootprintSourcePlan(before, SOURCE);
+  const value = { client: CLIENT, content: supplied() }; let calls = 0;
+  const proxy = new Proxy(value, {
+    getPrototypeOf(): object { calls += 1; return Object.prototype; },
+    ownKeys(): string[] { calls += 1; return ["client", "content"]; },
+    getOwnPropertyDescriptor(): PropertyDescriptor { calls += 1; return { value: "forged", configurable: true }; },
+    get(): unknown { calls += 1; return undefined; },
+  });
+  await assert.rejects(prepareCurrentFootprintCopyV2Plan(before, sourcePlan, proxy), /plain source/u);
+  const accessor = Object.defineProperty({ ...value }, "content", { get(): string { calls += 1; return value.content; } });
+  await assert.rejects(prepareCurrentFootprintCopyV2Plan(before, sourcePlan, accessor), /accessors/u);
+  for (const name of ["client", "content"]) {
+    const nested = Object.defineProperty({ ...value }, name, { value: proxy });
+    await assert.rejects(prepareCurrentFootprintCopyV2Plan(before, sourcePlan, nested), /primitive source strings/u);
+  }
+  assert.equal(calls, 0);
+});

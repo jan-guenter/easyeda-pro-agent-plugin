@@ -5,6 +5,7 @@ import type { TestContext } from "node:test";
 import { WebSocket } from "ws";
 import { z } from "zod";
 import type { CurrentPcbWorkerConstructionTransport } from "../../src/current-pcb-worker-construction-contract.ts";
+import { current209QaDescriptorFixture } from "./current-pcb-209-qa-descriptor-fixture.ts";
 import { worker209ConstructionFixtureSource } from "./current-pcb-209-worker-construction-fixture.ts";
 import { workerConstructionFixtureSource } from "./current-pcb-worker-construction-fixture.ts";
 
@@ -82,6 +83,7 @@ async function constructionInspectorSource(context: TestContext, source: string,
 export function constructionInspector(context: TestContext, loseAtPause = 0, publisherMethods = false): ReturnType<typeof constructionInspectorSource> {
   return constructionInspectorSource(context, workerConstructionFixtureSource(publisherMethods), loseAtPause);
 }
-export function construction209Inspector(context: TestContext, loseAtPause = 0, publisherMethods = false): ReturnType<typeof constructionInspectorSource> {
-  return constructionInspectorSource(context, worker209ConstructionFixtureSource(publisherMethods), loseAtPause);
+export async function construction209Inspector(context: TestContext, loseAtPause = 0, publisherMethods = false): ReturnType<typeof constructionInspectorSource> {
+  const fixture = await constructionInspectorSource(context, worker209ConstructionFixtureSource(publisherMethods), loseAtPause);
+  return { ...fixture, transport: current209QaDescriptorFixture(fixture.transport) };
 }

@@ -1,6 +1,7 @@
 /** Separate current3.2.209 footprint copy-v2 complete SQL relation. Supplied
  * source/native result and clock witnesses confer no dispatch, actor provenance,
  * producer completion, generation closure or reopened lifecycle authority. */
+import { types } from "node:util";
 import { z } from "zod";
 import { canonicalJson, isRecord, sha256Text } from "./core.ts";
 import { yieldProofEventLoop } from "./cooperative-proof.ts";
@@ -12,6 +13,7 @@ import { nativeProjectSymbolSqlSchema } from "./native-project-sql-schema.ts";
 import { MAX_ENCODED_BYTES } from "./sqlite-inventory-core.ts";
 import { readerCompletion } from "./sqlite-inventory.ts";
 import type { SqlCell, SqlRow, SqlTable, readExactSqlInventory } from "./sqlite-inventory.ts";
+// oxlint-disable-next-line import/max-dependencies -- The additional Node builtin rejects Proxy inputs before executing traps; retain the separate original-reader, source, append and SQL guards.
 import { decodeCurrentFootprintSourceHistory } from "./symbol-sql-comparator.ts";
 
 type Inventory = Awaited<ReturnType<typeof readExactSqlInventory>>;
@@ -20,10 +22,10 @@ const UUID = /^[a-f0-9]{32}$/u, UUID_V4 = /^[a-f0-9]{12}4[a-f0-9]{3}[89ab][a-f0-
 const integerSchema = z.number().int().nonnegative().max(Number.MAX_SAFE_INTEGER).refine((value) => !Object.is(value, -0));
 const timeSchema = integerSchema.max(8_640_000_000_000_000);
 const offsetSchema = z.number().int().min(-840).max(840).refine((value) => !Object.is(value, -0));
-const witnessSchema = z.object({ projectUuid: z.string().regex(/^(?:[a-f0-9]{32}|[a-f0-9]{64})$/u), branchUuid: z.string().regex(UUID),
-  backendActorUuid: z.string().regex(UUID), client: z.string().regex(/^[a-f0-9]{16}$/u), preDispatchMaxTicket: integerSchema.max(Number.MAX_SAFE_INTEGER - 3),
+const witnessSchema = z.object({ projectUuid: z.string().refine(value => /^(?:[a-f0-9]{32}|[a-f0-9]{64})$/u.exec(value)?.[0] === value), branchUuid: z.string().length(32).regex(UUID),
+  backendActorUuid: z.string().length(32).regex(UUID), client: z.string().length(16).regex(/^[a-f0-9]{16}$/u), preDispatchMaxTicket: integerSchema.max(Number.MAX_SAFE_INTEGER - 3),
   documentClockMinMs: timeSchema, documentClockMaxMs: timeSchema, backendClockMinMs: timeSchema, backendClockMaxMs: timeSchema,
-  backendLocalOffsetMinutes: offsetSchema, agedHead: z.object({ createdAtLiteral: z.string().regex(/^\d{4}-\d{2}-\d{2} \d{2}:\d{2}:\d{2}$/u),
+  backendLocalOffsetMinutes: offsetSchema, agedHead: z.object({ createdAtLiteral: z.string().length(19).regex(/^\d{4}-\d{2}-\d{2} \d{2}:\d{2}:\d{2}$/u),
     nativeParsedLocalMs: timeSchema, nativeTimezoneOffsetMinutes: offsetSchema }).strict().optional(),
 }).strict().refine((value) => value.documentClockMaxMs >= value.documentClockMinMs && value.documentClockMaxMs - value.documentClockMinMs <= 60_000 &&
   value.backendClockMaxMs >= value.backendClockMinMs && value.backendClockMaxMs - value.backendClockMinMs <= 60_000);
@@ -39,6 +41,9 @@ export interface CurrentFootprintCopyV2SqlPlan {
   readonly expectedStructureRequests: 0;
   readonly headEligibility: "locked" | "aged-unlocked";
   readonly maximumPlaintextBytes: number;
+  readonly maximumSavedRawSourceBytes: number;
+  readonly maximumSavedCacheSourceBytes: number;
+  readonly positiveDocumentClockWindow: true;
   readonly maximumCiphertextBase64Bytes: number;
   readonly maximumEncodedSqlBytes: number;
   readonly executionAuthorized: false;
@@ -60,7 +65,7 @@ export interface CurrentFootprintCopyV2SqlSource {
 const completedEffects = new WeakMap<object, Readonly<{ plan: CurrentFootprintCopyV2SqlPlan; after: Inventory; source: CurrentFootprintCopyV2SqlSource }>>();
 function need(condition: boolean, message: string): asserts condition { if (!condition) { throw new Error(`Current footprint copy-v2 SQL: ${message}`); } }
 function dataFields(value: unknown, names?: readonly string[]): Record<string, unknown> {
-  need(isRecord(value) && (Object.getPrototypeOf(value) === Object.prototype || Object.getPrototypeOf(value) === null), "plain input required");
+  need(!types.isProxy(value) && isRecord(value) && (Object.getPrototypeOf(value) === Object.prototype || Object.getPrototypeOf(value) === null), "plain input required");
   const keys = Reflect.ownKeys(value); need(keys.length <= 12 && keys.every((key) => typeof key === "string" && (names === undefined || names.includes(key))), "input keys differ");
   if (names !== undefined) { need(keys.length === names.length, "input keys are missing"); }
   const copy: Record<string, unknown> = {};
@@ -73,7 +78,18 @@ function dataFields(value: unknown, names?: readonly string[]): Record<string, u
 }
 function captureWitness(value: unknown): z.infer<typeof witnessSchema> {
   const fields = dataFields(value);
-  const result = witnessSchema.parse({ ...fields, ...(fields["agedHead"] === undefined ? {} : { agedHead: dataFields(fields["agedHead"]) }) });
+  const strings = new Set(["projectUuid", "branchUuid", "backendActorUuid", "client"]);
+  const numbers = new Set(["preDispatchMaxTicket", "documentClockMinMs", "documentClockMaxMs", "backendClockMinMs",
+    "backendClockMaxMs", "backendLocalOffsetMinutes"]);
+  // Invalid object scalars must never reach Zod's error formatter, which
+  // Inspects their prototypes and could execute a nested Proxy's traps.
+  need(Object.entries(fields).every(([name, scalar]) => name === "agedHead" ||
+    (strings.has(name) ? typeof scalar === "string" : numbers.has(name) && typeof scalar === "number")),
+  "primitive witness fields required");
+  const aged = fields["agedHead"] === undefined ? undefined : dataFields(fields["agedHead"]);
+  need(aged === undefined || Object.entries(aged).every(([name, scalar]) => name === "createdAtLiteral" ? typeof scalar === "string" :
+    ["nativeParsedLocalMs", "nativeTimezoneOffsetMinutes"].includes(name) && typeof scalar === "number"), "primitive aged-head fields required");
+  const result = witnessSchema.parse({ ...fields, ...(aged === undefined ? {} : { agedHead: aged }) });
   if (result.agedHead !== undefined) { Object.freeze(result.agedHead); }
   return Object.freeze(result);
 }
@@ -196,12 +212,43 @@ function sqlBudget(prepared: Prepared, plaintextBytes: number): Readonly<{ maxim
   return Object.freeze({ maximumCiphertextBase64Bytes, maximumEncodedSqlBytes });
 }
 
+/** Reserve both fresh-replay getter encodings before any future owner could
+ * Dispatch. UUID/client are fixed-width hex; nonzero positive integer times
+ * And tickets have their largest JSON encodings at the supplied upper bounds.
+ * Supplied clock bounds still establish no native clock provenance.
+ */
+function savedSourceBudget(prepared: Prepared): Readonly<{ maximumSavedRawSourceBytes: number;
+  maximumSavedCacheSourceBytes: number; positiveDocumentClockWindow: true }> {
+  const { copy, witness } = prepared;
+  need(witness.documentClockMinMs > 0, "positive document clock window required before copy");
+  const client = "0".repeat(16), targetUuid = "0".repeat(16), time = witness.documentClockMaxMs;
+  const metadata = `${JSON.stringify({ type: "META", ticket: copy.metadataTicket, id: "META" })}||${JSON.stringify(copy.destinationMetadata)}`;
+  const canvas = currentFootprintCopyV2Rows(copy).filter(raw => {
+    const split = raw.indexOf("||"); const header: unknown = JSON.parse(raw.slice(0, split));
+    need(isRecord(header), "saved source atom header differs"); return header["type"] !== "META";
+  });
+  need(canvas.length === copy.canvasRecords, "saved source canvas count differs");
+  const size = (user: object): number => {
+    const head = (ticket: number): string => `${JSON.stringify({ type: "DOCHEAD", ticket })}||${JSON.stringify({
+      docType: "FOOTPRINT", client, uuid: targetUuid, updateTime: time, version: String(time), editVersion: "3.2.209", user })}`;
+    return Buffer.byteLength([head(copy.canvasHeaderTicket + 1), metadata, head(copy.canvasHeaderTicket), ...canvas].join("|\n"));
+  };
+  const maximumSavedRawSourceBytes = size({ uuid: witness.backendActorUuid, username: prepared.username, nickname: prepared.nickname });
+  const maximumSavedCacheSourceBytes = size({ uuid: targetUuid });
+  need(maximumSavedRawSourceBytes <= 2_097_152 && maximumSavedCacheSourceBytes <= 2_097_152,
+    "saved getter byte capacity exceeded before copy");
+  return Object.freeze({ maximumSavedRawSourceBytes, maximumSavedCacheSourceBytes, positiveDocumentClockWindow: true });
+}
+
 /** Freeze all allocation/clock/effect bounds before dispatch. A copied reader
  * or copy-plan descriptor cannot be substituted by matching its public hash.
  */
 export async function prepareCurrentFootprintCopyV2SqlPlan(input: Readonly<{ before: Inventory; copyPlan: CurrentFootprintCopyV2Plan;
   witness: CurrentFootprintCopyV2SqlWitness }>): Promise<CurrentFootprintCopyV2SqlPlan> {
-  const fields = dataFields(input, ["before", "copyPlan", "witness"]); const before = input.before; const copy = input.copyPlan;
+  const fields = dataFields(input, ["before", "copyPlan", "witness"]);
+  // Capture rejects proxies/accessors before these typed data-property reads.
+  // No await or caller code runs between the descriptor and reference checks.
+  const before = input.before, copy = input.copyPlan;
   need(fields["before"] === before && fields["copyPlan"] === copy, "input identity changed during capture");
   const witness = captureWitness(fields["witness"]);
   assertCurrentFootprintCopyV2Inventory(copy, before); supported(before, witness.branchUuid);
@@ -222,13 +269,14 @@ export async function prepareCurrentFootprintCopyV2SqlPlan(input: Readonly<{ bef
   const maximumRaw = [editRow(prepared, witness.backendClockMaxMs), headerRow(witness, "0".repeat(16), copy.metadataTicket, witness.documentClockMaxMs),
     `${JSON.stringify({ type: "META", ticket: copy.metadataTicket, id: "META" })}||${JSON.stringify(copy.destinationMetadata)}`,
     headerRow(witness, "0".repeat(16), copy.canvasHeaderTicket, witness.documentClockMaxMs), ...currentFootprintCopyV2Rows(copy)].join("|\n");
+  const savedCapacity = savedSourceBudget(prepared);
   const maximumPlaintextBytes = Buffer.byteLength(maximumRaw); const capacity = sqlBudget(prepared, maximumPlaintextBytes);
   const decoded = await decodeCurrentFootprintSourceHistory(before, { projectUuid: witness.projectUuid, branchUuid: witness.branchUuid });
   need(decoded.maximumTicket === copy.maximumTicket && decoded.history.plaintextBytes + maximumPlaintextBytes <= 8_388_608, "complete raw-history capacity exceeded");
   assertCurrentFootprintCopyV2Inventory(copy, before); need(readerCompletion(before) === completion, "original reader changed during preparation");
   const plan: CurrentFootprintCopyV2SqlPlan = Object.freeze({ profile: "private.current-footprint-copy-v2-sql-plan.v1", beforeSqlSha256: before.logicalSha256,
     sourceUuid: copy.source.footprintUuid, expectedTicket: copy.canvasHeaderTicket, metadataTicket: copy.metadataTicket, expectedStructureRequests: 0,
-    headEligibility: eligibility, maximumPlaintextBytes, ...capacity, executionAuthorized: false, producerBindingVerified: false });
+    headEligibility: eligibility, maximumPlaintextBytes, ...savedCapacity, ...capacity, executionAuthorized: false, producerBindingVerified: false });
   plans.set(plan, prepared); return plan;
 }
 function newRow(owner: SqlTable, id: bigint): SqlRow {
@@ -272,7 +320,9 @@ async function exactRows(expected: readonly SqlRow[], observed: readonly SqlRow[
 export async function verifyCurrentFootprintCopyV2SqlEffect(plan: CurrentFootprintCopyV2SqlPlan, after: Inventory,
   result: Readonly<{ returnedUuid: string }>): Promise<Readonly<Record<string, unknown>>> {
   const prepared = plans.get(plan); need(prepared !== undefined, "original prepared plan required");
-  const returnedUuid = z.string().regex(/^[a-f0-9]{16}$/u).parse(dataFields(result, ["returnedUuid"])["returnedUuid"]);
+  const suppliedUuid = dataFields(result, ["returnedUuid"])["returnedUuid"];
+  need(typeof suppliedUuid === "string", "primitive returned UUID required");
+  const returnedUuid = z.string().length(16).regex(/^[a-f0-9]{16}$/u).parse(suppliedUuid);
   const { before, copy, witness, history, data } = prepared;
   assertCurrentFootprintCopyV2Inventory(copy, before); supported(after, witness.branchUuid); const completion = readerCompletion(after);
   need(canonicalJson(before.properties) === canonicalJson(after.properties), "persisted SQL properties changed");

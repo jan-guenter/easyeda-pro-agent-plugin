@@ -10,7 +10,7 @@ const require = function __easyedaGuardedRequire(specifier) { if (typeof specifi
 	const __easyedaPublicationLockPath = __easyedaJoin(__easyedaPublicationDirectory, ".bundle-publication.lock");
 const __easyedaAssertNoPublication = () => { try { __easyedaLstatSync(__easyedaPublicationLockPath); throw new Error("The facade bundle is undergoing a fail-closed publication transaction."); } catch (__easyedaPublicationError) { if (!__easyedaPublicationError || typeof __easyedaPublicationError !== "object" || !("code" in __easyedaPublicationError) || __easyedaPublicationError.code !== "ENOENT") throw __easyedaPublicationError; } };
 __easyedaAssertNoPublication();
-const __easyedaBundlePairId = "b2f07f0f6d26b81ed60ad62460779bbaac3856555e7dee8d31647e9b6c453a41";
+const __easyedaBundlePairId = "5d1ade81a590cbb103ae212b2601809364cc330e8c3cb085071fc652ab4ebaab";
 if (__easyedaBasename(import.meta.filename) === "server.mjs") {
   const __easyedaPeerPath = __easyedaJoin(import.meta.dirname, "upstream-supervisor.mjs");
   const __easyedaPeerPathBefore = __easyedaLstatSync(__easyedaPeerPath, { bigint: true });
@@ -115316,11 +115316,11 @@ function decodeFunction(input2, expected3) {
     return refuse14();
   }
 }
-function decodeScopeList(input2, scriptId2, expected3) {
+function decodeScopeList(input2, scriptId2, expected3, regularOwnCount) {
   try {
     token12.parse(scriptId2);
     const reply3 = external_exports.object({
-      result: external_exports.array(property3).length(expected3.regular ? 5 : 2),
+      result: external_exports.array(property3).length(expected3.regular ? regularOwnCount : 2),
       internalProperties: external_exports.array(external_exports.object({ name: text34, value: remote4 }).strict()).length(3)
     }).strict().parse(data5(input2));
     const values2 = new Map(reply3.result.map((item2) => [item2.name, item2]));
@@ -115333,13 +115333,15 @@ function decodeScopeList(input2, scriptId2, expected3) {
         return refuse14();
       }
     }
-    if (expected3.regular) {
+    if (expected3.regular && regularOwnCount === 5) {
       for (const name9 of ["arguments", "caller"]) {
         const item2 = values2.get(name9);
         if (item2?.value.type !== "object" || item2.value.subtype !== "null" || item2.value.value !== null || item2.value.objectId !== void 0 || item2.writable || item2.configurable || item2.enumerable) {
           return refuse14();
         }
       }
+    }
+    if (expected3.regular) {
       const prototype3 = values2.get("prototype");
       if (prototype3?.value.type !== "object" || prototype3.value.className !== "Object" || prototype3.value.objectId === void 0 || !prototype3.writable || prototype3.configurable || prototype3.enumerable) {
         return refuse14();
@@ -115384,10 +115386,10 @@ function decodeCurrentPcb209WorkerProducerFunction(input2, kind) {
   return decodeFunction(input2, CURRENT_PCB_209_WORKER_PRODUCER_LOCATIONS[kind]);
 }
 function decodeCurrentPcbStringProducerScopeList(input2, scriptId2, kind) {
-  return decodeScopeList(input2, scriptId2, CURRENT_PCB_STRING_PRODUCER_LOCATIONS[kind]);
+  return decodeScopeList(input2, scriptId2, CURRENT_PCB_STRING_PRODUCER_LOCATIONS[kind], 5);
 }
 function decodeCurrentPcb209WorkerProducerScopeList(input2, scriptId2, kind) {
-  return decodeScopeList(input2, scriptId2, CURRENT_PCB_209_WORKER_PRODUCER_LOCATIONS[kind]);
+  return decodeScopeList(input2, scriptId2, CURRENT_PCB_209_WORKER_PRODUCER_LOCATIONS[kind], 3);
 }
 function decodeCurrentPcbStringProducerScopes(input2, kind) {
   return decodeScopes(input2, CURRENT_PCB_STRING_PRODUCER_LOCATIONS[kind].scopeDescriptions);
@@ -168806,6 +168808,7 @@ var init_current_pcb_209_ratline_diagnostics = __esm({
         "COMMAND_SESSION",
         "CONTEXT",
         "CONTINUATION_CONSUMED",
+        "COPY_ASYNC_ORIGIN",
         "COPY_PRELOAD",
         "CREATION_OWNER",
         "DEADLINE",
@@ -173914,7 +173917,7 @@ function realmMembers2(value2) {
     return descriptor10.value;
   });
 }
-var monotonic2, empty12, token39, contextSchema6, scriptSchema3, frameSchema3, pauseSchema4, logArgument, logFrame, logStack, logSchema, childAttachmentSchema, requireCreation, CurrentPcb209RatlineBootstrapOwner;
+var monotonic2, empty12, token39, contextSchema6, scriptSchema3, asyncStackId, copyStack, frameSchema3, pauseSchema4, logArgument, logFrame, logStack, logSchema, childAttachmentSchema, requireCreation, CurrentPcb209RatlineBootstrapOwner;
 var init_current_pcb_209_ratline_bootstrap_owner = __esm({
   "server/src/current-pcb-209-ratline-bootstrap-owner.ts"() {
     init_current_pcb_209_ratline_budget();
@@ -173930,6 +173933,7 @@ var init_current_pcb_209_ratline_bootstrap_owner = __esm({
     init_current_pcb_209_ratline_diagnostics();
     init_current_pcb_209_ratline_transport_windows();
     init_current_pcb_209_ratline_continuation_timing();
+    init_current_pcb_209_ratline_stop_observation();
     monotonic2 = process.hrtime.bigint.bind(process.hrtime);
     empty12 = external_exports.object({}).strict();
     token39 = external_exports.string().regex(/^[A-Za-z\d_.:-]{1,256}$/u);
@@ -173946,6 +173950,11 @@ var init_current_pcb_209_ratline_bootstrap_owner = __esm({
       hasSourceURL: external_exports.literal(false).optional(),
       isLiveEdit: external_exports.literal(false).optional()
     });
+    asyncStackId = external_exports.object({
+      id: external_exports.string().regex(/^[1-9]\d{0,19}$/u).refine((value2) => value2.trim() === value2),
+      debuggerId: token39.refine((value2) => value2.trim() === value2)
+    }).strict();
+    copyStack = external_exports.object({ callFrames: external_exports.unknown(), parentId: asyncStackId.optional() }).strict();
     frameSchema3 = external_exports.looseObject({ location: external_exports.looseObject({ scriptId: token39 }) });
     pauseSchema4 = external_exports.looseObject({
       reason: external_exports.literal("instrumentation"),
@@ -173994,6 +174003,7 @@ var init_current_pcb_209_ratline_bootstrap_owner = __esm({
       #lastCommand = null;
       #lastEvent = "unparsed";
       #firstFailure = null;
+      #firstRejectedEvent = null;
       #released = false;
       #retired = false;
       #sealConsumed = false;
@@ -174059,6 +174069,7 @@ var init_current_pcb_209_ratline_bootstrap_owner = __esm({
           firstPauseWindowStarted: this.#firstPauseStartedAt !== null,
           firstFailure: this.#firstFailure,
           step: this.#step,
+          firstRejectedEvent: this.#firstRejectedEvent,
           lastCommand: this.#lastCommand,
           lastEvent: this.#lastEvent,
           events: this.#events
@@ -174079,7 +174090,7 @@ var init_current_pcb_209_ratline_bootstrap_owner = __esm({
         this.#same();
         need83(!this.#failed && !this.#released && !this.#retired, "NOT_CURRENT");
       }
-      #poison(cause = new Error("PCB209_RATLINE_BOOTSTRAP_ABORTED")) {
+      #poison(cause = new Error("PCB209_RATLINE_BOOTSTRAP_ABORTED"), step = this.#step) {
         if (this.#firstPauseTimer !== null) {
           clearTimeout(this.#firstPauseTimer);
           this.#firstPauseTimer = null;
@@ -174090,7 +174101,7 @@ var init_current_pcb_209_ratline_bootstrap_owner = __esm({
         const active2 = this.#stages[this.#index];
         this.#firstFailure = Object.freeze({
           reason: currentPcb209RatlineFailureReason(cause),
-          step: this.#step,
+          step,
           stage: active2?.role ?? null,
           lastCommand: this.#lastCommand,
           lastEvent: this.#lastEvent,
@@ -174112,7 +174123,18 @@ var init_current_pcb_209_ratline_bootstrap_owner = __esm({
       #lost = () => {
         this.#poison(new Error("PCB209_RATLINE_BOOTSTRAP_STREAM_LOST"));
       };
+      #qualifyCopyCreator(preloadScriptId, script) {
+        const stack4 = copyStack.parse(script["stackTrace"]);
+        if (stack4.parentId !== void 0) {
+          const first = this.#stages[0];
+          need83(this.#asyncDepthArmed && first?.qualified === true && first.pause !== null, "COPY_ASYNC_ORIGIN");
+          const origin = external_exports.looseObject({ asyncStackTraceId: asyncStackId }).parse(first.pause).asyncStackTraceId;
+          need83(stack4.parentId.id === origin.id && stack4.parentId.debuggerId === origin.debuggerId, "COPY_ASYNC_ORIGIN");
+        }
+        qualifyCurrentPcb209PreloadCopyCreator(preloadScriptId, { ...script, stackTrace: { callFrames: stack4.callFrames } });
+      }
       #event = (input2) => {
+        let step = "event-envelope";
         try {
           this.#same();
           need83(!this.#released && !this.#retired && this.#construction !== null, "EVENT_STATE");
@@ -174122,6 +174144,7 @@ var init_current_pcb_209_ratline_bootstrap_owner = __esm({
           need83(this.#events <= 128 && this.#eventBytes <= 256 * 1024, "EVENT_BUDGET");
           const event4 = external_exports.object({ method: external_exports.string().max(128), sessionId: token39, params: external_exports.record(external_exports.string(), external_exports.unknown()) }).strict().parse(captured.value);
           this.#lastEvent = currentPcb209RatlineEventKind(event4.method);
+          step = "event-session";
           need83(event4.sessionId === this.#construction.childSessionId, "EVENT_SESSION");
           const stage = this.#stages[this.#index];
           if (event4.method === "Inspector.workerScriptLoaded") {
@@ -174132,6 +174155,7 @@ var init_current_pcb_209_ratline_bootstrap_owner = __esm({
             return;
           }
           if (event4.method === "Runtime.executionContextCreated") {
+            step = "context-metadata";
             need83(this.#context === null && this.#index === 0, "CONTEXT");
             const context4 = external_exports.object({ context: contextSchema6 }).strict().parse(event4.params).context;
             qualifyCurrentPcb209RatlineBootstrapUrl(this.#construction.role, context4.origin, this.#construction.requestedUrlSha256);
@@ -174139,6 +174163,7 @@ var init_current_pcb_209_ratline_bootstrap_owner = __esm({
             return;
           }
           if (event4.method === "Debugger.scriptParsed") {
+            step = "script-metadata";
             const script = scriptSchema3.parse(event4.params);
             need83(this.#context !== null && script.executionContextId === this.#context.id, "SCRIPT_CONTEXT");
             if (this.#index === this.#stages.length && script.url === "") {
@@ -174147,14 +174172,16 @@ var init_current_pcb_209_ratline_bootstrap_owner = __esm({
             need83(stage !== void 0 && stage.script === null && !this.#stages.some((value2) => value2.script?.scriptId === script.scriptId), "SCRIPT_ORDER");
             need83(script.url === currentPcb209RatlineBootstrapRoleUrl(stage.role, this.#context.origin), "SCRIPT_URL");
             if (isCopy(stage.role)) {
+              step = "copy-creator-metadata";
               const preload = this.#stages[1];
               need83(preload?.script !== null && preload?.script !== void 0 && preload.qualified && preload.resumeSeen, "COPY_PRELOAD");
-              qualifyCurrentPcb209PreloadCopyCreator(preload.script.scriptId, script);
+              this.#qualifyCopyCreator(preload.script.scriptId, script);
             }
             stage.script = script;
             return;
           }
           if (event4.method === "Debugger.paused") {
+            step = "pause-observation";
             if ((this.#firstChild || this.#timing !== null) && this.#index === 0) {
               need83(this.#firstPauseStartedAt !== null, "CHILD_START_NOT_READY");
               need83(Number(monotonic2() - this.#firstPauseStartedAt) / 1e6 < CURRENT_PCB_209_RATLINE_NATIVE_PROFILE.elapsed.ordinaryRequestMilliseconds, "DEADLINE");
@@ -174173,6 +174200,7 @@ var init_current_pcb_209_ratline_bootstrap_owner = __esm({
             return;
           }
           if (event4.method === "Debugger.resumed") {
+            step = "resume-observation";
             empty12.parse(event4.params);
             if (this.#index === this.#stages.length) {
               this.#realmListener().resumed();
@@ -174188,6 +174216,7 @@ var init_current_pcb_209_ratline_bootstrap_owner = __esm({
             return;
           }
           if (event4.method === "Runtime.consoleAPICalled") {
+            step = "console-observation";
             if (this.#index === this.#stages.length) {
               return;
             }
@@ -174200,6 +174229,7 @@ var init_current_pcb_209_ratline_bootstrap_owner = __esm({
             return;
           }
           if (this.#index === this.#stages.length && event4.method === "Target.attachedToTarget") {
+            step = "subordinate-attachment";
             const child = childAttachmentSchema.parse(event4.params);
             need83(child.sessionId !== this.#construction.childSessionId && child.targetInfo.targetId !== this.#construction.childTargetId && this.#subordinates.size === 0, "SUBORDINATE_ATTACHMENT");
             this.#subordinates.set(child.sessionId, { targetId: child.targetInfo.targetId, startConsumed: false });
@@ -174208,7 +174238,10 @@ var init_current_pcb_209_ratline_bootstrap_owner = __esm({
           }
           throw new Error("PCB209_RATLINE_BOOTSTRAP_UNEXPECTED_EVENT");
         } catch (error63) {
-          this.#poison(error63);
+          if (!this.#failed) {
+            this.#firstRejectedEvent = captureCurrentPcb209RatlineStopRecord(input2, 32768);
+          }
+          this.#poison(error63, step);
         }
       };
       async #send(command2, cleanup = false, requestMilliseconds = CURRENT_PCB_209_RATLINE_NATIVE_PROFILE.elapsed.ordinaryRequestMilliseconds) {

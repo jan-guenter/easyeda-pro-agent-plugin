@@ -162,6 +162,13 @@ decoding and the following owner check. The step distinguishes function metadata
 scope enumeration and callback-relation checks. A retained reply is diagnostic
 evidence; it neither qualifies the assignment nor permits another attempt.
 
+The209 function-metadata profile requires the three own properties reported by
+its V8 build for the regular debounce wrapper: `length`, `name` and `prototype`.
+The inherited `arguments` and `caller` properties are not own descriptors.
+Do not infer strict mode from their absence or substitute a different engine's
+property roster. Function source, location, scope and callback-relation checks
+still apply; the older generation retains its separate descriptor contract.
+
 The 209 pause windows account for serial owner checks, source reads and
 breakpoint allocation. The project opener now adds the finite deliberate
 capture graph to its ordinary opening allowance: 651 seconds for capture,
