@@ -155,6 +155,13 @@ existing failure; do not treat it as the original cause. Per-stage
 `resumeOrigin` distinguishes normal and cleanup resume attempts. A source marked
 qualified and resumed can still belong to a failed capture.
 
+For a failed assignment observation, inspect `constructionAssignments` in the
+startup transport status. It retains the fixed step, completed reply count and
+last bounded immutable reply with its digest and byte length, captured before
+decoding and the following owner check. The step distinguishes function metadata,
+scope enumeration and callback-relation checks. A retained reply is diagnostic
+evidence; it neither qualifies the assignment nor permits another attempt.
+
 The 209 pause windows account for serial owner checks, source reads and
 breakpoint allocation. The project opener now adds the finite deliberate
 capture graph to its ordinary opening allowance: 651 seconds for capture,

@@ -1,12 +1,14 @@
 import assert from "node:assert/strict";
+import { createHash } from "node:crypto";
 import { test } from "node:test";
 import type { TestContext } from "node:test";
+import { z } from "zod";
 import { CURRENT_PCB_WORKER_CONSTRUCTION_ASSIGNMENT_CALLS,
   CURRENT_PCB_WORKER_CONSTRUCTION_ASSIGNMENT_FIELDS, CURRENT_PCB_WORKER_CONSTRUCTION_ASSIGNMENT_RECHECK,
   CURRENT_PCB_WORKER_CONSTRUCTION_ASSIGNMENT_REQUEST_COUNT } from "../src/current-pcb-worker-construction-assignment.ts";
 import type { CurrentPcbWorkerConstructionTransport } from "../src/current-pcb-worker-construction-contract.ts";
-import { CurrentPcbWorkerConstructionRunner } from "../src/current-pcb-worker-construction-runner.ts";
-import { constructionInspector } from "./helpers/current-pcb-worker-construction-inspector.ts";
+import { CurrentPcb209WorkerConstructionRunner, CurrentPcbWorkerConstructionRunner } from "../src/current-pcb-worker-construction-runner.ts";
+import { construction209Inspector, constructionInspector } from "./helpers/current-pcb-worker-construction-inspector.ts";
 
 async function retainRejection(promise: Promise<unknown>): Promise<void> {
   try { await promise; } catch {
@@ -104,4 +106,42 @@ void test("original owner loss after the final identity reply prevents issuing t
   }));
   await assert.rejects(state.runner.proveCurrentAssignments(state.packet));
   assert.equal(state.runner.status().failed, true); await state.runner.release();
+});
+
+void test("209 rejected QA metadata remains inspectable without accepting strict-function descriptors or retrying", { timeout: 30_000 }, async context => {
+  const fixture = await construction209Inspector(context);
+  let observing = false, replacement: unknown = null, requests = 0;
+  const descriptor = z.looseObject({ name: z.string() });
+  const metadata = z.looseObject({ result: z.array(descriptor) });
+  const runner = new CurrentPcb209WorkerConstructionRunner({ ...fixture.transport, request: async (command): Promise<unknown> => {
+    const reply = await fixture.transport.request(command);
+    if (observing) { requests += 1; }
+    if (!observing || requests !== 9) { return reply; }
+    assert.equal(command.method, "Runtime.getProperties");
+    const changed = metadata.parse(reply);
+    // A synthetic three-property regular function is deliberately rejected.
+    // This is not a claim about the unretained live EasyEDA descriptor shape.
+    changed.result = changed.result.filter(item => item.name !== "arguments" && item.name !== "caller");
+    assert.equal(changed.result.length, 3); replacement = changed; return changed;
+  } });
+  const captured = runner.capture(); void retainRejection(captured);
+  await runner.whenArmed(); const running = fixture.run();
+  const packet = await captured; await running;
+  const before = fixture.commands.length; observing = true;
+  await assert.rejects(runner.proveCurrentAssignments(packet), /PCB_STRING_PRODUCER_SCOPE/u);
+  const status = runner.status();
+  const observed = status.assignments;
+  const last = observed.lastReply;
+  assert.equal(status.failed, true); assert.equal(status.firstFailure?.step, "debounce-function-metadata");
+  assert.equal(observed.attempted, true); assert.equal(observed.completed, false);
+  assert.equal(observed.step, "debounce-function-metadata"); assert.equal(observed.replyCount, 9);
+  assert.equal(fixture.commands.length - before, 9); assert.ok(last);
+  const text = JSON.stringify(replacement);
+  assert.equal(last.step, "debounce-function-metadata"); assert.equal(last.method, "Runtime.getProperties");
+  assert.equal(last.sha256, createHash("sha256").update(text).digest("hex")); assert.equal(last.bytes, Buffer.byteLength(text));
+  assert.equal(JSON.stringify(last.value), text); assert.equal(Object.isFrozen(last.value), true);
+  assert.notEqual(last.value, replacement);
+  await assert.rejects(runner.proveCurrentAssignments(packet), /ASSIGNMENTS_FAILED/u);
+  assert.equal(fixture.commands.length - before, 9); assert.equal(runner.status().assignments.lastReply, last);
+  await runner.release();
 });

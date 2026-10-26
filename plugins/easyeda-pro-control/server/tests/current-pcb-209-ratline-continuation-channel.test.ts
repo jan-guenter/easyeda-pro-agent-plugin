@@ -7,9 +7,9 @@ import type { CurrentPcb209RatlineContinuationChannelDependency, CurrentPcb209Ra
 import { CurrentPcb209RatlineContinuationBudget, CURRENT_PCB_209_RATLINE_CONTINUATION_NATIVE_PROFILE as PROFILE } from "../src/current-pcb-209-ratline-continuation-budget.ts";
 import type { CurrentPcbWorkerStartupParentCommand, CurrentPcbWorkerStartupWorkerCommand } from "../src/current-pcb-worker-startup-contract.ts";
 import { CURRENT_PCB_WORKER_STARTUP_ATTACH } from "../src/current-pcb-worker-startup-contract.ts";
-import { currentPcb209WorkerStartupNativeCases, currentPcb209WorkerStartupNativeParentCases } from "../src/current-pcb-worker-startup-native.ts";
+import { currentPcb209RatlineWorkerStartupNativeParentCases, currentPcb209WorkerStartupNativeCases } from "../src/current-pcb-worker-startup-native.ts";
 import { CURRENT_PCB_WORKER_CONSTRUCTION_IDENTITY, CURRENT_PCB_WORKER_CONSTRUCTION_SAME } from "../src/current-pcb-worker-construction-contract.ts";
-import { CURRENT_PCB_DIAGNOSTIC_PCB_OPENING_FUNCTION } from "../src/current-pcb-diagnostic-pcb-opening.ts";
+import { CURRENT_PCB_209_RATLINE_OPENING_FUNCTION } from "../src/current-pcb-209-ratline-opening-program.ts";
 import { CURRENT_PCB_209_RATLINE_CONTINUATION_NATIVE_CASES } from "../src/current-pcb-209-ratline-continuation-native-cases.ts";
 
 import { CURRENT_PCB_209_RATLINE_LOADER_SOURCE } from "../src/current-pcb-209-ratline-loader-pause.ts";
@@ -63,8 +63,8 @@ async function fixture(context: TestContext): Promise<Readonly<{
 const sessions = { pcb: "parent-session", worker: "ratline-session", subordinate: "subordinate-session" } as const;
 type Fixture = Awaited<ReturnType<typeof fixture>>;
 function opening(pcbOpening: boolean, phase: "preflight" | "open-project" | "open-document"): CurrentPcbWorkerStartupParentCommand {
-  const command = currentPcb209WorkerStartupNativeParentCases().find(value => value.method === "Runtime.callFunctionOn" && value.params.arguments.length === 2 &&
-    value.params.arguments[1].value === phase && (value.params.functionDeclaration === CURRENT_PCB_DIAGNOSTIC_PCB_OPENING_FUNCTION) === pcbOpening);
+  const command = currentPcb209RatlineWorkerStartupNativeParentCases().find(value => value.method === "Runtime.callFunctionOn" && value.params.arguments.length === 2 &&
+    value.params.arguments[1].value === phase && (value.params.functionDeclaration === CURRENT_PCB_209_RATLINE_OPENING_FUNCTION) === pcbOpening);
   assert.ok(command?.method === "Runtime.callFunctionOn"); return { ...command, sessionId: "parent-session" };
 }
 function projectIdentity(): Extract<CurrentPcbWorkerStartupWorkerCommand, { method: "Runtime.callFunctionOn"; params: { awaitPromise: false } }> {
@@ -230,7 +230,7 @@ async function beginWindowNavigation(f: Fixture, dependency: CurrentPcb209Ratlin
     else if (phase === "window-document-resume") { documentResumeIssued.resolve(request); }
     else {
       let result: unknown = {};
-      if (phase === "navigation-source") { result = { scriptSource: `(${CURRENT_PCB_DIAGNOSTIC_PCB_OPENING_FUNCTION})` }; }
+      if (phase === "navigation-source") { result = { scriptSource: `(${CURRENT_PCB_209_RATLINE_OPENING_FUNCTION})` }; }
       else if (phase === "loader-source") { result = { scriptSource: CURRENT_PCB_209_RATLINE_LOADER_SOURCE }; }
       else if (phase === "window-initial-source" || phase === "window-document-source") { result = { scriptSource: CURRENT_PCB_209_RATLINE_WINDOW_SOURCE }; }
       f.frame({ id: request["requestId"], sessionId: request["sessionId"], result });

@@ -286,3 +286,64 @@ first combined run retained one stale coverage-source filename assertion; it
 was corrected to require the separate source plan/cache reader, and all 56
 coverage regressions then passed. No runtime guard or test selection changed.
 The expanded head still requires its own complete GitHub CI before publication.
+
+## Publication and installation, 2026-10-26
+
+The expanded payload was published through
+[PR132](https://github.com/jan-guenter/easyeda-pro-agent-plugin/pull/132).
+Tested head `35c7ef08a91f815b9e8bcd79a88dde264d41a052` was squash-merged as
+`babc5da5cda9684a2df9717386cb43989ab3557b`, with sole parent
+`2997c462290452cd6222c78565b740dd5d265ba1` and the exact reviewed tree
+`c5c8e42b76b7f4f38922b535e4967c10e1c0bc49`.
+
+All eleven required checks passed on that head:
+[Linux CI40326418994](https://github.com/jan-guenter/easyeda-pro-agent-plugin/actions/runs/40326418994)
+and [Windows CI40326418990](https://github.com/jan-guenter/easyeda-pro-agent-plugin/actions/runs/40326418990).
+The facade suite passed 13,099 tests with five expected platform skips and zero
+failures or cancellations; all 424 bridge tests passed. The complete logs also
+show all 54 added or renamed tests and all seven corrected fixture tests passing.
+Independent final CI receipt SHA-256 is
+`c6d72a1f0a8e38226c3f8e17af5b5fc6ef30fa4539271a3d5928400f64df81bf`.
+The root acceptance receipt is
+`aaa2cd713e226b1cbc6504c9b3c19ac8db24b771bb595a2259c5855143872af1`.
+
+One final-head CI attempt stalled during `apt-get update` before the fifth
+shard's dependencies, build or tests started. Its last output was package-index
+progress; the underlying transport cause was not established. The run was
+cancelled, its logs retained, and only that shard and the dependent aggregate
+were retried on the unchanged commit. Seven successful shards and the build
+were carried forward with identical logs and timestamps. This was not a test
+failure or a change to test selection. Cancellation review SHA-256 is
+`aafdac77a9038486dead8125f46d452b2d5da0ab43afdffe0717a1b7055203f0`.
+
+The official CLI upgraded the existing Git marketplace
+`https://github.com/jan-guenter/easyeda-pro-agent-plugin.git` once and registered
+`0.3.0+codex.20261026113627` as installed and enabled. Marketplace HEAD equals
+the merged commit. Both complete installed-payload comparisons passed:
+2,053 files, 42 directories including the root, 43,873,554 bytes and exact
+committed permissions. Installed inventory SHA-256 is
+`b13d2996458a0862f0206dcd072f714f6c2affd507d3d9ac5a77e6986851e513`.
+Installation receipt SHA-256 is
+`c0af08988fb95a1683b4194766a043100f27cc2caf1007f1a53db2e0464330a8`.
+
+The installed package's synthetic offline probe passed 27 catalog queries,
+exposing 27 tools from 52 configured tools. Its child completed 29 JSON-RPC
+requests and exited normally after stdin EOF. No live profile was selected;
+the sampled process/socket checks found no descendants or non-stdio sockets.
+These observations are not continuous isolation or connected execution proof.
+All five retained host process identities remained unchanged after installation;
+the existing facade still loads the previous `084540` version. No host process
+was terminated, and no cache or journal was patched.
+
+The next session must admit the installed `113627` runtime, then finish the
+two prepared disposable cases: startup/PCB continuation and footprint source
+observation, each with its own owner and complete closure. The existing R0603
+qualifies for source-only inspection; no drawing edit is needed to satisfy the
+superseded copy restrictions. Those live results remain pending. Full PCB
+completion/baseline and saved-reopen proofs, footprint copy/delete lifecycles,
+schematic connectivity, remaining library writers and manufacturing exports
+remain backlog. The excluded production project was not opened or changed.
+
+This post-installation appendix is retained locally for the next source batch;
+it is outside the already published and installed payload. No additional plugin
+version was created for the appendix.

@@ -8,7 +8,8 @@ import { sha256Json } from "./core.ts";
 import { currentDisposableOpenSealedTargetSchema } from "./current-disposable-open.ts";
 import type { CurrentDisposableOpenSealedTarget } from "./current-disposable-open.ts";
 import { CurrentPcbDiagnosticContext } from "./current-pcb-diagnostic-context.ts";
-import { CURRENT_PCB_DIAGNOSTIC_PCB_OPENING_FUNCTION, decodeCurrentPcbDiagnosticPcbOpeningReply } from "./current-pcb-diagnostic-pcb-opening.ts";
+import { decodeCurrentPcbDiagnosticPcbOpeningReply } from "./current-pcb-diagnostic-pcb-opening.ts";
+import { CURRENT_PCB_209_RATLINE_OPENING_FUNCTION, currentPcb209RatlineOpeningAcknowledged } from "./current-pcb-209-ratline-opening-program.ts";
 import type { CurrentPcbDiagnosticPcbOpeningResult } from "./current-pcb-diagnostic-pcb-opening.ts";
 import { captureCurrentPcbStringClockReply } from "./current-pcb-string-clock-reply.ts";
 import type { CurrentPcbWorkerStartupDependency, CurrentPcbWorkerStartupParentCommand } from "./current-pcb-worker-startup-contract.ts";
@@ -128,7 +129,7 @@ export class CurrentPcb209RatlineNativeSession {
     childSource: ReturnType<CurrentPcb209RatlineBootstrapOwner["status"]> | null;
     composite: ReturnType<CurrentPcb209RatlinePcbHeldStartup["status"]> | null }> {
     return Object.freeze({ phase: this.#phase, transitionStarted: this.#router?.status()["transitionStarted"] === true,
-      openingAcknowledged: this.#openingObservation?.phase === "open-document", packetRetained: this.#packet !== null, executionAuthorized: false,
+      openingAcknowledged: currentPcb209RatlineOpeningAcknowledged(this.#openingObservation), packetRetained: this.#packet !== null, executionAuthorized: false,
       nativeOrigin: this.#origin?.summary() ?? null, step: this.#step, firstFailure: this.#firstFailure,
       pcbContext: this.#router?.status() ?? null, childSource: this.#child?.status() ?? null, composite: this.#composite === null ? null : currentPcb209RatlineCompositeDiagnosticsSchema.parse(this.#composite.status()) });
   }
@@ -173,7 +174,7 @@ export class CurrentPcb209RatlineNativeSession {
   #openingCommand(phase: "preflight" | "open-document"): CurrentPcbWorkerStartupParentCommand {
     const context = phase === "preflight" ? this.#context.openingContext() : this.#context.pcbOpeningContext();
     return { method: "Runtime.callFunctionOn", sessionId: context.sessionId, params: {
-      functionDeclaration: CURRENT_PCB_DIAGNOSTIC_PCB_OPENING_FUNCTION, uniqueContextId: context.uniqueContextId,
+      functionDeclaration: CURRENT_PCB_209_RATLINE_OPENING_FUNCTION, uniqueContextId: context.uniqueContextId,
       arguments: [{ value: this.#target }, { value: phase }], returnByValue: true, awaitPromise: true,
       silent: true, generatePreview: false, userGesture: false, throwOnSideEffect: false } };
   }
@@ -276,7 +277,7 @@ export class CurrentPcb209RatlineNativeSession {
       need(nativeOrigin !== null && nativeOriginEvidence !== null, "ORIGIN_OBSERVATION_REQUIRED");
       this.#packet = Object.freeze({ profile: "private.pcb209-ratline-native-held-import.v1", targetSha256: sha256Json(this.#target),
         originalProjectConstructionSha256: sha256Json(this.#result.construction), pcbSource, childSource, nativeOrigin, nativeOriginEvidence, originalFrameProofSets: 3,
-        pcbNavigationAcknowledged: this.#openingObservation?.phase === "open-document", firstChildImportHeld: true,
+        pcbNavigationAcknowledged: currentPcb209RatlineOpeningAcknowledged(this.#openingObservation), firstChildImportHeld: true,
         nativeWorkerTargetIdentityVerified: false, completeStartupVerified: false, completeLiveBaselineVerified: false,
         executionAuthorized: false, saveAuthorized: false }); this.#phase = "first-child-held"; return this.#packet;
     } catch (error) {

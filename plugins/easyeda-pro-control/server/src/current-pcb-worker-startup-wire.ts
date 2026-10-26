@@ -19,6 +19,7 @@ import { CURRENT_PCB_WORKER_CONSTRUCTION_ASSIGNMENT_CALLS } from "./current-pcb-
 import { CURRENT_PCB_DIAGNOSTIC_OPENING_FUNCTION } from "./current-pcb-diagnostic-opening.ts";
 import { CURRENT_PCB_209_STARTUP_OPENING_FUNCTION } from "./current-pcb-209-startup-opening-program.ts";
 import { CURRENT_PCB_DIAGNOSTIC_PCB_OPENING_FUNCTION } from "./current-pcb-diagnostic-pcb-opening.ts";
+import { CURRENT_PCB_209_RATLINE_OPENING_FUNCTION } from "./current-pcb-209-ratline-opening-program.ts";
 import { currentDisposableOpenSealedTargetSchema } from "./current-disposable-open.ts";
 import { CURRENT_PCB_WORKER_STARTUP_UI_ACTOR_CLOCK_FUNCTION, CURRENT_PCB_WORKER_STARTUP_WORKER_ACTOR_CLOCK_FUNCTION } from "./current-pcb-worker-startup-actor.ts";
 import { CURRENT_PCB_WORKER_STARTUP_CHANNEL_CALLS } from "./current-pcb-worker-startup-channel-observation.ts";
@@ -47,7 +48,7 @@ const schema: z.ZodType<CurrentPcbWorkerStartupCommand> = z.union([
       z.object({ value: z.enum(["preflight", "open-project"]) }).strict()]),
     returnByValue: z.literal(true), awaitPromise: z.literal(true), silent: z.literal(true), generatePreview: z.literal(false),
     userGesture: z.literal(false), throwOnSideEffect: z.literal(false) }).strict()),
-  command("Runtime.callFunctionOn", z.object({ functionDeclaration: z.literal(CURRENT_PCB_DIAGNOSTIC_PCB_OPENING_FUNCTION),
+  command("Runtime.callFunctionOn", z.object({ functionDeclaration: z.enum([CURRENT_PCB_DIAGNOSTIC_PCB_OPENING_FUNCTION, CURRENT_PCB_209_RATLINE_OPENING_FUNCTION]),
     uniqueContextId: sessionId, arguments: z.tuple([z.object({ value: currentDisposableOpenSealedTargetSchema }).strict(),
       z.object({ value: z.enum(["preflight", "open-document", "observe"]) }).strict()]),
     returnByValue: z.literal(true), awaitPromise: z.literal(true), silent: z.literal(true), generatePreview: z.literal(false),
@@ -93,7 +94,8 @@ function captureWire(raw: unknown): unknown {
   const sourceText: unknown = functionField?.value;
   if (functionField === undefined || !Object.hasOwn(functionField, "value") || typeof sourceText !== "string" ||
       sourceText !== CURRENT_PCB_DIAGNOSTIC_OPENING_FUNCTION && sourceText !== CURRENT_PCB_209_STARTUP_OPENING_FUNCTION &&
-      sourceText !== CURRENT_PCB_DIAGNOSTIC_PCB_OPENING_FUNCTION && sourceText !== CURRENT_FOOTPRINT_CACHE_SOURCE_READ_FUNCTION) {
+      sourceText !== CURRENT_PCB_DIAGNOSTIC_PCB_OPENING_FUNCTION && sourceText !== CURRENT_PCB_209_RATLINE_OPENING_FUNCTION &&
+      sourceText !== CURRENT_FOOTPRINT_CACHE_SOURCE_READ_FUNCTION) {
     return captureCurrentPcbStringClockReply(raw).value;
   }
   const descriptors = Object.getOwnPropertyDescriptors(original);
@@ -108,7 +110,8 @@ function captureWire(raw: unknown): unknown {
 /** Decodes only inert own-data input before any schema/property inspection.
  * Native code independently reconstructs these phases from identifiers. */
 function startupWire(raw: unknown, id: number,
-  sites: typeof CURRENT_PCB_WORKER_CONSTRUCTION_SITES | typeof CURRENT_PCB_209_WORKER_CONSTRUCTION_SITES): Readonly<{
+  sites: typeof CURRENT_PCB_WORKER_CONSTRUCTION_SITES | typeof CURRENT_PCB_209_WORKER_CONSTRUCTION_SITES,
+  pcbOpening = CURRENT_PCB_DIAGNOSTIC_PCB_OPENING_FUNCTION): Readonly<{
   command: CurrentPcbWorkerStartupCommand & Readonly<{ id: number }>;
   request: Readonly<Record<string, string | number>>;
 }> {
@@ -155,10 +158,11 @@ function startupWire(raw: unknown, id: number,
           fields = { parentPhase: "actor-clock", uniqueContextId: parsed.params.uniqueContextId }; break;
         }
         const [target, phase] = parsed.params.arguments;
-        if (parsed.params.functionDeclaration !== CURRENT_PCB_DIAGNOSTIC_PCB_OPENING_FUNCTION &&
+        if (pcbOpening === CURRENT_PCB_209_RATLINE_OPENING_FUNCTION && phase.value === "observe") { return fail(); }
+        if (parsed.params.functionDeclaration !== pcbOpening &&
             parsed.params.functionDeclaration !== (sites === CURRENT_PCB_209_WORKER_CONSTRUCTION_SITES ?
               CURRENT_PCB_209_STARTUP_OPENING_FUNCTION : CURRENT_PCB_DIAGNOSTIC_OPENING_FUNCTION)) { return fail(); }
-        fields = { parentPhase: parsed.params.functionDeclaration === CURRENT_PCB_DIAGNOSTIC_PCB_OPENING_FUNCTION ? `pcb-${phase.value}` : phase.value,
+        fields = { parentPhase: parsed.params.functionDeclaration === pcbOpening ? `pcb-${phase.value}` : phase.value,
           uniqueContextId: parsed.params.uniqueContextId,
           targetRawWindowsPath: target.value.rawWindowsPath, targetProjectUuid: target.value.projectUuid,
           targetBranchUuid: target.value.branchUuid, targetDocumentUuid: target.value.documentUuid,
@@ -225,4 +229,9 @@ export function currentPcbWorkerStartupWire(raw: unknown, id: number): ReturnTyp
  * caller-selected coordinate. All actions, group and request bounds stay fixed. */
 export function currentPcb209WorkerStartupWire(raw: unknown, id: number): ReturnType<typeof startupWire> {
   return startupWire(raw, id, CURRENT_PCB_209_WORKER_CONSTRUCTION_SITES);
+}
+/** The native ratline owner adds the remaining Stopwatch horizon as a third
+ * runtime argument. No duration or deadline field crosses this wire. */
+export function currentPcb209RatlineWorkerStartupWire(raw: unknown, id: number): ReturnType<typeof startupWire> {
+  return startupWire(raw, id, CURRENT_PCB_209_WORKER_CONSTRUCTION_SITES, CURRENT_PCB_209_RATLINE_OPENING_FUNCTION);
 }

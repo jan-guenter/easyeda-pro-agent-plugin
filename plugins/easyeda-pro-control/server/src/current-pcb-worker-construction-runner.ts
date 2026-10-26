@@ -178,6 +178,10 @@ class CurrentPcbWorkerConstructionCore<P extends PacketProfile> {
   #releaseConsumed = false;
   #packet: ConstructionPacket<P> | null = null;
   #assignmentConsumed = false;
+  #assignmentStep: string | null = null;
+  #assignmentReplyCount = 0;
+  #assignmentLastReply: Readonly<{ step: string; method: CurrentPcbWorkerConstructionCommand["method"];
+    sha256: string; bytes: number; value: unknown }> | null = null;
   #assignments: CurrentPcbWorkerConstructionAssignments | null = null;
   #assignedWrappers: Readonly<Record<CurrentPcbWorkerConstructionAssignment, string>> | null = null;
   #projectIdentityConsumed = false;
@@ -220,11 +224,16 @@ class CurrentPcbWorkerConstructionCore<P extends PacketProfile> {
   public async whenArmed(): Promise<void> { await this.#ready.promise; }
   public status(): Readonly<{ consumed: boolean; failed: boolean; paused: boolean; resumeAttempted: boolean;
     resumeObserved: boolean; retainedIdentities: number; released: boolean; unresolvedBreakpoints: boolean;
-    firstFailure: ConstructionFailure | null; resumeOrigin: ResumeOrigin | null; progress: ConstructionProgress }> {
+    firstFailure: ConstructionFailure | null; resumeOrigin: ResumeOrigin | null; progress: ConstructionProgress;
+    assignments: Readonly<{ attempted: boolean; completed: boolean; step: string | null; replyCount: number;
+      lastReply: Readonly<{ step: string; method: CurrentPcbWorkerConstructionCommand["method"];
+        sha256: string; bytes: number; value: unknown }> | null }> }> {
     return Object.freeze({ progress: this.#progress(), firstFailure: this.#firstFailure, resumeOrigin: this.#pause?.resumeOrigin ?? null, consumed: this.#consumed, failed: this.#failed !== null,
       paused: this.#pause !== null && !this.#pause.resumeObserved, resumeAttempted: this.#pause?.resumeConsumed ?? false,
       resumeObserved: this.#pause?.resumeObserved ?? false, retainedIdentities: Object.keys(this.#identities).length, released: this.#released,
-      unresolvedBreakpoints: this.#uncertainBreakpoint || [...this.#breakpoints.values()].some(value => !value.removed) });
+      unresolvedBreakpoints: this.#uncertainBreakpoint || [...this.#breakpoints.values()].some(value => !value.removed),
+      assignments: Object.freeze({ attempted: this.#assignmentConsumed, completed: this.#assignments !== null,
+        step: this.#assignmentStep, replyCount: this.#assignmentReplyCount, lastReply: this.#assignmentLastReply }) });
   }
   #progress(): ConstructionProgress {
     const pause = this.#pause, window = this.#armingWindow ?? (pause !== null && !pause.resumeObserved ? pause.window : null);
@@ -259,11 +268,19 @@ class CurrentPcbWorkerConstructionCore<P extends PacketProfile> {
     this.#checkWindow();
     if (this.#releaseConsumed) { throw fail("OWNER_CHANGED"); }
   }
-  async #request(command: CurrentPcbWorkerConstructionCommand, retained?: unknown[]): Promise<unknown> {
+  async #request(command: CurrentPcbWorkerConstructionCommand, retained?: unknown[], assignmentStep?: string): Promise<unknown> {
+    if (assignmentStep !== undefined) { this.#assignmentStep = assignmentStep; this.#step = assignmentStep; }
     if (!this.#settled) { this.#step = "pause-read-owner-before"; } await this.#current();
     if (!this.#settled) { this.#step = "pause-read-request"; }
     const captured = captureCurrentPcbStringClockReply(await bounded(this.#sendOriginal(command)));
     retained?.push(captured.value);
+    // Keep the bounded original reply before decoding or an awaited owner
+    // Reproof. A refusal must remain diagnosable without resending the probe.
+    if (assignmentStep !== undefined) {
+      this.#assignmentReplyCount += 1;
+      this.#assignmentLastReply = Object.freeze({ step: assignmentStep, method: command.method,
+        sha256: captured.sha256, bytes: Buffer.byteLength(captured.text), value: captured.value });
+    }
     if (!this.#settled) { this.#step = "pause-read-owner-after"; } await this.#current(); return captured.value;
   }
   readonly #onPaused = (input: unknown): void => {
@@ -469,10 +486,11 @@ class CurrentPcbWorkerConstructionCore<P extends PacketProfile> {
     return Object.freeze(z.object({ project: token, channelBus: token, channel: token, onmessage: token,
       upload: token, cooperation: token, uploadStructure: token, structure: token, structureDebounce: token }).strict().parse(this.#identities));
   }
-  #assignmentCall(objectId: string, functionDeclaration: string, args: readonly string[], returnByValue = true, retained?: unknown[]): Promise<unknown> {
+  #assignmentCall(objectId: string, functionDeclaration: string, args: readonly string[], returnByValue = true, retained?: unknown[],
+    assignmentStep?: string): Promise<unknown> {
     return this.#request({ method: "Runtime.callFunctionOn", params: { objectId, functionDeclaration,
       arguments: args.map(value => ({ objectId: value })), objectGroup: GROUP, silent: true, returnByValue,
-      generatePreview: false, throwOnSideEffect: true, awaitPromise: false, userGesture: false } }, retained);
+      generatePreview: false, throwOnSideEffect: true, awaitPromise: false, userGesture: false } }, retained, assignmentStep);
   }
   /** Same original PROJECT receiver and bus, not a title-derived association.
    * The opener separately compares these fields with its checkpoint target. */
@@ -497,16 +515,17 @@ class CurrentPcbWorkerConstructionCore<P extends PacketProfile> {
       await this.requireOriginal(packet);
     } catch (error) { this.#fail("PROJECT_IDENTITY_CHANGED"); throw error; }
   }
-  async #assignmentScopes(original: string, kind: CurrentPcb209WorkerProducerKind): Promise<readonly string[]> {
+  async #assignmentScopes(original: string, kind: CurrentPcb209WorkerProducerKind,
+    field: CurrentPcbWorkerConstructionAssignment | "debounce"): Promise<readonly string[]> {
     const list = this.#decoders.producerScopeList(await this.#request({ method: "Runtime.getProperties",
-      params: { objectId: original, ownProperties: true, generatePreview: false } }), this.#scriptId, kind);
+      params: { objectId: original, ownProperties: true, generatePreview: false } }, undefined, `${field}-function-metadata`), this.#scriptId, kind);
     return this.#decoders.producerScopes(await this.#request({ method: "Runtime.getProperties",
-      params: { objectId: list, ownProperties: true, generatePreview: false } }), kind);
+      params: { objectId: list, ownProperties: true, generatePreview: false } }, undefined, `${field}-scope-list`), kind);
   }
   async #assignmentRecheck(original: Readonly<CurrentPcbWorkerConstructionIdentities>,
-    wrappers: Readonly<Record<CurrentPcbWorkerConstructionAssignment, string>>): Promise<void> {
+    wrappers: Readonly<Record<CurrentPcbWorkerConstructionAssignment, string>>, assignmentStep?: string): Promise<void> {
     resultBoolean.parse(await this.#assignmentCall(original.project, CURRENT_PCB_WORKER_CONSTRUCTION_ASSIGNMENT_RECHECK,
-      [original.channelBus, wrappers.uploadStructure, wrappers.structure, wrappers.cooperation, wrappers.upload]));
+      [original.channelBus, wrappers.uploadStructure, wrappers.structure, wrappers.cooperation, wrappers.upload], true, undefined, assignmentStep));
   }
   /** This original-event continuation is not a supplied-data projection. Every
    * callback argument comes from the retained constructor pauses. Current
@@ -520,23 +539,23 @@ class CurrentPcbWorkerConstructionCore<P extends PacketProfile> {
       for (const field of ["uploadStructure", "structure", "cooperation", "upload"] as const) {
         const kind = field === "uploadStructure" || field === "structure" ? "serial" : field;
         const wrapper = this.#decoders.producerFunction(await this.#assignmentCall(original.project,
-          CURRENT_PCB_WORKER_CONSTRUCTION_ASSIGNMENT_SELECTORS[field], [], false), kind);
-        const scopes = await this.#assignmentScopes(wrapper, kind);
+          CURRENT_PCB_WORKER_CONSTRUCTION_ASSIGNMENT_SELECTORS[field], [], false, undefined, `${field}-select`), kind);
+        const scopes = await this.#assignmentScopes(wrapper, kind, field);
         const scope = scopes[0];
         if (scope === undefined) { throw fail("ASSIGNMENT_SCOPE"); }
         const callback = field === "structure" ? original.structureDebounce : original[field];
         resultBoolean.parse(await this.#assignmentCall(scope, CURRENT_PCB_WORKER_CONSTRUCTION_ASSIGNMENT_RELATIONS[field],
-          [original.project, wrapper, callback]));
+          [original.project, wrapper, callback], true, undefined, `${field}-relation`));
         if (field === "structure") {
-          const debounceScopes = await this.#assignmentScopes(original.structureDebounce, "debounce"), parameters = debounceScopes[1];
+          const debounceScopes = await this.#assignmentScopes(original.structureDebounce, "debounce", "debounce"), parameters = debounceScopes[1];
           if (parameters === undefined) { throw fail("ASSIGNMENT_SCOPE"); }
           resultBoolean.parse(await this.#assignmentCall(parameters, CURRENT_PCB_WORKER_CONSTRUCTION_DEBOUNCE_RELATION,
-            [original.project, wrapper, scope, original.structureDebounce, original.structure]));
+            [original.project, wrapper, scope, original.structureDebounce, original.structure], true, undefined, "debounce-relation"));
         }
         wrappers[field] = wrapper;
       }
       const complete = Object.freeze(z.object({ uploadStructure: token, structure: token, cooperation: token, upload: token }).strict().parse(wrappers));
-      await this.#assignmentRecheck(original, complete);
+      await this.#assignmentRecheck(original, complete, "assignments-recheck");
       const observation: CurrentPcbWorkerConstructionAssignments = Object.freeze({
         profile: "private.current-pcb-worker-construction-assignments.v1",
         callbackKinds: Object.freeze(["uploadStructure", "structure", "cooperation", "upload"] as const), originalConstructionCallbacksMatched: true,

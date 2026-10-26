@@ -10,7 +10,7 @@ const require = function __easyedaGuardedRequire(specifier) { if (typeof specifi
 	const __easyedaPublicationLockPath = __easyedaJoin(__easyedaPublicationDirectory, ".bundle-publication.lock");
 const __easyedaAssertNoPublication = () => { try { __easyedaLstatSync(__easyedaPublicationLockPath); throw new Error("The facade bundle is undergoing a fail-closed publication transaction."); } catch (__easyedaPublicationError) { if (!__easyedaPublicationError || typeof __easyedaPublicationError !== "object" || !("code" in __easyedaPublicationError) || __easyedaPublicationError.code !== "ENOENT") throw __easyedaPublicationError; } };
 __easyedaAssertNoPublication();
-const __easyedaBundlePairId = "8dba7166cf3c1da6fc33de29d3d9ed131eaadfd27913c0f0e69c9b9c867e9c44";
+const __easyedaBundlePairId = "b2f07f0f6d26b81ed60ad62460779bbaac3856555e7dee8d31647e9b6c453a41";
 if (__easyedaBasename(import.meta.filename) === "server.mjs") {
   const __easyedaPeerPath = __easyedaJoin(import.meta.dirname, "upstream-supervisor.mjs");
   const __easyedaPeerPathBefore = __easyedaLstatSync(__easyedaPeerPath, { bigint: true });
@@ -48037,17 +48037,17 @@ function retainLibraryAtom(document3, entry, inheritedClient, chunkIndex, record
   const ticket2 = integer2(entry.header["ticket"]);
   const client3 = optionalClient(entry.header["client"] ?? inheritedClient);
   const serializedFirstTicket = hasFirstTicket ? { serializedFirstTicket: integer2(entry.header["firstTicket"]) } : {};
-  const signature2 = sha256Json({ type: type2, body: entry.body, ...serializedFirstTicket });
+  const signature3 = sha256Json({ type: type2, body: entry.body, ...serializedFirstTicket });
   const tickets2 = history.clocks.get(id16) ?? /* @__PURE__ */ new Map();
   const clients = tickets2.get(ticket2) ?? /* @__PURE__ */ new Map();
   const previous = clients.get(client3);
-  if (previous !== void 0 && previous !== signature2) {
+  if (previous !== void 0 && previous !== signature3) {
     fail2("record-ticket-conflict");
   }
   if (client3 === null && [...clients.keys()].some((value2) => value2 !== null) || client3 !== null && clients.has(null)) {
     fail2("record-client-conflict");
   }
-  clients.set(client3, signature2);
+  clients.set(client3, signature3);
   tickets2.set(ticket2, clients);
   history.clocks.set(id16, tickets2);
   history.hasFirstTicket ||= hasFirstTicket;
@@ -105403,7 +105403,7 @@ function queryCurrentPcb209WorkerStartupValidation(includeSchemas) {
       "After the assignment result is published, observe-actor-clock consumes one UI/worker/worker/UI bracket on those original owners. It compares the retained account values and local Date readings, not a PCB realm, Windows/server clock, backend actor, future Save or continuous publication interval.",
       "After the assignment result is published, observe-current-channel independently consumes one bounded original-channel relation and publisher-method observation with paired gate samples. It does not call publisher methods or establish native channel peers, continuous ownership, contained destinations or queue completion; it does not require the actor stage.",
       "After the assignment result is published, observe-footprint-state consumes one pair of synchronous reads from the original constructor-captured footprint and consistency managers. It checks the own undefined captured user, shared client and unchanged maximum ticket. No getter, copy, cache completion, actor provenance, Save or persistence claim follows.",
-      "After the footprint-state result is published, observe-footprint-source selects one footprintUuid from the original completed project checkpoint. It reconstructs source from the original live consistency entries and existing native Cache chunks, with two matching source reads, four state samples and exact checkpoint-derived source equality. This is a native equivalent, not a GET_STR dispatch. Missing cache entries refuse without fetch, parser replay, cache warming or copy. The bounded single-fragment CANVAS/PAD/LINE profile requires 65 remaining requests through normal request 224 and retains 32 cleanup slots. Cache reads are limited to 64 keys and 8MiB, source to 2MiB, and complete evidence to its separate serialization bound. No saved/reopened or writer claim follows.",
+      "After the footprint-state result is published, observe-footprint-source selects one footprintUuid from the original completed project checkpoint. It reconstructs source from the original live consistency entries and existing native Cache chunks, with two matching source reads in observed native order, four state samples and exact keyed-record and generated-header equality against the complete checkpoint. Checkpoint byte-order equality is not claimed. This is a native equivalent, not a GET_STR dispatch. Missing cache entries refuse without fetch, parser replay, cache warming or copy. The source-only profile admits ordinary record families, repeated fragments and tombstones; it requires 65 remaining requests through normal request 224 and retains 32 cleanup slots. Cache reads are limited to 64 keys and 8MiB, source to 2MiB, and complete evidence to its separate serialization bound. No saved/reopened or writer claim follows.",
       "Constructor and current-assignment observations are not continuous channel/publisher ownership, destination containment, full startup completion, stable baseline, create/Save authority or saved-content proof. No writer or explicit Save is offered.",
       "Every stage is consumed once. Inspect retained outcomes after uncertainty; do not repeat capture-project. Original normal close, root/Job termination, helper release and exact record settlement remain separate. Historical records never recreate a native owner."
     ],
@@ -121284,12 +121284,12 @@ function currentPcbStringWorkerProducerWire(raw, id16) {
     }, sessionId: sessionId4 };
     request13 = { ...base9, uniqueContextId: uniqueContextId2 };
   } else if (callPhase(phase5)) {
-    const signature2 = CURRENT_PCB_STRING_WORKER_PRODUCER_CALL_ARGUMENTS[phase5];
+    const signature3 = CURRENT_PCB_STRING_WORKER_PRODUCER_CALL_ARGUMENTS[phase5];
     if (method7 !== "Runtime.callFunctionOn") {
       return fail14();
     }
     const args = params["arguments"];
-    if (!Array.isArray(args) || args.length !== signature2.count) {
+    if (!Array.isArray(args) || args.length !== signature3.count) {
       return fail14();
     }
     const argumentsList = args.map((value2) => {
@@ -121304,7 +121304,7 @@ function currentPcbStringWorkerProducerWire(raw, id16) {
       objectId: objectId3,
       functionDeclaration: CURRENT_PCB_STRING_WORKER_PRODUCER_CALLS[phase5],
       objectGroup: GROUP,
-      returnByValue: signature2.returnByValue,
+      returnByValue: signature3.returnByValue,
       arguments: argumentsList
     }, sessionId: sessionId4 };
     request13 = { ...base9, objectId: objectId3, ...Object.fromEntries(argumentsList.map((value2, index2) => [`workerArgument${index2}`, value2.objectId])) };
@@ -125469,6 +125469,9 @@ var init_current_pcb_worker_construction_runner = __esm({
       #releaseConsumed = false;
       #packet = null;
       #assignmentConsumed = false;
+      #assignmentStep = null;
+      #assignmentReplyCount = 0;
+      #assignmentLastReply = null;
       #assignments = null;
       #assignedWrappers = null;
       #projectIdentityConsumed = false;
@@ -125526,7 +125529,14 @@ var init_current_pcb_worker_construction_runner = __esm({
           resumeObserved: this.#pause?.resumeObserved ?? false,
           retainedIdentities: Object.keys(this.#identities).length,
           released: this.#released,
-          unresolvedBreakpoints: this.#uncertainBreakpoint || [...this.#breakpoints.values()].some((value2) => !value2.removed)
+          unresolvedBreakpoints: this.#uncertainBreakpoint || [...this.#breakpoints.values()].some((value2) => !value2.removed),
+          assignments: Object.freeze({
+            attempted: this.#assignmentConsumed,
+            completed: this.#assignments !== null,
+            step: this.#assignmentStep,
+            replyCount: this.#assignmentReplyCount,
+            lastReply: this.#assignmentLastReply
+          })
         });
       }
       #progress() {
@@ -125587,7 +125597,11 @@ var init_current_pcb_worker_construction_runner = __esm({
           throw fail19("OWNER_CHANGED");
         }
       }
-      async #request(command2, retained3) {
+      async #request(command2, retained3, assignmentStep) {
+        if (assignmentStep !== void 0) {
+          this.#assignmentStep = assignmentStep;
+          this.#step = assignmentStep;
+        }
         if (!this.#settled) {
           this.#step = "pause-read-owner-before";
         }
@@ -125597,6 +125611,16 @@ var init_current_pcb_worker_construction_runner = __esm({
         }
         const captured = captureCurrentPcbStringClockReply(await bounded3(this.#sendOriginal(command2)));
         retained3?.push(captured.value);
+        if (assignmentStep !== void 0) {
+          this.#assignmentReplyCount += 1;
+          this.#assignmentLastReply = Object.freeze({
+            step: assignmentStep,
+            method: command2.method,
+            sha256: captured.sha256,
+            bytes: Buffer.byteLength(captured.text),
+            value: captured.value
+          });
+        }
         if (!this.#settled) {
           this.#step = "pause-read-owner-after";
         }
@@ -125966,7 +125990,7 @@ var init_current_pcb_worker_construction_runner = __esm({
           structureDebounce: token21
         }).strict().parse(this.#identities));
       }
-      #assignmentCall(objectId3, functionDeclaration, args, returnByValue = true, retained3) {
+      #assignmentCall(objectId3, functionDeclaration, args, returnByValue = true, retained3, assignmentStep) {
         return this.#request({ method: "Runtime.callFunctionOn", params: {
           objectId: objectId3,
           functionDeclaration,
@@ -125978,7 +126002,7 @@ var init_current_pcb_worker_construction_runner = __esm({
           throwOnSideEffect: true,
           awaitPromise: false,
           userGesture: false
-        } }, retained3);
+        } }, retained3, assignmentStep);
       }
       /** Same original PROJECT receiver and bus, not a title-derived association.
        * The opener separately compares these fields with its checkpoint target. */
@@ -126016,21 +126040,24 @@ var init_current_pcb_worker_construction_runner = __esm({
           throw error63;
         }
       }
-      async #assignmentScopes(original2, kind) {
+      async #assignmentScopes(original2, kind, field13) {
         const list2 = this.#decoders.producerScopeList(await this.#request({
           method: "Runtime.getProperties",
           params: { objectId: original2, ownProperties: true, generatePreview: false }
-        }), this.#scriptId, kind);
+        }, void 0, `${field13}-function-metadata`), this.#scriptId, kind);
         return this.#decoders.producerScopes(await this.#request({
           method: "Runtime.getProperties",
           params: { objectId: list2, ownProperties: true, generatePreview: false }
-        }), kind);
+        }, void 0, `${field13}-scope-list`), kind);
       }
-      async #assignmentRecheck(original2, wrappers) {
+      async #assignmentRecheck(original2, wrappers, assignmentStep) {
         resultBoolean.parse(await this.#assignmentCall(
           original2.project,
           CURRENT_PCB_WORKER_CONSTRUCTION_ASSIGNMENT_RECHECK,
-          [original2.channelBus, wrappers.uploadStructure, wrappers.structure, wrappers.cooperation, wrappers.upload]
+          [original2.channelBus, wrappers.uploadStructure, wrappers.structure, wrappers.cooperation, wrappers.upload],
+          true,
+          void 0,
+          assignmentStep
         ));
       }
       /** This original-event continuation is not a supplied-data projection. Every
@@ -126051,9 +126078,11 @@ var init_current_pcb_worker_construction_runner = __esm({
               original2.project,
               CURRENT_PCB_WORKER_CONSTRUCTION_ASSIGNMENT_SELECTORS[field13],
               [],
-              false
+              false,
+              void 0,
+              `${field13}-select`
             ), kind);
-            const scopes2 = await this.#assignmentScopes(wrapper2, kind);
+            const scopes2 = await this.#assignmentScopes(wrapper2, kind, field13);
             const scope7 = scopes2[0];
             if (scope7 === void 0) {
               throw fail19("ASSIGNMENT_SCOPE");
@@ -126062,23 +126091,29 @@ var init_current_pcb_worker_construction_runner = __esm({
             resultBoolean.parse(await this.#assignmentCall(
               scope7,
               CURRENT_PCB_WORKER_CONSTRUCTION_ASSIGNMENT_RELATIONS[field13],
-              [original2.project, wrapper2, callback]
+              [original2.project, wrapper2, callback],
+              true,
+              void 0,
+              `${field13}-relation`
             ));
             if (field13 === "structure") {
-              const debounceScopes = await this.#assignmentScopes(original2.structureDebounce, "debounce"), parameters = debounceScopes[1];
+              const debounceScopes = await this.#assignmentScopes(original2.structureDebounce, "debounce", "debounce"), parameters = debounceScopes[1];
               if (parameters === void 0) {
                 throw fail19("ASSIGNMENT_SCOPE");
               }
               resultBoolean.parse(await this.#assignmentCall(
                 parameters,
                 CURRENT_PCB_WORKER_CONSTRUCTION_DEBOUNCE_RELATION,
-                [original2.project, wrapper2, scope7, original2.structureDebounce, original2.structure]
+                [original2.project, wrapper2, scope7, original2.structureDebounce, original2.structure],
+                true,
+                void 0,
+                "debounce-relation"
               ));
             }
             wrappers[field13] = wrapper2;
           }
           const complete = Object.freeze(external_exports.object({ uploadStructure: token21, structure: token21, cooperation: token21, upload: token21 }).strict().parse(wrappers));
-          await this.#assignmentRecheck(original2, complete);
+          await this.#assignmentRecheck(original2, complete, "assignments-recheck");
           const observation3 = Object.freeze({
             profile: "private.current-pcb-worker-construction-assignments.v1",
             callbackKinds: Object.freeze(["uploadStructure", "structure", "cooperation", "upload"]),
@@ -126816,6 +126851,7 @@ var init_current_pcb_worker_startup_transport = __esm({
           firstEventFailure: this.#firstEventFailure,
           requests: this.#requests,
           preloadLogSeen: this.#preloadLogSeen,
+          constructionAssignments: this.#runner?.status().assignments ?? null,
           workerScriptLoadedObserved: this.#workerScriptLoadedObserved,
           bootstrapStages: Object.freeze(this.#bootstrapStages.map((stage) => Object.freeze({
             role: stage.role,
@@ -138881,9 +138917,9 @@ var init_engine = __esm({
             options.targetChanges,
             exactComponentMutation.state
           );
-          const guarded2 = wrapWithContextGuard(source7, expectedContext);
+          const guarded3 = wrapWithContextGuard(source7, expectedContext);
           const mutationArguments = {
-            code: guarded2,
+            code: guarded3,
             timeoutMs: 6e4,
             confirmWrite: true
           };
@@ -138918,7 +138954,7 @@ var init_engine = __esm({
             payload: payload3,
             assertions: assertions2,
             sourceSha256: sha256Text(source7),
-            transmittedSourceSha256: sha256Text(guarded2)
+            transmittedSourceSha256: sha256Text(guarded3)
           };
         }
         const activeContext = await this.assertContext(expectedContext, options);
@@ -138970,9 +139006,9 @@ var init_engine = __esm({
           if (typeof code2 !== "string") {
             throw new TypeError("easyeda_execute arguments.code must be a string.");
           }
-          const guarded2 = wrapWithContextGuard(code2, expectedContext);
-          args["code"] = guarded2;
-          transmittedSourceSha256 = sha256Text(guarded2);
+          const guarded3 = wrapWithContextGuard(code2, expectedContext);
+          args["code"] = guarded3;
+          transmittedSourceSha256 = sha256Text(guarded3);
         }
         const timeoutMs = spec.toolName === "easyeda_execute" ? Math.min(7e4, Number(args["timeoutMs"] ?? 15e3) + 1e4) : 7e4;
         const raw = expectedKind === "mutate-unsaved" && options.guardedDispatch ? await options.guardedDispatch(spec.toolName, args, timeoutMs) : await this.upstream.callTool(spec.toolName, args, timeoutMs);
@@ -139933,7 +139969,7 @@ var init_engine = __esm({
               operation.plan.expectedContext,
               exactSaveGuards
             );
-            const guarded2 = wrapWithContextGuard(
+            const guarded3 = wrapWithContextGuard(
               source7,
               operation.plan.expectedContext
             );
@@ -139952,7 +139988,7 @@ var init_engine = __esm({
               operation,
               "save-reopen",
               "easyeda_execute",
-              { code: guarded2, timeoutMs: 6e4, confirmWrite: true },
+              { code: guarded3, timeoutMs: 6e4, confirmWrite: true },
               7e4
             );
             await verifyDeviceAssociationNativeProfile(uploadBarrierBundles.assetsRoot);
@@ -139976,7 +140012,7 @@ var init_engine = __esm({
               "save-reopen",
               {
                 sourceSha256: sha256Text(source7),
-                transmittedSourceSha256: sha256Text(guarded2),
+                transmittedSourceSha256: sha256Text(guarded3),
                 exactSaveGuards: exactSaveGuards.map((guard) => ({
                   expectedSnapshotSha256: guard.expectedSnapshotSha256,
                   request: guard.request
@@ -164131,8 +164167,8 @@ var init_current_pcb_string_worker_producer_runner = __esm({
         } });
       }
       #call(workerProducerPhase, objectId3, args = []) {
-        const signature2 = CURRENT_PCB_STRING_WORKER_PRODUCER_CALL_ARGUMENTS[workerProducerPhase];
-        if (args.length !== signature2.count) {
+        const signature3 = CURRENT_PCB_STRING_WORKER_PRODUCER_CALL_ARGUMENTS[workerProducerPhase];
+        if (args.length !== signature3.count) {
           return refuse32();
         }
         return this.#request({ sessionId: this.#owner.sessionId, workerProducerPhase, method: "Runtime.callFunctionOn", params: {
@@ -164140,7 +164176,7 @@ var init_current_pcb_string_worker_producer_runner = __esm({
           objectId: handle13(objectId3),
           functionDeclaration: CURRENT_PCB_STRING_WORKER_PRODUCER_CALLS[workerProducerPhase],
           objectGroup: GROUP3,
-          returnByValue: signature2.returnByValue,
+          returnByValue: signature3.returnByValue,
           arguments: args.map((value2) => ({ objectId: handle13(value2) }))
         } });
       }
@@ -165004,13 +165040,531 @@ var init_current_pcb_string_native_clock = __esm({
   }
 });
 
-// server/src/current-pcb-worker-startup-wire.ts
+// server/src/current-pcb-209-ratline-budget.ts
 import { types as types58 } from "node:util";
+function sourceSlot2(stage, sourceBytes3) {
+  const frameBytes = 6 * sourceBytes3 + envelope4;
+  return Object.freeze({
+    stage,
+    sourceBytes: sourceBytes3,
+    frameBytes,
+    // A finite drain-opportunity allowance, not a transport throughput promise.
+    // Native exchange deadlines and the original launch deadline also apply.
+    deadlineMilliseconds: ordinaryRequestMilliseconds2 + (Math.ceil(frameBytes / chunkBytes2) + 2) * pollIntervalMilliseconds2
+  });
+}
+function currentPcb209RatlineSourceBudget(role, ordinal) {
+  if (role !== "pcb" && role !== "child" || !Number.isSafeInteger(ordinal) || ordinal < 0) {
+    throw new Error("PCB209_RATLINE_BUDGET_SOURCE_SLOT");
+  }
+  const slot = (role === "pcb" ? pcbSources2 : childSources2)[ordinal];
+  if (slot === void 0) {
+    throw new Error("PCB209_RATLINE_BUDGET_SOURCE_SLOT");
+  }
+  return slot;
+}
+function assertOriginalCurrentPcb209RatlineBudget(budget3) {
+  if (budget3 === null || typeof budget3 !== "object" || types58.isProxy(budget3) || !issued14.has(budget3) || Object.getPrototypeOf(budget3) !== CurrentPcb209RatlineBudget.prototype) {
+    throw new Error("PCB209_RATLINE_BUDGET_ORIGINAL");
+  }
+  for (const [index2, name9] of methodNames2.entries()) {
+    if (Object.hasOwn(budget3, name9) || Object.getOwnPropertyDescriptor(CurrentPcb209RatlineBudget.prototype, name9)?.value !== methods12[index2]) {
+      throw new Error("PCB209_RATLINE_BUDGET_ORIGINAL");
+    }
+  }
+}
+function isCurrentPcb209RatlineNormalResourceRefusal(error63, budget3) {
+  if (error63 === null || typeof error63 !== "object" || types58.isProxy(error63) || budget3 === null || typeof budget3 !== "object" || types58.isProxy(budget3) || !issued14.has(budget3)) {
+    return false;
+  }
+  const refusal = normalResourceRefusals2.get(error63);
+  return refusal?.budget === budget3 && refusal.current();
+}
+var chunkBytes2, envelope4, mib2, pollIntervalMilliseconds2, ordinaryRequestMilliseconds2, pcbSources2, childSources2, requestClasses2, normalRequestLimit2, cleanupRequests2, requestLimit2, prefixBytes2, sourceBytes2, ordinaryReplyBytes2, discoveryEventBytes2, discoveryEventCount2, startupEventBytes2, startupEventCount2, continuationEventBytes2, continuationEventCount2, largestFrame2, rejectedFrameBytes2, normalBytes2, cleanupBytes2, totalBytes2, cleanupMilliseconds2, normalMilliseconds2, ancestryProofMilliseconds2, pcbBootstrapSendMilliseconds, pcbBootstrapResumeMilliseconds, pcbBootstrapFirstPauseMilliseconds, sourceReleaseMilliseconds, childOwnerMilliseconds, childBootstrapSendMilliseconds, childBootstrapAllocationMilliseconds, childBootstrapResumeMilliseconds, childArmMilliseconds, pcbRealmAllocationMilliseconds, pcbChildStartMilliseconds, creationContinuationMilliseconds, capturePauseMilliseconds, captureWaitMilliseconds, normalPollLimit2, cleanupPollReserve2, pollLimit2, helperCleanupControlReserve2, helperControlMessages2, helperNormalControlMessages2, helperStdoutBytes2, CURRENT_PCB_209_RATLINE_NATIVE_PROFILE, monotonicNow2, issued14, normalResourceRefusals2, CurrentPcb209RatlineBudget, methodNames2, methods12;
+var init_current_pcb_209_ratline_budget = __esm({
+  "server/src/current-pcb-209-ratline-budget.ts"() {
+    init_current_pcb_209_ratline_pcb_bootstrap_profile();
+    init_current_pcb_209_ratline_bootstrap_profile();
+    init_current_pcb_209_worker_bootstrap_source();
+    init_current_pcb_209_ratline_source();
+    init_sqlite_inventory_core();
+    chunkBytes2 = 65536;
+    envelope4 = 1024;
+    mib2 = 1024 * 1024;
+    pollIntervalMilliseconds2 = 20;
+    ordinaryRequestMilliseconds2 = 2500;
+    pcbSources2 = Object.freeze(CURRENT_PCB_209_RATLINE_PCB_BOOTSTRAP_ROLES.map((role) => {
+      const copy3 = currentPcb209RatlinePcbBootstrapCopy(role);
+      if (copy3 !== null) {
+        return sourceSlot2(role, copy3.generatedBytes);
+      }
+      if (role === "bootstrap") {
+        return sourceSlot2(role, Math.max(...CURRENT_PCB_209_RATLINE_PCB_BOOTSTRAP_SOURCES.map((text56) => Buffer.byteLength(text56))));
+      }
+      if (role === "define-top" || role === "preload" || role === "api" || role === "engine" || role === "pcb") {
+        return sourceSlot2(role, CURRENT_PCB_209_RATLINE_PCB_BOOTSTRAP_SOURCE_PROFILE[role].bytes);
+      }
+      throw new Error("PCB209_RATLINE_BUDGET_SOURCE_PROFILE");
+    }));
+    childSources2 = Object.freeze(CURRENT_PCB_209_RATLINE_BOOTSTRAP_ROLES.map((role) => {
+      if (role === "bootstrap") {
+        return sourceSlot2(role, Math.max(...CURRENT_PCB_209_RATLINE_BOOTSTRAP_SOURCES.map((text56) => Buffer.byteLength(text56))));
+      }
+      if (role === "preload") {
+        return sourceSlot2(role, CURRENT_PCB_209_WORKER_BOOTSTRAP_SOURCE_PROFILE.preload.bytes);
+      }
+      if (role === "worker") {
+        return sourceSlot2(role, CURRENT_PCB_209_RATLINE_SOURCE_PROFILE.worker.bytes);
+      }
+      return sourceSlot2(role, CURRENT_PCB_209_PRELOAD_COPY_SOURCE.generatedBytes);
+    }));
+    requestClasses2 = freezeDeep({
+      // This is the existing complete discovery/project-opening cap, including its
+      // Retained reproof allowance. The four footprint constructor reads consume
+      // That reserve (80 to 76); this remains a 186 cap, not 186 expected commands or
+      // A new budget at handoff. The original pipe retains reply/event validation.
+      prefix: { count: 186, frameBytes: 32 * mib2 },
+      preparation: { count: 10, frameBytes: mib2 },
+      // Exact original navigation program compilation: one source read and resume.
+      navigation: { count: 2, frameBytes: mib2 },
+      // One pinned UI loader default callback: complete 28-byte source and resume.
+      loader: { count: 2, frameBytes: envelope4 },
+      // Electron window-context hooks: exact six-byte source and resume, once each.
+      "initial-window": { count: 2, frameBytes: envelope4 },
+      "document-window": { count: 2, frameBytes: envelope4 },
+      ownership: { count: 9, frameBytes: envelope4 },
+      ancestry: { count: 3 * 4 + 2, frameBytes: mib2 },
+      "pcb-source": { count: pcbSources2.length, frameBytes: Math.max(...pcbSources2.map((slot) => slot.frameBytes)) },
+      "child-source": { count: childSources2.length, frameBytes: Math.max(...childSources2.map((slot) => slot.frameBytes)) },
+      "pcb-bootstrap": { count: 5 + pcbSources2.length + 1, frameBytes: envelope4 },
+      "child-bootstrap": { count: 5 + childSources2.length - 1 + 1, frameBytes: envelope4 },
+      // One original first-child external creation stack, resolved only in PCB.
+      "origin-stack": { count: 1, frameBytes: mib2 },
+      // Two breakpoints; URL/name; two inventories; two object handles;
+      // Before/after resumes; two removals; one guarded child start.
+      "pcb-construction": { count: 2 + 2 + 2 + 2 + 2 + 2 + 1, frameBytes: mib2 },
+      // Held prefix: two breakpoints; bridge's three handles+relation; factory's
+      // Handle+relation; two removals/resumes; one retained construction join.
+      // The existing 13-request cap is unchanged. No callback/publication stage.
+      "pcb-capture": { count: 2 + 4 + 2 + 2 + 2 + 1, frameBytes: mib2 },
+      // Original prelude 32; two source instrumentation handles; construction's
+      // Two breakpoints and parent pause; five capture breakpoints and one pause.
+      cleanup: { count: 32 + 2 + 2 + 1 + 5 + 1 + 3, frameBytes: envelope4 }
+    });
+    normalRequestLimit2 = Object.entries(requestClasses2).reduce((sum, [kind, profile3]) => sum + (kind === "cleanup" ? 0 : profile3.count), 0);
+    cleanupRequests2 = requestClasses2.cleanup.count;
+    requestLimit2 = normalRequestLimit2 + cleanupRequests2;
+    prefixBytes2 = 64 * mib2;
+    sourceBytes2 = [...pcbSources2, ...childSources2].reduce((sum, slot) => sum + slot.frameBytes, 0);
+    ordinaryReplyBytes2 = Object.entries(requestClasses2).reduce((sum, [kind, profile3]) => sum + (kind === "prefix" || kind === "pcb-source" || kind === "child-source" || kind === "cleanup" ? 0 : profile3.count * profile3.frameBytes), 0);
+    discoveryEventBytes2 = 8 * mib2;
+    discoveryEventCount2 = 4096;
+    startupEventBytes2 = 8 * mib2;
+    startupEventCount2 = 4096;
+    continuationEventBytes2 = 8 * mib2 + 256 * 1024;
+    continuationEventCount2 = 4096 + 128;
+    largestFrame2 = requestClasses2["pcb-source"].frameBytes;
+    rejectedFrameBytes2 = largestFrame2 + chunkBytes2;
+    normalBytes2 = prefixBytes2 + sourceBytes2 + ordinaryReplyBytes2 + continuationEventBytes2 + rejectedFrameBytes2;
+    cleanupBytes2 = cleanupRequests2 * envelope4;
+    totalBytes2 = normalBytes2 + cleanupBytes2;
+    cleanupMilliseconds2 = 60 * 1e3;
+    normalMilliseconds2 = 60 * 60 * 1e3;
+    ancestryProofMilliseconds2 = 4 * 3 * ordinaryRequestMilliseconds2;
+    pcbBootstrapSendMilliseconds = 3 * ordinaryRequestMilliseconds2;
+    pcbBootstrapResumeMilliseconds = pcbBootstrapSendMilliseconds + ordinaryRequestMilliseconds2;
+    pcbBootstrapFirstPauseMilliseconds = (3 + 5 + 5 + 5 + 2 * 3 + 5 + 8) * ordinaryRequestMilliseconds2;
+    sourceReleaseMilliseconds = ancestryProofMilliseconds2 + 5 * ordinaryRequestMilliseconds2 + pcbBootstrapResumeMilliseconds;
+    childOwnerMilliseconds = 3 * ordinaryRequestMilliseconds2;
+    childBootstrapSendMilliseconds = 2 * childOwnerMilliseconds + ordinaryRequestMilliseconds2;
+    childBootstrapAllocationMilliseconds = childOwnerMilliseconds + ordinaryRequestMilliseconds2;
+    childBootstrapResumeMilliseconds = childBootstrapSendMilliseconds + ordinaryRequestMilliseconds2;
+    childArmMilliseconds = ordinaryRequestMilliseconds2 + 2 * childOwnerMilliseconds + 4 * childBootstrapSendMilliseconds + childBootstrapAllocationMilliseconds;
+    pcbRealmAllocationMilliseconds = 2 * ordinaryRequestMilliseconds2;
+    pcbChildStartMilliseconds = childOwnerMilliseconds + ordinaryRequestMilliseconds2;
+    creationContinuationMilliseconds = (4 + 5 + 2) * ordinaryRequestMilliseconds2;
+    capturePauseMilliseconds = requestClasses2["pcb-capture"].count * ordinaryRequestMilliseconds2;
+    captureWaitMilliseconds = childSources2.reduce((sum, slot) => sum + slot.deadlineMilliseconds, 0) + (requestClasses2["child-bootstrap"].count + requestClasses2["origin-stack"].count) * ordinaryRequestMilliseconds2 + capturePauseMilliseconds;
+    normalPollLimit2 = Math.ceil(normalMilliseconds2 / pollIntervalMilliseconds2) + 2 * normalRequestLimit2 + Math.ceil(normalBytes2 / chunkBytes2);
+    cleanupPollReserve2 = Math.ceil(cleanupMilliseconds2 / pollIntervalMilliseconds2) + 2 * cleanupRequests2 + Math.ceil(cleanupBytes2 / chunkBytes2);
+    pollLimit2 = normalPollLimit2 + cleanupPollReserve2;
+    helperCleanupControlReserve2 = 128;
+    helperControlMessages2 = 16 * requestLimit2 + helperCleanupControlReserve2;
+    helperNormalControlMessages2 = helperControlMessages2 - helperCleanupControlReserve2;
+    helperStdoutBytes2 = Math.ceil((4 * totalBytes2 + 8 * pollLimit2) / 3) + (pollLimit2 + helperControlMessages2) * envelope4 + 128 * 1e5;
+    CURRENT_PCB_209_RATLINE_NATIVE_PROFILE = freezeDeep({
+      purpose: "worker-startup-ratline209",
+      terminalStage: "first-child-held-import",
+      normalRequestLimit: normalRequestLimit2,
+      cleanupRequests: cleanupRequests2,
+      requestLimit: requestLimit2,
+      requestClasses: requestClasses2,
+      sources: { pcb: pcbSources2, child: childSources2 },
+      bytes: {
+        prefix: prefixBytes2,
+        sources: sourceBytes2,
+        ordinaryReplies: ordinaryReplyBytes2,
+        continuationEvents: continuationEventBytes2,
+        rejectedFrame: rejectedFrameBytes2,
+        normal: normalBytes2,
+        cleanup: cleanupBytes2,
+        total: totalBytes2,
+        helperStdout: helperStdoutBytes2
+      },
+      frames: { ordinary: mib2, source: largestFrame2, envelope: envelope4, chunk: chunkBytes2, outbound: 65536 },
+      events: {
+        discoveryReservedCount: discoveryEventCount2,
+        discoveryReservedBytes: discoveryEventBytes2,
+        startupCount: startupEventCount2,
+        startupBytes: startupEventBytes2,
+        continuationCount: continuationEventCount2,
+        continuationBytes: continuationEventBytes2,
+        totalCount: discoveryEventCount2 + startupEventCount2 + continuationEventCount2,
+        totalBytes: discoveryEventBytes2 + startupEventBytes2 + continuationEventBytes2
+      },
+      polling: { limit: pollLimit2, normalLimit: normalPollLimit2, cleanupReserve: cleanupPollReserve2, intervalMilliseconds: pollIntervalMilliseconds2 },
+      elapsed: {
+        normalMilliseconds: normalMilliseconds2,
+        cleanupMilliseconds: cleanupMilliseconds2,
+        totalMilliseconds: normalMilliseconds2 + cleanupMilliseconds2,
+        ordinaryRequestMilliseconds: ordinaryRequestMilliseconds2,
+        ancestryProofMilliseconds: ancestryProofMilliseconds2,
+        pcbBootstrapSendMilliseconds,
+        pcbBootstrapResumeMilliseconds,
+        pcbBootstrapFirstPauseMilliseconds,
+        sourceReleaseMilliseconds,
+        childArmMilliseconds,
+        childOwnerMilliseconds,
+        childBootstrapSendMilliseconds,
+        childBootstrapAllocationMilliseconds,
+        childBootstrapResumeMilliseconds,
+        pcbRealmAllocationMilliseconds,
+        pcbChildStartMilliseconds,
+        creationContinuationMilliseconds,
+        capturePauseMilliseconds,
+        captureWaitMilliseconds,
+        anchor: "original-monotonic-launch"
+      },
+      // One slot stays available for sequential cleanup after normal dispatch fails.
+      discoveryRequestLimit: 19,
+      normalPendingRequests: 31,
+      pendingRequests: 32,
+      helperControlMessages: helperControlMessages2,
+      helperNormalControlMessages: helperNormalControlMessages2,
+      helperCleanupControlReserve: helperCleanupControlReserve2
+    });
+    monotonicNow2 = process.hrtime.bigint.bind(process.hrtime);
+    issued14 = /* @__PURE__ */ new WeakSet();
+    normalResourceRefusals2 = /* @__PURE__ */ new WeakMap();
+    CurrentPcb209RatlineBudget = class {
+      #started = monotonicNow2();
+      #counts = /* @__PURE__ */ new Map();
+      #pending = /* @__PURE__ */ new Map();
+      #phase = "prefix";
+      #failed = false;
+      #normalResourceFailure = false;
+      #closed = false;
+      #discoveryOpen = true;
+      #startupEvents = 0;
+      #startupEventBytes = 0;
+      #requests = 0;
+      #prefixBytes = 0;
+      #bytes = 0;
+      #events = 0;
+      #eventBytes = 0;
+      #polls = 0;
+      #helperControls = 0;
+      #helperBytes = 0;
+      constructor() {
+        issued14.add(this);
+      }
+      #reject(code2, normalResource = false) {
+        if (!normalResource) {
+          this.#normalResourceFailure = false;
+        } else if (!this.#failed) {
+          this.#normalResourceFailure = true;
+        }
+        this.#failed = true;
+        const error63 = new Error(`PCB209_RATLINE_BUDGET_${code2}`);
+        if (normalResource && this.#normalResourceFailure && this.#phase !== "cleanup" && !this.#closed) {
+          normalResourceRefusals2.set(error63, Object.freeze({ budget: this, current: () => this.#normalResourceFailure && !this.#closed }));
+        }
+        throw error63;
+      }
+      #number(value2, minimum5 = 0) {
+        if (!Number.isSafeInteger(value2) || value2 < minimum5) {
+          this.#reject("NUMBER");
+        }
+      }
+      #age() {
+        return Number(monotonicNow2() - this.#started) / 1e6;
+      }
+      assertNormal() {
+        if (this.#closed || this.#phase === "cleanup") {
+          this.#reject("NORMAL_CLOSED");
+        }
+        if (this.#failed) {
+          this.#reject("NORMAL_CLOSED", this.#normalResourceFailure);
+        }
+        if (this.#age() > normalMilliseconds2) {
+          this.#reject("NORMAL_CLOSED", true);
+        }
+      }
+      assertCleanup() {
+        if (this.#closed || this.#phase !== "cleanup" || this.#age() > normalMilliseconds2 + cleanupMilliseconds2) {
+          this.#reject("CLEANUP_CLOSED");
+        }
+      }
+      /** The actual owner must already have drained its prelude pending/buffer.
+       * This one-way resource boundary does not certify that separate ownership. */
+      beginContinuation() {
+        this.assertNormal();
+        if (this.#phase !== "prefix" || this.#discoveryOpen || this.#requests === 0 || this.#pending.size > 0) {
+          this.#reject("CONTINUATION");
+        }
+        this.#phase = "continuation";
+      }
+      beginCleanup() {
+        this.#phase = "cleanup";
+      }
+      /** The original channel calls this after its native process/Job exit proof.
+       * This only closes accounting; it cannot establish that external proof.
+       * Late native release output remains bounded by the original stdout ledger. */
+      endAfterOriginalTermination() {
+        this.#closed = true;
+        this.#failed = true;
+        this.#normalResourceFailure = false;
+        this.#phase = "cleanup";
+        this.#pending.clear();
+      }
+      consumeDiscoveryRequest(id16) {
+        this.assertNormal();
+        this.#number(id16, 1);
+        if (!this.#discoveryOpen || this.#phase !== "prefix" || id16 !== this.#requests + 1 || id16 > CURRENT_PCB_209_RATLINE_NATIVE_PROFILE.discoveryRequestLimit) {
+          this.#reject("DISCOVERY_REQUEST");
+        }
+        this.#requests = id16;
+        this.#counts.set("prefix", id16);
+      }
+      /** The actual discovery pipe has already proved no pending request/buffer.
+       * Its next ID only checks this ledger's live count; it imports no usage. */
+      closeDiscovery(originalNextId) {
+        this.assertNormal();
+        this.#number(originalNextId, 1);
+        if (!this.#discoveryOpen || this.#requests === 0 || originalNextId !== this.#requests + 1) {
+          this.#reject("DISCOVERY_CLOSE");
+        }
+        this.#discoveryOpen = false;
+      }
+      consumeRequest(id16, kind) {
+        this.#number(id16, 1);
+        if (typeof kind !== "string" || !Object.hasOwn(requestClasses2, kind)) {
+          this.#reject("REPLY_KIND");
+        }
+        if (kind === "cleanup") {
+          this.assertCleanup();
+        } else {
+          this.assertNormal();
+        }
+        if (this.#discoveryOpen || id16 !== this.#requests + 1 || id16 > requestLimit2 || kind === "prefix" && this.#phase !== "prefix" || kind !== "prefix" && kind !== "cleanup" && this.#phase !== "continuation") {
+          this.#reject("REQUEST_ID_OR_PHASE");
+        }
+        const count6 = this.#counts.get(kind) ?? 0, profile3 = requestClasses2[kind];
+        const pendingLimit = kind === "cleanup" ? CURRENT_PCB_209_RATLINE_NATIVE_PROFILE.pendingRequests : CURRENT_PCB_209_RATLINE_NATIVE_PROFILE.normalPendingRequests;
+        if (count6 >= profile3.count || this.#pending.size >= pendingLimit) {
+          this.#reject("REQUEST_LIMIT", kind !== "cleanup");
+        }
+        const sourceOrdinal = kind === "pcb-source" || kind === "child-source" ? count6 : null;
+        const frameBytes = sourceOrdinal === null ? profile3.frameBytes : currentPcb209RatlineSourceBudget(kind === "pcb-source" ? "pcb" : "child", sourceOrdinal).frameBytes;
+        const reservation = Object.freeze({ id: id16, kind, sourceOrdinal, frameBytes });
+        this.#requests = id16;
+        this.#counts.set(kind, count6 + 1);
+        this.#pending.set(id16, reservation);
+        return reservation;
+      }
+      /** Count raw CDP pipe bytes exactly once, where the original helper's poll
+       * data enters. Reply/event attribution below does not charge them again. */
+      consumePipeBytes(bytes2) {
+        this.#number(bytes2);
+        this.#bytes += bytes2;
+        if (this.#phase === "prefix") {
+          this.#prefixBytes += bytes2;
+        }
+        if (this.#bytes > (this.#phase === "cleanup" ? totalBytes2 : normalBytes2) || this.#prefixBytes > prefixBytes2) {
+          this.#reject("PIPE_BYTES");
+        }
+      }
+      /** Attribute complete framed bytes to the original outstanding request. Late
+       * normal replies remain observable during cleanup without gaining authority. */
+      consumeReply(id16, bytes2) {
+        this.#number(id16, 1);
+        this.#number(bytes2, 1);
+        const pending = this.#pending.get(id16);
+        if (pending === void 0) {
+          this.#reject("REPLY_BOUND");
+        }
+        this.#pending.delete(id16);
+        if (bytes2 > pending.frameBytes) {
+          this.#reject("REPLY_BOUND");
+        }
+      }
+      pendingReplyFrameBytes(id16) {
+        this.#number(id16, 1);
+        const pending = this.#pending.get(id16);
+        if (pending === void 0) {
+          this.#reject("PENDING_ID");
+        }
+        return pending.frameBytes;
+      }
+      remainingRequests(kind) {
+        if (typeof kind !== "string" || !Object.hasOwn(requestClasses2, kind)) {
+          this.#reject("REPLY_KIND");
+        }
+        return requestClasses2[kind].count - (this.#counts.get(kind) ?? 0);
+      }
+      consumeEvent(bytes2) {
+        this.#number(bytes2, 1);
+        if (this.#discoveryOpen) {
+          this.#reject("DISCOVERY_PARSER_OWNS_EVENTS");
+        }
+        if (this.#phase === "prefix") {
+          this.#startupEvents += 1;
+          this.#startupEventBytes += bytes2;
+          if (bytes2 > mib2 || this.#startupEvents > startupEventCount2 || this.#startupEventBytes > startupEventBytes2) {
+            this.#reject("STARTUP_EVENT_BOUND");
+          }
+          return;
+        }
+        this.#events += 1;
+        this.#eventBytes += bytes2;
+        if (bytes2 > mib2 || this.#events > continuationEventCount2 || this.#eventBytes > continuationEventBytes2) {
+          this.#reject("EVENT_BOUND");
+        }
+      }
+      consumePoll() {
+        if (this.#phase === "cleanup") {
+          this.assertCleanup();
+        } else {
+          this.assertNormal();
+        }
+        this.#polls += 1;
+        if (this.#polls > (this.#phase === "cleanup" ? pollLimit2 : normalPollLimit2)) {
+          this.#reject("POLL_BOUND", this.#phase !== "cleanup");
+        }
+      }
+      /** Native termination/release controls may finish after CDP's deadline.
+       * Their bounded count and stdout remain charged to this original ledger. */
+      consumeHelperControl(cleanup = false) {
+        if (typeof cleanup !== "boolean") {
+          this.#reject("HELPER_CONTROL_KIND");
+        }
+        const limit = cleanup ? helperControlMessages2 : helperNormalControlMessages2;
+        if (this.#helperControls >= limit) {
+          this.#reject("HELPER_CONTROL_BOUND", !cleanup && this.#phase !== "cleanup");
+        }
+        this.#helperControls += 1;
+      }
+      consumeHelperStdout(bytes2) {
+        this.#number(bytes2);
+        this.#helperBytes += bytes2;
+        if (this.#helperBytes > helperStdoutBytes2) {
+          this.#reject("HELPER_STDOUT_BOUND");
+        }
+      }
+      snapshot() {
+        return Object.freeze({
+          phase: this.#phase,
+          failed: this.#failed,
+          closed: this.#closed,
+          requests: this.#requests,
+          discoveryOpen: this.#discoveryOpen,
+          reservedDiscoveryEvents: discoveryEventCount2,
+          reservedDiscoveryEventBytes: discoveryEventBytes2,
+          observedStartupEvents: this.#startupEvents,
+          observedStartupEventBytes: this.#startupEventBytes,
+          prefixRequests: this.#counts.get("prefix") ?? 0,
+          pendingReplies: this.#pending.size,
+          receivedBytes: this.#bytes,
+          prefixBytes: this.#prefixBytes,
+          continuationEvents: this.#events,
+          continuationEventBytes: this.#eventBytes,
+          polls: this.#polls,
+          helperControls: this.#helperControls,
+          helperStdoutBytes: this.#helperBytes,
+          elapsedMilliseconds: this.#age()
+        });
+      }
+    };
+    methodNames2 = [
+      "assertNormal",
+      "assertCleanup",
+      "beginContinuation",
+      "beginCleanup",
+      "consumeRequest",
+      "consumePipeBytes",
+      "consumeReply",
+      "consumeDiscoveryRequest",
+      "closeDiscovery",
+      "endAfterOriginalTermination",
+      "pendingReplyFrameBytes",
+      "remainingRequests",
+      "consumeEvent",
+      "consumePoll",
+      "consumeHelperControl",
+      "consumeHelperStdout",
+      "snapshot"
+    ];
+    methods12 = methodNames2.map((name9) => CurrentPcb209RatlineBudget.prototype[name9]);
+  }
+});
+
+// server/src/current-pcb-209-ratline-opening-program.ts
+function replaceOnce5(source7, original2, replacement) {
+  const parts2 = source7.split(original2);
+  if (parts2.length !== 2) {
+    throw new Error("PCB209_RATLINE_OPENING_TEMPLATE");
+  }
+  return parts2.join(replacement);
+}
+function currentPcb209RatlineOpeningAcknowledged(observation3) {
+  return observation3?.phase === "open-document" && observation3.ok;
+}
+var CURRENT_PCB_209_RATLINE_OPENING_MAX_MS, signature2, guarded, CURRENT_PCB_209_RATLINE_OPENING_FUNCTION;
+var init_current_pcb_209_ratline_opening_program = __esm({
+  "server/src/current-pcb-209-ratline-opening-program.ts"() {
+    init_current_pcb_diagnostic_pcb_opening();
+    init_current_pcb_209_ratline_budget();
+    init_current_pcb_209_ratline_continuation_budget();
+    CURRENT_PCB_209_RATLINE_OPENING_MAX_MS = CURRENT_PCB_209_RATLINE_NATIVE_PROFILE.elapsed.normalMilliseconds;
+    if (CURRENT_PCB_209_RATLINE_OPENING_MAX_MS !== CURRENT_PCB_209_RATLINE_CONTINUATION_NATIVE_PROFILE.elapsed.normalMilliseconds) {
+      throw new Error("PCB209_RATLINE_OPENING_HORIZON");
+    }
+    signature2 = replaceOnce5(
+      CURRENT_PCB_DIAGNOSTIC_PCB_OPENING_FUNCTION,
+      "async function(target,phase){",
+      "async function(target,phase,nativeRemainingMilliseconds){"
+    );
+    guarded = replaceOnce5(
+      signature2,
+      "plain(target);const targetKeys=",
+      `if(!["preflight","open-document"].includes(phase)||!Number.isSafeInteger(nativeRemainingMilliseconds)||nativeRemainingMilliseconds<0||nativeRemainingMilliseconds>${CURRENT_PCB_209_RATLINE_OPENING_MAX_MS}||(phase==="open-document"?nativeRemainingMilliseconds===0:nativeRemainingMilliseconds!==0))bad("TIMEOUT");
+plain(target);const targetKeys=`
+    );
+    CURRENT_PCB_209_RATLINE_OPENING_FUNCTION = replaceOnce5(
+      guarded,
+      'phase==="open-document"?45000:10000',
+      'phase==="open-document"?nativeRemainingMilliseconds:10000'
+    );
+  }
+});
+
+// server/src/current-pcb-worker-startup-wire.ts
+import { types as types59 } from "node:util";
 function fail21() {
   throw new Error("PCB_WORKER_STARTUP_WIRE");
 }
 function plain2(value2) {
-  return value2 !== null && typeof value2 === "object" && !types58.isProxy(value2) && !Array.isArray(value2) && (Object.getPrototypeOf(value2) === Object.prototype || Object.getPrototypeOf(value2) === null);
+  return value2 !== null && typeof value2 === "object" && !types59.isProxy(value2) && !Array.isArray(value2) && (Object.getPrototypeOf(value2) === Object.prototype || Object.getPrototypeOf(value2) === null);
 }
 function captureWire(raw) {
   if (!plain2(raw)) {
@@ -165023,7 +165577,7 @@ function captureWire(raw) {
   }
   const functionField = Object.getOwnPropertyDescriptor(original2, "functionDeclaration");
   const sourceText = functionField?.value;
-  if (functionField === void 0 || !Object.hasOwn(functionField, "value") || typeof sourceText !== "string" || sourceText !== CURRENT_PCB_DIAGNOSTIC_OPENING_FUNCTION && sourceText !== CURRENT_PCB_209_STARTUP_OPENING_FUNCTION && sourceText !== CURRENT_PCB_DIAGNOSTIC_PCB_OPENING_FUNCTION && sourceText !== CURRENT_FOOTPRINT_CACHE_SOURCE_READ_FUNCTION) {
+  if (functionField === void 0 || !Object.hasOwn(functionField, "value") || typeof sourceText !== "string" || sourceText !== CURRENT_PCB_DIAGNOSTIC_OPENING_FUNCTION && sourceText !== CURRENT_PCB_209_STARTUP_OPENING_FUNCTION && sourceText !== CURRENT_PCB_DIAGNOSTIC_PCB_OPENING_FUNCTION && sourceText !== CURRENT_PCB_209_RATLINE_OPENING_FUNCTION && sourceText !== CURRENT_FOOTPRINT_CACHE_SOURCE_READ_FUNCTION) {
     return captureCurrentPcbStringClockReply(raw).value;
   }
   const descriptors = Object.getOwnPropertyDescriptors(original2);
@@ -165036,7 +165590,7 @@ function captureWire(raw) {
   }
   return { ...captured, params: { ...captured["params"], functionDeclaration: sourceText } };
 }
-function startupWire(raw, id16, sites) {
+function startupWire(raw, id16, sites, pcbOpening = CURRENT_PCB_DIAGNOSTIC_PCB_OPENING_FUNCTION) {
   if (!Number.isSafeInteger(id16) || id16 < 1 || id16 > CURRENT_PCB_WORKER_STARTUP_REQUEST_LIMIT) {
     return fail21();
   }
@@ -165132,11 +165686,14 @@ function startupWire(raw, id16, sites) {
           break;
         }
         const [target9, phase5] = parsed6.params.arguments;
-        if (parsed6.params.functionDeclaration !== CURRENT_PCB_DIAGNOSTIC_PCB_OPENING_FUNCTION && parsed6.params.functionDeclaration !== (sites === CURRENT_PCB_209_WORKER_CONSTRUCTION_SITES ? CURRENT_PCB_209_STARTUP_OPENING_FUNCTION : CURRENT_PCB_DIAGNOSTIC_OPENING_FUNCTION)) {
+        if (pcbOpening === CURRENT_PCB_209_RATLINE_OPENING_FUNCTION && phase5.value === "observe") {
+          return fail21();
+        }
+        if (parsed6.params.functionDeclaration !== pcbOpening && parsed6.params.functionDeclaration !== (sites === CURRENT_PCB_209_WORKER_CONSTRUCTION_SITES ? CURRENT_PCB_209_STARTUP_OPENING_FUNCTION : CURRENT_PCB_DIAGNOSTIC_OPENING_FUNCTION)) {
           return fail21();
         }
         fields27 = {
-          parentPhase: parsed6.params.functionDeclaration === CURRENT_PCB_DIAGNOSTIC_PCB_OPENING_FUNCTION ? `pcb-${phase5.value}` : phase5.value,
+          parentPhase: parsed6.params.functionDeclaration === pcbOpening ? `pcb-${phase5.value}` : phase5.value,
           uniqueContextId: parsed6.params.uniqueContextId,
           targetRawWindowsPath: target9.value.rawWindowsPath,
           targetProjectUuid: target9.value.projectUuid,
@@ -165234,6 +165791,9 @@ function currentPcbWorkerStartupWire(raw, id16) {
 function currentPcb209WorkerStartupWire(raw, id16) {
   return startupWire(raw, id16, CURRENT_PCB_209_WORKER_CONSTRUCTION_SITES);
 }
+function currentPcb209RatlineWorkerStartupWire(raw, id16) {
+  return startupWire(raw, id16, CURRENT_PCB_209_WORKER_CONSTRUCTION_SITES, CURRENT_PCB_209_RATLINE_OPENING_FUNCTION);
+}
 var CURRENT_PCB_WORKER_STARTUP_REQUEST_LIMIT, handle14, sessionId, group2, empty9, objectArgument, command, schema10;
 var init_current_pcb_worker_startup_wire = __esm({
   "server/src/current-pcb-worker-startup-wire.ts"() {
@@ -165252,6 +165812,7 @@ var init_current_pcb_worker_startup_wire = __esm({
     init_current_pcb_diagnostic_opening();
     init_current_pcb_209_startup_opening_program();
     init_current_pcb_diagnostic_pcb_opening();
+    init_current_pcb_209_ratline_opening_program();
     init_current_disposable_open();
     init_current_pcb_worker_startup_actor();
     init_current_pcb_worker_startup_channel_observation();
@@ -165294,7 +165855,7 @@ var init_current_pcb_worker_startup_wire = __esm({
         throwOnSideEffect: external_exports.literal(false)
       }).strict()),
       command("Runtime.callFunctionOn", external_exports.object({
-        functionDeclaration: external_exports.literal(CURRENT_PCB_DIAGNOSTIC_PCB_OPENING_FUNCTION),
+        functionDeclaration: external_exports.enum([CURRENT_PCB_DIAGNOSTIC_PCB_OPENING_FUNCTION, CURRENT_PCB_209_RATLINE_OPENING_FUNCTION]),
         uniqueContextId: sessionId,
         arguments: external_exports.tuple([
           external_exports.object({ value: currentDisposableOpenSealedTargetSchema }).strict(),
@@ -165358,7 +165919,7 @@ var init_current_pcb_worker_startup_wire = __esm({
 });
 
 // server/src/current-pcb-worker-startup-channel.ts
-import { types as types59 } from "node:util";
+import { types as types60 } from "node:util";
 function replyFrameLimit(command2) {
   if (command2.method === "Debugger.getScriptSource") {
     return SOURCE_FRAME;
@@ -165381,7 +165942,7 @@ function parentCommand(command2) {
   return command2.method === "Target.getTargets" || command2.method === "Page.getFrameTree" || command2.method === "DOM.getFrameOwner" || command2.method === "DOM.describeNode" || command2.method === "Debugger.getScriptSource" && "pcbPhase" in command2 || command2.method === "Runtime.callFunctionOn" && "uniqueContextId" in command2.params;
 }
 function members4(dependency) {
-  if (!record18(dependency) || types59.isProxy(dependency) || Object.getPrototypeOf(dependency) !== Object.prototype && Object.getPrototypeOf(dependency) !== null) {
+  if (!record18(dependency) || types60.isProxy(dependency) || Object.getPrototypeOf(dependency) !== Object.prototype && Object.getPrototypeOf(dependency) !== null) {
     throw fail22("DEPENDENCY");
   }
   const fields27 = ["requireOriginalParent", "assertOriginalTermination", "observeOriginalParentEvent", "exchange"];
@@ -165532,7 +166093,7 @@ var init_current_pcb_worker_startup_channel = __esm({
           this.#sameMethods();
           const original2 = await this.#parentMethod.call(this.#native);
           this.#sameMethods();
-          if (!record18(original2) || types59.isProxy(original2) || !Object.isFrozen(original2)) {
+          if (!record18(original2) || types60.isProxy(original2) || !Object.isFrozen(original2)) {
             throw fail22("PARENT");
           }
           const parent2 = parentSchema.parse(captureCurrentPcbStringClockReply(original2).value);
@@ -165771,7 +166332,7 @@ var init_current_pcb_worker_startup_channel = __esm({
         void observe7(work);
       }
       #chunk(raw) {
-        if (!record18(raw) || types59.isProxy(raw) || Reflect.ownKeys(raw).join(",") !== "bytes" || Object.getPrototypeOf(raw) !== Object.prototype && Object.getPrototypeOf(raw) !== null) {
+        if (!record18(raw) || types60.isProxy(raw) || Reflect.ownKeys(raw).join(",") !== "bytes" || Object.getPrototypeOf(raw) !== Object.prototype && Object.getPrototypeOf(raw) !== null) {
           throw fail22("CHUNK");
         }
         const descriptor10 = Object.getOwnPropertyDescriptor(raw, "bytes"), text56 = descriptor10?.value;
@@ -165873,7 +166434,7 @@ var init_current_pcb_worker_startup_channel = __esm({
         try {
           const result2 = this.#parentEvent.call(this.#native, event4);
           if (result2 !== void 0) {
-            if (types59.isPromise(result2)) {
+            if (types60.isPromise(result2)) {
               void observe7(result2);
             }
             throw fail22("PARENT_EVENT");
@@ -165938,7 +166499,7 @@ var init_current_pcb_worker_startup_channel = __esm({
 });
 
 // server/src/current-pcb-worker-startup-opening.ts
-import { types as types60 } from "node:util";
+import { types as types61 } from "node:util";
 function fail23(code2) {
   return new Error(`PCB_WORKER_STARTUP_OPENING_${code2}`);
 }
@@ -165948,7 +166509,7 @@ function deadline2() {
   return error63;
 }
 function retainedMethods2(value2, keys3) {
-  if (types60.isProxy(value2) || !Object.isFrozen(value2) || Object.getPrototypeOf(value2) !== Object.prototype || Reflect.ownKeys(value2).length !== keys3.length) {
+  if (types61.isProxy(value2) || !Object.isFrozen(value2) || Object.getPrototypeOf(value2) !== Object.prototype || Reflect.ownKeys(value2).length !== keys3.length) {
     throw fail23("DEPENDENCY");
   }
   return keys3.map((key) => {
@@ -166036,7 +166597,7 @@ var init_current_pcb_worker_startup_opening = __esm({
         this.#dependency = handoff2.dependency;
         this.#opening = handoff2.opening;
         this.#methods = retainedMethods2(this.#opening, openingMethods2);
-        if (!Object.isFrozen(this.#dependency) || types60.isProxy(this.#dependency)) {
+        if (!Object.isFrozen(this.#dependency) || types61.isProxy(this.#dependency)) {
           throw fail23("DEPENDENCY");
         }
         this.#request = this.#dependency.request;
@@ -166453,7 +167014,7 @@ var init_current_pcb_diagnostic_profile = __esm({
 });
 
 // server/src/current-pcb-worker-startup-pcb-session.ts
-import { types as types61 } from "node:util";
+import { types as types62 } from "node:util";
 function need73(condition, detail) {
   if (!condition) {
     throw new Error(`PCB_WORKER_STARTUP_PCB_SESSION: ${detail}`);
@@ -166482,7 +167043,7 @@ function copyReply2(command2, raw) {
   if (command2.method !== "Debugger.getScriptSource") {
     return row9.parse(captureCurrentPcbStringClockReply(raw).value);
   }
-  need73(raw !== null && typeof raw === "object" && !types61.isProxy(raw) && !Array.isArray(raw) && (Object.getPrototypeOf(raw) === Object.prototype || Object.getPrototypeOf(raw) === null), "source reply shape");
+  need73(raw !== null && typeof raw === "object" && !types62.isProxy(raw) && !Array.isArray(raw) && (Object.getPrototypeOf(raw) === Object.prototype || Object.getPrototypeOf(raw) === null), "source reply shape");
   const keys3 = Reflect.ownKeys(raw), source7 = Object.getOwnPropertyDescriptor(raw, "scriptSource");
   need73(keys3.length === 1 && keys3[0] === "scriptSource" && source7 !== void 0 && Object.hasOwn(source7, "value") && typeof source7.value === "string" && source7.value.isWellFormed() && Buffer.byteLength(source7.value) === CURRENT_PCB_DIAGNOSTIC_SCRIPTS.pcb.scriptBytes, "complete source reply required");
   return Object.freeze({ scriptSource: source7.value });
@@ -166527,8 +167088,8 @@ var init_current_pcb_worker_startup_pcb_session = __esm({
       #packet = null;
       #model = null;
       constructor(opening, result2, dependency, context4, target9, reverifyCheckpoint) {
-        need73(!types61.isProxy(opening) && Object.getPrototypeOf(opening) === CurrentPcbWorkerStartupOpening.prototype && !types61.isProxy(context4) && Object.getPrototypeOf(context4) === CurrentPcbDiagnosticContext.prototype && typeof reverifyCheckpoint === "function", "original classes and checkpoint callback required");
-        need73(dependency !== null && typeof dependency === "object" && !types61.isProxy(dependency) && Object.isFrozen(dependency) && Object.getPrototypeOf(dependency) === Object.prototype, "original dependency required");
+        need73(!types62.isProxy(opening) && Object.getPrototypeOf(opening) === CurrentPcbWorkerStartupOpening.prototype && !types62.isProxy(context4) && Object.getPrototypeOf(context4) === CurrentPcbDiagnosticContext.prototype && typeof reverifyCheckpoint === "function", "original classes and checkpoint callback required");
+        need73(dependency !== null && typeof dependency === "object" && !types62.isProxy(dependency) && Object.isFrozen(dependency) && Object.getPrototypeOf(dependency) === Object.prototype, "original dependency required");
         const request13 = Object.getOwnPropertyDescriptor(dependency, "request");
         need73(request13 !== void 0 && Object.hasOwn(request13, "value") && typeof request13.value === "function", "original request method required");
         this.#opening = opening;
@@ -166554,7 +167115,7 @@ var init_current_pcb_worker_startup_pcb_session = __esm({
         return this.#openingObservation;
       }
       #same() {
-        need73(this.#phase !== "failed" && Object.getPrototypeOf(this.#context) === CurrentPcbDiagnosticContext.prototype && Object.getPrototypeOf(this.#opening) === CurrentPcbWorkerStartupOpening.prototype && this.#dependency.request === this.#request && Object.isFrozen(this.#dependency) && !types61.isProxy(this.#dependency), "original lifetime changed");
+        need73(this.#phase !== "failed" && Object.getPrototypeOf(this.#context) === CurrentPcbDiagnosticContext.prototype && Object.getPrototypeOf(this.#opening) === CurrentPcbWorkerStartupOpening.prototype && this.#dependency.request === this.#request && Object.isFrozen(this.#dependency) && !types62.isProxy(this.#dependency), "original lifetime changed");
         for (const key of contextKeys2) {
           need73(!Object.hasOwn(this.#context, key) && Object.getOwnPropertyDescriptor(CurrentPcbDiagnosticContext.prototype, key)?.value === originalContext2[key], "original context method changed");
         }
@@ -166728,9 +167289,9 @@ function currentPcb209EmptyNativeReplyFrameBytes(command2) {
   if (kind !== null) {
     return replyClasses[kind].frameBytes;
   }
-  return command2.method === "Debugger.getScriptSource" ? 32 * mib2 : mib2;
+  return command2.method === "Debugger.getScriptSource" ? 32 * mib3 : mib3;
 }
-var mib2, factoryRequests, identityRequests, pcbRequests, startupRequests, cleanupRequests2, optionalRequests, normalRequestLimit2, requestLimit2, chunkReplies, packetHandles, envelope4, handleFrame, chunkReplyBytes, finalTextReplyBytes, commonReplyBytes, rootReplyBytes, continuationEventBytes2, prefixBytes2, normalBytes2, cleanupBytes2, totalBytes2, cleanupMilliseconds2, normalMilliseconds2, chunkBytes2, pollIntervalMilliseconds2, pollLimit2, helperControlMessages2, helperStdoutBytes2, replyClasses, CURRENT_PCB_209_EMPTY_NATIVE_PROFILE;
+var mib3, factoryRequests, identityRequests, pcbRequests, startupRequests, cleanupRequests3, optionalRequests, normalRequestLimit3, requestLimit3, chunkReplies, packetHandles, envelope5, handleFrame, chunkReplyBytes, finalTextReplyBytes, commonReplyBytes, rootReplyBytes, continuationEventBytes3, prefixBytes3, normalBytes3, cleanupBytes3, totalBytes3, cleanupMilliseconds3, normalMilliseconds3, chunkBytes3, pollIntervalMilliseconds3, pollLimit3, helperControlMessages3, helperStdoutBytes3, replyClasses, CURRENT_PCB_209_EMPTY_NATIVE_PROFILE;
 var init_current_pcb_209_empty_native_profile = __esm({
   "server/src/current-pcb-209-empty-native-profile.ts"() {
     init_current_pcb_209_common_baseline_runner();
@@ -166738,50 +167299,50 @@ var init_current_pcb_209_empty_native_profile = __esm({
     init_current_pcb_common_graph();
     init_current_pcb_common_packet_program();
     init_sqlite_inventory_core();
-    mib2 = 1024 * 1024;
+    mib3 = 1024 * 1024;
     factoryRequests = 1;
     identityRequests = 2;
     pcbRequests = 64;
     startupRequests = 186;
-    cleanupRequests2 = 32;
+    cleanupRequests3 = 32;
     optionalRequests = 23 + 24 + 35;
-    normalRequestLimit2 = startupRequests + factoryRequests + pcbRequests + identityRequests + CURRENT_PCB_209_COMMON_BASELINE_REQUEST_COUNT + CURRENT_PCB_209_EMPTY_ROOT_REQUEST_COUNT + optionalRequests;
-    requestLimit2 = normalRequestLimit2 + cleanupRequests2;
+    normalRequestLimit3 = startupRequests + factoryRequests + pcbRequests + identityRequests + CURRENT_PCB_209_COMMON_BASELINE_REQUEST_COUNT + CURRENT_PCB_209_EMPTY_ROOT_REQUEST_COUNT + optionalRequests;
+    requestLimit3 = normalRequestLimit3 + cleanupRequests3;
     chunkReplies = 3 * CURRENT_PCB_COMMON_PACKET_MAX_STEPS;
     packetHandles = 3 * CURRENT_PCB_COMMON_PACKET_MAX_STEPS;
-    envelope4 = 1024;
+    envelope5 = 1024;
     handleFrame = 2048;
-    chunkReplyBytes = 6 * 3 * (CURRENT_PCB_209_COMMON_BASELINE_CHUNK_MAX_BYTES + CURRENT_PCB_COMMON_PACKET_MAX_TEXT_BYTES) + chunkReplies * envelope4;
-    finalTextReplyBytes = 5 * (6 * CURRENT_PCB_COMMON_GRAPH_BYTES + envelope4);
-    commonReplyBytes = packetHandles * handleFrame + 12 * mib2 + chunkReplyBytes + finalTextReplyBytes + envelope4;
-    rootReplyBytes = 6 * mib2 + 2 * (6 * 16384 + envelope4) + envelope4;
-    continuationEventBytes2 = 8 * mib2;
-    prefixBytes2 = 64 * mib2;
-    normalBytes2 = prefixBytes2 + commonReplyBytes + rootReplyBytes + continuationEventBytes2;
-    cleanupBytes2 = cleanupRequests2 * mib2;
-    totalBytes2 = normalBytes2 + cleanupBytes2;
-    cleanupMilliseconds2 = 60 * 1e3;
-    normalMilliseconds2 = 60 * 60 * 1e3;
-    chunkBytes2 = 65536;
-    pollIntervalMilliseconds2 = 20;
-    pollLimit2 = Math.ceil((normalMilliseconds2 + cleanupMilliseconds2) / pollIntervalMilliseconds2) + 2 * requestLimit2 + Math.ceil(totalBytes2 / chunkBytes2);
-    helperControlMessages2 = 16 * requestLimit2 + 128;
-    helperStdoutBytes2 = Math.ceil((4 * totalBytes2 + 8 * pollLimit2) / 3) + (pollLimit2 + helperControlMessages2) * envelope4 + 128 * 1e5;
+    chunkReplyBytes = 6 * 3 * (CURRENT_PCB_209_COMMON_BASELINE_CHUNK_MAX_BYTES + CURRENT_PCB_COMMON_PACKET_MAX_TEXT_BYTES) + chunkReplies * envelope5;
+    finalTextReplyBytes = 5 * (6 * CURRENT_PCB_COMMON_GRAPH_BYTES + envelope5);
+    commonReplyBytes = packetHandles * handleFrame + 12 * mib3 + chunkReplyBytes + finalTextReplyBytes + envelope5;
+    rootReplyBytes = 6 * mib3 + 2 * (6 * 16384 + envelope5) + envelope5;
+    continuationEventBytes3 = 8 * mib3;
+    prefixBytes3 = 64 * mib3;
+    normalBytes3 = prefixBytes3 + commonReplyBytes + rootReplyBytes + continuationEventBytes3;
+    cleanupBytes3 = cleanupRequests3 * mib3;
+    totalBytes3 = normalBytes3 + cleanupBytes3;
+    cleanupMilliseconds3 = 60 * 1e3;
+    normalMilliseconds3 = 60 * 60 * 1e3;
+    chunkBytes3 = 65536;
+    pollIntervalMilliseconds3 = 20;
+    pollLimit3 = Math.ceil((normalMilliseconds3 + cleanupMilliseconds3) / pollIntervalMilliseconds3) + 2 * requestLimit3 + Math.ceil(totalBytes3 / chunkBytes3);
+    helperControlMessages3 = 16 * requestLimit3 + 128;
+    helperStdoutBytes3 = Math.ceil((4 * totalBytes3 + 8 * pollLimit3) / 3) + (pollLimit3 + helperControlMessages3) * envelope5 + 128 * 1e5;
     replyClasses = freezeDeep({
       commonHandles: { count: packetHandles, frameBytes: handleFrame, totalBytes: packetHandles * handleFrame },
-      commonScopes: { count: 12, frameBytes: mib2, totalBytes: 12 * mib2 },
-      commonChunks: { count: chunkReplies, frameBytes: 6 * CURRENT_PCB_COMMON_PACKET_MAX_TEXT_BYTES + envelope4, totalBytes: chunkReplyBytes },
-      commonTexts: { count: 5, frameBytes: 6 * CURRENT_PCB_COMMON_GRAPH_BYTES + envelope4, totalBytes: finalTextReplyBytes },
-      commonRelease: { count: 1, frameBytes: envelope4, totalBytes: envelope4 },
-      rootScopes: { count: 6, frameBytes: mib2, totalBytes: 6 * mib2 },
-      rootSamples: { count: 2, frameBytes: 6 * 16384 + envelope4, totalBytes: 2 * (6 * 16384 + envelope4) },
-      rootRelease: { count: 1, frameBytes: envelope4, totalBytes: envelope4 }
+      commonScopes: { count: 12, frameBytes: mib3, totalBytes: 12 * mib3 },
+      commonChunks: { count: chunkReplies, frameBytes: 6 * CURRENT_PCB_COMMON_PACKET_MAX_TEXT_BYTES + envelope5, totalBytes: chunkReplyBytes },
+      commonTexts: { count: 5, frameBytes: 6 * CURRENT_PCB_COMMON_GRAPH_BYTES + envelope5, totalBytes: finalTextReplyBytes },
+      commonRelease: { count: 1, frameBytes: envelope5, totalBytes: envelope5 },
+      rootScopes: { count: 6, frameBytes: mib3, totalBytes: 6 * mib3 },
+      rootSamples: { count: 2, frameBytes: 6 * 16384 + envelope5, totalBytes: 2 * (6 * 16384 + envelope5) },
+      rootRelease: { count: 1, frameBytes: envelope5, totalBytes: envelope5 }
     });
     CURRENT_PCB_209_EMPTY_NATIVE_PROFILE = freezeDeep({
       purpose: "worker-startup-empty209",
-      requestLimit: requestLimit2,
-      normalRequestLimit: normalRequestLimit2,
-      cleanupRequests: cleanupRequests2,
+      requestLimit: requestLimit3,
+      normalRequestLimit: normalRequestLimit3,
+      cleanupRequests: cleanupRequests3,
       requests: {
         startup: startupRequests,
         factory: factoryRequests,
@@ -166803,25 +167364,25 @@ var init_current_pcb_209_empty_native_profile = __esm({
         conservativeReserve: 76
       },
       bytes: {
-        prefix: prefixBytes2,
+        prefix: prefixBytes3,
         common: commonReplyBytes,
         roots: rootReplyBytes,
-        continuationEvents: continuationEventBytes2,
-        normal: normalBytes2,
-        cleanup: cleanupBytes2,
-        total: totalBytes2,
-        helperStdout: helperStdoutBytes2
+        continuationEvents: continuationEventBytes3,
+        normal: normalBytes3,
+        cleanup: cleanupBytes3,
+        total: totalBytes3,
+        helperStdout: helperStdoutBytes3
       },
-      frames: { ordinary: mib2, source: 32 * mib2, packetHandle: handleFrame, envelope: envelope4, chunk: chunkBytes2, outbound: 65536 },
-      events: { totalCount: 8192, totalBytes: 16 * mib2, continuationCount: 4096, continuationBytes: continuationEventBytes2 },
-      polling: { limit: pollLimit2, intervalMilliseconds: pollIntervalMilliseconds2 },
+      frames: { ordinary: mib3, source: 32 * mib3, packetHandle: handleFrame, envelope: envelope5, chunk: chunkBytes3, outbound: 65536 },
+      events: { totalCount: 8192, totalBytes: 16 * mib3, continuationCount: 4096, continuationBytes: continuationEventBytes3 },
+      polling: { limit: pollLimit3, intervalMilliseconds: pollIntervalMilliseconds3 },
       elapsed: {
-        normalMilliseconds: normalMilliseconds2,
-        cleanupMilliseconds: cleanupMilliseconds2,
-        totalMilliseconds: normalMilliseconds2 + cleanupMilliseconds2,
+        normalMilliseconds: normalMilliseconds3,
+        cleanupMilliseconds: cleanupMilliseconds3,
+        totalMilliseconds: normalMilliseconds3 + cleanupMilliseconds3,
         anchor: "original-monotonic-launch"
       },
-      helperControlMessages: helperControlMessages2,
+      helperControlMessages: helperControlMessages3,
       pendingRequests: 32,
       replyClasses
     });
@@ -166932,12 +167493,12 @@ var init_current_pcb_209_empty_native_cases = __esm({
 });
 
 // server/src/current-pcb-209-empty-native-wire.ts
-import { types as types62 } from "node:util";
+import { types as types63 } from "node:util";
 function fail24() {
   throw new Error("PCB209_EMPTY_NATIVE_WIRE");
 }
 function plain3(value2) {
-  return value2 !== null && typeof value2 === "object" && !types62.isProxy(value2) && !Array.isArray(value2) && (Object.getPrototypeOf(value2) === Object.prototype || Object.getPrototypeOf(value2) === null);
+  return value2 !== null && typeof value2 === "object" && !types63.isProxy(value2) && !Array.isArray(value2) && (Object.getPrototypeOf(value2) === Object.prototype || Object.getPrototypeOf(value2) === null);
 }
 function match2(raw, template, fields27) {
   if (typeof template === "string") {
@@ -166958,7 +167519,7 @@ function match2(raw, template, fields27) {
   if (template === null || typeof template !== "object") {
     return Object.is(raw, template);
   }
-  if (raw === null || typeof raw !== "object" || types62.isProxy(raw)) {
+  if (raw === null || typeof raw !== "object" || types63.isProxy(raw)) {
     return false;
   }
   const array5 = Array.isArray(template);
@@ -167022,9 +167583,9 @@ var init_current_pcb_209_empty_native_wire = __esm({
 });
 
 // server/src/current-pcb-209-empty-startup-channel.ts
-import { types as types63 } from "node:util";
+import { types as types64 } from "node:util";
 function elapsed(anchor2) {
-  if (types63.isProxy(anchor2) || Object.getPrototypeOf(anchor2) !== CurrentPcb209EmptyStartupBudgetAnchor.prototype || Object.hasOwn(anchor2, "elapsedMilliseconds") || CurrentPcb209EmptyStartupBudgetAnchor.prototype.elapsedMilliseconds !== originalElapsed) {
+  if (types64.isProxy(anchor2) || Object.getPrototypeOf(anchor2) !== CurrentPcb209EmptyStartupBudgetAnchor.prototype || Object.hasOwn(anchor2, "elapsedMilliseconds") || CurrentPcb209EmptyStartupBudgetAnchor.prototype.elapsedMilliseconds !== originalElapsed) {
     throw fail25("LAUNCH_ANCHOR");
   }
   const age = originalElapsed.call(anchor2);
@@ -167052,7 +167613,7 @@ function parentCommand2(command2) {
   return command2.method === "Target.getTargets" || command2.method === "Page.getFrameTree" || command2.method === "DOM.getFrameOwner" || command2.method === "DOM.describeNode" || command2.method === "Debugger.getScriptSource" && "pcbPhase" in command2 || command2.method === "Runtime.callFunctionOn" && "uniqueContextId" in command2.params;
 }
 function members5(dependency) {
-  if (!record19(dependency) || types63.isProxy(dependency) || Object.getPrototypeOf(dependency) !== Object.prototype && Object.getPrototypeOf(dependency) !== null) {
+  if (!record19(dependency) || types64.isProxy(dependency) || Object.getPrototypeOf(dependency) !== Object.prototype && Object.getPrototypeOf(dependency) !== null) {
     throw fail25("DEPENDENCY");
   }
   const fields27 = ["requireOriginalParent", "assertOriginalTermination", "observeOriginalParentEvent", "exchange"];
@@ -167073,7 +167634,7 @@ async function observe9(work) {
   } catch {
   }
 }
-var monotonicNow2, CurrentPcb209EmptyStartupBudgetAnchor, originalElapsed, token28, parentSchema2, ackSchema2, MAX_BYTES10, MAX_EVENTS3, MAX_EVENT_BYTES3, MAX_FRAME2, MAX_POLLS2, pcbContextSchema, CurrentPcb209EmptyStartupChannel;
+var monotonicNow3, CurrentPcb209EmptyStartupBudgetAnchor, originalElapsed, token28, parentSchema2, ackSchema2, MAX_BYTES10, MAX_EVENTS3, MAX_EVENT_BYTES3, MAX_FRAME2, MAX_POLLS2, pcbContextSchema, CurrentPcb209EmptyStartupChannel;
 var init_current_pcb_209_empty_startup_channel = __esm({
   "server/src/current-pcb-209-empty-startup-channel.ts"() {
     init_zod();
@@ -167082,11 +167643,11 @@ var init_current_pcb_209_empty_startup_channel = __esm({
     init_current_pcb_209_empty_native_profile();
     init_current_pcb_209_empty_native_wire();
     init_current_pcb_diagnostic_pcb_opening();
-    monotonicNow2 = process.hrtime.bigint.bind(process.hrtime);
+    monotonicNow3 = process.hrtime.bigint.bind(process.hrtime);
     CurrentPcb209EmptyStartupBudgetAnchor = class {
-      #started = monotonicNow2();
+      #started = monotonicNow3();
       elapsedMilliseconds() {
-        return Number(monotonicNow2() - this.#started) / 1e6;
+        return Number(monotonicNow3() - this.#started) / 1e6;
       }
     };
     originalElapsed = CurrentPcb209EmptyStartupBudgetAnchor.prototype.elapsedMilliseconds;
@@ -167231,7 +167792,7 @@ var init_current_pcb_209_empty_startup_channel = __esm({
           const original2 = await this.#parentMethod.call(this.#native);
           this.#sameMethods();
           this.#time(false);
-          if (!record19(original2) || types63.isProxy(original2) || !Object.isFrozen(original2)) {
+          if (!record19(original2) || types64.isProxy(original2) || !Object.isFrozen(original2)) {
             throw fail25("PARENT");
           }
           const parent2 = parentSchema2.parse(captureCurrentPcbStringClockReply(original2).value);
@@ -167589,7 +168150,7 @@ var init_current_pcb_209_empty_startup_channel = __esm({
         void observe9(work);
       }
       #chunk(raw) {
-        if (!record19(raw) || types63.isProxy(raw) || Reflect.ownKeys(raw).join(",") !== "bytes" || Object.getPrototypeOf(raw) !== Object.prototype && Object.getPrototypeOf(raw) !== null) {
+        if (!record19(raw) || types64.isProxy(raw) || Reflect.ownKeys(raw).join(",") !== "bytes" || Object.getPrototypeOf(raw) !== Object.prototype && Object.getPrototypeOf(raw) !== null) {
           throw fail25("CHUNK");
         }
         const descriptor10 = Object.getOwnPropertyDescriptor(raw, "bytes"), text56 = descriptor10?.value;
@@ -167725,7 +168286,7 @@ var init_current_pcb_209_empty_startup_channel = __esm({
         try {
           const result2 = this.#parentEvent.call(this.#native, event4);
           if (result2 !== void 0) {
-            if (types63.isPromise(result2)) {
+            if (types64.isPromise(result2)) {
               void observe9(result2);
             }
             throw fail25("PARENT_EVENT");
@@ -167776,484 +168337,6 @@ var init_current_pcb_209_empty_startup_channel = __esm({
         this.#listener = null;
       }
     };
-  }
-});
-
-// server/src/current-pcb-209-ratline-budget.ts
-import { types as types64 } from "node:util";
-function sourceSlot2(stage, sourceBytes3) {
-  const frameBytes = 6 * sourceBytes3 + envelope5;
-  return Object.freeze({
-    stage,
-    sourceBytes: sourceBytes3,
-    frameBytes,
-    // A finite drain-opportunity allowance, not a transport throughput promise.
-    // Native exchange deadlines and the original launch deadline also apply.
-    deadlineMilliseconds: ordinaryRequestMilliseconds2 + (Math.ceil(frameBytes / chunkBytes3) + 2) * pollIntervalMilliseconds3
-  });
-}
-function currentPcb209RatlineSourceBudget(role, ordinal) {
-  if (role !== "pcb" && role !== "child" || !Number.isSafeInteger(ordinal) || ordinal < 0) {
-    throw new Error("PCB209_RATLINE_BUDGET_SOURCE_SLOT");
-  }
-  const slot = (role === "pcb" ? pcbSources2 : childSources2)[ordinal];
-  if (slot === void 0) {
-    throw new Error("PCB209_RATLINE_BUDGET_SOURCE_SLOT");
-  }
-  return slot;
-}
-function assertOriginalCurrentPcb209RatlineBudget(budget3) {
-  if (budget3 === null || typeof budget3 !== "object" || types64.isProxy(budget3) || !issued14.has(budget3) || Object.getPrototypeOf(budget3) !== CurrentPcb209RatlineBudget.prototype) {
-    throw new Error("PCB209_RATLINE_BUDGET_ORIGINAL");
-  }
-  for (const [index2, name9] of methodNames2.entries()) {
-    if (Object.hasOwn(budget3, name9) || Object.getOwnPropertyDescriptor(CurrentPcb209RatlineBudget.prototype, name9)?.value !== methods12[index2]) {
-      throw new Error("PCB209_RATLINE_BUDGET_ORIGINAL");
-    }
-  }
-}
-function isCurrentPcb209RatlineNormalResourceRefusal(error63, budget3) {
-  if (error63 === null || typeof error63 !== "object" || types64.isProxy(error63) || budget3 === null || typeof budget3 !== "object" || types64.isProxy(budget3) || !issued14.has(budget3)) {
-    return false;
-  }
-  const refusal = normalResourceRefusals2.get(error63);
-  return refusal?.budget === budget3 && refusal.current();
-}
-var chunkBytes3, envelope5, mib3, pollIntervalMilliseconds3, ordinaryRequestMilliseconds2, pcbSources2, childSources2, requestClasses2, normalRequestLimit3, cleanupRequests3, requestLimit3, prefixBytes3, sourceBytes2, ordinaryReplyBytes2, discoveryEventBytes2, discoveryEventCount2, startupEventBytes2, startupEventCount2, continuationEventBytes3, continuationEventCount2, largestFrame2, rejectedFrameBytes2, normalBytes3, cleanupBytes3, totalBytes3, cleanupMilliseconds3, normalMilliseconds3, ancestryProofMilliseconds2, pcbBootstrapSendMilliseconds, pcbBootstrapResumeMilliseconds, pcbBootstrapFirstPauseMilliseconds, sourceReleaseMilliseconds, childOwnerMilliseconds, childBootstrapSendMilliseconds, childBootstrapAllocationMilliseconds, childBootstrapResumeMilliseconds, childArmMilliseconds, pcbRealmAllocationMilliseconds, pcbChildStartMilliseconds, creationContinuationMilliseconds, capturePauseMilliseconds, captureWaitMilliseconds, normalPollLimit2, cleanupPollReserve2, pollLimit3, helperCleanupControlReserve2, helperControlMessages3, helperNormalControlMessages2, helperStdoutBytes3, CURRENT_PCB_209_RATLINE_NATIVE_PROFILE, monotonicNow3, issued14, normalResourceRefusals2, CurrentPcb209RatlineBudget, methodNames2, methods12;
-var init_current_pcb_209_ratline_budget = __esm({
-  "server/src/current-pcb-209-ratline-budget.ts"() {
-    init_current_pcb_209_ratline_pcb_bootstrap_profile();
-    init_current_pcb_209_ratline_bootstrap_profile();
-    init_current_pcb_209_worker_bootstrap_source();
-    init_current_pcb_209_ratline_source();
-    init_sqlite_inventory_core();
-    chunkBytes3 = 65536;
-    envelope5 = 1024;
-    mib3 = 1024 * 1024;
-    pollIntervalMilliseconds3 = 20;
-    ordinaryRequestMilliseconds2 = 2500;
-    pcbSources2 = Object.freeze(CURRENT_PCB_209_RATLINE_PCB_BOOTSTRAP_ROLES.map((role) => {
-      const copy3 = currentPcb209RatlinePcbBootstrapCopy(role);
-      if (copy3 !== null) {
-        return sourceSlot2(role, copy3.generatedBytes);
-      }
-      if (role === "bootstrap") {
-        return sourceSlot2(role, Math.max(...CURRENT_PCB_209_RATLINE_PCB_BOOTSTRAP_SOURCES.map((text56) => Buffer.byteLength(text56))));
-      }
-      if (role === "define-top" || role === "preload" || role === "api" || role === "engine" || role === "pcb") {
-        return sourceSlot2(role, CURRENT_PCB_209_RATLINE_PCB_BOOTSTRAP_SOURCE_PROFILE[role].bytes);
-      }
-      throw new Error("PCB209_RATLINE_BUDGET_SOURCE_PROFILE");
-    }));
-    childSources2 = Object.freeze(CURRENT_PCB_209_RATLINE_BOOTSTRAP_ROLES.map((role) => {
-      if (role === "bootstrap") {
-        return sourceSlot2(role, Math.max(...CURRENT_PCB_209_RATLINE_BOOTSTRAP_SOURCES.map((text56) => Buffer.byteLength(text56))));
-      }
-      if (role === "preload") {
-        return sourceSlot2(role, CURRENT_PCB_209_WORKER_BOOTSTRAP_SOURCE_PROFILE.preload.bytes);
-      }
-      if (role === "worker") {
-        return sourceSlot2(role, CURRENT_PCB_209_RATLINE_SOURCE_PROFILE.worker.bytes);
-      }
-      return sourceSlot2(role, CURRENT_PCB_209_PRELOAD_COPY_SOURCE.generatedBytes);
-    }));
-    requestClasses2 = freezeDeep({
-      // This is the existing complete discovery/project-opening cap, including its
-      // Retained reproof allowance. The four footprint constructor reads consume
-      // That reserve (80 to 76); this remains a 186 cap, not 186 expected commands or
-      // A new budget at handoff. The original pipe retains reply/event validation.
-      prefix: { count: 186, frameBytes: 32 * mib3 },
-      preparation: { count: 10, frameBytes: mib3 },
-      // Exact original navigation program compilation: one source read and resume.
-      navigation: { count: 2, frameBytes: mib3 },
-      // One pinned UI loader default callback: complete 28-byte source and resume.
-      loader: { count: 2, frameBytes: envelope5 },
-      // Electron window-context hooks: exact six-byte source and resume, once each.
-      "initial-window": { count: 2, frameBytes: envelope5 },
-      "document-window": { count: 2, frameBytes: envelope5 },
-      ownership: { count: 9, frameBytes: envelope5 },
-      ancestry: { count: 3 * 4 + 2, frameBytes: mib3 },
-      "pcb-source": { count: pcbSources2.length, frameBytes: Math.max(...pcbSources2.map((slot) => slot.frameBytes)) },
-      "child-source": { count: childSources2.length, frameBytes: Math.max(...childSources2.map((slot) => slot.frameBytes)) },
-      "pcb-bootstrap": { count: 5 + pcbSources2.length + 1, frameBytes: envelope5 },
-      "child-bootstrap": { count: 5 + childSources2.length - 1 + 1, frameBytes: envelope5 },
-      // One original first-child external creation stack, resolved only in PCB.
-      "origin-stack": { count: 1, frameBytes: mib3 },
-      // Two breakpoints; URL/name; two inventories; two object handles;
-      // Before/after resumes; two removals; one guarded child start.
-      "pcb-construction": { count: 2 + 2 + 2 + 2 + 2 + 2 + 1, frameBytes: mib3 },
-      // Held prefix: two breakpoints; bridge's three handles+relation; factory's
-      // Handle+relation; two removals/resumes; one retained construction join.
-      // The existing 13-request cap is unchanged. No callback/publication stage.
-      "pcb-capture": { count: 2 + 4 + 2 + 2 + 2 + 1, frameBytes: mib3 },
-      // Original prelude 32; two source instrumentation handles; construction's
-      // Two breakpoints and parent pause; five capture breakpoints and one pause.
-      cleanup: { count: 32 + 2 + 2 + 1 + 5 + 1 + 3, frameBytes: envelope5 }
-    });
-    normalRequestLimit3 = Object.entries(requestClasses2).reduce((sum, [kind, profile3]) => sum + (kind === "cleanup" ? 0 : profile3.count), 0);
-    cleanupRequests3 = requestClasses2.cleanup.count;
-    requestLimit3 = normalRequestLimit3 + cleanupRequests3;
-    prefixBytes3 = 64 * mib3;
-    sourceBytes2 = [...pcbSources2, ...childSources2].reduce((sum, slot) => sum + slot.frameBytes, 0);
-    ordinaryReplyBytes2 = Object.entries(requestClasses2).reduce((sum, [kind, profile3]) => sum + (kind === "prefix" || kind === "pcb-source" || kind === "child-source" || kind === "cleanup" ? 0 : profile3.count * profile3.frameBytes), 0);
-    discoveryEventBytes2 = 8 * mib3;
-    discoveryEventCount2 = 4096;
-    startupEventBytes2 = 8 * mib3;
-    startupEventCount2 = 4096;
-    continuationEventBytes3 = 8 * mib3 + 256 * 1024;
-    continuationEventCount2 = 4096 + 128;
-    largestFrame2 = requestClasses2["pcb-source"].frameBytes;
-    rejectedFrameBytes2 = largestFrame2 + chunkBytes3;
-    normalBytes3 = prefixBytes3 + sourceBytes2 + ordinaryReplyBytes2 + continuationEventBytes3 + rejectedFrameBytes2;
-    cleanupBytes3 = cleanupRequests3 * envelope5;
-    totalBytes3 = normalBytes3 + cleanupBytes3;
-    cleanupMilliseconds3 = 60 * 1e3;
-    normalMilliseconds3 = 60 * 60 * 1e3;
-    ancestryProofMilliseconds2 = 4 * 3 * ordinaryRequestMilliseconds2;
-    pcbBootstrapSendMilliseconds = 3 * ordinaryRequestMilliseconds2;
-    pcbBootstrapResumeMilliseconds = pcbBootstrapSendMilliseconds + ordinaryRequestMilliseconds2;
-    pcbBootstrapFirstPauseMilliseconds = (3 + 5 + 5 + 5 + 2 * 3 + 5 + 8) * ordinaryRequestMilliseconds2;
-    sourceReleaseMilliseconds = ancestryProofMilliseconds2 + 5 * ordinaryRequestMilliseconds2 + pcbBootstrapResumeMilliseconds;
-    childOwnerMilliseconds = 3 * ordinaryRequestMilliseconds2;
-    childBootstrapSendMilliseconds = 2 * childOwnerMilliseconds + ordinaryRequestMilliseconds2;
-    childBootstrapAllocationMilliseconds = childOwnerMilliseconds + ordinaryRequestMilliseconds2;
-    childBootstrapResumeMilliseconds = childBootstrapSendMilliseconds + ordinaryRequestMilliseconds2;
-    childArmMilliseconds = ordinaryRequestMilliseconds2 + 2 * childOwnerMilliseconds + 4 * childBootstrapSendMilliseconds + childBootstrapAllocationMilliseconds;
-    pcbRealmAllocationMilliseconds = 2 * ordinaryRequestMilliseconds2;
-    pcbChildStartMilliseconds = childOwnerMilliseconds + ordinaryRequestMilliseconds2;
-    creationContinuationMilliseconds = (4 + 5 + 2) * ordinaryRequestMilliseconds2;
-    capturePauseMilliseconds = requestClasses2["pcb-capture"].count * ordinaryRequestMilliseconds2;
-    captureWaitMilliseconds = childSources2.reduce((sum, slot) => sum + slot.deadlineMilliseconds, 0) + (requestClasses2["child-bootstrap"].count + requestClasses2["origin-stack"].count) * ordinaryRequestMilliseconds2 + capturePauseMilliseconds;
-    normalPollLimit2 = Math.ceil(normalMilliseconds3 / pollIntervalMilliseconds3) + 2 * normalRequestLimit3 + Math.ceil(normalBytes3 / chunkBytes3);
-    cleanupPollReserve2 = Math.ceil(cleanupMilliseconds3 / pollIntervalMilliseconds3) + 2 * cleanupRequests3 + Math.ceil(cleanupBytes3 / chunkBytes3);
-    pollLimit3 = normalPollLimit2 + cleanupPollReserve2;
-    helperCleanupControlReserve2 = 128;
-    helperControlMessages3 = 16 * requestLimit3 + helperCleanupControlReserve2;
-    helperNormalControlMessages2 = helperControlMessages3 - helperCleanupControlReserve2;
-    helperStdoutBytes3 = Math.ceil((4 * totalBytes3 + 8 * pollLimit3) / 3) + (pollLimit3 + helperControlMessages3) * envelope5 + 128 * 1e5;
-    CURRENT_PCB_209_RATLINE_NATIVE_PROFILE = freezeDeep({
-      purpose: "worker-startup-ratline209",
-      terminalStage: "first-child-held-import",
-      normalRequestLimit: normalRequestLimit3,
-      cleanupRequests: cleanupRequests3,
-      requestLimit: requestLimit3,
-      requestClasses: requestClasses2,
-      sources: { pcb: pcbSources2, child: childSources2 },
-      bytes: {
-        prefix: prefixBytes3,
-        sources: sourceBytes2,
-        ordinaryReplies: ordinaryReplyBytes2,
-        continuationEvents: continuationEventBytes3,
-        rejectedFrame: rejectedFrameBytes2,
-        normal: normalBytes3,
-        cleanup: cleanupBytes3,
-        total: totalBytes3,
-        helperStdout: helperStdoutBytes3
-      },
-      frames: { ordinary: mib3, source: largestFrame2, envelope: envelope5, chunk: chunkBytes3, outbound: 65536 },
-      events: {
-        discoveryReservedCount: discoveryEventCount2,
-        discoveryReservedBytes: discoveryEventBytes2,
-        startupCount: startupEventCount2,
-        startupBytes: startupEventBytes2,
-        continuationCount: continuationEventCount2,
-        continuationBytes: continuationEventBytes3,
-        totalCount: discoveryEventCount2 + startupEventCount2 + continuationEventCount2,
-        totalBytes: discoveryEventBytes2 + startupEventBytes2 + continuationEventBytes3
-      },
-      polling: { limit: pollLimit3, normalLimit: normalPollLimit2, cleanupReserve: cleanupPollReserve2, intervalMilliseconds: pollIntervalMilliseconds3 },
-      elapsed: {
-        normalMilliseconds: normalMilliseconds3,
-        cleanupMilliseconds: cleanupMilliseconds3,
-        totalMilliseconds: normalMilliseconds3 + cleanupMilliseconds3,
-        ordinaryRequestMilliseconds: ordinaryRequestMilliseconds2,
-        ancestryProofMilliseconds: ancestryProofMilliseconds2,
-        pcbBootstrapSendMilliseconds,
-        pcbBootstrapResumeMilliseconds,
-        pcbBootstrapFirstPauseMilliseconds,
-        sourceReleaseMilliseconds,
-        childArmMilliseconds,
-        childOwnerMilliseconds,
-        childBootstrapSendMilliseconds,
-        childBootstrapAllocationMilliseconds,
-        childBootstrapResumeMilliseconds,
-        pcbRealmAllocationMilliseconds,
-        pcbChildStartMilliseconds,
-        creationContinuationMilliseconds,
-        capturePauseMilliseconds,
-        captureWaitMilliseconds,
-        anchor: "original-monotonic-launch"
-      },
-      // One slot stays available for sequential cleanup after normal dispatch fails.
-      discoveryRequestLimit: 19,
-      normalPendingRequests: 31,
-      pendingRequests: 32,
-      helperControlMessages: helperControlMessages3,
-      helperNormalControlMessages: helperNormalControlMessages2,
-      helperCleanupControlReserve: helperCleanupControlReserve2
-    });
-    monotonicNow3 = process.hrtime.bigint.bind(process.hrtime);
-    issued14 = /* @__PURE__ */ new WeakSet();
-    normalResourceRefusals2 = /* @__PURE__ */ new WeakMap();
-    CurrentPcb209RatlineBudget = class {
-      #started = monotonicNow3();
-      #counts = /* @__PURE__ */ new Map();
-      #pending = /* @__PURE__ */ new Map();
-      #phase = "prefix";
-      #failed = false;
-      #normalResourceFailure = false;
-      #closed = false;
-      #discoveryOpen = true;
-      #startupEvents = 0;
-      #startupEventBytes = 0;
-      #requests = 0;
-      #prefixBytes = 0;
-      #bytes = 0;
-      #events = 0;
-      #eventBytes = 0;
-      #polls = 0;
-      #helperControls = 0;
-      #helperBytes = 0;
-      constructor() {
-        issued14.add(this);
-      }
-      #reject(code2, normalResource = false) {
-        if (!normalResource) {
-          this.#normalResourceFailure = false;
-        } else if (!this.#failed) {
-          this.#normalResourceFailure = true;
-        }
-        this.#failed = true;
-        const error63 = new Error(`PCB209_RATLINE_BUDGET_${code2}`);
-        if (normalResource && this.#normalResourceFailure && this.#phase !== "cleanup" && !this.#closed) {
-          normalResourceRefusals2.set(error63, Object.freeze({ budget: this, current: () => this.#normalResourceFailure && !this.#closed }));
-        }
-        throw error63;
-      }
-      #number(value2, minimum5 = 0) {
-        if (!Number.isSafeInteger(value2) || value2 < minimum5) {
-          this.#reject("NUMBER");
-        }
-      }
-      #age() {
-        return Number(monotonicNow3() - this.#started) / 1e6;
-      }
-      assertNormal() {
-        if (this.#closed || this.#phase === "cleanup") {
-          this.#reject("NORMAL_CLOSED");
-        }
-        if (this.#failed) {
-          this.#reject("NORMAL_CLOSED", this.#normalResourceFailure);
-        }
-        if (this.#age() > normalMilliseconds3) {
-          this.#reject("NORMAL_CLOSED", true);
-        }
-      }
-      assertCleanup() {
-        if (this.#closed || this.#phase !== "cleanup" || this.#age() > normalMilliseconds3 + cleanupMilliseconds3) {
-          this.#reject("CLEANUP_CLOSED");
-        }
-      }
-      /** The actual owner must already have drained its prelude pending/buffer.
-       * This one-way resource boundary does not certify that separate ownership. */
-      beginContinuation() {
-        this.assertNormal();
-        if (this.#phase !== "prefix" || this.#discoveryOpen || this.#requests === 0 || this.#pending.size > 0) {
-          this.#reject("CONTINUATION");
-        }
-        this.#phase = "continuation";
-      }
-      beginCleanup() {
-        this.#phase = "cleanup";
-      }
-      /** The original channel calls this after its native process/Job exit proof.
-       * This only closes accounting; it cannot establish that external proof.
-       * Late native release output remains bounded by the original stdout ledger. */
-      endAfterOriginalTermination() {
-        this.#closed = true;
-        this.#failed = true;
-        this.#normalResourceFailure = false;
-        this.#phase = "cleanup";
-        this.#pending.clear();
-      }
-      consumeDiscoveryRequest(id16) {
-        this.assertNormal();
-        this.#number(id16, 1);
-        if (!this.#discoveryOpen || this.#phase !== "prefix" || id16 !== this.#requests + 1 || id16 > CURRENT_PCB_209_RATLINE_NATIVE_PROFILE.discoveryRequestLimit) {
-          this.#reject("DISCOVERY_REQUEST");
-        }
-        this.#requests = id16;
-        this.#counts.set("prefix", id16);
-      }
-      /** The actual discovery pipe has already proved no pending request/buffer.
-       * Its next ID only checks this ledger's live count; it imports no usage. */
-      closeDiscovery(originalNextId) {
-        this.assertNormal();
-        this.#number(originalNextId, 1);
-        if (!this.#discoveryOpen || this.#requests === 0 || originalNextId !== this.#requests + 1) {
-          this.#reject("DISCOVERY_CLOSE");
-        }
-        this.#discoveryOpen = false;
-      }
-      consumeRequest(id16, kind) {
-        this.#number(id16, 1);
-        if (typeof kind !== "string" || !Object.hasOwn(requestClasses2, kind)) {
-          this.#reject("REPLY_KIND");
-        }
-        if (kind === "cleanup") {
-          this.assertCleanup();
-        } else {
-          this.assertNormal();
-        }
-        if (this.#discoveryOpen || id16 !== this.#requests + 1 || id16 > requestLimit3 || kind === "prefix" && this.#phase !== "prefix" || kind !== "prefix" && kind !== "cleanup" && this.#phase !== "continuation") {
-          this.#reject("REQUEST_ID_OR_PHASE");
-        }
-        const count6 = this.#counts.get(kind) ?? 0, profile3 = requestClasses2[kind];
-        const pendingLimit = kind === "cleanup" ? CURRENT_PCB_209_RATLINE_NATIVE_PROFILE.pendingRequests : CURRENT_PCB_209_RATLINE_NATIVE_PROFILE.normalPendingRequests;
-        if (count6 >= profile3.count || this.#pending.size >= pendingLimit) {
-          this.#reject("REQUEST_LIMIT", kind !== "cleanup");
-        }
-        const sourceOrdinal = kind === "pcb-source" || kind === "child-source" ? count6 : null;
-        const frameBytes = sourceOrdinal === null ? profile3.frameBytes : currentPcb209RatlineSourceBudget(kind === "pcb-source" ? "pcb" : "child", sourceOrdinal).frameBytes;
-        const reservation = Object.freeze({ id: id16, kind, sourceOrdinal, frameBytes });
-        this.#requests = id16;
-        this.#counts.set(kind, count6 + 1);
-        this.#pending.set(id16, reservation);
-        return reservation;
-      }
-      /** Count raw CDP pipe bytes exactly once, where the original helper's poll
-       * data enters. Reply/event attribution below does not charge them again. */
-      consumePipeBytes(bytes2) {
-        this.#number(bytes2);
-        this.#bytes += bytes2;
-        if (this.#phase === "prefix") {
-          this.#prefixBytes += bytes2;
-        }
-        if (this.#bytes > (this.#phase === "cleanup" ? totalBytes3 : normalBytes3) || this.#prefixBytes > prefixBytes3) {
-          this.#reject("PIPE_BYTES");
-        }
-      }
-      /** Attribute complete framed bytes to the original outstanding request. Late
-       * normal replies remain observable during cleanup without gaining authority. */
-      consumeReply(id16, bytes2) {
-        this.#number(id16, 1);
-        this.#number(bytes2, 1);
-        const pending = this.#pending.get(id16);
-        if (pending === void 0) {
-          this.#reject("REPLY_BOUND");
-        }
-        this.#pending.delete(id16);
-        if (bytes2 > pending.frameBytes) {
-          this.#reject("REPLY_BOUND");
-        }
-      }
-      pendingReplyFrameBytes(id16) {
-        this.#number(id16, 1);
-        const pending = this.#pending.get(id16);
-        if (pending === void 0) {
-          this.#reject("PENDING_ID");
-        }
-        return pending.frameBytes;
-      }
-      remainingRequests(kind) {
-        if (typeof kind !== "string" || !Object.hasOwn(requestClasses2, kind)) {
-          this.#reject("REPLY_KIND");
-        }
-        return requestClasses2[kind].count - (this.#counts.get(kind) ?? 0);
-      }
-      consumeEvent(bytes2) {
-        this.#number(bytes2, 1);
-        if (this.#discoveryOpen) {
-          this.#reject("DISCOVERY_PARSER_OWNS_EVENTS");
-        }
-        if (this.#phase === "prefix") {
-          this.#startupEvents += 1;
-          this.#startupEventBytes += bytes2;
-          if (bytes2 > mib3 || this.#startupEvents > startupEventCount2 || this.#startupEventBytes > startupEventBytes2) {
-            this.#reject("STARTUP_EVENT_BOUND");
-          }
-          return;
-        }
-        this.#events += 1;
-        this.#eventBytes += bytes2;
-        if (bytes2 > mib3 || this.#events > continuationEventCount2 || this.#eventBytes > continuationEventBytes3) {
-          this.#reject("EVENT_BOUND");
-        }
-      }
-      consumePoll() {
-        if (this.#phase === "cleanup") {
-          this.assertCleanup();
-        } else {
-          this.assertNormal();
-        }
-        this.#polls += 1;
-        if (this.#polls > (this.#phase === "cleanup" ? pollLimit3 : normalPollLimit2)) {
-          this.#reject("POLL_BOUND", this.#phase !== "cleanup");
-        }
-      }
-      /** Native termination/release controls may finish after CDP's deadline.
-       * Their bounded count and stdout remain charged to this original ledger. */
-      consumeHelperControl(cleanup = false) {
-        if (typeof cleanup !== "boolean") {
-          this.#reject("HELPER_CONTROL_KIND");
-        }
-        const limit = cleanup ? helperControlMessages3 : helperNormalControlMessages2;
-        if (this.#helperControls >= limit) {
-          this.#reject("HELPER_CONTROL_BOUND", !cleanup && this.#phase !== "cleanup");
-        }
-        this.#helperControls += 1;
-      }
-      consumeHelperStdout(bytes2) {
-        this.#number(bytes2);
-        this.#helperBytes += bytes2;
-        if (this.#helperBytes > helperStdoutBytes3) {
-          this.#reject("HELPER_STDOUT_BOUND");
-        }
-      }
-      snapshot() {
-        return Object.freeze({
-          phase: this.#phase,
-          failed: this.#failed,
-          closed: this.#closed,
-          requests: this.#requests,
-          discoveryOpen: this.#discoveryOpen,
-          reservedDiscoveryEvents: discoveryEventCount2,
-          reservedDiscoveryEventBytes: discoveryEventBytes2,
-          observedStartupEvents: this.#startupEvents,
-          observedStartupEventBytes: this.#startupEventBytes,
-          prefixRequests: this.#counts.get("prefix") ?? 0,
-          pendingReplies: this.#pending.size,
-          receivedBytes: this.#bytes,
-          prefixBytes: this.#prefixBytes,
-          continuationEvents: this.#events,
-          continuationEventBytes: this.#eventBytes,
-          polls: this.#polls,
-          helperControls: this.#helperControls,
-          helperStdoutBytes: this.#helperBytes,
-          elapsedMilliseconds: this.#age()
-        });
-      }
-    };
-    methodNames2 = [
-      "assertNormal",
-      "assertCleanup",
-      "beginContinuation",
-      "beginCleanup",
-      "consumeRequest",
-      "consumePipeBytes",
-      "consumeReply",
-      "consumeDiscoveryRequest",
-      "closeDiscovery",
-      "endAfterOriginalTermination",
-      "pendingReplyFrameBytes",
-      "remainingRequests",
-      "consumeEvent",
-      "consumePoll",
-      "consumeHelperControl",
-      "consumeHelperStdout",
-      "snapshot"
-    ];
-    methods12 = methodNames2.map((name9) => CurrentPcb209RatlineBudget.prototype[name9]);
   }
 });
 
@@ -169630,9 +169713,9 @@ var CURRENT_PCB_209_RATLINE_NAVIGATION_SOURCE, token30, location4, navigationFra
 var init_current_pcb_209_ratline_navigation_pause = __esm({
   "server/src/current-pcb-209-ratline-navigation-pause.ts"() {
     init_zod();
-    init_current_pcb_diagnostic_pcb_opening();
+    init_current_pcb_209_ratline_opening_program();
     init_current_pcb_string_clock_reply();
-    CURRENT_PCB_209_RATLINE_NAVIGATION_SOURCE = `(${CURRENT_PCB_DIAGNOSTIC_PCB_OPENING_FUNCTION})`;
+    CURRENT_PCB_209_RATLINE_NAVIGATION_SOURCE = `(${CURRENT_PCB_209_RATLINE_OPENING_FUNCTION})`;
     token30 = external_exports.string().regex(/^[A-Za-z\d_.:-]{1,256}$/u);
     location4 = external_exports.object({ scriptId: token30, lineNumber: external_exports.literal(0), columnNumber: external_exports.literal(0) }).strict();
     navigationFrame = external_exports.looseObject({ functionName: external_exports.literal(""), url: external_exports.literal(""), location: location4, functionLocation: location4 });
@@ -170013,7 +170096,7 @@ var init_current_pcb_209_ratline_startup_channel = __esm({
     init_current_pcb_diagnostic_json();
     init_current_pcb_string_clock_reply();
     init_current_pcb_worker_startup_wire();
-    init_current_pcb_diagnostic_pcb_opening();
+    init_current_pcb_209_ratline_opening_program();
     init_current_pcb_209_ratline_budget();
     init_current_pcb_209_ratline_native_wire();
     init_current_pcb_209_ratline_diagnostics();
@@ -170282,7 +170365,7 @@ var init_current_pcb_209_ratline_startup_channel = __esm({
             }
             const identity39 = JSON.stringify([command2.params.uniqueContextId, command2.params.arguments[0].value]);
             const phase5 = command2.params.arguments[1].value;
-            if (command2.params.functionDeclaration === CURRENT_PCB_DIAGNOSTIC_PCB_OPENING_FUNCTION) {
+            if (command2.params.functionDeclaration === CURRENT_PCB_209_RATLINE_OPENING_FUNCTION) {
               if (!this.#openingConsumed || this.#openingIdentity !== identity39 || phase5 === "preflight" && this.#pcbPreflightConsumed || phase5 === "open-document" && (!this.#pcbPreflightConsumed || this.#pcbOpeningConsumed) || phase5 === "observe" || this.#phase === "startup") {
                 throw fail27("PCB_OPENING_SEQUENCE");
               }
@@ -170386,7 +170469,7 @@ var init_current_pcb_209_ratline_startup_channel = __esm({
         return this.#cleanup;
       }
       #originalNavigationPending() {
-        return [...this.#pending.values()].some((pending) => pending.route === "parent" && pending.written && !pending.writeFailed && !pending.replied && pending.command.method === "Runtime.callFunctionOn" && "uniqueContextId" in pending.command.params && pending.command.params.functionDeclaration === CURRENT_PCB_DIAGNOSTIC_PCB_OPENING_FUNCTION && pending.command.params.uniqueContextId === this.#openingContext && pending.command.params.arguments[1]?.value === "open-document");
+        return [...this.#pending.values()].some((pending) => pending.route === "parent" && pending.written && !pending.writeFailed && !pending.replied && pending.command.method === "Runtime.callFunctionOn" && "uniqueContextId" in pending.command.params && pending.command.params.functionDeclaration === CURRENT_PCB_209_RATLINE_OPENING_FUNCTION && pending.command.params.uniqueContextId === this.#openingContext && pending.command.params.arguments[1]?.value === "open-document");
       }
       #ratlineKind(role, command2, phase5) {
         if (this.#parent === null || this.#phase !== "ratline" || this.#ratlineListener === null) {
@@ -170662,7 +170745,7 @@ var init_current_pcb_209_ratline_startup_channel = __esm({
         }
       }
       async #request(route, raw) {
-        const normalized3 = route === "startup" || route === "parent" ? currentPcb209WorkerStartupWire(raw, 1) : currentPcb209RatlineNativeWire(route, raw, 1);
+        const normalized3 = route === "startup" || route === "parent" ? currentPcb209RatlineWorkerStartupWire(raw, 1) : currentPcb209RatlineNativeWire(route, raw, 1);
         const { id: _validationId, ...command2 } = normalized3.command;
         const phase5 = typeof normalized3.request["phase"] === "string" ? normalized3.request["phase"] : "";
         if (route === "startup" || route === "parent") {
@@ -170794,7 +170877,7 @@ var init_current_pcb_209_ratline_startup_channel = __esm({
         }
         if (command2.params.arguments.length === 0) {
           this.#actorReads += 1;
-        } else if (command2.params.functionDeclaration === CURRENT_PCB_DIAGNOSTIC_PCB_OPENING_FUNCTION) {
+        } else if (command2.params.functionDeclaration === CURRENT_PCB_209_RATLINE_OPENING_FUNCTION) {
           if (command2.params.arguments[1].value === "preflight") {
             this.#pcbPreflightConsumed = true;
           } else {
@@ -176181,6 +176264,7 @@ var init_current_pcb_209_ratline_native_session = __esm({
     init_current_disposable_open();
     init_current_pcb_diagnostic_context();
     init_current_pcb_diagnostic_pcb_opening();
+    init_current_pcb_209_ratline_opening_program();
     init_current_pcb_string_clock_reply();
     init_current_pcb_209_worker_startup_opening();
     init_current_pcb_209_ratline_startup_channel();
@@ -176255,7 +176339,7 @@ var init_current_pcb_209_ratline_native_session = __esm({
         return Object.freeze({
           phase: this.#phase,
           transitionStarted: this.#router?.status()["transitionStarted"] === true,
-          openingAcknowledged: this.#openingObservation?.phase === "open-document",
+          openingAcknowledged: currentPcb209RatlineOpeningAcknowledged(this.#openingObservation),
           packetRetained: this.#packet !== null,
           executionAuthorized: false,
           nativeOrigin: this.#origin?.summary() ?? null,
@@ -176327,7 +176411,7 @@ var init_current_pcb_209_ratline_native_session = __esm({
       #openingCommand(phase5) {
         const context4 = phase5 === "preflight" ? this.#context.openingContext() : this.#context.pcbOpeningContext();
         return { method: "Runtime.callFunctionOn", sessionId: context4.sessionId, params: {
-          functionDeclaration: CURRENT_PCB_DIAGNOSTIC_PCB_OPENING_FUNCTION,
+          functionDeclaration: CURRENT_PCB_209_RATLINE_OPENING_FUNCTION,
           uniqueContextId: context4.uniqueContextId,
           arguments: [{ value: this.#target }, { value: phase5 }],
           returnByValue: true,
@@ -176510,7 +176594,7 @@ var init_current_pcb_209_ratline_native_session = __esm({
             nativeOrigin,
             nativeOriginEvidence,
             originalFrameProofSets: 3,
-            pcbNavigationAcknowledged: this.#openingObservation?.phase === "open-document",
+            pcbNavigationAcknowledged: currentPcb209RatlineOpeningAcknowledged(this.#openingObservation),
             firstChildImportHeld: true,
             nativeWorkerTargetIdentityVerified: false,
             completeStartupVerified: false,
@@ -176739,7 +176823,7 @@ var init_current_pcb_209_ratline_continuation_channel = __esm({
     init_current_pcb_diagnostic_json();
     init_current_pcb_string_clock_reply();
     init_current_pcb_worker_startup_wire();
-    init_current_pcb_diagnostic_pcb_opening();
+    init_current_pcb_209_ratline_opening_program();
     init_current_pcb_209_ratline_continuation_budget();
     init_current_pcb_209_ratline_continuation_native_wire();
     init_current_pcb_209_ratline_diagnostics();
@@ -177013,7 +177097,7 @@ var init_current_pcb_209_ratline_continuation_channel = __esm({
             }
             const identity39 = JSON.stringify([command2.params.uniqueContextId, command2.params.arguments[0].value]);
             const phase5 = command2.params.arguments[1].value;
-            if (command2.params.functionDeclaration === CURRENT_PCB_DIAGNOSTIC_PCB_OPENING_FUNCTION) {
+            if (command2.params.functionDeclaration === CURRENT_PCB_209_RATLINE_OPENING_FUNCTION) {
               if (!this.#openingConsumed || this.#openingIdentity !== identity39 || phase5 === "preflight" && this.#pcbPreflightConsumed || phase5 === "open-document" && (!this.#pcbPreflightConsumed || this.#pcbOpeningConsumed) || phase5 === "observe" || this.#phase === "startup") {
                 throw fail31("PCB_OPENING_SEQUENCE");
               }
@@ -177167,7 +177251,7 @@ var init_current_pcb_209_ratline_continuation_channel = __esm({
         return this.#cleanup;
       }
       #originalNavigationPending() {
-        return [...this.#pending.values()].some((pending) => pending.route === "parent" && pending.written && !pending.writeFailed && !pending.replied && pending.command.method === "Runtime.callFunctionOn" && "uniqueContextId" in pending.command.params && pending.command.params.functionDeclaration === CURRENT_PCB_DIAGNOSTIC_PCB_OPENING_FUNCTION && pending.command.params.uniqueContextId === this.#openingContext && pending.command.params.arguments[1]?.value === "open-document");
+        return [...this.#pending.values()].some((pending) => pending.route === "parent" && pending.written && !pending.writeFailed && !pending.replied && pending.command.method === "Runtime.callFunctionOn" && "uniqueContextId" in pending.command.params && pending.command.params.functionDeclaration === CURRENT_PCB_209_RATLINE_OPENING_FUNCTION && pending.command.params.uniqueContextId === this.#openingContext && pending.command.params.arguments[1]?.value === "open-document");
       }
       #session(role) {
         if (role === "pcb") {
@@ -177458,7 +177542,7 @@ var init_current_pcb_209_ratline_continuation_channel = __esm({
         }
       }
       async #request(route, raw) {
-        const normalized3 = route === "startup" || route === "parent" ? currentPcb209WorkerStartupWire(raw, 1) : currentPcb209RatlineContinuationNativeWire(route, raw, 1);
+        const normalized3 = route === "startup" || route === "parent" ? currentPcb209RatlineWorkerStartupWire(raw, 1) : currentPcb209RatlineContinuationNativeWire(route, raw, 1);
         const { id: _validationId, ...command2 } = normalized3.command;
         const phase5 = typeof normalized3.request["phase"] === "string" ? normalized3.request["phase"] : "";
         const projectIdentity3 = normalized3.request["startupPhase"] === "identity";
@@ -177610,7 +177694,7 @@ var init_current_pcb_209_ratline_continuation_channel = __esm({
         }
         if (command2.params.arguments.length === 0) {
           this.#actorReads += 1;
-        } else if (command2.params.functionDeclaration === CURRENT_PCB_DIAGNOSTIC_PCB_OPENING_FUNCTION) {
+        } else if (command2.params.functionDeclaration === CURRENT_PCB_209_RATLINE_OPENING_FUNCTION) {
           if (command2.params.arguments[1].value === "preflight") {
             this.#pcbPreflightConsumed = true;
           } else {
@@ -178888,6 +178972,7 @@ var init_current_pcb_209_ratline_continuation_native_session = __esm({
     init_current_disposable_open();
     init_current_pcb_diagnostic_context();
     init_current_pcb_diagnostic_pcb_opening();
+    init_current_pcb_209_ratline_opening_program();
     init_current_pcb_string_clock_reply();
     init_current_pcb_209_worker_startup_opening();
     init_current_pcb_209_ratline_continuation_channel();
@@ -178962,7 +179047,7 @@ var init_current_pcb_209_ratline_continuation_native_session = __esm({
       #openingCommand(phase5) {
         const context4 = phase5 === "preflight" ? this.#context.openingContext() : this.#context.pcbOpeningContext();
         return { method: "Runtime.callFunctionOn", sessionId: context4.sessionId, params: {
-          functionDeclaration: CURRENT_PCB_DIAGNOSTIC_PCB_OPENING_FUNCTION,
+          functionDeclaration: CURRENT_PCB_209_RATLINE_OPENING_FUNCTION,
           uniqueContextId: context4.uniqueContextId,
           arguments: [{ value: this.#target }, { value: phase5 }],
           returnByValue: true,
@@ -179047,7 +179132,7 @@ var init_current_pcb_209_ratline_continuation_native_session = __esm({
             targetSha256: sha256Json(this.#target),
             originalProjectConstructionSha256: sha256Json(this.#result.construction),
             continuation: continuation2,
-            pcbNavigationAcknowledged: this.#openingObservation?.phase === "open-document",
+            pcbNavigationAcknowledged: currentPcb209RatlineOpeningAcknowledged(this.#openingObservation),
             nativeWorkerTargetIdentityVerified: false,
             callbackReturnCompletionVerified: false,
             completeStartupVerified: false,
@@ -179108,7 +179193,7 @@ var init_current_pcb_209_ratline_continuation_native_session = __esm({
         return Object.freeze({
           phase: this.#phase,
           transitionStarted: this.#session?.status()["transitionStarted"] === true,
-          openingAcknowledged: this.#openingObservation?.phase === "open-document",
+          openingAcknowledged: currentPcb209RatlineOpeningAcknowledged(this.#openingObservation),
           packetRetained: this.#packet !== null,
           continuation: this.#session?.status() ?? null,
           executionAuthorized: false
@@ -179380,8 +179465,8 @@ var init_current_pcb_diagnostic_owner = __esm({
     init_current_pcb_209_poured_shapes();
     init_current_pcb_209_pad_shapes();
     init_current_pcb_209_selection_relations();
-    HELPER_SHA256 = "d6dca3d1dc09f260d74ef034d02306afcf652b25fe86b31827c99ca3e57331b7";
-    HELPER_BYTES = 1044713;
+    HELPER_SHA256 = "983eeac5a356325eaedcabb7ee70c17053c167f2ebb94de967bc6fe42414f52a";
+    HELPER_BYTES = 1018326;
     MAX_LINE = 1e5;
     MAX_TOTAL = 96 * 1024 * 1024;
     retainedOwners = /* @__PURE__ */ new Set();
@@ -219599,7 +219684,7 @@ function failure4(error63, upstreamProcess) {
     structuredContent: details
   };
 }
-function guarded(handler2, failureDiagnostics) {
+function guarded2(handler2, failureDiagnostics) {
   return async (input2) => {
     try {
       return success2(await handler2(input2));
@@ -219614,7 +219699,7 @@ function guarded(handler2, failureDiagnostics) {
   };
 }
 function serializedGuarded(handler2, options = {}) {
-  return guarded(
+  return guarded2(
     (input2) => bridgeGate.run(async () => {
       if (options.allowDuringOrphanRisk !== true) {
         await engine.assertBridgeDispatchAllowed();
@@ -219652,7 +219737,7 @@ function serializedLiveResult(handler2) {
   });
 }
 function serializedStatusGuarded(handler2) {
-  return guarded(
+  return guarded2(
     (input2) => bridgeGate.run(async () => {
       const admission = await engine.observeStatusAdmission();
       await assertNoUnresolvedCurrentPcbDiagnosticLaunches();
@@ -219899,13 +219984,13 @@ function readPngDimensions(bytes2) {
       "Canvas capture PNG exceeds the 16 MiB compressed validation limit."
     );
   }
-  const signature2 = Buffer.from([137, 80, 78, 71, 13, 10, 26, 10]);
-  if (bytes2.length < 45 || !bytes2.subarray(0, signature2.length).equals(signature2)) {
+  const signature3 = Buffer.from([137, 80, 78, 71, 13, 10, 26, 10]);
+  if (bytes2.length < 45 || !bytes2.subarray(0, signature3.length).equals(signature3)) {
     throw new Error(
       "Canvas capture PNG is missing its signature or complete chunk structure."
     );
   }
-  let offset9 = signature2.length;
+  let offset9 = signature3.length;
   let ihdr;
   let seenPalette = false;
   let seenIdat = false;
@@ -220993,7 +221078,7 @@ var init_src = __esm({
     registerFacadeTool(
       "easyeda_control_api",
       offlineApiToolConfiguration,
-      guarded(({ request: request13 }) => runOfflineApi(request13))
+      guarded2(({ request: request13 }) => runOfflineApi(request13))
     );
     registerFacadeTool(
       "easyeda_control_discover",
@@ -221013,7 +221098,7 @@ var init_src = __esm({
           idempotentHint: true
         }
       },
-      guarded(async (input2) => {
+      guarded2(async (input2) => {
         if (facadeMode !== "legacy-reviewed" && input2.source === "live") {
           throw new Error("Live upstream discovery is unavailable in local-utility mode; use the offline API catalogs.");
         }
@@ -221435,7 +221520,7 @@ var init_src = __esm({
         inputSchema: { request: external_exports.unknown().pipe(netlistFilesRequestSchema), expectedFingerprint: privateFingerprintSchema.optional() },
         annotations: { readOnlyHint: false, destructiveHint: false, idempotentHint: false, openWorldHint: false }
       },
-      guarded(async (input2) => {
+      guarded2(async (input2) => {
         if (input2.request.action === "prepare-file") {
           if (input2.expectedFingerprint !== void 0) {
             throw new Error("prepare-file does not accept a runtime fingerprint.");
@@ -221460,7 +221545,7 @@ var init_src = __esm({
         inputSchema: { request: external_exports.unknown().pipe(managedLibraryFilesRequestSchema) },
         annotations: { readOnlyHint: false, destructiveHint: false, idempotentHint: false, openWorldHint: false }
       },
-      guarded(async (input2) => ({ result: await executeManagedLibraryFiles(input2.request) }))
+      guarded2(async (input2) => ({ result: await executeManagedLibraryFiles(input2.request) }))
     );
     registerFacadeTool(
       "easyeda_control_catalog_footprint",
@@ -221470,7 +221555,7 @@ var init_src = __esm({
         inputSchema: { request: external_exports.unknown().pipe(publicSystemFootprintRequestSchema) },
         annotations: { readOnlyHint: true, destructiveHint: false, idempotentHint: true, openWorldHint: true }
       },
-      guarded(async (input2) => ({ result: await readPublicSystemFootprint(input2.request) }))
+      guarded2(async (input2) => ({ result: await readPublicSystemFootprint(input2.request) }))
     );
     registerFacadeTool(
       "easyeda_control_catalog_components",
@@ -221480,7 +221565,7 @@ var init_src = __esm({
         inputSchema: { request: external_exports.unknown().pipe(publicSystemCatalogRequestSchema) },
         annotations: { readOnlyHint: true, destructiveHint: false, idempotentHint: true, openWorldHint: true }
       },
-      guarded(async (input2) => ({ result: await readPublicSystemCatalog(input2.request) }))
+      guarded2(async (input2) => ({ result: await readPublicSystemCatalog(input2.request) }))
     );
     if (facadeToolRegistered(facadeMode, "easyeda_control_pcb_string_precreate_validation")) {
       const inputSchema6 = external_exports.object({ request: external_exports.unknown().pipe(currentPcbStringPrecreateRequestSchema) }).strict();
@@ -221491,7 +221576,7 @@ var init_src = __esm({
         inputSchema: inputSchema6,
         outputSchema: currentSymbolOperationToolOutputSchema,
         annotations: { readOnlyHint: false, destructiveHint: false, idempotentHint: false, openWorldHint: true }
-      }, guarded((input2) => {
+      }, guarded2((input2) => {
         const { request: request13 } = inputSchema6.parse(input2);
         if (original2 === void 0) {
           const environment = process21.env;
@@ -221748,11 +221833,11 @@ var init_src = __esm({
         const startupSchema = external_exports.object({ request: external_exports.unknown().pipe(currentPcb209WorkerStartupToolRequestSchema) }).strict();
         server.registerTool("easyeda_control_pcb209_worker_startup", {
           title: "Capture a disposable EasyEDA 3.2.209 project worker startup",
-          description: "Disposable EasyEDA 3.2.209 startup validation with four separate launch purposes. Query the matching offline catalog and argument validator first: pcb209-worker-startup/-validate, pcb209-empty-baseline/-validate, pcb209-ratline-held-import/-validate, or pcb209-ratline-continuation/-validate. Each purpose launches its own original owner; an existing owner cannot be upgraded. Launch, qualify browser/frame/UI source, then capture-project once against the exact disposable checkpoint. The default pcb209-startup-* purpose can subsequently observe current assignments, channel relations, a sequential UI/worker actor-clock bracket and original footprint-manager state. The footprint-state stage reads its captured user/client/ticket. After its published result, observe-footprint-source reconstructs one checkpoint-member footprint from original live consistency entries and existing native Cache chunks, comparing two source samples with exact checkpoint-derived source. It is a bounded native equivalent, not a GET_STR dispatch; a cache miss refuses without fetch, parser replay, cache writes or network fallback. Its single-fragment CANVAS/PAD/LINE profile needs 65 remaining normal requests and grants no copy/delete or persistence authority. The empty-baseline wrapper uses pcb209-empty-* and joins fixed common data with the original completed SQL checkpoint, bracketed by empty raw-manager samples; populated targets refuse. The ratline-held-import wrapper uses pcb209-ratline-* with the original cumulative budget and complete source leases. After capture-project, observe-ratline-held-import journals intent before the sole PCB navigation, qualifies 29 PCB source stages, captures original construction and holds the first ratline child at its seventh qualified source import. It stops before worker continuation, callback return and full startup or baseline completion. The ratline-continuation wrapper uses pcb209-continuation-* and a separately sealed native budget. After capture-project, observe-ratline-continuation qualifies the original PCB, first worker and subordinate sources, continues their fixed imports and observes original PCB/worker capture checkpoints and callback returnsites. Callback completion, publication completion and native Worker-object/target identity remain unproved. These sequential observations grant no native channel-peer, server-clock, contained-destination, writer or durability proof. Explicit debugger-pause acceptance is required. Launch/open may restore tabs, migrate, replay caches, use the network and automatically persist files. Every stage is consumed once. Inspect after uncertainty and retain the original owner through abort, normal close, original root/Job termination, helper release and record settlement. No caller JavaScript, CDP commands, explicit Save, CAD writer, historical-owner adoption, navigation retry, force exit or Save/Discard choice.",
+          description: "Disposable EasyEDA 3.2.209 startup validation with four separate launch purposes. Query the matching offline catalog and argument validator first: pcb209-worker-startup/-validate, pcb209-empty-baseline/-validate, pcb209-ratline-held-import/-validate, or pcb209-ratline-continuation/-validate. Each purpose launches its own original owner; an existing owner cannot be upgraded. Launch, qualify browser/frame/UI source, then capture-project once against the exact disposable checkpoint. The default pcb209-startup-* purpose can subsequently observe current assignments, channel relations, a sequential UI/worker actor-clock bracket and original footprint-manager state. The footprint-state stage reads its captured user/client/ticket. After its published result, observe-footprint-source reconstructs one checkpoint-member footprint from original live consistency entries and existing native Cache chunks, checking every keyed record and generated header against the complete checkpoint while two matching source samples retain observed native order. It is a bounded native equivalent, not a GET_STR dispatch; a cache miss refuses without fetch, parser replay, cache writes or network fallback. Its source-only profile accepts ordinary record families, repeated fragments and tombstones, needs 65 remaining normal requests and grants no copy/delete or persistence authority. The empty-baseline wrapper uses pcb209-empty-* and joins fixed common data with the original completed SQL checkpoint, bracketed by empty raw-manager samples; populated targets refuse. The ratline-held-import wrapper uses pcb209-ratline-* with the original cumulative budget and complete source leases. After capture-project, observe-ratline-held-import journals intent before the sole PCB navigation, qualifies 29 PCB source stages, captures original construction and holds the first ratline child at its seventh qualified source import. It stops before worker continuation, callback return and full startup or baseline completion. The ratline-continuation wrapper uses pcb209-continuation-* and a separately sealed native budget. After capture-project, observe-ratline-continuation qualifies the original PCB, first worker and subordinate sources, continues their fixed imports and observes original PCB/worker capture checkpoints and callback returnsites. Callback completion, publication completion and native Worker-object/target identity remain unproved. These sequential observations grant no native channel-peer, server-clock, contained-destination, writer or durability proof. Explicit debugger-pause acceptance is required. Launch/open may restore tabs, migrate, replay caches, use the network and automatically persist files. Every stage is consumed once. Inspect after uncertainty and retain the original owner through abort, normal close, original root/Job termination, helper release and record settlement. No caller JavaScript, CDP commands, explicit Save, CAD writer, historical-owner adoption, navigation retry, force exit or Save/Discard choice.",
           inputSchema: startupSchema,
           outputSchema: currentSymbolOperationToolOutputSchema,
           annotations: { readOnlyHint: false, destructiveHint: false, idempotentHint: false, openWorldHint: true }
-        }, guarded((input2) => {
+        }, guarded2((input2) => {
           const request13 = startupSchema.parse(input2).request;
           if (request13.action === "ratline-held-import") {
             return runStartup(request13.request, false, true);
@@ -221769,7 +221854,7 @@ var init_src = __esm({
         inputSchema: inputSchema6,
         outputSchema: currentSymbolOperationToolOutputSchema,
         annotations: { readOnlyHint: false, destructiveHint: false, idempotentHint: false, openWorldHint: true }
-      }, guarded((input2) => {
+      }, guarded2((input2) => {
         const { request: request13 } = inputSchema6.parse(input2);
         if (request13.action === "worker-startup") {
           return runStartup(request13.request);
@@ -223153,7 +223238,7 @@ var init_src = __esm({
         inputSchema: inputSchema6,
         outputSchema: currentSymbolOperationToolOutputSchema,
         annotations: { readOnlyHint: false, destructiveHint: true, idempotentHint: false }
-      }, guarded(async ({ request: request13 }) => {
+      }, guarded2(async ({ request: request13 }) => {
         const validated = currentPcbRenameOperationRequestSchema.parse(request13);
         if (validated.action === "inspect") {
           return { result: await (currentPcbRenameOperationCoordinator === void 0 ? inspectCurrentPcbRenameHistory(validated.operationId) : currentPcbRenameOperationCoordinator.run(validated)) };
@@ -223177,7 +223262,7 @@ var init_src = __esm({
         inputSchema: inputSchema6,
         outputSchema: currentSymbolOperationToolOutputSchema,
         annotations: { readOnlyHint: false, destructiveHint: true, idempotentHint: false }
-      }, guarded(async ({ request: request13 }) => {
+      }, guarded2(async ({ request: request13 }) => {
         const validated = currentSchematicRenameOperationRequestSchema.parse(request13);
         if (validated.action === "inspect") {
           return { result: await (currentSchematicRenameOperationCoordinator === void 0 ? inspectCurrentSchematicRenameHistory(validated.operationId) : currentSchematicRenameOperationCoordinator.run(validated)) };
@@ -223204,7 +223289,7 @@ var init_src = __esm({
         inputSchema: inputSchema6,
         outputSchema: currentSymbolOperationToolOutputSchema,
         annotations: { readOnlyHint: false, destructiveHint: true, idempotentHint: false }
-      }, guarded(async ({ request: request13, expectedFingerprint }) => {
+      }, guarded2(async ({ request: request13, expectedFingerprint }) => {
         const validated = currentSchematicOperationRequestSchema.parse(request13);
         if (validated.action !== "open" && expectedFingerprint !== void 0) {
           throw new Error("Only initial opening accepts a fingerprint; continuation retains its original authority.");

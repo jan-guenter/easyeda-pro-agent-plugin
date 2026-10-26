@@ -214,7 +214,8 @@ class CurrentPcbWorkerStartupTransportCore<Packet extends ConstructionPacket, Ru
     existingWorkersBound: boolean; existingWorkersObserved: number; existingWorkersAttached: number; firstEventFailure: EventFailure | null;
     bootstrapStages: readonly Readonly<{ role: StartupRole; parsed: boolean; pauseSeen: boolean;
       sourceQualified: boolean; resumeAttempted: boolean; resumeSeen: boolean; resumeOrigin: ResumeOrigin | null }>[]; preloadLogSeen: boolean;
-    workerScriptLoadedObserved: boolean; requests: number; firstFailure: StartupFailure | null }> {
+    workerScriptLoadedObserved: boolean; requests: number; firstFailure: StartupFailure | null;
+    constructionAssignments: ReturnType<CurrentPcbWorkerConstructionRunner["status"]>["assignments"] | null }> {
     return Object.freeze({ firstFailure: this.#firstFailure, started: this.#started, settled: this.#settled, failed: this.#failure !== null,
       sourceQualified: this.#sourceQualified, initialPauseSeen: this.#initialPauseSeen,
       initialResumeAttempted: this.#initialResume !== null || this.#bootstrapStages.some(stage => stage.resume !== null), initialResumeSeen: this.#initialResumeSeen,
@@ -222,6 +223,7 @@ class CurrentPcbWorkerStartupTransportCore<Packet extends ConstructionPacket, Ru
       attachedWorkers: this.#workers.size, released: this.#released, existingWorkersBound: this.#existingWorkers !== null,
       existingWorkersObserved: this.#existingWorkers?.size ?? 0, existingWorkersAttached: this.#backgroundWorkers.size,
       firstEventFailure: this.#firstEventFailure, requests: this.#requests, preloadLogSeen: this.#preloadLogSeen,
+      constructionAssignments: this.#runner?.status().assignments ?? null,
       workerScriptLoadedObserved: this.#workerScriptLoadedObserved,
       bootstrapStages: Object.freeze(this.#bootstrapStages.map(stage => Object.freeze({ role: stage.role,
         parsed: stage.script !== null, pauseSeen: stage.pauseSeen, sourceQualified: stage.sourceQualified,
