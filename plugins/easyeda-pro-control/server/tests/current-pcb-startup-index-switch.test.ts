@@ -35,6 +35,7 @@ async function fixture(): Promise<Readonly<{ run: Run; owners: readonly Readonly
   // The unmodified production index can capture and reprove its method graph.
   for (const name of ["captureWorkerStartup", "handoffWorkerStartup", "openWorkerStartup", "handoffStartup", "openStartup", "requireStartup",
     "observeWorkerStartupAssignments", "observeStartupAssignments", "requireStartupAssignments", "observeWorkerStartupFootprint", "observeStartupFootprint", "observeWorkerStartupActor", "observeStartupActor",
+    "observeWorkerStartupFootprintSource", "observeStartupFootprintSource",
     "observeWorkerStartupChannel", "observeStartupChannel", "observeWorkerStartupEmpty", "observeStartupEmpty", "prepareWorkerStartupEmpty", "prepareStartupEmpty", "observeWorkerStartupRatline", "observeStartupRatline",
     "observeWorkerStartupRatlineContinuation", "observeStartupRatlineContinuation"]) {
     Object.defineProperty(Owner.prototype, name, { value: (): never => { throw new Error(`Unexpected synthetic operation ${name}`); } });

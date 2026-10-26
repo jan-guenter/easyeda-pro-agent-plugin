@@ -195,3 +195,11 @@ unused diagnostic operations. All three actual registration-callback tests
 pass. Production method guards, runtime source, bundles, compatibility pins,
 test selection and deadlines are unchanged. The original CI result is not
 accepted for publication; the corrected commit requires its own complete CI.
+
+A follow-up search found the same two missing stubs in the purpose-switch
+fixture. All four affected tests reproduced the refusal locally, then passed
+with the matching roster correction. The first run's shard2 was cancelled
+after emitting those failures, so cancellation did not imply a clean partial
+run. Its raw log and the local failure remain retained. Both fixture corrections
+are included before publication; production code and test selection remain
+unchanged. Final CI acceptance must inspect failure output as well as job state.
