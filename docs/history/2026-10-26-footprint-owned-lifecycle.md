@@ -76,6 +76,14 @@ malformed/oversized result. This diagnostic grants no source or writer authority
 and cannot retroactively explain the first case's discarded reply. These fixes
 require fresh installed-runtime validation; neither consumed case was replayed.
 
+Before merging, root integration review found that the first draft captured
+rejected replies only in the construction reader. The outer startup transport
+could reject them first. The final implementation captures at that earliest
+transport boundary and exposes it through the opening's retained status, while
+keeping the reader-level diagnostic. A composed transport regression covers
+the actual rejection path. Earlier checks and the initial PR payload remain
+retained; final publication requires the corrected commit's checks.
+
 ## Original-owner preparation and bounded data
 
 The new [preparation component](../../plugins/easyeda-pro-control/server/src/current-footprint-copy-preparation-runtime.ts)

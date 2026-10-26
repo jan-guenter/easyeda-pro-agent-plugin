@@ -15,7 +15,8 @@ import { CURRENT_PCB_209_WORKER_BOOTSTRAP_ROLES, CURRENT_PCB_209_WORKER_PRELOAD_
   currentPcb209StartupScriptRole, isCurrentPcb209BootstrapTargetUrl, qualifyCurrentPcb209PreloadCopyCreator,
   qualifyCurrentPcb209PreloadCopyPause, qualifyCurrentPcb209StartupScriptSource } from "./current-pcb-209-worker-bootstrap-source.ts";
 import { captureCurrentPcbStringClockReply } from "./current-pcb-string-clock-reply.ts";
-import { CURRENT_FOOTPRINT_COPY_SOURCE_READ_LIMITS, captureCurrentFootprintCopySourceReadReply } from "./current-footprint-copy-source-read.ts";
+import { CURRENT_FOOTPRINT_COPY_SOURCE_READ_LIMITS } from "./current-footprint-copy-source-read.ts";
+import { CurrentFootprintSourceReplyCapture } from "./current-footprint-source-reply-capture.ts";
 import { CURRENT_PCB_DIAGNOSTIC_WORKER_SCRIPT } from "./current-pcb-diagnostic-worker-context.ts";
 import type { DiagnosticWorkerScriptProfile } from "./current-pcb-diagnostic-worker-context.ts";
 import { CurrentPcb209WorkerConstructionRunner, CurrentPcbWorkerConstructionRunner } from "./current-pcb-worker-construction-runner.ts";
@@ -172,6 +173,7 @@ class CurrentPcbWorkerStartupTransportCore<Packet extends ConstructionPacket, Ru
   #firstEventFailure: EventFailure | null = null;
   #lastCommand: CurrentPcbWorkerStartupCommand["method"] | null = null;
   #lastSourceTransfer: SourceTransfer | null = null;
+  readonly #footprintSourceCapture = new CurrentFootprintSourceReplyCapture();
   #worker: Worker | null = null;
   #expectedProject: z.infer<typeof expectedProjectSchema> | null = null;
   #context: z.infer<typeof contextSchema> | null = null;
@@ -226,6 +228,7 @@ class CurrentPcbWorkerStartupTransportCore<Packet extends ConstructionPacket, Ru
     bootstrapStages: readonly Readonly<{ role: StartupRole; parsed: boolean; pauseSeen: boolean;
       sourceQualified: boolean; resumeAttempted: boolean; resumeSeen: boolean; resumeOrigin: ResumeOrigin | null }>[]; preloadLogSeen: boolean;
     workerScriptLoadedObserved: boolean; requests: number; firstFailure: StartupFailure | null;
+    firstRejectedFootprintSourceReply: ReturnType<CurrentFootprintSourceReplyCapture["firstRejected"]>;
     constructionAssignments: ReturnType<CurrentPcbWorkerConstructionRunner["status"]>["assignments"] | null }> {
     return Object.freeze({ firstFailure: this.#firstFailure, started: this.#started, settled: this.#settled, failed: this.#failure !== null,
       sourceQualified: this.#sourceQualified, initialPauseSeen: this.#initialPauseSeen,
@@ -234,6 +237,7 @@ class CurrentPcbWorkerStartupTransportCore<Packet extends ConstructionPacket, Ru
       attachedWorkers: this.#workers.size, released: this.#released, existingWorkersBound: this.#existingWorkers !== null,
       existingWorkersObserved: this.#existingWorkers?.size ?? 0, existingWorkersAttached: this.#backgroundWorkers.size,
       firstEventFailure: this.#firstEventFailure, requests: this.#requests, preloadLogSeen: this.#preloadLogSeen,
+      firstRejectedFootprintSourceReply: this.#footprintSourceCapture.firstRejected(),
       constructionAssignments: this.#runner?.status().assignments ?? null,
       workerScriptLoadedObserved: this.#workerScriptLoadedObserved,
       bootstrapStages: Object.freeze(this.#bootstrapStages.map(stage => Object.freeze({ role: stage.role,
@@ -328,7 +332,9 @@ class CurrentPcbWorkerStartupTransportCore<Packet extends ConstructionPacket, Ru
     this.#requests += 1;
     const sourceRead = command.method === "Runtime.callFunctionOn" && "objectId" in command.params && command.params.awaitPromise;
     const raw = await bounded(this.#sendOriginal(command), sourceRead ? CURRENT_FOOTPRINT_COPY_SOURCE_READ_LIMITS.hostTimeoutMs : REQUEST_MS);
-    const result = sourceRead ? captureCurrentFootprintCopySourceReadReply(raw) : captureCurrentPcbStringClockReply(raw).value;
+    // This transport is the earliest strict source-envelope boundary. Retain
+    // A bounded rejected reply here before the construction reader can see it.
+    const result = sourceRead ? this.#footprintSourceCapture.capture(raw) : captureCurrentPcbStringClockReply(raw).value;
     if (!cleanup) { await this.#current(); }
     return result;
   }

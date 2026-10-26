@@ -10,7 +10,7 @@ const require = function __easyedaGuardedRequire(specifier) { if (typeof specifi
 	const __easyedaPublicationLockPath = __easyedaJoin(__easyedaPublicationDirectory, ".bundle-publication.lock");
 const __easyedaAssertNoPublication = () => { try { __easyedaLstatSync(__easyedaPublicationLockPath); throw new Error("The facade bundle is undergoing a fail-closed publication transaction."); } catch (__easyedaPublicationError) { if (!__easyedaPublicationError || typeof __easyedaPublicationError !== "object" || !("code" in __easyedaPublicationError) || __easyedaPublicationError.code !== "ENOENT") throw __easyedaPublicationError; } };
 __easyedaAssertNoPublication();
-const __easyedaBundlePairId = "12261b209293c437717c64b1ccaa96067e321451d853d567bfdfc2bf075c2490";
+const __easyedaBundlePairId = "610b7a7879d1d23ed96439e4487d148d8b1662d0f00f94d3d5f69ce6ee641295";
 if (__easyedaBasename(import.meta.filename) === "server.mjs") {
   const __easyedaPeerPath = __easyedaJoin(import.meta.dirname, "upstream-supervisor.mjs");
   const __easyedaPeerPathBefore = __easyedaLstatSync(__easyedaPeerPath, { bigint: true });
@@ -123558,9 +123558,152 @@ var init_current_pcb_209_startup_source_transfer = __esm({
   }
 });
 
+// server/src/current-pcb-209-ratline-stop-observation.ts
+import { types as types35 } from "node:util";
+function refuse25(status3) {
+  throw status3 === "oversized" ? oversized : malformed;
+}
+function captureCurrentPcb209RatlineStopRecord(input2, limit) {
+  let nodes = 0;
+  const seen = /* @__PURE__ */ new Set();
+  const copy3 = (value2, depth) => {
+    nodes += 1;
+    if (nodes > 1024 || depth > 12) {
+      return refuse25("oversized");
+    }
+    if (value2 === null || typeof value2 === "boolean") {
+      return value2;
+    }
+    if (typeof value2 === "string") {
+      if (value2.length > limit) {
+        return refuse25("oversized");
+      }
+      if (!value2.isWellFormed()) {
+        return refuse25("malformed");
+      }
+      return value2;
+    }
+    if (typeof value2 === "number") {
+      if (!Number.isFinite(value2) || Object.is(value2, -0)) {
+        return refuse25("malformed");
+      }
+      return value2;
+    }
+    if (typeof value2 !== "object" || types35.isProxy(value2) || seen.has(value2)) {
+      return refuse25("malformed");
+    }
+    seen.add(value2);
+    const own15 = (key) => {
+      const field13 = Object.getOwnPropertyDescriptor(value2, key);
+      if (field13 === void 0 || !Object.hasOwn(field13, "value") || field13.enumerable !== true) {
+        return refuse25("malformed");
+      }
+      return field13.value;
+    };
+    if (Array.isArray(value2)) {
+      if (Object.getPrototypeOf(value2) !== Array.prototype || Reflect.ownKeys(value2).length !== value2.length + 1) {
+        return refuse25("malformed");
+      }
+      if (value2.length > 256) {
+        return refuse25("oversized");
+      }
+      return Object.freeze(Array.from({ length: value2.length }, (_, index2) => copy3(own15(String(index2)), depth + 1)));
+    }
+    const keys3 = Reflect.ownKeys(value2), prototype2 = Object.getPrototypeOf(value2);
+    if (prototype2 !== Object.prototype && prototype2 !== null) {
+      return refuse25("malformed");
+    }
+    if (keys3.length > 32) {
+      return refuse25("oversized");
+    }
+    const result2 = {};
+    for (const key of keys3) {
+      if (typeof key !== "string" || !key.isWellFormed()) {
+        return refuse25("malformed");
+      }
+      if (key.length > 128) {
+        return refuse25("oversized");
+      }
+      Object.defineProperty(result2, key, { value: copy3(own15(key), depth + 1), enumerable: true });
+    }
+    return Object.freeze(result2);
+  };
+  try {
+    const value2 = copy3(input2, 0);
+    const text56 = JSON.stringify(value2);
+    const bytes2 = Buffer.byteLength(text56);
+    if (bytes2 > limit) {
+      return refuse25("oversized");
+    }
+    return Object.freeze({ status: "captured", value: value2, sha256: sha256Text(text56), bytes: bytes2 });
+  } catch (error63) {
+    return Object.freeze({ status: error63 === oversized ? "oversized" : "malformed", value: null, sha256: null, bytes: null });
+  }
+}
+function currentPcb209RatlineIsStop(input2) {
+  if (input2 === null || typeof input2 !== "object" || types35.isProxy(input2)) {
+    return false;
+  }
+  const descriptor10 = Object.getOwnPropertyDescriptor(input2, "method");
+  return descriptor10 !== void 0 && Object.hasOwn(descriptor10, "value") && typeof descriptor10.value === "string" && ["Debugger.paused", "Debugger.resumed", "Target.attachedToTarget"].includes(descriptor10.value);
+}
+function captureCurrentPcb209RatlineStop(input2, script, context4, metadata13) {
+  return Object.freeze({
+    profile: "private.pcb209-ratline-rejected-stop.v1",
+    metadata: Object.freeze({ ...metadata13 }),
+    event: captureCurrentPcb209RatlineStopRecord(input2, 32768),
+    script: script ?? unavailable,
+    context: context4 ?? unavailable,
+    executionAuthorized: false
+  });
+}
+function summarizeCurrentPcb209RatlineStop(value2) {
+  return Object.freeze({
+    profile: "private.pcb209-ratline-rejected-stop-summary.v1",
+    evidenceSha256: sha256Json(value2),
+    eventStatus: value2.event.status,
+    scriptStatus: value2.script.status,
+    contextStatus: value2.context.status,
+    executionAuthorized: false
+  });
+}
+var malformed, oversized, unavailable;
+var init_current_pcb_209_ratline_stop_observation = __esm({
+  "server/src/current-pcb-209-ratline-stop-observation.ts"() {
+    init_core3();
+    malformed = new Error("PCB209_RATLINE_STOP_MALFORMED");
+    oversized = new Error("PCB209_RATLINE_STOP_OVERSIZED");
+    unavailable = Object.freeze({ status: "unavailable", value: null, sha256: null, bytes: null });
+  }
+});
+
+// server/src/current-footprint-source-reply-capture.ts
+var CurrentFootprintSourceReplyCapture;
+var init_current_footprint_source_reply_capture = __esm({
+  "server/src/current-footprint-source-reply-capture.ts"() {
+    init_current_footprint_copy_source_read();
+    init_current_pcb_209_ratline_stop_observation();
+    CurrentFootprintSourceReplyCapture = class {
+      #firstRejected = null;
+      firstRejected() {
+        return this.#firstRejected;
+      }
+      capture(input2) {
+        const snapshot8 = this.#firstRejected === null ? captureCurrentPcb209RatlineStopRecord(input2, 32768) : null;
+        try {
+          return captureCurrentFootprintCopySourceReadReply(input2);
+        } catch (error63) {
+          this.#firstRejected ??= snapshot8;
+          throw error63;
+        }
+      }
+    };
+  }
+});
+
 // server/src/current-pcb-diagnostic-worker-context.ts
 import { createHash as createHash61 } from "node:crypto";
-function refuse25() {
+function refuse26() {
   throw new Error("PCB_DIAGNOSTIC_WORKER_IDENTITY");
 }
 function text37(value2, maximum5 = 8192) {
@@ -123622,7 +123765,7 @@ var init_current_pcb_diagnostic_worker_context = __esm({
        * the default compiled profile, never caller URL/hash/size expectations. */
       constructor(parentTargetId, parentSessionId, profile3 = CURRENT_PCB_DIAGNOSTIC_WORKER_SCRIPT) {
         if (!diagnosticToken(parentTargetId) || !diagnosticToken(parentSessionId) || !diagnosticExact(profile3, ["relativePath", "scriptSha256", "scriptBytes"]) || !/^[A-Za-z\d_.-]+(?:\/[A-Za-z\d_.-]+)+\.js$/u.test(profile3.relativePath) || profile3.relativePath.length > 512 || profile3.relativePath.split("/").some((part) => part === "." || part === "..") || !/^[a-f\d]{64}$/u.test(profile3.scriptSha256) || !positive3(profile3.scriptBytes) || profile3.scriptBytes > 4 * 1024 * 1024) {
-          refuse25();
+          refuse26();
         }
         this.#parentTargetId = parentTargetId;
         this.#parentSessionId = parentSessionId;
@@ -123835,7 +123978,7 @@ var init_current_pcb_diagnostic_worker_context = __esm({
       }
       #refuse() {
         this.#failed = true;
-        return refuse25();
+        return refuse26();
       }
     };
   }
@@ -124453,149 +124596,6 @@ var init_current_footprint_copy_source_command = __esm({
       userGesture: external_exports.literal(false)
     }).strict();
     CURRENT_FOOTPRINT_COPY_SOURCE_FRAME_BYTES = (CURRENT_FOOTPRINT_COPY_SOURCE_READ_LIMITS.contentBytes * 2 + 4096) * 2 + 4096;
-  }
-});
-
-// server/src/current-pcb-209-ratline-stop-observation.ts
-import { types as types35 } from "node:util";
-function refuse26(status3) {
-  throw status3 === "oversized" ? oversized : malformed;
-}
-function captureCurrentPcb209RatlineStopRecord(input2, limit) {
-  let nodes = 0;
-  const seen = /* @__PURE__ */ new Set();
-  const copy3 = (value2, depth) => {
-    nodes += 1;
-    if (nodes > 1024 || depth > 12) {
-      return refuse26("oversized");
-    }
-    if (value2 === null || typeof value2 === "boolean") {
-      return value2;
-    }
-    if (typeof value2 === "string") {
-      if (value2.length > limit) {
-        return refuse26("oversized");
-      }
-      if (!value2.isWellFormed()) {
-        return refuse26("malformed");
-      }
-      return value2;
-    }
-    if (typeof value2 === "number") {
-      if (!Number.isFinite(value2) || Object.is(value2, -0)) {
-        return refuse26("malformed");
-      }
-      return value2;
-    }
-    if (typeof value2 !== "object" || types35.isProxy(value2) || seen.has(value2)) {
-      return refuse26("malformed");
-    }
-    seen.add(value2);
-    const own15 = (key) => {
-      const field13 = Object.getOwnPropertyDescriptor(value2, key);
-      if (field13 === void 0 || !Object.hasOwn(field13, "value") || field13.enumerable !== true) {
-        return refuse26("malformed");
-      }
-      return field13.value;
-    };
-    if (Array.isArray(value2)) {
-      if (Object.getPrototypeOf(value2) !== Array.prototype || Reflect.ownKeys(value2).length !== value2.length + 1) {
-        return refuse26("malformed");
-      }
-      if (value2.length > 256) {
-        return refuse26("oversized");
-      }
-      return Object.freeze(Array.from({ length: value2.length }, (_, index2) => copy3(own15(String(index2)), depth + 1)));
-    }
-    const keys3 = Reflect.ownKeys(value2), prototype2 = Object.getPrototypeOf(value2);
-    if (prototype2 !== Object.prototype && prototype2 !== null) {
-      return refuse26("malformed");
-    }
-    if (keys3.length > 32) {
-      return refuse26("oversized");
-    }
-    const result2 = {};
-    for (const key of keys3) {
-      if (typeof key !== "string" || !key.isWellFormed()) {
-        return refuse26("malformed");
-      }
-      if (key.length > 128) {
-        return refuse26("oversized");
-      }
-      Object.defineProperty(result2, key, { value: copy3(own15(key), depth + 1), enumerable: true });
-    }
-    return Object.freeze(result2);
-  };
-  try {
-    const value2 = copy3(input2, 0);
-    const text56 = JSON.stringify(value2);
-    const bytes2 = Buffer.byteLength(text56);
-    if (bytes2 > limit) {
-      return refuse26("oversized");
-    }
-    return Object.freeze({ status: "captured", value: value2, sha256: sha256Text(text56), bytes: bytes2 });
-  } catch (error63) {
-    return Object.freeze({ status: error63 === oversized ? "oversized" : "malformed", value: null, sha256: null, bytes: null });
-  }
-}
-function currentPcb209RatlineIsStop(input2) {
-  if (input2 === null || typeof input2 !== "object" || types35.isProxy(input2)) {
-    return false;
-  }
-  const descriptor10 = Object.getOwnPropertyDescriptor(input2, "method");
-  return descriptor10 !== void 0 && Object.hasOwn(descriptor10, "value") && typeof descriptor10.value === "string" && ["Debugger.paused", "Debugger.resumed", "Target.attachedToTarget"].includes(descriptor10.value);
-}
-function captureCurrentPcb209RatlineStop(input2, script, context4, metadata13) {
-  return Object.freeze({
-    profile: "private.pcb209-ratline-rejected-stop.v1",
-    metadata: Object.freeze({ ...metadata13 }),
-    event: captureCurrentPcb209RatlineStopRecord(input2, 32768),
-    script: script ?? unavailable,
-    context: context4 ?? unavailable,
-    executionAuthorized: false
-  });
-}
-function summarizeCurrentPcb209RatlineStop(value2) {
-  return Object.freeze({
-    profile: "private.pcb209-ratline-rejected-stop-summary.v1",
-    evidenceSha256: sha256Json(value2),
-    eventStatus: value2.event.status,
-    scriptStatus: value2.script.status,
-    contextStatus: value2.context.status,
-    executionAuthorized: false
-  });
-}
-var malformed, oversized, unavailable;
-var init_current_pcb_209_ratline_stop_observation = __esm({
-  "server/src/current-pcb-209-ratline-stop-observation.ts"() {
-    init_core3();
-    malformed = new Error("PCB209_RATLINE_STOP_MALFORMED");
-    oversized = new Error("PCB209_RATLINE_STOP_OVERSIZED");
-    unavailable = Object.freeze({ status: "unavailable", value: null, sha256: null, bytes: null });
-  }
-});
-
-// server/src/current-footprint-source-reply-capture.ts
-var CurrentFootprintSourceReplyCapture;
-var init_current_footprint_source_reply_capture = __esm({
-  "server/src/current-footprint-source-reply-capture.ts"() {
-    init_current_footprint_copy_source_read();
-    init_current_pcb_209_ratline_stop_observation();
-    CurrentFootprintSourceReplyCapture = class {
-      #firstRejected = null;
-      firstRejected() {
-        return this.#firstRejected;
-      }
-      capture(input2) {
-        const snapshot8 = this.#firstRejected === null ? captureCurrentPcb209RatlineStopRecord(input2, 32768) : null;
-        try {
-          return captureCurrentFootprintCopySourceReadReply(input2);
-        } catch (error63) {
-          this.#firstRejected ??= snapshot8;
-          throw error63;
-        }
-      }
-    };
   }
 });
 
@@ -126827,6 +126827,7 @@ var init_current_pcb_worker_startup_transport = __esm({
     init_current_pcb_209_worker_bootstrap_source();
     init_current_pcb_string_clock_reply();
     init_current_footprint_copy_source_read();
+    init_current_footprint_source_reply_capture();
     init_current_pcb_diagnostic_worker_context();
     init_current_pcb_worker_construction_runner();
     init_current_pcb_worker_startup_contract();
@@ -126959,6 +126960,7 @@ var init_current_pcb_worker_startup_transport = __esm({
       #firstEventFailure = null;
       #lastCommand = null;
       #lastSourceTransfer = null;
+      #footprintSourceCapture = new CurrentFootprintSourceReplyCapture();
       #worker = null;
       #expectedProject = null;
       #context = null;
@@ -127047,6 +127049,7 @@ var init_current_pcb_worker_startup_transport = __esm({
           firstEventFailure: this.#firstEventFailure,
           requests: this.#requests,
           preloadLogSeen: this.#preloadLogSeen,
+          firstRejectedFootprintSourceReply: this.#footprintSourceCapture.firstRejected(),
           constructionAssignments: this.#runner?.status().assignments ?? null,
           workerScriptLoadedObserved: this.#workerScriptLoadedObserved,
           bootstrapStages: Object.freeze(this.#bootstrapStages.map((stage) => Object.freeze({
@@ -127189,7 +127192,7 @@ var init_current_pcb_worker_startup_transport = __esm({
         this.#requests += 1;
         const sourceRead3 = command2.method === "Runtime.callFunctionOn" && "objectId" in command2.params && command2.params.awaitPromise;
         const raw = await bounded4(this.#sendOriginal(command2), sourceRead3 ? CURRENT_FOOTPRINT_COPY_SOURCE_READ_LIMITS.hostTimeoutMs : REQUEST_MS3);
-        const result2 = sourceRead3 ? captureCurrentFootprintCopySourceReadReply(raw) : captureCurrentPcbStringClockReply(raw).value;
+        const result2 = sourceRead3 ? this.#footprintSourceCapture.capture(raw) : captureCurrentPcbStringClockReply(raw).value;
         if (!cleanup) {
           await this.#current();
         }

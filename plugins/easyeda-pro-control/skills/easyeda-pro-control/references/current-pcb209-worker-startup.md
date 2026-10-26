@@ -172,10 +172,13 @@ decoding and the following owner check. The step distinguishes function metadata
 scope enumeration and callback-relation checks. A retained reply is diagnostic
 evidence; it neither qualifies the assignment nor permits another attempt.
 
-For a failed footprint source capture, inspect `firstRejectedSourceReply` in
-the retained source observation. It preserves the first rejected reply before
-strict parsing, or explicitly reports that the reply was malformed or too large
-to retain. It supplies diagnostic evidence only. A later channel failure does
+For a failed footprint source capture, inspect
+`workerStartupOpeningState.transport.firstRejectedFootprintSourceReply` first.
+That transport parses the reply before the construction reader receives it.
+The reader also retains `firstRejectedSourceReply` for failures at its own
+boundary. Each preserves the first rejected reply before strict parsing, or
+explicitly reports that it was malformed or too large to retain. These supply
+diagnostic evidence only. A later channel failure does
 not establish why an earlier source reply failed, and a missing raw reply cannot
 be reconstructed from the error label.
 
@@ -190,13 +193,14 @@ The 209 pause windows account for serial owner checks, source reads and
 breakpoint allocation. The project opener now adds the finite deliberate
 capture graph to its ordinary opening allowance: 651 seconds for capture,
 45 seconds for opening and 25 seconds for delivery give a 696-second native
-deadline and 721-second host wait. The subsequent original-owner checks remain
-inside the original one-hour launch deadline. Small control requests and owner
+deadline and 721-second host wait. Small control requests and owner
 checks retain their two-second limits. The209 script-transfer limit derives from
 the pinned source size, JSON framing and native64KiB polling, capped by the
 remaining original pause. The project script's ceiling is6,540ms. This does not
 extend the stage or launch clocks or promise that every subordinate maximum fits.
-The60-second cleanup reserve is unchanged. These are conservative source
+The default purpose has the separate channel-construction lifetime described
+above. The empty and ratline purposes retain their own one-hour native launch
+clock and60-second cleanup reserve. These are conservative source
 bounds, not measured completion times. A native opening timeout now identifies
 `native-open-project`; it does not report the last root-binding check as the
 awaited operation. The generic opener and 206 pause limits are unchanged.
