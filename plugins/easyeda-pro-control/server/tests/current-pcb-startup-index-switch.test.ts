@@ -36,6 +36,7 @@ async function fixture(): Promise<Readonly<{ run: Run; owners: readonly Readonly
   for (const name of ["captureWorkerStartup", "handoffWorkerStartup", "openWorkerStartup", "handoffStartup", "openStartup", "requireStartup",
     "observeWorkerStartupAssignments", "observeStartupAssignments", "requireStartupAssignments", "observeWorkerStartupFootprint", "observeStartupFootprint", "observeWorkerStartupActor", "observeStartupActor",
     "observeWorkerStartupFootprintSource", "observeStartupFootprintSource",
+    "prepareWorkerStartupFootprintCopy", "prepareStartupFootprintCopy",
     "observeWorkerStartupChannel", "observeStartupChannel", "observeWorkerStartupEmpty", "observeStartupEmpty", "prepareWorkerStartupEmpty", "prepareStartupEmpty", "observeWorkerStartupRatline", "observeStartupRatline",
     "observeWorkerStartupRatlineContinuation", "observeStartupRatlineContinuation"]) {
     Object.defineProperty(Owner.prototype, name, { value: (): never => { throw new Error(`Unexpected synthetic operation ${name}`); } });
@@ -63,7 +64,9 @@ async function fixture(): Promise<Readonly<{ run: Run; owners: readonly Readonly
     currentPcbDiagnosticLifecycle: undefined, currentPcbStringPrecreateLifecycle: undefined };
   const source = await readFile(new URL("../src/index.ts", import.meta.url), "utf8");
   const begin = source.indexOf("  let startupOriginal:"), end = source.indexOf("\n  if (facadeToolRegistered", begin);
-  assert.ok(begin > 0 && end > begin && end - begin < 15_000);
+  // The preparation route extends this actual source slice beyond 15,000 characters.
+  // Match the bounded extraction used by the ordinary-release registration fixture.
+  assert.ok(begin > 0 && end > begin && end - begin < 20_000);
   const helpersBegin = source.indexOf("function disposableOwnData("), helpersEnd = source.indexOf("\n}", source.indexOf("function disposableOwnerMethod(", helpersBegin)) + 2;
   assert.ok(helpersBegin > 0 && helpersEnd > helpersBegin && helpersEnd - helpersBegin < 2500);
   // Evaluate the actual source bodies unchanged, supplying only synthetic

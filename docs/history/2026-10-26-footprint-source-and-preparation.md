@@ -315,3 +315,28 @@ No new native copy/delete writer is enabled. Both original disposable cases
 are terminal and released. Publication will require the frozen local non-suite
 checks, exact-commit complete CI, artifact comparison and official marketplace
 installation. Results will be appended after those steps complete.
+
+
+## CI fixture correction
+
+Candidate commit `4c4dc9eac8eed83fd9b6843b5f3dfc3faa6b2570` passed all
+25 local non-suite checks, the GitHub build/bridge job, Windows native checks
+and exact artifact comparison. Its full facade run found five fixture failures.
+Two synthetic owner classes omitted the newly captured public and protected
+preparation methods. Four tests also stopped at an extraction guard because
+the real dispatcher slice grew from 14,920 to 16,296 characters.
+
+The correction adds inert preparation methods to both synthetic owners and
+aligns the startup fixture's bounded extraction with the existing 20,000-character
+ordinary-release fixture. The extracted production source and all behavioral
+assertions remain intact. No runtime code, native helper, bundle, compatibility
+pin, execution gate or test selection changes. The original failed CI evidence
+is retained. The corrected commit requires its own full CI run; earlier passing
+jobs do not establish that final commit's complete suite result.
+
+
+Both corrected fixture files passed all seven focused tests and selected strict
+type-aware lint with zero warnings. Author receipt SHA-256:
+`ad8e7647c8bffe903c3249d4db1794cf97753a7656d9e90d9a92928ff8e0f918`.
+The final local evidence will rerun types, lint and documentation validators,
+while explicitly reusing the unchanged dependency/build/native evidence.
