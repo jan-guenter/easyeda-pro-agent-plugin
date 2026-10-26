@@ -170,3 +170,23 @@ supervisor bundle SHA-256 is
 The complete facade shards, bridge suite and Windows native job will run on
 the final commit through GitHub CI. These checks do not validate the new
 connected PCB path or footprint state.
+
+## Initial CI result and fixture correction
+
+Initial payload `026b583247b8497d45ebd03eee3ee6f66dadaee2` ran in
+[CI40295928273](https://github.com/jan-guenter/easyeda-pro-agent-plugin/actions/runs/40295928273)
+and [Windows40295928275](https://github.com/jan-guenter/easyeda-pro-agent-plugin/actions/runs/40295928275).
+Build, bridge, Windows and five facade shards passed. Three facade shards
+failed ten tests because existing synthetic registration/session fixtures
+omitted the new footprint class/methods or ancestry-evidence getter. Two
+failures followed an inspection exception that prevented fixture cleanup.
+The aggregate job correctly refused acceptance. Complete failed-job logs and
+terminal run metadata are retained; this run is not release evidence.
+
+Five test files now supply the real current209 class or the existing fixture's
+inert methods/getter. All assertions and production checks remain unchanged.
+The affected tests pass 16 cases in total and strict targeted lint is clean.
+An intermediate duplicate fixture getter was caught by lint and removed; both
+tests and lint then passed on the final fixture files. No runtime source,
+bundle or compatibility pin changed. Version `0.3.0+codex.20261026084540` remains
+unpublished. Corrected-commit CI must pass before publication.
