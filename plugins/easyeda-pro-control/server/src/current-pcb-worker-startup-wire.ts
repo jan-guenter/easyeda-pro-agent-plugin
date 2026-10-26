@@ -2,6 +2,8 @@
  * expression crosses the native boundary. Separate from diagnostic no-pause. */
 /* oxlint-disable import/max-dependencies -- This native boundary compares every fixed program against its original contract literal; splitting those checks would duplicate the admission policy. */
 import { z } from "zod";
+import { CURRENT_FOOTPRINT_COPY_DEPENDENCY_CALLS } from "./current-footprint-copy-dependency-bindings.ts";
+import { CURRENT_FOOTPRINT_COPY_PREPARATION_PROFILE } from "./current-footprint-copy-preparation-profile.ts";
 import { CURRENT_FOOTPRINT_COPY_CONSTRUCTORS_EXPRESSION, CURRENT_FOOTPRINT_COPY_STATE_CALLS } from "./current-footprint-copy-state.ts";
 import { currentFootprintCopySourceCommandParamsSchema } from "./current-footprint-copy-source-command.ts";
 import { CURRENT_FOOTPRINT_COPY_METHOD_CALLS } from "./current-footprint-copy-method-bindings.ts";
@@ -72,7 +74,7 @@ const schema: z.ZodType<CurrentPcbWorkerStartupCommand> = z.union([
   command("Runtime.getProperties", z.object({ objectId: handle, ownProperties: z.literal(true), generatePreview: z.literal(false) }).strict()),
   command("Runtime.callFunctionOn", z.object({ objectId: handle,
     functionDeclaration: z.string().max(16_384),
-    arguments: z.array(objectArgument).max(5), objectGroup: group, silent: z.literal(true), returnByValue: z.boolean(),
+    arguments: z.array(objectArgument).max(7), objectGroup: group, silent: z.literal(true), returnByValue: z.boolean(),
     generatePreview: z.literal(false), throwOnSideEffect: z.literal(true), awaitPromise: z.literal(false), userGesture: z.literal(false) }).strict()),
   command("Runtime.releaseObjectGroup", z.object({ objectGroup: group }).strict()),
 ]);
@@ -111,7 +113,7 @@ function captureWire(raw: unknown): unknown {
  * Native code independently reconstructs these phases from identifiers. */
 function startupWire(raw: unknown, id: number,
   sites: typeof CURRENT_PCB_WORKER_CONSTRUCTION_SITES | typeof CURRENT_PCB_209_WORKER_CONSTRUCTION_SITES,
-  pcbOpening = CURRENT_PCB_DIAGNOSTIC_PCB_OPENING_FUNCTION): Readonly<{
+  pcbOpening = CURRENT_PCB_DIAGNOSTIC_PCB_OPENING_FUNCTION, footprintPreparation = false): Readonly<{
   command: CurrentPcbWorkerStartupCommand & Readonly<{ id: number }>;
   request: Readonly<Record<string, string | number>>;
 }> {
@@ -180,6 +182,8 @@ function startupWire(raw: unknown, id: number,
           client: selected.value.client, maximumTicket: String(selected.value.maximumTicket) };
         break;
       }
+      const dependency = Object.entries(CURRENT_FOOTPRINT_COPY_DEPENDENCY_CALLS)
+        .find(([, value]) => value.program === parsed.params.functionDeclaration);
       const footprint = [...Object.entries(CURRENT_FOOTPRINT_COPY_STATE_CALLS),
         ...Object.entries(CURRENT_FOOTPRINT_COPY_METHOD_CALLS).map(([key, value]) => [`methods-${key}`, value] as const),
         ...Object.entries(CURRENT_FOOTPRINT_COPY_CACHE_FACTORY_CALLS).map(([key, value]) => [`cache-factory-${key}`, value] as const)]
@@ -188,7 +192,12 @@ function startupWire(raw: unknown, id: number,
         .find(([, value]) => value.program === parsed.params.functionDeclaration);
       const channel = Object.entries(CURRENT_PCB_WORKER_STARTUP_CHANNEL_CALLS)
         .find(([, value]) => value.program === parsed.params.functionDeclaration);
-      if (footprint !== undefined) {
+      if (dependency !== undefined) {
+        const [phase, expected] = dependency;
+        if (!footprintPreparation || sites !== CURRENT_PCB_209_WORKER_CONSTRUCTION_SITES || parsed.params.arguments.length !== expected.arguments ||
+            parsed.params.returnByValue !== expected.returnByValue) { return fail(); }
+        fields = { startupPhase: `footprint-dependency-${phase}`, objectId: parsed.params.objectId };
+      } else if (footprint !== undefined) {
         const [phase, expected] = footprint;
         if (sites !== CURRENT_PCB_209_WORKER_CONSTRUCTION_SITES || parsed.params.arguments.length !== expected.arguments ||
             parsed.params.returnByValue !== expected.returnByValue) { return fail(); }
@@ -229,6 +238,14 @@ export function currentPcbWorkerStartupWire(raw: unknown, id: number): ReturnTyp
  * caller-selected coordinate. All actions, group and request bounds stay fixed. */
 export function currentPcb209WorkerStartupWire(raw: unknown, id: number): ReturnType<typeof startupWire> {
   return startupWire(raw, id, CURRENT_PCB_209_WORKER_CONSTRUCTION_SITES);
+}
+/** Only the separately launched preparation owner accepts this counter range.
+ * Its extra dependency selectors are unavailable to either old startup purpose. */
+export function currentFootprintCopyPreparationWire(raw: unknown, id: number): ReturnType<typeof startupWire> {
+  if (!Number.isSafeInteger(id) || id < 1 || id > CURRENT_FOOTPRINT_COPY_PREPARATION_PROFILE.requestLimit) { return fail(); }
+  const original = startupWire(raw, 1, CURRENT_PCB_209_WORKER_CONSTRUCTION_SITES, CURRENT_PCB_DIAGNOSTIC_PCB_OPENING_FUNCTION, true);
+  return Object.freeze({ command: Object.freeze({ ...original.command, id }),
+    request: Object.freeze({ ...original.request, requestId: id }) });
 }
 /** The native ratline owner adds the remaining Stopwatch horizon as a third
  * runtime argument. No duration or deadline field crosses this wire. */

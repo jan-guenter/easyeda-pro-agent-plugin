@@ -7366,8 +7366,8 @@
       "routes": [],
       "omission": {
         "code": "footprint-copy-default-matching-and-lifecycle",
-        "reason": "The inspected 3.2.209 public matcher can return the existing footprint; native clone requires a special underscore-containing UUID. The separate native-create plan now has original-owned preparation publication, complete supplied SQL/saved-source models, unmounted original-worker lexical bindings, actor/SQL composition and UI route selectors. Source reading and preparation passed one installed191500 disposable lifecycle with exact closed-file equality; this does not validate native create. Native create allocates and advances a ticket before fetching source, crosses UI routing that can select an extension library, and ignores uploadLocal's success field. Neither preparation nor a returned success proves a new durable copy.",
-        "nextRequirement": "Bind a separate original copy launch, complete transitive parser/upload and UI destination ownership, and both actual native document-clock results plus backend actor/clock provenance; reserve the complete command/result/failure/journal lifecycle; perform one consumed native create; then prove original-generation closure, exact closed SQL, replay-excluded fresh saved reads and final closed equality on a disposable project. Parser/cache cleanup and upload fallback effects remain unqualified. Do not use the default matcher or clone as a substitute.",
+        "reason": "The inspected 3.2.209 public matcher can return the existing footprint; native clone requires a special underscore-containing UUID. The separate native-create plan now has original-owned preparation publication, complete supplied SQL/saved-source models, a separate original-owned preparation launch mounting worker lexical bindings, actor/SQL composition, 53 dependency functions and the initialized UI/manager route. The private two-continuation clock collector has synthetic tests but no native transport or embedded-V8 validation. Source reading and preparation passed one installed191500 disposable lifecycle with exact closed-file equality; this does not validate native create. Native create allocates and advances a ticket before fetching source, crosses UI routing that can select an extension library, and ignores uploadLocal's success field. Neither preparation nor a returned success proves a new durable copy.",
+        "nextRequirement": "Qualify asynchronous parser/upload completion and reciprocal UI/project-worker bus ownership, mount both actual native document-clock results and backend actor/clock provenance; reserve the complete command/result/failure/journal lifecycle; perform one consumed native create; then prove original-generation closure, exact closed SQL, replay-excluded fresh saved reads and final closed equality on a disposable project. Parser/cache cleanup and upload fallback effects remain unqualified. Do not use the default matcher or clone as a substitute.",
         "evidence": [
           "current-footprint-copy-preparation-runtime.ts",
           "current-footprint-copy-create-source.ts",
@@ -7375,10 +7375,15 @@
           "current-footprint-copy-producer-runner.ts",
           "current-footprint-copy-actor-preparation.ts",
           "current-footprint-copy-ui-bindings.ts",
+          "current-footprint-copy-preparation-validation.ts",
+          "current-footprint-copy-dependency-runner.ts",
+          "current-footprint-copy-manager-route-runner.ts",
+          "current-footprint-copy-transaction-clock-runner.ts",
           "current-footprint-copy-v2-sql.ts",
           "docs/history/2026-10-25-current-footprint-copy-preparation.md",
           "docs/history/2026-10-26-footprint-source-and-preparation.md",
-          "docs/history/2026-10-26-footprint-producer-bindings.md"
+          "docs/history/2026-10-26-footprint-producer-bindings.md",
+          "docs/history/2026-10-26-footprint-copy-integration.md"
         ]
       },
       "completeDeclaredContractSupported": false,

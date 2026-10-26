@@ -38,6 +38,8 @@ archive retain their original paths and must not be rewritten to later names.
 
 ## Record index and former paths
 
+- [2026-10-26 footprint copy integration](2026-10-26-footprint-copy-integration.md): separate preparation launch, original producer/actor/UI ownership and transaction-clock collection; implementation and validation status.
+
 Records sort by the date at the start of each filename. The former-path column
 also resolves references embedded in verbatim snapshots. Other reports retain
 their content with local links and report-path references adjusted for this

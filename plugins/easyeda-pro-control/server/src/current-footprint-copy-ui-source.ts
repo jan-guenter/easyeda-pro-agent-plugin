@@ -1,4 +1,4 @@
-/** Unmounted notification-source qualification. These pins describe the
+/** Fixed notification-source qualification. These pins describe the
  * already installed UI bundle; no supplied text is evaluated. */
 import { createHash } from "node:crypto";
 import { freezeDeep } from "./sqlite-inventory-core.ts";
@@ -123,9 +123,10 @@ export function assertCurrentFootprintCopyUiFunction(role: CurrentFootprintCopyU
     Buffer.byteLength(source) === profile.bytes && hash(source) === profile.sha256);
 }
 
-export function qualifyCurrentFootprintCopyUiSource(source: unknown): Readonly<{
+export type CurrentFootprintCopyUiSourceQualification = Readonly<{
   sourceSha256: string; functionCount: 9; runtimeBound: false; executionAuthorized: false;
-}> {
+}>;
+export function qualifyCurrentFootprintCopyUiSource(source: unknown): CurrentFootprintCopyUiSourceQualification {
   const profile = CURRENT_FOOTPRINT_COPY_UI_SOURCE;
   need(typeof source === "string" && source.length <= profile.bytes && source.isWellFormed() &&
     Buffer.byteLength(source) === profile.bytes && hash(source) === profile.sha256);

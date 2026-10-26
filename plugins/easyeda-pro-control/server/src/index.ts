@@ -128,10 +128,11 @@ import { editorContextRequestSchema } from "./editor-context.ts";
 import { readEditorContext, readEditorShell } from "./editor-shell-runtime.ts";
 import { OrdinaryLaunchCoordinator, ordinaryLaunchRequestSchema } from "./ordinary-launch.ts";
 import type { OrdinaryLaunchRuntime } from "./ordinary-launch.ts";
-import { CurrentPcb209DiagnosticLifecycle, CurrentPcb209EmptyStartupLifecycle, CurrentPcb209RatlineContinuationLifecycle, CurrentPcb209RatlineStartupLifecycle, CurrentPcb209WorkerStartupLifecycle, CurrentPcbDiagnosticLifecycle, CurrentPcbStringPrecreateLifecycle, CurrentPcbWorkerStartupLifecycle } from "./current-pcb-diagnostic-lifecycle.ts";
+import { CurrentFootprintCopyPreparationLifecycle, CurrentPcb209DiagnosticLifecycle, CurrentPcb209EmptyStartupLifecycle, CurrentPcb209RatlineContinuationLifecycle, CurrentPcb209RatlineStartupLifecycle, CurrentPcb209WorkerStartupLifecycle, CurrentPcbDiagnosticLifecycle, CurrentPcbStringPrecreateLifecycle, CurrentPcbWorkerStartupLifecycle } from "./current-pcb-diagnostic-lifecycle.ts";
 import { currentPcbDiagnosticToolRequestSchema } from "./current-pcb-diagnostic-validation.ts";
 import { currentPcb209OpeningRequestSchema } from "./current-pcb-209-opening-validation.ts";
 import type { CurrentPcbWorkerStartupValidationRequest } from "./current-pcb-worker-startup-validation.ts";
+import type { CurrentFootprintCopyPreparationValidationRequest } from "./current-footprint-copy-preparation-validation.ts";
 import { currentPcb209WorkerStartupToolRequestSchema } from "./current-pcb-209-empty-startup-validation.ts";
 import type { CurrentPcb209RatlineContinuationValidationRequest } from "./current-pcb-209-ratline-continuation-validation.ts";
 import type { CurrentPcb209RatlineStartupValidationRequest } from "./current-pcb-209-ratline-startup-validation.ts";
@@ -208,7 +209,7 @@ let ordinaryLaunchCoordinator: OrdinaryLaunchCoordinator | undefined;
 let ordinaryLaunchRuntime: WindowsControlRuntime | undefined;
 let currentPcbDiagnosticLifecycle: CurrentPcbDiagnosticLifecycle | CurrentPcb209DiagnosticLifecycle | undefined;
 let currentPcbStringPrecreateLifecycle: CurrentPcbStringPrecreateLifecycle | undefined;
-let currentPcbWorkerStartupLifecycle: CurrentPcbWorkerStartupLifecycle | CurrentPcb209WorkerStartupLifecycle | CurrentPcb209EmptyStartupLifecycle | CurrentPcb209RatlineStartupLifecycle | CurrentPcb209RatlineContinuationLifecycle | undefined;
+let currentPcbWorkerStartupLifecycle: CurrentPcbWorkerStartupLifecycle | CurrentPcb209WorkerStartupLifecycle | CurrentFootprintCopyPreparationLifecycle | CurrentPcb209EmptyStartupLifecycle | CurrentPcb209RatlineStartupLifecycle | CurrentPcb209RatlineContinuationLifecycle | undefined;
 let currentDisposableOpenCoordinator: CurrentDisposableOpenCoordinator | undefined;
 let currentPcbRenameOperationCoordinator: CurrentPcbRenameOperationCoordinator | undefined;
 let currentSchematicRenameOperationCoordinator: CurrentSchematicRenameOperationCoordinator | undefined;
@@ -2557,7 +2558,7 @@ if (facadeToolRegistered(facadeMode, "easyeda_control_pcb_diagnostic_validation"
   const inputSchema = z.object({ request: z.unknown().pipe(diagnostic209 ? currentPcb209OpeningRequestSchema : currentPcbDiagnosticToolRequestSchema) }).strict();
   let original: { readonly owner: CurrentPcbDiagnosticLifecycle | CurrentPcb209DiagnosticLifecycle; readonly run: CurrentPcbDiagnosticLifecycle["run"];
     readonly assertLocal: () => void } | undefined;
-  let startupOriginal: { readonly owner: CurrentPcbWorkerStartupLifecycle | CurrentPcb209WorkerStartupLifecycle | CurrentPcb209EmptyStartupLifecycle | CurrentPcb209RatlineStartupLifecycle | CurrentPcb209RatlineContinuationLifecycle; readonly run: CurrentPcbWorkerStartupLifecycle["run"];
+  let startupOriginal: { readonly owner: CurrentPcbWorkerStartupLifecycle | CurrentPcb209WorkerStartupLifecycle | CurrentFootprintCopyPreparationLifecycle | CurrentPcb209EmptyStartupLifecycle | CurrentPcb209RatlineStartupLifecycle | CurrentPcb209RatlineContinuationLifecycle; readonly run: CurrentPcbWorkerStartupLifecycle["run"];
     readonly capture: CurrentPcbWorkerStartupLifecycle["captureWorkerStartup"];
     readonly assignments: CurrentPcbWorkerStartupLifecycle["observeWorkerStartupAssignments"];
     readonly actor: CurrentPcbWorkerStartupLifecycle["observeWorkerStartupActor"];
@@ -2568,18 +2569,26 @@ if (facadeToolRegistered(facadeMode, "easyeda_control_pcb_diagnostic_validation"
     readonly empty: CurrentPcb209EmptyStartupLifecycle["observeWorkerStartupEmpty"] | undefined; readonly reserved: CurrentPcbWorkerStartupLifecycle["hasActiveReservation"];
     readonly ratline: CurrentPcb209RatlineStartupLifecycle["observeWorkerStartupRatline"] | undefined;
     readonly continuation: CurrentPcb209RatlineContinuationLifecycle["observeWorkerStartupRatlineContinuation"] | undefined;
+    readonly footprintUi: CurrentFootprintCopyPreparationLifecycle["observeWorkerStartupFootprintUi"] | undefined;
+    readonly footprintManagerRoute: CurrentFootprintCopyPreparationLifecycle["observeWorkerStartupFootprintManagerRoute"] | undefined;
+    readonly footprintDependencies: CurrentFootprintCopyPreparationLifecycle["prepareWorkerStartupFootprintDependencies"] | undefined;
+    readonly footprintPurpose: boolean; readonly footprintBindings: CurrentFootprintCopyPreparationLifecycle["prepareWorkerStartupFootprintBindings"] | undefined;
     readonly emptyPurpose: boolean; readonly ratlinePurpose: boolean; readonly continuationPurpose: boolean; readonly assertLocal: () => void } | undefined;
   let startupCalls = 0;
-  const runStartup = (request: CurrentPcbWorkerStartupValidationRequest | CurrentPcb209WorkerStartupValidationRequest | CurrentPcb209EmptyStartupValidationRequest | CurrentPcb209RatlineStartupValidationRequest | CurrentPcb209RatlineContinuationValidationRequest, emptyPurpose = false, ratlinePurpose = false, continuationPurpose = false): Promise<{ result: Record<string, unknown> }> => {
-    let StartupLifecycle: typeof CurrentPcbWorkerStartupLifecycle | typeof CurrentPcb209WorkerStartupLifecycle | typeof CurrentPcb209EmptyStartupLifecycle | typeof CurrentPcb209RatlineStartupLifecycle | typeof CurrentPcb209RatlineContinuationLifecycle = diagnostic209 ? CurrentPcb209WorkerStartupLifecycle : CurrentPcbWorkerStartupLifecycle;
-    if (Number(emptyPurpose) + Number(ratlinePurpose) + Number(continuationPurpose) > 1) { throw new Error("A launch has one fixed startup purpose."); }
+  const runStartup = (request: CurrentPcbWorkerStartupValidationRequest | CurrentPcb209WorkerStartupValidationRequest | CurrentPcb209EmptyStartupValidationRequest | CurrentPcb209RatlineStartupValidationRequest | CurrentPcb209RatlineContinuationValidationRequest | CurrentFootprintCopyPreparationValidationRequest, emptyPurpose = false, ratlinePurpose = false, continuationPurpose = false, footprintPurpose = false): Promise<{ result: Record<string, unknown> }> => {
+    let StartupLifecycle: typeof CurrentPcbWorkerStartupLifecycle | typeof CurrentPcb209WorkerStartupLifecycle | typeof CurrentFootprintCopyPreparationLifecycle | typeof CurrentPcb209EmptyStartupLifecycle | typeof CurrentPcb209RatlineStartupLifecycle | typeof CurrentPcb209RatlineContinuationLifecycle = diagnostic209 ? CurrentPcb209WorkerStartupLifecycle : CurrentPcbWorkerStartupLifecycle;
+    if (Number(emptyPurpose) + Number(ratlinePurpose) + Number(continuationPurpose) + Number(footprintPurpose) > 1) { throw new Error("A launch has one fixed startup purpose."); }
+    if (footprintPurpose) {
+      if (!diagnostic209) { throw new Error("Footprint preparation requires the209 route."); }
+      StartupLifecycle = CurrentFootprintCopyPreparationLifecycle;
+    }
     if (emptyPurpose) { StartupLifecycle = CurrentPcb209EmptyStartupLifecycle; }
     if (ratlinePurpose) { StartupLifecycle = CurrentPcb209RatlineStartupLifecycle; }
     if (continuationPurpose) { StartupLifecycle = CurrentPcb209RatlineContinuationLifecycle; }
     if (continuationPurpose && !diagnostic209) { throw new Error("Ratline continuation requires the 209 route."); }
     if (ratlinePurpose && !diagnostic209) { throw new Error("Ratline held-import startup requires the 209 route."); }
     if (emptyPurpose && !diagnostic209) { throw new Error("Empty worker startup requires the 209 route."); }
-    if (startupOriginal !== undefined && (startupOriginal.emptyPurpose !== emptyPurpose || startupOriginal.ratlinePurpose !== ratlinePurpose || startupOriginal.continuationPurpose !== continuationPurpose)) {
+    if (startupOriginal !== undefined && (startupOriginal.emptyPurpose !== emptyPurpose || startupOriginal.ratlinePurpose !== ratlinePurpose || startupOriginal.continuationPurpose !== continuationPurpose || startupOriginal.footprintPurpose !== footprintPurpose)) {
       startupOriginal.assertLocal();
       // A queued launch has no core lease yet. Retain its coordinator until
       // Every admitted call settles, and retain every pending cleanup lease.
@@ -2600,9 +2609,10 @@ if (facadeToolRegistered(facadeMode, "easyeda_control_pcb_diagnostic_validation"
         ...["run", "captureWorkerStartup", "handoffWorkerStartup", "openWorkerStartup", "handoffStartup", "openStartup", "requireStartup",
           "observeWorkerStartupAssignments", "observeStartupAssignments", "requireStartupAssignments", "observeWorkerStartupActor", "observeStartupActor",
           "observeWorkerStartupChannel", "observeStartupChannel", "hasActiveReservation",
-          ...(StartupLifecycle === CurrentPcb209WorkerStartupLifecycle ? ["observeWorkerStartupFootprint", "observeStartupFootprint",
+          ...((StartupLifecycle === CurrentPcb209WorkerStartupLifecycle || footprintPurpose) ? ["observeWorkerStartupFootprint", "observeStartupFootprint",
             "observeWorkerStartupFootprintSource", "observeStartupFootprintSource",
             "prepareWorkerStartupFootprintCopy", "prepareStartupFootprintCopy"] : []),
+          ...(footprintPurpose ? ["prepareWorkerStartupFootprintBindings", "prepareStartupFootprintCopyBindings", "observeWorkerStartupFootprintUi", "observeStartupFootprintCopyUi", "prepareWorkerStartupFootprintDependencies", "prepareStartupFootprintCopyDependencies", "observeWorkerStartupFootprintManagerRoute", "observeStartupFootprintCopyManagerRoute"] : []),
           ...(emptyPurpose ? ["observeWorkerStartupEmpty", "observeStartupEmpty", "prepareWorkerStartupEmpty", "prepareStartupEmpty"] : []),
           ...(ratlinePurpose ? ["observeWorkerStartupRatline", "observeStartupRatline"] : []),
           ...(continuationPurpose ? ["observeWorkerStartupRatlineContinuation", "observeStartupRatlineContinuation"] : [])]
@@ -2622,9 +2632,13 @@ if (facadeToolRegistered(facadeMode, "easyeda_control_pcb_diagnostic_validation"
               startupOriginal.owner.observeWorkerStartupActor !== startupOriginal.actor ||
               startupOriginal.owner.observeWorkerStartupChannel !== startupOriginal.channel ||
               startupOriginal.owner.hasActiveReservation !== startupOriginal.reserved ||
-              startupOriginal.owner instanceof CurrentPcb209WorkerStartupLifecycle && startupOriginal.owner.observeWorkerStartupFootprint !== startupOriginal.footprint ||
-              startupOriginal.owner instanceof CurrentPcb209WorkerStartupLifecycle && startupOriginal.owner.observeWorkerStartupFootprintSource !== startupOriginal.footprintSource ||
-              startupOriginal.owner instanceof CurrentPcb209WorkerStartupLifecycle && startupOriginal.owner.prepareWorkerStartupFootprintCopy !== startupOriginal.footprintPreparation ||
+              startupOriginal.owner instanceof CurrentFootprintCopyPreparationLifecycle && startupOriginal.owner.prepareWorkerStartupFootprintBindings !== startupOriginal.footprintBindings ||
+              startupOriginal.owner instanceof CurrentFootprintCopyPreparationLifecycle && startupOriginal.owner.observeWorkerStartupFootprintUi !== startupOriginal.footprintUi ||
+              startupOriginal.owner instanceof CurrentFootprintCopyPreparationLifecycle && startupOriginal.owner.observeWorkerStartupFootprintManagerRoute !== startupOriginal.footprintManagerRoute ||
+              startupOriginal.owner instanceof CurrentFootprintCopyPreparationLifecycle && startupOriginal.owner.prepareWorkerStartupFootprintDependencies !== startupOriginal.footprintDependencies ||
+              (startupOriginal.owner instanceof CurrentPcb209WorkerStartupLifecycle || startupOriginal.owner instanceof CurrentFootprintCopyPreparationLifecycle) && startupOriginal.owner.observeWorkerStartupFootprint !== startupOriginal.footprint ||
+              (startupOriginal.owner instanceof CurrentPcb209WorkerStartupLifecycle || startupOriginal.owner instanceof CurrentFootprintCopyPreparationLifecycle) && startupOriginal.owner.observeWorkerStartupFootprintSource !== startupOriginal.footprintSource ||
+              (startupOriginal.owner instanceof CurrentPcb209WorkerStartupLifecycle || startupOriginal.owner instanceof CurrentFootprintCopyPreparationLifecycle) && startupOriginal.owner.prepareWorkerStartupFootprintCopy !== startupOriginal.footprintPreparation ||
               startupOriginal.owner instanceof CurrentPcb209EmptyStartupLifecycle && startupOriginal.owner.observeWorkerStartupEmpty !== startupOriginal.empty ||
               startupOriginal.owner instanceof CurrentPcb209RatlineStartupLifecycle && startupOriginal.owner.observeWorkerStartupRatline !== startupOriginal.ratline ||
               startupOriginal.owner instanceof CurrentPcb209RatlineContinuationLifecycle && startupOriginal.owner.observeWorkerStartupRatlineContinuation !== startupOriginal.continuation)) { throw new Error("Worker startup original index owner, environment or methods changed."); }
@@ -2650,12 +2664,9 @@ if (facadeToolRegistered(facadeMode, "easyeda_control_pcb_diagnostic_validation"
       startupOriginal = { owner, run: owner.run, capture: owner.captureWorkerStartup,
         assignments: owner.observeWorkerStartupAssignments, actor: owner.observeWorkerStartupActor,
         channel: owner.observeWorkerStartupChannel,
-        // oxlint-disable-next-line typescript/unbound-method -- Invoke only with the retained current209 lifecycle receiver.
-        footprint: owner instanceof CurrentPcb209WorkerStartupLifecycle ? owner.observeWorkerStartupFootprint : undefined,
-        // oxlint-disable-next-line typescript/unbound-method -- Keep the exact method and invoke it only with the retained startup lifecycle receiver.
-        footprintSource: owner instanceof CurrentPcb209WorkerStartupLifecycle ? owner.observeWorkerStartupFootprintSource : undefined,
-        // oxlint-disable-next-line typescript/unbound-method -- Keep original preparation method identity; dispatch supplies that exact retained lifecycle receiver.
-        footprintPreparation: owner instanceof CurrentPcb209WorkerStartupLifecycle ? owner.prepareWorkerStartupFootprintCopy : undefined,
+        footprint: (owner instanceof CurrentPcb209WorkerStartupLifecycle || owner instanceof CurrentFootprintCopyPreparationLifecycle) ? owner.observeWorkerStartupFootprint : undefined,
+        footprintSource: (owner instanceof CurrentPcb209WorkerStartupLifecycle || owner instanceof CurrentFootprintCopyPreparationLifecycle) ? owner.observeWorkerStartupFootprintSource : undefined,
+        footprintPreparation: (owner instanceof CurrentPcb209WorkerStartupLifecycle || owner instanceof CurrentFootprintCopyPreparationLifecycle) ? owner.prepareWorkerStartupFootprintCopy : undefined,
         // oxlint-disable-next-line typescript/unbound-method -- The purpose-switch guard invokes this retained private-field method only with the original lifecycle receiver.
         reserved: owner.hasActiveReservation,
         // oxlint-disable-next-line typescript/unbound-method -- Retain the exact original method; the sole dispatch supplies its retained private-field receiver.
@@ -2664,7 +2675,15 @@ if (facadeToolRegistered(facadeMode, "easyeda_control_pcb_diagnostic_validation"
         ratline: owner instanceof CurrentPcb209RatlineStartupLifecycle ? owner.observeWorkerStartupRatline : undefined,
         // oxlint-disable-next-line typescript/unbound-method -- Keep the original purpose method and invoke only with its retained receiver.
         continuation: owner instanceof CurrentPcb209RatlineContinuationLifecycle ? owner.observeWorkerStartupRatlineContinuation : undefined,
-        emptyPurpose, ratlinePurpose, continuationPurpose, assertLocal };
+        // oxlint-disable-next-line typescript/unbound-method -- Retain the exact preparation method and always supply its original lifecycle receiver.
+        footprintBindings: owner instanceof CurrentFootprintCopyPreparationLifecycle ? owner.prepareWorkerStartupFootprintBindings : undefined,
+        // oxlint-disable-next-line typescript/unbound-method -- Retain the exact UI observation method and invoke it only with the original owner.
+        footprintUi: owner instanceof CurrentFootprintCopyPreparationLifecycle ? owner.observeWorkerStartupFootprintUi : undefined,
+        // oxlint-disable-next-line typescript/unbound-method -- The fixed dependency stage always runs with its retained lifecycle receiver.
+        footprintDependencies: owner instanceof CurrentFootprintCopyPreparationLifecycle ? owner.prepareWorkerStartupFootprintDependencies : undefined,
+        // oxlint-disable-next-line typescript/unbound-method -- The manager route reader always uses the retained original lifecycle receiver.
+        footprintManagerRoute: owner instanceof CurrentFootprintCopyPreparationLifecycle ? owner.observeWorkerStartupFootprintManagerRoute : undefined,
+        footprintPurpose, emptyPurpose, ratlinePurpose, continuationPurpose, assertLocal };
     }
     const retained = startupOriginal; retained.assertLocal();
     const assertRetained = (): void => {
@@ -2674,7 +2693,19 @@ if (facadeToolRegistered(facadeMode, "easyeda_control_pcb_diagnostic_validation"
     const run = async (): Promise<{ result: Record<string, unknown> }> => {
       assertRetained();
       let result: Record<string, unknown>;
-      if (request.action === "observe-ratline-continuation") {
+      if (request.action === "observe-footprint-manager-route") {
+        if (!(retained.owner instanceof CurrentFootprintCopyPreparationLifecycle) || !retained.footprintPurpose || retained.footprintManagerRoute === undefined) { throw new Error("Original footprint manager route purpose required."); }
+        result = await retained.footprintManagerRoute.call(retained.owner, request.operationId, request.expectedBindingSha256);
+      } else if (request.action === "prepare-footprint-dependencies") {
+        if (!(retained.owner instanceof CurrentFootprintCopyPreparationLifecycle) || !retained.footprintPurpose || retained.footprintDependencies === undefined) { throw new Error("Original footprint dependency preparation purpose required."); }
+        result = await retained.footprintDependencies.call(retained.owner, request.operationId, request.expectedBindingSha256);
+      } else if (request.action === "observe-footprint-ui") {
+        if (!(retained.owner instanceof CurrentFootprintCopyPreparationLifecycle) || !retained.footprintPurpose || retained.footprintUi === undefined) { throw new Error("Original footprint preparation UI purpose required."); }
+        result = await retained.footprintUi.call(retained.owner, request.operationId, request.expectedBindingSha256);
+      } else if (request.action === "prepare-footprint-bindings") {
+        if (!(retained.owner instanceof CurrentFootprintCopyPreparationLifecycle) || !retained.footprintPurpose || retained.footprintBindings === undefined) { throw new Error("Original footprint preparation purpose required."); }
+        result = await retained.footprintBindings.call(retained.owner, request.operationId, request.expectedBindingSha256);
+      } else if (request.action === "observe-ratline-continuation") {
         if (!(retained.owner instanceof CurrentPcb209RatlineContinuationLifecycle) || retained.continuation === undefined || !retained.continuationPurpose) { throw new Error("Original ratline continuation launch purpose required."); }
         result = await retained.continuation.call(retained.owner, request.operationId, request.expectedBindingSha256);
       } else if (request.action === "observe-ratline-held-import") {
@@ -2689,16 +2720,16 @@ if (facadeToolRegistered(facadeMode, "easyeda_control_pcb_diagnostic_validation"
       } else if (request.action === "observe-current-assignments") {
         result = await retained.assignments.call(retained.owner, request.operationId, request.expectedBindingSha256);
       } else if (request.action === "observe-footprint-state") {
-        if (!(retained.owner instanceof CurrentPcb209WorkerStartupLifecycle) || retained.footprint === undefined ||
+        if (!((retained.owner instanceof CurrentPcb209WorkerStartupLifecycle || retained.owner instanceof CurrentFootprintCopyPreparationLifecycle)) || retained.footprint === undefined ||
             retained.emptyPurpose || retained.ratlinePurpose || retained.continuationPurpose) { throw new Error("Original current209 startup footprint owner required."); }
         result = await retained.footprint.call(retained.owner, request.operationId, request.expectedBindingSha256);
       } else if (request.action === "observe-footprint-source") {
-        if (!(retained.owner instanceof CurrentPcb209WorkerStartupLifecycle) || retained.footprintSource === undefined ||
+        if (!((retained.owner instanceof CurrentPcb209WorkerStartupLifecycle || retained.owner instanceof CurrentFootprintCopyPreparationLifecycle)) || retained.footprintSource === undefined ||
             retained.emptyPurpose || retained.ratlinePurpose || retained.continuationPurpose) { throw new Error("Original current209 startup footprint source owner required."); }
         result = await retained.footprintSource.call(retained.owner, request.operationId, request.expectedBindingSha256,
           { footprintUuid: request.footprintUuid });
       } else if (request.action === "prepare-footprint-copy") {
-        if (!(retained.owner instanceof CurrentPcb209WorkerStartupLifecycle) || retained.footprintPreparation === undefined ||
+        if (!((retained.owner instanceof CurrentPcb209WorkerStartupLifecycle || retained.owner instanceof CurrentFootprintCopyPreparationLifecycle)) || retained.footprintPreparation === undefined ||
             retained.emptyPurpose || retained.ratlinePurpose || retained.continuationPurpose) { throw new Error("Original current209 startup footprint preparation owner required."); }
         result = await retained.footprintPreparation.call(retained.owner, request.operationId, request.expectedBindingSha256);
       } else if (request.action === "observe-actor-clock") {
@@ -2718,11 +2749,12 @@ if (facadeToolRegistered(facadeMode, "easyeda_control_pcb_diagnostic_validation"
     const startupSchema = z.object({ request: z.unknown().pipe(currentPcb209WorkerStartupToolRequestSchema) }).strict();
     server.registerTool("easyeda_control_pcb209_worker_startup", {
       title: "Capture a disposable EasyEDA 3.2.209 project worker startup",
-      description: "Disposable EasyEDA 3.2.209 startup validation with four separate launch purposes. Query the matching offline catalog and argument validator first: pcb209-worker-startup/-validate, pcb209-empty-baseline/-validate, pcb209-ratline-held-import/-validate, or pcb209-ratline-continuation/-validate. Each purpose launches its own original owner; an existing owner cannot be upgraded. Launch, qualify browser/frame/UI source, then capture-project once against the exact disposable checkpoint. The default pcb209-startup-* purpose can subsequently observe current assignments, channel relations, a sequential UI/worker actor-clock bracket and original footprint-manager state. The footprint-state stage reads its captured user/client/ticket. After its published result, observe-footprint-source reconstructs one checkpoint-member footprint from original live consistency entries and existing native Cache chunks, checking every keyed record and generated header against the complete checkpoint while two matching source samples retain observed native order. It is a bounded native equivalent, not a GET_STR dispatch; a cache miss refuses without fetch, parser replay, cache writes or network fallback. Its source-only profile accepts ordinary record families, repeated fragments and tombstones, needs 65 remaining normal requests and grants no copy/delete or persistence authority. After the source result, prepare-footprint-copy journals original-owned plan/argument hashes using eight remaining normal requests. Preparation cannot upgrade launch purpose or enable native create, Save or saved verification. The empty-baseline wrapper uses pcb209-empty-* and joins fixed common data with the original completed SQL checkpoint, bracketed by empty raw-manager samples; populated targets refuse. The ratline-held-import wrapper uses pcb209-ratline-* with the original cumulative budget and complete source leases. After capture-project, observe-ratline-held-import journals intent before the sole PCB navigation, qualifies 29 PCB source stages, captures original construction and holds the first ratline child at its seventh qualified source import. It stops before worker continuation, callback return and full startup or baseline completion. The ratline-continuation wrapper uses pcb209-continuation-* and a separately sealed native budget. After its durable intent, known physical PCB records in the original checkpoint refuse before PCB navigation; passing this negative filter proves no empty live baseline. Native queues must remain exactly empty, including no serialized [] job. After capture-project, observe-ratline-continuation qualifies the original PCB, first worker and subordinate sources, continues their fixed imports and observes original PCB/worker capture checkpoints and callback returnsites. Callback completion, publication completion and native Worker-object/target identity remain unproved. These sequential observations grant no native channel-peer, server-clock, contained-destination, writer or durability proof. Explicit debugger-pause acceptance is required. Launch/open may restore tabs, migrate, replay caches, use the network and automatically persist files. Every stage is consumed once. Inspect after uncertainty and retain the original owner through abort, normal close, original root/Job termination, helper release and record settlement. No caller JavaScript, CDP commands, explicit Save, CAD writer, historical-owner adoption, navigation retry, force exit or Save/Discard choice.",
+      description: "Disposable EasyEDA 3.2.209 startup validation with five separate launch purposes. The footprint-copy-preparation wrapper uses a separately bounded original launch to retain source, producer, actor, 53 dependency functions and initialized UI/manager route bindings; query footprint-copy-preparation/-validate first. It grants no copy or Save authority. Query the matching offline catalog and argument validator first: pcb209-worker-startup/-validate, pcb209-empty-baseline/-validate, pcb209-ratline-held-import/-validate, or pcb209-ratline-continuation/-validate. Each purpose launches its own original owner; an existing owner cannot be upgraded. Launch, qualify browser/frame/UI source, then capture-project once against the exact disposable checkpoint. The default pcb209-startup-* purpose can subsequently observe current assignments, channel relations, a sequential UI/worker actor-clock bracket and original footprint-manager state. The footprint-state stage reads its captured user/client/ticket. After its published result, observe-footprint-source reconstructs one checkpoint-member footprint from original live consistency entries and existing native Cache chunks, checking every keyed record and generated header against the complete checkpoint while two matching source samples retain observed native order. It is a bounded native equivalent, not a GET_STR dispatch; a cache miss refuses without fetch, parser replay, cache writes or network fallback. Its source-only profile accepts ordinary record families, repeated fragments and tombstones, needs 65 remaining normal requests and grants no copy/delete or persistence authority. After the source result, prepare-footprint-copy journals original-owned plan/argument hashes using eight remaining normal requests. Preparation cannot upgrade launch purpose or enable native create, Save or saved verification. The empty-baseline wrapper uses pcb209-empty-* and joins fixed common data with the original completed SQL checkpoint, bracketed by empty raw-manager samples; populated targets refuse. The ratline-held-import wrapper uses pcb209-ratline-* with the original cumulative budget and complete source leases. After capture-project, observe-ratline-held-import journals intent before the sole PCB navigation, qualifies 29 PCB source stages, captures original construction and holds the first ratline child at its seventh qualified source import. It stops before worker continuation, callback return and full startup or baseline completion. The ratline-continuation wrapper uses pcb209-continuation-* and a separately sealed native budget. After its durable intent, known physical PCB records in the original checkpoint refuse before PCB navigation; passing this negative filter proves no empty live baseline. Native queues must remain exactly empty, including no serialized [] job. After capture-project, observe-ratline-continuation qualifies the original PCB, first worker and subordinate sources, continues their fixed imports and observes original PCB/worker capture checkpoints and callback returnsites. Callback completion, publication completion and native Worker-object/target identity remain unproved. These sequential observations grant no native channel-peer, server-clock, contained-destination, writer or durability proof. Explicit debugger-pause acceptance is required. Launch/open may restore tabs, migrate, replay caches, use the network and automatically persist files. Every stage is consumed once. Inspect after uncertainty and retain the original owner through abort, normal close, original root/Job termination, helper release and record settlement. No caller JavaScript, CDP commands, explicit Save, CAD writer, historical-owner adoption, navigation retry, force exit or Save/Discard choice.",
       inputSchema: startupSchema, outputSchema: currentSymbolOperationToolOutputSchema,
       annotations: { readOnlyHint: false, destructiveHint: false, idempotentHint: false, openWorldHint: true },
     }, guarded((input: z.infer<typeof startupSchema>) => {
       const request = startupSchema.parse(input).request;
+      if (request.action === "footprint-copy-preparation") { return runStartup(request.request, false, false, false, true); }
       if (request.action === "ratline-held-import") { return runStartup(request.request, false, true); }
       if (request.action === "ratline-continuation") { return runStartup(request.request, false, false, true); }
       return request.action === "empty-baseline" ? runStartup(request.request, true) : runStartup(request);

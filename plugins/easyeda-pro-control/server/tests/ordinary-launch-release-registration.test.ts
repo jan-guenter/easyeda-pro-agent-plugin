@@ -89,7 +89,7 @@ async function fixture(): Promise<{ invoke: Invoke; startup: () => Promise<unkno
   const scope = vm.createContext({ z, ordinaryLaunchRequestSchema, OrdinaryLaunchCoordinator: Coordinator, WindowsControlRuntime: Runtime,
     CurrentPcbDiagnosticLifecycle: Diagnostic, CurrentPcbWorkerStartupLifecycle: Diagnostic, CurrentPcb209WorkerStartupLifecycle: Diagnostic,
     CurrentPcb209EmptyStartupLifecycle: Diagnostic, CurrentPcb209RatlineStartupLifecycle: Diagnostic,
-    CurrentPcb209RatlineContinuationLifecycle: Diagnostic, diagnostic209: true,
+    CurrentPcb209RatlineContinuationLifecycle: Diagnostic, CurrentFootprintCopyPreparationLifecycle: Diagnostic, diagnostic209: true,
     upstream, engine, bridgeGate: { run: async (work: () => Promise<unknown>): Promise<unknown> => { await Promise.resolve(); return work(); } },
     process: { env: { EASYEDA_ASSETS_ROOT: "/synthetic/assets", WSL_DISTRO_NAME: "synthetic" } },
     resolve: (): string => "/synthetic/plugin", controlDataDirectory: (): string => "/synthetic/control", retainedControlRoot: { path: "/synthetic/control" },
@@ -111,7 +111,9 @@ async function fixture(): Promise<{ invoke: Invoke; startup: () => Promise<unkno
   const registrationStart = source.indexOf('registerFacadeTool(\n  "easyeda_control_launch",');
   const registrationEnd = source.indexOf('registerFacadeTool(\n  "easyeda_control_project_open",', registrationStart);
   for (const [begin, end] of [[helperStart, helperEnd], [allocationStart, allocationEnd], [startupStart, startupEnd], [registrationStart, registrationEnd]] as const) {
-    assert.ok(begin > 0 && end > begin && end - begin < 20_000);
+    // The shared startup dispatcher now includes the separately sealed copy
+    // Preparation family; retain its complete callback in this older regression.
+    assert.ok(begin > 0 && end > begin && end - begin < 24_000);
     vm.runInContext(stripTypeScriptTypes(source.slice(begin, end)).replaceAll("import.meta.dirname", '"/synthetic/server/src"'), scope);
   }
   assert.ok(invoke);

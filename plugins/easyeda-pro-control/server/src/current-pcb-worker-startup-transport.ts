@@ -6,6 +6,9 @@
  * qualification through the original native process and pipe. */
 import { createHash } from "node:crypto";
 import { types } from "node:util";
+import { bindFootprintPreparationConstructionTransport } from "./current-footprint-copy-construction-purpose.ts";
+import { isOriginalFootprintPreparationDependency } from "./current-pcb-worker-startup-channel.ts";
+import { CURRENT_FOOTPRINT_COPY_PREPARATION_PROFILE } from "./current-footprint-copy-preparation-profile.ts";
 import { z } from "zod";
 import { CURRENT_PCB_209_STARTUP_TIMING, currentPcbStartupMonotonicMs, currentPcbStartupWindowObservation } from "./current-pcb-209-worker-startup-timing.ts";
 import type { CurrentPcbStartupWindow, CurrentPcbStartupWindowObservation } from "./current-pcb-209-worker-startup-timing.ts";
@@ -201,6 +204,8 @@ class CurrentPcbWorkerStartupTransportCore<Packet extends ConstructionPacket, Ru
   #events = 0;
   #eventBytes = 0;
   #requests = 0;
+  readonly #normalRequestLimit: number;
+  readonly #requestLimit: number;
   #cleanup: Promise<void> | null = null;
 
   public constructor(internal: typeof INTERNAL_PROFILE, dependency: CurrentPcbWorkerStartupDependency,
@@ -208,6 +213,9 @@ class CurrentPcbWorkerStartupTransportCore<Packet extends ConstructionPacket, Ru
     bootstrap209 = false) {
     if (internal !== INTERNAL_PROFILE) { throw failure("INTERNAL_PROFILE"); } this.#createRunner = createRunner;
     this.#originalMembers = members(dependency); this.#dependency = dependency;
+    const footprint = bootstrap209 && isOriginalFootprintPreparationDependency(dependency);
+    this.#normalRequestLimit = footprint ? CURRENT_FOOTPRINT_COPY_PREPARATION_PROFILE.normalRequestLimit : 224;
+    this.#requestLimit = footprint ? CURRENT_FOOTPRINT_COPY_PREPARATION_PROFILE.requestLimit : 256;
     this.#parentSession = sessionToken.parse(dependency.parentSessionId); this.#parentTarget = sessionToken.parse(dependency.parentTargetId);
     this.#send = dependency.request; this.#assertOwner = dependency.assertOriginalOwner;
     this.#assertTermination = dependency.assertOriginalTermination; this.#subscribe = dependency.subscribe;
@@ -328,7 +336,7 @@ class CurrentPcbWorkerStartupTransportCore<Packet extends ConstructionPacket, Ru
   }
   async #request(command: CurrentPcbWorkerStartupCommand, cleanup = false): Promise<unknown> {
     if (!cleanup) { await this.#current(); }
-    if (this.#requests >= (cleanup ? 256 : 224)) { this.#poison("REQUEST_BUDGET"); throw failure("REQUEST_BUDGET"); }
+    if (this.#requests >= (cleanup ? this.#requestLimit : this.#normalRequestLimit)) { this.#poison("REQUEST_BUDGET"); throw failure("REQUEST_BUDGET"); }
     this.#requests += 1;
     const sourceRead = command.method === "Runtime.callFunctionOn" && "objectId" in command.params && command.params.awaitPromise;
     const raw = await bounded(this.#sendOriginal(command), sourceRead ? CURRENT_FOOTPRINT_COPY_SOURCE_READ_LIMITS.hostTimeoutMs : REQUEST_MS);
@@ -656,7 +664,7 @@ class CurrentPcbWorkerStartupTransportCore<Packet extends ConstructionPacket, Ru
   }
   async #armInstrumentation(worker: Worker): Promise<void> {
     await this.#current();
-    if (this.#requests >= 224) { this.#poison("REQUEST_BUDGET"); throw failure("REQUEST_BUDGET"); }
+    if (this.#requests >= this.#normalRequestLimit) { this.#poison("REQUEST_BUDGET"); throw failure("REQUEST_BUDGET"); }
     this.#requests += 1;
     this.#instrumentationUncertain = true;
     const pending = (async (): Promise<void> => {
@@ -676,7 +684,7 @@ class CurrentPcbWorkerStartupTransportCore<Packet extends ConstructionPacket, Ru
   async #constructionRequest(command: CurrentPcbWorkerConstructionCommand, worker: Worker): Promise<unknown> {
     if (command.method === "Debugger.setBreakpoint") {
       await this.#current();
-      if (this.#requests >= 224) { this.#poison("REQUEST_BUDGET"); throw failure("REQUEST_BUDGET"); }
+      if (this.#requests >= this.#normalRequestLimit) { this.#poison("REQUEST_BUDGET"); throw failure("REQUEST_BUDGET"); }
       this.#requests += 1;
       // The runner owns this allocation deadline and retains late IDs. An
       // Additional transport timeout would hide its original late reply.
@@ -711,7 +719,7 @@ class CurrentPcbWorkerStartupTransportCore<Packet extends ConstructionPacket, Ru
         qualifyCurrentPcb209PreloadCopyPause(stage.role, script.scriptId, preload.scriptId, paused);
       }
       this.#step = "source-owner-before"; await this.#current();
-      if (this.#requests >= 224) { this.#poison("REQUEST_BUDGET"); throw failure("REQUEST_BUDGET"); }
+      if (this.#requests >= this.#normalRequestLimit) { this.#poison("REQUEST_BUDGET"); throw failure("REQUEST_BUDGET"); }
       this.#requests += 1;
       // Source replies exceed the small event capture bound. Qualify the own
       // Data string before any following awaited owner reproof.
@@ -766,6 +774,7 @@ class CurrentPcbWorkerStartupTransportCore<Packet extends ConstructionPacket, Ru
           return (): void => { if (this.#subscriber === events) { this.#subscriber = null; } };
         },
       });
+      if (this.#bootstrap209) { bindFootprintPreparationConstructionTransport(this.#dependency, transport); }
       const runner = this.#createRunner(transport); this.#runner = runner;
       this.#step = "construction-arming";
       const captured = runner.capture(); this.#constructionCapture = captured; void observe(captured); await runner.whenArmed();

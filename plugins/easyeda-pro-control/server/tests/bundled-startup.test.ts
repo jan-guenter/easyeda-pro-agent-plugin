@@ -142,6 +142,14 @@ void describe("self-contained packaged machine startup", () => {
       action: "inspect", operationId: "pcb209-startup-offline-catalog",
     } } });
     assert.equal(startupRequest["valid"], true);
+    const footprint = await api(client, { action: "footprint-copy-preparation", query: { includeSchemas: true } });
+    assert.equal(footprint["executionAuthorized"], false); assert.equal(footprint["toolWrapperAction"], "footprint-copy-preparation");
+    for (const action of ["prepare-footprint-bindings", "observe-footprint-ui", "prepare-footprint-dependencies", "observe-footprint-manager-route"]) {
+      const validation = await api(client, { action: "footprint-copy-preparation-validate", query: { request: {
+        action, operationId: "footprint-preparation-offline-catalog", expectedBindingSha256: "a".repeat(64),
+      } } });
+      assert.equal(validation["valid"], true); assert.equal(validation["executionAuthorized"], false);
+    }
     const catalog = await api(client, { action: "calculations", query: { includeSchemas: true } });
     assert.equal(catalog["total"], 16); assert.equal(catalog["invocationEnabledByDiscovery"], false);
     for (const name of ["easyeda_control_project_open", "easyeda_control_pcb_geometry", "easyeda_control_project_symbol_metadata",

@@ -599,9 +599,13 @@ their fresh lexical scopes. The private producer runner qualifies seven function
 objects and their locations, then compares identities across five method scopes.
 Its construction-owner integration consumes up to39 requests. The reuse check
 uses up to six requests to reprove owner, state and methods, without resampling
-lexical values. It has
-no public route. Parser/upload callbacks and transitive dependencies still need
-their own bindings before dispatch.
+lexical values. The separate `footprint-copy-preparation` startup purpose mounts these checks
+with actor/SQL preparation, UI and manager-route observation, and 53 dependency
+function qualifications. Its 553 normal requests, 34 cleanup requests and 18
+state samples come from the complete preparation sequence; older purposes keep
+their existing limits. Parser/upload callback completion, reciprocal bus peers
+and native copy dispatch remain unimplemented. See the
+[preparation workflow](../../easyeda-pro-control/references/current-footprint-copy-preparation.md).
 
 The UI source route uses a notification RPC wrapper and an async responder.
 Extension-library lookup precedes project routing. Inspect the existing registry

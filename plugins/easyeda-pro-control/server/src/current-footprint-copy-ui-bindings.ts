@@ -1,4 +1,4 @@
-/** Unmounted native selectors. The construction owner supplies original UI
+/** Fixed native selectors. The construction owner supplies original UI
  * handles and must qualify every returned function before following its scope.
  * Nothing calls rpcService, a responder, a vendor getter or an initializer. */
 import { z } from "zod";
@@ -43,6 +43,9 @@ export const CURRENT_FOOTPRINT_COPY_UI_FUNCTION_ORDER = Object.freeze([
  * remain with their original owner; JSON decoders cannot recreate them. The
  * fixed leaf has no mounted request budget and grants no extra owner capacity. */
 export const CURRENT_FOOTPRINT_COPY_UI_CALLS = freezeDeep({
+  /** Bootstrap in the already owned parent context. Root/host/project handles
+   * are selected here, never reconstructed from a caller-supplied object ID. */
+  initial: { program: `function(path,branch,tab){${helpers}\nconst host=own(this,"gVars"),project=own(host,"currentProject"),selected=notification(this,host,project,path,branch,tab);verify();return selected;}`, arguments: 3, returnByValue: false },
   notification: { program: `function(host,project,path,branch,tab){${helpers}\nconst selected=notification(this,host,project,path,branch,tab);verify();return selected;}`, arguments: 5, returnByValue: false },
   notificationRecheck: { program: `function(original,path,branch,tab){${helpers}\nretainedNotification(original,path,branch,tab);verify();return true;}`, arguments: 4, returnByValue: true },
   responder: { program: `function(wrapper){${helpers}\nif(own(this,"i")!==wrapper||own(this,"t")!=="/pro-ui/libSource/getProLibSource")bad();const responder=own(this,"e");if(typeof responder!=="function")bad();verify();return responder;}`, arguments: 1, returnByValue: false },
