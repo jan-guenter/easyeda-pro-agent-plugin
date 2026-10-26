@@ -10,6 +10,8 @@ import { CurrentPcbWorkerStartupActorRunner, currentPcbWorkerStartupActorPacketS
 import type { CurrentPcbWorkerStartupActorPacket, CurrentPcbWorkerStartupActorTransport } from "./current-pcb-worker-startup-actor-runner.ts";
 import { freezeDeep } from "./sqlite-inventory-core.ts";
 
+// oxlint-disable-next-line typescript/unbound-method -- The captured private-field method is invoked only with this wrapper's original inner runner.
+const originalStartupActorPacket = CurrentPcbWorkerStartupActorRunner.prototype.requireOriginal;
 const limits = Object.freeze({ originalConstructorOwnerVerified: false, nativeSourceContextsOwned: false,
   nativeIntrinsicsVerified: false, clockProvenanceVerified: false, futureSaveClockVerified: false,
   compatibilityAdmitted: false, executionAuthorized: false, saveAuthorized: false } as const);
@@ -56,13 +58,23 @@ export class CurrentPcb209WorkerStartupActorRunner {
       sourceClosureSha256: this.#qualification.sourceClosureSha256, originalActorPacket, ...limits });
     this.#packet = freezeDeep({ ...body, packetSha256: sha256Json(body) }); return this.#packet;
   }
-  public async requireOriginal(packet: CurrentPcb209WorkerStartupActorPacket): Promise<CurrentPcb209WorkerStartupActorPacket> {
+  async #requireOriginal(packet: CurrentPcb209WorkerStartupActorPacket): Promise<CurrentPcb209WorkerStartupActorPacket> {
     if (this.#packet === null || packet !== this.#packet) { throw new Error("PCB209_WORKER_STARTUP_ACTOR_ORIGINAL_PACKET"); }
+    if (CurrentPcbWorkerStartupActorRunner.prototype.requireOriginal !== originalStartupActorPacket) {
+      throw new Error("PCB209_WORKER_STARTUP_ACTOR_ORIGINAL_METHOD");
+    }
     requireCurrentPcb209ActorClockSourceQualification(this.#qualification);
-    await this.#runner.requireOriginal(packet.originalActorPacket); return packet;
+    await originalStartupActorPacket.call(this.#runner, packet.originalActorPacket);
+    if (this.#packet !== packet || CurrentPcbWorkerStartupActorRunner.prototype.requireOriginal !== originalStartupActorPacket) {
+      throw new Error("PCB209_WORKER_STARTUP_ACTOR_ORIGINAL_METHOD");
+    }
+    requireCurrentPcb209ActorClockSourceQualification(this.#qualification); return packet;
+  }
+  public requireOriginal(packet: CurrentPcb209WorkerStartupActorPacket): Promise<CurrentPcb209WorkerStartupActorPacket> {
+    return this.#requireOriginal(packet);
   }
   public async originalObservation(packet: CurrentPcb209WorkerStartupActorPacket): Promise<CurrentPcb209OriginalStartupActorObservation> {
-    await this.requireOriginal(packet);
+    await this.#requireOriginal(packet);
     return Object.freeze({ runner: this.#runner, packet: packet.originalActorPacket });
   }
 }

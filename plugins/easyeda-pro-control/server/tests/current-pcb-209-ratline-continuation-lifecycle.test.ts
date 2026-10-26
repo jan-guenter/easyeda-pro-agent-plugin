@@ -75,7 +75,7 @@ async function loadFixture(lifecycle: Row): Promise<FixtureModule> {
   // oxlint-disable-next-line typescript/no-unsafe-type-assertion -- Checked exports come from the bounded maintained fixture prefix; no production capability is reconstructed.
   return loaded as unknown as FixtureModule;
 }
-async function fixture(context: TestContext, mode: "prepare-fails" | "intent-changes" | "ordered"): Promise<Readonly<{
+async function fixture(context: TestContext, mode: "populated" | "prepare-fails" | "intent-changes" | "ordered"): Promise<Readonly<{
   value: Fixture; id: string; binding: string; observe: () => Promise<Row>; rejectedCaptureReplyEvidence: Readonly<Row>;
   counters: { prepared: number; navigation: number; capture: number; durableIntent: number; abort: number; release: number };
 }>> {
@@ -134,7 +134,14 @@ async function fixture(context: TestContext, mode: "prepare-fails" | "intent-cha
     }
   }
   const classes = new Map<string, unknown>([["./current-pcb-209-worker-startup-opening.ts", { CurrentPcb209WorkerStartupOpening: Opening }],
-    ["./current-pcb-209-ratline-continuation-native-session.ts", { CurrentPcb209RatlineContinuationNativeSession: Session }]]);
+    ["./current-pcb-209-ratline-continuation-native-session.ts", { CurrentPcb209RatlineContinuationNativeSession: Session }],
+    ["./current-pcb-209-ratline-checkpoint.ts", { rejectCurrentPcb209RatlineCheckpointPopulation: async (): Promise<void> => {
+      assert.ok(module !== null);
+      const raw = await readFile(join(module.directory(id), "worker-startup-continuation-intent.json"), "utf8");
+      const intent = diagnosticLifecycleRecordSchemas["worker-startup-continuation-intent.json"].parse(JSON.parse(raw) as unknown);
+      assert.equal(intent.operationId, id); assert.equal(counters.prepared, 0); assert.equal(counters.navigation, 0);
+      if (mode === "populated") { counters.durableIntent += 1; throw new Error("PCB209_RATLINE_CHECKPOINT_KNOWN_POPULATED"); }
+    } }]]);
   const adapter = await loadFile("../src/current-pcb-worker-startup-lifecycle-adapter.ts", classes);
   classes.set("./current-pcb-worker-startup-lifecycle-adapter.ts", adapter);
   const lifecycle = await loadFile("../src/current-pcb-diagnostic-lifecycle.ts", classes);
@@ -177,24 +184,24 @@ async function fixture(context: TestContext, mode: "prepare-fails" | "intent-cha
   assert.equal(await value.coordinator.openWorkerStartup(id, binding, module.STARTUP_OPEN_INPUT), result);
   return { value, id, binding, counters, rejectedCaptureReplyEvidence, observe: (): Promise<Row> => value.coordinator.observeWorkerStartupRatlineContinuation(id, binding) };
 }
-for (const mode of ["prepare-fails", "intent-changes", "ordered"] as const) {
+for (const mode of ["populated", "prepare-fails", "intent-changes", "ordered"] as const) {
   void test(`synthetic continuation209 lifecycle retains consumed failure and original intent before navigation: ${mode}`, async context => {
     const current = await fixture(context, mode);
-    const expected = { "prepare-fails": /synthetic preparation failure/u, "intent-changes": /LIFECYCLE_JOURNAL_CHANGED/u,
+    const expected = { populated: /PCB209_RATLINE_CHECKPOINT_KNOWN_POPULATED/u, "prepare-fails": /synthetic preparation failure/u, "intent-changes": /LIFECYCLE_JOURNAL_CHANGED/u,
       ordered: /synthetic stop after original PCB navigation/u }[mode];
     await assert.rejects(current.observe(), expected);
     const status = await current.value.coordinator.run({ action: "inspect", operationId: current.id });
     assert.equal(status["workerStartupContinuationAttemptConsumed"], true); assert.equal(status["workerStartupContinuationFailed"], true);
     assert.equal(status["workerStartupContinuationResultPublished"], false);
-    assert.equal(status["workerStartupContinuationRejectedCaptureReplyEvidence"], mode === "prepare-fails" ? null : current.rejectedCaptureReplyEvidence);
+    assert.equal(status["workerStartupContinuationRejectedCaptureReplyEvidence"], mode === "prepare-fails" || mode === "populated" ? null : current.rejectedCaptureReplyEvidence);
     await assert.rejects(current.observe(), /STARTUP_RATLINE_CONSUMED/u);
-    assert.deepEqual(current.counters, { prepared: 1, navigation: mode === "ordered" ? 1 : 0,
-      capture: mode === "prepare-fails" ? 0 : 1, durableIntent: mode === "prepare-fails" ? 0 : 1, abort: 0, release: 0 });
+    assert.deepEqual(current.counters, { prepared: mode === "populated" ? 0 : 1, navigation: mode === "ordered" ? 1 : 0,
+      capture: mode === "prepare-fails" || mode === "populated" ? 0 : 1, durableIntent: mode === "prepare-fails" ? 0 : 1, abort: 0, release: 0 });
     await current.value.request("normal-close", { hwnd: "12345", confirmNormalClose: true });
     current.value.state.terminated = true;
     await current.value.request("observe-termination"); await current.value.request("release-closed");
     const { calls } = current.value;
-    if (mode === "prepare-fails") {
+    if (mode === "prepare-fails" || mode === "populated") {
       assert.equal(current.counters.abort, 0); assert.equal(current.counters.release, 0);
       assert.ok(calls.includes("channel-abort") && calls.indexOf("channel-abort") < calls.indexOf("close"));
     }

@@ -39,6 +39,11 @@ either mode cannot transfer authority to the other.
    `observe-ratline-continuation` with the original binding and the required
    opening/debugger acknowledgments. The lifecycle consumes one navigation
    intent for the retained target. It accepts no replacement target or code.
+   A negative check of that original completed checkpoint rejects known physical
+   PCB records before preparing the native continuation or navigating to the PCB.
+   This filter grants no positive empty-baseline proof. The native queue and
+   result-array checks still require exact emptiness. A populated fixture is
+   unsuitable even if it was used successfully for other diagnostics.
 5. Inspect the result or first failure. Retain the original owner through
    `observe-window`, one `normal-close`, `observe-termination` and
    `release-closed`. Settle any offered publication record with its original
@@ -135,3 +140,16 @@ persist automatically. Do not claim unchanged storage from normal exit alone.
 Leave Save/Discard prompts unanswered unless authorized. After an uncertain
 call, retain its evidence and original process owner for cleanup; do not launch
 a replacement as a retry.
+
+For a capture refusal, inspect
+`workerStartupContinuationRejectedCaptureReplyEvidence`. It retains the first
+arrived PCB/worker reply with its fixed program, pause site/index and request
+number, bounded to32KiB per reply. `reply-validation` distinguishes decoder or
+relation refusal from owner checks. Later cleanup errors do not replace that
+first evidence. New empty-array refusals report a bounded reason and first-slot
+shape without returning its payload or invoking accessors.
+
+Do not equate a queued string `"[]"` with an empty queue. It still dispatches a
+native subordinate RPC and changes callback/retirement timing. This profile
+does not support that path. Use a separate empty disposable PCB so the populated
+fixture remains available for its other validation cases.

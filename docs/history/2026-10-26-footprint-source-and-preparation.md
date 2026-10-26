@@ -340,3 +340,58 @@ type-aware lint with zero warnings. Author receipt SHA-256:
 `ad8e7647c8bffe903c3249d4db1794cf97753a7656d9e90d9a92928ff8e0f918`.
 The final local evidence will rerun types, lint and documentation validators,
 while explicitly reusing the unchanged dependency/build/native evidence.
+
+
+## Publication and installation completed
+
+The corrected payload `7cea1c402396ad7885a0e04de9d84d72d4326958` merged
+through protected [PR136](https://github.com/jan-guenter/easyeda-pro-agent-plugin/pull/136)
+as main `966b7fbc7ad0e22d7422412bd79ab1b4ddba3487`. The final PR and main
+root trees are exactly `4d21b8483ef09d7b02e0bc62c4e4f71c55cd7357`.
+The first failed candidate remains recorded above.
+
+Final PR Linux CI40387312084 and Windows CI40387312032 passed all 11 required
+jobs on the corrected commit. The complete facade suites passed 13,175 tests,
+with five unchanged platform skips and zero failures; all 424 bridge tests
+passed. The 14 new or renamed top-level cases appeared in the unfiltered shard
+logs. Final local evidence reran 13 affected checks and explicitly reused 12
+unchanged dependency/build/native results, with original provenance retained.
+Both bundles and the external compatibility tuple remained unchanged by the
+fixture correction. Independent final CI acceptance SHA-256:
+`d5a40f88214f7d1a59b9602f5d5664c7daebdade027a0acd64ac5a415ecfd8ba`.
+
+The official Git marketplace upgrade installed and enabled
+`0.3.0+codex.20261026191500` from merged main. All 2,086 files, 42 directories
+and 44,229,179 bytes match committed content and exact package modes. Installed
+inventory SHA-256:
+`e9b345c45fd390292d3aaa6aa12ddbac87c1a07e10bd75b997b7ca9758403443`.
+The isolated offline probe passed 27 catalog queries in 29 JSON-RPC requests,
+then closed its own child through stdin EOF with zero stderr. It selected no
+live control root and sampled no descendants or non-stdio sockets. This is
+sampled isolation evidence, not continuous observation or live admission.
+The original host process chain remained unchanged before and after install.
+Independent installation review SHA-256:
+`c8bd6140deca270a3b0f65790a7d167fe9a5fd6913317be95eb00d0d482eeebc`.
+
+Facade source projection: 767 files,
+`00942a5d34d525d2b97f88e56095065138a03d42d99ae1a9f6a5f1268a758a46`.
+Runtime projection: three files,
+`1bc506aec3611ce658ef75910c3dfaaab37e805456906ae8f1aad4562d3a89f5`.
+Compatibility manifest SHA-256:
+`0e1dcc0fa9ed22fa09c28291da3c99eb469a72adc7ba75410fb267b3ce61b049`.
+
+Automatic main CI40389671293 was still running when installation finished;
+main Windows CI40389671312 had passed. No additional CI campaign was requested.
+The exact corrected PR tree supplies the completed release evidence.
+This publication appendix is retained locally for the next substantive batch,
+without a documentation-only plugin update.
+
+Next: admit the actual installed191500 host in a fresh Codex session, then use
+new disposable lifecycles for the corrected source/preparation reader and the
+retained ratline reply diagnostic. Both installed180000 cases above are terminal;
+never replay them. Batch the copy-specific producer scopes, original UI source
+routing, actor/server-clock observations and whole-lifecycle capacity before
+adding native create. The remaining closed SQL/reopen, copy/delete inverse,
+PCB identity/completion/persistence, schematic connectivity, other library
+writers and manufacturing-export work remains as listed above. No live191500
+writer validation, force termination or production-project access is claimed.

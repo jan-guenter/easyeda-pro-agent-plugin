@@ -127,6 +127,12 @@ Its JSON observation has a separate bound, so heavily escaped source can refuse
 below the content limit. It retains complete evidence or refuses; it never
 returns a truncated source as success.
 
+If copy preparation is the intended observation, reserve its additional eight
+requests along with the source stage: require `nextRequestId <= 152` before
+source inspection. Optional actor/channel work can prevent that combination
+from fitting. Private producer and actor compositions have no mounted action
+in this purpose and cannot be appended through caller code or a larger counter.
+
 ## Interpreting results and failures
 
 The exact209 source and breakpoint profiles differ from the old206 route.

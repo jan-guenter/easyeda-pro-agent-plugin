@@ -593,3 +593,29 @@ Before a future copy dispatch, reserve the complete saved-getter size for both
 alternatives and require positive document-clock bounds. Pure comparison inputs
 do not establish native actor/clock provenance, completion, generation closure,
 replay exclusion or a reopened result. No copy writer is enabled by these models.
+
+For native copy integration, retain the original eight creation methods and
+their fresh lexical scopes. The private producer runner qualifies seven function
+objects and their locations, then compares identities across five method scopes.
+Its construction-owner integration consumes up to39 requests. The reuse check
+uses up to six requests to reprove owner, state and methods, without resampling
+lexical values. It has
+no public route. Parser/upload callbacks and transitive dependencies still need
+their own bindings before dispatch.
+
+The UI source route uses a notification RPC wrapper and an async responder.
+Extension-library lookup precedes project routing. Inspect the existing registry
+and bus without calling their lazy getters or initializers; absence of a matching
+extension entry must be checked with a qualified native membership method.
+Preserve the actual 64-character local-project identity. A matching UI project
+ID alone does not bind the destination project worker or its channel peer.
+
+Keep manager, document and backend actors distinct. The footprint manager's own
+undefined user means DOCHEAD omits that field. An original startup actor joined
+to completed SQL can predict backend names, but does not prove a future request's
+actor. Native `buildString` and `canvasString` each await `qe`; retain both actual
+call identities and results even when their values coincide. A preliminary RPC
+probe or local Date sample cannot replace them. Native creation allocates and
+sets document type before the first clock continuation, so its durable intent
+and cleanup ownership must already exist. Partial preparation request counts
+do not reserve a whole copy lifecycle or expand the observation-purpose budget.

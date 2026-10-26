@@ -4,11 +4,13 @@ import assert from "node:assert/strict";
 import { test } from "node:test";
 import { currentFootprintCopyV2NativeCreateArguments } from "../src/current-footprint-copy-v2-native-arguments.ts";
 import { reserveCurrentFootprintCopyV2Capacity } from "../src/current-footprint-copy-v2-capacity.ts";
+import { planCurrentFootprintCopyPreparationCapacity } from "../src/current-footprint-copy-preparation-capacity.ts";
 import { prepareCurrentFootprintCopyV2Plan } from "../src/current-footprint-copy-v2-plan.ts";
 import { assertCurrentFootprintCopyV2SqlInputs, prepareCurrentFootprintCopyV2SqlPlan } from "../src/current-footprint-copy-v2-sql.ts";
 import { prepareCurrentFootprintSourcePlan } from "../src/current-footprint-source-plan.ts";
 import { prepareCurrentFootprintCopyOwned, requireCurrentFootprintCopyOwned } from "../src/current-footprint-copy-preparation-runtime.ts";
 import { CurrentPcb209WorkerStartupOpening } from "../src/current-pcb-209-worker-startup-opening.ts";
+// oxlint-disable-next-line import/max-dependencies -- Reuse the existing complete SQL fixture to verify composed stage capacity without duplicating native-history setup in another suite.
 import { IDS, WITNESS, encrypted, fixture, inventory, mutate } from "./helpers/symbol-sql-fixture.ts";
 
 const CLIENT = "a".repeat(16);
@@ -58,6 +60,14 @@ void test("copy-v2 native arguments preserve source selection and copied metadat
   assert.equal(capacity.cleanupRequestsPerGeneration, 32);
   assert.equal(capacity.wholeLaunchBudgetReserved, false); assert.equal(capacity.nativeWriterCommandReserved, false);
   assert.equal(capacity.journalPublicationReserved, false); assert.equal(capacity.executionAuthorized, false);
+  const preparation = planCurrentFootprintCopyPreparationCapacity(f.copy, f.sql);
+  assert.equal(preparation.ownedActorPreparationRequests, 32); assert.equal(preparation.ownedActorReproofRequestsPerUse, 16);
+  assert.equal(preparation.ownedActorPreparationStateObservations, 2); assert.equal(preparation.ownedActorReproofStateObservationsPerUse, 1);
+  assert.equal(preparation.producerBindingRequests, 29); assert.equal(preparation.producerOriginalOwnerMaximumRequests, 39);
+  assert.equal(preparation.producerOriginalOwnerReproofMaximumRequestsPerUse, 6); assert.equal(preparation.sourceGenerationKnownPreparationRequests, 144);
+  assert.equal(preparation.savedGenerationKnownObservationRequests, 65); assert.equal(preparation.nativeClockRequestCount, null);
+  assert.equal(preparation.wholeLaunchBudgetReserved, false); assert.equal(preparation.existingStartupBudgetExpanded, false);
+  assert.ok(preparation.unaccountedStages.includes("two-native-qe-results"));
 });
 
 void test("copy-v2 capacity refuses cloned and substituted original plans and escaped oversize arguments", async () => {

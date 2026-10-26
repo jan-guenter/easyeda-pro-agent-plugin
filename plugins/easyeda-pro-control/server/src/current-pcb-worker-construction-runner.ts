@@ -9,6 +9,10 @@ import { CURRENT_FOOTPRINT_COPY_METHOD_CALLS, decodeCurrentFootprintCopyCacheMet
   decodeCurrentFootprintCopyNativeMethodProperties } from "./current-footprint-copy-method-bindings.ts";
 import { CURRENT_FOOTPRINT_COPY_CACHE_FACTORY_CALLS, decodeCurrentFootprintCopyCacheFactoryArray,
   decodeCurrentFootprintCopyCacheFactoryProperties } from "./current-footprint-copy-cache-factory.ts";
+import { CURRENT_FOOTPRINT_COPY_CREATE_METHOD_CALLS } from "./current-footprint-copy-create-bindings.ts";
+import { CURRENT_FOOTPRINT_COPY_LEXICAL_CALLS } from "./current-footprint-copy-producer-scope.ts";
+import { CurrentFootprintCopyProducerRunner } from "./current-footprint-copy-producer-runner.ts";
+import type { CurrentFootprintCopyProducerObservation } from "./current-footprint-copy-producer-runner.ts";
 import type { CurrentFootprintSourcePlan } from "./current-footprint-source-plan.ts";
 import { currentFootprintCopySourceCommand } from "./current-footprint-copy-source-command.ts";
 import { CURRENT_FOOTPRINT_COPY_SOURCE_READ_LIMITS } from "./current-footprint-copy-source-read.ts";
@@ -207,6 +211,12 @@ class CurrentPcbWorkerConstructionCore<P extends PacketProfile> {
   #footprintSourcePacket: CurrentFootprintSourceReadPacket | null = null;
   readonly #footprintSourceReplies: unknown[] = [];
   readonly #footprintSourceCapture = new CurrentFootprintSourceReplyCapture();
+  #footprintProducerAttempted = false;
+  #footprintProducerRunner: CurrentFootprintCopyProducerRunner | null = null;
+  #footprintProducerPacket: CurrentFootprintCopyProducerObservation | null = null;
+  #footprintCreateMethods: string | null = null;
+  #footprintLexicalBundle: string | null = null;
+  readonly #footprintProducerReplies: unknown[] = [];
   #channelAttempted = false;
   #channel: CurrentPcbWorkerStartupChannelObservationRunner | null = null;
   #channelPacket: CurrentPcbWorkerStartupChannelPacket | null = null;
@@ -680,6 +690,78 @@ class CurrentPcbWorkerConstructionCore<P extends PacketProfile> {
       status: this.#footprintSourceRunner?.status() ?? null, replies: this.#footprintSourceRunner?.retainedReplies() ?? [],
       originalSourceReplies: Object.freeze([...this.#footprintSourceReplies]), firstRejectedSourceReply: this.#footprintSourceCapture.firstRejected(),
       methodObservation: this.retainedFootprintState() }) : null;
+  }
+  public retainedFootprintProducers(): Readonly<Record<string, unknown>> | null {
+    return this.#footprintProducerAttempted ? Object.freeze({ attempted: true, completed: this.#footprintProducerPacket !== null,
+      observation: this.#footprintProducerRunner?.retained() ?? null, originalReplies: Object.freeze([...this.#footprintProducerReplies]),
+      originalMethodBundleRetained: this.#footprintCreateMethods !== null, originalLexicalBundleRetained: this.#footprintLexicalBundle !== null,
+      mounted: false, executionAuthorized: false }) : null;
+  }
+  #footprintProducerCurrent(packet: ConstructionPacket<P>, assignments: CurrentPcbWorkerConstructionAssignments,
+    state: CurrentFootprintCopyStatePacket): void {
+    this.#checkWindow(); this.#sameTransport();
+    if (this.#releaseConsumed || packet !== this.#packet || issued.get(packet) !== this || assignments !== this.#assignments ||
+        state !== this.#footprintPacket || this.#profile !== "private.current-pcb209-worker-construction.v1" ||
+        this.#footprintManager === null || this.#footprintConsistency === null || this.#footprintConstructors === null) { throw fail("FOOTPRINT_PRODUCER_OWNER"); }
+  }
+  #recheckFootprintCreateMethods(original: Readonly<CurrentPcbWorkerConstructionIdentities>): Promise<unknown> {
+    if (this.#footprintCreateMethods === null || this.#footprintManager === null || this.#footprintConsistency === null ||
+        this.#footprintConstructors === null) { throw fail("FOOTPRINT_CREATE_METHODS"); }
+    return this.#assignmentCall(original.project, CURRENT_FOOTPRINT_COPY_CREATE_METHOD_CALLS.recheck.program,
+      [original.channelBus, this.#footprintManager, this.#footprintConsistency, this.#footprintConstructors, this.#footprintCreateMethods],
+      true, this.#footprintProducerReplies);
+  }
+  /** Private209 continuation only; no lifecycle or MCP route calls it yet.
+   * Intrinsic29 producer reads plus the original state's before/after reproof
+   * require a separately reserved finite budget. Existing limits are unchanged. */
+  public async observeFootprintProducers(packet: ConstructionPacket<P>, assignments: CurrentPcbWorkerConstructionAssignments,
+    state: CurrentFootprintCopyStatePacket): Promise<CurrentFootprintCopyProducerObservation> {
+    this.#footprintProducerCurrent(packet, assignments, state);
+    if (this.#footprintProducerAttempted) { throw fail("FOOTPRINT_PRODUCER_CONSUMED"); } this.#footprintProducerAttempted = true;
+    try {
+      await this.requireFootprintState(packet, assignments, state);
+      const original = await this.requireOriginal(packet);
+      const runner = new CurrentFootprintCopyProducerRunner(Object.freeze({
+        assertCurrent: (): void => { this.#footprintProducerCurrent(packet, assignments, state); },
+        captureOriginalMethods: async (): Promise<unknown> => {
+          if (this.#footprintCreateMethods !== null || this.#footprintManager === null || this.#footprintConsistency === null ||
+              this.#footprintConstructors === null) { throw fail("FOOTPRINT_CREATE_METHODS"); }
+          const raw = await this.#assignmentCall(original.project, CURRENT_FOOTPRINT_COPY_CREATE_METHOD_CALLS.capture.program,
+            [original.channelBus, this.#footprintManager, this.#footprintConsistency, this.#footprintConstructors], false, this.#footprintProducerReplies);
+          this.#footprintCreateMethods = objectReply.parse(raw).result.objectId; return raw;
+        },
+        recheckOriginalMethods: (): Promise<unknown> => this.#recheckFootprintCreateMethods(original),
+        properties: (objectId: string): Promise<unknown> => this.#request({ method: "Runtime.getProperties", params: {
+          objectId, ownProperties: true, generatePreview: false } }, this.#footprintProducerReplies),
+        captureLexicals: async (scopeId: string): Promise<unknown> => {
+          if (this.#footprintLexicalBundle !== null) { throw fail("FOOTPRINT_LEXICALS_CONSUMED"); }
+          const raw = await this.#assignmentCall(scopeId, CURRENT_FOOTPRINT_COPY_LEXICAL_CALLS.capture.program, [], false, this.#footprintProducerReplies);
+          this.#footprintLexicalBundle = objectReply.parse(raw).result.objectId; return raw;
+        },
+        recheckLexicals: (scopeId: string, bundleId: string): Promise<unknown> => {
+          if (this.#footprintLexicalBundle === null || bundleId !== this.#footprintLexicalBundle) { throw fail("FOOTPRINT_LEXICALS_OWNER"); }
+          return this.#assignmentCall(scopeId, CURRENT_FOOTPRINT_COPY_LEXICAL_CALLS.recheck.program, [this.#footprintLexicalBundle], true, this.#footprintProducerReplies);
+        },
+      }), this.#scriptId);
+      this.#footprintProducerRunner = runner;
+      const observation = await runner.observe();
+      await this.requireFootprintState(packet, assignments, state);
+      runner.requireOriginal(observation); this.#footprintProducerCurrent(packet, assignments, state);
+      this.#footprintProducerPacket = observation; return observation;
+    } catch (error) { this.#fail("FOOTPRINT_PRODUCER_FAILED"); throw error; }
+  }
+  /** Reprove the issued observation's owner, state and methods. This does not
+   * refresh lexical scopes or establish current producer execution authority. */
+  public async requireFootprintProducers(packet: ConstructionPacket<P>, assignments: CurrentPcbWorkerConstructionAssignments,
+    state: CurrentFootprintCopyStatePacket, observation: CurrentFootprintCopyProducerObservation): Promise<void> {
+    this.#footprintProducerCurrent(packet, assignments, state);
+    if (observation !== this.#footprintProducerPacket || this.#footprintProducerRunner === null) { throw fail("ORIGINAL_FOOTPRINT_PRODUCER_PACKET"); }
+    try {
+      this.#footprintProducerRunner.requireOriginal(observation);
+      await this.requireFootprintState(packet, assignments, state);
+      resultBoolean.parse(await this.#recheckFootprintCreateMethods(await this.requireOriginal(packet)));
+      this.#footprintProducerRunner.requireOriginal(observation); this.#footprintProducerCurrent(packet, assignments, state);
+    } catch (error) { this.#fail("FOOTPRINT_PRODUCER_CHANGED"); throw error; }
   }
   /** Exactly61 worker requests after the already published state observation.
    * The lifecycle reserves the shared parent/worker budget before its intent.

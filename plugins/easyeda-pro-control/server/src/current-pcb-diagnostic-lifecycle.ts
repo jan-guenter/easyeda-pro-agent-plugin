@@ -71,6 +71,7 @@ import { CURRENT_PCB_209_RATLINE_STARTUP_OPERATION_PREFIX, currentPcb209RatlineS
 import { CurrentPcb209RatlineStartupChannel } from "./current-pcb-209-ratline-startup-channel.ts";
 import { CurrentPcb209RatlineNativeSession } from "./current-pcb-209-ratline-native-session.ts";
 import { CurrentPcb209RatlineContinuationNativeSession } from "./current-pcb-209-ratline-continuation-native-session.ts";
+import { rejectCurrentPcb209RatlineCheckpointPopulation } from "./current-pcb-209-ratline-checkpoint.ts";
 import type { CurrentPcb209RatlineContinuationNativePacket } from "./current-pcb-209-ratline-continuation-native-session.ts";
 import { CurrentPcb209RatlineContinuationChannel } from "./current-pcb-209-ratline-continuation-channel.ts";
 import { CURRENT_PCB_209_RATLINE_CONTINUATION_OPERATION_PREFIX, currentPcb209RatlineContinuationIdSchema, currentPcb209RatlineContinuationLifecycleRequestSchema } from "./current-pcb-209-ratline-continuation-validation.ts";
@@ -1016,6 +1017,11 @@ class CurrentPcbLifecycleCore {
         await assertSnapshot(expected); current();
       };
       await assertOriginal();
+      /* Consume and journal first. This original-checkpoint rejection grants no
+       * empty runtime authority; the native continuation retains every guard. */
+      await this.#verifyHistoricalCheckpoint(preparation.prepared, preparation.originalTarget); await assertOriginal();
+      requireValue(canonicalJson(preparation.prepared) === preparation.preparedText, "STARTUP_RATLINE_CHECKPOINT_CHANGED");
+      await rejectCurrentPcb209RatlineCheckpointPopulation(preparation.prepared); await assertOriginal();
       const opened = requireCurrentPcb209StartupOpening(original.owner, openedResult);
       const reverify = currentPcb209StartupCheckpointCallback(preparation, openingIntent,
         Object.freeze({ assertOriginal, verifyHistorical: this.#verifyHistoricalCheckpoint }));
