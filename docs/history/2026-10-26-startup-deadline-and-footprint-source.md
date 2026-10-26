@@ -180,3 +180,18 @@ still need their actor/clock, upload, dependency and durable SQL lifecycles.
 Schematic connectivity, other scoped writers/library lifecycles and manufacturing
 exports remain in the broader backlog. Direct vendor GET_STR and missing cache
 fallback remain concretely omitted as described above.
+
+## First CI failure and fixture correction
+
+PR132 head `92125b19084a08ccec3149d9fe17ddfd14d91d26` failed one ordinary-launch
+registration test in facade shard7 of CI run40317554577. Its inert diagnostic
+collaborator omitted the two newly required footprint-source methods. The
+production index correctly refused that incomplete method roster before the
+test could reach its release scenario. The complete failed job log is retained,
+SHA-256 `7e8520442eae57b68be20da222dabdb239df5e48d02c34ca610c9c29649ee142`.
+
+The fixture now supplies both methods as throwing stubs, matching its other
+unused diagnostic operations. All three actual registration-callback tests
+pass. Production method guards, runtime source, bundles, compatibility pins,
+test selection and deadlines are unchanged. The original CI result is not
+accepted for publication; the corrected commit requires its own complete CI.
