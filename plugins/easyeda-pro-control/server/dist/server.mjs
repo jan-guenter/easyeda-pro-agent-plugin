@@ -10,7 +10,7 @@ const require = function __easyedaGuardedRequire(specifier) { if (typeof specifi
 	const __easyedaPublicationLockPath = __easyedaJoin(__easyedaPublicationDirectory, ".bundle-publication.lock");
 const __easyedaAssertNoPublication = () => { try { __easyedaLstatSync(__easyedaPublicationLockPath); throw new Error("The facade bundle is undergoing a fail-closed publication transaction."); } catch (__easyedaPublicationError) { if (!__easyedaPublicationError || typeof __easyedaPublicationError !== "object" || !("code" in __easyedaPublicationError) || __easyedaPublicationError.code !== "ENOENT") throw __easyedaPublicationError; } };
 __easyedaAssertNoPublication();
-const __easyedaBundlePairId = "53fab2910085de5a6be6eccb26086d91f146a91d5a04cc4420af6b6b6860a784";
+const __easyedaBundlePairId = "64c033e10faef950efb70533918af6f5136d3891c7a95b49870b7c6313593140";
 if (__easyedaBasename(import.meta.filename) === "server.mjs") {
   const __easyedaPeerPath = __easyedaJoin(import.meta.dirname, "upstream-supervisor.mjs");
   const __easyedaPeerPathBefore = __easyedaLstatSync(__easyedaPeerPath, { bigint: true });
@@ -38845,14 +38845,14 @@ var init_current_disposable_open_diagnostics = __esm({
     for (const stage of CURRENT_OPEN_NATIVE_STAGES) {
       for (const code2 of CURRENT_OPEN_NATIVE_CODES) {
         const category = `native-current-disposable-open:${stage}:${code2}`;
-        const fields26 = { nativeStage: stage, nativeCode: code2 };
+        const fields27 = { nativeStage: stage, nativeCode: code2 };
         nativeMessages.set(`CURRENT_DISPOSABLE_OPEN_FAILED:${stage}:${code2}`, category);
-        nativeCategories.set(category, fields26);
+        nativeCategories.set(category, fields27);
         for (const prefix4 of ["The upstream EasyEDA tool reported failure", "The upstream EasyEDA tool reported failure or unavailability"]) {
-          wrappedCategories.set(`${prefix4} [${category}].`, fields26);
+          wrappedCategories.set(`${prefix4} [${category}].`, fields27);
         }
         if (code2 === "TIMEOUT") {
-          wrappedCategories.set(`The native lifecycle deadline expired without proving execution ended [${category};execution-unsettled].`, fields26);
+          wrappedCategories.set(`The native lifecycle deadline expired without proving execution ended [${category};execution-unsettled].`, fields27);
         }
       }
     }
@@ -44372,8 +44372,8 @@ async function linuxProcessStartTime(pid2) {
   if (closingParenthesis === -1) {
     throw new Error(`Could not parse process identity for pid ${pid2}.`);
   }
-  const fields26 = statLine.slice(closingParenthesis + 1).trim().split(/\s+/u);
-  const startTime = fields26[19];
+  const fields27 = statLine.slice(closingParenthesis + 1).trim().split(/\s+/u);
+  const startTime = fields27[19];
   if (startTime === void 0 || !/^\d+$/u.test(startTime)) {
     throw new Error(`Could not parse process start time for pid ${pid2}.`);
   }
@@ -46986,7 +46986,7 @@ function compilePrimitive(operation, family3) {
   const target9 = "target" in operation ? operation.target : null;
   const properties2 = "properties" in operation ? operation.properties : {};
   const patch5 = "patch" in operation ? operation.patch : {};
-  const fields26 = method7 === "create" ? Object.keys(properties2) : Object.keys(patch5);
+  const fields27 = method7 === "create" ? Object.keys(properties2) : Object.keys(patch5);
   let args;
   let inverse;
   if (method7 === "create") {
@@ -46999,7 +46999,7 @@ function compilePrimitive(operation, family3) {
     args = [targetArgument(target9)];
     if (method7 === "modify") {
       args.push({ kind: "object", properties: Object.fromEntries(Object.entries(patch5).map(([field13, value2]) => [field13, propertyArgument(field13, value2)])) });
-      inverse = { kind: "restore-patch-from-before", api: catalog2.api, target: target9, fields: fields26 };
+      inverse = { kind: "restore-patch-from-before", api: catalog2.api, target: target9, fields: fields27 };
     } else {
       inverse = { kind: "restore-from-checkpoint", reason: "deleted-identity" };
     }
@@ -47037,7 +47037,7 @@ function compilePrimitive(operation, family3) {
     afterReads,
     expectedFields,
     inverse,
-    effect: { family: family3, target: target9, identity: method7 === "modify" ? "preserve" : method7, fields: fields26, collateral },
+    effect: { family: family3, target: target9, identity: method7 === "modify" ? "preserve" : method7, fields: fields27, collateral },
     limitations: ["compiler-only-until-connected-mutation-admission", "all-unlisted-document-state-must-remain-unchanged", ...family3 === "pad" ? ["standalone-pad-only-unless-parent-collateral-is-explicitly-proven", "specialPad-unimplemented-in-sdk"] : [], ...family3 === "region" ? ["public-reader-omits-NO_VIAS"] : [], ...family3 === "fill" ? ["public-reader-hardcodes-fillMode"] : [], ...family3 === "arc" || family3 === "via" ? ["public-reader-rounds-geometry"] : []]
   };
 }
@@ -48483,11 +48483,11 @@ function compareDocumentSources(before, after) {
       if (previous === void 0 || canonicalJson(previous) === canonicalJson(object6)) {
         return [];
       }
-      const fields26 = [.../* @__PURE__ */ new Set([...Object.keys(previous.body), ...Object.keys(object6.body)])].filter((key) => canonicalJson({ value: previous.body[key] }) !== canonicalJson({ value: object6.body[key] })).toSorted();
+      const fields27 = [.../* @__PURE__ */ new Set([...Object.keys(previous.body), ...Object.keys(object6.body)])].filter((key) => canonicalJson({ value: previous.body[key] }) !== canonicalJson({ value: object6.body[key] })).toSorted();
       if (previous.type !== object6.type) {
-        fields26.push("$type");
+        fields27.push("$type");
       }
-      return [{ before: previous, after: object6, fields: fields26 }];
+      return [{ before: previous, after: object6, fields: fields27 }];
     })
   };
 }
@@ -48530,11 +48530,11 @@ function assertExactTransportValue(value2, depth = 0) {
   if (typeof value2 !== "object" || value2 === null) {
     throw new Error("Exact reader transport contains a non-JSON value.");
   }
-  const fields26 = Array.isArray(value2) ? value2 : Object.values(value2);
-  if (fields26.length > 2e4) {
+  const fields27 = Array.isArray(value2) ? value2 : Object.values(value2);
+  if (fields27.length > 2e4) {
     throw new Error("Exact reader transport exceeds its collection bound.");
   }
-  for (const field13 of fields26) {
+  for (const field13 of fields27) {
     assertExactTransportValue(field13, depth + 1);
   }
 }
@@ -48629,8 +48629,8 @@ function assertExactRecordKeys(value2, requiredKeys, label) {
     throw new Error(`${label} has missing or unexpected fields.`);
   }
 }
-function assertFiniteFields(value2, fields26, label) {
-  for (const field13 of fields26) {
+function assertFiniteFields(value2, fields27, label) {
+  for (const field13 of fields27) {
     if (typeof value2[field13] !== "number" || !Number.isFinite(value2[field13])) {
       throw new TypeError(`${label}.${field13} must be finite.`);
     }
@@ -48750,7 +48750,7 @@ function assertMaskExpansion(value2, label) {
   if (value2 === null) {
     return;
   }
-  const fields26 = /* @__PURE__ */ new Set([
+  const fields27 = /* @__PURE__ */ new Set([
     "topSolderMask",
     "bottomSolderMask",
     "topPasteMask",
@@ -48759,7 +48759,7 @@ function assertMaskExpansion(value2, label) {
   if (!isUnknownRecord(value2)) {
     throw new Error(`${label} must be a mask-expansion object or null.`);
   }
-  if (Object.keys(value2).some((key) => !fields26.has(key))) {
+  if (Object.keys(value2).some((key) => !fields27.has(key))) {
     throw new Error(`${label} has an unexpected field.`);
   }
   assertFiniteFields(value2, Object.keys(value2), label);
@@ -51395,7 +51395,7 @@ function compileSchematicOperation(input2) {
   if (operation.action === "sch.component-pin.no-connect") {
     values2 = { noConnected: operation.noConnected };
   }
-  const fields26 = Object.keys(values2);
+  const fields27 = Object.keys(values2);
   let method7 = "modify";
   let resultKind = "modified-primitive";
   let args = [];
@@ -51428,7 +51428,7 @@ function compileSchematicOperation(input2) {
       inverse = { kind: "restore-from-checkpoint", reason: "deleted-identity" };
     } else {
       args.push({ kind: "object", properties: Object.fromEntries(Object.entries(values2).map(([field13, value2]) => [field13, literal3(value2)])) });
-      inverse = { kind: "restore-patch-from-before", api: definition.api, target: target9, fields: fields26 };
+      inverse = { kind: "restore-patch-from-before", api: definition.api, target: target9, fields: fields27 };
     }
   }
   const familyIdentities = { purpose: "family-identities", api: definition.api, method: "getAllPrimitiveId", args: [] };
@@ -51465,7 +51465,7 @@ function compileSchematicOperation(input2) {
   if (creating) {
     identity38 = "create";
   }
-  return { profile: SCHEMATIC_OPERATION_PROFILE, operation: structuredClone(operation), id: operation.id, action: operation.action, documentType: operation.documentType, call: { api: definition.api, method: method7, args }, resultKind, beforeReads, afterReads, expectedFields: Object.entries(values2).map(([field13, value2]) => expected(family3, field13, value2)), inverse, effect: { family: family3, target: target9, identity: identity38, fields: fields26, collateral }, requiredPreservation, limitations: limitations25 };
+  return { profile: SCHEMATIC_OPERATION_PROFILE, operation: structuredClone(operation), id: operation.id, action: operation.action, documentType: operation.documentType, call: { api: definition.api, method: method7, args }, resultKind, beforeReads, afterReads, expectedFields: Object.entries(values2).map(([field13, value2]) => expected(family3, field13, value2)), inverse, effect: { family: family3, target: target9, identity: identity38, fields: fields27, collateral }, requiredPreservation, limitations: limitations25 };
 }
 function referenceFamily(action) {
   const family3 = action.split(".")[1];
@@ -52669,25 +52669,25 @@ function storedTemplateBodies(sheet3, source7, model5) {
     if (live === void 0 || live.type !== stored2.type || !unlocked(stored2.body) || !unlocked(live.body)) {
       fail4();
     }
-    const body4 = structuredClone(stored2.body), fields26 = [];
+    const body4 = structuredClone(stored2.body), fields27 = [];
     if (stored2.type === "ATTR") {
       if (!same5(body4["zIndex"], live.body["zIndex"])) {
         if (!Number.isSafeInteger(live.body["zIndex"]) || number8(live.body["zIndex"]) < 0) {
           fail4();
         }
         body4["zIndex"] = live.body["zIndex"];
-        fields26.push("zIndex");
+        fields27.push("zIndex");
       }
       if (!Object.hasOwn(body4, "strikeout") && live.body["strikeout"] === false) {
         body4["strikeout"] = false;
-        fields26.push("strikeout");
+        fields27.push("strikeout");
       }
     }
     if (!same5(body4, live.body)) {
       fail4();
     }
-    if (fields26.length > 0) {
-      hydration.push({ id: stored2.id, fields: fields26 });
+    if (fields27.length > 0) {
+      hydration.push({ id: stored2.id, fields: fields27 });
     }
   }
   return hydration;
@@ -54067,7 +54067,7 @@ function diagnosticRecord(value2) {
 function contextFailureDiagnostics(payload2) {
   const source7 = diagnosticRecord(payload2);
   const result2 = {};
-  const fields26 = {
+  const fields27 = {
     project: ["uuid", "projectUuid", "path"],
     document: ["uuid", "documentUuid", "documentType", "tabId", "parentProjectUuid", "parentLibraryUuid"],
     pcb: ["uuid", "documentUuid", "tabId"],
@@ -54091,7 +54091,7 @@ function contextFailureDiagnostics(payload2) {
   const pathStatus = statuses["projectPath"];
   result2["projectPathCall"] = typeof pathStatus === "string" && allowedStatuses.has(pathStatus) ? pathStatus : "unreported";
   result2["contextStable"] = source7["contextStable"] === true;
-  for (const [label, keys3] of Object.entries(fields26)) {
+  for (const [label, keys3] of Object.entries(fields27)) {
     const item2 = diagnosticRecord(source7[label]);
     const status3 = statuses[label];
     const projected4 = {
@@ -55033,7 +55033,7 @@ async function readEditorTabLookup(engine2, requestInput2, expectedContext, over
   });
   const scope7 = prepareEditorTabLookupScope(history, context4);
   const code2 = wrapWithContextGuard(buildEditorTabLookupCode(request13, scope7), context4);
-  const observe12 = async () => {
+  const observe13 = async () => {
     await engine2.assertBridgeDispatchAllowed();
     await engine2.assertContext(context4);
     await unchanged5();
@@ -55044,7 +55044,7 @@ async function readEditorTabLookup(engine2, requestInput2, expectedContext, over
     await unchanged5();
     return result2;
   };
-  const first = await observe12(), second = await observe12();
+  const first = await observe13(), second = await observe13();
   await profile2();
   await unchanged5();
   await engine2.assertContext(context4);
@@ -55840,7 +55840,7 @@ async function readPcbPrimitiveType(engine2, requestInput2, expectedContext, exp
     throw new Error("PCB primitive type active identity changed.");
   }
   let inheritedScope;
-  const observe12 = async (kind) => {
+  const observe13 = async (kind) => {
     await engine2.assertBridgeDispatchAllowed();
     if (canonicalJson(await engine2.assertContext(context4)) !== canonicalJson(context4)) {
       throw new Error("PCB primitive type context changed before observation.");
@@ -55854,9 +55854,9 @@ async function readPcbPrimitiveType(engine2, requestInput2, expectedContext, exp
     return payload2;
   };
   const observations2 = async () => {
-    const beforePayload = await observe12("pcb-source");
-    const inventory2 = await observe12("pcb-inventory");
-    const afterPayload = await observe12("pcb-source");
+    const beforePayload = await observe13("pcb-source");
+    const inventory2 = await observe13("pcb-inventory");
+    const afterPayload = await observe13("pcb-source");
     const before = parseDocumentSource(external_exports.string().max(16777216).parse(beforePayload["source"]));
     const after = parseDocumentSource(external_exports.string().max(16777216).parse(afterPayload["source"]));
     if (before.sha256 !== after.sha256) {
@@ -56495,11 +56495,11 @@ function assertPlainInput(value2, depth, budget3) {
   if (!Array.isArray(value2) && prototype2 !== Object.prototype && prototype2 !== null) {
     throw new Error("Public SDK read arguments require plain data.");
   }
-  const fields26 = Object.getOwnPropertyDescriptors(value2);
-  if (Reflect.ownKeys(value2).some((key) => typeof key !== "string") || Object.keys(fields26).length > 4096) {
+  const fields27 = Object.getOwnPropertyDescriptors(value2);
+  if (Reflect.ownKeys(value2).some((key) => typeof key !== "string") || Object.keys(fields27).length > 4096) {
     throw new Error("Invalid public SDK read argument collection.");
   }
-  for (const [key, descriptor10] of Object.entries(fields26)) {
+  for (const [key, descriptor10] of Object.entries(fields27)) {
     budget3.characters += key.length;
     if (key.length > 256 || budget3.characters > 131072) {
       throw new Error("Public SDK read argument keys exceed the bound.");
@@ -56514,7 +56514,7 @@ function assertPlainInput(value2, depth, budget3) {
       assertPlainInput(descriptor10.value, depth + 1, budget3);
     }
   }
-  if (Array.isArray(value2) && Object.keys(fields26).length !== value2.length + 1) {
+  if (Array.isArray(value2) && Object.keys(fields27).length !== value2.length + 1) {
     throw new Error("Sparse public SDK arrays are not accepted.");
   }
 }
@@ -56951,8 +56951,8 @@ function validatePublicSdkReadPayload(input2, requestInput2) {
         if (definition.primitiveType === "ComponentPad" && row13["ParentComponentPrimitiveId"] !== request13.arguments["primitiveId"]) {
           throw new Error("Public SDK component pad belongs to a different parent.");
         }
-        const fields26 = row13["ComponentType"] === "block_symbol" ? [...definition.getters, "Cbb", "CbbSymbol"] : definition.getters;
-        if (Object.keys(row13).toSorted().join("\n") !== fields26.toSorted().join("\n")) {
+        const fields27 = row13["ComponentType"] === "block_symbol" ? [...definition.getters, "Cbb", "CbbSymbol"] : definition.getters;
+        if (Object.keys(row13).toSorted().join("\n") !== fields27.toSorted().join("\n")) {
           throw new Error("Public SDK primitive projection is incomplete or contains unknown fields.");
         }
         validatePrimitiveFields(row13, rowIndex, definition, undefinedPointers);
@@ -57406,8 +57406,8 @@ var init_public_sdk_read = __esm({
       Poured: { schema: emptyArguments2, parameters: [] },
       Region: { schema: external_exports.object({ layer: layer([...layerCopper, 12]).optional(), ruleType: regionRuleTypes, primitiveLock: optionalLock }).strict(), parameters: ["layer", "ruleType", "primitiveLock"] }
     };
-    for (const [family3, fields26] of Object.entries(pcbGetters)) {
-      const getterNames = `PrimitiveType PrimitiveId ${fields26}`.split(" ");
+    for (const [family3, fields27] of Object.entries(pcbGetters)) {
+      const getterNames = `PrimitiveType PrimitiveId ${fields27}`.split(" ");
       const filter = pcbFilters[family3];
       if (filter === void 0) {
         throw new Error("Missing fixed PCB primitive filter.");
@@ -57426,8 +57426,8 @@ var init_public_sdk_read = __esm({
       add2(`eda.pcb_Primitive${family3}.getAll`, PCB_DOCUMENTS, "primitive", filter.schema, filter.parameters, options);
       add2(`eda.pcb_Primitive${family3}.getAllPrimitiveId`, PCB_DOCUMENTS, "ids", filter.schema, filter.parameters, { limitations: options.limitations, parameterSupport: options.parameterSupport });
     }
-    for (const [family3, fields26] of Object.entries(schGetters)) {
-      const getterNames = `PrimitiveType PrimitiveId ${fields26}`.split(" ");
+    for (const [family3, fields27] of Object.entries(schGetters)) {
+      const getterNames = `PrimitiveType PrimitiveId ${fields27}`.split(" ");
       let filter = { schema: emptyArguments2, parameters: [] };
       if (family3 === "Attribute") {
         filter = { schema: external_exports.object({ parentPrimitiveId: id3.optional() }).strict(), parameters: ["parentPrimitiveId"] };
@@ -60159,8 +60159,8 @@ function expectedRegionRules(compiled2, before) {
     if (target9 === void 0 || !constraint && target9.type !== "POUR") {
       throw new Error("Region rule target must be an existing pour or constraint ID.");
     }
-    const fields26 = constraint ? { "Safe Spacing": "SAFE", "Other Spacing": "OTHER", Track: "TRACK", "Differential Pair": "DIFFER_ENTAIL", "Via Size": "RADIUS", "Plane Zone": "PLANE", "Copper Zone": "COPPER", "Creepage Distance": "CREEPAGE" } : { "Safe Spacing": "SAFE", "Plane Zone": "PLANE", "Copper Zone": "COPPER", "Creepage Distance": "CREEPAGE" };
-    const allowed = /* @__PURE__ */ new Set(["type", "name", ...Object.keys(fields26), ...constraint ? ["constraintName", "Copper Safe Spacing", "Plane Safe Spacing"] : []]);
+    const fields27 = constraint ? { "Safe Spacing": "SAFE", "Other Spacing": "OTHER", Track: "TRACK", "Differential Pair": "DIFFER_ENTAIL", "Via Size": "RADIUS", "Plane Zone": "PLANE", "Copper Zone": "COPPER", "Creepage Distance": "CREEPAGE" } : { "Safe Spacing": "SAFE", "Plane Zone": "PLANE", "Copper Zone": "COPPER", "Creepage Distance": "CREEPAGE" };
+    const allowed = /* @__PURE__ */ new Set(["type", "name", ...Object.keys(fields27), ...constraint ? ["constraintName", "Copper Safe Spacing", "Plane Safe Spacing"] : []]);
     if (Object.keys(value2).some((key) => !allowed.has(key))) {
       throw new Error("Unreviewed region rule field.");
     }
@@ -60170,7 +60170,7 @@ function expectedRegionRules(compiled2, before) {
     }
     wanted.add(id16);
     const ruleKeyValue = {};
-    for (const [label, raw] of Object.entries(fields26)) {
+    for (const [label, raw] of Object.entries(fields27)) {
       const family3 = String(raw), rule2 = reference(before, value2[label], family3);
       if (rule2 !== null && (constraint || !["PLANE", "COPPER"].includes(family3) || rule2 !== "default")) {
         ruleKeyValue[family3] = rule2;
@@ -60742,8 +60742,8 @@ function assertPrimitiveRepresentation(type2, body4) {
     return unsupported2("blind via requires an explicit existing blind-layer rule");
   }
   if (type2 === "PAD" || type2 === "VIA") {
-    const fields26 = type2 === "PAD" ? Object.values(MASK_FIELDS) : ["topSolderExpansion", "bottomSolderExpansion"];
-    const masks = fields26.map((field13) => body4[field13]);
+    const fields27 = type2 === "PAD" ? Object.values(MASK_FIELDS) : ["topSolderExpansion", "bottomSolderExpansion"];
+    const masks = fields27.map((field13) => body4[field13]);
     if (!masks.every((value2) => value2 === null) && !masks.every((value2) => typeof value2 === "number" && Number.isFinite(value2))) {
       return unsupported2("native mask mode is shared: use all explicit numeric expansions or all rule defaults");
     }
@@ -61455,9 +61455,9 @@ function values(record24, key) {
   }
   return value2;
 }
-function assertDefaultFields(record24, fields26) {
+function assertDefaultFields(record24, fields27) {
   const keys3 = values(record24, "ruleKeyValue");
-  for (const field13 of fields26) {
+  for (const field13 of fields27) {
     const value2 = keys3[field13];
     if (value2 !== void 0 && value2 !== null && value2 !== "default") {
       throw new Error("Public group operation would reset a member rule override; assign or preserve it explicitly first.");
@@ -61502,14 +61502,14 @@ function assertPublicRuleEffects(operation, before, expected3 = buildExpectedDes
     if (verb === "rename" && before.objects.some((record24) => record24.type === "RULE_SELECTOR" && record24 !== group2 && record24.id.includes(JSON.stringify([selector7, first.value])))) {
       throw new Error("Native group rename cannot preserve associated between-net selectors.");
     }
-    let fields26 = ["DIFFER_ENTAIL"];
+    let fields27 = ["DIFFER_ENTAIL"];
     if (family3 === "netclass") {
-      fields26 = ["SAFE", "TRACK", "BLIND", "RADIUS", "PLANE", "COPPER", "SOLDER", "PASTE", ...["delete", "rename"].includes(verb ?? "") ? ["CREEPAGE"] : []];
+      fields27 = ["SAFE", "TRACK", "BLIND", "RADIUS", "PLANE", "COPPER", "SOLDER", "PASTE", ...["delete", "rename"].includes(verb ?? "") ? ["CREEPAGE"] : []];
     } else if (family3 === "equal-length") {
-      fields26 = ["NET_LENGTH", "NET_LENGTH_TOLERANCE"];
+      fields27 = ["NET_LENGTH", "NET_LENGTH_TOLERANCE"];
     }
     if (verb === "add-nets") {
-      assertDefaultFields(group2, fields26);
+      assertDefaultFields(group2, fields27);
     }
     for (const record24 of before.objects.filter((entry) => entry.type === "NET")) {
       const next = expected3.objects.find((entry) => entry.id === record24.id);
@@ -61518,7 +61518,7 @@ function assertPublicRuleEffects(operation, before, expected3 = buildExpectedDes
         if (!Array.isArray(key) || typeof key[1] !== "string") {
           throw new TypeError("Invalid native net identity.");
         }
-        assertDefaultFields(records2.get(JSON.stringify(["RULE_SELECTOR", ["NET", key[1]]])), fields26);
+        assertDefaultFields(records2.get(JSON.stringify(["RULE_SELECTOR", ["NET", key[1]]])), fields27);
       }
     }
     if (family3 === "differential-pair") {
@@ -63625,8 +63625,8 @@ var init_footprint_public_line = __esm({
 function buildFootprintPublicGeometryExpression(input2, before, scope7, ids3 = {}) {
   const operation = footprintOperationSchema.parse(input2);
   const family3 = operation.action.split(".")[1] ?? "", verb = operation.action.split(".")[2];
-  const fields26 = mapping[family3], stem = stems[family3];
-  if (fields26 === void 0 || stem === void 0) {
+  const fields27 = mapping[family3], stem = stems[family3];
+  if (fields27 === void 0 || stem === void 0) {
     throw new Error("Unreviewed footprint public geometry family.");
   }
   assertFootprintProfileSupported(operation, before, ids3);
@@ -63681,7 +63681,7 @@ function buildFootprintPublicGeometryExpression(input2, before, scope7, ids3 = {
   }
   const baseline3 = {};
   if (target9 !== void 0) {
-    for (const [key, sourceKey] of Object.entries(fields26)) {
+    for (const [key, sourceKey] of Object.entries(fields27)) {
       if (!Object.hasOwn(target9.body, sourceKey)) {
         throw new Error("Incomplete footprint geometry source baseline.");
       }
@@ -64267,14 +64267,14 @@ function schematicUserRestoration(previous, current10, beforeCheckpointSha256, a
 function verifyTargetMetadata(previous, current10, beforeCheckpointSha256, afterCheckpointSha256) {
   const before = previous.metadata;
   const after = current10.metadata;
-  const fields26 = changedFields(before, after);
-  if (fields26.some((field13) => field13 !== "user" && !VOLATILE_METADATA.has(field13))) {
+  const fields27 = changedFields(before, after);
+  if (fields27.some((field13) => field13 !== "user" && !VOLATILE_METADATA.has(field13))) {
     throw new Error("Saved document metadata changed outside the intended edit.");
   }
-  if (fields26.includes("user")) {
+  if (fields27.includes("user")) {
     return schematicUserRestoration(previous, current10, beforeCheckpointSha256, afterCheckpointSha256);
   }
-  if (fields26.length === 0) {
+  if (fields27.length === 0) {
     return void 0;
   }
   const time20 = after["updateTime"];
@@ -64301,8 +64301,8 @@ function deriveDesignBaselineTargets(before, expectedAfter3) {
     if (after === void 0 || after.type !== record24.type) {
       return [{ id: record24.id, fields: Object.keys(record24.body).toSorted() }];
     }
-    const fields26 = changedFields(record24.body, after.body);
-    return fields26.length === 0 ? [] : [{ id: record24.id, fields: fields26 }];
+    const fields27 = changedFields(record24.body, after.body);
+    return fields27.length === 0 ? [] : [{ id: record24.id, fields: fields27 }];
   }).toSorted((left, right) => left.id.localeCompare(right.id));
 }
 function verifyDesignBaseline(input2) {
@@ -64501,13 +64501,13 @@ function projectFootprintPadHistory(input2) {
       throw new Error("Footprint pad target is absent from durable baseline.");
     }
     const after = live.body, before = stored2.body;
-    const fields26 = [.../* @__PURE__ */ new Set([...Object.keys(before), ...Object.keys(after)])].filter((field13) => canonicalJson({ value: before[field13] }) !== canonicalJson({ value: after[field13] }));
-    if (fields26.length > 0) {
+    const fields27 = [.../* @__PURE__ */ new Set([...Object.keys(before), ...Object.keys(after)])].filter((field13) => canonicalJson({ value: before[field13] }) !== canonicalJson({ value: after[field13] }));
+    if (fields27.length > 0) {
       const land = before["defaultPad"];
       if (before["hole"] !== null || after["hole"] !== null || before["layerId"] !== 1 && before["layerId"] !== 2 || before["layerId"] !== after["layerId"] || before["netName"] !== "" || before["parentId"] !== void 0 && before["parentId"] !== null && before["parentId"] !== "" || canonicalJson(before["specialPad"]) !== "[]" || !isRecord(land) || !["ELLIPSE", "OVAL", "RECT"].includes(String(land["padType"]))) {
         throw new Error("Unsupported footprint pad load/export representation.");
       }
-      for (const field13 of fields26) {
+      for (const field13 of fields27) {
         const observed12 = after[field13], value2 = before[field13];
         let admitted = false;
         if (field13 === "padOffsetX" || field13 === "padOffsetY") {
@@ -64606,9 +64606,9 @@ function resolvedTarget2(operation, ids3) {
 }
 function patchFields(family3, properties2, previous) {
   const result2 = {};
-  const fields26 = FIELDS[family3] ?? SHAPE_FIELDS;
+  const fields27 = FIELDS[family3] ?? SHAPE_FIELDS;
   for (const [key, value2] of Object.entries(properties2).filter(([property7]) => !DERIVED_FIELDS.has(property7))) {
-    const field13 = fields26[key];
+    const field13 = fields27[key];
     if (field13 === void 0) {
       throw new Error("Unmapped symbol geometry property.");
     }
@@ -64982,11 +64982,11 @@ function decodeModelTransform(value2) {
       translationMil: { x: numbers[9], y: numbers[10], z: numbers[11] }
     });
   }
-  const fields26 = text53.split(",");
-  if (fields26.length !== 9 || fields26.some((entry) => !/^[+-]?(?:\d+(?:\.\d*)?|\.\d+)(?:e[+-]?\d+)?$/iu.test(entry.trim()))) {
+  const fields27 = text53.split(",");
+  if (fields27.length !== 9 || fields27.some((entry) => !/^[+-]?(?:\d+(?:\.\d*)?|\.\d+)(?:e[+-]?\d+)?$/iu.test(entry.trim()))) {
     throw new Error("Native legacy model transform requires exactly nine numeric fields.");
   }
-  const values2 = fields26.map(Number);
+  const values2 = fields27.map(Number);
   return modelTransformSchema.parse({
     format: "legacy",
     dimensionsMil: { x: values2[0], y: values2[1], z: values2[2] },
@@ -65646,7 +65646,7 @@ var init_pcb_text_lifecycle = __esm({
 function fail5() {
   throw new Error("Schematic null style lacks exact native library reconstruction.");
 }
-function schematicLibraryStyle(history, native, stored2, exported, fields26) {
+function schematicLibraryStyle(history, native, stored2, exported, fields27) {
   const model5 = native.components.find((entry) => entry.id === stored2.body["parentId"]);
   const symbolId = model5?.attributes.find((entry) => entry.key === "Symbol")?.value;
   const symbol4 = history.documents.find((doc) => doc.uuid === symbolId && doc.docType === "SYMBOL" && !isNativeDocumentDeleted(doc));
@@ -65660,7 +65660,7 @@ function schematicLibraryStyle(history, native, stored2, exported, fields26) {
   }
   const roots2 = symbol4.records.filter((row13) => row13.type === "ATTR" && row13.body["partId"] === model5.body["partId"] && (row13.body["parentId"] === "" || row13.body["parentId"] === model5.body["partId"]) && row13.body["key"] === stored2.body["key"]);
   const attrs = model5.attributes.filter((attr) => attr.id === stored2.id && attr.key === stored2.body["key"]), root2 = roots2[0];
-  if (roots2.length !== 1 || root2 === void 0 || attrs.length !== 1 || !same12(attrs[0]?.body, exported.body) || fields26.length === 0 || fields26.some((key) => !["rotation", "fontSize", "fontWeight", "italic", "underline"].includes(key) || stored2.body[key] !== null || !Object.hasOwn(root2.body, key) || root2.body[key] === null || root2.body[key] === void 0 || !same12(root2.body[key], exported.body[key]) || (["rotation", "fontSize"].includes(key) ? typeof root2.body[key] !== "number" || !Number.isFinite(root2.body[key]) || key === "fontSize" && root2.body[key] <= 0 : typeof root2.body[key] !== "boolean"))) {
+  if (roots2.length !== 1 || root2 === void 0 || attrs.length !== 1 || !same12(attrs[0]?.body, exported.body) || fields27.length === 0 || fields27.some((key) => !["rotation", "fontSize", "fontWeight", "italic", "underline"].includes(key) || stored2.body[key] !== null || !Object.hasOwn(root2.body, key) || root2.body[key] === null || root2.body[key] === void 0 || !same12(root2.body[key], exported.body[key]) || (["rotation", "fontSize"].includes(key) ? typeof root2.body[key] !== "number" || !Number.isFinite(root2.body[key]) || key === "fontSize" && root2.body[key] <= 0 : typeof root2.body[key] !== "boolean"))) {
     fail5();
   }
   const pins2 = symbol4.records.filter((row13) => row13.type === "PIN" && row13.body["partId"] === model5.body["partId"]);
@@ -65670,7 +65670,7 @@ function schematicLibraryStyle(history, native, stored2, exported, fields26) {
   })) {
     fail5();
   }
-  return { componentId: model5.id, attributeId: stored2.id, libraryAttributeId: root2.id, symbolSha256: symbol4.semanticSha256, fields: fields26 };
+  return { componentId: model5.id, attributeId: stored2.id, libraryAttributeId: root2.id, symbolSha256: symbol4.semanticSha256, fields: fields27 };
 }
 var same12;
 var init_schematic_library_style = __esm({
@@ -65717,20 +65717,20 @@ function projectAttributes(side, document3, source7, native, before, differences
       throw new Error("Schematic stored attribute identity differs from source.");
     }
     const kind = parentKind(exported, source7, native);
-    const fields26 = [.../* @__PURE__ */ new Set([...Object.keys(record24.body), ...Object.keys(exported.body)])].filter((key) => !fieldEqual(record24.body, exported.body, key)).toSorted();
-    if (kind === "pin" && fields26.some((key) => key !== "strikeout")) {
+    const fields27 = [.../* @__PURE__ */ new Set([...Object.keys(record24.body), ...Object.keys(exported.body)])].filter((key) => !fieldEqual(record24.body, exported.body, key)).toSorted();
+    if (kind === "pin" && fields27.some((key) => key !== "strikeout")) {
       throw new Error("Pin attributes admit only the reviewed strikeout storage encoding.");
     }
-    const styleFields = fields26.filter((key) => !["zIndex", "strikeout"].includes(key));
+    const styleFields = fields27.filter((key) => !["zIndex", "strikeout"].includes(key));
     const libraryStyle = styleFields.length === 0 ? void 0 : schematicLibraryStyle(history, native, record24, exported, styleFields);
     if (side === "after" && styleFields.some((key) => !fieldEqual(old.get(record24.id)?.body ?? {}, record24.body, key))) {
       throw new Error("Changed durable attribute style is neither retained nor the exact captured model style.");
     }
-    if (fields26.includes("strikeout") && !(!Object.hasOwn(record24.body, "strikeout") && exported.body["strikeout"] === false || record24.body["strikeout"] === false && !Object.hasOwn(exported.body, "strikeout"))) {
+    if (fields27.includes("strikeout") && !(!Object.hasOwn(record24.body, "strikeout") && exported.body["strikeout"] === false || record24.body["strikeout"] === false && !Object.hasOwn(exported.body, "strikeout"))) {
       throw new Error("Schematic strikeout difference is not the exact missing/false encoding.");
     }
     let hiddenNullOrder;
-    if (fields26.includes("zIndex")) {
+    if (fields27.includes("zIndex")) {
       const current10 = exported.body["zIndex"];
       const stored2 = record24.body["zIndex"];
       const uninitializedWireOrder = stored2 === null && kind === "wire" && ["Relevance", "NET"].includes(exported.body["key"]);
@@ -65752,7 +65752,7 @@ function projectAttributes(side, document3, source7, native, before, differences
       parentId: exported.body["parentId"],
       parentKind: kind,
       key: exported.body["key"],
-      fields: fields26,
+      fields: fields27,
       storedBodySha256: sha256Json(record24.body),
       sourceBodySha256: sha256Json(exported.body),
       storedZIndex: record24.body["zIndex"],
@@ -69786,18 +69786,18 @@ function array2(value2, length) {
   return result2;
 }
 function descriptor(value2, directory4, maximum5, filename) {
-  const fields26 = exact(value2, ["path", "bytes", "sha256"]);
-  const bytes2 = fields26["bytes"], path6 = text7(fields26["path"]);
+  const fields27 = exact(value2, ["path", "bytes", "sha256"]);
+  const bytes2 = fields27["bytes"], path6 = text7(fields27["path"]);
   need(isAbsolute10(path6) && resolve5(path6) === path6 && dirname4(path6) === directory4 && !/[\0\r\n]/u.test(path6) && (filename === void 0 || basename4(path6) === filename), "Terminal artifact path refused.");
   need(typeof bytes2 === "number" && Number.isSafeInteger(bytes2) && !Object.is(bytes2, -0) && bytes2 > 0 && bytes2 <= maximum5, "Terminal artifact byte bound refused.");
-  return Object.freeze({ path: path6, bytes: bytes2, sha256: hash11(fields26["sha256"]) });
+  return Object.freeze({ path: path6, bytes: bytes2, sha256: hash11(fields27["sha256"]) });
 }
 function sql(value2) {
-  const fields26 = exact(value2, ["checkpointSha256", "schemaSha256", "logicalSha256"]);
-  return Object.freeze({ checkpointSha256: hash11(fields26["checkpointSha256"]), schemaSha256: hash11(fields26["schemaSha256"]), logicalSha256: hash11(fields26["logicalSha256"]) });
+  const fields27 = exact(value2, ["checkpointSha256", "schemaSha256", "logicalSha256"]);
+  return Object.freeze({ checkpointSha256: hash11(fields27["checkpointSha256"]), schemaSha256: hash11(fields27["schemaSha256"]), logicalSha256: hash11(fields27["logicalSha256"]) });
 }
 function generation(value2, ordinal, directory4) {
-  const fields26 = exact(value2, [
+  const fields27 = exact(value2, [
     "ordinal",
     "generationSha256",
     "launchReceiptSha256",
@@ -69809,20 +69809,20 @@ function generation(value2, ordinal, directory4) {
     "copyArtifact",
     "sqlDigests"
   ]);
-  need((ordinal === 0 || ordinal === 1 || ordinal === 2) && fields26["ordinal"] === ordinal && !Object.is(fields26["ordinal"], -0), "Terminal generation ordinal refused.");
-  const copyArtifact = descriptor(fields26["copyArtifact"], directory4, 268435456);
+  need((ordinal === 0 || ordinal === 1 || ordinal === 2) && fields27["ordinal"] === ordinal && !Object.is(fields27["ordinal"], -0), "Terminal generation ordinal refused.");
+  const copyArtifact = descriptor(fields27["copyArtifact"], directory4, 268435456);
   need(/^closed-copy-[a-f0-9]{8}-[a-f0-9]{4}-4[a-f0-9]{3}-[89ab][a-f0-9]{3}-[a-f0-9]{12}\.eprj2$/u.test(basename4(copyArtifact.path)), "Terminal copy name refused.");
   return Object.freeze({
     ordinal,
-    generationSha256: hash11(fields26["generationSha256"]),
-    launchReceiptSha256: hash11(fields26["launchReceiptSha256"]),
-    closeIntentSha256: hash11(fields26["closeIntentSha256"]),
-    closeReceiptSha256: hash11(fields26["closeReceiptSha256"]),
-    terminationProofSha256: hash11(fields26["terminationProofSha256"]),
-    checkpointReceiptSha256: hash11(fields26["checkpointReceiptSha256"]),
-    copyReceiptSha256: hash11(fields26["copyReceiptSha256"]),
+    generationSha256: hash11(fields27["generationSha256"]),
+    launchReceiptSha256: hash11(fields27["launchReceiptSha256"]),
+    closeIntentSha256: hash11(fields27["closeIntentSha256"]),
+    closeReceiptSha256: hash11(fields27["closeReceiptSha256"]),
+    terminationProofSha256: hash11(fields27["terminationProofSha256"]),
+    checkpointReceiptSha256: hash11(fields27["checkpointReceiptSha256"]),
+    copyReceiptSha256: hash11(fields27["copyReceiptSha256"]),
     copyArtifact,
-    sqlDigests: sql(fields26["sqlDigests"])
+    sqlDigests: sql(fields27["sqlDigests"])
   });
 }
 function parseClosedSymbolTerminalArtifact(value2, operationId18) {
@@ -70046,18 +70046,18 @@ function array3(value2, length) {
   return result2;
 }
 function descriptor2(value2, directory4, maximum5, filename) {
-  const fields26 = exact2(value2, ["path", "bytes", "sha256"]);
-  const bytes2 = fields26["bytes"], path6 = text8(fields26["path"]);
+  const fields27 = exact2(value2, ["path", "bytes", "sha256"]);
+  const bytes2 = fields27["bytes"], path6 = text8(fields27["path"]);
   need2(isAbsolute11(path6) && resolve6(path6) === path6 && dirname5(path6) === directory4 && !/[\0\r\n]/u.test(path6) && (filename === void 0 || basename5(path6) === filename), "Terminal artifact path refused.");
   need2(typeof bytes2 === "number" && Number.isSafeInteger(bytes2) && !Object.is(bytes2, -0) && bytes2 > 0 && bytes2 <= maximum5, "Terminal artifact byte bound refused.");
-  return Object.freeze({ path: path6, bytes: bytes2, sha256: hash12(fields26["sha256"]) });
+  return Object.freeze({ path: path6, bytes: bytes2, sha256: hash12(fields27["sha256"]) });
 }
 function sql2(value2) {
-  const fields26 = exact2(value2, ["checkpointSha256", "schemaSha256", "logicalSha256"]);
-  return Object.freeze({ checkpointSha256: hash12(fields26["checkpointSha256"]), schemaSha256: hash12(fields26["schemaSha256"]), logicalSha256: hash12(fields26["logicalSha256"]) });
+  const fields27 = exact2(value2, ["checkpointSha256", "schemaSha256", "logicalSha256"]);
+  return Object.freeze({ checkpointSha256: hash12(fields27["checkpointSha256"]), schemaSha256: hash12(fields27["schemaSha256"]), logicalSha256: hash12(fields27["logicalSha256"]) });
 }
 function generation2(value2, ordinal, directory4) {
-  const fields26 = exact2(value2, [
+  const fields27 = exact2(value2, [
     "ordinal",
     "generationSha256",
     "launchReceiptSha256",
@@ -70069,20 +70069,20 @@ function generation2(value2, ordinal, directory4) {
     "copyArtifact",
     "sqlDigests"
   ]);
-  need2((ordinal === 0 || ordinal === 1 || ordinal === 2) && fields26["ordinal"] === ordinal && !Object.is(fields26["ordinal"], -0), "Terminal generation ordinal refused.");
-  const copyArtifact = descriptor2(fields26["copyArtifact"], directory4, 268435456);
+  need2((ordinal === 0 || ordinal === 1 || ordinal === 2) && fields27["ordinal"] === ordinal && !Object.is(fields27["ordinal"], -0), "Terminal generation ordinal refused.");
+  const copyArtifact = descriptor2(fields27["copyArtifact"], directory4, 268435456);
   need2(/^closed-copy-[a-f0-9]{8}-[a-f0-9]{4}-4[a-f0-9]{3}-[89ab][a-f0-9]{3}-[a-f0-9]{12}\.eprj2$/u.test(basename5(copyArtifact.path)), "Terminal copy name refused.");
   return Object.freeze({
     ordinal,
-    generationSha256: hash12(fields26["generationSha256"]),
-    launchReceiptSha256: hash12(fields26["launchReceiptSha256"]),
-    closeIntentSha256: hash12(fields26["closeIntentSha256"]),
-    closeReceiptSha256: hash12(fields26["closeReceiptSha256"]),
-    terminationProofSha256: hash12(fields26["terminationProofSha256"]),
-    checkpointReceiptSha256: hash12(fields26["checkpointReceiptSha256"]),
-    copyReceiptSha256: hash12(fields26["copyReceiptSha256"]),
+    generationSha256: hash12(fields27["generationSha256"]),
+    launchReceiptSha256: hash12(fields27["launchReceiptSha256"]),
+    closeIntentSha256: hash12(fields27["closeIntentSha256"]),
+    closeReceiptSha256: hash12(fields27["closeReceiptSha256"]),
+    terminationProofSha256: hash12(fields27["terminationProofSha256"]),
+    checkpointReceiptSha256: hash12(fields27["checkpointReceiptSha256"]),
+    copyReceiptSha256: hash12(fields27["copyReceiptSha256"]),
     copyArtifact,
-    sqlDigests: sql2(fields26["sqlDigests"])
+    sqlDigests: sql2(fields27["sqlDigests"])
   });
 }
 function parseClosedSymbolAgedTerminalArtifact(value2, operationId18) {
@@ -70352,12 +70352,12 @@ function same18(left, right) {
   return canonicalJson(left) === canonicalJson(right);
 }
 function verifyTargetMetadata2(before, after) {
-  const fields26 = [.../* @__PURE__ */ new Set([...Object.keys(before), ...Object.keys(after)])].filter((key) => Object.hasOwn(before, key) !== Object.hasOwn(after, key) || !same18({ value: before[key] }, { value: after[key] }));
-  if (fields26.length === 0) {
+  const fields27 = [.../* @__PURE__ */ new Set([...Object.keys(before), ...Object.keys(after)])].filter((key) => Object.hasOwn(before, key) !== Object.hasOwn(after, key) || !same18({ value: before[key] }, { value: after[key] }));
+  if (fields27.length === 0) {
     return;
   }
   const time20 = after["updateTime"];
-  if (fields26.some((key) => !["client", "updateTime", "version"].includes(key)) || typeof after["client"] !== "string" || !/^[a-f0-9]{16}$/u.test(after["client"]) || typeof time20 !== "number" || !Number.isSafeInteger(time20) || time20 < 0 || after["version"] !== String(time20) || typeof before["updateTime"] === "number" && time20 < before["updateTime"]) {
+  if (fields27.some((key) => !["client", "updateTime", "version"].includes(key)) || typeof after["client"] !== "string" || !/^[a-f0-9]{16}$/u.test(after["client"]) || typeof time20 !== "number" || !Number.isSafeInteger(time20) || time20 < 0 || after["version"] !== String(time20) || typeof before["updateTime"] === "number" && time20 < before["updateTime"]) {
     throw new Error("Target library metadata changed outside the reviewed native edit header.");
   }
 }
@@ -70639,12 +70639,12 @@ function validateWorkerExpectation(input2, projectUuid4, active2, targetUuid) {
   if (input2 === null || typeof input2 !== "object" || Array.isArray(input2) || Object.getPrototypeOf(input2) !== Object.prototype && Object.getPrototypeOf(input2) !== null) {
     fail8();
   }
-  const fields26 = ["projectUuid", "client", "maxTicket", "notBeforeMs", "notAfterMs"];
-  if (Reflect.ownKeys(input2).length !== fields26.length) {
+  const fields27 = ["projectUuid", "client", "maxTicket", "notBeforeMs", "notAfterMs"];
+  if (Reflect.ownKeys(input2).length !== fields27.length) {
     fail8();
   }
   const values2 = {};
-  for (const key of fields26) {
+  for (const key of fields27) {
     const descriptor10 = Object.getOwnPropertyDescriptor(input2, key);
     if (descriptor10 === void 0 || !Object.hasOwn(descriptor10, "value")) {
       fail8();
@@ -71385,10 +71385,10 @@ async function appendClosedSymbolEvent(journal, input2) {
   requireValue(!busy.has(operationId18), "Closed journal append already running.");
   busy.add(operationId18);
   try {
-    const fields26 = exact3(input2, ["step", "kind", "generation", "requestSha256", "data"]);
-    const data17 = jsonData(fields26["data"]);
-    const capturedGeneration = jsonData(fields26["generation"]);
-    const requestSha256 = text9(fields26["requestSha256"], HASH4);
+    const fields27 = exact3(input2, ["step", "kind", "generation", "requestSha256", "data"]);
+    const data17 = jsonData(fields27["data"]);
+    const capturedGeneration = jsonData(fields27["generation"]);
+    const requestSha256 = text9(fields27["requestSha256"], HASH4);
     const loaded = await loadClosedSymbolJournal(operationId18);
     const predecessor = loaded.journal;
     const predecessorText = canonicalJson(predecessor);
@@ -71398,7 +71398,7 @@ async function appendClosedSymbolEvent(journal, input2) {
     };
     const sequence = predecessor.sequence + 1;
     const position7 = expected2(sequence);
-    requireValue(position7.step === fields26["step"] && position7.kind === fields26["kind"], "Closed journal phase order/replay refused.");
+    requireValue(position7.step === fields27["step"] && position7.kind === fields27["kind"], "Closed journal phase order/replay refused.");
     const event4 = parseEvent({
       profile: EVENT,
       operationId: operationId18,
@@ -71940,15 +71940,15 @@ function exact4(value2, keys3) {
   if (names2.length !== keys3.length || names2.some((key) => typeof key !== "string" || !keys3.includes(key))) {
     throw new Error("Admission exact object fields required.");
   }
-  const fields26 = [];
+  const fields27 = [];
   for (const key of keys3) {
     const descriptor10 = descriptors[key];
     if (descriptor10 === void 0 || !Object.hasOwn(descriptor10, "value") || descriptor10.enumerable !== true) {
       throw new Error("Admission enumerable own data fields required.");
     }
-    fields26.push([key, descriptor10.value]);
+    fields27.push([key, descriptor10.value]);
   }
-  return Object.freeze(Object.fromEntries(fields26));
+  return Object.freeze(Object.fromEntries(fields27));
 }
 function selectTerminalProfile(value2) {
   const envelope8 = exact4(value2, ["profile", "body", "bodySha256"]);
@@ -71966,9 +71966,9 @@ function selectTerminalProfile(value2) {
 }
 function matchesHistoricalAdmission(value2, expected3, selection2) {
   try {
-    const fields26 = exact4(value2, RESULT_KEYS);
-    const descriptor10 = parseClosedSymbolTerminalArtifact(fields26["terminalArtifact"], expected3.operationId);
-    return fields26["profile"] === selection2.historicalProfile && fields26["operationId"] === expected3.operationId && fields26["classification"] === "historical-completion-verified" && fields26["historicalCompletionRecorded"] === true && fields26["terminalOutcomeVerified"] === true && fields26["storedJournalSha256"] === expected3.storedJournalSha256 && fields26["entireStoredJournalSha256"] === expected3.entireStoredJournalSha256 && fields26["bodySha256"] === selection2.bodySha256 && canonicalJson(descriptor10) === canonicalJson(expected3.terminalArtifact) && FALSE_KEYS.every((key) => fields26[key] === false);
+    const fields27 = exact4(value2, RESULT_KEYS);
+    const descriptor10 = parseClosedSymbolTerminalArtifact(fields27["terminalArtifact"], expected3.operationId);
+    return fields27["profile"] === selection2.historicalProfile && fields27["operationId"] === expected3.operationId && fields27["classification"] === "historical-completion-verified" && fields27["historicalCompletionRecorded"] === true && fields27["terminalOutcomeVerified"] === true && fields27["storedJournalSha256"] === expected3.storedJournalSha256 && fields27["entireStoredJournalSha256"] === expected3.entireStoredJournalSha256 && fields27["bodySha256"] === selection2.bodySha256 && canonicalJson(descriptor10) === canonicalJson(expected3.terminalArtifact) && FALSE_KEYS.every((key) => fields27[key] === false);
   } catch {
     return false;
   }
@@ -75815,8 +75815,8 @@ function validateMainReferenceRequest(input2) {
   need8(value2["profile"] === MAIN_REFERENCE_PROFILE);
   const historyUuid = value2["historyUuid"], nonce = value2["nonce"], operationId18 = value2["operationId"];
   need8(typeof nonce === "string" && /^[a-f0-9]{64}$/u.test(nonce) && typeof operationId18 === "string" && /^easyeda-\d{8}t\d{6}z-[a-f0-9]{8}$/u.test(operationId18) && typeof historyUuid === "string" && /^[a-f0-9]{32}$/u.test(historyUuid));
-  const fields26 = ["closedPlanSha256", "baselineCopyReceiptSha256", "baselineLogicalSha256", "baselineClosureClockSha256", "nativePinsSha256"];
-  for (const field13 of fields26) {
+  const fields27 = ["closedPlanSha256", "baselineCopyReceiptSha256", "baselineLogicalSha256", "baselineClosureClockSha256", "nativePinsSha256"];
+  for (const field13 of fields27) {
     need8(typeof value2[field13] === "string" && /^[a-f0-9]{64}$/u.test(value2[field13]));
   }
   const scope7 = validateClockControlScope({ createdAtLiteral: value2["createdAtLiteral"], referenceUtcMs: value2["referenceUtcMs"] });
@@ -83202,9 +83202,9 @@ async function compileCurrentAgedSqlReferenceMetadata(input2) {
   command2 = replaceOnce(command2, `$helperBytes=${base9.helperIdentity.bytes}`, `$helperBytes=${helperIdentity.bytes}`);
   command2 = replaceOnce(command2, "-ceq'Easyeda.MainReference'", "-ceq'Easyeda.CurrentMainReference'");
   const oldInput = JSON.parse(base9.stdin);
-  const fields26 = exact6(oldInput, ["profile", "helperBase64", "mainBase64", "requestBase64"]);
-  need22(fields26["profile"] === base9.stdinProfile && fields26["mainBase64"] === Buffer.from(buildMainReferenceProgram(base9.request)).toString("base64") && fields26["requestBase64"] === Buffer.from(canonicalJson(base9.request)).toString("base64"));
-  const stdin = JSON.stringify({ ...fields26, helperBase64: helper.toString("base64"), mainBase64: Buffer.from(main).toString("base64") });
+  const fields27 = exact6(oldInput, ["profile", "helperBase64", "mainBase64", "requestBase64"]);
+  need22(fields27["profile"] === base9.stdinProfile && fields27["mainBase64"] === Buffer.from(buildMainReferenceProgram(base9.request)).toString("base64") && fields27["requestBase64"] === Buffer.from(canonicalJson(base9.request)).toString("base64"));
+  const stdin = JSON.stringify({ ...fields27, helperBase64: helper.toString("base64"), mainBase64: Buffer.from(main).toString("base64") });
   need22(stdin.length > 0 && stdin.length <= 524288 && Buffer.byteLength(stdin) === stdin.length);
   return Object.freeze({
     ...base9,
@@ -92961,18 +92961,18 @@ function convertedRecord(record24, after, input2, partId2) {
     return { record: record24 };
   }
   let body4 = { ...record24.body };
-  const fields26 = [];
+  const fields27 = [];
   for (const [field13, legacy] of [["groupId", ""], ...record24.type === "ATTR" ? [["version", "2.0"]] : []]) {
     if (field13 !== void 0 && body4[field13] === legacy && !Object.hasOwn(next.body, field13) && !Object.hasOwn(source7.body, field13) && !Object.hasOwn(sourceAfter.body, field13)) {
       body4 = Object.fromEntries(Object.entries(body4).filter(([key]) => key !== field13));
-      fields26.push(field13);
+      fields27.push(field13);
     }
   }
   if (record24.type === "ATTR" && body4["parentId"] === "" && source7.body["parentId"] === partId2 && sourceAfter.body["parentId"] === partId2 && next.body["parentId"] === partId2) {
     body4["parentId"] = partId2;
-    fields26.push("parentId");
+    fields27.push("parentId");
   }
-  if (fields26.length === 0) {
+  if (fields27.length === 0) {
     return { record: record24 };
   }
   if (!equal5(body4, source7.body)) {
@@ -92981,7 +92981,7 @@ function convertedRecord(record24, after, input2, partId2) {
   return { record: { ...record24, body: body4 }, effect: {
     id: record24.id,
     type: record24.type,
-    fields: fields26.toSorted(),
+    fields: fields27.toSorted(),
     beforeBodySha256: sha256Json(record24.body),
     afterBodySha256: sha256Json(body4)
   } };
@@ -94339,7 +94339,7 @@ const json=JSON.stringify(payload),utf8Bytes=new TextEncoder().encode(json).byte
 const envelope={schema:'easyeda-pro-control.exact-json.v1',utf8Bytes,json};
 if(new TextEncoder().encode(JSON.stringify(envelope)).byteLength>4194304)throw new Error('SCH_FLAT_TRANSPORT_BOUND');
 return envelope;`, context4);
-  const observe12 = async () => {
+  const observe13 = async () => {
     await engine2.assertBridgeDispatchAllowed();
     await engine2.assertContext(context4);
     await unchanged5();
@@ -94354,7 +94354,7 @@ return envelope;`, context4);
     await unchanged5();
     return { observation: payload2, proof };
   };
-  const first = await observe12(), second = await observe12();
+  const first = await observe13(), second = await observe13();
   await profile2();
   await unchanged5();
   await engine2.assertContext(context4);
@@ -94493,8 +94493,8 @@ async function verifyFlatInverseCheckpoint(checkpoint, source7) {
     controlRoot: await controlRootCapability(),
     artifactRoots: [join43(dirname19(expectedSource), "backups"), join43(controlDataDirectory(), "checkpoints")]
   });
-  const fields26 = ["receiptPath", "source", "checkpoint", "sourceSha256", "checkpointSha256", "sourceDumpSha256", "checkpointDumpSha256"];
-  if (!verified.ok || verified.sourceChanged || !verified.sourceMatchesReceipt || !verified.checkpointMatchesReceipt || fields26.some((field13) => verified[field13] !== expected3[field13])) {
+  const fields27 = ["receiptPath", "source", "checkpoint", "sourceSha256", "checkpointSha256", "sourceDumpSha256", "checkpointDumpSha256"];
+  if (!verified.ok || verified.sourceChanged || !verified.sourceMatchesReceipt || !verified.checkpointMatchesReceipt || fields27.some((field13) => verified[field13] !== expected3[field13])) {
     throw new Error("Flat inverse durable baseline changed immediately before dispatch; no inverse was dispatched.");
   }
 }
@@ -100689,11 +100689,11 @@ function token(raw, maximum5, allowEmpty = false) {
   return value2;
 }
 function lineFields2(line6) {
-  const fields26 = line6.split(";");
-  if (fields26.length !== 2) {
+  const fields27 = line6.split(";");
+  if (fields27.length !== 2) {
     fail11("each data row needs exactly one semicolon");
   }
-  const [before, after] = fields26;
+  const [before, after] = fields27;
   if (before === void 0 || after === void 0 || before.trim() === "" || after.trim() === "") {
     fail11("empty data row");
   }
@@ -100721,12 +100721,12 @@ function parseNetlistFileText(text53) {
     }
     const [before, after] = lineFields2(line6);
     if (stage === "packages") {
-      const fields26 = before.split("!");
-      if (fields26.length === 0 || fields26.length > 3) {
+      const fields27 = before.split("!");
+      if (fields27.length === 0 || fields27.length > 3) {
         fail11("only footprint, device and value package fields are supported");
       }
-      const footprint2 = token(fields26[0] ?? "", 128);
-      for (const value2 of fields26.slice(1)) {
+      const footprint2 = token(fields27[0] ?? "", 128);
+      for (const value2 of fields27.slice(1)) {
         token(value2, 128, true);
       }
       for (const member4 of members2(after)) {
@@ -100740,13 +100740,13 @@ function parseNetlistFileText(text53) {
         packages.set(footprint2, group2);
       }
     } else if (stage === "properties") {
-      const fields26 = before.split(/ +/u);
-      if (fields26.length !== 2 || !["CODE", "COMPONENT_HIGH_MAX"].includes(fields26[0] ?? "")) {
+      const fields27 = before.split(/ +/u);
+      if (fields27.length !== 2 || !["CODE", "COMPONENT_HIGH_MAX"].includes(fields27[0] ?? "")) {
         fail11("only non-routing CODE and COMPONENT_HIGH_MAX properties are supported");
       }
-      token(fields26[1] ?? "", 128);
+      token(fields27[1] ?? "", 128);
       for (const designator of members2(after)) {
-        const key = `${fields26[0] ?? ""}:${designator}`;
+        const key = `${fields27[0] ?? ""}:${designator}`;
         if (!components.has(designator) || propertyOwners.has(key)) {
           fail11("property target missing or repeated");
         }
@@ -100759,11 +100759,11 @@ function parseNetlistFileText(text53) {
       }
       const pins2 = members2(after);
       for (const pin4 of pins2) {
-        const fields26 = pin4.split(".");
-        if (fields26.length !== 2) {
+        const fields27 = pin4.split(".");
+        if (fields27.length !== 2) {
           fail11("pin references require one designator and pin number");
         }
-        const designator = token(fields26[0] ?? "", 48), number20 = token(fields26[1] ?? "", 48);
+        const designator = token(fields27[0] ?? "", 48), number20 = token(fields27[1] ?? "", 48);
         if (number20.includes(":") || !components.has(designator) || pinOwners.has(pin4) || pinOwners.size >= NETLIST_FILES_MAX_PINS) {
           fail11("missing component, pin-function suffix, duplicate or excessive pin");
         }
@@ -102972,6 +102972,347 @@ var init_shortcut_keys = __esm({
   }
 });
 
+// server/src/current-pcb-string-clock-reply.ts
+import { types } from "node:util";
+function fail12() {
+  throw new Error("PCB_STRING_CLOCK_REPLY_CAPTURE");
+}
+function captureCurrentPcbStringClockReply(input2) {
+  let nodes = 0;
+  const seen = /* @__PURE__ */ new Set();
+  const copy3 = (value3, depth) => {
+    nodes += 1;
+    if (nodes > 1024 || depth > 12) {
+      return fail12();
+    }
+    if (value3 === null || typeof value3 === "boolean") {
+      return value3;
+    }
+    if (typeof value3 === "string") {
+      if (value3.length > 16384 || !value3.isWellFormed()) {
+        return fail12();
+      }
+      return value3;
+    }
+    if (typeof value3 === "number") {
+      if (!Number.isFinite(value3) || Object.is(value3, -0)) {
+        return fail12();
+      }
+      return value3;
+    }
+    if (typeof value3 !== "object" || types.isProxy(value3) || seen.has(value3)) {
+      return fail12();
+    }
+    seen.add(value3);
+    const own15 = (key) => {
+      const descriptor10 = Object.getOwnPropertyDescriptor(value3, key);
+      if (descriptor10 === void 0 || !Object.hasOwn(descriptor10, "value") || descriptor10.enumerable !== true) {
+        return fail12();
+      }
+      return descriptor10.value;
+    };
+    if (Array.isArray(value3)) {
+      if (Object.getPrototypeOf(value3) !== Array.prototype || value3.length > 256 || Reflect.ownKeys(value3).length !== value3.length + 1) {
+        return fail12();
+      }
+      const result3 = Array.from({ length: value3.length }, (_, index2) => copy3(own15(String(index2)), depth + 1));
+      return Object.freeze(result3);
+    }
+    const keys3 = Reflect.ownKeys(value3), prototype2 = Object.getPrototypeOf(value3);
+    if (prototype2 !== Object.prototype && prototype2 !== null || keys3.length > 32) {
+      return fail12();
+    }
+    const result2 = /* @__PURE__ */ Object.create(null);
+    for (const key of keys3) {
+      if (typeof key !== "string" || key.length > 128 || !key.isWellFormed()) {
+        return fail12();
+      }
+      Object.defineProperty(result2, key, { value: copy3(own15(key), depth + 1), enumerable: true });
+    }
+    return Object.freeze(result2);
+  };
+  const value2 = copy3(input2, 0);
+  const text53 = JSON.stringify(value2);
+  if (Buffer.byteLength(text53) > 131072) {
+    return fail12();
+  }
+  return Object.freeze({ value: value2, text: text53, sha256: sha256Text(text53) });
+}
+var init_current_pcb_string_clock_reply = __esm({
+  "server/src/current-pcb-string-clock-reply.ts"() {
+    init_core3();
+  }
+});
+
+// server/src/current-pcb-string-observation-core.ts
+import { types as types2 } from "node:util";
+function record6(input2, fields27) {
+  if (input2 === null || typeof input2 !== "object" || types2.isProxy(input2) || Array.isArray(input2)) {
+    throw new Error("PCB_STRING_OBSERVATION_REPLY");
+  }
+  const keys3 = Reflect.ownKeys(input2), prototype2 = Object.getPrototypeOf(input2);
+  if (prototype2 !== Object.prototype && prototype2 !== null || keys3.length !== fields27.length || keys3.some((key) => typeof key !== "string" || !fields27.includes(key))) {
+    throw new Error("PCB_STRING_OBSERVATION_REPLY");
+  }
+  const result2 = {};
+  for (const key of fields27) {
+    const descriptor10 = Object.getOwnPropertyDescriptor(input2, key);
+    if (descriptor10 === void 0 || !Object.hasOwn(descriptor10, "value")) {
+      throw new Error("PCB_STRING_OBSERVATION_REPLY");
+    }
+    result2[key] = descriptor10.value;
+  }
+  return result2;
+}
+function decodeCurrentPcbStringObservation(input2, schema11) {
+  const wrapper2 = record6(input2, ["result"]);
+  const result2 = record6(wrapper2["result"], ["type", "value"]);
+  const raw = result2["value"];
+  if (result2["type"] !== "string" || typeof raw !== "string" || !raw.isWellFormed() || Buffer.byteLength(raw) > CURRENT_PCB_STRING_OBSERVATION_BYTES) {
+    throw new Error("PCB_STRING_OBSERVATION_REPLY");
+  }
+  try {
+    const parsed5 = decodeCurrentPcbDiagnosticJson(Buffer.from(raw)), state4 = schema11.parse(parsed5);
+    return freezeDeep({ ...state4, ...CURRENT_PCB_STRING_OBSERVATION_LIMITS });
+  } catch {
+    throw new Error("PCB_STRING_OBSERVATION_REPLY");
+  }
+}
+var CURRENT_PCB_STRING_OBSERVATION_BYTES, CURRENT_PCB_STRING_OBSERVATION_LIMITS, currentPcbStringMarkerSchema, currentPcbStringCountSchema, CURRENT_PCB_STRING_OBSERVATION_GUARDS;
+var init_current_pcb_string_observation_core = __esm({
+  "server/src/current-pcb-string-observation-core.ts"() {
+    init_zod();
+    init_current_pcb_diagnostic_json();
+    init_sqlite_inventory_core();
+    CURRENT_PCB_STRING_OBSERVATION_BYTES = 16384;
+    CURRENT_PCB_STRING_OBSERVATION_LIMITS = Object.freeze({
+      originalOwnerVerified: false,
+      nativeIntrinsicsVerified: false,
+      projectWorkerAssociationVerified: false,
+      completeLiveBaselineVerified: false,
+      queueCompletionVerified: false,
+      publicationDelivered: false,
+      saveAuthorized: false,
+      executionAuthorized: false
+    });
+    currentPcbStringMarkerSchema = external_exports.enum(["absent", "undefined", "null", "present"]);
+    currentPcbStringCountSchema = external_exports.number().int().min(0).max(65536).refine((value2) => !Object.is(value2, -0));
+    CURRENT_PCB_STRING_OBSERVATION_GUARDS = `
+"use strict";
+const bad=()=>{throw new Error("PCB_STRING_OBSERVATION_STATE");};
+const retained=[],collections=[];
+const own=(o,k)=>{if(o===null||(typeof o!=="object"&&typeof o!=="function"))bad();const d=Object.getOwnPropertyDescriptor(o,k);if(!d||!Object.hasOwn(d,"value"))bad();if(retained.length>=2048)bad();retained.push([o,k,d.value]);return d.value;};
+const object=o=>{if(o===null||typeof o!=="object"||Array.isArray(o))bad();return o;};
+const plain=o=>{object(o);const p=Object.getPrototypeOf(o);if(p!==Object.prototype&&p!==null)bad();return o;};
+const marker=(o,k)=>{const d=Object.getOwnPropertyDescriptor(o,k);if(!d){let p=Object.getPrototypeOf(o),n=0;while(p!==null){if(++n>8||Object.hasOwn(p,k))bad();p=Object.getPrototypeOf(p);}retained.push([o,k]);return "absent";}const v=own(o,k);return v===undefined?"undefined":v===null?"null":"present";};
+const count=n=>{if(!Number.isSafeInteger(n)||Object.is(n,-0)||n<0||n>65536)bad();return n;};
+const flag=v=>{if(typeof v!=="boolean")bad();return v;};
+const id=(v,re)=>{if(typeof v!=="string"||v.length>128||!re.test(v))bad();return v;};
+const keys=o=>{plain(o);const k=Reflect.ownKeys(o);if(k.length>65536||k.some(v=>typeof v!=="string"))bad();return k;};
+const emptyObject=o=>{if(keys(o).length!==0)bad();return [];};
+const size=(o,p)=>{object(o);if(Object.getPrototypeOf(o)!==p||Reflect.ownKeys(o).length!==0)bad();const d=Object.getOwnPropertyDescriptor(p,"size");if(!d||typeof d.get!=="function"||d.set!==undefined)bad();const n=count(Reflect.apply(d.get,o,[]));collections.push([o,p,d.get,n]);return n;};
+const emptyMap=o=>{if(size(o,Map.prototype)!==0)bad();return [];};
+const emptySet=o=>{if(size(o,Set.prototype)!==0)bad();return [];};
+const arraySize=o=>{if(!Array.isArray(o)||Object.getPrototypeOf(o)!==Array.prototype)bad();const n=count(own(o,"length")),k=Reflect.ownKeys(o);if(k.length!==n+1||k[n]!=="length")bad();for(let i=0;i<n;i++)own(o,String(i));return n;};
+const named=(o,name)=>{object(o);const p=Object.getPrototypeOf(o),c=own(p,"constructor");if(typeof c!=="function"||own(c,"name")!==name||own(c,"prototype")!==p)bad();return o;};
+const verify=()=>{for(const item of retained){const d=Object.getOwnPropertyDescriptor(item[0],item[1]);if(item.length===2?d!==undefined:!d||!Object.hasOwn(d,"value")||d.value!==item[2])bad();}for(const item of collections){if(Object.getPrototypeOf(item[0])!==item[1]||Reflect.ownKeys(item[0]).length!==0||Reflect.apply(item[2],item[0],[])!==item[3])bad();}};
+`;
+  }
+});
+
+// server/src/current-pcb-worker-startup-actor.ts
+function currentPcbWorkerStartupUiActorCommand(sessionId4, uniqueContextId2) {
+  const token42 = exactId(/^[A-Za-z\d_.:-]{1,128}$/u);
+  return freezeDeep({ method: "Runtime.callFunctionOn", sessionId: token42.parse(sessionId4), params: {
+    functionDeclaration: CURRENT_PCB_WORKER_STARTUP_UI_ACTOR_CLOCK_FUNCTION,
+    uniqueContextId: token42.parse(uniqueContextId2),
+    arguments: [],
+    returnByValue: true,
+    throwOnSideEffect: true,
+    silent: true,
+    awaitPromise: false,
+    generatePreview: false,
+    userGesture: false
+  } });
+}
+function decodeCurrentPcbWorkerStartupActor(raw) {
+  try {
+    const reply3 = external_exports.object({ result: external_exports.object({ type: external_exports.literal("string"), value: text28(16384) }).strict() }).strict().parse(captureCurrentPcbStringClockReply(raw).value);
+    if (Buffer.byteLength(reply3.result.value) > 16384) {
+      throw new Error("reply bound");
+    }
+    const sample5 = currentPcbWorkerStartupActorSampleSchema.parse(decodeCurrentPcbDiagnosticJson(Buffer.from(reply3.result.value)));
+    const originalUser = decodeCurrentPcbDiagnosticJson(Buffer.from(sample5.workerUserText));
+    if (canonicalJson(user.parse(originalUser)) !== canonicalJson(sample5.workerUser) || JSON.stringify(originalUser) !== sample5.workerUserText) {
+      throw new Error("ordered user differs");
+    }
+    if (sample5.phase === "ui" && (canonicalJson(sample5.cachedActor) !== canonicalJson(sample5.startupActor) || sample5.workerUserText !== JSON.stringify({
+      uuid: sample5.startupActor.uuid,
+      nickname: sample5.startupActor.nickname,
+      username: sample5.startupActor.username,
+      avatar: sample5.workerUser.avatar
+    }))) {
+      throw new Error("UI user differs");
+    }
+    return freezeDeep(sample5);
+  } catch {
+    throw new Error("PCB_WORKER_STARTUP_ACTOR_REPLY");
+  }
+}
+var exactId, currentPcbWorkerStartupActorIdentitySchema, text28, actor, user, milliseconds2, offset, stamp, clock7, base3, currentPcbWorkerStartupActorSampleSchema, COMMON, CURRENT_PCB_WORKER_STARTUP_UI_ACTOR_CLOCK_FUNCTION, CURRENT_PCB_WORKER_STARTUP_WORKER_ACTOR_CLOCK_FUNCTION;
+var init_current_pcb_worker_startup_actor = __esm({
+  "server/src/current-pcb-worker-startup-actor.ts"() {
+    init_zod();
+    init_core3();
+    init_current_pcb_diagnostic_json();
+    init_current_pcb_string_clock_reply();
+    init_current_pcb_string_observation_core();
+    init_sqlite_inventory_core();
+    exactId = (expression3) => external_exports.string().refine((value2) => expression3.exec(value2)?.[0] === value2);
+    currentPcbWorkerStartupActorIdentitySchema = external_exports.object({
+      projectUuid: exactId(/^[a-f\d]{64}$/u),
+      branchUuid: exactId(/^[a-f\d]{32}$/u),
+      windowTabId: exactId(/^[A-Za-z\d_-]{1,128}$/u)
+    }).strict();
+    text28 = (maximum5) => external_exports.string().max(maximum5).refine((value2) => value2.isWellFormed());
+    actor = external_exports.object({ uuid: exactId(/^[a-f\d]{32}$/u), username: text28(1024), nickname: text28(1024) }).strict();
+    user = actor.extend({ avatar: text28(4096) }).strict();
+    milliseconds2 = external_exports.number().int().min(0).max(864e13).refine((value2) => !Object.is(value2, -0));
+    offset = external_exports.number().int().min(-840).max(840).refine((value2) => !Object.is(value2, -0));
+    stamp = external_exports.object({ milliseconds: milliseconds2, iso: external_exports.string().max(32), timezoneOffsetMinutes: offset }).strict().refine((value2) => new Date(value2.milliseconds).toISOString() === value2.iso);
+    clock7 = external_exports.object({ before: stamp, after: stamp }).strict().refine((value2) => value2.after.milliseconds >= value2.before.milliseconds && value2.after.milliseconds - value2.before.milliseconds <= 1e3 && value2.before.timezoneOffsetMinutes === value2.after.timezoneOffsetMinutes);
+    base3 = {
+      schema: external_exports.literal("easyeda-pro-control.pcb-worker-startup-actor.v1"),
+      identity: currentPcbWorkerStartupActorIdentitySchema,
+      workerUser: user,
+      workerUserText: text28(16384),
+      clock: clock7
+    };
+    currentPcbWorkerStartupActorSampleSchema = external_exports.discriminatedUnion("phase", [
+      external_exports.object({ ...base3, phase: external_exports.literal("ui"), cachedActor: actor, startupActor: actor }).strict(),
+      external_exports.object({
+        ...base3,
+        phase: external_exports.literal("worker"),
+        originalProjectReceiverMatched: external_exports.literal(true),
+        originalWorkerBusMatched: external_exports.literal(true)
+      }).strict()
+    ]);
+    COMMON = `${CURRENT_PCB_STRING_OBSERVATION_GUARDS}
+const root=globalThis,apply=Reflect.apply;
+const exactId=(v,re)=>{const m=typeof v==="string"?re.exec(v):null;if(m===null||m[0]!==v)bad();return v;};
+const text=(v,max)=>{if(typeof v!=="string"||v.length>max||!v.isWellFormed())bad();return v;};
+const actor=o=>({uuid:exactId(own(o,"uuid"),/^[a-f0-9]{32}$/),username:text(own(o,"username"),1024),nickname:text(own(o,"nickname"),1024)});
+const nativeDate=own(root,"Date"),now=own(nativeDate,"now"),datePrototype=own(nativeDate,"prototype"),iso=own(datePrototype,"toISOString"),zone=own(datePrototype,"getTimezoneOffset");
+if([nativeDate,now,iso,zone].some(v=>typeof v!=="function"))bad();
+const stamp=()=>{verify();const milliseconds=apply(now,nativeDate,[]);if(!Number.isSafeInteger(milliseconds)||milliseconds<0||milliseconds>8640000000000000||Object.is(milliseconds,-0))bad();const date=new nativeDate(milliseconds),timezoneOffsetMinutes=apply(zone,date,[]);if(!Number.isSafeInteger(timezoneOffsetMinutes)||Math.abs(timezoneOffsetMinutes)>840||Object.is(timezoneOffsetMinutes,-0))bad();return{milliseconds,iso:apply(iso,date,[]),timezoneOffsetMinutes};};
+const before=stamp();
+const finish=()=>{const after=stamp();verify();if(after.milliseconds<before.milliseconds||after.milliseconds-before.milliseconds>1000||after.timezoneOffsetMinutes!==before.timezoneOffsetMinutes)bad();return{before,after};};
+`;
+    CURRENT_PCB_WORKER_STARTUP_UI_ACTOR_CLOCK_FUNCTION = `function(){
+${COMMON}
+const host=object(own(root,"gVars")),ui=object(own(root,"UI")),project=object(own(host,"currentProject"));
+if(own(ui,"gVars")!==host||own(project,"isV2Format")!==false||own(host,"isHistoryMode")!==false)bad();
+const identity={projectUuid:exactId(own(project,"projectId"),/^[a-f0-9]{64}$/),branchUuid:exactId(own(project,"branchUuid"),/^[a-f0-9]{32}$/),windowTabId:exactId(own(root,"_TAB_ID_"),/^[A-Za-z0-9_-]{1,128}$/)};
+const cached=object(own(object(own(host,"globalVariableCookieData")),"userInfo")),startup=object(own(host,"loginedUserInfo"));
+const cachedActor=actor(cached),startupActor=actor(startup);
+if(JSON.stringify(cachedActor)!==JSON.stringify(startupActor))bad();
+const workerUser={uuid:startupActor.uuid,nickname:startupActor.nickname,username:startupActor.username,avatar:text(own(startup,"avatar"),4096)};
+return JSON.stringify({schema:"easyeda-pro-control.pcb-worker-startup-actor.v1",phase:"ui",identity,cachedActor,startupActor,workerUser,workerUserText:JSON.stringify(workerUser),clock:finish()});
+}`;
+    CURRENT_PCB_WORKER_STARTUP_WORKER_ACTOR_CLOCK_FUNCTION = `function(bus){
+${COMMON}
+const project=named(this,"Lg"),pp=Object.getPrototypeOf(project),gp=Object.getPrototypeOf(pp);
+if(own(root,"PROJECT")!==project||own(project,"workerBus")!==bus||own(own(gp,"constructor"),"name")!=="Gd"||Object.getPrototypeOf(gp)!==Object.prototype||own(project,"_isV2Format")!==false)bad();
+const identity={projectUuid:exactId(own(project,"uuid"),/^[a-f0-9]{64}$/),branchUuid:exactId(own(project,"_branchUuid"),/^[a-f0-9]{32}$/),windowTabId:exactId(own(root,"_TAB_ID_"),/^[A-Za-z0-9_-]{1,128}$/)};
+const source=plain(own(project,"user")),order=Reflect.ownKeys(source);
+if(order.length!==4||order.some(k=>typeof k!=="string"||!["uuid","nickname","username","avatar"].includes(k)))bad();
+const projected=actor(source),avatar=text(own(source,"avatar"),4096),workerUser={};
+for(const key of order){const d=Object.getOwnPropertyDescriptor(source,key);if(!d||d.enumerable!==true)bad();workerUser[key]=key==="avatar"?avatar:projected[key];}
+const clock=finish();
+if(Object.getPrototypeOf(project)!==pp||Object.getPrototypeOf(pp)!==gp||Object.getPrototypeOf(gp)!==Object.prototype||Reflect.ownKeys(source).join(",")!==order.join(","))bad();
+for(const key of order){const d=Object.getOwnPropertyDescriptor(source,key);if(!d||!Object.hasOwn(d,"value")||d.enumerable!==true)bad();}
+verify();
+return JSON.stringify({schema:"easyeda-pro-control.pcb-worker-startup-actor.v1",phase:"worker",identity,originalProjectReceiverMatched:true,originalWorkerBusMatched:true,workerUser,workerUserText:JSON.stringify(workerUser),clock});
+}`;
+  }
+});
+
+// server/src/current-footprint-copy-state.ts
+function decodeCurrentFootprintCopyState(raw) {
+  const captured = captureCurrentPcbStringClockReply(raw).value;
+  const reply3 = external_exports.object({ result: external_exports.object({ type: external_exports.literal("string"), value: external_exports.string().max(2048) }).strict() }).strict().parse(captured);
+  return freezeDeep(currentFootprintCopyStateSampleSchema.parse(JSON.parse(reply3.result.value)));
+}
+var CURRENT_FOOTPRINT_COPY_CONSTRUCTORS_EXPRESSION, helpers, selectManager, selectConsistency, observe4, CURRENT_FOOTPRINT_COPY_STATE_CALLS, fields7, currentFootprintCopyStateSampleSchema, currentFootprintCopyStatePacketSchema;
+var init_current_footprint_copy_state = __esm({
+  "server/src/current-footprint-copy-state.ts"() {
+    init_zod();
+    init_current_pcb_string_clock_reply();
+    init_current_pcb_worker_startup_actor();
+    init_sqlite_inventory_core();
+    CURRENT_FOOTPRINT_COPY_CONSTRUCTORS_EXPRESSION = `(()=>{
+"use strict";const bad=()=>{throw new Error("FOOTPRINT_CONSTRUCTOR_BINDING");};
+const own=(o,k)=>{const d=Object.getOwnPropertyDescriptor(o,k);if(!d||!Object.hasOwn(d,"value"))bad();return d.value;};
+if(typeof Tg!=="function"||typeof ja!=="function")bad();
+const footprintBase=Object.getPrototypeOf(Tg),consistencyBase=Object.getPrototypeOf(ja);
+const constructors=[Tg,footprintBase,Object.getPrototypeOf(footprintBase),ja,consistencyBase,Object.getPrototypeOf(consistencyBase)];
+const manager=own(this,"footprint"),consistency=own(this,"consistencyManager");
+if(own(manager,"projectManager")!==this)bad();
+for(const [object,offset]of [[manager,0],[consistency,3]]){let p=Object.getPrototypeOf(object);for(let i=0;i<3;i++){const c=constructors[offset+i];if(typeof c!=="function"||own(c,"prototype")!==p||own(p,"constructor")!==c)bad();p=Object.getPrototypeOf(p);}if(p!==Object.prototype)bad();}
+return constructors;})()`;
+    helpers = `"use strict";
+const bad=()=>{throw new Error("FOOTPRINT_COPY_STATE");};
+const retained=[],prototypes=[];
+const object=o=>{if(o===null||(typeof o!=="object"&&typeof o!=="function"))bad();return o;};
+const own=(o,k)=>{object(o);const d=Object.getOwnPropertyDescriptor(o,k);if(!d||!Object.hasOwn(d,"value"))bad();retained.push([o,k,d.value]);return d.value;};
+const chain=(o,names,constructors=null,offset=0)=>{object(o);let index=offset;let p=Object.getPrototypeOf(o);prototypes.push([o,p]);for(const name of names){object(p);const c=own(p,"constructor");if(typeof c!=="function"||own(c,"name")!==name||own(c,"prototype")!==p||constructors!==null&&own(constructors,String(index++))!==c)bad();const n=Object.getPrototypeOf(p);prototypes.push([p,n]);p=n;}if(p!==Object.prototype)bad();};
+const verify=()=>{for(const [o,k,v]of retained){const d=Object.getOwnPropertyDescriptor(o,k);if(!d||!Object.hasOwn(d,"value")||d.value!==v)bad();}for(const [o,p]of prototypes)if(Object.getPrototypeOf(o)!==p)bad();};`;
+    selectManager = `function(){${helpers}
+const manager=own(this,"footprint");chain(manager,["Tg","ar","Pi"]);
+if(own(manager,"projectManager")!==this)bad();verify();return manager;}`;
+    selectConsistency = `function(){${helpers}
+const consistency=own(this,"consistencyManager");chain(consistency,["ja","Vc","zy"]);
+verify();return consistency;}`;
+    observe4 = `function(bus,manager,consistency,constructors){${helpers}
+const id=(v,re)=>{const m=typeof v==="string"?re.exec(v):null;if(m===null||m[0]!==v)bad();return v;};
+if(own(globalThis,"PROJECT")!==this||own(this,"workerBus")!==bus||own(this,"footprint")!==manager||own(this,"consistencyManager")!==consistency||own(manager,"projectManager")!==this)bad();
+if(!Array.isArray(constructors)||Object.getPrototypeOf(constructors)!==Array.prototype||own(constructors,"length")!==6||Reflect.ownKeys(constructors).length!==7)bad();
+chain(manager,["Tg","ar","Pi"],constructors,0);chain(consistency,["ja","Vc","zy"],constructors,3);
+if(own(manager,"user")!==undefined)bad();
+const client=id(own(manager,"client"),/^[a-f0-9]{16}$/);
+if(own(consistency,"client")!==client)bad();
+const maximumTicket=own(consistency,"maxTicket");
+if(!Number.isSafeInteger(maximumTicket)||Object.is(maximumTicket,-0)||maximumTicket<0||maximumTicket>Number.MAX_SAFE_INTEGER-3)bad();
+const identity={projectUuid:id(own(this,"uuid"),/^(?:[a-f0-9]{32}|[a-f0-9]{64})$/),branchUuid:id(own(this,"_branchUuid"),/^[a-f0-9]{32}$/),windowTabId:id(own(globalThis,"_TAB_ID_"),/^[A-Za-z0-9_-]{1,128}$/)};
+verify();return JSON.stringify({schema:"easyeda-pro-control.current-footprint-copy-state.v1",identity,client,maximumTicket,capturedUser:"own-undefined"});}`;
+    CURRENT_FOOTPRINT_COPY_STATE_CALLS = freezeDeep({
+      "manager-select": { program: selectManager, arguments: 0, returnByValue: false },
+      "consistency-select": { program: selectConsistency, arguments: 0, returnByValue: false },
+      observe: { program: observe4, arguments: 4, returnByValue: true }
+    });
+    fields7 = {
+      identity: currentPcbWorkerStartupActorIdentitySchema,
+      client: external_exports.string().length(16).regex(/^[a-f0-9]{16}$/u),
+      maximumTicket: external_exports.number().int().min(0).max(Number.MAX_SAFE_INTEGER - 3).refine((value2) => !Object.is(value2, -0)),
+      capturedUser: external_exports.literal("own-undefined")
+    };
+    currentFootprintCopyStateSampleSchema = external_exports.object({
+      schema: external_exports.literal("easyeda-pro-control.current-footprint-copy-state.v1"),
+      ...fields7
+    }).strict();
+    currentFootprintCopyStatePacketSchema = external_exports.object({
+      profile: external_exports.literal("private.current-footprint-copy-state.v1"),
+      ...fields7,
+      samples: external_exports.literal(2),
+      originalConstructorManagerMatched: external_exports.literal(true),
+      atomicSnapshotVerified: external_exports.literal(false),
+      cacheBranchObserved: external_exports.literal(false),
+      executionAuthorized: external_exports.literal(false),
+      persistenceVerified: external_exports.literal(false)
+    }).strict();
+  }
+});
+
 // server/src/current-project-url.ts
 function buildCurrentProjectUrlGuard() {
   return String.raw`const parseProjectUrl=(value,projectUuid,activeTabId)=>{
@@ -104285,6 +104626,7 @@ function queryCurrentPcb209WorkerStartupValidation(includeSchemas) {
       "After the original capture result is published, observe-current-assignments consumes one journaled read of the four current PROJECT wrappers and their original constructor callbacks. It rechecks those same assignments before publication; the result is a point-in-time, non-atomic observation, not an execution token.",
       "After the assignment result is published, observe-actor-clock consumes one UI/worker/worker/UI bracket on those original owners. It compares the retained account values and local Date readings, not a PCB realm, Windows/server clock, backend actor, future Save or continuous publication interval.",
       "After the assignment result is published, observe-current-channel independently consumes one bounded original-channel relation and publisher-method observation with paired gate samples. It does not call publisher methods or establish native channel peers, continuous ownership, contained destinations or queue completion; it does not require the actor stage.",
+      "After the assignment result is published, observe-footprint-state consumes one pair of synchronous reads from the original constructor-captured footprint and consistency managers. It checks the own undefined captured user, shared client and unchanged maximum ticket. No getter, copy, cache completion, actor provenance, Save or persistence claim follows.",
       "Constructor and current-assignment observations are not continuous channel/publisher ownership, destination containment, full startup completion, stable baseline, create/Save authority or saved-content proof. No writer or explicit Save is offered.",
       "Every stage is consumed once. Inspect retained outcomes after uncertainty; do not repeat capture-project. Original normal close, root/Job termination, helper release and exact record settlement remain separate. Historical records never recreate a native owner."
     ],
@@ -104300,7 +104642,7 @@ function validateCurrentPcb209WorkerStartupArguments(input2) {
     issues: parsed5.error.issues.slice(0, 16).map((issue2) => ({ path: issue2.path.map(String), message: issue2.message.slice(0, 512) }))
   };
 }
-var CURRENT_PCB_209_WORKER_STARTUP_OPERATION_PREFIX, currentPcb209WorkerStartupLifecycleIdSchema, digest7, token4, operationId4, bound3, currentPcb209WorkerStartupLifecycleRequestSchema, currentPcb209WorkerStartupCaptureRequestSchema, currentPcb209WorkerStartupAssignmentsRequestSchema, currentPcb209WorkerStartupActorRequestSchema, currentPcb209WorkerStartupChannelRequestSchema, currentPcb209WorkerStartupValidationRequestSchema;
+var CURRENT_PCB_209_WORKER_STARTUP_OPERATION_PREFIX, currentPcb209WorkerStartupLifecycleIdSchema, digest7, token4, operationId4, bound3, currentPcb209WorkerStartupLifecycleRequestSchema, currentPcb209WorkerStartupCaptureRequestSchema, currentPcb209WorkerStartupAssignmentsRequestSchema, currentPcb209WorkerStartupActorRequestSchema, currentPcb209WorkerStartupFootprintStateRequestSchema, currentPcb209WorkerStartupChannelRequestSchema, currentPcb209WorkerStartupValidationRequestSchema;
 var init_current_pcb_209_worker_startup_validation = __esm({
   "server/src/current-pcb-209-worker-startup-validation.ts"() {
     init_zod();
@@ -104336,13 +104678,15 @@ var init_current_pcb_209_worker_startup_validation = __esm({
     }).strict();
     currentPcb209WorkerStartupAssignmentsRequestSchema = external_exports.object({ action: external_exports.literal("observe-current-assignments"), ...bound3 }).strict();
     currentPcb209WorkerStartupActorRequestSchema = external_exports.object({ action: external_exports.literal("observe-actor-clock"), ...bound3 }).strict();
+    currentPcb209WorkerStartupFootprintStateRequestSchema = external_exports.object({ action: external_exports.literal("observe-footprint-state"), ...bound3 }).strict();
     currentPcb209WorkerStartupChannelRequestSchema = external_exports.object({ action: external_exports.literal("observe-current-channel"), ...bound3 }).strict();
     currentPcb209WorkerStartupValidationRequestSchema = external_exports.discriminatedUnion("action", [
       ...currentPcb209WorkerStartupLifecycleRequestSchema.options,
       currentPcb209WorkerStartupCaptureRequestSchema,
       currentPcb209WorkerStartupAssignmentsRequestSchema,
       currentPcb209WorkerStartupActorRequestSchema,
-      currentPcb209WorkerStartupChannelRequestSchema
+      currentPcb209WorkerStartupChannelRequestSchema,
+      currentPcb209WorkerStartupFootprintStateRequestSchema
     ]);
   }
 });
@@ -104626,78 +104970,6 @@ var init_current_pcb_209_ratline_creation_profile = __esm({
         worker: "o"
       }
     });
-  }
-});
-
-// server/src/current-pcb-string-clock-reply.ts
-import { types } from "node:util";
-function fail12() {
-  throw new Error("PCB_STRING_CLOCK_REPLY_CAPTURE");
-}
-function captureCurrentPcbStringClockReply(input2) {
-  let nodes = 0;
-  const seen = /* @__PURE__ */ new Set();
-  const copy3 = (value3, depth) => {
-    nodes += 1;
-    if (nodes > 1024 || depth > 12) {
-      return fail12();
-    }
-    if (value3 === null || typeof value3 === "boolean") {
-      return value3;
-    }
-    if (typeof value3 === "string") {
-      if (value3.length > 16384 || !value3.isWellFormed()) {
-        return fail12();
-      }
-      return value3;
-    }
-    if (typeof value3 === "number") {
-      if (!Number.isFinite(value3) || Object.is(value3, -0)) {
-        return fail12();
-      }
-      return value3;
-    }
-    if (typeof value3 !== "object" || types.isProxy(value3) || seen.has(value3)) {
-      return fail12();
-    }
-    seen.add(value3);
-    const own15 = (key) => {
-      const descriptor10 = Object.getOwnPropertyDescriptor(value3, key);
-      if (descriptor10 === void 0 || !Object.hasOwn(descriptor10, "value") || descriptor10.enumerable !== true) {
-        return fail12();
-      }
-      return descriptor10.value;
-    };
-    if (Array.isArray(value3)) {
-      if (Object.getPrototypeOf(value3) !== Array.prototype || value3.length > 256 || Reflect.ownKeys(value3).length !== value3.length + 1) {
-        return fail12();
-      }
-      const result3 = Array.from({ length: value3.length }, (_, index2) => copy3(own15(String(index2)), depth + 1));
-      return Object.freeze(result3);
-    }
-    const keys3 = Reflect.ownKeys(value3), prototype2 = Object.getPrototypeOf(value3);
-    if (prototype2 !== Object.prototype && prototype2 !== null || keys3.length > 32) {
-      return fail12();
-    }
-    const result2 = /* @__PURE__ */ Object.create(null);
-    for (const key of keys3) {
-      if (typeof key !== "string" || key.length > 128 || !key.isWellFormed()) {
-        return fail12();
-      }
-      Object.defineProperty(result2, key, { value: copy3(own15(key), depth + 1), enumerable: true });
-    }
-    return Object.freeze(result2);
-  };
-  const value2 = copy3(input2, 0);
-  const text53 = JSON.stringify(value2);
-  if (Buffer.byteLength(text53) > 131072) {
-    return fail12();
-  }
-  return Object.freeze({ value: value2, text: text53, sha256: sha256Text(text53) });
-}
-var init_current_pcb_string_clock_reply = __esm({
-  "server/src/current-pcb-string-clock-reply.ts"() {
-    init_core3();
   }
 });
 
@@ -105076,7 +105348,7 @@ var init_current_pcb_209_ratline_continuation_semantics = __esm({
 
 // server/src/current-pcb-209-worker-bootstrap-source.ts
 import { createHash as createHash37 } from "node:crypto";
-import { types as types2 } from "node:util";
+import { types as types3 } from "node:util";
 function currentPcb209PreloadCopyCaller(role) {
   switch (role) {
     case "preload-copy-1":
@@ -105126,7 +105398,7 @@ function digest10(value2) {
   return createHash37("sha256").update(value2).digest("hex");
 }
 function plain(value2) {
-  need46(value2 !== null && typeof value2 === "object" && !types2.isProxy(value2) && !Array.isArray(value2) && (Object.getPrototypeOf(value2) === Object.prototype || Object.getPrototypeOf(value2) === null));
+  need46(value2 !== null && typeof value2 === "object" && !types3.isProxy(value2) && !Array.isArray(value2) && (Object.getPrototypeOf(value2) === Object.prototype || Object.getPrototypeOf(value2) === null));
 }
 function sourceProperty(value2, key) {
   const descriptor10 = Object.getOwnPropertyDescriptor(value2, key);
@@ -105336,7 +105608,7 @@ var init_current_pcb_209_worker_bootstrap_source = __esm({
 
 // server/src/current-pcb-209-ratline-pcb-bootstrap-profile.ts
 import { createHash as createHash38 } from "node:crypto";
-import { types as types3 } from "node:util";
+import { types as types4 } from "node:util";
 function need47(value2) {
   if (!value2) {
     throw new Error("PCB209_RATLINE_PCB_BOOTSTRAP_SOURCE");
@@ -105375,7 +105647,7 @@ function currentPcb209RatlinePcbBootstrapRoleUrl(role, frameUrl) {
   throw new Error("PCB209_RATLINE_PCB_BOOTSTRAP_SOURCE");
 }
 function source5(input2) {
-  need47(input2 !== null && typeof input2 === "object" && !types3.isProxy(input2) && (Object.getPrototypeOf(input2) === Object.prototype || Object.getPrototypeOf(input2) === null));
+  need47(input2 !== null && typeof input2 === "object" && !types4.isProxy(input2) && (Object.getPrototypeOf(input2) === Object.prototype || Object.getPrototypeOf(input2) === null));
   const descriptor10 = Object.getOwnPropertyDescriptor(input2, "scriptSource"), keys3 = Reflect.ownKeys(input2);
   need47(keys3.length === 1 && keys3[0] === "scriptSource" && descriptor10 !== void 0 && Object.hasOwn(descriptor10, "value") && descriptor10.enumerable === true);
   const text53 = descriptor10.value;
@@ -105843,7 +106115,7 @@ var init_current_pcb_209_ratline_pcb_bootstrap_profile = __esm({
 
 // server/src/current-pcb-209-ratline-bootstrap-profile.ts
 import { createHash as createHash39 } from "node:crypto";
-import { types as types4 } from "node:util";
+import { types as types5 } from "node:util";
 function need48(value2) {
   if (!value2) {
     throw new Error("PCB209_RATLINE_BOOTSTRAP_SOURCE");
@@ -105879,7 +106151,7 @@ function currentPcb209RatlineBootstrapRoleUrl(role, bootstrapUrl) {
 }
 function qualifyCurrentPcb209RatlineBootstrapSource(role, input2) {
   need48(CURRENT_PCB_209_RATLINE_BOOTSTRAP_ROLES.some((value2) => value2 === role));
-  need48(input2 !== null && typeof input2 === "object" && !types4.isProxy(input2) && (Object.getPrototypeOf(input2) === Object.prototype || Object.getPrototypeOf(input2) === null));
+  need48(input2 !== null && typeof input2 === "object" && !types5.isProxy(input2) && (Object.getPrototypeOf(input2) === Object.prototype || Object.getPrototypeOf(input2) === null));
   const descriptor10 = Object.getOwnPropertyDescriptor(input2, "scriptSource"), keys3 = Reflect.ownKeys(input2);
   need48(keys3.length === 1 && keys3[0] === "scriptSource" && descriptor10 !== void 0 && Object.hasOwn(descriptor10, "value"));
   const source7 = descriptor10.value;
@@ -105912,7 +106184,7 @@ var init_current_pcb_209_ratline_bootstrap_profile = __esm({
 });
 
 // server/src/current-pcb-209-ratline-continuation-budget.ts
-import { types as types5 } from "node:util";
+import { types as types6 } from "node:util";
 function sourceSlot(stage, sourceBytes3) {
   const frameBytes = 6 * sourceBytes3 + envelope3;
   return Object.freeze({
@@ -105935,7 +106207,7 @@ function currentPcb209RatlineContinuationSourceBudget(role, ordinal) {
   return slot;
 }
 function assertOriginalCurrentPcb209RatlineContinuationBudget(budget3) {
-  if (budget3 === null || typeof budget3 !== "object" || types5.isProxy(budget3) || !issued6.has(budget3) || Object.getPrototypeOf(budget3) !== CurrentPcb209RatlineContinuationBudget.prototype) {
+  if (budget3 === null || typeof budget3 !== "object" || types6.isProxy(budget3) || !issued6.has(budget3) || Object.getPrototypeOf(budget3) !== CurrentPcb209RatlineContinuationBudget.prototype) {
     throw new Error("PCB209_RATLINE_CONTINUATION_BUDGET_ORIGINAL");
   }
   for (const [index2, name9] of methodNames.entries()) {
@@ -105945,7 +106217,7 @@ function assertOriginalCurrentPcb209RatlineContinuationBudget(budget3) {
   }
 }
 function isCurrentPcb209RatlineContinuationNormalResourceRefusal(error63, budget3) {
-  if (error63 === null || typeof error63 !== "object" || types5.isProxy(error63) || budget3 === null || typeof budget3 !== "object" || types5.isProxy(budget3) || !issued6.has(budget3)) {
+  if (error63 === null || typeof error63 !== "object" || types6.isProxy(error63) || budget3 === null || typeof budget3 !== "object" || types6.isProxy(budget3) || !issued6.has(budget3)) {
     return false;
   }
   const refusal = normalResourceRefusals.get(error63);
@@ -105991,8 +106263,9 @@ var init_current_pcb_209_ratline_continuation_budget = __esm({
     }));
     requestClasses = freezeDeep({
       // This is the existing complete discovery/project-opening cap, including its
-      // Retained reproof allowance. It is not 186 expected commands or a new budget
-      // At handoff. Its original pipe retains its own reply/event validation.
+      // Retained reproof allowance. The three footprint constructor reads consume
+      // That reserve (80 to 77); this remains a 186 cap, not 186 expected commands or
+      // A new budget at handoff. The original pipe retains reply/event validation.
       prefix: { count: 186, frameBytes: 32 * mib },
       preparation: { count: 10, frameBytes: mib },
       // Exact original navigation program compilation: one source read and resume.
@@ -106382,7 +106655,7 @@ var init_current_pcb_209_ratline_continuation_budget = __esm({
 });
 
 // server/src/current-pcb-209-ratline-continuation-handoff.ts
-import { types as types6 } from "node:util";
+import { types as types7 } from "node:util";
 function issueCurrentPcb209ContinuedSourceSeal(owner4, source7, contextId) {
   const seal2 = Object.freeze({ source: source7, contextId });
   sources.set(seal2, owner4);
@@ -106400,11 +106673,11 @@ function isCurrentPcb209CompletedCaptureSeal(seal2, owner4, packet) {
   return captures.get(seal2) === owner4 && seal2.packet === packet;
 }
 function methods3(owner4, names2) {
-  need49(!types6.isProxy(owner4), "OWNER");
+  need49(!types7.isProxy(owner4), "OWNER");
   const chain3 = [];
   let cursor = Object.getPrototypeOf(owner4);
   while (cursor !== Object.prototype) {
-    need49(cursor !== null && typeof cursor === "object" && !types6.isProxy(cursor) && chain3.length < 3, "OWNER");
+    need49(cursor !== null && typeof cursor === "object" && !types7.isProxy(cursor) && chain3.length < 3, "OWNER");
     chain3.push(cursor);
     cursor = Object.getPrototypeOf(cursor);
   }
@@ -107413,7 +107686,7 @@ var init_current_pcb_209_common_profile = __esm({
 });
 
 // server/src/current-pcb-common-graph.ts
-import { types as types7 } from "node:util";
+import { types as types8 } from "node:util";
 function graphProgram(classNames) {
   return `
 const graphNodes=[],graphSeen=new Map(),graphHeld=[],graphCollections=[],graphJsonChecks=[];let graphFields=0,graphStringUnits=0;
@@ -107467,17 +107740,17 @@ if(!Number.isSafeInteger(graphStarted)||graphStarted<0)bad();
 const graphBudget=()=>{if(Date.now!==graphNow)bad();const now=Reflect.apply(graphNow,Date,[]);if(!Number.isSafeInteger(now)||now<graphStarted||now-graphStarted>1000)bad();};
 ${program6}`;
 }
-function record6(value2, fields26) {
-  if (value2 === null || typeof value2 !== "object" || types7.isProxy(value2) || Array.isArray(value2)) {
+function record7(value2, fields27) {
+  if (value2 === null || typeof value2 !== "object" || types8.isProxy(value2) || Array.isArray(value2)) {
     throw new Error("PCB_COMMON_GRAPH_REPLY");
   }
   const prototype2 = Object.getPrototypeOf(value2);
   const keys3 = Reflect.ownKeys(value2);
-  if (prototype2 !== Object.prototype && prototype2 !== null || keys3.length !== fields26.length || keys3.some((key) => typeof key !== "string" || !fields26.includes(key))) {
+  if (prototype2 !== Object.prototype && prototype2 !== null || keys3.length !== fields27.length || keys3.some((key) => typeof key !== "string" || !fields27.includes(key))) {
     throw new Error("PCB_COMMON_GRAPH_REPLY");
   }
   const result2 = {};
-  for (const key of fields26) {
+  for (const key of fields27) {
     const descriptor10 = Object.getOwnPropertyDescriptor(value2, key);
     if (descriptor10 === void 0 || !Object.hasOwn(descriptor10, "value")) {
       throw new Error("PCB_COMMON_GRAPH_REPLY");
@@ -107487,8 +107760,8 @@ function record6(value2, fields26) {
   return result2;
 }
 function decodeCurrentPcbCommonGraph(input2, schema11) {
-  const wrapper2 = record6(input2, ["result"]);
-  const result2 = record6(wrapper2["result"], ["type", "value"]);
+  const wrapper2 = record7(input2, ["result"]);
+  const result2 = record7(wrapper2["result"], ["type", "value"]);
   const raw = result2["value"];
   if (result2["type"] !== "string" || typeof raw !== "string" || !raw.isWellFormed() || Buffer.byteLength(raw) > CURRENT_PCB_COMMON_GRAPH_BYTES) {
     throw new Error("PCB_COMMON_GRAPH_REPLY");
@@ -107683,7 +107956,7 @@ for(const [o,p]of lazyOwnerPrototypes)if(Object.getPrototypeOf(o)!==p)bad();};
 
 // server/src/current-pcb-diagnostic-model-program.ts
 import { createHash as createHash40 } from "node:crypto";
-import { types as types8 } from "node:util";
+import { types as types9 } from "node:util";
 function stateProgram(version7) {
   return `function(originalCallback){${GUARDS}
 if((${CURRENT_PCB_DIAGNOSTIC_MODEL_CALLBACK_EXPRESSION})!==originalCallback)bad();
@@ -107737,8 +108010,8 @@ return JSON.stringify({schema:"easyeda-pro-control.pcb-diagnostic-model-state.v$
 function refuse4() {
   throw new Error("PCB_DIAGNOSTIC_MODEL_REPLY");
 }
-function record7(value2, names2) {
-  if (value2 === null || typeof value2 !== "object" || types8.isProxy(value2) || Array.isArray(value2)) {
+function record8(value2, names2) {
+  if (value2 === null || typeof value2 !== "object" || types9.isProxy(value2) || Array.isArray(value2)) {
     return refuse4();
   }
   const prototype2 = Object.getPrototypeOf(value2);
@@ -107760,7 +108033,7 @@ function record7(value2, names2) {
   return copy3;
 }
 function replyData(input2) {
-  const reply3 = record7(input2, ["result"]), result2 = record7(reply3["result"], ["type", "value"]);
+  const reply3 = record8(input2, ["result"]), result2 = record8(reply3["result"], ["type", "value"]);
   const raw = result2["value"];
   if (result2["type"] !== "string" || typeof raw !== "string" || !raw.isWellFormed() || Buffer.byteLength(raw, "utf8") > CURRENT_PCB_DIAGNOSTIC_MODEL_RESULT_BYTES) {
     return refuse4();
@@ -108125,7 +108398,7 @@ const verifyTeardropOwner=()=>{for(const [o,k,v]of tearsHeld){const d=Object.get
 });
 
 // server/src/current-pcb-constructor-scope.ts
-import { types as types9 } from "node:util";
+import { types as types10 } from "node:util";
 function selector3(kind) {
   const owners7 = CURRENT_PCB_CONSTRUCTOR_BUNDLES[kind].map((key) => {
     const profile2 = CURRENT_PCB_CONSTRUCTOR_PROFILES[key];
@@ -108190,7 +108463,7 @@ function copyData(input2, depth, budget3) {
     }
     return input2;
   }
-  if (typeof input2 !== "object" || types9.isProxy(input2)) {
+  if (typeof input2 !== "object" || types10.isProxy(input2)) {
     return refuse5();
   }
   const array5 = Array.isArray(input2), keys3 = Reflect.ownKeys(input2), prototype2 = Object.getPrototypeOf(input2);
@@ -108357,7 +108630,7 @@ function decodeCurrentPcbConstructorProperties(input2, scriptId2, name9, kind = 
     });
   }
 }
-var NO_STATIC_FIELDS, TURN_STATIC_FIELDS, CURRENT_PCB_CONSTRUCTOR_PROFILES, ROOT_CONSTRUCTORS, CURRENT_PCB_CONSTRUCTOR_BUNDLES, CURRENT_PCB_CONSTRUCTOR_BUNDLE_FUNCTIONS, CURRENT_PCB_CONSTRUCTOR_ASSOCIATION_PROGRAMS, token10, text28, position, remote2, property, internal;
+var NO_STATIC_FIELDS, TURN_STATIC_FIELDS, CURRENT_PCB_CONSTRUCTOR_PROFILES, ROOT_CONSTRUCTORS, CURRENT_PCB_CONSTRUCTOR_BUNDLES, CURRENT_PCB_CONSTRUCTOR_BUNDLE_FUNCTIONS, CURRENT_PCB_CONSTRUCTOR_ASSOCIATION_PROGRAMS, token10, text29, position, remote2, property, internal;
 var init_current_pcb_constructor_scope = __esm({
   "server/src/current-pcb-constructor-scope.ts"() {
     init_zod();
@@ -108728,25 +109001,25 @@ var init_current_pcb_constructor_scope = __esm({
       common: association4("common")
     });
     token10 = external_exports.string().min(1).max(256).regex(/^[A-Za-z\d_.:-]+$/u);
-    text28 = external_exports.string().max(16384).refine((value2) => value2.isWellFormed() && !value2.includes("\0"));
+    text29 = external_exports.string().max(16384).refine((value2) => value2.isWellFormed() && !value2.includes("\0"));
     position = external_exports.object({ scriptId: token10, lineNumber: external_exports.number().int().nonnegative(), columnNumber: external_exports.number().int().nonnegative() }).strict();
     remote2 = external_exports.object({
       type: external_exports.enum(["object", "function", "string", "number"]),
-      subtype: text28.optional(),
-      className: text28.optional(),
-      description: text28.optional(),
+      subtype: text29.optional(),
+      className: text29.optional(),
+      description: text29.optional(),
       objectId: token10.optional(),
-      value: external_exports.union([external_exports.null(), text28, external_exports.number(), position]).optional()
+      value: external_exports.union([external_exports.null(), text29, external_exports.number(), position]).optional()
     }).strict();
     property = external_exports.object({
-      name: text28,
+      name: text29,
       value: remote2,
       writable: external_exports.boolean(),
       configurable: external_exports.boolean(),
       enumerable: external_exports.boolean(),
       isOwn: external_exports.literal(true)
     }).strict();
-    internal = external_exports.object({ name: text28, value: remote2 }).strict();
+    internal = external_exports.object({ name: text29, value: remote2 }).strict();
   }
 });
 
@@ -108762,8 +109035,8 @@ function graphObject(graph, value2, className) {
 function ownValue(node2, key) {
   return node2.fields.find((field13) => field13[0] === key)?.[1];
 }
-function exactFields(node2, fields26) {
-  return node2 !== void 0 && node2.fields.length === fields26.length && node2.fields.every((field13, index2) => field13[0] === fields26[index2]);
+function exactFields(node2, fields27) {
+  return node2 !== void 0 && node2.fields.length === fields27.length && node2.fields.every((field13, index2) => field13[0] === fields27[index2]);
 }
 function mapField(graph, node2, key, empty13 = false) {
   const value2 = ownValue(node2, key);
@@ -109065,82 +109338,6 @@ const text=JSON.stringify({schema:s.sourceSchema,documentUuid:s.documentUuid,pic
   }
 });
 
-// server/src/current-pcb-string-observation-core.ts
-import { types as types10 } from "node:util";
-function record8(input2, fields26) {
-  if (input2 === null || typeof input2 !== "object" || types10.isProxy(input2) || Array.isArray(input2)) {
-    throw new Error("PCB_STRING_OBSERVATION_REPLY");
-  }
-  const keys3 = Reflect.ownKeys(input2), prototype2 = Object.getPrototypeOf(input2);
-  if (prototype2 !== Object.prototype && prototype2 !== null || keys3.length !== fields26.length || keys3.some((key) => typeof key !== "string" || !fields26.includes(key))) {
-    throw new Error("PCB_STRING_OBSERVATION_REPLY");
-  }
-  const result2 = {};
-  for (const key of fields26) {
-    const descriptor10 = Object.getOwnPropertyDescriptor(input2, key);
-    if (descriptor10 === void 0 || !Object.hasOwn(descriptor10, "value")) {
-      throw new Error("PCB_STRING_OBSERVATION_REPLY");
-    }
-    result2[key] = descriptor10.value;
-  }
-  return result2;
-}
-function decodeCurrentPcbStringObservation(input2, schema11) {
-  const wrapper2 = record8(input2, ["result"]);
-  const result2 = record8(wrapper2["result"], ["type", "value"]);
-  const raw = result2["value"];
-  if (result2["type"] !== "string" || typeof raw !== "string" || !raw.isWellFormed() || Buffer.byteLength(raw) > CURRENT_PCB_STRING_OBSERVATION_BYTES) {
-    throw new Error("PCB_STRING_OBSERVATION_REPLY");
-  }
-  try {
-    const parsed5 = decodeCurrentPcbDiagnosticJson(Buffer.from(raw)), state4 = schema11.parse(parsed5);
-    return freezeDeep({ ...state4, ...CURRENT_PCB_STRING_OBSERVATION_LIMITS });
-  } catch {
-    throw new Error("PCB_STRING_OBSERVATION_REPLY");
-  }
-}
-var CURRENT_PCB_STRING_OBSERVATION_BYTES, CURRENT_PCB_STRING_OBSERVATION_LIMITS, currentPcbStringMarkerSchema, currentPcbStringCountSchema, CURRENT_PCB_STRING_OBSERVATION_GUARDS;
-var init_current_pcb_string_observation_core = __esm({
-  "server/src/current-pcb-string-observation-core.ts"() {
-    init_zod();
-    init_current_pcb_diagnostic_json();
-    init_sqlite_inventory_core();
-    CURRENT_PCB_STRING_OBSERVATION_BYTES = 16384;
-    CURRENT_PCB_STRING_OBSERVATION_LIMITS = Object.freeze({
-      originalOwnerVerified: false,
-      nativeIntrinsicsVerified: false,
-      projectWorkerAssociationVerified: false,
-      completeLiveBaselineVerified: false,
-      queueCompletionVerified: false,
-      publicationDelivered: false,
-      saveAuthorized: false,
-      executionAuthorized: false
-    });
-    currentPcbStringMarkerSchema = external_exports.enum(["absent", "undefined", "null", "present"]);
-    currentPcbStringCountSchema = external_exports.number().int().min(0).max(65536).refine((value2) => !Object.is(value2, -0));
-    CURRENT_PCB_STRING_OBSERVATION_GUARDS = `
-"use strict";
-const bad=()=>{throw new Error("PCB_STRING_OBSERVATION_STATE");};
-const retained=[],collections=[];
-const own=(o,k)=>{if(o===null||(typeof o!=="object"&&typeof o!=="function"))bad();const d=Object.getOwnPropertyDescriptor(o,k);if(!d||!Object.hasOwn(d,"value"))bad();if(retained.length>=2048)bad();retained.push([o,k,d.value]);return d.value;};
-const object=o=>{if(o===null||typeof o!=="object"||Array.isArray(o))bad();return o;};
-const plain=o=>{object(o);const p=Object.getPrototypeOf(o);if(p!==Object.prototype&&p!==null)bad();return o;};
-const marker=(o,k)=>{const d=Object.getOwnPropertyDescriptor(o,k);if(!d){let p=Object.getPrototypeOf(o),n=0;while(p!==null){if(++n>8||Object.hasOwn(p,k))bad();p=Object.getPrototypeOf(p);}retained.push([o,k]);return "absent";}const v=own(o,k);return v===undefined?"undefined":v===null?"null":"present";};
-const count=n=>{if(!Number.isSafeInteger(n)||Object.is(n,-0)||n<0||n>65536)bad();return n;};
-const flag=v=>{if(typeof v!=="boolean")bad();return v;};
-const id=(v,re)=>{if(typeof v!=="string"||v.length>128||!re.test(v))bad();return v;};
-const keys=o=>{plain(o);const k=Reflect.ownKeys(o);if(k.length>65536||k.some(v=>typeof v!=="string"))bad();return k;};
-const emptyObject=o=>{if(keys(o).length!==0)bad();return [];};
-const size=(o,p)=>{object(o);if(Object.getPrototypeOf(o)!==p||Reflect.ownKeys(o).length!==0)bad();const d=Object.getOwnPropertyDescriptor(p,"size");if(!d||typeof d.get!=="function"||d.set!==undefined)bad();const n=count(Reflect.apply(d.get,o,[]));collections.push([o,p,d.get,n]);return n;};
-const emptyMap=o=>{if(size(o,Map.prototype)!==0)bad();return [];};
-const emptySet=o=>{if(size(o,Set.prototype)!==0)bad();return [];};
-const arraySize=o=>{if(!Array.isArray(o)||Object.getPrototypeOf(o)!==Array.prototype)bad();const n=count(own(o,"length")),k=Reflect.ownKeys(o);if(k.length!==n+1||k[n]!=="length")bad();for(let i=0;i<n;i++)own(o,String(i));return n;};
-const named=(o,name)=>{object(o);const p=Object.getPrototypeOf(o),c=own(p,"constructor");if(typeof c!=="function"||own(c,"name")!==name||own(c,"prototype")!==p)bad();return o;};
-const verify=()=>{for(const item of retained){const d=Object.getOwnPropertyDescriptor(item[0],item[1]);if(item.length===2?d!==undefined:!d||!Object.hasOwn(d,"value")||d.value!==item[2])bad();}for(const item of collections){if(Object.getPrototypeOf(item[0])!==item[1]||Reflect.ownKeys(item[0]).length!==0||Reflect.apply(item[2],item[0],[])!==item[3])bad();}};
-`;
-  }
-});
-
 // server/src/current-pcb-string-empty-assets.ts
 import { createHash as createHash43 } from "node:crypto";
 function decodeCurrentPcbStringEmptyAssets(input2) {
@@ -109371,32 +109568,32 @@ function decodeCurrentPcb209CommonConstructorProperties(input2, scriptId2, name9
     });
   }
 }
-var token11, text29, position2, remote3, property2, internal2;
+var token11, text30, position2, remote3, property2, internal2;
 var init_current_pcb_209_common_constructor_scope = __esm({
   "server/src/current-pcb-209-common-constructor-scope.ts"() {
     init_zod();
     init_current_pcb_constructor_failure();
     init_current_pcb_209_common_profile();
     token11 = external_exports.string().min(1).max(256).regex(/^[A-Za-z\d_.:-]+$/u);
-    text29 = external_exports.string().max(16384).refine((value2) => value2.isWellFormed() && !value2.includes("\0"));
+    text30 = external_exports.string().max(16384).refine((value2) => value2.isWellFormed() && !value2.includes("\0"));
     position2 = external_exports.object({ scriptId: token11, lineNumber: external_exports.number().int().nonnegative(), columnNumber: external_exports.number().int().nonnegative() }).strict();
     remote3 = external_exports.object({
       type: external_exports.enum(["object", "function", "string", "number"]),
-      subtype: text29.optional(),
-      className: text29.optional(),
-      description: text29.optional(),
+      subtype: text30.optional(),
+      className: text30.optional(),
+      description: text30.optional(),
       objectId: token11.optional(),
-      value: external_exports.union([external_exports.null(), text29, external_exports.number(), position2]).optional()
+      value: external_exports.union([external_exports.null(), text30, external_exports.number(), position2]).optional()
     }).strict();
     property2 = external_exports.object({
-      name: text29,
+      name: text30,
       value: remote3,
       writable: external_exports.boolean(),
       configurable: external_exports.boolean(),
       enumerable: external_exports.boolean(),
       isOwn: external_exports.literal(true)
     }).strict();
-    internal2 = external_exports.object({ name: text29, value: remote3 }).strict();
+    internal2 = external_exports.object({ name: text30, value: remote3 }).strict();
   }
 });
 
@@ -110615,7 +110812,7 @@ function number17(value2) {
   need50(value2[0] === "number", "finite raw number required");
   return Number(value2[1]);
 }
-function text30(value2) {
+function text31(value2) {
   need50(value2[0] === "string", "raw string required");
   return value2[1];
 }
@@ -110632,7 +110829,7 @@ function rawNumber(node2, name9) {
   return number17(field3(node2, name9));
 }
 function rawText(node2, name9) {
-  return text30(field3(node2, name9));
+  return text31(field3(node2, name9));
 }
 function rawBoolean(node2, name9) {
   return boolean4(field3(node2, name9));
@@ -110646,10 +110843,10 @@ function nullableNumber(value2) {
   return value2[0] === "null" ? null : number17(value2);
 }
 function nullableText(value2) {
-  return value2[0] === "null" ? null : text30(value2);
+  return value2[0] === "null" ? null : text31(value2);
 }
 function gridType(value2) {
-  const name9 = text30(value2);
+  const name9 = text31(value2);
   if (name9 === "grid") {
     return "GRID";
   }
@@ -110988,7 +111185,7 @@ function number18(value2) {
   need51(value2[0] === "number", "finite number required");
   return Number(value2[1]);
 }
-function text31(value2) {
+function text32(value2) {
   need51(value2[0] === "string", "string required");
   return value2[1];
 }
@@ -111000,7 +111197,7 @@ function numeric2(item2, name9) {
   return number18(field4(item2, name9));
 }
 function string6(item2, name9) {
-  return text31(field4(item2, name9));
+  return text32(field4(item2, name9));
 }
 function bool(item2, name9) {
   return boolean5(field4(item2, name9));
@@ -111136,7 +111333,7 @@ function autoRouter(graph, item2) {
     viaQuantity,
     routingEffectPriority: numeric2(item2, "_routingEffectPriority") === 0 ? "SPEED_FIRST" : "COMPLETION_FIRST",
     layers: array4(graph, field4(item2, "layers")).map((value2) => number18(value2)),
-    ignoreNets: array4(graph, field4(item2, "ignoreNets")).map((value2) => text31(value2))
+    ignoreNets: array4(graph, field4(item2, "ignoreNets")).map((value2) => text32(value2))
   };
 }
 function context3(graph, item2, unit, className) {
@@ -111223,7 +111420,7 @@ function context3(graph, item2, unit, className) {
 function ruleRows(graph, budget3) {
   const rules = object5(graph, graph.roots[0]?.[1], "te"), unitValue = graph.roots[1]?.[1];
   need51(unitValue !== void 0, "missing observed rule unit");
-  const unit = text31(unitValue);
+  const unit = text32(unitValue);
   const ids3 = /* @__PURE__ */ new Set(), rows2 = [row7("RULE_TEMPLATE", "RULE_TEMPLATE", { name: string6(rules, "ruleTemplateName") })];
   budget3.remaining -= Buffer.byteLength(rows2[0]?.bodyText ?? "");
   for (const [family3, className, type2] of FAMILIES3) {
@@ -111485,11 +111682,11 @@ function need52(ok, detail) {
     throw new Error(`PCB_COMMON_STORED_RELATION: ${detail}`);
   }
 }
-function own2(input2, fields26) {
+function own2(input2, fields27) {
   need52(input2 !== null && typeof input2 === "object" && !types17.isProxy(input2) && !Array.isArray(input2), "own plain input required");
   const keys3 = Reflect.ownKeys(input2), prototype2 = Object.getPrototypeOf(input2);
-  need52((prototype2 === Object.prototype || prototype2 === null) && keys3.length === fields26.length && keys3.every((key) => typeof key === "string" && fields26.includes(key)), "input fields differ");
-  return Object.fromEntries(fields26.map((key) => {
+  need52((prototype2 === Object.prototype || prototype2 === null) && keys3.length === fields27.length && keys3.every((key) => typeof key === "string" && fields27.includes(key)), "input fields differ");
+  return Object.fromEntries(fields27.map((key) => {
     const descriptor10 = Object.getOwnPropertyDescriptor(input2, key);
     need52(descriptor10 !== void 0 && Object.hasOwn(descriptor10, "value"), "own data input required");
     return [key, descriptor10.value];
@@ -111933,8 +112130,8 @@ var init_current_pcb_209_common_baseline_session = __esm({
       #packet = null;
       #comparisonRefused = false;
       constructor(input2) {
-        const fields26 = own3(input2, ["before", "identity", "transport", "scriptId", "uniqueContextId"]);
-        const transport2 = own3(fields26["transport"], ["request", "assertCurrent"]);
+        const fields27 = own3(input2, ["before", "identity", "transport", "scriptId", "uniqueContextId"]);
+        const transport2 = own3(fields27["transport"], ["request", "assertCurrent"]);
         need53(typeof transport2["request"] === "function" && typeof transport2["assertCurrent"] === "function", "original transport methods required");
         this.#before = input2.before;
         this.#completion = readerCompletion(this.#before);
@@ -111942,14 +112139,14 @@ var init_current_pcb_209_common_baseline_session = __esm({
           this.#completion.observedChildClose && this.#completion.exitCode === 0 && this.#completion.exitSignal === null,
           "original completed SQL reader required"
         );
-        this.#identity = freezeDeep(identity30.parse(own3(fields26["identity"], ["projectUuid", "branchUuid", "documentUuid"])));
+        this.#identity = freezeDeep(identity30.parse(own3(fields27["identity"], ["projectUuid", "branchUuid", "documentUuid"])));
         this.#assertCurrent = input2.transport.assertCurrent;
         this.#runner = new CurrentPcb209CommonBaselineRunner(
           { request: input2.transport.request, assertCurrent: () => {
             this.#current();
           } },
-          handle3.parse(fields26["scriptId"]),
-          handle3.parse(fields26["uniqueContextId"]),
+          handle3.parse(fields27["scriptId"]),
+          handle3.parse(fields27["uniqueContextId"]),
           this.#identity.documentUuid
         );
       }
@@ -112560,8 +112757,8 @@ var init_current_pcb_209_empty_root_runner = __esm({
       #pair = null;
       #failure;
       constructor(transport2, scriptId2, contextId, documentUuid5) {
-        const fields26 = own4(transport2, ["request", "assertCurrent"]);
-        need54(typeof fields26["request"] === "function" && typeof fields26["assertCurrent"] === "function", "TRANSPORT");
+        const fields27 = own4(transport2, ["request", "assertCurrent"]);
+        need54(typeof fields27["request"] === "function" && typeof fields27["assertCurrent"] === "function", "TRANSPORT");
         this.#transport = transport2;
         this.#requestMethod = transport2.request;
         this.#assertMethod = transport2.assertCurrent;
@@ -112962,16 +113159,16 @@ function currentPcbDiagnosticPcbOpeningArguments(input2, phase5) {
 function refuse11() {
   throw new Error("PCB_DIAGNOSTIC_PCB_OPENING_REPLY");
 }
-function ownRecord(input2, fields26) {
+function ownRecord(input2, fields27) {
   if (input2 === null || typeof input2 !== "object" || types21.isProxy(input2) || Array.isArray(input2)) {
     return refuse11();
   }
   const keys3 = Reflect.ownKeys(input2), prototype2 = Object.getPrototypeOf(input2);
-  if (prototype2 !== Object.prototype && prototype2 !== null || keys3.length !== fields26.length || keys3.some((key) => typeof key !== "string" || !fields26.includes(key))) {
+  if (prototype2 !== Object.prototype && prototype2 !== null || keys3.length !== fields27.length || keys3.some((key) => typeof key !== "string" || !fields27.includes(key))) {
     return refuse11();
   }
   const copy3 = {};
-  for (const key of fields26) {
+  for (const key of fields27) {
     const descriptor10 = Object.getOwnPropertyDescriptor(input2, key);
     if (descriptor10 === void 0 || !Object.hasOwn(descriptor10, "value")) {
       return refuse11();
@@ -114320,7 +114517,7 @@ function decodeFunction(input2, expected3) {
     const reply3 = external_exports.object({ result: external_exports.object({
       type: external_exports.literal("function"),
       className: external_exports.literal("Function"),
-      description: text32,
+      description: text33,
       objectId: token12
     }).strict() }).strict().parse(data5(input2));
     const source7 = reply3.result.description;
@@ -114337,7 +114534,7 @@ function decodeScopeList(input2, scriptId2, expected3) {
     token12.parse(scriptId2);
     const reply3 = external_exports.object({
       result: external_exports.array(property3).length(expected3.regular ? 5 : 2),
-      internalProperties: external_exports.array(external_exports.object({ name: text32, value: remote4 }).strict()).length(3)
+      internalProperties: external_exports.array(external_exports.object({ name: text33, value: remote4 }).strict()).length(3)
     }).strict().parse(data5(input2));
     const values2 = new Map(reply3.result.map((item2) => [item2.name, item2]));
     if (values2.size !== reply3.result.length) {
@@ -114411,7 +114608,7 @@ function decodeCurrentPcbStringProducerScopes(input2, kind) {
 function decodeCurrentPcb209WorkerProducerScopes(input2, kind) {
   return decodeScopes(input2, CURRENT_PCB_209_WORKER_PRODUCER_LOCATIONS[kind].scopeDescriptions);
 }
-var CURRENT_PCB_STRING_PRODUCER_LOCATIONS, token12, text32, position3, remote4, property3;
+var CURRENT_PCB_STRING_PRODUCER_LOCATIONS, token12, text33, position3, remote4, property3;
 var init_current_pcb_string_producer_scope = __esm({
   "server/src/current-pcb-string-producer-scope.ts"() {
     init_zod();
@@ -114470,7 +114667,7 @@ var init_current_pcb_string_producer_scope = __esm({
       }
     });
     token12 = external_exports.string().min(1).max(256).regex(/^[A-Za-z\d_.:-]+$/u);
-    text32 = external_exports.string().max(4096).refine((value2) => value2.isWellFormed() && !value2.includes("\0"));
+    text33 = external_exports.string().max(4096).refine((value2) => value2.isWellFormed() && !value2.includes("\0"));
     position3 = external_exports.object({
       scriptId: token12,
       lineNumber: external_exports.number().int().nonnegative(),
@@ -114478,14 +114675,14 @@ var init_current_pcb_string_producer_scope = __esm({
     }).strict();
     remote4 = external_exports.object({
       type: external_exports.enum(["object", "function", "string", "number", "undefined"]),
-      subtype: text32.optional(),
-      className: text32.optional(),
-      description: text32.optional(),
+      subtype: text33.optional(),
+      className: text33.optional(),
+      description: text33.optional(),
       objectId: token12.optional(),
-      value: external_exports.union([external_exports.null(), text32, external_exports.number(), position3]).optional()
+      value: external_exports.union([external_exports.null(), text33, external_exports.number(), position3]).optional()
     }).strict();
     property3 = external_exports.object({
-      name: text32,
+      name: text33,
       value: remote4,
       writable: external_exports.boolean(),
       configurable: external_exports.boolean(),
@@ -115315,16 +115512,16 @@ function marked(value2) {
 function refuse17() {
   throw currentPcbRawStringReplyFailure();
 }
-function record12(input2, fields26) {
+function record12(input2, fields27) {
   if (input2 === null || typeof input2 !== "object" || types28.isProxy(input2) || Array.isArray(input2)) {
     return refuse17();
   }
   const keys3 = Reflect.ownKeys(input2), prototype2 = Object.getPrototypeOf(input2);
-  if (prototype2 !== Object.prototype && prototype2 !== null || keys3.length !== fields26.length || keys3.some((key) => typeof key !== "string" || !fields26.includes(key))) {
+  if (prototype2 !== Object.prototype && prototype2 !== null || keys3.length !== fields27.length || keys3.some((key) => typeof key !== "string" || !fields27.includes(key))) {
     return refuse17();
   }
   const result2 = {};
-  for (const key of fields26) {
+  for (const key of fields27) {
     const descriptor10 = Object.getOwnPropertyDescriptor(input2, key);
     if (descriptor10 === void 0 || !Object.hasOwn(descriptor10, "value")) {
       return refuse17();
@@ -115353,7 +115550,7 @@ function decodeCurrentPcbDiagnosticRawStringsReply(input2) {
     return refuse17();
   }
 }
-var CURRENT_PCB_DIAGNOSTIC_RAW_STRINGS_RESULT_BYTES, MAX_STRINGS, CURRENT_PCB_DIAGNOSTIC_RAW_STRINGS_FUNCTION, CURRENT_PCB_DIAGNOSTIC_RAW_STRINGS_FUNCTION_SHA256, finite6, integer7, identifier17, rawText2, missing2, point6, color5, groupId, box, base3, model, state2, LIMITS11;
+var CURRENT_PCB_DIAGNOSTIC_RAW_STRINGS_RESULT_BYTES, MAX_STRINGS, CURRENT_PCB_DIAGNOSTIC_RAW_STRINGS_FUNCTION, CURRENT_PCB_DIAGNOSTIC_RAW_STRINGS_FUNCTION_SHA256, finite6, integer7, identifier17, rawText2, missing2, point6, color5, groupId, box, base4, model, state2, LIMITS11;
 var init_current_pcb_diagnostic_raw_strings = __esm({
   "server/src/current-pcb-diagnostic-raw-strings.ts"() {
     init_zod();
@@ -115433,7 +115630,7 @@ return output;
     color5 = external_exports.object({ r: finite6, g: finite6, b: finite6, alpha: finite6 }).strict();
     groupId = external_exports.union([rawText2.max(128), integer7]);
     box = external_exports.object({ layerId: integer7, locked: external_exports.boolean(), leftLow: point6, leftUp: point6, rightLow: point6, rightUp: point6 }).strict();
-    base3 = external_exports.object({
+    base4 = external_exports.object({
       kind: external_exports.enum(["U8", "ib"]),
       num: integer7,
       type: integer7,
@@ -115465,7 +115662,7 @@ return output;
       value: rawText2.max(1024),
       position: point6,
       rotation: finite6,
-      base: base3,
+      base: base4,
       box: marked(box),
       stateWatcher: marked(external_exports.literal("reciprocal-yr"))
     }).strict();
@@ -115710,16 +115907,16 @@ import { types as types29 } from "node:util";
 function refuse18() {
   throw new Error("PCB_DIAGNOSTIC_ROOT_INVENTORY_REPLY");
 }
-function record13(input2, fields26) {
+function record13(input2, fields27) {
   if (input2 === null || typeof input2 !== "object" || types29.isProxy(input2) || Array.isArray(input2)) {
     return refuse18();
   }
   const keys3 = Reflect.ownKeys(input2), prototype2 = Object.getPrototypeOf(input2);
-  if (prototype2 !== Object.prototype && prototype2 !== null || keys3.length !== fields26.length || keys3.some((key) => typeof key !== "string" || !fields26.includes(key))) {
+  if (prototype2 !== Object.prototype && prototype2 !== null || keys3.length !== fields27.length || keys3.some((key) => typeof key !== "string" || !fields27.includes(key))) {
     return refuse18();
   }
   const result2 = {};
-  for (const key of fields26) {
+  for (const key of fields27) {
     const descriptor10 = Object.getOwnPropertyDescriptor(input2, key);
     if (descriptor10 === void 0 || !Object.hasOwn(descriptor10, "value")) {
       return refuse18();
@@ -116168,7 +116365,7 @@ function decodeCurrentPcbTeardropArguments(input2, index2) {
     throw failure2("bound-arguments", index2);
   }
 }
-var CURRENT_PCB_TEARDROP_TARGET_PROFILES, token13, text33, position4, remote5, property4, internal3;
+var CURRENT_PCB_TEARDROP_TARGET_PROFILES, token13, text34, position4, remote5, property4, internal3;
 var init_current_pcb_teardrop_owner_scope = __esm({
   "server/src/current-pcb-teardrop-owner-scope.ts"() {
     init_zod();
@@ -116232,18 +116429,18 @@ var init_current_pcb_teardrop_owner_scope = __esm({
       }
     ]);
     token13 = external_exports.string().min(1).max(256).regex(/^[A-Za-z\d_.:-]+$/u);
-    text33 = external_exports.string().max(4096).refine((value2) => value2.isWellFormed() && !value2.includes("\0"));
+    text34 = external_exports.string().max(4096).refine((value2) => value2.isWellFormed() && !value2.includes("\0"));
     position4 = external_exports.object({ scriptId: token13, lineNumber: external_exports.number().int().nonnegative(), columnNumber: external_exports.number().int().nonnegative() }).strict();
     remote5 = external_exports.object({
       type: external_exports.enum(["object", "function", "string", "number"]),
-      subtype: text33.optional(),
-      className: text33.optional(),
-      description: text33.optional(),
+      subtype: text34.optional(),
+      className: text34.optional(),
+      description: text34.optional(),
       objectId: token13.optional(),
-      value: external_exports.union([text33, external_exports.number(), position4]).optional()
+      value: external_exports.union([text34, external_exports.number(), position4]).optional()
     }).strict();
-    property4 = external_exports.object({ name: text33, value: remote5, writable: external_exports.boolean(), configurable: external_exports.boolean(), enumerable: external_exports.boolean(), isOwn: external_exports.literal(true) }).strict();
-    internal3 = external_exports.object({ name: text33, value: remote5 }).strict();
+    property4 = external_exports.object({ name: text34, value: remote5, writable: external_exports.boolean(), configurable: external_exports.boolean(), enumerable: external_exports.boolean(), isOwn: external_exports.literal(true) }).strict();
+    internal3 = external_exports.object({ name: text34, value: remote5 }).strict();
   }
 });
 
@@ -117027,7 +117224,7 @@ function validateCurrentPcbGeometryResult(input2, raw) {
     limitations: [...limitations13]
   };
 }
-var CURRENT_PCB_GEOMETRY_MAX_BYTES, CURRENT_PCB_GEOMETRY_MAX_ROWS, CURRENT_PCB_GEOMETRY_MAX_NUMBER, collectionMethods, selectedMethods, componentPadsMethod, attributeCollectionMethod, attributeSelectedMethod, methods5, targetSchema7, numberSchema, layerSchema2, nativeText4, boundedText4, idSchema3, imageSchema, holeFields, holeSchema, defaultCopperShapeSchema, maskExpansionSchema, thermalSchema, identity32, base4, track, lineSchema3, arcSchema, viaSchema, componentSchema2, stringSchema4, attributeSchema, attributeGroupsSchema, dimensionCoordinatesSchema, dimensionSchema2, padSchema, requestedIdsSchema, currentPcbGeometryRequestSchema, currentPcbGeometryQuerySchema, resultShape, attributeResultShape, selectedRowSchema, currentPcbGeometryResultSchema, limitations13;
+var CURRENT_PCB_GEOMETRY_MAX_BYTES, CURRENT_PCB_GEOMETRY_MAX_ROWS, CURRENT_PCB_GEOMETRY_MAX_NUMBER, collectionMethods, selectedMethods, componentPadsMethod, attributeCollectionMethod, attributeSelectedMethod, methods5, targetSchema7, numberSchema, layerSchema2, nativeText4, boundedText4, idSchema3, imageSchema, holeFields, holeSchema, defaultCopperShapeSchema, maskExpansionSchema, thermalSchema, identity32, base5, track, lineSchema3, arcSchema, viaSchema, componentSchema2, stringSchema4, attributeSchema, attributeGroupsSchema, dimensionCoordinatesSchema, dimensionSchema2, padSchema, requestedIdsSchema, currentPcbGeometryRequestSchema, currentPcbGeometryQuerySchema, resultShape, attributeResultShape, selectedRowSchema, currentPcbGeometryResultSchema, limitations13;
 var init_current_pcb_geometry = __esm({
   "server/src/current-pcb-geometry.ts"() {
     init_zod();
@@ -117111,9 +117308,9 @@ var init_current_pcb_geometry = __esm({
       external_exports.object({ mode: external_exports.literal(2) }).strict()
     ]).nullable();
     identity32 = { primitiveId: idSchema3, primitiveLock: external_exports.boolean() };
-    base4 = { ...identity32, net: boundedText4.nullable() };
+    base5 = { ...identity32, net: boundedText4.nullable() };
     track = {
-      ...base4,
+      ...base5,
       layer: layerSchema2,
       startX: numberSchema,
       startY: numberSchema,
@@ -117129,7 +117326,7 @@ var init_current_pcb_geometry = __esm({
       interactiveMode: external_exports.union([external_exports.literal(1), external_exports.literal(2)])
     }).strict();
     viaSchema = external_exports.object({
-      ...base4,
+      ...base5,
       primitiveType: external_exports.literal("Via"),
       x: numberSchema,
       y: numberSchema,
@@ -117207,7 +117404,7 @@ var init_current_pcb_geometry = __esm({
       "Dimension coordinate tuple does not match its type."
     );
     padSchema = external_exports.object({
-      ...base4,
+      ...base5,
       primitiveType: external_exports.literal("Pad"),
       layer: external_exports.union([external_exports.literal(1), external_exports.literal(2), external_exports.literal(12)]),
       padNumber: boundedText4,
@@ -119741,7 +119938,7 @@ function decodeCurrentPcbStringActorClock(input2) {
   const result2 = decodeCurrentPcbStringObservation(input2, observation2);
   if (result2.phase !== "pcb") {
     const raw = JSON.parse(result2.workerUserText);
-    const parsed5 = user.parse(raw);
+    const parsed5 = user2.parse(raw);
     if (JSON.stringify(parsed5) !== JSON.stringify(result2.workerUser) || JSON.stringify(raw) !== result2.workerUserText) {
       throw new Error("PCB_STRING_ACTOR_CLOCK_USER");
     }
@@ -119756,7 +119953,7 @@ function decodeCurrentPcbStringActorClock(input2) {
   }
   return result2;
 }
-var CURRENT_PCB_STRING_ACTOR_CLOCK_PHASES, currentPcbStringActorClockIdentitySchema, string7, actor, user, time5, offset, stamp, clock7, base5, ui2, worker, pcb2, observation2, COMMON, TARGET, CURRENT_PCB_STRING_UI_ACTOR_CLOCK_FUNCTION, CURRENT_PCB_STRING_WORKER_ACTOR_CLOCK_FUNCTION, CURRENT_PCB_STRING_PCB_CLOCK_FUNCTION, CURRENT_PCB_STRING_ACTOR_CLOCK_FUNCTIONS;
+var CURRENT_PCB_STRING_ACTOR_CLOCK_PHASES, currentPcbStringActorClockIdentitySchema, string7, actor2, user2, time5, offset2, stamp2, clock8, base6, ui2, worker, pcb2, observation2, COMMON2, TARGET, CURRENT_PCB_STRING_UI_ACTOR_CLOCK_FUNCTION, CURRENT_PCB_STRING_WORKER_ACTOR_CLOCK_FUNCTION, CURRENT_PCB_STRING_PCB_CLOCK_FUNCTION, CURRENT_PCB_STRING_ACTOR_CLOCK_FUNCTIONS;
 var init_current_pcb_string_actor_clock = __esm({
   "server/src/current-pcb-string-actor-clock.ts"() {
     init_zod();
@@ -119770,32 +119967,32 @@ var init_current_pcb_string_actor_clock = __esm({
       windowTabId: external_exports.string().regex(/^[A-Za-z\d_-]{1,128}$/u)
     }).strict();
     string7 = (maximum5) => external_exports.string().max(maximum5).refine((value2) => value2.isWellFormed());
-    actor = external_exports.object({ uuid: external_exports.string().regex(/^[a-f\d]{32}$/u), username: string7(1024), nickname: string7(1024) }).strict();
-    user = actor.extend({ avatar: string7(4096) }).strict();
+    actor2 = external_exports.object({ uuid: external_exports.string().regex(/^[a-f\d]{32}$/u), username: string7(1024), nickname: string7(1024) }).strict();
+    user2 = actor2.extend({ avatar: string7(4096) }).strict();
     time5 = external_exports.number().int().min(0).max(864e13).refine((value2) => !Object.is(value2, -0));
-    offset = external_exports.number().int().min(-840).max(840).refine((value2) => !Object.is(value2, -0));
-    stamp = external_exports.object({ milliseconds: time5, iso: external_exports.string().max(32), timezoneOffsetMinutes: offset }).strict().refine((value2) => new Date(value2.milliseconds).toISOString() === value2.iso);
-    clock7 = external_exports.object({ before: stamp, after: stamp }).strict().refine((value2) => value2.after.milliseconds >= value2.before.milliseconds && value2.after.milliseconds - value2.before.milliseconds <= 1e3 && value2.before.timezoneOffsetMinutes === value2.after.timezoneOffsetMinutes);
-    base5 = { schema: external_exports.literal("easyeda-pro-control.pcb-string-actor-clock.v1"), clock: clock7 };
+    offset2 = external_exports.number().int().min(-840).max(840).refine((value2) => !Object.is(value2, -0));
+    stamp2 = external_exports.object({ milliseconds: time5, iso: external_exports.string().max(32), timezoneOffsetMinutes: offset2 }).strict().refine((value2) => new Date(value2.milliseconds).toISOString() === value2.iso);
+    clock8 = external_exports.object({ before: stamp2, after: stamp2 }).strict().refine((value2) => value2.after.milliseconds >= value2.before.milliseconds && value2.after.milliseconds - value2.before.milliseconds <= 1e3 && value2.before.timezoneOffsetMinutes === value2.after.timezoneOffsetMinutes);
+    base6 = { schema: external_exports.literal("easyeda-pro-control.pcb-string-actor-clock.v1"), clock: clock8 };
     ui2 = external_exports.object({
-      ...base5,
+      ...base6,
       phase: external_exports.literal("ui"),
       identity: currentPcbStringActorClockIdentitySchema,
-      cachedActor: actor,
-      startupActor: actor,
-      workerUser: user,
+      cachedActor: actor2,
+      startupActor: actor2,
+      workerUser: user2,
       workerUserText: external_exports.string().max(16384)
     }).strict();
     worker = external_exports.object({
-      ...base5,
+      ...base6,
       phase: external_exports.literal("worker"),
       identity: currentPcbStringActorClockIdentitySchema,
-      workerUser: user,
+      workerUser: user2,
       workerUserText: external_exports.string().max(16384)
     }).strict();
-    pcb2 = external_exports.object({ ...base5, phase: external_exports.literal("pcb") }).strict();
+    pcb2 = external_exports.object({ ...base6, phase: external_exports.literal("pcb") }).strict();
     observation2 = external_exports.discriminatedUnion("phase", [ui2, worker, pcb2]);
-    COMMON = `${CURRENT_PCB_STRING_OBSERVATION_GUARDS}
+    COMMON2 = `${CURRENT_PCB_STRING_OBSERVATION_GUARDS}
 const root=globalThis,apply=Reflect.apply,nativeDate=own(root,"Date"),now=own(nativeDate,"now"),datePrototype=own(nativeDate,"prototype"),iso=own(datePrototype,"toISOString"),zone=own(datePrototype,"getTimezoneOffset");
 if([nativeDate,now,iso,zone].some(v=>typeof v!=="function"))bad();
 const stamp=()=>{verify();const milliseconds=apply(now,nativeDate,[]);if(!Number.isSafeInteger(milliseconds)||milliseconds<0||milliseconds>8640000000000000||Object.is(milliseconds,-0))bad();const date=new nativeDate(milliseconds),timezoneOffsetMinutes=apply(zone,date,[]);if(!Number.isSafeInteger(timezoneOffsetMinutes)||Math.abs(timezoneOffsetMinutes)>840||Object.is(timezoneOffsetMinutes,-0))bad();return{milliseconds,iso:apply(iso,date,[]),timezoneOffsetMinutes};};
@@ -119810,7 +120007,7 @@ id(own(target,"projectUuid"),/^[a-f0-9]{64}$/);id(own(target,"branchUuid"),/^[a-
 if(own(root,"_TAB_ID_")!==target.windowTabId)bad();
 `;
     CURRENT_PCB_STRING_UI_ACTOR_CLOCK_FUNCTION = `function(target){
-${COMMON}${TARGET}
+${COMMON2}${TARGET}
 const host=object(own(root,"gVars")),ui=object(own(root,"UI")),project=object(own(host,"currentProject"));
 if(own(ui,"gVars")!==host||own(project,"projectId")!==target.projectUuid||own(project,"branchUuid")!==target.branchUuid||own(project,"isV2Format")!==false||own(host,"isHistoryMode")!==false)bad();
 const cached=object(own(object(own(host,"globalVariableCookieData")),"userInfo")),startup=object(own(host,"loginedUserInfo"));
@@ -119820,7 +120017,7 @@ const workerUser={uuid:startupActor.uuid,nickname:startupActor.nickname,username
 return JSON.stringify({schema:"easyeda-pro-control.pcb-string-actor-clock.v1",phase:"ui",identity:target,cachedActor,startupActor,workerUser,workerUserText:JSON.stringify(workerUser),clock:finish()});
 }`;
     CURRENT_PCB_STRING_WORKER_ACTOR_CLOCK_FUNCTION = `function(target){
-${COMMON}${TARGET}
+${COMMON2}${TARGET}
 const project=named(own(root,"PROJECT"),"Lg"),gp=Object.getPrototypeOf(Object.getPrototypeOf(project));
 if(own(own(gp,"constructor"),"name")!=="Gd"||Object.getPrototypeOf(gp)!==Object.prototype||own(project,"uuid")!==target.projectUuid||own(project,"_branchUuid")!==target.branchUuid)bad();
 const source=plain(own(project,"user")),order=Reflect.ownKeys(source);
@@ -119830,7 +120027,7 @@ for(const key of order){const d=Object.getOwnPropertyDescriptor(source,key);if(!
 if(Reflect.ownKeys(source).join(",")!==order.join(","))bad();
 return JSON.stringify({schema:"easyeda-pro-control.pcb-string-actor-clock.v1",phase:"worker",identity:target,workerUser,workerUserText:JSON.stringify(workerUser),clock:finish()});
 }`;
-    CURRENT_PCB_STRING_PCB_CLOCK_FUNCTION = `function(){${COMMON}
+    CURRENT_PCB_STRING_PCB_CLOCK_FUNCTION = `function(){${COMMON2}
 return JSON.stringify({schema:"easyeda-pro-control.pcb-string-actor-clock.v1",phase:"pcb",clock:finish()});
 }`;
     CURRENT_PCB_STRING_ACTOR_CLOCK_FUNCTIONS = Object.freeze({
@@ -119869,15 +120066,15 @@ function handle7(input2, maximum5) {
   return input2;
 }
 function currentPcbStringActorClockWire(raw, id16) {
-  const fields26 = own5(raw, ["id", "method", "params", "sessionId", "actorClockPhase"]);
-  if (!Number.isSafeInteger(id16) || id16 < 1 || fields26["id"] !== id16 || fields26["method"] !== "Runtime.callFunctionOn") {
+  const fields27 = own5(raw, ["id", "method", "params", "sessionId", "actorClockPhase"]);
+  if (!Number.isSafeInteger(id16) || id16 < 1 || fields27["id"] !== id16 || fields27["method"] !== "Runtime.callFunctionOn") {
     return fail13();
   }
-  const phase5 = CURRENT_PCB_STRING_ACTOR_CLOCK_PHASES.find((value2) => value2 === fields26["actorClockPhase"]);
+  const phase5 = CURRENT_PCB_STRING_ACTOR_CLOCK_PHASES.find((value2) => value2 === fields27["actorClockPhase"]);
   if (phase5 === void 0) {
     return fail13();
   }
-  const params = own5(fields26["params"], [
+  const params = own5(fields27["params"], [
     "functionDeclaration",
     "uniqueContextId",
     "arguments",
@@ -119888,7 +120085,7 @@ function currentPcbStringActorClockWire(raw, id16) {
     "generatePreview",
     "userGesture"
   ]);
-  const sessionId4 = handle7(fields26["sessionId"], 128), uniqueContextId2 = handle7(params["uniqueContextId"], 256);
+  const sessionId4 = handle7(fields27["sessionId"], 128), uniqueContextId2 = handle7(params["uniqueContextId"], 256);
   const args = params["arguments"];
   if (!Array.isArray(args) || types32.isProxy(args) || Reflect.ownKeys(args).length !== (phase5 === "pcb" ? 1 : 2) || args.length !== (phase5 === "pcb" ? 0 : 1)) {
     return fail13();
@@ -121176,9 +121373,9 @@ function style2(value2) {
     refuse21();
   }
   for (const declaration of declarations) {
-    const fields26 = declaration.trim().split(":");
-    const content = fields26[1]?.trim(), name9 = fields26[0]?.trim();
-    if (fields26.length !== 2 || name9 === void 0 || content === void 0 || seen.has(name9) || !Object.hasOwn(STYLE, name9) || STYLE[name9]?.includes(content) !== true) {
+    const fields27 = declaration.trim().split(":");
+    const content = fields27[1]?.trim(), name9 = fields27[0]?.trim();
+    if (fields27.length !== 2 || name9 === void 0 || content === void 0 || seen.has(name9) || !Object.hasOwn(STYLE, name9) || STYLE[name9]?.includes(content) !== true) {
       refuse21();
     }
     seen.add(name9);
@@ -121341,6 +121538,15 @@ var init_current_pcb_diagnostic_same_document = __esm({
         }
         this.#sealed = true;
       }
+      /** A source-held child can precede this root's tab activation. This read
+       * proves only that no fragment event has committed yet; it does not seal,
+       * cancel or reset the original transition or its scheduling observations. */
+      assertPendingFragment() {
+        if (this.#failed || this.#sealed || this.#fragmentCount !== 0) {
+          this.#failed = true;
+          refuse22();
+        }
+      }
     };
   }
 });
@@ -121496,7 +121702,7 @@ import { createHash as createHash60 } from "node:crypto";
 function refuse24() {
   throw new Error("PCB_DIAGNOSTIC_CONTEXT_IDENTITY");
 }
-function text34(value2, maximum5 = 8192) {
+function text35(value2, maximum5 = 8192) {
   return typeof value2 === "string" && value2.length <= maximum5 && !value2.includes("\0");
 }
 function integer8(value2) {
@@ -121527,7 +121733,7 @@ function frameSummary(value2) {
   });
 }
 function validateDiagnosticFrameExpectation(value2) {
-  if (!diagnosticExact(value2, ["targetId", "frameId", "frameUrl", "scriptUrl", "scriptSha256", "scriptBytes"]) || !diagnosticToken(value2.targetId) || !diagnosticToken(value2.frameId) || !text34(value2.frameUrl) || value2.frameUrl.length === 0 || !text34(value2.scriptUrl) || value2.scriptUrl.length === 0 || !/^[a-f\d]{64}$/u.test(value2.scriptSha256) || !integer8(value2.scriptBytes) || value2.scriptBytes > DIAGNOSTIC_SOURCE_BYTES) {
+  if (!diagnosticExact(value2, ["targetId", "frameId", "frameUrl", "scriptUrl", "scriptSha256", "scriptBytes"]) || !diagnosticToken(value2.targetId) || !diagnosticToken(value2.frameId) || !text35(value2.frameUrl) || value2.frameUrl.length === 0 || !text35(value2.scriptUrl) || value2.scriptUrl.length === 0 || !/^[a-f\d]{64}$/u.test(value2.scriptSha256) || !integer8(value2.scriptBytes) || value2.scriptBytes > DIAGNOSTIC_SOURCE_BYTES) {
     return refuse24();
   }
   return Object.freeze({ ...value2 });
@@ -121540,7 +121746,7 @@ function diagnosticTargetInventory(reply3) {
   const ids3 = /* @__PURE__ */ new Set();
   const result2 = [];
   for (const item2 of rows2) {
-    if (!diagnosticRecord2(item2) || !diagnosticToken(item2["targetId"]) || ids3.has(item2["targetId"]) || !text34(item2["type"], 64) || !text34(item2["url"]) || typeof item2["attached"] !== "boolean") {
+    if (!diagnosticRecord2(item2) || !diagnosticToken(item2["targetId"]) || ids3.has(item2["targetId"]) || !text35(item2["type"], 64) || !text35(item2["url"]) || typeof item2["attached"] !== "boolean") {
       return refuse24();
     }
     ids3.add(item2["targetId"]);
@@ -121568,7 +121774,7 @@ function frames(reply3) {
       return refuse24();
     }
     const children2 = current10.node["childFrames"], item2 = current10.node["frame"];
-    if (current10.depth > 16 || !diagnosticRecord2(item2) || !diagnosticToken(item2["id"]) || ids3.has(item2["id"]) || ids3.size >= 128 || !diagnosticToken(item2["loaderId"]) || !text34(item2["url"]) || !text34(item2["securityOrigin"]) || (current10.parent === null ? item2["parentId"] !== void 0 : item2["parentId"] !== current10.parent)) {
+    if (current10.depth > 16 || !diagnosticRecord2(item2) || !diagnosticToken(item2["id"]) || ids3.has(item2["id"]) || ids3.size >= 128 || !diagnosticToken(item2["loaderId"]) || !text35(item2["url"]) || !text35(item2["securityOrigin"]) || (current10.parent === null ? item2["parentId"] !== void 0 : item2["parentId"] !== current10.parent)) {
       return refuse24();
     }
     ids3.add(item2["id"]);
@@ -121588,13 +121794,13 @@ function frames(reply3) {
   return Object.freeze(result2);
 }
 function validateDiagnosticScriptProfile(value2) {
-  if (!diagnosticExact(value2, ["family", "relativePath", "scriptSha256", "scriptBytes"]) || !["ui", "pcb", "public-api"].includes(value2.family) || !text34(value2.relativePath, 512) || !/^[A-Za-z\d_.-]+(?:\/[A-Za-z\d_.-]+)+\.js$/u.test(value2.relativePath) || value2.relativePath.split("/").some((part) => part === "." || part === "..") || !/^[a-f\d]{64}$/u.test(value2.scriptSha256) || !integer8(value2.scriptBytes) || value2.scriptBytes > DIAGNOSTIC_SOURCE_BYTES) {
+  if (!diagnosticExact(value2, ["family", "relativePath", "scriptSha256", "scriptBytes"]) || !["ui", "pcb", "public-api"].includes(value2.family) || !text35(value2.relativePath, 512) || !/^[A-Za-z\d_.-]+(?:\/[A-Za-z\d_.-]+)+\.js$/u.test(value2.relativePath) || value2.relativePath.split("/").some((part) => part === "." || part === "..") || !/^[a-f\d]{64}$/u.test(value2.scriptSha256) || !integer8(value2.scriptBytes) || value2.scriptBytes > DIAGNOSTIC_SOURCE_BYTES) {
     return refuse24();
   }
   return Object.freeze({ ...value2 });
 }
 function scriptUrlMatches(value2, profile2) {
-  if (!text34(value2) || value2.includes("\\") || /[\s?#@]/u.test(value2) || !/^[A-Za-z][A-Za-z\d+.-]*:\/\//u.test(value2) || /\/(?:\.|\.\.)(?:\/|$)/u.test(value2)) {
+  if (!text35(value2) || value2.includes("\\") || /[\s?#@]/u.test(value2) || !/^[A-Za-z][A-Za-z\d+.-]*:\/\//u.test(value2) || /\/(?:\.|\.\.)(?:\/|$)/u.test(value2)) {
     return false;
   }
   try {
@@ -121606,7 +121812,7 @@ function scriptUrlMatches(value2, profile2) {
 }
 function startPageBase(frame6) {
   const fragment = frame6["urlFragment"], url2 = frame6["url"];
-  if (!text34(url2) || !/^https:\/\/client\/editor\?cll=(?:trace|debug|info|warn|error)$/u.test(url2) || fragment !== void 0 && fragment !== "#" || frame6["parentId"] !== void 0 || frame6["securityOrigin"] !== "https://client") {
+  if (!text35(url2) || !/^https:\/\/client\/editor\?cll=(?:trace|debug|info|warn|error)$/u.test(url2) || fragment !== void 0 && fragment !== "#" || frame6["parentId"] !== void 0 || frame6["securityOrigin"] !== "https://client") {
     return refuse24();
   }
   return url2;
@@ -121773,7 +121979,7 @@ var init_current_pcb_diagnostic_context = __esm({
         }
         if (event4.method === "Runtime.executionContextCreated") {
           const context4 = params["context"];
-          if (!diagnosticRecord2(context4) || !integer8(context4["id"]) || !diagnosticToken(context4["uniqueId"]) || !text34(context4["origin"]) || !text34(context4["name"]) || !diagnosticRecord2(context4["auxData"]) || this.#contexts.has(context4["id"]) || [...this.#contexts.values()].some((value2) => value2["uniqueId"] === context4["uniqueId"])) {
+          if (!diagnosticRecord2(context4) || !integer8(context4["id"]) || !diagnosticToken(context4["uniqueId"]) || !text35(context4["origin"]) || !text35(context4["name"]) || !diagnosticRecord2(context4["auxData"]) || this.#contexts.has(context4["id"]) || [...this.#contexts.values()].some((value2) => value2["uniqueId"] === context4["uniqueId"])) {
             this.#refuse();
           }
           this.#contexts.set(context4["id"], clone2(context4));
@@ -121784,7 +121990,7 @@ var init_current_pcb_diagnostic_context = __esm({
           return;
         }
         if (event4.method === "Debugger.scriptParsed") {
-          if (!diagnosticToken(params["scriptId"]) || !integer8(params["executionContextId"]) || !text34(params["url"]) || this.#scripts.has(params["scriptId"])) {
+          if (!diagnosticToken(params["scriptId"]) || !integer8(params["executionContextId"]) || !text35(params["url"]) || this.#scripts.has(params["scriptId"])) {
             this.#refuse();
           }
           this.#scripts.set(params["scriptId"], clone2(params));
@@ -122013,7 +122219,7 @@ var init_current_pcb_diagnostic_context = __esm({
           if (this.#target["url"] !== `${base9}${fragment}`) {
             this.#refuse();
           }
-          if (titleProof !== void 0 && (!diagnosticExact(titleProof, ["initialTitle", "expectedOpenedTitle"]) || !text34(titleProof.initialTitle, 512) || !text34(titleProof.expectedOpenedTitle, 512) || titleProof.initialTitle.length === 0 || titleProof.expectedOpenedTitle.length === 0 || this.#target["title"] !== titleProof.initialTitle)) {
+          if (titleProof !== void 0 && (!diagnosticExact(titleProof, ["initialTitle", "expectedOpenedTitle"]) || !text35(titleProof.initialTitle, 512) || !text35(titleProof.expectedOpenedTitle, 512) || titleProof.initialTitle.length === 0 || titleProof.expectedOpenedTitle.length === 0 || this.#target["title"] !== titleProof.initialTitle)) {
             this.#refuse();
           }
           this.#opening = { base: base9, url: `${base9}#id=${projectUuid4}`, expectedTitle: titleProof?.expectedOpenedTitle ?? null };
@@ -122077,6 +122283,7 @@ var init_current_pcb_diagnostic_context = __esm({
           tabId,
           url: `${base9}#id=${projectUuid4},tab=*${tabId}`,
           originalRoot: this.#frame,
+          originalTarget: this.#target,
           uiIdentity: this.#sourceIdentity,
           childId: null,
           child: null,
@@ -122086,6 +122293,7 @@ var init_current_pcb_diagnostic_context = __esm({
           domObservation: null,
           profile: null,
           sourceIdentity: null,
+          bootstrapRootPhase: null,
           completed: false
         };
         this.#priorRootNavigation = this.#rootNavigation;
@@ -122166,6 +122374,56 @@ var init_current_pcb_diagnostic_context = __esm({
           return this.#refuse();
         }
       }
+      /** A held PCB source precedes the UI onload callback's tab activation.
+       * Admit its committed child with either the exact original project root or
+       * the event-proved final tab root. Only the latter seals that transition.
+       * This separate branch does not complete the ordinary document opener. */
+      observePcbBootstrapFrames(targetReply, frameReply) {
+        this.pcbOpeningContext();
+        const pcb6 = this.#pcbOpening;
+        if (pcb6 === null || pcb6.child !== null || pcb6.bootstrapRootPhase !== null) {
+          return this.#refuse();
+        }
+        return this.#observePcbBootstrapFrames(targetReply, frameReply, false);
+      }
+      #observePcbBootstrapFrames(targetReply, frameReply, reproof) {
+        this.pcbOpeningContext();
+        try {
+          const currentFrames = frames(frameReply), currentTarget = target5(targetReply, this.#targetId, true), pcb6 = this.#pcbOpening;
+          if (pcb6 === null || pcb6.childId === null || pcb6.navigation === null || pcb6.navigation.committedLoader === null || this.#rootNavigation === null || currentFrames.length !== (this.#ancillaryFrame === null ? 2 : 3) || this.#ancillaryFrame !== null && !currentFrames.some((value2) => equal6(value2, this.#ancillaryFrame)) || reproof && (pcb6.child === null || pcb6.bootstrapRootPhase === null || pcb6.domBackendNodeId === null || this.#frames === null)) {
+            this.#refuse();
+          }
+          pcb6.navigation.assertReady();
+          const child = currentFrames.find((value2) => value2["id"] === pcb6.childId), root2 = currentFrames.find((value2) => value2["id"] === pcb6.originalRoot["id"]);
+          if (root2 === void 0 || child === void 0) {
+            this.#refuse();
+          }
+          const { urlFragment: _originalFragment, ...originalFields } = pcb6.originalRoot;
+          const { urlFragment, ...currentFields } = root2;
+          const finalRoot = urlFragment === pcb6.url.slice(String(root2["url"]).length);
+          if (!equal6(originalFields, currentFields) || !finalRoot && !equal6(root2, pcb6.originalRoot) || !equal6({ ...pcb6.originalTarget, url: finalRoot ? pcb6.url : pcb6.originalTarget["url"], attached: true }, currentTarget) || child["parentId"] !== root2["id"] || child["loaderId"] !== pcb6.navigation.committedLoader || child["url"] !== "https://client/editor?entry=pcb" || child["securityOrigin"] !== "https://client" || child["urlFragment"] !== void 0 || reproof && !equal6(currentFrames, this.#frames?.map((value2) => value2["id"] === root2["id"] ? root2 : value2))) {
+            this.#refuse();
+          }
+          if (finalRoot) {
+            if (pcb6.bootstrapRootPhase !== "pcb") {
+              this.#rootNavigation.seal();
+            }
+          } else {
+            if (pcb6.bootstrapRootPhase === "pcb") {
+              this.#refuse();
+            }
+            this.#rootNavigation.assertPendingFragment();
+          }
+          pcb6.bootstrapRootPhase = finalRoot ? "pcb" : "project";
+          pcb6.child = child;
+          this.#frames = currentFrames;
+          this.#frame = root2;
+          this.#target = Object.freeze({ ...currentTarget, attached: false });
+          return Object.freeze({ frameId: pcb6.childId, rootFrameId: String(root2["id"]) });
+        } catch {
+          return this.#refuse();
+        }
+      }
       observePcbFrameOwner(ownerReply, describeReply) {
         this.pcbOpeningContext();
         const backend = ownerReply["backendNodeId"], node2 = describeReply["node"], pcb6 = this.#pcbOpening;
@@ -122175,7 +122433,7 @@ var init_current_pcb_diagnostic_context = __esm({
         const attributes3 = /* @__PURE__ */ new Map(), raw = node2["attributes"];
         for (let index2 = 0; index2 < raw.length; index2 += 2) {
           const key = raw[index2], value2 = raw[index2 + 1];
-          if (!text34(key, 128) || key !== key.toLowerCase() || !text34(value2, 8192) || attributes3.has(key)) {
+          if (!text35(key, 128) || key !== key.toLowerCase() || !text35(value2, 8192) || attributes3.has(key)) {
             this.#refuse();
           }
           attributes3.set(key, value2);
@@ -122294,6 +122552,10 @@ var init_current_pcb_diagnostic_context = __esm({
         if (pcb6?.child === null || pcb6?.child === void 0 || pcb6.navigation === null || pcb6.domBackendNodeId === null) {
           return this.#refuse();
         }
+        if (pcb6.bootstrapRootPhase !== null) {
+          this.#observePcbBootstrapFrames(targetReply, frameReply, true);
+          return;
+        }
         pcb6.navigation.assertReady();
         this.observeFrames(frameReply);
         this.observeTarget(targetReply);
@@ -122330,7 +122592,7 @@ var init_current_pcb_diagnostic_context = __esm({
         this.observeFrames(frameReply);
         this.observeTarget(targetReply);
         const pcb6 = this.#pcbOpening;
-        if (pcb6 === null || pcb6.profile === null || pcb6.child === null || pcb6.domBackendNodeId === null || pcb6.sourceIdentity !== null) {
+        if (pcb6 === null || pcb6.profile === null || pcb6.child === null || pcb6.domBackendNodeId === null || pcb6.sourceIdentity !== null || pcb6.bootstrapRootPhase === "project") {
           return this.#refuse();
         }
         const scriptSource = source7["scriptSource"], selected3 = this.pcbScript(pcb6.profile);
@@ -122366,7 +122628,7 @@ var init_current_pcb_diagnostic_context = __esm({
       completePcbOpening() {
         this.pcbOpeningContext();
         const pcb6 = this.#pcbOpening;
-        if (pcb6 === null || pcb6.completed || pcb6.child === null || pcb6.profile === null || pcb6.sourceIdentity === null || pcb6.domBackendNodeId === null) {
+        if (pcb6 === null || pcb6.completed || pcb6.child === null || pcb6.profile === null || pcb6.sourceIdentity === null || pcb6.bootstrapRootPhase === "project" || pcb6.domBackendNodeId === null) {
           this.#refuse();
         }
         const selected3 = this.#scriptFor(pcb6.child, pcb6.profile);
@@ -122407,7 +122669,7 @@ var init_current_pcb_209_worker_startup_timing = __esm({
     ARM_MS = OWNER_MS + BREAKPOINTS * READ_MS;
     SOURCE_MS = OWNER_MS + REQUEST_MS + OWNER_MS;
     SOURCE_CARRY_MS = REQUEST_MS + OWNER_MS;
-    constructionReads = [3, 3, 2, 4, 4, 4, 3, 2, 1];
+    constructionReads = [3, 3, 2, 4, 4, 4, 3, 5, 1];
     CURRENT_PCB_209_STARTUP_TIMING = Object.freeze({
       requestMs: REQUEST_MS,
       legacyPauseMs: 5e3,
@@ -122428,7 +122690,7 @@ import { createHash as createHash61 } from "node:crypto";
 function refuse25() {
   throw new Error("PCB_DIAGNOSTIC_WORKER_IDENTITY");
 }
-function text35(value2, maximum5 = 8192) {
+function text36(value2, maximum5 = 8192) {
   return typeof value2 === "string" && value2.length <= maximum5 && value2.isWellFormed() && !value2.includes("\0");
 }
 function positive3(value2) {
@@ -122441,7 +122703,7 @@ function copy(value2) {
   return Object.freeze(structuredClone(value2));
 }
 function sourceUrl(value2, profile2) {
-  if (!text35(value2) || value2.includes("\\") || /[\s?#@]/u.test(value2) || !/^[A-Za-z][A-Za-z\d+.-]*:\/\//u.test(value2) || /\/(?:\.|\.\.)(?:\/|$)/u.test(value2)) {
+  if (!text36(value2) || value2.includes("\\") || /[\s?#@]/u.test(value2) || !/^[A-Za-z][A-Za-z\d+.-]*:\/\//u.test(value2) || /\/(?:\.|\.\.)(?:\/|$)/u.test(value2)) {
     return false;
   }
   try {
@@ -122514,7 +122776,7 @@ var init_current_pcb_diagnostic_worker_context = __esm({
             this.#refuse();
           }
           const sessionId4 = params["sessionId"], target9 = params["targetInfo"];
-          if (target9["type"] !== "worker" || target9["attached"] !== true || !diagnosticToken(target9["targetId"]) || target9["targetId"] === this.#parentTargetId || !text35(target9["url"]) || !text35(target9["title"]) || this.#children.size >= 16 || this.#children.has(target9["targetId"]) || [...this.#children.values()].some((child) => child.sessionId === sessionId4)) {
+          if (target9["type"] !== "worker" || target9["attached"] !== true || !diagnosticToken(target9["targetId"]) || target9["targetId"] === this.#parentTargetId || !text36(target9["url"]) || !text36(target9["title"]) || this.#children.size >= 16 || this.#children.has(target9["targetId"]) || [...this.#children.values()].some((child) => child.sessionId === sessionId4)) {
             this.#refuse();
           }
           this.#children.set(target9["targetId"], Object.freeze({ sessionId: sessionId4, target: copy(target9) }));
@@ -122533,7 +122795,7 @@ var init_current_pcb_diagnostic_worker_context = __esm({
           return;
         }
         if (event4.method === "Debugger.scriptParsed") {
-          if (!diagnosticToken(params["scriptId"]) || !positive3(params["executionContextId"]) || !text35(params["url"]) || this.#scripts.has(params["scriptId"]) || this.#scripts.size >= 4096) {
+          if (!diagnosticToken(params["scriptId"]) || !positive3(params["executionContextId"]) || !text36(params["url"]) || this.#scripts.has(params["scriptId"]) || this.#scripts.size >= 4096) {
             this.#refuse();
           }
           this.#scripts.set(params["scriptId"], copy(params));
@@ -122775,7 +123037,7 @@ function decodeFunction2(input2, expected3) {
     const reply3 = external_exports.object({ result: external_exports.object({
       type: external_exports.literal("function"),
       className: external_exports.literal(expected3.async ? "AsyncFunction" : "Function"),
-      description: text36,
+      description: text37,
       objectId: token16
     }).strict() }).strict().parse(data7(input2));
     if (Buffer.byteLength(reply3.result.description) !== expected3.sourceBytes || createHash62("sha256").update(reply3.result.description).digest("hex") !== expected3.sourceSha256) {
@@ -122791,7 +123053,7 @@ function decodeScopeList2(input2, scriptId2, expected3) {
     token16.parse(scriptId2);
     const reply3 = external_exports.object({
       result: external_exports.array(property5).length(expected3.prototype ? 3 : 2),
-      internalProperties: external_exports.array(external_exports.object({ name: text36, value: remote6 }).strict()).length(3)
+      internalProperties: external_exports.array(external_exports.object({ name: text37, value: remote6 }).strict()).length(3)
     }).strict().parse(data7(input2));
     const values2 = new Map(reply3.result.map((item2) => [item2.name, item2]));
     if (values2.size !== reply3.result.length) {
@@ -122854,7 +123116,7 @@ function decodeCurrentPcbStringProducerCallbackScopeList(input2, scriptId2, kind
 function decodeCurrentPcb209WorkerCallbackScopeList(input2, scriptId2, kind) {
   return decodeScopeList2(input2, scriptId2, CURRENT_PCB_209_WORKER_CALLBACK_LOCATIONS[kind]);
 }
-var CURRENT_PCB_STRING_PRODUCER_CALLBACK_LOCATIONS, token16, text36, position5, remote6, property5;
+var CURRENT_PCB_STRING_PRODUCER_CALLBACK_LOCATIONS, token16, text37, position5, remote6, property5;
 var init_current_pcb_string_producer_callback_scope = __esm({
   "server/src/current-pcb-string-producer-callback-scope.ts"() {
     init_zod();
@@ -122929,7 +123191,7 @@ var init_current_pcb_string_producer_callback_scope = __esm({
       }
     });
     token16 = external_exports.string().min(1).max(256).regex(/^[A-Za-z\d_.:-]+$/u);
-    text36 = external_exports.string().max(4096).refine((value2) => value2.isWellFormed() && !value2.includes("\0"));
+    text37 = external_exports.string().max(4096).refine((value2) => value2.isWellFormed() && !value2.includes("\0"));
     position5 = external_exports.object({
       scriptId: token16,
       lineNumber: external_exports.number().int().nonnegative(),
@@ -122937,14 +123199,14 @@ var init_current_pcb_string_producer_callback_scope = __esm({
     }).strict();
     remote6 = external_exports.object({
       type: external_exports.enum(["object", "function", "string", "number"]),
-      subtype: text36.optional(),
-      className: text36.optional(),
-      description: text36.optional(),
+      subtype: text37.optional(),
+      className: text37.optional(),
+      description: text37.optional(),
       objectId: token16.optional(),
-      value: external_exports.union([external_exports.null(), text36, external_exports.number(), position5]).optional()
+      value: external_exports.union([external_exports.null(), text37, external_exports.number(), position5]).optional()
     }).strict();
     property5 = external_exports.object({
-      name: text36,
+      name: text37,
       value: remote6,
       writable: external_exports.boolean(),
       configurable: external_exports.boolean(),
@@ -123116,123 +123378,6 @@ if(own(globalThis,"PROJECT")!==this||own(this,"workerBus")!==bus)bad();
 const identity={projectUuid:id(own(this,"uuid"),/^(?:[a-f0-9]{32}|[a-f0-9]{64})$/),branchUuid:id(own(this,"_branchUuid"),/^[a-f0-9]{32}$/),windowTabId:id(own(globalThis,"_TAB_ID_"),/^[A-Za-z0-9_-]{1,128}$/)};
 for(const [o,k,v]of retained){const d=Object.getOwnPropertyDescriptor(o,k);if(!d||!Object.hasOwn(d,"value")||d.value!==v)bad();}
 return identity;}`;
-  }
-});
-
-// server/src/current-pcb-worker-startup-actor.ts
-function currentPcbWorkerStartupUiActorCommand(sessionId4, uniqueContextId2) {
-  const token42 = exactId(/^[A-Za-z\d_.:-]{1,128}$/u);
-  return freezeDeep({ method: "Runtime.callFunctionOn", sessionId: token42.parse(sessionId4), params: {
-    functionDeclaration: CURRENT_PCB_WORKER_STARTUP_UI_ACTOR_CLOCK_FUNCTION,
-    uniqueContextId: token42.parse(uniqueContextId2),
-    arguments: [],
-    returnByValue: true,
-    throwOnSideEffect: true,
-    silent: true,
-    awaitPromise: false,
-    generatePreview: false,
-    userGesture: false
-  } });
-}
-function decodeCurrentPcbWorkerStartupActor(raw) {
-  try {
-    const reply3 = external_exports.object({ result: external_exports.object({ type: external_exports.literal("string"), value: text37(16384) }).strict() }).strict().parse(captureCurrentPcbStringClockReply(raw).value);
-    if (Buffer.byteLength(reply3.result.value) > 16384) {
-      throw new Error("reply bound");
-    }
-    const sample5 = currentPcbWorkerStartupActorSampleSchema.parse(decodeCurrentPcbDiagnosticJson(Buffer.from(reply3.result.value)));
-    const originalUser = decodeCurrentPcbDiagnosticJson(Buffer.from(sample5.workerUserText));
-    if (canonicalJson(user2.parse(originalUser)) !== canonicalJson(sample5.workerUser) || JSON.stringify(originalUser) !== sample5.workerUserText) {
-      throw new Error("ordered user differs");
-    }
-    if (sample5.phase === "ui" && (canonicalJson(sample5.cachedActor) !== canonicalJson(sample5.startupActor) || sample5.workerUserText !== JSON.stringify({
-      uuid: sample5.startupActor.uuid,
-      nickname: sample5.startupActor.nickname,
-      username: sample5.startupActor.username,
-      avatar: sample5.workerUser.avatar
-    }))) {
-      throw new Error("UI user differs");
-    }
-    return freezeDeep(sample5);
-  } catch {
-    throw new Error("PCB_WORKER_STARTUP_ACTOR_REPLY");
-  }
-}
-var exactId, currentPcbWorkerStartupActorIdentitySchema, text37, actor2, user2, milliseconds2, offset2, stamp2, clock8, base6, currentPcbWorkerStartupActorSampleSchema, COMMON2, CURRENT_PCB_WORKER_STARTUP_UI_ACTOR_CLOCK_FUNCTION, CURRENT_PCB_WORKER_STARTUP_WORKER_ACTOR_CLOCK_FUNCTION;
-var init_current_pcb_worker_startup_actor = __esm({
-  "server/src/current-pcb-worker-startup-actor.ts"() {
-    init_zod();
-    init_core3();
-    init_current_pcb_diagnostic_json();
-    init_current_pcb_string_clock_reply();
-    init_current_pcb_string_observation_core();
-    init_sqlite_inventory_core();
-    exactId = (expression3) => external_exports.string().refine((value2) => expression3.exec(value2)?.[0] === value2);
-    currentPcbWorkerStartupActorIdentitySchema = external_exports.object({
-      projectUuid: exactId(/^[a-f\d]{64}$/u),
-      branchUuid: exactId(/^[a-f\d]{32}$/u),
-      windowTabId: exactId(/^[A-Za-z\d_-]{1,128}$/u)
-    }).strict();
-    text37 = (maximum5) => external_exports.string().max(maximum5).refine((value2) => value2.isWellFormed());
-    actor2 = external_exports.object({ uuid: exactId(/^[a-f\d]{32}$/u), username: text37(1024), nickname: text37(1024) }).strict();
-    user2 = actor2.extend({ avatar: text37(4096) }).strict();
-    milliseconds2 = external_exports.number().int().min(0).max(864e13).refine((value2) => !Object.is(value2, -0));
-    offset2 = external_exports.number().int().min(-840).max(840).refine((value2) => !Object.is(value2, -0));
-    stamp2 = external_exports.object({ milliseconds: milliseconds2, iso: external_exports.string().max(32), timezoneOffsetMinutes: offset2 }).strict().refine((value2) => new Date(value2.milliseconds).toISOString() === value2.iso);
-    clock8 = external_exports.object({ before: stamp2, after: stamp2 }).strict().refine((value2) => value2.after.milliseconds >= value2.before.milliseconds && value2.after.milliseconds - value2.before.milliseconds <= 1e3 && value2.before.timezoneOffsetMinutes === value2.after.timezoneOffsetMinutes);
-    base6 = {
-      schema: external_exports.literal("easyeda-pro-control.pcb-worker-startup-actor.v1"),
-      identity: currentPcbWorkerStartupActorIdentitySchema,
-      workerUser: user2,
-      workerUserText: text37(16384),
-      clock: clock8
-    };
-    currentPcbWorkerStartupActorSampleSchema = external_exports.discriminatedUnion("phase", [
-      external_exports.object({ ...base6, phase: external_exports.literal("ui"), cachedActor: actor2, startupActor: actor2 }).strict(),
-      external_exports.object({
-        ...base6,
-        phase: external_exports.literal("worker"),
-        originalProjectReceiverMatched: external_exports.literal(true),
-        originalWorkerBusMatched: external_exports.literal(true)
-      }).strict()
-    ]);
-    COMMON2 = `${CURRENT_PCB_STRING_OBSERVATION_GUARDS}
-const root=globalThis,apply=Reflect.apply;
-const exactId=(v,re)=>{const m=typeof v==="string"?re.exec(v):null;if(m===null||m[0]!==v)bad();return v;};
-const text=(v,max)=>{if(typeof v!=="string"||v.length>max||!v.isWellFormed())bad();return v;};
-const actor=o=>({uuid:exactId(own(o,"uuid"),/^[a-f0-9]{32}$/),username:text(own(o,"username"),1024),nickname:text(own(o,"nickname"),1024)});
-const nativeDate=own(root,"Date"),now=own(nativeDate,"now"),datePrototype=own(nativeDate,"prototype"),iso=own(datePrototype,"toISOString"),zone=own(datePrototype,"getTimezoneOffset");
-if([nativeDate,now,iso,zone].some(v=>typeof v!=="function"))bad();
-const stamp=()=>{verify();const milliseconds=apply(now,nativeDate,[]);if(!Number.isSafeInteger(milliseconds)||milliseconds<0||milliseconds>8640000000000000||Object.is(milliseconds,-0))bad();const date=new nativeDate(milliseconds),timezoneOffsetMinutes=apply(zone,date,[]);if(!Number.isSafeInteger(timezoneOffsetMinutes)||Math.abs(timezoneOffsetMinutes)>840||Object.is(timezoneOffsetMinutes,-0))bad();return{milliseconds,iso:apply(iso,date,[]),timezoneOffsetMinutes};};
-const before=stamp();
-const finish=()=>{const after=stamp();verify();if(after.milliseconds<before.milliseconds||after.milliseconds-before.milliseconds>1000||after.timezoneOffsetMinutes!==before.timezoneOffsetMinutes)bad();return{before,after};};
-`;
-    CURRENT_PCB_WORKER_STARTUP_UI_ACTOR_CLOCK_FUNCTION = `function(){
-${COMMON2}
-const host=object(own(root,"gVars")),ui=object(own(root,"UI")),project=object(own(host,"currentProject"));
-if(own(ui,"gVars")!==host||own(project,"isV2Format")!==false||own(host,"isHistoryMode")!==false)bad();
-const identity={projectUuid:exactId(own(project,"projectId"),/^[a-f0-9]{64}$/),branchUuid:exactId(own(project,"branchUuid"),/^[a-f0-9]{32}$/),windowTabId:exactId(own(root,"_TAB_ID_"),/^[A-Za-z0-9_-]{1,128}$/)};
-const cached=object(own(object(own(host,"globalVariableCookieData")),"userInfo")),startup=object(own(host,"loginedUserInfo"));
-const cachedActor=actor(cached),startupActor=actor(startup);
-if(JSON.stringify(cachedActor)!==JSON.stringify(startupActor))bad();
-const workerUser={uuid:startupActor.uuid,nickname:startupActor.nickname,username:startupActor.username,avatar:text(own(startup,"avatar"),4096)};
-return JSON.stringify({schema:"easyeda-pro-control.pcb-worker-startup-actor.v1",phase:"ui",identity,cachedActor,startupActor,workerUser,workerUserText:JSON.stringify(workerUser),clock:finish()});
-}`;
-    CURRENT_PCB_WORKER_STARTUP_WORKER_ACTOR_CLOCK_FUNCTION = `function(bus){
-${COMMON2}
-const project=named(this,"Lg"),pp=Object.getPrototypeOf(project),gp=Object.getPrototypeOf(pp);
-if(own(root,"PROJECT")!==project||own(project,"workerBus")!==bus||own(own(gp,"constructor"),"name")!=="Gd"||Object.getPrototypeOf(gp)!==Object.prototype||own(project,"_isV2Format")!==false)bad();
-const identity={projectUuid:exactId(own(project,"uuid"),/^[a-f0-9]{64}$/),branchUuid:exactId(own(project,"_branchUuid"),/^[a-f0-9]{32}$/),windowTabId:exactId(own(root,"_TAB_ID_"),/^[A-Za-z0-9_-]{1,128}$/)};
-const source=plain(own(project,"user")),order=Reflect.ownKeys(source);
-if(order.length!==4||order.some(k=>typeof k!=="string"||!["uuid","nickname","username","avatar"].includes(k)))bad();
-const projected=actor(source),avatar=text(own(source,"avatar"),4096),workerUser={};
-for(const key of order){const d=Object.getOwnPropertyDescriptor(source,key);if(!d||d.enumerable!==true)bad();workerUser[key]=key==="avatar"?avatar:projected[key];}
-const clock=finish();
-if(Object.getPrototypeOf(project)!==pp||Object.getPrototypeOf(pp)!==gp||Object.getPrototypeOf(gp)!==Object.prototype||Reflect.ownKeys(source).join(",")!==order.join(","))bad();
-for(const key of order){const d=Object.getOwnPropertyDescriptor(source,key);if(!d||!Object.hasOwn(d,"value")||d.enumerable!==true)bad();}
-verify();
-return JSON.stringify({schema:"easyeda-pro-control.pcb-worker-startup-actor.v1",phase:"worker",identity,originalProjectReceiverMatched:true,originalWorkerBusMatched:true,workerUser,workerUserText:JSON.stringify(workerUser),clock});
-}`;
   }
 });
 
@@ -123613,9 +123758,9 @@ function need56(condition, detail) {
 }
 function methods6(input2) {
   need56(input2 !== null && typeof input2 === "object" && !types35.isProxy(input2) && !Array.isArray(input2) && (Object.getPrototypeOf(input2) === Object.prototype || Object.getPrototypeOf(input2) === null), "plain transport required");
-  const fields26 = ["scriptId", "request", "assertCurrent"], keys3 = Reflect.ownKeys(input2);
-  need56(keys3.length === fields26.length && keys3.every((key) => fields26.some((field13) => key === field13)), "transport fields differ");
-  return fields26.map((field13) => {
+  const fields27 = ["scriptId", "request", "assertCurrent"], keys3 = Reflect.ownKeys(input2);
+  need56(keys3.length === fields27.length && keys3.every((key) => fields27.some((field13) => key === field13)), "transport fields differ");
+  return fields27.map((field13) => {
     const descriptor10 = Object.getOwnPropertyDescriptor(input2, field13);
     need56(descriptor10 !== void 0 && Object.hasOwn(descriptor10, "value") && typeof descriptor10.value === (field13 === "scriptId" ? "string" : "function"), "original transport members required");
     return descriptor10.value;
@@ -123793,12 +123938,12 @@ function transportMembers(transport2) {
   if (transport2 === null || typeof transport2 !== "object" || types36.isProxy(transport2) || Array.isArray(transport2) || Object.getPrototypeOf(transport2) !== Object.prototype && Object.getPrototypeOf(transport2) !== null) {
     throw fail17("TRANSPORT");
   }
-  const fields26 = ["scriptId", "assertOriginalPinnedWorker", "request", "subscribe"];
+  const fields27 = ["scriptId", "assertOriginalPinnedWorker", "request", "subscribe"];
   const keys3 = Reflect.ownKeys(transport2);
-  if (keys3.length !== fields26.length || keys3.some((key) => typeof key !== "string" || !fields26.some((field13) => field13 === key))) {
+  if (keys3.length !== fields27.length || keys3.some((key) => typeof key !== "string" || !fields27.some((field13) => field13 === key))) {
     throw fail17("TRANSPORT");
   }
-  return fields26.map((key) => {
+  return fields27.map((key) => {
     const descriptor10 = Object.getOwnPropertyDescriptor(transport2, key);
     if (descriptor10 === void 0 || !Object.hasOwn(descriptor10, "value") || typeof descriptor10.value !== (key === "scriptId" ? "string" : "function")) {
       throw fail17("TRANSPORT");
@@ -123810,6 +123955,7 @@ var GROUP2, token19, location3, frame, pauseSchema, objectReply, resultBoolean, 
 var init_current_pcb_worker_construction_runner = __esm({
   "server/src/current-pcb-worker-construction-runner.ts"() {
     init_zod();
+    init_current_footprint_copy_state();
     init_current_pcb_209_worker_startup_timing();
     init_current_pcb_209_worker_startup_profile();
     init_current_pcb_string_clock_reply();
@@ -123874,6 +124020,12 @@ var init_current_pcb_worker_construction_runner = __esm({
       #projectIdentity = null;
       #actorSampleAttempts = 0;
       #actorSampleBusy = false;
+      #footprintConstructors = null;
+      #footprintManager = null;
+      #footprintConsistency = null;
+      #footprintAttempted = false;
+      #footprintPacket = null;
+      #footprintReplies = [];
       #channelAttempted = false;
       #channel = null;
       #channelPacket = null;
@@ -123946,8 +124098,8 @@ var init_current_pcb_worker_construction_runner = __esm({
         return this.#send.call(this.#transport, command2);
       }
       #sameTransport() {
-        const fields26 = transportMembers(this.#transport);
-        if (fields26[0] !== this.#scriptId || fields26[1] !== this.#assertOwner || fields26[2] !== this.#send || fields26[3] !== this.#subscribe) {
+        const fields27 = transportMembers(this.#transport);
+        if (fields27[0] !== this.#scriptId || fields27[1] !== this.#assertOwner || fields27[2] !== this.#send || fields27[3] !== this.#subscribe) {
           throw fail17("TRANSPORT_CHANGED");
         }
       }
@@ -124150,6 +124302,25 @@ var init_current_pcb_worker_construction_runner = __esm({
           this.#identities.onmessage = arrow.result.objectId;
         } else if (site === "base" || site === "project") {
           await this.#receiver(top.callFrameId);
+          if (site === "project" && this.#profile === "private.current-pcb209-worker-construction.v1") {
+            const project3 = this.#identities.project;
+            if (project3 === void 0) {
+              throw fail17("MISSING_OWNER");
+            }
+            this.#footprintConstructors = await this.#object(top.callFrameId, CURRENT_FOOTPRINT_COPY_CONSTRUCTORS_EXPRESSION);
+            this.#footprintManager = objectReply.parse(await this.#assignmentCall(
+              project3,
+              CURRENT_FOOTPRINT_COPY_STATE_CALLS["manager-select"].program,
+              [],
+              false
+            )).result.objectId;
+            this.#footprintConsistency = objectReply.parse(await this.#assignmentCall(
+              project3,
+              CURRENT_FOOTPRINT_COPY_STATE_CALLS["consistency-select"].program,
+              [],
+              false
+            )).result.objectId;
+          }
         } else if (site === "bootstrap") {
           const bus = this.#identities.channelBus, original2 = this.#identities.project;
           if (original2 === void 0 || bus === void 0) {
@@ -124467,6 +124638,88 @@ var init_current_pcb_worker_construction_runner = __esm({
           throw error63;
         }
       }
+      retainedFootprintState() {
+        return Object.freeze({
+          attempted: this.#footprintAttempted,
+          completed: this.#footprintPacket !== null,
+          replies: Object.freeze([...this.#footprintReplies])
+        });
+      }
+      async #footprintSample(packet, assignments) {
+        if (this.#profile !== "private.current-pcb209-worker-construction.v1" || this.#footprintManager === null || this.#footprintConsistency === null || this.#footprintConstructors === null || this.#projectIdentity === null || this.#footprintReplies.length >= 16) {
+          throw fail17("FOOTPRINT_OWNER");
+        }
+        await this.requireCurrentAssignments(packet, assignments);
+        const original2 = await this.requireOriginal(packet);
+        await this.#current();
+        const args = [original2.channelBus, this.#footprintManager, this.#footprintConsistency, this.#footprintConstructors].map((objectId3) => ({ objectId: objectId3 }));
+        const reply3 = captureCurrentPcbStringClockReply(await bounded2(this.#sendOriginal({ method: "Runtime.callFunctionOn", params: {
+          objectId: original2.project,
+          functionDeclaration: CURRENT_FOOTPRINT_COPY_STATE_CALLS.observe.program,
+          arguments: args,
+          objectGroup: GROUP2,
+          silent: true,
+          returnByValue: true,
+          generatePreview: false,
+          throwOnSideEffect: true,
+          awaitPromise: false,
+          userGesture: false
+        } }))).value;
+        this.#footprintReplies.push(reply3);
+        await this.#current();
+        const sample5 = decodeCurrentFootprintCopyState(reply3);
+        if (sample5.identity.projectUuid !== this.#projectIdentity.projectUuid || sample5.identity.branchUuid !== this.#projectIdentity.branchUuid || sample5.identity.windowTabId !== this.#projectIdentity.windowTabId) {
+          throw fail17("FOOTPRINT_IDENTITY");
+        }
+        await this.requireCurrentAssignments(packet, assignments);
+        return sample5;
+      }
+      /** Current209 only: two synchronous observations of the constructor-captured
+       * manager, consistency object and their own client/user/ticket data fields. */
+      async observeFootprintState(packet, assignments) {
+        if (this.#footprintAttempted) {
+          throw fail17("FOOTPRINT_CONSUMED");
+        }
+        this.#footprintAttempted = true;
+        try {
+          const first = await this.#footprintSample(packet, assignments), second = await this.#footprintSample(packet, assignments);
+          if (JSON.stringify(first) !== JSON.stringify(second)) {
+            throw fail17("FOOTPRINT_CHANGED");
+          }
+          const state4 = Object.freeze({
+            profile: "private.current-footprint-copy-state.v1",
+            identity: first.identity,
+            client: first.client,
+            maximumTicket: first.maximumTicket,
+            capturedUser: first.capturedUser,
+            samples: 2,
+            originalConstructorManagerMatched: true,
+            atomicSnapshotVerified: false,
+            cacheBranchObserved: false,
+            executionAuthorized: false,
+            persistenceVerified: false
+          });
+          this.#footprintPacket = state4;
+          return state4;
+        } catch (error63) {
+          this.#fail("FOOTPRINT_OBSERVATION_FAILED");
+          throw error63;
+        }
+      }
+      async requireFootprintState(packet, assignments, state4) {
+        if (state4 !== this.#footprintPacket || this.#footprintPacket === null) {
+          throw fail17("ORIGINAL_FOOTPRINT_PACKET");
+        }
+        try {
+          const sample5 = await this.#footprintSample(packet, assignments);
+          if (sample5.client !== state4.client || sample5.maximumTicket !== state4.maximumTicket || JSON.stringify(sample5.identity) !== JSON.stringify(state4.identity)) {
+            throw fail17("FOOTPRINT_CHANGED");
+          }
+        } catch (error63) {
+          this.#fail("FOOTPRINT_STATE_CHANGED");
+          throw error63;
+        }
+      }
       /** Two worker samples for the separate four-read startup actor bracket. Each
        * request retains the original constructor PROJECT and bus, not a later
        * global lookup or caller-provided remote handle. Failure consumes the read. */
@@ -124674,7 +124927,7 @@ async function bounded3(work, milliseconds4 = REQUEST_MS3) {
     clearTimeout(timer);
   }
 }
-async function observe4(work) {
+async function observe5(work) {
   try {
     await work;
   } catch {
@@ -124687,12 +124940,12 @@ function members3(dependency) {
   if (dependency === null || typeof dependency !== "object" || types37.isProxy(dependency) || Array.isArray(dependency) || Object.getPrototypeOf(dependency) !== Object.prototype && Object.getPrototypeOf(dependency) !== null) {
     throw failure3("DEPENDENCY");
   }
-  const fields26 = ["parentTargetId", "parentSessionId", "assertOriginalOwner", "assertOriginalTermination", "request", "subscribe"];
+  const fields27 = ["parentTargetId", "parentSessionId", "assertOriginalOwner", "assertOriginalTermination", "request", "subscribe"];
   const keys3 = Reflect.ownKeys(dependency);
-  if (keys3.length !== fields26.length || keys3.some((key) => typeof key !== "string" || !fields26.some((field13) => field13 === key))) {
+  if (keys3.length !== fields27.length || keys3.some((key) => typeof key !== "string" || !fields27.some((field13) => field13 === key))) {
     throw failure3("DEPENDENCY");
   }
-  return fields26.map((key) => {
+  return fields27.map((key) => {
     const descriptor10 = Object.getOwnPropertyDescriptor(dependency, key);
     if (descriptor10 === void 0 || !Object.hasOwn(descriptor10, "value") || typeof descriptor10.value !== (key === "parentTargetId" || key === "parentSessionId" ? "string" : "function")) {
       throw failure3("DEPENDENCY");
@@ -124900,13 +125153,13 @@ var init_current_pcb_worker_startup_transport = __esm({
           watchdog: void 0
         })) : [];
         for (const stage of this.#bootstrapStages) {
-          void observe4(stage.paused.promise);
-          void observe4(stage.resumed.promise);
+          void observe5(stage.paused.promise);
+          void observe5(stage.resumed.promise);
         }
-        void observe4(this.#attached.promise);
-        void observe4(this.#armed.promise);
-        void observe4(this.#initialPaused.promise);
-        void observe4(this.#initialResumed.promise);
+        void observe5(this.#attached.promise);
+        void observe5(this.#armed.promise);
+        void observe5(this.#initialPaused.promise);
+        void observe5(this.#initialResumed.promise);
       }
       status() {
         return Object.freeze({
@@ -125176,7 +125429,7 @@ var init_current_pcb_worker_startup_transport = __esm({
             throw failure3("WORKER_TITLE");
           }
           if (this.#failure !== null) {
-            void observe4(this.#runWaiting(worker3));
+            void observe5(this.#runWaiting(worker3));
             return;
           }
           this.#attached.resolve(worker3);
@@ -125227,11 +125480,11 @@ var init_current_pcb_worker_startup_transport = __esm({
             this.#initialPauseSeen = true;
             this.#initialPauseWatchdog = setTimeout(() => {
               this.#poison("INITIAL_PAUSE_DEADLINE");
-              void observe4(this.cleanup());
+              void observe5(this.cleanup());
             }, PAUSE_MS);
             this.#initialPaused.resolve(event4.params);
             if (this.#failure !== null) {
-              void observe4(this.#cleanupInitialPause());
+              void observe5(this.#cleanupInitialPause());
             }
             return;
           }
@@ -125333,12 +125586,12 @@ var init_current_pcb_worker_startup_transport = __esm({
       }
       #releaseRejectedWorker(worker2) {
         if (this.#bootstrap209) {
-          void observe4((async () => {
+          void observe5((async () => {
             await Promise.resolve();
             await this.#runWaiting(worker2);
           })());
         } else {
-          void observe4(this.#runWaiting(worker2));
+          void observe5(this.#runWaiting(worker2));
         }
       }
       #bootstrapScript(script) {
@@ -125381,11 +125634,11 @@ var init_current_pcb_worker_startup_transport = __esm({
         stage.window = Object.freeze({ startedAtMs: currentPcbStartupMonotonicMs(), limitMs });
         stage.watchdog = setTimeout(() => {
           this.#poison("INITIAL_PAUSE_DEADLINE");
-          void observe4(this.cleanup());
+          void observe5(this.cleanup());
         }, limitMs);
         stage.paused.resolve(params);
         if (this.#failure !== null) {
-          void observe4(this.#cleanupInitialPause());
+          void observe5(this.#cleanupInitialPause());
         }
       }
       #bootstrapResumed() {
@@ -125559,7 +125812,7 @@ var init_current_pcb_worker_startup_transport = __esm({
           this.#instrumentation = external_exports.object({ breakpointId: token20 }).strict().parse(captureCurrentPcbStringClockReply(raw).value).breakpointId;
           this.#instrumentationUncertain = false;
           if (this.#failure !== null) {
-            void observe4((async () => {
+            void observe5((async () => {
               await this.#removeInitialBreakpoint();
               await this.#runWaiting(worker2);
               if (this.#initialPauseSeen && !this.#initialResumeSeen) {
@@ -125697,7 +125950,7 @@ var init_current_pcb_worker_startup_transport = __esm({
           this.#step = "construction-arming";
           const captured = runner.capture();
           this.#constructionCapture = captured;
-          void observe4(captured);
+          void observe5(captured);
           await runner.whenArmed();
           this.#step = "instrumentation-removal";
           await this.#removeInitialBreakpoint();
@@ -125712,7 +125965,7 @@ var init_current_pcb_worker_startup_transport = __esm({
         } catch (error63) {
           this.#poison("CAPTURE");
           if (this.#constructionCapture !== null) {
-            await observe4(bounded3(this.#constructionCapture, WAIT_MS2));
+            await observe5(bounded3(this.#constructionCapture, WAIT_MS2));
           }
           try {
             await this.cleanup();
@@ -126252,7 +126505,7 @@ function retainedMethods(value2, keys3) {
     return descriptor10.value;
   });
 }
-async function observe5(work) {
+async function observe6(work) {
   try {
     await work;
   } catch {
@@ -126321,6 +126574,9 @@ var init_current_pcb_209_worker_startup_opening = __esm({
       #actorAttempted = false;
       #actor = null;
       #actorPacket = null;
+      #footprintAttempted = false;
+      #footprintRunner = null;
+      #footprintPacket = null;
       #channelAttempted = false;
       #channelRunner = null;
       #channelPacket = null;
@@ -126494,7 +126750,7 @@ var init_current_pcb_209_worker_startup_opening = __esm({
           this.#transport.bindExistingWorkers(targets);
           const capture5 = this.#transport.capture();
           this.#capture = capture5;
-          void observe5(capture5);
+          void observe6(capture5);
           this.#step = "worker-arming";
           await this.#transport.whenArmed();
           await this.#current();
@@ -126549,7 +126805,7 @@ var init_current_pcb_209_worker_startup_opening = __esm({
             } catch (cleanupError) {
               throw new AggregateError([error63, cleanupError], "PCB209_WORKER_STARTUP_OPENING_FAILED", { cause: cleanupError });
             } finally {
-              await observe5(this.#capture);
+              await observe6(this.#capture);
             }
           }
           throw error63;
@@ -126607,6 +126863,38 @@ var init_current_pcb_209_worker_startup_opening = __esm({
         const runner = await transport2.requireOriginal(result2.construction);
         await this.#current();
         await runner.requireCurrentAssignments(result2.construction, assignments);
+        await this.#current();
+      }
+      retainedFootprintState() {
+        return this.#footprintRunner?.retainedFootprintState() ?? null;
+      }
+      async observeFootprintState(result2, assignments) {
+        if (this.#footprintAttempted) {
+          throw fail18("FOOTPRINT_CONSUMED");
+        }
+        this.#footprintAttempted = true;
+        await this.requireCurrentAssignments(result2, assignments);
+        const transport2 = await this.requireOriginal(result2);
+        const runner = await transport2.requireOriginal(result2.construction);
+        await this.#current();
+        this.#footprintRunner = runner;
+        const packet = await runner.observeFootprintState(result2.construction, assignments);
+        this.#footprintPacket = packet;
+        await this.#current();
+        return packet;
+      }
+      async requireFootprintState(result2, assignments, packet) {
+        if (packet !== this.#footprintPacket || this.#footprintRunner === null) {
+          throw fail18("ORIGINAL_FOOTPRINT_PACKET");
+        }
+        await this.requireCurrentAssignments(result2, assignments);
+        const transport2 = await this.requireOriginal(result2);
+        const runner = await transport2.requireOriginal(result2.construction);
+        await this.#current();
+        if (runner !== this.#footprintRunner) {
+          throw fail18("ORIGINAL_FOOTPRINT_OWNER");
+        }
+        await runner.requireFootprintState(result2.construction, assignments, packet);
         await this.#current();
       }
       retainedActorObservation() {
@@ -127723,6 +128011,12 @@ function validateChain(operation) {
   );
   requireValue14(actor10 === void 0 || startupPurpose && assigned !== void 0 && binding10 !== void 0 && actor10.assignmentsResultSha256 === sha256Json(assigned) && actor10.bindingSha256 === sha256Json(binding10), "WORKER_STARTUP_ACTOR_CHAIN");
   requireValue14(actorResult === void 0 || actor10 !== void 0 && startupOpened !== void 0 && actorResult.intentSha256 === sha256Json(actor10) && canonicalJson(actorResult.result.profile === "private.current-pcb209-worker-startup-actor.v1" ? actorResult.result.originalActorPacket.identity : actorResult.result.identity) === canonicalJson(startupOpened.result.workerIdentity), "WORKER_STARTUP_ACTOR_RESULT_CHAIN");
+  const footprint2 = records2["worker-startup-footprint-intent.json"], footprintResult = records2["worker-startup-footprint-result.json"];
+  requireValue14(footprint2 === void 0 || startup2092 && startupPurpose && assigned !== void 0 && binding10 !== void 0 && footprint2.assignmentsResultSha256 === sha256Json(assigned) && footprint2.bindingSha256 === sha256Json(binding10), "WORKER_STARTUP_FOOTPRINT_CHAIN");
+  requireValue14(
+    footprintResult === void 0 || footprint2 !== void 0 && startupOpened !== void 0 && footprintResult.intentSha256 === sha256Json(footprint2) && canonicalJson(footprintResult.result.identity) === canonicalJson(startupOpened.result.workerIdentity),
+    "WORKER_STARTUP_FOOTPRINT_RESULT_CHAIN"
+  );
   const channel = records2["worker-startup-channel-intent.json"], channelResult = records2["worker-startup-channel-result.json"];
   requireValue14(channel === void 0 || startupPurpose && assigned !== void 0 && binding10 !== void 0 && channel.assignmentsResultSha256 === sha256Json(assigned) && channel.bindingSha256 === sha256Json(binding10), "WORKER_STARTUP_CHANNEL_CHAIN");
   requireValue14(channelResult === void 0 || channel !== void 0 && startupOpened !== void 0 && channelResult.intentSha256 === sha256Json(channel) && canonicalJson(channelResult.result.identity) === canonicalJson(startupOpened.result.workerIdentity), "WORKER_STARTUP_CHANNEL_RESULT_CHAIN");
@@ -127902,10 +128196,11 @@ async function publishCurrentPcbDiagnosticLifecycleRecord(operationId18, name9, 
 function assertCurrentPcbDiagnosticLifecycleSnapshot(actual, expected3) {
   requireValue14(canonicalJson(actual) === canonicalJson(expected3), "JOURNAL_CHANGED");
 }
-var DIRECTORY, MAX_BYTES7, DIAGNOSTIC_OBSERVATION_MAX_BYTES, STRING_PRECREATE_OBSERVATION_V2_MAX_BYTES, STRING_PRECREATE_OBSERVATION_MAX_BYTES, MAX_OPERATIONS2, qualifiedPcbOpeningSchema, diagnosticLifecycleIdSchema, diagnosticLifecycleDigestSchema, diagnosticLifecycleWindowSchema, token22, diagnosticLifecycleBindingSchema, base7, diagnosticIntentSchema, stringIntentSchema, workerStartupIntentSchema, workerStartup209IntentSchema, workerStartupEmpty209IntentSchema, workerStartupRatline209IntentSchema, workerStartupContinuation209IntentSchema, startupId, startupOpeningId, intentSchema2, workerStartupHandoffIntentSchema, workerStartupHandoffResultSchema, bindingSchema2, closeIntentSchema, closeAcknowledgmentSchema, terminationSchema, releaseIntentSchema, releasedSchema, unlaunchedIntentSchema, notDispatchedSchema2, diagnosticLifecycleNoProcessReleaseProofSchema, noProcessIntentSchema, noProcessReleasedSchema, diagnosticObservationStageSchema, extendedObservationStageSchema, lifecycleObservationStages, observationIntentSchema, observationResultSchema, stringPrecreateIntentSchema, commonBaselineIntentSchema, commonBaselineResultSchema, commonBaselineFailureSchema, stringPrecreateObservationV1, stringWorkerObservation, stringActorObservation, stringPrecreateObservationV2, stringMoveObservation, stringFiniteEffects, stringPrecreateObservationV3, stringPrecreateObservationResultSchema, projectWindowSchema, pcbWindowSchema, stringPrecreateResultSchema, observationFailureSchema, projectOpeningIntentSchema, projectOpeningResultSchema, workerStartupOpeningIntentSchema, workerStartupOpenedSchema, workerStartupConstructionSchema, workerStartupResultSchema, workerStartup209ResultSchema, workerStartupOpeningResultSchema, workerStartupEmptyIntentSchema, workerStartupEmptyResultSchema, workerStartupRatlineIntentSchema, workerStartupRatlineResultSchema, workerStartupContinuationIntentSchema, workerStartupContinuationResultSchema, workerStartupAssignmentsIntentSchema, workerStartupAssignmentsSchema, workerStartupAssignmentsResultSchema, workerStartupActorIntentSchema, workerStartupActorResultSchema, workerStartupChannelIntentSchema, workerStartupChannelResultSchema, pcbOpenIntentSchema, pcbOpenResultSchema, diagnosticLifecycleRecordSchemas, launchLease;
+var DIRECTORY, MAX_BYTES7, DIAGNOSTIC_OBSERVATION_MAX_BYTES, STRING_PRECREATE_OBSERVATION_V2_MAX_BYTES, STRING_PRECREATE_OBSERVATION_MAX_BYTES, MAX_OPERATIONS2, qualifiedPcbOpeningSchema, diagnosticLifecycleIdSchema, diagnosticLifecycleDigestSchema, diagnosticLifecycleWindowSchema, token22, diagnosticLifecycleBindingSchema, base7, diagnosticIntentSchema, stringIntentSchema, workerStartupIntentSchema, workerStartup209IntentSchema, workerStartupEmpty209IntentSchema, workerStartupRatline209IntentSchema, workerStartupContinuation209IntentSchema, startupId, startupOpeningId, intentSchema2, workerStartupHandoffIntentSchema, workerStartupHandoffResultSchema, bindingSchema2, closeIntentSchema, closeAcknowledgmentSchema, terminationSchema, releaseIntentSchema, releasedSchema, unlaunchedIntentSchema, notDispatchedSchema2, diagnosticLifecycleNoProcessReleaseProofSchema, noProcessIntentSchema, noProcessReleasedSchema, diagnosticObservationStageSchema, extendedObservationStageSchema, lifecycleObservationStages, observationIntentSchema, observationResultSchema, stringPrecreateIntentSchema, commonBaselineIntentSchema, commonBaselineResultSchema, commonBaselineFailureSchema, stringPrecreateObservationV1, stringWorkerObservation, stringActorObservation, stringPrecreateObservationV2, stringMoveObservation, stringFiniteEffects, stringPrecreateObservationV3, stringPrecreateObservationResultSchema, projectWindowSchema, pcbWindowSchema, stringPrecreateResultSchema, observationFailureSchema, projectOpeningIntentSchema, projectOpeningResultSchema, workerStartupOpeningIntentSchema, workerStartupOpenedSchema, workerStartupConstructionSchema, workerStartupResultSchema, workerStartup209ResultSchema, workerStartupOpeningResultSchema, workerStartupEmptyIntentSchema, workerStartupEmptyResultSchema, workerStartupRatlineIntentSchema, workerStartupRatlineResultSchema, workerStartupContinuationIntentSchema, workerStartupContinuationResultSchema, workerStartupAssignmentsIntentSchema, workerStartupAssignmentsSchema, workerStartupAssignmentsResultSchema, workerStartupActorIntentSchema, workerStartupActorResultSchema, workerStartupChannelIntentSchema, workerStartupChannelResultSchema, workerStartupFootprintIntentSchema, workerStartupFootprintResultSchema, pcbOpenIntentSchema, pcbOpenResultSchema, diagnosticLifecycleRecordSchemas, launchLease;
 var init_current_pcb_diagnostic_lifecycle_journal = __esm({
   "server/src/current-pcb-diagnostic-lifecycle-journal.ts"() {
     init_zod();
+    init_current_footprint_copy_state();
     init_artifacts();
     init_core3();
     init_current_disposable_open();
@@ -128544,6 +128839,23 @@ var init_current_pcb_diagnostic_lifecycle_journal = __esm({
       executionAuthorized: external_exports.literal(false),
       saveAuthorized: external_exports.literal(false)
     }).strict();
+    workerStartupFootprintIntentSchema = external_exports.object({
+      schema: external_exports.literal("easyeda-pro-control.pcb209-footprint-state-intent.v1"),
+      ...base7,
+      operationId: currentPcb209WorkerStartupLifecycleIdSchema,
+      bindingSha256: diagnosticLifecycleDigestSchema,
+      assignmentsResultSha256: diagnosticLifecycleDigestSchema
+    }).strict();
+    workerStartupFootprintResultSchema = external_exports.object({
+      schema: external_exports.literal("easyeda-pro-control.pcb209-footprint-state-result.v1"),
+      ...base7,
+      operationId: currentPcb209WorkerStartupLifecycleIdSchema,
+      intentSha256: diagnosticLifecycleDigestSchema,
+      result: currentFootprintCopyStatePacketSchema,
+      pointInTimeObservation: external_exports.literal(true),
+      executionAuthorized: external_exports.literal(false),
+      saveAuthorized: external_exports.literal(false)
+    }).strict();
     pcbOpenIntentSchema = external_exports.object({
       schema: external_exports.literal("easyeda-pro-control.pcb-diagnostic-pcb-open-intent.v1"),
       ...base7,
@@ -128626,6 +128938,8 @@ var init_current_pcb_diagnostic_lifecycle_journal = __esm({
       "worker-startup-assignments-result.json": workerStartupAssignmentsResultSchema,
       "worker-startup-actor-intent.json": workerStartupActorIntentSchema,
       "worker-startup-actor-result.json": workerStartupActorResultSchema,
+      "worker-startup-footprint-intent.json": workerStartupFootprintIntentSchema,
+      "worker-startup-footprint-result.json": workerStartupFootprintResultSchema,
       "worker-startup-channel-intent.json": workerStartupChannelIntentSchema,
       "worker-startup-channel-result.json": workerStartupChannelResultSchema,
       "observation-failure.json": observationFailureSchema
@@ -128932,18 +129246,18 @@ var init_windows_runtime = __esm({
       async observeCurrentClock(evidence3) {
         const supervisor = this.requireSupervisor();
         const methods28 = this.supervisorClockMethods.get(supervisor);
-        const observe12 = methods28?.observe;
-        if (observe12 === void 0) {
+        const observe13 = methods28?.observe;
+        if (observe13 === void 0) {
           throw new Error("Retained runtime has no original fresh-clock method.");
         }
         const evidenceText = canonicalJson(evidence3), launch = this.currentLaunch, launchText = canonicalJson(launch);
         const current10 = () => {
-          if (this.requireSupervisor() !== supervisor || this.currentLaunch !== launch || canonicalJson(this.currentLaunch) !== launchText || this.supervisorClockMethods.get(supervisor) !== methods28 || supervisor.observeCurrentClock !== observe12 || supervisor.capture !== methods28?.capture || canonicalJson(evidence3) !== evidenceText) {
+          if (this.requireSupervisor() !== supervisor || this.currentLaunch !== launch || canonicalJson(this.currentLaunch) !== launchText || this.supervisorClockMethods.get(supervisor) !== methods28 || supervisor.observeCurrentClock !== observe13 || supervisor.capture !== methods28?.capture || canonicalJson(evidence3) !== evidenceText) {
             throw new Error("Fresh runtime clock lost its original capture, supervisor, method or launch.");
           }
         };
         current10();
-        const observation3 = await observe12.call(supervisor, evidence3);
+        const observation3 = await observe13.call(supervisor, evidence3);
         current10();
         const issued39 = assertCurrentIssuedWindowsClockObservation(observation3);
         if (issued39 !== observation3 || observation3.phase !== "owned-observation" || launch === null || observation3.base["jobId"] !== launch.jobId || observation3.base["helperInstance"] !== launch.helperInstance || observation3.base["captureBindingSha256"] !== evidence3.bindingSha256 || observation3.ownerBinding["bindingSha256"] !== evidence3.bindingSha256 || observation3.ownerBinding["authoritySha256"] !== evidence3.authoritySha256) {
@@ -130265,18 +130579,18 @@ var init_ordinary_launch = __esm({
         }
         const retained2 = this.retained, runtime = this.runtime;
         requireValue15(runtime !== void 0 && retained2 !== void 0 && retained2.operationId === operationId18 && canonicalJson(operation.launched) === canonicalJson(retained2.launched), "Ordinary launch has no retained owner for this exact operation.");
-        const launchText = canonicalJson(retained2.launch), launchedText = canonicalJson(retained2.launched), observe12 = retained2.observeTermination;
+        const launchText = canonicalJson(retained2.launch), launchedText = canonicalJson(retained2.launched), observe13 = retained2.observeTermination;
         const current10 = () => {
           this.assertProfileCurrent();
           requireValue15(
-            this.runtime === runtime && this.retained === retained2 && runtime.observeLaunchTermination === observe12 && (retained2.status === void 0 || runtime instanceof WindowsControlRuntime && runtime.status === retained2.status) && canonicalJson(retained2.launch) === launchText && canonicalJson(retained2.launched) === launchedText,
+            this.runtime === runtime && this.retained === retained2 && runtime.observeLaunchTermination === observe13 && (retained2.status === void 0 || runtime instanceof WindowsControlRuntime && runtime.status === retained2.status) && canonicalJson(retained2.launch) === launchText && canonicalJson(retained2.launched) === launchedText,
             "Ordinary termination retained runtime, launch or observer changed."
           );
         };
         current10();
         const facadeSha256 = await this.verify(this.options);
         current10();
-        const observed12 = external_exports.object({ jobId: tokenSchema, helperInstance: tokenSchema, terminated: external_exports.boolean() }).strict().parse(await this.checked(() => observe12.call(runtime)));
+        const observed12 = external_exports.object({ jobId: tokenSchema, helperInstance: tokenSchema, terminated: external_exports.boolean() }).strict().parse(await this.checked(() => observe13.call(runtime)));
         current10();
         requireValue15(observed12.jobId === retained2.launch.jobId && observed12.helperInstance === retained2.launch.helperInstance, "Ordinary termination observed another launch.");
         if (!observed12.terminated) {
@@ -131215,7 +131529,7 @@ var init_current_pcb_identities = __esm({
 });
 
 // server/src/current-project-pcb-metadata.ts
-function fields7(input2, names2) {
+function fields8(input2, names2) {
   if (input2 === null || typeof input2 !== "object" || Array.isArray(input2) || Object.getPrototypeOf(input2) !== Object.prototype && Object.getPrototypeOf(input2) !== null || Reflect.ownKeys(input2).length !== names2.length) {
     throw new Error("CURRENT_PROJECT_PCB_METADATA_SHAPE");
   }
@@ -131230,9 +131544,9 @@ function fields7(input2, names2) {
   return result2;
 }
 function parseCurrentProjectPcbMetadataRequest(input2) {
-  const value2 = fields7(input2, ["method", "target"]);
+  const value2 = fields8(input2, ["method", "target"]);
   const targetFields2 = value2["method"] === inventoryMethod ? ["projectUuid", "branchUuid"] : ["projectUuid", "branchUuid", "pcbUuid"];
-  return currentProjectPcbMetadataRequestSchema.parse({ method: value2["method"], target: fields7(value2["target"], targetFields2) });
+  return currentProjectPcbMetadataRequestSchema.parse({ method: value2["method"], target: fields8(value2["target"], targetFields2) });
 }
 function queryCurrentProjectPcbMetadata(input2 = {}) {
   const query = currentProjectPcbMetadataQuerySchema.parse(input2);
@@ -131302,7 +131616,7 @@ function validateCurrentProjectPcbMetadataResult(input2, raw) {
 }
 function decodeCurrentProjectPcbMetadataReply(raw, input2) {
   assertUpstreamReplySettled(raw);
-  const envelope8 = fields7(extractToolPayload(raw), ["schema", "utf8Bytes", "json"]);
+  const envelope8 = fields8(extractToolPayload(raw), ["schema", "utf8Bytes", "json"]);
   if (envelope8["schema"] !== EXACT_READ_ENVELOPE_SCHEMA || typeof envelope8["json"] !== "string" || envelope8["json"].length === 0 || envelope8["json"].length > CURRENT_PROJECT_PCB_METADATA_MAX_BYTES || !Number.isSafeInteger(envelope8["utf8Bytes"]) || Buffer.byteLength(envelope8["json"], "utf8") > CURRENT_PROJECT_PCB_METADATA_MAX_BYTES || Buffer.byteLength(JSON.stringify(envelope8), "utf8") > CURRENT_PROJECT_PCB_METADATA_MAX_BYTES) {
     throw new Error("CURRENT_PROJECT_PCB_METADATA_ENVELOPE");
   }
@@ -131389,7 +131703,7 @@ var init_current_project_pcb_metadata = __esm({
 
 // server/src/current-project-schematic-metadata.ts
 import { types as types42 } from "node:util";
-function fields8(input2, names2) {
+function fields9(input2, names2) {
   if (input2 === null || typeof input2 !== "object" || types42.isProxy(input2) || Array.isArray(input2) || Object.getPrototypeOf(input2) !== Object.prototype && Object.getPrototypeOf(input2) !== null || Reflect.ownKeys(input2).length !== names2.length) {
     throw new Error("CURRENT_PROJECT_SCHEMATIC_METADATA_SHAPE");
   }
@@ -131404,7 +131718,7 @@ function fields8(input2, names2) {
   return result2;
 }
 function parseCurrentProjectSchematicMetadataRequest(input2) {
-  const value2 = fields8(input2, ["method", "target"]);
+  const value2 = fields9(input2, ["method", "target"]);
   const targetFields2 = ["projectUuid", "branchUuid"];
   if (value2["method"] === methods9[0] || value2["method"] === methods9[2]) {
     targetFields2.push("schematicUuid");
@@ -131412,7 +131726,7 @@ function parseCurrentProjectSchematicMetadataRequest(input2) {
   if (value2["method"] === methods9[2]) {
     targetFields2.push("schematicPageUuid");
   }
-  return currentProjectSchematicMetadataRequestSchema.parse({ method: value2["method"], target: fields8(value2["target"], targetFields2) });
+  return currentProjectSchematicMetadataRequestSchema.parse({ method: value2["method"], target: fields9(value2["target"], targetFields2) });
 }
 function queryCurrentProjectSchematicMetadata(input2 = {}) {
   const query = currentProjectSchematicMetadataQuerySchema.parse(input2), selected3 = methods9.filter((method7) => query.method === void 0 || method7 === query.method);
@@ -131502,7 +131816,7 @@ function validateCurrentProjectSchematicMetadataResult(input2, raw) {
 }
 function decodeCurrentProjectSchematicMetadataReply(raw, input2) {
   assertUpstreamReplySettled(raw);
-  const envelope8 = fields8(extractToolPayload(raw), ["schema", "utf8Bytes", "json"]);
+  const envelope8 = fields9(extractToolPayload(raw), ["schema", "utf8Bytes", "json"]);
   if (envelope8["schema"] !== EXACT_READ_ENVELOPE_SCHEMA || typeof envelope8["json"] !== "string" || envelope8["json"].length === 0 || envelope8["json"].length > CURRENT_PROJECT_SCHEMATIC_METADATA_MAX_BYTES || !Number.isSafeInteger(envelope8["utf8Bytes"]) || Buffer.byteLength(envelope8["json"], "utf8") > CURRENT_PROJECT_SCHEMATIC_METADATA_MAX_BYTES || Buffer.byteLength(JSON.stringify(envelope8), "utf8") > CURRENT_PROJECT_SCHEMATIC_METADATA_MAX_BYTES) {
     throw new Error("CURRENT_PROJECT_SCHEMATIC_METADATA_ENVELOPE");
   }
@@ -131607,7 +131921,7 @@ var init_current_project_schematic_metadata = __esm({
 
 // server/src/current-project-board-metadata.ts
 import { types as types43 } from "node:util";
-function fields9(input2, names2) {
+function fields10(input2, names2) {
   if (input2 === null || typeof input2 !== "object" || types43.isProxy(input2) || Array.isArray(input2) || Object.getPrototypeOf(input2) !== Object.prototype && Object.getPrototypeOf(input2) !== null || Reflect.ownKeys(input2).length !== names2.length) {
     throw new Error("CURRENT_PROJECT_BOARD_METADATA_SHAPE");
   }
@@ -131622,9 +131936,9 @@ function fields9(input2, names2) {
   return result2;
 }
 function parseCurrentProjectBoardMetadataRequest(input2) {
-  const value2 = fields9(input2, ["method", "target"]);
+  const value2 = fields10(input2, ["method", "target"]);
   const targetFields2 = value2["method"] === inventoryMethod2 ? ["projectUuid", "branchUuid"] : ["projectUuid", "branchUuid", "boardUuid"];
-  return currentProjectBoardMetadataRequestSchema.parse({ method: value2["method"], target: fields9(value2["target"], targetFields2) });
+  return currentProjectBoardMetadataRequestSchema.parse({ method: value2["method"], target: fields10(value2["target"], targetFields2) });
 }
 function queryCurrentProjectBoardMetadata(input2 = {}) {
   const query = currentProjectBoardMetadataQuerySchema.parse(input2);
@@ -131695,7 +132009,7 @@ function validateCurrentProjectBoardMetadataResult(input2, raw) {
 }
 function decodeCurrentProjectBoardMetadataReply(raw, input2) {
   assertUpstreamReplySettled(raw);
-  const envelope8 = fields9(extractToolPayload(raw), ["schema", "utf8Bytes", "json"]);
+  const envelope8 = fields10(extractToolPayload(raw), ["schema", "utf8Bytes", "json"]);
   if (envelope8["schema"] !== EXACT_READ_ENVELOPE_SCHEMA || typeof envelope8["json"] !== "string" || envelope8["json"].length === 0 || envelope8["json"].length > CURRENT_PROJECT_BOARD_METADATA_MAX_BYTES || !Number.isSafeInteger(envelope8["utf8Bytes"]) || Buffer.byteLength(envelope8["json"], "utf8") > CURRENT_PROJECT_BOARD_METADATA_MAX_BYTES || Buffer.byteLength(JSON.stringify(envelope8), "utf8") > CURRENT_PROJECT_BOARD_METADATA_MAX_BYTES) {
     throw new Error("CURRENT_PROJECT_BOARD_METADATA_ENVELOPE");
   }
@@ -131830,7 +132144,7 @@ const runtimeObservation=()=>{
 });
 
 // server/src/current-pcb-rename-preflight.ts
-function fields10(input2, names2) {
+function fields11(input2, names2) {
   if (input2 === null || typeof input2 !== "object" || Array.isArray(input2) || Object.getPrototypeOf(input2) !== Object.prototype && Object.getPrototypeOf(input2) !== null || Reflect.ownKeys(input2).length !== names2.length) {
     throw new Error("CURRENT_PCB_RENAME_PREFLIGHT_SHAPE");
   }
@@ -131845,10 +132159,10 @@ function fields10(input2, names2) {
   return value2;
 }
 function parseCurrentPcbRenamePreflightRequest(input2) {
-  const value2 = fields10(input2, ["target", "expectedBefore", "desiredTitle"]);
+  const value2 = fields11(input2, ["target", "expectedBefore", "desiredTitle"]);
   return currentPcbRenamePreflightRequestSchema.parse({
-    target: fields10(value2["target"], ["projectUuid", "branchUuid", "pcbUuid", "ownerUuid"]),
-    expectedBefore: fields10(value2["expectedBefore"], ["title", "displayTitle", "parentUuid", "source", "version", "boardUuid", "ticket", "updateTime", "docType"]),
+    target: fields11(value2["target"], ["projectUuid", "branchUuid", "pcbUuid", "ownerUuid"]),
+    expectedBefore: fields11(value2["expectedBefore"], ["title", "displayTitle", "parentUuid", "source", "version", "boardUuid", "ticket", "updateTime", "docType"]),
     desiredTitle: value2["desiredTitle"]
   });
 }
@@ -131894,7 +132208,7 @@ function validateCurrentPcbRenamePreflightResult(input2, raw) {
 }
 function decodeCurrentPcbRenamePreflightReply(raw, expected3) {
   assertUpstreamReplySettled(raw);
-  const envelope8 = fields10(extractToolPayload(raw), ["schema", "utf8Bytes", "json"]);
+  const envelope8 = fields11(extractToolPayload(raw), ["schema", "utf8Bytes", "json"]);
   if (envelope8["schema"] !== EXACT_READ_ENVELOPE_SCHEMA || typeof envelope8["json"] !== "string" || envelope8["json"].length === 0 || envelope8["json"].length > CURRENT_PCB_RENAME_PREFLIGHT_MAX_BYTES || !Number.isSafeInteger(envelope8["utf8Bytes"]) || Buffer.byteLength(envelope8["json"], "utf8") > CURRENT_PCB_RENAME_PREFLIGHT_MAX_BYTES || Buffer.byteLength(JSON.stringify(envelope8), "utf8") > CURRENT_PCB_RENAME_PREFLIGHT_MAX_BYTES) {
     throw new Error("CURRENT_PCB_RENAME_PREFLIGHT_ENVELOPE");
   }
@@ -132246,13 +132560,13 @@ var init_current_symbol_copy_operation = __esm({
 });
 
 // server/src/current-pcb-rename-owner.ts
-function own6(value2, fields26) {
+function own6(value2, fields27) {
   const prototype2 = value2 === null || typeof value2 !== "object" ? void 0 : Object.getPrototypeOf(value2);
-  if (value2 === null || typeof value2 !== "object" || Array.isArray(value2) || prototype2 !== Object.prototype && prototype2 !== null || Reflect.ownKeys(value2).length !== fields26.length) {
+  if (value2 === null || typeof value2 !== "object" || Array.isArray(value2) || prototype2 !== Object.prototype && prototype2 !== null || Reflect.ownKeys(value2).length !== fields27.length) {
     throw new Error("Current PCB opening owner requires exact own-data fields.");
   }
   const result2 = {};
-  for (const name9 of fields26) {
+  for (const name9 of fields27) {
     const field13 = Object.getOwnPropertyDescriptor(value2, name9);
     if (field13 === void 0 || !Object.hasOwn(field13, "value")) {
       throw new Error("Current PCB opening owner refuses accessors or missing fields.");
@@ -132394,16 +132708,16 @@ var init_current_pcb_rename_operation = __esm({
 
 // server/src/current-schematic-rename-owner.ts
 import { types as types44 } from "node:util";
-function own7(value2, fields26) {
+function own7(value2, fields27) {
   if (value2 !== null && typeof value2 === "object" && types44.isProxy(value2)) {
     throw new Error("Current SCH owner refuses Proxy input.");
   }
   const prototype2 = value2 === null || typeof value2 !== "object" ? void 0 : Object.getPrototypeOf(value2);
-  if (value2 === null || typeof value2 !== "object" || Array.isArray(value2) || prototype2 !== Object.prototype && prototype2 !== null || Reflect.ownKeys(value2).length !== fields26.length) {
+  if (value2 === null || typeof value2 !== "object" || Array.isArray(value2) || prototype2 !== Object.prototype && prototype2 !== null || Reflect.ownKeys(value2).length !== fields27.length) {
     throw new Error("Current SCH opening owner requires exact own-data fields.");
   }
   const result2 = {};
-  for (const name9 of fields26) {
+  for (const name9 of fields27) {
     const field13 = Object.getOwnPropertyDescriptor(value2, name9);
     if (field13 === void 0 || !Object.hasOwn(field13, "value")) {
       throw new Error("Current SCH opening owner refuses accessors or missing fields.");
@@ -132803,7 +133117,7 @@ function validateCurrentProjectOnlySymbolPreflightArguments(input2) {
     return { valid: false, executionAuthorized: false, issues: error63 instanceof external_exports.ZodError ? error63.issues.slice(0, 16).map((issue2) => ({ path: issue2.path.map(String).join("."), message: issue2.message.slice(0, 512) })) : [{ path: "", message: "Expected exact own-data target and expectedBefore fields." }] };
   }
 }
-function fields11(input2, names2) {
+function fields12(input2, names2) {
   if (input2 === null || typeof input2 !== "object" || Array.isArray(input2) || Object.getPrototypeOf(input2) !== Object.prototype && Object.getPrototypeOf(input2) !== null || Reflect.ownKeys(input2).length !== names2.length) {
     throw new Error("CURRENT_PROJECT_ONLY_SYMBOL_PREFLIGHT_SHAPE");
   }
@@ -132818,10 +133132,10 @@ function fields11(input2, names2) {
   return value2;
 }
 function request(input2) {
-  const value2 = fields11(input2, ["target", "expectedBefore"]);
+  const value2 = fields12(input2, ["target", "expectedBefore"]);
   return currentProjectOnlySymbolPreflightRequestSchema.parse({
-    target: fields11(value2["target"], ["projectUuid", "branchUuid", "symbolUuid", "ownerUuid"]),
-    expectedBefore: fields11(value2["expectedBefore"], ["name", "description", "tagsJson", "source", "version", "ticket"])
+    target: fields12(value2["target"], ["projectUuid", "branchUuid", "symbolUuid", "ownerUuid"]),
+    expectedBefore: fields12(value2["expectedBefore"], ["name", "description", "tagsJson", "source", "version", "ticket"])
   });
 }
 function buildCurrentProjectOnlySymbolPreflightProgram(input2) {
@@ -132884,7 +133198,7 @@ return envelope;`;
 function decodeCurrentProjectOnlySymbolPreflightReply(raw, expected3) {
   const selected3 = request(expected3);
   assertUpstreamReplySettled(raw);
-  const envelope8 = fields11(extractToolPayload(raw), ["schema", "utf8Bytes", "json"]);
+  const envelope8 = fields12(extractToolPayload(raw), ["schema", "utf8Bytes", "json"]);
   if (envelope8["schema"] !== EXACT_READ_ENVELOPE_SCHEMA || typeof envelope8["json"] !== "string" || envelope8["json"].length === 0 || envelope8["json"].length > CURRENT_PROJECT_ONLY_SYMBOL_PREFLIGHT_MAX_BYTES || !Number.isSafeInteger(envelope8["utf8Bytes"]) || Buffer.byteLength(envelope8["json"], "utf8") > CURRENT_PROJECT_ONLY_SYMBOL_PREFLIGHT_MAX_BYTES || Buffer.byteLength(JSON.stringify(envelope8), "utf8") > CURRENT_PROJECT_ONLY_SYMBOL_PREFLIGHT_MAX_BYTES) {
     throw new Error("CURRENT_PROJECT_ONLY_SYMBOL_PREFLIGHT_ENVELOPE");
   }
@@ -135600,13 +135914,13 @@ var init_engine = __esm({
        */
       async freshClockObservationForClosedCapture(receipt2) {
         const slot = this.closedCaptures.get(receipt2);
-        const observe12 = slot?.clockMethod;
-        if (slot === void 0 || observe12 === void 0) {
+        const observe13 = slot?.clockMethod;
+        if (slot === void 0 || observe13 === void 0) {
           throw new Error("Fresh clock requires an original closed capture and retained clock method.");
         }
         const runtimeSnapshot = canonicalJson(slot.snapshot.runtimeIdentity), sessionSnapshot = canonicalJson(slot.snapshot.bridgeSession);
         const originalCurrent = () => {
-          if (this.closedCaptures.get(receipt2) !== slot || slot.releasing || this.executionAuthorityValidator !== slot.validator || this.upstream !== slot.upstream || slot.validator.observeCurrentClock !== observe12 || slot.upstream.bridgeSessionLifecycle !== slot.sessionMethod || slot.upstream.currentAuthenticatedBridgeDispatchBinding !== slot.dispatchMethod || canonicalJson(receipt2) !== canonicalJson(slot.snapshot)) {
+          if (this.closedCaptures.get(receipt2) !== slot || slot.releasing || this.executionAuthorityValidator !== slot.validator || this.upstream !== slot.upstream || slot.validator.observeCurrentClock !== observe13 || slot.upstream.bridgeSessionLifecycle !== slot.sessionMethod || slot.upstream.currentAuthenticatedBridgeDispatchBinding !== slot.dispatchMethod || canonicalJson(receipt2) !== canonicalJson(slot.snapshot)) {
             throw new Error("Fresh clock requires the unchanged original closed capture owner and methods.");
           }
         };
@@ -135624,7 +135938,7 @@ var init_engine = __esm({
           }
         };
         current10();
-        const observation3 = await observe12.call(slot.validator, slot.originalExecutionAuthority);
+        const observation3 = await observe13.call(slot.validator, slot.originalExecutionAuthority);
         current10();
         const authority2 = slot.snapshot.executionAuthority, issued39 = assertCurrentIssuedWindowsClockObservation(observation3);
         if (issued39 !== observation3 || observation3.phase !== "owned-observation" || observation3.ownerBinding["operationId"] !== slot.snapshot.operationId || observation3.ownerBinding["phase"] !== slot.snapshot.phase || observation3.ownerBinding["challengeAttempt"] !== slot.snapshot.challengeAttempt || observation3.ownerBinding["authoritySha256"] !== authority2.authoritySha256 || observation3.ownerBinding["bindingSha256"] !== authority2.bindingSha256 || observation3.base["captureBindingSha256"] !== authority2.bindingSha256 || observation3.ownerBinding["bridgeSessionSha256"] !== sha256Text(sessionSnapshot) || observation3.ownerBinding["runtimeIdentitySha256"] !== sha256Text(runtimeSnapshot)) {
@@ -135654,12 +135968,12 @@ var init_engine = __esm({
        */
       async freshClockObservationForTrackedDispatch(operation, phase5) {
         const slot = this.trackedClockCaptures.get(operation);
-        const observe12 = slot?.clockMethod;
-        if (slot === void 0 || observe12 === void 0) {
+        const observe13 = slot?.clockMethod;
+        if (slot === void 0 || observe13 === void 0) {
           throw new Error("Fresh clock requires an original tracked capture and retained clock method.");
         }
         const current10 = () => {
-          if (this.trackedClockCaptures.get(operation) !== slot || slot.operationId !== operation.operationId || slot.phase !== phase5 || this.executionAuthorityValidator !== slot.validator || slot.validator.observeCurrentClock !== observe12 || this.upstream.bridgeSessionLifecycle !== slot.sessionMethod || this.upstream.currentAuthenticatedBridgeDispatchBinding !== slot.dispatchMethod || operation.orphanedCallPhase !== phase5 || !operation.orphanedCallPossible || operation.runtimeRestartChallengeAttempt !== slot.challengeAttempt || canonicalJson(operation.executionAuthorityBeforeOrphan) !== slot.snapshot || canonicalJson(operation.runtimeIdentityBeforeOrphan) !== slot.runtimeSnapshot || canonicalJson(operation.bridgeSessionBeforeOrphan) !== slot.sessionSnapshot || canonicalJson(operation.bridgeDispatchBeforeOrphan) !== slot.dispatchSnapshot) {
+          if (this.trackedClockCaptures.get(operation) !== slot || slot.operationId !== operation.operationId || slot.phase !== phase5 || this.executionAuthorityValidator !== slot.validator || slot.validator.observeCurrentClock !== observe13 || this.upstream.bridgeSessionLifecycle !== slot.sessionMethod || this.upstream.currentAuthenticatedBridgeDispatchBinding !== slot.dispatchMethod || operation.orphanedCallPhase !== phase5 || !operation.orphanedCallPossible || operation.runtimeRestartChallengeAttempt !== slot.challengeAttempt || canonicalJson(operation.executionAuthorityBeforeOrphan) !== slot.snapshot || canonicalJson(operation.runtimeIdentityBeforeOrphan) !== slot.runtimeSnapshot || canonicalJson(operation.bridgeSessionBeforeOrphan) !== slot.sessionSnapshot || canonicalJson(operation.bridgeDispatchBeforeOrphan) !== slot.dispatchSnapshot) {
             throw new Error("Fresh clock requires the unchanged original tracked dispatch owner and methods.");
           }
           const session = this.authenticatedBridgeSession();
@@ -135668,7 +135982,7 @@ var init_engine = __esm({
           }
         };
         current10();
-        const observation3 = await observe12.call(slot.validator, slot.original);
+        const observation3 = await observe13.call(slot.validator, slot.original);
         current10();
         const issued39 = assertCurrentIssuedWindowsClockObservation(observation3);
         if (issued39 !== observation3 || observation3.phase !== "owned-observation" || observation3.ownerBinding["operationId"] !== slot.operationId || observation3.ownerBinding["phase"] !== slot.phase || observation3.ownerBinding["challengeAttempt"] !== slot.challengeAttempt || observation3.ownerBinding["authoritySha256"] !== slot.original.authoritySha256 || observation3.ownerBinding["bindingSha256"] !== slot.original.bindingSha256 || observation3.base["captureBindingSha256"] !== slot.original.bindingSha256 || observation3.ownerBinding["bridgeSessionSha256"] !== sha256Text(slot.sessionSnapshot) || observation3.ownerBinding["runtimeIdentitySha256"] !== sha256Text(slot.runtimeSnapshot)) {
@@ -136727,7 +137041,7 @@ var init_engine = __esm({
         const initialContext = await this.assertContext(boundContext);
         boundContext.document.tabId = initialContext.document.tabId;
         const source7 = wrapWithContextGuard(buildPublicSdkReadCode(parsed5), boundContext);
-        const observe12 = async () => {
+        const observe13 = async () => {
           await this.assertBridgeDispatchAllowed();
           await this.assertContext(boundContext);
           const raw = await this.upstream.callTool("easyeda_execute", { code: source7, timeoutMs: 6e4, confirmWrite: true }, 7e4);
@@ -136736,8 +137050,8 @@ var init_engine = __esm({
           await this.assertContext(boundContext);
           return payload2;
         };
-        const first = await observe12();
-        const second = await observe12();
+        const first = await observe13();
+        const second = await observe13();
         await this.assertPublicSdkImplementation();
         const snapshotSha256 = sha256Json(second);
         if (sha256Json(first) !== snapshotSha256) {
@@ -145980,8 +146294,8 @@ function processStartTime(stat3) {
   if (closingParenthesis < 1) {
     throw new Error("The supervised backend process stat record is malformed.");
   }
-  const fields26 = stat3.slice(closingParenthesis + 1).trim().split(/\s+/u);
-  const startTime = fields26[19];
+  const fields27 = stat3.slice(closingParenthesis + 1).trim().split(/\s+/u);
+  const startTime = fields27[19];
   if (startTime === void 0 || !/^\d+$/u.test(startTime)) {
     throw new Error("The supervised backend process start identity is unavailable.");
   }
@@ -146202,9 +146516,9 @@ async function establishedServerSocketInode(socket) {
   for (const table16 of tables) {
     const text53 = await readFile6(table16, "utf8");
     for (const line6 of text53.split(/\r?\n/u).slice(1)) {
-      const fields26 = line6.trim().split(/\s+/u);
-      if (fields26.length >= 10 && fields26[1] === expectedLocal && fields26[2] === expectedRemote && fields26[3] === "01" && fields26[9] !== void 0) {
-        matches.push(fields26[9]);
+      const fields27 = line6.trim().split(/\s+/u);
+      if (fields27.length >= 10 && fields27[1] === expectedLocal && fields27[2] === expectedRemote && fields27[3] === "01" && fields27[9] !== void 0) {
+        matches.push(fields27[9]);
       }
     }
   }
@@ -157182,7 +157496,7 @@ async function readPcbNetMembership(engine2, requestInput2, expectedContext, exp
     throw new Error("PCB net membership active identity changed.");
   }
   let inheritedScope;
-  const observe12 = async (kind) => {
+  const observe13 = async (kind) => {
     await engine2.assertBridgeDispatchAllowed();
     if (canonicalJson(await engine2.assertContext(context4)) !== canonicalJson(context4)) {
       throw new Error("PCB net membership context changed before observation.");
@@ -157196,9 +157510,9 @@ async function readPcbNetMembership(engine2, requestInput2, expectedContext, exp
     return payload2;
   };
   const observations2 = async () => {
-    const beforePayload = await observe12("pcb-source");
-    const inventory2 = await observe12("pcb-inventory");
-    const afterPayload = await observe12("pcb-source");
+    const beforePayload = await observe13("pcb-source");
+    const inventory2 = await observe13("pcb-inventory");
+    const afterPayload = await observe13("pcb-source");
     const before = parseDocumentSource(external_exports.string().max(16777216).parse(beforePayload["source"]));
     const after = parseDocumentSource(external_exports.string().max(16777216).parse(afterPayload["source"]));
     if (before.sha256 !== after.sha256) {
@@ -157589,14 +157903,14 @@ async function readPcbSourceObjects(engine2, requestInput2, expectedContext, exp
       throw new Error("Explicit PCB context changed around observation.");
     }
   };
-  const observe12 = async (kind) => {
+  const observe13 = async (kind) => {
     const payload2 = checkedExact2(await engine2.exactRead({ kind }, context4), kind);
     await guard();
     return payload2;
   };
   const observations2 = async () => {
-    const beforePayload = await observe12("pcb-source"), inventory2 = await observe12("pcb-inventory");
-    const afterPayload = await observe12("pcb-source");
+    const beforePayload = await observe13("pcb-source"), inventory2 = await observe13("pcb-inventory");
+    const afterPayload = await observe13("pcb-source");
     const before = parseDocumentSource(external_exports.string().max(16777216).parse(beforePayload["source"]));
     const after = parseDocumentSource(external_exports.string().max(16777216).parse(afterPayload["source"]));
     if (before.sha256 !== after.sha256) {
@@ -157812,7 +158126,7 @@ var init_facade_mode = __esm({
       "easyeda_control_pcb209_worker_startup"
     ]);
     PUBLIC_UTILITIES_ONLY_INSTRUCTIONS = "EasyEDA 3.2.209 exposes only the registered scoped tools. Use offline easyeda_control_api and validate exact arguments before live calls. Discovery does not authorize execution. Follow each tool's contract and the EasyEDA control skill. Generic CAD writes, explicit Save and recovery are unavailable. Disposable opening can persist data; keep the original owner through cleanup. Inspect uncertain results without replaying consumed actions.";
-    PUBLIC_UTILITIES_ONLY_SCOPE = "EasyEDA 3.2.209 scoped Math, Unit, Environment, supported and SDK-resolved language, API-page viewport, theme, toolbar-unit, fixed system-library-ID, tab-count, active-identity and shortcut observations, plus ordinary launch and bounded managed Allegro-file membership comparison. SDK-resolved language may be a fallback and does not verify provider success. Up to seven unique public utility methods can share one admission sequence and ten-second deadline; two ordered passes must match and failures return no partial batch. File preparation stays local; SDK comparison requires runtime admission and does not compare component values or prove circuit equivalence. The all-mode library_files tool prepares supplied files as exclusive managed inputs and reads bounded standalone-library or project-archive metadata entirely offline, without SDK execution or import. Separate catalog tools perform explicitly confirmed credential-free vendor HTTPS metadata queries without EasyEDA or SDK execution. The separate pcb209_opening route owns one disposable project/PCB opening, UI/PCB source/identity checks, bounded layer/copper-count and Line/Arc/Via/parentless-String/Component/Pad/Attribute/Dimension/Image loaded-view observations through original normal cleanup. Its selection/relations stage also captures selected IDs and requested component child-pad IDs. A separate Pad stage observes native top/inner/bottom special style groups without expanding physical layers. An Image stage retains bounded serialized vector paths or opaque Picture references without loading assets. Arc observations add native center, radius, endpoint angles and direction. Poured observations retain existing native fill contours and parent associations without rebuilding or qualifying copper. Digest-bound historical queries read published observations without live RPCs or owner adoption; they do not describe current state. Ordinary opening can migrate data and automatically Save. The separate pcb209_worker_startup route has four distinct disposable launch purposes. The default purpose captures original project-worker constructors, current wrapper/channel relations and bracketed actor/local-Date observations. The empty-baseline purpose joins fixed common data to the original completed SQL checkpoint between empty raw-manager samples. The ratline-held-import purpose qualifies PCB construction and the first ratline child through seven source phases and observes a bounded first-child native creation stack, leaving its final import held. It does not independently associate the JavaScript Worker object with its CDP target, continue that import or prove subordinate-worker, callback or publication completion. The separate ratline-continuation purpose qualifies and continues all three original source imports and observes PCB/worker capture checkpoints and callback returnsites. Native Worker/CDP identity and callback/publication completion remain unproved. Each purpose retains its own original owner and requires explicit debugger-pause acceptance; existing owners cannot be upgraded. No complete startup or live baseline, general geometry read/write, explicit Save or recovery is offered. Source review and synthetic tests are not connected execution validation. These observations and launch do not prove isolation, complete-board membership, reciprocal ownership, connectivity, saved state, physical stackup or readiness.";
+    PUBLIC_UTILITIES_ONLY_SCOPE = "EasyEDA 3.2.209 scoped Math, Unit, Environment, supported and SDK-resolved language, API-page viewport, theme, toolbar-unit, fixed system-library-ID, tab-count, active-identity and shortcut observations, plus ordinary launch and bounded managed Allegro-file membership comparison. SDK-resolved language may be a fallback and does not verify provider success. Up to seven unique public utility methods can share one admission sequence and ten-second deadline; two ordered passes must match and failures return no partial batch. File preparation stays local; SDK comparison requires runtime admission and does not compare component values or prove circuit equivalence. The all-mode library_files tool prepares supplied files as exclusive managed inputs and reads bounded standalone-library or project-archive metadata entirely offline, without SDK execution or import. Separate catalog tools perform explicitly confirmed credential-free vendor HTTPS metadata queries without EasyEDA or SDK execution. The separate pcb209_opening route owns one disposable project/PCB opening, UI/PCB source/identity checks, bounded layer/copper-count and Line/Arc/Via/parentless-String/Component/Pad/Attribute/Dimension/Image loaded-view observations through original normal cleanup. Its selection/relations stage also captures selected IDs and requested component child-pad IDs. A separate Pad stage observes native top/inner/bottom special style groups without expanding physical layers. An Image stage retains bounded serialized vector paths or opaque Picture references without loading assets. Arc observations add native center, radius, endpoint angles and direction. Poured observations retain existing native fill contours and parent associations without rebuilding or qualifying copper. Digest-bound historical queries read published observations without live RPCs or owner adoption; they do not describe current state. Ordinary opening can migrate data and automatically Save. The separate pcb209_worker_startup route has four distinct disposable launch purposes. The default purpose captures original project-worker constructors, current wrapper/channel relations, bracketed actor/local-Date observations and the original footprint manager's own user/client/ticket state. The footprint observation invokes no source getter, copy or delete and grants no persistence proof. The empty-baseline purpose joins fixed common data to the original completed SQL checkpoint between empty raw-manager samples. The ratline-held-import purpose qualifies PCB construction and the first ratline child through seven source phases and observes a bounded first-child native creation stack, leaving its final import held. It does not independently associate the JavaScript Worker object with its CDP target, continue that import or prove subordinate-worker, callback or publication completion. The separate ratline-continuation purpose qualifies and continues all three original source imports and observes PCB/worker capture checkpoints and callback returnsites. Native Worker/CDP identity and callback/publication completion remain unproved. Each purpose retains its own original owner and requires explicit debugger-pause acceptance; existing owners cannot be upgraded. No complete startup or live baseline, general geometry read/write, explicit Save or recovery is offered. Source review and synthetic tests are not connected execution validation. These observations and launch do not prove isolation, complete-board membership, reciprocal ownership, connectivity, saved state, physical stackup or readiness.";
     CALCULATION_ONLY_TOOLS = Object.freeze([
       "easyeda_control_api",
       "easyeda_control_discover",
@@ -158998,7 +159312,7 @@ var init_editor_shell_runtime = __esm({
 });
 
 // server/src/current-schematic-rename-preflight.ts
-function fields12(input2, names2) {
+function fields13(input2, names2) {
   if (input2 === null || typeof input2 !== "object" || Array.isArray(input2) || Object.getPrototypeOf(input2) !== Object.prototype && Object.getPrototypeOf(input2) !== null || Reflect.ownKeys(input2).length !== names2.length) {
     throw new Error("CURRENT_SCHEMATIC_RENAME_PREFLIGHT_SHAPE");
   }
@@ -159013,10 +159327,10 @@ function fields12(input2, names2) {
   return result2;
 }
 function parseCurrentSchematicRenamePreflightRequest(input2) {
-  const value2 = fields12(input2, ["target", "expectedBefore", "desiredTitle"]);
+  const value2 = fields13(input2, ["target", "expectedBefore", "desiredTitle"]);
   const result2 = currentSchematicRenamePreflightRequestSchema.parse({
-    target: fields12(value2["target"], ["projectUuid", "branchUuid", "schematicUuid", "ownerUuid"]),
-    expectedBefore: fields12(value2["expectedBefore"], ["name", "displayName", "source", "version", "boardUuid", "ticket", "updateTime"]),
+    target: fields13(value2["target"], ["projectUuid", "branchUuid", "schematicUuid", "ownerUuid"]),
+    expectedBefore: fields13(value2["expectedBefore"], ["name", "displayName", "source", "version", "boardUuid", "ticket", "updateTime"]),
     desiredTitle: value2["desiredTitle"]
   });
   const encoded = JSON.stringify(result2);
@@ -159883,8 +160197,8 @@ async function unchanged2(checkpoint, source7) {
     throw new Error("Disposable opening checkpoint receipt changed.");
   }
   const verified = await verifyCheckpoint(checkpoint.receiptPath, await accessPolicy(source7));
-  const fields26 = ["receiptPath", "source", "checkpoint", "sourceSha256", "checkpointSha256", "sourceDumpSha256", "checkpointDumpSha256"];
-  if (!verified.ok || verified.sourceChanged || !verified.sourceMatchesReceipt || !verified.checkpointMatchesReceipt || !verified.sourceEqualsCheckpoint || fields26.some((field13) => verified[field13] !== checkpoint[field13])) {
+  const fields27 = ["receiptPath", "source", "checkpoint", "sourceSha256", "checkpointSha256", "sourceDumpSha256", "checkpointDumpSha256"];
+  if (!verified.ok || verified.sourceChanged || !verified.sourceMatchesReceipt || !verified.checkpointMatchesReceipt || !verified.sourceEqualsCheckpoint || fields27.some((field13) => verified[field13] !== checkpoint[field13])) {
     throw new Error("Disposable opening original source or checkpoint changed before navigation.");
   }
 }
@@ -161858,8 +162172,8 @@ var init_current_pcb_common_baseline_session = __esm({
       #packet = null;
       #comparisonRefused = false;
       constructor(input2) {
-        const fields26 = own10(input2, ["before", "identity", "transport", "scriptId", "uniqueContextId"]);
-        const transport2 = own10(fields26["transport"], ["request", "assertCurrent"]);
+        const fields27 = own10(input2, ["before", "identity", "transport", "scriptId", "uniqueContextId"]);
+        const transport2 = own10(fields27["transport"], ["request", "assertCurrent"]);
         need66(typeof transport2["request"] === "function" && typeof transport2["assertCurrent"] === "function", "original transport methods required");
         this.#before = input2.before;
         this.#completion = readerCompletion(this.#before);
@@ -161867,14 +162181,14 @@ var init_current_pcb_common_baseline_session = __esm({
           this.#completion.observedChildClose && this.#completion.exitCode === 0 && this.#completion.exitSignal === null,
           "original completed SQL reader required"
         );
-        this.#identity = freezeDeep(identity35.parse(own10(fields26["identity"], ["projectUuid", "branchUuid", "documentUuid"])));
+        this.#identity = freezeDeep(identity35.parse(own10(fields27["identity"], ["projectUuid", "branchUuid", "documentUuid"])));
         this.#assertCurrent = input2.transport.assertCurrent;
         this.#runner = new CurrentPcbCommonBaselineRunner(
           { request: input2.transport.request, assertCurrent: () => {
             this.#current();
           } },
-          handle11.parse(fields26["scriptId"]),
-          handle11.parse(fields26["uniqueContextId"]),
+          handle11.parse(fields27["scriptId"]),
+          handle11.parse(fields27["uniqueContextId"]),
           this.#identity.documentUuid
         );
       }
@@ -163007,67 +163321,67 @@ function startupWire(raw, id16, sites) {
     return fail19();
   }
   const parsed5 = schema10.parse(captureWire(raw));
-  let fields26;
+  let fields27;
   let action = "worker-startup-send";
   switch (parsed5.method) {
     case "Target.getTargets": {
       action = "worker-startup-parent";
-      fields26 = { parentPhase: "targets" };
+      fields27 = { parentPhase: "targets" };
       break;
     }
     case "Page.getFrameTree": {
       action = "worker-startup-parent";
-      fields26 = { parentPhase: "frames" };
+      fields27 = { parentPhase: "frames" };
       break;
     }
     case "DOM.getFrameOwner": {
       action = "worker-startup-parent";
-      fields26 = { parentPhase: "frame-owner", frameId: parsed5.params.frameId };
+      fields27 = { parentPhase: "frame-owner", frameId: parsed5.params.frameId };
       break;
     }
     case "DOM.describeNode": {
       action = "worker-startup-parent";
-      fields26 = { parentPhase: "describe-owner", backendNodeId: parsed5.params.backendNodeId };
+      fields27 = { parentPhase: "describe-owner", backendNodeId: parsed5.params.backendNodeId };
       break;
     }
     case "Target.setAutoAttach": {
       if (JSON.stringify(parsed5.params) !== JSON.stringify(CURRENT_PCB_WORKER_STARTUP_ATTACH)) {
         return fail19();
       }
-      fields26 = { startupPhase: "attach" };
+      fields27 = { startupPhase: "attach" };
       break;
     }
     case "Runtime.enable": {
-      fields26 = { startupPhase: "runtime" };
+      fields27 = { startupPhase: "runtime" };
       break;
     }
     case "Debugger.enable": {
-      fields26 = { startupPhase: "debugger" };
+      fields27 = { startupPhase: "debugger" };
       break;
     }
     case "Debugger.setInstrumentationBreakpoint": {
-      fields26 = { startupPhase: "instrument" };
+      fields27 = { startupPhase: "instrument" };
       break;
     }
     case "Runtime.runIfWaitingForDebugger": {
-      fields26 = { startupPhase: "start" };
+      fields27 = { startupPhase: "start" };
       break;
     }
     case "Debugger.getScriptSource": {
       if ("pcbPhase" in parsed5) {
         action = "worker-startup-parent";
-        fields26 = { parentPhase: "pcb-source", scriptId: parsed5.params.scriptId };
+        fields27 = { parentPhase: "pcb-source", scriptId: parsed5.params.scriptId };
       } else {
-        fields26 = { startupPhase: "source", scriptId: parsed5.params.scriptId };
+        fields27 = { startupPhase: "source", scriptId: parsed5.params.scriptId };
       }
       break;
     }
     case "Debugger.removeBreakpoint": {
-      fields26 = { startupPhase: "remove", breakpointId: parsed5.params.breakpointId };
+      fields27 = { startupPhase: "remove", breakpointId: parsed5.params.breakpointId };
       break;
     }
     case "Debugger.resume": {
-      fields26 = { startupPhase: "resume" };
+      fields27 = { startupPhase: "resume" };
       break;
     }
     case "Debugger.setBreakpoint": {
@@ -163075,27 +163389,30 @@ function startupWire(raw, id16, sites) {
       if (site === void 0) {
         return fail19();
       }
-      fields26 = { startupPhase: "breakpoint", site, scriptId: parsed5.params.location.scriptId };
+      fields27 = { startupPhase: "breakpoint", site, scriptId: parsed5.params.location.scriptId };
       break;
     }
     case "Debugger.evaluateOnCallFrame": {
-      const selector7 = { this: "receiver", e: "argument-e", t: "argument-t", "this.bc": "channel", "this.bc.onmessage": "onmessage" }[parsed5.params.expression];
-      fields26 = { startupPhase: "select", selector: selector7, callFrameId: parsed5.params.callFrameId };
+      if (parsed5.params.expression === CURRENT_FOOTPRINT_COPY_CONSTRUCTORS_EXPRESSION && sites !== CURRENT_PCB_209_WORKER_CONSTRUCTION_SITES) {
+        return fail19();
+      }
+      const selector7 = { [CURRENT_FOOTPRINT_COPY_CONSTRUCTORS_EXPRESSION]: "footprint-constructors", this: "receiver", e: "argument-e", t: "argument-t", "this.bc": "channel", "this.bc.onmessage": "onmessage" }[parsed5.params.expression];
+      fields27 = { startupPhase: "select", selector: selector7, callFrameId: parsed5.params.callFrameId };
       break;
     }
     case "Runtime.getProperties": {
-      fields26 = { startupPhase: "properties", objectId: parsed5.params.objectId };
+      fields27 = { startupPhase: "properties", objectId: parsed5.params.objectId };
       break;
     }
     case "Runtime.callFunctionOn": {
       if ("uniqueContextId" in parsed5.params) {
         action = "worker-startup-parent";
         if (parsed5.params.arguments.length === 0) {
-          fields26 = { parentPhase: "actor-clock", uniqueContextId: parsed5.params.uniqueContextId };
+          fields27 = { parentPhase: "actor-clock", uniqueContextId: parsed5.params.uniqueContextId };
           break;
         }
         const [target9, phase5] = parsed5.params.arguments;
-        fields26 = {
+        fields27 = {
           parentPhase: parsed5.params.functionDeclaration === CURRENT_PCB_DIAGNOSTIC_PCB_OPENING_FUNCTION ? `pcb-${phase5.value}` : phase5.value,
           uniqueContextId: parsed5.params.uniqueContextId,
           targetRawWindowsPath: target9.value.rawWindowsPath,
@@ -163106,14 +163423,21 @@ function startupWire(raw, id16, sites) {
         };
         break;
       }
+      const footprint2 = Object.entries(CURRENT_FOOTPRINT_COPY_STATE_CALLS).find(([, value2]) => value2.program === parsed5.params.functionDeclaration);
       const assignment = Object.entries(CURRENT_PCB_WORKER_CONSTRUCTION_ASSIGNMENT_CALLS).find(([, value2]) => value2.program === parsed5.params.functionDeclaration);
       const channel = Object.entries(CURRENT_PCB_WORKER_STARTUP_CHANNEL_CALLS).find(([, value2]) => value2.program === parsed5.params.functionDeclaration);
-      if (channel !== void 0) {
+      if (footprint2 !== void 0) {
+        const [phase5, expected3] = footprint2;
+        if (sites !== CURRENT_PCB_209_WORKER_CONSTRUCTION_SITES || parsed5.params.arguments.length !== expected3.arguments || parsed5.params.returnByValue !== expected3.returnByValue) {
+          return fail19();
+        }
+        fields27 = { startupPhase: `footprint-${phase5}`, objectId: parsed5.params.objectId };
+      } else if (channel !== void 0) {
         const [phase5, expected3] = channel;
         if (parsed5.params.arguments.length !== expected3.arguments || parsed5.params.returnByValue !== expected3.returnByValue) {
           return fail19();
         }
-        fields26 = { startupPhase: `channel-${phase5}`, objectId: parsed5.params.objectId };
+        fields27 = { startupPhase: `channel-${phase5}`, objectId: parsed5.params.objectId };
       } else if (assignment === void 0) {
         if (parsed5.params.functionDeclaration !== CURRENT_PCB_WORKER_CONSTRUCTION_SAME && parsed5.params.functionDeclaration !== CURRENT_PCB_WORKER_CONSTRUCTION_PROJECT && parsed5.params.functionDeclaration !== CURRENT_PCB_WORKER_CONSTRUCTION_IDENTITY && parsed5.params.functionDeclaration !== CURRENT_PCB_WORKER_STARTUP_WORKER_ACTOR_CLOCK_FUNCTION || parsed5.params.arguments.length !== 1 || !parsed5.params.returnByValue) {
           return fail19();
@@ -163126,21 +163450,21 @@ function startupWire(raw, id16, sites) {
         } else if (parsed5.params.functionDeclaration === CURRENT_PCB_WORKER_STARTUP_WORKER_ACTOR_CLOCK_FUNCTION) {
           phase5 = "actor-clock";
         }
-        fields26 = { startupPhase: phase5, objectId: parsed5.params.objectId };
+        fields27 = { startupPhase: phase5, objectId: parsed5.params.objectId };
       } else {
         const [phase5, expected3] = assignment;
         if (parsed5.params.arguments.length !== expected3.arguments || parsed5.params.returnByValue !== expected3.returnByValue) {
           return fail19();
         }
-        fields26 = { startupPhase: `assignment-${phase5}`, objectId: parsed5.params.objectId };
+        fields27 = { startupPhase: `assignment-${phase5}`, objectId: parsed5.params.objectId };
       }
       for (const [index2, value2] of parsed5.params.arguments.entries()) {
-        fields26[`argument${index2}`] = value2.objectId;
+        fields27[`argument${index2}`] = value2.objectId;
       }
       break;
     }
     case "Runtime.releaseObjectGroup": {
-      fields26 = { startupPhase: "release" };
+      fields27 = { startupPhase: "release" };
       break;
     }
     default: {
@@ -163152,7 +163476,7 @@ function startupWire(raw, id16, sites) {
     requestId: id16,
     method: parsed5.method,
     ...parsed5.sessionId === void 0 ? {} : { sessionId: parsed5.sessionId },
-    ...fields26
+    ...fields27
   } });
 }
 function currentPcbWorkerStartupWire(raw, id16) {
@@ -163165,6 +163489,7 @@ var CURRENT_PCB_WORKER_STARTUP_REQUEST_LIMIT, handle13, sessionId, group, empty9
 var init_current_pcb_worker_startup_wire = __esm({
   "server/src/current-pcb-worker-startup-wire.ts"() {
     init_zod();
+    init_current_footprint_copy_state();
     init_current_pcb_209_worker_startup_profile();
     init_current_pcb_string_clock_reply();
     init_current_pcb_worker_construction_contract();
@@ -163251,7 +163576,7 @@ var init_current_pcb_worker_startup_wire = __esm({
       command("Debugger.resume", empty9),
       command("Debugger.evaluateOnCallFrame", external_exports.object({
         callFrameId: handle13,
-        expression: external_exports.enum(["this", "e", "t", "this.bc", "this.bc.onmessage"]),
+        expression: external_exports.enum(["this", "e", "t", "this.bc", "this.bc.onmessage", CURRENT_FOOTPRINT_COPY_CONSTRUCTORS_EXPRESSION]),
         objectGroup: group,
         silent: external_exports.literal(true),
         returnByValue: external_exports.literal(false),
@@ -163298,11 +163623,11 @@ function members4(dependency) {
   if (!record18(dependency) || types57.isProxy(dependency) || Object.getPrototypeOf(dependency) !== Object.prototype && Object.getPrototypeOf(dependency) !== null) {
     throw fail20("DEPENDENCY");
   }
-  const fields26 = ["requireOriginalParent", "assertOriginalTermination", "observeOriginalParentEvent", "exchange"];
-  if (Reflect.ownKeys(dependency).length !== fields26.length) {
+  const fields27 = ["requireOriginalParent", "assertOriginalTermination", "observeOriginalParentEvent", "exchange"];
+  if (Reflect.ownKeys(dependency).length !== fields27.length) {
     throw fail20("DEPENDENCY");
   }
-  return fields26.map((key) => {
+  return fields27.map((key) => {
     const descriptor10 = Object.getOwnPropertyDescriptor(dependency, key);
     if (descriptor10 === void 0 || !Object.hasOwn(descriptor10, "value") || typeof descriptor10.value !== "function") {
       throw fail20("DEPENDENCY");
@@ -163310,7 +163635,7 @@ function members4(dependency) {
     return descriptor10.value;
   });
 }
-async function observe6(work) {
+async function observe7(work) {
   try {
     await work;
   } catch {
@@ -163495,7 +163820,7 @@ var init_current_pcb_worker_startup_channel = __esm({
           await previous;
           await work();
         })();
-        this.#tail = observe6(next);
+        this.#tail = observe7(next);
         return next;
       }
       #attributed(command2) {
@@ -163621,7 +163946,7 @@ var init_current_pcb_worker_startup_channel = __esm({
             this.#schedulePoll(0);
           }
         });
-        void observe6(queued);
+        void observe7(queued);
         return completion2.promise;
       }
       #complete(pending) {
@@ -163681,7 +164006,7 @@ var init_current_pcb_worker_startup_channel = __esm({
             this.#schedulePoll(20);
           }
         });
-        void observe6(work);
+        void observe7(work);
       }
       #chunk(raw) {
         if (!record18(raw) || types57.isProxy(raw) || Reflect.ownKeys(raw).join(",") !== "bytes" || Object.getPrototypeOf(raw) !== Object.prototype && Object.getPrototypeOf(raw) !== null) {
@@ -163787,7 +164112,7 @@ var init_current_pcb_worker_startup_channel = __esm({
           const result2 = this.#parentEvent.call(this.#native, event4);
           if (result2 !== void 0) {
             if (types57.isPromise(result2)) {
-              void observe6(result2);
+              void observe7(result2);
             }
             throw fail20("PARENT_EVENT");
           }
@@ -163872,7 +164197,7 @@ function retainedMethods2(value2, keys3) {
     return descriptor10.value;
   });
 }
-async function observe7(work) {
+async function observe8(work) {
   try {
     await work;
   } catch {
@@ -164107,7 +164432,7 @@ var init_current_pcb_worker_startup_opening = __esm({
           this.#transport.bindExistingWorkers(targets);
           const capture5 = this.#transport.capture();
           this.#capture = capture5;
-          void observe7(capture5);
+          void observe8(capture5);
           this.#step = "worker-arming";
           await this.#transport.whenArmed();
           await this.#current();
@@ -164162,7 +164487,7 @@ var init_current_pcb_worker_startup_opening = __esm({
             } catch (cleanupError) {
               throw new AggregateError([error63, cleanupError], "PCB_WORKER_STARTUP_OPENING_FAILED", { cause: cleanupError });
             } finally {
-              await observe7(this.#capture);
+              await observe8(this.#capture);
             }
           }
           throw error63;
@@ -164704,13 +165029,16 @@ var init_current_pcb_209_empty_native_profile = __esm({
         roots: CURRENT_PCB_209_EMPTY_ROOT_REQUEST_COUNT,
         optional: optionalRequests
       },
+      // Constructor capture has 29 fixed reads, eight breakpoint installs/removals
+      // And nine resumes. The three footprint reads consume the existing reserve;
+      // They do not increase this purpose's request, byte or time ceilings.
       startupDerivation: {
         discovery: 19,
         bootstrapTransport: 20,
-        constructorCapture: 51,
+        constructorCapture: 54,
         openingCoordinator: 15,
         publishedIdentity: 1,
-        conservativeReserve: 80
+        conservativeReserve: 77
       },
       bytes: {
         prefix: prefixBytes2,
@@ -164849,7 +165177,7 @@ function fail22() {
 function plain3(value2) {
   return value2 !== null && typeof value2 === "object" && !types60.isProxy(value2) && !Array.isArray(value2) && (Object.getPrototypeOf(value2) === Object.prototype || Object.getPrototypeOf(value2) === null);
 }
-function match2(raw, template, fields26) {
+function match2(raw, template, fields27) {
   if (typeof template === "string") {
     const dynamic = /^__empty209_(sessionId|uniqueContextId|objectId|argument0|argument1)__$/u.exec(template)?.[1];
     if (dynamic === void 0) {
@@ -164859,10 +165187,10 @@ function match2(raw, template, fields26) {
     if (typeof raw !== "string" || raw.length > limit || !/^[A-Za-z\d_.:-]+$/u.test(raw)) {
       return false;
     }
-    if (fields26[dynamic] !== void 0 && fields26[dynamic] !== raw) {
+    if (fields27[dynamic] !== void 0 && fields27[dynamic] !== raw) {
       return false;
     }
-    fields26[dynamic] = raw;
+    fields27[dynamic] = raw;
     return true;
   }
   if (template === null || typeof template !== "object") {
@@ -164881,24 +165209,24 @@ function match2(raw, template, fields26) {
   }
   for (const name9 of names2) {
     const descriptor10 = Object.getOwnPropertyDescriptor(raw, name9), expected3 = Object.getOwnPropertyDescriptor(template, name9);
-    if (descriptor10 === void 0 || expected3 === void 0 || !Object.hasOwn(descriptor10, "value") || descriptor10.enumerable !== expected3.enumerable || !match2(descriptor10.value, expected3.value, fields26)) {
+    if (descriptor10 === void 0 || expected3 === void 0 || !Object.hasOwn(descriptor10, "value") || descriptor10.enumerable !== expected3.enumerable || !match2(descriptor10.value, expected3.value, fields27)) {
       return false;
     }
   }
   return true;
 }
-function instantiate(template, fields26) {
+function instantiate(template, fields27) {
   if (typeof template === "string") {
     const dynamic = /^__empty209_(sessionId|uniqueContextId|objectId|argument0|argument1)__$/u.exec(template)?.[1];
-    return dynamic === void 0 ? template : fields26[dynamic];
+    return dynamic === void 0 ? template : fields27[dynamic];
   }
   if (template === null || typeof template !== "object") {
     return template;
   }
   if (Array.isArray(template)) {
-    return template.map((value2) => instantiate(value2, fields26));
+    return template.map((value2) => instantiate(value2, fields27));
   }
-  return Object.fromEntries(Object.entries(template).map(([key, value2]) => [key, instantiate(value2, fields26)]));
+  return Object.fromEntries(Object.entries(template).map(([key, value2]) => [key, instantiate(value2, fields27)]));
 }
 function currentPcb209EmptyNativeWire(raw, id16) {
   if (!Number.isSafeInteger(id16) || id16 < 1 || id16 > CURRENT_PCB_209_EMPTY_NATIVE_PROFILE.requestLimit || !plain3(raw)) {
@@ -164909,10 +165237,10 @@ function currentPcb209EmptyNativeWire(raw, id16) {
     return freezeDeep({ command: { ...startup2.command, id: id16 }, request: { ...startup2.request, requestId: id16 } });
   }
   for (const template of CURRENT_PCB_209_EMPTY_NATIVE_CASES) {
-    const fields26 = {};
-    if (match2(raw, template, fields26)) {
-      const command2 = instantiate(template, fields26);
-      const { sessionId: sessionId4, ...handles } = fields26;
+    const fields27 = {};
+    if (match2(raw, template, fields27)) {
+      const command2 = instantiate(template, fields27);
+      const { sessionId: sessionId4, ...handles } = fields27;
       if (sessionId4 === void 0) {
         return fail22();
       }
@@ -164965,11 +165293,11 @@ function members5(dependency) {
   if (!record19(dependency) || types61.isProxy(dependency) || Object.getPrototypeOf(dependency) !== Object.prototype && Object.getPrototypeOf(dependency) !== null) {
     throw fail23("DEPENDENCY");
   }
-  const fields26 = ["requireOriginalParent", "assertOriginalTermination", "observeOriginalParentEvent", "exchange"];
-  if (Reflect.ownKeys(dependency).length !== fields26.length) {
+  const fields27 = ["requireOriginalParent", "assertOriginalTermination", "observeOriginalParentEvent", "exchange"];
+  if (Reflect.ownKeys(dependency).length !== fields27.length) {
     throw fail23("DEPENDENCY");
   }
-  return fields26.map((key) => {
+  return fields27.map((key) => {
     const descriptor10 = Object.getOwnPropertyDescriptor(dependency, key);
     if (descriptor10 === void 0 || !Object.hasOwn(descriptor10, "value") || typeof descriptor10.value !== "function") {
       throw fail23("DEPENDENCY");
@@ -164977,7 +165305,7 @@ function members5(dependency) {
     return descriptor10.value;
   });
 }
-async function observe8(work) {
+async function observe9(work) {
   try {
     await work;
   } catch {
@@ -165191,7 +165519,7 @@ var init_current_pcb_209_empty_startup_channel = __esm({
           await previous;
           await work();
         })();
-        this.#tail = observe8(next);
+        this.#tail = observe9(next);
         return next;
       }
       #time(cleanup) {
@@ -165419,7 +165747,7 @@ var init_current_pcb_209_empty_startup_channel = __esm({
             this.#schedulePoll(0);
           }
         });
-        void observe8(queued);
+        void observe9(queued);
         return completion2.promise;
       }
       #complete(pending) {
@@ -165432,7 +165760,7 @@ var init_current_pcb_209_empty_startup_channel = __esm({
         if (!pending.remoteError && this.#failure === null && baselineCommand(pending.command) && !cleanupCommand2(pending.command) && !pending.pcbProofVerified) {
           if (!pending.pcbProofQueued) {
             pending.pcbProofQueued = true;
-            void observe8(this.#queue(async () => {
+            void observe9(this.#queue(async () => {
               try {
                 await this.#reprovePcb(pending.command);
                 pending.pcbProofVerified = true;
@@ -165496,7 +165824,7 @@ var init_current_pcb_209_empty_startup_channel = __esm({
             this.#schedulePoll(CURRENT_PCB_209_EMPTY_NATIVE_PROFILE.polling.intervalMilliseconds);
           }
         });
-        void observe8(work);
+        void observe9(work);
       }
       #chunk(raw) {
         if (!record19(raw) || types61.isProxy(raw) || Reflect.ownKeys(raw).join(",") !== "bytes" || Object.getPrototypeOf(raw) !== Object.prototype && Object.getPrototypeOf(raw) !== null) {
@@ -165636,7 +165964,7 @@ var init_current_pcb_209_empty_startup_channel = __esm({
           const result2 = this.#parentEvent.call(this.#native, event4);
           if (result2 !== void 0) {
             if (types61.isPromise(result2)) {
-              void observe8(result2);
+              void observe9(result2);
             }
             throw fail23("PARENT_EVENT");
           }
@@ -165769,8 +166097,9 @@ var init_current_pcb_209_ratline_budget = __esm({
     }));
     requestClasses2 = freezeDeep({
       // This is the existing complete discovery/project-opening cap, including its
-      // Retained reproof allowance. It is not 186 expected commands or a new budget
-      // At handoff. Its original pipe retains its own reply/event validation.
+      // Retained reproof allowance. The three footprint constructor reads consume
+      // That reserve (80 to 77); this remains a 186 cap, not 186 expected commands or
+      // A new budget at handoff. The original pipe retains reply/event validation.
       prefix: { count: 186, frameBytes: 32 * mib3 },
       preparation: { count: 10, frameBytes: mib3 },
       // Exact original navigation program compilation: one source read and resume.
@@ -166486,13 +166815,13 @@ function fail24() {
 function plain4(value2) {
   return value2 !== null && typeof value2 === "object" && !types63.isProxy(value2) && !Array.isArray(value2) && (Object.getPrototypeOf(value2) === Object.prototype || Object.getPrototypeOf(value2) === null);
 }
-function match3(raw, template, fields26, coordinateKey) {
+function match3(raw, template, fields27, coordinateKey) {
   for (const [field13, limit] of Object.entries(CURRENT_PCB_209_RATLINE_COORDINATE_FIELDS)) {
     if (field13 === coordinateKey && template === limit) {
-      if (typeof raw !== "number" || !Number.isSafeInteger(raw) || Object.is(raw, -0) || raw < 0 || raw > limit || fields26[field13] !== void 0 && fields26[field13] !== raw) {
+      if (typeof raw !== "number" || !Number.isSafeInteger(raw) || Object.is(raw, -0) || raw < 0 || raw > limit || fields27[field13] !== void 0 && fields27[field13] !== raw) {
         return false;
       }
-      fields26[field13] = raw;
+      fields27[field13] = raw;
       return true;
     }
   }
@@ -166505,10 +166834,10 @@ function match3(raw, template, fields26, coordinateKey) {
     if (typeof raw !== "string" || raw.length > limit || !/^[A-Za-z\d_.:-]+$/u.test(raw)) {
       return false;
     }
-    if (fields26[dynamic] !== void 0 && fields26[dynamic] !== raw) {
+    if (fields27[dynamic] !== void 0 && fields27[dynamic] !== raw) {
       return false;
     }
-    fields26[dynamic] = raw;
+    fields27[dynamic] = raw;
     return true;
   }
   if (template === null || typeof template !== "object") {
@@ -166527,45 +166856,45 @@ function match3(raw, template, fields26, coordinateKey) {
   }
   for (const name9 of names2) {
     const descriptor10 = Object.getOwnPropertyDescriptor(raw, name9), expected3 = Object.getOwnPropertyDescriptor(template, name9);
-    if (descriptor10 === void 0 || expected3 === void 0 || !Object.hasOwn(descriptor10, "value") || descriptor10.enumerable !== expected3.enumerable || !match3(descriptor10.value, expected3.value, fields26, name9)) {
+    if (descriptor10 === void 0 || expected3 === void 0 || !Object.hasOwn(descriptor10, "value") || descriptor10.enumerable !== expected3.enumerable || !match3(descriptor10.value, expected3.value, fields27, name9)) {
       return false;
     }
   }
   return true;
 }
-function instantiate2(template, fields26, coordinateKey) {
+function instantiate2(template, fields27, coordinateKey) {
   for (const [field13, value2] of Object.entries(CURRENT_PCB_209_RATLINE_COORDINATE_FIELDS)) {
     if (field13 === coordinateKey && template === value2) {
-      return fields26[field13];
+      return fields27[field13];
     }
   }
   if (typeof template === "string") {
     const dynamic = /^__ratline209_(sessionId|scriptId|callFrameId|breakpointId|objectId|argument0|argument1|argument2|stackTraceId|debuggerId)__$/u.exec(template)?.[1];
-    return dynamic === void 0 ? template : fields26[dynamic];
+    return dynamic === void 0 ? template : fields27[dynamic];
   }
   if (template === null || typeof template !== "object") {
     return template;
   }
   if (Array.isArray(template)) {
-    return template.map((value2) => instantiate2(value2, fields26));
+    return template.map((value2) => instantiate2(value2, fields27));
   }
-  return Object.fromEntries(Object.entries(template).map(([key, value2]) => [key, instantiate2(value2, fields26, key)]));
+  return Object.fromEntries(Object.entries(template).map(([key, value2]) => [key, instantiate2(value2, fields27, key)]));
 }
 function currentPcb209RatlineNativeWire(role, raw, id16) {
   if (role !== "pcb" && role !== "worker" || !Number.isSafeInteger(id16) || id16 < 1 || id16 > 2147483647 || !plain4(raw)) {
     return fail24();
   }
   for (const entry of CURRENT_PCB_209_RATLINE_NATIVE_CASES) {
-    const fields26 = {};
-    if (entry.role === role && match3(raw, entry.command, fields26)) {
-      const command2 = instantiate2(entry.command, fields26);
+    const fields27 = {};
+    if (entry.role === role && match3(raw, entry.command, fields27)) {
+      const command2 = instantiate2(entry.command, fields27);
       return freezeDeep({ command: { ...command2, id: id16 }, request: {
         action: "worker-startup-ratline",
         role,
         phase: entry.phase,
         requestId: id16,
         method: command2.method,
-        ...fields26
+        ...fields27
       } });
     }
   }
@@ -167897,11 +168226,11 @@ function members6(dependency) {
   if (!record20(dependency) || types65.isProxy(dependency) || Object.getPrototypeOf(dependency) !== Object.prototype && Object.getPrototypeOf(dependency) !== null) {
     throw fail25("DEPENDENCY");
   }
-  const fields26 = ["requireOriginalParent", "assertOriginalTermination", "observeOriginalParentEvent", "exchange"];
-  if (Reflect.ownKeys(dependency).length !== fields26.length) {
+  const fields27 = ["requireOriginalParent", "assertOriginalTermination", "observeOriginalParentEvent", "exchange"];
+  if (Reflect.ownKeys(dependency).length !== fields27.length) {
     throw fail25("DEPENDENCY");
   }
-  return fields26.map((key) => {
+  return fields27.map((key) => {
     const descriptor10 = Object.getOwnPropertyDescriptor(dependency, key);
     if (descriptor10 === void 0 || !Object.hasOwn(descriptor10, "value") || typeof descriptor10.value !== "function") {
       throw fail25("DEPENDENCY");
@@ -167909,7 +168238,7 @@ function members6(dependency) {
     return descriptor10.value;
   });
 }
-async function observe9(work) {
+async function observe10(work) {
   try {
     await work;
   } catch {
@@ -168156,7 +168485,7 @@ var init_current_pcb_209_ratline_startup_channel = __esm({
           await previous;
           await work();
         })();
-        this.#tail = observe9(next);
+        this.#tail = observe10(next);
         return next;
       }
       #attributed(command2) {
@@ -168277,9 +168606,9 @@ var init_current_pcb_209_ratline_startup_channel = __esm({
           this.#cleanup = (async () => {
             await pending.promise;
           })();
-          void observe9(this.#cleanup);
+          void observe10(this.#cleanup);
           this.#poison("CLEANUP");
-          void observe9(this.#queue(async () => {
+          void observe10(this.#queue(async () => {
             try {
               external_exports.object({ aborted: external_exports.literal(true) }).strict().parse(captureCurrentPcbStringClockReply(
                 await this.#exchange.call(this.#native, { action: "worker-startup-ratline-abort" })
@@ -168678,7 +169007,7 @@ var init_current_pcb_209_ratline_startup_channel = __esm({
           } catch (error63) {
             this.#poison("WRITE", false, error63);
             if (isCurrentPcb209RatlineNormalResourceRefusal(error63, this.#budget)) {
-              void observe9(this.beginCleanup());
+              void observe10(this.beginCleanup());
             }
             if (pending === null) {
               completion2.reject(error63);
@@ -168691,7 +169020,7 @@ var init_current_pcb_209_ratline_startup_channel = __esm({
             this.#schedulePoll(0);
           }
         });
-        void observe9(queued);
+        void observe10(queued);
         return completion2.promise;
       }
       #consumePrelude(command2) {
@@ -168900,7 +169229,7 @@ var init_current_pcb_209_ratline_startup_channel = __esm({
           } catch (error63) {
             if (isCurrentPcb209RatlineNormalResourceRefusal(error63, this.#budget)) {
               this.#poison("POLL_RESOURCE", false, error63);
-              void observe9(this.beginCleanup());
+              void observe10(this.beginCleanup());
             } else {
               this.#poison("POLL", true, error63);
             }
@@ -168909,7 +169238,7 @@ var init_current_pcb_209_ratline_startup_channel = __esm({
             this.#schedulePoll(CURRENT_PCB_209_RATLINE_NATIVE_PROFILE.polling.intervalMilliseconds);
           }
         });
-        void observe9(work);
+        void observe10(work);
       }
       #chunk(raw) {
         if (!record20(raw) || types65.isProxy(raw) || Reflect.ownKeys(raw).join(",") !== "bytes" || Object.getPrototypeOf(raw) !== Object.prototype && Object.getPrototypeOf(raw) !== null) {
@@ -169024,7 +169353,7 @@ var init_current_pcb_209_ratline_startup_channel = __esm({
           const result2 = this.#parentEvent.call(this.#native, event4);
           if (result2 !== void 0) {
             if (types65.isPromise(result2)) {
-              void observe9(result2);
+              void observe10(result2);
             }
             throw fail25("PARENT_EVENT");
           }
@@ -170422,6 +170751,8 @@ var init_current_pcb_209_ratline_pcb_context_router = __esm({
       #resumes = 0;
       #proofSets = 0;
       #commands = 0;
+      #ancestryReplies = [];
+      #ancestryBytes = 0;
       #events = 0;
       constructor(context4, target9, dependency) {
         need78(!types69.isProxy(context4) && Object.getPrototypeOf(context4) === CurrentPcbDiagnosticContext.prototype, "ORIGINAL_CONTEXT");
@@ -170860,10 +171191,10 @@ var init_current_pcb_209_ratline_pcb_context_router = __esm({
                 await this.#current();
                 currentWindow();
               });
-              const owner4 = await this.#snapshot({ method: "DOM.getFrameOwner", sessionId: sessionId4, params: { frameId } });
+              const owner4 = await this.#snapshot({ method: "DOM.getFrameOwner", sessionId: sessionId4, params: { frameId } }, "initial-window");
               currentWindow();
               const backendNodeId = external_exports.number().int().positive().max(2147483647).parse(owner4["backendNodeId"]);
-              const node2 = await this.#snapshot({ method: "DOM.describeNode", sessionId: sessionId4, params: { backendNodeId, depth: 0, pierce: false } });
+              const node2 = await this.#snapshot({ method: "DOM.describeNode", sessionId: sessionId4, params: { backendNodeId, depth: 0, pierce: false } }, "initial-window");
               currentWindow();
               qualifyCurrentPcb209RatlineWindowOwner(owner4, node2, frameId, this.#target);
               await ownership.remove((command2) => this.#dependency.request(command2));
@@ -170888,6 +171219,16 @@ var init_current_pcb_209_ratline_pcb_context_router = __esm({
       }
       retainedRejectedStopEvidence() {
         return this.#rejectedStop;
+      }
+      /** Historical replies only. Inspecting these copies never rechecks or
+       * reconstructs a live context, and cannot retry an original request. */
+      retainedAncestryEvidence() {
+        return Object.freeze({
+          profile: "private.pcb209-ratline-ancestry-replies.v1",
+          records: Object.freeze([...this.#ancestryReplies]),
+          capturedBytes: this.#ancestryBytes,
+          executionAuthorized: false
+        });
       }
       async #sourceRequest(command2) {
         this.#same();
@@ -170921,13 +171262,18 @@ var init_current_pcb_209_ratline_pcb_context_router = __esm({
           }
         }
       }
-      async #snapshot(command2) {
+      async #snapshot(command2, purpose) {
         await this.#current();
         need78(this.#commands < 14, "PROOF_COMMAND_BUDGET");
         this.#commands += 1;
         this.#lastCommand = command2.method;
         this.#step = "ancestry-request";
+        const identity38 = { ordinal: this.#commands, purpose, method: command2.method }, index2 = this.#ancestryReplies.length;
+        this.#ancestryReplies.push(Object.freeze({ ...identity38, reply: Object.freeze({ status: "unavailable", value: null, sha256: null, bytes: null }) }));
         const raw = await bounded12(this.#dependency.requestParent(command2));
+        const captured = captureCurrentPcb209RatlineStopRecord(raw, Math.min(16384, 65536 - this.#ancestryBytes));
+        this.#ancestryReplies[index2] = Object.freeze({ ...identity38, reply: captured });
+        this.#ancestryBytes += captured.bytes ?? 0;
         const reply3 = row10.parse(captureCurrentPcbStringClockReply(raw).value);
         await this.#current();
         return reply3;
@@ -170935,16 +171281,22 @@ var init_current_pcb_209_ratline_pcb_context_router = __esm({
       async #fresh(admission) {
         need78(this.#selected !== null && this.#proofSets < 3, "PROOF_STAGE");
         const selected3 = this.#selected, sessionId4 = this.#dependency.parentSessionId;
-        const targets = await this.#snapshot({ method: "Target.getTargets", params: {} });
-        const frames4 = await this.#snapshot({ method: "Page.getFrameTree", params: {}, sessionId: sessionId4 });
+        let purpose = "pcb-admission";
+        if (!admission) {
+          purpose = this.#proofSets === 1 ? "pcb-source-release" : "first-child-held";
+        }
+        const targets = await this.#snapshot({ method: "Target.getTargets", params: {} }, purpose);
+        const frames4 = await this.#snapshot({ method: "Page.getFrameTree", params: {}, sessionId: sessionId4 }, purpose);
+        this.#step = "ancestry-frame-validation";
         if (admission) {
-          need78(this.#context.observePcbOpeningFrames(targets, frames4).frameId === selected3.frameId, "SELECTED_FRAME");
+          need78(this.#context.observePcbBootstrapFrames(targets, frames4).frameId === selected3.frameId, "SELECTED_FRAME");
         } else {
           this.#context.reprovePcbBootstrapFrames(targets, frames4);
         }
-        const owner4 = await this.#snapshot({ method: "DOM.getFrameOwner", sessionId: sessionId4, params: { frameId: selected3.frameId } });
+        const owner4 = await this.#snapshot({ method: "DOM.getFrameOwner", sessionId: sessionId4, params: { frameId: selected3.frameId } }, purpose);
         const backendNodeId = external_exports.number().int().positive().max(2147483647).parse(owner4["backendNodeId"]);
-        const node2 = await this.#snapshot({ method: "DOM.describeNode", sessionId: sessionId4, params: { backendNodeId, depth: 0, pierce: false } });
+        const node2 = await this.#snapshot({ method: "DOM.describeNode", sessionId: sessionId4, params: { backendNodeId, depth: 0, pierce: false } }, purpose);
+        this.#step = "ancestry-dom-validation";
         if (admission) {
           this.#context.observePcbFrameOwner(owner4, node2);
         } else {
@@ -171089,6 +171441,8 @@ var init_current_pcb_209_ratline_pcb_context_router = __esm({
           loaderResumed: this.#loaderResumed,
           windowPauses: { initial: this.#windows.initial.phase, document: this.#windows.document.phase },
           windowOwnership: this.#windowOwnership?.status() ?? null,
+          ancestryReplyCount: this.#ancestryReplies.length,
+          ancestryCapturedBytes: this.#ancestryBytes,
           retainedScriptEvidenceBytes: this.#scriptEvidenceBytes,
           scriptEvidenceExhausted: this.#scriptEvidenceExhausted,
           rejectedStop: this.#rejectedStop === null ? null : summarizeCurrentPcb209RatlineStop(this.#rejectedStop),
@@ -174051,7 +174405,7 @@ async function boundedOwner(work) {
     clearTimeout(timer);
   }
 }
-async function observe10(work) {
+async function observe11(work) {
   try {
     await work;
   } catch {
@@ -174156,6 +174510,9 @@ var init_current_pcb_209_ratline_native_session = __esm({
       retainedRejectedStopEvidence() {
         return this.#router?.retainedRejectedStopEvidence() ?? null;
       }
+      retainedAncestryEvidence() {
+        return this.#router?.retainedAncestryEvidence() ?? null;
+      }
       retainedOpeningObservation() {
         return this.#openingObservation;
       }
@@ -174228,7 +174585,7 @@ var init_current_pcb_209_ratline_native_session = __esm({
           need86(reply3.ok && reply3.windowTabId === this.#result.workerIdentity.windowTabId, "OPENING_REFUSED");
           this.#same();
         })();
-        void observe10(this.#navigation);
+        void observe11(this.#navigation);
         return this.#navigation;
       }
       #lost(error63 = new Error("PCB209_RATLINE_NATIVE_SESSION_STREAM_LOST")) {
@@ -174444,7 +174801,7 @@ var init_current_pcb_209_ratline_native_session = __esm({
         await this.#dependency.assertOriginalTermination();
         if (this.#composite !== null) {
           if (this.#compositeWork !== null) {
-            await observe10(this.#compositeWork);
+            await observe11(this.#compositeWork);
           }
           await this.#composite.releaseAfterTermination();
         } else if (this.#child !== null) {
@@ -174481,13 +174838,13 @@ function fail28() {
 function plain5(value2) {
   return value2 !== null && typeof value2 === "object" && !types78.isProxy(value2) && !Array.isArray(value2) && (Object.getPrototypeOf(value2) === Object.prototype || Object.getPrototypeOf(value2) === null);
 }
-function match4(raw, template, fields26, coordinateKey) {
+function match4(raw, template, fields27, coordinateKey) {
   for (const [field13, limit] of Object.entries(CURRENT_PCB_209_RATLINE_COORDINATE_FIELDS)) {
     if (field13 === coordinateKey && template === limit) {
-      if (typeof raw !== "number" || !Number.isSafeInteger(raw) || Object.is(raw, -0) || raw < 0 || raw > limit || fields26[field13] !== void 0 && fields26[field13] !== raw) {
+      if (typeof raw !== "number" || !Number.isSafeInteger(raw) || Object.is(raw, -0) || raw < 0 || raw > limit || fields27[field13] !== void 0 && fields27[field13] !== raw) {
         return false;
       }
-      fields26[field13] = raw;
+      fields27[field13] = raw;
       return true;
     }
   }
@@ -174500,10 +174857,10 @@ function match4(raw, template, fields26, coordinateKey) {
     if (typeof raw !== "string" || raw.length > limit || !/^[A-Za-z\d_.:-]+$/u.test(raw)) {
       return false;
     }
-    if (fields26[dynamic] !== void 0 && fields26[dynamic] !== raw) {
+    if (fields27[dynamic] !== void 0 && fields27[dynamic] !== raw) {
       return false;
     }
-    fields26[dynamic] = raw;
+    fields27[dynamic] = raw;
     return true;
   }
   if (template === null || typeof template !== "object") {
@@ -174522,45 +174879,45 @@ function match4(raw, template, fields26, coordinateKey) {
   }
   for (const name9 of names2) {
     const descriptor10 = Object.getOwnPropertyDescriptor(raw, name9), expected3 = Object.getOwnPropertyDescriptor(template, name9);
-    if (descriptor10 === void 0 || expected3 === void 0 || !Object.hasOwn(descriptor10, "value") || descriptor10.enumerable !== expected3.enumerable || !match4(descriptor10.value, expected3.value, fields26, name9)) {
+    if (descriptor10 === void 0 || expected3 === void 0 || !Object.hasOwn(descriptor10, "value") || descriptor10.enumerable !== expected3.enumerable || !match4(descriptor10.value, expected3.value, fields27, name9)) {
       return false;
     }
   }
   return true;
 }
-function instantiate3(template, fields26, coordinateKey) {
+function instantiate3(template, fields27, coordinateKey) {
   for (const [field13, value2] of Object.entries(CURRENT_PCB_209_RATLINE_COORDINATE_FIELDS)) {
     if (field13 === coordinateKey && template === value2) {
-      return fields26[field13];
+      return fields27[field13];
     }
   }
   if (typeof template === "string") {
     const dynamic = /^__ratline209_(sessionId|scriptId|callFrameId|breakpointId|objectId|argument0|argument1|argument2|stackTraceId|debuggerId)__$/u.exec(template)?.[1];
-    return dynamic === void 0 ? template : fields26[dynamic];
+    return dynamic === void 0 ? template : fields27[dynamic];
   }
   if (template === null || typeof template !== "object") {
     return template;
   }
   if (Array.isArray(template)) {
-    return template.map((value2) => instantiate3(value2, fields26));
+    return template.map((value2) => instantiate3(value2, fields27));
   }
-  return Object.fromEntries(Object.entries(template).map(([key, value2]) => [key, instantiate3(value2, fields26, key)]));
+  return Object.fromEntries(Object.entries(template).map(([key, value2]) => [key, instantiate3(value2, fields27, key)]));
 }
 function currentPcb209RatlineContinuationNativeWire(role, raw, id16) {
   if (role !== "pcb" && role !== "worker" && role !== "subordinate" || !Number.isSafeInteger(id16) || id16 < 1 || id16 > 2147483647 || !plain5(raw)) {
     return fail28();
   }
   for (const entry of CURRENT_PCB_209_RATLINE_CONTINUATION_NATIVE_CASES) {
-    const fields26 = {};
-    if (entry.role === role && match4(raw, entry.command, fields26)) {
-      const command2 = instantiate3(entry.command, fields26);
+    const fields27 = {};
+    if (entry.role === role && match4(raw, entry.command, fields27)) {
+      const command2 = instantiate3(entry.command, fields27);
       return freezeDeep({ command: { ...command2, id: id16 }, request: {
         action: "worker-startup-ratline-continuation",
         role,
         phase: entry.phase,
         requestId: id16,
         method: command2.method,
-        ...fields26
+        ...fields27
       } });
     }
   }
@@ -174595,11 +174952,11 @@ function members16(dependency) {
   if (!record21(dependency) || types79.isProxy(dependency) || Object.getPrototypeOf(dependency) !== Object.prototype && Object.getPrototypeOf(dependency) !== null) {
     throw fail29("DEPENDENCY");
   }
-  const fields26 = ["requireOriginalParent", "assertOriginalTermination", "observeOriginalParentEvent", "exchange"];
-  if (Reflect.ownKeys(dependency).length !== fields26.length) {
+  const fields27 = ["requireOriginalParent", "assertOriginalTermination", "observeOriginalParentEvent", "exchange"];
+  if (Reflect.ownKeys(dependency).length !== fields27.length) {
     throw fail29("DEPENDENCY");
   }
-  return fields26.map((key) => {
+  return fields27.map((key) => {
     const descriptor10 = Object.getOwnPropertyDescriptor(dependency, key);
     if (descriptor10 === void 0 || !Object.hasOwn(descriptor10, "value") || typeof descriptor10.value !== "function") {
       throw fail29("DEPENDENCY");
@@ -174607,7 +174964,7 @@ function members16(dependency) {
     return descriptor10.value;
   });
 }
-async function observe11(work) {
+async function observe12(work) {
   try {
     await work;
   } catch {
@@ -174859,7 +175216,7 @@ var init_current_pcb_209_ratline_continuation_channel = __esm({
           await previous;
           await work();
         })();
-        this.#tail = observe11(next);
+        this.#tail = observe12(next);
         return next;
       }
       #attributed(command2) {
@@ -175030,9 +175387,9 @@ var init_current_pcb_209_ratline_continuation_channel = __esm({
           this.#cleanup = (async () => {
             await pending.promise;
           })();
-          void observe11(this.#cleanup);
+          void observe12(this.#cleanup);
           this.#poison("CLEANUP");
-          void observe11(this.#queue(async () => {
+          void observe12(this.#queue(async () => {
             try {
               external_exports.object({ aborted: external_exports.literal(true) }).strict().parse(captureCurrentPcbStringClockReply(
                 await this.#exchange.call(this.#native, { action: "worker-startup-ratline-continuation-abort" })
@@ -175466,7 +175823,7 @@ var init_current_pcb_209_ratline_continuation_channel = __esm({
           } catch (error63) {
             this.#poison("WRITE", false, error63);
             if (isCurrentPcb209RatlineContinuationNormalResourceRefusal(error63, this.#budget)) {
-              void observe11(this.beginCleanup());
+              void observe12(this.beginCleanup());
             }
             if (pending === null) {
               completion2.reject(error63);
@@ -175479,7 +175836,7 @@ var init_current_pcb_209_ratline_continuation_channel = __esm({
             this.#schedulePoll(0);
           }
         });
-        void observe11(queued);
+        void observe12(queued);
         return completion2.promise;
       }
       #consumePrelude(command2) {
@@ -175693,7 +176050,7 @@ var init_current_pcb_209_ratline_continuation_channel = __esm({
           } catch (error63) {
             if (isCurrentPcb209RatlineContinuationNormalResourceRefusal(error63, this.#budget)) {
               this.#poison("POLL_RESOURCE", false, error63);
-              void observe11(this.beginCleanup());
+              void observe12(this.beginCleanup());
             } else {
               this.#poison("POLL", true, error63);
             }
@@ -175702,7 +176059,7 @@ var init_current_pcb_209_ratline_continuation_channel = __esm({
             this.#schedulePoll(CURRENT_PCB_209_RATLINE_CONTINUATION_NATIVE_PROFILE.polling.intervalMilliseconds);
           }
         });
-        void observe11(work);
+        void observe12(work);
       }
       #chunk(raw) {
         if (!record21(raw) || types79.isProxy(raw) || Reflect.ownKeys(raw).join(",") !== "bytes" || Object.getPrototypeOf(raw) !== Object.prototype && Object.getPrototypeOf(raw) !== null) {
@@ -175819,7 +176176,7 @@ var init_current_pcb_209_ratline_continuation_channel = __esm({
           const result2 = this.#parentEvent.call(this.#native, event4);
           if (result2 !== void 0) {
             if (types79.isPromise(result2)) {
-              void observe11(result2);
+              void observe12(result2);
             }
             throw fail29("PARENT_EVENT");
           }
@@ -176712,6 +177069,9 @@ var init_current_pcb_209_ratline_continuation_session = __esm({
       retainedRejectedStopEvidence() {
         return this.#contextRouter?.retainedRejectedStopEvidence() ?? null;
       }
+      retainedAncestryEvidence() {
+        return this.#contextRouter?.retainedAncestryEvidence() ?? null;
+      }
       status() {
         return Object.freeze({
           phase: this.#phase,
@@ -176979,6 +177339,9 @@ var init_current_pcb_209_ratline_continuation_native_session = __esm({
       retainedRejectedStopEvidence() {
         return this.#session?.retainedRejectedStopEvidence() ?? null;
       }
+      retainedAncestryEvidence() {
+        return this.#session?.retainedAncestryEvidence() ?? null;
+      }
       status() {
         return Object.freeze({
           phase: this.#phase,
@@ -177004,8 +177367,8 @@ import { fileURLToPath as fileURLToPath4 } from "node:url";
 function record22(value2) {
   return value2 !== null && typeof value2 === "object" && !Array.isArray(value2);
 }
-function exact24(value2, fields26) {
-  return Object.keys(value2).toSorted().join(",") === fields26.toSorted().join(",");
+function exact24(value2, fields27) {
+  return Object.keys(value2).toSorted().join(",") === fields27.toSorted().join(",");
 }
 function error62(code2) {
   return new Error(`PCB_DIAGNOSTIC_OWNER_${code2}`);
@@ -177255,8 +177618,8 @@ var init_current_pcb_diagnostic_owner = __esm({
     init_current_pcb_209_poured_shapes();
     init_current_pcb_209_pad_shapes();
     init_current_pcb_209_selection_relations();
-    HELPER_SHA256 = "c75e7b8287d051b5deee2659466dcb6ab8d34463aaaaeaf322d730cfdf6d1fe1";
-    HELPER_BYTES = 972723;
+    HELPER_SHA256 = "72106cd4e2b143a17726bcf6326e5f9450753b5654504b433bda886e875b8c01";
+    HELPER_BYTES = 984177;
     MAX_LINE = 1e5;
     MAX_TOTAL = 96 * 1024 * 1024;
     retainedOwners = /* @__PURE__ */ new Set();
@@ -179963,6 +180326,8 @@ function describe4(operationId18, operation) {
     workerStartupOpeningResultPublished: records2?.["worker-startup-opening-result.json"] !== void 0,
     workerStartupAssignmentsAttemptConsumed: records2?.["worker-startup-assignments-intent.json"] !== void 0,
     workerStartupAssignmentsResultPublished: records2?.["worker-startup-assignments-result.json"] !== void 0,
+    workerStartupFootprintAttemptConsumed: records2?.["worker-startup-footprint-intent.json"] !== void 0,
+    workerStartupFootprintResultPublished: records2?.["worker-startup-footprint-result.json"] !== void 0,
     workerStartupActorAttemptConsumed: records2?.["worker-startup-actor-intent.json"] !== void 0,
     workerStartupActorResultPublished: records2?.["worker-startup-actor-result.json"] !== void 0,
     workerStartupChannelAttemptConsumed: records2?.["worker-startup-channel-intent.json"] !== void 0,
@@ -180068,7 +180433,7 @@ function publicStartupEmptyResult(operationId18, record24) {
     }
   };
 }
-var startupStages2, launchPurposeFields, startupCaptureInputSchema, startupOpeningMethods, emptySessionMethods, ratlineChannelCleanup, ratlineSessionMethods, continuationChannelCleanup, continuationSessionMethods, methods14, claims4, CurrentPcbLifecycleCore, CurrentPcbDiagnosticLifecycle, CurrentPcb209DiagnosticLifecycle, CurrentPcbStringPrecreateLifecycle, CurrentPcbWorkerStartupLifecycle, CurrentPcb209WorkerStartupLifecycle, CurrentPcb209EmptyStartupLifecycle, CurrentPcb209RatlineStartupLifecycle, CurrentPcb209RatlineContinuationLifecycle;
+var startupStages2, launchPurposeFields, startupCaptureInputSchema, startupOpeningMethods, footprintStateMethods, emptySessionMethods, ratlineChannelCleanup, ratlineSessionMethods, continuationChannelCleanup, continuationSessionMethods, methods14, claims4, CurrentPcbLifecycleCore, CurrentPcbDiagnosticLifecycle, CurrentPcb209DiagnosticLifecycle, CurrentPcbStringPrecreateLifecycle, CurrentPcbWorkerStartupLifecycle, CurrentPcb209WorkerStartupLifecycle, CurrentPcb209EmptyStartupLifecycle, CurrentPcb209RatlineStartupLifecycle, CurrentPcb209RatlineContinuationLifecycle;
 var init_current_pcb_diagnostic_lifecycle = __esm({
   "server/src/current-pcb-diagnostic-lifecycle.ts"() {
     init_artifacts();
@@ -180132,6 +180497,11 @@ var init_current_pcb_diagnostic_lifecycle = __esm({
       "requireCurrentChannel",
       "releaseAfterTermination"
     ];
+    footprintStateMethods = Object.freeze({
+      observe: CurrentPcb209WorkerStartupOpening.prototype.observeFootprintState,
+      require: CurrentPcb209WorkerStartupOpening.prototype.requireFootprintState,
+      retained: CurrentPcb209WorkerStartupOpening.prototype.retainedFootprintState
+    });
     emptySessionMethods = Object.freeze({
       openPcb: CurrentPcb209WorkerStartupPcbSession.prototype.openAndQualify,
       pcbStatus: CurrentPcb209WorkerStartupPcbSession.prototype.status,
@@ -180149,7 +180519,8 @@ var init_current_pcb_diagnostic_lifecycle = __esm({
       status: CurrentPcb209RatlineNativeSession.prototype.status,
       opening: CurrentPcb209RatlineNativeSession.prototype.retainedOpeningObservation,
       originEvidence: CurrentPcb209RatlineNativeSession.prototype.retainedNativeOriginEvidence,
-      rejectedStopEvidence: CurrentPcb209RatlineNativeSession.prototype.retainedRejectedStopEvidence
+      rejectedStopEvidence: CurrentPcb209RatlineNativeSession.prototype.retainedRejectedStopEvidence,
+      ancestryEvidence: CurrentPcb209RatlineNativeSession.prototype.retainedAncestryEvidence
     });
     continuationChannelCleanup = CurrentPcb209RatlineContinuationChannel.prototype.beginCleanup;
     continuationSessionMethods = Object.freeze({
@@ -180160,7 +180531,8 @@ var init_current_pcb_diagnostic_lifecycle = __esm({
       status: CurrentPcb209RatlineContinuationNativeSession.prototype.status,
       opening: CurrentPcb209RatlineContinuationNativeSession.prototype.retainedOpeningObservation,
       originEvidence: CurrentPcb209RatlineContinuationNativeSession.prototype.retainedNativeOriginEvidence,
-      rejectedStopEvidence: CurrentPcb209RatlineContinuationNativeSession.prototype.retainedRejectedStopEvidence
+      rejectedStopEvidence: CurrentPcb209RatlineContinuationNativeSession.prototype.retainedRejectedStopEvidence,
+      ancestryEvidence: CurrentPcb209RatlineContinuationNativeSession.prototype.retainedAncestryEvidence
     });
     methods14 = [
       "launch",
@@ -180231,6 +180603,9 @@ var init_current_pcb_diagnostic_lifecycle = __esm({
       #startupOpeningReleased = false;
       #startupAssignmentsAttempted = false;
       #startupAssignments = null;
+      #startupFootprintAttempted = false;
+      #startupFootprintPacket = null;
+      #startupFootprintOpening = null;
       #startupActorAttempted = false;
       #startupActorPacket = null;
       #startupChannelAttempted = false;
@@ -180402,6 +180777,10 @@ var init_current_pcb_diagnostic_lifecycle = __esm({
             workerStartupAssignmentsAttemptConsumed: operation?.records["worker-startup-assignments-intent.json"] !== void 0 || original2 && this.#startupAssignmentsAttempted,
             workerStartupAssignmentsResultRetained: original2 && this.#startupAssignments !== null,
             workerStartupAssignmentsResult: operation?.records["worker-startup-assignments-result.json"]?.result ?? null,
+            workerStartupFootprintAttemptConsumed: operation?.records["worker-startup-footprint-intent.json"] !== void 0 || original2 && this.#startupFootprintAttempted,
+            workerStartupFootprintResultRetained: original2 && this.#startupFootprintPacket !== null,
+            workerStartupFootprintObservation: original2 && this.#startupFootprintOpening !== null ? footprintStateMethods.retained.call(this.#startupFootprintOpening) : null,
+            workerStartupFootprintResult: operation?.records["worker-startup-footprint-result.json"]?.result ?? null,
             workerStartupActorAttemptConsumed: operation?.records["worker-startup-actor-intent.json"] !== void 0 || original2 && this.#startupActorAttempted,
             workerStartupActorResultRetained: original2 && this.#startupActorPacket !== null,
             workerStartupActorObservation: original2 && this.#startupOpening !== null ? this.#startupOpening.methods.retainedActorObservation.call(this.#startupOpening.owner) : null,
@@ -180418,6 +180797,7 @@ var init_current_pcb_diagnostic_lifecycle = __esm({
             workerStartupRatlineState: original2 && this.#startupRatlineSession !== null ? ratlineSessionMethods.status.call(this.#startupRatlineSession) : null,
             workerStartupRatlineUnpublishedOriginEvidence: operation?.records["worker-startup-ratline-result.json"] === void 0 && original2 && this.#startupRatlineSession !== null ? ratlineSessionMethods.originEvidence.call(this.#startupRatlineSession) : null,
             workerStartupRatlineRejectedStopEvidence: original2 && this.#startupRatlineSession !== null ? ratlineSessionMethods.rejectedStopEvidence.call(this.#startupRatlineSession) : null,
+            workerStartupRatlineAncestryEvidence: original2 && this.#startupRatlineSession !== null ? ratlineSessionMethods.ancestryEvidence.call(this.#startupRatlineSession) : null,
             workerStartupRatlineOpening: original2 && this.#startupRatlineSession !== null ? ratlineSessionMethods.opening.call(this.#startupRatlineSession) : null,
             workerStartupContinuationAttemptConsumed: operation?.records["worker-startup-continuation-intent.json"] !== void 0 || original2 && this.#startupContinuationAttempted,
             workerStartupContinuationResultPublished: operation?.records["worker-startup-continuation-result.json"] !== void 0,
@@ -180427,6 +180807,7 @@ var init_current_pcb_diagnostic_lifecycle = __esm({
             workerStartupContinuationState: original2 && this.#startupContinuationSession !== null ? continuationSessionMethods.status.call(this.#startupContinuationSession) : null,
             workerStartupContinuationUnpublishedOriginEvidence: operation?.records["worker-startup-continuation-result.json"] === void 0 && original2 && this.#startupContinuationSession !== null ? continuationSessionMethods.originEvidence.call(this.#startupContinuationSession) : null,
             workerStartupContinuationRejectedStopEvidence: original2 && this.#startupContinuationSession !== null ? continuationSessionMethods.rejectedStopEvidence.call(this.#startupContinuationSession) : null,
+            workerStartupContinuationAncestryEvidence: original2 && this.#startupContinuationSession !== null ? continuationSessionMethods.ancestryEvidence.call(this.#startupContinuationSession) : null,
             workerStartupContinuationOpening: original2 && this.#startupContinuationSession !== null ? continuationSessionMethods.opening.call(this.#startupContinuationSession) : null,
             workerStartupRatlineResult: operation?.records["worker-startup-ratline-result.json"]?.result ?? null,
             workerStartupEmptyAttemptConsumed: operation?.records["worker-startup-empty-intent.json"] !== void 0 || original2 && this.#startupEmptyAttempted,
@@ -181172,6 +181553,75 @@ var init_current_pcb_diagnostic_lifecycle = __esm({
           this.#busy = false;
         }
       }
+      async observeStartupFootprint(operationId18, expectedBindingSha256) {
+        this.#startupId(operationId18);
+        diagnosticLifecycleDigestSchema.parse(expectedBindingSha256);
+        this.#options.assertLocalAllowed();
+        requireValue16(this.#generation === "209-startup" && this.#purpose === "worker-startup", "WORKER_STARTUP_FOOTPRINT_PURPOSE_REQUIRED");
+        requireValue16(!this.#busy, "BUSY");
+        this.#busy = true;
+        try {
+          const operations = await readCurrentPcbDiagnosticLifecycles();
+          const operation = operations.find((value2) => value2.operationId === operationId18), retained2 = this.#retained;
+          this.#assertPurpose(operationId18, operation);
+          const assignments = this.#startupAssignments, openingResult = this.#startupOpeningResult, original2 = this.#startupOpening;
+          const openingRecord = operation?.records["worker-startup-opening-result.json"], record24 = operation?.records["worker-startup-assignments-result.json"];
+          requireValue16(operation !== void 0 && retained2 !== null && retained2.operationId === operationId18 && original2 !== null && openingResult !== null && assignments !== null && !this.#startupOpeningReleased && !this.#closeAttempted && operation.records["close-intent.json"] === void 0 && operation.records["terminated.json"] === void 0 && sha256Json(operation.records["binding.json"]) === expectedBindingSha256 && openingRecord !== void 0 && record24 !== void 0 && this.#pending.get("worker-startup-opening-result.json") === canonicalJson(openingRecord) && this.#pending.get("worker-startup-assignments-result.json") === canonicalJson(record24), "ORIGINAL_STARTUP_ASSIGNMENTS_REQUIRED");
+          this.#assertOwner(retained2);
+          requireValue16(!this.#startupFootprintAttempted && operation.records["worker-startup-footprint-intent.json"] === void 0, "WORKER_STARTUP_FOOTPRINT_CONSUMED");
+          await this.#installation(retained2);
+          await assertSnapshot(operations);
+          this.#assertOwner(retained2);
+          const intent = {
+            schema: "easyeda-pro-control.pcb209-footprint-state-intent.v1",
+            operationId: operationId18,
+            createdAt: (/* @__PURE__ */ new Date()).toISOString(),
+            bindingSha256: expectedBindingSha256,
+            assignmentsResultSha256: sha256Json(record24)
+          };
+          this.#startupFootprintAttempted = true;
+          await this.#record(operationId18, "worker-startup-footprint-intent.json", intent);
+          const updated = { ...operation, records: { ...operation.records, "worker-startup-footprint-intent.json": intent } };
+          const expected3 = operations.map((value2) => value2.operationId === operationId18 ? updated : value2);
+          await assertSnapshot(expected3);
+          this.#assertOwner(retained2);
+          const opened = requireCurrentPcb209StartupOpening(original2.owner, openingResult);
+          this.#startupFootprintOpening = opened.opening;
+          const packet = await footprintStateMethods.observe.call(opened.opening, opened.result, assignments);
+          this.#startupFootprintPacket = packet;
+          this.#assertOwner(retained2);
+          await footprintStateMethods.require.call(opened.opening, opened.result, assignments, packet);
+          this.#assertOwner(retained2);
+          const result2 = diagnosticLifecycleRecordSchemas["worker-startup-footprint-result.json"].parse({
+            schema: "easyeda-pro-control.pcb209-footprint-state-result.v1",
+            operationId: operationId18,
+            createdAt: (/* @__PURE__ */ new Date()).toISOString(),
+            intentSha256: sha256Json(intent),
+            result: structuredClone(packet),
+            pointInTimeObservation: true,
+            executionAuthorized: false,
+            saveAuthorized: false
+          });
+          requireValue16(canonicalJson(result2.result.identity) === canonicalJson(openingResult.workerIdentity), "WORKER_STARTUP_FOOTPRINT_IDENTITY");
+          this.#retainRecord("worker-startup-footprint-result.json", result2);
+          await assertSnapshot(expected3);
+          this.#assertOwner(retained2);
+          await this.#publish(operationId18, "worker-startup-footprint-result.json", result2);
+          const completed5 = { ...updated, records: { ...updated.records, "worker-startup-footprint-result.json": result2 } };
+          await assertSnapshot(expected3.map((value2) => value2.operationId === operationId18 ? completed5 : value2));
+          this.#assertOwner(retained2);
+          return {
+            operationId: operationId18,
+            result: structuredClone(result2.result),
+            pointInTimeObservation: true,
+            validationOnly: true,
+            executionAuthorized: false,
+            saveAuthorized: false
+          };
+        } finally {
+          this.#busy = false;
+        }
+      }
       async observeStartupActor(operationId18, expectedBindingSha256) {
         this.#startupId(operationId18);
         diagnosticLifecycleDigestSchema.parse(expectedBindingSha256);
@@ -181353,14 +181803,14 @@ var init_current_pcb_diagnostic_lifecycle = __esm({
         }
         if (this.#startupRatlineSession !== null) {
           const session = this.#startupRatlineSession;
-          requireValue16(session.captureFirstChildHeld === ratlineSessionMethods.capture && session.requireOriginal === ratlineSessionMethods.require && session.abort === ratlineSessionMethods.abort && session.releaseAfterTermination === ratlineSessionMethods.release && session.status === ratlineSessionMethods.status && session.retainedOpeningObservation === ratlineSessionMethods.opening && session.retainedNativeOriginEvidence === ratlineSessionMethods.originEvidence && session.retainedRejectedStopEvidence === ratlineSessionMethods.rejectedStopEvidence, "STARTUP_RATLINE_METHODS_CHANGED");
+          requireValue16(session.captureFirstChildHeld === ratlineSessionMethods.capture && session.requireOriginal === ratlineSessionMethods.require && session.abort === ratlineSessionMethods.abort && session.releaseAfterTermination === ratlineSessionMethods.release && session.status === ratlineSessionMethods.status && session.retainedOpeningObservation === ratlineSessionMethods.opening && session.retainedNativeOriginEvidence === ratlineSessionMethods.originEvidence && session.retainedRejectedStopEvidence === ratlineSessionMethods.rejectedStopEvidence && session.retainedAncestryEvidence === ratlineSessionMethods.ancestryEvidence, "STARTUP_RATLINE_METHODS_CHANGED");
         }
         if (this.#generation === "209-startup-ratline-continuation") {
           requireValue16(typeof retained2.methods.prepareWorkerStartupRatlineContinuationSession209 === "function" && retained2.owner.prepareWorkerStartupRatlineContinuationSession209 === retained2.methods.prepareWorkerStartupRatlineContinuationSession209, "STARTUP_RATLINE_OWNER_CHANGED");
         }
         if (this.#startupContinuationSession !== null) {
           const session = this.#startupContinuationSession;
-          requireValue16(session.captureContinuation === continuationSessionMethods.capture && session.requireOriginal === continuationSessionMethods.require && session.abort === continuationSessionMethods.abort && session.releaseAfterTermination === continuationSessionMethods.release && session.status === continuationSessionMethods.status && session.retainedOpeningObservation === continuationSessionMethods.opening && session.retainedNativeOriginEvidence === continuationSessionMethods.originEvidence && session.retainedRejectedStopEvidence === continuationSessionMethods.rejectedStopEvidence, "STARTUP_RATLINE_METHODS_CHANGED");
+          requireValue16(session.captureContinuation === continuationSessionMethods.capture && session.requireOriginal === continuationSessionMethods.require && session.abort === continuationSessionMethods.abort && session.releaseAfterTermination === continuationSessionMethods.release && session.status === continuationSessionMethods.status && session.retainedOpeningObservation === continuationSessionMethods.opening && session.retainedNativeOriginEvidence === continuationSessionMethods.originEvidence && session.retainedRejectedStopEvidence === continuationSessionMethods.rejectedStopEvidence && session.retainedAncestryEvidence === continuationSessionMethods.ancestryEvidence, "STARTUP_RATLINE_METHODS_CHANGED");
         }
         if (this.#startupEmptyPreparation !== null) {
           const pcb6 = this.#startupEmptyPreparation.pcb;
@@ -181980,43 +182430,43 @@ var init_current_pcb_diagnostic_lifecycle = __esm({
           } else if (request13.action === "observe-model-state") {
             result2 = await retained2.methods.observeModelState.call(retained2.owner);
           } else if (request13.action === "observe-layers") {
-            const observe12 = retained2.methods.observeLayers209;
-            requireValue16(this.#generation === "209-opening" && observe12 !== void 0, "LAYERS209_PURPOSE");
-            result2 = await observe12.call(retained2.owner, this.#originalProjectOpening(operation).sealedTarget);
+            const observe13 = retained2.methods.observeLayers209;
+            requireValue16(this.#generation === "209-opening" && observe13 !== void 0, "LAYERS209_PURPOSE");
+            result2 = await observe13.call(retained2.owner, this.#originalProjectOpening(operation).sealedTarget);
           } else if (request13.action === "observe-primitives") {
-            const observe12 = retained2.methods.observePrimitives209;
-            requireValue16(this.#generation === "209-opening" && observe12 !== void 0, "PRIMITIVES209_PURPOSE");
-            result2 = await observe12.call(retained2.owner, this.#originalProjectOpening(operation).sealedTarget);
+            const observe13 = retained2.methods.observePrimitives209;
+            requireValue16(this.#generation === "209-opening" && observe13 !== void 0, "PRIMITIVES209_PURPOSE");
+            result2 = await observe13.call(retained2.owner, this.#originalProjectOpening(operation).sealedTarget);
           } else if (request13.action === "observe-extended-primitives") {
-            const observe12 = retained2.methods.observeExtendedPrimitives209;
-            requireValue16(this.#generation === "209-opening" && observe12 !== void 0, "EXTENDED_PRIMITIVES209_PURPOSE");
-            result2 = await observe12.call(retained2.owner, this.#originalProjectOpening(operation).sealedTarget);
+            const observe13 = retained2.methods.observeExtendedPrimitives209;
+            requireValue16(this.#generation === "209-opening" && observe13 !== void 0, "EXTENDED_PRIMITIVES209_PURPOSE");
+            result2 = await observe13.call(retained2.owner, this.#originalProjectOpening(operation).sealedTarget);
           } else if (request13.action === "observe-pad-shapes") {
-            const observe12 = retained2.methods.observePadShapes209;
-            requireValue16(this.#generation === "209-opening" && observe12 !== void 0, "PAD_SHAPES209_PURPOSE");
-            result2 = await observe12.call(retained2.owner, this.#originalProjectOpening(operation).sealedTarget);
+            const observe13 = retained2.methods.observePadShapes209;
+            requireValue16(this.#generation === "209-opening" && observe13 !== void 0, "PAD_SHAPES209_PURPOSE");
+            result2 = await observe13.call(retained2.owner, this.#originalProjectOpening(operation).sealedTarget);
           } else if (request13.action === "observe-image-shapes") {
-            const observe12 = retained2.methods.observeImageShapes209;
-            requireValue16(this.#generation === "209-opening" && observe12 !== void 0, "IMAGE_SHAPES209_PURPOSE");
-            result2 = await observe12.call(retained2.owner, this.#originalProjectOpening(operation).sealedTarget);
+            const observe13 = retained2.methods.observeImageShapes209;
+            requireValue16(this.#generation === "209-opening" && observe13 !== void 0, "IMAGE_SHAPES209_PURPOSE");
+            result2 = await observe13.call(retained2.owner, this.#originalProjectOpening(operation).sealedTarget);
           } else if (request13.action === "observe-arc-shapes") {
-            const observe12 = retained2.methods.observeArcShapes209;
-            requireValue16(this.#generation === "209-opening" && observe12 !== void 0, "ARC_SHAPES209_PURPOSE");
-            result2 = await observe12.call(retained2.owner, this.#originalProjectOpening(operation).sealedTarget);
+            const observe13 = retained2.methods.observeArcShapes209;
+            requireValue16(this.#generation === "209-opening" && observe13 !== void 0, "ARC_SHAPES209_PURPOSE");
+            result2 = await observe13.call(retained2.owner, this.#originalProjectOpening(operation).sealedTarget);
           } else if (request13.action === "observe-poured-shapes") {
-            const observe12 = retained2.methods.observePouredShapes209;
-            requireValue16(this.#generation === "209-opening" && observe12 !== void 0, "POURED_SHAPES209_PURPOSE");
-            result2 = await observe12.call(retained2.owner, this.#originalProjectOpening(operation).sealedTarget);
+            const observe13 = retained2.methods.observePouredShapes209;
+            requireValue16(this.#generation === "209-opening" && observe13 !== void 0, "POURED_SHAPES209_PURPOSE");
+            result2 = await observe13.call(retained2.owner, this.#originalProjectOpening(operation).sealedTarget);
           } else if (request13.action === "observe-string-precreate") {
-            const observe12 = retained2.methods.observeStringPrecreate;
-            requireValue16(this.#stringPurpose && observe12 !== void 0, "STRING_PURPOSE_REQUIRED");
+            const observe13 = retained2.methods.observeStringPrecreate;
+            requireValue16(this.#stringPurpose && observe13 !== void 0, "STRING_PURPOSE_REQUIRED");
             const before = this.#originalProjectOpening(operation).commonInventory;
             requireValue16(before !== null, "STRING_ORIGINAL_SQL_REQUIRED");
-            result2 = await observe12.call(retained2.owner, before);
+            result2 = await observe13.call(retained2.owner, before);
           } else if (request13.action === "observe-selection-relations") {
-            const observe12 = retained2.methods.observeSelectionRelations209;
-            requireValue16(this.#generation === "209-opening" && observe12 !== void 0, "SELECTION_RELATIONS209_PURPOSE");
-            result2 = await observe12.call(retained2.owner, this.#originalProjectOpening(operation).sealedTarget, request13.componentIds);
+            const observe13 = retained2.methods.observeSelectionRelations209;
+            requireValue16(this.#generation === "209-opening" && observe13 !== void 0, "SELECTION_RELATIONS209_PURPOSE");
+            result2 = await observe13.call(retained2.owner, this.#originalProjectOpening(operation).sealedTarget, request13.componentIds);
           } else if (request13.action === "observe-pcb-opening") {
             const preparation3 = this.#originalProjectOpening(operation);
             result2 = await retained2.methods.observePcbOpening.call(
@@ -182097,8 +182547,8 @@ var init_current_pcb_diagnostic_lifecycle = __esm({
         return { ...describe4(request13.operationId, completed5), stage, result: publicObservationResult(request13.operationId, stage, record24.result, true) };
       }
       async #observeCommonBaseline(request13, operation, operations, retained2) {
-        const failureReader = retained2.methods.retainedCommonBaselineFailure, observe12 = retained2.methods.observeCommonBaseline;
-        requireValue16(this.#stringPurpose && observe12 !== void 0 && failureReader !== void 0, "COMMON_PURPOSE_REQUIRED");
+        const failureReader = retained2.methods.retainedCommonBaselineFailure, observe13 = retained2.methods.observeCommonBaseline;
+        requireValue16(this.#stringPurpose && observe13 !== void 0 && failureReader !== void 0, "COMMON_PURPOSE_REQUIRED");
         requireValue16(
           !this.#observationConsumed.has("common-baseline") && operation.records["common-baseline-intent.json"] === void 0,
           "COMMON_OBSERVATION_CONSUMED"
@@ -182139,7 +182589,7 @@ var init_current_pcb_diagnostic_lifecycle = __esm({
         this.#assertOwner(retained2);
         let result2;
         try {
-          result2 = await observe12.call(retained2.owner, before);
+          result2 = await observe13.call(retained2.owner, before);
         } catch (caughtError) {
           const rawFailure = failureReader.call(retained2.owner);
           if (rawFailure !== null) {
@@ -182503,6 +182953,9 @@ var init_current_pcb_diagnostic_lifecycle = __esm({
       }
       observeWorkerStartupAssignments(operationId18, expectedBindingSha256) {
         return this.observeStartupAssignments(operationId18, expectedBindingSha256);
+      }
+      observeWorkerStartupFootprint(operationId18, expectedBindingSha256) {
+        return this.observeStartupFootprint(operationId18, expectedBindingSha256);
       }
       observeWorkerStartupActor(operationId18, expectedBindingSha256) {
         return this.observeStartupActor(operationId18, expectedBindingSha256);
@@ -183405,7 +183858,7 @@ var init_current_start_page = __esm({
 });
 
 // server/src/current-project-only-open.ts
-function fields13(input2, names2) {
+function fields14(input2, names2) {
   if (input2 === null || typeof input2 !== "object" || Array.isArray(input2) || Object.getPrototypeOf(input2) !== Object.prototype && Object.getPrototypeOf(input2) !== null || Reflect.ownKeys(input2).length !== names2.length) {
     throw new Error("CURRENT_PROJECT_ONLY_OPEN_SHAPE");
   }
@@ -183420,7 +183873,7 @@ function fields13(input2, names2) {
   return value2;
 }
 function target8(input2) {
-  return currentDisposableOpenSealedTargetSchema.parse(fields13(input2, ["rawWindowsPath", "projectUuid", "documentUuid", "expectedSourceSha256", "branchUuid"]));
+  return currentDisposableOpenSealedTargetSchema.parse(fields14(input2, ["rawWindowsPath", "projectUuid", "documentUuid", "expectedSourceSha256", "branchUuid"]));
 }
 function buildCurrentProjectOnlyOpenProgram(input2) {
   const selected3 = target8(input2);
@@ -183520,7 +183973,7 @@ return envelope;`;
 function decodeCurrentProjectOnlyOpenReply(raw, expected3) {
   const selected3 = target8(expected3);
   assertUpstreamReplySettled(raw);
-  const envelope8 = fields13(extractToolPayload(raw), ["schema", "utf8Bytes", "json"]);
+  const envelope8 = fields14(extractToolPayload(raw), ["schema", "utf8Bytes", "json"]);
   if (envelope8["schema"] !== EXACT_READ_ENVELOPE_SCHEMA || typeof envelope8["json"] !== "string" || envelope8["json"].length === 0 || envelope8["json"].length > CURRENT_PROJECT_ONLY_OPEN_MAX_BYTES || !Number.isSafeInteger(envelope8["utf8Bytes"]) || Buffer.byteLength(envelope8["json"], "utf8") > CURRENT_PROJECT_ONLY_OPEN_MAX_BYTES || Buffer.byteLength(JSON.stringify(envelope8), "utf8") > CURRENT_PROJECT_ONLY_OPEN_MAX_BYTES) {
     throw new Error("CURRENT_PROJECT_ONLY_OPEN_ENVELOPE");
   }
@@ -185277,7 +185730,7 @@ function need102(condition, message = "Current symbol transaction clock refused.
     throw new Error(message);
   }
 }
-function fields14(value2, required2, optional3 = []) {
+function fields15(value2, required2, optional3 = []) {
   need102(value2 !== null && typeof value2 === "object" && !Array.isArray(value2) && (Object.getPrototypeOf(value2) === Object.prototype || Object.getPrototypeOf(value2) === null), "Clock input must be plain data.");
   const keys3 = Reflect.ownKeys(value2);
   need102(keys3.every((key) => typeof key === "string" && (required2.includes(key) || optional3.includes(key))) && required2.every((key) => keys3.includes(key)), "Clock input fields differ.");
@@ -185301,7 +185754,7 @@ function data11(value2, depth = 0) {
   need102(isRecord(value2));
   const keys3 = Reflect.ownKeys(value2);
   need102(keys3.length <= 16);
-  fields14(value2, Object.keys(value2));
+  fields15(value2, Object.keys(value2));
   const copy3 = {};
   for (const key of keys3) {
     need102(typeof key === "string");
@@ -185310,7 +185763,7 @@ function data11(value2, depth = 0) {
   return Object.freeze(copy3);
 }
 function documentSample(value2) {
-  fields14(value2, [
+  fields15(value2, [
     "rendererBeforeMs",
     "serverTimeMs",
     "rendererAfterMs",
@@ -185382,7 +185835,7 @@ function operationId16(binding10) {
   return value2;
 }
 async function prepareCurrentSymbolTransactionClock(input2) {
-  fields14(input2, [
+  fields15(input2, [
     "before",
     "operation",
     "startupActor",
@@ -185397,7 +185850,7 @@ async function prepareCurrentSymbolTransactionClock(input2) {
   ]);
   const owner4 = input2.dispatchOwner;
   reserveCurrentSymbolTransactionClockOwner(owner4);
-  fields14(input2.comparisonIdentity, ["projectUuid", "branchUuid", "client", "preDispatchMaxTicket"], ["agedHead"]);
+  fields15(input2.comparisonIdentity, ["projectUuid", "branchUuid", "client", "preDispatchMaxTicket"], ["agedHead"]);
   data11(input2.comparisonIdentity);
   const identity38 = structuredClone(input2.comparisonIdentity);
   const operation = data11(input2.operation);
@@ -185466,7 +185919,7 @@ async function recordCurrentSymbolTransactionClockPost(plan2, input2) {
   const prepared = plans4.get(plan2);
   need102(prepared !== void 0 && prepared.stage === "armed", "Clock post observation requires its original unconsumed plan.");
   prepared.stage = "post-consumed";
-  fields14(input2, ["dispatchOwner", "afterClock", "documentAfter"]);
+  fields15(input2, ["dispatchOwner", "afterClock", "documentAfter"]);
   need102(input2.dispatchOwner === prepared.dispatchOwner, "Clock dispatch owner changed.");
   const document3 = documentSample(input2.documentAfter), token42 = input2.afterClock;
   need102(token42 !== prepared.before.token && token42 !== prepared.armed.token, "Post Windows bracket requires a distinct original observation.");
@@ -185488,7 +185941,7 @@ async function verifyCurrentSymbolTransactionClock(plan2, input2) {
   const post = prepared?.post;
   need102(prepared !== void 0 && post !== void 0 && prepared.stage === "post-recorded", "Clock verification requires its original unconsumed post observation.");
   prepared.stage = "verification-consumed";
-  fields14(input2, ["dispatchOwner", "terminationProof", "after"]);
+  fields15(input2, ["dispatchOwner", "terminationProof", "after"]);
   need102(input2.dispatchOwner === prepared.dispatchOwner, "Clock dispatch owner changed.");
   const proof = input2.terminationProof;
   const afterInventory = input2.after;
@@ -186056,10 +186509,10 @@ async function collectCurrentAgedSqlClock(engine2, generation5, reference3) {
   collections.set(generation5, collection);
   const evidenceId = currentSymbolClockEvidenceId(generation5.operationId);
   try {
-    const observe12 = engine2.freshClockObservationForClosedCapture;
+    const observe13 = engine2.freshClockObservationForClosedCapture;
     const call = engine2.upstream.callTool;
     const unchanged5 = () => {
-      need107(assertCurrentProjectOnlySymbolGeneration(generation5, engine2, scopeText) === source7 && assertOriginalCurrentAgedSqlReference(reference3, engine2, source7.baseline) === reference3 && engine2.upstream.currentAuthenticatedBridgeDispatchBinding === scopeReader && canonicalJson(scopeReader.call(engine2.upstream)) === scopeText && engine2.freshClockObservationForClosedCapture === observe12 && engine2.upstream.callTool === call);
+      need107(assertCurrentProjectOnlySymbolGeneration(generation5, engine2, scopeText) === source7 && assertOriginalCurrentAgedSqlReference(reference3, engine2, source7.baseline) === reference3 && engine2.upstream.currentAuthenticatedBridgeDispatchBinding === scopeReader && canonicalJson(scopeReader.call(engine2.upstream)) === scopeText && engine2.freshClockObservationForClosedCapture === observe13 && engine2.upstream.callTool === call);
     };
     unchanged5();
     await revalidateCurrentProjectOnlySymbolGeneration(generation5, engine2, scopeText);
@@ -186094,13 +186547,13 @@ async function collectCurrentAgedSqlClock(engine2, generation5, reference3) {
     unchanged5();
     await readExactUtf8Artifact(intent);
     unchanged5();
-    const before = await observe12.call(engine2, source7.capture);
+    const before = await observe13.call(engine2, source7.capture);
     collection.before = before;
     unchanged5();
     const raw = await call.call(engine2.upstream, "easyeda_execute", { code: code2, timeoutMs: 15e3, confirmWrite: true }, 25e3);
     collection.raw = raw;
     unchanged5();
-    const after = await observe12.call(engine2, source7.capture);
+    const after = await observe13.call(engine2, source7.capture);
     collection.after = after;
     unchanged5();
     collection.resultPublicationAttempted = true;
@@ -188091,9 +188544,9 @@ var init_current_symbol_writer_runtime = __esm({
         if (prior === void 0 && dispatch === void 0 && authority2 === void 0 && !journal.orphanedCallPossible) {
           return;
         }
-        const observe12 = this.engine.upstream.assertClosedAuthenticatedBridgeDispatchReleased;
-        need111(prior !== void 0 && dispatch !== void 0 && authority2 !== void 0 && observe12 !== void 0 && canonicalJson(prior) === canonicalJson(original2.capture.bridgeSession) && authority2.processes.some((process22) => canonicalJson(process22) === canonicalJson(original2.launch.root)) && authority2.processes.every((process22) => process22.startIdentity.endsWith(`:job:${original2.launch.jobId}`)));
-        const closed = observe12.call(this.engine.upstream, dispatch, prior);
+        const observe13 = this.engine.upstream.assertClosedAuthenticatedBridgeDispatchReleased;
+        need111(prior !== void 0 && dispatch !== void 0 && authority2 !== void 0 && observe13 !== void 0 && canonicalJson(prior) === canonicalJson(original2.capture.bridgeSession) && authority2.processes.some((process22) => canonicalJson(process22) === canonicalJson(original2.launch.root)) && authority2.processes.every((process22) => process22.startIdentity.endsWith(`:job:${original2.launch.jobId}`)));
+        const closed = observe13.call(this.engine.upstream, dispatch, prior);
         need111(isRecord(closed) && closed["sessionId"] === prior.sessionId && closed["sequence"] === prior.sequence && closed["authenticationReceiptSha256"] === prior.authenticationReceiptSha256 && closed["authenticatedAtEpochMs"] === prior.authenticatedAtEpochMs && typeof closed["closedAtEpochMs"] === "number" && Number.isSafeInteger(closed["closedAtEpochMs"]) && closed["closedAtEpochMs"] >= prior.authenticatedAtEpochMs);
       }
       inspect(operationId18) {
@@ -188406,7 +188859,7 @@ var init_current_symbol_saved_read = __esm({
 });
 
 // server/src/current-upload-queue-read.ts
-function fields15(input2, names2) {
+function fields16(input2, names2) {
   if (input2 === null || typeof input2 !== "object" || Array.isArray(input2) || Object.getPrototypeOf(input2) !== Object.prototype && Object.getPrototypeOf(input2) !== null || Reflect.ownKeys(input2).length !== names2.length) {
     throw new Error("CURRENT_UPLOAD_QUEUE_INPUT");
   }
@@ -188421,7 +188874,7 @@ function fields15(input2, names2) {
   return result2;
 }
 function scope6(input2) {
-  const value2 = fields15(input2, ["projectUuid", "branchUuid"]);
+  const value2 = fields16(input2, ["projectUuid", "branchUuid"]);
   const branchUuid2 = value2["branchUuid"], projectUuid4 = value2["projectUuid"];
   if (typeof projectUuid4 !== "string" || projectUuid4.length !== 64 || !/^[a-f0-9]{64}$/u.test(projectUuid4) || typeof branchUuid2 !== "string" || branchUuid2.length !== 32 || !/^[a-f0-9]{32}$/u.test(branchUuid2)) {
     throw new Error("CURRENT_UPLOAD_QUEUE_INPUT");
@@ -188476,7 +188929,7 @@ return envelope;`;
 }
 function decodeCurrentUploadQueueReadReply(raw, expected3) {
   assertUpstreamReplySettled(raw);
-  const envelope8 = fields15(extractToolPayload(raw), ["schema", "utf8Bytes", "json"]);
+  const envelope8 = fields16(extractToolPayload(raw), ["schema", "utf8Bytes", "json"]);
   if (envelope8["schema"] !== EXACT_READ_ENVELOPE_SCHEMA || typeof envelope8["json"] !== "string" || envelope8["json"].length === 0 || envelope8["json"].length > CURRENT_UPLOAD_QUEUE_MAX_BYTES || !Number.isSafeInteger(envelope8["utf8Bytes"]) || Buffer.byteLength(envelope8["json"], "utf8") > CURRENT_UPLOAD_QUEUE_MAX_BYTES || Buffer.byteLength(JSON.stringify(envelope8), "utf8") > CURRENT_UPLOAD_QUEUE_MAX_BYTES) {
     throw new Error("CURRENT_UPLOAD_QUEUE_ENVELOPE");
   }
@@ -188484,7 +188937,7 @@ function decodeCurrentUploadQueueReadReply(raw, expected3) {
 }
 function validateCurrentUploadQueueReadResult(input2, expected3) {
   const target9 = scope6(expected3);
-  const value2 = fields15(input2, [
+  const value2 = fields16(input2, [
     "profile",
     "projectUuid",
     "branchUuid",
@@ -189410,9 +189863,9 @@ var init_current_symbol_verification_runtime = __esm({
         if (prior === void 0 && dispatch === void 0 && authority2 === void 0 && !journal.orphanedCallPossible) {
           return;
         }
-        const observe12 = this.engine.upstream.assertClosedAuthenticatedBridgeDispatchReleased;
-        need114(prior !== void 0 && dispatch !== void 0 && authority2 !== void 0 && observe12 !== void 0 && canonicalJson(prior) === canonicalJson(capture5.bridgeSession) && authority2.processes.some((process22) => canonicalJson(process22) === canonicalJson(launch.root)) && authority2.processes.every((process22) => process22.startIdentity.endsWith(`:job:${launch.jobId}`)));
-        const closed = observe12.call(this.engine.upstream, dispatch, prior);
+        const observe13 = this.engine.upstream.assertClosedAuthenticatedBridgeDispatchReleased;
+        need114(prior !== void 0 && dispatch !== void 0 && authority2 !== void 0 && observe13 !== void 0 && canonicalJson(prior) === canonicalJson(capture5.bridgeSession) && authority2.processes.some((process22) => canonicalJson(process22) === canonicalJson(launch.root)) && authority2.processes.every((process22) => process22.startIdentity.endsWith(`:job:${launch.jobId}`)));
+        const closed = observe13.call(this.engine.upstream, dispatch, prior);
         need114(isRecord(closed) && closed["sessionId"] === prior.sessionId && closed["sequence"] === prior.sequence && closed["authenticationReceiptSha256"] === prior.authenticationReceiptSha256 && closed["authenticatedAtEpochMs"] === prior.authenticatedAtEpochMs && typeof closed["closedAtEpochMs"] === "number" && Number.isSafeInteger(closed["closedAtEpochMs"]) && closed["closedAtEpochMs"] >= prior.authenticatedAtEpochMs);
       }
       inspect(operationId18) {
@@ -189802,10 +190255,10 @@ async function collectCurrentCopyAgedSqlClock(engine2, generation5, reference3) 
   collections4.set(generation5, collection);
   const evidenceId = currentSymbolClockEvidenceId(generation5.operationId);
   try {
-    const observe12 = engine2.freshClockObservationForClosedCapture;
+    const observe13 = engine2.freshClockObservationForClosedCapture;
     const call = engine2.upstream.callTool;
     const unchanged5 = () => {
-      need117(assertCurrentProjectOnlySymbolCopyGeneration(generation5, engine2, scopeText) === source7 && assertOriginalCurrentCopyAgedSqlReference(reference3, engine2, source7.baseline) === reference3 && engine2.upstream.currentAuthenticatedBridgeDispatchBinding === scopeReader && canonicalJson(scopeReader.call(engine2.upstream)) === scopeText && engine2.freshClockObservationForClosedCapture === observe12 && engine2.upstream.callTool === call);
+      need117(assertCurrentProjectOnlySymbolCopyGeneration(generation5, engine2, scopeText) === source7 && assertOriginalCurrentCopyAgedSqlReference(reference3, engine2, source7.baseline) === reference3 && engine2.upstream.currentAuthenticatedBridgeDispatchBinding === scopeReader && canonicalJson(scopeReader.call(engine2.upstream)) === scopeText && engine2.freshClockObservationForClosedCapture === observe13 && engine2.upstream.callTool === call);
     };
     unchanged5();
     await revalidateCurrentProjectOnlySymbolCopyGeneration(generation5, engine2, scopeText);
@@ -189840,13 +190293,13 @@ async function collectCurrentCopyAgedSqlClock(engine2, generation5, reference3) 
     unchanged5();
     await readExactUtf8Artifact(intent);
     unchanged5();
-    const before = await observe12.call(engine2, source7.capture);
+    const before = await observe13.call(engine2, source7.capture);
     collection.before = before;
     unchanged5();
     const raw = await call.call(engine2.upstream, "easyeda_execute", { code: code2, timeoutMs: 15e3, confirmWrite: true }, 25e3);
     collection.raw = raw;
     unchanged5();
-    const after = await observe12.call(engine2, source7.capture);
+    const after = await observe13.call(engine2, source7.capture);
     collection.after = after;
     unchanged5();
     collection.resultPublicationAttempted = true;
@@ -193349,8 +193802,8 @@ function dataFields(value2, names2) {
   return copy3;
 }
 function captureWitness(value2) {
-  const fields26 = dataFields(value2);
-  const result2 = witnessSchema.parse({ ...fields26, ...fields26["agedHead"] === void 0 ? {} : { agedHead: dataFields(fields26["agedHead"]) } });
+  const fields27 = dataFields(value2);
+  const result2 = witnessSchema.parse({ ...fields27, ...fields27["agedHead"] === void 0 ? {} : { agedHead: dataFields(fields27["agedHead"]) } });
   if (result2.agedHead !== void 0) {
     Object.freeze(result2.agedHead);
   }
@@ -193514,11 +193967,11 @@ function sqlBudget(prepared, plaintextBytes) {
   return Object.freeze({ maximumCiphertextBase64Bytes, maximumEncodedSqlBytes });
 }
 async function prepareCurrentSymbolCopySqlPlan(input2) {
-  const fields26 = dataFields(input2, ["before", "copyPlan", "witness"]);
+  const fields27 = dataFields(input2, ["before", "copyPlan", "witness"]);
   const before = input2.before;
   const copy3 = input2.copyPlan;
-  need122(fields26["before"] === before && fields26["copyPlan"] === copy3, "input identity changed during capture");
-  const witness = captureWitness(fields26["witness"]);
+  need122(fields27["before"] === before && fields27["copyPlan"] === copy3, "input identity changed during capture");
+  const witness = captureWitness(fields27["witness"]);
   assertCurrentSymbolCopyPlanInventory(copy3, before);
   supported2(before, witness.branchUuid);
   const completion2 = readerCompletion(before);
@@ -193810,7 +194263,7 @@ function need123(condition, message = "Current symbol transaction clock refused.
     throw new Error(message);
   }
 }
-function fields16(value2, required2, optional3 = []) {
+function fields17(value2, required2, optional3 = []) {
   need123(value2 !== null && typeof value2 === "object" && !Array.isArray(value2) && (Object.getPrototypeOf(value2) === Object.prototype || Object.getPrototypeOf(value2) === null), "Clock input must be plain data.");
   const keys3 = Reflect.ownKeys(value2);
   need123(keys3.every((key) => typeof key === "string" && (required2.includes(key) || optional3.includes(key))) && required2.every((key) => keys3.includes(key)), "Clock input fields differ.");
@@ -193834,7 +194287,7 @@ function data13(value2, depth = 0) {
   need123(isRecord(value2));
   const keys3 = Reflect.ownKeys(value2);
   need123(keys3.length <= 16);
-  fields16(value2, Object.keys(value2));
+  fields17(value2, Object.keys(value2));
   const copy3 = {};
   for (const key of keys3) {
     need123(typeof key === "string");
@@ -193843,7 +194296,7 @@ function data13(value2, depth = 0) {
   return Object.freeze(copy3);
 }
 function documentSample2(value2) {
-  fields16(value2, [
+  fields17(value2, [
     "rendererBeforeMs",
     "serverTimeMs",
     "rendererAfterMs",
@@ -193915,7 +194368,7 @@ function operationId17(binding10) {
   return value2;
 }
 async function prepareCurrentSymbolCopyClock(input2) {
-  fields16(input2, [
+  fields17(input2, [
     "before",
     "copyPlan",
     "startupActor",
@@ -193930,7 +194383,7 @@ async function prepareCurrentSymbolCopyClock(input2) {
   ]);
   const owner4 = input2.dispatchOwner;
   reserveCurrentSymbolTransactionClockOwner(owner4);
-  fields16(input2.comparisonIdentity, ["projectUuid", "branchUuid", "client", "preDispatchMaxTicket"], ["agedHead"]);
+  fields17(input2.comparisonIdentity, ["projectUuid", "branchUuid", "client", "preDispatchMaxTicket"], ["agedHead"]);
   data13(input2.comparisonIdentity);
   const identity38 = structuredClone(input2.comparisonIdentity);
   const copyPlan = input2.copyPlan;
@@ -193999,7 +194452,7 @@ async function recordCurrentSymbolCopyClockPost(plan2, input2) {
   const prepared = plans6.get(plan2);
   need123(prepared !== void 0 && prepared.stage === "armed", "Clock post observation requires its original unconsumed plan.");
   prepared.stage = "post-consumed";
-  fields16(input2, ["dispatchOwner", "afterClock", "documentAfter", "returnedUuid"]);
+  fields17(input2, ["dispatchOwner", "afterClock", "documentAfter", "returnedUuid"]);
   const returnedUuid = input2.returnedUuid;
   assertCurrentSymbolCopyDestination(prepared.copyPlan, returnedUuid);
   need123(input2.dispatchOwner === prepared.dispatchOwner, "Clock dispatch owner changed.");
@@ -194023,7 +194476,7 @@ async function verifyCurrentSymbolCopyClock(plan2, input2) {
   const post = prepared?.post;
   need123(prepared !== void 0 && post !== void 0 && prepared.stage === "post-recorded", "Clock verification requires its original unconsumed post observation.");
   prepared.stage = "verification-consumed";
-  fields16(input2, ["dispatchOwner", "terminationProof", "after"]);
+  fields17(input2, ["dispatchOwner", "terminationProof", "after"]);
   need123(input2.dispatchOwner === prepared.dispatchOwner, "Clock dispatch owner changed.");
   const proof = input2.terminationProof;
   const afterInventory = input2.after;
@@ -195673,9 +196126,9 @@ var init_current_symbol_copy_writer_runtime = __esm({
         if (prior === void 0 && dispatch === void 0 && authority2 === void 0 && !journal.orphanedCallPossible) {
           return;
         }
-        const observe12 = this.engine.upstream.assertClosedAuthenticatedBridgeDispatchReleased;
-        need125(prior !== void 0 && dispatch !== void 0 && authority2 !== void 0 && observe12 !== void 0 && canonicalJson(prior) === canonicalJson(original2.capture.bridgeSession) && authority2.processes.some((process22) => canonicalJson(process22) === canonicalJson(original2.launch.root)) && authority2.processes.every((process22) => process22.startIdentity.endsWith(`:job:${original2.launch.jobId}`)));
-        const closed = observe12.call(this.engine.upstream, dispatch, prior);
+        const observe13 = this.engine.upstream.assertClosedAuthenticatedBridgeDispatchReleased;
+        need125(prior !== void 0 && dispatch !== void 0 && authority2 !== void 0 && observe13 !== void 0 && canonicalJson(prior) === canonicalJson(original2.capture.bridgeSession) && authority2.processes.some((process22) => canonicalJson(process22) === canonicalJson(original2.launch.root)) && authority2.processes.every((process22) => process22.startIdentity.endsWith(`:job:${original2.launch.jobId}`)));
+        const closed = observe13.call(this.engine.upstream, dispatch, prior);
         need125(isRecord(closed) && closed["sessionId"] === prior.sessionId && closed["sequence"] === prior.sequence && closed["authenticationReceiptSha256"] === prior.authenticationReceiptSha256 && closed["authenticatedAtEpochMs"] === prior.authenticatedAtEpochMs && typeof closed["closedAtEpochMs"] === "number" && Number.isSafeInteger(closed["closedAtEpochMs"]) && closed["closedAtEpochMs"] >= prior.authenticatedAtEpochMs);
       }
       inspect(operationId18) {
@@ -196776,9 +197229,9 @@ var init_current_symbol_copy_verification_runtime = __esm({
         if (prior === void 0 && dispatch === void 0 && authority2 === void 0 && !journal.orphanedCallPossible) {
           return;
         }
-        const observe12 = this.engine.upstream.assertClosedAuthenticatedBridgeDispatchReleased;
-        need128(prior !== void 0 && dispatch !== void 0 && authority2 !== void 0 && observe12 !== void 0 && canonicalJson(prior) === canonicalJson(capture5.bridgeSession) && authority2.processes.some((process22) => canonicalJson(process22) === canonicalJson(launch.root)) && authority2.processes.every((process22) => process22.startIdentity.endsWith(`:job:${launch.jobId}`)));
-        const closed = observe12.call(this.engine.upstream, dispatch, prior);
+        const observe13 = this.engine.upstream.assertClosedAuthenticatedBridgeDispatchReleased;
+        need128(prior !== void 0 && dispatch !== void 0 && authority2 !== void 0 && observe13 !== void 0 && canonicalJson(prior) === canonicalJson(capture5.bridgeSession) && authority2.processes.some((process22) => canonicalJson(process22) === canonicalJson(launch.root)) && authority2.processes.every((process22) => process22.startIdentity.endsWith(`:job:${launch.jobId}`)));
+        const closed = observe13.call(this.engine.upstream, dispatch, prior);
         need128(isRecord(closed) && closed["sessionId"] === prior.sessionId && closed["sequence"] === prior.sequence && closed["authenticationReceiptSha256"] === prior.authenticationReceiptSha256 && closed["authenticatedAtEpochMs"] === prior.authenticatedAtEpochMs && typeof closed["closedAtEpochMs"] === "number" && Number.isSafeInteger(closed["closedAtEpochMs"]) && closed["closedAtEpochMs"] >= prior.authenticatedAtEpochMs);
       }
       inspect(operationId18) {
@@ -203187,10 +203640,10 @@ async function collectCurrentPcbAgedSqlClock(engine2, generation5, reference3, s
   collections8.set(generation5, collection);
   const evidenceId = currentSymbolClockEvidenceId(generation5.operationId);
   try {
-    const observe12 = engine2.freshClockObservationForClosedCapture;
+    const observe13 = engine2.freshClockObservationForClosedCapture;
     const call = engine2.upstream.callTool;
     const unchanged5 = () => {
-      need138(assertCurrentProjectOnlyPcbRenameGeneration(generation5, engine2, scopeText) === source7 && assertOriginalCurrentPcbAgedSqlReference(reference3, engine2, source7.baseline) === reference3 && assertOriginalCurrentPcbRenameStartup(startup2, engine2, generation5) === originalStartup && engine2.upstream.currentAuthenticatedBridgeDispatchBinding === scopeReader && canonicalJson(scopeReader.call(engine2.upstream)) === scopeText && engine2.freshClockObservationForClosedCapture === observe12 && engine2.upstream.callTool === call);
+      need138(assertCurrentProjectOnlyPcbRenameGeneration(generation5, engine2, scopeText) === source7 && assertOriginalCurrentPcbAgedSqlReference(reference3, engine2, source7.baseline) === reference3 && assertOriginalCurrentPcbRenameStartup(startup2, engine2, generation5) === originalStartup && engine2.upstream.currentAuthenticatedBridgeDispatchBinding === scopeReader && canonicalJson(scopeReader.call(engine2.upstream)) === scopeText && engine2.freshClockObservationForClosedCapture === observe13 && engine2.upstream.callTool === call);
     };
     unchanged5();
     await revalidateCurrentProjectOnlyPcbRenameGeneration(generation5, engine2, scopeText);
@@ -203228,13 +203681,13 @@ async function collectCurrentPcbAgedSqlClock(engine2, generation5, reference3, s
     unchanged5();
     await readExactUtf8Artifact(intent);
     unchanged5();
-    const before = await observe12.call(engine2, source7.capture);
+    const before = await observe13.call(engine2, source7.capture);
     collection.before = before;
     unchanged5();
     const raw = await call.call(engine2.upstream, "easyeda_execute", { code: code2, timeoutMs: 15e3, confirmWrite: true }, 25e3);
     collection.raw = raw;
     unchanged5();
-    const after = await observe12.call(engine2, source7.capture);
+    const after = await observe13.call(engine2, source7.capture);
     collection.after = after;
     unchanged5();
     collection.resultPublicationAttempted = true;
@@ -203362,7 +203815,7 @@ function need139(condition, message) {
     throw new Error(`Current PCB rename history: ${message}`);
   }
 }
-function fields17(value2, keys3) {
+function fields18(value2, keys3) {
   need139(value2 !== null && typeof value2 === "object" && (Object.getPrototypeOf(value2) === Object.prototype || Object.getPrototypeOf(value2) === null), "plain data required");
   const actual = Reflect.ownKeys(value2);
   need139(actual.length === keys3.length && actual.every((key) => typeof key === "string" && keys3.includes(key)), "input fields differ");
@@ -203381,7 +203834,7 @@ function digest19(value2) {
   return createHash85("sha256").update(value2, "utf8").digest("hex");
 }
 function prepareCurrentPcbRenameHistory(input2) {
-  const raw = fields17(input2, [
+  const raw = fields18(input2, [
     "targetUuid",
     "beforeMetaText",
     "desiredTitle",
@@ -203396,9 +203849,9 @@ function prepareCurrentPcbRenameHistory(input2) {
   ]);
   const captured = inputSchema2.parse({
     ...raw,
-    documentClock: fields17(raw["documentClock"], ["minimumMs", "maximumMs"]),
-    backendClock: fields17(raw["backendClock"], ["minimumMs", "maximumMs"]),
-    backendActor: fields17(raw["backendActor"], ["uuid", "username", "nickname"])
+    documentClock: fields18(raw["documentClock"], ["minimumMs", "maximumMs"]),
+    backendClock: fields18(raw["backendClock"], ["minimumMs", "maximumMs"]),
+    backendActor: fields18(raw["backendActor"], ["uuid", "username", "nickname"])
   });
   exactUtf8(captured.beforeMetaText);
   const parsed5 = JSON.parse(captured.beforeMetaText);
@@ -203557,8 +204010,8 @@ function verifyMembership(structure4) {
   return known.size;
 }
 function prepareCurrentPcbRenameStructure(input2) {
-  const fields26 = dataFields2(input2, ["structureText", "targetUuid", "expectedOwnerUuid", "expectedBefore", "desiredTitle", "documentTime"]);
-  const captured = inputSchema3.parse({ ...fields26, expectedBefore: dataFields2(fields26["expectedBefore"], ["title", "version", "updateTime"]) });
+  const fields27 = dataFields2(input2, ["structureText", "targetUuid", "expectedOwnerUuid", "expectedBefore", "desiredTitle", "documentTime"]);
+  const captured = inputSchema3.parse({ ...fields27, expectedBefore: dataFields2(fields27["expectedBefore"], ["title", "version", "updateTime"]) });
   const structure4 = parseStructure(captured.structureText);
   const documentCount = verifyMembership(structure4);
   need140(structure4.owner.uuid === captured.expectedOwnerUuid, "owner identity differs");
@@ -203650,7 +204103,7 @@ function need141(condition, message) {
     throw new Error(`Current PCB structure SQL: ${message}`);
   }
 }
-function fields18(value2, names2) {
+function fields19(value2, names2) {
   need141(value2 !== null && typeof value2 === "object" && (Object.getPrototypeOf(value2) === Object.prototype || Object.getPrototypeOf(value2) === null), "plain input required");
   const keys3 = Reflect.ownKeys(value2);
   need141(keys3.length === names2.length && keys3.every((key) => typeof key === "string" && names2.includes(key)), "input keys differ");
@@ -203700,7 +204153,7 @@ function originalProjection(projection9) {
   verifyCurrentPcbRenameStructure(projection9, descriptor10.value);
 }
 async function prepareCurrentPcbRenameStructureSql(input2) {
-  const captured = fields18(input2, ["before", "projection", "projectUuid", "branchUuid", "ticket"]);
+  const captured = fields19(input2, ["before", "projection", "projectUuid", "branchUuid", "ticket"]);
   const before = input2.before, projection9 = input2.projection;
   need141(captured["before"] === before && captured["projection"] === projection9, "input identity changed");
   const request13 = requestSchema3.parse({ projectUuid: captured["projectUuid"], branchUuid: captured["branchUuid"], ticket: captured["ticket"] });
@@ -203798,7 +204251,7 @@ function need142(condition, message) {
     throw new Error(`Current PCB rename SQL: ${message}`);
   }
 }
-function fields19(value2, names2) {
+function fields20(value2, names2) {
   need142(isRecord(value2) && (Object.getPrototypeOf(value2) === Object.prototype || Object.getPrototypeOf(value2) === null), "plain input required");
   const keys3 = Reflect.ownKeys(value2);
   need142(keys3.length <= 12 && keys3.every((key) => typeof key === "string" && (names2 === void 0 || names2.includes(key))), "input keys differ");
@@ -203814,9 +204267,9 @@ function fields19(value2, names2) {
   return result2;
 }
 function captureWitness2(value2) {
-  const captured = fields19(value2), result2 = witnessSchema2.parse({
+  const captured = fields20(value2), result2 = witnessSchema2.parse({
     ...captured,
-    ...captured["agedHead"] === void 0 ? {} : { agedHead: fields19(captured["agedHead"]) }
+    ...captured["agedHead"] === void 0 ? {} : { agedHead: fields20(captured["agedHead"]) }
   });
   for (const time20 of [result2.backendClockMinMs, result2.backendClockMaxMs]) {
     for (const offset9 of [0, result2.backendLocalOffsetMinutes * 6e4]) {
@@ -204036,7 +204489,7 @@ function budget(prepared) {
   return { maximumPlaintextBytes, maximumCiphertextBase64Bytes, maximumEncodedSqlBytes };
 }
 async function prepareCurrentPcbRenameSql(input2) {
-  const captured = fields19(input2, ["before", "historyProjection", "structureProjection", "witness"]);
+  const captured = fields20(input2, ["before", "historyProjection", "structureProjection", "witness"]);
   const before = input2.before, historyProjection = input2.historyProjection, structureProjection = input2.structureProjection;
   need142(captured["before"] === before && captured["historyProjection"] === historyProjection && captured["structureProjection"] === structureProjection, "input identity changed");
   const witness = captureWitness2(captured["witness"]);
@@ -205033,7 +205486,7 @@ function need147(condition, message = "Current PCB rename clock refused.") {
     throw new Error(message);
   }
 }
-function fields20(value2, required2, optional3 = []) {
+function fields21(value2, required2, optional3 = []) {
   need147(value2 !== null && typeof value2 === "object" && !Array.isArray(value2) && (Object.getPrototypeOf(value2) === Object.prototype || Object.getPrototypeOf(value2) === null), "Clock input must be plain data.");
   const keys3 = Reflect.ownKeys(value2);
   need147(keys3.every((key) => typeof key === "string" && (required2.includes(key) || optional3.includes(key))) && required2.every((key) => keys3.includes(key)), "Clock input fields differ.");
@@ -205042,7 +205495,7 @@ function fields20(value2, required2, optional3 = []) {
   }
 }
 function documentSample3(value2) {
-  fields20(value2, ["rendererBeforeMs", "serverTimeMs", "rendererAfterMs", "rendererBeforeIso", "rendererAfterIso", "rendererTimezoneOffsetMinutes", "notifyTabId"]);
+  fields21(value2, ["rendererBeforeMs", "serverTimeMs", "rendererAfterMs", "rendererBeforeIso", "rendererAfterIso", "rendererTimezoneOffsetMinutes", "notifyTabId"]);
   const copy3 = Object.freeze({ ...value2 });
   for (const time20 of [copy3.rendererBeforeMs, copy3.serverTimeMs, copy3.rendererAfterMs]) {
     need147(Number.isSafeInteger(time20) && time20 >= 0 && time20 <= 864e13 && !Object.is(time20, -0));
@@ -205096,7 +205549,7 @@ function sameCapture3(capture5, clock9) {
   need147(canonicalJson(capture5.token.ownerBinding) === canonicalJson(clock9.token.ownerBinding) && clock9.token.base["captureBindingSha256"] === capture5.token.base["bindingSha256"]);
 }
 async function prepareCurrentPcbRenameClock(input2) {
-  fields20(input2, ["engine", "generation", "startup", "dispatchOwner", "beforeClock", "armedClock", "documentBefore"], ["agedHead"]);
+  fields21(input2, ["engine", "generation", "startup", "dispatchOwner", "beforeClock", "armedClock", "documentBefore"], ["agedHead"]);
   const { engine: engine2, generation: generation5, startup: startup2, dispatchOwner: owner4 } = input2;
   const source7 = assertOriginalCurrentPcbRenameStartup(startup2, engine2, generation5);
   need147(owner4 !== null && typeof owner4 === "object" && !attempts22.has(startup2) && !owners5.has(owner4), "PCB clock reservation already consumed.");
@@ -205106,7 +205559,7 @@ async function prepareCurrentPcbRenameClock(input2) {
   const tokens = [source7.source.launchClock, source7.source.captureClock, input2.beforeClock, input2.armedClock];
   const aged = input2.agedHead;
   if (aged !== void 0) {
-    fields20(aged, ["createdAtLiteral", "nativeParsedLocalMs", "nativeTimezoneOffsetMinutes"]);
+    fields21(aged, ["createdAtLiteral", "nativeParsedLocalMs", "nativeTimezoneOffsetMinutes"]);
   }
   const agedHead = aged === void 0 ? void 0 : Object.freeze({ ...aged });
   const check3 = () => {
@@ -205218,7 +205671,7 @@ async function recordCurrentPcbRenameClockPost(plan2, input2) {
   const lifecycle = lifecycles.get(plan2);
   need147(lifecycle !== void 0 && lifecycle.stage === "armed", "Original PCB clock post already consumed or absent.");
   lifecycle.stage = "post-consumed";
-  fields20(input2, ["engine", "generation", "startup", "dispatchOwner", "afterClock", "result"]);
+  fields21(input2, ["engine", "generation", "startup", "dispatchOwner", "afterClock", "result"]);
   const prepared = assertOriginalCurrentPcbRenameClock(plan2, input2.engine, input2.generation, input2.startup, input2.dispatchOwner);
   const { engine: engine2, generation: generation5, startup: startup2, dispatchOwner, afterClock: token42, result: originalResult } = input2;
   const check3 = () => {
@@ -205253,7 +205706,7 @@ async function verifyCurrentPcbRenameClockEffect(plan2, input2) {
   const post = lifecycle?.post;
   need147(lifecycle !== void 0 && prepared !== void 0 && post !== void 0 && lifecycle.stage === "post-recorded", "Original PCB clock effect already consumed or post absent.");
   lifecycle.stage = "verification-consumed";
-  fields20(input2, ["engine", "dispatchOwner", "terminationProof", "after"]);
+  fields21(input2, ["engine", "dispatchOwner", "terminationProof", "after"]);
   need147(input2.engine === prepared.engine && input2.dispatchOwner === prepared.dispatchOwner && canonicalJson(plan2) === prepared.text, "Original PCB clock closure owner differs.");
   const after = input2.after, proof = input2.terminationProof, termination = await windowsClockObservationForResult(proof, "termination");
   const exit = await issued30(termination, "termination");
@@ -205367,7 +205820,7 @@ var init_current_pcb_rename_clock = __esm({
 });
 
 // server/src/current-pcb-rename-writer-clock-program.ts
-function fields21(input2, names2) {
+function fields22(input2, names2) {
   if (input2 === null || typeof input2 !== "object" || Array.isArray(input2) || Object.getPrototypeOf(input2) !== Object.prototype || Reflect.ownKeys(input2).length !== names2.length) {
     throw new Error("CURRENT_PCB_RENAME_WRITER_CLOCK_INPUT");
   }
@@ -205382,10 +205835,10 @@ function fields21(input2, names2) {
   return result2;
 }
 function request10(input2) {
-  const selected3 = fields21(input2, ["target", "expectedActor"]);
+  const selected3 = fields22(input2, ["target", "expectedActor"]);
   return currentPcbRenameWriterClockRequestSchema.parse({
-    target: fields21(selected3["target"], ["projectUuid", "branchUuid", "pcbUuid", "ownerUuid"]),
-    expectedActor: fields21(selected3["expectedActor"], ["uuid", "username", "nickname"])
+    target: fields22(selected3["target"], ["projectUuid", "branchUuid", "pcbUuid", "ownerUuid"]),
+    expectedActor: fields22(selected3["expectedActor"], ["uuid", "username", "nickname"])
   });
 }
 function buildCurrentPcbRenameWriterClockProgram(input2) {
@@ -206213,9 +206666,9 @@ var init_current_pcb_rename_writer_runtime = __esm({
         if (prior === void 0 && dispatch === void 0 && authority2 === void 0 && !journal.orphanedCallPossible) {
           return;
         }
-        const observe12 = this.engine.upstream.assertClosedAuthenticatedBridgeDispatchReleased;
-        need148(prior !== void 0 && dispatch !== void 0 && authority2 !== void 0 && observe12 !== void 0 && canonicalJson(prior) === canonicalJson(original2.capture.bridgeSession) && authority2.processes.some((process22) => canonicalJson(process22) === canonicalJson(original2.launch.root)) && authority2.processes.every((process22) => process22.startIdentity.endsWith(`:job:${original2.launch.jobId}`)));
-        const closed = observe12.call(this.engine.upstream, dispatch, prior);
+        const observe13 = this.engine.upstream.assertClosedAuthenticatedBridgeDispatchReleased;
+        need148(prior !== void 0 && dispatch !== void 0 && authority2 !== void 0 && observe13 !== void 0 && canonicalJson(prior) === canonicalJson(original2.capture.bridgeSession) && authority2.processes.some((process22) => canonicalJson(process22) === canonicalJson(original2.launch.root)) && authority2.processes.every((process22) => process22.startIdentity.endsWith(`:job:${original2.launch.jobId}`)));
+        const closed = observe13.call(this.engine.upstream, dispatch, prior);
         need148(isRecord(closed) && closed["sessionId"] === prior.sessionId && closed["sequence"] === prior.sequence && closed["authenticationReceiptSha256"] === prior.authenticationReceiptSha256 && closed["authenticatedAtEpochMs"] === prior.authenticatedAtEpochMs && typeof closed["closedAtEpochMs"] === "number" && Number.isSafeInteger(closed["closedAtEpochMs"]) && closed["closedAtEpochMs"] >= prior.authenticatedAtEpochMs);
       }
       inspect(operationId18) {
@@ -207391,9 +207844,9 @@ var init_current_pcb_rename_verification_runtime = __esm({
         if (prior === void 0 && dispatch === void 0 && authority2 === void 0 && !journal.orphanedCallPossible) {
           return;
         }
-        const observe12 = this.engine.upstream.assertClosedAuthenticatedBridgeDispatchReleased;
-        need151(prior !== void 0 && dispatch !== void 0 && authority2 !== void 0 && observe12 !== void 0 && canonicalJson(prior) === canonicalJson(capture5.bridgeSession) && authority2.processes.some((process22) => canonicalJson(process22) === canonicalJson(launch.root)) && authority2.processes.every((process22) => process22.startIdentity.endsWith(`:job:${launch.jobId}`)));
-        const closed = observe12.call(this.engine.upstream, dispatch, prior);
+        const observe13 = this.engine.upstream.assertClosedAuthenticatedBridgeDispatchReleased;
+        need151(prior !== void 0 && dispatch !== void 0 && authority2 !== void 0 && observe13 !== void 0 && canonicalJson(prior) === canonicalJson(capture5.bridgeSession) && authority2.processes.some((process22) => canonicalJson(process22) === canonicalJson(launch.root)) && authority2.processes.every((process22) => process22.startIdentity.endsWith(`:job:${launch.jobId}`)));
+        const closed = observe13.call(this.engine.upstream, dispatch, prior);
         need151(isRecord(closed) && closed["sessionId"] === prior.sessionId && closed["sequence"] === prior.sequence && closed["authenticationReceiptSha256"] === prior.authenticationReceiptSha256 && closed["authenticatedAtEpochMs"] === prior.authenticatedAtEpochMs && typeof closed["closedAtEpochMs"] === "number" && Number.isSafeInteger(closed["closedAtEpochMs"]) && closed["closedAtEpochMs"] >= prior.authenticatedAtEpochMs);
       }
       inspect(operationId18) {
@@ -211013,10 +211466,10 @@ async function collectCurrentSchematicAgedSqlClock(engine2, generation5, referen
   collections11.set(generation5, collection);
   const evidenceId = currentSymbolClockEvidenceId(generation5.operationId);
   try {
-    const observe12 = engine2.freshClockObservationForClosedCapture;
+    const observe13 = engine2.freshClockObservationForClosedCapture;
     const call = engine2.upstream.callTool;
     const unchanged5 = () => {
-      need161(assertCurrentProjectOnlySchematicRenameGeneration(generation5, engine2, scopeText) === source7 && assertOriginalCurrentSchematicAgedSqlReference(reference3, engine2, source7.baseline) === reference3 && assertOriginalCurrentSchematicRenameStartup(startup2, engine2, generation5) === originalStartup && engine2.upstream.currentAuthenticatedBridgeDispatchBinding === scopeReader && canonicalJson(scopeReader.call(engine2.upstream)) === scopeText && engine2.freshClockObservationForClosedCapture === observe12 && engine2.upstream.callTool === call);
+      need161(assertCurrentProjectOnlySchematicRenameGeneration(generation5, engine2, scopeText) === source7 && assertOriginalCurrentSchematicAgedSqlReference(reference3, engine2, source7.baseline) === reference3 && assertOriginalCurrentSchematicRenameStartup(startup2, engine2, generation5) === originalStartup && engine2.upstream.currentAuthenticatedBridgeDispatchBinding === scopeReader && canonicalJson(scopeReader.call(engine2.upstream)) === scopeText && engine2.freshClockObservationForClosedCapture === observe13 && engine2.upstream.callTool === call);
     };
     unchanged5();
     await revalidateCurrentProjectOnlySchematicRenameGeneration(generation5, engine2, scopeText);
@@ -211054,13 +211507,13 @@ async function collectCurrentSchematicAgedSqlClock(engine2, generation5, referen
     unchanged5();
     await readExactUtf8Artifact(intent);
     unchanged5();
-    const before = await observe12.call(engine2, source7.capture);
+    const before = await observe13.call(engine2, source7.capture);
     collection.before = before;
     unchanged5();
     const raw = await call.call(engine2.upstream, "easyeda_execute", { code: code2, timeoutMs: 15e3, confirmWrite: true }, 25e3);
     collection.raw = raw;
     unchanged5();
-    const after = await observe12.call(engine2, source7.capture);
+    const after = await observe13.call(engine2, source7.capture);
     collection.after = after;
     unchanged5();
     collection.resultPublicationAttempted = true;
@@ -211188,7 +211641,7 @@ function need162(condition, message) {
     throw new Error(`Current schematic rename history: ${message}`);
   }
 }
-function fields22(value2, keys3) {
+function fields23(value2, keys3) {
   need162(value2 !== null && typeof value2 === "object" && (Object.getPrototypeOf(value2) === Object.prototype || Object.getPrototypeOf(value2) === null), "plain data required");
   const actual = Reflect.ownKeys(value2);
   need162(actual.length === keys3.length && actual.every((key) => typeof key === "string" && keys3.includes(key)), "input fields differ");
@@ -211207,7 +211660,7 @@ function digest21(value2) {
   return createHash88("sha256").update(value2, "utf8").digest("hex");
 }
 function prepareCurrentSchematicRenameHistory(input2) {
-  const raw = fields22(input2, [
+  const raw = fields23(input2, [
     "targetUuid",
     "beforeMetaText",
     "desiredTitle",
@@ -211222,9 +211675,9 @@ function prepareCurrentSchematicRenameHistory(input2) {
   ]);
   const captured = inputSchema4.parse({
     ...raw,
-    documentClock: fields22(raw["documentClock"], ["minimumMs", "maximumMs"]),
-    backendClock: fields22(raw["backendClock"], ["minimumMs", "maximumMs"]),
-    backendActor: fields22(raw["backendActor"], ["uuid", "username", "nickname"])
+    documentClock: fields23(raw["documentClock"], ["minimumMs", "maximumMs"]),
+    backendClock: fields23(raw["backendClock"], ["minimumMs", "maximumMs"]),
+    backendActor: fields23(raw["backendActor"], ["uuid", "username", "nickname"])
   });
   exactUtf82(captured.beforeMetaText);
   const parsed5 = JSON.parse(captured.beforeMetaText);
@@ -211335,7 +211788,7 @@ function need163(condition, message) {
     throw new Error(`Current schematic rename structure: ${message}`);
   }
 }
-function fields23(value2, names2) {
+function fields24(value2, names2) {
   need163(typeof value2 === "object" && value2 !== null && (Object.getPrototypeOf(value2) === Object.prototype || Object.getPrototypeOf(value2) === null), "plain input required");
   const keys3 = Reflect.ownKeys(value2);
   need163(keys3.length === names2.length && keys3.every((key) => typeof key === "string" && names2.includes(key)), "input keys differ");
@@ -211378,8 +211831,8 @@ function verifyMembership2(structure4) {
   return known.size;
 }
 function prepareCurrentSchematicRenameStructure(input2) {
-  const raw = fields23(input2, ["structureText", "targetUuid", "expectedOwnerUuid", "expectedBefore", "desiredTitle", "documentTime"]);
-  const captured = inputSchema5.parse({ ...raw, expectedBefore: fields23(raw["expectedBefore"], ["name", "version", "updateTime"]) });
+  const raw = fields24(input2, ["structureText", "targetUuid", "expectedOwnerUuid", "expectedBefore", "desiredTitle", "documentTime"]);
+  const captured = inputSchema5.parse({ ...raw, expectedBefore: fields24(raw["expectedBefore"], ["name", "version", "updateTime"]) });
   const structure4 = parseStructure2(captured.structureText);
   const documentCount = verifyMembership2(structure4);
   need163(structure4.owner.uuid === captured.expectedOwnerUuid, "owner identity differs");
@@ -211486,7 +211939,7 @@ function need164(condition, message) {
     throw new Error(`Current SCH rename SQL: ${message}`);
   }
 }
-function fields24(value2, names2) {
+function fields25(value2, names2) {
   need164(isRecord(value2) && (Object.getPrototypeOf(value2) === Object.prototype || Object.getPrototypeOf(value2) === null), "plain input required");
   const keys3 = Reflect.ownKeys(value2);
   need164(keys3.length <= 12 && keys3.every((key) => typeof key === "string" && (names2 === void 0 || names2.includes(key))), "input keys differ");
@@ -211502,9 +211955,9 @@ function fields24(value2, names2) {
   return result2;
 }
 function captureWitness3(value2) {
-  const captured = fields24(value2), result2 = witnessSchema4.parse({
+  const captured = fields25(value2), result2 = witnessSchema4.parse({
     ...captured,
-    ...captured["agedHead"] === void 0 ? {} : { agedHead: fields24(captured["agedHead"]) }
+    ...captured["agedHead"] === void 0 ? {} : { agedHead: fields25(captured["agedHead"]) }
   });
   for (const time20 of [result2.backendClockMinMs, result2.backendClockMaxMs]) {
     for (const offset9 of [0, result2.backendLocalOffsetMinutes * 6e4]) {
@@ -211785,7 +212238,7 @@ async function projectIntent(intent, documentTime, backendTime) {
   return result2;
 }
 async function prepareCurrentSchematicRenameSql(input2) {
-  const captured = fields24(input2, ["before", "metadata", "witness"]);
+  const captured = fields25(input2, ["before", "metadata", "witness"]);
   const before = input2.before, metadata13 = input2.metadata;
   need164(captured["before"] === before && captured["metadata"] === metadata13, "input identity changed");
   assertOriginalCurrentSchematicNativeMetadata(metadata13, before);
@@ -211834,7 +212287,7 @@ async function prepareCurrentSchematicRenameSql(input2) {
 async function bindCurrentSchematicRenameSqlTimes(preparation3, input2) {
   const intent = intentions.get(preparation3);
   need164(intent !== void 0, "original schematic SQL preparation required");
-  const observed12 = external_exports.object({ documentTime: timeSchema3, backendTime: timeSchema3 }).strict().parse(fields24(input2, ["documentTime", "backendTime"]));
+  const observed12 = external_exports.object({ documentTime: timeSchema3, backendTime: timeSchema3 }).strict().parse(fields25(input2, ["documentTime", "backendTime"]));
   const plan2 = await projectIntent(intent, observed12.documentTime, observed12.backendTime);
   for (const key of ["maximumPlaintextBytes", "maximumCiphertextBase64Bytes", "maximumEncodedSqlBytes"]) {
     need164(plan2[key] <= preparation3[key], "observed times exceed reserved capacity");
@@ -211843,7 +212296,7 @@ async function bindCurrentSchematicRenameSqlTimes(preparation3, input2) {
   return plan2;
 }
 async function prepareBoundSql(input2) {
-  const captured = fields24(input2, ["before", "metadata", "historyProjection", "structureProjection", "witness"]);
+  const captured = fields25(input2, ["before", "metadata", "historyProjection", "structureProjection", "witness"]);
   const before = input2.before, historyProjection = input2.historyProjection, structureProjection = input2.structureProjection;
   need164(captured["before"] === before && captured["historyProjection"] === historyProjection && captured["structureProjection"] === structureProjection, "input identity changed");
   need164(captured["metadata"] === input2.metadata, "metadata identity changed");
@@ -212638,7 +213091,7 @@ function need168(condition, message = "Current SCH rename clock refused.") {
     throw new Error(message);
   }
 }
-function fields25(value2, required2, optional3 = []) {
+function fields26(value2, required2, optional3 = []) {
   need168(value2 !== null && typeof value2 === "object" && !types89.isProxy(value2) && !Array.isArray(value2) && (Object.getPrototypeOf(value2) === Object.prototype || Object.getPrototypeOf(value2) === null), "Clock input must be plain data.");
   const keys3 = Reflect.ownKeys(value2);
   need168(keys3.every((key) => typeof key === "string" && (required2.includes(key) || optional3.includes(key))) && required2.every((key) => keys3.includes(key)), "Clock input fields differ.");
@@ -212647,7 +213100,7 @@ function fields25(value2, required2, optional3 = []) {
   }
 }
 function documentSample4(value2) {
-  fields25(value2, ["rendererBeforeMs", "serverTimeMs", "rendererAfterMs", "rendererBeforeIso", "rendererAfterIso", "rendererTimezoneOffsetMinutes", "notifyTabId"]);
+  fields26(value2, ["rendererBeforeMs", "serverTimeMs", "rendererAfterMs", "rendererBeforeIso", "rendererAfterIso", "rendererTimezoneOffsetMinutes", "notifyTabId"]);
   const copy3 = Object.freeze({ ...value2 });
   for (const time20 of [copy3.rendererBeforeMs, copy3.serverTimeMs, copy3.rendererAfterMs]) {
     need168(Number.isSafeInteger(time20) && time20 >= 0 && time20 <= 864e13 && !Object.is(time20, -0));
@@ -212701,7 +213154,7 @@ function sameCapture4(capture5, clock9) {
   need168(canonicalJson(capture5.token.ownerBinding) === canonicalJson(clock9.token.ownerBinding) && clock9.token.base["captureBindingSha256"] === capture5.token.base["bindingSha256"]);
 }
 async function prepareCurrentSchematicRenameClock(input2) {
-  fields25(input2, ["engine", "generation", "startup", "dispatchOwner", "beforeClock", "armedClock", "documentBefore"], ["agedHead"]);
+  fields26(input2, ["engine", "generation", "startup", "dispatchOwner", "beforeClock", "armedClock", "documentBefore"], ["agedHead"]);
   const { engine: engine2, generation: generation5, startup: startup2, dispatchOwner: owner4 } = input2;
   const scopeReader = engine2.upstream.currentAuthenticatedBridgeDispatchBinding;
   const scope7 = scopeReader?.call(engine2.upstream), scopeText = scope7 === void 0 ? void 0 : canonicalJson(scope7);
@@ -212715,7 +213168,7 @@ async function prepareCurrentSchematicRenameClock(input2) {
   const tokens = [source7.source.launchClock, source7.source.captureClock, input2.beforeClock, input2.armedClock];
   const aged = input2.agedHead;
   if (aged !== void 0) {
-    fields25(aged, ["createdAtLiteral", "nativeParsedLocalMs", "nativeTimezoneOffsetMinutes"]);
+    fields26(aged, ["createdAtLiteral", "nativeParsedLocalMs", "nativeTimezoneOffsetMinutes"]);
   }
   const agedHead = aged === void 0 ? void 0 : Object.freeze({ ...aged });
   const check3 = () => {
@@ -212839,7 +213292,7 @@ async function recordCurrentSchematicRenameClockPost(plan2, input2) {
   const lifecycle = lifecycles2.get(plan2);
   need168(lifecycle !== void 0 && lifecycle.stage === "armed", "Original SCH clock post already consumed or absent.");
   lifecycle.stage = "post-consumed";
-  fields25(input2, ["engine", "generation", "startup", "dispatchOwner", "afterClock", "result"]);
+  fields26(input2, ["engine", "generation", "startup", "dispatchOwner", "afterClock", "result"]);
   const prepared = assertOriginalCurrentSchematicRenameClock(plan2, input2.engine, input2.generation, input2.startup, input2.dispatchOwner);
   const { engine: engine2, generation: generation5, startup: startup2, dispatchOwner, afterClock: token42, result: originalResult } = input2;
   const check3 = () => {
@@ -212870,7 +213323,7 @@ async function verifyCurrentSchematicRenameClockEffect(plan2, input2) {
   const post = lifecycle?.post;
   need168(lifecycle !== void 0 && prepared !== void 0 && post !== void 0 && lifecycle.stage === "post-recorded", "Original SCH clock effect already consumed or post absent.");
   lifecycle.stage = "verification-consumed";
-  fields25(input2, ["engine", "dispatchOwner", "terminationProof", "after"]);
+  fields26(input2, ["engine", "dispatchOwner", "terminationProof", "after"]);
   need168(input2.engine === prepared.engine && input2.dispatchOwner === prepared.dispatchOwner && canonicalJson(plan2) === prepared.text, "Original SCH clock closure owner differs.");
   const after = input2.after, proof = input2.terminationProof, termination = await windowsClockObservationForResult(proof, "termination");
   const exit = await issued36(termination, "termination");
@@ -214093,9 +214546,9 @@ var init_current_schematic_rename_writer_runtime = __esm({
         if (prior === void 0 && dispatch === void 0 && authority2 === void 0 && !journal.orphanedCallPossible) {
           return;
         }
-        const observe12 = this.engine.upstream.assertClosedAuthenticatedBridgeDispatchReleased;
-        need170(prior !== void 0 && dispatch !== void 0 && authority2 !== void 0 && observe12 !== void 0 && canonicalJson(prior) === canonicalJson(original2.capture.bridgeSession) && authority2.processes.some((process22) => canonicalJson(process22) === canonicalJson(original2.launch.root)) && authority2.processes.every((process22) => process22.startIdentity.endsWith(`:job:${original2.launch.jobId}`)));
-        const closed = observe12.call(this.engine.upstream, dispatch, prior);
+        const observe13 = this.engine.upstream.assertClosedAuthenticatedBridgeDispatchReleased;
+        need170(prior !== void 0 && dispatch !== void 0 && authority2 !== void 0 && observe13 !== void 0 && canonicalJson(prior) === canonicalJson(original2.capture.bridgeSession) && authority2.processes.some((process22) => canonicalJson(process22) === canonicalJson(original2.launch.root)) && authority2.processes.every((process22) => process22.startIdentity.endsWith(`:job:${original2.launch.jobId}`)));
+        const closed = observe13.call(this.engine.upstream, dispatch, prior);
         need170(isRecord(closed) && closed["sessionId"] === prior.sessionId && closed["sequence"] === prior.sequence && closed["authenticationReceiptSha256"] === prior.authenticationReceiptSha256 && closed["authenticatedAtEpochMs"] === prior.authenticatedAtEpochMs && typeof closed["closedAtEpochMs"] === "number" && Number.isSafeInteger(closed["closedAtEpochMs"]) && closed["closedAtEpochMs"] >= prior.authenticatedAtEpochMs);
       }
       inspect(operationId18) {
@@ -215275,9 +215728,9 @@ var init_current_schematic_rename_verification_runtime = __esm({
         if (prior === void 0 && dispatch === void 0 && authority2 === void 0 && !journal.orphanedCallPossible) {
           return;
         }
-        const observe12 = this.engine.upstream.assertClosedAuthenticatedBridgeDispatchReleased;
-        need173(prior !== void 0 && dispatch !== void 0 && authority2 !== void 0 && observe12 !== void 0 && canonicalJson(prior) === canonicalJson(capture5.bridgeSession) && authority2.processes.some((process22) => canonicalJson(process22) === canonicalJson(launch.root)) && authority2.processes.every((process22) => process22.startIdentity.endsWith(`:job:${launch.jobId}`)));
-        const closed = observe12.call(this.engine.upstream, dispatch, prior);
+        const observe13 = this.engine.upstream.assertClosedAuthenticatedBridgeDispatchReleased;
+        need173(prior !== void 0 && dispatch !== void 0 && authority2 !== void 0 && observe13 !== void 0 && canonicalJson(prior) === canonicalJson(capture5.bridgeSession) && authority2.processes.some((process22) => canonicalJson(process22) === canonicalJson(launch.root)) && authority2.processes.every((process22) => process22.startIdentity.endsWith(`:job:${launch.jobId}`)));
+        const closed = observe13.call(this.engine.upstream, dispatch, prior);
         need173(isRecord(closed) && closed["sessionId"] === prior.sessionId && closed["sequence"] === prior.sequence && closed["authenticationReceiptSha256"] === prior.authenticationReceiptSha256 && closed["authenticatedAtEpochMs"] === prior.authenticatedAtEpochMs && typeof closed["closedAtEpochMs"] === "number" && Number.isSafeInteger(closed["closedAtEpochMs"]) && closed["closedAtEpochMs"] >= prior.authenticatedAtEpochMs);
       }
       inspect(operationId18) {
@@ -217792,8 +218245,8 @@ function assertExactObjectKeys(value2, expectedKeys, label) {
     throw new Error(`${label} has unexpected or missing fields.`);
   }
 }
-function assertFiniteCaptureFields(value2, fields26, label) {
-  for (const field13 of fields26) {
+function assertFiniteCaptureFields(value2, fields27, label) {
+  for (const field13 of fields27) {
     if (typeof value2[field13] !== "number" || !Number.isFinite(value2[field13])) {
       throw new TypeError(`${label}.${field13} must be a finite number.`);
     }
@@ -219337,6 +219790,7 @@ var init_src = __esm({
               "observeWorkerStartupChannel",
               "observeStartupChannel",
               "hasActiveReservation",
+              ...StartupLifecycle === CurrentPcb209WorkerStartupLifecycle ? ["observeWorkerStartupFootprint", "observeStartupFootprint"] : [],
               ...emptyPurpose ? ["observeWorkerStartupEmpty", "observeStartupEmpty", "prepareWorkerStartupEmpty", "prepareStartupEmpty"] : [],
               ...ratlinePurpose ? ["observeWorkerStartupRatline", "observeStartupRatline"] : [],
               ...continuationPurpose ? ["observeWorkerStartupRatlineContinuation", "observeStartupRatlineContinuation"] : []
@@ -219345,7 +219799,7 @@ var init_src = __esm({
           const capturedMethods = methodIdentities();
           const assertLocal = () => {
             const currentMethods = methodIdentities();
-            if (engine !== originalEngine || upstream !== originalUpstream || bridgeGate !== originalGate || disposableOwnData(engine, "upstream") !== originalUpstream || disposableOwnData(engine, "controlFingerprintPromise") !== facadePromise || disposableOwnData(engine, "executionAuthorityValidator") !== authority2 || process21.env !== environment || environment["EASYEDA_ASSETS_ROOT"] !== assetsRoot || environment["WSL_DISTRO_NAME"] !== wslDistribution || controlDataDirectory() !== controlPath || retainedControlRoot2.path !== controlPath || resolve25(import.meta.dirname, "../..") !== pluginRoot || capturedMethods.some((method7, index2) => method7 !== currentMethods[index2]) || startupOriginal !== void 0 && (currentPcbWorkerStartupLifecycle !== startupOriginal.owner || startupOriginal.owner.run !== startupOriginal.run || startupOriginal.owner.captureWorkerStartup !== startupOriginal.capture || startupOriginal.owner.observeWorkerStartupAssignments !== startupOriginal.assignments || startupOriginal.owner.observeWorkerStartupActor !== startupOriginal.actor || startupOriginal.owner.observeWorkerStartupChannel !== startupOriginal.channel || startupOriginal.owner.hasActiveReservation !== startupOriginal.reserved || startupOriginal.owner instanceof CurrentPcb209EmptyStartupLifecycle && startupOriginal.owner.observeWorkerStartupEmpty !== startupOriginal.empty || startupOriginal.owner instanceof CurrentPcb209RatlineStartupLifecycle && startupOriginal.owner.observeWorkerStartupRatline !== startupOriginal.ratline || startupOriginal.owner instanceof CurrentPcb209RatlineContinuationLifecycle && startupOriginal.owner.observeWorkerStartupRatlineContinuation !== startupOriginal.continuation)) {
+            if (engine !== originalEngine || upstream !== originalUpstream || bridgeGate !== originalGate || disposableOwnData(engine, "upstream") !== originalUpstream || disposableOwnData(engine, "controlFingerprintPromise") !== facadePromise || disposableOwnData(engine, "executionAuthorityValidator") !== authority2 || process21.env !== environment || environment["EASYEDA_ASSETS_ROOT"] !== assetsRoot || environment["WSL_DISTRO_NAME"] !== wslDistribution || controlDataDirectory() !== controlPath || retainedControlRoot2.path !== controlPath || resolve25(import.meta.dirname, "../..") !== pluginRoot || capturedMethods.some((method7, index2) => method7 !== currentMethods[index2]) || startupOriginal !== void 0 && (currentPcbWorkerStartupLifecycle !== startupOriginal.owner || startupOriginal.owner.run !== startupOriginal.run || startupOriginal.owner.captureWorkerStartup !== startupOriginal.capture || startupOriginal.owner.observeWorkerStartupAssignments !== startupOriginal.assignments || startupOriginal.owner.observeWorkerStartupActor !== startupOriginal.actor || startupOriginal.owner.observeWorkerStartupChannel !== startupOriginal.channel || startupOriginal.owner.hasActiveReservation !== startupOriginal.reserved || startupOriginal.owner instanceof CurrentPcb209WorkerStartupLifecycle && startupOriginal.owner.observeWorkerStartupFootprint !== startupOriginal.footprint || startupOriginal.owner instanceof CurrentPcb209EmptyStartupLifecycle && startupOriginal.owner.observeWorkerStartupEmpty !== startupOriginal.empty || startupOriginal.owner instanceof CurrentPcb209RatlineStartupLifecycle && startupOriginal.owner.observeWorkerStartupRatline !== startupOriginal.ratline || startupOriginal.owner instanceof CurrentPcb209RatlineContinuationLifecycle && startupOriginal.owner.observeWorkerStartupRatlineContinuation !== startupOriginal.continuation)) {
               throw new Error("Worker startup original index owner, environment or methods changed.");
             }
           };
@@ -219378,6 +219832,8 @@ var init_src = __esm({
             assignments: owner4.observeWorkerStartupAssignments,
             actor: owner4.observeWorkerStartupActor,
             channel: owner4.observeWorkerStartupChannel,
+            // oxlint-disable-next-line typescript/unbound-method -- Invoke only with the retained current209 lifecycle receiver.
+            footprint: owner4 instanceof CurrentPcb209WorkerStartupLifecycle ? owner4.observeWorkerStartupFootprint : void 0,
             // oxlint-disable-next-line typescript/unbound-method -- The purpose-switch guard invokes this retained private-field method only with the original lifecycle receiver.
             reserved: owner4.hasActiveReservation,
             // oxlint-disable-next-line typescript/unbound-method -- Retain the exact original method; the sole dispatch supplies its retained private-field receiver.
@@ -219423,6 +219879,11 @@ var init_src = __esm({
             result2 = await retained2.capture.call(retained2.owner, operationId18, expectedBindingSha256, input2);
           } else if (request13.action === "observe-current-assignments") {
             result2 = await retained2.assignments.call(retained2.owner, request13.operationId, request13.expectedBindingSha256);
+          } else if (request13.action === "observe-footprint-state") {
+            if (!(retained2.owner instanceof CurrentPcb209WorkerStartupLifecycle) || retained2.footprint === void 0 || retained2.emptyPurpose || retained2.ratlinePurpose || retained2.continuationPurpose) {
+              throw new Error("Original current209 startup footprint owner required.");
+            }
+            result2 = await retained2.footprint.call(retained2.owner, request13.operationId, request13.expectedBindingSha256);
           } else if (request13.action === "observe-actor-clock") {
             result2 = await retained2.actor.call(retained2.owner, request13.operationId, request13.expectedBindingSha256);
           } else if (request13.action === "observe-current-channel") {
@@ -219448,7 +219909,7 @@ var init_src = __esm({
         const startupSchema = external_exports.object({ request: external_exports.unknown().pipe(currentPcb209WorkerStartupToolRequestSchema) }).strict();
         server.registerTool("easyeda_control_pcb209_worker_startup", {
           title: "Capture a disposable EasyEDA 3.2.209 project worker startup",
-          description: "Disposable EasyEDA 3.2.209 startup validation with four separate launch purposes. Query the matching offline catalog and argument validator first: pcb209-worker-startup/-validate, pcb209-empty-baseline/-validate, pcb209-ratline-held-import/-validate, or pcb209-ratline-continuation/-validate. Each purpose launches its own original owner; an existing owner cannot be upgraded. Launch, qualify browser/frame/UI source, then capture-project once against the exact disposable checkpoint. The default pcb209-startup-* purpose can subsequently observe current assignments, channel relations and a sequential UI/worker actor-clock bracket. The empty-baseline wrapper uses pcb209-empty-* and joins fixed common data with the original completed SQL checkpoint, bracketed by empty raw-manager samples; populated targets refuse. The ratline-held-import wrapper uses pcb209-ratline-* with the original cumulative budget and complete source leases. After capture-project, observe-ratline-held-import journals intent before the sole PCB navigation, qualifies 29 PCB source stages, captures original construction and holds the first ratline child at its seventh qualified source import. It stops before worker continuation, callback return and full startup or baseline completion. The ratline-continuation wrapper uses pcb209-continuation-* and a separately sealed native budget. After capture-project, observe-ratline-continuation qualifies the original PCB, first worker and subordinate sources, continues their fixed imports and observes original PCB/worker capture checkpoints and callback returnsites. Callback completion, publication completion and native Worker-object/target identity remain unproved. These sequential observations grant no native channel-peer, server-clock, contained-destination, writer or durability proof. Explicit debugger-pause acceptance is required. Launch/open may restore tabs, migrate, replay caches, use the network and automatically persist files. Every stage is consumed once. Inspect after uncertainty and retain the original owner through abort, normal close, original root/Job termination, helper release and record settlement. No caller JavaScript, CDP commands, explicit Save, CAD writer, historical-owner adoption, navigation retry, force exit or Save/Discard choice.",
+          description: "Disposable EasyEDA 3.2.209 startup validation with four separate launch purposes. Query the matching offline catalog and argument validator first: pcb209-worker-startup/-validate, pcb209-empty-baseline/-validate, pcb209-ratline-held-import/-validate, or pcb209-ratline-continuation/-validate. Each purpose launches its own original owner; an existing owner cannot be upgraded. Launch, qualify browser/frame/UI source, then capture-project once against the exact disposable checkpoint. The default pcb209-startup-* purpose can subsequently observe current assignments, channel relations, a sequential UI/worker actor-clock bracket and original footprint-manager state. The footprint stage reads its own captured user/client/ticket without invoking GET_STR, copy or delete. The empty-baseline wrapper uses pcb209-empty-* and joins fixed common data with the original completed SQL checkpoint, bracketed by empty raw-manager samples; populated targets refuse. The ratline-held-import wrapper uses pcb209-ratline-* with the original cumulative budget and complete source leases. After capture-project, observe-ratline-held-import journals intent before the sole PCB navigation, qualifies 29 PCB source stages, captures original construction and holds the first ratline child at its seventh qualified source import. It stops before worker continuation, callback return and full startup or baseline completion. The ratline-continuation wrapper uses pcb209-continuation-* and a separately sealed native budget. After capture-project, observe-ratline-continuation qualifies the original PCB, first worker and subordinate sources, continues their fixed imports and observes original PCB/worker capture checkpoints and callback returnsites. Callback completion, publication completion and native Worker-object/target identity remain unproved. These sequential observations grant no native channel-peer, server-clock, contained-destination, writer or durability proof. Explicit debugger-pause acceptance is required. Launch/open may restore tabs, migrate, replay caches, use the network and automatically persist files. Every stage is consumed once. Inspect after uncertainty and retain the original owner through abort, normal close, original root/Job termination, helper release and record settlement. No caller JavaScript, CDP commands, explicit Save, CAD writer, historical-owner adoption, navigation retry, force exit or Save/Discard choice.",
           inputSchema: startupSchema,
           outputSchema: currentSymbolOperationToolOutputSchema,
           annotations: { readOnlyHint: false, destructiveHint: false, idempotentHint: false, openWorldHint: true }

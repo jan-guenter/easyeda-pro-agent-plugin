@@ -92,6 +92,7 @@ async function routerConstructor(): Promise<typeof CurrentPcb209RatlinePcbContex
 }
 type Events = Parameters<CurrentPcb209RatlinePcbContextDependency["subscribe"]>[0];
 async function fixture(options: Readonly<{ badReplay?: boolean; badDom?: boolean; foreignPause?: boolean; delayMilliseconds?: number;
+  delayedRootActivation?: boolean; foreignFrameReply?: boolean; ancestryPadding?: number;
   navigationPause?: "valid" | "source-change" | "foreign-context" | "lost-resume-ack" | "historical-script";
   loaderPause?: "valid" | "source-change" | "historical-script" | "settled-navigation" | "duplicate"; holdNavigationAck?: boolean;
   windowPause?: "valid" | "source-change" | "duplicate" | "foreign-context" | "lost-resume-ack";
@@ -100,6 +101,7 @@ async function fixture(options: Readonly<{ badReplay?: boolean; badDom?: boolean
   router: CurrentPcb209RatlinePcbContextRouter; owner: CurrentPcb209RatlinePcbBootstrapOwner;
   counts: () => Readonly<{ navigation: number; resumes: number; sources: number; snapshots: number; removals: number }>;
   emit: (value: DiagnosticEvent) => void; finishNavigation: () => void; changeFrame: () => void; terminate: () => Promise<void>;
+  activateRoot: () => void;
   navigationResumeRequested: Promise<null>; acknowledgeNavigationResume: () => void; loaderCounts: () => Readonly<{ sources: number; resumes: number }>;
   cleanupCount: () => number; windowCounts: () => Readonly<{ sources: number; resumes: number }>;
 }>> {
@@ -109,6 +111,7 @@ async function fixture(options: Readonly<{ badReplay?: boolean; badDom?: boolean
   let drift = false, index = 0, listener: Events | null = null, removals = 0, resumes = 0, snapshots = 0, sources = 0, started = 0, terminated = false;
   let lastPause: DiagnosticEvent | null = null;
   let committedDuringOwnership = false, instrumentationHeld = false;
+  let activeRootUrl = projectUrl;
   const activePcbContext = options.initialOwnershipCommit === undefined ? pcbContext : { ...pcbContext, id: 2, uniqueId: "initial-blank" };
   const ownership = new Map<string, Readonly<{ breakpointId: string; callFrames: unknown }>>();
   const emit = (value: DiagnosticEvent): void => {
@@ -142,7 +145,10 @@ async function fixture(options: Readonly<{ badReplay?: boolean; badDom?: boolean
     if (options.windowPause === undefined) { pause(); } else { emitWindow("document"); }
   };
   const beginPcb = (): void => {
+    if (options.delayedRootActivation !== true) {
+      activeRootUrl = openedUrl;
       emit(event("Page.navigatedWithinDocument", { frameId: "root", url: openedUrl, navigationType: "fragment" }));
+    }
       emit(event("Page.frameAttached", { frameId: "pcb-frame", parentFrameId: "root" }));
       emit(event("Runtime.executionContextCreated", { context: { ...pcbContext, id: 2, uniqueId: "initial-blank" } }));
       if (options.windowPause === undefined) { commitPcb(); } else { initialWindow = true; emitWindow("initial"); }
@@ -212,14 +218,15 @@ async function fixture(options: Readonly<{ badReplay?: boolean; badDom?: boolean
             if (command.windowPhase === "initial-resume") { commitPcb(); } else { pause(); } return {};
           }
           resumes += 1; emit(event("Debugger.resumed", {})); index += 1; pause(); return ({}); }
-        case "Target.getTargets": { snapshots += 1; return ({ targetInfos: [{ ...parent, attached: true, url: openedUrl }] }); }
-        case "Page.getFrameTree": { assert.equal(instrumentationHeld, false); snapshots += 1; return ({ frameTree: { frame: { ...root, urlFragment: openedUrl.slice(base.length) },
-          childFrames: [{ frame: { ...pcbFrame, ...(drift ? { loaderId: "replacement" } : {}) } }] } }); }
+        case "Target.getTargets": { snapshots += 1; return ({ targetInfos: [{ ...parent, attached: true, url: activeRootUrl }] }); }
+        case "Page.getFrameTree": { assert.equal(instrumentationHeld, false); snapshots += 1; return ({ frameTree: { frame: { ...root, urlFragment: activeRootUrl.slice(base.length) },
+          childFrames: [{ frame: { ...pcbFrame, ...(drift || options.foreignFrameReply === true ? { loaderId: "replacement" } : {}) } }] } }); }
         case "DOM.getFrameOwner": { assert.equal(instrumentationHeld, false); snapshots += 1; assert.equal(command.params.frameId, "pcb-frame"); return ({ backendNodeId: 17 }); }
         case "DOM.describeNode": {
           assert.equal(instrumentationHeld, false);
           snapshots += 1; assert.deepEqual(command.params, { backendNodeId: 17, depth: 0, pierce: false });
           return ({ node: { backendNodeId: 17, nodeType: 1, nodeName: "IFRAME", localName: "iframe", frameId: "pcb-frame",
+            ...(options.ancestryPadding === undefined ? {} : { retainedTestPadding: "x".repeat(options.ancestryPadding) }),
             attributes: ["id", `frame_${tab}`, "c_dbid", options.badDom === true ? "foreign" : tab, "c_doctype", "3", "src", "editor?entry=pcb", ...(initialWindow ? [] : ["pcb-canvas", "true"]), "class", "editframe"] } });
         }
         case "Debugger.evaluateOnCallFrame": case "Debugger.setBreakpoint": case "Runtime.callFunctionOn": case "Runtime.runIfWaitingForDebugger": { throw new Error("Unexpected synthetic command"); }
@@ -254,6 +261,7 @@ async function fixture(options: Readonly<{ badReplay?: boolean; badDom?: boolean
   const router = new Constructor(context, target, dependency);
   return { router, owner: router.sourceOwner, counts: (): Readonly<{ navigation: number; resumes: number; sources: number; snapshots: number; removals: number }> =>
     ({ navigation: started, resumes, sources, snapshots, removals }), emit, finishNavigation: (): void => { navigation.resolve(null); }, changeFrame: (): void => { drift = true; },
+    activateRoot: (): void => { activeRootUrl = openedUrl; emit(event("Page.navigatedWithinDocument", { frameId: "root", url: openedUrl, navigationType: "fragment" })); },
     navigationResumeRequested: navigationResumeRequested.promise, acknowledgeNavigationResume: (): void => { navigationAck.resolve(null); },
     loaderCounts: (): Readonly<{ sources: number; resumes: number }> => ({ sources: loaderSources, resumes: loaderResumes }),
     cleanupCount: (): number => cleanupCalls, windowCounts: (): Readonly<{ sources: number; resumes: number }> => ({ sources: windowSources, resumes: windowResumes }),
@@ -281,6 +289,53 @@ void test("changed historical Runtime replay refuses before any PCB navigation o
   assert.equal(Reflect.get(sourceState, "failed"), true); assert.ok(Object.isFrozen(failure));
   assert.deepEqual(f.counts(), { navigation: 0, resumes: 0, sources: 0, snapshots: 0, removals: 0 }); await f.router.abort(); await f.terminate();
   assert.equal(f.router.status()["firstFailure"], failure);
+});
+void test("held PCB source uses original project root until native activation advances the sealed fragment", async () => {
+  const f = await fixture({ delayedRootActivation: true });
+  try {
+    await f.owner.armBeforeNavigation(); await f.owner.startOriginalNavigation(); const packet = await f.owner.whenSourceQualified();
+    assert.equal(f.router.status()["proofSets"], 1);
+    const realm = await f.owner.claimOriginalPcbRealm(packet); realm.subscribe({ paused: (): never => { throw new Error("Unexpected pause"); },
+      resumed: (): void => { assert.equal(f.counts().resumes, 29); }, attached: (): never => { throw new Error("Unexpected child"); },
+      lost: (): void => { assert.equal(f.router.status()["failed"], true); } });
+    await f.router.releaseOriginalPinnedSource(packet); f.activateRoot(); await f.router.reproveFirstChildHeld(packet);
+    assert.equal(f.router.status()["proofSets"], 3);
+    const evidence = f.router.retainedAncestryEvidence();
+    const targetReplies = evidence.records.filter(record => record.method === "Target.getTargets").map(record => record.reply);
+    assert.equal(targetReplies.length, 3);
+    assert.deepEqual(targetReplies.map(reply => JSON.stringify(reply.value).includes(openedUrl)), [false, false, true]);
+    assert.equal(evidence.executionAuthorized, false);
+  } finally { f.finishNavigation(); await f.router.abort(); await f.terminate(); }
+});
+void test("failed frame admission retains complete original target and frame replies without further DOM requests", async () => {
+  const f = await fixture({ foreignFrameReply: true });
+  try {
+    await f.owner.armBeforeNavigation(); await f.owner.startOriginalNavigation(); await assert.rejects(f.owner.whenSourceQualified());
+    const evidence = f.router.retainedAncestryEvidence();
+    assert.deepEqual(evidence.records.map(record => [record.ordinal, record.purpose, record.method, record.reply.status]),
+      [[1, "pcb-admission", "Target.getTargets", "captured"], [2, "pcb-admission", "Page.getFrameTree", "captured"]]);
+    const frame = evidence.records[1]?.reply; assert.equal(frame?.status, "captured");
+    assert.match(JSON.stringify(frame?.value), /replacement/u);
+    assert.equal(frame?.sha256, createHash("sha256").update(JSON.stringify(frame?.value)).digest("hex"));
+    assert.ok(Object.isFrozen(evidence.records)); assert.equal(f.counts().snapshots, 2); assert.equal(f.counts().resumes, 0);
+    const failure = f.router.status()["firstFailure"]; assert.ok(failure !== null && typeof failure === "object");
+    assert.equal(Reflect.get(failure, "step"), "ancestry-frame-validation");
+    await f.router.abort(); assert.deepEqual(f.router.retainedAncestryEvidence(), evidence);
+  } finally { f.finishNavigation(); await f.router.abort(); await f.terminate(); }
+});
+void test("ancestry diagnostic overflow is explicit and bounded without changing original proof or request counts", async () => {
+  const f = await fixture({ navigationPause: "valid", loaderPause: "valid", windowPause: "valid", ancestryPadding: 15_600 });
+  try {
+    await f.owner.armBeforeNavigation(); await f.owner.startOriginalNavigation(); const packet = await f.owner.whenSourceQualified();
+    const realm = await f.owner.claimOriginalPcbRealm(packet); realm.subscribe({ paused: (): never => { throw new Error("Unexpected pause"); },
+      resumed: (): void => { assert.equal(f.counts().resumes, 29); }, attached: (): never => { throw new Error("Unexpected child"); },
+      lost: (): void => { assert.equal(f.router.status()["failed"], true); } });
+    await f.router.releaseOriginalPinnedSource(packet); await f.router.reproveFirstChildHeld(packet);
+    const evidence = f.router.retainedAncestryEvidence(); assert.equal(evidence.records.length, 14); assert.ok(evidence.capturedBytes <= 65_536);
+    assert.ok(evidence.records.some(record => record.reply.status === "oversized"));
+    assert.equal(evidence.capturedBytes, evidence.records.reduce((sum, record) => sum + (record.reply.bytes ?? 0), 0));
+    assert.equal(f.router.status()["proofSets"], 3); assert.equal(f.counts().snapshots, 14);
+  } finally { f.finishNavigation(); await f.router.abort(); await f.terminate(); }
 });
 void test("foreign debugger pause and incorrect DOM owner refuse before any source execution", async () => {
   for (const options of [{ foreignPause: true }, { badDom: true }]) {

@@ -2561,6 +2561,7 @@ if (facadeToolRegistered(facadeMode, "easyeda_control_pcb_diagnostic_validation"
     readonly capture: CurrentPcbWorkerStartupLifecycle["captureWorkerStartup"];
     readonly assignments: CurrentPcbWorkerStartupLifecycle["observeWorkerStartupAssignments"];
     readonly actor: CurrentPcbWorkerStartupLifecycle["observeWorkerStartupActor"];
+    readonly footprint: CurrentPcb209WorkerStartupLifecycle["observeWorkerStartupFootprint"] | undefined;
     readonly channel: CurrentPcbWorkerStartupLifecycle["observeWorkerStartupChannel"];
     readonly empty: CurrentPcb209EmptyStartupLifecycle["observeWorkerStartupEmpty"] | undefined; readonly reserved: CurrentPcbWorkerStartupLifecycle["hasActiveReservation"];
     readonly ratline: CurrentPcb209RatlineStartupLifecycle["observeWorkerStartupRatline"] | undefined;
@@ -2597,6 +2598,7 @@ if (facadeToolRegistered(facadeMode, "easyeda_control_pcb_diagnostic_validation"
         ...["run", "captureWorkerStartup", "handoffWorkerStartup", "openWorkerStartup", "handoffStartup", "openStartup", "requireStartup",
           "observeWorkerStartupAssignments", "observeStartupAssignments", "requireStartupAssignments", "observeWorkerStartupActor", "observeStartupActor",
           "observeWorkerStartupChannel", "observeStartupChannel", "hasActiveReservation",
+          ...(StartupLifecycle === CurrentPcb209WorkerStartupLifecycle ? ["observeWorkerStartupFootprint", "observeStartupFootprint"] : []),
           ...(emptyPurpose ? ["observeWorkerStartupEmpty", "observeStartupEmpty", "prepareWorkerStartupEmpty", "prepareStartupEmpty"] : []),
           ...(ratlinePurpose ? ["observeWorkerStartupRatline", "observeStartupRatline"] : []),
           ...(continuationPurpose ? ["observeWorkerStartupRatlineContinuation", "observeStartupRatlineContinuation"] : [])]
@@ -2616,6 +2618,7 @@ if (facadeToolRegistered(facadeMode, "easyeda_control_pcb_diagnostic_validation"
               startupOriginal.owner.observeWorkerStartupActor !== startupOriginal.actor ||
               startupOriginal.owner.observeWorkerStartupChannel !== startupOriginal.channel ||
               startupOriginal.owner.hasActiveReservation !== startupOriginal.reserved ||
+              startupOriginal.owner instanceof CurrentPcb209WorkerStartupLifecycle && startupOriginal.owner.observeWorkerStartupFootprint !== startupOriginal.footprint ||
               startupOriginal.owner instanceof CurrentPcb209EmptyStartupLifecycle && startupOriginal.owner.observeWorkerStartupEmpty !== startupOriginal.empty ||
               startupOriginal.owner instanceof CurrentPcb209RatlineStartupLifecycle && startupOriginal.owner.observeWorkerStartupRatline !== startupOriginal.ratline ||
               startupOriginal.owner instanceof CurrentPcb209RatlineContinuationLifecycle && startupOriginal.owner.observeWorkerStartupRatlineContinuation !== startupOriginal.continuation)) { throw new Error("Worker startup original index owner, environment or methods changed."); }
@@ -2641,6 +2644,8 @@ if (facadeToolRegistered(facadeMode, "easyeda_control_pcb_diagnostic_validation"
       startupOriginal = { owner, run: owner.run, capture: owner.captureWorkerStartup,
         assignments: owner.observeWorkerStartupAssignments, actor: owner.observeWorkerStartupActor,
         channel: owner.observeWorkerStartupChannel,
+        // oxlint-disable-next-line typescript/unbound-method -- Invoke only with the retained current209 lifecycle receiver.
+        footprint: owner instanceof CurrentPcb209WorkerStartupLifecycle ? owner.observeWorkerStartupFootprint : undefined,
         // oxlint-disable-next-line typescript/unbound-method -- The purpose-switch guard invokes this retained private-field method only with the original lifecycle receiver.
         reserved: owner.hasActiveReservation,
         // oxlint-disable-next-line typescript/unbound-method -- Retain the exact original method; the sole dispatch supplies its retained private-field receiver.
@@ -2673,6 +2678,10 @@ if (facadeToolRegistered(facadeMode, "easyeda_control_pcb_diagnostic_validation"
         result = await retained.capture.call(retained.owner, operationId, expectedBindingSha256, input);
       } else if (request.action === "observe-current-assignments") {
         result = await retained.assignments.call(retained.owner, request.operationId, request.expectedBindingSha256);
+      } else if (request.action === "observe-footprint-state") {
+        if (!(retained.owner instanceof CurrentPcb209WorkerStartupLifecycle) || retained.footprint === undefined ||
+            retained.emptyPurpose || retained.ratlinePurpose || retained.continuationPurpose) { throw new Error("Original current209 startup footprint owner required."); }
+        result = await retained.footprint.call(retained.owner, request.operationId, request.expectedBindingSha256);
       } else if (request.action === "observe-actor-clock") {
         result = await retained.actor.call(retained.owner, request.operationId, request.expectedBindingSha256);
       } else if (request.action === "observe-current-channel") {
@@ -2690,7 +2699,7 @@ if (facadeToolRegistered(facadeMode, "easyeda_control_pcb_diagnostic_validation"
     const startupSchema = z.object({ request: z.unknown().pipe(currentPcb209WorkerStartupToolRequestSchema) }).strict();
     server.registerTool("easyeda_control_pcb209_worker_startup", {
       title: "Capture a disposable EasyEDA 3.2.209 project worker startup",
-      description: "Disposable EasyEDA 3.2.209 startup validation with four separate launch purposes. Query the matching offline catalog and argument validator first: pcb209-worker-startup/-validate, pcb209-empty-baseline/-validate, pcb209-ratline-held-import/-validate, or pcb209-ratline-continuation/-validate. Each purpose launches its own original owner; an existing owner cannot be upgraded. Launch, qualify browser/frame/UI source, then capture-project once against the exact disposable checkpoint. The default pcb209-startup-* purpose can subsequently observe current assignments, channel relations and a sequential UI/worker actor-clock bracket. The empty-baseline wrapper uses pcb209-empty-* and joins fixed common data with the original completed SQL checkpoint, bracketed by empty raw-manager samples; populated targets refuse. The ratline-held-import wrapper uses pcb209-ratline-* with the original cumulative budget and complete source leases. After capture-project, observe-ratline-held-import journals intent before the sole PCB navigation, qualifies 29 PCB source stages, captures original construction and holds the first ratline child at its seventh qualified source import. It stops before worker continuation, callback return and full startup or baseline completion. The ratline-continuation wrapper uses pcb209-continuation-* and a separately sealed native budget. After capture-project, observe-ratline-continuation qualifies the original PCB, first worker and subordinate sources, continues their fixed imports and observes original PCB/worker capture checkpoints and callback returnsites. Callback completion, publication completion and native Worker-object/target identity remain unproved. These sequential observations grant no native channel-peer, server-clock, contained-destination, writer or durability proof. Explicit debugger-pause acceptance is required. Launch/open may restore tabs, migrate, replay caches, use the network and automatically persist files. Every stage is consumed once. Inspect after uncertainty and retain the original owner through abort, normal close, original root/Job termination, helper release and record settlement. No caller JavaScript, CDP commands, explicit Save, CAD writer, historical-owner adoption, navigation retry, force exit or Save/Discard choice.",
+      description: "Disposable EasyEDA 3.2.209 startup validation with four separate launch purposes. Query the matching offline catalog and argument validator first: pcb209-worker-startup/-validate, pcb209-empty-baseline/-validate, pcb209-ratline-held-import/-validate, or pcb209-ratline-continuation/-validate. Each purpose launches its own original owner; an existing owner cannot be upgraded. Launch, qualify browser/frame/UI source, then capture-project once against the exact disposable checkpoint. The default pcb209-startup-* purpose can subsequently observe current assignments, channel relations, a sequential UI/worker actor-clock bracket and original footprint-manager state. The footprint stage reads its own captured user/client/ticket without invoking GET_STR, copy or delete. The empty-baseline wrapper uses pcb209-empty-* and joins fixed common data with the original completed SQL checkpoint, bracketed by empty raw-manager samples; populated targets refuse. The ratline-held-import wrapper uses pcb209-ratline-* with the original cumulative budget and complete source leases. After capture-project, observe-ratline-held-import journals intent before the sole PCB navigation, qualifies 29 PCB source stages, captures original construction and holds the first ratline child at its seventh qualified source import. It stops before worker continuation, callback return and full startup or baseline completion. The ratline-continuation wrapper uses pcb209-continuation-* and a separately sealed native budget. After capture-project, observe-ratline-continuation qualifies the original PCB, first worker and subordinate sources, continues their fixed imports and observes original PCB/worker capture checkpoints and callback returnsites. Callback completion, publication completion and native Worker-object/target identity remain unproved. These sequential observations grant no native channel-peer, server-clock, contained-destination, writer or durability proof. Explicit debugger-pause acceptance is required. Launch/open may restore tabs, migrate, replay caches, use the network and automatically persist files. Every stage is consumed once. Inspect after uncertainty and retain the original owner through abort, normal close, original root/Job termination, helper release and record settlement. No caller JavaScript, CDP commands, explicit Save, CAD writer, historical-owner adoption, navigation retry, force exit or Save/Discard choice.",
       inputSchema: startupSchema, outputSchema: currentSymbolOperationToolOutputSchema,
       annotations: { readOnlyHint: false, destructiveHint: false, idempotentHint: false, openWorldHint: true },
     }, guarded((input: z.infer<typeof startupSchema>) => {

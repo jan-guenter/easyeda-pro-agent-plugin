@@ -299,8 +299,8 @@ function pcbOpeningFixture(): CurrentPcbDiagnosticContext {
   context.beginPcbOpeningTransition(PROJECT_UUID, PCB_DOCUMENT);
   return context;
 }
-function pcbChild(context: CurrentPcbDiagnosticContext): void {
-  within(context, { url: PCB_URL });
+function pcbChild(context: CurrentPcbDiagnosticContext, activateRoot = true): void {
+  if (activateRoot) { within(context, { url: PCB_URL }); }
   context.observeEvent(event("Page.frameAttached", { frameId: "pcb-frame", parentFrameId: "frame-1" }));
   context.observeEvent(event("Page.frameNavigated", { frame: PCB_CHILD, type: "Navigation" }));
   context.observeEvent(event("Runtime.executionContextCreated", { context: { ...UI_CONTEXT, id: 8, uniqueId: "pcb-context",
@@ -598,4 +598,88 @@ void test("sensor navigation attachment replacement detach and context loss stay
     assert.throws(() => { context.observeEvent(item); }, /INVALIDATED/u);
     assert.throws(() => context.pcbOpeningContext(), /IDENTITY/u);
   }
+});
+
+const PCB_PENDING_ROOT_REPLY = { frameTree: { ...OPEN_FRAME_REPLY.frameTree, childFrames: [{ frame: PCB_CHILD }] } };
+function bootstrapFixture(): CurrentPcbDiagnosticContext {
+  const context = pcbOpeningFixture(); pcbChild(context, false);
+  context.observePcbBootstrapFrames(OPEN_TARGET_REPLY, PCB_PENDING_ROOT_REPLY);
+  context.observePcbFrameOwner({ backendNodeId: 42 }, { node: PCB_NODE });
+  return context;
+}
+void test("held PCB bootstrap retains the original project root until the later UI tab activation", () => {
+  const context = bootstrapFixture();
+  context.reprovePcbBootstrapFrames(OPEN_TARGET_REPLY, PCB_PENDING_ROOT_REPLY);
+  context.reprovePcbBootstrapOwner({ backendNodeId: 42 }, { node: PCB_NODE });
+  assert.equal(context.pcbBootstrapEventContext(8)?.["uniqueId"], "pcb-context");
+  context.observeEvent(event("Page.frameScheduledNavigation", { frameId: "frame-1", url: PCB_URL, delay: 0, reason: "scriptInitiated" }));
+  context.reprovePcbBootstrapFrames(OPEN_TARGET_REPLY, PCB_PENDING_ROOT_REPLY);
+  within(context, { url: PCB_URL });
+  context.observeEvent(event("Page.frameClearedScheduledNavigation", { frameId: "frame-1" }));
+  context.reprovePcbBootstrapFrames(PCB_TARGET_REPLY, PCB_FRAME_REPLY);
+  context.reprovePcbBootstrapFrames(PCB_TARGET_REPLY, PCB_FRAME_REPLY);
+  context.reprovePcbBootstrapOwner({ backendNodeId: 42 }, { node: PCB_NODE });
+  assert.deepEqual(context.pcbOpeningContext(), { sessionId: "session-1", uniqueContextId: UI_CONTEXT.uniqueId });
+});
+void test("bootstrap admits an already completed exact root transition without changing ordinary completion requirements", () => {
+  const ready = pcbOpeningFixture(); pcbChild(ready);
+  assert.deepEqual(ready.observePcbBootstrapFrames(PCB_TARGET_REPLY, PCB_FRAME_REPLY), { frameId: "pcb-frame", rootFrameId: "frame-1" });
+  ready.observePcbFrameOwner({ backendNodeId: 42 }, { node: PCB_NODE }); ready.reprovePcbBootstrapFrames(PCB_TARGET_REPLY, PCB_FRAME_REPLY);
+  const ordinary = pcbOpeningFixture(); pcbChild(ordinary, false);
+  assert.throws(() => ordinary.observePcbOpeningFrames(OPEN_TARGET_REPLY, PCB_PENDING_ROOT_REPLY), /IDENTITY/u);
+  const pending = bootstrapFixture(); pending.pcbScript(PROFILE);
+  assert.throws(() => pending.finishPcbOpening({ scriptSource: SOURCE }, OPEN_TARGET_REPLY, PCB_PENDING_ROOT_REPLY), /IDENTITY/u);
+});
+void test("bootstrap root observations require the original exact target and nonfragment root fields", () => {
+  for (const change of [{ loaderId: "foreign-loader" }, { url: "https://foreign/" }, { mimeType: "changed" },
+    { urlFragment: `#id=${PROJECT_UUID},tab=foreign` }, { unreviewedField: true }]) {
+    const context = pcbOpeningFixture(); pcbChild(context, false);
+    assert.throws(() => context.observePcbBootstrapFrames(OPEN_TARGET_REPLY,
+      { frameTree: { ...PCB_PENDING_ROOT_REPLY.frameTree, frame: { ...OPEN_FRAME_REPLY.frameTree.frame, ...change } } }), /IDENTITY/u);
+  }
+  for (const change of [{ title: "changed" }, { url: PCB_URL }, { url: `${OPEN_URL},tab=foreign` }, { unreviewedField: true }]) {
+    const context = pcbOpeningFixture(); pcbChild(context, false);
+    assert.throws(() => context.observePcbBootstrapFrames({ targetInfos: [{ ...OPEN_TARGET_REPLY.targetInfos[0], ...change }] }, PCB_PENDING_ROOT_REPLY), /IDENTITY/u);
+  }
+});
+void test("bootstrap root cannot advance without its event or roll back after the event or accepted final snapshot", () => {
+  const missing = bootstrapFixture(); assert.throws(() => { missing.reprovePcbBootstrapFrames(PCB_TARGET_REPLY, PCB_FRAME_REPLY); }, /IDENTITY/u);
+  for (const sampled of [false, true]) {
+    const context = bootstrapFixture(); within(context, { url: PCB_URL });
+    if (sampled) { context.reprovePcbBootstrapFrames(PCB_TARGET_REPLY, PCB_FRAME_REPLY); }
+    assert.throws(() => { context.reprovePcbBootstrapFrames(OPEN_TARGET_REPLY, PCB_PENDING_ROOT_REPLY); }, /IDENTITY/u);
+    assert.throws(() => context.pcbOpeningContext(), /IDENTITY/u);
+  }
+  const uncleared = bootstrapFixture();
+  uncleared.observeEvent(event("Page.frameScheduledNavigation", { frameId: "frame-1", url: PCB_URL, delay: 0, reason: "scriptInitiated" }));
+  within(uncleared, { url: PCB_URL });
+  assert.throws(() => { uncleared.reprovePcbBootstrapFrames(PCB_TARGET_REPLY, PCB_FRAME_REPLY); }, /IDENTITY/u);
+});
+void test("bootstrap reproof keeps full child and ancillary rows and rejects child drift or extra frames", () => {
+  for (const change of [{ loaderId: "changed" }, { parentId: "foreign" }, { mimeType: "changed" }, { unreviewedField: true }]) {
+    const context = bootstrapFixture();
+    assert.throws(() => { context.reprovePcbBootstrapFrames(OPEN_TARGET_REPLY,
+      { frameTree: { ...PCB_PENDING_ROOT_REPLY.frameTree, childFrames: [{ frame: { ...PCB_CHILD, ...change } }] } }); }, /IDENTITY/u);
+  }
+  for (const change of [{ loaderId: "changed" }, { mimeType: "changed" }, { unreviewedField: true }]) {
+    const context = ancillaryProject(); context.beginPcbOpeningTransition(PROJECT_UUID, PCB_DOCUMENT); pcbChild(context, false);
+    const pending = { frameTree: { ...OPEN_FRAME_REPLY.frameTree, childFrames: [{ frame: SENSOR_FRAME }, { frame: PCB_CHILD }] } };
+    context.observePcbBootstrapFrames(OPEN_TARGET_REPLY, pending); context.observePcbFrameOwner({ backendNodeId: 42 }, { node: PCB_NODE });
+    context.reprovePcbBootstrapFrames(OPEN_TARGET_REPLY, pending);
+    assert.throws(() => { context.reprovePcbBootstrapFrames(OPEN_TARGET_REPLY,
+      { frameTree: { ...pending.frameTree, childFrames: [{ frame: { ...SENSOR_FRAME, ...change } }, { frame: PCB_CHILD }] } }); }, /IDENTITY/u);
+  }
+  const extra = bootstrapFixture();
+  assert.throws(() => { extra.reprovePcbBootstrapFrames(OPEN_TARGET_REPLY,
+    { frameTree: { ...PCB_PENDING_ROOT_REPLY.frameTree, childFrames: [{ frame: PCB_CHILD }, { frame: SENSOR_FRAME }] } }); }, /IDENTITY/u);
+});
+void test("pending bootstrap preserves original UI and child context loss and does not issue a second first proof", () => {
+  for (const lost of [{ executionContextId: 7, executionContextUniqueId: UI_CONTEXT.uniqueId },
+    { executionContextId: 8, executionContextUniqueId: "pcb-context" }]) {
+    const context = bootstrapFixture();
+    assert.throws(() => { context.observeEvent(event("Runtime.executionContextDestroyed", lost)); }, /INVALIDATED/u);
+    assert.throws(() => { context.reprovePcbBootstrapFrames(OPEN_TARGET_REPLY, PCB_PENDING_ROOT_REPLY); }, /IDENTITY/u);
+  }
+  const duplicate = bootstrapFixture();
+  assert.throws(() => duplicate.observePcbBootstrapFrames(OPEN_TARGET_REPLY, PCB_PENDING_ROOT_REPLY), /IDENTITY/u);
 });

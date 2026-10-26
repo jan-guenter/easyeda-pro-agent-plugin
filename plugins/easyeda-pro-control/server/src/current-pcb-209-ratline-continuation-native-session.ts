@@ -166,6 +166,7 @@ export class CurrentPcb209RatlineContinuationNativeSession {
   public retainedOpeningObservation(): CurrentPcbDiagnosticPcbOpeningResult | null { return this.#openingObservation; }
   public retainedNativeOriginEvidence(): ReturnType<CurrentPcb209RatlineContinuationSession["retainedNativeOriginEvidence"]> { return this.#session?.retainedNativeOriginEvidence() ?? null; }
   public retainedRejectedStopEvidence(): ReturnType<CurrentPcb209RatlineContinuationSession["retainedRejectedStopEvidence"]> { return this.#session?.retainedRejectedStopEvidence() ?? null; }
+  public retainedAncestryEvidence(): ReturnType<CurrentPcb209RatlineContinuationSession["retainedAncestryEvidence"]> { return this.#session?.retainedAncestryEvidence() ?? null; }
   public status(): Readonly<Record<string, unknown>> { return Object.freeze({ phase: this.#phase,
     transitionStarted: this.#session?.status()["transitionStarted"] === true, openingAcknowledged: this.#openingObservation?.phase === "open-document",
     packetRetained: this.#packet !== null, continuation: this.#session?.status() ?? null, executionAuthorized: false }); }

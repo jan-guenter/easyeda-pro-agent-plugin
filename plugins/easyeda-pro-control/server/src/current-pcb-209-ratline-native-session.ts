@@ -134,6 +134,7 @@ export class CurrentPcb209RatlineNativeSession {
   }
   public retainedNativeOriginEvidence(): CurrentPcb209RatlineOriginEvidence | null { return this.#origin?.evidence() ?? null; }
   public retainedRejectedStopEvidence(): CurrentPcb209RatlineStopEvidence | null { return this.#router?.retainedRejectedStopEvidence() ?? null; }
+  public retainedAncestryEvidence(): ReturnType<CurrentPcb209RatlinePcbContextRouter["retainedAncestryEvidence"]> | null { return this.#router?.retainedAncestryEvidence() ?? null; }
   public retainedOpeningObservation(): CurrentPcbDiagnosticPcbOpeningResult | null { return this.#openingObservation; }
   #same(): void {
     need(this.#phase !== "failed" && this.#phase !== "cleanup" && this.#phase !== "released" && this.#dependency.request === this.#request, "NOT_CURRENT");

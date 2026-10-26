@@ -55,6 +55,14 @@ type SourceEvents = Parameters<CurrentPcb209RatlinePcbBootstrapDependency["subsc
 type Failure = Readonly<{ reason: string; step: string; lastEvent: CurrentPcb209RatlineEventKind;
   lastCommand: CurrentPcb209RatlinePcbContextCommand["method"] | null; transitionStarted: boolean; selectedContextObserved: boolean;
   proofSets: number; proofCommands: number; events: number }>;
+type AncestryPurpose = "initial-window" | "pcb-admission" | "pcb-source-release" | "first-child-held";
+export interface CurrentPcb209RatlineAncestryEvidence {
+  readonly profile: "private.pcb209-ratline-ancestry-replies.v1";
+  readonly records: readonly Readonly<{ ordinal: number; purpose: AncestryPurpose;
+    method: CurrentPcb209RatlinePcbContextParentCommand["method"]; reply: CurrentPcb209RatlineStopCapture }>[];
+  readonly capturedBytes: number;
+  readonly executionAuthorized: false;
+}
 const token = z.string().regex(/^[A-Za-z\d_.:-]{1,256}$/u);
 const eventSchema = z.object({ method: z.string().max(128), sessionId: token, params: z.record(z.string(), z.unknown()) }).strict();
 const contextCreated = z.looseObject({ context: z.looseObject({ id: z.number().int().positive() }) }), row = z.record(z.string(), z.unknown());
@@ -133,6 +141,8 @@ export class CurrentPcb209RatlinePcbContextRouter {
   #resumes = 0;
   #proofSets = 0;
   #commands = 0;
+  readonly #ancestryReplies: CurrentPcb209RatlineAncestryEvidence["records"][number][] = [];
+  #ancestryBytes = 0;
   #events = 0;
   public constructor(context: CurrentPcbDiagnosticContext, target: CurrentDisposableOpenSealedTarget,
     dependency: CurrentPcb209RatlinePcbContextDependency) {
@@ -379,9 +389,9 @@ export class CurrentPcb209RatlinePcbContextRouter {
           const ownership = new CurrentPcb209OwnershipBreakpoint("initial-window", sessionId, event.params, { lineNumber: 0, columnNumber: 0 });
           this.#windowOwnership = ownership;
           await ownership.enter(command => this.#dependency.request(command), async (): Promise<void> => { await this.#current(); currentWindow(); });
-          const owner = await this.#snapshot({ method: "DOM.getFrameOwner", sessionId, params: { frameId } }); currentWindow();
+          const owner = await this.#snapshot({ method: "DOM.getFrameOwner", sessionId, params: { frameId } }, "initial-window"); currentWindow();
           const backendNodeId = z.number().int().positive().max(2_147_483_647).parse(owner["backendNodeId"]);
-          const node = await this.#snapshot({ method: "DOM.describeNode", sessionId, params: { backendNodeId, depth: 0, pierce: false } }); currentWindow();
+          const node = await this.#snapshot({ method: "DOM.describeNode", sessionId, params: { backendNodeId, depth: 0, pierce: false } }, "initial-window"); currentWindow();
           qualifyCurrentPcb209RatlineWindowOwner(owner, node, frameId, this.#target);
           await ownership.remove(command => this.#dependency.request(command)); currentWindow();
         }
@@ -393,6 +403,12 @@ export class CurrentPcb209RatlinePcbContextRouter {
     })());
   }
   public retainedRejectedStopEvidence(): CurrentPcb209RatlineStopEvidence | null { return this.#rejectedStop; }
+  /** Historical replies only. Inspecting these copies never rechecks or
+   * reconstructs a live context, and cannot retry an original request. */
+  public retainedAncestryEvidence(): CurrentPcb209RatlineAncestryEvidence {
+    return Object.freeze({ profile: "private.pcb209-ratline-ancestry-replies.v1", records: Object.freeze([...this.#ancestryReplies]),
+      capturedBytes: this.#ancestryBytes, executionAuthorized: false });
+  }
   async #sourceRequest(command: SourceCommand): Promise<unknown> {
     this.#same(); need(!this.#released, "RELEASED");
     const cleanup = command.method === "Debugger.removeBreakpoint";
@@ -413,22 +429,32 @@ export class CurrentPcb209RatlinePcbContextRouter {
     this.#lastCommand = command.method; this.#step = "source-request";
     try { return await this.#dependency.request(command); } finally { if (enabling) { this.#enable = null; } }
   }
-  async #snapshot(command: CurrentPcb209RatlinePcbContextParentCommand): Promise<Row> {
+  async #snapshot(command: CurrentPcb209RatlinePcbContextParentCommand, purpose: AncestryPurpose): Promise<Row> {
     await this.#current(); need(this.#commands < 14, "PROOF_COMMAND_BUDGET"); this.#commands += 1;
     this.#lastCommand = command.method; this.#step = "ancestry-request";
+    const identity = { ordinal: this.#commands, purpose, method: command.method }, index = this.#ancestryReplies.length;
+    this.#ancestryReplies.push(Object.freeze({ ...identity, reply: Object.freeze({ status: "unavailable", value: null, sha256: null, bytes: null }) }));
     const raw = await bounded(this.#dependency.requestParent(command));
+    // Keep the original reply before parsing or later ownership checks can
+    // Fail. Complete captures share a 64KiB budget; overflow is explicit.
+    const captured = captureCurrentPcb209RatlineStopRecord(raw, Math.min(16_384, 65_536 - this.#ancestryBytes));
+    this.#ancestryReplies[index] = Object.freeze({ ...identity, reply: captured }); this.#ancestryBytes += captured.bytes ?? 0;
     const reply = row.parse(captureCurrentPcbStringClockReply(raw).value);
     await this.#current(); return reply;
   }
   async #fresh(admission: boolean): Promise<void> {
     need(this.#selected !== null && this.#proofSets < 3, "PROOF_STAGE"); const selected = this.#selected, sessionId = this.#dependency.parentSessionId;
-    const targets = await this.#snapshot({ method: "Target.getTargets", params: {} });
-    const frames = await this.#snapshot({ method: "Page.getFrameTree", params: {}, sessionId });
-    if (admission) { need(this.#context.observePcbOpeningFrames(targets, frames).frameId === selected.frameId, "SELECTED_FRAME"); }
+    let purpose: AncestryPurpose = "pcb-admission";
+    if (!admission) { purpose = this.#proofSets === 1 ? "pcb-source-release" : "first-child-held"; }
+    const targets = await this.#snapshot({ method: "Target.getTargets", params: {} }, purpose);
+    const frames = await this.#snapshot({ method: "Page.getFrameTree", params: {}, sessionId }, purpose);
+    this.#step = "ancestry-frame-validation";
+    if (admission) { need(this.#context.observePcbBootstrapFrames(targets, frames).frameId === selected.frameId, "SELECTED_FRAME"); }
     else { this.#context.reprovePcbBootstrapFrames(targets, frames); }
-    const owner = await this.#snapshot({ method: "DOM.getFrameOwner", sessionId, params: { frameId: selected.frameId } });
+    const owner = await this.#snapshot({ method: "DOM.getFrameOwner", sessionId, params: { frameId: selected.frameId } }, purpose);
     const backendNodeId = z.number().int().positive().max(2_147_483_647).parse(owner["backendNodeId"]);
-    const node = await this.#snapshot({ method: "DOM.describeNode", sessionId, params: { backendNodeId, depth: 0, pierce: false } });
+    const node = await this.#snapshot({ method: "DOM.describeNode", sessionId, params: { backendNodeId, depth: 0, pierce: false } }, purpose);
+    this.#step = "ancestry-dom-validation";
     if (admission) { this.#context.observePcbFrameOwner(owner, node); } else { this.#context.reprovePcbBootstrapOwner(owner, node); }
     this.#context.assertPcbBootstrapContext(selected); this.#proofSets += 1; this.assertCurrent();
   }
@@ -490,6 +516,7 @@ export class CurrentPcb209RatlinePcbContextRouter {
     loaderPause: this.#loaderPause, loaderResumed: this.#loaderResumed,
     windowPauses: { initial: this.#windows.initial.phase, document: this.#windows.document.phase },
     windowOwnership: this.#windowOwnership?.status() ?? null,
+    ancestryReplyCount: this.#ancestryReplies.length, ancestryCapturedBytes: this.#ancestryBytes,
     retainedScriptEvidenceBytes: this.#scriptEvidenceBytes, scriptEvidenceExhausted: this.#scriptEvidenceExhausted,
     rejectedStop: this.#rejectedStop === null ? null : summarizeCurrentPcb209RatlineStop(this.#rejectedStop),
     sourceContinuationConsumed: this.#sourceReleaseConsumed, nativeWorkerTargetIdentityVerified: false, executionAuthorized: false }); }

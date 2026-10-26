@@ -216,3 +216,73 @@ The runtime projection remains
 `a455fae89de334a4ec01850d6776fd1eaffee21822ec6c1d08ff5f885cde9488`
 because the footprint models are not registered runtime routes. External pins
 remain unchanged.
+
+## Publication and official installation
+
+Final payload `bc9c14f9de5f70344dec8ac4d0a7e398d9d8ed36` merged through
+[PR130](https://github.com/jan-guenter/easyeda-pro-agent-plugin/pull/130) as
+main `64acddd7a2c797908b4ded677323fd40074f0430`. Both have the reviewed tree
+`787cdcdc7c487717af10f685b9b49b61d2b5b5d9`. The published commit is a squash
+with the original main as its sole parent; the synthetic tested PR merge has
+separate base/head parents. Their tree equivalence was checked independently.
+
+All eleven required jobs passed on their first attempts in
+[CI40240882386](https://github.com/jan-guenter/easyeda-pro-agent-plugin/actions/runs/40240882386)
+and [Windows40240882364](https://github.com/jan-guenter/easyeda-pro-agent-plugin/actions/runs/40240882364).
+The facade suite passed 13,022 tests with five expected platform skips and zero
+failures, cancellations or todos. Bridge tests passed 424 cases in 28 files.
+Both new native-ID regressions appear in the final shard logs. Lint has zero
+warnings/errors. The independent review receipt SHA-256 is
+`9434dce36000b71237d0e05d5de871f500fc61b8837a61cc8c2d7c828c5ee0d5`;
+accepted CI receipt is
+`932a1467fb7e9189d7e3708fa56672e701ef4e0ceb1d018afb16acb001662f02`.
+The superseded run was automatically cancelled after the corrected push; its
+partial results and logs remain retained and are not final acceptance evidence.
+
+The official CLI performed one marketplace upgrade from
+`https://github.com/jan-guenter/easyeda-pro-agent-plugin.git`, with installer
+umask022. It registered and enabled `0.3.0+codex.20261025221649`. Two maintained
+comparisons proved all 2,030 files / 42 directories / 43,301,472 bytes and exact
+committed modes. Marketplace HEAD equals merged main. Inventory SHA-256 is
+`a39ee57c5139761dac0ef63343be7373e58379397905f2e8347546acdb927b96`;
+installation receipt is
+`1118c534ed10cf7aee075ec33976d6834e8caa1b6f23664ae24b5cf1c360bcdf`.
+
+The installed synthetic-profile probe passed 27 queries / 29 JSON-RPC requests,
+observing 27 tools and 52 manifest declarations across modes. It selected no
+live control root, sampled no upstream child/non-stdio socket, and exited cleanly
+after EOF. Probe receipt SHA-256 is
+`c0daf080d89e4d39055148a8fd0e0dea26a14375a3d703466eacbd7e51660a3e`.
+This is installed offline evidence; actual fresh-host admission and connected
+validation of the new context correction remain pending. No installed cache
+was manually patched and no host-owned facade was stopped.
+
+Automatic main Windows40242122632 passed. Follow-on main CI40242122590 was
+still running when this record was written. The accepted PR checks cover the
+same merged payload tree. No additional full local suite or manual CI rerun was
+started. This installation appendix is retained locally for the next source
+batch, outside the already-installed immutable plugin payload.
+
+## Next session and remaining backlog
+
+- Load the installed snapshot in a fresh Codex session and admit its actual
+  process, source files, bundles and upstream graph. The current host retains
+  the previous snapshot. The193803 disposable case is terminal; never replay
+  its launch, capture, navigation, close or release.
+- Run one new disposable continuation case for the context correction. Then
+  finish Worker/CDP association, callback/canvas/copper completion and complete
+  live/source/SQL plus saved/reopened PCB baseline before enabling writers.
+- Implement the current209 footprint manager/state collector from the existing
+  project-constructor owner, then its source getter and actor/clock collection.
+  Batch those related changes where feasible. The private concrete handoff has
+  SHA-256 `afdc93b3ae1469e3fc8a1302c73c74e4034700f9fdaebad55f9dc85dd71aa01c`.
+  Continue with buffered-upload completion/replay exclusion and the owned
+  copy/reopen lifecycle. Pure SQL/getter matches do not replace that work.
+- Complete dependency-aware footprint deletion, schematic connectivity, other
+  scoped writers and library lifecycles, and manufacturing exports. Broader
+  source-history/asset formats, vendor stubs and settings/rendering effects keep
+  their concrete omissions in the coverage inventory.
+
+The excluded production project was neither opened nor read. The disposable
+fixture remains byte-identical and closed. No explicit Save, library mutation,
+restore or manufacturing action occurred in this session.

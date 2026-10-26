@@ -78,3 +78,13 @@ void test("constructor keeps exact supported URL grammar and same project in a P
     assert.throws(() => new CurrentPcbDiagnosticSameDocument(FRAME, url), /SAME_DOCUMENT/u);
   }
 });
+
+void test("pending-fragment observation preserves scheduling but refuses any accepted commit or sealed state", () => {
+  const pending = new CurrentPcbDiagnosticSameDocument(FRAME, URL);
+  pending.assertPendingFragment(); pending.accept(schedule()); pending.assertPendingFragment();
+  pending.accept(fragment()); pending.accept(clear()); pending.seal();
+  assert.throws(() => { pending.assertPendingFragment(); }, /SAME_DOCUMENT/u);
+  const observed = new CurrentPcbDiagnosticSameDocument(FRAME, URL); observed.accept(fragment());
+  assert.throws(() => { observed.assertPendingFragment(); }, /SAME_DOCUMENT/u);
+  assert.throws(() => { observed.seal(); }, /SAME_DOCUMENT/u);
+});

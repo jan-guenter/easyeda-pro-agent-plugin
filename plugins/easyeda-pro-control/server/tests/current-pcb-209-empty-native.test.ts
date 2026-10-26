@@ -10,9 +10,9 @@ import { currentPcb209WorkerStartupNativeCases, currentPcbWorkerStartupNativePar
 import { currentPcb209WorkerStartupWire } from "../src/current-pcb-worker-startup-wire.ts";
 
 const limit = CURRENT_PCB_209_EMPTY_NATIVE_PROFILE.requestLimit;
-void test("empty209 wire preserves all fixed startup cases and original actual IDs without widening the old grammar", () => {
+void test("empty209 wire preserves all fixed current startup cases and original actual IDs", () => {
   const cases = [...currentPcb209WorkerStartupNativeCases(), ...currentPcbWorkerStartupNativeParentCases()];
-  assert.equal(cases.length, 51);
+  assert.equal(cases.length, 55);
   for (const sample of cases) {
     const encoded = currentPcb209EmptyNativeWire(sample, limit), old = currentPcb209WorkerStartupWire(sample, 1);
     assert.deepEqual(encoded.command, { ...old.command, id: limit });
@@ -98,6 +98,8 @@ void test("empty209 profile accounts for complete fixed command, framed text, he
   assert.equal(profile.requests.common, 3090); assert.equal(profile.requests.roots, 9);
   assert.equal(profile.normalRequestLimit - profile.requests.optional, 3352);
   assert.equal(profile.normalRequestLimit, 3434); assert.equal(profile.requestLimit, 3466);
+  assert.equal(profile.startupDerivation.constructorCapture, 54);
+  assert.equal(profile.startupDerivation.conservativeReserve, 77);
   assert.equal(Object.values(profile.startupDerivation).reduce((sum, value) => sum + value, 0), profile.requests.startup);
   assert.equal(profile.bytes.total, profile.bytes.normal + profile.bytes.cleanup);
   assert.equal(profile.bytes.normal, profile.bytes.prefix + profile.bytes.common + profile.bytes.roots + profile.bytes.continuationEvents);

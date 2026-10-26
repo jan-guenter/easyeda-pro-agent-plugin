@@ -90,6 +90,10 @@ The separate [209 project-worker startup route](current-pcb209-worker-startup.md
 captures original constructor callbacks and project identity before opening.
 It then offers current wrapper assignments, channel/publisher relations and
 bracketed UI/worker actor/local-Date observations. It retains the original
+footprint manager and offers a once-only own-property state observation after
+wrapper assignments. That stage checks its captured undefined user, client and
+maximum ticket; it does not run GET_STR, copy, delete or prove persistence.
+The startup route retains the original
 native process, Job, pipe and fixed256-command budget. These observations do
 not establish continuous publisher ownership, peer containment, server clock
 provenance, complete startup or writer eligibility. The route requires connected

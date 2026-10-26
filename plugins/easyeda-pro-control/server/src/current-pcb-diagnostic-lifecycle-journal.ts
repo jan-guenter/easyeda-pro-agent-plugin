@@ -6,6 +6,7 @@ import type { BigIntStats, Dirent } from "node:fs";
 import { lstat, mkdir, open, opendir } from "node:fs/promises";
 import { join } from "node:path";
 import { z } from "zod";
+import { currentFootprintCopyStatePacketSchema } from "./current-footprint-copy-state.ts";
 import { controlDataDirectory, controlRootCapability, publishManagedAttachmentExclusive } from "./artifacts.ts";
 import type { ControlRootDirectory } from "./control-root.ts";
 import { canonicalJson, sha256Json } from "./core.ts";
@@ -420,6 +421,17 @@ const workerStartupChannelResultSchema = z.object({
   result: currentPcbWorkerStartupChannelPacketSchema, pointInTimeObservation: z.literal(true),
   executionAuthorized: z.literal(false), saveAuthorized: z.literal(false),
 }).strict();
+const workerStartupFootprintIntentSchema = z.object({
+  schema: z.literal("easyeda-pro-control.pcb209-footprint-state-intent.v1"), ...base,
+  operationId: currentPcb209WorkerStartupLifecycleIdSchema, bindingSha256: diagnosticLifecycleDigestSchema,
+  assignmentsResultSha256: diagnosticLifecycleDigestSchema,
+}).strict();
+const workerStartupFootprintResultSchema = z.object({
+  schema: z.literal("easyeda-pro-control.pcb209-footprint-state-result.v1"), ...base,
+  operationId: currentPcb209WorkerStartupLifecycleIdSchema, intentSha256: diagnosticLifecycleDigestSchema,
+  result: currentFootprintCopyStatePacketSchema, pointInTimeObservation: z.literal(true),
+  executionAuthorized: z.literal(false), saveAuthorized: z.literal(false),
+}).strict();
 const pcbOpenIntentSchema = z.object({
   schema: z.literal("easyeda-pro-control.pcb-diagnostic-pcb-open-intent.v1"), ...base,
   bindingSha256: diagnosticLifecycleDigestSchema, projectOpeningIntentSha256: diagnosticLifecycleDigestSchema,
@@ -470,6 +482,8 @@ export const diagnosticLifecycleRecordSchemas = {
   "worker-startup-assignments-result.json": workerStartupAssignmentsResultSchema,
   "worker-startup-actor-intent.json": workerStartupActorIntentSchema,
   "worker-startup-actor-result.json": workerStartupActorResultSchema,
+  "worker-startup-footprint-intent.json": workerStartupFootprintIntentSchema,
+  "worker-startup-footprint-result.json": workerStartupFootprintResultSchema,
   "worker-startup-channel-intent.json": workerStartupChannelIntentSchema,
   "worker-startup-channel-result.json": workerStartupChannelResultSchema,
   "observation-failure.json": observationFailureSchema,
@@ -664,6 +678,12 @@ function validateChain(operation: DiagnosticLifecycleOperation): void {
     actor.assignmentsResultSha256 === sha256Json(assigned) && actor.bindingSha256 === sha256Json(binding), "WORKER_STARTUP_ACTOR_CHAIN");
   requireValue(actorResult === undefined || actor !== undefined && startupOpened !== undefined && actorResult.intentSha256 === sha256Json(actor) &&
     canonicalJson(actorResult.result.profile === "private.current-pcb209-worker-startup-actor.v1" ? actorResult.result.originalActorPacket.identity : actorResult.result.identity) === canonicalJson(startupOpened.result.workerIdentity), "WORKER_STARTUP_ACTOR_RESULT_CHAIN");
+  const footprint = records["worker-startup-footprint-intent.json"], footprintResult = records["worker-startup-footprint-result.json"];
+  requireValue(footprint === undefined || startup209 && startupPurpose && assigned !== undefined && binding !== undefined &&
+    footprint.assignmentsResultSha256 === sha256Json(assigned) && footprint.bindingSha256 === sha256Json(binding), "WORKER_STARTUP_FOOTPRINT_CHAIN");
+  requireValue(footprintResult === undefined || footprint !== undefined && startupOpened !== undefined &&
+    footprintResult.intentSha256 === sha256Json(footprint) && canonicalJson(footprintResult.result.identity) === canonicalJson(startupOpened.result.workerIdentity),
+  "WORKER_STARTUP_FOOTPRINT_RESULT_CHAIN");
   const channel = records["worker-startup-channel-intent.json"], channelResult = records["worker-startup-channel-result.json"];
   requireValue(channel === undefined || startupPurpose && assigned !== undefined && binding !== undefined &&
     channel.assignmentsResultSha256 === sha256Json(assigned) && channel.bindingSha256 === sha256Json(binding), "WORKER_STARTUP_CHANNEL_CHAIN");

@@ -123,3 +123,29 @@ function unusedOpening(): CurrentPcb209WorkerStartupOpeningResult["opening"] {
     startupQualified: false, restorationCompletionVerified: false, persistenceVerified: false, compilerOwnerVerified: false,
     queueCompletionVerified: false, executionAuthorized: false, nativeIntrinsicsVerified: false };
 }
+
+void test("footprint state action and records admit only the original209 startup purpose and exact observational claims", async () => {
+  const action = { action: "observe-footprint-state", operationId: id, expectedBindingSha256: digest };
+  assert.equal(currentPcb209WorkerStartupValidationRequestSchema.safeParse(action).success, true);
+  for (const operationId of ["worker-startup-legacy", "pcb209-empty-other", "pcb209-ratline-other", "pcb209-continuation-other"]) {
+    assert.equal(currentPcb209WorkerStartupValidationRequestSchema.safeParse({ ...action, operationId }).success, false);
+  }
+  const value = { profile: "private.current-footprint-copy-state.v1", identity,
+    client: "1234567890abcdef", maximumTicket: 7, capturedUser: "own-undefined", samples: 2,
+    originalConstructorManagerMatched: true, atomicSnapshotVerified: false, cacheBranchObserved: false,
+    executionAuthorized: false, persistenceVerified: false };
+  const record = { schema: "easyeda-pro-control.pcb209-footprint-state-result.v1", operationId: id,
+    createdAt: new Date(0).toISOString(), intentSha256: digest, result: value, pointInTimeObservation: true,
+    executionAuthorized: false, saveAuthorized: false };
+  const schema = diagnosticLifecycleRecordSchemas["worker-startup-footprint-result.json"];
+  assert.equal(schema.safeParse(record).success, true);
+  for (const result of [{ ...value, client: `${value.client}\n` }, { ...value, maximumTicket: -0 },
+    { ...value, capturedUser: "present" }, { ...value, executionAuthorized: true }, { ...value, samples: 1 }]) {
+    assert.equal(schema.safeParse({ ...record, result }).success, false);
+  }
+  const options: CurrentPcbDiagnosticLifecycleOptions = { pluginRoot: "/synthetic/plugin", assetsRoot: "/synthetic/assets",
+    powershellSha256: digest, powershellBytes: 1, assertAllowed: unused, assertLocalAllowed: (): void => undefined,
+    assertOtherLaunchesSettled: unused };
+  const lifecycle = new CurrentPcb209WorkerStartupLifecycle(options, { allocateOwner: unused, verifyInstallation: unused });
+  await assert.rejects(lifecycle.observeWorkerStartupFootprint(id, digest), /ORIGINAL_STARTUP_ASSIGNMENTS_REQUIRED/u);
+});

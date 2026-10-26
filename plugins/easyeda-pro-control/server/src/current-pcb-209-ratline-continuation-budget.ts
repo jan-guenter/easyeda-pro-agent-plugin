@@ -38,8 +38,9 @@ const childSources = Object.freeze(CURRENT_PCB_209_RATLINE_BOOTSTRAP_ROLES.map(r
 }));
 const requestClasses = freezeDeep({
   // This is the existing complete discovery/project-opening cap, including its
-  // Retained reproof allowance. It is not 186 expected commands or a new budget
-  // At handoff. Its original pipe retains its own reply/event validation.
+  // Retained reproof allowance. The three footprint constructor reads consume
+  // That reserve (80 to 77); this remains a 186 cap, not 186 expected commands or
+  // A new budget at handoff. The original pipe retains reply/event validation.
   prefix: { count: 186, frameBytes: 32 * mib },
   preparation: { count: 10, frameBytes: mib },
   // Exact original navigation program compilation: one source read and resume.

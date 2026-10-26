@@ -1,7 +1,9 @@
 /* oxlint-disable eslint/max-classes-per-file -- Keep the private core with its fixed-generation wrappers so no caller-selectable profile or decoder constructor is exported. */
-/** Dormant original-event capture. No native transport, startup registration,
- * peer exclusion, create/Save or writer permit is implemented by this class. */
+/** Original-event capture through the fixed startup transport. Peer exclusion,
+ * create/Save and writer permits remain outside this class. */
 import { z } from "zod";
+import { CURRENT_FOOTPRINT_COPY_CONSTRUCTORS_EXPRESSION, CURRENT_FOOTPRINT_COPY_STATE_CALLS, decodeCurrentFootprintCopyState } from "./current-footprint-copy-state.ts";
+import type { CurrentFootprintCopyStatePacket, CurrentFootprintCopyStateSample } from "./current-footprint-copy-state.ts";
 import { types } from "node:util";
 import { CURRENT_PCB_209_STARTUP_TIMING, currentPcbStartupMonotonicMs, currentPcbStartupWindowObservation } from "./current-pcb-209-worker-startup-timing.ts";
 import type { CurrentPcbStartupWindow, CurrentPcbStartupWindowObservation } from "./current-pcb-209-worker-startup-timing.ts";
@@ -20,9 +22,8 @@ import { CURRENT_PCB_WORKER_CONSTRUCTION_IDENTITY, CURRENT_PCB_WORKER_CONSTRUCTI
   CURRENT_PCB_WORKER_CONSTRUCTION_SOURCE } from "./current-pcb-worker-construction-contract.ts";
 import type { CurrentPcbWorkerConstructionCommand, CurrentPcbWorkerConstructionExpression,
   CurrentPcbWorkerConstructionSite, CurrentPcbWorkerConstructionTransport } from "./current-pcb-worker-construction-contract.ts";
-import { CURRENT_PCB_WORKER_STARTUP_WORKER_ACTOR_CLOCK_FUNCTION,
-  decodeCurrentPcbWorkerStartupActor } from "./current-pcb-worker-startup-actor.ts";
-// oxlint-disable-next-line import/max-dependencies -- Fixed timing and source coordinates remain separate from the retained channel observer.
+// oxlint-disable-next-line import/max-dependencies -- Original construction keeps independent fixed state, timing, actor and channel contracts without merging their authority.
+import { CURRENT_PCB_WORKER_STARTUP_WORKER_ACTOR_CLOCK_FUNCTION, decodeCurrentPcbWorkerStartupActor } from "./current-pcb-worker-startup-actor.ts";
 import { CURRENT_PCB_WORKER_STARTUP_CHANNEL_CALLS } from "./current-pcb-worker-startup-channel-observation.ts";
 import type { CurrentPcbWorkerStartupChannelObservationCommand,
   CurrentPcbWorkerStartupChannelPacket } from "./current-pcb-worker-startup-channel-observation.ts";
@@ -173,6 +174,12 @@ class CurrentPcbWorkerConstructionCore<P extends PacketProfile> {
   #projectIdentity: CurrentPcbWorkerConstructionProjectIdentity | null = null;
   #actorSampleAttempts = 0;
   #actorSampleBusy = false;
+  #footprintConstructors: string | null = null;
+  #footprintManager: string | null = null;
+  #footprintConsistency: string | null = null;
+  #footprintAttempted = false;
+  #footprintPacket: CurrentFootprintCopyStatePacket | null = null;
+  readonly #footprintReplies: unknown[] = [];
   #channelAttempted = false;
   #channel: CurrentPcbWorkerStartupChannelObservationRunner | null = null;
   #channelPacket: CurrentPcbWorkerStartupChannelPacket | null = null;
@@ -327,7 +334,18 @@ class CurrentPcbWorkerConstructionCore<P extends PacketProfile> {
         description: z.literal("s=>{this.onMessage(s.data)}"), objectId: token }).strict() }).strict().parse(await this.#select(top.callFrameId, "this.bc.onmessage"));
       // oxlint-disable-next-line unicorn/prefer-add-event-listener -- This records an identity string, not a live event-handler assignment.
       this.#identities.onmessage = arrow.result.objectId;
-    } else if (site === "base" || site === "project") { await this.#receiver(top.callFrameId); }
+    } else if (site === "base" || site === "project") {
+      await this.#receiver(top.callFrameId);
+      if (site === "project" && this.#profile === "private.current-pcb209-worker-construction.v1") {
+        const project = this.#identities.project;
+        if (project === undefined) { throw fail("MISSING_OWNER"); }
+        this.#footprintConstructors = await this.#object(top.callFrameId, CURRENT_FOOTPRINT_COPY_CONSTRUCTORS_EXPRESSION);
+        this.#footprintManager = objectReply.parse(await this.#assignmentCall(project,
+          CURRENT_FOOTPRINT_COPY_STATE_CALLS["manager-select"].program, [], false)).result.objectId;
+        this.#footprintConsistency = objectReply.parse(await this.#assignmentCall(project,
+          CURRENT_FOOTPRINT_COPY_STATE_CALLS["consistency-select"].program, [], false)).result.objectId;
+      }
+    }
     else if (site === "bootstrap") {
       const bus = this.#identities.channelBus, original = this.#identities.project;
       if (original === undefined || bus === undefined) { throw fail("MISSING_OWNER"); }
@@ -513,6 +531,54 @@ class CurrentPcbWorkerConstructionCore<P extends PacketProfile> {
     const original = await this.requireOriginal(packet);
     try { await this.#assignmentRecheck(original, this.#assignedWrappers); }
     catch (error) { this.#fail("ASSIGNMENTS_CHANGED"); throw error; }
+  }
+  public retainedFootprintState(): Readonly<Record<string, unknown>> {
+    return Object.freeze({ attempted: this.#footprintAttempted, completed: this.#footprintPacket !== null,
+      replies: Object.freeze([...this.#footprintReplies]) });
+  }
+  async #footprintSample(packet: ConstructionPacket<P>, assignments: CurrentPcbWorkerConstructionAssignments): Promise<CurrentFootprintCopyStateSample> {
+    if (this.#profile !== "private.current-pcb209-worker-construction.v1" || this.#footprintManager === null ||
+        this.#footprintConsistency === null || this.#footprintConstructors === null || this.#projectIdentity === null || this.#footprintReplies.length >= 16) { throw fail("FOOTPRINT_OWNER"); }
+    await this.requireCurrentAssignments(packet, assignments);
+    const original = await this.requireOriginal(packet);
+    await this.#current();
+    const args = [original.channelBus, this.#footprintManager, this.#footprintConsistency, this.#footprintConstructors].map(objectId => ({ objectId }));
+    const reply = captureCurrentPcbStringClockReply(await bounded(this.#sendOriginal({ method: "Runtime.callFunctionOn", params: {
+      objectId: original.project, functionDeclaration: CURRENT_FOOTPRINT_COPY_STATE_CALLS.observe.program,
+      arguments: args,
+      objectGroup: GROUP, silent: true, returnByValue: true, generatePreview: false,
+      throwOnSideEffect: true, awaitPromise: false, userGesture: false,
+    } }))).value;
+    // Preserve the inert native reply before a later owner or decoder refusal.
+    this.#footprintReplies.push(reply); await this.#current();
+    const sample = decodeCurrentFootprintCopyState(reply);
+    if (sample.identity.projectUuid !== this.#projectIdentity.projectUuid || sample.identity.branchUuid !== this.#projectIdentity.branchUuid ||
+        sample.identity.windowTabId !== this.#projectIdentity.windowTabId) { throw fail("FOOTPRINT_IDENTITY"); }
+    await this.requireCurrentAssignments(packet, assignments); return sample;
+  }
+  /** Current209 only: two synchronous observations of the constructor-captured
+   * manager, consistency object and their own client/user/ticket data fields. */
+  public async observeFootprintState(packet: ConstructionPacket<P>,
+    assignments: CurrentPcbWorkerConstructionAssignments): Promise<CurrentFootprintCopyStatePacket> {
+    if (this.#footprintAttempted) { throw fail("FOOTPRINT_CONSUMED"); } this.#footprintAttempted = true;
+    try {
+      const first = await this.#footprintSample(packet, assignments), second = await this.#footprintSample(packet, assignments);
+      if (JSON.stringify(first) !== JSON.stringify(second)) { throw fail("FOOTPRINT_CHANGED"); }
+      const state: CurrentFootprintCopyStatePacket = Object.freeze({ profile: "private.current-footprint-copy-state.v1",
+        identity: first.identity, client: first.client, maximumTicket: first.maximumTicket, capturedUser: first.capturedUser,
+        samples: 2, originalConstructorManagerMatched: true, atomicSnapshotVerified: false, cacheBranchObserved: false,
+        executionAuthorized: false, persistenceVerified: false });
+      this.#footprintPacket = state; return state;
+    } catch (error) { this.#fail("FOOTPRINT_OBSERVATION_FAILED"); throw error; }
+  }
+  public async requireFootprintState(packet: ConstructionPacket<P>, assignments: CurrentPcbWorkerConstructionAssignments,
+    state: CurrentFootprintCopyStatePacket): Promise<void> {
+    if (state !== this.#footprintPacket || this.#footprintPacket === null) { throw fail("ORIGINAL_FOOTPRINT_PACKET"); }
+    try {
+      const sample = await this.#footprintSample(packet, assignments);
+      if (sample.client !== state.client || sample.maximumTicket !== state.maximumTicket ||
+          JSON.stringify(sample.identity) !== JSON.stringify(state.identity)) { throw fail("FOOTPRINT_CHANGED"); }
+    } catch (error) { this.#fail("FOOTPRINT_STATE_CHANGED"); throw error; }
   }
   /** Two worker samples for the separate four-read startup actor bracket. Each
    * request retains the original constructor PROJECT and bus, not a later
