@@ -76,10 +76,11 @@ async function loadFixture(lifecycle: Row): Promise<FixtureModule> {
   return loaded as unknown as FixtureModule;
 }
 async function fixture(context: TestContext, mode: "prepare-fails" | "intent-changes" | "ordered"): Promise<Readonly<{
-  value: Fixture; id: string; binding: string; observe: () => Promise<Row>;
+  value: Fixture; id: string; binding: string; observe: () => Promise<Row>; rejectedCaptureReplyEvidence: Readonly<Row>;
   counters: { prepared: number; navigation: number; capture: number; durableIntent: number; abort: number; release: number };
 }>> {
   const counters = { prepared: 0, navigation: 0, capture: 0, durableIntent: 0, abort: 0, release: 0 }, id = `pcb209-continuation-test-${mode}`;
+  const rejectedCaptureReplyEvidence = Object.freeze({ pcb: null, worker: Object.freeze({ syntheticBoundaryEvidence: true, executionAuthorized: false }) });
   let module: FixtureModule | null = null, result: CurrentPcb209WorkerStartupOpeningResult | null = null;
   let reverify: (() => Promise<unknown>) | null = null;
   let originalFixture: Fixture | null = null;
@@ -124,6 +125,7 @@ async function fixture(context: TestContext, mode: "prepare-fails" | "intent-cha
     public status(): Row { return { synthetic: true, consumed: this.#consumed }; }
     public retainedOpeningObservation(): null { assert.equal(typeof this.#consumed, "boolean"); return null; }
     public retainedRejectedStopEvidence(): null { assert.equal(typeof this.#consumed, "boolean"); return null; }
+    public retainedRejectedCaptureReplyEvidence(): Readonly<Row> { assert.equal(this.#consumed, true); return rejectedCaptureReplyEvidence; }
     public retainedNativeOriginEvidence(): null { assert.equal(typeof this.#consumed, "boolean"); return null; }
     public retainedAncestryEvidence(): null { assert.equal(typeof this.#consumed, "boolean"); return null; }
     public abort(): Promise<void> { assert.equal(this.#consumed, true); assert.ok(originalFixture); counters.abort += 1; originalFixture.calls.push("ratline-abort"); return Promise.resolve(); }
@@ -173,7 +175,7 @@ async function fixture(context: TestContext, mode: "prepare-fails" | "intent-cha
   assert.equal(typeof binding, "string"); assert.ok(typeof binding === "string");
   await value.coordinator.handoffWorkerStartup(id, binding);
   assert.equal(await value.coordinator.openWorkerStartup(id, binding, module.STARTUP_OPEN_INPUT), result);
-  return { value, id, binding, counters, observe: (): Promise<Row> => value.coordinator.observeWorkerStartupRatlineContinuation(id, binding) };
+  return { value, id, binding, counters, rejectedCaptureReplyEvidence, observe: (): Promise<Row> => value.coordinator.observeWorkerStartupRatlineContinuation(id, binding) };
 }
 for (const mode of ["prepare-fails", "intent-changes", "ordered"] as const) {
   void test(`synthetic continuation209 lifecycle retains consumed failure and original intent before navigation: ${mode}`, async context => {
@@ -184,6 +186,7 @@ for (const mode of ["prepare-fails", "intent-changes", "ordered"] as const) {
     const status = await current.value.coordinator.run({ action: "inspect", operationId: current.id });
     assert.equal(status["workerStartupContinuationAttemptConsumed"], true); assert.equal(status["workerStartupContinuationFailed"], true);
     assert.equal(status["workerStartupContinuationResultPublished"], false);
+    assert.equal(status["workerStartupContinuationRejectedCaptureReplyEvidence"], mode === "prepare-fails" ? null : current.rejectedCaptureReplyEvidence);
     await assert.rejects(current.observe(), /STARTUP_RATLINE_CONSUMED/u);
     assert.deepEqual(current.counters, { prepared: 1, navigation: mode === "ordered" ? 1 : 0,
       capture: mode === "prepare-fails" ? 0 : 1, durableIntent: mode === "prepare-fails" ? 0 : 1, abort: 0, release: 0 });

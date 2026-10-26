@@ -7,6 +7,7 @@ import { lstat, mkdir, open, opendir } from "node:fs/promises";
 import { join } from "node:path";
 import { z } from "zod";
 import { currentFootprintCopyStatePacketSchema } from "./current-footprint-copy-state.ts";
+import { currentFootprintCopyPreparationSchema } from "./current-footprint-copy-preparation.ts";
 import { currentFootprintSourceReadPacketSchema } from "./current-footprint-source-read-runner.ts";
 import { controlDataDirectory, controlRootCapability, publishManagedAttachmentExclusive } from "./artifacts.ts";
 import type { ControlRootDirectory } from "./control-root.ts";
@@ -454,6 +455,16 @@ const workerStartupFootprintSourceResultSchema = z.object({
 }).strict().refine(value => value.result.route === "native-cache-equivalent" &&
   Buffer.byteLength(canonicalJson(value)) + 1 <= FOOTPRINT_SOURCE_RESULT_MAX_BYTES,
   "Footprint source result exceeds its complete evidence bound.");
+const workerStartupFootprintPreparationIntentSchema = z.object({
+  schema: z.literal("easyeda-pro-control.pcb209-footprint-preparation-intent.v1"), ...base,
+  operationId: currentPcb209WorkerStartupLifecycleIdSchema, bindingSha256: diagnosticLifecycleDigestSchema,
+  sourceResultSha256: diagnosticLifecycleDigestSchema,
+}).strict();
+const workerStartupFootprintPreparationResultSchema = z.object({
+  schema: z.literal("easyeda-pro-control.pcb209-footprint-preparation-result.v1"), ...base,
+  operationId: currentPcb209WorkerStartupLifecycleIdSchema, intentSha256: diagnosticLifecycleDigestSchema,
+  result: currentFootprintCopyPreparationSchema, executionAuthorized: z.literal(false), saveAuthorized: z.literal(false),
+}).strict();
 const pcbOpenIntentSchema = z.object({
   schema: z.literal("easyeda-pro-control.pcb-diagnostic-pcb-open-intent.v1"), ...base,
   bindingSha256: diagnosticLifecycleDigestSchema, projectOpeningIntentSha256: diagnosticLifecycleDigestSchema,
@@ -508,6 +519,8 @@ export const diagnosticLifecycleRecordSchemas = {
   "worker-startup-footprint-result.json": workerStartupFootprintResultSchema,
   "worker-startup-footprint-source-intent.json": workerStartupFootprintSourceIntentSchema,
   "worker-startup-footprint-source-result.json": workerStartupFootprintSourceResultSchema,
+  "worker-startup-footprint-preparation-intent.json": workerStartupFootprintPreparationIntentSchema,
+  "worker-startup-footprint-preparation-result.json": workerStartupFootprintPreparationResultSchema,
   "worker-startup-channel-intent.json": workerStartupChannelIntentSchema,
   "worker-startup-channel-result.json": workerStartupChannelResultSchema,
   "observation-failure.json": observationFailureSchema,
@@ -723,6 +736,17 @@ function validateChain(operation: DiagnosticLifecycleOperation): void {
     footprintSourceResult.result.request.maximumTicket === footprintResult.result.maximumTicket &&
     canonicalJson(footprintSourceResult.result.request.identity) === canonicalJson(footprintResult.result.identity),
   "WORKER_STARTUP_FOOTPRINT_SOURCE_RESULT_CHAIN");
+  const footprintPreparation = records["worker-startup-footprint-preparation-intent.json"];
+  const footprintPrepared = records["worker-startup-footprint-preparation-result.json"];
+  requireValue(footprintPreparation === undefined || operation.records["intent.json"]?.schema === "easyeda-pro-control.pcb209-worker-startup-launch-intent.v1" &&
+    binding !== undefined && footprintSourceResult !== undefined && footprintPreparation.bindingSha256 === sha256Json(binding) &&
+    footprintPreparation.sourceResultSha256 === sha256Json(footprintSourceResult), "WORKER_STARTUP_FOOTPRINT_PREPARATION_CHAIN");
+  requireValue(footprintPrepared === undefined || footprintPreparation !== undefined && footprintSource !== undefined && footprintSourceResult !== undefined &&
+    footprintPrepared.intentSha256 === sha256Json(footprintPreparation) &&
+    footprintPrepared.result.beforeCheckpointSha256 === footprintSource.checkpointSha256 &&
+    footprintPrepared.result.beforeSqlSha256 === footprintSource.beforeSqlSha256 &&
+    footprintPrepared.result.sourcePlanSha256 === footprintSource.sourcePlanSha256 &&
+    footprintPrepared.result.sourcePacketSha256 === sha256Json(footprintSourceResult.result), "WORKER_STARTUP_FOOTPRINT_PREPARATION_RESULT_CHAIN");
   const channel = records["worker-startup-channel-intent.json"], channelResult = records["worker-startup-channel-result.json"];
   requireValue(channel === undefined || startupPurpose && assigned !== undefined && binding !== undefined &&
     channel.assignmentsResultSha256 === sha256Json(assigned) && channel.bindingSha256 === sha256Json(binding), "WORKER_STARTUP_CHANNEL_CHAIN");

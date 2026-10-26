@@ -31,11 +31,12 @@ export const currentPcb209WorkerStartupFootprintSourceRequestSchema = z.object({
   action: z.literal("observe-footprint-source"), ...bound,
   ...currentPcb209WorkerStartupFootprintSourceInputSchema.shape,
 }).strict();
+export const currentPcb209WorkerStartupFootprintPreparationRequestSchema = z.object({ action: z.literal("prepare-footprint-copy"), ...bound }).strict();
 export const currentPcb209WorkerStartupChannelRequestSchema = z.object({ action: z.literal("observe-current-channel"), ...bound }).strict();
 export const currentPcb209WorkerStartupValidationRequestSchema = z.discriminatedUnion("action", [
   ...currentPcb209WorkerStartupLifecycleRequestSchema.options, currentPcb209WorkerStartupCaptureRequestSchema,
   currentPcb209WorkerStartupAssignmentsRequestSchema, currentPcb209WorkerStartupActorRequestSchema, currentPcb209WorkerStartupChannelRequestSchema, currentPcb209WorkerStartupFootprintStateRequestSchema,
-  currentPcb209WorkerStartupFootprintSourceRequestSchema,
+  currentPcb209WorkerStartupFootprintSourceRequestSchema, currentPcb209WorkerStartupFootprintPreparationRequestSchema,
 ]);
 export type CurrentPcb209WorkerStartupValidationRequest = z.infer<typeof currentPcb209WorkerStartupValidationRequestSchema>;
 export function queryCurrentPcb209WorkerStartupValidation(includeSchemas: boolean): Record<string, unknown> {
@@ -52,6 +53,7 @@ export function queryCurrentPcb209WorkerStartupValidation(includeSchemas: boolea
       "After the assignment result is published, observe-current-channel independently consumes one bounded original-channel relation and publisher-method observation with paired gate samples. It does not call publisher methods or establish native channel peers, continuous ownership, contained destinations or queue completion; it does not require the actor stage.",
       "After the assignment result is published, observe-footprint-state consumes one pair of synchronous reads from the original constructor-captured footprint and consistency managers. It checks the own undefined captured user, shared client and unchanged maximum ticket. No getter, copy, cache completion, actor provenance, Save or persistence claim follows.",
       "After the footprint-state result is published, observe-footprint-source selects one footprintUuid from the original completed project checkpoint. It reconstructs source from the original live consistency entries and existing native Cache chunks, with two matching source reads in observed native order, four state samples and exact keyed-record and generated-header equality against the complete checkpoint. Checkpoint byte-order equality is not claimed. This is a native equivalent, not a GET_STR dispatch. Missing cache entries refuse without fetch, parser replay, cache warming or copy. The source-only profile admits ordinary record families, repeated fragments and tombstones; it requires 65 remaining requests through normal request 224 and retains 32 cleanup slots. Cache reads are limited to 64 keys and 8MiB, source to 2MiB, and complete evidence to its separate serialization bound. No saved/reopened or writer claim follows.",
+      "After the source result is published, prepare-footprint-copy consumes one original-owner preparation and publishes its checkpoint/source/plan/argument hashes. It requires eight remaining normal requests and preserves 32 cleanup slots. The original source and completed SQL reader are retained. The launch remains observation-only: no copy purpose, producer/clock proof, complete writer capacity, native create, Save or persistence authority is granted.",
       "Constructor and current-assignment observations are not continuous channel/publisher ownership, destination containment, full startup completion, stable baseline, create/Save authority or saved-content proof. No writer or explicit Save is offered.",
       "Every stage is consumed once. Inspect retained outcomes after uncertainty; do not repeat capture-project. Original normal close, root/Job termination, helper release and exact record settlement remain separate. Historical records never recreate a native owner.",
     ], ...(includeSchemas ? { inputSchema: z.toJSONSchema(currentPcb209WorkerStartupValidationRequestSchema) } : {}) };

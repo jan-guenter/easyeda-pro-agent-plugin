@@ -77,7 +77,16 @@ Validation is offline. It neither creates a journal nor grants authority.
    it does not dispatch `Tg.getStr`, a parser, cache writes or a network fallback.
    A missing cache entry refuses. This is source inspection, with no copy,
    delete, Save or persistence authority.
-6. Use `observe-window`, then one `normal-close` with the observed `hwnd` and
+6. After the published source result, optional `prepare-footprint-copy` takes
+   only the same ID and binding. It retains that exact original opening, source
+   packet, source plan and completed SQL reader, then publishes the preparation's
+   checkpoint, source, plan and native-argument hashes. Reserve eight remaining
+   normal requests through224, preserving32 cleanup slots. The stage is consumed
+   before preparation and cannot be retried after a capacity or ownership refusal.
+   This is an observation-purpose plan. It does not qualify a copy launch,
+   producer, actor/clock source, complete writer budget, native create or saved
+   result. No caller plan, name, source text or native handle is accepted.
+7. Use `observe-window`, then one `normal-close` with the observed `hwnd` and
    `confirmNormalClose:true`. Separately call `observe-termination` and
    `release-closed`. Complete any offered `settle-records` using the retained
    intent digest. Release requires original root exit and an empty original Job.
@@ -181,6 +190,17 @@ explicitly reports that it was malformed or too large to retain. These supply
 diagnostic evidence only. A later channel failure does
 not establish why an earlier source reply failed, and a missing raw reply cannot
 be reconstructed from the error label.
+
+For a rejected ratline continuation capture, inspect
+`workerStartupContinuationRejectedCaptureReplyEvidence`. Its original PCB and
+worker owners retain the first rejected reply separately, with the fixed pause
+site, program or selector, request number, complete bounded data and digest.
+`reply-validation` distinguishes decoding from the preceding owner reproof.
+Each raw copy has a32KiB limit plus fixed structural limits; malformed or
+oversized data remains explicitly unavailable. These copies stay outside the
+closed status diagnostics and grant no capture or retry authority. An upstream
+transport or owner refusal can prevent a reply reaching this boundary; absence
+does not identify that missing reply or the cause of a prior failure.
 
 The209 function-metadata profile requires the three own properties reported by
 its V8 build for the regular debounce wrapper: `length`, `name` and `prototype`.

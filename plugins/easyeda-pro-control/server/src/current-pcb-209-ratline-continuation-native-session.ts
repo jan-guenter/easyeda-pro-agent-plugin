@@ -167,6 +167,9 @@ export class CurrentPcb209RatlineContinuationNativeSession {
   public retainedOpeningObservation(): CurrentPcbDiagnosticPcbOpeningResult | null { return this.#openingObservation; }
   public retainedNativeOriginEvidence(): ReturnType<CurrentPcb209RatlineContinuationSession["retainedNativeOriginEvidence"]> { return this.#session?.retainedNativeOriginEvidence() ?? null; }
   public retainedRejectedStopEvidence(): ReturnType<CurrentPcb209RatlineContinuationSession["retainedRejectedStopEvidence"]> { return this.#session?.retainedRejectedStopEvidence() ?? null; }
+  public retainedRejectedCaptureReplyEvidence(): ReturnType<CurrentPcb209RatlineContinuationSession["retainedRejectedCaptureReplyEvidence"]> | null {
+    return this.#session?.retainedRejectedCaptureReplyEvidence() ?? null;
+  }
   public retainedAncestryEvidence(): ReturnType<CurrentPcb209RatlineContinuationSession["retainedAncestryEvidence"]> { return this.#session?.retainedAncestryEvidence() ?? null; }
   public status(): Readonly<Record<string, unknown>> { return Object.freeze({ phase: this.#phase,
     transitionStarted: this.#session?.status()["transitionStarted"] === true, openingAcknowledged: currentPcb209RatlineOpeningAcknowledged(this.#openingObservation),

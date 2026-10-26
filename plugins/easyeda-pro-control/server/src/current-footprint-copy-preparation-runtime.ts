@@ -1,7 +1,8 @@
-/** Unmounted preparation from an original209 opening and its retained source.
+/** Original-owner preparation from an original209 opening and its retained source.
  * Native leases stay with that opening; this leaf cannot launch, transfer its
  * purpose, publish lifecycle records, write, Save or release its native owner. */
 import { types } from "node:util";
+import type { CurrentFootprintCopyPreparation } from "./current-footprint-copy-preparation.ts";
 import { canonicalJson, sha256Json } from "./core.ts";
 import { assertCurrentFootprintCopyV2Inventory, prepareCurrentFootprintCopyV2Plan } from "./current-footprint-copy-v2-plan.ts";
 import type { CurrentFootprintCopyV2Plan } from "./current-footprint-copy-v2-plan.ts";
@@ -14,6 +15,7 @@ import type { CurrentFootprintSourceReadPacket } from "./current-footprint-sourc
 import { CurrentPcb209WorkerStartupOpening } from "./current-pcb-209-worker-startup-opening.ts";
 import type { CurrentPcb209WorkerStartupOpeningResult } from "./current-pcb-209-worker-startup-opening.ts";
 import type { CurrentPcbWorkerConstructionAssignments } from "./current-pcb-worker-construction-assignment.ts";
+// oxlint-disable-next-line import/max-dependencies -- Preparation joins eleven independently owned inputs; its shared durable schema avoids a duplicated journal contract.
 import { readerCompletion } from "./sqlite-inventory.ts";
 import type { readExactSqlInventory } from "./sqlite-inventory.ts";
 
@@ -27,24 +29,8 @@ interface Source {
   readonly source: CurrentFootprintSourceReadPacket;
   readonly before: Inventory;
 }
-export interface CurrentFootprintCopyPreparation {
-  readonly profile: "private.current-footprint-copy-owned-preparation.v1";
-  readonly beforeCheckpointSha256: string;
-  readonly beforeSqlSha256: string;
-  readonly sourcePlanSha256: string;
-  readonly sourcePacketSha256: string;
-  readonly copyPlanSha256: string;
-  readonly nativeArgumentsSha256: string;
-  readonly originalOpeningRetained: true;
-  readonly originalSourceObservationRetained: true;
-  readonly lifecyclePublicationVerified: false;
-  readonly copyLaunchPurposeQualified: false;
-  readonly completeCapacityReserved: false;
-  readonly producerBindingVerified: false;
-  readonly actorAndClocksVerified: false;
-  readonly executionAuthorized: false;
-  readonly persistenceVerified: false;
-}
+export type { CurrentFootprintCopyPreparation } from "./current-footprint-copy-preparation.ts";
+
 interface Retained {
   readonly source: Source;
   readonly sourceText: string;

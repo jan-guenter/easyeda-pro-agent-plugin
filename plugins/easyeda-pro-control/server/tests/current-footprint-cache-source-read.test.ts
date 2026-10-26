@@ -64,12 +64,63 @@ async function reply(vm: Context): Promise<ReturnType<typeof decodeCurrentFootpr
   return decodeCurrentFootprintCopySourceRead({ result: { type: "string", value } });
 }
 
+/** WebIDL-style synthetic worker global: the timer pair belongs to the
+ * WorkerGlobalScope prototype, below DedicatedWorkerGlobalScope. */
+function inheritTimers(vm: Context): void {
+  runInContext(`globalThis.timerCalls=0;
+const originalSet=setTimeout,originalClear=clearTimeout;
+globalThis.workerScope=Object.create(Object.prototype);
+Object.assign(workerScope,{setTimeout(...args){timerCalls++;return Reflect.apply(originalSet,undefined,args);},clearTimeout(...args){return Reflect.apply(originalClear,undefined,args);}});
+globalThis.dedicatedScope=Object.create(workerScope);
+delete globalThis.setTimeout;delete globalThis.clearTimeout;
+Object.setPrototypeOf(globalThis,dedicatedScope);
+if(Object.hasOwn(globalThis,'setTimeout')||Object.hasOwn(dedicatedScope,'setTimeout'))throw Error('Synthetic timer ownership differs');`, vm);
+}
+
 void test("source-only cache leaf preserves 45 records, seven fragments, native order, full actor and empty tombstone", async () => {
   const f = fixture(), result = await reply(f.vm);
   assert.equal(result.content, f.expected); assert.deepEqual(result.cacheRead, { keys: 7, bytes: f.bytes, atoms: 45 });
   assert.equal(result.sourceGetterDispatched, false); assert.equal(result.cacheEffectsPossible, false);
   assert.equal(result.cacheWrites, 0); assert.equal(result.networkRequests, 0);
   assert.equal(runInContext("calls", f.vm) as unknown, 0); assert.equal(runInContext("Object.keys(consistency.historyMap).length", f.vm) as unknown, 0);
+});
+void test("source cache reader resolves inherited worker-global timers without relaxing ordinary own-data fields", async () => {
+  const f = fixture(); inheritTimers(f.vm); const result = await reply(f.vm);
+  assert.equal(result.content, f.expected);
+  const timerCalls: unknown = runInContext("timerCalls", f.vm); assert.ok(typeof timerCalls === "number" && timerCalls > 0);
+  assert.equal(runInContext("calls", f.vm) as unknown, 0);
+  const inheritedProject = fixture(); inheritTimers(inheritedProject.vm);
+  runInContext(`const uuid=project.uuid;delete project.uuid;Object.defineProperty(Lg.prototype,'uuid',{value:uuid});`, inheritedProject.vm);
+  await assert.rejects(reply(inheritedProject.vm), /SOURCE_READ_REFUSED/u);
+  assert.equal(runInContext("timerCalls", inheritedProject.vm) as unknown, 0);
+});
+void test("inherited timer capture rejects accessors, split ownership and excessive prototype depth before I/O", async () => {
+  for (const change of [
+    "Object.defineProperty(globalThis,'setTimeout',{get(){traps++;return workerScope.setTimeout;}})",
+    "Object.defineProperty(workerScope,'clearTimeout',{get(){traps++;return ()=>{};}})",
+    "globalThis.setTimeout=workerScope.setTimeout",
+    "workerScope.setTimeout=1",
+    "Object.setPrototypeOf(globalThis,Object.create(Object.create(dedicatedScope)))",
+  ]) {
+    const f = fixture(); inheritTimers(f.vm); runInContext(change, f.vm);
+    await assert.rejects(reply(f.vm), /SOURCE_READ_REFUSED/u, change);
+    assert.equal(runInContext("traps", f.vm) as unknown, 0, change);
+    assert.equal(runInContext("timerCalls", f.vm) as unknown, 0, change);
+    assert.equal(runInContext("matches.length", f.vm) as unknown, 0, change);
+  }
+});
+void test("inherited timer descriptors, absent shadows and prototype links are rechecked after cache awaits", async () => {
+  for (const change of [
+    "workerScope.setTimeout=()=>0", "workerScope.clearTimeout=()=>{}",
+    "globalThis.setTimeout=workerScope.setTimeout", "dedicatedScope.clearTimeout=workerScope.clearTimeout",
+    "Object.setPrototypeOf(globalThis,Object.create(dedicatedScope))",
+    "Object.setPrototypeOf(dedicatedScope,Object.create(workerScope))",
+  ]) {
+    const f = fixture(); inheritTimers(f.vm); runInContext(`afterMatch=async()=>{${change};}`, f.vm);
+    await assert.rejects(reply(f.vm), /SOURCE_READ_REFUSED/u, change);
+    assert.equal(runInContext("calls", f.vm) as unknown, 0, change);
+    assert.equal(runInContext("timerCalls", f.vm) as unknown, 1, change);
+  }
 });
 void test("source-only metadata with no drawing records returns the complete three-line source without cache I/O", async () => {
   const f = fixture(); runInContext("nodes.clear()", f.vm); const result = await reply(f.vm);

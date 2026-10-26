@@ -11,6 +11,7 @@ import { currentPcb209RatlinePcbBootstrapRoleUrl, CURRENT_PCB_209_RATLINE_PCB_BO
 import { CURRENT_PCB_209_RATLINE_BOOTSTRAP_ROLES as childRoles, currentPcb209RatlineBootstrapRoleUrl } from "../src/current-pcb-209-ratline-bootstrap-profile.ts";
 import { CURRENT_PCB_209_PRELOAD_COPY_SOURCE, CURRENT_PCB_209_WORKER_PRELOAD_LOG, CURRENT_PCB_209_WORKER_PRELOAD_URL, currentPcb209PreloadCopyCaller } from "../src/current-pcb-209-worker-bootstrap-source.ts";
 import { CURRENT_PCB_209_RATLINE_CAPTURE_PROFILES } from "../src/current-pcb-209-ratline-capture-profile.ts";
+import { CURRENT_PCB_209_RATLINE_CAPTURE_PROGRAMS } from "../src/current-pcb-209-ratline-capture-program.ts";
 import { CURRENT_PCB_209_RATLINE_CREATION_PROFILES } from "../src/current-pcb-209-ratline-creation-profile.ts";
 import { currentPcb209RatlineContinuationNativeWire } from "../src/current-pcb-209-ratline-continuation-native-wire.ts";
 import { currentPcb209RatlineContinuationNativePacketSchema } from "../src/current-pcb-209-ratline-continuation-packet-schema.ts";
@@ -56,7 +57,8 @@ const frameProof = (method: string): unknown => {
     throw new Error("Unexpected frame proof");
   };
 
-void test("fresh continuation orders actual V8 captures before original child termination and preserves sealed history", { timeout: 60_000 }, async context => {
+for (const rejectReply of [false, true]) {
+void test(`fresh continuation orders actual V8 captures and retains original rejected replies: ${String(rejectReply)}`, { timeout: 60_000 }, async context => {
   const modules = await ratlineContinuationModules();
   const signals: { terminate: (role: "worker" | "subordinate") => void; publication: () => void } = {
     terminate: (): never => { throw new Error("Fixture termination before original routing"); }, publication: (): never => { throw new Error("Fixture publication before original routing"); },
@@ -79,6 +81,8 @@ void test("fresh continuation orders actual V8 captures before original child te
   const workerTarget = { targetId: "worker", type: "worker", title: "pcb-ratline-worker", attached: true, url: urls.worker };
   const subordinateTarget = { ...workerTarget, targetId: "subordinate", url: urls.subordinate };
   const running: Promise<unknown>[] = [];
+  const refusedReply = { result: { type: "undefined" }, exceptionDetails: { text: "Synthetic fixed empty-array refusal", lineNumber: 4 } };
+  const refusedText = JSON.stringify(refusedReply); let replyRefused = false;
   const childExited = { worker: false, subordinate: false }, revoked = { worker: false, subordinate: false };
   const disposeFixture = new Map<string, () => void>();
   let pcbReceivedDuringWorkerPause = false, workerTerminalPaused = false;
@@ -116,6 +120,7 @@ void test("fresh continuation orders actual V8 captures before original child te
   const originalTermination = (): Promise<void> => { assert.ok(terminated); return Promise.resolve(); };
   const run = (role: "pcb" | "worker"): void => { const work = (role === "pcb" ? pcb : worker).run(); running.push(work); void observe(work); };
   signals.terminate = (role): void => {
+    if (replyRefused) { return; }
     assert.equal(revoked[role], true); assert.equal(childExited[role], false);
     disposeFixture.get(role)?.();
     const work = (async (): Promise<void> => {
@@ -128,6 +133,7 @@ void test("fresh continuation orders actual V8 captures before original child te
     })(); running.push(work); void observe(work);
   };
   signals.publication = (): void => {
+    if (replyRefused) { return; }
     const work = (async (): Promise<unknown> => { await workerReturned.promise;
       return pcb.request("Runtime.evaluate", { expression: "A.callback(JSON.stringify({ratlineRes:[],workerName:0}))", returnByValue: true }); })();
     running.push(work); void observe(work);
@@ -160,6 +166,7 @@ void test("fresh continuation orders actual V8 captures before original child te
   const dependency: CurrentPcb209RatlineContinuationDependency = Object.freeze<CurrentPcb209RatlineContinuationDependency>({
     requireOriginalParent: async (): Promise<typeof originalParent> => {
       parentProofs += 1; assert.equal(terminated, false);
+      if (replyRefused) { refusedReply.exceptionDetails.text = "Changed during subsequent owner reproof"; }
       if (subordinateArmed && !started.subordinate && holder.session !== null && row.parse(holder.session.status()["subordinateSource"])["armed"] === true) {
         firstArmedProof ??= performance.now(); subordinateWaitProofs += 1; await delay(250);
         if (!started.subordinate) { assert.equal(sources.subordinate, 0); }
@@ -225,6 +232,10 @@ void test("fresh continuation orders actual V8 captures before original child te
         return Promise.resolve({});
       }
       assert.notEqual(role, "subordinate");
+      if (rejectReply && role === "worker" && command.method === "Runtime.callFunctionOn" &&
+          command.params.functionDeclaration === CURRENT_PCB_209_RATLINE_CAPTURE_PROGRAMS.empty) {
+        assert.equal(replyRefused, false); replyRefused = true; return Promise.resolve(refusedReply);
+      }
       if (role === "worker" && workerTerminalPaused && command.method === "Debugger.evaluateOnCallFrame") {
         return (async (): Promise<unknown> => { await received.promise; return worker.request(command.method, command.params); })();
       }
@@ -234,6 +245,25 @@ void test("fresh continuation orders actual V8 captures before original child te
   const localTarget = { ...target }, session = new modules.Session(originalContext(), localTarget, dependency); holder.session = session;
   try {
   let packet; const capture = session.capture(); localTarget.documentUuid = "e".repeat(16);
+  if (rejectReply) {
+    await assert.rejects(capture); assert.ok(replyRefused);
+    const evidence = session.retainedRejectedCaptureReplyEvidence().worker;
+    assert.ok(evidence !== null && evidence.reply.status === "captured");
+    assert.equal(evidence.role, "worker"); assert.equal(evidence.site, "initialized"); assert.equal(evidence.pauseIndex, 6);
+    assert.equal(evidence.command, "Runtime.callFunctionOn"); assert.equal(evidence.program, "empty");
+    assert.equal(evidence.requestNumber, 45); assert.equal(evidence.executionAuthorized, false);
+    assert.equal(JSON.stringify(evidence.reply.value), refusedText);
+    assert.equal(evidence.reply.sha256, createHash("sha256").update(refusedText).digest("hex"));
+    assert.ok(Object.isFrozen(evidence) && Object.isFrozen(evidence.reply.value));
+    const workerStatus = row.parse(session.status()["worker"]);
+    const captureStatus = row.parse(workerStatus["capture"]);
+    const failure = row.parse(captureStatus["firstFailure"]);
+    assert.equal(failure["step"], "reply-validation"); assert.equal(failure["reason"], "SCHEMA");
+    assert.equal(session.retainedRejectedCaptureReplyEvidence().pcb, null);
+    await assert.rejects(session.capture());
+    assert.equal(session.retainedRejectedCaptureReplyEvidence().worker, evidence);
+    return;
+  }
   try { packet = await capture; } catch (error) { context.diagnostic(JSON.stringify(session.status())); context.diagnostic(String(error)); throw error; }
   const captureParentProofs = parentProofs;
   assert.deepEqual(childExited, { worker: true, subordinate: true }); assert.deepEqual(revoked, childExited); assert.ok(pcbReceivedDuringWorkerPause); assert.equal(detachBeforeParentResume, 1);
@@ -262,9 +292,10 @@ void test("fresh continuation orders actual V8 captures before original child te
     received.resolve(null); workerReturned.resolve(null); await session.abort(); assert.ok(cleanup);
     await Promise.all([pcb.terminate(), worker.terminate(), subordinate.terminate()]); terminated = true;
     await Promise.allSettled(running); await session.releaseAfterTermination();
+    assert.equal(session.status()["phase"], "released"); assert.equal(unsubscriptions, 1);
   }
-  assert.equal(session.status()["phase"], "released"); assert.equal(unsubscriptions, 1);
 });
+}
 
 void test("failed native cleanup admission still settles local source waits and never dispatches cleanup commands", async () => {
   const modules = await ratlineContinuationModules(), parent = Object.freeze({ targetId: "parent", sessionId: "parent-session", nextRequestId: 301 });

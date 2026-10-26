@@ -7366,12 +7366,15 @@
       "routes": [],
       "omission": {
         "code": "footprint-copy-default-matching-and-lifecycle",
-        "reason": "In the inspected 3.2.209 UI, a same-current-project source and target with the same existing nonzero UUID ticket can match the original footprint before naming or creation. The public returned UUID therefore need not identify a new copy. Native clone instead requires a special underscore-containing destination UUID. A separate native-create data plan and necessary closed-history record relation now exist, but grant no dispatch or complete SQL/lifecycle authority.",
-        "nextRequirement": "Complete source-getter serialization and exact raw append/SQL effects, bind an original native owner and new ordinary UUID, observe subscriber/structure completion, and verify saved/reopened content on a disposable project before enabling the independent-copy route. Do not route derived arguments through the default matcher or native clone.",
+        "reason": "The inspected 3.2.209 public matcher can return the existing footprint; native clone requires a special underscore-containing UUID. The separate native-create plan now has original-owned preparation publication, complete supplied SQL/saved-source models and unmounted source/method qualification. Native create allocates and advances a ticket before fetching source, crosses UI routing that can select an extension library, and ignores uploadLocal's success field. Neither preparation nor a returned success proves a new durable copy.",
+        "nextRequirement": "Bind a separate original copy launch, lexical/UI source routing and actor/server clocks; reserve the complete command/result/failure/journal lifecycle; perform one consumed native create; then prove original-generation closure, exact closed SQL, replay-excluded fresh saved reads and final closed equality on a disposable project. Parser/cache cleanup and upload fallback effects remain unqualified. Do not use the default matcher or clone as a substitute.",
         "evidence": [
-          "current-footprint-copy-plan.ts",
-          "current-footprint-copy-plan.test.ts",
-          "docs/history/2026-10-25-current-footprint-copy-preparation.md"
+          "current-footprint-copy-preparation-runtime.ts",
+          "current-footprint-copy-create-source.ts",
+          "current-footprint-copy-create-bindings.ts",
+          "current-footprint-copy-v2-sql.ts",
+          "docs/history/2026-10-25-current-footprint-copy-preparation.md",
+          "docs/history/2026-10-26-footprint-source-and-preparation.md"
         ]
       },
       "completeDeclaredContractSupported": false,

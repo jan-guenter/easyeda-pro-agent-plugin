@@ -12,6 +12,7 @@ import type { CurrentPcb209RatlineBootstrapOwner } from "./current-pcb-209-ratli
 import type { CurrentPcb209RatlineRealmDependency } from "./current-pcb-209-ratline-event-dispatcher.ts";
 import type { CurrentPcb209RatlineCreationPacket } from "./current-pcb-209-ratline-creation-runner.ts";
 import type { CurrentPcb209RatlineAnyCapturePacket, CurrentPcb209RatlineCapturePacket, CurrentPcb209RatlineHeldCapturePacket } from "./current-pcb-209-ratline-capture-runner.ts";
+import type { CurrentPcb209RatlineCaptureReplyEvidence } from "./current-pcb-209-ratline-capture-reply.ts";
 import type { CurrentPcb209RatlineCaptureScope } from "./current-pcb-209-ratline-capture-profile.ts";
 import { currentPcb209RatlineContinuationTiming } from "./current-pcb-209-ratline-continuation-timing.ts";
 import { isCurrentPcb209CompletedCaptureSeal, issueCurrentPcb209CompletedCaptureSeal } from "./current-pcb-209-ratline-continuation-handoff.ts";
@@ -98,6 +99,9 @@ class CurrentPcb209RatlineStartupCore<Scope extends CurrentPcb209RatlineCaptureS
     this.#releaseSource = dependency.releaseOriginalPinnedSource;
     this.#childGate = new CurrentPcb209RatlineChildStartGate(role, dependency.realm, dependency.childBootstrapOwner);
     this.#dispatcher = new CurrentPcb209RatlineEventDispatcher(role, this.#childGate.claimOriginalRealm(), scope); this.#stages = this.#dispatcher.claimOriginalStages();
+  }
+  public retainedRejectedCaptureReplyEvidence(): CurrentPcb209RatlineCaptureReplyEvidence | null {
+    return this.#stages.capture.retainedRejectedReplyEvidence();
   }
   public status(): Readonly<Record<string, unknown>> {
     return Object.freeze({ ...this.#diagnostics.snapshot(), scope: this.#scope, consumed: this.#consumed, settled: this.#settled, failed: this.#failed, released: this.#released,
