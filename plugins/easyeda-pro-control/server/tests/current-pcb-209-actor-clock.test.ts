@@ -9,7 +9,7 @@ import { CURRENT_PCB_209_ACTOR_CLOCK_SOURCE_PROFILE, qualifyCurrentPcb209ActorCl
 import type { CurrentPcb209ActorClockSourceQualification } from "../src/current-pcb-209-actor-clock-source.ts";
 import { CurrentPcb209ActorClockRunner } from "../src/current-pcb-209-actor-clock.ts";
 import { CurrentPcb209WorkerStartupActorRunner } from "../src/current-pcb-209-worker-startup-actor.ts";
-import { CurrentPcbWorkerStartupActorRunner } from "../src/current-pcb-worker-startup-actor-runner.ts";
+import { CurrentPcb209StartupActorCollection } from "../src/current-pcb-209-worker-startup-actor-runner.ts";
 
 const fakeQualification: CurrentPcb209ActorClockSourceQualification = Object.freeze({
   profile: "private.pcb209-actor-clock-source.v1", application: "3.2.209.8a704eab",
@@ -95,12 +95,12 @@ void test("startup actor extraction bypasses method shadows and still checks the
   assert.equal(ownerChecks, checksBefore + 1); assert.equal(original.packet, packet.originalActorPacket);
   Object.defineProperty(original.runner, "requireOriginal", { value: (): Promise<unknown> => { shadowCalls += 1; return Promise.resolve(original.packet); } });
   assert.equal(await requireOriginal(packet), packet); assert.equal(ownerChecks, checksBefore + 2);
-  const descriptor = Object.getOwnPropertyDescriptor(CurrentPcbWorkerStartupActorRunner.prototype, "requireOriginal"); assert.ok(descriptor);
+  const descriptor = Object.getOwnPropertyDescriptor(CurrentPcb209StartupActorCollection.prototype, "requireOriginal"); assert.ok(descriptor);
   try {
-    Object.defineProperty(CurrentPcbWorkerStartupActorRunner.prototype, "requireOriginal", { ...descriptor,
+    Object.defineProperty(CurrentPcb209StartupActorCollection.prototype, "requireOriginal", { ...descriptor,
       value: (): Promise<unknown> => { shadowCalls += 1; return Promise.resolve(original.packet); } });
     await assert.rejects(owner.originalObservation(packet), /ORIGINAL_METHOD/u);
-  } finally { Object.defineProperty(CurrentPcbWorkerStartupActorRunner.prototype, "requireOriginal", descriptor); }
+  } finally { Object.defineProperty(CurrentPcb209StartupActorCollection.prototype, "requireOriginal", descriptor); }
   current = false; await assert.rejects(owner.originalObservation(packet), /original inner owner expired/u);
   assert.equal(shadowCalls, 0);
 });

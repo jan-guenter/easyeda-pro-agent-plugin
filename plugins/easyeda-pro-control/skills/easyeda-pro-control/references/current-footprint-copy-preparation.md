@@ -39,10 +39,15 @@ Follow the returned phase and retain the same Codex session:
 7. `observe-footprint-manager-route` follows the original UI subscription
    through the initialized manager registry to the project and worker bus.
    It fetches and qualifies the original callback's complete manager script
-   before following its lexical scope. The reciprocal worker/channel peer and
+   before following its lexical scope. It reads the original browser-native
+   BroadcastChannel name accessor under `throwOnSideEffect`, rejects instance
+   overrides and rechecks the retained getter and expected channel name. This
+   invokes no vendor getter or RPC. The reciprocal worker/channel peer and
    backend dynamic dispatch remain unproved.
 8. Inspect retained evidence after any refusal. Close normally, observe both
-   original root and Job termination, release the helper and settle records.
+   original root and Job termination, release the helper, then inspect the final state. Call `settle-records` only
+   if that fresh inspection still reports `publicationSettlementAvailable:true`.
+   A successfully released owner normally needs no further settlement.
    These are separate steps; a close acknowledgment is not termination.
 
 Each observation is consumed once. The operation has a cumulative request,
@@ -67,7 +72,12 @@ Preliminary clock calls cannot replace those results. Native create allocates
 state before its first clock continuation, so a later failure may already have
 changed the design.
 
-Copy execution still requires asynchronous producer completion and reciprocal destination bindings,
-native clock transport, backend clock window, durable one-shot dispatch,
-complete effect verification, one Save and a distinct saved verification
-generation. Neither preparation nor a returned UUID supplies those proofs.
+Copy execution still needs reciprocal destination and backend actor/clock
+bindings, its own native transport and finite budget, durable one-shot dispatch,
+and complete effect verification. The private execution coordinator follows
+the symbol-copy pattern with zero explicit Save attempts: original-generation
+closure, complete closed SQL comparison, upload-cache replay exclusion and a
+distinct saved verification generation. Its native owner is not mounted.
+Generation closure does not prove callback completion or undo external effects;
+those effect branches must be qualified before dispatch. Neither preparation
+nor a returned UUID supplies the missing proofs.

@@ -4,7 +4,7 @@ import { types } from "node:util";
 import { z } from "zod";
 import { CURRENT_FOOTPRINT_COPY_MANAGER_ROUTE_CALLS as CALLS, decodeCurrentFootprintCopyManagerRouteArray as decodeArray,
   decodeCurrentFootprintCopyManagerRouteCallable as decodeCallable, decodeCurrentFootprintCopyManagerRouteFunction as decodeFunction,
-  decodeCurrentFootprintCopyManagerRouteNativeGet as decodeNativeGet, decodeCurrentFootprintCopyManagerRouteScope as decodeScope } from "./current-footprint-copy-manager-route-bindings.ts";
+  decodeCurrentFootprintCopyManagerRouteNativeGet as decodeNativeGet, decodeCurrentFootprintCopyManagerRouteNativeName as decodeNativeName, decodeCurrentFootprintCopyManagerRouteScope as decodeScope } from "./current-footprint-copy-manager-route-bindings.ts";
 import { CURRENT_FOOTPRINT_COPY_MANAGER_ROUTE_FLAGS as FLAGS, CURRENT_FOOTPRINT_COPY_MANAGER_ROUTE_GROUP as GROUP, validateCurrentFootprintCopyManagerRouteCommand } from "./current-footprint-copy-manager-route-command.ts";
 import type { CurrentFootprintCopyManagerRouteCommand as Command } from "./current-footprint-copy-manager-route-command.ts";
 import { CURRENT_FOOTPRINT_COPY_MANAGER_ROUTE_SOURCE as SOURCE, captureCurrentFootprintCopyManagerRouteSourceReply, qualifyCurrentFootprintCopyManagerRouteSource, requireCurrentFootprintCopyManagerRouteSource } from "./current-footprint-copy-manager-route-source.ts";
@@ -18,11 +18,17 @@ const bindingSchema = z.object({ sessionId: handle.max(128), uiScriptId: handle,
   projectUuid: z.string().regex(/^[a-f\d]{64}$/u), branchUuid: z.string().regex(/^[a-f\d]{32}$/u), windowTabId: z.string().regex(/^[A-Za-z\d_-]{1,128}$/u) }).strict();
 export type CurrentFootprintCopyManagerRouteBinding = Readonly<z.infer<typeof bindingSchema>>;
 export interface CurrentFootprintCopyManagerRouteTransport { readonly assertCurrent: () => Promise<void>; readonly request: (command: Command) => Promise<unknown> }
-export const CURRENT_FOOTPRINT_COPY_MANAGER_ROUTE_REQUESTS = Object.freeze({ observe: 29, reprove: 7, release: 1 });
-export const currentFootprintCopyManagerRouteObservationSchema = z.object({ profile: z.literal("private.current-footprint-copy-manager-route.v1"),
+export const CURRENT_FOOTPRINT_COPY_MANAGER_ROUTE_REQUESTS = Object.freeze({ observe: 30, reprove: 7, release: 1 });
+const legacyObservationSchema = z.object({ profile: z.literal("private.current-footprint-copy-manager-route.v1"),
   runtimeManagerSourceQualified: z.literal(true), originalUiBusSubscriptionRetained: z.literal(true), initializedProjectRegistryBound: z.literal(true),
   footprintReceiverAndWorkerBusBound: z.literal(true), managerWorkerObjectRetained: z.literal(true), initializedProjectChannelEntryMatched: z.literal(true), projectChannelNameMatched: z.literal(false),
   reciprocalWorkerPeerBound: z.literal(false), backendDynamicDispatchQualified: z.literal(false), executionAuthorized: z.literal(false) }).strict();
+export const currentFootprintCopyManagerRouteObservationSchema = legacyObservationSchema.extend({
+  profile: z.literal("private.current-footprint-copy-manager-route.v2"), projectChannelNameMatched: z.literal(true),
+});
+/** Historical records retain their original meaning. This union is for journal
+ * decoding only; the live runner issues the strict v2 packet above. */
+export const recordedCurrentFootprintCopyManagerRouteObservationSchema = z.discriminatedUnion("profile", [legacyObservationSchema, currentFootprintCopyManagerRouteObservationSchema]);
 export type CurrentFootprintCopyManagerRouteObservation = Readonly<z.infer<typeof currentFootprintCopyManagerRouteObservationSchema>>;
 interface Retained { readonly first: string; readonly wrapper: string; readonly role: "rpcUi" | "rpcManager"; readonly service: string; readonly handler: string; readonly registry: string; readonly project: string }
 function need(value: boolean): asserts value { if (!value) { throw new Error("FOOTPRINT_COPY_MANAGER_ROUTE_OWNER"); } }
@@ -71,7 +77,7 @@ export class CurrentFootprintCopyManagerRouteRunner {
       params: { ...FLAGS, objectId, functionDeclaration: CALLS[phase].program, arguments: args, returnByValue: CALLS[phase].returnByValue } });
   }
   async #array(phase: "initial" | "registry" | "project", objectId: string, args: readonly Readonly<{ objectId: string } | { value: string }>[]): Promise<Readonly<{ id: string; values: ReturnType<typeof decodeArray> }>> {
-    const count = { initial: 5, registry: 12, project: 10 }[phase];
+    const count = { initial: 5, registry: 12, project: 11 }[phase];
     const description = `Array(${String(count)})`;
     const reply = z.object({ result: z.object({ type: z.literal("object"), subtype: z.literal("array"), className: z.literal("Array"), description: z.literal(description), objectId: handle }).strict() }).strict().parse(await this.#call(phase, objectId, args));
     return Object.freeze({ id: reply.result.objectId, values: decodeArray(await this.#properties(reply.result.objectId), phase) });
@@ -118,13 +124,14 @@ export class CurrentFootprintCopyManagerRouteRunner {
       }
       const nativeGet = registry.values.ids[4]; need(nativeGet !== undefined); decodeNativeGet(await this.#properties(nativeGet));
       const project = await this.#array("project", handlerScope, [{ objectId: registry.id }, { objectId: first.id }, ...this.#values()]);
-      const getStr = project.values.ids[0], rpcCall = project.values.ids[1]; need(getStr !== undefined && rpcCall !== undefined);
+      const channelName = project.values.ids[10], getStr = project.values.ids[0], rpcCall = project.values.ids[1]; need(getStr !== undefined && rpcCall !== undefined && channelName !== undefined);
       await this.#metadata(getStr, "footprintGetStr"); await this.#metadata(rpcCall, "workerRpcCall");
+      decodeNativeName(await this.#properties(channelName));
       this.#retained = Object.freeze({ first: first.id, wrapper, role, service, handler, registry: registry.id, project: project.id }); await this.#recheck(this.#retained);
       need(this.#operationRequests === CURRENT_FOOTPRINT_COPY_MANAGER_ROUTE_REQUESTS.observe && this.#managerSource !== null);
-      this.#packet = Object.freeze(currentFootprintCopyManagerRouteObservationSchema.parse({ profile: "private.current-footprint-copy-manager-route.v1", runtimeManagerSourceQualified: true,
+      this.#packet = Object.freeze(currentFootprintCopyManagerRouteObservationSchema.parse({ profile: "private.current-footprint-copy-manager-route.v2", runtimeManagerSourceQualified: true,
         originalUiBusSubscriptionRetained: true, initializedProjectRegistryBound: true, footprintReceiverAndWorkerBusBound: true, managerWorkerObjectRetained: true,
-        initializedProjectChannelEntryMatched: true, projectChannelNameMatched: false, reciprocalWorkerPeerBound: false, backendDynamicDispatchQualified: false, executionAuthorized: false })); return this.#packet;
+        initializedProjectChannelEntryMatched: true, projectChannelNameMatched: true, reciprocalWorkerPeerBound: false, backendDynamicDispatchQualified: false, executionAuthorized: false })); return this.#packet;
     } catch (error) { this.#failed = true; throw error; } finally { this.#busy = false; }
   }
   public async requireOriginal(packet: CurrentFootprintCopyManagerRouteObservation): Promise<void> {

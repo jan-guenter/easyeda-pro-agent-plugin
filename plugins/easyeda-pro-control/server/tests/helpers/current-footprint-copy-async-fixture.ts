@@ -1,0 +1,14 @@
+/** Exact pinned vendor callbacks for synthetic descriptor tests. */
+export const CURRENT_FOOTPRINT_COPY_ASYNC_FIXTURE = [
+  "(n,a)=>this.onHeadChange(n,a)",
+  "(n,a,o,c,l,u,h,p,d,m,f,g,y)=>{var E,T,w;let b=this.consistencyManager.getDoctype(n);switch(b){case ve.BLOB:{this.blob.onDataChange(n,a,o,c,u,l,p,d,f,m);break}case ve.BOARD:{this.board.onDataChange(n,o,c,p,l,u,m);break}case ve.CONFIG:{this.config.onDataChange(n,a,o,c,l,u,m);break}case ve.DEVICE:{this.device.onDataChange(n,o,c,l,u,m);break}case ve.FONT:{this.font.onDataChange(n,a,o,c,u,l,p,d,f,m);break}case ve.FOOTPRINT:{this.footprint.onDataChange(n,a,o,c,l,u,p,d,f,m,y);break}case ve.INSTANCE:{this.instance.onDataChange(n,a,o,c,l,u,p,d);break}case ve.PANEL:{this.panel.onDataChange(n,a,o,c,l,u,p,d,f,m,y);break}case ve.PCB:{this.pcb.onDataChange(n,a,o,c,l,u,p,d,f,m,y);break}case ve.SCH:{this.schematic.onDataChange(n,a,o,c,l,u,p,d,f,m,y);break}case ve.SCH_PAGE:{if(this.sheet.onDataChange(n,a,o,c,l,u,p,d,f,m,y),c===De.META){let S=(E=this.sheet.data[n])==null?void 0:E.schematic,v=(T=this.sheet.data[n])==null?void 0:T.updateTime,_=(w=this.sheet.data[n])==null?void 0:w.version;S&&this.schematic.setEditData(S,void 0,v,_)}break}case ve.SIMULATION:{this.simulation.onDataChange(n,a,o,c,l,u,p,d,f,m,y);break}case ve.SYMBOL:{this.symbol.onDataChange(n,a,o,c,l,u,p,d,f,m,y);break}case ve.VARIANT:{!m&&this.variant.onVariantChange(n,o,c);break}case ve.COMPONENT_GROUP:{!m&&this.variant.onGroupChange(n,a,o,c);break}case ve.COMPONENT_GROUP_DATA:{!m&&this.variant.onGroupDataChange(n,a,o,c);break}}if(this.uploadStructure(b,c,p),this.localPublishTicket(),this.canWsPublish()&&!d){if([ve.SYMBOL,ve.FOOTPRINT].includes(b)&&p&&c!==De.META)return;let S=[n,a,l,u,o,c,b,p];this.bufferedPendDataStream(S)}}",
+  "l=>{r&&(clearTimeout(r),r=null),n&&n(),i&&a.task1.delete(i),i=new Promise(u=>n=u),a.task1.add(i),o(l),r=setTimeout(()=>c(),s)}",
+  "()=>this.getCacheData()",
+  "async()=>{this.isBatchUpload||await this.batchUploadCloud()}",
+  "async function c(){r=null;let l=i,u=n;n=null,i=null;try{await t()}catch(h){console.error(h)}u&&u(),l&&a.task1.delete(l)}",
+  "function o(l){let u=Array.isArray(l)?l:[l];for(let h of u)a.bufferUploadData.set(h.dataUrl,h.dataStr)}"
+] as const;
+
+export const CURRENT_FOOTPRINT_COPY_BUFFERED_STREAM_FIXTURE = "bufferedStream(t,s){let r=null,i=null,n=null,a=this;return l=>{r&&(clearTimeout(r),r=null),n&&n(),i&&a.task1.delete(i),i=new Promise(u=>n=u),a.task1.add(i),o(l),r=setTimeout(()=>c(),s)};function o(l){let u=Array.isArray(l)?l:[l];for(let h of u)a.bufferUploadData.set(h.dataUrl,h.dataStr)}async function c(){r=null;let l=i,u=n;n=null,i=null;try{await t()}catch(h){console.error(h)}u&&u(),l&&a.task1.delete(l)}}";
+
+export const CURRENT_FOOTPRINT_COPY_AWAIT_UPLOAD_END_FIXTURE = "async awaitUploadEnd(){this.task1.size&&await Promise.all(Array.from(this.task1))}";

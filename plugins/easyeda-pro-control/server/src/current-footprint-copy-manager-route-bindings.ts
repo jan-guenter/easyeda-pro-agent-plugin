@@ -1,5 +1,6 @@
 /** Fixed descriptor route from the original UI bus to an initialized manager
- * project. No vendor callback, getter, registry initializer or RPC is invoked. */
+ * project. The native BroadcastChannel name accessor is read under
+ * throwOnSideEffect; no vendor callback, getter, initializer or RPC runs. */
 import { z } from "zod";
 import { captureCurrentPcbStringClockReply } from "./current-pcb-string-clock-reply.ts";
 import { CURRENT_FOOTPRINT_COPY_MANAGER_ROUTE_SOURCE as SOURCE, assertCurrentFootprintCopyManagerRouteFunction } from "./current-footprint-copy-manager-route-source.ts";
@@ -13,6 +14,7 @@ const array=(o,n)=>{if(!Array.isArray(o)||Object.getPrototypeOf(o)!==Array.proto
 const same=(o,a)=>{array(o,a.length);for(let i=0;i<a.length;i++)if(own(o,String(i))!==a[i])bad();};
 const method=(o,k,n)=>{for(let i=0;i<n;i++){if(descriptor(o,k)!==undefined)bad();o=Object.getPrototypeOf(o);}const f=own(o,k);if(typeof f!=="function")bad();return f;};
 const verify=()=>{for(const[o,k,d]of seen){const v=Object.getOwnPropertyDescriptor(o,k);if(d===undefined?v!==undefined:!v||Reflect.ownKeys(d).length!==Reflect.ownKeys(v).length||Reflect.ownKeys(d).some(k=>!Object.is(d[k],v[k])))bad();}};
+const channelName=(bc,expected)=>{const constructor=own(globalThis,"BroadcastChannel"),prototype=own(constructor,"prototype"),entry=descriptor(prototype,"name");if(Object.getPrototypeOf(bc)!==prototype||descriptor(bc,"name")!==undefined||!entry||Object.hasOwn(entry,"value")||typeof entry.get!=="function"||entry.set!==undefined||entry.enumerable!==true||entry.configurable!==true)bad();const getter=entry.get;if(own(getter,"name")!=="get name"||own(getter,"length")!==0||Function.prototype.toString.call(getter)!=="function get name() { [native code] }"||Reflect.apply(getter,bc,[])!==expected)bad();return getter;};
 const initial=(route,path,branch,tab)=>{array(route,17);const notification=own(route,"14");array(notification,7);const root=own(notification,"1"),host=own(notification,"2"),project=own(notification,"3"),bus=own(route,"12");
 if(own(root,"gVars")!==host||own(host,"currentProject")!==project||own(project,"projectId")!==path||own(project,"branchUuid")!==branch||own(root,"_TAB_ID_")!==tab||own(root,"_MSG_BUS_")!==bus||own(host,"messageBus")!==bus)bad();
 const subscribed=own(bus,"subscribed"),queue=own(subscribed,"/PrjDB/footprint/getStr");array(queue,1);const task=own(queue,"0"),wrapper=own(task,"callback");if(own(task,"isRunning")!==true||typeof wrapper!=="function")bad();return[wrapper,bus,queue,task,route];};
@@ -22,7 +24,7 @@ const project=(scope,original,first,path,branch,tab)=>{const reg=registry(scope,
 const managerCurrent=own(reg[10],"currentProject");if(own(managerCurrent,"projectId")!==path||own(managerCurrent,"branchUuid")!==branch||own(own(selected,"_projectDetail"),"currentBranch")!==branch)bad();
 if(own(selected,"uuid")!==path||own(selected,"isReady")!==true||own(selected,"_isOpening")!==false||own(selected,"_isClosing")!==false||own(selected,"mainBus")!==own(first,"1"))bad();const footprint=own(selected,"footprint"),footprintProto=own(reg[8],"prototype");if(Object.getPrototypeOf(footprint)!==footprintProto||own(footprintProto,"constructor")!==reg[8]||own(footprint,"project")!==selected)bad();
 const workerBus=own(selected,"workerBus"),worker=own(selected,"worker"),bc=own(workerBus,"bc"),channel="/"+tab+"/project/"+path,notification=own(own(first,"4"),"14"),root=own(notification,"1");const uuid=own(workerBus,"uuid");if(own(root,channel)!==workerBus||typeof uuid!=="string"||!/^[a-f\d]{8}-[a-f\d]{4}-[a-f\d]{4}-[a-f\d]{4}-[a-f\d]{12}$/.test(uuid)||own(own(reg[9],"footprint"),"getStr")!=="/mgr/projectWorker/footprint/getStr")bad();
-const getStr=method(footprint,"getStr",1),rpcCall=method(workerBus,"rpcCall",3);return[getStr,rpcCall,selected,footprint,workerBus,worker,bc,original,first,footprintProto];};`;
+const getStr=method(footprint,"getStr",1),rpcCall=method(workerBus,"rpcCall",3),nameGetter=channelName(bc,channel);verify();if(Reflect.apply(nameGetter,bc,[])!==channel)bad();return[getStr,rpcCall,selected,footprint,workerBus,worker,bc,original,first,footprintProto,nameGetter];};`;
 const recheck = (key: "e" | "t"): string => `function(wrapperScope,serviceScope,first,service,handler,reg,original,path,branch,tab){${helpers}\nif(own(wrapperScope,"${key}")!==service||own(serviceScope,"t")!==handler)bad();same(original,project(this,reg,first,path,branch,tab));verify();return true;}`;
 export const CURRENT_FOOTPRINT_COPY_MANAGER_ROUTE_CALLS = freezeDeep({
   initial: { program: `function(path,branch,tab){${helpers}\nconst result=initial(this,path,branch,tab);verify();return result;}`, arguments: 3, returnByValue: false },
@@ -78,7 +80,7 @@ export function decodeCurrentFootprintCopyManagerRouteCallable(input: unknown, r
   assertCurrentFootprintCopyManagerRouteFunction(role, reply.result.description); return reply.result.objectId;
 }
 export function decodeCurrentFootprintCopyManagerRouteArray(input: unknown, kind: "initial" | "registry" | "project"): Readonly<{ ids: readonly string[]; wrapperRole: "rpcUi" | "rpcManager" | null }> {
-  const count = { initial: 5, registry: 12, project: 10 }[kind];
+  const count = { initial: 5, registry: 12, project: 11 }[kind];
   const reply = z.object({ result: z.array(property).length(count + 1), internalProperties: z.array(internal).length(1) }).strict().parse(data(input));
   const fields = new Map(reply.result.map(item => [item.name, item])); need(fields.size === count + 1);
   const length = fields.get("length"), parent = reply.internalProperties[0];
@@ -97,16 +99,21 @@ export function decodeCurrentFootprintCopyManagerRouteArray(input: unknown, kind
     }
     if (role !== undefined) { const profile = SOURCE.functions[role]; need(value.type === "function" && value.className === (profile.async ? "AsyncFunction" : "Function") && value.subtype === undefined); assertCurrentFootprintCopyManagerRouteFunction(role, value.description); }
     else if (kind === "registry" && i === 4) { need(value.type === "function" && value.className === "Function" && value.description === "function get() { [native code] }" && value.subtype === undefined); }
+    else if (kind === "project" && i === 10) { need(value.type === "function" && value.className === "Function" && value.description === "function get name() { [native code] }" && value.subtype === undefined); }
     else { need(value.type === (kind === "registry" && (i === 5 || i === 8) ? "function" : "object")); }
     if (kind === "project" && (i === 5 || i === 6)) { need(value.className === (i === 5 ? "Worker" : "BroadcastChannel") && value.subtype === undefined); }
     ids.push(item.value.objectId);
   }
   return Object.freeze({ ids: Object.freeze(ids), wrapperRole });
 }
-export function decodeCurrentFootprintCopyManagerRouteNativeGet(input: unknown): void {
+function decodeNative(input: unknown, name: "get" | "get name", arity: 0 | 1): void {
   const reply = z.object({ result: z.array(property).length(2), internalProperties: z.array(internal).length(2) }).strict().parse(data(input));
   const fields = new Map(reply.result.map(item => [item.name, item])); need(fields.size === 2);
-  for (const name of ["name", "length"] as const) { const item = fields.get(name); need(item !== undefined && !item.writable && !item.enumerable && item.configurable && item.value.type === (name === "name" ? "string" : "number") && item.value.value === (name === "name" ? "get" : 1) && item.value.objectId === undefined && item.value.subtype === undefined && item.value.className === undefined); }
+  for (const field of ["name", "length"] as const) { const item = fields.get(field); need(item !== undefined && !item.writable && !item.enumerable && item.configurable && item.value.type === (field === "name" ? "string" : "number") && item.value.value === (field === "name" ? name : arity) && !Object.is(item.value.value, -0) && item.value.objectId === undefined && item.value.subtype === undefined && item.value.className === undefined); }
   const entries = new Map(reply.internalProperties.map(item => [item.name, item.value])), parent = entries.get("[[Prototype]]"), scopes = entries.get("[[Scopes]]");
   need(entries.size === 2 && parent?.type === "function" && parent.className === "Function" && parent.objectId !== undefined && parent.value === undefined && scopes?.type === "object" && scopes.subtype === "internal#scopeList" && scopes.className === "Array" && scopes.description === "Scopes[0]" && scopes.objectId !== undefined && scopes.value === undefined);
 }
+export function decodeCurrentFootprintCopyManagerRouteNativeGet(input: unknown): void { decodeNative(input, "get", 1); }
+/** Browser-native getters have no script location or lexical environment. The
+ * fixed selector retains the same getter, receiver and prototype separately. */
+export function decodeCurrentFootprintCopyManagerRouteNativeName(input: unknown): void { decodeNative(input, "get name", 0); }

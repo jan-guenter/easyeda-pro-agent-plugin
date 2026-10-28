@@ -77,6 +77,7 @@ export class CurrentFootprintCopyTransactionClockRunner {
   readonly #breakpoints: Breakpoint[] = [];
   readonly #raw: unknown[] = [];
   readonly #samples: CurrentFootprintCopyTransactionClockSample[] = [];
+  readonly #pauses: Paused[] = [];
   #phase: Phase = "ready";
   #busy = false;
   #requests = 0;
@@ -157,7 +158,7 @@ export class CurrentFootprintCopyTransactionClockRunner {
       const index = this.#samples.length, point = this.#breakpoints[index], site = SITES[index];
       need(site !== undefined && point !== undefined, "PAUSE_SITE");
       const callFrameId = decodeCurrentFootprintCopyTransactionClockPause(pause.value, this.#scriptId, index, point.id);
-      const paused: Paused = { index, resumeAttempted: false, resumed: false }; this.#paused = paused;
+      const paused: Paused = { index, resumeAttempted: false, resumed: false }; this.#paused = paused; this.#pauses.push(paused);
       await this.#current();
       const captured = await this.#send({ method: "Debugger.evaluateOnCallFrame", params: { callFrameId, expression: site.expression,
         objectGroup: GROUP, returnByValue: false, silent: true, throwOnSideEffect: true, generatePreview: false, includeCommandLineAPI: false } });
@@ -173,6 +174,19 @@ export class CurrentFootprintCopyTransactionClockRunner {
       await this.#remove(point); await this.#resume(paused); await this.#current();
       this.#samples.push(sample); return sample;
     });
+  }
+  /** A second valid native pause can precede acknowledgment of the first
+   * resume. If that acknowledgment fails, retain the already delivered next
+   * pause for cleanup only. This never revives sampling, dispatch or Save. */
+  public retainCleanupPause(input: unknown): void {
+    need(this.#phase === "failed" && !this.#busy && this.#dispatched && this.#pauses.length < 2, "CLEANUP_PAUSE_ORDER");
+    const pause = captureCurrentPcbStringClockReply(input); this.#raw.push(pause.value);
+    const index = this.#pauses.length, point = this.#breakpoints[index];
+    need(point !== undefined, "CLEANUP_PAUSE_SITE");
+    decodeCurrentFootprintCopyTransactionClockPause(pause.value, this.#scriptId, index, point.id);
+    const previous = this.#pauses.at(-1);
+    need(previous === undefined || previous.resumeAttempted, "CLEANUP_PAUSE_WITHOUT_RESUME");
+    const paused: Paused = { index, resumeAttempted: false, resumed: false }; this.#paused = paused; this.#pauses.push(paused);
   }
   async #release(): Promise<void> {
     if (this.#groupReleased) { return; } need(!this.#groupAttempted, "RELEASE_CONSUMED"); this.#groupAttempted = true;
@@ -216,11 +230,14 @@ export class CurrentFootprintCopyTransactionClockRunner {
   public retained(): Readonly<{ phase: Phase; requests: number; mutationMayHaveOccurred: boolean; busy: boolean;
     rawRepliesAndPauses: readonly unknown[]; samples: readonly CurrentFootprintCopyTransactionClockSample[];
     allocatedBreakpoints: number; removedBreakpoints: number; resumeAttempted: boolean; resumeObserved: boolean;
+    pauses: readonly Readonly<{ ordinal: number; resumeAttempted: boolean; resumeObserved: boolean }>[];
     groupReleaseAttempted: boolean; groupReleased: boolean; executionAuthorized: false }> {
     return Object.freeze({ phase: this.#phase, requests: this.#requests, mutationMayHaveOccurred: this.#dispatched, busy: this.#busy,
       rawRepliesAndPauses: Object.freeze([...this.#raw]), samples: Object.freeze([...this.#samples]),
       allocatedBreakpoints: this.#breakpoints.length, removedBreakpoints: this.#breakpoints.filter(item => item.removed).length,
       resumeAttempted: this.#paused?.resumeAttempted ?? false, resumeObserved: this.#paused?.resumed ?? false,
+      pauses: Object.freeze(this.#pauses.map(paused => Object.freeze({ ordinal: paused.index + 1,
+        resumeAttempted: paused.resumeAttempted, resumeObserved: paused.resumed }))),
       groupReleaseAttempted: this.#groupAttempted, groupReleased: this.#groupReleased, executionAuthorized: false });
   }
 }

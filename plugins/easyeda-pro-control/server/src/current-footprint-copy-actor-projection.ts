@@ -7,7 +7,7 @@ import { captureCurrentPcbStringClockReply } from "./current-pcb-string-clock-re
 import { currentFootprintCopyStatePacketSchema } from "./current-footprint-copy-state.ts";
 import type { CurrentFootprintCopyStatePacket } from "./current-footprint-copy-state.ts";
 import type { CurrentPcb209OriginalStartupActorObservation } from "./current-pcb-209-worker-startup-actor.ts";
-import { CurrentPcbWorkerStartupActorRunner } from "./current-pcb-worker-startup-actor-runner.ts";
+import { requireCurrentPcb209OriginalStartupActorObservation } from "./current-pcb-209-worker-startup-actor.ts";
 import { readerCompletion } from "./sqlite-inventory.ts";
 import type { SqlRow, SqlTable, readExactSqlInventory } from "./sqlite-inventory.ts";
 import { freezeDeep } from "./sqlite-inventory-core.ts";
@@ -48,8 +48,6 @@ interface Retained {
 }
 const originals = new WeakMap<CurrentFootprintCopyActorProjection, Retained>();
 const consumed = new WeakSet<object>();
-// oxlint-disable-next-line typescript/unbound-method -- The original class method runs with its retained private-field receiver.
-const originalPacket = CurrentPcbWorkerStartupActorRunner.prototype.requireOriginal;
 function need(condition: boolean, detail: string): asserts condition {
   if (!condition) { throw new Error(`CURRENT_FOOTPRINT_COPY_ACTOR: ${detail}`); }
 }
@@ -65,9 +63,7 @@ function observation(input: CurrentPcb209OriginalStartupActorObservation): Curre
     !types.isProxy(input.runner) && !types.isProxy(input.packet), "original observation objects required"); return input;
 }
 async function actor(input: CurrentPcb209OriginalStartupActorObservation): Promise<void> {
-  need(CurrentPcbWorkerStartupActorRunner.prototype.requireOriginal === originalPacket, "original actor method changed");
-  need(await originalPacket.call(input.runner, input.packet) === input.packet, "original actor collection required");
-  need(CurrentPcbWorkerStartupActorRunner.prototype.requireOriginal === originalPacket, "original actor method changed");
+  await requireCurrentPcb209OriginalStartupActorObservation(input);
 }
 function sql(before: Inventory, completion: ReturnType<typeof readerCompletion>): void {
   need(readerCompletion(before) === completion && completion.observedChildClose && completion.exitCode === 0 && completion.exitSignal === null,

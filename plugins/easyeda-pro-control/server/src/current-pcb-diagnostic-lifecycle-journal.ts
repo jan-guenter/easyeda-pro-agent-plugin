@@ -9,7 +9,7 @@ import { z } from "zod";
 import { currentFootprintCopyStatePacketSchema } from "./current-footprint-copy-state.ts";
 import { currentFootprintCopyUiObservationSchema } from "./current-footprint-copy-ui-runner.ts";
 import { currentFootprintCopyDependencyObservationSchema } from "./current-footprint-copy-dependency-runner.ts";
-import { currentFootprintCopyManagerRouteObservationSchema } from "./current-footprint-copy-manager-route-runner.ts";
+import { recordedCurrentFootprintCopyManagerRouteObservationSchema } from "./current-footprint-copy-manager-route-runner.ts";
 import { currentFootprintCopyBindingsSchema } from "./current-footprint-copy-bindings.ts";
 import { CURRENT_FOOTPRINT_COPY_PREPARATION_OPERATION_PREFIX, currentFootprintCopyPreparationIdSchema } from "./current-footprint-copy-preparation-validation.ts";
 import { currentFootprintCopyPreparationSchema } from "./current-footprint-copy-preparation.ts";
@@ -514,7 +514,7 @@ const footprintManagerRouteIntentSchema = z.object({
 const footprintManagerRouteResultSchema = z.object({
   schema: z.literal("easyeda-pro-control.footprint-copy-manager-route-result.v1"), ...base,
   operationId: currentFootprintCopyPreparationIdSchema, intentSha256: diagnosticLifecycleDigestSchema,
-  result: currentFootprintCopyManagerRouteObservationSchema, originalManagerRouteReproofCompleted: z.literal(true),
+  result: recordedCurrentFootprintCopyManagerRouteObservationSchema, originalManagerRouteReproofCompleted: z.literal(true),
   executionAuthorized: z.literal(false), saveAuthorized: z.literal(false),
 }).strict();
 const pcbOpenIntentSchema = z.object({

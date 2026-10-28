@@ -88,8 +88,10 @@ Validation is offline. It neither creates a journal nor grants authority.
    result. No caller plan, name, source text or native handle is accepted.
 7. Use `observe-window`, then one `normal-close` with the observed `hwnd` and
    `confirmNormalClose:true`. Separately call `observe-termination` and
-   `release-closed`. Complete any offered `settle-records` using the retained
-   intent digest. Release requires original root exit and an empty original Job.
+   `release-closed`. Inspect after release. Use `settle-records` with the retained intent digest
+   only if that fresh inspection reports `publicationSettlementAvailable:true`.
+   Release normally completes the records and removes that option. Release
+   requires original root exit and an empty original Job.
 
 The parent discovery and startup channel share one monotonic request counter
 with a fixed256-command limit. Handoff does not reset it. This is sufficient
@@ -150,7 +152,12 @@ Early, duplicate, malformed and foreign notifications still cause refusal.
 
 Current assignment and channel observations are sequential samples. They do
 not prove continuous wrapper ownership, native BroadcastChannel peers,
-contained publication destinations or queue completion. The actor stage's
+contained publication destinations or queue completion. The current209 actor collector uses a separate fixed70-second availability
+budget for four samples and their interleaved original-owner checks. Opening
+and publication keep their existing deadlines. The budget derives from the
+mounted35-request allowance and existing2-second leaf limit; it does not
+guarantee every nested maximum fits. Legacy actor packets keep their10-second
+pair contract. Both profiles remain sequential observations. The actor stage's
 local Date bracket is not a native/server clock proof or a future Save clock.
 Footprint state does not call the asynchronous source getter or prove its cache
 branch, backend actor, copy/delete completion, closed SQL or saved/reopened data.

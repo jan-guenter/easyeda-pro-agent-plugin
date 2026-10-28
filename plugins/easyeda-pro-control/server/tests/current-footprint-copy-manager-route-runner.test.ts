@@ -10,6 +10,7 @@ import { CURRENT_FOOTPRINT_COPY_MANAGER_ROUTE_SOURCE as SOURCE, assertCurrentFoo
 import type { CurrentFootprintCopyManagerRouteFunction as Role } from "../src/current-footprint-copy-manager-route-source.ts";
 import { CURRENT_FOOTPRINT_COPY_MANAGER_ROUTE_CALLS as CALLS } from "../src/current-footprint-copy-manager-route-bindings.ts";
 import type { CurrentFootprintCopyManagerRouteRunner, CurrentFootprintCopyManagerRouteTransport } from "../src/current-footprint-copy-manager-route-runner.ts";
+import { currentFootprintCopyManagerRouteObservationSchema, recordedCurrentFootprintCopyManagerRouteObservationSchema } from "../src/current-footprint-copy-manager-route-runner.ts";
 import { validateCurrentFootprintCopyManagerRouteCommand } from "../src/current-footprint-copy-manager-route-command.ts";
 import type { CurrentFootprintCopyManagerRouteCommand as Command } from "../src/current-footprint-copy-manager-route-command.ts";
 import { currentFootprintCopyManagerRouteNativeCases, currentFootprintCopyManagerRouteNativeSource } from "../src/current-footprint-copy-manager-route-native.ts";
@@ -34,12 +35,13 @@ function metadata(role: Role): Data {
   ] };
 }
 function bundle(kind: "initial" | "registry" | "project", wrapper: "rpcUi" | "rpcManager"): Data {
-  const count = { initial: 5, registry: 12, project: 10 }[kind];
+  const count = { initial: 5, registry: 12, project: 11 }[kind];
   const roles: Record<typeof kind, readonly Role[]> = { initial: [wrapper], registry: ["registryLookup", "registryInstance", "registryGet", "channelProducer"], project: ["footprintGetStr", "workerRpcCall"] };
   const result = Array.from({ length: count }, (_, index) => {
     const role = roles[kind][index]; let value: Data;
     if (role !== undefined) { value = { type: "function", className: SOURCE.functions[role].async ? "AsyncFunction" : "Function", description: FIXTURE[role], objectId: role }; }
     else if (kind === "registry" && index === 4) { value = { type: "function", className: "Function", description: "function get() { [native code] }", objectId: "native-get" }; }
+    else if (kind === "project" && index === 10) { value = { type: "function", className: "Function", description: "function get name() { [native code] }", objectId: "native-name" }; }
     else { value = { type: kind === "registry" && (index === 5 || index === 8) ? "function" : "object", objectId: `${kind}-${String(index)}` }; }
     if (kind === "project" && (index === 5 || index === 6)) { value["className"] = index === 5 ? "Worker" : "BroadcastChannel"; }
     return property(String(index), value, true, true);
@@ -68,13 +70,13 @@ function fixture(wrapper: "rpcUi" | "rpcManager" = "rpcUi"): Readonly<{ commands
   const response = (command: Command): unknown => {
     if (command.phase === "release") { return {}; }
     if (command.phase === "source") { return { scriptSource: state.sourceMismatch ? "changed" : "synthetic-exact-runtime-manager-source" }; }
-    if (command.phase === "initial" || command.phase === "registry" || command.phase === "project") { return { result: { type: "object", subtype: "array", className: "Array", objectId: command.phase, description: `Array(${String({ initial: 5, registry: 12, project: 10 }[command.phase])})` } }; }
+    if (command.phase === "initial" || command.phase === "registry" || command.phase === "project") { return { result: { type: "object", subtype: "array", className: "Array", objectId: command.phase, description: `Array(${String({ initial: 5, registry: 12, project: 11 }[command.phase])})` } }; }
     if (command.phase === "serviceUi" || command.phase === "serviceManager") { return { result: { type: "function", className: "AsyncFunction", description: FIXTURE.service, objectId: "service" } }; }
     if (command.phase === "handler") { return { result: { type: "function", className: "AsyncFunction", description: FIXTURE.handler, objectId: "handler" } }; }
     if (command.method === "Runtime.getProperties") {
       const id = command.params.objectId;
       if (id === "initial" || id === "registry" || id === "project") { return bundle(id, wrapper); }
-      if (id === "native-get") { return { result: [property("name", { type: "string", value: "get" }), property("length", { type: "number", value: 1 })], internalProperties: [
+      if (id === "native-get" || id === "native-name") { return { result: [property("name", { type: "string", value: id === "native-get" ? "get" : "get name" }), property("length", { type: "number", value: id === "native-get" ? 1 : 0 })], internalProperties: [
         { name: "[[Prototype]]", value: { type: "function", className: "Function", objectId: "native-parent" } },
         { name: "[[Scopes]]", value: { type: "object", subtype: "internal#scopeList", className: "Array", description: "Scopes[0]", objectId: "native-scopes" } }] }; }
       if (id.endsWith("-scopes")) {
@@ -99,12 +101,12 @@ void test("manager route qualifies runtime source before scopes and retains both
     const value = fixture(wrapper);
     const runner = new Constructor(uiSource, value.transport, binding);
     const packet = await runner.observe();
-    assert.equal(value.commands.length, 29); assert.equal(value.commands.filter(command => command.phase === "source").length, 1);
+    assert.equal(value.commands.length, 30); assert.equal(value.commands.filter(command => command.phase === "source").length, 1);
     const sourceIndex = value.commands.findIndex(command => command.phase === "source"); assert.equal(sourceIndex, wrapper === "rpcUi" ? 6 : 3);
     const next = value.commands[sourceIndex + 1]; assert.equal(next?.method, "Runtime.getProperties");
-    assert.equal(packet.reciprocalWorkerPeerBound, false); assert.equal(packet.backendDynamicDispatchQualified, false);
-    await runner.requireOriginal(packet); assert.equal(value.commands.length, 36); assert.equal(value.state.scopeReads, 9);
-    await runner.release(); assert.equal(value.commands.length, 37); await assert.rejects(runner.release()); await assert.rejects(runner.observe());
+    assert.equal(packet.projectChannelNameMatched, true); assert.equal(packet.reciprocalWorkerPeerBound, false); assert.equal(packet.backendDynamicDispatchQualified, false);
+    await runner.requireOriginal(packet); assert.equal(value.commands.length, 37); assert.equal(value.state.scopeReads, 9);
+    await runner.release(); assert.equal(value.commands.length, 38); await assert.rejects(runner.release()); await assert.rejects(runner.observe());
   }
 });
 void test("manager runtime source mismatch stops before following manager closure or invoking registry", async () => {
@@ -121,16 +123,23 @@ void test("manager owner loss retains reply and consumes attempt; copied packets
   const value = fixture();
   const runner = new Constructor(uiSource, value.transport, binding);
   const packet = await runner.observe();
-  await assert.rejects(runner.requireOriginal(structuredClone(packet))); assert.equal(value.commands.length, 29); await runner.release();
+  await assert.rejects(runner.requireOriginal(structuredClone(packet))); assert.equal(value.commands.length, 30); await runner.release();
 });
 void test("manager fixed route inspects initialized Map and worker bus without calling lazy initializers", () => {
   const expression = String.raw`(()=>{let called=0;class Base{get(k){called++;throw Error("must not invoke registry get");}}class Registry extends Base{static getInstance(){called++;throw Error("must not initialize");}}
 class Footprint{constructor(project){this.project=project;}getStr(){called++;throw Error("must not invoke getStr");}}class Rpc{rpcCall(){called++;throw Error("must not RPC");}}class BroadcastBase extends Rpc{}class Broadcast extends BroadcastBase{}
+// The single native-accessor boundary is synthetic. Node has no browser-native BroadcastChannel name getter.
+class BroadcastChannel{constructor(name){this.channelName=name;}}Object.defineProperty(globalThis,"BroadcastChannel",{value:BroadcastChannel,configurable:true});
+const nameEntry={get name(){return this.channelName;}},nameGetter=Object.getOwnPropertyDescriptor(nameEntry,"name").get;
+Object.defineProperty(BroadcastChannel.prototype,"name",{get:nameGetter,enumerable:true,configurable:true});const nativeToString=Function.prototype.toString;Function.prototype.toString=function(){return this===nameGetter?"function get name() { [native code] }":Reflect.apply(nativeToString,this,[]);};
 const root={},host={},uiProject={projectId:path,branchUuid:branch},bus={subscribed:{"/PrjDB/footprint/getStr":[{callback:()=>{},isRunning:true}]}},notification=[()=>{},root,host,uiProject,{},[],{}],route=Array(17).fill({});route[12]=bus;route[14]=notification;root.gVars=host;host.currentProject=uiProject;root._TAB_ID_=tab;root._MSG_BUS_=bus;host.messageBus=bus;
-Registry.tool=new Registry;Registry.tool.map=new Map;const project={uuid:path,_projectDetail:{currentBranch:branch},isReady:true,_isOpening:false,_isClosing:false,mainBus:bus,worker:{},workerBus:new Broadcast};project.footprint=new Footprint(project);const channel="/"+tab+"/project/"+path;project.workerBus.uuid="11111111-2222-3333-4444-555555555555";project.workerBus.bc={};root[channel]=project.workerBus;Registry.tool.map.set(path,project);
+Registry.tool=new Registry;Registry.tool.map=new Map;const project={uuid:path,_projectDetail:{currentBranch:branch},isReady:true,_isOpening:false,_isClosing:false,mainBus:bus,worker:{},workerBus:new Broadcast};project.footprint=new Footprint(project);const channel="/"+tab+"/project/"+path;project.workerBus.uuid="11111111-2222-3333-4444-555555555555";project.workerBus.bc=new BroadcastChannel(channel);root[channel]=project.workerBus;Registry.tool.map.set(path,project);
 const scope={K(){},so:Registry,Hn(){called++;throw Error("must not initialize");},V0:Footprint,J:{footprint:{getStr:"/mgr/projectWorker/footprint/getStr"}},Ee:{messageBus:bus,currentProject:{projectId:path,branchUuid:branch}}};
 const first=Reflect.apply(initial,route,[path,branch,tab]),reg=Reflect.apply(registry,scope,[first,path,branch,tab]),selected=Reflect.apply(select,scope,[reg,first,path,branch,tab]);
-if(selected[2]!==project||selected[4]!==project.workerBus||called!==0)throw Error("wrong ownership");Registry.tool=null;let refused=false;try{Reflect.apply(select,scope,[reg,first,path,branch,tab]);}catch{refused=true;}if(!refused||called!==0)throw Error("lazy initializer called");return true;})()`;
+if(selected[2]!==project||selected[4]!==project.workerBus||selected[10]!==nameGetter||called!==0)throw Error("wrong ownership");
+project.workerBus.bc.channelName="unrelated";let nameRefused=false;try{Reflect.apply(select,scope,[reg,first,path,branch,tab]);}catch{nameRefused=true;}if(!nameRefused)throw Error("wrong channel accepted");project.workerBus.bc.channelName=channel;
+Object.defineProperty(project.workerBus.bc,"name",{get(){called++;throw Error("must not call own getter");},configurable:true});let ownRefused=false;try{Reflect.apply(select,scope,[reg,first,path,branch,tab]);}catch{ownRefused=true;}if(!ownRefused||called!==0)throw Error("own getter called");delete project.workerBus.bc.name;
+Registry.tool=null;let refused=false;try{Reflect.apply(select,scope,[reg,first,path,branch,tab]);}catch{refused=true;}if(!refused||called!==0)throw Error("lazy initializer called");return true;})()`;
   const script = `const initial=${CALLS.initial.program},registry=${CALLS.registry.program},select=${CALLS.project.program};${expression}`;
   assert.equal(runInNewContext(script, { path: binding.projectUuid, branch: binding.branchUuid, tab: binding.windowTabId }, { timeout: 1000, contextCodeGeneration: { strings: false, wasm: false } }), true);
 });
@@ -151,4 +160,16 @@ void test("manager source capture accepts its full fixed byte count and rejects 
   let called = false;
   assert.throws(() => captureCurrentFootprintCopyManagerRouteSourceReply({ get scriptSource(): string { called = true; return text; } })); assert.equal(called, false);
   assert.throws(() => captureCurrentFootprintCopyManagerRouteSourceReply({ scriptSource: text, extra: true }));
+});
+void test("manager recorded schema preserves old observations without upgrading their channel evidence", async () => {
+  const Constructor = await constructor(), value = fixture();
+  const runner = new Constructor(uiSource, value.transport, binding);
+  const packet = await runner.observe();
+  const historical = { ...packet, profile: "private.current-footprint-copy-manager-route.v1", projectChannelNameMatched: false };
+  assert.deepEqual(recordedCurrentFootprintCopyManagerRouteObservationSchema.parse(historical), historical);
+  assert.deepEqual(recordedCurrentFootprintCopyManagerRouteObservationSchema.parse(packet), packet);
+  assert.throws(() => currentFootprintCopyManagerRouteObservationSchema.parse(historical));
+  assert.throws(() => recordedCurrentFootprintCopyManagerRouteObservationSchema.parse({ ...historical, projectChannelNameMatched: true }));
+  assert.throws(() => recordedCurrentFootprintCopyManagerRouteObservationSchema.parse({ ...packet, projectChannelNameMatched: false }));
+  await runner.release();
 });

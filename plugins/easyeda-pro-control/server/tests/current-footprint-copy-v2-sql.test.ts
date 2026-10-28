@@ -77,7 +77,10 @@ void test("footprint copy-v2 full SQL composes ordinary multi-fragment records a
   for (const key of ["executionAuthorized", "producerBindingVerified", "completionProved", "generationClosureVerified", "persistentUploadReplayExcluded", "reopened"]) {
     assert.equal(effect[key], false);
   }
-  assert.equal(completedCurrentFootprintCopyV2SqlSource(sqlPlan, effect, after).copyPlan, copyPlan);
+  const closedSource = completedCurrentFootprintCopyV2SqlSource(sqlPlan, effect, after);
+  assert.equal(closedSource.copyPlan, copyPlan);
+  assert.deepEqual(closedSource.documentClocks, [TIMES.document, TIMES.document + 1]);
+  assert.equal(Object.isFrozen(closedSource.documentClocks), true);
   assert.throws(() => completedCurrentFootprintCopyV2SqlSource(sqlPlan, structuredClone(effect), after), /original/u);
   assert.throws(() => completedCurrentFootprintCopyV2SqlSource(sqlPlan, effect, structuredClone(after)), /original/u);
   assert.throws(() => completedCurrentFootprintCopyV2SqlSource(structuredClone(sqlPlan), effect, after), /original/u);
