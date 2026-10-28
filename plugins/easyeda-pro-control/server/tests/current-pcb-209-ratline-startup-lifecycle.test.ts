@@ -14,6 +14,7 @@ import { CurrentPcb209RatlineBudget } from "../src/current-pcb-209-ratline-budge
 import type { CurrentPcbWorkerStartupHandoff } from "../src/current-pcb-diagnostic-owner.ts";
 import type { CurrentPcb209RatlineStartupLifecycle } from "../src/current-pcb-diagnostic-lifecycle.ts";
 import type { CurrentPcb209WorkerStartupOpeningResult } from "../src/current-pcb-209-worker-startup-opening.ts";
+import { CurrentFootprintCopyStartupOpening } from "../src/current-pcb-209-worker-startup-opening.ts";
 import { diagnosticLifecycleRecordSchemas } from "../src/current-pcb-diagnostic-lifecycle-journal.ts";
 
 type Row = Record<string, unknown>;
@@ -131,7 +132,7 @@ async function fixture(context: TestContext, mode: "prepare-fails" | "intent-cha
       assert.equal(this.#consumed, true); assert.ok(originalFixture); assert.equal(originalFixture.state.terminated, true); counters.release += 1; originalFixture.calls.push("ratline-release"); return Promise.resolve();
     }
   }
-  const classes = new Map<string, unknown>([["./current-pcb-209-worker-startup-opening.ts", { CurrentPcb209WorkerStartupOpening: Opening }],
+  const classes = new Map<string, unknown>([["./current-pcb-209-worker-startup-opening.ts", { CurrentPcb209WorkerStartupOpening: Opening, CurrentFootprintCopyStartupOpening }],
     ["./current-pcb-209-ratline-native-session.ts", { CurrentPcb209RatlineNativeSession: Session }],
     /* Held-import qualification does not run the empty-only continuation filter,
      * even when that separate filter would reject this target as populated. */

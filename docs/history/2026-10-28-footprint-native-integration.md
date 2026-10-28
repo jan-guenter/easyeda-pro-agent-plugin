@@ -129,3 +129,20 @@ pending-peer scenario.
 Complete facade and bridge suites are delegated to exact-commit GitHub CI.
 Publication and installation are pending those results. No connected copy or
 saved/reopened writer result is claimed.
+
+### First complete CI run and fixture correction
+
+Linux CI `40681338818` failed for candidate
+`ea830bb245af205f033d7cd080246079f0ac4fdf`. Build verification, the bridge suite
+and facade shards five and six passed; the other six facade shards failed.
+Windows native CI `40681338755` passed. The original job logs are retained.
+
+Every failed facade case was traced to older test fixtures missing the new
+opening/lifecycle exports, or to an assertion for the previous native request
+budget selector. Ten test files now supply the required bindings and assert the
+new selector. Their 52 focused cases pass with zero lint warnings. The fixtures
+retain their original assertions and no production guard was relaxed. A stale
+numeric comment in the offline package probe was also corrected.
+
+These corrections do not change the native helper or runtime bundles. Complete
+CI must pass again on the final correction commit before publication.

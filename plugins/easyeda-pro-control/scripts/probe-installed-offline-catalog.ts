@@ -20,7 +20,7 @@ const NODE_VERSION = "24.18.0";
 const MAX_REPLY_BYTES = 8 * 1024 * 1024;
 const MAX_OUTPUT_BYTES = 16 * 1024 * 1024;
 const REQUEST_TIMEOUT_MS = 15_000;
-// Initialize and tool discovery plus the thirty-four fixed catalog requests below.
+// Initialize and tool discovery plus the fixed catalog requests below.
 const REQUEST_LIMIT = 2 + 38;
 const EXPECTED_TOOLS = [
   "api", "calculate", "discover", "disposable_pcb_rename", "disposable_schematic_rename", "disposable_symbol_copy",

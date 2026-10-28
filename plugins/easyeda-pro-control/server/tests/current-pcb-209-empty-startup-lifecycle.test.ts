@@ -8,6 +8,7 @@ import { test } from "node:test";
 import type { TestContext } from "node:test";
 import { runInThisContext } from "node:vm";
 import { transform } from "esbuild";
+import { CurrentFootprintCopyStartupOpening } from "../src/current-pcb-209-worker-startup-opening.ts";
 import { canonicalJson } from "../src/core.ts";
 import { CurrentPcbWorkerStartupChannel } from "../src/current-pcb-worker-startup-channel.ts";
 import type { CurrentPcbWorkerStartupHandoff } from "../src/current-pcb-diagnostic-owner.ts";
@@ -130,7 +131,7 @@ async function fixture(context: TestContext, mode: "prepare-fails" | "intent-cha
     public requireOriginal(): never { assert.equal(this.#packet, packet); return unused(); }
     public status(): Row { assert.equal(this.#packet, packet); return { synthetic: true, complete: false }; }
   }
-  const classes = new Map<string, unknown>([["./current-pcb-209-worker-startup-opening.ts", { CurrentPcb209WorkerStartupOpening: Opening }],
+  const classes = new Map<string, unknown>([["./current-pcb-209-worker-startup-opening.ts", { CurrentFootprintCopyStartupOpening, CurrentPcb209WorkerStartupOpening: Opening }],
     ["./current-pcb-209-worker-startup-pcb-session.ts", { CurrentPcb209WorkerStartupPcbSession: Pcb }],
     ["./current-pcb-209-worker-startup-empty-session.ts", { CurrentPcb209WorkerStartupEmptySession: Empty }]]);
   const adapter = await loadFile("../src/current-pcb-worker-startup-lifecycle-adapter.ts", classes);

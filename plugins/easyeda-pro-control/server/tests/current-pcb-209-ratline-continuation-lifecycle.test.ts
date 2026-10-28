@@ -8,6 +8,7 @@ import { test } from "node:test";
 import type { TestContext } from "node:test";
 import { runInThisContext } from "node:vm";
 import { transform } from "esbuild";
+import { CurrentFootprintCopyStartupOpening } from "../src/current-pcb-209-worker-startup-opening.ts";
 import { canonicalJson } from "../src/core.ts";
 import { CurrentPcb209RatlineContinuationChannel } from "../src/current-pcb-209-ratline-continuation-channel.ts";
 import { CurrentPcb209RatlineContinuationBudget } from "../src/current-pcb-209-ratline-continuation-budget.ts";
@@ -133,7 +134,7 @@ async function fixture(context: TestContext, mode: "populated" | "prepare-fails"
       assert.equal(this.#consumed, true); assert.ok(originalFixture); assert.equal(originalFixture.state.terminated, true); counters.release += 1; originalFixture.calls.push("ratline-release"); return Promise.resolve();
     }
   }
-  const classes = new Map<string, unknown>([["./current-pcb-209-worker-startup-opening.ts", { CurrentPcb209WorkerStartupOpening: Opening }],
+  const classes = new Map<string, unknown>([["./current-pcb-209-worker-startup-opening.ts", { CurrentFootprintCopyStartupOpening, CurrentPcb209WorkerStartupOpening: Opening }],
     ["./current-pcb-209-ratline-continuation-native-session.ts", { CurrentPcb209RatlineContinuationNativeSession: Session }],
     ["./current-pcb-209-ratline-checkpoint.ts", { rejectCurrentPcb209RatlineCheckpointPopulation: async (): Promise<void> => {
       assert.ok(module !== null);

@@ -1,4 +1,4 @@
-/* oxlint-disable eslint/max-classes-per-file -- The actual extracted index dispatcher selects between these six synthetic lifecycle classes. */
+/* oxlint-disable eslint/max-classes-per-file -- The actual extracted index dispatcher selects between these seven synthetic lifecycle classes. */
 import assert from "node:assert/strict";
 import { readFile } from "node:fs/promises";
 import { resolve } from "node:path";
@@ -27,6 +27,7 @@ async function fixture(): Promise<Readonly<{ run: Run; owners: readonly Readonly
   class Empty209 extends Owner {}
   class Continuation209 extends Owner {}
   class Footprint209 extends Owner {}
+  class FootprintRoute209 extends Owner {}
   class Ratline209 extends Owner {
     public observeWorkerStartupRatline(): Promise<Row> {
       assert.equal(this.hasActiveReservation(), true); return Promise.resolve({ synthetic: true, held: true });
@@ -60,7 +61,8 @@ async function fixture(): Promise<Readonly<{ run: Run; owners: readonly Readonly
     assertDiagnosticLaunchOtherOperationsSettled: (): Promise<void> => Promise.resolve() };
   const data = { diagnostic209: true, CurrentPcbWorkerStartupLifecycle: Owner, CurrentPcb209WorkerStartupLifecycle: Owner209,
     CurrentPcb209EmptyStartupLifecycle: Empty209, CurrentPcb209RatlineStartupLifecycle: Ratline209,
-    CurrentPcb209RatlineContinuationLifecycle: Continuation209, CurrentFootprintCopyPreparationLifecycle: Footprint209, engine, bridgeGate, upstream,
+    CurrentPcb209RatlineContinuationLifecycle: Continuation209, CurrentFootprintCopyPreparationLifecycle: Footprint209,
+    CurrentFootprintCopyRoutePreparationLifecycle: FootprintRoute209, engine, bridgeGate, upstream,
     retainedControlRoot: Object.freeze({ path: "/synthetic-control" }), controlDataDirectory: (): string => "/synthetic-control", resolve,
     CURRENT_PCB_DIAGNOSTIC_PROFILE: Object.freeze({ powershell: { sha256: "a".repeat(64), bytes: 1 } }),
     windowsRuntime: undefined, ordinaryLaunchRuntime: undefined, currentDisposableOpenCoordinator: undefined,
