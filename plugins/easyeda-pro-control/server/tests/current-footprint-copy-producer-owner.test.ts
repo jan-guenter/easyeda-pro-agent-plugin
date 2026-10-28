@@ -7,8 +7,10 @@ import { test } from "node:test";
 import { runInThisContext } from "node:vm";
 import { transform } from "esbuild";
 import { CURRENT_FOOTPRINT_COPY_CREATE_METHOD_CALLS } from "../src/current-footprint-copy-create-bindings.ts";
+import { currentFootprintCopyPreparationWire } from "../src/current-pcb-worker-startup-wire.ts";
 import type { CurrentFootprintCopyProducerObservation, CurrentFootprintCopyProducerTransport } from "../src/current-footprint-copy-producer-runner.ts";
 import type { CurrentPcb209WorkerConstructionRunner } from "../src/current-pcb-worker-construction-runner.ts";
+// oxlint-disable-next-line import/max-dependencies -- This integration fixture joins the real inspector, constructor owner and native wire encoder at the formerly missing command boundary.
 import { construction209Inspector } from "./helpers/current-pcb-worker-construction-inspector.ts";
 
 async function handled(work: Promise<unknown>): Promise<void> {
@@ -45,6 +47,10 @@ void test("original209 producer continuation issues only after final state repro
     const transport: typeof peer.transport = { ...peer.transport, request: command => {
       if (command.method === "Runtime.callFunctionOn" && Object.values(CURRENT_FOOTPRINT_COPY_CREATE_METHOD_CALLS)
         .some(call => call.program === command.params.functionDeclaration)) {
+        const wire = currentFootprintCopyPreparationWire({ ...command, sessionId: "original-session" }, 264);
+        assert.equal(wire.request["startupPhase"], command.params.returnByValue ?
+          "footprint-producer-methods-recheck" : "footprint-producer-methods-capture");
+        assert.equal(Object.hasOwn(wire.request, "functionDeclaration"), false);
         requests.push({ program: command.params.functionDeclaration, objects: command.params.arguments.map(item => { assert.ok("objectId" in item); return item.objectId; }) });
         assert.equal(command.params.throwOnSideEffect, true); assert.equal(command.params.awaitPromise, false);
         return Promise.resolve(command.params.returnByValue ? { result: { type: "boolean", value: true } } : {

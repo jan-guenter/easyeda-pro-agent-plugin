@@ -7,8 +7,21 @@
 import { createHash } from "node:crypto";
 import { types } from "node:util";
 import { bindFootprintPreparationConstructionTransport } from "./current-footprint-copy-construction-purpose.ts";
-import { isOriginalFootprintPreparationDependency } from "./current-pcb-worker-startup-channel.ts";
+import { isOriginalFootprintExecutionDependency, isOriginalFootprintPreparationDependency,
+  requestCurrentFootprintCopyParent, requestCurrentFootprintCopyTransactionClock, subscribeCurrentFootprintCopyParentEvents } from "./current-pcb-worker-startup-channel.ts";
 import { CURRENT_FOOTPRINT_COPY_PREPARATION_PROFILE } from "./current-footprint-copy-preparation-profile.ts";
+import { CURRENT_FOOTPRINT_COPY_EXECUTION_PROFILE } from "./current-footprint-copy-execution-profile.ts";
+import { CurrentFootprintParentConstructionRunner } from "./current-footprint-copy-parent-construction-runner.ts";
+import type { CurrentFootprintParentConstructionHeld, CurrentFootprintParentConstructionTransport } from "./current-footprint-copy-parent-construction-contract.ts";
+import { CURRENT_FOOTPRINT_PARENT_CONSTRUCTION_LIMITS } from "./current-footprint-copy-parent-construction-contract.ts";
+import { CurrentFootprintParentWorkerRunner } from "./current-footprint-copy-parent-worker-runner.ts";
+import type { CurrentFootprintParentWorkerObservation } from "./current-footprint-copy-parent-worker-runner.ts";
+import type { CurrentFootprintParentWorkerCommand } from "./current-footprint-copy-parent-worker-contract.ts";
+import { CURRENT_FOOTPRINT_PARENT_WORKER_LIMITS } from "./current-footprint-copy-parent-worker-contract.ts";
+import { requireCurrentFootprintCopyParentRoute } from "./current-footprint-copy-parent-route.ts";
+import type { CurrentFootprintCopyParentRoute } from "./current-footprint-copy-parent-route.ts";
+import { bindCurrentFootprintCopyClockRoute } from "./current-footprint-copy-clock-route.ts";
+import type { CurrentFootprintCopyTransactionClockCommand } from "./current-footprint-copy-transaction-clock.ts";
 import { z } from "zod";
 import { CURRENT_PCB_209_STARTUP_TIMING, currentPcbStartupMonotonicMs, currentPcbStartupWindowObservation } from "./current-pcb-209-worker-startup-timing.ts";
 import type { CurrentPcbStartupWindow, CurrentPcbStartupWindowObservation } from "./current-pcb-209-worker-startup-timing.ts";
@@ -22,8 +35,8 @@ import { CURRENT_FOOTPRINT_COPY_SOURCE_READ_LIMITS } from "./current-footprint-c
 import { CurrentFootprintSourceReplyCapture } from "./current-footprint-source-reply-capture.ts";
 import { CURRENT_PCB_DIAGNOSTIC_WORKER_SCRIPT } from "./current-pcb-diagnostic-worker-context.ts";
 import type { DiagnosticWorkerScriptProfile } from "./current-pcb-diagnostic-worker-context.ts";
-import { CurrentPcb209WorkerConstructionRunner, CurrentPcbWorkerConstructionRunner } from "./current-pcb-worker-construction-runner.ts";
-import type { CurrentPcb209WorkerConstructionPacket, CurrentPcbWorkerConstructionPacket } from "./current-pcb-worker-construction-runner.ts";
+import { CurrentFootprintCopyConstructionRunner, CurrentPcb209WorkerConstructionRunner, CurrentPcbWorkerConstructionRunner } from "./current-pcb-worker-construction-runner.ts";
+import type { CurrentFootprintCopyConstructionPacket, CurrentPcb209WorkerConstructionPacket, CurrentPcbWorkerConstructionOwner, CurrentPcbWorkerConstructionPacket, CurrentPcbWorkerConstructionPacketFor, CurrentPcbWorkerConstructionProfile } from "./current-pcb-worker-construction-runner.ts";
 import type { CurrentPcbWorkerConstructionCommand, CurrentPcbWorkerConstructionTransport } from "./current-pcb-worker-construction-contract.ts";
 import { CURRENT_PCB_WORKER_STARTUP_ATTACH } from "./current-pcb-worker-startup-contract.ts";
 import type { CurrentPcbWorkerStartupCommand, CurrentPcbWorkerStartupDependency, CurrentPcbWorkerStartupEvent } from "./current-pcb-worker-startup-contract.ts";
@@ -143,7 +156,7 @@ function members(dependency: CurrentPcbWorkerStartupDependency): readonly unknow
   });
 }
 
-type ConstructionPacket = CurrentPcbWorkerConstructionPacket | CurrentPcb209WorkerConstructionPacket;
+type ConstructionPacket = CurrentPcbWorkerConstructionPacketFor<CurrentPcbWorkerConstructionProfile>;
 interface ConstructionRunner<Packet extends ConstructionPacket> {
   readonly capture: () => Promise<Packet>;
   readonly requireOriginal: (packet: Packet) => ReturnType<CurrentPcbWorkerConstructionRunner["requireOriginal"]>;
@@ -162,6 +175,7 @@ class CurrentPcbWorkerStartupTransportCore<Packet extends ConstructionPacket, Ru
   readonly #parentTarget: string;
   readonly #profile: DiagnosticWorkerScriptProfile;
   readonly #bootstrap209: boolean;
+  readonly #execution209: boolean;
   readonly #bootstrapStages: readonly BootstrapStage[];
   #bootstrapIndex = 0;
   #preloadLogSeen = false;
@@ -192,6 +206,9 @@ class CurrentPcbWorkerStartupTransportCore<Packet extends ConstructionPacket, Ru
   #runner: Runner | null = null;
   #constructionCapture: Promise<Packet> | null = null;
   #subscriber: Subscriber | null = null;
+  #clockListener: ((event: unknown) => void) | null = null;
+  #clockLost: (() => void) | null = null;
+  #clockSubscriptionConsumed = false;
   #unsubscribe: (() => void) | null = null;
   #failure: Error | null = null;
   #firstFailure: StartupFailure | null = null;
@@ -200,6 +217,18 @@ class CurrentPcbWorkerStartupTransportCore<Packet extends ConstructionPacket, Ru
   #settled = false;
   #sourceQualified = false;
   #workerScriptLoadedObserved = false;
+  #parentConstruction: CurrentFootprintParentConstructionRunner | null = null;
+  #parentRoute: CurrentFootprintCopyParentRoute | null = null;
+  #parentHeld: CurrentFootprintParentConstructionHeld | null = null;
+  #parentCapture: Promise<CurrentFootprintParentConstructionHeld> | null = null;
+  #parentPeer: CurrentFootprintParentWorkerRunner | null = null;
+  #parentPeerPacket: CurrentFootprintParentWorkerObservation | null = null;
+  #parentPeerWork: Promise<void> | null = null;
+  readonly #rejectedExecutionWorkers = new Set<string>();
+  #peerEvaluations = 0;
+  #peerAdvanceConsumed = false;
+  readonly #peerAdvance = Promise.withResolvers<null>();
+  readonly #peerIdle = Promise.withResolvers<null>();
   #released = false;
   #events = 0;
   #eventBytes = 0;
@@ -210,12 +239,15 @@ class CurrentPcbWorkerStartupTransportCore<Packet extends ConstructionPacket, Ru
 
   public constructor(internal: typeof INTERNAL_PROFILE, dependency: CurrentPcbWorkerStartupDependency,
     profile: DiagnosticWorkerScriptProfile, createRunner: (transport: CurrentPcbWorkerConstructionTransport) => Runner,
-    bootstrap209 = false) {
+    bootstrap209 = false, execution209 = false) {
     if (internal !== INTERNAL_PROFILE) { throw failure("INTERNAL_PROFILE"); } this.#createRunner = createRunner;
     this.#originalMembers = members(dependency); this.#dependency = dependency;
+    if (execution209 !== isOriginalFootprintExecutionDependency(dependency)) { throw failure("EXECUTION_PURPOSE"); }
+    this.#execution209 = execution209;
     const footprint = bootstrap209 && isOriginalFootprintPreparationDependency(dependency);
-    this.#normalRequestLimit = footprint ? CURRENT_FOOTPRINT_COPY_PREPARATION_PROFILE.normalRequestLimit : 224;
-    this.#requestLimit = footprint ? CURRENT_FOOTPRINT_COPY_PREPARATION_PROFILE.requestLimit : 256;
+    const budget = execution209 ? CURRENT_FOOTPRINT_COPY_EXECUTION_PROFILE : CURRENT_FOOTPRINT_COPY_PREPARATION_PROFILE;
+    this.#normalRequestLimit = footprint ? budget.normalRequestLimit : 224;
+    this.#requestLimit = footprint ? budget.requestLimit : 256;
     this.#parentSession = sessionToken.parse(dependency.parentSessionId); this.#parentTarget = sessionToken.parse(dependency.parentTargetId);
     this.#send = dependency.request; this.#assertOwner = dependency.assertOriginalOwner;
     this.#assertTermination = dependency.assertOriginalTermination; this.#subscribe = dependency.subscribe;
@@ -228,6 +260,7 @@ class CurrentPcbWorkerStartupTransportCore<Packet extends ConstructionPacket, Ru
     for (const stage of this.#bootstrapStages) { void observe(stage.paused.promise); void observe(stage.resumed.promise); }
     void observe(this.#attached.promise); void observe(this.#armed.promise);
     void observe(this.#initialPaused.promise); void observe(this.#initialResumed.promise);
+    void observe(this.#peerAdvance.promise); void observe(this.#peerIdle.promise);
   }
   public status(): Readonly<{ started: boolean; settled: boolean; failed: boolean; sourceQualified: boolean;
     initialPauseSeen: boolean; initialResumeAttempted: boolean; initialResumeSeen: boolean;
@@ -305,10 +338,12 @@ class CurrentPcbWorkerStartupTransportCore<Packet extends ConstructionPacket, Ru
         reason: cause === undefined ? null : failureReason(cause), sourceTransfer: this.#lastSourceTransfer });
       this.#failure = failure(code);
     }
+    this.#peerAdvance.reject(this.#failure); this.#peerIdle.reject(this.#failure);
     this.#attached.reject(this.#failure); this.#initialPaused.reject(this.#failure);
     this.#armed.reject(this.#failure);
     for (const stage of this.#bootstrapStages) { stage.paused.reject(this.#failure); }
     this.#subscriber?.lost();
+    this.#clockLost?.();
   }
   /** The project opener may dispatch only after the original auto-attach reply
    * and owner reproof. Calling capture() alone does not establish this barrier. */
@@ -421,7 +456,7 @@ class CurrentPcbWorkerStartupTransportCore<Packet extends ConstructionPacket, Ru
       // Autoattach can have succeeded before its reply was lost. A later first
       // Attachment still belongs to this original owner and must not remain
       // Waiting merely because the initial empty cleanup already settled.
-      if (this.#failure !== null) { void observe(this.#runWaiting(worker)); return; }
+      if (this.#failure !== null) { if (!this.#execution209) { void observe(this.#runWaiting(worker)); } return; }
       this.#attached.resolve(worker); return;
     }
     const worker = this.#worker;
@@ -437,7 +472,7 @@ class CurrentPcbWorkerStartupTransportCore<Packet extends ConstructionPacket, Ru
           this.#bootstrapStages.some(stage => !stage.sourceQualified || stage.resume === null || !stage.resumeSeen)) {
         throw failure("UNEXPECTED_EVENT");
       }
-      this.#workerScriptLoadedObserved = true; return;
+      this.#workerScriptLoadedObserved = true; this.#peerIdle.resolve(null); return;
     }
     if (event.method === "Runtime.executionContextCreated") {
       const context = z.object({ context: contextSchema }).strict().parse(event.params).context;
@@ -449,7 +484,7 @@ class CurrentPcbWorkerStartupTransportCore<Packet extends ConstructionPacket, Ru
       retainScript(script);
       // Fixed callFunctionOn programs can produce anonymous parsed scripts.
       // They cannot replace the admitted bootstrap or introduce another world.
-      if (this.#sourceQualified && script.url === "" && script.executionContextId === this.#context?.id) { return; }
+      if ((this.#sourceQualified || this.#execution209 && this.#peerEvaluations > 0) && script.url === "" && script.executionContextId === this.#context?.id) { return; }
       if (this.#bootstrap209) { this.#bootstrapScript(script); return; }
       if (this.#script !== null || !this.#sourceUrl(script.url) || script.url !== worker.target.url) { throw failure("SCRIPT"); }
       this.#script = script; return;
@@ -464,6 +499,7 @@ class CurrentPcbWorkerStartupTransportCore<Packet extends ConstructionPacket, Ru
         this.#initialPaused.resolve(event.params);
         if (this.#failure !== null) { void observe(this.#cleanupInitialPause()); } return;
       }
+      if (this.#clockListener !== null) { this.#clockListener(event); return; }
       if (!this.#initialResumeSeen || this.#subscriber === null) { throw failure("UNEXPECTED_PAUSE"); }
       this.#subscriber.paused(event.params); return;
     }
@@ -476,6 +512,7 @@ class CurrentPcbWorkerStartupTransportCore<Packet extends ConstructionPacket, Ru
         if (this.#initialResume === null) { throw failure("UNEXPECTED_RESUME"); }
         this.#initialResumeSeen = true; clearTimeout(this.#initialPauseWatchdog); this.#initialResumed.resolve(null); return;
       }
+      if (this.#clockListener !== null) { this.#clockListener(event); return; }
       if (this.#subscriber === null) { throw failure("UNEXPECTED_RESUME"); }
       this.#subscriber.resumed(); return;
     }
@@ -531,6 +568,9 @@ class CurrentPcbWorkerStartupTransportCore<Packet extends ConstructionPacket, Ru
       creatorMatchesPreloadCopy, priorScriptId: this.#bootstrapStages.some(stage => stage.script?.scriptId === script.scriptId) });
   }
   #releaseRejectedWorker(worker: Worker): void {
+    // The diagnostic must not release a wrong child into vendor message
+    // Handlers. Only observed whole-generation termination releases its wait.
+    if (this.#execution209) { this.#rejectedExecutionWorkers.add(worker.sessionId); return; }
     // Preserve the refusal and its target metadata before cleanup can deliver
     // Synchronous nested events. The original waiting attempt remains consumed.
     if (this.#bootstrap209) {
@@ -560,7 +600,7 @@ class CurrentPcbWorkerStartupTransportCore<Packet extends ConstructionPacket, Ru
     stage.pauseSeen = true; this.#initialPauseSeen = true;
     const timing = CURRENT_PCB_209_STARTUP_TIMING;
     let limitMs = timing.sourcePauseMs;
-    if (stage.role === "bootstrap") { limitMs = timing.bootstrapPauseMs; }
+    if (stage.role === "bootstrap") { limitMs = this.#execution209 ? CURRENT_FOOTPRINT_PARENT_CONSTRUCTION_LIMITS.holdMs : timing.bootstrapPauseMs; }
     else if (stage.role === "project") { limitMs = timing.projectPauseMs; }
     stage.window = Object.freeze({ startedAtMs: currentPcbStartupMonotonicMs(), limitMs });
     stage.watchdog = setTimeout(() => { this.#poison("INITIAL_PAUSE_DEADLINE"); void observe(this.cleanup()); }, limitMs);
@@ -674,7 +714,9 @@ class CurrentPcbWorkerStartupTransportCore<Packet extends ConstructionPacket, Ru
       this.#instrumentationUncertain = false;
       if (this.#failure !== null) {
         void observe((async (): Promise<void> => {
-          await this.#removeInitialBreakpoint(); await this.#runWaiting(worker);
+          await this.#removeInitialBreakpoint();
+          if (this.#execution209 && this.#parentPeerPacket === null) { return; }
+          await this.#runWaiting(worker);
           if (this.#initialPauseSeen && !this.#initialResumeSeen) { await this.#resumeInitialPause("cleanup"); }
         })());
       }
@@ -735,6 +777,10 @@ class CurrentPcbWorkerStartupTransportCore<Packet extends ConstructionPacket, Ru
       qualifyCurrentPcb209StartupScriptSource(stage.role, await bounded(this.#sendOriginal(
         { method: "Debugger.getScriptSource", params: { scriptId: script.scriptId }, sessionId: worker.sessionId }), limit));
       stage.sourceQualified = true; this.#step = "source-owner-after"; await this.#current();
+      if (this.#execution209 && stage.role === "bootstrap") {
+        this.#parentPeerWork = this.#observeParentPeer(worker); void observe(this.#parentPeerWork);
+        await bounded(this.#peerAdvance.promise, CURRENT_FOOTPRINT_PARENT_CONSTRUCTION_LIMITS.holdMs); await this.#current();
+      }
       if (stage.role === "project") { this.#sourceQualified = true; return script; }
       this.#step = "source-resume"; await this.#resumeBootstrapStage(stage);
       this.#step = "source-resume-owner-after"; await this.#current();
@@ -752,11 +798,73 @@ class CurrentPcbWorkerStartupTransportCore<Packet extends ConstructionPacket, Ru
       params: { scriptId: script.scriptId }, sessionId: worker.sessionId })));
     await this.#current(); return script;
   }
+  async #armParentConstruction(): Promise<void> {
+    const expected = this.#expectedProject;
+    if (!this.#execution209 || expected === null || this.#parentConstruction !== null) { throw failure("PARENT_CONSTRUCTION_STATE"); }
+    const route = requireCurrentFootprintCopyParentRoute(this.#dependency); this.#parentRoute = route;
+    const parent = new CurrentFootprintParentConstructionRunner(Object.freeze<CurrentFootprintParentConstructionTransport>({
+      assertOriginalOwner: route.assertOriginal,
+      assertOriginalGenerationExited: (): Promise<void> => this.#assertTermination.call(this.#dependency),
+      request: (command): Promise<unknown> => requestCurrentFootprintCopyParent(this.#dependency, command, "construction"),
+      subscribe: (events): (() => void) => subscribeCurrentFootprintCopyParentEvents(this.#dependency, event => {
+        if (event.sessionId !== route.parentSessionId) { throw failure("PARENT_EVENT_SESSION"); }
+        if (event.method === "Debugger.paused") { events.paused(event.params); }
+        else if (event.method === "Debugger.resumed") { empty.parse(event.params); events.resumed(); }
+        else { throw failure("PARENT_EVENT_METHOD"); }
+      }, events.lost),
+    }), { sessionId: route.parentSessionId, uniqueContextId: route.parentUniqueContextId, managerScriptId: route.managerScriptId,
+      projectUuid: expected.projectUuid, windowTabId: expected.windowTabId });
+    this.#parentConstruction = parent; await parent.arm();
+    const pending = parent.captureUntilHeld(); this.#parentCapture = pending; void observe(pending);
+  }
+  async #observeParentPeer(worker: Worker): Promise<void> {
+    try {
+      const context = this.#context, parent = this.#parentConstruction, route = this.#parentRoute;
+      if (parent === null || route === null || context === null || this.#parentPeer !== null || this.#parentCapture === null) { throw failure("PARENT_PEER_STATE"); }
+      const held = await parent.whenHeld(); this.#parentHeld = held;
+      const current = async (stage: "before-imports" | "bootstrap-idle" | "peer-proved"): Promise<void> => {
+        const same = (): void => {
+          this.#sameDependency(); route.assertOriginalSynchronous();
+          if (this.#released || this.#failure !== null || this.#worker !== worker || this.#context !== context || this.#parentConstruction !== parent ||
+              this.#parentHeld !== held || this.#parentRoute !== route || [...this.#workers.values()].filter(candidate => this.#existingWorkers?.has(candidate.target.targetId) !== true).length !== 1) { throw failure("PARENT_PEER_OWNER"); }
+          if (stage === "before-imports") {
+            const first = this.#bootstrapStages[0];
+            if (this.#bootstrapIndex !== 0 || first?.sourceQualified !== true || first.resume !== null || this.#peerAdvanceConsumed) { throw failure("PARENT_PEER_IMPORTS"); }
+          } else if (!this.#workerScriptLoadedObserved || !this.#sourceQualified || this.#bootstrapIndex !== this.#bootstrapStages.length) { throw failure("PARENT_PEER_BOOTSTRAP"); }
+        };
+        same();
+        await (stage === "peer-proved" ? parent.requireOriginalParent(held) : parent.requireOriginalHeld(held));
+        await route.assertOriginal(); same();
+      };
+      const peer = new CurrentFootprintParentWorkerRunner(Object.freeze({ assertOriginalState: current,
+        assertOriginalGenerationExited: (): Promise<void> => this.#assertTermination.call(this.#dependency),
+        request: async (command: CurrentFootprintParentWorkerCommand): Promise<unknown> => {
+          if (command.method === "Runtime.callFunctionOn" && command.sessionId === worker.sessionId) { this.#peerEvaluations += 1; }
+          try { return await requestCurrentFootprintCopyParent(this.#dependency, command, "peer"); }
+          finally { if (command.method === "Runtime.callFunctionOn" && command.sessionId === worker.sessionId) { this.#peerEvaluations -= 1; } }
+        },
+        advanceOriginalChildBootstrap: async (): Promise<void> => {
+          await current("before-imports"); this.#peerAdvanceConsumed = true; this.#peerAdvance.resolve(null);
+          await bounded(this.#peerIdle.promise, CURRENT_FOOTPRINT_PARENT_CONSTRUCTION_LIMITS.holdMs); await current("bootstrap-idle");
+        },
+      }), { ...held, childSessionId: worker.sessionId, childUniqueContextId: context.uniqueId, childTargetId: worker.target.targetId });
+      this.#parentPeer = peer;
+      const packet = await peer.observe(); this.#parentPeerPacket = packet;
+      await parent.resumeAfterPeer(peer, packet); await this.#current();
+    } catch (error) { this.#poison("PARENT_PEER", error); throw error; }
+  }
+  /** Original-reference getter for the later retained manager-route join. */
+  public async originalParentWorkerPeer(packet: Packet): Promise<Readonly<{ runner: CurrentFootprintParentWorkerRunner; packet: CurrentFootprintParentWorkerObservation }>> {
+    await this.requireOriginal(packet);
+    if (!this.#execution209 || this.#parentPeer === null || this.#parentPeerPacket === null || this.#parentConstruction?.retained().resumed !== true) { throw failure("PARENT_PEER_INCOMPLETE"); }
+    return Object.freeze({ runner: this.#parentPeer, packet: this.#parentPeerPacket });
+  }
   public async capture(): Promise<Packet> {
     if (this.#started) { throw failure("CONSUMED"); } this.#started = true;
     try {
       if (this.#bootstrap209 && (this.#expectedProject === null || this.#existingWorkers === null)) { throw failure("EXPECTED_PROJECT_REQUIRED"); }
       await this.#current(); this.#unsubscribe = this.#subscribe.call(this.#dependency, this.#event);
+      if (this.#execution209) { await this.#armParentConstruction(); }
       empty.parse(captureCurrentPcbStringClockReply(await this.#request({ method: "Target.setAutoAttach",
         params: CURRENT_PCB_WORKER_STARTUP_ATTACH, sessionId: this.#parentSession })).value);
       this.#armed.resolve(null);
@@ -775,6 +883,35 @@ class CurrentPcbWorkerStartupTransportCore<Packet extends ConstructionPacket, Ru
         },
       });
       if (this.#bootstrap209) { bindFootprintPreparationConstructionTransport(this.#dependency, transport); }
+      if (this.#execution209) {
+        bindCurrentFootprintCopyClockRoute(this.#dependency, transport, Object.freeze({ scriptId: script.scriptId, workerSessionId: worker.sessionId,
+          assertOriginal: (): Promise<void> => this.#current(),
+          assertCleanup: (): void => {
+            this.#sameDependency();
+            if (this.#released || this.#worker !== worker || this.#script !== script || !this.#sourceQualified) { throw failure("CLOCK_ORIGINAL_WORKER"); }
+          },
+          assertOriginalTermination: async (): Promise<void> => {
+            this.#sameDependency(); await this.#assertTermination.call(this.#dependency); this.#sameDependency();
+          },
+          request: (command: CurrentFootprintCopyTransactionClockCommand & Readonly<{ sessionId: string }>): Promise<unknown> => {
+            this.#sameDependency();
+            if (this.#released || this.#worker !== worker || command.sessionId !== worker.sessionId || this.#clockListener === null) {
+              return Promise.reject(failure("CLOCK_ORIGINAL_WORKER"));
+            }
+            return requestCurrentFootprintCopyTransactionClock(this.#dependency, command);
+          },
+          subscribe: (listener: (event: unknown) => void, lost: () => void): (() => void) => {
+            this.#sameDependency();
+            if (!this.#settled || this.#failure !== null || this.#released || this.#subscriber !== null || this.#clockSubscriptionConsumed ||
+                this.#worker !== worker || this.#runner?.status().unresolvedBreakpoints !== false) { throw failure("CLOCK_SUBSCRIPTION"); }
+            this.#clockSubscriptionConsumed = true; this.#clockListener = listener; this.#clockLost = lost;
+            return (): void => {
+              if (this.#clockListener !== listener || this.#clockLost !== lost) { throw failure("CLOCK_SUBSCRIPTION"); }
+              this.#clockListener = null; this.#clockLost = null;
+            };
+          },
+        }));
+      }
       const runner = this.#createRunner(transport); this.#runner = runner;
       this.#step = "construction-arming";
       const captured = runner.capture(); this.#constructionCapture = captured; void observe(captured); await runner.whenArmed();
@@ -782,7 +919,9 @@ class CurrentPcbWorkerStartupTransportCore<Packet extends ConstructionPacket, Ru
       this.#step = "project-resume-owner"; await this.#current();
       this.#step = "project-resume"; await this.#resumeInitialPause();
       this.#step = "construction-capture";
-      const packet = await captured; await this.#current(); return packet;
+      const packet = await captured;
+      if (this.#parentPeerWork !== null) { await this.#parentPeerWork; }
+      await this.#current(); return packet;
     } catch (error) {
       this.#poison("CAPTURE", error);
       // A failed startup must settle the retained construction listener too.
@@ -819,6 +958,10 @@ class CurrentPcbWorkerStartupTransportCore<Packet extends ConstructionPacket, Ru
         failures.push(failure("RETAIN_CONSTRUCTION_BREAKPOINTS"));
         throw new AggregateError(failures, "PCB_WORKER_STARTUP_CLEANUP");
       }
+      if (this.#execution209 && (this.#rejectedExecutionWorkers.size > 0 || this.#parentPeerPacket === null || this.#parentConstruction?.retained().resumed !== true)) {
+        failures.push(failure("RETAIN_UNPROVED_PARENT_PEER"));
+        throw new AggregateError(failures, "PCB_WORKER_STARTUP_CLEANUP");
+      }
       for (const worker of this.#workers.values()) {
         try { await this.#runWaiting(worker); } catch (error) { failures.push(error); }
       }
@@ -834,9 +977,31 @@ class CurrentPcbWorkerStartupTransportCore<Packet extends ConstructionPacket, Ru
     this.#sameDependency(); await bounded(this.#assertTermination.call(this.#dependency)); this.#sameDependency();
     clearTimeout(this.#initialPauseWatchdog);
     for (const stage of this.#bootstrapStages) { clearTimeout(stage.watchdog); }
+    const failures: unknown[] = [];
+    /* Actual generation exit ends these owned waits without fabricating a
+     * debugger event. Completed peer work is unaffected; incomplete work must
+     * reach its original finally before its retained listener can be released. */
+    const ended = failure("PARENT_GENERATION_ENDED");
+    this.#peerAdvance.reject(ended); this.#peerIdle.reject(ended);
+    if (this.#parentConstruction !== null && !this.#parentConstruction.retained().originalGenerationEnded) {
+      try { await this.#parentConstruction.observeOriginalGenerationEnded(); } catch (error) { failures.push(error); }
+    }
+    if (this.#parentPeerWork !== null) {
+      try {
+        await bounded(observe(this.#parentPeerWork), CURRENT_FOOTPRINT_PARENT_WORKER_LIMITS.ownerCheckMs + CURRENT_FOOTPRINT_PARENT_WORKER_LIMITS.requestMs);
+      } catch (error) { failures.push(error); }
+    }
+    if (this.#parentPeer !== null && !this.#parentPeer.retained().originalGenerationEnded) {
+      try { await this.#parentPeer.observeOriginalGenerationEnded(); } catch (error) { failures.push(error); }
+    }
+    if (failures.length > 0) { throw new AggregateError(failures, "PCB_WORKER_STARTUP_PARENT_RELEASE"); }
     this.#unsubscribe?.(); this.#unsubscribe = null; this.#released = true;
   }
 }
+
+/** Type-only original owner relationship; no runtime factory/profile selector. */
+export type CurrentPcbWorkerStartupTransportOwner<P extends CurrentPcbWorkerConstructionProfile> =
+  CurrentPcbWorkerStartupTransportCore<CurrentPcbWorkerConstructionPacketFor<P>, CurrentPcbWorkerConstructionOwner<P>>;
 
 /** The legacy optional profile remains its existing offline fixture seam.
  * Production owners use its compiled default; generation209 has no such seam. */
@@ -853,5 +1018,14 @@ export class CurrentPcb209WorkerStartupTransport extends CurrentPcbWorkerStartup
     const source = CURRENT_PCB_209_WORKER_STARTUP_SOURCE;
     super(INTERNAL_PROFILE, dependency, { relativePath: source.relativePath, scriptBytes: source.bytes, scriptSha256: source.sha256 },
       transport => new CurrentPcb209WorkerConstructionRunner(transport), true);
+  }
+}
+/** Execution-only constructor capture and subsequent original clock event route.
+ * The old startup/preparation transports cannot select this runner. */
+export class CurrentFootprintCopyWorkerStartupTransport extends CurrentPcbWorkerStartupTransportCore<CurrentFootprintCopyConstructionPacket, CurrentFootprintCopyConstructionRunner> {
+  public constructor(dependency: CurrentPcbWorkerStartupDependency) {
+    const source = CURRENT_PCB_209_WORKER_STARTUP_SOURCE;
+    super(INTERNAL_PROFILE, dependency, { relativePath: source.relativePath, scriptBytes: source.bytes, scriptSha256: source.sha256 },
+      transport => new CurrentFootprintCopyConstructionRunner(transport), true, true);
   }
 }

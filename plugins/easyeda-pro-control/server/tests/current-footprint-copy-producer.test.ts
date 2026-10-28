@@ -56,8 +56,8 @@ void test("fixed lexical selectors retain identities, enums and separator withou
     "Object.defineProperty(scope,'Qe',{get(){calls++;return function Qe(){};}})", "scope.Oe={FOOTPRINT:4}"]) {
     const context = vm.createContext({});
     vm.runInContext(String.raw`let calls=0;const f=()=>{calls++;throw Error('must not invoke')};const ai=function Jo(){calls++};ai.getProLibSource=f;const scope={ai,qe:f,Qe:f,Ke:f,Ni:f,cg:f,ve:{FOOTPRINT:'FOOTPRINT',FONT:'FONT',BLOB:'BLOB'},Oe:{FOOTPRINT:4},Ie:'|\n'};`, context);
-    vm.runInContext(`const original=(${CALLS.capture.program}).call(scope);${change}`, context);
-    const run = (): unknown => vm.runInContext(`(${CALLS.recheck.program}).call(scope,original)`, context);
+    vm.runInContext(`const original=(${CALLS.capture.program}).call({object:scope});${change}`, context);
+    const run = (): unknown => vm.runInContext(`(${CALLS.recheck.program}).call({object:scope},original)`, context);
     if (change === "") { assert.equal(run(), true); } else { assert.throws(run, /FOOTPRINT_COPY_PRODUCER_SCOPE/u); }
     assert.equal(vm.runInContext("calls", context), 0);
   }

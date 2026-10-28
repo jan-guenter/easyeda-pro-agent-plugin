@@ -1,3 +1,4 @@
+/* oxlint-disable max-classes-per-file -- Two distinct private-field opening classes exercise cross-generation adapter rejection. */
 import assert from "node:assert/strict";
 import { readFile } from "node:fs/promises";
 import { createRequire } from "node:module";
@@ -25,6 +26,7 @@ void test("adapter forwards the actual private-field opening and original packet
     public requireCurrentChannel = unused;
     public releaseAfterTermination = unused;
   }
+  class RouteOpening extends Opening { public readonly distinctRoute = true; }
   // Substitute only the opening class. The actual adapter runs unchanged with
   // Real private fields, retained receivers and asynchronous packet forwarding.
   const generated = await transform(await readFile(path, "utf8"), { loader: "ts", format: "cjs", target: "node24" });
@@ -32,7 +34,7 @@ void test("adapter forwards the actual private-field opening and original packet
   const evaluate: unknown = runInThisContext(`(function(require,module,exports){${generated.code}\n})`);
   assert.ok(typeof evaluate === "function");
   const load = (name: string): unknown => name === "./current-pcb-209-worker-startup-opening.ts"
-    ? { CurrentPcb209WorkerStartupOpening: Opening } : actualRequire(name) as unknown;
+    ? { CurrentPcb209WorkerStartupOpening: Opening, CurrentFootprintCopyStartupOpening: RouteOpening } : actualRequire(name) as unknown;
   Reflect.apply(evaluate, undefined, [load, loaded, loaded.exports]);
   const adapt = loaded.exports["adaptCurrentPcb209WorkerStartupLifecycle"], original = loaded.exports["requireCurrentPcb209StartupOpening"];
   assert.ok(typeof adapt === "function" && typeof original === "function");
@@ -46,6 +48,19 @@ void test("adapter forwards the actual private-field opening and original packet
   assert.equal(retained.opening, owner); assert.equal(retained.result, packet);
   assert.throws(() => Reflect.apply(original, undefined, [{ ...adapter }, result]), /ORIGINAL_ADAPTER/u);
   assert.throws(() => Reflect.apply(original, undefined, [adapter, { ...packet }]), /ORIGINAL_ADAPTER/u);
+  const adaptRoute = loaded.exports["adaptCurrentFootprintCopyStartupLifecycle"], originalRoute = loaded.exports["requireCurrentFootprintCopyStartupOpening"];
+  assert.ok(typeof adaptRoute === "function" && typeof originalRoute === "function");
+  const routeOwner = new RouteOpening();
+  const routeAdapter: unknown = Reflect.apply(adaptRoute, undefined, [routeOwner]);
+  assert.ok(routeAdapter !== null && typeof routeAdapter === "object");
+  const routeOpen: unknown = Reflect.get(routeAdapter, "open"); assert.ok(typeof routeOpen === "function");
+  await Reflect.apply(routeOpen, routeAdapter, [{}, unused]);
+  const routeRetained: unknown = Reflect.apply(originalRoute, undefined, [routeAdapter, packet]);
+  assert.ok(routeRetained !== null && typeof routeRetained === "object" && "opening" in routeRetained && routeRetained.opening === routeOwner);
+  assert.throws(() => Reflect.apply(original, undefined, [routeAdapter, packet]), /ORIGINAL_ADAPTER/u);
+  assert.throws(() => Reflect.apply(originalRoute, undefined, [adapter, packet]), /ORIGINAL_ADAPTER/u);
+  assert.throws(() => Reflect.apply(originalRoute, undefined, [routeAdapter, { ...packet }]), /ORIGINAL_ADAPTER/u);
+  assert.throws(() => Reflect.apply(adaptRoute, undefined, [Object.create(RouteOpening.prototype)]), TypeError);
   owner.requireOriginal = (): never => { throw new Error("replacement method must not run"); };
   assert.throws(() => Reflect.apply(original, undefined, [adapter, result]), /ORIGINAL_ADAPTER/u);
   assert.throws(() => Reflect.apply(adapt, undefined, [Object.create(Opening.prototype)]), TypeError);

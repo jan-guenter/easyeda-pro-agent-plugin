@@ -145,3 +145,62 @@ before any validator ran; the corrected command passed all seven. Earlier
 failures and the live refusal remain retained. Complete facade/bridge suites
 and reproducible-package acceptance are delegated to exact-commit GitHub CI.
 No full local suite was duplicated.
+
+## Publication and installation complete
+
+Payload `fc2720362ffab8425f7890013a9e5a65f1d53382` passed
+[Linux CI40660528058](https://github.com/jan-guenter/easyeda-pro-agent-plugin/actions/runs/40660528058)
+and [Windows CI40660528073](https://github.com/jan-guenter/easyeda-pro-agent-plugin/actions/runs/40660528073).
+All eight facade shards, build and aggregate jobs passed: 13,271 facade tests
+passed, with five expected platform skips and no failures; all 424 bridge tests
+passed. Independent inspection matched all 806 source and three runtime
+manifest members in the CI artifact to the frozen local payload.
+
+[PR139](https://github.com/jan-guenter/easyeda-pro-agent-plugin/pull/139)
+merged as `6b04ec4de07c2fbcdb9d9db87f55cb48bb600bf5`. Its root tree
+`4deab302435cb00e557057ec98dc317bdc12dd3d` matches the tested payload.
+The official Git marketplace
+`https://github.com/jan-guenter/easyeda-pro-agent-plugin.git` was upgraded once;
+`0.3.0+codex.20261028084035` is installed and enabled. The upgrade returned an
+empty error list. Its temporary arg0 directory cleanup warning was nonblocking;
+no manual cache repair or redundant plugin add was performed.
+
+Installed verification matched all 2,151 files, 42 directories and 42,770,759
+bytes, including expected file and directory modes. Inventory SHA256:
+`9582fbb928cd28d4ec49f6586d31f274ef3f190e695c8a6f79173be566ec1f9d`.
+The cached marketplace HEAD equals merged main. The installed offline catalog
+passed all 34 queries / 36 JSON-RPC requests and exposed the expected 27 tools
+under its synthetic profile. Its own child exited normally through stdin EOF,
+with no stderr or signal. Sampled process/socket checks and post-close inventory
+passed; these checks do not establish continuous isolation or live admission.
+
+The first local candidate archive preserved root tar's directory modes, so its
+full payload comparison refused. Its separate offline probe passed, but that
+did not make the archive acceptable. A fresh archive extracted with
+`--no-same-permissions` under umask022 passed full comparison before publication.
+Both results remain retained; no installed files were patched.
+
+The original host still runs the previous `20261026231500` snapshot, and its
+PID, start time, executable and arguments remain unchanged. The next live
+preparation must use a fresh Codex chat loading `20261028084035` and a new
+operation, never the consumed actor attempt.
+That disposable attempt remains terminal with its original root/Job exit and
+helper release proved, and its project file unchanged. No explicit Save or
+copy/delete was dispatched. The excluded production project was not accessed.
+
+The immediate backlog is live validation of the new preparation timing, then
+native copy execution ownership, callback/clock integration and complete saved
+verification. Deletion/inverse, other library writers, PCB startup/copper,
+schematic connectivity and manufacturing exports remain open. The private
+coordinator still has no mounted execution action or successful native copy
+result.
+
+Automatic main follow-up Linux CI40662639977 was still running at installation;
+Windows CI40662639978 passed. Exact-tree PR CI supplies the release evidence
+above. Check the main run's latest state on resume. This publication appendix
+is retained locally for the next substantive batch, avoiding a version and
+restart solely to publish installation chronology.
+
+A final documentation privacy check rejected a production project name in this
+unpublished appendix. The name was removed; the failed log remains retained.
+No release payload or installed files changed.

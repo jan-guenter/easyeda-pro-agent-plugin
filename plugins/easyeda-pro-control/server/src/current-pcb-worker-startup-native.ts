@@ -3,6 +3,8 @@
 /* oxlint-disable import/max-dependencies -- This generator compares both fixed source profiles and every literal command family at one native protocol boundary. */
 import { gzipSync } from "node:zlib";
 import { CURRENT_FOOTPRINT_COPY_DEPENDENCY_CALLS } from "./current-footprint-copy-dependency-bindings.ts";
+import { CURRENT_FOOTPRINT_COPY_CREATE_METHOD_CALLS } from "./current-footprint-copy-create-bindings.ts";
+import { CURRENT_FOOTPRINT_COPY_LEXICAL_CALLS } from "./current-footprint-copy-producer-scope.ts";
 import { CURRENT_FOOTPRINT_COPY_CONSTRUCTORS_EXPRESSION, CURRENT_FOOTPRINT_COPY_STATE_CALLS } from "./current-footprint-copy-state.ts";
 import { CURRENT_FOOTPRINT_COPY_METHOD_CALLS } from "./current-footprint-copy-method-bindings.ts";
 import { CURRENT_FOOTPRINT_COPY_CACHE_FACTORY_CALLS } from "./current-footprint-copy-cache-factory.ts";
@@ -85,6 +87,14 @@ export function currentFootprintCopyDependencyNativeCases(): readonly CurrentPcb
   return freezeDeep(Object.values(CURRENT_FOOTPRINT_COPY_DEPENDENCY_CALLS).map(entry => ({ method: "Runtime.callFunctionOn" as const,
     params: { ...effects, objectId: placeholder("objectId"), functionDeclaration: entry.program, returnByValue: entry.returnByValue,
       arguments: Array.from({ length: entry.arguments }, (_, index) => ({ objectId: placeholder(`argument${index}`) })) }, sessionId: "original-session" })));
+}
+/** The creation methods are observed, never called. These four cases belong
+ * only to the original footprint preparation or execution purpose. */
+export function currentFootprintCopyProducerNativeCases(): readonly CurrentPcbWorkerStartupWorkerCommand[] {
+  return freezeDeep([...Object.values(CURRENT_FOOTPRINT_COPY_CREATE_METHOD_CALLS), ...Object.values(CURRENT_FOOTPRINT_COPY_LEXICAL_CALLS)]
+    .map(entry => ({ method: "Runtime.callFunctionOn" as const,
+      params: { ...effects, objectId: placeholder("objectId"), functionDeclaration: entry.program, returnByValue: entry.returnByValue,
+        arguments: Array.from({ length: entry.arguments }, (_, index) => ({ objectId: placeholder(`argument${index}`) })) }, sessionId: "original-session" })));
 }
 const literal = (value: string): string => `@"${value.replaceAll('"', '""')}"`;
 function packedProgram(name: string, value: string, exposed = false): string {
@@ -179,7 +189,8 @@ export function currentPcbWorkerStartupNativeSource(): string {
   }
   const entries = [...legacyCases.map((sample, index) => ({ sample, current: variant(index, sample), currentOnly: false, preparationOnly: false })),
     ...currentCases.slice(legacyCases.length).map(sample => ({ sample, current: sample, currentOnly: true, preparationOnly: false })),
-    ...currentFootprintCopyDependencyNativeCases().map(sample => ({ sample, current: sample, currentOnly: true, preparationOnly: true }))];
+    ...[...currentFootprintCopyDependencyNativeCases(), ...currentFootprintCopyProducerNativeCases()]
+      .map(sample => ({ sample, current: sample, currentOnly: true, preparationOnly: true }))];
   const rows = entries.map(({ sample, current, currentOnly, preparationOnly }) => {
     const wire = preparationOnly ? currentFootprintCopyPreparationWire : currentPcb209WorkerStartupWire;
     const request = (currentOnly ? wire : currentPcbWorkerStartupWire)(sample, 1).request;
@@ -214,31 +225,46 @@ export function currentPcbWorkerStartupNativeSource(): string {
   if (changedCases !== 1 || legacyCases.length + Object.keys(CURRENT_FOOTPRINT_COPY_STATE_CALLS).length +
       Object.keys(CURRENT_FOOTPRINT_COPY_METHOD_CALLS).length + Object.keys(CURRENT_FOOTPRINT_COPY_CACHE_FACTORY_CALLS).length + 2 !== currentCases.length) { throw new Error("WORKER_STARTUP_NATIVE_GENERATION_COUNT"); }
   const smokeExpected: string[] = [];
-  function expectedReference(value: string): string {
+  function expectedReference(value: string): number {
     if (value.includes("\0")) { throw new Error("WORKER_STARTUP_NATIVE_SMOKE_DELIMITER"); }
     const index = smokeExpected.indexOf(value);
-    if (index !== -1) { return `expected[${String(index)}]`; }
-    smokeExpected.push(value); return `expected[${String(smokeExpected.length - 1)}]`;
+    if (index !== -1) { return index; }
+    smokeExpected.push(value); return smokeExpected.length - 1;
   }
-  const smoke = legacyCases.map((sample, index) => {
+  // Compile-only inputs are fixed data. One bounded loop exercises the same
+  // Encoders and refusals without repeating hundreds of C# field statements.
+  const smokeInputs: string[] = [];
+  function input(kind: number, method: string, session: string, phase: string,
+    legacy: number, current: number, remaining: number, fields: readonly (readonly [string, unknown])[]): void {
+    const columns = [String(kind), method, session, phase, String(legacy), String(current), String(remaining)];
+    for (const [key, value] of fields) {
+      if (typeof value !== "string" && !(typeof value === "number" && Number.isSafeInteger(value))) {
+        throw new Error("WORKER_STARTUP_NATIVE_SMOKE_FIELD");
+      }
+      columns.push(key, typeof value === "number" ? "N" : "S", String(value));
+    }
+    if (columns.some(value => /[\0\t]/u.test(value))) { throw new Error("WORKER_STARTUP_NATIVE_SMOKE_INPUT_DELIMITER"); }
+    smokeInputs.push(columns.join("\t"));
+  }
+  for (const [index, sample] of legacyCases.entries()) {
     const current = variant(index, sample);
     const request = currentPcbWorkerStartupWire(sample, 1).request;
     const fields = Object.entries(request).filter(([key]) => !["action", "requestId", "method", "sessionId", "startupPhase"].includes(key));
     const expected = JSON.stringify({ id: 1, method: sample.method, params: sample.params, sessionId: sample.sessionId });
     const currentExpected = JSON.stringify({ id: 1, method: current.method, params: current.params, sessionId: current.sessionId });
-    const expectedExpression = expected === currentExpected ? expectedReference(expected) : `(workerStartup209?${expectedReference(currentExpected)}:${expectedReference(expected)})`;
-    return `    fields.Clear();\n${fields.map(([key, value]) => `    fields.Add(${literal(key)},${literal(String(value))});`).join("\n")}\n` +
-      `    Need(EncodeCore(1,${literal(sample.method)},${literal(sample.sessionId)},${literal(String(request["startupPhase"]))},fields,workerStartup209)==${expectedExpression}+"\\0","smoke-parity");`;
-  }).join("\n");
-  const footprintSmoke = [...currentCases.slice(legacyCases.length), ...currentFootprintCopyDependencyNativeCases()].map(sample => {
+    const currentIndex = expectedReference(currentExpected), legacyIndex = expectedReference(expected);
+    input(0, sample.method, sample.sessionId, String(request["startupPhase"]), legacyIndex, currentIndex, 0, fields);
+  }
+  const footprintCases = [...currentCases.slice(legacyCases.length), ...currentFootprintCopyDependencyNativeCases(), ...currentFootprintCopyProducerNativeCases()];
+  for (const sample of footprintCases) {
     const request = currentFootprintCopyPreparationWire(sample, 1).request;
     const fields = Object.entries(request).filter(([key]) => !["action", "requestId", "method", "sessionId", "startupPhase"].includes(key));
     const expected = JSON.stringify({ id: 1, method: sample.method, params: sample.params, sessionId: sample.sessionId });
-    return `    fields.Clear();\n${fields.map(([key, value]) => `    fields.Add(${literal(key)},${literal(String(value))});`).join("\n")}\n` +
-      `    if(workerStartup209)Need(EncodeCore(1,${literal(sample.method)},${literal(sample.sessionId)},${literal(String(request["startupPhase"]))},fields,true)==${expectedReference(expected)}+"\\0","smoke-footprint-parity");\n` +
-      `    else {bool refused=false;try{EncodeCore(1,${literal(sample.method)},${literal(sample.sessionId)},${literal(String(request["startupPhase"]))},fields,false);}catch(System.InvalidOperationException){refused=true;}Need(refused,"smoke-footprint-legacy");}`;
-  }).join("\n");
-  const parentSmoke = currentPcbWorkerStartupNativeParentCases().map((sample, index) => {
+    const expectedIndex = expectedReference(expected);
+    input(1, sample.method, sample.sessionId, String(request["startupPhase"]), expectedIndex, expectedIndex, 0, fields);
+  }
+  const parentCases = currentPcbWorkerStartupNativeParentCases();
+  for (const [index, sample] of parentCases.entries()) {
     const request = currentPcbWorkerStartupWire(sample, 256).request;
     const fields = Object.entries(request).filter(([key]) => !["action", "requestId", "method", "parentPhase"].includes(key));
     const expected = JSON.stringify({ id: 256, method: sample.method, params: sample.params,
@@ -249,12 +275,11 @@ export function currentPcbWorkerStartupNativeSource(): string {
     }
     const currentExpected = JSON.stringify({ id: 256, method: current.method, params: current.params,
       ...(current.sessionId === undefined ? {} : { sessionId: current.sessionId }) });
-    const expectedExpression = expected === currentExpected ? expectedReference(expected) :
-      `(workerStartup209?${expectedReference(currentExpected)}:${expectedReference(expected)})`;
-    return `    fields.Clear();\n${fields.map(([key, value]) => `    fields.Add(${literal(key)},${typeof value === "number" ? String(value) : literal(value)});`).join("\n")}\n` +
-      `    Need((workerStartup209?EasyedaDiagnosticOwner.WorkerStartup209ParentProtocolMessage(256,${literal(sample.method)},${literal(String(request["parentPhase"]))},fields):EasyedaDiagnosticOwner.WorkerStartupParentProtocolMessage(256,${literal(sample.method)},${literal(String(request["parentPhase"]))},fields))==${expectedExpression}+"\\0","smoke-parent-parity");`;
-  }).join("\n");
-  const ratlineParentSmoke = currentPcb209RatlineWorkerStartupNativeParentCases().map(sample => {
+    const currentIndex = expectedReference(currentExpected), legacyIndex = expectedReference(expected);
+    input(2, sample.method, "", String(request["parentPhase"]), legacyIndex, currentIndex, 0, fields);
+  }
+  const ratlineCases = currentPcb209RatlineWorkerStartupNativeParentCases();
+  for (const sample of ratlineCases) {
     const request = currentPcb209RatlineWorkerStartupWire(sample, 256).request;
     const fields = Object.entries(request).filter(([key]) => !["action", "requestId", "method", "parentPhase"].includes(key));
     const opening = sample.method === "Runtime.callFunctionOn" && sample.params.functionDeclaration === CURRENT_PCB_209_RATLINE_OPENING_FUNCTION;
@@ -262,9 +287,14 @@ export function currentPcbWorkerStartupNativeSource(): string {
     const params = opening ? { ...sample.params, arguments: [...sample.params.arguments, { value: remaining }] } : sample.params;
     const expected = JSON.stringify({ id: 256, method: sample.method, params,
       ...(sample.sessionId === undefined ? {} : { sessionId: sample.sessionId }) });
-    return `    fields.Clear();\n${fields.map(([key, value]) => `    fields.Add(${literal(key)},${typeof value === "number" ? String(value) : literal(value)});`).join("\n")}\n` +
-      `    Need(EasyedaDiagnosticOwner.WorkerStartupRatline209ParentProtocolMessage(256,${literal(sample.method)},${literal(String(request["parentPhase"]))},fields,${String(remaining)})==${expectedReference(expected)}+"\\0","smoke-ratline-parent-parity");`;
-  }).join("\n");
+    const expectedIndex = expectedReference(expected);
+    input(3, sample.method, "", String(request["parentPhase"]), expectedIndex, expectedIndex, remaining, fields);
+  }
+  const smokeInputText = smokeInputs.join("\0");
+  const smokeInputBytes = Buffer.byteLength(smokeInputText);
+  if (smokeInputBytes > 65_536) { throw new Error("WORKER_STARTUP_NATIVE_SMOKE_INPUT_BOUND"); }
+  // oxlint-disable-next-line node/no-sync -- Deterministic in-memory compression of fixed compile-only input vectors.
+  const smokeInputPacked = gzipSync(smokeInputText, { level: 9 });
   const smokeText = smokeExpected.join("\0");
   const smokeBytes = Buffer.byteLength(smokeText);
   // oxlint-disable-next-line node/no-sync -- Deterministic in-memory compression of fixed compile-only expected vectors.
@@ -337,13 +367,36 @@ ${rows.join(" else\n")}
     string[] result=new System.Text.UTF8Encoding(false,true).GetString(bytes).Split('\\0');
     Need(result.Length==${String(smokeExpected.length)},"smoke-count");return result;
   }
+  static string[] SmokeInputs() {
+    string[] result=UnpackFixedProgram(${literal(smokeInputPacked.toString("base64"))},${String(smokeInputPacked.length)},${String(smokeInputBytes)},${literal(sha256Text(smokeInputText))}).Split('\\0');
+    Need(result.Length==${String(smokeInputs.length)},"smoke-input-count");return result;
+  }
+  static int SmokeInteger(string value) {
+    int result;Need(System.Int32.TryParse(value,System.Globalization.NumberStyles.None,System.Globalization.CultureInfo.InvariantCulture,out result),"smoke-integer");return result;
+  }
   static void VerifySmokeCore(bool workerStartup209) {
     string[] expected=SmokeExpected();
     System.Collections.Hashtable fields=new System.Collections.Hashtable(System.StringComparer.Ordinal);
-${smoke}
-${footprintSmoke}
-${parentSmoke}
-${ratlineParentSmoke}
+    int[] counts=new int[4];
+    foreach(string row in SmokeInputs()) {
+      string[] columns=row.Split('\\t');Need(columns.Length>=7 && (columns.Length-7)%3==0,"smoke-input-fields");
+      int kind=SmokeInteger(columns[0]),legacy=SmokeInteger(columns[4]),current=SmokeInteger(columns[5]),remaining=SmokeInteger(columns[6]);
+      Need(kind<4 && legacy<expected.Length && current<expected.Length,"smoke-input-index");counts[kind]++;
+      string method=columns[1],session=columns[2],phase=columns[3];fields.Clear();
+      for(int index=7;index<columns.Length;index+=3) {
+        string type=columns[index+1];Need(type=="S" || type=="N","smoke-input-type");
+        fields.Add(columns[index],type=="N"?(object)SmokeInteger(columns[index+2]):columns[index+2]);
+      }
+      string want=expected[workerStartup209?current:legacy]+"\\0";
+      if(kind==0)Need(EncodeCore(1,method,session,phase,fields,workerStartup209)==want,"smoke-parity");
+      else if(kind==1) {
+        if(workerStartup209)Need(EncodeCore(1,method,session,phase,fields,true)==want,"smoke-footprint-parity");
+        else {bool refused=false;try{EncodeCore(1,method,session,phase,fields,false);}catch(System.InvalidOperationException){refused=true;}Need(refused,"smoke-footprint-legacy");}
+      }
+      else if(kind==2)Need((workerStartup209?EasyedaDiagnosticOwner.WorkerStartup209ParentProtocolMessage(256,method,phase,fields):EasyedaDiagnosticOwner.WorkerStartupParentProtocolMessage(256,method,phase,fields))==want,"smoke-parent-parity");
+      else Need(EasyedaDiagnosticOwner.WorkerStartupRatline209ParentProtocolMessage(256,method,phase,fields,remaining)==want,"smoke-ratline-parent-parity");
+    }
+    Need(counts[0]==${String(legacyCases.length)} && counts[1]==${String(footprintCases.length)} && counts[2]==${String(parentCases.length)} && counts[3]==${String(ratlineCases.length)},"smoke-input-coverage");
     fields.Clear();fields.Add("objectId","__startup_argument0__");fields.Add("argument0","other");
     string collision=EncodeCore(256,"Runtime.callFunctionOn","s","same",fields,workerStartup209);
     Need(collision.Contains(@"""objectId"":""__startup_argument0__""") && collision.Contains(@"""objectId"":""other"""),"smoke-placeholder");

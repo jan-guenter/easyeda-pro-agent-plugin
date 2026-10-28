@@ -5,6 +5,7 @@ import { DIAGNOSTIC_SOURCE_BYTES, diagnosticExact, diagnosticRecord, diagnosticT
 import type { DiagnosticEvent } from "./current-pcb-diagnostic-protocol.ts";
 import { diagnosticAncillaryOwner } from "./current-pcb-diagnostic-ancillary.ts";
 import { CurrentPcbDiagnosticSameDocument } from "./current-pcb-diagnostic-same-document.ts";
+import { CURRENT_FOOTPRINT_COPY_MANAGER_ROUTE_SOURCE } from "./current-footprint-copy-manager-route-source.ts";
 import { CurrentPcbDiagnosticChildNavigation } from "./current-pcb-diagnostic-child-navigation.ts";
 
 type Row = Readonly<Record<string, unknown>>;
@@ -301,6 +302,21 @@ export class CurrentPcbDiagnosticContext {
         selected.scriptId !== source.scriptId || selected.context["id"] !== source.contextId ||
         selected.context["uniqueId"] !== source.uniqueContextId) { return this.#refuse(); }
     return Object.freeze({ sessionId: this.#sessionId, uniqueContextId: source.uniqueContextId });
+  }
+  /** Select only the fixed manager bundle in the already admitted original UI
+   * context. The execution owner separately reads and qualifies its live bytes;
+   * this lookup does not grant pause, invocation or source authority. */
+  public footprintCopyParentWorkerScript(): Readonly<{ sessionId: string; uniqueContextId: string; scriptId: string }> {
+    const context = this.#uiSourceContext(), source = this.#sourceIdentity;
+    if (source === null) { return this.#refuse(); }
+    const profile = CURRENT_FOOTPRINT_COPY_MANAGER_ROUTE_SOURCE;
+    const matches = [...this.#scripts.values()].filter(value => value["executionContextId"] === source.contextId &&
+      scriptUrlMatches(value["url"], { family: "ui", relativePath: profile.relativePath, scriptBytes: profile.bytes, scriptSha256: profile.sha256 }));
+    const selected = matches[0];
+    if (matches.length !== 1 || selected === undefined || !diagnosticToken(selected["scriptId"]) ||
+        selected["hasSourceURL"] === true || selected["isLiveEdit"] === true ||
+        selected["scriptLanguage"] !== undefined && selected["scriptLanguage"] !== "JavaScript") { return this.#refuse(); }
+    return Object.freeze({ ...context, scriptId: selected["scriptId"] });
   }
   /** Derive only the optional original blank child. This selector grants no
    * opening: the original CDP DOM-owner replies must establish its closed

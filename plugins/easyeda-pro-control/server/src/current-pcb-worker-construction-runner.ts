@@ -3,8 +3,14 @@
 /** Original-event capture through the fixed startup transport. Peer exclusion,
  * create/Save and writer permits remain outside this class. */
 import { z } from "zod";
-import { isOriginalFootprintPreparationConstructionTransport } from "./current-footprint-copy-construction-purpose.ts";
+import { isOriginalFootprintExecutionConstructionTransport, isOriginalFootprintPreparationConstructionTransport } from "./current-footprint-copy-construction-purpose.ts";
 import { CURRENT_FOOTPRINT_COPY_PREPARATION_PROFILE } from "./current-footprint-copy-preparation-profile.ts";
+import { CURRENT_FOOTPRINT_COPY_EXECUTION_PROFILE } from "./current-footprint-copy-execution-profile.ts";
+import { createCurrentFootprintCopyTransactionClockEvents } from "./current-footprint-copy-clock-route.ts";
+import type { CurrentFootprintCopyTransactionClockEvents } from "./current-footprint-copy-transaction-clock-events.ts";
+import { CURRENT_FOOTPRINT_COPY_DESTINATION_CALLS } from "./current-footprint-copy-destination-bindings.ts";
+import { CurrentFootprintCopyDestinationRunner } from "./current-footprint-copy-destination-runner.ts";
+import type { CurrentFootprintCopyDestinationObservation } from "./current-footprint-copy-destination-runner.ts";
 import { CURRENT_FOOTPRINT_COPY_CONSTRUCTORS_EXPRESSION, CURRENT_FOOTPRINT_COPY_STATE_CALLS, decodeCurrentFootprintCopyState } from "./current-footprint-copy-state.ts";
 import type { CurrentFootprintCopyStatePacket, CurrentFootprintCopyStateSample } from "./current-footprint-copy-state.ts";
 import { CURRENT_FOOTPRINT_COPY_METHOD_CALLS, decodeCurrentFootprintCopyCacheMethodArray, decodeCurrentFootprintCopyMethodProperties,
@@ -18,9 +24,13 @@ import type { CurrentFootprintCopyProducerObservation } from "./current-footprin
 import { CurrentFootprintCopyDependencyRunner } from "./current-footprint-copy-dependency-runner.ts";
 import type { CurrentFootprintCopyDependencyObservation } from "./current-footprint-copy-dependency-runner.ts";
 import { CURRENT_FOOTPRINT_COPY_DEPENDENCY_CALLS } from "./current-footprint-copy-dependency-bindings.ts";
-import { CURRENT_FOOTPRINT_COPY_ASYNC_CALLS } from "./current-footprint-copy-async-bindings.ts";
+import { CURRENT_FOOTPRINT_COPY_CONSTRUCTION_SEQUENCE, CURRENT_FOOTPRINT_COPY_CONSTRUCTION_SITES,
+  CURRENT_FOOTPRINT_COPY_CONSTRUCTION_TIMING, CURRENT_FOOTPRINT_COPY_PARSER_CONSTRUCTION_CALLS,
+  decodeCurrentFootprintCopyParserArgument } from "./current-footprint-copy-parser-construction.ts";
+import type { CurrentFootprintCopyConstructionSite } from "./current-footprint-copy-parser-construction.ts";
+import { CURRENT_FOOTPRINT_COPY_ASYNC_CALLS, decodeCurrentFootprintCopyAsyncFunction } from "./current-footprint-copy-async-bindings.ts";
 import { CurrentFootprintCopyAsyncRunner } from "./current-footprint-copy-async-runner.ts";
-import type { CurrentFootprintCopyAsyncObservation, CurrentFootprintCopyConstructedAsyncObservation } from "./current-footprint-copy-async-runner.ts";
+import type { CurrentFootprintCopyAsyncObservation, CurrentFootprintCopyConstructedAsyncObservation, CurrentFootprintCopyRegisteredAsyncObservation } from "./current-footprint-copy-async-runner.ts";
 import type { CurrentFootprintSourcePlan } from "./current-footprint-source-plan.ts";
 import { currentFootprintCopySourceCommand } from "./current-footprint-copy-source-command.ts";
 import { CURRENT_FOOTPRINT_COPY_SOURCE_READ_LIMITS } from "./current-footprint-copy-source-read.ts";
@@ -45,7 +55,7 @@ import { CURRENT_PCB_WORKER_CONSTRUCTION_IDENTITY, CURRENT_PCB_WORKER_CONSTRUCTI
   CURRENT_PCB_WORKER_CONSTRUCTION_SEQUENCE, CURRENT_PCB_WORKER_CONSTRUCTION_SITES,
   CURRENT_PCB_WORKER_CONSTRUCTION_SOURCE } from "./current-pcb-worker-construction-contract.ts";
 import type { CurrentPcbWorkerConstructionCommand, CurrentPcbWorkerConstructionExpression,
-  CurrentPcbWorkerConstructionSite, CurrentPcbWorkerConstructionTransport } from "./current-pcb-worker-construction-contract.ts";
+  CurrentPcbWorkerConstructionTransport } from "./current-pcb-worker-construction-contract.ts";
 import { CURRENT_PCB_WORKER_STARTUP_WORKER_ACTOR_CLOCK_FUNCTION, decodeCurrentPcbWorkerStartupActor } from "./current-pcb-worker-startup-actor.ts";
 import { CURRENT_PCB_WORKER_STARTUP_CHANNEL_CALLS } from "./current-pcb-worker-startup-channel-observation.ts";
 import type { CurrentPcbWorkerStartupChannelObservationCommand,
@@ -101,10 +111,11 @@ interface RetainedBreakpoint {
   removal: Promise<void> | null;
   removed: boolean;
 }
-type PacketProfile = "private.current-pcb-worker-construction.v1" | "private.current-pcb209-worker-construction.v1";
+export type CurrentPcbWorkerConstructionProfile = "private.current-pcb-worker-construction.v1" | "private.current-pcb209-worker-construction.v1" | "private.current-footprint-copy-construction.v1";
+type PacketProfile = CurrentPcbWorkerConstructionProfile;
 interface ConstructionPacket<P extends PacketProfile> {
   readonly profile: P;
-  readonly pauses: 9;
+  readonly pauses: P extends "private.current-footprint-copy-construction.v1" ? 11 : 9;
   readonly originalConstructorAndFactoryEventsRetained: true;
   readonly originalProjectReceiverMatched: true;
   readonly channelNativeIntrinsicAndPeerOwnershipVerified: false;
@@ -113,6 +124,7 @@ interface ConstructionPacket<P extends PacketProfile> {
   readonly writeDestinationsContained: false;
   readonly executionAuthorized: false;
 }
+export type CurrentFootprintCopyConstructionPacket = ConstructionPacket<"private.current-footprint-copy-construction.v1">;
 export type CurrentPcbWorkerConstructionPacket = ConstructionPacket<"private.current-pcb-worker-construction.v1">;
 export type CurrentPcb209WorkerConstructionPacket = ConstructionPacket<"private.current-pcb209-worker-construction.v1">;
 export interface CurrentPcbWorkerConstructionIdentities {
@@ -164,14 +176,16 @@ interface ConstructionDecoders {
 }
 class CurrentPcbWorkerConstructionCore<P extends PacketProfile> {
   readonly #profile: P;
-  readonly #sites: typeof CURRENT_PCB_WORKER_CONSTRUCTION_SITES | typeof CURRENT_PCB_209_WORKER_CONSTRUCTION_SITES;
+  readonly #sites: typeof CURRENT_PCB_WORKER_CONSTRUCTION_SITES | typeof CURRENT_PCB_209_WORKER_CONSTRUCTION_SITES | typeof CURRENT_FOOTPRINT_COPY_CONSTRUCTION_SITES;
+  readonly #sequence: readonly CurrentFootprintCopyConstructionSite[];
+  readonly #current209: boolean;
   readonly #decoders: ConstructionDecoders;
   readonly #transport: CurrentPcbWorkerConstructionTransport;
   readonly #send: CurrentPcbWorkerConstructionTransport["request"];
   readonly #assertOwner: CurrentPcbWorkerConstructionTransport["assertOriginalPinnedWorker"];
   readonly #subscribe: CurrentPcbWorkerConstructionTransport["subscribe"];
   readonly #scriptId: string;
-  readonly #breakpoints = new Map<CurrentPcbWorkerConstructionSite, RetainedBreakpoint>();
+  readonly #breakpoints = new Map<CurrentFootprintCopyConstructionSite, RetainedBreakpoint>();
   readonly #identities: { -readonly [K in keyof CurrentPcbWorkerConstructionIdentities]?: string } = {};
   readonly #ready = Promise.withResolvers<null>();
   #waiting = Promise.withResolvers<RetainedPause>();
@@ -231,20 +245,40 @@ class CurrentPcbWorkerConstructionCore<P extends PacketProfile> {
   #footprintDependencyPacket: CurrentFootprintCopyDependencyObservation | null = null;
   #footprintDependencyBundle: string | null = null;
   readonly #footprintDependencyReplies: unknown[] = [];
+  #parserConsistency: string | null = null;
+  #parserRoster: string | null = null;
+  #parserHead: string | null = null;
+  #parserChange: string | null = null;
+  readonly #parserReplies: unknown[] = [];
+  #constructionSubscriptionStopped = false;
+  #registeredAsyncPacket: CurrentFootprintCopyRegisteredAsyncObservation | null = null;
+  #transactionClockAttempted = false;
+  #transactionClocks: CurrentFootprintCopyTransactionClockEvents | null = null;
   #footprintAsyncAttempted = false;
   #footprintAsyncRunner: CurrentFootprintCopyAsyncRunner | null = null;
   #footprintAsyncObservation: CurrentFootprintCopyAsyncObservation | null = null;
   #footprintAsyncPacket: CurrentFootprintCopyConstructedAsyncObservation | null = null;
+  #footprintAsyncBundle: string | null = null;
   readonly #footprintAsyncReplies: unknown[] = [];
+  #footprintDestinationAttempted = false;
+  #footprintDestinationBundle: string | null = null;
+  #footprintDestinationRunner: CurrentFootprintCopyDestinationRunner | null = null;
+  #footprintDestinationPacket: CurrentFootprintCopyDestinationObservation | null = null;
+  readonly #footprintDestinationReplies: unknown[] = [];
   #channelAttempted = false;
   #channel: CurrentPcbWorkerStartupChannelObservationRunner | null = null;
   #channelPacket: CurrentPcbWorkerStartupChannelPacket | null = null;
 
   public constructor(internal: typeof INTERNAL_PROFILE, transport: CurrentPcbWorkerConstructionTransport, profile: P,
-    sites: typeof CURRENT_PCB_WORKER_CONSTRUCTION_SITES | typeof CURRENT_PCB_209_WORKER_CONSTRUCTION_SITES, decoders: ConstructionDecoders) {
+    sites: typeof CURRENT_PCB_WORKER_CONSTRUCTION_SITES | typeof CURRENT_PCB_209_WORKER_CONSTRUCTION_SITES | typeof CURRENT_FOOTPRINT_COPY_CONSTRUCTION_SITES, decoders: ConstructionDecoders) {
     if (internal !== INTERNAL_PROFILE) { throw fail("INTERNAL_PROFILE"); }
-    this.#footprintSampleLimit = profile === "private.current-pcb209-worker-construction.v1" && isOriginalFootprintPreparationConstructionTransport(transport) ?
-      CURRENT_FOOTPRINT_COPY_PREPARATION_PROFILE.stateSampleLimit : 16;
+    if (profile === "private.current-footprint-copy-construction.v1" && isOriginalFootprintExecutionConstructionTransport(transport)) {
+      this.#footprintSampleLimit = CURRENT_FOOTPRINT_COPY_EXECUTION_PROFILE.stateSampleLimit;
+    } else if (profile === "private.current-pcb209-worker-construction.v1" && isOriginalFootprintPreparationConstructionTransport(transport)) {
+      this.#footprintSampleLimit = CURRENT_FOOTPRINT_COPY_PREPARATION_PROFILE.stateSampleLimit;
+    } else { this.#footprintSampleLimit = 16; }
+    this.#current209 = profile !== "private.current-pcb-worker-construction.v1";
+    this.#sequence = profile === "private.current-footprint-copy-construction.v1" ? CURRENT_FOOTPRINT_COPY_CONSTRUCTION_SEQUENCE : CURRENT_PCB_WORKER_CONSTRUCTION_SEQUENCE;
     this.#profile = profile; this.#sites = sites; this.#decoders = Object.freeze(decoders);
     transportMembers(transport);
     this.#transport = transport; this.#scriptId = token.parse(transport.scriptId);
@@ -325,9 +359,9 @@ class CurrentPcbWorkerConstructionCore<P extends PacketProfile> {
     // Event ordinal, not the capture loop index: the next pause may precede
     // The previous Debugger.resume acknowledgment.
     const index = this.#acceptedPauses; this.#acceptedPauses += 1;
-    const limitMs = this.#profile === "private.current-pcb209-worker-construction.v1"
-      ? CURRENT_PCB_209_STARTUP_TIMING.constructionPauseMs[index] ?? CURRENT_PCB_209_STARTUP_TIMING.legacyPauseMs
-      : CURRENT_PCB_209_STARTUP_TIMING.legacyPauseMs;
+    let limitMs: number = CURRENT_PCB_209_STARTUP_TIMING.legacyPauseMs;
+    if (this.#profile === "private.current-footprint-copy-construction.v1") { limitMs = CURRENT_FOOTPRINT_COPY_CONSTRUCTION_TIMING.pauseMs[index] ?? limitMs; }
+    else if (this.#current209) { limitMs = CURRENT_PCB_209_STARTUP_TIMING.constructionPauseMs[index] ?? limitMs; }
     const window = Object.freeze({ startedAtMs: currentPcbStartupMonotonicMs(), limitMs });
     const paused: RetainedPause = { raw, captureError, index, window, resumeOrigin: null,
       resumed: Promise.withResolvers(), resumeConsumed: false, resumeObserved: false, resumeResult: null,
@@ -366,9 +400,9 @@ class CurrentPcbWorkerConstructionCore<P extends PacketProfile> {
     if (!paused.resumeObserved) { try { await this.#resume(paused, "cleanup"); } catch (error) { errors.push(error); } }
     if (errors.length > 0) { throw new AggregateError(errors, "PCB_WORKER_CONSTRUCTION_PAUSE_CLEANUP"); }
   }
-  #select(callFrameId: string, expression: CurrentPcbWorkerConstructionExpression): Promise<unknown> {
+  #select(callFrameId: string, expression: CurrentPcbWorkerConstructionExpression, retained?: unknown[]): Promise<unknown> {
     return this.#request({ method: "Debugger.evaluateOnCallFrame", params: { callFrameId, expression, objectGroup: GROUP,
-      silent: true, returnByValue: false, generatePreview: false, throwOnSideEffect: true, includeCommandLineAPI: false } });
+      silent: true, returnByValue: false, generatePreview: false, throwOnSideEffect: true, includeCommandLineAPI: false } }, retained);
   }
   async #object(callFrameId: string, expression: CurrentPcbWorkerConstructionExpression): Promise<string> {
     return objectReply.parse(await this.#select(callFrameId, expression)).result.objectId;
@@ -390,11 +424,18 @@ class CurrentPcbWorkerConstructionCore<P extends PacketProfile> {
       params: { objectId: original, ownProperties: true, generatePreview: false } }), this.#scriptId, kind);
     return original;
   }
+  #site(site: CurrentFootprintCopyConstructionSite): Readonly<{ name: string; offset: number; lineNumber: number; columnNumber: number }> {
+    if (site === "parserHead" || site === "parserChange") {
+      if (this.#profile !== "private.current-footprint-copy-construction.v1") { throw fail("PARSER_PURPOSE"); }
+      return CURRENT_FOOTPRINT_COPY_CONSTRUCTION_SITES[site];
+    }
+    return this.#sites[site];
+  }
   async #capturePause(paused: RetainedPause, index: number): Promise<void> {
     if (paused.captureError !== null) { throw new Error("PCB_WORKER_CONSTRUCTION_EVENT_CAPTURE", { cause: paused.captureError }); }
-    const event = pauseSchema.parse(paused.raw), site = CURRENT_PCB_WORKER_CONSTRUCTION_SEQUENCE[index];
+    const event = pauseSchema.parse(paused.raw), site = this.#sequence[index];
     if (site === undefined) { throw fail("EXTRA_PAUSE"); }
-    const target = this.#sites[site], top = event.callFrames[0];
+    const target = this.#site(site), top = event.callFrames[0];
     if (top === undefined || event.hitBreakpoints[0] !== this.#breakpoints.get(site)?.id || top.functionName !== target.name ||
         top.location.scriptId !== this.#scriptId || top.location.lineNumber !== target.lineNumber || top.location.columnNumber !== target.columnNumber) {
       throw fail("PAUSE_LOCATION");
@@ -408,13 +449,13 @@ class CurrentPcbWorkerConstructionCore<P extends PacketProfile> {
       this.#identities.onmessage = arrow.result.objectId;
     } else if (site === "base" || site === "project") {
       await this.#receiver(top.callFrameId);
-      if (site === "base" && this.#profile === "private.current-pcb209-worker-construction.v1") {
+      if (site === "base" && this.#current209) {
         const project = this.#identities.project;
         if (project === undefined) { throw fail("MISSING_OWNER"); }
         this.#footprintCacheFactory = objectReply.parse(await this.#assignmentCall(project,
           CURRENT_FOOTPRINT_COPY_CACHE_FACTORY_CALLS.capture.program, [], false)).result.objectId;
       }
-      if (site === "project" && this.#profile === "private.current-pcb209-worker-construction.v1") {
+      if (site === "project" && this.#current209) {
         const project = this.#identities.project;
         if (project === undefined) { throw fail("MISSING_OWNER"); }
         this.#footprintConstructors = await this.#object(top.callFrameId, CURRENT_FOOTPRINT_COPY_CONSTRUCTORS_EXPRESSION);
@@ -422,7 +463,16 @@ class CurrentPcbWorkerConstructionCore<P extends PacketProfile> {
           CURRENT_FOOTPRINT_COPY_STATE_CALLS["manager-select"].program, [], false)).result.objectId;
         this.#footprintConsistency = objectReply.parse(await this.#assignmentCall(project,
           CURRENT_FOOTPRINT_COPY_STATE_CALLS["consistency-select"].program, [], false)).result.objectId;
+        if (this.#profile === "private.current-footprint-copy-construction.v1") {
+          if (this.#parserConsistency === null || this.#parserRoster === null || this.#parserHead === null || this.#parserChange === null) { throw fail("PARSER_OWNER"); }
+          await this.#same(this.#parserConsistency, this.#footprintConsistency);
+          resultBoolean.parse(await this.#assignmentCall(this.#parserConsistency, CURRENT_FOOTPRINT_COPY_PARSER_CONSTRUCTION_CALLS.registered.program,
+            [project, this.#parserRoster, this.#parserHead, this.#parserChange], true, this.#parserReplies));
+        }
       }
+    }
+    else if (site === "parserHead" || site === "parserChange") {
+      await this.#captureParser(event, site);
     }
     else if (site === "bootstrap") {
       const bus = this.#identities.channelBus, original = this.#identities.project;
@@ -442,6 +492,32 @@ class CurrentPcbWorkerConstructionCore<P extends PacketProfile> {
       else { this.#identities.structureDebounce = this.#decoders.producerFunction(await this.#select(top.callFrameId, "e"), "debounce"); }
     }
   }
+  async #captureParser(event: z.infer<typeof pauseSchema>, site: "parserHead" | "parserChange"): Promise<void> {
+    const caller = event.callFrames[1], expected = this.#sites.project, top = event.callFrames[0];
+    const startColumn = expected.columnNumber - (expected.offset - expected.start);
+    if (this.#profile !== "private.current-footprint-copy-construction.v1" || top === undefined || caller === undefined || caller.functionName !== expected.name ||
+      caller.location.scriptId !== this.#scriptId || caller.location.lineNumber !== expected.lineNumber || caller.location.columnNumber < startColumn ||
+      caller.location.columnNumber > expected.columnNumber) { throw fail("PARSER_CONSTRUCTING_CALLER"); }
+    await this.#receiver(caller.callFrameId);
+    const project = this.#identities.project; if (project === undefined) { throw fail("PARSER_OWNER"); }
+    const consistency = objectReply.parse(await this.#select(top.callFrameId, "this", this.#parserReplies)).result.objectId;
+    if (site === "parserHead") {
+      if (this.#parserConsistency !== null) { throw fail("PARSER_CONSUMED"); }
+      this.#parserConsistency = consistency;
+      this.#parserRoster = objectReply.parse(await this.#assignmentCall(consistency, CURRENT_FOOTPRINT_COPY_PARSER_CONSTRUCTION_CALLS.head.program,
+        [project], false, this.#parserReplies)).result.objectId;
+    } else {
+      if (this.#parserConsistency === null || this.#parserRoster === null || this.#parserHead === null || this.#parserChange !== null) { throw fail("PARSER_OWNER"); }
+      await this.#same(this.#parserConsistency, consistency);
+      resultBoolean.parse(await this.#assignmentCall(consistency, CURRENT_FOOTPRINT_COPY_PARSER_CONSTRUCTION_CALLS.change.program,
+        [project, this.#parserRoster, this.#parserHead], true, this.#parserReplies));
+    }
+    const index = site === "parserHead" ? 0 : 1;
+    const callback = decodeCurrentFootprintCopyParserArgument(await this.#select(top.callFrameId, "e", this.#parserReplies), index);
+    decodeCurrentFootprintCopyAsyncFunction(await this.#request({ method: "Runtime.getProperties", params: {
+      objectId: callback, ownProperties: true, generatePreview: false } }, this.#parserReplies), this.#scriptId, index);
+    if (site === "parserHead") { this.#parserHead = callback; } else { this.#parserChange = callback; }
+  }
   async #removeBreakpoints(): Promise<void> {
     const removals: Promise<void>[] = [];
     for (const breakpoint of this.#breakpoints.values()) {
@@ -455,9 +531,9 @@ class CurrentPcbWorkerConstructionCore<P extends PacketProfile> {
     const failures = results.flatMap(result => result.status === "rejected" ? [result.reason as unknown] : []);
     if (failures.length > 0) { throw new AggregateError(failures, "PCB_WORKER_CONSTRUCTION_BREAKPOINT_CLEANUP"); }
   }
-  async #arm(site: CurrentPcbWorkerConstructionSite): Promise<void> {
+  async #arm(site: CurrentFootprintCopyConstructionSite): Promise<void> {
     this.#step = `arm-${site}-owner-before`; await this.#current();
-    const target = this.#sites[site];
+    const target = this.#site(site);
     const point = { scriptId: this.#scriptId, lineNumber: target.lineNumber, columnNumber: target.columnNumber };
     this.#uncertainBreakpoint = true;
     this.#step = `arm-${site}-request`;
@@ -476,8 +552,8 @@ class CurrentPcbWorkerConstructionCore<P extends PacketProfile> {
     if (this.#consumed) { throw fail("CONSUMED"); } this.#consumed = true;
     try {
       this.#step = "arming-initial-owner";
-      if (this.#profile === "private.current-pcb209-worker-construction.v1") {
-        const limitMs = CURRENT_PCB_209_STARTUP_TIMING.constructionArmMs;
+      if (this.#current209) {
+        const limitMs = this.#profile === "private.current-footprint-copy-construction.v1" ? CURRENT_FOOTPRINT_COPY_CONSTRUCTION_TIMING.armMs : CURRENT_PCB_209_STARTUP_TIMING.constructionArmMs;
         this.#armingWindow = Object.freeze({ startedAtMs: currentPcbStartupMonotonicMs(), limitMs });
         this.#armingWatchdog = setTimeout(() => {
           this.#fail("ARMING_DEADLINE"); this.#ready.reject(this.#failed);
@@ -485,23 +561,26 @@ class CurrentPcbWorkerConstructionCore<P extends PacketProfile> {
       }
       await this.#current();
       this.#unsubscribe = this.#subscribe.call(this.#transport, { paused: this.#onPaused, resumed: this.#onResumed, lost: this.#onLost });
-      for (const site of new Set(CURRENT_PCB_WORKER_CONSTRUCTION_SEQUENCE)) {
+      for (const site of new Set(this.#sequence)) {
         await this.#arm(site);
       }
       this.#checkWindow(); clearTimeout(this.#armingWatchdog); this.#armingWindow = null;
       this.#step = "waiting-construction-pause"; this.#ready.resolve(null);
-      for (let index = 0; index < CURRENT_PCB_WORKER_CONSTRUCTION_SEQUENCE.length; index += 1) {
+      for (let index = 0; index < this.#sequence.length; index += 1) {
         const paused = await bounded(this.#waiting.promise, WAIT_MS); this.#waiting = Promise.withResolvers<RetainedPause>();
         void observeRejection(this.#waiting.promise);
         this.#step = "pause-owner"; await this.#current();
         this.#step = "pause-snapshot"; await this.#capturePause(paused, index);
-        if (index === CURRENT_PCB_WORKER_CONSTRUCTION_SEQUENCE.length - 1) { this.#step = "final-breakpoint-removal"; await this.#removeBreakpoints(); }
+        if (index === this.#sequence.length - 1) { this.#step = "final-breakpoint-removal"; await this.#removeBreakpoints(); }
         this.#step = "pause-resume"; await this.#resume(paused);
         this.#step = "waiting-construction-pause";
       }
       await this.#removeBreakpoints(); await this.#current();
       if (Object.keys(this.#identities).length !== 9) { throw fail("MISSING_IDENTITY"); }
-      const packet: ConstructionPacket<P> = Object.freeze({ profile: this.#profile, pauses: 9,
+      // The private constructor selects one fixed sequence, never caller data.
+      // oxlint-disable-next-line typescript/no-unsafe-type-assertion -- P is fixed by an unexported symbol and its class wrapper; sequence length is exactly11 for copy or9 for both historical profiles.
+      const pauses = this.#sequence.length as ConstructionPacket<P>["pauses"];
+      const packet: ConstructionPacket<P> = Object.freeze({ profile: this.#profile, pauses,
         originalConstructorAndFactoryEventsRetained: true, originalProjectReceiverMatched: true,
         channelNativeIntrinsicAndPeerOwnershipVerified: false, wrapperAssignmentRelationVerified: false,
         nativeStartupIntegrationVerified: false, writeDestinationsContained: false, executionAuthorized: false });
@@ -662,7 +741,7 @@ class CurrentPcbWorkerConstructionCore<P extends PacketProfile> {
       [original.channelBus, this.#footprintCacheFactory]));
   }
   async #footprintSample(packet: ConstructionPacket<P>, assignments: CurrentPcbWorkerConstructionAssignments): Promise<CurrentFootprintCopyStateSample> {
-    if (this.#profile !== "private.current-pcb209-worker-construction.v1" || this.#footprintManager === null ||
+    if (!this.#current209 || this.#footprintManager === null ||
         this.#footprintConsistency === null || this.#footprintConstructors === null || this.#projectIdentity === null || this.#footprintReplies.length >= this.#footprintSampleLimit) { throw fail("FOOTPRINT_OWNER"); }
     await this.requireCurrentAssignments(packet, assignments);
     const original = await this.requireOriginal(packet);
@@ -722,7 +801,7 @@ class CurrentPcbWorkerConstructionCore<P extends PacketProfile> {
     state: CurrentFootprintCopyStatePacket): void {
     this.#checkWindow(); this.#sameTransport();
     if (this.#releaseConsumed || packet !== this.#packet || issued.get(packet) !== this || assignments !== this.#assignments ||
-        state !== this.#footprintPacket || this.#profile !== "private.current-pcb209-worker-construction.v1" ||
+        state !== this.#footprintPacket || !this.#current209 ||
         this.#footprintManager === null || this.#footprintConsistency === null || this.#footprintConstructors === null) { throw fail("FOOTPRINT_PRODUCER_OWNER"); }
   }
   #recheckFootprintCreateMethods(original: Readonly<CurrentPcbWorkerConstructionIdentities>): Promise<unknown> {
@@ -861,8 +940,15 @@ class CurrentPcbWorkerConstructionCore<P extends PacketProfile> {
         assertCurrent: (): void => { this.#footprintProducerCurrent(packet, assignments, state); },
         properties: (objectId: string): Promise<unknown> => this.#request({ method: "Runtime.getProperties", params: {
           objectId, ownProperties: true, generatePreview: false } }, this.#footprintAsyncReplies),
-        capture: (): Promise<unknown> => this.#assignmentCall(original.project, calls.capture.program,
-          [original.channelBus, manager, consistency], false, this.#footprintAsyncReplies),
+        capture: async (): Promise<unknown> => {
+          if (this.#profile === "private.current-footprint-copy-construction.v1") {
+            if (this.#parserRoster === null || this.#parserHead === null || this.#parserChange === null) { throw fail("PARSER_OWNER"); }
+            const raw = await this.#assignmentCall(original.project, calls.captureRegistered.program,
+              [original.channelBus, manager, consistency, this.#parserRoster, this.#parserHead, this.#parserChange], false, this.#footprintAsyncReplies);
+            this.#footprintAsyncBundle = objectReply.parse(raw).result.objectId; return raw;
+          }
+          return this.#assignmentCall(original.project, calls.capture.program, [original.channelBus, manager, consistency], false, this.#footprintAsyncReplies);
+        },
         recheck: (originalId: string): Promise<unknown> => this.#assignmentCall(original.project, calls.recheck.program,
           [original.channelBus, manager, consistency, originalId], true, this.#footprintAsyncReplies),
         captureUpload: (scopeId: string): Promise<unknown> => this.#assignmentCall(scopeId, calls.captureConstructedUpload.program,
@@ -891,6 +977,116 @@ class CurrentPcbWorkerConstructionCore<P extends PacketProfile> {
       await this.requireCurrentAssignments(packet, assignments); this.#footprintProducerCurrent(packet, assignments, state);
     } catch (error) { this.#fail("FOOTPRINT_ASYNC_CHANGED"); throw error; }
   }
+  /** Same19+6 read budget as the upload-only composition, with the first
+   * selector also checking the original parser arrays and registration args. */
+  public async observeFootprintRegisteredAsync(packet: ConstructionPacket<P>, assignments: CurrentPcbWorkerConstructionAssignments,
+    state: CurrentFootprintCopyStatePacket): Promise<CurrentFootprintCopyRegisteredAsyncObservation> {
+    if (this.#profile !== "private.current-footprint-copy-construction.v1") { throw fail("PARSER_PURPOSE"); }
+    const observation = await this.observeFootprintAsync(packet, assignments, state);
+    this.#footprintProducerCurrent(packet, assignments, state);
+    this.#registeredAsyncPacket = Object.freeze({ ...observation, parserArrowReceiversVerified: true, originalParserRegistrationArgumentsMatched: true });
+    return this.#registeredAsyncPacket;
+  }
+  public async requireFootprintRegisteredAsync(packet: ConstructionPacket<P>, assignments: CurrentPcbWorkerConstructionAssignments,
+    state: CurrentFootprintCopyStatePacket, observation: CurrentFootprintCopyRegisteredAsyncObservation): Promise<void> {
+    if (this.#profile !== "private.current-footprint-copy-construction.v1" || observation !== this.#registeredAsyncPacket || this.#footprintAsyncPacket === null) { throw fail("ORIGINAL_REGISTERED_ASYNC"); }
+    await this.requireFootprintAsync(packet, assignments, state, this.#footprintAsyncPacket);
+  }
+  public retainedParserRegistration(): Readonly<Record<string, unknown>> {
+    return Object.freeze({ headCaptured: this.#parserHead !== null, changeCaptured: this.#parserChange !== null,
+      originalRosterRetained: this.#parserRoster !== null, completed: this.#packet !== null && this.#profile === "private.current-footprint-copy-construction.v1",
+      replies: Object.freeze([...this.#parserReplies]), subscriptionStopped: this.#constructionSubscriptionStopped,
+      observation: this.#registeredAsyncPacket, executionAuthorized: false });
+  }
+  /** Additional execution-only route observation. The original dependency and
+   * registered callback arrays supply every retained association. Two assignment
+   * checks surround36 reads; no additional state-sample allowance is borrowed. */
+  public async observeFootprintDestinations(packet: ConstructionPacket<P>, assignments: CurrentPcbWorkerConstructionAssignments,
+    state: CurrentFootprintCopyStatePacket, dependencies: CurrentFootprintCopyDependencyObservation,
+    callbacks: CurrentFootprintCopyRegisteredAsyncObservation): Promise<CurrentFootprintCopyDestinationObservation> {
+    this.#footprintProducerCurrent(packet, assignments, state);
+    if (this.#profile !== "private.current-footprint-copy-construction.v1" || this.#footprintDestinationAttempted ||
+      dependencies !== this.#footprintDependencyPacket || callbacks !== this.#registeredAsyncPacket ||
+      this.#footprintDependencyBundle === null || this.#footprintAsyncBundle === null || this.#footprintManager === null || this.#footprintConsistency === null) { throw fail("DESTINATION_OWNER"); }
+    this.#footprintDestinationAttempted = true;
+    try {
+      await this.requireCurrentAssignments(packet, assignments);
+      const original = await this.requireOriginal(packet);
+      const args = [original.project, original.channelBus, this.#footprintManager, this.#footprintConsistency, this.#footprintDependencyBundle, this.#footprintAsyncBundle];
+      const runner = new CurrentFootprintCopyDestinationRunner(Object.freeze({
+        dependencyBundleObjectId: this.#footprintDependencyBundle,
+        assertCurrent: (): void => { this.#footprintProducerCurrent(packet, assignments, state); },
+        properties: (objectId: string): Promise<unknown> => this.#request({ method: "Runtime.getProperties", params: {
+          objectId, ownProperties: true, generatePreview: false } }, this.#footprintDestinationReplies),
+        capture: async (scopeId: string): Promise<unknown> => {
+          if (this.#footprintDestinationBundle !== null) { throw fail("DESTINATION_CONSUMED"); }
+          const raw = await this.#assignmentCall(scopeId, CURRENT_FOOTPRINT_COPY_DESTINATION_CALLS.capture.program, args, false, this.#footprintDestinationReplies);
+          this.#footprintDestinationBundle = objectReply.parse(raw).result.objectId; return raw;
+        },
+        recheck: (scopeId: string, bundleId: string): Promise<unknown> => {
+          if (bundleId !== this.#footprintDestinationBundle) { throw fail("DESTINATION_BUNDLE"); }
+          return this.#assignmentCall(scopeId, CURRENT_FOOTPRINT_COPY_DESTINATION_CALLS.recheck.program, [...args, bundleId], true, this.#footprintDestinationReplies);
+        },
+      }), this.#scriptId, state);
+      this.#footprintDestinationRunner = runner;
+      const observation = await runner.observe();
+      await this.requireCurrentAssignments(packet, assignments); this.#footprintProducerCurrent(packet, assignments, state);
+      this.#footprintDestinationPacket = observation; return observation;
+    } catch (error) { this.#fail("DESTINATION_OBSERVATION_FAILED"); throw error; }
+  }
+  public async requireFootprintDestinations(packet: ConstructionPacket<P>, assignments: CurrentPcbWorkerConstructionAssignments,
+    state: CurrentFootprintCopyStatePacket, observation: CurrentFootprintCopyDestinationObservation): Promise<void> {
+    this.#footprintProducerCurrent(packet, assignments, state);
+    if (this.#profile !== "private.current-footprint-copy-construction.v1" || observation !== this.#footprintDestinationPacket || this.#footprintDestinationRunner === null) { throw fail("DESTINATION_ORIGINAL"); }
+    try {
+      await this.requireCurrentAssignments(packet, assignments); await this.#footprintDestinationRunner.requireOriginal(observation);
+      await this.requireCurrentAssignments(packet, assignments); this.#footprintProducerCurrent(packet, assignments, state);
+    } catch (error) { this.#fail("DESTINATION_REPROOF_FAILED"); throw error; }
+  }
+  public retainedFootprintDestinations(): Readonly<Record<string, unknown>> {
+    return Object.freeze({ attempted: this.#footprintDestinationAttempted, observation: this.#footprintDestinationPacket,
+      runner: this.#footprintDestinationRunner?.retained() ?? null, replies: Object.freeze([...this.#footprintDestinationReplies]), executionAuthorized: false });
+  }
+  /** Twenty-one requests: nine original dependency/state reproofs, six original
+   * async reproofs, five destination reproofs and one final assignment check. One additional state sample
+   * is consumed. The factory requires the separate original execution route;
+   * no caller supplies manager handles, event transport or a worker session. */
+  public async createFootprintTransactionClocks(packet: ConstructionPacket<P>, assignments: CurrentPcbWorkerConstructionAssignments,
+    state: CurrentFootprintCopyStatePacket, producers: CurrentFootprintCopyProducerObservation,
+    dependencies: CurrentFootprintCopyDependencyObservation,
+    callbacks: CurrentFootprintCopyRegisteredAsyncObservation,
+    destinations: CurrentFootprintCopyDestinationObservation): Promise<CurrentFootprintCopyTransactionClockEvents> {
+    this.#footprintProducerCurrent(packet, assignments, state);
+    if (this.#profile !== "private.current-footprint-copy-construction.v1" || this.#transactionClockAttempted ||
+      this.#footprintManager === null || this.#footprintLexicalBundle === null) { throw fail("TRANSACTION_CLOCK_HANDOFF"); }
+    this.#transactionClockAttempted = true;
+    try {
+      await this.requireFootprintDependencies(packet, assignments, state, producers, dependencies);
+      await this.requireFootprintRegisteredAsync(packet, assignments, state, callbacks);
+      await this.requireFootprintDestinations(packet, assignments, state, destinations);
+      this.#footprintProducerCurrent(packet, assignments, state);
+      const collector = createCurrentFootprintCopyTransactionClockEvents(this.#transport, this.#footprintManager, this.#footprintLexicalBundle);
+      this.#transactionClocks = collector;
+      await this.requireCurrentAssignments(packet, assignments);
+      this.#footprintProducerCurrent(packet, assignments, state);
+      this.stopConstructionPauseSubscription(packet);
+      return collector;
+    } catch (error) { this.#fail("TRANSACTION_CLOCK_HANDOFF_FAILED"); throw error; }
+  }
+  public retainedFootprintTransactionClocks(): Readonly<Record<string, unknown>> {
+    return Object.freeze({ attempted: this.#transactionClockAttempted, collector: this.#transactionClocks?.retained() ?? null,
+      constructionSubscriptionStopped: this.#constructionSubscriptionStopped, executionAuthorized: false });
+  }
+  /** One-way event handoff. Retained original objects remain available; this
+   * never releases their group, transfers ownership or accepts another worker. */
+  public stopConstructionPauseSubscription(packet: ConstructionPacket<P>): void {
+    this.#checkWindow(); this.#sameTransport();
+    if (this.#profile !== "private.current-footprint-copy-construction.v1" || packet !== this.#packet || issued.get(packet) !== this ||
+      !this.#settled || this.#uncertainBreakpoint || this.#releaseConsumed || this.#constructionSubscriptionStopped || this.#unsubscribe === null ||
+      [...this.#breakpoints.values()].some(value => !value.removed) || this.#pause !== null && !this.#pause.resumeObserved) { throw fail("CONSTRUCTION_HANDOFF"); }
+    this.#constructionSubscriptionStopped = true;
+    try { this.#unsubscribe(); this.#unsubscribe = null; } catch (error) { this.#fail("CONSTRUCTION_HANDOFF_FAILED"); throw error; }
+  }
   public retainedFootprintAsync(): Readonly<Record<string, unknown>> {
     return Object.freeze({ attempted: this.#footprintAsyncAttempted, completed: this.#footprintAsyncPacket !== null,
       observation: this.#footprintAsyncPacket, runner: this.#footprintAsyncRunner?.retained() ?? null,
@@ -901,7 +1097,7 @@ class CurrentPcbWorkerConstructionCore<P extends PacketProfile> {
    * Native source replies are retained before any awaited owner reproof. */
   public async observeFootprintSource(packet: ConstructionPacket<P>, assignments: CurrentPcbWorkerConstructionAssignments,
     state: CurrentFootprintCopyStatePacket, plan: CurrentFootprintSourcePlan): Promise<CurrentFootprintSourceReadPacket> {
-    if (this.#footprintSourceAttempted || state !== this.#footprintPacket || this.#profile !== "private.current-pcb209-worker-construction.v1") { throw fail("FOOTPRINT_SOURCE_CONSUMED"); }
+    if (this.#footprintSourceAttempted || state !== this.#footprintPacket || !this.#current209) { throw fail("FOOTPRINT_SOURCE_CONSUMED"); }
     this.#footprintSourceAttempted = true; this.#footprintSourcePlan = plan;
     try {
       await this.proveFootprintMethods(packet, assignments, state);
@@ -989,7 +1185,7 @@ class CurrentPcbWorkerConstructionCore<P extends PacketProfile> {
     try {
       await this.requireCurrentAssignments(packet, assignments);
       const original = await this.requireOriginal(packet);
-      const Runner = this.#profile === "private.current-pcb209-worker-construction.v1"
+      const Runner = this.#current209
         ? CurrentPcb209WorkerStartupChannelObservationRunner : CurrentPcbWorkerStartupChannelObservationRunner;
       const channel = new Runner(Object.freeze({ scriptId: this.#scriptId,
         request: (command: CurrentPcbWorkerStartupChannelObservationCommand): Promise<unknown> => this.#channelRequest(original, command),
@@ -1040,6 +1236,11 @@ class CurrentPcbWorkerConstructionCore<P extends PacketProfile> {
 
 /** Fixed legacy construction API. Its source, locations and decoders remain
  * unchanged; the implementation core is private and cannot accept an override. */
+/** Type-only common owner for fixed opening wrappers; the private runtime
+ * constructor and its profile selector remain inaccessible. */
+export type CurrentPcbWorkerConstructionOwner<P extends CurrentPcbWorkerConstructionProfile> = CurrentPcbWorkerConstructionCore<P>;
+export type CurrentPcbWorkerConstructionPacketFor<P extends CurrentPcbWorkerConstructionProfile> = ConstructionPacket<P>;
+
 export class CurrentPcbWorkerConstructionRunner extends CurrentPcbWorkerConstructionCore<"private.current-pcb-worker-construction.v1"> {
   public constructor(transport: CurrentPcbWorkerConstructionTransport) {
     super(INTERNAL_PROFILE, transport, "private.current-pcb-worker-construction.v1", CURRENT_PCB_WORKER_CONSTRUCTION_SITES, {
@@ -1054,6 +1255,18 @@ export class CurrentPcbWorkerConstructionRunner extends CurrentPcbWorkerConstruc
 export class CurrentPcb209WorkerConstructionRunner extends CurrentPcbWorkerConstructionCore<"private.current-pcb209-worker-construction.v1"> {
   public constructor(transport: CurrentPcbWorkerConstructionTransport) {
     super(INTERNAL_PROFILE, transport, "private.current-pcb209-worker-construction.v1", CURRENT_PCB_209_WORKER_CONSTRUCTION_SITES, {
+      callbackFunction: decodeCurrentPcb209WorkerCallbackFunction, callbackScopeList: decodeCurrentPcb209WorkerCallbackScopeList,
+      producerFunction: decodeCurrentPcb209WorkerProducerFunction, producerScopeList: decodeCurrentPcb209WorkerProducerScopeList,
+      producerScopes: decodeCurrentPcb209WorkerProducerScopes,
+    });
+  }
+}
+
+/** The distinct copy execution owner captures parser registration arguments
+ * while their original Lg caller is still paused. No preparation adoption. */
+export class CurrentFootprintCopyConstructionRunner extends CurrentPcbWorkerConstructionCore<"private.current-footprint-copy-construction.v1"> {
+  public constructor(transport: CurrentPcbWorkerConstructionTransport) {
+    super(INTERNAL_PROFILE, transport, "private.current-footprint-copy-construction.v1", CURRENT_FOOTPRINT_COPY_CONSTRUCTION_SITES, {
       callbackFunction: decodeCurrentPcb209WorkerCallbackFunction, callbackScopeList: decodeCurrentPcb209WorkerCallbackScopeList,
       producerFunction: decodeCurrentPcb209WorkerProducerFunction, producerScopeList: decodeCurrentPcb209WorkerProducerScopeList,
       producerScopes: decodeCurrentPcb209WorkerProducerScopes,

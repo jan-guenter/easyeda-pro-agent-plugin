@@ -3,9 +3,9 @@ import { createHash } from "node:crypto";
 import { readFile } from "node:fs/promises";
 import { test } from "node:test";
 import { gunzipSync } from "node:zlib";
-import { currentFootprintCopyDependencyNativeCases, currentPcb209RatlineWorkerStartupNativeParentCases, currentPcb209WorkerStartupNativeCases, currentPcb209WorkerStartupNativeParentCases, currentPcbWorkerStartupNativeCases, currentPcbWorkerStartupNativeParentCases,
+import { currentFootprintCopyDependencyNativeCases, currentFootprintCopyProducerNativeCases, currentPcb209RatlineWorkerStartupNativeParentCases, currentPcb209WorkerStartupNativeCases, currentPcb209WorkerStartupNativeParentCases, currentPcbWorkerStartupNativeCases, currentPcbWorkerStartupNativeParentCases,
   currentPcbWorkerStartupNativeSource } from "../src/current-pcb-worker-startup-native.ts";
-import { currentPcb209RatlineWorkerStartupWire, currentPcb209WorkerStartupWire, currentPcbWorkerStartupWire } from "../src/current-pcb-worker-startup-wire.ts";
+import { currentFootprintCopyPreparationWire, currentPcb209RatlineWorkerStartupWire, currentPcb209WorkerStartupWire, currentPcbWorkerStartupWire } from "../src/current-pcb-worker-startup-wire.ts";
 import { CURRENT_PCB_209_RATLINE_OPENING_FUNCTION } from "../src/current-pcb-209-ratline-opening-program.ts";
 import { CURRENT_PCB_WORKER_STARTUP_WORKER_ACTOR_CLOCK_FUNCTION, currentPcbWorkerStartupUiActorCommand } from "../src/current-pcb-worker-startup-actor.ts";
 import { CURRENT_PCB_WORKER_STARTUP_CHANNEL_CALLS } from "../src/current-pcb-worker-startup-channel-observation.ts";
@@ -211,7 +211,8 @@ void test("startup compile-only packing retains every legacy,209 and parent expe
       if (!expected.includes(text)) { expected.push(text); }
     }
   }
-  for (const sample of [...currentPcb209WorkerStartupNativeCases().slice(samples.length), ...currentFootprintCopyDependencyNativeCases()]) {
+  const footprintCases = [...currentPcb209WorkerStartupNativeCases().slice(samples.length), ...currentFootprintCopyDependencyNativeCases(), ...currentFootprintCopyProducerNativeCases()];
+  for (const sample of footprintCases) {
     expected.push(JSON.stringify({ id: 1, method: sample.method, params: sample.params, sessionId: sample.sessionId }));
   }
   for (const [index, sample] of currentPcbWorkerStartupNativeParentCases().entries()) {
@@ -231,10 +232,50 @@ void test("startup compile-only packing retains every legacy,209 and parent expe
     if (!expected.includes(text)) { expected.push(text); }
   }
   assert.deepEqual(commands, expected);
-  assert.equal(generated.match(/"smoke-parity"/gu)?.length, samples.length);
-  assert.equal(generated.match(/"smoke-parent-parity"/gu)?.length, currentPcbWorkerStartupNativeParentCases().length);
-  assert.equal(generated.match(/"smoke-ratline-parent-parity"/gu)?.length, currentPcb209RatlineWorkerStartupNativeParentCases().length);
+  const packedInputs = /string\[\] result=UnpackFixedProgram\(@"([A-Za-z\d+/=]+)",(\d+),(\d+),@"([a-f\d]{64})"\)\.Split\('\\0'\);/u.exec(decoder);
+  assert.ok(packedInputs?.[1] !== undefined);
+  const compressedInputs = Buffer.from(packedInputs[1], "base64");
+  assert.equal(String(compressedInputs.length), packedInputs[2]);
+  assert.equal(compressedInputs.toString("base64"), packedInputs[1]);
+  // oxlint-disable-next-line node/no-sync -- Bounded fixed compile-only inputs must independently match every original wire field and expected command.
+  const decodedInputs = gunzipSync(compressedInputs);
+  assert.equal(String(decodedInputs.length), packedInputs[3]); assert.ok(decodedInputs.length <= 65_536);
+  assert.equal(createHash("sha256").update(decodedInputs).digest("hex"), packedInputs[4]);
+  const rows = decodedInputs.toString("utf8").split("\0").map(row => row.split("\t"));
+  const families = [samples, footprintCases, currentPcbWorkerStartupNativeParentCases(), currentPcb209RatlineWorkerStartupNativeParentCases()] as const;
+  let offset = 0;
+  for (const [kind, cases] of families.entries()) {
+    for (const [index, sample] of cases.entries()) {
+      const row = rows[offset]; offset += 1; assert.ok(row);
+      const worker = kind < 2;
+      let wire;
+      if (kind === 1) { wire = currentFootprintCopyPreparationWire(sample, 1); }
+      else if (kind === 3) { wire = currentPcb209RatlineWorkerStartupWire(sample, 256); }
+      else { wire = currentPcbWorkerStartupWire(sample, worker ? 1 : 256); }
+      const omit = worker ? ["action", "requestId", "method", "sessionId", "startupPhase"] : ["action", "requestId", "method", "parentPhase"];
+      const fields = Object.entries(wire.request).filter(([key]) => !omit.includes(key));
+      assert.deepEqual(row.slice(7), fields.flatMap(([key, value]) => [key, typeof value === "number" ? "N" : "S", String(value)]));
+      const remaining = kind === 3 && wire.request["parentPhase"] === "pcb-open-document" ? 1234 : 0;
+      assert.deepEqual(row.slice(0, 4), [String(kind), sample.method, worker ? sample.sessionId : "", String(wire.request[worker ? "startupPhase" : "parentPhase"])]);
+      assert.equal(row[6], String(remaining));
+      let current = sample;
+      if (kind === 0) { const item = currentPcb209WorkerStartupNativeCases()[index]; assert.ok(item); current = item; }
+      else if (kind === 2) { const item = currentPcb209WorkerStartupNativeParentCases()[index]; assert.ok(item); current = item; }
+      for (const [column, command] of [[4, sample], [5, current]] as const) {
+        const opening = kind === 3 && command.method === "Runtime.callFunctionOn" && command.params.functionDeclaration === CURRENT_PCB_209_RATLINE_OPENING_FUNCTION;
+        const params = opening ? { ...command.params, arguments: [...command.params.arguments, { value: remaining }] } : command.params;
+        assert.equal(commands[Number(row[column])], JSON.stringify({ id: worker ? 1 : 256, method: command.method, params,
+          ...(command.sessionId === undefined ? {} : { sessionId: command.sessionId }) }));
+      }
+    }
+  }
+  assert.equal(rows.length, offset);
+  assert.ok(generated.includes(`counts[0]==${String(samples.length)} && counts[1]==${String(footprintCases.length)} && counts[2]==${String(families[2].length)} && counts[3]==${String(families[3].length)}`));
+  for (const code of ["smoke-parity", "smoke-footprint-parity", "smoke-footprint-legacy", "smoke-parent-parity", "smoke-ratline-parent-parity"]) {
+    assert.equal(generated.match(new RegExp(`"${code}"`, "gu"))?.length, 1);
+  }
   assert.equal(generated.split("SmokeExpected()").length - 1, 2);
+  assert.equal(generated.split("SmokeInputs()").length - 1, 2);
 });
 
 void test("native packed programs retain exact opener and source JSON bytes within the fixed helper bound", () => {
@@ -273,7 +314,7 @@ void test("native packed programs retain exact opener and source JSON bytes with
 
 void test("packed encoder tables retain every exact fixed segment and preserve each bounded decoder", () => {
   const generated = currentPcbWorkerStartupNativeSource();
-  const templates = [...currentPcbWorkerStartupNativeCases(), ...currentPcb209WorkerStartupNativeCases(), ...currentFootprintCopyDependencyNativeCases()]
+  const templates = [...currentPcbWorkerStartupNativeCases(), ...currentPcb209WorkerStartupNativeCases(), ...currentFootprintCopyDependencyNativeCases(), ...currentFootprintCopyProducerNativeCases()]
     .map(sample => JSON.stringify(sample.params));
   const matches = [...generated.matchAll(/static readonly string\[\] (ParameterTextTable\d+)=UnpackFixedProgram\(@"([A-Za-z\d+/=]+)",(\d+),(\d+),@"([a-f\d]{64})"\)\.Split\('\\0'\);/gu)];
   assert.ok(matches.length > 0);

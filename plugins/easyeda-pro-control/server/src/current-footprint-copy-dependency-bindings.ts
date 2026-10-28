@@ -11,30 +11,31 @@ const bad=()=>{throw new Error("FOOTPRINT_COPY_DEPENDENCY_BINDING");},seen=[],pa
 const object=o=>{if(o===null||(typeof o!=="object"&&typeof o!=="function"))bad();return o;};
 const descriptor=(o,k)=>{object(o);const d=Object.getOwnPropertyDescriptor(o,k);seen.push([o,k,d]);return d;};
 const own=(o,k)=>{const d=descriptor(o,k);if(!d||!Object.hasOwn(d,"value"))bad();return d.value;};
+const bindings=own(this,"object");
 const absent=(o,k)=>{if(descriptor(o,k)!==undefined)bad();};
 const proto=o=>{const p=Object.getPrototypeOf(object(o));parents.push([o,p]);return p;};
 const array=(o,n)=>{if(!Array.isArray(o)||proto(o)!==Array.prototype||own(o,"length")!==n||Reflect.ownKeys(o).length!==n+1)bad();};
 const fun=(o,k)=>{const f=own(o,k);if(typeof f!=="function")bad();return f;};
 const method=(c,k)=>{const p=own(c,"prototype"),d=descriptor(p,k);if(!d||!Object.hasOwn(d,"value")||typeof d.value!=="function"||d.writable!==true||d.enumerable!==false||d.configurable!==true)bad();return d.value;};
-const chain=(o,names)=>{const out=[];let p=proto(o);for(const name of names){const c=fun(this,name);if(own(c,"prototype")!==p||own(p,"constructor")!==c)bad();out.push(p);p=proto(p);}if(p!==Object.prototype)bad();return out;};
+const chain=(o,names)=>{const out=[];let p=proto(o);for(const name of names){const c=fun(bindings,name);if(own(c,"prototype")!==p||own(p,"constructor")!==c)bad();out.push(p);p=proto(p);}if(p!==Object.prototype)bad();return out;};
 const resolved=(o,levels,k,owner)=>{absent(o,k);for(let i=0;i<owner;i++)absent(levels[i],k);return own(levels[owner],k);};
 array(constructors,6);array(lexicals,10);
 const projectLevels=chain(project,["Lg","Gd"]),managerLevels=chain(manager,["Tg","ar","Pi"]),commonLevels=chain(consistency,["ja","Vc","zy"]);
 if(own(globalThis,"PROJECT")!==project||own(project,"workerBus")!==bus||own(project,"footprint")!==manager||own(project,"consistencyManager")!==consistency||own(manager,"projectManager")!==project||own(manager,"user")!==undefined)bad();
 for(let i=0;i<3;i++)if(own(constructors,String(i))!==own(managerLevels[i],"constructor")||own(constructors,String(i+3))!==own(commonLevels[i],"constructor"))bad();
-for(const [key,index]of [["qe",2],["Qe",3],["Ke",4],["Ni",5],["cg",6]])if(own(this,key)!==own(lexicals,String(index)))bad();
+for(const [key,index]of [["qe",2],["Qe",3],["Ke",4],["Ni",5],["cg",6]])if(own(bindings,key)!==own(lexicals,String(index)))bad();
 const selected=[];`;
 const selection = PROFILES.map(profile => {
   if (profile.kind === "method") {
     const [owner, name] = profile.key.split(".");
-    return `selected.push(method(fun(this,${JSON.stringify(owner)}),${JSON.stringify(name)}));`;
+    return `selected.push(method(fun(bindings,${JSON.stringify(owner)}),${JSON.stringify(name)}));`;
   }
-  return `selected.push(fun(this,${JSON.stringify(profile.key)}));`;
+  return `selected.push(fun(bindings,${JSON.stringify(profile.key)}));`;
 }).join("\n");
 const inheritance = PROFILES.filter(profile => profile.kind === "class").map(profile => {
-  const parent = profile.parent === null ? "Function.prototype" : `fun(this,${JSON.stringify(profile.parent)})`;
+  const parent = profile.parent === null ? "Function.prototype" : `fun(bindings,${JSON.stringify(profile.parent)})`;
   const parentPrototype = profile.parent === null ? "Object.prototype" : `own(${parent},"prototype")`;
-  return `if(proto(fun(this,${JSON.stringify(profile.key)}))!==${parent}||proto(own(fun(this,${JSON.stringify(profile.key)}),"prototype"))!==${parentPrototype})bad();`;
+  return `if(proto(fun(bindings,${JSON.stringify(profile.key)}))!==${parent}||proto(own(fun(bindings,${JSON.stringify(profile.key)}),"prototype"))!==${parentPrototype})bad();`;
 }).join("\n");
 const runtimeMethods = PROFILES.filter(profile => profile.kind === "method" && /^(?:Gd|Lg|ja|zy|Vc)\./u.test(profile.key)).map(profile => {
   const [owner, name] = profile.key.split(".");
@@ -42,15 +43,15 @@ const runtimeMethods = PROFILES.filter(profile => profile.kind === "method" && /
   const levels: Readonly<Record<string, number>> = { Lg: 0, Gd: 1, ja: 0, Vc: 1, zy: 2 };
   const level = levels[owner ?? ""];
   if (level === undefined) { throw new Error("FOOTPRINT_DEPENDENCY_PROFILE"); }
-  return `if(resolved(${project ? "project,projectLevels" : "consistency,commonLevels"},${JSON.stringify(name)},${String(level)})!==method(fun(this,${JSON.stringify(owner)}),${JSON.stringify(name)}))bad();`;
+  return `if(resolved(${project ? "project,projectLevels" : "consistency,commonLevels"},${JSON.stringify(name)},${String(level)})!==method(fun(bindings,${JSON.stringify(owner)}),${JSON.stringify(name)}))bad();`;
 }).join("\n");
 const notification = String.raw`
 const top=descriptor(globalThis,"EDITOR_TOP");if(top!==undefined&&(!Object.hasOwn(top,"value")||top.value!==undefined&&top.value!==globalThis))bad();
-absent(this,"self");
+absent(bindings,"self");
 const tab=own(globalThis,"_TAB_ID_");if(typeof tab!=="string"||!/^[A-Za-z\d_-]{1,128}$/.test(tab))bad();
 const notification=own(globalThis,"/"+tab+"/notify");if(own(project,"wsBus")!==notification)bad();
 const notifyLevels=chain(notification,["JP","KP","Mb"]);
-for(const [name,level]of [["rpcCall",2],["subscribeOnce",2],["push",1],["subscribe",1]])if(resolved(notification,notifyLevels,name,level)!==method(fun(this,level===2?"Mb":"KP"),name))bad();
+for(const [name,level]of [["rpcCall",2],["subscribeOnce",2],["push",1],["subscribe",1]])if(resolved(notification,notifyLevels,name,level)!==method(fun(bindings,level===2?"Mb":"KP"),name))bad();
 const uuid=own(notification,"uuid"),ticket=own(notification,"rpcTicket");
 if(typeof uuid!=="string"||!/^[a-f\d]{8}-[a-f\d]{4}-[a-f\d]{4}-[a-f\d]{4}-[a-f\d]{12}$/.test(uuid)||!Number.isSafeInteger(ticket)||Object.is(ticket,-0)||ticket<0||ticket>=Number.MAX_SAFE_INTEGER)bad();
 selected.push(notification,object(own(project,"cache")),object(own(project,"localCache")));

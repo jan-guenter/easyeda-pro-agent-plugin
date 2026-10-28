@@ -12,13 +12,19 @@ import type { CurrentFootprintCopyManagerRouteSource, CurrentFootprintCopyManage
 import { requireCurrentFootprintCopyUiSource } from "./current-footprint-copy-ui-source.ts";
 import type { CurrentFootprintCopyUiSourceQualification } from "./current-footprint-copy-ui-source.ts";
 import { captureCurrentPcbStringClockReply } from "./current-pcb-string-clock-reply.ts";
+import { CurrentFootprintParentWorkerRunner } from "./current-footprint-copy-parent-worker-runner.ts";
+import type { CurrentFootprintParentWorkerObservation } from "./current-footprint-copy-parent-worker-runner.ts";
 
 const handle = z.string().min(1).max(256).regex(/^[A-Za-z\d_.:-]+$/u);
 const bindingSchema = z.object({ sessionId: handle.max(128), uiScriptId: handle, uiRoute: handle,
   projectUuid: z.string().regex(/^[a-f\d]{64}$/u), branchUuid: z.string().regex(/^[a-f\d]{32}$/u), windowTabId: z.string().regex(/^[A-Za-z\d_-]{1,128}$/u) }).strict();
 export type CurrentFootprintCopyManagerRouteBinding = Readonly<z.infer<typeof bindingSchema>>;
 export interface CurrentFootprintCopyManagerRouteTransport { readonly assertCurrent: () => Promise<void>; readonly request: (command: Command) => Promise<unknown> }
-export const CURRENT_FOOTPRINT_COPY_MANAGER_ROUTE_REQUESTS = Object.freeze({ observe: 30, reprove: 7, release: 1 });
+export const CURRENT_FOOTPRINT_COPY_MANAGER_ROUTE_REQUESTS = Object.freeze({ observe: 30, reprove: 7, release: 1,
+  // Two original route checks surround the peer's two reproof requests and join.
+  originalPeerJoin: 17 });
+// oxlint-disable-next-line typescript/unbound-method -- Retain the original implementation and always call it with the validated peer receiver.
+const originalPeerJoin = CurrentFootprintParentWorkerRunner.prototype.joinOriginalManagerRoute;
 const legacyObservationSchema = z.object({ profile: z.literal("private.current-footprint-copy-manager-route.v1"),
   runtimeManagerSourceQualified: z.literal(true), originalUiBusSubscriptionRetained: z.literal(true), initializedProjectRegistryBound: z.literal(true),
   footprintReceiverAndWorkerBusBound: z.literal(true), managerWorkerObjectRetained: z.literal(true), initializedProjectChannelEntryMatched: z.literal(true), projectChannelNameMatched: z.literal(false),
@@ -138,6 +144,18 @@ export class CurrentFootprintCopyManagerRouteRunner {
     need(!this.#busy); this.#busy = true; this.#operationRequests = 0; this.#maximum = CURRENT_FOOTPRINT_COPY_MANAGER_ROUTE_REQUESTS.reprove;
     try { await this.#current(); need(packet === this.#packet && this.#packet !== null && this.#retained !== null); await this.#recheck(this.#retained); need(this.#operationRequests === CURRENT_FOOTPRINT_COPY_MANAGER_ROUTE_REQUESTS.reprove); }
     catch (error) { this.#failed = true; throw error; } finally { this.#busy = false; }
+  }
+  /** A native-message peer joins only the actual original manager route. No
+   * caller handle or serialized proof substitutes for either retained owner. */
+  public async requireOriginalWorkerPeer(packet: CurrentFootprintCopyManagerRouteObservation, peer: CurrentFootprintParentWorkerRunner,
+    peerPacket: CurrentFootprintParentWorkerObservation): Promise<void> {
+    await this.requireOriginal(packet);
+    need(!this.#busy && this.#retained !== null && !types.isProxy(peer) && Object.getPrototypeOf(peer) === CurrentFootprintParentWorkerRunner.prototype);
+    this.#busy = true; this.#operationRequests = 0; this.#maximum = CURRENT_FOOTPRINT_COPY_MANAGER_ROUTE_REQUESTS.reprove;
+    try {
+      await this.#current(); await originalPeerJoin.call(peer, peerPacket, this.#retained.project); await this.#current();
+      await this.#recheck(this.#retained); need(this.#operationRequests === CURRENT_FOOTPRINT_COPY_MANAGER_ROUTE_REQUESTS.reprove);
+    } catch (error) { this.#failed = true; throw error; } finally { this.#busy = false; }
   }
   public async release(): Promise<void> {
     need(!this.#busy && this.#attempted && !this.#releaseAttempted); this.#releaseAttempted = true; this.#busy = true;
