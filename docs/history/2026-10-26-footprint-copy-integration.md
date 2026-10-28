@@ -155,3 +155,43 @@ missing class bindings and inert method vocabulary were added. All original
 behavior assertions remain. The affected files pass their eight focused tests.
 No production source, compatibility pin, bundle or test selection changed in
 this correction. Full exact-commit CI will run again before publication.
+
+## Publication and installation complete
+
+Corrected payload `d7b2a74995f18224ee25d30098301aa97efdd169` passed
+[Linux CI40420771586](https://github.com/jan-guenter/easyeda-pro-agent-plugin/actions/runs/40420771586)
+and [Windows CI40420771605](https://github.com/jan-guenter/easyeda-pro-agent-plugin/actions/runs/40420771605).
+All eight facade shards passed: 13,245 tests, five expected platform skips,
+zero failures. All 424 bridge tests, build checks, committed-bundle
+reproducibility and every fixed Windows purpose passed. Independent review
+verified all 796 source and three runtime manifest members.
+
+[PR138](https://github.com/jan-guenter/easyeda-pro-agent-plugin/pull/138)
+merged to main `20c349f1fca5315b096e56ae754ff48ed4e7ae28`. Its root tree
+`c2350b7a` matches the tested payload exactly. The official Git marketplace
+`https://github.com/jan-guenter/easyeda-pro-agent-plugin.git` was upgraded once;
+`0.3.0+codex.20261026231500` is installed and enabled. The CLI logged a
+nonblocking temporary arg0 cleanup warning; its upgrade error list was empty,
+and independent installed verification succeeded.
+
+All 2,134 packaged files, 42 directories and 42,573,779 bytes match committed
+bytes and modes. Inventory SHA256:
+`6d842f99ef6b571773df71a706bf9e96397bfdfa3b88188ec857a207f2ac2b7c`.
+The cached marketplace HEAD equals merged main. The configured installed
+offline launcher exposes 27 tools; all 34 queries / 36 JSON-RPC requests passed.
+Its private synthetic child closed through EOF with no stderr or signal;
+sampled upstream/descendant/socket absence and post-close inventory passed.
+This is installation/offline evidence, not continuous isolation, live runtime
+admission or a validated copy writer.
+
+The original host still runs the previous212700 snapshot and was not killed,
+rebound or patched. A fresh Codex session must load231500 before the next live
+disposable preparation. No design was accessed, no EasyEDA app was launched,
+and no CAD action or Save was dispatched during this batch. The only Windows
+execution was the empty native CompileOnly check. Full private handoff and
+remaining implementation plan are retained outside the repository.
+
+The automatic main-branch CI runs are separate follow-up runs; exact-tree PR
+CI supplied the release evidence above. Check their recorded latest state on
+resume. This publication appendix is retained locally for the next batch,
+avoiding another version and restart solely to publish installation chronology.

@@ -18,6 +18,9 @@ import type { CurrentFootprintCopyProducerObservation } from "./current-footprin
 import { CurrentFootprintCopyDependencyRunner } from "./current-footprint-copy-dependency-runner.ts";
 import type { CurrentFootprintCopyDependencyObservation } from "./current-footprint-copy-dependency-runner.ts";
 import { CURRENT_FOOTPRINT_COPY_DEPENDENCY_CALLS } from "./current-footprint-copy-dependency-bindings.ts";
+import { CURRENT_FOOTPRINT_COPY_ASYNC_CALLS } from "./current-footprint-copy-async-bindings.ts";
+import { CurrentFootprintCopyAsyncRunner } from "./current-footprint-copy-async-runner.ts";
+import type { CurrentFootprintCopyAsyncObservation, CurrentFootprintCopyConstructedAsyncObservation } from "./current-footprint-copy-async-runner.ts";
 import type { CurrentFootprintSourcePlan } from "./current-footprint-source-plan.ts";
 import { currentFootprintCopySourceCommand } from "./current-footprint-copy-source-command.ts";
 import { CURRENT_FOOTPRINT_COPY_SOURCE_READ_LIMITS } from "./current-footprint-copy-source-read.ts";
@@ -228,6 +231,11 @@ class CurrentPcbWorkerConstructionCore<P extends PacketProfile> {
   #footprintDependencyPacket: CurrentFootprintCopyDependencyObservation | null = null;
   #footprintDependencyBundle: string | null = null;
   readonly #footprintDependencyReplies: unknown[] = [];
+  #footprintAsyncAttempted = false;
+  #footprintAsyncRunner: CurrentFootprintCopyAsyncRunner | null = null;
+  #footprintAsyncObservation: CurrentFootprintCopyAsyncObservation | null = null;
+  #footprintAsyncPacket: CurrentFootprintCopyConstructedAsyncObservation | null = null;
+  readonly #footprintAsyncReplies: unknown[] = [];
   #channelAttempted = false;
   #channel: CurrentPcbWorkerStartupChannelObservationRunner | null = null;
   #channelPacket: CurrentPcbWorkerStartupChannelPacket | null = null;
@@ -834,6 +842,59 @@ class CurrentPcbWorkerConstructionCore<P extends PacketProfile> {
       await this.requireFootprintProducers(packet, assignments, state, producers);
       await this.#footprintDependencyRunner.requireOriginal(observation); this.#footprintProducerCurrent(packet, assignments, state);
     } catch (error) { this.#fail("FOOTPRINT_DEPENDENCIES_CHANGED"); throw error; }
+  }
+  /**19 fixed requests:17 callback reads plus current-assignment checks on
+   * both sides. No historical purpose gains these requests automatically.
+   * The upload arrow was captured at bufferedStream entry with the actual Gd
+   * caller receiver; compare that exact argument with the current closure. */
+  public async observeFootprintAsync(packet: ConstructionPacket<P>, assignments: CurrentPcbWorkerConstructionAssignments,
+    state: CurrentFootprintCopyStatePacket): Promise<CurrentFootprintCopyConstructedAsyncObservation> {
+    this.#footprintProducerCurrent(packet, assignments, state);
+    if (this.#footprintAsyncAttempted) { throw fail("FOOTPRINT_ASYNC_CONSUMED"); } this.#footprintAsyncAttempted = true;
+    try {
+      await this.requireCurrentAssignments(packet, assignments);
+      const original = await this.requireOriginal(packet);
+      const consistency = this.#footprintConsistency, manager = this.#footprintManager;
+      if (manager === null || consistency === null) { throw fail("FOOTPRINT_ASYNC_OWNER"); }
+      const calls = CURRENT_FOOTPRINT_COPY_ASYNC_CALLS;
+      const runner = new CurrentFootprintCopyAsyncRunner(Object.freeze({
+        assertCurrent: (): void => { this.#footprintProducerCurrent(packet, assignments, state); },
+        properties: (objectId: string): Promise<unknown> => this.#request({ method: "Runtime.getProperties", params: {
+          objectId, ownProperties: true, generatePreview: false } }, this.#footprintAsyncReplies),
+        capture: (): Promise<unknown> => this.#assignmentCall(original.project, calls.capture.program,
+          [original.channelBus, manager, consistency], false, this.#footprintAsyncReplies),
+        recheck: (originalId: string): Promise<unknown> => this.#assignmentCall(original.project, calls.recheck.program,
+          [original.channelBus, manager, consistency, originalId], true, this.#footprintAsyncReplies),
+        captureUpload: (scopeId: string): Promise<unknown> => this.#assignmentCall(scopeId, calls.captureConstructedUpload.program,
+          [original.project, original.channelBus, manager, consistency, original.upload], false, this.#footprintAsyncReplies),
+        sample: (scopeId: string, originalId: string, uploadId: string): Promise<unknown> => this.#assignmentCall(scopeId, calls.sample.program,
+          [original.project, original.channelBus, manager, consistency, originalId, uploadId], true, this.#footprintAsyncReplies),
+      }), this.#scriptId);
+      this.#footprintAsyncRunner = runner;
+      const observation = await runner.observe(); this.#footprintAsyncObservation = observation;
+      await this.requireCurrentAssignments(packet, assignments); this.#footprintProducerCurrent(packet, assignments, state);
+      this.#footprintAsyncPacket = Object.freeze({ ...observation, uploadArrowReceiverVerified: true, originalConstructionUploadMatched: true });
+      return this.#footprintAsyncPacket;
+    } catch (error) { this.#fail("FOOTPRINT_ASYNC_FAILED"); throw error; }
+  }
+  /** Six reads reprove the original observation; copied packets and a second
+   * reproof are refused. This observes no untracked cleanup completion. */
+  public async requireFootprintAsync(packet: ConstructionPacket<P>, assignments: CurrentPcbWorkerConstructionAssignments,
+    state: CurrentFootprintCopyStatePacket, observation: CurrentFootprintCopyConstructedAsyncObservation): Promise<void> {
+    this.#footprintProducerCurrent(packet, assignments, state);
+    if (observation !== this.#footprintAsyncPacket || this.#footprintAsyncRunner === null || this.#footprintAsyncObservation === null) {
+      throw fail("ORIGINAL_FOOTPRINT_ASYNC_PACKET");
+    }
+    try {
+      await this.requireCurrentAssignments(packet, assignments);
+      await this.#footprintAsyncRunner.requireOriginal(this.#footprintAsyncObservation);
+      await this.requireCurrentAssignments(packet, assignments); this.#footprintProducerCurrent(packet, assignments, state);
+    } catch (error) { this.#fail("FOOTPRINT_ASYNC_CHANGED"); throw error; }
+  }
+  public retainedFootprintAsync(): Readonly<Record<string, unknown>> {
+    return Object.freeze({ attempted: this.#footprintAsyncAttempted, completed: this.#footprintAsyncPacket !== null,
+      observation: this.#footprintAsyncPacket, runner: this.#footprintAsyncRunner?.retained() ?? null,
+      replies: Object.freeze([...this.#footprintAsyncReplies]), mounted: false, executionAuthorized: false });
   }
   /** Exactly61 worker requests after the already published state observation.
    * The lifecycle reserves the shared parent/worker budget before its intent.

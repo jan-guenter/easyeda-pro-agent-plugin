@@ -106,9 +106,11 @@ with no GET_STR dispatch, copy/delete or saved-state claim. It needs 65 remainin
 normal requests and preserves the original cleanup reserve.
 The separate [footprint preparation purpose](current-footprint-copy-preparation.md)
 mounts producer/actor bindings, 53 dependency functions and initialized UI/manager
-route readers under a distinct launch budget. It does not dispatch a copy or
-Save. Reciprocal worker peers, asynchronous completion, native clock transport
-and saved-result proof remain open; its offline checks are not live validation.
+route readers, including native channel-name qualification, under a distinct
+launch budget. It does not dispatch a copy or Save. Reciprocal worker peers,
+external-effect qualification, native execution transport and saved-result
+proof remain open. The private copy/closure/reopen coordinator is unmounted;
+its tests are not connected writer validation.
 The startup route retains the original
 native process, Job, pipe and fixed256-command budget. These observations do
 not establish continuous publisher ownership, peer containment, server clock

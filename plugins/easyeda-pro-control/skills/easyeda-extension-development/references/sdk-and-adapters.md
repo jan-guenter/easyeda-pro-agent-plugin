@@ -601,7 +601,7 @@ Its construction-owner integration consumes up to39 requests. The reuse check
 uses up to six requests to reprove owner, state and methods, without resampling
 lexical values. The separate `footprint-copy-preparation` startup purpose mounts these checks
 with actor/SQL preparation, UI and manager-route observation, and 53 dependency
-function qualifications. Its 553 normal requests, 34 cleanup requests and 18
+function qualifications and the original native channel name. Its 554 normal requests, 34 cleanup requests and 18
 state samples come from the complete preparation sequence; older purposes keep
 their existing limits. Parser/upload callback completion, reciprocal bus peers
 and native copy dispatch remain unimplemented. See the

@@ -6,8 +6,10 @@ import { captureCurrentPcbStringClockReply } from "./current-pcb-string-clock-re
 import { freezeDeep } from "./sqlite-inventory-core.ts";
 
 export const CURRENT_FOOTPRINT_COPY_TRANSACTION_CLOCK_SITES = freezeDeep([
-  { role: "buildString", lineNumber: 109, columnNumber: 36_821, expression: "[this,n,l,qe]" },
-  { role: "canvasString", lineNumber: 109, columnNumber: 42_317, expression: "[this,s,a,qe]" },
+  // V8 pauses at the property access, after the preceding await result was
+  // Assigned. Declarator starts36821/42317 relocate and must not be requested.
+  { role: "buildString", lineNumber: 109, columnNumber: 36_825, expression: "[this,n,l,qe]" },
+  { role: "canvasString", lineNumber: 109, columnNumber: 42_324, expression: "[this,s,a,qe]" },
 ] as const);
 export const CURRENT_FOOTPRINT_COPY_TRANSACTION_CLOCK_GROUP = "easyeda-footprint-copy-clocks-v1";
 /** 2 breakpoint allocations, 2 frame captures, 2 receiver/producer relations,

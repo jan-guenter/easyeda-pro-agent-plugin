@@ -38,6 +38,7 @@ archive retain their original paths and must not be rewritten to later names.
 
 ## Record index and former paths
 
+- [2026-10-28 footprint preparation runtime](2026-10-28-footprint-preparation-runtime.md): disposable preparation timing refusal, verified original cleanup and unchanged fixture, and combined copy integration work.
 - [2026-10-26 footprint copy integration](2026-10-26-footprint-copy-integration.md): separate preparation launch, original producer/actor/UI ownership and transaction-clock collection; implementation and validation status.
 
 Records sort by the date at the start of each filename. The former-path column

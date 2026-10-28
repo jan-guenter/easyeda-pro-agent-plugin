@@ -213,9 +213,9 @@ Promise<Readonly<{ value: Fixture; id: string; binding: string; prepare: () => P
       return uiExpired ? Promise.reject(new Error("synthetic UI owner lost")) : Promise.resolve();
     };
     value.owner["retainedFootprintCopyUi"] = (): Row => ({ synthetic: true });
-    const managerRoute = Object.freeze(currentFootprintCopyManagerRouteObservationSchema.parse({ profile: "private.current-footprint-copy-manager-route.v1",
+    const managerRoute = Object.freeze(currentFootprintCopyManagerRouteObservationSchema.parse({ profile: "private.current-footprint-copy-manager-route.v2",
       runtimeManagerSourceQualified: true, originalUiBusSubscriptionRetained: true, initializedProjectRegistryBound: true,
-      footprintReceiverAndWorkerBusBound: true, managerWorkerObjectRetained: true, initializedProjectChannelEntryMatched: true, projectChannelNameMatched: false,
+      footprintReceiverAndWorkerBusBound: true, managerWorkerObjectRetained: true, initializedProjectChannelEntryMatched: true, projectChannelNameMatched: true,
       reciprocalWorkerPeerBound: false, backendDynamicDispatchQualified: false, executionAuthorized: false }));
     let managerRaw: Row = { attempted: false, replies: [] };
     value.owner["observeFootprintCopyManagerRoute"] = async (opening: unknown, selected: unknown): Promise<typeof managerRoute> => {
@@ -338,7 +338,7 @@ for (const mode of ["success", "capacity", "reproof"] as const) {
     const f = await fixture(context, "success", true); await f.prepare(); f.setNextRequestId(1); await f.observeUi();
     await assert.rejects(f.observeManagerRoute(), /ORIGINAL_FOOTPRINT_MANAGER_ROUTE_INPUT_REQUIRED/u);
     await f.prepareDependencies(); f.calls.length = 0;
-    const requests = CURRENT_FOOTPRINT_COPY_PREPARATION_PROFILE.requests.managerRoute; assert.equal(requests, 56);
+    const requests = CURRENT_FOOTPRINT_COPY_PREPARATION_PROFILE.requests.managerRoute; assert.equal(requests, 57);
     f.setNextRequestId(CURRENT_FOOTPRINT_COPY_PREPARATION_PROFILE.normalRequestLimit - requests + (mode === "capacity" ? 2 : 1));
     if (mode === "reproof") { f.expireManagerRoute(); }
     if (mode === "success") {
