@@ -32,6 +32,9 @@ void describe("dependency-free installed package offline catalog probe", () => {
     assert.equal(result["tools"], 27);
     assert.equal(result["configuredTools"], 52);
     assert.equal(result["queries"], 42);
+    const closed = result["closed"];
+    assert.ok(closed !== null && typeof closed === "object" && "requests" in closed);
+    assert.equal(closed.requests, 44);
     assert.equal(result["ratlineContinuationDiscoveryChecked"], true);
     assert.equal(result["footprintCopyPreparationDiscoveryChecked"], true);
     assert.equal(result["footprintCopyRoutePreparationDiscoveryChecked"], true);

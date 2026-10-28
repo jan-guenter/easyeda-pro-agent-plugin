@@ -20,8 +20,9 @@ const NODE_VERSION = "24.18.0";
 const MAX_REPLY_BYTES = 8 * 1024 * 1024;
 const MAX_OUTPUT_BYTES = 16 * 1024 * 1024;
 const REQUEST_TIMEOUT_MS = 15_000;
+const CATALOG_QUERY_COUNT = 42;
 // Initialize and tool discovery plus the fixed catalog requests below.
-const REQUEST_LIMIT = 2 + 38;
+const REQUEST_LIMIT = 2 + CATALOG_QUERY_COUNT;
 const EXPECTED_TOOLS = [
   "api", "calculate", "discover", "disposable_pcb_rename", "disposable_schematic_rename", "disposable_symbol_copy",
   "editor_context", "editor_shell", "extensions", "history", "launch", "library_files", "pcb_diagnostic_validation", "pcb_geometry",
@@ -434,7 +435,7 @@ async function catalogChecks(child: OfflineChild, sample: () => Promise<void>): 
   requireCheck(fileValidation["valid"] === true && fileValidation["executionAuthorized"] === false &&
     record(fileValidation["requestSummary"])["base64Echoed"] === false && !Object.hasOwn(fileValidation, "request"),
   "Managed library-file validation echoed source or implied execution authority.");
-  return { tools: tools.length, queries: 42, footprintMainDiscoveryChecked: true, ratlineContinuationDiscoveryChecked: true, footprintCopyPreparationDiscoveryChecked: true, footprintCopyRoutePreparationDiscoveryChecked: true };
+  return { tools: tools.length, queries: CATALOG_QUERY_COUNT, footprintMainDiscoveryChecked: true, ratlineContinuationDiscoveryChecked: true, footprintCopyPreparationDiscoveryChecked: true, footprintCopyRoutePreparationDiscoveryChecked: true };
 }
 
 export async function probeInstalledOfflineCatalog(installedRoot: string): Promise<Record<string, unknown>> {
@@ -498,6 +499,7 @@ export async function probeInstalledOfflineCatalog(installedRoot: string): Promi
     await child.sample(controlDirectory, upstreamMarker, nodeExecutable);
     closeAttempted = true;
     const closed = await child.close(); child = undefined;
+    requireCheck(closed["requests"] === REQUEST_LIMIT, "Offline catalog did not consume its complete fixed request count.");
     await assertClosedOfflineState(controlDirectory, upstreamMarker);
     for (const file of retained) { await file.assertCurrent(); }
     const report = { ok: true, scope: "synthetic-profile-installed-package-offline-catalog;not-runtime-admission",

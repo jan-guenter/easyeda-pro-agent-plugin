@@ -158,3 +158,33 @@ the three-file runtime projection is
 `85bc0081e7b2ac322b9c66f60a6b27f8d3c71d350a75a30cb245b9665fdd6a8c`.
 Every external compatibility pin remains unchanged from the starting main.
 Publication, exact-commit CI and installation remain pending.
+
+## First CI fixture corrections
+
+Candidate `c47f7fc8fc95b3066c241de7ed1f487ea7831fb8` passed build and
+Windows CI40734471879. Linux CI40734470510 found two stale test fixtures:
+`facade-mode.test.ts` still expected six launch purposes, and the isolated
+`current-pcb-worker-startup-validation.test.ts` context did not define the new
+main-owner variable used by the actual exclusion guard. The failures are retained;
+this candidate is not merged or installed.
+
+The correction expects seven purposes and supplies the isolated main-owner
+variable. The existing reservation-exclusion loop now also checks an active main
+owner. Both test files and targeted strict lint passed. Runtime source, bundles,
+helper, compatibility pins and version remain unchanged. Corrected exact-commit
+CI is required before release.
+
+The final shard also found the offline catalog checker's old request ceiling.
+Four new discovery/validation queries raised its catalog from 38 to 42, while
+the checker still allowed only 40 protocol requests including initialization
+and tool listing. This stopped its success case and the shutdown-effect negative
+case before their intended boundary. One maintained catalog-count constant now
+sets both the report and exact 44-request ceiling, with final original-child
+request-count equality checked after EOF. The complete offline probe fixture
+still checks private profile isolation samples, shutdown markers and closure.
+
+The first full Linux run is terminal: 13,398 tests, 13,389 passes, four failures,
+five expected platform skips and zero cancellations. All 424 bridge tests and
+Windows passed. Complete job logs, the first artifact and its exact committed
+inventory are retained separately. These corrections change tests and checkout
+tooling only; the frozen runtime source and bundle projections remain unchanged.
