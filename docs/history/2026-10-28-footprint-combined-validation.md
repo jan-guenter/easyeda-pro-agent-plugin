@@ -161,3 +161,15 @@ Every external compatibility pin remains unchanged. Earlier main
 CI40773441413 completed successfully; the prior release's pending main-CI
 statement is historical. Candidate publication and installation still require
 exact-payload CI and committed byte/mode verification.
+
+
+## Exact CI correction, 2026-10-28
+
+Initial candidate `446778c2b5f7191a94ddb717fdef6de994539799` passed build
+and Windows CI. Facade shard1 stopped at a source-parity test whose two exact
+expected native limit expressions omitted the new leading combined-purpose
+branch. Its result was1,316 passes and one failure. The test expectations now
+include that branch and retain every legacy branch. Runtime code, request
+budgets, helper bytes, reviewed projections and external pins are unchanged.
+The failed log remains retained; the corrected candidate needs its own exact
+complete CI result. A successful focused retry does not replace that requirement.
