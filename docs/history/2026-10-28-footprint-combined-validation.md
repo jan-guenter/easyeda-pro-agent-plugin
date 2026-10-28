@@ -184,3 +184,33 @@ Production code and guards are unchanged. All six bootstrap and four source-repl
 cases pass after this fixture-only correction. The six original failed tests
 include the single parity case above; no other non-cancellation failure marker
 was found in those retained logs. Corrected exact-payload CI is still required.
+
+
+## Dependency advisory correction, 2026-10-28 UTC
+
+Candidate `1a99d7e7fa259758a2b56aa474f39c9c4763342c` reached a new audit
+failure for the unchanged locked `@hono/node-server1.19.17`. The
+[maintainer advisory](https://github.com/honojs/node-server/security/advisories/GHSA-rmxm-3fg6-px4f)
+identifies a moderate double-decoding bypass in `serveStatic`, fixed in2.1.3.
+The [authoritative GitHub advisory API](https://api.github.com/advisories/GHSA-rmxm-3fg6-px4f)
+reports publication at21:05UTC on October28;
+the audit began reporting it during this release. Earlier clean audit results
+remain historical observations.
+
+The lock now resolves2.1.5, the current patched release accepted by SDK1.32.1's
+existing `^1.19.9 || ^2.0.5` range. Node24.18 satisfies its Node>=20 requirement.
+The [official2.1.3-to2.1.5 comparison](https://github.com/honojs/node-server/compare/v2.1.3...v2.1.5)
+adds Hono5 peer compatibility, HTTP/2 request-abort handling and GET/HEAD-only
+static serving. Only this transitive lock entry changed; no direct dependency,
+SDK version, override or audit threshold changed. The existing bundled input
+inventory and both runtime bundles contain no `@hono/node-server` or affected
+static-serving module. This absence does not waive the dependency audit.
+
+
+After the lock update, clean dependency installation, complete dependency tree,
+151 registry signatures,42 attestations and the moderate-threshold audit passed
+with zero vulnerabilities. Both rebuilt bundles are byte-identical to the
+previous frozen candidate and reproduce on a second build. Facade and bridge
+types, strict lint, generators/sanitizer, coverage, all skills, plugin/MCP and
+repository checks passed. Source/runtime projections remain the878/3 hashes
+recorded above; external pins are unchanged. Only review time refreshed.
