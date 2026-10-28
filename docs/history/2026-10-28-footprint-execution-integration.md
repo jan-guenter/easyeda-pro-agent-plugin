@@ -142,3 +142,28 @@ compatibility, repository/contract/skill validators and seven skill-creator chec
 passed. The three status regressions were repeated after source, bundles and pins
 were frozen and passed. The earlier dependency and unchanged native-helper checks
 remain applicable to this correction. Complete suites await new exact-commit CI.
+
+## Extracted registration fixture correction
+
+Corrected candidate `2ec410e3874d6e10c5818c91ca8aa12948dcec5c` passed the build,
+Windows CI40705351588 and the packaged status callback in Linux CI40705351823.
+That callback returned 283,579 bytes on the longer CI installation path. Shard6
+then reported four failures in the extracted status-registration fixture: its
+isolated VM omitted the newly imported `projectPublicEngineStatus` binding.
+The fixture had also returned only a synthetic marker instead of the shared
+implementation fingerprint the real engine supplies. These were test-harness
+failures, not another packaged status overflow. Their full logs are retained.
+
+The fixture correction injects the real imported projector and a typed shared
+fingerprint. Existing admission, lease, quarantine and error-propagation checks
+remain in place. Runtime source, bundles, manifest pins and the plugin version
+remain unchanged. This correction needs its own exact-commit CI before release.
+
+All seven affected registration tests, TypeScript, strict type-aware lint and
+repository/contract/skill validators passed after the fixture correction.
+Compatibility and byte-for-byte bundle checks confirm unchanged runtime payloads.
+
+The second CI run completed with 13,344 passing tests, those four fixture
+failures, zero cancelled tests and five expected platform skips. All other seven
+facade shards, the build and 424 bridge tests passed. Full logs and the exact
+2,221-file artifact comparison are retained for this failed candidate.
