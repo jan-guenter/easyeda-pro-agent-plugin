@@ -68,7 +68,7 @@ async function fixture(): Promise<Readonly<{ run: Run; owners: readonly Readonly
     windowsRuntime: undefined, ordinaryLaunchRuntime: undefined, currentDisposableOpenCoordinator: undefined,
     currentPcbRenameOperationCoordinator: undefined, currentSchematicRenameOperationCoordinator: undefined,
     closedSymbolIndexReservation: undefined, closedSymbolUnreservedFailure: { observed: false }, scheduledShutdown: undefined,
-    currentPcbDiagnosticLifecycle: undefined, currentPcbStringPrecreateLifecycle: undefined };
+    currentPcbDiagnosticLifecycle: undefined, currentPcbStringPrecreateLifecycle: undefined, currentFootprintMainLifecycle: undefined };
   const source = await readFile(new URL("../src/index.ts", import.meta.url), "utf8");
   const begin = source.indexOf("  let startupOriginal:"), end = source.indexOf("\n  if (facadeToolRegistered", begin);
   // The preparation route extends this actual source slice beyond 20,000 characters.

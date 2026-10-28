@@ -126,3 +126,55 @@ program equality. All seven tests in the file, types and strict lint passed;
 independent review accepted the one-line change. Source, native helper, runtime
 bundles, compatibility pins and version remain unchanged. Corrected exact-commit
 CI is required before release.
+
+
+## Publication and installation, 2026-10-28
+
+Corrected candidate `f85363cdade14528f00d624273f62fc001e542d0` passed Linux
+CI40723161351 and Windows CI40723161131. All eight facade shards, build and
+aggregate checks succeeded. Totals were 13,373 passing facade tests, five expected
+platform skips and zero failures or cancellations, plus all 424 bridge tests.
+The earlier CI40720383891 failure is retained with its sole stale parity extractor;
+its other seven shards and build passed. No full local suite was duplicated.
+
+[PR142](https://github.com/jan-guenter/easyeda-pro-agent-plugin/pull/142) merged as
+`22db63a6c55021f1ce646df47264e100f7770bd7`. Its root tree
+`1f55494498674bb86e2f225acad979ea918645df` equals the tested candidate tree.
+The batch changes 47 files. The complete CI artifact was independently compared
+with every committed plugin byte and mode. Local checkout verification also
+corrected 63 tracked-file and five directory permission discrepancies to the
+committed 0644/0755 modes without changing bytes.
+
+The official CLI upgraded only Git marketplace `easyeda-pro-agent` from
+`https://github.com/jan-guenter/easyeda-pro-agent-plugin.git`. The installer used
+umask022 and process-local parallel Git checkout settings, with no persistent Git
+configuration or cache patch. It completed successfully; the unrelated stale-arg0
+cleanup warning remained nonfatal. Marketplace HEAD equals merged main.
+Version `0.3.0+codex.20261028154656` is installed and enabled.
+
+The maintained installed comparison verified 2,230 files, 42 directories and
+43,936,934 bytes against plugin subtree
+`d0c482903229e41c8d8b12ec8b4a2d994ecb804f`, including exact modes and no extras.
+Its full inventory SHA256 is
+`7c4c7e0377f90c374a86784626f14ec0b2ea459b2aa4ca17e659f2e75d8c62ea`.
+The dependency-free offline probe passed 38 catalog queries with 27 exposed tools,
+then closed its owned child by stdin EOF with exit0 and empty stderr. It used only
+its synthetic profile and sampled no upstream child or non-stdio socket. This is
+not continuous isolation or actual-host/connected admission.
+
+Main Windows CI40725965831 passed; main Linux CI40725965492 was running when
+this record was written. Exact PR-payload checks already passed. The live host
+still belongs to134521. A fresh Codex session must load154656 and admit the actual
+process before one new disposable probe of the corrected parent/cache capture
+and registered clock observation. The completed134521 operation is terminal
+released and must not be replayed. No production CAD edit was performed.
+
+The next original-main backend implementation has a concrete transport plan in
+retained private research. It requires owned stderr, an original root-PID/Job-bound
+inspector connection, genuine app.js handler/request-context/SQL owners and
+actual document-clock continuations. A renderer registration sample cannot
+substitute for those owners. Complete copy/delete and the broader backlog above
+remain unfinished.
+
+This local publication appendix is retained for the next substantive commit;
+the installed package stays exactly the tested merged tree.

@@ -122,7 +122,16 @@ void test("native DOS creation verifies the retained original image before one p
   // One P/Invoke declaration plus the image-verified call checked above.
   assert.equal(source.match(/\bResumeThread\s*\(/gu)?.length, 2);
   assert.ok(!source.includes("OpenProcess("));
-  assert.ok(!source.includes("TerminateJobObject"));
+  // Explicit forced cleanup is confined to the separately confirmed original
+  // Main diagnostic purpose. Older purposes retain their existing closure gate.
+  const mainBegin = source.indexOf("// BEGIN GENERATED FOOTPRINT MAIN TRANSPORT PROTOCOL"), mainEnd = source.indexOf("// END GENERATED FOOTPRINT MAIN TRANSPORT PROTOCOL");
+  assert.ok(mainBegin !== -1 && mainEnd > mainBegin);
+  const main = source.slice(mainBegin, mainEnd);
+  assert.equal(main.match(/\bTerminateJobObject\(/gu)?.length, 2);
+  assert.ok(main.includes("TerminateJobObject(job,0x4544414d)"));
+  assert.ok(!(source.slice(0, mainBegin) + source.slice(mainEnd)).includes("TerminateJobObject"));
+  assert.ok(source.includes("public void TerminateMain(){MainPurpose();originalMain.RequestOriginalJobTermination();}"));
+  assert.ok(source.includes("$request.confirmTerminateOriginalDiagnosticJob -isnot [bool]"));
 });
 void test("native unlaunched release refuses any consumed launch or retained native root", async () => {
   const source = await readFile(new URL("../../scripts/pcb-diagnostic-owner.ps1", import.meta.url), "utf8");

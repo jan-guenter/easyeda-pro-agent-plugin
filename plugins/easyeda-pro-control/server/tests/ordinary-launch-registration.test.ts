@@ -36,7 +36,7 @@ void test("ordinary launcher registration keeps quarantine and exact shared runt
     ordinaryLaunchCoordinator: undefined, ordinaryLaunchRuntime: undefined, windowsRuntime: undefined,
     closedSymbolIndexReservation: undefined, scheduledShutdown: undefined,
     currentDisposableOpenCoordinator: undefined, currentPcbRenameOperationCoordinator: undefined, currentSchematicRenameOperationCoordinator: undefined,
-    currentPcbDiagnosticLifecycle: undefined, currentPcbStringPrecreateLifecycle: undefined, currentPcbWorkerStartupLifecycle: undefined,
+    currentPcbDiagnosticLifecycle: undefined, currentPcbStringPrecreateLifecycle: undefined, currentPcbWorkerStartupLifecycle: undefined, currentFootprintMainLifecycle: undefined,
     closedSymbolUnreservedFailure: { observed: false },
     assertOrdinaryRuntimeAllocationAllowed: (): void => { checks += 1; },
     engine: { assertBridgeDispatchAllowed: async (): Promise<void> => {

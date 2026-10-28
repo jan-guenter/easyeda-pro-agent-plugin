@@ -265,7 +265,7 @@ async function offlineApi(child: OfflineChild, request: Record<string, unknown>)
   return record(content["result"]);
 }
 
-async function catalogChecks(child: OfflineChild, sample: () => Promise<void>): Promise<{ readonly tools: number; readonly queries: number; readonly ratlineContinuationDiscoveryChecked: true; readonly footprintCopyPreparationDiscoveryChecked: true; readonly footprintCopyRoutePreparationDiscoveryChecked: true }> {
+async function catalogChecks(child: OfflineChild, sample: () => Promise<void>): Promise<{ readonly tools: number; readonly queries: number; readonly ratlineContinuationDiscoveryChecked: true; readonly footprintCopyPreparationDiscoveryChecked: true; readonly footprintCopyRoutePreparationDiscoveryChecked: true; readonly footprintMainDiscoveryChecked: true }> {
   const initialized = await child.request("initialize", {
     protocolVersion: "2024-11-05", capabilities: {}, clientInfo: { name: "easyeda-installed-offline-probe", version: "1.0.0" },
   });
@@ -377,6 +377,20 @@ async function catalogChecks(child: OfflineChild, sample: () => Promise<void>): 
     requireCheck(result["valid"] === valid && result["executionAuthorized"] === false,
       "Footprint route validation accepted a foreign purpose, caller budget or execution authority.");
   }
+  const footprintMain = await offlineApi(child, { action: "footprint-main", query: { includeSchemas: true } });
+  requireCheck(footprintMain["toolWrapperAction"] === "footprint-main" && footprintMain["executionAuthorized"] === false &&
+    footprintMain["saveAuthorized"] === false && footprintMain["connectedValidation"] === false &&
+    Array.isArray(footprintMain["actions"]) && footprintMain["actions"].includes("observe-main-construction"),
+  "Original main discovery changed or implied writer authority.");
+  const mainRequest = { action: "terminate-main", operationId: "footprint-main-offline-catalog",
+    expectedBindingSha256: "a".repeat(64), confirmTerminateOriginalDiagnosticJob: true };
+  for (const { request, valid } of [{ request: mainRequest, valid: true },
+    { request: { ...mainRequest, confirmTerminateOriginalDiagnosticJob: false }, valid: false },
+    { request: { ...mainRequest, inspectorUrl: "ws://127.0.0.1:1/caller" }, valid: false }]) {
+    const result = await offlineApi(child, { action: "footprint-main-validate", query: { request } });
+    requireCheck(result["valid"] === valid && result["executionAuthorized"] === false,
+      "Original main validation accepted unconfirmed termination or caller transport.");
+  }
   const netlist = await offlineApi(child, { action: "netlist-files", query: { includeSchemas: true } });
   requireCheck(netlist["method"] === "eda.sys_Tool.netlistComparison" && netlist["executionAuthorized"] === false &&
     netlist["invocationEnabledByDiscovery"] === false && Array.isArray(record(netlist["inputSchema"])["oneOf"]),
@@ -420,7 +434,7 @@ async function catalogChecks(child: OfflineChild, sample: () => Promise<void>): 
   requireCheck(fileValidation["valid"] === true && fileValidation["executionAuthorized"] === false &&
     record(fileValidation["requestSummary"])["base64Echoed"] === false && !Object.hasOwn(fileValidation, "request"),
   "Managed library-file validation echoed source or implied execution authority.");
-  return { tools: tools.length, queries: 38, ratlineContinuationDiscoveryChecked: true, footprintCopyPreparationDiscoveryChecked: true, footprintCopyRoutePreparationDiscoveryChecked: true };
+  return { tools: tools.length, queries: 42, footprintMainDiscoveryChecked: true, ratlineContinuationDiscoveryChecked: true, footprintCopyPreparationDiscoveryChecked: true, footprintCopyRoutePreparationDiscoveryChecked: true };
 }
 
 export async function probeInstalledOfflineCatalog(installedRoot: string): Promise<Record<string, unknown>> {

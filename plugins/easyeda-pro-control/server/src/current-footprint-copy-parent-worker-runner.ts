@@ -31,12 +31,35 @@ const property = z.object({ name: z.string().max(128), value: remote, writable: 
 const internal = z.object({ name: z.string().max(128), value: remote }).strict();
 const childNames = ["addEventListener", "removeEventListener", "stopImmediatePropagation", "get data", "get type", "get currentTarget"] as const;
 const childArities = [2, 2, 0, 0, 0, 0] as const;
-function need(value: boolean, reason: string): asserts value { if (!value) { throw new Error(`FOOTPRINT_PARENT_WORKER_${reason}`); } }
+type PeerStep = Phase | "not-started" | "owner-check" | "bootstrap-advance" | "properties" | "release";
+interface PeerFailure {
+  readonly step: PeerStep;
+  readonly stage: Parameters<Transport["assertOriginalState"]>[0];
+  readonly requests: number;
+  readonly replies: number;
+  readonly kind: "deadline" | "contract" | "request-or-owner";
+  readonly code: string | null;
+}
+const issuedPeerFailures = new WeakMap<object, string>();
+function peerFailure(code: string): Error {
+  const error = new Error(`FOOTPRINT_PARENT_WORKER_${code}`);
+  issuedPeerFailures.set(error, code); return error;
+}
+/** Only this module's issued errors may supply a diagnostic code. A dependency
+ * message that resembles an internal error remains an unclassified failure. */
+function peerFailureKind(error: unknown): Pick<PeerFailure, "kind" | "code"> {
+  if (error !== null && typeof error === "object" && !types.isProxy(error)) {
+    const code = issuedPeerFailures.get(error);
+    if (code !== undefined) { return { kind: code === "DEADLINE" ? "deadline" : "contract", code: `FOOTPRINT_PARENT_WORKER_${code}` }; }
+  }
+  return { kind: "request-or-owner", code: null };
+}
+function need(value: boolean, reason: string): asserts value { if (!value) { throw peerFailure(reason); } }
 async function bounded<T>(promise: Promise<T>, milliseconds: number): Promise<T> {
   let timer: ReturnType<typeof setTimeout> | undefined;
   const deadline = Promise.withResolvers<never>();
   try {
-    timer = setTimeout(() => { deadline.reject(new Error("FOOTPRINT_PARENT_WORKER_DEADLINE")); }, milliseconds);
+    timer = setTimeout(() => { deadline.reject(peerFailure("DEADLINE")); }, milliseconds);
     return await Promise.race([promise, deadline.promise]);
   } finally { clearTimeout(timer); }
 }
@@ -118,6 +141,8 @@ export class CurrentFootprintParentWorkerRunner {
   #requests = 0;
   #operationRequests = 0;
   #operationLimit = 0;
+  #step: PeerStep = "not-started";
+  #firstFailure: PeerFailure | null = null;
   public constructor(transport: Transport, binding: Binding) {
     this.#transport = transport; this.#members = members(transport);
     this.#binding = Object.freeze(bindingSchema.parse(captureCurrentPcbStringClockReply(binding).value));
@@ -125,8 +150,14 @@ export class CurrentFootprintParentWorkerRunner {
     this.#advance = transport.advanceOriginalChildBootstrap; this.#exited = transport.assertOriginalGenerationExited;
   }
   #same(): void { need(members(this.#transport).every((item, index) => item === this.#members[index]), "OWNER_CHANGED"); }
+  #fail(error: unknown): void {
+    this.#failed = true;
+    this.#firstFailure ??= Object.freeze({ step: this.#step, stage: this.#stage, requests: this.#requests,
+      replies: this.#raw.length, ...peerFailureKind(error) });
+  }
   async #current(): Promise<void> { this.#same(); await bounded(this.#assertState(this.#stage), LIMITS.ownerCheckMs); this.#same(); }
   async #request(command: Command): Promise<unknown> {
+    this.#step = command.phase;
     await this.#current(); need(this.#operationRequests < this.#operationLimit, "BUDGET"); this.#operationRequests += 1; this.#requests += 1;
     const fixed = validateCurrentFootprintParentWorkerCommand(command);
     const reply = await bounded(this.#send(fixed), LIMITS.requestMs);
@@ -152,10 +183,14 @@ export class CurrentFootprintParentWorkerRunner {
     if (requireReceipt || this.#packet !== null) { need(reply.result.value.received, "DISPOSE_RECEIPT"); } this.#disposed = true;
   }
   public retained(): Readonly<{ attempted: boolean; failed: boolean; completed: boolean; requests: number; listenerRemoved: boolean;
-    cleanupAttempted: boolean; released: boolean; originalGenerationEnded: boolean; replies: readonly unknown[] }> {
+    cleanupAttempted: boolean; released: boolean; originalGenerationEnded: boolean; replies: readonly unknown[];
+    step: PeerStep; firstFailure: PeerFailure | null }> {
     return Object.freeze({ attempted: this.#attempted, failed: this.#failed, completed: this.#packet !== null, requests: this.#requests,
       listenerRemoved: this.#disposed, cleanupAttempted: this.#cleanupAttempted, released: this.#released,
-      originalGenerationEnded: this.#generationEnded, replies: Object.freeze([...this.#raw]) });
+      originalGenerationEnded: this.#generationEnded, replies: Object.freeze([...this.#raw]), step: this.#step, firstFailure: this.#firstFailure });
+  }
+  public diagnostics(): Readonly<Omit<ReturnType<CurrentFootprintParentWorkerRunner["retained"]>, "replies"> & { replies: number }> {
+    const { replies, ...state } = this.retained(); return Object.freeze({ ...state, replies: replies.length });
   }
   public async observe(): Promise<CurrentFootprintParentWorkerObservation> {
     need(!this.#attempted && !this.#busy, "CONSUMED"); this.#attempted = true; this.#busy = true;
@@ -173,6 +208,7 @@ export class CurrentFootprintParentWorkerRunner {
         decodeCurrentFootprintParentWorkerNative(await this.#properties("child", id), name, arity);
       }
       this.#installAttempted = true; yes.parse(await this.#call("childInstall", "child", this.#child, this.#value()));
+      this.#step = "bootstrap-advance";
       await this.#current(); await bounded(this.#advance(), LIMITS.bootstrapMs); this.#same(); this.#stage = "bootstrap-idle"; await this.#current();
       yes.parse(await this.#call("parentSend", "parent", this.#parent, this.#value()));
       const receiptValue = z.object({ profile: z.literal("private.current-footprint-worker-peer-receipt.v1"), nonce: z.literal(this.#nonce), trusted: z.literal(true), removed: z.literal(true) }).strict();
@@ -184,7 +220,7 @@ export class CurrentFootprintParentWorkerRunner {
       this.#packet = Object.freeze({ profile: "private.current-footprint-parent-worker-peer.v1", parentWorkerNativeMessageReceivedByOriginalChild: true,
         diagnosticListenerRemoved: true, reciprocalProjectChannelQualified: false, backendDynamicDispatchQualified: false, executionAuthorized: false });
       issued.set(this.#packet, this); this.#stage = "peer-proved"; return this.#packet;
-    } catch (error) { this.#failed = true; throw error; } finally { this.#busy = false; }
+    } catch (error) { this.#fail(error); throw error; } finally { this.#busy = false; }
   }
   public async requireOriginal(packet: CurrentFootprintParentWorkerObservation): Promise<void> {
     need(!this.#busy && !this.#failed && !this.#cleanupAttempted && !this.#released && !this.#generationEnded && packet === this.#packet && issued.get(packet) === this && this.#parent !== null && this.#child !== null && this.#disposed, "ORIGINAL");

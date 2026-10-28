@@ -2,6 +2,8 @@
  * recreates a native owner. Partial reservations remain launch blockers. */
 /* oxlint-disable import/max-dependencies -- This shared journal validates distinct diagnostic, String and common evidence, including global String exclusion, without merging their authority. */
 import { constants } from "node:fs";
+import { createHash } from "node:crypto";
+import type { Hash } from "node:crypto";
 import type { BigIntStats, Dirent } from "node:fs";
 import { lstat, mkdir, open, opendir } from "node:fs/promises";
 import { join } from "node:path";
@@ -44,6 +46,8 @@ import { CURRENT_PCB_209_POURED_SHAPES_RESULT_BYTES } from "./current-pcb-209-po
 import { CURRENT_PCB_209_PAD_SHAPES_RESULT_BYTES } from "./current-pcb-209-pad-shapes.ts";
 import { CURRENT_PCB_209_SELECTION_RELATIONS_RESULT_BYTES, currentPcb209SelectionRelationsComponentIdsSchema } from "./current-pcb-209-selection-relations.ts";
 import { assertNoUnresolvedCurrentPcbStringLedgers } from "./current-pcb-string-ledger-exclusion.ts";
+import { CURRENT_FOOTPRINT_MAIN_OPERATION_PREFIX, currentFootprintMainIdSchema } from "./current-footprint-main-validation.ts";
+import { currentFootprintCopyMainBackendObservationSchema } from "./current-footprint-copy-main-backend-runner.ts";
 import { CURRENT_PCB_COMMON_FAILURE_MAX_BYTES, currentPcbCommonBaselineFailureSchema, currentPcbCommonBaselineResultSchema } from "./current-pcb-common-baseline-validation.ts";
 
 const DIRECTORY = "pcb-diagnostic-lifecycle-v1";
@@ -54,6 +58,12 @@ export const DIAGNOSTIC_OBSERVATION_MAX_BYTES = 128 * 1024;
 export const STRING_PRECREATE_OBSERVATION_V2_MAX_BYTES = 680 * 1024;
 export const STRING_PRECREATE_OBSERVATION_MAX_BYTES = 712 * 1024;
 const MAX_OPERATIONS = 4096;
+const MAX_SETTLED_CHAIN_BYTES = 262_144, MAX_SETTLED_CHAIN_ENTRIES = 512;
+// Only a pure schema/chain computation is reused. Every guard enumerates the
+// Complete current roster and reads every record byte through readRecordBytes.
+// No records, process handles, admission result or execution token are retained.
+const settledChains = new Map<string, Readonly<{ digest: string; bytes: number }>>();
+let settledChainBytes = 0;
 export type CurrentPcbDiagnosticLifecyclePurpose = "diagnostic" | "string-precreate" | "worker-startup";
 const qualifiedPcbOpeningSchema = z.looseObject({
   family: z.literal("pcb"), sourceVerified: z.literal(true), domOwnerVerified: z.literal(true),
@@ -113,12 +123,26 @@ const workerStartupFootprint209IntentSchema = workerStartupIntentSchema.extend({
 const workerStartupFootprintRoute209IntentSchema = workerStartupIntentSchema.extend({
   schema: z.literal("easyeda-pro-control.footprint-copy-route-preparation-launch-intent.v1"), operationId: currentFootprintCopyRoutePreparationIdSchema,
 });
+const mainIntentSchema = workerStartupIntentSchema.extend({
+  schema: z.literal("easyeda-pro-control.footprint-main-launch-intent.v1"), operationId: currentFootprintMainIdSchema,
+  acceptDebuggerPauseEffects: z.literal(true),
+});
+const mainBound = { ...base, operationId: currentFootprintMainIdSchema, bindingSha256: diagnosticLifecycleDigestSchema };
+const mainObservationIntentSchema = z.object({ ...mainBound, schema: z.literal("easyeda-pro-control.footprint-main-construction-intent.v1") }).strict();
+const mainObservationResultSchema = z.object({ ...base, operationId: currentFootprintMainIdSchema,
+  schema: z.literal("easyeda-pro-control.footprint-main-construction-result.v1"), intentSha256: diagnosticLifecycleDigestSchema,
+  result: currentFootprintCopyMainBackendObservationSchema }).strict();
+const mainTerminateIntentSchema = z.object({ ...mainBound, schema: z.literal("easyeda-pro-control.footprint-main-terminate-intent.v1"),
+  confirmTerminateOriginalDiagnosticJob: z.literal(true) }).strict();
+const mainTerminateAckSchema = z.object({ ...base, operationId: currentFootprintMainIdSchema,
+  schema: z.literal("easyeda-pro-control.footprint-main-terminate-acknowledged.v1"), intentSha256: diagnosticLifecycleDigestSchema,
+  terminationDispatched: z.literal(true), terminationProved: z.literal(false) }).strict();
 const footprintStartupId = z.union([currentPcb209WorkerStartupLifecycleIdSchema, currentFootprintCopyPreparationIdSchema]);
 const legacyStartupId = z.union([currentPcbWorkerStartupLifecycleIdSchema, footprintStartupId]);
 const startupId = z.union([legacyStartupId, currentFootprintCopyRoutePreparationIdSchema]);
 const startupOpeningId = z.union([startupId, currentPcb209EmptyStartupIdSchema, currentPcb209RatlineStartupIdSchema, currentPcb209RatlineContinuationIdSchema]);
 const intentSchema = z.discriminatedUnion("schema", [diagnosticIntentSchema, stringIntentSchema, workerStartupIntentSchema,
-  workerStartup209IntentSchema, workerStartupEmpty209IntentSchema, workerStartupRatline209IntentSchema, workerStartupContinuation209IntentSchema, workerStartupFootprint209IntentSchema, workerStartupFootprintRoute209IntentSchema]);
+  workerStartup209IntentSchema, workerStartupEmpty209IntentSchema, workerStartupRatline209IntentSchema, workerStartupContinuation209IntentSchema, workerStartupFootprint209IntentSchema, workerStartupFootprintRoute209IntentSchema, mainIntentSchema]);
 const workerStartupHandoffIntentSchema = z.object({ schema: z.literal("easyeda-pro-control.pcb-worker-startup-handoff-intent.v1"), ...base,
   operationId: startupOpeningId, bindingSha256: diagnosticLifecycleDigestSchema,
   scriptResultSha256: diagnosticLifecycleDigestSchema,
@@ -610,6 +634,10 @@ export const diagnosticLifecycleRecordSchemas = {
   "footprint-copy-manager-route-result.json": footprintManagerRouteResultSchema,
   "worker-startup-channel-intent.json": workerStartupChannelIntentSchema,
   "worker-startup-channel-result.json": workerStartupChannelResultSchema,
+  "main-construction-intent.json": mainObservationIntentSchema,
+  "main-construction-result.json": mainObservationResultSchema,
+  "main-terminate-intent.json": mainTerminateIntentSchema,
+  "main-terminate-acknowledged.json": mainTerminateAckSchema,
   "observation-failure.json": observationFailureSchema,
 } as const;
 export type DiagnosticLifecycleRecords = { readonly [Key in keyof typeof diagnosticLifecycleRecordSchemas]?: z.infer<(typeof diagnosticLifecycleRecordSchemas)[Key]> };
@@ -678,7 +706,7 @@ async function entries(directory: ControlRootDirectory, limit: number): Promise<
   }
   return result;
 }
-async function readRecord(directory: ControlRootDirectory, name: RecordName): Promise<unknown> {
+async function readRecordBytes(directory: ControlRootDirectory, name: RecordName): Promise<Buffer> {
   const path = `/proc/self/fd/${String(directory.handle.fd)}/${name}`;
   // oxlint-disable-next-line no-bitwise -- Bound regular journal descriptors must not follow links or block on devices.
   const handle = await open(path, constants.O_RDONLY | constants.O_NOFOLLOW | constants.O_NONBLOCK);
@@ -693,8 +721,60 @@ async function readRecord(directory: ControlRootDirectory, name: RecordName): Pr
     }
     requireValue(count === Number(initial.size) && same(initial, await handle.stat({ bigint: true })) &&
       same(initial, await lstat(path, { bigint: true })), "RECORD_CHANGED");
-    return JSON.parse(new TextDecoder("utf-8", { fatal: true }).decode(bytes.subarray(0, count))) as unknown;
+    return bytes.subarray(0, count);
   } finally { await handle.close(); }
+}
+async function readRecord(directory: ControlRootDirectory, name: RecordName): Promise<unknown> {
+  return JSON.parse(new TextDecoder("utf-8", { fatal: true }).decode(await readRecordBytes(directory, name))) as unknown;
+}
+function hashRecord(hash: Hash, name: RecordName, bytes: Buffer): void {
+  hash.update(`${name}\0${String(bytes.length)}\0`); hash.update(bytes); hash.update("\0");
+}
+function settled(operation: DiagnosticLifecycleOperation): boolean {
+  return operation.records["released.json"] !== undefined || operation.records["not-dispatched.json"] !== undefined ||
+    operation.records["no-process-released.json"] !== undefined;
+}
+function forgetSettledChain(key: string): void {
+  const previous = settledChains.get(key);
+  if (previous !== undefined) { settledChains.delete(key); settledChainBytes -= previous.bytes; }
+}
+/** A matching digest only replaces deterministic parsing and validateChain.
+ * Descriptor authority, every byte and both directory rosters remain fresh. */
+async function requireSettledOperation(directory: ControlRootDirectory, operationId: string): Promise<void> {
+  const initial = await directory.handle.stat({ bigint: true });
+  const key = JSON.stringify([directory.absolute, String(initial.dev), String(initial.ino), operationId]);
+  const currentEntries = await entries(directory, Object.keys(diagnosticLifecycleRecordSchemas).length);
+  const roster = currentEntries.toSorted((left, right) => left.name.localeCompare(right.name));
+  for (const record of roster) { requireValue(record.isFile() && recordName(record.name), "UNKNOWN_RECORD"); }
+  const expected = settledChains.get(key);
+  let matched = false;
+  let pending: Readonly<{ digest: string; bytes: number }> | null = null;
+  if (expected !== undefined) {
+    const hash = createHash("sha256");
+    for (const record of roster) {
+      requireValue(recordName(record.name), "UNKNOWN_RECORD");
+      hashRecord(hash, record.name, await readRecordBytes(directory, record.name));
+    }
+    matched = hash.digest("hex") === expected.digest;
+    if (!matched) { forgetSettledChain(key); }
+  }
+  if (!matched) {
+    const hash = createHash("sha256"), records: DiagnosticLifecycleRecords = {};
+    for (const record of roster) {
+      requireValue(recordName(record.name), "UNKNOWN_RECORD");
+      const name = record.name;
+      const bytes = await readRecordBytes(directory, name); hashRecord(hash, name, bytes);
+      const value: unknown = JSON.parse(new TextDecoder("utf-8", { fatal: true }).decode(bytes));
+      Object.defineProperty(records, name, { enumerable: true, value: diagnosticLifecycleRecordSchemas[name].parse(value) });
+    }
+    const operation = { operationId, records }; validateChain(operation); requireValue(settled(operation), "UNRESOLVED_LAUNCH");
+    const digest = hash.digest("hex"); const bytes = Buffer.byteLength(key) + digest.length;
+    pending = Object.freeze({ digest, bytes });
+  }
+  requireValue(same(initial, await directory.handle.stat({ bigint: true })), "RECORD_ROSTER_CHANGED");
+  if (pending !== null && settledChains.size < MAX_SETTLED_CHAIN_ENTRIES && settledChainBytes + pending.bytes <= MAX_SETTLED_CHAIN_BYTES) {
+    forgetSettledChain(key); settledChains.set(key, pending); settledChainBytes += pending.bytes;
+  }
 }
 function validateChain(operation: DiagnosticLifecycleOperation): void {
   const records = operation.records;
@@ -709,6 +789,15 @@ function validateChain(operation: DiagnosticLifecycleOperation): void {
   const startupLegacy209 = intent?.schema === "easyeda-pro-control.pcb209-worker-startup-launch-intent.v1";
   const startupRatline209 = intent?.schema === "easyeda-pro-control.pcb209-ratline-startup-launch-intent.v1";
   const startupContinuation209 = intent?.schema === "easyeda-pro-control.pcb209-ratline-continuation-launch-intent.v1";
+  const mainPurpose = intent?.schema === "easyeda-pro-control.footprint-main-launch-intent.v1";
+  requireValue(!mainPurpose || operation.operationId.startsWith(CURRENT_FOOTPRINT_MAIN_OPERATION_PREFIX), "MAIN_PURPOSE_ID");
+  requireValue(intent === undefined || mainPurpose || !operation.operationId.startsWith(CURRENT_FOOTPRINT_MAIN_OPERATION_PREFIX), "RESERVED_MAIN_PURPOSE_ID");
+  const mainObservation = records["main-construction-intent.json"], mainResult = records["main-construction-result.json"];
+  const mainAck = records["main-terminate-acknowledged.json"], mainTerminate = records["main-terminate-intent.json"];
+  requireValue(mainObservation === undefined || mainPurpose && binding !== undefined && binding.launchAcknowledged && mainObservation.bindingSha256 === sha256Json(binding), "MAIN_CONSTRUCTION_CHAIN");
+  requireValue(mainResult === undefined || mainObservation !== undefined && mainResult.intentSha256 === sha256Json(mainObservation), "MAIN_CONSTRUCTION_RESULT_CHAIN");
+  requireValue(mainTerminate === undefined || mainPurpose && binding !== undefined && mainTerminate.bindingSha256 === sha256Json(binding) && close === undefined, "MAIN_TERMINATE_CHAIN");
+  requireValue(mainAck === undefined || mainTerminate !== undefined && mainAck.intentSha256 === sha256Json(mainTerminate), "MAIN_TERMINATE_ACK_CHAIN");
   const startupFootprintRoute209 = intent?.schema === "easyeda-pro-control.footprint-copy-route-preparation-launch-intent.v1";
   const startupFootprint209 = intent?.schema === "easyeda-pro-control.footprint-copy-preparation-launch-intent.v1";
   const startup209 = startupLegacy209 || startupEmpty209 || startupRatline209 || startupContinuation209 || startupFootprint209 || startupFootprintRoute209;
@@ -1028,9 +1117,30 @@ export async function readCurrentPcbDiagnosticLifecycles(): Promise<readonly Dia
 
 export async function assertNoUnresolvedCurrentPcbDiagnosticLaunches(): Promise<void> {
   await assertNoUnresolvedCurrentPcbStringLedgers();
-  const operations = await readCurrentPcbDiagnosticLifecycles();
-  requireValue(operations.every(operation => operation.records["released.json"] !== undefined || operation.records["not-dispatched.json"] !== undefined ||
-    operation.records["no-process-released.json"] !== undefined), "UNRESOLVED_LAUNCH");
+  const root = await controlRootCapability(false);
+  const parent = await root.openDirectory(join(controlDataDirectory(), DIRECTORY), false).catch((error: unknown) => {
+    if (absent(error)) { return null; } throw error;
+  });
+  if (parent === null) { await root.assertCurrent(); return; }
+  try {
+    const initial = await parent.handle.stat({ bigint: true });
+    const children = await entries(parent, MAX_OPERATIONS);
+    for (const entry of children.toSorted((left, right) => left.name.localeCompare(right.name))) {
+      requireValue(entry.isDirectory() && diagnosticLifecycleIdSchema.safeParse(entry.name).success, "UNKNOWN_OPERATION");
+      const slot = await root.openDirectory(join(parent.absolute, entry.name), false);
+      try {
+        await requireSettledOperation(slot, entry.name);
+        const current = await root.openDirectory(slot.absolute, false);
+        try { requireValue(current.info.dev === slot.info.dev && current.info.ino === slot.info.ino, "OPERATION_DIRECTORY_CHANGED"); }
+        finally { await current.handle.close(); }
+      } finally { await slot.handle.close(); }
+    }
+    requireValue(same(initial, await parent.handle.stat({ bigint: true })), "OPERATION_ROSTER_CHANGED");
+    const current = await root.openDirectory(parent.absolute, false);
+    try { requireValue(current.info.dev === parent.info.dev && current.info.ino === parent.info.ino, "OPERATION_PARENT_CHANGED"); }
+    finally { await current.handle.close(); }
+    await root.assertCurrent();
+  } finally { await parent.handle.close(); }
 }
 export async function reserveCurrentPcbDiagnosticLifecycle(operationId: string): Promise<void> {
   diagnosticLifecycleIdSchema.parse(operationId);

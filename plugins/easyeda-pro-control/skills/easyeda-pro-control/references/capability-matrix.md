@@ -121,6 +121,14 @@ reads; it cannot dispatch create or Save. Native HTTP backend and actor/clock
 ownership, complete external-effect qualification and connected saved-copy proof
 remain open. The complete private copy/closure/reopen coordinator is unmounted;
 its tests are not connected writer validation.
+The separate [original-main diagnostic](current-footprint-main.md) retains owned
+stderr and a root/Job/TCP-bound inspector connection, source-qualified original
+protocol/driver/router functions and native Date.now. It records no actual
+backend request context, actor/clock invocation, project SQL call or registration
+completion. Its 64 normal and eight cleanup requests are separate from renderer
+budgets. Explicit confirmed termination affects only its original diagnostic Job;
+observed root exit and empty Job remain required before release. Connected
+construction validation and the complete writer remain pending.
 The startup route retains the original
 native process, Job, pipe and fixed256-command budget. These observations do
 not establish continuous publisher ownership, peer containment, server clock

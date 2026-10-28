@@ -1,4 +1,4 @@
-param([switch]$CompileOnly,[switch]$StringPrecreate,[switch]$WorkerStartup,[switch]$Layers209,[switch]$WorkerStartup209,[switch]$WorkerStartupEmpty209,[switch]$WorkerStartupRatline209,[switch]$WorkerStartupRatlineContinuation209,[switch]$WorkerStartupFootprint209,[switch]$WorkerStartupFootprintCopy209,[switch]$WorkerStartupFootprintSaved209)
+param([switch]$CompileOnly,[switch]$StringPrecreate,[switch]$WorkerStartup,[switch]$Layers209,[switch]$WorkerStartup209,[switch]$WorkerStartupEmpty209,[switch]$WorkerStartupRatline209,[switch]$WorkerStartupRatlineContinuation209,[switch]$WorkerStartupFootprint209,[switch]$WorkerStartupFootprintCopy209,[switch]$WorkerStartupFootprintSaved209,[switch]$WorkerStartupFootprintMain209)
 $ErrorActionPreference = 'Stop'
 if (($StringPrecreate -and $WorkerStartup) -or ($Layers209 -and ($StringPrecreate -or $WorkerStartup))) {throw 'pcb-diagnostic-conflicting-purpose'}
 if ($WorkerStartup209 -and ($StringPrecreate -or $WorkerStartup -or $Layers209)) {throw 'pcb-diagnostic-conflicting-purpose'}
@@ -8,8 +8,9 @@ if ($WorkerStartupRatlineContinuation209 -and ($StringPrecreate -or $WorkerStart
 if ($WorkerStartupFootprint209 -and ($StringPrecreate -or $WorkerStartup -or $Layers209 -or $WorkerStartup209 -or $WorkerStartupEmpty209 -or $WorkerStartupRatline209 -or $WorkerStartupRatlineContinuation209)) {throw 'pcb-diagnostic-conflicting-purpose'}
 if ($WorkerStartupFootprintCopy209 -and ($StringPrecreate -or $WorkerStartup -or $Layers209 -or $WorkerStartup209 -or $WorkerStartupEmpty209 -or $WorkerStartupRatline209 -or $WorkerStartupRatlineContinuation209 -or $WorkerStartupFootprint209)) {throw 'pcb-diagnostic-conflicting-purpose'}
 if ($WorkerStartupFootprintSaved209 -and ($StringPrecreate -or $WorkerStartup -or $Layers209 -or $WorkerStartup209 -or $WorkerStartupEmpty209 -or $WorkerStartupRatline209 -or $WorkerStartupRatlineContinuation209 -or $WorkerStartupFootprint209 -or $WorkerStartupFootprintCopy209)) {throw 'pcb-diagnostic-conflicting-purpose'}
+if ($WorkerStartupFootprintMain209 -and ($StringPrecreate -or $WorkerStartup -or $Layers209 -or $WorkerStartup209 -or $WorkerStartupEmpty209 -or $WorkerStartupRatline209 -or $WorkerStartupRatlineContinuation209 -or $WorkerStartupFootprint209 -or $WorkerStartupFootprintCopy209 -or $WorkerStartupFootprintSaved209)) {throw 'pcb-diagnostic-conflicting-purpose'}
 $ratlinePurpose=$WorkerStartupRatline209 -or $WorkerStartupRatlineContinuation209
-$startupPurpose=$WorkerStartup -or $WorkerStartup209 -or $WorkerStartupEmpty209 -or $WorkerStartupFootprint209 -or $WorkerStartupFootprintCopy209 -or $WorkerStartupFootprintSaved209 -or $ratlinePurpose
+$startupPurpose=$WorkerStartupFootprintMain209 -or $WorkerStartup -or $WorkerStartup209 -or $WorkerStartupEmpty209 -or $WorkerStartupFootprint209 -or $WorkerStartupFootprintCopy209 -or $WorkerStartupFootprintSaved209 -or $ratlinePurpose
 [Console]::OutputEncoding = New-Object System.Text.UTF8Encoding($false)
 # Separate diagnostic owner. The ordinary no-argument launcher is unchanged.
 # Electron requests Browser::Quit on pipe disconnect. Never dispose live pipes,
@@ -1371,6 +1372,211 @@ Reject(()=>encode(0,"Runtime.callFunctionOn",sessionId));Reject(()=>encode(1,"Ru
 }
 public static class EasyedaFootprintSavedLimits { public const int Requests=353; public const int NormalRequests=319; public const long NormalMilliseconds=3600000L; public const long TotalMilliseconds=3660000L; }
 // END GENERATED FOOTPRINT COPY SAVED PROTOCOL
+// BEGIN GENERATED FOOTPRINT MAIN TRANSPORT PROTOCOL
+internal sealed class EasyedaOriginalMainTransport {
+  [System.Runtime.InteropServices.StructLayout(System.Runtime.InteropServices.LayoutKind.Sequential)] struct SA { public int length; public System.IntPtr descriptor; [System.Runtime.InteropServices.MarshalAs(System.Runtime.InteropServices.UnmanagedType.Bool)] public bool inherit; }
+  [System.Runtime.InteropServices.DllImport("kernel32.dll",SetLastError=true)] static extern bool CreatePipe(out System.IntPtr read,out System.IntPtr write,ref SA attributes,uint size);
+  [System.Runtime.InteropServices.DllImport("kernel32.dll",SetLastError=true)] static extern bool SetHandleInformation(System.IntPtr handle,uint mask,uint flags);
+  [System.Runtime.InteropServices.DllImport("kernel32.dll",SetLastError=true)] static extern bool GetHandleInformation(System.IntPtr handle,out uint flags);
+  [System.Runtime.InteropServices.DllImport("kernel32.dll",SetLastError=true)] static extern bool ReadFile(System.IntPtr handle,byte[] data,uint count,out uint read,System.IntPtr overlapped);
+  [System.Runtime.InteropServices.DllImport("kernel32.dll",SetLastError=true)] static extern bool CloseHandle(System.IntPtr handle);
+  [System.Runtime.InteropServices.DllImport("kernel32.dll",SetLastError=true)] static extern uint GetProcessId(System.IntPtr handle);
+  [System.Runtime.InteropServices.DllImport("kernel32.dll")] static extern uint GetCurrentProcessId();
+  [System.Runtime.InteropServices.DllImport("kernel32.dll",SetLastError=true)] static extern bool GetProcessTimes(System.IntPtr handle,out long created,out long exited,out long kernel,out long user);
+  [System.Runtime.InteropServices.DllImport("kernel32.dll",SetLastError=true)] static extern bool IsProcessInJob(System.IntPtr process,System.IntPtr job,out bool contains);
+  [System.Runtime.InteropServices.DllImport("kernel32.dll",SetLastError=true)] static extern uint WaitForSingleObject(System.IntPtr handle,uint milliseconds);
+  [System.Runtime.InteropServices.DllImport("kernel32.dll",SetLastError=true)] static extern bool QueryInformationJobObject(System.IntPtr job,int kind,System.IntPtr data,uint size,out uint returned);
+  [System.Runtime.InteropServices.DllImport("kernel32.dll",SetLastError=true)] static extern bool TerminateJobObject(System.IntPtr job,uint code);
+  [System.Runtime.InteropServices.DllImport("iphlpapi.dll",SetLastError=true)] static extern uint GetExtendedTcpTable(System.IntPtr table,ref uint size,[System.Runtime.InteropServices.MarshalAs(System.Runtime.InteropServices.UnmanagedType.Bool)] bool order,uint family,int kind,uint reserved);
+  internal sealed class Endpoint { internal int port; internal string token; }
+  internal sealed class TcpRow { internal uint state,localAddress,remoteAddress,pid; internal int localPort,remotePort; }
+  readonly object gate=new object();
+  readonly System.Diagnostics.Stopwatch elapsed=System.Diagnostics.Stopwatch.StartNew();
+  readonly System.Collections.Generic.List<byte> incoming=new System.Collections.Generic.List<byte>();
+  readonly System.IO.MemoryStream message=new System.IO.MemoryStream();
+  readonly System.Security.Cryptography.RandomNumberGenerator random=System.Security.Cryptography.RandomNumberGenerator.Create();
+  readonly System.Text.UTF8Encoding utf8=new System.Text.UTF8Encoding(false,true);
+  System.IntPtr stdinChild,stdinParent,stdoutChild,stdoutParent,stderrChild,stderrParent,root,job;
+  System.Action assertImage;
+  uint rootPid;long rootCreated,stdoutBytes,stderrBytes,totalReceived;int clientPort,requests,normalRequests,cleanupRequests,frames,polls;bool creationEntered,noRoot,drainStarted,childClosed,attachAttempted,attached,fragmented,terminationAttempted,terminated,released;
+  System.Threading.Thread stdoutThread,stderrThread;System.Net.Sockets.Socket socket;Endpoint endpoint;string failure;
+  static System.Exception Error(string code){return new System.InvalidOperationException("pcb-diagnostic-main-"+code);}
+  static void Need(bool value,string code){if(!value)throw Error(code);}
+  static void Close(ref System.IntPtr handle){if(handle==System.IntPtr.Zero)return;System.IntPtr original=handle;Need(CloseHandle(original),"close-handle");handle=System.IntPtr.Zero;}
+  static bool Handle(System.IntPtr handle,bool inheritable){uint flags;return handle!=System.IntPtr.Zero&&GetHandleInformation(handle,out flags)&&(flags&1)==(inheritable?1U:0U);}
+  void Fail(string code){lock(gate){if(failure==null)failure=code;}}
+  void CheckFailure(){lock(gate){Need(failure==null,"drain-failed");}}
+  internal void PreparePipes(){
+    Need(!creationEntered&&!released&&stdinChild==System.IntPtr.Zero&&stdinParent==System.IntPtr.Zero&&stdoutChild==System.IntPtr.Zero&&stdoutParent==System.IntPtr.Zero&&stderrChild==System.IntPtr.Zero&&stderrParent==System.IntPtr.Zero,"pipes-once");
+    var attributes=new SA();attributes.length=System.Runtime.InteropServices.Marshal.SizeOf(typeof(SA));attributes.inherit=true;
+    Need(CreatePipe(out stdinChild,out stdinParent,ref attributes,65536),"stdin-pipe");Need(SetHandleInformation(stdinParent,1,0),"stdin-parent");
+    Need(CreatePipe(out stdoutParent,out stdoutChild,ref attributes,65536),"stdout-pipe");Need(SetHandleInformation(stdoutParent,1,0),"stdout-parent");
+    Need(CreatePipe(out stderrParent,out stderrChild,ref attributes,65536),"stderr-pipe");Need(SetHandleInformation(stderrParent,1,0),"stderr-parent");
+    Need(Handle(stdinChild,true)&&Handle(stdoutChild,true)&&Handle(stderrChild,true)&&Handle(stdinParent,false)&&Handle(stdoutParent,false)&&Handle(stderrParent,false),"pipe-inheritance");
+  }
+  // These are the only extra child handles placed in the ORIGINAL handle list.
+  internal System.IntPtr StdinChild {get{Need(!childClosed&&Handle(stdinChild,true),"stdin-child");return stdinChild;}}
+  internal System.IntPtr StdoutChild {get{Need(!childClosed&&Handle(stdoutChild,true),"stdout-child");return stdoutChild;}}
+  internal System.IntPtr StderrChild {get{Need(!childClosed&&Handle(stderrChild,true),"stderr-child");return stderrChild;}}
+  internal void EnterCreation(){Need(!creationEntered&&!released&&Handle(stdinChild,true)&&Handle(stdoutChild,true)&&Handle(stderrChild,true),"creation-once");creationEntered=true;}
+  // Called only after CreateProcess returned false with all four outputs empty.
+  internal void DefiniteNoRoot(){Need(creationEntered&&root==System.IntPtr.Zero&&!noRoot&&!attachAttempted,"no-root-state");noRoot=true;}
+  internal void BindOriginalRoot(System.IntPtr originalRoot,System.IntPtr originalJob,uint originalPid,System.Action originalImageAssertion){
+    Need(creationEntered&&!noRoot&&root==System.IntPtr.Zero&&originalRoot!=System.IntPtr.Zero&&originalJob!=System.IntPtr.Zero&&originalPid>0&&originalImageAssertion!=null,"root-once");
+    root=originalRoot;job=originalJob;assertImage=originalImageAssertion;rootPid=originalPid;long created=0,exited,kernel,user;
+    Need(rootPid!=0&&rootPid!=GetCurrentProcessId()&&GetProcessTimes(root,out created,out exited,out kernel,out user)&&created>0,"root-bind");rootCreated=created;AssertRoot(true);
+  }
+  void AssertRoot(bool live){
+    Need(!released&&root!=System.IntPtr.Zero&&job!=System.IntPtr.Zero&&assertImage!=null&&GetProcessId(root)==rootPid,"root-handle");
+    long created,exited,kernel,user;bool member;Need(GetProcessTimes(root,out created,out exited,out kernel,out user)&&created==rootCreated&&IsProcessInJob(root,job,out member)&&member,"root-identity");
+    Need(WaitForSingleObject(root,0)==(live?258U:0U),"root-state");assertImage();
+  }
+  internal void StartDrains(){
+    Need(creationEntered&&!noRoot&&!drainStarted&&!released&&Handle(stdoutParent,false)&&Handle(stderrParent,false),"drains-once");drainStarted=true;
+    stdoutThread=new System.Threading.Thread(()=>Drain(stdoutParent,false));stderrThread=new System.Threading.Thread(()=>Drain(stderrParent,true));
+    stdoutThread.IsBackground=true;stderrThread.IsBackground=true;stdoutThread.Start();stderrThread.Start();
+  }
+  internal void CloseChildHandles(){Need(!childClosed&&creationEntered,"child-close-once");childClosed=true;Close(ref stdinChild);Close(ref stdoutChild);Close(ref stderrChild);}
+  void Drain(System.IntPtr handle,bool stderr){
+    try{byte[] bytes=new byte[4096];var line=new System.Collections.Generic.List<byte>();
+      while(true){uint read;if(!ReadFile(handle,bytes,(uint)bytes.Length,out read,System.IntPtr.Zero)){int code=System.Runtime.InteropServices.Marshal.GetLastWin32Error();if(code!=109)Fail("stdio-read");break;}if(read==0)break;
+        lock(gate){if(stderr){stderrBytes+=read;if(stderrBytes>65536)Fail("stderr-bound");}else{stdoutBytes+=read;if(stdoutBytes>1048576)Fail("stdout-bound");}}
+        if(!stderr)continue;
+        for(int i=0;i<read;i++){byte value=bytes[i];if(value==10){if(line.Count>0&&line[line.Count-1]==13)line.RemoveAt(line.Count-1);ParseLine(line);line.Clear();}else if(line.Count<=2048)line.Add(value);else Fail("stderr-line-bound");}
+      }if(stderr&&line.Count>0)ParseLine(line);
+    }catch{Fail("stdio-exception");}
+  }
+  void ParseLine(System.Collections.Generic.List<byte> bytes){
+    if(bytes.Count>2048){Fail("stderr-line-bound");return;}string text=System.Text.Encoding.ASCII.GetString(bytes.ToArray());
+    if(text.IndexOf("Debugger listening on",System.StringComparison.Ordinal)<0)return;
+    try{Endpoint found=ParseEndpoint(text);lock(gate){if(endpoint!=null){Fail("endpoint-duplicate");return;}endpoint=found;}}catch{Fail("endpoint-malformed");}
+  }
+  internal static Endpoint ParseEndpoint(string line){
+    Need(line!=null&&line.Length<=2048,"endpoint-bound");
+    var match=System.Text.RegularExpressions.Regex.Match(line,@"\ADebugger listening on ws://127\.0\.0\.1:([1-9][0-9]{0,4})/([a-f0-9]{8}-[a-f0-9]{4}-[a-f0-9]{4}-[a-f0-9]{4}-[a-f0-9]{12})\z");
+    int port;Need(match.Success&&int.TryParse(match.Groups[1].Value,System.Globalization.NumberStyles.None,System.Globalization.CultureInfo.InvariantCulture,out port),"endpoint-grammar");
+    port=int.Parse(match.Groups[1].Value,System.Globalization.CultureInfo.InvariantCulture);Need(port>0&&port<=65535,"endpoint-port");return new Endpoint{port=port,token=match.Groups[2].Value};
+  }
+  static int Port(uint value){return (int)(((value&255)<<8)|((value>>8)&255));}
+  static TcpRow[] TcpRows(){
+    uint size=0;uint result=GetExtendedTcpTable(System.IntPtr.Zero,ref size,true,2,5,0);Need(result==122&&size>=4&&size<=4+65536U*24,"tcp-size");
+    System.IntPtr memory=System.Runtime.InteropServices.Marshal.AllocHGlobal(checked((int)size));try{
+      uint capacity=size;result=GetExtendedTcpTable(memory,ref size,true,2,5,0);Need(result==0&&size<=capacity&&size>=4,"tcp-read");
+      uint count=unchecked((uint)System.Runtime.InteropServices.Marshal.ReadInt32(memory));Need(count<=65536U&&4L+count*24L<=size,"tcp-count");var rows=new TcpRow[count];
+      for(int i=0;i<rows.Length;i++){int offset=4+i*24;rows[i]=new TcpRow{state=unchecked((uint)System.Runtime.InteropServices.Marshal.ReadInt32(memory,offset)),localAddress=unchecked((uint)System.Runtime.InteropServices.Marshal.ReadInt32(memory,offset+4)),localPort=Port(unchecked((uint)System.Runtime.InteropServices.Marshal.ReadInt32(memory,offset+8))),remoteAddress=unchecked((uint)System.Runtime.InteropServices.Marshal.ReadInt32(memory,offset+12)),remotePort=Port(unchecked((uint)System.Runtime.InteropServices.Marshal.ReadInt32(memory,offset+16))),pid=unchecked((uint)System.Runtime.InteropServices.Marshal.ReadInt32(memory,offset+20))};}return rows;
+    }finally{System.Runtime.InteropServices.Marshal.FreeHGlobal(memory);}
+  }
+  internal static void CompareRows(TcpRow[] rows,uint rootPid,uint helperPid,int serverPort,int clientPort,bool connected){
+    Need(rows!=null&&rows.Length<=65536&&rootPid>0&&helperPid>0&&rootPid!=helperPid&&serverPort>0&&serverPort<=65535&&(!connected||clientPort>0&&clientPort<=65535&&clientPort!=serverPort),"tcp-input");
+    int listeners=0,servers=0,clients=0;foreach(TcpRow row in rows){Need(row!=null&&row.state>=1&&row.state<=12&&row.localPort>=0&&row.localPort<=65535&&row.remotePort>=0&&row.remotePort<=65535,"tcp-row");
+      if(row.state==2&&row.localPort==serverPort){listeners++;Need(row.pid==rootPid&&row.localAddress==0x0100007f,"tcp-listener");}
+      if(connected&&row.state==5&&row.localAddress==0x0100007f&&row.localPort==serverPort){servers++;Need(row.pid==rootPid&&row.remoteAddress==0x0100007f&&row.remotePort==clientPort,"tcp-server");}
+      if(connected&&row.state==5&&row.pid==helperPid&&row.localPort==clientPort){clients++;Need(row.localAddress==0x0100007f&&row.remoteAddress==0x0100007f&&row.remotePort==serverPort,"tcp-client");}}
+    Need(listeners==1&&(!connected||servers==1&&clients==1),"tcp-pair");
+  }
+  void AssertConnection(){
+    AssertRoot(true);CheckFailure();Need(attached&&socket!=null&&socket.Connected&&endpoint!=null,"connection-state");
+    var local=socket.LocalEndPoint as System.Net.IPEndPoint;var remote=socket.RemoteEndPoint as System.Net.IPEndPoint;
+    Need(local!=null&&remote!=null&&local.Address.Equals(System.Net.IPAddress.Loopback)&&remote.Address.Equals(System.Net.IPAddress.Loopback)&&local.Port==clientPort&&remote.Port==endpoint.port,"socket-tuple");
+    CompareRows(TcpRows(),rootPid,GetCurrentProcessId(),endpoint.port,clientPort,true);AssertRoot(true);CheckFailure();
+  }
+  void Budget(bool cleanup){Need(elapsed.ElapsedMilliseconds<(cleanup?3660000L:3600000L),"elapsed");}
+  internal void Reprove(bool cleanup){Budget(cleanup);AssertConnection();}
+  internal void Attach(){
+    Need(!attachAttempted&&!attached&&!released&&drainStarted&&childClosed,"attach-once");attachAttempted=true;AssertRoot(true);Budget(false);
+    var deadline=System.Diagnostics.Stopwatch.StartNew();Endpoint found=null;
+    while(found==null){CheckFailure();AssertRoot(true);Budget(false);lock(gate){found=endpoint;}Need(deadline.ElapsedMilliseconds<10000,"endpoint-deadline");if(found==null)System.Threading.Thread.Sleep(10);}
+    CompareRows(TcpRows(),rootPid,GetCurrentProcessId(),found.port,0,false);AssertRoot(true);
+    socket=new System.Net.Sockets.Socket(System.Net.Sockets.AddressFamily.InterNetwork,System.Net.Sockets.SocketType.Stream,System.Net.Sockets.ProtocolType.Tcp);socket.NoDelay=true;socket.ReceiveTimeout=1000;socket.SendTimeout=1000;socket.Bind(new System.Net.IPEndPoint(System.Net.IPAddress.Loopback,0));
+    var pending=socket.BeginConnect(new System.Net.IPEndPoint(System.Net.IPAddress.Loopback,found.port),null,null);
+    try{Need(pending.AsyncWaitHandle.WaitOne(System.Math.Max(1,10000-(int)deadline.ElapsedMilliseconds)),"connect-deadline");socket.EndConnect(pending);}finally{pending.AsyncWaitHandle.Close();}
+    clientPort=((System.Net.IPEndPoint)socket.LocalEndPoint).Port;CompareRows(TcpRows(),rootPid,GetCurrentProcessId(),found.port,clientPort,true);AssertRoot(true);
+    byte[] nonce=new byte[16];random.GetBytes(nonce);string key=System.Convert.ToBase64String(nonce);
+    string request="GET /"+found.token+" HTTP/1.1\r\nHost: 127.0.0.1:"+found.port.ToString(System.Globalization.CultureInfo.InvariantCulture)+"\r\nUpgrade: websocket\r\nConnection: Upgrade\r\nSec-WebSocket-Key: "+key+"\r\nSec-WebSocket-Version: 13\r\n\r\n";
+    WriteAll(System.Text.Encoding.ASCII.GetBytes(request));var header=new System.Collections.Generic.List<byte>();byte[] one=new byte[1];
+    while(true){Budget(false);AssertRoot(true);Need(deadline.ElapsedMilliseconds<10000&&header.Count<8192,"handshake-bound");int read=socket.Receive(one);Need(read==1&&one[0]>=9&&one[0]<127,"handshake-read");header.Add(one[0]);int count=header.Count;if(count>=4&&header[count-4]==13&&header[count-3]==10&&header[count-2]==13&&header[count-1]==10)break;}
+    ValidateHandshake(System.Text.Encoding.ASCII.GetString(header.ToArray()),key);attached=true;AssertConnection();
+  }
+  internal static void ValidateHandshake(string header,string key){
+    Need(header!=null&&header.Length<=8192&&header.EndsWith("\r\n\r\n",System.StringComparison.Ordinal),"handshake-header");string[] lines=header.Split(new string[]{"\r\n"},System.StringSplitOptions.None);Need(lines.Length>=6&&lines[0]=="HTTP/1.1 101 Switching Protocols","handshake-status");
+    var fields=new System.Collections.Generic.Dictionary<string,string>(System.StringComparer.OrdinalIgnoreCase);for(int i=1;i<lines.Length-2;i++){int colon=lines[i].IndexOf(':');Need(colon>0&&colon<lines[i].Length-1,"handshake-field");string name=lines[i].Substring(0,colon),value=lines[i].Substring(colon+1).Trim();Need(System.Text.RegularExpressions.Regex.IsMatch(name,@"\A[A-Za-z0-9-]+\z")&&!fields.ContainsKey(name),"handshake-duplicate");fields.Add(name,value);}
+    string upgrade=null,connection=null,accept=null;Need(fields.TryGetValue("Upgrade",out upgrade)&&upgrade.Equals("websocket",System.StringComparison.OrdinalIgnoreCase)&&fields.TryGetValue("Connection",out connection)&&connection.Equals("Upgrade",System.StringComparison.OrdinalIgnoreCase)&&fields.TryGetValue("Sec-WebSocket-Accept",out accept),"handshake-upgrade");
+    using(var sha=System.Security.Cryptography.SHA1.Create()){string expected=System.Convert.ToBase64String(sha.ComputeHash(System.Text.Encoding.ASCII.GetBytes(key+"258EAFA5-E914-47DA-95CA-C5AB0DC85B11")));Need(accept==expected,"handshake-accept");}
+  }
+  void WriteAll(byte[] bytes){int offset=0;while(offset<bytes.Length){int written=socket.Send(bytes,offset,bytes.Length-offset,System.Net.Sockets.SocketFlags.None);Need(written>0,"socket-write");offset+=written;}}
+  void WriteFrame(byte opcode,byte[] bytes){
+    Need(bytes.Length<=4194304,"outgoing-bound");int header=bytes.Length<126?2:bytes.Length<=65535?4:10;byte[] frame=new byte[header+4+bytes.Length];frame[0]=(byte)(128|opcode);
+    if(header==2)frame[1]=(byte)(128|bytes.Length);else if(header==4){frame[1]=254;frame[2]=(byte)(bytes.Length>>8);frame[3]=(byte)bytes.Length;}else{frame[1]=255;for(int i=0;i<8;i++)frame[2+i]=(byte)((ulong)bytes.Length>>(56-8*i));}
+    byte[] mask=new byte[4];random.GetBytes(mask);System.Array.Copy(mask,0,frame,header,4);for(int i=0;i<bytes.Length;i++)frame[header+4+i]=(byte)(bytes[i]^mask[i%4]);WriteAll(frame);
+  }
+  // Only the separately generated fixed command encoder may call this method.
+  // It is internal, has no serialized tool route and accepts no URL/session.
+  internal void SendFixed(string fixedMessage,bool cleanup){
+    Budget(cleanup);AssertConnection();Need(fixedMessage!=null&&fixedMessage.Length>0&&fixedMessage.IndexOf('\0')<0&&utf8.GetByteCount(fixedMessage)<=65536,"command-bound");
+    Need(requests<72&&(cleanup?cleanupRequests<8:normalRequests<64),"request-budget");requests++;if(cleanup)cleanupRequests++;else normalRequests++;WriteFrame(1,utf8.GetBytes(fixedMessage));AssertConnection();
+  }
+  internal string Poll(bool cleanup){
+    Budget(cleanup);AssertConnection();Need(++polls<=(cleanup?24000:21000),"poll-budget");string ready=ReadFrame();if(ready!=null){AssertConnection();return ready;}
+    if(!socket.Poll(0,System.Net.Sockets.SelectMode.SelectRead))return null;byte[] bytes=new byte[65536];int read=socket.Receive(bytes);Need(read>0,"socket-eof");totalReceived+=read;Need(totalReceived<=33554432L&&incoming.Count+read<=4194304+14,"received-bound");
+    for(int i=0;i<read;i++)incoming.Add(bytes[i]);ready=ReadFrame();AssertConnection();return ready;
+  }
+  string ReadFrame(){
+    while(incoming.Count>=2){byte first=incoming[0],second=incoming[1];Need((first&112)==0&&(second&128)==0,"frame-flags");bool final=(first&128)!=0;byte opcode=(byte)(first&15);ulong length=(ulong)(second&127);int header=2;
+      if(length==126){if(incoming.Count<4)return null;length=(ulong)((incoming[2]<<8)|incoming[3]);Need(length>=126,"frame-short-length");header=4;}
+      else if(length==127){if(incoming.Count<10)return null;length=0;for(int i=0;i<8;i++)length=(length<<8)|incoming[2+i];Need(length>65535&&length<=4194304U,"frame-long-length");header=10;}
+      Need(length<=4194304U,"frame-bound");if((ulong)incoming.Count<(ulong)header+length)return null;Need(++frames<=4096,"frame-count");byte[] payload=incoming.GetRange(header,(int)length).ToArray();incoming.RemoveRange(0,header+(int)length);
+      if(opcode>=8){Need(final&&length<=125&&(opcode==8||opcode==9||opcode==10),"control-frame");if(opcode==8)throw Error("websocket-close");if(opcode==9)WriteFrame(10,payload);continue;}
+      Need(opcode==0||opcode==1,"text-frame");if(opcode==1){Need(!fragmented&&message.Length==0,"fragment-start");fragmented=!final;}else Need(fragmented,"fragment-continuation");
+      Need(message.Length+payload.Length<=4194304,"message-bound");message.Write(payload,0,payload.Length);if(!final)continue;fragmented=false;byte[] complete=message.ToArray();message.SetLength(0);return utf8.GetString(complete);
+    }return null;
+  }
+  // A deliberately separate diagnostic cleanup, never recovery by copied PID.
+  // The original owner journals and confirms this command before calling it.
+  internal void RequestOriginalJobTermination(){
+    Need(!terminationAttempted&&!released&&root!=System.IntPtr.Zero&&job!=System.IntPtr.Zero,"termination-once");terminationAttempted=true;
+    long created,exited,kernel,user;bool member;Need(GetProcessId(root)==rootPid&&(rootCreated==0||GetProcessTimes(root,out created,out exited,out kernel,out user)&&created==rootCreated)&&IsProcessInJob(root,job,out member)&&member,"termination-owner");Need(TerminateJobObject(job,0x4544414d),"termination-request");
+  }
+  internal bool ObserveTermination(){
+    Need(!released&&root!=System.IntPtr.Zero&&job!=System.IntPtr.Zero,"termination-observe");if(WaitForSingleObject(root,0)!=0)return false;
+    long created,exited,kernel,user;Need(GetProcessId(root)==rootPid&&(rootCreated==0||GetProcessTimes(root,out created,out exited,out kernel,out user)&&created==rootCreated),"termination-root");
+    var memory=System.Runtime.InteropServices.Marshal.AllocHGlobal(48);try{uint returned;Need(QueryInformationJobObject(job,1,memory,48,out returned)&&returned==48,"job-accounting");if(System.Runtime.InteropServices.Marshal.ReadInt32(memory,40)!=0)return false;terminated=true;return true;}finally{System.Runtime.InteropServices.Marshal.FreeHGlobal(memory);}
+  }
+  internal void Release(){
+    Need(!released&&(!creationEntered||noRoot||terminated),"release-state");if(creationEntered&&!noRoot)Need(ObserveTermination(),"release-reobserve");
+    if(socket!=null){socket.Close();socket=null;}Close(ref stdinChild);Close(ref stdoutChild);Close(ref stderrChild);Close(ref stdinParent);
+    // The original root and empty Job were observed before closing pipe readers.
+    if(stdoutThread!=null&&(stdoutThread.ThreadState&System.Threading.ThreadState.Unstarted)==0)Need(stdoutThread.Join(1000),"stdout-drain-release");if(stderrThread!=null&&(stderrThread.ThreadState&System.Threading.ThreadState.Unstarted)==0)Need(stderrThread.Join(1000),"stderr-drain-release");
+    Close(ref stdoutParent);Close(ref stderrParent);message.Dispose();random.Dispose();released=true;
+  }
+  internal static void VerifySmoke(){
+    var endpoint=ParseEndpoint("Debugger listening on ws://127.0.0.1:12345/01234567-89ab-cdef-0123-456789abcdef");Need(endpoint.port==12345&&endpoint.token=="01234567-89ab-cdef-0123-456789abcdef","smoke-endpoint");
+    string key="dGhlIHNhbXBsZSBub25jZQ==";ValidateHandshake("HTTP/1.1 101 Switching Protocols\r\nUpgrade: websocket\r\nConnection: Upgrade\r\nSec-WebSocket-Accept: s3pPLMBiTxaQ9kYGzzhZRbK+xOo=\r\n\r\n",key);
+    var rows=new TcpRow[]{new TcpRow{state=2,localAddress=0x0100007f,localPort=12345,pid=17},new TcpRow{state=5,localAddress=0x0100007f,localPort=12345,remoteAddress=0x0100007f,remotePort=23456,pid=17},new TcpRow{state=5,localAddress=0x0100007f,localPort=23456,remoteAddress=0x0100007f,remotePort=12345,pid=18}};CompareRows(rows,17,18,12345,23456,true);
+    System.Action<System.Action> refuse=action=>{bool refused=false;try{action();}catch(System.InvalidOperationException){refused=true;}Need(refused,"smoke-refusal");};
+    foreach(string bad in new string[]{"ws://127.0.0.1:12345/01234567-89ab-cdef-0123-456789abcdef","Debugger listening on ws://0.0.0.0:12345/01234567-89ab-cdef-0123-456789abcdef","Debugger listening on ws://127.0.0.1:65536/01234567-89ab-cdef-0123-456789abcdef","Debugger listening on ws://127.0.0.1:0123/01234567-89ab-cdef-0123-456789abcdef"})refuse(()=>ParseEndpoint(bad));
+    refuse(()=>ValidateHandshake("HTTP/1.1 101 Switching Protocols\r\nUpgrade: websocket\r\nConnection: Upgrade\r\nSec-WebSocket-Accept: bad\r\n\r\n",key));rows[1].pid=19;refuse(()=>CompareRows(rows,17,18,12345,23456,true));
+    var framed=new EasyedaOriginalMainTransport();framed.incoming.AddRange(new byte[]{129,3,97});Need(framed.ReadFrame()==null,"smoke-incomplete-frame");framed.incoming.AddRange(new byte[]{98,99});Need(framed.ReadFrame()=="abc","smoke-text-frame");
+    framed.incoming.AddRange(new byte[]{1,2,97,98,128,1,99});Need(framed.ReadFrame()=="abc"&&!framed.fragmented,"smoke-fragmented-frame");
+    framed.incoming.AddRange(new byte[]{129,126,0,126});for(int i=0;i<126;i++)framed.incoming.Add(97);Need(framed.ReadFrame()==new string('a',126),"smoke-medium-frame");
+    framed.incoming.AddRange(new byte[]{129,127,0,0,0,0,0,1,0,0});for(int i=0;i<65536;i++)framed.incoming.Add(98);Need(framed.ReadFrame()==new string('b',65536),"smoke-long-frame");
+    framed.incoming.AddRange(new byte[]{129,128});refuse(()=>framed.ReadFrame());framed.incoming.Clear();framed.Release();
+    var transport=new EasyedaOriginalMainTransport();refuse(()=>transport.Attach());refuse(()=>transport.SendFixed("{}",false));refuse(()=>transport.RequestOriginalJobTermination());transport.Release();refuse(()=>transport.Release());
+  }
+}
+public static class EasyedaFootprintCopyMainBackendProtocol {
+static void Need(bool value){if(!value)throw new System.InvalidOperationException("pcb-diagnostic-main-backend-protocol");}
+static string[][] Load(){byte[] packed=System.Convert.FromBase64String(@"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");byte[] bytes=new byte[6587];int count=0;
+using(var input=new System.IO.MemoryStream(packed,false))using(var stream=new System.IO.Compression.GZipStream(input,System.IO.Compression.CompressionMode.Decompress)){while(count<bytes.Length){int read=stream.Read(bytes,count,bytes.Length-count);if(read==0)break;count+=read;}Need(count==bytes.Length&&stream.ReadByte()==-1);}
+using(var sha=System.Security.Cryptography.SHA256.Create())Need(System.BitConverter.ToString(sha.ComputeHash(bytes)).Replace("-","").ToLowerInvariant()==@"e77606211d42ee068a00495df22440c36dc123029475bb1d459df6054db02ed4");
+string[] rows=new System.Text.UTF8Encoding(false,true).GetString(bytes).Split('\0');Need(rows.Length==14);string[][] result=new string[rows.Length][];for(int i=0;i<rows.Length;i++){result[i]=rows[i].Split('\t');Need(result[i].Length==4);}return result;}
+static readonly string[][] Cases=Load();
+static string Field(string name,object input){string value=input as string;Need(value!=null);if(name=="breakpointId"&&value==@"2:8583:3994:(?:^|[\\/])app\.js$")return @"""2:8583:3994:(?:^|[\\\\/])app\\.js$""";Need(System.Text.RegularExpressions.Regex.IsMatch(value,@"\A[A-Za-z0-9_.:-]{1,256}\z"));return "\""+value+"\"";}
+public static string Encode(int id,string phase,string method,System.Collections.IDictionary fields){Need(id>0&&fields!=null);string[] selected=null;foreach(string[] row in Cases)if(row[0]==phase){Need(selected==null);selected=row;}Need(selected!=null&&selected[1]==method);string[] names=selected[2].Length==0?new string[0]:selected[2].Split(',');Need(fields.Count==names.Length);foreach(string name in names)Need(fields.Contains(name));foreach(System.Collections.DictionaryEntry entry in fields){bool found=false;foreach(string name in names)if(entry.Key as string==name)found=true;Need(found);}
+string template=selected[3];var output=new System.Text.StringBuilder();int previous=0;foreach(System.Text.RegularExpressions.Match match in System.Text.RegularExpressions.Regex.Matches(template,"\"__mainbackend_([A-Za-z0-9]+)__\"")){string name=match.Groups[1].Value;output.Append(template,previous,match.Index-previous);output.Append(Field(name,fields[name]));previous=match.Index+match.Length;}output.Append(template,previous,template.Length-previous);string text=output.ToString();Need(text.Length>1&&text[0]=='{'&&System.Text.Encoding.UTF8.GetByteCount(text)<=16384);return "{\"id\":"+id.ToString(System.Globalization.CultureInfo.InvariantCulture)+","+text.Substring(1);}
+static void Refused(System.Action action){bool refused=false;try{action();}catch(System.InvalidOperationException){refused=true;}Need(refused);}
+public static void VerifySmoke(){string[] hashes=new string[]{@"27d2de4e2013f3d3f3c7ad5c65a1754654826fea8e3b85e9b22a4918e7fc1659",@"15dcdfdf3467cf2f66fe889a6072e24f7217aaa38fb5519aceef47de19d04255",@"dda7c2ded0359af656124a8d791e9b5f083bc9c7f7bfc502d045842066ed6870",@"0b81e34aa67a739894be5410ec2d05b007128f13d919b9b290cd93e1d4a25157",@"f33e2c8441134c33b2c4cde4717f7ee68bbe5388e254ec6cc988d9d77c3b0311",@"9605d5eaeb76318d2d7121f283c209d1cff52f84b90d6cbc54b1b7e2cc3d1404",@"7e0e9a73c4a1188728e0804293d6aa506913014aac612e4ec5cc3e735dc349dc",@"f48bc784c920da214f5c53e734ebf02446c2c4dd3fbb19db89e06928b0ddc541",@"eaba88c45fc991b42a710f110c799a1603839e88b14c0446dd55c774e8dca90f",@"8f660caaf561d857fc31478a5ab37bd25c21a595411f0edb71ca16f31958c8eb",@"b1d03e632a0bc07b8e9548f12b1903877b153189824a3c68b9d96a93c28d2513",@"a9d44dd96f7a246308b93d9a21390320d16f632f42c1caed8e22d2bea79d9eca",@"943d904828f2fb749b144f63f4f059aef0bc1271d3790d1f6cd97b2683b9c9fb",@"cd8427b82ddc4797598ca9787daab4bd283a42464f705ed6a62c8480b6dc69d1"};for(int i=0;i<Cases.Length;i++){string[] row=Cases[i];var fields=new System.Collections.Hashtable();if(row[2].Length>0)foreach(string name in row[2].Split(','))fields.Add(name,"main_handle");string output=Encode(73,row[0],row[1],fields);using(var sha=System.Security.Cryptography.SHA256.Create())Need(System.BitConverter.ToString(sha.ComputeHash(System.Text.Encoding.UTF8.GetBytes(output))).Replace("-","").ToLowerInvariant()==hashes[i]);Refused(()=>Encode(73,"unknown",row[1],fields));Refused(()=>Encode(73,row[0],"Runtime.evaluate",fields));fields.Add("sessionId","copied");Refused(()=>Encode(73,row[0],row[1],fields));fields.Remove("sessionId");fields.Add("functionDeclaration","function(){}");Refused(()=>Encode(73,row[0],row[1],fields));fields.Remove("functionDeclaration");Refused(()=>Encode(0,row[0],row[1],fields));if(fields.Contains("breakpointId")){fields["breakpointId"]=@"2:8583:3994:(?:^|[\\/])app\.js$";Need(Encode(73,row[0],row[1],fields)==@"{""id"":73,""method"":""Debugger.removeBreakpoint"",""params"":{""breakpointId"":""2:8583:3994:(?:^|[\\\\/])app\\.js$""}}");fields["breakpointId"]="copied?regex";Refused(()=>Encode(73,row[0],row[1],fields));}if(fields.Contains("objectId")){fields["objectId"]="bad\n";Refused(()=>Encode(73,row[0],row[1],fields));}}}
+}
+// END GENERATED FOOTPRINT MAIN TRANSPORT PROTOCOL
 public sealed class EasyedaDiagnosticOwner {
   [StructLayout(LayoutKind.Sequential)] struct SECURITY_ATTRIBUTES { public int length; public IntPtr descriptor; [MarshalAs(UnmanagedType.Bool)] public bool inherit; }
   [StructLayout(LayoutKind.Sequential)] struct STARTUPINFO { public int cb; public IntPtr reserved, desktop, title; public int x,y,xSize,ySize,xChars,yChars,fill,flags; public short show,reservedSize; public IntPtr reserved2,stdin,stdout,stderr; }
@@ -1417,6 +1623,9 @@ public sealed class EasyedaDiagnosticOwner {
   CreationPhase creationPhase; bool launchSettled; uint? createProcessError;
   readonly EasyedaDiagnosticInstallation installation=new EasyedaDiagnosticInstallation();
   readonly bool stringPrecreate;
+  readonly bool workerStartupFootprintMain209;
+  EasyedaOriginalMainTransport originalMain;int mainRequest,mainPolls,mainBufferOffset;byte[] mainBuffer;
+
   readonly bool layers209;
   readonly bool workerStartup;
   readonly bool workerStartup209;
@@ -1522,6 +1731,30 @@ public sealed class EasyedaDiagnosticOwner {
   public static EasyedaDiagnosticOwner CreateWorkerStartupFootprint209() { return new EasyedaDiagnosticOwner("footprint-copy-preparation",true); }
   public static EasyedaDiagnosticOwner CreateWorkerStartupFootprintCopy209() { return new EasyedaDiagnosticOwner("worker-startup-footprint-copy209",true); }
   public static EasyedaDiagnosticOwner CreateWorkerStartupFootprintSaved209() { return new EasyedaDiagnosticOwner("worker-startup-footprint-saved209",true); }
+  EasyedaDiagnosticOwner(int mainPurpose){if(mainPurpose!=209)throw Error("main-purpose");workerStartup=true;workerStartup209=true;workerStartupFootprintMain209=true;originalMain=new EasyedaOriginalMainTransport();}
+  public static EasyedaDiagnosticOwner CreateWorkerStartupFootprintMain209(){return new EasyedaDiagnosticOwner(209);}
+  void MainPurpose(){if(!workerStartupFootprintMain209||originalMain==null)throw Error("main-purpose");}
+  public void AttachMain(){MainPurpose();AssertLive();originalMain.Attach();AssertLive();}
+  public void ReproveMain(){MainPurpose();AssertLive();originalMain.Reprove(true);AssertLive();}
+  public void SendMain(int id,string phase,string method,System.Collections.IDictionary fields){
+    MainPurpose();AssertLive();if(id!=mainRequest+1||id>72)throw Error("main-request-id");mainRequest=id;
+    string text=EasyedaFootprintCopyMainBackendProtocol.Encode(id,phase,method,fields);bool cleanup=phase=="release"||phase=="remove"||phase=="resume";
+    originalMain.SendFixed(text,cleanup);AssertLive();
+  }
+  public string PollMain(bool cleanup){
+    MainPurpose();AssertLive();if(++mainPolls>(cleanup?24000:21000))throw Error("main-poll-budget");
+    if(mainBuffer==null){string text=originalMain.Poll(cleanup);if(text==null)return "";mainBuffer=new UTF8Encoding(false,true).GetBytes(text+"\0");mainBufferOffset=0;}
+    originalMain.Reprove(cleanup);int count=Math.Min(32768,mainBuffer.Length-mainBufferOffset);string encoded=Convert.ToBase64String(mainBuffer,mainBufferOffset,count);mainBufferOffset+=count;if(mainBufferOffset==mainBuffer.Length){mainBuffer=null;mainBufferOffset=0;}AssertLive();return encoded;
+  }
+  public void TerminateMain(){MainPurpose();originalMain.RequestOriginalJobTermination();}
+  public static void VerifyOriginalMainSmoke(){
+    EasyedaOriginalMainTransport.VerifySmoke();EasyedaFootprintCopyMainBackendProtocol.VerifySmoke();
+    foreach(var prior in new EasyedaDiagnosticOwner[]{new EasyedaDiagnosticOwner(),CreateWorkerStartup209(),CreateWorkerStartupFootprintCopy209(),CreateWorkerStartupFootprintSaved209()}){
+      bool refused=false;try{prior.AttachMain();}catch(InvalidOperationException){refused=true;}if(!refused)throw Error("main-old-purpose-smoke");
+    }
+    var owner=CreateWorkerStartupFootprintMain209();try{owner.Initialize();if(owner.NoProcessCreationState()!="not-entered")throw Error("main-no-root-smoke");owner.ReleaseUnlaunched();}finally{owner.RetainUntilClosed();}
+  }
+
   public static void VerifyFootprintSavedSmoke() {
     EasyedaDiagnosticOwner owner=CreateWorkerStartupFootprintSaved209();
     Action<Action> refuse=action=>{bool rejected=false;try{action();}catch{rejected=true;}if(!rejected)throw Error("footprint-saved-smoke-refusal");};
@@ -1607,7 +1840,7 @@ public sealed class EasyedaDiagnosticOwner {
     Native(CreatePipe(out browserRead,out parentWrite,ref attributes,65536));
     Native(CreatePipe(out parentRead,out browserWrite,ref attributes,65536));
     Native(SetHandleInformation(parentRead,1,0)); Native(SetHandleInformation(parentWrite,1,0));
-    AssertPipes();
+    AssertPipes();if(workerStartupFootprintMain209)originalMain.PreparePipes();
   }
   void AssertLimits() {
     if(job==IntPtr.Zero || released) throw Error("owner-unavailable");
@@ -1661,13 +1894,16 @@ public sealed class EasyedaDiagnosticOwner {
       IntPtr size=IntPtr.Zero; InitializeProcThreadAttributeList(IntPtr.Zero,2,0,ref size); if(size==IntPtr.Zero || size.ToInt64()>65536) throw Error("attribute-size");
       IntPtr list=Marshal.AllocHGlobal(size),jobs=IntPtr.Zero,handles=IntPtr.Zero; bool initialized=false;
       try {
-        jobs=Marshal.AllocHGlobal(IntPtr.Size); handles=Marshal.AllocHGlobal(2*IntPtr.Size);
+        int inherited=workerStartupFootprintMain209?5:2;jobs=Marshal.AllocHGlobal(IntPtr.Size); handles=Marshal.AllocHGlobal(inherited*IntPtr.Size);
         Native(InitializeProcThreadAttributeList(list,2,0,ref size)); initialized=true;
         Marshal.WriteIntPtr(jobs,job); Marshal.WriteIntPtr(handles,0,browserRead); Marshal.WriteIntPtr(handles,IntPtr.Size,browserWrite);
+        if(workerStartupFootprintMain209){Marshal.WriteIntPtr(handles,2*IntPtr.Size,originalMain.StdinChild);Marshal.WriteIntPtr(handles,3*IntPtr.Size,originalMain.StdoutChild);Marshal.WriteIntPtr(handles,4*IntPtr.Size,originalMain.StderrChild);}
         Native(UpdateProcThreadAttribute(list,0,new IntPtr(0x0002000D),jobs,new IntPtr(IntPtr.Size),IntPtr.Zero,IntPtr.Zero));
-        Native(UpdateProcThreadAttribute(list,0,new IntPtr(0x00020002),handles,new IntPtr(2*IntPtr.Size),IntPtr.Zero,IntPtr.Zero));
+        Native(UpdateProcThreadAttribute(list,0,new IntPtr(0x00020002),handles,new IntPtr(inherited*IntPtr.Size),IntPtr.Zero,IntPtr.Zero));
         STARTUPINFOEX startup=new STARTUPINFOEX(); startup.startup.cb=Marshal.SizeOf(typeof(STARTUPINFOEX)); startup.attributes=list;
+        if(workerStartupFootprintMain209){startup.startup.flags=0x00000100;startup.startup.stdin=originalMain.StdinChild;startup.startup.stdout=originalMain.StdoutChild;startup.startup.stderr=originalMain.StderrChild;}
         string args="\""+installation.Executable+"\" --remote-debugging-pipe --remote-debugging-io-pipes="+HandleArgument(browserRead)+","+HandleArgument(browserWrite);
+        if(workerStartupFootprintMain209)args+=" --inspect-brk=127.0.0.1:0 --inspect-publish-uid=stderr";
         PROCESS_INFORMATION info;
         installation.AssertCurrent();
         // This Windows tuple rejects GUID/NT image paths with error87. Use the
@@ -1677,27 +1913,29 @@ public sealed class EasyedaDiagnosticOwner {
         if(installation.ExecutableNativeDirectory.Length>=260) throw Error("working-directory-bound");
         // Any P/Invoke exception leaves Unknown. Only a normal false return
         // with entirely empty outputs proves the narrow failed-creation case.
-        creationPhase=CreationPhase.Unknown;
+        creationPhase=CreationPhase.Unknown;if(workerStartupFootprintMain209)originalMain.EnterCreation();
         bool createdProcess=CreateProcess(installation.Executable,new StringBuilder(args),IntPtr.Zero,IntPtr.Zero,true,0x00080004,IntPtr.Zero,installation.ExecutableNativeDirectory,ref startup,out info);
         if(!createdProcess) {
           // Capture immediately, before any other P/Invoke or cleanup can
           // replace the thread's error. A code is diagnostic, never ownership.
           createProcessError=unchecked((uint)Marshal.GetLastWin32Error());
-          if(info.process==IntPtr.Zero && info.thread==IntPtr.Zero && info.processId==0 && info.threadId==0) creationPhase=CreationPhase.ReturnedFalse;
+          if(info.process==IntPtr.Zero && info.thread==IntPtr.Zero && info.processId==0 && info.threadId==0){creationPhase=CreationPhase.ReturnedFalse;if(workerStartupFootprintMain209)originalMain.DefiniteNoRoot();}
           throw Error("create-process-refused");
         }
         // Keep the ORIGINAL CreateProcess process handle before any fallible work.
         root=info.process; rootThread=info.thread; rootPid=info.processId;
         creationPhase=CreationPhase.RootRetained;
+        if(workerStartupFootprintMain209)originalMain.BindOriginalRoot(root,job,rootPid,()=>installation.AssertCreatedImage(root));
         if(root==IntPtr.Zero || rootThread==IntPtr.Zero || rootPid==0) throw Error("root-output");
         long created,exited,kernel,user; Native(GetProcessTimes(root,out created,out exited,out kernel,out user)); if(created<=0) throw Error("root-created"); rootCreated=created;
         AssertLive(); installation.AssertCreatedImage(root);
+        if(workerStartupFootprintMain209)originalMain.StartDrains();
         // No retry/resume endpoint exists. Failure leaves this original process
         // and thread retained, potentially suspended; no forced cleanup.
         if(ResumeThread(rootThread)!=1) throw Error("primary-thread-resume");
         Close(ref rootThread);
         // Only browser-end duplicates are closed. Parent endpoints stay owned.
-        Close(ref browserRead); Close(ref browserWrite); AssertLive(); launchCompleted=true;
+        if(workerStartupFootprintMain209)originalMain.CloseChildHandles();Close(ref browserRead); Close(ref browserWrite); AssertLive(); launchCompleted=true;
       } finally { if(initialized) DeleteProcThreadAttributeList(list); if(handles!=IntPtr.Zero) Marshal.FreeHGlobal(handles); if(jobs!=IntPtr.Zero) Marshal.FreeHGlobal(jobs); Marshal.FreeHGlobal(list); }
   }
   // Exact worker diagnostic program. Its complete UTF-8 bytes must match the
@@ -2926,347 +3164,21 @@ return callback;
 })())!==originalCallback)bad(""callback"");
 return selected;
 }catch{return JSON.stringify({schema:""easyeda-pro-control.pcb-constructor-failure.v1"",bundle:""common"",profile,stage,reason});}}";
-  const string CommonPresentationFunction=@"function(originalCallback,constructors){
-""use strict"";const bad=()=>{throw new Error(""PCB_COMMON_STATE"");};
-const retained=[],absent=[];const own=(o,k)=>{if(o===null||(typeof o!==""object""&&typeof o!==""function""))bad();const d=Object.getOwnPropertyDescriptor(o,k);if(!d||!Object.hasOwn(d,""value"")||retained.length>=32768)bad();retained.push([o,k,d.value]);return d.value;};
-const object=o=>{if(o===null||typeof o!==""object""||Array.isArray(o))bad();return o;};
-if(((()=>{
-""use strict"";
-const bad=()=>{throw new Error(""PCB_DIAGNOSTIC_MODEL_STATE"");};
-const own=(o,k)=>{if(o===null||(typeof o!==""object""&&typeof o!==""function""))bad();const d=Object.getOwnPropertyDescriptor(o,k);if(!d||!Object.hasOwn(d,""value""))bad();return d.value;};
-const object=o=>{if(o===null||typeof o!==""object""||Array.isArray(o))bad();return o;};
-const plain=o=>{object(o);const p=Object.getPrototypeOf(o);if(p!==Object.prototype&&p!==null)bad();return o;};
-const extent=n=>{if(!Number.isSafeInteger(n)||Object.is(n,-0)||n<0)bad();return n;};
-const count=n=>{extent(n);if(n>65536)bad();return n;};
-const flag=v=>{if(typeof v!==""boolean"")bad();return v;};
-const id=v=>{if(typeof v!==""string""||!/^(?:[a-f0-9]{16}|[a-f0-9]{32}|[a-f0-9]{64})$/.test(v))bad();return v;};
-const customId=v=>{if(typeof v!==""string""||!/^(?:[a-f0-9]{16}|[a-f0-9]{32})_[a-f0-9]{16}$/.test(v))bad();return v;};
-const marker=(o,k)=>{const d=Object.getOwnPropertyDescriptor(o,k);if(!d)return ""absent"";const v=own(o,k);return v===undefined?""undefined"":v===null?""null"":""present"";};
-const keys=o=>{plain(o);const k=Reflect.ownKeys(o);if(k.some(v=>typeof v!==""string""))bad();return count(k.length);};
-const arrayLength=o=>{if(!Array.isArray(o)||Object.getPrototypeOf(o)!==Array.prototype)bad();return count(own(o,""length""));};
-const nativeMap=o=>{object(o);if(Object.getPrototypeOf(o)!==Map.prototype||Reflect.ownKeys(o).length!==0)bad();return o;};
-const mapSize=o=>{nativeMap(o);const d=Object.getOwnPropertyDescriptor(Map.prototype,""size"");if(!d||typeof d.get!==""function""||d.set!==undefined)bad();return count(Reflect.apply(d.get,o,[]));};
-
-const named=(o,name)=>{object(o);const p=Object.getPrototypeOf(o),c=own(p,""constructor"");if(typeof c!==""function""||own(c,""name"")!==name||own(c,""prototype"")!==p)bad();return o;};
-const bridge=named(own(globalThis,""MSG_BUS_PCB""),""HJ""),bus=named(own(bridge,""messageBus""),""Oet""),subscribed=plain(own(bus,""subscribed"")),tasks=own(subscribed,""pcb/saveCompiler"");
-if(arrayLength(tasks)!==1||Reflect.ownKeys(tasks).length!==2)bad();
-const task=named(own(tasks,""0""),""Z1e""),callback=own(task,""callback"");
-if(own(task,""isRunning"")!==true||typeof callback!==""function"")bad();
-return callback;
-})())!==originalCallback)bad();
-const scope=object(own(this,""object"")),klass=n=>{const c=own(scope,n);if(typeof c!==""function"")bad();return c;};
-
-const constructorHeld=[],constructorProfiles={""Yme"":[""Yme"",0,{}],""Nfe"":[""Nfe"",0,{}],""Epe"":[""Epe"",0,{}],""GSe"":[""GSe"",0,{}]};
-if(!Array.isArray(constructors)||Object.getPrototypeOf(constructors)!==Array.prototype)bad();
-const constructorLength=own(constructors,""length""),constructorKeys=Reflect.ownKeys(constructors);
-if(![4].includes(constructorLength)||constructorKeys.length!==constructorLength+1||constructorKeys[constructorLength]!==""length"")bad();
-for(let i=0;i<constructorLength;i++)if(constructorKeys[i]!==String(i)||typeof own(constructors,String(i))!==""function"")bad();
-const constructorNames=[""Yme"",""Nfe"",""Epe"",""GSe""];
-const constructorMetadata=(c,name)=>{const [label,arity,statics]=constructorProfiles[name];if(own(c,""name"")!==label||own(c,""length"")!==arity)bad();for(const key of Object.keys(statics)){const d=Object.getOwnPropertyDescriptor(c,key);if(!d||!Object.hasOwn(d,""value"")||!d.writable||!d.configurable||!d.enumerable||own(c,key)!==statics[key])bad();}};
-const constructorInstance=(o,name)=>{object(o);const i=constructorNames.indexOf(name);if(i<0)bad();const c=own(constructors,String(i)),p=own(c,""prototype"");if(Object.getPrototypeOf(o)!==p||own(p,""constructor"")!==c)bad();constructorMetadata(c,name);constructorHeld.push([o,p,c,name,i]);return o;};
-const verifyConstructorAssociations=()=>{if(Object.getPrototypeOf(constructors)!==Array.prototype||own(constructors,""length"")!==constructorLength)bad();const k=Reflect.ownKeys(constructors);if(k.length!==constructorKeys.length||k.some((v,i)=>v!==constructorKeys[i]))bad();for(const [o,p,c,name,i] of constructorHeld){if(own(constructors,String(i))!==c||Object.getPrototypeOf(o)!==p||own(c,""prototype"")!==p||own(p,""constructor"")!==c)bad();constructorMetadata(c,name);}};
-
-const instance=(o,n)=>{object(o);if(Object.getPrototypeOf(o)!==own(klass(n),""prototype""))bad();return o;};
-const env=instance(own(klass(""x""),""env""),""x""),documentUuid=own(env,""_id"");
-if(own(env,""_doctype"")!==3||typeof documentUuid!==""string""||!/^(?:[a-f0-9]{16}|[a-f0-9]{32})$/.test(documentUuid))bad();
-const pick=(o,names)=>{const r=Object.create(null);for(const n of names)r[n]=own(o,n);return r;};
-const noOwnPublic=(o,names)=>{for(const n of names){if(Object.getOwnPropertyDescriptor(o,n))bad();absent.push([o,n]);}};
-const optional=(o,k)=>{if(Object.getOwnPropertyDescriptor(o,k))return{present:true,value:own(o,k)};let p=Object.getPrototypeOf(o),depth=0;while(p!==null){if(++depth>8||Object.hasOwn(p,k))bad();p=Object.getPrototypeOf(p);}absent.push([o,k]);return{present:false};};
-
-const graphNow=Date.now;
-if(typeof graphNow!==""function"")bad();
-const graphStarted=Reflect.apply(graphNow,Date,[]);
-if(!Number.isSafeInteger(graphStarted)||graphStarted<0)bad();
-const graphBudget=()=>{if(Date.now!==graphNow)bad();const now=Reflect.apply(graphNow,Date,[]);if(!Number.isSafeInteger(now)||now<graphStarted||now-graphStarted>1000)bad();};
-
-const graphNodes=[],graphSeen=new Map(),graphHeld=[],graphCollections=[],graphJsonChecks=[];let graphFields=0,graphStringUnits=0;
-const graphClassNames=[""S"",""ee"",""Ke"",""WA"",""Ff"",""HA"",""te"",""Wre"",""xI"",""fj"",""Ky"",""nC"",""cR"",""E8"",""i2"",""tR"",""rR"",""Jx"",""Yre"",""zre"",""aR"",""eR"",""O8"",""Qx"",""KCe"",""lR"",""sR"",""hR"",""zi"",""Ll""];
-const graphClasses=graphClassNames.map(n=>[n,own(klass(n),""prototype"")]);
-const graphString=v=>{graphBudget();if(typeof v!==""string""||v.length>4096||!v.isWellFormed()||(graphStringUnits+=v.length)>131072)bad();return v;};
-const graphKeys=o=>{graphBudget();const k=Reflect.ownKeys(o);if(k.length>4096||k.some(v=>typeof v!==""string""))bad();return k;};
-const graphDescriptor=(o,k,enumerableKeys)=>{graphBudget();const d=Object.getOwnPropertyDescriptor(o,k);if(!d||!Object.hasOwn(d,""value""))bad();if(++graphFields>32768)bad();graphHeld.push([o,k,d]);if(enumerableKeys&&d.enumerable)enumerableKeys.push(k);return d.value;};
-const graphJsonToJSONAbsent=o=>{let depth=0;while(o!==null){graphBudget();if(++depth>16||graphJsonChecks.length>=32768)bad();const descriptor=Object.getOwnPropertyDescriptor(o,""toJSON"");if(descriptor!==undefined){graphJsonChecks.push([o,true]);return false;}const prototype=Object.getPrototypeOf(o);graphJsonChecks.push([o,false,prototype]);o=prototype;}return true;};
-if(!graphJsonToJSONAbsent(Object.prototype)||!graphJsonToJSONAbsent(Array.prototype))bad();
-const graphCollection=(o,p,recheck=false)=>{if(Object.getPrototypeOf(o)!==p||graphKeys(o).length!==0)bad();const d=Object.getOwnPropertyDescriptor(p,""size"");if(!d||typeof d.get!==""function""||d.set!==undefined)bad();const n=Reflect.apply(d.get,o,[]);if(!Number.isSafeInteger(n)||n<0||n>4096)bad();if(!recheck&&(graphFields+=n*2)>32768)bad();const iterator=Reflect.apply(own(p,""entries""),o,[]),next=own(Object.getPrototypeOf(iterator),""next""),items=[];if(typeof next!==""function"")bad();for(let i=0;i<n;i++){const e=Reflect.apply(next,iterator,[]);graphBudget();if(own(e,""done"")!==false)bad();const pair=own(e,""value"");if(!Array.isArray(pair)||pair.length!==2)bad();items.push([own(pair,""0""),own(pair,""1"")]);}if(own(Reflect.apply(next,iterator,[]),""done"")!==true)bad();if(!recheck)graphCollections.push([o,p,items]);return items;};
-const graphValue=(v,depth=0)=>{
-graphBudget();if(depth>32)bad();if(v===null)return[""null""];if(v===undefined)return[""undefined""];
-if(typeof v===""boolean"")return[""boolean"",v];if(typeof v===""string"")return[""string"",graphString(v)];
-if(typeof v===""number""){if(!Number.isFinite(v))bad();return[""number"",Object.is(v,-0)?""-0"":String(v)];}
-if(typeof v!==""object"")bad();if(graphSeen.has(v))return[""ref"",graphSeen.get(v)];
-if(graphNodes.length>=4096)bad();const index=graphNodes.length;graphSeen.set(v,index);graphNodes.push(null);
-const p=Object.getPrototypeOf(v);let node;
-if(p===Map.prototype||p===Set.prototype){const entries=graphCollection(v,p);node=p===Map.prototype?{kind:""map"",entries:entries.map(e=>[graphValue(e[0],depth+1),graphValue(e[1],depth+1)])}:{kind:""set"",values:entries.map(e=>graphValue(e[0],depth+1))};}
-else if(Array.isArray(v)){if(p!==Array.prototype)bad();const k=graphKeys(v),n=graphDescriptor(v,""length"");if(!Number.isSafeInteger(n)||n<0||n>4096||k.length!==n+1||k[n]!==""length"")bad();const values=[];for(let i=0;i<n;i++){if(k[i]!==String(i))bad();values.push(graphValue(graphDescriptor(v,String(i)),depth+1));}graphHeld.push([v,null,k,p]);node={kind:""array"",values,jsonToJSONAbsent:graphJsonToJSONAbsent(v)};}
-else{let className=p===null?""null"":p===Object.prototype?""plain"":null;if(className===null){const matches=graphClasses.filter(e=>e[1]===p);if(matches.length!==1)bad();className=matches[0][0];}const k=graphKeys(v),fields=[],enumerableKeys=[];graphHeld.push([v,null,k,p]);for(const key of k)fields.push([graphString(key),graphValue(graphDescriptor(v,key,enumerableKeys),depth+1)]);node={kind:""object"",className,fields,enumerableKeys,jsonToJSONAbsent:graphJsonToJSONAbsent(v)};}
-graphNodes[index]=node;return[""ref"",index];};
-const graphVerify=()=>{graphBudget();for(const h of graphHeld){graphBudget();if(h[1]===null){const k=Reflect.ownKeys(h[0]);if(Object.getPrototypeOf(h[0])!==h[3]||k.length!==h[2].length||k.some((v,i)=>v!==h[2][i]))bad();}else{const d=Object.getOwnPropertyDescriptor(h[0],h[1]),p=h[2];if(!d||!Object.hasOwn(d,""value"")||!Object.is(d.value,p.value)||d.enumerable!==p.enumerable||d.configurable!==p.configurable||d.writable!==p.writable)bad();}}for(const h of graphCollections){graphBudget();const now=graphCollection(h[0],h[1],true);if(now.length!==h[2].length||now.some((e,i)=>!Object.is(e[0],h[2][i][0])||!Object.is(e[1],h[2][i][1])))bad();}for(const h of graphJsonChecks){graphBudget();const present=Object.getOwnPropertyDescriptor(h[0],""toJSON"")!==undefined;if(present!==h[1]||!present&&Object.getPrototypeOf(h[0])!==h[2])bad();}};
-
-const emptyMap=o=>{if(graphCollection(o,Map.prototype).length!==0)bad();};
-const finish=(schema,roots)=>{verifyConstructorAssociations();graphVerify();for(const r of retained){graphBudget();const d=Object.getOwnPropertyDescriptor(r[0],r[1]);if(!d||!Object.hasOwn(d,""value"")||!Object.is(d.value,r[2]))bad();}for(const r of absent){graphBudget();if(Object.getOwnPropertyDescriptor(r[0],r[1]))bad();}if(((()=>{
-""use strict"";
-const bad=()=>{throw new Error(""PCB_DIAGNOSTIC_MODEL_STATE"");};
-const own=(o,k)=>{if(o===null||(typeof o!==""object""&&typeof o!==""function""))bad();const d=Object.getOwnPropertyDescriptor(o,k);if(!d||!Object.hasOwn(d,""value""))bad();return d.value;};
-const object=o=>{if(o===null||typeof o!==""object""||Array.isArray(o))bad();return o;};
-const plain=o=>{object(o);const p=Object.getPrototypeOf(o);if(p!==Object.prototype&&p!==null)bad();return o;};
-const extent=n=>{if(!Number.isSafeInteger(n)||Object.is(n,-0)||n<0)bad();return n;};
-const count=n=>{extent(n);if(n>65536)bad();return n;};
-const flag=v=>{if(typeof v!==""boolean"")bad();return v;};
-const id=v=>{if(typeof v!==""string""||!/^(?:[a-f0-9]{16}|[a-f0-9]{32}|[a-f0-9]{64})$/.test(v))bad();return v;};
-const customId=v=>{if(typeof v!==""string""||!/^(?:[a-f0-9]{16}|[a-f0-9]{32})_[a-f0-9]{16}$/.test(v))bad();return v;};
-const marker=(o,k)=>{const d=Object.getOwnPropertyDescriptor(o,k);if(!d)return ""absent"";const v=own(o,k);return v===undefined?""undefined"":v===null?""null"":""present"";};
-const keys=o=>{plain(o);const k=Reflect.ownKeys(o);if(k.some(v=>typeof v!==""string""))bad();return count(k.length);};
-const arrayLength=o=>{if(!Array.isArray(o)||Object.getPrototypeOf(o)!==Array.prototype)bad();return count(own(o,""length""));};
-const nativeMap=o=>{object(o);if(Object.getPrototypeOf(o)!==Map.prototype||Reflect.ownKeys(o).length!==0)bad();return o;};
-const mapSize=o=>{nativeMap(o);const d=Object.getOwnPropertyDescriptor(Map.prototype,""size"");if(!d||typeof d.get!==""function""||d.set!==undefined)bad();return count(Reflect.apply(d.get,o,[]));};
-
-const named=(o,name)=>{object(o);const p=Object.getPrototypeOf(o),c=own(p,""constructor"");if(typeof c!==""function""||own(c,""name"")!==name||own(c,""prototype"")!==p)bad();return o;};
-const bridge=named(own(globalThis,""MSG_BUS_PCB""),""HJ""),bus=named(own(bridge,""messageBus""),""Oet""),subscribed=plain(own(bus,""subscribed"")),tasks=own(subscribed,""pcb/saveCompiler"");
-if(arrayLength(tasks)!==1||Reflect.ownKeys(tasks).length!==2)bad();
-const task=named(own(tasks,""0""),""Z1e""),callback=own(task,""callback"");
-if(own(task,""isRunning"")!==true||typeof callback!==""function"")bad();
-return callback;
-})())!==originalCallback)bad();graphBudget();const text=JSON.stringify({schema,documentUuid,pickedOwnerPublicShadowsAbsent:true,graph:{roots,nodes:graphNodes}});if(text.length>524288)bad();let bytes=0;for(let i=0;i<text.length;i++){if(i%1024===0)graphBudget();const c=text.charCodeAt(i);bytes+=c<128?1:c<2048?2:c>=55296&&c<=56319?(i++,4):3;if(bytes>524288)bad();}graphBudget();return text;};
-
-noOwnPublic(env,[""origin"",""unit"",""altGridSize"",""gridType"",""multiType"",""multiRatio"",""forceValue""]);
-const canvas=pick(env,[""_origin"",""_unit"",""_altGridSize"",""_gridType"",""_multiType"",""_multiRatio"",""_forceValue""]);
-const grid=instance(own(klass(""At""),""ins""),""At""),gridFields=[""_stepX"",""_stepY"",""_snapX"",""_snapY""];
-noOwnPublic(grid,[""getGridX"",""getGridY"",""getSnapX"",""getSnapY""]);
-const gridParam=own(grid,""param""),gridState={owner:pick(grid,gridFields),parameter:gridParam===null?null:pick(instance(gridParam,""ogt""),gridFields)};
-if(gridParam!==null)noOwnPublic(gridParam,[""getGridX"",""getGridY"",""getSnapX"",""getSnapY""]);
-const layers=instance(own(klass(""Ke""),""manager""),""Ke""),filters=instance(own(klass(""zi""),""manager""),""zi"");
-graphCollection(own(layers,""map""),Map.prototype);graphCollection(own(layers,""_layerPhys""),Map.prototype);graphCollection(own(filters,""map""),Map.prototype);
-own(layers,""activeLayer"");own(layers,""_deactiveAlpha"");
-const panel=instance(own(klass(""ai""),""model""),""ai""),panelParam=object(own(panel,""_param""));
-noOwnPublic(panel,[""getDefaultPanelize""]);
-if(own(panelParam,""on"")!==false||own(panelParam,""success"")!==false)bad();
-const model=constructorInstance(own(scope,""Me""),""Yme""),silk=pick(model,[""_topBoardColor"",""_topSilkscreenColor"",""_bottomBoardColor"",""_bottomSilkscreenColor""]);
-noOwnPublic(model,[""topBoardColor"",""topSilkscreenColor"",""bottomBoardColor"",""bottomSilkscreenColor""]);
-const roots=[[""canvas"",graphValue(canvas)],[""grid"",graphValue(gridState)],[""layers"",graphValue(layers)],[""filters"",graphValue(filters)],[""silk"",graphValue(silk)],[""panelize"",graphValue(panelParam)]];
-return finish(""easyeda-pro-control.pcb-common-presentation.v2"",roots);
-}";
-  const string CommonRulesFunction=@"function(originalCallback,constructors){
-""use strict"";const bad=()=>{throw new Error(""PCB_COMMON_STATE"");};
-const retained=[],absent=[];const own=(o,k)=>{if(o===null||(typeof o!==""object""&&typeof o!==""function""))bad();const d=Object.getOwnPropertyDescriptor(o,k);if(!d||!Object.hasOwn(d,""value"")||retained.length>=32768)bad();retained.push([o,k,d.value]);return d.value;};
-const object=o=>{if(o===null||typeof o!==""object""||Array.isArray(o))bad();return o;};
-if(((()=>{
-""use strict"";
-const bad=()=>{throw new Error(""PCB_DIAGNOSTIC_MODEL_STATE"");};
-const own=(o,k)=>{if(o===null||(typeof o!==""object""&&typeof o!==""function""))bad();const d=Object.getOwnPropertyDescriptor(o,k);if(!d||!Object.hasOwn(d,""value""))bad();return d.value;};
-const object=o=>{if(o===null||typeof o!==""object""||Array.isArray(o))bad();return o;};
-const plain=o=>{object(o);const p=Object.getPrototypeOf(o);if(p!==Object.prototype&&p!==null)bad();return o;};
-const extent=n=>{if(!Number.isSafeInteger(n)||Object.is(n,-0)||n<0)bad();return n;};
-const count=n=>{extent(n);if(n>65536)bad();return n;};
-const flag=v=>{if(typeof v!==""boolean"")bad();return v;};
-const id=v=>{if(typeof v!==""string""||!/^(?:[a-f0-9]{16}|[a-f0-9]{32}|[a-f0-9]{64})$/.test(v))bad();return v;};
-const customId=v=>{if(typeof v!==""string""||!/^(?:[a-f0-9]{16}|[a-f0-9]{32})_[a-f0-9]{16}$/.test(v))bad();return v;};
-const marker=(o,k)=>{const d=Object.getOwnPropertyDescriptor(o,k);if(!d)return ""absent"";const v=own(o,k);return v===undefined?""undefined"":v===null?""null"":""present"";};
-const keys=o=>{plain(o);const k=Reflect.ownKeys(o);if(k.some(v=>typeof v!==""string""))bad();return count(k.length);};
-const arrayLength=o=>{if(!Array.isArray(o)||Object.getPrototypeOf(o)!==Array.prototype)bad();return count(own(o,""length""));};
-const nativeMap=o=>{object(o);if(Object.getPrototypeOf(o)!==Map.prototype||Reflect.ownKeys(o).length!==0)bad();return o;};
-const mapSize=o=>{nativeMap(o);const d=Object.getOwnPropertyDescriptor(Map.prototype,""size"");if(!d||typeof d.get!==""function""||d.set!==undefined)bad();return count(Reflect.apply(d.get,o,[]));};
-
-const named=(o,name)=>{object(o);const p=Object.getPrototypeOf(o),c=own(p,""constructor"");if(typeof c!==""function""||own(c,""name"")!==name||own(c,""prototype"")!==p)bad();return o;};
-const bridge=named(own(globalThis,""MSG_BUS_PCB""),""HJ""),bus=named(own(bridge,""messageBus""),""Oet""),subscribed=plain(own(bus,""subscribed"")),tasks=own(subscribed,""pcb/saveCompiler"");
-if(arrayLength(tasks)!==1||Reflect.ownKeys(tasks).length!==2)bad();
-const task=named(own(tasks,""0""),""Z1e""),callback=own(task,""callback"");
-if(own(task,""isRunning"")!==true||typeof callback!==""function"")bad();
-return callback;
-})())!==originalCallback)bad();
-const scope=object(own(this,""object"")),klass=n=>{const c=own(scope,n);if(typeof c!==""function"")bad();return c;};
-
-const constructorHeld=[],constructorProfiles={""Yme"":[""Yme"",0,{}],""Nfe"":[""Nfe"",0,{}],""Epe"":[""Epe"",0,{}],""GSe"":[""GSe"",0,{}]};
-if(!Array.isArray(constructors)||Object.getPrototypeOf(constructors)!==Array.prototype)bad();
-const constructorLength=own(constructors,""length""),constructorKeys=Reflect.ownKeys(constructors);
-if(![4].includes(constructorLength)||constructorKeys.length!==constructorLength+1||constructorKeys[constructorLength]!==""length"")bad();
-for(let i=0;i<constructorLength;i++)if(constructorKeys[i]!==String(i)||typeof own(constructors,String(i))!==""function"")bad();
-const constructorNames=[""Yme"",""Nfe"",""Epe"",""GSe""];
-const constructorMetadata=(c,name)=>{const [label,arity,statics]=constructorProfiles[name];if(own(c,""name"")!==label||own(c,""length"")!==arity)bad();for(const key of Object.keys(statics)){const d=Object.getOwnPropertyDescriptor(c,key);if(!d||!Object.hasOwn(d,""value"")||!d.writable||!d.configurable||!d.enumerable||own(c,key)!==statics[key])bad();}};
-const constructorInstance=(o,name)=>{object(o);const i=constructorNames.indexOf(name);if(i<0)bad();const c=own(constructors,String(i)),p=own(c,""prototype"");if(Object.getPrototypeOf(o)!==p||own(p,""constructor"")!==c)bad();constructorMetadata(c,name);constructorHeld.push([o,p,c,name,i]);return o;};
-const verifyConstructorAssociations=()=>{if(Object.getPrototypeOf(constructors)!==Array.prototype||own(constructors,""length"")!==constructorLength)bad();const k=Reflect.ownKeys(constructors);if(k.length!==constructorKeys.length||k.some((v,i)=>v!==constructorKeys[i]))bad();for(const [o,p,c,name,i] of constructorHeld){if(own(constructors,String(i))!==c||Object.getPrototypeOf(o)!==p||own(c,""prototype"")!==p||own(p,""constructor"")!==c)bad();constructorMetadata(c,name);}};
-
-const instance=(o,n)=>{object(o);if(Object.getPrototypeOf(o)!==own(klass(n),""prototype""))bad();return o;};
-const env=instance(own(klass(""x""),""env""),""x""),documentUuid=own(env,""_id"");
-if(own(env,""_doctype"")!==3||typeof documentUuid!==""string""||!/^(?:[a-f0-9]{16}|[a-f0-9]{32})$/.test(documentUuid))bad();
-const pick=(o,names)=>{const r=Object.create(null);for(const n of names)r[n]=own(o,n);return r;};
-const noOwnPublic=(o,names)=>{for(const n of names){if(Object.getOwnPropertyDescriptor(o,n))bad();absent.push([o,n]);}};
-const optional=(o,k)=>{if(Object.getOwnPropertyDescriptor(o,k))return{present:true,value:own(o,k)};let p=Object.getPrototypeOf(o),depth=0;while(p!==null){if(++depth>8||Object.hasOwn(p,k))bad();p=Object.getPrototypeOf(p);}absent.push([o,k]);return{present:false};};
-
-const graphNow=Date.now;
-if(typeof graphNow!==""function"")bad();
-const graphStarted=Reflect.apply(graphNow,Date,[]);
-if(!Number.isSafeInteger(graphStarted)||graphStarted<0)bad();
-const graphBudget=()=>{if(Date.now!==graphNow)bad();const now=Reflect.apply(graphNow,Date,[]);if(!Number.isSafeInteger(now)||now<graphStarted||now-graphStarted>1000)bad();};
-
-const graphNodes=[],graphSeen=new Map(),graphHeld=[],graphCollections=[],graphJsonChecks=[];let graphFields=0,graphStringUnits=0;
-const graphClassNames=[""S"",""ee"",""Ke"",""WA"",""Ff"",""HA"",""te"",""Wre"",""xI"",""fj"",""Ky"",""nC"",""cR"",""E8"",""i2"",""tR"",""rR"",""Jx"",""Yre"",""zre"",""aR"",""eR"",""O8"",""Qx"",""KCe"",""lR"",""sR"",""hR"",""zi"",""Ll""];
-const graphClasses=graphClassNames.map(n=>[n,own(klass(n),""prototype"")]);
-const graphString=v=>{graphBudget();if(typeof v!==""string""||v.length>4096||!v.isWellFormed()||(graphStringUnits+=v.length)>131072)bad();return v;};
-const graphKeys=o=>{graphBudget();const k=Reflect.ownKeys(o);if(k.length>4096||k.some(v=>typeof v!==""string""))bad();return k;};
-const graphDescriptor=(o,k,enumerableKeys)=>{graphBudget();const d=Object.getOwnPropertyDescriptor(o,k);if(!d||!Object.hasOwn(d,""value""))bad();if(++graphFields>32768)bad();graphHeld.push([o,k,d]);if(enumerableKeys&&d.enumerable)enumerableKeys.push(k);return d.value;};
-const graphJsonToJSONAbsent=o=>{let depth=0;while(o!==null){graphBudget();if(++depth>16||graphJsonChecks.length>=32768)bad();const descriptor=Object.getOwnPropertyDescriptor(o,""toJSON"");if(descriptor!==undefined){graphJsonChecks.push([o,true]);return false;}const prototype=Object.getPrototypeOf(o);graphJsonChecks.push([o,false,prototype]);o=prototype;}return true;};
-if(!graphJsonToJSONAbsent(Object.prototype)||!graphJsonToJSONAbsent(Array.prototype))bad();
-const graphCollection=(o,p,recheck=false)=>{if(Object.getPrototypeOf(o)!==p||graphKeys(o).length!==0)bad();const d=Object.getOwnPropertyDescriptor(p,""size"");if(!d||typeof d.get!==""function""||d.set!==undefined)bad();const n=Reflect.apply(d.get,o,[]);if(!Number.isSafeInteger(n)||n<0||n>4096)bad();if(!recheck&&(graphFields+=n*2)>32768)bad();const iterator=Reflect.apply(own(p,""entries""),o,[]),next=own(Object.getPrototypeOf(iterator),""next""),items=[];if(typeof next!==""function"")bad();for(let i=0;i<n;i++){const e=Reflect.apply(next,iterator,[]);graphBudget();if(own(e,""done"")!==false)bad();const pair=own(e,""value"");if(!Array.isArray(pair)||pair.length!==2)bad();items.push([own(pair,""0""),own(pair,""1"")]);}if(own(Reflect.apply(next,iterator,[]),""done"")!==true)bad();if(!recheck)graphCollections.push([o,p,items]);return items;};
-const graphValue=(v,depth=0)=>{
-graphBudget();if(depth>32)bad();if(v===null)return[""null""];if(v===undefined)return[""undefined""];
-if(typeof v===""boolean"")return[""boolean"",v];if(typeof v===""string"")return[""string"",graphString(v)];
-if(typeof v===""number""){if(!Number.isFinite(v))bad();return[""number"",Object.is(v,-0)?""-0"":String(v)];}
-if(typeof v!==""object"")bad();if(graphSeen.has(v))return[""ref"",graphSeen.get(v)];
-if(graphNodes.length>=4096)bad();const index=graphNodes.length;graphSeen.set(v,index);graphNodes.push(null);
-const p=Object.getPrototypeOf(v);let node;
-if(p===Map.prototype||p===Set.prototype){const entries=graphCollection(v,p);node=p===Map.prototype?{kind:""map"",entries:entries.map(e=>[graphValue(e[0],depth+1),graphValue(e[1],depth+1)])}:{kind:""set"",values:entries.map(e=>graphValue(e[0],depth+1))};}
-else if(Array.isArray(v)){if(p!==Array.prototype)bad();const k=graphKeys(v),n=graphDescriptor(v,""length"");if(!Number.isSafeInteger(n)||n<0||n>4096||k.length!==n+1||k[n]!==""length"")bad();const values=[];for(let i=0;i<n;i++){if(k[i]!==String(i))bad();values.push(graphValue(graphDescriptor(v,String(i)),depth+1));}graphHeld.push([v,null,k,p]);node={kind:""array"",values,jsonToJSONAbsent:graphJsonToJSONAbsent(v)};}
-else{let className=p===null?""null"":p===Object.prototype?""plain"":null;if(className===null){const matches=graphClasses.filter(e=>e[1]===p);if(matches.length!==1)bad();className=matches[0][0];}const k=graphKeys(v),fields=[],enumerableKeys=[];graphHeld.push([v,null,k,p]);for(const key of k)fields.push([graphString(key),graphValue(graphDescriptor(v,key,enumerableKeys),depth+1)]);node={kind:""object"",className,fields,enumerableKeys,jsonToJSONAbsent:graphJsonToJSONAbsent(v)};}
-graphNodes[index]=node;return[""ref"",index];};
-const graphVerify=()=>{graphBudget();for(const h of graphHeld){graphBudget();if(h[1]===null){const k=Reflect.ownKeys(h[0]);if(Object.getPrototypeOf(h[0])!==h[3]||k.length!==h[2].length||k.some((v,i)=>v!==h[2][i]))bad();}else{const d=Object.getOwnPropertyDescriptor(h[0],h[1]),p=h[2];if(!d||!Object.hasOwn(d,""value"")||!Object.is(d.value,p.value)||d.enumerable!==p.enumerable||d.configurable!==p.configurable||d.writable!==p.writable)bad();}}for(const h of graphCollections){graphBudget();const now=graphCollection(h[0],h[1],true);if(now.length!==h[2].length||now.some((e,i)=>!Object.is(e[0],h[2][i][0])||!Object.is(e[1],h[2][i][1])))bad();}for(const h of graphJsonChecks){graphBudget();const present=Object.getOwnPropertyDescriptor(h[0],""toJSON"")!==undefined;if(present!==h[1]||!present&&Object.getPrototypeOf(h[0])!==h[2])bad();}};
-
-const emptyMap=o=>{if(graphCollection(o,Map.prototype).length!==0)bad();};
-const finish=(schema,roots)=>{verifyConstructorAssociations();graphVerify();for(const r of retained){graphBudget();const d=Object.getOwnPropertyDescriptor(r[0],r[1]);if(!d||!Object.hasOwn(d,""value"")||!Object.is(d.value,r[2]))bad();}for(const r of absent){graphBudget();if(Object.getOwnPropertyDescriptor(r[0],r[1]))bad();}if(((()=>{
-""use strict"";
-const bad=()=>{throw new Error(""PCB_DIAGNOSTIC_MODEL_STATE"");};
-const own=(o,k)=>{if(o===null||(typeof o!==""object""&&typeof o!==""function""))bad();const d=Object.getOwnPropertyDescriptor(o,k);if(!d||!Object.hasOwn(d,""value""))bad();return d.value;};
-const object=o=>{if(o===null||typeof o!==""object""||Array.isArray(o))bad();return o;};
-const plain=o=>{object(o);const p=Object.getPrototypeOf(o);if(p!==Object.prototype&&p!==null)bad();return o;};
-const extent=n=>{if(!Number.isSafeInteger(n)||Object.is(n,-0)||n<0)bad();return n;};
-const count=n=>{extent(n);if(n>65536)bad();return n;};
-const flag=v=>{if(typeof v!==""boolean"")bad();return v;};
-const id=v=>{if(typeof v!==""string""||!/^(?:[a-f0-9]{16}|[a-f0-9]{32}|[a-f0-9]{64})$/.test(v))bad();return v;};
-const customId=v=>{if(typeof v!==""string""||!/^(?:[a-f0-9]{16}|[a-f0-9]{32})_[a-f0-9]{16}$/.test(v))bad();return v;};
-const marker=(o,k)=>{const d=Object.getOwnPropertyDescriptor(o,k);if(!d)return ""absent"";const v=own(o,k);return v===undefined?""undefined"":v===null?""null"":""present"";};
-const keys=o=>{plain(o);const k=Reflect.ownKeys(o);if(k.some(v=>typeof v!==""string""))bad();return count(k.length);};
-const arrayLength=o=>{if(!Array.isArray(o)||Object.getPrototypeOf(o)!==Array.prototype)bad();return count(own(o,""length""));};
-const nativeMap=o=>{object(o);if(Object.getPrototypeOf(o)!==Map.prototype||Reflect.ownKeys(o).length!==0)bad();return o;};
-const mapSize=o=>{nativeMap(o);const d=Object.getOwnPropertyDescriptor(Map.prototype,""size"");if(!d||typeof d.get!==""function""||d.set!==undefined)bad();return count(Reflect.apply(d.get,o,[]));};
-
-const named=(o,name)=>{object(o);const p=Object.getPrototypeOf(o),c=own(p,""constructor"");if(typeof c!==""function""||own(c,""name"")!==name||own(c,""prototype"")!==p)bad();return o;};
-const bridge=named(own(globalThis,""MSG_BUS_PCB""),""HJ""),bus=named(own(bridge,""messageBus""),""Oet""),subscribed=plain(own(bus,""subscribed"")),tasks=own(subscribed,""pcb/saveCompiler"");
-if(arrayLength(tasks)!==1||Reflect.ownKeys(tasks).length!==2)bad();
-const task=named(own(tasks,""0""),""Z1e""),callback=own(task,""callback"");
-if(own(task,""isRunning"")!==true||typeof callback!==""function"")bad();
-return callback;
-})())!==originalCallback)bad();graphBudget();const text=JSON.stringify({schema,documentUuid,pickedOwnerPublicShadowsAbsent:true,graph:{roots,nodes:graphNodes}});if(text.length>524288)bad();let bytes=0;for(let i=0;i<text.length;i++){if(i%1024===0)graphBudget();const c=text.charCodeAt(i);bytes+=c<128?1:c<2048?2:c>=55296&&c<=56319?(i++,4):3;if(bytes>524288)bad();}graphBudget();return text;};
-
-const rules=instance(own(klass(""te""),""manager""),""te"");
-for(const name of [""safeSpacings"",""otherSpacings"",""creepageSpacings"",""trackPhysics"",""netLengthPhysics"",""netLengthTolerancePhysics"",""differentialPhysics"",""blindViaPhysics"",""radiusPhysics"",""innerPlanes"",""copperPlanes"",""solderExpansions"",""pasteExpansions"",""autoRouters""])graphCollection(own(rules,name),Map.prototype);
-graphCollection(own(rules,""defaultRuleMap""),Map.prototype);graphCollection(own(rules,""map""),Map.prototype);graphString(own(rules,""ruleTemplateName""));
-for(const name of [""nets"",""netClass"",""netDifferentials"",""regionSelectors"",""equalLengthGroups"",""padsPairGroups"",""cacheNetModel""])emptyMap(own(rules,name));
-const between=instance(own(rules,""betweenNetRule""),""Wre"");
-for(const name of [""rule"",""cacheRuleMap""]){const a=own(between,name);if(!Array.isArray(a)||Object.getPrototypeOf(a)!==Array.prototype||own(a,""length"")!==0||Reflect.ownKeys(a).length!==1)bad();}
-const ruleUnit=own(object(own(scope,""_Fe"")),""UNIT_NAME"");graphString(ruleUnit);
-return finish(""easyeda-pro-control.pcb-common-rules.v2"",[[""rules"",graphValue(rules)],[""ruleUnit"",graphValue(ruleUnit)]]);
-}";
-  const string CommonPreferenceFunction=@"function(originalCallback,constructors){
-""use strict"";const bad=()=>{throw new Error(""PCB_COMMON_STATE"");};
-const retained=[],absent=[];const own=(o,k)=>{if(o===null||(typeof o!==""object""&&typeof o!==""function""))bad();const d=Object.getOwnPropertyDescriptor(o,k);if(!d||!Object.hasOwn(d,""value"")||retained.length>=32768)bad();retained.push([o,k,d.value]);return d.value;};
-const object=o=>{if(o===null||typeof o!==""object""||Array.isArray(o))bad();return o;};
-if(((()=>{
-""use strict"";
-const bad=()=>{throw new Error(""PCB_DIAGNOSTIC_MODEL_STATE"");};
-const own=(o,k)=>{if(o===null||(typeof o!==""object""&&typeof o!==""function""))bad();const d=Object.getOwnPropertyDescriptor(o,k);if(!d||!Object.hasOwn(d,""value""))bad();return d.value;};
-const object=o=>{if(o===null||typeof o!==""object""||Array.isArray(o))bad();return o;};
-const plain=o=>{object(o);const p=Object.getPrototypeOf(o);if(p!==Object.prototype&&p!==null)bad();return o;};
-const extent=n=>{if(!Number.isSafeInteger(n)||Object.is(n,-0)||n<0)bad();return n;};
-const count=n=>{extent(n);if(n>65536)bad();return n;};
-const flag=v=>{if(typeof v!==""boolean"")bad();return v;};
-const id=v=>{if(typeof v!==""string""||!/^(?:[a-f0-9]{16}|[a-f0-9]{32}|[a-f0-9]{64})$/.test(v))bad();return v;};
-const customId=v=>{if(typeof v!==""string""||!/^(?:[a-f0-9]{16}|[a-f0-9]{32})_[a-f0-9]{16}$/.test(v))bad();return v;};
-const marker=(o,k)=>{const d=Object.getOwnPropertyDescriptor(o,k);if(!d)return ""absent"";const v=own(o,k);return v===undefined?""undefined"":v===null?""null"":""present"";};
-const keys=o=>{plain(o);const k=Reflect.ownKeys(o);if(k.some(v=>typeof v!==""string""))bad();return count(k.length);};
-const arrayLength=o=>{if(!Array.isArray(o)||Object.getPrototypeOf(o)!==Array.prototype)bad();return count(own(o,""length""));};
-const nativeMap=o=>{object(o);if(Object.getPrototypeOf(o)!==Map.prototype||Reflect.ownKeys(o).length!==0)bad();return o;};
-const mapSize=o=>{nativeMap(o);const d=Object.getOwnPropertyDescriptor(Map.prototype,""size"");if(!d||typeof d.get!==""function""||d.set!==undefined)bad();return count(Reflect.apply(d.get,o,[]));};
-
-const named=(o,name)=>{object(o);const p=Object.getPrototypeOf(o),c=own(p,""constructor"");if(typeof c!==""function""||own(c,""name"")!==name||own(c,""prototype"")!==p)bad();return o;};
-const bridge=named(own(globalThis,""MSG_BUS_PCB""),""HJ""),bus=named(own(bridge,""messageBus""),""Oet""),subscribed=plain(own(bus,""subscribed"")),tasks=own(subscribed,""pcb/saveCompiler"");
-if(arrayLength(tasks)!==1||Reflect.ownKeys(tasks).length!==2)bad();
-const task=named(own(tasks,""0""),""Z1e""),callback=own(task,""callback"");
-if(own(task,""isRunning"")!==true||typeof callback!==""function"")bad();
-return callback;
-})())!==originalCallback)bad();
-const scope=object(own(this,""object"")),klass=n=>{const c=own(scope,n);if(typeof c!==""function"")bad();return c;};
-
-const constructorHeld=[],constructorProfiles={""Yme"":[""Yme"",0,{}],""Nfe"":[""Nfe"",0,{}],""Epe"":[""Epe"",0,{}],""GSe"":[""GSe"",0,{}]};
-if(!Array.isArray(constructors)||Object.getPrototypeOf(constructors)!==Array.prototype)bad();
-const constructorLength=own(constructors,""length""),constructorKeys=Reflect.ownKeys(constructors);
-if(![4].includes(constructorLength)||constructorKeys.length!==constructorLength+1||constructorKeys[constructorLength]!==""length"")bad();
-for(let i=0;i<constructorLength;i++)if(constructorKeys[i]!==String(i)||typeof own(constructors,String(i))!==""function"")bad();
-const constructorNames=[""Yme"",""Nfe"",""Epe"",""GSe""];
-const constructorMetadata=(c,name)=>{const [label,arity,statics]=constructorProfiles[name];if(own(c,""name"")!==label||own(c,""length"")!==arity)bad();for(const key of Object.keys(statics)){const d=Object.getOwnPropertyDescriptor(c,key);if(!d||!Object.hasOwn(d,""value"")||!d.writable||!d.configurable||!d.enumerable||own(c,key)!==statics[key])bad();}};
-const constructorInstance=(o,name)=>{object(o);const i=constructorNames.indexOf(name);if(i<0)bad();const c=own(constructors,String(i)),p=own(c,""prototype"");if(Object.getPrototypeOf(o)!==p||own(p,""constructor"")!==c)bad();constructorMetadata(c,name);constructorHeld.push([o,p,c,name,i]);return o;};
-const verifyConstructorAssociations=()=>{if(Object.getPrototypeOf(constructors)!==Array.prototype||own(constructors,""length"")!==constructorLength)bad();const k=Reflect.ownKeys(constructors);if(k.length!==constructorKeys.length||k.some((v,i)=>v!==constructorKeys[i]))bad();for(const [o,p,c,name,i] of constructorHeld){if(own(constructors,String(i))!==c||Object.getPrototypeOf(o)!==p||own(c,""prototype"")!==p||own(p,""constructor"")!==c)bad();constructorMetadata(c,name);}};
-
-const instance=(o,n)=>{object(o);if(Object.getPrototypeOf(o)!==own(klass(n),""prototype""))bad();return o;};
-const env=instance(own(klass(""x""),""env""),""x""),documentUuid=own(env,""_id"");
-if(own(env,""_doctype"")!==3||typeof documentUuid!==""string""||!/^(?:[a-f0-9]{16}|[a-f0-9]{32})$/.test(documentUuid))bad();
-const pick=(o,names)=>{const r=Object.create(null);for(const n of names)r[n]=own(o,n);return r;};
-const noOwnPublic=(o,names)=>{for(const n of names){if(Object.getOwnPropertyDescriptor(o,n))bad();absent.push([o,n]);}};
-const optional=(o,k)=>{if(Object.getOwnPropertyDescriptor(o,k))return{present:true,value:own(o,k)};let p=Object.getPrototypeOf(o),depth=0;while(p!==null){if(++depth>8||Object.hasOwn(p,k))bad();p=Object.getPrototypeOf(p);}absent.push([o,k]);return{present:false};};
-
-const graphNow=Date.now;
-if(typeof graphNow!==""function"")bad();
-const graphStarted=Reflect.apply(graphNow,Date,[]);
-if(!Number.isSafeInteger(graphStarted)||graphStarted<0)bad();
-const graphBudget=()=>{if(Date.now!==graphNow)bad();const now=Reflect.apply(graphNow,Date,[]);if(!Number.isSafeInteger(now)||now<graphStarted||now-graphStarted>1000)bad();};
-
-const graphNodes=[],graphSeen=new Map(),graphHeld=[],graphCollections=[],graphJsonChecks=[];let graphFields=0,graphStringUnits=0;
-const graphClassNames=[""S"",""ee"",""Ke"",""WA"",""Ff"",""HA"",""te"",""Wre"",""xI"",""fj"",""Ky"",""nC"",""cR"",""E8"",""i2"",""tR"",""rR"",""Jx"",""Yre"",""zre"",""aR"",""eR"",""O8"",""Qx"",""KCe"",""lR"",""sR"",""hR"",""zi"",""Ll""];
-const graphClasses=graphClassNames.map(n=>[n,own(klass(n),""prototype"")]);
-const graphString=v=>{graphBudget();if(typeof v!==""string""||v.length>4096||!v.isWellFormed()||(graphStringUnits+=v.length)>131072)bad();return v;};
-const graphKeys=o=>{graphBudget();const k=Reflect.ownKeys(o);if(k.length>4096||k.some(v=>typeof v!==""string""))bad();return k;};
-const graphDescriptor=(o,k,enumerableKeys)=>{graphBudget();const d=Object.getOwnPropertyDescriptor(o,k);if(!d||!Object.hasOwn(d,""value""))bad();if(++graphFields>32768)bad();graphHeld.push([o,k,d]);if(enumerableKeys&&d.enumerable)enumerableKeys.push(k);return d.value;};
-const graphJsonToJSONAbsent=o=>{let depth=0;while(o!==null){graphBudget();if(++depth>16||graphJsonChecks.length>=32768)bad();const descriptor=Object.getOwnPropertyDescriptor(o,""toJSON"");if(descriptor!==undefined){graphJsonChecks.push([o,true]);return false;}const prototype=Object.getPrototypeOf(o);graphJsonChecks.push([o,false,prototype]);o=prototype;}return true;};
-if(!graphJsonToJSONAbsent(Object.prototype)||!graphJsonToJSONAbsent(Array.prototype))bad();
-const graphCollection=(o,p,recheck=false)=>{if(Object.getPrototypeOf(o)!==p||graphKeys(o).length!==0)bad();const d=Object.getOwnPropertyDescriptor(p,""size"");if(!d||typeof d.get!==""function""||d.set!==undefined)bad();const n=Reflect.apply(d.get,o,[]);if(!Number.isSafeInteger(n)||n<0||n>4096)bad();if(!recheck&&(graphFields+=n*2)>32768)bad();const iterator=Reflect.apply(own(p,""entries""),o,[]),next=own(Object.getPrototypeOf(iterator),""next""),items=[];if(typeof next!==""function"")bad();for(let i=0;i<n;i++){const e=Reflect.apply(next,iterator,[]);graphBudget();if(own(e,""done"")!==false)bad();const pair=own(e,""value"");if(!Array.isArray(pair)||pair.length!==2)bad();items.push([own(pair,""0""),own(pair,""1"")]);}if(own(Reflect.apply(next,iterator,[]),""done"")!==true)bad();if(!recheck)graphCollections.push([o,p,items]);return items;};
-const graphValue=(v,depth=0)=>{
-graphBudget();if(depth>32)bad();if(v===null)return[""null""];if(v===undefined)return[""undefined""];
-if(typeof v===""boolean"")return[""boolean"",v];if(typeof v===""string"")return[""string"",graphString(v)];
-if(typeof v===""number""){if(!Number.isFinite(v))bad();return[""number"",Object.is(v,-0)?""-0"":String(v)];}
-if(typeof v!==""object"")bad();if(graphSeen.has(v))return[""ref"",graphSeen.get(v)];
-if(graphNodes.length>=4096)bad();const index=graphNodes.length;graphSeen.set(v,index);graphNodes.push(null);
-const p=Object.getPrototypeOf(v);let node;
-if(p===Map.prototype||p===Set.prototype){const entries=graphCollection(v,p);node=p===Map.prototype?{kind:""map"",entries:entries.map(e=>[graphValue(e[0],depth+1),graphValue(e[1],depth+1)])}:{kind:""set"",values:entries.map(e=>graphValue(e[0],depth+1))};}
-else if(Array.isArray(v)){if(p!==Array.prototype)bad();const k=graphKeys(v),n=graphDescriptor(v,""length"");if(!Number.isSafeInteger(n)||n<0||n>4096||k.length!==n+1||k[n]!==""length"")bad();const values=[];for(let i=0;i<n;i++){if(k[i]!==String(i))bad();values.push(graphValue(graphDescriptor(v,String(i)),depth+1));}graphHeld.push([v,null,k,p]);node={kind:""array"",values,jsonToJSONAbsent:graphJsonToJSONAbsent(v)};}
-else{let className=p===null?""null"":p===Object.prototype?""plain"":null;if(className===null){const matches=graphClasses.filter(e=>e[1]===p);if(matches.length!==1)bad();className=matches[0][0];}const k=graphKeys(v),fields=[],enumerableKeys=[];graphHeld.push([v,null,k,p]);for(const key of k)fields.push([graphString(key),graphValue(graphDescriptor(v,key,enumerableKeys),depth+1)]);node={kind:""object"",className,fields,enumerableKeys,jsonToJSONAbsent:graphJsonToJSONAbsent(v)};}
-graphNodes[index]=node;return[""ref"",index];};
-const graphVerify=()=>{graphBudget();for(const h of graphHeld){graphBudget();if(h[1]===null){const k=Reflect.ownKeys(h[0]);if(Object.getPrototypeOf(h[0])!==h[3]||k.length!==h[2].length||k.some((v,i)=>v!==h[2][i]))bad();}else{const d=Object.getOwnPropertyDescriptor(h[0],h[1]),p=h[2];if(!d||!Object.hasOwn(d,""value"")||!Object.is(d.value,p.value)||d.enumerable!==p.enumerable||d.configurable!==p.configurable||d.writable!==p.writable)bad();}}for(const h of graphCollections){graphBudget();const now=graphCollection(h[0],h[1],true);if(now.length!==h[2].length||now.some((e,i)=>!Object.is(e[0],h[2][i][0])||!Object.is(e[1],h[2][i][1])))bad();}for(const h of graphJsonChecks){graphBudget();const present=Object.getOwnPropertyDescriptor(h[0],""toJSON"")!==undefined;if(present!==h[1]||!present&&Object.getPrototypeOf(h[0])!==h[2])bad();}};
-
-const emptyMap=o=>{if(graphCollection(o,Map.prototype).length!==0)bad();};
-const finish=(schema,roots)=>{verifyConstructorAssociations();graphVerify();for(const r of retained){graphBudget();const d=Object.getOwnPropertyDescriptor(r[0],r[1]);if(!d||!Object.hasOwn(d,""value"")||!Object.is(d.value,r[2]))bad();}for(const r of absent){graphBudget();if(Object.getOwnPropertyDescriptor(r[0],r[1]))bad();}if(((()=>{
-""use strict"";
-const bad=()=>{throw new Error(""PCB_DIAGNOSTIC_MODEL_STATE"");};
-const own=(o,k)=>{if(o===null||(typeof o!==""object""&&typeof o!==""function""))bad();const d=Object.getOwnPropertyDescriptor(o,k);if(!d||!Object.hasOwn(d,""value""))bad();return d.value;};
-const object=o=>{if(o===null||typeof o!==""object""||Array.isArray(o))bad();return o;};
-const plain=o=>{object(o);const p=Object.getPrototypeOf(o);if(p!==Object.prototype&&p!==null)bad();return o;};
-const extent=n=>{if(!Number.isSafeInteger(n)||Object.is(n,-0)||n<0)bad();return n;};
-const count=n=>{extent(n);if(n>65536)bad();return n;};
-const flag=v=>{if(typeof v!==""boolean"")bad();return v;};
-const id=v=>{if(typeof v!==""string""||!/^(?:[a-f0-9]{16}|[a-f0-9]{32}|[a-f0-9]{64})$/.test(v))bad();return v;};
-const customId=v=>{if(typeof v!==""string""||!/^(?:[a-f0-9]{16}|[a-f0-9]{32})_[a-f0-9]{16}$/.test(v))bad();return v;};
-const marker=(o,k)=>{const d=Object.getOwnPropertyDescriptor(o,k);if(!d)return ""absent"";const v=own(o,k);return v===undefined?""undefined"":v===null?""null"":""present"";};
-const keys=o=>{plain(o);const k=Reflect.ownKeys(o);if(k.some(v=>typeof v!==""string""))bad();return count(k.length);};
-const arrayLength=o=>{if(!Array.isArray(o)||Object.getPrototypeOf(o)!==Array.prototype)bad();return count(own(o,""length""));};
-const nativeMap=o=>{object(o);if(Object.getPrototypeOf(o)!==Map.prototype||Reflect.ownKeys(o).length!==0)bad();return o;};
-const mapSize=o=>{nativeMap(o);const d=Object.getOwnPropertyDescriptor(Map.prototype,""size"");if(!d||typeof d.get!==""function""||d.set!==undefined)bad();return count(Reflect.apply(d.get,o,[]));};
-
-const named=(o,name)=>{object(o);const p=Object.getPrototypeOf(o),c=own(p,""constructor"");if(typeof c!==""function""||own(c,""name"")!==name||own(c,""prototype"")!==p)bad();return o;};
-const bridge=named(own(globalThis,""MSG_BUS_PCB""),""HJ""),bus=named(own(bridge,""messageBus""),""Oet""),subscribed=plain(own(bus,""subscribed"")),tasks=own(subscribed,""pcb/saveCompiler"");
-if(arrayLength(tasks)!==1||Reflect.ownKeys(tasks).length!==2)bad();
-const task=named(own(tasks,""0""),""Z1e""),callback=own(task,""callback"");
-if(own(task,""isRunning"")!==true||typeof callback!==""function"")bad();
-return callback;
-})())!==originalCallback)bad();graphBudget();const text=JSON.stringify({schema,documentUuid,pickedOwnerPublicShadowsAbsent:true,graph:{roots,nodes:graphNodes}});if(text.length>524288)bad();let bytes=0;for(let i=0;i<text.length;i++){if(i%1024===0)graphBudget();const c=text.charCodeAt(i);bytes+=c<128?1:c<2048?2:c>=55296&&c<=56319?(i++,4):3;if(bytes>524288)bad();}graphBudget();return text;};
-
-const config=instance(own(constructorInstance(own(scope,""ce""),""Nfe""),""pcbConfig""),""vfe""),model=constructorInstance(own(scope,""Me""),""Yme"");
-const route=instance(own(klass(""nr""),""instance""),""nr""),params=instance(own(klass(""pl""),""instance""),""pl"");
-const panel=instance(own(klass(""ha""),""instance""),""ha"");if(own(panel,""wiringRouterParams"")!==params)bad();
-noOwnPublic(config,[""startTrackWidth"",""startViaSize"",""rotateWhole"",""trackFollow"",""layerPhyPerferenceConfig""]);noOwnPublic(model,[""prevTrackWidth"",""adsorb"",""removeLoop""]);
-noOwnPublic(route,[""mode"",""type""]);noOwnPublic(panel,[""trackMinCorner"",""pushVia"",""pathOptimization4BePushed"",""currentPathOptimization4BePushed"",""removeCircuitsContainingVias"",""removeAntenna""]);noOwnPublic(params,[""getTrackMinCorner"",""getPushVia"",""getPathOptimization4BePushed"",""getCurrentPathOptimization"",""getRemoveCircuitsContainingVias"",""getRemoveAntenna""]);
-const via=own(constructorInstance(own(scope,""rt""),""Epe""),""defaultVia"");
-const configValues=pick(config,[""_startTrackWidth"",""_startViaSize"",""_rotateWhole"",""_trackFollow"",""realTimeUpdateUnusedLayers"",""unusedPadRange""]);
-configValues.layerPreference=optional(config,""_layerPhyPerferenceConfig"");
-const modelValues=pick(model,[""_prevTrackWidth"",""_adsorb"",""_removeLoop""]),viaValues=pick(via,[""innerRadius"",""radius""]);
-const routing=pick(route,[""_mode"",""_type""]),options=pick(params,[""minimumTrackCorners"",""pushViaOptimization"",""pathOptimization"",""currentPathOptimization"",""removeCircuitsContainingVias"",""removeAntenna""]);
-return finish(""easyeda-pro-control.pcb-common-preference.v2"",[[""config"",graphValue(configValues)],[""model"",graphValue(modelValues)],[""via"",graphValue(viaValues)],[""routing"",graphValue(routing)],[""options"",graphValue(options)]]);
-}";
+  // BEGIN GENERATED PCB209 COMMON PRESENTATION PROGRAM
+  const string CommonPresentationFunctionGzip="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";
+  const string CommonPresentationFunctionSha256="10ec3a9288a5b424b61c68adcc2253292251e880f4b7bce8514c1d737819069c";
+  static readonly string CommonPresentationFunction=UnpackFixedProgram(CommonPresentationFunctionGzip,15161,CommonPresentationFunctionSha256,"4a1e5d0b34a3d1c8dfdfdba879fd55c145956df2606207b71b7203985d349ce3");
+  // END GENERATED PCB209 COMMON PRESENTATION PROGRAM
+  // BEGIN GENERATED PCB209 COMMON RULES PROGRAM
+  const string CommonRulesFunctionGzip="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";
+  const string CommonRulesFunctionSha256="6107c74fc09378557d300fcf4972136521de2cfe1f9ace044c3dbac8295db7a9";
+  static readonly string CommonRulesFunction=UnpackFixedProgram(CommonRulesFunctionGzip,14619,CommonRulesFunctionSha256,"a9b560e2a0c5b8b66623adef38f7690fd5c97ad9f7261a3d6dfb7603f01deb7b");
+  // END GENERATED PCB209 COMMON RULES PROGRAM
+  // BEGIN GENERATED PCB209 COMMON PREFERENCE PROGRAM
+  const string CommonPreferenceFunctionGzip="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";
+  const string CommonPreferenceFunctionSha256="9d60d49e00b1ced4913f6a9a265a57a87508bb3725bd19aebee6c80469d319e5";
+  static readonly string CommonPreferenceFunction=UnpackFixedProgram(CommonPreferenceFunctionGzip,15217,CommonPreferenceFunctionSha256,"9952aca1de8b7009c48bfc9c457213759c016f3fbfd26c5c03dbe8e2ac095ad7");
+  // END GENERATED PCB209 COMMON PREFERENCE PROGRAM
   const string CommonAssetsFunction=@"function(originalCallback,constructors){
 
 ""use strict"";
@@ -3733,159 +3645,11 @@ return callback;
 })())!==originalCallback)bad();
 return JSON.stringify({schema:""easyeda-pro-control.pcb-string-empty-producers.v2"",documentUuid,model,view,net,clusters});
 }";
-  const string StringProducerMarkersV2Function=@"function(originalCallback,constructors){
-
-""use strict"";
-const bad=()=>{throw new Error(""PCB_STRING_OBSERVATION_STATE"");};
-const retained=[],collections=[];
-const own=(o,k)=>{if(o===null||(typeof o!==""object""&&typeof o!==""function""))bad();const d=Object.getOwnPropertyDescriptor(o,k);if(!d||!Object.hasOwn(d,""value""))bad();if(retained.length>=2048)bad();retained.push([o,k,d.value]);return d.value;};
-const object=o=>{if(o===null||typeof o!==""object""||Array.isArray(o))bad();return o;};
-const plain=o=>{object(o);const p=Object.getPrototypeOf(o);if(p!==Object.prototype&&p!==null)bad();return o;};
-const marker=(o,k)=>{const d=Object.getOwnPropertyDescriptor(o,k);if(!d){let p=Object.getPrototypeOf(o),n=0;while(p!==null){if(++n>8||Object.hasOwn(p,k))bad();p=Object.getPrototypeOf(p);}retained.push([o,k]);return ""absent"";}const v=own(o,k);return v===undefined?""undefined"":v===null?""null"":""present"";};
-const count=n=>{if(!Number.isSafeInteger(n)||Object.is(n,-0)||n<0||n>65536)bad();return n;};
-const flag=v=>{if(typeof v!==""boolean"")bad();return v;};
-const id=(v,re)=>{if(typeof v!==""string""||v.length>128||!re.test(v))bad();return v;};
-const keys=o=>{plain(o);const k=Reflect.ownKeys(o);if(k.length>65536||k.some(v=>typeof v!==""string""))bad();return k;};
-const emptyObject=o=>{if(keys(o).length!==0)bad();return [];};
-const size=(o,p)=>{object(o);if(Object.getPrototypeOf(o)!==p||Reflect.ownKeys(o).length!==0)bad();const d=Object.getOwnPropertyDescriptor(p,""size"");if(!d||typeof d.get!==""function""||d.set!==undefined)bad();const n=count(Reflect.apply(d.get,o,[]));collections.push([o,p,d.get,n]);return n;};
-const emptyMap=o=>{if(size(o,Map.prototype)!==0)bad();return [];};
-const emptySet=o=>{if(size(o,Set.prototype)!==0)bad();return [];};
-const arraySize=o=>{if(!Array.isArray(o)||Object.getPrototypeOf(o)!==Array.prototype)bad();const n=count(own(o,""length"")),k=Reflect.ownKeys(o);if(k.length!==n+1||k[n]!==""length"")bad();for(let i=0;i<n;i++)own(o,String(i));return n;};
-const named=(o,name)=>{object(o);const p=Object.getPrototypeOf(o),c=own(p,""constructor"");if(typeof c!==""function""||own(c,""name"")!==name||own(c,""prototype"")!==p)bad();return o;};
-const verify=()=>{for(const item of retained){const d=Object.getOwnPropertyDescriptor(item[0],item[1]);if(item.length===2?d!==undefined:!d||!Object.hasOwn(d,""value"")||d.value!==item[2])bad();}for(const item of collections){if(Object.getPrototypeOf(item[0])!==item[1]||Reflect.ownKeys(item[0]).length!==0||Reflect.apply(item[2],item[0],[])!==item[3])bad();}};
-
-if(((()=>{
-""use strict"";
-const bad=()=>{throw new Error(""PCB_DIAGNOSTIC_MODEL_STATE"");};
-const own=(o,k)=>{if(o===null||(typeof o!==""object""&&typeof o!==""function""))bad();const d=Object.getOwnPropertyDescriptor(o,k);if(!d||!Object.hasOwn(d,""value""))bad();return d.value;};
-const object=o=>{if(o===null||typeof o!==""object""||Array.isArray(o))bad();return o;};
-const plain=o=>{object(o);const p=Object.getPrototypeOf(o);if(p!==Object.prototype&&p!==null)bad();return o;};
-const extent=n=>{if(!Number.isSafeInteger(n)||Object.is(n,-0)||n<0)bad();return n;};
-const count=n=>{extent(n);if(n>65536)bad();return n;};
-const flag=v=>{if(typeof v!==""boolean"")bad();return v;};
-const id=v=>{if(typeof v!==""string""||!/^(?:[a-f0-9]{16}|[a-f0-9]{32}|[a-f0-9]{64})$/.test(v))bad();return v;};
-const customId=v=>{if(typeof v!==""string""||!/^(?:[a-f0-9]{16}|[a-f0-9]{32})_[a-f0-9]{16}$/.test(v))bad();return v;};
-const marker=(o,k)=>{const d=Object.getOwnPropertyDescriptor(o,k);if(!d)return ""absent"";const v=own(o,k);return v===undefined?""undefined"":v===null?""null"":""present"";};
-const keys=o=>{plain(o);const k=Reflect.ownKeys(o);if(k.some(v=>typeof v!==""string""))bad();return count(k.length);};
-const arrayLength=o=>{if(!Array.isArray(o)||Object.getPrototypeOf(o)!==Array.prototype)bad();return count(own(o,""length""));};
-const nativeMap=o=>{object(o);if(Object.getPrototypeOf(o)!==Map.prototype||Reflect.ownKeys(o).length!==0)bad();return o;};
-const mapSize=o=>{nativeMap(o);const d=Object.getOwnPropertyDescriptor(Map.prototype,""size"");if(!d||typeof d.get!==""function""||d.set!==undefined)bad();return count(Reflect.apply(d.get,o,[]));};
-
-const named=(o,name)=>{object(o);const p=Object.getPrototypeOf(o),c=own(p,""constructor"");if(typeof c!==""function""||own(c,""name"")!==name||own(c,""prototype"")!==p)bad();return o;};
-const bridge=named(own(globalThis,""MSG_BUS_PCB""),""HJ""),bus=named(own(bridge,""messageBus""),""Oet""),subscribed=plain(own(bus,""subscribed"")),tasks=own(subscribed,""pcb/saveCompiler"");
-if(arrayLength(tasks)!==1||Reflect.ownKeys(tasks).length!==2)bad();
-const task=named(own(tasks,""0""),""Z1e""),callback=own(task,""callback"");
-if(own(task,""isRunning"")!==true||typeof callback!==""function"")bad();
-return callback;
-})())!==originalCallback)bad();
-const prototypes=[],keySamples=[],absentFields=[];
-const prototype=o=>{const p=Object.getPrototypeOf(o);prototypes.push([o,p]);return p;};
-const scope=object(own(this,""object"")),klass=n=>{const c=own(scope,n);if(typeof c!==""function"")bad();return c;};
-
-const constructorHeld=[],constructorProfiles={""kde"":[""kde"",0,{}],""Sfe"":[""Sfe"",0,{}],""mpe"":[""mpe"",0,{}],""Yde"":[""Yde"",0,{}],""HSe"":[""HSe"",0,{}],""USe"":[""USe"",0,{}],""Jse"":[""Jse"",0,{}],""Lpe"":[""Lpe"",1,{}],""Kme"":[""Kme"",0,{}],""fpe"":[""fpe"",0,{}],""P1e"":[""P1e"",0,{}],""mge"":[""mge"",0,{}],""tge"":[""tge"",0,{}],""$me"":[""Sy"",0,{""FLIP_PROGRESS_RANGE"":0.8,""FLIP_PROGRESS_START"":0.1,""MAX_QUEUE_SIZE"":20,""PROGRESS_UPDATE_INTERVAL"":10}],""Spe"":[""Spe"",0,{}],""Ume"":[""Ume"",0,{}],""cge"":[""cge"",0,{}],""Tfe"":[""Tfe"",0,{}],""Qme"":[""Qme"",0,{}],""jde"":[""jde"",0,{}]};
-if(!Array.isArray(constructors)||Object.getPrototypeOf(constructors)!==Array.prototype)bad();
-const constructorLength=own(constructors,""length""),constructorKeys=Reflect.ownKeys(constructors);
-if(![20].includes(constructorLength)||constructorKeys.length!==constructorLength+1||constructorKeys[constructorLength]!==""length"")bad();
-for(let i=0;i<constructorLength;i++)if(constructorKeys[i]!==String(i)||typeof own(constructors,String(i))!==""function"")bad();
-const constructorNames=[""kde"",""Sfe"",""mpe"",""Yde"",""HSe"",""USe"",""Jse"",""Lpe"",""Kme"",""fpe"",""P1e"",""mge"",""tge"",""$me"",""Spe"",""Ume"",""cge"",""Tfe"",""Qme"",""jde""];
-const constructorMetadata=(c,name)=>{const [label,arity,statics]=constructorProfiles[name];if(own(c,""name"")!==label||own(c,""length"")!==arity)bad();for(const key of Object.keys(statics)){const d=Object.getOwnPropertyDescriptor(c,key);if(!d||!Object.hasOwn(d,""value"")||!d.writable||!d.configurable||!d.enumerable||own(c,key)!==statics[key])bad();}};
-const constructorInstance=(o,name)=>{object(o);const i=constructorNames.indexOf(name);if(i<0)bad();const c=own(constructors,String(i)),p=own(c,""prototype"");if(Object.getPrototypeOf(o)!==p||own(p,""constructor"")!==c)bad();constructorMetadata(c,name);constructorHeld.push([o,p,c,name,i]);return o;};
-const verifyConstructorAssociations=()=>{if(Object.getPrototypeOf(constructors)!==Array.prototype||own(constructors,""length"")!==constructorLength)bad();const k=Reflect.ownKeys(constructors);if(k.length!==constructorKeys.length||k.some((v,i)=>v!==constructorKeys[i]))bad();for(const [o,p,c,name,i] of constructorHeld){if(own(constructors,String(i))!==c||Object.getPrototypeOf(o)!==p||own(c,""prototype"")!==p||own(p,""constructor"")!==c)bad();constructorMetadata(c,name);}};
-
-const instance=(o,c)=>{object(o);if(prototype(o)!==own(c,""prototype""))bad();return o;};
-const rawMarker=(o,k)=>{const m=marker(o,k);if(m===""absent""){absentFields.push([o,k]);let p=o,n=0;while(p!==null){if(++n>10)bad();p=prototype(p);}}return m;};
-const finite=v=>{if(typeof v!==""number""||!Number.isFinite(v)||Object.is(v,-0))bad();return v;};
-const token=v=>{finite(v);if(!Number.isSafeInteger(v)||v<0)bad();return v;};
-const dataKeys=o=>{const k=Reflect.ownKeys(o);if(k.length>65537)bad();for(const key of k){if(typeof key!==""string"")bad();const d=Object.getOwnPropertyDescriptor(o,key);if(!d||!Object.hasOwn(d,""value""))bad();}keySamples.push([o,k]);return k;};
-const objectCount=o=>{plain(o);prototype(o);return count(dataKeys(o).length);};
-const arrayCount=o=>{if(!Array.isArray(o)||prototype(o)!==Array.prototype)bad();const n=count(own(o,""length"")),k=dataKeys(o);if(k.length!==n+1||k[n]!==""length"")bad();for(let i=0;i<n;i++)if(k[i]!==String(i))bad();return n;};
-const mapCount=o=>size(o,Map.prototype),setCount=o=>size(o,Set.prototype);
-const ec=klass(""x""),env=instance(own(ec,""env""),ec),documentUuid=id(own(env,""_id""),/^(?:[a-f0-9]{16}|[a-f0-9]{32})$/);
-if(own(env,""_doctype"")!==3)bad();
-
-const lazyOwners=[],lazyOwnerPrototypes=[];
-const lazyOwner=c=>{if(typeof c!==""function"")bad();const d=Object.getOwnPropertyDescriptor(c,""manager"");
-if(d&&!Object.hasOwn(d,""value""))bad();
-if(!d){let p=c,n=0;while(p!==null){if(++n>8||Object.hasOwn(p,""manager""))bad();const next=Object.getPrototypeOf(p);lazyOwnerPrototypes.push([p,next]);p=next;}}
-lazyOwners.push([c,d]);const v=d?d.value:undefined;
-return {marker:!d?""absent"":v===undefined?""undefined"":v===null?""null"":""present"",value:v};};
-const verifyLazyOwners=()=>{for(const [c,d]of lazyOwners){const n=Object.getOwnPropertyDescriptor(c,""manager"");
-if(!d){if(n!==undefined)bad();let p=Object.getPrototypeOf(c),i=0;while(p!==null){if(++i>8||Object.hasOwn(p,""manager""))bad();p=Object.getPrototypeOf(p);}}
-else if(!n||!Object.hasOwn(n,""value"")||!Object.is(n.value,d.value)||n.writable!==d.writable||n.configurable!==d.configurable||n.enumerable!==d.enumerable)bad();}
-for(const [o,p]of lazyOwnerPrototypes)if(Object.getPrototypeOf(o)!==p)bad();};
-
-const copperClass=klass(""FP""),copperSlot=lazyOwner(copperClass),copperOwner=copperSlot.value;
-let dynamicCopper={manager:copperSlot.marker,state:null};
-if(copperSlot.marker===""present""){
- const copper=instance(copperOwner,copperClass),workerNameMarker=rawMarker(copper,""workerName"");
- const state={openPcb:flag(own(copper,""openPcb"")),workerNameMarker,
- workerId:workerNameMarker===""present""?token(own(copper,""workerName"")):null,
- timerMarker:rawMarker(copper,""time""),busMarker:rawMarker(copper,""_bus"")};
- dynamicCopper={manager:""present"",state};
-}
-const modelClass=klass(""MI""),modelSlot=lazyOwner(modelClass),modelOwner=modelSlot.value;
-let ratlineModel={manager:modelSlot.marker,state:null};
-if(modelSlot.marker===""present""){
- const models=instance(modelOwner,modelClass);
- ratlineModel={manager:""present"",state:{netCount:mapCount(own(models,""map"")),idCount:mapCount(own(models,""idMap"")),
- lastRatlineMarker:rawMarker(models,""_lastRatline""),lastMarker:rawMarker(models,""_last"")}};
-}
-const views=constructorInstance(own(scope,""jo""),""mpe"");
-const ratlineView={netCount:mapCount(own(views,""map"")),idCount:mapCount(own(views,""idMap"")),
- highlightNetCount:setCount(own(views,""highLightNets"")),clickHighlightCount:setCount(own(views,""clickHighlightRatlines"")),
- hoverHighlightCount:setCount(own(views,""hoverHighlightRatlines""))};
-const network=constructorInstance(own(scope,""ze""),""Yde""),updates=plain(own(network,""updateNets""));
-if(objectCount(updates)!==3)bad();
-const viewGroupsMarker=rawMarker(network,""_viewGroupIds"");
-const net={netCount:mapCount(own(network,""map"")),noneNetCount:mapCount(own(network,""noneNetMap"")),
- lengthCount:mapCount(own(network,""netLength"")),modifyCount:mapCount(own(network,""netModify"")),
- rubbishCount:setCount(own(network,""rubbish"")),optionCount:arrayCount(own(network,""netOptions"")),
- addCount:arrayCount(own(updates,""addNet"")),deleteCount:arrayCount(own(updates,""deleteNet"")),
- updateLengthCount:objectCount(own(updates,""updateNetLength"")),grayCount:objectCount(own(network,""ratlineVisibleBeforeGray"")),
- viewGroupsMarker,viewGroupCount:viewGroupsMarker===""present""?arrayCount(own(network,""_viewGroupIds"")):null};
-const debounce=instance(own(network,""debounce""),klass(""U5"")),func=own(debounce,""func""),frame=own(debounce,""animationFrameId"");
-if(func!==null&&typeof func!==""function"")bad();
-const leftMarker=rawMarker(network,""updateLeftTree""),left=leftMarker===""present""?own(network,""updateLeftTree""):null;
-if(leftMarker===""present""&&typeof left!==""function"")bad();
-const notification={funcMarker:func===null?""null"":""function"",frameMarker:frame===null?""null"":""token"",
- frameId:frame===null?null:token(frame),lastTime:finite(own(debounce,""lastTime"")),delay:finite(own(debounce,""delay"")),
- updateLeftTreeMarker:leftMarker===""present""?""function"":leftMarker,
- sameCallbackReference:typeof func===""function""&&typeof left===""function""?func===left:null};
-const clusters={networkCount:mapCount(own(klass(""Xh""),""map"")),
-wireClusterCount:mapCount(own(constructorInstance(own(scope,""h_""),""HSe""),""map"")),
-jumpWireCount:mapCount(own(constructorInstance(own(scope,""aE""),""USe""),""map"")),
- useWireClusterCache:flag(own(klass(""h0""),""useWireClusterCache"")),emptyNetChange:flag(own(klass(""h0""),""emptyNetChange""))};
-verifyConstructorAssociations();verifyLazyOwners();verify();
-for(const item of retained)if(item.length===3&&!Object.is(Object.getOwnPropertyDescriptor(item[0],item[1]).value,item[2]))bad();
-for(const item of prototypes)if(Object.getPrototypeOf(item[0])!==item[1])bad();
-for(const item of absentFields){let p=item[0],n=0;while(p!==null){if(++n>10||Object.hasOwn(p,item[1]))bad();p=Object.getPrototypeOf(p);}}
-for(const item of keySamples){const k=Reflect.ownKeys(item[0]);if(k.length!==item[1].length)bad();for(let i=0;i<k.length;i++){if(k[i]!==item[1][i])bad();const d=Object.getOwnPropertyDescriptor(item[0],k[i]);if(!d||!Object.hasOwn(d,""value""))bad();}}
-if(((()=>{
-""use strict"";
-const bad=()=>{throw new Error(""PCB_DIAGNOSTIC_MODEL_STATE"");};
-const own=(o,k)=>{if(o===null||(typeof o!==""object""&&typeof o!==""function""))bad();const d=Object.getOwnPropertyDescriptor(o,k);if(!d||!Object.hasOwn(d,""value""))bad();return d.value;};
-const object=o=>{if(o===null||typeof o!==""object""||Array.isArray(o))bad();return o;};
-const plain=o=>{object(o);const p=Object.getPrototypeOf(o);if(p!==Object.prototype&&p!==null)bad();return o;};
-const extent=n=>{if(!Number.isSafeInteger(n)||Object.is(n,-0)||n<0)bad();return n;};
-const count=n=>{extent(n);if(n>65536)bad();return n;};
-const flag=v=>{if(typeof v!==""boolean"")bad();return v;};
-const id=v=>{if(typeof v!==""string""||!/^(?:[a-f0-9]{16}|[a-f0-9]{32}|[a-f0-9]{64})$/.test(v))bad();return v;};
-const customId=v=>{if(typeof v!==""string""||!/^(?:[a-f0-9]{16}|[a-f0-9]{32})_[a-f0-9]{16}$/.test(v))bad();return v;};
-const marker=(o,k)=>{const d=Object.getOwnPropertyDescriptor(o,k);if(!d)return ""absent"";const v=own(o,k);return v===undefined?""undefined"":v===null?""null"":""present"";};
-const keys=o=>{plain(o);const k=Reflect.ownKeys(o);if(k.some(v=>typeof v!==""string""))bad();return count(k.length);};
-const arrayLength=o=>{if(!Array.isArray(o)||Object.getPrototypeOf(o)!==Array.prototype)bad();return count(own(o,""length""));};
-const nativeMap=o=>{object(o);if(Object.getPrototypeOf(o)!==Map.prototype||Reflect.ownKeys(o).length!==0)bad();return o;};
-const mapSize=o=>{nativeMap(o);const d=Object.getOwnPropertyDescriptor(Map.prototype,""size"");if(!d||typeof d.get!==""function""||d.set!==undefined)bad();return count(Reflect.apply(d.get,o,[]));};
-
-const named=(o,name)=>{object(o);const p=Object.getPrototypeOf(o),c=own(p,""constructor"");if(typeof c!==""function""||own(c,""name"")!==name||own(c,""prototype"")!==p)bad();return o;};
-const bridge=named(own(globalThis,""MSG_BUS_PCB""),""HJ""),bus=named(own(bridge,""messageBus""),""Oet""),subscribed=plain(own(bus,""subscribed"")),tasks=own(subscribed,""pcb/saveCompiler"");
-if(arrayLength(tasks)!==1||Reflect.ownKeys(tasks).length!==2)bad();
-const task=named(own(tasks,""0""),""Z1e""),callback=own(task,""callback"");
-if(own(task,""isRunning"")!==true||typeof callback!==""function"")bad();
-return callback;
-})())!==originalCallback)bad();
-return JSON.stringify({schema:""easyeda-pro-control.pcb-string-producer-markers.v2"",documentUuid,dynamicCopper,ratlineModel,ratlineView,net,notification,clusters});
-}";
+  // BEGIN GENERATED PCB209 STRING PRODUCER MARKERS V TWO PROGRAM
+  const string StringProducerMarkersV2FunctionGzip="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";
+  const string StringProducerMarkersV2FunctionSha256="a8e74ec6f2c508145b731ef03e15e967d2d18aaedf1b60a8bba26d20e2d50d9f";
+  static readonly string StringProducerMarkersV2Function=UnpackFixedProgram(StringProducerMarkersV2FunctionGzip,15722,StringProducerMarkersV2FunctionSha256,"65544d890b31ae8074e69db6532e1e0533894962c54084454f5ba0812f8c389b");
+  // END GENERATED PCB209 STRING PRODUCER MARKERS V TWO PROGRAM
   static string ModelProtocolMessageCore(int id,string method,string sessionId,string phase,
     string uniqueContextId,string objectId,string callbackObjectId,string constructorObjectId,bool stringPurpose,string teardropObjectId=null) {
     Func<string,bool> handle=value=>value!=null && System.Text.RegularExpressions.Regex.IsMatch(value,@"\A[A-Za-z0-9_.:-]{1,256}\z");
@@ -7208,6 +6972,7 @@ return callback;
   public void ReleaseClosed() {
     if(released) throw Error("release-consumed");
     if(!Terminated()) throw Error("retain-live-owner");
+    if(workerStartupFootprintMain209){if(root!=IntPtr.Zero&&!originalMain.ObserveTermination())throw Error("main-retain-live-owner");originalMain.Release();}
     Close(ref browserRead); Close(ref browserWrite); Close(ref parentRead); Close(ref parentWrite); Close(ref rootThread); Close(ref root); Close(ref job); installation.Release(); released=true;
   }
   public void RetainUntilClosed() {
@@ -7218,11 +6983,12 @@ return callback;
   }
 }
 '@
-$owner=if ($WorkerStartupFootprintSaved209) {[EasyedaDiagnosticOwner]::CreateWorkerStartupFootprintSaved209()} elseif ($WorkerStartupFootprintCopy209) {[EasyedaDiagnosticOwner]::CreateWorkerStartupFootprintCopy209()} elseif ($WorkerStartupFootprint209) {[EasyedaDiagnosticOwner]::CreateWorkerStartupFootprint209()} elseif ($WorkerStartupRatlineContinuation209) {[EasyedaDiagnosticOwner]::CreateWorkerStartupRatlineContinuation209()} elseif ($WorkerStartupRatline209) {[EasyedaDiagnosticOwner]::CreateWorkerStartupRatline209()} elseif ($WorkerStartupEmpty209) {[EasyedaDiagnosticOwner]::CreateWorkerStartupEmpty209()} elseif ($WorkerStartup209) {[EasyedaDiagnosticOwner]::CreateWorkerStartup209()} elseif ($WorkerStartup) {[EasyedaDiagnosticOwner]::CreateWorkerStartup()} elseif ($StringPrecreate) {[EasyedaDiagnosticOwner]::CreateStringPrecreate()} elseif ($Layers209) {[EasyedaDiagnosticOwner]::CreateLayers209()} else {New-Object EasyedaDiagnosticOwner}
+$owner=if ($WorkerStartupFootprintMain209) {[EasyedaDiagnosticOwner]::CreateWorkerStartupFootprintMain209()} elseif ($WorkerStartupFootprintSaved209) {[EasyedaDiagnosticOwner]::CreateWorkerStartupFootprintSaved209()} elseif ($WorkerStartupFootprintCopy209) {[EasyedaDiagnosticOwner]::CreateWorkerStartupFootprintCopy209()} elseif ($WorkerStartupFootprint209) {[EasyedaDiagnosticOwner]::CreateWorkerStartupFootprint209()} elseif ($WorkerStartupRatlineContinuation209) {[EasyedaDiagnosticOwner]::CreateWorkerStartupRatlineContinuation209()} elseif ($WorkerStartupRatline209) {[EasyedaDiagnosticOwner]::CreateWorkerStartupRatline209()} elseif ($WorkerStartupEmpty209) {[EasyedaDiagnosticOwner]::CreateWorkerStartupEmpty209()} elseif ($WorkerStartup209) {[EasyedaDiagnosticOwner]::CreateWorkerStartup209()} elseif ($WorkerStartup) {[EasyedaDiagnosticOwner]::CreateWorkerStartup()} elseif ($StringPrecreate) {[EasyedaDiagnosticOwner]::CreateStringPrecreate()} elseif ($Layers209) {[EasyedaDiagnosticOwner]::CreateLayers209()} else {New-Object EasyedaDiagnosticOwner}
 $startupRequestLimit=if ($WorkerStartupFootprintSaved209) {[EasyedaFootprintSavedLimits]::Requests} elseif ($WorkerStartupFootprintCopy209) {[EasyedaFootprintExecutionLimits]::Requests} elseif ($WorkerStartupFootprint209) {[EasyedaFootprintPreparationLimits]::Requests} elseif ($WorkerStartupRatlineContinuation209) {[EasyedaRatlineContinuation209Limits]::RequestLimit} elseif ($WorkerStartupRatline209) {[EasyedaRatline209Limits]::RequestLimit} elseif ($WorkerStartupEmpty209) {[EasyedaWorkerStartupEmpty209Protocol]::RequestLimit} else {256}
 try {
   $owner.Initialize()
   if ($CompileOnly) {
+    [EasyedaDiagnosticOwner]::VerifyOriginalMainSmoke()
     [EasyedaWorkerStartupProtocol]::VerifySmoke()
     [EasyedaWorkerStartupProtocol]::Verify209Smoke()
     [EasyedaWorkerStartupEmpty209Protocol]::VerifySmoke()
@@ -7392,6 +7158,29 @@ try {
         $owner.AdmitRatlineRequest($request.action,$cleanup)
       }
       switch -CaseSensitive ($request.action) {
+        'main-attach' {
+          if (-not $WorkerStartupFootprintMain209 -or -not $launched -or (@($request.PSObject.Properties.Name | Sort-Object) -join ',') -cne 'action,helperInstance,id,jobId,rootCreated,rootPid') {throw 'pcb-diagnostic-main-attach-fields'}
+          $owner.AttachMain();$result=@{attached=$true}
+        }
+        'main-reprove' {
+          if (-not $WorkerStartupFootprintMain209 -or -not $launched -or (@($request.PSObject.Properties.Name | Sort-Object) -join ',') -cne 'action,helperInstance,id,jobId,rootCreated,rootPid') {throw 'pcb-diagnostic-main-reprove-fields'}
+          $owner.ReproveMain();$result=@{current=$true}
+        }
+        'main-poll' {
+          if (-not $WorkerStartupFootprintMain209 -or -not $launched -or $request.cleanup -isnot [bool] -or (@($request.PSObject.Properties.Name | Sort-Object) -join ',') -cne 'action,cleanup,helperInstance,id,jobId,rootCreated,rootPid') {throw 'pcb-diagnostic-main-poll-fields'}
+          $result=@{bytes=$owner.PollMain($request.cleanup)}
+        }
+        'main-send' {
+          if (-not $WorkerStartupFootprintMain209 -or -not $launched -or $request.phase -isnot [string] -or $request.method -isnot [string] -or ($request.requestId -isnot [int] -and $request.requestId -isnot [long])) {throw 'pcb-diagnostic-main-send-fields'}
+          $baseFields=@('action','helperInstance','id','jobId','rootCreated','rootPid','requestId','phase','method');$fields=New-Object Collections.Hashtable ([StringComparer]::Ordinal)
+          foreach ($field in $baseFields) {if (@($request.PSObject.Properties.Name) -cnotcontains $field) {throw 'pcb-diagnostic-main-send-field'}}
+          foreach ($property in $request.PSObject.Properties) {if ($baseFields -cnotcontains $property.Name) {$fields.Add($property.Name,$property.Value)}}
+          $owner.SendMain([int]$request.requestId,$request.phase,$request.method,$fields);$result=@{written=$true}
+        }
+        'main-terminate' {
+          if (-not $WorkerStartupFootprintMain209 -or -not $launched -or $request.confirmTerminateOriginalDiagnosticJob -isnot [bool] -or -not $request.confirmTerminateOriginalDiagnosticJob -or (@($request.PSObject.Properties.Name | Sort-Object) -join ',') -cne 'action,confirmTerminateOriginalDiagnosticJob,helperInstance,id,jobId,rootCreated,rootPid') {throw 'pcb-diagnostic-main-terminate-fields'}
+          $owner.TerminateMain();$result=@{terminationDispatched=$true}
+        }
         'worker-startup-ratline-abort' {
           if (-not $WorkerStartupRatline209 -or -not $launched -or
               (@($request.PSObject.Properties.Name | Sort-Object) -join ',') -cne 'action,helperInstance,id,jobId,rootCreated,rootPid') {throw 'pcb-diagnostic-ratline-abort-fields'}
