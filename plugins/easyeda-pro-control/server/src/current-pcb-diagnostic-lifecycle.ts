@@ -10,8 +10,8 @@ import type { CurrentDisposableOpenSealedTarget } from "./current-disposable-ope
 import { prepareCurrentDisposableOpenCheckpoint, readCurrentPcbCommonOpenInventory, verifyCurrentDisposableOpenCheckpoint, verifyHistoricalCurrentDisposableOpenCheckpoint } from "./current-disposable-open-checkpoint.ts";
 import type { CurrentDisposableOpenCheckpoint } from "./current-disposable-open-checkpoint.ts";
 import { assertNoUnresolvedOrdinaryLaunches } from "./ordinary-launch.ts";
-import { startCurrentFootprintCopyNativeOwner, startCurrentFootprintCopyPreparationOwner, startCurrentFootprintMainNativeOwner, startCurrentPcb209DiagnosticOwner, startCurrentPcb209EmptyStartupOwner, startCurrentPcb209RatlineContinuationOwner, startCurrentPcb209RatlineStartupOwner, startCurrentPcb209WorkerStartupOwner, startCurrentPcbDiagnosticOwner, startCurrentPcbStringPrecreateOwner, startCurrentPcbWorkerStartupOwner } from "./current-pcb-diagnostic-owner.ts";
-import type { CurrentFootprintCopyNativeOwner, CurrentFootprintCopyPreparationOwner, CurrentFootprintMainNativeOwner, CurrentPcb209RatlineContinuationOwner, CurrentPcb209RatlineStartupOwner, CurrentPcb209WorkerStartupOwner, CurrentPcbDiagnosticOwner, CurrentPcbStringPrecreateOwner, CurrentPcbWorkerStartupHandoff, CurrentPcbWorkerStartupOwner } from "./current-pcb-diagnostic-owner.ts";
+import { startCurrentFootprintCombinedNativeOwner, startCurrentFootprintCopyNativeOwner, startCurrentFootprintCopyPreparationOwner, startCurrentFootprintMainNativeOwner, startCurrentPcb209DiagnosticOwner, startCurrentPcb209EmptyStartupOwner, startCurrentPcb209RatlineContinuationOwner, startCurrentPcb209RatlineStartupOwner, startCurrentPcb209WorkerStartupOwner, startCurrentPcbDiagnosticOwner, startCurrentPcbStringPrecreateOwner, startCurrentPcbWorkerStartupOwner } from "./current-pcb-diagnostic-owner.ts";
+import type { CurrentFootprintCombinedNativeOwner, CurrentFootprintCopyNativeOwner, CurrentFootprintCopyPreparationOwner, CurrentFootprintMainNativeOwner, CurrentPcb209RatlineContinuationOwner, CurrentPcb209RatlineStartupOwner, CurrentPcb209WorkerStartupOwner, CurrentPcbDiagnosticOwner, CurrentPcbStringPrecreateOwner, CurrentPcbWorkerStartupHandoff, CurrentPcbWorkerStartupOwner } from "./current-pcb-diagnostic-owner.ts";
 import { verifyCurrentPcb209DiagnosticInstallation, verifyCurrentPcb209RatlineInstallation, verifyCurrentPcbDiagnosticInstallation } from "./current-pcb-diagnostic-installation.ts";
 import type { CurrentPcbDiagnosticInstallation, CurrentPcbDiagnosticInstallationOptions } from "./current-pcb-diagnostic-installation.ts";
 import { CURRENT_PCB_DIAGNOSTIC_SCRIPTS } from "./current-pcb-diagnostic-profile.ts";
@@ -98,11 +98,16 @@ import { CURRENT_FOOTPRINT_MAIN_OPERATION_PREFIX, currentFootprintMainIdSchema, 
   currentFootprintMainValidationRequestSchema } from "./current-footprint-main-validation.ts";
 import type { CurrentFootprintMainValidationRequest } from "./current-footprint-main-validation.ts";
 
+import { CURRENT_FOOTPRINT_COMBINED_OPERATION_PREFIX, currentFootprintCombinedIdSchema, currentFootprintCombinedLifecycleRequestSchema, currentFootprintCombinedNativeStateSchema,
+  currentFootprintCombinedValidationRequestSchema } from "./current-footprint-combined-validation.ts";
+import type { CurrentFootprintCombinedValidationRequest } from "./current-footprint-combined-validation.ts";
+
 export type { CurrentPcbWorkerStartupOpeningCoordinator } from "./current-pcb-worker-startup-lifecycle-adapter.ts";
 
 type LifecycleRequest = Request | CurrentPcbStringPrecreateRequest | CurrentPcb209OpeningRequest;
-type LifecycleGeneration = "209-startup-footprint-main" | "209-startup-footprint-route" | "206" | "209-opening" | "209-startup" | "209-startup-footprint" | "209-startup-empty" | "209-startup-ratline" | "209-startup-ratline-continuation";
-function startup209(generation: LifecycleGeneration): boolean { return generation === "209-startup-footprint-route" || generation === "209-startup-footprint" || generation === "209-startup" || generation === "209-startup-empty" || generation === "209-startup-ratline" || generation === "209-startup-ratline-continuation"; }
+type LifecycleGeneration = "209-startup-footprint-combined" | "209-startup-footprint-main" | "209-startup-footprint-route" | "206" | "209-opening" | "209-startup" | "209-startup-footprint" | "209-startup-empty" | "209-startup-ratline" | "209-startup-ratline-continuation";
+function routeStartup209(generation: LifecycleGeneration): boolean { return generation === "209-startup-footprint-route" || generation === "209-startup-footprint-combined"; }
+function startup209(generation: LifecycleGeneration): boolean { return generation === "209-startup-footprint-combined" || generation === "209-startup-footprint-route" || generation === "209-startup-footprint" || generation === "209-startup" || generation === "209-startup-empty" || generation === "209-startup-ratline" || generation === "209-startup-ratline-continuation"; }
 const startupStages = ["browser", "frames", "script"] as const;
 const launchPurposeFields = {
   diagnostic: { schema: "easyeda-pro-control.pcb-diagnostic-launch-intent.v1" },
@@ -110,9 +115,10 @@ const launchPurposeFields = {
   "worker-startup": { schema: "easyeda-pro-control.pcb-worker-startup-launch-intent.v1", purpose: "worker-startup" },
 } as const;
 function launchFields(purpose: CurrentPcbDiagnosticLifecyclePurpose, generation: LifecycleGeneration):
-  typeof launchPurposeFields[CurrentPcbDiagnosticLifecyclePurpose] | Readonly<{ schema: "easyeda-pro-control.footprint-main-launch-intent.v1" | "easyeda-pro-control.footprint-copy-route-preparation-launch-intent.v1" | "easyeda-pro-control.footprint-copy-preparation-launch-intent.v1" | "easyeda-pro-control.pcb209-worker-startup-launch-intent.v1" | "easyeda-pro-control.pcb209-empty-startup-launch-intent.v1" | "easyeda-pro-control.pcb209-ratline-startup-launch-intent.v1" | "easyeda-pro-control.pcb209-ratline-continuation-launch-intent.v1"; purpose: "worker-startup" }> {
+  typeof launchPurposeFields[CurrentPcbDiagnosticLifecyclePurpose] | Readonly<{ schema: "easyeda-pro-control.footprint-combined-launch-intent.v1" | "easyeda-pro-control.footprint-main-launch-intent.v1" | "easyeda-pro-control.footprint-copy-route-preparation-launch-intent.v1" | "easyeda-pro-control.footprint-copy-preparation-launch-intent.v1" | "easyeda-pro-control.pcb209-worker-startup-launch-intent.v1" | "easyeda-pro-control.pcb209-empty-startup-launch-intent.v1" | "easyeda-pro-control.pcb209-ratline-startup-launch-intent.v1" | "easyeda-pro-control.pcb209-ratline-continuation-launch-intent.v1"; purpose: "worker-startup" }> {
+  if (generation === "209-startup-footprint-combined") { return { schema: "easyeda-pro-control.footprint-combined-launch-intent.v1", purpose: "worker-startup" }; }
   if (generation === "209-startup-footprint-main") { return { schema: "easyeda-pro-control.footprint-main-launch-intent.v1", purpose: "worker-startup" }; }
-  if (generation === "209-startup-footprint-route") { return { schema: "easyeda-pro-control.footprint-copy-route-preparation-launch-intent.v1", purpose: "worker-startup" }; }
+  if (routeStartup209(generation)) { return { schema: "easyeda-pro-control.footprint-copy-route-preparation-launch-intent.v1", purpose: "worker-startup" }; }
   if (generation === "209-startup-footprint") { return { schema: "easyeda-pro-control.footprint-copy-preparation-launch-intent.v1", purpose: "worker-startup" }; }
   if (generation === "209-startup-ratline-continuation") { return { schema: "easyeda-pro-control.pcb209-ratline-continuation-launch-intent.v1", purpose: "worker-startup" }; }
   if (generation === "209-startup-ratline") { return { schema: "easyeda-pro-control.pcb209-ratline-startup-launch-intent.v1", purpose: "worker-startup" }; }
@@ -185,7 +191,8 @@ type StartupFootprintUiMethods = Pick<CurrentFootprintCopyPreparationOwner, "obs
 type StartupFootprintRouteMethods = Pick<CurrentFootprintCopyNativeOwner, "observeFootprintCopyWindowsClock" | "joinFootprintCopyManagerPeer" |
   "observeFootprintCopyClockRegistration" | "sampleFootprintCopyClockRegistration" | "retainedFootprintCopyClockRegistration" | "releaseFootprintCopyClockRegistration">;
 type MainOwnerMethods = Pick<CurrentFootprintMainNativeOwner, "observeFootprintMainConstruction" | "retainedFootprintMainConstruction" | "terminateFootprintMain">;
-type LifecycleOwner = CurrentPcbDiagnosticLifecycleOwner & Partial<MainOwnerMethods & StartupFootprintRouteMethods & StartupFootprintUiMethods & StringOwnerMethods & StartupOwnerMethods & StartupEmptyOwnerMethods & StartupRatlineOwnerMethods & StartupContinuationOwnerMethods>;
+type CombinedOwnerMethods = Pick<CurrentFootprintCombinedNativeOwner, "abortFootprintCombined" | "reserveFootprintCombinedAbort" | "dispatchFootprintCombinedAbort">;
+type LifecycleOwner = CurrentPcbDiagnosticLifecycleOwner & Partial<CombinedOwnerMethods & MainOwnerMethods & StartupFootprintRouteMethods & StartupFootprintUiMethods & StringOwnerMethods & StartupOwnerMethods & StartupEmptyOwnerMethods & StartupRatlineOwnerMethods & StartupContinuationOwnerMethods>;
 export interface CurrentPcb209StartupEmptyPreparation {
   /** The enclosing lifecycle must durably consume PCB navigation intent before
    * calling openAndQualify. This private preparation does not publish that intent. */
@@ -410,6 +417,10 @@ class CurrentPcbLifecycleCore {
   #footprintManagerRoute: CurrentFootprintCopyManagerRouteObservation | null = null;
   #mainObservationAttempted = false;
   #mainTerminateAttempted = false;
+  #combinedAbortAttempted = false;
+  #combinedAbortBusy = false;
+  #publicationTail: Promise<void> = Promise.resolve();
+  readonly #combinedAbortedRecords = new Map<DiagnosticLifecycleRecordName, string>();
   #footprintRouteAttempted = false;
   #footprintRouteRetained: Record<string, unknown> | null = null;
   #startupActorAttempted = false;
@@ -457,18 +468,34 @@ class CurrentPcbLifecycleCore {
     if (generation === "209-startup-ratline") { allocate = startCurrentPcb209RatlineStartupOwner; }
     if (generation === "209-startup-ratline-continuation") { allocate = startCurrentPcb209RatlineContinuationOwner; }
     else if (generation === "209-startup-empty") { allocate = startCurrentPcb209EmptyStartupOwner; }
+    else if (generation === "209-startup-footprint-combined") { allocate = startCurrentFootprintCombinedNativeOwner; }
     else if (generation === "209-startup-footprint-main") { allocate = startCurrentFootprintMainNativeOwner; }
-    else if (generation === "209-startup-footprint-route") { allocate = startCurrentFootprintCopyNativeOwner; }
+    else if (routeStartup209(generation)) { allocate = startCurrentFootprintCopyNativeOwner; }
     else if (generation === "209-startup-footprint") { allocate = startCurrentFootprintCopyPreparationOwner; }
     else if (generation === "209-startup") { allocate = startCurrentPcb209WorkerStartupOwner; }
     else if (generation === "209-opening") { allocate = startCurrentPcb209DiagnosticOwner; }
     this.#allocate = dependencies.allocateOwner ?? allocate;
-    this.#publish = dependencies.publishRecord ?? publishCurrentPcbDiagnosticLifecycleRecord;
+    const publish = dependencies.publishRecord ?? publishCurrentPcbDiagnosticLifecycleRecord;
+    this.#publish = generation === "209-startup-footprint-combined" ? (operationId, name, record): Promise<void> => {
+      const previous = this.#publicationTail;
+      const pending = (async (): Promise<void> => {
+        await previous; this.#assertPublicationAllowed(name);
+        await publish(operationId, name, record);
+      })();
+      // Publication remains ordered even if a consumed plan fails. Abort waits
+      // Only this disk barrier, never an active renderer/inspector operation.
+      this.#publicationTail = (async (): Promise<void> => {
+        try { await pending; } catch {
+          // The original caller retains the failure and consumed plan.
+        }
+      })();
+      return pending;
+    } : publish;
     this.#prepareCheckpoint = dependencies.prepareCheckpoint ?? prepareCurrentDisposableOpenCheckpoint;
     this.#verifyCheckpoint = dependencies.verifyCheckpoint ?? verifyCurrentDisposableOpenCheckpoint;
     this.#verifyHistoricalCheckpoint = dependencies.verifyHistoricalCheckpoint ?? verifyHistoricalCurrentDisposableOpenCheckpoint;
     this.#readCommonInventory = "readCommonInventory" in dependencies ? dependencies.readCommonInventory ?? readCurrentPcbCommonOpenInventory : readCurrentPcbCommonOpenInventory;
-    if (generation === "209-startup-footprint-route") {
+    if (routeStartup209(generation)) {
       const create = "createFootprintRouteStartupOpening" in dependencies ? dependencies.createFootprintRouteStartupOpening : undefined;
       this.#createStartupOpening = (handoff): CurrentPcbStartupLifecycleAdapter => adaptCurrentFootprintCopyStartupLifecycle(create === undefined ? new CurrentFootprintCopyStartupOpening(handoff) : create(handoff));
     } else if (startup209(generation)) {
@@ -482,8 +509,8 @@ class CurrentPcbLifecycleCore {
 
   public async run(input: unknown): Promise<Record<string, unknown>> {
     let request: LifecycleRequest;
-    if (this.#generation === "209-startup-footprint-main") {
-      const selected = currentFootprintMainLifecycleRequestSchema.parse(input);
+    if (this.#generation === "209-startup-footprint-main" || this.#generation === "209-startup-footprint-combined") {
+      const selected = (this.#generation === "209-startup-footprint-combined" ? currentFootprintCombinedLifecycleRequestSchema : currentFootprintMainLifecycleRequestSchema).parse(input);
       request = selected.action === "launch" ? currentPcbDiagnosticValidationRequestSchema.parse({ action: selected.action, operationId: selected.operationId, confirmValidationOnly: selected.confirmValidationOnly, confirmDiagnosticLaunch: selected.confirmDiagnosticLaunch, acceptExistingProfileEffects: selected.acceptExistingProfileEffects }) : selected;
     }
     else if (this.#generation === "209-startup-footprint-route") { request = currentFootprintCopyRoutePreparationLifecycleRequestSchema.parse(input); }
@@ -571,7 +598,11 @@ class CurrentPcbLifecycleCore {
       if (openingResult !== undefined) {
         openingState = openingResult["ok"] === true && openingResult["status"] === "opened-prefix-observed" ? "opened-prefix-observed" : "refused";
       }
+      const combinedNativeState = this.#generation === "209-startup-footprint-combined" && native !== null ? currentFootprintCombinedNativeStateSchema.parse({
+        combinedAbortDispatchAttempted: native.combinedAbortDispatchAttempted, combinedOutputCleanupOnly: native.combinedOutputCleanupOnly,
+      }) : { combinedAbortDispatchAttempted: null, combinedOutputCleanupOnly: null };
       return { ...describe(request.operationId, operation), busy: this.#busy, observations, noProcessCleanupAvailable,
+        ...combinedNativeState,
         workerStartupHandoffAttemptConsumed: operation?.records["worker-startup-handoff-intent.json"] !== undefined || original && this.#startupHandoffAttempted,
         workerStartupHandoffRetained: original && this.#startupHandoff !== null,
         workerStartupChannel: native?.workerStartupChannel ?? null,
@@ -580,6 +611,9 @@ class CurrentPcbLifecycleCore {
         mainConstructionObservation: original && this.#retained?.methods.retainedFootprintMainConstruction !== undefined ? this.#retained.methods.retainedFootprintMainConstruction.call(this.#retained.owner) : null,
         mainTerminationAttemptConsumed: operation?.records["main-terminate-intent.json"] !== undefined || original && this.#mainTerminateAttempted,
         mainTerminationAcknowledged: operation?.records["main-terminate-acknowledged.json"] !== undefined,
+        combinedAbortAttemptConsumed: operation?.records["combined-abort-intent.json"] !== undefined || original && this.#combinedAbortAttempted,
+        combinedAbortAcknowledged: operation?.records["combined-abort-acknowledged.json"] !== undefined,
+        combinedAbortedUnpublishedRecordCount: original ? this.#combinedAbortedRecords.size : 0,
         workerStartupOpeningAttemptConsumed: operation?.records["worker-startup-opening-intent.json"] !== undefined ||
           original && this.#purpose === "worker-startup" && this.#openingAttempted,
         workerStartupOpeningResultRetained: original && this.#startupOpeningResult !== null,
@@ -618,7 +652,7 @@ class CurrentPcbLifecycleCore {
         footprintRouteResult: operation?.records["footprint-copy-route-result.json"]?.result ?? null,
         footprintRouteFailure: operation?.records["footprint-copy-route-failure.json"] ?? null,
         footprintRouteRetained: original ? structuredClone(this.#footprintRouteRetained) : null,
-        footprintRouteRawObservation: original && this.#generation === "209-startup-footprint-route" && this.#startupOpening !== null && this.#startupOpeningResult !== null ?
+        footprintRouteRawObservation: original && routeStartup209(this.#generation) && this.#startupOpening !== null && this.#startupOpeningResult !== null ?
           footprintRouteMethods.retained.call(requireCurrentFootprintCopyStartupOpening(this.#startupOpening.owner, this.#startupOpeningResult).opening) : null,
         footprintManagerRouteObservation: original && this.#retained?.methods.retainedFootprintCopyManagerRoute !== undefined ?
           publicFootprintManagerRouteObservation(this.#retained.methods.retainedFootprintCopyManagerRoute.call(this.#retained.owner)) : null,
@@ -701,7 +735,7 @@ class CurrentPcbLifecycleCore {
         releaseAttemptConsumed: operation?.records["release-intent.json"] !== undefined || original && this.#releaseAttempted };
     }
     this.#options.assertLocalAllowed();
-    requireValue(!this.#busy, "BUSY"); this.#busy = true;
+    requireValue(!this.#busy && !this.#combinedAbortBusy, "BUSY"); this.#busy = true;
     try {
       if (request.action === "launch") {
         requireValue(this.#lease === null && !this.#launchAttempted, "LAUNCH_CONSUMED");
@@ -722,7 +756,7 @@ class CurrentPcbLifecycleCore {
   protected async runMainAction(request: Extract<CurrentFootprintMainValidationRequest,
     { action: "observe-main-construction" | "terminate-main" }>): Promise<Record<string, unknown>> {
     this.#options.assertLocalAllowed();
-    requireValue(this.#generation === "209-startup-footprint-main" && !this.#busy, "MAIN_PURPOSE_OR_BUSY");
+    requireValue((this.#generation === "209-startup-footprint-main" || this.#generation === "209-startup-footprint-combined") && !this.#busy && !this.#combinedAbortAttempted, "MAIN_PURPOSE_OR_BUSY");
     this.#busy = true;
     try {
       const operations = await readCurrentPcbDiagnosticLifecycles();
@@ -732,10 +766,11 @@ class CurrentPcbLifecycleCore {
       requireValue(retained !== null && retained.operationId === request.operationId && operation !== undefined && binding !== undefined &&
         binding.intentSha256 === retained.intentSha256 && canonicalJson(binding.binding) === canonicalJson(retained.binding) &&
         sha256Json(binding) === request.expectedBindingSha256, "ORIGINAL_OWNER_REQUIRED");
-      this.#assertOwner(retained);
+      this.#assertNormalOwner(retained);
       requireValue(operation.records["terminated.json"] === undefined && operation.records["released.json"] === undefined, "MAIN_ALREADY_TERMINATED");
-      await assertSnapshot(operations); this.#assertOwner(retained);
+      await assertSnapshot(operations); this.#assertNormalOwner(retained);
       if (request.action === "terminate-main") {
+        requireValue(this.#generation === "209-startup-footprint-main", "MAIN_TERMINATE_PURPOSE");
         requireValue(!this.#mainTerminateAttempted && operation.records["main-terminate-intent.json"] === undefined, "MAIN_TERMINATE_CONSUMED");
         const terminate = retained.methods.terminateFootprintMain; requireValue(terminate !== undefined, "MAIN_OWNER_REQUIRED");
         const intent: NonNullable<DiagnosticLifecycleRecords["main-terminate-intent.json"]> = {
@@ -745,14 +780,14 @@ class CurrentPcbLifecycleCore {
         this.#mainTerminateAttempted = true; await this.#record(request.operationId, "main-terminate-intent.json", intent);
         const updated = { ...operation, records: { ...operation.records, "main-terminate-intent.json": intent } };
         const expected = operations.map(value => value.operationId === request.operationId ? updated : value);
-        await assertSnapshot(expected); this.#assertOwner(retained);
-        await terminate.call(retained.owner, request.confirmTerminateOriginalDiagnosticJob); this.#assertOwner(retained);
-        await assertSnapshot(expected); this.#assertOwner(retained);
+        await assertSnapshot(expected); this.#assertNormalOwner(retained);
+        await terminate.call(retained.owner, request.confirmTerminateOriginalDiagnosticJob); this.#assertNormalOwner(retained);
+        await assertSnapshot(expected); this.#assertNormalOwner(retained);
         const result: NonNullable<DiagnosticLifecycleRecords["main-terminate-acknowledged.json"]> = {
           schema: "easyeda-pro-control.footprint-main-terminate-acknowledged.v1", operationId: request.operationId,
           createdAt: new Date().toISOString(), intentSha256: sha256Json(intent), terminationDispatched: true, terminationProved: false,
         };
-        await this.#record(request.operationId, "main-terminate-acknowledged.json", result); this.#assertOwner(retained);
+        await this.#record(request.operationId, "main-terminate-acknowledged.json", result); this.#assertNormalOwner(retained);
         return { ...describe(request.operationId, { ...updated, records: { ...updated.records, "main-terminate-acknowledged.json": result } }),
           terminationDispatched: true, terminationProved: false };
       }
@@ -760,7 +795,7 @@ class CurrentPcbLifecycleCore {
         operation.records["main-construction-intent.json"] === undefined && operation.records["main-terminate-intent.json"] === undefined,
       "MAIN_CONSTRUCTION_CONSUMED");
       const observe = retained.methods.observeFootprintMainConstruction; requireValue(observe !== undefined, "MAIN_OWNER_REQUIRED");
-      await this.#installation(retained); this.#assertOwner(retained);
+      await this.#installation(retained); this.#assertNormalOwner(retained);
       const intent: NonNullable<DiagnosticLifecycleRecords["main-construction-intent.json"]> = {
         schema: "easyeda-pro-control.footprint-main-construction-intent.v1", operationId: request.operationId,
         createdAt: new Date().toISOString(), bindingSha256: request.expectedBindingSha256,
@@ -768,17 +803,17 @@ class CurrentPcbLifecycleCore {
       this.#mainObservationAttempted = true; await this.#record(request.operationId, "main-construction-intent.json", intent);
       const updated = { ...operation, records: { ...operation.records, "main-construction-intent.json": intent } };
       const expected = operations.map(value => value.operationId === request.operationId ? updated : value);
-      await assertSnapshot(expected); this.#assertOwner(retained);
-      const observation = await observe.call(retained.owner); this.#assertOwner(retained);
+      await assertSnapshot(expected); this.#assertNormalOwner(retained);
+      const observation = await observe.call(retained.owner); this.#assertNormalOwner(retained);
       const result = diagnosticLifecycleRecordSchemas["main-construction-result.json"].parse({
         schema: "easyeda-pro-control.footprint-main-construction-result.v1", operationId: request.operationId,
         createdAt: new Date().toISOString(), intentSha256: sha256Json(intent), result: observation,
       });
       this.#retainRecord("main-construction-result.json", result);
-      await assertSnapshot(expected); this.#assertOwner(retained);
+      await assertSnapshot(expected); this.#assertNormalOwner(retained);
       await this.#publish(request.operationId, "main-construction-result.json", result);
       const completed = { ...updated, records: { ...updated.records, "main-construction-result.json": result } };
-      await assertSnapshot(operations.map(value => value.operationId === request.operationId ? completed : value)); this.#assertOwner(retained);
+      await assertSnapshot(operations.map(value => value.operationId === request.operationId ? completed : value)); this.#assertNormalOwner(retained);
       return { ...describe(request.operationId, completed), result: structuredClone(result.result), executionAuthorized: false, saveAuthorized: false };
     } finally { this.#busy = false; }
   }
@@ -803,7 +838,7 @@ class CurrentPcbLifecycleCore {
       requireValue(retained !== null && retained.operationId === operationId && operation !== undefined && binding !== undefined &&
         binding.intentSha256 === retained.intentSha256 && canonicalJson(binding.binding) === canonicalJson(retained.binding) &&
         sha256Json(binding) === expectedBindingSha256, "ORIGINAL_OWNER_REQUIRED");
-      this.#assertOwner(retained);
+      this.#assertNormalOwner(retained);
       requireValue(!this.#startupHandoffAttempted && operation.records["worker-startup-handoff-intent.json"] === undefined,
         "WORKER_STARTUP_HANDOFF_CONSUMED");
       requireValue(binding.launchAcknowledged && retained.binding?.rootCreated !== "0" && !this.#closeAttempted &&
@@ -816,7 +851,7 @@ class CurrentPcbLifecycleCore {
         this.#pending.get("script-result.json") === canonicalJson(script), "ORIGINAL_UI_SOURCE_REQUIRED");
       const transfer = retained.methods.handoffWorkerStartup;
       requireValue(transfer !== undefined, "WORKER_STARTUP_PURPOSE_REQUIRED");
-      await this.#installation(retained); await assertSnapshot(operations); this.#assertOwner(retained);
+      await this.#installation(retained); await assertSnapshot(operations); this.#assertNormalOwner(retained);
       const intent: NonNullable<DiagnosticLifecycleRecords["worker-startup-handoff-intent.json"]> = {
         schema: "easyeda-pro-control.pcb-worker-startup-handoff-intent.v1", operationId, createdAt: new Date().toISOString(),
         bindingSha256: expectedBindingSha256, scriptResultSha256: sha256Json(script),
@@ -825,27 +860,27 @@ class CurrentPcbLifecycleCore {
       await this.#record(operationId, "worker-startup-handoff-intent.json", intent);
       const updated = { ...operation, records: { ...operation.records, "worker-startup-handoff-intent.json": intent } };
       const expected = operations.map(value => value.operationId === operationId ? updated : value);
-      await assertSnapshot(expected); this.#assertOwner(retained);
+      await assertSnapshot(expected); this.#assertNormalOwner(retained);
       const handoff = await transfer.call(retained.owner);
       // Keep the same channel even if final checks or publication fail. It is
       // Never reconstructed from a result record or handed to another owner.
       this.#startupHandoff = handoff;
-      this.#assertOwner(retained); await assertSnapshot(expected); this.#assertOwner(retained);
+      this.#assertNormalOwner(retained); await assertSnapshot(expected); this.#assertNormalOwner(retained);
       const result: NonNullable<DiagnosticLifecycleRecords["worker-startup-handoff-result.json"]> = {
         schema: "easyeda-pro-control.pcb-worker-startup-handoff-result.v1", operationId, createdAt: new Date().toISOString(),
         intentSha256: sha256Json(intent), originalParentRetained: true, handoffIrreversible: true, executionAuthorized: false,
       };
       await this.#record(operationId, "worker-startup-handoff-result.json", result);
       const completed = { ...updated, records: { ...updated.records, "worker-startup-handoff-result.json": result } };
-      await assertSnapshot(expected.map(value => value.operationId === operationId ? completed : value)); this.#assertOwner(retained);
+      await assertSnapshot(expected.map(value => value.operationId === operationId ? completed : value)); this.#assertNormalOwner(retained);
       return handoff;
     } finally { this.#busy = false; }
   }
 
   protected openStartup(operationId: string, expectedBindingSha256: string, input: unknown, generation: "206"): Promise<CurrentPcbWorkerStartupOpeningResult>;
   protected openStartup(operationId: string, expectedBindingSha256: string, input: unknown, generation: "209-startup" | "209-startup-footprint" | "209-startup-empty" | "209-startup-ratline" | "209-startup-ratline-continuation"): Promise<CurrentPcb209WorkerStartupOpeningResult>;
-  protected openStartup(operationId: string, expectedBindingSha256: string, input: unknown, generation: "209-startup-footprint-route"): Promise<CurrentFootprintCopyStartupOpeningResult>;
-  protected async openStartup(operationId: string, expectedBindingSha256: string, input: unknown, generation: "209-startup-footprint-route" | "206" | "209-startup" | "209-startup-footprint" | "209-startup-empty" | "209-startup-ratline" | "209-startup-ratline-continuation"): Promise<CurrentPcbStartupOpeningResult> {
+  protected openStartup(operationId: string, expectedBindingSha256: string, input: unknown, generation: "209-startup-footprint-route" | "209-startup-footprint-combined"): Promise<CurrentFootprintCopyStartupOpeningResult>;
+  protected async openStartup(operationId: string, expectedBindingSha256: string, input: unknown, generation: "209-startup-footprint-route" | "209-startup-footprint-combined" | "206" | "209-startup" | "209-startup-footprint" | "209-startup-empty" | "209-startup-ratline" | "209-startup-ratline-continuation"): Promise<CurrentPcbStartupOpeningResult> {
     requireValue(this.#generation === generation, "GENERATION_MISMATCH");
     this.#startupId(operationId); diagnosticLifecycleDigestSchema.parse(expectedBindingSha256);
     const request = startupCaptureInputSchema.parse(input);
@@ -859,7 +894,7 @@ class CurrentPcbLifecycleCore {
       requireValue(operation !== undefined && binding !== undefined && retained !== null && retained.operationId === operationId &&
         binding.intentSha256 === retained.intentSha256 && canonicalJson(binding.binding) === canonicalJson(retained.binding) &&
         sha256Json(binding) === expectedBindingSha256, "ORIGINAL_OWNER_REQUIRED");
-      this.#assertOwner(retained);
+      this.#assertNormalOwner(retained);
       const handedOff = operation.records["worker-startup-handoff-result.json"], handoff = this.#startupHandoff;
       requireValue(handedOff !== undefined && handoff !== null && this.#pending.get("worker-startup-handoff-result.json") === canonicalJson(handedOff),
         "ORIGINAL_STARTUP_HANDOFF_REQUIRED");
@@ -869,23 +904,23 @@ class CurrentPcbLifecycleCore {
       // The checkpoint can persist evidence even before the native opener. Any
       // Attempt here is consumed, including a failed checkpoint or publication.
       this.#openingAttempted = true;
-      await this.#installation(retained); await assertSnapshot(operations); this.#assertOwner(retained);
+      await this.#installation(retained); await assertSnapshot(operations); this.#assertNormalOwner(retained);
       const target = Object.freeze(structuredClone(request.target));
-      const prepared = await this.#prepareCheckpoint(target); this.#assertOwner(retained);
+      const prepared = await this.#prepareCheckpoint(target); this.#assertNormalOwner(retained);
       const preparedText = canonicalJson(prepared);
       requireValue(prepared.targetEvidence.projectUuid === target.projectUuid && prepared.targetEvidence.documentUuid === target.documentUuid &&
         prepared.targetEvidence.docType === "PCB" && prepared.targetEvidence.sourceSha256 === target.expectedSourceSha256, "PROJECT_CHECKPOINT_BINDING");
       const sealedTarget = Object.freeze(currentDisposableOpenSealedTargetSchema.parse({ ...target, branchUuid: prepared.targetEvidence.branchUuid }));
-      const commonInventory = await this.#readCommonInventory(prepared, target); this.#assertOwner(retained);
+      const commonInventory = await this.#readCommonInventory(prepared, target); this.#assertNormalOwner(retained);
       const completion = readerCompletion(commonInventory);
       requireValue(completion.observedChildClose && completion.exitCode === 0 && completion.exitSignal === null &&
         commonInventory.checkpointSha256 === prepared.checkpoint.checkpointSha256, "COMMON_ORIGINAL_SQL_REQUIRED");
       const preparation = Object.freeze({ sealedTarget, prepared, preparedText, originalTarget: target, commonInventory });
       this.#projectPreparation = preparation;
       const preparationCheckpoint = currentDisposableOpenPreparationCheckpointSchema.parse(prepared.preparationCheckpoint);
-      await this.#verifyCheckpoint(prepared, target); this.#assertOwner(retained);
+      await this.#verifyCheckpoint(prepared, target); this.#assertNormalOwner(retained);
       requireValue(canonicalJson(prepared) === preparedText && readerCompletion(commonInventory) === completion, "PROJECT_CHECKPOINT_CHANGED");
-      await this.#installation(retained); await assertSnapshot(operations); this.#assertOwner(retained);
+      await this.#installation(retained); await assertSnapshot(operations); this.#assertNormalOwner(retained);
       const intent: NonNullable<DiagnosticLifecycleRecords["worker-startup-opening-intent.json"]> = {
         schema: "easyeda-pro-control.pcb-worker-startup-opening-intent.v1", operationId, createdAt: new Date().toISOString(),
         bindingSha256: expectedBindingSha256, handoffResultSha256: sha256Json(handedOff), target: sealedTarget,
@@ -895,7 +930,7 @@ class CurrentPcbLifecycleCore {
       await this.#record(operationId, "worker-startup-opening-intent.json", intent);
       const updated = { ...operation, records: { ...operation.records, "worker-startup-opening-intent.json": intent } };
       const expected = operations.map(value => value.operationId === operationId ? updated : value);
-      await assertSnapshot(expected); this.#assertOwner(retained);
+      await assertSnapshot(expected); this.#assertNormalOwner(retained);
       const owner = this.#createStartupOpening(handoff);
       const captured = Object.freeze({ assertOriginalMethodsCurrent: owner.assertOriginalMethodsCurrent, open: owner.open, status: owner.status, retainedOpeningResult: owner.retainedOpeningResult,
         requireOriginal: owner.requireOriginal, proveCurrentAssignments: owner.proveCurrentAssignments,
@@ -903,26 +938,26 @@ class CurrentPcbLifecycleCore {
         observeActorClock: owner.observeActorClock, requireActorClock: owner.requireActorClock,
         retainedChannelObservation: owner.retainedChannelObservation, observeCurrentChannel: owner.observeCurrentChannel,
         requireCurrentChannel: owner.requireCurrentChannel, releaseAfterTermination: owner.releaseAfterTermination });
-      this.#startupOpening = Object.freeze({ owner, methods: captured }); this.#assertOwner(retained);
+      this.#startupOpening = Object.freeze({ owner, methods: captured }); this.#assertNormalOwner(retained);
       let reverified = false, reverifyAttempted = false;
       const result = await captured.open.call(owner, sealedTarget, async () => {
         requireValue(!reverifyAttempted, "WORKER_STARTUP_REVERIFICATION_CONSUMED"); reverifyAttempted = true;
-        await this.#installation(retained); await assertSnapshot(expected); this.#assertOwner(retained);
+        await this.#installation(retained); await assertSnapshot(expected); this.#assertNormalOwner(retained);
         requireValue(this.#projectPreparation === preparation && canonicalJson(prepared) === preparedText &&
           readerCompletion(commonInventory) === completion && this.#startupHandoff === handoff, "PROJECT_CHECKPOINT_CHANGED");
-        await this.#verifyCheckpoint(prepared, target); this.#assertOwner(retained);
+        await this.#verifyCheckpoint(prepared, target); this.#assertNormalOwner(retained);
         requireValue(canonicalJson(prepared) === preparedText && readerCompletion(commonInventory) === completion, "PROJECT_CHECKPOINT_CHANGED");
-        await this.#installation(retained); await assertSnapshot(expected); this.#assertOwner(retained); reverified = true;
+        await this.#installation(retained); await assertSnapshot(expected); this.#assertNormalOwner(retained); reverified = true;
       });
       // Keep the original packet, not the serialized journal projection. Its
       // Constructor runner retains the live object identity needed by require.
       this.#startupOpeningResult = result;
       let expectedConstruction = startup209(this.#generation) ? "private.current-pcb209-worker-construction.v1" : "private.current-pcb-worker-construction.v1";
-      if (this.#generation === "209-startup-footprint-route") { expectedConstruction = "private.current-footprint-copy-construction.v1"; }
+      if (routeStartup209(this.#generation)) { expectedConstruction = "private.current-footprint-copy-construction.v1"; }
       requireValue(result.construction.profile === expectedConstruction, "WORKER_STARTUP_CONSTRUCTION_GENERATION");
       requireValue(reverified, "WORKER_STARTUP_REVERIFICATION_REQUIRED");
-      this.#assertOwner(retained);
-      await captured.requireOriginal.call(owner, result); this.#assertOwner(retained);
+      this.#assertNormalOwner(retained);
+      await captured.requireOriginal.call(owner, result); this.#assertNormalOwner(retained);
       const record = diagnosticLifecycleRecordSchemas["worker-startup-opening-result.json"].parse({
         schema: "easyeda-pro-control.pcb-worker-startup-opening-result.v1", operationId, createdAt: new Date().toISOString(),
         intentSha256: sha256Json(intent), result: structuredClone(result), executionAuthorized: false,
@@ -932,10 +967,10 @@ class CurrentPcbLifecycleCore {
         record.result.workerIdentity.branchUuid === sealedTarget.branchUuid &&
         record.result.workerIdentity.windowTabId === record.result.opening.observation.windowTabId, "WORKER_STARTUP_OPENING_TARGET");
       this.#retainRecord("worker-startup-opening-result.json", record);
-      await assertSnapshot(expected); this.#assertOwner(retained);
+      await assertSnapshot(expected); this.#assertNormalOwner(retained);
       await this.#publish(operationId, "worker-startup-opening-result.json", record);
       const completed = { ...updated, records: { ...updated.records, "worker-startup-opening-result.json": record } };
-      await assertSnapshot(expected.map(value => value.operationId === operationId ? completed : value)); this.#assertOwner(retained);
+      await assertSnapshot(expected.map(value => value.operationId === operationId ? completed : value)); this.#assertNormalOwner(retained);
       return result;
     } finally { this.#busy = false; }
   }
@@ -1236,10 +1271,10 @@ class CurrentPcbLifecycleCore {
         operation.records["close-intent.json"] === undefined && operation.records["terminated.json"] === undefined &&
         sha256Json(operation.records["binding.json"]) === expectedBindingSha256 && openingRecord !== undefined &&
         this.#pending.get("worker-startup-opening-result.json") === canonicalJson(openingRecord), "ORIGINAL_STARTUP_RESULT_REQUIRED");
-      this.#assertOwner(retained);
+      this.#assertNormalOwner(retained);
       requireValue(!this.#startupAssignmentsAttempted && operation.records["worker-startup-assignments-intent.json"] === undefined,
         "WORKER_STARTUP_ASSIGNMENTS_CONSUMED");
-      await this.#installation(retained); await assertSnapshot(operations); this.#assertOwner(retained);
+      await this.#installation(retained); await assertSnapshot(operations); this.#assertNormalOwner(retained);
       const intent: NonNullable<DiagnosticLifecycleRecords["worker-startup-assignments-intent.json"]> = {
         schema: "easyeda-pro-control.pcb-worker-startup-assignments-intent.v1", operationId, createdAt: new Date().toISOString(),
         bindingSha256: expectedBindingSha256, openingResultSha256: sha256Json(openingRecord),
@@ -1248,22 +1283,22 @@ class CurrentPcbLifecycleCore {
       await this.#record(operationId, "worker-startup-assignments-intent.json", intent);
       const updated = { ...operation, records: { ...operation.records, "worker-startup-assignments-intent.json": intent } };
       const expected = operations.map(value => value.operationId === operationId ? updated : value);
-      await assertSnapshot(expected); this.#assertOwner(retained);
+      await assertSnapshot(expected); this.#assertNormalOwner(retained);
       const assignments = await original.methods.proveCurrentAssignments.call(original.owner, openingResult);
       // Retain partial success before later reproof/publication. A failed
       // Reproof leaves no accepted result plan for settlement to manufacture.
-      this.#startupAssignments = assignments; this.#assertOwner(retained);
-      await original.methods.requireCurrentAssignments.call(original.owner, openingResult, assignments); this.#assertOwner(retained);
+      this.#startupAssignments = assignments; this.#assertNormalOwner(retained);
+      await original.methods.requireCurrentAssignments.call(original.owner, openingResult, assignments); this.#assertNormalOwner(retained);
       const record = diagnosticLifecycleRecordSchemas["worker-startup-assignments-result.json"].parse({
         schema: "easyeda-pro-control.pcb-worker-startup-assignments-result.v1", operationId, createdAt: new Date().toISOString(),
         intentSha256: sha256Json(intent), result: structuredClone(assignments), pointInTimeObservation: true,
         executionAuthorized: false, saveAuthorized: false,
       });
       this.#retainRecord("worker-startup-assignments-result.json", record);
-      await assertSnapshot(expected); this.#assertOwner(retained);
+      await assertSnapshot(expected); this.#assertNormalOwner(retained);
       await this.#publish(operationId, "worker-startup-assignments-result.json", record);
       const completed = { ...updated, records: { ...updated.records, "worker-startup-assignments-result.json": record } };
-      await assertSnapshot(expected.map(value => value.operationId === operationId ? completed : value)); this.#assertOwner(retained);
+      await assertSnapshot(expected.map(value => value.operationId === operationId ? completed : value)); this.#assertNormalOwner(retained);
       return { operationId, result: structuredClone(record.result), pointInTimeObservation: true,
         validationOnly: true, executionAuthorized: false, saveAuthorized: false };
     } finally { this.#busy = false; }
@@ -1297,7 +1332,7 @@ class CurrentPcbLifecycleCore {
   protected async observeStartupFootprintRoute(operationId: string, expectedBindingSha256: string): Promise<Record<string, unknown>> {
     this.#startupId(operationId); diagnosticLifecycleDigestSchema.parse(expectedBindingSha256);
     this.#options.assertLocalAllowed();
-    requireValue(this.#generation === "209-startup-footprint-route" && !this.#busy, "FOOTPRINT_ROUTE_PURPOSE"); this.#busy = true;
+    requireValue(routeStartup209(this.#generation) && !this.#busy, "FOOTPRINT_ROUTE_PURPOSE"); this.#busy = true;
     try {
       const operations = await readCurrentPcbDiagnosticLifecycles();
       const operation = operations.find(value => value.operationId === operationId);
@@ -1313,7 +1348,7 @@ class CurrentPcbLifecycleCore {
         sha256Json(operation.records["binding.json"]) === expectedBindingSha256 && !this.#startupOpeningReleased && !this.#closeAttempted &&
         operation.records["close-intent.json"] === undefined && operation.records["terminated.json"] === undefined,
       "ORIGINAL_FOOTPRINT_ROUTE_INPUT_REQUIRED");
-      this.#assertOwner(retained);
+      this.#assertNormalOwner(retained);
       requireValue(!this.#footprintRouteAttempted && operation.records["footprint-copy-route-intent.json"] === undefined, "FOOTPRINT_ROUTE_CONSUMED");
       this.#footprintRouteAttempted = true;
       const opened = requireCurrentFootprintCopyStartupOpening(original.owner, result);
@@ -1325,7 +1360,7 @@ class CurrentPcbLifecycleCore {
         "FOOTPRINT_ROUTE_OWNER_REQUIRED");
       const before = checkpoint.commonInventory, completion = readerCompletion(before);
       const current = (): void => {
-        this.#assertOwner(retained);
+        this.#assertNormalOwner(retained);
         requireValue(this.#startupOpening === original && this.#startupOpeningResult === result && this.#startupAssignments === assignments &&
           this.#startupActorPacket === actor && this.#projectPreparation === checkpoint && checkpoint.commonInventory === before &&
           readerCompletion(before) === completion && canonicalJson(checkpoint.prepared) === checkpoint.preparedText,
@@ -1898,9 +1933,9 @@ class CurrentPcbLifecycleCore {
         sha256Json(operation.records["binding.json"]) === expectedBindingSha256 && openingRecord !== undefined && record !== undefined &&
         this.#pending.get("worker-startup-opening-result.json") === canonicalJson(openingRecord) &&
         this.#pending.get("worker-startup-assignments-result.json") === canonicalJson(record), "ORIGINAL_STARTUP_ASSIGNMENTS_REQUIRED");
-      this.#assertOwner(retained);
+      this.#assertNormalOwner(retained);
       requireValue(!this.#startupActorAttempted && operation.records["worker-startup-actor-intent.json"] === undefined, "WORKER_STARTUP_ACTOR_CONSUMED");
-      await this.#installation(retained); await assertSnapshot(operations); this.#assertOwner(retained);
+      await this.#installation(retained); await assertSnapshot(operations); this.#assertNormalOwner(retained);
       const intent: NonNullable<DiagnosticLifecycleRecords["worker-startup-actor-intent.json"]> = {
         schema: "easyeda-pro-control.pcb-worker-startup-actor-intent.v1", operationId, createdAt: new Date().toISOString(),
         bindingSha256: expectedBindingSha256, assignmentsResultSha256: sha256Json(record),
@@ -1909,11 +1944,11 @@ class CurrentPcbLifecycleCore {
       await this.#record(operationId, "worker-startup-actor-intent.json", intent);
       const updated = { ...operation, records: { ...operation.records, "worker-startup-actor-intent.json": intent } };
       const expected = operations.map(value => value.operationId === operationId ? updated : value);
-      await assertSnapshot(expected); this.#assertOwner(retained);
+      await assertSnapshot(expected); this.#assertNormalOwner(retained);
       const packet = await original.methods.observeActorClock.call(original.owner, openingResult, assignments);
-      this.#startupActorPacket = packet; this.#assertOwner(retained);
+      this.#startupActorPacket = packet; this.#assertNormalOwner(retained);
       requireValue((packet.profile === "private.current-pcb209-worker-startup-actor.v1") === startup209(this.#generation), "WORKER_STARTUP_ACTOR_GENERATION");
-      await original.methods.requireActorClock.call(original.owner, openingResult, assignments, packet); this.#assertOwner(retained);
+      await original.methods.requireActorClock.call(original.owner, openingResult, assignments, packet); this.#assertNormalOwner(retained);
       const result = diagnosticLifecycleRecordSchemas["worker-startup-actor-result.json"].parse({
         schema: "easyeda-pro-control.pcb-worker-startup-actor-result.v1", operationId, createdAt: new Date().toISOString(),
         intentSha256: sha256Json(intent), result: structuredClone(packet), pointInTimeObservation: true,
@@ -1922,17 +1957,17 @@ class CurrentPcbLifecycleCore {
       const actorIdentity = result.result.profile === "private.current-pcb209-worker-startup-actor.v1" ? result.result.originalActorPacket.identity : result.result.identity;
       requireValue(canonicalJson(actorIdentity) === canonicalJson(openingResult.workerIdentity), "WORKER_STARTUP_ACTOR_IDENTITY");
       this.#retainRecord("worker-startup-actor-result.json", result);
-      await assertSnapshot(expected); this.#assertOwner(retained);
+      await assertSnapshot(expected); this.#assertNormalOwner(retained);
       await this.#publish(operationId, "worker-startup-actor-result.json", result);
       const completed = { ...updated, records: { ...updated.records, "worker-startup-actor-result.json": result } };
-      await assertSnapshot(expected.map(value => value.operationId === operationId ? completed : value)); this.#assertOwner(retained);
+      await assertSnapshot(expected.map(value => value.operationId === operationId ? completed : value)); this.#assertNormalOwner(retained);
       return { operationId, result: structuredClone(result.result), pointInTimeObservation: true,
         validationOnly: true, executionAuthorized: false, saveAuthorized: false };
     } finally { this.#busy = false; }
   }
 
   protected async observeStartupChannel(operationId: string, expectedBindingSha256: string): Promise<Record<string, unknown>> {
-    requireValue(this.#generation !== "209-startup-footprint-route", "FOOTPRINT_ROUTE_CHANNEL_UNAVAILABLE");
+    requireValue(!routeStartup209(this.#generation), "FOOTPRINT_ROUTE_CHANNEL_UNAVAILABLE");
     this.#startupId(operationId); diagnosticLifecycleDigestSchema.parse(expectedBindingSha256);
     this.#options.assertLocalAllowed(); requireValue(this.#purpose === "worker-startup", "WORKER_STARTUP_PURPOSE_REQUIRED");
     requireValue(!this.#busy, "BUSY"); this.#busy = true;
@@ -1983,7 +2018,8 @@ class CurrentPcbLifecycleCore {
     return this.#generation === "209-startup-footprint" ? CURRENT_FOOTPRINT_COPY_PREPARATION_PROFILE.normalRequestLimit : 224;
   }
   #startupId(operationId: string): void {
-    if (this.#generation === "209-startup-footprint-main") { currentFootprintMainIdSchema.parse(operationId); }
+    if (this.#generation === "209-startup-footprint-combined") { currentFootprintCombinedIdSchema.parse(operationId); }
+    else if (this.#generation === "209-startup-footprint-main") { currentFootprintMainIdSchema.parse(operationId); }
     else if (this.#generation === "209-startup-footprint-route") { currentFootprintCopyRoutePreparationIdSchema.parse(operationId); }
     else if (this.#generation === "209-startup-footprint") { currentFootprintCopyPreparationIdSchema.parse(operationId); }
     else if (this.#generation === "209-startup-ratline-continuation") { currentPcb209RatlineContinuationIdSchema.parse(operationId); }
@@ -1997,23 +2033,98 @@ class CurrentPcbLifecycleCore {
     let idPurpose: CurrentPcbDiagnosticLifecyclePurpose = "diagnostic";
     const continuation209 = operationId.startsWith(CURRENT_PCB_209_RATLINE_CONTINUATION_OPERATION_PREFIX);
     const empty209 = operationId.startsWith(CURRENT_PCB_209_EMPTY_STARTUP_OPERATION_PREFIX), ratline209 = operationId.startsWith(CURRENT_PCB_209_RATLINE_STARTUP_OPERATION_PREFIX);
+    const combined209 = operationId.startsWith(CURRENT_FOOTPRINT_COMBINED_OPERATION_PREFIX);
     const main209 = operationId.startsWith(CURRENT_FOOTPRINT_MAIN_OPERATION_PREFIX);
     const footprintRoute209 = operationId.startsWith(CURRENT_FOOTPRINT_COPY_ROUTE_PREPARATION_OPERATION_PREFIX);
     const footprint209 = operationId.startsWith(CURRENT_FOOTPRINT_COPY_PREPARATION_OPERATION_PREFIX);
     const project209 = operationId.startsWith(CURRENT_PCB_209_WORKER_STARTUP_OPERATION_PREFIX);
     if (operationId.startsWith(CURRENT_PCB_STRING_PRECREATE_OPERATION_PREFIX)) { idPurpose = "string-precreate"; }
-    else if (operationId.startsWith(CURRENT_PCB_WORKER_STARTUP_OPERATION_PREFIX) || project209 || empty209 || ratline209 || continuation209 || footprint209 || footprintRoute209 || main209) { idPurpose = "worker-startup"; }
+    else if (operationId.startsWith(CURRENT_PCB_WORKER_STARTUP_OPERATION_PREFIX) || project209 || empty209 || ratline209 || continuation209 || footprint209 || footprintRoute209 || main209 || combined209) { idPurpose = "worker-startup"; }
     const expectedSchema = launchFields(this.#purpose, this.#generation).schema;
-    requireValue(main209 === (this.#generation === "209-startup-footprint-main") && footprintRoute209 === (this.#generation === "209-startup-footprint-route") && footprint209 === (this.#generation === "209-startup-footprint") && continuation209 === (this.#generation === "209-startup-ratline-continuation") && ratline209 === (this.#generation === "209-startup-ratline") && project209 === (this.#generation === "209-startup") && empty209 === (this.#generation === "209-startup-empty") &&
+    requireValue(combined209 === (this.#generation === "209-startup-footprint-combined") && main209 === (this.#generation === "209-startup-footprint-main") && footprintRoute209 === (this.#generation === "209-startup-footprint-route") && footprint209 === (this.#generation === "209-startup-footprint") && continuation209 === (this.#generation === "209-startup-ratline-continuation") && ratline209 === (this.#generation === "209-startup-ratline") && project209 === (this.#generation === "209-startup") && empty209 === (this.#generation === "209-startup-empty") &&
       (operationId.startsWith(CURRENT_PCB_209_OPENING_PROFILE.operationPrefix) && !project209 && !empty209 && !ratline209 && !continuation209) === (this.#generation === "209-opening"), "GENERATION_MISMATCH");
     requireValue(idPurpose === this.#purpose && (intent === undefined || intent.schema === expectedSchema), "PURPOSE_MISMATCH");
+  }
+  protected async requireCombinedMainPublished(operationId: string, expectedBindingSha256: string): Promise<void> {
+    this.assertCombinedNormal(); currentFootprintCombinedIdSchema.parse(operationId); diagnosticLifecycleDigestSchema.parse(expectedBindingSha256);
+    const operations = await readCurrentPcbDiagnosticLifecycles(); this.assertCombinedNormal();
+    const operation = operations.find(value => value.operationId === operationId), retained = this.#retained;
+    this.#assertPurpose(operationId, operation);
+    const binding = operation?.records["binding.json"], result = operation?.records["main-construction-result.json"];
+    requireValue(retained !== null && retained.operationId === operationId && binding !== undefined &&
+      sha256Json(binding) === expectedBindingSha256 && canonicalJson(binding.binding) === canonicalJson(retained.binding) &&
+      binding.intentSha256 === retained.intentSha256, "ORIGINAL_OWNER_REQUIRED");
+    this.#assertNormalOwner(retained);
+    requireValue(this.#mainObservationAttempted && result !== undefined && this.#pending.get("main-construction-result.json") === canonicalJson(result), "COMBINED_MAIN_PUBLICATION_REQUIRED");
+    await assertSnapshot(operations); this.#assertNormalOwner(retained);
+  }
+  protected async runCombinedAbort(request: Extract<CurrentFootprintCombinedValidationRequest, { action: "abort-generation" }>): Promise<Record<string, unknown>> {
+    this.#options.assertLocalAllowed();
+    requireValue(this.#generation === "209-startup-footprint-combined" && !this.#combinedAbortBusy && !this.#combinedAbortAttempted, "COMBINED_ABORT_CONSUMED");
+    const retained = this.#retained;
+    const bindingText = this.#pending.get("binding.json");
+    requireValue(retained !== null && retained.operationId === request.operationId && bindingText !== undefined &&
+      sha256Json(JSON.parse(bindingText) as unknown) === request.expectedBindingSha256 && !this.#releaseAttempted, "ORIGINAL_OWNER_REQUIRED");
+    this.#assertOwner(retained);
+    const dispatch = retained.methods.dispatchFootprintCombinedAbort; const reserve = retained.methods.reserveFootprintCombinedAbort;
+    requireValue(reserve !== undefined && dispatch !== undefined, "COMBINED_OWNER_REQUIRED");
+    // Consume synchronously, independently of normal #busy. A renderer wait
+    // Must not queue a confirmed original-Job abort behind that same wait.
+    this.#combinedAbortBusy = true; this.#combinedAbortAttempted = true;
+    try {
+      const reservation = reserve.call(retained.owner); this.#assertOwner(retained);
+      await this.#publicationTail; this.#assertOwner(retained);
+      const operations = await readCurrentPcbDiagnosticLifecycles(); this.#assertOwner(retained);
+      const operation = operations.find(value => value.operationId === request.operationId);
+      this.#assertPurpose(request.operationId, operation);
+      const binding = operation?.records["binding.json"];
+      requireValue(operation !== undefined && binding !== undefined && canonicalJson(binding) === bindingText &&
+        operation.records["combined-abort-intent.json"] === undefined && operation.records["terminated.json"] === undefined &&
+        operation.records["release-intent.json"] === undefined && operation.records["released.json"] === undefined, "COMBINED_ABORT_UNAVAILABLE");
+      requireValue(Object.keys(operation.records).every(name => [...this.#pending].some(([known, text]) => known === name && canonicalJson(operation.records[known]) === text)), "JOURNAL_CHANGED");
+      // Retain interrupted plans privately. They cannot become post-abort
+      // Success records or obstruct the original generation's cleanup.
+      for (const [name, text] of this.#pending) {
+        if (operation.records[name] === undefined) { this.#combinedAbortedRecords.set(name, text); this.#pending.delete(name); }
+      }
+      const intent: NonNullable<DiagnosticLifecycleRecords["combined-abort-intent.json"]> = {
+        schema: "easyeda-pro-control.footprint-combined-abort-intent.v1", operationId: request.operationId,
+        createdAt: new Date().toISOString(), bindingSha256: request.expectedBindingSha256,
+        previousRecordsSha256: sha256Json(operation.records), confirmAbortOriginalCombinedJob: true,
+      };
+      await assertSnapshot(operations); this.#assertOwner(retained);
+      await this.#record(request.operationId, "combined-abort-intent.json", intent); this.#assertOwner(retained);
+      const updated = { ...operation, records: { ...operation.records, "combined-abort-intent.json": intent } };
+      const expected = operations.map(value => value.operationId === request.operationId ? updated : value);
+      await assertSnapshot(expected); this.#assertOwner(retained);
+      await dispatch.call(retained.owner, reservation, request.confirmAbortOriginalCombinedJob); this.#assertOwner(retained);
+      await assertSnapshot(expected); this.#assertOwner(retained);
+      const acknowledgment: NonNullable<DiagnosticLifecycleRecords["combined-abort-acknowledged.json"]> = {
+        schema: "easyeda-pro-control.footprint-combined-abort-acknowledged.v1", operationId: request.operationId,
+        createdAt: new Date().toISOString(), intentSha256: sha256Json(intent), abortDispatched: true, terminationProved: false,
+      };
+      await this.#record(request.operationId, "combined-abort-acknowledged.json", acknowledgment); this.#assertOwner(retained);
+      return { ...describe(request.operationId, { ...updated, records: { ...updated.records, "combined-abort-acknowledged.json": acknowledgment } }),
+        abortDispatched: true, terminationProved: false, executionAuthorized: false, saveAuthorized: false };
+    } finally { this.#combinedAbortBusy = false; }
+  }
+  protected assertCombinedNormal(): void {
+    this.#options.assertLocalAllowed();
+    requireValue(this.#generation === "209-startup-footprint-combined" && !this.#combinedAbortAttempted, "COMBINED_GENERATION_ABORTED");
+  }
+  #assertNormalOwner(retained: Retained): void {
+    requireValue(this.#generation !== "209-startup-footprint-combined" || !this.#combinedAbortAttempted, "COMBINED_GENERATION_ABORTED");
+    this.#assertOwner(retained);
+  }
+  #assertPublicationAllowed(name: DiagnosticLifecycleRecordName): void {
+    requireValue(!this.#combinedAbortAttempted || ["combined-abort-intent.json", "combined-abort-acknowledged.json", "terminated.json", "release-intent.json", "released.json"].includes(name), "COMBINED_GENERATION_ABORTED");
   }
   #assertOwner(retained: Retained): void {
     this.#options.assertLocalAllowed();
     requireValue(this.#lease !== null, "ORIGINAL_LEASE_REQUIRED"); assertCurrentPcbDiagnosticLaunchExclusion(this.#lease);
     requireValue(this.#retained === retained && methods.every(name => retained.owner[name] === retained.methods[name]), "OWNER_CHANGED");
     const status = retained.methods.status.call(retained.owner);
-    const expectedProfile = this.#generation === "206" ? this.#purpose : { "209-startup-footprint-main": "worker-startup-footprint-main209", "209-startup-footprint-route": "worker-startup-footprint-copy209", "209-startup-footprint": "worker-startup-footprint209", "209-startup": "worker-startup209", "209-startup-empty": "worker-startup-empty209", "209-startup-ratline": "worker-startup-ratline209", "209-startup-ratline-continuation": "worker-startup-ratline-continuation209", "209-opening": "diagnostic209" }[this.#generation];
+    const expectedProfile = this.#generation === "206" ? this.#purpose : { "209-startup-footprint-combined": "worker-startup-footprint-combined209", "209-startup-footprint-main": "worker-startup-footprint-main209", "209-startup-footprint-route": "worker-startup-footprint-copy209", "209-startup-footprint": "worker-startup-footprint209", "209-startup": "worker-startup209", "209-startup-empty": "worker-startup-empty209", "209-startup-ratline": "worker-startup-ratline209", "209-startup-ratline-continuation": "worker-startup-ratline-continuation209", "209-opening": "diagnostic209" }[this.#generation];
     requireValue(status.profile === expectedProfile &&
       (this.#generation !== "209-opening" || typeof retained.methods.observeLayers209 === "function" &&
         retained.owner.observeLayers209 === retained.methods.observeLayers209 &&
@@ -2037,7 +2148,7 @@ class CurrentPcbLifecycleCore {
     requireValue(this.#startupOpening === null || startupOpeningMethods.every(name =>
       this.#startupOpening?.owner[name] === this.#startupOpening?.methods[name]), "STARTUP_OPENING_OWNER_CHANGED");
     this.#startupOpening?.methods.assertOriginalMethodsCurrent();
-    if (this.#generation === "209-startup-footprint" || this.#generation === "209-startup-footprint-route") {
+    if (this.#generation === "209-startup-footprint" || routeStartup209(this.#generation)) {
       requireValue(typeof retained.methods.observeFootprintCopyUi === "function" && typeof retained.methods.requireFootprintCopyUi === "function" &&
         typeof retained.methods.retainedFootprintCopyUi === "function" && retained.owner.observeFootprintCopyUi === retained.methods.observeFootprintCopyUi &&
         retained.owner.requireFootprintCopyUi === retained.methods.requireFootprintCopyUi &&
@@ -2047,12 +2158,20 @@ class CurrentPcbLifecycleCore {
         retained.owner.requireFootprintCopyManagerRoute === retained.methods.requireFootprintCopyManagerRoute &&
         retained.owner.retainedFootprintCopyManagerRoute === retained.methods.retainedFootprintCopyManagerRoute, "FOOTPRINT_MANAGER_ROUTE_OWNER_CHANGED");
     }
+    if (this.#generation === "209-startup-footprint-combined") {
+      for (const name of ["abortFootprintCombined", "reserveFootprintCombinedAbort", "dispatchFootprintCombinedAbort"] as const) {
+        requireValue(typeof retained.methods[name] === "function" && retained.owner[name] === retained.methods[name], "COMBINED_OWNER_METHODS_CHANGED");
+      }
+    }
     if (this.#generation === "209-startup-footprint-main") {
-      for (const name of ["observeFootprintMainConstruction", "retainedFootprintMainConstruction", "terminateFootprintMain"] as const) {
+      requireValue(typeof retained.methods.terminateFootprintMain === "function" && retained.owner.terminateFootprintMain === retained.methods.terminateFootprintMain, "MAIN_OWNER_METHODS_CHANGED");
+    }
+    if (this.#generation === "209-startup-footprint-main" || this.#generation === "209-startup-footprint-combined") {
+      for (const name of ["observeFootprintMainConstruction", "retainedFootprintMainConstruction"] as const) {
         requireValue(typeof retained.methods[name] === "function" && retained.owner[name] === retained.methods[name], "MAIN_OWNER_METHODS_CHANGED");
       }
     }
-    if (this.#generation === "209-startup-footprint-route") {
+    if (routeStartup209(this.#generation)) {
       requireValue(typeof retained.methods.observeFootprintCopyWindowsClock === "function" && retained.owner.observeFootprintCopyWindowsClock === retained.methods.observeFootprintCopyWindowsClock &&
         typeof retained.methods.joinFootprintCopyManagerPeer === "function" && retained.owner.joinFootprintCopyManagerPeer === retained.methods.joinFootprintCopyManagerPeer, "FOOTPRINT_ROUTE_OWNER_CHANGED");
       for (const name of ["observeFootprintCopyClockRegistration", "sampleFootprintCopyClockRegistration", "retainedFootprintCopyClockRegistration", "releaseFootprintCopyClockRegistration"] as const) {
@@ -2114,9 +2233,11 @@ class CurrentPcbLifecycleCore {
   }
   async #record<Key extends DiagnosticLifecycleRecordName>(operationId: string, name: Key,
     record: z.infer<(typeof diagnosticLifecycleRecordSchemas)[Key]>): Promise<void> {
+    this.#assertPublicationAllowed(name);
     this.#retainRecord(name, record); await this.#publish(operationId, name, record);
   }
   #retainRecord<Key extends DiagnosticLifecycleRecordName>(name: Key, record: z.infer<(typeof diagnosticLifecycleRecordSchemas)[Key]>): void {
+    this.#assertPublicationAllowed(name);
     const original = this.#pending.get(name), text = canonicalJson(record);
     requireValue(original === undefined || original === text, "PUBLICATION_PLAN_CHANGED");
     this.#pending.set(name, text);
@@ -2251,7 +2372,7 @@ class CurrentPcbLifecycleCore {
       ...launchFields(this.#purpose, this.#generation), operationId: request.operationId, createdAt: new Date().toISOString(),
       facadeSha256: installation.facadeSha256, installationSha256: sha256Json(installation),
       confirmValidationOnly: true, confirmDiagnosticLaunch: true, acceptExistingProfileEffects: true,
-      ...(this.#generation === "209-startup-footprint-main" ? { acceptDebuggerPauseEffects: true as const } : {}),
+      ...(this.#generation === "209-startup-footprint-main" || this.#generation === "209-startup-footprint-combined" ? { acceptDebuggerPauseEffects: true as const } : {}),
     });
     this.#attempt = { operationId: request.operationId, intentSha256: sha256Json(intent), allocationInvoked: false, launchInvoked: false };
     await this.#record(request.operationId, "intent.json", intent);
@@ -2274,12 +2395,14 @@ class CurrentPcbLifecycleCore {
       ...(this.#stringPurpose ? { observeStringPrecreate: owner.observeStringPrecreate, observeCommonBaseline: owner.observeCommonBaseline,
         retainedCommonBaselineFailure: owner.retainedCommonBaselineFailure } : {}),
       ...(this.#purpose === "worker-startup" ? { handoffWorkerStartup: owner.handoffWorkerStartup } : {}),
-      ...(this.#generation === "209-startup-footprint" || this.#generation === "209-startup-footprint-route" ? { observeFootprintCopyUi: owner.observeFootprintCopyUi,
+      ...(this.#generation === "209-startup-footprint" || routeStartup209(this.#generation) ? { observeFootprintCopyUi: owner.observeFootprintCopyUi,
         requireFootprintCopyUi: owner.requireFootprintCopyUi, retainedFootprintCopyUi: owner.retainedFootprintCopyUi,
         observeFootprintCopyManagerRoute: owner.observeFootprintCopyManagerRoute, requireFootprintCopyManagerRoute: owner.requireFootprintCopyManagerRoute,
         retainedFootprintCopyManagerRoute: owner.retainedFootprintCopyManagerRoute } : {}),
-      ...(this.#generation === "209-startup-footprint-main" ? { observeFootprintMainConstruction: owner.observeFootprintMainConstruction, retainedFootprintMainConstruction: owner.retainedFootprintMainConstruction, terminateFootprintMain: owner.terminateFootprintMain } : {}),
-      ...(this.#generation === "209-startup-footprint-route" ? { observeFootprintCopyWindowsClock: owner.observeFootprintCopyWindowsClock, joinFootprintCopyManagerPeer: owner.joinFootprintCopyManagerPeer,
+      ...(this.#generation === "209-startup-footprint-main" || this.#generation === "209-startup-footprint-combined" ? { observeFootprintMainConstruction: owner.observeFootprintMainConstruction, retainedFootprintMainConstruction: owner.retainedFootprintMainConstruction } : {}),
+      ...(this.#generation === "209-startup-footprint-main" ? { terminateFootprintMain: owner.terminateFootprintMain } : {}),
+      ...(this.#generation === "209-startup-footprint-combined" ? { abortFootprintCombined: owner.abortFootprintCombined, reserveFootprintCombinedAbort: owner.reserveFootprintCombinedAbort, dispatchFootprintCombinedAbort: owner.dispatchFootprintCombinedAbort } : {}),
+      ...(routeStartup209(this.#generation) ? { observeFootprintCopyWindowsClock: owner.observeFootprintCopyWindowsClock, joinFootprintCopyManagerPeer: owner.joinFootprintCopyManagerPeer,
         observeFootprintCopyClockRegistration: owner.observeFootprintCopyClockRegistration, sampleFootprintCopyClockRegistration: owner.sampleFootprintCopyClockRegistration,
         retainedFootprintCopyClockRegistration: owner.retainedFootprintCopyClockRegistration, releaseFootprintCopyClockRegistration: owner.releaseFootprintCopyClockRegistration } : {}),
       ...(this.#generation === "209-startup-ratline" ? { prepareWorkerStartupRatlineSession209: owner.prepareWorkerStartupRatlineSession209 } : {}),
@@ -2523,7 +2646,7 @@ class CurrentPcbLifecycleCore {
       requireValue(source !== undefined && record !== undefined && source["sourceVerified"] === true &&
         canonicalJson(source) === canonicalJson(record.result) && this.#pending.get("worker-script-result.json") === canonicalJson(record), "ORIGINAL_WORKER_SOURCE_REQUIRED");
     }
-    await this.#installation(retained); await assertSnapshot(operations); this.#assertOwner(retained);
+    await this.#installation(retained); await assertSnapshot(operations); this.#assertNormalOwner(retained);
     const intent: NonNullable<DiagnosticLifecycleRecords["browser-intent.json"] | DiagnosticLifecycleRecords["string-precreate-intent.json"]> = stage === "string-precreate" ? {
       schema: "easyeda-pro-control.pcb-string-precreate-observation-intent.v1", operationId: request.operationId, createdAt: new Date().toISOString(),
       bindingSha256: request.expectedBindingSha256, stage, pcbOpeningResultSha256: sha256Json(operation.records["pcb-opening-result.json"]),
@@ -2538,7 +2661,7 @@ class CurrentPcbLifecycleCore {
     this.#observationConsumed.add(stage); await this.#record(request.operationId, `${stage}-intent.json`, intent);
     const updated = { ...operation, records: { ...operation.records, [`${stage}-intent.json`]: intent } };
     const expected = operations.map(value => value.operationId === operation.operationId ? updated : value);
-    await assertSnapshot(expected); this.#assertOwner(retained);
+    await assertSnapshot(expected); this.#assertNormalOwner(retained);
     let result: Readonly<Record<string, unknown>>;
     try {
     if (request.action === "browser-observation") { result = await retained.methods.browserObservation.call(retained.owner); }
@@ -2616,10 +2739,10 @@ class CurrentPcbLifecycleCore {
         });
         this.#retainRecord("observation-failure.json", record);
         try {
-          this.#assertOwner(retained); await assertSnapshot(expected); this.#assertOwner(retained);
+          this.#assertNormalOwner(retained); await assertSnapshot(expected); this.#assertNormalOwner(retained);
           await this.#publish(request.operationId, "observation-failure.json", record);
           const failed = { ...updated, records: { ...updated.records, "observation-failure.json": record } };
-          await assertSnapshot(expected.map(value => value.operationId === request.operationId ? failed : value)); this.#assertOwner(retained);
+          await assertSnapshot(expected.map(value => value.operationId === request.operationId ? failed : value)); this.#assertNormalOwner(retained);
         } catch (publicationError) {
           // oxlint-disable-next-line eslint/preserve-caught-error -- Keep the primary observation as cause; both it and this later publication error remain in errors.
           throw new AggregateError([caughtError, publicationError], "PCB_DIAGNOSTIC_OBSERVATION_FAILURE_PUBLICATION", { cause: caughtError });
@@ -2654,10 +2777,10 @@ class CurrentPcbLifecycleCore {
       intentSha256: sha256Json(intent), executionAuthorized: false as const,
     };
     this.#retainRecord(`${stage}-result.json`, record);
-    this.#assertOwner(retained); await assertSnapshot(expected); this.#assertOwner(retained);
+    this.#assertNormalOwner(retained); await assertSnapshot(expected); this.#assertNormalOwner(retained);
     await this.#publish(request.operationId, `${stage}-result.json`, record);
     const completed = { ...updated, records: { ...updated.records, [`${stage}-result.json`]: record } };
-    await assertSnapshot(expected.map(value => value.operationId === request.operationId ? completed : value)); this.#assertOwner(retained);
+    await assertSnapshot(expected.map(value => value.operationId === request.operationId ? completed : value)); this.#assertNormalOwner(retained);
     return { ...describe(request.operationId, completed), stage, result: publicObservationResult(request.operationId, stage, record.result, true) };
   }
   async #observeCommonBaseline(request: Extract<CleanupRequest, { action: "observe-common-baseline" }>, operation: DiagnosticLifecycleOperation,
@@ -3116,6 +3239,47 @@ export class CurrentFootprintCopyRoutePreparationLifecycle extends CurrentPcbLif
   }
   public observeWorkerStartupFootprintRoute(operationId: string, expectedBindingSha256: string): Promise<Record<string, unknown>> {
     return this.observeStartupFootprintRoute(operationId, expectedBindingSha256);
+  }
+}
+
+/** Original combined main/renderer diagnostics; no backend request or writer mount. */
+export class CurrentFootprintCombinedLifecycle extends CurrentPcbLifecycleCore {
+  public constructor(options: CurrentPcbDiagnosticLifecycleOptions, dependencies: CurrentPcb209WorkerStartupLifecycleDependencies = {}) {
+    super(options, dependencies, "worker-startup", "209-startup-footprint-combined");
+  }
+  public override run(input: unknown): Promise<Record<string, unknown>> {
+    try {
+      const request = currentFootprintCombinedValidationRequestSchema.parse(input);
+    if (request.action === "abort-generation") { return this.runCombinedAbort(request); }
+    if (!["inspect", "observe-termination", "release-closed", "settle-records", "cleanup-unlaunched", "cleanup-no-process"].includes(request.action)) { this.assertCombinedNormal(); }
+      return request.action === "observe-main-construction" ? this.runMainAction(request) : super.run(request);
+    } catch (error) { return Promise.reject(error instanceof Error ? error : new Error("COMBINED_REQUEST_REFUSED")); }
+  }
+  public async handoffWorkerStartup(operationId: string, expectedBindingSha256: string): Promise<CurrentPcbWorkerStartupHandoff> {
+    await this.requireCombinedMainPublished(operationId, expectedBindingSha256); this.assertCombinedNormal();
+    return this.handoffStartup(operationId, expectedBindingSha256);
+  }
+  public async openWorkerStartup(operationId: string, expectedBindingSha256: string, input: unknown): Promise<CurrentFootprintCopyStartupOpeningResult> {
+    await this.requireCombinedMainPublished(operationId, expectedBindingSha256); this.assertCombinedNormal();
+    return this.openStartup(operationId, expectedBindingSha256, input, "209-startup-footprint-combined");
+  }
+  public async captureWorkerStartup(operationId: string, expectedBindingSha256: string, input: unknown): Promise<Record<string, unknown>> {
+    const request = startupCaptureInputSchema.parse(input);
+    await this.handoffWorkerStartup(operationId, expectedBindingSha256); this.assertCombinedNormal();
+    const result = await this.openWorkerStartup(operationId, expectedBindingSha256, request); this.assertCombinedNormal();
+    return { ...structuredClone(result), operationId, validationOnly: true, executionAuthorized: false, saveAuthorized: false };
+  }
+  public observeWorkerStartupAssignments(operationId: string, expectedBindingSha256: string): Promise<Record<string, unknown>> {
+    this.assertCombinedNormal(); return this.observeStartupAssignments(operationId, expectedBindingSha256);
+  }
+  public observeWorkerStartupActor(operationId: string, expectedBindingSha256: string): Promise<Record<string, unknown>> {
+    this.assertCombinedNormal(); return this.observeStartupActor(operationId, expectedBindingSha256);
+  }
+  public observeWorkerStartupChannel(operationId: string, expectedBindingSha256: string): Promise<Record<string, unknown>> {
+    this.assertCombinedNormal(); return this.observeStartupChannel(operationId, expectedBindingSha256);
+  }
+  public observeWorkerStartupFootprintRoute(operationId: string, expectedBindingSha256: string): Promise<Record<string, unknown>> {
+    this.assertCombinedNormal(); return this.observeStartupFootprintRoute(operationId, expectedBindingSha256);
   }
 }
 

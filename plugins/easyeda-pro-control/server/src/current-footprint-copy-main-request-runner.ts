@@ -1,0 +1,277 @@
+/** Unmounted sequenced observer of one real backend invocation. It never starts
+ * that invocation, chooses a project, executes SQL or authorizes a write. The
+ * original combined owner owns the sole main scheduler and all kernel handles. */
+/* oxlint-disable import/max-dependencies -- The fixed provenance, selectors, protocol, original issuer and wire bound are independently enforced at this boundary. */
+import { performance } from "node:perf_hooks";
+import { setTimeout as delay } from "node:timers/promises";
+import { z } from "zod";
+import { freezeDeep } from "./sqlite-inventory-core.ts";
+import { captureCurrentPcbStringClockReply } from "./current-pcb-string-clock-reply.ts";
+import { requireCurrentFootprintCopyMainRequestSource } from "./current-footprint-copy-main-request-source.ts";
+import { requireCurrentFootprintCopyMainRequestOrigin } from "./current-footprint-copy-main-request-origin.ts";
+import type { CurrentFootprintCopyMainRequestOrigin } from "./current-footprint-copy-main-request-origin.ts";
+import { CURRENT_FOOTPRINT_COPY_MAIN_REQUEST_COLLECTION_ORDER as ORDER,
+  CURRENT_FOOTPRINT_COPY_MAIN_REQUEST_REQUESTS as REQUESTS, currentFootprintCopyMainRequestAllocatedId, currentFootprintCopyMainRequestSourceArm,
+  decodeCurrentFootprintCopyMainRequestAllocation, decodeCurrentFootprintCopyMainRequestArrayCapture, decodeCurrentFootprintCopyMainRequestArrayMember,
+  decodeCurrentFootprintCopyMainRequestCollectedFunction, decodeCurrentFootprintCopyMainRequestCollectionPause,
+  requireCurrentFootprintCopyMainRequestEmpty, validateCurrentFootprintCopyMainRequestCollectCommand } from "./current-footprint-copy-main-request-protocol.ts";
+import type { CurrentFootprintCopyMainRequestCollectCommand as Command, CurrentFootprintCopyMainRequestCollectionStage as Stage } from "./current-footprint-copy-main-request-protocol.ts";
+import { CURRENT_FOOTPRINT_COPY_MAIN_REQUEST_FLAGS as FLAGS, currentFootprintCopyMainRequestPlanSchema,
+  decodeCurrentFootprintCopyMainRequestPromise, decodeCurrentFootprintCopyMainRequestValue } from "./current-footprint-copy-main-request-contract.ts";
+import { CURRENT_FOOTPRINT_COPY_MAIN_REQUEST_CALLS as CALLS, CURRENT_FOOTPRINT_COPY_MAIN_REQUEST_EXPRESSIONS as EXPRESSIONS,
+  CURRENT_FOOTPRINT_COPY_MAIN_REQUEST_GROUP as GROUP } from "./current-footprint-copy-main-request-programs.ts";
+import { CURRENT_FOOTPRINT_COPY_MAIN_REQUEST_INVOCATION_EXPRESSIONS as INVOCATION, CURRENT_FOOTPRINT_COPY_MAIN_REQUEST_INVOCATION_PROGRAMS as PROGRAMS } from "./current-footprint-copy-main-request-collect-programs.ts";
+import { currentFootprintCopyMainRequestWire } from "./current-footprint-copy-main-request-wire.ts";
+
+type Origin = ReturnType<typeof requireCurrentFootprintCopyMainRequestOrigin>;
+type Plan = Readonly<z.infer<typeof currentFootprintCopyMainRequestPlanSchema>>;
+type Actor = ReturnType<typeof decodeCurrentFootprintCopyMainRequestValue>;
+interface Breakpoint { readonly stage: Stage; readonly id: string; removeAttempted: boolean; removed: boolean }
+interface Pause {
+  readonly stage: Stage; readonly frameId: string; readonly callerFrameId: string | null;
+  resumeAttempted: boolean; resumeObserved: boolean;
+}
+export interface CurrentFootprintCopyMainRequestObservation {
+  readonly profile: "private.current-footprint-copy-main-request-observation.v1";
+  readonly actualOriginalDriverInvocationAndContextJoined: true;
+  readonly actualOriginalControllerAndL3CallerJoined: true;
+  readonly actualPbArgumentAndProjectUserRowJoined: true;
+  readonly originalFulfilledPromiseResultAndSqlOwnerJoined: true;
+  readonly actualBackendActor: Actor;
+  readonly allFourPausesResumed: true;
+  readonly allAllocatedBreakpointsRemoved: true;
+  readonly temporaryObjectGroupReleased: false;
+  readonly actualDocumentClockRpcJoinsObserved: false;
+  readonly nativePublicationCompletionVerified: false;
+  readonly nativeSqlCompletionVerified: false;
+  readonly originalGenerationClosed: false;
+  readonly savedResultVerified: false;
+  readonly executionAuthorized: false;
+}
+type Phase = "ready" | "arming" | "armed" | "invocation-consumed" | "collected" | "failed";
+interface CollectionFailure { readonly code: string; readonly phase: Phase; readonly normalRequests: number; readonly cleanupRequests: number; readonly replies: number }
+const issued = new WeakMap<CurrentFootprintCopyMainRequestObservation, CurrentFootprintCopyMainRequestRunner>();
+const consumed = new WeakSet<object>(), failures = new WeakMap<Error, string>();
+const LIMIT_MS = 300_000;
+function fail(code: string): Error { const error = new Error(`FOOTPRINT_MAIN_REQUEST_COLLECTOR_${code}`); failures.set(error, code); return error; }
+function need(value: boolean, code: string): asserts value { if (!value) { throw fail(code); } }
+const yes = z.object({ result: z.object({ type: z.literal("boolean"), value: z.literal(true) }).strict() }).strict();
+const eventSchema = z.discriminatedUnion("method", [
+  z.object({ method: z.literal("Debugger.paused"), params: z.unknown() }).strict(),
+  z.object({ method: z.literal("Debugger.resumed"), params: z.object({}).strict() }).strict(),
+]);
+export class CurrentFootprintCopyMainRequestRunner {
+  readonly #token: CurrentFootprintCopyMainRequestOrigin;
+  readonly #origin: Origin;
+  readonly #plan: Plan;
+  readonly #points: Breakpoint[] = [];
+  readonly #pauses: Pause[] = [];
+  readonly #raw: unknown[] = [];
+  #phase: Phase = "ready";
+  #busy = false;
+  #ending = false;
+  #generationEnded = false;
+  #started = 0;
+  #normal = 0;
+  #cleanup = 0;
+  #allocationUncertain = false;
+  #unknownPause = false;
+  #resuming: Pause | null = null;
+  #cleanupAttempted = false;
+  #groupAttempted = false;
+  #groupReleased = false;
+  #retired = false;
+  #invocation: string | null = null;
+  #context: string | null = null;
+  #controller: string | null = null;
+  #actorPacket: string | null = null;
+  #packet: CurrentFootprintCopyMainRequestObservation | null = null;
+  #firstFailure: CollectionFailure | null = null;
+  #idle: Promise<null> = Promise.resolve(null);
+  #resolveIdle: (() => void) | null = null;
+  public constructor(origin: CurrentFootprintCopyMainRequestOrigin, suppliedPlan: unknown) {
+    this.#origin = requireCurrentFootprintCopyMainRequestOrigin(origin); this.#token = origin;
+    this.#plan = freezeDeep(currentFootprintCopyMainRequestPlanSchema.parse(captureCurrentPcbStringClockReply(suppliedPlan).value));
+    // Refuse oversized source/escaping before allocating any breakpoint. The
+    // Fixed existing native outgoing-message cap remains65536 bytes.
+    currentFootprintCopyMainRequestWire({ phase: "request-controller", method: "Runtime.callFunctionOn", params: { ...FLAGS,
+      objectId: "x".repeat(256), functionDeclaration: CALLS.controller.program,
+      arguments: [{ objectId: "x".repeat(256) }, { value: this.#plan }], returnByValue: false } }, 2_147_483_647);
+  }
+  #same(cleanup = false): void {
+    need(!this.#retired && !this.#generationEnded && requireCurrentFootprintCopyMainRequestOrigin(this.#token) === this.#origin, "ORIGINAL_OWNER");
+    requireCurrentFootprintCopyMainRequestSource(this.#origin.qualifiedSource);
+    need(cleanup || this.#phase !== "failed" && !this.#cleanupAttempted && !this.#ending, "FAILED");
+    need(cleanup || this.#started === 0 || performance.now() - this.#started < LIMIT_MS, "DEADLINE");
+  }
+  async #current(cleanup = false): Promise<void> {
+    this.#same(cleanup);
+    await (cleanup ? this.#origin.assertCleanup() : this.#origin.assertOriginal());
+    this.#same(cleanup);
+  }
+  #begin(): void { need(!this.#busy && !this.#ending, "BUSY"); this.#busy = true; const idle = Promise.withResolvers<null>(); this.#idle = idle.promise; this.#resolveIdle = (): void => { idle.resolve(null); }; }
+  #end(): void { this.#busy = false; this.#resolveIdle?.(); this.#resolveIdle = null; }
+  #refuse(error: unknown): void {
+    this.#firstFailure ??= Object.freeze({ code: error instanceof Error ? failures.get(error) ?? "ORIGINAL_CHANNEL_OR_REPLY" : "ORIGINAL_CHANNEL_OR_REPLY",
+      phase: this.#phase, normalRequests: this.#normal, cleanupRequests: this.#cleanup, replies: this.#raw.length });
+    this.#phase = "failed";
+  }
+  #drain(): void {
+    for (let count = 0; count < 32; count += 1) {
+      const raw = this.#origin.takeEvent(); if (raw === null) { return; }
+      const captured = captureCurrentPcbStringClockReply(raw).value; this.#raw.push(captured);
+      const event = eventSchema.parse(captured);
+      if (event.method === "Debugger.resumed") {
+        const current = this.#resuming; need(current !== null && current.resumeAttempted && !current.resumeObserved, "UNEXPECTED_RESUME");
+        current.resumeObserved = true; this.#resuming = null;
+      } else {
+        const index = this.#pauses.length; const stage = ORDER[index]; const previous = this.#pauses.at(-1); const point = this.#points.find(value => value.stage === stage);
+        try {
+          need(this.#phase === "invocation-consumed" && stage !== undefined && point !== undefined &&
+            (previous === undefined || previous.resumeAttempted && previous.resumeObserved), "UNEXPECTED_PAUSE");
+          const decoded = decodeCurrentFootprintCopyMainRequestCollectionPause(event.params, stage, this.#origin.scriptId, point.id);
+          this.#pauses.push({ stage, ...decoded, resumeAttempted: false, resumeObserved: false });
+        } catch (error) { this.#unknownPause = true; throw error; }
+      }
+    }
+    throw fail("EVENT_BOUND");
+  }
+  async #send(input: Command, cleanup = false, allocation?: Stage): Promise<unknown> {
+    await this.#current(cleanup); this.#drain();
+    need(cleanup ? this.#cleanup < REQUESTS.cleanup : this.#normal < REQUESTS.normal, "REQUEST_BOUND");
+    const command = validateCurrentFootprintCopyMainRequestCollectCommand(input);
+    currentFootprintCopyMainRequestWire(command, 2_147_483_647);
+    if (cleanup) { this.#cleanup += 1; } else { this.#normal += 1; }
+    if (allocation !== undefined) { this.#allocationUncertain = true; }
+    const raw = captureCurrentPcbStringClockReply(await this.#origin.request(command, cleanup)).value; this.#raw.push(raw);
+    if (allocation !== undefined) {
+      const id = currentFootprintCopyMainRequestAllocatedId(raw);
+      if (id !== null && !this.#points.some(value => value.id === id)) { this.#points.push({ stage: allocation, id, removeAttempted: false, removed: false }); this.#allocationUncertain = false; }
+    }
+    await this.#current(cleanup); this.#drain(); return raw;
+  }
+  async #wait(predicate: () => boolean): Promise<void> {
+    while (!predicate()) { await this.#current(); this.#drain(); if (predicate()) { return; }
+      await this.#origin.pump(false); await this.#current(); this.#drain(); if (!predicate()) { await delay(10); } }
+  }
+  #properties(objectId: string): Promise<unknown> {
+    return this.#send({ phase: "request-properties", method: "Runtime.getProperties", params: { objectId, ownProperties: true, accessorPropertiesOnly: false, generatePreview: false } });
+  }
+  async #frame(frameId: string, role: keyof typeof EXPRESSIONS): Promise<string> {
+    return decodeCurrentFootprintCopyMainRequestArrayCapture(await this.#send({ phase: "request-frame", method: "Debugger.evaluateOnCallFrame", params: {
+      callFrameId: frameId, expression: EXPRESSIONS[role], objectGroup: GROUP, silent: true, returnByValue: false,
+      generatePreview: false, throwOnSideEffect: true, includeCommandLineAPI: false } }), role === "context" ? 4 : ({ controller: 8, actor: 9, editHead: 1 } as const)[role]);
+  }
+  async #invocationFrame(frameId: string, role: keyof typeof INVOCATION): Promise<string> {
+    return decodeCurrentFootprintCopyMainRequestArrayCapture(await this.#send({ phase: "request-invocation-frame", method: "Debugger.evaluateOnCallFrame", params: {
+      callFrameId: frameId, expression: INVOCATION[role], objectGroup: GROUP, silent: true, returnByValue: false,
+      generatePreview: false, throwOnSideEffect: true, includeCommandLineAPI: false } }), 3);
+  }
+  public async arm(): Promise<void> {
+    need(this.#phase === "ready" && !consumed.has(this.#token), "ARM_CONSUMED"); consumed.add(this.#token); this.#begin(); this.#phase = "arming"; this.#started = performance.now();
+    try {
+      for (const stage of ORDER) {
+        const reply = await this.#send(stage === "driver" ? { phase: "request-driver-arm", method: "Debugger.setBreakpointOnFunctionCall", params: { objectId: this.#origin.driverCallbackObjectId } } :
+          currentFootprintCopyMainRequestSourceArm(stage, this.#origin.scriptId), false, stage);
+        const id = decodeCurrentFootprintCopyMainRequestAllocation(reply, stage, this.#origin.scriptId);
+        need(this.#points.at(-1)?.id === id && this.#points.at(-1)?.stage === stage, "ALLOCATION");
+      }
+      need(this.#normal === 4 && this.#points.length === 4, "ARM_COUNT"); this.#phase = "armed";
+    } catch (error) { this.#refuse(error); throw error; } finally { this.#end(); }
+  }
+  /** The enclosing original writer calls this after its durable intent and
+   * immediately before dispatch. It starts no request and grants no authority. */
+  public consumeBeforeInvocation(): void { this.#same(); need(!this.#busy && this.#phase === "armed", "INVOCATION_CONSUMED"); this.#phase = "invocation-consumed"; }
+  async #remove(point: Breakpoint): Promise<void> {
+    if (point.removed) { return; } need(!point.removeAttempted, "REMOVE_CONSUMED"); point.removeAttempted = true;
+    requireCurrentFootprintCopyMainRequestEmpty(await this.#send({ phase: "request-remove", method: "Debugger.removeBreakpoint", params: { breakpointId: point.id } }, true)); point.removed = true;
+  }
+  async #resume(pause: Pause): Promise<void> {
+    need(!pause.resumeAttempted && !pause.resumeObserved && this.#resuming === null, "RESUME_CONSUMED"); pause.resumeAttempted = true; this.#resuming = pause;
+    requireCurrentFootprintCopyMainRequestEmpty(await this.#send({ phase: "request-resume", method: "Debugger.resume", params: {} }, true));
+    await this.#wait(() => pause.resumeObserved);
+  }
+  async #capture(pause: Pause): Promise<Actor | null> {
+    if (pause.stage === "driver") {
+      need(pause.callerFrameId !== null, "DRIVER_STACK"); const selected = await this.#invocationFrame(pause.frameId, "driver"); const caller = await this.#invocationFrame(pause.callerFrameId, "driverCaller");
+      this.#invocation = decodeCurrentFootprintCopyMainRequestArrayCapture(await this.#send({ phase: "request-invocation", method: "Runtime.callFunctionOn", params: { ...FLAGS,
+        objectId: selected, functionDeclaration: PROGRAMS.invocation, arguments: [{ objectId: this.#origin.retainedArrayObjectId }, { objectId: caller }], returnByValue: false } }), 6); return null;
+    }
+    if (pause.stage === "context") {
+      need(this.#invocation !== null, "INVOCATION_REQUIRED"); const selected = await this.#frame(pause.frameId, "context");
+      this.#context = decodeCurrentFootprintCopyMainRequestArrayCapture(await this.#send({ phase: "request-context", method: "Runtime.callFunctionOn", params: { ...FLAGS,
+        objectId: selected, functionDeclaration: CALLS.context.program, arguments: [{ objectId: this.#origin.retainedArrayObjectId }], returnByValue: false } }), 6);
+      yes.parse(await this.#send({ phase: "request-context-join", method: "Runtime.callFunctionOn", params: { ...FLAGS, objectId: this.#invocation,
+        functionDeclaration: PROGRAMS.contextJoin, arguments: [{ objectId: this.#context }], returnByValue: true } })); return null;
+    }
+    if (pause.stage === "controller") {
+      need(this.#context !== null, "CONTEXT_REQUIRED"); const selected = await this.#frame(pause.frameId, "controller");
+      this.#controller = decodeCurrentFootprintCopyMainRequestArrayCapture(await this.#send({ phase: "request-controller", method: "Runtime.callFunctionOn", params: { ...FLAGS,
+        objectId: selected, functionDeclaration: CALLS.controller.program, arguments: [{ objectId: this.#context }, { value: this.#plan }], returnByValue: false } }), 12);
+      const fn = decodeCurrentFootprintCopyMainRequestArrayMember(await this.#properties(this.#controller), 12, 8, "editHead");
+      decodeCurrentFootprintCopyMainRequestCollectedFunction(await this.#properties(fn), "editHead", this.#origin.scriptId); return null;
+    }
+    need(this.#controller !== null && pause.callerFrameId !== null, "CONTROLLER_REQUIRED");
+    const selected = await this.#frame(pause.frameId, "editHead"); const caller = await this.#frame(pause.callerFrameId, "actor");
+    this.#actorPacket = decodeCurrentFootprintCopyMainRequestArrayCapture(await this.#send({ phase: "request-actor", method: "Runtime.callFunctionOn", params: { ...FLAGS,
+      objectId: selected, functionDeclaration: CALLS.actor.program, arguments: [{ objectId: caller }, { objectId: this.#controller }], returnByValue: false } }), 10);
+    const promise = decodeCurrentFootprintCopyMainRequestArrayMember(await this.#properties(this.#actorPacket), 10, 6, "promise");
+    const sqlOwner = decodeCurrentFootprintCopyMainRequestPromise(await this.#properties(promise));
+    const sql = decodeCurrentFootprintCopyMainRequestArrayCapture(await this.#send({ phase: "request-sql", method: "Runtime.callFunctionOn", params: { ...FLAGS,
+      objectId: this.#actorPacket, functionDeclaration: CALLS.sql.program, arguments: [{ objectId: sqlOwner }], returnByValue: false } }), 7);
+    const query = decodeCurrentFootprintCopyMainRequestArrayMember(await this.#properties(sql), 7, 6, "sqlQueryOne");
+    decodeCurrentFootprintCopyMainRequestCollectedFunction(await this.#properties(query), "sqlQueryOne", this.#origin.scriptId);
+    return decodeCurrentFootprintCopyMainRequestValue(await this.#send({ phase: "request-value", method: "Runtime.callFunctionOn", params: { ...FLAGS,
+      objectId: this.#actorPacket, functionDeclaration: CALLS.value.program, arguments: [], returnByValue: true } }));
+  }
+  public async collect(): Promise<CurrentFootprintCopyMainRequestObservation> {
+    need(this.#phase === "invocation-consumed" && this.#packet === null, "COLLECT_CONSUMED"); this.#begin();
+    try {
+      let actor: Actor | null = null;
+      for (const [index, stage] of ORDER.entries()) {
+        await this.#wait(() => this.#pauses[index] !== undefined); const pause = this.#pauses[index], point = this.#points[index];
+        need(pause?.stage === stage && point?.stage === stage, "PAUSE_ORDER"); actor = await this.#capture(pause) ?? actor;
+        await this.#remove(point); await this.#resume(pause); await this.#current();
+      }
+      need(actor !== null && this.#normal === REQUESTS.normal && this.#cleanup === REQUESTS.cleanup - 1 &&
+        !this.#allocationUncertain && !this.#unknownPause && this.#points.every(value => value.removed) && this.#pauses.every(value => value.resumeObserved), "INCOMPLETE");
+      this.#packet = freezeDeep({ profile: "private.current-footprint-copy-main-request-observation.v1", actualOriginalDriverInvocationAndContextJoined: true,
+        actualOriginalControllerAndL3CallerJoined: true, actualPbArgumentAndProjectUserRowJoined: true, originalFulfilledPromiseResultAndSqlOwnerJoined: true,
+        actualBackendActor: actor, allFourPausesResumed: true, allAllocatedBreakpointsRemoved: true, temporaryObjectGroupReleased: false,
+        actualDocumentClockRpcJoinsObserved: false, nativePublicationCompletionVerified: false, nativeSqlCompletionVerified: false, originalGenerationClosed: false,
+        savedResultVerified: false, executionAuthorized: false }); issued.set(this.#packet, this); this.#phase = "collected"; return this.#packet;
+    } catch (error) { this.#refuse(error); throw error; } finally { this.#end(); }
+  }
+  public async requireOriginal(packet: CurrentFootprintCopyMainRequestObservation): Promise<void> {
+    need(!this.#busy && this.#phase === "collected" && packet === this.#packet && issued.get(packet) === this, "ORIGINAL_PACKET");
+    await this.#current(); need(packet === this.#packet && issued.get(packet) === this && !this.#cleanupAttempted, "ORIGINAL_PACKET");
+  }
+  public async cleanup(): Promise<void> {
+    need(!this.#cleanupAttempted, "CLEANUP_CONSUMED"); this.#begin(); this.#cleanupAttempted = true;
+    try {
+      const errors: unknown[] = [];
+      for (const point of this.#points) { try { await this.#remove(point); } catch (error) { errors.push(error); } }
+      // A refused capture may be paused immediately before native SQL. Cleanup
+      // Never resumes it to make a failed observation complete.
+      need(errors.length === 0 && !this.#allocationUncertain && !this.#unknownPause && this.#resuming === null &&
+        this.#pauses.every(value => value.resumeObserved), "GENERATION_CLOSURE_REQUIRED");
+      need(!this.#groupAttempted, "RELEASE_CONSUMED"); this.#groupAttempted = true;
+      requireCurrentFootprintCopyMainRequestEmpty(await this.#send({ phase: "request-release", method: "Runtime.releaseObjectGroup", params: { objectGroup: GROUP } }, true));
+      this.#groupReleased = true; await this.#origin.retire(); this.#retired = true;
+    } catch (error) { this.#refuse(error); throw error; } finally { this.#end(); }
+  }
+  public async observeOriginalGenerationEnded(): Promise<void> {
+    need(!this.#ending && !this.#generationEnded && !this.#retired, "GENERATION_CONSUMED"); this.#ending = true; const idle = this.#idle;
+    try {
+      await this.#origin.assertOriginalGenerationExited(); this.#generationEnded = true; this.#refuse(fail("ORIGINAL_GENERATION_ENDED"));
+      await idle; need(!this.#busy && this.#idle === idle, "ORIGINAL_OPERATION_UNSETTLED"); await this.#origin.retire(); this.#retired = true;
+    } finally { this.#ending = false; }
+  }
+  public diagnostics(): Readonly<{ phase: Phase; normalRequests: number; cleanupRequests: number; replies: number; pauses: number;
+    unknownPause: boolean; uncertainAllocation: boolean; groupReleased: boolean; retired: boolean; originalGenerationEnded: boolean;
+    firstFailure: CollectionFailure | null }> {
+    return Object.freeze({ phase: this.#phase, normalRequests: this.#normal, cleanupRequests: this.#cleanup, replies: this.#raw.length, pauses: this.#pauses.length,
+      unknownPause: this.#unknownPause, uncertainAllocation: this.#allocationUncertain, groupReleased: this.#groupReleased, retired: this.#retired,
+      originalGenerationEnded: this.#generationEnded, firstFailure: this.#firstFailure });
+  }
+}

@@ -7,7 +7,7 @@ import { currentFootprintCopyDependencyNativeCases, currentFootprintCopyProducer
   currentPcbWorkerStartupNativeSource } from "../src/current-pcb-worker-startup-native.ts";
 import { currentFootprintCopyPreparationWire, currentPcb209RatlineWorkerStartupWire, currentPcb209WorkerStartupWire, currentPcbWorkerStartupWire } from "../src/current-pcb-worker-startup-wire.ts";
 import { CURRENT_PCB_209_RATLINE_OPENING_FUNCTION } from "../src/current-pcb-209-ratline-opening-program.ts";
-import { CURRENT_PCB_WORKER_STARTUP_WORKER_ACTOR_CLOCK_FUNCTION, currentPcbWorkerStartupUiActorCommand } from "../src/current-pcb-worker-startup-actor.ts";
+import { CURRENT_PCB_WORKER_STARTUP_UI_ACTOR_CLOCK_FUNCTION, CURRENT_PCB_WORKER_STARTUP_WORKER_ACTOR_CLOCK_FUNCTION, currentPcbWorkerStartupUiActorCommand } from "../src/current-pcb-worker-startup-actor.ts";
 import { CURRENT_PCB_WORKER_STARTUP_CHANNEL_CALLS } from "../src/current-pcb-worker-startup-channel-observation.ts";
 
 const samples = currentPcbWorkerStartupNativeCases();
@@ -288,12 +288,13 @@ void test("native packed programs retain exact opener and source JSON bytes with
     command.method === "Runtime.callFunctionOn" && command.params.awaitPromise && command.params.arguments[1]?.value === "open-document");
   assert.ok(source?.method === "Runtime.callFunctionOn" && opener?.method === "Runtime.callFunctionOn" && pcbOpener?.method === "Runtime.callFunctionOn");
   const expected = new Map([
+    ["UiActorClockFunction", CURRENT_PCB_WORKER_STARTUP_UI_ACTOR_CLOCK_FUNCTION],
     ["PcbOpeningFunction", pcbOpener.params.functionDeclaration],
     ["ProjectOpening209Function", opener.params.functionDeclaration],
     ["RatlinePcbOpening209Function", CURRENT_PCB_209_RATLINE_OPENING_FUNCTION],
     ["FootprintSourceFunctionJson", JSON.stringify(source.params.functionDeclaration)],
   ]);
-  const matches = [...generated.matchAll(/static readonly string (PcbOpeningFunction|ProjectOpening209Function|RatlinePcbOpening209Function|FootprintSourceFunctionJson)=UnpackFixedProgram\(@"([A-Za-z\d+/=]+)",(\d+),(\d+),@"([a-f\d]{64})"\);/gu)];
+  const matches = [...generated.matchAll(/static readonly string (UiActorClockFunction|PcbOpeningFunction|ProjectOpening209Function|RatlinePcbOpening209Function|FootprintSourceFunctionJson)=UnpackFixedProgram\(@"([A-Za-z\d+/=]+)",(\d+),(\d+),@"([a-f\d]{64})"\);/gu)];
   assert.equal(matches.length, expected.size);
   for (const match of matches) {
     const [name, encoded, compressedLength, decodedLength, hash] = match.slice(1);

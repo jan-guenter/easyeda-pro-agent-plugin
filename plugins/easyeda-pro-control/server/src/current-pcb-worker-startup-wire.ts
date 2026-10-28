@@ -271,6 +271,12 @@ export function currentFootprintCopyExecutionStartupWire(raw: unknown, id: numbe
   return Object.freeze({ command: Object.freeze({ ...original.command, id }),
     request: Object.freeze({ ...original.request, requestId: id }) });
 }
+
+/** A distinct birth-only wire identity. It currently admits the same bounded
+ * observation vocabulary, never a write or upgrade of a historical owner. */
+export function currentFootprintCombinedStartupWire(raw: unknown, id: number): ReturnType<typeof startupWire> {
+  return currentFootprintCopyExecutionStartupWire(raw, id);
+}
 /** The saved owner admits only construction and native-cache observation.
  * Parser registration capture is shared fixed code, not execution authority. */
 export function currentFootprintCopySavedStartupWire(raw: unknown, id: number): ReturnType<typeof startupWire> {

@@ -1,11 +1,13 @@
 /** Synthetic original transport callback ordering. No application or design is
  * connected, and source qualification below is explicitly an identity issuer. */
+/* oxlint-disable import/max-dependencies -- The real runner, native capability refusal and bounded Zod diagnostics share this fixed transport fixture; none is substituted for another's original issuer. */
 import assert from "node:assert/strict";
 import { readFile } from "node:fs/promises";
 import { createRequire } from "node:module";
 import { test } from "node:test";
 import vm from "node:vm";
 import { transform } from "esbuild";
+import { z } from "zod";
 import { CURRENT_FOOTPRINT_COPY_MAIN_BACKEND_SOURCE as SOURCE } from "../src/current-footprint-copy-main-backend-source.ts";
 import type { CurrentFootprintCopyMainBackendRole as Role } from "../src/current-footprint-copy-main-backend-source.ts";
 import type { CurrentFootprintCopyMainBackendCommand as Command } from "../src/current-footprint-copy-main-backend-contract.ts";
@@ -14,6 +16,12 @@ import type { CurrentFootprintCopyMainBackendRunner, CurrentFootprintCopyMainBac
 import { mainBackendFragments as fragments } from "./helpers/footprint-main-backend-fragments.ts";
 
 type Data = Record<string, unknown>;
+void test("the real ESM origin entry and journal schema initialize without constructing a native owner", async () => {
+  const origin = await import("../src/current-footprint-copy-main-request-origin.ts");
+  const journal = await import("../src/current-pcb-diagnostic-lifecycle-journal.ts");
+  assert.equal(typeof origin.requireCurrentFootprintCopyMainRequestOrigin, "function"); assert.equal(typeof journal.diagnosticLifecycleRecordSchemas, "object");
+  assert.throws(() => origin.requireCurrentFootprintCopyMainRequestOrigin({ profile: "private.current-footprint-copy-main-request-origin.v1", executionAuthorized: false }));
+});
 const qualified = Object.freeze({ profile: "private.current-footprint-copy-main-backend-source.v1", sha256: SOURCE.sha256, runtimeBound: false, executionAuthorized: false });
 async function constructor(): Promise<typeof CurrentFootprintCopyMainBackendRunner> {
   const path = new URL("../src/current-footprint-copy-main-backend-runner.ts", import.meta.url);
@@ -64,10 +72,11 @@ function array(): Data {
 function fixture(): Readonly<{ transport: CurrentFootprintCopyMainBackendTransport; commands: Command[]; state: {
   current: boolean; wrongSource: boolean; foreignPause: boolean; duplicateResume: boolean; sendFailure: string; malformedChunk: boolean; resumeCount: number; polls: number;
   registrationColumnDelta: number; foreignRegistrationScript: boolean;
+  metadataShapeRole: string; sendFailureText: string; sendError: Error | null;
 } }> {
   const commands: Command[] = [], queue: string[] = [];
   const state = { current: true, wrongSource: false, foreignPause: false, duplicateResume: false, sendFailure: "", malformedChunk: false, resumeCount: 0, polls: 0,
-    registrationColumnDelta: 0, foreignRegistrationScript: false };
+    registrationColumnDelta: 0, foreignRegistrationScript: false, metadataShapeRole: "", sendFailureText: "lost original send acknowledgment", sendError: null as Error | null };
   const event = (method: string, params: Data): void => { queue.push(`${JSON.stringify({ method, params })}\0`); };
   function response(command: Command): unknown {
     if (command.phase === "debugger-enable") { return { debuggerId: "main-debugger" }; }
@@ -89,6 +98,7 @@ function fixture(): Readonly<{ transport: CurrentFootprintCopyMainBackendTranspo
     if (command.phase === "require") { return { result: { type: "boolean", value: true } }; }
     if (command.phase === "properties") {
       const id = command.params.objectId;
+      if (id === state.metadataShapeRole) { return { result: [{ value: { className: "sensitive-foreign-value" } }] }; }
       if (id === "capture") { return array(); }
       if (id === "Date" || id === "now") { return nativeMetadata(id); }
       assert.ok(Object.hasOwn(SOURCE.functions, id));
@@ -101,7 +111,7 @@ function fixture(): Readonly<{ transport: CurrentFootprintCopyMainBackendTranspo
     assertCurrent(): Promise<void> { assert.ok(state.current, "original transport lost"); return Promise.resolve(); },
     send(command: Command, id: number): Promise<void> {
       assert.equal(id, commands.length + 1); commands.push(command);
-      if (state.sendFailure === command.phase) { return Promise.reject(new Error("lost original send acknowledgment")); }
+      if (state.sendFailure === command.phase) { return Promise.reject(state.sendError ?? new Error(state.sendFailureText)); }
       const result = response(command); queue.push(`${JSON.stringify({ id, result })}\0`); return Promise.resolve();
     },
     poll(): Promise<string> { state.polls += 1; if (state.malformedChunk) { return Promise.resolve("===="); } return Promise.resolve(Buffer.from(queue.shift() ?? "").toString("base64")); },
@@ -111,6 +121,7 @@ function fixture(): Readonly<{ transport: CurrentFootprintCopyMainBackendTranspo
 void test("original main startup arms registration before its one initial continuation and retains exact construction without invoking app methods", async () => {
   const Constructor = await constructor(), value = fixture(); const runner = new Constructor(value.transport); const packet = await runner.observe();
   assert.equal(value.state.resumeCount, 2); assert.equal(packet.initialContinuationCount, 1); assert.equal(packet.executionAuthorized, false); assert.equal(packet.protocolRegistrationObserved, false);
+  assert.equal(runner.retained().metadataRole, null); assert.equal(runner.retained().schemaIssues, null);
   assert.deepEqual(value.commands.slice(0, 6).map(command => command.phase), ["runtime-enable", "debugger-enable", "registration-arm", "run-waiting", "resume", "source"]);
   await runner.reprove(packet); await runner.release(); assert.equal(runner.retained().released, true); assert.equal(runner.retained().pendingReplies, 0);
   await assert.rejects(runner.observe()); await assert.rejects(runner.reprove(structuredClone(packet))); await assert.rejects(runner.release());
@@ -124,10 +135,49 @@ void test("a rejected original registration retains bounded location and script-
     assert.deepEqual(retained, { lineNumber: SOURCE.registration.https.lineNumber,
       columnNumber: SOURCE.registration.https.breakpointColumnNumber + value.state.registrationColumnDelta, scriptObserved: !foreign });
     assert.ok(Object.isFrozen(retained));
+    assert.equal(runner.retained().failure, "REGISTRATION_LOCATION");
     assert.equal(value.commands.some(command => command.phase === "source" || command.phase === "frame" || command.phase === "capture"), false);
     value.state.current = false; await assert.rejects(runner.release());
     assert.equal(runner.retained().registrationLocationFailure, retained);
   }
+});
+void test("metadata schema failure retains only a bounded role and immutable issue codes and paths", async () => {
+  const Constructor = await constructor();
+  for (const role of ["capture", "Date", "now", "protocolCallback", "driverIntercept", "driverCallback", "router", "actorClock", "projectSql"]) {
+    const value = fixture(); value.state.metadataShapeRole = role; const runner = new Constructor(value.transport);
+    await assert.rejects(runner.observe()); const retained = runner.retained();
+    assert.equal(retained.metadataRole, role === "capture" ? "retained-array" : role); assert.equal(retained.failure, "REPLY_SCHEMA");
+    assert.ok(retained.schemaIssues !== null && retained.schemaIssues.length > 0 && retained.schemaIssues.length <= 6);
+    assert.ok(Object.isFrozen(retained.schemaIssues));
+    for (const issue of retained.schemaIssues) { assert.ok(Object.isFrozen(issue) && Object.isFrozen(issue.path)); assert.ok(issue.path.length <= 8); }
+    assert.equal(JSON.stringify(retained).includes("sensitive-foreign-value"), false);
+    const first = retained.schemaIssues; value.state.current = false; await assert.rejects(runner.release());
+    assert.equal(runner.retained().schemaIssues, first); assert.equal(runner.retained().metadataRole, retained.metadataRole);
+  }
+});
+void test("foreign errors cannot claim a locally issued construction reason by matching its text", async () => {
+  const Constructor = await constructor(), value = fixture(); value.state.sendFailure = "runtime-enable";
+  value.state.sendFailureText = "FOOTPRINT_MAIN_CONSTRUCTION_REGISTRATION_LOCATION";
+  const runner = new Constructor(value.transport); await assert.rejects(runner.observe(), /REGISTRATION_LOCATION/u);
+  assert.equal(runner.retained().failure, "ORIGINAL_TRANSPORT_OR_CAPTURE"); assert.equal(runner.retained().schemaIssues, null);
+});
+void test("schema diagnostics cannot echo foreign values or arbitrary path keys", async () => {
+  const Constructor = await constructor(), value = fixture(); value.state.sendFailure = "runtime-enable";
+  value.state.sendError = new z.ZodError(Array.from({ length: 9 }, () => ({ code: "custom", message: "sensitive-foreign-message",
+    path: ["sensitive-unapproved-key", ...Array.from({ length: 12 }, (_, index) => index + 1000)] })));
+  const runner = new Constructor(value.transport); await assert.rejects(runner.observe()); const issues = runner.retained().schemaIssues;
+  assert.ok(issues !== null && issues.length === 6); assert.ok(issues.every(issue => issue.code === "custom" && issue.path.length === 8 && issue.path.every(key => key === "$unknown")));
+  assert.equal(JSON.stringify(runner.retained()).includes("sensitive"), false);
+});
+void test("a completed diagnostic or synthetic construction cannot adopt a copied combined owner capability", async () => {
+  const Constructor = await constructor(), value = fixture(); const runner = new Constructor(value.transport);
+  const packet = await runner.observe();
+  const count = value.commands.length;
+  const capability = Object.freeze({ profile: "private.current-footprint-combined-main-capability.v1" as const, executionAuthorized: false as const });
+  await assert.rejects(runner.issueRequestOrigin(capability, packet));
+  await assert.rejects(runner.issueRequestOrigin(capability, structuredClone(packet)));
+  assert.equal(value.commands.length, count); assert.equal(runner.retained().requestOriginIssued, false); assert.equal(runner.retained().requestOriginActive, false);
+  await runner.reprove(packet); await runner.release();
 });
 void test("source drift, foreign pauses and duplicate resume events refuse before lexical evaluation without repeating continuation", async () => {
   const Constructor = await constructor();

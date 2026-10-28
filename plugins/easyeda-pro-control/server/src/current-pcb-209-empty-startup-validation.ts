@@ -2,6 +2,7 @@
 import { z } from "zod";
 import { currentFootprintCopyRoutePreparationValidationRequestSchema } from "./current-footprint-copy-route-preparation-validation.ts";
 import { currentFootprintMainValidationRequestSchema } from "./current-footprint-main-validation.ts";
+import { currentFootprintCombinedValidationRequestSchema } from "./current-footprint-combined-validation.ts";
 import { currentFootprintCopyPreparationValidationRequestSchema } from "./current-footprint-copy-preparation-validation.ts";
 import { currentPcb209RatlineContinuationValidationRequestSchema } from "./current-pcb-209-ratline-continuation-validation.ts";
 import { currentPcb209RatlineStartupValidationRequestSchema } from "./current-pcb-209-ratline-startup-validation.ts";
@@ -25,6 +26,7 @@ export type CurrentPcb209EmptyStartupLifecycleRequest = z.infer<typeof currentPc
 export type CurrentPcb209EmptyStartupValidationRequest = z.infer<typeof currentPcb209EmptyStartupValidationRequestSchema>;
 /** The existing tool receives this extra wrapper; legacy requests retain their exact schema. */
 export const currentPcb209WorkerStartupToolRequestSchema = z.discriminatedUnion("action", [
+  z.object({ action: z.literal("footprint-combined"), request: currentFootprintCombinedValidationRequestSchema }).strict(),
   z.object({ action: z.literal("footprint-main"), request: currentFootprintMainValidationRequestSchema }).strict(),
   z.object({ action: z.literal("footprint-copy-route-preparation"), request: currentFootprintCopyRoutePreparationValidationRequestSchema }).strict(),
   ...currentPcb209WorkerStartupValidationRequestSchema.options,

@@ -13,7 +13,7 @@ import { z } from "zod";
 import { decodeCurrentPcbDiagnosticJson } from "./current-pcb-diagnostic-json.ts";
 import { captureCurrentPcbStringClockReply } from "./current-pcb-string-clock-reply.ts";
 import { CURRENT_FOOTPRINT_COPY_SOURCE_FRAME_BYTES } from "./current-footprint-copy-source-command.ts";
-import { CURRENT_PCB_WORKER_STARTUP_REQUEST_LIMIT, currentFootprintCopyExecutionStartupWire, currentFootprintCopyPreparationWire, currentFootprintCopySavedStartupWire,
+import { CURRENT_PCB_WORKER_STARTUP_REQUEST_LIMIT, currentFootprintCombinedStartupWire, currentFootprintCopyExecutionStartupWire, currentFootprintCopyPreparationWire, currentFootprintCopySavedStartupWire,
   currentPcb209WorkerStartupWire, currentPcbWorkerStartupWire } from "./current-pcb-worker-startup-wire.ts";
 import { currentFootprintCopyManagerRouteWire } from "./current-footprint-copy-manager-route-wire.ts";
 import type { CurrentFootprintCopyManagerRouteCommand } from "./current-footprint-copy-manager-route-command.ts";
@@ -24,6 +24,7 @@ import { currentFootprintCopyUiWire } from "./current-footprint-copy-ui-wire.ts"
 import type { CurrentFootprintCopyUiCommand } from "./current-footprint-copy-ui-command.ts";
 import { CURRENT_FOOTPRINT_COPY_PREPARATION_PROFILE } from "./current-footprint-copy-preparation-profile.ts";
 import { CURRENT_FOOTPRINT_COPY_EXECUTION_PROFILE } from "./current-footprint-copy-execution-profile.ts";
+import { CURRENT_FOOTPRINT_COMBINED_RENDERER_PROFILE } from "./current-footprint-copy-combined-profile.ts";
 import { CURRENT_FOOTPRINT_COPY_SAVED_PROFILE } from "./current-footprint-copy-saved-profile.ts";
 import { currentFootprintCopySavedQueueWire } from "./current-footprint-copy-saved-queue-wire.ts";
 import type { CurrentFootprintCopySavedQueueChannelCommand } from "./current-footprint-copy-saved-queue-wire.ts";
@@ -168,7 +169,7 @@ class CurrentPcbWorkerStartupChannelCore {
   readonly #footprintPurpose: boolean;
   readonly #executionPurpose: boolean;
   readonly #savedPurpose: boolean;
-  readonly #footprintProfile: typeof CURRENT_FOOTPRINT_COPY_PREPARATION_PROFILE | typeof CURRENT_FOOTPRINT_COPY_EXECUTION_PROFILE | typeof CURRENT_FOOTPRINT_COPY_SAVED_PROFILE;
+  readonly #footprintProfile: typeof CURRENT_FOOTPRINT_COPY_PREPARATION_PROFILE | typeof CURRENT_FOOTPRINT_COPY_EXECUTION_PROFILE | typeof CURRENT_FOOTPRINT_COPY_SAVED_PROFILE | typeof CURRENT_FOOTPRINT_COMBINED_RENDERER_PROFILE;
   readonly #requestLimit: number;
   readonly #native: CurrentPcbWorkerStartupNativeDependency;
   readonly #members: readonly unknown[];
@@ -240,11 +241,14 @@ class CurrentPcbWorkerStartupChannelCore {
   public constructor(internal: typeof INTERNAL_PROFILE, native: CurrentPcbWorkerStartupNativeDependency,
     wire: typeof currentPcbWorkerStartupWire, priorUsage?: CurrentPcbWorkerStartupPriorUsage) {
     if (internal !== INTERNAL_PROFILE) { throw fail("INTERNAL_PROFILE"); } this.#wire = wire;
-    this.#executionPurpose = wire === currentFootprintCopyExecutionStartupWire;
+    this.#executionPurpose = wire === currentFootprintCopyExecutionStartupWire || wire === currentFootprintCombinedStartupWire;
     this.#savedPurpose = wire === currentFootprintCopySavedStartupWire;
     this.#footprintPurpose = this.#executionPurpose || this.#savedPurpose || wire === currentFootprintCopyPreparationWire;
     const writerProfile = this.#executionPurpose ? CURRENT_FOOTPRINT_COPY_EXECUTION_PROFILE : CURRENT_FOOTPRINT_COPY_PREPARATION_PROFILE;
-    this.#footprintProfile = this.#savedPurpose ? CURRENT_FOOTPRINT_COPY_SAVED_PROFILE : writerProfile;
+    let footprintProfile: typeof CURRENT_FOOTPRINT_COPY_PREPARATION_PROFILE | typeof CURRENT_FOOTPRINT_COPY_EXECUTION_PROFILE | typeof CURRENT_FOOTPRINT_COPY_SAVED_PROFILE | typeof CURRENT_FOOTPRINT_COMBINED_RENDERER_PROFILE = writerProfile;
+    if (this.#savedPurpose) { footprintProfile = CURRENT_FOOTPRINT_COPY_SAVED_PROFILE; }
+    if (wire === currentFootprintCombinedStartupWire) { footprintProfile = CURRENT_FOOTPRINT_COMBINED_RENDERER_PROFILE; }
+    this.#footprintProfile = footprintProfile;
     this.#requestLimit = this.#footprintPurpose ? this.#footprintProfile.requestLimit : CURRENT_PCB_WORKER_STARTUP_REQUEST_LIMIT;
     this.#members = members(native); this.#native = native;
     this.#parentMethod = native.requireOriginalParent; this.#terminate = native.assertOriginalTermination;
@@ -777,6 +781,12 @@ export class CurrentFootprintCopyPreparationChannel extends CurrentPcbWorkerStar
 export class CurrentFootprintCopyExecutionChannel extends CurrentPcbWorkerStartupChannelCore {
   public constructor(native: CurrentPcbWorkerStartupNativeDependency, priorUsage?: CurrentPcbWorkerStartupPriorUsage) {
     super(INTERNAL_PROFILE, native, currentFootprintCopyExecutionStartupWire, priorUsage);
+  }
+}
+/** New sealed main/renderer birth; it cannot be obtained from an old channel. */
+export class CurrentFootprintCombinedStartupChannel extends CurrentPcbWorkerStartupChannelCore {
+  public constructor(native: CurrentPcbWorkerStartupNativeDependency, priorUsage?: CurrentPcbWorkerStartupPriorUsage) {
+    super(INTERNAL_PROFILE, native, currentFootprintCombinedStartupWire, priorUsage);
   }
 }
 /** Fixed saved-generation owner; no writer, clock or parent challenge marker. */

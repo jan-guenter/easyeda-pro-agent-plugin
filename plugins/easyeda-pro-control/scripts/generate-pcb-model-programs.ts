@@ -4,6 +4,7 @@ import { CURRENT_PCB_DIAGNOSTIC_ROOT_INVENTORY_FUNCTION } from "../server/src/cu
 import { CURRENT_PCB_STRING_PRODUCER_MARKERS_V2_FUNCTION } from "../server/src/current-pcb-string-producer-markers.ts";
 import { CURRENT_PCB_COMMON_PREFERENCE_FUNCTION, CURRENT_PCB_COMMON_PRESENTATION_FUNCTION, CURRENT_PCB_COMMON_RULES_FUNCTION } from "../server/src/current-pcb-common-state.ts";
 import { generatePackedNativeProgram } from "./native-program-packing.ts";
+import { CURRENT_PCB_COMMON_PACKET_SEEDS } from "../server/src/current-pcb-common-packet-program.ts";
 
 for (const [marker, name, source] of [
   ["MODEL STATE", "ModelStateFunction", CURRENT_PCB_DIAGNOSTIC_MODEL_STATE_FUNCTION],
@@ -15,6 +16,8 @@ for (const [marker, name, source] of [
   ["COMMON PRESENTATION", "CommonPresentationFunction", CURRENT_PCB_COMMON_PRESENTATION_FUNCTION],
   ["COMMON PREFERENCE", "CommonPreferenceFunction", CURRENT_PCB_COMMON_PREFERENCE_FUNCTION],
   ["COMMON RULES", "CommonRulesFunction", CURRENT_PCB_COMMON_RULES_FUNCTION],
+  ["COMMON PREFERENCE SEED", "CommonPreferenceSeedFunction", CURRENT_PCB_COMMON_PACKET_SEEDS.preference],
+  ["COMMON PRESENTATION SEED", "CommonPresentationSeedFunction", CURRENT_PCB_COMMON_PACKET_SEEDS.presentation],
 ] as const) {
   // oxlint-disable-next-line node/no-top-level-await -- ESM-only deterministic generation command; each bounded program retains its exact existing bytes.
   await generatePackedNativeProgram(marker, name, source);

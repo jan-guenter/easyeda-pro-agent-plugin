@@ -65,19 +65,19 @@ void test("exact209 selectors expose sixteen scoped tools without inheriting unr
   assert.deepEqual(capabilities["publicReaders"], { tool: "easyeda_control_public_readers", runtimeAdmissionRequired: true, connectedValidation: false,
     batch: { maximumMethods: 7, sharedDeadlineMilliseconds: 10_000, atomicSnapshot: false, partialSuccess: false },
     scope: "supported-and-sdk-resolved-languages-api-page-viewport-theme-toolbar-unit-and-fixed-system-library-id" });
-  assert.deepEqual(capabilities["navigation"], { enabled: true, scope: "original-owner-disposable209-opening-and-six-project-startup-purposes-only" });
+  assert.deepEqual(capabilities["navigation"], { enabled: true, scope: "original-owner-disposable209-opening-and-seven-project-startup-purposes-only" });
   assert.deepEqual(capabilities["designAccess"], { enabled: false, scope: "general-geometry-and-writers;disposable-bounded-observations-and-historical-queries-only" });
   const opening = capabilities["disposableOpening"]; assert.ok(typeof opening === "object" && opening !== null && "layerObservation" in opening);
   assert.equal(opening.layerObservation, "double-sampled-metadata-and-copper-count");
   assert.equal(Object.hasOwn(capabilities, "projectSymbolMetadata"), false);
   assert.deepEqual(capabilities["disposableWorkerStartup"], { tool: "easyeda_control_pcb209_worker_startup", validationOnly: true, connectedValidation: false,
     runtimeAdmissionRequired: true, debuggerPauseAcceptanceRequired: true, startupCompletionVerified: false,
-    scope: "separate-project-worker-constructor-footprint-copy-preparation-and-route-preparation-empty-baseline-ratline-held-import-and-continuation-purposes;no-complete-startup-or-writer-authority",
+    scope: "separate-project-worker-constructor-footprint-copy-preparation-and-route-preparation-combined-main-renderer-empty-baseline-ratline-held-import-and-continuation-purposes;no-complete-startup-or-writer-authority",
     completeLiveBaselineVerified: false, serverClockProvenanceVerified: false, cadAuthority: false });
   assert.deepEqual(capabilities["save"], { enabled: false }); assert.deepEqual(capabilities["recovery"], { enabled: false });
   assert.deepEqual(capabilities["nativeAdapters"], { enabled: true,
     scope: "identity-and-disposable209-opening-layer-primitive-selection-relations;project-worker-constructor-footprint-copy-preparation-and-route-preparation-empty-baseline-held-ratline-import-and-ratline-continuation-observations-only" });
-  assert.match(PUBLIC_UTILITIES_ONLY_SCOPE, /seven distinct disposable launch purposes/u);
+  assert.match(PUBLIC_UTILITIES_ONLY_SCOPE, /eight distinct disposable launch purposes/u);
   assert.match(PUBLIC_UTILITIES_ONLY_SCOPE, /empty-baseline purpose joins fixed common data to the original completed SQL checkpoint/u);
   assert.match(PUBLIC_UTILITIES_ONLY_SCOPE, /ratline-held-import purpose qualifies PCB construction/u);
   assert.match(PUBLIC_UTILITIES_ONLY_SCOPE, /observes a bounded first-child native creation stack/u);

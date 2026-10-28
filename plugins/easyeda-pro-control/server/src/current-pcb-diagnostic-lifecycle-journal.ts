@@ -47,7 +47,8 @@ import { CURRENT_PCB_209_PAD_SHAPES_RESULT_BYTES } from "./current-pcb-209-pad-s
 import { CURRENT_PCB_209_SELECTION_RELATIONS_RESULT_BYTES, currentPcb209SelectionRelationsComponentIdsSchema } from "./current-pcb-209-selection-relations.ts";
 import { assertNoUnresolvedCurrentPcbStringLedgers } from "./current-pcb-string-ledger-exclusion.ts";
 import { CURRENT_FOOTPRINT_MAIN_OPERATION_PREFIX, currentFootprintMainIdSchema } from "./current-footprint-main-validation.ts";
-import { currentFootprintCopyMainBackendObservationSchema } from "./current-footprint-copy-main-backend-runner.ts";
+import { CURRENT_FOOTPRINT_COMBINED_OPERATION_PREFIX, currentFootprintCombinedIdSchema } from "./current-footprint-combined-validation.ts";
+import { currentFootprintCopyMainBackendObservationSchema } from "./current-footprint-copy-main-backend-observation.ts";
 import { CURRENT_PCB_COMMON_FAILURE_MAX_BYTES, currentPcbCommonBaselineFailureSchema, currentPcbCommonBaselineResultSchema } from "./current-pcb-common-baseline-validation.ts";
 
 const DIRECTORY = "pcb-diagnostic-lifecycle-v1";
@@ -127,22 +128,34 @@ const mainIntentSchema = workerStartupIntentSchema.extend({
   schema: z.literal("easyeda-pro-control.footprint-main-launch-intent.v1"), operationId: currentFootprintMainIdSchema,
   acceptDebuggerPauseEffects: z.literal(true),
 });
-const mainBound = { ...base, operationId: currentFootprintMainIdSchema, bindingSha256: diagnosticLifecycleDigestSchema };
+const mainConstructionId = z.union([currentFootprintMainIdSchema, currentFootprintCombinedIdSchema]);
+const mainBound = { ...base, operationId: mainConstructionId, bindingSha256: diagnosticLifecycleDigestSchema };
 const mainObservationIntentSchema = z.object({ ...mainBound, schema: z.literal("easyeda-pro-control.footprint-main-construction-intent.v1") }).strict();
-const mainObservationResultSchema = z.object({ ...base, operationId: currentFootprintMainIdSchema,
+const mainObservationResultSchema = z.object({ ...base, operationId: mainConstructionId,
   schema: z.literal("easyeda-pro-control.footprint-main-construction-result.v1"), intentSha256: diagnosticLifecycleDigestSchema,
   result: currentFootprintCopyMainBackendObservationSchema }).strict();
-const mainTerminateIntentSchema = z.object({ ...mainBound, schema: z.literal("easyeda-pro-control.footprint-main-terminate-intent.v1"),
+const mainTerminateIntentSchema = z.object({ ...mainBound, operationId: currentFootprintMainIdSchema, schema: z.literal("easyeda-pro-control.footprint-main-terminate-intent.v1"),
   confirmTerminateOriginalDiagnosticJob: z.literal(true) }).strict();
 const mainTerminateAckSchema = z.object({ ...base, operationId: currentFootprintMainIdSchema,
   schema: z.literal("easyeda-pro-control.footprint-main-terminate-acknowledged.v1"), intentSha256: diagnosticLifecycleDigestSchema,
   terminationDispatched: z.literal(true), terminationProved: z.literal(false) }).strict();
+const combinedIntentSchema = workerStartupIntentSchema.extend({
+  schema: z.literal("easyeda-pro-control.footprint-combined-launch-intent.v1"), operationId: currentFootprintCombinedIdSchema,
+  acceptDebuggerPauseEffects: z.literal(true),
+});
+const combinedAbortIntentSchema = z.object({ ...base, operationId: currentFootprintCombinedIdSchema,
+  schema: z.literal("easyeda-pro-control.footprint-combined-abort-intent.v1"), bindingSha256: diagnosticLifecycleDigestSchema,
+  previousRecordsSha256: diagnosticLifecycleDigestSchema, confirmAbortOriginalCombinedJob: z.literal(true) }).strict();
+const combinedAbortAckSchema = z.object({ ...base, operationId: currentFootprintCombinedIdSchema,
+  schema: z.literal("easyeda-pro-control.footprint-combined-abort-acknowledged.v1"), intentSha256: diagnosticLifecycleDigestSchema,
+  abortDispatched: z.literal(true), terminationProved: z.literal(false) }).strict();
+const footprintRouteId = z.union([currentFootprintCopyRoutePreparationIdSchema, currentFootprintCombinedIdSchema]);
 const footprintStartupId = z.union([currentPcb209WorkerStartupLifecycleIdSchema, currentFootprintCopyPreparationIdSchema]);
 const legacyStartupId = z.union([currentPcbWorkerStartupLifecycleIdSchema, footprintStartupId]);
-const startupId = z.union([legacyStartupId, currentFootprintCopyRoutePreparationIdSchema]);
+const startupId = z.union([legacyStartupId, footprintRouteId]);
 const startupOpeningId = z.union([startupId, currentPcb209EmptyStartupIdSchema, currentPcb209RatlineStartupIdSchema, currentPcb209RatlineContinuationIdSchema]);
 const intentSchema = z.discriminatedUnion("schema", [diagnosticIntentSchema, stringIntentSchema, workerStartupIntentSchema,
-  workerStartup209IntentSchema, workerStartupEmpty209IntentSchema, workerStartupRatline209IntentSchema, workerStartupContinuation209IntentSchema, workerStartupFootprint209IntentSchema, workerStartupFootprintRoute209IntentSchema, mainIntentSchema]);
+  workerStartup209IntentSchema, workerStartupEmpty209IntentSchema, workerStartupRatline209IntentSchema, workerStartupContinuation209IntentSchema, workerStartupFootprint209IntentSchema, workerStartupFootprintRoute209IntentSchema, mainIntentSchema, combinedIntentSchema]);
 const workerStartupHandoffIntentSchema = z.object({ schema: z.literal("easyeda-pro-control.pcb-worker-startup-handoff-intent.v1"), ...base,
   operationId: startupOpeningId, bindingSha256: diagnosticLifecycleDigestSchema,
   scriptResultSha256: diagnosticLifecycleDigestSchema,
@@ -379,7 +392,7 @@ const workerStartupOpeningResultSchema = z.object({
   operationId: startupOpeningId, intentSha256: diagnosticLifecycleDigestSchema,
   result: z.union([workerStartupResultSchema, workerStartup209ResultSchema, workerStartupFootprintRouteResultSchema]), executionAuthorized: z.literal(false),
 }).strict().refine(value => Buffer.byteLength(canonicalJson(value.result)) <= DIAGNOSTIC_OBSERVATION_MAX_BYTES &&
-  value.operationId.startsWith(CURRENT_FOOTPRINT_COPY_ROUTE_PREPARATION_OPERATION_PREFIX) === (value.result.construction.profile === "private.current-footprint-copy-construction.v1") &&
+  (value.operationId.startsWith(CURRENT_FOOTPRINT_COPY_ROUTE_PREPARATION_OPERATION_PREFIX) || value.operationId.startsWith(CURRENT_FOOTPRINT_COMBINED_OPERATION_PREFIX)) === (value.result.construction.profile === "private.current-footprint-copy-construction.v1") &&
   (value.operationId.startsWith(CURRENT_FOOTPRINT_COPY_PREPARATION_OPERATION_PREFIX) || value.operationId.startsWith(CURRENT_PCB_209_WORKER_STARTUP_OPERATION_PREFIX) || value.operationId.startsWith(CURRENT_PCB_209_EMPTY_STARTUP_OPERATION_PREFIX) || value.operationId.startsWith(CURRENT_PCB_209_RATLINE_STARTUP_OPERATION_PREFIX) || value.operationId.startsWith(CURRENT_PCB_209_RATLINE_CONTINUATION_OPERATION_PREFIX)) ===
     (value.result.construction.profile === "private.current-pcb209-worker-construction.v1"), "Startup opening generation or bound differs.");
 const workerStartupEmptyIntentSchema = z.object({
@@ -561,16 +574,16 @@ const pcbOpenResultSchema = z.object({
   intentSha256: diagnosticLifecycleDigestSchema, result: z.record(z.string(), z.unknown()), executionAuthorized: z.literal(false),
 }).strict().refine(value => Buffer.byteLength(canonicalJson(value.result)) <= DIAGNOSTIC_OBSERVATION_MAX_BYTES, "PCB opening result exceeds its bound.");
 const footprintRouteIntentSchema = z.object({
-  schema: z.literal("easyeda-pro-control.footprint-copy-route-intent.v1"), ...base, operationId: currentFootprintCopyRoutePreparationIdSchema,
+  schema: z.literal("easyeda-pro-control.footprint-copy-route-intent.v1"), ...base, operationId: footprintRouteId,
   bindingSha256: diagnosticLifecycleDigestSchema, assignmentsResultSha256: diagnosticLifecycleDigestSchema, actorResultSha256: diagnosticLifecycleDigestSchema,
 }).strict();
 const footprintRouteResultSchema = z.object({
-  schema: z.literal("easyeda-pro-control.footprint-copy-route-result.v1"), ...base, operationId: currentFootprintCopyRoutePreparationIdSchema,
+  schema: z.literal("easyeda-pro-control.footprint-copy-route-result.v1"), ...base, operationId: footprintRouteId,
   intentSha256: diagnosticLifecycleDigestSchema, result: recordedCurrentFootprintCopyRouteObservationSchema,
   executionAuthorized: z.literal(false), saveAuthorized: z.literal(false),
 }).strict();
 const footprintRouteFailureSchema = z.object({
-  schema: z.literal("easyeda-pro-control.footprint-copy-route-failure.v1"), ...base, operationId: currentFootprintCopyRoutePreparationIdSchema,
+  schema: z.literal("easyeda-pro-control.footprint-copy-route-failure.v1"), ...base, operationId: footprintRouteId,
   intentSha256: diagnosticLifecycleDigestSchema, failedStage: z.enum(["cache-construction", "state", "producers", "dependencies", "callbacks", "destinations", "ui", "clock-registration", "manager", "peer", "reproof", "windows-clock", "clock-registration-sample"]),
   error: z.string().max(4096), completedObservations: z.record(z.string(), z.unknown()), executionAuthorized: z.literal(false), saveAuthorized: z.literal(false),
 }).strict().refine(value => Buffer.byteLength(canonicalJson(value)) <= CURRENT_FOOTPRINT_COPY_ROUTE_RESULT_MAX_BYTES, "Route failure exceeds its bound.");
@@ -638,6 +651,8 @@ export const diagnosticLifecycleRecordSchemas = {
   "main-construction-result.json": mainObservationResultSchema,
   "main-terminate-intent.json": mainTerminateIntentSchema,
   "main-terminate-acknowledged.json": mainTerminateAckSchema,
+  "combined-abort-intent.json": combinedAbortIntentSchema,
+  "combined-abort-acknowledged.json": combinedAbortAckSchema,
   "observation-failure.json": observationFailureSchema,
 } as const;
 export type DiagnosticLifecycleRecords = { readonly [Key in keyof typeof diagnosticLifecycleRecordSchemas]?: z.infer<(typeof diagnosticLifecycleRecordSchemas)[Key]> };
@@ -789,18 +804,30 @@ function validateChain(operation: DiagnosticLifecycleOperation): void {
   const startupLegacy209 = intent?.schema === "easyeda-pro-control.pcb209-worker-startup-launch-intent.v1";
   const startupRatline209 = intent?.schema === "easyeda-pro-control.pcb209-ratline-startup-launch-intent.v1";
   const startupContinuation209 = intent?.schema === "easyeda-pro-control.pcb209-ratline-continuation-launch-intent.v1";
+  const combinedPurpose = intent?.schema === "easyeda-pro-control.footprint-combined-launch-intent.v1";
+  requireValue(!combinedPurpose || operation.operationId.startsWith(CURRENT_FOOTPRINT_COMBINED_OPERATION_PREFIX), "COMBINED_PURPOSE_ID");
+  requireValue(intent === undefined || combinedPurpose || !operation.operationId.startsWith(CURRENT_FOOTPRINT_COMBINED_OPERATION_PREFIX), "RESERVED_COMBINED_PURPOSE_ID");
   const mainPurpose = intent?.schema === "easyeda-pro-control.footprint-main-launch-intent.v1";
   requireValue(!mainPurpose || operation.operationId.startsWith(CURRENT_FOOTPRINT_MAIN_OPERATION_PREFIX), "MAIN_PURPOSE_ID");
   requireValue(intent === undefined || mainPurpose || !operation.operationId.startsWith(CURRENT_FOOTPRINT_MAIN_OPERATION_PREFIX), "RESERVED_MAIN_PURPOSE_ID");
   const mainObservation = records["main-construction-intent.json"], mainResult = records["main-construction-result.json"];
   const mainAck = records["main-terminate-acknowledged.json"], mainTerminate = records["main-terminate-intent.json"];
-  requireValue(mainObservation === undefined || mainPurpose && binding !== undefined && binding.launchAcknowledged && mainObservation.bindingSha256 === sha256Json(binding), "MAIN_CONSTRUCTION_CHAIN");
+  requireValue(mainObservation === undefined || (mainPurpose || combinedPurpose) && binding !== undefined && binding.launchAcknowledged && mainObservation.bindingSha256 === sha256Json(binding), "MAIN_CONSTRUCTION_CHAIN");
   requireValue(mainResult === undefined || mainObservation !== undefined && mainResult.intentSha256 === sha256Json(mainObservation), "MAIN_CONSTRUCTION_RESULT_CHAIN");
   requireValue(mainTerminate === undefined || mainPurpose && binding !== undefined && mainTerminate.bindingSha256 === sha256Json(binding) && close === undefined, "MAIN_TERMINATE_CHAIN");
   requireValue(mainAck === undefined || mainTerminate !== undefined && mainAck.intentSha256 === sha256Json(mainTerminate), "MAIN_TERMINATE_ACK_CHAIN");
+  const combinedAbort = records["combined-abort-intent.json"], combinedAck = records["combined-abort-acknowledged.json"];
+  requireValue(combinedAbort === undefined || combinedPurpose && binding !== undefined &&
+    combinedAbort.bindingSha256 === sha256Json(binding), "COMBINED_ABORT_CHAIN");
+  requireValue(combinedAck === undefined || combinedAbort !== undefined && combinedAck.intentSha256 === sha256Json(combinedAbort), "COMBINED_ABORT_ACK_CHAIN");
+  if (combinedAbort !== undefined) {
+    const laterCleanup = new Set(["combined-abort-intent.json", "combined-abort-acknowledged.json", "terminated.json", "release-intent.json", "released.json"]);
+    const beforeAbort = Object.fromEntries(Object.entries(records).filter(([name]) => !laterCleanup.has(name)));
+    requireValue(sha256Json(beforeAbort) === combinedAbort.previousRecordsSha256, "COMBINED_ABORT_PREFIX_CHANGED");
+  }
   const startupFootprintRoute209 = intent?.schema === "easyeda-pro-control.footprint-copy-route-preparation-launch-intent.v1";
   const startupFootprint209 = intent?.schema === "easyeda-pro-control.footprint-copy-preparation-launch-intent.v1";
-  const startup209 = startupLegacy209 || startupEmpty209 || startupRatline209 || startupContinuation209 || startupFootprint209 || startupFootprintRoute209;
+  const startup209 = startupLegacy209 || startupEmpty209 || startupRatline209 || startupContinuation209 || startupFootprint209 || startupFootprintRoute209 || combinedPurpose;
   const startup206 = intent?.schema === "easyeda-pro-control.pcb-worker-startup-launch-intent.v1";
   const startupPurpose = startup206 || startup209;
   requireValue(!startupFootprintRoute209 || operation.operationId.startsWith(CURRENT_FOOTPRINT_COPY_ROUTE_PREPARATION_OPERATION_PREFIX), "FOOTPRINT_ROUTE_PURPOSE_ID");
@@ -850,9 +877,10 @@ function validateChain(operation: DiagnosticLifecycleOperation): void {
   requireValue(handedOff === undefined || handoff !== undefined && handedOff.intentSha256 === sha256Json(handoff), "WORKER_STARTUP_HANDOFF_RESULT_CHAIN");
   const startupOpened = records["worker-startup-opening-result.json"], startupOpening = records["worker-startup-opening-intent.json"];
   let expectedConstruction = startup209 ? "private.current-pcb209-worker-construction.v1" : "private.current-pcb-worker-construction.v1";
-  if (startupFootprintRoute209) { expectedConstruction = "private.current-footprint-copy-construction.v1"; }
+  if (startupFootprintRoute209 || combinedPurpose) { expectedConstruction = "private.current-footprint-copy-construction.v1"; }
   requireValue(startupOpened === undefined || startupOpened.result.construction.profile === expectedConstruction,
     "WORKER_STARTUP_CONSTRUCTION_GENERATION");
+  requireValue(!combinedPurpose || startupOpening === undefined || mainResult !== undefined, "COMBINED_MAIN_BEFORE_PROJECT");
   requireValue(startupOpening === undefined || startupPurpose && handedOff !== undefined && binding !== undefined &&
     startupOpening.handoffResultSha256 === sha256Json(handedOff) && startupOpening.bindingSha256 === sha256Json(binding), "WORKER_STARTUP_OPENING_CHAIN");
   requireValue(startupOpened === undefined || startupOpening !== undefined && startupOpened.intentSha256 === sha256Json(startupOpening) &&
@@ -909,7 +937,7 @@ function validateChain(operation: DiagnosticLifecycleOperation): void {
     footprintResult.intentSha256 === sha256Json(footprint) && canonicalJson(footprintResult.result.identity) === canonicalJson(startupOpened.result.workerIdentity),
   "WORKER_STARTUP_FOOTPRINT_RESULT_CHAIN");
   const footprintRoute = records["footprint-copy-route-intent.json"], footprintRouteFailure = records["footprint-copy-route-failure.json"], footprintRouteResult = records["footprint-copy-route-result.json"];
-  requireValue(footprintRoute === undefined || startupFootprintRoute209 && binding !== undefined && assigned !== undefined && actorResult !== undefined &&
+  requireValue(footprintRoute === undefined || (startupFootprintRoute209 || combinedPurpose) && binding !== undefined && assigned !== undefined && actorResult !== undefined &&
     footprintRoute.bindingSha256 === sha256Json(binding) && footprintRoute.assignmentsResultSha256 === sha256Json(assigned) && footprintRoute.actorResultSha256 === sha256Json(actorResult), "FOOTPRINT_ROUTE_CHAIN");
   requireValue(footprintRouteResult === undefined || footprintRoute !== undefined && binding !== undefined && startupOpened !== undefined &&
     footprintRouteResult.intentSha256 === sha256Json(footprintRoute) && canonicalJson(footprintRouteResult.result.state.identity) === canonicalJson(startupOpened.result.workerIdentity) &&

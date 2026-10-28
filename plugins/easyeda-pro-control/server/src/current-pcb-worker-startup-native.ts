@@ -302,7 +302,7 @@ export function currentPcbWorkerStartupNativeSource(): string {
   return `// BEGIN GENERATED WORKER STARTUP PROTOCOL
 // Generated from current-pcb-worker-startup-native.ts. Do not edit this block.
 public static class EasyedaWorkerStartupProtocol {
-  public const string UiActorClockFunction=${literal(CURRENT_PCB_WORKER_STARTUP_UI_ACTOR_CLOCK_FUNCTION)};
+${packedProgram("UiActorClockFunction", CURRENT_PCB_WORKER_STARTUP_UI_ACTOR_CLOCK_FUNCTION, true)}
 ${packedProgram("PcbOpeningFunction", CURRENT_PCB_DIAGNOSTIC_PCB_OPENING_FUNCTION, true)}
 ${packedProgram("ProjectOpening209Function", CURRENT_PCB_209_STARTUP_OPENING_FUNCTION, true)}
 ${packedProgram("RatlinePcbOpening209Function", CURRENT_PCB_209_RATLINE_OPENING_FUNCTION, true)}
