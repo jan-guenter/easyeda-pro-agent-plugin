@@ -1,5 +1,6 @@
 /** Exact209 selected transitive producer metadata, from the pinned worker.
  * These are observation profiles, not completion or writer authority. */
+import { CURRENT_FOOTPRINT_COPY_BACKEND_CACHE_PROFILES } from "./current-footprint-copy-backend-cache-profiles.ts";
 import { freezeDeep } from "./sqlite-inventory-core.ts";
 
 export const CURRENT_FOOTPRINT_COPY_DEPENDENCY_PROFILES = freezeDeep([
@@ -56,4 +57,5 @@ export const CURRENT_FOOTPRINT_COPY_DEPENDENCY_PROFILES = freezeDeep([
   {"key":"KP.subscribe","name":"subscribe","kind":"method","async":false,"arity":2,"lineNumber":0,"columnNumber":9935,"bytes":117,"sha256":"450d1d293308163521ccbbfc41dc0451d2390625dd6c288f4d1261a63d1c1bf5","parent":null},
   {"key":"Vc.onEnd","name":"onEnd","kind":"method","async":false,"arity":0,"lineNumber":4,"columnNumber":3218,"bytes":9,"sha256":"8a50e13f478e299fcb4ee92f5e56fe26a2a669480d6f75b16a293c86fa7de8e6","parent":null},
   {"key":"Gd.getFlowParse","name":"getFlowParse","kind":"method","async":false,"arity":3,"lineNumber":110,"columnNumber":6127,"bytes":828,"sha256":"73b0e0541118ecd7aac7e62fba245364f69d1c77c36cecb2b76dee1e1ad4db97","parent":null},
+  ...CURRENT_FOOTPRINT_COPY_BACKEND_CACHE_PROFILES,
 ] as const);

@@ -2,7 +2,8 @@
 import assert from "node:assert/strict";
 import { test } from "node:test";
 import vm from "node:vm";
-import { CURRENT_FOOTPRINT_COPY_CREATE_METHOD_CALLS as CALLS, CURRENT_FOOTPRINT_COPY_CREATE_METHOD_PROFILES as PROFILES,
+import { CURRENT_FOOTPRINT_COPY_CREATE_METHOD_CALLS as CALLS, CURRENT_FOOTPRINT_COPY_NATIVE_CREATE_CALL as CREATE,
+  CURRENT_FOOTPRINT_COPY_CREATE_METHOD_PROFILES as PROFILES,
   decodeCurrentFootprintCopyCreateMethodArray, decodeCurrentFootprintCopyCreateMethodProperties } from "../src/current-footprint-copy-create-bindings.ts";
 import { FOOTPRINT_CREATE_SOURCE_FIXTURE as SOURCE } from "./helpers/current-footprint-copy-create-source-fixture.ts";
 
@@ -26,12 +27,12 @@ function methodReply(index: number): { result: ReturnType<typeof property>[]; in
     { name: "[[Scopes]]", value: { type: "object", subtype: "internal#scopeList", className: "Array", description: "Scopes[2]", objectId: `scopes-${String(index)}` } },
   ] };
 }
-function fixture(): vm.Context {
+function fixture(createBody = "calls++;"): vm.Context {
   const context = vm.createContext({});
   vm.runInContext(`let calls=0;
 class Gd{uploadLocal(){calls++;}}class Lg extends Gd{}
 class Pi{get newTicket(){calls++;return 1;}}class ar extends Pi{}
-class Tg extends ar{create(){calls++;}buildString(){calls++;}canvasString(){calls++;}getCanvasData(){calls++;}get(){calls++;}}
+class Tg extends ar{async create(argument){${createBody}}buildString(){calls++;}canvasString(){calls++;}getCanvasData(){calls++;}get(){calls++;}}
 class zy{}class Vc extends zy{}class ja extends Vc{setDoctype(){calls++;}}
 const bus={},manager=new Tg,consistency=new ja,constructors=[Tg,ar,Pi,ja,Vc,zy];
 globalThis.PROJECT=new Lg;PROJECT.workerBus=bus;PROJECT.footprint=manager;PROJECT.consistencyManager=consistency;
@@ -50,6 +51,45 @@ void test("create method capture retains eight original callable objects without
   assert.equal(vm.runInContext("calls", context), 0); assert.equal(vm.runInContext("methods.length", context), 8);
   assert.equal(vm.runInContext("methods[0]===Tg.prototype.create&&methods[5]===Gd.prototype.uploadLocal&&methods[6]===ja.prototype.setDoctype&&methods[7]===Object.getOwnPropertyDescriptor(Pi.prototype,'newTicket').get", context), true);
   assert.equal(CALLS.capture.arguments, 4); assert.equal(CALLS.recheck.arguments, 5);
+});
+
+function create(context: vm.Context): Promise<unknown> {
+  // oxlint-disable-next-line typescript/no-unsafe-type-assertion -- This exact embedded async program always returns a Promise; the synthetic VM supplies no external execution owner.
+  return vm.runInContext(`(${CREATE.program}).call(PROJECT,bus,manager,consistency,constructors,methods,PROJECT.uuid,argument)`, context) as Promise<unknown>;
+}
+function createFixture(body: string): vm.Context {
+  const context = fixture(body);
+  vm.runInContext(`PROJECT.uuid="${"1".repeat(64)}";const argument={uuid:"${"a".repeat(16)}",path:PROJECT.uuid,isProject:true,docType:4,
+title:"Copy",display_title:"Copy",description:"",custom_tags:"[]",source:"",version:""};`, context);
+  capture(context); return context;
+}
+void test("fixed native create passes only its one argument and preserves the complete bounded JSON result", async () => {
+  const context = createFixture("calls++;if(this!==manager||arguments.length!==1||argument!==globalThis.expected)throw Error('native arguments');return {success:true,result:{creator:{uuid:undefined,username:undefined},value:'Ω',nested:[1,null]}};");
+  vm.runInContext("globalThis.expected=argument", context);
+  assert.equal(await create(context), '{"success":true,"result":{"creator":{},"value":"Ω","nested":[1,null]}}');
+  assert.equal(vm.runInContext("calls", context), 1);
+});
+void test("fixed native create refuses changed receivers and argument accessors before its sole native invocation", async () => {
+  for (const change of ["methods[0]=methods[1]", "PROJECT.uuid='wrong'", "argument.path='wrong'", "argument.isProject=false",
+    "argument.extra=true", "argument.display_title='wrong'", "argument.custom_tags='[null]'",
+    "Object.defineProperty(argument,'description',{get(){calls++;return '';}})",
+    "Tg.prototype.create=async()=>{calls++;}"]) {
+    const context = createFixture("calls++;return {success:true};"); vm.runInContext(change, context);
+    await assert.rejects(create(context), /FOOTPRINT_COPY_CREATE_BINDING/u); assert.equal(vm.runInContext("calls", context), 0);
+  }
+});
+void test("fixed native create retains ambiguity after post-await replacement and avoids result getters", async () => {
+  for (const body of ["calls++;await Promise.resolve();Tg.prototype.create=async()=>{};return {success:true};",
+    "calls++;return Object.defineProperty({success:true},'result',{enumerable:true,get(){calls++;return {};}});"]) {
+    const context = createFixture(body); await assert.rejects(create(context), /FOOTPRINT_COPY_CREATE_BINDING/u);
+    assert.equal(vm.runInContext("calls", context), 1);
+  }
+});
+void test("fixed native create preserves shared actor objects while rejecting cycles without a second invocation", async () => {
+  const same = createFixture("calls++;const actor={uuid:undefined};return {success:true,result:{creator:actor,modifier:actor}};");
+  assert.equal(await create(same), '{"success":true,"result":{"creator":{},"modifier":{}}}');
+  const cycle = createFixture("calls++;const result={success:true};result.cycle=result;return result;");
+  await assert.rejects(create(cycle), /FOOTPRINT_COPY_CREATE_BINDING/u); assert.equal(vm.runInContext("calls", cycle), 1);
 });
 
 void test("create method recheck rejects replacement receivers, shadow methods, accessors and changed original functions", () => {

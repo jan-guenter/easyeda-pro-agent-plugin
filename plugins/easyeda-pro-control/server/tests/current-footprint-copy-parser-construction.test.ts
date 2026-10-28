@@ -11,7 +11,7 @@ async function retain(work: Promise<unknown>): Promise<void> {
     // The original promise remains the asserted operation.
   }
 }
-const SETUP = 'PROJECT.uuid="a".repeat(64);PROJECT._branchUuid="b".repeat(32);globalThis._TAB_ID_="window_1";class Cache{};PROJECT.cache=new Cache;PROJECT.localCache=new Cache;';
+const SETUP = 'PROJECT.uuid="a".repeat(64);PROJECT._branchUuid="b".repeat(32);globalThis._TAB_ID_="window_1";class bb{};PROJECT.cache=new bb;PROJECT.localCache=new bb;';
 
 void test("separate copy fixture retains the exact registration source and executable offsets", () => {
   const source = footprintCopyConstructionFixtureSource();

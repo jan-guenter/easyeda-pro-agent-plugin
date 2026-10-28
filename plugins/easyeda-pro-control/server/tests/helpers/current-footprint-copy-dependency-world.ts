@@ -12,7 +12,10 @@ export function footprintDependencyWorldSource(): string {
     const project=Object.create(scope.Lg.prototype),manager=Object.create(scope.Tg.prototype),consistency=Object.create(scope.ja.prototype),bus={};
     const constructors=[scope.Tg,scope.ar,scope.Pi,scope.ja,scope.Vc,scope.zy],lexicals=[stop,stop,scope.qe,scope.Qe,scope.Ke,scope.Ni,scope.cg,{}, {},'|\\n'];
     const notification=Object.create(scope.JP.prototype);notification.uuid='12345678-1234-1234-1234-123456789abc';notification.rpcTicket=1;
-    Object.assign(project,{workerBus:bus,footprint:manager,consistencyManager:consistency,wsBus:notification,cache:{},localCache:{}});Object.assign(manager,{projectManager:project,user:undefined});
+    Object.assign(project,{workerBus:bus,footprint:manager,consistencyManager:consistency,wsBus:notification,uuid:"a".repeat(64),cache:Object.create(scope.bb.prototype),localCache:Object.create(scope.bb.prototype)});Object.assign(manager,{projectManager:project,user:undefined});
+    globalThis.Cache=class Cache{};for(const key of ['put','match','delete'])Object.defineProperty(Cache.prototype,key,{value:stop,writable:true,enumerable:true,configurable:true});
+    Object.assign(project.cache,{cacheName:'project_'+project.uuid+'_v6',cache:Object.create(Cache.prototype)});
+    Object.assign(project.localCache,{cacheName:'localProject_'+project.uuid+'_v1',cache:Object.create(Cache.prototype)});
     globalThis.PROJECT=project;globalThis._TAB_ID_='tab';globalThis['/tab/notify']=notification;
   `;
 }

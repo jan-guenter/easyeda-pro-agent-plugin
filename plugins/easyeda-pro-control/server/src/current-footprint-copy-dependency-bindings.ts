@@ -1,5 +1,6 @@
 /** Descriptor-only transitive capture. No lazy bus getter, serializer, parser,
  * cache writer, buffered upload callback or notification producer is invoked. */
+import { CURRENT_FOOTPRINT_COPY_BACKEND_CACHE_BINDING, CURRENT_FOOTPRINT_COPY_BACKEND_CACHE_NATIVE_PROFILES } from "./current-footprint-copy-backend-cache.ts";
 import { createHash } from "node:crypto";
 import { z } from "zod";
 import { CURRENT_FOOTPRINT_COPY_DEPENDENCY_PROFILES as PROFILES } from "./current-footprint-copy-dependency-profiles.ts";
@@ -56,11 +57,11 @@ const uuid=own(notification,"uuid"),ticket=own(notification,"rpcTicket");
 if(typeof uuid!=="string"||!/^[a-f\d]{8}-[a-f\d]{4}-[a-f\d]{4}-[a-f\d]{4}-[a-f\d]{12}$/.test(uuid)||!Number.isSafeInteger(ticket)||Object.is(ticket,-0)||ticket<0||ticket>=Number.MAX_SAFE_INTEGER)bad();
 selected.push(notification,object(own(project,"cache")),object(own(project,"localCache")));
 const verify=()=>{for(const [o,p]of parents)if(Object.getPrototypeOf(o)!==p)bad();for(const [o,k,d]of seen){const n=Object.getOwnPropertyDescriptor(o,k);if(d===undefined?n!==undefined:!n||d.writable!==n.writable||d.enumerable!==n.enumerable||d.configurable!==n.configurable||!Object.is(d.value,n.value)||d.get!==n.get||d.set!==n.set||Object.hasOwn(d,"value")!==Object.hasOwn(n,"value"))bad();}};`;
-const body = `${helper}\n${selection}\n${inheritance}\n${runtimeMethods}\n${notification}`;
+const body = `${helper}\n${selection}\n${inheritance}\n${runtimeMethods}\n${notification}\n${CURRENT_FOOTPRINT_COPY_BACKEND_CACHE_BINDING}`;
 /** Capture uses the original direct lexical bundle. Recheck keeps all seven original object associations explicit. */
 export const CURRENT_FOOTPRINT_COPY_DEPENDENCY_CALLS = freezeDeep({
   capture: { program: `function(project,bus,manager,consistency,constructors,lexicals){${body}\nverify();return selected;}`, arguments: 6, returnByValue: false },
-  recheck: { program: `function(project,bus,manager,consistency,constructors,lexicals,original){${body}\narray(original,${String(PROFILES.length + 3)});for(let i=0;i<selected.length;i++)if(own(original,String(i))!==selected[i])bad();verify();return true;}`, arguments: 7, returnByValue: true },
+  recheck: { program: `function(project,bus,manager,consistency,constructors,lexicals,original){${body}\narray(original,${String(PROFILES.length + 9)});for(let i=0;i<selected.length;i++)if(own(original,String(i))!==selected[i])bad();verify();return true;}`, arguments: 7, returnByValue: true },
 });
 const token = z.string().regex(/^[A-Za-z\d_.:-]{1,256}$/u);
 const text = z.string().max(16_384).refine(value => value.isWellFormed());
@@ -71,7 +72,7 @@ const property = z.object({ name: text, value: remote, writable: z.boolean(), co
 const internal = z.object({ name: text, value: remote }).strict();
 function need(condition: boolean): asserts condition { if (!condition) { throw new Error("FOOTPRINT_COPY_DEPENDENCY_METADATA"); } }
 export function decodeCurrentFootprintCopyDependencies(input: unknown): readonly string[] {
-  const count = PROFILES.length + 3;
+  const count = PROFILES.length + 9;
   const reply = z.object({ result: z.array(property).length(count + 1), internalProperties: z.array(internal).length(1) }).strict()
     .parse(captureCurrentPcbStringClockReply(input).value);
   const fields = new Map(reply.result.map(item => [item.name, item])); need(fields.size === count + 1);
@@ -88,8 +89,21 @@ export function decodeCurrentFootprintCopyDependencies(input: unknown): readonly
     const item = fields.get(String(index)), value = item?.value;
     need(item !== undefined && item.writable && item.configurable && item.enumerable && value?.type === "object" &&
       value.objectId !== undefined && value.value === undefined && value.subtype === undefined &&
-      value.className === (index === PROFILES.length ? "JP" : "Cache"));
+      value.className === (index === PROFILES.length ? "JP" : "bb"));
   }
+  for (const index of [PROFILES.length + 3, PROFILES.length + 4]) {
+    const item = fields.get(String(index)), value = item?.value;
+    need(item !== undefined && item.writable && item.configurable && item.enumerable && value?.type === "object" &&
+      value.className === "Cache" && value.objectId !== undefined && value.value === undefined && value.subtype === undefined);
+  }
+  for (const [offset, expected] of CURRENT_FOOTPRINT_COPY_BACKEND_CACHE_NATIVE_PROFILES.entries()) {
+    const item = fields.get(String(PROFILES.length + 5 + offset)), value = item?.value;
+    need(item !== undefined && item.writable && item.configurable && item.enumerable && value?.type === "function" &&
+      value.className === "Function" && value.objectId !== undefined && value.value === undefined && value.subtype === undefined &&
+      value.description === `function ${expected.name}() { [native code] }`);
+  }
+  const handles = [...fields.values()].filter(item => item.name !== "length").map(item => item.value.objectId);
+  need(new Set(handles).size === count && !handles.includes(undefined));
   const parent = reply.internalProperties[0];
   need(new Set(ids).size === ids.length && parent?.name === "[[Prototype]]" && parent.value.type === "object" &&
     parent.value.subtype === "array" && parent.value.className === "Array" && parent.value.description === "Array(0)" && parent.value.objectId !== undefined);
@@ -118,4 +132,14 @@ export function decodeCurrentFootprintCopyDependencyFunction(input: unknown, scr
     parent?.type === (expected.async ? "object" : "function") && parent.objectId !== undefined &&
     scopes?.type === "object" && scopes.subtype === "internal#scopeList" && scopes.className === "Array" && scopes.objectId !== undefined &&
     /^Scopes\[[1-8]\]$/u.test(scopes.description ?? "")); return scopes.objectId;
+}
+
+export function decodeCurrentFootprintCopyDependencyNativeFunctions(input: unknown): readonly string[] {
+  decodeCurrentFootprintCopyDependencies(input);
+  const reply = z.object({ result: z.array(property), internalProperties: z.array(internal) }).strict()
+    .parse(captureCurrentPcbStringClockReply(input).value);
+  return Object.freeze(CURRENT_FOOTPRINT_COPY_BACKEND_CACHE_NATIVE_PROFILES.map((_, index) => {
+    const id = reply.result.find(item => item.name === String(PROFILES.length + 5 + index))?.value.objectId;
+    need(id !== undefined); return id;
+  }));
 }

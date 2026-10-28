@@ -3,7 +3,10 @@
 /** Original-event capture through the fixed startup transport. Peer exclusion,
  * create/Save and writer permits remain outside this class. */
 import { z } from "zod";
-import { isOriginalFootprintExecutionConstructionTransport, isOriginalFootprintPreparationConstructionTransport } from "./current-footprint-copy-construction-purpose.ts";
+import { isOriginalFootprintExecutionConstructionTransport, isOriginalFootprintPreparationConstructionTransport, isOriginalFootprintSavedConstructionTransport, originalFootprintExecutionConstructionProjectUuid, requestFootprintExecutionConstructionCache } from "./current-footprint-copy-construction-purpose.ts";
+import { CurrentFootprintCopyCacheConstructionRunner } from "./current-footprint-copy-cache-construction-runner.ts";
+import type { CurrentFootprintCopyCacheConstructionObservation, CurrentFootprintCopyCacheConstructionTransport } from "./current-footprint-copy-cache-construction-runner.ts";
+import { CURRENT_FOOTPRINT_COPY_SAVED_PROFILE } from "./current-footprint-copy-saved-profile.ts";
 import { CURRENT_FOOTPRINT_COPY_PREPARATION_PROFILE } from "./current-footprint-copy-preparation-profile.ts";
 import { CURRENT_FOOTPRINT_COPY_EXECUTION_PROFILE } from "./current-footprint-copy-execution-profile.ts";
 import { createCurrentFootprintCopyTransactionClockEvents } from "./current-footprint-copy-clock-route.ts";
@@ -32,12 +35,16 @@ import { CURRENT_FOOTPRINT_COPY_ASYNC_CALLS, decodeCurrentFootprintCopyAsyncFunc
 import { CurrentFootprintCopyAsyncRunner } from "./current-footprint-copy-async-runner.ts";
 import type { CurrentFootprintCopyAsyncObservation, CurrentFootprintCopyConstructedAsyncObservation, CurrentFootprintCopyRegisteredAsyncObservation } from "./current-footprint-copy-async-runner.ts";
 import type { CurrentFootprintSourcePlan } from "./current-footprint-source-plan.ts";
+import { currentFootprintCopySavedSourceCommand } from "./current-footprint-copy-saved-source-command.ts";
 import { currentFootprintCopySourceCommand } from "./current-footprint-copy-source-command.ts";
 import { CURRENT_FOOTPRINT_COPY_SOURCE_READ_LIMITS } from "./current-footprint-copy-source-read.ts";
 import { CurrentFootprintSourceReplyCapture } from "./current-footprint-source-reply-capture.ts";
 import type { CurrentFootprintCopySourceReadRequest } from "./current-footprint-copy-source-read.ts";
 import { CurrentFootprintSourceReadRunner } from "./current-footprint-source-read-runner.ts";
 import type { CurrentFootprintSourceReadPacket } from "./current-footprint-source-read-runner.ts";
+import type { CurrentFootprintCopySourceReadTransport } from "./current-footprint-copy-source-read-runner.ts";
+import { currentFootprintCopyV2SavedTarget } from "./current-footprint-copy-v2-saved-source.ts";
+import type { CurrentFootprintCopyV2SavedProjection } from "./current-footprint-copy-v2-saved-source.ts";
 import { types } from "node:util";
 import { CURRENT_PCB_209_STARTUP_TIMING, currentPcbStartupMonotonicMs, currentPcbStartupWindowObservation } from "./current-pcb-209-worker-startup-timing.ts";
 import type { CurrentPcbStartupWindow, CurrentPcbStartupWindowObservation } from "./current-pcb-209-worker-startup-timing.ts";
@@ -232,6 +239,16 @@ class CurrentPcbWorkerConstructionCore<P extends PacketProfile> {
   #footprintSourceRunner: CurrentFootprintSourceReadRunner | null = null;
   #footprintSourcePlan: CurrentFootprintSourcePlan | null = null;
   #footprintSourcePacket: CurrentFootprintSourceReadPacket | null = null;
+  #footprintSavedProjection: CurrentFootprintCopyV2SavedProjection | null = null;
+  #footprintSavedStateCalls = 0;
+  #footprintSavedSourceCalls = 0;
+  #footprintSavedReadBusy = false;
+  #footprintCacheConstruction: CurrentFootprintCopyCacheConstructionRunner | null = null;
+  #footprintCacheListener: Parameters<CurrentFootprintCopyCacheConstructionTransport["subscribe"]>[0] | null = null;
+  #footprintCachePauseActive = false;
+  #footprintCacheConstructionPacket: CurrentFootprintCopyCacheConstructionObservation | null = null;
+  #footprintCacheConstructionObserved = false;
+  #footprintCacheConstructionReleased = false;
   readonly #footprintSourceReplies: unknown[] = [];
   readonly #footprintSourceCapture = new CurrentFootprintSourceReplyCapture();
   #footprintProducerAttempted = false;
@@ -272,7 +289,9 @@ class CurrentPcbWorkerConstructionCore<P extends PacketProfile> {
   public constructor(internal: typeof INTERNAL_PROFILE, transport: CurrentPcbWorkerConstructionTransport, profile: P,
     sites: typeof CURRENT_PCB_WORKER_CONSTRUCTION_SITES | typeof CURRENT_PCB_209_WORKER_CONSTRUCTION_SITES | typeof CURRENT_FOOTPRINT_COPY_CONSTRUCTION_SITES, decoders: ConstructionDecoders) {
     if (internal !== INTERNAL_PROFILE) { throw fail("INTERNAL_PROFILE"); }
-    if (profile === "private.current-footprint-copy-construction.v1" && isOriginalFootprintExecutionConstructionTransport(transport)) {
+    if (profile === "private.current-footprint-copy-construction.v1" && isOriginalFootprintSavedConstructionTransport(transport)) {
+      this.#footprintSampleLimit = CURRENT_FOOTPRINT_COPY_SAVED_PROFILE.stateSampleLimit;
+    } else if (profile === "private.current-footprint-copy-construction.v1" && isOriginalFootprintExecutionConstructionTransport(transport)) {
       this.#footprintSampleLimit = CURRENT_FOOTPRINT_COPY_EXECUTION_PROFILE.stateSampleLimit;
     } else if (profile === "private.current-pcb209-worker-construction.v1" && isOriginalFootprintPreparationConstructionTransport(transport)) {
       this.#footprintSampleLimit = CURRENT_FOOTPRINT_COPY_PREPARATION_PROFILE.stateSampleLimit;
@@ -351,6 +370,12 @@ class CurrentPcbWorkerConstructionCore<P extends PacketProfile> {
     if (!this.#settled) { this.#step = "pause-read-owner-after"; } await this.#current(); return captured.value;
   }
   readonly #onPaused = (input: unknown): void => {
+    if (this.#footprintCacheConstruction?.acceptsPause(input) === true) {
+      if (this.#footprintCacheListener === null || this.#footprintCachePauseActive || this.#pause !== null && !this.#pause.resumeObserved) {
+        this.#fail("CACHE_CONSTRUCTION_PAUSE_ROUTE"); return;
+      }
+      this.#footprintCachePauseActive = true; this.#footprintCacheListener.paused(input); return;
+    }
     if (this.#pause !== null && !this.#pause.resumeObserved) {
       this.#fail("DUPLICATE_PAUSE"); return;
     }
@@ -372,13 +397,17 @@ class CurrentPcbWorkerConstructionCore<P extends PacketProfile> {
     if (this.#settled) { this.#fail("EXTRA_PAUSE"); void observeRejection(this.#cleanupPause(paused)); }
   };
   readonly #onResumed = (): void => {
+    if (this.#footprintCachePauseActive) {
+      if (this.#footprintCacheListener === null) { this.#fail("CACHE_CONSTRUCTION_RESUME_ROUTE"); return; }
+      this.#footprintCachePauseActive = false; this.#footprintCacheListener.resumed(); return;
+    }
     const paused = this.#pause;
     if (paused === null || paused.resumeObserved) { this.#fail("UNEXPECTED_RESUME"); return; }
     if (!paused.resumeConsumed) { this.#fail("UNEXPECTED_RESUME"); }
     if (currentPcbStartupMonotonicMs() - paused.window.startedAtMs >= paused.window.limitMs) { this.#fail("PAUSE_DEADLINE"); }
     paused.resumeObserved = true; clearTimeout(paused.watchdog); paused.resumed.resolve(null);
   };
-  readonly #onLost = (): void => { this.#fail("OWNER_LOST"); this.#waiting.reject(this.#failed); };
+  readonly #onLost = (): void => { this.#footprintCacheListener?.lost(); this.#fail("OWNER_LOST"); this.#waiting.reject(this.#failed); };
   #resume(paused: RetainedPause, origin: ResumeOrigin = "normal"): Promise<void> {
     if (paused.resumeResult !== null) { return paused.resumeResult; }
     if (origin === "normal") { this.#checkWindow(); }
@@ -478,6 +507,9 @@ class CurrentPcbWorkerConstructionCore<P extends PacketProfile> {
       const bus = this.#identities.channelBus, original = this.#identities.project;
       if (original === undefined || bus === undefined) { throw fail("MISSING_OWNER"); }
       await this.#same(original, bus, true);
+      if (this.#profile === "private.current-footprint-copy-construction.v1" && isOriginalFootprintExecutionConstructionTransport(this.#transport)) {
+        await this.#armFootprintCacheConstruction(original);
+      }
     } else {
       const caller = event.callFrames[1], expected = site === "upload" ? this.#sites.base : this.#sites.project;
       const startColumn = expected.columnNumber - (expected.offset - expected.start);
@@ -491,6 +523,49 @@ class CurrentPcbWorkerConstructionCore<P extends PacketProfile> {
       else if (index === 4) { this.#identities.uploadStructure = await this.#arrow(top.callFrameId, "e", "uploadStructure"); }
       else { this.#identities.structureDebounce = this.#decoders.producerFunction(await this.#select(top.callFrameId, "e"), "debounce"); }
     }
+  }
+  async #armFootprintCacheConstruction(projectObjectId: string): Promise<void> {
+    if (this.#footprintCacheConstruction !== null || this.#footprintCacheListener !== null) { throw fail("CACHE_CONSTRUCTION_CONSUMED"); }
+    const projectUuid = originalFootprintExecutionConstructionProjectUuid(this.#transport);
+    const runner = new CurrentFootprintCopyCacheConstructionRunner(Object.freeze<CurrentFootprintCopyCacheConstructionTransport>({
+      assertOriginalWorker: async (): Promise<void> => {
+        await this.#current();
+        if (originalFootprintExecutionConstructionProjectUuid(this.#transport) !== projectUuid || this.#identities.project !== projectObjectId) {
+          throw fail("CACHE_CONSTRUCTION_OWNER");
+        }
+      },
+      assertCleanup: (): void => {
+        this.#sameTransport();
+        if (this.#releaseConsumed || this.#identities.project !== projectObjectId) { throw fail("CACHE_CONSTRUCTION_CLEANUP_OWNER"); }
+      },
+      request: command => requestFootprintExecutionConstructionCache(this.#transport, command),
+      subscribe: listener => {
+        if (this.#footprintCacheListener !== null || this.#constructionSubscriptionStopped || this.#unsubscribe === null) { throw fail("CACHE_CONSTRUCTION_SUBSCRIBER"); }
+        this.#footprintCacheListener = listener;
+        return (): void => {
+          if (this.#footprintCacheListener !== listener || this.#footprintCachePauseActive) { throw fail("CACHE_CONSTRUCTION_RETAIN_PAUSE"); }
+          this.#footprintCacheListener = null;
+        };
+      },
+    }), { scriptId: this.#scriptId, projectObjectId, projectUuid });
+    this.#footprintCacheConstruction = runner; await runner.arm();
+  }
+  public async observeFootprintCacheConstruction(packet: ConstructionPacket<P>,
+    assignments: CurrentPcbWorkerConstructionAssignments): Promise<CurrentFootprintCopyCacheConstructionObservation> {
+    const runner = this.#footprintCacheConstruction;
+    if (runner === null || this.#footprintCacheConstructionObserved) { throw fail("CACHE_CONSTRUCTION_OBSERVATION_CONSUMED"); }
+    this.#footprintCacheConstructionObserved = true;
+    try {
+      if (assignments !== this.#assignments || assignmentsIssued.get(assignments) !== this || this.#assignedWrappers === null) {
+        throw fail("ORIGINAL_ASSIGNMENTS");
+      }
+      await this.requireOriginal(packet);
+      const result = await runner.result(); await this.#current();
+      this.#footprintCacheConstructionPacket = result; return result;
+    } catch (error) { this.#fail("CACHE_CONSTRUCTION_OBSERVATION_FAILED"); throw error; }
+  }
+  public retainedFootprintCacheConstruction(): Readonly<Record<string, unknown>> | null {
+    return this.#footprintCacheConstruction?.retained() ?? null;
   }
   async #captureParser(event: z.infer<typeof pauseSchema>, site: "parserHead" | "parserChange"): Promise<void> {
     const caller = event.callFrames[1], expected = this.#sites.project, top = event.callFrames[0];
@@ -587,6 +662,12 @@ class CurrentPcbWorkerConstructionCore<P extends PacketProfile> {
       this.#packet = packet; issued.set(packet, this); return packet;
     } catch (error) {
       this.#fail("FAILED"); clearTimeout(this.#armingWatchdog); this.#ready.reject(error); const errors: unknown[] = [error];
+      if (this.#footprintCacheConstruction !== null) {
+        try { await this.#footprintCacheConstruction.cleanup();
+          if (this.#footprintCacheConstruction.retained()["released"] !== true) { throw fail("CACHE_CONSTRUCTION_RETAIN_RELEASE"); }
+          this.#footprintCacheConstructionReleased = true; }
+        catch (cleanupError) { errors.push(cleanupError); }
+      }
       try { await this.#removeBreakpoints(); } catch (cleanupError) { errors.push(cleanupError); }
       if (this.#pause !== null && !this.#pause.resumeObserved) { try { await this.#resume(this.#pause, "cleanup"); } catch (cleanupError) { errors.push(cleanupError); } }
       throw errors.length === 1 ? error : new AggregateError(errors, "PCB_WORKER_CONSTRUCTION_FAILED", { cause: error });
@@ -877,7 +958,7 @@ class CurrentPcbWorkerConstructionCore<P extends PacketProfile> {
     const call = recheck ? CURRENT_FOOTPRINT_COPY_DEPENDENCY_CALLS.recheck : CURRENT_FOOTPRINT_COPY_DEPENDENCY_CALLS.capture;
     return this.#assignmentCall(scopeId, call.program, args, call.returnByValue, this.#footprintDependencyReplies);
   }
-  /** 64 selected dependency requests plus two six-request original producer
+  /** 75 selected dependency requests plus two six-request original producer
    * reproofs. This never invokes wa, lazy cache factories or queued uploads. */
   public async observeFootprintDependencies(packet: ConstructionPacket<P>, assignments: CurrentPcbWorkerConstructionAssignments,
     state: CurrentFootprintCopyStatePacket, producers: CurrentFootprintCopyProducerObservation): Promise<CurrentFootprintCopyDependencyObservation> {
@@ -1065,6 +1146,11 @@ class CurrentPcbWorkerConstructionCore<P extends PacketProfile> {
       await this.requireFootprintRegisteredAsync(packet, assignments, state, callbacks);
       await this.requireFootprintDestinations(packet, assignments, state, destinations);
       this.#footprintProducerCurrent(packet, assignments, state);
+      if (this.#footprintCacheConstruction === null || this.#footprintCacheConstructionPacket === null) { throw fail("ORIGINAL_CACHE_CONSTRUCTION_REQUIRED"); }
+      await this.#footprintCacheConstruction.requireOriginal(this.#footprintCacheConstructionPacket);
+      await this.#footprintCacheConstruction.release();
+      if (this.#footprintCacheConstruction.retained()["released"] !== true) { throw fail("CACHE_CONSTRUCTION_RETAIN_RELEASE"); }
+      this.#footprintCacheConstructionReleased = true;
       const collector = createCurrentFootprintCopyTransactionClockEvents(this.#transport, this.#footprintManager, this.#footprintLexicalBundle);
       this.#transactionClocks = collector;
       await this.requireCurrentAssignments(packet, assignments);
@@ -1082,7 +1168,8 @@ class CurrentPcbWorkerConstructionCore<P extends PacketProfile> {
   public stopConstructionPauseSubscription(packet: ConstructionPacket<P>): void {
     this.#checkWindow(); this.#sameTransport();
     if (this.#profile !== "private.current-footprint-copy-construction.v1" || packet !== this.#packet || issued.get(packet) !== this ||
-      !this.#settled || this.#uncertainBreakpoint || this.#releaseConsumed || this.#constructionSubscriptionStopped || this.#unsubscribe === null ||
+      !this.#settled || this.#uncertainBreakpoint || this.#releaseConsumed || this.#constructionSubscriptionStopped ||
+      this.#footprintCacheListener !== null || this.#footprintCachePauseActive || this.#footprintCacheConstruction !== null && !this.#footprintCacheConstructionReleased || this.#unsubscribe === null ||
       [...this.#breakpoints.values()].some(value => !value.removed) || this.#pause !== null && !this.#pause.resumeObserved) { throw fail("CONSTRUCTION_HANDOFF"); }
     this.#constructionSubscriptionStopped = true;
     try { this.#unsubscribe(); this.#unsubscribe = null; } catch (error) { this.#fail("CONSTRUCTION_HANDOFF_FAILED"); throw error; }
@@ -1132,6 +1219,63 @@ class CurrentPcbWorkerConstructionCore<P extends PacketProfile> {
     if (this.#footprintSourceRunner === null || source !== this.#footprintSourcePacket || plan !== this.#footprintSourcePlan ||
       state !== this.#footprintPacket || assignments !== this.#assignments) { throw fail("ORIGINAL_FOOTPRINT_SOURCE_PACKET"); }
     await this.requireOriginal(packet); await this.#footprintSourceRunner.requireOriginal(source);
+  }
+  /** Own the fixed cache reader for the fresh saved generation. The enclosing
+   * saved lifecycle separately proves both upload caches absent before opening.
+   * A copied projection, arbitrary request or repeated source stage cannot issue
+   * this transport. No vendor getter or cache-fill fallback is permitted. */
+  public async createFootprintSavedReadTransport(packet: ConstructionPacket<P>, assignments: CurrentPcbWorkerConstructionAssignments,
+    state: CurrentFootprintCopyStatePacket, projection: CurrentFootprintCopyV2SavedProjection): Promise<CurrentFootprintCopySourceReadTransport> {
+    if (this.#footprintSourceAttempted || state !== this.#footprintPacket || !this.#current209 ||
+      this.#profile !== "private.current-footprint-copy-construction.v1") { throw fail("FOOTPRINT_SAVED_SOURCE_CONSUMED"); }
+    this.#footprintSourceAttempted = true; this.#footprintSavedProjection = projection;
+    const target = currentFootprintCopyV2SavedTarget(projection);
+    const same = (): void => {
+      const current = currentFootprintCopyV2SavedTarget(projection);
+      if (projection !== this.#footprintSavedProjection || state !== this.#footprintPacket || assignments !== this.#assignments ||
+        current.projectUuid !== state.identity.projectUuid || current.branchUuid !== state.identity.branchUuid ||
+        current.footprintUuid !== target.footprintUuid || projection.maximumTicket !== state.maximumTicket) { throw fail("FOOTPRINT_SAVED_SOURCE_OWNER"); }
+    };
+    try {
+      same(); await this.proveFootprintMethods(packet, assignments, state); same();
+      return Object.freeze({
+        assertOriginalState: async (selected: CurrentFootprintCopyStatePacket): Promise<void> => {
+          if (selected !== state) { throw fail("FOOTPRINT_SAVED_SOURCE_STATE"); }
+          same(); await this.requireOriginal(packet); same();
+        },
+        observeState: async (): Promise<unknown> => {
+          same();
+          if (this.#footprintSavedReadBusy || this.#footprintSavedStateCalls >= 4) { throw fail("FOOTPRINT_SAVED_STATE_BUDGET"); }
+          this.#footprintSavedReadBusy = true; this.#footprintSavedStateCalls += 1;
+          try {
+            await this.#footprintSample(packet, assignments); same();
+            const raw = this.#footprintReplies.at(-1);
+            if (raw === undefined) { throw fail("FOOTPRINT_SAVED_STATE_REPLY"); } return raw;
+          } catch (error) { this.#fail("FOOTPRINT_SAVED_SOURCE_FAILED"); throw error; }
+          finally { this.#footprintSavedReadBusy = false; }
+        },
+        readSource: async (selected: CurrentFootprintCopySourceReadRequest): Promise<unknown> => {
+          same();
+          if (this.#footprintSavedReadBusy || this.#footprintSavedSourceCalls >= 2 || selected.footprintUuid !== target.footprintUuid ||
+            selected.identity.projectUuid !== target.projectUuid || selected.identity.branchUuid !== target.branchUuid ||
+            selected.maximumTicket !== state.maximumTicket || selected.client !== state.client) { throw fail("FOOTPRINT_SAVED_SOURCE_REQUEST"); }
+          this.#footprintSavedReadBusy = true; this.#footprintSavedSourceCalls += 1;
+          try {
+            await this.requireCurrentAssignments(packet, assignments); same();
+            const original = await this.requireOriginal(packet); await this.#requireFootprintMethods(original); same();
+            if (this.#footprintManager === null || this.#footprintConsistency === null || this.#footprintConstructors === null ||
+              this.#footprintMethods === null) { throw fail("FOOTPRINT_OWNER"); }
+            const command = currentFootprintCopySavedSourceCommand({ project: original.project, bus: original.channelBus,
+              manager: this.#footprintManager, consistency: this.#footprintConsistency,
+              constructors: this.#footprintConstructors, methods: this.#footprintMethods }, selected);
+            const raw = this.#footprintSourceCapture.capture(await bounded(this.#sendOriginal(command), CURRENT_FOOTPRINT_COPY_SOURCE_READ_LIMITS.hostTimeoutMs));
+            this.#footprintSourceReplies.push(raw); await this.#current(); same();
+            await this.requireCurrentAssignments(packet, assignments); await this.#requireFootprintMethods(original); same(); return raw;
+          } catch (error) { this.#fail("FOOTPRINT_SAVED_SOURCE_FAILED"); throw error; }
+          finally { this.#footprintSavedReadBusy = false; }
+        },
+      });
+    } catch (error) { this.#fail("FOOTPRINT_SAVED_SOURCE_FAILED"); throw error; }
   }
   /** Two worker samples for the separate four-read startup actor bracket. Each
    * request retains the original constructor PROJECT and bus, not a later
@@ -1210,6 +1354,11 @@ class CurrentPcbWorkerConstructionCore<P extends PacketProfile> {
     if (this.#releaseConsumed) { throw fail("RELEASE_CONSUMED"); }
     if (!this.#settled || this.#uncertainBreakpoint) { throw fail("RETAIN_PENDING_OWNER"); }
     if (this.#pause !== null && !this.#pause.resumeObserved) { throw fail("RETAIN_PAUSED_OWNER"); }
+    if (this.#footprintCacheConstruction !== null && !this.#footprintCacheConstructionReleased) {
+      await this.#footprintCacheConstruction.cleanup();
+      if (this.#footprintCacheConstruction.retained()["released"] !== true) { throw fail("CACHE_CONSTRUCTION_RETAIN_RELEASE"); }
+      this.#footprintCacheConstructionReleased = true;
+    }
     this.#releaseConsumed = true;
     try {
       await this.#removeBreakpoints(); await this.#settleLatePause();

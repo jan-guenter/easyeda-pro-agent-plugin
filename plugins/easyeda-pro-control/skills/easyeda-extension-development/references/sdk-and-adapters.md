@@ -600,11 +600,23 @@ objects and their locations, then compares identities across five method scopes.
 Its construction-owner integration consumes up to39 requests. The reuse check
 uses up to six requests to reprove owner, state and methods, without resampling
 lexical values. The separate `footprint-copy-preparation` startup purpose mounts these checks
-with actor/SQL preparation, UI and manager-route observation, and 53 dependency
-function qualifications and the original native channel name. Its 554 normal requests, 34 cleanup requests and 18
+with actor/SQL preparation, UI and manager-route observation, and 60 dependency
+function qualifications and the original native channel name. Seven qualifications
+cover the original `bb` wrapper class and six methods; four native Cache functions
+are checked separately. Its 565 normal requests, 34 cleanup requests and 18
 state samples come from the complete preparation sequence; older purposes keep
-their existing limits. Parser/upload callback completion, reciprocal bus peers
-and native copy dispatch remain unimplemented. See the
+their existing limits. The distinct execution purpose captures the original
+parent/worker peer and registered parser/upload relationships. Its four original
+cache-open pauses retain the native CacheStorage receiver, exact namespace
+arguments and resulting Cache objects through project assignment. Wrapper labels
+and native class metadata alone do not establish namespace provenance. This
+purpose reserves 743 normal and 44 cleanup requests, 787 total; complete native
+writer integration and connected acceptance remain pending. A private saved owner
+uses its separate read-only purpose and 319 normal/34 cleanup request budget,
+353 total, with original queue exclusion, constructor and saved-source captures.
+It does not inherit writer handles or permit create, transaction clocks or Save.
+Parser/upload completion, HTTP backend ownership and actual backend actor/clock
+provenance still require their own runtime evidence. See the
 [preparation workflow](../../easyeda-pro-control/references/current-footprint-copy-preparation.md).
 
 The UI source route uses a notification RPC wrapper and an async responder.

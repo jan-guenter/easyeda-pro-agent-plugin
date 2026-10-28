@@ -1,4 +1,4 @@
-/* oxlint-disable eslint/max-classes-per-file -- Keep the private shared core with two fixed wrappers so no caller can select a transport factory or constructor profile. */
+/* oxlint-disable eslint/max-classes-per-file -- Keep the private shared core with fixed wrappers so no caller can select a transport factory or constructor profile. */
 /** Fixed209 original-owner choreography. Legacy opening remains separate. The lifecycle must publish the sealed
  * checkpoint intent before calling open(). This module supplies no journal,
  * owner adoption, public writer or saved-state authority. */
@@ -7,6 +7,7 @@ import { types } from "node:util";
 import { z } from "zod";
 import type { CurrentFootprintCopyProducerObservation } from "./current-footprint-copy-producer-runner.ts";
 import type { CurrentFootprintCopyDependencyObservation } from "./current-footprint-copy-dependency-runner.ts";
+import type { CurrentFootprintCopyCacheConstructionObservation } from "./current-footprint-copy-cache-construction-runner.ts";
 import type { CurrentFootprintParentWorkerObservation, CurrentFootprintParentWorkerRunner } from "./current-footprint-copy-parent-worker-runner.ts";
 import type { CurrentFootprintCopyDestinationObservation } from "./current-footprint-copy-destination-runner.ts";
 import type { CurrentFootprintCopyRegisteredAsyncObservation } from "./current-footprint-copy-async-runner.ts";
@@ -14,6 +15,8 @@ import type { CurrentFootprintCopyTransactionClockEvents } from "./current-footp
 import type { CurrentFootprintCopyStatePacket } from "./current-footprint-copy-state.ts";
 import type { CurrentFootprintSourcePlan } from "./current-footprint-source-plan.ts";
 import type { CurrentFootprintSourceReadPacket } from "./current-footprint-source-read-runner.ts";
+import type { CurrentFootprintCopySourceReadTransport } from "./current-footprint-copy-source-read-runner.ts";
+import type { CurrentFootprintCopyV2SavedProjection } from "./current-footprint-copy-v2-saved-source.ts";
 import { currentDisposableOpenSealedTargetSchema } from "./current-disposable-open.ts";
 import type { CurrentDisposableOpenSealedTarget } from "./current-disposable-open.ts";
 import type { CurrentPcbWorkerStartupHandoff, CurrentPcbWorkerStartupOpeningBinding } from "./current-pcb-diagnostic-owner.ts";
@@ -26,7 +29,7 @@ import { CurrentPcb209WorkerConstructionRunner } from "./current-pcb-worker-cons
 import type { CurrentPcbWorkerConstructionOwner, CurrentPcbWorkerConstructionPacketFor, CurrentPcbWorkerConstructionProjectIdentity } from "./current-pcb-worker-construction-runner.ts";
 import type { CurrentPcbWorkerConstructionAssignments } from "./current-pcb-worker-construction-assignment.ts";
 import type { CurrentPcbWorkerStartupCommand, CurrentPcbWorkerStartupDependency } from "./current-pcb-worker-startup-contract.ts";
-import { CurrentFootprintCopyWorkerStartupTransport, CurrentPcb209WorkerStartupTransport } from "./current-pcb-worker-startup-transport.ts";
+import { CurrentFootprintCopySavedWorkerStartupTransport, CurrentFootprintCopyWorkerStartupTransport, CurrentPcb209WorkerStartupTransport } from "./current-pcb-worker-startup-transport.ts";
 import type { CurrentPcbWorkerStartupTransportOwner } from "./current-pcb-worker-startup-transport.ts";
 import { currentPcbWorkerStartupUiActorCommand } from "./current-pcb-worker-startup-actor.ts";
 import { CurrentPcb209WorkerStartupActorRunner } from "./current-pcb-209-worker-startup-actor.ts";
@@ -139,6 +142,11 @@ class CurrentPcb209WorkerStartupOpeningCore<P extends OpeningProfile> {
   #released = false;
   #releasing = false;
   #openingAttempted = false;
+  #openingDispatch: Promise<CurrentPcbDiagnosticOpeningResult> | null = null;
+  #openingDispatchSettled = false;
+  #openingDispatchRefused = false;
+  #transportTerminationReleased = false;
+  #savedSourceAttempted = false;
   #capture: Promise<CurrentPcbWorkerConstructionPacketFor<P>> | null = null;
   #openingResult: CurrentPcbDiagnosticOpeningResult | null = null;
   #target: CurrentDisposableOpenSealedTarget | null = null;
@@ -153,6 +161,8 @@ class CurrentPcb209WorkerStartupOpeningCore<P extends OpeningProfile> {
   #footprintAttempted = false;
   #footprintRunner: CurrentPcbWorkerConstructionOwner<P> | null = null;
   #footprintPacket: CurrentFootprintCopyStatePacket | null = null;
+  #cacheConstructionAttempted = false;
+  #cacheConstructionPacket: CurrentFootprintCopyCacheConstructionObservation | null = null;
   #footprintSourceAttempted = false;
   #footprintSourcePlan: CurrentFootprintSourcePlan | null = null;
   #footprintSourcePacket: CurrentFootprintSourceReadPacket | null = null;
@@ -188,10 +198,12 @@ class CurrentPcb209WorkerStartupOpeningCore<P extends OpeningProfile> {
     this.#transport = createTransport(this.#dependency);
   }
   public status(): Readonly<{ consumed: boolean; settled: boolean; openingAttempted: boolean;
+    openingDispatchSettled: boolean;
     openingResultRetained: boolean; constructionRetained: boolean; completed: boolean;
     transport: ReturnType<CurrentPcbWorkerStartupTransportOwner<P>["status"]>;
     diagnostics: CurrentPcb209WorkerStartupOpeningDiagnostics; executionAuthorized: false }> {
     return Object.freeze({ consumed: this.#consumed, settled: this.#settled, openingAttempted: this.#openingAttempted,
+      openingDispatchSettled: this.#openingDispatchSettled,
       openingResultRetained: this.#openingResult !== null, constructionRetained: this.#construction !== null,
       completed: this.#completed !== null, transport: this.#transport.status(),
       diagnostics: Object.freeze({ stage: this.#stage, step: this.#step, failure: this.#failure }), executionAuthorized: false });
@@ -240,13 +252,20 @@ class CurrentPcb209WorkerStartupOpeningCore<P extends OpeningProfile> {
     if (this.#opening.ancillaryFrame() !== frameId) { throw fail("ANCILLARY_CHANGED"); }
     this.#opening.observeAncillary(owner, node); await this.#current();
   }
-  async #callOpening(target: CurrentDisposableOpenSealedTarget, phase: CurrentPcbDiagnosticOpeningPhase): Promise<CurrentPcbDiagnosticOpeningResult> {
+  async #callOpening(target: CurrentDisposableOpenSealedTarget, phase: CurrentPcbDiagnosticOpeningPhase,
+    beforeDispatch?: () => Promise<void>): Promise<CurrentPcbDiagnosticOpeningResult> {
     await this.#current(); const selected = this.#context();
     const command: CurrentPcbWorkerStartupCommand = { method: "Runtime.callFunctionOn", sessionId: selected.sessionId,
       params: { functionDeclaration: CURRENT_PCB_209_STARTUP_OPENING_FUNCTION, uniqueContextId: selected.uniqueContextId,
         arguments: [{ value: target }, { value: phase }], returnByValue: true, awaitPromise: true,
         silent: true, generatePreview: false, userGesture: false, throwOnSideEffect: false } };
-    if (phase === "open-project") { this.#openingAttempted = true; }
+    if (phase === "open-project") {
+      if (beforeDispatch !== undefined) { await beforeDispatch(); }
+      const current = this.#context();
+      if (this.#openingDispatchRefused || this.#released || this.#releasing || current.sessionId !== selected.sessionId ||
+          current.uniqueContextId !== selected.uniqueContextId) { throw fail("OPENING_DISPATCH_REFUSED"); }
+      this.#openingAttempted = true;
+    }
     this.#step = phase === "preflight" ? "preflight-request" : "open-project-request";
     const reply = await bounded(this.#request.call(this.#dependency, command),
       phase === "preflight" ? 15_000 : CURRENT_PCB_209_STARTUP_OPENING_TIMING.hostMs);
@@ -256,7 +275,15 @@ class CurrentPcb209WorkerStartupOpeningCore<P extends OpeningProfile> {
     const result = decodeCurrentPcbDiagnosticOpeningReply(reply, target, phase); this.#openingResult = result;
     await this.#current(); return result;
   }
-  public async open(input: CurrentDisposableOpenSealedTarget, reverify: () => Promise<void>): Promise<OpeningResult<P>> {
+  async #observeOpeningSettlement(opening: Promise<CurrentPcbDiagnosticOpeningResult>): Promise<void> {
+    try { await observe(opening); } finally { this.#openingDispatchSettled = true; }
+  }
+  async #observeCaptureFailure(capture: Promise<CurrentPcbWorkerConstructionPacketFor<P>>, signal: PromiseWithResolvers<never>): Promise<void> {
+    try { await capture; }
+    catch (error) { this.#openingDispatchRefused = true; signal.reject(error); }
+  }
+  public async open(input: CurrentDisposableOpenSealedTarget, reverify: () => Promise<void>,
+    beforeDispatch?: () => Promise<void>): Promise<OpeningResult<P>> {
     if (this.#consumed) { throw fail("CONSUMED"); } this.#consumed = true;
     try {
       this.#stage = "target-validation"; this.#step = "validate-target";
@@ -284,7 +311,16 @@ class CurrentPcb209WorkerStartupOpeningCore<P extends OpeningProfile> {
       // The worker must run its bounded capture while the parent opener is
       // Awaiting startup. Waiting for the opener before capture would deadlock.
       this.#stage = "open-project";
-      const result = await this.#callOpening(target, "open-project");
+      // A refused original capture must not leave the caller waiting for an
+      // Opener whose worker is deliberately held. Keep the original request
+      // And its late reply owned; cleanup never repeats navigation or resumes
+      // An unproved worker to obtain a reply.
+      const opening = this.#callOpening(target, "open-project", beforeDispatch);
+      this.#openingDispatch = opening;
+      void this.#observeOpeningSettlement(opening);
+      const captureFailed = Promise.withResolvers<never>();
+      void this.#observeCaptureFailure(capture, captureFailed);
+      const result = await Promise.race([opening, captureFailed.promise]);
       this.#step = "open-project-decode";
       if (!result.ok || result.observation?.initialTitle !== title.initialTitle ||
           result.observation.expectedOpenedTitle !== title.expectedOpenedTitle ||
@@ -305,6 +341,7 @@ class CurrentPcb209WorkerStartupOpeningCore<P extends OpeningProfile> {
       this.#stage = "complete"; this.#step = "complete";
       return this.#completed;
     } catch (error) {
+      this.#openingDispatchRefused = true;
       this.#failure ??= Object.freeze({ stage: this.#stage, step: this.#step,
         kind: error instanceof Error && deadlineErrors.has(error) ? "deadline" : "refused" });
       if (this.#capture !== null) {
@@ -364,6 +401,16 @@ class CurrentPcb209WorkerStartupOpeningCore<P extends OpeningProfile> {
   public retainedFootprintState(): Readonly<Record<string, unknown>> | null {
     return this.#footprintRunner?.retainedFootprintState() ?? null;
   }
+  public async observeFootprintCacheConstruction(result: OpeningResult<P>,
+    assignments: CurrentPcbWorkerConstructionAssignments): Promise<CurrentFootprintCopyCacheConstructionObservation> {
+    if (this.#cacheConstructionAttempted) { throw fail("CACHE_CONSTRUCTION_CONSUMED"); }
+    this.#cacheConstructionAttempted = true;
+    await this.requireCurrentAssignments(result, assignments);
+    const transport = await this.requireOriginal(result);
+    const runner = await transport.requireOriginal(result.construction); await this.#current();
+    const packet = await runner.observeFootprintCacheConstruction(result.construction, assignments);
+    this.#cacheConstructionPacket = packet; await this.#current(); return packet;
+  }
   public async observeFootprintState(result: OpeningResult<P>,
     assignments: CurrentPcbWorkerConstructionAssignments): Promise<CurrentFootprintCopyStatePacket> {
     if (this.#footprintAttempted) { throw fail("FOOTPRINT_CONSUMED"); } this.#footprintAttempted = true;
@@ -385,6 +432,17 @@ class CurrentPcb209WorkerStartupOpeningCore<P extends OpeningProfile> {
   }
   public retainedFootprintSource(): Readonly<Record<string, unknown>> | null {
     return this.#footprintRunner?.retainedFootprintSource() ?? null;
+  }
+  public async createFootprintSavedReadTransport(result: OpeningResult<P>, assignments: CurrentPcbWorkerConstructionAssignments,
+    state: CurrentFootprintCopyStatePacket, projection: CurrentFootprintCopyV2SavedProjection): Promise<CurrentFootprintCopySourceReadTransport> {
+    if (this.#savedSourceAttempted || state !== this.#footprintPacket || this.#footprintRunner === null) { throw fail("SAVED_SOURCE_CONSUMED"); }
+    this.#savedSourceAttempted = true;
+    await this.requireCurrentAssignments(result, assignments);
+    const runner = this.#footprintRunner;
+    const transport = await runner.createFootprintSavedReadTransport(result.construction, assignments, state, projection);
+    await this.#current();
+    if (this.#footprintRunner !== runner || state !== this.#footprintPacket) { throw fail("ORIGINAL_FOOTPRINT_OWNER"); }
+    return transport;
   }
   /** The lifecycle must publish the selected checkpoint member before dispatch.
    * Neither the plan nor the returned data adopts
@@ -541,7 +599,7 @@ class CurrentPcb209WorkerStartupOpeningCore<P extends OpeningProfile> {
   }
   public retainedFootprintRouteObservations(): Readonly<Record<string, unknown>> {
     const runner = this.#footprintRunner;
-    return Object.freeze({ state: runner?.retainedFootprintState() ?? null,
+    return Object.freeze({ cacheConstruction: this.#cacheConstructionPacket, state: runner?.retainedFootprintState() ?? null,
       producers: runner?.retainedFootprintProducers() ?? null, dependencies: runner?.retainedFootprintDependencies() ?? null,
       callbacks: runner?.retainedFootprintAsync() ?? null, registrations: runner?.retainedParserRegistration() ?? null,
       destinations: runner?.retainedFootprintDestinations() ?? null, clocks: runner?.retainedFootprintTransactionClocks() ?? null,
@@ -621,7 +679,13 @@ class CurrentPcb209WorkerStartupOpeningCore<P extends OpeningProfile> {
         // Even a preflight refusal retains its original native owner. Do not
         // Require a capture listener that was never allocated, or infer exit.
         this.#same(); await bounded(this.#assertTermination.call(this.#dependency)); this.#same();
-      } else { await this.#transport.releaseAfterTermination(); }
+      } else if (!this.#transportTerminationReleased) {
+        await this.#transport.releaseAfterTermination(); this.#transportTerminationReleased = true;
+      }
+      if (this.#openingDispatch !== null) {
+        await bounded(observe(this.#openingDispatch));
+        if (!this.#openingDispatchSettled) { throw fail("ORIGINAL_OPENING_UNSETTLED"); }
+      }
       this.#released = true;
     } finally { this.#releasing = false; }
   }
@@ -636,6 +700,12 @@ export type CurrentFootprintCopyOpeningResult = OpeningResult<OpeningProfile>;
 export class CurrentPcb209WorkerStartupOpening extends CurrentPcb209WorkerStartupOpeningCore<"private.current-pcb209-worker-construction.v1"> {
   public constructor(handoff: Pick<CurrentPcbWorkerStartupHandoff, "dependency" | "opening" | "actorClockSourceQualification">) {
     super(INTERNAL_OPENING, handoff, dependency => new CurrentPcb209WorkerStartupTransport(dependency));
+  }
+}
+/** Fresh verification capture uses its separate native read-only purpose. */
+export class CurrentFootprintCopySavedStartupOpening extends CurrentPcb209WorkerStartupOpeningCore<"private.current-footprint-copy-construction.v1"> {
+  public constructor(handoff: Pick<CurrentPcbWorkerStartupHandoff, "dependency" | "opening" | "actorClockSourceQualification">) {
+    super(INTERNAL_OPENING, handoff, dependency => new CurrentFootprintCopySavedWorkerStartupTransport(dependency));
   }
 }
 /** Distinct execution opening selects its original 11-pause constructor. This

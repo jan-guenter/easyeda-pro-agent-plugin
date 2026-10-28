@@ -7,10 +7,10 @@ import { lstat, mkdir, open, opendir } from "node:fs/promises";
 import { join } from "node:path";
 import { z } from "zod";
 import { CURRENT_FOOTPRINT_COPY_ROUTE_PREPARATION_OPERATION_PREFIX, currentFootprintCopyRoutePreparationIdSchema } from "./current-footprint-copy-route-preparation-validation.ts";
-import { CURRENT_FOOTPRINT_COPY_ROUTE_RESULT_MAX_BYTES, currentFootprintCopyRouteObservationSchema } from "./current-footprint-copy-route-observation.ts";
+import { CURRENT_FOOTPRINT_COPY_ROUTE_RESULT_MAX_BYTES, recordedCurrentFootprintCopyRouteObservationSchema } from "./current-footprint-copy-route-observation.ts";
 import { currentFootprintCopyStatePacketSchema } from "./current-footprint-copy-state.ts";
 import { currentFootprintCopyUiObservationSchema } from "./current-footprint-copy-ui-runner.ts";
-import { currentFootprintCopyDependencyObservationSchema } from "./current-footprint-copy-dependency-runner.ts";
+import { recordedCurrentFootprintCopyDependencyObservationSchema } from "./current-footprint-copy-dependency-runner.ts";
 import { recordedCurrentFootprintCopyManagerRouteObservationSchema } from "./current-footprint-copy-manager-route-runner.ts";
 import { currentFootprintCopyBindingsSchema } from "./current-footprint-copy-bindings.ts";
 import { CURRENT_FOOTPRINT_COPY_PREPARATION_OPERATION_PREFIX, currentFootprintCopyPreparationIdSchema } from "./current-footprint-copy-preparation-validation.ts";
@@ -513,7 +513,7 @@ const footprintDependenciesIntentSchema = z.object({
 const footprintDependenciesResultSchema = z.object({
   schema: z.literal("easyeda-pro-control.footprint-copy-dependencies-result.v1"), ...base,
   operationId: currentFootprintCopyPreparationIdSchema, intentSha256: diagnosticLifecycleDigestSchema,
-  result: currentFootprintCopyDependencyObservationSchema, originalDependencyReproofCompleted: z.literal(true),
+  result: recordedCurrentFootprintCopyDependencyObservationSchema, originalDependencyReproofCompleted: z.literal(true),
   executionAuthorized: z.literal(false), saveAuthorized: z.literal(false),
 }).strict();
 const footprintManagerRouteIntentSchema = z.object({
@@ -542,12 +542,12 @@ const footprintRouteIntentSchema = z.object({
 }).strict();
 const footprintRouteResultSchema = z.object({
   schema: z.literal("easyeda-pro-control.footprint-copy-route-result.v1"), ...base, operationId: currentFootprintCopyRoutePreparationIdSchema,
-  intentSha256: diagnosticLifecycleDigestSchema, result: currentFootprintCopyRouteObservationSchema,
+  intentSha256: diagnosticLifecycleDigestSchema, result: recordedCurrentFootprintCopyRouteObservationSchema,
   executionAuthorized: z.literal(false), saveAuthorized: z.literal(false),
 }).strict();
 const footprintRouteFailureSchema = z.object({
   schema: z.literal("easyeda-pro-control.footprint-copy-route-failure.v1"), ...base, operationId: currentFootprintCopyRoutePreparationIdSchema,
-  intentSha256: diagnosticLifecycleDigestSchema, failedStage: z.enum(["state", "producers", "dependencies", "callbacks", "destinations", "ui", "manager", "peer", "reproof", "windows-clock"]),
+  intentSha256: diagnosticLifecycleDigestSchema, failedStage: z.enum(["cache-construction", "state", "producers", "dependencies", "callbacks", "destinations", "ui", "manager", "peer", "reproof", "windows-clock"]),
   error: z.string().max(4096), completedObservations: z.record(z.string(), z.unknown()), executionAuthorized: z.literal(false), saveAuthorized: z.literal(false),
 }).strict().refine(value => Buffer.byteLength(canonicalJson(value)) <= CURRENT_FOOTPRINT_COPY_ROUTE_RESULT_MAX_BYTES, "Route failure exceeds its bound.");
 export const diagnosticLifecycleRecordSchemas = {

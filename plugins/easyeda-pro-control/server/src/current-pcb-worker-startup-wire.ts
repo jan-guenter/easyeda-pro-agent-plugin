@@ -8,6 +8,8 @@ import { CURRENT_FOOTPRINT_COPY_LEXICAL_CALLS } from "./current-footprint-copy-p
 import { CURRENT_FOOTPRINT_COPY_PREPARATION_PROFILE } from "./current-footprint-copy-preparation-profile.ts";
 import { CURRENT_FOOTPRINT_COPY_EXECUTION_PROFILE } from "./current-footprint-copy-execution-profile.ts";
 import { currentFootprintCopyExecutionWorkerWire } from "./current-footprint-copy-execution-worker-wire.ts";
+import { CURRENT_FOOTPRINT_COPY_SAVED_PROFILE } from "./current-footprint-copy-saved-profile.ts";
+import { currentFootprintCopySavedSourceWire } from "./current-footprint-copy-saved-source-wire.ts";
 import { CURRENT_FOOTPRINT_COPY_CONSTRUCTORS_EXPRESSION, CURRENT_FOOTPRINT_COPY_STATE_CALLS } from "./current-footprint-copy-state.ts";
 import { currentFootprintCopySourceCommandParamsSchema } from "./current-footprint-copy-source-command.ts";
 import { CURRENT_FOOTPRINT_COPY_METHOD_CALLS } from "./current-footprint-copy-method-bindings.ts";
@@ -268,6 +270,23 @@ export function currentFootprintCopyExecutionStartupWire(raw: unknown, id: numbe
   const original = startupWire(raw, 1, CURRENT_PCB_209_WORKER_CONSTRUCTION_SITES, CURRENT_PCB_DIAGNOSTIC_PCB_OPENING_FUNCTION, true);
   return Object.freeze({ command: Object.freeze({ ...original.command, id }),
     request: Object.freeze({ ...original.request, requestId: id }) });
+}
+/** The saved owner admits only construction and native-cache observation.
+ * Parser registration capture is shared fixed code, not execution authority. */
+export function currentFootprintCopySavedStartupWire(raw: unknown, id: number): ReturnType<typeof startupWire> {
+  if (!Number.isSafeInteger(id) || id < 1 || id > CURRENT_FOOTPRINT_COPY_SAVED_PROFILE.requestLimit) { return fail(); }
+  const source = currentFootprintCopySavedSourceWire(raw, id);
+  if (source !== null) { return source; }
+  const extra = currentFootprintCopyExecutionWorkerWire(raw, id);
+  if (extra !== null) {
+    if (!["parser-head-arm", "parser-change-arm", "parser-head", "parser-change", "parser-registered"].includes(String(extra.request["executionPhase"]))) { return fail(); }
+    return Object.freeze({ command: extra.command, request: Object.freeze({ ...extra.request, action: "footprint-saved-worker" }) });
+  }
+  const original = startupWire(raw, 1, CURRENT_PCB_209_WORKER_CONSTRUCTION_SITES);
+  const parent = original.request["parentPhase"], phase = original.request["startupPhase"];
+  if (parent !== undefined && !["targets", "frames", "frame-owner", "describe-owner", "preflight", "open-project"].includes(String(parent)) ||
+    typeof phase === "string" && (phase === "actor-clock" || phase === "footprint-source-read" || phase.startsWith("channel-") || phase.startsWith("footprint-producer-") || phase.startsWith("footprint-dependency-"))) { return fail(); }
+  return Object.freeze({ command: Object.freeze({ ...original.command, id }), request: Object.freeze({ ...original.request, requestId: id }) });
 }
 /** The native ratline owner adds the remaining Stopwatch horizon as a third
  * runtime argument. No duration or deadline field crosses this wire. */

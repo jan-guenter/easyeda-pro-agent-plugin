@@ -122,6 +122,7 @@ const startupOpeningMethods = ["open", "status", "retainedOpeningResult", "requi
 
 // oxlint-disable typescript/unbound-method -- Retained private-field methods are invoked only with their original session receiver.
 const footprintRouteMethods = Object.freeze({
+  cache: CurrentFootprintCopyStartupOpening.prototype.observeFootprintCacheConstruction,
   state: CurrentFootprintCopyStartupOpening.prototype.observeFootprintState,
   producers: CurrentFootprintCopyStartupOpening.prototype.observeFootprintProducers,
   dependencies: CurrentFootprintCopyStartupOpening.prototype.observeFootprintDependencies,
@@ -1245,7 +1246,7 @@ class CurrentPcbLifecycleCore {
           this.#startupActorPacket === actor && this.#projectPreparation === checkpoint && checkpoint.commonInventory === before &&
           readerCompletion(before) === completion && canonicalJson(checkpoint.prepared) === checkpoint.preparedText,
         "FOOTPRINT_ROUTE_INPUT_CHANGED");
-        requireValue(opened.opening.observeFootprintState === footprintRouteMethods.state && opened.opening.observeFootprintProducers === footprintRouteMethods.producers &&
+        requireValue(opened.opening.observeFootprintCacheConstruction === footprintRouteMethods.cache && opened.opening.observeFootprintState === footprintRouteMethods.state && opened.opening.observeFootprintProducers === footprintRouteMethods.producers &&
           opened.opening.observeFootprintDependencies === footprintRouteMethods.dependencies && opened.opening.observeFootprintRegisteredAsync === footprintRouteMethods.callbacks &&
           opened.opening.observeFootprintDestinations === footprintRouteMethods.destinations && opened.opening.requireFootprintRouteObservations === footprintRouteMethods.reproof &&
           opened.opening.retainedFootprintRouteObservations === footprintRouteMethods.retained,
@@ -1258,7 +1259,7 @@ class CurrentPcbLifecycleCore {
         const requests = CURRENT_FOOTPRINT_COPY_PREPARATION_PROFILE.requests.bindings + CURRENT_FOOTPRINT_COPY_PREPARATION_PROFILE.requests.dependencies +
           CURRENT_FOOTPRINT_COPY_PREPARATION_PROFILE.requests.uiObserve + CURRENT_FOOTPRINT_COPY_PREPARATION_PROFILE.requests.uiReprove +
           CURRENT_FOOTPRINT_COPY_PREPARATION_PROFILE.requests.managerRoute + CURRENT_FOOTPRINT_COPY_EXECUTION_PROFILE.requests.asyncAndHandoff +
-          CURRENT_FOOTPRINT_COPY_EXECUTION_PROFILE.requests.destinations + 17;
+          CURRENT_FOOTPRINT_COPY_EXECUTION_PROFILE.requests.destinations + 18 + CURRENT_FOOTPRINT_COPY_EXECUTION_PROFILE.requests.cacheConstructionDelegates;
         requireValue(channel !== undefined && channel !== null && channel.started && !channel.failed && !channel.released && channel.pendingReplies === 0 &&
           Number.isSafeInteger(channel.nextRequestId) && channel.nextRequestId >= 1 &&
           channel.nextRequestId + requests - 1 <= CURRENT_FOOTPRINT_COPY_EXECUTION_PROFILE.normalRequestLimit, "FOOTPRINT_ROUTE_CAPACITY");
@@ -1276,9 +1277,12 @@ class CurrentPcbLifecycleCore {
       await assertSnapshot(expected); capacity();
       const evidence: Record<string, unknown> = {};
       this.#footprintRouteRetained = evidence;
-      let stage: NonNullable<DiagnosticLifecycleRecords["footprint-copy-route-failure.json"]>["failedStage"] = "state";
+      let stage: NonNullable<DiagnosticLifecycleRecords["footprint-copy-route-failure.json"]>["failedStage"] = "cache-construction";
       let packet;
       try {
+        const cacheConstruction = await footprintRouteMethods.cache.call(opened.opening, opened.result, assignments);
+        evidence["cacheConstruction"] = cacheConstruction; current();
+        stage = "state";
         const state = await footprintRouteMethods.state.call(opened.opening, opened.result, assignments); evidence["state"] = state; current();
         stage = "producers";
         const producers = await footprintRouteMethods.producers.call(opened.opening, opened.result, assignments, state); evidence["producers"] = producers; current();

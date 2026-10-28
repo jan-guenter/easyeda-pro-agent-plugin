@@ -7,6 +7,7 @@ import { prepareCurrentFootprintCopyActorOwned, requireCurrentFootprintCopyActor
 import { CURRENT_FOOTPRINT_COPY_CLOCK_REQUIREMENTS } from "../src/current-footprint-copy-clock-requirements.ts";
 import type { CurrentFootprintCopyStatePacket } from "../src/current-footprint-copy-state.ts";
 import { CurrentPcb209WorkerStartupOpening } from "../src/current-pcb-209-worker-startup-opening.ts";
+import { currentFootprintCopyPreparationOpeningMethods } from "../src/current-footprint-copy-preparation-opening.ts";
 import { CurrentPcbWorkerStartupActorRunner } from "../src/current-pcb-worker-startup-actor-runner.ts";
 import { IDS, fixture, inventory, mutate } from "./helpers/symbol-sql-fixture.ts";
 
@@ -90,7 +91,7 @@ void test("owned actor preparation refuses forged private openings and getter wr
   await assert.rejects(prepareCurrentFootprintCopyActorOwned(source), /consumed/u);
   // oxlint-disable-next-line typescript/no-unsafe-type-assertion -- The forged actor getter must remain uncalled when the original private opening is absent.
   const forgedActor = Object.defineProperty({}, "originalActorPacket", { get: getter }) as typeof source.actor;
-  await assert.rejects(CurrentPcb209WorkerStartupOpening.prototype.originalActorObservation.call(source.opening,
+  await assert.rejects(currentFootprintCopyPreparationOpeningMethods(source.opening).originalActorObservation.call(source.opening,
     source.result, source.assignments, forgedActor), /private|class|object/u);
   // oxlint-disable-next-line typescript/no-unsafe-type-assertion -- A public-shaped token cannot retrieve privately retained actor or copy inputs.
   await assert.rejects(requireCurrentFootprintCopyActorOwned({} as Parameters<typeof requireCurrentFootprintCopyActorOwned>[0], source.opening), /original owned actor/u);

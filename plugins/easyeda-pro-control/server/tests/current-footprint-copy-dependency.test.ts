@@ -6,7 +6,7 @@ import vm from "node:vm";
 import { CURRENT_FOOTPRINT_COPY_DEPENDENCY_CALLS as CALLS, decodeCurrentFootprintCopyDependencies,
   decodeCurrentFootprintCopyDependencyFunction } from "../src/current-footprint-copy-dependency-bindings.ts";
 import { CURRENT_FOOTPRINT_COPY_DEPENDENCY_PROFILES as PROFILES } from "../src/current-footprint-copy-dependency-profiles.ts";
-import { CurrentFootprintCopyDependencyRunner, currentFootprintCopyDependencyObservationSchema } from "../src/current-footprint-copy-dependency-runner.ts";
+import { CurrentFootprintCopyDependencyRunner, currentFootprintCopyDependencyObservationSchema, recordedCurrentFootprintCopyDependencyObservationSchema } from "../src/current-footprint-copy-dependency-runner.ts";
 import { CURRENT_FOOTPRINT_COPY_LEXICAL_PROFILES as DIRECT } from "../src/current-footprint-copy-producer-scope.ts";
 import { currentFootprintCopyDependencyNativeCases, currentPcb209WorkerStartupNativeCases, currentPcbWorkerStartupNativeSource } from "../src/current-pcb-worker-startup-native.ts";
 import { currentFootprintCopyPreparationWire, currentPcb209WorkerStartupWire, currentPcbWorkerStartupWire } from "../src/current-pcb-worker-startup-wire.ts";
@@ -14,6 +14,8 @@ import { CURRENT_FOOTPRINT_COPY_DEPENDENCY_FIXTURE as SOURCES } from "./helpers/
 import { FOOTPRINT_PRODUCER_SOURCE_FIXTURE as DIRECT_SOURCES } from "./helpers/current-footprint-copy-producer-fixture.ts";
 
 import { footprintDependencyWorldSource } from "./helpers/current-footprint-copy-dependency-world.ts";
+
+import { backendCacheArrayTail, backendCacheNativeMetadata } from "./helpers/current-footprint-copy-backend-cache-metadata.ts";
 
 type Data = Record<string, unknown>;
 const property = (name: string, value: Data, writable = false, enumerable = false, configurable = true): Data =>
@@ -27,9 +29,9 @@ function arrayReply(direct = false): Data {
     result.push(...[7, 8].map(index => property(String(index), { type: "object", className: "Object", description: "Object", objectId: `enum-${String(index)}` }, true, true)),
       property("9", { type: "string", value: "|\n" }, true, true));
   } else {
-    result.push(...["JP", "Cache", "Cache"].map((className, index) => property(String(index + 53), { type: "object", className, objectId: `runtime-${String(index)}` }, true, true)));
+    result.push(...backendCacheArrayTail());
   }
-  result.push(property("length", { type: "number", value: direct ? 10 : 56 }, true, false, false));
+  result.push(property("length", { type: "number", value: direct ? 10 : 69 }, true, false, false));
   return { result, internalProperties: [{ name: "[[Prototype]]", value: { type: "object", subtype: "array", className: "Array", description: "Array(0)", objectId: "array-prototype" } }] };
 }
 function functionReply(index: number, direct = false): Data {
@@ -55,16 +57,16 @@ function owner(): { runner: CurrentFootprintCopyDependencyRunner; calls: string[
         type: "object", subtype: "internal#scope", className: "Object", description, objectId: `${id}-${String(index)}`,
       }, true, true)) }); }
       const index = Number(id.split("-")[1]);
-      return Promise.resolve(functionReply(index, id.startsWith("direct-")));
+      return Promise.resolve(id.startsWith("native-") ? backendCacheNativeMetadata(index) : functionReply(index, id.startsWith("direct-")));
     },
-    capture: (scope: string): Promise<unknown> => { calls.push(`capture-${scope}`); return Promise.resolve({ result: { type: "object", subtype: "array", className: "Array", description: "Array(56)", objectId: "dependencies" } }); },
+    capture: (scope: string): Promise<unknown> => { calls.push(`capture-${scope}`); return Promise.resolve({ result: { type: "object", subtype: "array", className: "Array", description: "Array(69)", objectId: "dependencies" } }); },
     recheck: (scope: string, bundle: string): Promise<unknown> => { calls.push(`recheck-${scope}`); assert.equal(bundle, "dependencies"); return Promise.resolve(valid ? yes : { result: { type: "boolean", value: false } }); },
   }), "script");
   return { runner, calls, failFinal: (): void => { valid = false; }, loseAfterReply: (): void => { lose = true; } };
 }
 
 void test("dependency profiles match complete pinned sources and JavaScript arities without invoking them", () => {
-  assert.equal(decodeCurrentFootprintCopyDependencies(arrayReply()).length, 53);
+  assert.equal(decodeCurrentFootprintCopyDependencies(arrayReply()).length, 60);
   const context = vm.createContext({}), done = new Set<string>();
   function compile(index: number): void {
     const profile = PROFILES[index], source = SOURCES[index]; assert.ok(profile && source);
@@ -78,7 +80,7 @@ void test("dependency profiles match complete pinned sources and JavaScript arit
     assert.throws(() => decodeCurrentFootprintCopyDependencyFunction(functionReply(index), "other-script", index));
   }
   for (const index of PROFILES.keys()) { compile(index); }
-  assert.equal(done.size, 53);
+  assert.equal(done.size, 60);
   const altered = arrayReply(); assert.ok(Array.isArray(altered["result"]));
   altered["result"][0] = property("0", { type: "function", className: "Function", description: "function wa(){}", objectId: "replacement" }, true, true);
   assert.throws(() => decodeCurrentFootprintCopyDependencies(altered));
@@ -91,7 +93,8 @@ function fixedWorld(): vm.Context {
 }
 
 void test("fixed dependency selectors retain original identities and refuse lazy bus creation, accessors and method shadows", () => {
-  for (const change of ["", "delete globalThis['/tab/notify']", "scope.wa=function replacement(){}", "project.cache={}",
+  for (const change of ["", "delete globalThis['/tab/notify']", "scope.wa=function replacement(){}", "project.cache={}", "project.cache.cacheName='foreign'", "project.cache.cache=Object.create(Cache.prototype)",
+    "project.localCache.cache=project.cache.cache", "project.cache.put=stop", "Cache.prototype.put=function other(){}", "scope.bb.prototype.put=function other(){}",
     "notification.rpcCall=function replacement(){}", "Object.defineProperty(scope,'oo',{get(){calls++;return stop;}})", "globalThis.EDITOR_TOP={}", "manager.user='changed'"]) {
     const context = fixedWorld();
     vm.runInContext(`const original=(${CALLS.capture.program}).call({object:scope},project,bus,manager,consistency,constructors,lexicals);${change}`, context);
@@ -101,21 +104,40 @@ void test("fixed dependency selectors retain original identities and refuse lazy
     if (change.startsWith("delete")) { assert.equal(vm.runInContext("Object.hasOwn(globalThis,'/tab/notify')", context), false); }
   }
 });
-void test("dependency runner retains64 original reads, then one fresh3-request reproof without execution authority", async () => {
+void test("dependency runner retains75 original reads, then one fresh3-request reproof without execution authority", async () => {
   const { runner, calls } = owner(), packet = await runner.observe();
-  assert.equal(calls.length, 64); assert.equal(runner.retained().replies.length, 64);
+  assert.equal(calls.length, 75); assert.equal(runner.retained().replies.length, 75);
   assert.deepEqual(calls.filter(id => id.startsWith("scopes-")), ["scopes-2", "scopes-4", "scopes-5"]);
   currentFootprintCopyDependencyObservationSchema.parse(packet); assert.equal(packet.executionAuthorized, false);
-  await assert.rejects(runner.requireOriginal({ ...packet })); assert.equal(calls.length, 64);
-  await runner.requireOriginal(packet); assert.equal(calls.length, 67);
-  await assert.rejects(runner.requireOriginal(packet)); await assert.rejects(runner.observe()); assert.equal(calls.length, 67);
+  await assert.rejects(runner.requireOriginal({ ...packet })); assert.equal(calls.length, 75);
+  await runner.requireOriginal(packet); assert.equal(calls.length, 78);
+  await assert.rejects(runner.requireOriginal(packet)); await assert.rejects(runner.observe()); assert.equal(calls.length, 78);
 });
 void test("dependency owner loss retains the arrived reply and failed reproof cannot retry", async () => {
   const lost = owner(); lost.loseAfterReply(); await assert.rejects(lost.runner.observe(), /owner lost/u);
   assert.equal(lost.runner.retained().replies.length, 1); assert.equal(lost.runner.retained().failed, true);
   const failed = owner(), packet = await failed.runner.observe(); failed.failFinal(); await assert.rejects(failed.runner.requireOriginal(packet));
-  assert.equal(failed.runner.retained().requests, 67); assert.equal(failed.runner.retained().failed, true);
-  await assert.rejects(failed.runner.requireOriginal(packet)); assert.equal(failed.calls.length, 67);
+  assert.equal(failed.runner.retained().requests, 78); assert.equal(failed.runner.retained().failed, true);
+  await assert.rejects(failed.runner.requireOriginal(packet)); assert.equal(failed.calls.length, 78);
+});
+
+void test("recorded dependency observations preserve exact historical53 without admitting them as current60 evidence", async () => {
+  const value = owner(); const packet = await value.runner.observe();
+  const newFields = ["cacheWrapperFunctionsQualified", "cacheWrapperNamespaceNamesMatched", "originalNativeCacheReceiverCandidatesRetained",
+    "nativeCacheFunctionsQualified", "nativeCacheNamespaceProvenanceVerified"];
+  const historical = { ...Object.fromEntries(Object.entries(packet).filter(([name]) => !newFields.includes(name))), selectedFunctionCount: 53 };
+  assert.deepEqual(recordedCurrentFootprintCopyDependencyObservationSchema.parse(historical), historical);
+  assert.deepEqual(recordedCurrentFootprintCopyDependencyObservationSchema.parse(packet), packet);
+  assert.equal(currentFootprintCopyDependencyObservationSchema.safeParse(historical).success, false);
+  for (const field of newFields) {
+    assert.equal(recordedCurrentFootprintCopyDependencyObservationSchema.safeParse({ ...historical, [field]: true }).success, false);
+    const missing = Object.fromEntries(Object.entries(packet).filter(([name]) => name !== field));
+    assert.equal(recordedCurrentFootprintCopyDependencyObservationSchema.safeParse(missing).success, false);
+  }
+  assert.equal(recordedCurrentFootprintCopyDependencyObservationSchema.safeParse({ ...packet, selectedFunctionCount: 53 }).success, false);
+  assert.equal(recordedCurrentFootprintCopyDependencyObservationSchema.safeParse({ ...packet, nativeCacheNamespaceProvenanceVerified: true }).success, false);
+  await assert.rejects(value.runner.requireOriginal(currentFootprintCopyDependencyObservationSchema.parse(packet)));
+  assert.equal(value.calls.length, 75);
 });
 void test("dependency commands exist only in preparation wire while native generation preserves old case parity", () => {
   for (const [index, command] of currentFootprintCopyDependencyNativeCases().entries()) {

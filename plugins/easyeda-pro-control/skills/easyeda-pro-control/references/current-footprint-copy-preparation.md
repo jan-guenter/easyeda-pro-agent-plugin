@@ -32,10 +32,13 @@ Follow the returned phase and retain the same Codex session:
    responder, initialized registry and bus. It checks registry membership
    without invoking a lazy getter or creating a bus. A matching project ID and
    worker identity bracket do not prove that the UI bus targets that worker.
-6. `prepare-footprint-dependencies` qualifies 53 helper, serializer, parser,
-   cache, upload and notification functions. It retains the initialized bus
+6. `prepare-footprint-dependencies` qualifies 60 helper, serializer, parser,
+   cache, upload and notification functions, including the original `bb` cache
+   wrapper class and its six methods. It retains the initialized bus
    without invoking those functions or initializing a lazy bus. This does not
-   prove subscriber completion or that an upload queue has drained.
+   prove subscriber completion or that an upload queue has drained. Declared
+   wrapper names and four qualified native Cache functions retain candidate
+   receivers; they do not prove the native cache namespaces.
 7. `observe-footprint-manager-route` follows the original UI subscription
    through the initialized manager registry to the project and worker bus.
    It fetches and qualifies the original callback's complete manager script
@@ -65,19 +68,26 @@ the cache. Keep raw source ordering and the independent checkpoint comparison
 separate. The manager's own undefined user is also distinct from the backend
 actor selected from SQL.
 
-The private clock collector captures the two results used by the actual native
+The preparation purpose reserves 565 normal requests and 34 cleanup requests,
+599 total. The private clock collector captures the two results used by the actual native
 `buildString` and `canvasString` continuations. Its synthetic tests do not
 validate embedded-V8 breakpoint locations, server provenance or a writer.
 Preliminary clock calls cannot replace those results. Native create allocates
 state before its first clock continuation, so a later failure may already have
 changed the design.
 
-Copy execution still needs complete destination and backend actor/clock
-bindings, a complete native transport and finite budget, durable one-shot dispatch,
-and complete effect verification. The private execution coordinator follows
+Copy execution still needs complete backend actor/clock bindings, durable
+one-shot dispatch integration and complete effect verification. Fixed private
+create encoding and a separate saved-generation owner are implemented, but the
+complete native writer remains unmounted. The private execution coordinator follows
 the symbol-copy pattern with zero explicit Save attempts: original-generation
 closure, complete closed SQL comparison, upload-cache replay exclusion and a
-distinct saved verification generation. Its complete native writer is not mounted.
+distinct saved verification generation. The private saved owner uses purpose
+`worker-startup-footprint-saved209`, reserves 319 normal and 34 cleanup requests
+(353 total), and retains its own launch, parent queue checks, constructor capture
+and saved-source reads. It cannot adopt the writer's handles or dispatch create,
+transaction-clock calls or explicit Save. This is implementation coverage,
+not connected saved-copy acceptance or a public saved-owner action.
 Generation closure does not prove callback completion or undo external effects;
 those effect branches must be qualified before dispatch. Neither preparation
 nor a returned UUID supplies the missing proofs.
@@ -97,7 +107,15 @@ original parent around Worker creation and qualifies the child bootstrap before
 installing a one-use diagnostic message observer. The child consumes that exact
 message before business handlers receive it. Only the original matching proof
 permits the parent to resume. The eleven constructor pauses retain parser and
-upload callback relationships. These debugger pauses affect application timing.
+upload callback relationships. Four additional cache pauses observe the two
+original `bb.open` calls before native `CacheStorage.open` and after its result
+assignment. The original event subscription, source-qualified wrapper functions,
+native getter/open identities and unchanged project assignments bind the two
+cache namespace arguments to the retained native Cache results. A namespace
+label or an after-the-fact object inspection cannot replace that event history.
+These debugger pauses affect application timing. This purpose shares the private
+execution envelope of 743 normal requests and 44 cleanup requests, 787 total;
+this does not reserve or enable a complete writer lifecycle.
 
 After capture, current assignments and actor observation, `observe-footprint-route` runs the fixed
 original-owner route observation and publishes its result or retained failure.
@@ -106,9 +124,10 @@ does not accept caller programs, budgets, clock samples or reconstructed owner
 objects. Do not repeat a stage after an uncertain response.
 
 The observation qualifies selected notification methods, original API objects,
-relative history routes and empty queues at the observed point. Native HTTP
-backend ownership, cache namespace provenance and callback completion remain
-separate requirements. A Windows clock sample does not prove the backend actor
+relative history routes and empty queues at the observed point. Cache namespace
+evidence is accepted only from its completed original startup capture; connected
+validation remains pending. Native HTTP backend ownership and callback completion
+remain separate requirements. A Windows clock sample does not prove the backend actor
 or replace the two clock results used by native document creation. This purpose
 does not arm transaction-clock breakpoints or dispatch copy, delete or Save.
 

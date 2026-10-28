@@ -6,7 +6,10 @@ import { test } from "node:test";
 import { setTimeout as delay } from "node:timers/promises";
 import type { TestContext } from "node:test";
 import { CurrentFootprintCopyExecutionChannel, CurrentFootprintCopyPreparationChannel, isOriginalFootprintExecutionDependency,
-  requestCurrentFootprintCopyParent, requestCurrentFootprintCopyTransactionClock, subscribeCurrentFootprintCopyParentEvents } from "../src/current-pcb-worker-startup-channel.ts";
+  requestCurrentFootprintCopyCacheConstruction, requestCurrentFootprintCopyParent, requestCurrentFootprintCopyTransactionClock, subscribeCurrentFootprintCopyParentEvents } from "../src/current-pcb-worker-startup-channel.ts";
+import { currentFootprintCacheConstructionNativeCases } from "../src/current-footprint-copy-cache-construction-native.ts";
+import { bindFootprintPreparationConstructionTransport, originalFootprintExecutionConstructionProjectUuid,
+  requestFootprintExecutionConstructionCache } from "../src/current-footprint-copy-construction-purpose.ts";
 import { validateCurrentFootprintParentWorkerCommand } from "../src/current-footprint-copy-parent-worker-wire.ts";
 import { bindCurrentFootprintCopyParentRoute } from "../src/current-footprint-copy-parent-route.ts";
 import { currentFootprintCopyParentNativeCases } from "../src/current-footprint-copy-parent-native.ts";
@@ -43,7 +46,7 @@ async function fixture(context: TestContext, execution: boolean): Promise<Readon
           targetInfo: { targetId: "worker-target", type: "worker", attached: true, title: "synthetic", url: "file:///synthetic/project-worker.js" } } });
       }
       let sessionId = request["sessionId"];
-      if (request["action"] === "footprint-copy-clock" || request["action"] === "footprint-copy-worker") { sessionId = "worker-session"; }
+      if (request["action"] === "footprint-copy-clock" || request["action"] === "footprint-copy-worker" || request["action"] === "footprint-cache-construction") { sessionId = "worker-session"; }
       else if (request["action"] === "footprint-copy-parent") { sessionId = request["realm"] === "parent" ? "parent-session" : "worker-session"; }
       frame({ id: request["requestId"], sessionId, result: {} }); return Promise.resolve({ written: true });
     },
@@ -82,6 +85,28 @@ void test("execution routes original parser and clock commands through the same 
   assert.equal(Object.hasOwn(worker, "sessionId"), false); assert.equal(Object.hasOwn(clockRequest, "sessionId"), false);
   await assert.rejects(requestCurrentFootprintCopyTransactionClock(value.dependency, { ...clock, sessionId: "foreign" }), /FOOTPRINT_CLOCK_OWNER/u);
   assert.equal(value.requests.length, 6);
+});
+
+void test("cache construction commands retain writer dependency, original project and the shared counter", async context => {
+  const preparation = await fixture(context, false), value = await fixture(context, true);
+  const sample = currentFootprintCacheConstructionNativeCases().find(command => command.method === "Runtime.getProperties"); assert.ok(sample);
+  const { phase: _phase, sessionId: _session, ...command } = sample;
+  await assert.rejects(requestCurrentFootprintCopyCacheConstruction(preparation.dependency, command), /PURPOSE/u);
+  await assert.rejects(requestCurrentFootprintCopyCacheConstruction(Object.freeze({ ...value.dependency }), command), /PURPOSE/u);
+  const construction: CurrentPcbWorkerConstructionTransport = Object.freeze({ scriptId: "script", assertOriginalPinnedWorker: (): Promise<void> => Promise.resolve(),
+    request: (): Promise<unknown> => Promise.reject(new Error("generic construction transport must not dispatch cache commands")), subscribe: (): (() => void) => (): void => undefined });
+  assert.throws(() => { bindFootprintPreparationConstructionTransport(value.dependency, construction); }, /CACHE_PROJECT/u);
+  await open(value); await value.dependency.request({ method: "Runtime.enable", sessionId: "worker-session", params: {} });
+  bindFootprintPreparationConstructionTransport(value.dependency, construction);
+  assert.match(originalFootprintExecutionConstructionProjectUuid(construction), /^[a-f\d]{64}$/u);
+  assert.throws(() => originalFootprintExecutionConstructionProjectUuid(Object.freeze({ ...construction })), /CONSTRUCTION_PROJECT/u);
+  assert.throws(() => { bindFootprintPreparationConstructionTransport(value.dependency, construction); }, /ISSUED/u);
+  const before = value.requests.length;
+  for (let count = 0; count < 33; count += 1) { await requestFootprintExecutionConstructionCache(construction, command); }
+  await assert.rejects(requestFootprintExecutionConstructionCache(construction, command), /CACHE_OWNER/u);
+  assert.equal(value.requests.length - before, 33);
+  assert.equal(value.requests.at(-1)?.["action"], "footprint-cache-construction");
+  assert.equal(Object.hasOwn(value.requests.at(-1) ?? {}, "sessionId"), false);
 });
 void test("preparation and copied dependency objects cannot request execution clocks", async context => {
   const clock = currentFootprintCopyTransactionClockNativeCases()[0], value = await fixture(context, false); assert.ok(clock);

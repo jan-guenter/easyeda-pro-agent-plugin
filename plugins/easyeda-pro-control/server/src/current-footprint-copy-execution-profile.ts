@@ -6,10 +6,16 @@ import { CURRENT_FOOTPRINT_COPY_TRANSACTION_CLOCK_REQUESTS } from "./current-foo
 import { CURRENT_FOOTPRINT_COPY_CONSTRUCTION_TIMING } from "./current-footprint-copy-parser-construction.ts";
 import { CURRENT_FOOTPRINT_PARENT_CONSTRUCTION_REQUESTS } from "./current-footprint-copy-parent-construction-contract.ts";
 import { CURRENT_FOOTPRINT_PARENT_WORKER_REQUESTS } from "./current-footprint-copy-parent-worker-contract.ts";
+import { CURRENT_FOOTPRINT_COPY_CACHE_CONSTRUCTION_REQUESTS } from "./current-footprint-copy-cache-construction-contract.ts";
 import { CURRENT_FOOTPRINT_COPY_MANAGER_ROUTE_REQUESTS } from "./current-footprint-copy-manager-route-runner.ts";
 import { freezeDeep } from "./sqlite-inventory-core.ts";
 
 const transactionClockCleanup = 5;
+const cacheConstructionNative = CURRENT_FOOTPRINT_COPY_CACHE_CONSTRUCTION_REQUESTS.total + CURRENT_FOOTPRINT_COPY_CACHE_CONSTRUCTION_REQUESTS.reproof;
+const cacheConstructionCleanup = CURRENT_FOOTPRINT_COPY_CACHE_CONSTRUCTION_REQUESTS.release;
+const cacheConstruction = cacheConstructionNative - cacheConstructionCleanup;
+// The opening delegate reproves project identity twice and assignments once.
+const cacheConstructionDelegates = 3;
 const construction = CURRENT_FOOTPRINT_COPY_CONSTRUCTION_TIMING.captureRequests - 55;
 const asyncAndHandoff = 19 + 6 + 1;
 const destinations = 38 + 5;
@@ -20,14 +26,14 @@ const parentNormal = parentConstruction.arm + parentConstruction.capture + paren
 const parentCleanup = parentConstruction.release + parentPeer.cleanup;
 export const CURRENT_FOOTPRINT_COPY_EXECUTION_PROFILE = freezeDeep({
   purpose: "worker-startup-footprint-copy209",
-  normalRequestLimit: CURRENT_FOOTPRINT_COPY_PREPARATION_PROFILE.normalRequestLimit + construction + asyncAndHandoff + destinations + parentNormal + CURRENT_FOOTPRINT_COPY_TRANSACTION_CLOCK_REQUESTS - transactionClockCleanup,
-  requestLimit: CURRENT_FOOTPRINT_COPY_PREPARATION_PROFILE.requestLimit + construction + asyncAndHandoff + destinations + parentNormal + parentCleanup + CURRENT_FOOTPRINT_COPY_TRANSACTION_CLOCK_REQUESTS,
+  normalRequestLimit: CURRENT_FOOTPRINT_COPY_PREPARATION_PROFILE.normalRequestLimit + construction + asyncAndHandoff + destinations + parentNormal + cacheConstruction + cacheConstructionDelegates + CURRENT_FOOTPRINT_COPY_TRANSACTION_CLOCK_REQUESTS - transactionClockCleanup,
+  requestLimit: CURRENT_FOOTPRINT_COPY_PREPARATION_PROFILE.requestLimit + construction + asyncAndHandoff + destinations + parentNormal + parentCleanup + cacheConstructionNative + cacheConstructionDelegates + CURRENT_FOOTPRINT_COPY_TRANSACTION_CLOCK_REQUESTS,
   requests: { preparation: CURRENT_FOOTPRINT_COPY_PREPARATION_PROFILE.normalRequestLimit,
-    construction, asyncAndHandoff, destinations, parentNormal,
+    construction, asyncAndHandoff, destinations, parentNormal, cacheConstruction, cacheConstructionNative, cacheConstructionDelegates,
     parentNative: parentConstruction.arm + parentConstruction.capture + parentConstruction.resume + parentConstruction.release +
       parentPeer.observe + 2 * parentPeer.reprove + parentPeer.managerJoin + parentPeer.cleanup,
     transactionClock: CURRENT_FOOTPRINT_COPY_TRANSACTION_CLOCK_REQUESTS - transactionClockCleanup,
-    cleanup: CURRENT_FOOTPRINT_COPY_PREPARATION_PROFILE.requests.cleanup + transactionClockCleanup + parentCleanup },
+    cleanup: CURRENT_FOOTPRINT_COPY_PREPARATION_PROFILE.requests.cleanup + transactionClockCleanup + parentCleanup + cacheConstructionCleanup },
   stateSampleLimit: CURRENT_FOOTPRINT_COPY_PREPARATION_PROFILE.stateSampleLimit,
   normalMilliseconds: CURRENT_FOOTPRINT_COPY_PREPARATION_PROFILE.normalMilliseconds,
   cleanupMilliseconds: CURRENT_FOOTPRINT_COPY_PREPARATION_PROFILE.cleanupMilliseconds,
