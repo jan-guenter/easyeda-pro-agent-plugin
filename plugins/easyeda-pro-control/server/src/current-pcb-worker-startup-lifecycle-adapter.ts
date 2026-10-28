@@ -6,20 +6,21 @@ import type { CurrentPcbWorkerConstructionAssignments } from "./current-pcb-work
 import type { CurrentPcbWorkerStartupActorPacket } from "./current-pcb-worker-startup-actor-runner.ts";
 import type { CurrentPcbWorkerStartupChannelPacket } from "./current-pcb-worker-startup-channel-observation.ts";
 import type { CurrentPcbWorkerStartupOpening, CurrentPcbWorkerStartupOpeningResult } from "./current-pcb-worker-startup-opening.ts";
-import type { CurrentPcb209WorkerStartupTransport, CurrentPcbWorkerStartupTransport } from "./current-pcb-worker-startup-transport.ts";
+import type { CurrentPcb209WorkerStartupTransport, CurrentPcbWorkerStartupTransport, CurrentPcbWorkerStartupTransportOwner } from "./current-pcb-worker-startup-transport.ts";
 import type { CurrentPcb209WorkerStartupActorPacket } from "./current-pcb-209-worker-startup-actor.ts";
-import { CurrentPcb209WorkerStartupOpening } from "./current-pcb-209-worker-startup-opening.ts";
-import type { CurrentPcb209WorkerStartupOpeningResult } from "./current-pcb-209-worker-startup-opening.ts";
+import { CurrentFootprintCopyStartupOpening, CurrentPcb209WorkerStartupOpening } from "./current-pcb-209-worker-startup-opening.ts";
+import type { CurrentFootprintCopyStartupOpeningResult, CurrentPcb209WorkerStartupOpeningResult } from "./current-pcb-209-worker-startup-opening.ts";
 import { types } from "node:util";
 
-export type CurrentPcbStartupOpeningResult = CurrentPcbWorkerStartupOpeningResult | CurrentPcb209WorkerStartupOpeningResult;
+export type CurrentPcbStartupOpeningResult = CurrentPcbWorkerStartupOpeningResult | CurrentPcb209WorkerStartupOpeningResult | CurrentFootprintCopyStartupOpeningResult;
 export type CurrentPcbStartupActorPacket = CurrentPcbWorkerStartupActorPacket | CurrentPcb209WorkerStartupActorPacket;
-export type CurrentPcbStartupTransport = CurrentPcbWorkerStartupTransport | CurrentPcb209WorkerStartupTransport;
+export type CurrentPcbStartupTransport = CurrentPcbWorkerStartupTransport | CurrentPcb209WorkerStartupTransport | CurrentPcbWorkerStartupTransportOwner<"private.current-footprint-copy-construction.v1">;
 const methodNames = ["open", "status", "retainedOpeningResult", "requireOriginal", "proveCurrentAssignments", "requireCurrentAssignments",
   "retainedActorObservation", "observeActorClock", "requireActorClock", "retainedChannelObservation", "observeCurrentChannel", "requireCurrentChannel",
   "releaseAfterTermination"] as const;
 export type CurrentPcbWorkerStartupOpeningCoordinator = Pick<CurrentPcbWorkerStartupOpening, (typeof methodNames)[number]>;
 export type CurrentPcb209WorkerStartupOpeningCoordinator = Pick<CurrentPcb209WorkerStartupOpening, (typeof methodNames)[number]>;
+export type CurrentFootprintCopyStartupOpeningCoordinator = Pick<CurrentFootprintCopyStartupOpening, (typeof methodNames)[number]>;
 interface Coordinator<R extends CurrentPcbStartupOpeningResult, A extends CurrentPcbStartupActorPacket, T extends CurrentPcbStartupTransport> {
   readonly open: (target: CurrentDisposableOpenSealedTarget, reverify: () => Promise<void>) => Promise<R>;
   readonly status: () => Readonly<Record<string, unknown>>;
@@ -45,6 +46,12 @@ const original209 = new WeakMap<CurrentPcbStartupLifecycleAdapter, Readonly<{
 }>>();
 // oxlint-disable-next-line typescript/unbound-method -- Private-field brand check always supplies the original instance as receiver.
 const status209 = CurrentPcb209WorkerStartupOpening.prototype.status;
+const originalFootprint = new WeakMap<CurrentPcbStartupLifecycleAdapter, Readonly<{
+  owner: CurrentFootprintCopyStartupOpening;
+  result: (input: CurrentPcbStartupOpeningResult) => CurrentFootprintCopyStartupOpeningResult;
+}>>();
+// oxlint-disable-next-line typescript/unbound-method -- The original private-field owner is always supplied as receiver.
+const statusFootprint = CurrentFootprintCopyStartupOpening.prototype.status;
 function adapt<R extends CurrentPcbStartupOpeningResult, A extends CurrentPcbStartupActorPacket, T extends CurrentPcbStartupTransport>(
   owner: Coordinator<R, A, T>): Readonly<{ adapter: CurrentPcbStartupLifecycleAdapter; original: (result: CurrentPcbStartupOpeningResult) => R }> {
   const methods = Object.freeze({ open: owner.open, status: owner.status, retainedOpeningResult: owner.retainedOpeningResult,
@@ -103,5 +110,24 @@ export function requireCurrentPcb209StartupOpening(adapter: CurrentPcbStartupLif
   if (retained === undefined || Object.getPrototypeOf(retained.owner) !== CurrentPcb209WorkerStartupOpening.prototype ||
       CurrentPcb209WorkerStartupOpening.prototype.status !== status209) { return refuse(); }
   status209.call(retained.owner);
+  return Object.freeze({ opening: retained.owner, result: retained.result(result) });
+}
+
+/** Separate brand for the eleven-pause route. Legacy adapters cannot adopt it. */
+export function adaptCurrentFootprintCopyStartupLifecycle(owner: CurrentFootprintCopyStartupOpeningCoordinator): CurrentPcbStartupLifecycleAdapter {
+  const retained = adapt(owner);
+  if (!types.isProxy(owner) && Object.getPrototypeOf(owner) === CurrentFootprintCopyStartupOpening.prototype &&
+      owner instanceof CurrentFootprintCopyStartupOpening) {
+    statusFootprint.call(owner);
+    originalFootprint.set(retained.adapter, Object.freeze({ owner, result: retained.original }));
+  }
+  return retained.adapter;
+}
+export function requireCurrentFootprintCopyStartupOpening(adapter: CurrentPcbStartupLifecycleAdapter,
+  result: CurrentPcbStartupOpeningResult): Readonly<{ opening: CurrentFootprintCopyStartupOpening; result: CurrentFootprintCopyStartupOpeningResult }> {
+  const retained = originalFootprint.get(adapter);
+  if (retained === undefined || Object.getPrototypeOf(retained.owner) !== CurrentFootprintCopyStartupOpening.prototype ||
+      CurrentFootprintCopyStartupOpening.prototype.status !== statusFootprint) { return refuse(); }
+  statusFootprint.call(retained.owner);
   return Object.freeze({ opening: retained.owner, result: retained.result(result) });
 }

@@ -3,7 +3,11 @@
 /* oxlint-disable import/max-dependencies -- This native boundary compares every fixed program against its original contract literal; splitting those checks would duplicate the admission policy. */
 import { z } from "zod";
 import { CURRENT_FOOTPRINT_COPY_DEPENDENCY_CALLS } from "./current-footprint-copy-dependency-bindings.ts";
+import { CURRENT_FOOTPRINT_COPY_CREATE_METHOD_CALLS } from "./current-footprint-copy-create-bindings.ts";
+import { CURRENT_FOOTPRINT_COPY_LEXICAL_CALLS } from "./current-footprint-copy-producer-scope.ts";
 import { CURRENT_FOOTPRINT_COPY_PREPARATION_PROFILE } from "./current-footprint-copy-preparation-profile.ts";
+import { CURRENT_FOOTPRINT_COPY_EXECUTION_PROFILE } from "./current-footprint-copy-execution-profile.ts";
+import { currentFootprintCopyExecutionWorkerWire } from "./current-footprint-copy-execution-worker-wire.ts";
 import { CURRENT_FOOTPRINT_COPY_CONSTRUCTORS_EXPRESSION, CURRENT_FOOTPRINT_COPY_STATE_CALLS } from "./current-footprint-copy-state.ts";
 import { currentFootprintCopySourceCommandParamsSchema } from "./current-footprint-copy-source-command.ts";
 import { CURRENT_FOOTPRINT_COPY_METHOD_CALLS } from "./current-footprint-copy-method-bindings.ts";
@@ -184,6 +188,9 @@ function startupWire(raw: unknown, id: number,
       }
       const dependency = Object.entries(CURRENT_FOOTPRINT_COPY_DEPENDENCY_CALLS)
         .find(([, value]) => value.program === parsed.params.functionDeclaration);
+      const producer = [...Object.entries(CURRENT_FOOTPRINT_COPY_CREATE_METHOD_CALLS).map(([key, value]) => [`methods-${key}`, value] as const),
+        ...Object.entries(CURRENT_FOOTPRINT_COPY_LEXICAL_CALLS).map(([key, value]) => [`lexicals-${key}`, value] as const)]
+        .find(([, value]) => value.program === parsed.params.functionDeclaration);
       const footprint = [...Object.entries(CURRENT_FOOTPRINT_COPY_STATE_CALLS),
         ...Object.entries(CURRENT_FOOTPRINT_COPY_METHOD_CALLS).map(([key, value]) => [`methods-${key}`, value] as const),
         ...Object.entries(CURRENT_FOOTPRINT_COPY_CACHE_FACTORY_CALLS).map(([key, value]) => [`cache-factory-${key}`, value] as const)]
@@ -192,7 +199,12 @@ function startupWire(raw: unknown, id: number,
         .find(([, value]) => value.program === parsed.params.functionDeclaration);
       const channel = Object.entries(CURRENT_PCB_WORKER_STARTUP_CHANNEL_CALLS)
         .find(([, value]) => value.program === parsed.params.functionDeclaration);
-      if (dependency !== undefined) {
+      if (producer !== undefined) {
+        const [phase, expected] = producer;
+        if (!footprintPreparation || sites !== CURRENT_PCB_209_WORKER_CONSTRUCTION_SITES || parsed.params.arguments.length !== expected.arguments ||
+            parsed.params.returnByValue !== expected.returnByValue) { return fail(); }
+        fields = { startupPhase: `footprint-producer-${phase}`, objectId: parsed.params.objectId };
+      } else if (dependency !== undefined) {
         const [phase, expected] = dependency;
         if (!footprintPreparation || sites !== CURRENT_PCB_209_WORKER_CONSTRUCTION_SITES || parsed.params.arguments.length !== expected.arguments ||
             parsed.params.returnByValue !== expected.returnByValue) { return fail(); }
@@ -243,6 +255,16 @@ export function currentPcb209WorkerStartupWire(raw: unknown, id: number): Return
  * Its extra dependency selectors are unavailable to either old startup purpose. */
 export function currentFootprintCopyPreparationWire(raw: unknown, id: number): ReturnType<typeof startupWire> {
   if (!Number.isSafeInteger(id) || id < 1 || id > CURRENT_FOOTPRINT_COPY_PREPARATION_PROFILE.requestLimit) { return fail(); }
+  const original = startupWire(raw, 1, CURRENT_PCB_209_WORKER_CONSTRUCTION_SITES, CURRENT_PCB_DIAGNOSTIC_PCB_OPENING_FUNCTION, true);
+  return Object.freeze({ command: Object.freeze({ ...original.command, id }),
+    request: Object.freeze({ ...original.request, requestId: id }) });
+}
+/** A distinct execution owner keeps the same fixed preparation grammar. Its
+ * transaction clocks have a separate fixed encoder, never generic JS input. */
+export function currentFootprintCopyExecutionStartupWire(raw: unknown, id: number): ReturnType<typeof startupWire> {
+  if (!Number.isSafeInteger(id) || id < 1 || id > CURRENT_FOOTPRINT_COPY_EXECUTION_PROFILE.requestLimit) { return fail(); }
+  const execution = currentFootprintCopyExecutionWorkerWire(raw, id);
+  if (execution !== null) { return execution; }
   const original = startupWire(raw, 1, CURRENT_PCB_209_WORKER_CONSTRUCTION_SITES, CURRENT_PCB_DIAGNOSTIC_PCB_OPENING_FUNCTION, true);
   return Object.freeze({ command: Object.freeze({ ...original.command, id }),
     request: Object.freeze({ ...original.request, requestId: id }) });

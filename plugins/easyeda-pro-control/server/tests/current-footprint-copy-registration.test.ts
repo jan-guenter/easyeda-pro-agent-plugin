@@ -15,10 +15,11 @@ type Row = Record<string, unknown>;
 type Handler = (input: { request: unknown }) => Promise<unknown>;
 const expectedBindingSha256 = "a".repeat(64), operationId = "footprint-preparation-registration";
 const wrap = (request: object): { request: object } => ({ request: { action: "footprint-copy-preparation", request } });
+const route = (request: object): { request: object } => ({ request: { action: "footprint-copy-route-preparation", request } });
 const launch = { action: "launch", operationId, confirmValidationOnly: true, confirmDiagnosticLaunch: true, acceptExistingProfileEffects: true };
 const bound = (action: string): object => ({ action, operationId, expectedBindingSha256 });
 async function fixture(): Promise<Readonly<{ invoke: Handler; calls: readonly Row[]; allocations: readonly string[];
-  gate: SerializedGate; replaceMethod: () => void; failNext: () => void }>> {
+  gate: SerializedGate; replaceMethod: () => void; replaceRouteMethod: () => void; failNext: () => void }>> {
   const allocations: string[] = [], calls: Row[] = []; let fail = false;
   class Base {
     readonly #kind: string;
@@ -40,6 +41,7 @@ async function fixture(): Promise<Readonly<{ invoke: Handler; calls: readonly Ro
     }
   }
   class Preparation extends Base { public constructor(options: ConstructorParameters<typeof Base>[1]) { super("preparation", options); } }
+  class RoutePreparation extends Base { public constructor(options: ConstructorParameters<typeof Base>[1]) { super("route-preparation", options); } }
   class Ordinary extends Base { public constructor(options: ConstructorParameters<typeof Base>[1]) { super("ordinary", options); } }
   class Empty extends Base { public constructor(options: ConstructorParameters<typeof Base>[1]) { super("empty", options); } }
   class Ratline extends Base { public constructor(options: ConstructorParameters<typeof Base>[1]) { super("ratline", options); } }
@@ -51,6 +53,7 @@ async function fixture(): Promise<Readonly<{ invoke: Handler; calls: readonly Ro
     "prepareWorkerStartupFootprintBindings", "prepareStartupFootprintCopyBindings", "observeWorkerStartupFootprintUi", "observeStartupFootprintCopyUi",
     "prepareWorkerStartupFootprintDependencies", "prepareStartupFootprintCopyDependencies",
     "observeWorkerStartupFootprintManagerRoute", "observeStartupFootprintCopyManagerRoute",
+    "observeWorkerStartupFootprintRoute", "observeStartupFootprintRoute",
     "observeWorkerStartupEmpty", "observeStartupEmpty", "prepareWorkerStartupEmpty", "prepareStartupEmpty",
     "observeWorkerStartupRatline", "observeStartupRatline", "observeWorkerStartupRatlineContinuation", "observeStartupRatlineContinuation"]) {
     Object.defineProperty(Base.prototype, name, { value(this: Base, ...args: unknown[]): Promise<Row> { return this.record(name, args); } });
@@ -61,6 +64,7 @@ async function fixture(): Promise<Readonly<{ invoke: Handler; calls: readonly Ro
   let handler: Handler | null = null;
   const scope = vm.createContext({ z, currentPcb209WorkerStartupToolRequestSchema, currentSymbolOperationToolOutputSchema: z.unknown(),
     CurrentPcbWorkerStartupLifecycle: Ordinary, CurrentPcb209WorkerStartupLifecycle: Ordinary, CurrentFootprintCopyPreparationLifecycle: Preparation,
+    CurrentFootprintCopyRoutePreparationLifecycle: RoutePreparation,
     CurrentPcb209EmptyStartupLifecycle: Empty, CurrentPcb209RatlineStartupLifecycle: Ratline, CurrentPcb209RatlineContinuationLifecycle: Continuation,
     diagnostic209: true, facadeMode: "public-utilities-only", facadeToolRegistered: (): boolean => true,
     process: { env: { EASYEDA_ASSETS_ROOT: "/synthetic/assets", WSL_DISTRO_NAME: "synthetic" } },
@@ -89,8 +93,36 @@ async function fixture(): Promise<Readonly<{ invoke: Handler; calls: readonly Ro
   assert.ok(handler !== null);
   return { invoke: handler, calls, allocations, gate, failNext: (): void => { fail = true; }, replaceMethod: (): void => {
     Object.defineProperty(Preparation.prototype, "prepareWorkerStartupFootprintBindings", { value: (): never => assert.fail("Replacement must not execute") });
+  }, replaceRouteMethod: (): void => {
+    Object.defineProperty(RoutePreparation.prototype, "observeWorkerStartupFootprintRoute", { value: (): never => assert.fail("Replacement must not execute") });
   } };
 }
+void test("registered route preparation retains its own purpose and original observation receiver", async () => {
+  const f = await fixture(), routeId = "footprint-route-registration";
+  const stage = { action: "observe-footprint-route", operationId: routeId, expectedBindingSha256 };
+  for (const request of [{ ...stage, requestLimit: 9999 }, { ...stage, operationId }, { ...stage, operationId: `${routeId}\n` },
+    { ...stage, action: "create" }, { ...stage, action: "save" }]) {
+    await assert.rejects(f.invoke(route(request)));
+  }
+  assert.deepEqual(f.allocations, []);
+  await f.invoke(route({ ...launch, operationId: routeId }));
+  await f.invoke(route(stage));
+  assert.deepEqual(f.allocations, ["route-preparation"]);
+  assert.deepEqual(f.calls.map(row => row["method"]), ["run", "observeWorkerStartupFootprintRoute"]);
+  assert.deepEqual(structuredClone(f.calls[1]?.["args"]), [routeId, expectedBindingSha256]);
+  await assert.rejects(f.invoke(wrap(launch)), /purpose cannot change/u);
+  f.replaceRouteMethod(); const count = f.calls.length;
+  await assert.rejects(f.invoke(route(stage)), /methods changed/u); assert.equal(f.calls.length, count);
+});
+void test("offline route preparation matches its registered strict schema without enabling a writer", () => {
+  const response = queryOfflineApi(apiRequestSchema.parse({ action: "footprint-copy-route-preparation", query: { includeSchemas: true } }));
+  const discovery = z.record(z.string(), z.unknown()).parse(response.result);
+  assert.equal(discovery["toolWrapperAction"], "footprint-copy-route-preparation"); assert.equal(discovery["executionAuthorized"], false);
+  const request = { action: "observe-footprint-route", operationId: "footprint-route-offline", expectedBindingSha256 };
+  const validation = queryOfflineApi(apiRequestSchema.parse({ action: "footprint-copy-route-preparation-validate", query: { request } }));
+  assert.equal(z.record(z.string(), z.unknown()).parse(validation.result)["valid"], true);
+  assert.equal(currentPcb209WorkerStartupToolRequestSchema.safeParse({ action: "footprint-copy-route-preparation", request }).success, true);
+});
 void test("registered preparation route forwards each action only through its original lifecycle receiver", async () => {
   const f = await fixture(); await f.invoke(wrap(launch));
   for (const action of ["observe-current-assignments", "observe-actor-clock", "observe-footprint-state", "prepare-footprint-copy", "prepare-footprint-bindings", "observe-footprint-ui", "prepare-footprint-dependencies", "observe-footprint-manager-route"]) {

@@ -48,25 +48,30 @@ import { prepareCurrentPcbStringSaveProvenance, requireOriginalCurrentPcbStringS
 import type { CurrentPcbStringSaveProvenance } from "./current-pcb-string-save-provenance.ts";
 import { CurrentPcbStringMoveRunner, currentPcbStringMoveFailureDetail } from "./current-pcb-string-move-runner.ts";
 import { inspectCurrentPcbStringFiniteEffects } from "./current-pcb-string-finite-effects.ts";
+import { CurrentFootprintCopyWindowsClockIssuer } from "./current-footprint-copy-windows-clock.ts";
+import type { CurrentFootprintCopyWindowsClockObservation, CurrentFootprintCopyWindowsClockPhase, CurrentFootprintCopyWindowsClockTransport } from "./current-footprint-copy-windows-clock.ts";
 import { CurrentPcbStringNativeClockIssuer } from "./current-pcb-string-native-clock.ts";
 import { captureCurrentPcbStringClockReply } from "./current-pcb-string-clock-reply.ts";
 import type { CurrentPcbStringNativeClockObservation, CurrentPcbStringNativeClockPhase } from "./current-pcb-string-native-clock.ts";
 import { freezeDeep } from "./sqlite-inventory-core.ts";
-import { CurrentFootprintCopyPreparationChannel, CurrentPcb209WorkerStartupChannel, CurrentPcbWorkerStartupChannel } from "./current-pcb-worker-startup-channel.ts";
+import { CurrentFootprintCopyExecutionChannel, CurrentFootprintCopyPreparationChannel, CurrentPcb209WorkerStartupChannel, CurrentPcbWorkerStartupChannel } from "./current-pcb-worker-startup-channel.ts";
 import type { CurrentPcbWorkerStartupParent } from "./current-pcb-worker-startup-channel.ts";
 import type { CurrentPcbWorkerStartupDependency } from "./current-pcb-worker-startup-contract.ts";
 import { CurrentPcbWorkerStartupOpening } from "./current-pcb-worker-startup-opening.ts";
 import type { CurrentPcbWorkerStartupOpeningResult } from "./current-pcb-worker-startup-opening.ts";
 import { CurrentPcbWorkerStartupPcbSession } from "./current-pcb-worker-startup-pcb-session.ts";
-import type { CurrentFootprintCopyManagerRouteObservation, CurrentFootprintCopyManagerRouteRunner } from "./current-footprint-copy-manager-route-runner.ts";
+import { CurrentFootprintCopyManagerRouteRunner } from "./current-footprint-copy-manager-route-runner.ts";
+import type { CurrentFootprintParentWorkerObservation } from "./current-footprint-copy-parent-worker-runner.ts";
+import type { CurrentFootprintCopyManagerRouteObservation } from "./current-footprint-copy-manager-route-runner.ts";
 import type { CurrentFootprintCopyManagerRouteCommand } from "./current-footprint-copy-manager-route-command.ts";
 import { CurrentFootprintCopyUiRunner } from "./current-footprint-copy-ui-runner.ts";
 import type { CurrentFootprintCopyUiCommand } from "./current-footprint-copy-ui-command.ts";
 import type { CurrentFootprintCopyUiObservation } from "./current-footprint-copy-ui-runner.ts";
 import { qualifyCurrentFootprintCopyUiSource, requireCurrentFootprintCopyUiSource } from "./current-footprint-copy-ui-source.ts";
 import type { CurrentFootprintCopyUiSourceQualification } from "./current-footprint-copy-ui-source.ts";
-import { CurrentPcb209WorkerStartupOpening } from "./current-pcb-209-worker-startup-opening.ts";
-import type { CurrentPcb209WorkerStartupOpeningResult } from "./current-pcb-209-worker-startup-opening.ts";
+import { bindCurrentFootprintCopyParentRoute } from "./current-footprint-copy-parent-route.ts";
+import { CurrentPcb209WorkerStartupOpening, originalCurrentFootprintCopyParentPeer, requireCurrentFootprintCopyOpening } from "./current-pcb-209-worker-startup-opening.ts";
+import type { CurrentFootprintCopyOpeningOwner, CurrentFootprintCopyOpeningResult, CurrentPcb209WorkerStartupOpeningResult } from "./current-pcb-209-worker-startup-opening.ts";
 import { CurrentPcb209WorkerStartupPcbSession } from "./current-pcb-209-worker-startup-pcb-session.ts";
 import type { CurrentPcb209EmptyNativeDependency } from "./current-pcb-209-worker-startup-empty-session.ts";
 import { CurrentPcb209EmptyStartupBudgetAnchor, CurrentPcb209EmptyStartupChannel } from "./current-pcb-209-empty-startup-channel.ts";
@@ -89,25 +94,27 @@ import { decodeCurrentPcb209PouredShapesReply } from "./current-pcb-209-poured-s
 import { decodeCurrentPcb209PadShapesReply } from "./current-pcb-209-pad-shapes.ts";
 import { currentPcb209SelectionRelationsComponentIdsSchema, decodeCurrentPcb209SelectionRelationsReply } from "./current-pcb-209-selection-relations.ts";
 
-const HELPER_SHA256 = "b5ea0f12b661f8cc266aaac4ccb321d3e30567201e55810cb0904f036add3330";
-const HELPER_BYTES = 1_021_232;
+const HELPER_SHA256 = "799271e6a46d1f537515f2e617a7764e86e1e44bf36a1fbd5da4e8a988732340";
+const HELPER_BYTES = 1_043_051;
 const MAX_LINE = 100_000;
 // 64 MiB native bytes need at most 85.34 MiB base64 plus bounded poll envelopes.
 const MAX_TOTAL = 96 * 1024 * 1024;
 // Original helper owners remain reachable after caller exceptions.
 const retainedOwners = new Set<object>();
-// oxlint-disable-next-line typescript/unbound-method -- Invoke only with the original private-field owner; never call a shadow supplied by an instance.
-const requireFootprintUiOpening = CurrentPcb209WorkerStartupOpening.prototype.requireOriginal;
+
+
 // oxlint-disable-next-line typescript/unbound-method -- Invoke only with the original purpose-sealed private channel.
 const requestFootprintUi = CurrentFootprintCopyPreparationChannel.prototype.requestFootprintUi;
 // oxlint-disable-next-line typescript/unbound-method -- Invoke only on the original purpose-sealed channel.
 const requestFootprintManagerRoute = CurrentFootprintCopyPreparationChannel.prototype.requestFootprintManagerRoute;
 // oxlint-disable-next-line typescript/unbound-method -- Child issuance retains the original UI private fields, never an instance override.
 const createFootprintManagerRoute = CurrentFootprintCopyUiRunner.prototype.createManagerRoute;
+// oxlint-disable-next-line typescript/unbound-method -- The exact private manager issuer joins its original peer, never receipt JSON.
+const requireFootprintManagerPeer = CurrentFootprintCopyManagerRouteRunner.prototype.requireOriginalWorkerPeer;
 
 
 type RecordValue = Record<string, unknown>;
-type OwnerPurpose = "diagnostic" | "diagnostic209" | "string-precreate" | "worker-startup" | "worker-startup209" | "worker-startup-footprint209" | "worker-startup-empty209" | "worker-startup-ratline209" | "worker-startup-ratline-continuation209";
+type OwnerPurpose = "diagnostic" | "diagnostic209" | "string-precreate" | "worker-startup" | "worker-startup209" | "worker-startup-footprint209" | "worker-startup-footprint-copy209" | "worker-startup-empty209" | "worker-startup-ratline209" | "worker-startup-ratline-continuation209";
 export interface CurrentPcbWorkerStartupOpeningBinding {
   readonly context: () => Readonly<{ sessionId: string; uniqueContextId: string }>;
   readonly reprove: () => Promise<void>;
@@ -120,7 +127,7 @@ export interface CurrentPcbWorkerStartupOpeningBinding {
   readonly ancillaryObservation: () => RecordValue | null;
 }
 export interface CurrentPcbWorkerStartupHandoff {
-  readonly channel: CurrentPcbWorkerStartupChannel | CurrentPcb209WorkerStartupChannel | CurrentFootprintCopyPreparationChannel | CurrentPcb209EmptyStartupChannel | CurrentPcb209RatlineContinuationChannel | CurrentPcb209RatlineStartupChannel;
+  readonly channel: CurrentPcbWorkerStartupChannel | CurrentPcb209WorkerStartupChannel | CurrentFootprintCopyPreparationChannel | CurrentFootprintCopyExecutionChannel | CurrentPcb209EmptyStartupChannel | CurrentPcb209RatlineContinuationChannel | CurrentPcb209RatlineStartupChannel;
   readonly actorClockSourceQualification?: CurrentPcb209ActorClockSourceQualification;
   readonly dependency: CurrentPcbWorkerStartupDependency;
   readonly opening: CurrentPcbWorkerStartupOpeningBinding;
@@ -197,7 +204,7 @@ class CurrentPcbRetainedOwnerCore {
   readonly #purpose: OwnerPurpose;
   #startupHandoffConsumed = false;
   #startupParent: CurrentPcbWorkerStartupParent | null = null;
-  #startupChannel: CurrentPcbWorkerStartupChannel | CurrentPcb209WorkerStartupChannel | CurrentFootprintCopyPreparationChannel | CurrentPcb209EmptyStartupChannel | CurrentPcb209RatlineContinuationChannel | CurrentPcb209RatlineStartupChannel | null = null;
+  #startupChannel: CurrentPcbWorkerStartupChannel | CurrentPcb209WorkerStartupChannel | CurrentFootprintCopyPreparationChannel | CurrentFootprintCopyExecutionChannel | CurrentPcb209EmptyStartupChannel | CurrentPcb209RatlineContinuationChannel | CurrentPcb209RatlineStartupChannel | null = null;
   readonly #emptyAnchor: CurrentPcb209EmptyStartupBudgetAnchor | null;
   readonly #ratlineBudget: CurrentPcb209RatlineBudget | null;
   readonly #continuationBudget: CurrentPcb209RatlineContinuationBudget | null;
@@ -211,8 +218,8 @@ class CurrentPcbRetainedOwnerCore {
   #footprintUiReproofAttempted = false;
   #footprintUiRunner: CurrentFootprintCopyUiRunner | null = null;
   #footprintUiPacket: CurrentFootprintCopyUiObservation | null = null;
-  #footprintUiOpening: CurrentPcb209WorkerStartupOpening | null = null;
-  #footprintUiOpeningResult: CurrentPcb209WorkerStartupOpeningResult | null = null;
+  #footprintUiOpening: CurrentFootprintCopyOpeningOwner | null = null;
+  #footprintUiOpeningResult: CurrentFootprintCopyOpeningResult | null = null;
   readonly #footprintUiParentReplies: unknown[] = [];
   #footprintManagerAttempted = false;
   #footprintManagerReproofAttempted = false;
@@ -285,6 +292,8 @@ class CurrentPcbRetainedOwnerCore {
   #stringSaveProvenance: CurrentPcbStringSaveProvenance | null = null;
   #stringMoveRunner: CurrentPcbStringMoveRunner | null = null;
   #stringNativeClock: CurrentPcbStringNativeClockIssuer | null = null;
+  #footprintWindowsClock: CurrentFootprintCopyWindowsClockIssuer | null = null;
+  #footprintPeerJoinAttempted = false;
   #terminationObserved = false;
   #terminationObservation: Readonly<TerminationObservation> | null = null;
 
@@ -300,11 +309,11 @@ class CurrentPcbRetainedOwnerCore {
     if ((purpose === "worker-startup-ratline209") !== (ratlineBudget !== null)) { throw error("RATLINE_BUDGET"); }
     if (ratlineBudget !== null) { assertOriginalCurrentPcb209RatlineBudget(ratlineBudget); }
     if ((purpose === "worker-startup-empty209") !== (emptyAnchor !== null)) { throw error("STARTUP_EMPTY_ANCHOR"); }
-    if (purpose === "worker-startup209" || purpose === "worker-startup-footprint209" || purpose === "worker-startup-empty209" || purpose === "worker-startup-ratline209" || purpose === "worker-startup-ratline-continuation209") {
+    if (purpose === "worker-startup209" || (purpose === "worker-startup-footprint209" || purpose === "worker-startup-footprint-copy209") || purpose === "worker-startup-empty209" || purpose === "worker-startup-ratline209" || purpose === "worker-startup-ratline-continuation209") {
       if (actorClockSource === null) { throw error("STARTUP209_ACTOR_SOURCE"); }
       requireCurrentPcb209ActorClockSourceQualification(actorClockSource);
     } else if (actorClockSource !== null) { throw error("STARTUP209_PURPOSE"); }
-    this.#startupPurpose = purpose === "worker-startup" || purpose === "worker-startup209" || purpose === "worker-startup-footprint209" || purpose === "worker-startup-empty209" || purpose === "worker-startup-ratline209" || purpose === "worker-startup-ratline-continuation209";
+    this.#startupPurpose = purpose === "worker-startup" || purpose === "worker-startup209" || (purpose === "worker-startup-footprint209" || purpose === "worker-startup-footprint-copy209") || purpose === "worker-startup-empty209" || purpose === "worker-startup-ratline209" || purpose === "worker-startup-ratline-continuation209";
     this.#child = child; this.#verify = verify; this.#installation = installation; this.#verifyInstallation = verifyInstallation;
     this.#verifyStartupFacade = verifyStartupFacade;
     this.#purpose = purpose; this.#stringPurpose = purpose === "string-precreate";
@@ -1104,7 +1113,7 @@ class CurrentPcbRetainedOwnerCore {
     const targets = await this.#transfer(() => this.#pipe.getTargets());
     const frameTree = await this.#transfer(() => this.#pipe.getFrameTree());
     context.assertCurrent(); const result = context.finish(source, targets, frameTree);
-    if (this.#purpose === "worker-startup-footprint209") { this.#footprintUiSource = qualifyCurrentFootprintCopyUiSource(source["scriptSource"]); }
+    if ((this.#purpose === "worker-startup-footprint209" || this.#purpose === "worker-startup-footprint-copy209")) { this.#footprintUiSource = qualifyCurrentFootprintCopyUiSource(source["scriptSource"]); }
     return result;
   }
 
@@ -1191,7 +1200,7 @@ class CurrentPcbRetainedOwnerCore {
         if (canonicalJson(this.#startupEmptyPcbContext) !== canonicalJson(selectedModel)) { throw error("STARTUP_EMPTY_PCB_CHANGED"); }
         return this.#startupEmptyPcbContext;
       };
-      let channel: CurrentPcbWorkerStartupChannel | CurrentPcb209WorkerStartupChannel | CurrentFootprintCopyPreparationChannel | CurrentPcb209EmptyStartupChannel | CurrentPcb209RatlineContinuationChannel | CurrentPcb209RatlineStartupChannel;
+      let channel: CurrentPcbWorkerStartupChannel | CurrentPcb209WorkerStartupChannel | CurrentFootprintCopyPreparationChannel | CurrentFootprintCopyExecutionChannel | CurrentPcb209EmptyStartupChannel | CurrentPcb209RatlineContinuationChannel | CurrentPcb209RatlineStartupChannel;
       if (this.#purpose === "worker-startup-ratline-continuation209") {
         if (this.#continuationBudget === null) { throw error("CONTINUATION_BUDGET"); }
         this.#continuationBudget.closeDiscovery(prior.nextRequestId); channel = new CurrentPcb209RatlineContinuationChannel(native, this.#continuationBudget);
@@ -1202,8 +1211,9 @@ class CurrentPcbRetainedOwnerCore {
       } else if (this.#purpose === "worker-startup-empty209") {
         if (this.#emptyAnchor === null) { throw error("STARTUP_EMPTY_ANCHOR"); }
         channel = new CurrentPcb209EmptyStartupChannel(native, { ...priorUsage, pollCount: this.#emptyPolls }, this.#emptyAnchor, requireOriginalPcbContext);
-      } else if (this.#purpose === "worker-startup-footprint209") {
-        channel = new CurrentFootprintCopyPreparationChannel(native, priorUsage);
+      } else if ((this.#purpose === "worker-startup-footprint209" || this.#purpose === "worker-startup-footprint-copy209")) {
+        channel = this.#purpose === "worker-startup-footprint-copy209" ? new CurrentFootprintCopyExecutionChannel(native, priorUsage) :
+          new CurrentFootprintCopyPreparationChannel(native, priorUsage);
       } else {
         channel = this.#purpose === "worker-startup209" ? new CurrentPcb209WorkerStartupChannel(native, priorUsage) :
           new CurrentPcbWorkerStartupChannel(native, priorUsage);
@@ -1214,6 +1224,20 @@ class CurrentPcbRetainedOwnerCore {
         const emptyDependency = await channel.start(); this.#startupEmptyDependency = emptyDependency; dependency = emptyDependency;
       } else { dependency = await channel.start(); }
       current();
+      if (this.#purpose === "worker-startup-footprint-copy209") {
+        const manager = context.footprintCopyParentWorkerScript();
+        const sameManager = (): void => {
+          current();
+          const actual = context.footprintCopyParentWorkerScript();
+          if (actual.scriptId !== manager.scriptId || actual.sessionId !== manager.sessionId ||
+              actual.uniqueContextId !== manager.uniqueContextId) { throw error("FOOTPRINT_PARENT_MANAGER_CHANGED"); }
+        };
+        bindCurrentFootprintCopyParentRoute(dependency, Object.freeze({ parentSessionId: manager.sessionId,
+          parentUniqueContextId: manager.uniqueContextId, managerScriptId: manager.scriptId,
+          assertOriginalSynchronous: sameManager,
+          assertOriginal: async (): Promise<void> => { sameManager(); await reprove(); sameManager(); },
+        }));
+      }
       const opening = Object.freeze<CurrentPcbWorkerStartupOpeningBinding>({
         context: (): Readonly<{ sessionId: string; uniqueContextId: string }> => { current(); return selected; }, reprove,
         begin: (input, titleProof): Readonly<{ sessionId: string; uniqueContextId: string }> => {
@@ -1265,16 +1289,16 @@ class CurrentPcbRetainedOwnerCore {
   /** Bind the already inspected original UI to the same original construction
    * owner. This proves route selection only; destination/RPC ownership is not
    * inferred from matching project UUIDs. */
-  public async observeFootprintCopyUi(opening: CurrentPcb209WorkerStartupOpening,
-    result: CurrentPcb209WorkerStartupOpeningResult): Promise<CurrentFootprintCopyUiObservation> {
+  public async observeFootprintCopyUi(opening: CurrentFootprintCopyOpeningOwner,
+    result: CurrentFootprintCopyOpeningResult): Promise<CurrentFootprintCopyUiObservation> {
     const context = this.#stagedContext, handoff = this.#startupHandoff, source = this.#footprintUiSource;
-    if (this.#purpose !== "worker-startup-footprint209" || this.#footprintUiAttempted || handoff === null || context === null || source === null ||
-        !(handoff.channel instanceof CurrentFootprintCopyPreparationChannel)) { throw error("FOOTPRINT_UI_UNAVAILABLE"); }
+    if ((this.#purpose !== "worker-startup-footprint209" && this.#purpose !== "worker-startup-footprint-copy209") || this.#footprintUiAttempted || handoff === null || context === null || source === null ||
+        !(handoff.channel instanceof CurrentFootprintCopyPreparationChannel || handoff.channel instanceof CurrentFootprintCopyExecutionChannel)) { throw error("FOOTPRINT_UI_UNAVAILABLE"); }
     this.#enter(true); this.#footprintUiAttempted = true;
     this.#footprintUiOpening = opening; this.#footprintUiOpeningResult = result;
     try {
       requireCurrentFootprintCopyUiSource(source);
-      await requireFootprintUiOpening.call(opening, result);
+      await requireCurrentFootprintCopyOpening(opening, result, handoff.dependency);
       const channel = handoff.channel, original = this.#binding, script = context.script(), selected = context.openingContext();
       const current = async (): Promise<void> => {
         const same = (): void => {
@@ -1295,26 +1319,26 @@ class CurrentPcbRetainedOwnerCore {
       this.#footprintUiRunner = runner;
       const packet = await runner.observe();
       await this.#footprintUiParent(handoff, current);
-      await requireFootprintUiOpening.call(opening, result); await current();
+      await requireCurrentFootprintCopyOpening(opening, result, handoff.dependency); await current();
       this.#footprintUiPacket = packet; return packet;
     } finally { this.#busy = false; }
   }
   public async requireFootprintCopyUi(packet: CurrentFootprintCopyUiObservation): Promise<void> {
     const handoff = this.#startupHandoff, opening = this.#footprintUiOpening, result = this.#footprintUiOpeningResult, runner = this.#footprintUiRunner;
-    if (this.#purpose !== "worker-startup-footprint209" || this.#footprintUiReproofAttempted || runner === null || handoff === null ||
+    if ((this.#purpose !== "worker-startup-footprint209" && this.#purpose !== "worker-startup-footprint-copy209") || this.#footprintUiReproofAttempted || runner === null || handoff === null ||
         opening === null || result === null || packet !== this.#footprintUiPacket) { throw error("FOOTPRINT_UI_ORIGINAL"); }
     this.#enter(true); this.#footprintUiReproofAttempted = true;
     try {
-      await requireFootprintUiOpening.call(opening, result);
+      await requireCurrentFootprintCopyOpening(opening, result, handoff.dependency);
       await this.#footprintUiParent(handoff, handoff.opening.reprove);
       await runner.requireOriginal(packet);
       await this.#footprintUiParent(handoff, handoff.opening.reprove);
-      await requireFootprintUiOpening.call(opening, result);
+      await requireCurrentFootprintCopyOpening(opening, result, handoff.dependency);
     } finally { this.#busy = false; }
   }
   public async releaseFootprintCopyUi(): Promise<void> {
     const runner = this.#footprintUiRunner;
-    if (this.#purpose !== "worker-startup-footprint209" || runner === null) { throw error("FOOTPRINT_UI_RELEASE"); }
+    if ((this.#purpose !== "worker-startup-footprint209" && this.#purpose !== "worker-startup-footprint-copy209") || runner === null) { throw error("FOOTPRINT_UI_RELEASE"); }
     this.#enter(true);
     try { await runner.release(); } finally { this.#busy = false; }
   }
@@ -1323,12 +1347,12 @@ class CurrentPcbRetainedOwnerCore {
     return Object.freeze({ attempted: this.#footprintManagerAttempted, reproofAttempted: this.#footprintManagerReproofAttempted,
       runner: this.#footprintManagerRunner?.retained() ?? null, parentReplies: Object.freeze([...this.#footprintManagerParentReplies]) });
   }
-  public async observeFootprintCopyManagerRoute(opening: CurrentPcb209WorkerStartupOpening,
-    result: CurrentPcb209WorkerStartupOpeningResult): Promise<CurrentFootprintCopyManagerRouteObservation> {
+  public async observeFootprintCopyManagerRoute(opening: CurrentFootprintCopyOpeningOwner,
+    result: CurrentFootprintCopyOpeningResult): Promise<CurrentFootprintCopyManagerRouteObservation> {
     const context = this.#stagedContext, handoff = this.#startupHandoff, packet = this.#footprintUiPacket, ui = this.#footprintUiRunner;
-    if (this.#purpose !== "worker-startup-footprint209" || this.#footprintManagerAttempted || context === null || handoff === null ||
+    if ((this.#purpose !== "worker-startup-footprint209" && this.#purpose !== "worker-startup-footprint-copy209") || this.#footprintManagerAttempted || context === null || handoff === null ||
         ui === null || packet === null || opening !== this.#footprintUiOpening || result !== this.#footprintUiOpeningResult ||
-        !this.#footprintUiReproofAttempted || !(handoff.channel instanceof CurrentFootprintCopyPreparationChannel)) { throw error("FOOTPRINT_MANAGER_ROUTE_UNAVAILABLE"); }
+        !this.#footprintUiReproofAttempted || !(handoff.channel instanceof CurrentFootprintCopyPreparationChannel || handoff.channel instanceof CurrentFootprintCopyExecutionChannel)) { throw error("FOOTPRINT_MANAGER_ROUTE_UNAVAILABLE"); }
     this.#enter(true); this.#footprintManagerAttempted = true;
     try {
       const channel = handoff.channel, original = this.#binding, script = context.script(), selected = context.openingContext();
@@ -1343,30 +1367,45 @@ class CurrentPcbRetainedOwnerCore {
         same(); await handoff.opening.reprove(); same();
       };
       this.#footprintManagerCurrent = current;
-      await requireFootprintUiOpening.call(opening, result); await this.#footprintUiParent(handoff, current, this.#footprintManagerParentReplies);
+      await requireCurrentFootprintCopyOpening(opening, result, handoff.dependency); await this.#footprintUiParent(handoff, current, this.#footprintManagerParentReplies);
       const runner = createFootprintManagerRoute.call(ui, packet, Object.freeze({ assertCurrent: current,
         request: (command: CurrentFootprintCopyManagerRouteCommand): Promise<unknown> => requestFootprintManagerRoute.call(channel, command) }));
       this.#footprintManagerRunner = runner;
       const observation = await runner.observe();
-      await this.#footprintUiParent(handoff, current, this.#footprintManagerParentReplies); await requireFootprintUiOpening.call(opening, result); await current();
+      await this.#footprintUiParent(handoff, current, this.#footprintManagerParentReplies); await requireCurrentFootprintCopyOpening(opening, result, handoff.dependency); await current();
       this.#footprintManagerPacket = observation; return observation;
     } finally { this.#busy = false; }
   }
   public async requireFootprintCopyManagerRoute(packet: CurrentFootprintCopyManagerRouteObservation): Promise<void> {
     const current = this.#footprintManagerCurrent, handoff = this.#startupHandoff, opening = this.#footprintUiOpening, result = this.#footprintUiOpeningResult,
       runner = this.#footprintManagerRunner;
-    if (this.#purpose !== "worker-startup-footprint209" || this.#footprintManagerReproofAttempted || runner === null || handoff === null ||
+    if ((this.#purpose !== "worker-startup-footprint209" && this.#purpose !== "worker-startup-footprint-copy209") || this.#footprintManagerReproofAttempted || runner === null || handoff === null ||
         opening === null || result === null || current === null || packet !== this.#footprintManagerPacket) { throw error("FOOTPRINT_MANAGER_ROUTE_ORIGINAL"); }
     this.#enter(true); this.#footprintManagerReproofAttempted = true;
     try {
-      await requireFootprintUiOpening.call(opening, result); await this.#footprintUiParent(handoff, current, this.#footprintManagerParentReplies);
+      await requireCurrentFootprintCopyOpening(opening, result, handoff.dependency); await this.#footprintUiParent(handoff, current, this.#footprintManagerParentReplies);
       await runner.requireOriginal(packet);
-      await this.#footprintUiParent(handoff, current, this.#footprintManagerParentReplies); await requireFootprintUiOpening.call(opening, result); await current();
+      await this.#footprintUiParent(handoff, current, this.#footprintManagerParentReplies); await requireCurrentFootprintCopyOpening(opening, result, handoff.dependency); await current();
+    } finally { this.#busy = false; }
+  }
+  public async joinFootprintCopyManagerPeer(opening: CurrentFootprintCopyOpeningOwner, result: CurrentFootprintCopyOpeningResult,
+    packet: CurrentFootprintCopyManagerRouteObservation): Promise<CurrentFootprintParentWorkerObservation> {
+    const handoff = this.#startupHandoff, manager = this.#footprintManagerRunner;
+    if (this.#purpose !== "worker-startup-footprint-copy209" || this.#footprintPeerJoinAttempted || manager === null || handoff === null ||
+        opening !== this.#footprintUiOpening || result !== this.#footprintUiOpeningResult || packet !== this.#footprintManagerPacket ||
+        CurrentFootprintCopyManagerRouteRunner.prototype.requireOriginalWorkerPeer !== requireFootprintManagerPeer) { throw error("FOOTPRINT_PEER_JOIN"); }
+    this.#enter(true); this.#footprintPeerJoinAttempted = true;
+    try {
+      const peer = await originalCurrentFootprintCopyParentPeer(opening, result, handoff.dependency);
+      await requireFootprintManagerPeer.call(manager, packet, peer.runner, peer.packet);
+      if (this.#footprintManagerRunner !== manager || this.#startupHandoff !== handoff ||
+          CurrentFootprintCopyManagerRouteRunner.prototype.requireOriginalWorkerPeer !== requireFootprintManagerPeer) { throw error("FOOTPRINT_PEER_JOIN_CHANGED"); }
+      return peer.packet;
     } finally { this.#busy = false; }
   }
   public async releaseFootprintCopyManagerRoute(): Promise<void> {
     const runner = this.#footprintManagerRunner;
-    if (this.#purpose !== "worker-startup-footprint209" || runner === null) { throw error("FOOTPRINT_MANAGER_ROUTE_RELEASE"); }
+    if ((this.#purpose !== "worker-startup-footprint209" && this.#purpose !== "worker-startup-footprint-copy209") || runner === null) { throw error("FOOTPRINT_MANAGER_ROUTE_RELEASE"); }
     this.#enter(true); try { await runner.release(); } finally { this.#busy = false; }
   }
 
@@ -1569,6 +1608,38 @@ class CurrentPcbRetainedOwnerCore {
       return await this.#stringNativeClock.observe(phase);
     } finally { this.#busy = false; }
   }
+
+  /** Separate footprint purpose; only the low-level Windows sample reader is
+   * shared with String. These tokens grant no server/document clock authority. */
+  public async observeFootprintCopyWindowsClock(phase: CurrentFootprintCopyWindowsClockPhase): Promise<CurrentFootprintCopyWindowsClockObservation> {
+    const original = this.#binding;
+    if (this.#purpose !== "worker-startup-footprint-copy209" || original === null || !this.#launchSucceeded) { throw error("FOOTPRINT_WINDOWS_CLOCK_PURPOSE"); }
+    this.#enter(true);
+    try {
+      const owned = (): void => {
+        if (this.#purpose !== "worker-startup-footprint-copy209" || this.#binding !== original || !this.#launchSucceeded) { throw error("FOOTPRINT_WINDOWS_CLOCK_OWNER"); }
+      };
+      this.#footprintWindowsClock ??= new CurrentFootprintCopyWindowsClockIssuer(Object.freeze<CurrentFootprintCopyWindowsClockTransport>({
+        assertOwned: owned,
+        assertCurrent: (selected: CurrentFootprintCopyWindowsClockPhase): void => {
+          owned(); this.#available();
+          if (this.#releaseConsumed || selected === "termination" && !this.#terminationObserved ||
+              selected !== "termination" && (this.#terminationObserved || this.#closeConsumed || this.#startupChannel?.status().failed === true)) { throw error("FOOTPRINT_WINDOWS_CLOCK_CURRENT"); }
+        },
+        request: async (request): Promise<unknown> => {
+          owned(); await this.#verifyInstallation(); await this.#verify(); this.#available(); owned();
+          const reply = captureCurrentPcbStringClockReply(await this.#request({ ...request }));
+          owned(); await this.#verifyInstallation(); await this.#verify(); this.#available(); owned(); return reply.value;
+        },
+      }), original);
+      return await this.#footprintWindowsClock.observe(phase);
+    } finally { this.#busy = false; }
+  }
+  public requireRecordedFootprintCopyWindowsClock(observation: CurrentFootprintCopyWindowsClockObservation): CurrentFootprintCopyWindowsClockObservation {
+    if (this.#footprintWindowsClock === null) { throw error("FOOTPRINT_WINDOWS_CLOCK_ORIGINAL"); }
+    return this.#footprintWindowsClock.requireRecorded(observation);
+  }
+  public retainedFootprintCopyWindowsClock(): Readonly<Record<string, unknown>> | null { return this.#footprintWindowsClock?.evidence() ?? null; }
 
   public releaseClosed(): Promise<void> { return this.#release(false); }
 
@@ -1911,6 +1982,16 @@ export class CurrentFootprintCopyPreparationOwner extends CurrentPcbRetainedOwne
     super(child, verify, installation, verifyInstallation, "worker-startup-footprint209", verifyStartupFacade, actorClockSource);
   }
 }
+/** Separate native purpose and process/Job ownership. This does not implement
+ * CurrentFootprintCopyExecutionNative or enable native create by itself. */
+export class CurrentFootprintCopyNativeOwner extends CurrentPcbRetainedOwnerCore {
+  public constructor(child: ChildProcessWithoutNullStreams, verify: () => Promise<void>,
+    actorClockSource: CurrentPcb209ActorClockSourceQualification,
+    installation: CurrentPcbDiagnosticInstallation | null = null, verifyInstallation: () => Promise<void> = (): Promise<void> => Promise.resolve(),
+    verifyStartupFacade: () => Promise<void> = verifyInstallation) {
+    super(child, verify, installation, verifyInstallation, "worker-startup-footprint-copy209", verifyStartupFacade, actorClockSource);
+  }
+}
 
 /** Separate fixed launch purpose for the complete empty-baseline vocabulary.
  * Its original monotonic anchor predates helper spawn and cannot be replaced. */
@@ -1975,10 +2056,13 @@ export function startCurrentPcb209RatlineContinuationOwner(options: CurrentPcbDi
 export function startCurrentFootprintCopyPreparationOwner(options: CurrentPcbDiagnosticInstallationOptions): Promise<CurrentFootprintCopyPreparationOwner> {
   return startFixedOwner(options, "worker-startup-footprint209", "209-startup");
 }
+export function startCurrentFootprintCopyNativeOwner(options: CurrentPcbDiagnosticInstallationOptions): Promise<CurrentFootprintCopyNativeOwner> {
+  return startFixedOwner(options, "worker-startup-footprint-copy209", "209-startup");
+}
 async function startFixedOwner(options: CurrentPcbDiagnosticInstallationOptions, purpose: OwnerPurpose,
   generation: "206" | "209-opening" | "209-startup" = "206"): Promise<CurrentPcbDiagnosticOwner | CurrentPcbStringPrecreateOwner | CurrentPcbWorkerStartupOwner> {
   const sealedOptions = Object.freeze({ ...options });
-  const startup209 = purpose === "worker-startup209" || purpose === "worker-startup-footprint209" || purpose === "worker-startup-empty209" || purpose === "worker-startup-ratline209" || purpose === "worker-startup-ratline-continuation209";
+  const startup209 = purpose === "worker-startup209" || (purpose === "worker-startup-footprint209" || purpose === "worker-startup-footprint-copy209") || purpose === "worker-startup-empty209" || purpose === "worker-startup-ratline209" || purpose === "worker-startup-ratline-continuation209";
   if ((generation === "209-opening") !== (purpose === "diagnostic209") || (generation === "209-startup") !== startup209) { throw error("INSTALLATION_PURPOSE"); }
   let verifier = generation === "206" ? verifyCurrentPcbDiagnosticInstallation : verifyCurrentPcb209DiagnosticInstallation;
   if (purpose === "worker-startup-ratline209" || purpose === "worker-startup-ratline-continuation209") { verifier = verifyCurrentPcb209RatlineInstallation; }
@@ -2024,6 +2108,7 @@ async function startFixedOwner(options: CurrentPcbDiagnosticInstallationOptions,
   if (purpose === "worker-startup-ratline-continuation209") { purposeSwitch = " -WorkerStartupRatlineContinuation209"; }
   else if (purpose === "worker-startup-ratline209") { purposeSwitch = " -WorkerStartupRatline209"; }
   else if (purpose === "worker-startup-empty209") { purposeSwitch = " -WorkerStartupEmpty209"; }
+  else if (purpose === "worker-startup-footprint-copy209") { purposeSwitch = " -WorkerStartupFootprintCopy209"; }
   else if (purpose === "worker-startup-footprint209") { purposeSwitch = " -WorkerStartupFootprint209"; }
   else if (purpose === "worker-startup209") { purposeSwitch = " -WorkerStartup209"; }
   else if (purpose === "worker-startup") { purposeSwitch = " -WorkerStartup"; }
@@ -2055,6 +2140,10 @@ async function startFixedOwner(options: CurrentPcbDiagnosticInstallationOptions,
   else if (purpose === "worker-startup-empty209") {
     if (actorClockSource === null || emptyAnchor === null) { throw error("STARTUP_EMPTY_ALLOCATION"); }
     owner = new CurrentPcb209EmptyStartupOwner(child, verify, actorClockSource, emptyAnchor, installation, verifyInstallation, verifyStartupFacade);
+  }
+  else if (purpose === "worker-startup-footprint-copy209") {
+    if (actorClockSource === null) { throw error("STARTUP209_ACTOR_SOURCE"); }
+    owner = new CurrentFootprintCopyNativeOwner(child, verify, actorClockSource, installation, verifyInstallation, verifyStartupFacade);
   }
   else if (purpose === "worker-startup-footprint209") {
     if (actorClockSource === null) { throw error("STARTUP209_ACTOR_SOURCE"); }

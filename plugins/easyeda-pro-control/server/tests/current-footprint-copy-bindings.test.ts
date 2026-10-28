@@ -6,6 +6,7 @@ import { createRequire } from "node:module";
 import { test } from "node:test";
 import { runInThisContext } from "node:vm";
 import { transform } from "esbuild";
+import { CurrentFootprintCopyStartupOpening } from "../src/current-pcb-209-worker-startup-opening.ts";
 import { CURRENT_FOOTPRINT_COPY_BINDINGS_REPROOF_REQUESTS, CURRENT_FOOTPRINT_COPY_BINDINGS_REQUESTS } from "../src/current-footprint-copy-bindings.ts";
 import type { prepareCurrentFootprintCopyBindingsOwned, requireCurrentFootprintCopyBindingsOwned, retainedCurrentFootprintCopyBindingsProducers } from "../src/current-footprint-copy-bindings-runtime.ts";
 
@@ -38,7 +39,7 @@ async function fixture(): Promise<Readonly<{
   // oxlint-disable-next-line typescript/no-unsafe-type-assertion -- The actual composition is evaluated below with explicit private-field opening and actor seams; their small inert data is not a native result.
   source = Object.freeze({ opening, result: {}, assignments: {}, state: {}, actor: {}, preparation: {} }) as unknown as Source;
   const replacements = new Map<string, unknown>([
-    ["./current-pcb-209-worker-startup-opening.ts", { CurrentPcb209WorkerStartupOpening: Opening }],
+    ["./current-pcb-209-worker-startup-opening.ts", { CurrentFootprintCopyStartupOpening, CurrentPcb209WorkerStartupOpening: Opening }],
     ["./current-footprint-copy-actor-preparation.ts", {
       prepareCurrentFootprintCopyActorOwned: (input: unknown): Promise<typeof actor> => {
         assert.equal(input, source); assert.ok(alive, "original owner lost"); calls.push("actor"); return Promise.resolve(actor);

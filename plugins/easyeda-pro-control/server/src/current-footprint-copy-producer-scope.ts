@@ -18,8 +18,9 @@ export const CURRENT_FOOTPRINT_COPY_LEXICAL_PROFILES = freezeDeep([
 const selector = String.raw`"use strict";
 const bad=()=>{throw new Error("FOOTPRINT_COPY_PRODUCER_SCOPE");},seen=[];
 const own=(o,k)=>{if(o===null||(typeof o!=="object"&&typeof o!=="function"))bad();const d=Object.getOwnPropertyDescriptor(o,k);if(!d||!Object.hasOwn(d,"value"))bad();seen.push([o,k,d]);return d.value;};
-const ai=own(this,"ai"),ve=own(this,"ve"),Oe=own(this,"Oe"),Ie=own(this,"Ie");
-const selected=[ai,own(ai,"getProLibSource"),own(this,"qe"),own(this,"Qe"),own(this,"Ke"),own(this,"Ni"),own(this,"cg"),ve,Oe,Ie];
+const bindings=own(this,"object");
+const ai=own(bindings,"ai"),ve=own(bindings,"ve"),Oe=own(bindings,"Oe"),Ie=own(bindings,"Ie");
+const selected=[ai,own(ai,"getProLibSource"),own(bindings,"qe"),own(bindings,"Qe"),own(bindings,"Ke"),own(bindings,"Ni"),own(bindings,"cg"),ve,Oe,Ie];
 for(let i=0;i<7;i++)if(typeof selected[i]!=="function")bad();
 if(own(ve,"FOOTPRINT")!=="FOOTPRINT"||own(ve,"FONT")!=="FONT"||own(ve,"BLOB")!=="BLOB"||own(Oe,"FOOTPRINT")!==4||Ie!=="|\n")bad();
 const verify=()=>{for(const [o,k,d]of seen){const n=Object.getOwnPropertyDescriptor(o,k);if(!n||!Object.hasOwn(n,"value")||!Object.is(n.value,d.value)||n.writable!==d.writable||n.enumerable!==d.enumerable||n.configurable!==d.configurable)bad();}};`;

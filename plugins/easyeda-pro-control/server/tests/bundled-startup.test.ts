@@ -144,6 +144,12 @@ void describe("self-contained packaged machine startup", () => {
     assert.equal(startupRequest["valid"], true);
     const footprint = await api(client, { action: "footprint-copy-preparation", query: { includeSchemas: true } });
     assert.equal(footprint["executionAuthorized"], false); assert.equal(footprint["toolWrapperAction"], "footprint-copy-preparation");
+    const route = await api(client, { action: "footprint-copy-route-preparation", query: { includeSchemas: true } });
+    assert.equal(route["executionAuthorized"], false); assert.equal(route["toolWrapperAction"], "footprint-copy-route-preparation");
+    const routeRequest = await api(client, { action: "footprint-copy-route-preparation-validate", query: { request: {
+      action: "observe-footprint-route", operationId: "footprint-route-offline-catalog", expectedBindingSha256: "a".repeat(64),
+    } } });
+    assert.equal(routeRequest["valid"], true); assert.equal(routeRequest["executionAuthorized"], false);
     for (const action of ["prepare-footprint-bindings", "observe-footprint-ui", "prepare-footprint-dependencies", "observe-footprint-manager-route"]) {
       const validation = await api(client, { action: "footprint-copy-preparation-validate", query: { request: {
         action, operationId: "footprint-preparation-offline-catalog", expectedBindingSha256: "a".repeat(64),

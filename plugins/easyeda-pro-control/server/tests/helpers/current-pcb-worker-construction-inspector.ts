@@ -6,7 +6,7 @@ import { WebSocket } from "ws";
 import { z } from "zod";
 import type { CurrentPcbWorkerConstructionTransport } from "../../src/current-pcb-worker-construction-contract.ts";
 import { current209QaDescriptorFixture } from "./current-pcb-209-qa-descriptor-fixture.ts";
-import { worker209ConstructionFixtureSource } from "./current-pcb-209-worker-construction-fixture.ts";
+import { footprintCopyConstructionFixtureSource, worker209ConstructionFixtureSource } from "./current-pcb-209-worker-construction-fixture.ts";
 import { workerConstructionFixtureSource } from "./current-pcb-worker-construction-fixture.ts";
 
 /** This launches only this test's synthetic Node process, never EasyEDA or a
@@ -85,5 +85,9 @@ export function constructionInspector(context: TestContext, loseAtPause = 0, pub
 }
 export async function construction209Inspector(context: TestContext, loseAtPause = 0, publisherMethods = false): ReturnType<typeof constructionInspectorSource> {
   const fixture = await constructionInspectorSource(context, worker209ConstructionFixtureSource(publisherMethods), loseAtPause);
+  return { ...fixture, transport: current209QaDescriptorFixture(fixture.transport) };
+}
+export async function footprintCopyConstructionInspector(context: TestContext): ReturnType<typeof constructionInspectorSource> {
+  const fixture = await constructionInspectorSource(context, footprintCopyConstructionFixtureSource(), 0);
   return { ...fixture, transport: current209QaDescriptorFixture(fixture.transport) };
 }

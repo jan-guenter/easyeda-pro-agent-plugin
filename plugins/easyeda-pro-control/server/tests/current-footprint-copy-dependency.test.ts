@@ -13,6 +13,8 @@ import { currentFootprintCopyPreparationWire, currentPcb209WorkerStartupWire, cu
 import { CURRENT_FOOTPRINT_COPY_DEPENDENCY_FIXTURE as SOURCES } from "./helpers/current-footprint-copy-dependency-fixture.ts";
 import { FOOTPRINT_PRODUCER_SOURCE_FIXTURE as DIRECT_SOURCES } from "./helpers/current-footprint-copy-producer-fixture.ts";
 
+import { footprintDependencyWorldSource } from "./helpers/current-footprint-copy-dependency-world.ts";
+
 type Data = Record<string, unknown>;
 const property = (name: string, value: Data, writable = false, enumerable = false, configurable = true): Data =>
   ({ name, value, writable, enumerable, configurable, isOwn: true });
@@ -84,27 +86,16 @@ void test("dependency profiles match complete pinned sources and JavaScript arit
 
 function fixedWorld(): vm.Context {
   const context = vm.createContext({});
-  const selected = PROFILES.map(profile => ({ key: profile.key, kind: profile.kind, parent: profile.parent }));
-  vm.runInContext(`const selected=${JSON.stringify(selected)};let calls=0;const scope={};const stop=()=>{calls++;throw Error('invoked');};
-    function define(name,parent){if(scope[name])return scope[name];const inherited=parent??selected.find(p=>p.key===name)?.parent;const base=inherited?define(inherited):null;const c=base?class extends base{}:class{};scope[name]=c;return c;}
-    for(const [name,parent]of [['Gd',null],['Lg','Gd'],['Pi',null],['ar','Pi'],['Tg','ar'],['zy',null],['Vc','zy'],['ja','Vc'],['Mb',null],['KP','Mb'],['JP','KP']])define(name,parent);
-    for(const p of selected.filter(p=>p.kind==='class'))define(p.key,p.parent);
-    for(const p of selected){if(p.kind==='function')scope[p.key]=stop;else if(p.kind==='method'){const [owner,key]=p.key.split('.');Object.defineProperty(scope[owner].prototype,key,{value:stop,writable:true,enumerable:false,configurable:true});}}
-    for(const key of ['qe','Qe','Ke','Ni','cg'])scope[key]=stop;
-    const project=Object.create(scope.Lg.prototype),manager=Object.create(scope.Tg.prototype),consistency=Object.create(scope.ja.prototype),bus={};
-    const constructors=[scope.Tg,scope.ar,scope.Pi,scope.ja,scope.Vc,scope.zy],lexicals=[stop,stop,scope.qe,scope.Qe,scope.Ke,scope.Ni,scope.cg,{}, {},'|\\n'];
-    const notification=Object.create(scope.JP.prototype);notification.uuid='12345678-1234-1234-1234-123456789abc';notification.rpcTicket=1;
-    Object.assign(project,{workerBus:bus,footprint:manager,consistencyManager:consistency,wsBus:notification,cache:{},localCache:{}});Object.assign(manager,{projectManager:project,user:undefined});
-    globalThis.PROJECT=project;globalThis._TAB_ID_='tab';globalThis['/tab/notify']=notification;
-  `, context);
+  vm.runInContext(footprintDependencyWorldSource(), context);
   return context;
 }
+
 void test("fixed dependency selectors retain original identities and refuse lazy bus creation, accessors and method shadows", () => {
   for (const change of ["", "delete globalThis['/tab/notify']", "scope.wa=function replacement(){}", "project.cache={}",
     "notification.rpcCall=function replacement(){}", "Object.defineProperty(scope,'oo',{get(){calls++;return stop;}})", "globalThis.EDITOR_TOP={}", "manager.user='changed'"]) {
     const context = fixedWorld();
-    vm.runInContext(`const original=(${CALLS.capture.program}).call(scope,project,bus,manager,consistency,constructors,lexicals);${change}`, context);
-    const invoke = (): unknown => vm.runInContext(`(${CALLS.recheck.program}).call(scope,project,bus,manager,consistency,constructors,lexicals,original)`, context);
+    vm.runInContext(`const original=(${CALLS.capture.program}).call({object:scope},project,bus,manager,consistency,constructors,lexicals);${change}`, context);
+    const invoke = (): unknown => vm.runInContext(`(${CALLS.recheck.program}).call({object:scope},project,bus,manager,consistency,constructors,lexicals,original)`, context);
     if (change === "") { assert.equal(invoke(), true); } else { assert.throws(invoke, /FOOTPRINT_COPY_DEPENDENCY_BINDING/u); }
     assert.equal(vm.runInContext("calls", context), 0);
     if (change.startsWith("delete")) { assert.equal(vm.runInContext("Object.hasOwn(globalThis,'/tab/notify')", context), false); }

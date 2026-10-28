@@ -34,6 +34,10 @@ export interface CurrentFootprintCopyConstructedAsyncObservation extends Omit<Cu
   readonly uploadArrowReceiverVerified: true;
   readonly originalConstructionUploadMatched: true;
 }
+export interface CurrentFootprintCopyRegisteredAsyncObservation extends Omit<CurrentFootprintCopyConstructedAsyncObservation, "parserArrowReceiversVerified"> {
+  readonly parserArrowReceiversVerified: true;
+  readonly originalParserRegistrationArgumentsMatched: true;
+}
 export const CURRENT_FOOTPRINT_COPY_CONSTRUCTED_ASYNC_REQUESTS = Object.freeze({ observe: 19, reproof: 6 });
 export const CURRENT_FOOTPRINT_COPY_ASYNC_REQUESTS = Object.freeze({ observe: 17, reproof: 4 });
 

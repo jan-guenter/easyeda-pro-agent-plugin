@@ -25,7 +25,7 @@ void test("actual209 source delegates each reprove original project identity and
   const source = Object.freeze({ synthetic: "source" }), state = Object.freeze({ synthetic: "state" });
   const producers = Object.freeze({ synthetic: "producers" });
   const dependencies = Object.freeze({ synthetic: "dependencies" });
-  const runner = Object.freeze({
+  const runnerMethods = Object.freeze({
     proveProjectIdentity: (): Promise<typeof identity> => Promise.resolve(identity),
     requireProjectIdentity: (packet: unknown, selected: unknown): Promise<void> => {
       assert.equal(packet, construction); assert.equal(selected, identity); checks.push("identity"); return Promise.resolve();
@@ -38,26 +38,28 @@ void test("actual209 source delegates each reprove original project identity and
     observeFootprintSource: (): Promise<typeof source> => Promise.resolve(source),
     requireFootprintSource: (): Promise<void> => Promise.resolve(),
   });
+  let originalRunner: object | null = null;
   class ProducerRunner {
     public observeFootprintProducers(selected: unknown, assigned: unknown, observed: unknown): Promise<typeof producers> {
-      assert.equal(this, runner); assert.equal(selected, construction); assert.equal(assigned, assignments); assert.equal(observed, state);
+      assert.equal(this, originalRunner); assert.equal(selected, construction); assert.equal(assigned, assignments); assert.equal(observed, state);
       checks.push("producers-observe"); return Promise.resolve(producers);
     }
     public requireFootprintProducers(selected: unknown, assigned: unknown, observed: unknown, packet: unknown): Promise<void> {
-      assert.equal(this, runner); assert.equal(selected, construction); assert.equal(assigned, assignments); assert.equal(observed, state);
+      assert.equal(this, originalRunner); assert.equal(selected, construction); assert.equal(assigned, assignments); assert.equal(observed, state);
       assert.equal(packet, producers); checks.push("producers-require"); return Promise.resolve();
     }
-    public retainedFootprintProducers(): Readonly<Record<string, unknown>> { assert.equal(this, runner); return producers; }
+    public retainedFootprintProducers(): Readonly<Record<string, unknown>> { assert.equal(this, originalRunner); return producers; }
     public observeFootprintDependencies(selected: unknown, assigned: unknown, observed: unknown, producerInput: unknown): Promise<typeof dependencies> {
-      assert.equal(this, runner); assert.equal(selected, construction); assert.equal(assigned, assignments); assert.equal(observed, state);
+      assert.equal(this, originalRunner); assert.equal(selected, construction); assert.equal(assigned, assignments); assert.equal(observed, state);
       assert.equal(producerInput, producers); checks.push("dependencies-observe"); return Promise.resolve(dependencies);
     }
     public requireFootprintDependencies(selected: unknown, assigned: unknown, observed: unknown, producerInput: unknown, packet: unknown): Promise<void> {
-      assert.equal(this, runner); assert.equal(selected, construction); assert.equal(assigned, assignments); assert.equal(observed, state);
+      assert.equal(this, originalRunner); assert.equal(selected, construction); assert.equal(assigned, assignments); assert.equal(observed, state);
       assert.equal(producerInput, producers); assert.equal(packet, dependencies); checks.push("dependencies-require"); return Promise.resolve();
     }
-    public retainedFootprintDependencies(): Readonly<Record<string, unknown>> { assert.equal(this, runner); return dependencies; }
+    public retainedFootprintDependencies(): Readonly<Record<string, unknown>> { assert.equal(this, originalRunner); return dependencies; }
   }
+  const runner = Object.freeze(Object.assign(new ProducerRunner(), runnerMethods)); originalRunner = runner;
   class Transport {
     readonly #packet = construction;
     #identityBound = false;
@@ -105,6 +107,8 @@ void test("actual209 source delegates each reprove original project identity and
   // oxlint-disable-next-line typescript/no-unsafe-type-assertion -- The real source coordinator is instantiated with the two explicitly synthetic imported boundaries above.
   const owner = Reflect.construct(Constructor, [{ dependency, opening: binding, actorClockSourceQualification: {} }]) as CurrentPcb209WorkerStartupOpening;
   const opened = await owner.open(target, (): Promise<void> => Promise.resolve());
+  await owner.requireOriginalNativeDependency(opened, dependency);
+  await assert.rejects(owner.requireOriginalNativeDependency(opened, Object.freeze({ ...dependency })), /ORIGINAL_NATIVE_DEPENDENCY/u);
   const assigned = await owner.proveCurrentAssignments(opened), observed = await owner.observeFootprintState(opened, assigned);
   checks.length = 0;
   // oxlint-disable-next-line typescript/no-unsafe-type-assertion -- The inert runner deliberately never interprets this plan; only the actual opening delegate's owner checks are under test.

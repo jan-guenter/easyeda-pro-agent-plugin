@@ -1,14 +1,18 @@
+/* oxlint-disable import/max-dependencies -- This sole generator assembles independently bounded native protocol families and their exact purpose limits. */
 import { readFile, writeFile } from "node:fs/promises";
 import { currentFootprintCopyManagerRouteNativeSource } from "../server/src/current-footprint-copy-manager-route-native.ts";
 import { currentFootprintCopyUiNativeSource } from "../server/src/current-footprint-copy-ui-native.ts";
 import { CURRENT_FOOTPRINT_COPY_PREPARATION_PROFILE as footprint } from "../server/src/current-footprint-copy-preparation-profile.ts";
+import { CURRENT_FOOTPRINT_COPY_EXECUTION_PROFILE as execution } from "../server/src/current-footprint-copy-execution-profile.ts";
+import { currentFootprintCopyParentNativeSource } from "../server/src/current-footprint-copy-parent-native.ts";
+import { currentFootprintCopyTransactionClockNativeSource } from "../server/src/current-footprint-copy-transaction-clock-native.ts";
+import { currentFootprintCopyExecutionWorkerNativeSource } from "../server/src/current-footprint-copy-execution-worker-native.ts";
 import { currentPcbWorkerStartupNativeSource } from "../server/src/current-pcb-worker-startup-native.ts";
 import { currentPcb209EmptyNativeSource } from "../server/src/current-pcb-209-empty-native.ts";
 import { currentPcb209RatlineNativeSource } from "../server/src/current-pcb-209-ratline-native.ts";
 import { CURRENT_PCB_209_RATLINE_NATIVE_PROFILE as ratline } from "../server/src/current-pcb-209-ratline-budget.ts";
 import { CURRENT_PCB_209_RATLINE_INSTALLATION_PROFILE as installation } from "../server/src/current-pcb-209-ratline-installation-profile.ts";
 import { currentPcb209RatlineContinuationNativeSource } from "../server/src/current-pcb-209-ratline-continuation-native.ts";
-// oxlint-disable-next-line import/max-dependencies -- This generator assembles five independently bounded protocol families and their exact limit tables.
 import { CURRENT_PCB_209_RATLINE_CONTINUATION_NATIVE_PROFILE as continuation } from "../server/src/current-pcb-209-ratline-continuation-budget.ts";
 
 const quote = (text: string): string => `@"${text.replaceAll('"', '""')}"`;
@@ -64,7 +68,7 @@ async function main(): Promise<void> {
     ["WORKER STARTUP EMPTY209", currentPcb209EmptyNativeSource()],
     ["WORKER STARTUP RATLINE209", ratlineSource()],
     ["WORKER STARTUP RATLINE CONTINUATION209", continuationSource()],
-    ["FOOTPRINT COPY PREPARATION", footprintSource()]] as const) {
+    ["FOOTPRINT COPY PREPARATION", footprintSource()], ["FOOTPRINT COPY EXECUTION", footprintExecutionSource()]] as const) {
     const begin = `// BEGIN GENERATED ${name} PROTOCOL`, end = `// END GENERATED ${name} PROTOCOL`;
     const start = next.indexOf(begin), stop = next.indexOf(end);
     if (start === -1 || stop < start || next.includes(begin, start + begin.length) || next.includes(end, stop + end.length)) {
@@ -89,6 +93,11 @@ function footprintSource(): string {
   return `// BEGIN GENERATED FOOTPRINT COPY PREPARATION PROTOCOL\n${currentFootprintCopyUiNativeSource()}\n${currentFootprintCopyManagerRouteNativeSource()}\n` +
     `public static class EasyedaFootprintPreparationLimits { public const int Requests=${String(footprint.requestLimit)}; public const int NormalRequests=${String(footprint.normalRequestLimit)}; public const long NormalMilliseconds=${String(footprint.normalMilliseconds)}L; public const long TotalMilliseconds=${String(footprint.normalMilliseconds + footprint.cleanupMilliseconds)}L; }\n` +
     "// END GENERATED FOOTPRINT COPY PREPARATION PROTOCOL";
+}
+function footprintExecutionSource(): string {
+  return `// BEGIN GENERATED FOOTPRINT COPY EXECUTION PROTOCOL\n${currentFootprintCopyTransactionClockNativeSource()}\n${currentFootprintCopyExecutionWorkerNativeSource()}\n${currentFootprintCopyParentNativeSource()}\n` +
+    `public static class EasyedaFootprintExecutionLimits { public const int Requests=${String(execution.requestLimit)}; public const int NormalRequests=${String(execution.normalRequestLimit)}; public const int ClockRequests=11; public const int ParentRequests=${String(execution.requests.parentNative)}; public const long NormalMilliseconds=${String(execution.normalMilliseconds)}L; public const long TotalMilliseconds=${String(execution.normalMilliseconds + execution.cleanupMilliseconds)}L; }\n` +
+    "// END GENERATED FOOTPRINT COPY EXECUTION PROTOCOL";
 }
 // oxlint-disable-next-line node/no-top-level-await -- ESM-only build command; never loaded by require().
 await main();

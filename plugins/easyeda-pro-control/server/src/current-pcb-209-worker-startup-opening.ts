@@ -1,3 +1,4 @@
+/* oxlint-disable eslint/max-classes-per-file -- Keep the private shared core with two fixed wrappers so no caller can select a transport factory or constructor profile. */
 /** Fixed209 original-owner choreography. Legacy opening remains separate. The lifecycle must publish the sealed
  * checkpoint intent before calling open(). This module supplies no journal,
  * owner adoption, public writer or saved-state authority. */
@@ -6,6 +7,10 @@ import { types } from "node:util";
 import { z } from "zod";
 import type { CurrentFootprintCopyProducerObservation } from "./current-footprint-copy-producer-runner.ts";
 import type { CurrentFootprintCopyDependencyObservation } from "./current-footprint-copy-dependency-runner.ts";
+import type { CurrentFootprintParentWorkerObservation, CurrentFootprintParentWorkerRunner } from "./current-footprint-copy-parent-worker-runner.ts";
+import type { CurrentFootprintCopyDestinationObservation } from "./current-footprint-copy-destination-runner.ts";
+import type { CurrentFootprintCopyRegisteredAsyncObservation } from "./current-footprint-copy-async-runner.ts";
+import type { CurrentFootprintCopyTransactionClockEvents } from "./current-footprint-copy-transaction-clock-events.ts";
 import type { CurrentFootprintCopyStatePacket } from "./current-footprint-copy-state.ts";
 import type { CurrentFootprintSourcePlan } from "./current-footprint-source-plan.ts";
 import type { CurrentFootprintSourceReadPacket } from "./current-footprint-source-read-runner.ts";
@@ -18,10 +23,11 @@ import { CURRENT_PCB_209_STARTUP_OPENING_TIMING } from "./current-pcb-209-worker
 import type { CurrentPcbDiagnosticOpeningPhase, CurrentPcbDiagnosticOpeningResult } from "./current-pcb-diagnostic-opening.ts";
 import { captureCurrentPcbStringClockReply } from "./current-pcb-string-clock-reply.ts";
 import { CurrentPcb209WorkerConstructionRunner } from "./current-pcb-worker-construction-runner.ts";
-import type { CurrentPcb209WorkerConstructionPacket, CurrentPcbWorkerConstructionProjectIdentity } from "./current-pcb-worker-construction-runner.ts";
+import type { CurrentPcbWorkerConstructionOwner, CurrentPcbWorkerConstructionPacketFor, CurrentPcbWorkerConstructionProjectIdentity } from "./current-pcb-worker-construction-runner.ts";
 import type { CurrentPcbWorkerConstructionAssignments } from "./current-pcb-worker-construction-assignment.ts";
 import type { CurrentPcbWorkerStartupCommand, CurrentPcbWorkerStartupDependency } from "./current-pcb-worker-startup-contract.ts";
-import { CurrentPcb209WorkerStartupTransport } from "./current-pcb-worker-startup-transport.ts";
+import { CurrentFootprintCopyWorkerStartupTransport, CurrentPcb209WorkerStartupTransport } from "./current-pcb-worker-startup-transport.ts";
+import type { CurrentPcbWorkerStartupTransportOwner } from "./current-pcb-worker-startup-transport.ts";
 import { currentPcbWorkerStartupUiActorCommand } from "./current-pcb-worker-startup-actor.ts";
 import { CurrentPcb209WorkerStartupActorRunner } from "./current-pcb-209-worker-startup-actor.ts";
 import type { CurrentPcb209OriginalStartupActorObservation, CurrentPcb209WorkerStartupActorPacket } from "./current-pcb-209-worker-startup-actor.ts";
@@ -30,6 +36,8 @@ import type { CurrentPcb209ActorClockSourceQualification } from "./current-pcb-2
 import type { CurrentPcbWorkerStartupChannelPacket } from "./current-pcb-worker-startup-channel-observation.ts";
 
 type Row = Record<string, unknown>;
+type OpeningProfile = "private.current-pcb209-worker-construction.v1" | "private.current-footprint-copy-construction.v1";
+const INTERNAL_OPENING = Symbol("fixed-original-worker-opening");
 const recordSchema = z.record(z.string(), z.unknown());
 const contextSchema = z.object({ sessionId: z.string().min(1).max(128).regex(/^[A-Za-z\d_.:-]+$/u),
   uniqueContextId: z.string().min(1).max(128).regex(/^[A-Za-z\d_.:-]+$/u) }).strict();
@@ -49,17 +57,21 @@ const footprintDependencyMethods = Object.freeze({
   retained: CurrentPcb209WorkerConstructionRunner.prototype.retainedFootprintDependencies,
 });
 // oxlint-enable typescript/unbound-method
-function producerMethods(): void {
+function producerMethods(runner?: CurrentPcbWorkerConstructionOwner<OpeningProfile>): void {
     if (CurrentPcb209WorkerConstructionRunner.prototype.observeFootprintProducers !== footprintProducerMethods.observe ||
         CurrentPcb209WorkerConstructionRunner.prototype.requireFootprintProducers !== footprintProducerMethods.require ||
-        CurrentPcb209WorkerConstructionRunner.prototype.retainedFootprintProducers !== footprintProducerMethods.retained) {
+        CurrentPcb209WorkerConstructionRunner.prototype.retainedFootprintProducers !== footprintProducerMethods.retained ||
+        runner !== undefined && (runner.observeFootprintProducers !== footprintProducerMethods.observe ||
+          runner.requireFootprintProducers !== footprintProducerMethods.require || runner.retainedFootprintProducers !== footprintProducerMethods.retained)) {
       throw fail("FOOTPRINT_PRODUCER_METHOD_CHANGED");
     }
   }
-function dependencyMethods(): void {
+function dependencyMethods(runner?: CurrentPcbWorkerConstructionOwner<OpeningProfile>): void {
   if (CurrentPcb209WorkerConstructionRunner.prototype.observeFootprintDependencies !== footprintDependencyMethods.observe ||
       CurrentPcb209WorkerConstructionRunner.prototype.requireFootprintDependencies !== footprintDependencyMethods.require ||
-      CurrentPcb209WorkerConstructionRunner.prototype.retainedFootprintDependencies !== footprintDependencyMethods.retained) {
+      CurrentPcb209WorkerConstructionRunner.prototype.retainedFootprintDependencies !== footprintDependencyMethods.retained ||
+      runner !== undefined && (runner.observeFootprintDependencies !== footprintDependencyMethods.observe ||
+        runner.requireFootprintDependencies !== footprintDependencyMethods.require || runner.retainedFootprintDependencies !== footprintDependencyMethods.retained)) {
     throw fail("FOOTPRINT_DEPENDENCY_METHOD_CHANGED");
   }
 }
@@ -104,16 +116,16 @@ async function bounded<T>(work: Promise<T>, milliseconds = 2000): Promise<T> {
   try { return await Promise.race([work, expired.promise]); } finally { clearTimeout(timer); }
 }
 
-export interface CurrentPcb209WorkerStartupOpeningResult {
+interface OpeningResult<P extends OpeningProfile> {
   readonly opening: CurrentPcbDiagnosticOpeningResult;
-  readonly construction: CurrentPcb209WorkerConstructionPacket;
+  readonly construction: CurrentPcbWorkerConstructionPacketFor<P>;
   readonly workerIdentity: CurrentPcbWorkerConstructionProjectIdentity;
   readonly ancillaryFrame: Row | null;
   readonly executionAuthorized: false;
   readonly persistenceVerified: false;
 }
 
-export class CurrentPcb209WorkerStartupOpening {
+class CurrentPcb209WorkerStartupOpeningCore<P extends OpeningProfile> {
   readonly #actorSource: CurrentPcb209ActorClockSourceQualification;
   readonly #dependency: CurrentPcbWorkerStartupDependency;
   readonly #opening: CurrentPcbWorkerStartupOpeningBinding;
@@ -121,25 +133,25 @@ export class CurrentPcb209WorkerStartupOpening {
   readonly #request: CurrentPcbWorkerStartupDependency["request"];
   readonly #assertOwner: CurrentPcbWorkerStartupDependency["assertOriginalOwner"];
   readonly #assertTermination: CurrentPcbWorkerStartupDependency["assertOriginalTermination"];
-  readonly #transport: CurrentPcb209WorkerStartupTransport;
+  readonly #transport: CurrentPcbWorkerStartupTransportOwner<P>;
   #consumed = false;
   #settled = false;
   #released = false;
   #releasing = false;
   #openingAttempted = false;
-  #capture: Promise<CurrentPcb209WorkerConstructionPacket> | null = null;
+  #capture: Promise<CurrentPcbWorkerConstructionPacketFor<P>> | null = null;
   #openingResult: CurrentPcbDiagnosticOpeningResult | null = null;
   #target: CurrentDisposableOpenSealedTarget | null = null;
-  #construction: CurrentPcb209WorkerConstructionPacket | null = null;
+  #construction: CurrentPcbWorkerConstructionPacketFor<P> | null = null;
   #workerIdentity: CurrentPcbWorkerConstructionProjectIdentity | null = null;
-  #completed: CurrentPcb209WorkerStartupOpeningResult | null = null;
+  #completed: OpeningResult<P> | null = null;
   #assignmentsConsumed = false;
   #assignments: CurrentPcbWorkerConstructionAssignments | null = null;
   #actorAttempted = false;
   #actor: CurrentPcb209WorkerStartupActorRunner | null = null;
   #actorPacket: CurrentPcb209WorkerStartupActorPacket | null = null;
   #footprintAttempted = false;
-  #footprintRunner: CurrentPcb209WorkerConstructionRunner | null = null;
+  #footprintRunner: CurrentPcbWorkerConstructionOwner<P> | null = null;
   #footprintPacket: CurrentFootprintCopyStatePacket | null = null;
   #footprintSourceAttempted = false;
   #footprintSourcePlan: CurrentFootprintSourcePlan | null = null;
@@ -148,14 +160,22 @@ export class CurrentPcb209WorkerStartupOpening {
   #footprintProducers: CurrentFootprintCopyProducerObservation | null = null;
   #footprintDependenciesAttempted = false;
   #footprintDependencies: CurrentFootprintCopyDependencyObservation | null = null;
+  #registeredAsyncAttempted = false;
+  #registeredAsync: CurrentFootprintCopyRegisteredAsyncObservation | null = null;
+  #destinationsAttempted = false;
+  #destinations: CurrentFootprintCopyDestinationObservation | null = null;
+  #routeFinalAttempted = false;
+  #clocksAttempted = false;
   #channelAttempted = false;
-  #channelRunner: CurrentPcb209WorkerConstructionRunner | null = null;
+  #channelRunner: CurrentPcbWorkerConstructionOwner<P> | null = null;
   #channelPacket: CurrentPcbWorkerStartupChannelPacket | null = null;
   #stage: OpeningStage = "idle";
   #step: OpeningStep = "idle";
   #failure: CurrentPcb209WorkerStartupOpeningDiagnostics["failure"] = null;
 
-  public constructor(handoff: Pick<CurrentPcbWorkerStartupHandoff, "dependency" | "opening" | "actorClockSourceQualification">) {
+  public constructor(internal: symbol, handoff: Pick<CurrentPcbWorkerStartupHandoff, "dependency" | "opening" | "actorClockSourceQualification">,
+    createTransport: (dependency: CurrentPcbWorkerStartupDependency) => CurrentPcbWorkerStartupTransportOwner<P>) {
+    if (internal !== INTERNAL_OPENING) { throw fail("FIXED_OPENING"); }
     if (handoff.actorClockSourceQualification === undefined) { throw fail("ACTOR_SOURCE_QUALIFICATION"); }
     requireCurrentPcb209ActorClockSourceQualification(handoff.actorClockSourceQualification);
     this.#actorSource = handoff.actorClockSourceQualification;
@@ -165,11 +185,11 @@ export class CurrentPcb209WorkerStartupOpening {
     this.#request = this.#dependency.request; this.#assertOwner = this.#dependency.assertOriginalOwner;
     this.#assertTermination = this.#dependency.assertOriginalTermination;
     // Production never accepts a caller-selected worker source profile.
-    this.#transport = new CurrentPcb209WorkerStartupTransport(this.#dependency);
+    this.#transport = createTransport(this.#dependency);
   }
   public status(): Readonly<{ consumed: boolean; settled: boolean; openingAttempted: boolean;
     openingResultRetained: boolean; constructionRetained: boolean; completed: boolean;
-    transport: ReturnType<CurrentPcb209WorkerStartupTransport["status"]>;
+    transport: ReturnType<CurrentPcbWorkerStartupTransportOwner<P>["status"]>;
     diagnostics: CurrentPcb209WorkerStartupOpeningDiagnostics; executionAuthorized: false }> {
     return Object.freeze({ consumed: this.#consumed, settled: this.#settled, openingAttempted: this.#openingAttempted,
       openingResultRetained: this.#openingResult !== null, constructionRetained: this.#construction !== null,
@@ -236,7 +256,7 @@ export class CurrentPcb209WorkerStartupOpening {
     const result = decodeCurrentPcbDiagnosticOpeningReply(reply, target, phase); this.#openingResult = result;
     await this.#current(); return result;
   }
-  public async open(input: CurrentDisposableOpenSealedTarget, reverify: () => Promise<void>): Promise<CurrentPcb209WorkerStartupOpeningResult> {
+  public async open(input: CurrentDisposableOpenSealedTarget, reverify: () => Promise<void>): Promise<OpeningResult<P>> {
     if (this.#consumed) { throw fail("CONSUMED"); } this.#consumed = true;
     try {
       this.#stage = "target-validation"; this.#step = "validate-target";
@@ -295,19 +315,26 @@ export class CurrentPcb209WorkerStartupOpening {
       throw error;
     } finally { this.#settled = true; }
   }
-  public requireOriginal(result: CurrentPcb209WorkerStartupOpeningResult): Promise<CurrentPcb209WorkerStartupTransport> {
+  public requireOriginal(result: OpeningResult<P>): Promise<CurrentPcbWorkerStartupTransportOwner<P>> {
     return this.#requireOriginalResult(result);
   }
-  async #requireOriginalResult(result: CurrentPcb209WorkerStartupOpeningResult): Promise<CurrentPcb209WorkerStartupTransport> {
+  async #requireOriginalResult(result: OpeningResult<P>): Promise<CurrentPcbWorkerStartupTransportOwner<P>> {
     if (result !== this.#completed || !this.#settled || this.#released || this.#releasing ||
         this.#workerIdentity === null || result.workerIdentity !== this.#workerIdentity) { throw fail("ORIGINAL_RESULT"); }
     await this.#current(); const runner = await this.#transport.requireOriginal(result.construction); await this.#current();
     await runner.requireProjectIdentity(result.construction, this.#workerIdentity); await this.#current(); return this.#transport;
   }
+  /** An opening from another native launch cannot qualify this owner's UI or
+   * worker route even when the serialized project identities are identical. */
+  public async requireOriginalNativeDependency(result: OpeningResult<P>, dependency: CurrentPcbWorkerStartupDependency): Promise<void> {
+    if (dependency !== this.#dependency) { throw fail("ORIGINAL_NATIVE_DEPENDENCY"); }
+    await this.#requireOriginalResult(result);
+    if (dependency !== this.#dependency) { throw fail("ORIGINAL_NATIVE_DEPENDENCY"); }
+  }
   /** The same original opening can be joined to its own PCB qualification.
    * Matching serialized evidence cannot transfer it to another native channel
    * or replace the checkpoint-selected target. This is not writer authority. */
-  public async requireOriginalPcbDependency(result: CurrentPcb209WorkerStartupOpeningResult,
+  public async requireOriginalPcbDependency(result: OpeningResult<P>,
     dependency: CurrentPcbWorkerStartupDependency, input: CurrentDisposableOpenSealedTarget): Promise<void> {
     const target = currentDisposableOpenSealedTargetSchema.parse(captureCurrentPcbStringClockReply(input).value);
     if (dependency !== this.#dependency || this.#target === null || JSON.stringify(target) !== JSON.stringify(this.#target)) {
@@ -320,14 +347,14 @@ export class CurrentPcb209WorkerStartupOpening {
   }
   /** These sequential reads associate current wrappers with the retained
    * constructor callbacks. They do not prove continuous or atomic ownership. */
-  public async proveCurrentAssignments(result: CurrentPcb209WorkerStartupOpeningResult): Promise<CurrentPcbWorkerConstructionAssignments> {
+  public async proveCurrentAssignments(result: OpeningResult<P>): Promise<CurrentPcbWorkerConstructionAssignments> {
     if (this.#assignmentsConsumed) { throw fail("ASSIGNMENTS_CONSUMED"); } this.#assignmentsConsumed = true;
     const transport = await this.requireOriginal(result);
     const runner = await transport.requireOriginal(result.construction); await this.#current();
     const assignments = await runner.proveCurrentAssignments(result.construction);
     this.#assignments = assignments; await this.#current(); return assignments;
   }
-  public async requireCurrentAssignments(result: CurrentPcb209WorkerStartupOpeningResult,
+  public async requireCurrentAssignments(result: OpeningResult<P>,
     assignments: CurrentPcbWorkerConstructionAssignments): Promise<void> {
     if (assignments !== this.#assignments || this.#assignments === null) { throw fail("ORIGINAL_ASSIGNMENTS"); }
     const transport = await this.requireOriginal(result);
@@ -337,7 +364,7 @@ export class CurrentPcb209WorkerStartupOpening {
   public retainedFootprintState(): Readonly<Record<string, unknown>> | null {
     return this.#footprintRunner?.retainedFootprintState() ?? null;
   }
-  public async observeFootprintState(result: CurrentPcb209WorkerStartupOpeningResult,
+  public async observeFootprintState(result: OpeningResult<P>,
     assignments: CurrentPcbWorkerConstructionAssignments): Promise<CurrentFootprintCopyStatePacket> {
     if (this.#footprintAttempted) { throw fail("FOOTPRINT_CONSUMED"); } this.#footprintAttempted = true;
     await this.requireCurrentAssignments(result, assignments);
@@ -347,7 +374,7 @@ export class CurrentPcb209WorkerStartupOpening {
     const packet = await runner.observeFootprintState(result.construction, assignments);
     this.#footprintPacket = packet; await this.#current(); return packet;
   }
-  public async requireFootprintState(result: CurrentPcb209WorkerStartupOpeningResult,
+  public async requireFootprintState(result: OpeningResult<P>,
     assignments: CurrentPcbWorkerConstructionAssignments, packet: CurrentFootprintCopyStatePacket): Promise<void> {
     if (packet !== this.#footprintPacket || this.#footprintRunner === null) { throw fail("ORIGINAL_FOOTPRINT_PACKET"); }
     await this.requireCurrentAssignments(result, assignments);
@@ -362,7 +389,7 @@ export class CurrentPcb209WorkerStartupOpening {
   /** The lifecycle must publish the selected checkpoint member before dispatch.
    * Neither the plan nor the returned data adopts
    * another construction owner or enables a footprint writer. */
-  public async observeFootprintSource(result: CurrentPcb209WorkerStartupOpeningResult,
+  public async observeFootprintSource(result: OpeningResult<P>,
     assignments: CurrentPcbWorkerConstructionAssignments, state: CurrentFootprintCopyStatePacket,
     plan: CurrentFootprintSourcePlan): Promise<CurrentFootprintSourceReadPacket> {
     if (this.#footprintSourceAttempted) { throw fail("FOOTPRINT_SOURCE_CONSUMED"); }
@@ -374,7 +401,7 @@ export class CurrentPcb209WorkerStartupOpening {
     const packet = await runner.observeFootprintSource(result.construction, assignments, state, plan);
     this.#footprintSourcePacket = packet; await this.#current(); return packet;
   }
-  public async requireFootprintSource(result: CurrentPcb209WorkerStartupOpeningResult,
+  public async requireFootprintSource(result: OpeningResult<P>,
     assignments: CurrentPcbWorkerConstructionAssignments, state: CurrentFootprintCopyStatePacket,
     plan: CurrentFootprintSourcePlan, packet: CurrentFootprintSourceReadPacket): Promise<void> {
     if (packet !== this.#footprintSourcePacket || plan !== this.#footprintSourcePlan || state !== this.#footprintPacket) {
@@ -386,73 +413,144 @@ export class CurrentPcb209WorkerStartupOpening {
     await runner.requireFootprintSource(result.construction, assignments, state, plan, packet); await this.#current();
   }
   public retainedFootprintProducers(): Readonly<Record<string, unknown>> | null {
-    producerMethods();
-    return this.#footprintRunner === null ? null : footprintProducerMethods.retained.call(this.#footprintRunner);
+    producerMethods(this.#footprintRunner ?? undefined);
+    return this.#footprintRunner === null ? null : this.#footprintRunner.retainedFootprintProducers();
   }
   /** Two opening identity/assignment reads precede the construction owner's
    * bounded producer stage. The retained arrays never leave that same owner. */
-  public async observeFootprintProducers(result: CurrentPcb209WorkerStartupOpeningResult,
+  public async observeFootprintProducers(result: OpeningResult<P>,
     assignments: CurrentPcbWorkerConstructionAssignments, state: CurrentFootprintCopyStatePacket): Promise<CurrentFootprintCopyProducerObservation> {
-    producerMethods();
+    producerMethods(this.#footprintRunner ?? undefined);
     if (this.#footprintProducersAttempted) { throw fail("FOOTPRINT_PRODUCER_CONSUMED"); }
     this.#footprintProducersAttempted = true;
     if (state !== this.#footprintPacket || this.#footprintRunner === null) { throw fail("ORIGINAL_FOOTPRINT_PACKET"); }
     const runner = this.#footprintRunner;
-    await this.requireCurrentAssignments(result, assignments); producerMethods();
+    await this.requireCurrentAssignments(result, assignments); producerMethods(this.#footprintRunner ?? undefined);
     if (runner !== this.#footprintRunner || state !== this.#footprintPacket) { throw fail("ORIGINAL_FOOTPRINT_OWNER"); }
-    const packet = await footprintProducerMethods.observe.call(runner, result.construction, assignments, state);
+    const packet = await runner.observeFootprintProducers(result.construction, assignments, state);
     this.#footprintProducers = packet;
-    await this.#current(); producerMethods(); return packet;
+    await this.#current(); producerMethods(this.#footprintRunner ?? undefined); return packet;
   }
-  public async requireFootprintProducers(result: CurrentPcb209WorkerStartupOpeningResult,
+  public async requireFootprintProducers(result: OpeningResult<P>,
     assignments: CurrentPcbWorkerConstructionAssignments, state: CurrentFootprintCopyStatePacket,
     packet: CurrentFootprintCopyProducerObservation): Promise<void> {
-    producerMethods();
+    producerMethods(this.#footprintRunner ?? undefined);
     if (packet !== this.#footprintProducers || this.#footprintProducers === null || state !== this.#footprintPacket ||
         this.#footprintRunner === null) { throw fail("ORIGINAL_FOOTPRINT_PRODUCER_PACKET"); }
     const runner = this.#footprintRunner;
-    await this.requireCurrentAssignments(result, assignments); producerMethods();
+    await this.requireCurrentAssignments(result, assignments); producerMethods(this.#footprintRunner ?? undefined);
     if (runner !== this.#footprintRunner || state !== this.#footprintPacket) { throw fail("ORIGINAL_FOOTPRINT_OWNER"); }
-    await footprintProducerMethods.require.call(runner, result.construction, assignments, state, packet);
-    await this.#current(); producerMethods();
+    await runner.requireFootprintProducers(result.construction, assignments, state, packet);
+    await this.#current(); producerMethods(this.#footprintRunner ?? undefined);
   }
   public retainedFootprintDependencies(): Readonly<Record<string, unknown>> | null {
-    dependencyMethods();
-    return this.#footprintRunner === null ? null : footprintDependencyMethods.retained.call(this.#footprintRunner);
+    dependencyMethods(this.#footprintRunner ?? undefined);
+    return this.#footprintRunner === null ? null : this.#footprintRunner.retainedFootprintDependencies();
   }
-  public async observeFootprintDependencies(result: CurrentPcb209WorkerStartupOpeningResult,
+  public async observeFootprintDependencies(result: OpeningResult<P>,
     assignments: CurrentPcbWorkerConstructionAssignments, state: CurrentFootprintCopyStatePacket,
     producers: CurrentFootprintCopyProducerObservation): Promise<CurrentFootprintCopyDependencyObservation> {
-    dependencyMethods();
+    dependencyMethods(this.#footprintRunner ?? undefined);
     if (this.#footprintDependenciesAttempted) { throw fail("FOOTPRINT_DEPENDENCY_CONSUMED"); }
     this.#footprintDependenciesAttempted = true;
     if (producers !== this.#footprintProducers || this.#footprintProducers === null || state !== this.#footprintPacket ||
         this.#footprintRunner === null) { throw fail("ORIGINAL_FOOTPRINT_PRODUCER_PACKET"); }
     const runner = this.#footprintRunner;
-    await this.requireCurrentAssignments(result, assignments); dependencyMethods();
+    await this.requireCurrentAssignments(result, assignments); dependencyMethods(this.#footprintRunner ?? undefined);
     if (runner !== this.#footprintRunner || state !== this.#footprintPacket) { throw fail("ORIGINAL_FOOTPRINT_OWNER"); }
-    const packet = await footprintDependencyMethods.observe.call(runner, result.construction, assignments, state, producers);
+    const packet = await runner.observeFootprintDependencies(result.construction, assignments, state, producers);
     this.#footprintDependencies = packet;
-    await this.#current(); dependencyMethods(); return packet;
+    await this.#current(); dependencyMethods(this.#footprintRunner ?? undefined); return packet;
   }
-  public async requireFootprintDependencies(result: CurrentPcb209WorkerStartupOpeningResult,
+  public async requireFootprintDependencies(result: OpeningResult<P>,
     assignments: CurrentPcbWorkerConstructionAssignments, state: CurrentFootprintCopyStatePacket,
     producers: CurrentFootprintCopyProducerObservation, packet: CurrentFootprintCopyDependencyObservation): Promise<void> {
-    dependencyMethods();
+    dependencyMethods(this.#footprintRunner ?? undefined);
     if (packet !== this.#footprintDependencies || this.#footprintDependencies === null || producers !== this.#footprintProducers ||
         this.#footprintProducers === null || state !== this.#footprintPacket || this.#footprintRunner === null) {
       throw fail("ORIGINAL_FOOTPRINT_DEPENDENCY_PACKET");
     }
     const runner = this.#footprintRunner;
-    await this.requireCurrentAssignments(result, assignments); dependencyMethods();
+    await this.requireCurrentAssignments(result, assignments); dependencyMethods(this.#footprintRunner ?? undefined);
     if (runner !== this.#footprintRunner || state !== this.#footprintPacket) { throw fail("ORIGINAL_FOOTPRINT_OWNER"); }
-    await footprintDependencyMethods.require.call(runner, result.construction, assignments, state, producers, packet);
-    await this.#current(); dependencyMethods();
+    await runner.requireFootprintDependencies(result.construction, assignments, state, producers, packet);
+    await this.#current(); dependencyMethods(this.#footprintRunner ?? undefined);
+  }
+  protected async observeRegisteredAsyncForExecution(result: OpeningResult<P>, assignments: CurrentPcbWorkerConstructionAssignments,
+    state: CurrentFootprintCopyStatePacket): Promise<CurrentFootprintCopyRegisteredAsyncObservation> {
+    if (result !== this.#completed || result.construction.profile !== "private.current-footprint-copy-construction.v1" ||
+        assignments !== this.#assignments || state !== this.#footprintPacket || this.#footprintRunner === null ||
+        this.#registeredAsyncAttempted) { throw fail("REGISTERED_ASYNC_STATE"); }
+    this.#registeredAsyncAttempted = true;
+    const runner = this.#footprintRunner;
+    await this.#current();
+    const observation = await runner.observeFootprintRegisteredAsync(result.construction, assignments, state);
+    this.#registeredAsync = observation;
+    await this.#current(); return observation;
+  }
+  protected async observeDestinationsForExecution(result: OpeningResult<P>, assignments: CurrentPcbWorkerConstructionAssignments,
+    state: CurrentFootprintCopyStatePacket, dependencies: CurrentFootprintCopyDependencyObservation,
+    callbacks: CurrentFootprintCopyRegisteredAsyncObservation): Promise<CurrentFootprintCopyDestinationObservation> {
+    if (result !== this.#completed || result.construction.profile !== "private.current-footprint-copy-construction.v1" ||
+        assignments !== this.#assignments || state !== this.#footprintPacket || dependencies !== this.#footprintDependencies ||
+        callbacks !== this.#registeredAsync || this.#footprintRunner === null || this.#destinationsAttempted) { throw fail("DESTINATIONS_STATE"); }
+    this.#destinationsAttempted = true; const runner = this.#footprintRunner;
+    await this.#current();
+    const observation = await runner.observeFootprintDestinations(result.construction, assignments, state, dependencies, callbacks);
+    this.#destinations = observation; await this.#current(); return observation;
+  }
+  protected async requireRouteObservationsForExecution(result: OpeningResult<P>, assignments: CurrentPcbWorkerConstructionAssignments,
+    state: CurrentFootprintCopyStatePacket, producers: CurrentFootprintCopyProducerObservation,
+    dependencies: CurrentFootprintCopyDependencyObservation, callbacks: CurrentFootprintCopyRegisteredAsyncObservation,
+    destinations: CurrentFootprintCopyDestinationObservation): Promise<void> {
+    if (result !== this.#completed || result.construction.profile !== "private.current-footprint-copy-construction.v1" ||
+        assignments !== this.#assignments || state !== this.#footprintPacket || producers !== this.#footprintProducers ||
+        dependencies !== this.#footprintDependencies || callbacks !== this.#registeredAsync || destinations !== this.#destinations ||
+        this.#footprintRunner === null || this.#clocksAttempted || this.#routeFinalAttempted) { throw fail("ROUTE_FINAL_STATE"); }
+    this.#routeFinalAttempted = true; const runner = this.#footprintRunner;
+    await this.#current();
+    await runner.requireFootprintDependencies(result.construction, assignments, state, producers, dependencies);
+    await runner.requireFootprintRegisteredAsync(result.construction, assignments, state, callbacks);
+    await runner.requireFootprintDestinations(result.construction, assignments, state, destinations);
+    await runner.requireCurrentAssignments(result.construction, assignments); await this.#current();
+  }
+  /** No copied opening or another native launch can retrieve this peer issuer. */
+  public async originalParentWorkerPeer(result: OpeningResult<P>, dependency: CurrentPcbWorkerStartupDependency): Promise<Readonly<{
+    runner: CurrentFootprintParentWorkerRunner; packet: CurrentFootprintParentWorkerObservation;
+  }>> {
+    if (result !== this.#completed || result.construction.profile !== "private.current-footprint-copy-construction.v1" ||
+        dependency !== this.#dependency || !this.#settled || this.#released || this.#releasing) { throw fail("ORIGINAL_PARENT_PEER"); }
+    await this.#current(); const peer = await this.#transport.originalParentWorkerPeer(result.construction); await this.#current(); return peer;
+  }
+  /** The original construction owner consumes the final dependency and callback
+   * checks, then moves its event subscription to the transaction collector.
+   * No extra assignment/provenance reads are hidden in this handoff. */
+  protected async createTransactionClocksForExecution(result: OpeningResult<P>, assignments: CurrentPcbWorkerConstructionAssignments,
+    state: CurrentFootprintCopyStatePacket, producers: CurrentFootprintCopyProducerObservation,
+    dependencies: CurrentFootprintCopyDependencyObservation, callbacks: CurrentFootprintCopyRegisteredAsyncObservation,
+    destinations: CurrentFootprintCopyDestinationObservation): Promise<CurrentFootprintCopyTransactionClockEvents> {
+    if (result !== this.#completed || result.construction.profile !== "private.current-footprint-copy-construction.v1" ||
+        assignments !== this.#assignments || state !== this.#footprintPacket || producers !== this.#footprintProducers ||
+        dependencies !== this.#footprintDependencies || callbacks !== this.#registeredAsync || destinations !== this.#destinations || this.#footprintRunner === null ||
+        this.#clocksAttempted || this.#routeFinalAttempted) { throw fail("TRANSACTION_CLOCK_STATE"); }
+    this.#clocksAttempted = true;
+    const runner = this.#footprintRunner;
+    await this.#current();
+    const clocks = await runner.createFootprintTransactionClocks(result.construction, assignments, state, producers, dependencies, callbacks, destinations);
+    await this.#current(); return clocks;
+  }
+  public retainedFootprintRouteObservations(): Readonly<Record<string, unknown>> {
+    const runner = this.#footprintRunner;
+    return Object.freeze({ state: runner?.retainedFootprintState() ?? null,
+      producers: runner?.retainedFootprintProducers() ?? null, dependencies: runner?.retainedFootprintDependencies() ?? null,
+      callbacks: runner?.retainedFootprintAsync() ?? null, registrations: runner?.retainedParserRegistration() ?? null,
+      destinations: runner?.retainedFootprintDestinations() ?? null, clocks: runner?.retainedFootprintTransactionClocks() ?? null,
+      finalReproofAttempted: this.#routeFinalAttempted, clockHandoffAttempted: this.#clocksAttempted, executionAuthorized: false });
   }
   public retainedActorObservation(): Readonly<Record<string, unknown>> | null {
     return this.#actor === null ? null : Object.freeze({ status: this.#actor.status(), samples: this.#actor.retainedSamples() });
   }
-  public async observeActorClock(result: CurrentPcb209WorkerStartupOpeningResult,
+  public async observeActorClock(result: OpeningResult<P>,
     assignments: CurrentPcbWorkerConstructionAssignments): Promise<CurrentPcb209WorkerStartupActorPacket> {
     if (this.#actorAttempted) { throw fail("ACTOR_CONSUMED"); } this.#actorAttempted = true;
     await this.requireCurrentAssignments(result, assignments);
@@ -471,14 +569,14 @@ export class CurrentPcb209WorkerStartupOpening {
     this.#actor = actor;
     const packet = await actor.observe(); this.#actorPacket = packet; await this.#current(); return packet;
   }
-  public async requireActorClock(result: CurrentPcb209WorkerStartupOpeningResult,
+  public async requireActorClock(result: OpeningResult<P>,
     assignments: CurrentPcbWorkerConstructionAssignments, packet: CurrentPcb209WorkerStartupActorPacket): Promise<void> {
     if (packet !== this.#actorPacket || this.#actor === null) { throw fail("ORIGINAL_ACTOR_PACKET"); }
     await this.requireCurrentAssignments(result, assignments); await this.#actor.requireOriginal(packet); await this.#current();
   }
   /** Retains the original actor issuer for internal compositions. Matching JSON
    * cannot retrieve it; local Date samples still establish no server clock. */
-  public async originalActorObservation(result: CurrentPcb209WorkerStartupOpeningResult,
+  public async originalActorObservation(result: OpeningResult<P>,
     assignments: CurrentPcbWorkerConstructionAssignments, packet: CurrentPcb209WorkerStartupActorPacket): Promise<CurrentPcb209OriginalStartupActorObservation> {
     if (packet !== this.#actorPacket || this.#actor === null ||
       CurrentPcb209WorkerStartupActorRunner.prototype.originalObservation !== originalActorObservation) { throw fail("ORIGINAL_ACTOR_PACKET"); }
@@ -496,7 +594,7 @@ export class CurrentPcb209WorkerStartupOpening {
    * assignment checks bracket the stage; each internal await rechecks the same
    * source-qualified worker without spending the channel budget on duplicate
    * assignment reads. These samples grant no writer or persistence authority. */
-  public async observeCurrentChannel(result: CurrentPcb209WorkerStartupOpeningResult,
+  public async observeCurrentChannel(result: OpeningResult<P>,
     assignments: CurrentPcbWorkerConstructionAssignments): Promise<CurrentPcbWorkerStartupChannelPacket> {
     if (this.#channelAttempted) { throw fail("CHANNEL_CONSUMED"); } this.#channelAttempted = true;
     if (assignments !== this.#assignments || this.#assignments === null) { throw fail("ORIGINAL_ASSIGNMENTS"); }
@@ -506,7 +604,7 @@ export class CurrentPcb209WorkerStartupOpening {
     const packet = await runner.observeCurrentChannel(result.construction, assignments);
     this.#channelPacket = packet; await this.#current(); return packet;
   }
-  public async requireCurrentChannel(result: CurrentPcb209WorkerStartupOpeningResult,
+  public async requireCurrentChannel(result: OpeningResult<P>,
     assignments: CurrentPcbWorkerConstructionAssignments, packet: CurrentPcbWorkerStartupChannelPacket): Promise<void> {
     if (packet !== this.#channelPacket || this.#channelRunner === null || assignments !== this.#assignments ||
         this.#assignments === null) { throw fail("ORIGINAL_CHANNEL_PACKET"); }
@@ -527,4 +625,68 @@ export class CurrentPcb209WorkerStartupOpening {
       this.#released = true;
     } finally { this.#releasing = false; }
   }
+}
+
+export type CurrentPcb209WorkerStartupOpeningResult = OpeningResult<"private.current-pcb209-worker-construction.v1">;
+export type CurrentFootprintCopyStartupOpeningResult = OpeningResult<"private.current-footprint-copy-construction.v1">;
+export type CurrentFootprintCopyOpeningOwner = CurrentPcb209WorkerStartupOpeningCore<OpeningProfile>;
+export type CurrentFootprintCopyOpeningResult = OpeningResult<OpeningProfile>;
+
+/** Fixed legacy/current preparation opening. It cannot select execution capture. */
+export class CurrentPcb209WorkerStartupOpening extends CurrentPcb209WorkerStartupOpeningCore<"private.current-pcb209-worker-construction.v1"> {
+  public constructor(handoff: Pick<CurrentPcbWorkerStartupHandoff, "dependency" | "opening" | "actorClockSourceQualification">) {
+    super(INTERNAL_OPENING, handoff, dependency => new CurrentPcb209WorkerStartupTransport(dependency));
+  }
+}
+/** Distinct execution opening selects its original 11-pause constructor. This
+ * does not expose a create call or qualify worker destinations. */
+export class CurrentFootprintCopyStartupOpening extends CurrentPcb209WorkerStartupOpeningCore<"private.current-footprint-copy-construction.v1"> {
+  public constructor(handoff: Pick<CurrentPcbWorkerStartupHandoff, "dependency" | "opening" | "actorClockSourceQualification">) {
+    super(INTERNAL_OPENING, handoff, dependency => new CurrentFootprintCopyWorkerStartupTransport(dependency));
+  }
+  public observeFootprintRegisteredAsync(result: CurrentFootprintCopyStartupOpeningResult, assignments: CurrentPcbWorkerConstructionAssignments,
+    state: CurrentFootprintCopyStatePacket): Promise<CurrentFootprintCopyRegisteredAsyncObservation> {
+    return this.observeRegisteredAsyncForExecution(result, assignments, state);
+  }
+  public observeFootprintDestinations(result: CurrentFootprintCopyStartupOpeningResult, assignments: CurrentPcbWorkerConstructionAssignments,
+    state: CurrentFootprintCopyStatePacket, dependencies: CurrentFootprintCopyDependencyObservation,
+    callbacks: CurrentFootprintCopyRegisteredAsyncObservation): Promise<CurrentFootprintCopyDestinationObservation> {
+    return this.observeDestinationsForExecution(result, assignments, state, dependencies, callbacks);
+  }
+  public requireFootprintRouteObservations(result: CurrentFootprintCopyStartupOpeningResult, assignments: CurrentPcbWorkerConstructionAssignments,
+    state: CurrentFootprintCopyStatePacket, producers: CurrentFootprintCopyProducerObservation,
+    dependencies: CurrentFootprintCopyDependencyObservation, callbacks: CurrentFootprintCopyRegisteredAsyncObservation,
+    destinations: CurrentFootprintCopyDestinationObservation): Promise<void> {
+    return this.requireRouteObservationsForExecution(result, assignments, state, producers, dependencies, callbacks, destinations);
+  }
+  public createFootprintTransactionClocks(result: CurrentFootprintCopyStartupOpeningResult, assignments: CurrentPcbWorkerConstructionAssignments,
+    state: CurrentFootprintCopyStatePacket, producers: CurrentFootprintCopyProducerObservation,
+    dependencies: CurrentFootprintCopyDependencyObservation, callbacks: CurrentFootprintCopyRegisteredAsyncObservation,
+    destinations: CurrentFootprintCopyDestinationObservation): Promise<CurrentFootprintCopyTransactionClockEvents> {
+    return this.createTransactionClocksForExecution(result, assignments, state, producers, dependencies, callbacks, destinations);
+  }
+}
+// oxlint-disable-next-line typescript/unbound-method -- Called only with the original private-field opening owner and exact retained result below.
+const requireOriginalFootprintOpening = CurrentPcb209WorkerStartupOpeningCore.prototype.requireOriginalNativeDependency;
+export async function requireCurrentFootprintCopyOpening(opening: CurrentFootprintCopyOpeningOwner,
+  result: CurrentFootprintCopyOpeningResult, dependency: CurrentPcbWorkerStartupDependency): Promise<void> {
+  if (CurrentPcb209WorkerStartupOpeningCore.prototype.requireOriginalNativeDependency !== requireOriginalFootprintOpening) {
+    throw fail("ORIGINAL_METHOD_CHANGED");
+  }
+  await requireOriginalFootprintOpening.call(opening, result, dependency);
+  if (CurrentPcb209WorkerStartupOpeningCore.prototype.requireOriginalNativeDependency !== requireOriginalFootprintOpening) {
+    throw fail("ORIGINAL_METHOD_CHANGED");
+  }
+}
+
+// oxlint-disable-next-line typescript/unbound-method -- The original private-field receiver and exact native dependency are rechecked by the captured method.
+const originalParentPeer = CurrentPcb209WorkerStartupOpeningCore.prototype.originalParentWorkerPeer;
+export async function originalCurrentFootprintCopyParentPeer(opening: CurrentFootprintCopyOpeningOwner,
+  result: CurrentFootprintCopyOpeningResult, dependency: CurrentPcbWorkerStartupDependency): Promise<Readonly<{
+    runner: CurrentFootprintParentWorkerRunner; packet: CurrentFootprintParentWorkerObservation;
+  }>> {
+  if (CurrentPcb209WorkerStartupOpeningCore.prototype.originalParentWorkerPeer !== originalParentPeer) { throw fail("ORIGINAL_METHOD_CHANGED"); }
+  const peer = await originalParentPeer.call(opening, result, dependency);
+  if (CurrentPcb209WorkerStartupOpeningCore.prototype.originalParentWorkerPeer !== originalParentPeer) { throw fail("ORIGINAL_METHOD_CHANGED"); }
+  return peer;
 }

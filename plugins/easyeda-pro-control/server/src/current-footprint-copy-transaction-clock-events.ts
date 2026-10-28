@@ -25,7 +25,7 @@ export interface CurrentFootprintCopyTransactionClockEventTransport {
   readonly request: (command: CurrentFootprintCopyTransactionClockCommand & Readonly<{ sessionId: string }>) => Promise<unknown>;
   /** A retained owner allocates this exclusive original worker event route.
    * Receipt JSON, matching IDs and an arbitrary EventEmitter confer no authority. */
-  readonly subscribe: (listener: (event: unknown) => void) => () => void;
+  readonly subscribe: (listener: (event: unknown) => void, originalOwnerLost: () => void) => () => void;
 }
 const names = ["scriptId", "managerObjectId", "lexicalBundleObjectId", "workerSessionId",
   "assertOriginal", "assertCleanup", "assertOriginalTermination", "request", "subscribe"] as const;
@@ -163,7 +163,8 @@ export class CurrentFootprintCopyTransactionClockEvents {
     this.#arming = true; consumed.add(this.#transport);
     try {
       await this.#current();
-      const unsubscribe = this.#subscribe.call(this.#transport, (event: unknown): void => { this.#event(event); });
+      const unsubscribe = this.#subscribe.call(this.#transport, (event: unknown): void => { this.#event(event); },
+        (): void => { this.#fail(new Error("FOOTPRINT_COPY_CLOCK_EVENTS_ORIGINAL_OWNER_LOST")); });
       need(typeof unsubscribe === "function", "SUBSCRIPTION"); this.#unsubscribe = unsubscribe;
       await this.#current(); await this.#runner.arm(); this.#armed = true;
     } catch (error) { this.#fail(error); throw error; }

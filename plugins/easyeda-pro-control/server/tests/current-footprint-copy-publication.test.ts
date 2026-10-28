@@ -9,6 +9,7 @@ import { test } from "node:test";
 import type { TestContext } from "node:test";
 import { runInThisContext } from "node:vm";
 import { transform } from "esbuild";
+import { CurrentFootprintCopyStartupOpening } from "../src/current-pcb-209-worker-startup-opening.ts";
 import { z } from "zod";
 import { sha256Json, sha256Text } from "../src/core.ts";
 import { CURRENT_FOOTPRINT_COPY_PREPARATION_PROFILE } from "../src/current-footprint-copy-preparation-profile.ts";
@@ -138,7 +139,7 @@ Promise<Readonly<{ value: Fixture; id: string; binding: string; prepare: () => P
     }
     public releaseAfterTermination(): Promise<void> { assert.equal(this.#original.synthetic, true); return Promise.resolve(); }
   }
-  const classes = new Map<string, unknown>([["./current-pcb-209-worker-startup-opening.ts", { CurrentPcb209WorkerStartupOpening: Opening }],
+  const classes = new Map<string, unknown>([["./current-pcb-209-worker-startup-opening.ts", { CurrentFootprintCopyStartupOpening, CurrentPcb209WorkerStartupOpening: Opening }],
     ["./current-footprint-source-plan.ts", { prepareCurrentFootprintSourcePlan: (inventory: NonNullable<typeof before>): Promise<Row> => {
       before = inventory; plan = Object.freeze({ maximumTicket: 100, beforeSqlSha256: inventory.logicalSha256, beforeCheckpointSha256: inventory.checkpointSha256 });
       return Promise.resolve(plan);

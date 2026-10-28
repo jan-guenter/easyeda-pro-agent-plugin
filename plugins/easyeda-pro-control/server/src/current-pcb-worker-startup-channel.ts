@@ -4,17 +4,26 @@
  * irreversibly hand off its original parent attachment and request counter.
  * This module neither launches EasyEDA nor accepts a parent receipt as authority. */
 import { types } from "node:util";
+import { currentFootprintCopyParentWire } from "./current-footprint-copy-parent-wire.ts";
+import type { CurrentFootprintParentCommand, CurrentFootprintParentCommandKind } from "./current-footprint-copy-parent-wire.ts";
+import { markCurrentFootprintExecutionDependency } from "./current-footprint-copy-execution-purpose.ts";
+import { requireCurrentFootprintCopyParentRoute } from "./current-footprint-copy-parent-route.ts";
 import process from "node:process";
 import { z } from "zod";
 import { decodeCurrentPcbDiagnosticJson } from "./current-pcb-diagnostic-json.ts";
 import { captureCurrentPcbStringClockReply } from "./current-pcb-string-clock-reply.ts";
 import { CURRENT_FOOTPRINT_COPY_SOURCE_FRAME_BYTES } from "./current-footprint-copy-source-command.ts";
-import { CURRENT_PCB_WORKER_STARTUP_REQUEST_LIMIT, currentFootprintCopyPreparationWire, currentPcb209WorkerStartupWire, currentPcbWorkerStartupWire } from "./current-pcb-worker-startup-wire.ts";
+import { CURRENT_PCB_WORKER_STARTUP_REQUEST_LIMIT, currentFootprintCopyExecutionStartupWire, currentFootprintCopyPreparationWire,
+  currentPcb209WorkerStartupWire, currentPcbWorkerStartupWire } from "./current-pcb-worker-startup-wire.ts";
 import { currentFootprintCopyManagerRouteWire } from "./current-footprint-copy-manager-route-wire.ts";
 import type { CurrentFootprintCopyManagerRouteCommand } from "./current-footprint-copy-manager-route-command.ts";
 import { currentFootprintCopyUiWire } from "./current-footprint-copy-ui-wire.ts";
 import type { CurrentFootprintCopyUiCommand } from "./current-footprint-copy-ui-command.ts";
 import { CURRENT_FOOTPRINT_COPY_PREPARATION_PROFILE } from "./current-footprint-copy-preparation-profile.ts";
+import { CURRENT_FOOTPRINT_COPY_EXECUTION_PROFILE } from "./current-footprint-copy-execution-profile.ts";
+import { CURRENT_FOOTPRINT_COPY_TRANSACTION_CLOCK_REQUESTS } from "./current-footprint-copy-transaction-clock.ts";
+import type { CurrentFootprintCopyTransactionClockCommand } from "./current-footprint-copy-transaction-clock.ts";
+import { currentFootprintCopyTransactionClockWire } from "./current-footprint-copy-transaction-clock-wire.ts";
 import type { CurrentPcbWorkerStartupCommand, CurrentPcbWorkerStartupDependency, CurrentPcbWorkerStartupEvent } from "./current-pcb-worker-startup-contract.ts";
 import { CURRENT_PCB_DIAGNOSTIC_PCB_OPENING_FUNCTION } from "./current-pcb-diagnostic-pcb-opening.ts";
 
@@ -39,9 +48,29 @@ export interface CurrentPcbWorkerStartupPriorUsage {
 }
 const INTERNAL_PROFILE = Symbol("fixed-worker-startup-channel-wire");
 const footprintDependencies = new WeakSet<CurrentPcbWorkerStartupDependency>();
+const executionDependencies = new WeakMap<CurrentPcbWorkerStartupDependency, CurrentPcbWorkerStartupChannelCore>();
 /** This marker is issued only by the separate channel, never by receipt data. */
 export function isOriginalFootprintPreparationDependency(dependency: CurrentPcbWorkerStartupDependency): boolean {
   return footprintDependencies.has(dependency);
+}
+export { isOriginalFootprintExecutionDependency } from "./current-footprint-copy-execution-purpose.ts";
+export function requestCurrentFootprintCopyTransactionClock(dependency: CurrentPcbWorkerStartupDependency,
+  command: CurrentFootprintCopyTransactionClockCommand & Readonly<{ sessionId: string }>): Promise<unknown> {
+  const channel = executionDependencies.get(dependency);
+  if (channel === undefined) { return Promise.reject(fail("FOOTPRINT_CLOCK_PURPOSE")); }
+  return channel.requestFootprintClock(command);
+}
+export function requestCurrentFootprintCopyParent(dependency: CurrentPcbWorkerStartupDependency,
+  command: CurrentFootprintParentCommand, kind: CurrentFootprintParentCommandKind): Promise<unknown> {
+  const channel = executionDependencies.get(dependency);
+  if (channel === undefined) { return Promise.reject(fail("FOOTPRINT_PARENT_PURPOSE")); }
+  return channel.requestFootprintParent(dependency, command, kind);
+}
+export function subscribeCurrentFootprintCopyParentEvents(dependency: CurrentPcbWorkerStartupDependency,
+  listener: (event: CurrentPcbWorkerStartupEvent) => void, lost: () => void): () => void {
+  const channel = executionDependencies.get(dependency);
+  if (channel === undefined) { throw fail("FOOTPRINT_PARENT_PURPOSE"); }
+  return channel.subscribeFootprintParentEvents(dependency, listener, lost);
 }
 const token = z.string().min(1).max(128).regex(/^[A-Za-z\d_.:-]+$/u);
 const parentSchema = z.object({ targetId: token, sessionId: token,
@@ -53,7 +82,14 @@ const ACTIVE_POLL_MS = 20, IDLE_POLL_MS = 250, LIFETIME_MS = 60 * 60 * 1000;
 const MAX_DATA_POLLS = 8192, MAX_IDLE_POLLS = LIFETIME_MS / IDLE_POLL_MS, MAX_WAIT_POLLS = 8192;
 const monotonicNow = process.hrtime.bigint.bind(process.hrtime);
 const failureCodes = new WeakMap<Error, string>();
-type ChannelCommand = CurrentPcbWorkerStartupCommand | CurrentFootprintCopyUiCommand | CurrentFootprintCopyManagerRouteCommand;
+type ClockCommand = CurrentFootprintCopyTransactionClockCommand & Readonly<{ sessionId: string }>;
+type ChannelCommand = CurrentPcbWorkerStartupCommand | CurrentFootprintCopyUiCommand | CurrentFootprintCopyManagerRouteCommand | ClockCommand | CurrentFootprintParentCommand;
+function clockWire(raw: unknown, id: number): ReturnType<typeof currentFootprintCopyTransactionClockWire> {
+  const captured = captureCurrentPcbStringClockReply(raw).value;
+  if (!record(captured) || !exact(captured, ["method", "params", "sessionId"]) || typeof captured["sessionId"] !== "string") { throw fail("FOOTPRINT_CLOCK_COMMAND"); }
+  const { sessionId, ...command } = captured;
+  return currentFootprintCopyTransactionClockWire(command, id, sessionId);
+}
 function replyFrameLimit(command: ChannelCommand): number {
   if (command.method === "Debugger.getScriptSource") { return SOURCE_FRAME; }
   return command.method === "Runtime.callFunctionOn" && "objectId" in command.params && command.params.awaitPromise ?
@@ -80,7 +116,7 @@ function cleanupCommand(command: ChannelCommand): boolean {
   return command.method === "Debugger.removeBreakpoint" || command.method === "Debugger.resume" ||
     command.method === "Runtime.runIfWaitingForDebugger" || command.method === "Runtime.releaseObjectGroup";
 }
-function parentCommand(command: CurrentPcbWorkerStartupCommand): boolean {
+function parentCommand(command: ChannelCommand): boolean {
   return command.method === "Target.getTargets" || command.method === "Page.getFrameTree" ||
     command.method === "DOM.getFrameOwner" || command.method === "DOM.describeNode" ||
     command.method === "Debugger.getScriptSource" && "pcbPhase" in command ||
@@ -106,6 +142,8 @@ async function observe(work: Promise<unknown>): Promise<void> {
 class CurrentPcbWorkerStartupChannelCore {
   readonly #wire: typeof currentPcbWorkerStartupWire;
   readonly #footprintPurpose: boolean;
+  readonly #executionPurpose: boolean;
+  readonly #footprintProfile: typeof CURRENT_FOOTPRINT_COPY_PREPARATION_PROFILE | typeof CURRENT_FOOTPRINT_COPY_EXECUTION_PROFILE;
   readonly #requestLimit: number;
   readonly #native: CurrentPcbWorkerStartupNativeDependency;
   readonly #members: readonly unknown[];
@@ -148,6 +186,12 @@ class CurrentPcbWorkerStartupChannelCore {
   #footprintManagerStarted = false;
   #footprintManagerSourceConsumed = false;
   #footprintManagerReleased = false;
+  #footprintParentSubscriber: Readonly<{ event: (event: CurrentPcbWorkerStartupEvent) => void; lost: () => void }> | null = null;
+  #footprintParentSubscriptionConsumed = false;
+  #executionWorkerSession: string | null = null;
+  #executionChildContext: string | null = null;
+  #footprintClockSession: string | null = null;
+  #footprintClockRequests = 0;
   #pcbPreflightConsumed = false;
   #pcbOpeningConsumed = false;
   #pcbSourceConsumed = false;
@@ -159,8 +203,10 @@ class CurrentPcbWorkerStartupChannelCore {
   public constructor(internal: typeof INTERNAL_PROFILE, native: CurrentPcbWorkerStartupNativeDependency,
     wire: typeof currentPcbWorkerStartupWire, priorUsage?: CurrentPcbWorkerStartupPriorUsage) {
     if (internal !== INTERNAL_PROFILE) { throw fail("INTERNAL_PROFILE"); } this.#wire = wire;
-    this.#footprintPurpose = wire === currentFootprintCopyPreparationWire;
-    this.#requestLimit = this.#footprintPurpose ? CURRENT_FOOTPRINT_COPY_PREPARATION_PROFILE.requestLimit : CURRENT_PCB_WORKER_STARTUP_REQUEST_LIMIT;
+    this.#executionPurpose = wire === currentFootprintCopyExecutionStartupWire;
+    this.#footprintPurpose = this.#executionPurpose || wire === currentFootprintCopyPreparationWire;
+    this.#footprintProfile = this.#executionPurpose ? CURRENT_FOOTPRINT_COPY_EXECUTION_PROFILE : CURRENT_FOOTPRINT_COPY_PREPARATION_PROFILE;
+    this.#requestLimit = this.#footprintPurpose ? this.#footprintProfile.requestLimit : CURRENT_PCB_WORKER_STARTUP_REQUEST_LIMIT;
     this.#members = members(native); this.#native = native;
     this.#parentMethod = native.requireOriginalParent; this.#terminate = native.assertOriginalTermination;
     this.#parentEvent = native.observeOriginalParentEvent; this.#exchange = native.exchange;
@@ -181,8 +227,8 @@ class CurrentPcbWorkerStartupChannelCore {
   }
   #withinLifetime(cleanup = false): void {
     const age = monotonicNow() - this.#created;
-    const normal = this.#footprintPurpose ? CURRENT_FOOTPRINT_COPY_PREPARATION_PROFILE.normalMilliseconds : LIFETIME_MS;
-    const total = normal + (this.#footprintPurpose ? CURRENT_FOOTPRINT_COPY_PREPARATION_PROFILE.cleanupMilliseconds : 0);
+    const normal = this.#footprintPurpose ? this.#footprintProfile.normalMilliseconds : LIFETIME_MS;
+    const total = normal + (this.#footprintPurpose ? this.#footprintProfile.cleanupMilliseconds : 0);
     if (age < 0n || age >= BigInt(total) * 1_000_000n) {
       this.#poison("LIFETIME", true); throw this.#failure ?? fail("LIFETIME");
     }
@@ -233,10 +279,16 @@ class CurrentPcbWorkerStartupChannelCore {
       },
     });
     if (this.#footprintPurpose) { footprintDependencies.add(dependency); }
+    if (this.#executionPurpose) { markCurrentFootprintExecutionDependency(dependency); executionDependencies.set(dependency, this); }
     return dependency;
   }
   #poison(code: string, fatal = false): void {
+    const first = this.#failure === null;
     this.#failure ??= fail(code); this.#failureCode ??= code; this.#fatal ||= fatal;
+    if (first) {
+      try { this.#footprintParentSubscriber?.lost(); }
+      catch { this.#fatal = true; }
+    }
     for (const pending of this.#pending.values()) {
       if (!pending.allocation && !pending.settled) { pending.settled = true; pending.completion.reject(this.#failure); }
     }
@@ -246,8 +298,27 @@ class CurrentPcbWorkerStartupChannelCore {
     const next = (async (): Promise<void> => { await previous; await work(); })();
     this.#tail = observe(next); return next;
   }
-  #attributed(command: ChannelCommand, manager = false): void {
+  #attributed(command: ChannelCommand, manager = false, clock = false, parentKind?: CurrentFootprintParentCommandKind): void {
     if (this.#parent === null || this.#released || this.#releaseRequested || this.#terminationVerified) { throw fail("NOT_STARTED"); }
+    if (parentKind !== undefined) {
+      if (!this.#executionPurpose || this.#footprintParentSubscriber === null || !("phase" in command)) { throw fail("FOOTPRINT_PARENT_OWNER"); }
+      if (parentKind === "construction") {
+        if (command.sessionId !== this.#parent.sessionId || !this.#openingConsumed &&
+            !["source", "breakpoint-before", "breakpoint-after"].includes(command.phase)) { throw fail("FOOTPRINT_PARENT_SEQUENCE"); }
+      } else {
+        if (!this.#openingConsumed || this.#executionWorkerSession === null ||
+            command.sessionId !== this.#parent.sessionId && command.sessionId !== this.#executionWorkerSession) { throw fail("FOOTPRINT_PEER_SESSION"); }
+        if (command.method === "Runtime.callFunctionOn" && "uniqueContextId" in command.params &&
+            command.params.uniqueContextId !== this.#executionChildContext) { throw fail("FOOTPRINT_PEER_CONTEXT"); }
+      }
+      return;
+    }
+    if (clock) {
+      if (!this.#executionPurpose || !this.#openingConsumed || command.sessionId === undefined || command.sessionId !== this.#executionWorkerSession || !this.#workers.has(command.sessionId) ||
+        this.#footprintClockSession !== null && command.sessionId !== this.#footprintClockSession ||
+        this.#footprintClockRequests >= CURRENT_FOOTPRINT_COPY_TRANSACTION_CLOCK_REQUESTS) { throw fail("FOOTPRINT_CLOCK_OWNER"); }
+      return;
+    }
     if (manager) {
       if (!("phase" in command) || !this.#footprintPurpose || !this.#openingConsumed || !this.#footprintUiStarted || this.#footprintUiReleased && command.phase !== "release" ||
           command.sessionId !== this.#parent.sessionId || this.#footprintManagerReleased ||
@@ -291,17 +362,27 @@ class CurrentPcbWorkerStartupChannelCore {
     }
     if (command.sessionId === undefined) { throw fail("WORKER_SESSION"); }
     if (!this.#workers.has(command.sessionId)) { throw fail("WORKER_SESSION"); }
+    if (this.#executionPurpose && command.method === "Runtime.enable" &&
+        (!this.#openingConsumed || this.#executionWorkerSession !== null)) { throw fail("EXECUTION_WORKER_RUNTIME"); }
   }
   // oxlint-disable-next-line eslint/require-await -- Return the original retained completion, with synchronous guards converted to rejection.
-  async #request(raw: ChannelCommand, manager = false): Promise<unknown> {
+  async #request(raw: ChannelCommand, manager = false, clock = false, parentKind?: CurrentFootprintParentCommandKind): Promise<unknown> {
     // Select the fixed grammar only after rejecting prototype/proxy traps.
     if (!record(raw) || types.isProxy(raw) ||
       Object.getPrototypeOf(raw) !== Object.prototype && Object.getPrototypeOf(raw) !== null) { throw fail("COMMAND"); }
     if ("phase" in raw && !this.#footprintPurpose) { throw fail("FOOTPRINT_UI_PURPOSE"); }
     const copyWire = manager ? currentFootprintCopyManagerRouteWire : currentFootprintCopyUiWire;
-    const normalized = ("phase" in raw ? copyWire(raw, 1) : this.#wire(raw, 1)).command;
+    const encode = (value: ChannelCommand, id: number): Readonly<{ command: ChannelCommand & Readonly<{ id: number }>; request: Readonly<Record<string, string | number>> }> => {
+      if (parentKind !== undefined) {
+        if (this.#parent === null) { throw fail("NOT_STARTED"); }
+        return currentFootprintCopyParentWire(value, id, parentKind, this.#parent.sessionId, this.#executionWorkerSession);
+      }
+      if (clock) { return clockWire(value, id); }
+      return "phase" in value ? copyWire(value, id) : this.#wire(value, id);
+    };
+    const normalized = encode(raw, 1).command;
     const { id: _id, ...command } = normalized;
-    this.#attributed(command, manager);
+    this.#attributed(command, manager, clock, parentKind);
     this.#withinLifetime(cleanupCommand(command));
     if (this.#fatal || this.#failure !== null && !cleanupCommand(command)) { throw this.#failure ?? fail("FATAL"); }
     if (this.#queuedRequests >= 32) { throw fail("QUEUE_BUDGET"); } this.#queuedRequests += 1;
@@ -310,11 +391,13 @@ class CurrentPcbWorkerStartupChannelCore {
       let pending: Pending | null = null;
       try {
         if (!cleanupCommand(command)) { await this.#currentWithinQueue(); }
-        this.#attributed(command, manager);
+        this.#attributed(command, manager, clock, parentKind);
         this.#withinLifetime(cleanupCommand(command));
-        const limit = this.#footprintPurpose && !cleanupCommand(command) ? CURRENT_FOOTPRINT_COPY_PREPARATION_PROFILE.normalRequestLimit : this.#requestLimit;
+        const limit = this.#footprintPurpose && !cleanupCommand(command) ? this.#footprintProfile.normalRequestLimit : this.#requestLimit;
         if (this.#fatal || this.#released || this.#nextId > limit) { throw fail("REQUEST_BUDGET"); }
-        const wire = "phase" in command ? copyWire(command, this.#nextId) : this.#wire(command, this.#nextId); this.#nextId += 1;
+        const wire = encode(command, this.#nextId); this.#nextId += 1;
+        if (this.#executionPurpose && command.method === "Runtime.enable") { this.#executionWorkerSession = command.sessionId ?? null; }
+        if (clock) { this.#footprintClockSession ??= command.sessionId ?? null; this.#footprintClockRequests += 1; }
         pending = { id: wire.command.id, command, completion,
           allocation: command.method === "Debugger.setBreakpoint" || command.method === "Debugger.setInstrumentationBreakpoint",
           written: false, writeFailed: false, replied: false, result: null, remoteError: false, settled: false };
@@ -329,7 +412,7 @@ class CurrentPcbWorkerStartupChannelCore {
           if (command.phase === "initial") { this.#footprintUiStarted = true; }
           if (command.phase === "release") { this.#footprintUiReleased = true; }
         }
-        if (!("phase" in command) && command.method === "Runtime.callFunctionOn" && "uniqueContextId" in command.params) {
+        if (!clock && parentKind === undefined && !("phase" in command) && command.method === "Runtime.callFunctionOn" && "uniqueContextId" in command.params) {
           if (command.params.arguments.length === 0) { this.#actorReads += 1; }
           else if (command.params.functionDeclaration === CURRENT_PCB_DIAGNOSTIC_PCB_OPENING_FUNCTION) {
             if (command.params.arguments[1].value === "preflight") { this.#pcbPreflightConsumed = true; }
@@ -360,6 +443,36 @@ class CurrentPcbWorkerStartupChannelCore {
   public requestFootprintManagerRoute(command: CurrentFootprintCopyManagerRouteCommand): Promise<unknown> {
     if (!this.#footprintPurpose) { return Promise.reject(fail("FOOTPRINT_MANAGER_ROUTE_PURPOSE")); }
     return this.#request(command, true);
+  }
+  public requestFootprintParent(dependency: CurrentPcbWorkerStartupDependency,
+    command: CurrentFootprintParentCommand, kind: CurrentFootprintParentCommandKind): Promise<unknown> {
+    const route = requireCurrentFootprintCopyParentRoute(dependency);
+    if (executionDependencies.get(dependency) !== this || command.sessionId === route.parentSessionId &&
+        (command.method === "Debugger.getScriptSource" && command.params.scriptId !== route.managerScriptId ||
+         command.method === "Debugger.setBreakpoint" && command.params.location.scriptId !== route.managerScriptId)) {
+      return Promise.reject(fail("FOOTPRINT_PARENT_SOURCE"));
+    }
+    return this.#request(command, false, false, kind);
+  }
+  public subscribeFootprintParentEvents(dependency: CurrentPcbWorkerStartupDependency,
+    listener: (event: CurrentPcbWorkerStartupEvent) => void, lost: () => void): () => void {
+    const route = requireCurrentFootprintCopyParentRoute(dependency);
+    if (!this.#executionPurpose || executionDependencies.get(dependency) !== this || this.#footprintParentSubscriptionConsumed ||
+        this.#parent === null || route.parentSessionId !== this.#parent.sessionId || this.#released || this.#releaseRequested ||
+        this.#failure !== null || this.#openingConsumed) { throw fail("FOOTPRINT_PARENT_SUBSCRIBER"); }
+    this.#footprintParentSubscriptionConsumed = true;
+    const selected = Object.freeze({ event: (event: CurrentPcbWorkerStartupEvent): void => {
+      route.assertOriginalSynchronous(); listener(event); route.assertOriginalSynchronous();
+    }, lost });
+    this.#footprintParentSubscriber = selected;
+    return (): void => {
+      if (this.#footprintParentSubscriber !== selected) { throw fail("FOOTPRINT_PARENT_SUBSCRIBER"); }
+      this.#footprintParentSubscriber = null;
+    };
+  }
+  public requestFootprintClock(command: ClockCommand): Promise<unknown> {
+    if (!this.#executionPurpose) { return Promise.reject(fail("FOOTPRINT_CLOCK_PURPOSE")); }
+    return this.#request(command, false, true);
   }
   #complete(pending: Pending): void {
     if (!pending.replied) { return; }
@@ -470,6 +583,10 @@ class CurrentPcbWorkerStartupChannelCore {
       .parse(captureCurrentPcbStringClockReply(value).value);
     if (event.sessionId === this.#parent.sessionId) {
       if (event.method !== "Target.attachedToTarget") {
+        if (this.#executionPurpose && this.#footprintParentSubscriber !== null &&
+            (event.method === "Debugger.paused" || event.method === "Debugger.resumed")) {
+          this.#footprintParentSubscriber.event(event); return;
+        }
         this.#deliverParent(event); return;
       }
       const params = event.params;
@@ -481,6 +598,11 @@ class CurrentPcbWorkerStartupChannelCore {
       if (targetId === this.#parent.targetId || [...this.#workers.values()].includes(targetId)) { throw fail("ATTACHMENT"); }
       this.#workers.set(sessionId, targetId);
     } else if (!this.#workers.has(event.sessionId)) { throw fail("EVENT_SESSION"); }
+    if (this.#executionPurpose && event.sessionId === this.#executionWorkerSession && event.method === "Runtime.executionContextCreated") {
+      const context = event.params["context"];
+      if (!record(context) || this.#executionChildContext !== null) { throw fail("FOOTPRINT_PEER_CONTEXT"); }
+      this.#executionChildContext = token.parse(context["uniqueId"]);
+    }
     if (this.#listener === null) { throw fail("WORKER_SUBSCRIBER"); }
     this.#listener(event);
   }
@@ -533,5 +655,11 @@ export class CurrentPcb209WorkerStartupChannel extends CurrentPcbWorkerStartupCh
 export class CurrentFootprintCopyPreparationChannel extends CurrentPcbWorkerStartupChannelCore {
   public constructor(native: CurrentPcbWorkerStartupNativeDependency, priorUsage?: CurrentPcbWorkerStartupPriorUsage) {
     super(INTERNAL_PROFILE, native, currentFootprintCopyPreparationWire, priorUsage);
+  }
+}
+/** Separate fixed launch identity. Preparation channels cannot be upgraded. */
+export class CurrentFootprintCopyExecutionChannel extends CurrentPcbWorkerStartupChannelCore {
+  public constructor(native: CurrentPcbWorkerStartupNativeDependency, priorUsage?: CurrentPcbWorkerStartupPriorUsage) {
+    super(INTERNAL_PROFILE, native, currentFootprintCopyExecutionStartupWire, priorUsage);
   }
 }

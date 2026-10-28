@@ -36,6 +36,7 @@ verify();return result;`;
  * or native method name is a parameter in any selector. */
 export const CURRENT_FOOTPRINT_COPY_ASYNC_CALLS = freezeDeep({
   capture: { program: `function(bus,manager,consistency){${helpers}\nconst project=this;\nconst out=roster();verify();return out;}`, arguments: 3, returnByValue: false },
+  captureRegistered: { program: `function(bus,manager,consistency,registered,head,change){${helpers}\nconst project=this;\nconst out=roster();array(registered,2);if(own(registered,"0")!==out[4]||own(registered,"1")!==out[5]||head!==out[0]||change!==out[1])bad();verify();return out;}`, arguments: 6, returnByValue: false },
   recheck: { program: `function(bus,manager,consistency,original){${helpers}\nconst project=this;\nsame(original,roster());verify();return true;}`, arguments: 4, returnByValue: true },
   captureUpload: { program: `function(project,bus,manager,consistency){${helpers}\n${closure}\nverify();return callbacks;}`, arguments: 4, returnByValue: false },
   captureConstructedUpload: { program: `function(project,bus,manager,consistency,originalUpload){${helpers}\n${closure}\nif(callbacks[0]!==fun(originalUpload))bad();verify();return callbacks;}`, arguments: 5, returnByValue: false },

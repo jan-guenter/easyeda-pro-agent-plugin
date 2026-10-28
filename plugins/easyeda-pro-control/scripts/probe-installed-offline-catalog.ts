@@ -20,8 +20,8 @@ const NODE_VERSION = "24.18.0";
 const MAX_REPLY_BYTES = 8 * 1024 * 1024;
 const MAX_OUTPUT_BYTES = 16 * 1024 * 1024;
 const REQUEST_TIMEOUT_MS = 15_000;
-// Initialize and tool discovery plus the thirty-four fixed catalog requests below.
-const REQUEST_LIMIT = 2 + 34;
+// Initialize and tool discovery plus the fixed catalog requests below.
+const REQUEST_LIMIT = 2 + 38;
 const EXPECTED_TOOLS = [
   "api", "calculate", "discover", "disposable_pcb_rename", "disposable_schematic_rename", "disposable_symbol_copy",
   "editor_context", "editor_shell", "extensions", "history", "launch", "library_files", "pcb_diagnostic_validation", "pcb_geometry",
@@ -265,7 +265,7 @@ async function offlineApi(child: OfflineChild, request: Record<string, unknown>)
   return record(content["result"]);
 }
 
-async function catalogChecks(child: OfflineChild, sample: () => Promise<void>): Promise<{ readonly tools: number; readonly queries: number; readonly ratlineContinuationDiscoveryChecked: true; readonly footprintCopyPreparationDiscoveryChecked: true }> {
+async function catalogChecks(child: OfflineChild, sample: () => Promise<void>): Promise<{ readonly tools: number; readonly queries: number; readonly ratlineContinuationDiscoveryChecked: true; readonly footprintCopyPreparationDiscoveryChecked: true; readonly footprintCopyRoutePreparationDiscoveryChecked: true }> {
   const initialized = await child.request("initialize", {
     protocolVersion: "2024-11-05", capabilities: {}, clientInfo: { name: "easyeda-installed-offline-probe", version: "1.0.0" },
   });
@@ -364,6 +364,19 @@ async function catalogChecks(child: OfflineChild, sample: () => Promise<void>): 
     requireCheck(result["valid"] === valid && result["validationOnly"] === true && result["executionAuthorized"] === false,
       "Footprint preparation validation accepted a foreign purpose, caller budget or execution authority.");
   }
+  const footprintRoute = await offlineApi(child, { action: "footprint-copy-route-preparation", query: { includeSchemas: true } });
+  requireCheck(footprintRoute["toolWrapperAction"] === "footprint-copy-route-preparation" && footprintRoute["executionAuthorized"] === false &&
+    footprintRoute["saveAuthorized"] === false && footprintRoute["connectedValidation"] === false &&
+    Array.isArray(footprintRoute["actions"]) && footprintRoute["actions"].includes("observe-footprint-route"),
+  "Footprint route preparation discovery changed or implied writer authority.");
+  const routeRequest = { action: "observe-footprint-route", operationId: "footprint-route-offline-catalog", expectedBindingSha256: "a".repeat(64) };
+  for (const { request, valid } of [{ request: routeRequest, valid: true },
+    { request: { ...routeRequest, operationId: "footprint-preparation-cannot-upgrade" }, valid: false },
+    { request: { ...routeRequest, requestLimit: 9999 }, valid: false }]) {
+    const result = await offlineApi(child, { action: "footprint-copy-route-preparation-validate", query: { request } });
+    requireCheck(result["valid"] === valid && result["executionAuthorized"] === false,
+      "Footprint route validation accepted a foreign purpose, caller budget or execution authority.");
+  }
   const netlist = await offlineApi(child, { action: "netlist-files", query: { includeSchemas: true } });
   requireCheck(netlist["method"] === "eda.sys_Tool.netlistComparison" && netlist["executionAuthorized"] === false &&
     netlist["invocationEnabledByDiscovery"] === false && Array.isArray(record(netlist["inputSchema"])["oneOf"]),
@@ -407,7 +420,7 @@ async function catalogChecks(child: OfflineChild, sample: () => Promise<void>): 
   requireCheck(fileValidation["valid"] === true && fileValidation["executionAuthorized"] === false &&
     record(fileValidation["requestSummary"])["base64Echoed"] === false && !Object.hasOwn(fileValidation, "request"),
   "Managed library-file validation echoed source or implied execution authority.");
-  return { tools: tools.length, queries: 34, ratlineContinuationDiscoveryChecked: true, footprintCopyPreparationDiscoveryChecked: true };
+  return { tools: tools.length, queries: 38, ratlineContinuationDiscoveryChecked: true, footprintCopyPreparationDiscoveryChecked: true, footprintCopyRoutePreparationDiscoveryChecked: true };
 }
 
 export async function probeInstalledOfflineCatalog(installedRoot: string): Promise<Record<string, unknown>> {
