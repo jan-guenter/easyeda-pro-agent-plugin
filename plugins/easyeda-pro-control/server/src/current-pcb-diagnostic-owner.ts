@@ -121,7 +121,7 @@ import { CurrentFootprintCopyMainBackendRunner } from "./current-footprint-copy-
 import type { CurrentFootprintCopyMainBackendObservation } from "./current-footprint-copy-main-backend-runner.ts";
 
 
-const HELPER_SHA256 = "15dab6acceaf01d050b619e0edf8b51a0678c76ae5b03a47d984ae71c3e82ab4";
+const HELPER_SHA256 = "4ff22fb798f9f232532ea9153703690ec52ec24c35aa473db81b80ae5b21835e";
 const HELPER_BYTES = 1_046_761;
 const MAX_LINE = 100_000;
 // 64 MiB native bytes need at most 85.34 MiB base64 plus bounded poll envelopes.

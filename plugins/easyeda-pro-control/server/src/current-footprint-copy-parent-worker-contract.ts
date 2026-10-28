@@ -24,16 +24,25 @@ export interface CurrentFootprintParentWorkerBinding {
   readonly childUniqueContextId: string;
   readonly childTargetId: string;
 }
+/** Shape alone has no authority. Only the issuing runner's WeakMap admits this
+ * original pending handshake after bootstrap qualification and one sent nonce. */
+export interface CurrentFootprintParentWorkerPending {
+  readonly profile: "private.current-footprint-parent-worker-pending.v1";
+  readonly executionAuthorized: false;
+}
 export interface CurrentFootprintParentWorkerTransport {
   /** Original native owner checks the retained parent pause, original one-shot
    * open, exactly one startup-held child, qualified contexts and no imports yet.
-   * During bootstrap-idle parent still cannot create its bus or openProject RPC.
-   * After peer-proved the parent may resume once; retained identities still bind.
+   * During bootstrap-idle the parent is still held. The pending handshake permits
+   * its one normal-open continuation before receipt: Chromium must run its parent
+   * script-evaluated notification before delivering queued Worker messages.
+   * No peer proof or downstream route authority follows from that continuation.
    * A new/unknown child always refuses and remains held for generation cleanup. */
-  readonly assertOriginalState: (stage: "before-imports" | "bootstrap-idle" | "peer-proved") => Promise<void>;
+  readonly assertOriginalState: (stage: "before-imports" | "bootstrap-idle" | "parent-running" | "peer-proved") => Promise<void>;
   readonly request: (command: CurrentFootprintParentWorkerCommand) => Promise<unknown>;
   /** Runs only the qualified bootstrap and initial constructors to an idle event
    * loop. Does not wait for project-open/assignment/actor state needing parent RPC. */
   readonly advanceOriginalChildBootstrap: () => Promise<void>;
+  readonly continueOriginalParentForPeer: (pending: CurrentFootprintParentWorkerPending) => Promise<void>;
   readonly assertOriginalGenerationExited: () => Promise<void>;
 }

@@ -63,11 +63,12 @@ function array(): Data {
 }
 function fixture(): Readonly<{ transport: CurrentFootprintCopyMainBackendTransport; commands: Command[]; state: {
   current: boolean; wrongSource: boolean; foreignPause: boolean; duplicateResume: boolean; sendFailure: string; malformedChunk: boolean; resumeCount: number; polls: number;
+  registrationColumnDelta: number; foreignRegistrationScript: boolean;
 } }> {
   const commands: Command[] = [], queue: string[] = [];
-  const state = { current: true, wrongSource: false, foreignPause: false, duplicateResume: false, sendFailure: "", malformedChunk: false, resumeCount: 0, polls: 0 };
+  const state = { current: true, wrongSource: false, foreignPause: false, duplicateResume: false, sendFailure: "", malformedChunk: false, resumeCount: 0, polls: 0,
+    registrationColumnDelta: 0, foreignRegistrationScript: false };
   const event = (method: string, params: Data): void => { queue.push(`${JSON.stringify({ method, params })}\0`); };
-  const registeredLocation = { scriptId: "app", lineNumber: SOURCE.registration.https.lineNumber, columnNumber: SOURCE.registration.https.breakpointColumnNumber };
   function response(command: Command): unknown {
     if (command.phase === "debugger-enable") { return { debuggerId: "main-debugger" }; }
     if (command.phase === "registration-arm") { return { breakpointId: REGISTRATION_ID, locations: [] }; }
@@ -75,6 +76,8 @@ function fixture(): Readonly<{ transport: CurrentFootprintCopyMainBackendTranspo
     if (command.phase === "resume") {
       state.resumeCount += 1; event("Debugger.resumed", {}); if (state.duplicateResume) { event("Debugger.resumed", {}); }
       if (state.resumeCount === 1) {
+        const registeredLocation = { scriptId: state.foreignRegistrationScript ? "foreign" : "app", lineNumber: SOURCE.registration.https.lineNumber,
+          columnNumber: SOURCE.registration.https.breakpointColumnNumber + state.registrationColumnDelta };
         event("Debugger.scriptParsed", { scriptId: "app", url: "file:///synthetic/app.js", executionContextId: 1 });
         event("Debugger.breakpointResolved", { breakpointId: REGISTRATION_ID, location: registeredLocation });
         event("Debugger.paused", { reason: "other", hitBreakpoints: [REGISTRATION_ID], callFrames: [{ callFrameId: "registration-frame", location: registeredLocation }] });
@@ -111,6 +114,20 @@ void test("original main startup arms registration before its one initial contin
   assert.deepEqual(value.commands.slice(0, 6).map(command => command.phase), ["runtime-enable", "debugger-enable", "registration-arm", "run-waiting", "resume", "source"]);
   await runner.reprove(packet); await runner.release(); assert.equal(runner.retained().released, true); assert.equal(runner.retained().pendingReplies, 0);
   await assert.rejects(runner.observe()); await assert.rejects(runner.reprove(structuredClone(packet))); await assert.rejects(runner.release());
+});
+void test("a rejected original registration retains bounded location and script-membership evidence before lexical evaluation", async () => {
+  const Constructor = await constructor();
+  for (const foreign of [false, true]) {
+    const value = fixture(); value.state.foreignRegistrationScript = foreign; value.state.registrationColumnDelta = foreign ? 0 : 9;
+    const runner = new Constructor(value.transport); await assert.rejects(runner.observe(), /REGISTRATION_LOCATION/u);
+    const retained = runner.retained().registrationLocationFailure;
+    assert.deepEqual(retained, { lineNumber: SOURCE.registration.https.lineNumber,
+      columnNumber: SOURCE.registration.https.breakpointColumnNumber + value.state.registrationColumnDelta, scriptObserved: !foreign });
+    assert.ok(Object.isFrozen(retained));
+    assert.equal(value.commands.some(command => command.phase === "source" || command.phase === "frame" || command.phase === "capture"), false);
+    value.state.current = false; await assert.rejects(runner.release());
+    assert.equal(runner.retained().registrationLocationFailure, retained);
+  }
 });
 void test("source drift, foreign pauses and duplicate resume events refuse before lexical evaluation without repeating continuation", async () => {
   const Constructor = await constructor();

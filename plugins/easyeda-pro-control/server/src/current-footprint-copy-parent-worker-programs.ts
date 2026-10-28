@@ -1,7 +1,9 @@
 /** Fixed diagnostic messages, never application RPCs. Native Worker.postMessage
  * uses the Worker's hidden outside port (HTML workers). The receiver is installed
  * before imports, consumes only its trusted nonce event, and removes itself.
- * Parent remains held before Hn/bridge/openProject until this proof completes.
+ * Parent remains held before Hn/bridge/openProject through listener installation,
+ * qualified child startup and the one send. Its original open must then resume
+ * so Chromium can deliver the queued message; receipt alone issues peer proof.
  * https://html.spec.whatwg.org/multipage/workers.html#dom-worker-postmessage
  * https://dom.spec.whatwg.org/#dom-event-stopimmediatepropagation */
 import { freezeDeep } from "./sqlite-inventory-core.ts";

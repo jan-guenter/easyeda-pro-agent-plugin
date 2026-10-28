@@ -75,3 +75,7 @@ export function observeClosedSymbolTerminalClosure(input: unknown): Promise<unkn
 export function revalidateClosedSymbolTerminalClosure(input: unknown, previous: unknown): Promise<unknown> {
   return step("revalidate", { input, previous });
 }
+
+export function revalidateObservedClosedSymbolTerminalClosure(previous: unknown): Promise<unknown> {
+  return step("revalidate", { previous });
+}

@@ -1,13 +1,14 @@
 /** Retain the actual manager receiver across the one original Worker expression.
- * The post-constructor pause never resumes on failure. Only the original native
- * message proof permits that resume; otherwise the generation must end. */
+ * The post-constructor pause never resumes on failure. The original pending
+ * handshake permits one normal-open continuation so Chromium can enable native
+ * message delivery. Only the later receipt grants peer proof. */
 import { types } from "node:util";
 import { z } from "zod";
 import { captureCurrentPcbStringClockReply } from "./current-pcb-string-clock-reply.ts";
 import { captureCurrentFootprintCopyManagerRouteSourceReply } from "./current-footprint-copy-manager-route-source.ts";
 import { CURRENT_FOOTPRINT_COPY_PARENT_WORKER_SITES as SITES, qualifyCurrentFootprintCopyParentWorkerSource } from "./current-footprint-copy-parent-worker-source.ts";
 import { CurrentFootprintParentWorkerRunner } from "./current-footprint-copy-parent-worker-runner.ts";
-import type { CurrentFootprintParentWorkerObservation } from "./current-footprint-copy-parent-worker-runner.ts";
+import type { CurrentFootprintParentWorkerPending } from "./current-footprint-copy-parent-worker-contract.ts";
 import { CURRENT_FOOTPRINT_PARENT_CONSTRUCTION_GROUP as GROUP, CURRENT_FOOTPRINT_PARENT_CONSTRUCTION_LIMITS as LIMITS,
   CURRENT_FOOTPRINT_PARENT_CONSTRUCTION_PROGRAMS as PROGRAMS, CURRENT_FOOTPRINT_PARENT_CONSTRUCTION_REQUESTS as REQUESTS } from "./current-footprint-copy-parent-construction-contract.ts";
 import type { CurrentFootprintParentConstructionBinding as Binding, CurrentFootprintParentConstructionCommand as Command,
@@ -24,7 +25,7 @@ const empty = z.object({}).strict();
 const bindingSchema = z.object({ sessionId: token, uniqueContextId: token, managerScriptId: token,
   projectUuid: z.string().regex(/^[a-f\d]{64}$/u), windowTabId: z.string().regex(/^[A-Za-z\d_-]{1,128}$/u) }).strict();
 // oxlint-disable-next-line typescript/unbound-method -- Call the captured implementation only with the validated original peer receiver.
-const requirePeerParent = CurrentFootprintParentWorkerRunner.prototype.requireOriginalHeldParent;
+const requirePendingParent = CurrentFootprintParentWorkerRunner.prototype.requireOriginalPendingParent;
 const issuedFailures = new WeakMap<Error, string>();
 function fail(code: string): Error {
   const error = new Error(`FOOTPRINT_PARENT_CONSTRUCTION_${code}`); issuedFailures.set(error, code); return error;
@@ -228,11 +229,11 @@ export class CurrentFootprintParentConstructionRunner {
   public async requireOriginalParent(value: Held): Promise<void> {
     this.#originalParent(value); await bounded(this.#owner(), LIMITS.ownerMs); this.#originalParent(value);
   }
-  public async resumeAfterPeer(peer: CurrentFootprintParentWorkerRunner, packet: CurrentFootprintParentWorkerObservation): Promise<void> {
+  public async resumeForPeer(peer: CurrentFootprintParentWorkerRunner, pending: CurrentFootprintParentWorkerPending): Promise<void> {
     need(!this.#busy && !this.#resumeAttempted && this.#heldBinding !== null && this.#activePause?.side === "after" && !types.isProxy(peer) && Object.getPrototypeOf(peer) === CurrentFootprintParentWorkerRunner.prototype, "RESUME_PEER");
     this.#begin(); this.#resumeAttempted = true; this.#limit = REQUESTS.resume; this.#operationRequests = 0;
     try {
-      await this.#current(); await requirePeerParent.call(peer, packet, this.#heldBinding); await this.#current();
+      await this.#current(); await requirePendingParent.call(peer, pending, this.#heldBinding); await this.#current();
       await this.#source(); const current = this.#activePause; need(current?.side === "after", "RESUME_HOLD"); await this.#resume(current);
       need(this.#operationRequests === REQUESTS.resume, "RESUME_COUNT"); clearTimeout(this.#holdTimer); this.#resumed = true;
     } catch (error) { this.#refuse(error); throw error; } finally { this.#end(); }

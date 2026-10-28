@@ -188,3 +188,53 @@ five expected platform skips and zero cancellations. All 424 bridge tests and
 Windows passed. Complete job logs, the first artifact and its exact committed
 inventory are retained separately. These corrections change tests and checkout
 tooling only; the frozen runtime source and bundle projections remain unchanged.
+
+## Publication and installation, 2026-10-28
+
+Corrected candidate `cf0fd169268d0883d361b3bcecf948d4098f53ae` passed Linux
+CI40737838624 and Windows CI40737838493. All eight facade shards, build and
+aggregate checks succeeded: 13,393 facade passes, five unchanged expected
+platform skips, zero failures or cancellations and all 424 bridge tests passed.
+The first failed run and all its job logs remain separate. No full local suite
+was duplicated.
+
+[PR143](https://github.com/jan-guenter/easyeda-pro-agent-plugin/pull/143) merged as
+`5523cc8ca6fab5c157cade261bc7de4ca95acf09`. Its root tree
+`585e393274667d2a2aa9d39598658bd26303366d` is exactly the tested candidate tree.
+The combined batch changes 56 files. Independent artifact verification compared
+every committed plugin byte and mode. Local checkout modes were normalized to
+the committed 0644/0755 values after checkout, without changing file bytes.
+
+The official CLI upgraded only the configured Git marketplace
+`https://github.com/jan-guenter/easyeda-pro-agent-plugin.git`, using umask022
+and process-local parallel Git checkout settings. The first attempt succeeded
+with no upgrade errors; the unrelated stale-arg0 cleanup warning remained
+nonfatal. No cache patch, redundant plugin add, bridge-key change or gateway
+termination was used. Marketplace HEAD equals merged main.
+
+Version `0.3.0+codex.20261028170636` is installed and enabled. The maintained
+installed comparison verified 2,248 files, 42 directories and 44,207,423 bytes
+against plugin tree `d301fd42f3d4dd958fb6627c2a0afd0260b56d75`, including exact
+modes. Inventory SHA256 is
+`1604ce0d147032c83b303a5cf246f54c8be7a82e6144de6edc7b62cc682c879d`.
+The dependency-free offline probe passed 42 catalog queries and exactly 44
+protocol requests with 27 exposed tools. Its original child closed through
+stdin EOF with exit0, no signal and empty stderr. The probe used only its
+private synthetic profile and sampled no descendants or non-stdio sockets.
+This is not continuous isolation or actual-host/connected admission.
+
+Main Windows CI40740018010 passed; main Linux CI40740018572 was running when
+recorded. The exact merged tree already has complete PR-payload evidence.
+The loaded facade still belongs to154656. A fresh Codex session must admit the
+actual170636 process before new disposable peer and original-main probes.
+The completed154656 operation remains terminal released and must not be replayed.
+No production CAD change was performed.
+
+Private follow-on plans retain 53 exact backend request/context/SQL/clock source
+sites and a combined copy/completion/delete implementation path. Separate API
+priorities cover viewport/PNG, passive net/rule observations, supplied-archive
+footprint sources and placement-CSV/DXF exports. These are planned work, not
+new execution support. The remaining work above is still open.
+
+This local publication appendix is retained for the next substantive commit;
+the installed package remains exactly the tested merged tree.

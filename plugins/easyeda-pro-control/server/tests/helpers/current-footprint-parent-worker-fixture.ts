@@ -1,7 +1,8 @@
 /** Synthetic original-owner CDP fixture; no browser or native delivery. */
 import assert from "node:assert/strict";
 import { CurrentFootprintParentWorkerRunner } from "../../src/current-footprint-copy-parent-worker-runner.ts";
-import type { CurrentFootprintParentWorkerCommand as Command, CurrentFootprintParentWorkerTransport as Transport } from "../../src/current-footprint-copy-parent-worker-contract.ts";
+import type { CurrentFootprintParentWorkerCommand as Command, CurrentFootprintParentWorkerPending as Pending,
+  CurrentFootprintParentWorkerTransport as Transport } from "../../src/current-footprint-copy-parent-worker-contract.ts";
 import { validateCurrentFootprintParentWorkerCommand } from "../../src/current-footprint-copy-parent-worker-wire.ts";
 
 type Data = Record<string, unknown>;
@@ -32,12 +33,22 @@ function array(kind: "parent" | "child"): Data {
 }
 function fixture(): { runner: CurrentFootprintParentWorkerRunner; commands: Command[]; state: {
   nonce: string | null; bootstrap: boolean; owner: boolean; exited: boolean; wrongReceipt: boolean; disposeReceived: boolean;
+  parentContinued: boolean; continuationAttempts: number; continueParent: ((pending: Pending) => Promise<void>) | null;
   failPhase: Command["phase"] | null; failReleaseSession: string | null }; transport: Transport } {
   const commands: Command[] = [], state = { nonce: null as string | null, bootstrap: false, owner: true, exited: false,
-    wrongReceipt: false, disposeReceived: true, failPhase: null as Command["phase"] | null, failReleaseSession: null as string | null };
+    wrongReceipt: false, disposeReceived: true, parentContinued: false, continuationAttempts: 0,
+    continueParent: null as ((pending: Pending) => Promise<void>) | null,
+    failPhase: null as Command["phase"] | null, failReleaseSession: null as string | null };
   const transport: Transport = {
-    assertOriginalState: stage => { assert.ok(state.owner, "original owner lost"); assert.equal(stage === "before-imports", !state.bootstrap); return Promise.resolve(); },
+    assertOriginalState: stage => {
+      assert.ok(state.owner, "original owner lost"); assert.equal(stage === "before-imports", !state.bootstrap);
+      if (stage === "parent-running" || stage === "peer-proved") { assert.ok(state.parentContinued); }
+      return Promise.resolve();
+    },
     advanceOriginalChildBootstrap: () => { state.bootstrap = true; return Promise.resolve(); },
+    continueOriginalParentForPeer: async pending => {
+      state.continuationAttempts += 1; await state.continueParent?.(pending); state.parentContinued = true;
+    },
     assertOriginalGenerationExited: () => { assert.ok(state.exited, "original generation still alive"); return Promise.resolve(); },
     request: command => {
       validateCurrentFootprintParentWorkerCommand(command); commands.push(command);
@@ -51,7 +62,7 @@ function fixture(): { runner: CurrentFootprintParentWorkerRunner; commands: Comm
         description: command.phase === "parentSelect" ? "Array(4)" : "Array(8)", objectId: command.phase === "parentSelect" ? "parent-bundle" : "child-bundle" } }); }
       if (command.phase === "childInstall") { const argument = command.params.arguments[0]; assert.ok(argument !== undefined && "value" in argument); state.nonce = argument.value; }
       if (command.phase === "parentSend") { assert.ok(state.bootstrap); const argument = command.params.arguments[0]; assert.ok(argument !== undefined && "value" in argument); assert.equal(argument.value, state.nonce); }
-      if (command.phase === "childReceipt") { return Promise.resolve({ result: { type: "object", value: { profile: "private.current-footprint-worker-peer-receipt.v1",
+      if (command.phase === "childReceipt") { assert.ok(state.parentContinued); return Promise.resolve({ result: { type: "object", value: { profile: "private.current-footprint-worker-peer-receipt.v1",
         nonce: state.wrongReceipt ? "f".repeat(64) : state.nonce, trusted: true, removed: true } } }); }
       if (command.phase === "childDispose") { return Promise.resolve({ result: { type: "object", value: { received: state.disposeReceived, removed: true, installed: false } } }); }
       return Promise.resolve({ result: { type: "boolean", value: true } });
