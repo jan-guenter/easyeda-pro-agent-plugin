@@ -17,6 +17,7 @@ import { CURRENT_PCB_DIAGNOSTIC_MODEL_CALLBACK_EXPRESSION, CURRENT_PCB_DIAGNOSTI
 import { CurrentPcbDiagnosticPipe, CurrentPcbStringPrecreatePipe } from "../src/current-pcb-diagnostic-pipe.ts";
 import { diagnosticNativeRequest, stringPrecreateNativeRequest } from "../src/current-pcb-diagnostic-protocol.ts";
 import { CURRENT_PCB_STRING_EMPTY_ASSETS_FUNCTION } from "../src/current-pcb-string-empty-assets.ts";
+import { readPackedNativeProgram } from "./helpers/native-packed-program.ts";
 
 const effects = { throwOnSideEffect: true, silent: true, awaitPromise: false, generatePreview: false, userGesture: false } as const;
 function properties(objectId: string): CurrentPcbCommonBaselineCommand {
@@ -99,7 +100,9 @@ void test("common native adapter embeds exact historical and packet programs and
     CommonPreferenceSeedFunction: CURRENT_PCB_COMMON_PACKET_SEEDS.preference, CommonPacketAdvanceFunction: CURRENT_PCB_COMMON_PACKET_ADVANCE,
     CommonPacketReadFunction: CURRENT_PCB_COMMON_PACKET_READ, CommonPacketResultFunction: CURRENT_PCB_COMMON_PACKET_RESULT })) {
     const encoded = new RegExp(`const string ${name}=@"((?:""|[^"])*)";`, "u").exec(native)?.[1];
-    assert.equal(encoded?.replaceAll('""', '"'), source, name);
+    const actual = ["CommonPresentationFunction", "CommonPreferenceFunction", "CommonRulesFunction"].includes(name)
+      ? readPackedNativeProgram(native, name) : encoded?.replaceAll('""', '"');
+    assert.equal(actual, source, name);
     assert.ok(native.includes(createHash("sha256").update(source).digest("hex")));
   }
   assert.ok(native.includes('if(!stringPrecreate) throw Error("common-purpose");'));

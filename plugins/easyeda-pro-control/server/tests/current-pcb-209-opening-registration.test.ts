@@ -8,7 +8,7 @@ import { stripTypeScriptTypes } from "node:module";
 import { test } from "node:test";
 import vm from "node:vm";
 import { z } from "zod";
-import { CurrentFootprintCopyPreparationLifecycle, CurrentFootprintCopyRoutePreparationLifecycle, CurrentPcb209DiagnosticLifecycle, CurrentPcb209EmptyStartupLifecycle, CurrentPcb209RatlineContinuationLifecycle, CurrentPcb209RatlineStartupLifecycle, CurrentPcb209WorkerStartupLifecycle } from "../src/current-pcb-diagnostic-lifecycle.ts";
+import { CurrentFootprintCopyPreparationLifecycle, CurrentFootprintCopyRoutePreparationLifecycle, CurrentFootprintMainLifecycle, CurrentPcb209DiagnosticLifecycle, CurrentPcb209EmptyStartupLifecycle, CurrentPcb209RatlineContinuationLifecycle, CurrentPcb209RatlineStartupLifecycle, CurrentPcb209WorkerStartupLifecycle } from "../src/current-pcb-diagnostic-lifecycle.ts";
 import type { CurrentPcbDiagnosticLifecycleOptions } from "../src/current-pcb-diagnostic-lifecycle.ts";
 import { CURRENT_PCB_DIAGNOSTIC_PROFILE } from "../src/current-pcb-diagnostic-profile.ts";
 import { currentPcbDiagnosticToolRequestSchema } from "../src/current-pcb-diagnostic-validation.ts";
@@ -20,6 +20,7 @@ import { facadeToolRegistered } from "../src/facade-mode.ts";
 
 function forbiddenLegacyLifecycle(): never { assert.fail("209 registration selected a legacy diagnostic or worker-startup lifecycle"); }
 function wrapRatline(request: unknown): { request: unknown } { return { request: { action: "ratline-held-import", request } }; }
+function mainWrap(request: unknown): { request: unknown } { return { request: { action: "footprint-main", request } }; }
 
 void test("209 public opening and startup callbacks select original lifecycles and reject wider/caller-selected routes before allocation", async () => {
   const source = await readFile(new URL("../src/index.ts", import.meta.url), "utf8");
@@ -54,9 +55,9 @@ void test("209 public opening and startup callbacks select original lifecycles a
   const scope = vm.createContext({ z, currentPcb209OpeningRequestSchema, currentPcbDiagnosticToolRequestSchema, currentPcb209WorkerStartupToolRequestSchema,
     CURRENT_PCB_DIAGNOSTIC_PROFILE, CurrentPcb209DiagnosticLifecycle: Selected209Lifecycle,
     CurrentPcb209WorkerStartupLifecycle: Selected209StartupLifecycle, CurrentPcb209EmptyStartupLifecycle, CurrentPcb209RatlineStartupLifecycle, CurrentPcb209RatlineContinuationLifecycle,
-    CurrentFootprintCopyPreparationLifecycle, CurrentFootprintCopyRoutePreparationLifecycle,
+    CurrentFootprintMainLifecycle, CurrentFootprintCopyPreparationLifecycle, CurrentFootprintCopyRoutePreparationLifecycle,
     CurrentPcbDiagnosticLifecycle: forbiddenLegacyLifecycle, CurrentPcbWorkerStartupLifecycle: forbiddenLegacyLifecycle,
-    currentPcbDiagnosticLifecycle: undefined, currentPcbStringPrecreateLifecycle: undefined, currentPcbWorkerStartupLifecycle: undefined,
+    currentPcbDiagnosticLifecycle: undefined, currentPcbStringPrecreateLifecycle: undefined, currentPcbWorkerStartupLifecycle: undefined, currentFootprintMainLifecycle: undefined,
     process: { env: environment }, engine, upstream, facadeMode: "public-utilities-only", facadeToolRegistered,
     bridgeGate: { run: (handler: () => Promise<unknown>): Promise<unknown> => { gateCalls += 1; return handler(); } },
     retainedControlRoot: { path: "/synthetic/control" }, controlDataDirectory: (): string => "/synthetic/control",
@@ -119,7 +120,7 @@ void test("209 public opening and startup callbacks select original lifecycles a
     "currentSchematicRenameOperationCoordinator", "closedSymbolIndexReservation", "scheduledShutdown"]) {
     scope[name] = {}; await assert.rejects(options.assertOtherLaunchesSettled(), /requires no retained/u); scope[name] = undefined;
   }
-  for (const name of ["currentPcbStringPrecreateLifecycle", "currentPcbWorkerStartupLifecycle"]) {
+  for (const name of ["currentPcbStringPrecreateLifecycle", "currentPcbWorkerStartupLifecycle", "currentFootprintMainLifecycle"]) {
     scope[name] = { hasActiveReservation: (): boolean => true };
     await assert.rejects(options.assertOtherLaunchesSettled(), /requires no retained/u); scope[name] = undefined;
   }
@@ -217,4 +218,32 @@ void test("209 public opening and startup callbacks select original lifecycles a
   await assert.rejects(startupInvoke(wrapRatline(ratlineObserve)), /ORIGINAL_STARTUP_RATLINE_REQUIRED/u);
   assert.equal(checks, beforeRatline.checks + 1); assert.equal(gateCalls, beforeRatline.gateCalls + 2);
   assert.equal(startupAllocations, 1); assert.equal(allocations, 1);
+
+  // Run the actual new main lifecycle through the registered callback. Engine
+  // Refusal prevents native allocation; no source packet or retained handle is
+  // Reconstructed from these synthetic arguments.
+  const mainId = "footprint-main-registration";
+  const mainLaunch = { ...launch, operationId: mainId, acceptDebuggerPauseEffects: true };
+  for (const request of [{ ...mainLaunch, inspectorUrl: "ws://127.0.0.1:1/caller" },
+    { ...mainLaunch, acceptDebuggerPauseEffects: false },
+    { action: "terminate-main", operationId: mainId, expectedBindingSha256 }]) {
+    assert.equal(startupRegistration.inputSchema.safeParse(mainWrap(request)).success, false);
+    await assert.rejects(startupInvoke(mainWrap(request)));
+  }
+  assert.equal(scope["currentFootprintMainLifecycle"], undefined);
+  const beforeMain = counts();
+  const mainInspection = await startupInvoke(mainWrap({ action: "inspect", operationId: mainId }));
+  assert.match(JSON.stringify(mainInspection), /not-found/u); assert.deepEqual(counts(), beforeMain);
+  const mainOwner: unknown = Object.getOwnPropertyDescriptor(scope, "currentFootprintMainLifecycle")?.value;
+  assert.ok(mainOwner instanceof CurrentFootprintMainLifecycle);
+  await assert.rejects(startupInvoke(mainWrap(mainLaunch)), /unresolved engine journal/u);
+  assert.equal(checks, beforeMain.checks + 1); assert.equal(gateCalls, beforeMain.gateCalls + 1);
+  for (const request of [{ action: "observe-main-construction", operationId: mainId, expectedBindingSha256 },
+    { action: "terminate-main", operationId: mainId, expectedBindingSha256, confirmTerminateOriginalDiagnosticJob: true }]) {
+    assert.equal(startupRegistration.inputSchema.safeParse(mainWrap(request)).success, true);
+    await assert.rejects(startupInvoke(mainWrap(request)), /ORIGINAL_OWNER_REQUIRED/u);
+  }
+  const expectedOwner = scope["currentFootprintMainLifecycle"]; scope["currentFootprintMainLifecycle"] = {};
+  await assert.rejects(startupInvoke(mainWrap({ action: "inspect", operationId: mainId })), /Original main lifecycle owner/u);
+  scope["currentFootprintMainLifecycle"] = expectedOwner;
 });

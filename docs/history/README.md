@@ -38,6 +38,7 @@ archive retain their original paths and must not be rewritten to later names.
 
 ## Record index and former paths
 
+- [2026-10-28 footprint main transport](2026-10-28-footprint-main-transport.md): terminal parent/peer observation, original-main transport and backend construction, explicit diagnostic cleanup and unchanged-record validation reuse.
 - [2026-10-28 footprint execution integration](2026-10-28-footprint-execution-integration.md): terminal installed parent-capture refusal, cache-wrapper repair, native cache capture and saved-generation integration.
 - [2026-10-28 footprint native integration](2026-10-28-footprint-native-integration.md): connected actor/source preparation, producer transport repair, and combined parent/callback/destination/clock integration.
 - [2026-10-28 footprint preparation runtime](2026-10-28-footprint-preparation-runtime.md): disposable preparation timing refusal, verified original cleanup and unchanged fixture, and combined copy integration work.

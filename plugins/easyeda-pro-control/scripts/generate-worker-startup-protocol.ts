@@ -8,6 +8,8 @@ import { currentFootprintCopyParentNativeSource } from "../server/src/current-fo
 import { currentFootprintCacheConstructionNativeSource } from "../server/src/current-footprint-copy-cache-construction-native.ts";
 import { currentFootprintCopySavedNativeSource } from "../server/src/current-footprint-copy-saved-native.ts";
 import { currentFootprintCopyClockRegistrationNativeSource } from "../server/src/current-footprint-copy-clock-registration-native.ts";
+import { currentFootprintCopyMainTransportNativeSource } from "../server/src/current-footprint-copy-main-transport-native.ts";
+import { currentFootprintCopyMainBackendNativeSource } from "../server/src/current-footprint-copy-main-backend-native.ts";
 import { CURRENT_FOOTPRINT_COPY_CLOCK_REGISTRATION_REQUESTS as clockRegistration } from "../server/src/current-footprint-copy-clock-registration-runner.ts";
 import { CURRENT_FOOTPRINT_COPY_SAVED_PROFILE as saved } from "../server/src/current-footprint-copy-saved-profile.ts";
 import { currentFootprintCopyTransactionClockNativeSource } from "../server/src/current-footprint-copy-transaction-clock-native.ts";
@@ -74,7 +76,7 @@ async function main(): Promise<void> {
     ["WORKER STARTUP RATLINE209", ratlineSource()],
     ["WORKER STARTUP RATLINE CONTINUATION209", continuationSource()],
     ["FOOTPRINT COPY PREPARATION", footprintSource()], ["FOOTPRINT COPY EXECUTION", footprintExecutionSource()],
-    ["FOOTPRINT COPY SAVED", footprintSavedSource()]] as const) {
+    ["FOOTPRINT COPY SAVED", footprintSavedSource()], ["FOOTPRINT MAIN TRANSPORT", footprintMainSource()]] as const) {
     const begin = `// BEGIN GENERATED ${name} PROTOCOL`, end = `// END GENERATED ${name} PROTOCOL`;
     const start = next.indexOf(begin), stop = next.indexOf(end);
     if (start === -1 || stop < start || next.includes(begin, start + begin.length) || next.includes(end, stop + end.length)) {
@@ -109,6 +111,10 @@ function footprintSavedSource(): string {
   return `// BEGIN GENERATED FOOTPRINT COPY SAVED PROTOCOL\n${currentFootprintCopySavedNativeSource()}\n` +
     `public static class EasyedaFootprintSavedLimits { public const int Requests=${String(saved.requestLimit)}; public const int NormalRequests=${String(saved.normalRequestLimit)}; public const long NormalMilliseconds=${String(saved.normalMilliseconds)}L; public const long TotalMilliseconds=${String(saved.normalMilliseconds + saved.cleanupMilliseconds)}L; }\n` +
     "// END GENERATED FOOTPRINT COPY SAVED PROTOCOL";
+}
+function footprintMainSource(): string {
+  return `// BEGIN GENERATED FOOTPRINT MAIN TRANSPORT PROTOCOL\n${currentFootprintCopyMainTransportNativeSource()}\n${currentFootprintCopyMainBackendNativeSource()}\n` +
+    "// END GENERATED FOOTPRINT MAIN TRANSPORT PROTOCOL";
 }
 // oxlint-disable-next-line node/no-top-level-await -- ESM-only build command; never loaded by require().
 await main();

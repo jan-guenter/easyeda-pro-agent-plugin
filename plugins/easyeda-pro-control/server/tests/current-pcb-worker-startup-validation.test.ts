@@ -113,7 +113,8 @@ void test("startup public registration binds the actual inherited methods, fixed
     CurrentPcbDiagnosticLifecycle, CurrentPcb209DiagnosticLifecycle, CurrentPcb209EmptyStartupLifecycle, CurrentPcb209RatlineStartupLifecycle, CurrentPcb209RatlineContinuationLifecycle, CurrentPcb209WorkerStartupLifecycle,
     CurrentFootprintCopyPreparationLifecycle, CurrentFootprintCopyRoutePreparationLifecycle,
     CurrentPcbWorkerStartupLifecycle: Coordinator, currentPcbWorkerStartupLifecycle: undefined,
-    currentPcbDiagnosticLifecycle: undefined, currentPcbStringPrecreateLifecycle: undefined, process: { env: environment }, engine, upstream,
+    currentPcbDiagnosticLifecycle: undefined, currentPcbStringPrecreateLifecycle: undefined, currentFootprintMainLifecycle: undefined,
+    process: { env: environment }, engine, upstream,
     facadeMode: "calculation-only", facadeToolRegistered,
     bridgeGate: { run: (handler: () => Promise<unknown>): Promise<unknown> => { gateCalls += 1; return handler(); } },
     retainedControlRoot: { path: "/synthetic/control" }, controlDataDirectory: (): string => "/synthetic/control",
@@ -148,7 +149,7 @@ void test("startup public registration binds the actual inherited methods, fixed
     "currentSchematicRenameOperationCoordinator", "closedSymbolIndexReservation", "scheduledShutdown"]) {
     scope[name] = {}; await assert.rejects(options.assertOtherLaunchesSettled(), /requires no retained/u); scope[name] = undefined;
   }
-  for (const name of ["currentPcbDiagnosticLifecycle", "currentPcbStringPrecreateLifecycle"]) {
+  for (const name of ["currentPcbDiagnosticLifecycle", "currentPcbStringPrecreateLifecycle", "currentFootprintMainLifecycle"]) {
     scope[name] = { hasActiveReservation: (): boolean => true };
     await assert.rejects(options.assertOtherLaunchesSettled(), /requires no retained/u); scope[name] = undefined;
   }

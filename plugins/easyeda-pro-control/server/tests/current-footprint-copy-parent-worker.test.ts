@@ -3,11 +3,11 @@
 import assert from "node:assert/strict";
 import { test } from "node:test";
 import { runInNewContext } from "node:vm";
-import { decodeCurrentFootprintParentWorkerNative } from "../src/current-footprint-copy-parent-worker-runner.ts";
+import { CurrentFootprintParentWorkerRunner, decodeCurrentFootprintParentWorkerNative } from "../src/current-footprint-copy-parent-worker-runner.ts";
 import { CURRENT_FOOTPRINT_COPY_PARENT_WORKER_PROGRAMS as PROGRAMS } from "../src/current-footprint-copy-parent-worker-programs.ts";
 import { validateCurrentFootprintParentWorkerCommand } from "../src/current-footprint-copy-parent-worker-wire.ts";
 
-import { fixture, native } from "./helpers/current-footprint-parent-worker-fixture.ts";
+import { binding, fixture, native } from "./helpers/current-footprint-parent-worker-fixture.ts";
 
 void test("private peer proof requires native metadata, fresh nonce receipt and removal before original manager join", async () => {
   const value = fixture(); const packet = await value.runner.observe();
@@ -26,6 +26,23 @@ void test("wrong target receipt consumes postMessage and cannot resume, replay o
   assert.equal(value.commands.filter(command => command.phase === "parentSend").length, 1);
   assert.equal(value.runner.retained().completed, false); assert.equal(value.commands.some(command => command.phase === "parentRecheck"), false);
   await value.runner.release(); assert.ok(value.runner.retained().released);
+});
+void test("peer diagnostics retain the first bounded phase without exposing nonce or raw replies", async () => {
+  const value = fixture(); value.state.failPhase = "childReceipt";
+  await assert.rejects(value.runner.observe(), /lost native acknowledgment/u);
+  const failure = value.runner.diagnostics().firstFailure;
+  assert.equal(failure?.step, "childReceipt"); assert.equal(failure.stage, "bootstrap-idle");
+  assert.equal(failure.kind, "request-or-owner"); assert.equal(failure.code, null);
+  assert.equal(failure.requests, 14); assert.equal(failure.replies, 13);
+  const text = JSON.stringify(value.runner.diagnostics());
+  assert.equal(text.includes(value.state.nonce ?? "missing"), false);
+  value.state.failReleaseSession = "parent"; await assert.rejects(value.runner.release());
+  assert.equal(value.runner.diagnostics().firstFailure, failure);
+  const fake = new CurrentFootprintParentWorkerRunner({ ...fixture().transport,
+    request: (): Promise<never> => Promise.reject(new Error("FOOTPRINT_PARENT_WORKER_DEADLINE")) }, binding);
+  await assert.rejects(fake.observe());
+  assert.equal(fake.diagnostics().firstFailure?.kind, "request-or-owner");
+  assert.equal(fake.diagnostics().firstFailure?.code, null);
 });
 void test("lost disposal acknowledgment is not retried and both group releases are attempted independently", async () => {
   const value = fixture(); value.state.failPhase = "childDispose";

@@ -104,6 +104,7 @@ type StartupFailure = Readonly<{ code: string; step: string; bootstrapStage: Sta
   constructionFailure: ReturnType<CurrentPcbWorkerConstructionRunner["status"]>["firstFailure"];
   constructionProgress: ReturnType<CurrentPcbWorkerConstructionRunner["status"]>["progress"] | null;
   parentConstruction: ReturnType<CurrentFootprintParentConstructionRunner["diagnostics"]> | null;
+  parentPeer: ReturnType<CurrentFootprintParentWorkerRunner["diagnostics"]> | null;
   reason: FailureReason | null; sourceTransfer: SourceTransfer | null }>;
 type StartupRole = typeof CURRENT_PCB_209_WORKER_BOOTSTRAP_ROLES[number];
 interface BootstrapStage {
@@ -274,6 +275,7 @@ class CurrentPcbWorkerStartupTransportCore<Packet extends ConstructionPacket, Ru
       sourceQualified: boolean; resumeAttempted: boolean; resumeSeen: boolean; resumeOrigin: ResumeOrigin | null }>[]; preloadLogSeen: boolean;
     workerScriptLoadedObserved: boolean; requests: number; firstFailure: StartupFailure | null;
     parentConstruction: ReturnType<CurrentFootprintParentConstructionRunner["diagnostics"]> | null;
+    parentPeer: ReturnType<CurrentFootprintParentWorkerRunner["diagnostics"]> | null;
     firstRejectedFootprintSourceReply: ReturnType<CurrentFootprintSourceReplyCapture["firstRejected"]>;
     constructionAssignments: ReturnType<CurrentPcbWorkerConstructionRunner["status"]>["assignments"] | null }> {
     return Object.freeze({ firstFailure: this.#firstFailure, started: this.#started, settled: this.#settled, failed: this.#failure !== null,
@@ -286,6 +288,7 @@ class CurrentPcbWorkerStartupTransportCore<Packet extends ConstructionPacket, Ru
       firstRejectedFootprintSourceReply: this.#footprintSourceCapture.firstRejected(),
       constructionAssignments: this.#runner?.status().assignments ?? null,
       parentConstruction: this.#parentConstruction?.diagnostics() ?? null,
+      parentPeer: this.#parentPeer?.diagnostics() ?? null,
       workerScriptLoadedObserved: this.#workerScriptLoadedObserved,
       bootstrapStages: Object.freeze(this.#bootstrapStages.map(stage => Object.freeze({ role: stage.role,
         parsed: stage.script !== null, pauseSeen: stage.pauseSeen, sourceQualified: stage.sourceQualified,
@@ -342,6 +345,7 @@ class CurrentPcbWorkerStartupTransportCore<Packet extends ConstructionPacket, Ru
         resumeSeen: stage?.resumeSeen ?? this.#initialResumeSeen, lastCommand: this.#lastCommand, requestCount: this.#requests,
         constructionFailure: this.#runner?.status().firstFailure ?? null, constructionProgress: this.#runner?.status().progress ?? null,
         parentConstruction: this.#parentConstruction?.diagnostics() ?? null,
+        parentPeer: this.#parentPeer?.diagnostics() ?? null,
         reason: cause === undefined ? null : failureReason(cause), sourceTransfer: this.#lastSourceTransfer });
       this.#failure = failure(code);
     }

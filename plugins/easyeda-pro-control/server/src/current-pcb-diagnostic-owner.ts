@@ -114,10 +114,15 @@ import type { CurrentFootprintCopyV2SavedProjection } from "./current-footprint-
 import { currentFootprintCopyV2SavedTarget } from "./current-footprint-copy-v2-saved-source.ts";
 import type { CurrentFootprintCopyStatePacket } from "./current-footprint-copy-state.ts";
 import type { CurrentFootprintCopySourceReadTransport } from "./current-footprint-copy-source-read-runner.ts";
+import { currentFootprintCopyMainBackendWire } from "./current-footprint-copy-main-backend-wire.ts";
+import type { CurrentFootprintCopyMainBackendCommand } from "./current-footprint-copy-main-backend-contract.ts";
+import { CURRENT_FOOTPRINT_COPY_MAIN_TRANSPORT } from "./current-footprint-copy-main-transport-contract.ts";
+import { CurrentFootprintCopyMainBackendRunner } from "./current-footprint-copy-main-backend-runner.ts";
+import type { CurrentFootprintCopyMainBackendObservation } from "./current-footprint-copy-main-backend-runner.ts";
 
 
-const HELPER_SHA256 = "9e17bf8bf65ff1d1d1862b94712165c3aa2b8add5cc24f47fd2c74863d9b8773";
-const HELPER_BYTES = 1_047_248;
+const HELPER_SHA256 = "15dab6acceaf01d050b619e0edf8b51a0678c76ae5b03a47d984ae71c3e82ab4";
+const HELPER_BYTES = 1_046_761;
 const MAX_LINE = 100_000;
 // 64 MiB native bytes need at most 85.34 MiB base64 plus bounded poll envelopes.
 const MAX_TOTAL = 96 * 1024 * 1024;
@@ -140,7 +145,7 @@ const requireFootprintManagerPeer = CurrentFootprintCopyManagerRouteRunner.proto
 
 
 type RecordValue = Record<string, unknown>;
-type OwnerPurpose = "diagnostic" | "diagnostic209" | "string-precreate" | "worker-startup" | "worker-startup209" | "worker-startup-footprint209" | "worker-startup-footprint-copy209" | "worker-startup-footprint-saved209" | "worker-startup-empty209" | "worker-startup-ratline209" | "worker-startup-ratline-continuation209";
+type OwnerPurpose = "diagnostic" | "diagnostic209" | "string-precreate" | "worker-startup" | "worker-startup209" | "worker-startup-footprint209" | "worker-startup-footprint-copy209" | "worker-startup-footprint-saved209" | "worker-startup-footprint-main209" | "worker-startup-empty209" | "worker-startup-ratline209" | "worker-startup-ratline-continuation209";
 export interface CurrentPcbWorkerStartupOpeningBinding {
   readonly context: () => Readonly<{ sessionId: string; uniqueContextId: string }>;
   readonly reprove: () => Promise<void>;
@@ -166,9 +171,12 @@ export interface CurrentPcbDiagnosticNoProcessRelease {
   readonly processCreated: false; readonly released: true;
 }
 interface NoProcessProof { readonly creationState: "not-entered" | "returned-false"; readonly createProcessError?: number }
+const mainNativeActions = ["main-attach", "main-reprove", "main-send", "main-poll", "main-terminate"] as const;
+type MainNativeAction = typeof mainNativeActions[number];
 interface Pending {
   readonly id: string; readonly resolve: (value: RecordValue) => void; readonly reject: (error: Error) => void;
-  readonly timer: ReturnType<typeof setTimeout>; readonly launch: boolean; readonly send: boolean; readonly poll: boolean; written: boolean; reply: RecordValue | null;
+  readonly timer: ReturnType<typeof setTimeout>; readonly launch: boolean; readonly send: boolean; readonly poll: boolean;
+  readonly mainAction: MainNativeAction | null; written: boolean; reply: RecordValue | null;
 }
 function record(value: unknown): value is RecordValue { return value !== null && typeof value === "object" && !Array.isArray(value); }
 function exact(value: RecordValue, fields: readonly string[]): boolean { return Object.keys(value).toSorted().join(",") === fields.toSorted().join(","); }
@@ -290,6 +298,7 @@ class CurrentPcbRetainedOwnerCore {
   #noProcessProof: Readonly<NoProcessProof> | null = null;
   #nativeLaunchError: string | null = null;
   #nativeSendError: string | null = null;
+  #mainNativeFailure: Readonly<{ action: MainNativeAction; code: string }> | null = null;
   #observationFailure: CurrentPcbObservationFailure | null = null;
   #closeConsumed = false;
   #releaseConsumed = false;
@@ -350,6 +359,14 @@ class CurrentPcbRetainedOwnerCore {
   #footprintSavedOpening: CurrentFootprintCopySavedStartupOpening | null = null;
   #footprintSavedOpeningReleased = false;
   #footprintSavedQueues = 0;
+  #mainAttachAttempted = false;
+  #mainAttached = false;
+  #mainRequestId = 0;
+  #mainNormalRequests = 0;
+  #mainCleanupRequests = 0;
+  #mainTerminateAttempted = false;
+  #mainObservationAttempted = false;
+  #mainRunner: CurrentFootprintCopyMainBackendRunner | null = null;
   readonly #footprintSavedQueueReplies: unknown[] = [];
 
   public constructor(child: ChildProcessWithoutNullStreams, verify: () => Promise<void>,
@@ -364,11 +381,11 @@ class CurrentPcbRetainedOwnerCore {
     if ((purpose === "worker-startup-ratline209") !== (ratlineBudget !== null)) { throw error("RATLINE_BUDGET"); }
     if (ratlineBudget !== null) { assertOriginalCurrentPcb209RatlineBudget(ratlineBudget); }
     if ((purpose === "worker-startup-empty209") !== (emptyAnchor !== null)) { throw error("STARTUP_EMPTY_ANCHOR"); }
-    if (purpose === "worker-startup209" || (purpose === "worker-startup-footprint209" || purpose === "worker-startup-footprint-copy209" || purpose === "worker-startup-footprint-saved209") || purpose === "worker-startup-empty209" || purpose === "worker-startup-ratline209" || purpose === "worker-startup-ratline-continuation209") {
+    if (purpose === "worker-startup209" || (purpose === "worker-startup-footprint209" || purpose === "worker-startup-footprint-copy209" || purpose === "worker-startup-footprint-saved209" || purpose === "worker-startup-footprint-main209") || purpose === "worker-startup-empty209" || purpose === "worker-startup-ratline209" || purpose === "worker-startup-ratline-continuation209") {
       if (actorClockSource === null) { throw error("STARTUP209_ACTOR_SOURCE"); }
       requireCurrentPcb209ActorClockSourceQualification(actorClockSource);
     } else if (actorClockSource !== null) { throw error("STARTUP209_PURPOSE"); }
-    this.#startupPurpose = purpose === "worker-startup" || purpose === "worker-startup209" || (purpose === "worker-startup-footprint209" || purpose === "worker-startup-footprint-copy209" || purpose === "worker-startup-footprint-saved209") || purpose === "worker-startup-empty209" || purpose === "worker-startup-ratline209" || purpose === "worker-startup-ratline-continuation209";
+    this.#startupPurpose = purpose === "worker-startup" || purpose === "worker-startup209" || (purpose === "worker-startup-footprint209" || purpose === "worker-startup-footprint-copy209" || purpose === "worker-startup-footprint-saved209" || purpose === "worker-startup-footprint-main209") || purpose === "worker-startup-empty209" || purpose === "worker-startup-ratline209" || purpose === "worker-startup-ratline-continuation209";
     this.#child = child; this.#verify = verify; this.#installation = installation; this.#verifyInstallation = verifyInstallation;
     this.#verifyStartupFacade = verifyStartupFacade;
     this.#purpose = purpose; this.#stringPurpose = purpose === "string-precreate";
@@ -399,6 +416,7 @@ class CurrentPcbRetainedOwnerCore {
     busy: boolean; launchConsumed: boolean; closeConsumed: boolean; released: boolean; helperClosed: boolean;
     cleanupOnly: boolean; noProcessCleanupAvailable: boolean; frameWorkerVerified: false; executionAuthorized: false;
     nativeLaunchError: string | null; nativeSendError: string | null; createProcessError: number | null;
+    mainNativeFailure?: Readonly<{ action: MainNativeAction; code: string }> | null;
     browserObservationConsumed: boolean; frameInspectionConsumed: boolean; scriptInspectionConsumed: boolean; diagnosticFailure: string | null;
     diagnosticFailureObservation: CurrentPcbDiagnosticFailureObservation | null;
     workerStartupChannel?: ReturnType<CurrentPcbWorkerStartupChannel["status"]> | ReturnType<CurrentPcb209EmptyStartupChannel["status"]> |
@@ -414,6 +432,7 @@ class CurrentPcbRetainedOwnerCore {
       released: this.#released, helperClosed: this.#childClosed, cleanupOnly: this.#binding !== null && !this.#launchSucceeded,
       noProcessCleanupAvailable: this.#noProcessCleanupAvailable(), frameWorkerVerified: false, executionAuthorized: false, browserObservationConsumed: this.#browserObservationConsumed,
       nativeLaunchError: this.#nativeLaunchError, nativeSendError: this.#nativeSendError, createProcessError: this.#noProcessProof?.createProcessError ?? null,
+      mainNativeFailure: this.#mainNativeFailure,
       frameInspectionConsumed: this.#framesConsumed, scriptInspectionConsumed: this.#scriptConsumed, diagnosticFailure: this.#pipe.status().failure,
       diagnosticFailureObservation: this.#pipe.status().failureObservation,
       workerStartupChannel: this.#startupChannel?.status() ?? null,
@@ -1892,6 +1911,112 @@ class CurrentPcbRetainedOwnerCore {
   }
   public retainedFootprintCopyWindowsClock(): Readonly<Record<string, unknown>> | null { return this.#footprintWindowsClock?.evidence() ?? null; }
 
+  #requireFootprintMain(attached: boolean): Binding {
+    this.#available();
+    if (this.#purpose !== "worker-startup-footprint-main209" || this.#binding === null || !this.#launchSucceeded ||
+      this.#terminationObserved || this.#releaseConsumed || this.#closeConsumed || this.#mainTerminateAttempted || attached && !this.#mainAttached) {
+      throw error("MAIN_ORIGINAL_OWNER");
+    }
+    return this.#binding;
+  }
+  /** The helper discovers its own retained stderr endpoint and proves the
+   * original root/Job/image and reciprocal TCP owners. No URL enters here. */
+  public async attachFootprintMain(): Promise<void> {
+    const original = this.#requireFootprintMain(false);
+    if (this.#mainAttachAttempted) { throw error("MAIN_ATTACH_CONSUMED"); }
+    this.#enter(true); this.#mainAttachAttempted = true;
+    try {
+      await this.#verifyInstallation(); await this.#verify();
+      if (this.#requireFootprintMain(false) !== original) { throw error("MAIN_OWNER_CHANGED"); }
+      const reply = await this.#request({ action: "main-attach" });
+      if (!exact(reply, ["attached"]) || reply["attached"] !== true) { throw error("MAIN_ATTACH_REPLY"); }
+      await this.#verify();
+      if (this.#requireFootprintMain(false) !== original) { throw error("MAIN_OWNER_CHANGED"); }
+      this.#mainAttached = true;
+    } finally { this.#busy = false; }
+  }
+  public async reproveFootprintMain(): Promise<void> {
+    const original = this.#requireFootprintMain(true); this.#enter(true);
+    try {
+      await this.#verify();
+      const reply = await this.#request({ action: "main-reprove" });
+      if (!exact(reply, ["current"]) || reply["current"] !== true || this.#requireFootprintMain(true) !== original) { throw error("MAIN_REPROOF_REPLY"); }
+      await this.#verify();
+      if (this.#requireFootprintMain(true) !== original) { throw error("MAIN_OWNER_CHANGED"); }
+    } finally { this.#busy = false; }
+  }
+  /** Internal fixed vocabulary only. The native helper chooses the original
+   * connection and independently checks its own counters before each write. */
+  public async sendFootprintMain(command: CurrentFootprintCopyMainBackendCommand, requestId: number): Promise<void> {
+    const original = this.#requireFootprintMain(true);
+    if (requestId !== this.#mainRequestId + 1) { throw error("MAIN_REQUEST_ID"); }
+    const wire = currentFootprintCopyMainBackendWire(command, requestId);
+    const cleanup = ["remove", "release", "resume"].includes(wire.command.phase);
+    if (cleanup ? this.#mainCleanupRequests >= CURRENT_FOOTPRINT_COPY_MAIN_TRANSPORT.cleanupRequests :
+      this.#mainNormalRequests >= CURRENT_FOOTPRINT_COPY_MAIN_TRANSPORT.normalRequests) { throw error("MAIN_REQUEST_BUDGET"); }
+    this.#enter(true); this.#mainRequestId += 1;
+    if (cleanup) { this.#mainCleanupRequests += 1; } else { this.#mainNormalRequests += 1; }
+    try {
+      await this.#verify();
+      if (this.#requireFootprintMain(true) !== original) { throw error("MAIN_OWNER_CHANGED"); }
+      const reply = await this.#request({ ...wire.request });
+      if (!exact(reply, ["written"]) || reply["written"] !== true) { throw error("MAIN_WRITE_REPLY"); }
+      await this.#verify();
+      if (this.#requireFootprintMain(true) !== original) { throw error("MAIN_OWNER_CHANGED"); }
+    } finally { this.#busy = false; }
+  }
+  /** Returns only a bounded transport chunk. The private construction runner
+   * owns message framing, outstanding replies and actual inspector events. */
+  public async pollFootprintMain(cleanup: boolean): Promise<string> {
+    if (typeof cleanup !== "boolean") { throw error("MAIN_POLL_INPUT"); }
+    const original = this.#requireFootprintMain(true); this.#enter(true);
+    try {
+      const reply = await this.#request({ action: "main-poll", cleanup });
+      const encoded = reply["bytes"];
+      if (!exact(reply, ["bytes"]) || typeof encoded !== "string" || encoded.length > 43_692 ||
+        !/^(?:[A-Za-z\d+/]{4})*(?:[A-Za-z\d+/]{2}==|[A-Za-z\d+/]{3}=)?$/u.test(encoded)) { throw error("MAIN_POLL_REPLY"); }
+      const bytes = Buffer.from(encoded, "base64");
+      if (bytes.length > 32_768 || bytes.toString("base64") !== encoded || this.#requireFootprintMain(true) !== original) { throw error("MAIN_POLL_REPLY"); }
+      return encoded;
+    } finally { this.#busy = false; }
+  }
+  /** Explicit user-authorized cleanup for the original diagnostic Job, including
+   * an initial main pause before any window exists. Acknowledgment is not exit. */
+  public async terminateFootprintMain(confirmTerminateOriginalDiagnosticJob: true): Promise<void> {
+    this.#available();
+    // Native creation can retain a live original root before launch admission
+    // Finishes. The cleanup path needs its retained binding, not a successful
+    // Launch acknowledgment, main attachment or observed application window.
+    const original = this.#binding;
+    if (this.#purpose !== "worker-startup-footprint-main209" || original === null || this.#terminationObserved ||
+      this.#releaseConsumed || this.#closeConsumed || this.#mainTerminateAttempted) { throw error("MAIN_ORIGINAL_CLEANUP_OWNER"); }
+    // oxlint-disable-next-line typescript/no-unnecessary-boolean-literal-compare -- Runtime callers must supply the exact explicit termination confirmation.
+    if (confirmTerminateOriginalDiagnosticJob !== true) { throw error("MAIN_TERMINATE_CONFIRMATION"); }
+    this.#enter(true); this.#mainTerminateAttempted = true;
+    try {
+      await this.#verify();
+      if (this.#binding !== original) { throw error("MAIN_OWNER_CHANGED"); }
+      const reply = await this.#request({ action: "main-terminate", confirmTerminateOriginalDiagnosticJob: true });
+      if (!exact(reply, ["terminationDispatched"]) || reply["terminationDispatched"] !== true) { throw error("MAIN_TERMINATE_REPLY"); }
+      await this.#verify(); this.#available(); if (this.#binding !== original) { throw error("MAIN_OWNER_CHANGED"); }
+    } finally { this.#busy = false; }
+  }
+  public async observeFootprintMainConstruction(): Promise<CurrentFootprintCopyMainBackendObservation> {
+    this.#requireFootprintMain(false);
+    if (this.#mainObservationAttempted) { throw error("MAIN_OBSERVATION_CONSUMED"); }
+    this.#mainObservationAttempted = true;
+    await this.attachFootprintMain();
+    const runner = new CurrentFootprintCopyMainBackendRunner(Object.freeze({
+      assertCurrent: (): Promise<void> => this.reproveFootprintMain(),
+      send: (command: CurrentFootprintCopyMainBackendCommand, id: number): Promise<void> => this.sendFootprintMain(command, id),
+      poll: (cleanup: boolean): Promise<string> => this.pollFootprintMain(cleanup),
+    }));
+    this.#mainRunner = runner; return runner.observe();
+  }
+  public retainedFootprintMainConstruction(): ReturnType<CurrentFootprintCopyMainBackendRunner["retained"]> | null {
+    return this.#mainRunner?.retained() ?? null;
+  }
+
   public releaseClosed(): Promise<void> { return this.#release(false); }
 
   /** Original helper only, before this owner has ever invoked launch. Native
@@ -2092,9 +2217,10 @@ class CurrentPcbRetainedOwnerCore {
     const deferred = Promise.withResolvers<RecordValue>(), id = randomBytes(16).toString("hex");
     const launch = request["action"] === "launch";
     const pending: Pending = { id, resolve: deferred.resolve, reject: deferred.reject, launch, poll: request["action"] === "poll",
+      mainAction: mainNativeActions.find(action => action === request["action"]) ?? null,
       send: request["action"] === "send" || request["action"] === "worker-startup-send" || request["action"] === "worker-startup-parent" ||
         request["action"] === "worker-startup-empty-common" || request["action"] === "worker-startup-empty-root" ||
-        request["action"] === "worker-startup-ratline" || request["action"] === "worker-startup-ratline-continuation", written: false, reply: null,
+        request["action"] === "worker-startup-ratline" || request["action"] === "worker-startup-ratline-continuation" || request["action"] === "main-send", written: false, reply: null,
       timer: setTimeout(() => { this.#fail("HELPER_DEADLINE"); }, 15_000) };
     this.#pending = pending;
     if (launch) { this.#launchRequestIssued = true; }
@@ -2123,6 +2249,11 @@ class CurrentPcbRetainedOwnerCore {
       this.#pending = null; clearTimeout(pending.timer);
       const reply = pending.reply;
       if (reply["ok"] === false) {
+        // #data admitted only the fixed bounded native error-code grammar.
+        // Retain transport refusals even before a main runner was allocated.
+        if (pending.mainAction !== null && typeof reply["error"] === "string") {
+          this.#mainNativeFailure ??= Object.freeze({ action: pending.mainAction, code: reply["error"] });
+        }
         if (pending.send && typeof reply["error"] === "string") { this.#nativeSendError = reply["error"]; }
         if (pending.launch) {
           this.#nativeLaunchRefused = true;
@@ -2248,6 +2379,17 @@ export class CurrentFootprintCopyNativeOwner extends CurrentPcbRetainedOwnerCore
   }
 }
 
+/** Standalone original-main construction purpose. Existing native owners
+ * cannot adopt this inspector or receive its launch switch after creation. */
+export class CurrentFootprintMainNativeOwner extends CurrentPcbRetainedOwnerCore {
+  public constructor(child: ChildProcessWithoutNullStreams, verify: () => Promise<void>,
+    actorClockSource: CurrentPcb209ActorClockSourceQualification,
+    installation: CurrentPcbDiagnosticInstallation | null = null, verifyInstallation: () => Promise<void> = (): Promise<void> => Promise.resolve(),
+    verifyStartupFacade: () => Promise<void> = verifyInstallation) {
+    super(child, verify, installation, verifyInstallation, "worker-startup-footprint-main209", verifyStartupFacade, actorClockSource);
+  }
+}
+
 /** Distinct read-only fresh generation. It cannot dispatch native create or
  * transaction clocks and cannot inherit a writer's process/Job handles. */
 export class CurrentFootprintCopySavedNativeOwner extends CurrentPcbRetainedOwnerCore {
@@ -2366,6 +2508,9 @@ export function startCurrentFootprintCopyPreparationOwner(options: CurrentPcbDia
 export function startCurrentFootprintCopyNativeOwner(options: CurrentPcbDiagnosticInstallationOptions): Promise<CurrentFootprintCopyNativeOwner> {
   return startFixedOwner(options, "worker-startup-footprint-copy209", "209-startup");
 }
+export function startCurrentFootprintMainNativeOwner(options: CurrentPcbDiagnosticInstallationOptions): Promise<CurrentFootprintMainNativeOwner> {
+  return startFixedOwner(options, "worker-startup-footprint-main209", "209-startup");
+}
 export async function startCurrentFootprintCopySavedNativeOwner(writer: CurrentFootprintCopyNativeOwner,
   after: Awaited<ReturnType<typeof readExactSqlInventory>>): Promise<CurrentFootprintCopySavedNativeOwner> {
   assertOriginalCurrentFootprintCopyNativeOwner(writer); requireCurrentFootprintCopyClosedSnapshot(writer, after);
@@ -2399,7 +2544,7 @@ export function retainedCurrentFootprintCopySavedAllocation(writer: CurrentFootp
 async function startFixedOwner(options: CurrentPcbDiagnosticInstallationOptions, purpose: OwnerPurpose,
   generation: "206" | "209-opening" | "209-startup" = "206", savedWriter?: CurrentFootprintCopyNativeOwner): Promise<CurrentPcbDiagnosticOwner | CurrentPcbStringPrecreateOwner | CurrentPcbWorkerStartupOwner> {
   const sealedOptions = Object.freeze({ ...options });
-  const startup209 = purpose === "worker-startup209" || (purpose === "worker-startup-footprint209" || purpose === "worker-startup-footprint-copy209" || purpose === "worker-startup-footprint-saved209") || purpose === "worker-startup-empty209" || purpose === "worker-startup-ratline209" || purpose === "worker-startup-ratline-continuation209";
+  const startup209 = purpose === "worker-startup209" || (purpose === "worker-startup-footprint209" || purpose === "worker-startup-footprint-copy209" || purpose === "worker-startup-footprint-saved209" || purpose === "worker-startup-footprint-main209") || purpose === "worker-startup-empty209" || purpose === "worker-startup-ratline209" || purpose === "worker-startup-ratline-continuation209";
   if ((generation === "209-opening") !== (purpose === "diagnostic209") || (generation === "209-startup") !== startup209) { throw error("INSTALLATION_PURPOSE"); }
   let verifier = generation === "206" ? verifyCurrentPcbDiagnosticInstallation : verifyCurrentPcb209DiagnosticInstallation;
   if (purpose === "worker-startup-ratline209" || purpose === "worker-startup-ratline-continuation209") { verifier = verifyCurrentPcb209RatlineInstallation; }
@@ -2445,6 +2590,7 @@ async function startFixedOwner(options: CurrentPcbDiagnosticInstallationOptions,
   if (purpose === "worker-startup-ratline-continuation209") { purposeSwitch = " -WorkerStartupRatlineContinuation209"; }
   else if (purpose === "worker-startup-ratline209") { purposeSwitch = " -WorkerStartupRatline209"; }
   else if (purpose === "worker-startup-empty209") { purposeSwitch = " -WorkerStartupEmpty209"; }
+  else if (purpose === "worker-startup-footprint-main209") { purposeSwitch = " -WorkerStartupFootprintMain209"; }
   else if (purpose === "worker-startup-footprint-saved209") { purposeSwitch = " -WorkerStartupFootprintSaved209"; }
   else if (purpose === "worker-startup-footprint-copy209") { purposeSwitch = " -WorkerStartupFootprintCopy209"; }
   else if (purpose === "worker-startup-footprint209") { purposeSwitch = " -WorkerStartupFootprint209"; }
@@ -2479,6 +2625,10 @@ async function startFixedOwner(options: CurrentPcbDiagnosticInstallationOptions,
   else if (purpose === "worker-startup-empty209") {
     if (actorClockSource === null || emptyAnchor === null) { throw error("STARTUP_EMPTY_ALLOCATION"); }
     owner = new CurrentPcb209EmptyStartupOwner(child, verify, actorClockSource, emptyAnchor, installation, verifyInstallation, verifyStartupFacade);
+  }
+  else if (purpose === "worker-startup-footprint-main209") {
+    if (actorClockSource === null) { throw error("STARTUP209_ACTOR_SOURCE"); }
+    owner = new CurrentFootprintMainNativeOwner(child, verify, actorClockSource, installation, verifyInstallation, verifyStartupFacade);
   }
   else if (purpose === "worker-startup-footprint-saved209") {
     if (actorClockSource === null) { throw error("STARTUP209_ACTOR_SOURCE"); }

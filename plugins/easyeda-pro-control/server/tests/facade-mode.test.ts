@@ -74,7 +74,7 @@ void test("exact209 selectors expose sixteen scoped tools without inheriting unr
   assert.deepEqual(capabilities["save"], { enabled: false }); assert.deepEqual(capabilities["recovery"], { enabled: false });
   assert.deepEqual(capabilities["nativeAdapters"], { enabled: true,
     scope: "identity-and-disposable209-opening-layer-primitive-selection-relations;project-worker-constructor-footprint-copy-preparation-and-route-preparation-empty-baseline-held-ratline-import-and-ratline-continuation-observations-only" });
-  assert.match(PUBLIC_UTILITIES_ONLY_SCOPE, /six distinct disposable launch purposes/u);
+  assert.match(PUBLIC_UTILITIES_ONLY_SCOPE, /seven distinct disposable launch purposes/u);
   assert.match(PUBLIC_UTILITIES_ONLY_SCOPE, /empty-baseline purpose joins fixed common data to the original completed SQL checkpoint/u);
   assert.match(PUBLIC_UTILITIES_ONLY_SCOPE, /ratline-held-import purpose qualifies PCB construction/u);
   assert.match(PUBLIC_UTILITIES_ONLY_SCOPE, /observes a bounded first-child native creation stack/u);
