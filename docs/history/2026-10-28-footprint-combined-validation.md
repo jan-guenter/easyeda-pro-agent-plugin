@@ -173,3 +173,14 @@ include that branch and retain every legacy branch. Runtime code, request
 budgets, helper bytes, reviewed projections and external pins are unchanged.
 The failed log remains retained; the corrected candidate needs its own exact
 complete CI result. A successful focused retry does not replace that requirement.
+
+
+A complete audit of all11 original CI job logs found five further test failures
+before automatic cancellation, despite their final cancelled job state. Three
+bootstrap cases and two source-reply cases shared a synthetic construction
+fixture that lacked the new diagnostics/cache-wait interface. The fixture now
+returns null diagnostics for its non-footprint scope and refuses footprint waits.
+Production code and guards are unchanged. All six bootstrap and four source-reply
+cases pass after this fixture-only correction. The six original failed tests
+include the single parity case above; no other non-cancellation failure marker
+was found in those retained logs. Corrected exact-payload CI is still required.
