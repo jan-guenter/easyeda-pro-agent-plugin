@@ -69,6 +69,9 @@ export async function bootstrapLifecycleFixture(options: BootstrapFixtureOptions
     }
     public whenArmed(): Promise<void> { options.timing?.beforeConstructionArmed?.(); return this.#transport.assertOriginalPinnedWorker(); }
     public requireOriginal(value: unknown): Promise<void> { assert.equal(value, packet); return this.#transport.assertOriginalPinnedWorker(); }
+    public footprintCacheConstructionDiagnostics(): null { assert.equal(this.#transport.scriptId, "project-script"); return null; }
+    public waitOriginalFootprintCacheCapture(): Promise<void> { assert.equal(this.#transport.scriptId, "project-script"); return Promise.reject(new Error("FIXTURE_FOOTPRINT_CACHE_UNAVAILABLE")); }
+
     public status(): Readonly<{ unresolvedBreakpoints: false }> { assert.equal(this.#transport.scriptId, "project-script"); return { unresolvedBreakpoints: false }; }
   }
   const loaded: { exports: Record<string, unknown> } = { exports: {} };

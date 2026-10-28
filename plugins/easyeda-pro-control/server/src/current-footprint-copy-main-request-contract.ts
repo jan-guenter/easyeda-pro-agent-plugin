@@ -10,7 +10,9 @@ const handle = z.string().min(1).max(256).regex(/^[A-Za-z\d_.:-]+$/u);
 const object = z.object({ objectId: handle }).strict();
 export const currentFootprintCopyMainRequestPlanSchema = z.object({
   projectUuid: z.string().regex(/^[a-f\d]{64}$/u), branchUuid: z.string().regex(/^[a-f\d]{32}$/u),
-  projectKey: z.string().regex(/^[a-f\d]{64}$/u), path: z.string().min(1).max(4096), dataStr: z.string().min(1).max(524_288),
+  projectKey: z.string().regex(/^[a-f\d]{64}$/u), path: z.string().min(1).max(4096),
+  dataStr: z.string().min(1).max(16_384).refine(value => value.isWellFormed() && value.length <= 16_384 && Buffer.byteLength(value) <= 16_384,
+    "The fixed request comparison admits at most16KiB of exact UTF-8 source in one scalar."),
 }).strict();
 const flags = { objectGroup: z.literal(GROUP), silent: z.literal(true), generatePreview: z.literal(false),
   throwOnSideEffect: z.literal(true), awaitPromise: z.literal(false), userGesture: z.literal(false) };

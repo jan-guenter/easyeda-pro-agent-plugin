@@ -105,6 +105,7 @@ type StartupFailure = Readonly<{ code: string; step: string; bootstrapStage: Sta
   constructionProgress: ReturnType<CurrentPcbWorkerConstructionRunner["status"]>["progress"] | null;
   parentConstruction: ReturnType<CurrentFootprintParentConstructionRunner["diagnostics"]> | null;
   parentPeer: ReturnType<CurrentFootprintParentWorkerRunner["diagnostics"]> | null;
+  cacheConstruction: ReturnType<CurrentPcbWorkerConstructionRunner["footprintCacheConstructionDiagnostics"]>;
   reason: FailureReason | null; sourceTransfer: SourceTransfer | null }>;
 type StartupRole = typeof CURRENT_PCB_209_WORKER_BOOTSTRAP_ROLES[number];
 interface BootstrapStage {
@@ -161,6 +162,8 @@ function members(dependency: CurrentPcbWorkerStartupDependency): readonly unknow
 
 type ConstructionPacket = CurrentPcbWorkerConstructionPacketFor<CurrentPcbWorkerConstructionProfile>;
 interface ConstructionRunner<Packet extends ConstructionPacket> {
+  readonly footprintCacheConstructionDiagnostics: () => ReturnType<CurrentPcbWorkerConstructionRunner["footprintCacheConstructionDiagnostics"]>;
+  readonly waitOriginalFootprintCacheCapture: (packet: Packet) => Promise<void>;
   readonly capture: () => Promise<Packet>;
   readonly requireOriginal: (packet: Packet) => ReturnType<CurrentPcbWorkerConstructionRunner["requireOriginal"]>;
   readonly status: () => ReturnType<CurrentPcbWorkerConstructionRunner["status"]>;
@@ -276,6 +279,7 @@ class CurrentPcbWorkerStartupTransportCore<Packet extends ConstructionPacket, Ru
     workerScriptLoadedObserved: boolean; requests: number; firstFailure: StartupFailure | null;
     parentConstruction: ReturnType<CurrentFootprintParentConstructionRunner["diagnostics"]> | null;
     parentPeer: ReturnType<CurrentFootprintParentWorkerRunner["diagnostics"]> | null;
+    cacheConstruction: ReturnType<CurrentPcbWorkerConstructionRunner["footprintCacheConstructionDiagnostics"]>;
     firstRejectedFootprintSourceReply: ReturnType<CurrentFootprintSourceReplyCapture["firstRejected"]>;
     constructionAssignments: ReturnType<CurrentPcbWorkerConstructionRunner["status"]>["assignments"] | null }> {
     return Object.freeze({ firstFailure: this.#firstFailure, started: this.#started, settled: this.#settled, failed: this.#failure !== null,
@@ -289,6 +293,7 @@ class CurrentPcbWorkerStartupTransportCore<Packet extends ConstructionPacket, Ru
       constructionAssignments: this.#runner?.status().assignments ?? null,
       parentConstruction: this.#parentConstruction?.diagnostics() ?? null,
       parentPeer: this.#parentPeer?.diagnostics() ?? null,
+      cacheConstruction: this.#runner?.footprintCacheConstructionDiagnostics() ?? null,
       workerScriptLoadedObserved: this.#workerScriptLoadedObserved,
       bootstrapStages: Object.freeze(this.#bootstrapStages.map(stage => Object.freeze({ role: stage.role,
         parsed: stage.script !== null, pauseSeen: stage.pauseSeen, sourceQualified: stage.sourceQualified,
@@ -346,6 +351,7 @@ class CurrentPcbWorkerStartupTransportCore<Packet extends ConstructionPacket, Ru
         constructionFailure: this.#runner?.status().firstFailure ?? null, constructionProgress: this.#runner?.status().progress ?? null,
         parentConstruction: this.#parentConstruction?.diagnostics() ?? null,
         parentPeer: this.#parentPeer?.diagnostics() ?? null,
+        cacheConstruction: this.#runner?.footprintCacheConstructionDiagnostics() ?? null,
         reason: cause === undefined ? null : failureReason(cause), sourceTransfer: this.#lastSourceTransfer });
       this.#failure = failure(code);
     }
@@ -862,7 +868,12 @@ class CurrentPcbWorkerStartupTransportCore<Packet extends ConstructionPacket, Ru
           await runner.requireOriginal(await bounded(captured, CURRENT_FOOTPRINT_PARENT_CONSTRUCTION_LIMITS.holdMs));
           await current("bootstrap-idle");
         },
-        continueOriginalParentForPeer: async (pending: CurrentFootprintParentWorkerPending): Promise<void> => { await parent.resumeForPeer(peer, pending); await this.#current(); },
+        continueOriginalParentForPeer: async (pending: CurrentFootprintParentWorkerPending): Promise<void> => {
+          await parent.resumeForPeer(peer, pending); await this.#current();
+          const captured = this.#constructionCapture, runner = this.#runner;
+          if (captured === null || runner === null) { throw failure("PARENT_PEER_CONSTRUCTION"); }
+          await runner.waitOriginalFootprintCacheCapture(await captured); await this.#current();
+        },
       }), { ...held, childSessionId: worker.sessionId, childUniqueContextId: context.uniqueId, childTargetId: worker.target.targetId });
       this.#parentPeer = peer;
       const packet = await peer.observe(); this.#parentPeerPacket = packet;

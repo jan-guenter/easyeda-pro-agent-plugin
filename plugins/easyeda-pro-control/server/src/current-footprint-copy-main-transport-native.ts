@@ -22,7 +22,8 @@ export function currentFootprintCopyMainTransportNativeSource(): string {
   internal sealed class Endpoint { internal int port; internal string token; }
   internal sealed class TcpRow { internal uint state,localAddress,remoteAddress,pid; internal int localPort,remotePort; }
   readonly object gate=new object();
-  readonly System.Diagnostics.Stopwatch elapsed=System.Diagnostics.Stopwatch.StartNew();
+  readonly System.Diagnostics.Stopwatch elapsed;
+  readonly int normalLimit,cleanupLimit;
   readonly System.Collections.Generic.List<byte> incoming=new System.Collections.Generic.List<byte>();
   readonly System.IO.MemoryStream message=new System.IO.MemoryStream();
   readonly System.Security.Cryptography.RandomNumberGenerator random=System.Security.Cryptography.RandomNumberGenerator.Create();
@@ -31,6 +32,11 @@ export function currentFootprintCopyMainTransportNativeSource(): string {
   System.Action assertImage;
   uint rootPid;long rootCreated,stdoutBytes,stderrBytes,totalReceived;int clientPort,requests,normalRequests,cleanupRequests,frames,polls;bool creationEntered,noRoot,drainStarted,childClosed,attachAttempted,attached,fragmented,terminationAttempted,terminated,released;
   System.Threading.Thread stdoutThread,stderrThread;System.Net.Sockets.Socket socket;Endpoint endpoint;string failure;
+  internal EasyedaOriginalMainTransport():this(false,null){}
+  internal EasyedaOriginalMainTransport(bool combined,System.Diagnostics.Stopwatch originalElapsed){
+    Need(combined==(originalElapsed!=null),"purpose-clock");elapsed=combined?originalElapsed:System.Diagnostics.Stopwatch.StartNew();
+    normalLimit=combined?EasyedaFootprintCombinedLimits.MainNormal:${String(PROFILE.normalRequests)};cleanupLimit=combined?EasyedaFootprintCombinedLimits.MainCleanup:${String(PROFILE.cleanupRequests)};
+  }
   static System.Exception Error(string code){return new System.InvalidOperationException("pcb-diagnostic-main-"+code);}
   static void Need(bool value,string code){if(!value)throw Error(code);}
   static void Close(ref System.IntPtr handle){if(handle==System.IntPtr.Zero)return;System.IntPtr original=handle;Need(CloseHandle(original),"close-handle");handle=System.IntPtr.Zero;}
@@ -144,7 +150,7 @@ export function currentFootprintCopyMainTransportNativeSource(): string {
   // It is internal, has no serialized tool route and accepts no URL/session.
   internal void SendFixed(string fixedMessage,bool cleanup){
     Budget(cleanup);AssertConnection();Need(fixedMessage!=null&&fixedMessage.Length>0&&fixedMessage.IndexOf('\0')<0&&utf8.GetByteCount(fixedMessage)<=65536,"command-bound");
-    Need(requests<${String(PROFILE.normalRequests + PROFILE.cleanupRequests)}&&(cleanup?cleanupRequests<${String(PROFILE.cleanupRequests)}:normalRequests<${String(PROFILE.normalRequests)}),"request-budget");requests++;if(cleanup)cleanupRequests++;else normalRequests++;WriteFrame(1,utf8.GetBytes(fixedMessage));AssertConnection();
+    Need(requests<normalLimit+cleanupLimit&&(cleanup?cleanupRequests<cleanupLimit:normalRequests<normalLimit),"request-budget");requests++;if(cleanup)cleanupRequests++;else normalRequests++;WriteFrame(1,utf8.GetBytes(fixedMessage));AssertConnection();
   }
   internal string Poll(bool cleanup){
     Budget(cleanup);AssertConnection();Need(++polls<=(cleanup?${String(PROFILE.totalPolls)}:${String(PROFILE.normalPolls)}),"poll-budget");string ready=ReadFrame();if(ready!=null){AssertConnection();return ready;}
@@ -191,6 +197,9 @@ export function currentFootprintCopyMainTransportNativeSource(): string {
     framed.incoming.AddRange(new byte[]{129,126,0,126});for(int i=0;i<126;i++)framed.incoming.Add(97);Need(framed.ReadFrame()==new string('a',126),"smoke-medium-frame");
     framed.incoming.AddRange(new byte[]{129,127,0,0,0,0,0,1,0,0});for(int i=0;i<65536;i++)framed.incoming.Add(98);Need(framed.ReadFrame()==new string('b',65536),"smoke-long-frame");
     framed.incoming.AddRange(new byte[]{129,128});refuse(()=>framed.ReadFrame());framed.incoming.Clear();framed.Release();
+    var originalElapsed=System.Diagnostics.Stopwatch.StartNew();var combined=new EasyedaOriginalMainTransport(true,originalElapsed);
+    Need(System.Object.ReferenceEquals(combined.elapsed,originalElapsed)&&combined.normalLimit==EasyedaFootprintCombinedLimits.MainNormal&&combined.cleanupLimit==EasyedaFootprintCombinedLimits.MainCleanup,"smoke-combined-clock-budget");
+    refuse(()=>new EasyedaOriginalMainTransport(false,originalElapsed));refuse(()=>new EasyedaOriginalMainTransport(true,null));combined.Release();
     var transport=new EasyedaOriginalMainTransport();refuse(()=>transport.Attach());refuse(()=>transport.SendFixed("{}",false));refuse(()=>transport.RequestOriginalJobTermination());transport.Release();refuse(()=>transport.Release());
   }
 }`;

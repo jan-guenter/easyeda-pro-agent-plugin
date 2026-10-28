@@ -38,6 +38,7 @@ archive retain their original paths and must not be rewritten to later names.
 
 ## Record index and former paths
 
+- [2026-10-28 combined footprint validation](2026-10-28-footprint-combined-validation.md): terminal211407 main success and peer timeout, cache-wait correction, combined original owner/abort, unmounted request collector and inverse limits.
 - [2026-10-28 footprint startup and source files](2026-10-28-footprint-startup-and-source-files.md): terminal main/peer probes, exact full-source breakpoint correction, request ownership, supplied-archive footprint sources and compact historical plans.
 - [2026-10-28 footprint main transport](2026-10-28-footprint-main-transport.md): terminal parent/peer observation, original-main transport and backend construction, explicit diagnostic cleanup and unchanged-record validation reuse.
 - [2026-10-28 footprint execution integration](2026-10-28-footprint-execution-integration.md): terminal installed parent-capture refusal, cache-wrapper repair, native cache capture and saved-generation integration.

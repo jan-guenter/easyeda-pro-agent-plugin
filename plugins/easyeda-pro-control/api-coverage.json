@@ -15,7 +15,7 @@
       "omitted": 498
     },
     "executionRoutes": {
-      "available-with-runtime-guards": 400,
+      "available-with-runtime-guards": 401,
       "available-with-network-guards": 9,
       "available-with-managed-file-guards": 3,
       "blocked": 94,
@@ -3617,6 +3617,41 @@
       "installed209Declaration": true,
       "status": "implemented-public-subset",
       "routes": [
+        {
+          "tool": "easyeda_control_pcb209_worker_startup",
+          "selector": "footprint-combined/capture-project",
+          "implementation": "native-task-equivalent",
+          "scope": "Separate disposable main/renderer validation purpose sealed before launch. Published original main source/function construction is required before one checkpoint-bound project opening; browser/frame/UI and original worker/callback/cache/actor/route observations keep their exact guards. Both transports retain the same original root/Job and absolute lifetime, with independent protocol counters and one main event cursor. A confirmed journaled abort targets only this original Job, consumes the generation and blocks normal work; acknowledgment, observed original-root exit, empty Job and release are separate. Existing owners cannot upgrade. Opening may migrate, replay caches, restore tabs, use the network or automatically persist. No backend request collector, actual document-clock joins, copy/delete, explicit Save, complete startup or saved-result proof is mounted. The four-generation writer budget remains incomplete and refuses reservation.",
+          "source": [
+            "current-footprint-combined-validation.ts",
+            "current-footprint-copy-combined-profile.ts",
+            "current-footprint-copy-combined-capacity.ts",
+            "current-pcb-diagnostic-lifecycle.ts",
+            "current-pcb-diagnostic-lifecycle-journal.ts",
+            "current-pcb-diagnostic-owner.ts",
+            "current-pcb-worker-startup-channel.ts",
+            "current-pcb-worker-startup-transport.ts",
+            "current-footprint-copy-main-backend-runner.ts"
+          ],
+          "tests": [
+            "current-footprint-copy-combined.test.ts",
+            "current-footprint-combined-lifecycle.test.ts",
+            "current-pcb-worker-startup-validation.test.ts"
+          ],
+          "validation": "offline-regression;current-live-unclaimed",
+          "executionState": "available-with-runtime-guards",
+          "inputDiscovery": {
+            "tool": "easyeda_control_api",
+            "arguments": {
+              "request": {
+                "action": "footprint-combined",
+                "query": {
+                  "includeSchemas": true
+                }
+              }
+            }
+          }
+        },
         {
           "tool": "easyeda_control_project_open",
           "selector": "open;registered-local-disposable-pcb",
@@ -7366,10 +7401,12 @@
       "routes": [],
       "omission": {
         "code": "footprint-copy-default-matching-and-lifecycle",
-        "reason": "The inspected 3.2.209 public matcher can return the existing footprint; native clone requires a special underscore-containing UUID. The separate native-create plan now has original-owned preparation publication, complete supplied SQL/saved-source models, a separate original-owned preparation launch mounting worker lexical bindings, actor/SQL composition, 60 dependency functions and the initialized UI/manager route. The private two-continuation clock collector has fixed command encoding, original-event routing and exact-method V8 tests, but no mounted execution transport or embedded-V8 validation. A private copy/closure/reopen coordinator reuses complete SQL and saved-source readers with zero explicit Save attempts; a separate saved-generation native owner is implemented, while the complete writer still lacks actual backend ownership and full execution integration. A separate original-main diagnostic now owns stderr and a root/Job/TCP-bound inspector and captures exact app.js protocol/driver/router and actor/SQL functions without invoking them. Actual request context, document clock, selected project SQL service and registration completion remain unproved; construction is not backend execution authority. Native channel-name qualification does not establish a reciprocal worker peer. Source reading and preparation passed one installed191500 disposable lifecycle with exact closed-file equality; this does not validate native create. Native create allocates and advances a ticket before fetching source, crosses UI routing that can select an extension library, and ignores uploadLocal's success field. Neither preparation nor a returned success proves a new durable copy.",
+        "reason": "The inspected 3.2.209 public matcher can return the existing footprint; native clone requires a special underscore-containing UUID. The separate native-create plan now has original-owned preparation publication, complete supplied SQL/saved-source models, a separate original-owned preparation launch mounting worker lexical bindings, actor/SQL composition, 60 dependency functions and the initialized UI/manager route. The private two-continuation clock collector has fixed command encoding, original-event routing and exact-method V8 tests, but no mounted execution transport or embedded-V8 validation. A private copy/closure/reopen coordinator reuses complete SQL and saved-source readers with zero explicit Save attempts; a separate saved-generation native owner is implemented, while the complete writer still lacks actual backend ownership and full execution integration. A separate original-main diagnostic now owns stderr and a root/Job/TCP-bound inspector and captures exact app.js protocol/driver/router and actor/SQL functions without invoking them. The new separate combined main/renderer validation purpose retains one original generation, while the sequenced request/context/actor/fulfilled-SQL collector is implemented privately with fixed native encoding and remains unmounted. Actual request context, document clock, selected project SQL service and registration completion remain unproved; construction is not backend execution authority. Native channel-name qualification does not establish a reciprocal worker peer. Source reading and preparation passed one installed191500 disposable lifecycle with exact closed-file equality; this does not validate native create. Native create allocates and advances a ticket before fetching source, crosses UI routing that can select an extension library, and ignores uploadLocal's success field. Neither preparation nor a returned success proves a new durable copy.",
         "nextRequirement": "Qualify parser/upload external effects and reciprocal UI/project-worker bus ownership, mount both actual native document-clock results and backend actor/clock provenance; reserve the complete command/result/failure/journal lifecycle; perform one consumed native create; then prove original-generation closure, exact closed SQL, replay-excluded fresh saved reads and final closed equality on a disposable project. Parser/cache cleanup and upload fallback effects remain unqualified. Do not use the default matcher or clone as a substitute.",
         "evidence": [
           "current-footprint-main-validation.ts",
+          "current-footprint-combined-validation.ts",
+          "current-footprint-copy-main-request-runner.ts",
           "current-footprint-copy-main-backend-runner.ts",
           "current-footprint-copy-main-transport-native.ts",
           "current-footprint-copy-preparation-runtime.ts",
@@ -7495,9 +7532,11 @@
       "routes": [],
       "omission": {
         "code": "footprint-delete-unawaited-dispatch-and-project-selector",
-        "reason": "The inspected 3.2.209 public wrapper enables project dependency checks only for the literal Project selector; an actual current project ID still selects project storage but skips those checks. Its UI helper calls deleteFootprint in an unawaited forEach and reports success before native completion. The current footprint subscriber removes its cache entry; the adjacent symbol preview/forced-close branch is distinct.",
+        "reason": "The inspected 3.2.209 public wrapper enables project dependency checks only for the literal Project selector; an actual current project ID still selects project storage but skips those checks. Its UI helper calls deleteFootprint in an unawaited forEach and reports success before native completion. The current footprint subscriber removes its cache entry; the adjacent symbol preview/forced-close branch is distinct. An unmounted exact delete plan now models one native clock, a stable ticket baseline and DOCHEAD/DELETE_DOC bytes for an undefined manager user. The actual deleteData ignores a false upload result. This projection grants no dependency, clock, SQL, callback-completion or saved-absence proof.",
         "nextRequirement": "Implement strict project/dependency/editor ownership, an awaited native deletion path, exact tombstone and full-peer/raw/SQL effect comparison, complete subscriber/structure settlement and disposable saved/reopened recovery. The public boolean or older symbol-delete lifecycle assumptions cannot establish footprint completion.",
         "evidence": [
+          "current-footprint-delete-plan.ts",
+          "current-footprint-delete-source.ts",
           "docs/history/2026-10-25-current-footprint-copy-preparation.md"
         ]
       },

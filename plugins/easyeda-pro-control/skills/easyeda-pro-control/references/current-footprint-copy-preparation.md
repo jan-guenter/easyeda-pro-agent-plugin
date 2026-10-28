@@ -110,7 +110,10 @@ and one message-send acknowledgment are qualified, an original pending-handshake
 capability permits the parent's one normal-open continuation. Chromium processes
 its parent-side worker-ready task before delivering the queued message. The
 actual matching receipt is still required before publishing peer proof or
-using later route/source observations. A pending handshake is no peer proof.
+using later route/source observations. Its four original cache-open pauses must
+qualify and resume before the two-second message-receipt leaf wait begins;
+cache settlement does not consume the later result/join proof. A pending
+handshake is no peer proof.
 Opening can therefore advance before that proof; copy, delete and Save remain
 unavailable. The eleven constructor pauses retain parser and
 upload callback relationships. Four additional cache pauses observe the two

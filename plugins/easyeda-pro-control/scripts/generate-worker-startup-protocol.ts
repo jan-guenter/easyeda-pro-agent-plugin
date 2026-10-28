@@ -10,6 +10,8 @@ import { currentFootprintCopySavedNativeSource } from "../server/src/current-foo
 import { currentFootprintCopyClockRegistrationNativeSource } from "../server/src/current-footprint-copy-clock-registration-native.ts";
 import { currentFootprintCopyMainTransportNativeSource } from "../server/src/current-footprint-copy-main-transport-native.ts";
 import { currentFootprintCopyMainBackendNativeSource } from "../server/src/current-footprint-copy-main-backend-native.ts";
+import { currentFootprintCopyMainRequestNativeSource } from "../server/src/current-footprint-copy-main-request-native.ts";
+import { currentFootprintCombinedNativeLimits } from "../server/src/current-footprint-copy-combined-profile.ts";
 import { CURRENT_FOOTPRINT_COPY_CLOCK_REGISTRATION_REQUESTS as clockRegistration } from "../server/src/current-footprint-copy-clock-registration-runner.ts";
 import { CURRENT_FOOTPRINT_COPY_SAVED_PROFILE as saved } from "../server/src/current-footprint-copy-saved-profile.ts";
 import { currentFootprintCopyTransactionClockNativeSource } from "../server/src/current-footprint-copy-transaction-clock-native.ts";
@@ -113,7 +115,7 @@ function footprintSavedSource(): string {
     "// END GENERATED FOOTPRINT COPY SAVED PROTOCOL";
 }
 function footprintMainSource(): string {
-  return `// BEGIN GENERATED FOOTPRINT MAIN TRANSPORT PROTOCOL\n${currentFootprintCopyMainTransportNativeSource()}\n${currentFootprintCopyMainBackendNativeSource()}\n` +
+  return `// BEGIN GENERATED FOOTPRINT MAIN TRANSPORT PROTOCOL\n${currentFootprintCombinedNativeLimits()}\n${currentFootprintCopyMainTransportNativeSource()}\n${currentFootprintCopyMainBackendNativeSource()}\n${currentFootprintCopyMainRequestNativeSource()}\n` +
     "// END GENERATED FOOTPRINT MAIN TRANSPORT PROTOCOL";
 }
 // oxlint-disable-next-line node/no-top-level-await -- ESM-only build command; never loaded by require().

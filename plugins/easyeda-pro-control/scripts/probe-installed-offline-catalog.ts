@@ -20,7 +20,7 @@ const NODE_VERSION = "24.18.0";
 const MAX_REPLY_BYTES = 8 * 1024 * 1024;
 const MAX_OUTPUT_BYTES = 16 * 1024 * 1024;
 const REQUEST_TIMEOUT_MS = 15_000;
-const CATALOG_QUERY_COUNT = 42;
+const CATALOG_QUERY_COUNT = 44;
 // Initialize and tool discovery plus the fixed catalog requests below.
 const REQUEST_LIMIT = 2 + CATALOG_QUERY_COUNT;
 const EXPECTED_TOOLS = [
@@ -266,7 +266,7 @@ async function offlineApi(child: OfflineChild, request: Record<string, unknown>)
   return record(content["result"]);
 }
 
-async function catalogChecks(child: OfflineChild, sample: () => Promise<void>): Promise<{ readonly tools: number; readonly queries: number; readonly ratlineContinuationDiscoveryChecked: true; readonly footprintCopyPreparationDiscoveryChecked: true; readonly footprintCopyRoutePreparationDiscoveryChecked: true; readonly footprintMainDiscoveryChecked: true }> {
+async function catalogChecks(child: OfflineChild, sample: () => Promise<void>): Promise<{ readonly tools: number; readonly queries: number; readonly ratlineContinuationDiscoveryChecked: true; readonly footprintCopyPreparationDiscoveryChecked: true; readonly footprintCopyRoutePreparationDiscoveryChecked: true; readonly footprintMainDiscoveryChecked: true; readonly footprintCombinedDiscoveryChecked: true }> {
   const initialized = await child.request("initialize", {
     protocolVersion: "2024-11-05", capabilities: {}, clientInfo: { name: "easyeda-installed-offline-probe", version: "1.0.0" },
   });
@@ -392,6 +392,17 @@ async function catalogChecks(child: OfflineChild, sample: () => Promise<void>): 
     requireCheck(result["valid"] === valid && result["executionAuthorized"] === false,
       "Original main validation accepted unconfirmed termination or caller transport.");
   }
+  const combined = await offlineApi(child, { action: "footprint-combined", query: { includeSchemas: true } });
+  requireCheck(combined["toolWrapperAction"] === "footprint-combined" && combined["executionAuthorized"] === false &&
+    combined["saveAuthorized"] === false && combined["connectedValidation"] === false &&
+    Array.isArray(combined["actions"]) && combined["actions"].includes("abort-generation"),
+  "Combined main/renderer discovery changed or implied writer authority.");
+  const combinedAbort = await offlineApi(child, { action: "footprint-combined-validate", query: { request: {
+    action: "abort-generation", operationId: "footprint-combined-offline-catalog", expectedBindingSha256: "a".repeat(64),
+    confirmAbortOriginalCombinedJob: true,
+  } } });
+  requireCheck(combinedAbort["valid"] === true && combinedAbort["executionAuthorized"] === false,
+    "Combined validation refused its exact confirmed original-generation abort.");
   const netlist = await offlineApi(child, { action: "netlist-files", query: { includeSchemas: true } });
   requireCheck(netlist["method"] === "eda.sys_Tool.netlistComparison" && netlist["executionAuthorized"] === false &&
     netlist["invocationEnabledByDiscovery"] === false && Array.isArray(record(netlist["inputSchema"])["oneOf"]),
@@ -435,7 +446,7 @@ async function catalogChecks(child: OfflineChild, sample: () => Promise<void>): 
   requireCheck(fileValidation["valid"] === true && fileValidation["executionAuthorized"] === false &&
     record(fileValidation["requestSummary"])["base64Echoed"] === false && !Object.hasOwn(fileValidation, "request"),
   "Managed library-file validation echoed source or implied execution authority.");
-  return { tools: tools.length, queries: CATALOG_QUERY_COUNT, footprintMainDiscoveryChecked: true, ratlineContinuationDiscoveryChecked: true, footprintCopyPreparationDiscoveryChecked: true, footprintCopyRoutePreparationDiscoveryChecked: true };
+  return { tools: tools.length, queries: CATALOG_QUERY_COUNT, footprintMainDiscoveryChecked: true, footprintCombinedDiscoveryChecked: true, ratlineContinuationDiscoveryChecked: true, footprintCopyPreparationDiscoveryChecked: true, footprintCopyRoutePreparationDiscoveryChecked: true };
 }
 
 export async function probeInstalledOfflineCatalog(installedRoot: string): Promise<Record<string, unknown>> {

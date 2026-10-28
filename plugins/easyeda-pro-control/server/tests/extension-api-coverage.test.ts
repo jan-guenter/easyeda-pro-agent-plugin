@@ -1197,11 +1197,11 @@ void test("every coverage input-discovery request resolves to an actual strict a
     assert.ok(isRecord(request));
     const result = queryOfflineApi(apiRequestSchema.parse(request)).result;
     assert.ok(isRecord(result));
-    if (["project-symbol-operation", "disposable-symbol-copy", "disposable-pcb-rename", "disposable-schematic-rename", "project-schematic-operation", "pcb209-opening", "pcb209-worker-startup", "netlist-files", "library-files"].includes(String(request["action"]))) {
+    if (["project-symbol-operation", "disposable-symbol-copy", "disposable-pcb-rename", "disposable-schematic-rename", "project-schematic-operation", "pcb209-opening", "pcb209-worker-startup", "footprint-combined", "netlist-files", "library-files"].includes(String(request["action"]))) {
       assert.ok(isRecord(result["inputSchema"]));
       // The ordinary SCH and 209 opening routes expose their lifecycle union at the root;
       // Existing routes still promise a separate phase schema as well.
-      if (!["project-schematic-operation", "pcb209-opening", "pcb209-worker-startup", "netlist-files", "library-files"].includes(String(request["action"]))) { assert.ok(isRecord(result["stepSchema"])); }
+      if (!["project-schematic-operation", "pcb209-opening", "pcb209-worker-startup", "footprint-combined", "netlist-files", "library-files"].includes(String(request["action"]))) { assert.ok(isRecord(result["stepSchema"])); }
       assert.equal(result["executionAuthorized"], false);
     } else {
       const entries = result["entries"];

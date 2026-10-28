@@ -160,3 +160,48 @@ change is the exact registration columns3994/4023 to4003/4032. All17 named
 model programs retain their original decoded bytes. These proofs establish no
 new connected startup, clock or writer validation. Exact-commit CI, publication
 and installation remain pending.
+
+## Publication and installation, 2026-10-28
+
+Final candidate `c3641a2f9122e561fc974db70da85ea1b3a8d059` passed Linux
+CI40771208156 and Windows CI40771208061. All eight facade shards, build and
+aggregate checks succeeded:13,416 facade passes, five unchanged expected
+platform skips, zero failures/cancellations and all424 bridge tests passed.
+All11 complete job logs and their hashes were independently checked. The
+53-file batch merged through [PR144](https://github.com/jan-guenter/easyeda-pro-agent-plugin/pull/144)
+as `fcfcf8e7d66f1d45107214b6c856897ad25eacb6`. Root tree
+`3b9b31c18ac83c6ccb09cf96d05c2f9e4d528722` and plugin tree
+`e2f5e36528bb1e037ff84649d432ddddb6d47814` exactly match the tested candidate.
+
+The CI artifact and actual installation contain2,256 files,42 directories and
+44,316,416 bytes, with every committed byte and mode independently matched.
+Inventory SHA256 is
+`154c5c8bd7a8ca1a8dd8fc08eb7ed678c5feeb6fa38d2d35b3950218e24668ad`.
+The official CLI upgraded only the configured Git marketplace
+`https://github.com/jan-guenter/easyeda-pro-agent-plugin.git`, using umask022
+and process-local parallel-checkout settings. The first attempt succeeded with
+no upgrade errors. The stale-arg0 cleanup warning remained nonfatal. Cache HEAD
+equals merged main. Version `0.3.0+codex.20261028211407` is installed and enabled,
+with one EasyEDA registration. No cache patch, redundant plugin add, bridge-key
+change or host-gateway termination was used.
+
+The dependency-free installed offline probe passed27 exposed tools,42 catalog
+queries and exactly44 protocol requests. Its own child closed through stdin EOF
+with exit0, no signal and empty stderr. It used a private synthetic profile and
+sampled no descendants or non-stdio sockets; continuous isolation and connected
+validation remain false. Bundle SHA256 is
+`679eb5a556d008a981ebea5a697c9b91786eee35d6bf0647c65be02754b686cd`;
+configuration SHA256 remains
+`26ca4c2caa92a3eb5f2aef7ac2c96c86dd56d8dd3479994565bbd9f44b5871c8`.
+This is separate from actual-host admission.
+
+Main Windows CI40773441480 passed; duplicate main Linux CI40773441413 was
+running when recorded. Its tree is the fully tested PR payload. The loaded
+facade still belongs to170636, and no live tool was called after installation.
+A fresh Codex session must admit the actual211407 host before new main and peer
+probes. Both170636 operations are terminal released and must never be replayed.
+Corrected connected startup, full copy/delete and the broader API backlog above
+remain open. No production project was opened or edited.
+
+This local publication appendix is retained for the next substantive commit;
+the installed package remains exactly the tested merged tree.

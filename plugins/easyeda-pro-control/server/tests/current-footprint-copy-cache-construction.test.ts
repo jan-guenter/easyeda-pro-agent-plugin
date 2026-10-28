@@ -12,6 +12,7 @@ import { CurrentFootprintCopyCacheConstructionRunner } from "../src/current-foot
 import type { CurrentFootprintCopyCacheConstructionTransport } from "../src/current-footprint-copy-cache-construction-runner.ts";
 import { CURRENT_FOOTPRINT_COPY_BACKEND_CACHE_PROFILES as WRAPPERS } from "../src/current-footprint-copy-backend-cache-profiles.ts";
 import { CURRENT_FOOTPRINT_COPY_BACKEND_CACHE_FIXTURE as SOURCES } from "./helpers/current-footprint-copy-backend-cache-fixture.ts";
+import { fixture as peerFixture } from "./helpers/current-footprint-parent-worker-fixture.ts";
 
 type Data = Record<string, unknown>;
 const property = (name: string, value: Data, writable = false, enumerable = false, configurable = true): Data =>
@@ -67,12 +68,14 @@ function arrayProperties(size: number, namespace: number): Data {
   result.push(property("length", { type: "number", value: size }, true, false, false));
   return { result, internalProperties: [{ name: "[[Prototype]]", value: { type: "object", subtype: "array", className: "Array", description: "Array(0)", objectId: "array-prototype" } }] };
 }
-function fixture(mode: "success" | "resume-lost" | "release-lost" | "unsubscribe-failed" | "relocated" = "success"): Readonly<{
+function fixture(mode: "success" | "resume-lost" | "release-lost" | "unsubscribe-failed" | "relocated" | "settlement-held" = "success"): Readonly<{
   runner: CurrentFootprintCopyCacheConstructionRunner; calls: Command[]; emit: (ordinal: number) => void; lost: () => void;
+  unblockMetadata: () => void; metadataEntered: Promise<null>;
 }> {
   let listener: Parameters<CurrentFootprintCopyCacheConstructionTransport["subscribe"]>[0] | null = null;
   let arrayCount = 0, ordinal = 0, resumes = 0;
   const arrays = new Map<string, Data>(), calls: Command[] = [], removed = new Set<string>();
+  const entered = Promise.withResolvers<null>(), metadataGate = Promise.withResolvers<null>();
   const emit = (index: number): void => {
     ordinal = index; const site = SITES[index % 2]; assert.ok(site !== undefined && listener !== null);
     listener.paused({ reason: "other", hitBreakpoints: [`point-${String(index % 2)}`], callFrames: [{ callFrameId: `frame-${String(index)}`, functionName: "open",
@@ -88,6 +91,7 @@ function fixture(mode: "success" | "resume-lost" | "release-lost" | "unsubscribe
     if (command.method === "Debugger.evaluateOnCallFrame") { return { result: { type: "object", className: "bb", description: "bb", objectId: `wrapper-${String(Math.floor(ordinal / 2))}` } }; }
     if (command.method === "Runtime.getProperties") {
       const id = command.params.objectId;
+      if (mode === "settlement-held" && id === "wrapper-function-0") { entered.resolve(null); await metadataGate.promise; }
       if (id.startsWith("wrapper-function-")) { return metadata(Number(id.at(-1)), false); }
       if (id.startsWith("native-")) { return metadata(Number(id.at(-1)), true); }
       const result = arrays.get(id); assert.ok(result !== undefined); return result;
@@ -120,6 +124,7 @@ function fixture(mode: "success" | "resume-lost" | "release-lost" | "unsubscribe
     },
   });
   return { runner: new CurrentFootprintCopyCacheConstructionRunner(transport, { scriptId: "script", projectObjectId: "project", projectUuid: "a".repeat(64) }), calls, emit,
+    unblockMetadata: (): void => { metadataGate.resolve(null); }, metadataEntered: entered.promise,
     lost: (): void => { assert.ok(listener !== null); listener.lost(); } };
 }
 
@@ -130,6 +135,22 @@ void test("registered original cache events consume33 requests through reproof a
   await f.runner.requireOriginal(packet); await f.runner.release(); assert.equal(f.calls.length, 33);
   assert.equal(f.calls.filter(call => call.method === "Debugger.resume").length, 4);
   await assert.rejects(f.runner.arm()); await assert.rejects(f.runner.result()); await assert.rejects(f.runner.release());
+});
+void test("original cache pauses settle before the short peer receipt without consuming the later joined result", async () => {
+  const cache = fixture("settlement-held"); await cache.runner.arm();
+  const peer = peerFixture(); peer.state.continueParent = async (): Promise<void> => {
+    const settled = cache.runner.waitOriginalCaptureComplete(); cache.emit(0); await settled;
+  };
+  const observing = peer.runner.observe(); await cache.metadataEntered;
+  assert.equal(cache.runner.diagnostics().pauseCount, 1); assert.equal(cache.runner.diagnostics().captureComplete, false);
+  assert.equal(peer.commands.some(command => command.phase === "childReceipt"), false);
+  assert.equal(peer.runner.retained().completed, false);
+  cache.unblockMetadata(); await observing;
+  assert.equal(cache.runner.diagnostics().resumedPauses, 4); assert.equal(cache.runner.diagnostics().captureComplete, true);
+  assert.equal(cache.calls.length, 30); assert.equal(cache.runner.retained()["observation"], null);
+  const packet = await cache.runner.result(); assert.equal(cache.calls.length, 31);
+  await cache.runner.requireOriginal(packet); await cache.runner.release(); await peer.runner.release();
+  assert.equal(cache.calls.length, 33); await assert.rejects(cache.runner.waitOriginalCaptureComplete());
 });
 void test("relocated allocation retains its original breakpoint and cleanup never repeats arming", async () => {
   const f = fixture("relocated"); await assert.rejects(f.runner.arm()); await f.runner.cleanup();
@@ -151,8 +172,11 @@ void test("cache pause routing uses only retained breakpoint IDs and never evalu
 });
 void test("lost resume acknowledgment retains a delivered next pause and prevents successful namespace evidence", async () => {
   const f = fixture("resume-lost"); await f.runner.arm(); f.emit(0); await assert.rejects(f.runner.result(), /lost resume acknowledgment/u);
+  const failure = f.runner.diagnostics().firstFailure; assert.equal(failure?.step, "resume"); assert.equal(failure.code, "DEPENDENCY_OR_REPLY");
+  assert.equal(JSON.stringify(f.runner.diagnostics()).includes("lost resume acknowledgment"), false);
   await f.runner.cleanup(); assert.equal(f.calls.filter(call => call.method === "Debugger.resume").length, 2);
   assert.equal(f.runner.retained()["observation"], null); assert.equal(f.runner.retained()["failed"], true);
+  await assert.rejects(f.runner.waitOriginalCaptureComplete()); assert.equal(f.runner.diagnostics().firstFailure, failure);
 });
 void test("lost cache group release remains a cleanup failure without repeating the original release", async () => {
   const f = fixture("release-lost"); await f.runner.arm();

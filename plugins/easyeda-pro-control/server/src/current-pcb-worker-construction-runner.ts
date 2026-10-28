@@ -567,6 +567,16 @@ class CurrentPcbWorkerConstructionCore<P extends PacketProfile> {
   public retainedFootprintCacheConstruction(): Readonly<Record<string, unknown>> | null {
     return this.#footprintCacheConstruction?.retained() ?? null;
   }
+  public footprintCacheConstructionDiagnostics(): ReturnType<CurrentFootprintCopyCacheConstructionRunner["diagnostics"]> | null {
+    return this.#footprintCacheConstruction?.diagnostics() ?? null;
+  }
+  /** The original startup may settle its existing cache breakpoints before
+   * the short peer receipt. It cannot consume the later joined observation. */
+  public async waitOriginalFootprintCacheCapture(packet: ConstructionPacket<P>): Promise<void> {
+    const runner = this.#footprintCacheConstruction;
+    if (this.#profile !== "private.current-footprint-copy-construction.v1" || runner === null) { throw fail("CACHE_CONSTRUCTION_WAIT_OWNER"); }
+    await this.requireOriginal(packet); await runner.waitOriginalCaptureComplete(); await this.requireOriginal(packet);
+  }
   async #captureParser(event: z.infer<typeof pauseSchema>, site: "parserHead" | "parserChange"): Promise<void> {
     const caller = event.callFrames[1], expected = this.#sites.project, top = event.callFrames[0];
     const startColumn = expected.columnNumber - (expected.offset - expected.start);

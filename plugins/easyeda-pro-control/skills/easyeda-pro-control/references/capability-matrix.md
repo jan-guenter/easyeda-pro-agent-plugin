@@ -128,8 +128,24 @@ protocol/driver/router functions and native Date.now. It records no actual
 backend request context, actor/clock invocation, project SQL call or registration
 completion. Its 64 normal and eight cleanup requests are separate from renderer
 budgets. Explicit confirmed termination affects only its original diagnostic Job;
-observed root exit and empty Job remain required before release. Connected
-construction validation and the complete writer remain pending.
+observed root exit and empty Job remain required before release. Installed211407
+passed one complete original-main construction case; that scoped result does not
+admit this source payload or an actual backend request.
+The separate [combined main/renderer validation](current-footprint-combined.md)
+seals both channels to one original root/Job before launch. It requires published
+main construction before disposable capture, then offers the existing assignment,
+actor and full-route observations. Its derived main budget is41 normal and13
+cleanup commands; renderer limits remain780 normal and45 cleanup. Confirmed
+original-Job abort synchronously blocks normal work, publishes exact-prefix
+intent and dispatches once. Intent-publication failure prevents dispatch while
+leaving the abort consumed; acknowledgment never proves exit or rollback.
+Installed211407's separate route stopped at its peer receipt after parent
+continuation. The cache-pause ordering correction and this new combined purpose
+have no connected acceptance yet. The original request collector and native
+delete-tombstone plan remain unmounted; actual request/clock joins, publication
+completion, full lifecycle budget, closed SQL, fresh saved readback and a supported
+inverse remain required before writer enablement. Query the offline API coverage
+inventory for each current route and omission reason.
 The startup route retains the original
 native process, Job, pipe and fixed256-command budget. These observations do
 not establish continuous publisher ownership, peer containment, server clock

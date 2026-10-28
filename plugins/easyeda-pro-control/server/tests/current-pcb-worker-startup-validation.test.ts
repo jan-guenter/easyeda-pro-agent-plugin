@@ -1,4 +1,4 @@
-/* oxlint-disable import/max-dependencies -- This composition test compares the real index registration, offline facade and fixed-purpose schema together; splitting their imports would hide a boundary under a synthetic helper. */
+/* oxlint-disable import/max-dependencies, max-classes-per-file -- Compare the real registration, facade and schemas together; keep legacy and combined synthetic coordinators independently scoped so the existing VM fixture retains its semantics. */
 import assert from "node:assert/strict";
 import { createHash } from "node:crypto";
 import { readFile } from "node:fs/promises";
@@ -6,7 +6,7 @@ import { stripTypeScriptTypes } from "node:module";
 import { test } from "node:test";
 import vm from "node:vm";
 import { z } from "zod";
-import { CurrentFootprintCopyPreparationLifecycle, CurrentFootprintCopyRoutePreparationLifecycle, CurrentPcb209DiagnosticLifecycle, CurrentPcb209EmptyStartupLifecycle, CurrentPcb209RatlineContinuationLifecycle, CurrentPcb209RatlineStartupLifecycle, CurrentPcb209WorkerStartupLifecycle, CurrentPcbDiagnosticLifecycle, CurrentPcbWorkerStartupLifecycle } from "../src/current-pcb-diagnostic-lifecycle.ts";
+import { CurrentFootprintCombinedLifecycle, CurrentFootprintCopyPreparationLifecycle, CurrentFootprintCopyRoutePreparationLifecycle, CurrentPcb209DiagnosticLifecycle, CurrentPcb209EmptyStartupLifecycle, CurrentPcb209RatlineContinuationLifecycle, CurrentPcb209RatlineStartupLifecycle, CurrentPcb209WorkerStartupLifecycle, CurrentPcbDiagnosticLifecycle, CurrentPcbWorkerStartupLifecycle } from "../src/current-pcb-diagnostic-lifecycle.ts";
 import type { CurrentPcbDiagnosticLifecycleOptions } from "../src/current-pcb-diagnostic-lifecycle.ts";
 import { CURRENT_PCB_DIAGNOSTIC_PROFILE } from "../src/current-pcb-diagnostic-profile.ts";
 import { currentPcbDiagnosticToolRequestSchema, currentPcbDiagnosticValidationRequestSchema,
@@ -14,6 +14,9 @@ import { currentPcbDiagnosticToolRequestSchema, currentPcbDiagnosticValidationRe
 import { currentPcbWorkerStartupValidationRequestSchema, queryCurrentPcbWorkerStartupValidation } from "../src/current-pcb-worker-startup-validation.ts";
 import { apiRequestSchema, queryOfflineApi } from "../src/offline-api.ts";
 import { currentPcb209OpeningRequestSchema } from "../src/current-pcb-209-opening-validation.ts";
+import { currentFootprintCombinedValidationRequestSchema } from "../src/current-footprint-combined-validation.ts";
+import { currentPcb209WorkerStartupToolRequestSchema } from "../src/current-pcb-209-empty-startup-validation.ts";
+import { SerializedGate } from "../src/engine.ts";
 import { facadeToolRegistered } from "../src/facade-mode.ts";
 
 const operationId = "worker-startup-contract";
@@ -25,6 +28,7 @@ const capture = { action: "capture-project", operationId, expectedBindingSha256,
     documentUuid: "b".repeat(16), expectedSourceSha256: "c".repeat(64) },
   confirmDisposableProject: true, acceptNormalOpenEffects: true, acceptDebuggerPauseEffects: true };
 const wrap = (request: unknown): Readonly<{ action: "worker-startup"; request: unknown }> => ({ action: "worker-startup", request });
+const wrapCombined = (request: unknown): { request: { action: "footprint-combined"; request: unknown } } => ({ request: { action: "footprint-combined", request } });
 
 void test("startup validation is discoverable through the existing offline diagnostic wrapper without execution claims", () => {
   const startup = queryCurrentPcbWorkerStartupValidation(true);
@@ -166,4 +170,90 @@ void test("startup public registration binds the actual inherited methods, fixed
   const guard = source.slice(source.indexOf("function assertOrdinaryRuntimeAllocationAllowed()"), source.indexOf("/** No outer gate/authenticated scope."));
   vm.runInContext(stripTypeScriptTypes(`${guard}\ncurrentPcbWorkerStartupLifecycle={hasActiveReservation:()=>true};`), scope);
   assert.throws(() => vm.runInContext("assertOrdinaryRuntimeAllocationAllowed()", scope), /reserves application startup/u);
+});
+
+
+void test("registered combined wrapper retains its lifecycle and confirmed abort bypasses the occupied bridge gate", { timeout: 5000 }, async () => {
+  const source = await readFile(new URL("../src/index.ts", import.meta.url), "utf8");
+  const start = source.indexOf('if (facadeToolRegistered(facadeMode, "easyeda_control_pcb_diagnostic_validation") ||');
+  const end = source.indexOf('registerFacadeTool(\n  "easyeda_control_launch",', start + 1);
+  const helpers = source.slice(source.indexOf("function disposableOwnData("), source.indexOf("function disposableIndexMethods("));
+  assert.ok(start > 0 && end > start);
+  let invoke: ((input: { request: unknown }) => Promise<unknown>) | undefined;
+  let allocations = 0, gateCalls = 0;
+  let options: CurrentPcbDiagnosticLifecycleOptions | undefined;
+  let mainPublished = false, reserved = false, sealed = false;
+  const calls: string[] = [], entered = Promise.withResolvers<null>(), release = Promise.withResolvers<null>();
+  const { action: _action, operationId: _operation, expectedBindingSha256: _binding, ...captureBody } = capture;
+  // The actual registration/prototype guards and actual SerializedGate are
+  // Exercised here. Coordinator callbacks remain explicitly synthetic.
+  class Coordinator extends CurrentFootprintCombinedLifecycle {
+    public constructor(input: CurrentPcbDiagnosticLifecycleOptions) { super(input); allocations += 1; options = input; }
+    public override async run(input: unknown): Promise<Record<string, unknown>> {
+      assert.ok(this instanceof Coordinator); assert.ok(options); options.assertLocalAllowed();
+      const request = currentFootprintCombinedValidationRequestSchema.parse(input);
+      if (request.action === "launch") { await options.assertAllowed(); reserved = true; }
+      if (request.action === "observe-main-construction") { mainPublished = true; }
+      if (request.action === "abort-generation") { sealed = true; }
+      calls.push(request.action); return { synthetic: true, action: request.action, executionAuthorized: false };
+    }
+    public override async captureWorkerStartup(id: string, binding: string, input: unknown): Promise<Record<string, unknown>> {
+      assert.ok(this instanceof Coordinator); assert.ok(options); options.assertLocalAllowed();
+      assert.equal(id, "footprint-combined-registration"); assert.equal(binding, expectedBindingSha256);
+      assert.equal(mainPublished, true); assert.equal(JSON.stringify(input), JSON.stringify(captureBody));
+      calls.push("capture-project"); entered.resolve(null); await release.promise; options.assertLocalAllowed();
+      assert.equal(sealed, true); throw new Error("synthetic original generation sealed");
+    }
+    public override hasActiveReservation(): boolean { assert.ok(this instanceof Coordinator); return reserved; }
+  }
+  const gate = new SerializedGate(), upstream = {};
+  const engine = { upstream, executionAuthorityValidator: {}, controlFingerprintPromise: Promise.resolve({ sha256: "a".repeat(64) }),
+    assertDiagnosticLaunchOtherOperationsSettled: (): Promise<void> => Promise.resolve() };
+  const scope = vm.createContext({ z, currentPcbDiagnosticToolRequestSchema, currentPcb209OpeningRequestSchema,
+    currentPcb209WorkerStartupToolRequestSchema, CURRENT_PCB_DIAGNOSTIC_PROFILE,
+    CurrentPcbDiagnosticLifecycle, CurrentPcb209DiagnosticLifecycle, CurrentPcb209EmptyStartupLifecycle, CurrentPcb209RatlineStartupLifecycle,
+    CurrentPcb209RatlineContinuationLifecycle, CurrentPcb209WorkerStartupLifecycle, CurrentFootprintCopyPreparationLifecycle,
+    CurrentFootprintCopyRoutePreparationLifecycle, CurrentFootprintCombinedLifecycle: Coordinator, CurrentPcbWorkerStartupLifecycle,
+    currentPcbWorkerStartupLifecycle: undefined, currentPcbDiagnosticLifecycle: undefined, currentPcbStringPrecreateLifecycle: undefined,
+    currentFootprintMainLifecycle: undefined, process: { env: { EASYEDA_ASSETS_ROOT: "/synthetic/assets", WSL_DISTRO_NAME: "Ubuntu" } },
+    engine, upstream, facadeMode: "public-utilities-only", facadeToolRegistered,
+    bridgeGate: { run: (handler: () => Promise<unknown>): Promise<unknown> => { gateCalls += 1; return gate.run(handler); } },
+    retainedControlRoot: { path: "/synthetic/control" }, controlDataDirectory: (): string => "/synthetic/control",
+    resolve: (): string => "/synthetic/plugin", currentSymbolOperationToolOutputSchema: z.object({ result: z.unknown() }),
+    windowsRuntime: undefined, ordinaryLaunchRuntime: undefined, currentDisposableOpenCoordinator: undefined,
+    currentPcbRenameOperationCoordinator: undefined, currentSchematicRenameOperationCoordinator: undefined,
+    closedSymbolIndexReservation: undefined, closedSymbolUnreservedFailure: { observed: false }, scheduledShutdown: undefined,
+    guarded: (handler: NonNullable<typeof invoke>): NonNullable<typeof invoke> => async input => { const result = await handler(input); return result; },
+    server: { registerTool: (name: string, configuration: { inputSchema: z.ZodType }, handler: typeof invoke): void => {
+      if (name === "easyeda_control_pcb209_worker_startup") {
+        assert.equal(configuration.inputSchema.safeParse({ request: {}, extra: true }).success, false); invoke = handler;
+      }
+    } },
+  });
+  vm.runInContext(stripTypeScriptTypes(`${helpers}\n${source.slice(start, end)}`).replaceAll("import.meta.dirname", '"/synthetic/server/src"'), scope);
+  assert.ok(invoke);
+  const id = "footprint-combined-registration";
+  await assert.rejects(invoke(wrapCombined({ action: "abort-generation", operationId: id, expectedBindingSha256, confirmAbortOriginalCombinedJob: false })));
+  assert.equal(allocations, 0); assert.equal(gateCalls, 0);
+  await invoke(wrapCombined({ ...launch, operationId: id, acceptDebuggerPauseEffects: true }));
+  await invoke(wrapCombined({ action: "observe-main-construction", operationId: id, expectedBindingSha256 }));
+  assert.equal(allocations, 1); assert.equal(gateCalls, 2);
+  const captureRequest = invoke(wrapCombined({ ...capture, operationId: id }));
+  const captureRefusal = assert.rejects(captureRequest, /synthetic original generation sealed/u); await entered.promise;
+  assert.equal(gateCalls, 3);
+  const core: unknown = Object.getPrototypeOf(CurrentFootprintCombinedLifecycle.prototype);
+  assert.ok(core !== null && typeof core === "object");
+  for (const name of ["runMainAction", "runCombinedAbort", "requireCombinedMainPublished", "assertCombinedNormal"]) {
+    const descriptor = Object.getOwnPropertyDescriptor(core, name); assert.ok(descriptor);
+    try {
+      Object.defineProperty(core, name, { ...descriptor, value: (): never => { throw new Error("substituted combined core called"); } });
+      await assert.rejects(invoke(wrapCombined({ action: "abort-generation", operationId: id, expectedBindingSha256, confirmAbortOriginalCombinedJob: true })), /original index owner/u);
+    } finally { Object.defineProperty(core, name, descriptor); }
+  }
+  await assert.rejects(invoke({ request: { action: "footprint-copy-route-preparation", request: { action: "inspect", operationId: "footprint-route-foreign" } } }), /purpose cannot change/u);
+  assert.equal(allocations, 1);
+  await invoke(wrapCombined({ action: "abort-generation", operationId: id, expectedBindingSha256, confirmAbortOriginalCombinedJob: true }));
+  assert.equal(gateCalls, 3); assert.equal(sealed, true); assert.deepEqual(calls, ["launch", "observe-main-construction", "capture-project", "abort-generation"]);
+  await invoke(wrapCombined({ action: "inspect", operationId: id })); assert.equal(gateCalls, 3); assert.equal(allocations, 1);
+  release.resolve(null); await captureRefusal;
 });
