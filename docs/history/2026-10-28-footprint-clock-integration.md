@@ -109,3 +109,20 @@ the three-file runtime projection is
 `f3ba7c2862e63bf4b44f89aebc9571f46e77d03ff82cea56cbea70c814c54f1f`.
 All external runtime, upstream, SDK and bridge pins remain unchanged.
 Exact-commit CI, publication and installation are pending.
+
+
+## Packed parity fixture correction
+
+Candidate `5235956f6e00ebb29521fd0751f178df815ebe97` passed build and Windows
+CI40720383932. Linux CI40720383891 found one stale test in
+`current-pcb-diagnostic-native.test.ts`: its literal extractor had not been updated
+for packed `ModelStateFunction`. The other two affected parity readers already
+handled the packed storage. The failure is retained; this candidate was not
+merged or installed.
+
+The correction adds that name to the existing independent packed reader. It
+preserves exact decoded length, UTF-8, compressed/decoded hashes and complete
+program equality. All seven tests in the file, types and strict lint passed;
+independent review accepted the one-line change. Source, native helper, runtime
+bundles, compatibility pins and version remain unchanged. Corrected exact-commit
+CI is required before release.
