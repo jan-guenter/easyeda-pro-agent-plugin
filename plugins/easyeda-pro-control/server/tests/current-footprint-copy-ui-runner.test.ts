@@ -17,6 +17,8 @@ import type { CurrentFootprintCopyUiCommand } from "../src/current-footprint-cop
 import { currentFootprintCopyUiNativeCases, currentFootprintCopyUiNativeSource } from "../src/current-footprint-copy-ui-native.ts";
 import { currentFootprintCopyUiWire } from "../src/current-footprint-copy-ui-wire.ts";
 import { FOOTPRINT_COPY_UI_FIXTURE as FIXTURE } from "./current-footprint-copy-ui-fixture.ts";
+import type { CurrentFootprintCopyClockRegistrationBinding, CurrentFootprintCopyClockRegistrationTransport } from "../src/current-footprint-copy-clock-registration-runner.ts";
+import { CURRENT_FOOTPRINT_COPY_CLOCK_REGISTRATION_CALLS as CLOCK_CALLS, CURRENT_FOOTPRINT_COPY_CLOCK_REGISTRATION_FLAGS as CLOCK_FLAGS } from "../src/current-footprint-copy-clock-registration-contract.ts";
 
 type Data = Record<string, unknown>;
 const binding = Object.freeze({ sessionId: "parent", uniqueContextId: "context", scriptId: "ui",
@@ -47,15 +49,17 @@ function bundle(kind: "route" | "notification"): Data {
   result.push(property("length", { type: "number", value: count }, true, false, false));
   return { result, internalProperties: [{ name: "[[Prototype]]", value: { type: "object", subtype: "array", className: "Array", description: "Array(0)", objectId: "array-prototype" } }] };
 }
-async function constructor(): Promise<typeof CurrentFootprintCopyUiRunner> {
+async function constructor(clockModule?: object): Promise<typeof CurrentFootprintCopyUiRunner> {
   const path = new URL("../src/current-footprint-copy-ui-runner.ts", import.meta.url);
   const actualRequire = createRequire(path);
   const loaded: { exports: Record<string, unknown> } = { exports: {} };
   const program = await transform(await readFile(path, "utf8"), { loader: "ts", format: "cjs", target: "node24" });
   const evaluate: unknown = runInThisContext(`(function(require,module,exports){${program.code}\n})`); assert.ok(typeof evaluate === "function");
-  Reflect.apply(evaluate, undefined, [(specifier: string): unknown => specifier === "./current-footprint-copy-ui-source.ts" ? {
-    requireCurrentFootprintCopyUiSource: (value: unknown): void => { assert.equal(value, source); },
-  } : actualRequire(specifier) as unknown, loaded, loaded.exports]);
+  Reflect.apply(evaluate, undefined, [(specifier: string): unknown => {
+    if (specifier === "./current-footprint-copy-ui-source.ts") { return { requireCurrentFootprintCopyUiSource: (value: unknown): void => { assert.equal(value, source); } }; }
+    if (specifier === "./current-footprint-copy-clock-registration-runner.ts" && clockModule !== undefined) { return clockModule; }
+    return actualRequire(specifier) as unknown;
+  }, loaded, loaded.exports]);
   const value = loaded.exports["CurrentFootprintCopyUiRunner"]; assert.ok(typeof value === "function");
   // oxlint-disable-next-line typescript/no-unsafe-type-assertion -- Load the actual runner with only its separately tested full vendor-source issuer replaced above.
   return value as typeof CurrentFootprintCopyUiRunner;
@@ -151,4 +155,31 @@ void test("UI native grammar reconstructs nine fixed commands and rejects progra
   const native = currentFootprintCopyUiNativeSource(); assert.ok(Buffer.byteLength(native) < 10_000);
   assert.match(native, /originalParentSession/u); assert.match(native, /fields.Count==names.Length/u);
   assert.equal(CURRENT_FOOTPRINT_COPY_UI_REQUESTS.observe, 25); assert.equal(CURRENT_FOOTPRINT_COPY_UI_REQUESTS.reprove, 7);
+});
+
+void test("UI clock child composition binds original lifetime, receipt, transport methods and parent session", async () => {
+  for (const failure of ["owner", "transport", "release"]) {
+    const capture: { transport?: CurrentFootprintCopyClockRegistrationTransport; binding?: CurrentFootprintCopyClockRegistrationBinding } = {};
+    // Capture constructor arguments here; clock-registration tests exercise
+    // The actual child collector independently.
+    // oxlint-disable-next-line typescript/no-extraneous-class -- The original parent issues a new child instance; this fixture captures that exact construction boundary.
+    class Child {
+      public constructor(input: unknown, transport: CurrentFootprintCopyClockRegistrationTransport, childBinding: CurrentFootprintCopyClockRegistrationBinding) {
+        assert.equal(input, source); capture.transport = transport; capture.binding = childBinding;
+      }
+    }
+    const Constructor = await constructor({ CurrentFootprintCopyClockRegistrationRunner: Child }), value = fixture();
+    const runner = new Constructor(source, value.transport, binding); const packet = await runner.observe(); let calls = 0;
+    const transport: CurrentFootprintCopyClockRegistrationTransport = { assertCurrent: (): Promise<void> => Promise.resolve(), request: (): Promise<unknown> => { calls += 1; return Promise.resolve({}); } };
+    assert.throws(() => runner.createClockRegistration(structuredClone(packet), transport));
+    runner.createClockRegistration(packet, transport); assert.throws(() => runner.createClockRegistration(packet, transport));
+    const original = capture.transport; assert.ok(original !== undefined); assert.equal(capture.binding?.sessionId, binding.sessionId); assert.equal(capture.binding.uiRoute, "route");
+    await original.assertCurrent();
+    const command = { phase: "callback" as const, method: "Runtime.callFunctionOn" as const, sessionId: binding.sessionId, params: { ...CLOCK_FLAGS, objectId: "scope", functionDeclaration: CLOCK_CALLS.callback.program, arguments: [], returnByValue: false } };
+    await original.request(command); assert.equal(calls, 1); assert.throws(() => original.request({ ...command, sessionId: "another" })); assert.equal(calls, 1);
+    if (failure === "owner") { value.state.current = false; }
+    else if (failure === "transport") { Object.defineProperty(transport, "request", { value: (): Promise<unknown> => { calls += 1; return Promise.resolve({}); } }); }
+    else { await runner.release(); }
+    await assert.rejects(original.assertCurrent()); assert.equal(calls, 1);
+  }
 });

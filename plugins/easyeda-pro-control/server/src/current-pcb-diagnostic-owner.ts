@@ -65,6 +65,8 @@ import { CurrentFootprintCopyManagerRouteRunner } from "./current-footprint-copy
 import type { CurrentFootprintParentWorkerObservation } from "./current-footprint-copy-parent-worker-runner.ts";
 import type { CurrentFootprintCopyManagerRouteObservation } from "./current-footprint-copy-manager-route-runner.ts";
 import type { CurrentFootprintCopyManagerRouteCommand } from "./current-footprint-copy-manager-route-command.ts";
+import type { CurrentFootprintCopyClockRegistrationObservation, CurrentFootprintCopyClockRegistrationRunner, CurrentFootprintCopyClockRegistrationSample } from "./current-footprint-copy-clock-registration-runner.ts";
+import type { CurrentFootprintCopyClockRegistrationCommand } from "./current-footprint-copy-clock-registration-contract.ts";
 import { CurrentFootprintCopyUiRunner } from "./current-footprint-copy-ui-runner.ts";
 import type { CurrentFootprintCopyUiCommand } from "./current-footprint-copy-ui-command.ts";
 import type { CurrentFootprintCopyUiObservation } from "./current-footprint-copy-ui-runner.ts";
@@ -114,8 +116,8 @@ import type { CurrentFootprintCopyStatePacket } from "./current-footprint-copy-s
 import type { CurrentFootprintCopySourceReadTransport } from "./current-footprint-copy-source-read-runner.ts";
 
 
-const HELPER_SHA256 = "f5cc7b3f265785a1ed2dec4697576cfe1765117a85e261bb4ac2ffde52817193";
-const HELPER_BYTES = 1_046_826;
+const HELPER_SHA256 = "9e17bf8bf65ff1d1d1862b94712165c3aa2b8add5cc24f47fd2c74863d9b8773";
+const HELPER_BYTES = 1_047_248;
 const MAX_LINE = 100_000;
 // 64 MiB native bytes need at most 85.34 MiB base64 plus bounded poll envelopes.
 const MAX_TOTAL = 96 * 1024 * 1024;
@@ -127,8 +129,12 @@ const retainedOwners = new Set<object>();
 const requestFootprintUi = CurrentFootprintCopyPreparationChannel.prototype.requestFootprintUi;
 // oxlint-disable-next-line typescript/unbound-method -- Invoke only on the original purpose-sealed channel.
 const requestFootprintManagerRoute = CurrentFootprintCopyPreparationChannel.prototype.requestFootprintManagerRoute;
+// oxlint-disable-next-line typescript/unbound-method -- Invoke only with the original execution channel receiver retained by this native owner.
+const requestFootprintClockRegistration = CurrentFootprintCopyExecutionChannel.prototype.requestFootprintClockRegistration;
 // oxlint-disable-next-line typescript/unbound-method -- Child issuance retains the original UI private fields, never an instance override.
 const createFootprintManagerRoute = CurrentFootprintCopyUiRunner.prototype.createManagerRoute;
+// oxlint-disable-next-line typescript/unbound-method -- Invoke with the original UI runner and its original observation packet.
+const createFootprintClockRegistration = CurrentFootprintCopyUiRunner.prototype.createClockRegistration;
 // oxlint-disable-next-line typescript/unbound-method -- The exact private manager issuer joins its original peer, never receipt JSON.
 const requireFootprintManagerPeer = CurrentFootprintCopyManagerRouteRunner.prototype.requireOriginalWorkerPeer;
 
@@ -217,6 +223,7 @@ export interface CurrentFootprintCopyNativeTarget {
 export type CurrentFootprintCopyGenerationOwner = CurrentFootprintCopyNativeOwner | CurrentFootprintCopySavedNativeOwner;
 const footprintSavedAllocations = new WeakMap<CurrentFootprintCopyNativeOwner, CurrentFootprintCopySavedNativeOwner>();
 const footprintSavedAllocationAttempts = new WeakSet<CurrentFootprintCopyNativeOwner>();
+const footprintSavedAllocationStates = new WeakMap<CurrentFootprintCopyNativeOwner, "pending" | "no-resource" | "unresolved">();
 const footprintFactories = new WeakMap<object, Readonly<{ options: CurrentPcbDiagnosticInstallationOptions; installation: CurrentPcbDiagnosticInstallation }>>();
 const footprintTerminations = new WeakMap<object, Readonly<{ owner: object; binding: Binding | null; noProcess: boolean }>>();
 
@@ -261,6 +268,9 @@ class CurrentPcbRetainedOwnerCore {
   #footprintManagerPacket: CurrentFootprintCopyManagerRouteObservation | null = null;
   #footprintManagerCurrent: (() => Promise<void>) | null = null;
   readonly #footprintManagerParentReplies: unknown[] = [];
+  #footprintClockRegistrationAttempted = false;
+  #footprintClockRegistrationRunner: CurrentFootprintCopyClockRegistrationRunner | null = null;
+  #footprintClockRegistrationPacket: CurrentFootprintCopyClockRegistrationObservation | null = null;
 
   #startupPcbConsumed = false;
   #startupPcbSession: CurrentPcbWorkerStartupPcbSession | CurrentPcb209WorkerStartupPcbSession | CurrentPcb209RatlineContinuationNativeSession | CurrentPcb209RatlineNativeSession | null = null;
@@ -1387,7 +1397,61 @@ class CurrentPcbRetainedOwnerCore {
     const runner = this.#footprintUiRunner;
     if ((this.#purpose !== "worker-startup-footprint209" && this.#purpose !== "worker-startup-footprint-copy209") || runner === null) { throw error("FOOTPRINT_UI_RELEASE"); }
     this.#enter(true);
-    try { await runner.release(); } finally { this.#busy = false; }
+    try {
+      const clock = this.#footprintClockRegistrationRunner;
+      if (clock !== null && !clock.retained().releaseAttempted) { await clock.release(); }
+      if (clock !== null && !clock.retained().released) { throw error("FOOTPRINT_CLOCK_REGISTRATION_NOT_RELEASED"); }
+      await runner.release();
+    } finally { this.#busy = false; }
+  }
+
+  public retainedFootprintCopyClockRegistration(): Readonly<RecordValue> {
+    return Object.freeze({ attempted: this.#footprintClockRegistrationAttempted, runner: this.#footprintClockRegistrationRunner?.retained() ?? null });
+  }
+  /** This separate execution-only observation retains the original renderer
+   * registration. It does not observe an actual document-clock invocation. */
+  public async observeFootprintCopyClockRegistration(opening: CurrentFootprintCopyOpeningOwner,
+    result: CurrentFootprintCopyOpeningResult): Promise<CurrentFootprintCopyClockRegistrationObservation> {
+    const context = this.#stagedContext, handoff = this.#startupHandoff, packet = this.#footprintUiPacket, ui = this.#footprintUiRunner;
+    if (this.#purpose !== "worker-startup-footprint-copy209" || this.#footprintClockRegistrationAttempted || context === null || handoff === null ||
+        ui === null || packet === null || opening !== this.#footprintUiOpening || result !== this.#footprintUiOpeningResult || !this.#footprintUiReproofAttempted ||
+        !(handoff.channel instanceof CurrentFootprintCopyExecutionChannel) || CurrentFootprintCopyUiRunner.prototype.createClockRegistration !== createFootprintClockRegistration ||
+        CurrentFootprintCopyExecutionChannel.prototype.requestFootprintClockRegistration !== requestFootprintClockRegistration) { throw error("FOOTPRINT_CLOCK_REGISTRATION_UNAVAILABLE"); }
+    this.#enter(true); this.#footprintClockRegistrationAttempted = true;
+    try {
+      const channel = handoff.channel, original = this.#binding, script = context.script(), selected = context.openingContext();
+      const current = async (): Promise<void> => {
+        const same = (): void => {
+          this.#available();
+          if (this.#binding !== original || this.#startupHandoff !== handoff || this.#stagedContext !== context || this.#footprintUiRunner !== ui || this.#footprintUiPacket !== packet ||
+              this.#terminationObserved || this.#closeConsumed || this.#releaseConsumed || channel !== this.#startupChannel ||
+              context.script().scriptId !== script.scriptId || context.openingContext().uniqueContextId !== selected.uniqueContextId ||
+              context.openingContext().sessionId !== selected.sessionId || handoff.dependency.parentSessionId !== selected.sessionId ||
+              CurrentFootprintCopyUiRunner.prototype.createClockRegistration !== createFootprintClockRegistration ||
+              CurrentFootprintCopyExecutionChannel.prototype.requestFootprintClockRegistration !== requestFootprintClockRegistration) { throw error("FOOTPRINT_CLOCK_REGISTRATION_OWNER_CHANGED"); }
+        };
+        same(); await handoff.opening.reprove(); same();
+      };
+      await requireCurrentFootprintCopyOpening(opening, result, handoff.dependency); await current();
+      const runner = createFootprintClockRegistration.call(ui, packet, Object.freeze({ assertCurrent: current,
+        request: (command: CurrentFootprintCopyClockRegistrationCommand): Promise<unknown> => requestFootprintClockRegistration.call(channel, command) }));
+      // Retain cleanup ownership before the first awaited capture request.
+      this.#footprintClockRegistrationRunner = runner;
+      const observation = await runner.observe(); await current(); await requireCurrentFootprintCopyOpening(opening, result, handoff.dependency);
+      this.#footprintClockRegistrationPacket = observation; return observation;
+    } finally { this.#busy = false; }
+  }
+  public async sampleFootprintCopyClockRegistration(packet: CurrentFootprintCopyClockRegistrationObservation): Promise<CurrentFootprintCopyClockRegistrationSample> {
+    const handoff = this.#startupHandoff, opening = this.#footprintUiOpening, result = this.#footprintUiOpeningResult, runner = this.#footprintClockRegistrationRunner;
+    if (this.#purpose !== "worker-startup-footprint-copy209" || runner === null || handoff === null || opening === null || result === null || packet !== this.#footprintClockRegistrationPacket) { throw error("FOOTPRINT_CLOCK_REGISTRATION_ORIGINAL"); }
+    this.#enter(true);
+    try { await requireCurrentFootprintCopyOpening(opening, result, handoff.dependency); const sample = await runner.sampleOriginal(packet); await requireCurrentFootprintCopyOpening(opening, result, handoff.dependency); return sample; }
+    finally { this.#busy = false; }
+  }
+  public async releaseFootprintCopyClockRegistration(): Promise<void> {
+    const runner = this.#footprintClockRegistrationRunner;
+    if (this.#purpose !== "worker-startup-footprint-copy209" || runner === null) { throw error("FOOTPRINT_CLOCK_REGISTRATION_RELEASE"); }
+    this.#enter(true); try { await runner.release(); } finally { this.#busy = false; }
   }
 
   public retainedFootprintCopyManagerRoute(): Readonly<RecordValue> {
@@ -2309,9 +2373,25 @@ export async function startCurrentFootprintCopySavedNativeOwner(writer: CurrentF
   if (original === undefined || !writer.status().released || !writer.status().helperClosed) { throw error("FOOTPRINT_WRITER_RELEASE_REQUIRED"); }
   if (footprintSavedAllocationAttempts.has(writer)) { throw error("FOOTPRINT_SAVED_ALLOCATION_CONSUMED"); }
   footprintSavedAllocationAttempts.add(writer);
-  const owner = await startFixedOwner(original.options, "worker-startup-footprint-saved209", "209-startup", writer);
+  footprintSavedAllocationStates.set(writer, "pending");
+  let owner: Awaited<ReturnType<typeof startFixedOwner>>;
+  try { owner = await startFixedOwner(original.options, "worker-startup-footprint-saved209", "209-startup", writer); }
+  catch (caughtError) {
+    // Only admission before the spawn boundary proves no helper allocation.
+    // Absence of a retained owner after that boundary is unresolved ownership.
+    if (footprintSavedAllocationStates.get(writer) === "pending") { footprintSavedAllocationStates.set(writer, "no-resource"); }
+    throw caughtError;
+  }
   if (!(owner instanceof CurrentFootprintCopySavedNativeOwner)) { throw error("FOOTPRINT_SAVED_FACTORY"); }
   owner.bindFootprintSavedSource(writer, after); return owner;
+}
+export function currentFootprintCopySavedAllocationOutcome(writer: CurrentFootprintCopyNativeOwner): Readonly<{
+  status: "not-attempted" | "pending" | "no-resource" | "unresolved"; owner: null;
+}> | Readonly<{ status: "retained"; owner: CurrentFootprintCopySavedNativeOwner }> {
+  assertOriginalCurrentFootprintCopyNativeOwner(writer);
+  const owner = footprintSavedAllocations.get(writer);
+  return owner === undefined ? Object.freeze({ status: footprintSavedAllocationStates.get(writer) ?? "not-attempted", owner: null }) :
+    Object.freeze({ status: "retained", owner });
 }
 export function retainedCurrentFootprintCopySavedAllocation(writer: CurrentFootprintCopyNativeOwner): CurrentFootprintCopySavedNativeOwner | null {
   assertOriginalCurrentFootprintCopyNativeOwner(writer); return footprintSavedAllocations.get(writer) ?? null;
@@ -2384,6 +2464,7 @@ async function startFixedOwner(options: CurrentPcbDiagnosticInstallationOptions,
   const emptyAnchor = purpose === "worker-startup-empty209" ? new CurrentPcb209EmptyStartupBudgetAnchor() : null;
   const ratlineBudget = purpose === "worker-startup-ratline209" ? new CurrentPcb209RatlineBudget() : null;
   const continuationBudget = purpose === "worker-startup-ratline-continuation209" ? new CurrentPcb209RatlineContinuationBudget() : null;
+  if (savedWriter !== undefined) { footprintSavedAllocationStates.set(savedWriter, "unresolved"); }
   const child = spawn(installation.paths.powershellExecutable,
     ["-NoLogo", "-NoProfile", "-NonInteractive", "-ExecutionPolicy", "Bypass", "-EncodedCommand", encoded],
     { stdio: ["pipe", "pipe", "pipe"], windowsHide: true });

@@ -5,7 +5,7 @@ import { createRequire } from "node:module";
 import { test } from "node:test";
 import { runInThisContext } from "node:vm";
 import { transform } from "esbuild";
-import { CurrentFootprintCopyPreparationChannel, CurrentPcb209WorkerStartupChannel } from "../src/current-pcb-worker-startup-channel.ts";
+import { CurrentFootprintCopyExecutionChannel, CurrentFootprintCopyPreparationChannel, CurrentPcb209WorkerStartupChannel } from "../src/current-pcb-worker-startup-channel.ts";
 import type { CurrentPcbWorkerStartupNativeDependency, CurrentPcbWorkerStartupParent } from "../src/current-pcb-worker-startup-channel.ts";
 import { currentPcbWorkerStartupNativeParentCases } from "../src/current-pcb-worker-startup-native.ts";
 import { CURRENT_PCB_WORKER_STARTUP_ATTACH } from "../src/current-pcb-worker-startup-contract.ts";
@@ -14,6 +14,8 @@ import { currentFootprintCopyManagerRouteNativeCases } from "../src/current-foot
 import { currentFootprintCopyUiNativeCases } from "../src/current-footprint-copy-ui-native.ts";
 import type { CurrentFootprintCopyUiCommand } from "../src/current-footprint-copy-ui-command.ts";
 import { CURRENT_FOOTPRINT_COPY_PREPARATION_PROFILE as PROFILE } from "../src/current-footprint-copy-preparation-profile.ts";
+import { currentFootprintCopyClockRegistrationNativeCases } from "../src/current-footprint-copy-clock-registration-native.ts";
+import { CURRENT_FOOTPRINT_COPY_EXECUTION_PROFILE as EXECUTION } from "../src/current-footprint-copy-execution-profile.ts";
 
 async function clockConstructor(clock: { now: bigint }): Promise<typeof CurrentFootprintCopyPreparationChannel> {
   const path = new URL("../src/current-pcb-worker-startup-channel.ts", import.meta.url);
@@ -136,5 +138,30 @@ void test("manager route uses the existing original UI parent and consumes runti
     await value.channel.requestFootprintManagerRoute(release);
     await assert.rejects(value.channel.requestFootprintManagerRoute(release), /FOOTPRINT_MANAGER_ROUTE_SEQUENCE/u);
     assert.equal(value.channel.status().failed, false); assert.equal(value.requests.at(-1)?.["parentPhase"], "footprint-copy-manager-route-release");
+  } finally { await value.close(); }
+});
+
+void test("clock registration is execution-only and retains 37 normal requests plus one original cleanup request", async () => {
+  const cases = Array.from(currentFootprintCopyClockRegistrationNativeCases(), command => ({ ...command, sessionId: "parent" }));
+  const selected = (phase: string): typeof cases[number] => { const command = cases.find(value => value.phase === phase); assert.ok(command !== undefined); return command; };
+  for (const Constructor of [CurrentFootprintCopyPreparationChannel, CurrentPcb209WorkerStartupChannel]) {
+    const old = await fixture(Constructor); try { await assert.rejects(old.channel.requestFootprintClockRegistration(selected("initial")), /FOOTPRINT_CLOCK_REGISTRATION_PURPOSE/u); assert.equal(old.requests.length, 0); } finally { await old.close(); }
+  }
+  const value = await fixture(CurrentFootprintCopyExecutionChannel);
+  try {
+    await assert.rejects(value.channel.requestFootprintClockRegistration(selected("initial")), /FOOTPRINT_CLOCK_REGISTRATION_SEQUENCE/u);
+    await open(value); await value.channel.requestFootprintUi(select("initial"));
+    await assert.rejects(value.channel.requestFootprintClockRegistration({ ...selected("initial"), sessionId: "worker" }), /FOOTPRINT_COPY_CLOCK_REGISTRATION_WIRE_SESSION/u);
+    await value.channel.requestFootprintClockRegistration(selected("initial")); await assert.rejects(value.channel.requestFootprintClockRegistration(selected("initial")), /FOOTPRINT_CLOCK_REGISTRATION_SEQUENCE/u);
+    await assert.rejects(value.channel.requestFootprintUi(select("release")), /FOOTPRINT_UI_SEQUENCE/u);
+    for (const phase of ["source", "callback", "bindings"]) { await value.channel.requestFootprintClockRegistration(selected(phase)); await assert.rejects(value.channel.requestFootprintClockRegistration(selected(phase)), /FOOTPRINT_CLOCK_REGISTRATION_SEQUENCE/u); }
+    for (let index = 0; index < 5; index += 1) { await value.channel.requestFootprintClockRegistration(selected("sample")); }
+    await assert.rejects(value.channel.requestFootprintClockRegistration(selected("sample")), /FOOTPRINT_CLOCK_REGISTRATION_SEQUENCE/u);
+    for (let index = 0; index < 28; index += 1) { await value.channel.requestFootprintClockRegistration(selected("properties")); }
+    await assert.rejects(value.channel.requestFootprintClockRegistration(selected("properties")), /FOOTPRINT_CLOCK_REGISTRATION_SEQUENCE/u);
+    await value.channel.requestFootprintClockRegistration(selected("release")); await assert.rejects(value.channel.requestFootprintClockRegistration(selected("release")), /FOOTPRINT_CLOCK_REGISTRATION_SEQUENCE/u);
+    assert.equal(value.requests.filter(request => String(request["parentPhase"]).startsWith("footprint-copy-clock-registration-")).length, 38);
+    await value.channel.requestFootprintUi(select("release")); assert.equal(value.channel.status().failed, false);
+    assert.equal(EXECUTION.normalRequestLimit, 780); assert.equal(EXECUTION.requestLimit, 825); assert.equal(PROFILE.normalRequestLimit, 565); assert.equal(PROFILE.requestLimit, 599);
   } finally { await value.close(); }
 });

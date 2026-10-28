@@ -375,3 +375,5 @@ layout. The connected ledger retains its generation and case anchors.
 | [2026-10-23 startup assignment batch](2026-10-23-startup-assignment-batch.md) | Assignment/actor stages, opening diagnostics and active lease proof |
 | [2026-10-23 startup containment batch](2026-10-23-startup-containment-batch.md) | Original-channel observations, existing-worker attachment handling and retained diagnostics |
 | [2026-10-23 selected geometry and startup-PCB batch](2026-10-23-selected-geometry-startup-pcb-batch.md) | Selected-object DTO reader, background metadata initialization and private same-owner PCB continuation |
+
+- [2026-10-28 footprint clock integration](2026-10-28-footprint-clock-integration.md)

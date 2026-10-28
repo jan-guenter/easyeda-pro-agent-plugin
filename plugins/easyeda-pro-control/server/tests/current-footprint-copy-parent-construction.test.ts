@@ -25,7 +25,7 @@ async function constructor(): Promise<typeof CurrentFootprintParentConstructionR
   // oxlint-disable-next-line typescript/no-unsafe-type-assertion -- The actual class is loaded with only the source issuer replaced above.
   return result as typeof CurrentFootprintParentConstructionRunner;
 }
-async function fixture(): Promise<{ runner: CurrentFootprintParentConstructionRunner; commands: Command[];
+async function fixture(receiverClass = "tl"): Promise<{ runner: CurrentFootprintParentConstructionRunner; commands: Command[];
   pause: (side: "before" | "after", column?: number) => void; state: { exited: boolean; source: string; sourceError: Error | null; failResume: boolean; unsubscribed: boolean } }> {
   const Constructor = await constructor(), commands: Command[] = [], state: { exited: boolean; source: string; sourceError: Error | null; failResume: boolean; unsubscribed: boolean } =
     { exited: false, source: "synthetic-complete-manager-source", sourceError: null, failResume: false, unsubscribed: false };
@@ -42,7 +42,7 @@ async function fixture(): Promise<{ runner: CurrentFootprintParentConstructionRu
       commands.push(command);
       if (command.phase === "source") { return state.sourceError === null ? Promise.resolve({ scriptSource: state.source }) : Promise.reject(state.sourceError); }
       if (command.method === "Debugger.setBreakpoint") { return Promise.resolve({ breakpointId: command.phase, actualLocation: command.params.location }); }
-      if (command.phase === "receiver") { return Promise.resolve({ result: { type: "object", className: "sl", description: "sl", objectId: command.params.callFrameId === "frame-before" ? "project-before" : "project" } }); }
+      if (command.phase === "receiver") { return Promise.resolve({ result: { type: "object", className: receiverClass, description: receiverClass, objectId: command.params.callFrameId === "frame-before" ? "project-before" : "project" } }); }
       if (command.phase === "before" || command.phase === "after") { return Promise.resolve({ result: { type: "boolean", value: true } }); }
       if (command.phase === "resume") {
         assert.ok(listener !== null); resumeCount += 1; listener.resumed();
@@ -76,6 +76,13 @@ void test("lost original resume reply retains the later pause for generation cle
   assert.ok(value.runner.retained().held); await assert.rejects(value.runner.release());
   await assert.rejects(value.runner.observeOriginalGenerationEnded(), /generation remains alive/u);
   value.state.exited = true; await value.runner.observeOriginalGenerationEnded(); assert.ok(value.state.unsubscribed);
+});
+void test("temporary-project sl receiver is refused without resuming its constructor", async () => {
+  const value = await fixture("sl"); await value.runner.arm();
+  const work = value.runner.captureUntilHeld(); value.pause("before"); await assert.rejects(work);
+  assert.equal(value.commands.filter(command => command.phase === "resume").length, 0);
+  assert.equal(value.runner.retained().captured, false);
+  value.state.exited = true; await value.runner.observeOriginalGenerationEnded();
 });
 void test("wrong pause location or changed complete source stops without a speculative parent resume", async () => {
   const wrong = await fixture(); await wrong.runner.arm(); const work = wrong.runner.captureUntilHeld(); wrong.pause("before", 125_908);

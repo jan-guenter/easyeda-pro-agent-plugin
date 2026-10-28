@@ -114,8 +114,19 @@ native getter/open identities and unchanged project assignments bind the two
 cache namespace arguments to the retained native Cache results. A namespace
 label or an after-the-fact object inspection cannot replace that event history.
 These debugger pauses affect application timing. This purpose shares the private
-execution envelope of 743 normal requests and 44 cleanup requests, 787 total;
+execution envelope of 780 normal requests and 45 cleanup requests, 825 total;
 this does not reserve or enable a complete writer lifecycle.
+
+The parent capture pins ordinary local-project `tl.open`. The temporary-project
+`sl.open` path is a separate constructor and is not admitted by this purpose.
+The combined observation also retains the actual ws-service clock RPC task,
+original wrapper/callback and native Date.now. It samples fresh lexical Jd scope
+wrappers during registration and once again after the final Windows-clock
+observation. The fixed parent grammar reserves 37 normal requests and one cleanup
+request for registration and up to four later samples. These samples do not
+observe the document's own clock invocation, prove responder exclusivity or
+establish Electron-main backend ownership. Release this clock child before its
+original UI route; partial capture retains the child for cleanup.
 
 After capture, current assignments and actor observation, `observe-footprint-route` runs the fixed
 original-owner route observation and publishes its result or retained failure.

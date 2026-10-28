@@ -167,3 +167,54 @@ The second CI run completed with 13,344 passing tests, those four fixture
 failures, zero cancelled tests and five expected platform skips. All other seven
 facade shards, the build and 424 bridge tests passed. Full logs and the exact
 2,221-file artifact comparison are retained for this failed candidate.
+
+## Publication and installation, 2026-10-28
+
+Final candidate `13e424df37cc58384b073001b43281eb2bd3f04c` passed all eight facade
+shards, the build and aggregate gate in Linux CI40707828704, plus Windows
+CI40707828706. The facade totals were 13,348 passed, zero failures/cancellations
+and five expected platform skips out of 13,353 tests. All 424 bridge tests passed.
+The complete CI artifact matched all 2,221 committed plugin files and modes.
+
+[PR141](https://github.com/jan-guenter/easyeda-pro-agent-plugin/pull/141) merged as
+`8a90860ea6b4d73377507e39765fe1520825b145`. Its complete tree
+`8d2f3405addaaf20826ef0c0b15b1274d243f306` equals the tested candidate tree.
+The batch changes 93 files. Main Windows CI40710473003 passed; main Linux
+CI40710472958 was running when this installation record was written. The exact
+PR payload already passed all required checks; no additional local full suite
+was started.
+
+The official CLI upgraded only marketplace `easyeda-pro-agent` from
+`https://github.com/jan-guenter/easyeda-pro-agent-plugin.git`, under umask022.
+Its first attempt timed out during the Windows-mounted checkout after 30 seconds;
+the previous enabled version remained installed. A second official upgrade with
+process-local Git `checkout.workers=8` and `checkout.thresholdForParallelism=0`
+succeeded. No persistent Git configuration or installed cache was patched.
+The unrelated CLI stale-arg0 cleanup warning remained nonfatal on success.
+
+Marketplace HEAD equals merged main. Version `0.3.0+codex.20261028134521` is
+installed and enabled. The maintained comparison verified all 2,221 files,
+43,769,214 bytes and 42 directories against the committed plugin subtree
+`61da6f08f6362c07b21430bcebde06b7d9eaf845`, including exact modes and no extra files.
+The installed inventory SHA256 is
+`b2f6c49d5b4066a72cfb7f254999a8775e7172fde3193afe6e197707bee7c1b2`.
+
+The installed dependency-free offline probe completed 38 catalog queries,
+reported 27 exposed tools and closed its owned child through stdin EOF with
+exit0 and empty stderr. It selected only its synthetic profile, sampled no
+upstream descendant or non-stdio socket, and did not claim continuous isolation
+or connected runtime admission. All seven packaged skills were verified earlier.
+
+The loaded host still belongs to the previous111845 generation. A fresh Codex
+session must load134521 and admit its actual process before the next disposable
+probe. No new live writer is validated by these release checks. The completed
+111845 probe remains terminal released; never replay it. Production designs were
+not accessed. Remaining implementation and validation work is listed above.
+
+This local publication appendix is retained for the next substantive commit;
+the released package remains exactly the tested merged tree.
+
+Main Linux CI40710472958 subsequently completed successfully for exact merged
+commit8a90860, including all eight facade shards, build and aggregate gate.
+The next session independently admitted the actual134521 process and all
+installed source/runtime members before starting a new disposable operation.

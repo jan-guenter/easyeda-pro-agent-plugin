@@ -41,11 +41,15 @@ export interface CurrentFootprintCopyExecutionQualification {
 /** Tokens are retained native references, never persisted JSON or booleans.
  * requireTermination must prove original root exit and complete Job emptiness. */
 type Termination = Readonly<{ status: "pending" }> | Readonly<{ status: "terminated"; original: object }>;
+export type CurrentFootprintCopySavedStartOutcome = "not-started" | "pending" | "no-resource" | "retained" | "unresolved";
 export interface CurrentFootprintCopySavedExecutionNative {
   readonly generation: object;
   readonly assertOwned: () => void;
   /** This owner is allocated and retained before its first native launch. */
   readonly start: (projection: CurrentFootprintCopyV2SavedProjection, after: Inventory) => Promise<void>;
+  /** Original allocation outcome, including admission failure before spawn.
+   * No-resource grants no termination, release or saved-content evidence. */
+  readonly startOutcome: () => CurrentFootprintCopySavedStartOutcome;
   readonly excludeReplay: () => Promise<object>;
   readonly requireReplayExclusion: (original: object) => Promise<void>;
   /** Must check original post-edit bytes and both upload-cache namespaces
@@ -89,7 +93,7 @@ export interface CurrentFootprintCopyExecutionNative {
 }
 const nativeFields = ["generation", "nativeGeneration", "assertOwned", "qualify", "requireQualification", "publish", "create", "close",
   "termination", "requireTermination", "snapshot", "verifyClockClosure", "release", "observeRelease", "verification"] as const;
-const verificationFields = ["generation", "assertOwned", "start", "excludeReplay", "requireReplayExclusion", "open", "close",
+const verificationFields = ["generation", "assertOwned", "start", "startOutcome", "excludeReplay", "requireReplayExclusion", "open", "close",
   "termination", "requireTermination", "snapshot", "release", "observeRelease"] as const;
 const cleanupPhases = new Set<CurrentFootprintCopyExecutionPhase>(["close-writer", "observe-writer-exit", "release-writer",
   "close-verification", "observe-verification-exit", "release-verification"]);
@@ -189,6 +193,7 @@ export class CurrentFootprintCopyExecutionCoordinator {
   #verificationTermination: object | null = null;
   #verificationReleaseAttempted = false;
   #verificationReleasePolls = 0;
+  #verificationNoResource = false;
   #finalEquality = false;
   public constructor(owner: CurrentFootprintCopyExecutionOwner) {
     need(owner !== null && typeof owner === "object" && !types.isProxy(owner) && owners.has(owner) &&
@@ -321,8 +326,22 @@ export class CurrentFootprintCopyExecutionCoordinator {
     const verification = this.#native.verification();
     this.#verificationFields = fields(verification, verificationFields, 1);
     need(verification.generation !== this.#native.nativeGeneration, "FRESH_GENERATION"); this.#verification = verification;
-    this.#verificationCurrent(); await this.#record("verification-start-intent", { afterSqlSha256: this.#after.logicalSha256 });
-    this.#workCurrent(); await verification.start(this.#projection, this.#after); this.#verificationCurrent(); this.#phase = "exclude-replay";
+    try {
+      this.#verificationCurrent(); await this.#record("verification-start-intent", { afterSqlSha256: this.#after.logicalSha256 });
+      this.#workCurrent(); await verification.start(this.#projection, this.#after);
+    }
+    catch (error) {
+      this.#verificationCurrent();
+      const outcome = verification.startOutcome(); this.#verificationCurrent();
+      if (outcome === "no-resource" || outcome === "not-started") {
+        this.#verificationNoResource = true;
+        await this.#record("verification-not-allocated", { startAttemptConsumed: outcome === "no-resource", startOutcome: outcome, retryAllowed: false,
+          nativeGenerationAllocated: false, nativeTerminationObserved: false, nativeReleaseObserved: false, savedContentVerified: false });
+      }
+      throw error;
+    }
+    this.#verificationCurrent(); need(verification.startOutcome() === "retained", "VERIFICATION_ALLOCATION_REQUIRED");
+    this.#phase = "exclude-replay";
   }
   async #excludeReplay(): Promise<void> {
     const verification = this.#verificationCurrent();
@@ -407,7 +426,7 @@ export class CurrentFootprintCopyExecutionCoordinator {
       return this.status();
     } catch (error) {
       this.#failed = true; this.#failures.push(error);
-      if (this.#writerReleased && this.#clockReleased && this.#verification === null || this.#verificationReleased) { this.#phase = "failed-closed"; }
+      if (this.#writerReleased && this.#clockReleased && (this.#verification === null || this.#verificationNoResource) || this.#verificationReleased) { this.#phase = "failed-closed"; }
       else if (!cleanupPhases.has(this.#phase)) {
         this.#phase = this.#verification === null ? "close-writer" : "close-verification";
       }
@@ -416,7 +435,7 @@ export class CurrentFootprintCopyExecutionCoordinator {
   }
   public status(): Readonly<{ phase: CurrentFootprintCopyExecutionPhase; busy: boolean; failed: boolean;
     createAttempted: boolean; nativeReplyRetained: boolean; nativeReplySha256: string | null;
-    writerGenerationClosed: boolean; writerReleased: boolean; verificationGenerationClosed: boolean; verificationReleased: boolean;
+    writerGenerationClosed: boolean; writerReleased: boolean; verificationGenerationClosed: boolean; verificationReleased: boolean; verificationNoResource: boolean;
     completeClosedSqlEffectVerified: boolean; savedContentVerified: boolean; finalClosedSqlEqual: boolean;
     persistentUploadReplayExcluded: boolean; explicitSaveDispatched: false; callbacksCompleted: false; executionAuthorized: false;
     nativeExecutionMounted: false; journalRecords: number; failureCount: number; cleanupPending: boolean; clockReleased: boolean }> {
@@ -424,6 +443,7 @@ export class CurrentFootprintCopyExecutionCoordinator {
       nativeReplyRetained: this.#rawCreate !== null, nativeReplySha256: this.#rawCreate === null ? null : sha256Text(this.#rawCreate),
       writerGenerationClosed: this.#writerClosed, writerReleased: this.#writerReleased,
       verificationGenerationClosed: this.#verificationClosed, verificationReleased: this.#verificationReleased,
+      verificationNoResource: this.#verificationNoResource,
       completeClosedSqlEffectVerified: this.#projection !== null, savedContentVerified: this.#saved !== null, finalClosedSqlEqual: this.#finalEquality,
       persistentUploadReplayExcluded: this.#replay !== null && this.#savedReader !== null, explicitSaveDispatched: false,
       callbacksCompleted: false, executionAuthorized: false, nativeExecutionMounted: false, journalRecords: this.#records,

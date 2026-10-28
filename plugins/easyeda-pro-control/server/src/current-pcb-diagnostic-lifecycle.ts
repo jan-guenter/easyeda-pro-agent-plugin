@@ -177,7 +177,8 @@ export type CurrentPcbStringPrecreateLifecycleOwner = CurrentPcbDiagnosticLifecy
 export type CurrentPcbWorkerStartupLifecycleOwner = CurrentPcbDiagnosticLifecycleOwner & StartupOwnerMethods & Partial<StartupEmptyOwnerMethods & StartupRatlineOwnerMethods & StartupContinuationOwnerMethods>;
 type StartupFootprintUiMethods = Pick<CurrentFootprintCopyPreparationOwner, "observeFootprintCopyUi" | "requireFootprintCopyUi" | "retainedFootprintCopyUi" |
   "observeFootprintCopyManagerRoute" | "requireFootprintCopyManagerRoute" | "retainedFootprintCopyManagerRoute">;
-type StartupFootprintRouteMethods = Pick<CurrentFootprintCopyNativeOwner, "observeFootprintCopyWindowsClock" | "joinFootprintCopyManagerPeer">;
+type StartupFootprintRouteMethods = Pick<CurrentFootprintCopyNativeOwner, "observeFootprintCopyWindowsClock" | "joinFootprintCopyManagerPeer" |
+  "observeFootprintCopyClockRegistration" | "sampleFootprintCopyClockRegistration" | "retainedFootprintCopyClockRegistration" | "releaseFootprintCopyClockRegistration">;
 type LifecycleOwner = CurrentPcbDiagnosticLifecycleOwner & Partial<StartupFootprintRouteMethods & StartupFootprintUiMethods & StringOwnerMethods & StartupOwnerMethods & StartupEmptyOwnerMethods & StartupRatlineOwnerMethods & StartupContinuationOwnerMethods>;
 export interface CurrentPcb209StartupEmptyPreparation {
   /** The enclosing lifecycle must durably consume PCB navigation intent before
@@ -1237,7 +1238,8 @@ class CurrentPcbLifecycleCore {
       const observeUi = retained.methods.observeFootprintCopyUi, reproveUi = retained.methods.requireFootprintCopyUi;
       const joinPeer = retained.methods.joinFootprintCopyManagerPeer, observeManager = retained.methods.observeFootprintCopyManagerRoute;
       const windows = retained.methods.observeFootprintCopyWindowsClock;
-      requireValue(observeUi !== undefined && reproveUi !== undefined && observeManager !== undefined && joinPeer !== undefined && windows !== undefined,
+      const clockRegistration = retained.methods.observeFootprintCopyClockRegistration, sampleClockRegistration = retained.methods.sampleFootprintCopyClockRegistration;
+      requireValue(observeUi !== undefined && reproveUi !== undefined && observeManager !== undefined && joinPeer !== undefined && windows !== undefined && clockRegistration !== undefined && sampleClockRegistration !== undefined,
         "FOOTPRINT_ROUTE_OWNER_REQUIRED");
       const before = checkpoint.commonInventory, completion = readerCompletion(before);
       const current = (): void => {
@@ -1259,7 +1261,8 @@ class CurrentPcbLifecycleCore {
         const requests = CURRENT_FOOTPRINT_COPY_PREPARATION_PROFILE.requests.bindings + CURRENT_FOOTPRINT_COPY_PREPARATION_PROFILE.requests.dependencies +
           CURRENT_FOOTPRINT_COPY_PREPARATION_PROFILE.requests.uiObserve + CURRENT_FOOTPRINT_COPY_PREPARATION_PROFILE.requests.uiReprove +
           CURRENT_FOOTPRINT_COPY_PREPARATION_PROFILE.requests.managerRoute + CURRENT_FOOTPRINT_COPY_EXECUTION_PROFILE.requests.asyncAndHandoff +
-          CURRENT_FOOTPRINT_COPY_EXECUTION_PROFILE.requests.destinations + 18 + CURRENT_FOOTPRINT_COPY_EXECUTION_PROFILE.requests.cacheConstructionDelegates;
+          CURRENT_FOOTPRINT_COPY_EXECUTION_PROFILE.requests.destinations + 18 + CURRENT_FOOTPRINT_COPY_EXECUTION_PROFILE.requests.cacheConstructionDelegates +
+          CURRENT_FOOTPRINT_COPY_EXECUTION_PROFILE.requests.clockRegistration;
         requireValue(channel !== undefined && channel !== null && channel.started && !channel.failed && !channel.released && channel.pendingReplies === 0 &&
           Number.isSafeInteger(channel.nextRequestId) && channel.nextRequestId >= 1 &&
           channel.nextRequestId + requests - 1 <= CURRENT_FOOTPRINT_COPY_EXECUTION_PROFILE.normalRequestLimit, "FOOTPRINT_ROUTE_CAPACITY");
@@ -1295,6 +1298,8 @@ class CurrentPcbLifecycleCore {
         stage = "ui";
         const ui = await observeUi.call(retained.owner, opened.opening, opened.result); evidence["ui"] = ui; current();
         await reproveUi.call(retained.owner, ui); current();
+        stage = "clock-registration";
+        const registration = await clockRegistration.call(retained.owner, opened.opening, opened.result); evidence["clockRegistration"] = registration; current();
         stage = "manager";
         const manager = await observeManager.call(retained.owner, opened.opening, opened.result); evidence["manager"] = manager; current();
         stage = "peer";
@@ -1303,6 +1308,8 @@ class CurrentPcbLifecycleCore {
         await footprintRouteMethods.reproof.call(opened.opening, opened.result, assignments, state, producers, dependencies, callbacks, destinations); current();
         stage = "windows-clock";
         const windowsClock = await windows.call(retained.owner, "before"); evidence["windowsClock"] = windowsClock; current();
+        stage = "clock-registration-sample";
+        const finalRegistration = await sampleClockRegistration.call(retained.owner, registration); evidence["clockRegistrationFinalSample"] = finalRegistration; current();
         packet = currentFootprintCopyRouteObservationSchema.parse({ profile: "private.current-footprint-copy-route-preparation.v1", ...evidence,
           originalManagerWorkerPeerMatched: true, finalOriginalWorkerObservationsReproved: true, documentClocksArmed: false, createDispatched: false,
           callbacksCompleted: false, backendDynamicDispatchQualified: false, executionAuthorized: false, saveAuthorized: false, persistenceVerified: false });
@@ -1959,6 +1966,9 @@ class CurrentPcbLifecycleCore {
     if (this.#generation === "209-startup-footprint-route") {
       requireValue(typeof retained.methods.observeFootprintCopyWindowsClock === "function" && retained.owner.observeFootprintCopyWindowsClock === retained.methods.observeFootprintCopyWindowsClock &&
         typeof retained.methods.joinFootprintCopyManagerPeer === "function" && retained.owner.joinFootprintCopyManagerPeer === retained.methods.joinFootprintCopyManagerPeer, "FOOTPRINT_ROUTE_OWNER_CHANGED");
+      for (const name of ["observeFootprintCopyClockRegistration", "sampleFootprintCopyClockRegistration", "retainedFootprintCopyClockRegistration", "releaseFootprintCopyClockRegistration"] as const) {
+        requireValue(typeof retained.methods[name] === "function" && retained.owner[name] === retained.methods[name], "FOOTPRINT_CLOCK_REGISTRATION_OWNER_CHANGED");
+      }
     }
     if (this.#generation === "209-startup-ratline") {
       requireValue(typeof retained.methods.prepareWorkerStartupRatlineSession209 === "function" &&
@@ -2178,7 +2188,9 @@ class CurrentPcbLifecycleCore {
         requireFootprintCopyUi: owner.requireFootprintCopyUi, retainedFootprintCopyUi: owner.retainedFootprintCopyUi,
         observeFootprintCopyManagerRoute: owner.observeFootprintCopyManagerRoute, requireFootprintCopyManagerRoute: owner.requireFootprintCopyManagerRoute,
         retainedFootprintCopyManagerRoute: owner.retainedFootprintCopyManagerRoute } : {}),
-      ...(this.#generation === "209-startup-footprint-route" ? { observeFootprintCopyWindowsClock: owner.observeFootprintCopyWindowsClock, joinFootprintCopyManagerPeer: owner.joinFootprintCopyManagerPeer } : {}),
+      ...(this.#generation === "209-startup-footprint-route" ? { observeFootprintCopyWindowsClock: owner.observeFootprintCopyWindowsClock, joinFootprintCopyManagerPeer: owner.joinFootprintCopyManagerPeer,
+        observeFootprintCopyClockRegistration: owner.observeFootprintCopyClockRegistration, sampleFootprintCopyClockRegistration: owner.sampleFootprintCopyClockRegistration,
+        retainedFootprintCopyClockRegistration: owner.retainedFootprintCopyClockRegistration, releaseFootprintCopyClockRegistration: owner.releaseFootprintCopyClockRegistration } : {}),
       ...(this.#generation === "209-startup-ratline" ? { prepareWorkerStartupRatlineSession209: owner.prepareWorkerStartupRatlineSession209 } : {}),
       ...(this.#generation === "209-startup-ratline-continuation" ? { prepareWorkerStartupRatlineContinuationSession209: owner.prepareWorkerStartupRatlineContinuationSession209 } : {}),
       ...(startup209(this.#generation) ? { requireWorkerStartupEmptyDependency209: owner.requireWorkerStartupEmptyDependency209,

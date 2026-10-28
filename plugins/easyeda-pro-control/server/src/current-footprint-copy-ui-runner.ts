@@ -13,6 +13,9 @@ import type { CurrentFootprintCopyUiSourceQualification } from "./current-footpr
 import { captureCurrentPcbStringClockReply } from "./current-pcb-string-clock-reply.ts";
 import { CurrentFootprintCopyManagerRouteRunner } from "./current-footprint-copy-manager-route-runner.ts";
 import type { CurrentFootprintCopyManagerRouteTransport } from "./current-footprint-copy-manager-route-runner.ts";
+import { CurrentFootprintCopyClockRegistrationRunner } from "./current-footprint-copy-clock-registration-runner.ts";
+import type { CurrentFootprintCopyClockRegistrationTransport } from "./current-footprint-copy-clock-registration-runner.ts";
+import type { CurrentFootprintCopyClockRegistrationCommand } from "./current-footprint-copy-clock-registration-contract.ts";
 
 const handle = z.string().min(1).max(256).regex(/^[A-Za-z\d_.:-]+$/u);
 const bindingSchema = z.object({ sessionId: handle.max(128), uniqueContextId: handle.max(128), scriptId: handle,
@@ -51,7 +54,7 @@ export const currentFootprintCopyUiObservationSchema = z.object({
 }).strict();
 interface Retained { readonly notification: string; readonly wrapper: string; readonly responder: string; readonly route: string }
 function need(value: boolean): asserts value { if (!value) { throw new Error("FOOTPRINT_COPY_UI_OWNER"); } }
-function methods(value: CurrentFootprintCopyUiTransport): readonly unknown[] {
+function methods(value: object): readonly unknown[] {
   need(!types.isProxy(value) && (Object.getPrototypeOf(value) === Object.prototype || Object.getPrototypeOf(value) === null));
   need(Reflect.ownKeys(value).length === 2);
   return Object.freeze(["assertCurrent", "request"].map(key => {
@@ -78,6 +81,7 @@ export class CurrentFootprintCopyUiRunner {
   #releaseAttempted = false;
   #released = false;
   #managerRouteIssued = false;
+  #clockRegistrationIssued = false;
   public constructor(source: CurrentFootprintCopyUiSourceQualification, transport: CurrentFootprintCopyUiTransport,
     binding: CurrentFootprintCopyUiBinding) {
     requireCurrentFootprintCopyUiSource(source); this.#source = source;
@@ -137,6 +141,20 @@ export class CurrentFootprintCopyUiRunner {
     return new CurrentFootprintCopyManagerRouteRunner(this.#source, transport, { sessionId: this.#binding.sessionId,
       uiScriptId: this.#binding.scriptId, uiRoute: this.#retained.route, projectUuid: this.#binding.projectUuid,
       branchUuid: this.#binding.branchUuid, windowTabId: this.#binding.windowTabId });
+  }
+  /** The child retains this owner's original UI route. Its separately reserved
+   * requests observe registration and offset only, never a document clock. */
+  public createClockRegistration(packet: CurrentFootprintCopyUiObservation, transport: CurrentFootprintCopyClockRegistrationTransport): CurrentFootprintCopyClockRegistrationRunner {
+    this.#same(); need(!this.#busy && !this.#clockRegistrationIssued && this.#packet !== null && packet === this.#packet && this.#retained !== null);
+    this.#clockRegistrationIssued = true;
+    const originalMethods = methods(transport);
+    const same = (): void => { this.#same(); need(!this.#busy && packet === this.#packet && methods(transport).every((item, index) => item === originalMethods[index])); };
+    const original: CurrentFootprintCopyClockRegistrationTransport = Object.freeze({
+      assertCurrent: async (): Promise<void> => { same(); await this.#current(); same(); await transport.assertCurrent(); same(); },
+      request: (command: CurrentFootprintCopyClockRegistrationCommand): Promise<unknown> => { same(); need(command.sessionId === this.#binding.sessionId); return transport.request(command); },
+    });
+    return new CurrentFootprintCopyClockRegistrationRunner(this.#source, original, { sessionId: this.#binding.sessionId,
+      uiRoute: this.#retained.route, projectUuid: this.#binding.projectUuid, branchUuid: this.#binding.branchUuid, windowTabId: this.#binding.windowTabId });
   }
   public async observe(): Promise<CurrentFootprintCopyUiObservation> {
     need(!this.#attempted && !this.#busy); this.#attempted = true; this.#busy = true;
