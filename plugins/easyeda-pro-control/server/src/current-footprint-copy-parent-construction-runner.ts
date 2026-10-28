@@ -25,7 +25,10 @@ const bindingSchema = z.object({ sessionId: token, uniqueContextId: token, manag
   projectUuid: z.string().regex(/^[a-f\d]{64}$/u), windowTabId: z.string().regex(/^[A-Za-z\d_-]{1,128}$/u) }).strict();
 // oxlint-disable-next-line typescript/unbound-method -- Call the captured implementation only with the validated original peer receiver.
 const requirePeerParent = CurrentFootprintParentWorkerRunner.prototype.requireOriginalHeldParent;
-function fail(code: string): Error { return new Error(`FOOTPRINT_PARENT_CONSTRUCTION_${code}`); }
+const issuedFailures = new WeakMap<Error, string>();
+function fail(code: string): Error {
+  const error = new Error(`FOOTPRINT_PARENT_CONSTRUCTION_${code}`); issuedFailures.set(error, code); return error;
+}
 function need(value: boolean, code: string): asserts value { if (!value) { throw fail(code); } }
 async function bounded<T>(promise: Promise<T>, milliseconds: number): Promise<T> {
   let timer: ReturnType<typeof setTimeout> | undefined;
@@ -53,6 +56,15 @@ interface Pause {
   resumeObserved: boolean;
 }
 interface Breakpoint { readonly id: string; removalAttempted: boolean; removed: boolean }
+type ParentPhase = "idle" | "waiting-before" | "waiting-after" | "held" | Command["phase"];
+interface ParentFailure {
+  readonly code: string;
+  readonly phase: ParentPhase;
+  readonly expectedPause: "before" | "after" | "none";
+  readonly observedPause: "before" | "after" | null;
+  readonly requests: number;
+  readonly replies: number;
+}
 export class CurrentFootprintParentConstructionRunner {
   readonly #transport: Transport;
   readonly #members: readonly unknown[];
@@ -70,6 +82,8 @@ export class CurrentFootprintParentConstructionRunner {
   #activePause: Pause | null = null;
   #heldBinding: Held | null = null;
   #failed: Error | null = null;
+  #phase: ParentPhase = "idle";
+  #firstFailure: ParentFailure | null = null;
   #unsubscribe: (() => void) | null = null;
   #holdTimer: ReturnType<typeof setTimeout> | undefined;
   #armAttempted = false;
@@ -104,6 +118,14 @@ export class CurrentFootprintParentConstructionRunner {
   #live(): void { this.#same(); if (this.#failed !== null) { throw this.#failed; } need(!this.#released && !this.#generationEnded, "ENDED"); }
   async #current(): Promise<void> { this.#live(); await bounded(this.#owner(), LIMITS.ownerMs); this.#live(); }
   #refuse(error: unknown): void {
+    if (this.#firstFailure === null) {
+      // These labels come only from our fixed errors. Never publish a native
+      // Exception message, actor value, source text or remote object handle.
+      const issued = error instanceof Error ? issuedFailures.get(error) : undefined;
+      const code = issued ?? (error instanceof z.ZodError ? "REPLY_SCHEMA" : "DEPENDENCY_FAILURE");
+      this.#firstFailure = Object.freeze({ code, phase: this.#phase, expectedPause: this.#expected,
+        observedPause: this.#activePause?.side ?? null, requests: this.#requests, replies: this.#raw.length });
+    }
     this.#failed ??= error instanceof Error ? error : fail("EVENT");
     clearTimeout(this.#holdTimer);
     this.#before.reject(this.#failed); this.#after.reject(this.#failed); this.#held.reject(this.#failed); this.#activePause?.resumed.reject(this.#failed);
@@ -127,6 +149,7 @@ export class CurrentFootprintParentConstructionRunner {
     current.resumeObserved = true; current.resumed.resolve(null); this.#activePause = null;
   }
   async #request(command: Command): Promise<unknown> {
+    this.#phase = command.phase;
     await this.#current(); need(this.#operationRequests < this.#limit, "BUDGET"); this.#operationRequests += 1; this.#requests += 1;
     const raw = await bounded(this.#send(command), LIMITS.requestMs);
     const reply = command.phase === "source" ? captureCurrentFootprintCopyManagerRouteSourceReply(raw) : captureCurrentPcbStringClockReply(raw).value;
@@ -176,13 +199,16 @@ export class CurrentFootprintParentConstructionRunner {
   public async captureUntilHeld(): Promise<Held> {
     need(this.#armed && !this.#captureAttempted && !this.#busy, "CAPTURE_CONSUMED"); this.#captureAttempted = true; this.#begin(); this.#limit = REQUESTS.capture; this.#operationRequests = 0;
     try {
+      this.#phase = "waiting-before";
       const before = await bounded(this.#before.promise, LIMITS.pauseMs); await this.#current();
       const original = await this.#receiver(before); await this.#relation("before", original); await this.#remove("before");
       this.#expected = "after"; await this.#resume(before);
+      this.#phase = "waiting-after";
       const after = await bounded(this.#after.promise, LIMITS.pauseMs); await this.#current();
       const receiver = await this.#receiver(after); await this.#relation("after", receiver, original); await this.#remove("after");
       need(this.#operationRequests === REQUESTS.capture && this.#activePause === after && !after.resumeAttempted, "HOLD_STATE");
       this.#heldBinding = Object.freeze({ parentSessionId: this.#binding.sessionId, parentUniqueContextId: this.#binding.uniqueContextId, projectObjectId: receiver });
+      this.#phase = "held";
       this.#holdTimer = setTimeout(() => { this.#refuse(fail("HOLD_DEADLINE")); }, LIMITS.holdMs);
       this.#held.resolve(this.#heldBinding); return this.#heldBinding;
     } catch (error) { this.#refuse(error); throw error; } finally { this.#end(); }
@@ -216,6 +242,12 @@ export class CurrentFootprintParentConstructionRunner {
     return Object.freeze({ armed: this.#armed, captured: this.#heldBinding !== null, held: this.#activePause !== null, resumeAttempted: this.#resumeAttempted,
       resumed: this.#resumed, failed: this.#failed !== null, requests: this.#requests, released: this.#released,
       originalGenerationEnded: this.#generationEnded, replies: Object.freeze([...this.#raw]) });
+  }
+  public diagnostics(): Readonly<{ phase: ParentPhase; firstFailure: ParentFailure | null; armed: boolean;
+    captured: boolean; held: boolean; resumed: boolean; requests: number; replies: number }> {
+    return Object.freeze({ phase: this.#phase, firstFailure: this.#firstFailure, armed: this.#armed,
+      captured: this.#heldBinding !== null, held: this.#activePause !== null, resumed: this.#resumed,
+      requests: this.#requests, replies: this.#raw.length });
   }
   public async release(): Promise<void> {
     need(!this.#busy && this.#resumed && !this.#releaseAttempted, "RELEASE"); this.#releaseAttempted = true; this.#begin(); this.#limit = REQUESTS.release; this.#operationRequests = 0;

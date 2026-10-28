@@ -15,7 +15,7 @@ const fun=(o,k)=>{const f=own(o,k);if(typeof f!=="function")bad();return f;};
 const method=(c,k)=>{const p=own(c,"prototype"),f=fun(p,k),d=Object.getOwnPropertyDescriptor(p,k);if(!d||d.writable!==true||d.enumerable!==false||d.configurable!==true)bad();return f;};
 const chain=(o,names)=>{const out=[];let p=proto(o);for(const name of names){const c=fun(bindings,name);if(p!==own(c,"prototype")||own(p,"constructor")!==c)bad();out.push(p);p=proto(p);}if(p!==Object.prototype)bad();return out;};
 const resolved=(o,levels,k,index)=>{absent(o,k);for(let i=0;i<index;i++)absent(levels[i],k);return own(levels[index],k);};
-const bindings=own(this,"object");array(dependencies,56);array(callbacks,14);
+const bindings=own(this,"object");array(dependencies,69);array(callbacks,14);
 if(own(globalThis,"PROJECT")!==project||own(project,"workerBus")!==bus||own(project,"footprint")!==manager||own(project,"consistencyManager")!==consistency||own(manager,"projectManager")!==project)bad();
 const projectLevels=chain(project,["Lg","Gd"]);
 if(own(bindings,"jr")!==false||own(bindings,"ln")!==true)bad();
@@ -25,7 +25,7 @@ for(const key of ["isTemporary","isHistoryBack","_isV2Format","isUploadingCloud"
 if(own(project,"isReady")!==true)bad();
 for(const[key,index]of [["onHeadChange",39],["uploadCloud",35],["batchUploadCloud",36],["publishUploadPending",37]])if(resolved(project,projectLevels,key,key==="onHeadChange"?0:1)!==own(dependencies,String(index)))bad();
 const cache=own(project,"cache"),localCache=own(project,"localCache");
-if(cache!==own(dependencies,"54")||localCache!==own(dependencies,"55")||localCache!==own(callbacks,"12")||cache!==own(callbacks,"13"))bad();
+if(cache!==own(dependencies,"61")||localCache!==own(dependencies,"62")||localCache!==own(callbacks,"12")||cache!==own(callbacks,"13"))bad();
 for(const[key,index,set]of [["task1",6,true],["task2",7,true],["task3",8,true],["cachePromise",9,true],["bufferUploadData",10,false],["bufferUploadCache",11,false]]){const value=own(project,key),p=set?Set.prototype:Map.prototype,d=Object.getOwnPropertyDescriptor(p,"size");if(value!==own(callbacks,String(index))||proto(value)!==p||Reflect.ownKeys(value).length!==0||!d||typeof d.get!=="function"||Object.hasOwn(d,"value")||Reflect.apply(d.get,value,[])!==0)bad();}
 const api=fun(bindings,"Re");if(api!==fun(bindings,"mc"))bad();const instance=own(api,"tool");if(instance===null||proto(instance)!==own(api,"prototype")||own(own(api,"prototype"),"constructor")!==api)bad();
 const history=own(instance,"projectHistory"),branchApi=own(instance,"branch"),historyLevels=chain(history,["_d","rs"]),branchLevels=chain(branchApi,["bd","rs"]);

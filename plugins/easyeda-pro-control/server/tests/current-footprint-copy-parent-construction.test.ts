@@ -26,8 +26,9 @@ async function constructor(): Promise<typeof CurrentFootprintParentConstructionR
   return result as typeof CurrentFootprintParentConstructionRunner;
 }
 async function fixture(): Promise<{ runner: CurrentFootprintParentConstructionRunner; commands: Command[];
-  pause: (side: "before" | "after", column?: number) => void; state: { exited: boolean; source: string; failResume: boolean; unsubscribed: boolean } }> {
-  const Constructor = await constructor(), commands: Command[] = [], state = { exited: false, source: "synthetic-complete-manager-source", failResume: false, unsubscribed: false };
+  pause: (side: "before" | "after", column?: number) => void; state: { exited: boolean; source: string; sourceError: Error | null; failResume: boolean; unsubscribed: boolean } }> {
+  const Constructor = await constructor(), commands: Command[] = [], state: { exited: boolean; source: string; sourceError: Error | null; failResume: boolean; unsubscribed: boolean } =
+    { exited: false, source: "synthetic-complete-manager-source", sourceError: null, failResume: false, unsubscribed: false };
   let listener: Parameters<Transport["subscribe"]>[0] | null = null, resumeCount = 0;
   const pause = (side: "before" | "after", column: number = SITES[side].columnNumber): void => {
     assert.ok(listener !== null); listener.paused({ reason: "other", hitBreakpoints: [`breakpoint-${side}`], callFrames: [{ functionName: "open", callFrameId: `frame-${side}`,
@@ -39,7 +40,7 @@ async function fixture(): Promise<{ runner: CurrentFootprintParentConstructionRu
     subscribe: selected => { listener = selected; return () => { state.unsubscribed = true; }; },
     request: command => {
       commands.push(command);
-      if (command.phase === "source") { return Promise.resolve({ scriptSource: state.source }); }
+      if (command.phase === "source") { return state.sourceError === null ? Promise.resolve({ scriptSource: state.source }) : Promise.reject(state.sourceError); }
       if (command.method === "Debugger.setBreakpoint") { return Promise.resolve({ breakpointId: command.phase, actualLocation: command.params.location }); }
       if (command.phase === "receiver") { return Promise.resolve({ result: { type: "object", className: "sl", description: "sl", objectId: command.params.callFrameId === "frame-before" ? "project-before" : "project" } }); }
       if (command.phase === "before" || command.phase === "after") { return Promise.resolve({ result: { type: "boolean", value: true } }); }
@@ -99,4 +100,29 @@ void test("original root and Job exit settles a pending constructor wait without
   assert.equal(value.runner.retained().released, true);
   assert.ok(value.state.unsubscribed);
   await assert.rejects(value.runner.captureUntilHeld(), /CAPTURE_CONSUMED/u);
+});
+
+void test("parent diagnostics retain the first fixed location refusal through failed and completed termination cleanup", async () => {
+  const value = await fixture(); await value.runner.arm();
+  const work = value.runner.captureUntilHeld(); value.pause("before", 125_908); await assert.rejects(work, /PAUSE_LOCATION/u);
+  const first = value.runner.diagnostics().firstFailure;
+  assert.deepEqual(first, { code: "PAUSE_LOCATION", phase: "waiting-before", expectedPause: "before", observedPause: null, requests: 3, replies: 4 });
+  assert.ok(Object.isFrozen(first));
+  await assert.rejects(value.runner.observeOriginalGenerationEnded());
+  assert.equal(value.runner.diagnostics().firstFailure, first);
+  value.state.exited = true; await value.runner.observeOriginalGenerationEnded();
+  assert.equal(value.runner.diagnostics().firstFailure, first);
+  assert.equal(value.commands.filter(command => command.phase === "resume").length, 0);
+});
+
+void test("dependency errors cannot forge a parent diagnostic code or publish source text", async () => {
+  for (const message of ["private fixture source and actor must not be published", "FOOTPRINT_PARENT_CONSTRUCTION_PRIVATE_SOURCE"]) {
+    const value = await fixture(); value.state.sourceError = new Error(message);
+    await assert.rejects(value.runner.arm(), error => error === value.state.sourceError);
+    const first = value.runner.diagnostics().firstFailure;
+    assert.deepEqual(first, { code: "DEPENDENCY_FAILURE", phase: "source", expectedPause: "none", observedPause: null, requests: 1, replies: 0 });
+    assert.equal(JSON.stringify(value.runner.diagnostics()).includes(message), false);
+    value.state.exited = true; await value.runner.observeOriginalGenerationEnded();
+    assert.equal(value.runner.diagnostics().firstFailure, first);
+  }
 });

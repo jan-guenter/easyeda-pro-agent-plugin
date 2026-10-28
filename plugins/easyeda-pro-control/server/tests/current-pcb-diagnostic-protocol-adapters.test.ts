@@ -13,6 +13,7 @@ import { CURRENT_PCB_DIAGNOSTIC_ROOT_INVENTORY_FUNCTION } from "../src/current-p
 import { CURRENT_PCB_CONSTRUCTOR_BUNDLE_FUNCTIONS } from "../src/current-pcb-constructor-scope.ts";
 import { CURRENT_PCB_TEARDROP_CALLBACK_SELECTOR, CURRENT_PCB_TEARDROP_OWNER_ASSOCIATION } from "../src/current-pcb-teardrop-owner-program.ts";
 import { DIAGNOSTIC_REQUEST_LIMIT, diagnosticNativeRequest, diagnosticOpeningParams, diagnosticPcbOpeningParams, stringPrecreateNativeRequest } from "../src/current-pcb-diagnostic-protocol.ts";
+import { readPackedNativeProgram } from "./helpers/native-packed-program.ts";
 
 type Row = Record<string, unknown>;
 function wire(value: unknown): Buffer { return Buffer.from(`${JSON.stringify(value)}\0`); }
@@ -243,7 +244,9 @@ void test("native adapter embeds and private fields match TS programs without na
     TeardropOwnerFunction: CURRENT_PCB_TEARDROP_OWNER_ASSOCIATION,
   })) {
     const encoded = new RegExp(`const string ${name}=@"((?:""|[^"])*)";`, "u").exec(source)?.[1];
-    assert.equal(encoded?.replaceAll('""', '"'), program);
+    const actual = name === "ModelPendingFunction" || name === "ModelRootInventoryFunction"
+      ? readPackedNativeProgram(source, name) : encoded?.replaceAll('""', '"');
+    assert.equal(actual, program, name);
     assert.ok(source.includes(createHash("sha256").update(program).digest("hex")));
   }
   assert.ok(source.includes(String.raw`string target="{\"rawWindowsPath\":"+JsonString(path)+",\"projectUuid\":"+JsonString(project)+`));
@@ -252,14 +255,14 @@ void test("native adapter embeds and private fields match TS programs without na
   assert.ok(source.includes("$request.requestId -gt $requestLimit"));
   assert.ok(source.includes("id!=nextRequest || id>EffectiveRequestLimit"));
   assert.ok(source.includes("int RequestLimit { get { return workerStartup?256:stringPrecreate?3309:103; } }"));
-  assert.ok(source.includes("long FootprintRequestLimit { get { return workerStartupFootprintCopy209?EasyedaFootprintExecutionLimits.Requests:EasyedaFootprintPreparationLimits.Requests; } }"));
+  assert.ok(source.includes("long FootprintRequestLimit { get { return workerStartupFootprintSaved209?EasyedaFootprintSavedLimits.Requests:workerStartupFootprintCopy209?EasyedaFootprintExecutionLimits.Requests:EasyedaFootprintPreparationLimits.Requests; } }"));
   assert.ok(source.includes("long EffectiveRequestLimit { get { return workerStartupFootprint209?FootprintRequestLimit:workerStartupRatline209?RatlineRequestLimit:workerStartupEmpty209?EasyedaWorkerStartupEmpty209Protocol.RequestLimit:RequestLimit; } }"));
   assert.ok(source.includes("public const int RequestLimit=3466;"));
   assert.ok(source.includes("public const long RequestLimit=383L;"));
   assert.ok(source.includes("public const long NormalRequestLimit=337L;"));
   assert.ok(source.includes("if (($StringPrecreate -and $WorkerStartup) -or ($Layers209 -and ($StringPrecreate -or $WorkerStartup)))"));
   assert.ok(source.includes("if ($WorkerStartupRatline209 -and ($StringPrecreate -or $WorkerStartup -or $Layers209 -or $WorkerStartup209 -or $WorkerStartupEmpty209))"));
-  assert.ok(source.includes("$startupRequestLimit=if ($WorkerStartupFootprintCopy209) {[EasyedaFootprintExecutionLimits]::Requests} elseif ($WorkerStartupFootprint209) {[EasyedaFootprintPreparationLimits]::Requests} elseif ($WorkerStartupRatlineContinuation209) {[EasyedaRatlineContinuation209Limits]::RequestLimit} elseif ($WorkerStartupRatline209) {[EasyedaRatline209Limits]::RequestLimit} elseif ($WorkerStartupEmpty209) {[EasyedaWorkerStartupEmpty209Protocol]::RequestLimit} else {256}"));
+  assert.ok(source.includes("$startupRequestLimit=if ($WorkerStartupFootprintSaved209) {[EasyedaFootprintSavedLimits]::Requests} elseif ($WorkerStartupFootprintCopy209) {[EasyedaFootprintExecutionLimits]::Requests} elseif ($WorkerStartupFootprint209) {[EasyedaFootprintPreparationLimits]::Requests} elseif ($WorkerStartupRatlineContinuation209) {[EasyedaRatlineContinuation209Limits]::RequestLimit} elseif ($WorkerStartupRatline209) {[EasyedaRatline209Limits]::RequestLimit} elseif ($WorkerStartupEmpty209) {[EasyedaWorkerStartupEmpty209Protocol]::RequestLimit} else {256}"));
   assert.ok(source.includes("$request.requestId -gt $startupRequestLimit) {throw 'pcb-diagnostic-startup-fields'}"));
   assert.ok(source.includes('if((long)received+count>(workerStartupRatline209?RatlineTotalByteLimit:workerStartupEmpty209?EasyedaWorkerStartupEmpty209Protocol.TotalByteLimit:64L*1024*1024)) throw Error("receive-budget")'));
   assert.ok(source.includes("'snapshot' {$fields+=@('objectId','callbackObjectId')}"));

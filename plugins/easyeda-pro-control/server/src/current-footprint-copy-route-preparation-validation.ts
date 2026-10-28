@@ -27,7 +27,7 @@ export function queryCurrentFootprintCopyRoutePreparation(includeSchemas: boolea
     actions: currentFootprintCopyRoutePreparationValidationRequestSchema.options.map(option => option.shape.action.value),
     limitations: [
       "Launch a separate footprint-route-* owner. Existing startup and preparation owners cannot be upgraded or adopted.",
-      "After browser, frame and UI-source qualification, capture the identified disposable project once. The distinct constructor capture retains parser callbacks and challenges the original native Worker while its parent is held before business dispatch.",
+      "After browser, frame and UI-source qualification, capture the identified disposable project once. The distinct constructor capture retains parser callbacks, observes four original cache-open events and challenges the original native Worker while its parent is held before business dispatch. Cache namespace evidence requires the original events, native results and unchanged project assignments; names alone cannot supply it.",
       "After assignments and actor observation, observe-footprint-route consumes one journaled stage for original footprint state, producers, dependencies, parser callbacks, destinations, UI/manager peer binding and a Windows clock sample.",
       "These are bounded point-in-time observations. No copy, document-clock breakpoint arming, queue completion, explicit Save or saved/reopened effect is offered.",
       "Existing-profile launch and opening can restore tabs, use the network and automatically persist. Retain the original owner through normal close, observed root/Job exit, release and record settlement. Failed probes are consumed and must not be repeated.",

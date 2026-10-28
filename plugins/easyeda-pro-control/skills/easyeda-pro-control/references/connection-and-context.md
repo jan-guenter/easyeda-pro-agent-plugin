@@ -424,6 +424,10 @@ copy the entire response: `runtimeIdentity` from `includeRuntimeIdentity:true`
 is a separate diagnostic, not a field returned by the ordinary context guard.
 Keep the full `upstream.stableFingerprint` from authenticated status in
 `expectedFingerprint`; do not substitute the diagnostic for that fingerprint.
+`upstream.facadeImplementation` summarizes that same implementation with its
+hash, file count and total bytes. Its `filesPointer` identifies the complete
+inventory at `/upstream/stableFingerprint/facadeImplementation/files`; the
+summary itself is not an admission fingerprint.
 
 The historical legacy connected-read-admitted tuple and source-specific version/path rules are in [compatibility.md](compatibility.md#historical-read-admission-2026-09-11). The legacy facade resolves the missing public project path using an exact native registry record with original-path hash proof and post-read context equality. It checks the active schematic page separately from its parent container.
 

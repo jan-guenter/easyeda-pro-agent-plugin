@@ -146,3 +146,50 @@ numeric comment in the offline package probe was also corrected.
 
 These corrections do not change the native helper or runtime bundles. Complete
 CI must pass again on the final correction commit before publication.
+
+## Publication and installation complete
+
+Corrected payload `b0a89e4df921491298e2d78b5e6aa696080f1df5` passed
+[Linux CI40683908241](https://github.com/jan-guenter/easyeda-pro-agent-plugin/actions/runs/40683908241)
+and [Windows CI40683908235](https://github.com/jan-guenter/easyeda-pro-agent-plugin/actions/runs/40683908235).
+All eight facade shards, build and aggregate jobs passed. Facade results were
+13,308 passed, five expected platform skips and zero failures; all 424 bridge
+tests passed. The corrected local types, strict type-aware lint, compatibility,
+repository, MCP-contract and all-skill checks also passed. The native helper,
+source projection and runtime bundles remained unchanged by the correction.
+
+[PR140](https://github.com/jan-guenter/easyeda-pro-agent-plugin/pull/140)
+merged through the protected branch as
+`5d5bd18a19279e62b2cc98d213294815ba93e1fc`. Its root tree
+`2189cbe6f2e05aab6f781363a89a2c381a97c8fc` equals the tested candidate tree.
+This batch changes 100 files. Independent comparison matched the complete CI
+artifact to the candidate, including every regular file and mode.
+
+The official Git marketplace
+`https://github.com/jan-guenter/easyeda-pro-agent-plugin.git` was upgraded once.
+Version `0.3.0+codex.20261028111845` is installed and enabled. The upgrade returned
+an empty error list. The CLI's stale arg0-directory cleanup warning was
+nonblocking; no redundant add or manual cache repair was performed.
+
+Installed verification matched all 2,190 files, 42 directories and 43,369,430
+bytes, with exact file and directory modes. Inventory SHA256:
+`f863be5367946fe2bacb4172bacab418dd90c266650277b43cbc390622070fc0`.
+The cached marketplace HEAD equals merged main. The installed offline probe
+passed 38 queries / 40 JSON-RPC requests and exposed the expected 27 tools under
+its synthetic profile. Its child closed through stdin EOF with exit zero and
+no stderr. Sampled process/socket checks and post-close inventory passed;
+these checks do not establish continuous isolation or connected admission.
+
+The original host's PID, start time, executable and arguments remain unchanged.
+It still runs `20261028084035`; the next live stage requires a fresh Codex chat
+loading `20261028111845`. Use one new disposable `footprint-route-*` operation
+to validate the combined route. The earlier preparation attempt is terminal
+and must not be replayed. The new route has no connected result yet, and copy,
+delete and saved/reopened execution remain unfinished. The excluded production
+project was not accessed.
+
+Automatic main follow-up Linux CI40685983189 was still running after installation;
+Windows CI40685983067 passed. Exact-tree PR CI supplies the release evidence.
+The previous release's main Linux CI40662639977 has also completed successfully.
+This publication appendix is retained locally for the next substantive batch,
+avoiding a new version solely to publish installation chronology.

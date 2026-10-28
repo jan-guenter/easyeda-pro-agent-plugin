@@ -7,10 +7,11 @@
 import { createHash } from "node:crypto";
 import { types } from "node:util";
 import { bindFootprintPreparationConstructionTransport } from "./current-footprint-copy-construction-purpose.ts";
-import { isOriginalFootprintExecutionDependency, isOriginalFootprintPreparationDependency,
+import { isOriginalFootprintExecutionDependency, isOriginalFootprintPreparationDependency, isOriginalFootprintSavedDependency,
   requestCurrentFootprintCopyParent, requestCurrentFootprintCopyTransactionClock, subscribeCurrentFootprintCopyParentEvents } from "./current-pcb-worker-startup-channel.ts";
 import { CURRENT_FOOTPRINT_COPY_PREPARATION_PROFILE } from "./current-footprint-copy-preparation-profile.ts";
 import { CURRENT_FOOTPRINT_COPY_EXECUTION_PROFILE } from "./current-footprint-copy-execution-profile.ts";
+import { CURRENT_FOOTPRINT_COPY_SAVED_PROFILE } from "./current-footprint-copy-saved-profile.ts";
 import { CurrentFootprintParentConstructionRunner } from "./current-footprint-copy-parent-construction-runner.ts";
 import type { CurrentFootprintParentConstructionHeld, CurrentFootprintParentConstructionTransport } from "./current-footprint-copy-parent-construction-contract.ts";
 import { CURRENT_FOOTPRINT_PARENT_CONSTRUCTION_LIMITS } from "./current-footprint-copy-parent-construction-contract.ts";
@@ -102,6 +103,7 @@ type StartupFailure = Readonly<{ code: string; step: string; bootstrapStage: Sta
   resumeSeen: boolean; lastCommand: CurrentPcbWorkerStartupCommand["method"] | null; requestCount: number;
   constructionFailure: ReturnType<CurrentPcbWorkerConstructionRunner["status"]>["firstFailure"];
   constructionProgress: ReturnType<CurrentPcbWorkerConstructionRunner["status"]>["progress"] | null;
+  parentConstruction: ReturnType<CurrentFootprintParentConstructionRunner["diagnostics"]> | null;
   reason: FailureReason | null; sourceTransfer: SourceTransfer | null }>;
 type StartupRole = typeof CURRENT_PCB_209_WORKER_BOOTSTRAP_ROLES[number];
 interface BootstrapStage {
@@ -239,13 +241,15 @@ class CurrentPcbWorkerStartupTransportCore<Packet extends ConstructionPacket, Ru
 
   public constructor(internal: typeof INTERNAL_PROFILE, dependency: CurrentPcbWorkerStartupDependency,
     profile: DiagnosticWorkerScriptProfile, createRunner: (transport: CurrentPcbWorkerConstructionTransport) => Runner,
-    bootstrap209 = false, execution209 = false) {
+    bootstrap209 = false, execution209 = false, saved209 = false) {
     if (internal !== INTERNAL_PROFILE) { throw failure("INTERNAL_PROFILE"); } this.#createRunner = createRunner;
     this.#originalMembers = members(dependency); this.#dependency = dependency;
     if (execution209 !== isOriginalFootprintExecutionDependency(dependency)) { throw failure("EXECUTION_PURPOSE"); }
+    if (saved209 !== isOriginalFootprintSavedDependency(dependency) || execution209 && saved209) { throw failure("SAVED_PURPOSE"); }
     this.#execution209 = execution209;
-    const footprint = bootstrap209 && isOriginalFootprintPreparationDependency(dependency);
-    const budget = execution209 ? CURRENT_FOOTPRINT_COPY_EXECUTION_PROFILE : CURRENT_FOOTPRINT_COPY_PREPARATION_PROFILE;
+    const footprint = bootstrap209 && (isOriginalFootprintPreparationDependency(dependency) || saved209);
+    const writerBudget = execution209 ? CURRENT_FOOTPRINT_COPY_EXECUTION_PROFILE : CURRENT_FOOTPRINT_COPY_PREPARATION_PROFILE;
+    const budget = saved209 ? CURRENT_FOOTPRINT_COPY_SAVED_PROFILE : writerBudget;
     this.#normalRequestLimit = footprint ? budget.normalRequestLimit : 224;
     this.#requestLimit = footprint ? budget.requestLimit : 256;
     this.#parentSession = sessionToken.parse(dependency.parentSessionId); this.#parentTarget = sessionToken.parse(dependency.parentTargetId);
@@ -269,6 +273,7 @@ class CurrentPcbWorkerStartupTransportCore<Packet extends ConstructionPacket, Ru
     bootstrapStages: readonly Readonly<{ role: StartupRole; parsed: boolean; pauseSeen: boolean;
       sourceQualified: boolean; resumeAttempted: boolean; resumeSeen: boolean; resumeOrigin: ResumeOrigin | null }>[]; preloadLogSeen: boolean;
     workerScriptLoadedObserved: boolean; requests: number; firstFailure: StartupFailure | null;
+    parentConstruction: ReturnType<CurrentFootprintParentConstructionRunner["diagnostics"]> | null;
     firstRejectedFootprintSourceReply: ReturnType<CurrentFootprintSourceReplyCapture["firstRejected"]>;
     constructionAssignments: ReturnType<CurrentPcbWorkerConstructionRunner["status"]>["assignments"] | null }> {
     return Object.freeze({ firstFailure: this.#firstFailure, started: this.#started, settled: this.#settled, failed: this.#failure !== null,
@@ -280,6 +285,7 @@ class CurrentPcbWorkerStartupTransportCore<Packet extends ConstructionPacket, Ru
       firstEventFailure: this.#firstEventFailure, requests: this.#requests, preloadLogSeen: this.#preloadLogSeen,
       firstRejectedFootprintSourceReply: this.#footprintSourceCapture.firstRejected(),
       constructionAssignments: this.#runner?.status().assignments ?? null,
+      parentConstruction: this.#parentConstruction?.diagnostics() ?? null,
       workerScriptLoadedObserved: this.#workerScriptLoadedObserved,
       bootstrapStages: Object.freeze(this.#bootstrapStages.map(stage => Object.freeze({ role: stage.role,
         parsed: stage.script !== null, pauseSeen: stage.pauseSeen, sourceQualified: stage.sourceQualified,
@@ -335,6 +341,7 @@ class CurrentPcbWorkerStartupTransportCore<Packet extends ConstructionPacket, Ru
         sourceQualified: stage?.sourceQualified ?? this.#sourceQualified, resumeOrigin: stage?.resumeOrigin ?? null,
         resumeSeen: stage?.resumeSeen ?? this.#initialResumeSeen, lastCommand: this.#lastCommand, requestCount: this.#requests,
         constructionFailure: this.#runner?.status().firstFailure ?? null, constructionProgress: this.#runner?.status().progress ?? null,
+        parentConstruction: this.#parentConstruction?.diagnostics() ?? null,
         reason: cause === undefined ? null : failureReason(cause), sourceTransfer: this.#lastSourceTransfer });
       this.#failure = failure(code);
     }
@@ -1027,5 +1034,14 @@ export class CurrentFootprintCopyWorkerStartupTransport extends CurrentPcbWorker
     const source = CURRENT_PCB_209_WORKER_STARTUP_SOURCE;
     super(INTERNAL_PROFILE, dependency, { relativePath: source.relativePath, scriptBytes: source.bytes, scriptSha256: source.sha256 },
       transport => new CurrentFootprintCopyConstructionRunner(transport), true, true);
+  }
+}
+/** Fresh saved generation captures the same parser construction arguments,
+ * without transferring the writer's parent peer or transaction-clock route. */
+export class CurrentFootprintCopySavedWorkerStartupTransport extends CurrentPcbWorkerStartupTransportCore<CurrentFootprintCopyConstructionPacket, CurrentFootprintCopyConstructionRunner> {
+  public constructor(dependency: CurrentPcbWorkerStartupDependency) {
+    const source = CURRENT_PCB_209_WORKER_STARTUP_SOURCE;
+    super(INTERNAL_PROFILE, dependency, { relativePath: source.relativePath, scriptBytes: source.bytes, scriptSha256: source.sha256 },
+      transport => new CurrentFootprintCopyConstructionRunner(transport), true, false, true);
   }
 }

@@ -4,8 +4,9 @@ import { stripTypeScriptTypes } from "node:module";
 import { test } from "node:test";
 import vm from "node:vm";
 import { z } from "zod";
-import { isRecord } from "../src/core.ts";
+import { controlImplementationFingerprint, isRecord } from "../src/core.ts";
 import { CALCULATION_ONLY_TOOLS } from "../src/facade-mode.ts";
+import { projectPublicEngineStatus } from "../src/public-status-projection.ts";
 
 const DIAGNOSTICS = Object.freeze({ schema: "easyeda-pro-control.admission-scan-diagnostics.v1", journalCount: 3,
   candidateCounts: { legacy: 2, incomplete: 1, invalid: 0, terminal: 0, "current-baseline": 0 },
@@ -16,6 +17,7 @@ type Handler = (input: object) => Promise<Record<string, unknown>>;
 async function registeredStatus(options: { connectDuringProbe?: boolean; disconnected?: boolean; failureStage?: "list-tools" | "status"; diagnosticsThrow?: boolean;
   facadeMode?: "legacy-reviewed" | "calculation-only"; diagnosticBlocked?: boolean } = {}): Promise<{
   calls: string[]; invoke: Handler; refuseAdmission: () => void;
+  implementation: Awaited<ReturnType<typeof controlImplementationFingerprint>>;
 }> {
   const source = await readFile(new URL("../src/index.ts", import.meta.url), "utf8");
   const wrapperStart = source.indexOf("function serializedStatusGuarded<Input>(");
@@ -26,6 +28,9 @@ async function registeredStatus(options: { connectDuringProbe?: boolean; disconn
   const failureEnd = source.indexOf("\nfunction serializedGuarded<Input>(", failureStart);
   assert.ok(wrapperStart !== -1 && wrapperEnd > wrapperStart && registrationStart !== -1 && registrationEnd > registrationStart);
   assert.ok(failureStart !== -1 && failureEnd > failureStart);
+  const implementation = await controlImplementationFingerprint();
+  const stableFingerprint = { facadeImplementation: implementation };
+  const engineStatus = { synthetic: true, facadeImplementation: implementation, stableFingerprint };
   const calls: string[] = [];
   let admissionCount = 0, connected = options.disconnected !== true, refused = false;
   let invoke: Handler | undefined;
@@ -33,6 +38,7 @@ async function registeredStatus(options: { connectDuringProbe?: boolean; disconn
     CONTROL_VERSION: "synthetic",
     facadeMode: options.facadeMode ?? "legacy-reviewed",
     CALCULATION_ONLY_TOOLS,
+    projectPublicEngineStatus,
     UpstreamStartupError: class extends Error {},
     boundedTransactionErrorOutput: (): object => ({}),
     isRecord: (value: unknown): boolean => typeof value === "object" && value !== null,
@@ -55,7 +61,7 @@ async function registeredStatus(options: { connectDuringProbe?: boolean; disconn
         calls.push("status");
         if (options.failureStage === "status") { return Promise.reject(new Error("original status failure")); }
         if (options.connectDuringProbe === true) { connected = true; }
-        return Promise.resolve({ synthetic: true });
+        return Promise.resolve(engineStatus);
       },
     },
     facadeLease: { path: "/synthetic/lease", pid: 0 },
@@ -92,7 +98,7 @@ async function registeredStatus(options: { connectDuringProbe?: boolean; disconn
   const errorHandlingSource = options.failureStage === undefined ? "" : source.slice(failureStart, failureEnd);
   vm.runInNewContext(stripTypeScriptTypes(`${errorHandlingSource}\n${source.slice(wrapperStart, wrapperEnd)}\n${source.slice(registrationStart, registrationEnd)}`), scope);
   assert.ok(invoke !== undefined);
-  return { calls, invoke, refuseAdmission: (): void => { refused = true; } };
+  return { calls, invoke, implementation, refuseAdmission: (): void => { refused = true; } };
 }
 
 void test("registered status uses one fresh admission and labels its report observation", async () => {
@@ -102,6 +108,15 @@ void test("registered status uses one fresh admission and labels its report obse
     assert.equal(result["incompleteOperationsObservedAt"], `observation-${String(request)}`);
     assert.equal(JSON.stringify(result["incompleteOperations"]), JSON.stringify([{ observation: request }]));
     assert.equal(result["admissionScan"], DIAGNOSTICS);
+    const upstream = result["upstream"];
+    assert.ok(isRecord(upstream));
+    const stable = upstream["stableFingerprint"], summary = upstream["facadeImplementation"];
+    assert.ok(isRecord(summary) && isRecord(stable));
+    assert.equal(summary["schema"], "easyeda-pro-control.implementation-summary.v1");
+    assert.equal(summary["fileCount"], fixture.implementation.files.length);
+    assert.equal(summary["sha256"], fixture.implementation.sha256);
+    assert.equal(Object.hasOwn(summary, "files"), false);
+    assert.equal(stable["facadeImplementation"], fixture.implementation);
   }
   assert.deepEqual(fixture.calls, ["admission", "list-tools", "lease-start", "status", "lease-end",
     "admission", "list-tools", "lease-start", "status", "lease-end"]);

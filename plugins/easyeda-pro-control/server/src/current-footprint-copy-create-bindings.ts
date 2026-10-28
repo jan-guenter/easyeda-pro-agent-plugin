@@ -42,6 +42,28 @@ export const CURRENT_FOOTPRINT_COPY_CREATE_METHOD_CALLS = freezeDeep({
   capture: { program: `function(bus,manager,consistency,constructors){${helpers}\nverify();return selected;}`, arguments: 4, returnByValue: false },
   recheck: { program: `function(bus,manager,consistency,constructors,methods){${helpers}\narray(methods,8);for(let i=0;i<8;i++)if(own(methods,String(i))!==selected[i])bad();verify();return true;}`, arguments: 5, returnByValue: true },
 });
+/** Dormant fixed writer only. The enclosing original owner must consume and
+ * journal the sole dispatch after full destination/backend/clock qualification.
+ * No existing preparation transport admits this side-effecting command. */
+export const CURRENT_FOOTPRINT_COPY_NATIVE_CREATE_CALL = freezeDeep({
+  program: `async function(bus,manager,consistency,constructors,methods,expectedProjectUuid,argument){${helpers}
+array(methods,8);for(let i=0;i<8;i++)if(own(methods,String(i))!==selected[i])bad();
+const identifier=(value,re)=>{const match=typeof value==="string"?re.exec(value):null;if(match===null||match[0]!==value)bad();return value;};
+identifier(expectedProjectUuid,/^(?:[a-f0-9]{32}|[a-f0-9]{64})$/);if(own(this,"uuid")!==expectedProjectUuid)bad();
+if(argument===null||typeof argument!=="object"||proto(argument)!==Object.prototype)bad();
+const fields=["uuid","path","isProject","docType","title","display_title","description","custom_tags","source","version"];
+if(Reflect.ownKeys(argument).length!==fields.length)bad();for(const key of fields)own(argument,key);
+identifier(argument.uuid,/^(?:[a-f0-9]{16}|[a-f0-9]{32})$/);if(argument.path!==expectedProjectUuid||argument.isProject!==true||argument.docType!==4||argument.source!==""||argument.version!=="")bad();
+if(typeof argument.title!=="string"||argument.title.length<1||argument.title.length>512||argument.display_title!==argument.title||typeof argument.description!=="string"||argument.description.length>65536||typeof argument.custom_tags!=="string"||argument.custom_tags.length>65536)bad();
+const tags=JSON.parse(argument.custom_tags);if(!Array.isArray(tags)||tags.length>256||tags.some(tag=>typeof tag!=="string"||tag.length>512)||JSON.stringify(tags)!==argument.custom_tags)bad();
+const bytes=text=>{let count=0;for(let i=0;i<text.length;i++){const code=text.charCodeAt(i);if(code>=55296&&code<=56319){const low=text.charCodeAt(++i);if(!(low>=56320&&low<=57343))bad();count+=4;}else if(code>=56320&&code<=57343)bad();else count+=code<128?1:code<2048?2:3;}return count;};
+bytes(argument.title);bytes(argument.description);for(const tag of tags)bytes(tag);if(bytes(JSON.stringify(argument))>65536)bad();verify();
+const result=await selected[0].call(manager,argument);verify();
+let nodes=0;const seen=new Set();
+const data=(value,depth)=>{if(++nodes>4096||depth>8)bad();if(value===undefined||value===null||typeof value==="boolean")return value;if(typeof value==="string"){if(value.length>2097152)bad();bytes(value);return value;}if(typeof value==="number"){if(!Number.isFinite(value)||Object.is(value,-0))bad();return value;}if(typeof value!=="object"||seen.has(value))bad();seen.add(value);const isArray=Array.isArray(value),parent=Object.getPrototypeOf(value);if(isArray?parent!==Array.prototype:parent!==Object.prototype&&parent!==null)bad();const keys=Reflect.ownKeys(value);if(keys.length>(isArray?513:512))bad();const output=isArray?[]:Object.create(null);if(isArray){const length=Object.getOwnPropertyDescriptor(value,"length");if(!length||!Object.hasOwn(length,"value")||length.value>512||keys.length!==length.value+1)bad();for(let i=0;i<length.value;i++){const field=Object.getOwnPropertyDescriptor(value,String(i));if(!field||!Object.hasOwn(field,"value")||!field.enumerable)bad();output.push(data(field.value,depth+1));}}else for(const key of keys){if(typeof key!=="string")bad();bytes(key);const field=Object.getOwnPropertyDescriptor(value,key);if(!field||!Object.hasOwn(field,"value")||!field.enumerable)bad();output[key]=data(field.value,depth+1);}seen.delete(value);return output;};
+const serialized=JSON.stringify(data(result,0));if(typeof serialized!=="string"||bytes(serialized)>2097152)bad();verify();return serialized;}`,
+  arguments: 7, returnByValue: true, throwOnSideEffect: false, awaitPromise: true,
+});
 const token = z.string().min(1).max(256).regex(/^[A-Za-z\d_.:-]+$/u);
 const text = z.string().max(4096).refine(value => value.isWellFormed() && !value.includes("\0"));
 const position = z.object({ scriptId: token, lineNumber: z.number().int().nonnegative(), columnNumber: z.number().int().nonnegative() }).strict();

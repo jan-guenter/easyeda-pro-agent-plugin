@@ -2,7 +2,7 @@
 import { z } from "zod";
 import { canonicalJson } from "./core.ts";
 import { currentFootprintCopyStatePacketSchema } from "./current-footprint-copy-state.ts";
-import { currentFootprintCopyDependencyObservationSchema } from "./current-footprint-copy-dependency-runner.ts";
+import { currentFootprintCopyDependencyObservationSchema, recordedCurrentFootprintCopyDependencyObservationSchema } from "./current-footprint-copy-dependency-runner.ts";
 import { currentFootprintCopyAsyncObservationSchema } from "./current-footprint-copy-async-runner.ts";
 import { currentFootprintCopyUiObservationSchema } from "./current-footprint-copy-ui-runner.ts";
 import { currentFootprintCopyManagerRouteObservationSchema } from "./current-footprint-copy-manager-route-runner.ts";
@@ -22,6 +22,11 @@ const destinations = z.object({ profile: z.literal("private.current-footprint-co
 const peer = z.object({ profile: z.literal("private.current-footprint-parent-worker-peer.v1"),
   parentWorkerNativeMessageReceivedByOriginalChild: z.literal(true), diagnosticListenerRemoved: z.literal(true),
   reciprocalProjectChannelQualified: z.literal(false), backendDynamicDispatchQualified: z.literal(false), executionAuthorized: z.literal(false) }).strict();
+const cacheConstruction = z.object({ profile: z.literal("private.current-footprint-cache-construction.v1"),
+  originalOpenEventsObserved: z.literal(4), originalWrapperReceiversMatched: z.literal(true),
+  originalNativeCacheResultsMatched: z.literal(true), bothNamespaceArgumentsMatched: z.literal(true),
+  originalProjectAssignmentsMatched: z.literal(true), nativeOpenInvokedByAgent: z.literal(false),
+  networkBackendOwned: z.literal(false), executionAuthorized: z.literal(false) }).strict();
 const digest = z.string().regex(/^[a-f0-9]{64}$/u);
 const counter = z.string().regex(/^[0-9]{1,24}$/u);
 const sample = z.object({ schema: z.literal("easyeda-pro-control.windows-clock-sample.v1"), utcBeforeTicks: counter,
@@ -43,13 +48,19 @@ const windowsClock = z.object({ profile: z.literal("private.current-footprint-co
   } catch { return false; }
 }, "Windows clock pair order, zone, frequency or collection bound differs.");
 export const CURRENT_FOOTPRINT_COPY_ROUTE_RESULT_MAX_BYTES = 128 * 1024;
-export const currentFootprintCopyRouteObservationSchema = z.object({
+const route = z.object({
   profile: z.literal("private.current-footprint-copy-route-preparation.v1"), state: currentFootprintCopyStatePacketSchema,
   producers: producer, dependencies: currentFootprintCopyDependencyObservationSchema, callbacks, destinations,
   ui: currentFootprintCopyUiObservationSchema, manager: currentFootprintCopyManagerRouteObservationSchema, peer, windowsClock,
+  cacheConstruction,
   originalManagerWorkerPeerMatched: z.literal(true), finalOriginalWorkerObservationsReproved: z.literal(true),
   documentClocksArmed: z.literal(false), createDispatched: z.literal(false), callbacksCompleted: z.literal(false),
   backendDynamicDispatchQualified: z.literal(false), executionAuthorized: z.literal(false), saveAuthorized: z.literal(false), persistenceVerified: z.literal(false),
-}).strict().refine(value => Buffer.byteLength(canonicalJson(value)) <= CURRENT_FOOTPRINT_COPY_ROUTE_RESULT_MAX_BYTES,
-  "Route observation exceeds its bound.");
+}).strict();
+function withinResultBound(value: unknown): boolean { return Buffer.byteLength(canonicalJson(value)) <= CURRENT_FOOTPRINT_COPY_ROUTE_RESULT_MAX_BYTES; }
+export const currentFootprintCopyRouteObservationSchema = route.refine(withinResultBound, "Route observation exceeds its bound.");
+/** Historical data can be inspected but cannot issue a current runtime packet. */
+export const recordedCurrentFootprintCopyRouteObservationSchema = route.extend({
+  cacheConstruction: cacheConstruction.optional(), dependencies: recordedCurrentFootprintCopyDependencyObservationSchema,
+}).strict().refine(withinResultBound, "Route observation exceeds its bound.");
 export type CurrentFootprintCopyRouteObservation = z.infer<typeof currentFootprintCopyRouteObservationSchema>;

@@ -12,17 +12,17 @@ import type { CurrentFootprintCopyStatePacket } from "./current-footprint-copy-s
 import { assertCurrentFootprintSourcePlanInventory } from "./current-footprint-source-plan.ts";
 import type { CurrentFootprintSourcePlan } from "./current-footprint-source-plan.ts";
 import type { CurrentFootprintSourceReadPacket } from "./current-footprint-source-read-runner.ts";
-import { CurrentPcb209WorkerStartupOpening } from "./current-pcb-209-worker-startup-opening.ts";
-import type { CurrentPcb209WorkerStartupOpeningResult } from "./current-pcb-209-worker-startup-opening.ts";
+import { currentFootprintCopyPreparationOpeningMethods } from "./current-footprint-copy-preparation-opening.ts";
+import type { CurrentFootprintCopyOpeningOwner, CurrentFootprintCopyOpeningResult } from "./current-pcb-209-worker-startup-opening.ts";
+// oxlint-disable-next-line import/max-dependencies -- Preparation joins twelve independently owned inputs, including the sealed dual-opening dispatcher; do not duplicate their contracts.
 import type { CurrentPcbWorkerConstructionAssignments } from "./current-pcb-worker-construction-assignment.ts";
-// oxlint-disable-next-line import/max-dependencies -- Preparation joins eleven independently owned inputs; its shared durable schema avoids a duplicated journal contract.
 import { readerCompletion } from "./sqlite-inventory.ts";
 import type { readExactSqlInventory } from "./sqlite-inventory.ts";
 
 type Inventory = Awaited<ReturnType<typeof readExactSqlInventory>>;
 interface Source {
-  readonly opening: CurrentPcb209WorkerStartupOpening;
-  readonly result: CurrentPcb209WorkerStartupOpeningResult;
+  readonly opening: CurrentFootprintCopyOpeningOwner;
+  readonly result: CurrentFootprintCopyOpeningResult;
   readonly assignments: CurrentPcbWorkerConstructionAssignments;
   readonly state: CurrentFootprintCopyStatePacket;
   readonly sourcePlan: CurrentFootprintSourcePlan;
@@ -41,8 +41,6 @@ interface Retained {
 }
 const preparations = new WeakMap<CurrentFootprintCopyPreparation, Retained>();
 const consumed = new WeakSet<CurrentFootprintSourceReadPacket>();
-// oxlint-disable-next-line typescript/unbound-method -- The captured private-field method always receives its original instance; no caller callback establishes ownership.
-const requireSource = CurrentPcb209WorkerStartupOpening.prototype.requireFootprintSource;
 function need(condition: boolean, detail: string): asserts condition {
   if (!condition) { throw new Error(`CURRENT_FOOTPRINT_COPY_PREPARATION: ${detail}`); }
 }
@@ -50,12 +48,13 @@ function same(source: Source, completion: ReturnType<typeof readerCompletion>, t
   assertCurrentFootprintSourcePlanInventory(source.sourcePlan, source.before);
   need(readerCompletion(source.before) === completion && completion.observedChildClose && completion.exitCode === 0 &&
     completion.exitSignal === null, "original completed checkpoint reader required");
-  need(canonicalJson(source.source) === text && CurrentPcb209WorkerStartupOpening.prototype.requireFootprintSource === requireSource,
-    "original source or opening method changed");
+  currentFootprintCopyPreparationOpeningMethods(source.opening);
+  need(canonicalJson(source.source) === text, "original source changed");
 }
 async function reprove(source: Source, completion: ReturnType<typeof readerCompletion>, text: string): Promise<void> {
   same(source, completion, text);
-  await requireSource.call(source.opening, source.result, source.assignments, source.state, source.sourcePlan, source.source);
+  await currentFootprintCopyPreparationOpeningMethods(source.opening).requireFootprintSource.call(source.opening,
+    source.result, source.assignments, source.state, source.sourcePlan, source.source);
   same(source, completion, text);
 }
 
@@ -81,7 +80,8 @@ export async function prepareCurrentFootprintCopyOwned(source: Source): Promise<
   assertCurrentFootprintSourcePlanInventory(source.sourcePlan, source.before);
   // Check packet identity before serializing it. A forged packet may contain
   // Accessors, and no formatting or hashing path may execute those accessors.
-  await requireSource.call(source.opening, source.result, source.assignments, source.state, source.sourcePlan, source.source);
+  await currentFootprintCopyPreparationOpeningMethods(source.opening).requireFootprintSource.call(source.opening,
+    source.result, source.assignments, source.state, source.sourcePlan, source.source);
   const text = canonicalJson(source.source);
   await reprove(source, completion, text);
   const plan = await prepareCurrentFootprintCopyV2Plan(source.before, source.sourcePlan,
@@ -102,7 +102,7 @@ export async function prepareCurrentFootprintCopyOwned(source: Source): Promise<
 /** A descriptor clone cannot retrieve private inputs. The original opening
  * again checks its source/assignment/native owner before any future use. */
 export async function requireCurrentFootprintCopyOwned(preparation: CurrentFootprintCopyPreparation,
-  opening: CurrentPcb209WorkerStartupOpening): Promise<Readonly<{
+  opening: CurrentFootprintCopyOpeningOwner): Promise<Readonly<{
     before: Inventory; sourcePlan: CurrentFootprintSourcePlan; copyPlan: CurrentFootprintCopyV2Plan;
     nativeArguments: CurrentFootprintCopyV2NativeArguments;
   }>> {

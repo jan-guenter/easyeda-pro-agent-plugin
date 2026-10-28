@@ -10,6 +10,7 @@ import { CURRENT_PCB_STRING_EMPTY_PRODUCERS_FUNCTION, CURRENT_PCB_STRING_EMPTY_P
 import { CURRENT_PCB_STRING_PRODUCER_MARKERS_V2_FUNCTION } from "../src/current-pcb-string-producer-markers.ts";
 import { CURRENT_PCB_DIAGNOSTIC_MODEL_STATE_V2_FUNCTION } from "../src/current-pcb-diagnostic-model-program.ts";
 import { CURRENT_PCB_DIAGNOSTIC_PENDING_STATE_V2_FUNCTION } from "../src/current-pcb-diagnostic-pending-program.ts";
+import { readPackedNativeProgram } from "./helpers/native-packed-program.ts";
 
 function wire(value: unknown): Buffer { return Buffer.from(`${JSON.stringify(value)}\0`); }
 const COMMANDS = [
@@ -64,7 +65,8 @@ void test("String programs are byte-exact in the native fixed-purpose adapter", 
     ModelPendingV2Function: CURRENT_PCB_DIAGNOSTIC_PENDING_STATE_V2_FUNCTION,
   })) {
     const encoded = new RegExp(`const string ${name}=@"((?:""|[^"])*)";`, "u").exec(native)?.[1];
-    assert.equal(encoded?.replaceAll('""', '"'), source, name);
+    const actual = name === "ModelPendingV2Function" ? readPackedNativeProgram(native, name) : encoded?.replaceAll('""', '"');
+    assert.equal(actual, source, name);
     assert.ok(native.includes(createHash("sha256").update(source).digest("hex")));
   }
   assert.ok(native.includes('if(!stringPrecreate) throw Error("string-purpose");'));

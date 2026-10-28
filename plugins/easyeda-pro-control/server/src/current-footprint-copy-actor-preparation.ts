@@ -9,13 +9,13 @@ import { requireCurrentFootprintCopyOwned } from "./current-footprint-copy-prepa
 import type { CurrentFootprintCopyPreparation } from "./current-footprint-copy-preparation.ts";
 import type { CurrentFootprintCopyStatePacket } from "./current-footprint-copy-state.ts";
 import type { CurrentPcb209OriginalStartupActorObservation, CurrentPcb209WorkerStartupActorPacket } from "./current-pcb-209-worker-startup-actor.ts";
-import { CurrentPcb209WorkerStartupOpening } from "./current-pcb-209-worker-startup-opening.ts";
-import type { CurrentPcb209WorkerStartupOpeningResult } from "./current-pcb-209-worker-startup-opening.ts";
+import { currentFootprintCopyPreparationOpeningMethods } from "./current-footprint-copy-preparation-opening.ts";
+import type { CurrentFootprintCopyOpeningOwner, CurrentFootprintCopyOpeningResult } from "./current-pcb-209-worker-startup-opening.ts";
 import type { CurrentPcbWorkerConstructionAssignments } from "./current-pcb-worker-construction-assignment.ts";
 
 interface Source {
-  readonly opening: CurrentPcb209WorkerStartupOpening;
-  readonly result: CurrentPcb209WorkerStartupOpeningResult;
+  readonly opening: CurrentFootprintCopyOpeningOwner;
+  readonly result: CurrentFootprintCopyOpeningResult;
   readonly assignments: CurrentPcbWorkerConstructionAssignments;
   readonly state: CurrentFootprintCopyStatePacket;
   readonly actor: CurrentPcb209WorkerStartupActorPacket;
@@ -52,21 +52,17 @@ interface Retained {
 }
 const originals = new WeakMap<CurrentFootprintCopyActorPreparation, Retained>();
 const consumed = new WeakSet<CurrentFootprintCopyPreparation>();
-// oxlint-disable-next-line typescript/unbound-method -- Both methods are captured from the class and called only with the retained original private-field opening.
-const requireState = CurrentPcb209WorkerStartupOpening.prototype.requireFootprintState;
-// oxlint-disable-next-line typescript/unbound-method -- Same original private-field receiver rule as requireState.
-const observeActor = CurrentPcb209WorkerStartupOpening.prototype.originalActorObservation;
 function need(condition: boolean, detail: string): asserts condition {
   if (!condition) { throw new Error(`CURRENT_FOOTPRINT_COPY_OWNED_ACTOR: ${detail}`); }
 }
-function methods(): void {
-  need(CurrentPcb209WorkerStartupOpening.prototype.requireFootprintState === requireState &&
-    CurrentPcb209WorkerStartupOpening.prototype.originalActorObservation === observeActor, "original opening methods changed");
-}
 async function reprove(source: Source): Promise<Readonly<{ copy: Copy; observation: CurrentPcb209OriginalStartupActorObservation }>> {
-  methods(); const copy = await requireCurrentFootprintCopyOwned(source.preparation, source.opening); methods();
-  await requireState.call(source.opening, source.result, source.assignments, source.state); methods();
-  const observation = await observeActor.call(source.opening, source.result, source.assignments, source.actor); methods();
+  const methods = currentFootprintCopyPreparationOpeningMethods(source.opening);
+  const copy = await requireCurrentFootprintCopyOwned(source.preparation, source.opening);
+  currentFootprintCopyPreparationOpeningMethods(source.opening);
+  await methods.requireFootprintState.call(source.opening, source.result, source.assignments, source.state);
+  currentFootprintCopyPreparationOpeningMethods(source.opening);
+  const observation = await methods.originalActorObservation.call(source.opening, source.result, source.assignments, source.actor);
+  currentFootprintCopyPreparationOpeningMethods(source.opening);
   need(copy.copyPlan.source.projectUuid === source.state.identity.projectUuid &&
     copy.copyPlan.source.branchUuid === source.state.identity.branchUuid && copy.copyPlan.client === source.state.client &&
     copy.copyPlan.maximumTicket === source.state.maximumTicket && source.state.capturedUser === "own-undefined",
@@ -102,7 +98,7 @@ export async function prepareCurrentFootprintCopyActorOwned(source: Source): Pro
   originals.set(token, { source, copy: first.copy, observation: first.observation, projection, failed: false }); return token;
 }
 export async function requireCurrentFootprintCopyActorOwned(token: CurrentFootprintCopyActorPreparation,
-  opening: CurrentPcb209WorkerStartupOpening): Promise<Readonly<{ copy: Copy; actor: CurrentFootprintCopyActorProjection }>> {
+  opening: CurrentFootprintCopyOpeningOwner): Promise<Readonly<{ copy: Copy; actor: CurrentFootprintCopyActorProjection }>> {
   const retained = originals.get(token);
   need(retained !== undefined && retained.source.opening === opening && !retained.failed, "original owned actor preparation required");
   try {

@@ -1,3 +1,4 @@
+/* oxlint-disable import/max-dependencies -- Native parity compares each independent fixed program and the bounded packed decoder. */
 import assert from "node:assert/strict";
 import { createHash } from "node:crypto";
 import { readFile } from "node:fs/promises";
@@ -12,6 +13,7 @@ import { CURRENT_PCB_DIAGNOSTIC_RAW_STRINGS_FUNCTION } from "../src/current-pcb-
 // oxlint-disable-next-line import/max-dependencies -- Native parity needs each fixed program from its independently reviewed implementation.
 import { CURRENT_PCB_DIAGNOSTIC_ROOT_INVENTORY_FUNCTION } from "../src/current-pcb-diagnostic-root-inventory.ts";
 import { CURRENT_PCB_DIAGNOSTIC_PCB_OPENING_FUNCTION } from "../src/current-pcb-diagnostic-pcb-opening.ts";
+import { readPackedNativeProgram } from "./helpers/native-packed-program.ts";
 
 const sourcePath = new URL("../../scripts/pcb-diagnostic-owner.ps1", import.meta.url);
 
@@ -83,7 +85,9 @@ void test("native opening and model programs are byte-exact fixed commands, not 
     ModelDiagnosticConstructorsFunction: CURRENT_PCB_CONSTRUCTOR_BUNDLE_FUNCTIONS.diagnostic,
     ModelPrecreateConstructorsFunction: CURRENT_PCB_CONSTRUCTOR_BUNDLE_FUNCTIONS.precreate })) {
     const encoded = new RegExp(`const string ${name}=@"((?:""|[^"])*)";`, "u").exec(source)?.[1];
-    assert.equal(encoded?.replaceAll('""', '"'), expected, name);
+    const actual = name === "ModelPendingFunction" || name === "ModelRootInventoryFunction"
+      ? readPackedNativeProgram(source, name) : encoded?.replaceAll('""', '"');
+    assert.equal(actual, expected, name);
     assert.ok(source.includes(createHash("sha256").update(expected).digest("hex")), name);
   }
   assert.ok(source.includes("new UTF8Encoding(false,true).GetBytes(path)"));

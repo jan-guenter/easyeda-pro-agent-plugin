@@ -72,6 +72,7 @@ let coldApiCallLog: string;
 let client: Client;
 let transport: StdioClientTransport;
 let expectedFingerprint: Record<string, unknown>;
+let publicStatusPayload: Record<string, unknown>;
 let fixtureBridgeEndpoint: Record<string, unknown>;
 let evidenceSequence = 0;
 let facadeEntrypoint: string;
@@ -727,6 +728,7 @@ before(async () => {
     JSON.stringify(status.structuredContent),
   );
   const statusPayload = structured(status);
+  publicStatusPayload = statusPayload;
   fixtureBridgeEndpoint = requireRecord(
     requireRecord(statusPayload["bridgeConnection"], "status.bridgeConnection")["fixturePublicEndpoint"],
     "status.bridgeConnection.fixturePublicEndpoint",
@@ -750,6 +752,20 @@ after(async () => {
 });
 
 void describe("published facade contracts", { concurrency: false }, () => {
+  void test("published status summarizes its duplicate inventory and preserves the full admission fingerprint", context => {
+    const upstreamStatus = requireRecord(publicStatusPayload["upstream"], "status.upstream");
+    const summary = requireRecord(upstreamStatus["facadeImplementation"], "implementation summary");
+    const complete = requireRecord(expectedFingerprint["facadeImplementation"], "complete implementation fingerprint");
+    const files = requireArray(complete["files"], "complete implementation files");
+    assert.equal(summary["schema"], "easyeda-pro-control.implementation-summary.v1");
+    assert.equal(summary["filesPointer"], "/upstream/stableFingerprint/facadeImplementation/files");
+    assert.equal(summary["fileCount"], files.length); assert.equal(summary["sha256"], complete["sha256"]);
+    assert.equal(Object.hasOwn(summary, "files"), false);
+    assert.equal(upstreamStatus["stableFingerprint"], expectedFingerprint);
+    const statusBytes = Buffer.byteLength(JSON.stringify(publicStatusPayload));
+    assert.ok(files.length > 0); assert.ok(statusBytes <= 512 * 1024);
+    context.diagnostic(`Status retains ${String(files.length)} implementation files in ${String(statusBytes)} bytes.`);
+  });
   void test("synthetic facade uses an ephemeral loopback listener isolated from the production bridge port", async () => {
     assert.equal(fixtureBridgeEndpoint["host"], "127.0.0.1");
     const port = fixtureBridgeEndpoint["port"];

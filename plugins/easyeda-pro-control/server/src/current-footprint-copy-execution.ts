@@ -10,8 +10,8 @@ export const CURRENT_FOOTPRINT_COPY_EXECUTION_PHASES = ["prepare", "create", "cl
 export const currentFootprintCopyExecutionGenerationSchema = z.object({
   profile: z.literal("private.current-footprint-copy-execution-generation.v1"),
   purpose: z.literal(CURRENT_FOOTPRINT_COPY_EXECUTION_PURPOSE),
-  operationId: z.string().regex(/^footprint-copy-[a-z\d][a-z\d-]{0,95}$/u),
-  bindingSha256: z.string().length(64).regex(/^[a-f\d]{64}$/u),
+  operationId: z.string().regex(/^footprint-copy-[a-z\d][a-z\d-]{0,95}(?![\s\S])/u),
+  bindingSha256: z.string().length(64).regex(/^[a-f\d]{64}(?![\s\S])/u),
 }).strict();
 export const currentFootprintCopyExecutionAdvanceSchema = z.object({
   expectedPhase: z.enum(CURRENT_FOOTPRINT_COPY_EXECUTION_PHASES),

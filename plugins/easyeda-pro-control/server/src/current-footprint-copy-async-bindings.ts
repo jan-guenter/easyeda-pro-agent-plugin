@@ -69,7 +69,7 @@ export function decodeCurrentFootprintCopyAsyncArray(input: unknown, upload: boo
         value.description !== undefined && Buffer.byteLength(value.description) === expected.bytes &&
         createHash("sha256").update(value.description).digest("hex") === expected.sha256); ids.push(value.objectId);
     } else {
-      let className = "Cache", subtype: string | undefined;
+      let className = "bb", subtype: string | undefined;
       if (index < 6) { className = "Array"; subtype = "array"; }
       else if (index < 10) { className = "Set"; subtype = "set"; }
       else if (index < 12) { className = "Map"; subtype = "map"; }

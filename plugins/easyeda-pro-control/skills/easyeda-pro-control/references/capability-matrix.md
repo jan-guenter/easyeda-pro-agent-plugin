@@ -105,14 +105,19 @@ This is a native task equivalent,
 with no GET_STR dispatch, copy/delete or saved-state claim. It needs 65 remaining
 normal requests and preserves the original cleanup reserve.
 The separate [footprint preparation purpose](current-footprint-copy-preparation.md)
-mounts producer/actor bindings, 53 dependency functions and initialized UI/manager
+mounts producer/actor bindings, 60 dependency functions and initialized UI/manager
 route readers, including native channel-name qualification, under a distinct
 launch budget. It does not dispatch a copy or Save. A separate
 `footprint-copy-route-preparation` purpose exposes original parent Worker
-capture, a one-use child message proof and registered callback/destination
-qualification for disposable validation. Complete external-effect qualification,
-native writer transport and saved-result proof remain open. The complete private
-copy/closure/reopen coordinator is unmounted;
+capture, a one-use child message proof, four original cache-open pauses and
+registered callback/destination qualification for disposable validation. Cache
+namespace evidence requires those original events and retained native results;
+wrapper names alone remain insufficient. The execution envelope has 743 normal
+requests and 44 cleanup requests. A separate private saved-generation owner has
+319 normal requests and 34 cleanup requests, original queue checks and saved-source
+reads; it cannot dispatch create or Save. Native HTTP backend and actor/clock
+ownership, complete external-effect qualification and connected saved-copy proof
+remain open. The complete private copy/closure/reopen coordinator is unmounted;
 its tests are not connected writer validation.
 The startup route retains the original
 native process, Job, pipe and fixed256-command budget. These observations do

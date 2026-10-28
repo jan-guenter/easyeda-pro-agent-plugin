@@ -484,7 +484,9 @@ check(
     packageScripts["sanitizer:check"] ===
       "node scripts/build-descriptor-sanitizer.ts --check" &&
     packageScripts["build"] ===
-      "npm run sanitizer:check && npm run sql:reader:check && npm run startup:protocol:check && npm run pcb209:layers:check && npm run pcb209:primitives:check && npm run pcb209:extended-primitives:check && npm run pcb209:selection-relations:check && npm run pcb209:pad-shapes:check && npm run pcb209:image-shapes:check && npm run pcb209:arc-shapes:check && npm run pcb209:poured-shapes:check && node scripts/build-server.ts" &&
+      "npm run sanitizer:check && npm run sql:reader:check && npm run startup:protocol:check && npm run pcb:models:check && npm run pcb209:layers:check && npm run pcb209:primitives:check && npm run pcb209:extended-primitives:check && npm run pcb209:selection-relations:check && npm run pcb209:pad-shapes:check && npm run pcb209:image-shapes:check && npm run pcb209:arc-shapes:check && npm run pcb209:poured-shapes:check && node scripts/build-server.ts" &&
+    packageScripts["pcb:models:check"] === "node scripts/generate-pcb-model-programs.ts --check" &&
+    packageScripts["pcb:models:update"] === "node scripts/generate-pcb-model-programs.ts --write" &&
     packageScripts["pcb209:image-shapes:check"] === "node scripts/generate-pcb209-image-shapes-protocol.ts --check" &&
     packageScripts["pcb209:arc-shapes:check"] === "node scripts/generate-pcb209-arc-shapes-protocol.ts --check" &&
     packageScripts["pcb209:poured-shapes:check"] === "node scripts/generate-pcb209-poured-shapes-protocol.ts --check" &&

@@ -22,9 +22,9 @@ function arrayReply(upload: boolean): Data {
     type: "function", className: entry.async ? "AsyncFunction" : "Function", description: SOURCES[index + start], objectId: `function-${String(index + start)}`,
   }, true, true));
   if (!upload) {
-    for (const [index, className] of ["Array", "Array", "Set", "Set", "Set", "Set", "Map", "Map", "Cache", "Cache"].entries()) {
+    for (const [index, className] of ["Array", "Array", "Set", "Set", "Set", "Set", "Map", "Map", "bb", "bb"].entries()) {
       const value: Data = { type: "object", className, objectId: `original-${String(index)}` };
-      if (className !== "Cache") { value["subtype"] = className.toLowerCase(); }
+      if (className !== "bb") { value["subtype"] = className.toLowerCase(); }
       result.push(property(String(index + 4), value, true, true));
     }
   }

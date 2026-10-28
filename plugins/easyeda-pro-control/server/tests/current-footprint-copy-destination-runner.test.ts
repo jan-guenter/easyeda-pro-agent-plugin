@@ -9,6 +9,8 @@ import type { CurrentFootprintCopyStatePacket } from "../src/current-footprint-c
 import { CURRENT_FOOTPRINT_COPY_DEPENDENCY_FIXTURE as DEPENDENCY_SOURCES } from "./helpers/current-footprint-copy-dependency-fixture.ts";
 import { CURRENT_FOOTPRINT_COPY_DESTINATION_FIXTURE as SOURCES } from "./helpers/current-footprint-copy-destination-fixture.ts";
 
+import { backendCacheArrayTail } from "./helpers/current-footprint-copy-backend-cache-metadata.ts";
+
 type Data = Record<string, unknown>;
 const property = (name: string, value: Data, writable = false, enumerable = false, configurable = true): Data =>
   ({ name, value, writable, enumerable, configurable, isOwn: true });
@@ -17,14 +19,14 @@ function array(dependency: boolean): Data {
   const result = profiles.map((profile, index) => property(String(index), { type: "function", className: profile.async ? "AsyncFunction" : "Function",
     description: sources[index], objectId: `${dependency ? "dep" : "fn"}-${String(index)}` }, true, true));
   if (dependency) {
-    result.push(...["JP", "Cache", "Cache"].map((className, index) => property(String(index + 53), { type: "object", className, objectId: `runtime-${String(index)}` }, true, true)));
+    result.push(...backendCacheArrayTail());
   } else {
     for (let index = 28; index < 36; index += 1) { result.push(property(String(index), { type: index === 28 ? "function" : "object", objectId: `object-${String(index)}` }, true, true)); }
     for (const [index, value] of ["1".repeat(16), 7, "a".repeat(64), "b".repeat(32)].entries()) {
       result.push(property(String(index + 36), { type: typeof value, value }, true, true));
     }
   }
-  result.push(property("length", { type: "number", value: dependency ? 56 : 40 }, true, false, false));
+  result.push(property("length", { type: "number", value: dependency ? 69 : 40 }, true, false, false));
   return { result, internalProperties: [{ name: "[[Prototype]]", value: { type: "object", subtype: "array", className: "Array", description: "Array(0)", objectId: "array-proto" } }] };
 }
 function metadata(index: number, head = false): Data {
