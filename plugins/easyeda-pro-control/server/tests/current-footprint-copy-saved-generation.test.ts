@@ -15,9 +15,10 @@ import { captureCurrentPcbStringClockReply } from "../src/current-pcb-string-clo
 import { CURRENT_UPLOAD_QUEUE_PROFILE, validateCurrentUploadQueueReadResult } from "../src/current-upload-queue-read.ts";
 import { savedFixture } from "./helpers/current-footprint-copy-v2-saved-fixture.ts";
 
-async function fixture(options: Readonly<{ secondQueuePresent?: boolean; sourceChanged?: boolean; lostOpen?: boolean }> = {}): Promise<{
+async function fixture(options: Readonly<{ secondQueuePresent?: boolean; sourceChanged?: boolean; lostOpen?: boolean;
+  admissionFailed?: boolean; allocationFailed?: boolean; launchFailed?: boolean; launchRefused?: boolean; lostCleanup?: boolean }> = {}): Promise<{
   adapter: CurrentFootprintCopySavedExecutionNative; input: Awaited<ReturnType<typeof savedFixture>>;
-  calls: string[]; forgedGuard: () => Promise<void>;
+  calls: string[]; forgedGuard: () => Promise<void>; settleCleanup: () => void; duplicate: () => unknown;
 }> {
   const input = await savedFixture(), target = currentFootprintCopyV2SavedTarget(input.projection);
   const calls: string[] = [], checkpoint = Object.freeze({ source: "/synthetic.eprj2" }), token = Object.freeze({}), writer = Object.freeze({});
@@ -28,12 +29,15 @@ async function fixture(options: Readonly<{ secondQueuePresent?: boolean; sourceC
     .replaceAll(/^import[\s\S]*?;\n/gmu, "").replaceAll(/\bexport (?=(?:async )?(?:function|const|class))/gu, "");
   const scope = createContext({ canonicalJson, currentFootprintCopyV2SavedTarget, captureCurrentPcbStringClockReply,
     validateCurrentUploadQueueReadResult: (value: unknown, expected: unknown): unknown =>
-      validateCurrentUploadQueueReadResult(value, structuredClone(expected)), Object, Reflect, Error, Promise, WeakMap, writer,
+      validateCurrentUploadQueueReadResult(value, structuredClone(expected)), Object, Reflect, Error, Promise, WeakMap, WeakSet, writer,
     assertOriginalCurrentFootprintCopyNativeOwner(owner: object): void { assert.ok(owner === writer || owner === allocated); },
     assertOriginalCurrentFootprintCopyNativeTermination(owner: object, original: object): void { assert.equal(owner, allocated); assert.equal(original, token); assert.ok(closed); },
     originalCurrentFootprintCopyNativeTermination(owner: object): object { assert.equal(owner, allocated); assert.ok(closed); return token; },
     originalCurrentFootprintCopyNativeTarget(owner: object): unknown { assert.ok(owner === writer || owner === allocated); return { target,
       checkpoint, source: checkpoint.source }; },
+    currentFootprintCopySavedAllocationOutcome(owner: object): unknown {
+      assert.equal(owner, writer); return allocated === null ? { status: "no-resource", owner: null } : { status: "retained", owner: allocated };
+    },
     requireCurrentFootprintCopyClosedSnapshot(owner: object, after: object): unknown { assert.equal(owner, writer); assert.equal(after, input.after); return snapshot; },
     captureCurrentFootprintCopyClosedSnapshot(owner: object, original: object): Promise<unknown> {
       assert.equal(owner, allocated); assert.equal(original, token); assert.ok(closed); calls.push("final-sql"); return Promise.resolve(input.after);
@@ -44,7 +48,11 @@ async function fixture(options: Readonly<{ secondQueuePresent?: boolean; sourceC
     },
   });
   class NativeOwner {
-    public startFootprintCopySavedGeneration(): Promise<void> { assert.equal(allocated, this); calls.push("launch"); launched = true; return Promise.resolve(); }
+    public startFootprintCopySavedGeneration(): Promise<void> {
+      assert.equal(allocated, this); calls.push("launch");
+      if (options.launchFailed === true) { return Promise.reject(new Error("launch admission failed")); }
+      launched = true; return options.launchRefused === true ? Promise.reject(new Error("launch refused")) : Promise.resolve();
+    }
     public observeFootprintCopyUploadQueue(): Promise<unknown> { assert.equal(this, allocated);
       assert.ok(launched && !closed); queues += 1; calls.push(`queue-${queues}`);
       if (queues === 2 && options.secondQueuePresent === true) { return Promise.reject(new Error("upload cache present")); }
@@ -62,22 +70,34 @@ async function fixture(options: Readonly<{ secondQueuePresent?: boolean; sourceC
     public observeApplicationWindow(): Promise<string> { assert.equal(this, allocated); calls.push("window"); return Promise.resolve("1"); }
     public requestNormalClose(hwnd: string): Promise<void> { assert.equal(this, allocated); assert.equal(hwnd, "1"); calls.push("close"); closed = true; return Promise.resolve(); }
     public observeTermination(): Promise<boolean> { assert.equal(this, allocated); calls.push("exit"); return Promise.resolve(closed); }
-    public releaseUnlaunched(): Promise<never> { assert.equal(this, allocated); return Promise.reject(new Error("No unlaunched cleanup in this fixture")); }
-    public releaseNoProcess(): Promise<never> { assert.equal(this, allocated); return Promise.reject(new Error("No no-process cleanup in this fixture")); }
+    public releaseUnlaunched(): Promise<void> {
+      assert.equal(this, allocated); assert.equal(launched, false); calls.push("release-unlaunched");
+      if (options.lostCleanup === true) { return Promise.reject(new Error("cleanup reply lost")); }
+      closed = true; released = true; return Promise.resolve();
+    }
+    public releaseNoProcess(): Promise<void> {
+      assert.equal(this, allocated); assert.equal(options.launchRefused, true); calls.push("release-no-process");
+      if (options.lostCleanup === true) { return Promise.reject(new Error("cleanup reply lost")); }
+      closed = true; released = true; return Promise.resolve();
+    }
     public observeFootprintCopyRelease(): "pending" | "released" { assert.equal(this, allocated); return released ? "released" : "pending"; }
-    public status(): unknown { return { binding: this === writer ? writerBinding : savedBinding, launchConsumed: launched, noProcessCleanupAvailable: false, released, helperClosed: released }; }
+    public status(): unknown { return { binding: this === writer ? writerBinding : savedBinding, launchConsumed: launched,
+      noProcessCleanupAvailable: options.launchRefused === true, released, helperClosed: released }; }
     public releaseClosed(): Promise<void> { assert.equal(this, allocated); assert.ok(closed); calls.push("release"); released = true; return Promise.resolve(); }
   }
   scope["CurrentFootprintCopySavedNativeOwner"] = NativeOwner;
   scope["startCurrentFootprintCopySavedNativeOwner"] = (owner: object, after: object): Promise<NativeOwner> => {
     assert.equal(owner, writer); assert.equal(after, input.after); assert.equal(allocated, null); calls.push("allocate");
-    const native = new NativeOwner(); allocated = native; return Promise.resolve(native);
+    if (options.admissionFailed === true) { return Promise.reject(new Error("helper admission failed")); }
+    const native = new NativeOwner(); allocated = native;
+    return options.allocationFailed === true ? Promise.reject(new Error("allocated owner startup failed")) : Promise.resolve(native);
   };
   const loaded: unknown = runInContext(`${program}\ncreateCurrentFootprintCopySavedExecutionNative(writer)`, scope);
   assert.ok(loaded !== null && typeof loaded === "object");
   // oxlint-disable-next-line typescript/no-unsafe-type-assertion -- Maintained code runs in a private realm with the explicit synthetic native-owner seam above.
   const adapter = loaded as CurrentFootprintCopySavedExecutionNative;
-  return { adapter, input, calls, forgedGuard: (): Promise<void> => {
+  return { adapter, input, calls, settleCleanup: (): void => { closed = true; released = true; },
+    duplicate: (): unknown => runInContext("createCurrentFootprintCopySavedExecutionNative(writer)", scope), forgedGuard: (): Promise<void> => {
     scope["openOwner"] = allocated;
     // oxlint-disable-next-line typescript/no-unsafe-type-assertion -- The fixed invocation evaluates only the maintained async guard in this synthetic realm.
     return runInContext("revalidateCurrentFootprintCopySavedOpenGuard(openOwner,{profile:'private.current-footprint-copy-saved-open-guard.v1'})", scope) as Promise<void>;
@@ -85,8 +105,10 @@ async function fixture(options: Readonly<{ secondQueuePresent?: boolean; sourceC
 }
 
 void test("saved generation allocates before launch and brackets its sole open with two cache probes and exact bytes", async () => {
-  const f = await fixture(); assert.deepEqual(f.calls, []);
+  const f = await fixture(); assert.deepEqual(f.calls, []); assert.equal(f.adapter.startOutcome(), "not-started");
+  assert.throws(f.duplicate, /WRITER_CONSUMED/u);
   await f.adapter.start(f.input.projection, f.input.after); assert.deepEqual(f.calls, ["allocate", "launch"]);
+  assert.equal(f.adapter.startOutcome(), "retained");
   const replay = await f.adapter.excludeReplay(); await f.adapter.requireReplayExclusion(replay);
   await assert.rejects(Promise.resolve().then(() => f.adapter.requireReplayExclusion(structuredClone(replay))), /ORIGINAL_REPLAY/u);
   await assert.rejects(f.forgedGuard(), /ORIGINAL_OPEN_GUARD/u);
@@ -98,6 +120,45 @@ void test("saved generation allocates before launch and brackets its sole open w
   await f.adapter.snapshot(exit.original); await f.adapter.release(exit.original);
   assert.equal(await f.adapter.observeRelease(exit.original), "released");
   assert.deepEqual(f.calls.slice(-5), ["window", "close", "exit", "final-sql", "release"]);
+});
+
+void test("saved admission failure consumes its attempt and reports no resource without native closure evidence", async () => {
+  const f = await fixture({ admissionFailed: true });
+  await assert.rejects(f.adapter.start(f.input.projection, f.input.after), /helper admission failed/u);
+  assert.equal(f.adapter.startOutcome(), "no-resource"); assert.deepEqual(f.calls, ["allocate"]);
+  await assert.rejects(f.adapter.start(f.input.projection, f.input.after), /START_CONSUMED/u);
+  await assert.rejects(f.adapter.close(), /NATIVE_OWNER_NOT_ALLOCATED/u);
+  await assert.rejects(f.adapter.termination(), /NATIVE_OWNER_NOT_ALLOCATED/u);
+  await assert.rejects(f.adapter.release(Object.freeze({})), /NATIVE_OWNER_NOT_ALLOCATED/u);
+  assert.deepEqual(f.calls, ["allocate"]);
+});
+
+void test("failed saved allocation or launch retains its actual owner for once-only unlaunched cleanup", async () => {
+  for (const options of [{ allocationFailed: true }, { launchFailed: true }, { launchRefused: true }]) {
+    const f = await fixture(options);
+    await assert.rejects(f.adapter.start(f.input.projection, f.input.after), /startup failed|admission failed|launch refused/u);
+    assert.equal(f.adapter.startOutcome(), "retained");
+    await f.adapter.close(); await assert.rejects(f.adapter.close(), /CLOSE_CONSUMED/u);
+    const exit = await f.adapter.termination(); assert.ok(exit.status === "terminated");
+    await f.adapter.release(exit.original); assert.equal(await f.adapter.observeRelease(exit.original), "released");
+    assert.equal(f.calls.filter(call => call.startsWith("release-")).length, 1);
+    assert.equal(f.calls.includes("close"), false); assert.equal(f.calls.includes("exit"), false);
+  }
+});
+
+void test("lost no-process cleanup acknowledgment observes original release before issuing a termination token", async () => {
+  for (const options of [{ launchFailed: true, lostCleanup: true }, { launchRefused: true, lostCleanup: true }]) {
+    const f = await fixture(options);
+    await assert.rejects(f.adapter.start(f.input.projection, f.input.after), /admission failed|launch refused/u);
+    await assert.rejects(f.adapter.close(), /cleanup reply lost/u);
+    const pending = await f.adapter.termination(); assert.equal(pending.status, "pending");
+    await assert.rejects(f.adapter.close(), /CLOSE_CONSUMED/u); f.settleCleanup();
+    const exit = await f.adapter.termination(); assert.ok(exit.status === "terminated");
+    await f.adapter.requireTermination(exit.original); await f.adapter.release(exit.original);
+    assert.equal(await f.adapter.observeRelease(exit.original), "released");
+    assert.equal(f.calls.filter(call => call.startsWith("release-")).length, 1);
+    assert.equal(f.calls.includes("close"), false); assert.equal(f.calls.includes("exit"), false);
+  }
 });
 
 void test("saved generation blocks opening on the second cache probe or changed post-edit bytes and still closes once", async () => {

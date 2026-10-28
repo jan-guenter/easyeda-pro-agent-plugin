@@ -610,7 +610,7 @@ parent/worker peer and registered parser/upload relationships. Its four original
 cache-open pauses retain the native CacheStorage receiver, exact namespace
 arguments and resulting Cache objects through project assignment. Wrapper labels
 and native class metadata alone do not establish namespace provenance. This
-purpose reserves 743 normal and 44 cleanup requests, 787 total; complete native
+purpose reserves 780 normal and 45 cleanup requests, 825 total; complete native
 writer integration and connected acceptance remain pending. A private saved owner
 uses its separate read-only purpose and 319 normal/34 cleanup request budget,
 353 total, with original queue exclusion, constructor and saved-source captures.
@@ -635,3 +635,13 @@ probe or local Date sample cannot replace them. Native creation allocates and
 sets document type before the first clock continuation, so its durable intent
 and cleanup ownership must already exist. Partial preparation request counts
 do not reserve a whole copy lifecycle or expand the observation-purpose budget.
+
+
+The ordinary local-project parent is `tl.open`; temporary `sl.open` has separate
+Worker construction sites. Exact source qualification of a temporary path cannot
+bind ordinary opening. The private registered-clock adapter qualifies the
+complete original ws-service source and actual bus `pulled` RPC task, wrapper,
+callback and fresh lexical Jd values. Its runtime transport is fixed and parent
+owned. A task or offset sample does not prove the callback handled the native
+document request or that another responder could not answer. Those event and
+backend proofs remain required before writer admission.

@@ -1,7 +1,8 @@
 /** Durable sample data only; no original owner or Windows provenance is minted. */
 import assert from "node:assert/strict";
 import { test } from "node:test";
-import { currentFootprintCopyRouteObservationSchema } from "../src/current-footprint-copy-route-observation.ts";
+import { currentFootprintCopyRouteObservationSchema, recordedCurrentFootprintCopyRouteObservationSchema } from "../src/current-footprint-copy-route-observation.ts";
+import { diagnosticLifecycleRecordSchemas } from "../src/current-pcb-diagnostic-lifecycle-journal.ts";
 
 function sample(milliseconds: number): {
   schema: "easyeda-pro-control.windows-clock-sample.v1"; utcBeforeTicks: string; utcAfterTicks: string;
@@ -29,4 +30,28 @@ void test("durable Windows clock projection rejects pair contradictions accepted
   assert.equal(schema.safeParse({ ...value, before: { ...sample(1000), localOffsetMinutes: -0 },
     after: { ...sample(1010), localOffsetMinutes: -0 } }).success, false);
   assert.equal(schema.safeParse({ ...value, after: { ...sample(1010), qpcBefore: "not-decimal" } }).success, false);
+});
+
+void test("current route publication requires both original registration fields while recorded history preserves their absence", () => {
+  const current = currentFootprintCopyRouteObservationSchema.shape, recorded = recordedCurrentFootprintCopyRouteObservationSchema.shape;
+  const registration = { profile: "private.current-footprint-copy-clock-registration.v1", runtimeWsSourceQualified: true,
+    originalNotificationBusRetained: true, originalRpcWrapperAndCallbackRetained: true, originalNativeDateNowRetained: true,
+    initialLexicalOffset: -59, documentClockInvocationObserved: false, responderExclusivityProven: false, backendOwnershipProven: false, executionAuthorized: false };
+  const final = { profile: "private.current-footprint-copy-clock-registration-sample.v1", sampleIndex: 1, lexicalOffset: 82,
+    documentClockInvocationObserved: false, executionAuthorized: false };
+  assert.equal(current.clockRegistration.safeParse(registration).success, true); assert.equal(current.clockRegistrationFinalSample.safeParse(final).success, true);
+  // oxlint-disable-next-line unicorn/no-useless-undefined -- Explicit absence is the regression input distinguishing mandatory current fields from optional historical fields.
+  assert.equal(current.clockRegistration.safeParse(undefined).success, false); assert.equal(current.clockRegistrationFinalSample.safeParse(undefined).success, false);
+  // oxlint-disable-next-line unicorn/no-useless-undefined -- Historical absence must remain absent instead of being upgraded into a current clock registration.
+  assert.equal(recorded.clockRegistration.safeParse(undefined).success, true); assert.equal(recorded.clockRegistrationFinalSample.safeParse(undefined).success, true);
+  assert.equal(current.clockRegistrationFinalSample.safeParse({ ...final, sampleIndex: 2 }).success, false);
+  assert.equal(current.clockRegistration.safeParse({ ...registration, documentClockInvocationObserved: true }).success, false);
+  assert.equal(current.clockRegistration.safeParse({ ...registration, backendOwnershipProven: true }).success, false);
+  assert.equal(recorded.clockRegistration.safeParse({ ...registration, responderExclusivityProven: true }).success, false);
+  assert.equal(current.clockRegistrationFinalSample.safeParse({ ...final, executionAuthorized: true }).success, false);
+  const failure = { schema: "easyeda-pro-control.footprint-copy-route-failure.v1", operationId: "footprint-route-synthetic", createdAt: "2026-10-28T12:00:00.000Z", intentSha256: "a".repeat(64),
+    failedStage: "clock-registration", error: "synthetic refusal", completedObservations: {}, executionAuthorized: false, saveAuthorized: false };
+  assert.equal(diagnosticLifecycleRecordSchemas["footprint-copy-route-failure.json"].safeParse(failure).success, true);
+  assert.equal(diagnosticLifecycleRecordSchemas["footprint-copy-route-failure.json"].safeParse({ ...failure, failedStage: "clock-registration-sample" }).success, true);
+  assert.equal(diagnosticLifecycleRecordSchemas["footprint-copy-route-failure.json"].safeParse({ ...failure, failedStage: "clock-dispatch" }).success, false);
 });

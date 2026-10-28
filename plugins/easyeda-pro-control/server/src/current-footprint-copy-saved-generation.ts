@@ -6,17 +6,18 @@ import type { Inventory } from "./closed-sql-equality.ts";
 import { captureCurrentFootprintCopyClosedSnapshot, requireCurrentFootprintCopyClosedSnapshot } from "./current-footprint-copy-closed-snapshot.ts";
 // oxlint-disable-next-line import/no-cycle -- These deferred calls retain the native issuer and original snapshot; no authority is reconstructed to break the ownership cycle.
 import { verifyCurrentFootprintCopyPosteditPreopenSource } from "./current-footprint-copy-preopen-source.ts";
-import type { CurrentFootprintCopySavedExecutionNative } from "./current-footprint-copy-execution-runtime.ts";
+import type { CurrentFootprintCopySavedExecutionNative, CurrentFootprintCopySavedStartOutcome } from "./current-footprint-copy-execution-runtime.ts";
 import { currentFootprintCopyV2SavedTarget } from "./current-footprint-copy-v2-saved-source.ts";
 import type { CurrentFootprintCopyV2SavedProjection } from "./current-footprint-copy-v2-saved-source.ts";
 // oxlint-disable-next-line import/no-cycle -- These deferred calls retain the native issuer and original snapshot; no authority is reconstructed to break the ownership cycle.
-import { CurrentFootprintCopySavedNativeOwner, assertOriginalCurrentFootprintCopyNativeOwner, assertOriginalCurrentFootprintCopyNativeTermination, originalCurrentFootprintCopyNativeTarget, originalCurrentFootprintCopyNativeTermination, retainedCurrentFootprintCopySavedAllocation, startCurrentFootprintCopySavedNativeOwner } from "./current-pcb-diagnostic-owner.ts";
+import { CurrentFootprintCopySavedNativeOwner, assertOriginalCurrentFootprintCopyNativeOwner, assertOriginalCurrentFootprintCopyNativeTermination, currentFootprintCopySavedAllocationOutcome, originalCurrentFootprintCopyNativeTarget, originalCurrentFootprintCopyNativeTermination, startCurrentFootprintCopySavedNativeOwner } from "./current-pcb-diagnostic-owner.ts";
 import type { CurrentFootprintCopyNativeOwner } from "./current-pcb-diagnostic-owner.ts";
 import { captureCurrentPcbStringClockReply } from "./current-pcb-string-clock-reply.ts";
 import { validateCurrentUploadQueueReadResult } from "./current-upload-queue-read.ts";
 
 export interface CurrentFootprintCopySavedOpenGuard { readonly profile: "private.current-footprint-copy-saved-open-guard.v1" }
 const guards = new WeakMap<CurrentFootprintCopySavedOpenGuard, CurrentFootprintCopySavedGeneration>();
+const writers = new WeakSet<CurrentFootprintCopyNativeOwner>();
 /* oxlint-disable typescript/unbound-method -- Invoke only with the genuine original saved native receiver; recheck both instance and prototype before use. */
 type NativeMethods = { readonly [Key in keyof typeof names]: CurrentFootprintCopySavedNativeOwner[typeof names[Key]] };
 function nativeMethods(): NativeMethods { return Object.freeze({
@@ -54,6 +55,7 @@ class CurrentFootprintCopySavedGeneration {
   #projectionText: string | null = null;
   #after: Inventory | null = null;
   #startAttempted = false;
+  #startOutcome: CurrentFootprintCopySavedStartOutcome = "not-started";
   #started = false;
   #exclusionAttempted = false;
   #replay: object | null = null;
@@ -66,9 +68,10 @@ class CurrentFootprintCopySavedGeneration {
   #snapshotAttempted = false;
   #releaseAttempted = false;
   #noProcessReleased = false;
+  #noProcessReleaseAttempted = false;
   readonly #rawQueues: unknown[] = [];
   public constructor(writer: CurrentFootprintCopyNativeOwner) {
-    assertOriginalCurrentFootprintCopyNativeOwner(writer); this.#writer = writer;
+    assertOriginalCurrentFootprintCopyNativeOwner(writer); need(!writers.has(writer), "WRITER_CONSUMED"); writers.add(writer); this.#writer = writer;
   }
   #current(): void {
     assertOriginalCurrentFootprintCopyNativeOwner(this.#writer);
@@ -98,6 +101,7 @@ class CurrentFootprintCopySavedGeneration {
   public binding(): CurrentFootprintCopySavedExecutionNative {
     return Object.freeze<CurrentFootprintCopySavedExecutionNative>({ generation: this.#generation, assertOwned: (): void => { this.#current(); },
       start: async (projection, after): Promise<void> => { await this.#start(projection, after); },
+      startOutcome: (): CurrentFootprintCopySavedStartOutcome => { this.#current(); return this.#startOutcome; },
       excludeReplay: (): Promise<object> => this.#excludeReplay(),
       requireReplayExclusion: (original): Promise<void> => { this.#requireReplay(original); return Promise.resolve(); },
       open: (projection, after, replay) => this.#open(projection, after, replay),
@@ -111,21 +115,30 @@ class CurrentFootprintCopySavedGeneration {
   }
   async #start(projection: CurrentFootprintCopyV2SavedProjection, after: Inventory): Promise<void> {
     this.#current(); need(!this.#startAttempted, "START_CONSUMED"); this.#startAttempted = true;
-    const snapshot = requireCurrentFootprintCopyClosedSnapshot(this.#writer, after);
-    currentFootprintCopyV2SavedTarget(projection);
-    this.#projection = projection; this.#projectionText = canonicalJson(projection); this.#after = after; this.#current();
-    // Factory allocates a distinct helper, retains it and returns before app
-    // Launch. Store its owner before the first launch-capable native method.
-    let owner: CurrentFootprintCopySavedNativeOwner;
-    try { owner = await startCurrentFootprintCopySavedNativeOwner(this.#writer, after); }
-    catch (error) { this.#owner = retainedCurrentFootprintCopySavedAllocation(this.#writer); throw error; }
-    this.#owner = owner; this.#current();
-    const origin = originalCurrentFootprintCopyNativeTarget(owner);
-    need(origin.checkpoint === snapshot.checkpoint && origin.source === snapshot.checkpoint.source, "SAVED_POSTEDIT_BINDING");
-    await this.#methods.start.call(owner); this.#current();
-    const saved = this.#methods.status.call(owner).binding, writer = this.#methods.status.call(this.#writer).binding;
-    need(writer !== null && saved !== null && writer.jobId !== saved.jobId && writer.helperInstance !== saved.helperInstance,
-      "FRESH_NATIVE_GENERATION"); this.#started = true;
+    this.#startOutcome = "pending";
+    let allocationAttempted = false;
+    try {
+      const snapshot = requireCurrentFootprintCopyClosedSnapshot(this.#writer, after);
+      currentFootprintCopyV2SavedTarget(projection);
+      this.#projection = projection; this.#projectionText = canonicalJson(projection); this.#after = after; this.#current();
+      // Factory allocates a distinct helper, retains it and returns before app
+      // Launch. Store its owner before the first launch-capable native method.
+      allocationAttempted = true;
+      const owner = await startCurrentFootprintCopySavedNativeOwner(this.#writer, after);
+      this.#owner = owner; this.#startOutcome = "retained"; this.#current();
+      const origin = originalCurrentFootprintCopyNativeTarget(owner);
+      need(origin.checkpoint === snapshot.checkpoint && origin.source === snapshot.checkpoint.source, "SAVED_POSTEDIT_BINDING");
+      await this.#methods.start.call(owner); this.#current();
+      const saved = this.#methods.status.call(owner).binding, writer = this.#methods.status.call(this.#writer).binding;
+      need(writer !== null && saved !== null && writer.jobId !== saved.jobId && writer.helperInstance !== saved.helperInstance,
+        "FRESH_NATIVE_GENERATION"); this.#started = true;
+    } catch (error) {
+      if (allocationAttempted) {
+        const outcome = currentFootprintCopySavedAllocationOutcome(this.#writer);
+        this.#owner = outcome.owner; this.#startOutcome = outcome.status === "not-attempted" ? "unresolved" : outcome.status;
+      } else { this.#startOutcome = "no-resource"; }
+      throw error;
+    }
   }
   async #queue(): Promise<void> {
     const owner = this.#live(); need(this.#projection !== null && this.#rawQueues.length < 2, "QUEUE_BUDGET");
@@ -160,9 +173,9 @@ class CurrentFootprintCopySavedGeneration {
     const owner = this.#native(); need(!this.#closeAttempted, "CLOSE_CONSUMED"); this.#closeAttempted = true;
     const status = this.#methods.status.call(owner);
     if (!status.launchConsumed || status.noProcessCleanupAvailable) {
-      this.#noProcessReleased = true;
+      this.#noProcessReleaseAttempted = true;
       const result = await (status.launchConsumed ? this.#methods.noProcess.call(owner) : this.#methods.unlaunched.call(owner));
-      this.#current(); return result;
+      this.#current(); this.#noProcessReleased = this.#methods.releaseState.call(owner) === "released"; return result;
     }
     const window = await this.#methods.window.call(owner); this.#current(); need(window !== null, "CLOSE_WINDOW_MISSING");
     await this.#methods.close.call(owner, window); this.#current();
@@ -170,6 +183,10 @@ class CurrentFootprintCopySavedGeneration {
   }
   async #observeTermination(): ReturnType<CurrentFootprintCopySavedExecutionNative["termination"]> {
     const owner = this.#native(); need(this.#closeAttempted, "CLOSE_REQUIRED");
+    if (this.#noProcessReleaseAttempted && !this.#noProcessReleased) {
+      this.#noProcessReleased = this.#methods.releaseState.call(owner) === "released";
+      if (!this.#noProcessReleased) { return Object.freeze({ status: "pending" }); }
+    }
     if (!this.#noProcessReleased && !await this.#methods.termination.call(owner)) { this.#current(); return Object.freeze({ status: "pending" }); }
     this.#current(); const original = originalCurrentFootprintCopyNativeTermination(owner);
     assertOriginalCurrentFootprintCopyNativeTermination(owner, original); this.#termination = original;

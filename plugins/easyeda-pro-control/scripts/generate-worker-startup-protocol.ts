@@ -7,6 +7,8 @@ import { CURRENT_FOOTPRINT_COPY_EXECUTION_PROFILE as execution } from "../server
 import { currentFootprintCopyParentNativeSource } from "../server/src/current-footprint-copy-parent-native.ts";
 import { currentFootprintCacheConstructionNativeSource } from "../server/src/current-footprint-copy-cache-construction-native.ts";
 import { currentFootprintCopySavedNativeSource } from "../server/src/current-footprint-copy-saved-native.ts";
+import { currentFootprintCopyClockRegistrationNativeSource } from "../server/src/current-footprint-copy-clock-registration-native.ts";
+import { CURRENT_FOOTPRINT_COPY_CLOCK_REGISTRATION_REQUESTS as clockRegistration } from "../server/src/current-footprint-copy-clock-registration-runner.ts";
 import { CURRENT_FOOTPRINT_COPY_SAVED_PROFILE as saved } from "../server/src/current-footprint-copy-saved-profile.ts";
 import { currentFootprintCopyTransactionClockNativeSource } from "../server/src/current-footprint-copy-transaction-clock-native.ts";
 import { currentFootprintCopyExecutionWorkerNativeSource } from "../server/src/current-footprint-copy-execution-worker-native.ts";
@@ -99,8 +101,8 @@ function footprintSource(): string {
     "// END GENERATED FOOTPRINT COPY PREPARATION PROTOCOL";
 }
 function footprintExecutionSource(): string {
-  return `// BEGIN GENERATED FOOTPRINT COPY EXECUTION PROTOCOL\n${currentFootprintCopyTransactionClockNativeSource()}\n${currentFootprintCopyExecutionWorkerNativeSource()}\n${currentFootprintCopyParentNativeSource()}\n${currentFootprintCacheConstructionNativeSource()}\n` +
-    `public static class EasyedaFootprintExecutionLimits { public const int Requests=${String(execution.requestLimit)}; public const int NormalRequests=${String(execution.normalRequestLimit)}; public const int ClockRequests=11; public const int ParentRequests=${String(execution.requests.parentNative)}; public const int CacheRequests=${String(execution.requests.cacheConstructionNative)}; public const long NormalMilliseconds=${String(execution.normalMilliseconds)}L; public const long TotalMilliseconds=${String(execution.normalMilliseconds + execution.cleanupMilliseconds)}L; }\n` +
+  return `// BEGIN GENERATED FOOTPRINT COPY EXECUTION PROTOCOL\n${currentFootprintCopyTransactionClockNativeSource()}\n${currentFootprintCopyExecutionWorkerNativeSource()}\n${currentFootprintCopyParentNativeSource()}\n${currentFootprintCacheConstructionNativeSource()}\n${currentFootprintCopyClockRegistrationNativeSource()}\n` +
+    `public static class EasyedaFootprintExecutionLimits { public const int Requests=${String(execution.requestLimit)}; public const int NormalRequests=${String(execution.normalRequestLimit)}; public const int ClockRequests=11; public const int ParentRequests=${String(execution.requests.parentNative)}; public const int CacheRequests=${String(execution.requests.cacheConstructionNative)}; public const int RegistrationRequests=${String(clockRegistration.total)}; public const long NormalMilliseconds=${String(execution.normalMilliseconds)}L; public const long TotalMilliseconds=${String(execution.normalMilliseconds + execution.cleanupMilliseconds)}L; }\n` +
     "// END GENERATED FOOTPRINT COPY EXECUTION PROTOCOL";
 }
 function footprintSavedSource(): string {

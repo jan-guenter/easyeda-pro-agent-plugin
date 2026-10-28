@@ -6,6 +6,7 @@ import { currentFootprintCopyDependencyObservationSchema, recordedCurrentFootpri
 import { currentFootprintCopyAsyncObservationSchema } from "./current-footprint-copy-async-runner.ts";
 import { currentFootprintCopyUiObservationSchema } from "./current-footprint-copy-ui-runner.ts";
 import { currentFootprintCopyManagerRouteObservationSchema } from "./current-footprint-copy-manager-route-runner.ts";
+import { currentFootprintCopyClockRegistrationObservationSchema, currentFootprintCopyClockRegistrationSampleSchema } from "./current-footprint-copy-clock-registration-runner.ts";
 import { validateClockSample } from "./windows-clock-transport.ts";
 
 const producer = z.object({ profile: z.literal("private.current-footprint-copy-producer.v1"), methodCount: z.literal(8),
@@ -53,6 +54,8 @@ const route = z.object({
   producers: producer, dependencies: currentFootprintCopyDependencyObservationSchema, callbacks, destinations,
   ui: currentFootprintCopyUiObservationSchema, manager: currentFootprintCopyManagerRouteObservationSchema, peer, windowsClock,
   cacheConstruction,
+  clockRegistration: currentFootprintCopyClockRegistrationObservationSchema,
+  clockRegistrationFinalSample: currentFootprintCopyClockRegistrationSampleSchema.extend({ sampleIndex: z.literal(1) }),
   originalManagerWorkerPeerMatched: z.literal(true), finalOriginalWorkerObservationsReproved: z.literal(true),
   documentClocksArmed: z.literal(false), createDispatched: z.literal(false), callbacksCompleted: z.literal(false),
   backendDynamicDispatchQualified: z.literal(false), executionAuthorized: z.literal(false), saveAuthorized: z.literal(false), persistenceVerified: z.literal(false),
@@ -62,5 +65,7 @@ export const currentFootprintCopyRouteObservationSchema = route.refine(withinRes
 /** Historical data can be inspected but cannot issue a current runtime packet. */
 export const recordedCurrentFootprintCopyRouteObservationSchema = route.extend({
   cacheConstruction: cacheConstruction.optional(), dependencies: recordedCurrentFootprintCopyDependencyObservationSchema,
+  clockRegistration: currentFootprintCopyClockRegistrationObservationSchema.optional(),
+  clockRegistrationFinalSample: currentFootprintCopyClockRegistrationSampleSchema.optional(),
 }).strict().refine(withinResultBound, "Route observation exceeds its bound.");
 export type CurrentFootprintCopyRouteObservation = z.infer<typeof currentFootprintCopyRouteObservationSchema>;

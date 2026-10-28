@@ -244,7 +244,7 @@ void test("native adapter embeds and private fields match TS programs without na
     TeardropOwnerFunction: CURRENT_PCB_TEARDROP_OWNER_ASSOCIATION,
   })) {
     const encoded = new RegExp(`const string ${name}=@"((?:""|[^"])*)";`, "u").exec(source)?.[1];
-    const actual = name === "ModelPendingFunction" || name === "ModelRootInventoryFunction"
+    const actual = name === "ModelStateFunction" || name === "ModelPendingFunction" || name === "ModelRootInventoryFunction"
       ? readPackedNativeProgram(source, name) : encoded?.replaceAll('""', '"');
     assert.equal(actual, program, name);
     assert.ok(source.includes(createHash("sha256").update(program).digest("hex")));

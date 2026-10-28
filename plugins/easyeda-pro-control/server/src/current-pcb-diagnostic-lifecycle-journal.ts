@@ -547,7 +547,7 @@ const footprintRouteResultSchema = z.object({
 }).strict();
 const footprintRouteFailureSchema = z.object({
   schema: z.literal("easyeda-pro-control.footprint-copy-route-failure.v1"), ...base, operationId: currentFootprintCopyRoutePreparationIdSchema,
-  intentSha256: diagnosticLifecycleDigestSchema, failedStage: z.enum(["cache-construction", "state", "producers", "dependencies", "callbacks", "destinations", "ui", "manager", "peer", "reproof", "windows-clock"]),
+  intentSha256: diagnosticLifecycleDigestSchema, failedStage: z.enum(["cache-construction", "state", "producers", "dependencies", "callbacks", "destinations", "ui", "clock-registration", "manager", "peer", "reproof", "windows-clock", "clock-registration-sample"]),
   error: z.string().max(4096), completedObservations: z.record(z.string(), z.unknown()), executionAuthorized: z.literal(false), saveAuthorized: z.literal(false),
 }).strict().refine(value => Buffer.byteLength(canonicalJson(value)) <= CURRENT_FOOTPRINT_COPY_ROUTE_RESULT_MAX_BYTES, "Route failure exceeds its bound.");
 export const diagnosticLifecycleRecordSchemas = {

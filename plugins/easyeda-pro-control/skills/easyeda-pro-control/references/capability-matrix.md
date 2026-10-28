@@ -112,8 +112,10 @@ launch budget. It does not dispatch a copy or Save. A separate
 capture, a one-use child message proof, four original cache-open pauses and
 registered callback/destination qualification for disposable validation. Cache
 namespace evidence requires those original events and retained native results;
-wrapper names alone remain insufficient. The execution envelope has 743 normal
-requests and 44 cleanup requests. A separate private saved-generation owner has
+wrapper names alone remain insufficient. The execution envelope has 780 normal
+requests and 45 cleanup requests. Its clock-registration observation retains the
+original RPC callback and resamples lexical offset without claiming actual
+document-clock invocation or exclusive/backend ownership. A separate private saved-generation owner has
 319 normal requests and 34 cleanup requests, original queue checks and saved-source
 reads; it cannot dispatch create or Save. Native HTTP backend and actor/clock
 ownership, complete external-effect qualification and connected saved-copy proof
