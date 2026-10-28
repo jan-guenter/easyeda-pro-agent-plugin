@@ -8,9 +8,13 @@ export const CURRENT_FOOTPRINT_COPY_MAIN_BACKEND_SOURCE = freezeDeep({
   relativePath: "app.js", bytes: 2_657_192,
   sha256: "52f51ce43cfebc81a362addde6cd27e39fa58c8fc1ab4ee5adacca4551e5ef0c",
   registration: {
-    https: { start: 2_629_792, end: 2_629_820, bytes: 28, lineNumber: 8583, columnNumber: 3992, breakpointColumnNumber: 3994,
+    // The receiver is closure-captured in the complete original source. A
+    // Synthetic function parameters introduce property-load pause sites3994/
+    // 4023 that do not exist in that original lexical context. Pin the actual
+    // Call sites instead; a relocated breakpoint still refuses.
+    https: { start: 2_629_792, end: 2_629_820, bytes: 28, lineNumber: 8583, columnNumber: 3992, breakpointColumnNumber: 4003,
       sha256: "1012eeee68840071f917750e8ddf745f75e290ca0c248b5107ce015eb837f6de" },
-    http: { start: 2_629_821, end: 2_629_848, bytes: 27, lineNumber: 8583, columnNumber: 4021, breakpointColumnNumber: 4023,
+    http: { start: 2_629_821, end: 2_629_848, bytes: 27, lineNumber: 8583, columnNumber: 4021, breakpointColumnNumber: 4032,
       sha256: "59126d16b6b7c6c045030480adeed53cd299567707a96e735a3c2cb3cf333975" },
   },
   functions: {

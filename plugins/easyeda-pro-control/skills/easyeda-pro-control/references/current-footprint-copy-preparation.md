@@ -105,8 +105,14 @@ Follow the discovered launch, browser, frame and pinned UI-source stages, then
 capture the checkpoint-bound disposable project once. This purpose holds the
 original parent around Worker creation and qualifies the child bootstrap before
 installing a one-use diagnostic message observer. The child consumes that exact
-message before business handlers receive it. Only the original matching proof
-permits the parent to resume. The eleven constructor pauses retain parser and
+message before business handlers receive it. After the listener, constructor
+and one message-send acknowledgment are qualified, an original pending-handshake
+capability permits the parent's one normal-open continuation. Chromium processes
+its parent-side worker-ready task before delivering the queued message. The
+actual matching receipt is still required before publishing peer proof or
+using later route/source observations. A pending handshake is no peer proof.
+Opening can therefore advance before that proof; copy, delete and Save remain
+unavailable. The eleven constructor pauses retain parser and
 upload callback relationships. Four additional cache pauses observe the two
 original `bb.open` calls before native `CacheStorage.open` and after its result
 assignment. The original event subscription, source-qualified wrapper functions,

@@ -56,15 +56,17 @@ async function fixture(receiverClass = "tl"): Promise<{ runner: CurrentFootprint
   return { runner, commands, pause, state };
 }
 
-void test("parent holds the original post-Worker receiver until the actual peer packet passes", async () => {
+void test("parent resumes once for its original pending challenge before the receipt can issue a peer packet", async () => {
   const value = await fixture(); await value.runner.arm();
   const work = value.runner.captureUntilHeld(); value.pause("before"); const held = await work;
   assert.deepEqual(held, { parentSessionId: "parent", parentUniqueContextId: "parent-context", projectObjectId: "project" });
   assert.equal(value.commands.length, 10); await value.runner.requireOriginalHeld(held); assert.equal(value.commands.length, 10);
   assert.equal(value.commands.filter(command => command.phase === "resume").length, 1); assert.ok(value.runner.retained().held);
-  const peer = peerFixture(); const packet = await peer.runner.observe();
-  await value.runner.resumeAfterPeer(peer.runner, packet); assert.equal(value.commands.length, 12);
-  await assert.rejects(value.runner.resumeAfterPeer(peer.runner, packet)); assert.equal(value.commands.length, 12);
+  const peer = peerFixture(); const continuations: Parameters<typeof value.runner.resumeForPeer>[1][] = [];
+  peer.state.continueParent = async (pending): Promise<void> => { continuations.push(pending); assert.equal(peer.runner.retained().completed, false);
+    await value.runner.resumeForPeer(peer.runner, pending); };
+  await peer.runner.observe(); assert.equal(value.commands.length, 12); const continuation = continuations[0]; assert.ok(continuation);
+  await assert.rejects(value.runner.resumeForPeer(peer.runner, continuation)); assert.equal(value.commands.length, 12);
   await value.runner.release(); await value.runner.requireOriginalParent(held); await peer.runner.release();
   assert.equal(value.commands.length, 13); assert.ok(value.state.unsubscribed);
   value.state.exited = true; await value.runner.observeOriginalGenerationEnded(); await assert.rejects(value.runner.requireOriginalParent(held));
@@ -76,6 +78,19 @@ void test("lost original resume reply retains the later pause for generation cle
   assert.ok(value.runner.retained().held); await assert.rejects(value.runner.release());
   await assert.rejects(value.runner.observeOriginalGenerationEnded(), /generation remains alive/u);
   value.state.exited = true; await value.runner.observeOriginalGenerationEnded(); assert.ok(value.state.unsubscribed);
+});
+void test("lost pending-handshake resume acknowledgment consumes the original continuation without a peer packet", async () => {
+  const value = await fixture(); await value.runner.arm();
+  const held = value.runner.captureUntilHeld(); value.pause("before"); await held; value.state.failResume = true;
+  const peer = peerFixture(); peer.state.continueParent = (pending): Promise<void> => value.runner.resumeForPeer(peer.runner, pending);
+  await assert.rejects(peer.runner.observe(), /lost resume acknowledgment/u);
+  assert.equal(value.commands.filter(command => command.phase === "resume").length, 2);
+  assert.equal(peer.runner.retained().completed, false); assert.equal(peer.runner.retained().parentContinuationAttempted, true);
+  assert.equal(value.runner.retained().resumeAttempted, true); assert.equal(value.runner.retained().resumed, false);
+  await assert.rejects(value.runner.resumeForPeer(peer.runner, { profile: "private.current-footprint-parent-worker-pending.v1", executionAuthorized: false }));
+  assert.equal(value.commands.filter(command => command.phase === "resume").length, 2);
+  value.state.exited = true; peer.state.exited = true;
+  await value.runner.observeOriginalGenerationEnded(); await peer.runner.observeOriginalGenerationEnded();
 });
 void test("temporary-project sl receiver is refused without resuming its constructor", async () => {
   const value = await fixture("sl"); await value.runner.arm();

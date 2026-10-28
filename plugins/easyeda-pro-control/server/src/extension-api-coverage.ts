@@ -283,6 +283,14 @@ export function inventoryExtensionApiCoverage(): ApiCoverageEntry[] {
       inputDiscovery: { tool: "easyeda_control_api", arguments: { request: { action: "library-files", query: { includeSchemas: true } } } },
     }]);
   }
+  routes.set("eda.sys_FileManager.getDocumentFootprintSources", [{
+    tool: "easyeda_control_library_files", selector: "extract-project-footprint-sources", implementation: "native-task-equivalent",
+    scope: "Offline supplied-archive subset in every facade mode. Reads only an exact managed .epro/.epro2 descriptor, checking all ZIP32 extents, inflation, CRC, manifest and peer members. Every .efoo candidate requires a distinct lowercase 16- or 32-hex UUID.efoo basename. Publishes one exclusive managed JSON index with the complete archive-order roster, source byte hashes and UTF-16 lengths, bound to the raw whole-archive SHA-256. list-project-footprint-sources pages that complete roster through this tool without a general artifact reader. The read-project-footprint-source action reopens and verifies that whole input and source-set digest before one lossless text/base64 page of at most4096 UTF-16 code units without splitting surrogate pairs. Opaque UTF-8 source retains BOM, line endings and unknown records; CAD framing, geometry, references, renderability and import suitability are unvalidated. Input4MiB, expanded8MiB,256members, complete index256KiB, response64KiB. No SDK invocation, app, network, current-document lookup, export, import, CAD edit or Save. Direct SDK execution remains omitted because its getDocumentFile dependency can export the current document through an unqualified lifecycle; supplied archive bytes do not prove current or saved design state.",
+    source: ["managed-library-files.ts", "managed-library-files-zip.ts", "managed-library-files-runtime.ts", "managed-project-footprint-sources.ts", "artifacts.ts", "facade-mode.ts"],
+    tests: ["managed-project-footprint-sources.test.ts", "managed-library-files.test.ts", "managed-library-files-registration.test.ts", "facade-mode.test.ts"],
+    validation: "offline-regression;current-live-unclaimed", executionState: "available-with-managed-file-guards",
+    inputDiscovery: { tool: "easyeda_control_api", arguments: { request: { action: "library-files", query: { includeSchemas: true } } } },
+  }]);
   const footprintPath = "eda.lib_Footprint.get";
   routes.set(footprintPath, [...routes.get(footprintPath) ?? [], {
     tool: "easyeda_control_catalog_footprint", selector: "fixed-vendor-system-catalog-footprint", implementation: "vendor-http-task-equivalent",

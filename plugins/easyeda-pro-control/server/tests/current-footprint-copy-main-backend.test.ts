@@ -91,19 +91,27 @@ void test("both exact original registration expressions retain unrelocated V8 br
   session.on("Debugger.paused", event => { events.push(event.params.callFrames[0]?.location.columnNumber ?? -1); void retainResume(session.post("Debugger.resume"), errors); });
   try {
     await session.post("Runtime.enable"); await session.post("Debugger.enable");
-    const pair = 't.protocol.handle("https",u),t.protocol.handle("http",u)', prefix = "var entry=function(t,e){";
-    runInContext(`${"\n".repeat(SOURCE.registration.https.lineNumber)}${" ".repeat(SOURCE.registration.https.columnNumber - prefix.length)}${prefix}${pair};${fragments.protocolCallback}};const calls=[];\n//# sourceURL=file:///synthetic/main-registration/app.js`, context);
+    // The native receiver is closure-captured. Making it an invented entry
+    // Parameter changes V8's breakable map and incorrectly admits3994/4023.
+    const pair = 't.protocol.handle("https",u),t.protocol.handle("http",u)',
+      prefix = "var makeEntry=function(t,e){return function(){var l=()=>{},f=()=>{};var c=l,A=f;";
+    runInContext(`${"\n".repeat(SOURCE.registration.https.lineNumber)}${" ".repeat(SOURCE.registration.https.columnNumber - prefix.length)}${prefix}${pair};${fragments.protocolCallback}};};const calls=[];\n//# sourceURL=file:///synthetic/main-registration/app.js`, context);
     const selected = script.value; assert.ok(selected !== null);
     const registration = await session.post("Debugger.setBreakpointByUrl", { urlRegex: URL_PATTERN, lineNumber: SOURCE.registration.https.lineNumber, columnNumber: SOURCE.registration.https.breakpointColumnNumber });
     assert.equal(registration.breakpointId, REGISTRATION_ID); points.push(registration.breakpointId);
-    assert.deepEqual(registration.locations, [{ scriptId: selected.id, lineNumber: 8583, columnNumber: 3994 }]);
+    assert.deepEqual(registration.locations, [{ scriptId: selected.id, lineNumber: 8583, columnNumber: 4003 }]);
     assert.equal(currentFootprintCopyMainBackendWire({ phase: "remove", method: "Debugger.removeBreakpoint", params: { breakpointId: registration.breakpointId } }, 73).request["breakpointId"], REGISTRATION_ID);
     for (const site of Object.values(SOURCE.registration)) {
       const location: Readonly<{ scriptId: string; lineNumber: number; columnNumber: number }> = { scriptId: selected.id, lineNumber: site.lineNumber, columnNumber: site.breakpointColumnNumber };
       const result = await session.post("Debugger.setBreakpoint", { location }); points.push(result.breakpointId); assert.deepEqual(result.actualLocation, location);
     }
-    const result = await session.post("Runtime.evaluate", { contextId: selected.context, expression: 'entry({protocol:{handle(name,callback){calls.push(name);}}},{})', returnByValue: true });
-    assert.equal(result.exceptionDetails, undefined); assert.deepEqual(events, [3994, 4023]); assert.deepEqual(errors, []); assert.equal(runInContext('calls.join(",")', context), "https,http");
+    for (const [obsolete, actual] of [[3994, 4003], [4023, 4032]] as const) {
+      const allocation: Readonly<{ breakpointId: string; actualLocation: Readonly<{ columnNumber?: number | undefined }> }> =
+        await session.post("Debugger.setBreakpoint", { location: { scriptId: selected.id, lineNumber: 8583, columnNumber: obsolete } });
+      points.push(allocation.breakpointId); assert.equal(allocation.actualLocation.columnNumber, actual); assert.notEqual(allocation.actualLocation.columnNumber, obsolete);
+    }
+    const result = await session.post("Runtime.evaluate", { contextId: selected.context, expression: 'makeEntry({protocol:{handle(name,callback){calls.push(name);}}},{})()', returnByValue: true });
+    assert.equal(result.exceptionDetails, undefined); assert.deepEqual(events, [4003, 4032]); assert.deepEqual(errors, []); assert.equal(runInContext('calls.join(",")', context), "https,http");
   } finally { try { for (const breakpointId of points) { await session.post("Debugger.removeBreakpoint", { breakpointId }); } } finally { session.disconnect(); } }
 });
 void test("all fourteen fixed native main commands retain exact JSON and admit no caller program, session or endpoint", () => {

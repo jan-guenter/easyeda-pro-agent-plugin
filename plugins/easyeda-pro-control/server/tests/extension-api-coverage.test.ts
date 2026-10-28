@@ -9,6 +9,16 @@ import { apiRequestSchema, queryOfflineApi } from "../src/offline-api.ts";
 import { isRecord } from "../src/core.ts";
 import { DESIGN_STRUCTURE_LIFECYCLE_REFUSAL } from "../src/design-execution-lifecycle.ts";
 
+void test("supplied footprint archive coverage distinguishes exact offline source reads from current-document SDK export", () => {
+  const row = inventoryExtensionApiCoverage().find(entry => entry.path === "eda.sys_FileManager.getDocumentFootprintSources"); assert.ok(row);
+  assert.equal(row.completeDeclaredContractSupported, false); assert.equal(row.currentGenerationLiveValidation, "not-recorded");
+  const route = row.routes.find(entry => entry.tool === "easyeda_control_library_files"); assert.ok(route);
+  assert.equal(route.selector, "extract-project-footprint-sources"); assert.equal(route.implementation, "native-task-equivalent");
+  assert.equal(route.executionState, "available-with-managed-file-guards");
+  assert.match(route.scope, /whole-archive SHA-256/u); assert.match(route.scope, /UTF-16 code units/u);
+  assert.match(route.scope, /Direct SDK execution remains omitted/u); assert.match(route.scope, /unqualified lifecycle/u);
+});
+
 
 void test("all eight legacy project-structure writer routes remain blocked without removing argument discovery", () => {
   const mappings = [
@@ -531,7 +541,7 @@ void test("NetGroup and filtered PCB membership reads expose narrow native route
   assert.match(route.scope, /not public primitive instances/u); assert.match(route.scope, /explicit nonempty unique filters/u);
   assert.match(route.scope, /source\/inventory\/source/u);
   assert.deepEqual(extensionApiCoverageSummary()["statuses"], {
-    "implemented-public-subset": 214, "implemented-native-equivalent": 37, "implemented-vendor-http-equivalent": 6, "internal-lifecycle-only": 0, "implemented-but-blocked": 79, omitted: 499,
+    "implemented-public-subset": 214, "implemented-native-equivalent": 38, "implemented-vendor-http-equivalent": 6, "internal-lifecycle-only": 0, "implemented-but-blocked": 79, omitted: 498,
   });
 });
 

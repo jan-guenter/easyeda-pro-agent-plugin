@@ -5,7 +5,7 @@ Use supported typed APIs first. Native controls cover genuine API stubs and dial
 The separate EasyEDA3.2.209 profile registers API reference,
 local discovery, status, calculations, system observations, language/viewport/theme/
 toolbar-unit/system-library-identity readers, managed netlist comparison,
-offline supplied-library/project-file metadata,
+offline supplied-library/project-file metadata and project footprint sources,
 tab-count/active-identity/shortcut observations, public catalog queries,
 ordinary launch, disposable project/PCB opening with layer and primitive observations,
 and a separate original project-worker startup capture.
@@ -19,8 +19,9 @@ a circuit as electrically correct. Both routes require their own exact runtime
 admission; source and synthetic tests are not connected validation.
 The separate [library-file reader](current-library-files.md) runs in every
 facade mode without runtime admission. It prepares supplied bytes as managed
-inputs and reads bounded standalone-library or project-archive metadata. This
-is a native-task-equivalent projection, with no SDK invocation, import or CAD
+inputs, reads bounded standalone-library/project-archive metadata and indexes
+opaque footprint sources for digest-bound lossless page reads. These are
+native-task-equivalent projections, with no SDK invocation, import or CAD
 validity claim.
 It admits the source-reviewed fixed16Math and18Unit/Environment subsets through
 their own exact runtime checks. Two utility argument sets passed on the prior
@@ -198,7 +199,7 @@ below describe retained source contracts, not execution support for types1/2/3.
 
 | Capability | Controlled path | Current boundary |
 |---|---|---|
-| Supplied library/project-file metadata | library_files; api library-files/library-files-validate | Offline managed inputs and metadata for standalone .efoo/.epanl/ordinary-type2 .esym and bounded ZIP32 .epro/.epro2. Every admitted archive member is integrity checked. No SDK call, import, open, Save, geometry/dependency/electrical validation or arbitrary external-path read. Available in all facade modes. See [file workflow](current-library-files.md) |
+| Supplied library metadata and project footprint sources | library_files; api library-files/library-files-validate | Offline managed inputs and metadata for standalone .efoo/.epanl/ordinary-type2 .esym and bounded ZIP32 .epro/.epro2. Complete archive-order UUID.efoo source index and digest-bound lossless text/base64 pages from the original supplied archive. Every member is integrity checked; opaque source has no CAD framing, geometry or dependency validation. No SDK call, current-document export, import, open, Save or arbitrary external-path read. Available in all facade modes. See [file workflow](current-library-files.md) |
 | Current project-only PCB inventory | project_pcb; api project-pcb/project-pcb-validate | getAllPcbsInfo with exact project/branch, no editor tabs or hidden frames. Two complete native key/value metadata samples bracketed by owner/project checks; sorted UUID order, genuine empty maps preserved, native error-to-empty array fallback excluded. Same metadata fields as selected lookup, at most128PCBs/64KiB. No canvas, saved membership, hierarchy proof or rename authority. Source/offline validation only. See [PCB inventory](current-pcb-readers.md#complete-observed-pcb-metadata-inventory) |
 | Current project-only schematic metadata | project_schematic; api project-schematic/project-schematic-validate | One or all native schematic containers or sheets with complete observed parent membership, no editor tabs or hidden frames. Two complete schematic/sheet map samples, exact selected-get cross-check and project/branch/owner checks. Selected sheet lookup binds its expected parent. Names/display names and sheet titles/display titles remain distinct; Unicode preserved. At most128containers/128sheets/512KiB. No canvas, AST, connectivity, saved membership, worker lease or rename authority. Installed143713 passed selected/all page reads with one container and two pages; container routes and later generations remain unvalidated by that case. See [schematic metadata](current-schematic-readers.md) |
 | Current project-only board metadata | project_board; api project-board/project-board-validate | One board or the complete observed native board map with exact project/branch and no editor tabs. Two complete owner-bracketed samples and selected-get cross-check; UUID/raw title/zIndex/ticket only. At most128boards/64KiB before selection. No public board-item parity, child membership, canvas, saved membership or writer authority. Installed143713 passed both methods with one populated board; empty-map and later-generation cases remain unvalidated. See [board metadata](current-board-readers.md) |

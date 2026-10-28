@@ -17,7 +17,7 @@ import type { CurrentFootprintParentConstructionHeld, CurrentFootprintParentCons
 import { CURRENT_FOOTPRINT_PARENT_CONSTRUCTION_LIMITS } from "./current-footprint-copy-parent-construction-contract.ts";
 import { CurrentFootprintParentWorkerRunner } from "./current-footprint-copy-parent-worker-runner.ts";
 import type { CurrentFootprintParentWorkerObservation } from "./current-footprint-copy-parent-worker-runner.ts";
-import type { CurrentFootprintParentWorkerCommand } from "./current-footprint-copy-parent-worker-contract.ts";
+import type { CurrentFootprintParentWorkerCommand, CurrentFootprintParentWorkerPending } from "./current-footprint-copy-parent-worker-contract.ts";
 import { CURRENT_FOOTPRINT_PARENT_WORKER_LIMITS } from "./current-footprint-copy-parent-worker-contract.ts";
 import { requireCurrentFootprintCopyParentRoute } from "./current-footprint-copy-parent-route.ts";
 import type { CurrentFootprintCopyParentRoute } from "./current-footprint-copy-parent-route.ts";
@@ -833,7 +833,7 @@ class CurrentPcbWorkerStartupTransportCore<Packet extends ConstructionPacket, Ru
       const context = this.#context, parent = this.#parentConstruction, route = this.#parentRoute;
       if (parent === null || route === null || context === null || this.#parentPeer !== null || this.#parentCapture === null) { throw failure("PARENT_PEER_STATE"); }
       const held = await parent.whenHeld(); this.#parentHeld = held;
-      const current = async (stage: "before-imports" | "bootstrap-idle" | "peer-proved"): Promise<void> => {
+      const current = async (stage: "before-imports" | "bootstrap-idle" | "parent-running" | "peer-proved"): Promise<void> => {
         const same = (): void => {
           this.#sameDependency(); route.assertOriginalSynchronous();
           if (this.#released || this.#failure !== null || this.#worker !== worker || this.#context !== context || this.#parentConstruction !== parent ||
@@ -844,7 +844,7 @@ class CurrentPcbWorkerStartupTransportCore<Packet extends ConstructionPacket, Ru
           } else if (!this.#workerScriptLoadedObserved || !this.#sourceQualified || this.#bootstrapIndex !== this.#bootstrapStages.length) { throw failure("PARENT_PEER_BOOTSTRAP"); }
         };
         same();
-        await (stage === "peer-proved" ? parent.requireOriginalParent(held) : parent.requireOriginalHeld(held));
+        await (stage === "parent-running" || stage === "peer-proved" ? parent.requireOriginalParent(held) : parent.requireOriginalHeld(held));
         await route.assertOriginal(); same();
       };
       const peer = new CurrentFootprintParentWorkerRunner(Object.freeze({ assertOriginalState: current,
@@ -856,12 +856,17 @@ class CurrentPcbWorkerStartupTransportCore<Packet extends ConstructionPacket, Ru
         },
         advanceOriginalChildBootstrap: async (): Promise<void> => {
           await current("before-imports"); this.#peerAdvanceConsumed = true; this.#peerAdvance.resolve(null);
-          await bounded(this.#peerIdle.promise, CURRENT_FOOTPRINT_PARENT_CONSTRUCTION_LIMITS.holdMs); await current("bootstrap-idle");
+          await bounded(this.#peerIdle.promise, CURRENT_FOOTPRINT_PARENT_CONSTRUCTION_LIMITS.holdMs);
+          const captured = this.#constructionCapture, runner = this.#runner;
+          if (captured === null || runner === null) { throw failure("PARENT_PEER_CONSTRUCTION"); }
+          await runner.requireOriginal(await bounded(captured, CURRENT_FOOTPRINT_PARENT_CONSTRUCTION_LIMITS.holdMs));
+          await current("bootstrap-idle");
         },
+        continueOriginalParentForPeer: async (pending: CurrentFootprintParentWorkerPending): Promise<void> => { await parent.resumeForPeer(peer, pending); await this.#current(); },
       }), { ...held, childSessionId: worker.sessionId, childUniqueContextId: context.uniqueId, childTargetId: worker.target.targetId });
       this.#parentPeer = peer;
       const packet = await peer.observe(); this.#parentPeerPacket = packet;
-      await parent.resumeAfterPeer(peer, packet); await this.#current();
+      await this.#current();
     } catch (error) { this.#poison("PARENT_PEER", error); throw error; }
   }
   /** Original-reference getter for the later retained manager-route join. */

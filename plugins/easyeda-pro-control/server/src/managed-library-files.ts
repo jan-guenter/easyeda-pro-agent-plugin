@@ -3,10 +3,13 @@ import { z } from "zod";
 import { decodeCurrentPcbDiagnosticJson } from "./current-pcb-diagnostic-json.ts";
 import { MANAGED_LIBRARY_ARCHIVE_MAX_BYTES, MANAGED_LIBRARY_ARCHIVE_MAX_EXPANDED_BYTES, MANAGED_LIBRARY_ARCHIVE_MAX_MEMBERS,
   readManagedLibraryZip } from "./managed-library-files-zip.ts";
+import { MANAGED_PROJECT_FOOTPRINT_INDEX_MAX_BYTES, MANAGED_PROJECT_FOOTPRINT_ROSTER_PAGE_ENTRIES, MANAGED_PROJECT_FOOTPRINT_SOURCE_PAGE_UNITS,
+  MANAGED_PROJECT_FOOTPRINT_UUID_PATTERN } from "./managed-project-footprint-sources.ts";
 
 export const MANAGED_LIBRARY_FILES_MAX_TEXT_BYTES = 256 * 1024;
 export const MANAGED_LIBRARY_FILES_MAX_RESULT_BYTES = 65_536;
-export const MANAGED_LIBRARY_FILES_METHODS = ["eda.sys_FileManager.extractLibInfo", "eda.sys_FileManager.extractProjectInfo"] as const;
+export const MANAGED_LIBRARY_FILES_METHODS = ["eda.sys_FileManager.extractLibInfo", "eda.sys_FileManager.extractProjectInfo",
+  "eda.sys_FileManager.getDocumentFootprintSources"] as const;
 const fileName = z.string().max(128).regex(/^[A-Za-z0-9][A-Za-z0-9_ -]*\.(?:efoo|esym|epanl|epro|epro2)$/u);
 const sha256 = z.string().regex(/^[a-f0-9]{64}$/u);
 export const managedLibraryFileSchema = z.object({ schema: z.literal("easyeda-pro-control.library-file.v1"), name: fileName,
@@ -24,8 +27,17 @@ export const managedLibraryExtractRequestSchema = z.object({ action: z.literal("
     .refine((files) => new Set(files.map((file) => file.name.toLowerCase())).size === files.length,
       { message: "Library metadata requires distinct standalone library filenames." }) }).strict();
 export const managedProjectExtractRequestSchema = z.object({ action: z.literal("extract-project-info"), file: projectFileSchema }).strict();
+export const managedProjectFootprintSourcesRequestSchema = z.object({ action: z.literal("extract-project-footprint-sources"), file: projectFileSchema }).strict();
+export const managedProjectFootprintSourceListRequestSchema = z.object({ action: z.literal("list-project-footprint-sources"), file: projectFileSchema,
+  expectedSourceSetSha256: sha256, offset: z.number().int().min(0).max(MANAGED_LIBRARY_ARCHIVE_MAX_MEMBERS).default(0),
+  length: z.number().int().min(1).max(MANAGED_PROJECT_FOOTPRINT_ROSTER_PAGE_ENTRIES).default(MANAGED_PROJECT_FOOTPRINT_ROSTER_PAGE_ENTRIES) }).strict();
+export const managedProjectFootprintSourceReadRequestSchema = z.object({ action: z.literal("read-project-footprint-source"), file: projectFileSchema,
+  expectedSourceSetSha256: sha256, footprintUuid: z.string().regex(MANAGED_PROJECT_FOOTPRINT_UUID_PATTERN),
+  offset: z.number().int().min(0).max(MANAGED_LIBRARY_ARCHIVE_MAX_EXPANDED_BYTES).default(0),
+  length: z.number().int().min(1).max(MANAGED_PROJECT_FOOTPRINT_SOURCE_PAGE_UNITS).default(MANAGED_PROJECT_FOOTPRINT_SOURCE_PAGE_UNITS) }).strict();
 export const managedLibraryFilesRequestSchema = z.discriminatedUnion("action", [managedLibraryPrepareRequestSchema,
-  managedLibraryExtractRequestSchema, managedProjectExtractRequestSchema]);
+  managedLibraryExtractRequestSchema, managedProjectExtractRequestSchema, managedProjectFootprintSourcesRequestSchema,
+  managedProjectFootprintSourceListRequestSchema, managedProjectFootprintSourceReadRequestSchema]);
 const text = (maximum: number): z.ZodString => z.string().max(maximum).refine((value) => value.isWellFormed() && !value.includes("\u0000"));
 const projectMetadataSchema = z.object({ title: text(512), cbbProject: z.boolean().optional(), editorVersion: text(128).optional() });
 const project2MetadataSchema = z.object({ title: text(512), cbb_project: z.boolean().optional(), editorVersion: text(128).optional() });
@@ -84,7 +96,7 @@ export function extractManagedLibraryMetadata(nameInput: string, bytes: Buffer):
 
 /** Mirrors Si.extract's supplied archive metadata projection only. The entire
  * archive is CRC/extent checked; no member is extracted to disk or imported. */
-export function extractManagedProjectMetadata(nameInput: string, bytes: Buffer): ManagedProjectMetadata {
+export function decodeManagedProjectArchive(nameInput: string, bytes: Buffer): Readonly<{ members: ReadonlyMap<string, Buffer>; metadata: ManagedProjectMetadata }> {
   const name = fileName.parse(nameInput); const current = name.endsWith(".epro2");
   if (!current && !name.endsWith(".epro")) { refuse("project archive extension"); }
   const members = readManagedLibraryZip(bytes); const manifest = members.get(current ? "project2.json" : "project.json");
@@ -94,12 +106,16 @@ export function extractManagedProjectMetadata(nameInput: string, bytes: Buffer):
   const parsed = decodeCurrentPcbDiagnosticJson(manifest);
   if (current) {
     const metadata = project2MetadataSchema.parse(parsed);
-    return managedProjectMetadataSchema.parse({ title: metadata.title, cbbProject: metadata.cbb_project ?? false,
-      ...(metadata.editorVersion === undefined ? {} : { editorVersion: metadata.editorVersion }) });
+    return { members, metadata: managedProjectMetadataSchema.parse({ title: metadata.title, cbbProject: metadata.cbb_project ?? false,
+      ...(metadata.editorVersion === undefined ? {} : { editorVersion: metadata.editorVersion }) }) };
   }
   const metadata = z.object({ config: projectMetadataSchema }).parse(parsed).config;
-  return managedProjectMetadataSchema.parse({ title: metadata.title, cbbProject: metadata.cbbProject ?? false,
-    ...(metadata.editorVersion === undefined ? {} : { editorVersion: metadata.editorVersion }) });
+  return { members, metadata: managedProjectMetadataSchema.parse({ title: metadata.title, cbbProject: metadata.cbbProject ?? false,
+    ...(metadata.editorVersion === undefined ? {} : { editorVersion: metadata.editorVersion }) }) };
+}
+
+export function extractManagedProjectMetadata(nameInput: string, bytes: Buffer): ManagedProjectMetadata {
+  return decodeManagedProjectArchive(nameInput, bytes).metadata;
 }
 
 export function validateManagedLibraryFileContents(fileInput: unknown, bytes: Buffer): ManagedLibraryMetadata | ManagedProjectMetadata {
@@ -114,6 +130,7 @@ const limitations = [
   "Project inputs support unencrypted ZIP32 .epro/project.json.config and .epro2/project2.json metadata: title, Boolean cbbProject and optional string editorVersion. Filenames and member paths use the declared ASCII subset; metadata text may be Unicode. Every ZIP member is bounded, inflated and CRC-checked. No ZIP64, data descriptors, extras, multipart archives, links, unsafe paths, duplicate/case aliases, conflicting manifests or trailing compressed bytes.",
   "Library inputs support standalone .efoo FOOTPRINT, .epanl PANEL_LIB and ordinary .esym SYMBOL type2 with complete UTF-8 JSON-line framing, DOCTYPE1.0 and one HEAD. Filename SHA-256 supplies the native UUID; filename stem supplies title; description/tags are empty. No archive/device extraction, vendor storage-ID string overloads, net flags, ports or multi-document bodies.",
   "Metadata has supplied-file scope. Record framing and ZIP integrity are checked; CAD geometry, member reference completeness, pins, dependencies, library ownership, renderability, electrical correctness and import suitability remain unverified. Unknown drawing/manifest fields stay in the exact input artifact and are not projected or executed. No external references are followed.",
+  "extract-project-footprint-sources reads only the supplied prepared archive, independently of the SDK getter's current-document export dependency. It requires every .efoo member to have a distinct lowercase 16- or 32-hex UUID.efoo basename. The complete archive-order roster, raw byte hashes and UTF-16 lengths become an exclusive managed JSON index; opaque UTF-8 sources retain BOM, line endings and unknown records. CAD framing and references are not interpreted. list-project-footprint-sources rechecks that whole archive and digest before at most32 metadata entries, so UUID discovery needs no general artifact reader. read-project-footprint-source rechecks the exact whole archive and source-set digest before one lossless text/base64 page, without splitting Unicode surrogate pairs. No live document source or implicit export is obtained.",
   "The installed .epro2 wrapper names introduction, description and tags, but its manager extractor does not return them; these fields remain absent. Library batch inputs reject repeated filename UUIDs instead of the native last-wins deduplication. Names differing only in case are refused as ambiguous.",
   "4 MiB archive input, 8 MiB total inflated content, 256 members, 256 KiB library text or manifest, 8192 library records, 16 library files and 64 KiB response. The ZIP parser has a bounded synchronous inflation step; no unbounded backend RPC is launched.",
 ] as const;
@@ -125,7 +142,9 @@ export function queryManagedLibraryFiles(input: unknown = {}): Record<string, un
     publicSdkMethodExecuted: false, installedRuntimeAdmission: false, methods: [...MANAGED_LIBRARY_FILES_METHODS],
     ...(query.includeSchemas ? { inputSchema: z.toJSONSchema(managedLibraryFilesRequestSchema) } : {}), limitations: [...limitations],
     limits: { archiveBytes: MANAGED_LIBRARY_ARCHIVE_MAX_BYTES, expandedBytes: MANAGED_LIBRARY_ARCHIVE_MAX_EXPANDED_BYTES,
-      archiveMembers: MANAGED_LIBRARY_ARCHIVE_MAX_MEMBERS, textBytes: MANAGED_LIBRARY_FILES_MAX_TEXT_BYTES, responseBytes: MANAGED_LIBRARY_FILES_MAX_RESULT_BYTES },
+      archiveMembers: MANAGED_LIBRARY_ARCHIVE_MAX_MEMBERS, textBytes: MANAGED_LIBRARY_FILES_MAX_TEXT_BYTES, responseBytes: MANAGED_LIBRARY_FILES_MAX_RESULT_BYTES,
+      footprintSourceIndexBytes: MANAGED_PROJECT_FOOTPRINT_INDEX_MAX_BYTES, footprintRosterPageEntries: MANAGED_PROJECT_FOOTPRINT_ROSTER_PAGE_ENTRIES,
+      footprintSourcePageUtf16Units: MANAGED_PROJECT_FOOTPRINT_SOURCE_PAGE_UNITS },
     provenance: { apiSha256: "e7c31b0de9dcbe4806e6b3cf8879b31c9e44425361bb8e67c3e8480ae359c8b1",
       uiSha256: "3515d4c299b353fa7bcd0d859f0b8b59b7eae39b5dc243b2c27f2e54a60a1ee6",
       managerSha256: "b3260ec9d98d6cad5f65a6234aa839b32f6bf5954cb03de0bd6ce003577b388d",

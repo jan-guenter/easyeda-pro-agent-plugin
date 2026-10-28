@@ -1,14 +1,16 @@
 /** Actual native Worker message receipt associates the retained parent object
  * with one original child context. Timing, URL, channel name and constructor
- * locations alone never issue this proof. Failure leaves the parent held and
- * requires instrumentation removal or observed original-generation termination. */
+ * locations alone never issue this proof. After the pending continuation the
+ * parent may be running; failure grants no downstream authority and requires
+ * instrumentation removal or observed original-generation termination. */
 import { randomBytes } from "node:crypto";
 import { types } from "node:util";
 import { z } from "zod";
 import { captureCurrentPcbStringClockReply } from "./current-pcb-string-clock-reply.ts";
 import { CURRENT_FOOTPRINT_PARENT_WORKER_LIMITS as LIMITS, CURRENT_FOOTPRINT_PARENT_WORKER_REQUESTS as REQUESTS } from "./current-footprint-copy-parent-worker-contract.ts";
 import type { CurrentFootprintParentWorkerBinding as Binding, CurrentFootprintParentWorkerCommand as Command,
-  CurrentFootprintParentWorkerPhase as Phase, CurrentFootprintParentWorkerTransport as Transport } from "./current-footprint-copy-parent-worker-contract.ts";
+  CurrentFootprintParentWorkerPending as Pending, CurrentFootprintParentWorkerPhase as Phase,
+  CurrentFootprintParentWorkerTransport as Transport } from "./current-footprint-copy-parent-worker-contract.ts";
 import { CURRENT_FOOTPRINT_COPY_PARENT_WORKER_GROUP as GROUP, CURRENT_FOOTPRINT_COPY_PARENT_WORKER_PROGRAMS as PROGRAMS } from "./current-footprint-copy-parent-worker-programs.ts";
 import { validateCurrentFootprintParentWorkerCommand } from "./current-footprint-copy-parent-worker-wire.ts";
 
@@ -31,7 +33,7 @@ const property = z.object({ name: z.string().max(128), value: remote, writable: 
 const internal = z.object({ name: z.string().max(128), value: remote }).strict();
 const childNames = ["addEventListener", "removeEventListener", "stopImmediatePropagation", "get data", "get type", "get currentTarget"] as const;
 const childArities = [2, 2, 0, 0, 0, 0] as const;
-type PeerStep = Phase | "not-started" | "owner-check" | "bootstrap-advance" | "properties" | "release";
+type PeerStep = Phase | "not-started" | "owner-check" | "bootstrap-advance" | "parent-continuation" | "properties" | "release";
 interface PeerFailure {
   readonly step: PeerStep;
   readonly stage: Parameters<Transport["assertOriginalState"]>[0];
@@ -65,7 +67,7 @@ async function bounded<T>(promise: Promise<T>, milliseconds: number): Promise<T>
 }
 function members(transport: Transport): readonly unknown[] {
   need(!types.isProxy(transport) && (Object.getPrototypeOf(transport) === Object.prototype || Object.getPrototypeOf(transport) === null), "TRANSPORT");
-  const names = ["assertOriginalState", "request", "advanceOriginalChildBootstrap", "assertOriginalGenerationExited"] as const;
+  const names = ["assertOriginalState", "request", "advanceOriginalChildBootstrap", "continueOriginalParentForPeer", "assertOriginalGenerationExited"] as const;
   need(Reflect.ownKeys(transport).length === names.length, "TRANSPORT");
   return names.map(name => { const item = Object.getOwnPropertyDescriptor(transport, name);
     need(item !== undefined && Object.hasOwn(item, "value") && typeof item.value === "function", "TRANSPORT"); return item.value as unknown; });
@@ -114,6 +116,7 @@ export interface CurrentFootprintParentWorkerObservation {
   readonly executionAuthorized: false;
 }
 const issued = new WeakMap<CurrentFootprintParentWorkerObservation, CurrentFootprintParentWorkerRunner>();
+const pendingIssued = new WeakMap<Pending, CurrentFootprintParentWorkerRunner>();
 
 export class CurrentFootprintParentWorkerRunner {
   readonly #transport: Transport;
@@ -122,6 +125,7 @@ export class CurrentFootprintParentWorkerRunner {
   readonly #send: Transport["request"];
   readonly #assertState: Transport["assertOriginalState"];
   readonly #advance: Transport["advanceOriginalChildBootstrap"];
+  readonly #continueParent: Transport["continueOriginalParentForPeer"];
   readonly #exited: Transport["assertOriginalGenerationExited"];
   readonly #nonce = randomBytes(32).toString("hex");
   readonly #raw: unknown[] = [];
@@ -143,11 +147,17 @@ export class CurrentFootprintParentWorkerRunner {
   #operationLimit = 0;
   #step: PeerStep = "not-started";
   #firstFailure: PeerFailure | null = null;
+  #pending: Pending | null = null;
+  #bootstrapAdvanced = false;
+  #sendAcknowledged = false;
+  #parentContinuationAttempted = false;
+  #parentContinued = false;
   public constructor(transport: Transport, binding: Binding) {
     this.#transport = transport; this.#members = members(transport);
     this.#binding = Object.freeze(bindingSchema.parse(captureCurrentPcbStringClockReply(binding).value));
     this.#send = transport.request; this.#assertState = transport.assertOriginalState;
-    this.#advance = transport.advanceOriginalChildBootstrap; this.#exited = transport.assertOriginalGenerationExited;
+    this.#advance = transport.advanceOriginalChildBootstrap; this.#continueParent = transport.continueOriginalParentForPeer;
+    this.#exited = transport.assertOriginalGenerationExited;
   }
   #same(): void { need(members(this.#transport).every((item, index) => item === this.#members[index]), "OWNER_CHANGED"); }
   #fail(error: unknown): void {
@@ -184,10 +194,11 @@ export class CurrentFootprintParentWorkerRunner {
   }
   public retained(): Readonly<{ attempted: boolean; failed: boolean; completed: boolean; requests: number; listenerRemoved: boolean;
     cleanupAttempted: boolean; released: boolean; originalGenerationEnded: boolean; replies: readonly unknown[];
-    step: PeerStep; firstFailure: PeerFailure | null }> {
+    parentContinuationAttempted: boolean; parentContinued: boolean; step: PeerStep; firstFailure: PeerFailure | null }> {
     return Object.freeze({ attempted: this.#attempted, failed: this.#failed, completed: this.#packet !== null, requests: this.#requests,
       listenerRemoved: this.#disposed, cleanupAttempted: this.#cleanupAttempted, released: this.#released,
-      originalGenerationEnded: this.#generationEnded, replies: Object.freeze([...this.#raw]), step: this.#step, firstFailure: this.#firstFailure });
+      originalGenerationEnded: this.#generationEnded, parentContinuationAttempted: this.#parentContinuationAttempted,
+      parentContinued: this.#parentContinued, replies: Object.freeze([...this.#raw]), step: this.#step, firstFailure: this.#firstFailure });
   }
   public diagnostics(): Readonly<Omit<ReturnType<CurrentFootprintParentWorkerRunner["retained"]>, "replies"> & { replies: number }> {
     const { replies, ...state } = this.retained(); return Object.freeze({ ...state, replies: replies.length });
@@ -210,7 +221,16 @@ export class CurrentFootprintParentWorkerRunner {
       this.#installAttempted = true; yes.parse(await this.#call("childInstall", "child", this.#child, this.#value()));
       this.#step = "bootstrap-advance";
       await this.#current(); await bounded(this.#advance(), LIMITS.bootstrapMs); this.#same(); this.#stage = "bootstrap-idle"; await this.#current();
-      yes.parse(await this.#call("parentSend", "parent", this.#parent, this.#value()));
+      this.#bootstrapAdvanced = true;
+      yes.parse(await this.#call("parentSend", "parent", this.#parent, this.#value())); this.#sendAcknowledged = true;
+      // Chromium's worker-side script-loaded event precedes a parent task that
+      // Enables native Worker message delivery. Holding that parent until the
+      // Receipt would deadlock this challenge. This capability grants only its
+      // Already-authorized original normal-open continuation, never peer proof.
+      this.#pending = Object.freeze({ profile: "private.current-footprint-parent-worker-pending.v1", executionAuthorized: false });
+      pendingIssued.set(this.#pending, this); this.#step = "parent-continuation"; this.#parentContinuationAttempted = true;
+      await bounded(this.#continueParent(this.#pending), LIMITS.bootstrapMs); this.#same(); this.#parentContinued = true;
+      this.#stage = "parent-running"; await this.#current();
       const receiptValue = z.object({ profile: z.literal("private.current-footprint-worker-peer-receipt.v1"), nonce: z.literal(this.#nonce), trusted: z.literal(true), removed: z.literal(true) }).strict();
       const receiptResult = z.object({ type: z.literal("object"), value: receiptValue }).strict();
       const receipt = z.object({ result: receiptResult }).strict();
@@ -232,12 +252,20 @@ export class CurrentFootprintParentWorkerRunner {
     }
     catch (error) { this.#failed = true; throw error; } finally { this.#busy = false; }
   }
-  public async requireOriginalHeldParent(packet: CurrentFootprintParentWorkerObservation,
+  /** Only the original in-flight observer may authorize its captured parent's
+   * one continuation. This pending capability is not a receipt or peer packet. */
+  public async requireOriginalPendingParent(pending: Pending,
     expected: Readonly<{ parentSessionId: string; parentUniqueContextId: string; projectObjectId: string }>): Promise<void> {
-    const captured = captureCurrentPcbStringClockReply(expected).value;
-    const selected = heldParentSchema.parse(captured);
-    need(selected.parentSessionId === this.#binding.parentSessionId && selected.parentUniqueContextId === this.#binding.parentUniqueContextId &&
-      selected.projectObjectId === this.#binding.projectObjectId, "PARENT_BINDING"); await this.requireOriginal(packet);
+    const selected = heldParentSchema.parse(captureCurrentPcbStringClockReply(expected).value);
+    const same = (): void => {
+      need(pending === this.#pending && pendingIssued.get(pending) === this && this.#attempted && this.#busy && !this.#failed &&
+        !this.#cleanupAttempted && !this.#released && !this.#generationEnded && this.#packet === null && this.#parent !== null && this.#child !== null &&
+        this.#installAttempted && !this.#disposeAttempted && this.#bootstrapAdvanced && this.#sendAcknowledged &&
+        this.#parentContinuationAttempted && !this.#parentContinued && this.#step === "parent-continuation" && this.#stage === "bootstrap-idle" &&
+        selected.parentSessionId === this.#binding.parentSessionId && selected.parentUniqueContextId === this.#binding.parentUniqueContextId &&
+        selected.projectObjectId === this.#binding.projectObjectId, "PENDING_PARENT");
+    };
+    same(); await this.#current(); same();
   }
   /** The manager owner must supply its retained original route array after its
    * own reproof. This compares object identity, never serialized IDs or names. */

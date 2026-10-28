@@ -42,6 +42,11 @@ const objectReply = z.object({ result: z.object({ type: z.literal("object"), sub
   description: z.string().max(32), objectId: handle }).strict() }).strict();
 interface Pause { readonly frameId: string; readonly location: z.infer<typeof location>; readonly registration: boolean; resumeAttempted: boolean; resumed: boolean }
 interface Resolved { readonly breakpointId: string; readonly location: z.infer<typeof location> }
+interface RegistrationLocationFailure {
+  readonly lineNumber: number;
+  readonly columnNumber: number;
+  readonly scriptObserved: boolean;
+}
 const methodNames = ["assertCurrent", "send", "poll"] as const;
 function need(value: boolean, detail: string): asserts value { if (!value) { throw new Error(`FOOTPRINT_MAIN_CONSTRUCTION_${detail}`); } }
 function methods(transport: CurrentFootprintCopyMainBackendTransport): readonly unknown[] {
@@ -82,6 +87,7 @@ export class CurrentFootprintCopyMainBackendRunner {
   #packet: CurrentFootprintCopyMainBackendObservation | null = null;
   #phase = "idle";
   #lastFailure: string | null = null;
+  #registrationLocationFailure: RegistrationLocationFailure | null = null;
   public constructor(transport: CurrentFootprintCopyMainBackendTransport) {
     this.#methods = methods(transport); this.#transport = transport;
   }
@@ -92,7 +98,10 @@ export class CurrentFootprintCopyMainBackendRunner {
   }
   async #current(cleanup = false): Promise<void> { this.#same(cleanup); await this.#transport.assertCurrent(); this.#same(cleanup); }
   #location(actual: z.infer<typeof location>): void {
-    need(actual.lineNumber === SOURCE.registration.https.lineNumber && actual.columnNumber === SOURCE.registration.https.breakpointColumnNumber && this.#scripts.has(actual.scriptId), "REGISTRATION_LOCATION");
+    const scriptObserved = this.#scripts.has(actual.scriptId);
+    const matches = actual.lineNumber === SOURCE.registration.https.lineNumber && actual.columnNumber === SOURCE.registration.https.breakpointColumnNumber && scriptObserved;
+    if (!matches) { this.#registrationLocationFailure ??= Object.freeze({ lineNumber: actual.lineNumber, columnNumber: actual.columnNumber, scriptObserved }); }
+    need(matches, "REGISTRATION_LOCATION");
   }
   #resolve(record: Resolved): void {
     need(this.#resolved.length < 8, "RESOLUTION_BOUND"); this.#resolved.push(record);
@@ -236,10 +245,11 @@ export class CurrentFootprintCopyMainBackendRunner {
   }
   public retained(): Readonly<{ attempted: boolean; completed: boolean; failed: boolean; phase: string; failure: string | null; requests: number; replies: number;
     pendingReplies: number; events: number; receivedBytes: number; initialContinuationCount: number; registrationPaused: boolean; sourceQualified: boolean;
-    breakpointRemoved: boolean; releaseAttempted: boolean; released: boolean }> {
+    breakpointRemoved: boolean; releaseAttempted: boolean; released: boolean; registrationLocationFailure: RegistrationLocationFailure | null }> {
     return Object.freeze({ attempted: this.#attempted, completed: this.#packet !== null, failed: this.#failed, phase: this.#phase, failure: this.#lastFailure,
       requests: this.#requests, replies: this.#replies.length, pendingReplies: this.#pendingId === null ? 0 : 1, events: this.#events, receivedBytes: this.#received,
       initialContinuationCount: this.#initialContinuationCount, registrationPaused: this.#registrationSeen, sourceQualified: this.#source !== null,
-      breakpointRemoved: this.#removed, releaseAttempted: this.#releaseAttempted, released: this.#released });
+      breakpointRemoved: this.#removed, releaseAttempted: this.#releaseAttempted, released: this.#released,
+      registrationLocationFailure: this.#registrationLocationFailure });
   }
 }

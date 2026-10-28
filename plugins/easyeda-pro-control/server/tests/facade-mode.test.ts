@@ -57,12 +57,15 @@ void test("exact209 selectors expose sixteen scoped tools without inheriting unr
     assert.equal(facadeToolRegistered("public-utilities-only", name), false);
   }
   const capabilities = publicUtilitiesOnlyCapabilities();
+  assert.deepEqual(capabilities["libraryFiles"], { tool: "easyeda_control_library_files", runtimeAdmissionRequired: false, offline: true,
+    implementation: "native-task-equivalent", localArtifactConfirmationRequired: true, publicSdkMethodExecuted: false,
+    metadataOnly: false, suppliedFootprintSourceExtraction: true });
   assert.deepEqual(capabilities["netlistFiles"], { tool: "easyeda_control_netlist_files", runtimeAdmissionRequiredForComparison: true,
     connectedValidation: false, preparation: "exclusive-managed-artifact-from-supplied-ascii", comparison: "allegro-file-memberships-only", cadAuthority: false });
   assert.deepEqual(capabilities["publicReaders"], { tool: "easyeda_control_public_readers", runtimeAdmissionRequired: true, connectedValidation: false,
     batch: { maximumMethods: 7, sharedDeadlineMilliseconds: 10_000, atomicSnapshot: false, partialSuccess: false },
     scope: "supported-and-sdk-resolved-languages-api-page-viewport-theme-toolbar-unit-and-fixed-system-library-id" });
-  assert.deepEqual(capabilities["navigation"], { enabled: true, scope: "original-owner-disposable209-opening-and-five-separate-startup-purposes-only" });
+  assert.deepEqual(capabilities["navigation"], { enabled: true, scope: "original-owner-disposable209-opening-and-six-project-startup-purposes-only" });
   assert.deepEqual(capabilities["designAccess"], { enabled: false, scope: "general-geometry-and-writers;disposable-bounded-observations-and-historical-queries-only" });
   const opening = capabilities["disposableOpening"]; assert.ok(typeof opening === "object" && opening !== null && "layerObservation" in opening);
   assert.equal(opening.layerObservation, "double-sampled-metadata-and-copper-count");

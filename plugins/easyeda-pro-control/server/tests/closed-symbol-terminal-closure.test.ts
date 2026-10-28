@@ -14,7 +14,8 @@ registerHooks({ resolve(specifier, context, nextResolve) {
 } });
 const { closureFixture } = await import("./helpers/closed-symbol-terminal-closure-fixture.ts");
 const { deriveClosedSymbolTerminalClosure, ClosureEvidenceChangedError, ClosureIneligibleError } = await import("../src/closed-symbol-terminal-closure-plan.ts");
-const { observeClosedSymbolTerminalClosure, revalidateClosedSymbolTerminalClosure } = await import("../src/closed-symbol-terminal-closure-observer.ts");
+const { observeClosedSymbolTerminalClosure, revalidateClosedSymbolTerminalClosure, revalidateObservedClosedSymbolTerminalClosure,
+  revalidateObservedClosedSymbolAgedTerminalClosure } = await import("../src/closed-symbol-terminal-closure-observer.ts");
 const { sha256Json } = await import("../src/core.ts");
 const { readExactUtf8Artifact } = await import("../src/artifacts.ts");
 const { withCurrentProcessSqlRuntimeLease } = await import("../src/current-process-sql-runtime-lease.ts");
@@ -26,6 +27,38 @@ void test("fixed64 role closure retains aliases,18 sidecars, same bytes and no a
   assert.equal(first.files.length, 62); assert.equal(first.absentSidecars.length, 18);
   assert.equal(first.executionAuthorized, false); assert.equal(first.completionProved, false); assert.equal(first.semanticValidationPerformed, false);
   assert.deepEqual(await revalidateClosedSymbolTerminalClosure(fixture.input, first), first);
+  assert.deepEqual(await revalidateObservedClosedSymbolTerminalClosure(first), first);
+});
+void test("compact revalidation requires the exact original observation and profile before I/O", async () => {
+  const fixture = await closureFixture(); const first = await observeClosedSymbolTerminalClosure(fixture.input);
+  await assert.rejects(revalidateObservedClosedSymbolTerminalClosure(structuredClone(first)), /closure-original-observation-required/u);
+  await assert.rejects(revalidateObservedClosedSymbolTerminalClosure(new Proxy(first, {})), /closure-original-observation-required/u);
+  await assert.rejects(revalidateObservedClosedSymbolAgedTerminalClosure(first), /closure-original-observation-required/u);
+  let calls = 0;
+  const forged = Object.defineProperty({}, "plan", { get() { calls += 1; throw new Error("not invoked"); } });
+  await assert.rejects(revalidateObservedClosedSymbolTerminalClosure(forged), /closure-original-observation-required/u);
+  assert.equal(calls, 0);
+});
+void test("compact revalidation retains a derived plan while rechecking current complete bytes", async () => {
+  const fixture = await closureFixture(); const first = await observeClosedSymbolTerminalClosure(fixture.input);
+  // The large original replay graph is unnecessary after its successful fixed
+  // Derivation. Replacing it cannot alter the original immutable retained plan.
+  fixture.input.events.length = 0;
+  assert.deepEqual(await revalidateObservedClosedSymbolTerminalClosure(first), first);
+  const path = fixture.input.envelope.body.evidence.savedReadRaw.path;
+  const bytes = await readFile(path); bytes[0] = ((bytes[0] ?? 0) + 1) % 256; await writeFile(path, bytes);
+  await assert.rejects(revalidateObservedClosedSymbolTerminalClosure(first), ClosureEvidenceChangedError);
+});
+void test("compact revalidation still requires sidecar absence and original file identity", async () => {
+  const fixture = await closureFixture(); const first = await observeClosedSymbolTerminalClosure(fixture.input);
+  const role = first.plan.roles.find((entry) => entry.database); assert.ok(role !== undefined);
+  await writeFile(`${role.path}-wal`, "synthetic", { flag: "wx", mode: 0o600 });
+  await assert.rejects(revalidateObservedClosedSymbolTerminalClosure(first), /closure-sidecar-present/u);
+  const other = await closureFixture(); const observed = await observeClosedSymbolTerminalClosure(other.input);
+  const path = other.input.envelope.body.evidence.savedReadRaw.path;
+  const bytes = await readFile(path);
+  await rename(path, `${path}.retained`); await writeFile(path, bytes, { flag: "wx", mode: 0o600 });
+  await assert.rejects(revalidateObservedClosedSymbolTerminalClosure(observed), /closure-previous-observation-changed/u);
 });
 void test("borrowed runtime retains one original owner but rechecks all closure bytes on warm observation", async (context) => {
   const fixture = await closureFixture(), originalOpen = fsPromises.open;

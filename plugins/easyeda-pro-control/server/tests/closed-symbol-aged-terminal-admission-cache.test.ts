@@ -126,17 +126,30 @@ void test("candidate change and runtime change cause fresh cold computation", as
   await run(f.candidate, f.runtime); assert.equal(count("cold"), 2); assert.equal(count("revalidate"), 0);
   f.runtime["nodeSha256"] = "b".repeat(64); await run(f.candidate, f.runtime); assert.equal(count("cold"), 3);
 });
-void test("four useful residents survive repeated five-candidate scans without LRU churn", async () => {
+void test("compact residents avoid repeated cold replay beyond the former four-entry limit", async () => {
   const { run, f } = await setup(); const fixtures = [f, ...[2001, 2002, 2003, 2004].map((value) => makeFixture(value))];
   for (let scan = 0; scan < 3; scan += 1) { for (const selected of fixtures) { await run(selected.candidate, selected.runtime); } }
-  assert.equal(count("cold"), 7); assert.equal(count("revalidate"), 8);
+  assert.equal(count("cold"), 5); assert.equal(count("revalidate"), 10);
 });
-void test("32MiB encoded capacity preserves existing residents when a fourth large entry cannot fit", async () => {
+void test("large raw replay inputs are not retained in the compact metadata allowance", async () => {
   const { run, f } = await setup(); const fixtures = [f, ...[2101, 2102, 2103].map((value) => makeFixture(value))];
   state.observationPadding = "o".repeat(900_000);
   for (const selected of fixtures) { selected.inputPadding = "p".repeat(8_000_000); await run(selected.candidate, selected.runtime); }
   for (const selected of fixtures) { await run(selected.candidate, selected.runtime); }
-  assert.equal(count("cold"), 5); assert.equal(count("revalidate"), 3);
+  assert.equal(count("cold"), 4); assert.equal(count("revalidate"), 4);
+});
+void test("512 compact residents remain bounded without eviction churn", async () => {
+  const { run, f } = await setup(); const fixtures = [f, ...Array.from({ length: 512 }, (_, index) => makeFixture(3000 + index))];
+  for (const selected of fixtures) { await run(selected.candidate, selected.runtime); }
+  for (const selected of fixtures) { await run(selected.candidate, selected.runtime); }
+  assert.equal(count("cold"), 514); assert.equal(count("revalidate"), 512);
+});
+void test("32MiB metadata capacity declines new residents without evicting useful ones", async () => {
+  const { run, f } = await setup(); const fixtures = [f, ...Array.from({ length: 39 }, (_, index) => makeFixture(4000 + index))];
+  state.observationPadding = "o".repeat(900_000);
+  for (const selected of fixtures) { await run(selected.candidate, selected.runtime); }
+  for (const selected of fixtures) { await run(selected.candidate, selected.runtime); }
+  assert.equal(count("cold"), 43); assert.equal(count("revalidate"), 37);
 });
 void test("absolute ten-minute expiry is not extended by a hit", async (context) => {
   const { run, f } = await setup(); let now = 0; context.mock.method(performance, "now", () => now);

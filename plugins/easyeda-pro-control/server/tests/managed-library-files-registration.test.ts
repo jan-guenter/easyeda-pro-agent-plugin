@@ -13,6 +13,7 @@ import { executeManagedLibraryFiles } from "../src/managed-library-files-runtime
 // oxlint-disable-next-line import/max-dependencies -- This composition test checks the real registration, runtime, discovery and coverage together; splitting it would hide their contract.
 import { managedLibraryFilesRequestSchema } from "../src/managed-library-files.ts";
 import { apiRequestSchema, queryOfflineApi } from "../src/offline-api.ts";
+import { managedProjectFootprintArchive } from "./helpers/managed-project-footprint-archive.ts";
 
 const request = { action: "prepare-file", name: "registration.efoo",
   base64: Buffer.from('["DOCTYPE","FOOTPRINT","1.0"]\n["HEAD",{}]\n').toString("base64"), confirmLocalArtifact: true };
@@ -63,7 +64,8 @@ void test("managed file tool prepares and extracts supplied bytes in every facad
   }
   const capabilities = publicUtilitiesOnlyCapabilities();
   assert.deepEqual(capabilities["libraryFiles"], { tool: "easyeda_control_library_files", runtimeAdmissionRequired: false,
-    offline: true, implementation: "native-task-equivalent", localArtifactConfirmationRequired: true, publicSdkMethodExecuted: false, metadataOnly: true });
+    offline: true, implementation: "native-task-equivalent", localArtifactConfirmationRequired: true, publicSdkMethodExecuted: false,
+    metadataOnly: false, suppliedFootprintSourceExtraction: true });
 });
 
 void test("strict registration refuses injected paths and mismatched actions before local publication", async () => {
@@ -78,6 +80,35 @@ void test("strict registration refuses injected paths and mismatched actions bef
   assert.equal(JSON.stringify(failed).includes("e30="), false);
 });
 
+void test("registered tool lists unknown footprint UUIDs and reads their sources in every mode without an artifact reader", async () => {
+  const other = "fedcba0987654321", uuid = "1234567890abcdef";
+  const archive = managedProjectFootprintArchive([{ name: "project2.json", content: '{"title":"Supplied fixture"}' },
+    { name: `${uuid}.efoo`, content: "first opaque source\r\n" }, { name: `${other}.efoo`, content: "second opaque source\r\n" }]);
+  for (const mode of ["legacy-reviewed", "calculation-only", "public-utilities-only"] as const) {
+    const tool = await registration(mode);
+    const prepared = await tool.invoke({ request: { action: "prepare-file", name: "Enumeration.epro2", base64: archive.toString("base64"), confirmLocalArtifact: true } });
+    assert.ok(isRecord(prepared) && isRecord(prepared["result"]));
+    const file = prepared["result"]["file"];
+    const extracted = await tool.invoke({ request: { action: "extract-project-footprint-sources", file } });
+    assert.ok(isRecord(extracted) && isRecord(extracted["result"]));
+    const expectedSourceSetSha256 = extracted["result"]["sourceSetSha256"];
+    const requestList = { action: "list-project-footprint-sources", file, expectedSourceSetSha256, length: 1 };
+    const offline = queryOfflineApi(apiRequestSchema.parse({ action: "library-files-validate", query: { request: requestList } }));
+    assert.ok(isRecord(offline.result)); assert.equal(offline.result["valid"], true);
+    const roster = await tool.invoke({ request: requestList });
+    assert.ok(isRecord(roster) && isRecord(roster["result"]));
+    const page = roster["result"]; assert.equal(page["endOfRoster"], false); assert.equal(page["nextOffset"], 1);
+    assert.ok(Array.isArray(page["sources"]) && isRecord(page["sources"][0]));
+    const selected = page["sources"][0]; assert.equal(selected["footprintUuid"], uuid);
+    assert.equal(Object.hasOwn(selected, "documentSource"), false);
+    const last = await tool.invoke({ request: { ...requestList, offset: page["nextOffset"] } });
+    assert.ok(isRecord(last) && isRecord(last["result"])); assert.equal(last["result"]["endOfRoster"], true);
+    const source = await tool.invoke({ request: { action: "read-project-footprint-source", file, expectedSourceSetSha256, footprintUuid: selected["footprintUuid"] } });
+    assert.ok(isRecord(source) && isRecord(source["result"])); assert.equal(source["result"]["documentSource"], "first opaque source\r\n");
+    assert.equal(source["result"]["publicSdkMethodExecuted"], false); assert.equal(tool.calls.length, 5);
+  }
+});
+
 void test("offline discovery validates content without echoing it and coverage distinguishes managed-file authority", () => {
   const catalog = queryOfflineApi(apiRequestSchema.parse({ action: "library-files", query: { includeSchemas: true } }));
   assert.ok(isRecord(catalog.result)); assert.ok(isRecord(catalog.result["inputSchema"]));
@@ -87,7 +118,7 @@ void test("offline discovery validates content without echoing it and coverage d
   assert.equal(valid.result["valid"], true); assert.equal(valid.result["executionAuthorized"], false);
   assert.equal(valid.result["requestSummary"]["base64Echoed"], false); assert.equal(JSON.stringify(valid).includes(request.base64), false);
   assert.equal(Object.hasOwn(valid.result, "request"), false);
-  for (const method of ["extractLibInfo", "extractProjectInfo"]) {
+  for (const method of ["extractLibInfo", "extractProjectInfo", "getDocumentFootprintSources"]) {
     const entry = inventoryExtensionApiCoverage().find(row => row.path === `eda.sys_FileManager.${method}`); assert.ok(entry);
     assert.equal(entry.status, "implemented-native-equivalent"); assert.equal(entry.completeDeclaredContractSupported, false);
     assert.equal(entry.currentGenerationLiveValidation, "not-recorded"); assert.equal(entry.routes.length, 1);
@@ -98,5 +129,5 @@ void test("offline discovery validates content without echoing it and coverage d
     assert.ok(isRecord(discovery.result));
   }
   const summary = extensionApiCoverageSummary(); assert.ok(isRecord(summary["executionRoutes"]));
-  assert.equal(summary["executionRoutes"]["available-with-managed-file-guards"], 2);
+  assert.equal(summary["executionRoutes"]["available-with-managed-file-guards"], 3);
 });

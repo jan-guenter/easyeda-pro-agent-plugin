@@ -1,9 +1,10 @@
-# Supplied library and project-file metadata
+# Supplied library metadata and project footprint sources
 
 Use `easyeda_control_library_files` to inspect supplied standalone libraries or
 project archives without launching EasyEDA. This tool is available in every
-facade mode. It implements a bounded native-task-equivalent metadata projection;
-it does not invoke `sys_FileManager.extractLibInfo` or `extractProjectInfo`.
+facade mode. It implements bounded native-task-equivalent metadata projections
+and lossless footprint-source reads. It does not invoke the SDK's
+`extractLibInfo`, `extractProjectInfo` or `getDocumentFootprintSources` methods.
 
 Discover `easyeda_control_api` action `library-files` with
 `query:{includeSchemas:true}`. Validate the exact inner request using
@@ -28,8 +29,9 @@ verifies the actual managed bytes.
 
 The tool does not accept a runtime fingerprint. It does not import a library,
 open a project, save a design, access the network or extract archive members to
-disk. `prepare-file` has a local artifact effect; extraction only reads the
-exact managed input. Do not replace unsupported source records or rewrite the
+disk. `prepare-file` writes the managed input, and footprint-source extraction
+writes a complete managed index. Metadata extraction and source-page reads only
+read the exact managed input. Do not replace unsupported source records or rewrite the
 input just to make the validator accept it.
 
 ## What the output means
@@ -51,7 +53,42 @@ not prove drawable geometry, complete member references, electrical correctness,
 pin-to-pad mapping, dependencies, renderability or import suitability. Unknown
 fields remain in the retained input and are not followed or executed. Keep
 `publicSdkMethodExecuted:false`, `installedRuntimeAdmission:false` and the
-metadata-only limitations when reporting the result.
+returned scope when reporting the result. Metadata actions return
+`metadataOnly:true`, as do source-roster pages. Source-index extraction and
+source-body pages return `metadataOnly:false` and `cadFramingValidated:false`.
+
+## Read project footprint sources
+
+For a prepared `.epro` or `.epro2`, send
+`request:{action:"extract-project-footprint-sources",file}`. The result contains
+`sourceSetSha256`, counts and an exclusive managed `index` descriptor. The index
+lists every source in archive order with member path, footprint UUID, byte length,
+SHA-256 and UTF-16 length. Use
+`request:{action:"list-project-footprint-sources",file,expectedSourceSetSha256,
+offset:0,length:32}` to page that roster through the same tool. Follow
+`nextOffset` until `endOfRoster:true`. Roster offsets count source entries;
+`completeRosterReturned` also requires a zero start. Each page recomputes the
+whole archive and digest, and needs no general artifact-reader tool. The digest
+binds the raw whole archive and complete roster. No source member is written
+to disk.
+
+Then send `request:{action:"read-project-footprint-source",file,
+expectedSourceSetSha256,footprintUuid,offset:0,length:4096}` using the original
+file descriptor and returned digest. Each page freshly verifies the entire
+archive and recomputes the complete source set. Offsets and lengths count UTF-16
+code units. Follow `nextOffset`; a split-surrogate start refuses and a split end
+is shortened. A one-unit page that cannot contain the next character refuses.
+`endOfSource` means this page reaches the end; `completeSourceReturned` means it
+also starts at zero. Use `pageBase64`, `pageBytes` and `pageSha256` for the exact
+corresponding UTF-8 bytes. The full source hash remains separate.
+
+Every case-insensitive `.efoo` candidate must have a distinct canonical lowercase
+16- or 32-hex `UUID.efoo` basename. Malformed names, case aliases, repeated UUIDs,
+directories, empty sources and invalid UTF-8 refuse. Sources preserve BOM, line
+endings and opaque future records. This path does not parse CAD framing or prove
+geometry, dependency completeness or current document state. The direct SDK
+getter's current-document export dependency remains unqualified. Do not run it
+as a shortcut for reading a supplied archive.
 
 ## Format and size limits
 
@@ -68,5 +105,7 @@ metadata text may contain Unicode.
 
 Limits are 4 MiB input, 8 MiB total expanded archive content, 256 archive members,
 256 KiB standalone text or manifest, 8192 library records, sixteen standalone
-files and 64 KiB response. Check the current discovered schema for exact names
+files and 64 KiB response. Footprint sources share the archive bounds, with a
+256 KiB complete index and at most4096 UTF-16 code units per source page. Each
+page reparses the bounded archive. Check the current discovered schema for exact names
 and limits before preparing a file.

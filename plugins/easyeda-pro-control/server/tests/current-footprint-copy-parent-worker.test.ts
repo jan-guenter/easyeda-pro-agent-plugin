@@ -12,6 +12,7 @@ import { binding, fixture, native } from "./helpers/current-footprint-parent-wor
 void test("private peer proof requires native metadata, fresh nonce receipt and removal before original manager join", async () => {
   const value = fixture(); const packet = await value.runner.observe();
   assert.equal(value.commands.length, 16); assert.equal(packet.parentWorkerNativeMessageReceivedByOriginalChild, true);
+  assert.equal(value.state.continuationAttempts, 1); assert.equal(value.runner.diagnostics().parentContinued, true);
   assert.equal(packet.reciprocalProjectChannelQualified, false); assert.equal(packet.backendDynamicDispatchQualified, false);
   assert.match(value.state.nonce ?? "", /^[a-f\d]{64}$/u);
   await assert.rejects(value.runner.requireOriginal(structuredClone(packet))); assert.equal(value.commands.length, 16);
@@ -20,7 +21,32 @@ void test("private peer proof requires native metadata, fresh nonce receipt and 
   await value.runner.release(); assert.equal(value.commands.length, 23); assert.ok(value.runner.retained().released);
   await assert.rejects(value.runner.observe()); await assert.rejects(value.runner.requireOriginal(packet));
 });
-void test("wrong target receipt consumes postMessage and cannot resume, replay or issue peer proof", async () => {
+void test("pending continuation is original-only and never grants a peer packet before native receipt", async () => {
+  const value = fixture(); const pendingValues: Parameters<typeof value.runner.requireOriginalPendingParent>[0][] = [];
+  const original = { parentSessionId: binding.parentSessionId, parentUniqueContextId: binding.parentUniqueContextId, projectObjectId: binding.projectObjectId };
+  value.state.continueParent = async (pending): Promise<void> => {
+    pendingValues.push(pending); assert.equal(value.runner.retained().completed, false); assert.equal(value.runner.retained().parentContinued, false);
+    await assert.rejects(value.runner.requireOriginalPendingParent(structuredClone(pending), original), /PENDING_PARENT/u);
+    await assert.rejects(value.runner.requireOriginalPendingParent(pending, { ...original, projectObjectId: "foreign" }), /PENDING_PARENT/u);
+    await assert.rejects(fixture().runner.requireOriginalPendingParent(pending, original), /PENDING_PARENT/u);
+    await value.runner.requireOriginalPendingParent(pending, original);
+  };
+  await value.runner.observe(); const captured = pendingValues[0]; assert.ok(captured);
+  await assert.rejects(value.runner.requireOriginalPendingParent(captured, original), /PENDING_PARENT/u);
+  assert.equal(value.commands.filter(command => command.phase === "parentSend").length, 1);
+  assert.equal(value.state.continuationAttempts, 1); await value.runner.release();
+});
+void test("failed send or lost original continuation cannot be replayed or produce peer proof", async () => {
+  const send = fixture(); send.state.failPhase = "parentSend";
+  await assert.rejects(send.runner.observe()); assert.equal(send.state.continuationAttempts, 0); await send.runner.release();
+  const lost = fixture(); lost.state.continueParent = (): Promise<never> => Promise.reject(new Error("lost original resume acknowledgment"));
+  await assert.rejects(lost.runner.observe(), /lost original resume/u); await assert.rejects(lost.runner.observe());
+  assert.equal(lost.state.continuationAttempts, 1); assert.equal(lost.commands.filter(command => command.phase === "parentSend").length, 1);
+  assert.equal(lost.commands.some(command => command.phase === "childReceipt"), false);
+  assert.equal(lost.runner.diagnostics().parentContinuationAttempted, true); assert.equal(lost.runner.diagnostics().parentContinued, false);
+  assert.equal(lost.runner.diagnostics().completed, false); lost.state.exited = true; await lost.runner.observeOriginalGenerationEnded();
+});
+void test("wrong target receipt consumes postMessage and cannot replay or issue peer proof", async () => {
   const value = fixture(); value.state.wrongReceipt = true;
   await assert.rejects(value.runner.observe()); await assert.rejects(value.runner.observe());
   assert.equal(value.commands.filter(command => command.phase === "parentSend").length, 1);
@@ -31,7 +57,7 @@ void test("peer diagnostics retain the first bounded phase without exposing nonc
   const value = fixture(); value.state.failPhase = "childReceipt";
   await assert.rejects(value.runner.observe(), /lost native acknowledgment/u);
   const failure = value.runner.diagnostics().firstFailure;
-  assert.equal(failure?.step, "childReceipt"); assert.equal(failure.stage, "bootstrap-idle");
+  assert.equal(failure?.step, "childReceipt"); assert.equal(failure.stage, "parent-running");
   assert.equal(failure.kind, "request-or-owner"); assert.equal(failure.code, null);
   assert.equal(failure.requests, 14); assert.equal(failure.replies, 13);
   const text = JSON.stringify(value.runner.diagnostics());
@@ -77,19 +103,21 @@ void test("fixed peer wire refuses nonce injection, dual contexts and side-effec
 });
 
 void test("fixed observer consumes only its diagnostic event, removes itself and prevents send replay", async () => {
-  const text = String.raw`(async()=>{const listeners=[];let vendor=0,sends=0;
+  const text = String.raw`(async()=>{const listeners=[],early=[];let vendor=0,sends=0,parentReady=false;
 class EventTarget{addEventListener(type,callback){listeners.push({type,callback,capture:arguments[2]===true});}removeEventListener(type,callback){const i=listeners.findIndex(x=>x.type===type&&x.callback===callback);if(i>=0)listeners.splice(i,1);}}
 class Event{constructor(type){this.kind=type;this.target=globalThis;this.stopped=false;this.isTrusted=true;}get type(){return this.kind;}get currentTarget(){return this.target;}stopImmediatePropagation(){this.stopped=true;}}
 class MessageEvent extends Event{constructor(data){super("message");this.payload=data;}get data(){return this.payload;}}
 const dispatch=data=>{const event=new MessageEvent(data);for(const item of [...listeners].sort((a,b)=>Number(b.capture)-Number(a.capture))){item.callback(event);if(event.stopped)break;}};
-class Worker{postMessage(message){sends++;dispatch(message);}}
+class Worker{postMessage(message){sends++;if(parentReady)dispatch(message);else early.push(message);}}
 Object.assign(globalThis,{EventTarget,Event,MessageEvent,Worker});const intrinsics=new Set([Worker.prototype.postMessage,EventTarget.prototype.addEventListener,EventTarget.prototype.removeEventListener,Event.prototype.stopImmediatePropagation,...["data"].map(x=>Object.getOwnPropertyDescriptor(MessageEvent.prototype,x).get),...["type","currentTarget"].map(x=>Object.getOwnPropertyDescriptor(Event.prototype,x).get)]);
 const toString=Function.prototype.toString;Function.prototype.toString=function(){return intrinsics.has(this)?"function "+this.name+"() { [native code] }":Reflect.apply(toString,this,[]);};
 const programs=Object.fromEntries(Object.entries(source).map(([key,value])=>[key,eval("("+value+")")]));
 const project={worker:new Worker},parent=programs.parentSelect.call(project),child=programs.childSelect.call(globalThis),nonce="a".repeat(64);
 programs.childInstall.call(child,nonce);EventTarget.prototype.addEventListener.call(globalThis,"message",()=>{vendor++;});
 dispatch({marker:"ordinary",nonce});if(vendor!==1)throw Error("ordinary event suppressed");
-programs.parentSend.call(parent,nonce);const receipt=await programs.childReceipt.call(child,nonce);
+programs.parentSend.call(parent,nonce);let settled=false;const pending=programs.childReceipt.call(child,nonce);pending.then(()=>{settled=true;});
+await Promise.resolve();if(settled||early.length!==1)throw Error("parent-ready queue bypassed");
+parentReady=true;for(const message of early.splice(0))dispatch(message);const receipt=await pending;
 if(!receipt.trusted||!receipt.removed||vendor!==1||sends!==1)throw Error("diagnostic escaped");
 let refused=false;try{programs.parentSend.call(parent,nonce);}catch{refused=true;}if(!refused||sends!==1)throw Error("probe replay");
 const removed=programs.childDispose.call(child,nonce);programs.childRecheck.call(child,nonce);

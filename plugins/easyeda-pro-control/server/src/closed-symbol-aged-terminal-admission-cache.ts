@@ -10,19 +10,21 @@ import { canonicalJson, isRecord, sha256Json } from "./core.ts";
 import { machineProfileSchema } from "./machine-profile.ts";
 import type { CurrentProcessSqlRuntimeLease } from "./current-process-sql-runtime-lease.ts";
 import { captureClosedSymbolJournalBytes } from "./closed-symbol-terminal-closure-journal.ts";
-import { observeClosedSymbolAgedTerminalClosure, revalidateClosedSymbolAgedTerminalClosure } from "./closed-symbol-terminal-closure-observer.ts";
+import { observeClosedSymbolAgedTerminalClosure, revalidateObservedClosedSymbolAgedTerminalClosure } from "./closed-symbol-terminal-closure-observer.ts";
 import type { ClosureObservation } from "./closed-symbol-terminal-closure-observer.ts";
 import { ownBoundedData, requireEvidence } from "./closed-symbol-terminal-closure-plan.ts";
 import { ClosureEvidenceChangedError } from "./closed-symbol-terminal-closure-evidence-error.ts";
 import { ClosureIneligibleError } from "./closed-symbol-terminal-closure-ineligible-error.ts";
 
-const LIFETIME_MS = 600_000, MAX_ENTRIES = 4, MAX_RETAINED_BYTES = 33_554_432;
-const REVISION = "private.aged-admission-cache.v1";
+// Bounded compact plans let sorted scans reuse more than four historical proofs
+// Without retaining their large raw replay graphs or evicting useful residents.
+const LIFETIME_MS = 600_000, MAX_ENTRIES = 512, MAX_RETAINED_BYTES = 33_554_432;
+const REVISION = "private.aged-admission-cache.v2";
 type Bag = Readonly<Record<string, unknown>>;
 type Runtime = ReturnType<typeof machineProfileSchema.shape.runtime.parse>;
 type Candidate = Readonly<{ operationId: string; state: typeof AGED_TERMINAL_STATE; family: typeof FAMILY;
   storedJournalSha256: string; entireStoredJournalSha256: string; terminalArtifact: ReturnType<typeof parseClosedSymbolAgedTerminalArtifact> }>;
-interface Entry { readonly key: string; readonly candidate: Candidate; readonly runtime: Runtime; readonly input: unknown;
+interface Entry { readonly key: string; readonly candidate: Candidate; readonly runtime: Runtime;
   readonly observation: ClosureObservation; readonly result: HistoricalAgedTerminalInspection; readonly bytes: number; readonly enrolledAt: number }
 const entries = new Map<string, Entry>();
 let retainedBytes = 0;
@@ -112,7 +114,7 @@ export async function inspectAgedTerminalForAdmission(candidateInput: unknown, r
   const selected = entries.get(slot);
   if (selected !== undefined && selected.key === key) {
     try {
-      await finalChecked(() => revalidateClosedSymbolAgedTerminalClosure(selected.input, selected.observation, lease));
+      await finalChecked(() => revalidateObservedClosedSymbolAgedTerminalClosure(selected.observation, lease));
       const end = performance.now();
       if (end < selected.enrolledAt || end - selected.enrolledAt >= LIFETIME_MS) { throw new ClosureIneligibleError("cache-hit-expired"); }
       scope();
@@ -157,9 +159,9 @@ export async function inspectAgedTerminalForAdmission(candidateInput: unknown, r
   // Retain its historical result. No awaited work follows this insertion check.
   scope();
   const enrolledAt = performance.now(); expire(enrolledAt);
-  const bytes = Buffer.byteLength(JSON.stringify({ key, candidate, runtime, input, observation, result, enrolledAt }));
+  const bytes = Buffer.byteLength(JSON.stringify({ key, candidate, runtime, observation, result, enrolledAt }));
   if (!entries.has(slot) && entries.size < MAX_ENTRIES && retainedBytes + bytes <= MAX_RETAINED_BYTES) {
-    entries.set(slot, Object.freeze({ key, candidate, runtime, input, observation, result, bytes, enrolledAt })); retainedBytes += bytes;
+    entries.set(slot, Object.freeze({ key, candidate, runtime, observation, result, bytes, enrolledAt })); retainedBytes += bytes;
   }
   return result;
 }
