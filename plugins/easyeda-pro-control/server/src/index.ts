@@ -52,6 +52,7 @@ import {
   validatePrivateFingerprint,
 } from "./core.ts";
 import { EasyedaControlEngine, SerializedGate } from "./engine.ts";
+import { projectPublicEngineStatus } from "./public-status-projection.ts";
 import type { StatusAdmissionObservation } from "./engine.ts";
 import { DesignExecutor } from "./design-execution.ts";
 import { compileDesignAction } from "./design-action.ts";
@@ -2026,8 +2027,8 @@ registerFacadeTool(
       ...(facadeMode === "calculation-only" ? { availableTools: CALCULATION_ONLY_TOOLS,
         capabilityScope: "Separately admitted observations, utilities, historical abandonment, ordinary existing-profile launch and checkpointed disposable opening. The shared unused META-only symbol lifecycle passed an installed101500 disposable forward/inverse round trip. Installed123000 passed the separate ordinary unused META-only forward-only route with exact closed SQL, reopened content and final closure. That historical validation grants no current-invocation authority. Ordinary unused-symbol metadata accepts complete META-only or bounded canvas-segments history, including tombstones, with exactly one write and no inverse. Installed080000 passed the ordinary unused drawn-symbol forward lifecycle with complete closed SQL, exact reopened content and final closure on a disposable fixture. Installed210000 passed the disposable canvas-segments forward/inverse round trip with complete closed SQL, reopened content and final closure. The separate original-owner ordinary SCH-container title route passed its installed203733 disposable-fixture lifecycle, including batching, full closed SQL, fresh metadata/peer/child-roster and both AST readback, final closure and unchanged SQL. Ordinary-project scope retains exact startup, clock and one-write guards; historical validation grants no current-invocation authority. Generic design writers remain disabled. No generic design-content access or legacy-route admission; ordinary opening may change storage and launch does not prove isolation." } : {}),
     },
-    upstream: facadeMode === "legacy-reviewed" ? await engine.status() : {
-      ...await engine.status(), capabilities: facadeMode === "public-utilities-only" ? publicUtilitiesOnlyCapabilities() : {
+    upstream: facadeMode === "legacy-reviewed" ? projectPublicEngineStatus(await engine.status()) : {
+      ...projectPublicEngineStatus(await engine.status()), capabilities: facadeMode === "public-utilities-only" ? publicUtilitiesOnlyCapabilities() : {
         sdkCalculations: { tool: "easyeda_control_calculate", runtimeAdmissionRequired: true },
         sdkSystem: { tool: "easyeda_control_system", runtimeAdmissionRequired: true },
         startupExtensions: { tool: "easyeda_control_extensions", runtimeAdmissionRequired: true, launchQualification: false },

@@ -108,3 +108,37 @@ failed unsubscribe incorrectly reporting release on subsequent cleanup.
 
 Complete facade/bridge suites are delegated to exact-commit GitHub CI. Publication
 and installation remain pending those results; no new live writer claim is made.
+
+## First CI result and bounded status correction
+
+PR141 candidate `9a4361bee0f0b2f1439d13cf96032e1144d9de0e` completed Linux
+CI40701581040 with seven facade shards and the build passing. The eighth shard
+failed its shared setup because public status serialized the complete source
+inventory twice: 530,417 bytes exceeded the unchanged 512 KiB response limit.
+The suite reported 13,327 passing tests, 18 cancelled after that setup failure
+and five expected platform skips. All 424 bridge tests and Windows CI40701581279
+passed. The failure logs and candidate artifact verification are retained;
+this candidate was not merged or installed.
+
+The correction replaces only the redundant public `upstream.facadeImplementation`
+with an explicit summary and pointer to the full inventory in
+`upstream.stableFingerprint.facadeImplementation`. Internal status, complete
+admission fingerprints, mismatch diagnostics and the response ceiling stay
+unchanged. Distinct inventory objects are refused before projection. The actual
+registered callback now retains all 847 source files in a 256,429-byte response;
+two projection regressions and that callback regression passed. Independent
+review found no admission or consumer regression.
+
+The corrected source projection is
+`718e6808dc2539a772ab6e5c59ccc544b609e3aca0e6d5a1458129241d19e57f`;
+its three-file runtime projection is
+`a496f347986831dd4105d3c92e1557f413f26031a5f83cd147d2701669f5eaf5`.
+The native helper and all external compatibility pins are unchanged. The version
+remains `0.3.0+codex.20261028134521`; this is part of the same unpublished batch.
+Corrected exact-commit CI and installation are pending.
+
+Corrected local TypeScript, strict type-aware lint, coverage, reproducible build,
+compatibility, repository/contract/skill validators and seven skill-creator checks
+passed. The three status regressions were repeated after source, bundles and pins
+were frozen and passed. The earlier dependency and unchanged native-helper checks
+remain applicable to this correction. Complete suites await new exact-commit CI.
