@@ -159,6 +159,20 @@ opening tool retains its existing expectation. No runtime, bundle, manifest,
 external pin or execution guard changed for this test correction. The failed
 run remains evidence and does not satisfy final full-suite acceptance.
 
+### Dispatcher fixture extraction correction
+
+The annotation-corrected candidate, with final metadata clarification in
+`7e8a6ff1d2f128f12e556dd5663e47d9e475934c`, passed Windows40801727349
+and the build/bridge job in Linux40801727558. Six facade shards passed; shards2
+and3 failed fixture extraction in the ordinary-release and startup-purpose-switch
+tests. Those fixtures bounded one contiguous source slice at24,000 characters;
+the new unrelated historical dispatcher made the slice exceed that cap before
+any callback test could execute. The fixtures now select the exact lexical
+startup state and `runStartup` declarations from their unique owning block,
+retaining bounded complete callback bodies and actual method/ownership guards.
+No runtime, bundle, manifest, external pin or execution guard changed. Earlier
+failed and superseded CI remains retained and is not final acceptance.
+
 ## Remaining work
 
 Validate the new historical relinquishment action first in a fresh facade,
