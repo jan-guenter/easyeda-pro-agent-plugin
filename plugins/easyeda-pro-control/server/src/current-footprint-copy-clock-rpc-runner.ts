@@ -23,6 +23,10 @@ import { CURRENT_FOOTPRINT_COPY_CLOCK_RPC_FLAGS as FLAGS, CURRENT_FOOTPRINT_COPY
   requireCurrentFootprintCopyClockRpcDescription, validateCurrentFootprintCopyClockRpcCommand, currentFootprintCopyClockRpcArrayValue as valueAt } from "./current-footprint-copy-clock-rpc-protocol.ts";
 import type { CurrentFootprintCopyClockRpcCommand as Command } from "./current-footprint-copy-clock-rpc-protocol.ts";
 
+// oxlint-disable-next-line import/no-cycle -- Pre-await custody is verified only after original construction; the immutable issuer path is shared with this private collector.
+import { requireCurrentFootprintCopyAllocatedDestination, requireCurrentFootprintCopyAllocationOrigin } from "./current-footprint-copy-allocation-runner.ts";
+import type { CurrentFootprintCopyAllocationRunner } from "./current-footprint-copy-allocation-runner.ts";
+
 interface Point { readonly role: Site; readonly sessionId: string; readonly id: string; removeAttempted: boolean; removed: boolean }
 interface Pause { readonly role: Site; readonly sessionId: string; readonly frameId: string; readonly callerId: string | null; resumed: boolean; resumeAttempted: boolean }
 interface Request { readonly packet: string; readonly replyTopic: string; readonly id: number; value: number | null; offset: number | null }
@@ -57,7 +61,8 @@ export class CurrentFootprintCopyClockRpcRunner {
   readonly #origin: ReturnType<typeof requireCurrentFootprintCopyClockRpcOrigin>;
   readonly #worker: ReturnType<typeof requireCurrentFootprintCopyClockRpcConstructionLease>;
   readonly #ui: ReturnType<typeof requireCurrentFootprintCopyClockRpcRegistrationLease>;
-  readonly #documentUuid: string;
+  readonly #documentUuid: string | null;
+  readonly #allocation: CurrentFootprintCopyAllocationRunner | null;
   readonly #points: Point[] = [];
   readonly #pauses: Pause[] = [];
   readonly #raw: unknown[] = [];
@@ -86,11 +91,13 @@ export class CurrentFootprintCopyClockRpcRunner {
   #retired = false;
   #packet: CurrentFootprintCopyClockRpcObservation | null = null;
   #firstFailure: Readonly<{ phase: Phase; normal: number; cleanup: number; replies: number }> | null = null;
-  public constructor(origin: CurrentFootprintCopyClockRpcOrigin, documentUuid: string) {
+  public constructor(origin: CurrentFootprintCopyClockRpcOrigin, documentUuid: string | CurrentFootprintCopyAllocationRunner) {
     this.#origin = requireCurrentFootprintCopyClockRpcOrigin(origin); this.#token = origin;
     this.#worker = requireCurrentFootprintCopyClockRpcConstructionLease(this.#origin.workerLease);
     this.#ui = requireCurrentFootprintCopyClockRpcRegistrationLease(this.#origin.registrationLease);
-    this.#documentUuid = z.string().regex(/^[a-f\d]{16}$/u).parse(documentUuid);
+    this.#allocation = typeof documentUuid === "string" ? null : documentUuid;
+    this.#documentUuid = typeof documentUuid === "string" ? z.string().regex(/^[a-f\d]{16}$/u).parse(documentUuid) : null;
+    if (this.#allocation !== null) { requireCurrentFootprintCopyAllocationOrigin(this.#allocation, origin); }
     need(handle.max(128).safeParse(this.#origin.workerSessionId).success && this.#origin.workerSessionId !== this.#ui.sessionId, "REALMS");
     this.#same();
   }
@@ -104,6 +111,7 @@ export class CurrentFootprintCopyClockRpcRunner {
       requireCurrentFootprintCopyClockRpcConstructionLease(this.#origin.workerLease) === this.#worker &&
       requireCurrentFootprintCopyClockRpcRegistrationLease(this.#origin.registrationLease) === this.#ui, "ORIGINAL_OWNER");
     this.#worker.assertCleanup(); this.#ui.assertCleanup();
+    if (this.#allocation !== null) { requireCurrentFootprintCopyAllocationOrigin(this.#allocation, this.#token); }
     requireCurrentFootprintCopyClockRpcSource(this.#worker.qualifiedSource, "worker"); requireCurrentFootprintCopyClockRpcSource(this.#ui.qualifiedSource, "ui");
     need(cleanup || this.#phase !== "failed" && !this.#cleanupAttempted && (this.#started === 0 || performance.now() - this.#started < 300_000), "FAILED_OR_EXPIRED");
   }
@@ -226,9 +234,12 @@ export class CurrentFootprintCopyClockRpcRunner {
       const result = await this.#call("reply", pause.sessionId, frame, [{ objectId: request.packet }, { value: { uiUuid: this.#uiUuid, value: request.value } }], 4);
       need(valueAt(result.values, 3) === request.value, "PENDING_REPLY_RESULT"); return;
     }
-    const result = await this.#call("producer", pause.sessionId, frame, [{ objectId: request.packet }, { value: { documentUuid: this.#documentUuid, value: request.value } }, { value: ordinal }], 5);
-    need(valueAt(result.values, 2) === this.#documentUuid && valueAt(result.values, 3) === request.value && valueAt(result.values, 4) === ordinal, "CONSUMED_RESULT");
-    this.#samples.push(Object.freeze({ ordinal, producer: role, documentUuid: this.#documentUuid, updateTime: request.value, lexicalOffset: request.offset, replyTopicSha256: sha256Text(request.replyTopic) }));
+    const documentUuid = this.#allocation === null ? this.#documentUuid : await requireCurrentFootprintCopyAllocatedDestination(this.#allocation, this.#token);
+    need(documentUuid !== null, "ORIGINAL_ALLOCATION"); await this.#current();
+    const result = await this.#call("producer", pause.sessionId, frame, [{ objectId: request.packet }, { value: { documentUuid, value: request.value } }, { value: ordinal }], 5);
+    if (this.#allocation !== null) { need(await requireCurrentFootprintCopyAllocatedDestination(this.#allocation, this.#token) === documentUuid, "ORIGINAL_ALLOCATION_CHANGED"); }
+    need(valueAt(result.values, 2) === documentUuid && valueAt(result.values, 3) === request.value && valueAt(result.values, 4) === ordinal, "CONSUMED_RESULT");
+    this.#samples.push(Object.freeze({ ordinal, producer: role, documentUuid, updateTime: request.value, lexicalOffset: request.offset, replyTopicSha256: sha256Text(request.replyTopic) }));
   }
   async #remove(point: Point): Promise<void> {
     if (point.removed) { return; } need(!point.removeAttempted, "REMOVE_CONSUMED"); point.removeAttempted = true;
@@ -296,7 +307,7 @@ export class CurrentFootprintCopyClockRpcRunner {
     } finally { if (timer !== null) { clearTimeout(timer); } this.#ending = false; }
   }
   public diagnostics(): Readonly<Record<string, unknown>> {
-    return Object.freeze({ phase: this.#phase, normalRequests: this.#normal, cleanupRequests: this.#cleanup, replies: this.#raw.length,
+    return Object.freeze({ phase: this.#phase, preAwaitAllocationMode: this.#allocation !== null, normalRequests: this.#normal, cleanupRequests: this.#cleanup, replies: this.#raw.length,
       pauses: this.#pauses.length, resumes: this.#pauses.filter(value => value.resumed).length, removed: this.#points.filter(value => value.removed).length,
       uncertainAllocation: this.#uncertainAllocation, unknownPause: this.#unknownPause, groupReleaseAttempts: this.#groupAttempts.size, groupsReleased: this.#groupsReleased.size,
       retired: this.#retired, originalGenerationEnded: this.#generationEnded, retirementSettlementAttempted: this.#retirementSettlementAttempted,

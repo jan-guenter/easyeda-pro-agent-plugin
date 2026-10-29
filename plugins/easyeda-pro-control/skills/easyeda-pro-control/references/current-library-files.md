@@ -1,9 +1,9 @@
-# Supplied library metadata, symbol pins and project sources
+# Supplied libraries, project sources and raw design records
 
 Use `easyeda_control_library_files` to inspect supplied standalone libraries or
 project archives without launching EasyEDA. This tool is available in every
 facade mode. It implements bounded native-task-equivalent metadata projections
-and lossless footprint/symbol source reads. It does not invoke the SDK's
+and lossless supplied-document source reads. It does not invoke the SDK's
 `extractLibInfo`, `extractProjectInfo` or `getDocumentFootprintSources` methods.
 
 Discover `easyeda_control_api` action `library-files` with
@@ -30,7 +30,7 @@ verifies the actual managed bytes.
 The tool does not accept a runtime fingerprint. It does not import a library,
 open a project, save a design, access the network or extract archive members to
 disk. `prepare-file` writes the managed input, and footprint-source extraction
-writes a complete managed index. Symbol-source extraction also writes one index. Metadata extraction and source-page reads only
+writes a complete managed index. Symbol-source and project-document-source extraction also write one index each. Metadata extraction and source-page reads only
 read the exact managed input. Do not replace unsupported source records or rewrite the
 input just to make the validator accept it.
 
@@ -141,6 +141,89 @@ framing. `cadFramingValidated:false` and `designValidityVerified:false` remain.
 The table performs no ERC, connectivity inference, dependency lookup, pin-to-pad
 mapping or live membership check. It does not admit an SDK getter or writer.
 
+## Read current combined project documents
+
+For a prepared `.epro` or `.epro2`, send
+`request:{action:"extract-project-document-sources",file}`. Keep the returned
+`sourceSetSha256` and complete managed `index`. Page the roster with
+`request:{action:"list-project-document-sources",file,expectedSourceSetSha256,
+offset:0,length:32}`. Each source has a `sourceId`, document type, member path,
+byte offset inside that member, byte length, full-source SHA-256 and UTF-16
+length. `sourceId` identifies this exact source segment, rather than a catalog
+part. Use the returned value instead of guessing it from a UUID.
+
+The current exporter writes one root `<project-name>.epru` inside `.epro2`.
+The index decodes every native header/body record before splitting original
+DOCHEAD segments, including non-schematic peers. DOCHEAD text inside a JSON value
+does not create another segment. Unique document IDs, complete framing and the
+terminal `|\n` delimiter are required. The complete source bytes retain every
+record, unknown field, ordering, numeric spelling and separator. A source index
+can preserve history or tombstones without qualifying them for a raw design
+report. A repeated DOCHEAD for the same document refuses as an ambiguous source.
+
+Legacy exported `.epro` archives use
+`SHEET/<schematic-id>/<sheet_id>.esch`, `PCB/<uuid>.epcb`,
+`SYMBOL/<uuid>.esym` and `FOOTPRINT/<uuid>.efoo`. These bodies remain opaque during
+indexing. `sheetId` comes from the filename and remains separate from the
+document UUID. A legacy sheet therefore reports `documentUuid:null` until a
+separate supported inspector reads its header. Typed PCB/symbol/footprint members
+retain their filename UUID so a supported inspector can check header agreement. Mixed combined and legacy
+source layouts refuse. Unknown peer members stay in the exact prepared archive.
+`sourceLayout` distinguishes the combined-stream and recognized-legacy-member
+domains. Legacy PANEL, INSTANCE, assets and other unindexed member families
+remain opaque peers. `completeRosterReturned` covers this recognized source
+roster, not every document or dependency in the project.
+`completeProjectDocumentInventory` stays false for both layouts.
+
+Read any indexed document through
+`request:{action:"read-project-document-source",file,expectedSourceSetSha256,
+sourceId,offset:0,length:4096}`. Follow `nextOffset` as for footprint pages.
+Every list, read and report freshly verifies the whole supplied archive and its
+complete source-set digest. No member is written to disk and no external
+dependency is followed. An archive index does not prove a live design, missing
+dependency completeness, saved application state or import suitability.
+
+For an indexed SYMBOL source, use
+`request:{action:"inspect-project-symbol-pins",file,expectedSourceSetSha256,
+sourceId,offset:0,length:16}`. This reuses the raw pin inspector described above,
+including its complete-source checks and8192-record bound. The original filename
+or native DOCHEAD supplies the selected symbol UUID. It does not resolve a
+schematic component's inherited pins or qualify that component's dependencies.
+
+## Inspect raw schematic and PCB records
+
+For an indexed SCH or SCH_PAGE source, send
+`request:{action:"inspect-schematic-records",file,expectedSourceSetSha256,
+sourceId,offset:0,length:16}`. The inspector first validates the entire native
+source, one agreeing DOCHEAD and unique object IDs. Mutable history, tombstones,
+multiple headers and unsupported framing refuse this report while lossless
+source reads remain available.
+
+The page reports raw COMPONENT, PIN, WIRE, LINE, NET, ATTR, RELEVANCE, PART, PORT
+and NET_LABEL records. Each retains its original text, header/body projection,
+record index and SHA-256. Record-type counts cover the full source, including
+unknown families. Follow `nextOffset` until `endOfRecords:true`.
+`completeRecordsReturned` requires a zero start. The report resolves no inherited
+symbol pins or component dependencies and infers no connection from geometric
+contact or a stored net label. `connectivityCompiled`, `netMembershipVerified`
+and `electricalRulesEvaluated` stay false. This route never invokes the compiled
+netlist getter that can annotate parts and Save All.
+
+For an indexed PCB source, send
+`request:{action:"inspect-pcb-stack-rules",file,expectedSourceSetSha256,
+sourceId,section:"all",offset:0,length:16}`. `section` can be `stack`, `rules`,
+`selectors` or `all`. The inspector accepts a complete unique native PCB source
+or an ordinary PCB1.x JSON-line source with HEAD. It reports exact stored layer,
+physical-layer, active-layer, rule-template/rule and selector/equal-length
+records, fourteen known rule-family counts, and unknown families. Populated
+selectors are retained as raw records instead of normalized or discarded.
+
+Numeric fields and layer IDs retain their raw encoding. No live default repair,
+native parser, rule getter, merge or initialization runs. Stored records do not
+prove effective precedence, net/pad applicability, physical fabrication stackup
+or current loaded state. The corresponding verification flags stay false.
+Neither report enables a live SDK reader, writer, DRC, ERC or fabrication action.
+
 ## Format and size limits
 
 Standalone files require complete UTF-8 JSON-line framing, a matching
@@ -163,3 +246,11 @@ page reparses the bounded archive. Symbol sources share those bounds and an
 and32 KiB of pin DTOs; if even one complete DTO cannot fit, use the raw source
 pages. These bounds do not truncate a pin or an unknown record. Check the current discovered schema for exact names
 and limits before preparing a file.
+
+Combined project streams allow at most65,536 complete records and256 document
+segments within the existing8 MiB expanded archive limit. Project document
+indexes share the256 KiB index and4096-unit source-page bounds. Schematic and
+PCB record pages contain at most16 complete records and32 KiB of report rows.
+PCB reports accept at most32,768 complete source records. If one record cannot
+fit a report page, use lossless source pages. Reports never return a truncated
+record as complete.

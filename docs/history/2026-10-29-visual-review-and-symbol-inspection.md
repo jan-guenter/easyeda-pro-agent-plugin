@@ -213,3 +213,80 @@ retained separately.
 Corrected source projection919 members: `904101baafb081ea78a6e087357098894ae09ef2db1e58de4654756c0bade65a`.
 Runtime projection3 members: `def362bacc3e3450104b0f2c7a46b9001b5ed690edc745ce0030c5a9f5010f19`.
 Manifest: `3460858f160adbb165ee5eddefaab082164b751900232c1012406c886090c68a`.
+
+## Publication and official installation
+
+Final candidate `b3a310d48ce3fedcac607f88a2336d66041af205` passed all eleven
+required PR checks. Linux40898522347 passed13,600 facade cases, five expected
+platform skips and zero failures, plus424 bridge cases. Windows40898522352
+passed all fourteen exact-helper purposes and native recovery smokes. Earlier
+8e0de6a Windows and2a62694 Linux failures remain retained separately. The
+superseded8e0de6a Linux run was cancelled after its build passed; it supplies no
+complete-suite success.
+
+Protected [PR151](https://github.com/jan-guenter/easyeda-pro-agent-plugin/pull/151)
+merged as `92abfed492f7e7da396ece224634eee3af4a3b47`. The plugin tree
+`9c08e41b2f09afb21380eebfe4bb3d14d9db16f2` is byte-exact to the final tested
+candidate. This release batches62 files. Source/bundles/helper stayed frozen
+after the final green candidate.
+
+The official CLI upgraded only marketplace `easyeda-pro-agent`, retaining
+`https://github.com/jan-guenter/easyeda-pro-agent-plugin.git` and merged main92abfed.
+The installed/enabled snapshot is `0.3.0+codex.20261029142600`. No redundant add,
+manual installed-cache patch, host-gateway termination or bridge-key
+provisioning was used. The known stale arg0-directory cleanup permission
+warning remains in stderr; upgrade and verification succeeded without deleting
+unrelated temporary data.
+
+Both complete comparisons before and after the scoped plugin list pass all
+2,360 files,45,885,119 bytes,42 directories and committed0644/0755 modes.
+Installed inventory:
+`379385c2d9739fd53001f2a137c9f7e5d6c874fad683cac3435a5c3927289ef0`.
+The machine profile remains byte-exact. The installed builtin-only helper
+identity check passes both exact consumer size/hash pins and the unchanged cap.
+
+The installed configured-entrypoint offline probe passes27 exposed/52
+configured tools and45 catalog queries through47 requests on pinned Node24.18.0.
+Its own synthetic child exits0 through stdin EOF, without a signal and with
+zero stderr. Marker/control-roster checks and sampled absence of descendants
+or nonstdio sockets pass. Continuous isolation, ambient-to-pinned handoff,
+actual newly loaded host admission and connected execution are not established.
+No live call used the new snapshot in this chat.
+
+Automatic merged-main Windows40901093838 passed. Merged-main Linux40901094277
+is pending at this entry; its terminal result must be recorded separately.
+Publication and installation are complete. Before any new live case, load the
+snapshot in a fresh Codex session and admit its actual owner. Terminal120000
+cannot be continued or reconstructed from its JSON. Its original release and
+closed-fixture proof remain separate historical evidence.
+
+### Next work after fresh admission
+
+Validate the new viewport workflow and the corrected destination route on
+new disposable operation IDs. Finish genuine pre-await allocated-UUID custody,
+whole copy/SQL completion, four-generation resource/output reservations,
+independent saved copy verification, genuine inverse deletion and saved absence.
+Selection writes need eligibility and complete flush/delete effects; PNG needs
+native pre-allocation and renderer completion/cleanup. Passive current stack
+and rules, supplied schematic source/connectivity, and other inventoried API
+families remain backlog. Offline supplied-symbol inspection is usable without
+EasyEDA and grants no live SDK, import or electrical authority.
+
+This publication appendix remains local until the next substantive commit,
+avoiding a release solely for chronology. AGENTS and README remain unchanged.
+
+### Final merged-main verification and handoff
+
+Merged main92abfed passed all ten Linux jobs in40901094277 and Windows40901093838.
+Both runs name the exact merged commit. Final installed metadata, manifest,
+both bundles and the native helper still match the reviewed candidate bytes
+and modes after CI. The private machine profile remains unchanged. No new live
+call, installed-cache patch, gateway termination or bridge-key provisioning
+followed installation.
+
+Load142600 in a fresh Codex session and admit its actual host before any live
+case. The old120000 operation is terminal released and has no continuation
+authority. Use new disposable IDs for viewport and destination validation.
+The source/omission inventory and preceding next-work list retain the broader
+unfinished implementations. This task did not enable or validate a copy/delete
+writer or access production designs.

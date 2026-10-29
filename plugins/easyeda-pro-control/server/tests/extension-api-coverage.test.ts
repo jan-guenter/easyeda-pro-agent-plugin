@@ -834,7 +834,9 @@ void test("legacy capture coverage stays separate from the current209 native vie
     assert.deepEqual(route.documentTypes, [3]); assert.equal(route.executionState, "available-with-runtime-guards");
     assert.deepEqual(route.inputDiscovery?.arguments, { request: { action: "pcb209-visual", query: { includeSchemas: true } } });
     assert.match(route.scope, /one journaled perform-visual/u); assert.match(route.scope, /no selection mutation/u);
-    assert.match(route.scope, /render completion is not observed/u); assert.match(route.scope, /connected execution remains unvalidated/u);
+    assert.match(route.scope, /render completion is not observed/u);
+    assert.match(route.scope, /Fit-all, fit-selected and other domains remain unvalidated/u);
+    assert.match(route.scope, /historical case does not admit later source or loaded owners/u);
   }
   const zoom = rows.get("eda.dmt_EditorControl.zoom"); assert.equal(zoom?.status, "omitted");
   assert.equal(zoom?.omission?.code, "installed-209-constant-false-stub"); assert.match(zoom.omission.reason, /literal false/u);

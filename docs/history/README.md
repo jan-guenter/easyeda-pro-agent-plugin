@@ -1,5 +1,7 @@
 # Project history
 
+- [2026-10-29 Supplied design inspection and viewport validation](2026-10-29-supplied-design-inspection-and-viewport.md).
+- [2026-10-29 Supplied PCB stack and rule inspection](2026-10-29-supplied-pcb-stack-rule-inspection.md).
 - [2026-10-29 Visual review, supplied symbols and copy integration](2026-10-29-visual-review-and-symbol-inspection.md).
 
 This directory contains repository research, reviews, work logs, release reports,
