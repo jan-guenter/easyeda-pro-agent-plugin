@@ -139,6 +139,7 @@ export class CurrentFootprintCopyMainBackendRunner {
   #failed = false;
   #releaseAttempted = false;
   #released = false;
+  #normalCloseAttempted = false;
   #started = 0;
   #requests = 0;
   #normalRequests = 0;
@@ -191,7 +192,8 @@ export class CurrentFootprintCopyMainBackendRunner {
     this.#methods = methods(transport); this.#transport = transport;
   }
   #same(cleanup: boolean): void {
-    need(methods(this.#transport).every((value, index) => value === this.#methods[index]) && !this.#released && (cleanup || !this.#failed && !this.#releaseAttempted), "OWNER");
+    need(methods(this.#transport).every((value, index) => value === this.#methods[index]) && !this.#released &&
+      (cleanup || !this.#failed && !this.#releaseAttempted && !this.#normalCloseAttempted), "OWNER");
     if (this.#source !== null) { requireCurrentFootprintCopyMainBackendSource(this.#source); }
     need(this.#started === 0 || performance.now() - this.#started < (cleanup ? PROFILE.totalMilliseconds : PROFILE.normalMilliseconds), "TOTAL_DEADLINE");
   }
@@ -368,11 +370,33 @@ export class CurrentFootprintCopyMainBackendRunner {
     try { await this.#reprove(); } catch (error) { this.#fail(error); throw error; } finally { this.#busy = false; }
   }
   public async release(): Promise<void> {
+    await this.#release();
+  }
+  async #release(): Promise<void> {
     need(!this.#originActive && this.#attempted && !this.#busy && !this.#releaseAttempted, "RELEASE_CONSUMED"); this.#releaseAttempted = true; this.#busy = true;
     try {
       if (this.#breakpoint !== null && !this.#removeAttempted) { await this.#remove(true); }
       empty.parse(await this.#request({ phase: "release", method: "Runtime.releaseObjectGroup", params: { objectGroup: GROUP } }, true)); this.#released = true;
     } catch (error) { this.#fail(error); throw error; } finally { this.#busy = false; }
+  }
+  #normalCloseQuiescence(released: boolean): void {
+    need(methods(this.#transport).every((value, index) => value === this.#methods[index]) && this.#packet !== null &&
+      !this.#busy && !this.#failed && this.#pendingId === null && this.#text.length === 0 && this.#removed &&
+      this.#pause !== null && this.#pause.resumed && !this.#originActive && !this.#completionActive && !this.#completionFailed &&
+      !this.#originPauseActive && !this.#originResumeExpected && !this.#originUncertain && this.#originBreakpoints.size === 0 &&
+      this.#originEvents.length === 0 && this.#released === released && (!released || this.#releaseAttempted), "NORMAL_CLOSE_QUIESCENCE");
+  }
+  /** No resume is dispatched here. A complete original observation, settled
+   * origins and the acknowledged registration resume precede the existing
+   * object-group release. A failed release consumes this cleanup attempt. */
+  public async prepareNormalClose(): Promise<void> {
+    need(!this.#normalCloseAttempted, "NORMAL_CLOSE_CONSUMED"); this.#normalCloseAttempted = true;
+    this.#normalCloseQuiescence(this.#released);
+    if (!this.#released) { await this.#release(); }
+    this.#normalCloseQuiescence(true);
+  }
+  public requireNormalClosePrepared(): void {
+    need(this.#normalCloseAttempted, "NORMAL_CLOSE_REQUIRED"); this.#normalCloseQuiescence(true);
   }
   /** Only the actual new combined native owner can join this original runner.
    * No caller-supplied scheduler, handles, flags or serialized packet is issued. */

@@ -5,6 +5,7 @@ import { captureCurrentPcbStringClockReply } from "./current-pcb-string-clock-re
 import { CURRENT_PCB_DIAGNOSTIC_TRANSPORT_LIMITS as TRANSPORT } from "./current-pcb-diagnostic-transport-limits.ts";
 import { DIAGNOSTIC_REQUEST_LIMIT } from "./current-pcb-diagnostic-protocol.ts";
 import { CURRENT_WINDOW_CAPTURE_TRANSPORT_RESERVATION as BUDGET } from "./current-pcb-diagnostic-window-capture-budget.ts";
+import { CURRENT_WINDOW_RESTORE_LIMITS as RESTORE } from "./current-pcb-diagnostic-window-restore.ts";
 import { CURRENT_WINDOW_CAPTURE_LIMITS as IMAGE } from "./current-pcb-diagnostic-window-capture.ts";
 import { freezeDeep } from "./sqlite-inventory-core.ts";
 
@@ -12,17 +13,19 @@ export const CURRENT_WINDOW_CAPTURE_READINESS_LIMITS = Object.freeze({ queries: 
 const coordinate = z.number().int().min(-1_000_000).max(1_000_000).refine(value => !Object.is(value, -0));
 const native = z.object({ hwnd: z.string().regex(/^[1-9][0-9]{0,18}$/u).nullable(),
   bounds: z.object({ left: coordinate, top: coordinate, right: coordinate, bottom: coordinate }).strict().nullable(),
+  restoreAttempted: z.boolean(), restoreRequestSubmitted: z.boolean(), restoreStateObserved: z.boolean(),
   maximized: z.boolean().nullable(), resizeAttempted: z.boolean(), resizeRequestSubmitted: z.boolean(), resizeGeometryObserved: z.boolean(),
   queriesUsed: z.number().int().min(1).max(CURRENT_WINDOW_CAPTURE_READINESS_LIMITS.queries), captureAttempted: z.boolean(),
   paintDispatched: z.boolean(), nativeResourcesRetained: z.boolean(),
 }).strict().refine(value => (value.hwnd === null) === (value.bounds === null) &&
   (value.bounds === null || value.bounds.right > value.bounds.left && value.bounds.bottom > value.bounds.top) &&
-  (!value.paintDispatched || value.captureAttempted) && (!value.nativeResourcesRetained || value.captureAttempted) && (!value.resizeRequestSubmitted || value.resizeAttempted) &&
+  (!value.paintDispatched || value.captureAttempted) && (!value.nativeResourcesRetained || value.captureAttempted) && (!value.restoreRequestSubmitted || value.restoreAttempted) && (!value.restoreStateObserved || value.restoreRequestSubmitted && value.hwnd !== null && value.maximized === false) &&
+  (!value.resizeRequestSubmitted || value.resizeAttempted) &&
   (!value.resizeGeometryObserved || value.resizeRequestSubmitted && value.hwnd !== null && value.maximized === false &&
     value.bounds !== null && value.bounds.right - value.bounds.left === 1920 && value.bounds.bottom - value.bounds.top === 1080) && (value.hwnd === null) === (value.maximized === null), "Contradictory original window readiness.");
 const usage = z.object({ helperStdoutBytes: z.number().int().min(0).max(TRANSPORT.maximumHelperStdoutBytes),
   cdpRequests: z.number().int().min(0).max(DIAGNOSTIC_REQUEST_LIMIT), readerAvailable: z.boolean(),
-  sourceQualified: z.boolean(), resizeConsumed: z.boolean().optional(), captureConsumed: z.boolean(), queriesUsed: z.number().int().min(1).max(CURRENT_WINDOW_CAPTURE_READINESS_LIMITS.queries),
+  sourceQualified: z.boolean(), restoreConsumed: z.boolean().optional(), resizeConsumed: z.boolean().optional(), captureConsumed: z.boolean(), queriesUsed: z.number().int().min(1).max(CURRENT_WINDOW_CAPTURE_READINESS_LIMITS.queries),
 }).strict();
 export type CurrentWindowCaptureReadinessUsage = z.infer<typeof usage>;
 
@@ -39,17 +42,23 @@ export function currentWindowCaptureReadiness(input: unknown, usageInput: Curren
   const remainingHelperStdoutBytes = TRANSPORT.maximumHelperStdoutBytes - used.helperStdoutBytes;
   const transportEligible = remainingCdpRequests >= BUDGET.cdpRequests && remainingHelperStdoutBytes >= BUDGET.requiredHeadroomBytes;
   const captureAttemptConsumed = used.captureConsumed || value.captureAttempted;
+  const restoreAttemptConsumed = used.restoreConsumed === true || value.restoreAttempted;
   const resizeAttemptConsumed = used.resizeConsumed === true || value.resizeAttempted;
   const result = { schema: "easyeda-pro-control.window-capture-readiness.v1", hwnd: value.hwnd, bounds: value.bounds, width, height,
     geometryEligible, transportEligible, resizeTransportEligible: remainingCdpRequests >= 2 * BUDGET.cdpRequests &&
-      remainingHelperStdoutBytes >= BUDGET.requiredHeadroomBytes && used.queriesUsed < CURRENT_WINDOW_CAPTURE_READINESS_LIMITS.queries, capacityAvailable: geometryEligible && transportEligible && !captureAttemptConsumed && (!resizeAttemptConsumed || value.resizeGeometryObserved),
+      remainingHelperStdoutBytes >= BUDGET.requiredHeadroomBytes && used.queriesUsed < CURRENT_WINDOW_CAPTURE_READINESS_LIMITS.queries, capacityAvailable: geometryEligible && transportEligible && !captureAttemptConsumed && (!resizeAttemptConsumed || value.resizeGeometryObserved) && (!restoreAttemptConsumed || value.restoreStateObserved),
     originalPcbSourceRetained: used.sourceQualified, readerAvailable: used.readerAvailable, captureAttemptConsumed,
-    maximized: value.maximized, resizeSupported: value.hwnd !== null && value.maximized === false && !captureAttemptConsumed && !resizeAttemptConsumed,
+    restoreTransportEligible: remainingCdpRequests >= RESTORE.requiredCdpStages * BUDGET.cdpRequests &&
+      remainingHelperStdoutBytes >= BUDGET.requiredHeadroomBytes && CURRENT_WINDOW_CAPTURE_READINESS_LIMITS.queries - used.queriesUsed >= RESTORE.requiredQuerySlots,
+    restoreSupported: value.hwnd !== null && value.maximized === true && !captureAttemptConsumed && !resizeAttemptConsumed && !restoreAttemptConsumed,
+    restoreAttemptConsumed, restoreAttempted: value.restoreAttempted, restoreRequestSubmitted: value.restoreRequestSubmitted, restoreStateObserved: value.restoreStateObserved,
+    maximized: value.maximized, resizeSupported: value.hwnd !== null && value.maximized === false && !captureAttemptConsumed && !resizeAttemptConsumed && (!restoreAttemptConsumed || value.restoreStateObserved),
     resizeAttemptConsumed, resizeAttempted: value.resizeAttempted, resizeRequestSubmitted: value.resizeRequestSubmitted, resizeGeometryObserved: value.resizeGeometryObserved,
     nativePaintDispatched: value.paintDispatched, nativeResourcesRetained: value.nativeResourcesRetained,
     limits: { minimumWidth: 320, minimumHeight: 200, maximumDimension: IMAGE.maximumDimension, maximumPixels: IMAGE.maximumPixels,
       maximumPngBytes: IMAGE.maximumPngBytes, maximumNativePacketBytes: IMAGE.maximumReplyBytes },
-    budgets: { remainingCdpRequests, requiredCdpRequests: BUDGET.cdpRequests, requiredResizeCdpRequests: 2 * BUDGET.cdpRequests, remainingHelperStdoutBytes,
+    budgets: { remainingCdpRequests, requiredCdpRequests: BUDGET.cdpRequests, requiredResizeCdpRequests: 2 * BUDGET.cdpRequests, requiredRestoreCdpRequests: RESTORE.requiredCdpStages * BUDGET.cdpRequests,
+      requiredRestoreQuerySlots: RESTORE.requiredQuerySlots, remainingHelperStdoutBytes,
       requiredHelperStdoutBytes: BUDGET.requiredHeadroomBytes, protectedCleanupBytes: BUDGET.cleanupReplyBytes,
       nativeQueriesUsed: value.queriesUsed, queriesUsed: used.queriesUsed, queriesRemaining: CURRENT_WINDOW_CAPTURE_READINESS_LIMITS.queries - used.queriesUsed },
     snapshotOnly: true, activePcbRechecked: false, captureRequiresFreshReproof: true, paintIssued: false, executionAuthorized: false };

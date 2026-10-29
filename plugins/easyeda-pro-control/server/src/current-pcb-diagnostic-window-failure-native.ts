@@ -1,13 +1,14 @@
 /** Fixed PowerShell error adapter. It reads cached scalars only, never a window,
  * process, exception message payload or fresh native resource probe. */
-import { CURRENT_WINDOW_FAILURE_NATIVE_CODES, CURRENT_WINDOW_FAILURE_STAGES } from "./current-pcb-diagnostic-window-failure-contract.ts";
+import { CURRENT_WINDOW_FAILURE_ACTIONS, CURRENT_WINDOW_FAILURE_NATIVE_CODES, CURRENT_WINDOW_FAILURE_STAGES } from "./current-pcb-diagnostic-window-failure-contract.ts";
 
 export function currentWindowFailurePowerShell(): string {
+  const actions = CURRENT_WINDOW_FAILURE_ACTIONS.filter(action => action !== "release").map(action => `'${action}'`).join(",");
   const codes = CURRENT_WINDOW_FAILURE_NATIVE_CODES.map(code => `'${code}'`).join(",");
   const stages = CURRENT_WINDOW_FAILURE_STAGES.map(stage => `'${stage}'`).join(",");
   return `$windowFailure=$null
       $windowRelease=$request.action -ceq 'release' -and @('pcb-diagnostic-window-capture-release-before-exit','pcb-diagnostic-window-capture-gdi-release') -ccontains $code
-      if ($Visual209 -and (@('capture-window','resize-window-for-capture','window-capture-readiness') -ccontains $request.action -or $windowRelease)) {
+      if ($Visual209 -and (@(${actions}) -ccontains $request.action -or $windowRelease)) {
         try {
           $stage=$owner.WindowFaultStage;$bounds=$owner.WindowFaultBounds
           $label=$code.Substring(15)

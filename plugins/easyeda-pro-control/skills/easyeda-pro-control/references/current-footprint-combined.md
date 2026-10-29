@@ -40,7 +40,16 @@ an owner or retire an unknown/live generation.
    owner binds the main inspector to its original stderr, root/Job/image handles
    and reciprocal TCP connection. A URL, PID or old receipt cannot replace it.
 2. Inspect the browser and current frames, then qualify the exact UI script.
-   Use the returned target/frame identities, never historical ones.
+   Use the returned target/frame identities, never historical ones. Before
+   `capture-project`, `observe-saved-cache-native` may be called once with the
+   same original binding. It requires all three prerequisite results to be
+   published and consumes a durable intent before five fixed reads plus one
+   object-group release. It retains the original `CacheStorage` constructor,
+   prototype and `match` descriptor identities, complete bounded metadata and
+   the browser engine tuple. It invokes neither `caches` nor `match`. The result
+   is unqualified evidence for later profile review: no native-match
+   qualification, saved-generation replay token or execution authority is
+   issued. Do not repeat it after any refusal or missing reply.
 3. Call `capture-project` once with that original binding, exact disposable
    target/checkpoint and all required opening/debugger acknowledgments. Main
    construction must already be published. Follow
@@ -70,13 +79,24 @@ ownership packets.
 
 After uncertainty, inspect without repeating the stage. Bounded main diagnostics
 retain the metadata role, locally issued failure reason and schema paths without
-raw values. Worker diagnostics retain cache step/failure, command and pause
+raw values. The optional native-cache probe retains complete raw descriptor
+replies up to32KiB each and192KiB in aggregate, with phase, index, byte count and
+hash. Its original replies remain private; failure inspection grants no replay.
+Worker diagnostics retain cache step/failure, command and pause
 counts alongside the parent and peer states. A constructor index is the last
 accepted pause, not evidence that a later pause is held.
 
 For ordinary closure, observe the original window, request normal close once,
 then separately observe original root exit and an empty Job, release the helper
 and inspect. Keep any Save/Discard prompt unanswered unless actually authorized.
+
+For main/combined owners, normal close first releases the observed main object
+group and detaches its original inspector socket. This requires acknowledged
+resume, removed breakpoints and no pending reply or active origin. It issues no
+extra resume. A provably never-attempted attachment needs no detach; ambiguous
+attachment or cleanup refuses. The once-only close attempt stays consumed on
+error. Process, Job and stdio handles remain retained until actual termination
+and final release. Detachment does not prove that normal close will finish.
 
 When force termination is authorized, use `abort-generation` with the original
 binding and `confirmAbortOriginalCombinedJob:true`. The lifecycle durably consumes

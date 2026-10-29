@@ -96,6 +96,34 @@ does not recheck active PCB identity or authorize capture. The window can change
 immediately afterward; actual capture repeats all original-owner, context,
 geometry and capacity checks. No caller PID/HWND or resize is accepted.
 
+For a visible maximized original window, validate `restore-window-for-capture`
+with the same operation/binding and `acceptWindowRestoreEffects:true`. This
+separate once-only action requests the fixed nonactivating show command4 through
+[ShowWindowAsync](https://learn.microsoft.com/en-us/windows/win32/api/winuser/nf-winuser-showwindowasync).
+Windows may restore the previous position as well as size; accepting restore
+includes that possible position change. No caller HWND, coordinates or show
+command are accepted. This changes window state, not a project backup or design.
+
+The native API reports only that its request started. Command4 follows
+[SW_SHOWNOACTIVATE](https://learn.microsoft.com/en-us/windows/win32/api/winuser/nf-winuser-showwindow):
+it requests the most recent size/position without activation. The adapter makes
+no Z-order, geometry, rendering or persistence guarantee. It does not use
+`SetWindowPlacement`, style changes, a foreground request or synchronous restore.
+Minimized, hidden, ambiguous and ordinary-purpose windows remain unsupported.
+
+Restore must precede every resize/capture attempt. Its durable intent is consumed
+before possible dispatch; source/postguard failures, missing replies and refusal
+do not permit retry or an inverse. Before restore, at least30 CDP slots and32MiB
+stdout headroom and two unused readiness-query slots are required. These reserve
+transport capacity for restore, potential resize and capture; each later stage
+rechecks its remaining output capacity independently. Run readiness after the
+restore result is published and require `restoreStateObserved:true` on the same
+original HWND with `maximized:false`. This snapshot is required before resize or
+capture, and neither later operation treats it as current-state authority. If the
+restored window remains too large, use the fixed resize below and run readiness
+again. If it remains maximized or the window changes, inspect and use only the
+offered cleanup; do not issue another restore.
+
 For an eligible non-maximized window that needs a smaller size, validate
 `resize-window-for-capture` with the original operation/binding and
 `acceptWindowResizeEffects:true`. It requests fixed1920x1080 using the original
@@ -107,8 +135,9 @@ queues; see [SetWindowPos](https://learn.microsoft.com/en-us/windows/win32/api/w
 exact1920x1080 at the same original position before capture can consume its
 intent. Capture then repeats its fresh checks and recalculates output headroom.
 A missing, refused, clamped or unapplied resize is consumed; it grants no retry
-or automatic restoration. Maximized windows explicitly refuse. Restore/style
-changes and arbitrary window control remain unavailable.
+or automatic restoration. Resize itself refuses maximized windows; use only the
+separate restore workflow above before resizing. Style changes, arbitrary window
+control and restoration of previous state remain unavailable.
 
 When the snapshot has suitable geometry and capacity, obtain the original application `hwnd`
 with `observe-window`. Validate and send

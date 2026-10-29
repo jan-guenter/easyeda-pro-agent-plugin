@@ -18,6 +18,7 @@ import { decodeCurrentPcb209VisualReply } from "../src/current-pcb-209-visual-ac
 import type { CurrentPcb209VisualOperation } from "../src/current-pcb-209-visual-actions.ts";
 import { currentPcb209VisualRequestSchema } from "../src/current-pcb-209-visual-validation.ts";
 import { currentWindowCaptureReadiness } from "../src/current-pcb-diagnostic-window-capture-readiness.ts";
+import { windowRestorePacket } from "./helpers/window-restore-packet.ts";
 import { windowResizePacket } from "./helpers/window-resize-packet.ts";
 import { windowCapturePacket } from "./helpers/window-capture-png.ts";
 import { queryOfflineApi } from "../src/offline-api.ts";
@@ -63,16 +64,18 @@ function fixture(context: TestContext, id: string): Readonly<{
   lifecycle: CurrentPcb209VisualLifecycle; options: CurrentPcbDiagnosticLifecycleOptions;
   dependencies: CurrentPcbDiagnosticLifecycleDependencies; calls: string[];
   state: { bound: boolean; released: boolean; terminated: boolean; publicationLoss: boolean; throwVisual: boolean; wrongTarget: boolean;
-    resizeCalls: number; resizeReadinessObserved: boolean; readinessCalls: number; captureCalls: number; throwCapture: boolean; methodCalls: number; abortCalls: number; abortPublicationLoss: boolean; lostAbort: boolean };
+    maximized: boolean; restoreCalls: number; restoreReadinessObserved: boolean; resizeCalls: number; resizeReadinessObserved: boolean; readinessCalls: number; captureCalls: number; throwCapture: boolean; methodCalls: number; abortCalls: number; abortPublicationLoss: boolean; lostAbort: boolean };
   request: (action: string, extra?: Record<string, unknown>) => Promise<Record<string, unknown>>;
 }> {
   const calls: string[] = [], state = { bound: false, released: false, terminated: false, publicationLoss: false, throwVisual: false,
-    wrongTarget: false, resizeCalls: 0, resizeReadinessObserved: false, readinessCalls: 0, captureCalls: 0, throwCapture: false, methodCalls: 0, abortCalls: 0, abortPublicationLoss: false, lostAbort: false };
+    wrongTarget: false, maximized: false, restoreCalls: 0, restoreReadinessObserved: false, resizeCalls: 0, resizeReadinessObserved: false, readinessCalls: 0, captureCalls: 0, throwCapture: false, methodCalls: 0, abortCalls: 0, abortPublicationLoss: false, lostAbort: false };
   const valueReadinessCalls = (): void => { state.readinessCalls += 1; };
   const binding = { helperInstance: "b".repeat(32), jobId: "c".repeat(32), rootPid: 123, rootCreated: "123456789012345" };
   const owner: CurrentPcbDiagnosticLifecycleOwner = {
-    status: () => ({ windowResize209AttemptConsumed: state.resizeCalls > 0, windowResize209ReadinessObserved: state.resizeReadinessObserved,
-      windowResize209RequestCapacity: state.resizeCalls === 0 && state.captureCalls === 0 && state.readinessCalls < 8, profile: "visual209", stringPrecreateConsumed: false, helperPid: 456, binding: state.bound ? binding : null,
+    status: () => ({ windowRestore209AttemptConsumed: state.restoreCalls > 0, windowRestore209ReadinessObserved: state.restoreReadinessObserved,
+      windowRestore209RequestCapacity: state.restoreCalls === 0 && state.resizeCalls === 0 && state.captureCalls === 0 && state.readinessCalls <= 6,
+      windowResize209AttemptConsumed: state.resizeCalls > 0, windowResize209ReadinessObserved: state.resizeReadinessObserved,
+      windowResize209RequestCapacity: state.resizeCalls === 0 && state.captureCalls === 0 && state.readinessCalls < 8 && (state.restoreCalls === 0 || state.restoreReadinessObserved), profile: "visual209", stringPrecreateConsumed: false, helperPid: 456, binding: state.bound ? binding : null,
       failure: null, busy: false, launchConsumed: state.bound, closeConsumed: calls.includes("close"), released: state.released, helperClosed: state.released,
       browserObservationConsumed: calls.includes("browser"), frameInspectionConsumed: calls.includes("frames"), scriptInspectionConsumed: calls.includes("script"),
       diagnosticFailure: null, diagnosticFailureObservation: null, projectOpeningConsumed: calls.includes("project"), projectOpeningResult: calls.includes("project") ? OPEN : null,
@@ -106,12 +109,18 @@ function fixture(context: TestContext, id: string): Readonly<{
       return Promise.resolve({ family: "pcb", projectUuid: TARGET.projectUuid, documentUuid: TARGET.documentUuid,
         tabId: TAB, sourceVerified: true, domOwnerVerified: true, openingObservation: OBSERVED, executionAuthorized: false }); },
     observeWindowCaptureReadiness209: () => {
-      valueReadinessCalls(); if (state.resizeCalls > 0) { state.resizeReadinessObserved = true; }
-      return Promise.resolve(currentWindowCaptureReadiness({ hwnd: "12345", bounds: { left: 0, top: 0, right: 1920, bottom: 1080 },
-        queriesUsed: state.readinessCalls, maximized: false, resizeAttempted: state.resizeCalls > 0,
+      valueReadinessCalls(); if (state.restoreCalls > 0 && !state.maximized) { state.restoreReadinessObserved = true; }
+      if (state.resizeCalls > 0) { state.resizeReadinessObserved = true; }
+      return Promise.resolve(currentWindowCaptureReadiness({ hwnd: "12345", bounds: { left: 0, top: 0, right: state.restoreCalls > 0 && state.resizeCalls === 0 ? 3840 : 1920, bottom: state.restoreCalls > 0 && state.resizeCalls === 0 ? 2160 : 1080 },
+        queriesUsed: state.readinessCalls, restoreAttempted: state.restoreCalls > 0, restoreRequestSubmitted: state.restoreCalls > 0, restoreStateObserved: state.restoreReadinessObserved, maximized: state.maximized, resizeAttempted: state.resizeCalls > 0,
         resizeRequestSubmitted: state.resizeCalls > 0, resizeGeometryObserved: state.resizeReadinessObserved, captureAttempted: state.captureCalls > 0, paintDispatched: state.captureCalls > 0, nativeResourcesRetained: state.captureCalls > 0 },
         { helperStdoutBytes: 1024, cdpRequests: 60, readerAvailable: true, sourceQualified: calls.includes("source"),
-          captureConsumed: state.captureCalls > 0, queriesUsed: state.readinessCalls }));
+          captureConsumed: state.captureCalls > 0, restoreConsumed: state.restoreCalls > 0, queriesUsed: state.readinessCalls }));
+    },
+    restoreWindowForCapture209: async (target) => {
+      state.restoreCalls += 1; assert.deepEqual(target, SEALED); assert.equal(state.maximized, true); state.restoreReadinessObserved = false;
+      const intentFile = join(directory(id), "window-restore209-intent.json");
+      assert.match(await readFile(intentFile, "utf8"), /acceptWindowRestoreEffects/u); state.maximized = false; return windowRestorePacket();
     },
     resizeWindowForCapture209: async (target) => {
       state.resizeCalls += 1; assert.deepEqual(target, SEALED); state.resizeReadinessObserved = false;
@@ -324,4 +333,22 @@ void test("fixed resize consumes intent once and requires a new geometry observa
   await value.request("capture-window", { hwnd: "12345", acceptWindowPaintEffects: true, confirmLocalArtifact: true });
   await assert.rejects(value.request("resize-window-for-capture", { acceptWindowResizeEffects: true }), /CONSUMED/u);
   assert.equal(value.state.resizeCalls, 1); assert.equal(value.state.captureCalls, 1);
+});
+
+void test("restore submission needs later normal-state readiness before fixed resize and capture", async context => {
+  const id = "pcb209-visual-test-restore", value = fixture(context, id); await ready(value, id); value.state.maximized = true;
+  await assert.rejects(value.request("restore-window-for-capture", { acceptWindowRestoreEffects: false })); assert.equal(value.state.restoreCalls, 0);
+  const restored = await value.request("restore-window-for-capture", { acceptWindowRestoreEffects: true }); assert.ok(isRecord(restored["result"]));
+  assert.equal(restored["result"]["requestSubmitted"], true); assert.equal(restored["result"]["restoreCompletionVerified"], false);
+  assert.equal(restored["result"]["positionMayChange"], true);
+  await assert.rejects(value.request("resize-window-for-capture", { acceptWindowResizeEffects: true }), /RESTORE209_.*READINESS_REQUIRED/u);
+  await assert.rejects(value.request("capture-window", { hwnd: "12345", acceptWindowPaintEffects: true, confirmLocalArtifact: true }), /RESTORE209_.*READINESS_REQUIRED/u);
+  const operations = await readCurrentPcbDiagnosticLifecycles(); const current = operations.find(item => item.operationId === id);
+  assert.equal(current?.records["window-resize209-intent.json"], undefined); assert.equal(current?.records["window-capture209-intent.json"], undefined);
+  const readiness = await value.request("observe-capture-readiness"); assert.ok(isRecord(readiness["readiness"]));
+  assert.equal(readiness["readiness"]["restoreStateObserved"], true);
+  await value.request("resize-window-for-capture", { acceptWindowResizeEffects: true }); await value.request("observe-capture-readiness");
+  await value.request("capture-window", { hwnd: "12345", acceptWindowPaintEffects: true, confirmLocalArtifact: true });
+  await assert.rejects(value.request("restore-window-for-capture", { acceptWindowRestoreEffects: true }), /CONSUMED/u);
+  assert.equal(value.state.restoreCalls, 1); assert.equal(value.state.resizeCalls, 1); assert.equal(value.state.captureCalls, 1);
 });

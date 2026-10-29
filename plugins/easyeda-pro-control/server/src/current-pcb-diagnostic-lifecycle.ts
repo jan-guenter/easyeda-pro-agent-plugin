@@ -1,6 +1,7 @@
 /** Original-owner validation lifecycle with one checkpoint-bound disposable
  * opening. No generic debugger command, CAD writer or historical owner recreation. */
 /* oxlint-disable max-classes-per-file, import/max-dependencies -- Fixed facades share one private cleanup/journal core; keeping the purpose selector unexported prevents a caller-selectable upgrade API. */
+import { CURRENT_WINDOW_RESTORE_LIMITS, currentWindowRestoreResult, requireCurrentWindowRestoreResult } from "./current-pcb-diagnostic-window-restore.ts";
 import { CURRENT_WINDOW_RESIZE_LIMITS, currentWindowResizeResult, requireCurrentWindowResizeResult } from "./current-pcb-diagnostic-window-resize.ts";
 import { currentWindowCaptureResult, publishCurrentWindowCapture, requireCurrentWindowCaptureResult } from "./current-pcb-diagnostic-window-capture.ts";
 import { currentPcb209VisualRequestSchema } from "./current-pcb-209-visual-validation.ts";
@@ -182,13 +183,13 @@ const continuationSessionMethods = Object.freeze({ capture: CurrentPcb209Ratline
 // oxlint-enable typescript/unbound-method
 
 type CleanupRequest = Exclude<LifecycleRequest, { action: "launch" | "inspect" | "query-observation" | "settle-records" | "cleanup-unlaunched" | "cleanup-no-process" }>;
-type ObservationRequest = Extract<LifecycleRequest, { action: "resize-window-for-capture" | "capture-window" | "perform-visual" | "browser-observation" | "inspect-frames" | "inspect-script" | "inspect-workers" | "inspect-worker-script" | "observe-worker-state" | "observe-model-state" | "observe-pcb-opening" | "observe-string-precreate" | "observe-layers" | "observe-primitives" | "observe-extended-primitives" | "observe-selection-relations" | "observe-pad-shapes" | "observe-image-shapes" | "observe-arc-shapes" | "observe-poured-shapes" }>;
-type ObservationStage = "window-resize209" | "window-capture209" | "visual-viewport209" | z.infer<typeof diagnosticObservationStageSchema> | "common-baseline" | "string-precreate" | "layers209" | "primitives209" | "extended-primitives209" | "selection-relations209" | "pad-shapes209" | "image-shapes209" | "arc-shapes209" | "poured-shapes209";
+type ObservationRequest = Extract<LifecycleRequest, { action: "restore-window-for-capture" | "resize-window-for-capture" | "capture-window" | "perform-visual" | "browser-observation" | "inspect-frames" | "inspect-script" | "inspect-workers" | "inspect-worker-script" | "observe-worker-state" | "observe-model-state" | "observe-pcb-opening" | "observe-string-precreate" | "observe-layers" | "observe-primitives" | "observe-extended-primitives" | "observe-selection-relations" | "observe-pad-shapes" | "observe-image-shapes" | "observe-arc-shapes" | "observe-poured-shapes" }>;
+type ObservationStage = "window-restore209" | "window-resize209" | "window-capture209" | "visual-viewport209" | z.infer<typeof diagnosticObservationStageSchema> | "common-baseline" | "string-precreate" | "layers209" | "primitives209" | "extended-primitives209" | "selection-relations209" | "pad-shapes209" | "image-shapes209" | "arc-shapes209" | "poured-shapes209";
 const methods = ["launch", "status", "observeApplicationWindow", "requestNormalClose", "observeTermination", "releaseClosed", "releaseUnlaunched",
   "releaseNoProcess", "browserObservation", "inspectFrames", "inspectScript", "inspectWorkers", "inspectWorkerScript", "observeWorkerState", "observeModelState", "openProject",
   "openPcb", "observePcbOpening"] as const;
 export type CurrentPcbDiagnosticLifecycleOwner = Pick<CurrentPcbDiagnosticOwner, (typeof methods)[number]> &
-  Partial<Pick<CurrentPcbDiagnosticOwner, "observeLayers209" | "observePrimitives209" | "observeExtendedPrimitives209" | "observeSelectionRelations209" | "observePadShapes209" | "observeImageShapes209" | "observeArcShapes209" | "observePouredShapes209" | "performVisual209" | "captureWindow209" | "observeWindowCaptureReadiness209" | "resizeWindowForCapture209" | "terminateVisualJob">>;
+  Partial<Pick<CurrentPcbDiagnosticOwner, "observeLayers209" | "observePrimitives209" | "observeExtendedPrimitives209" | "observeSelectionRelations209" | "observePadShapes209" | "observeImageShapes209" | "observeArcShapes209" | "observePouredShapes209" | "performVisual209" | "captureWindow209" | "observeWindowCaptureReadiness209" | "resizeWindowForCapture209" | "restoreWindowForCapture209" | "terminateVisualJob">>;
 type StringOwnerMethods = Pick<CurrentPcbStringPrecreateOwner, "observeStringPrecreate" | "observeCommonBaseline" | "retainedCommonBaselineFailure">;
 type StartupOwnerMethods = Pick<CurrentPcbWorkerStartupOwner, "handoffWorkerStartup">;
 type StartupContinuationOwnerMethods = Pick<CurrentPcb209RatlineContinuationOwner, "prepareWorkerStartupRatlineContinuationSession209">;
@@ -201,7 +202,7 @@ type StartupFootprintUiMethods = Pick<CurrentFootprintCopyPreparationOwner, "obs
 type StartupFootprintRouteMethods = Pick<CurrentFootprintCopyNativeOwner, "observeFootprintCopyWindowsClock" | "joinFootprintCopyManagerPeer" |
   "observeFootprintCopyClockRegistration" | "sampleFootprintCopyClockRegistration" | "retainedFootprintCopyClockRegistration" | "releaseFootprintCopyClockRegistration">;
 type MainOwnerMethods = Pick<CurrentFootprintMainNativeOwner, "observeFootprintMainConstruction" | "retainedFootprintMainConstruction" | "terminateFootprintMain">;
-type CombinedOwnerMethods = Pick<CurrentFootprintCombinedNativeOwner, "abortFootprintCombined" | "reserveFootprintCombinedAbort" | "dispatchFootprintCombinedAbort">;
+type CombinedOwnerMethods = Pick<CurrentFootprintCombinedNativeOwner, "abortFootprintCombined" | "reserveFootprintCombinedAbort" | "dispatchFootprintCombinedAbort" | "observeSavedCacheNative">;
 type LifecycleOwner = CurrentPcbDiagnosticLifecycleOwner & Partial<CombinedOwnerMethods & MainOwnerMethods & StartupFootprintRouteMethods & StartupFootprintUiMethods & StringOwnerMethods & StartupOwnerMethods & StartupEmptyOwnerMethods & StartupRatlineOwnerMethods & StartupContinuationOwnerMethods>;
 export interface CurrentPcb209StartupEmptyPreparation {
   /** The enclosing lifecycle must durably consume PCB navigation intent before
@@ -427,6 +428,7 @@ class CurrentPcbLifecycleCore {
   #footprintManagerRouteAttempted = false;
   #footprintManagerRoute: CurrentFootprintCopyManagerRouteObservation | null = null;
   #mainObservationAttempted = false;
+  #savedCacheNativeAttempted = false;
   #visualAbortAttempted = false;
   #mainTerminateAttempted = false;
   #combinedFactoryError: unknown = null;
@@ -471,7 +473,7 @@ class CurrentPcbLifecycleCore {
     this.#generation = generation;
     this.#purpose = purpose;
     this.#stringPurpose = stringPurpose;
-    this.#stages = opening209(generation) ? [...(generation === "209-visual" ? ["visual-viewport209" as const, "window-resize209" as const, "window-capture209" as const] : []), "browser", "frames", "script", "pcb-opening", "layers209", "primitives209", "extended-primitives209", "selection-relations209", "pad-shapes209", "image-shapes209", "arc-shapes209", "poured-shapes209"] :
+    this.#stages = opening209(generation) ? [...(generation === "209-visual" ? ["visual-viewport209" as const, "window-restore209" as const, "window-resize209" as const, "window-capture209" as const] : []), "browser", "frames", "script", "pcb-opening", "layers209", "primitives209", "extended-primitives209", "selection-relations209", "pad-shapes209", "image-shapes209", "arc-shapes209", "poured-shapes209"] :
       { diagnostic: diagnosticObservationStageSchema.options, "string-precreate": currentPcbStringPrecreateStages,
         "worker-startup": startupStages }[purpose];
     this.#options = Object.freeze({ ...options });
@@ -637,6 +639,10 @@ class CurrentPcbLifecycleCore {
           operation?.records["window-capture209-result.json"] === undefined && !this.#pending.has("window-capture209-result.json") ?
           native?.windowCapture209RetainedObservation ?? null : null,
         windowNativeFailure: original ? native?.windowNativeFailure ?? null : null,
+        windowRestore209AttemptConsumed: operation?.records["window-restore209-intent.json"] !== undefined || original && native?.windowRestore209AttemptConsumed === true,
+        windowRestore209ReadinessObserved: original ? native?.windowRestore209ReadinessObserved ?? false : false,
+        windowRestore209RetainedObservation: original && operation?.records["window-restore209-result.json"] === undefined ? native?.windowRestore209RetainedObservation ?? null : null,
+        windowRestoreObservationAccepted: false,
         windowResize209AttemptConsumed: operation?.records["window-resize209-intent.json"] !== undefined || original && native?.windowResize209AttemptConsumed === true,
         windowResize209ReadinessObserved: original ? native?.windowResize209ReadinessObserved ?? false : false,
         windowResize209RetainedObservation: original && operation?.records["window-resize209-result.json"] === undefined ? native?.windowResize209RetainedObservation ?? null : null,
@@ -648,6 +654,9 @@ class CurrentPcbLifecycleCore {
         visualObservationCurrent: false, visualObservationAccepted: false,
         mainConstructionAttemptConsumed: operation?.records["main-construction-intent.json"] !== undefined || original && this.#mainObservationAttempted,
         mainConstructionResultPublished: operation?.records["main-construction-result.json"] !== undefined,
+        savedCacheNativeAttemptConsumed: operation?.records["saved-cache-native-intent.json"] !== undefined || original && this.#savedCacheNativeAttempted,
+        savedCacheNativeObservation: original && operation?.records["saved-cache-native-result.json"] === undefined ? native?.savedCacheNativeObservation ?? null : null,
+        savedCacheNativeResult: operation?.records["saved-cache-native-result.json"]?.result ?? null,
         mainConstructionObservation: original && this.#retained?.methods.retainedFootprintMainConstruction !== undefined ? this.#retained.methods.retainedFootprintMainConstruction.call(this.#retained.owner) : null,
         visualAbortAttemptConsumed: operation?.records["visual-abort-intent.json"] !== undefined || original && this.#visualAbortAttempted,
         visualAbortAcknowledged: operation?.records["visual-abort-acknowledged.json"] !== undefined,
@@ -856,6 +865,61 @@ class CurrentPcbLifecycleCore {
       await this.#publish(request.operationId, "main-construction-result.json", result);
       const completed = { ...updated, records: { ...updated.records, "main-construction-result.json": result } };
       await assertSnapshot(operations.map(value => value.operationId === request.operationId ? completed : value)); this.#assertNormalOwner(retained);
+      return { ...describe(request.operationId, completed), result: structuredClone(result.result), executionAuthorized: false, saveAuthorized: false };
+    } finally { this.#busy = false; }
+  }
+  protected async runSavedCacheNative(request: Extract<CurrentFootprintCombinedValidationRequest,
+    { action: "observe-saved-cache-native" }>): Promise<Record<string, unknown>> {
+    this.#options.assertLocalAllowed();
+    requireValue(this.#generation === "209-startup-footprint-combined" && !this.#busy && !this.#combinedAbortBusy &&
+      !this.#combinedAbortAttempted, "SAVED_CACHE_NATIVE_PURPOSE_OR_BUSY");
+    this.#busy = true;
+    try {
+      const operations = await readCurrentPcbDiagnosticLifecycles();
+      const operation = operations.find(value => value.operationId === request.operationId), retained = this.#retained;
+      this.#assertPurpose(request.operationId, operation);
+      const binding = operation?.records["binding.json"], browser = operation?.records["browser-result.json"],
+        main = operation?.records["main-construction-result.json"], script = operation?.records["script-result.json"];
+      requireValue(retained !== null && retained.operationId === request.operationId && operation !== undefined && binding !== undefined &&
+        binding.launchAcknowledged && binding.intentSha256 === retained.intentSha256 && canonicalJson(binding.binding) === canonicalJson(retained.binding) &&
+        sha256Json(binding) === request.expectedBindingSha256, "ORIGINAL_OWNER_REQUIRED");
+      this.#assertNormalOwner(retained);
+      requireValue(this.#mainObservationAttempted && main !== undefined && browser !== undefined && script !== undefined &&
+        this.#pending.get("main-construction-result.json") === canonicalJson(main) &&
+        this.#pending.get("browser-result.json") === canonicalJson(browser) && canonicalJson(this.#observations.get("browser")) === canonicalJson(browser.result) &&
+        this.#pending.get("script-result.json") === canonicalJson(script) && canonicalJson(this.#observations.get("script")) === canonicalJson(script.result) &&
+        operation.records["script-intent.json"]?.family === "ui" && script.result["sourceVerified"] === true && script.result["family"] === "ui",
+      "SAVED_CACHE_NATIVE_PUBLICATION_REQUIRED");
+      requireValue(!this.#savedCacheNativeAttempted && operation.records["saved-cache-native-intent.json"] === undefined &&
+        operation.records["worker-startup-handoff-intent.json"] === undefined && operation.records["worker-startup-opening-intent.json"] === undefined &&
+        operation.records["project-opening-intent.json"] === undefined && operation.records["close-intent.json"] === undefined &&
+        operation.records["terminated.json"] === undefined && operation.records["release-intent.json"] === undefined &&
+        !this.#closeAttempted && !this.#releaseAttempted, "SAVED_CACHE_NATIVE_CONSUMED_OR_OPENED");
+      const observe = retained.methods.observeSavedCacheNative;
+      requireValue(observe !== undefined && retained.owner.observeSavedCacheNative === observe, "SAVED_CACHE_NATIVE_ORIGINAL_METHOD");
+      const same = (): void => {
+        this.#assertNormalOwner(retained); requireValue(retained.owner.observeSavedCacheNative === observe, "SAVED_CACHE_NATIVE_ORIGINAL_METHOD");
+      };
+      await this.#installation(retained); same(); await assertSnapshot(operations); same();
+      const intent: NonNullable<DiagnosticLifecycleRecords["saved-cache-native-intent.json"]> = {
+        schema: "easyeda-pro-control.saved-cache-native-intent.v1", operationId: request.operationId, createdAt: new Date().toISOString(),
+        bindingSha256: request.expectedBindingSha256, mainResultSha256: sha256Json(main), browserResultSha256: sha256Json(browser), scriptResultSha256: sha256Json(script),
+      };
+      this.#savedCacheNativeAttempted = true; await this.#record(request.operationId, "saved-cache-native-intent.json", intent); same();
+      const updated = { ...operation, records: { ...operation.records, "saved-cache-native-intent.json": intent } };
+      const expected = operations.map(value => value.operationId === request.operationId ? updated : value);
+      await assertSnapshot(expected); same();
+      const observation = await observe.call(retained.owner);
+      requireValue(canonicalJson(observation.engine) === canonicalJson(browser.result["version"]), "SAVED_CACHE_NATIVE_ENGINE_CHANGED");
+      // Preserve the bounded complete packet before any post-await owner check.
+      const result = diagnosticLifecycleRecordSchemas["saved-cache-native-result.json"].parse({
+        schema: "easyeda-pro-control.saved-cache-native-result.v1", operationId: request.operationId, createdAt: new Date().toISOString(),
+        intentSha256: sha256Json(intent), result: observation,
+      });
+      this.#retainRecord("saved-cache-native-result.json", result); same(); await assertSnapshot(expected); same();
+      await this.#publish(request.operationId, "saved-cache-native-result.json", result); same();
+      const completed = { ...updated, records: { ...updated.records, "saved-cache-native-result.json": result } };
+      await assertSnapshot(operations.map(value => value.operationId === request.operationId ? completed : value)); same();
       return { ...describe(request.operationId, completed), result: structuredClone(result.result), executionAuthorized: false, saveAuthorized: false };
     } finally { this.#busy = false; }
   }
@@ -2171,7 +2235,8 @@ class CurrentPcbLifecycleCore {
     const status = retained.methods.status.call(retained.owner);
     const expectedProfile = this.#generation === "206" ? this.#purpose : { "209-startup-footprint-combined": "worker-startup-footprint-combined209", "209-startup-footprint-main": "worker-startup-footprint-main209", "209-startup-footprint-route": "worker-startup-footprint-copy209", "209-startup-footprint": "worker-startup-footprint209", "209-startup": "worker-startup209", "209-startup-empty": "worker-startup-empty209", "209-startup-ratline": "worker-startup-ratline209", "209-startup-ratline-continuation": "worker-startup-ratline-continuation209", "209-visual": "visual209", "209-opening": "diagnostic209" }[this.#generation];
     requireValue(status.profile === expectedProfile &&
-      (this.#generation !== "209-visual" || typeof retained.methods.resizeWindowForCapture209 === "function" && retained.owner.resizeWindowForCapture209 === retained.methods.resizeWindowForCapture209 &&
+      (this.#generation !== "209-visual" || typeof retained.methods.restoreWindowForCapture209 === "function" && retained.owner.restoreWindowForCapture209 === retained.methods.restoreWindowForCapture209 &&
+        typeof retained.methods.resizeWindowForCapture209 === "function" && retained.owner.resizeWindowForCapture209 === retained.methods.resizeWindowForCapture209 &&
         typeof retained.methods.observeWindowCaptureReadiness209 === "function" && retained.owner.observeWindowCaptureReadiness209 === retained.methods.observeWindowCaptureReadiness209 &&
         typeof retained.methods.captureWindow209 === "function" && retained.owner.captureWindow209 === retained.methods.captureWindow209 &&
         typeof retained.methods.performVisual209 === "function" && retained.owner.performVisual209 === retained.methods.performVisual209 &&
@@ -2487,7 +2552,7 @@ class CurrentPcbLifecycleCore {
       inspectWorkers: owner.inspectWorkers, inspectWorkerScript: owner.inspectWorkerScript, observeWorkerState: owner.observeWorkerState,
       observeModelState: owner.observeModelState, openProject: owner.openProject,
       openPcb: owner.openPcb, observePcbOpening: owner.observePcbOpening,
-      ...(this.#generation === "209-visual" ? { performVisual209: owner.performVisual209, captureWindow209: owner.captureWindow209, observeWindowCaptureReadiness209: owner.observeWindowCaptureReadiness209, resizeWindowForCapture209: owner.resizeWindowForCapture209, terminateVisualJob: owner.terminateVisualJob } : {}),
+      ...(this.#generation === "209-visual" ? { performVisual209: owner.performVisual209, captureWindow209: owner.captureWindow209, observeWindowCaptureReadiness209: owner.observeWindowCaptureReadiness209, resizeWindowForCapture209: owner.resizeWindowForCapture209, restoreWindowForCapture209: owner.restoreWindowForCapture209, terminateVisualJob: owner.terminateVisualJob } : {}),
       ...(opening209(this.#generation) ? { observeLayers209: owner.observeLayers209, observePrimitives209: owner.observePrimitives209,
         observeExtendedPrimitives209: owner.observeExtendedPrimitives209, observeSelectionRelations209: owner.observeSelectionRelations209,
         observePadShapes209: owner.observePadShapes209, observeImageShapes209: owner.observeImageShapes209, observeArcShapes209: owner.observeArcShapes209, observePouredShapes209: owner.observePouredShapes209 } : {}),
@@ -2500,7 +2565,7 @@ class CurrentPcbLifecycleCore {
         retainedFootprintCopyManagerRoute: owner.retainedFootprintCopyManagerRoute } : {}),
       ...(this.#generation === "209-startup-footprint-main" || this.#generation === "209-startup-footprint-combined" ? { observeFootprintMainConstruction: owner.observeFootprintMainConstruction, retainedFootprintMainConstruction: owner.retainedFootprintMainConstruction } : {}),
       ...(this.#generation === "209-startup-footprint-main" ? { terminateFootprintMain: owner.terminateFootprintMain } : {}),
-      ...(this.#generation === "209-startup-footprint-combined" ? { abortFootprintCombined: owner.abortFootprintCombined, reserveFootprintCombinedAbort: owner.reserveFootprintCombinedAbort, dispatchFootprintCombinedAbort: owner.dispatchFootprintCombinedAbort } : {}),
+      ...(this.#generation === "209-startup-footprint-combined" ? { abortFootprintCombined: owner.abortFootprintCombined, reserveFootprintCombinedAbort: owner.reserveFootprintCombinedAbort, dispatchFootprintCombinedAbort: owner.dispatchFootprintCombinedAbort, observeSavedCacheNative: owner.observeSavedCacheNative } : {}),
       ...(routeStartup209(this.#generation) ? { observeFootprintCopyWindowsClock: owner.observeFootprintCopyWindowsClock, joinFootprintCopyManagerPeer: owner.joinFootprintCopyManagerPeer,
         observeFootprintCopyClockRegistration: owner.observeFootprintCopyClockRegistration, sampleFootprintCopyClockRegistration: owner.sampleFootprintCopyClockRegistration,
         retainedFootprintCopyClockRegistration: owner.retainedFootprintCopyClockRegistration, releaseFootprintCopyClockRegistration: owner.releaseFootprintCopyClockRegistration } : {}),
@@ -2592,7 +2657,7 @@ class CurrentPcbLifecycleCore {
     if (request.action === "observe-common-baseline") { return this.#observeCommonBaseline(request, operation, operations, retained); }
     if (request.action === "browser-observation" || request.action === "inspect-frames" || request.action === "inspect-script" ||
         request.action === "inspect-workers" || request.action === "inspect-worker-script" || request.action === "observe-worker-state" ||
-        request.action === "resize-window-for-capture" || request.action === "capture-window" || request.action === "perform-visual" || request.action === "observe-model-state" || request.action === "observe-pcb-opening" || request.action === "observe-string-precreate" || request.action === "observe-layers" || request.action === "observe-primitives" || request.action === "observe-extended-primitives" || request.action === "observe-selection-relations" || request.action === "observe-pad-shapes" || request.action === "observe-image-shapes" || request.action === "observe-arc-shapes" || request.action === "observe-poured-shapes") {
+        request.action === "restore-window-for-capture" || request.action === "resize-window-for-capture" || request.action === "capture-window" || request.action === "perform-visual" || request.action === "observe-model-state" || request.action === "observe-pcb-opening" || request.action === "observe-string-precreate" || request.action === "observe-layers" || request.action === "observe-primitives" || request.action === "observe-extended-primitives" || request.action === "observe-selection-relations" || request.action === "observe-pad-shapes" || request.action === "observe-image-shapes" || request.action === "observe-arc-shapes" || request.action === "observe-poured-shapes") {
       return this.#observe(request, operation, operations, retained);
     }
     if (request.action === "observe-capture-readiness") {
@@ -2674,6 +2739,7 @@ class CurrentPcbLifecycleCore {
   async #observe(request: ObservationRequest, operation: DiagnosticLifecycleOperation, operations: readonly DiagnosticLifecycleOperation[],
     retained: Retained): Promise<Record<string, unknown>> {
     let stage: ObservationStage = "browser";
+    if (request.action === "restore-window-for-capture") { stage = "window-restore209"; }
     if (request.action === "resize-window-for-capture") { stage = "window-resize209"; }
     if (request.action === "capture-window") { stage = "window-capture209"; }
     if (request.action === "perform-visual") { stage = "visual-viewport209"; }
@@ -2701,6 +2767,22 @@ class CurrentPcbLifecycleCore {
     requireValue(stage !== "workers" || operation.records["frames-result.json"] !== undefined, "FRAME_OBSERVATION_REQUIRED");
     requireValue(stage !== "worker-script" || operation.records["workers-result.json"] !== undefined, "WORKER_OBSERVATION_REQUIRED");
     requireValue(stage !== "worker-state" || operation.records["worker-script-result.json"] !== undefined, "WORKER_SOURCE_REQUIRED");
+    if (request.action === "restore-window-for-capture") {
+      requireValue(this.#generation === "209-visual" && retained.methods.restoreWindowForCapture209 !== undefined &&
+        !this.#observationConsumed.has("window-capture209") && !this.#observationConsumed.has("window-resize209") &&
+        retained.methods.status.call(retained.owner).windowRestore209RequestCapacity === true, "WINDOW_RESTORE209_CAPACITY");
+      this.#originalPcbSource(operation);
+    }
+    if (request.action === "resize-window-for-capture" || request.action === "capture-window") {
+      const status = retained.methods.status.call(retained.owner);
+      if (operation.records["window-restore209-intent.json"] !== undefined) {
+        const restored = operation.records["window-restore209-result.json"];
+        requireValue(restored !== undefined && this.#pending.get("window-restore209-result.json") === canonicalJson(restored) &&
+          canonicalJson(this.#observations.get("window-restore209")) === canonicalJson(restored.result) && status.windowRestore209ReadinessObserved === true,
+        "WINDOW_RESTORE209_RESULT_AND_READINESS_REQUIRED");
+      }
+      requireValue(status.windowRestore209AttemptConsumed !== true || status.windowRestore209ReadinessObserved === true, "WINDOW_RESTORE209_READINESS_REQUIRED");
+    }
     if (request.action === "resize-window-for-capture") {
       requireValue(this.#generation === "209-visual" && retained.methods.resizeWindowForCapture209 !== undefined &&
         !this.#observationConsumed.has("window-capture209") && retained.methods.status.call(retained.owner).windowResize209RequestCapacity === true,
@@ -2810,6 +2892,8 @@ class CurrentPcbLifecycleCore {
         canonicalJson(source) === canonicalJson(record.result) && this.#pending.get("worker-script-result.json") === canonicalJson(record), "ORIGINAL_WORKER_SOURCE_REQUIRED");
     }
     await this.#installation(retained); await assertSnapshot(operations); this.#assertNormalOwner(retained);
+    const restored = operation.records["window-restore209-result.json"];
+    const restoreProof = restored === undefined ? {} : { restoreResultSha256: sha256Json(restored), postRestoreStateObserved: true as const };
     const intent: NonNullable<DiagnosticLifecycleRecords["browser-intent.json"] | DiagnosticLifecycleRecords["string-precreate-intent.json"]> = stage === "string-precreate" ? {
       schema: "easyeda-pro-control.pcb-string-precreate-observation-intent.v1", operationId: request.operationId, createdAt: new Date().toISOString(),
       bindingSha256: request.expectedBindingSha256, stage, pcbOpeningResultSha256: sha256Json(operation.records["pcb-opening-result.json"]),
@@ -2820,6 +2904,8 @@ class CurrentPcbLifecycleCore {
       ...(request.action === "inspect-frames" || request.action === "inspect-worker-script" ? { targetId: request.targetId } : {}),
       ...(request.action === "inspect-script" ? { frameId: request.frameId, family: request.family } : {}),
       ...(request.action === "observe-selection-relations" ? { componentIds: [...request.componentIds] } : {}),
+      ...(request.action === "restore-window-for-capture" ? { acceptWindowRestoreEffects: true as const } : {}),
+      ...(request.action === "resize-window-for-capture" || request.action === "capture-window" ? restoreProof : {}),
       ...(request.action === "resize-window-for-capture" ? { acceptWindowResizeEffects: true as const } : {}),
       ...(request.action === "capture-window" ? { captureHwnd: request.hwnd, acceptWindowPaintEffects: true as const, confirmLocalArtifact: true as const,
         ...(operation.records["window-resize209-result.json"] === undefined ? {} : {
@@ -2887,6 +2973,13 @@ class CurrentPcbLifecycleCore {
       requireValue(before !== null, "STRING_ORIGINAL_SQL_REQUIRED");
       result = await observe.call(retained.owner, before);
     }
+    else if (request.action === "restore-window-for-capture") {
+      const restore = retained.methods.restoreWindowForCapture209;
+      requireValue(this.#generation === "209-visual" && restore !== undefined, "WINDOW_RESTORE209_PURPOSE");
+      const selected = this.#originalProjectOpening(operation).sealedTarget;
+      result = currentWindowRestoreResult(await restore.call(retained.owner, selected), selected);
+      requireCurrentWindowRestoreResult(result, selected);
+    }
     else if (request.action === "resize-window-for-capture") {
       const resize = retained.methods.resizeWindowForCapture209;
       requireValue(this.#generation === "209-visual" && resize !== undefined, "WINDOW_RESIZE209_PURPOSE");
@@ -2950,6 +3043,7 @@ class CurrentPcbLifecycleCore {
       requireCurrentPcb209VisualResult(result, this.#originalProjectOpening(operation).sealedTarget, request.operation);
     }
     let observationLimit = DIAGNOSTIC_OBSERVATION_MAX_BYTES;
+    if (request.action === "restore-window-for-capture") { observationLimit = CURRENT_WINDOW_RESTORE_LIMITS.resultBytes; }
     if (request.action === "resize-window-for-capture") { observationLimit = CURRENT_WINDOW_RESIZE_LIMITS.resultBytes; }
     if (request.action === "perform-visual") { observationLimit = CURRENT_PCB_209_VISUAL_RESULT_BYTES; }
     else if (stage === "primitives209") { observationLimit = CURRENT_PCB_209_PRIMITIVES_RESULT_BYTES; }
@@ -3459,7 +3553,9 @@ export class CurrentFootprintCombinedLifecycle extends CurrentPcbLifecycleCore {
       const request = currentFootprintCombinedValidationRequestSchema.parse(input);
     if (request.action === "abort-generation") { return this.runCombinedAbort(request); }
     if (!["inspect", "observe-termination", "release-closed", "settle-records", "cleanup-unlaunched", "cleanup-no-process"].includes(request.action)) { this.assertCombinedNormal(); }
-      return request.action === "observe-main-construction" ? this.runMainAction(request) : super.run(request);
+      if (request.action === "observe-main-construction") { return this.runMainAction(request); }
+      if (request.action === "observe-saved-cache-native") { return this.runSavedCacheNative(request); }
+      return super.run(request);
     } catch (error) { return Promise.reject(error instanceof Error ? error : new Error("COMBINED_REQUEST_REFUSED")); }
   }
   public async handoffWorkerStartup(operationId: string, expectedBindingSha256: string): Promise<CurrentPcbWorkerStartupHandoff> {

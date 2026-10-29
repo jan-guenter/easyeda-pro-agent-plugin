@@ -31,10 +31,11 @@ void describe("dependency-free installed package offline catalog probe", () => {
     assert.equal(result["scope"], "synthetic-profile-installed-package-offline-catalog;not-runtime-admission");
     assert.equal(result["tools"], 27);
     assert.equal(result["configuredTools"], 52);
-    assert.equal(result["queries"], 45);
+    assert.equal(result["queries"], 46);
+    assert.equal(result["loadedFacadeChecked"], true);
     const closed = result["closed"];
     assert.ok(closed !== null && typeof closed === "object" && "requests" in closed);
-    assert.equal(closed.requests, 47);
+    assert.equal(closed.requests, 48);
     assert.equal(result["ratlineContinuationDiscoveryChecked"], true);
     assert.equal(result["footprintCopyPreparationDiscoveryChecked"], true);
     assert.equal(result["footprintCopyRoutePreparationDiscoveryChecked"], true);

@@ -74,12 +74,17 @@ void test("worker grammar refuses phase/function mismatch, effects, context/grou
 void test("all 20 native programs, sequence, effects and fixed argument grammar match the reviewed exports", async () => {
   const source = await readFile(new URL("../../scripts/pcb-diagnostic-owner.ps1", import.meta.url), "utf8");
   const programs = [...Object.entries(CURRENT_PCB_STRING_WORKER_PRODUCER_EVALUATIONS), ...Object.entries(CURRENT_PCB_STRING_WORKER_PRODUCER_CALLS)];
+  const packedNames = new Map([[1, "StringWorkerUploadStructureSelectorFunction"], [3, "StringWorkerCooperationSelectorFunction"],
+    [4, "StringWorkerUploadSelectorFunction"], [5, "StringWorkerGateSelectorFunction"], [6, "StringWorkerGateFunction"],
+    [7, "StringWorkerUploadStructureFunction"], [8, "StringWorkerStructureFunction"], [10, "StringWorkerDebounceFunction"],
+    [9, "StringWorkerDebounceSelectorFunction"], [11, "StringWorkerCooperationFunction"], [12, "StringWorkerUploadFunction"], [19, "StringWorkerBufferedEnvironmentFunction"]]);
   assert.equal(programs.length, 20);
   for (const [index, [phase, program]] of programs.entries()) {
     const encoded = new RegExp(`const string WorkerProducerProgram${index}=@"((?:""|[^"])*)";`, "u").exec(source)?.[1];
-    const decoded = index === 6 ? readPackedNativeProgram(source, "StringWorkerGateFunction") : encoded?.replaceAll('""', '"');
+    const packedName = packedNames.get(index);
+    const decoded = packedName === undefined ? encoded?.replaceAll('""', '"') : readPackedNativeProgram(source, packedName);
     assert.equal(decoded, program, phase);
-    if (index === 6) { assert.ok(source.includes("static readonly string WorkerProducerProgram6=StringWorkerGateFunction;")); }
+    if (packedName !== undefined) { assert.ok(source.includes(`static readonly string WorkerProducerProgram${index}=${packedName};`)); }
     assert.ok(source.includes(createHash("sha256").update(program).digest("hex")));
     assert.ok(source.includes(`case "${phase}": return WorkerProducerProgram${index};`));
   }

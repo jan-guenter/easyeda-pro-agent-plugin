@@ -100,6 +100,7 @@ void test("constructor seams cannot mint combined factory authority, request lea
   assert.equal(owner.status().combinedAbortAttempted, false);
   assert.equal(actions.includes("combined-abort"), false); assert.equal(actions.includes("main-terminate"), false);
   const hwnd = await owner.observeApplicationWindow(); assert.ok(hwnd !== null); await owner.requestNormalClose(hwnd);
+  assert.equal(actions.includes("main-close-detach"), false);
   assert.equal(await owner.observeTermination(), true); await owner.releaseClosed();
 });
 
