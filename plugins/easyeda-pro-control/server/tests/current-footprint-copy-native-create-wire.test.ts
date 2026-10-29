@@ -41,7 +41,7 @@ void test("separate fixed create grammar accepts exact data only and remains exc
 });
 void test("native create packed template matches the immutable command and retains native bounds and original-session selection", () => {
   const source = currentFootprintCopyNativeCreateNativeSource();
-  const encoded = /FromBase64String\(@"([A-Za-z\d+/=]+)"\)/u.exec(source)?.[1];
+  const encoded = /FromBase64String\("([A-Za-z\d+/=]+)"\)/u.exec(source)?.[1];
   assert.ok(encoded !== undefined);
   // oxlint-disable-next-line node/no-sync -- This bounded in-memory fixed template is synthetic encoding evidence only.
   const bytes = gunzipSync(Buffer.from(encoded, "base64"));
@@ -49,6 +49,18 @@ void test("native create packed template matches the immutable command and retai
   assert.ok(source.includes(createHash("sha256").update(bytes).digest("hex")));
   assert.ok(source.includes("stream.ReadByte()==-1")); assert.ok(source.includes("fields.Count==8"));
   assert.ok(source.includes('Field("sessionId",originalWorkerSession)')); assert.ok(source.includes("<=81920"));
+});
+void test("native create smoke uses ASCII C# literals while preserving its exact Unicode argument bytes", () => {
+  const source = currentFootprintCopyNativeCreateNativeSource();
+  assert.equal(Buffer.byteLength(source), source.length);
+  assert.equal(Buffer.from(source).some(byte => byte > 0x7F), false);
+  assert.ok(source.includes(String.raw`\u03a9`));
+  const literal = /fields\.Add\("createArgumentJson",("(?:\\.|[^"\\])*")\);/u.exec(source)?.[1];
+  assert.ok(literal !== undefined);
+  const raw: unknown = JSON.parse(literal); assert.ok(typeof raw === "string");
+  const argument: unknown = JSON.parse(raw);
+  assert.ok(argument !== null && typeof argument === "object" && "title" in argument && "description" in argument);
+  assert.equal(argument.title, 'Copy " Ω'); assert.equal(argument.description, "line\nslash\\");
 });
 void test("native create refuses oversized fully escaped helper envelopes before an otherwise valid command can be sent", () => {
   const command = complete();

@@ -8,7 +8,12 @@ import { CURRENT_PCB_WORKER_CONSTRUCTION_SOURCE } from "./current-pcb-worker-con
 import { CURRENT_FOOTPRINT_COPY_CREATE_CLOCK_BUDGET as BUDGET } from "./current-footprint-copy-create-clock-budget.ts";
 
 const marker = (name: string): string => `__copycreate_${name}__`;
-const literal = (value: string): string => `@"${value.replaceAll('"', '""')}"`;
+// Windows PowerShell5 reads a BOM-less helper using the system codepage.
+// Emit ASCII C# literals while preserving each original UTF-16 code unit.
+const literal = (value: string): string => JSON.stringify(value).split("").map(character => {
+  const unit = character.codePointAt(0);
+  return unit !== undefined && unit > 0x7F ? `\\u${unit.toString(16).padStart(4, "0")}` : character;
+}).join("");
 export function currentFootprintCopyNativeCreateTemplate(): string {
   return JSON.stringify({ method: "Runtime.callFunctionOn", sessionId: marker("sessionId"), params: {
     objectId: marker("objectId"), functionDeclaration: CURRENT_FOOTPRINT_COPY_NATIVE_CREATE_CALL.program,

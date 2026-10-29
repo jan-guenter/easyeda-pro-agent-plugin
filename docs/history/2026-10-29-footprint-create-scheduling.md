@@ -194,3 +194,37 @@ focused corrections before final CI. No connected operation was repeated.
 Publication candidate version is `0.3.0+codex.20261029120000`. Exact-payload CI,
 protected merge, official marketplace installation and installed verification
 are pending at this entry.
+
+### Windows CI correction
+
+Candidate `34ec91f1eed406fcf2dde96dd62f3b739db34b86` passed the Linux build job,
+but Windows40870691502 refused the new Unicode create-codec smoke. Its
+PowerShell5 reader interpreted the BOM-less script's sole raw non-ASCII literal
+through the system ANSI code page. The inert UTF-8 C# compilation had therefore
+not covered that loading behavior. No application launched in the failed job.
+
+The generator now emits ASCII-only normal C# literals, escaping each non-ASCII
+UTF-16 unit while preserving the original Unicode command bytes. The unchanged
+Unicode/quote/newline/backslash command-hash assertion passes. A focused case
+checks the generated source is ASCII and decodes to the exact data. The entire
+helper is now ASCII. The exact corrected helper compiled under C#5 with zero
+warnings and passed inert old-purpose, accounting, packing and Unicode smokes.
+This does not replace the pending exact-commit Windows job.
+
+Corrected helper is1,026,532 bytes,22,044 bytes below the unchanged cap, SHA
+`3d1d18e7e5de3b226ca76e20c35774a2fcd1436b13b3bec8359f80a63fff9fc9`.
+Source projection912 members:
+`ed3ac68f9b758a56888c268a542d6c56e9277a566ecc7b875b024dde8ef8bf45`.
+Runtime projection3 members:
+`94137aaa4e8279f8123b274a64593d5d7ccd4e374f24187f9277f5e999d7a703`.
+Manifest:
+`ed44ba30cd56147562fa4954a9762910db7a1dcd9242a6fa09f8e5793cd10f6a`.
+Both bundles reproduce. Final whole types, strict zero-warning lint, generated
+protocol/build, compatibility, package/skills/repository checks pass again.
+The corrected frozen focused selection passes37 cases with zero failures/skips.
+
+One private cleanup edge remains backlog: a lost retirement acknowledgment
+during the first explicit clock-origin exit settlement needs a bounded local
+settlement retry. It must preserve the consumed native retirement rather than
+replay it. Normal cleanup followed by first exit settlement is already modeled;
+this additional failed-exit-settlement case is not enabled writer support.
