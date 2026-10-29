@@ -72,7 +72,7 @@ void test("capture checks actual poll envelope and raw-byte costs without poison
 });
 
 void test("readiness reports oversized or exhausted snapshots without painting or granting authority", () => {
-  const native = { hwnd: "12345", bounds: { left: 0, top: 0, right: 3840, bottom: 2160 }, queriesUsed: 1, maximized: false, resizeAttempted: false, resizeRequestSubmitted: false, resizeGeometryObserved: false,
+  const native = { hwnd: "12345", bounds: { left: 0, top: 0, right: 3840, bottom: 2160 }, queriesUsed: 1, restoreAttempted: false, restoreRequestSubmitted: false, restoreStateObserved: false, maximized: false, resizeAttempted: false, resizeRequestSubmitted: false, resizeGeometryObserved: false,
     captureAttempted: false, paintDispatched: false, nativeResourcesRetained: false };
   const usage = { helperStdoutBytes: 1024, cdpRequests: 60, readerAvailable: true, sourceQualified: true, captureConsumed: false, queriesUsed: 1 };
   const result = currentWindowCaptureReadiness(native, usage);

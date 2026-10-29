@@ -1,6 +1,7 @@
 /** Private, append-only diagnostic lifecycle records. Historical JSON never
  * recreates a native owner. Partial reservations remain launch blockers. */
 /* oxlint-disable import/max-dependencies -- This shared journal validates distinct diagnostic, String and common evidence, including global String exclusion, without merging their authority. */
+import { currentWindowRestoreResultSchema, requireCurrentWindowRestoreResult } from "./current-pcb-diagnostic-window-restore.ts";
 import { currentWindowResizeResultSchema, requireCurrentWindowResizeResult } from "./current-pcb-diagnostic-window-resize.ts";
 import { currentWindowCaptureResultSchema, requireCurrentWindowCaptureResult } from "./current-pcb-diagnostic-window-capture.ts";
 import { currentPcb209VisualIdSchema } from "./current-pcb-209-visual-validation.ts";
@@ -58,6 +59,8 @@ import { assertCurrentFootprintCombinedHistoricalSnapshot, readCurrentFootprintC
   readCurrentFootprintCombinedHistoricalSnapshot, requireCurrentFootprintCombinedHistoricalSnapshot } from "./current-footprint-combined-abandonment-journal.ts";
 import type { CurrentFootprintCombinedHistoricalSnapshot } from "./current-footprint-combined-abandonment-journal.ts";
 import { currentFootprintCombinedBeforeLaunchFailureProofSchema } from "./current-footprint-combined-ready.ts";
+import { CURRENT_FOOTPRINT_SAVED_CACHE_PROBE_LIMITS } from "./current-footprint-saved-cache-probe.ts";
+import { currentFootprintSavedCacheObservationSchema } from "./current-footprint-saved-cache-runner.ts";
 import { currentFootprintCopyMainBackendObservationSchema } from "./current-footprint-copy-main-backend-observation.ts";
 import { CURRENT_PCB_COMMON_FAILURE_MAX_BYTES, currentPcbCommonBaselineFailureSchema, currentPcbCommonBaselineResultSchema } from "./current-pcb-common-baseline-validation.ts";
 
@@ -154,6 +157,15 @@ const mainObservationIntentSchema = z.object({ ...mainBound, schema: z.literal("
 const mainObservationResultSchema = z.object({ ...base, operationId: mainConstructionId,
   schema: z.literal("easyeda-pro-control.footprint-main-construction-result.v1"), intentSha256: diagnosticLifecycleDigestSchema,
   result: currentFootprintCopyMainBackendObservationSchema }).strict();
+const savedCacheNativeIntentSchema = z.object({ ...base, operationId: currentFootprintCombinedIdSchema,
+  schema: z.literal("easyeda-pro-control.saved-cache-native-intent.v1"), bindingSha256: diagnosticLifecycleDigestSchema,
+  mainResultSha256: diagnosticLifecycleDigestSchema, browserResultSha256: diagnosticLifecycleDigestSchema, scriptResultSha256: diagnosticLifecycleDigestSchema,
+}).strict();
+const savedCacheNativeResultSchema = z.object({ ...base, operationId: currentFootprintCombinedIdSchema,
+  schema: z.literal("easyeda-pro-control.saved-cache-native-result.v1"), intentSha256: diagnosticLifecycleDigestSchema,
+  result: currentFootprintSavedCacheObservationSchema,
+}).strict().refine(value => Buffer.byteLength(canonicalJson(value.result)) <= CURRENT_FOOTPRINT_SAVED_CACHE_PROBE_LIMITS.resultBytes,
+  "Saved cache metadata observation exceeds its bound.");
 const mainTerminateIntentSchema = z.object({ ...mainBound, operationId: currentFootprintMainIdSchema, schema: z.literal("easyeda-pro-control.footprint-main-terminate-intent.v1"),
   confirmTerminateOriginalDiagnosticJob: z.literal(true) }).strict();
 const mainTerminateAckSchema = z.object({ ...base, operationId: currentFootprintMainIdSchema,
@@ -232,19 +244,29 @@ const noProcessReleasedSchema = z.object({ schema: z.literal("easyeda-pro-contro
   noProcessReleaseIntentSha256: diagnosticLifecycleDigestSchema, proof: diagnosticLifecycleNoProcessReleaseProofSchema,
 }).strict();
 export const diagnosticObservationStageSchema = z.enum(["browser", "frames", "script", "workers", "worker-script", "worker-state", "pcb-opening", "model-state"]);
-const extendedObservationStageSchema = z.enum([...diagnosticObservationStageSchema.options, "window-resize209", "window-capture209", "visual-viewport209", "layers209", "primitives209", "extended-primitives209", "selection-relations209", "pad-shapes209", "image-shapes209", "arc-shapes209", "poured-shapes209"]);
+const extendedObservationStageSchema = z.enum([...diagnosticObservationStageSchema.options, "window-restore209", "window-resize209", "window-capture209", "visual-viewport209", "layers209", "primitives209", "extended-primitives209", "selection-relations209", "pad-shapes209", "image-shapes209", "arc-shapes209", "poured-shapes209"]);
 export const lifecycleObservationStages = [...extendedObservationStageSchema.options, "common-baseline", "string-precreate"] as const;
 const observationIntentSchema = z.object({ schema: z.literal("easyeda-pro-control.pcb-diagnostic-observation-intent.v1"), ...base,
   bindingSha256: diagnosticLifecycleDigestSchema, stage: extendedObservationStageSchema,
   targetId: z.string().regex(/^[A-Za-z\d_.:-]{1,128}$/u).optional(), frameId: z.string().regex(/^[A-Za-z\d_.:-]{1,128}$/u).optional(),
   family: z.enum(["ui", "pcb", "public-api"]).optional(),
   componentIds: currentPcb209SelectionRelationsComponentIdsSchema.optional(),
+  acceptWindowRestoreEffects: z.literal(true).optional(),
+  restoreResultSha256: diagnosticLifecycleDigestSchema.optional(), postRestoreStateObserved: z.literal(true).optional(),
   acceptWindowResizeEffects: z.literal(true).optional(),
   resizeResultSha256: diagnosticLifecycleDigestSchema.optional(), postResizeGeometryObserved: z.literal(true).optional(),
   captureHwnd: diagnosticLifecycleWindowSchema.optional(), acceptWindowPaintEffects: z.literal(true).optional(), confirmLocalArtifact: z.literal(true).optional(),
   visualOperation: currentPcb209VisualOperationSchema.optional(), confirmVisualStateChanges: z.literal(true).optional(),
 }).strict().refine(value => {
+  if (value.stage !== "window-capture209" && value.stage !== "window-resize209" && (value.restoreResultSha256 !== undefined || value.postRestoreStateObserved !== undefined)) { return false; }
+  if ((value.restoreResultSha256 === undefined) !== (value.postRestoreStateObserved === undefined)) { return false; }
   if (value.stage !== "window-capture209" && (value.resizeResultSha256 !== undefined || value.postResizeGeometryObserved !== undefined)) { return false; }
+  if (value.stage === "window-restore209") {
+    return value.acceptWindowRestoreEffects === true && value.acceptWindowResizeEffects === undefined && value.captureHwnd === undefined &&
+      value.acceptWindowPaintEffects === undefined && value.confirmLocalArtifact === undefined && value.visualOperation === undefined &&
+      value.confirmVisualStateChanges === undefined && value.componentIds === undefined && value.targetId === undefined && value.frameId === undefined && value.family === undefined;
+  }
+  if (value.acceptWindowRestoreEffects !== undefined) { return false; }
   if (value.stage === "window-resize209") {
     return value.acceptWindowResizeEffects === true && value.captureHwnd === undefined && value.acceptWindowPaintEffects === undefined &&
       value.confirmLocalArtifact === undefined && value.visualOperation === undefined && value.confirmVisualStateChanges === undefined &&
@@ -276,6 +298,7 @@ const observationResultSchema = z.object({ schema: z.literal("easyeda-pro-contro
   intentSha256: diagnosticLifecycleDigestSchema, stage: extendedObservationStageSchema,
   result: z.record(z.string(), z.unknown()), executionAuthorized: z.literal(false),
 }).strict().refine(value => {
+  if (value.stage === "window-restore209" && !currentWindowRestoreResultSchema.safeParse(value.result).success) { return false; }
   if (value.stage === "window-resize209" && !currentWindowResizeResultSchema.safeParse(value.result).success) { return false; }
   if (value.stage === "window-capture209" && !currentWindowCaptureResultSchema.safeParse(value.result).success) { return false; }
   let ordinaryLimit = DIAGNOSTIC_OBSERVATION_MAX_BYTES;
@@ -658,6 +681,7 @@ export const diagnosticLifecycleRecordSchemas = {
   "pcb-open-intent.json": pcbOpenIntentSchema, "pcb-open-result.json": pcbOpenResultSchema,
   "pcb-opening-intent.json": observationIntentSchema, "pcb-opening-result.json": observationResultSchema,
   "visual-abort-intent.json": visualAbortIntentSchema, "visual-abort-acknowledged.json": visualAbortAckSchema,
+  "window-restore209-intent.json": observationIntentSchema, "window-restore209-result.json": observationResultSchema,
   "window-resize209-intent.json": observationIntentSchema, "window-resize209-result.json": observationResultSchema,
   "window-capture209-intent.json": observationIntentSchema, "window-capture209-result.json": observationResultSchema,
   "visual-viewport209-intent.json": observationIntentSchema, "visual-viewport209-result.json": observationResultSchema,
@@ -707,6 +731,8 @@ export const diagnosticLifecycleRecordSchemas = {
   "worker-startup-channel-result.json": workerStartupChannelResultSchema,
   "main-construction-intent.json": mainObservationIntentSchema,
   "main-construction-result.json": mainObservationResultSchema,
+  "saved-cache-native-intent.json": savedCacheNativeIntentSchema,
+  "saved-cache-native-result.json": savedCacheNativeResultSchema,
   "main-terminate-intent.json": mainTerminateIntentSchema,
   "main-terminate-acknowledged.json": mainTerminateAckSchema,
   "combined-factory-before-launch.json": combinedFactoryBeforeLaunchSchema,
@@ -728,6 +754,7 @@ function absent(value: unknown): boolean { return value instanceof Error && "cod
 function recordName(value: string): value is RecordName { return Object.hasOwn(diagnosticLifecycleRecordSchemas, value); }
 function recordBound(name: RecordName): number {
   // Six JSON bytes per UTF-16 code unit covers control-character escapes in16 IDs.
+  if (name === "saved-cache-native-result.json") { return MAX_BYTES + CURRENT_FOOTPRINT_SAVED_CACHE_PROBE_LIMITS.resultBytes; }
   if (name === "visual-viewport209-intent.json") { return MAX_BYTES + CURRENT_PCB_209_VISUAL_OPERATION_BYTES; }
   if (name === "visual-viewport209-result.json") { return MAX_BYTES + CURRENT_PCB_209_VISUAL_RESULT_BYTES; }
   if (name === "selection-relations209-intent.json") { return MAX_BYTES + 16 * 256 * 6; }
@@ -898,6 +925,16 @@ function validateChain(operation: DiagnosticLifecycleOperation): void {
   requireValue(!mainPurpose || operation.operationId.startsWith(CURRENT_FOOTPRINT_MAIN_OPERATION_PREFIX), "MAIN_PURPOSE_ID");
   requireValue(intent === undefined || mainPurpose || !operation.operationId.startsWith(CURRENT_FOOTPRINT_MAIN_OPERATION_PREFIX), "RESERVED_MAIN_PURPOSE_ID");
   const mainObservation = records["main-construction-intent.json"], mainResult = records["main-construction-result.json"];
+  const savedCacheNative = records["saved-cache-native-intent.json"], savedCacheNativeResult = records["saved-cache-native-result.json"];
+  requireValue(savedCacheNative === undefined || combinedPurpose && binding !== undefined && mainResult !== undefined &&
+    records["browser-result.json"] !== undefined && records["script-result.json"] !== undefined && records["script-intent.json"]?.family === "ui" &&
+    records["script-result.json"].result["sourceVerified"] === true && records["script-result.json"].result["family"] === "ui" &&
+    savedCacheNative.bindingSha256 === sha256Json(binding) && savedCacheNative.mainResultSha256 === sha256Json(mainResult) &&
+    savedCacheNative.browserResultSha256 === sha256Json(records["browser-result.json"]) &&
+    savedCacheNative.scriptResultSha256 === sha256Json(records["script-result.json"]), "SAVED_CACHE_NATIVE_CHAIN");
+  requireValue(savedCacheNativeResult === undefined || savedCacheNative !== undefined &&
+    savedCacheNativeResult.intentSha256 === sha256Json(savedCacheNative) &&
+    canonicalJson(savedCacheNativeResult.result.engine) === canonicalJson(records["browser-result.json"]?.result["version"]), "SAVED_CACHE_NATIVE_RESULT_CHAIN");
   const mainAck = records["main-terminate-acknowledged.json"], mainTerminate = records["main-terminate-intent.json"];
   requireValue(mainObservation === undefined || (mainPurpose || combinedPurpose) && binding !== undefined && binding.launchAcknowledged && mainObservation.bindingSha256 === sha256Json(binding), "MAIN_CONSTRUCTION_CHAIN");
   requireValue(mainResult === undefined || mainObservation !== undefined && mainResult.intentSha256 === sha256Json(mainObservation), "MAIN_CONSTRUCTION_RESULT_CHAIN");
@@ -1105,6 +1142,19 @@ function validateChain(operation: DiagnosticLifecycleOperation): void {
   requireValue(records["worker-state-intent.json"] === undefined || records["worker-script-result.json"] !== undefined, "WORKER_STATE_CHAIN");
   const opened = records["project-opening-result.json"], opening = records["project-opening-intent.json"], script = records["script-result.json"];
   const pcbObserved = records["pcb-opening-result.json"], pcbOpen = records["pcb-open-intent.json"], pcbOpened = records["pcb-open-result.json"];
+  const windowRestore = records["window-restore209-intent.json"]; const restoredWindow = records["window-restore209-result.json"];
+  requireValue(windowRestore === undefined || visualPurpose && opening !== undefined && pcbObserved !== undefined &&
+    diagnosticPcbOpeningSourceAccepted(pcbObserved.result, opening.target) && windowRestore.acceptWindowRestoreEffects === true &&
+    records["workers-intent.json"] === undefined && records["model-state-intent.json"] === undefined, "WINDOW_RESTORE209_CHAIN");
+  if (restoredWindow !== undefined) {
+    requireValue(opening !== undefined && windowRestore !== undefined, "WINDOW_RESTORE209_TARGET_CHAIN");
+    requireCurrentWindowRestoreResult(restoredWindow.result, opening.target);
+  }
+  for (const stage of ["window-resize209", "window-capture209"] as const) {
+    const followupIntent = records[`${stage}-intent.json`];
+    requireValue(followupIntent === undefined || (windowRestore === undefined ? followupIntent.restoreResultSha256 === undefined && followupIntent.postRestoreStateObserved === undefined :
+      restoredWindow !== undefined && followupIntent.restoreResultSha256 === sha256Json(restoredWindow) && followupIntent.postRestoreStateObserved === true), "WINDOW_RESTORE209_FOLLOWUP_CHAIN");
+  }
   const windowResize = records["window-resize209-intent.json"]; const resizedWindow = records["window-resize209-result.json"];
   requireValue(windowResize === undefined || visualPurpose && opening !== undefined && pcbObserved !== undefined &&
     diagnosticPcbOpeningSourceAccepted(pcbObserved.result, opening.target) && windowResize.acceptWindowResizeEffects === true &&

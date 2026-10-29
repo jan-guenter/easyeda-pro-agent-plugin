@@ -13,6 +13,7 @@ import { lstat, mkdir, open, readFile, readdir, readlink, realpath, writeFile } 
 import type { FileHandle } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import { dirname, isAbsolute, join, resolve as resolvePath } from "node:path";
+import { pathToFileURL } from "node:url";
 
 import { createPrivateTemporaryDirectory } from "./private-temporary-directory.ts";
 
@@ -20,7 +21,7 @@ const NODE_VERSION = "24.18.0";
 const MAX_REPLY_BYTES = 8 * 1024 * 1024;
 const MAX_OUTPUT_BYTES = 16 * 1024 * 1024;
 const REQUEST_TIMEOUT_MS = 15_000;
-const CATALOG_QUERY_COUNT = 45;
+const CATALOG_QUERY_COUNT = 46;
 // Initialize and tool discovery plus the fixed catalog requests below.
 const REQUEST_LIMIT = 2 + CATALOG_QUERY_COUNT;
 const EXPECTED_TOOLS = [
@@ -204,6 +205,13 @@ class OfflineChild {
     this.#child.stdin.write('{"jsonrpc":"2.0","method":"notifications/initialized"}\n');
   }
 
+  public assertLoadedFacade(value: Record<string, unknown>, root: string): void {
+    requireCheck(!this.#ended && this.#child.pid !== undefined && value["schema"] === "easyeda-pro-control.loaded-facade.v1" &&
+      value["pid"] === this.#child.pid && value["moduleUrl"] === pathToFileURL(join(root, "server/dist/server.mjs")).href &&
+      value["nodeVersion"] === `v${NODE_VERSION}` && value["admissionGranted"] === false,
+    "Loaded facade report does not identify the original offline child and bundle.");
+  }
+
   public async sample(controlDirectory: string, upstreamMarker: string, nodeExecutable: string): Promise<void> {
     const pid = this.#child.pid;
     requireCheck(pid !== undefined && !this.#ended, "Original offline child is not running.");
@@ -266,7 +274,7 @@ async function offlineApi(child: OfflineChild, request: Record<string, unknown>)
   return record(content["result"]);
 }
 
-async function catalogChecks(child: OfflineChild, sample: () => Promise<void>): Promise<{ readonly tools: number; readonly queries: number; readonly ratlineContinuationDiscoveryChecked: true; readonly footprintCopyPreparationDiscoveryChecked: true; readonly footprintCopyRoutePreparationDiscoveryChecked: true; readonly footprintMainDiscoveryChecked: true; readonly footprintCombinedDiscoveryChecked: true; readonly footprintCombinedUnknownAbandonmentDiscoveryChecked: true }> {
+async function catalogChecks(child: OfflineChild, root: string, sample: () => Promise<void>): Promise<{ readonly tools: number; readonly queries: number; readonly loadedFacadeChecked: true; readonly ratlineContinuationDiscoveryChecked: true; readonly footprintCopyPreparationDiscoveryChecked: true; readonly footprintCopyRoutePreparationDiscoveryChecked: true; readonly footprintMainDiscoveryChecked: true; readonly footprintCombinedDiscoveryChecked: true; readonly footprintCombinedUnknownAbandonmentDiscoveryChecked: true }> {
   const initialized = await child.request("initialize", {
     protocolVersion: "2024-11-05", capabilities: {}, clientInfo: { name: "easyeda-installed-offline-probe", version: "1.0.0" },
   });
@@ -285,6 +293,7 @@ async function catalogChecks(child: OfflineChild, sample: () => Promise<void>): 
   }).toSorted();
   requireCheck(JSON.stringify(names) === JSON.stringify(EXPECTED_TOOLS), "Offline tool names changed.");
   await sample();
+  child.assertLoadedFacade(await offlineApi(child, { action: "loaded-facade" }), root);
   for (const [action, total] of [["calculations", 16], ["system", 18], ["pcb-geometry", 20], ["project-schematic", 4]] as const) {
     const result = await offlineApi(child, { action, query: { includeSchemas: true } });
     requireCheck(result["total"] === total && result["invocationEnabledByDiscovery"] === false,
@@ -452,7 +461,7 @@ async function catalogChecks(child: OfflineChild, sample: () => Promise<void>): 
   requireCheck(fileValidation["valid"] === true && fileValidation["executionAuthorized"] === false &&
     record(fileValidation["requestSummary"])["base64Echoed"] === false && !Object.hasOwn(fileValidation, "request"),
   "Managed library-file validation echoed source or implied execution authority.");
-  return { tools: tools.length, queries: CATALOG_QUERY_COUNT, footprintMainDiscoveryChecked: true, footprintCombinedDiscoveryChecked: true, footprintCombinedUnknownAbandonmentDiscoveryChecked: true, ratlineContinuationDiscoveryChecked: true, footprintCopyPreparationDiscoveryChecked: true, footprintCopyRoutePreparationDiscoveryChecked: true };
+  return { tools: tools.length, queries: CATALOG_QUERY_COUNT, loadedFacadeChecked: true, footprintMainDiscoveryChecked: true, footprintCombinedDiscoveryChecked: true, footprintCombinedUnknownAbandonmentDiscoveryChecked: true, ratlineContinuationDiscoveryChecked: true, footprintCopyPreparationDiscoveryChecked: true, footprintCopyRoutePreparationDiscoveryChecked: true };
 }
 
 export async function probeInstalledOfflineCatalog(installedRoot: string): Promise<Record<string, unknown>> {
@@ -512,7 +521,7 @@ export async function probeInstalledOfflineCatalog(installedRoot: string): Promi
       EASYEDA_MACHINE_PROFILE: profilePath, EASYEDA_CONTROL_DATA_DIR: controlDirectory, LANG: "C", LC_ALL: "C",
     });
     const owned = child;
-    const result = await catalogChecks(child, async () => { await owned.sample(controlDirectory, upstreamMarker, nodeExecutable); });
+    const result = await catalogChecks(child, installedRoot, async () => { await owned.sample(controlDirectory, upstreamMarker, nodeExecutable); });
     await child.sample(controlDirectory, upstreamMarker, nodeExecutable);
     closeAttempted = true;
     const closed = await child.close(); child = undefined;

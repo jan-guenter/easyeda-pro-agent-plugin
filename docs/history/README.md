@@ -1,5 +1,6 @@
 # Project history
 
+- [2026-10-29 Diagnostic shutdown, cache metadata and window restoration](2026-10-29-diagnostic-shutdown-cache-and-window.md).
 - [2026-10-29 Capture readiness and saved queue correction](2026-10-29-capture-readiness-and-saved-queue.md).
 
 - [2026-10-29 Native allocation and bounded window capture](2026-10-29-native-allocation-and-window-capture.md).

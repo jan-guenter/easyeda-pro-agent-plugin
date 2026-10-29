@@ -30,7 +30,7 @@ export function currentFootprintCopyMainTransportNativeSource(): string {
   readonly System.Text.UTF8Encoding utf8=new System.Text.UTF8Encoding(false,true);
   System.IntPtr stdinChild,stdinParent,stdoutChild,stdoutParent,stderrChild,stderrParent,root,job;
   System.Action assertImage;
-  uint rootPid;long rootCreated,stdoutBytes,stderrBytes,totalReceived;int clientPort,requests,normalRequests,cleanupRequests,frames,polls;bool creationEntered,noRoot,drainStarted,childClosed,attachAttempted,attached,fragmented,terminationAttempted,terminated,released;
+  uint rootPid;long rootCreated,stdoutBytes,stderrBytes,totalReceived;int clientPort,requests,normalRequests,cleanupRequests,frames,polls;bool creationEntered,noRoot,drainStarted,childClosed,attachAttempted,attached,fragmented,detachAttempted,terminationAttempted,terminated,released;
   System.Threading.Thread stdoutThread,stderrThread;System.Net.Sockets.Socket socket;Endpoint endpoint;string failure;
   internal EasyedaOriginalMainTransport():this(false,null){}
   internal EasyedaOriginalMainTransport(bool combined,System.Diagnostics.Stopwatch originalElapsed){
@@ -184,6 +184,14 @@ export function currentFootprintCopyMainTransportNativeSource(): string {
     long created,exited,kernel,user;Need(GetProcessId(root)==rootPid&&(rootCreated==0||GetProcessTimes(root,out created,out exited,out kernel,out user)&&created==rootCreated),"termination-root");
     var memory=System.Runtime.InteropServices.Marshal.AllocHGlobal(48);try{uint returned;Need(QueryInformationJobObject(job,1,memory,48,out returned)&&returned==48,"job-accounting");if(System.Runtime.InteropServices.Marshal.ReadInt32(memory,40)!=0)return false;terminated=true;return true;}finally{System.Runtime.InteropServices.Marshal.FreeHGlobal(memory);}
   }
+  // The original host runner proves acknowledged resume/cleanup before this
+  // fixed action. Keep every process, Job and stdio handle until actual exit.
+  internal bool NeverAttached {get{return !attachAttempted&&!attached&&socket==null&&!detachAttempted;}}
+  void CloseInspectorSocket(){Need(detachAttempted&&attached&&socket!=null,"detach-socket");socket.Close();socket=null;attached=false;}
+  internal void DetachForNormalClose(){
+    Need(!detachAttempted&&attached&&!released&&!terminationAttempted&&socket!=null&&incoming.Count==0&&message.Length==0&&!fragmented,"detach-state");
+    detachAttempted=true;Budget(true);AssertConnection();Need(socket.Available==0,"detach-pending-data");CloseInspectorSocket();AssertRoot(true);
+  }
   internal void Release(){
     Need(!released&&(!creationEntered||noRoot||terminated),"release-state");if(creationEntered&&!noRoot)Need(ObserveTermination(),"release-reobserve");
     if(socket!=null){socket.Close();socket=null;}Close(ref stdinChild);Close(ref stdoutChild);Close(ref stderrChild);Close(ref stdinParent);
@@ -207,7 +215,11 @@ export function currentFootprintCopyMainTransportNativeSource(): string {
     Need(System.Object.ReferenceEquals(combined.elapsed,originalElapsed)&&combined.normalLimit==EasyedaFootprintCombinedLimits.MainNormal&&combined.cleanupLimit==EasyedaFootprintCombinedLimits.MainCleanup,"smoke-combined-clock-budget");
     refuse(()=>combined.RequireCompletionCapacity(1));refuse(()=>combined.RequireCompletionCapacity(0));Need(combined.requests==0&&combined.normalRequests==0&&combined.cleanupRequests==0,"smoke-completion-capacity-nondispatch");
     refuse(()=>new EasyedaOriginalMainTransport(false,originalElapsed));refuse(()=>new EasyedaOriginalMainTransport(true,null));combined.Release();
-    var transport=new EasyedaOriginalMainTransport();refuse(()=>transport.Attach());refuse(()=>transport.SendFixed("{}",false));refuse(()=>transport.RequestOriginalJobTermination());transport.Release();refuse(()=>transport.Release());
+    var transport=new EasyedaOriginalMainTransport();Need(transport.NeverAttached,"smoke-never-attached");refuse(()=>transport.Attach());Need(transport.NeverAttached,"smoke-precondition-no-attempt");transport.drainStarted=true;transport.childClosed=true;refuse(()=>transport.Attach());Need(!transport.NeverAttached,"smoke-attempt-not-absence");refuse(()=>transport.SendFixed("{}",false));refuse(()=>transport.DetachForNormalClose());refuse(()=>transport.RequestOriginalJobTermination());transport.Release();refuse(()=>transport.Release());refuse(()=>transport.DetachForNormalClose());
+    var detached=new EasyedaOriginalMainTransport();var retained=new System.IntPtr(17);detached.root=detached.job=detached.stdinChild=detached.stdinParent=detached.stdoutChild=detached.stdoutParent=detached.stderrChild=detached.stderrParent=retained;
+    detached.socket=new System.Net.Sockets.Socket(System.Net.Sockets.AddressFamily.InterNetwork,System.Net.Sockets.SocketType.Stream,System.Net.Sockets.ProtocolType.Tcp);detached.attached=true;detached.detachAttempted=true;detached.CloseInspectorSocket();
+    Need(detached.socket==null&&!detached.attached&&!detached.NeverAttached&&detached.root==retained&&detached.job==retained&&detached.stdinChild==retained&&detached.stdinParent==retained&&detached.stdoutChild==retained&&detached.stdoutParent==retained&&detached.stderrChild==retained&&detached.stderrParent==retained&&!detached.released,"smoke-detach-retains-handles");refuse(()=>detached.CloseInspectorSocket());refuse(()=>detached.DetachForNormalClose());
+    detached.root=detached.job=detached.stdinChild=detached.stdinParent=detached.stdoutChild=detached.stdoutParent=detached.stderrChild=detached.stderrParent=System.IntPtr.Zero;detached.Release();
   }
 }`;
 }

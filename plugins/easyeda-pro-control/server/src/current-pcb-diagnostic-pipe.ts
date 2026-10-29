@@ -28,6 +28,8 @@ import { CURRENT_PCB_STRING_ACTOR_CLOCK_PHASES } from "./current-pcb-string-acto
 import type { CurrentPcbStringActorClockCommand } from "./current-pcb-string-actor-clock.ts";
 import { CURRENT_PCB_STRING_MOVE_SEQUENCE } from "./current-pcb-string-move-runner.ts";
 import type { CurrentPcbStringMoveCommand } from "./current-pcb-string-move-runner.ts";
+import { currentFootprintSavedCacheWire } from "./current-footprint-saved-cache-protocol.ts";
+import type { CurrentFootprintSavedCacheCommand } from "./current-footprint-saved-cache-protocol.ts";
 
 export { decodeCurrentPcbDiagnosticJson } from "./current-pcb-diagnostic-json.ts";
 
@@ -46,7 +48,8 @@ type RequestPhase = "discovery" | "frame-owner" | "worker-discovery" | "worker-s
   `project-${CurrentPcbDiagnosticOpeningPhase}` | `pcb-${CurrentPcbDiagnosticPcbOpeningPhase}` | "layers209" | "primitives209" | "extended-primitives209" | "selection-relations209" | "visual209" | "pad-shapes209" | "image-shapes209" | "arc-shapes209" | "poured-shapes209" |
   `model-${CurrentPcbDiagnosticModelCommand["modelPhase"]}` | `string-${CurrentPcbStringPrecreatePhase}` |
   `common-${CurrentPcbCommonBaselineCommand["commonPhase"]}` | `worker-producer-${CurrentPcbStringWorkerProducerCommand["workerProducerPhase"]}` |
-  `actor-clock-${CurrentPcbStringActorClockCommand["actorClockPhase"]}` | `move-${CurrentPcbStringMoveCommand["movePhase"]}`;
+  `actor-clock-${CurrentPcbStringActorClockCommand["actorClockPhase"]}` | `move-${CurrentPcbStringMoveCommand["movePhase"]}` |
+  `saved-cache-${CurrentFootprintSavedCacheCommand["cacheNativePhase"]}`;
 const REQUEST_METHODS = [
   "Browser.getVersion", "Target.getTargets", "Target.attachToTarget", "Page.enable", "Page.getFrameTree", "Runtime.enable",
   "Debugger.enable", "Debugger.getScriptSource", "DOM.getFrameOwner", "DOM.describeNode", "Target.setAutoAttach",
@@ -65,6 +68,7 @@ const REQUEST_PHASES = [
   ...CURRENT_PCB_STRING_WORKER_PRODUCER_SEQUENCE.map(phase => `worker-producer-${phase}` as const),
   ...CURRENT_PCB_STRING_ACTOR_CLOCK_PHASES.map(phase => `actor-clock-${phase}` as const),
   ...CURRENT_PCB_STRING_MOVE_SEQUENCE.map(phase => `move-${phase}` as const),
+  ...(["capture", "array-properties", "constructor-properties", "match-properties", "recheck", "release"] as const).map(phase => `saved-cache-${phase}` as const),
 ] as const satisfies readonly RequestPhase[];
 const EVENT_KINDS = [
   "Target.attachedToTarget", "Target.detachedFromTarget", "Target.targetCreated", "Target.targetDestroyed",
@@ -134,6 +138,11 @@ class CurrentPcbFixedPipeCore {
   readonly #output: Writable;
   readonly #stringPurpose: boolean;
   readonly #startupPurpose: boolean;
+  readonly #combinedPurpose: boolean;
+  #savedCacheSession: string | null = null;
+  #savedCacheStep = 0;
+  #savedCacheReleaseAttempted = false;
+  #savedCacheReleased = false;
   #handedOff = false;
   #started = false;
   #failure: Failure | null = null;
@@ -157,9 +166,10 @@ class CurrentPcbFixedPipeCore {
   #workerDiscoverySettled = false;
   #selectedWorkerSession: string | null = null;
 
-  public constructor(input: Readable, output: Writable, purpose: "diagnostic" | "string-precreate" | "worker-startup") {
+  public constructor(input: Readable, output: Writable, purpose: "diagnostic" | "string-precreate" | "worker-startup" | "combined-discovery") {
     this.#input = input; this.#output = output; this.#stringPurpose = purpose === "string-precreate";
-    this.#startupPurpose = purpose === "worker-startup";
+    this.#startupPurpose = purpose === "worker-startup" || purpose === "combined-discovery";
+    this.#combinedPurpose = purpose === "combined-discovery";
   }
 
   /** One clean transfer of the original counter and receive budgets. Listeners
@@ -167,7 +177,8 @@ class CurrentPcbFixedPipeCore {
   protected handoffStartupPipe(): CurrentPcbWorkerStartupPipeHandoff {
     if (!this.#startupPurpose || this.#handedOff || !this.#started || this.#released || this.#failure !== null ||
         this.#sessionId === null || this.#event === null || this.#workerEvent !== null || this.#pending !== null || this.#used !== 0 ||
-        this.#inputEnded || this.#inputClosed || this.#outputClosed || this.#output.writableLength !== 0 || this.#input.readableLength !== 0) {
+        this.#inputEnded || this.#inputClosed || this.#outputClosed || this.#output.writableLength !== 0 || this.#input.readableLength !== 0 ||
+        this.#combinedPurpose && this.#savedCacheStep > 0 && !this.#savedCacheReleased) {
       throw new Error("PCB_DIAGNOSTIC_PIPE_HANDOFF_UNAVAILABLE");
     }
     this.#handedOff = true;
@@ -194,6 +205,25 @@ class CurrentPcbFixedPipeCore {
   }
 
   public getVersion(): Promise<Reply> { return this.#request({ id: this.#nextId, method: "Browser.getVersion" }); }
+  protected async savedCacheNative(command: CurrentFootprintSavedCacheCommand): Promise<Reply> {
+    if (!this.#combinedPurpose || this.#sessionId === null || this.#handedOff || this.#savedCacheReleaseAttempted ||
+      command.sessionId !== this.#sessionId) { throw new Error("PCB_DIAGNOSTIC_PIPE_SAVED_CACHE_PURPOSE"); }
+    const wire = currentFootprintSavedCacheWire(command, this.#nextId);
+    const phase = wire.command.cacheNativePhase;
+    const sequence = ["capture", "array-properties", "constructor-properties", "match-properties", "recheck"] as const;
+    if (phase === "release" ? this.#savedCacheStep === 0 : sequence[this.#savedCacheStep] !== phase) {
+      throw new Error("PCB_DIAGNOSTIC_PIPE_SAVED_CACHE_SEQUENCE");
+    }
+    if (this.#savedCacheSession !== null && this.#savedCacheSession !== command.sessionId) { throw new Error("PCB_DIAGNOSTIC_PIPE_SAVED_CACHE_SESSION"); }
+    this.#savedCacheSession = command.sessionId;
+    if (phase === "release") { this.#savedCacheReleaseAttempted = true; } else { this.#savedCacheStep += 1; }
+    const reply = await this.#request(wire.command, `saved-cache-${phase}`);
+    if (phase === "release") {
+      if (!diagnosticExact(reply, [])) { this.#fail("reply"); throw failureError("reply"); }
+      this.#savedCacheReleased = true;
+    }
+    return reply;
+  }
   public getTargets(): Promise<Reply> { return this.#request({ id: this.#nextId, method: "Target.getTargets" }); }
   public async attachTarget(targetId: string, event: (value: DiagnosticEvent) => void): Promise<string> {
     if (this.#event !== null || !diagnosticToken(targetId)) { throw new Error("PCB_DIAGNOSTIC_PIPE_ATTACH_INPUT"); }
@@ -422,10 +452,11 @@ class CurrentPcbFixedPipeCore {
   }
 
   // oxlint-disable-next-line eslint/require-await -- Async converts pre-dispatch guards to rejected promises; native completion is callback-based.
-  async #request(command: DiagnosticCommand | (Omit<CurrentPcbStringPrecreateCommand, "stringPhase"> &
+  async #request(command: DiagnosticCommand | (CurrentFootprintSavedCacheCommand & Readonly<{ id: number }>) | (Omit<CurrentPcbStringPrecreateCommand, "stringPhase"> &
     Readonly<{ id: number; sessionId: string }>), phase: RequestPhase = "discovery"): Promise<Reply> {
     if (!this.#started || this.#released || this.#handedOff) { throw new Error("PCB_DIAGNOSTIC_PIPE_NOT_STARTED"); }
-    if (this.#startupPurpose && (phase !== "discovery" && phase !== "frame-owner" ||
+    const savedCache = this.#combinedPurpose && phase.startsWith("saved-cache-") && "cacheNativePhase" in command;
+    if (this.#startupPurpose && !savedCache && (phase !== "discovery" && phase !== "frame-owner" ||
         command.method === "Target.setAutoAttach" || command.method === "Runtime.evaluate" || command.method === "Runtime.callFunctionOn")) {
       throw new Error("PCB_DIAGNOSTIC_PIPE_STARTUP_DISCOVERY_ONLY");
     }
@@ -597,5 +628,12 @@ export class CurrentPcbStringPrecreatePipe extends CurrentPcbFixedPipeCore {
 /** Fixed discovery prefix for the separate constructor-capture owner. */
 export class CurrentPcbWorkerStartupDiscoveryPipe extends CurrentPcbFixedPipeCore {
   public constructor(input: Readable, output: Writable) { super(input, output, "worker-startup"); }
+  public handoff(): CurrentPcbWorkerStartupPipeHandoff { return this.handoffStartupPipe(); }
+}
+/** Separate birth for the combined owner's bounded pre-opening metadata
+ * observation. Old startup pipes cannot acquire this fixed command grammar. */
+export class CurrentFootprintCombinedDiscoveryPipe extends CurrentPcbFixedPipeCore {
+  public constructor(input: Readable, output: Writable) { super(input, output, "combined-discovery"); }
+  public observeSavedCacheNative(command: CurrentFootprintSavedCacheCommand): Promise<Reply> { return this.savedCacheNative(command); }
   public handoff(): CurrentPcbWorkerStartupPipeHandoff { return this.handoffStartupPipe(); }
 }

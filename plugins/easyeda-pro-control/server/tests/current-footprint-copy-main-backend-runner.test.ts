@@ -91,3 +91,38 @@ void test("a lost original write acknowledgment or malformed framing consumes th
     await assert.rejects(runner.release()); assert.equal(value.commands.length, 1); await assert.rejects(runner.observe());
   }
 });
+void test("normal close uses its reserved release only after the original resumed observation is quiescent", async () => {
+  const Constructor = await constructor(), value = fixture(); const runner = new Constructor(value.transport);
+  assert.throws(() => { runner.requireNormalClosePrepared(); }, /NORMAL_CLOSE_REQUIRED/u);
+  await runner.observe(); const before = value.commands.length;
+  await runner.prepareNormalClose(); runner.requireNormalClosePrepared();
+  assert.deepEqual(value.commands.slice(before).map(command => command.phase), ["release"]);
+  assert.equal(value.state.resumeCount, 2); assert.equal(runner.retained().released, true);
+  await assert.rejects(runner.prepareNormalClose(), /NORMAL_CLOSE_CONSUMED/u);
+  assert.equal(value.commands.length, before + 1);
+});
+void test("normal close refuses held or ambiguous original observations without releasing or resuming them", async () => {
+  const Constructor = await constructor();
+  for (const failure of ["not-started", "held-registration", "pending-release"] as const) {
+    const value = fixture(); const runner = new Constructor(value.transport);
+    if (failure === "held-registration") {
+      value.state.wrongSource = true; await assert.rejects(runner.observe());
+    } else if (failure === "pending-release") {
+      await runner.observe(); value.state.sendFailure = "release"; await assert.rejects(runner.release());
+    }
+    const before = value.commands.length, resumes = value.state.resumeCount;
+    await assert.rejects(runner.prepareNormalClose(), /NORMAL_CLOSE_QUIESCENCE/u);
+    await assert.rejects(runner.prepareNormalClose(), /NORMAL_CLOSE_CONSUMED/u);
+    assert.throws(() => { runner.requireNormalClosePrepared(); }, /NORMAL_CLOSE_QUIESCENCE/u);
+    assert.equal(value.commands.length, before); assert.equal(value.state.resumeCount, resumes);
+  }
+});
+void test("a lost normal-close group release cannot be retried or called quiescent", async () => {
+  const Constructor = await constructor(), value = fixture(); const runner = new Constructor(value.transport);
+  await runner.observe(); value.state.sendFailure = "release";
+  await assert.rejects(runner.prepareNormalClose()); const before = value.commands.length;
+  assert.equal(runner.retained().pendingReplies, 1);
+  await assert.rejects(runner.prepareNormalClose(), /NORMAL_CLOSE_CONSUMED/u);
+  assert.throws(() => { runner.requireNormalClosePrepared(); }, /NORMAL_CLOSE_QUIESCENCE/u);
+  assert.equal(value.commands.length, before); assert.equal(value.state.resumeCount, 2);
+});

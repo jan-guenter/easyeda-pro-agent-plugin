@@ -40,6 +40,7 @@ import { currentPcbStringWorkerProducerWire } from "./current-pcb-string-worker-
 import type { CurrentPcbStringWorkerProducerWireCommand } from "./current-pcb-string-worker-producer-wire.ts";
 import { currentPcbStringMoveWire } from "./current-pcb-string-move-wire.ts";
 import type { CurrentPcbStringMoveWireCommand } from "./current-pcb-string-move-wire.ts";
+import { currentFootprintSavedCacheWire } from "./current-footprint-saved-cache-protocol.ts";
 
 // The original complete worker path uses32 requests. Project opening adds8.
 // The existing-PCB model path uses69; the complete project/PCB opening and
@@ -338,6 +339,18 @@ function modelWire(id: number, method: unknown, params: Record<string, unknown>,
  * JSON itself. Canonical re-encoding prevents an alternative wire vocabulary. */
 export function diagnosticNativeRequest(chunk: Buffer): Readonly<Record<string, unknown>> {
   return fixedNativeRequest(chunk, false);
+}
+/** Only the separate combined discovery owner selects this encoder. The
+ * ordinary diagnostic/startup encoders keep refusing this discriminator. */
+export function combinedDiagnosticNativeRequest(chunk: Buffer): Readonly<Record<string, unknown>> {
+  if (chunk.length > 16_384 || chunk.at(-1) !== 0) { return fail(); }
+  const raw: unknown = JSON.parse(new TextDecoder("utf-8", { fatal: true }).decode(chunk.subarray(0, -1)));
+  if (!diagnosticRecord(raw) || !Object.hasOwn(raw, "cacheNativePhase")) { return diagnosticNativeRequest(chunk); }
+  const { id, ...command } = raw;
+  if (typeof id !== "number") { return fail(); }
+  const fixed = currentFootprintSavedCacheWire(command, id);
+  if (!chunk.equals(Buffer.from(`${JSON.stringify(fixed.command)}\0`))) { return fail(); }
+  return fixed.request;
 }
 /** Separate fixed factory path. The public diagnostic owner never selects this
  * profile; it cannot upgrade its original native or byte-transport purpose. */

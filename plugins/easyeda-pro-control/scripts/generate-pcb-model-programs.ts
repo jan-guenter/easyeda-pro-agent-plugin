@@ -5,9 +5,12 @@ import { CURRENT_PCB_DIAGNOSTIC_ROOT_INVENTORY_FUNCTION } from "../server/src/cu
 import { CURRENT_PCB_STRING_PRODUCER_MARKERS_V2_FUNCTION } from "../server/src/current-pcb-string-producer-markers.ts";
 import { CURRENT_PCB_COMMON_PREFERENCE_FUNCTION, CURRENT_PCB_COMMON_PRESENTATION_FUNCTION, CURRENT_PCB_COMMON_RULES_FUNCTION } from "../server/src/current-pcb-common-state.ts";
 import { CURRENT_PCB_STRING_ACTOR_CLOCK_FUNCTIONS } from "../server/src/current-pcb-string-actor-clock.ts";
-import { CURRENT_PCB_STRING_MOVE_SELECTOR, CURRENT_PCB_STRING_MOVE_STATE } from "../server/src/current-pcb-string-producer-program.ts";
+import { CURRENT_PCB_STRING_COOPERATION_SELECTOR, CURRENT_PCB_STRING_COOPERATION_STATE, CURRENT_PCB_STRING_DEBOUNCE_SELECTOR, CURRENT_PCB_STRING_DEBOUNCE_STATE, CURRENT_PCB_STRING_MOVE_SELECTOR,
+  CURRENT_PCB_STRING_MOVE_STATE, CURRENT_PCB_STRING_STRUCTURE_STATE, CURRENT_PCB_STRING_UPLOAD_SELECTOR, CURRENT_PCB_STRING_UPLOAD_STATE,
+  CURRENT_PCB_STRING_UPLOAD_STRUCTURE_SELECTOR, CURRENT_PCB_STRING_UPLOAD_STRUCTURE_STATE } from "../server/src/current-pcb-string-producer-program.ts";
+import { CURRENT_PCB_STRING_BUFFERED_CALLBACK_ENVIRONMENT } from "../server/src/current-pcb-string-producer-callback-program.ts";
 import { CURRENT_PCB_STRING_STARTUP_STATE_FUNCTION } from "../server/src/current-pcb-string-startup-state.ts";
-import { CURRENT_PCB_STRING_WORKER_GATE_PROGRAM } from "../server/src/current-pcb-string-worker-gate-program.ts";
+import { CURRENT_PCB_STRING_WORKER_GATE_PROGRAM, CURRENT_PCB_STRING_WORKER_GATE_SELECTOR } from "../server/src/current-pcb-string-worker-gate-program.ts";
 import { generatePackedNativeProgram } from "./native-program-packing.ts";
 import { CURRENT_PCB_DIAGNOSTIC_RAW_STRINGS_FUNCTION } from "../server/src/current-pcb-diagnostic-raw-strings.ts";
 import { CURRENT_PCB_TEARDROP_CALLBACK_SELECTOR, CURRENT_PCB_TEARDROP_OWNER_ASSOCIATION } from "../server/src/current-pcb-teardrop-owner-program.ts";
@@ -21,7 +24,18 @@ import { CURRENT_PCB_STRING_RENDERER_ASSOCIATION_FUNCTION } from "../server/src/
 import { CURRENT_PCB_STRING_EMPTY_ASSETS_FUNCTION } from "../server/src/current-pcb-string-empty-assets.ts";
 
 for (const [marker, name, source] of [
+  ["STRING WORKER GATE SELECTOR", "StringWorkerGateSelectorFunction", CURRENT_PCB_STRING_WORKER_GATE_SELECTOR],
   ["STRING WORKER GATE", "StringWorkerGateFunction", CURRENT_PCB_STRING_WORKER_GATE_PROGRAM],
+  ["STRING WORKER UPLOAD STRUCTURE SELECTOR", "StringWorkerUploadStructureSelectorFunction", CURRENT_PCB_STRING_UPLOAD_STRUCTURE_SELECTOR],
+  ["STRING WORKER COOPERATION SELECTOR", "StringWorkerCooperationSelectorFunction", CURRENT_PCB_STRING_COOPERATION_SELECTOR],
+  ["STRING WORKER UPLOAD SELECTOR", "StringWorkerUploadSelectorFunction", CURRENT_PCB_STRING_UPLOAD_SELECTOR],
+  ["STRING WORKER DEBOUNCE SELECTOR", "StringWorkerDebounceSelectorFunction", CURRENT_PCB_STRING_DEBOUNCE_SELECTOR],
+  ["STRING WORKER UPLOAD STRUCTURE", "StringWorkerUploadStructureFunction", CURRENT_PCB_STRING_UPLOAD_STRUCTURE_STATE],
+  ["STRING WORKER STRUCTURE", "StringWorkerStructureFunction", CURRENT_PCB_STRING_STRUCTURE_STATE],
+  ["STRING WORKER DEBOUNCE", "StringWorkerDebounceFunction", CURRENT_PCB_STRING_DEBOUNCE_STATE],
+  ["STRING WORKER COOPERATION", "StringWorkerCooperationFunction", CURRENT_PCB_STRING_COOPERATION_STATE],
+  ["STRING WORKER UPLOAD", "StringWorkerUploadFunction", CURRENT_PCB_STRING_UPLOAD_STATE],
+  ["STRING WORKER BUFFERED ENVIRONMENT", "StringWorkerBufferedEnvironmentFunction", CURRENT_PCB_STRING_BUFFERED_CALLBACK_ENVIRONMENT],
   ["MOVE PRODUCER TWO", "MoveProducerTwoFunction", CURRENT_PCB_STRING_MOVE_SELECTOR],
   ["MOVE PRODUCER THREE", "MoveProducerThreeFunction", CURRENT_PCB_STRING_MOVE_STATE],
   ["MOVE PRODUCER FOUR", "MoveProducerFourFunction", CURRENT_PCB_STRING_STARTUP_STATE_FUNCTION],
