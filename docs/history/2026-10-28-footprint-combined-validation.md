@@ -214,3 +214,49 @@ previous frozen candidate and reproduce on a second build. Facade and bridge
 types, strict lint, generators/sanitizer, coverage, all skills, plugin/MCP and
 repository checks passed. Source/runtime projections remain the878/3 hashes
 recorded above; external pins are unchanged. Only review time refreshed.
+
+
+## Publication and installation, 2026-10-28 UTC
+
+Final candidate `43259f1f7443ce5ee8982a6ee8dca9e377bc62a9` passed Linux
+CI40785390419 and Windows CI40785390439. All eight facade shards and the
+aggregate gate passed:13,449 facade passes, five unchanged expected platform
+skips, zero failures/cancellations, and424 bridge passes. All11 complete job logs
+were independently retained and hashed. The67-file batch merged through
+[PR145](https://github.com/jan-guenter/easyeda-pro-agent-plugin/pull/145) as
+`559655590261e764c8043f1fa322d6851085bddc`. Root tree
+`a0fde83987329d09447861d641208995e289de96` and plugin tree
+`2fb168dddce79f98bec20871c1e1a81c26eef69b` match the tested candidate and
+CI's synthetic merge checkout exactly.
+
+The official CLI upgraded only the configured Git marketplace
+`https://github.com/jan-guenter/easyeda-pro-agent-plugin.git` with umask022
+and process-local parallel checkout settings. It reported zero upgrade errors.
+Version `0.3.0+codex.20261028223950` is installed and enabled, with one EasyEDA
+registration and cached marketplace HEAD equal to merged main. All2,277 installed
+files,44,643,343 bytes and42 directories including the package root match committed
+bytes and0644/0755 modes. Installed inventory SHA256 is
+`907225a69cba6b2e10bf003f65594bf10b4b2d10489393d377b47c4201f7509f`.
+The independent CI artifact matches the same complete payload. The stale-arg0
+cleanup warning was nonfatal. No redundant plugin add, cache edit, bridge-key
+change or host-gateway termination was used.
+
+The dependency-free installed offline probe passed27 exposed tools,44 catalog
+queries and exactly46 protocol requests, including combined discovery and argument
+validation. Its own child closed through stdin EOF with exit0, no signal and
+empty stderr. It used a private synthetic profile, verified the post-close marker
+and control roster, and sampled no descendants or non-stdio sockets. These samples
+do not establish continuous isolation or connected admission. Runtime and
+configuration hashes match the tested payload.
+
+Main Windows CI40787449525 passed. Automatic main Linux CI40787449524 was running
+at this snapshot; its tree is the already tested payload. The loaded facade
+still belongs to211407, and no live tool was called after installation. A fresh
+Codex chat must load223950 and admit its actual host before the new combined
+probe. Both211407 operations are terminal released and must never be replayed.
+Corrected connected combined/cache acceptance, actual request/clock/completion
+proofs, full copy/delete and saved/inverse verification, and the broader API
+backlog above remain open.
+
+This local publication appendix is retained for the next substantive commit.
+The installed package remains exactly the tested merged tree.

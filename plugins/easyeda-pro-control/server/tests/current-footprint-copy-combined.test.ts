@@ -21,6 +21,8 @@ import { CURRENT_FOOTPRINT_COPY_MAIN_REQUEST_REQUESTS as REQUEST } from "../src/
 import { currentFootprintCombinedStartupWire, currentFootprintCopyExecutionStartupWire } from "../src/current-pcb-worker-startup-wire.ts";
 import type { CurrentFootprintCombinedNativeOwner } from "../src/current-pcb-diagnostic-owner.ts";
 
+const readyPreload = fileURLToPath(new URL("helpers/current-footprint-combined-helper-ready.ts", import.meta.url));
+
 void test("combined capacities include construction cleanup IDs without reserving unfinished writer stages", () => {
   assert.equal(CONSTRUCTION.maximumObserve, CONSTRUCTION.observeNormal + CONSTRUCTION.observeCleanup);
   assert.equal(PROFILE.main.normalRequestLimit, 17 + 1 + REQUEST.normal);
@@ -76,16 +78,17 @@ void test("constructor seams cannot mint combined factory authority, request lea
   const { loaded, sourceOnly } = await syntheticOwnerModule();
   const Owner = loaded.exports["CurrentFootprintCombinedNativeOwner"], assertOriginal = loaded.exports["assertOriginalCurrentFootprintCombinedNativeOwner"];
   assert.ok(typeof Owner === "function" && typeof assertOriginal === "function");
-  const child = spawn(process.execPath, [fileURLToPath(new URL("helpers/current-pcb-diagnostic-helper-fixture.ts", import.meta.url)), "normal"], { stdio: ["pipe", "pipe", "pipe"] });
+  const child = spawn(process.execPath, ["--import", readyPreload, fileURLToPath(new URL("helpers/current-pcb-diagnostic-helper-fixture.ts", import.meta.url)), "normal"], { stdio: ["pipe", "pipe", "pipe"] });
   const actions: string[] = [], originalWrite = child.stdin.write.bind(child.stdin);
   context.mock.method(child.stdin, "write", (...args: Parameters<typeof child.stdin.write>) => {
     if (typeof args[0] === "string") { const line: unknown = JSON.parse(args[0]); assert.ok(line !== null && typeof line === "object" && "action" in line); actions.push(String(line["action"])); }
     return originalWrite(...args);
   });
   // oxlint-disable-next-line typescript/no-unsafe-type-assertion -- The evaluated maintained constructor receives a real inert child; only the source qualification input is replaced.
-  const owner = Reflect.construct(Owner, [child, (): Promise<void> => Promise.resolve(), sourceOnly]) as CurrentFootprintCombinedNativeOwner;
+  const owner = Reflect.construct(Owner, [child, (): Promise<void> => Promise.resolve(), sourceOnly, null, undefined, undefined, "a".repeat(32)]) as CurrentFootprintCombinedNativeOwner;
   owner.start();
   context.after(async () => { if (!owner.status().helperClosed) { const closed = once(child, "close"); child.stdin.end(); await closed; } });
+  await owner.waitFootprintCombinedReady();
   await owner.launch({ executable: "C:\\Reviewed\\easyeda-pro.exe", executableSha256: "a".repeat(64), confirmDiagnosticLaunch: true });
   assert.equal(owner.status().profile, PURPOSE);
   assert.throws(() => Reflect.apply(assertOriginal, undefined, [owner]), /COMBINED_ORIGINAL_OWNER/u);
@@ -103,7 +106,7 @@ void test("constructor seams cannot mint combined factory authority, request lea
 void test("one combined native queue lets the original main reproof complete while the renderer waits", { timeout: 5000 }, async context => {
   const { loaded, sourceOnly } = await syntheticOwnerModule(), Owner = loaded.exports["CurrentFootprintCombinedNativeOwner"];
   assert.ok(typeof Owner === "function");
-  const child = spawn(process.execPath, ["-e", `
+  const child = spawn(process.execPath, ["--import", readyPreload, "-e", `
 const readline=require('node:readline');const lines=readline.createInterface({input:process.stdin});let pending=null,ready=false;
 lines.on('line',line=>{const q=JSON.parse(line);let result;
 if(q.action==='launch')result={helperInstance:'b'.repeat(32),jobId:'c'.repeat(32),rootPid:123,rootCreated:'123456789012345'};
@@ -116,7 +119,7 @@ else if(q.action==='release')result={released:true};else throw Error('unexpected
 process.stdout.write(JSON.stringify({id:q.id,ok:true,result})+'\\n');});
 `], { stdio: ["pipe", "pipe", "pipe"] });
   // oxlint-disable-next-line typescript/no-unsafe-type-assertion -- The maintained constructor has real child pipes and an inert source token; this test cannot acquire private factory authority.
-  const owner = Reflect.construct(Owner, [child, (): Promise<void> => Promise.resolve(), sourceOnly]) as CurrentFootprintCombinedNativeOwner;
+  const owner = Reflect.construct(Owner, [child, (): Promise<void> => Promise.resolve(), sourceOnly, null, undefined, undefined, "a".repeat(32)]) as CurrentFootprintCombinedNativeOwner;
   owner.start();
   context.after(async () => { if (!owner.status().helperClosed) { const closed = once(child, "close"); child.stdin.end(); await closed; } });
   const actions: string[] = [], firstPoll = Promise.withResolvers<null>(), originalWrite = child.stdin.write.bind(child.stdin);
@@ -125,6 +128,7 @@ process.stdout.write(JSON.stringify({id:q.id,ok:true,result})+'\\n');});
       actions.push(String(line["action"])); if (line["action"] === "poll") { firstPoll.resolve(null); } }
     return originalWrite(...args);
   });
+  await owner.waitFootprintCombinedReady();
   await owner.launch({ executable: "C:\\Reviewed\\easyeda-pro.exe", executableSha256: "a".repeat(64), confirmDiagnosticLaunch: true });
   await owner.attachFootprintMain();
   const renderer = owner.getVersion(); await firstPoll.promise;
@@ -139,9 +143,9 @@ process.stdout.write(JSON.stringify({id:q.id,ok:true,result})+'\\n');});
 void test("combined normal stdout exhaustion preserves original termination and helper release", async context => {
   // Only the normal byte threshold is shortened. Real callback, line parser,
   // Logical cleanup transition and independent reserve remain unchanged.
-  const { loaded, sourceOnly } = await syntheticOwnerModule(320), Owner = loaded.exports["CurrentFootprintCombinedNativeOwner"];
+  const { loaded, sourceOnly } = await syntheticOwnerModule(640), Owner = loaded.exports["CurrentFootprintCombinedNativeOwner"];
   assert.ok(typeof Owner === "function");
-  const child = spawn(process.execPath, ["-e", `
+  const child = spawn(process.execPath, ["--import", readyPreload, "-e", `
 const readline=require('node:readline');const lines=readline.createInterface({input:process.stdin});let pending=null;
 lines.on('line',line=>{const q=JSON.parse(line);let result;
 if(q.action==='launch')result={helperInstance:'b'.repeat(32),jobId:'c'.repeat(32),rootPid:123,rootCreated:'123456789012345'};
@@ -152,9 +156,10 @@ else if(q.action==='release')result={released:true};else throw Error('unexpected
 process.stdout.write(JSON.stringify({id:q.id,ok:true,result})+'\\n');});
 `], { stdio: ["pipe", "pipe", "pipe"] });
   // oxlint-disable-next-line typescript/no-unsafe-type-assertion -- The maintained owner receives real inert child pipes and only the source/normal-limit fixtures are replaced.
-  const owner = Reflect.construct(Owner, [child, (): Promise<void> => Promise.resolve(), sourceOnly]) as CurrentFootprintCombinedNativeOwner;
+  const owner = Reflect.construct(Owner, [child, (): Promise<void> => Promise.resolve(), sourceOnly, null, undefined, undefined, "a".repeat(32)]) as CurrentFootprintCombinedNativeOwner;
   owner.start();
   context.after(async () => { if (!owner.status().helperClosed) { const closed = once(child, "close"); child.stdin.end(); await closed; } });
+  await owner.waitFootprintCombinedReady();
   await owner.launch({ executable: "C:\\Reviewed\\easyeda-pro.exe", executableSha256: "a".repeat(64), confirmDiagnosticLaunch: true });
   await assert.rejects(owner.getVersion(), /COMBINED_HELPER_NORMAL_BOUND/u);
   assert.equal(owner.status().combinedOutputCleanupOnly, true); assert.equal(owner.status().failure, null);
@@ -188,7 +193,7 @@ void test("composed original allocator accepts last normal ID 50 with 41 normal 
   const schedule = [...construction, command("require"), ...f.commands, command("release")];
   assert.equal(schedule.length, PROFILE.main.requestLimit);
   const { loaded, sourceOnly } = await syntheticOwnerModule(), Owner = loaded.exports["CurrentFootprintCombinedNativeOwner"]; assert.ok(typeof Owner === "function");
-  const child = spawn(process.execPath, ["-e", `
+  const child = spawn(process.execPath, ["--import", readyPreload, "-e", `
 const readline=require('node:readline');const lines=readline.createInterface({input:process.stdin});
 lines.on('line',line=>{const q=JSON.parse(line);let result;
 if(q.action==='launch')result={helperInstance:'b'.repeat(32),jobId:'c'.repeat(32),rootPid:123,rootCreated:'123456789012345'};
@@ -199,9 +204,10 @@ else if(q.action==='release')result={released:true};else throw Error('unexpected
 process.stdout.write(JSON.stringify({id:q.id,ok:true,result})+'\\n');});
 `], { stdio: ["pipe", "pipe", "pipe"] });
   // oxlint-disable-next-line typescript/no-unsafe-type-assertion -- The maintained owner has real inert child pipes; constructor seams cannot issue production authority.
-  const owner = Reflect.construct(Owner, [child, (): Promise<void> => Promise.resolve(), sourceOnly]) as CurrentFootprintCombinedNativeOwner;
+  const owner = Reflect.construct(Owner, [child, (): Promise<void> => Promise.resolve(), sourceOnly, null, undefined, undefined, "a".repeat(32)]) as CurrentFootprintCombinedNativeOwner;
   owner.start();
   context.after(async () => { if (!owner.status().helperClosed) { const closed = once(child, "close"); child.stdin.end(); await closed; } });
+  await owner.waitFootprintCombinedReady();
   await owner.launch({ executable: "C:\\Reviewed\\easyeda-pro.exe", executableSha256: "a".repeat(64), confirmDiagnosticLaunch: true }); await owner.attachFootprintMain();
   let cleanup = 0, lastNormalId = 0, normal = 0;
   for (const [index, request] of schedule.entries()) {

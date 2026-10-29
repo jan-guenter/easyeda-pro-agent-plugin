@@ -12,6 +12,7 @@ import { currentFootprintCopyMainTransportNativeSource } from "../server/src/cur
 import { currentFootprintCopyMainBackendNativeSource } from "../server/src/current-footprint-copy-main-backend-native.ts";
 import { currentFootprintCopyMainRequestNativeSource } from "../server/src/current-footprint-copy-main-request-native.ts";
 import { currentFootprintCombinedNativeLimits } from "../server/src/current-footprint-copy-combined-profile.ts";
+import { currentFootprintCombinedReadyNativeSource } from "../server/src/current-footprint-combined-ready.ts";
 import { CURRENT_FOOTPRINT_COPY_CLOCK_REGISTRATION_REQUESTS as clockRegistration } from "../server/src/current-footprint-copy-clock-registration-runner.ts";
 import { CURRENT_FOOTPRINT_COPY_SAVED_PROFILE as saved } from "../server/src/current-footprint-copy-saved-profile.ts";
 import { currentFootprintCopyTransactionClockNativeSource } from "../server/src/current-footprint-copy-transaction-clock-native.ts";
@@ -86,6 +87,12 @@ async function main(): Promise<void> {
     }
     next = next.slice(0, start) + generated + next.slice(stop + end.length);
   }
+  const readyBegin = "  # BEGIN GENERATED FOOTPRINT COMBINED READY", readyEnd = "  # END GENERATED FOOTPRINT COMBINED READY";
+  const readyStart = next.indexOf(readyBegin), readyStop = next.indexOf(readyEnd);
+  if (readyStart === -1 || readyStop < readyStart || next.includes(readyBegin, readyStart + readyBegin.length) || next.includes(readyEnd, readyStop + readyEnd.length)) {
+    throw new Error("Native combined readiness markers must occur once");
+  }
+  next = next.slice(0, readyStart) + currentFootprintCombinedReadyNativeSource() + next.slice(readyStop + readyEnd.length);
   if (Buffer.byteLength(next) > 1_048_576) { throw new Error("Native startup helper exceeds its fixed byte bound"); }
   if (action === "--write") { await writeFile(path, next); }
   else if (next !== source) { throw new Error("Generated native startup protocol differs"); }

@@ -68,6 +68,15 @@ import { CURRENT_PCB_WORKER_STARTUP_CHANNEL_CALLS } from "./current-pcb-worker-s
 import type { CurrentPcbWorkerStartupChannelObservationCommand,
   CurrentPcbWorkerStartupChannelPacket } from "./current-pcb-worker-startup-channel-observation.ts";
 import { CurrentPcb209WorkerStartupChannelObservationRunner, CurrentPcbWorkerStartupChannelObservationRunner } from "./current-pcb-worker-startup-channel-observation-runner.ts";
+import { qualifyCurrentFootprintCopyClockRpcSource, requireCurrentFootprintCopyClockRpcSource } from "./current-footprint-copy-clock-rpc-source.ts";
+import type { CurrentFootprintCopyClockRpcSource } from "./current-footprint-copy-clock-rpc-source.ts";
+import type { CurrentFootprintCopyClockRpcConstructionBinding, CurrentFootprintCopyClockRpcConstructionLease } from "./current-footprint-copy-clock-rpc-leases.ts";
+
+const clockRpcLeases = new WeakMap<CurrentFootprintCopyClockRpcConstructionLease, CurrentFootprintCopyClockRpcConstructionBinding>();
+export function requireCurrentFootprintCopyClockRpcConstructionLease(lease: CurrentFootprintCopyClockRpcConstructionLease): CurrentFootprintCopyClockRpcConstructionBinding {
+  const binding = clockRpcLeases.get(lease); if (binding === undefined) { throw new Error("FOOTPRINT_CLOCK_RPC_CONSTRUCTION_LEASE"); }
+  binding.assertCleanup(); return binding;
+}
 
 const GROUP = CURRENT_PCB_WORKER_CONSTRUCTION_SOURCE.group;
 const token = z.string().min(1).max(256).regex(/^[A-Za-z\d_.:-]+$/u);
@@ -271,6 +280,8 @@ class CurrentPcbWorkerConstructionCore<P extends PacketProfile> {
   #registeredAsyncPacket: CurrentFootprintCopyRegisteredAsyncObservation | null = null;
   #transactionClockAttempted = false;
   #transactionClocks: CurrentFootprintCopyTransactionClockEvents | null = null;
+  #clockRpcSource: CurrentFootprintCopyClockRpcSource | null = null;
+  #clockRpcLease: CurrentFootprintCopyClockRpcConstructionLease | null = null;
   #footprintAsyncAttempted = false;
   #footprintAsyncRunner: CurrentFootprintCopyAsyncRunner | null = null;
   #footprintAsyncObservation: CurrentFootprintCopyAsyncObservation | null = null;
@@ -958,6 +969,43 @@ class CurrentPcbWorkerConstructionCore<P extends PacketProfile> {
     return this.#footprintDependencyAttempted ? Object.freeze({ attempted: true, completed: this.#footprintDependencyPacket !== null,
       observation: this.#footprintDependencyRunner?.retained() ?? null, originalReplies: Object.freeze([...this.#footprintDependencyReplies]),
       originalDependencyBundleRetained: this.#footprintDependencyBundle !== null, executionAuthorized: false }) : null;
+  }
+  /** The original startup transport may retain its already hash-qualified
+   * complete source here. Source bytes alone grant no invocation ownership. */
+  public bindClockRpcSource(source: unknown): void {
+    this.#sameTransport(); this.#checkWindow();
+    if (this.#profile !== "private.current-footprint-copy-construction.v1" || this.#clockRpcSource !== null || this.#releaseConsumed) {
+      throw fail("CLOCK_RPC_SOURCE_UNAVAILABLE");
+    }
+    this.#clockRpcSource = qualifyCurrentFootprintCopyClockRpcSource("worker", source);
+  }
+  /** No commands or reproof budget are consumed. The genuine combined owner
+   * must separately bind this exact issuer and its original renderer channel. */
+  public issueClockRpcObservationLease(packet: ConstructionPacket<P>, assignments: CurrentPcbWorkerConstructionAssignments,
+    state: CurrentFootprintCopyStatePacket, producers: CurrentFootprintCopyProducerObservation,
+    dependencies: CurrentFootprintCopyDependencyObservation): CurrentFootprintCopyClockRpcConstructionLease {
+    this.#footprintProducerCurrent(packet, assignments, state);
+    const source = this.#clockRpcSource; const manager = this.#footprintManager; const lexicals = this.#footprintLexicalBundle;
+    const bundle = this.#footprintDependencyBundle; const project = this.#identities.project;
+    if (source === null || manager === null || lexicals === null || bundle === null || project === undefined ||
+      producers !== this.#footprintProducerPacket || dependencies !== this.#footprintDependencyPacket ||
+      this.#footprintProducerRunner === null || this.#footprintDependencyRunner?.retained().completed !== true ||
+      this.#footprintDependencyRunner.retained().failed) { throw fail("CLOCK_RPC_ORIGINAL_PREPARATION"); }
+    this.#footprintProducerRunner.requireOriginal(producers); requireCurrentFootprintCopyClockRpcSource(source, "worker");
+    if (this.#clockRpcLease !== null) { return this.#clockRpcLease; }
+    const same = (): void => {
+      this.#sameTransport(); requireCurrentFootprintCopyClockRpcSource(source, "worker");
+      if (this.#releaseConsumed || this.#clockRpcSource !== source || this.#packet !== packet || this.#assignments !== assignments ||
+        this.#footprintPacket !== state || this.#footprintProducerPacket !== producers || this.#footprintDependencyPacket !== dependencies ||
+        this.#footprintManager !== manager || this.#footprintLexicalBundle !== lexicals || this.#footprintDependencyBundle !== bundle ||
+        this.#identities.project !== project) { throw fail("CLOCK_RPC_ORIGINAL_PREPARATION_CHANGED"); }
+    };
+    const lease = Object.freeze({ profile: "private.current-footprint-clock-rpc-construction-lease.v1" as const });
+    clockRpcLeases.set(lease, Object.freeze({ issuer: this, scriptId: this.#scriptId, projectObjectId: project,
+      managerObjectId: manager, lexicalBundleObjectId: lexicals, dependencyBundleObjectId: bundle, qualifiedSource: source,
+      assertCleanup: same, assertOriginal: async (): Promise<void> => { same(); await this.#current(); same(); },
+    }));
+    this.#clockRpcLease = lease; return lease;
   }
   #footprintDependencyCall(scopeId: string, original: Readonly<CurrentPcbWorkerConstructionIdentities>, recheck: boolean): Promise<unknown> {
     if (this.#footprintManager === null || this.#footprintConsistency === null || this.#footprintConstructors === null ||

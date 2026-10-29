@@ -106,7 +106,7 @@ jobs:
           $ErrorActionPreference = 'Stop'
           Set-StrictMode -Version Latest
           $script = Join-Path $env:GITHUB_WORKSPACE 'plugins\easyeda-pro-control\scripts\pcb-diagnostic-owner.ps1'
-          foreach ($purpose in @('', '-StringPrecreate', '-WorkerStartup', '-Layers209', '-WorkerStartup209', '-WorkerStartupEmpty209', '-WorkerStartupRatline209', '-WorkerStartupRatlineContinuation209', '-WorkerStartupFootprint209', '-WorkerStartupFootprintCopy209', '-WorkerStartupFootprintSaved209')) {
+          foreach ($purpose in @('', '-StringPrecreate', '-WorkerStartup', '-Layers209', '-WorkerStartup209', '-WorkerStartupEmpty209', '-WorkerStartupRatline209', '-WorkerStartupRatlineContinuation209', '-WorkerStartupFootprint209', '-WorkerStartupFootprintCopy209', '-WorkerStartupFootprintSaved209', '-WorkerStartupFootprintMain209', '-WorkerStartupFootprintCombined209')) {
           $child = [Diagnostics.Process]::new()
           $child.StartInfo.FileName = Join-Path $PSHOME 'powershell.exe'
           $child.StartInfo.Arguments = '-NoLogo -NoProfile -NonInteractive -ExecutionPolicy Bypass -File "' + $script + '" -CompileOnly ' + $purpose
@@ -138,6 +138,60 @@ jobs:
           } finally { $child.Dispose() }
           }
           Write-Output 'Diagnostic helper compiled and checked an empty Job plus four anonymous pipe endpoints; no application launched.'
+
+      - name: Verify combined readiness and empty-input closure without an application
+        shell: powershell
+        run: |
+          $ErrorActionPreference = 'Stop'
+          Set-StrictMode -Version Latest
+          $script = Join-Path $env:GITHUB_WORKSPACE 'plugins\easyeda-pro-control\scripts\pcb-diagnostic-owner.ps1'
+          $challenge = [Guid]::NewGuid().ToString('N')
+          $child = [Diagnostics.Process]::new()
+          $child.StartInfo.FileName = Join-Path $PSHOME 'powershell.exe'
+          $child.StartInfo.Arguments = '-NoLogo -NoProfile -NonInteractive -ExecutionPolicy Bypass -File "' + $script + '" -WorkerStartupFootprintCombined209 -CombinedReadyChallenge ' + $challenge
+          $child.StartInfo.UseShellExecute = $false
+          $child.StartInfo.CreateNoWindow = $true
+          $child.StartInfo.RedirectStandardInput = $true
+          $child.StartInfo.RedirectStandardOutput = $true
+          $child.StartInfo.RedirectStandardError = $true
+          $started = $false
+          try {
+            if (-not $child.Start()) { throw 'Combined readiness helper did not start.' }
+            $started = $true
+            [char[]]$stderrBuffer = New-Object char[] 65537
+            $stderr = $child.StandardError.ReadAsync($stderrBuffer, 0, $stderrBuffer.Length)
+            $clock = [Diagnostics.Stopwatch]::StartNew()
+            $line = New-Object Text.StringBuilder
+            [char[]]$character = New-Object char[] 1
+            while ($true) {
+              $remaining = 15000 - $clock.ElapsedMilliseconds
+              if ($remaining -le 0) { throw 'Combined readiness helper timed out.' }
+              $read = $child.StandardOutput.ReadAsync($character, 0, 1)
+              if (-not $read.Wait([int]$remaining) -or $read.Result -ne 1) { throw 'Combined readiness reply did not arrive.' }
+              if ($character[0] -eq [char]10) { break }
+              if ($line.Length -ge 511) { throw 'Combined readiness reply exceeded its fixed bound.' }
+              [void]$line.Append($character[0])
+            }
+            if ([Text.Encoding]::UTF8.GetByteCount($line.ToString()) -gt 512) { throw 'Combined readiness byte bound exceeded.' }
+            $result = $line.ToString() | ConvertFrom-Json
+            if ((@($result.PSObject.Properties.Name | Sort-Object) -join ',') -cne 'challenge,creationState,emptyJob,helperInstance,jobId,pipesChecked,processCreated,schema' -or
+                $result.schema -cne 'easyeda-pro-control.footprint-combined-ready.v1' -or
+                $result.challenge -isnot [string] -or $result.challenge -cne $challenge -or
+                $result.creationState -cne 'not-entered' -or $result.helperInstance -isnot [string] -or $result.jobId -isnot [string] -or
+                $result.helperInstance -cnotmatch '^[a-f0-9]{32}$' -or $result.jobId -cnotmatch '^[a-f0-9]{32}$' -or
+                $result.emptyJob -isnot [bool] -or -not $result.emptyJob -or $result.pipesChecked -isnot [bool] -or -not $result.pipesChecked -or
+                $result.processCreated -isnot [bool] -or $result.processCreated) { throw 'Combined readiness packet differs.' }
+            # No input byte was written; close only this original empty input.
+            $child.StandardInput.Close()
+            if (-not $child.WaitForExit(15000)) { throw 'Combined empty-input helper did not exit.' }
+            if (-not $stderr.Wait(5000) -or $stderr.Result -ne 0 -or $child.ExitCode -ne 0 -or $child.StandardOutput.Read() -ne -1) {
+              throw 'Combined empty-input closure emitted an error or extra output.'
+            }
+          } finally {
+            if ($started) { $child.StandardInput.Close() }
+            $child.Dispose()
+          }
+          Write-Output 'Combined original readiness passed and empty input closed without an application launch.'
 
       - name: Verify suspended image admission with a fresh no-op child
         shell: powershell

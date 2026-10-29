@@ -13,8 +13,12 @@ export const currentFootprintCombinedLifecycleRequestSchema = z.discriminatedUni
   currentPcb209WorkerStartupLifecycleRequestSchema.options[0].extend({ operationId, acceptDebuggerPauseEffects: z.literal(true) }),
   ...currentPcb209WorkerStartupLifecycleRequestSchema.options.slice(1).map(option => option.extend({ operationId })),
 ]);
+export const currentFootprintCombinedAbandonUnknownRequestSchema = z.object({
+  action: z.literal("abandon-unknown-launch"), operationId, expectedIntentSha256: digest,
+  confirmAbandonUnknownLaunch: z.literal(true), acceptUnobservedDescendants: z.literal(true), acceptUnknownProfileEffects: z.literal(true),
+}).strict();
 export const currentFootprintCombinedValidationRequestSchema = z.discriminatedUnion("action", [
-  ...currentFootprintCombinedLifecycleRequestSchema.options,
+  ...currentFootprintCombinedLifecycleRequestSchema.options, currentFootprintCombinedAbandonUnknownRequestSchema,
   currentPcb209WorkerStartupCaptureRequestSchema.extend({ operationId }),
   currentPcb209WorkerStartupAssignmentsRequestSchema.extend({ operationId }),
   currentPcb209WorkerStartupActorRequestSchema.extend({ operationId }),
@@ -32,8 +36,12 @@ export function queryCurrentFootprintCombined(includeSchemas: boolean): Record<s
     actions: currentFootprintCombinedValidationRequestSchema.options.map(option => option.shape.action.value),
     limitations: [
       "Launch a new footprint-combined-* original main/renderer owner with all four exact confirmations. Existing diagnostic, route and preparation owners cannot be upgraded or adopted.",
+      "This combined purpose requires a private challenge-matched helper-ready packet before any launch input. Only its original factory can prove an observed closed, never-written helper failed before application dispatch; factory-before-launch-failed grants no native-resource-release proof and cannot qualify older intent-only failures.",
+      "A new same-purpose launch may replace a consumed combined coordinator only after all calls settle and its original reservation is released. Inspection retains the previous coordinator, unknown/live attempts remain reserved, and durable old operation IDs cannot be replayed.",
       "Observe-main-construction must complete and publish its source-qualified result before disposable capture-project. Browser/frame/UI qualification, original project-worker capture, assignment/actor and route observations retain their existing exact guards.",
       "The separate native birth purpose shares original main request IDs, event cursor, process/Job handles and absolute lifetime. This public route mounts no backend request collector, copy/delete writer, document-clock arming, explicit Save or saved-result proof. Whole-writer authority remains false.",
+      "The unmounted clock/RPC unit derives49 normal plus18 cleanup commands and has fixed standalone native-codec parity checks, but no genuine owner origin or embedded channel route. Pure logical delete/saved-reader models support locked or aged heads and retained tombstones, not native deletion/reopen or replay exclusion. The complete four-generation budget remains unavailable.",
+      "Historical abandon-unknown-launch is separate, explicitly accepts unknown effects/descendants, and requires a fresh coordinator, exact reviewed223950 intent-only bytes, no other Linux facade, and absent PowerShell/EasyEDA samples. It preserves the original journal and grants no termination, non-dispatch, resource-release, design or persistence proof.",
       "Abort-generation durably consumes its intent before requesting termination of only this original combined Job. Exact confirmation is required; missing acknowledgment is consumed. Abort blocks normal work and is distinct from observed original-root exit, empty Job, release and record settlement.",
       "Existing-profile launch and disposable opening can restore tabs, use the network and automatically persist files. Debugger pauses affect timing. Retain the original owner through cleanup; historical JSON and screenshots cannot recreate it.",
     ], ...(includeSchemas ? { inputSchema: z.toJSONSchema(currentFootprintCombinedValidationRequestSchema) } : {}) };

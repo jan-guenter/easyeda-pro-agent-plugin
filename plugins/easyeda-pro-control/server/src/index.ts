@@ -137,6 +137,7 @@ import type { CurrentFootprintCopyPreparationValidationRequest } from "./current
 import type { CurrentFootprintCopyRoutePreparationValidationRequest } from "./current-footprint-copy-route-preparation-validation.ts";
 import type { CurrentFootprintMainValidationRequest } from "./current-footprint-main-validation.ts";
 import type { CurrentFootprintCombinedValidationRequest } from "./current-footprint-combined-validation.ts";
+import { CurrentFootprintCombinedUnknownAbandonment } from "./current-footprint-combined-unknown-abandonment.ts";
 import { currentPcb209WorkerStartupToolRequestSchema } from "./current-pcb-209-empty-startup-validation.ts";
 import type { CurrentPcb209RatlineContinuationValidationRequest } from "./current-pcb-209-ratline-continuation-validation.ts";
 import type { CurrentPcb209RatlineStartupValidationRequest } from "./current-pcb-209-ratline-startup-validation.ts";
@@ -214,7 +215,7 @@ let ordinaryLaunchRuntime: WindowsControlRuntime | undefined;
 let currentPcbDiagnosticLifecycle: CurrentPcbDiagnosticLifecycle | CurrentPcb209DiagnosticLifecycle | undefined;
 let currentPcbStringPrecreateLifecycle: CurrentPcbStringPrecreateLifecycle | undefined;
 let currentFootprintMainLifecycle: CurrentFootprintMainLifecycle | undefined;
-let currentPcbWorkerStartupLifecycle: CurrentFootprintCombinedLifecycle | CurrentPcbWorkerStartupLifecycle | CurrentPcb209WorkerStartupLifecycle | CurrentFootprintCopyPreparationLifecycle | CurrentFootprintCopyRoutePreparationLifecycle | CurrentPcb209EmptyStartupLifecycle | CurrentPcb209RatlineStartupLifecycle | CurrentPcb209RatlineContinuationLifecycle | undefined;
+let currentPcbWorkerStartupLifecycle: CurrentFootprintCombinedLifecycle | CurrentFootprintCombinedUnknownAbandonment | CurrentPcbWorkerStartupLifecycle | CurrentPcb209WorkerStartupLifecycle | CurrentFootprintCopyPreparationLifecycle | CurrentFootprintCopyRoutePreparationLifecycle | CurrentPcb209EmptyStartupLifecycle | CurrentPcb209RatlineStartupLifecycle | CurrentPcb209RatlineContinuationLifecycle | undefined;
 let currentDisposableOpenCoordinator: CurrentDisposableOpenCoordinator | undefined;
 let currentPcbRenameOperationCoordinator: CurrentPcbRenameOperationCoordinator | undefined;
 let currentSchematicRenameOperationCoordinator: CurrentSchematicRenameOperationCoordinator | undefined;
@@ -2628,6 +2629,7 @@ if (facadeToolRegistered(facadeMode, "easyeda_control_pcb_diagnostic_validation"
     readonly footprintPreparation: CurrentPcb209WorkerStartupLifecycle["prepareWorkerStartupFootprintCopy"] | undefined;
     readonly channel: CurrentPcbWorkerStartupLifecycle["observeWorkerStartupChannel"];
     readonly empty: CurrentPcb209EmptyStartupLifecycle["observeWorkerStartupEmpty"] | undefined; readonly reserved: CurrentPcbWorkerStartupLifecycle["hasActiveReservation"];
+    readonly attempted: CurrentFootprintCombinedLifecycle["hasAttemptedNativeOwnerAllocation"] | undefined;
     readonly ratline: CurrentPcb209RatlineStartupLifecycle["observeWorkerStartupRatline"] | undefined;
     readonly continuation: CurrentPcb209RatlineContinuationLifecycle["observeWorkerStartupRatlineContinuation"] | undefined;
     readonly footprintUi: CurrentFootprintCopyPreparationLifecycle["observeWorkerStartupFootprintUi"] | undefined;
@@ -2637,7 +2639,76 @@ if (facadeToolRegistered(facadeMode, "easyeda_control_pcb_diagnostic_validation"
     readonly footprintPurpose: boolean; readonly footprintBindings: CurrentFootprintCopyPreparationLifecycle["prepareWorkerStartupFootprintBindings"] | undefined;
     readonly emptyPurpose: boolean; readonly ratlinePurpose: boolean; readonly continuationPurpose: boolean; readonly assertLocal: () => void } | undefined;
   let startupCalls = 0;
+  let combinedHistoricalOriginal: { readonly owner: CurrentFootprintCombinedUnknownAbandonment;
+    readonly run: CurrentFootprintCombinedUnknownAbandonment["run"];
+    readonly reserved: CurrentFootprintCombinedUnknownAbandonment["hasActiveReservation"]; readonly assertLocal: () => void } | undefined;
+  const runCombinedHistorical = (request: Extract<CurrentFootprintCombinedValidationRequest, { action: "abandon-unknown-launch" }>): Promise<{ result: Record<string, unknown> }> => {
+    if (!diagnostic209) { throw new Error("Combined historical relinquishment requires the209 route."); }
+    if (combinedHistoricalOriginal === undefined) {
+      const environment = process.env;
+      const assetsRoot = environment["EASYEDA_ASSETS_ROOT"], wslDistribution = environment["WSL_DISTRO_NAME"];
+      const originalEngine = engine, originalGate = bridgeGate, originalUpstream = upstream;
+      const authority = disposableOwnData(engine, "executionAuthorityValidator"), facadePromise = disposableOwnData(engine, "controlFingerprintPromise");
+      const controlPath = retainedControlRoot.path, pluginRoot = resolve(import.meta.dirname, "../..");
+      const methodIdentities = (): readonly unknown[] => [disposableOwnerMethod(bridgeGate, "run"),
+        disposableOwnerMethod(engine, "assertDiagnosticLaunchOtherOperationsSettled"),
+        disposableOwnerMethod(CurrentFootprintCombinedUnknownAbandonment.prototype, "run"),
+        disposableOwnerMethod(CurrentFootprintCombinedUnknownAbandonment.prototype, "hasActiveReservation")];
+      const capturedMethods = methodIdentities();
+      const ownerReference: { current: CurrentFootprintCombinedUnknownAbandonment | undefined } = { current: undefined };
+      const assertLocal = (): void => {
+        const methodsNow = methodIdentities();
+        if (engine !== originalEngine || bridgeGate !== originalGate || upstream !== originalUpstream ||
+            disposableOwnData(engine, "upstream") !== originalUpstream || disposableOwnData(engine, "controlFingerprintPromise") !== facadePromise ||
+            disposableOwnData(engine, "executionAuthorityValidator") !== authority || process.env !== environment ||
+            environment["EASYEDA_ASSETS_ROOT"] !== assetsRoot || environment["WSL_DISTRO_NAME"] !== wslDistribution ||
+            retainedControlRoot.path !== controlPath || resolve(import.meta.dirname, "../..") !== pluginRoot ||
+            methodsNow.length !== capturedMethods.length || methodsNow.some((method, index) => method !== capturedMethods[index]) ||
+            ownerReference.current !== undefined && (currentPcbWorkerStartupLifecycle !== undefined && currentPcbWorkerStartupLifecycle !== ownerReference.current ||
+              disposableOwnerMethod(ownerReference.current, "run") !== capturedMethods[2] ||
+              disposableOwnerMethod(ownerReference.current, "hasActiveReservation") !== capturedMethods[3])) {
+          throw new Error("Combined historical relinquishment coordinator changed.");
+        }
+      };
+      const assertFreshNoOwnedAllocations = (): void => {
+        assertLocal();
+        if (windowsRuntime !== undefined || ordinaryLaunchRuntime !== undefined || ordinaryLaunchCoordinator !== undefined ||
+            currentDisposableOpenCoordinator !== undefined || currentPcbRenameOperationCoordinator !== undefined ||
+            currentSchematicRenameOperationCoordinator !== undefined || closedSymbolIndexReservation !== undefined ||
+            closedSymbolUnreservedFailure.observed || scheduledShutdown !== undefined || currentPcbDiagnosticLifecycle !== undefined ||
+            currentPcbStringPrecreateLifecycle !== undefined || currentFootprintMainLifecycle !== undefined ||
+            currentPcbWorkerStartupLifecycle !== undefined && currentPcbWorkerStartupLifecycle !== ownerReference.current ||
+            mainOriginal !== undefined || startupOriginal !== undefined || startupCalls !== 0) {
+          throw new Error("Combined historical relinquishment requires a fresh facade with no application-owner allocation or reservation.");
+        }
+      };
+      const assertOtherLaunchesSettled = async (): Promise<void> => {
+        assertFreshNoOwnedAllocations(); await engine.assertDiagnosticLaunchOtherOperationsSettled(); assertFreshNoOwnedAllocations();
+      };
+      assertFreshNoOwnedAllocations();
+      const owner = new CurrentFootprintCombinedUnknownAbandonment({ pluginRoot, assetsRoot: assetsRoot ?? "",
+        ...(wslDistribution === undefined ? {} : { wslDistribution }), powershellSha256: CURRENT_PCB_DIAGNOSTIC_PROFILE.powershell.sha256,
+        powershellBytes: CURRENT_PCB_DIAGNOSTIC_PROFILE.powershell.bytes, assertLocalAllowed: assertLocal,
+        assertAllowed: assertOtherLaunchesSettled, assertOtherLaunchesSettled, assertFreshNoOwnedAllocations });
+      ownerReference.current = owner;
+      // oxlint-disable-next-line typescript/unbound-method -- Dispatch supplies this exact retained historical coordinator as receiver.
+      combinedHistoricalOriginal = { owner, run: owner.run, reserved: owner.hasActiveReservation, assertLocal };
+    }
+    const retained = combinedHistoricalOriginal; retained.assertLocal();
+    return bridgeGate.run(async () => {
+      retained.assertLocal();
+      if (combinedHistoricalOriginal !== retained) { throw new Error("Combined historical relinquishment owner changed."); }
+      currentPcbWorkerStartupLifecycle = retained.owner;
+      try { const result = await retained.run.call(retained.owner, request); retained.assertLocal(); return { result }; }
+      finally {
+        if (currentPcbWorkerStartupLifecycle === retained.owner && !retained.reserved.call(retained.owner)) { currentPcbWorkerStartupLifecycle = undefined; }
+      }
+    });
+  };
   const runStartup = (request: CurrentPcbWorkerStartupValidationRequest | CurrentPcb209WorkerStartupValidationRequest | CurrentPcb209EmptyStartupValidationRequest | CurrentPcb209RatlineStartupValidationRequest | CurrentPcb209RatlineContinuationValidationRequest | CurrentFootprintCopyPreparationValidationRequest | CurrentFootprintCopyRoutePreparationValidationRequest | CurrentFootprintCombinedValidationRequest, emptyPurpose = false, ratlinePurpose = false, continuationPurpose = false, footprintPurpose = false, routePurpose = false, combinedPurpose = false): Promise<{ result: Record<string, unknown> }> => {
+    if (combinedHistoricalOriginal !== undefined && currentPcbWorkerStartupLifecycle === combinedHistoricalOriginal.owner) {
+      throw new Error("Combined historical relinquishment reserves this facade.");
+    }
     let StartupLifecycle: typeof CurrentPcbWorkerStartupLifecycle | typeof CurrentPcb209WorkerStartupLifecycle | typeof CurrentFootprintCopyPreparationLifecycle | typeof CurrentFootprintCopyRoutePreparationLifecycle | typeof CurrentFootprintCombinedLifecycle | typeof CurrentPcb209EmptyStartupLifecycle | typeof CurrentPcb209RatlineStartupLifecycle | typeof CurrentPcb209RatlineContinuationLifecycle = diagnostic209 ? CurrentPcb209WorkerStartupLifecycle : CurrentPcbWorkerStartupLifecycle;
     if (Number(emptyPurpose) + Number(ratlinePurpose) + Number(continuationPurpose) + Number(footprintPurpose) + Number(routePurpose) + Number(combinedPurpose) > 1) { throw new Error("A launch has one fixed startup purpose."); }
     if (combinedPurpose) {
@@ -2667,6 +2738,14 @@ if (facadeToolRegistered(facadeMode, "easyeda_control_pcb_diagnostic_validation"
       }
       startupOriginal = undefined;
     }
+    if (combinedPurpose && request.action === "launch" && startupOriginal?.combinedPurpose === true) {
+      startupOriginal.assertLocal();
+      // Only a completed original allocation with its durable terminal and
+      // Released lease can yield to a new combined launch. Queued calls and
+      // Inspect retain the original coordinator; journals keep old IDs consumed.
+      if (startupCalls === 0 && !startupOriginal.reserved.call(startupOriginal.owner) &&
+          startupOriginal.attempted?.call(startupOriginal.owner) === true) { startupOriginal = undefined; }
+    }
     if (startupOriginal === undefined) {
       const environment = process.env;
       const assetsRoot = environment["EASYEDA_ASSETS_ROOT"], wslDistribution = environment["WSL_DISTRO_NAME"];
@@ -2684,7 +2763,7 @@ if (facadeToolRegistered(facadeMode, "easyeda_control_pcb_diagnostic_validation"
             "prepareWorkerStartupFootprintCopy", "prepareStartupFootprintCopy"] : []),
           ...(footprintPurpose ? ["prepareWorkerStartupFootprintBindings", "prepareStartupFootprintCopyBindings", "observeWorkerStartupFootprintUi", "observeStartupFootprintCopyUi", "prepareWorkerStartupFootprintDependencies", "prepareStartupFootprintCopyDependencies", "observeWorkerStartupFootprintManagerRoute", "observeStartupFootprintCopyManagerRoute"] : []),
           ...((routePurpose || combinedPurpose) ? ["observeWorkerStartupFootprintRoute", "observeStartupFootprintRoute"] : []),
-          ...(combinedPurpose ? ["runMainAction", "runCombinedAbort", "requireCombinedMainPublished", "assertCombinedNormal"] : []),
+          ...(combinedPurpose ? ["runMainAction", "runCombinedAbort", "requireCombinedMainPublished", "assertCombinedNormal", "hasAttemptedNativeOwnerAllocation"] : []),
           ...(emptyPurpose ? ["observeWorkerStartupEmpty", "observeStartupEmpty", "prepareWorkerStartupEmpty", "prepareStartupEmpty"] : []),
           ...(ratlinePurpose ? ["observeWorkerStartupRatline", "observeStartupRatline"] : []),
           ...(continuationPurpose ? ["observeWorkerStartupRatlineContinuation", "observeStartupRatlineContinuation"] : [])]
@@ -2704,6 +2783,7 @@ if (facadeToolRegistered(facadeMode, "easyeda_control_pcb_diagnostic_validation"
               startupOriginal.owner.observeWorkerStartupActor !== startupOriginal.actor ||
               startupOriginal.owner.observeWorkerStartupChannel !== startupOriginal.channel ||
               startupOriginal.owner.hasActiveReservation !== startupOriginal.reserved ||
+              startupOriginal.combinedPurpose && startupOriginal.owner.hasAttemptedNativeOwnerAllocation !== startupOriginal.attempted ||
               (startupOriginal.owner instanceof CurrentFootprintCopyRoutePreparationLifecycle || startupOriginal.combinedPurpose && startupOriginal.owner instanceof CurrentFootprintCombinedLifecycle) && startupOriginal.owner.observeWorkerStartupFootprintRoute !== startupOriginal.footprintRoute ||
               startupOriginal.owner instanceof CurrentFootprintCopyPreparationLifecycle && startupOriginal.owner.prepareWorkerStartupFootprintBindings !== startupOriginal.footprintBindings ||
               startupOriginal.owner instanceof CurrentFootprintCopyPreparationLifecycle && startupOriginal.owner.observeWorkerStartupFootprintUi !== startupOriginal.footprintUi ||
@@ -2742,6 +2822,8 @@ if (facadeToolRegistered(facadeMode, "easyeda_control_pcb_diagnostic_validation"
         footprintPreparation: (owner instanceof CurrentPcb209WorkerStartupLifecycle || owner instanceof CurrentFootprintCopyPreparationLifecycle) ? owner.prepareWorkerStartupFootprintCopy : undefined,
         // oxlint-disable-next-line typescript/unbound-method -- The purpose-switch guard invokes this retained private-field method only with the original lifecycle receiver.
         reserved: owner.hasActiveReservation,
+        // oxlint-disable-next-line typescript/unbound-method -- Only the combined replacement guard calls this retained monotonic method with its original receiver.
+        attempted: combinedPurpose ? owner.hasAttemptedNativeOwnerAllocation : undefined,
         // oxlint-disable-next-line typescript/unbound-method -- Retain the exact original method; the sole dispatch supplies its retained private-field receiver.
         empty: owner instanceof CurrentPcb209EmptyStartupLifecycle ? owner.observeWorkerStartupEmpty : undefined,
         // oxlint-disable-next-line typescript/unbound-method -- Retain the exact original method and invoke only with its retained lifecycle receiver.
@@ -2826,13 +2908,15 @@ if (facadeToolRegistered(facadeMode, "easyeda_control_pcb_diagnostic_validation"
     const startupSchema = z.object({ request: z.unknown().pipe(currentPcb209WorkerStartupToolRequestSchema) }).strict();
     server.registerTool("easyeda_control_pcb209_worker_startup", {
       title: "Capture a disposable EasyEDA 3.2.209 project worker startup",
-      description: "Disposable EasyEDA 3.2.209 startup validation with eight separate launch purposes. The footprint-combined wrapper seals an original main/renderer owner before launch, requires published main construction before disposable project capture, and supports the existing exact worker/actor/route observations. It enables no request collector, copy/delete or Save; query footprint-combined/-validate first. Its confirmed abort-generation targets only its original Job and blocks subsequent normal work while retaining termination/release. The footprint-main wrapper launches an original main inspector with owned stderr and a root/Job/TCP-bound connection, captures fixed original protocol registration owners and offers explicit once-only termination of that diagnostic Job. Query footprint-main/-validate first. It opens no project and offers no writer or Save. The footprint-copy-route-preparation wrapper uses its own footprint-route-* launch to qualify original Worker identity and callback/destination routes without copy, transaction-clock arming or Save; query footprint-copy-route-preparation/-validate first. The footprint-copy-preparation wrapper uses a separately bounded original launch to retain source, producer, actor, 60 dependency functions and initialized UI/manager route bindings; query footprint-copy-preparation/-validate first. It grants no copy or Save authority. Query the matching offline catalog and argument validator first: pcb209-worker-startup/-validate, pcb209-empty-baseline/-validate, pcb209-ratline-held-import/-validate, or pcb209-ratline-continuation/-validate. Each purpose launches its own original owner; an existing owner cannot be upgraded. Launch, qualify browser/frame/UI source, then capture-project once against the exact disposable checkpoint. The default pcb209-startup-* purpose can subsequently observe current assignments, channel relations, a sequential UI/worker actor-clock bracket and original footprint-manager state. The footprint-state stage reads its captured user/client/ticket. After its published result, observe-footprint-source reconstructs one checkpoint-member footprint from original live consistency entries and existing native Cache chunks, checking every keyed record and generated header against the complete checkpoint while two matching source samples retain observed native order. It is a bounded native equivalent, not a GET_STR dispatch; a cache miss refuses without fetch, parser replay, cache writes or network fallback. Its source-only profile accepts ordinary record families, repeated fragments and tombstones, needs 65 remaining normal requests and grants no copy/delete or persistence authority. After the source result, prepare-footprint-copy journals original-owned plan/argument hashes using eight remaining normal requests. Preparation cannot upgrade launch purpose or enable native create, Save or saved verification. The empty-baseline wrapper uses pcb209-empty-* and joins fixed common data with the original completed SQL checkpoint, bracketed by empty raw-manager samples; populated targets refuse. The ratline-held-import wrapper uses pcb209-ratline-* with the original cumulative budget and complete source leases. After capture-project, observe-ratline-held-import journals intent before the sole PCB navigation, qualifies 29 PCB source stages, captures original construction and holds the first ratline child at its seventh qualified source import. It stops before worker continuation, callback return and full startup or baseline completion. The ratline-continuation wrapper uses pcb209-continuation-* and a separately sealed native budget. After its durable intent, known physical PCB records in the original checkpoint refuse before PCB navigation; passing this negative filter proves no empty live baseline. Native queues must remain exactly empty, including no serialized [] job. After capture-project, observe-ratline-continuation qualifies the original PCB, first worker and subordinate sources, continues their fixed imports and observes original PCB/worker capture checkpoints and callback returnsites. Callback completion, publication completion and native Worker-object/target identity remain unproved. These sequential observations grant no native channel-peer, server-clock, contained-destination, writer or durability proof. Explicit debugger-pause acceptance is required. Launch/open may restore tabs, migrate, replay caches, use the network and automatically persist files. Every stage is consumed once. Inspect after uncertainty and retain the original owner through abort, normal close, original root/Job termination, helper release and record settlement. No caller JavaScript, CDP commands, explicit Save, CAD writer, historical-owner adoption, navigation retry or Save/Discard choice. Forced termination is limited to the explicitly confirmed original footprint-main or footprint-combined Job.",
+      description: "Disposable EasyEDA 3.2.209 startup validation with eight separate launch purposes. The footprint-combined wrapper seals an original main/renderer owner before launch, requires published main construction before disposable project capture, and supports the existing exact worker/actor/route observations. A private challenge-matched helper-ready packet precedes launch input. Original-factory closed/zero-input failure proof is distinct from native-resource release. Its separate historical abandon-unknown-launch action requires a fresh facade before any owner allocation, exact reviewed223950 intent-only bytes and bounded process-absence checks; it preserves an unknown outcome and grants no termination or design proof. It enables no request collector, copy/delete or Save; query footprint-combined/-validate first. Its confirmed abort-generation targets only its original Job and blocks subsequent normal work while retaining termination/release. The footprint-main wrapper launches an original main inspector with owned stderr and a root/Job/TCP-bound connection, captures fixed original protocol registration owners and offers explicit once-only termination of that diagnostic Job. Query footprint-main/-validate first. It opens no project and offers no writer or Save. The footprint-copy-route-preparation wrapper uses its own footprint-route-* launch to qualify original Worker identity and callback/destination routes without copy, transaction-clock arming or Save; query footprint-copy-route-preparation/-validate first. The footprint-copy-preparation wrapper uses a separately bounded original launch to retain source, producer, actor, 60 dependency functions and initialized UI/manager route bindings; query footprint-copy-preparation/-validate first. It grants no copy or Save authority. Query the matching offline catalog and argument validator first: pcb209-worker-startup/-validate, pcb209-empty-baseline/-validate, pcb209-ratline-held-import/-validate, or pcb209-ratline-continuation/-validate. Each purpose launches its own original owner; an existing owner cannot be upgraded. Launch, qualify browser/frame/UI source, then capture-project once against the exact disposable checkpoint. The default pcb209-startup-* purpose can subsequently observe current assignments, channel relations, a sequential UI/worker actor-clock bracket and original footprint-manager state. The footprint-state stage reads its captured user/client/ticket. After its published result, observe-footprint-source reconstructs one checkpoint-member footprint from original live consistency entries and existing native Cache chunks, checking every keyed record and generated header against the complete checkpoint while two matching source samples retain observed native order. It is a bounded native equivalent, not a GET_STR dispatch; a cache miss refuses without fetch, parser replay, cache writes or network fallback. Its source-only profile accepts ordinary record families, repeated fragments and tombstones, needs 65 remaining normal requests and grants no copy/delete or persistence authority. After the source result, prepare-footprint-copy journals original-owned plan/argument hashes using eight remaining normal requests. Preparation cannot upgrade launch purpose or enable native create, Save or saved verification. The empty-baseline wrapper uses pcb209-empty-* and joins fixed common data with the original completed SQL checkpoint, bracketed by empty raw-manager samples; populated targets refuse. The ratline-held-import wrapper uses pcb209-ratline-* with the original cumulative budget and complete source leases. After capture-project, observe-ratline-held-import journals intent before the sole PCB navigation, qualifies 29 PCB source stages, captures original construction and holds the first ratline child at its seventh qualified source import. It stops before worker continuation, callback return and full startup or baseline completion. The ratline-continuation wrapper uses pcb209-continuation-* and a separately sealed native budget. After its durable intent, known physical PCB records in the original checkpoint refuse before PCB navigation; passing this negative filter proves no empty live baseline. Native queues must remain exactly empty, including no serialized [] job. After capture-project, observe-ratline-continuation qualifies the original PCB, first worker and subordinate sources, continues their fixed imports and observes original PCB/worker capture checkpoints and callback returnsites. Callback completion, publication completion and native Worker-object/target identity remain unproved. These sequential observations grant no native channel-peer, server-clock, contained-destination, writer or durability proof. Explicit debugger-pause acceptance is required. Launch/open may restore tabs, migrate, replay caches, use the network and automatically persist files. Every stage is consumed once. Inspect after uncertainty and retain the original owner through abort, normal close, original root/Job termination, helper release and record settlement. No caller JavaScript, CDP commands, explicit Save, CAD writer, historical-owner adoption, navigation retry or Save/Discard choice. Forced termination is limited to the explicitly confirmed original footprint-main or footprint-combined Job.",
       inputSchema: startupSchema, outputSchema: currentSymbolOperationToolOutputSchema,
-      annotations: { readOnlyHint: false, destructiveHint: false, idempotentHint: false, openWorldHint: true },
+      annotations: { readOnlyHint: false, destructiveHint: true, idempotentHint: false, openWorldHint: true },
     }, guarded((input: z.infer<typeof startupSchema>) => {
       const request = startupSchema.parse(input).request;
       if (request.action === "footprint-main") { return runMain(request.request); }
-      if (request.action === "footprint-combined") { return runStartup(request.request, false, false, false, false, false, true); }
+      if (request.action === "footprint-combined") {
+        return request.request.action === "abandon-unknown-launch" ? runCombinedHistorical(request.request) : runStartup(request.request, false, false, false, false, false, true);
+      }
       if (request.action === "footprint-copy-route-preparation") { return runStartup(request.request, false, false, false, false, true); }
       if (request.action === "footprint-copy-preparation") { return runStartup(request.request, false, false, false, true); }
       if (request.action === "ratline-held-import") { return runStartup(request.request, false, true); }
@@ -2921,7 +3005,7 @@ registerFacadeTool(
       const diagnosticReserved = CurrentPcbDiagnosticLifecycle.prototype.hasActiveReservation;
       // oxlint-disable-next-line typescript/unbound-method -- This monotonic observer distinguishes never-allocated owners from completed or failed allocations.
       const diagnosticAllocated = CurrentPcbDiagnosticLifecycle.prototype.hasAttemptedNativeOwnerAllocation;
-      let releaseDiagnostics: readonly (CurrentPcbDiagnosticLifecycle | CurrentPcbStringPrecreateLifecycle | CurrentPcbWorkerStartupLifecycle | undefined)[] | undefined;
+      let releaseDiagnostics: readonly (CurrentPcbDiagnosticLifecycle | CurrentPcbStringPrecreateLifecycle | CurrentPcbWorkerStartupLifecycle | CurrentFootprintCombinedUnknownAbandonment | undefined)[] | undefined;
       const assertLocalAllowed = (): void => {
         if (closedSymbolIndexReservation !== undefined || scheduledShutdown !== undefined ||
             windowsRuntime !== ordinaryLaunchRuntime || process.env["EASYEDA_ASSETS_ROOT"] !== assetsRoot) {
