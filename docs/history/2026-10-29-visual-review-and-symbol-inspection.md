@@ -167,3 +167,15 @@ unchanged1MiB cap, SHA
 `8b8cef73032950d2804efd6dea2be3ecd6400d1458bc9c4942394359ae8ab469`.
 Both independent helper consumers match that pin. Final source, bundle and
 helper are frozen before CI. The machine profile remains byte-exact.
+
+## First CI correction
+
+Candidate `8e0de6a648d29bed213ab8b49196f5edccbf5880` passed Linux build checks.
+Windows40893434788 refused its suspended-image smoke before running the child
+probe. The independent launch-smoke consumer had the new helper hash but still
+required the old1,026,532-byte length. Its exact byte pin is corrected to
+1,047,511. The unchanged1MiB cap and exact hash remain enforced. A consumer
+consistency regression now checks both declarations together. No helper code,
+facade runtime source or bundled executable changed for this correction.
+The original Windows failure and superseded Linux run remain retained; final
+CI must cover the corrected commit.
