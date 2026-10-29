@@ -146,6 +146,19 @@ published commit. The official CLI exposes no separate plugin validator.
 GitHub publication, exact-commit CI and official Git-marketplace installation are
 pending at this candidate snapshot. The old installed facade remains untouched.
 
+### Initial CI assertion correction
+
+Initial candidate commit `1df6c08d9e2d6227c63ded902d7b6d588b93a751` passed
+Windows40800678350 and the build/bridge job in Linux40800678375. Facade shard1
+failed an older registration assertion expecting `destructiveHint:false` for
+the startup tool. The tool now advertises its existing confirmed Job-abort
+capability as destructive. Two older registration fixtures retained the obsolete
+annotation; shard5 subsequently reported that second fixture. Both now require
+the correct startup annotation, while the separate
+opening tool retains its existing expectation. No runtime, bundle, manifest,
+external pin or execution guard changed for this test correction. The failed
+run remains evidence and does not satisfy final full-suite acceptance.
+
 ## Remaining work
 
 Validate the new historical relinquishment action first in a fresh facade,

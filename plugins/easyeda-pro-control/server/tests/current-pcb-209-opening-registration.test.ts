@@ -73,7 +73,8 @@ void test("209 public opening and startup callbacks select original lifecycles a
       annotations: { readOnlyHint: boolean; destructiveHint: boolean; idempotentHint: boolean; openWorldHint: boolean } }, handler: Invoke): void => {
       assert.ok(["easyeda_control_pcb209_opening", "easyeda_control_pcb209_worker_startup"].includes(name));
       assert.equal(registrations.has(name), false); registrations.set(name, { inputSchema: configuration.inputSchema, invoke: handler });
-      assert.equal(configuration.annotations.readOnlyHint, false); assert.equal(configuration.annotations.destructiveHint, false);
+      assert.equal(configuration.annotations.readOnlyHint, false);
+      assert.equal(configuration.annotations.destructiveHint, name === "easyeda_control_pcb209_worker_startup");
       assert.equal(configuration.annotations.idempotentHint, false); assert.equal(configuration.annotations.openWorldHint, true);
     } },
   });
