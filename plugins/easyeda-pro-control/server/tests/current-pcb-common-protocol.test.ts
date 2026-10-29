@@ -100,7 +100,7 @@ void test("common native adapter embeds exact historical and packet programs and
     CommonPreferenceSeedFunction: CURRENT_PCB_COMMON_PACKET_SEEDS.preference, CommonPacketAdvanceFunction: CURRENT_PCB_COMMON_PACKET_ADVANCE,
     CommonPacketReadFunction: CURRENT_PCB_COMMON_PACKET_READ, CommonPacketResultFunction: CURRENT_PCB_COMMON_PACKET_RESULT })) {
     const encoded = new RegExp(`const string ${name}=@"((?:""|[^"])*)";`, "u").exec(native)?.[1];
-    const actual = ["CommonPresentationFunction", "CommonPreferenceFunction", "CommonRulesFunction", "CommonPreferenceSeedFunction", "CommonPresentationSeedFunction", "CommonRulesSeedFunction", "CommonMetadataFunction"].includes(name)
+    const actual = ["CommonAssetsFunction", "CommonPacketAdvanceFunction", "CommonPacketResultFunction", "CommonPresentationFunction", "CommonPreferenceFunction", "CommonRulesFunction", "CommonPreferenceSeedFunction", "CommonPresentationSeedFunction", "CommonRulesSeedFunction", "CommonMetadataFunction"].includes(name)
       ? readPackedNativeProgram(native, name) : encoded?.replaceAll('""', '"');
     assert.equal(actual, source, name);
     assert.ok(native.includes(createHash("sha256").update(source).digest("hex")));

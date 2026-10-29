@@ -600,17 +600,17 @@ objects and their locations, then compares identities across five method scopes.
 Its construction-owner integration consumes up to39 requests. The reuse check
 uses up to six requests to reprove owner, state and methods, without resampling
 lexical values. The separate `footprint-copy-preparation` startup purpose mounts these checks
-with actor/SQL preparation, UI and manager-route observation, and 60 dependency
+with actor/SQL preparation, UI and manager-route observation, and 61 dependency
 function qualifications and the original native channel name. Seven qualifications
 cover the original `bb` wrapper class and six methods; four native Cache functions
-are checked separately. Its 565 normal requests, 34 cleanup requests and 18
+are checked separately. Its 566 normal requests, 34 cleanup requests and 18
 state samples come from the complete preparation sequence; older purposes keep
 their existing limits. The distinct execution purpose captures the original
 parent/worker peer and registered parser/upload relationships. Its four original
 cache-open pauses retain the native CacheStorage receiver, exact namespace
 arguments and resulting Cache objects through project assignment. Wrapper labels
 and native class metadata alone do not establish namespace provenance. This
-purpose reserves 780 normal and 45 cleanup requests, 825 total; complete native
+purpose reserves 784 normal and 45 cleanup requests, 829 total; complete native
 writer integration and connected acceptance remain pending. A private saved owner
 uses its separate read-only purpose and 319 normal/34 cleanup request budget,
 353 total, with original queue exclusion, constructor and saved-source captures.

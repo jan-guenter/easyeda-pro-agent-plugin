@@ -1,5 +1,5 @@
-/** Separate fixed writer grammar. No preparation or startup route imports this
- * selector, and recognizing its data never issues execution authority. */
+/** Separate fixed writer grammar for the private unmounted create-clock
+ * composition. Recognizing its data never issues execution authority. */
 import { z } from "zod";
 import { types } from "node:util";
 import { CURRENT_FOOTPRINT_COPY_NATIVE_CREATE_CALL } from "./current-footprint-copy-create-bindings.ts";
@@ -11,7 +11,7 @@ import { freezeDeep } from "./sqlite-inventory-core.ts";
 
 export const CURRENT_FOOTPRINT_COPY_NATIVE_CREATE_LIMITS = Object.freeze({ argumentsBytes: 65_536,
   commandBytes: 81_920, serializedResultBytes: 2_097_152, responseFrameBytes: 4_198_400,
-  createRequests: 1, explicitSaveRequests: 0, mounted: false });
+  helperEnvelopeBytes: 32_768, createRequests: 1, explicitSaveRequests: 0, mounted: false });
 const token = z.string().regex(/^[A-Za-z\d_.:-]{1,256}(?![\s\S])/u);
 const project = z.string().regex(/^(?:[a-f\d]{32}|[a-f\d]{64})(?![\s\S])/u);
 const text = z.string().max(65_536).refine(value => value.isWellFormed());
@@ -19,7 +19,7 @@ const argument = z.object({ uuid: z.string().regex(/^(?:[a-f\d]{16}|[a-f\d]{32})
   isProject: z.literal(true), docType: z.literal(4), title: text.min(1).max(512), display_title: text.min(1).max(512),
   description: text, custom_tags: text, source: z.literal(""), version: z.literal("") }).strict();
 const remote = z.object({ objectId: token }).strict();
-const argumentValue = z.object({ value: argument }).strict(), projectValue = z.object({ value: project }).strict();
+const argumentValue = z.object({ value: text }).strict(), projectValue = z.object({ value: project }).strict();
 const schema = z.object({ method: z.literal("Runtime.callFunctionOn"), sessionId: token.max(128), params: z.object({
   objectId: token, functionDeclaration: z.literal(CURRENT_FOOTPRINT_COPY_NATIVE_CREATE_CALL.program),
   arguments: z.tuple([remote, remote, remote, remote, remote, projectValue, argumentValue]),
@@ -42,12 +42,12 @@ export function currentFootprintCopyNativeCreateWire(serialized: unknown, id: nu
   const parsed: unknown = JSON.parse(serialized);
   const command = schema.parse(parsed);
   if (JSON.stringify(parsed) !== serialized) { throw new Error("FOOTPRINT_COPY_NATIVE_CREATE_SERIALIZATION"); }
-  const args = command.params.arguments, value = args[6].value;
+  const args = command.params.arguments, value = argument.parse(JSON.parse(args[6].value));
   const tags: unknown = JSON.parse(value.custom_tags);
   const tagSchema = z.array(z.string().max(512).refine(tag => tag.isWellFormed())).max(256);
   tagSchema.parse(tags);
   const createArgumentJson = JSON.stringify(value);
-  if (value.path !== args[5].value || value.display_title !== value.title || JSON.stringify(tags) !== value.custom_tags ||
+  if (createArgumentJson !== args[6].value || value.path !== args[5].value || value.display_title !== value.title || JSON.stringify(tags) !== value.custom_tags ||
     Buffer.byteLength(createArgumentJson) > CURRENT_FOOTPRINT_COPY_NATIVE_CREATE_LIMITS.argumentsBytes) {
     throw new Error("FOOTPRINT_COPY_NATIVE_CREATE_ARGUMENTS");
   }
@@ -56,6 +56,15 @@ export function currentFootprintCopyNativeCreateWire(serialized: unknown, id: nu
   for (const [index, entry] of args.slice(0, 5).entries()) {
     if (!("objectId" in entry)) { throw new Error("FOOTPRINT_COPY_NATIVE_CREATE_HANDLES"); }
     request[`arg${String(index)}ObjectId`] = entry.objectId;
+  }
+  // Reserve the complete escaped flat helper input as well as the argument.
+  // Original bindings cannot exceed these maximum-width values.
+  // Include LF although the helper strips it before its byte check.
+  const envelope = `${JSON.stringify({ helperInstance: "f".repeat(32), jobId: "f".repeat(32), rootPid: 4_294_967_295,
+    rootCreated: "9".repeat(20), ...request, id: "f".repeat(32) })}\n`;
+  if (envelope.length >= CURRENT_FOOTPRINT_COPY_NATIVE_CREATE_LIMITS.helperEnvelopeBytes ||
+    Buffer.byteLength(envelope) > CURRENT_FOOTPRINT_COPY_NATIVE_CREATE_LIMITS.helperEnvelopeBytes) {
+    throw new Error("FOOTPRINT_COPY_NATIVE_CREATE_HELPER_ENVELOPE");
   }
   return freezeDeep({ command: { ...command, id }, request });
 }
@@ -68,7 +77,7 @@ export function currentFootprintCopyNativeCreateCommand(sessionId: string, proje
   const args = currentFootprintCopyV2NativeCreateArguments(plan);
   const command = { method: "Runtime.callFunctionOn", sessionId, params: { objectId: projectObjectId,
     functionDeclaration: CURRENT_FOOTPRINT_COPY_NATIVE_CREATE_CALL.program,
-    arguments: [...handles.map(objectId => ({ objectId })), { value: args.expectedProjectUuid }, { value: args.createArgument }],
+    arguments: [...handles.map(objectId => ({ objectId })), { value: args.expectedProjectUuid }, { value: JSON.stringify(args.createArgument) }],
     objectGroup: CURRENT_PCB_WORKER_CONSTRUCTION_SOURCE.group, silent: true, returnByValue: true, generatePreview: false,
     throwOnSideEffect: false, awaitPromise: true, userGesture: false } };
   const wire = currentFootprintCopyNativeCreateWire(JSON.stringify(command), 1);

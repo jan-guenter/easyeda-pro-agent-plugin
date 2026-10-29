@@ -49,7 +49,7 @@ export function clockRpcFixture(): Readonly<{
 class wu{constructor(e,t){this.callback=e,this.unsafe=t,this.isRunning=!0}cancel(){this.callback=null,this.isRunning=!1}running(){return this.isRunning}async execute(e){try{e=this.unsafe?e:op(e),this.callback(e)}catch(t){console.error(t)}}}
 const bus=new JP();Object.assign(bus,{uuid:${JSON.stringify(workerUuid)},rpcTicket:0,pushCnt:0,bc:new BroadcastChannel('/tab_1/notify'),pushed:{},subscribed:{}});
 const project={},manager={user:undefined,projectManager:project};Object.assign(project,{footprint:manager,wsBus:bus});globalThis.PROJECT=project;globalThis._TAB_ID_='tab_1';globalThis['/tab_1/notify']=bus;
-async function qe(){}const lexicals=Array(10).fill(null);lexicals[2]=qe;const dependencies=Array(69).fill(null);dependencies[60]=bus;
+async function qe(){}const lexicals=Array(10).fill(null);lexicals[2]=qe;const dependencies=Array(70).fill(null);dependencies[61]=bus;
 dependencies[${String(dependencyIndexes["Mb.rpcCall"])}]=Mb.prototype.rpcCall;dependencies[${String(dependencyIndexes["Mb.subscribeOnce"])}]=Mb.prototype.subscribeOnce;dependencies[${String(dependencyIndexes["KP.push"])}]=KP.prototype.push;
 globalThis.refs={bus,project,manager,qe,lexicals,dependencies,createPending:()=>{let s=new wu(null,true),t=r=>{globalThis.resolved=r.result;};s.callback=r=>{s.cancel(),t(r)};return s;}};`, worker);
   runInContext(`let Jd=5;let fixedNow=${String(baseTime - 5)};const actualNow=function now(){return fixedNow;};Date.now=actualNow;nativeText.set(actualNow,'function now() { [native code] }');

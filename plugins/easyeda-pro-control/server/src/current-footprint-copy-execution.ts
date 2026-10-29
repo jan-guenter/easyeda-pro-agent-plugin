@@ -19,7 +19,7 @@ export const currentFootprintCopyExecutionAdvanceSchema = z.object({
 export type CurrentFootprintCopyExecutionGeneration = Readonly<z.infer<typeof currentFootprintCopyExecutionGenerationSchema>>;
 export type CurrentFootprintCopyExecutionPhase = typeof CURRENT_FOOTPRINT_COPY_EXECUTION_PHASES[number];
 /** Coordinator limits only. They cannot reserve a native helper or expand the
- *565-normal-request preparation purpose. Native execution needs its own full profile. */
+ *566-normal-request preparation purpose. Native execution needs its own full profile. */
 export const CURRENT_FOOTPRINT_COPY_EXECUTION_LIMITS = Object.freeze({
   generations: 2, createAttempts: 1, explicitSaveAttempts: 0, normalCloseAttemptsPerGeneration: 1,
   terminationObservationsPerGeneration: 240, journalRecords: 32, milliseconds: 3_600_000,

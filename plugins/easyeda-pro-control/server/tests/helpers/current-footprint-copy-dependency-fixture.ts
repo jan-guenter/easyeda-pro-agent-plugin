@@ -57,4 +57,5 @@ export const CURRENT_FOOTPRINT_COPY_DEPENDENCY_FIXTURE = [
   "onEnd(){}",
   "getFlowParse(t,s,r,i=!0,n,a,o){var f;let c=[],l={uuid:i&&t.snapshot||t.uuid,num:s,editHead:(f=t==null?void 0:t.editHead)==null?void 0:f[s],dNum:n};t.editHead||(t.editHead=[]),a&&(t.editHead[s]=a);let u=r?(g,y,b)=>{let E=Uo(l.uuid,s,g,y);o&&o(E,b);let T=this.cache.put(E,new Response(b));this.cachePromise.add(T),T.then(()=>this.cachePromise.delete(T))}:void 0,h=r?g=>{!a&&(t.editHead[s]=g)}:void 0,p=this.consistencyManager.flowParseFull({cache:u,history:l,onEditHead:h}),d=g=>{r&&c.push(g),p.update(g)},m=()=>{if(p.end(),r){let g=p.getDocIds();t.snapshot&&i?(t.snapDocs||(t.snapDocs=[]),p.docMap&&(t.snapDocs[s]=p.docMap),t.snapDocIds||(t.snapDocIds=[]),g.length&&(t.snapDocIds[s]=g)):(t.docs||(t.docs=[]),p.docMap&&(t.docs[s]=p.docMap),t.docIds||(t.docIds=[]),g.length&&(t.docIds[s]=g))}};return{start:p.start,end:m,update:d}}",
   ...CURRENT_FOOTPRINT_COPY_BACKEND_CACHE_FIXTURE,
+  "parseFull(e,t,s,r){let i=[];if(r)for(let n of r)this.orderTree.has(n)&&(i.push(n),this.orderTree.delete(n));super.parseFull(e,t,s),i.length&&this.reCalcOrderTree(i)}",
 ] as const;

@@ -58,4 +58,7 @@ export const CURRENT_FOOTPRINT_COPY_DEPENDENCY_PROFILES = freezeDeep([
   {"key":"Vc.onEnd","name":"onEnd","kind":"method","async":false,"arity":0,"lineNumber":4,"columnNumber":3218,"bytes":9,"sha256":"8a50e13f478e299fcb4ee92f5e56fe26a2a669480d6f75b16a293c86fa7de8e6","parent":null},
   {"key":"Gd.getFlowParse","name":"getFlowParse","kind":"method","async":false,"arity":3,"lineNumber":110,"columnNumber":6127,"bytes":828,"sha256":"73b0e0541118ecd7aac7e62fba245364f69d1c77c36cecb2b76dee1e1ad4db97","parent":null},
   ...CURRENT_FOOTPRINT_COPY_BACKEND_CACHE_PROFILES,
+  // Append the native receiver override so existing producer/cache indices stay
+  // Stable. Its super call still requires the separately qualified zy method.
+  {"key":"ja.parseFull","name":"parseFull","kind":"method","async":false,"arity":4,"lineNumber":9,"columnNumber":7641,"bytes":165,"sha256":"25704701f7723aa391b5ae1ca283a14fbd8ddfb622365a9446cdca4b78b269ba","parent":null},
 ] as const);

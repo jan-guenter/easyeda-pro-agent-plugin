@@ -85,7 +85,7 @@ void test("native opening and model programs are byte-exact fixed commands, not 
     ModelDiagnosticConstructorsFunction: CURRENT_PCB_CONSTRUCTOR_BUNDLE_FUNCTIONS.diagnostic,
     ModelPrecreateConstructorsFunction: CURRENT_PCB_CONSTRUCTOR_BUNDLE_FUNCTIONS.precreate })) {
     const encoded = new RegExp(`const string ${name}=@"((?:""|[^"])*)";`, "u").exec(source)?.[1];
-    const actual = name === "OpeningFunction" || name === "PcbOpeningFunction" || name === "ModelStateFunction" || name === "ModelPendingFunction" || name === "ModelRootInventoryFunction"
+    const actual = name === "OpeningFunction" || name === "PcbOpeningFunction" || name === "ModelStateFunction" || name === "ModelPendingFunction" || name === "ModelRootInventoryFunction" || name === "ModelDiagnosticConstructorsFunction" || name === "ModelPrecreateConstructorsFunction"
       ? readPackedNativeProgram(source, name) : encoded?.replaceAll('""', '"');
     assert.equal(actual, expected, name);
     assert.ok(source.includes(createHash("sha256").update(expected).digest("hex")), name);

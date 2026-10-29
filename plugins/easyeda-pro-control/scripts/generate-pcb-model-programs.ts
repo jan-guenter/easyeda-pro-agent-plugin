@@ -1,15 +1,18 @@
+/* oxlint-disable import/max-dependencies -- This deterministic generator preserves the exact bytes of independent fixed native programs. */
 import { CURRENT_PCB_DIAGNOSTIC_MODEL_STATE_FUNCTION, CURRENT_PCB_DIAGNOSTIC_MODEL_STATE_V2_FUNCTION } from "../server/src/current-pcb-diagnostic-model-program.ts";
 import { CURRENT_PCB_DIAGNOSTIC_PENDING_STATE_FUNCTION, CURRENT_PCB_DIAGNOSTIC_PENDING_STATE_V2_FUNCTION } from "../server/src/current-pcb-diagnostic-pending-program.ts";
 import { CURRENT_PCB_DIAGNOSTIC_ROOT_INVENTORY_FUNCTION } from "../server/src/current-pcb-diagnostic-root-inventory.ts";
 import { CURRENT_PCB_STRING_PRODUCER_MARKERS_V2_FUNCTION } from "../server/src/current-pcb-string-producer-markers.ts";
 import { CURRENT_PCB_COMMON_PREFERENCE_FUNCTION, CURRENT_PCB_COMMON_PRESENTATION_FUNCTION, CURRENT_PCB_COMMON_RULES_FUNCTION } from "../server/src/current-pcb-common-state.ts";
 import { generatePackedNativeProgram } from "./native-program-packing.ts";
-import { CURRENT_PCB_COMMON_PACKET_SEEDS } from "../server/src/current-pcb-common-packet-program.ts";
+import { CURRENT_PCB_COMMON_PACKET_ADVANCE, CURRENT_PCB_COMMON_PACKET_RESULT, CURRENT_PCB_COMMON_PACKET_SEEDS } from "../server/src/current-pcb-common-packet-program.ts";
 import { CURRENT_PCB_DIAGNOSTIC_OPENING_FUNCTION } from "../server/src/current-pcb-diagnostic-opening.ts";
 import { CURRENT_PCB_DIAGNOSTIC_PCB_OPENING_FUNCTION } from "../server/src/current-pcb-diagnostic-pcb-opening.ts";
 import { CURRENT_PCB_STRING_EMPTY_PRODUCERS_FUNCTION, CURRENT_PCB_STRING_EMPTY_PRODUCERS_V2_FUNCTION } from "../server/src/current-pcb-string-empty-producers.ts";
-// oxlint-disable-next-line import/max-dependencies -- Byte-exact packing requires the independently maintained metadata program alongside the other fixed model sources.
 import { CURRENT_PCB_COMMON_METADATA_FUNCTION } from "../server/src/current-pcb-common-metadata.ts";
+import { CURRENT_PCB_CONSTRUCTOR_BUNDLE_FUNCTIONS } from "../server/src/current-pcb-constructor-scope.ts";
+import { CURRENT_PCB_STRING_RENDERER_ASSOCIATION_FUNCTION } from "../server/src/current-pcb-string-association.ts";
+import { CURRENT_PCB_STRING_EMPTY_ASSETS_FUNCTION } from "../server/src/current-pcb-string-empty-assets.ts";
 
 for (const [marker, name, source] of [
   ["DIAGNOSTIC OPENING", "OpeningFunction", CURRENT_PCB_DIAGNOSTIC_OPENING_FUNCTION],
@@ -27,6 +30,12 @@ for (const [marker, name, source] of [
   ["COMMON PRESENTATION SEED", "CommonPresentationSeedFunction", CURRENT_PCB_COMMON_PACKET_SEEDS.presentation],
   ["COMMON RULES SEED", "CommonRulesSeedFunction", CURRENT_PCB_COMMON_PACKET_SEEDS.rules],
   ["COMMON METADATA", "CommonMetadataFunction", CURRENT_PCB_COMMON_METADATA_FUNCTION],
+  ["MODEL DIAGNOSTIC CONSTRUCTORS", "ModelDiagnosticConstructorsFunction", CURRENT_PCB_CONSTRUCTOR_BUNDLE_FUNCTIONS.diagnostic],
+  ["MODEL PRECREATE CONSTRUCTORS", "ModelPrecreateConstructorsFunction", CURRENT_PCB_CONSTRUCTOR_BUNDLE_FUNCTIONS.precreate],
+  ["STRING RENDERER ASSOCIATION", "StringRendererAssociationFunction", CURRENT_PCB_STRING_RENDERER_ASSOCIATION_FUNCTION],
+  ["COMMON ASSETS", "CommonAssetsFunction", CURRENT_PCB_STRING_EMPTY_ASSETS_FUNCTION],
+  ["COMMON PACKET ADVANCE", "CommonPacketAdvanceFunction", CURRENT_PCB_COMMON_PACKET_ADVANCE],
+  ["COMMON PACKET RESULT", "CommonPacketResultFunction", CURRENT_PCB_COMMON_PACKET_RESULT],
   ["STRING EMPTY PRODUCERS", "StringEmptyProducersFunction", CURRENT_PCB_STRING_EMPTY_PRODUCERS_FUNCTION],
   ["STRING EMPTY PRODUCERS V TWO", "StringEmptyProducersV2Function", CURRENT_PCB_STRING_EMPTY_PRODUCERS_V2_FUNCTION],
 ] as const) {

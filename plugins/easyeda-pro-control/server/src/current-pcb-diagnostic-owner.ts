@@ -140,8 +140,8 @@ import { CurrentFootprintCopyMainBackendRunner } from "./current-footprint-copy-
 import type { CurrentFootprintCopyMainBackendObservation } from "./current-footprint-copy-main-backend-runner.ts";
 
 
-const HELPER_SHA256 = "ba99b949930606e9371fd5ca39d2b617d31c4a256f9b32213ae5bcbc34dcb63b";
-const HELPER_BYTES = 1_044_546;
+const HELPER_SHA256 = "f91f9e2cbee4fdb6f78626cff987d7f7a0e25d87a2912d30cf871f1824f382d2";
+const HELPER_BYTES = 1_026_539;
 const MAX_LINE = 100_000;
 // 64 MiB native bytes need at most 85.34 MiB base64 plus bounded poll envelopes.
 const MAX_TOTAL = 96 * 1024 * 1024;
@@ -279,6 +279,7 @@ export interface CurrentFootprintCopyClockRpcOrigin { readonly profile: "private
 // Only the original combined factory can join both retained issuers and the
 // One original channel. No constructor, copied lease or JSON factory can mint it.
 const footprintClockRpcOrigins = new WeakMap<CurrentFootprintCopyClockRpcOrigin, CurrentFootprintCopyClockRpcOriginBindings>();
+const footprintClockRpcOwners = new WeakMap<CurrentFootprintCopyClockRpcOrigin, CurrentPcbRetainedOwnerCore>();
 export function requireCurrentFootprintCopyClockRpcOrigin(token: CurrentFootprintCopyClockRpcOrigin): CurrentFootprintCopyClockRpcOriginBindings {
   if (types.isProxy(token)) { throw error("FOOTPRINT_CLOCK_RPC_ORIGINAL_ORIGIN"); }
   const held = footprintClockRpcOrigins.get(token);
@@ -1661,6 +1662,7 @@ class CurrentPcbRetainedOwnerCore {
       transport.consume();
       const route = await beginCurrentFootprintCopyClockRpcChannel(handoff.dependency, reservation); same(false);
       const token = Object.freeze({ profile: "private.current-footprint-clock-rpc-origin.v1" as const });
+      footprintClockRpcOwners.set(token, this);
       footprintClockRpcOrigins.set(token, Object.freeze({ workerLease, registrationLease, workerSessionId: route.workerSessionId,
         assertOriginal: async (): Promise<void> => { same(false); await route.assertOriginal(); same(false); },
         assertCleanup: async (): Promise<void> => { same(true); await route.assertCleanup(); same(true); },
@@ -2867,6 +2869,13 @@ function originalCombinedCapabilityOwner(capability: CurrentFootprintCombinedMai
     Object.getPrototypeOf(CurrentFootprintCombinedNativeOwner.prototype) !== CurrentPcbRetainedOwnerCore.prototype ||
     !originalFootprintDescriptors(CurrentPcbRetainedOwnerCore.prototype, footprintCoreDescriptors)) { throw error("COMBINED_MAIN_CAPABILITY"); }
   combinedOwnershipMethods.require.call(owner, runner, mode); return owner;
+}
+/** Original cross-process identity only. It reserves no writer/native budget
+ * and cannot upgrade a validation generation or mint a new clock origin. */
+export function requireCurrentFootprintCombinedPairedSchedule(capability: CurrentFootprintCombinedMainCapability,
+  runner: CurrentFootprintCopyMainBackendRunner, clock: CurrentFootprintCopyClockRpcOrigin): void {
+  const owner = originalCombinedCapabilityOwner(capability, runner, "normal");
+  if (footprintClockRpcOwners.get(clock) !== owner || !footprintClockRpcOrigins.has(clock)) { throw error("FOOTPRINT_PAIRED_ORIGINAL_OWNER"); }
 }
 export function requireCurrentFootprintCombinedMainCapability(capability: CurrentFootprintCombinedMainCapability, runner: CurrentFootprintCopyMainBackendRunner): void {
   originalCombinedCapabilityOwner(capability, runner, "normal");

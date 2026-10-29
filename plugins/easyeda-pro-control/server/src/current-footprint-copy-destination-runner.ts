@@ -7,8 +7,12 @@ import { decodeCurrentFootprintCopyDestinationArray, decodeCurrentFootprintCopyD
 import { decodeCurrentFootprintCopyProducerScope } from "./current-footprint-copy-producer-scope.ts";
 import type { CurrentFootprintCopyStatePacket } from "./current-footprint-copy-state.ts";
 import { captureCurrentPcbStringClockReply } from "./current-pcb-string-clock-reply.ts";
+import { assertCurrentFootprintCopyProgramReturned } from "./current-footprint-copy-program-exception.ts";
+import { CURRENT_FOOTPRINT_COPY_DESTINATION_PROFILES } from "./current-footprint-copy-destination-profiles.ts";
 
-export const CURRENT_FOOTPRINT_COPY_DESTINATION_REQUESTS = Object.freeze({ observe: 36, reproof: 3, originalObserve: 38, originalReproof: 5 });
+const observeRequests = CURRENT_FOOTPRINT_COPY_DESTINATION_PROFILES.length + 8;
+export const CURRENT_FOOTPRINT_COPY_DESTINATION_REQUESTS = Object.freeze({ observe: observeRequests, reproof: 3,
+  originalObserve: observeRequests + 2, originalReproof: 5 });
 export interface CurrentFootprintCopyDestinationTransport {
   readonly dependencyBundleObjectId: string;
   readonly assertCurrent: () => void;
@@ -18,7 +22,7 @@ export interface CurrentFootprintCopyDestinationTransport {
 }
 export interface CurrentFootprintCopyDestinationObservation {
   readonly profile: "private.current-footprint-copy-destinations.v1";
-  readonly selectedFunctions: 28;
+  readonly selectedFunctions: 31;
   readonly originalProjectAndApiObjectsMatched: true;
   readonly privateCooperationBranchExcluded: true;
   /** Only the six selected upload/cache containers; publishTimer and detached
@@ -33,7 +37,7 @@ export interface CurrentFootprintCopyDestinationObservation {
 }
 const handle = z.string().regex(/^[A-Za-z\d_.:-]{1,256}$/u);
 const arrayReply = z.object({ result: z.object({ type: z.literal("object"), subtype: z.literal("array"), className: z.literal("Array"),
-  description: z.literal("Array(40)"), objectId: handle }).strict() }).strict();
+  description: z.literal("Array(43)"), objectId: handle }).strict() }).strict();
 const yes = z.object({ result: z.object({ type: z.literal("boolean"), value: z.literal(true) }).strict() }).strict();
 const fields = ["dependencyBundleObjectId", "assertCurrent", "properties", "capture", "recheck"] as const;
 function need(value: boolean): asserts value { if (!value) { throw new Error("FOOTPRINT_COPY_DESTINATION_OWNER"); } }
@@ -63,8 +67,9 @@ export class CurrentFootprintCopyDestinationRunner {
   }
   #current(): void { need(!this.#failed && members(this.#transport).every((value, index) => value === this.#members[index])); this.#transport.assertCurrent(); }
   async #request(operation: () => Promise<unknown>): Promise<unknown> {
-    this.#current(); need(this.#requests < 36 + (this.#reproofAttempted ? 3 : 0)); this.#requests += 1;
-    const raw = captureCurrentPcbStringClockReply(await operation()).value; this.#replies.push(raw); this.#current(); return raw;
+    this.#current(); need(this.#requests < observeRequests + (this.#reproofAttempted ? 3 : 0)); this.#requests += 1;
+    const raw = captureCurrentPcbStringClockReply(await operation()).value; this.#replies.push(raw); this.#current();
+    assertCurrentFootprintCopyProgramReturned(raw, "destinations"); return raw;
   }
   async #scope(): Promise<string> {
     const head = this.#head; need(head !== null);
@@ -86,8 +91,8 @@ export class CurrentFootprintCopyDestinationRunner {
       }
       const finalScope = await this.#scope();
       yes.parse(await this.#request(() => this.#transport.recheck(finalScope, captured.result.objectId)));
-      need(this.#requests === 36); this.#current();
-      this.#packet = Object.freeze({ profile: "private.current-footprint-copy-destinations.v1", selectedFunctions: 28,
+      need(this.#requests === observeRequests); this.#current();
+      this.#packet = Object.freeze({ profile: "private.current-footprint-copy-destinations.v1", selectedFunctions: 31,
         originalProjectAndApiObjectsMatched: true, privateCooperationBranchExcluded: true, trackedUploadQueuesEmptyAtObservation: true,
         relativeHistoryRoutesQualified: true, nativeHttpBackendOwned: false, notificationPeerOwned: false,
         cacheNamespacesQualified: false, callbacksCompleted: false, executionAuthorized: false });

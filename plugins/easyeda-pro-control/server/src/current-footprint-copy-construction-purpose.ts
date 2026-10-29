@@ -1,7 +1,9 @@
 /** Private identity propagation from the native-purpose dependency. Neither a
  * copied adapter nor a caller-provided field can enlarge the state-read bound. */
+/* oxlint-disable import/no-cycle -- Retain genuine channel identity checks through the construction/create cycle; these imports run only inside later owner operations. */
 import { isOriginalFootprintExecutionDependency, isOriginalFootprintPreparationDependency, isOriginalFootprintSavedDependency,
   originalCurrentFootprintExecutionProjectUuid, requestCurrentFootprintCopyCacheConstruction } from "./current-pcb-worker-startup-channel.ts";
+/* oxlint-enable import/no-cycle */
 import type { CurrentFootprintCacheConstructionCommand } from "./current-footprint-copy-cache-construction-contract.ts";
 import type { CurrentPcbWorkerStartupDependency } from "./current-pcb-worker-startup-contract.ts";
 import type { CurrentPcbWorkerConstructionTransport } from "./current-pcb-worker-construction-contract.ts";

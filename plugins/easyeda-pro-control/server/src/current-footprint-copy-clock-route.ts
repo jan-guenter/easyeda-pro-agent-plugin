@@ -3,6 +3,7 @@
 import { types } from "node:util";
 import { CurrentFootprintCopyTransactionClockEvents } from "./current-footprint-copy-transaction-clock-events.ts";
 import type { CurrentFootprintCopyTransactionClockEventTransport } from "./current-footprint-copy-transaction-clock-events.ts";
+// oxlint-disable-next-line import/no-cycle -- Keep the original channel's private identity issuer through the construction/create cycle; no initialization-time call crosses it.
 import { isOriginalFootprintExecutionDependency } from "./current-pcb-worker-startup-channel.ts";
 import type { CurrentPcbWorkerStartupDependency } from "./current-pcb-worker-startup-contract.ts";
 import type { CurrentPcbWorkerConstructionTransport } from "./current-pcb-worker-construction-contract.ts";
