@@ -2,6 +2,7 @@
  * Earlier writer phases are fixed test setup, not writer or closure evidence. */
 /* oxlint-disable import/max-dependencies -- Exercise the maintained coordinator's strict owner, schema, SQL completion and comparison code together at the saved-allocation boundary. */
 import assert from "node:assert/strict";
+import { Buffer } from "node:buffer";
 import { readFile } from "node:fs/promises";
 import { stripTypeScriptTypes } from "node:module";
 import { types } from "node:util";
@@ -16,6 +17,7 @@ import type { CurrentFootprintCopyExecutionCoordinator, CurrentFootprintCopyExec
 import { CurrentFootprintCopyTransactionClockEvents } from "../src/current-footprint-copy-transaction-clock-events.ts";
 import { captureCurrentPcbStringClockReply } from "../src/current-pcb-string-clock-reply.ts";
 import { readerCompletion } from "../src/sqlite-inventory.ts";
+import { CurrentFootprintCopyOutputLedger, reserveCurrentFootprintCopyOutput } from "../src/current-footprint-copy-output-reservation.ts";
 import { savedFixture } from "./helpers/current-footprint-copy-v2-saved-fixture.ts";
 
 const unavailable = (): Promise<never> => Promise.reject(new Error("writer already closed in this synthetic boundary"));
@@ -24,6 +26,10 @@ async function fixture(options: Readonly<{ outcome: CurrentFootprintCopySavedSta
   runner: CurrentFootprintCopyExecutionCoordinator; calls: string[]; records: Readonly<{ phase: string; evidence: unknown }>[];
 }> {
   const calls: string[] = [], input = await savedFixture(), records: { phase: string; evidence: unknown }[] = [];
+  // The synthetic prior writer also supplies its actual plan-derived output
+  // Ledger. Consume its closed snapshot slot before exercising saved cleanup.
+  const output = new CurrentFootprintCopyOutputLedger(reserveCurrentFootprintCopyOutput(input.copy, input.sql));
+  output.retain(output.begin("closed-sql"), JSON.stringify(input.after));
   const termination = Object.freeze({}); let attempted = false, now = 0n;
   const saved: CurrentFootprintCopySavedExecutionNative = Object.freeze({ generation: Object.freeze({}), assertOwned: (): void => undefined,
     start: (): Promise<void> => { attempted = true; calls.push("start"); return Promise.reject(new Error("saved start failed")); },
@@ -53,22 +59,22 @@ async function fixture(options: Readonly<{ outcome: CurrentFootprintCopySavedSta
   });
   let program = stripTypeScriptTypes(await readFile(new URL("../src/current-footprint-copy-execution-runtime.ts", import.meta.url), "utf8"))
     .replaceAll(/^import[\s\S]*?;\n/gmu, "").replaceAll(/\bexport (?=(?:async )?(?:function|const|class))/gu, "")
-    .replaceAll(/(#(?:phase|after|projection)) +(?==)/gu, "$1 ");
+    .replaceAll(/(#(?:phase|after|projection|output)) +(?==)/gu, "$1 ");
   // Start at the saved boundary while preserving the actual native-owner
   // Constructor, strict member checks, catch routing and all cleanup methods.
   for (const [original, replacement] of [
     ['#phase = "prepare"', '#phase = "start-verification"'], ["#writerReleased = false", "#writerReleased = true"],
     ["#writerClosed = false", "#writerClosed = true"], ["#after = null", "#after = input.after"],
-    ["#projection = null", "#projection = input.projection"],
+    ["#projection = null", "#projection = input.projection"], ["#output = null", "#output = output"],
   ]) {
     assert.ok(original !== undefined && replacement !== undefined); assert.equal(program.split(original).length, 2);
     program = program.replace(original, replacement);
   }
-  const scope = createContext({ types, Object, Reflect, Error, AggregateError,
+  const scope = createContext({ types, Object, Reflect, Error, AggregateError, Buffer,
     process: { hrtime: { bigint: (): bigint => now } }, canonicalJson, sha256Text,
     LIMITS, currentFootprintCopyExecutionAdvanceSchema, currentFootprintCopyExecutionGenerationSchema,
     CurrentFootprintCopyTransactionClockEvents, captureCurrentPcbStringClockReply, compareCompleteClosedSql,
-    readerCompletion, native, input });
+    readerCompletion, native, input, output });
   const loaded: unknown = runInContext(`${program}\nnew CurrentFootprintCopyExecutionCoordinator(new CurrentFootprintCopyExecutionOwner(native))`, scope);
   assert.ok(loaded !== null && typeof loaded === "object");
   // oxlint-disable-next-line typescript/no-unsafe-type-assertion -- Execute the maintained class in a private realm with only the explicit synthetic prior-phase setup above.

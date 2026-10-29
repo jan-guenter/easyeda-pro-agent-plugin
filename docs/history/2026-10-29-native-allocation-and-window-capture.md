@@ -163,3 +163,31 @@ facade and bridge suites are delegated to exact-commit GitHub CI rather than a
 duplicate local full campaign. Their terminal results and official installation
 proof remain pending at this frozen candidate; these statements are preserved
 and will be resolved by a later appended result.
+
+## Initial CI failure and batched test-fixture correction
+
+Initial candidate `c8461418f0843310b5f7fdd5f2a9cbc08d18f138` ran PR153 Linux
+CI40924659801 and Windows40924659731. Windows native checks, verify-build and
+six facade shards passed, including424 bridge tests. Two facade shards failed:
+all six saved-boundary coordinator cases used an explicit VM context missing
+Node Buffer, and one exhaustive coverage assertion retained the old generic
+PNG wording rather than the accurate SDK-canvas wording. All eight shards were
+allowed to finish before batching corrections; their failure logs are retained.
+
+Supplying Buffer exposed the saved fixture's missing prior output reservation.
+The synthetic closed-writer setup now retains its actual copy/SQL plans, creates
+the real plan-derived output ledger and consumes the writer's closed SQL slot
+before exercising verification cleanup. No runtime guard changed. All six
+saved-boundary tests then passed. The corrected SDK-canvas assertion passed its
+whole57-test coverage file. Full types and strict lint of the changed tests
+passed. Server source, helper, bundles, manifest and native contracts are
+unchanged by these corrections. A new exact-head full CI remains required.
+
+The initial offline package materialization also correctly refused directory
+mode0775: root's tar extraction preserved archive group-write bits despite
+umask022. A fresh private extraction with explicit no-same-permissions produced
+exact0755/0644/0755 modes and passed all2,389 files/46,317,799 bytes for the
+initial candidate, inventory
+`941b62cf7f4d2cbd3dec26c76bd28cd5784d74bb6a529320a4957a62c08e773e`.
+This corrected a disposable archive extraction, not an installed cache. The
+repaired test payload needs its own complete package comparison below.
