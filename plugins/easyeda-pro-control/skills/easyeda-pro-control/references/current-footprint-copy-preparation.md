@@ -32,7 +32,7 @@ Follow the returned phase and retain the same Codex session:
    responder, initialized registry and bus. It checks registry membership
    without invoking a lazy getter or creating a bus. A matching project ID and
    worker identity bracket do not prove that the UI bus targets that worker.
-6. `prepare-footprint-dependencies` qualifies 60 helper, serializer, parser,
+6. `prepare-footprint-dependencies` qualifies 61 helper, serializer, parser,
    cache, upload and notification functions, including the original `bb` cache
    wrapper class and its six methods. It retains the initialized bus
    without invoking those functions or initializing a lazy bus. This does not
@@ -68,8 +68,8 @@ the cache. Keep raw source ordering and the independent checkpoint comparison
 separate. The manager's own undefined user is also distinct from the backend
 actor selected from SQL.
 
-The preparation purpose reserves 565 normal requests and 34 cleanup requests,
-599 total. The private clock collector captures the two results used by the actual native
+The preparation purpose reserves 566 normal requests and 34 cleanup requests,
+600 total. The private clock collector captures the two results used by the actual native
 `buildString` and `canvasString` continuations. Its synthetic tests do not
 validate embedded-V8 breakpoint locations, server provenance or a writer.
 Preliminary clock calls cannot replace those results. Native create allocates
@@ -123,7 +123,7 @@ native getter/open identities and unchanged project assignments bind the two
 cache namespace arguments to the retained native Cache results. A namespace
 label or an after-the-fact object inspection cannot replace that event history.
 These debugger pauses affect application timing. This purpose shares the private
-execution envelope of 780 normal requests and 45 cleanup requests, 825 total;
+execution envelope of 784 normal requests and 45 cleanup requests, 829 total;
 this does not reserve or enable a complete writer lifecycle.
 
 The parent capture pins ordinary local-project `tl.open`. The temporary-project

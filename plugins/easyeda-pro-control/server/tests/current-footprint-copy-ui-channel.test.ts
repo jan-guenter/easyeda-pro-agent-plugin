@@ -162,6 +162,6 @@ void test("clock registration is execution-only and retains 37 normal requests p
     await value.channel.requestFootprintClockRegistration(selected("release")); await assert.rejects(value.channel.requestFootprintClockRegistration(selected("release")), /FOOTPRINT_CLOCK_REGISTRATION_SEQUENCE/u);
     assert.equal(value.requests.filter(request => String(request["parentPhase"]).startsWith("footprint-copy-clock-registration-")).length, 38);
     await value.channel.requestFootprintUi(select("release")); assert.equal(value.channel.status().failed, false);
-    assert.equal(EXECUTION.normalRequestLimit, 780); assert.equal(EXECUTION.requestLimit, 825); assert.equal(PROFILE.normalRequestLimit, 565); assert.equal(PROFILE.requestLimit, 599);
+    assert.equal(EXECUTION.normalRequestLimit, 784); assert.equal(EXECUTION.requestLimit, 829); assert.equal(PROFILE.normalRequestLimit, 566); assert.equal(PROFILE.requestLimit, 600);
   } finally { await value.close(); }
 });

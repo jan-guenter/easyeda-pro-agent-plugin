@@ -403,6 +403,13 @@ export class CurrentFootprintCopyMainBackendRunner {
       requestOrigins.set(token, Object.freeze({ assertOriginalEntry: (): void => { this.#originCheck(token, true); }, bindings })); return token;
     } catch (error) { this.#fail(error); throw error; } finally { this.#busy = false; }
   }
+  /** Synchronous identity join before any create. Equal receipts or an origin
+   * belonging to another original backend cannot pass this capability check. */
+  public requireRequestOrigin(capability: CurrentFootprintCombinedMainCapability, token: CurrentFootprintCopyMainRequestOrigin): void {
+    requireCurrentFootprintCombinedMainCapability(capability, this);
+    need(capability === this.#originCapability && token === this.#originToken, "REQUEST_ORIGINAL_OWNER");
+    this.#originCheck(token, false);
+  }
   /** Private original-owner handoff. Capacity refuses before either the old
    * lease or a native phase is consumed. A dispatched begin is one-shot; only
    * actual original exit can settle a lost acknowledgment. No writer starts. */

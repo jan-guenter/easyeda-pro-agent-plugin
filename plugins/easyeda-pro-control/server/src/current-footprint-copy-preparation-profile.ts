@@ -2,7 +2,7 @@
  * not native create, clocks, Save, or saved-generation verification. */
 import { freezeDeep } from "./sqlite-inventory-core.ts";
 
-const actor = 35, bindings = 97, cleanup = 34, dependencies = 100, managerRoute = 57, startup = 224, uiObserve = 35, uiReprove = 17;
+const actor = 35, bindings = 97, cleanup = 34, dependencies = 101, managerRoute = 57, startup = 224, uiObserve = 35, uiReprove = 17;
 export const CURRENT_FOOTPRINT_COPY_PREPARATION_PROFILE = freezeDeep({
   purpose: "worker-startup-footprint209",
   normalRequestLimit: startup + actor + bindings + uiObserve + uiReprove + dependencies + managerRoute,

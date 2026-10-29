@@ -176,13 +176,32 @@ retains the new actor result and route refusal separately.
 
 ## Private groundwork and remaining integration
 
+Installed095000 subsequently passed a fresh original main/worker/cache/peer
+capture, assignments and four coherent actor samples. Dependency capture
+progressed past the missing-alias check and refused an incorrect receiver
+resolution assumption. The pinned worker has a real `ja.parseFull` override.
+Source now qualifies that override and its `zy.parseFull` superclass separately,
+while keeping arbitrary shadows refused. The61st method adds exactly one
+metadata read to preparation. Three separately source-qualified destination
+classes add three further renderer reads. Current preparation is
+566 normal/34 cleanup/600 total; combined renderer is784 normal/45 cleanup/829
+total. Main remains41 normal/13 cleanup/54 total.
+
+The consumed095000 route was not retried. Original normal close, one authorized
+original-Job abort, actual termination and release completed. The closed
+disposable fixture stayed byte-exact. This is not acceptance of the corrected
+dependency or destination reader. Its [batch record](https://github.com/jan-guenter/easyeda-pro-agent-plugin/blob/main/docs/history/2026-10-29-footprint-create-scheduling.md)
+retains the original failure and source correction separately.
+
 The private clock/RPC integration joins original worker construction and UI
 registration leases through the same retained combined native owner. A one-way
 handoff replaces the original transport subscription with one paired router,
 allocator and event cursor. Its fixed unit uses49 normal and18 cleanup commands.
 All67 commands consume global IDs. A conservative preflight reserves up to69 IDs
 for original group handoff and the unit, entirely within the existing normal-ID
-ceiling780. It enlarges no native request limit or whole-writer reservation.
+ceiling784. The source-qualified parser override and three destination classes
+add exactly four reads to the prior780-command normal allowance. This does not
+reserve a whole writer.
 
 Fixed native begin/send/retire actions retain the original two sessions, consume
 before possible pipe writes and exclude other normal renderer/main sends while
@@ -230,6 +249,25 @@ append support does not qualify new-document lifecycle. A future writer must
 prove branch/header eligibility before dispatch; refusal after mutation supplies
 no pre-write safety. Completion observations keep SQL durability, publication,
 saved-result and execution authority false, including after post-await joins.
+
+The distinct private create/clock unit uses68 IDs,50 normal and18 cleanup,
+with exactly one native create at offset13 after arming. It retains either the
+original early reply or one exact original pending reply across clock retirement.
+Old renderer sends remain unavailable afterward while original main collection
+can continue. Fixed native encoding, request accounting and complete escaped
+input preflight are implemented, but every existing native birth purpose
+rejects this unit before beginning. No validation owner can upgrade into it.
+
+The private paired scheduler composes the actual main, clock and completion
+runners in that order. It still cannot qualify a real new create. Native
+`buildString` allocates the destination UUID internally and produces two unknown
+clock values. The current request plan expects their exact resulting body before
+arming. Genuine allocation capture and late plan binding must resolve that
+dependency before dispatch. Supplied matching values or a synthetic scheduler
+test cannot supply ownership. Partial result/artifact/journal slots also leave
+whole helper stdout, events, raw collector replies and four-generation capacity
+unreserved. A native create result can precede the buffered backend upload;
+neither an early acknowledgment nor waiting for it proves SQL completion.
 
 Pure delete models retain the originally copied UUID, require the complete
 supported SQL inverse and compare an independent saved reader. The inverse

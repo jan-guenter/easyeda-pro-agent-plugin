@@ -7,10 +7,11 @@ import { decodeCurrentFootprintCopyDependencies, decodeCurrentFootprintCopyDepen
 import { CURRENT_FOOTPRINT_COPY_DEPENDENCY_PROFILES } from "./current-footprint-copy-dependency-profiles.ts";
 import { decodeCurrentFootprintCopyProducerArray, decodeCurrentFootprintCopyProducerFunction, decodeCurrentFootprintCopyProducerScope } from "./current-footprint-copy-producer-scope.ts";
 import { captureCurrentPcbStringClockReply } from "./current-pcb-string-clock-reply.ts";
+import { assertCurrentFootprintCopyProgramReturned } from "./current-footprint-copy-program-exception.ts";
 
-export const CURRENT_FOOTPRINT_COPY_DEPENDENCY_REQUESTS = 75;
+export const CURRENT_FOOTPRINT_COPY_DEPENDENCY_REQUESTS = CURRENT_FOOTPRINT_COPY_DEPENDENCY_PROFILES.length + 15;
 export const CURRENT_FOOTPRINT_COPY_DEPENDENCY_REPROOF_REQUESTS = 3;
-export const CURRENT_FOOTPRINT_COPY_DEPENDENCY_OWNER_REQUESTS = Object.freeze({ observeMaximum: 87, requireMaximum: 9 });
+export const CURRENT_FOOTPRINT_COPY_DEPENDENCY_OWNER_REQUESTS = Object.freeze({ observeMaximum: CURRENT_FOOTPRINT_COPY_DEPENDENCY_REQUESTS + 12, requireMaximum: 9 });
 export interface CurrentFootprintCopyDependencyTransport {
   readonly lexicalBundleObjectId: string;
   readonly assertCurrent: () => void;
@@ -19,7 +20,8 @@ export interface CurrentFootprintCopyDependencyTransport {
   readonly recheck: (scopeId: string, bundleId: string) => Promise<unknown>;
 }
 export const currentFootprintCopyDependencyObservationSchema = z.object({
-  profile: z.literal("private.current-footprint-copy-dependencies.v1"), selectedFunctionCount: z.literal(60), freshDirectScopeCount: z.literal(3),
+  profile: z.literal("private.current-footprint-copy-dependencies.v1"), selectedFunctionCount: z.literal(61), freshDirectScopeCount: z.literal(3),
+  nativeParserOverrideQualified: z.literal(true),
   originalSelectedIdentitiesRechecked: z.literal(true), initializedNotificationBusRetained: z.literal(true), originalCacheObjectsRetained: z.literal(true),
   cacheWrapperFunctionsQualified: z.literal(7), cacheWrapperNamespaceNamesMatched: z.literal(true), originalNativeCacheReceiverCandidatesRetained: z.literal(true),
   nativeCacheFunctionsQualified: z.literal(4), nativeCacheNamespaceProvenanceVerified: z.literal(false),
@@ -29,17 +31,20 @@ export const currentFootprintCopyDependencyObservationSchema = z.object({
 export type CurrentFootprintCopyDependencyObservation = z.infer<typeof currentFootprintCopyDependencyObservationSchema>;
 /** Historical journal decoding only. A recorded packet never reconstructs the
  * original runner or satisfies its private packet-identity check. */
-const historicalDependencyObservationSchema = currentFootprintCopyDependencyObservationSchema.omit({
+const historicalCacheDependencyObservationSchema = currentFootprintCopyDependencyObservationSchema.omit({ nativeParserOverrideQualified: true })
+  .extend({ selectedFunctionCount: z.literal(60) }).strict();
+const historicalDependencyObservationSchema = historicalCacheDependencyObservationSchema.omit({
   cacheWrapperFunctionsQualified: true, cacheWrapperNamespaceNamesMatched: true, originalNativeCacheReceiverCandidatesRetained: true,
   nativeCacheFunctionsQualified: true, nativeCacheNamespaceProvenanceVerified: true,
 }).extend({ selectedFunctionCount: z.literal(53) }).strict();
 export const recordedCurrentFootprintCopyDependencyObservationSchema = z.union([
-  currentFootprintCopyDependencyObservationSchema, historicalDependencyObservationSchema,
+  currentFootprintCopyDependencyObservationSchema, historicalCacheDependencyObservationSchema, historicalDependencyObservationSchema,
 ]);
 
 const handle = z.string().regex(/^[A-Za-z\d_.:-]{1,256}$/u);
+const arrayDescription = `Array(${String(CURRENT_FOOTPRINT_COPY_DEPENDENCY_PROFILES.length + 9)})`;
 const array = z.object({ result: z.object({ type: z.literal("object"), subtype: z.literal("array"), className: z.literal("Array"),
-  description: z.literal("Array(69)"), objectId: handle }).strict() }).strict();
+  description: z.literal(arrayDescription), objectId: handle }).strict() }).strict();
 const yes = z.object({ result: z.object({ type: z.literal("boolean"), value: z.literal(true) }).strict() }).strict();
 const scopeValue = z.looseObject({ objectId: handle.optional() });
 const scopeInternal = z.looseObject({ name: z.string(), value: scopeValue });
@@ -75,7 +80,8 @@ export class CurrentFootprintCopyDependencyRunner {
   async #request(operation: () => Promise<unknown>, reproof = false): Promise<unknown> {
     this.#current(); need(this.#requests < CURRENT_FOOTPRINT_COPY_DEPENDENCY_REQUESTS + (reproof ? CURRENT_FOOTPRINT_COPY_DEPENDENCY_REPROOF_REQUESTS : 0));
     this.#requests += 1;
-    const raw = captureCurrentPcbStringClockReply(await operation()).value; this.#replies.push(raw); this.#current(); return raw;
+    const raw = captureCurrentPcbStringClockReply(await operation()).value; this.#replies.push(raw); this.#current();
+    assertCurrentFootprintCopyProgramReturned(raw, "dependencies"); return raw;
   }
   async #scope(objectId: string, index: number, reproof = false): Promise<string> {
     const input = await this.#request(() => this.#transport.properties(objectId), reproof);
@@ -109,8 +115,9 @@ export class CurrentFootprintCopyDependencyRunner {
           const bundle = this.#bundleId; yes.parse(await this.#request(() => this.#transport.recheck(scopeId, bundle)));
         }
       }
-      need(this.#requests === CURRENT_FOOTPRINT_COPY_DEPENDENCY_REQUESTS && CURRENT_FOOTPRINT_COPY_DEPENDENCY_PROFILES.length === 60);
-      this.#packet = Object.freeze({ profile: "private.current-footprint-copy-dependencies.v1", selectedFunctionCount: 60, freshDirectScopeCount: 3,
+      need(this.#requests === CURRENT_FOOTPRINT_COPY_DEPENDENCY_REQUESTS && CURRENT_FOOTPRINT_COPY_DEPENDENCY_PROFILES.length === 61);
+      this.#packet = Object.freeze({ profile: "private.current-footprint-copy-dependencies.v1", selectedFunctionCount: 61, freshDirectScopeCount: 3,
+        nativeParserOverrideQualified: true,
         originalSelectedIdentitiesRechecked: true, initializedNotificationBusRetained: true, originalCacheObjectsRetained: true,
         cacheWrapperFunctionsQualified: 7, cacheWrapperNamespaceNamesMatched: true, originalNativeCacheReceiverCandidatesRetained: true,
         nativeCacheFunctionsQualified: 4, nativeCacheNamespaceProvenanceVerified: false,

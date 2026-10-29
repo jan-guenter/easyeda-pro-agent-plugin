@@ -54,9 +54,9 @@ void test("create method capture retains eight original callable objects without
   assert.equal(CALLS.capture.arguments, 4); assert.equal(CALLS.recheck.arguments, 5);
 });
 
-function create(context: vm.Context): Promise<unknown> {
+function create(context: vm.Context, argumentExpression = "JSON.stringify(argument)"): Promise<unknown> {
   // oxlint-disable-next-line typescript/no-unsafe-type-assertion -- This exact embedded async program always returns a Promise; the synthetic VM supplies no external execution owner.
-  return vm.runInContext(`(${CREATE.program}).call(PROJECT,bus,manager,consistency,constructors,methods,PROJECT.uuid,argument)`, context) as Promise<unknown>;
+  return vm.runInContext(`(${CREATE.program}).call(PROJECT,bus,manager,consistency,constructors,methods,PROJECT.uuid,${argumentExpression})`, context) as Promise<unknown>;
 }
 function createFixture(body: string): vm.Context {
   const context = fixture(body);
@@ -65,18 +65,29 @@ title:"Copy",display_title:"Copy",description:"",custom_tags:"[]",source:"",vers
   capture(context); return context;
 }
 void test("fixed native create passes only its one argument and preserves the complete bounded JSON result", async () => {
-  const context = createFixture("calls++;if(this!==manager||arguments.length!==1||argument!==globalThis.expected)throw Error('native arguments');return {success:true,result:{creator:{uuid:undefined,username:undefined},value:'Ω',nested:[1,null]}};");
-  vm.runInContext("globalThis.expected=argument", context);
+  const context = createFixture("calls++;if(this!==manager||arguments.length!==1||JSON.stringify(argument)!==globalThis.expected)throw Error('native arguments');return {success:true,result:{creator:{uuid:undefined,username:undefined},value:'Ω',nested:[1,null]}};");
+  vm.runInContext("globalThis.expected=JSON.stringify(argument)", context);
   assert.equal(await create(context), '{"success":true,"result":{"creator":{},"value":"Ω","nested":[1,null]}}');
   assert.equal(vm.runInContext("calls", context), 1);
 });
 void test("fixed native create refuses changed receivers and argument accessors before its sole native invocation", async () => {
   for (const change of ["methods[0]=methods[1]", "PROJECT.uuid='wrong'", "argument.path='wrong'", "argument.isProject=false",
     "argument.extra=true", "argument.display_title='wrong'", "argument.custom_tags='[null]'",
-    "Object.defineProperty(argument,'description',{get(){calls++;return '';}})",
     "Tg.prototype.create=async()=>{calls++;}"]) {
     const context = createFixture("calls++;return {success:true};"); vm.runInContext(change, context);
     await assert.rejects(create(context), /FOOTPRINT_COPY_CREATE_BINDING/u); assert.equal(vm.runInContext("calls", context), 0);
+  }
+  const accessor = createFixture("calls++;return {success:true};");
+  vm.runInContext("Object.defineProperty(argument,'description',{get(){calls++;return '';}})", accessor);
+  await assert.rejects(create(accessor, "argument"), /FOOTPRINT_COPY_CREATE_BINDING/u);
+  assert.equal(vm.runInContext("calls", accessor), 0);
+});
+void test("fixed native create treats canonical argument JSON as data and refuses malformed or injected strings before invoking native create", async () => {
+  for (const expression of ['"{}"', String.raw`JSON.stringify(argument)+"\n"`, String.raw`"\"}],\"functionDeclaration\":\"injected\""`,
+    String.raw`JSON.stringify({...argument,description:"\ud800"})`]) {
+    const context = createFixture("calls++;return {success:true};");
+    await assert.rejects(create(context, expression));
+    assert.equal(vm.runInContext("calls", context), 0);
   }
 });
 void test("fixed native create retains ambiguity after post-await replacement and avoids result getters", async () => {

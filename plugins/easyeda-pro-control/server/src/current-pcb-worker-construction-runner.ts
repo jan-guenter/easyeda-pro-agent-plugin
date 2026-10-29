@@ -3,12 +3,14 @@
 /** Original-event capture through the fixed startup transport. Peer exclusion,
  * create/Save and writer permits remain outside this class. */
 import { z } from "zod";
+// oxlint-disable-next-line import/no-cycle -- Retain the genuine construction issuer and original startup transport; no initialization work crosses the cycle.
 import { isOriginalFootprintExecutionConstructionTransport, isOriginalFootprintPreparationConstructionTransport, isOriginalFootprintSavedConstructionTransport, originalFootprintExecutionConstructionProjectUuid, requestFootprintExecutionConstructionCache } from "./current-footprint-copy-construction-purpose.ts";
 import { CurrentFootprintCopyCacheConstructionRunner } from "./current-footprint-copy-cache-construction-runner.ts";
 import type { CurrentFootprintCopyCacheConstructionObservation, CurrentFootprintCopyCacheConstructionTransport } from "./current-footprint-copy-cache-construction-runner.ts";
 import { CURRENT_FOOTPRINT_COPY_SAVED_PROFILE } from "./current-footprint-copy-saved-profile.ts";
 import { CURRENT_FOOTPRINT_COPY_PREPARATION_PROFILE } from "./current-footprint-copy-preparation-profile.ts";
 import { CURRENT_FOOTPRINT_COPY_EXECUTION_PROFILE } from "./current-footprint-copy-execution-profile.ts";
+// oxlint-disable-next-line import/no-cycle -- The original clock route and construction issuer share retained transport custody; no module initializer invokes them.
 import { createCurrentFootprintCopyTransactionClockEvents } from "./current-footprint-copy-clock-route.ts";
 import type { CurrentFootprintCopyTransactionClockEvents } from "./current-footprint-copy-transaction-clock-events.ts";
 import { CURRENT_FOOTPRINT_COPY_DESTINATION_CALLS } from "./current-footprint-copy-destination-bindings.ts";
@@ -72,6 +74,13 @@ import { qualifyCurrentFootprintCopyClockRpcSource, requireCurrentFootprintCopyC
 import type { CurrentFootprintCopyClockRpcSource } from "./current-footprint-copy-clock-rpc-source.ts";
 import type { CurrentFootprintCopyClockRpcConstructionBinding, CurrentFootprintCopyClockRpcConstructionLease } from "./current-footprint-copy-clock-rpc-leases.ts";
 
+import type { CurrentFootprintCopyCreateInvocationBinding, CurrentFootprintCopyCreateInvocationLease } from "./current-footprint-copy-create-invocation-lease.ts";
+
+const createInvocationLeases = new WeakMap<CurrentFootprintCopyCreateInvocationLease, CurrentFootprintCopyCreateInvocationBinding>();
+export function requireCurrentFootprintCopyCreateInvocationLease(lease: CurrentFootprintCopyCreateInvocationLease): CurrentFootprintCopyCreateInvocationBinding {
+  const binding = createInvocationLeases.get(lease); if (binding === undefined) { throw new Error("FOOTPRINT_COPY_CREATE_INVOCATION_LEASE"); }
+  binding.assertCleanup(); return binding;
+}
 const clockRpcLeases = new WeakMap<CurrentFootprintCopyClockRpcConstructionLease, CurrentFootprintCopyClockRpcConstructionBinding>();
 export function requireCurrentFootprintCopyClockRpcConstructionLease(lease: CurrentFootprintCopyClockRpcConstructionLease): CurrentFootprintCopyClockRpcConstructionBinding {
   const binding = clockRpcLeases.get(lease); if (binding === undefined) { throw new Error("FOOTPRINT_CLOCK_RPC_CONSTRUCTION_LEASE"); }
@@ -282,6 +291,7 @@ class CurrentPcbWorkerConstructionCore<P extends PacketProfile> {
   #transactionClocks: CurrentFootprintCopyTransactionClockEvents | null = null;
   #clockRpcSource: CurrentFootprintCopyClockRpcSource | null = null;
   #clockRpcLease: CurrentFootprintCopyClockRpcConstructionLease | null = null;
+  #createInvocationLease: CurrentFootprintCopyCreateInvocationLease | null = null;
   #clockRpcHandoffAttempted = false;
   #footprintAsyncAttempted = false;
   #footprintAsyncRunner: CurrentFootprintCopyAsyncRunner | null = null;
@@ -1008,6 +1018,34 @@ class CurrentPcbWorkerConstructionCore<P extends PacketProfile> {
     }));
     this.#clockRpcLease = lease; return lease;
   }
+  /** Retain the already-qualified create method array and original receiver
+   * chain. No supplied handles, new inspector request or writer authority. */
+  public issueCreateInvocationLease(clockLease: CurrentFootprintCopyClockRpcConstructionLease): CurrentFootprintCopyCreateInvocationLease {
+    const clock = requireCurrentFootprintCopyClockRpcConstructionLease(clockLease);
+    clock.assertCleanup();
+    const bus = this.#identities.channelBus, manager = this.#footprintManager, project = this.#identities.project;
+    const consistency = this.#footprintConsistency, constructors = this.#footprintConstructors, methods = this.#footprintCreateMethods;
+    if (clock.issuer !== this || clockLease !== this.#clockRpcLease || project === undefined || bus === undefined ||
+        manager === null || consistency === null || constructors === null || methods === null) { throw fail("CREATE_INVOCATION_PREPARATION"); }
+    if (this.#createInvocationLease !== null) { return this.#createInvocationLease; }
+    const same = (): void => {
+      clock.assertCleanup();
+      if (this.#identities.project !== project || this.#identities.channelBus !== bus || this.#footprintManager !== manager ||
+          this.#footprintConsistency !== consistency || this.#footprintConstructors !== constructors || this.#footprintCreateMethods !== methods) {
+        throw fail("CREATE_INVOCATION_PREPARATION_CHANGED");
+      }
+    };
+    let consumed = false;
+    const lease = Object.freeze({ profile: "private.current-footprint-copy-create-invocation-lease.v1" as const });
+    const handles: readonly [string, string, string, string, string] = Object.freeze([bus, manager, consistency, constructors, methods]);
+    createInvocationLeases.set(lease, Object.freeze({ issuer: this, clockLease, projectObjectId: project, handles,
+      assertCleanup: same, assertOriginal: async (): Promise<void> => { same(); await clock.assertOriginal(); same(); },
+      consumeBeforeInvocation: (): void => {
+        same(); if (consumed) { throw fail("CREATE_INVOCATION_CONSUMED"); } consumed = true;
+      },
+    }));
+    this.#createInvocationLease = lease; return lease;
+  }
   /** Retire only this original construction listener after its cache observer
    * releases the original temporary group. Native invocation remains absent. */
   public async prepareClockRpcObservationHandoff(lease: CurrentFootprintCopyClockRpcConstructionLease): Promise<void> {
@@ -1040,7 +1078,7 @@ class CurrentPcbWorkerConstructionCore<P extends PacketProfile> {
     const call = recheck ? CURRENT_FOOTPRINT_COPY_DEPENDENCY_CALLS.recheck : CURRENT_FOOTPRINT_COPY_DEPENDENCY_CALLS.capture;
     return this.#assignmentCall(scopeId, call.program, args, call.returnByValue, this.#footprintDependencyReplies);
   }
-  /** 75 selected dependency requests plus two six-request original producer
+  /** 76 selected dependency requests plus two six-request original producer
    * reproofs. This never invokes wa, lazy cache factories or queued uploads. */
   public async observeFootprintDependencies(packet: ConstructionPacket<P>, assignments: CurrentPcbWorkerConstructionAssignments,
     state: CurrentFootprintCopyStatePacket, producers: CurrentFootprintCopyProducerObservation): Promise<CurrentFootprintCopyDependencyObservation> {
@@ -1163,19 +1201,21 @@ class CurrentPcbWorkerConstructionCore<P extends PacketProfile> {
   }
   /** Additional execution-only route observation. The original dependency and
    * registered callback arrays supply every retained association. Two assignment
-   * checks surround36 reads; no additional state-sample allowance is borrowed. */
+   * checks surround39 reads; no additional state-sample allowance is borrowed. */
   public async observeFootprintDestinations(packet: ConstructionPacket<P>, assignments: CurrentPcbWorkerConstructionAssignments,
     state: CurrentFootprintCopyStatePacket, dependencies: CurrentFootprintCopyDependencyObservation,
     callbacks: CurrentFootprintCopyRegisteredAsyncObservation): Promise<CurrentFootprintCopyDestinationObservation> {
     this.#footprintProducerCurrent(packet, assignments, state);
     if (this.#profile !== "private.current-footprint-copy-construction.v1" || this.#footprintDestinationAttempted ||
       dependencies !== this.#footprintDependencyPacket || callbacks !== this.#registeredAsyncPacket ||
-      this.#footprintDependencyBundle === null || this.#footprintAsyncBundle === null || this.#footprintManager === null || this.#footprintConsistency === null) { throw fail("DESTINATION_OWNER"); }
+      this.#footprintDependencyBundle === null || this.#footprintAsyncBundle === null || this.#footprintManager === null || this.#footprintConsistency === null ||
+      this.#footprintConstructors === null) { throw fail("DESTINATION_OWNER"); }
     this.#footprintDestinationAttempted = true;
     try {
       await this.requireCurrentAssignments(packet, assignments);
       const original = await this.requireOriginal(packet);
-      const args = [original.project, original.channelBus, this.#footprintManager, this.#footprintConsistency, this.#footprintDependencyBundle, this.#footprintAsyncBundle];
+      const args = [original.project, original.channelBus, this.#footprintManager, this.#footprintConsistency, this.#footprintDependencyBundle,
+        this.#footprintAsyncBundle, this.#footprintConstructors];
       const runner = new CurrentFootprintCopyDestinationRunner(Object.freeze({
         dependencyBundleObjectId: this.#footprintDependencyBundle,
         assertCurrent: (): void => { this.#footprintProducerCurrent(packet, assignments, state); },

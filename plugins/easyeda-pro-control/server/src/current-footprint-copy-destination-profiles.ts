@@ -366,5 +366,8 @@ export const CURRENT_FOOTPRINT_COPY_DESTINATION_PROFILES = freezeDeep([
     "columnNumber": 7483,
     "bytes": 116,
     "sha256": "c74f4554d2be2f6a1b7c2fd7365c4774db8bd7a2d712b055f0f2749018d3fa22"
-  }
+  },
+  {"key":"_d","name":"_d","kind":"class","async":false,"arity":1,"start":1_760_266,"end":1_761_089,"lineNumber":108,"columnNumber":58_798,"bytes":823,"sha256":"9e7edf7612d7ea420cdba43b5dbe3146ca4097a5df3570ba3af3022c86da9be1"},
+  {"key":"bd","name":"bd","kind":"class","async":false,"arity":1,"start":1_714_857,"end":1_716_533,"lineNumber":108,"columnNumber":13_389,"bytes":1676,"sha256":"a828cb66a436a6b49310b688d4eaab46dc6fcfd04fd4838272293e1015d9da10"},
+  {"key":"rs","name":"rs","kind":"class","async":false,"arity":0,"start":1_711_566,"end":1_712_299,"lineNumber":108,"columnNumber":10_070,"bytes":733,"sha256":"fa70af6cdfc7a5a91db6cebe668e4ccf49e04b560a9b217777d7c6d2d7c2b126"}
 ] as const);

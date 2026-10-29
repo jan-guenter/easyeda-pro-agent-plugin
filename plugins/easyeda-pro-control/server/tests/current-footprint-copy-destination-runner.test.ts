@@ -21,18 +21,20 @@ function array(dependency: boolean): Data {
   if (dependency) {
     result.push(...backendCacheArrayTail());
   } else {
-    for (let index = 28; index < 36; index += 1) { result.push(property(String(index), { type: index === 28 ? "function" : "object", objectId: `object-${String(index)}` }, true, true)); }
+    for (let index = 31; index < 39; index += 1) { result.push(property(String(index), { type: index === 31 ? "function" : "object", objectId: `object-${String(index)}` }, true, true)); }
     for (const [index, value] of ["1".repeat(16), 7, "a".repeat(64), "b".repeat(32)].entries()) {
-      result.push(property(String(index + 36), { type: typeof value, value }, true, true));
+      result.push(property(String(index + 39), { type: typeof value, value }, true, true));
     }
   }
-  result.push(property("length", { type: "number", value: dependency ? 69 : 40 }, true, false, false));
+  result.push(property("length", { type: "number", value: dependency ? 70 : 43 }, true, false, false));
   return { result, internalProperties: [{ name: "[[Prototype]]", value: { type: "object", subtype: "array", className: "Array", description: "Array(0)", objectId: "array-proto" } }] };
 }
 function metadata(index: number, head = false): Data {
   const profile = head ? DEPENDENCIES[39] : PROFILES[index]; assert.ok(profile !== undefined);
   const result = [property("name", { type: "string", value: profile.name }), property("length", { type: "number", value: profile.arity })];
-  if (profile.kind === "function" && !profile.async) { result.push(property("prototype", { type: "object", objectId: "own-proto" }, true, false, false)); }
+  if (profile.kind === "class" || profile.kind === "function" && !profile.async) {
+    result.push(property("prototype", { type: "object", objectId: "own-proto" }, profile.kind !== "class", false, false));
+  }
   return { result, internalProperties: [
     { name: "[[FunctionLocation]]", value: { type: "object", subtype: "internal#location", value: { scriptId: "script", lineNumber: profile.lineNumber, columnNumber: profile.columnNumber } } },
     { name: "[[Prototype]]", value: { type: profile.async ? "object" : "function", objectId: "fn-proto" } },
@@ -43,7 +45,7 @@ const state: CurrentFootprintCopyStatePacket = Object.freeze({ profile: "private
   identity: { projectUuid: "a".repeat(64), branchUuid: "b".repeat(32), windowTabId: "tab" }, client: "1".repeat(16), maximumTicket: 7,
   capturedUser: "own-undefined", originalConstructorManagerMatched: true, atomicSnapshotVerified: false,
   cacheBranchObserved: false, executionAuthorized: false, persistenceVerified: false });
-void test("destination collector consumes36 reads and one fresh3-read reproof; copied ownership and reuse cannot dispatch", async () => {
+void test("destination collector consumes39 reads and one fresh3-read reproof; copied ownership and reuse cannot dispatch", async () => {
   let count = 0;
   const runner = new CurrentFootprintCopyDestinationRunner(Object.freeze({ dependencyBundleObjectId: "dependencies", assertCurrent: (): void => {
     // Synthetic immutable owner; no connected state is claimed.
@@ -54,12 +56,12 @@ void test("destination collector consumes36 reads and one fresh3-read reproof; c
     if (objectId === "scopes") { return Promise.resolve({ result: ["Closure", "Global"].map((description, index) => property(String(index),
       { type: "object", subtype: "internal#scope", className: "Object", description, objectId: `scope-${String(index)}` }, true, true)) }); }
     const index = Number(objectId.slice(3)); return Promise.resolve(metadata(index));
-  }, capture: (): Promise<unknown> => { count += 1; return Promise.resolve({ result: { type: "object", subtype: "array", className: "Array", description: "Array(40)", objectId: "destinations" } }); },
+  }, capture: (): Promise<unknown> => { count += 1; return Promise.resolve({ result: { type: "object", subtype: "array", className: "Array", description: "Array(43)", objectId: "destinations" } }); },
   recheck: (): Promise<unknown> => { count += 1; return Promise.resolve({ result: { type: "boolean", value: true } }); } }), "script", state);
-  const packet = await runner.observe(); assert.equal(count, 36); assert.equal(packet.privateCooperationBranchExcluded, true);
+  const packet = await runner.observe(); assert.equal(count, 39); assert.equal(packet.privateCooperationBranchExcluded, true);
   assert.equal(packet.trackedUploadQueuesEmptyAtObservation, true);
   assert.equal(packet.nativeHttpBackendOwned, false); assert.equal(packet.callbacksCompleted, false);
-  await assert.rejects(runner.requireOriginal({ ...packet })); assert.equal(count, 36);
-  await runner.requireOriginal(packet); assert.equal(count, 39);
-  await assert.rejects(runner.requireOriginal(packet)); await assert.rejects(runner.observe()); assert.equal(count, 39);
+  await assert.rejects(runner.requireOriginal({ ...packet })); assert.equal(count, 39);
+  await runner.requireOriginal(packet); assert.equal(count, 42);
+  await assert.rejects(runner.requireOriginal(packet)); await assert.rejects(runner.observe()); assert.equal(count, 42);
 });

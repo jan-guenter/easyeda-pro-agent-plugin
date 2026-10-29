@@ -204,3 +204,84 @@ forged token with `COMPLETION_ORIGINAL_LEASE_REQUIRED`; the assertion and title
 now require that actual guard. All three focused completion-source/grammar
 cases and strict lint pass. No runtime, helper, budget or manifest changed.
 The failed run40855125062 remains retained, not final green suite evidence.
+
+## Publication and official installation
+
+Final candidate `45ec46e6d11f666c195ae66147612ac055cac244` passed all eleven PR
+checks. Linux40857300743 passed13,533 facade cases with five expected skips and
+zero failures, plus424 bridge cases. Windows40857300833 passed. Protected
+[PR149](https://github.com/jan-guenter/easyeda-pro-agent-plugin/pull/149) merged
+as `22aa629abe52b8b8034fcc47577875510b34b172`. Its plugin tree
+`5a664b6eb8631c1b76cdc4372c1504ca8ad40dba` is exactly the tested candidate tree.
+The batch changes57 files. No runtime changed after final green PR validation.
+
+The official CLI upgraded only Git marketplace `easyeda-pro-agent` from
+`https://github.com/jan-guenter/easyeda-pro-agent-plugin.git`. Its cached Git
+HEAD is merged main22aa629 and origin remains that exact canonical URL.
+The upgrade refreshed the enabled plugin directly to
+`0.3.0+codex.20261029095000`; no redundant add/reinstall was needed.
+The CLI emitted its stale arg0-directory cleanup permission warning, retained
+in private stderr. Installation and verification succeeded without deleting
+temporary roots or changing the host gateway.
+
+Complete installed comparisons before and after the scoped plugin list pass
+all2,332 files,45,438,879 bytes,42 directories including the root, and committed
+0644/0755 modes. Inventory digest:
+`2d6c7769ceba56594a81ad66ff57cdbe090f23b0d9addd82601e7216ed0a7124`.
+The scoped list confirms installed/enabled true and the canonical Git source.
+The private machine profile remains byte-exact; no key was reprovisioned.
+No installed cache or host-owned facade was manually patched or terminated.
+
+The installed configured-entrypoint offline probe passed27 exposed/52 configured
+tools and45 queries through47 requests on pinned Node24.18.0. Its own synthetic
+child closed through stdin EOF with exit0, no signal and zero stderr. Marker and
+control-roster checks passed. Sampled descendants/nonstdio sockets were absent;
+continuous isolation remains unproved. This is neither actual new-host admission,
+an ambient-to-pinned handoff proof nor connected writer validation.
+
+Automatic merged-main Linux40859228974 and Windows40859228971 are separate from
+the green exact-payload PR evidence. Their final status is pending at this entry.
+The existing chat still loaded081309. Load the installed snapshot in a fresh
+Codex session before new live calls; do not replay the terminal081309 case.
+
+### Next scheduling unit
+
+The source review derives one pending-create/clock unit at68 commands,
+50 normal and18 cleanup, or up to70 IDs with the original group handoff.
+This is a proposed distinct unit, not a larger reservation or current execution
+permission. The original main breakpoints must arm first; the clock unit arms13
+requests before the sole fixed create. Retain an opaque original create-reply
+lease through clock retirement, allowing either its already received reply or
+that one exact pending reply. The normal vendor path returns after local cache
+write and starts buffered backend work without awaiting it. The fallback can
+keep create pending through backend completion. Therefore neither a required
+pending state nor an early acknowledgment can establish backend completion.
+
+The next implementation needs explicit native create placement/accounting,
+bounded reply custody, the narrowly derived retirement exception and a sole
+post-clock custodian before main collection. It must preflight the complete
+native envelope and leave the public54-ID main profile unchanged. The full
+four-generation reservation, eligibility and persistence proofs remain required.
+The private source design note is retained outside the repository for continuation.
+
+## Final merged-main verification and handoff
+
+Merged main22aa629 passed all ten Linux jobs in40859228974 and Windows40859228971.
+The final manifest, both runtime bundles, plugin metadata and native helper still
+match the committed installed bytes and modes after those runs. The private
+machine profile remains unchanged. No live call used the new installation in
+this chat, and no installed cache or host gateway was patched or terminated.
+
+The observed existing facade still uses081309 from its now-pruned old cache
+path. Its native disposable case is already released. A fresh Codex session
+must admit the actual095000 owner and start a new disposable case for the
+corrected constructor/dependency route. Never replay081309 or its close/abort,
+the completed223950 relinquishment or the old PowerShell termination. No Save
+was attempted in081309.
+
+Preserve the proposed pending-create/clock schedule for the next implementation
+batch, then implement genuine inverse ownership and complete full-SQL/reopened
+proofs before enabling copy/delete. No whole-writer reservation or public writer
+is claimed. All broader coverage omissions remain listed in the inventory.
+This publication appendix is retained locally for the next substantive commit,
+without starting another release solely for its chronology.

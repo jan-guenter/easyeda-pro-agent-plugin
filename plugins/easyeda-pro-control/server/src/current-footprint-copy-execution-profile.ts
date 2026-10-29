@@ -9,6 +9,7 @@ import { CURRENT_FOOTPRINT_PARENT_WORKER_REQUESTS } from "./current-footprint-co
 import { CURRENT_FOOTPRINT_COPY_CACHE_CONSTRUCTION_REQUESTS } from "./current-footprint-copy-cache-construction-contract.ts";
 import { CURRENT_FOOTPRINT_COPY_MANAGER_ROUTE_REQUESTS } from "./current-footprint-copy-manager-route-runner.ts";
 import { CURRENT_FOOTPRINT_COPY_CLOCK_REGISTRATION_REQUESTS } from "./current-footprint-copy-clock-registration-runner.ts";
+import { CURRENT_FOOTPRINT_COPY_DESTINATION_PROFILES } from "./current-footprint-copy-destination-profiles.ts";
 import { freezeDeep } from "./sqlite-inventory-core.ts";
 
 const transactionClockCleanup = 5;
@@ -19,7 +20,9 @@ const cacheConstruction = cacheConstructionNative - cacheConstructionCleanup;
 const cacheConstructionDelegates = 3;
 const construction = CURRENT_FOOTPRINT_COPY_CONSTRUCTION_TIMING.captureRequests - 55;
 const asyncAndHandoff = 19 + 6 + 1;
-const destinations = 38 + 5;
+// Each selected method/class has one metadata read, eight shared capture
+// Requests, two original-owner checks and five original reproof requests.
+const destinations = CURRENT_FOOTPRINT_COPY_DESTINATION_PROFILES.length + 8 + 2 + 5;
 const parentConstruction = CURRENT_FOOTPRINT_PARENT_CONSTRUCTION_REQUESTS;
 const parentPeer = CURRENT_FOOTPRINT_PARENT_WORKER_REQUESTS;
 const parentNormal = parentConstruction.arm + parentConstruction.capture + parentConstruction.resume + parentPeer.observe +

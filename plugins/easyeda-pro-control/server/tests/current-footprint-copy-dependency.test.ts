@@ -31,7 +31,7 @@ function arrayReply(direct = false): Data {
   } else {
     result.push(...backendCacheArrayTail());
   }
-  result.push(property("length", { type: "number", value: direct ? 10 : 69 }, true, false, false));
+  result.push(property("length", { type: "number", value: direct ? 10 : 70 }, true, false, false));
   return { result, internalProperties: [{ name: "[[Prototype]]", value: { type: "object", subtype: "array", className: "Array", description: "Array(0)", objectId: "array-prototype" } }] };
 }
 function functionReply(index: number, direct = false): Data {
@@ -46,8 +46,8 @@ function functionReply(index: number, direct = false): Data {
     { name: "[[Scopes]]", value: { type: "object", subtype: "internal#scopeList", className: "Array", description: "Scopes[2]", objectId: `scopes-${String(index)}` } },
   ] };
 }
-function owner(): { runner: CurrentFootprintCopyDependencyRunner; calls: string[]; failFinal: () => void; loseAfterReply: () => void } {
-  const calls: string[] = []; let current = true, lose = false, valid = true;
+function owner(): { runner: CurrentFootprintCopyDependencyRunner; calls: string[]; failFinal: () => void; loseAfterReply: () => void; refuseCapture: () => void } {
+  const calls: string[] = []; let current = true, exception = false, lose = false, valid = true;
   const runner = new CurrentFootprintCopyDependencyRunner(Object.freeze({
     lexicalBundleObjectId: "lexicals", assertCurrent: (): void => { assert.ok(current, "owner lost"); },
     properties: (id: string): Promise<unknown> => {
@@ -59,14 +59,20 @@ function owner(): { runner: CurrentFootprintCopyDependencyRunner; calls: string[
       const index = Number(id.split("-")[1]);
       return Promise.resolve(id.startsWith("native-") ? backendCacheNativeMetadata(index) : functionReply(index, id.startsWith("direct-")));
     },
-    capture: (scope: string): Promise<unknown> => { calls.push(`capture-${scope}`); return Promise.resolve({ result: { type: "object", subtype: "array", className: "Array", description: "Array(69)", objectId: "dependencies" } }); },
+    capture: (scope: string): Promise<unknown> => {
+      calls.push(`capture-${scope}`);
+      return Promise.resolve(exception ? { result: { type: "undefined" }, exceptionDetails: { lineNumber: 12, columnNumber: 3,
+        text: "private fixture details must remain in raw evidence" } } :
+        { result: { type: "object", subtype: "array", className: "Array", description: "Array(70)", objectId: "dependencies" } });
+    },
     recheck: (scope: string, bundle: string): Promise<unknown> => { calls.push(`recheck-${scope}`); assert.equal(bundle, "dependencies"); return Promise.resolve(valid ? yes : { result: { type: "boolean", value: false } }); },
   }), "script");
-  return { runner, calls, failFinal: (): void => { valid = false; }, loseAfterReply: (): void => { lose = true; } };
+  return { runner, calls, failFinal: (): void => { valid = false; }, loseAfterReply: (): void => { lose = true; },
+    refuseCapture: (): void => { exception = true; } };
 }
 
 void test("dependency profiles match complete pinned sources and JavaScript arities without invoking them", () => {
-  assert.equal(decodeCurrentFootprintCopyDependencies(arrayReply()).length, 60);
+  assert.equal(decodeCurrentFootprintCopyDependencies(arrayReply()).length, 61);
   const context = vm.createContext({}), done = new Set<string>();
   function compile(index: number): void {
     const profile = PROFILES[index], source = SOURCES[index]; assert.ok(profile && source);
@@ -80,7 +86,7 @@ void test("dependency profiles match complete pinned sources and JavaScript arit
     assert.throws(() => decodeCurrentFootprintCopyDependencyFunction(functionReply(index), "other-script", index));
   }
   for (const index of PROFILES.keys()) { compile(index); }
-  assert.equal(done.size, 60);
+  assert.equal(done.size, 61);
   const altered = arrayReply(); assert.ok(Array.isArray(altered["result"]));
   altered["result"][0] = property("0", { type: "function", className: "Function", description: "function wa(){}", objectId: "replacement" }, true, true);
   assert.throws(() => decodeCurrentFootprintCopyDependencies(altered));
@@ -104,14 +110,14 @@ void test("fixed dependency selectors retain original identities and refuse lazy
     if (change.startsWith("delete")) { assert.equal(vm.runInContext("Object.hasOwn(globalThis,'/tab/notify')", context), false); }
   }
 });
-void test("dependency runner retains75 original reads, then one fresh3-request reproof without execution authority", async () => {
+void test("dependency runner retains76 original reads, then one fresh3-request reproof without execution authority", async () => {
   const { runner, calls } = owner(), packet = await runner.observe();
-  assert.equal(calls.length, 75); assert.equal(runner.retained().replies.length, 75);
+  assert.equal(calls.length, 76); assert.equal(runner.retained().replies.length, 76);
   assert.deepEqual(calls.filter(id => id.startsWith("scopes-")), ["scopes-2", "scopes-4", "scopes-5"]);
   currentFootprintCopyDependencyObservationSchema.parse(packet); assert.equal(packet.executionAuthorized, false);
-  await assert.rejects(runner.requireOriginal({ ...packet })); assert.equal(calls.length, 75);
-  await runner.requireOriginal(packet); assert.equal(calls.length, 78);
-  await assert.rejects(runner.requireOriginal(packet)); await assert.rejects(runner.observe()); assert.equal(calls.length, 78);
+  await assert.rejects(runner.requireOriginal({ ...packet })); assert.equal(calls.length, 76);
+  await runner.requireOriginal(packet); assert.equal(calls.length, 79);
+  await assert.rejects(runner.requireOriginal(packet)); await assert.rejects(runner.observe()); assert.equal(calls.length, 79);
 });
 void test("dependency selectors retain original classes when V8 omits unused lexical aliases", () => {
   const context = fixedWorld();
@@ -138,21 +144,55 @@ void test("dependency selectors reject changed original class vectors and derive
     assert.equal(vm.runInContext("calls", context), 0);
   }
 });
+void test("dependency selector qualifies native ja parser override and its separate zy super implementation", () => {
+  const context = fixedWorld();
+  assert.equal(vm.runInContext("Object.hasOwn(scope.ja.prototype,'parseFull')&&Object.hasOwn(scope.zy.prototype,'parseFull')&&!Object.hasOwn(scope.Vc.prototype,'parseFull')", context), true);
+  vm.runInContext(`const original=(${CALLS.capture.program}).call({object:scope},project,bus,manager,consistency,constructors,lexicals);`, context);
+  assert.equal(vm.runInContext(`(${CALLS.recheck.program}).call({object:scope},project,bus,manager,consistency,constructors,lexicals,original)`, context), true);
+  for (const mutation of [
+    "delete scope.ja.prototype.parseFull",
+    "consistency.parseFull=stop",
+    "Object.defineProperty(scope.Vc.prototype,'parseFull',{value:stop,writable:true,configurable:true})",
+  ]) {
+    const rejected = fixedWorld(); vm.runInContext(mutation, rejected);
+    assert.throws(() => vm.runInContext(`(${CALLS.capture.program}).call({object:scope},project,bus,manager,consistency,constructors,lexicals)`, rejected), /FOOTPRINT_COPY_DEPENDENCY_BINDING/u);
+    assert.equal(vm.runInContext("calls", rejected), 0);
+  }
+  for (const ownerName of ["ja", "zy"]) {
+    const changed = fixedWorld();
+    vm.runInContext(`const original=(${CALLS.capture.program}).call({object:scope},project,bus,manager,consistency,constructors,lexicals);scope.${ownerName}.prototype.parseFull=function parseFull(){};`, changed);
+    assert.throws(() => vm.runInContext(`(${CALLS.recheck.program}).call({object:scope},project,bus,manager,consistency,constructors,lexicals,original)`, changed), /FOOTPRINT_COPY_DEPENDENCY_BINDING/u);
+  }
+});
 void test("dependency owner loss retains the arrived reply and failed reproof cannot retry", async () => {
   const lost = owner(); lost.loseAfterReply(); await assert.rejects(lost.runner.observe(), /owner lost/u);
   assert.equal(lost.runner.retained().replies.length, 1); assert.equal(lost.runner.retained().failed, true);
   const failed = owner(), packet = await failed.runner.observe(); failed.failFinal(); await assert.rejects(failed.runner.requireOriginal(packet));
-  assert.equal(failed.runner.retained().requests, 78); assert.equal(failed.runner.retained().failed, true);
-  await assert.rejects(failed.runner.requireOriginal(packet)); assert.equal(failed.calls.length, 78);
+  assert.equal(failed.runner.retained().requests, 79); assert.equal(failed.runner.retained().failed, true);
+  await assert.rejects(failed.runner.requireOriginal(packet)); assert.equal(failed.calls.length, 79);
+});
+void test("dependency inspector exception retains full raw evidence before fixed diagnostic and cannot redispatch", async () => {
+  const value = owner(); value.refuseCapture();
+  await assert.rejects(value.runner.observe(), { message: "FOOTPRINT_COPY_INSPECTOR_EXCEPTION:dependencies:13:4" });
+  const retained = value.runner.retained();
+  assert.equal(retained.failed, true); assert.equal(retained.completed, false); assert.equal(retained.requests, 4);
+  assert.equal(JSON.stringify(retained.replies.at(-1)), JSON.stringify({ result: { type: "undefined" },
+    exceptionDetails: { lineNumber: 12, columnNumber: 3, text: "private fixture details must remain in raw evidence" } }));
+  const calls = value.calls.length;
+  await assert.rejects(value.runner.observe()); assert.equal(value.calls.length, calls);
+  assert.equal(value.runner.retained().replies.length, 4);
 });
 
-void test("recorded dependency observations preserve exact historical53 without admitting them as current60 evidence", async () => {
+void test("recorded dependency observations preserve exact historical53 without admitting them as current61 evidence", async () => {
   const value = owner(); const packet = await value.runner.observe();
   const newFields = ["cacheWrapperFunctionsQualified", "cacheWrapperNamespaceNamesMatched", "originalNativeCacheReceiverCandidatesRetained",
-    "nativeCacheFunctionsQualified", "nativeCacheNamespaceProvenanceVerified"];
+    "nativeCacheFunctionsQualified", "nativeCacheNamespaceProvenanceVerified", "nativeParserOverrideQualified"];
   const historical = { ...Object.fromEntries(Object.entries(packet).filter(([name]) => !newFields.includes(name))), selectedFunctionCount: 53 };
   assert.deepEqual(recordedCurrentFootprintCopyDependencyObservationSchema.parse(historical), historical);
   assert.deepEqual(recordedCurrentFootprintCopyDependencyObservationSchema.parse(packet), packet);
+  const historicalCache = { ...Object.fromEntries(Object.entries(packet).filter(([name]) => name !== "nativeParserOverrideQualified")), selectedFunctionCount: 60 };
+  assert.deepEqual(recordedCurrentFootprintCopyDependencyObservationSchema.parse(historicalCache), historicalCache);
+  assert.equal(currentFootprintCopyDependencyObservationSchema.safeParse(historicalCache).success, false);
   assert.equal(currentFootprintCopyDependencyObservationSchema.safeParse(historical).success, false);
   for (const field of newFields) {
     assert.equal(recordedCurrentFootprintCopyDependencyObservationSchema.safeParse({ ...historical, [field]: true }).success, false);
@@ -162,7 +202,7 @@ void test("recorded dependency observations preserve exact historical53 without 
   assert.equal(recordedCurrentFootprintCopyDependencyObservationSchema.safeParse({ ...packet, selectedFunctionCount: 53 }).success, false);
   assert.equal(recordedCurrentFootprintCopyDependencyObservationSchema.safeParse({ ...packet, nativeCacheNamespaceProvenanceVerified: true }).success, false);
   await assert.rejects(value.runner.requireOriginal(currentFootprintCopyDependencyObservationSchema.parse(packet)));
-  assert.equal(value.calls.length, 75);
+  assert.equal(value.calls.length, 76);
 });
 void test("dependency commands exist only in preparation wire while native generation preserves old case parity", () => {
   for (const [index, command] of currentFootprintCopyDependencyNativeCases().entries()) {

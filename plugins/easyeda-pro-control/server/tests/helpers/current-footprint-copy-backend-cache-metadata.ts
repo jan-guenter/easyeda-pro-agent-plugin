@@ -7,9 +7,9 @@ const property = (name: string, value: Data, writable = false, enumerable = fals
 
 export function backendCacheArrayTail(): Data[] {
   return [
-    ...["JP", "bb", "bb", "Cache", "Cache"].map((className, index) => property(String(index + 60),
+    ...["JP", "bb", "bb", "Cache", "Cache"].map((className, index) => property(String(index + 61),
       { type: "object", className, objectId: `runtime-${String(index)}` }, true, true)),
-    ...PROFILES.map((profile, index) => property(String(index + 65), { type: "function", className: "Function",
+    ...PROFILES.map((profile, index) => property(String(index + 66), { type: "function", className: "Function",
       description: `function ${profile.name}() { [native code] }`, objectId: `native-${String(index)}` }, true, true)),
   ];
 }

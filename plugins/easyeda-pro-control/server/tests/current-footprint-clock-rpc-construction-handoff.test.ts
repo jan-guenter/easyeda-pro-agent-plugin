@@ -6,13 +6,17 @@ import { createRequire } from "node:module";
 import { test } from "node:test";
 import { runInThisContext } from "node:vm";
 import { transform } from "esbuild";
+import type { CurrentFootprintCopyCreateInvocationBinding, CurrentFootprintCopyCreateInvocationLease } from "../src/current-footprint-copy-create-invocation-lease.ts";
 import type { CurrentFootprintCopyClockRpcConstructionLease } from "../src/current-footprint-copy-clock-rpc-leases.ts";
 
 interface TestRunner {
   seedClockRpcHandoffForTest: (cache: object, observation: object, unsubscribe: () => void) => CurrentFootprintCopyClockRpcConstructionLease;
+  issueCreateInvocationLease: (lease: CurrentFootprintCopyClockRpcConstructionLease) => CurrentFootprintCopyCreateInvocationLease;
+  changeCreateHandleForTest: () => void;
   prepareClockRpcObservationHandoff: (lease: CurrentFootprintCopyClockRpcConstructionLease) => Promise<void>;
 }
 async function fixture(valid = true, missingFailureFlag = false, lostRelease = false): Promise<Readonly<{
+  requireInvocation: (lease: CurrentFootprintCopyCreateInvocationLease) => CurrentFootprintCopyCreateInvocationBinding;
   runner: TestRunner; lease: CurrentFootprintCopyClockRpcConstructionLease; state: { releases: number; cleanups: number; unsubscribed: number; released: boolean };
 }>> {
   const url = new URL("../src/current-pcb-worker-construction-runner.ts", import.meta.url);
@@ -21,8 +25,11 @@ async function fixture(valid = true, missingFailureFlag = false, lostRelease = f
     const packet=Object.freeze({profile:this.#profile});this.#packet=packet;issued.set(packet,this);this.#settled=true;this.#unsubscribe=unsubscribe;
     this.#footprintCacheConstruction=cache;this.#footprintCacheConstructionPacket=observation;
     const lease=Object.freeze({profile:"private.current-footprint-clock-rpc-construction-lease.v1"});this.#clockRpcLease=lease;
-    clockRpcLeases.set(lease,Object.freeze({issuer:this,assertCleanup:()=>this.#sameTransport()}));return lease;
-  }\n  public status():`;
+    Object.assign(this.#identities,{project:"project",channelBus:"bus"});this.#footprintManager="manager";this.#footprintConsistency="consistency";
+    this.#footprintConstructors="constructors";this.#footprintCreateMethods="methods";
+    clockRpcLeases.set(lease,Object.freeze({issuer:this,assertCleanup:()=>this.#sameTransport(),assertOriginal:async()=>this.#sameTransport()}));return lease;
+  }
+  public changeCreateHandleForTest(): void { this.#footprintCreateMethods="replacement"; }\n  public status():`;
   const changed = source.replace("public status():", seed); assert.notEqual(changed, source);
   const output = await transform(changed, { loader: "ts", format: "cjs", target: "node24" });
   const loaded: { exports: Record<string, unknown> } = { exports: {} };
@@ -46,7 +53,10 @@ async function fixture(valid = true, missingFailureFlag = false, lostRelease = f
     cleanup: (): Promise<void> => { state.cleanups += 1; throw new Error("normal handoff called failure cleanup"); },
   });
   const lease = runner.seedClockRpcHandoffForTest(cache, observation, (): void => { state.unsubscribed += 1; });
-  return { runner, lease, state };
+  const getBinding = loaded.exports["requireCurrentFootprintCopyCreateInvocationLease"]; assert.ok(typeof getBinding === "function");
+  // oxlint-disable-next-line typescript/no-unsafe-type-assertion -- Lookup belongs to the same VM-loaded real issuer registry; only prerequisite state is synthetic.
+  const requireInvocation = getBinding as (original: CurrentFootprintCopyCreateInvocationLease) => CurrentFootprintCopyCreateInvocationBinding;
+  return { runner, lease, state, requireInvocation };
 }
 void test("completed original cache retires its group once and stops construction without failure cleanup", async () => {
   const f = await fixture(); await f.runner.prepareClockRpcObservationHandoff(f.lease);
@@ -65,4 +75,20 @@ void test("lost original group-release acknowledgement consumes handoff without 
   await assert.rejects(f.runner.prepareClockRpcObservationHandoff(f.lease), /lost group/u);
   await assert.rejects(f.runner.prepareClockRpcObservationHandoff(f.lease), /HANDOFF/u);
   assert.deepEqual(f.state, { releases: 1, cleanups: 0, unsubscribed: 0, released: false });
+});
+
+void test("original construction issues one immutable invocation lease and consumes it once without new requests", async () => {
+  const f = await fixture();
+  const lease = f.runner.issueCreateInvocationLease(f.lease);
+  assert.equal(f.runner.issueCreateInvocationLease(f.lease), lease);
+  assert.throws(() => f.requireInvocation({ ...lease }), /INVOCATION_LEASE/u);
+  const binding = f.requireInvocation(lease); await binding.assertOriginal();
+  assert.equal(binding.projectObjectId, "project");
+  assert.deepEqual(binding.handles, ["bus", "manager", "consistency", "constructors", "methods"]);
+  assert.equal(Object.isFrozen(binding.handles), true); binding.consumeBeforeInvocation();
+  assert.throws(() => { binding.consumeBeforeInvocation(); }, /INVOCATION_CONSUMED/u);
+  f.runner.changeCreateHandleForTest();
+  assert.throws(() => { binding.assertCleanup(); }, /PREPARATION_CHANGED/u);
+  assert.throws(() => f.requireInvocation(lease), /PREPARATION_CHANGED/u);
+  assert.deepEqual(f.state, { releases: 0, cleanups: 0, unsubscribed: 0, released: false });
 });

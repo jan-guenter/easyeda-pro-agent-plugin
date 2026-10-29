@@ -47,7 +47,8 @@ export const CURRENT_FOOTPRINT_COPY_CREATE_METHOD_CALLS = freezeDeep({
  * journal the sole dispatch after full destination/backend/clock qualification.
  * No existing preparation transport admits this side-effecting command. */
 export const CURRENT_FOOTPRINT_COPY_NATIVE_CREATE_CALL = freezeDeep({
-  program: `async function(bus,manager,consistency,constructors,methods,expectedProjectUuid,argument){${helpers}
+  program: `async function(bus,manager,consistency,constructors,methods,expectedProjectUuid,createArgumentJson){${helpers}
+if(typeof createArgumentJson!=="string"||createArgumentJson.length>65536)bad();const argument=JSON.parse(createArgumentJson);if(JSON.stringify(argument)!==createArgumentJson)bad();
 array(methods,8);for(let i=0;i<8;i++)if(own(methods,String(i))!==selected[i])bad();
 const identifier=(value,re)=>{const match=typeof value==="string"?re.exec(value):null;if(match===null||match[0]!==value)bad();return value;};
 identifier(expectedProjectUuid,/^(?:[a-f0-9]{32}|[a-f0-9]{64})$/);if(own(this,"uuid")!==expectedProjectUuid)bad();

@@ -51,6 +51,11 @@ const runtimeMethods = PROFILES.filter(profile => profile.kind === "method" && /
   const levels: Readonly<Record<string, number>> = { Lg: 0, Gd: 1, ja: 0, Vc: 1, zy: 2 };
   const level = levels[owner ?? ""];
   if (level === undefined) { throw new Error("FOOTPRINT_DEPENDENCY_PROFILE"); }
+  if (profile.key === "zy.parseFull") {
+    // Current ja.parseFull intentionally shadows the base method and invokes
+    // It through super. Qualify both exact functions and the original chain.
+    return 'absent(consistency,"parseFull");absent(commonLevels[1],"parseFull");if(own(commonLevels[0],"parseFull")!==method(classRef("ja"),"parseFull")||own(commonLevels[2],"parseFull")!==method(classRef("zy"),"parseFull"))bad();';
+  }
   return `if(resolved(${project ? "project,projectLevels" : "consistency,commonLevels"},${JSON.stringify(name)},${String(level)})!==method(classRef(${JSON.stringify(owner)}),${JSON.stringify(name)}))bad();`;
 }).join("\n");
 const notification = String.raw`

@@ -1,0 +1,98 @@
+/** Original synthetic SQLite plans and actual byte/slot preflight. No EasyEDA,
+ * native owner, filesystem publication or whole-writer reservation is created. */
+import assert from "node:assert/strict";
+import { test } from "node:test";
+import { CurrentFootprintCopyOutputLedger, assertCurrentFootprintCopyOutputHeadroom,
+  reserveCurrentFootprintCopyOutput } from "../src/current-footprint-copy-output-reservation.ts";
+import { prepareCurrentFootprintSourcePlan } from "../src/current-footprint-source-plan.ts";
+import { prepareCurrentFootprintCopyV2Plan } from "../src/current-footprint-copy-v2-plan.ts";
+import { prepareCurrentFootprintCopyV2SqlPlan } from "../src/current-footprint-copy-v2-sql.ts";
+import { IDS, WITNESS, encrypted, fixture, inventory, mutate } from "./helpers/symbol-sql-fixture.ts";
+
+const SOURCE = { projectUuid: IDS.project, branchUuid: IDS.branch, footprintUuid: IDS.target };
+const ACTOR = { uuid: IDS.actor, username: "synthetic-user", nickname: "Synthetic" }, CLIENT = "a".repeat(16);
+const META = { title: "Source", description: "Preserve Ω", tags: ["tag"], source: "source-reference" };
+function head(ticket: number): string {
+  return `${JSON.stringify({ type: "DOCHEAD", ticket })}||${JSON.stringify({ docType: "FOOTPRINT", client: CLIENT,
+    uuid: IDS.target, updateTime: 300, version: "300", editVersion: "3.2.209", user: ACTOR })}`;
+}
+async function plans(): Promise<Readonly<{
+  copy: Awaited<ReturnType<typeof prepareCurrentFootprintCopyV2Plan>>;
+  sql: Awaited<ReturnType<typeof prepareCurrentFootprintCopyV2SqlPlan>>;
+}>> {
+  const created = await fixture();
+  const metadata = `${JSON.stringify({ type: "META", ticket: 90, id: "META" })}||${JSON.stringify(META)}`;
+  const pad = '{"type":"PAD","ticket":90,"id":"pad"}||{"number":"1", "x":10}';
+  const raw = [`{"type":"EDIT_HEAD"}||${JSON.stringify({ ...ACTOR, updateTime: 1 })}`, head(100), metadata, pad].join("|\n");
+  mutate(created.path, `UPDATE history_data SET dataStr='${encrypted(raw, IDS.oldHead, IDS.oldKey)}' WHERE uuid='${IDS.oldHead}'`);
+  const before = await inventory(created.path), source = await prepareCurrentFootprintSourcePlan(before, SOURCE);
+  const content = [head(101), metadata, head(100), pad].join("|\n");
+  const copy = await prepareCurrentFootprintCopyV2Plan(before, source, { client: CLIENT, content });
+  const sql = await prepareCurrentFootprintCopyV2SqlPlan({ before, copyPlan: copy, witness: {
+    projectUuid: IDS.project, branchUuid: IDS.branch, backendActorUuid: IDS.actor, client: CLIENT, preDispatchMaxTicket: 100,
+    documentClockMinMs: WITNESS.serverClockMinMs, documentClockMaxMs: WITNESS.serverClockMaxMs,
+    backendClockMinMs: WITNESS.serverClockMinMs, backendClockMaxMs: WITNESS.serverClockMaxMs,
+    backendLocalOffsetMinutes: WITNESS.serverLocalOffsetMinutes,
+  } });
+  return { copy, sql };
+}
+
+void test("output preflight binds original SQL/copy plans and accounts distinct escaped records", async () => {
+  const { copy, sql } = await plans(), reservation = reserveCurrentFootprintCopyOutput(copy, sql);
+  assert.equal(reservation.slots["create-frame"].bytes, 4_198_400);
+  assert.equal(reservation.slots["create-result"].bytes, 2_097_152);
+  assert.equal(reservation.slots["rejected-frame"].count, 1);
+  assert.equal(reservation.slots["rejected-frame"].bytes, 4 * Math.ceil(4_198_400 / 3) + 65_536);
+  assert.equal(reservation.slots["closed-sql"].bytes, sql.maximumEncodedSqlBytes);
+  assert.equal(reservation.slots["journal-control"].count + reservation.slots["journal-create"].count + reservation.slots["journal-saved"].count, 32);
+  assert.equal(reservation.slots["journal-create"].bytes, 5 * 2_097_152 + 65_536);
+  assert.equal(reservation.retainedBytes, reservation.artifactBytes + reservation.journalBytes);
+  assert.equal(reservation.wholeWriterOutputReserved, false); assert.equal(reservation.helperStdoutReserved, false);
+  assert.equal(reservation.nativeRequestsReserved, false); assert.equal(reservation.executionAuthorized, false);
+  assertCurrentFootprintCopyOutputHeadroom(reservation, reservation.artifactBytes, reservation.journalBytes);
+  assert.throws(() => { assertCurrentFootprintCopyOutputHeadroom(reservation, reservation.artifactBytes - 1, reservation.journalBytes); }, /HEADROOM/u);
+  assert.throws(() => { assertCurrentFootprintCopyOutputHeadroom(reservation, reservation.artifactBytes, reservation.journalBytes - 1); }, /HEADROOM/u);
+  assert.throws(() => reserveCurrentFootprintCopyOutput(structuredClone(copy), sql), /original/u);
+  assert.throws(() => reserveCurrentFootprintCopyOutput(copy, structuredClone(sql)), /original/u);
+  assert.throws(() => new CurrentFootprintCopyOutputLedger(structuredClone(reservation)), /ORIGINAL_RESERVATION/u);
+  for (const value of [-0, -1, Number.NaN, Infinity, "1000000000", {}]) {
+    assert.throws(() => { assertCurrentFootprintCopyOutputHeadroom(reservation, value, reservation.journalBytes); }, /HEADROOM_SCALAR/u);
+  }
+});
+
+void test("output ledger consumes original slots before decoding and retains malformed or late raw text", async () => {
+  const { copy, sql } = await plans(), ledger = new CurrentFootprintCopyOutputLedger(reserveCurrentFootprintCopyOutput(copy, sql));
+  const frame = ledger.begin("create-frame"), result = ledger.begin("create-result");
+  assert.equal(ledger.status().pending, 2);
+  const malformed = '{"id":1,"result":';
+  ledger.retain(frame, malformed);
+  assert.equal(ledger.retained(frame), malformed);
+  assert.throws(() => JSON.parse(ledger.retained(frame)));
+  assert.throws(() => ledger.retain({ ...frame }, "{}"), /ORIGINAL_SLOT/u);
+  assert.throws(() => ledger.retain(frame, "{}"), /ORIGINAL_SLOT/u);
+  assert.throws(() => ledger.begin("create-frame"), /SLOT_EXHAUSTED/u);
+  assert.equal(ledger.status().failed, true);
+  // Failure cannot discard an already written original request's later reply.
+  ledger.retain(result, '{"success":false,"result":"late original"}');
+  assert.equal(ledger.status().pending, 0); assert.equal(ledger.status().retained, 2);
+  assert.throws(() => ledger.begin("saved-packet"), /SLOT_CLASS/u);
+  assert.equal(ledger.status().slotsConsumed, 2);
+});
+
+void test("UTF8 size and failed output consume publication once without invoking object hooks", async () => {
+  const { copy, sql } = await plans(), reservation = reserveCurrentFootprintCopyOutput(copy, sql);
+  const ledger = new CurrentFootprintCopyOutputLedger(reservation);
+  const raw = ledger.begin("create-result"), saved = ledger.begin("saved-observation");
+  const maximum = reservation.slots["saved-observation"].bytes;
+  const unicode = "Ω".repeat(Math.floor(maximum / 2) + 1);
+  assert.ok(unicode.length <= maximum && Buffer.byteLength(unicode) > maximum);
+  let publications = 0;
+  const publish = (): void => { ledger.retain(saved, unicode); publications += 1; };
+  assert.throws(publish, /SLOT_BYTES/u); assert.equal(publications, 0);
+  assert.throws(() => ledger.retain(saved, "{}"), /ORIGINAL_SLOT/u);
+  let traps = 0;
+  const object = new Proxy({}, { get(): never { traps += 1; throw new Error("hook"); } });
+  assert.throws(() => ledger.retain(raw, object), /PRIMITIVE_UTF8/u);
+  assert.equal(traps, 0); assert.equal(ledger.status().pending, 0); assert.equal(ledger.status().slotsConsumed, 2);
+  assert.equal(ledger.status().retained, 0); assert.equal(ledger.status().failed, true);
+});
