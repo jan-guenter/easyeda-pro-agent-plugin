@@ -179,3 +179,37 @@ consistency regression now checks both declarations together. No helper code,
 facade runtime source or bundled executable changed for this correction.
 The original Windows failure and superseded Linux run remain retained; final
 CI must cover the corrected commit.
+
+## Full-suite correction and fast pin preflight
+
+Linux40894515615 for candidate2a62694 completed13,605 cases:13,595 passed,
+five failed and five expected platform cases skipped. Windows40894515608
+passed. Three failures were isolated registration VMs missing the new real
+visual schema binding. Another retained negative guard needed to recognize the
+separately birth-gated, original-Job visual termination method while preserving
+all creation-image, process-membership and no-other-termination assertions.
+
+The remaining failure identified a real startup defect: the owner hash was
+current but `HELPER_BYTES` still required1,026,532 bytes. Earlier wording that
+both consumers matched was incomplete. The runtime byte pin now requires
+1,047,511. The original consumer regression correctly caught this and stayed
+unchanged. This is not a relaxed size/hash guard or a test-only correction.
+
+A new builtin-only `native:helper:check` runs first in every build. It reads the
+actual bounded helper and independently checks both consumers' unique exact
+size/hash declarations, ASCII and the unchanged1MiB cap. It does not load the
+owner, launch anything, access control data or automatically refresh pins.
+This catches future pin drift during the fast build phase. Both package and
+repository validators require that step. No new API feature or helper code was
+added during these corrections.
+
+Final local verification again passes types, zero-warning lint, complete package
+and repository checks, skills, compatibility and reproducible bundles. The
+focused final selection passes33 cases with zero failures/skips, including all
+five previously failing cases and the independent consumer regression. The
+full final suites still require exact-commit CI; the earlier failed runs are
+retained separately.
+
+Corrected source projection919 members: `904101baafb081ea78a6e087357098894ae09ef2db1e58de4654756c0bade65a`.
+Runtime projection3 members: `def362bacc3e3450104b0f2c7a46b9001b5ed690edc745ce0030c5a9f5010f19`.
+Manifest: `3460858f160adbb165ee5eddefaab082164b751900232c1012406c886090c68a`.

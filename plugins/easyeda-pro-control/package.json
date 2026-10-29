@@ -11,7 +11,7 @@
   "packageManager": "npm@11.16.0",
   "type": "module",
   "scripts": {
-    "build": "npm run sanitizer:check && npm run sql:reader:check && npm run startup:protocol:check && npm run pcb:models:check && npm run pcb209:layers:check && npm run pcb209:visual:check && npm run pcb209:primitives:check && npm run pcb209:extended-primitives:check && npm run pcb209:selection-relations:check && npm run pcb209:pad-shapes:check && npm run pcb209:image-shapes:check && npm run pcb209:arc-shapes:check && npm run pcb209:poured-shapes:check && node scripts/build-server.ts",
+    "build": "npm run native:helper:check && npm run sanitizer:check && npm run sql:reader:check && npm run startup:protocol:check && npm run pcb:models:check && npm run pcb209:layers:check && npm run pcb209:visual:check && npm run pcb209:primitives:check && npm run pcb209:extended-primitives:check && npm run pcb209:selection-relations:check && npm run pcb209:pad-shapes:check && npm run pcb209:image-shapes:check && npm run pcb209:arc-shapes:check && npm run pcb209:poured-shapes:check && node scripts/build-server.ts",
     "bridge:build": "node scripts/build-authenticated-bridge.ts",
     "bridge:lint": "oxlint --config .oxlintrc.bridge.json --type-aware --deny-warnings easyeda-bridge-extension/src easyeda-bridge-extension/tests easyeda-bridge-extension/scripts easyeda-bridge-extension/vitest.config.ts",
     "bridge:provision": "node scripts/provision-bridge-token.ts",
@@ -20,6 +20,7 @@
     "typecheck": "tsc --noEmit && tsc --noEmit -p tsconfig.bridge-stubs.json",
     "lint": "oxlint --type-aware .",
     "lint:fix": "oxlint --type-aware . --fix",
+    "native:helper:check": "node scripts/check-diagnostic-helper-identity.ts",
     "sanitizer:build": "node scripts/build-descriptor-sanitizer.ts --write",
     "sanitizer:check": "node scripts/build-descriptor-sanitizer.ts --check",
     "sql:reader:check": "node scripts/generate-sqlite-inventory-program.ts --check",

@@ -549,10 +549,11 @@ check(
   "descriptor-sanitizer-build-scripts",
   pluginPackageManifest.scripts?.["sanitizer:build"] ===
     "node scripts/build-descriptor-sanitizer.ts --write" &&
+    pluginPackageManifest.scripts?.["native:helper:check"] === "node scripts/check-diagnostic-helper-identity.ts" &&
     pluginPackageManifest.scripts?.["sanitizer:check"] ===
       "node scripts/build-descriptor-sanitizer.ts --check" &&
     pluginPackageManifest.scripts?.["build"] ===
-      "npm run sanitizer:check && npm run sql:reader:check && npm run startup:protocol:check && npm run pcb:models:check && npm run pcb209:layers:check && npm run pcb209:visual:check && npm run pcb209:primitives:check && npm run pcb209:extended-primitives:check && npm run pcb209:selection-relations:check && npm run pcb209:pad-shapes:check && npm run pcb209:image-shapes:check && npm run pcb209:arc-shapes:check && npm run pcb209:poured-shapes:check && node scripts/build-server.ts" &&
+      "npm run native:helper:check && npm run sanitizer:check && npm run sql:reader:check && npm run startup:protocol:check && npm run pcb:models:check && npm run pcb209:layers:check && npm run pcb209:visual:check && npm run pcb209:primitives:check && npm run pcb209:extended-primitives:check && npm run pcb209:selection-relations:check && npm run pcb209:pad-shapes:check && npm run pcb209:image-shapes:check && npm run pcb209:arc-shapes:check && npm run pcb209:poured-shapes:check && node scripts/build-server.ts" &&
     pluginPackageManifest.scripts?.["pcb:models:check"] === "node scripts/generate-pcb-model-programs.ts --check" &&
     pluginPackageManifest.scripts?.["pcb:models:update"] === "node scripts/generate-pcb-model-programs.ts --write" &&
     pluginPackageManifest.scripts?.["pcb209:image-shapes:check"] === "node scripts/generate-pcb209-image-shapes-protocol.ts --check" &&

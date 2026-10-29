@@ -122,16 +122,30 @@ void test("native DOS creation verifies the retained original image before one p
   // One P/Invoke declaration plus the image-verified call checked above.
   assert.equal(source.match(/\bResumeThread\s*\(/gu)?.length, 2);
   assert.ok(!source.includes("OpenProcess("));
-  // Explicit forced cleanup is confined to the separately confirmed original
-  // Main diagnostic purpose. Older purposes retain their existing closure gate.
+  // Forced cleanup is confined to the separately confirmed original Main and
+  // Visual Jobs. Excluding only the exact guarded visual method/declaration
+  // Keeps every other creation, installation and dispatcher path prohibited.
   const mainBegin = source.indexOf("// BEGIN GENERATED FOOTPRINT MAIN TRANSPORT PROTOCOL"), mainEnd = source.indexOf("// END GENERATED FOOTPRINT MAIN TRANSPORT PROTOCOL");
   assert.ok(mainBegin !== -1 && mainEnd > mainBegin);
   const main = source.slice(mainBegin, mainEnd);
   assert.equal(main.match(/\bTerminateJobObject\(/gu)?.length, 2);
   assert.ok(main.includes("TerminateJobObject(job,0x4544414d)"));
-  assert.ok(!(source.slice(0, mainBegin) + source.slice(mainEnd)).includes("TerminateJobObject"));
+  const visualBegin = source.indexOf("public void TerminateVisual(){"), visualEnd = source.indexOf("\n  public void SendVisual209", visualBegin);
+  assert.ok(visualBegin > mainEnd && visualEnd > visualBegin);
+  const visual = source.slice(visualBegin, visualEnd);
+  assert.ok(source.includes("readonly bool layers209,visual209;"));
+  const once = visual.indexOf('if(!visual209||visual209AbortAttempted||released||root==IntPtr.Zero||job==IntPtr.Zero)throw Error("visual209-termination-owner");visual209AbortAttempted=true;');
+  const identity = visual.indexOf("GetProcessId(root)!=rootPid||rootCreated==0||!GetProcessTimes(root,out created,out exited,out kernel,out user)||created!=rootCreated||!IsProcessInJob(root,job,out member)||!member");
+  const terminate = visual.indexOf("Native(TerminateJobObject(job,0x45444156))");
+  assert.ok(once !== -1 && once < visual.indexOf("AssertLimits();") && identity > once && terminate > identity);
+  assert.equal(visual.match(/\bTerminateJobObject\(/gu)?.length, 1);
+  const declaration = '[DllImport("kernel32.dll",SetLastError=true)] static extern bool TerminateJobObject(IntPtr job,uint code);';
+  const outsideMain = source.slice(0, mainBegin) + source.slice(mainEnd);
+  assert.equal(outsideMain.split(declaration).length, 2); assert.equal(outsideMain.split(visual).length, 2);
+  assert.ok(!outsideMain.replace(declaration, "").replace(visual, "").includes("TerminateJobObject"));
   assert.ok(source.includes("public void TerminateMain(){MainPurpose();originalMain.RequestOriginalJobTermination();}"));
   assert.ok(source.includes("$request.confirmTerminateOriginalDiagnosticJob -isnot [bool]"));
+  assert.ok(source.includes("if (-not $Visual209 -or $request.confirmAbortOriginalVisualJob -isnot [bool] -or -not $request.confirmAbortOriginalVisualJob"));
 });
 void test("native unlaunched release refuses any consumed launch or retained native root", async () => {
   const source = await readFile(new URL("../../scripts/pcb-diagnostic-owner.ps1", import.meta.url), "utf8");
