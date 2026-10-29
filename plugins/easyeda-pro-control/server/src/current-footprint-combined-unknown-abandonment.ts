@@ -35,6 +35,18 @@ interface Pending {
   readonly result: CurrentFootprintCombinedAbandonmentResult;
 }
 function need(value: boolean, reason: string): asserts value { if (!value) { throw new Error(`COMBINED_UNKNOWN_ABANDONMENT_${reason}`); } }
+function requireWindowsAbsence(observation: Awaited<ReturnType<typeof observeOrdinaryLaunchRecovery>>): void {
+  if (!observation.otherPowerShellPresent && !observation.sameNameProcessPresent) { return; }
+  const error = new Error("COMBINED_UNKNOWN_ABANDONMENT_WINDOWS_PROCESS_PRESENT");
+  // Report only the already validated presence flags. This supplies neither
+  // Process identity nor authority to close, terminate or adopt either process.
+  Object.defineProperty(error, "assertionResults", { enumerable: true, value: Object.freeze({
+    profile: "easyeda-pro-control.footprint-combined-recovery-process-presence.v1",
+    samples: observation.samples, otherPowerShellPresent: observation.otherPowerShellPresent,
+    easyedaProcessPresent: observation.sameNameProcessPresent,
+  }) });
+  throw error;
+}
 function publicResult(result: CurrentFootprintCombinedAbandonmentResult): Record<string, unknown> {
   return { ...structuredClone(result), state: "unknown-launch-abandoned", startupBlockerRelinquished: true, executionAuthorized: false };
 }
@@ -83,7 +95,7 @@ export class CurrentFootprintCombinedUnknownAbandonment {
         const nonce = randomBytes(32).toString("hex");
         need(!await this.#linux(), "OTHER_LINUX_FACADE"); await this.#current(original);
         const observation = await this.#windows(this.#options); await this.#current(original);
-        need(!observation.otherPowerShellPresent && !observation.sameNameProcessPresent, "WINDOWS_PROCESS_PRESENT");
+        requireWindowsAbsence(observation);
         need(!await this.#linux(), "OTHER_LINUX_FACADE"); await this.#current(original);
         const finalInstallation = await this.#verify(this.#options); await this.#current(original);
         need(canonicalJson(finalInstallation) === canonicalJson(installation), "INSTALLATION_CHANGED");

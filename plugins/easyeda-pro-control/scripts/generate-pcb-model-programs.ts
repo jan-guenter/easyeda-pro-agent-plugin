@@ -5,8 +5,12 @@ import { CURRENT_PCB_STRING_PRODUCER_MARKERS_V2_FUNCTION } from "../server/src/c
 import { CURRENT_PCB_COMMON_PREFERENCE_FUNCTION, CURRENT_PCB_COMMON_PRESENTATION_FUNCTION, CURRENT_PCB_COMMON_RULES_FUNCTION } from "../server/src/current-pcb-common-state.ts";
 import { generatePackedNativeProgram } from "./native-program-packing.ts";
 import { CURRENT_PCB_COMMON_PACKET_SEEDS } from "../server/src/current-pcb-common-packet-program.ts";
+import { CURRENT_PCB_DIAGNOSTIC_OPENING_FUNCTION } from "../server/src/current-pcb-diagnostic-opening.ts";
+import { CURRENT_PCB_DIAGNOSTIC_PCB_OPENING_FUNCTION } from "../server/src/current-pcb-diagnostic-pcb-opening.ts";
 
 for (const [marker, name, source] of [
+  ["DIAGNOSTIC OPENING", "OpeningFunction", CURRENT_PCB_DIAGNOSTIC_OPENING_FUNCTION],
+  ["DIAGNOSTIC PCB OPENING", "PcbOpeningFunction", CURRENT_PCB_DIAGNOSTIC_PCB_OPENING_FUNCTION],
   ["MODEL STATE", "ModelStateFunction", CURRENT_PCB_DIAGNOSTIC_MODEL_STATE_FUNCTION],
   ["MODEL STATE V TWO", "ModelStateV2Function", CURRENT_PCB_DIAGNOSTIC_MODEL_STATE_V2_FUNCTION],
   ["MODEL PENDING", "ModelPendingFunction", CURRENT_PCB_DIAGNOSTIC_PENDING_STATE_FUNCTION],

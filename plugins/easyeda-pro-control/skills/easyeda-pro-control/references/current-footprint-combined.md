@@ -104,7 +104,11 @@ installed223950 v1 producer's intent-only combined launches. It does not invoke
 the old launch or reconstruct its ownership. Use a fresh facade before any
 ordinary, native, main or startup coordinator is allocated. Even calling the
 ordinary startup `inspect` first allocates a coordinator and prevents this path.
-Offline API discovery and exact-argument validation can run first.
+Offline API discovery and exact-argument validation can run first. In a fresh
+Codex session, admit the actual root facade and finish this historical recovery
+before starting subagents. Automatic connector initialization can create a
+competing facade even when an agent makes no MCP call. A conflict stub is still
+a blocker; never kill gateways or edit records to make the roster pass.
 
 Supply the original operation ID and its `expectedIntentSha256`, plus
 `confirmAbandonUnknownLaunch:true`, `acceptUnobservedDescendants:true` and
@@ -121,6 +125,12 @@ cleanup allocates a plugin owner, finish that cleanup and use another fresh
 facade before relinquishment. Process cleanup is separate from accepting the
 historical uncertainty; this action cannot kill or adopt a process.
 
+The process-presence refusal's `assertionResults` contains only the validated
+two-sample `otherPowerShellPresent` and `easyedaProcessPresent` flags. It returns
+no PID, command line or process identity. An unrelated PowerShell process is
+outside permission to terminate EasyEDA. Use separately authorized OS cleanup;
+do not infer that every shell belongs to this plugin.
+
 The route writes a separate digest-bound relinquishment receipt and preserves
 the original directory. Its outcome remains unknown. It proves no non-dispatch,
 termination, native-resource release, original launch identity, design effect or
@@ -130,13 +140,45 @@ new attempt, never a replay of the historical ID.
 
 ## Private groundwork and remaining integration
 
-The unmounted clock/RPC sequencer joins two actual document-clock invocations
-through original worker tasks, selected UI callbacks, replies and post-await
-values. Its derived unit is49 normal and18 cleanup commands. Fixed TypeScript
-and standalone native codecs have offline parity checks; no native owner issues
-its origin, embeds the codec or mounts the collector. Whole-source qualification
-and inert compilation do not prove embedded Electron execution. The existing
-1MiB helper cap remains unchanged.
+The unmounted clock/RPC sequencer is written to join two actual document-clock
+invocations through original worker tasks, selected UI callbacks, replies and
+post-await values. Its derived unit is 49 normal and 18 cleanup commands. All 67
+commands consume IDs from the original allocator; cleanup classification does
+not remove ID usage or enlarge a native normal-request cap. The full writer
+reservation must account for both limits, every other unit and all generations.
+
+The execution transport now transfers its same already-qualified complete
+project-source string to the exact new construction runner before capture.
+It adds no fetch, request or await; successful and failed handoff clear the raw
+transport reference. This does not grant invocation authority. The fixed native
+clock encoder is embedded as an unrouted class in the 1,045,412-byte helper under
+the unchanged 1MiB cap. Two existing opener programs use the maintained strict
+packing decoder with byte-exact source parity. Actual Windows combined-flag
+CompileOnly passed with no application launched. No original native owner issues
+the clock origin or routes these commands. Integration still requires the exact
+original UI registration and worker construction, paired realm routing, one
+allocator/event cursor and retained native root/Job. Source qualification,
+codec compilation and synthetic joins do not prove embedded Electron execution.
+
+The original main request collector can select a held-final-PB schedule before
+invocation. Its prefix uses 23 normal and 7 cleanup commands, removes all four
+request breakpoints and resumes only the first three pauses. The fourth remains
+held after the request/actor/fulfilled SQL-owner joins. A separate unmounted
+fixed completion sequencer uses 45 normal and 30 cleanup commands for fourteen
+ordered source-qualified callback/branch/transaction/project-update/service
+joins. Together these main portions use 105 commands; this is not the entire
+combined writer budget or a mounted native-purpose reservation.
+
+Completion has a getter-only origin seam with no issuer or native codec. The
+real owner must atomically consume or transfer the exact held-PB lease before
+its first resume so that the old collector cannot remain held authority after
+native advancement. Later checks must retain the same original kernel, channel,
+allocator, cursor and root/Job. The selectors admit missing-header and locked or
+aged append paths. Fresh unlocked mutable history refuses, and first-header
+append support does not qualify new-document lifecycle. A future writer must
+prove branch/header eligibility before dispatch; refusal after mutation supplies
+no pre-write safety. Completion observations keep SQL durability, publication,
+saved-result and execution authority false, including after post-await joins.
 
 Pure delete models retain the originally copied UUID, require the complete
 supported SQL inverse and compare an independent saved reader. The inverse
@@ -145,7 +187,14 @@ It supports locked or independently aged heads. A fresh unlocked copy needs
 another supported model or an aged-head qualification. These models prove no
 native manager deletion, replay exclusion, actual reopen or writer lifecycle.
 
-Before mounting a writer, join original backend completion and the held final
-SQL handoff, derive the entire copy/readback/delete/readback budget, and preflight
-the16KiB main request envelope even when a source reader permits2MiB. Then prove
-closed SQL, saved source and saved absence through their independent owners.
+Before mounting a writer, implement genuine origins, the atomic held handoff,
+paired router and fixed native completion encoding. Derive the reservation for
+all four copy/readback/delete/readback generations, including request IDs,
+normal/cleanup categories, native message/output limits and idle/exit/empty Job
+joins. Preflight the 16KiB main request envelope even when a source reader
+permits 2MiB. Complete worker parser/upload/renderer publication and native SQL
+completion, then independently compare closed complete logical SQL, history,
+backups and unrelated content. Prove actual reopen/saved copy and supported
+native delete/saved absence through their independent owners. A SQL commit can
+precede a later failure; neither an upload acknowledgment nor a post-await
+observation establishes durability or unchanged storage.

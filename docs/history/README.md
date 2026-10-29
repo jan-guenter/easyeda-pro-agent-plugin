@@ -38,6 +38,7 @@ archive retain their original paths and must not be rewritten to later names.
 
 ## Record index and former paths
 
+- [2026-10-29 footprint recovery and completion](2026-10-29-footprint-recovery-and-completion.md): fresh host admission, process-presence refusal and batched clock/backend completion work.
 - [2026-10-29 combined startup and footprint proofs](2026-10-29-combined-startup-and-footprint-proofs.md): consumed pre-binding helper failure, actual flag correction, readiness/relinquishment work, clock/RPC and pure delete verification.
 - [2026-10-28 combined footprint validation](2026-10-28-footprint-combined-validation.md): terminal211407 main success and peer timeout, cache-wait correction, combined original owner/abort, unmounted request collector and inverse limits.
 - [2026-10-28 footprint startup and source files](2026-10-28-footprint-startup-and-source-files.md): terminal main/peer probes, exact full-source breakpoint correction, request ownership, supplied-archive footprint sources and compact historical plans.

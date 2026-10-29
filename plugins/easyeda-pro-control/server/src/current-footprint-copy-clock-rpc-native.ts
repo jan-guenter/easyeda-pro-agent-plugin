@@ -1,5 +1,5 @@
-/** Standalone finite native encoder. This table is not embedded in the helper
- * or reachable through an owner/channel route; it grants no invocation. */
+/** Finite native encoder embedded only as a compiled, unrouted helper class.
+ * No owner/channel route or genuine origin issuer grants an invocation. */
 import { createHash } from "node:crypto";
 import { gzipSync } from "node:zlib";
 import { CURRENT_FOOTPRINT_COPY_CLOCK_RPC_SITES as SITES } from "./current-footprint-copy-clock-rpc-source.ts";

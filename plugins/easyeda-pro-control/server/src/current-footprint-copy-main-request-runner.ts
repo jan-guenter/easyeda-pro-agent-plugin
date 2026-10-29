@@ -48,9 +48,33 @@ export interface CurrentFootprintCopyMainRequestObservation {
   readonly savedResultVerified: false;
   readonly executionAuthorized: false;
 }
-type Phase = "ready" | "arming" | "armed" | "invocation-consumed" | "collected" | "failed";
+/** Prepared before the invocation. The original PB call remains paused and its
+ * object group belongs to the original collector; this token cannot resume it. */
+export interface CurrentFootprintCopyMainRequestHeldFinalPb {
+  readonly profile: "private.current-footprint-copy-main-request-held-final-pb.v1";
+  readonly originalRequestAndSqlOwnerJoined: true;
+  readonly originalFinalPbStillHeld: true;
+  readonly allAllocatedRequestBreakpointsRemoved: true;
+  readonly nativeSqlCompletionVerified: false;
+  readonly executionAuthorized: false;
+}
+export interface CurrentFootprintCopyMainRequestHeldFinalPbBindings {
+  readonly scriptId: string;
+  readonly finalPbFrameId: string;
+  readonly retainedArrayObjectId: string;
+  readonly controllerObjectId: string;
+  readonly actorObjectId: string;
+  readonly sqlObjectId: string;
+  readonly plan: Plan;
+  readonly qualifiedSource: Origin["qualifiedSource"];
+  readonly assertOriginal: () => Promise<void>;
+}
+type Phase = "ready" | "arming" | "armed" | "invocation-consumed" | "held-final-pb" | "collected" | "failed";
 interface CollectionFailure { readonly code: string; readonly phase: Phase; readonly normalRequests: number; readonly cleanupRequests: number; readonly replies: number }
 const issued = new WeakMap<CurrentFootprintCopyMainRequestObservation, CurrentFootprintCopyMainRequestRunner>();
+const held = new WeakMap<CurrentFootprintCopyMainRequestHeldFinalPb, Readonly<{
+  owner: CurrentFootprintCopyMainRequestRunner; read: () => CurrentFootprintCopyMainRequestHeldFinalPbBindings;
+}>>();
 const consumed = new WeakSet<object>(), failures = new WeakMap<Error, string>();
 const LIMIT_MS = 300_000;
 function fail(code: string): Error { const error = new Error(`FOOTPRINT_MAIN_REQUEST_COLLECTOR_${code}`); failures.set(error, code); return error; }
@@ -85,6 +109,9 @@ export class CurrentFootprintCopyMainRequestRunner {
   #context: string | null = null;
   #controller: string | null = null;
   #actorPacket: string | null = null;
+  #sqlPacket: string | null = null;
+  #holdFinalPb = false;
+  #heldPacket: CurrentFootprintCopyMainRequestHeldFinalPb | null = null;
   #packet: CurrentFootprintCopyMainRequestObservation | null = null;
   #firstFailure: CollectionFailure | null = null;
   #idle: Promise<null> = Promise.resolve(null);
@@ -167,8 +194,13 @@ export class CurrentFootprintCopyMainRequestRunner {
       callFrameId: frameId, expression: INVOCATION[role], objectGroup: GROUP, silent: true, returnByValue: false,
       generatePreview: false, throwOnSideEffect: true, includeCommandLineAPI: false } }), 3);
   }
-  public async arm(): Promise<void> {
+  public arm(): Promise<void> { return this.#arm(false); }
+  /** Select the held-final-PB schedule before any invocation can be consumed.
+   * It adds no command, callback factory, writer or completion authority. */
+  public armForCompletion(): Promise<void> { return this.#arm(true); }
+  async #arm(holdFinalPb: boolean): Promise<void> {
     need(this.#phase === "ready" && !consumed.has(this.#token), "ARM_CONSUMED"); consumed.add(this.#token); this.#begin(); this.#phase = "arming"; this.#started = performance.now();
+    this.#holdFinalPb = holdFinalPb;
     try {
       for (const stage of ORDER) {
         const reply = await this.#send(stage === "driver" ? { phase: "request-driver-arm", method: "Debugger.setBreakpointOnFunctionCall", params: { objectId: this.#origin.driverCallbackObjectId } } :
@@ -219,19 +251,49 @@ export class CurrentFootprintCopyMainRequestRunner {
     const sqlOwner = decodeCurrentFootprintCopyMainRequestPromise(await this.#properties(promise));
     const sql = decodeCurrentFootprintCopyMainRequestArrayCapture(await this.#send({ phase: "request-sql", method: "Runtime.callFunctionOn", params: { ...FLAGS,
       objectId: this.#actorPacket, functionDeclaration: CALLS.sql.program, arguments: [{ objectId: sqlOwner }], returnByValue: false } }), 7);
+    this.#sqlPacket = sql;
     const query = decodeCurrentFootprintCopyMainRequestArrayMember(await this.#properties(sql), 7, 6, "sqlQueryOne");
     decodeCurrentFootprintCopyMainRequestCollectedFunction(await this.#properties(query), "sqlQueryOne", this.#origin.scriptId);
     return decodeCurrentFootprintCopyMainRequestValue(await this.#send({ phase: "request-value", method: "Runtime.callFunctionOn", params: { ...FLAGS,
       objectId: this.#actorPacket, functionDeclaration: CALLS.value.program, arguments: [], returnByValue: true } }));
   }
   public async collect(): Promise<CurrentFootprintCopyMainRequestObservation> {
-    need(this.#phase === "invocation-consumed" && this.#packet === null, "COLLECT_CONSUMED"); this.#begin();
+    need(!this.#holdFinalPb, "COMPLETION_SCHEDULE_REQUIRED");
+    const result = await this.#collect(false);
+    need(result === this.#packet && this.#packet !== null, "ORIGINAL_PACKET"); return this.#packet;
+  }
+  public async collectToHeldFinalPb(): Promise<CurrentFootprintCopyMainRequestHeldFinalPb> {
+    need(this.#holdFinalPb, "COMPLETION_NOT_PREPARED");
+    const result = await this.#collect(true);
+    need(result === this.#heldPacket && this.#heldPacket !== null, "ORIGINAL_HELD_PACKET"); return this.#heldPacket;
+  }
+  async #collect(holdFinalPb: boolean): Promise<CurrentFootprintCopyMainRequestObservation | CurrentFootprintCopyMainRequestHeldFinalPb> {
+    need(this.#phase === "invocation-consumed" && this.#packet === null && this.#heldPacket === null, "COLLECT_CONSUMED"); this.#begin();
     try {
       let actor: Actor | null = null;
       for (const [index, stage] of ORDER.entries()) {
         await this.#wait(() => this.#pauses[index] !== undefined); const pause = this.#pauses[index], point = this.#points[index];
         need(pause?.stage === stage && point?.stage === stage, "PAUSE_ORDER"); actor = await this.#capture(pause) ?? actor;
-        await this.#remove(point); await this.#resume(pause); await this.#current();
+        await this.#remove(point);
+        if (holdFinalPb && stage === "editHead") {
+          need(actor !== null && this.#normal === REQUESTS.normal && this.#cleanup === REQUESTS.cleanup - 2 &&
+            !this.#allocationUncertain && !this.#unknownPause && this.#points.every(value => value.removed) &&
+            this.#pauses.slice(0, -1).every(value => value.resumeObserved) && !pause.resumeAttempted && !pause.resumeObserved &&
+            this.#controller !== null && this.#actorPacket !== null && this.#sqlPacket !== null, "HELD_INCOMPLETE");
+          this.#heldPacket = Object.freeze({ profile: "private.current-footprint-copy-main-request-held-final-pb.v1",
+            originalRequestAndSqlOwnerJoined: true, originalFinalPbStillHeld: true, allAllocatedRequestBreakpointsRemoved: true,
+            nativeSqlCompletionVerified: false, executionAuthorized: false });
+          const packet = this.#heldPacket;
+          const bindings = Object.freeze({ scriptId: this.#origin.scriptId, finalPbFrameId: pause.frameId,
+            retainedArrayObjectId: this.#origin.retainedArrayObjectId, controllerObjectId: this.#controller,
+            actorObjectId: this.#actorPacket, sqlObjectId: this.#sqlPacket, plan: this.#plan, qualifiedSource: this.#origin.qualifiedSource,
+            assertOriginal: async (): Promise<void> => { this.#assertHeld(packet); await this.#current(); this.#assertHeld(packet); } });
+          held.set(packet, Object.freeze({ owner: this, read: (): CurrentFootprintCopyMainRequestHeldFinalPbBindings => {
+            this.#assertHeld(packet); return bindings;
+          } }));
+          this.#phase = "held-final-pb"; return packet;
+        }
+        await this.#resume(pause); await this.#current();
       }
       need(actor !== null && this.#normal === REQUESTS.normal && this.#cleanup === REQUESTS.cleanup - 1 &&
         !this.#allocationUncertain && !this.#unknownPause && this.#points.every(value => value.removed) && this.#pauses.every(value => value.resumeObserved), "INCOMPLETE");
@@ -241,6 +303,17 @@ export class CurrentFootprintCopyMainRequestRunner {
         actualDocumentClockRpcJoinsObserved: false, nativePublicationCompletionVerified: false, nativeSqlCompletionVerified: false, originalGenerationClosed: false,
         savedResultVerified: false, executionAuthorized: false }); issued.set(this.#packet, this); this.#phase = "collected"; return this.#packet;
     } catch (error) { this.#refuse(error); throw error; } finally { this.#end(); }
+  }
+  /** Getter for the exact once-issued held token. No JSON, copied handle or
+   * callback may create a replacement. Completion transport remains separate. */
+  public heldFinalPbBindings(packet: CurrentFootprintCopyMainRequestHeldFinalPb): CurrentFootprintCopyMainRequestHeldFinalPbBindings {
+    this.#assertHeld(packet); return requireCurrentFootprintCopyMainRequestHeldFinalPb(packet);
+  }
+  #assertHeld(packet: CurrentFootprintCopyMainRequestHeldFinalPb): void {
+    this.#same(); const pause = this.#pauses.at(-1);
+    need(!this.#busy && this.#phase === "held-final-pb" && packet === this.#heldPacket && held.get(packet)?.owner === this &&
+      pause?.stage === "editHead" && !pause.resumeAttempted && !pause.resumeObserved && this.#controller !== null &&
+      this.#actorPacket !== null && this.#sqlPacket !== null && this.#points.every(value => value.removed), "ORIGINAL_HELD_PACKET");
   }
   public async requireOriginal(packet: CurrentFootprintCopyMainRequestObservation): Promise<void> {
     need(!this.#busy && this.#phase === "collected" && packet === this.#packet && issued.get(packet) === this, "ORIGINAL_PACKET");
@@ -274,4 +347,7 @@ export class CurrentFootprintCopyMainRequestRunner {
       unknownPause: this.#unknownPause, uncertainAllocation: this.#allocationUncertain, groupReleased: this.#groupReleased, retired: this.#retired,
       originalGenerationEnded: this.#generationEnded, firstFailure: this.#firstFailure });
   }
+}
+export function requireCurrentFootprintCopyMainRequestHeldFinalPb(packet: CurrentFootprintCopyMainRequestHeldFinalPb): CurrentFootprintCopyMainRequestHeldFinalPbBindings {
+  const original = held.get(packet); need(original !== undefined, "ORIGINAL_HELD_PACKET"); return original.read();
 }

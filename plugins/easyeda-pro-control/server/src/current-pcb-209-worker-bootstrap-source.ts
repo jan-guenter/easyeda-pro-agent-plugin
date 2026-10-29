@@ -163,7 +163,7 @@ export function currentPcb209StartupScriptRole(url: string): "bootstrap" | "prel
   return null;
 }
 /** Raw Debugger.getScriptSource result only, with no caller hash/profile override. */
-export function qualifyCurrentPcb209StartupScriptSource(role: CurrentPcb209StartupScriptRole, input: unknown): void {
+export function qualifyCurrentPcb209StartupScriptSource(role: CurrentPcb209StartupScriptRole, input: unknown): string {
   need(CURRENT_PCB_209_WORKER_BOOTSTRAP_ROLES.some(value => value === role));
   plain(input); const keys = Reflect.ownKeys(input);
   need(keys.length === 1 && keys[0] === "scriptSource");
@@ -174,6 +174,7 @@ export function qualifyCurrentPcb209StartupScriptSource(role: CurrentPcb209Start
     const copy = CURRENT_PCB_209_PRELOAD_COPY_SOURCE;
     need(Buffer.byteLength(source) === copy.generatedBytes && digest(source) === copy.generatedSha256);
   }
+  return source;
 }
 /** Fixed descriptor-captured installation closure. This module opens no files. */
 export function qualifyCurrentPcb209WorkerBootstrapSources(input: CurrentPcb209WorkerBootstrapSources): CurrentPcb209WorkerBootstrapSourceQualification {
