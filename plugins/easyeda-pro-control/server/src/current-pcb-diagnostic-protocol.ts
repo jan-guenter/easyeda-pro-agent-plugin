@@ -30,6 +30,8 @@ import { CURRENT_PCB_209_POURED_SHAPES_FUNCTION } from "./current-pcb-209-poured
 import { CURRENT_PCB_209_PAD_SHAPES_FUNCTION } from "./current-pcb-209-pad-shapes.ts";
 import { CURRENT_PCB_209_EXTENDED_PRIMITIVES_FUNCTION } from "./current-pcb-209-extended-primitives.ts";
 import { CURRENT_PCB_209_SELECTION_RELATIONS_FUNCTION, currentPcb209SelectionRelationsComponentIdsSchema } from "./current-pcb-209-selection-relations.ts";
+import { CURRENT_PCB_209_VISUAL_FUNCTION, currentPcb209VisualOperationSchema } from "./current-pcb-209-visual-actions.ts";
+import type { CurrentPcb209VisualOperation } from "./current-pcb-209-visual-actions.ts";
 import { CURRENT_PCB_STRING_PRECREATE_REQUEST_LIMIT, currentPcbStringScopeCommand, currentPcbStringWorkerCommand } from "./current-pcb-string-commands.ts";
 import type { CurrentPcbStringPrecreateCommand } from "./current-pcb-string-commands.ts";
 import { currentPcbStringActorClockWire } from "./current-pcb-string-actor-clock-wire.ts";
@@ -104,6 +106,14 @@ export function diagnosticSelectionRelations209Params(uniqueContextId: string, t
   const ids = Object.freeze(currentPcb209SelectionRelationsComponentIdsSchema.parse(componentIds));
   return Object.freeze({ ...fixed, functionDeclaration: CURRENT_PCB_209_SELECTION_RELATIONS_FUNCTION,
     arguments: Object.freeze([...fixed.arguments, Object.freeze({ value: ids })]) });
+}
+
+export function diagnosticVisual209Params(uniqueContextId: string, target: CurrentDisposableOpenSealedTarget,
+  operation: CurrentPcb209VisualOperation): ReturnType<typeof diagnosticOpeningParams> {
+  const fixed = diagnosticPcbOpeningParams(uniqueContextId, target, "observe");
+  const selected = Object.freeze(currentPcb209VisualOperationSchema.parse(operation));
+  return Object.freeze({ ...fixed, functionDeclaration: CURRENT_PCB_209_VISUAL_FUNCTION,
+    arguments: Object.freeze([Object.freeze({ value: target }), Object.freeze({ value: "visual" }), Object.freeze({ value: selected })]) });
 }
 
 export const DIAGNOSTIC_WORKER_ATTACH_PARAMS = Object.freeze({ autoAttach: true, waitForDebuggerOnStart: false, flatten: true,
@@ -442,7 +452,8 @@ function fixedNativeRequest(chunk: Buffer, stringPurpose: boolean): Readonly<Rec
     } else if (method === "Runtime.callFunctionOn") {
       const args = params["arguments"];
       const selectionRelations209 = params["functionDeclaration"] === CURRENT_PCB_209_SELECTION_RELATIONS_FUNCTION;
-      if (!diagnosticToken(params["uniqueContextId"]) || !Array.isArray(args) || args.length !== (selectionRelations209 ? 3 : 2) ||
+      const visual209 = params["functionDeclaration"] === CURRENT_PCB_209_VISUAL_FUNCTION;
+      if (!diagnosticToken(params["uniqueContextId"]) || !Array.isArray(args) || args.length !== (selectionRelations209 || visual209 ? 3 : 2) ||
           !diagnosticRecord(args[0]) || !diagnosticExact(args[0], ["value"]) ||
           !diagnosticRecord(args[1]) || !diagnosticExact(args[1], ["value"])) { return fail(); }
       const phase = args[1]["value"], target = args[0]["value"];
@@ -463,7 +474,13 @@ function fixedNativeRequest(chunk: Buffer, stringPurpose: boolean): Readonly<Rec
         componentIds = currentPcb209SelectionRelationsComponentIdsSchema.parse(argument["value"]);
       }
       let fixed: ReturnType<typeof diagnosticOpeningParams>;
-      if (selectionRelations209) {
+      let visualOperation: CurrentPcb209VisualOperation | null = null;
+      if (visual209) {
+        const argument: unknown = args[2];
+        if (phase !== "visual" || !diagnosticRecord(argument) || !diagnosticExact(argument, ["value"])) { return fail(); }
+        visualOperation = currentPcb209VisualOperationSchema.parse(argument["value"]);
+        fixed = diagnosticVisual209Params(params["uniqueContextId"], selected, visualOperation);
+      } else if (selectionRelations209) {
         if (phase !== "observe") { return fail(); }
         fixed = diagnosticSelectionRelations209Params(params["uniqueContextId"], selected, componentIds);
       } else if (imageShapes209) {
@@ -497,7 +514,8 @@ function fixedNativeRequest(chunk: Buffer, stringPurpose: boolean): Readonly<Rec
       if (JSON.stringify(params) !== JSON.stringify(fixed)) { return fail(); }
       command = { id, method, params: fixed, sessionId };
       let selectedPhase: Record<string, unknown> = { openingPhase: phase };
-      if (selectionRelations209) { selectedPhase = { pcbSelectionRelations209Phase: phase, componentIds }; }
+      if (visualOperation !== null) { selectedPhase = { pcbVisual209Phase: phase, visualOperationJson: JSON.stringify(visualOperation) }; }
+      else if (selectionRelations209) { selectedPhase = { pcbSelectionRelations209Phase: phase, componentIds }; }
       else if (imageShapes209) { selectedPhase = { pcbImageShapes209Phase: phase }; }
       else if (arcShapes209) { selectedPhase = { pcbArcShapes209Phase: phase }; }
       else if (pouredShapes209) { selectedPhase = { pcbPouredShapes209Phase: phase }; }
@@ -513,6 +531,10 @@ function fixedNativeRequest(chunk: Buffer, stringPurpose: boolean): Readonly<Rec
     } else { return fail(); }
   }
   if (chunk.toString("utf8") !== `${JSON.stringify(command)}\0`) { return fail(); }
+  // Visual operations carry bounded JSON data through the flat native input.
+  // Reserve the complete escaped envelope and its line terminator before write.
+  if (request["pcbVisual209Phase"] !== undefined &&
+      (JSON.stringify(request).length + 1 > 32_768 || Buffer.byteLength(`${JSON.stringify(request)}\n`) > 32_768)) { return fail(); }
   return request;
 }
 function fail(): never { throw new Error("PCB_DIAGNOSTIC_OUTBOUND_FRAME"); }

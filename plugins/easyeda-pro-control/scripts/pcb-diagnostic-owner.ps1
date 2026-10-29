@@ -1,5 +1,7 @@
-param([switch]$CompileOnly,[switch]$StringPrecreate,[switch]$WorkerStartup,[switch]$Layers209,[switch]$WorkerStartup209,[switch]$WorkerStartupEmpty209,[switch]$WorkerStartupRatline209,[switch]$WorkerStartupRatlineContinuation209,[switch]$WorkerStartupFootprint209,[switch]$WorkerStartupFootprintCopy209,[switch]$WorkerStartupFootprintSaved209,[switch]$WorkerStartupFootprintMain209,[switch]$WorkerStartupFootprintCombined209,[string]$CombinedReadyChallenge)
+param([switch]$CompileOnly,[switch]$StringPrecreate,[switch]$WorkerStartup,[switch]$Layers209,[switch]$Visual209,[switch]$WorkerStartup209,[switch]$WorkerStartupEmpty209,[switch]$WorkerStartupRatline209,[switch]$WorkerStartupRatlineContinuation209,[switch]$WorkerStartupFootprint209,[switch]$WorkerStartupFootprintCopy209,[switch]$WorkerStartupFootprintSaved209,[switch]$WorkerStartupFootprintMain209,[switch]$WorkerStartupFootprintCombined209,[string]$CombinedReadyChallenge)
 $ErrorActionPreference = 'Stop'
+if ($Visual209 -and ($Layers209 -or $StringPrecreate -or $WorkerStartup -or $WorkerStartup209 -or $WorkerStartupEmpty209 -or $WorkerStartupRatline209 -or $WorkerStartupRatlineContinuation209 -or $WorkerStartupFootprint209 -or $WorkerStartupFootprintCopy209 -or $WorkerStartupFootprintSaved209 -or $WorkerStartupFootprintMain209 -or $WorkerStartupFootprintCombined209)) {throw 'pcb-diagnostic-conflicting-visual-purpose'}
+if ($Visual209) {$Layers209=$true}
 if (($WorkerStartupFootprintCombined209 -and -not $CompileOnly -and $CombinedReadyChallenge -cnotmatch '\A[a-f0-9]{32}\z') -or (-not $WorkerStartupFootprintCombined209 -and -not [string]::IsNullOrEmpty($CombinedReadyChallenge))) {throw 'pcb-diagnostic-combined-ready-challenge'}
 if (($StringPrecreate -and $WorkerStartup) -or ($Layers209 -and ($StringPrecreate -or $WorkerStartup))) {throw 'pcb-diagnostic-conflicting-purpose'}
 if ($WorkerStartup209 -and ($StringPrecreate -or $WorkerStartup -or $Layers209)) {throw 'pcb-diagnostic-conflicting-purpose'}
@@ -1690,7 +1692,8 @@ public sealed class EasyedaDiagnosticOwner {
   bool footprintCombinedAbortAttempted;
   EasyedaOriginalMainTransport originalMain;int mainRequest,mainPolls,mainBufferOffset;byte[] mainBuffer;
 
-  readonly bool layers209;
+  readonly bool layers209,visual209;
+  bool visual209Attempted,visual209AbortAttempted;
   readonly bool workerStartup;
   readonly bool workerStartup209;
   readonly bool workerStartupFootprint209;
@@ -1986,6 +1989,8 @@ public sealed class EasyedaDiagnosticOwner {
   public static EasyedaDiagnosticOwner CreateWorkerStartupRatline209() { return new EasyedaDiagnosticOwner("worker-startup-ratline209"); }
   public static EasyedaDiagnosticOwner CreateWorkerStartupRatlineContinuation209() { return new EasyedaDiagnosticOwner("worker-startup-ratline-continuation209"); }
   EasyedaDiagnosticOwner(bool stringPrecreatePurpose,bool workerStartupPurpose,bool layers209Purpose) { stringPrecreate=stringPrecreatePurpose;workerStartup=workerStartupPurpose;layers209=layers209Purpose; }
+  EasyedaDiagnosticOwner(bool visualPurpose,int marker) {if(!visualPurpose||marker!=209)throw Error("visual209-birth");layers209=true;visual209=true;}
+  public static EasyedaDiagnosticOwner CreateVisual209() { return new EasyedaDiagnosticOwner(true,209); }
   public static EasyedaDiagnosticOwner CreateLayers209() { return new EasyedaDiagnosticOwner(false,false,true); }
   public void Initialize() {
     if(job!=IntPtr.Zero || released) throw Error("initialize-consumed");
@@ -2015,6 +2020,7 @@ public sealed class EasyedaDiagnosticOwner {
   }
   bool RootExited() { uint state=WaitForSingleObject(root,0); if(state!=0 && state!=258) throw Error("root-wait"); return state==0; }
   void AssertCleanupLive() {
+    if(visual209AbortAttempted)throw Error("visual209-abort-consumed");
     if(footprintCombinedAbortAttempted)throw Error("combined-abort-consumed");
     AssertLimits(); AssertPipes(); bool contained;
     if(root==IntPtr.Zero || RootExited() || GetProcessId(root)!=rootPid) throw Error("root-not-live");
@@ -2202,6 +2208,11 @@ return handler;
   const string PcbOpeningFunctionSha256="62d282abfdea1db218ba057d5af99ca7b7198390454efdded7a72ab57d5568bf";
   static readonly string PcbOpeningFunction=UnpackFixedProgram(PcbOpeningFunctionGzip,13044,PcbOpeningFunctionSha256,"9269b6ebc6d8ef4bf1e237dd5ebef95ed9bff4ef61ba3561b2ffec998f20765b");
   // END GENERATED PCB209 DIAGNOSTIC PCB OPENING PROGRAM
+  // BEGIN GENERATED PCB209 VISUAL PROGRAM
+  const string Visual209FunctionGzip="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";
+  const string Visual209FunctionSha256="0a316415831538231f410dd6e26632cd9065a6d9c4239129ae1968737bdc9551";
+  static readonly string Visual209Function=UnpackFixedProgram(Visual209FunctionGzip,11713,Visual209FunctionSha256,"19d1191511bd12ab3eddfae48445a75860463d35e59a84c5f7fc6cc26ed452ca");
+  // END GENERATED PCB209 VISUAL PROGRAM
   // BEGIN GENERATED PCB209 LAYERS PROGRAM
   const string Layers209FunctionGzip="H4sIAAAAAAACA6U6a3PbOJLf/Ssk3pVFriH5kUluRxrE4/hx41sndtlO5rYUjQsiIQsriuQCoGSVof9+1XiQoCRnauo+SWg0+g10o0EiVlncmpRZLFmehYKSlCaomBJBo9e9oBS0JSRnsQwGeymVLcnmlKM4pYQj+lIwThM8Iamggz3JV697cZ4J2eJ5LvFzmo9J+jhlApGiSFf4nk5SGsueHqExSXAY4Y+vcsrzZSujy9Yl5zkPg7vzTydHPz/dnP3z8v7h6f7y6uvD5UUQDdYDSz5fZjjM0QxWs0mYY4yzMk2VCuWqoPmklbcxDvLxv2gsg/19H+g0DaJoTJIwGhiKCb7V2L1nKm+X2R3PC8rl6oKKmLNC5lyzG7BJ2E6UalvkKRG3yyxMULAgaUkrmpzKkmetpKfBntx6Gc7xR5AFRK6Fw77E7TPOyarHhP4N88hRKFLCMiAAercNfphHStXi3/Fc5kD1dhLmURs7zQoHbwqZ1+KRsaCZrCz7Vy2T7O+Hb1pGKWuNNsZlltAJy2ji7FVJMMk2uE9wvswqDtZWk6YjG+pMgJi2ko1lvVDHs4kJQfmCBkq5YMyX2T/oSjjsXkqzZzltY/zeEt6b5Dw00sxa+aQ1DDhZ/s6yJF+KOyKnAQoKnoPWX0uWBChI8ric08wN6UtBY0mTh7zkMX2YkpP3HwIUjDnJ4qnGGUW1bqCu3YQzcF4Auy97dlpaO82JjKc4FIjT2lZzzGmPvtA4FJU55lWczYdHI4yxAPtA7GgSllXPUwAd/jEk3clR9+fR64ef1v95GCnVRK4l93HfnezC9W2BDv8IT/vVguMPa+WvjnYs32W7bQGbtpGEP1OJXz2d+jvUrLXob+vli93fpYok4+udMwfBr8HBNrsqwgvCBb2zEzzFod4UyJeMxJIt6CNwAOfuterocDuoY6Kio5SG2KD9+O7kvz78XSmL7NH0ljhjtaw8BumzDqimg96deA768BM4yISXR9gciT4RpfzR8GjUxthfsMGe0ZgKbLQQRcpk2PmPjtmzesqpdtI4rsdEUGwQhkejihqAnSZTKQvR/374/TBOGc3k90OaMJnz76dxmuLwtC85ialK6Lh8Viyb5GpJeKYopKBKUyBoVKxIK1X9NcppnKZWE06eISBwQweM8fFpp9O3ch+D3GwSVsgYdzqR2bevQBTReSFXfclLauJN9IcjPzr6sLPXnivphL3gDktw58Az+aDJxKDtYKTT+J9wAlM4Wj0hCZfidyanoSF60IHluNPMrTSTnFGB63Upi6ldYm1z8D5y7ledyDCy6yzGL8dKNSEfT95/aDAyouPhCAlKMwwVxQOVYTSAwmVO+IwmWht9Ig72WvXBDoRXcLhbDtHrXqvlH7WHf4Tf/3YahW+fXr+Gf75xNBvQrlWdwErN61DS8w7ybvfO8VTFBvFkdND5tXPgVoG7QX/IwaHGc+7QUJIkFjow9uoVpZg6kBHNkDqGfNH5Wyd61aDKfO2q2vIixE/r+/vNCZOAmrCGYL5v9MRgvdda77V+HKONAPVIrAd71XGb5jGBKgFDRdpzIzTldILd6LQHw+rMN6huhEqmSxAAouDrdRChaS6kB3v+RrgIIjTPE+qB7+5vny4vrh9v758+315cBnUJZ1yKTZECC4AgCuKSc5pJmxuCKAI1haZYMhRIMv5EOJCp0wEgNGqht+pAQIRq4soibhWDrgLUFsWTTK9AwTOVZ87IQYSeqXwk48b0Ixl/Wl0nQYQEhXoKO8Od9v5dUr560NCcn8GOqyU3yLvquCqLj62F9G0hNKy0SdDQpPieDoNRFKGESOLZU5IxCgAWRBW9SV5mCTa0DPPK4WjYGbIEBxNO5vSpc+BTP+gEo85IpwBNoS4Pj5vy6sVY4wyPRiiesjTBGnjai/NM0kyamtFMXbhg06PTOtwKAkHgVprRZUphzrHKiHYSaKpXo+Dzw38/ffr68HR3/imIUDwlWUZTjWBwUTCnQpBn+qkUGoGlya29i9RUDMTN65uHP60BdRh7RKpIq9HNhK6MzVSD7I4FGt7Ar2JSSu7sAfEoJWfjUlI0JcLBp0TU8DglQtBqTg9vmJAI/EBYJrDFMJ4BiDU70MDmb5OXH7ogz8amszNTInZPODa7Z2veP9gP8RQufkPr25FOabyIES/i22VGubmmAJThowH75d2AHRxE9maQwdGkKQyZzg/u5ggTf/UiDGtQwIv4nKRpYG5+OkX84O5nNa2vgNvXtyLG7r7sdMLAajDmlMwGay2+yVW7zzijy2DtuYoX8Q9MKqiEo8wc14LKRzaneSmDaKDbG/WcHtazlUdoPDMdDGBpmyFK6fSx1Hu9jXUysTCZF02AS0BtXOUiO+OOgzauzlOl6pM1oRNSpvIbozWLehYM8bgqwMw/+/Cv9zdtjCHXKdXMfTvAOWfPDCQLTCF9aMvoyoYbF5lQ51B7dPq3Gf80NcnrBzmyjTGkUaXaw+D85vryy2P3t7Obq6fbq6ub6y+X3cuzh39eXpx1784/dR/Of+venX25vOk+XH8OkMP/c9RRj2VxWiZUhHMv/puiQaaHmoYptZXqwVy5kGYGcvMu+O6kXpd09WqX2U1VJDbEsehVkwFyrcbctLQhWKF7/QUPv4ZuoDPx7eQq53NihNR1lq8IE78xIXO++pwntEbxhH2jaGhjbKoKpXbWDW2MzVApk50Nts30I092HUIO6wf1gLGjEd4rBWAvEUk2zKsR9MJgmxUgwBrd0zFZqY3xO3+iYG/5wzIyTTXDx5z0N2zMCV8Z12hB3B7dKpnaGJtipXFG26D6f1UzloZXzyhlYeYuotf77oVxT5LnL2SuT/Drq/uzz5eBUmZGNxks1+CgaUeDkcOZfrHrZLMUxHmeZbrfAwblJXUzjTIItpAeu9kqwbexy+xK2T89L/W6v26dn+AhSqXkbsqvJ2BXE6GUYbq5qk7eSrWNQ6qiwsqAhgG0HjTlYBS5CK5X2uoDDYPStAM3AnG7ETmcocVINyOHQfyUjKHR2NgESMNt0KLgXQAQwWPoR+o2yKm+a+IiHuupIh53Y5ItiAhQAKYPRrorabckCKnlR8OZFm/xZnN0nJJsdm2URcGE5/MrlsLff4k8OyfxlN5TkqwCj/yUCI/6Vsw1ymfwI9SLSukfP1M2Cms7f/FGzvRpXLyROQ0DLUMdenro5ozfqhRsgH6aN5CtZLuRUw+3XGJOmF3VPVyniTlO36rvtXq6TNw46zbqfGcGM/ZY7ijem7hV2dWQ014QHKoeegjbFX4D827zRtqsZ035Z06rH5a27OPR/v7uCtGidY91COt60fBipnrEGLvSUxe02sDNaretUdyzBU0FhX5Js/DdWOKQbY7cLjf1IS91etxVb+pTjRLu7LJu3MDudj8INfJFgd96HdJ91h1PRPv7xRsef/PxiL6Q2Lwd0ZXQjxKVeMCo6i+UJMWbby9GEDNZZyQgZEdK2UmRz2k4wx/berKq42bR1lOSpC8ShwuUmc6RLVeMnVw33XtfUWrh2oqZUmFbL9rfX9S92yN4nVj0mPidpimUSjQJNx78FjX7rJwD9znLcPdLOR9T3vt89r9P385uvl6iOXnBm8AdomUaJVCqbZGZuGIZkzRc1C9+TIQL1AXhFr/MWabU4uOcvLwp1zjPU7zY5gVwSjZf07yFtrK5z5cCc7K0t56Nh0pOlmCloYFW4bTr6u9V4bujE2htPO1kpr9GligwbjHXzwx6w9nH98cn2896QKUOqezguLEzWCLqNjHioNtwtHn0ZP55w/NlJcSDDp2QRdFAR3/I8yUaBilZUX4NT382+2YmF+Y8oTxAgSlwz/M03xidpcWUwAMibaI0xg5pwQQb68Sa5vGMJhUpgIAED5LIUgSjynoMGt9ze8dZokrOCB2jD+/fv3sfIaHX7ECzxCJ0hE7Mg0gVkteZpM+UhyyJ/Eh1YEMyUoolQrekWdX2BQi0o+EZaQ+Mb673r1awPtweVwXtw1au5bHdpOOTv0cILLsxrY0doeOjk58QFDIR0nbvN3Qyrogi5Bl2g47vAstt0wtNmls+AmMdR6jhvQ0mTU9bNtvubjLaEQ6WlY2JPmzmGt9FShQhEyob8zZ+KmtsTNuogtV1JPSNW9eQ1+xZAQ6sj4uYpCkm+uMSmRcs1gmBxrNq63EKn4SQJWGyZcpAaGfZwgUN9SJUPSmgo1E0qAjUmUVTqdPR0kKqgsj/aoQlNJNMroxYYf1wrrtOVhSQO7QX1OvkLIPq8NH0Ix17s9fNu+3Q3h31DVHjmesVSGIwfni5tChurb5dbiYyTkniiWzEdLqEnlUMNlk2NCni8SF9kTQTLM/O7q4Pi3is/diFi0ya3sB/EWyRgaPQO/L1OTp4k/fOEOBltmXqCeNCWgFBsTBCcC/A//Nw+6VnUjGbrEKNZs52umw90hd5mcV5QnkY9aj+F8KyqDdeSXpj0jYcYR82O3xxDl1/j10lMpuEG0wNNvhA0/bzBKeiTOWmlK/5zLzOzliW9MHUJ0c/d03njKRdY2bzxYmu/90dDZmq3Zi+r3VFgsyLlIr+CWLwB24bes0/NGmzoCuJmHXpv0u2ICn04lBMkrNSTnPOqrexgnLBhKRZTL9RziaMJm5muhIsJumDJPGsObc2l4Q3jW30f9Pczv0aSwdAI5ikKWV1pr3j+ZwJGgLJPF1QxCnEmP4ODD4tq5oaEulieKiDx31pBtYemBXhn38wFg3W6Pjo6AjOjnUlpYkGK0cPPgIIh7zMwghZOSFjrmN4Av0Ln6ZNwOXpSpdVoEfzPdS9A+i+cqMj/QpfzTU+jAvNx3Xe13NDTRGU+KtSrdd76/8Drhco7OInAAA=";
   const string Layers209FunctionSha256="65e4089208affb3e8d3d1fd9a050439b13c5b400ff411f76d7311ff5a3add980";
@@ -2458,6 +2469,110 @@ return handler;
     try {OpeningProtocolMessageCore(true,1,"s","c","observe",path,project,new string('a',32),new string('b',16),new string('c',64),false,false,true,true);} catch {refused=true;}
     if(!refused) throw Error("primitives209-exclusive-purpose");
   }
+  // BEGIN PCB209 VISUAL NATIVE CONTRACT
+  sealed class Visual209Json {
+    readonly string text; int at;
+    readonly Dictionary<string,object> fields=new Dictionary<string,object>(StringComparer.Ordinal);
+    Visual209Json(string value) {
+      if(value==null || value.Length==0 || value.Length>12000 || new UTF8Encoding(false,true).GetByteCount(value)>12000)throw Error("visual209-operation-size");text=value;
+    }
+    void White(){while(at<text.Length && (text[at]==' '||text[at]=='\t'||text[at]=='\r'||text[at]=='\n'))at++;}
+    bool Take(char c){White();if(at<text.Length&&text[at]==c){at++;return true;}return false;}
+    void Need(char c){if(!Take(c))throw Error("visual209-json");}
+    string String(){
+      Need('"');StringBuilder value=new StringBuilder();bool closed=false;
+      while(at<text.Length){char c=text[at++];if(c=='"'){closed=true;break;}if(c<32)throw Error("visual209-json-string");
+        if(c=='\\'){
+          if(at>=text.Length)throw Error("visual209-json-string");c=text[at++];
+          switch(c){case '"':case '\\':case '/':value.Append(c);break;case 'b':value.Append('\b');break;case 'f':value.Append('\f');break;case 'n':value.Append('\n');break;case 'r':value.Append('\r');break;case 't':value.Append('\t');break;
+            case 'u':if(at+4>text.Length)throw Error("visual209-json-string");int n=0;for(int i=0;i<4;i++){char h=text[at++];int v=h>='0'&&h<='9'?h-'0':h>='a'&&h<='f'?h-'a'+10:h>='A'&&h<='F'?h-'A'+10:-1;if(v<0)throw Error("visual209-json-string");n=n*16+v;}value.Append((char)n);break;
+            default:throw Error("visual209-json-string");}
+        }else value.Append(c);
+        if(value.Length>256)throw Error("visual209-json-string");
+      }
+      if(!closed)throw Error("visual209-json-string");string result=value.ToString();new UTF8Encoding(false,true).GetBytes(result);return result;
+    }
+    string[] Ids(){
+      Need('[');List<string> values=new List<string>();HashSet<string> seen=new HashSet<string>(StringComparer.Ordinal);
+      if(!Take(']')){do{string value=String();if(value.Length==0 || values.Count>=256 || !seen.Add(value))throw Error("visual209-ids");values.Add(value);}while(Take(','));Need(']');}
+      return values.ToArray();
+    }
+    double Number(){
+      White();System.Text.RegularExpressions.Match match=System.Text.RegularExpressions.Regex.Match(text.Substring(at),@"\A-?(?:0|[1-9][0-9]*)(?:\.[0-9]+)?(?:[eE][+-]?[0-9]+)?");
+      double value;if(!match.Success || match.Length>64 || !Double.TryParse(match.Value,NumberStyles.Float,CultureInfo.InvariantCulture,out value) || Double.IsInfinity(value)||Double.IsNaN(value)||value==0&&match.Value[0]=='-')throw Error("visual209-number");at+=match.Length;return value;
+    }
+    string Build(){
+      Need('{');do{
+        string key=String();if(fields.ContainsKey(key))throw Error("visual209-duplicate-field");Need(':');object value;
+        if(key=="kind")value=String();else if(key=="expectedSelection")value=Ids();else if(key=="xMil"||key=="yMil"||key=="scaleRatio")value=Number();else throw Error("visual209-field");fields.Add(key,value);
+      }while(Take(','));Need('}');White();if(at!=text.Length || !fields.ContainsKey("kind"))throw Error("visual209-json");
+      string kind=fields["kind"] as string;string result;
+      if(kind=="fit-all"){if(fields.Count!=1)throw Error("visual209-fields");result="{\"kind\":\"fit-all\"}";}
+      else if(kind=="fit-selected"){
+        object selected;if(fields.Count!=2||!fields.TryGetValue("expectedSelection",out selected))throw Error("visual209-fields");string[] ids=selected as string[];if(ids==null||ids.Length==0)throw Error("visual209-ids");
+        List<string> encoded=new List<string>();foreach(string id in ids)encoded.Add(JsonString(id));result="{\"kind\":\"fit-selected\",\"expectedSelection\":["+System.String.Join(",",encoded.ToArray())+"]}";
+      }else if(kind=="zoom-to"){
+        if(fields.Count!=4 || !fields.ContainsKey("xMil")||!fields.ContainsKey("yMil")||!fields.ContainsKey("scaleRatio"))throw Error("visual209-fields");
+        double x=(double)fields["xMil"],y=(double)fields["yMil"],ratio=(double)fields["scaleRatio"];
+        if(Math.Abs(x)>1e12||Math.Abs(y)>1e12||ratio<0.00001||ratio>1000000)throw Error("visual209-number-bound");
+        result="{\"kind\":\"zoom-to\",\"xMil\":"+x.ToString("R",CultureInfo.InvariantCulture)+",\"yMil\":"+y.ToString("R",CultureInfo.InvariantCulture)+",\"scaleRatio\":"+ratio.ToString("R",CultureInfo.InvariantCulture)+"}";
+      }else throw Error("visual209-kind");
+      if(new UTF8Encoding(false,true).GetByteCount(result)>12000)throw Error("visual209-operation-size");return result;
+    }
+    public static string Canonical(string value){return new Visual209Json(value).Build();}
+  }
+  public static string Visual209ProtocolMessage(int id,string sessionId,string uniqueContextId,string phase,
+    string path,string project,string branch,string document,string source,string operationJson) {
+    if(phase!="visual")throw Error("visual209-phase");
+    // Reuse the unchanged pure opening constructor's exact target, path, hash,
+    // handle and103-request validation. It does not send or invoke its program.
+    OpeningProtocolMessageCore(true,id,sessionId,uniqueContextId,"observe",path,project,branch,document,source,false,false,true);
+    string operation=Visual209Json.Canonical(operationJson);
+    string target="{\"rawWindowsPath\":"+JsonString(path)+",\"projectUuid\":"+JsonString(project)+",\"documentUuid\":"+JsonString(document)+",\"expectedSourceSha256\":"+JsonString(source)+",\"branchUuid\":"+JsonString(branch)+"}";
+    string message="{\"id\":"+id.ToString(CultureInfo.InvariantCulture)+",\"method\":\"Runtime.callFunctionOn\",\"params\":{\"functionDeclaration\":"+JsonString(Visual209Function)+",\"uniqueContextId\":"+JsonString(uniqueContextId)+",\"arguments\":[{\"value\":"+target+"},{\"value\":\"visual\"},{\"value\":"+operation+"}],\"returnByValue\":true,\"awaitPromise\":true,\"silent\":true,\"generatePreview\":false,\"userGesture\":false,\"throwOnSideEffect\":false},\"sessionId\":"+JsonString(sessionId)+"}\0";
+    if(Encoding.UTF8.GetByteCount(message)>65536)throw Error("visual209-send-size");return message;
+  }
+  [DllImport("kernel32.dll",SetLastError=true)] static extern bool TerminateJobObject(IntPtr job,uint code);
+  public void AdmitVisualAction(string action){if(visual209&&visual209AbortAttempted&&action!="identity"&&action!="termination"&&action!="release"&&action!="terminate-visual")throw Error("visual209-abort-consumed");}
+  public void TerminateVisual(){
+    if(!visual209||visual209AbortAttempted||released||root==IntPtr.Zero||job==IntPtr.Zero)throw Error("visual209-termination-owner");visual209AbortAttempted=true;
+    AssertLimits();long created,exited,kernel,user;bool member;
+    if(GetProcessId(root)!=rootPid||rootCreated==0||!GetProcessTimes(root,out created,out exited,out kernel,out user)||created!=rootCreated||!IsProcessInJob(root,job,out member)||!member)throw Error("visual209-termination-identity");
+    Native(TerminateJobObject(job,0x45444156));
+  }
+  public void SendVisual209(int id,string sessionId,string uniqueContextId,string phase,string path,string project,string branch,string document,string source,string operationJson){
+    if(!visual209 || !layers209 || stringPrecreate || workerStartup)throw Error("visual209-purpose");
+    string message=Visual209ProtocolMessage(id,sessionId,uniqueContextId,phase,path,project,branch,document,source,operationJson);
+    if(visual209Attempted)throw Error("visual209-consumed");visual209Attempted=true;SendMessage(id,message);
+  }
+  public static void VerifyVisual209Smoke(){
+    string path=@"C:\Reviewed\VisualFixture.eprj2",project;using(SHA256 hash=SHA256.Create()){
+      project=BitConverter.ToString(hash.ComputeHash(Encoding.UTF8.GetBytes(path))).Replace("-","").ToLowerInvariant();
+      if(BitConverter.ToString(hash.ComputeHash(Encoding.UTF8.GetBytes(Visual209Function))).Replace("-","").ToLowerInvariant()!=Visual209FunctionSha256)throw Error("visual209-program");
+    }
+    foreach(string operation in new string[]{"{\"kind\":\"fit-all\"}","{\"kind\":\"fit-selected\",\"expectedSelection\":[\"quote\\\"slash\\\\\\n\\u03a9\"]}","{\"kind\":\"zoom-to\",\"xMil\":-1e12,\"yMil\":1e12,\"scaleRatio\":1e-5}"}){
+      string message=Visual209ProtocolMessage(103,"s","c","visual",path,project,new string('a',32),new string('b',16),new string('c',64),operation);
+      if(message.IndexOf("\"awaitPromise\":true",StringComparison.Ordinal)<0 || message.IndexOf("\"value\":\"visual\"",StringComparison.Ordinal)<0 || message.IndexOf("\"userGesture\":false",StringComparison.Ordinal)<0)throw Error("visual209-command");
+    }
+    foreach(string operation in new string[]{"{}","{\"kind\":\"select-primitives\",\"expectedSelection\":[],\"primitiveIds\":[\"x\"]}","{\"kind\":\"fit-all\",\"kind\":\"fit-all\"}","{\"kind\":\"fit-all\",\"extra\":1}","{\"kind\":\"fit-selected\",\"expectedSelection\":[]}","{\"kind\":\"fit-selected\",\"expectedSelection\":[\"x\",\"x\"]}","{\"kind\":\"fit-selected\",\"expectedSelection\":[\"\\uD800\"]}","{\"kind\":\"zoom-to\",\"xMil\":-0,\"yMil\":0,\"scaleRatio\":1}","{\"kind\":\"zoom-to\",\"xMil\":1e13,\"yMil\":0,\"scaleRatio\":1}","{\"kind\":\"zoom-to\",\"xMil\":0,\"yMil\":0,\"scaleRatio\":0}","{\"kind\":\"fit-all\",\"extra\":null}","{\"kind\":\"zoom-to\",\"xMil\":01,\"yMil\":0,\"scaleRatio\":1}","{\"kind\":\"fit-all\"} trailing"}){
+      bool refused=false;try{Visual209Json.Canonical(operation);}catch{refused=true;}if(!refused)throw Error("visual209-invalid-operation");
+    }
+    foreach(int count in new int[]{256,257}){
+      List<string> ids=new List<string>();for(int i=0;i<count;i++)ids.Add("\"id"+i.ToString(CultureInfo.InvariantCulture)+"\"");
+      bool refused=false;try{Visual209Json.Canonical("{\"kind\":\"fit-selected\",\"expectedSelection\":["+String.Join(",",ids.ToArray())+"]}");}catch{refused=true;}if(refused!=(count==257))throw Error("visual209-id-count");
+    }
+    foreach(string ids in new string[]{"[\""+new string('x',257)+"\"]","[\"\"]"}){bool refused=false;try{Visual209Json.Canonical("{\"kind\":\"fit-selected\",\"expectedSelection\":"+ids+"}");}catch{refused=true;}if(!refused)throw Error("visual209-id-length");}
+    foreach(EasyedaDiagnosticOwner old in new EasyedaDiagnosticOwner[]{new EasyedaDiagnosticOwner(),CreateStringPrecreate(),CreateLayers209(),CreateWorkerStartup(),CreateWorkerStartup209(),CreateWorkerStartupEmpty209(),CreateWorkerStartupRatline209(),CreateWorkerStartupRatlineContinuation209(),CreateWorkerStartupFootprint209(),CreateWorkerStartupFootprintCopy209(),CreateWorkerStartupFootprintSaved209(),CreateWorkerStartupFootprintMain209(),CreateWorkerStartupFootprintCombined209()}){
+      bool refused=false;try{old.SendVisual209(1,"s","c","visual",path,project,new string('a',32),new string('b',16),new string('c',64),"{\"kind\":\"fit-all\"}");}catch(Exception failure){refused=failure.Message=="pcb-diagnostic-visual209-purpose";}if(!refused)throw Error("visual209-old-purpose");
+      refused=false;try{old.TerminateVisual();}catch(Exception failure){refused=failure.Message=="pcb-diagnostic-visual209-termination-owner";}if(!refused)throw Error("visual209-old-abort");
+    }
+    EasyedaDiagnosticOwner current=CreateVisual209();if(!current.visual209||!current.layers209||current.workerStartup||current.stringPrecreate||current.nextRequest!=1||current.visual209Attempted)throw Error("visual209-birth");
+    bool unbound=false;try{current.TerminateVisual();}catch{unbound=true;}if(!unbound||current.visual209AbortAttempted)throw Error("visual209-unbound-abort");
+    current.visual209AbortAttempted=true;bool stopped=false;try{current.AdmitVisualAction("send");}catch{stopped=true;}if(!stopped)throw Error("visual209-abort-dispatch");current.AdmitVisualAction("termination");current.AdmitVisualAction("release");
+    foreach(int request in new int[]{0,104}){bool refused=false;try{Visual209ProtocolMessage(request,"s","c","visual",path,project,new string('a',32),new string('b',16),new string('c',64),"{\"kind\":\"fit-all\"}");}catch{refused=true;}if(!refused)throw Error("visual209-budget");}
+    bool wrongPhase=false;try{Visual209ProtocolMessage(1,"s","c","observe",path,project,new string('a',32),new string('b',16),new string('c',64),"{\"kind\":\"fit-all\"}");}catch{wrongPhase=true;}if(!wrongPhase)throw Error("visual209-phase");
+  }
+  // END PCB209 VISUAL NATIVE CONTRACT
   public static string Layers209ProtocolMessage(int id,string sessionId,string uniqueContextId,string phase,
     string path,string project,string branch,string document,string source) {
     return OpeningProtocolMessageCore(true,id,sessionId,uniqueContextId,phase,path,project,branch,document,source,false,false,true);
@@ -5920,7 +6035,8 @@ return callback;
   }
 }
 '@
-$owner=if ($WorkerStartupFootprintCombined209) {[EasyedaDiagnosticOwner]::CreateWorkerStartupFootprintCombined209()} elseif ($WorkerStartupFootprintMain209) {[EasyedaDiagnosticOwner]::CreateWorkerStartupFootprintMain209()} elseif ($WorkerStartupFootprintSaved209) {[EasyedaDiagnosticOwner]::CreateWorkerStartupFootprintSaved209()} elseif ($WorkerStartupFootprintCopy209) {[EasyedaDiagnosticOwner]::CreateWorkerStartupFootprintCopy209()} elseif ($WorkerStartupFootprint209) {[EasyedaDiagnosticOwner]::CreateWorkerStartupFootprint209()} elseif ($WorkerStartupRatlineContinuation209) {[EasyedaDiagnosticOwner]::CreateWorkerStartupRatlineContinuation209()} elseif ($WorkerStartupRatline209) {[EasyedaDiagnosticOwner]::CreateWorkerStartupRatline209()} elseif ($WorkerStartupEmpty209) {[EasyedaDiagnosticOwner]::CreateWorkerStartupEmpty209()} elseif ($WorkerStartup209) {[EasyedaDiagnosticOwner]::CreateWorkerStartup209()} elseif ($WorkerStartup) {[EasyedaDiagnosticOwner]::CreateWorkerStartup()} elseif ($StringPrecreate) {[EasyedaDiagnosticOwner]::CreateStringPrecreate()} elseif ($Layers209) {[EasyedaDiagnosticOwner]::CreateLayers209()} else {New-Object EasyedaDiagnosticOwner}
+$footprintCopyWorkerHandleFields=@('scriptId','objectId','arg0ObjectId','arg1ObjectId','arg2ObjectId','arg3ObjectId','arg4ObjectId','arg5ObjectId','arg6ObjectId','arg7ObjectId')
+$owner=if ($Visual209) {[EasyedaDiagnosticOwner]::CreateVisual209()} elseif ($WorkerStartupFootprintCombined209) {[EasyedaDiagnosticOwner]::CreateWorkerStartupFootprintCombined209()} elseif ($WorkerStartupFootprintMain209) {[EasyedaDiagnosticOwner]::CreateWorkerStartupFootprintMain209()} elseif ($WorkerStartupFootprintSaved209) {[EasyedaDiagnosticOwner]::CreateWorkerStartupFootprintSaved209()} elseif ($WorkerStartupFootprintCopy209) {[EasyedaDiagnosticOwner]::CreateWorkerStartupFootprintCopy209()} elseif ($WorkerStartupFootprint209) {[EasyedaDiagnosticOwner]::CreateWorkerStartupFootprint209()} elseif ($WorkerStartupRatlineContinuation209) {[EasyedaDiagnosticOwner]::CreateWorkerStartupRatlineContinuation209()} elseif ($WorkerStartupRatline209) {[EasyedaDiagnosticOwner]::CreateWorkerStartupRatline209()} elseif ($WorkerStartupEmpty209) {[EasyedaDiagnosticOwner]::CreateWorkerStartupEmpty209()} elseif ($WorkerStartup209) {[EasyedaDiagnosticOwner]::CreateWorkerStartup209()} elseif ($WorkerStartup) {[EasyedaDiagnosticOwner]::CreateWorkerStartup()} elseif ($StringPrecreate) {[EasyedaDiagnosticOwner]::CreateStringPrecreate()} elseif ($Layers209) {[EasyedaDiagnosticOwner]::CreateLayers209()} else {New-Object EasyedaDiagnosticOwner}
 $startupRequestLimit=if ($WorkerStartupFootprintCombined209) {[EasyedaFootprintCombinedLimits]::Requests} elseif ($WorkerStartupFootprintSaved209) {[EasyedaFootprintSavedLimits]::Requests} elseif ($WorkerStartupFootprintCopy209) {[EasyedaFootprintExecutionLimits]::Requests} elseif ($WorkerStartupFootprint209) {[EasyedaFootprintPreparationLimits]::Requests} elseif ($WorkerStartupRatlineContinuation209) {[EasyedaRatlineContinuation209Limits]::RequestLimit} elseif ($WorkerStartupRatline209) {[EasyedaRatline209Limits]::RequestLimit} elseif ($WorkerStartupEmpty209) {[EasyedaWorkerStartupEmpty209Protocol]::RequestLimit} else {256}
 try {
   $owner.Initialize()
@@ -5932,6 +6048,7 @@ try {
   }
   # END GENERATED FOOTPRINT COMBINED READY
   if ($CompileOnly) {
+    if ($footprintCopyWorkerHandleFields.Length -ne 10 -or $footprintCopyWorkerHandleFields -cnotcontains 'arg7ObjectId' -or $footprintCopyWorkerHandleFields -ccontains 'arg8ObjectId' -or $footprintCopyWorkerHandleFields -ccontains 'unexpected') {throw 'pcb-diagnostic-footprint-copy-worker-handle-fields'}
     [EasyedaDiagnosticOwner]::VerifyOriginalMainSmoke()
     [EasyedaDiagnosticOwner]::VerifyFootprintCombinedSmoke()
     [EasyedaDiagnosticOwner]::VerifyMainCompletionPurposeSmoke()
@@ -5960,6 +6077,7 @@ try {
     [EasyedaDiagnosticInstallation]::VerifyLeaseSmoke()
     [EasyedaDiagnosticOwner]::VerifyProtocolSmoke()
     [EasyedaDiagnosticOwner]::VerifyPackedProgramSmoke()
+    [EasyedaDiagnosticOwner]::VerifyVisual209Smoke()
     [EasyedaDiagnosticOwner]::VerifyLayers209Smoke()
     [EasyedaDiagnosticOwner]::VerifyPrimitives209Smoke()
     [EasyedaDiagnosticOwner]::VerifyExtendedPrimitives209Smoke()
@@ -6094,7 +6212,8 @@ try {
       if ($request.id -isnot [string] -or $request.id -cnotmatch '^[a-f0-9]{32}$') {throw 'pcb-diagnostic-request-id'}
       $id=$request.id
       if ($launched -and $request.action -cne 'identity' -and ($request.helperInstance -isnot [string] -or $request.jobId -isnot [string] -or $request.rootCreated -isnot [string] -or ($request.rootPid -isnot [int] -and $request.rootPid -isnot [long]) -or $request.helperInstance -cne $owner.HelperInstance -or $request.jobId -cne $owner.JobId -or $request.rootCreated -cne $owner.RootCreated -or $request.rootPid -ne $owner.RootPid)) {throw 'pcb-diagnostic-owner-binding'}
-      if ($request.action -ceq 'combined-abort' -and ($request.helperInstance -isnot [string] -or $request.jobId -isnot [string] -or $request.rootCreated -isnot [string] -or ($request.rootPid -isnot [int] -and $request.rootPid -isnot [long]) -or $request.helperInstance -cne $owner.HelperInstance -or $request.jobId -cne $owner.JobId -or $request.rootCreated -cne $owner.RootCreated -or $request.rootPid -ne $owner.RootPid)) {throw 'pcb-diagnostic-owner-binding'}
+      if (@('combined-abort','terminate-visual') -ccontains $request.action -and ($request.helperInstance -isnot [string] -or $request.jobId -isnot [string] -or $request.rootCreated -isnot [string] -or ($request.rootPid -isnot [int] -and $request.rootPid -isnot [long]) -or $request.helperInstance -cne $owner.HelperInstance -or $request.jobId -cne $owner.JobId -or $request.rootCreated -cne $owner.RootCreated -or $request.rootPid -ne $owner.RootPid)) {throw 'pcb-diagnostic-owner-binding'}
+      if ($Visual209) {$owner.AdmitVisualAction($request.action)}
       if ($WorkerStartupFootprintCombined209) {$owner.AdmitCombinedAction($request.action)}
       if ($WorkerStartupEmpty209) {
         if ($request.action -isnot [string]) {throw 'pcb-diagnostic-empty-action'}
@@ -6160,6 +6279,10 @@ try {
           if (-not $WorkerStartupFootprintCombined209 -or -not $launched -or
               (@($request.PSObject.Properties.Name | Sort-Object) -join ',') -cne 'action,helperInstance,id,jobId,rootCreated,rootPid') {throw 'pcb-diagnostic-main-completion-retire-fields'}
           $owner.RetireMainCompletion();$result=@{retired=$true}
+        }
+        'terminate-visual' {
+          if (-not $Visual209 -or $request.confirmAbortOriginalVisualJob -isnot [bool] -or -not $request.confirmAbortOriginalVisualJob -or (@($request.PSObject.Properties.Name | Sort-Object) -join ',') -cne 'action,confirmAbortOriginalVisualJob,helperInstance,id,jobId,rootCreated,rootPid') {throw 'pcb-diagnostic-visual209-terminate-fields'}
+          $owner.TerminateVisual();$result=@{terminationDispatched=$true}
         }
         'combined-abort' {
           if (-not $WorkerStartupFootprintCombined209 -or $request.confirmAbortOriginalCombinedJob -isnot [bool] -or -not $request.confirmAbortOriginalCombinedJob -or (@($request.PSObject.Properties.Name | Sort-Object) -join ',') -cne 'action,confirmAbortOriginalCombinedJob,helperInstance,id,jobId,rootCreated,rootPid') {throw 'pcb-diagnostic-combined-abort-fields'}
@@ -6264,7 +6387,7 @@ try {
           $workerFields=New-Object 'System.Collections.Hashtable' ([StringComparer]::Ordinal)
           foreach ($property in $request.PSObject.Properties) {
             if (@('id','action','helperInstance','jobId','rootPid','rootCreated','requestId','method','executionPhase') -cnotcontains $property.Name) {
-              if (@('scriptId','objectId','arg0ObjectId','arg1ObjectId','arg2ObjectId','arg3ObjectId','arg4ObjectId','arg5ObjectId','arg6ObjectId') -cnotcontains $property.Name -or $property.Value -isnot [string]) {throw 'pcb-diagnostic-footprint-copy-worker-field'}
+              if ($footprintCopyWorkerHandleFields -cnotcontains $property.Name -or $property.Value -isnot [string]) {throw 'pcb-diagnostic-footprint-copy-worker-field'}
               $workerFields.Add($property.Name,$property.Value)
             }
           }
@@ -6527,7 +6650,7 @@ try {
             'Runtime.evaluate' {$fields+=@('sessionId','uniqueContextId')}
             'Runtime.callFunctionOn' {
               $fields+=@('sessionId','uniqueContextId','targetRawWindowsPath','targetProjectUuid','targetBranchUuid','targetDocumentUuid','targetExpectedSourceSha256')
-              if ($null -ne $request.pcbPouredShapes209Phase) {if (-not $Layers209) {throw 'pcb-diagnostic-poured-shapes209-purpose'};$fields+=@('pcbPouredShapes209Phase')} elseif ($null -ne $request.pcbArcShapes209Phase) {if (-not $Layers209) {throw 'pcb-diagnostic-arc-shapes209-purpose'};$fields+=@('pcbArcShapes209Phase')} elseif ($null -ne $request.pcbImageShapes209Phase) {if (-not $Layers209) {throw 'pcb-diagnostic-image-shapes209-purpose'};$fields+=@('pcbImageShapes209Phase')} elseif ($null -ne $request.pcbPadShapes209Phase) {if (-not $Layers209) {throw 'pcb-diagnostic-pad-shapes209-purpose'};$fields+=@('pcbPadShapes209Phase')} elseif ($null -ne $request.pcbSelectionRelations209Phase) {if (-not $Layers209) {throw 'pcb-diagnostic-selection-relations209-purpose'};$fields+=@('pcbSelectionRelations209Phase','componentIds')} elseif ($null -ne $request.pcbExtendedPrimitives209Phase) {if (-not $Layers209) {throw 'pcb-diagnostic-extended-primitives209-purpose'};$fields+=@('pcbExtendedPrimitives209Phase')} elseif ($null -ne $request.pcbPrimitives209Phase) {if (-not $Layers209) {throw 'pcb-diagnostic-primitives209-purpose'};$fields+=@('pcbPrimitives209Phase')} elseif ($null -ne $request.pcbLayers209Phase) {if (-not $Layers209) {throw 'pcb-diagnostic-layers209-purpose'};$fields+=@('pcbLayers209Phase')} elseif ($null -ne $request.pcbOpeningPhase) {$fields+=@('pcbOpeningPhase')} else {$fields+=@('openingPhase')}
+              if ($null -ne $request.pcbVisual209Phase) {if (-not $Visual209) {throw 'pcb-diagnostic-visual209-purpose'};$fields+=@('pcbVisual209Phase','visualOperationJson')} elseif ($null -ne $request.pcbPouredShapes209Phase) {if (-not $Layers209) {throw 'pcb-diagnostic-poured-shapes209-purpose'};$fields+=@('pcbPouredShapes209Phase')} elseif ($null -ne $request.pcbArcShapes209Phase) {if (-not $Layers209) {throw 'pcb-diagnostic-arc-shapes209-purpose'};$fields+=@('pcbArcShapes209Phase')} elseif ($null -ne $request.pcbImageShapes209Phase) {if (-not $Layers209) {throw 'pcb-diagnostic-image-shapes209-purpose'};$fields+=@('pcbImageShapes209Phase')} elseif ($null -ne $request.pcbPadShapes209Phase) {if (-not $Layers209) {throw 'pcb-diagnostic-pad-shapes209-purpose'};$fields+=@('pcbPadShapes209Phase')} elseif ($null -ne $request.pcbSelectionRelations209Phase) {if (-not $Layers209) {throw 'pcb-diagnostic-selection-relations209-purpose'};$fields+=@('pcbSelectionRelations209Phase','componentIds')} elseif ($null -ne $request.pcbExtendedPrimitives209Phase) {if (-not $Layers209) {throw 'pcb-diagnostic-extended-primitives209-purpose'};$fields+=@('pcbExtendedPrimitives209Phase')} elseif ($null -ne $request.pcbPrimitives209Phase) {if (-not $Layers209) {throw 'pcb-diagnostic-primitives209-purpose'};$fields+=@('pcbPrimitives209Phase')} elseif ($null -ne $request.pcbLayers209Phase) {if (-not $Layers209) {throw 'pcb-diagnostic-layers209-purpose'};$fields+=@('pcbLayers209Phase')} elseif ($null -ne $request.pcbOpeningPhase) {$fields+=@('pcbOpeningPhase')} else {$fields+=@('openingPhase')}
             }
             'Debugger.enable' {$fields+=@('sessionId')}
             'Debugger.getScriptSource' {$fields+=@('sessionId','scriptId')}
@@ -6538,6 +6661,7 @@ try {
           if ((@($request.PSObject.Properties.Name | Sort-Object) -join ',') -cne (@($fields | Sort-Object) -join ',')) {throw 'pcb-diagnostic-request-fields'}
           foreach ($field in @('targetId','sessionId','scriptId','uniqueContextId','openingPhase','pcbOpeningPhase','targetRawWindowsPath','targetProjectUuid','targetBranchUuid','targetDocumentUuid','targetExpectedSourceSha256','modelPhase','stringPhase','commonPhase','objectId','callbackObjectId','constructorObjectId','teardropObjectId','teardropCallbacksObjectId','teardropReceiver0','teardropReceiver1','teardropReceiver2','teardropReceiver3','teardropReceiver4','teardropReceiver5','teardropTarget0','teardropTarget1','teardropTarget2','teardropTarget3','teardropTarget4','teardropTarget5','frameId')) {if ($null -ne $request.$field -and $request.$field -isnot [string]) {throw 'pcb-diagnostic-request-field'}}
           foreach ($field in @('workerProducerPhase','workerArgument0','workerArgument1','workerArgument2','workerArgument3','workerArgument4','workerArgument5')) {if ($null -ne $request.$field -and $request.$field -isnot [string]) {throw 'pcb-diagnostic-worker-producer-field'}}
+          if ($null -ne $request.pcbVisual209Phase -and ($request.pcbVisual209Phase -isnot [string] -or $request.visualOperationJson -isnot [string])) {throw 'pcb-diagnostic-visual209-field'}
           if ($null -ne $request.pcbLayers209Phase -and $request.pcbLayers209Phase -isnot [string]) {throw 'pcb-diagnostic-layers209-field'}
           if ($null -ne $request.pcbPrimitives209Phase -and $request.pcbPrimitives209Phase -isnot [string]) {throw 'pcb-diagnostic-primitives209-field'}
           if ($null -ne $request.pcbExtendedPrimitives209Phase -and $request.pcbExtendedPrimitives209Phase -isnot [string]) {throw 'pcb-diagnostic-extended-primitives209-field'}
@@ -6583,7 +6707,9 @@ try {
           } elseif ($request.method -ceq 'DOM.getFrameOwner' -or $request.method -ceq 'DOM.describeNode') {
             $owner.SendDom([int]$request.requestId,$request.method,$request.sessionId,$request.frameId,$request.backendNodeId)
           } elseif ($request.method -ceq 'Runtime.callFunctionOn') {
-            if ($null -ne $request.pcbPouredShapes209Phase) {
+            if ($null -ne $request.pcbVisual209Phase) {
+              $owner.SendVisual209([int]$request.requestId,$request.sessionId,$request.uniqueContextId,$request.pcbVisual209Phase,$request.targetRawWindowsPath,$request.targetProjectUuid,$request.targetBranchUuid,$request.targetDocumentUuid,$request.targetExpectedSourceSha256,$request.visualOperationJson)
+            } elseif ($null -ne $request.pcbPouredShapes209Phase) {
               $owner.SendPouredShapes209([int]$request.requestId,$request.sessionId,$request.uniqueContextId,$request.pcbPouredShapes209Phase,$request.targetRawWindowsPath,$request.targetProjectUuid,$request.targetBranchUuid,$request.targetDocumentUuid,$request.targetExpectedSourceSha256)
             } elseif ($null -ne $request.pcbArcShapes209Phase) {
               $owner.SendArcShapes209([int]$request.requestId,$request.sessionId,$request.uniqueContextId,$request.pcbArcShapes209Phase,$request.targetRawWindowsPath,$request.targetProjectUuid,$request.targetBranchUuid,$request.targetDocumentUuid,$request.targetExpectedSourceSha256)

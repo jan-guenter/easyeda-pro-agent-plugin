@@ -1,10 +1,10 @@
 /** Private partial schedule around the actual main and renderer sequencers.
  * No native factory constructs a writer-capable channel or complete qualification
  * yet. Caller-supplied plans/UUIDs cannot create those original capabilities.
- * The current observers require an exact destination UUID and main request body
- * before arming. Real Tg.create allocates its UUID internally before its first
- * clock. A supplied known UUID/body is suitable only for already-qualified
- * observations, never qualification of that native allocation or future create. */
+ * The clock observer still requires an exact destination UUID before arming.
+ * The main request may use a separately pre-reserved original copy projection
+ * bound only after the original paired clocks. Real Tg.create allocates its UUID
+ * internally; a supplied known UUID never qualifies that allocation. */
 /* oxlint-disable import/max-dependencies -- Keep genuine native ownership, the exact pending channel and each original sequencer explicit; none is replaceable by caller callbacks. */
 import { types } from "node:util";
 import type { z } from "zod";
@@ -24,6 +24,8 @@ import { requireCurrentFootprintCopyCreateClockChannelRoute } from "./current-pc
 import type { CurrentFootprintCopyCreateClockChannelRoute, CurrentFootprintCopyPendingCreate } from "./current-pcb-worker-startup-channel.ts";
 import { requireCurrentFootprintCombinedPairedSchedule } from "./current-pcb-diagnostic-owner.ts";
 import type { CurrentFootprintCombinedMainCapability } from "./current-pcb-diagnostic-owner.ts";
+import { isCurrentFootprintCopyMainRequestReservation } from "./current-footprint-copy-main-request-plan.ts";
+import type { CurrentFootprintCopyMainRequestReservation } from "./current-footprint-copy-main-request-plan.ts";
 
 type Plan = Readonly<z.infer<typeof currentFootprintCopyMainRequestPlanSchema>>;
 type Phase = "ready" | "main-armed" | "clocks-bound" | "clocks-armed" | "create-written" | "clocks-retired" | "main-completed" | "complete" | "failed" | "ended";
@@ -49,6 +51,7 @@ export class CurrentFootprintCopyPairedScheduler {
   readonly #capability: CurrentFootprintCombinedMainCapability;
   readonly #mainOrigin: CurrentFootprintCopyMainRequestOrigin;
   readonly #main: CurrentFootprintCopyMainRequestRunner;
+  readonly #latePlan: boolean;
   #phase: Phase = "ready";
   #busy = false;
   #ending = false;
@@ -68,10 +71,11 @@ export class CurrentFootprintCopyPairedScheduler {
   #mainTransferred = false;
   #firstFailure: Phase | null = null;
   public constructor(backend: CurrentFootprintCopyMainBackendRunner, capability: CurrentFootprintCombinedMainCapability,
-    mainOrigin: CurrentFootprintCopyMainRequestOrigin, plan: Plan) {
+    mainOrigin: CurrentFootprintCopyMainRequestOrigin, plan: Plan | CurrentFootprintCopyMainRequestReservation) {
     need(!types.isProxy(backend) && Object.getPrototypeOf(backend) === CurrentFootprintCopyMainBackendRunner.prototype && Reflect.ownKeys(backend).length === 0, "ORIGINAL_BACKEND");
     backendMethods.requireRequestOrigin.call(backend, capability, mainOrigin);
     this.#backend = backend; this.#capability = capability; this.#mainOrigin = mainOrigin;
+    this.#latePlan = isCurrentFootprintCopyMainRequestReservation(plan);
     this.#main = new CurrentFootprintCopyMainRequestRunner(mainOrigin, plan);
   }
   #same(): void {
@@ -125,6 +129,9 @@ export class CurrentFootprintCopyPairedScheduler {
     this.#begin("create-written");
     try {
       need(this.#clock !== null, "CLOCKS"); this.#clocks = await this.#clock.collect(); this.#same();
+      if (this.#latePlan) {
+        need(this.#clockToken !== null, "CLOCKS"); await this.#main.bindObservedClocks(this.#clockToken, this.#clocks); this.#same();
+      }
       await this.#clock.requireOriginal(this.#clocks); this.#same(); await this.#clock.cleanup(); this.#same();
       need(this.#clock.diagnostics()["retired"] === true, "CLOCK_RETIREMENT"); this.#phase = "clocks-retired";
     } catch (error) { this.#failed(); throw error; } finally { this.#end(); }

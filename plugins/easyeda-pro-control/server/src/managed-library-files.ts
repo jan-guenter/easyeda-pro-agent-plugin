@@ -5,6 +5,8 @@ import { MANAGED_LIBRARY_ARCHIVE_MAX_BYTES, MANAGED_LIBRARY_ARCHIVE_MAX_EXPANDED
   readManagedLibraryZip } from "./managed-library-files-zip.ts";
 import { MANAGED_PROJECT_FOOTPRINT_INDEX_MAX_BYTES, MANAGED_PROJECT_FOOTPRINT_ROSTER_PAGE_ENTRIES, MANAGED_PROJECT_FOOTPRINT_SOURCE_PAGE_UNITS,
   MANAGED_PROJECT_FOOTPRINT_UUID_PATTERN } from "./managed-project-footprint-sources.ts";
+import { MANAGED_SYMBOL_SOURCE_ID_PATTERN } from "./managed-project-symbol-sources.ts";
+import { MANAGED_SYMBOL_PIN_PAGE_ENTRIES } from "./managed-symbol-pins.ts";
 
 export const MANAGED_LIBRARY_FILES_MAX_TEXT_BYTES = 256 * 1024;
 export const MANAGED_LIBRARY_FILES_MAX_RESULT_BYTES = 65_536;
@@ -21,6 +23,7 @@ const standaloneFileSchema = managedLibraryFileSchema.extend({
   name: z.string().max(128).regex(/^[A-Za-z0-9][A-Za-z0-9_ -]*\.(?:efoo|esym|epanl)$/u),
   bytes: z.number().int().min(1).max(MANAGED_LIBRARY_FILES_MAX_TEXT_BYTES),
 });
+const symbolSourceFileSchema = managedLibraryFileSchema.extend({ name: z.string().max(128).regex(/^[A-Za-z0-9][A-Za-z0-9_ -]*\.(?:esym|epro|epro2)$/u) });
 const projectFileSchema = managedLibraryFileSchema.extend({ name: z.string().max(128).regex(/^[A-Za-z0-9][A-Za-z0-9_ -]*\.epro2?$/u) });
 export const managedLibraryExtractRequestSchema = z.object({ action: z.literal("extract-library-info"),
   files: z.array(standaloneFileSchema).min(1).max(16)
@@ -35,9 +38,22 @@ export const managedProjectFootprintSourceReadRequestSchema = z.object({ action:
   expectedSourceSetSha256: sha256, footprintUuid: z.string().regex(MANAGED_PROJECT_FOOTPRINT_UUID_PATTERN),
   offset: z.number().int().min(0).max(MANAGED_LIBRARY_ARCHIVE_MAX_EXPANDED_BYTES).default(0),
   length: z.number().int().min(1).max(MANAGED_PROJECT_FOOTPRINT_SOURCE_PAGE_UNITS).default(MANAGED_PROJECT_FOOTPRINT_SOURCE_PAGE_UNITS) }).strict();
+export const managedSymbolSourcesRequestSchema = z.object({ action: z.literal("extract-symbol-sources"), file: symbolSourceFileSchema }).strict();
+export const managedSymbolSourceListRequestSchema = z.object({ action: z.literal("list-symbol-sources"), file: symbolSourceFileSchema,
+  expectedSourceSetSha256: sha256, offset: z.number().int().min(0).max(MANAGED_LIBRARY_ARCHIVE_MAX_MEMBERS).default(0),
+  length: z.number().int().min(1).max(MANAGED_PROJECT_FOOTPRINT_ROSTER_PAGE_ENTRIES).default(MANAGED_PROJECT_FOOTPRINT_ROSTER_PAGE_ENTRIES) }).strict();
+export const managedSymbolSourceReadRequestSchema = z.object({ action: z.literal("read-symbol-source"), file: symbolSourceFileSchema,
+  expectedSourceSetSha256: sha256, symbolId: z.string().regex(MANAGED_SYMBOL_SOURCE_ID_PATTERN),
+  offset: z.number().int().min(0).max(MANAGED_LIBRARY_ARCHIVE_MAX_EXPANDED_BYTES).default(0),
+  length: z.number().int().min(1).max(MANAGED_PROJECT_FOOTPRINT_SOURCE_PAGE_UNITS).default(MANAGED_PROJECT_FOOTPRINT_SOURCE_PAGE_UNITS) }).strict();
+export const managedSymbolPinsRequestSchema = z.object({ action: z.literal("inspect-symbol-pins"), file: symbolSourceFileSchema,
+  expectedSourceSetSha256: sha256, symbolId: z.string().regex(MANAGED_SYMBOL_SOURCE_ID_PATTERN),
+  offset: z.number().int().min(0).max(8192).default(0),
+  length: z.number().int().min(1).max(MANAGED_SYMBOL_PIN_PAGE_ENTRIES).default(MANAGED_SYMBOL_PIN_PAGE_ENTRIES) }).strict();
 export const managedLibraryFilesRequestSchema = z.discriminatedUnion("action", [managedLibraryPrepareRequestSchema,
   managedLibraryExtractRequestSchema, managedProjectExtractRequestSchema, managedProjectFootprintSourcesRequestSchema,
-  managedProjectFootprintSourceListRequestSchema, managedProjectFootprintSourceReadRequestSchema]);
+  managedProjectFootprintSourceListRequestSchema, managedProjectFootprintSourceReadRequestSchema, managedSymbolSourcesRequestSchema,
+  managedSymbolSourceListRequestSchema, managedSymbolSourceReadRequestSchema, managedSymbolPinsRequestSchema]);
 const text = (maximum: number): z.ZodString => z.string().max(maximum).refine((value) => value.isWellFormed() && !value.includes("\u0000"));
 const projectMetadataSchema = z.object({ title: text(512), cbbProject: z.boolean().optional(), editorVersion: text(128).optional() });
 const project2MetadataSchema = z.object({ title: text(512), cbb_project: z.boolean().optional(), editorVersion: text(128).optional() });
@@ -131,6 +147,7 @@ const limitations = [
   "Library inputs support standalone .efoo FOOTPRINT, .epanl PANEL_LIB and ordinary .esym SYMBOL type2 with complete UTF-8 JSON-line framing, DOCTYPE1.0 and one HEAD. Filename SHA-256 supplies the native UUID; filename stem supplies title; description/tags are empty. No archive/device extraction, vendor storage-ID string overloads, net flags, ports or multi-document bodies.",
   "Metadata has supplied-file scope. Record framing and ZIP integrity are checked; CAD geometry, member reference completeness, pins, dependencies, library ownership, renderability, electrical correctness and import suitability remain unverified. Unknown drawing/manifest fields stay in the exact input artifact and are not projected or executed. No external references are followed.",
   "extract-project-footprint-sources reads only the supplied prepared archive, independently of the SDK getter's current-document export dependency. It requires every .efoo member to have a distinct lowercase 16- or 32-hex UUID.efoo basename. The complete archive-order roster, raw byte hashes and UTF-16 lengths become an exclusive managed JSON index; opaque UTF-8 sources retain BOM, line endings and unknown records. CAD framing and references are not interpreted. list-project-footprint-sources rechecks that whole archive and digest before at most32 metadata entries, so UUID discovery needs no general artifact reader. read-project-footprint-source rechecks the exact whole archive and source-set digest before one lossless text/base64 page, without splitting Unicode surrogate pairs. No live document source or implicit export is obtained.",
+  "extract-symbol-sources, list-symbol-sources and read-symbol-source provide the same lossless hash-bound source workflow for prepared ordinary standalone .esym files and canonical SYMBOL/UUID.esym project members. The pinned exporter combines symbols and block symbols, so an archive member does not imply ordinary symbol subtype. inspect-symbol-pins separately recognizes complete ordinary type2 SYMBOL1.0 JSON lines or unique-record native DOCHEAD SYMBOL source. It reports raw-file coordinates/orientation, exact pin attribute values and visibility, with record-index/hash references to the preserved full source. Unknown records remain in that source; no ERC, live membership, pin-to-pad mapping or connectivity proof. Mutable histories/tombstones or ambiguous pin attributes refuse pin inspection without disabling raw source reads.",
   "The installed .epro2 wrapper names introduction, description and tags, but its manager extractor does not return them; these fields remain absent. Library batch inputs reject repeated filename UUIDs instead of the native last-wins deduplication. Names differing only in case are refused as ambiguous.",
   "4 MiB archive input, 8 MiB total inflated content, 256 members, 256 KiB library text or manifest, 8192 library records, 16 library files and 64 KiB response. The ZIP parser has a bounded synchronous inflation step; no unbounded backend RPC is launched.",
 ] as const;
@@ -144,9 +161,12 @@ export function queryManagedLibraryFiles(input: unknown = {}): Record<string, un
     limits: { archiveBytes: MANAGED_LIBRARY_ARCHIVE_MAX_BYTES, expandedBytes: MANAGED_LIBRARY_ARCHIVE_MAX_EXPANDED_BYTES,
       archiveMembers: MANAGED_LIBRARY_ARCHIVE_MAX_MEMBERS, textBytes: MANAGED_LIBRARY_FILES_MAX_TEXT_BYTES, responseBytes: MANAGED_LIBRARY_FILES_MAX_RESULT_BYTES,
       footprintSourceIndexBytes: MANAGED_PROJECT_FOOTPRINT_INDEX_MAX_BYTES, footprintRosterPageEntries: MANAGED_PROJECT_FOOTPRINT_ROSTER_PAGE_ENTRIES,
-      footprintSourcePageUtf16Units: MANAGED_PROJECT_FOOTPRINT_SOURCE_PAGE_UNITS },
+      footprintSourcePageUtf16Units: MANAGED_PROJECT_FOOTPRINT_SOURCE_PAGE_UNITS,
+      symbolSourceIndexBytes: MANAGED_PROJECT_FOOTPRINT_INDEX_MAX_BYTES, symbolRosterPageEntries: MANAGED_PROJECT_FOOTPRINT_ROSTER_PAGE_ENTRIES,
+      symbolSourcePageUtf16Units: MANAGED_PROJECT_FOOTPRINT_SOURCE_PAGE_UNITS, symbolPinPageEntries: MANAGED_SYMBOL_PIN_PAGE_ENTRIES },
     provenance: { apiSha256: "e7c31b0de9dcbe4806e6b3cf8879b31c9e44425361bb8e67c3e8480ae359c8b1",
       uiSha256: "3515d4c299b353fa7bcd0d859f0b8b59b7eae39b5dc243b2c27f2e54a60a1ee6",
+      symbolParserSha256: "b88ad265bb2bc7febb90af92a6f37189b3f90be7cd1f1427522c8f2435dfb4bd",
       managerSha256: "b3260ec9d98d6cad5f65a6234aa839b32f6bf5954cb03de0bd6ce003577b388d",
       sourceReview: "EasyEDA3.2.209 API0.3.59.1ca9efb5 UI3.2.198.2800f583 manager3.2.185.bf63a159",
       connectedSdkValidation: "not-performed" } };

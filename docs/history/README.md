@@ -1,5 +1,7 @@
 # Project history
 
+- [2026-10-29 Visual review, supplied symbols and copy integration](2026-10-29-visual-review-and-symbol-inspection.md).
+
 This directory contains repository research, reviews, work logs, release reports,
 validation results and handoffs. These records are evidence, not current agent
 instructions or an executable work queue. Historical "current", "next" and

@@ -228,3 +228,84 @@ during the first explicit clock-origin exit settlement needs a bounded local
 settlement retry. It must preserve the consumed native retirement rather than
 replay it. Normal cleanup followed by first exit settlement is already modeled;
 this additional failed-exit-settlement case is not enabled writer support.
+
+## Publication and official installation
+
+Final candidate `90fafba6a916cf4a6e75ce24aa12c3d21cbc7a2c` passed all eleven
+required checks. Linux40871716677 passed13,562 facade cases, five expected
+platform skips and zero failures, plus424 bridge cases. Windows40871716658
+passed the corrected exact-helper job. The earlier34ec91f Windows failure
+remains retained; its superseded Linux40870691344 run was cancelled after its
+build job passed and is not final suite evidence.
+
+Protected [PR150](https://github.com/jan-guenter/easyeda-pro-agent-plugin/pull/150)
+merged as `c2a99b34d55e2eb25430c7b00909087a9f2807cc`. Its plugin tree
+`493c7817b2b4bf79ec5d2e666ac6f04fbee60f24` is exactly the tested candidate tree.
+This release batches70 files. No source, runtime or helper changed after the
+final green candidate.
+
+The official CLI upgraded only Git marketplace `easyeda-pro-agent`, retaining
+`https://github.com/jan-guenter/easyeda-pro-agent-plugin.git` and merged mainc2a99b3.
+It directly refreshed the enabled plugin to `0.3.0+codex.20261029120000`.
+No redundant plugin add, installed-cache patch or gateway termination was used.
+The existing stale arg0-directory cleanup permission warning remains retained
+in stderr; installation and verification succeeded without deleting temp roots.
+
+Complete installed comparisons before and after the scoped plugin list pass
+all2,344 files,45,551,277 bytes,42 directories and committed0644/0755 modes.
+Inventory digest:
+`b821d4dba80d13e699af98e830562e9522af62ebd41d0f801ac2c86d14e8324e`.
+The scoped list confirms installed/enabled true and the canonical Git source.
+The private machine profile remains byte-exact; the bridge key epoch is unchanged.
+
+The installed configured-entrypoint offline probe passed27 exposed/52 configured
+tools and45 queries through47 requests on pinned Node24.18.0. Its own synthetic
+child closed through stdin EOF with exit0, no signal and zero stderr. Marker and
+control-roster checks passed, with sampled absence of descendants/nonstdio
+sockets. Continuous isolation remains unproved. This supplies neither actual
+new-host admission, ambient-to-pinned handoff proof nor connected writer proof.
+No live call used the new snapshot in this chat.
+
+Automatic main Windows40874185562 has passed. Main Linux40874185454 is pending
+at this entry. Its final result must be recorded separately. The next live case
+needs the newly loaded snapshot and fresh actual-host admission. Do not replay
+any terminal095000 action or adopt its JSON as an owner.
+
+### Practical backlog priorities
+
+Read-only triage recommends a useful visual-review batch of current209 viewport
+controls, canvas PNG capture, exact selection and net highlighting, with supplied
+symbol/schematic source and pin inspection in parallel. Passive stack/rules
+inspection follows a separately qualified current-source port. The exact private
+notes retain source commitments and bounded work units for continuation.
+
+The current API `zoom` body is a literal false stub. Implemented `zoomTo` and
+fit routes are better initial candidates. Coordinate/region navigation also
+starts overlay timers, while exact selection currently drops missing IDs and
+can report partial success. These are concrete adapter requirements rather
+than permission to forward wrappers. Physical-stack getters are stubs; the
+older private rule reader pins another PCB generation and rejects populated
+selectors. Managed archive source indexing currently covers footprints only.
+Source findings and these priorities provide no new runtime admission.
+
+Allocation/late request binding, full copy/delete lifecycle, complete budgets
+and the private cleanup edge remain separately tracked. This release does not
+mark those tasks finished. This publication appendix stays local until the next
+substantive commit, avoiding a release solely for chronology.
+
+### Final merged-main verification and handoff
+
+Merged mainc2a99b3 passed all ten Linux jobs in40874185454 and Windows40874185562.
+Both runs name the exact merged commit. Final installed metadata, manifest,
+both runtime bundles and native helper still match that committed payload and
+mode after CI. The private machine profile is unchanged. No new live call,
+installed-cache patch, owner termination or bridge-key reprovision followed
+installation.
+
+Load120000 in a fresh Codex session and admit the actual host before its next
+live case. Start a new disposable combined ID to validate the parser/destination
+fixes; terminal095000 has no continuation authority. The allocation/request-plan
+design and practical API triage are retained privately for the next batch.
+Prioritize a visible viewport/selection workflow and independent offline source
+inspection alongside the unfinished copy/delete work, rather than publishing
+another isolated guard correction.

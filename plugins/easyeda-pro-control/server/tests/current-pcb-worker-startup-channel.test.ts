@@ -1,4 +1,6 @@
+/* oxlint-disable import/max-dependencies -- The original channel fixture now also joins the separately branded native-refusal issuer; keeping this cross-boundary regression here exercises actual consumed transport ownership. */
 import assert from "node:assert/strict";
+import { issueCurrentPcbDiagnosticNativeRefusal } from "../src/current-pcb-diagnostic-native-refusal.ts";
 import { test } from "node:test";
 import type { TestContext } from "node:test";
 import { setTimeout as delay } from "node:timers/promises";
@@ -318,4 +320,19 @@ void test("release cannot overlap the original start parent read or return a clo
   const closing = channel.releaseAfterTermination(); await delay(5); assert.equal(terminationChecks, 0);
   held.resolve(Object.freeze({ targetId: "p", sessionId: "s", nextRequestId: 1 }));
   await starting; await closing; assert.equal(terminationChecks, 1); assert.equal(channel.status().released, true);
+});
+
+void test("startup channel retains original native refusal diagnostics without trusting arbitrary error messages", async context => {
+  for (const nativeRefusal of [true, false]) {
+    const value = await fixture(context);
+    value.state.onSend = (): Promise<unknown> => Promise.reject(nativeRefusal ?
+      issueCurrentPcbDiagnosticNativeRefusal("pcb-diagnostic-footprint-copy-worker-field") : new Error("private arbitrary/native-looking error"));
+    await assert.rejects(value.dependency.request({ method: "Target.getTargets", params: {} }), /WRITE/u);
+    assert.deepEqual(value.channel.status().exchangeFailure, { requestId: 17, method: "Target.getTargets",
+      nativeCode: nativeRefusal ? "pcb-diagnostic-footprint-copy-worker-field" : null,
+      kind: nativeRefusal ? "native-refusal" : "unrecognized-exchange-failure" });
+    assert.equal(JSON.stringify(value.channel.status()).includes("private arbitrary"), false);
+    assert.equal(value.requests.length, 1); await assert.rejects(value.dependency.request({ method: "Target.getTargets", params: {} }));
+    assert.equal(value.requests.length, 1);
+  }
 });

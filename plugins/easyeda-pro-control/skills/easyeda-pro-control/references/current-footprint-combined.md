@@ -259,12 +259,22 @@ input preflight are implemented, but every existing native birth purpose
 rejects this unit before beginning. No validation owner can upgrade into it.
 
 The private paired scheduler composes the actual main, clock and completion
-runners in that order. It still cannot qualify a real new create. Native
-`buildString` allocates the destination UUID internally and produces two unknown
-clock values. The current request plan expects their exact resulting body before
-arming. Genuine allocation capture and late plan binding must resolve that
-dependency before dispatch. Supplied matching values or a synthetic scheduler
-test cannot supply ownership. Partial result/artifact/journal slots also leave
+runners in that order. Its separate late request mode reserves the maximum
+escaped native envelope from the original copy projection before main arming.
+After both genuine paired-clock samples, it binds their exact ordered upload
+body through the same original combined owner. The known-plan mode still
+requires its exact body before arming. These are private source capabilities.
+
+The scheduler still cannot qualify a real new create. Native `buildString`
+allocates the destination UUID internally, while the clock observer requires a
+known destination before arming. The existing post-await producer frames do not
+retain the original create argument identity. A competing same-manager call
+therefore cannot be excluded by those frames alone. A separate pre-await join
+of the fixed wrapper, create argument and `buildString` argument is still needed,
+with its own complete request and output reservation. Supplied matching values
+or a synthetic scheduler test cannot supply that ownership.
+
+Partial result/artifact/journal slots also leave
 whole helper stdout, events, raw collector replies and four-generation capacity
 unreserved. A native create result can precede the buffered backend upload;
 neither an early acknowledgment nor waiting for it proves SQL completion.

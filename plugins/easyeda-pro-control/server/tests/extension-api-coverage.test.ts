@@ -541,7 +541,7 @@ void test("NetGroup and filtered PCB membership reads expose narrow native route
   assert.match(route.scope, /not public primitive instances/u); assert.match(route.scope, /explicit nonempty unique filters/u);
   assert.match(route.scope, /source\/inventory\/source/u);
   assert.deepEqual(extensionApiCoverageSummary()["statuses"], {
-    "implemented-public-subset": 214, "implemented-native-equivalent": 38, "implemented-vendor-http-equivalent": 6, "internal-lifecycle-only": 0, "implemented-but-blocked": 79, omitted: 498,
+    "implemented-public-subset": 214, "implemented-native-equivalent": 41, "implemented-vendor-http-equivalent": 6, "internal-lifecycle-only": 0, "implemented-but-blocked": 79, omitted: 495,
   });
 });
 
@@ -808,7 +808,7 @@ void test("PCB type lookup coverage exposes the native classification subset ins
   assert.deepEqual(current.inputDiscovery?.arguments, { request: { action: "pcb-identities", query: { method: row.path, includeSchemas: true } } });
 });
 
-void test("existing capture workflows have truthful public-subset coverage without enabling standalone navigation", () => {
+void test("legacy capture coverage stays separate from the current209 native viewport subset", () => {
   const rows = new Map(inventoryExtensionApiCoverage().map((row) => [row.path, row]));
   for (const [method, selector] of [["getCurrentRenderedAreaImage", "easyeda_canvas_capture"], ["zoomToRegion", "easyeda_canvas_capture_region"]]) {
     const row = rows.get(`eda.dmt_EditorControl.${method}`); assert.ok(row);
@@ -824,9 +824,28 @@ void test("existing capture workflows have truthful public-subset coverage witho
   }
   assert.match(rows.get("eda.dmt_EditorControl.getCurrentRenderedAreaImage")?.routes[0]?.scope ?? "", /Viewport-image observation only/u);
   assert.match(rows.get("eda.dmt_EditorControl.zoomToRegion")?.routes[0]?.scope ?? "", /no standalone zoom operation/u);
+  assert.match(rows.get("eda.dmt_EditorControl.getCurrentRenderedAreaImage")?.routes[0]?.scope ?? "", /Current209 PNG capture remains unavailable/u);
   for (const method of ["zoomTo", "zoomToAllPrimitives", "zoomToSelectedPrimitives"]) {
-    assert.equal(rows.get(`eda.dmt_EditorControl.${method}`)?.status, "omitted");
+    const row = rows.get(`eda.dmt_EditorControl.${method}`); assert.ok(row);
+    assert.equal(row.status, "implemented-native-equivalent"); assert.equal(row.currentGenerationLiveValidation, "not-recorded");
+    assert.equal(row.completeDeclaredContractSupported, false); assert.equal(row.routes.length, 1);
+    const route = row.routes[0]; assert.ok(route); assert.equal(route.tool, "easyeda_control_pcb209_opening");
+    assert.equal(route.selector, "visual.perform-visual"); assert.equal(route.implementation, "native-task-equivalent");
+    assert.deepEqual(route.documentTypes, [3]); assert.equal(route.executionState, "available-with-runtime-guards");
+    assert.deepEqual(route.inputDiscovery?.arguments, { request: { action: "pcb209-visual", query: { includeSchemas: true } } });
+    assert.match(route.scope, /one journaled perform-visual/u); assert.match(route.scope, /no selection mutation/u);
+    assert.match(route.scope, /render completion is not observed/u); assert.match(route.scope, /connected execution remains unvalidated/u);
   }
+  const zoom = rows.get("eda.dmt_EditorControl.zoom"); assert.equal(zoom?.status, "omitted");
+  assert.equal(zoom?.omission?.code, "installed-209-constant-false-stub"); assert.match(zoom.omission.reason, /literal false/u);
+  for (const method of ["doSelectPrimitives", "clearSelected"]) {
+    const row = rows.get(`eda.pcb_SelectControl.${method}`); assert.equal(row?.status, "omitted");
+    assert.equal(row?.omission?.code, "installed-209-selection-flushes-design-services");
+    assert.match(row.omission.reason, /native uploads/u); assert.match(row.omission.reason, /delete empty/u);
+  }
+  const symbol = rows.get("eda.lib_Symbol.getDocumentSource"); assert.equal(symbol?.status, "omitted");
+  assert.equal(symbol?.omission?.code, "installed-209-symbol-source-runtime-contract-unqualified");
+  assert.match(symbol.omission.reason, /does not call this SDK method/u);
 });
 
 void test("current PCB layer coverage preserves the separate legacy route and discloses native execution", () => {
@@ -1197,11 +1216,11 @@ void test("every coverage input-discovery request resolves to an actual strict a
     assert.ok(isRecord(request));
     const result = queryOfflineApi(apiRequestSchema.parse(request)).result;
     assert.ok(isRecord(result));
-    if (["project-symbol-operation", "disposable-symbol-copy", "disposable-pcb-rename", "disposable-schematic-rename", "project-schematic-operation", "pcb209-opening", "pcb209-worker-startup", "footprint-combined", "netlist-files", "library-files"].includes(String(request["action"]))) {
+    if (["project-symbol-operation", "disposable-symbol-copy", "disposable-pcb-rename", "disposable-schematic-rename", "project-schematic-operation", "pcb209-opening", "pcb209-visual", "pcb209-worker-startup", "footprint-combined", "netlist-files", "library-files"].includes(String(request["action"]))) {
       assert.ok(isRecord(result["inputSchema"]));
       // The ordinary SCH and 209 opening routes expose their lifecycle union at the root;
       // Existing routes still promise a separate phase schema as well.
-      if (!["project-schematic-operation", "pcb209-opening", "pcb209-worker-startup", "footprint-combined", "netlist-files", "library-files"].includes(String(request["action"]))) { assert.ok(isRecord(result["stepSchema"])); }
+      if (!["project-schematic-operation", "pcb209-opening", "pcb209-visual", "pcb209-worker-startup", "footprint-combined", "netlist-files", "library-files"].includes(String(request["action"]))) { assert.ok(isRecord(result["stepSchema"])); }
       assert.equal(result["executionAuthorized"], false);
     } else {
       const entries = result["entries"];

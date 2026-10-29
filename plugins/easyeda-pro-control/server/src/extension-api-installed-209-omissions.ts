@@ -16,6 +16,33 @@ interface OmissionGroup {
  */
 const groups: readonly OmissionGroup[] = [
   {
+    paths: ["dmt_EditorControl.zoom"],
+    omission: {
+      code: "installed-209-constant-false-stub",
+      reason: "The pinned API0.3.59 implementation is zoom(t,i){return!1}. It returns literal false without changing or observing the viewport. The separate current209 native viewport subset uses implemented zoomTo/fit handlers and does not execute this percentage-zoom wrapper.",
+      nextRequirement: "Review an implementation that actually performs this percentage-zoom contract, or qualify a separate exact task equivalent with observable camera effects. A false stub is not a completed zoom or valid camera-bounds observation.",
+      evidence: [...evidence, "current-pcb-209-visual-actions.ts", "docs/history/2026-10-29-visual-review-and-symbol-inspection.md"],
+    },
+  },
+  {
+    paths: ["pcb_SelectControl.doSelectPrimitives", "pcb_SelectControl.clearSelected"],
+    omission: {
+      code: "installed-209-selection-flushes-design-services",
+      reason: "The current native selection handler silently drops missing IDs and can report true after a partial selection. Even with an exactly empty prior selection, append publishes flushService, whose AutoService updates DRC/connectivity and native uploads; flushSelectingInfo reaches flushSelect, which can delete empty selected views or annotations and settle tool state. Clearing also runs the empty-view deletion and stash cleanup paths. Therefore these operations cannot be admitted as camera-only UI changes, and the mounted visual purpose excludes both selecting and clearing.",
+      nextRequirement: "Bind complete selection membership, active tool/stash state, all affected design services, native uploads and possible empty-object deletions before dispatch. Define the complete source/SQL effects and supported inverse, then validate a disposable closed/reopened lifecycle. The existing selection-relations reader and fit-selected camera operation grant no selection-write authority.",
+      evidence: [...evidence, "current-pcb-209-visual-actions.ts", "current-pcb-209-selection-relations.ts", "docs/history/2026-10-29-visual-review-and-symbol-inspection.md"],
+    },
+  },
+  {
+    paths: ["lib_Symbol.getDocumentSource"],
+    omission: {
+      code: "installed-209-symbol-source-runtime-contract-unqualified",
+      reason: "No current209 public symbol-source getter adapter is mounted. The separate managed-file workflow reads exact supplied standalone .esym or SYMBOL/UUID.esym archive bytes and can project recognized pin records. It does not call this SDK method, resolve a live or shared-library symbol, establish current membership or prove saved design state.",
+      nextRequirement: "Qualify the exact current runtime getter, project/shared-library routing, cache/dependency effects, complete source format and failure behavior before registering live execution. Use the supplied-file reader for offline source and pin inspection without attributing its result to an SDK call.",
+      evidence: [...evidence, "managed-project-symbol-sources.ts", "managed-symbol-pins.ts", "managed-project-symbol-sources.test.ts"],
+    },
+  },
+  {
     paths: ["sys_IFrame.isIFrameAlreadyExist"],
     omission: {
       code: "installed-209-constant-false-stub",

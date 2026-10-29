@@ -7,6 +7,7 @@ import { z } from "zod";
 import { sha256Json, sha256Text } from "./core.ts";
 import { freezeDeep } from "./sqlite-inventory-core.ts";
 import { captureCurrentPcbStringClockReply } from "./current-pcb-string-clock-reply.ts";
+// oxlint-disable-next-line import/no-cycle -- The original native owner constructs this observer and the main late binder later checks its issued packet; no ownership getter runs during initialization.
 import { requireCurrentFootprintCopyClockRpcOrigin } from "./current-footprint-copy-clock-rpc-origin.ts";
 import type { CurrentFootprintCopyClockRpcOrigin } from "./current-footprint-copy-clock-rpc-origin.ts";
 import { requireCurrentFootprintCopyClockRpcConstructionLease } from "./current-pcb-worker-construction-runner.ts";
@@ -76,6 +77,7 @@ export class CurrentFootprintCopyClockRpcRunner {
   #idle: PromiseWithResolvers<null> | null = null;
   #ending = false;
   #generationEnded = false;
+  #retirementSettlementAttempted = false;
   #started = 0;
   #uncertainAllocation = false;
   #unknownPause = false;
@@ -256,6 +258,10 @@ export class CurrentFootprintCopyClockRpcRunner {
   public async requireOriginal(packet: CurrentFootprintCopyClockRpcObservation): Promise<void> {
     need(packet === this.#packet && packets.get(packet) === this && this.#phase === "collected", "ORIGINAL_PACKET"); await this.#current();
   }
+  public async requireOriginalForOrigin(packet: CurrentFootprintCopyClockRpcObservation, origin: CurrentFootprintCopyClockRpcOrigin): Promise<void> {
+    need(origin === this.#token && packet === this.#packet && packets.get(packet) === this && this.#phase === "collected", "ORIGINAL_PACKET_ORIGIN");
+    await this.#current();
+  }
   public async cleanup(): Promise<void> {
     need(!this.#busy && !this.#ending && !this.#cleanupAttempted, "CLEANUP_CONSUMED");
     need(this.#phase !== "failed" && !this.#unknownPause && !this.#uncertainAllocation && this.#resuming === null && this.#pauses.every(value => value.resumed), "GENERATION_CLOSURE_REQUIRED");
@@ -270,7 +276,11 @@ export class CurrentFootprintCopyClockRpcRunner {
     } catch (error) { this.#fail(); throw error; } finally { this.#end(); }
   }
   public async observeOriginalGenerationEnded(): Promise<void> {
-    need(!this.#retired && !this.#ending && !this.#generationEnded, "GENERATION_CLOSURE_CONSUMED");
+    need(!this.#retired && !this.#ending && (!this.#generationEnded || !this.#retirementSettlementAttempted), "GENERATION_CLOSURE_CONSUMED");
+    // An actual exit can consume native retirement before its acknowledgment
+    // Arrives. Permit one bounded original-origin settlement; its retained
+    // Channel settles that consumed retirement locally without another send.
+    if (this.#generationEnded) { this.#retirementSettlementAttempted = true; }
     this.#ending = true; const idle = this.#idle;
     let timer: ReturnType<typeof setTimeout> | null = null;
     try {
@@ -289,6 +299,18 @@ export class CurrentFootprintCopyClockRpcRunner {
     return Object.freeze({ phase: this.#phase, normalRequests: this.#normal, cleanupRequests: this.#cleanup, replies: this.#raw.length,
       pauses: this.#pauses.length, resumes: this.#pauses.filter(value => value.resumed).length, removed: this.#points.filter(value => value.removed).length,
       uncertainAllocation: this.#uncertainAllocation, unknownPause: this.#unknownPause, groupReleaseAttempts: this.#groupAttempts.size, groupsReleased: this.#groupsReleased.size,
-      retired: this.#retired, originalGenerationEnded: this.#generationEnded, endingOriginalGeneration: this.#ending, firstFailure: this.#firstFailure, rawEvidenceSha256: sha256Json(this.#raw), executionAuthorized: false });
+      retired: this.#retired, originalGenerationEnded: this.#generationEnded, retirementSettlementAttempted: this.#retirementSettlementAttempted,
+      endingOriginalGeneration: this.#ending, firstFailure: this.#firstFailure, rawEvidenceSha256: sha256Json(this.#raw), executionAuthorized: false });
   }
+}
+// oxlint-disable-next-line typescript/unbound-method -- The captured method is called only with its exact private-field issuer, preventing an own-property override.
+const originalForOrigin = CurrentFootprintCopyClockRpcRunner.prototype.requireOriginalForOrigin;
+
+/** Retains the original runner/origin relation across the await. Matching
+ * packet JSON, a copied origin or a caller-provided verifier cannot issue it. */
+export async function requireCurrentFootprintCopyClockRpcObservation(packet: CurrentFootprintCopyClockRpcObservation,
+  origin: CurrentFootprintCopyClockRpcOrigin): Promise<void> {
+  const runner = packets.get(packet); need(runner !== undefined, "ORIGINAL_PACKET");
+  await originalForOrigin.call(runner, packet, origin);
+  need(packets.get(packet) === runner, "ORIGINAL_PACKET");
 }

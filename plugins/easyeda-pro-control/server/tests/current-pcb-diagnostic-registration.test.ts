@@ -1,16 +1,17 @@
+/* oxlint-disable import/max-dependencies -- Registration uses the actual purpose classes, strict schemas and facade mode selection instead of permissive stand-ins. */
 import assert from "node:assert/strict";
 import { readFile } from "node:fs/promises";
 import { stripTypeScriptTypes } from "node:module";
 import { test } from "node:test";
 import vm from "node:vm";
 import { z } from "zod";
-import { CurrentPcb209DiagnosticLifecycle, CurrentPcbDiagnosticLifecycle, CurrentPcbStringPrecreateLifecycle, CurrentPcbWorkerStartupLifecycle } from "../src/current-pcb-diagnostic-lifecycle.ts";
+import { CurrentPcb209DiagnosticLifecycle, CurrentPcb209VisualLifecycle, CurrentPcbDiagnosticLifecycle, CurrentPcbStringPrecreateLifecycle, CurrentPcbWorkerStartupLifecycle } from "../src/current-pcb-diagnostic-lifecycle.ts";
 import type { CurrentPcbDiagnosticLifecycleOptions } from "../src/current-pcb-diagnostic-lifecycle.ts";
 import { CURRENT_PCB_DIAGNOSTIC_PROFILE } from "../src/current-pcb-diagnostic-profile.ts";
 import { currentPcbDiagnosticToolRequestSchema, currentPcbDiagnosticValidationRequestSchema } from "../src/current-pcb-diagnostic-validation.ts";
 import { currentPcbStringPrecreateRequestSchema } from "../src/current-pcb-string-precreate-validation.ts";
-// oxlint-disable-next-line import/max-dependencies -- Registration must use the real purpose schemas and mode selection instead of permissive stand-ins.
 import { currentPcb209OpeningRequestSchema } from "../src/current-pcb-209-opening-validation.ts";
+import { currentPcb209VisualRequestSchema } from "../src/current-pcb-209-visual-validation.ts";
 import { facadeToolRegistered } from "../src/facade-mode.ts";
 
 for (const stringPurpose of [false, true]) {
@@ -48,8 +49,8 @@ void test(`public ${stringPurpose ? "String precreate" : "diagnostic"} registrat
       if (pendingAdmission !== undefined) { await pendingAdmission; }
     } };
   const scope = vm.createContext({ z, currentPcbDiagnosticToolRequestSchema, currentPcbDiagnosticValidationRequestSchema,
-    currentPcbStringPrecreateRequestSchema, currentPcb209OpeningRequestSchema, CURRENT_PCB_DIAGNOSTIC_PROFILE,
-    CurrentPcbDiagnosticLifecycle: Coordinator, CurrentPcb209DiagnosticLifecycle, CurrentPcbStringPrecreateLifecycle: Coordinator,
+    currentPcbStringPrecreateRequestSchema, currentPcb209OpeningRequestSchema, currentPcb209VisualRequestSchema, CURRENT_PCB_DIAGNOSTIC_PROFILE,
+    CurrentPcbDiagnosticLifecycle: Coordinator, CurrentPcb209DiagnosticLifecycle, CurrentPcb209VisualLifecycle, CurrentPcbStringPrecreateLifecycle: Coordinator,
     CurrentPcbWorkerStartupLifecycle,
     currentPcbDiagnosticLifecycle: undefined, currentPcbStringPrecreateLifecycle: undefined, currentPcbWorkerStartupLifecycle: undefined, currentFootprintMainLifecycle: undefined,
     process: { env: environment }, engine, upstream,

@@ -1,4 +1,5 @@
 import { z } from "zod";
+import { queryCurrentPcb209Visual, validateCurrentPcb209VisualArguments } from "./current-pcb-209-visual-validation.ts";
 import { queryCurrentFootprintCopyPreparation, validateCurrentFootprintCopyPreparationArguments } from "./current-footprint-copy-preparation-validation.ts";
 import { extensionApiCatalogInputSchema, queryExtensionApiCatalog } from "./extension-api-catalog.ts";
 import { extensionApiCoverageInputSchema, queryExtensionApiCoverage } from "./extension-api-coverage.ts";
@@ -7,8 +8,8 @@ import { operationCatalogQuerySchema, operationValidationRequestSchema, queryOpe
 import { querySdkMathCalculations, sdkMathCatalogQuerySchema, validateSdkMathArguments } from "./sdk-math.ts";
 import { querySdkSystemMethods, sdkSystemCatalogQuerySchema, validateSdkSystemArguments } from "./sdk-system.ts";
 import { querySdkPublicReadersMethods, sdkPublicReadersCatalogQuerySchema, validateSdkPublicReadersArguments } from "./sdk-public-readers.ts";
-import { netlistFilesCatalogQuerySchema, queryNetlistFiles, validateNetlistFilesArguments } from "./netlist-files.ts";
 // oxlint-disable-next-line import/max-dependencies -- This fixed offline router imports each capability's own validator; an intermediary would only hide those dependencies.
+import { netlistFilesCatalogQuerySchema, queryNetlistFiles, validateNetlistFilesArguments } from "./netlist-files.ts";
 import { managedLibraryFilesCatalogQuerySchema, queryManagedLibraryFiles, validateManagedLibraryFilesArguments } from "./managed-library-files.ts";
 import { queryCurrentFootprintCopyRoutePreparation, validateCurrentFootprintCopyRoutePreparationArguments } from "./current-footprint-copy-route-preparation-validation.ts";
 import { queryCurrentFootprintMain, validateCurrentFootprintMainArguments } from "./current-footprint-main-validation.ts";
@@ -122,6 +123,8 @@ export const apiRequestSchema = z.discriminatedUnion("action", [
   z.object({ action: z.literal("launch-validate"), query: publicSdkValidationQuerySchema }).strict(),
   z.object({ action: z.literal("pcb-diagnostic-validation"), query: currentPcbDiagnosticValidationQuerySchema.optional() }).strict(),
   z.object({ action: z.literal("pcb-diagnostic-validation-validate"), query: publicSdkValidationQuerySchema }).strict(),
+  z.object({ action: z.literal("pcb209-visual"), query: currentPcbDiagnosticValidationQuerySchema.optional() }).strict(),
+  z.object({ action: z.literal("pcb209-visual-validate"), query: publicSdkValidationQuerySchema }).strict(),
   z.object({ action: z.literal("pcb209-opening"), query: currentPcbDiagnosticValidationQuerySchema.optional() }).strict(),
   z.object({ action: z.literal("pcb209-opening-validate"), query: publicSdkValidationQuerySchema }).strict(),
   z.object({ action: z.literal("footprint-copy-route-preparation"), query: currentPcbDiagnosticValidationQuerySchema.optional() }).strict(),
@@ -172,6 +175,8 @@ export function queryOfflineApi(request: ApiRequest): { offline: true; result: u
   switch (request.action) {
     case "pcb-diagnostic-validation": { result = queryCurrentPcbDiagnosticValidation(request.query ?? {}); break; }
     case "pcb-diagnostic-validation-validate": { result = validateCurrentPcbDiagnosticValidationArguments(request.query.request); break; }
+    case "pcb209-visual": { result = queryCurrentPcb209Visual(request.query ?? {}); break; }
+    case "pcb209-visual-validate": { result = validateCurrentPcb209VisualArguments(request.query.request); break; }
     case "pcb209-opening": { result = queryCurrentPcb209Opening(request.query ?? {}); break; }
     case "pcb209-opening-validate": { result = validateCurrentPcb209OpeningArguments(request.query.request); break; }
     case "footprint-copy-route-preparation": { result = queryCurrentFootprintCopyRoutePreparation(request.query?.includeSchemas ?? false); break; }

@@ -1,9 +1,9 @@
-# Supplied library metadata and project footprint sources
+# Supplied library metadata, symbol pins and project sources
 
 Use `easyeda_control_library_files` to inspect supplied standalone libraries or
 project archives without launching EasyEDA. This tool is available in every
 facade mode. It implements bounded native-task-equivalent metadata projections
-and lossless footprint-source reads. It does not invoke the SDK's
+and lossless footprint/symbol source reads. It does not invoke the SDK's
 `extractLibInfo`, `extractProjectInfo` or `getDocumentFootprintSources` methods.
 
 Discover `easyeda_control_api` action `library-files` with
@@ -30,7 +30,7 @@ verifies the actual managed bytes.
 The tool does not accept a runtime fingerprint. It does not import a library,
 open a project, save a design, access the network or extract archive members to
 disk. `prepare-file` writes the managed input, and footprint-source extraction
-writes a complete managed index. Metadata extraction and source-page reads only
+writes a complete managed index. Symbol-source extraction also writes one index. Metadata extraction and source-page reads only
 read the exact managed input. Do not replace unsupported source records or rewrite the
 input just to make the validator accept it.
 
@@ -90,6 +90,57 @@ geometry, dependency completeness or current document state. The direct SDK
 getter's current-document export dependency remains unqualified. Do not run it
 as a shortcut for reading a supplied archive.
 
+## Read supplied symbol sources and pins
+
+Use `request:{action:"extract-symbol-sources",file}` with a prepared ordinary
+standalone `.esym` or `.epro`/`.epro2` archive. Keep its `sourceSetSha256` and
+index descriptor. Page the complete archive-order roster with
+`request:{action:"list-symbol-sources",file,expectedSourceSetSha256,offset:0,
+length:32}`. Each item has `symbolId`, `identityKind`, member path, exact byte
+length, SHA-256 and UTF-16 length. For standalone input, `symbolId` is the native
+filename SHA-256, not a vendor library UUID. For project input it is the exact
+member UUID.
+
+The pinned project exporter writes `SYMBOL/<uuid>.esym` and combines ordinary
+symbols with block symbols. Every case-insensitive `.esym` candidate must have
+that canonical path and a lowercase 16- or 32-hex UUID. A source roster does not
+prove ordinary symbol subtype. Raw bodies stay opaque, including future records,
+BOM and line endings. Missing or unsupported framing does not prevent lossless
+source reading.
+
+Read one source with `request:{action:"read-symbol-source",file,
+expectedSourceSetSha256,symbolId,offset:0,length:4096}`. It uses the same lossless
+UTF-16/base64 paging rules as footprint sources. Each request verifies the exact
+whole input and recomputes its complete source-set digest. Unknown fields remain
+available in these pages rather than being silently dropped from the file.
+
+For a pin table, use `request:{action:"inspect-symbol-pins",file,
+expectedSourceSetSha256,symbolId,offset:0,length:16}` and follow `nextOffset` to
+`endOfPins:true`. The inspector recognizes complete ordinary type-2 SYMBOL1.0
+JSON lines or exported native DOCHEAD SYMBOL source with unique record IDs.
+Native member and DOCHEAD UUID must agree. Mutable histories, tombstones,
+duplicate native IDs, repeated JSON-line part IDs, duplicate JSON-line pin or
+attribute IDs within one part, and ambiguous known pin attribute keys refuse
+pin inspection. Native attributes must match their parent pin's part. The same
+JSON-line pin or attribute ID may occur in distinct parts.
+Raw source reads remain available. Every pin is checked before a page returns,
+so a malformed later pin cannot hide behind an earlier page.
+
+The table reports literal pin IDs and part IDs, number, name, electrical-type
+string, position, length, orientation, visibility and raw pin shape. Values use
+raw file coordinates. JSON-line and native-source coordinates have different
+conventions; no public API conversion is implied. Missing attributes have an
+explicit `Present:false` flag and null value. Empty names, leading-zero numbers,
+false visibility and null visibility remain distinct. The pin and every owned
+attribute link to their full-source record index and SHA-256. Extra fields and
+unknown record families stay in the complete hash-bound source. The result also
+counts all record types.
+
+`symbolPinRecordFramingValidated:true` describes the supported pin record
+framing. `cadFramingValidated:false` and `designValidityVerified:false` remain.
+The table performs no ERC, connectivity inference, dependency lookup, pin-to-pad
+mapping or live membership check. It does not admit an SDK getter or writer.
+
 ## Format and size limits
 
 Standalone files require complete UTF-8 JSON-line framing, a matching
@@ -107,5 +158,8 @@ Limits are 4 MiB input, 8 MiB total expanded archive content, 256 archive member
 256 KiB standalone text or manifest, 8192 library records, sixteen standalone
 files and 64 KiB response. Footprint sources share the archive bounds, with a
 256 KiB complete index and at most4096 UTF-16 code units per source page. Each
-page reparses the bounded archive. Check the current discovered schema for exact names
+page reparses the bounded archive. Symbol sources share those bounds and an
+8192-record recognized pin-inspection limit. Pin pages contain at most16 entries
+and32 KiB of pin DTOs; if even one complete DTO cannot fit, use the raw source
+pages. These bounds do not truncate a pin or an unknown record. Check the current discovered schema for exact names
 and limits before preparing a file.
