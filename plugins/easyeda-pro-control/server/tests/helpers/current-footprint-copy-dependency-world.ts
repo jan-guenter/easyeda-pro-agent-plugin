@@ -9,8 +9,8 @@ export function footprintDependencyWorldSource(): string {
     for(const p of selected.filter(p=>p.kind==='class'))define(p.key,p.parent);
     for(const p of selected){if(p.kind==='function')scope[p.key]=stop;else if(p.kind==='method'){const [owner,key]=p.key.split('.');Object.defineProperty(scope[owner].prototype,key,{value:stop,writable:true,enumerable:false,configurable:true});}}
     for(const key of ['qe','Qe','Ke','Ni','cg'])scope[key]=stop;
-    const project=Object.create(scope.Lg.prototype),manager=Object.create(scope.Tg.prototype),consistency=Object.create(scope.ja.prototype),bus={};
-    const constructors=[scope.Tg,scope.ar,scope.Pi,scope.ja,scope.Vc,scope.zy],lexicals=[stop,stop,scope.qe,scope.Qe,scope.Ke,scope.Ni,scope.cg,{}, {},'|\\n'];
+    const project=Object.create(scope.Lg.prototype),manager=Object.create(scope.Tg.prototype),consistency=Object.create(scope.ja.prototype),bus=Object.create(scope.JP.prototype);
+    const constructors=[scope.Tg,scope.ar,scope.Pi,scope.ja,scope.Vc,scope.zy,scope.Lg,scope.Gd,scope.JP,scope.KP,scope.Mb],lexicals=[stop,stop,scope.qe,scope.Qe,scope.Ke,scope.Ni,scope.cg,{}, {},'|\\n'];
     const notification=Object.create(scope.JP.prototype);notification.uuid='12345678-1234-1234-1234-123456789abc';notification.rpcTicket=1;
     Object.assign(project,{workerBus:bus,footprint:manager,consistencyManager:consistency,wsBus:notification,uuid:"a".repeat(64),cache:Object.create(scope.bb.prototype),localCache:Object.create(scope.bb.prototype)});Object.assign(manager,{projectManager:project,user:undefined});
     globalThis.Cache=class Cache{};for(const key of ['put','match','delete'])Object.defineProperty(Cache.prototype,key,{value:stop,writable:true,enumerable:true,configurable:true});

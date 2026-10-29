@@ -22,14 +22,14 @@ const value = Object.freeze({ historyUuid: "e".repeat(32), backendActorUuid: "c"
 const frameSizes = { save: 4, "transaction-enter": 2, "callback-enter": 5, branch: 6, append: 4, "branch-return": 7,
   "commit-enter": 2, "commit-return": 2, "transaction-return": 2, "save-post-transaction": 6, "project-sql": 4,
   "project-sql-caller": 6, "project-return": 4, "save-return": 6, "controller-return": 5 } as const;
-interface State { current: boolean; heldCurrent: boolean; exited: boolean; retired: boolean; groupReleased: boolean; nextPause: number; failPhase: string; lostResume: boolean; foreignCaller: boolean; unexpectedResume: boolean }
+interface State { current: boolean; heldCurrent: boolean; exited: boolean; retired: boolean; failed: boolean; groupReleased: boolean; nextPause: number; failPhase: string; lostResume: boolean; foreignCaller: boolean; unexpectedResume: boolean }
 export interface MainCompletionRunnerFixture { readonly token: Origin; readonly heldToken: HeldToken; readonly source: Source; readonly held: Held; readonly bindings: Bindings; readonly commands: Command[]; readonly state: State; readonly require: (input: unknown) => Bindings; readonly requireHeld: (input: unknown) => Held; readonly requireSource: (input: unknown) => void }
 export function mainCompletionRunnerFixture(): MainCompletionRunnerFixture {
   const token = Object.freeze({ profile: "private.current-footprint-copy-main-completion-origin.v1", executionAuthorized: false } as const);
   const heldToken = Object.freeze({ profile: "private.current-footprint-copy-main-request-held-final-pb.v1", originalRequestAndSqlOwnerJoined: true,
     originalFinalPbStillHeld: true, allAllocatedRequestBreakpointsRemoved: true, nativeSqlCompletionVerified: false, executionAuthorized: false } as const);
   const source = Object.freeze({ profile: "private.current-footprint-copy-main-completion-source.v1", sourceSha256: "52f51ce43cfebc81a362addde6cd27e39fa58c8fc1ab4ee5adacca4551e5ef0c", embeddedV8Validated: false, executionAuthorized: false } as const);
-  const state = { current: true, heldCurrent: true, exited: false, retired: false, groupReleased: false, nextPause: 0,
+  const state = { current: true, heldCurrent: true, exited: false, retired: false, failed: false, groupReleased: false, nextPause: 0,
     failPhase: "", lostResume: false, foreignCaller: false, unexpectedResume: false };
   const commands: Command[] = [], events: Event[] = [];
   const held: Held = Object.freeze({ scriptId: "app", finalPbFrameId: "original-final-pb", retainedArrayObjectId: "original-construction",
@@ -67,10 +67,12 @@ export function mainCompletionRunnerFixture(): MainCompletionRunnerFixture {
     if (command.phase === "completion-release") { state.groupReleased = true; }
     return {};
   }
-  const bindings: Bindings = Object.freeze({ heldFinalPb: heldToken, source, scriptId: "app",
+  const bindings: Bindings = Object.freeze({ heldFinalPb: heldToken, transferredHeld: held, source, scriptId: "app",
     assertOriginal: (): Promise<void> => { assert.ok(state.current && !state.exited && !state.retired, "original completion owner changed"); return Promise.resolve(); },
     assertCleanup: (): Promise<void> => { assert.ok(state.current && !state.retired, "original cleanup owner changed"); return Promise.resolve(); },
     assertOriginalGenerationExited: (): Promise<void> => { assert.ok(state.exited, "original root/Job remains live"); events.length = 0; return Promise.resolve(); },
+    assertOriginalHeld: (): Promise<void> => { assert.ok(state.current && state.heldCurrent && !state.exited, "original held lease changed"); return Promise.resolve(); },
+    fail: (): void => { state.failed = true; },
     request: (command: Command): Promise<unknown> => {
       commands.push(command); if (state.failPhase === command.phase) { return Promise.reject(new Error("lost completion allocation acknowledgement")); }
       const reply = response(command);

@@ -160,18 +160,33 @@ capture and assignments. Actor collection completed but its publication refused
 a missing combined-purpose classification. The exact source correction preserves
 generation/timing/packet bounds and does not repair that consumed stage. One
 authorized original-Job abort, retained root-exit/empty-Job proof and release
-completed, followed by exact closed-fixture equality. The corrected payload's
-actor/route publication and connected clock execution remain unvalidated.
+completed, followed by exact closed-fixture equality. Installed081309 was then
+admitted as the actual host-owned facade with complete installed-file equality.
+A new disposable combined generation passed main/project/worker capture,
+assignments and actor publication with four coherent samples over38,481ms.
+Its route passed cache construction, state and producer capture before a missing
+later lexical class alias caused dependency capture to refuse. This consumed
+attempt was not repeated. The source correction retains eleven original
+manager/common/project/bus constructors and qualified encoder ancestry without
+extra request IDs; connected acceptance of that correction remains pending.
+Normal close acknowledged without exit. One authorized original-Job abort,
+retained actual root-exit/empty-Job proof and release completed, with the whole
+closed disposable fixture byte-exact and no publication settlement pending.
+Connected document-clock execution and full route acceptance remain unproved.
 The original request collector now has a preselected held-final-PB schedule:
 23 normal and 7 cleanup commands, four removed request breakpoints and three
 resumes. The separate fixed main-completion unit uses 45 normal and 30 cleanup
 commands and source-qualified callback/append/commit/project-update/service
 joins. These main portions total 105 commands, not a complete writer reservation.
 Its fixed48-variant native codec is embedded with exact flat scalar parity and a
-maximum9,412-byte CDP body. The main completion origin still has no issuer, native
-dispatch or complete owner budget. Atomic transfer of the exact held lease before
-its first resume, original kernel/cursor/allocator and pre-write branch/header
-eligibility remain required. Fresh unlocked mutable
+maximum9,412-byte CDP body. A genuine private completion issuer now atomically
+transfers the exact held lease, retaining the original main kernel/channel,
+allocator, event cursor and root/Job. Fixed native completion begin/send/retire is
+implemented. The unchanged54-ID observation purpose cannot fit the75-command
+completion unit and final construction release; it refuses before transfer.
+Known main stages require at least86 normal/41 cleanup/127 total commands. This
+partial lower bound grants no whole-writer reservation or connected acceptance.
+Pre-write branch/header eligibility remains required. Fresh unlocked mutable
 history refuses; missing-header append selector support proves no new-document
 lifecycle or durable SQL result.
 
@@ -192,7 +207,15 @@ models remain unmounted. Existing native profiles, message/output/control bounds
 and all four copy/readback/delete/readback generations still need joint proof.
 
 The delete model supports locked or aged heads and retained tombstones, with no
-native reopen or replay-exclusion proof. Actual request/clock joins, worker
+native reopen or replay-exclusion proof. A dormant fixed delete trigger captures
+nine method/getter references and checks own target/client/ticket scalars before
+one exact manager invocation. Its eleven original constructors bind project and
+bus ancestry, and the pinned entry producer creates the target's own UUID. Flat
+scalar wire and a three-variant C#5 codec expose no caller program or session.
+No genuine inverse origin, consumed journal issuer, single actual delete-clock
+collector or native helper mount exists. Scalar eligibility and native success
+prove no complete dependency or upload/SQL/saved-absence result.
+Actual request/clock joins, worker
 parser/upload/publication and native SQL completion, original idle/exit/empty Job
 joins, independent closed full logical-SQL/history/backup/collateral comparison,
 fresh saved copy readback and supported native delete/saved absence remain gates

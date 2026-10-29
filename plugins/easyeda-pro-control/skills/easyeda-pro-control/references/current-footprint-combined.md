@@ -146,8 +146,7 @@ pauses, peer receipt/listener removal and callback assignments. Actor collection
 completed all four coherent samples, but result publication refused a missing
 combined-purpose entry in its generation classifier. The source correction adds
 only that exact purpose and preserves packet, timing and byte checks. It does
-not repair or replay the consumed historical stage. Actor/route publication on
-the corrected installed payload remains unvalidated.
+not repair or replay the consumed historical stage.
 
 Normal close acknowledged without exit. One authorized original-Job abort was
 followed by retained root-exit/empty-Job proof and release. The entire closed
@@ -155,6 +154,25 @@ disposable fixture remained byte-exact. Those observations supply no copy/delete
 explicit Save, complete startup or saved-result proof. Historical results do not
 admit a later payload. The [current batch record](https://github.com/jan-guenter/easyeda-pro-agent-plugin/blob/main/docs/history/2026-10-29-combined-recovery-and-native-clock.md)
 retains the failure and its narrower conclusions.
+
+Installed081309 was subsequently admitted as the actual host-owned facade with
+complete packaged-file equality. One new disposable combined generation passed
+main construction, project/worker capture, current assignments and actor result
+publication. Four coherent UI/worker/worker/UI samples spanned38,481ms. Route
+observation passed cache construction, manager-state comparison and producer
+capture, then refused dependency capture because a later lexical class alias
+was unavailable. The route was consumed and not repeated.
+
+The correction retains all eleven original manager/common/project/bus
+constructors at the source-qualified constructor point, then compares their
+identities and qualified encoder ancestry. It adds no request IDs. This source
+correction has no connected acceptance yet. Normal close acknowledged without
+exit; one authorized original-Job abort was followed by actual retained root
+exit, empty Job and release. Final inspection was released, not busy and had no
+publication settlement pending. The whole closed disposable fixture remained
+byte-exact. These observations supply no copy/delete or saved-result proof.
+The [following batch record](https://github.com/jan-guenter/easyeda-pro-agent-plugin/blob/main/docs/history/2026-10-29-footprint-completion-owner-and-route.md)
+retains the new actor result and route refusal separately.
 
 ## Private groundwork and remaining integration
 
@@ -197,13 +215,17 @@ combined writer budget or a mounted native-purpose reservation.
 
 The fixed completion codec now embeds48 exact native variants with flat scalar
 parity. Its maximum CDP body is9,412 bytes with all supported handle maxima, below
-the16KiB main envelope. Completion still has a getter-only origin seam with no
-issuer, native dispatch or complete native owner budget. The real owner must
-atomically consume or transfer the exact held-PB lease before
-its first resume so that the old collector cannot remain held authority after
-native advancement. Later checks must retain the same original kernel, channel,
-allocator, cursor and root/Job. The selectors admit missing-header and locked or
-aged append paths. Fresh unlocked mutable history refuses, and first-header
+the16KiB main envelope. A genuine private completion issuer now transfers the
+exact held-PB lease atomically before any native advancement. The old collector
+loses held authority, while the original kernel, channel, allocator, cursor and
+root/Job remain bound. Fixed native completion begin/send/retire is implemented.
+The current observation profile still reserves41 normal and13 cleanup commands,
+54 total. It refuses the75-command completion unit plus the final construction
+release before the held lease can transfer. The known main stages need at least
+86 normal and41 cleanup commands,127 total. That partial lower bound is neither
+a complete writer reservation nor a reason to enlarge an existing profile.
+Connected completion execution remains unvalidated. The selectors admit
+missing-header and locked or aged append paths. Fresh unlocked mutable history refuses, and first-header
 append support does not qualify new-document lifecycle. A future writer must
 prove branch/header eligibility before dispatch; refusal after mutation supplies
 no pre-write safety. Completion observations keep SQL durability, publication,
@@ -216,9 +238,20 @@ It supports locked or independently aged heads. A fresh unlocked copy needs
 another supported model or an aged-head qualification. These models prove no
 native manager deletion, replay exclusion, actual reopen or writer lifecycle.
 
+A dormant fixed delete-trigger grammar now captures nine original method/getter
+references, checks own project/branch/client/live-target/ticket scalars without
+invoking native methods, and fixes one original `Tg.deleteData` invocation. Its
+eleven-constructor vector binds original project and bus ancestry. The pinned
+entry producer creates the target's own UUID before folding metadata. A flat
+scalar wire and three-variant C#5 encoder forward no caller program or session.
+There is no genuine inverse origin, consumed journal dispatch issuer, single
+actual delete-clock collector or native helper mount. Scalar preflight is not
+complete dependency eligibility. Native success remains only an acknowledgment,
+because `deleteData` ignores a false `uploadLocal` result.
+
 Before mounting a writer, validate the private original-owner clock/router path
-and implement the genuine completion origin, atomic held handoff and native
-completion dispatch. Derive the reservation for
+and the implemented genuine completion issuer, atomic held handoff and native
+completion phase. Derive the reservation for
 all four copy/readback/delete/readback generations, including request IDs,
 normal/cleanup categories, native message/output limits and idle/exit/empty Job
 joins. Preflight the 16KiB main request envelope even when a source reader

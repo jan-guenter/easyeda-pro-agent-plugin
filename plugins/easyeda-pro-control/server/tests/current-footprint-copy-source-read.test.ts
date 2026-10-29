@@ -32,12 +32,13 @@ class ja extends Vc{};class Pi{constructor(project){this.projectManager=project;
 class ar extends Pi{constructor(project){super(project);this.data={};}}
 class Tg extends ar{async getStr(){calls++;await after();return{success:true,result:sourceContent};}}
 class Gd{};class Lg extends Gd{getCanvasByConsistency(){return Promise.resolve("");}compress(){return Promise.resolve("");}}
-globalThis.originalProject=new Lg;globalThis.originalBus={};globalThis.originalConsistency=new ja;
+class Mb{}class KP extends Mb{}class JP extends KP{}
+globalThis.originalProject=new Lg;globalThis.originalBus=new JP;globalThis.originalConsistency=new ja;
 Object.assign(originalProject,{uuid:${JSON.stringify(PROJECT)},_branchUuid:${JSON.stringify(IDS.branch)},workerBus:originalBus,consistencyManager:originalConsistency});
 globalThis.originalFootprint=new Tg(originalProject);originalProject.footprint=originalFootprint;
 originalFootprint.data[${JSON.stringify(IDS.target)}]={ticket:90,title:"Source",description:"Keep",tags:[],source:"",version:"100",updateTime:100};
 globalThis.PROJECT=originalProject;globalThis._TAB_ID_=${JSON.stringify(IDENTITY.windowTabId)};
-globalThis.selected=${JSON.stringify(REQUEST)};globalThis.originalConstructors=[Tg,ar,Pi,ja,Vc,zy];
+globalThis.selected=${JSON.stringify(REQUEST)};globalThis.originalConstructors=[Tg,ar,Pi,ja,Vc,zy,Lg,Gd,JP,KP,Mb];
 globalThis.originalMethods=[Tg.prototype.getStr,Object.getOwnPropertyDescriptor(Pi.prototype,"maxTicket").get,Vc.prototype.getMaxTicket,Lg.prototype.getCanvasByConsistency,Lg.prototype.compress];`;
 const EXPRESSION = `(${CURRENT_FOOTPRINT_COPY_SOURCE_READ_FUNCTION}).call(originalFootprint,originalProject,originalBus,originalConsistency,selected,originalConstructors,originalMethods)`;
 const CACHE_EXPRESSION = `(${CURRENT_FOOTPRINT_COPY_CACHE_SOURCE_READ_FUNCTION}).call(originalFootprint,originalProject,originalBus,originalConsistency,selected,originalConstructors,cacheMethods)`;

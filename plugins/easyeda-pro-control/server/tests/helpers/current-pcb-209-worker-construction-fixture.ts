@@ -7,7 +7,7 @@ export function worker209ConstructionFixtureSource(publisherMethods = false): st
   const legacy = workerConstructionFixtureSource(publisherMethods);
   // Synthetic own-data layout for the separately pinned Tg/Pi and ja/Vc
   // Relationships. It does not execute a production getter or mutate a design.
-  const layout = `var Pi=class Pi{constructor(p){this.projectManager=p;this.client=p.consistencyManager.client;this.user=p.user;}};var ar=class ar extends Pi{};Tg=class Tg extends ar{};var zy=class zy{};var Vc=class Vc extends zy{constructor(){super();this.maxTicket=0;this.client="1234567890abcdef";}};ja=class ja extends Vc{constructor(){super();this.orderTree={orderChange(){}};}setCacheData(e){this.getCache=e;}onHeadChange(){}onChange(){}};`;
+  const layout = `var Mb=class Mb{};KP=class KP extends Mb{constructor(t){super();this.uuid=t}};var Pi=class Pi{constructor(p){this.projectManager=p;this.client=p.consistencyManager.client;this.user=p.user;}};var ar=class ar extends Pi{};Tg=class Tg extends ar{};var zy=class zy{};var Vc=class Vc extends zy{constructor(){super();this.maxTicket=0;this.client="1234567890abcdef";}};ja=class ja extends Vc{constructor(){super();this.orderTree={orderChange(){}};}setCacheData(e){this.getCache=e;}onHeadChange(){}onChange(){}};`;
   const prepared = legacy.slice(0, 1000) + layout + legacy.slice(1000 + layout.length);
   return `${prepared.slice(0, 1_800_000)}${" ".repeat(24)}${prepared.slice(1_800_000)}`;
 }

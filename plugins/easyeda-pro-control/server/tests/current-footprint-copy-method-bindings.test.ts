@@ -39,7 +39,8 @@ function fixture(): vm.Context {
 class Gd{};class Lg extends Gd{getCanvasByConsistency(a,b,c,d){calls++;}compress(a={}){calls++;}}
 class Pi{get maxTicket(){calls++;return 1;}}class ar extends Pi{}class Tg extends ar{getStr(s){calls++;return s;}}
 class zy{}class Vc extends zy{getMaxTicket(){calls++;return 1;}}class ja extends Vc{}
-const bus={},manager=new Tg,consistency=new ja,constructors=[Tg,ar,Pi,ja,Vc,zy];
+class Mb{}class KP extends Mb{}class JP extends KP{}
+const bus=new JP,manager=new Tg,consistency=new ja,constructors=[Tg,ar,Pi,ja,Vc,zy,Lg,Gd,JP,KP,Mb];
 globalThis.PROJECT=new Lg;PROJECT.workerBus=bus;PROJECT.footprint=manager;PROJECT.consistencyManager=consistency;manager.projectManager=PROJECT;`, context);
   return context;
 }

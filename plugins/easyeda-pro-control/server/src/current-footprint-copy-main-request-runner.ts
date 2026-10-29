@@ -8,6 +8,7 @@ import { z } from "zod";
 import { freezeDeep } from "./sqlite-inventory-core.ts";
 import { captureCurrentPcbStringClockReply } from "./current-pcb-string-clock-reply.ts";
 import { requireCurrentFootprintCopyMainRequestSource } from "./current-footprint-copy-main-request-source.ts";
+// oxlint-disable-next-line import/no-cycle -- The original scheduler invokes this collector's synchronous held transfer only after both instances exist; initialization never invokes the getter.
 import { requireCurrentFootprintCopyMainRequestOrigin } from "./current-footprint-copy-main-request-origin.ts";
 import type { CurrentFootprintCopyMainRequestOrigin } from "./current-footprint-copy-main-request-origin.ts";
 import { CURRENT_FOOTPRINT_COPY_MAIN_REQUEST_COLLECTION_ORDER as ORDER,
@@ -69,7 +70,7 @@ export interface CurrentFootprintCopyMainRequestHeldFinalPbBindings {
   readonly qualifiedSource: Origin["qualifiedSource"];
   readonly assertOriginal: () => Promise<void>;
 }
-type Phase = "ready" | "arming" | "armed" | "invocation-consumed" | "held-final-pb" | "collected" | "failed";
+type Phase = "ready" | "arming" | "armed" | "invocation-consumed" | "held-final-pb" | "completion-transferred" | "collected" | "failed";
 interface CollectionFailure { readonly code: string; readonly phase: Phase; readonly normalRequests: number; readonly cleanupRequests: number; readonly replies: number }
 const issued = new WeakMap<CurrentFootprintCopyMainRequestObservation, CurrentFootprintCopyMainRequestRunner>();
 const held = new WeakMap<CurrentFootprintCopyMainRequestHeldFinalPb, Readonly<{
@@ -95,6 +96,7 @@ export class CurrentFootprintCopyMainRequestRunner {
   #busy = false;
   #ending = false;
   #generationEnded = false;
+  #retirementSettlementAttempted = false;
   #started = 0;
   #normal = 0;
   #cleanup = 0;
@@ -309,6 +311,15 @@ export class CurrentFootprintCopyMainRequestRunner {
   public heldFinalPbBindings(packet: CurrentFootprintCopyMainRequestHeldFinalPb): CurrentFootprintCopyMainRequestHeldFinalPbBindings {
     this.#assertHeld(packet); return requireCurrentFootprintCopyMainRequestHeldFinalPb(packet);
   }
+  /** The genuine original scheduler consumes this exact held lease atomically.
+   * No await or native resume occurs here. Old getters and cleanup owners lose
+   * their authority before the completion origin can issue its first command. */
+  public transferHeldFinalPb(packet: CurrentFootprintCopyMainRequestHeldFinalPb,
+    originalOrigin: CurrentFootprintCopyMainRequestOrigin): CurrentFootprintCopyMainRequestHeldFinalPbBindings {
+    need(originalOrigin === this.#token, "ORIGINAL_TRANSFER_ORIGIN"); this.#assertHeld(packet);
+    const bindings = requireCurrentFootprintCopyMainRequestHeldFinalPb(packet);
+    this.#phase = "completion-transferred"; held.delete(packet); return bindings;
+  }
   #assertHeld(packet: CurrentFootprintCopyMainRequestHeldFinalPb): void {
     this.#same(); const pause = this.#pauses.at(-1);
     need(!this.#busy && this.#phase === "held-final-pb" && packet === this.#heldPacket && held.get(packet)?.owner === this &&
@@ -320,6 +331,7 @@ export class CurrentFootprintCopyMainRequestRunner {
     await this.#current(); need(packet === this.#packet && issued.get(packet) === this && !this.#cleanupAttempted, "ORIGINAL_PACKET");
   }
   public async cleanup(): Promise<void> {
+    need(this.#phase !== "completion-transferred", "COMPLETION_OWNS_GENERATION");
     need(!this.#cleanupAttempted, "CLEANUP_CONSUMED"); this.#begin(); this.#cleanupAttempted = true;
     try {
       const errors: unknown[] = [];
@@ -334,10 +346,14 @@ export class CurrentFootprintCopyMainRequestRunner {
     } catch (error) { this.#refuse(error); throw error; } finally { this.#end(); }
   }
   public async observeOriginalGenerationEnded(): Promise<void> {
-    need(!this.#ending && !this.#generationEnded && !this.#retired, "GENERATION_CONSUMED"); this.#ending = true; const idle = this.#idle;
+    need(this.#phase !== "completion-transferred", "COMPLETION_OWNS_GENERATION");
+    need(!this.#ending && !this.#retired && (!this.#generationEnded || !this.#retirementSettlementAttempted), "GENERATION_CONSUMED");
+    if (this.#generationEnded) { this.#retirementSettlementAttempted = true; }
+    this.#ending = true; const idle = this.#idle;
     try {
       await this.#origin.assertOriginalGenerationExited(); this.#generationEnded = true; this.#refuse(fail("ORIGINAL_GENERATION_ENDED"));
-      await idle; need(!this.#busy && this.#idle === idle, "ORIGINAL_OPERATION_UNSETTLED"); await this.#origin.retire(); this.#retired = true;
+      await idle; need(!this.#busy && this.#idle === idle, "ORIGINAL_OPERATION_UNSETTLED");
+      if (!this.#retired) { await this.#origin.retire(); this.#retired = true; }
     } finally { this.#ending = false; }
   }
   public diagnostics(): Readonly<{ phase: Phase; normalRequests: number; cleanupRequests: number; replies: number; pauses: number;
@@ -350,4 +366,9 @@ export class CurrentFootprintCopyMainRequestRunner {
 }
 export function requireCurrentFootprintCopyMainRequestHeldFinalPb(packet: CurrentFootprintCopyMainRequestHeldFinalPb): CurrentFootprintCopyMainRequestHeldFinalPbBindings {
   const original = held.get(packet); need(original !== undefined, "ORIGINAL_HELD_PACKET"); return original.read();
+}
+export function transferCurrentFootprintCopyMainRequestHeldFinalPb(packet: CurrentFootprintCopyMainRequestHeldFinalPb,
+  origin: CurrentFootprintCopyMainRequestOrigin): CurrentFootprintCopyMainRequestHeldFinalPbBindings {
+  const original = held.get(packet); need(original !== undefined, "ORIGINAL_HELD_PACKET");
+  return original.owner.transferHeldFinalPb(packet, origin);
 }

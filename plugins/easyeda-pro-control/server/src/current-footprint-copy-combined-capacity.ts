@@ -4,6 +4,7 @@ import { z } from "zod";
 import { CURRENT_FOOTPRINT_COMBINED_PROFILE, CURRENT_FOOTPRINT_COMBINED_PURPOSE } from "./current-footprint-copy-combined-profile.ts";
 import { CURRENT_FOOTPRINT_COPY_SAVED_PROFILE } from "./current-footprint-copy-saved-profile.ts";
 import { CURRENT_FOOTPRINT_COPY_SOURCE_STAGE_REQUESTS } from "./current-footprint-copy-source-read-runner.ts";
+import { CURRENT_FOOTPRINT_COPY_MAIN_KNOWN_CAPACITY } from "./current-footprint-copy-main-capacity.ts";
 import { freezeDeep } from "./sqlite-inventory-core.ts";
 
 export const currentFootprintCombinedGenerationSchema = z.object({
@@ -23,6 +24,7 @@ export function planCurrentFootprintCombinedCapacity(): Readonly<{
   generationRoles: readonly ["forward-writer", "forward-saved-readback", "inverse-writer", "inverse-saved-readback"];
   knownCombinedObservation: typeof CURRENT_FOOTPRINT_COMBINED_PROFILE;
   knownSavedObservation: typeof CURRENT_FOOTPRINT_COPY_SAVED_PROFILE;
+  knownMainMinimum: typeof CURRENT_FOOTPRINT_COPY_MAIN_KNOWN_CAPACITY;
   completeSourceObservationRequests: number;
   unaccountedStages: typeof pending;
   wholeLifecycleRequestLimit: null;
@@ -33,6 +35,7 @@ export function planCurrentFootprintCombinedCapacity(): Readonly<{
 }> {
   return freezeDeep({ profile: "private.current-footprint-combined-capacity.v1", generationRoles: ["forward-writer", "forward-saved-readback", "inverse-writer", "inverse-saved-readback"],
     knownCombinedObservation: CURRENT_FOOTPRINT_COMBINED_PROFILE, knownSavedObservation: CURRENT_FOOTPRINT_COPY_SAVED_PROFILE,
+    knownMainMinimum: CURRENT_FOOTPRINT_COPY_MAIN_KNOWN_CAPACITY,
     completeSourceObservationRequests: CURRENT_FOOTPRINT_COPY_SOURCE_STAGE_REQUESTS, unaccountedStages: pending,
     wholeLifecycleRequestLimit: null, wholeLifecycleBytes: null, wholeLifecycleMilliseconds: null,
     wholeExecutionBudgetReserved: false, executionAuthorized: false });

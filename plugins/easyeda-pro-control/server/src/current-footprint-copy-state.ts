@@ -7,14 +7,20 @@ import { currentPcbWorkerStartupActorIdentitySchema } from "./current-pcb-worker
 import { freezeDeep } from "./sqlite-inventory-core.ts";
 
 /** Evaluated only on the original source-qualified Lg constructor-end frame.
- * Lexical constructor equality rejects lookalike chains before the handles are
- * retained. The remote array avoids serializing complete class descriptions. */
+ * Keep the first six original manager/consistency constructors, followed by the
+ * original project and worker-channel classes. The initialized workerBus is the
+ * original JP receiver; the later lazy wsBus is neither read nor initialized. */
 export const CURRENT_FOOTPRINT_COPY_CONSTRUCTORS_EXPRESSION = `(()=>{
 "use strict";const bad=()=>{throw new Error("FOOTPRINT_CONSTRUCTOR_BINDING");};
 const own=(o,k)=>{const d=Object.getOwnPropertyDescriptor(o,k);if(!d||!Object.hasOwn(d,"value"))bad();return d.value;};
 if(typeof Tg!=="function"||typeof ja!=="function")bad();
 const footprintBase=Object.getPrototypeOf(Tg),consistencyBase=Object.getPrototypeOf(ja);
-const constructors=[Tg,footprintBase,Object.getPrototypeOf(footprintBase),ja,consistencyBase,Object.getPrototypeOf(consistencyBase)];
+const projectPrototype=Object.getPrototypeOf(this),projectConstructor=own(projectPrototype,"constructor"),projectBase=Object.getPrototypeOf(projectConstructor);
+if(typeof projectConstructor!=="function"||own(projectConstructor,"name")!=="Lg"||typeof projectBase!=="function"||own(projectBase,"name")!=="Gd"||own(projectConstructor,"prototype")!==projectPrototype||own(projectBase,"prototype")!==Object.getPrototypeOf(projectPrototype)||Object.getPrototypeOf(projectBase)!==Function.prototype||Object.getPrototypeOf(own(projectBase,"prototype"))!==Object.prototype)bad();
+const bus=own(this,"workerBus"),busConstructors=[];let busPrototype=Object.getPrototypeOf(bus);
+for(const name of ["JP","KP","Mb"]){const c=own(busPrototype,"constructor");if(typeof c!=="function"||own(c,"name")!==name||own(c,"prototype")!==busPrototype)bad();busConstructors.push(c);busPrototype=Object.getPrototypeOf(busPrototype);}
+if(busPrototype!==Object.prototype||Object.getPrototypeOf(busConstructors[0])!==busConstructors[1]||Object.getPrototypeOf(busConstructors[1])!==busConstructors[2]||Object.getPrototypeOf(busConstructors[2])!==Function.prototype)bad();
+const constructors=[Tg,footprintBase,Object.getPrototypeOf(footprintBase),ja,consistencyBase,Object.getPrototypeOf(consistencyBase),projectConstructor,projectBase,...busConstructors];
 const manager=own(this,"footprint"),consistency=own(this,"consistencyManager");
 if(own(manager,"projectManager")!==this)bad();
 for(const [object,offset]of [[manager,0],[consistency,3]]){let p=Object.getPrototypeOf(object);for(let i=0;i<3;i++){const c=constructors[offset+i];if(typeof c!=="function"||own(c,"prototype")!==p||own(p,"constructor")!==c)bad();p=Object.getPrototypeOf(p);}if(p!==Object.prototype)bad();}
@@ -37,8 +43,9 @@ verify();return consistency;}`;
 const observe = `function(bus,manager,consistency,constructors){${helpers}
 const id=(v,re)=>{const m=typeof v==="string"?re.exec(v):null;if(m===null||m[0]!==v)bad();return v;};
 if(own(globalThis,"PROJECT")!==this||own(this,"workerBus")!==bus||own(this,"footprint")!==manager||own(this,"consistencyManager")!==consistency||own(manager,"projectManager")!==this)bad();
-if(!Array.isArray(constructors)||Object.getPrototypeOf(constructors)!==Array.prototype||own(constructors,"length")!==6||Reflect.ownKeys(constructors).length!==7)bad();
-chain(manager,["Tg","ar","Pi"],constructors,0);chain(consistency,["ja","Vc","zy"],constructors,3);
+if(!Array.isArray(constructors)||Object.getPrototypeOf(constructors)!==Array.prototype||own(constructors,"length")!==11||Reflect.ownKeys(constructors).length!==12)bad();
+chain(manager,["Tg","ar","Pi"],constructors,0);chain(consistency,["ja","Vc","zy"],constructors,3);chain(this,["Lg","Gd"],constructors,6);
+chain(bus,["JP","KP","Mb"],constructors,8);
 if(own(manager,"user")!==undefined)bad();
 const client=id(own(manager,"client"),/^[a-f0-9]{16}$/);
 if(own(consistency,"client")!==client)bad();
