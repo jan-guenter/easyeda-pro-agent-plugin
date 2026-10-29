@@ -3,7 +3,12 @@
 Use this workflow to fit an existing disposable PCB or move its camera to exact
 mil coordinates. It offers three viewport operations through a separate native
 owner. Source implementation, offline tests and native compilation exist;
-connected execution is unvalidated. Check the installed catalog before use.
+installed142600 passed one disposable zoom-to at0,0 mil and scale ratio1,
+unchanged selection, normal root/Job exit and helper release. The whole closed
+fixture stayed byte-exact. Fit-all, fit-selected and other argument domains
+remain unvalidated. Read the [case record](https://github.com/jan-guenter/easyeda-pro-agent-plugin/blob/main/docs/history/2026-10-29-supplied-design-inspection-and-viewport.md)
+for the exact evidence and limits. Historical results do not admit a later
+loaded host. Check the installed catalog before use.
 
 Discover `easyeda_control_api` action `pcb209-visual` with
 `query:{includeSchemas:true}`. Validate each exact inner action with

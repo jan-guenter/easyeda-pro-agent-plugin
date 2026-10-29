@@ -1,12 +1,14 @@
 /** Private partial schedule around the actual main and renderer sequencers.
  * No native factory constructs a writer-capable channel or complete qualification
  * yet. Caller-supplied plans/UUIDs cannot create those original capabilities.
- * The clock observer still requires an exact destination UUID before arming.
+ * A separate allocation observer can capture the original native UUID before
+ * its first clock await. Its extra grammar/budget is not mounted.
  * The main request may use a separately pre-reserved original copy projection
  * bound only after the original paired clocks. Real Tg.create allocates its UUID
  * internally; a supplied known UUID never qualifies that allocation. */
 /* oxlint-disable import/max-dependencies -- Keep genuine native ownership, the exact pending channel and each original sequencer explicit; none is replaceable by caller callbacks. */
 import { types } from "node:util";
+import { CurrentFootprintCopyAllocationRunner, requireCurrentFootprintCopyAllocationOrigin } from "./current-footprint-copy-allocation-runner.ts";
 import type { z } from "zod";
 import { CurrentFootprintCopyMainBackendRunner } from "./current-footprint-copy-main-backend-runner.ts";
 import { CurrentFootprintCopyMainRequestRunner } from "./current-footprint-copy-main-request-runner.ts";
@@ -32,6 +34,9 @@ type Phase = "ready" | "main-armed" | "clocks-bound" | "clocks-armed" | "create-
 /* oxlint-disable typescript/unbound-method -- Captured class methods are invoked only with the original private-field receiver, preventing supplied method overrides. */
 const backendMethods = Object.freeze({ requireRequestOrigin: CurrentFootprintCopyMainBackendRunner.prototype.requireRequestOrigin,
   issueCompletionOrigin: CurrentFootprintCopyMainBackendRunner.prototype.issueCompletionOrigin, release: CurrentFootprintCopyMainBackendRunner.prototype.release });
+const allocationMethods = Object.freeze({ arm: CurrentFootprintCopyAllocationRunner.prototype.arm,
+  collectAndResume: CurrentFootprintCopyAllocationRunner.prototype.collectAndResume, consumeBeforeInvocation: CurrentFootprintCopyAllocationRunner.prototype.consumeBeforeInvocation,
+  observeOriginalGenerationEnded: CurrentFootprintCopyAllocationRunner.prototype.observeOriginalGenerationEnded, release: CurrentFootprintCopyAllocationRunner.prototype.release });
 /* oxlint-enable typescript/unbound-method */
 function need(value: boolean, code: string): asserts value { if (!value) { throw new Error(`FOOTPRINT_PAIRED_SCHEDULE_${code}`); } }
 export interface CurrentFootprintCopyPairedScheduleObservation {
@@ -60,6 +65,7 @@ export class CurrentFootprintCopyPairedScheduler {
   #resolveIdle: (() => void) | null = null;
   #clockToken: CurrentFootprintCopyClockRpcOrigin | null = null;
   #clock: CurrentFootprintCopyClockRpcRunner | null = null;
+  #allocation: CurrentFootprintCopyAllocationRunner | null = null;
   #route: CurrentFootprintCopyCreateClockChannelRoute | null = null;
   #routeBinding: ReturnType<typeof requireCurrentFootprintCopyCreateClockChannelRoute> | null = null;
   #pending: CurrentFootprintCopyPendingCreate | null = null;
@@ -99,17 +105,19 @@ export class CurrentFootprintCopyPairedScheduler {
   }
   /** The genuine future native factory enters its separately sealed renderer
    * phase only AFTER armMain. Existing observation origins have no create route. */
-  public bindClocks(token: CurrentFootprintCopyClockRpcOrigin, route: CurrentFootprintCopyCreateClockChannelRoute, documentUuid: string): void {
+  public bindClocks(token: CurrentFootprintCopyClockRpcOrigin, route: CurrentFootprintCopyCreateClockChannelRoute, documentUuid: string | CurrentFootprintCopyAllocationRunner): void {
     need(!this.#busy && !this.#ending && this.#phase === "main-armed", "PHASE"); this.#same();
     requireCurrentFootprintCombinedPairedSchedule(this.#capability, this.#backend, token);
     const binding = requireCurrentFootprintCopyCreateClockChannelRoute(route), original = requireCurrentFootprintCopyClockRpcOrigin(token);
     need(original.workerLease === binding.clockLease && original.workerSessionId === binding.workerSessionId, "ORIGINAL_CLOCK_ROUTE");
+    this.#allocation = typeof documentUuid === "string" ? null : documentUuid;
+    if (this.#allocation !== null) { requireCurrentFootprintCopyAllocationOrigin(this.#allocation, token); }
     this.#clock = new CurrentFootprintCopyClockRpcRunner(token, documentUuid);
     this.#clockToken = token; this.#route = route; this.#routeBinding = binding; this.#phase = "clocks-bound";
   }
   public async armClocks(): Promise<void> {
     this.#begin("clocks-bound");
-    try { need(this.#clock !== null, "CLOCKS"); await this.#clock.arm(); this.#same(); this.#phase = "clocks-armed"; }
+    try { need(this.#clock !== null, "CLOCKS"); if (this.#allocation !== null) { await allocationMethods.arm.call(this.#allocation); this.#same(); } await this.#clock.arm(); this.#same(); this.#phase = "clocks-armed"; }
     catch (error) { this.#failed(); throw error; } finally { this.#end(); }
   }
   /** The enclosing genuine owner must already have durable intent and complete
@@ -120,7 +128,7 @@ export class CurrentFootprintCopyPairedScheduler {
       need(this.#clock !== null && this.#route !== null, "CLOCKS");
       // Both markers consume synchronously. No await or native write separates
       // Them from the original route's once-only queued dispatch.
-      this.#main.consumeBeforeInvocation(); this.#clock.consumeBeforeInvocation();
+      this.#main.consumeBeforeInvocation(); this.#clock.consumeBeforeInvocation(); if (this.#allocation !== null) { allocationMethods.consumeBeforeInvocation.call(this.#allocation); }
       this.#createDispatchAttempted = true;
       this.#pending = await this.#route.dispatchCreate(); this.#same(); this.#phase = "create-written";
     } catch (error) { this.#failed(); throw error; } finally { this.#end(); }
@@ -128,11 +136,15 @@ export class CurrentFootprintCopyPairedScheduler {
   public async collectClocks(): Promise<void> {
     this.#begin("create-written");
     try {
-      need(this.#clock !== null, "CLOCKS"); this.#clocks = await this.#clock.collect(); this.#same();
+      need(this.#clock !== null, "CLOCKS");
+      if (this.#allocation !== null) { await allocationMethods.collectAndResume.call(this.#allocation); this.#same(); }
+      this.#clocks = await this.#clock.collect(); this.#same();
       if (this.#latePlan) {
         need(this.#clockToken !== null, "CLOCKS"); await this.#main.bindObservedClocks(this.#clockToken, this.#clocks); this.#same();
       }
-      await this.#clock.requireOriginal(this.#clocks); this.#same(); await this.#clock.cleanup(); this.#same();
+      await this.#clock.requireOriginal(this.#clocks); this.#same();
+      if (this.#allocation !== null) { await allocationMethods.release.call(this.#allocation); this.#same(); }
+      await this.#clock.cleanup(); this.#same();
       need(this.#clock.diagnostics()["retired"] === true, "CLOCK_RETIREMENT"); this.#phase = "clocks-retired";
     } catch (error) { this.#failed(); throw error; } finally { this.#end(); }
   }
@@ -175,6 +187,7 @@ export class CurrentFootprintCopyPairedScheduler {
       const deadline = Promise.withResolvers<never>();
       timer = setTimeout(() => { deadline.reject(new Error("FOOTPRINT_PAIRED_SCHEDULE_ORIGINAL_IDLE_DEADLINE")); }, 300_000);
       await Promise.race([idle, deadline.promise]); need(!this.#busy && this.#idle === idle, "ORIGINAL_OPERATION_UNSETTLED");
+      if (this.#allocation !== null && this.#allocation.diagnostics()["phase"] !== "ended") { await allocationMethods.observeOriginalGenerationEnded.call(this.#allocation); }
       if (this.#clock !== null && this.#clock.diagnostics()["retired"] !== true) { await this.#clock.observeOriginalGenerationEnded(); }
       if (this.#completion !== null) {
         if (!this.#completion.diagnostics().retired) { await this.#completion.observeOriginalGenerationEnded(); }
@@ -187,7 +200,7 @@ export class CurrentFootprintCopyPairedScheduler {
   }
   public diagnostics(): Readonly<Record<string, unknown>> {
     return Object.freeze({ phase: this.#phase, busy: this.#busy, ending: this.#ending, originalGenerationEnded: this.#generationEnded, firstFailure: this.#firstFailure,
-      createDispatchAttempted: this.#createDispatchAttempted, createWriteAcknowledged: this.#pending !== null, clocks: this.#clock?.diagnostics() ?? null,
+      createDispatchAttempted: this.#createDispatchAttempted, createWriteAcknowledged: this.#pending !== null, clocks: this.#clock?.diagnostics() ?? null, allocation: this.#allocation?.diagnostics() ?? null,
       main: this.#main.diagnostics(), completion: this.#completion?.diagnostics() ?? null,
       writerPurposeMounted: false, wholeWriterBudgetReserved: false, executionAuthorized: false });
   }

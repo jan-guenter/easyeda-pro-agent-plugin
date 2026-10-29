@@ -3,9 +3,11 @@ import { basename, dirname, join } from "node:path";
 import { controlDataDirectory, ensureManagedDirectory, publishManagedAttachmentExclusive, readExactBinaryArtifact } from "./artifacts.ts";
 import { MANAGED_LIBRARY_FILES_MAX_RESULT_BYTES, decodeManagedLibraryBase64, decodeManagedProjectArchive, extractManagedLibraryMetadata, extractManagedProjectMetadata,
   managedLibraryExtractRequestSchema, managedLibraryFileSchema, managedLibraryFilesRequestSchema, managedLibraryMetadataSchema,
-  managedLibraryPrepareRequestSchema, managedProjectExtractRequestSchema, managedProjectFootprintSourceListRequestSchema,
-  managedProjectFootprintSourceReadRequestSchema, managedProjectFootprintSourcesRequestSchema, managedSymbolPinsRequestSchema,
-  managedSymbolSourceListRequestSchema, managedSymbolSourceReadRequestSchema, managedSymbolSourcesRequestSchema, validateManagedLibraryFileContents } from "./managed-library-files.ts";
+  managedLibraryPrepareRequestSchema, managedPcbStackRulesRequestSchema, managedProjectDocumentSourceListRequestSchema, managedProjectDocumentSourceReadRequestSchema,
+  managedProjectDocumentSourcesRequestSchema, managedProjectExtractRequestSchema, managedProjectFootprintSourceListRequestSchema,
+  managedProjectFootprintSourceReadRequestSchema, managedProjectFootprintSourcesRequestSchema, managedProjectSymbolPinsRequestSchema, managedSchematicRecordsRequestSchema,
+  managedSymbolPinsRequestSchema, managedSymbolSourceListRequestSchema, managedSymbolSourceReadRequestSchema,
+  managedSymbolSourcesRequestSchema, validateManagedLibraryFileContents } from "./managed-library-files.ts";
 import type { ManagedLibraryFile } from "./managed-library-files.ts";
 import { collectManagedProjectFootprintSources, encodeManagedProjectFootprintSourceIndex,
   pageManagedProjectFootprintRoster, pageManagedProjectFootprintSource } from "./managed-project-footprint-sources.ts";
@@ -13,6 +15,11 @@ import { collectManagedProjectSymbolSources, collectManagedStandaloneSymbolSourc
   pageManagedSymbolRoster, pageManagedSymbolSource } from "./managed-project-symbol-sources.ts";
 import type { ManagedSymbolSource, ManagedSymbolSourceSet } from "./managed-project-symbol-sources.ts";
 import { inspectManagedSymbolPins } from "./managed-symbol-pins.ts";
+import { collectManagedProjectDocumentSources, encodeManagedProjectDocumentSourceIndex,
+  pageManagedProjectDocumentRoster, pageManagedProjectDocumentSource } from "./managed-project-document-sources.ts";
+import type { ManagedProjectDocumentSource, ManagedProjectDocumentSourceSet } from "./managed-project-document-sources.ts";
+import { inspectManagedSchematicRecords } from "./managed-schematic-records.ts";
+import { inspectManagedPcbStackRules } from "./managed-pcb-stack-rules.ts";
 
 function inputsDirectory(): string { return join(controlDataDirectory(), "artifacts", "library-file-inputs"); }
 function result(value: Record<string, unknown>, metadataOnly = true): Record<string, unknown> {
@@ -145,6 +152,62 @@ export async function inspectManagedSymbolSourcePins(input: unknown): Promise<Re
     localArtifactWritten: false, suppliedSourceOnly: true, cadFramingValidated: false, symbolPinRecordFramingValidated: true }, false);
 }
 
+async function documentSources(file: ManagedLibraryFile, expectedSourceSetSha256?: string): Promise<ManagedProjectDocumentSourceSet> {
+  const content = await exactInput(file);
+  const set = collectManagedProjectDocumentSources(decodeManagedProjectArchive(file.name, content).members, file.sha256);
+  if (expectedSourceSetSha256 !== undefined && set.sourceSetSha256 !== expectedSourceSetSha256) { throw new Error("Supplied project document source-set digest differs."); }
+  return set;
+}
+function selectedDocument(set: ManagedProjectDocumentSourceSet, sourceId: string): ManagedProjectDocumentSource {
+  const item = set.sources.find(entry => entry.sourceId === sourceId);
+  if (item === undefined) { throw new Error("Requested document source identity is absent from the complete supplied source roster."); }
+  return item;
+}
+export async function extractManagedProjectDocumentSources(input: unknown): Promise<Record<string, unknown>> {
+  const request = managedProjectDocumentSourcesRequestSchema.parse(input); const set = await documentSources(request.file);
+  const directory = await ensureManagedDirectory(join(controlDataDirectory(), "artifacts", "project-document-source-indexes"));
+  const index = await publishManagedAttachmentExclusive(join(directory, `${randomUUID()}.json`), "Supplied project document source index",
+    encodeManagedProjectDocumentSourceIndex(set), "project-document-source-index");
+  if (index.sha256 !== set.sourceSetSha256) { throw new Error("Supplied project document index differs from its complete source-set digest."); }
+  return result({ action: request.action, input: request.file, sourceSetSha256: set.sourceSetSha256,
+    documentCount: set.sources.length, totalSourceBytes: set.totalSourceBytes, inputMembers: set.inputMembers,
+    sourceLayout: set.sourceLayout, completeProjectDocumentInventory: false,
+    index, localArtifactWritten: true, suppliedSourceOnly: true, cadFramingValidated: false }, false);
+}
+export async function listManagedProjectDocumentSources(input: unknown): Promise<Record<string, unknown>> {
+  const request = managedProjectDocumentSourceListRequestSchema.parse(input); const set = await documentSources(request.file, request.expectedSourceSetSha256);
+  return result({ action: request.action, input: request.file, sourceSetSha256: set.sourceSetSha256,
+    ...pageManagedProjectDocumentRoster(set, request.offset, request.length), localArtifactWritten: false, suppliedSourceOnly: true, cadFramingValidated: false });
+}
+export async function readManagedProjectDocumentSource(input: unknown): Promise<Record<string, unknown>> {
+  const request = managedProjectDocumentSourceReadRequestSchema.parse(input); const set = await documentSources(request.file, request.expectedSourceSetSha256);
+  return result({ action: request.action, input: request.file, sourceSetSha256: set.sourceSetSha256,
+    ...pageManagedProjectDocumentSource(selectedDocument(set, request.sourceId), request.offset, request.length),
+    localArtifactWritten: false, suppliedSourceOnly: true, cadFramingValidated: false }, false);
+}
+export async function inspectManagedProjectSchematicRecords(input: unknown): Promise<Record<string, unknown>> {
+  const request = managedSchematicRecordsRequestSchema.parse(input); const set = await documentSources(request.file, request.expectedSourceSetSha256);
+  return result({ action: request.action, input: request.file, sourceSetSha256: set.sourceSetSha256,
+    ...inspectManagedSchematicRecords(selectedDocument(set, request.sourceId), request.offset, request.length),
+    localArtifactWritten: false, suppliedSourceOnly: true, cadFramingValidated: false, schematicRecordFramingValidated: true }, false);
+}
+export async function inspectManagedProjectPcbStackRules(input: unknown): Promise<Record<string, unknown>> {
+  const request = managedPcbStackRulesRequestSchema.parse(input); const set = await documentSources(request.file, request.expectedSourceSetSha256);
+  const item = selectedDocument(set, request.sourceId);
+  if (item.documentType !== "PCB") { throw new Error("PCB stack/rule inspection requires a selected PCB document source."); }
+  return result({ action: request.action, input: request.file, sourceSetSha256: set.sourceSetSha256, sourceId: item.sourceId,
+    ...inspectManagedPcbStackRules(item, request.offset, request.length, request.section),
+    localArtifactWritten: false, suppliedSourceOnly: true, cadFramingValidated: false, pcbStackRuleRecordFramingValidated: true }, false);
+}
+export async function inspectManagedProjectSymbolPins(input: unknown): Promise<Record<string, unknown>> {
+  const request = managedProjectSymbolPinsRequestSchema.parse(input); const set = await documentSources(request.file, request.expectedSourceSetSha256);
+  const item = selectedDocument(set, request.sourceId);
+  if (item.documentType !== "SYMBOL" || item.documentUuid === null) { throw new Error("Project symbol pin inspection requires a UUID-bound selected SYMBOL source."); }
+  return result({ action: request.action, input: request.file, sourceSetSha256: set.sourceSetSha256, sourceId: item.sourceId,
+    ...inspectManagedSymbolPins({ ...item, symbolId: item.documentUuid, identityKind: "archive-member-uuid" }, request.offset, request.length),
+    localArtifactWritten: false, suppliedSourceOnly: true, cadFramingValidated: false, symbolPinRecordFramingValidated: true }, false);
+}
+
 /** Fixed local dispatch; accepting this operation never starts the bridge. */
 export async function executeManagedLibraryFiles(input: unknown): Promise<Record<string, unknown>> {
   const request = managedLibraryFilesRequestSchema.parse(input);
@@ -152,7 +215,10 @@ export async function executeManagedLibraryFiles(input: unknown): Promise<Record
     "extract-project-info": extractManagedProjectFile, "extract-project-footprint-sources": extractManagedProjectFootprintSources,
     "list-project-footprint-sources": listManagedProjectFootprintSources,
     "read-project-footprint-source": readManagedProjectFootprintSource, "extract-symbol-sources": extractManagedSymbolSources,
-    "list-symbol-sources": listManagedSymbolSources, "read-symbol-source": readManagedSymbolSource, "inspect-symbol-pins": inspectManagedSymbolSourcePins };
+    "list-symbol-sources": listManagedSymbolSources, "read-symbol-source": readManagedSymbolSource, "inspect-symbol-pins": inspectManagedSymbolSourcePins,
+    "extract-project-document-sources": extractManagedProjectDocumentSources, "list-project-document-sources": listManagedProjectDocumentSources,
+    "read-project-document-source": readManagedProjectDocumentSource, "inspect-schematic-records": inspectManagedProjectSchematicRecords,
+    "inspect-pcb-stack-rules": inspectManagedProjectPcbStackRules, "inspect-project-symbol-pins": inspectManagedProjectSymbolPins };
   const output = await routes[request.action](request);
   return output;
 }

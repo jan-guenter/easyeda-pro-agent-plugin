@@ -1043,6 +1043,7 @@ class CurrentPcbWorkerConstructionCore<P extends PacketProfile> {
       consumeBeforeInvocation: (): void => {
         same(); if (consumed) { throw fail("CREATE_INVOCATION_CONSUMED"); } consumed = true;
       },
+      requireInvocationConsumed: (): void => { same(); if (!consumed) { throw fail("CREATE_INVOCATION_NOT_CONSUMED"); } },
     }));
     this.#createInvocationLease = lease; return lease;
   }

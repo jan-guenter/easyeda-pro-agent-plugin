@@ -82,6 +82,13 @@ profile has three own properties; the older profile has five. Keep each exact
 contract and retain source/location checks. A test running on the facade's
 pinned Node version does not establish the embedded browser's property roster.
 
+CDP `internal#scope` handles also need their real receiver shape. On the pinned
+engine, `getProperties(scope)` lists lexical variables, while a fixed
+`callFunctionOn(scope)` receives a two-field `description`/`object` wrapper.
+Qualify that exact envelope and closure label before reading its lexical object;
+direct `this.alias` lookups refuse on the wrapper. Local inspector regressions
+can catch this distinction, but do not admit an embedded application generation.
+
 For data-only input capture, reject proxies before reflection and check scalar
 types before passing them to schema validation. Even error formatting can
 inspect a rejected object's prototype. Keep source-content limits separate from

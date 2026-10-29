@@ -11,5 +11,7 @@ export interface CurrentFootprintCopyCreateInvocationBinding {
   readonly assertOriginal: () => Promise<void>;
   readonly assertCleanup: () => void;
   readonly consumeBeforeInvocation: () => void;
+  /** A matching competing call cannot satisfy the original consumed dispatch. */
+  readonly requireInvocationConsumed: () => void;
 }
 export { requireCurrentFootprintCopyCreateInvocationLease } from "./current-pcb-worker-construction-runner.ts";

@@ -1,5 +1,6 @@
 /** Synthetic native objects and source descriptors, never connected effects. */
 import assert from "node:assert/strict";
+import { Session } from "node:inspector/promises";
 import { test } from "node:test";
 import vm from "node:vm";
 import { CURRENT_FOOTPRINT_COPY_UI_CALLS as CALLS, CURRENT_FOOTPRINT_COPY_UI_LIMITS,
@@ -24,8 +25,8 @@ class Registry{static getInstance(){forbidden()}static get context(){return forb
 root.extendLibManager=new Registry();root.extendLibManager._map=new Map();
 class Router{static async getProLibSource(){forbidden()}static async getProjectLibByWorker(){forbidden()}}
 const holder={bus,get messageBus(){return forbidden()}};
-const scope={ZI:Router,Lo:holder,h4:Registry,Po:forbidden,$e:{FOOTPRINT:{GET_STR:'/PrjDB/footprint/getStr'}}};
-const wrapperScope={i:wrapper,t:'/pro-ui/libSource/getProLibSource',e:responder};`;
+const scope={description:"Closure",object:{ZI:Router,Lo:holder,h4:Registry,Po:forbidden,$e:{FOOTPRINT:{GET_STR:'/PrjDB/footprint/getStr'}}}};
+const wrapperScope={description:'Closure (rpcService)',object:{i:wrapper,t:'/pro-ui/libSource/getProLibSource',e:responder}};`;
 function fixture(): vm.Context {
   const context = vm.createContext({}); vm.runInContext(setup, context);
   vm.runInContext(`const notification=(${CALLS.notification.program}).call(root,host,project,path,branch,tab);`, context);
@@ -48,7 +49,7 @@ void test("UI selectors retain an existing responder, initialized bus and regist
 void test("missing initialization and own shadows refuse without invoking lazy accessors", () => {
   for (const change of ["delete root.extendLibManager", "holder.bus=undefined", "delete holder.bus", "root._MSG_BUS_={}",
     "Object.defineProperty(root,'extendLibManager',{get:forbidden})", "Object.defineProperty(holder,'bus',{get:forbidden})",
-    "root.EDITOR_TOP={}", "scope.$e.FOOTPRINT.GET_STR='/wrong'",
+    "root.EDITOR_TOP={}", "scope.object.$e.FOOTPRINT.GET_STR='/wrong'",
     "root.extendLibManager.hasLib=forbidden", "root.extendLibManager._map.has=forbidden"]) {
     const context = fixture(); vm.runInContext(change, context);
     assert.throws(() => vm.runInContext(`(${CALLS.route.program}).call(scope,notification,path,branch,tab)`, context));
@@ -57,15 +58,15 @@ void test("missing initialization and own shadows refuse without invoking lazy a
 });
 
 void test("fresh relation rechecks reject route replacement, project drift and occupied notification queues", () => {
-  for (const change of ["root.extendLibManager._map=new Map()", "holder.bus={}", "scope.Po=()=>{}",
+  for (const change of ["root.extendLibManager._map=new Map()", "holder.bus={}", "scope.object.Po=()=>{}",
     "Router.getProLibSource=async()=>{}", "task.callback=()=>{}", "task.isRunning=false", "queue.push(task)",
     "project.branchUuid='c'.repeat(32)", "notify.pushed['/pro-ui/libSource/getProLibSource']=[]",
-    "root.extendLibManager._map.set(path,{})", "Object.defineProperty(scope,'ZI',{get:forbidden})"]) {
+    "root.extendLibManager._map.set(path,{})", "Object.defineProperty(scope.object,'ZI',{get:forbidden})"]) {
     const context = fixture(); vm.runInContext(`const route=(${CALLS.route.program}).call(scope,notification,path,branch,tab);${change}`, context);
     assert.throws(() => vm.runInContext(`(${CALLS.routeRecheck.program}).call(scope,notification,path,branch,tab,route)`, context));
     assert.equal(vm.runInContext("calls", context), 0);
   }
-  const context = fixture(); vm.runInContext("wrapperScope.e=()=>{}", context);
+  const context = fixture(); vm.runInContext("wrapperScope.object.e=()=>{}", context);
   assert.throws(() => vm.runInContext(`(${CALLS.responderRecheck.program}).call(wrapperScope,wrapper,responder)`, context));
 });
 
@@ -142,4 +143,46 @@ void test("scope and array decoders reject hostile descriptors, duplicates and g
   assert.throws(() => decodeCurrentFootprintCopyUiArray(value, "route")); assert.equal(calls, 0);
   const duplicate = bundle("route"), fields = duplicate["result"]; assert.ok(Array.isArray(fields)); fields.copyWithin(1, 0, 1);
   assert.throws(() => decodeCurrentFootprintCopyUiArray(duplicate, "route"));
+});
+
+void test("actual V8 internal scope receivers require their description/object envelope before responder selection", async () => {
+  const session = new Session(); session.connect();
+  // The pinned Node inspector declarations omit this supported V8 parameter.
+  // Keep it as a structural extension while testing the actual runtime guard.
+  const sideEffectCheck = { throwOnSideEffect: true };
+  try {
+    await session.post("Runtime.enable");
+    const evaluated = await session.post("Runtime.evaluate", { expression: `(()=>{const ZI={getProLibSource(){throw Error('must not invoke')}};const responder=${FIXTURE.responder};return new class{rpcService(e,t){let i=${FIXTURE.wrapper};return i}}().rpcService(responder,'/pro-ui/libSource/getProLibSource')})()`, objectGroup: "ui-scope-regression" });
+    const wrapper = evaluated.result.objectId; assert.ok(wrapper !== undefined);
+    const wrapperMetadata = await session.post("Runtime.getProperties", { objectId: wrapper, ownProperties: true });
+    const scopesId = wrapperMetadata.internalProperties?.find(entry => entry.name === "[[Scopes]]")?.value?.objectId; assert.ok(scopesId !== undefined);
+    const scopeList = await session.post("Runtime.getProperties", { objectId: scopesId, ownProperties: true });
+    const scope = scopeList.result[0]?.value?.objectId; assert.ok(scope !== undefined);
+    assert.equal(scopeList.result[0]?.value?.description, "Closure (rpcService)");
+    const selected = await session.post("Runtime.callFunctionOn", { objectId: scope, functionDeclaration: CALLS.responder.program,
+      arguments: [{ objectId: wrapper }], objectGroup: "ui-scope-regression", returnByValue: false, ...sideEffectCheck });
+    assert.equal(selected.exceptionDetails, undefined); assert.equal(selected.result.description, FIXTURE.responder);
+    const responder = selected.result.objectId; assert.ok(responder !== undefined);
+    const rechecked = await session.post("Runtime.callFunctionOn", { objectId: scope, functionDeclaration: CALLS.responderRecheck.program,
+      arguments: [{ objectId: wrapper }, { objectId: responder }], returnByValue: true, ...sideEffectCheck });
+    assert.equal(rechecked.exceptionDetails, undefined); assert.equal(rechecked.result.value, true);
+    const plain = await session.post("Runtime.callFunctionOn", { objectId: scope, functionDeclaration: "function(){return this.object}", returnByValue: false, ...sideEffectCheck });
+    assert.ok(plain.result.objectId !== undefined);
+    const refused = await session.post("Runtime.callFunctionOn", { objectId: plain.result.objectId, functionDeclaration: CALLS.responder.program,
+      arguments: [{ objectId: wrapper }], returnByValue: false, ...sideEffectCheck });
+    assert.ok(refused.exceptionDetails !== undefined);
+  } finally {
+    try { await session.post("Runtime.releaseObjectGroup", { objectGroup: "ui-scope-regression" }); }
+    finally { session.disconnect(); }
+  }
+});
+
+void test("scope envelopes reject wrong labels, extra fields and lexical accessors without invoking them", () => {
+  for (const change of ["scope.description='Global'", "scope.extra=true", "wrapperScope.description='Closure'", "wrapperScope.extra=true",
+    "Object.defineProperty(wrapperScope,'object',{get:forbidden})", "Object.defineProperty(scope,'object',{get:forbidden})"]) {
+    const context = fixture(); vm.runInContext(change, context);
+    const responder = change.includes("wrapperScope");
+    const call = responder ? `(${CALLS.responder.program}).call(wrapperScope,wrapper)` : `(${CALLS.route.program}).call(scope,notification,path,branch,tab)`;
+    assert.throws(() => vm.runInContext(call, context)); assert.equal(vm.runInContext("calls", context), 0);
+  }
 });

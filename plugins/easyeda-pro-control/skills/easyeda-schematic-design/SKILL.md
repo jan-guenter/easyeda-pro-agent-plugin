@@ -9,6 +9,13 @@ Make the schematic explain the circuit and preserve the intended electrical grap
 
 For a live EasyEDA task, read the sibling [control skill](../easyeda-pro-control/SKILL.md) before application actions. For supplied files, PDFs or screenshots, work offline; do not connect to the editor just to review them. Screenshots alone cannot prove connectivity.
 
+For supplied `.epro`/`.epro2` archives, use the control skill's
+[source inspection workflow](../easyeda-pro-control/references/current-library-files.md)
+to index and page exact schematic sources and raw component, wire, net and
+attribute records. Current mixed-document `.epru` exports are supported. Keep
+inherited symbol pins and hierarchical connectivity unresolved until their
+actual definitions and joins are checked; the raw report is not a netlist.
+
 The current compiled-topology reader is disabled because its installed netlist
 exporter can annotate parts and invoke Save All. Schematic transactions needing
 that proof are blocked pending a verified non-mutating replacement. Native

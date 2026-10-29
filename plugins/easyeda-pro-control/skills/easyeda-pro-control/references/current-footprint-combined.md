@@ -265,14 +265,24 @@ After both genuine paired-clock samples, it binds their exact ordered upload
 body through the same original combined owner. The known-plan mode still
 requires its exact body before arming. These are private source capabilities.
 
-The scheduler still cannot qualify a real new create. Native `buildString`
-allocates the destination UUID internally, while the clock observer requires a
-known destination before arming. The existing post-await producer frames do not
-retain the original create argument identity. A competing same-manager call
-therefore cannot be excluded by those frames alone. A separate pre-await join
-of the fixed wrapper, create argument and `buildString` argument is still needed,
-with its own complete request and output reservation. Supplied matching values
-or a synthetic scheduler test cannot supply that ownership.
+The scheduler now has a separate private pre-await allocation mode. A fixed
+breakpoint after native UUID allocation and before its first `qe` call captures
+adjacent `buildString`, `create` and the exact generated invocation wrapper.
+Descriptor joins compare the same original argument object, five retained
+construction handles, eight methods and consumed original invocation lease.
+The emitted destination UUID can then feed both genuine clock producers.
+Known-UUID mode remains separate and unchanged. Equal JSON or an ordinary
+same-manager call cannot issue this custody.
+
+The allocation observer adds seven normal and three cleanup commands, raising
+this create/clock minimum from68 to78. Its strict grammar, collector and private
+scheduler composition are implemented and source-tested. Existing native birth
+purposes reject its first arm before dispatch. Its fixed native encoding,
+prelaunch ledger, complete output/event reservations and connected execution
+remain unmounted. Focused tests cover the real allocation collector with
+explicit synthetic issuers and the existing known-UUID clock/scheduler path;
+they do not establish a complete allocation/clock/main generation. Neither the
+new lease nor an allocated UUID supplies whole-writer authority.
 
 Partial result/artifact/journal slots also leave
 whole helper stdout, events, raw collector replies and four-generation capacity

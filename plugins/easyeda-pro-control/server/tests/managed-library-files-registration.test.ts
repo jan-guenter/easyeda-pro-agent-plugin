@@ -80,6 +80,41 @@ void test("strict registration refuses injected paths and mismatched actions bef
   assert.equal(JSON.stringify(failed).includes("e30="), false);
 });
 
+void test("registered tool reads current combined project sources and raw schematic/PCB reports in every mode", async () => {
+  const source = '{"type":"DOCHEAD"}||{"docType":"SCH_PAGE","uuid":"1234567890abcdef"}|\n' +
+    '{"type":"COMPONENT","id":"component"}||{"symbol":"unresolved","x":0}|\n' +
+    '{"type":"DOCHEAD"}||{"docType":"PCB","uuid":"abcdef1234567890"}|\n' +
+    '{"type":"LAYER","id":"layer"}||{"physicalLayer":1,"future":"preserved"}|\n';
+  const archive = managedProjectFootprintArchive([{ name: "project2.json", content: '{"title":"Combined fixture"}' },
+    { name: "Combined.epru", content: source }]);
+  for (const mode of ["legacy-reviewed", "calculation-only", "public-utilities-only"] as const) {
+    const tool = await registration(mode);
+    const prepared = await tool.invoke({ request: { action: "prepare-file", name: "Combined.epro2", base64: archive.toString("base64"), confirmLocalArtifact: true } });
+    assert.ok(isRecord(prepared) && isRecord(prepared["result"]));
+    const file = prepared["result"]["file"];
+    const extracted = await tool.invoke({ request: { action: "extract-project-document-sources", file } });
+    assert.ok(isRecord(extracted) && isRecord(extracted["result"]));
+    assert.equal(extracted["result"]["documentCount"], 2);
+    const bound = { file, expectedSourceSetSha256: extracted["result"]["sourceSetSha256"] };
+    const roster = await tool.invoke({ request: { action: "list-project-document-sources", ...bound } });
+    assert.ok(isRecord(roster) && isRecord(roster["result"]));
+    const items = roster["result"]["sources"]; assert.ok(Array.isArray(items) && isRecord(items[0]) && isRecord(items[1]));
+    const schematic = await tool.invoke({ request: { action: "inspect-schematic-records", ...bound, sourceId: items[0]["sourceId"] } });
+    assert.ok(isRecord(schematic) && isRecord(schematic["result"]));
+    assert.equal(schematic["result"]["connectivityCompiled"], false); assert.equal(schematic["result"]["totalRecognizedRecords"], 1);
+    const pcbRequest = { action: "inspect-pcb-stack-rules", ...bound, sourceId: items[1]["sourceId"], section: "stack" };
+    const valid = queryOfflineApi(apiRequestSchema.parse({ action: "library-files-validate", query: { request: pcbRequest } }));
+    assert.ok(isRecord(valid.result)); assert.equal(valid.result["valid"], true);
+    const pcb = await tool.invoke({ request: pcbRequest }); assert.ok(isRecord(pcb) && isRecord(pcb["result"]));
+    assert.equal(pcb["result"]["totalSelectedRecords"], 1); assert.equal(pcb["result"]["effectiveRulesEvaluated"], false);
+    assert.equal(pcb["result"]["installedRuntimeAdmission"], false); assert.equal(pcb["result"]["publicSdkMethodExecuted"], false);
+    const raw = await tool.invoke({ request: { action: "read-project-document-source", ...bound, sourceId: items[0]["sourceId"] } });
+    assert.ok(isRecord(raw) && isRecord(raw["result"])); assert.equal(raw["result"]["documentType"], "SCH_PAGE");
+    await assert.rejects(tool.invoke({ request: { ...pcbRequest, section: "effective" } }));
+    assert.equal(tool.calls.length, 6);
+  }
+});
+
 void test("registered tool lists unknown footprint UUIDs and reads their sources in every mode without an artifact reader", async () => {
   const other = "fedcba0987654321", uuid = "1234567890abcdef";
   const archive = managedProjectFootprintArchive([{ name: "project2.json", content: '{"title":"Supplied fixture"}' },

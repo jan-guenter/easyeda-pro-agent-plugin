@@ -56,7 +56,7 @@ const grammar = z.union([
 /* oxlint-enable unicorn/max-nested-calls */
 export interface CurrentFootprintCopyClockRpcCommand {
   readonly phase: string;
-  readonly method: "Runtime.callFunctionOn" | "Debugger.setBreakpoint" | "Debugger.evaluateOnCallFrame" | "Runtime.getProperties" | "Debugger.removeBreakpoint" | "Debugger.resume" | "Runtime.releaseObjectGroup";
+  readonly method: "Runtime.callFunctionOn" | "Debugger.setBreakpoint" | "Debugger.evaluateOnCallFrame" | "Runtime.getProperties" | "Debugger.removeBreakpoint" | "Debugger.resume" | "Runtime.releaseObjectGroup" | "Debugger.getScriptSource";
   readonly sessionId: string;
   readonly role?: Site;
   readonly params: Readonly<Record<string, unknown>>;

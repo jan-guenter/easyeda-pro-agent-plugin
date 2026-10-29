@@ -85,10 +85,13 @@ void test("original construction issues one immutable invocation lease and consu
   const binding = f.requireInvocation(lease); await binding.assertOriginal();
   assert.equal(binding.projectObjectId, "project");
   assert.deepEqual(binding.handles, ["bus", "manager", "consistency", "constructors", "methods"]);
-  assert.equal(Object.isFrozen(binding.handles), true); binding.consumeBeforeInvocation();
+  assert.equal(Object.isFrozen(binding.handles), true);
+  assert.throws(() => { binding.requireInvocationConsumed(); }, /NOT_CONSUMED/u);
+  binding.consumeBeforeInvocation(); binding.requireInvocationConsumed();
   assert.throws(() => { binding.consumeBeforeInvocation(); }, /INVOCATION_CONSUMED/u);
   f.runner.changeCreateHandleForTest();
   assert.throws(() => { binding.assertCleanup(); }, /PREPARATION_CHANGED/u);
+  assert.throws(() => { binding.requireInvocationConsumed(); }, /PREPARATION_CHANGED/u);
   assert.throws(() => f.requireInvocation(lease), /PREPARATION_CHANGED/u);
   assert.deepEqual(f.state, { releases: 0, cleanups: 0, unsubscribed: 0, released: false });
 });

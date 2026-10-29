@@ -21,6 +21,13 @@ Establish intended operating conditions, worst-case inputs and loads, interfaces
 
 Work offline by default for supplied artifacts. Do not launch or modify EasyEDA, upload files, change parts or accept waivers under a review-only request. If the user requested live inspection, use the sibling [control skill](../easyeda-pro-control/SKILL.md) for application actions; never treat a review as editing authority.
 
+For supplied EasyEDA project archives, read the control skill's
+[source inspection workflow](../easyeda-pro-control/references/current-library-files.md).
+Use its exact source pages, supported symbol pin tables, schematic records and
+persisted PCB stack/rule records to cite concrete evidence. Raw selectors do
+not establish effective rule precedence, and raw wire/net fields do not prove
+compiled or hierarchical connectivity. Keep those missing checks explicit.
+
 Follow power, signal and return-current paths. Correlate schematic pins to exact package terminals and physical pads. For each concern, state the artifact/location, failure condition, consequence and evidence. Distinguish a confirmed defect from a plausible risk or an uncheckable point.
 
 Check calculations at relevant tolerance, temperature, supply, timing and load extremes. Typical curves and absolute maximum ratings are not guaranteed operating design points. Do not claim compliance, safe mains isolation or battery charging safety from a schematic screenshot or generic spacing rule.

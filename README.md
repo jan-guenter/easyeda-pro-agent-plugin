@@ -44,6 +44,11 @@ prepares supplied standalone libraries or project archives as managed inputs and
 extracts bounded metadata in every facade mode. It checks supported file framing
 and archive integrity without opening EasyEDA. It does not import the files or
 validate their geometry, dependencies or electrical correctness.
+It also pages exact document sources from current mixed-document `.epro2`
+exports and recognized legacy archive members. Separate reports expose raw
+schematic records, supported symbol pins and persisted PCB stack/rule records.
+They preserve raw selectors and unknown source data without compiling
+connectivity or calculating effective rule precedence.
 After an ordinary session closes and its retained process/Job termination is
 verified, an explicit `release-closed` action frees its helper for another
 workflow. Project workflows that still own that runtime prevent release.
