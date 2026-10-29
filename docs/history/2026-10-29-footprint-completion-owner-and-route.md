@@ -196,3 +196,11 @@ Runtime/helper bytes and the final catalog projections above are unchanged.
 The three focused wire cases and their strict type-aware lint pass. The initial
 failure and cancelled remainder stay preserved; final CI must cover every shard
 on the test correction as well.
+
+Candidate71301d3 passed the build/bridge job, Windows and seven facade shards.
+The eighth shard's sole failure was a second obsolete assertion expecting the
+old `NATIVE_ORIGIN_UNAVAILABLE` placeholder. The genuine issuer now rejects a
+forged token with `COMPLETION_ORIGINAL_LEASE_REQUIRED`; the assertion and title
+now require that actual guard. All three focused completion-source/grammar
+cases and strict lint pass. No runtime, helper, budget or manifest changed.
+The failed run40855125062 remains retained, not final green suite evidence.

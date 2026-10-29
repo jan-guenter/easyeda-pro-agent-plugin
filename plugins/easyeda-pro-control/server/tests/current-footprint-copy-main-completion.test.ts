@@ -32,7 +32,7 @@ void test("foreign original relations, changed singleton SQL/modifier and access
     assert.equal(result.mutationCalls, 0); assert.equal(result.getterCalls, 0);
   }
 });
-void test("completion command grammar fixes source/condition/selector and cannot issue a native origin", () => {
+void test("completion command grammar fixes source/condition/selector and rejects a forged native origin", () => {
   const source = currentFootprintCopyMainCompletionSourceArm("project-sql", "app");
   assert.ok(source.phase === "completion-source-arm");
   assert.equal(source.params.condition, `r===${JSON.stringify(SQL)}`);
@@ -41,6 +41,6 @@ void test("completion command grammar fixes source/condition/selector and cannot
   assert.throws(() => validateCurrentFootprintCopyMainCompletionCommand({ phase: "completion-join", stage: "save", method: "Runtime.callFunctionOn", params: { functionDeclaration: "function(){return true;}" } }));
   assert.throws(() => currentFootprintCopyMainCompletionNativeCommand(source, 0));
   assert.deepEqual(Object.keys(currentFootprintCopyMainCompletionNativeCommand(source, 1)), ["id", "method", "params"]);
-  assert.throws(() => requireCurrentFootprintCopyMainCompletionOrigin({ profile: "private.current-footprint-copy-main-completion-origin.v1", executionAuthorized: false }), /NATIVE_ORIGIN_UNAVAILABLE/u);
+  assert.throws(() => requireCurrentFootprintCopyMainCompletionOrigin({ profile: "private.current-footprint-copy-main-completion-origin.v1", executionAuthorized: false }), /COMPLETION_ORIGINAL_LEASE_REQUIRED/u);
   assert.equal(Object.keys(PROGRAMS).length, 14);
 });
