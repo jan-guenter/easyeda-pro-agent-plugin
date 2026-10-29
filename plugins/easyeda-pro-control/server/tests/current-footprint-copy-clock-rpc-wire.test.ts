@@ -8,12 +8,16 @@ import { currentFootprintCopyClockRpcNativeCases, currentFootprintCopyClockRpcNa
 import { currentFootprintCopyClockRpcWire } from "../src/current-footprint-copy-clock-rpc-wire.ts";
 
 const worker = "clockrpc_worker"; const ui = "clockrpc_ui";
-void test("the fixed clock RPC encoder fits the unchanged helper cap without a native request route", async () => {
+void test("the fixed clock RPC encoder fits the unchanged cap behind its original combined-owner reservation", async () => {
   const helper = await readFile(new URL("../../scripts/pcb-diagnostic-owner.ps1", import.meta.url), "utf8");
   const source = currentFootprintCopyClockRpcNativeSource();
   assert.ok(Buffer.byteLength(helper) <= 1_048_576);
   assert.equal(helper.split(source).length, 2);
-  assert.equal(helper.includes("EasyedaFootprintCopyClockRpcProtocol.Encode("), false);
+  assert.equal(helper.split("EasyedaFootprintCopyClockRpcProtocol.Encode(").length, 2);
+  assert.ok(helper.includes("if(!workerStartupFootprintCombined209 || footprintClockRpcBegun)"));
+  assert.ok(helper.includes("id!=footprintClockRpcFirst+footprintClockRpcTotal"));
+  assert.ok(helper.includes("bool ended=Terminated();if(!ended)AssertLive();RetireFootprintClockRpcCore(ended);"));
+  assert.ok(helper.includes("$largeClockRpcRequest=$WorkerStartupFootprintCombined209 -and $request.action -ceq 'footprint-clock-rpc-send'"));
   const compileOnly = helper.indexOf("  if ($CompileOnly) {");
   const smoke = helper.indexOf("    [EasyedaFootprintCopyClockRpcProtocol]::VerifySmoke()");
   const firstPayload = helper.indexOf("    $selectionSmokePath=", compileOnly);

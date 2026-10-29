@@ -38,6 +38,10 @@ import type { CurrentFootprintCopyTransactionClockCommand } from "./current-foot
 import { currentFootprintCopyTransactionClockWire } from "./current-footprint-copy-transaction-clock-wire.ts";
 import type { CurrentPcbWorkerStartupCommand, CurrentPcbWorkerStartupDependency, CurrentPcbWorkerStartupEvent } from "./current-pcb-worker-startup-contract.ts";
 import { CURRENT_PCB_DIAGNOSTIC_PCB_OPENING_FUNCTION } from "./current-pcb-diagnostic-pcb-opening.ts";
+import { currentFootprintCopyClockRpcWire } from "./current-footprint-copy-clock-rpc-wire.ts";
+import { CurrentFootprintCopyClockRpcBudget } from "./current-footprint-copy-clock-rpc-budget.ts";
+import type { CurrentFootprintCopyClockRpcCommand } from "./current-footprint-copy-clock-rpc-protocol.ts";
+import type { CurrentFootprintCopyClockRpcOriginEvent } from "./current-footprint-copy-clock-rpc-origin.ts";
 
 export interface CurrentPcbWorkerStartupParent {
   readonly targetId: string;
@@ -115,14 +119,14 @@ function clockWire(raw: unknown, id: number): ReturnType<typeof currentFootprint
   const { sessionId, ...command } = captured;
   return currentFootprintCopyTransactionClockWire(command, id, sessionId);
 }
-function replyFrameLimit(command: ChannelCommand): number {
+function replyFrameLimit(command: ChannelCommand | CurrentFootprintCopyClockRpcCommand): number {
   if (command.method === "Debugger.getScriptSource") { return SOURCE_FRAME; }
-  return command.method === "Runtime.callFunctionOn" && "objectId" in command.params && command.params.awaitPromise ?
+  return command.method === "Runtime.callFunctionOn" && "objectId" in command.params && command.params.awaitPromise === true ?
     CURRENT_FOOTPRINT_COPY_SOURCE_FRAME_BYTES : MAX_FRAME;
 }
 interface Pending {
   readonly id: number;
-  readonly command: ChannelCommand;
+  readonly command: ChannelCommand | CurrentFootprintCopyClockRpcCommand;
   readonly completion: PromiseWithResolvers<unknown>;
   readonly allocation: boolean;
   written: boolean;
@@ -137,9 +141,33 @@ function fail(code: string): Error {
 }
 function record(value: unknown): value is Record<string, unknown> { return value !== null && typeof value === "object" && !Array.isArray(value); }
 function exact(value: object, keys: readonly string[]): boolean { return Object.keys(value).toSorted().join(",") === [...keys].toSorted().join(","); }
-function cleanupCommand(command: ChannelCommand): boolean {
+function cleanupCommand(command: ChannelCommand | CurrentFootprintCopyClockRpcCommand): boolean {
   return command.method === "Debugger.removeBreakpoint" || command.method === "Debugger.resume" ||
     command.method === "Runtime.runIfWaitingForDebugger" || command.method === "Runtime.releaseObjectGroup";
+}
+interface ClockRpcState {
+  readonly workerSessionId: string;
+  readonly uiSessionId: string;
+  readonly budget: CurrentFootprintCopyClockRpcBudget;
+  readonly events: CurrentFootprintCopyClockRpcOriginEvent[];
+  begun: boolean;
+  retired: boolean;
+  retireAttempted: boolean;
+  retireAcknowledged: boolean;
+  eventCount: number;
+  eventBytes: number;
+}
+export interface CurrentFootprintCopyClockRpcChannelReservation { readonly profile: "private.current-footprint-clock-rpc-channel-reservation.v1" }
+export interface CurrentFootprintCopyClockRpcChannelRoute {
+  readonly workerSessionId: string;
+  readonly assertOriginal: () => Promise<void>;
+  readonly assertCleanup: () => Promise<void>;
+  readonly assertOriginalGenerationExited: () => Promise<void>;
+  readonly request: (command: CurrentFootprintCopyClockRpcCommand, cleanup: boolean) => Promise<unknown>;
+  readonly pump: (cleanup: boolean) => Promise<void>;
+  readonly takeEvent: () => CurrentFootprintCopyClockRpcOriginEvent | null;
+  readonly fail: () => void;
+  readonly retire: () => Promise<void>;
 }
 function parentCommand(command: ChannelCommand): boolean {
   return command.method === "Target.getTargets" || command.method === "Page.getFrameTree" ||
@@ -229,6 +257,11 @@ class CurrentPcbWorkerStartupChannelCore {
   #executionChildContext: string | null = null;
   #footprintClockSession: string | null = null;
   #footprintClockRequests = 0;
+  #clockRpcAttempted = false;
+  #clockRpcHandoffPending = false;
+  #clockRpc: ClockRpcState | null = null;
+  #clockRpcPreparedState: ClockRpcState | null = null;
+  #clockRpcReservation: CurrentFootprintCopyClockRpcChannelReservation | null = null;
   #footprintCacheRequests = 0;
   #pcbPreflightConsumed = false;
   #pcbOpeningConsumed = false;
@@ -329,6 +362,7 @@ class CurrentPcbWorkerStartupChannelCore {
   #poison(code: string, fatal = false): void {
     const first = this.#failure === null;
     this.#failure ??= fail(code); this.#failureCode ??= code; this.#fatal ||= fatal;
+    if (this.#clockRpc !== null && !this.#clockRpc.retired) { this.#clockRpc.budget.fail(); }
     if (first) {
       try { this.#footprintParentSubscriber?.lost(); }
       catch { this.#fatal = true; }
@@ -442,6 +476,7 @@ class CurrentPcbWorkerStartupChannelCore {
   }
   // oxlint-disable-next-line eslint/require-await -- Return the original retained completion, with synchronous guards converted to rejection.
   async #request(raw: ChannelCommand, manager = false, clock = false, parentKind?: CurrentFootprintParentCommandKind, registration = false): Promise<unknown> {
+    if (this.#clockRpcHandoffPending || this.#clockRpc !== null && !this.#clockRpc.retired) { throw fail("FOOTPRINT_RPC_EXCLUSIVE"); }
     // Select the fixed grammar only after rejecting prototype/proxy traps.
     if (!record(raw) || types.isProxy(raw) ||
       Object.getPrototypeOf(raw) !== Object.prototype && Object.getPrototypeOf(raw) !== null) { throw fail("COMMAND"); }
@@ -591,8 +626,148 @@ class CurrentPcbWorkerStartupChannelCore {
     };
   }
   public requestFootprintClock(command: ClockCommand): Promise<unknown> {
-    if (!this.#executionPurpose) { return Promise.reject(fail("FOOTPRINT_CLOCK_PURPOSE")); }
+    if (!this.#executionPurpose || this.#clockRpcAttempted) { return Promise.reject(fail("FOOTPRINT_CLOCK_PURPOSE")); }
     return this.#request(command, false, true);
+  }
+  /** Quiesce the one original queue before its synchronous transport handoff.
+   * Polling remains suspended until begin or original-generation cleanup. */
+  public async prepareFootprintClockRpc(dependency: CurrentPcbWorkerStartupDependency,
+    workerSessionId: string): Promise<CurrentFootprintCopyClockRpcChannelReservation> {
+    if (this.#wire !== currentFootprintCombinedStartupWire || executionDependencies.get(dependency) !== this || this.#clockRpcAttempted) {
+      throw fail("FOOTPRINT_RPC_PURPOSE");
+    }
+    this.#clockRpcAttempted = true; this.#clockRpcHandoffPending = true;
+    if (this.#pollTimer !== null) { clearTimeout(this.#pollTimer); this.#pollTimer = null; }
+    try {
+      await this.#queue(async (): Promise<void> => {
+        await this.#currentWithinQueue();
+        if (this.#parent === null || this.#listener === null || this.#pending.size > 0 || this.#queuedRequests !== 0 || this.#used !== 0 ||
+            this.#pollQueued || this.#fatal || this.#failure !== null || this.#footprintParentSubscriber !== null || this.#footprintClockRequests !== 0 ||
+            this.#executionWorkerSession !== workerSessionId || workerSessionId === this.#parent.sessionId ||
+            !this.#workers.has(workerSessionId) || !this.#footprintClockRegistrationStarted || this.#footprintClockRegistrationReleased) {
+          throw fail("FOOTPRINT_RPC_QUIESCENCE");
+        }
+        this.#clockRpcPreparedState = { workerSessionId, uiSessionId: this.#parent.sessionId,
+          budget: new CurrentFootprintCopyClockRpcBudget(this.#nextId), events: [], begun: false, retired: false,
+          retireAttempted: false, retireAcknowledged: false, eventCount: 0, eventBytes: 0 };
+        this.#clockRpcReservation = Object.freeze({ profile: "private.current-footprint-clock-rpc-channel-reservation.v1" });
+      });
+      if (this.#clockRpcReservation === null) { throw fail("FOOTPRINT_RPC_RESERVATION"); }
+      return this.#clockRpcReservation;
+    } catch (error) {
+      this.#clockRpcHandoffPending = false; this.#poison("FOOTPRINT_RPC_HANDOFF"); this.#schedulePoll(0); throw error;
+    }
+  }
+  /** The genuine owner consumes its original transport subscription immediately
+   * before this synchronous cursor installation. No await separates them. */
+  public async beginFootprintClockRpc(dependency: CurrentPcbWorkerStartupDependency,
+    reservation: CurrentFootprintCopyClockRpcChannelReservation): Promise<CurrentFootprintCopyClockRpcChannelRoute> {
+    const state = this.#clockRpcPreparedState;
+    if (executionDependencies.get(dependency) !== this || reservation !== this.#clockRpcReservation || state === null ||
+        this.#clockRpc !== null || !this.#clockRpcHandoffPending || this.#nextId !== state.budget.snapshot().startId ||
+        this.#pending.size > 0 || this.#queuedRequests !== 0 || this.#used !== 0 || this.#failure !== null || this.#fatal) { throw fail("FOOTPRINT_RPC_RESERVATION"); }
+    this.#clockRpc = state;
+    try {
+      await this.#queue(async (): Promise<void> => {
+        await this.#currentWithinQueue();
+        const result = captureCurrentPcbStringClockReply(await this.#exchange.call(this.#native,
+          { action: "footprint-clock-rpc-begin", firstRequestId: this.#nextId })).value;
+        if (!record(result) || !exact(result, ["begun"]) || result["begun"] !== true) { throw fail("FOOTPRINT_RPC_BEGIN_ACK"); }
+        state.begun = true;
+      });
+      return Object.freeze({ workerSessionId: state.workerSessionId,
+        assertOriginal: (): Promise<void> => this.#assertClockRpc(state, false),
+        assertCleanup: (): Promise<void> => this.#assertClockRpc(state, true),
+        assertOriginalGenerationExited: (): Promise<void> => this.#originalTermination(),
+        request: (command: CurrentFootprintCopyClockRpcCommand, cleanup: boolean): Promise<unknown> => this.#requestClockRpc(state, command, cleanup),
+        pump: async (cleanup: boolean): Promise<void> => {
+          this.#sameClockRpc(state, cleanup); this.#schedulePoll(0);
+          await this.#queue((): Promise<void> => { this.#sameClockRpc(state, cleanup); return Promise.resolve(); });
+        },
+        takeEvent: (): CurrentFootprintCopyClockRpcOriginEvent | null => {
+          this.#sameClockRpc(state, true); return state.events.shift() ?? null;
+        },
+        fail: (): void => {
+          if (this.#clockRpc === state && !state.retired) { state.budget.fail(); this.#poison("FOOTPRINT_RPC_SEMANTIC"); }
+        },
+        retire: (): Promise<void> => this.#retireClockRpc(state),
+      });
+    } catch (error) { this.#clockRpc?.budget.fail(); this.#poison("FOOTPRINT_RPC_HANDOFF"); throw error; }
+    finally { this.#clockRpcHandoffPending = false; this.#schedulePoll(0); }
+  }
+  #sameClockRpc(state: ClockRpcState, cleanup: boolean): void {
+    this.#sameMethods();
+    if (this.#clockRpc !== state || !state.begun || state.retired || this.#released || this.#releaseRequested ||
+        this.#terminationVerified || this.#fatal || !cleanup && (this.#failure !== null || state.budget.snapshot().failed)) {
+      throw fail("FOOTPRINT_RPC_ORIGINAL");
+    }
+    this.#withinLifetime(cleanup);
+  }
+  async #assertClockRpc(state: ClockRpcState, cleanup: boolean): Promise<void> {
+    this.#sameClockRpc(state, cleanup);
+    await this.#queue(async (): Promise<void> => {
+      this.#sameClockRpc(state, cleanup);
+      const parent = await this.#parentMethod.call(this.#native); this.#sameClockRpc(state, cleanup);
+      if (parent !== this.#parent) { throw fail("FOOTPRINT_RPC_PARENT"); }
+    });
+    this.#sameClockRpc(state, cleanup);
+  }
+  // oxlint-disable-next-line eslint/require-await -- Preserve the retained pending completion and convert synchronous validation failures to rejection.
+  async #requestClockRpc(state: ClockRpcState, input: CurrentFootprintCopyClockRpcCommand, cleanup: boolean): Promise<unknown> {
+    this.#sameClockRpc(state, cleanup);
+    const { id: _validationId, ...command } = currentFootprintCopyClockRpcWire(input, 1, state.workerSessionId, state.uiSessionId).command;
+    if (typeof cleanup !== "boolean" || cleanup !== cleanupCommand(command) || state.budget.snapshot().failed) { throw fail("FOOTPRINT_RPC_CLASS"); }
+    if (this.#queuedRequests >= 32) { throw fail("QUEUE_BUDGET"); }
+    this.#queuedRequests += 1; const completion = Promise.withResolvers<unknown>();
+    const queued = this.#queue(async (): Promise<void> => {
+      let pending: Pending | null = null;
+      try {
+        this.#sameClockRpc(state, cleanup);
+        const parent = await this.#parentMethod.call(this.#native); this.#sameClockRpc(state, cleanup);
+        if (parent !== this.#parent || this.#failure !== null) { throw fail("FOOTPRINT_RPC_PARENT"); }
+        const wire = currentFootprintCopyClockRpcWire(command, this.#nextId, state.workerSessionId, state.uiSessionId);
+        state.budget.consume(this.#nextId, cleanup); this.#nextId += 1;
+        pending = { id: wire.command.id, command: wire.command, completion,
+          allocation: command.method === "Debugger.setBreakpoint", written: false, writeFailed: false, replied: false,
+          result: null, remoteError: false, settled: false };
+        this.#pending.set(pending.id, pending);
+        ackSchema.parse(captureCurrentPcbStringClockReply(await this.#exchange.call(this.#native, wire.request)).value);
+        pending.written = true; this.#complete(pending);
+      } catch (error) {
+        state.budget.fail(); this.#poison("FOOTPRINT_RPC_WRITE");
+        if (pending === null) { completion.reject(error); }
+        else { pending.writeFailed = true; this.#complete(pending); }
+      } finally { this.#queuedRequests -= 1; this.#schedulePoll(0); }
+    });
+    void observe(queued); return completion.promise;
+  }
+  async #retireClockRpc(state: ClockRpcState): Promise<void> {
+    try { await this.#queue(async (): Promise<void> => {
+      if (this.#clockRpc !== state || state.retired || this.#released || this.#releaseRequested || this.#pending.size > 0 ||
+          this.#queuedRequests !== 0 || this.#used !== 0 || state.events.length > 0) { throw fail("FOOTPRINT_RPC_RETAIN"); }
+      this.#sameMethods();
+      if (state.retireAttempted) {
+        if (!this.#terminationVerified) { throw fail("FOOTPRINT_RPC_RETAIN_RETIRE_UNKNOWN"); }
+        // The prior native retirement remains unknown. Actual exit permits
+        // Local route settlement only; never repeat its consumed control.
+        state.retired = true; return;
+      }
+      if (!this.#terminationVerified) {
+        this.#sameClockRpc(state, false); state.budget.requireCompleted();
+      }
+      state.retireAttempted = true;
+      const result = captureCurrentPcbStringClockReply(await this.#exchange.call(this.#native, { action: "footprint-clock-rpc-retire" })).value;
+      if (!record(result) || !exact(result, ["retired"]) || result["retired"] !== true) { throw fail("FOOTPRINT_RPC_RETIRE_ACK"); }
+      state.retireAcknowledged = true;
+      if (!this.#terminationVerified) { state.budget.retire(); }
+      state.retired = true;
+    }); } catch (error) { state.budget.fail(); this.#poison("FOOTPRINT_RPC_RETIRE"); throw error; }
+  }
+  public retainedFootprintClockRpc(): Readonly<Record<string, unknown>> {
+    const state = this.#clockRpc;
+    return Object.freeze({ attempted: this.#clockRpcAttempted, begun: state?.begun ?? false, retired: state?.retired ?? false,
+      retirementDispatchAttempted: state?.retireAttempted ?? false, nativeRetirementAcknowledged: state?.retireAcknowledged ?? false,
+      originalGenerationExitObserved: this.#terminationVerified, budget: state?.budget.snapshot() ?? null, executionAuthorized: false });
   }
   #complete(pending: Pending): void {
     if (!pending.replied) { return; }
@@ -613,7 +788,7 @@ class CurrentPcbWorkerStartupChannelCore {
     }
   }
   #schedulePoll(milliseconds: number): void {
-    if (this.#released || this.#releaseRequested || this.#terminationVerified || this.#fatal ||
+    if (this.#released || this.#releaseRequested || this.#terminationVerified || this.#fatal || this.#clockRpcHandoffPending ||
         this.#listener === null && this.#pending.size === 0 || this.#pollQueued) { return; }
     if (this.#pollTimer !== null) {
       if (milliseconds !== 0) { return; }
@@ -701,6 +876,14 @@ class CurrentPcbWorkerStartupChannelCore {
     if (bytes > MAX_FRAME || this.#events > MAX_EVENTS || this.#eventBytes > MAX_EVENT_BYTES || this.#parent === null) { throw fail("EVENT_BUDGET"); }
     const event = z.object({ method: z.string().min(1).max(128), params: z.record(z.string(), z.unknown()), sessionId: token }).strict()
       .parse(captureCurrentPcbStringClockReply(value).value);
+    const rpc = this.#clockRpc;
+    if (rpc !== null && !rpc.retired && (event.sessionId === rpc.uiSessionId || event.sessionId === rpc.workerSessionId) &&
+        (event.method === "Debugger.paused" || event.method === "Debugger.resumed")) {
+      if (!rpc.begun || rpc.events.length >= 20 || rpc.eventCount >= 20 || rpc.eventBytes + bytes > MAX_EVENT_BYTES) { throw fail("FOOTPRINT_RPC_EVENTS"); }
+      const params = captureCurrentPcbStringClockReply(event.params).value;
+      rpc.events.push(Object.freeze({ method: event.method, sessionId: event.sessionId, params }));
+      rpc.eventCount += 1; rpc.eventBytes += bytes; return;
+    }
     if (event.sessionId === this.#parent.sessionId) {
       if (event.method !== "Target.attachedToTarget") {
         if (this.#executionPurpose && this.#footprintParentSubscriber !== null &&
@@ -742,6 +925,14 @@ class CurrentPcbWorkerStartupChannelCore {
       this.#sameMethods(); await this.#terminate.call(this.#native); this.#sameMethods();
       this.#terminationVerified = true;
       if (this.#pollTimer !== null) { clearTimeout(this.#pollTimer); this.#pollTimer = null; }
+      if (this.#clockRpc !== null && !this.#clockRpc.retired) {
+        // Only the retained root/whole-Job proof above ends ambiguous RPC
+        // Allocations. Rejecting their waits fabricates no debugger reply.
+        for (const pending of this.#pending.values()) {
+          if (!pending.settled) { pending.settled = true; pending.completion.reject(fail("TERMINATED")); }
+        }
+        this.#pending.clear(); this.#clockRpc.budget.fail(); this.#clockRpc.events.length = 0; this.#used = 0;
+      }
     });
   }
   /** Original termination, not a timeout or caller flag, ends reply retention.
@@ -794,4 +985,20 @@ export class CurrentFootprintCopySavedChannel extends CurrentPcbWorkerStartupCha
   public constructor(native: CurrentPcbWorkerStartupNativeDependency, priorUsage?: CurrentPcbWorkerStartupPriorUsage) {
     super(INTERNAL_PROFILE, native, currentFootprintCopySavedStartupWire, priorUsage);
   }
+}
+// oxlint-disable-next-line typescript/unbound-method -- Called only with the original WeakMap-selected private-field channel above.
+const beginOriginalClockRpc = CurrentPcbWorkerStartupChannelCore.prototype.beginFootprintClockRpc;
+// oxlint-disable-next-line typescript/unbound-method -- Called only with the original WeakMap-selected private-field channel below.
+const prepareOriginalClockRpc = CurrentPcbWorkerStartupChannelCore.prototype.prepareFootprintClockRpc;
+export function prepareCurrentFootprintCopyClockRpcChannel(dependency: CurrentPcbWorkerStartupDependency,
+  workerSessionId: string): Promise<CurrentFootprintCopyClockRpcChannelReservation> {
+  const channel = executionDependencies.get(dependency);
+  if (!(channel instanceof CurrentFootprintCombinedStartupChannel)) { return Promise.reject(fail("FOOTPRINT_RPC_PURPOSE")); }
+  return prepareOriginalClockRpc.call(channel, dependency, workerSessionId);
+}
+export function beginCurrentFootprintCopyClockRpcChannel(dependency: CurrentPcbWorkerStartupDependency,
+  reservation: CurrentFootprintCopyClockRpcChannelReservation): Promise<CurrentFootprintCopyClockRpcChannelRoute> {
+  const channel = executionDependencies.get(dependency);
+  if (!(channel instanceof CurrentFootprintCombinedStartupChannel)) { return Promise.reject(fail("FOOTPRINT_RPC_PURPOSE")); }
+  return beginOriginalClockRpc.call(channel, dependency, reservation);
 }

@@ -1,5 +1,5 @@
-/** Finite native encoder embedded only as a compiled, unrouted helper class.
- * No owner/channel route or genuine origin issuer grants an invocation. */
+/** Finite native encoder for the original combined owner's private RPC phase.
+ * No public writer or complete lifecycle reservation is supplied by this codec. */
 import { createHash } from "node:crypto";
 import { gzipSync } from "node:zlib";
 import { CURRENT_FOOTPRINT_COPY_CLOCK_RPC_SITES as SITES } from "./current-footprint-copy-clock-rpc-source.ts";
@@ -68,7 +68,7 @@ export function currentFootprintCopyClockRpcNativeSource(): string {
     return [wire.request["phase"], command.method, realm, Object.keys(fields).join(","), template].join("\t");
   });
   const bytes = Buffer.from(rows.join("\0"));
-  // oxlint-disable-next-line node/no-sync -- Deterministic in-memory packing of the finite, currently unmounted native command table.
+  // oxlint-disable-next-line node/no-sync -- Deterministic in-memory packing of the finite native command table.
   const packed = gzipSync(bytes, { level: 9 });
   const hashes = cases.map(command => createHash("sha256").update(`${JSON.stringify({ id: 73, method: command.method, sessionId: command.sessionId, params: command.params })}\0`).digest("hex"));
   return `public static class EasyedaFootprintCopyClockRpcProtocol {

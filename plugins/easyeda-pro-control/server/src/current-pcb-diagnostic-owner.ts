@@ -55,7 +55,8 @@ import { CurrentPcbStringNativeClockIssuer } from "./current-pcb-string-native-c
 import { captureCurrentPcbStringClockReply } from "./current-pcb-string-clock-reply.ts";
 import type { CurrentPcbStringNativeClockObservation, CurrentPcbStringNativeClockPhase } from "./current-pcb-string-native-clock.ts";
 import { freezeDeep } from "./sqlite-inventory-core.ts";
-import { CurrentFootprintCombinedStartupChannel, CurrentFootprintCopyExecutionChannel, CurrentFootprintCopyPreparationChannel, CurrentFootprintCopySavedChannel, CurrentPcb209WorkerStartupChannel, CurrentPcbWorkerStartupChannel } from "./current-pcb-worker-startup-channel.ts";
+import { CurrentFootprintCombinedStartupChannel, CurrentFootprintCopyExecutionChannel, CurrentFootprintCopyPreparationChannel, CurrentFootprintCopySavedChannel, CurrentPcb209WorkerStartupChannel, CurrentPcbWorkerStartupChannel,
+  beginCurrentFootprintCopyClockRpcChannel, prepareCurrentFootprintCopyClockRpcChannel } from "./current-pcb-worker-startup-channel.ts";
 import type { CurrentPcbWorkerStartupParent } from "./current-pcb-worker-startup-channel.ts";
 import type { CurrentPcbWorkerStartupDependency } from "./current-pcb-worker-startup-contract.ts";
 import { CurrentPcbWorkerStartupOpening } from "./current-pcb-worker-startup-opening.ts";
@@ -66,6 +67,12 @@ import type { CurrentFootprintParentWorkerObservation } from "./current-footprin
 import type { CurrentFootprintCopyManagerRouteObservation } from "./current-footprint-copy-manager-route-runner.ts";
 import type { CurrentFootprintCopyManagerRouteCommand } from "./current-footprint-copy-manager-route-command.ts";
 import type { CurrentFootprintCopyClockRegistrationObservation, CurrentFootprintCopyClockRegistrationRunner, CurrentFootprintCopyClockRegistrationSample } from "./current-footprint-copy-clock-registration-runner.ts";
+import { requireCurrentFootprintCopyClockRpcRegistrationLease } from "./current-footprint-copy-clock-registration-runner.ts";
+import { requireCurrentFootprintCopyClockRpcConstructionLease } from "./current-pcb-worker-construction-runner.ts";
+import { prepareCurrentFootprintCopyClockRpcTransport, requireCurrentFootprintCopyClockRpcTransportHandoff } from "./current-pcb-worker-startup-transport.ts";
+import { requireCurrentFootprintCopyClockRpcHandoffHeadroom } from "./current-footprint-copy-clock-rpc-budget.ts";
+import type { CurrentFootprintCopyClockRpcCommand } from "./current-footprint-copy-clock-rpc-protocol.ts";
+import type { CurrentFootprintCopyClockRpcConstructionLease } from "./current-footprint-copy-clock-rpc-leases.ts";
 import type { CurrentFootprintCopyClockRegistrationCommand } from "./current-footprint-copy-clock-registration-contract.ts";
 import { CurrentFootprintCopyUiRunner } from "./current-footprint-copy-ui-runner.ts";
 import type { CurrentFootprintCopyUiCommand } from "./current-footprint-copy-ui-command.ts";
@@ -129,8 +136,8 @@ import { CurrentFootprintCopyMainBackendRunner } from "./current-footprint-copy-
 import type { CurrentFootprintCopyMainBackendObservation } from "./current-footprint-copy-main-backend-runner.ts";
 
 
-const HELPER_SHA256 = "08edb5549d42d7fc244e1097ff12c82a90f6068ee6b11763b164b8e593af59cc";
-const HELPER_BYTES = 1_045_412;
+const HELPER_SHA256 = "d3ce3cee810a9804839acff1def0601997ba01eb78b0f7e673b0920825b1a701";
+const HELPER_BYTES = 1_043_219;
 const MAX_LINE = 100_000;
 // 64 MiB native bytes need at most 85.34 MiB base64 plus bounded poll envelopes.
 const MAX_TOTAL = 96 * 1024 * 1024;
@@ -265,8 +272,8 @@ interface CombinedFactoryFailure {
 }
 const combinedFactoryFailures = new WeakMap<object, CombinedFactoryFailure>();
 export interface CurrentFootprintCopyClockRpcOrigin { readonly profile: "private.current-footprint-clock-rpc-origin.v1" }
-// No issuer is mounted. Exact constructor/registration leases alone cannot
-// Acquire this native transport role; the original owner must join them first.
+// Only the original combined factory can join both retained issuers and the
+// One original channel. No constructor, copied lease or JSON factory can mint it.
 const footprintClockRpcOrigins = new WeakMap<CurrentFootprintCopyClockRpcOrigin, CurrentFootprintCopyClockRpcOriginBindings>();
 export function requireCurrentFootprintCopyClockRpcOrigin(token: CurrentFootprintCopyClockRpcOrigin): CurrentFootprintCopyClockRpcOriginBindings {
   if (types.isProxy(token)) { throw error("FOOTPRINT_CLOCK_RPC_ORIGINAL_ORIGIN"); }
@@ -319,6 +326,7 @@ class CurrentPcbRetainedOwnerCore {
   #footprintClockRegistrationAttempted = false;
   #footprintClockRegistrationRunner: CurrentFootprintCopyClockRegistrationRunner | null = null;
   #footprintClockRegistrationPacket: CurrentFootprintCopyClockRegistrationObservation | null = null;
+  #footprintClockRpcOriginAttempted = false;
 
   #startupPcbConsumed = false;
   #startupPcbSession: CurrentPcbWorkerStartupPcbSession | CurrentPcb209WorkerStartupPcbSession | CurrentPcb209RatlineContinuationNativeSession | CurrentPcb209RatlineNativeSession | null = null;
@@ -1601,6 +1609,62 @@ class CurrentPcbRetainedOwnerCore {
     this.#enter(true); try { await runner.release(); } finally { this.#busy = false; }
   }
 
+  /** Private original-generation handoff only. This arms no breakpoint and
+   * invokes no document clock, create, backend request or Save. The entire
+   * writer reservation and actual native invocation are still unmounted. */
+  public async issueFootprintCopyClockRpcOrigin(opening: CurrentFootprintCopyOpeningOwner,
+    result: CurrentFootprintCopyOpeningResult, workerLease: CurrentFootprintCopyClockRpcConstructionLease): Promise<CurrentFootprintCopyClockRpcOrigin> {
+    this.requireOriginalFootprintCombinedGeneration();
+    const handoff = this.#startupHandoff, packet = this.#footprintClockRegistrationPacket, ui = this.#footprintClockRegistrationRunner;
+    const context = this.#stagedContext, original = this.#binding;
+    if (this.#footprintClockRpcOriginAttempted || handoff === null || !(handoff.channel instanceof CurrentFootprintCombinedStartupChannel) ||
+        original === null || context === null || ui === null || packet === null || opening !== this.#footprintUiOpening ||
+        result !== this.#footprintUiOpeningResult || this.#combinedAbortAttempted || this.#combinedOutputCleanupOnly) {
+      throw error("FOOTPRINT_CLOCK_RPC_UNAVAILABLE");
+    }
+    this.#enter(true); this.#footprintClockRpcOriginAttempted = true;
+    try {
+      // This full opening proof may execute fixed project getters. It belongs
+      // Before the handoff and before either realm can be paused by the RPC unit.
+      await requireCurrentFootprintCopyOpening(opening, result, handoff.dependency);
+      const worker = requireCurrentFootprintCopyClockRpcConstructionLease(workerLease);
+      const registrationLease = ui.issueInvocationLease(packet);
+      const registration = requireCurrentFootprintCopyClockRpcRegistrationLease(registrationLease);
+      const selected = context.openingContext();
+      const same = (cleanup: boolean): void => {
+        this.#available(); this.requireOriginalFootprintCombinedGeneration(); worker.assertCleanup(); registration.assertCleanup();
+        if (this.#binding !== original || this.#startupHandoff !== handoff || this.#stagedContext !== context ||
+            this.#footprintClockRegistrationRunner !== ui || this.#footprintClockRegistrationPacket !== packet ||
+            this.#footprintUiOpening !== opening || this.#footprintUiOpeningResult !== result || this.#startupChannel !== handoff.channel ||
+            registration.issuer !== ui || registration.sessionId !== selected.sessionId || selected.sessionId !== handoff.dependency.parentSessionId ||
+            context.script().scriptId !== registration.scriptId || this.#releaseConsumed ||
+            !cleanup && (this.#terminationObserved || this.#closeConsumed || this.#combinedAbortAttempted || this.#combinedOutputCleanupOnly)) {
+          throw error("FOOTPRINT_CLOCK_RPC_OWNER_CHANGED");
+        }
+      };
+      same(false); await worker.assertOriginal(); same(false); await registration.assertOriginal(); same(false);
+      requireCurrentFootprintCopyClockRpcHandoffHeadroom(handoff.channel.status().nextRequestId);
+      const prepared = await prepareCurrentFootprintCopyClockRpcTransport(handoff.dependency, workerLease); same(false);
+      const transport = requireCurrentFootprintCopyClockRpcTransportHandoff(prepared);
+      if (transport.dependency !== handoff.dependency || transport.workerLease !== workerLease) { throw error("FOOTPRINT_CLOCK_RPC_TRANSPORT"); }
+      const reservation = await prepareCurrentFootprintCopyClockRpcChannel(handoff.dependency, transport.workerSessionId); same(false);
+      transport.consume();
+      const route = await beginCurrentFootprintCopyClockRpcChannel(handoff.dependency, reservation); same(false);
+      const token = Object.freeze({ profile: "private.current-footprint-clock-rpc-origin.v1" as const });
+      footprintClockRpcOrigins.set(token, Object.freeze({ workerLease, registrationLease, workerSessionId: route.workerSessionId,
+        assertOriginal: async (): Promise<void> => { same(false); await route.assertOriginal(); same(false); },
+        assertCleanup: async (): Promise<void> => { same(true); await route.assertCleanup(); same(true); },
+        assertOriginalGenerationExited: async (): Promise<void> => { same(true); await route.assertOriginalGenerationExited(); same(true); },
+        request: async (command: CurrentFootprintCopyClockRpcCommand, cleanup: boolean): Promise<unknown> => { same(cleanup); const reply = await route.request(command, cleanup); same(cleanup); return reply; },
+        pump: async (cleanup: boolean): Promise<void> => { same(cleanup); await route.pump(cleanup); same(cleanup); },
+        takeEvent: () => { same(true); return route.takeEvent(); },
+        fail: (): void => { route.fail(); },
+        retire: async (): Promise<void> => { same(true); await route.retire(); same(true); },
+      }));
+      return token;
+    } finally { this.#busy = false; }
+  }
+
   public retainedFootprintCopyManagerRoute(): Readonly<RecordValue> {
     return Object.freeze({ attempted: this.#footprintManagerAttempted, reproofAttempted: this.#footprintManagerReproofAttempted,
       runner: this.#footprintManagerRunner?.retained() ?? null, parentReplies: Object.freeze([...this.#footprintManagerParentReplies]) });
@@ -2383,7 +2447,9 @@ class CurrentPcbRetainedOwnerCore {
     if (this.#pending !== null) { throw error("REQUEST_PENDING"); }
     if (this.#purpose === CURRENT_FOOTPRINT_COMBINED_PURPOSE && (!this.#combinedFactoryReady || this.#combinedReadyPacket === null || this.#combinedReadyAbandoned)) { throw error("COMBINED_READY_REQUIRED"); }
 
-    const combinedCleanup = combinedCleanupControl(request);
+    const rpcRetireAfterTermination = this.#purpose === CURRENT_FOOTPRINT_COMBINED_PURPOSE && request["action"] === "footprint-clock-rpc-retire" &&
+      this.#terminationObserved && this.#terminationObservation?.originalRootExited === true && this.#terminationObservation.originalJobEmpty === true;
+    const combinedCleanup = combinedCleanupControl(request) || rpcRetireAfterTermination;
     if ((this.#combinedAbortAttempted || this.#combinedOutputCleanupOnly) && !combinedCleanup) { throw error("COMBINED_CLEANUP_ONLY"); }
     if (this.#combinedOutputCleanupOnly) {
       if (this.#combinedCleanupControls >= CURRENT_FOOTPRINT_COMBINED_PROFILE.helperStdout.cleanupControlLimit) { throw error("COMBINED_CLEANUP_CONTROL_BOUND"); }
@@ -2438,13 +2504,15 @@ class CurrentPcbRetainedOwnerCore {
       mainAction: mainNativeActions.find(action => action === request["action"]) ?? null, combinedCleanup,
       send: request["action"] === "send" || request["action"] === "worker-startup-send" || request["action"] === "worker-startup-parent" ||
         request["action"] === "worker-startup-empty-common" || request["action"] === "worker-startup-empty-root" ||
-        request["action"] === "worker-startup-ratline" || request["action"] === "worker-startup-ratline-continuation" || request["action"] === "main-send" || request["action"] === "main-request-send", written: false, reply: null,
+        request["action"] === "worker-startup-ratline" || request["action"] === "worker-startup-ratline-continuation" || request["action"] === "main-send" || request["action"] === "main-request-send" ||
+        request["action"] === "footprint-clock-rpc-send", written: false, reply: null,
       timer: setTimeout(() => { this.#fail("HELPER_DEADLINE"); }, 15_000) };
     this.#pending = pending;
     if (launch) { this.#launchRequestIssued = true; }
     try {
       const data = `${JSON.stringify({ ...this.#binding, ...request, id })}\n`;
-      const combinedRequest = this.#purpose === CURRENT_FOOTPRINT_COMBINED_PURPOSE && request["action"] === "main-request-send";
+      const combinedRequest = this.#purpose === CURRENT_FOOTPRINT_COMBINED_PURPOSE &&
+        (request["action"] === "main-request-send" || request["action"] === "footprint-clock-rpc-send");
       const maximum = combinedRequest || request["method"] === "Runtime.callFunctionOn" && (request["action"] === "worker-startup-parent" &&
         (request["parentPhase"] === "preflight" || request["parentPhase"] === "open-project" ||
           request["parentPhase"] === "pcb-preflight" || request["parentPhase"] === "pcb-open-document" || request["parentPhase"] === "pcb-observe") || request["action"] === "send" &&

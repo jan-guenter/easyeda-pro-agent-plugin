@@ -9,9 +9,11 @@ import { currentFootprintCacheConstructionNativeSource } from "../server/src/cur
 import { currentFootprintCopySavedNativeSource } from "../server/src/current-footprint-copy-saved-native.ts";
 import { currentFootprintCopyClockRegistrationNativeSource } from "../server/src/current-footprint-copy-clock-registration-native.ts";
 import { currentFootprintCopyClockRpcNativeSource } from "../server/src/current-footprint-copy-clock-rpc-native.ts";
+import { CURRENT_FOOTPRINT_COPY_CLOCK_RPC_REQUESTS as clockRpcRequests } from "../server/src/current-footprint-copy-clock-rpc-protocol.ts";
 import { currentFootprintCopyMainTransportNativeSource } from "../server/src/current-footprint-copy-main-transport-native.ts";
 import { currentFootprintCopyMainBackendNativeSource } from "../server/src/current-footprint-copy-main-backend-native.ts";
 import { currentFootprintCopyMainRequestNativeSource } from "../server/src/current-footprint-copy-main-request-native.ts";
+import { currentFootprintCopyMainCompletionNativeSource } from "../server/src/current-footprint-copy-main-completion-native.ts";
 import { currentFootprintCombinedNativeLimits } from "../server/src/current-footprint-copy-combined-profile.ts";
 import { currentFootprintCombinedReadyNativeSource } from "../server/src/current-footprint-combined-ready.ts";
 import { CURRENT_FOOTPRINT_COPY_CLOCK_REGISTRATION_REQUESTS as clockRegistration } from "../server/src/current-footprint-copy-clock-registration-runner.ts";
@@ -114,7 +116,7 @@ function footprintSource(): string {
 }
 function footprintExecutionSource(): string {
   return `// BEGIN GENERATED FOOTPRINT COPY EXECUTION PROTOCOL\n${currentFootprintCopyTransactionClockNativeSource()}\n${currentFootprintCopyExecutionWorkerNativeSource()}\n${currentFootprintCopyParentNativeSource()}\n${currentFootprintCacheConstructionNativeSource()}\n${currentFootprintCopyClockRegistrationNativeSource()}\n${currentFootprintCopyClockRpcNativeSource()}\n` +
-    `public static class EasyedaFootprintExecutionLimits { public const int Requests=${String(execution.requestLimit)}; public const int NormalRequests=${String(execution.normalRequestLimit)}; public const int ClockRequests=11; public const int ParentRequests=${String(execution.requests.parentNative)}; public const int CacheRequests=${String(execution.requests.cacheConstructionNative)}; public const int RegistrationRequests=${String(clockRegistration.total)}; public const long NormalMilliseconds=${String(execution.normalMilliseconds)}L; public const long TotalMilliseconds=${String(execution.normalMilliseconds + execution.cleanupMilliseconds)}L; }\n` +
+    `public static class EasyedaFootprintExecutionLimits { public const int Requests=${String(execution.requestLimit)}; public const int NormalRequests=${String(execution.normalRequestLimit)}; public const int ClockRequests=11; public const int RpcNormal=${String(clockRpcRequests.normal)}; public const int RpcCleanup=${String(clockRpcRequests.cleanup)}; public const int RpcRequests=${String(clockRpcRequests.total)}; public const int ParentRequests=${String(execution.requests.parentNative)}; public const int CacheRequests=${String(execution.requests.cacheConstructionNative)}; public const int RegistrationRequests=${String(clockRegistration.total)}; public const long NormalMilliseconds=${String(execution.normalMilliseconds)}L; public const long TotalMilliseconds=${String(execution.normalMilliseconds + execution.cleanupMilliseconds)}L; }\n` +
     "// END GENERATED FOOTPRINT COPY EXECUTION PROTOCOL";
 }
 function footprintSavedSource(): string {
@@ -123,7 +125,7 @@ function footprintSavedSource(): string {
     "// END GENERATED FOOTPRINT COPY SAVED PROTOCOL";
 }
 function footprintMainSource(): string {
-  return `// BEGIN GENERATED FOOTPRINT MAIN TRANSPORT PROTOCOL\n${currentFootprintCombinedNativeLimits()}\n${currentFootprintCopyMainTransportNativeSource()}\n${currentFootprintCopyMainBackendNativeSource()}\n${currentFootprintCopyMainRequestNativeSource()}\n` +
+  return `// BEGIN GENERATED FOOTPRINT MAIN TRANSPORT PROTOCOL\n${currentFootprintCombinedNativeLimits()}\n${currentFootprintCopyMainTransportNativeSource()}\n${currentFootprintCopyMainBackendNativeSource()}\n${currentFootprintCopyMainRequestNativeSource()}\n${currentFootprintCopyMainCompletionNativeSource()}\n` +
     "// END GENERATED FOOTPRINT MAIN TRANSPORT PROTOCOL";
 }
 // oxlint-disable-next-line node/no-top-level-await -- ESM-only build command; never loaded by require().

@@ -154,28 +154,42 @@ Installed211407's separate route stopped at its peer receipt after parent
 continuation. Installed223950's combined launch failed without a binding and
 remains unknown; its later inert reproduction does not prove the original cause
 or outcome. The corrected helper passed actual Windows readiness with empty
-input and no application launch. Integrated project/peer acceptance is pending.
+input and no application launch. Installed042605 later passed historical
+relinquishment, combined main construction, disposable project/worker/cache/peer
+capture and assignments. Actor collection completed but its publication refused
+a missing combined-purpose classification. The exact source correction preserves
+generation/timing/packet bounds and does not repair that consumed stage. One
+authorized original-Job abort, retained root-exit/empty-Job proof and release
+completed, followed by exact closed-fixture equality. The corrected payload's
+actor/route publication and connected clock execution remain unvalidated.
 The original request collector now has a preselected held-final-PB schedule:
 23 normal and 7 cleanup commands, four removed request breakpoints and three
 resumes. The separate fixed main-completion unit uses 45 normal and 30 cleanup
 commands and source-qualified callback/append/commit/project-update/service
 joins. These main portions total 105 commands, not a complete writer reservation.
-The main completion origin has no issuer or native codec. Atomic transfer of the
-exact held lease before its first resume, original kernel/cursor/allocator and
-pre-write branch/header eligibility remain required. Fresh unlocked mutable
+Its fixed48-variant native codec is embedded with exact flat scalar parity and a
+maximum9,412-byte CDP body. The main completion origin still has no issuer, native
+dispatch or complete owner budget. Atomic transfer of the exact held lease before
+its first resume, original kernel/cursor/allocator and pre-write branch/header
+eligibility remain required. Fresh unlocked mutable
 history refuses; missing-header append selector support proves no new-document
 lifecycle or durable SQL result.
 
-The 67-command clock/RPC sequencer, main request/completion units and complete
-logical delete/saved-reader models remain unmounted. The same qualified complete
-worker source now reaches its exact construction runner and is cleared on every
-handoff outcome. The fixed clock native encoder is embedded but unrouted in the
-1,045,412-byte helper under the unchanged 1MiB cap; actual Windows combined-flag
-CompileOnly passed without launching an application. No genuine paired native
-clock origin or shared two-realm route exists. Its 49 normal and 18 cleanup
-commands consume 67 request IDs; cleanup status never exempts a command from ID
-limits. Existing native profiles, message/output bounds and the reservation for
-all four copy/readback/delete/readback generations still need joint proof.
+The private clock integration now issues an origin through the genuine combined
+owner and original registration/construction leases. A one-way handoff retains
+one paired router, allocator and event cursor for both original sessions. The
+same qualified complete worker source reaches its exact construction runner and
+is cleared on every handoff outcome. Fixed native begin/send/retire reserves all
+67 IDs for49 normal and18 cleanup commands within the unchanged normal-ID ceiling
+780; a conservative preflight covers up to69 IDs including original group
+handoff. Native counters consume before possible writes, and failed retirement
+requires retained original-generation exit. This grants no public clock action,
+complete writer reservation or connected origin/router execution proof. The
+fixed clock/completion codecs remain under the unchanged1MiB helper cap.
+
+The complete writer, main request/completion route and logical delete/saved-reader
+models remain unmounted. Existing native profiles, message/output/control bounds
+and all four copy/readback/delete/readback generations still need joint proof.
 
 The delete model supports locked or aged heads and retained tombstones, with no
 native reopen or replay-exclusion proof. Actual request/clock joins, worker

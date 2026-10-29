@@ -7,6 +7,7 @@ import { generatePackedNativeProgram } from "./native-program-packing.ts";
 import { CURRENT_PCB_COMMON_PACKET_SEEDS } from "../server/src/current-pcb-common-packet-program.ts";
 import { CURRENT_PCB_DIAGNOSTIC_OPENING_FUNCTION } from "../server/src/current-pcb-diagnostic-opening.ts";
 import { CURRENT_PCB_DIAGNOSTIC_PCB_OPENING_FUNCTION } from "../server/src/current-pcb-diagnostic-pcb-opening.ts";
+import { CURRENT_PCB_STRING_EMPTY_PRODUCERS_FUNCTION, CURRENT_PCB_STRING_EMPTY_PRODUCERS_V2_FUNCTION } from "../server/src/current-pcb-string-empty-producers.ts";
 
 for (const [marker, name, source] of [
   ["DIAGNOSTIC OPENING", "OpeningFunction", CURRENT_PCB_DIAGNOSTIC_OPENING_FUNCTION],
@@ -22,6 +23,9 @@ for (const [marker, name, source] of [
   ["COMMON RULES", "CommonRulesFunction", CURRENT_PCB_COMMON_RULES_FUNCTION],
   ["COMMON PREFERENCE SEED", "CommonPreferenceSeedFunction", CURRENT_PCB_COMMON_PACKET_SEEDS.preference],
   ["COMMON PRESENTATION SEED", "CommonPresentationSeedFunction", CURRENT_PCB_COMMON_PACKET_SEEDS.presentation],
+  ["COMMON RULES SEED", "CommonRulesSeedFunction", CURRENT_PCB_COMMON_PACKET_SEEDS.rules],
+  ["STRING EMPTY PRODUCERS", "StringEmptyProducersFunction", CURRENT_PCB_STRING_EMPTY_PRODUCERS_FUNCTION],
+  ["STRING EMPTY PRODUCERS V TWO", "StringEmptyProducersV2Function", CURRENT_PCB_STRING_EMPTY_PRODUCERS_V2_FUNCTION],
 ] as const) {
   // oxlint-disable-next-line node/no-top-level-await -- ESM-only deterministic generation command; each bounded program retains its exact existing bytes.
   await generatePackedNativeProgram(marker, name, source);
