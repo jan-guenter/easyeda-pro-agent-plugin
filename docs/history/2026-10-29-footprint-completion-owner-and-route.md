@@ -132,7 +132,7 @@ publication and installation are pending at this snapshot.
 
 ## Frozen local verification
 
-The candidate has907 source members, digest
+The first candidate `5e15cb0f5e113e6354de6107c3fd4aad74c1b15b` has907 source members, digest
 `6c36b3da59d7089e1bef850704245c48ef6deabdf3cf0ece69b1f2771135b9d6`,
 and three runtime members, digest
 `b1a20d4ad1c283f2f63077dc7c2e195036f354aa77cf6dbaa6a249d36d36bb9f`.
@@ -170,3 +170,21 @@ JavaScript outputs. Their working-tree modes were corrected to the committed
 tracked files now match their expected0644/0755 modes. No installed cache or
 owner was altered. Final package and repository checks after the history/mode
 updates pass.
+
+### Final discovery correction
+
+Final review found the offline combined catalog still described completion
+ownership and native dispatch as unimplemented. Its description now matches
+the private implementation and distinguishes the unchanged54-ID refusal from
+the127-ID lower bound. No execution path or limit changed in this correction.
+The earlier CI run on5e15cb0 is superseded and is not final suite evidence.
+
+The final907-member source projection is
+`5a9e77d52aec63aac425503ccf12c628ec43bff00916a1918a5c7f9c3176f94c`,
+the three-member runtime projection is
+`b549c8a233913616422a0063e1229c0cd99d88315478ef5f1d4cde007098b24d`,
+and the compatibility manifest is
+`2f22d21e11ae6337b6815833792f8479effabb2f0a853f7dba613d30d44b8298`.
+The helper is unchanged. Final whole types, zero-warning lint, package and
+compatibility checks pass after rebuilding the corrected catalog. Complete
+suite evidence must name this final candidate rather than the superseded run.
