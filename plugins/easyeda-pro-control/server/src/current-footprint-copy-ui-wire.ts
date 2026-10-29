@@ -12,6 +12,7 @@ export function currentFootprintCopyUiWire(input: unknown, id: number): Readonly
   const command = validateCurrentFootprintCopyUiCommand(input);
   const fields: Record<string, string | number> = { action: "worker-startup-parent", requestId: id,
     method: command.method, parentPhase: `footprint-copy-ui-${command.phase}` };
+  if (command.method === "Debugger.getScriptSource") { fields["scriptId"] = command.params.scriptId; }
   if (command.method === "Runtime.getProperties") { fields["objectId"] = command.params.objectId; }
   if (command.method === "Runtime.callFunctionOn") {
     fields["uniqueContextId" in command.params ? "uniqueContextId" : "objectId"] =

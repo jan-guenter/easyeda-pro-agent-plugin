@@ -1,3 +1,4 @@
+/* oxlint-disable import/max-dependencies -- This retained owner joins the separate UI/preload source contracts, strict metadata, fixed transport and its two source-bound child owners. */
 /** Retained copy-source UI route observation. No responder, getter, lazy
  * initializer, RPC, create or Save is called. A mounted copy-purpose channel
  * must own this runner's original parent and reserve its requests separately. */
@@ -5,9 +6,14 @@ import { types } from "node:util";
 import { z } from "zod";
 import { CURRENT_FOOTPRINT_COPY_UI_CALLS as CALLS, CURRENT_FOOTPRINT_COPY_UI_FUNCTION_ORDER as ORDER,
   decodeCurrentFootprintCopyUiArray, decodeCurrentFootprintCopyUiFunction, decodeCurrentFootprintCopyUiNativeHas,
-  decodeCurrentFootprintCopyUiResponder, decodeCurrentFootprintCopyUiScope } from "./current-footprint-copy-ui-bindings.ts";
+  decodeCurrentFootprintCopyUiResponder, decodeCurrentFootprintCopyUiScope, rejectCurrentFootprintCopyUiException } from "./current-footprint-copy-ui-bindings.ts";
 import { CURRENT_FOOTPRINT_COPY_UI_GROUP, CURRENT_FOOTPRINT_COPY_UI_FLAGS as FLAGS, validateCurrentFootprintCopyUiCommand } from "./current-footprint-copy-ui-command.ts";
 import type { CurrentFootprintCopyUiCommand } from "./current-footprint-copy-ui-command.ts";
+import { CURRENT_FOOTPRINT_COPY_UI_REGISTRY_SOURCE as REGISTRY_SOURCE, assertCurrentFootprintCopyUiRegistryFunction,
+  captureCurrentFootprintCopyUiRegistrySourceReply, qualifyCurrentFootprintCopyUiRegistrySource,
+  requireCurrentFootprintCopyUiRegistrySource } from "./current-footprint-copy-ui-registry-source.ts";
+import type { CurrentFootprintCopyUiRegistrySourceQualification } from "./current-footprint-copy-ui-registry-source.ts";
+import { decodeCurrentFootprintCopyUiRegistryArray, decodeCurrentFootprintCopyUiRegistryClassScope, decodeCurrentFootprintCopyUiRegistryFunction } from "./current-footprint-copy-ui-registry-metadata.ts";
 import { requireCurrentFootprintCopyUiSource } from "./current-footprint-copy-ui-source.ts";
 import type { CurrentFootprintCopyUiSourceQualification } from "./current-footprint-copy-ui-source.ts";
 import { captureCurrentPcbStringClockReply } from "./current-pcb-string-clock-reply.ts";
@@ -28,7 +34,7 @@ const yes = z.object({ result: z.object({ type: z.literal("boolean"), value: z.l
 const empty = z.object({}).strict();
 /** Four fresh metadata/scope requests precede the final three native rechecks.
  * Parent/frame/source reproof costs are additional, not hidden in this count. */
-export const CURRENT_FOOTPRINT_COPY_UI_REQUESTS = Object.freeze({ observe: 25, reprove: 7, release: 1 });
+export const CURRENT_FOOTPRINT_COPY_UI_REQUESTS = Object.freeze({ observe: 39, reprove: 11, release: 1 });
 export interface CurrentFootprintCopyUiTransport {
   /** Reprove the same original parent frame/context/source/process/pipe. This
    * callback may not attach, select another target or recreate a prior owner. */
@@ -52,7 +58,9 @@ export const currentFootprintCopyUiObservationSchema = z.object({
   extensionEntryAbsentAtObservation: z.literal(true), freshClosureRelationsRechecked: z.literal(true),
   projectWorkerTargetBound: z.literal(false), transitiveClosuresBound: z.literal(false), executionAuthorized: z.literal(false),
 }).strict();
-interface Retained { readonly notification: string; readonly wrapper: string; readonly responder: string; readonly route: string }
+interface RegistryRetained { readonly array: string; readonly getter: string; readonly contextProducer: string; readonly scriptId: string;
+  readonly source: CurrentFootprintCopyUiRegistrySourceQualification }
+interface Retained { readonly notification: string; readonly wrapper: string; readonly responder: string; readonly route: string; readonly registry: RegistryRetained }
 function need(value: boolean): asserts value { if (!value) { throw new Error("FOOTPRINT_COPY_UI_OWNER"); } }
 function methods(value: object): readonly unknown[] {
   need(!types.isProxy(value) && (Object.getPrototypeOf(value) === Object.prototype || Object.getPrototypeOf(value) === null));
@@ -99,9 +107,13 @@ export class CurrentFootprintCopyUiRunner {
     await this.#current(); need(this.#operationRequests < this.#maximum);
     const fixed = validateCurrentFootprintCopyUiCommand(command);
     this.#operationRequests += 1; this.#requests += 1;
-    const result = captureCurrentPcbStringClockReply(await this.#transport.request(fixed)).value;
+    const raw = await this.#transport.request(fixed);
+    const result = fixed.phase === "registrySource" ? captureCurrentFootprintCopyUiRegistrySourceReply(raw) : captureCurrentPcbStringClockReply(raw).value;
     // Receipt retention precedes asynchronous parent/lease reproof.
-    this.#replies.push(result); await this.#current(); return result;
+    this.#replies.push(result); await this.#current();
+    // The fixed source envelope already excludes exception/metadata fields.
+    // Its full preload text must not pass through the small clock capture again.
+    if (fixed.phase !== "registrySource") { rejectCurrentFootprintCopyUiException(result, fixed.phase); } return result;
   }
   #values(): readonly Readonly<{ value: string }>[] {
     return [{ value: this.#binding.projectUuid }, { value: this.#binding.branchUuid }, { value: this.#binding.windowTabId }];
@@ -110,7 +122,7 @@ export class CurrentFootprintCopyUiRunner {
     return this.#request({ phase: "properties", method: "Runtime.getProperties", sessionId: this.#binding.sessionId,
       params: { objectId, ownProperties: true, accessorPropertiesOnly: false, generatePreview: false } });
   }
-  #call(phase: "notificationRecheck" | "responder" | "responderRecheck" | "route" | "membership" | "routeRecheck",
+  #call(phase: "notificationRecheck" | "responder" | "responderRecheck" | "route" | "membership" | "routeRecheck" | "registry" | "registryContextProducer" | "registryRecheck",
     objectId: string, args: readonly Readonly<{ objectId: string } | { value: string }>[]): Promise<unknown> {
     return this.#request({ phase, method: "Runtime.callFunctionOn", sessionId: this.#binding.sessionId,
       params: { ...FLAGS, objectId, functionDeclaration: CALLS[phase].program, arguments: args, returnByValue: CALLS[phase].returnByValue } });
@@ -119,14 +131,48 @@ export class CurrentFootprintCopyUiRunner {
     const list = decodeCurrentFootprintCopyUiFunction(await this.#properties(objectId), kind, this.#binding.scriptId);
     return decodeCurrentFootprintCopyUiScope(await this.#properties(list), kind);
   }
+  async #registrySource(scriptId: string): Promise<CurrentFootprintCopyUiRegistrySourceQualification> {
+    const raw = await this.#request({ phase: "registrySource", method: "Debugger.getScriptSource", sessionId: this.#binding.sessionId, params: { scriptId } });
+    const reply = z.object({ scriptSource: z.string().max(REGISTRY_SOURCE.bytes) }).strict().parse(raw);
+    return qualifyCurrentFootprintCopyUiRegistrySource(reply.scriptSource);
+  }
+  async #registryObserve(notification: string): Promise<RegistryRetained> {
+    const captured = array.parse(await this.#call("registry", notification, [{ objectId: notification }, ...this.#values()]));
+    need(captured.result.description === "Array(8)");
+    const ids = decodeCurrentFootprintCopyUiRegistryArray(await this.#properties(captured.result.objectId));
+    let getterScope: string | undefined, scriptId: string | undefined;
+    for (const [index, role] of (["registryConstructor", "registryHas", "registryInstance", "registryContext"] as const).entries()) {
+      const id = ids[index]; need(id !== undefined);
+      const metadata = decodeCurrentFootprintCopyUiRegistryFunction(await this.#properties(id), role, scriptId);
+      scriptId ??= metadata.scriptId;
+      if (role === "registryContext") { getterScope = metadata.scopesId; }
+    }
+    need(scriptId !== undefined && getterScope !== undefined);
+    const source = await this.#registrySource(scriptId);
+    const scopes = decodeCurrentFootprintCopyUiRegistryClassScope(await this.#properties(getterScope));
+    const selected = z.object({ result: z.object({ type: z.literal("function"), className: z.literal("Function"), description: z.string().max(4096), objectId: handle }).strict() }).strict()
+      .parse(await this.#call("registryContextProducer", scopes.closureScopeId, [{ objectId: notification }, { objectId: captured.result.objectId }, { objectId: scopes.blockScopeId }, ...this.#values()]));
+    assertCurrentFootprintCopyUiRegistryFunction("contextProducer", selected.result.description);
+    decodeCurrentFootprintCopyUiRegistryFunction(await this.#properties(selected.result.objectId), "contextProducer", scriptId);
+    const getter = ids[3]; need(getter !== undefined);
+    return Object.freeze({ array: captured.result.objectId, getter, contextProducer: selected.result.objectId, scriptId, source });
+  }
+  async #registryRecheck(notification: string, registry: RegistryRetained): Promise<void> {
+    requireCurrentFootprintCopyUiRegistrySource(registry.source);
+    await this.#registrySource(registry.scriptId);
+    const metadata = decodeCurrentFootprintCopyUiRegistryFunction(await this.#properties(registry.getter), "registryContext", registry.scriptId);
+    const scopes = decodeCurrentFootprintCopyUiRegistryClassScope(await this.#properties(metadata.scopesId));
+    yes.parse(await this.#call("registryRecheck", scopes.closureScopeId, [{ objectId: notification }, { objectId: registry.array }, { objectId: registry.contextProducer }, { objectId: scopes.blockScopeId }, ...this.#values()]));
+  }
   async #recheck(retained: Retained): Promise<void> {
     // V8 scope wrappers can retain snapshots. Obtain new wrappers from the
     // Original functions before checking current lexical bindings.
     const wrapperScope = await this.#scope(retained.wrapper, "wrapper");
     const responderScope = await this.#scope(retained.responder, "responder");
+    await this.#registryRecheck(retained.notification, retained.registry);
     yes.parse(await this.#call("notificationRecheck", retained.notification, [{ objectId: retained.notification }, ...this.#values()]));
     yes.parse(await this.#call("responderRecheck", wrapperScope, [{ objectId: retained.wrapper }, { objectId: retained.responder }]));
-    yes.parse(await this.#call("routeRecheck", responderScope, [{ objectId: retained.notification }, ...this.#values(), { objectId: retained.route }]));
+    yes.parse(await this.#call("routeRecheck", responderScope, [{ objectId: retained.notification }, ...this.#values(), { objectId: retained.route }, { objectId: retained.registry.array }]));
   }
   public retained(): Readonly<{ attempted: boolean; failed: boolean; requests: number; completed: boolean;
     releaseAttempted: boolean; released: boolean; replies: readonly unknown[] }> {
@@ -178,8 +224,9 @@ export class CurrentFootprintCopyUiRunner {
       }
       const mapHas = functions[7]; need(mapHas !== undefined);
       decodeCurrentFootprintCopyUiNativeHas(await this.#properties(mapHas));
-      yes.parse(await this.#call("membership", responderScope, [{ objectId: notification.result.objectId }, ...this.#values(), { objectId: route.result.objectId }]));
-      const retained = Object.freeze({ notification: notification.result.objectId, wrapper, responder, route: route.result.objectId });
+      const registry = await this.#registryObserve(notification.result.objectId);
+      yes.parse(await this.#call("membership", responderScope, [{ objectId: notification.result.objectId }, ...this.#values(), { objectId: route.result.objectId }, { objectId: registry.array }]));
+      const retained = Object.freeze({ notification: notification.result.objectId, wrapper, responder, route: route.result.objectId, registry });
       this.#retained = retained; await this.#recheck(retained);
       need(this.#operationRequests === CURRENT_FOOTPRINT_COPY_UI_REQUESTS.observe);
       this.#packet = Object.freeze(currentFootprintCopyUiObservationSchema.parse({ profile: "private.current-footprint-copy-ui.v1", functionCount: 9,

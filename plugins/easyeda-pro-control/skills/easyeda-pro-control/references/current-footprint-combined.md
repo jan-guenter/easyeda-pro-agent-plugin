@@ -276,18 +276,39 @@ same-manager call cannot issue this custody.
 
 The allocation observer adds seven normal and three cleanup commands, raising
 this create/clock minimum from68 to78. Its strict grammar, collector and private
-scheduler composition are implemented and source-tested. Existing native birth
-purposes reject its first arm before dispatch. Its fixed native encoding,
-prelaunch ledger, complete output/event reservations and connected execution
-remain unmounted. Focused tests cover the real allocation collector with
+scheduler composition, fixed native encoding and78-command request ledger are
+implemented and source-tested. The allocated unit has57 normal and21 cleanup
+commands and exactly22 event slots. Its create is at offset14; the separate
+known-UUID68-command unit is unchanged. Existing native birth purposes still
+reject its first arm before dispatch. Connected allocation/clock/main execution
+remains unvalidated. Focused tests cover the real allocation collector with
 explicit synthetic issuers and the existing known-UUID clock/scheduler path;
 they do not establish a complete allocation/clock/main generation. Neither the
 new lease nor an allocated UUID supplies whole-writer authority.
 
-Partial result/artifact/journal slots also leave
-whole helper stdout, events, raw collector replies and four-generation capacity
+A separate source-derived forward-only reservation now covers two generations:
+renderer926 normal/61 cleanup/987 total commands, main127 known-minimum commands,
+helper stdout, events, raw replies, SQL snapshots and failure journals. The
+actual private coordinator now spends its result/artifact/journal ledger before
+callbacks; normal failure leaves only bounded cleanup publications. These
+counters neither authenticate a caller-supplied owner nor mount a native writer.
+The old coordinator still uses its obsolete11-clock contract. A genuine forward
+factory must join the allocated unit, current source/head/dependency/empty-queue
+eligibility, paired clocks, main completion and saved-generation replay exclusion
+before any write. Four-generation copy/delete/readback capacity remains
 unreserved. A native create result can precede the buffered backend upload;
 neither an early acknowledgment nor waiting for it proves SQL completion.
+
+Installed161500 subsequently reached the UI registry compound guard after61
+dependencies and31 destinations, then closed through its original Job with
+byte-exact disposable storage. Source investigation found preload creates the
+registry before UI defines its separate class. The fixed route now qualifies
+that exact preload constructor, methods, lexical Block/Closure scopes and shared
+map/original notification receiver; original Map guards remain strict. UI
+observation/reproof budgets are39/11, preparation49/21, and the existing execution
+preparation ceiling is now802 normal/45 cleanup/847 total. This source correction
+still needs connected validation. See the [batch record](https://github.com/jan-guenter/easyeda-pro-agent-plugin/blob/main/docs/history/2026-10-29-native-allocation-and-window-capture.md)
+and [source finding](https://github.com/jan-guenter/easyeda-pro-agent-plugin/blob/main/docs/history/2026-10-29-preload-registry-source-qualification.md).
 
 Pure delete models retain the originally copied UUID, require the complete
 supported SQL inverse and compare an independent saved reader. The inverse

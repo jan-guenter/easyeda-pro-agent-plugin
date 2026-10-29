@@ -15,6 +15,7 @@ import { currentFootprintCopyUiNativeCases } from "../src/current-footprint-copy
 import type { CurrentFootprintCopyUiCommand } from "../src/current-footprint-copy-ui-command.ts";
 import { CURRENT_FOOTPRINT_COPY_PREPARATION_PROFILE as PROFILE } from "../src/current-footprint-copy-preparation-profile.ts";
 import { currentFootprintCopyClockRegistrationNativeCases } from "../src/current-footprint-copy-clock-registration-native.ts";
+import { CURRENT_FOOTPRINT_COPY_UI_REGISTRY_SOURCE as REGISTRY_SOURCE } from "../src/current-footprint-copy-ui-registry-source.ts";
 import { CURRENT_FOOTPRINT_COPY_EXECUTION_PROFILE as EXECUTION } from "../src/current-footprint-copy-execution-profile.ts";
 
 async function clockConstructor(clock: { now: bigint }): Promise<typeof CurrentFootprintCopyPreparationChannel> {
@@ -29,7 +30,7 @@ async function clockConstructor(clock: { now: bigint }): Promise<typeof CurrentF
   // oxlint-disable-next-line typescript/no-unsafe-type-assertion -- The actual channel module is loaded with only the process monotonic clock replaced above.
   return value as typeof CurrentFootprintCopyPreparationChannel;
 }
-async function fixture(Constructor: typeof CurrentFootprintCopyPreparationChannel | typeof CurrentPcb209WorkerStartupChannel, managerSource?: string): Promise<{
+async function fixture(Constructor: typeof CurrentFootprintCopyPreparationChannel | typeof CurrentPcb209WorkerStartupChannel, managerSource?: string, registrySource?: string): Promise<{
   channel: CurrentFootprintCopyPreparationChannel | CurrentPcb209WorkerStartupChannel;
   dependency: Awaited<ReturnType<CurrentFootprintCopyPreparationChannel["start"]>>;
   requests: Readonly<Record<string, string | number>>[];
@@ -52,8 +53,11 @@ async function fixture(Constructor: typeof CurrentFootprintCopyPreparationChanne
         frame({ method: "Target.attachedToTarget", sessionId: "parent", params: { sessionId: "worker", waitingForDebugger: true,
           targetInfo: { targetId: "child", type: "worker", attached: true, title: "synthetic", url: "file:///synthetic/project-worker.js" } } });
       }
+      let result: object = {};
+      if (request["parentPhase"] === "footprint-copy-manager-route-source" && managerSource !== undefined) { result = { scriptSource: managerSource }; }
+      if (registrySource !== undefined && (request["parentPhase"] === "footprint-copy-ui-registrySource" || request["parentPhase"] === "footprint-copy-ui-properties")) { result = { scriptSource: registrySource }; }
       frame({ id: request["requestId"], ...(request["method"] === "Target.getTargets" ? {} :
-        { sessionId: request["sessionId"] ?? "parent" }), result: request["parentPhase"] === "footprint-copy-manager-route-source" && managerSource !== undefined ? { scriptSource: managerSource } : {} });
+        { sessionId: request["sessionId"] ?? "parent" }), result });
       return Promise.resolve({ written: true });
     },
   };
@@ -162,6 +166,23 @@ void test("clock registration is execution-only and retains 37 normal requests p
     await value.channel.requestFootprintClockRegistration(selected("release")); await assert.rejects(value.channel.requestFootprintClockRegistration(selected("release")), /FOOTPRINT_CLOCK_REGISTRATION_SEQUENCE/u);
     assert.equal(value.requests.filter(request => String(request["parentPhase"]).startsWith("footprint-copy-clock-registration-")).length, 38);
     await value.channel.requestFootprintUi(select("release")); assert.equal(value.channel.status().failed, false);
-    assert.equal(EXECUTION.normalRequestLimit, 784); assert.equal(EXECUTION.requestLimit, 829); assert.equal(PROFILE.normalRequestLimit, 566); assert.equal(PROFILE.requestLimit, 600);
+    assert.equal(EXECUTION.normalRequestLimit, 802); assert.equal(EXECUTION.requestLimit, 847); assert.equal(PROFILE.normalRequestLimit, 584); assert.equal(PROFILE.requestLimit, 618);
+  } finally { await value.close(); }
+});
+
+void test("full preload source crosses the retained native chunks without granting ordinary replies a source frame", async () => {
+  const unit = "\n\\\"Ω";
+  const prefix = unit.repeat(Math.floor(REGISTRY_SOURCE.bytes / Buffer.byteLength(unit)));
+  const source = prefix + "x".repeat(REGISTRY_SOURCE.bytes - Buffer.byteLength(prefix));
+  const result = { scriptSource: source }, value = await fixture(CurrentFootprintCopyPreparationChannel, undefined, source);
+  assert.equal(Buffer.byteLength(source), 875_163); assert.ok(Buffer.byteLength(JSON.stringify(result)) > 1024 * 1024);
+  try {
+    await open(value); await value.channel.requestFootprintUi(select("initial"));
+    assert.deepEqual(await value.channel.requestFootprintUi(select("registrySource")), result);
+    assert.deepEqual(await value.channel.requestFootprintUi(select("registrySource")), result);
+    assert.equal(value.channel.status().failed, false);
+    assert.equal(value.requests.filter(request => request["parentPhase"] === "footprint-copy-ui-registrySource").length, 2);
+    assert.ok(value.channel.status().receivedBytes > 2 * Buffer.byteLength(JSON.stringify(result)));
+    await assert.rejects(value.channel.requestFootprintUi(select("properties")), /FRAME_BUDGET|REPLY|POLL/u);
   } finally { await value.close(); }
 });

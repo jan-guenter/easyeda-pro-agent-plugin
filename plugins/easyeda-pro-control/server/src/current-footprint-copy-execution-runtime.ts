@@ -32,6 +32,8 @@ import type { CurrentFootprintCopySourceReadTransport } from "./current-footprin
 import type { CurrentFootprintCopyStatePacket } from "./current-footprint-copy-state.ts";
 import { captureCurrentPcbStringClockReply } from "./current-pcb-string-clock-reply.ts";
 import { readerCompletion } from "./sqlite-inventory.ts";
+import { CurrentFootprintCopyOutputLedger, reserveCurrentFootprintCopyOutput } from "./current-footprint-copy-output-reservation.ts";
+import type { CurrentFootprintCopyOutputKind } from "./current-footprint-copy-output-reservation.ts";
 
 export interface CurrentFootprintCopyExecutionQualification {
   readonly copyPlan: CurrentFootprintCopyV2Plan;
@@ -168,6 +170,7 @@ export class CurrentFootprintCopyExecutionCoordinator {
   #qualification: CurrentFootprintCopyExecutionQualification | null = null;
   #qualificationText: string | null = null;
   #sqlPlan: CurrentFootprintCopyV2SqlPlan | null = null;
+  #output: CurrentFootprintCopyOutputLedger | null = null;
   #before: Inventory | null = null;
   #rawCreate: string | null = null;
   #createAttempted = false;
@@ -215,6 +218,20 @@ export class CurrentFootprintCopyExecutionCoordinator {
   }
   async #record(phase: string, evidence: unknown): Promise<void> {
     this.#current(); need(this.#records < LIMITS.journalRecords, "JOURNAL_BUDGET"); this.#records += 1;
+    const text = JSON.stringify({ phase, evidence });
+    if (this.#output === null) {
+      // Before a complete original SQL/copy plan exists, only bounded cleanup
+      // Metadata can be published; no create is reachable in that state.
+      need(!this.#createAttempted && Buffer.byteLength(text) <= 65_536, "PREPARATION_JOURNAL_BYTES");
+    } else {
+      let kind: CurrentFootprintCopyOutputKind = "journal-control";
+      if (phase === "create-result") { kind = "journal-create"; }
+      else if (phase === "verification-saved-read") { kind = "journal-saved"; }
+      else if (phase === "clock-cleanup-failed") { kind = "journal-clock-failure"; }
+      const slot = cleanupPhases.has(this.#phase) && (kind === "journal-control" || kind === "journal-clock-failure") ?
+        this.#output.beginCleanup(kind) : this.#output.begin(kind);
+      this.#output.retain(slot, text);
+    }
     await this.#native.publish(phase, evidence); this.#current();
   }
   async #prepared(): Promise<CurrentFootprintCopyExecutionQualification> {
@@ -232,6 +249,7 @@ export class CurrentFootprintCopyExecutionCoordinator {
     await this.#prepared();
     this.#sqlPlan = await prepareCurrentFootprintCopyV2SqlPlan({ before: this.#before, copyPlan: q.copyPlan, witness: q.witness });
     const capacity = reserveCurrentFootprintCopyV2Capacity(q.copyPlan, this.#sqlPlan);
+    this.#output = new CurrentFootprintCopyOutputLedger(reserveCurrentFootprintCopyOutput(q.copyPlan, this.#sqlPlan));
     await this.#prepared(); await this.#record("prepared", { generation: this.#native.generation, sqlPlan: this.#sqlPlan, capacity });
     this.#workCurrent(); await clockMethods.arm.call(q.clocks); await this.#prepared(); this.#phase = "create";
   }
@@ -240,9 +258,11 @@ export class CurrentFootprintCopyExecutionCoordinator {
     await this.#record("create-intent", { nativeArguments: args, copyPlanSha256: sha256Json(q.copyPlan), witness: q.witness,
       nativeCreateAttempts: 1, explicitSaveAttempts: 0, replayAllowed: false });
     await this.#prepared(); this.#workCurrent(); clockMethods.consumeBeforeCreate.call(q.clocks); this.#createAttempted = true;
+    need(this.#output !== null, "OUTPUT_RESERVATION");
+    const rawSlot = this.#output.begin("create-result");
     const raw = await this.#native.create(args.createArgument);
     need(typeof raw === "string" && raw.length <= 2_097_152, "NATIVE_RESULT_BYTES");
-    this.#rawCreate = raw; this.#current();
+    this.#rawCreate = raw; this.#output.retain(rawSlot, raw); this.#current();
     this.#result = decodeCurrentFootprintCopyV2NativeResult(q.copyPlan, raw);
     this.#clocks = await clockMethods.result.call(q.clocks); this.#current(); await clockMethods.requireOriginal.call(q.clocks, this.#clocks); this.#current();
     const [first, second] = this.#clocks.samples;
@@ -270,7 +290,10 @@ export class CurrentFootprintCopyExecutionCoordinator {
     if (termination.status === "pending") { return; }
     await this.#native.requireTermination(termination.original); this.#current();
     this.#writerTermination = termination.original; this.#writerClosed = true; this.#phase = "release-writer";
-    this.#after = await this.#native.snapshot(termination.original); this.#current(); finished(this.#after);
+    const slot = this.#output?.beginCleanup("closed-sql") ?? null;
+    this.#after = await this.#native.snapshot(termination.original);
+    if (slot !== null) { this.#output?.retain(slot, JSON.stringify(this.#after)); }
+    this.#current(); finished(this.#after);
     if (!this.#failed && this.#result !== null && this.#qualification !== null && this.#clocks !== null && this.#sqlPlan !== null) {
       await this.#native.verifyClockClosure(this.#qualification, this.#clocks, termination.original); this.#current();
       const effect = await verifyCurrentFootprintCopyV2SqlEffect(this.#sqlPlan, this.#after, { returnedUuid: this.#result.returnedUuid });
@@ -360,10 +383,47 @@ export class CurrentFootprintCopyExecutionCoordinator {
     this.#phase = "read-verification";
   }
   async #readVerification(): Promise<void> {
-    this.#verificationCurrent(); need(this.#savedReader !== null, "SAVED_READER");
-    this.#saved = await this.#savedReader.observe(); this.#verificationCurrent();
-    await this.#savedReader.requireOriginal(this.#saved); this.#verificationCurrent();
-    await this.#record("verification-saved-read", this.#saved); this.#phase = "close-verification";
+    this.#verificationCurrent(); need(this.#savedReader !== null && this.#output !== null, "SAVED_READER");
+    const output = this.#output;
+    const frames = [output.begin("saved-frame"), output.begin("saved-frame")];
+    const observations = [output.begin("saved-observation"), output.begin("saved-observation")];
+    const states = Array.from({ length: 4 }, () => output.begin("saved-state"));
+    const packet = output.begin("saved-packet");
+    let failed = false, failure: unknown;
+    try {
+      this.#saved = await this.#savedReader.observe();
+      output.retain(packet, JSON.stringify(this.#saved));
+    } catch (error) { failed = true; failure = error; }
+    try {
+      // Retain already captured partial or stale-arrival replies as data even
+      // When observe fails. Missing replies leave their consumed slots pending.
+      const replies = this.#savedReader.retainedReplies();
+      for (const [index, reply] of replies.entries()) {
+        if (index === 1 || index === 4) {
+          const ordinal = index === 1 ? 0 : 1;
+          const frameSlot = frames[ordinal], observationSlot = observations[ordinal];
+          need(frameSlot !== undefined && observationSlot !== undefined && reply !== null && typeof reply === "object", "SAVED_OUTPUT_SEQUENCE");
+          output.retain(frameSlot, JSON.stringify(reply));
+          const result = Object.getOwnPropertyDescriptor(reply, "result")?.value as unknown;
+          need(result !== null && typeof result === "object", "SAVED_OUTPUT_SEQUENCE");
+          output.retain(observationSlot, Object.getOwnPropertyDescriptor(result, "value")?.value);
+        } else {
+          const ordinal = [0, 2, 3, 5].indexOf(index);
+          const stateSlot = states[ordinal]; need(stateSlot !== undefined, "SAVED_OUTPUT_SEQUENCE");
+          output.retain(stateSlot, JSON.stringify(reply));
+        }
+      }
+    } catch (error) {
+      if (failed) { throw new AggregateError([failure, error], "FOOTPRINT_COPY_SAVED_OUTPUT_RETENTION", { cause: error }); }
+      throw error;
+    }
+    if (failed) { throw failure; }
+    const saved = this.#saved;
+    need(saved !== null, "ORIGINAL_SAVED_PACKET"); this.#verificationCurrent();
+    await this.#savedReader.requireOriginal(saved); this.#verificationCurrent();
+    need(this.#saved === saved, "ORIGINAL_SAVED_PACKET");
+    await this.#record("verification-saved-read", saved);
+    need(this.#saved === saved, "ORIGINAL_SAVED_PACKET"); this.#phase = "close-verification";
   }
   async #closeVerification(): Promise<void> {
     const verification = this.#verificationCurrent(); await this.#record("verification-close-intent", { replayAllowed: false });
@@ -377,7 +437,9 @@ export class CurrentFootprintCopyExecutionCoordinator {
     if (termination.status === "pending") { return; }
     await verification.requireTermination(termination.original); this.#verificationCurrent();
     this.#verificationTermination = termination.original; this.#verificationClosed = true; this.#phase = "release-verification";
-    const final = await verification.snapshot(termination.original); this.#verificationCurrent(); finished(final);
+    need(this.#output !== null, "OUTPUT_RESERVATION"); const slot = this.#output.beginCleanup("closed-sql");
+    const final = await verification.snapshot(termination.original);
+    this.#output.retain(slot, JSON.stringify(final)); this.#verificationCurrent(); finished(final);
     need(this.#after !== null, "ORIGINAL_POST_EDIT_SQL");
     const equality = await compareCompleteClosedSql(this.#after, final);
     await verification.requireTermination(termination.original); this.#verificationCurrent();
@@ -438,7 +500,8 @@ export class CurrentFootprintCopyExecutionCoordinator {
     writerGenerationClosed: boolean; writerReleased: boolean; verificationGenerationClosed: boolean; verificationReleased: boolean; verificationNoResource: boolean;
     completeClosedSqlEffectVerified: boolean; savedContentVerified: boolean; finalClosedSqlEqual: boolean;
     persistentUploadReplayExcluded: boolean; explicitSaveDispatched: false; callbacksCompleted: false; executionAuthorized: false;
-    nativeExecutionMounted: false; journalRecords: number; failureCount: number; cleanupPending: boolean; clockReleased: boolean }> {
+    nativeExecutionMounted: false; journalRecords: number; failureCount: number; cleanupPending: boolean; clockReleased: boolean;
+    output: ReturnType<CurrentFootprintCopyOutputLedger["status"]> | null }> {
     return Object.freeze({ phase: this.#phase, busy: this.#busy, failed: this.#failed, createAttempted: this.#createAttempted,
       nativeReplyRetained: this.#rawCreate !== null, nativeReplySha256: this.#rawCreate === null ? null : sha256Text(this.#rawCreate),
       writerGenerationClosed: this.#writerClosed, writerReleased: this.#writerReleased,
@@ -447,6 +510,7 @@ export class CurrentFootprintCopyExecutionCoordinator {
       completeClosedSqlEffectVerified: this.#projection !== null, savedContentVerified: this.#saved !== null, finalClosedSqlEqual: this.#finalEquality,
       persistentUploadReplayExcluded: this.#replay !== null && this.#savedReader !== null, explicitSaveDispatched: false,
       callbacksCompleted: false, executionAuthorized: false, nativeExecutionMounted: false, journalRecords: this.#records,
-      failureCount: this.#failures.length, cleanupPending: cleanupPhases.has(this.#phase), clockReleased: this.#clockReleased });
+      failureCount: this.#failures.length, cleanupPending: cleanupPhases.has(this.#phase), clockReleased: this.#clockReleased,
+      output: this.#output?.status() ?? null });
   }
 }

@@ -26,6 +26,12 @@ reference does not verify the referenced asset's bytes or availability. Arc
 angles do not establish full-circle rendering, and Poured contours prove neither
 fresh copper nor fabrication geometry. Arc/Poured passed a live empty-collection
 case; populated shapes still need connected validation.
+A separate [disposable visual workflow](plugins/easyeda-pro-control/skills/easyeda-pro-control/references/current-pcb209-visual.md)
+provides fit/zoom and one bounded capture of its original application window.
+Capture returns a managed PNG, retains native paint resources until verified
+process exit and may show blank, stale or partial content. It has offline
+validation; connected capture acceptance remains pending. It does not use the
+SDK canvas exporter or prove rendering, design correctness or saved contents.
 Catalog queries require explicit network confirmation and run without the
 application; they are not SDK execution. Footprint-name and LCSC-code lookups
 verify each returned candidate through its vendor metadata, within one bounded

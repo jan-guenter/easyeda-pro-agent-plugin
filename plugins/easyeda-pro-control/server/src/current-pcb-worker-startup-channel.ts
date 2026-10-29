@@ -44,6 +44,9 @@ import { currentFootprintCopyClockRpcWire } from "./current-footprint-copy-clock
 import { CurrentFootprintCopyClockRpcBudget } from "./current-footprint-copy-clock-rpc-budget.ts";
 import type { CurrentFootprintCopyClockRpcCommand } from "./current-footprint-copy-clock-rpc-protocol.ts";
 import type { CurrentFootprintCopyClockRpcOriginEvent } from "./current-footprint-copy-clock-rpc-origin.ts";
+import { CurrentFootprintCopyAllocatedCreateClockBudget } from "./current-footprint-copy-allocated-create-clock-budget.ts";
+import { currentFootprintCopyAllocationWire } from "./current-footprint-copy-allocation-wire.ts";
+import { CURRENT_PCB_WORKER_STARTUP_STREAM_LIMITS as STREAM } from "./current-pcb-worker-startup-stream-limits.ts";
 import { CurrentFootprintCopyCreateClockBudget } from "./current-footprint-copy-create-clock-budget.ts";
 import { CURRENT_FOOTPRINT_COPY_NATIVE_CREATE_LIMITS, captureCurrentFootprintCopyNativeCreateReply, currentFootprintCopyNativeCreateCommand,
   currentFootprintCopyNativeCreateWire } from "./current-footprint-copy-native-create-wire.ts";
@@ -115,10 +118,10 @@ const token = z.string().min(1).max(128).regex(/^[A-Za-z\d_.:-]+$/u);
 const parentSchema = z.object({ targetId: token, sessionId: token,
   nextRequestId: z.number().int().min(1).max(CURRENT_PCB_WORKER_STARTUP_REQUEST_LIMIT) }).strict();
 const ackSchema = z.object({ written: z.literal(true) }).strict();
-const MAX_BYTES = 64 * 1024 * 1024, MAX_EVENTS = 4096, MAX_EVENT_BYTES = 8 * 1024 * 1024;
-const MAX_FRAME = 1024 * 1024, SOURCE_FRAME = 32 * 1024 * 1024;
-const ACTIVE_POLL_MS = 20, IDLE_POLL_MS = 250, LIFETIME_MS = 60 * 60 * 1000;
-const MAX_DATA_POLLS = 8192, MAX_IDLE_POLLS = LIFETIME_MS / IDLE_POLL_MS, MAX_WAIT_POLLS = 8192;
+const MAX_BYTES = STREAM.receivedBytes, MAX_EVENTS = STREAM.eventCount, MAX_EVENT_BYTES = STREAM.eventBytes;
+const MAX_FRAME = STREAM.frameBytes, SOURCE_FRAME = STREAM.sourceFrameBytes;
+const ACTIVE_POLL_MS = STREAM.activePollMilliseconds, IDLE_POLL_MS = STREAM.idlePollMilliseconds, LIFETIME_MS = STREAM.lifetimeMilliseconds;
+const MAX_DATA_POLLS = STREAM.dataPolls, MAX_IDLE_POLLS = STREAM.idlePolls, MAX_WAIT_POLLS = STREAM.waitPolls;
 const monotonicNow = process.hrtime.bigint.bind(process.hrtime);
 const failureCodes = new WeakMap<Error, string>();
 type ClockCommand = CurrentFootprintCopyTransactionClockCommand & Readonly<{ sessionId: string }>;
@@ -132,6 +135,7 @@ function clockWire(raw: unknown, id: number): ReturnType<typeof currentFootprint
 type PendingCommand = ChannelCommand | CurrentFootprintCopyClockRpcCommand | CurrentFootprintCopyNativeCreateCommand;
 function replyFrameLimit(command: PendingCommand, nativeCreate = false): number {
   if (nativeCreate) { return CURRENT_FOOTPRINT_COPY_NATIVE_CREATE_LIMITS.responseFrameBytes; }
+  if ("phase" in command && typeof command.phase === "string" && command.phase.startsWith("allocation-")) { return 65_536; }
   if (command.method === "Debugger.getScriptSource") { return SOURCE_FRAME; }
   return command.method === "Runtime.callFunctionOn" && "objectId" in command.params && command.params.awaitPromise === true ?
     CURRENT_FOOTPRINT_COPY_SOURCE_FRAME_BYTES : MAX_FRAME;
@@ -163,7 +167,7 @@ function cleanupCommand(command: PendingCommand): boolean {
 interface ClockRpcState {
   readonly workerSessionId: string;
   readonly uiSessionId: string;
-  readonly budget: CurrentFootprintCopyClockRpcBudget | CurrentFootprintCopyCreateClockBudget;
+  readonly budget: CurrentFootprintCopyClockRpcBudget | CurrentFootprintCopyCreateClockBudget | CurrentFootprintCopyAllocatedCreateClockBudget;
   readonly create: CreateClockState | null;
   readonly events: CurrentFootprintCopyClockRpcOriginEvent[];
   begun: boolean;
@@ -174,6 +178,7 @@ interface ClockRpcState {
   eventBytes: number;
 }
 interface CreateClockState {
+  readonly allocation: boolean;
   readonly binding: CurrentFootprintCopyCreateInvocationBinding;
   readonly command: CurrentFootprintCopyNativeCreateCommand;
   readonly token: CurrentFootprintCopyPendingCreate;
@@ -239,6 +244,7 @@ class CurrentPcbWorkerStartupChannelCore {
   readonly #footprintPurpose: boolean;
   readonly #executionPurpose: boolean;
   readonly #createClockPurpose: boolean;
+  readonly #allocationPurpose: boolean;
   readonly #savedPurpose: boolean;
   readonly #footprintProfile: typeof CURRENT_FOOTPRINT_COPY_PREPARATION_PROFILE | typeof CURRENT_FOOTPRINT_COPY_EXECUTION_PROFILE | typeof CURRENT_FOOTPRINT_COPY_SAVED_PROFILE | typeof CURRENT_FOOTPRINT_COMBINED_RENDERER_PROFILE;
   readonly #requestLimit: number;
@@ -264,7 +270,7 @@ class CurrentPcbWorkerStartupChannelCore {
   #dataPolls = 0;
   #waitPolls = 0;
   #idlePolls = 0;
-  #nextPollDelay = ACTIVE_POLL_MS;
+  #nextPollDelay: number = ACTIVE_POLL_MS;
   #pollTimer: ReturnType<typeof setTimeout> | null = null;
   #pollQueued = false;
   #started = false;
@@ -316,8 +322,9 @@ class CurrentPcbWorkerStartupChannelCore {
   #fatal = false;
 
   public constructor(internal: typeof INTERNAL_PROFILE, native: CurrentPcbWorkerStartupNativeDependency,
-    wire: typeof currentPcbWorkerStartupWire, priorUsage?: CurrentPcbWorkerStartupPriorUsage, createClockPurpose = false) {
-    if (internal !== INTERNAL_PROFILE) { throw fail("INTERNAL_PROFILE"); } this.#wire = wire; this.#createClockPurpose = createClockPurpose;
+    wire: typeof currentPcbWorkerStartupWire, priorUsage?: CurrentPcbWorkerStartupPriorUsage, createClockPurpose = false, allocationPurpose = false) {
+    if (internal !== INTERNAL_PROFILE) { throw fail("INTERNAL_PROFILE"); } this.#wire = wire; this.#createClockPurpose = createClockPurpose; this.#allocationPurpose = allocationPurpose;
+    if (allocationPurpose && !createClockPurpose) { throw fail("FOOTPRINT_ALLOCATION_PURPOSE"); }
     this.#executionPurpose = wire === currentFootprintCopyExecutionStartupWire || wire === currentFootprintCombinedStartupWire;
     this.#savedPurpose = wire === currentFootprintCopySavedStartupWire;
     this.#footprintPurpose = this.#executionPurpose || this.#savedPurpose || wire === currentFootprintCopyPreparationWire;
@@ -700,7 +707,7 @@ class CurrentPcbWorkerStartupChannelCore {
     const command = currentFootprintCopyNativeCreateCommand(workerSessionId, binding.projectObjectId, binding.handles, plan);
     if (command.params.arguments[5].value !== this.#openingProjectUuid) { throw fail("FOOTPRINT_CREATE_PROJECT"); }
     binding.assertCleanup();
-    const create: CreateClockState = { binding, command, token: Object.freeze({ profile: "private.current-footprint-copy-pending-create.v1" }),
+    const create: CreateClockState = { allocation: this.#allocationPurpose, binding, command, token: Object.freeze({ profile: "private.current-footprint-copy-pending-create.v1" }),
       dispatchAttempted: false, pending: null, rejectedFrame: null };
     return this.#prepareClockRpc(dependency, workerSessionId, create);
   }
@@ -719,8 +726,12 @@ class CurrentPcbWorkerStartupChannelCore {
             !this.#workers.has(workerSessionId) || !this.#footprintClockRegistrationStarted || this.#footprintClockRegistrationReleased) {
           throw fail("FOOTPRINT_RPC_QUIESCENCE");
         }
+        let budget: ClockRpcState["budget"];
+        if (create === null) { budget = new CurrentFootprintCopyClockRpcBudget(this.#nextId); }
+        else if (create.allocation) { budget = new CurrentFootprintCopyAllocatedCreateClockBudget(this.#nextId); }
+        else { budget = new CurrentFootprintCopyCreateClockBudget(this.#nextId); }
         this.#clockRpcPreparedState = { workerSessionId, uiSessionId: this.#parent.sessionId,
-          budget: create === null ? new CurrentFootprintCopyClockRpcBudget(this.#nextId) : new CurrentFootprintCopyCreateClockBudget(this.#nextId),
+          budget,
           create, events: [], begun: false, retired: false,
           retireAttempted: false, retireAcknowledged: false, eventCount: 0, eventBytes: 0 };
         this.#clockRpcReservation = Object.freeze({ profile: "private.current-footprint-clock-rpc-channel-reservation.v1" });
@@ -743,8 +754,10 @@ class CurrentPcbWorkerStartupChannelCore {
     try {
       await this.#queue(async (): Promise<void> => {
         await this.#currentWithinQueue();
+        let action = "footprint-clock-rpc-begin";
+        if (state.create !== null) { action = state.create.allocation ? "footprint-copy-allocated-create-clock-begin" : "footprint-copy-create-clock-begin"; }
         const result = captureCurrentPcbStringClockReply(await this.#exchange.call(this.#native,
-          { action: state.create === null ? "footprint-clock-rpc-begin" : "footprint-copy-create-clock-begin", firstRequestId: this.#nextId })).value;
+          { action, firstRequestId: this.#nextId })).value;
         if (!record(result) || !exact(result, ["begun"]) || result["begun"] !== true) { throw fail("FOOTPRINT_RPC_BEGIN_ACK"); }
         state.begun = true;
       });
@@ -806,7 +819,11 @@ class CurrentPcbWorkerStartupChannelCore {
   // oxlint-disable-next-line eslint/require-await -- Preserve the retained pending completion and convert synchronous validation failures to rejection.
   async #requestClockRpc(state: ClockRpcState, input: CurrentFootprintCopyClockRpcCommand, cleanup: boolean): Promise<unknown> {
     this.#sameClockRpc(state, cleanup);
-    const { id: _validationId, ...command } = currentFootprintCopyClockRpcWire(input, 1, state.workerSessionId, state.uiSessionId).command;
+    const captured = captureCurrentPcbStringClockReply(input).value;
+    const allocation = z.object({ phase: z.string() }).loose().parse(captured).phase.startsWith("allocation-");
+    if (allocation && !(state.budget instanceof CurrentFootprintCopyAllocatedCreateClockBudget)) { throw fail("FOOTPRINT_ALLOCATION_PURPOSE"); }
+    const { id: _validationId, ...command } = (allocation ? currentFootprintCopyAllocationWire(captured, 1, state.workerSessionId) :
+      currentFootprintCopyClockRpcWire(captured, 1, state.workerSessionId, state.uiSessionId)).command;
     if (typeof cleanup !== "boolean" || cleanup !== cleanupCommand(command) || state.budget.snapshot().failed) { throw fail("FOOTPRINT_RPC_CLASS"); }
     if (this.#queuedRequests >= 32) { throw fail("QUEUE_BUDGET"); }
     this.#queuedRequests += 1; const completion = Promise.withResolvers<unknown>();
@@ -816,8 +833,13 @@ class CurrentPcbWorkerStartupChannelCore {
         this.#sameClockRpc(state, cleanup);
         const parent = await this.#parentMethod.call(this.#native); this.#sameClockRpc(state, cleanup);
         if (parent !== this.#parent || this.#failure !== null) { throw fail("FOOTPRINT_RPC_PARENT"); }
-        const wire = currentFootprintCopyClockRpcWire(command, this.#nextId, state.workerSessionId, state.uiSessionId);
-        state.budget.consume(this.#nextId, cleanup); this.#nextId += 1;
+        const wire = allocation ? currentFootprintCopyAllocationWire(command, this.#nextId, state.workerSessionId) :
+          currentFootprintCopyClockRpcWire(command, this.#nextId, state.workerSessionId, state.uiSessionId);
+        if (allocation) {
+          if (!(state.budget instanceof CurrentFootprintCopyAllocatedCreateClockBudget)) { throw fail("FOOTPRINT_ALLOCATION_PURPOSE"); }
+          state.budget.consumeAllocation(this.#nextId, String(wire.request["phase"]), cleanup);
+        } else { state.budget.consume(this.#nextId, cleanup); }
+        this.#nextId += 1;
         pending = { id: wire.command.id, command: wire.command, completion,
           allocation: command.method === "Debugger.setBreakpoint", written: false, writeFailed: false, replied: false,
           result: null, remoteError: false, settled: false };
@@ -842,7 +864,7 @@ class CurrentPcbWorkerStartupChannelCore {
   }
   async #dispatchCreate(state: ClockRpcState): Promise<CurrentFootprintCopyPendingCreate> {
     const create = this.#samePendingCreate(state);
-    if (state.retired || create.dispatchAttempted || !(state.budget instanceof CurrentFootprintCopyCreateClockBudget)) {
+    if (state.retired || create.dispatchAttempted || !(state.budget instanceof CurrentFootprintCopyCreateClockBudget || state.budget instanceof CurrentFootprintCopyAllocatedCreateClockBudget)) {
       throw fail("FOOTPRINT_CREATE_CONSUMED");
     }
     // Consume synchronously before entering the queue. A lost native ACK never
@@ -857,7 +879,7 @@ class CurrentPcbWorkerStartupChannelCore {
     await this.#queue(async (): Promise<void> => {
       let pending: Pending | null = null;
       try {
-        if (this.#samePendingCreate(state) !== create || state.retired || !(state.budget instanceof CurrentFootprintCopyCreateClockBudget)) {
+        if (this.#samePendingCreate(state) !== create || state.retired || !(state.budget instanceof CurrentFootprintCopyCreateClockBudget || state.budget instanceof CurrentFootprintCopyAllocatedCreateClockBudget)) {
           throw fail("FOOTPRINT_CREATE_ORIGINAL");
         }
         if (this.#samePendingCreate(state) !== create) { throw fail("FOOTPRINT_CREATE_ORIGINAL"); }
@@ -990,7 +1012,7 @@ class CurrentPcbWorkerStartupChannelCore {
     if (descriptor === undefined || !Object.hasOwn(descriptor, "value") || typeof text !== "string" || text.length > 87_384 ||
         !/^(?:[A-Za-z\d+/]{4})*(?:[A-Za-z\d+/]{2}==|[A-Za-z\d+/]{3}=)?$/u.test(text)) { throw fail("CHUNK"); }
     const bytes = Buffer.from(text, "base64");
-    if (bytes.length > 65_536 || bytes.toString("base64") !== text) { throw fail("CHUNK"); }
+    if (bytes.length > STREAM.pollChunkBytes || bytes.toString("base64") !== text) { throw fail("CHUNK"); }
     // Empty idle checks observe unsolicited events, but consume no data or
     // Request-wait allowance. Bound all three forms separately and never reset
     // A count after progress. The nonrenewable monotonic lifetime caps idle time.
@@ -1070,7 +1092,7 @@ class CurrentPcbWorkerStartupChannelCore {
     if (rpc?.create !== null && rpc?.create !== undefined && rpc.retired) { throw fail("FOOTPRINT_CREATE_POST_CLOCK_EVENT"); }
     if (rpc !== null && !rpc.retired && (event.sessionId === rpc.uiSessionId || event.sessionId === rpc.workerSessionId) &&
         (event.method === "Debugger.paused" || event.method === "Debugger.resumed")) {
-      if (!rpc.begun || rpc.events.length >= 20 || rpc.eventCount >= 20 || rpc.eventBytes + bytes > MAX_EVENT_BYTES) { throw fail("FOOTPRINT_RPC_EVENTS"); }
+      if (!rpc.begun || rpc.events.length >= (rpc.create?.allocation === true ? STREAM.allocatedCreateClockEvents : STREAM.clockRpcEvents) || rpc.eventCount >= (rpc.create?.allocation === true ? STREAM.allocatedCreateClockEvents : STREAM.clockRpcEvents) || rpc.eventBytes + bytes > MAX_EVENT_BYTES) { throw fail("FOOTPRINT_RPC_EVENTS"); }
       const params = captureCurrentPcbStringClockReply(event.params).value;
       rpc.events.push(Object.freeze({ method: event.method, sessionId: event.sessionId, params }));
       rpc.eventCount += 1; rpc.eventBytes += bytes; return;
@@ -1176,6 +1198,12 @@ export class CurrentFootprintCombinedStartupChannel extends CurrentPcbWorkerStar
 export class CurrentFootprintCopyCreateClockStartupChannel extends CurrentPcbWorkerStartupChannelCore {
   public constructor(native: CurrentPcbWorkerStartupNativeDependency, priorUsage?: CurrentPcbWorkerStartupPriorUsage) {
     super(INTERNAL_PROFILE, native, currentFootprintCombinedStartupWire, priorUsage, true);
+  }
+}
+/** Separate private allocation birth; no existing native validation owner constructs it. */
+export class CurrentFootprintCopyAllocatedCreateClockStartupChannel extends CurrentPcbWorkerStartupChannelCore {
+  public constructor(native: CurrentPcbWorkerStartupNativeDependency, priorUsage?: CurrentPcbWorkerStartupPriorUsage) {
+    super(INTERNAL_PROFILE, native, currentFootprintCombinedStartupWire, priorUsage, true, true);
   }
 }
 /** Fixed saved-generation owner; no writer, clock or parent challenge marker. */

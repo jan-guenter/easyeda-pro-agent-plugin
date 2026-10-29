@@ -28,8 +28,12 @@ const schema = z.union([
   call("notificationRecheck", z.tuple([object, path, branch, tab])),
   call("responder", z.tuple([object])), call("responderRecheck", z.tuple([object, object])),
   call("route", z.tuple([object, path, branch, tab])),
-  call("membership", z.tuple([object, path, branch, tab, object])),
-  call("routeRecheck", z.tuple([object, path, branch, tab, object])),
+  call("registry", z.tuple([object, path, branch, tab])),
+  call("registryContextProducer", z.tuple([object, object, object, path, branch, tab])),
+  call("registryRecheck", z.tuple([object, object, object, object, path, branch, tab])),
+  call("membership", z.tuple([object, path, branch, tab, object, object])),
+  call("routeRecheck", z.tuple([object, path, branch, tab, object, object])),
+  z.object({ phase: z.literal("registrySource"), method: z.literal("Debugger.getScriptSource"), sessionId: session, params: z.object({ scriptId: handle }).strict() }).strict(),
   z.object({ phase: z.literal("properties"), method: z.literal("Runtime.getProperties"), sessionId: session,
     params: z.object({ objectId: handle, ownProperties: z.literal(true), accessorPropertiesOnly: z.literal(false),
       generatePreview: z.literal(false) }).strict() }).strict(),
@@ -46,6 +50,7 @@ export type CurrentFootprintCopyUiCommand = Readonly<{ sessionId: string }> & (
       (Readonly<{ objectId: string }> | Readonly<{ uniqueContextId: string }>) }>
   | Readonly<{ phase: "properties"; method: "Runtime.getProperties"; params: Readonly<{
     objectId: string; ownProperties: true; accessorPropertiesOnly: false; generatePreview: false }> }>
+  | Readonly<{ phase: "registrySource"; method: "Debugger.getScriptSource"; params: Readonly<{ scriptId: string }> }>
   | Readonly<{ phase: "release"; method: "Runtime.releaseObjectGroup"; params: Readonly<{ objectGroup: typeof CURRENT_FOOTPRINT_COPY_UI_GROUP }> }>
 );
 export const CURRENT_FOOTPRINT_COPY_UI_FLAGS: Flags = Object.freeze({ objectGroup: CURRENT_FOOTPRINT_COPY_UI_GROUP,

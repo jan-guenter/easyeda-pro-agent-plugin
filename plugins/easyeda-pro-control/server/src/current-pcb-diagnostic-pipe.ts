@@ -8,6 +8,7 @@
  * application-closure policy permits release. No TCP endpoint is supported. */
 /* oxlint-disable max-classes-per-file -- Three fixed-purpose facades share a private byte-transport core without exposing a caller-selectable purpose or budget. */
 /* oxlint-disable import/max-dependencies -- Fixed transport composes independent model/common/worker/actor grammars without merging their source or authority boundaries. */
+import { CURRENT_PCB_DIAGNOSTIC_TRANSPORT_LIMITS as TRANSPORT } from "./current-pcb-diagnostic-transport-limits.ts";
 import type { Readable, Writable } from "node:stream";
 import { DIAGNOSTIC_REQUEST_LIMIT, DIAGNOSTIC_SESSION_BYTES, DIAGNOSTIC_SOURCE_FRAME_BYTES, DIAGNOSTIC_WORKER_ATTACH_PARAMS, diagnosticArcShapes209Params, diagnosticExact, diagnosticExtendedPrimitives209Params, diagnosticImageShapes209Params, diagnosticLayers209Params, diagnosticOpeningParams, diagnosticPadShapes209Params, diagnosticPcbOpeningParams, diagnosticPouredShapes209Params, diagnosticPrimitives209Params, diagnosticSelectionRelations209Params, diagnosticToken, diagnosticVisual209Params, diagnosticWorkerEvaluationParams } from "./current-pcb-diagnostic-protocol.ts";
 import type { DiagnosticCommand, DiagnosticEvent } from "./current-pcb-diagnostic-protocol.ts";
@@ -30,7 +31,7 @@ import type { CurrentPcbStringMoveCommand } from "./current-pcb-string-move-runn
 
 export { decodeCurrentPcbDiagnosticJson } from "./current-pcb-diagnostic-json.ts";
 
-const MAX_FRAME_BYTES = 1024 * 1024;
+const MAX_FRAME_BYTES = TRANSPORT.maximumFrameBytes;
 // A fixed reader returns JSON text inside a CDP string. Escaped quotes and
 // Backslashes can double its524288-byte text plus the bounded CDP envelope.
 const COMMON_FRAME_BYTES = 2 * CURRENT_PCB_COMMON_GRAPH_BYTES + 1024;
@@ -359,6 +360,12 @@ class CurrentPcbFixedPipeCore {
     if (this.#failure !== null) { throw failureError(this.#failure); }
     if (DIAGNOSTIC_REQUEST_LIMIT - (this.#nextId - 1) < 9) { throw new Error("PCB209_SHAPE_STAGE_REQUEST_BUDGET"); }
   }
+  /** Two fixed parent/ancillary brackets plus two active-PCB identity reads.
+   * The native window message itself consumes no CDP request. */
+  public assertPcb209WindowCaptureCapacity(): void {
+    this.assertPcb209ShapeStageCapacity();
+    if (DIAGNOSTIC_REQUEST_LIMIT - (this.#nextId - 1) < 10) { throw new Error("PCB209_WINDOW_CAPTURE_REQUEST_BUDGET"); }
+  }
   public observeArcShapes209(uniqueContextId: string, target: CurrentDisposableOpenSealedTarget): Promise<Reply> {
     if (this.#sessionId === null || this.#workerEvent !== null) { return Promise.reject(new Error("PCB209_ARC_SHAPES_PIPE_INPUT")); }
     return this.#request({ id: this.#nextId, method: "Runtime.callFunctionOn",
@@ -502,7 +509,7 @@ class CurrentPcbFixedPipeCore {
   #receiveEvent(value: Record<string, unknown>, bytes: number): void {
     const method = value["method"], params = value["params"], sessionId = value["sessionId"];
     this.#eventCount += 1; this.#eventBytes += bytes;
-    if (this.#event === null || bytes > MAX_FRAME_BYTES || this.#eventCount > 4096 || this.#eventBytes > 8 * MAX_FRAME_BYTES) {
+    if (this.#event === null || bytes > MAX_FRAME_BYTES || this.#eventCount > TRANSPORT.maximumEventCount || this.#eventBytes > TRANSPORT.maximumEventBytes) {
       this.#fail("reply", "event-budget-or-handler", eventKind(method)); return;
     }
     if (typeof method !== "string" || !record(params) ||

@@ -17,6 +17,7 @@ import { CURRENT_PCB_209_OPENING_SCRIPTS } from "../src/current-pcb-209-opening-
 import { decodeCurrentPcb209VisualReply } from "../src/current-pcb-209-visual-actions.ts";
 import type { CurrentPcb209VisualOperation } from "../src/current-pcb-209-visual-actions.ts";
 import { currentPcb209VisualRequestSchema } from "../src/current-pcb-209-visual-validation.ts";
+import { windowCapturePacket } from "./helpers/window-capture-png.ts";
 import { queryOfflineApi } from "../src/offline-api.ts";
 
 const PATH = String.raw`C:\Fixtures\Visual.eprj2`;
@@ -60,11 +61,11 @@ function fixture(context: TestContext, id: string): Readonly<{
   lifecycle: CurrentPcb209VisualLifecycle; options: CurrentPcbDiagnosticLifecycleOptions;
   dependencies: CurrentPcbDiagnosticLifecycleDependencies; calls: string[];
   state: { bound: boolean; released: boolean; terminated: boolean; publicationLoss: boolean; throwVisual: boolean; wrongTarget: boolean;
-    methodCalls: number; abortCalls: number; abortPublicationLoss: boolean; lostAbort: boolean };
+    captureCalls: number; throwCapture: boolean; methodCalls: number; abortCalls: number; abortPublicationLoss: boolean; lostAbort: boolean };
   request: (action: string, extra?: Record<string, unknown>) => Promise<Record<string, unknown>>;
 }> {
   const calls: string[] = [], state = { bound: false, released: false, terminated: false, publicationLoss: false, throwVisual: false,
-    wrongTarget: false, methodCalls: 0, abortCalls: 0, abortPublicationLoss: false, lostAbort: false };
+    wrongTarget: false, captureCalls: 0, throwCapture: false, methodCalls: 0, abortCalls: 0, abortPublicationLoss: false, lostAbort: false };
   const binding = { helperInstance: "b".repeat(32), jobId: "c".repeat(32), rootPid: 123, rootCreated: "123456789012345" };
   const owner: CurrentPcbDiagnosticLifecycleOwner = {
     status: () => ({ profile: "visual209", stringPrecreateConsumed: false, helperPid: 456, binding: state.bound ? binding : null,
@@ -100,6 +101,13 @@ function fixture(context: TestContext, id: string): Readonly<{
     observePcbOpening: (target, profile) => { assert.deepEqual(target, SEALED); assert.equal(profile, CURRENT_PCB_209_OPENING_SCRIPTS.pcb); calls.push("source");
       return Promise.resolve({ family: "pcb", projectUuid: TARGET.projectUuid, documentUuid: TARGET.documentUuid,
         tabId: TAB, sourceVerified: true, domOwnerVerified: true, openingObservation: OBSERVED, executionAuthorized: false }); },
+    captureWindow209: async (target, hwnd) => {
+      state.captureCalls += 1; assert.deepEqual(target, SEALED); assert.equal(hwnd, "12345");
+      const intentFile = join(directory(id), "window-capture209-intent.json");
+      assert.match(await readFile(intentFile, "utf8"), /acceptWindowPaintEffects/u);
+      if (state.throwCapture) { throw new Error("synthetic paint failed after possible dispatch"); }
+      return windowCapturePacket();
+    },
     performVisual209: async (target, operation) => {
       state.methodCalls += 1; assert.deepEqual(target, SEALED);
       const raw = await readFile(join(directory(id), "visual-viewport209-intent.json"), "utf8");
@@ -126,7 +134,7 @@ function fixture(context: TestContext, id: string): Readonly<{
     verifyCheckpoint: (checkpoint, target) => { assert.equal(checkpoint, CHECKPOINT); assert.deepEqual(target, TARGET); return Promise.resolve(); },
     verifyHistoricalCheckpoint: () => Promise.resolve(),
     publishRecord: (operationId, name, record) => {
-      if (name === "visual-viewport209-result.json" && state.publicationLoss) { return Promise.reject(new Error("synthetic lost visual result publication")); }
+      if ((name === "visual-viewport209-result.json" || name === "window-capture209-result.json") && state.publicationLoss) { return Promise.reject(new Error("synthetic lost visual result publication")); }
       if (name === "visual-abort-intent.json" && state.abortPublicationLoss) { return Promise.reject(new Error("synthetic visual abort intent publication lost")); }
       return publishCurrentPcbDiagnosticLifecycleRecord(operationId, name, record);
     },
@@ -249,4 +257,28 @@ void test("visual abort intent publication loss consumes the attempt before any 
   await assert.rejects(value.request("abort-visual", { confirmAbortOriginalVisualJob: true }), /CONSUMED/u);
   await assert.rejects(value.request("perform-visual", { operation: { kind: "fit-all" }, confirmVisualStateChanges: true }));
   assert.equal(value.state.abortCalls, 0); assert.equal(value.state.methodCalls, 0);
+});
+
+void test("window pixels publish one managed PNG after intent and settle lost metadata without recapture", async context => {
+  const id = "pcb209-visual-test-window", value = fixture(context, id); await ready(value, id);
+  value.state.publicationLoss = true;
+  await assert.rejects(value.request("capture-window", { hwnd: "12345", acceptWindowPaintEffects: true, confirmLocalArtifact: true }), /synthetic lost/u);
+  assert.equal(value.state.captureCalls, 1);
+  const current = await value.lifecycle.run({ action: "inspect", operationId: id }); value.state.publicationLoss = false;
+  await value.lifecycle.run({ action: "settle-records", operationId: id, expectedIntentSha256: current["intentSha256"] });
+  const journals = await readCurrentPcbDiagnosticLifecycles(); const result = journals.find(item => item.operationId === id)?.records["window-capture209-result.json"]?.result;
+  assert.ok(isRecord(result)); assert.equal(result["canvasOnly"], false); assert.equal(result["renderCompletionVerified"], false);
+  assert.equal(result["nativeResourcesRetained"], true); assert.equal(Object.hasOwn(result, "pngBase64"), false);
+  const image = result["image"]; assert.ok(isRecord(image)); assert.equal(typeof image["path"], "string");
+  assert.ok(typeof image["path"] === "string"); const png = await readFile(image["path"]); assert.equal(png.length, image["bytes"]);
+  await assert.rejects(value.request("capture-window", { hwnd: "12345", acceptWindowPaintEffects: true, confirmLocalArtifact: true }), /CONSUMED/u);
+  assert.equal(value.state.captureCalls, 1);
+});
+void test("window capture refusal consumes its own paint attempt without granting a second native call", async context => {
+  const id = "pcb209-visual-test-window-failure", value = fixture(context, id); await ready(value, id);
+  await assert.rejects(value.request("capture-window", { hwnd: "12345", acceptWindowPaintEffects: false, confirmLocalArtifact: true }));
+  assert.equal(value.state.captureCalls, 0); value.state.throwCapture = true;
+  await assert.rejects(value.request("capture-window", { hwnd: "12345", acceptWindowPaintEffects: true, confirmLocalArtifact: true }), /synthetic paint/u);
+  await assert.rejects(value.request("capture-window", { hwnd: "12345", acceptWindowPaintEffects: true, confirmLocalArtifact: true }), /CONSUMED/u);
+  assert.equal(value.state.captureCalls, 1);
 });

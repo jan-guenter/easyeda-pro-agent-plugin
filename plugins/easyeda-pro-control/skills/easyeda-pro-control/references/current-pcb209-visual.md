@@ -85,6 +85,42 @@ state is not independently double-sampled, rendering completion is not observed
 and the result contains no screenshot. A three-second observer prevents later
 camera dispatch after expiry but cannot cancel a handler already sent.
 
+## Capture the original window
+
+After published `observe-pcb-opening`, obtain the original application `hwnd`
+with `observe-window`. Validate and send
+`capture-window` with that HWND, the original operation/binding,
+`acceptWindowPaintEffects:true` and `confirmLocalArtifact:true`. This separate
+once-only action can follow the viewport operation. It brackets the native
+capture with fresh source-qualified active-PCB checks. It cannot capture an
+arbitrary PID, HWND or an ordinary running session.
+
+The action requests `WM_PRINT` from the original root window into an owned,
+bounded bitmap. The paint request can run application paint handlers. Native
+dimensions and pixels are capped before allocation: at most4096 pixels per
+side and4,194,304 pixels total, with at most256KiB PNG and360,000 bytes for the
+native packet. Before paint, the original transport reserves32MiB of remaining
+helper output and a separate protected cleanup allowance, with bounded CDP
+requests, polls and control replies. Capacity refusal consumes the capture stage
+while preserving original-owner cleanup. The return contains a managed PNG descriptor and exact dimensions,
+hash, bounds and pixel summary. Use its exact path for visual inspection. The
+result and journal do not repeat base64 image contents. Unsupported dimensions,
+PNG output or framing refuse whole rather than resize or truncate the image.
+
+The one-second native message deadline does not cancel the target's paint work.
+Native DC/bitmap resources remain retained even after an acknowledged capture,
+until actual original root exit and an empty Job permit release. Keep the owner
+alive through the cleanup steps below; use its confirmed abort when needed.
+Lost replies, failed guards and publication failures do not permit recapture.
+Original pending record settlement publishes retained evidence only.
+
+This is a full-window pixel observation. It may be blank, stale or partial and
+does not prove a stable render, canvas-only content, geometry, connectivity or
+persistence. A nonzero pixel summary is not visual acceptance. The public SDK
+canvas-image method and its separate renderer/resource problems remain excluded.
+The new capture route has source/offline validation; connected acceptance is
+pending.
+
 ## Close and release the original owner
 
 Use `observe-window`, then one `normal-close` with the observed `hwnd` and
@@ -112,10 +148,11 @@ its exact intent digest. A restarted facade cannot adopt old native ownership.
   append a camera-only action. A true result can also hide missing IDs.
 - `dmt_EditorControl.zoom` is a literal false stub. The three operations above
   use implemented zoom-to and fit handlers, not that percentage wrapper.
-- Current209 canvas PNG capture remains unavailable. The image path can allocate
+- Current209 SDK canvas PNG capture remains unavailable. The image path can allocate
   RGBA, ImageData and canvas data before facade bounds. Original renderer/frame
   ownership, asynchronous capture completion and resource cleanup need their
-  own bounded implementation. The older capture route has separate admission.
+  own bounded implementation. The separate original-window operation above does
+  not qualify that path. The older capture route has separate admission.
 - Net highlighting, cross-probe, overlay timers, schematic/3D routing, ordinary
   projects, complete startup/baseline, source membership, electrical correctness,
   explicit Save, saved/reopened content and exact inverse are not supplied.

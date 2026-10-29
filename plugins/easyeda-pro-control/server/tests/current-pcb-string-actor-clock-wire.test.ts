@@ -1,3 +1,4 @@
+import { readPackedNativeProgram } from "./helpers/native-packed-program.ts";
 import assert from "node:assert/strict";
 import { createHash } from "node:crypto";
 import { readFile } from "node:fs/promises";
@@ -49,8 +50,7 @@ void test("native actor adapter contains exact fixed programs, purpose gates and
   for (const [name, source] of Object.entries({ ActorClockUiFunction: CURRENT_PCB_STRING_ACTOR_CLOCK_FUNCTIONS.ui,
     ActorClockWorkerFunction: CURRENT_PCB_STRING_ACTOR_CLOCK_FUNCTIONS.worker,
     ActorClockPcbFunction: CURRENT_PCB_STRING_ACTOR_CLOCK_FUNCTIONS.pcb })) {
-    const encoded = new RegExp(`const string ${name}=@"((?:""|[^"])*)";`, "u").exec(native)?.[1];
-    assert.equal(encoded?.replaceAll('""', '"'), source, name);
+    assert.equal(readPackedNativeProgram(native, name), source);
     assert.ok(native.includes(createHash("sha256").update(source).digest("hex")));
   }
   assert.ok(native.includes('if(!stringPrecreate) throw Error("actor-clock-purpose");'));

@@ -16,7 +16,7 @@ const CONTROL_OVERHEAD_BYTES = 65_536;
 // Profile never enlarges that independent file-reader bound.
 const MANAGED_ARTIFACT_BYTES = 64 * 1024 * 1024;
 export type CurrentFootprintCopyOutputKind = "create-frame" | "create-result" | "rejected-frame" | "saved-frame" | "saved-observation" |
-  "saved-packet" | "closed-sql" | "journal-control" | "journal-create" | "journal-saved";
+  "saved-state" | "saved-packet" | "closed-sql" | "journal-control" | "journal-create" | "journal-saved" | "journal-clock-failure";
 interface Slot { readonly count: number; readonly bytes: number }
 type Slots = Readonly<Record<CurrentFootprintCopyOutputKind, Slot>>;
 export interface CurrentFootprintCopyOutputReservation {
@@ -48,11 +48,13 @@ function total(slots: readonly Slot[]): number {
   need(Number.isSafeInteger(bytes) && bytes > 0, "AGGREGATE_BOUND"); return bytes;
 }
 
-/** The32 journal records include two heavy records, each consumed once.
+/** The32 journal records include three heavy records, each consumed once.
  * The create-result record retains two serialized strings and one parsed
  * envelope, costing at most5x the native JSON bytes plus bounded metadata.
  * Saved packet strings use the modeled escaped packet bound. Other records
- * contain metadata or digests, never raw SQL, clocks or arbitrary exceptions.
+ * contain metadata or digests, never raw SQL or arbitrary exceptions. The
+ * separate clock-failure record covers eleven replies and four pause/resume
+ * packets, each bounded by the maintained128KiB metadata copier, plus wrappers.
  * A future issuer must use these exact classes or reserve a separate record.
  */
 export function reserveCurrentFootprintCopyOutput(copy: CurrentFootprintCopyV2Plan,
@@ -68,11 +70,13 @@ export function reserveCurrentFootprintCopyOutput(copy: CurrentFootprintCopyV2Pl
     "rejected-frame": { count: 1, bytes: 4 * Math.ceil(create.responseFrameBytes / 3) + CONTROL_OVERHEAD_BYTES },
     "saved-frame": { count: 2, bytes: modeled.maximumSavedFrameBytes },
     "saved-observation": { count: 2, bytes: modeled.maximumSavedObservationBytes },
+    "saved-state": { count: 4, bytes: 131_072 },
     "saved-packet": { count: 1, bytes: modeled.maximumSavedPacketArtifactBytes },
     "closed-sql": { count: 2, bytes: sql.maximumEncodedSqlBytes },
-    "journal-control": { count: CURRENT_FOOTPRINT_COPY_EXECUTION_LIMITS.journalRecords - 2, bytes: controlBytes },
+    "journal-control": { count: CURRENT_FOOTPRINT_COPY_EXECUTION_LIMITS.journalRecords - 3, bytes: controlBytes },
     "journal-create": { count: 1, bytes: 5 * create.serializedResultBytes + CONTROL_OVERHEAD_BYTES },
     "journal-saved": { count: 1, bytes: modeled.maximumSavedPacketArtifactBytes + CONTROL_OVERHEAD_BYTES },
+    "journal-clock-failure": { count: 1, bytes: 16 * 131_072 + CONTROL_OVERHEAD_BYTES },
   });
   need(Object.values(slots).every(slot => Number.isSafeInteger(slot.bytes) && slot.bytes > 0 && slot.bytes <= MANAGED_ARTIFACT_BYTES), "ARTIFACT_BOUND");
   const artifactBytes = total(Object.entries(slots).filter(([kind]) => !kind.startsWith("journal-")).map(([, slot]) => slot));
@@ -119,8 +123,18 @@ export class CurrentFootprintCopyOutputLedger {
     original(reservation); this.#reservation = reservation;
   }
   public begin(kind: CurrentFootprintCopyOutputKind): CurrentFootprintCopyOutputSlot {
+    return this.#begin(kind, false);
+  }
+  /** A failed normal slot must not consume the already reserved cleanup
+   * journal and closed-SQL classes. This neither clears failure nor permits another create,
+   * source read, saved publication or refunded slot. */
+  public beginCleanup(kind: "journal-control" | "journal-clock-failure" | "closed-sql"): CurrentFootprintCopyOutputSlot {
+    need(kind === "journal-control" || kind === "journal-clock-failure" || kind === "closed-sql", "CLEANUP_CLASS");
+    return this.#begin(kind, true);
+  }
+  #begin(kind: CurrentFootprintCopyOutputKind, cleanup: boolean): CurrentFootprintCopyOutputSlot {
     original(this.#reservation);
-    need(!this.#failed && typeof kind === "string" && Object.hasOwn(this.#reservation.slots, kind), "SLOT_CLASS");
+    need((cleanup || !this.#failed) && typeof kind === "string" && Object.hasOwn(this.#reservation.slots, kind), "SLOT_CLASS");
     const count = this.#counts.get(kind) ?? 0, limit = this.#reservation.slots[kind];
     if (count >= limit.count) { this.#failed = true; throw new Error("FOOTPRINT_COPY_OUTPUT_SLOT_EXHAUSTED"); }
     const slot = Object.freeze({ profile: "private.current-footprint-copy-output-slot.v1" as const });

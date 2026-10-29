@@ -8,7 +8,7 @@ import type { CurrentFootprintCopyUiFunction } from "./current-footprint-copy-ui
 import { freezeDeep } from "./sqlite-inventory-core.ts";
 
 const helpers = String.raw`"use strict";
-const bad=()=>{throw new Error("FOOTPRINT_COPY_UI_BINDING");},seen=[];
+const bad=(guard="SHAPE")=>{throw new Error("FOOTPRINT_COPY_UI_BINDING:"+guard);},seen=[];
 const descriptor=(o,k)=>{if(o===null||(typeof o!=="object"&&typeof o!=="function"))bad();const d=Object.getOwnPropertyDescriptor(o,k);seen.push([o,k,d]);return d;};
 const own=(o,k)=>{const d=descriptor(o,k);if(!d||!Object.hasOwn(d,"value"))bad();return d.value;};
 const absent=(o,k)=>{if(descriptor(o,k)!==undefined||k in o)bad();};
@@ -18,13 +18,21 @@ const verify=()=>{for(const [o,k,d]of seen){const n=Object.getOwnPropertyDescrip
 const context=(root,host,project,path,branch,tab)=>{if(typeof path!=="string"||!/^[a-f0-9]{64}$/.test(path)||typeof branch!=="string"||!/^[a-f0-9]{32}$/.test(branch)||typeof tab!=="string"||tab.length<1||tab.length>128||!/^[A-Za-z0-9_-]+$/.test(tab))bad();if(own(root,"gVars")!==host||own(host,"currentProject")!==project||own(project,"projectId")!==path||own(project,"branchUuid")!==branch||own(root,"_TAB_ID_")!==tab)bad();const top=descriptor(root,"EDITOR_TOP");if(top===undefined){if("EDITOR_TOP" in root)bad();}else if(!Object.hasOwn(top,"value")||(top.value!==undefined&&top.value!==null&&top.value!==root))bad();};
 const notification=(root,host,project,path,branch,tab)=>{context(root,host,project,path,branch,tab);const bus=own(host,"concurrentBus");if(own(root,"/"+tab+"/notify")!==bus)bad();const pulled=own(bus,"pulled"),pushed=own(bus,"pushed"),queue=own(pulled,"/pro-ui/libSource/getProLibSource");array(queue,1);absent(pushed,"/pro-ui/libSource/getProLibSource");const task=own(queue,"0"),wrapper=own(task,"callback");if(own(task,"isRunning")!==true||own(task,"unsafe")!==true||typeof wrapper!=="function")bad();return[wrapper,root,host,project,bus,queue,task];};
 const scopeObject=(o,name)=>{if(Object.getPrototypeOf(o)!==Object.prototype||Reflect.ownKeys(o).length!==2||own(o,"description")!==name)bad();const value=own(o,"object");if(value===null||typeof value!=="object")bad();return value;};
-const retainedNotification=(original,path,branch,tab)=>{array(original,7);const fresh=notification(own(original,"1"),own(original,"2"),own(original,"3"),path,branch,tab);for(let i=0;i<7;i++)if(own(original,String(i))!==fresh[i])bad();return fresh;};`;
+const retainedNotification=(original,path,branch,tab)=>{array(original,7);const fresh=notification(own(original,"1"),own(original,"2"),own(original,"3"),path,branch,tab);for(let i=0;i<7;i++)if(own(original,String(i))!==fresh[i])bad();return fresh;};
+const same=(original,fresh)=>{array(original,fresh.length);for(let i=0;i<fresh.length;i++)if(own(original,String(i))!==fresh[i])bad("RETAINED_RELATION");};
+const registryCapture=(notificationBundle,path,branch,tab)=>{const n=retainedNotification(notificationBundle,path,branch,tab),registry=own(n[1],"extendLibManager"),prototype=Object.getPrototypeOf(registry),constructor=own(prototype,"constructor"),map=own(registry,"_map");
+if(typeof constructor!=="function"||own(constructor,"prototype")!==prototype)bad("PRELOAD_REGISTRY_PROTOTYPE");
+if(Object.getPrototypeOf(map)!==Map.prototype)bad("MAP_PROTOTYPE");if(descriptor(registry,"hasLib")!==undefined||descriptor(map,"has")!==undefined)bad("REGISTRY_SHADOW");
+const has=own(prototype,"hasLib"),instance=own(constructor,"getInstance"),context=getter(constructor,"context");if(typeof has!=="function"||typeof instance!=="function")bad("PRELOAD_REGISTRY_FUNCTION");return[constructor,has,instance,context,prototype,registry,map,notificationBundle];};`;
 const route = String.raw`
 const n=retainedNotification(notificationBundle,path,branch,tab),root=n[1],host=n[2];
 const scope=scopeObject(this,"Closure"),router=own(scope,"ZI"),holder=own(scope,"Lo"),registryClass=own(scope,"h4"),contextProducer=own(scope,"Po"),enums=own(scope,"$e"),footprint=own(enums,"FOOTPRINT");
 if(typeof router!=="function"||typeof registryClass!=="function"||typeof contextProducer!=="function"||own(footprint,"GET_STR")!=="/PrjDB/footprint/getStr")bad();
 const registry=own(root,"extendLibManager"),prototype=own(registryClass,"prototype"),map=own(registry,"_map"),bus=own(holder,"bus");
-if(Object.getPrototypeOf(registry)!==prototype||own(prototype,"constructor")!==registryClass||Object.getPrototypeOf(map)!==Map.prototype)bad();
+if(Object.getPrototypeOf(registry)===prototype)bad("PRELOAD_REGISTRY_REQUIRED");
+registryCapture(notificationBundle,path,branch,tab);
+if(own(prototype,"constructor")!==registryClass)bad("REGISTRY_CONSTRUCTOR");
+if(Object.getPrototypeOf(map)!==Map.prototype)bad("MAP_PROTOTYPE");
 if(descriptor(registry,"hasLib")!==undefined||descriptor(map,"has")!==undefined)bad();if(bus===undefined||bus===null||own(root,"_MSG_BUS_")!==bus||own(host,"messageBus")!==bus)bad();
 const functions=[own(router,"getProLibSource"),own(router,"getProjectLibByWorker"),own(registryClass,"getInstance"),own(prototype,"hasLib"),getter(registryClass,"context"),getter(holder,"messageBus"),contextProducer];
 if(functions.some(value=>typeof value!=="function"))bad();
@@ -33,8 +41,9 @@ const selected=[...functions,router,registryClass,registry,map,holder,bus,footpr
 
 const membership = String.raw`
 array(original,17);for(let i=0;i<17;i++)if(own(original,String(i))!==selected[i])bad();
-if(Function.prototype.toString.call(mapHas)!=="function has() { [native code] }")bad();
-verify();if(Reflect.apply(mapHas,map,[path])!==false)bad();verify();return true;`;
+same(registryOriginal,registryCapture(notificationBundle,path,branch,tab));
+if(Function.prototype.toString.call(mapHas)!=="function has() { [native code] }")bad("MAP_HAS_NATIVE");
+verify();if(Reflect.apply(mapHas,map,[path])!==false)bad("EXTENSION_ENTRY_PRESENT");verify();return true;`;
 
 export const CURRENT_FOOTPRINT_COPY_UI_FUNCTION_ORDER = Object.freeze([
   "sourceRouter", "projectSource", "registryInstance", "registryHas", "registryContext", "messageBus", "contextProducer",
@@ -51,11 +60,14 @@ export const CURRENT_FOOTPRINT_COPY_UI_CALLS = freezeDeep({
   notificationRecheck: { program: `function(original,path,branch,tab){${helpers}\nretainedNotification(original,path,branch,tab);verify();return true;}`, arguments: 4, returnByValue: true },
   responder: { program: `function(wrapper){${helpers}\nconst scope=scopeObject(this,"Closure (rpcService)");if(own(scope,"i")!==wrapper||own(scope,"t")!=="/pro-ui/libSource/getProLibSource")bad();const responder=own(scope,"e");if(typeof responder!=="function")bad();verify();return responder;}`, arguments: 1, returnByValue: false },
   responderRecheck: { program: `function(wrapper,responder){${helpers}\nconst scope=scopeObject(this,"Closure (rpcService)");if(own(scope,"i")!==wrapper||own(scope,"t")!=="/pro-ui/libSource/getProLibSource"||own(scope,"e")!==responder)bad();verify();return true;}`, arguments: 2, returnByValue: true },
+  registry: { program: `function(notificationBundle,path,branch,tab){${helpers}\nconst selected=registryCapture(notificationBundle,path,branch,tab);verify();return selected;}`, arguments: 4, returnByValue: false },
+  registryContextProducer: { program: `function(notificationBundle,registryOriginal,blockScope,path,branch,tab){${helpers}\nconst fresh=registryCapture(notificationBundle,path,branch,tab);same(registryOriginal,fresh);const block=scopeObject(blockScope,"Block");if(Reflect.ownKeys(block).length!==1||own(block,"sl")!==fresh[0])bad("PRELOAD_CLASS_SCOPE");const ws=own(scopeObject(this,"Closure"),"ws");if(typeof ws!=="function")bad("PRELOAD_CONTEXT_PRODUCER");verify();return ws;}`, arguments: 6, returnByValue: false },
+  registryRecheck: { program: `function(notificationBundle,registryOriginal,contextProducer,blockScope,path,branch,tab){${helpers}\nconst fresh=registryCapture(notificationBundle,path,branch,tab);same(registryOriginal,fresh);const block=scopeObject(blockScope,"Block");if(Reflect.ownKeys(block).length!==1||own(block,"sl")!==fresh[0])bad("PRELOAD_CLASS_SCOPE");if(own(scopeObject(this,"Closure"),"ws")!==contextProducer)bad("PRELOAD_CONTEXT_PRODUCER");verify();return true;}`, arguments: 7, returnByValue: true },
   route: { program: `function(notificationBundle,path,branch,tab){${helpers}${route}\nverify();return selected;}`, arguments: 4, returnByValue: false },
   /** After complete native has metadata qualification only. Repeating this
    * fixed read at the final recheck proves current absence, not historical absence. */
-  membership: { program: `function(notificationBundle,path,branch,tab,original){${helpers}${route}${membership}}`, arguments: 5, returnByValue: true },
-  routeRecheck: { program: `function(notificationBundle,path,branch,tab,original){${helpers}${route}${membership}}`, arguments: 5, returnByValue: true },
+  membership: { program: `function(notificationBundle,path,branch,tab,original,registryOriginal){${helpers}${route}${membership}}`, arguments: 6, returnByValue: true },
+  routeRecheck: { program: `function(notificationBundle,path,branch,tab,original,registryOriginal){${helpers}${route}${membership}}`, arguments: 6, returnByValue: true },
 });
 
 const token = z.string().min(1).max(256).regex(/^[A-Za-z\d_.:-]+$/u);
@@ -67,6 +79,27 @@ const property = z.object({ name: text, value: remote, writable: z.boolean(), co
 const internal = z.object({ name: text, value: remote }).strict();
 function fail(): never { throw new Error("FOOTPRINT_COPY_UI_METADATA"); }
 function data(input: unknown): unknown { return captureCurrentPcbStringClockReply(input).value; }
+
+/** Report a retained CDP exception before a success-shape decoder obscures it.
+ * Malformed exception evidence still refuses. Only a fixed guard name and
+ * numeric source position enter the message; vendor text stays in raw replies. */
+export function rejectCurrentFootprintCopyUiException(input: unknown, phase: string): void {
+  const reply = data(input);
+  if (reply === null || typeof reply !== "object" || !Object.hasOwn(reply, "exceptionDetails")) { return; }
+  const details: unknown = Reflect.get(reply, "exceptionDetails");
+  let guard = "UNCLASSIFIED", position = "";
+  if (details !== null && typeof details === "object") {
+    const column: unknown = Reflect.get(details, "columnNumber"), line: unknown = Reflect.get(details, "lineNumber");
+    if (typeof line === "number" && Number.isSafeInteger(line) && line >= 0 &&
+        typeof column === "number" && Number.isSafeInteger(column) && column >= 0) { position = `:${String(line)}:${String(column)}`; }
+    const exception: unknown = Reflect.get(details, "exception");
+    if (exception !== null && typeof exception === "object") {
+      const description: unknown = Reflect.get(exception, "description");
+      if (typeof description === "string") { guard = /FOOTPRINT_COPY_UI_BINDING:([A-Z_]{1,64})\b/u.exec(description)?.[1] ?? guard; }
+    }
+  }
+  throw new Error(`FOOTPRINT_COPY_UI_CDP_EXCEPTION:${phase}:${guard}${position}`);
+}
 
 export function decodeCurrentFootprintCopyUiResponder(input: unknown): string {
   try {
@@ -178,11 +211,10 @@ export function decodeCurrentFootprintCopyUiScope(input: unknown, kind: "wrapper
 }
 
 export const CURRENT_FOOTPRINT_COPY_UI_LIMITS = Object.freeze({
-  /** Three captures, two array reads, nine function metadata reads, two
-   * scope-list reads, native has metadata, first membership and three final
-   * native rechecks: 21 requests. Owner/frame/source admission and
-   * fresh recheck scope reads are separate; no existing budget is increased. */
-  minimumDescriptorRequests: 21, initializedRegistryRequired: true, initializedMessageBusRequired: true,
+  /** The original UI descriptor work21 plus preload qualification10 and
+   * preload final recheck4. Four UI scope refresh requests account for the
+   * runner total39; original parent/frame bracketing is separately reserved. */
+  minimumDescriptorRequests: 35, initializedRegistryRequired: true, initializedMessageBusRequired: true,
   routeCaptureProvesExtensionAbsence: false, nativeHasQualificationRequired: true, matchingExtensionEntryAllowed: false, nativeNotificationDispatched: false,
   transitiveClosuresBound: false, projectWorkerTargetBound: false, executionAuthorized: false,
 } as const);

@@ -53,6 +53,9 @@ import { CurrentFootprintCopyWindowsClockIssuer } from "./current-footprint-copy
 import type { CurrentFootprintCopyWindowsClockObservation, CurrentFootprintCopyWindowsClockPhase, CurrentFootprintCopyWindowsClockTransport } from "./current-footprint-copy-windows-clock.ts";
 import { CurrentPcbStringNativeClockIssuer } from "./current-pcb-string-native-clock.ts";
 import { captureCurrentPcbStringClockReply } from "./current-pcb-string-clock-reply.ts";
+import { CURRENT_WINDOW_CAPTURE_TRANSPORT_RESERVATION, CurrentWindowCaptureTransportBudget } from "./current-pcb-diagnostic-window-capture-budget.ts";
+import { CURRENT_PCB_DIAGNOSTIC_TRANSPORT_LIMITS as TRANSPORT } from "./current-pcb-diagnostic-transport-limits.ts";
+import { CURRENT_WINDOW_CAPTURE_LIMITS, decodeCurrentWindowCapture } from "./current-pcb-diagnostic-window-capture.ts";
 import type { CurrentPcbStringNativeClockObservation, CurrentPcbStringNativeClockPhase } from "./current-pcb-string-native-clock.ts";
 import { freezeDeep } from "./sqlite-inventory-core.ts";
 import { CurrentFootprintCombinedStartupChannel, CurrentFootprintCopyExecutionChannel, CurrentFootprintCopyPreparationChannel, CurrentFootprintCopySavedChannel, CurrentPcb209WorkerStartupChannel, CurrentPcbWorkerStartupChannel,
@@ -143,11 +146,11 @@ import { CurrentFootprintCopyMainBackendRunner } from "./current-footprint-copy-
 import type { CurrentFootprintCopyMainBackendObservation } from "./current-footprint-copy-main-backend-runner.ts";
 
 
-const HELPER_SHA256 = "9de125fb301793e0ef55047a256a9ef80b2db16a89f6df416809b9ec9f57d1b9";
-const HELPER_BYTES = 1_047_639;
-const MAX_LINE = 100_000;
+const HELPER_SHA256 = "1ac7464a523a46eed23674d0b28d53ed110a80e88b0f3876d9efc76b317755b9";
+const HELPER_BYTES = 1_039_698;
+const MAX_LINE = TRANSPORT.maximumHelperLineBytes;
 // 64 MiB native bytes need at most 85.34 MiB base64 plus bounded poll envelopes.
-const MAX_TOTAL = 96 * 1024 * 1024;
+const MAX_TOTAL = TRANSPORT.maximumHelperStdoutBytes;
 // Original helper owners remain reachable after caller exceptions.
 const retainedOwners = new Set<object>();
 
@@ -201,7 +204,7 @@ type MainNativeAction = typeof mainNativeActions[number];
 interface Pending {
   readonly id: string; readonly resolve: (value: RecordValue) => void; readonly reject: (error: Error) => void;
   readonly timer: ReturnType<typeof setTimeout>; readonly launch: boolean; readonly send: boolean; readonly poll: boolean;
-  readonly mainAction: MainNativeAction | null; readonly combinedCleanup: boolean; written: boolean; reply: RecordValue | null;
+  readonly windowCapture: boolean; readonly mainAction: MainNativeAction | null; readonly combinedCleanup: boolean; written: boolean; reply: RecordValue | null;
 }
 function record(value: unknown): value is RecordValue { return value !== null && typeof value === "object" && !Array.isArray(value); }
 function exact(value: RecordValue, fields: readonly string[]): boolean { return Object.keys(value).toSorted().join(",") === fields.toSorted().join(","); }
@@ -402,6 +405,11 @@ class CurrentPcbRetainedOwnerCore {
   #arcShapes209Consumed = false;
   #pouredShapes209Consumed = false;
   #selectionRelations209Consumed = false;
+  #windowCapture209Consumed = false;
+  #windowCapture209Retained: Readonly<RecordValue> | null = null;
+  #windowCapture209DispatchAttempted = false;
+  #windowCapture209Transport: CurrentWindowCaptureTransportBudget | null = null;
+  #windowCapture209CleanupReserved = false;
   #visual209Consumed = false;
   #visual209RetainedObservation: Readonly<RecordValue> | null = null;
   #modelConsumed = false;
@@ -512,6 +520,8 @@ class CurrentPcbRetainedOwnerCore {
     busy: boolean; launchConsumed: boolean; closeConsumed: boolean; released: boolean; helperClosed: boolean;
     cleanupOnly: boolean; noProcessCleanupAvailable: boolean; frameWorkerVerified: false; executionAuthorized: false;
     nativeLaunchError: string | null; nativeSendError: string | null; createProcessError: number | null;
+    windowCapture209AttemptConsumed?: boolean; windowCapture209NativeDispatchAttempted?: boolean; windowCaptureNativeResourcesMayRemain?: boolean;
+    windowCapture209RetainedObservation?: Readonly<RecordValue>; windowCaptureObservationAccepted?: false;
     visual209RetainedObservation?: Readonly<RecordValue>; visualObservationCurrent?: false; visualObservationAccepted?: false;
     mainNativeFailure?: Readonly<{ action: MainNativeAction; code: string }> | null;
     combinedAbortAttempted?: boolean; combinedAbortDispatchAttempted?: boolean; combinedOutputCleanupOnly?: boolean;
@@ -536,6 +546,12 @@ class CurrentPcbRetainedOwnerCore {
       frameInspectionConsumed: this.#framesConsumed, scriptInspectionConsumed: this.#scriptConsumed, diagnosticFailure: this.#pipe.status().failure,
       diagnosticFailureObservation: this.#pipe.status().failureObservation,
       workerStartupChannel: this.#startupChannel?.status() ?? null,
+      ...(this.#purpose === "visual209" ? { windowCapture209AttemptConsumed: this.#windowCapture209Consumed,
+        windowCapture209NativeDispatchAttempted: this.#windowCapture209DispatchAttempted,
+        windowCaptureNativeResourcesMayRemain: this.#windowCapture209DispatchAttempted && !this.#released } : {}),
+      ...(this.#windowCapture209Retained === null ? {} : { windowCapture209RetainedObservation: (() => {
+        const { pngBase64: _png, ...metadata } = this.#windowCapture209Retained; return metadata;
+      })(), windowCaptureObservationAccepted: false as const }),
       ...(this.#visual209RetainedObservation === null ? {} : { visual209RetainedObservation: this.#visual209RetainedObservation,
         visualObservationCurrent: false as const, visualObservationAccepted: false as const }),
       observationFailure: this.#observationFailure,
@@ -1074,6 +1090,45 @@ class CurrentPcbRetainedOwnerCore {
       return result;
     } catch (caughtError) { this.#input.emit("error", error("VISUAL209_FAILED")); throw caughtError; }
     finally { this.#busy = false; }
+  }
+
+  /** One original-window paint. Exact native image data is retained before any
+   * final context check; only this successful method return can be published. */
+  public async captureWindow209(input: CurrentDisposableOpenSealedTarget, hwnd: string): Promise<Readonly<RecordValue>> {
+    const context = this.#stagedContext, profile = this.#pcbSourceProfile, target = currentDisposableOpenSealedTargetSchema.parse(input);
+    if (this.#purpose !== "visual209" || context === null || this.#windowCapture209Consumed || !this.#pcbSourceQualified ||
+        profile === null || this.#pcbFrameObservation?.ok !== true || this.#workersConsumed || this.#modelConsumed ||
+        !/^[1-9][0-9]{0,18}$/u.test(hwnd) || JSON.stringify(target) !== JSON.stringify(this.#projectOpeningTarget)) { throw error("WINDOW_CAPTURE209_UNAVAILABLE"); }
+    this.#pipe.assertPcb209WindowCaptureCapacity();
+    const transport = new CurrentWindowCaptureTransportBudget(this.#total);
+    this.#enter(true); this.#windowCapture209Consumed = true; this.#windowCapture209Transport = transport;
+    this.#windowCapture209CleanupReserved = true;
+    try {
+      const pcb = context.modelContext(), selected = context.pcbOpeningContext();
+      const reprove = (): void => {
+        this.#available(); context.pcbScript(profile);
+        if (JSON.stringify(context.pcbOpeningContext()) !== JSON.stringify(selected) ||
+            JSON.stringify(context.modelContext()) !== JSON.stringify(pcb)) { throw error("WINDOW_CAPTURE209_CONTEXT"); }
+      };
+      const identity = async (): Promise<void> => {
+        const result = decodeCurrentPcbDiagnosticPcbOpeningReply(
+          await this.#transfer(() => this.#pipe.observePcbOpening(selected.uniqueContextId, target, "observe")), target, "observe");
+        reprove();
+        if (!result.ok || result.status !== "frame-observed" || !result.frameObserved ||
+            result.windowTabId !== this.#projectOpeningResult?.observation?.windowTabId) { throw error("WINDOW_CAPTURE209_ACTIVE_PCB"); }
+      };
+      await this.#verifyInstallation(); reprove(); await this.#verify(); reprove();
+      await this.#observeParent(); reprove(); await this.#observeOpeningAncillary(); reprove(); await identity();
+      this.#windowCapture209DispatchAttempted = true;
+      const raw = await this.#request({ action: "capture-window", hwnd, acceptWindowPaintEffects: true });
+      const captured = decodeCurrentWindowCapture(raw);
+      this.#windowCapture209Retained = freezeDeep({ ...captured.observation, pngBase64: captured.png.toString("base64") });
+      if (captured.observation.hwnd !== hwnd) { throw error("WINDOW_CAPTURE209_HWND"); }
+      reprove(); await identity(); await this.#observeParent(); reprove(); await this.#observeOpeningAncillary(); reprove();
+      await this.#verifyInstallation(); reprove(); await this.#verify(); reprove();
+      return this.#windowCapture209Retained;
+    } catch (caughtError) { this.#input.emit("error", error("WINDOW_CAPTURE209_FAILED")); throw caughtError; }
+    finally { this.#windowCapture209Transport = null; this.#busy = false; }
   }
 
   /** Fixed parent-only child reporting. The optional profile is an internal
@@ -2534,10 +2589,10 @@ class CurrentPcbRetainedOwnerCore {
       await this.#send;
       while (this.#pipe.status().pendingRequestId !== null) {
         this.#available(); const chunk = await this.#request({ action: "poll" });
-        if (!exact(chunk, ["bytes"]) || typeof chunk["bytes"] !== "string" || chunk["bytes"].length > 87_384 ||
+        if (!exact(chunk, ["bytes"]) || typeof chunk["bytes"] !== "string" || chunk["bytes"].length > TRANSPORT.maximumNativePollBase64Units ||
             !/^(?:[A-Za-z\d+/]{4})*(?:[A-Za-z\d+/]{2}==|[A-Za-z\d+/]{3}=)?$/u.test(chunk["bytes"])) { throw error("PIPE_CHUNK"); }
         const bytes = Buffer.from(chunk["bytes"], "base64");
-        if (bytes.toString("base64") !== chunk["bytes"] || bytes.length > 65_536) { throw error("PIPE_CHUNK"); }
+        if (bytes.toString("base64") !== chunk["bytes"] || bytes.length > TRANSPORT.maximumNativePollBytes) { throw error("PIPE_CHUNK"); }
         if (bytes.length > 0) { this.#input.write(bytes); } else { await delay(20); }
       }
       const result = await observed;
@@ -2642,9 +2697,17 @@ class CurrentPcbRetainedOwnerCore {
         this.#emptyControls += 1;
       }
     }
+    if (this.#windowCapture209CleanupReserved &&
+      !["identity", "window", "normal-close", "terminate-visual", "termination", "release"].includes(String(request["action"]))) {
+      const nextReplyBytes = request["action"] === "capture-window" ? CURRENT_WINDOW_CAPTURE_TRANSPORT_RESERVATION.nativeCaptureReplyBytes : MAX_LINE;
+      if (this.#total > MAX_TOTAL - CURRENT_WINDOW_CAPTURE_TRANSPORT_RESERVATION.cleanupReplyBytes - nextReplyBytes) {
+        throw error("WINDOW_CAPTURE209_CLEANUP_RESERVE");
+      }
+    }
+    this.#windowCapture209Transport?.consume(request["action"] === "poll");
     const deferred = Promise.withResolvers<RecordValue>(), id = randomBytes(16).toString("hex");
     const launch = request["action"] === "launch";
-    const pending: Pending = { id, resolve: deferred.resolve, reject: deferred.reject, launch, poll: request["action"] === "poll",
+    const pending: Pending = { id, resolve: deferred.resolve, reject: deferred.reject, launch, windowCapture: request["action"] === "capture-window" && this.#purpose === "visual209", poll: request["action"] === "poll",
       mainAction: mainNativeActions.find(action => action === request["action"]) ?? null, combinedCleanup,
       send: request["action"] === "send" || request["action"] === "worker-startup-send" || request["action"] === "worker-startup-parent" ||
         request["action"] === "worker-startup-empty-common" || request["action"] === "worker-startup-empty-root" ||
@@ -2732,7 +2795,8 @@ class CurrentPcbRetainedOwnerCore {
     if (this.#purpose === "worker-startup-empty209") { maximum = CURRENT_PCB_209_EMPTY_NATIVE_PROFILE.bytes.helperStdout; }
     if (this.#ratlineBudget !== null) { maximum = CURRENT_PCB_209_RATLINE_NATIVE_PROFILE.bytes.helperStdout; }
     if (this.#continuationBudget !== null) { maximum = CURRENT_PCB_209_RATLINE_CONTINUATION_NATIVE_PROFILE.bytes.helperStdout; }
-    if (!Buffer.isBuffer(chunk) || chunk.length > MAX_LINE || this.#total + chunk.length > maximum || this.#buffer.length + chunk.length > MAX_LINE) { this.#fail("HELPER_BOUND"); return; }
+    const lineMaximum = this.#pending?.windowCapture === true ? CURRENT_WINDOW_CAPTURE_LIMITS.maximumReplyBytes + 128 : MAX_LINE;
+    if (!Buffer.isBuffer(chunk) || chunk.length > lineMaximum || this.#total + chunk.length > maximum || this.#buffer.length + chunk.length > lineMaximum) { this.#fail("HELPER_BOUND"); return; }
     if (this.#purpose === CURRENT_FOOTPRINT_COMBINED_PURPOSE && this.#total + chunk.length > CURRENT_FOOTPRINT_COMBINED_PROFILE.helperStdout.normalBytes) {
       this.#combinedOutputCleanupOnly = true;
     }
@@ -2762,6 +2826,17 @@ class CurrentPcbRetainedOwnerCore {
       if (!record(raw) || pending === null || pending.reply !== null || raw["id"] !== pending.id ||
           (raw["ok"] === true ? !exact(raw, ["id", "ok", "result"]) || !record(raw["result"]) :
             raw["ok"] !== false || !exact(raw, ["id", "ok", "error"]) || typeof raw["error"] !== "string" || !/^pcb-diagnostic-[a-z-]{1,80}$/u.test(raw["error"]))) { this.#fail("HELPER_REPLY"); return; }
+      try {
+        const pollReplyKind = pending.poll && raw["ok"] === true ? "poll" : "control";
+        const kind = pending.windowCapture ? "image" : pollReplyKind;
+        const result = record(raw["result"]) ? raw["result"] : {};
+        this.#windowCapture209Transport?.observeReply(kind, newline + 1, result);
+      } catch (budgetError) {
+        // A complete, bounded response exceeded this capture's narrower budget.
+        // Settle only its request; retain native close/abort/termination/release.
+        this.#buffer = Buffer.alloc(0); this.#pending = null; clearTimeout(pending.timer);
+        pending.reject(budgetError instanceof Error ? budgetError : error("WINDOW_CAPTURE209_HELPER_ENVELOPE")); return;
+      }
       this.#buffer = Buffer.alloc(0); pending.reply = raw; this.#settle();
     } catch { this.#fail("HELPER_FRAMING"); }
   };

@@ -6,6 +6,8 @@ import { CURRENT_FOOTPRINT_COPY_NATIVE_CREATE_CALL } from "./current-footprint-c
 import { CURRENT_FOOTPRINT_COPY_NATIVE_CREATE_LIMITS as LIMITS, currentFootprintCopyNativeCreateWire } from "./current-footprint-copy-native-create-wire.ts";
 import { CURRENT_PCB_WORKER_CONSTRUCTION_SOURCE } from "./current-pcb-worker-construction-contract.ts";
 import { CURRENT_FOOTPRINT_COPY_CREATE_CLOCK_BUDGET as BUDGET } from "./current-footprint-copy-create-clock-budget.ts";
+import { CURRENT_FOOTPRINT_COPY_ALLOCATED_CREATE_CLOCK_BUDGET as ALLOCATED,
+  CURRENT_FOOTPRINT_COPY_ALLOCATION_NATIVE_ORDER as ORDER } from "./current-footprint-copy-allocated-create-clock-budget.ts";
 
 const marker = (name: string): string => `__copycreate_${name}__`;
 // Windows PowerShell5 reads a BOM-less helper using the system codepage.
@@ -62,7 +64,8 @@ System.Action<System.Action> refuse=action=>{bool failed=false;try{action();}cat
  * This class issues no process, original-handle, purpose or writer authority. */
 export function currentFootprintCopyCreateClockNativeSource(): string {
   const maximumFirst = BUDGET.maximumNormalId - BUDGET.total + 1;
-  return `public sealed class EasyedaFootprintCopyCreateClockLedger {
+  return `public interface IEasyedaFootprintCopyCreateClockLedger {int Next{get;}int CreateId{get;}bool Failed{get;}void Clock(int id,bool cleanup);void Allocation(int id,string phase,bool cleanup);void Create(int id);void Fail();void Retire(bool originalGenerationEnded);}
+public sealed class EasyedaFootprintCopyCreateClockLedger:IEasyedaFootprintCopyCreateClockLedger {
 public const int ClockNormal=${String(BUDGET.clockNormal)},ClockCleanup=${String(BUDGET.clockCleanup)},ArmPrefix=${String(BUDGET.armPrefix)},Requests=${String(BUDGET.total)};
 public readonly int First;public int Next{get;private set;}public int Normal{get;private set;}public int Cleanup{get;private set;}public int CreateId{get;private set;}public bool Failed{get;private set;}public bool Retired{get;private set;}
 static void Need(bool value){if(!value)throw new System.InvalidOperationException("footprint-copy-create-clock-ledger");}
@@ -70,6 +73,7 @@ void Guard(bool value){if(!value){Failed=true;Need(false);}}
 public EasyedaFootprintCopyCreateClockLedger(int first){Need(first>=1&&(long)first+Requests-1<=${String(BUDGET.maximumNormalId)});First=first;Next=first;}
 void Available(int id){Guard(!Failed&&!Retired&&id==Next&&id==First+Normal+Cleanup+(CreateId==0?0:1)&&id<First+Requests);}
 public void Clock(int id,bool cleanup){Available(id);Guard(CreateId!=0||Normal<ArmPrefix&&!cleanup);Guard(cleanup?Cleanup<ClockCleanup:Normal<ClockNormal);Next++;if(cleanup)Cleanup++;else Normal++;}
+public void Allocation(int id,string phase,bool cleanup){Guard(false);}
 public void Create(int id){Available(id);Guard(CreateId==0&&id==First+ArmPrefix&&Normal==ArmPrefix&&Cleanup==0);CreateId=id;Next++;}
 public void Fail(){Failed=true;}
 public bool Complete{get{return !Failed&&CreateId==First+ArmPrefix&&Normal==ClockNormal&&Cleanup==ClockCleanup&&Next==First+Requests;}}
@@ -81,5 +85,33 @@ var missing=new EasyedaFootprintCopyCreateClockLedger(1);for(int i=0;i<ArmPrefix
 var duplicate=new EasyedaFootprintCopyCreateClockLedger(1);for(int i=0;i<ArmPrefix;i++)duplicate.Clock(duplicate.Next,false);duplicate.Create(duplicate.Next);refuse(()=>duplicate.Create(duplicate.Next));duplicate.Retire(true);
 var early=new EasyedaFootprintCopyCreateClockLedger(1);refuse(()=>early.Create(1));early.Retire(true);
 var incomplete=new EasyedaFootprintCopyCreateClockLedger(1);refuse(()=>incomplete.Retire(false));incomplete.Retire(true);refuse(()=>incomplete.Retire(true));}
+}`;
+}
+
+/** The pre-await mode has its own ordering and counters. A68-ID owner cannot
+ * accept one of its additional commands or refund an ambiguous allocation. */
+export function currentFootprintCopyAllocatedCreateClockNativeSource(): string {
+  const maximumFirst = ALLOCATED.maximumNormalId - ALLOCATED.total + 1;
+  return `public sealed class EasyedaFootprintCopyAllocatedCreateClockLedger:IEasyedaFootprintCopyCreateClockLedger {
+public const int ClockNormal=${String(ALLOCATED.clockNormal)},ClockCleanup=${String(ALLOCATED.clockCleanup)},ArmPrefix=${String(ALLOCATED.armPrefix)},Requests=${String(ALLOCATED.total)};
+static readonly string[] Order={${ORDER.map(value => literal(value)).join(",")}};
+public readonly int First;public int Next{get;private set;}public int Normal{get;private set;}public int Cleanup{get;private set;}public int AllocationPhase{get;private set;}public int CreateId{get;private set;}public bool Failed{get;private set;}public bool Retired{get;private set;}
+static void Need(bool value){if(!value)throw new System.InvalidOperationException("footprint-copy-allocated-create-clock-ledger");}
+void Guard(bool value){if(!value){Failed=true;Need(false);}}
+public EasyedaFootprintCopyAllocatedCreateClockLedger(int first){Need(first>=1&&(long)first+Requests-1<=${String(ALLOCATED.maximumNormalId)});First=first;Next=first;}
+void Available(int id){Guard(!Failed&&!Retired&&id==Next&&id==First+Normal+Cleanup+AllocationPhase+(CreateId==0?0:1)&&id<First+Requests);}
+public void Clock(int id,bool cleanup){Available(id);Guard(CreateId==0?AllocationPhase==1&&Normal<13&&!cleanup:AllocationPhase>=9);Guard(cleanup?Cleanup<ClockCleanup:Normal<ClockNormal);Next++;if(cleanup)Cleanup++;else Normal++;}
+public void Allocation(int id,string phase,bool cleanup){Available(id);Guard(AllocationPhase<Order.Length&&phase==Order[AllocationPhase]&&cleanup==(AllocationPhase>=7));Guard(AllocationPhase==0?Normal==0&&Cleanup==0&&CreateId==0:CreateId!=0);Guard(AllocationPhase==0||AllocationPhase>=9||Normal==13&&Cleanup==0);Guard(AllocationPhase!=9||Normal==ClockNormal);AllocationPhase++;Next++;}
+public void Create(int id){Available(id);Guard(CreateId==0&&AllocationPhase==1&&id==First+ArmPrefix&&Normal==13&&Cleanup==0);CreateId=id;Next++;}
+public void Fail(){Failed=true;}
+public bool Complete{get{return !Failed&&AllocationPhase==10&&CreateId==First+ArmPrefix&&Normal==ClockNormal&&Cleanup==ClockCleanup&&Next==First+Requests;}}
+public void Retire(bool originalGenerationEnded){Guard(!Retired);if(!Complete&&!originalGenerationEnded){Failed=true;Need(false);}Retired=true;}
+public static void VerifySmoke(){System.Action<System.Action> refuse=action=>{bool failed=false;try{action();}catch(System.InvalidOperationException){failed=true;}Need(failed);};
+foreach(int first in new int[]{0,${String(maximumFirst + 1)},int.MaxValue})refuse(()=>new EasyedaFootprintCopyAllocatedCreateClockLedger(first));
+var value=new EasyedaFootprintCopyAllocatedCreateClockLedger(${String(maximumFirst)});value.Allocation(value.Next,Order[0],false);for(int i=0;i<13;i++)value.Clock(value.Next,false);value.Create(value.Next);for(int i=1;i<9;i++)value.Allocation(value.Next,Order[i],i>=7);for(int i=13;i<ClockNormal;i++)value.Clock(value.Next,false);for(int i=0;i<10;i++)value.Clock(value.Next,true);value.Allocation(value.Next,Order[9],true);for(int i=10;i<ClockCleanup;i++)value.Clock(value.Next,true);Need(value.Complete&&value.Next==${String(ALLOCATED.maximumNormalId + 1)}&&value.CreateId==${String(maximumFirst + ALLOCATED.createOffset)});value.Retire(false);refuse(()=>value.Clock(value.Next,true));
+var old=new EasyedaFootprintCopyCreateClockLedger(1);refuse(()=>old.Allocation(1,Order[0],false));old.Retire(true);
+var missing=new EasyedaFootprintCopyAllocatedCreateClockLedger(1);refuse(()=>missing.Clock(1,false));missing.Retire(true);
+var early=new EasyedaFootprintCopyAllocatedCreateClockLedger(1);early.Allocation(1,Order[0],false);refuse(()=>early.Create(2));early.Retire(true);
+var incomplete=new EasyedaFootprintCopyAllocatedCreateClockLedger(1);refuse(()=>incomplete.Retire(false));incomplete.Retire(true);refuse(()=>incomplete.Retire(true));}
 }`;
 }
