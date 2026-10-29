@@ -28,6 +28,10 @@ fresh copper nor fabrication geometry. Arc/Poured passed a live empty-collection
 case; populated shapes still need connected validation.
 A separate [disposable visual workflow](plugins/easyeda-pro-control/skills/easyeda-pro-control/references/current-pcb209-visual.md)
 provides fit/zoom and one bounded capture of its original application window.
+Before capture, a bounded readiness query reports window geometry and remaining
+transport capacity without painting or consuming the capture attempt. A separate
+once-only request can resize an eligible normal window to1920x1080; a later
+readiness sample must confirm it. Maximized-window restore is unsupported.
 Capture returns a managed PNG, retains native paint resources until verified
 process exit and may show blank, stale or partial content. It has offline
 validation; connected capture acceptance remains pending. It does not use the

@@ -7,6 +7,7 @@ import { CURRENT_PCB_COMMON_PREFERENCE_FUNCTION, CURRENT_PCB_COMMON_PRESENTATION
 import { CURRENT_PCB_STRING_ACTOR_CLOCK_FUNCTIONS } from "../server/src/current-pcb-string-actor-clock.ts";
 import { CURRENT_PCB_STRING_MOVE_SELECTOR, CURRENT_PCB_STRING_MOVE_STATE } from "../server/src/current-pcb-string-producer-program.ts";
 import { CURRENT_PCB_STRING_STARTUP_STATE_FUNCTION } from "../server/src/current-pcb-string-startup-state.ts";
+import { CURRENT_PCB_STRING_WORKER_GATE_PROGRAM } from "../server/src/current-pcb-string-worker-gate-program.ts";
 import { generatePackedNativeProgram } from "./native-program-packing.ts";
 import { CURRENT_PCB_DIAGNOSTIC_RAW_STRINGS_FUNCTION } from "../server/src/current-pcb-diagnostic-raw-strings.ts";
 import { CURRENT_PCB_TEARDROP_CALLBACK_SELECTOR, CURRENT_PCB_TEARDROP_OWNER_ASSOCIATION } from "../server/src/current-pcb-teardrop-owner-program.ts";
@@ -20,6 +21,7 @@ import { CURRENT_PCB_STRING_RENDERER_ASSOCIATION_FUNCTION } from "../server/src/
 import { CURRENT_PCB_STRING_EMPTY_ASSETS_FUNCTION } from "../server/src/current-pcb-string-empty-assets.ts";
 
 for (const [marker, name, source] of [
+  ["STRING WORKER GATE", "StringWorkerGateFunction", CURRENT_PCB_STRING_WORKER_GATE_PROGRAM],
   ["MOVE PRODUCER TWO", "MoveProducerTwoFunction", CURRENT_PCB_STRING_MOVE_SELECTOR],
   ["MOVE PRODUCER THREE", "MoveProducerThreeFunction", CURRENT_PCB_STRING_MOVE_STATE],
   ["MOVE PRODUCER FOUR", "MoveProducerFourFunction", CURRENT_PCB_STRING_STARTUP_STATE_FUNCTION],

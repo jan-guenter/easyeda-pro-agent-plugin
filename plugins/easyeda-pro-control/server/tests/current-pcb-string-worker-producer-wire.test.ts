@@ -10,6 +10,7 @@ import { CURRENT_PCB_STRING_WORKER_PRODUCER_CALLS, CURRENT_PCB_STRING_WORKER_PRO
   CURRENT_PCB_STRING_WORKER_PRODUCER_SEQUENCE } from "../src/current-pcb-string-worker-producer-commands.ts";
 import { CurrentPcbStringWorkerProducerRunner } from "../src/current-pcb-string-worker-producer-runner.ts";
 import { createCurrentPcbStringWorkerProducerResponder } from "./helpers/current-pcb-string-worker-producer-responder.ts";
+import { readPackedNativeProgram } from "./helpers/native-packed-program.ts";
 
 type Row = Record<string, unknown>;
 const EFFECTS = CURRENT_PCB_STRING_WORKER_PRODUCER_EFFECTS, GROUP = CURRENT_PCB_STRING_WORKER_PRODUCER_OBJECT_GROUP;
@@ -76,7 +77,9 @@ void test("all 20 native programs, sequence, effects and fixed argument grammar 
   assert.equal(programs.length, 20);
   for (const [index, [phase, program]] of programs.entries()) {
     const encoded = new RegExp(`const string WorkerProducerProgram${index}=@"((?:""|[^"])*)";`, "u").exec(source)?.[1];
-    assert.equal(encoded?.replaceAll('""', '"'), program, phase);
+    const decoded = index === 6 ? readPackedNativeProgram(source, "StringWorkerGateFunction") : encoded?.replaceAll('""', '"');
+    assert.equal(decoded, program, phase);
+    if (index === 6) { assert.ok(source.includes("static readonly string WorkerProducerProgram6=StringWorkerGateFunction;")); }
     assert.ok(source.includes(createHash("sha256").update(program).digest("hex")));
     assert.ok(source.includes(`case "${phase}": return WorkerProducerProgram${index};`));
   }

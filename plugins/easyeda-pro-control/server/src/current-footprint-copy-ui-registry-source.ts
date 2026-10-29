@@ -8,6 +8,12 @@ import { freezeDeep } from "./sqlite-inventory-core.ts";
 
 export const CURRENT_FOOTPRINT_COPY_UI_REGISTRY_SOURCE = freezeDeep({
   ...CURRENT_PCB_209_WORKER_BOOTSTRAP_SOURCE_PROFILE.preload,
+  // Target inspector contract, not this Node process's function roster. The
+  // Admitted application reports V8 14.6; near-family Node26 diagnostics show
+  // Its ordinary ws function omits Node24's legacy own caller/arguments fields.
+  targetFunctionMetadata: { v8: "14.6.202.33", chromiumMajor: 146,
+    contextProducerOwnProperties: ["length", "name", "prototype"],
+    legacyOwnCallerArgumentsAdmitted: false, connectedFunctionRosterVerified: false },
   functions: {
     registryConstructor: { start: 682_378, end: 683_330, bytes: 952,
       sha256: "dac0694a6253a07e3fd974a214d9863e6b44f606d59260cff947efe2727889e5",

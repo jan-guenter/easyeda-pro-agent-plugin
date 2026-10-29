@@ -2,10 +2,12 @@
  * Arbitrarily fragmented/empty native polls need a count and envelope bound:
  * raw CDP bytes alone do not bound the cost of helper JSON responses. */
 import { CURRENT_PCB_DIAGNOSTIC_TRANSPORT_LIMITS as TRANSPORT } from "./current-pcb-diagnostic-transport-limits.ts";
+import { CURRENT_WINDOW_RESIZE_LIMITS as RESIZE } from "./current-pcb-diagnostic-window-resize.ts";
 import { CURRENT_WINDOW_CAPTURE_LIMITS as IMAGE } from "./current-pcb-diagnostic-window-capture.ts";
 
 const cdpRequests = 10, cleanupControlReplies = 16, controlRequests = 16, pollRequests = 512;
 const helperEnvelopeBytes = 512, nativeCaptureReplyBytes = IMAGE.maximumReplyBytes + 128;
+const nativeResizeReplyBytes = RESIZE.resultBytes + 128;
 const maximumCdpRawBytes = cdpRequests * (TRANSPORT.maximumFrameBytes + 1) + TRANSPORT.maximumEventBytes + TRANSPORT.maximumEventCount;
 // Per-poll padding adds less than4 bytes beyond aggregate base64 encoding.
 const maximumPollBase64Bytes = 4 * Math.ceil(maximumCdpRawBytes / 3) + 4 * pollRequests;
@@ -13,7 +15,7 @@ const stageReplyBytes = maximumPollBase64Bytes + (controlRequests + pollRequests
 const cleanupReplyBytes = cleanupControlReplies * TRANSPORT.maximumHelperLineBytes;
 const requiredHeadroomBytes = Math.ceil((stageReplyBytes + cleanupReplyBytes) / (16 * 1024 * 1024)) * 16 * 1024 * 1024;
 export const CURRENT_WINDOW_CAPTURE_TRANSPORT_RESERVATION = Object.freeze({
-  cdpRequests, controlRequests, pollRequests, cleanupControlReplies, helperEnvelopeBytes, nativeCaptureReplyBytes,
+  cdpRequests, controlRequests, pollRequests, cleanupControlReplies, helperEnvelopeBytes, nativeCaptureReplyBytes, nativeResizeReplyBytes,
   maximumCdpRawBytes, maximumPollBase64Bytes, stageReplyBytes, cleanupReplyBytes, requiredHeadroomBytes,
 });
 
@@ -35,10 +37,13 @@ export class CurrentWindowCaptureTransportBudget {
       if (this.#controls >= controlRequests) { throw refusal("CONTROL_BUDGET"); } this.#controls += 1;
     }
   }
-  public observeReply(kind: "poll" | "control" | "image", lineBytes: number, result: Readonly<Record<string, unknown>>): void {
+  public observeReply(kind: "poll" | "control" | "image" | "resize", lineBytes: number, result: Readonly<Record<string, unknown>>): void {
     if (!Number.isSafeInteger(lineBytes) || lineBytes < 1) { throw refusal("HELPER_ENVELOPE"); }
     if (kind !== "poll") {
-      if (lineBytes > (kind === "image" ? nativeCaptureReplyBytes : helperEnvelopeBytes)) { throw refusal("HELPER_ENVELOPE"); } return;
+      let maximum = helperEnvelopeBytes;
+      if (kind === "image") { maximum = nativeCaptureReplyBytes; }
+      else if (kind === "resize") { maximum = nativeResizeReplyBytes; }
+      if (lineBytes > maximum) { throw refusal("HELPER_ENVELOPE"); } return;
     }
     const encoded = result["bytes"];
     if (Object.keys(result).length !== 1 || typeof encoded !== "string" || encoded.length > TRANSPORT.maximumNativePollBase64Units ||

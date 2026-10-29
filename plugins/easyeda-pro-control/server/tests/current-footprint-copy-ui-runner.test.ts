@@ -2,6 +2,7 @@
 /** Synthetic CDP replies exercise the actual runner and fixed wire. Only the
  * separately tested complete vendor-source issuer is replaced in this fixture. */
 import assert from "node:assert/strict";
+import { createHash } from "node:crypto";
 import { readFile } from "node:fs/promises";
 import { createRequire } from "node:module";
 import { test } from "node:test";
@@ -49,8 +50,7 @@ function metadata(role: CurrentFootprintCopyUiFunction): Data {
 function registryMetadata(role: CurrentFootprintCopyUiRegistryFunction): Data {
   const profile = REGISTRY_SOURCE.functions[role];
   const result: Data[] = [property("name", { type: "string", value: profile.name }), property("length", { type: "number", value: profile.arity })];
-  if (role === "contextProducer") { result.push(property("prototype", { type: "object", className: "Object", description: "Object", objectId: "registry-context-prototype" }, true, false, false),
-    property("arguments", { type: "object", subtype: "null", value: null }, false, false, false), property("caller", { type: "object", subtype: "null", value: null }, false, false, false)); }
+  if (role === "contextProducer") { result.push(property("prototype", { type: "object", className: "Object", description: "Object", objectId: "registry-context-prototype" }, true, false, false)); }
   if (role === "registryConstructor") {
     result.push(property("prototype", { type: "object", className: "Object", description: "Object", objectId: "registry-prototype" }, false, false, false),
       property("getInstance", { type: "function", className: "Function", description: REGISTRY_FIXTURE.registryInstance, objectId: "preload:registryInstance" }, true),
@@ -174,9 +174,13 @@ void test("UI runner retains full preload source through observation and reproof
   const Constructor = await constructor(), value = fixture();
   const runner = new Constructor(source, value.transport, binding);
   const packet = await runner.observe(); await runner.requireOriginal(packet);
-  const retained = runner.retained().replies.filter((reply): reply is object => reply !== null && typeof reply === "object" && Object.hasOwn(reply, "scriptSource"));
+  const retained = runner.retained().replies.filter((reply): reply is object => reply !== null && typeof reply === "object" && Reflect.get(reply, "kind") === "script-source");
   assert.equal(retained.length, 3);
-  for (const reply of retained) { assert.equal(Reflect.get(reply, "scriptSource"), registryText); }
+  for (const reply of retained) { assert.deepEqual(reply, { kind: "script-source", utf8Bytes: REGISTRY_SOURCE.bytes,
+    sha256: createHash("sha256").update(registryText).digest("hex"), originalRetainedPrivately: true }); }
+  const diagnostics = JSON.stringify(runner.retained());
+  assert.ok(Buffer.byteLength(diagnostics) < 98_304); assert.equal(diagnostics.includes(registryText), false);
+  assert.equal(runner.retained().originalRepliesRetainedPrivately, true);
   assert.equal(value.commands.length, 50); await runner.release();
 });
 
@@ -186,9 +190,39 @@ void test("UI full preload reply is retained before awaited owner loss and the a
   await assert.rejects(runner.observe(), /original parent lost/u);
   assert.equal(value.commands.at(-1)?.phase, "registrySource"); assert.equal(runner.retained().replies.length, 24);
   const last = runner.retained().replies.at(-1); assert.ok(last !== null && typeof last === "object");
-  assert.equal(Reflect.get(last, "scriptSource"), registryText);
+  assert.deepEqual(last, { kind: "script-source", utf8Bytes: REGISTRY_SOURCE.bytes,
+    sha256: createHash("sha256").update(registryText).digest("hex"), originalRetainedPrivately: true });
   assert.equal(value.commands.some(command => command.phase === "membership"), false);
   await assert.rejects(runner.observe()); assert.equal(value.commands.length, 24);
+});
+
+void test("UI registry failure diagnostics identify the exact metadata role and retain its bounded actual reply", async () => {
+  const Constructor = await constructor(), value = fixture();
+  const original = value.transport.request;
+  const transport: CurrentFootprintCopyUiTransport = { assertCurrent: value.transport.assertCurrent,
+    request: async (command): Promise<unknown> => {
+      const reply = await original(command);
+      if (command.phase === "properties" && command.params.objectId === "preload:contextProducer") {
+        const actualMetadata = registryMetadata("contextProducer"), fields = actualMetadata["result"]; assert.ok(Array.isArray(fields));
+        const originalFields: readonly unknown[] = fields;
+        return { ...actualMetadata, result: [...originalFields,
+          property("arguments", { type: "object", subtype: "null", value: null }, false, false, false),
+          property("caller", { type: "object", subtype: "null", value: null }, false, false, false)] };
+      }
+      return reply;
+    } };
+  const runner = new Constructor(source, transport, binding);
+  await assert.rejects(runner.observe(), /FOOTPRINT_COPY_UI_REGISTRY_METADATA/u);
+  const status = runner.retained();
+  assert.deepEqual(status.failure, { requestNumber: 27, replyIndex: 26, phase: "properties", method: "Runtime.getProperties",
+    role: "preload.contextProducer", code: "FOOTPRINT_COPY_UI_REGISTRY_METADATA" });
+  assert.equal(status.replyStartIndex, 0); assert.ok(Buffer.byteLength(JSON.stringify(status)) < 98_304);
+  const last = status.replies[26]; assert.ok(last !== null && typeof last === "object");
+  const fields: unknown = Reflect.get(last, "result"); assert.ok(Array.isArray(fields));
+  assert.deepEqual(fields.map((field: Data) => field["name"]), ["name", "length", "prototype", "arguments", "caller"]);
+  assert.equal(value.commands.some(command => command.phase === "membership"), false);
+  await assert.rejects(runner.observe()); await runner.release();
+  assert.equal(runner.retained().failure?.role, "preload.contextProducer");
 });
 
 void test("UI runner retains delivered evidence before owner loss and refuses replay", async () => {

@@ -23,9 +23,7 @@ function metadata(role: CurrentFootprintCopyUiRegistryFunction): Reply {
       property("getInstance", nativeFunction("registryInstance"), true),
       { name: "context", get: nativeFunction("registryContext"), set: { type: "undefined" }, enumerable: false, configurable: true, isOwn: true });
   } else if (role === "contextProducer") {
-    result.push(property("prototype", { type: "object", className: "Object", description: "Object", objectId: "function-prototype" }, true, false, false),
-      property("arguments", { type: "object", subtype: "null", value: null }, false, false, false),
-      property("caller", { type: "object", subtype: "null", value: null }, false, false, false));
+    result.push(property("prototype", { type: "object", className: "Object", description: "Object", objectId: "function-prototype" }, true, false, false));
   }
   return { result, internalProperties: [
     { name: "[[FunctionLocation]]", value: { type: "object", subtype: "internal#location", value: { scriptId: "preload", lineNumber: profile.lineNumber, columnNumber: profile.columnNumber } } },
@@ -67,10 +65,12 @@ void test("class metadata rejects writable prototype, missing static prefix, sub
     const reply = metadata("registryConstructor"); mutate(reply);
     assert.throws(() => decodeCurrentFootprintCopyUiRegistryFunction(reply, "registryConstructor", "preload"), refusal);
   }
-  for (const name of ["arguments", "caller"]) {
-    const reply = metadata("contextProducer"); reply.result = reply.result.filter(item => item["name"] !== name);
-    assert.throws(() => decodeCurrentFootprintCopyUiRegistryFunction(reply, "contextProducer", "preload"), refusal);
-  }
+  const legacy = metadata("contextProducer");
+  for (const name of ["arguments", "caller"]) { legacy.result.push(property(name, { type: "object", subtype: "null", value: null }, false, false, false)); }
+  assert.throws(() => decodeCurrentFootprintCopyUiRegistryFunction(legacy, "contextProducer", "preload"), refusal);
+  assert.deepEqual(SOURCE.targetFunctionMetadata.contextProducerOwnProperties, ["length", "name", "prototype"]);
+  assert.equal(SOURCE.targetFunctionMetadata.legacyOwnCallerArgumentsAdmitted, false);
+  assert.equal(SOURCE.targetFunctionMetadata.connectedFunctionRosterVerified, false);
 });
 
 void test("class scope chain requires its distinct Block, preload Closure and final Global", () => {

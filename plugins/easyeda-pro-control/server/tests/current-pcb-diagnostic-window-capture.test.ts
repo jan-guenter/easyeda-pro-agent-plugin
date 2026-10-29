@@ -4,6 +4,9 @@ import assert from "node:assert/strict";
 import { test } from "node:test";
 import { CurrentWindowCaptureTransportBudget, CURRENT_WINDOW_CAPTURE_TRANSPORT_RESERVATION as RESERVATION } from "../src/current-pcb-diagnostic-window-capture-budget.ts";
 import { CURRENT_PCB_DIAGNOSTIC_TRANSPORT_LIMITS as TRANSPORT } from "../src/current-pcb-diagnostic-transport-limits.ts";
+import { decodeCurrentWindowResize, requireCurrentWindowResizeReadiness } from "../src/current-pcb-diagnostic-window-resize.ts";
+import { windowResizePacket } from "./helpers/window-resize-packet.ts";
+import { currentWindowCaptureReadiness } from "../src/current-pcb-diagnostic-window-capture-readiness.ts";
 import { CURRENT_WINDOW_CAPTURE_LIMITS, currentWindowCaptureArtifactPath, decodeCurrentWindowCapture } from "../src/current-pcb-diagnostic-window-capture.ts";
 import { windowCapturePacket } from "./helpers/window-capture-png.ts";
 
@@ -66,4 +69,31 @@ void test("capture checks actual poll envelope and raw-byte costs without poison
   const fullPolls = Math.floor(RESERVATION.maximumCdpRawBytes / TRANSPORT.maximumNativePollBytes);
   for (let index = 0; index < fullPolls; index += 1) { budget.observeReply("poll", encoded.length + 512, { bytes: encoded }); }
   assert.throws(() => { budget.observeReply("poll", encoded.length + 512, { bytes: encoded }); }, /RAW_REPLY_BUDGET/u);
+});
+
+void test("readiness reports oversized or exhausted snapshots without painting or granting authority", () => {
+  const native = { hwnd: "12345", bounds: { left: 0, top: 0, right: 3840, bottom: 2160 }, queriesUsed: 1, maximized: false, resizeAttempted: false, resizeRequestSubmitted: false, resizeGeometryObserved: false,
+    captureAttempted: false, paintDispatched: false, nativeResourcesRetained: false };
+  const usage = { helperStdoutBytes: 1024, cdpRequests: 60, readerAvailable: true, sourceQualified: true, captureConsumed: false, queriesUsed: 1 };
+  const result = currentWindowCaptureReadiness(native, usage);
+  assert.equal(result["geometryEligible"], false); assert.equal(result["capacityAvailable"], false); assert.equal(result["captureAttemptConsumed"], false);
+  assert.equal(result["paintIssued"], false); assert.equal(result["activePcbRechecked"], false); assert.equal(result["executionAuthorized"], false);
+  const valid = { ...native, bounds: { left: 0, top: 0, right: 1920, bottom: 1080 } };
+  assert.equal(currentWindowCaptureReadiness(valid, usage)["capacityAvailable"], true);
+  assert.equal(currentWindowCaptureReadiness(valid, { ...usage, cdpRequests: 94 })["transportEligible"], false);
+  assert.equal(currentWindowCaptureReadiness(valid, { ...usage, helperStdoutBytes: TRANSPORT.maximumHelperStdoutBytes - RESERVATION.requiredHeadroomBytes + 1 })["transportEligible"], false);
+  assert.equal(currentWindowCaptureReadiness(valid, { ...usage, captureConsumed: true })["capacityAvailable"], false);
+  assert.equal(currentWindowCaptureReadiness({ ...native, hwnd: null, bounds: null, maximized: null }, usage)["geometryEligible"], false);
+  assert.throws(() => currentWindowCaptureReadiness({ ...valid, queriesUsed: 9 }, { ...usage, queriesUsed: 9 }));
+});
+
+void test("resize metadata fixes its dimensions and independently binds the later no-move sample", () => {
+  const packet = windowResizePacket(); assert.equal(decodeCurrentWindowResize(packet)["requestedWidth"], 1920);
+  for (const extra of [{ requestedWidth: 3840 }, { geometryVerified: true }, { hwnd: "foreign" }, { x: 0 }]) {
+    assert.throws(() => decodeCurrentWindowResize({ ...packet, ...extra }));
+  }
+  const readiness = { hwnd: "12345", bounds: { left: 0, top: 0, right: 1920, bottom: 1080 }, maximized: false, resizeGeometryObserved: true };
+  requireCurrentWindowResizeReadiness(readiness, packet);
+  assert.throws(() =>{  requireCurrentWindowResizeReadiness({ ...readiness, bounds: { left: 1, top: 0, right: 1921, bottom: 1080 } }, packet); });
+  assert.throws(() =>{  requireCurrentWindowResizeReadiness({ ...readiness, maximized: true }, packet); });
 });

@@ -35,7 +35,16 @@ export const CURRENT_WINDOW_CAPTURE_NATIVE_MEMBERS = String.raw`
       return dc==IntPtr.Zero&&bitmap==IntPtr.Zero;
     }
   }
+  string windowFaultStage="request";WcRect windowFaultBounds;bool windowFaultBoundsObserved;
+  void WcFaultStart(string stage){windowFaultStage=stage;windowFaultBoundsObserved=false;}
+  public string WindowFaultStage {get{return windowFaultStage;}}
+  public object WindowFaultBounds {get{return windowFaultBoundsObserved?(object)new Dictionary<string,object>{{"left",windowFaultBounds.left},{"top",windowFaultBounds.top},{"right",windowFaultBounds.right},{"bottom",windowFaultBounds.bottom}}:null;}}
   WindowCaptureSurface windowCaptureSurface;
+  [DllImport("user32.dll")] static extern bool IsZoomed(IntPtr hwnd);
+  [DllImport("user32.dll",SetLastError=true)] static extern bool SetWindowPos(IntPtr hwnd,IntPtr after,int x,int y,int width,int height,uint flags);
+  bool windowResizeAttempted,windowResizeSubmitted,windowResizeGeometryObserved;
+  string windowResizeHwnd;WcRect windowResizeBefore;
+  int windowCaptureReadinessQueries;
   bool windowCaptureAttempted,windowCapturePaintDispatched,windowCapturePrintAcknowledged;
   public bool WindowCaptureAttempted { get { return windowCaptureAttempted; } }
   public bool WindowCaptureResourcesRetained { get { return windowCaptureSurface!=null; } }
@@ -45,9 +54,13 @@ export const CURRENT_WINDOW_CAPTURE_NATIVE_MEMBERS = String.raw`
     if(width<1||height<1||width>WindowCaptureMaximumDimension||height>WindowCaptureMaximumDimension||
        (long)width*height>WindowCaptureMaximumPixels)throw Error("window-capture-dimensions");
   }
-  WcRect WcBounds(IntPtr hwnd) {
+  WcRect WcReadBounds(IntPtr hwnd) {
     WcRect value;if(!WcGetWindowRect(hwnd,out value)||value.left<-1000000||value.left>1000000||value.top<-1000000||value.top>1000000||
        value.right<-1000000||value.right>1000000||value.bottom<-1000000||value.bottom>1000000)throw Error("window-capture-rectangle");
+    windowFaultBounds=value;windowFaultBoundsObserved=true;return value;
+  }
+  WcRect WcBounds(IntPtr hwnd) {
+    WcRect value=WcReadBounds(hwnd);
     long width=(long)value.right-value.left,height=(long)value.bottom-value.top;
     if(width<320||height<200||width>WindowCaptureMaximumDimension||height>WindowCaptureMaximumDimension)throw Error("window-capture-rectangle");
     WcDimensions((int)width,(int)height);return value;
@@ -97,25 +110,62 @@ export const CURRENT_WINDOW_CAPTURE_NATIVE_MEMBERS = String.raw`
     }
     return png;
   }
+  bool WcResizeMatches(string hwnd,WcRect value) {
+    return windowResizeSubmitted&&hwnd==windowResizeHwnd&&!IsZoomed(new IntPtr(long.Parse(hwnd,CultureInfo.InvariantCulture)))&&
+      value.left==windowResizeBefore.left&&value.top==windowResizeBefore.top&&(long)value.right-value.left==1920&&(long)value.bottom-value.top==1080;
+  }
+  public Dictionary<string,object> ResizeWindowForCapture() {
+    WcFaultStart("request");
+    if(!visual209||!layers209||workerStartup||stringPrecreate)throw Error("window-resize-purpose");
+    if(windowResizeAttempted||windowCaptureAttempted||windowCaptureReadinessQueries>=8)throw Error("window-resize-consumed");
+    windowResizeAttempted=true;windowResizeGeometryObserved=false;windowFaultStage="owner";AssertLive();windowFaultStage="identity";string hwnd=Window();
+    if(hwnd==null)throw Error("window-resize-window");IntPtr handle=new IntPtr(long.Parse(hwnd,CultureInfo.InvariantCulture));
+    windowFaultStage="bounds";WcRect before=WcReadBounds(handle);if(IsZoomed(handle))throw Error("window-resize-maximized-unsupported");
+    windowFaultStage="before-resize";AssertLive();if(Window()!=hwnd||!WcSame(before,WcReadBounds(handle)))throw Error("window-resize-window-changed");
+    windowResizeHwnd=hwnd;windowResizeBefore=before;
+    // Fixed asynchronous no-move/no-activate/no-Z-order request, never restore.
+    windowFaultStage="resize-submission";if(!SetWindowPos(handle,IntPtr.Zero,0,0,1920,1080,0x4216))throw Error("window-resize-submission-failed");
+    windowResizeSubmitted=true;windowFaultStage="after-resize";AssertLive();if(Window()!=hwnd)throw Error("window-resize-window-changed");
+    return new Dictionary<string,object>{{"schema","easyeda-pro-control.original-window-resize.v1"},{"hwnd",hwnd},
+      {"previousBounds",new Dictionary<string,object>{{"left",before.left},{"top",before.top},{"right",before.right},{"bottom",before.bottom}}},
+      {"requestedWidth",1920},{"requestedHeight",1080},{"requestSubmitted",true},{"noMoveRequested",true},{"noActivateRequested",true},
+      {"zOrderPreservationRequested",true},{"geometryVerified",false},{"renderCompletionVerified",false}};
+  }
+  public Dictionary<string,object> WindowCaptureReadiness() {
+    WcFaultStart("request");
+    if(!visual209||!layers209||workerStartup||stringPrecreate)throw Error("window-readiness-purpose");
+    if(windowCaptureReadinessQueries>=8)throw Error("window-readiness-consumed");windowCaptureReadinessQueries++;windowFaultStage="owner";AssertLive();windowFaultStage="identity";
+    string hwnd=Window();object bounds=null,maximized=null;windowResizeGeometryObserved=false;
+    if(hwnd!=null){IntPtr handle=new IntPtr(long.Parse(hwnd,CultureInfo.InvariantCulture));windowFaultStage="bounds";WcRect value=WcReadBounds(handle);AssertLive();
+      if(Window()!=hwnd||!WcSame(value,WcReadBounds(handle)))throw Error("window-readiness-changed");
+      windowFaultStage="readiness";maximized=IsZoomed(handle);windowResizeGeometryObserved=WcResizeMatches(hwnd,value);
+      bounds=new Dictionary<string,object>{{"left",value.left},{"top",value.top},{"right",value.right},{"bottom",value.bottom}};
+    }else{AssertLive();if(Window()!=null)throw Error("window-readiness-changed");}
+    return new Dictionary<string,object>{{"hwnd",hwnd},{"bounds",bounds},{"queriesUsed",windowCaptureReadinessQueries},{"captureAttempted",windowCaptureAttempted},
+      {"paintDispatched",windowCapturePaintDispatched},{"nativeResourcesRetained",windowCaptureSurface!=null},{"maximized",maximized},
+      {"resizeAttempted",windowResizeAttempted},{"resizeRequestSubmitted",windowResizeSubmitted},{"resizeGeometryObserved",windowResizeGeometryObserved}};
+  }
   public Dictionary<string,object> CaptureWindow(string hwnd) {
+    WcFaultStart("request");
     if(!visual209||!layers209||workerStartup||stringPrecreate)throw Error("window-capture-purpose");
-    if(windowCaptureAttempted)throw Error("window-capture-consumed");windowCaptureAttempted=true;AssertLive();
+    if(windowResizeAttempted&&!windowResizeGeometryObserved)throw Error("window-resize-readiness-required");
+    if(windowCaptureAttempted)throw Error("window-capture-consumed");windowCaptureAttempted=true;windowFaultStage="owner";AssertLive();windowFaultStage="identity";
     long number;if(!long.TryParse(hwnd,NumberStyles.None,CultureInfo.InvariantCulture,out number)||number<=0||Window()!=hwnd)throw Error("window-capture-window");
-    IntPtr handle=new IntPtr(number);WcRect bounds=WcBounds(handle);string children=WcChildren(handle);
+    IntPtr handle=new IntPtr(number);windowFaultStage="bounds";WcRect bounds=WcBounds(handle);if(windowResizeAttempted&&!WcResizeMatches(hwnd,bounds))throw Error("window-resize-geometry-changed");windowFaultStage="children";string children=WcChildren(handle);
     int width=checked(bounds.right-bounds.left),height=checked(bounds.bottom-bounds.top);
     windowCaptureSurface=new WindowCaptureSurface();
     try {
-      windowCaptureSurface.Allocate(width,height);AssertLive();
+      windowFaultStage="allocation";windowCaptureSurface.Allocate(width,height);windowFaultStage="before-paint";AssertLive();
       if(Window()!=hwnd||!WcSame(bounds,WcBounds(handle))||children!=WcChildren(handle))throw Error("window-capture-window-changed");
-      UIntPtr result;windowCapturePaintDispatched=true;
+      UIntPtr result;windowFaultStage="paint";windowCapturePaintDispatched=true;
       // Fixed WM_PRINT, visible/nonclient/client/children only. It never reads
       // a desktop DC, requests owned popup windows, or invokes caller code.
       if(WcSendMessageTimeout(handle,0x0317,windowCaptureSurface.dc,new IntPtr(0x17),0x23,1000,out result)==IntPtr.Zero)throw Error("window-capture-paint-unsettled");
-      windowCapturePrintAcknowledged=true;AssertLive();
+      windowCapturePrintAcknowledged=true;windowFaultStage="after-paint";AssertLive();
       if(Window()!=hwnd||!WcSame(bounds,WcBounds(handle))||children!=WcChildren(handle))throw Error("window-capture-window-changed");
-      bool allZero;byte[] png=WcPng(windowCaptureSurface.bits,width,height,out allZero);string sha;
+      windowFaultStage="encoding";bool allZero;byte[] png=WcPng(windowCaptureSurface.bits,width,height,out allZero);string sha;
       using(SHA256 hash=SHA256.Create())sha=BitConverter.ToString(hash.ComputeHash(png)).Replace("-","").ToLowerInvariant();
-      AssertLive();if(Window()!=hwnd||!WcSame(bounds,WcBounds(handle))||children!=WcChildren(handle))throw Error("window-capture-window-changed");
+      windowFaultStage="after-encoding";AssertLive();if(Window()!=hwnd||!WcSame(bounds,WcBounds(handle))||children!=WcChildren(handle))throw Error("window-capture-window-changed");
       return new Dictionary<string,object>{{"schema","easyeda-pro-control.original-window-png.v1"},{"hwnd",hwnd},{"width",width},{"height",height},
         {"bounds",new Dictionary<string,object>{{"left",bounds.left},{"top",bounds.top},{"right",bounds.right},{"bottom",bounds.bottom}}},
         {"pngBase64",Convert.ToBase64String(png)},{"pngBytes",png.Length},{"pngSha256",sha},{"allRgbZero",allZero},{"method","wm-print-to-owned-dib"},
@@ -127,11 +177,24 @@ export const CURRENT_WINDOW_CAPTURE_NATIVE_MEMBERS = String.raw`
     }
   }
   public void ReleaseWindowCaptureAfterTermination() {
-    if(windowCaptureSurface==null)return;
+    if(windowCaptureSurface==null)return;WcFaultStart("cleanup");
     if(!Terminated())throw Error("window-capture-release-before-exit");
     if(!windowCaptureSurface.Release())throw Error("window-capture-gdi-release");windowCaptureSurface=null;
   }
   public static void VerifyWindowCaptureSmoke() {
+    EasyedaDiagnosticOwner oldResize=new EasyedaDiagnosticOwner();bool resizeRefused=false;
+    try{oldResize.ResizeWindowForCapture();}catch(InvalidOperationException){resizeRefused=true;}
+    if(!resizeRefused||oldResize.windowResizeAttempted)throw Error("window-resize-purpose-smoke");
+    EasyedaDiagnosticOwner spentResize=CreateVisual209();spentResize.windowResizeAttempted=true;resizeRefused=false;
+    try{spentResize.ResizeWindowForCapture();}catch(InvalidOperationException){resizeRefused=true;}
+    if(!resizeRefused||spentResize.windowResizeSubmitted)throw Error("window-resize-consumed-smoke");
+    EasyedaDiagnosticOwner legacy=new EasyedaDiagnosticOwner();bool readinessRefused=false;
+    try{legacy.WindowCaptureReadiness();}catch(InvalidOperationException){readinessRefused=true;}
+    if(!readinessRefused||legacy.windowCaptureReadinessQueries!=0||legacy.windowCaptureAttempted||legacy.windowCaptureSurface!=null)throw Error("window-readiness-purpose-smoke");
+    EasyedaDiagnosticOwner limited=CreateVisual209();limited.windowCaptureReadinessQueries=8;readinessRefused=false;
+    try{limited.WindowCaptureReadiness();}catch(InvalidOperationException){readinessRefused=true;}
+    if(!readinessRefused||limited.windowCaptureAttempted||limited.windowCaptureSurface!=null)throw Error("window-readiness-bound-smoke");
+
     bool refused=false;try{WcDimensions(4097,1);}catch(InvalidOperationException){refused=true;}if(!refused)throw Error("window-capture-smoke-bound");
     refused=false;try{WcDimensions(4096,4096);}catch(InvalidOperationException){refused=true;}if(!refused)throw Error("window-capture-smoke-pixels");
     IntPtr pixels=Marshal.AllocHGlobal(16);

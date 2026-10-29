@@ -1402,7 +1402,7 @@ static string Load(string encoded,int length,string hash){Need(length>0&&length<
 using(var input=new System.IO.MemoryStream(packed,false))using(var stream=new System.IO.Compression.GZipStream(input,System.IO.Compression.CompressionMode.Decompress)){while(count<bytes.Length){int read=stream.Read(bytes,count,bytes.Length-count);if(read==0)break;count+=read;}Need(count==bytes.Length&&stream.ReadByte()==-1,"program-length");}
 using(var sha=System.Security.Cryptography.SHA256.Create())Need(System.BitConverter.ToString(sha.ComputeHash(bytes)).Replace("-","").ToLowerInvariant()==hash,"program-hash");return new System.Text.UTF8Encoding(false,true).GetString(bytes);}
 static readonly string FootprintSourceFunctionJson=Load(@"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",19729,@"b5147a1a9255b792315a59e289aeed782fd6aaec2dd6659e8afcaab3802280d9");
-static readonly string QueueFunctionJson=Load(@"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",11352,@"f3cd1f0f5c31b5f39b9eab93c7dd5e559cfa8187618d6d88a64633701c3d03fe");
+static readonly string QueueFunctionJson=Load(@"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",11352,@"880bb83407b717a278c07d0d208d402161d3426676f5c595db419e7bd4ca853e");
 static string Field(System.Collections.IDictionary fields,string name){Need(fields!=null&&fields.Contains(name),"field");string value=fields[name] as string;Need(value!=null,"field-type");return value;}
 static string Handle(string value,int maximum){Need(value!=null&&value.Length<=maximum&&System.Text.RegularExpressions.Regex.IsMatch(value,@"\A[A-Za-z0-9_.:-]+\z"),"handle");return value;}
 static void Fields(System.Collections.IDictionary fields,string[] names){Need(fields!=null&&fields.Count==names.Length,"fields");foreach(string name in names)Need(fields.Contains(name),"field");}
@@ -1421,7 +1421,7 @@ public static string EncodeSource(int id,string method,string originalWorkerSess
 public static string EncodeQueue(int id,string method,string originalParentSession,System.Collections.IDictionary fields){Need(id>0&&id<=353&&method=="Runtime.callFunctionOn","queue-command");Fields(fields,new string[]{"uniqueContextId","projectUuid","branchUuid"});string session=Handle(originalParentSession,128),context=Handle(Field(fields,"uniqueContextId"),128),project=FootprintAtom(fields,"projectUuid","[a-f0-9]{64}"),branch=FootprintAtom(fields,"branchUuid","[a-f0-9]{32}");
 string command="{\"id\":"+id.ToString(System.Globalization.CultureInfo.InvariantCulture)+",\"method\":\"Runtime.callFunctionOn\",\"sessionId\":\""+session+"\",\"params\":{\"uniqueContextId\":\""+context+"\",\"functionDeclaration\":"+QueueFunctionJson+",\"arguments\":[{\"value\":\""+project+"\"},{\"value\":\""+branch+"\"}],\"returnByValue\":true,\"awaitPromise\":true,\"silent\":true,\"userGesture\":false,\"objectGroup\":\"easyeda-footprint-copy-saved-queue-v1\",\"generatePreview\":false,\"throwOnSideEffect\":false}}";Need(System.Text.Encoding.UTF8.GetByteCount(command)<=16384,"queue-bytes");return command+"\0";}
 static void Reject(System.Action action){bool refused=false;try{action();}catch(System.InvalidOperationException){refused=true;}Need(refused,"smoke-reject");}
-public static void VerifySmoke(){string[] rows=@"objectId,argument0,argument1,argument2,argument4,argument5,projectUuid,branchUuid,windowTabId,footprintUuid,client,maximumTicket	manager,project,bus,consistency,constructors,methods,aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa,bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb,original-tab,cccccccccccccccc,dddddddddddddddd,123|uniqueContextId,projectUuid,branchUuid	queue-context,aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa,bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb".Split('|'),hashes=@"47e0679748e4ea90930f2c50fc1c313b59e097a6390abfa1500d6a96017917a8,f8f9758caf3ff1464dfe25f8ff9026d70028e69ef7526e0394c1e7a75e602c15".Split(',');for(int i=0;i<2;i++){string[] parts=rows[i].Split('\t'),names=parts[0].Split(','),values=parts[1].Split(',');var fields=new System.Collections.Hashtable(System.StringComparer.Ordinal);for(int n=0;n<names.Length;n++)fields.Add(names[n],values[n]);bool source=i==0;System.Func<int,string,string,string> encode=(id,method,session)=>source?EncodeSource(id,method,session,fields):EncodeQueue(id,method,session,fields);string sessionId=@"saved-smoke-session";
+public static void VerifySmoke(){string[] rows=@"objectId,argument0,argument1,argument2,argument4,argument5,projectUuid,branchUuid,windowTabId,footprintUuid,client,maximumTicket	manager,project,bus,consistency,constructors,methods,aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa,bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb,original-tab,cccccccccccccccc,dddddddddddddddd,123|uniqueContextId,projectUuid,branchUuid	queue-context,aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa,bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb".Split('|'),hashes=@"47e0679748e4ea90930f2c50fc1c313b59e097a6390abfa1500d6a96017917a8,047b5b91c10bf9c5278cb99edfd5100c11c0c876dd2e40d91100250d956fbd85".Split(',');for(int i=0;i<2;i++){string[] parts=rows[i].Split('\t'),names=parts[0].Split(','),values=parts[1].Split(',');var fields=new System.Collections.Hashtable(System.StringComparer.Ordinal);for(int n=0;n<names.Length;n++)fields.Add(names[n],values[n]);bool source=i==0;System.Func<int,string,string,string> encode=(id,method,session)=>source?EncodeSource(id,method,session,fields):EncodeQueue(id,method,session,fields);string sessionId=@"saved-smoke-session";
 using(var sha=System.Security.Cryptography.SHA256.Create())Need(System.BitConverter.ToString(sha.ComputeHash(System.Text.Encoding.UTF8.GetBytes(encode(1,"Runtime.callFunctionOn",sessionId)))).Replace("-","").ToLowerInvariant()==hashes[i],"smoke-parity");
 Reject(()=>encode(0,"Runtime.callFunctionOn",sessionId));Reject(()=>encode(1,"Runtime.evaluate",sessionId));Reject(()=>encode(1,"Runtime.callFunctionOn",sessionId+"\n"));fields.Add("sessionId","foreign");Reject(()=>encode(1,"Runtime.callFunctionOn",sessionId));fields.Remove("sessionId");foreach(string name in names){object original=fields[name];fields[name]=(string)original+"\n";Reject(()=>encode(1,"Runtime.callFunctionOn",sessionId));fields[name]=original;}}}
 }
@@ -3583,56 +3583,12 @@ const methods=[nativeMethod(gp,""isReadOnly""),format.get,nativeMethod(lp,""canW
 const recheck=()=>{verify();for(const [o,p]of prototypes)if(Object.getPrototypeOf(o)!==p)bad();for(const [o,k,d]of descriptors){const n=Object.getOwnPropertyDescriptor(o,k);if(!d){if(n!==undefined)bad();continue;}if(!n||n.enumerable!==d.enumerable||n.configurable!==d.configurable||Object.hasOwn(n,""value"")!==Object.hasOwn(d,""value"")||n.value!==d.value||n.writable!==d.writable||n.get!==d.get||n.set!==d.set)bad();}};
 
 recheck();return methods;}";
-  const string WorkerProducerProgram6=@"function(originalMethods,gateScope){
-""use strict"";
-const bad=()=>{throw new Error(""PCB_STRING_OBSERVATION_STATE"");};
-const retained=[],collections=[];
-const own=(o,k)=>{if(o===null||(typeof o!==""object""&&typeof o!==""function""))bad();const d=Object.getOwnPropertyDescriptor(o,k);if(!d||!Object.hasOwn(d,""value""))bad();if(retained.length>=2048)bad();retained.push([o,k,d.value]);return d.value;};
-const object=o=>{if(o===null||typeof o!==""object""||Array.isArray(o))bad();return o;};
-const plain=o=>{object(o);const p=Object.getPrototypeOf(o);if(p!==Object.prototype&&p!==null)bad();return o;};
-const marker=(o,k)=>{const d=Object.getOwnPropertyDescriptor(o,k);if(!d){let p=Object.getPrototypeOf(o),n=0;while(p!==null){if(++n>8||Object.hasOwn(p,k))bad();p=Object.getPrototypeOf(p);}retained.push([o,k]);return ""absent"";}const v=own(o,k);return v===undefined?""undefined"":v===null?""null"":""present"";};
-const count=n=>{if(!Number.isSafeInteger(n)||Object.is(n,-0)||n<0||n>65536)bad();return n;};
-const flag=v=>{if(typeof v!==""boolean"")bad();return v;};
-const id=(v,re)=>{if(typeof v!==""string""||v.length>128||!re.test(v))bad();return v;};
-const keys=o=>{plain(o);const k=Reflect.ownKeys(o);if(k.length>65536||k.some(v=>typeof v!==""string""))bad();return k;};
-const emptyObject=o=>{if(keys(o).length!==0)bad();return [];};
-const size=(o,p)=>{object(o);if(Object.getPrototypeOf(o)!==p||Reflect.ownKeys(o).length!==0)bad();const d=Object.getOwnPropertyDescriptor(p,""size"");if(!d||typeof d.get!==""function""||d.set!==undefined)bad();const n=count(Reflect.apply(d.get,o,[]));collections.push([o,p,d.get,n]);return n;};
-const emptyMap=o=>{if(size(o,Map.prototype)!==0)bad();return [];};
-const emptySet=o=>{if(size(o,Set.prototype)!==0)bad();return [];};
-const arraySize=o=>{if(!Array.isArray(o)||Object.getPrototypeOf(o)!==Array.prototype)bad();const n=count(own(o,""length"")),k=Reflect.ownKeys(o);if(k.length!==n+1||k[n]!==""length"")bad();for(let i=0;i<n;i++)own(o,String(i));return n;};
-const named=(o,name)=>{object(o);const p=Object.getPrototypeOf(o),c=own(p,""constructor"");if(typeof c!==""function""||own(c,""name"")!==name||own(c,""prototype"")!==p)bad();return o;};
-const verify=()=>{for(const item of retained){const d=Object.getOwnPropertyDescriptor(item[0],item[1]);if(item.length===2?d!==undefined:!d||!Object.hasOwn(d,""value"")||d.value!==item[2])bad();}for(const item of collections){if(Object.getPrototypeOf(item[0])!==item[1]||Reflect.ownKeys(item[0]).length!==0||Reflect.apply(item[2],item[0],[])!==item[3])bad();}};
-
-const descriptors=[],prototypes=[];
-const proto=o=>{const p=Object.getPrototypeOf(o);prototypes.push([o,p]);return p;};
-const desc=(o,k)=>{const d=Object.getOwnPropertyDescriptor(o,k);descriptors.push([o,k,d]);return d;};
-const absent=(o,k)=>{if(desc(o,k)!==undefined)bad();};
-const nativeMethod=(o,k)=>{const d=desc(o,k);if(!d||!Object.hasOwn(d,""value"")||typeof d.value!==""function""||!d.writable||!d.configurable||d.enumerable)bad();return d.value;};
-const project=object(own(globalThis,""PROJECT""));if(this!==project)bad();
-named(project,""Lg"");const lp=proto(project);named(lp,""Gd"");const gp=proto(lp);if(proto(gp)!==Object.prototype)bad();
-for(const key of [""isReadOnly"",""isV2Format"",""canWsPublish""])absent(project,key);
-absent(lp,""isReadOnly"");absent(lp,""isV2Format"");
-const format=desc(gp,""isV2Format"");if(!format||Object.hasOwn(format,""value"")||typeof format.get!==""function""||typeof format.set!==""function""||!format.configurable||format.enumerable)bad();
-const bus=object(own(project,""workerBus""));named(bus,""JP"");const jp=proto(bus);named(jp,""KP"");const kp=proto(jp);named(kp,""Mb"");const mp=proto(kp);if(proto(mp)!==Object.prototype)bad();
-for(const key of [""publish"",""broadcastPublish"",""post"",""onMessage"",""onReceivedPublish""])absent(bus,key);
-absent(jp,""publish"");absent(jp,""onReceivedPublish"");
-const methods=[nativeMethod(gp,""isReadOnly""),format.get,nativeMethod(lp,""canWsPublish""),nativeMethod(kp,""publish""),nativeMethod(jp,""broadcastPublish""),nativeMethod(jp,""post""),nativeMethod(jp,""onMessage""),nativeMethod(kp,""onReceivedPublish"")];
-const recheck=()=>{verify();for(const [o,p]of prototypes)if(Object.getPrototypeOf(o)!==p)bad();for(const [o,k,d]of descriptors){const n=Object.getOwnPropertyDescriptor(o,k);if(!d){if(n!==undefined)bad();continue;}if(!n||n.enumerable!==d.enumerable||n.configurable!==d.configurable||Object.hasOwn(n,""value"")!==Object.hasOwn(d,""value"")||n.value!==d.value||n.writable!==d.writable||n.get!==d.get||n.set!==d.set)bad();}};
-
-if(arraySize(originalMethods)!==8)bad();for(let i=0;i<8;i++)if(own(originalMethods,String(i))!==methods[i])bad();
-const captured=object(own(gateScope,""object"")),privateMode=flag(own(captured,""jr""));
-const syncDescriptor=desc(project,""isSyncing"");let syncing;
-if(syncDescriptor===undefined){for(let p=proto(project),n=0;p!==null;p=proto(p)){if(++n>8)bad();absent(p,""isSyncing"");}syncing={state:""absent"",value:null};}
-else{const value=own(project,""isSyncing"");syncing=value===undefined?{state:""undefined"",value:null}:{state:""boolean"",value:flag(value)};}
-const isTemporary=flag(own(project,""isTemporary"")),isHistoryBack=flag(own(project,""isHistoryBack"")),isV2Format=flag(own(project,""_isV2Format"")),isReady=flag(own(project,""isReady""));
-const isReadOnly=isTemporary||isHistoryBack||isV2Format,syncingTrue=syncing.value===true;
-const state={schema:""easyeda-pro-control.pcb-string-worker-gates.v1"",
-identity:{projectUuid:id(own(project,""uuid""),/^(?:[a-f0-9]{32}|[a-f0-9]{64})$/),branchUuid:id(own(project,""_branchUuid""),/^[a-f0-9]{32}$/),windowTabId:id(own(globalThis,""_TAB_ID_""),/^[A-Za-z0-9_-]{1,128}$/)},
-raw:{isTemporary,isHistoryBack,isV2Format,isReady,isSyncing:syncing,privateMode},
-predicates:{isReadOnly,canWsPublish:privateMode&&isReady&&!isReadOnly&&!syncingTrue,cooperationCallbackGateOpen:!isReadOnly,structureCallbackStateGateOpen:isReady&&!isReadOnly&&!syncingTrue},
-privateModeSource:""jr=L1.IS_PRIVATE"",gateMethodReferencesMatched:true,
-publisher:{senderUuid:id(own(bus,""uuid""),/^[a-f0-9]{8}-[a-f0-9]{4}-4[a-f0-9]{3}-[89ab][a-f0-9]{3}-[a-f0-9]{12}$/),methodChainReferencesMatched:true,nativeChannelVerified:false,nativeOnMessageReceiverVerified:false,completePublishersVerified:false},
-hiddenCallbackReceiversVerified:false,writeDestinationsContained:false,atomicSample:false};recheck();return JSON.stringify(state);}";
+  // BEGIN GENERATED PCB209 STRING WORKER GATE PROGRAM
+  const string StringWorkerGateFunctionGzip="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";
+  const string StringWorkerGateFunctionSha256="d5ad3ae0eb7d9d34abc93a616bbd02c569550c6d7317b61bebfe7fe3dddc6b4e";
+  static readonly string StringWorkerGateFunction=UnpackFixedProgram(StringWorkerGateFunctionGzip,6305,StringWorkerGateFunctionSha256,"3dcdae53915a423ccd4e3d6216fa1d6101440ca8d1cff6925ba9da438218c34f");
+  // END GENERATED PCB209 STRING WORKER GATE PROGRAM
+  static readonly string WorkerProducerProgram6=StringWorkerGateFunction;
   const string WorkerProducerProgram7=@"function(originalFunction){
 ""use strict"";
 const bad=()=>{throw new Error(""PCB_STRING_OBSERVATION_STATE"");};
@@ -5344,7 +5300,16 @@ const int WindowCaptureMaximumDimension=4096,WindowCaptureMaximumPixels=4194304,
       return dc==IntPtr.Zero&&bitmap==IntPtr.Zero;
     }
   }
+  string windowFaultStage="request";WcRect windowFaultBounds;bool windowFaultBoundsObserved;
+  void WcFaultStart(string stage){windowFaultStage=stage;windowFaultBoundsObserved=false;}
+  public string WindowFaultStage {get{return windowFaultStage;}}
+  public object WindowFaultBounds {get{return windowFaultBoundsObserved?(object)new Dictionary<string,object>{{"left",windowFaultBounds.left},{"top",windowFaultBounds.top},{"right",windowFaultBounds.right},{"bottom",windowFaultBounds.bottom}}:null;}}
   WindowCaptureSurface windowCaptureSurface;
+  [DllImport("user32.dll")] static extern bool IsZoomed(IntPtr hwnd);
+  [DllImport("user32.dll",SetLastError=true)] static extern bool SetWindowPos(IntPtr hwnd,IntPtr after,int x,int y,int width,int height,uint flags);
+  bool windowResizeAttempted,windowResizeSubmitted,windowResizeGeometryObserved;
+  string windowResizeHwnd;WcRect windowResizeBefore;
+  int windowCaptureReadinessQueries;
   bool windowCaptureAttempted,windowCapturePaintDispatched,windowCapturePrintAcknowledged;
   public bool WindowCaptureAttempted { get { return windowCaptureAttempted; } }
   public bool WindowCaptureResourcesRetained { get { return windowCaptureSurface!=null; } }
@@ -5354,9 +5319,13 @@ const int WindowCaptureMaximumDimension=4096,WindowCaptureMaximumPixels=4194304,
     if(width<1||height<1||width>WindowCaptureMaximumDimension||height>WindowCaptureMaximumDimension||
        (long)width*height>WindowCaptureMaximumPixels)throw Error("window-capture-dimensions");
   }
-  WcRect WcBounds(IntPtr hwnd) {
+  WcRect WcReadBounds(IntPtr hwnd) {
     WcRect value;if(!WcGetWindowRect(hwnd,out value)||value.left<-1000000||value.left>1000000||value.top<-1000000||value.top>1000000||
        value.right<-1000000||value.right>1000000||value.bottom<-1000000||value.bottom>1000000)throw Error("window-capture-rectangle");
+    windowFaultBounds=value;windowFaultBoundsObserved=true;return value;
+  }
+  WcRect WcBounds(IntPtr hwnd) {
+    WcRect value=WcReadBounds(hwnd);
     long width=(long)value.right-value.left,height=(long)value.bottom-value.top;
     if(width<320||height<200||width>WindowCaptureMaximumDimension||height>WindowCaptureMaximumDimension)throw Error("window-capture-rectangle");
     WcDimensions((int)width,(int)height);return value;
@@ -5406,25 +5375,62 @@ const int WindowCaptureMaximumDimension=4096,WindowCaptureMaximumPixels=4194304,
     }
     return png;
   }
+  bool WcResizeMatches(string hwnd,WcRect value) {
+    return windowResizeSubmitted&&hwnd==windowResizeHwnd&&!IsZoomed(new IntPtr(long.Parse(hwnd,CultureInfo.InvariantCulture)))&&
+      value.left==windowResizeBefore.left&&value.top==windowResizeBefore.top&&(long)value.right-value.left==1920&&(long)value.bottom-value.top==1080;
+  }
+  public Dictionary<string,object> ResizeWindowForCapture() {
+    WcFaultStart("request");
+    if(!visual209||!layers209||workerStartup||stringPrecreate)throw Error("window-resize-purpose");
+    if(windowResizeAttempted||windowCaptureAttempted||windowCaptureReadinessQueries>=8)throw Error("window-resize-consumed");
+    windowResizeAttempted=true;windowResizeGeometryObserved=false;windowFaultStage="owner";AssertLive();windowFaultStage="identity";string hwnd=Window();
+    if(hwnd==null)throw Error("window-resize-window");IntPtr handle=new IntPtr(long.Parse(hwnd,CultureInfo.InvariantCulture));
+    windowFaultStage="bounds";WcRect before=WcReadBounds(handle);if(IsZoomed(handle))throw Error("window-resize-maximized-unsupported");
+    windowFaultStage="before-resize";AssertLive();if(Window()!=hwnd||!WcSame(before,WcReadBounds(handle)))throw Error("window-resize-window-changed");
+    windowResizeHwnd=hwnd;windowResizeBefore=before;
+    // Fixed asynchronous no-move/no-activate/no-Z-order request, never restore.
+    windowFaultStage="resize-submission";if(!SetWindowPos(handle,IntPtr.Zero,0,0,1920,1080,0x4216))throw Error("window-resize-submission-failed");
+    windowResizeSubmitted=true;windowFaultStage="after-resize";AssertLive();if(Window()!=hwnd)throw Error("window-resize-window-changed");
+    return new Dictionary<string,object>{{"schema","easyeda-pro-control.original-window-resize.v1"},{"hwnd",hwnd},
+      {"previousBounds",new Dictionary<string,object>{{"left",before.left},{"top",before.top},{"right",before.right},{"bottom",before.bottom}}},
+      {"requestedWidth",1920},{"requestedHeight",1080},{"requestSubmitted",true},{"noMoveRequested",true},{"noActivateRequested",true},
+      {"zOrderPreservationRequested",true},{"geometryVerified",false},{"renderCompletionVerified",false}};
+  }
+  public Dictionary<string,object> WindowCaptureReadiness() {
+    WcFaultStart("request");
+    if(!visual209||!layers209||workerStartup||stringPrecreate)throw Error("window-readiness-purpose");
+    if(windowCaptureReadinessQueries>=8)throw Error("window-readiness-consumed");windowCaptureReadinessQueries++;windowFaultStage="owner";AssertLive();windowFaultStage="identity";
+    string hwnd=Window();object bounds=null,maximized=null;windowResizeGeometryObserved=false;
+    if(hwnd!=null){IntPtr handle=new IntPtr(long.Parse(hwnd,CultureInfo.InvariantCulture));windowFaultStage="bounds";WcRect value=WcReadBounds(handle);AssertLive();
+      if(Window()!=hwnd||!WcSame(value,WcReadBounds(handle)))throw Error("window-readiness-changed");
+      windowFaultStage="readiness";maximized=IsZoomed(handle);windowResizeGeometryObserved=WcResizeMatches(hwnd,value);
+      bounds=new Dictionary<string,object>{{"left",value.left},{"top",value.top},{"right",value.right},{"bottom",value.bottom}};
+    }else{AssertLive();if(Window()!=null)throw Error("window-readiness-changed");}
+    return new Dictionary<string,object>{{"hwnd",hwnd},{"bounds",bounds},{"queriesUsed",windowCaptureReadinessQueries},{"captureAttempted",windowCaptureAttempted},
+      {"paintDispatched",windowCapturePaintDispatched},{"nativeResourcesRetained",windowCaptureSurface!=null},{"maximized",maximized},
+      {"resizeAttempted",windowResizeAttempted},{"resizeRequestSubmitted",windowResizeSubmitted},{"resizeGeometryObserved",windowResizeGeometryObserved}};
+  }
   public Dictionary<string,object> CaptureWindow(string hwnd) {
+    WcFaultStart("request");
     if(!visual209||!layers209||workerStartup||stringPrecreate)throw Error("window-capture-purpose");
-    if(windowCaptureAttempted)throw Error("window-capture-consumed");windowCaptureAttempted=true;AssertLive();
+    if(windowResizeAttempted&&!windowResizeGeometryObserved)throw Error("window-resize-readiness-required");
+    if(windowCaptureAttempted)throw Error("window-capture-consumed");windowCaptureAttempted=true;windowFaultStage="owner";AssertLive();windowFaultStage="identity";
     long number;if(!long.TryParse(hwnd,NumberStyles.None,CultureInfo.InvariantCulture,out number)||number<=0||Window()!=hwnd)throw Error("window-capture-window");
-    IntPtr handle=new IntPtr(number);WcRect bounds=WcBounds(handle);string children=WcChildren(handle);
+    IntPtr handle=new IntPtr(number);windowFaultStage="bounds";WcRect bounds=WcBounds(handle);if(windowResizeAttempted&&!WcResizeMatches(hwnd,bounds))throw Error("window-resize-geometry-changed");windowFaultStage="children";string children=WcChildren(handle);
     int width=checked(bounds.right-bounds.left),height=checked(bounds.bottom-bounds.top);
     windowCaptureSurface=new WindowCaptureSurface();
     try {
-      windowCaptureSurface.Allocate(width,height);AssertLive();
+      windowFaultStage="allocation";windowCaptureSurface.Allocate(width,height);windowFaultStage="before-paint";AssertLive();
       if(Window()!=hwnd||!WcSame(bounds,WcBounds(handle))||children!=WcChildren(handle))throw Error("window-capture-window-changed");
-      UIntPtr result;windowCapturePaintDispatched=true;
+      UIntPtr result;windowFaultStage="paint";windowCapturePaintDispatched=true;
       // Fixed WM_PRINT, visible/nonclient/client/children only. It never reads
       // a desktop DC, requests owned popup windows, or invokes caller code.
       if(WcSendMessageTimeout(handle,0x0317,windowCaptureSurface.dc,new IntPtr(0x17),0x23,1000,out result)==IntPtr.Zero)throw Error("window-capture-paint-unsettled");
-      windowCapturePrintAcknowledged=true;AssertLive();
+      windowCapturePrintAcknowledged=true;windowFaultStage="after-paint";AssertLive();
       if(Window()!=hwnd||!WcSame(bounds,WcBounds(handle))||children!=WcChildren(handle))throw Error("window-capture-window-changed");
-      bool allZero;byte[] png=WcPng(windowCaptureSurface.bits,width,height,out allZero);string sha;
+      windowFaultStage="encoding";bool allZero;byte[] png=WcPng(windowCaptureSurface.bits,width,height,out allZero);string sha;
       using(SHA256 hash=SHA256.Create())sha=BitConverter.ToString(hash.ComputeHash(png)).Replace("-","").ToLowerInvariant();
-      AssertLive();if(Window()!=hwnd||!WcSame(bounds,WcBounds(handle))||children!=WcChildren(handle))throw Error("window-capture-window-changed");
+      windowFaultStage="after-encoding";AssertLive();if(Window()!=hwnd||!WcSame(bounds,WcBounds(handle))||children!=WcChildren(handle))throw Error("window-capture-window-changed");
       return new Dictionary<string,object>{{"schema","easyeda-pro-control.original-window-png.v1"},{"hwnd",hwnd},{"width",width},{"height",height},
         {"bounds",new Dictionary<string,object>{{"left",bounds.left},{"top",bounds.top},{"right",bounds.right},{"bottom",bounds.bottom}}},
         {"pngBase64",Convert.ToBase64String(png)},{"pngBytes",png.Length},{"pngSha256",sha},{"allRgbZero",allZero},{"method","wm-print-to-owned-dib"},
@@ -5436,11 +5442,24 @@ const int WindowCaptureMaximumDimension=4096,WindowCaptureMaximumPixels=4194304,
     }
   }
   public void ReleaseWindowCaptureAfterTermination() {
-    if(windowCaptureSurface==null)return;
+    if(windowCaptureSurface==null)return;WcFaultStart("cleanup");
     if(!Terminated())throw Error("window-capture-release-before-exit");
     if(!windowCaptureSurface.Release())throw Error("window-capture-gdi-release");windowCaptureSurface=null;
   }
   public static void VerifyWindowCaptureSmoke() {
+    EasyedaDiagnosticOwner oldResize=new EasyedaDiagnosticOwner();bool resizeRefused=false;
+    try{oldResize.ResizeWindowForCapture();}catch(InvalidOperationException){resizeRefused=true;}
+    if(!resizeRefused||oldResize.windowResizeAttempted)throw Error("window-resize-purpose-smoke");
+    EasyedaDiagnosticOwner spentResize=CreateVisual209();spentResize.windowResizeAttempted=true;resizeRefused=false;
+    try{spentResize.ResizeWindowForCapture();}catch(InvalidOperationException){resizeRefused=true;}
+    if(!resizeRefused||spentResize.windowResizeSubmitted)throw Error("window-resize-consumed-smoke");
+    EasyedaDiagnosticOwner legacy=new EasyedaDiagnosticOwner();bool readinessRefused=false;
+    try{legacy.WindowCaptureReadiness();}catch(InvalidOperationException){readinessRefused=true;}
+    if(!readinessRefused||legacy.windowCaptureReadinessQueries!=0||legacy.windowCaptureAttempted||legacy.windowCaptureSurface!=null)throw Error("window-readiness-purpose-smoke");
+    EasyedaDiagnosticOwner limited=CreateVisual209();limited.windowCaptureReadinessQueries=8;readinessRefused=false;
+    try{limited.WindowCaptureReadiness();}catch(InvalidOperationException){readinessRefused=true;}
+    if(!readinessRefused||limited.windowCaptureAttempted||limited.windowCaptureSurface!=null)throw Error("window-readiness-bound-smoke");
+
     bool refused=false;try{WcDimensions(4097,1);}catch(InvalidOperationException){refused=true;}if(!refused)throw Error("window-capture-smoke-bound");
     refused=false;try{WcDimensions(4096,4096);}catch(InvalidOperationException){refused=true;}if(!refused)throw Error("window-capture-smoke-pixels");
     IntPtr pixels=Marshal.AllocHGlobal(16);
@@ -6435,6 +6454,15 @@ try {
               (@($request.PSObject.Properties.Name | Sort-Object) -join ',') -cne 'action,helperInstance,id,jobId,phase,rootCreated,rootPid,sequence') {throw 'pcb-diagnostic-string-clock-fields'}
           $result=$owner.StringClock($request.phase,[int]$request.sequence)
         }
+        'resize-window-for-capture' {
+          if (-not $Visual209 -or -not $launched -or $request.acceptWindowResizeEffects -isnot [bool] -or $request.acceptWindowResizeEffects -ne $true -or
+              (@($request.PSObject.Properties.Name | Sort-Object) -join ',') -cne 'acceptWindowResizeEffects,action,helperInstance,id,jobId,rootCreated,rootPid') {throw 'pcb-diagnostic-window-resize-fields'}
+          $result=$owner.ResizeWindowForCapture()
+        }
+        'window-capture-readiness' {
+          if (-not $Visual209 -or -not $launched -or (@($request.PSObject.Properties.Name | Sort-Object) -join ',') -cne 'action,helperInstance,id,jobId,rootCreated,rootPid') {throw 'pcb-diagnostic-window-readiness-fields'}
+          $result=$owner.WindowCaptureReadiness()
+        }
         'capture-window' {
           if (-not $Visual209 -or -not $launched -or $request.hwnd -isnot [string] -or $request.hwnd -cnotmatch '^[1-9][0-9]{0,18}$' -or
               $request.acceptWindowPaintEffects -isnot [bool] -or $request.acceptWindowPaintEffects -ne $true -or
@@ -6477,9 +6505,39 @@ try {
         if ($exception.Message -cmatch '^pcb-diagnostic-[a-z-]{1,80}$') {$code=$exception.Message;break}
         $exception=$exception.InnerException
       }
+      # BEGIN GENERATED WINDOW FAILURE
+      $windowFailure=$null
+      $windowRelease=$request.action -ceq 'release' -and @('pcb-diagnostic-window-capture-release-before-exit','pcb-diagnostic-window-capture-gdi-release') -ccontains $code
+      if ($Visual209 -and (@('capture-window','resize-window-for-capture','window-capture-readiness') -ccontains $request.action -or $windowRelease)) {
+        try {
+          $stage=$owner.WindowFaultStage;$bounds=$owner.WindowFaultBounds
+          $label=$code.Substring(15)
+          if (@('window-capture-fields','window-capture-purpose','window-capture-consumed','window-capture-window','window-capture-window-changed','window-capture-rectangle','window-capture-dimensions','window-capture-child-ownership','window-capture-allocation-once','window-capture-dc','window-capture-dib','window-capture-select','window-capture-pixel-pointer','window-capture-png-bound','window-capture-paint-unsettled','window-capture-release-before-exit','window-capture-gdi-release','window-resize-fields','window-resize-purpose','window-resize-consumed','window-resize-window','window-resize-window-changed','window-resize-maximized-unsupported','window-resize-submission-failed','window-resize-readiness-required','window-resize-geometry-changed','window-readiness-fields','window-readiness-purpose','window-readiness-consumed','window-readiness-changed') -cnotcontains $label) {
+            $label='unclassified';$fault=$_.Exception
+            for ($index=0;$index -lt 4 -and $null -ne $fault;$index++) {
+              switch -CaseSensitive ($fault.GetType().Name) {
+                'OutOfMemoryException' {$label='allocation-failed'}
+                'OverflowException' {$label='arithmetic-overflow'}
+                'NotSupportedException' {if ($stage -ceq 'encoding') {$label='encoding-capacity'}}
+                'IOException' {if ($stage -ceq 'encoding') {$label='encoding-io'}}
+              }
+              $fault=$fault.InnerException
+            }
+          }
+          if ($label.EndsWith('-fields')) {$stage='request';$bounds=$null}
+          if ($windowRelease) {$stage='cleanup';$bounds=$null}
+          if (@('request','owner','identity','bounds','children','allocation','before-paint','paint','after-paint','encoding','after-encoding','before-resize','resize-submission','after-resize','readiness','cleanup','unclassified') -cnotcontains $stage) {$stage='unclassified';$bounds=$null}
+          $paint=if ($owner.WindowCapturePaintDispatched) {'possibly-dispatched'} else {'not-dispatched'}
+          $windowFailure=@{schema='easyeda-pro-control.window-failure.v1';action=$request.action;stage=$stage;code=$label;paintPhase=$paint;nativeResourcesRetained=$owner.WindowCaptureResourcesRetained;bounds=$bounds;snapshotOnly=$true;executionAuthorized=$false}
+        } catch {$windowFailure=$null}
+      }
+      # END GENERATED WINDOW FAILURE
+      if ($null -ne $windowFailure) {@{id=$id;ok=$false;error=$code;windowFailure=$windowFailure} | ConvertTo-Json -Depth 5 -Compress}
+      else {
       if ($ratlinePurpose) {$owner.WriteRatlineReply((@{id=$id;ok=$false;error=$code} | ConvertTo-Json -Compress))}
       elseif ($WorkerStartupEmpty209) {$owner.WriteEmptyReply((@{id=$id;ok=$false;error=$code} | ConvertTo-Json -Compress))}
       else {@{id=$id;ok=$false;error=$code} | ConvertTo-Json -Compress}
+      }
     }
   }
 } finally {$owner.RetainUntilClosed()}
