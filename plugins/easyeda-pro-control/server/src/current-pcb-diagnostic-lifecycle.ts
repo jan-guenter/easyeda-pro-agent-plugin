@@ -10,7 +10,7 @@ import type { CurrentDisposableOpenSealedTarget } from "./current-disposable-ope
 import { prepareCurrentDisposableOpenCheckpoint, readCurrentPcbCommonOpenInventory, verifyCurrentDisposableOpenCheckpoint, verifyHistoricalCurrentDisposableOpenCheckpoint } from "./current-disposable-open-checkpoint.ts";
 import type { CurrentDisposableOpenCheckpoint } from "./current-disposable-open-checkpoint.ts";
 import { assertNoUnresolvedOrdinaryLaunches } from "./ordinary-launch.ts";
-import { startCurrentFootprintCombinedNativeOwner, startCurrentFootprintCopyNativeOwner, startCurrentFootprintCopyPreparationOwner, startCurrentFootprintMainNativeOwner, startCurrentPcb209DiagnosticOwner, startCurrentPcb209EmptyStartupOwner, startCurrentPcb209RatlineContinuationOwner, startCurrentPcb209RatlineStartupOwner, startCurrentPcb209WorkerStartupOwner, startCurrentPcbDiagnosticOwner, startCurrentPcbStringPrecreateOwner, startCurrentPcbWorkerStartupOwner } from "./current-pcb-diagnostic-owner.ts";
+import { currentFootprintCombinedFactoryFailureDiagnostics, requireCurrentFootprintCombinedUnlaunchedFactoryFailure, startCurrentFootprintCombinedNativeOwner, startCurrentFootprintCopyNativeOwner, startCurrentFootprintCopyPreparationOwner, startCurrentFootprintMainNativeOwner, startCurrentPcb209DiagnosticOwner, startCurrentPcb209EmptyStartupOwner, startCurrentPcb209RatlineContinuationOwner, startCurrentPcb209RatlineStartupOwner, startCurrentPcb209WorkerStartupOwner, startCurrentPcbDiagnosticOwner, startCurrentPcbStringPrecreateOwner, startCurrentPcbWorkerStartupOwner } from "./current-pcb-diagnostic-owner.ts";
 import type { CurrentFootprintCombinedNativeOwner, CurrentFootprintCopyNativeOwner, CurrentFootprintCopyPreparationOwner, CurrentFootprintMainNativeOwner, CurrentPcb209RatlineContinuationOwner, CurrentPcb209RatlineStartupOwner, CurrentPcb209WorkerStartupOwner, CurrentPcbDiagnosticOwner, CurrentPcbStringPrecreateOwner, CurrentPcbWorkerStartupHandoff, CurrentPcbWorkerStartupOwner } from "./current-pcb-diagnostic-owner.ts";
 import { verifyCurrentPcb209DiagnosticInstallation, verifyCurrentPcb209RatlineInstallation, verifyCurrentPcbDiagnosticInstallation } from "./current-pcb-diagnostic-installation.ts";
 import type { CurrentPcbDiagnosticInstallation, CurrentPcbDiagnosticInstallationOptions } from "./current-pcb-diagnostic-installation.ts";
@@ -100,6 +100,8 @@ import type { CurrentFootprintMainValidationRequest } from "./current-footprint-
 
 import { CURRENT_FOOTPRINT_COMBINED_OPERATION_PREFIX, currentFootprintCombinedIdSchema, currentFootprintCombinedLifecycleRequestSchema, currentFootprintCombinedNativeStateSchema,
   currentFootprintCombinedValidationRequestSchema } from "./current-footprint-combined-validation.ts";
+import { currentFootprintCombinedFactoryFailureDiagnosticsSchema } from "./current-footprint-combined-ready.ts";
+import type { CurrentFootprintCombinedBeforeLaunchFailureProof, CurrentFootprintCombinedFactoryFailureDiagnostics } from "./current-footprint-combined-ready.ts";
 import type { CurrentFootprintCombinedValidationRequest } from "./current-footprint-combined-validation.ts";
 
 export type { CurrentPcbWorkerStartupOpeningCoordinator } from "./current-pcb-worker-startup-lifecycle-adapter.ts";
@@ -115,8 +117,8 @@ const launchPurposeFields = {
   "worker-startup": { schema: "easyeda-pro-control.pcb-worker-startup-launch-intent.v1", purpose: "worker-startup" },
 } as const;
 function launchFields(purpose: CurrentPcbDiagnosticLifecyclePurpose, generation: LifecycleGeneration):
-  typeof launchPurposeFields[CurrentPcbDiagnosticLifecyclePurpose] | Readonly<{ schema: "easyeda-pro-control.footprint-combined-launch-intent.v1" | "easyeda-pro-control.footprint-main-launch-intent.v1" | "easyeda-pro-control.footprint-copy-route-preparation-launch-intent.v1" | "easyeda-pro-control.footprint-copy-preparation-launch-intent.v1" | "easyeda-pro-control.pcb209-worker-startup-launch-intent.v1" | "easyeda-pro-control.pcb209-empty-startup-launch-intent.v1" | "easyeda-pro-control.pcb209-ratline-startup-launch-intent.v1" | "easyeda-pro-control.pcb209-ratline-continuation-launch-intent.v1"; purpose: "worker-startup" }> {
-  if (generation === "209-startup-footprint-combined") { return { schema: "easyeda-pro-control.footprint-combined-launch-intent.v1", purpose: "worker-startup" }; }
+  typeof launchPurposeFields[CurrentPcbDiagnosticLifecyclePurpose] | Readonly<{ schema: "easyeda-pro-control.footprint-combined-launch-intent.v2" | "easyeda-pro-control.footprint-main-launch-intent.v1" | "easyeda-pro-control.footprint-copy-route-preparation-launch-intent.v1" | "easyeda-pro-control.footprint-copy-preparation-launch-intent.v1" | "easyeda-pro-control.pcb209-worker-startup-launch-intent.v1" | "easyeda-pro-control.pcb209-empty-startup-launch-intent.v1" | "easyeda-pro-control.pcb209-ratline-startup-launch-intent.v1" | "easyeda-pro-control.pcb209-ratline-continuation-launch-intent.v1"; purpose: "worker-startup" }> {
+  if (generation === "209-startup-footprint-combined") { return { schema: "easyeda-pro-control.footprint-combined-launch-intent.v2", purpose: "worker-startup" }; }
   if (generation === "209-startup-footprint-main") { return { schema: "easyeda-pro-control.footprint-main-launch-intent.v1", purpose: "worker-startup" }; }
   if (routeStartup209(generation)) { return { schema: "easyeda-pro-control.footprint-copy-route-preparation-launch-intent.v1", purpose: "worker-startup" }; }
   if (generation === "209-startup-footprint") { return { schema: "easyeda-pro-control.footprint-copy-preparation-launch-intent.v1", purpose: "worker-startup" }; }
@@ -261,6 +263,7 @@ function describe(operationId: string, operation: DiagnosticLifecycleOperation |
   if (binding?.binding.rootCreated === "0") { state = "cleanup-only"; }
   if (records?.["terminated.json"] !== undefined) { state = "terminated"; }
   if (records?.["released.json"] !== undefined) { state = "released"; }
+  if (records?.["combined-factory-before-launch.json"] !== undefined) { state = "factory-before-launch-failed"; }
   if (records?.["not-dispatched.json"] !== undefined) { state = "not-dispatched"; }
   if (records?.["no-process-released.json"] !== undefined) { state = "no-process-released"; }
   return { operationId, state, attemptConsumed: operation !== undefined, closeAttemptConsumed: records?.["close-intent.json"] !== undefined,
@@ -417,6 +420,9 @@ class CurrentPcbLifecycleCore {
   #footprintManagerRoute: CurrentFootprintCopyManagerRouteObservation | null = null;
   #mainObservationAttempted = false;
   #mainTerminateAttempted = false;
+  #combinedFactoryError: unknown = null;
+  #combinedFactoryFailure: CurrentFootprintCombinedBeforeLaunchFailureProof | null = null;
+  #combinedFactoryDiagnostics: CurrentFootprintCombinedFactoryFailureDiagnostics | null = null;
   #combinedAbortAttempted = false;
   #combinedAbortBusy = false;
   #publicationTail: Promise<void> = Promise.resolve();
@@ -598,11 +604,18 @@ class CurrentPcbLifecycleCore {
       if (openingResult !== undefined) {
         openingState = openingResult["ok"] === true && openingResult["status"] === "opened-prefix-observed" ? "opened-prefix-observed" : "refused";
       }
+      if (this.#attempt?.operationId === request.operationId && this.#combinedFactoryError !== null) {
+        const diagnostics = currentFootprintCombinedFactoryFailureDiagnostics(this.#combinedFactoryError, this.#options);
+        this.#combinedFactoryDiagnostics = diagnostics === null ? null : currentFootprintCombinedFactoryFailureDiagnosticsSchema.parse(diagnostics);
+      }
       const combinedNativeState = this.#generation === "209-startup-footprint-combined" && native !== null ? currentFootprintCombinedNativeStateSchema.parse({
         combinedAbortDispatchAttempted: native.combinedAbortDispatchAttempted, combinedOutputCleanupOnly: native.combinedOutputCleanupOnly,
       }) : { combinedAbortDispatchAttempted: null, combinedOutputCleanupOnly: null };
       return { ...describe(request.operationId, operation), busy: this.#busy, observations, noProcessCleanupAvailable,
         ...combinedNativeState,
+        combinedFactoryBeforeLaunchPublished: operation?.records["combined-factory-before-launch.json"] !== undefined,
+        combinedFactoryBeforeLaunchRetained: this.#attempt?.operationId === request.operationId && this.#combinedFactoryFailure !== null,
+        combinedFactoryFailureDiagnostics: this.#attempt?.operationId === request.operationId ? this.#combinedFactoryDiagnostics : null,
         workerStartupHandoffAttemptConsumed: operation?.records["worker-startup-handoff-intent.json"] !== undefined || original && this.#startupHandoffAttempted,
         workerStartupHandoffRetained: original && this.#startupHandoff !== null,
         workerStartupChannel: native?.workerStartupChannel ?? null,
@@ -2043,7 +2056,7 @@ class CurrentPcbLifecycleCore {
     const expectedSchema = launchFields(this.#purpose, this.#generation).schema;
     requireValue(combined209 === (this.#generation === "209-startup-footprint-combined") && main209 === (this.#generation === "209-startup-footprint-main") && footprintRoute209 === (this.#generation === "209-startup-footprint-route") && footprint209 === (this.#generation === "209-startup-footprint") && continuation209 === (this.#generation === "209-startup-ratline-continuation") && ratline209 === (this.#generation === "209-startup-ratline") && project209 === (this.#generation === "209-startup") && empty209 === (this.#generation === "209-startup-empty") &&
       (operationId.startsWith(CURRENT_PCB_209_OPENING_PROFILE.operationPrefix) && !project209 && !empty209 && !ratline209 && !continuation209) === (this.#generation === "209-opening"), "GENERATION_MISMATCH");
-    requireValue(idPurpose === this.#purpose && (intent === undefined || intent.schema === expectedSchema), "PURPOSE_MISMATCH");
+    requireValue(idPurpose === this.#purpose && (intent === undefined || intent.schema === expectedSchema || combined209 && intent.schema === "easyeda-pro-control.footprint-combined-launch-intent.v1"), "PURPOSE_MISMATCH");
   }
   protected async requireCombinedMainPublished(operationId: string, expectedBindingSha256: string): Promise<void> {
     this.assertCombinedNormal(); currentFootprintCombinedIdSchema.parse(operationId); diagnosticLifecycleDigestSchema.parse(expectedBindingSha256);
@@ -2273,7 +2286,7 @@ class CurrentPcbLifecycleCore {
     requireValue(Object.keys(operation.records).length === this.#pending.size && [...this.#pending].every(([name, text]) =>
       canonicalJson(operation.records[name]) === text), "JOURNAL_CHANGED");
     if (operation.records["released.json"] !== undefined || operation.records["not-dispatched.json"] !== undefined ||
-        operation.records["no-process-released.json"] !== undefined) {
+        operation.records["no-process-released.json"] !== undefined || operation.records["combined-factory-before-launch.json"] !== undefined) {
       this.#releaseLease();
     }
     return describe(operationId, operation);
@@ -2284,9 +2297,16 @@ class CurrentPcbLifecycleCore {
   }
   async #cleanupUnlaunched(operationId: string, intentSha256: string): Promise<Record<string, unknown>> {
     const attempt = this.#assertAttempt(operationId, intentSha256);
-    requireValue(!attempt.launchInvoked && (!attempt.allocationInvoked || this.#retained !== null), "NONDISPATCH_NOT_PROVED");
+    if (this.#combinedFactoryError !== null && !attempt.launchInvoked && this.#retained === null) {
+      const operations = await readCurrentPcbDiagnosticLifecycles(); this.#assertAttempt(operationId, intentSha256);
+      const operation = operations.find(candidate => candidate.operationId === operationId);
+      if (await this.#completeCombinedFactoryFailure(operation, operations)) {
+        const completed = await readCurrentPcbDiagnosticLifecycles(); return describe(operationId, completed.find(candidate => candidate.operationId === operationId));
+      }
+    }
+    requireValue(!attempt.launchInvoked && (!attempt.allocationInvoked || this.#retained !== null || this.#combinedFactoryFailure !== null), "NONDISPATCH_NOT_PROVED");
     const settled = await this.#settleRecords(operationId, intentSha256);
-    if (settled["state"] === "not-dispatched") { return settled; }
+    if (settled["state"] === "not-dispatched" || settled["state"] === "factory-before-launch-failed") { return settled; }
     this.#assertAttempt(operationId, intentSha256);
     const retained = this.#retained;
     if (retained !== null) {
@@ -2352,6 +2372,33 @@ class CurrentPcbLifecycleCore {
     await assertSnapshot(operations.map(value => value.operationId === operationId ? completed : value)); this.#assertOwner(retained);
     this.#releaseLease(); return describe(operationId, completed);
   }
+  async #completeCombinedFactoryFailure(operation: DiagnosticLifecycleOperation | undefined, operations: readonly DiagnosticLifecycleOperation[]): Promise<boolean> {
+    if (this.#combinedFactoryError === null) { return false; }
+    const proof = requireCurrentFootprintCombinedUnlaunchedFactoryFailure(this.#combinedFactoryError, this.#options);
+    if (proof === null) { return false; }
+    const attempt = this.#attempt, intent = operation?.records["intent.json"];
+    requireValue(this.#generation === "209-startup-footprint-combined" && operation !== undefined &&
+      intent?.schema === "easyeda-pro-control.footprint-combined-launch-intent.v2" && attempt !== null &&
+      attempt.operationId === operation.operationId && attempt.intentSha256 === sha256Json(intent) && attempt.allocationInvoked &&
+      !attempt.launchInvoked && this.#retained === null && this.#lease !== null, "COMBINED_FACTORY_FAILURE_PURPOSE");
+    this.#combinedFactoryFailure = proof;
+    this.#options.assertLocalAllowed(); assertCurrentPcbDiagnosticLaunchExclusion(this.#lease);
+    await assertSnapshot(operations); this.#options.assertLocalAllowed(); assertCurrentPcbDiagnosticLaunchExclusion(this.#lease);
+    const retained = this.#pending.get("combined-factory-before-launch.json");
+    const published = operation.records["combined-factory-before-launch.json"];
+    if (published !== undefined) {
+      requireValue(retained !== undefined && retained === canonicalJson(published), "COMBINED_FACTORY_PUBLICATION_CHANGED");
+      this.#releaseLease(); return true;
+    }
+    const record: NonNullable<DiagnosticLifecycleRecords["combined-factory-before-launch.json"]> = retained === undefined ? {
+      schema: "easyeda-pro-control.footprint-combined-factory-before-launch.v1", operationId: operation.operationId,
+      createdAt: new Date().toISOString(), intentSha256: attempt.intentSha256, proof,
+    } : diagnosticLifecycleRecordSchemas["combined-factory-before-launch.json"].parse(JSON.parse(retained) as unknown);
+    await this.#record(operation.operationId, "combined-factory-before-launch.json", record);
+    await assertSnapshot(operations.map(candidate => candidate.operationId === operation.operationId ?
+      { ...candidate, records: { ...candidate.records, "combined-factory-before-launch.json": record } } : candidate));
+    this.#options.assertLocalAllowed(); assertCurrentPcbDiagnosticLaunchExclusion(this.#lease); this.#releaseLease(); return true;
+  }
   async #launch(request: Extract<LifecycleRequest, { action: "launch" }>): Promise<Record<string, unknown>> {
     requireValue(!this.#launchAttempted && this.#retained === null, "LAUNCH_CONSUMED");
     this.#assertPurpose(request.operationId);
@@ -2373,6 +2420,7 @@ class CurrentPcbLifecycleCore {
       facadeSha256: installation.facadeSha256, installationSha256: sha256Json(installation),
       confirmValidationOnly: true, confirmDiagnosticLaunch: true, acceptExistingProfileEffects: true,
       ...(this.#generation === "209-startup-footprint-main" || this.#generation === "209-startup-footprint-combined" ? { acceptDebuggerPauseEffects: true as const } : {}),
+      ...(this.#generation === "209-startup-footprint-combined" ? { dispatchProtocol: "challenge-ready-before-launch.v1" as const } : {}),
     });
     this.#attempt = { operationId: request.operationId, intentSha256: sha256Json(intent), allocationInvoked: false, launchInvoked: false };
     await this.#record(request.operationId, "intent.json", intent);
@@ -2380,7 +2428,18 @@ class CurrentPcbLifecycleCore {
       .toSorted((left, right) => left.operationId.localeCompare(right.operationId));
     await assertSnapshot(expected);
     this.#attempt.allocationInvoked = true;
-    const owner = await this.#allocate(this.#options);
+    let owner: LifecycleOwner;
+    try { owner = await this.#allocate(this.#options); }
+    catch (error) {
+      if (this.#generation === "209-startup-footprint-combined") {
+        const diagnostics = currentFootprintCombinedFactoryFailureDiagnostics(error, this.#options);
+        this.#combinedFactoryDiagnostics = diagnostics === null ? null : currentFootprintCombinedFactoryFailureDiagnosticsSchema.parse(diagnostics);
+        if (diagnostics !== null) { this.#combinedFactoryError = error; }
+        try { await this.#completeCombinedFactoryFailure(expected.find(operation => operation.operationId === request.operationId), expected); }
+        catch (publicationError) { throw new AggregateError([error, publicationError], "Combined factory failed; terminal publication remains unresolved.", { cause: publicationError }); }
+      }
+      throw error;
+    }
     // Capture original identities; calls below always use the original receiver.
     const captured = Object.freeze({ launch: owner.launch, status: owner.status, observeApplicationWindow: owner.observeApplicationWindow,
       requestNormalClose: owner.requestNormalClose, observeTermination: owner.observeTermination, releaseClosed: owner.releaseClosed,

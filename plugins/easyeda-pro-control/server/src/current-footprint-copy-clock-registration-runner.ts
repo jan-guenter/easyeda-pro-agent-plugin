@@ -14,6 +14,17 @@ import type { CurrentFootprintCopyClockRegistrationSource, CurrentFootprintCopyC
 import { captureCurrentPcbStringClockReply } from "./current-pcb-string-clock-reply.ts";
 import { requireCurrentFootprintCopyUiSource } from "./current-footprint-copy-ui-source.ts";
 import type { CurrentFootprintCopyUiSourceQualification } from "./current-footprint-copy-ui-source.ts";
+import { qualifyCurrentFootprintCopyClockRpcSource, requireCurrentFootprintCopyClockRpcSource } from "./current-footprint-copy-clock-rpc-source.ts";
+import type { CurrentFootprintCopyClockRpcSource } from "./current-footprint-copy-clock-rpc-source.ts";
+import type { CurrentFootprintCopyClockRpcRegistrationBinding, CurrentFootprintCopyClockRpcRegistrationLease } from "./current-footprint-copy-clock-rpc-leases.ts";
+
+const invocationLeases = new WeakMap<CurrentFootprintCopyClockRpcRegistrationLease, CurrentFootprintCopyClockRpcRegistrationBinding>();
+/** No binding factory is exported. Only the original completed runner issues a
+ * token; serialized observations and equal handle strings cannot recreate it. */
+export function requireCurrentFootprintCopyClockRpcRegistrationLease(lease: CurrentFootprintCopyClockRpcRegistrationLease): CurrentFootprintCopyClockRpcRegistrationBinding {
+  const binding = invocationLeases.get(lease); if (binding === undefined) { throw new Error("FOOTPRINT_CLOCK_RPC_REGISTRATION_LEASE"); }
+  binding.assertCleanup(); return binding;
+}
 
 const handle = z.string().min(1).max(256).regex(/^[A-Za-z\d_.:-]+$/u);
 const bindingSchema = z.object({ sessionId: handle.max(128), uiRoute: handle, projectUuid: z.string().regex(/^[a-f\d]{64}$/u),
@@ -56,6 +67,9 @@ export class CurrentFootprintCopyClockRegistrationRunner {
   #operationRequests = 0;
   #maximum = 0;
   #sampleAttempts = 0;
+  #rpcSource: CurrentFootprintCopyClockRpcSource | null = null;
+  #rpcSourceText: string | null = null;
+  #rpcLease: CurrentFootprintCopyClockRpcRegistrationLease | null = null;
   public constructor(source: CurrentFootprintCopyUiSourceQualification, transport: CurrentFootprintCopyClockRegistrationTransport, binding: CurrentFootprintCopyClockRegistrationBinding) {
     requireCurrentFootprintCopyUiSource(source); this.#source = source; this.#methods = methods(transport); this.#transport = transport;
     this.#binding = Object.freeze(bindingSchema.parse(captureCurrentPcbStringClockReply(binding).value));
@@ -84,6 +98,7 @@ export class CurrentFootprintCopyClockRegistrationRunner {
       need(this.#scriptId === null); this.#scriptId = metadata.scriptId;
       const reply = z.object({ scriptSource: z.string().max(SOURCE.bytes) }).strict().parse(await this.#request({ phase: "source", method: "Debugger.getScriptSource", sessionId: this.#binding.sessionId, params: { scriptId: metadata.scriptId } }));
       this.#wsSource = qualifyCurrentFootprintCopyClockRegistrationSource(reply.scriptSource);
+      this.#rpcSourceText = reply.scriptSource;
     }
     return decodeScope(await this.#properties(metadata.scopesId), role);
   }
@@ -121,6 +136,28 @@ export class CurrentFootprintCopyClockRegistrationRunner {
       const sample = Object.freeze(currentFootprintCopyClockRegistrationSampleSchema.parse({ profile: "private.current-footprint-copy-clock-registration-sample.v1",
         sampleIndex: this.#sampleAttempts, lexicalOffset: offset, documentClockInvocationObserved: false, executionAuthorized: false })); this.#samples.push(sample); return sample;
     } catch (error) { this.#failed = true; throw error; } finally { this.#busy = false; }
+  }
+  /** Source/registration retention only. A combined native owner must still
+   * join this exact issuer to its own worker, event router and kernel handles. */
+  public issueInvocationLease(packet: CurrentFootprintCopyClockRegistrationObservation): CurrentFootprintCopyClockRpcRegistrationLease {
+    this.#same();
+    if (this.#rpcSource === null && this.#rpcSourceText !== null) { this.#rpcSource = qualifyCurrentFootprintCopyClockRpcSource("ui", this.#rpcSourceText); }
+    const retained = this.#retained; const source = this.#rpcSource; const scriptId = this.#scriptId;
+    need(!this.#busy && packet === this.#packet && packet !== null && retained !== null && source !== null && scriptId !== null);
+    requireCurrentFootprintCopyClockRpcSource(source, "ui");
+    if (this.#rpcLease !== null) { return this.#rpcLease; }
+    const same = (): void => {
+      need(this.#retained === retained && this.#rpcSource === source && this.#scriptId === scriptId && this.#packet === packet &&
+        !this.#released && !this.#releaseAttempted && methods(this.#transport).every((value, index) => value === this.#methods[index]));
+      requireCurrentFootprintCopyClockRpcSource(source, "ui");
+    };
+    const lease = Object.freeze({ profile: "private.current-footprint-clock-rpc-registration-lease.v1" as const });
+    invocationLeases.set(lease, Object.freeze({ issuer: this, sessionId: this.#binding.sessionId, scriptId,
+      registrationArrayObjectId: retained.first, callbackObjectId: retained.callback, bindingsArrayObjectId: retained.bindings,
+      qualifiedSource: source, assertCleanup: same,
+      assertOriginal: async (): Promise<void> => { same(); await this.#current(); same(); },
+    }));
+    this.#rpcLease = lease; return lease;
   }
   public async release(): Promise<void> {
     need(!this.#busy && this.#attempted && !this.#releaseAttempted); this.#releaseAttempted = true; this.#busy = true;

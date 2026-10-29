@@ -1,0 +1,109 @@
+/** Actual sequencer and fixed descriptor joins over synthetic CDP/native
+ * issuers. These cases cannot issue a real combined-origin capability. */
+/* oxlint-disable import/max-dependencies -- The test checks the real closed protocol and all three production issuers in addition to the isolated runner/VM fixture. */
+import assert from "node:assert/strict";
+import { readFile } from "node:fs/promises";
+import { createRequire } from "node:module";
+import { test } from "node:test";
+import { runInThisContext } from "node:vm";
+import { transform } from "esbuild";
+import type { CurrentFootprintCopyClockRpcRunner } from "../src/current-footprint-copy-clock-rpc-runner.ts";
+import { requireCurrentFootprintCopyClockRpcOrigin } from "../src/current-footprint-copy-clock-rpc-origin.ts";
+import { requireCurrentFootprintCopyClockRpcRegistrationLease } from "../src/current-footprint-copy-clock-registration-runner.ts";
+import { requireCurrentFootprintCopyClockRpcConstructionLease } from "../src/current-pcb-worker-construction-runner.ts";
+import { CURRENT_FOOTPRINT_COPY_CLOCK_RPC_SITES as SITES, CURRENT_FOOTPRINT_COPY_CLOCK_RPC_SOURCE as SOURCE,
+  qualifyCurrentFootprintCopyClockRpcSource, requireCurrentFootprintCopyClockRpcSource } from "../src/current-footprint-copy-clock-rpc-source.ts";
+import { currentFootprintCopyClockRpcCondition, validateCurrentFootprintCopyClockRpcCommand } from "../src/current-footprint-copy-clock-rpc-protocol.ts";
+import { currentFootprintCopyClockRpcWire } from "../src/current-footprint-copy-clock-rpc-wire.ts";
+import { clockRpcFixture, documentUuid } from "./helpers/footprint-clock-rpc-fixture.ts";
+
+async function fixture(): Promise<ReturnType<typeof clockRpcFixture> & Readonly<{ runner: CurrentFootprintCopyClockRpcRunner }>> {
+  const f = clockRpcFixture(); const url = new URL("../src/current-footprint-copy-clock-rpc-runner.ts", import.meta.url);
+  const loaded: { exports: Record<string, unknown> } = { exports: {} }; const actualRequire = createRequire(url);
+  const output = await transform(await readFile(url, "utf8"), { loader: "ts", format: "cjs", target: "node24" });
+  const evaluate: unknown = runInThisContext(`(function(require,module,exports){${output.code}\n})`); assert.ok(typeof evaluate === "function");
+  Reflect.apply(evaluate, undefined, [(name: string): unknown => {
+    if (name === "./current-footprint-copy-clock-rpc-origin.ts") { return { requireCurrentFootprintCopyClockRpcOrigin: (value: unknown): typeof f.binding => { assert.equal(value, f.token); return f.binding; } }; }
+    if (name === "./current-footprint-copy-clock-registration-runner.ts") { return { requireCurrentFootprintCopyClockRpcRegistrationLease: (value: unknown): typeof f.registration => { assert.equal(value, f.binding.registrationLease); return f.registration; } }; }
+    if (name === "./current-pcb-worker-construction-runner.ts") { return { requireCurrentFootprintCopyClockRpcConstructionLease: (value: unknown): typeof f.construction => { assert.equal(value, f.binding.workerLease); return f.construction; } }; }
+    if (name === "./current-footprint-copy-clock-rpc-source.ts") {
+      const source: unknown = actualRequire(name); assert.ok(source !== null && typeof source === "object");
+      return { ...source, requireCurrentFootprintCopyClockRpcSource: (value: unknown, realm: string): void => { assert.equal(value, realm === "worker" ? f.workerSource : f.uiSource); } };
+    }
+    return actualRequire(name) as unknown;
+  }, loaded, loaded.exports]);
+  const candidate = loaded.exports["CurrentFootprintCopyClockRpcRunner"]; assert.equal(typeof candidate, "function");
+  // oxlint-disable-next-line typescript/no-unsafe-type-assertion -- Actual runner code uses only explicitly labeled synthetic issuer hooks, never a genuine native owner.
+  const Constructor = candidate as typeof CurrentFootprintCopyClockRpcRunner;
+  const runner = new Constructor(f.token, documentUuid);
+  return { ...f, runner };
+}
+
+void test("two actual descriptor traces keep distinct RPCs/tasks, fresh offsets and equal consumed values without a clock invocation", async () => {
+  const f = await fixture();
+  assert.throws(() => requireCurrentFootprintCopyClockRpcOrigin(f.token));
+  assert.throws(() => requireCurrentFootprintCopyClockRpcConstructionLease(f.binding.workerLease));
+  assert.throws(() => requireCurrentFootprintCopyClockRpcRegistrationLease(f.binding.registrationLease));
+  await f.runner.arm(); assert.equal(f.commands.length, 13); await assert.rejects(f.runner.arm());
+  f.runner.consumeBeforeInvocation(); assert.throws(() => { f.runner.consumeBeforeInvocation(); }); f.state.started = true;
+  const packet = await f.runner.collect(); assert.equal(packet.samples.length, 2);
+  assert.deepEqual(packet.samples.map(value => value.updateTime), [1_700_000_000_123, 1_700_000_000_123]);
+  assert.deepEqual(packet.samples.map(value => value.lexicalOffset), [5, 11]);
+  assert.notEqual(packet.samples[0]?.replyTopicSha256, packet.samples[1]?.replyTopicSha256);
+  assert.equal(f.state.clockCalls, 2); assert.equal(packet.executionAuthorized, false); assert.equal(packet.nativeCreateCompletionVerified, false);
+  assert.equal(packet.backendClockOrSqlCompletionVerified, false); assert.equal(packet.nativeBroadcastSenderHandleAuthenticated, false);
+  assert.equal(f.runner.diagnostics()["normalRequests"], 49); assert.equal(f.runner.diagnostics()["cleanupRequests"], 16);
+  assert.equal(f.commands.filter(value => value.method === "Debugger.resume").length, 10);
+  assert.equal(f.commands.filter(value => value.method === "Runtime.releaseObjectGroup").length, 0);
+  await f.runner.requireOriginal(packet); await assert.rejects(f.runner.requireOriginal(structuredClone(packet)));
+  await f.runner.cleanup(); assert.equal(f.commands.length, 67); assert.equal(f.runner.diagnostics()["cleanupRequests"], 18);
+  for (const [index, command] of f.commands.entries()) {
+    const wire = currentFootprintCopyClockRpcWire(command, index + 1, "worker", "ui");
+    assert.equal(wire.request["requestId"], index + 1); assert.equal(Object.hasOwn(wire.request, "sessionId"), false);
+  }
+  assert.equal(f.state.retired, true); await assert.rejects(f.runner.cleanup()); await assert.rejects(f.runner.requireOriginal(packet));
+});
+
+for (const [field, expectedResumes] of [["wrongTarget", 1], ["changedResult", 3], ["reusedUiTask", 7]] as const) {
+  void test(`actual ${field} refuses before its continuation and preserves original generation cleanup`, async () => {
+    const f = await fixture(); f.state[field] = true; await f.runner.arm(); f.runner.consumeBeforeInvocation(); f.state.started = true;
+    await assert.rejects(f.runner.collect()); const failure = f.runner.diagnostics()["firstFailure"];
+    assert.equal(f.commands.filter(value => value.method === "Debugger.resume").length, expectedResumes);
+    await assert.rejects(f.runner.cleanup(), /GENERATION_CLOSURE_REQUIRED/u); await assert.rejects(f.runner.collect());
+    assert.deepEqual(f.runner.diagnostics()["firstFailure"], failure); await assert.rejects(f.runner.observeOriginalGenerationEnded(), /remains live/u);
+    f.state.exited = true; await f.runner.observeOriginalGenerationEnded(); assert.equal(f.state.retired, true);
+  });
+}
+
+void test("lost resume acknowledgment cannot repeat a continuation or turn delivered next-pause evidence into success", async () => {
+  const f = await fixture(); await f.runner.arm(); f.runner.consumeBeforeInvocation(); f.state.started = true; f.state.lostResume = true;
+  await assert.rejects(f.runner.collect(), /lost original resume/u); await assert.rejects(f.runner.collect()); await assert.rejects(f.runner.cleanup());
+  assert.equal(f.commands.filter(value => value.method === "Debugger.resume").length, 1);
+  f.state.exited = true; await f.runner.observeOriginalGenerationEnded(); assert.equal(f.runner.diagnostics()["retired"], true);
+});
+
+void test("the native origin cannot replace a lost original construction lease before a continuation", async () => {
+  const f = await fixture(); await f.runner.arm(); f.runner.consumeBeforeInvocation(); f.state.started = true; f.state.lostWorkerLease = true;
+  await assert.rejects(f.runner.collect(), /original worker lease lost/u);
+  assert.equal(f.commands.length, 13); assert.equal(f.commands.filter(value => value.method === "Debugger.resume").length, 0);
+  await assert.rejects(f.runner.cleanup()); f.state.exited = true; await f.runner.observeOriginalGenerationEnded();
+});
+
+void test("uninvoked source instrumentation retires without any native continuation", async () => {
+  const f = await fixture(); await f.runner.arm(); await f.runner.cleanup();
+  assert.equal(f.commands.filter(value => value.method === "Debugger.resume").length, 0);
+  assert.equal(f.commands.filter(value => value.method === "Debugger.removeBreakpoint").length, 6);
+  assert.equal(f.commands.filter(value => value.method === "Runtime.releaseObjectGroup").length, 2);
+});
+
+void test("whole source/capability pins and exact conditions refuse substituted bodies, AST coordinates and caller code", () => {
+  assert.equal(SOURCE.worker.functions.push.sha256, "5dd2e69c15d7d28dfdd72ae7debbd98f7658cd6cddcc59be370092f353a7a1dd");
+  assert.throws(() => qualifyCurrentFootprintCopyClockRpcSource("worker", "synthetic source"));
+  assert.throws(() => { requireCurrentFootprintCopyClockRpcSource({ profile: "private.current-footprint-copy-clock-rpc-source.v1", realm: "worker", sha256: SOURCE.worker.sha256, invocationObserved: false }, "worker"); });
+  const role = "push"; const site = SITES.push; const condition = currentFootprintCopyClockRpcCondition(role, "11111111-1111-1111-1111-111111111111");
+  const command = { phase: "rpc-arm", role, method: "Debugger.setBreakpoint", sessionId: "worker", params: { location: { scriptId: "worker-script", lineNumber: site.lineNumber, columnNumber: site.columnNumber }, condition } };
+  assert.equal(validateCurrentFootprintCopyClockRpcCommand(command).method, "Debugger.setBreakpoint");
+  for (const params of [{ ...command.params, condition: "process.exit()" }, { ...command.params, location: { ...command.params.location, columnNumber: 10_165 } }]) {
+    assert.throws(() => validateCurrentFootprintCopyClockRpcCommand({ ...command, params }));
+  }
+});

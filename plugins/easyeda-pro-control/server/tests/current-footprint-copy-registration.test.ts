@@ -77,7 +77,7 @@ async function fixture(): Promise<Readonly<{ invoke: Handler; calls: readonly Ro
     guarded: (registered: Handler): Handler => async (input): Promise<unknown> => { const result = await registered(input); return result; },
     server: { registerTool: (name: string, config: { inputSchema: z.ZodType; annotations: object }, registered: Handler): void => {
       assert.equal(name, "easyeda_control_pcb209_worker_startup");
-      assert.deepEqual(structuredClone(config.annotations), { readOnlyHint: false, destructiveHint: false, idempotentHint: false, openWorldHint: true });
+      assert.deepEqual(structuredClone(config.annotations), { readOnlyHint: false, destructiveHint: true, idempotentHint: false, openWorldHint: true });
       handler = registered;
     } },
   });

@@ -1,13 +1,36 @@
 /* oxlint-disable eslint/max-classes-per-file -- The actual extracted index dispatcher selects between these seven synthetic lifecycle classes. */
 import assert from "node:assert/strict";
 import { readFile } from "node:fs/promises";
+import { stripTypeScriptTypes } from "node:module";
 import { resolve } from "node:path";
 import { test } from "node:test";
 import { runInThisContext } from "node:vm";
 import { transform } from "esbuild";
+import { parse } from "acorn";
 
 type Row = Record<string, unknown>;
 type Run = (request: Readonly<{ action: string }>, empty?: boolean, ratline?: boolean) => Promise<Readonly<{ result: Row }>>;
+function startupDeclarations(source: string): string {
+  const blocks = parse(source, { ecmaVersion: "latest", sourceType: "module" }).body.flatMap(statement =>
+    statement.type === "IfStatement" && statement.consequent.type === "BlockStatement" && statement.consequent.body.some(node =>
+      node.type === "VariableDeclaration" && node.declarations.some(declaration => declaration.id.type === "Identifier" && declaration.id.name === "runStartup")) ? [statement.consequent] : []);
+  assert.equal(blocks.length, 1); const block = blocks[0]; assert.ok(block);
+  const selected = ["startupOriginal", "startupCalls", "combinedHistoricalOriginal", "runStartup"].map(name => {
+    const matches = block.body.filter(node => node.type === "VariableDeclaration" && node.declarations.length === 1 &&
+      node.declarations[0]?.id.type === "Identifier" && node.declarations[0].id.name === name);
+    assert.equal(matches.length, 1); const node = matches[0]; assert.ok(node?.type === "VariableDeclaration");
+    assert.equal(node.kind, name === "runStartup" ? "const" : "let");
+    const initializer = node.declarations[0]?.init;
+    if (name === "runStartup") { assert.equal(initializer?.type, "ArrowFunctionExpression"); }
+    else if (name === "startupCalls") { assert.ok(initializer?.type === "Literal" && initializer.value === 0); }
+    else { assert.equal(initializer, null); }
+    assert.ok(node.end > node.start && node.end - node.start < (name === "runStartup" ? 24_000 : 3000));
+    return source.slice(node.start, node.end);
+  }).join("\n");
+  // Bound the actual callback independently of erased type padding and the
+  // Unused historical dispatcher/registration descriptions in the same block.
+  assert.ok(selected.length < 28_000); return selected;
+}
 async function fixture(): Promise<Readonly<{ run: Run; owners: readonly Readonly<{ hasActiveReservation: () => boolean }>[]; flush: () => Promise<void>;
   state: { holdInspect: Promise<unknown> | null; blockGate: boolean; rejectEnqueue: boolean } }>> {
   const owners: Owner[] = [], state = { holdInspect: null as Promise<unknown> | null, blockGate: false, rejectEnqueue: false };
@@ -69,11 +92,8 @@ async function fixture(): Promise<Readonly<{ run: Run; owners: readonly Readonly
     currentPcbRenameOperationCoordinator: undefined, currentSchematicRenameOperationCoordinator: undefined,
     closedSymbolIndexReservation: undefined, closedSymbolUnreservedFailure: { observed: false }, scheduledShutdown: undefined,
     currentPcbDiagnosticLifecycle: undefined, currentPcbStringPrecreateLifecycle: undefined, currentFootprintMainLifecycle: undefined };
-  const source = await readFile(new URL("../src/index.ts", import.meta.url), "utf8");
-  const begin = source.indexOf("  let startupOriginal:"), end = source.indexOf("\n  if (facadeToolRegistered", begin);
-  // The preparation route extends this actual source slice beyond 20,000 characters.
-  // Match the bounded extraction used by the ordinary-release registration fixture.
-  assert.ok(begin > 0 && end > begin && end - begin < 24_000);
+  const source = stripTypeScriptTypes(await readFile(new URL("../src/index.ts", import.meta.url), "utf8"));
+  const startup = startupDeclarations(source);
   const helpersBegin = source.indexOf("function disposableOwnData("), helpersEnd = source.indexOf("\n}", source.indexOf("function disposableOwnerMethod(", helpersBegin)) + 2;
   assert.ok(helpersBegin > 0 && helpersEnd > helpersBegin && helpersEnd - helpersBegin < 2500);
   // Evaluate the actual source bodies unchanged, supplying only synthetic
@@ -81,7 +101,7 @@ async function fixture(): Promise<Readonly<{ run: Run; owners: readonly Readonly
   const wrapper = `export function create(context) { const { ${Object.keys(data).join(",")} } = context;
     let currentPcbWorkerStartupLifecycle;
     ${source.slice(helpersBegin, helpersEnd)}
-    ${source.slice(begin, end)}
+    ${startup}
     return runStartup;
   }`;
   const generated = await transform(wrapper, { loader: "ts", format: "cjs", target: "node24",

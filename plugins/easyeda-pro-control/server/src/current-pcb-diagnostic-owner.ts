@@ -119,14 +119,18 @@ import type { CurrentFootprintCopyMainBackendCommand } from "./current-footprint
 import { currentFootprintCopyMainRequestWire } from "./current-footprint-copy-main-request-wire.ts";
 import type { CurrentFootprintCopyMainRequestCollectCommand } from "./current-footprint-copy-main-request-protocol.ts";
 import { CURRENT_FOOTPRINT_COMBINED_PROFILE, CURRENT_FOOTPRINT_COMBINED_PURPOSE } from "./current-footprint-copy-combined-profile.ts";
+import { CURRENT_FOOTPRINT_COMBINED_READY, decodeCurrentFootprintCombinedReady } from "./current-footprint-combined-ready.ts";
+import type { CurrentFootprintCombinedBeforeLaunchFailureProof, CurrentFootprintCombinedFactoryFailureDiagnostics, CurrentFootprintCombinedReadyPacket } from "./current-footprint-combined-ready.ts";
+import type { CurrentFootprintCopyClockRpcOriginBindings } from "./current-footprint-copy-clock-rpc-origin.ts";
+
 import { CURRENT_FOOTPRINT_COPY_MAIN_TRANSPORT } from "./current-footprint-copy-main-transport-contract.ts";
 // oxlint-disable-next-line import/no-cycle -- This owner constructs the sole main runner; the runner invokes original factory guards only after construction. No owner class or guard is read at module initialization.
 import { CurrentFootprintCopyMainBackendRunner } from "./current-footprint-copy-main-backend-runner.ts";
 import type { CurrentFootprintCopyMainBackendObservation } from "./current-footprint-copy-main-backend-runner.ts";
 
 
-const HELPER_SHA256 = "919398ed5f5d6d85394b5b306ff0e977771ccddd278b838e3e4870b2d7e292d3";
-const HELPER_BYTES = 1_046_338;
+const HELPER_SHA256 = "0f2ae9b8e9011b56e101d28ea776c08fbc08a5da0980152789a9c0d217f85e2d";
+const HELPER_BYTES = 1_047_260;
 const MAX_LINE = 100_000;
 // 64 MiB native bytes need at most 85.34 MiB base64 plus bounded poll envelopes.
 const MAX_TOTAL = 96 * 1024 * 1024;
@@ -254,6 +258,22 @@ export interface CurrentFootprintCombinedAbortReservation {
 }
 const footprintCombinedFactories = new WeakMap<object, CurrentPcbDiagnosticInstallation>();
 const footprintCombinedCapabilities = new WeakMap<CurrentFootprintCombinedMainCapability, CurrentPcbRetainedOwnerCore>();
+interface CombinedFactoryFailure {
+  readonly options: CurrentPcbDiagnosticInstallationOptions;
+  readonly owner: CurrentFootprintCombinedNativeOwner;
+  proof: CurrentFootprintCombinedBeforeLaunchFailureProof | null;
+}
+const combinedFactoryFailures = new WeakMap<object, CombinedFactoryFailure>();
+export interface CurrentFootprintCopyClockRpcOrigin { readonly profile: "private.current-footprint-clock-rpc-origin.v1" }
+// No issuer is mounted. Exact constructor/registration leases alone cannot
+// Acquire this native transport role; the original owner must join them first.
+const footprintClockRpcOrigins = new WeakMap<CurrentFootprintCopyClockRpcOrigin, CurrentFootprintCopyClockRpcOriginBindings>();
+export function requireCurrentFootprintCopyClockRpcOrigin(token: CurrentFootprintCopyClockRpcOrigin): CurrentFootprintCopyClockRpcOriginBindings {
+  if (types.isProxy(token)) { throw error("FOOTPRINT_CLOCK_RPC_ORIGINAL_ORIGIN"); }
+  const held = footprintClockRpcOrigins.get(token);
+  if (held === undefined) { throw error("FOOTPRINT_CLOCK_RPC_ORIGINAL_ORIGIN"); } return held;
+}
+
 
 /** Test seams supply a real retained child, never process IDs or an attach path.
  * Only the fixed owner factories check packaged helper source. Neither
@@ -304,6 +324,19 @@ class CurrentPcbRetainedOwnerCore {
   #startupPcbSession: CurrentPcbWorkerStartupPcbSession | CurrentPcb209WorkerStartupPcbSession | CurrentPcb209RatlineContinuationNativeSession | CurrentPcb209RatlineNativeSession | null = null;
   #nativeTail: Promise<void> = Promise.resolve();
   readonly #closed = Promise.withResolvers<null>();
+  readonly #combinedReadyChallenge: string | null;
+  readonly #combinedReady = Promise.withResolvers<CurrentFootprintCombinedReadyPacket>();
+  #combinedReadyPacket: CurrentFootprintCombinedReadyPacket | null = null;
+  #combinedReadyWaitAttempted = false;
+  #combinedFactoryReady = false;
+  #combinedReadyAbandoned = false;
+  #combinedReadyEofAttempted = false;
+  #nativeStdinBytes = 0;
+  #launchMethodInvoked = false;
+  #stderrBytes = 0;
+  readonly #stderrHash = createHash("sha256");
+  #stderrTruncated = false;
+
   #pending: Pending | null = null;
   #buffer = Buffer.alloc(0);
   #total = 0;
@@ -400,7 +433,17 @@ class CurrentPcbRetainedOwnerCore {
   public constructor(child: ChildProcessWithoutNullStreams, verify: () => Promise<void>,
     installation: CurrentPcbDiagnosticInstallation | null, verifyInstallation: () => Promise<void>, purpose: OwnerPurpose,
     verifyStartupFacade: () => Promise<void> = verifyInstallation, actorClockSource: CurrentPcb209ActorClockSourceQualification | null = null,
-    emptyAnchor: CurrentPcb209EmptyStartupBudgetAnchor | null = null, ratlineBudget: CurrentPcb209RatlineBudget | null = null, continuationBudget: CurrentPcb209RatlineContinuationBudget | null = null) {
+    emptyAnchor: CurrentPcb209EmptyStartupBudgetAnchor | null = null, ratlineBudget: CurrentPcb209RatlineBudget | null = null, continuationBudget: CurrentPcb209RatlineContinuationBudget | null = null, readyChallenge: string | null = null) {
+    if ((purpose === CURRENT_FOOTPRINT_COMBINED_PURPOSE) !== (readyChallenge !== null) ||
+      readyChallenge !== null && !/^[a-f\d]{32}(?![\s\S])/u.test(readyChallenge)) { throw error("COMBINED_READY_CHALLENGE_PROFILE"); }
+    this.#combinedReadyChallenge = readyChallenge;
+    // Attach rejection handling before any native pipe can emit an error.
+    // The original readiness waiter still receives the same rejection.
+    if (purpose === CURRENT_FOOTPRINT_COMBINED_PURPOSE) {
+      void (async (): Promise<void> => { try { await this.#combinedReady.promise; } catch {
+        // The original readiness waiter retains this failure.
+      } })();
+    }
     this.#actorClockSource = actorClockSource;
     this.#emptyAnchor = emptyAnchor;
     this.#ratlineBudget = ratlineBudget; this.#continuationBudget = continuationBudget;
@@ -446,6 +489,7 @@ class CurrentPcbRetainedOwnerCore {
     nativeLaunchError: string | null; nativeSendError: string | null; createProcessError: number | null;
     mainNativeFailure?: Readonly<{ action: MainNativeAction; code: string }> | null;
     combinedAbortAttempted?: boolean; combinedAbortDispatchAttempted?: boolean; combinedOutputCleanupOnly?: boolean;
+    combinedReadiness?: CurrentFootprintCombinedFactoryFailureDiagnostics | null;
     browserObservationConsumed: boolean; frameInspectionConsumed: boolean; scriptInspectionConsumed: boolean; diagnosticFailure: string | null;
     diagnosticFailureObservation: CurrentPcbDiagnosticFailureObservation | null;
     workerStartupChannel?: ReturnType<CurrentPcbWorkerStartupChannel["status"]> | ReturnType<CurrentPcb209EmptyStartupChannel["status"]> |
@@ -461,6 +505,7 @@ class CurrentPcbRetainedOwnerCore {
       released: this.#released, helperClosed: this.#childClosed, cleanupOnly: this.#binding !== null && !this.#launchSucceeded,
       noProcessCleanupAvailable: this.#noProcessCleanupAvailable(), frameWorkerVerified: false, executionAuthorized: false, browserObservationConsumed: this.#browserObservationConsumed,
       nativeLaunchError: this.#nativeLaunchError, nativeSendError: this.#nativeSendError, createProcessError: this.#noProcessProof?.createProcessError ?? null,
+      ...(this.#purpose === CURRENT_FOOTPRINT_COMBINED_PURPOSE ? { combinedReadiness: this.combinedFactoryFailureDiagnostics() } : {}),
       mainNativeFailure: this.#mainNativeFailure, combinedAbortAttempted: this.#combinedAbortAttempted, combinedAbortDispatchAttempted: this.#combinedAbortDispatchAttempted, combinedOutputCleanupOnly: this.#combinedOutputCleanupOnly,
       frameInspectionConsumed: this.#framesConsumed, scriptInspectionConsumed: this.#scriptConsumed, diagnosticFailure: this.#pipe.status().failure,
       diagnosticFailureObservation: this.#pipe.status().failureObservation,
@@ -474,7 +519,53 @@ class CurrentPcbRetainedOwnerCore {
       profile: this.#purpose, workerStartupHandoffConsumed: this.#startupHandoffConsumed });
   }
 
+  /** Genuine combined factory only waits for this original stdout packet.
+   * No request may enter the original stdin before it has been accepted. */
+  public async waitFootprintCombinedReady(): Promise<void> {
+    if (this.#purpose !== CURRENT_FOOTPRINT_COMBINED_PURPOSE || this.#combinedReadyWaitAttempted) { throw error("COMBINED_READY_CONSUMED"); }
+    this.#combinedReadyWaitAttempted = true;
+    const timer = setTimeout(() => { this.#fail("COMBINED_READY_DEADLINE"); }, CURRENT_FOOTPRINT_COMBINED_READY.milliseconds);
+    try {
+      await this.#combinedReady.promise;
+      this.#available(); await this.#verifyInstallation(); this.#available(); await this.#verify(); this.#available();
+      if (this.#combinedReadyPacket === null || this.#combinedReadyAbandoned) { throw error("COMBINED_READY_REQUIRED"); }
+      this.#combinedFactoryReady = true;
+    } finally { clearTimeout(timer); }
+  }
+  /** EOF is restricted to this original never-written input. It is not a
+   * helper kill, native release command or application termination proof. */
+  public async closeFootprintCombinedBeforeLaunch(): Promise<void> {
+    if (this.#purpose !== CURRENT_FOOTPRINT_COMBINED_PURPOSE || this.#nativeStdinBytes !== 0 || this.#launchMethodInvoked || this.#combinedReadyEofAttempted) {
+      throw error("COMBINED_PRELAUNCH_EOF_REFUSED");
+    }
+    this.#combinedReadyAbandoned = true; this.#combinedReadyEofAttempted = true;
+    if (!this.#childClosed && !this.#child.stdin.writableEnded) { this.#child.stdin.end(); }
+    if (this.#childClosed) { return; }
+    const expired = Promise.withResolvers<false>();
+    const timer = setTimeout(() => { expired.resolve(false); }, CURRENT_FOOTPRINT_COMBINED_READY.eofCleanupMilliseconds);
+    try {
+      const closed = (async (): Promise<true> => { await this.#closed.promise; return true; })();
+      if (!await Promise.race([closed, expired.promise])) { throw error("COMBINED_PRELAUNCH_CHILD_RETAINED"); }
+    } finally { clearTimeout(timer); }
+  }
+  public combinedFactoryFailureDiagnostics(): CurrentFootprintCombinedFactoryFailureDiagnostics {
+    return Object.freeze({ profile: "private.current-footprint-combined-factory-failure-diagnostics.v1", helperClosed: this.#childClosed,
+      failure: this.#failure, readinessObserved: this.#combinedReadyPacket !== null, launchInvoked: this.#launchMethodInvoked,
+      stdinBytesWritten: this.#nativeStdinBytes,
+      stderr: Object.freeze({ bytes: this.#stderrBytes, sha256: this.#stderrBytes === 0 ? null : this.#stderrHash.copy().digest("hex"), truncated: this.#stderrTruncated }) });
+  }
+  #bindingFromOriginalHelper(value: RecordValue): Binding {
+    const observed = binding(value), ready = this.#combinedReadyPacket;
+    if (this.#purpose === CURRENT_FOOTPRINT_COMBINED_PURPOSE && (ready === null || ready.helperInstance !== observed.helperInstance || ready.jobId !== observed.jobId)) {
+      throw error("COMBINED_READY_BINDING_CHANGED");
+    }
+    return observed;
+  }
   public async launch(input: Readonly<{ executable: string; executableSha256: string; confirmDiagnosticLaunch: true }>): Promise<Binding> {
+    if (this.#purpose === CURRENT_FOOTPRINT_COMBINED_PURPOSE) {
+      this.#launchMethodInvoked = true;
+      if (!this.#combinedFactoryReady || this.#combinedReadyPacket === null || this.#combinedReadyAbandoned) { throw error("COMBINED_READY_REQUIRED"); }
+    }
     if (this.#launchConsumed) { throw error("LAUNCH_CONSUMED"); }
     const { executable, executableSha256, confirmDiagnosticLaunch } = input;
     // oxlint-disable-next-line typescript/no-unnecessary-boolean-literal-compare, eslint/no-control-regex -- Exact confirmation and exclusion of native command control characters are required at this boundary.
@@ -485,7 +576,7 @@ class CurrentPcbRetainedOwnerCore {
       await this.#verifyInstallation(); await this.#verify(); this.#available();
       const nativeFile = this.#installation?.plan.files[0];
       if (this.#installation !== null && (nativeFile?.windowsPath !== executable || nativeFile.sha256 !== executableSha256)) { throw error("INSTALLATION_TARGET"); }
-      try { this.#binding = binding(await this.#request({ action: "launch", executable, executableSha256, confirmDiagnosticLaunch: true,
+      try { this.#binding = this.#bindingFromOriginalHelper(await this.#request({ action: "launch", executable, executableSha256, confirmDiagnosticLaunch: true,
         ...(this.#installation === null ? {} : { installation: this.#installation.plan }) })); }
       catch (caughtError) {
         // Native failure can follow successful CreateProcess. Recover only this
@@ -502,7 +593,11 @@ class CurrentPcbRetainedOwnerCore {
 
   async #recoverLaunchBinding(): Promise<void> {
     const observed = await this.#request({ action: "identity" });
-    if (observed["rootPid"] !== 0) { this.#binding = binding(observed); }
+    const ready = this.#combinedReadyPacket;
+    if (this.#purpose === CURRENT_FOOTPRINT_COMBINED_PURPOSE && (ready === null || observed["helperInstance"] !== ready.helperInstance || observed["jobId"] !== ready.jobId)) {
+      throw error("COMBINED_READY_BINDING_CHANGED");
+    }
+    if (observed["rootPid"] !== 0) { this.#binding = this.#bindingFromOriginalHelper(observed); }
     else if (this.#nativeLaunchRefused) {
       if (!exact(observed, ["helperInstance", "jobId", "rootPid", "rootCreated"]) || observed["rootCreated"] !== "0" ||
           typeof observed["helperInstance"] !== "string" || !/^[a-f\d]{32}$/u.test(observed["helperInstance"]) ||
@@ -2286,6 +2381,8 @@ class CurrentPcbRetainedOwnerCore {
   #requestNow(request: RecordValue): Promise<RecordValue> {
     this.#available();
     if (this.#pending !== null) { throw error("REQUEST_PENDING"); }
+    if (this.#purpose === CURRENT_FOOTPRINT_COMBINED_PURPOSE && (!this.#combinedFactoryReady || this.#combinedReadyPacket === null || this.#combinedReadyAbandoned)) { throw error("COMBINED_READY_REQUIRED"); }
+
     const combinedCleanup = combinedCleanupControl(request);
     if ((this.#combinedAbortAttempted || this.#combinedOutputCleanupOnly) && !combinedCleanup) { throw error("COMBINED_CLEANUP_ONLY"); }
     if (this.#combinedOutputCleanupOnly) {
@@ -2358,6 +2455,7 @@ class CurrentPcbRetainedOwnerCore {
             "pcbPadShapes209Phase", "pcbImageShapes209Phase", "pcbArcShapes209Phase", "pcbPouredShapes209Phase"]
             .some(key => request[key] === "observe"))) ? 32_768 : 4096;
       if (Buffer.byteLength(data) > maximum || combinedRequest && data.length >= 32_768) { throw error("REQUEST_SIZE"); }
+      this.#nativeStdinBytes += Buffer.byteLength(data);
       this.#child.stdin.write(data, cause => {
         if (cause !== null && cause !== undefined) { this.#fail("HELPER_WRITE"); }
         else if (this.#pending === pending) { pending.written = true; this.#settle(); }
@@ -2406,6 +2504,10 @@ class CurrentPcbRetainedOwnerCore {
   }
   #fail(reason: string): void {
     this.#failure ??= reason; this.#buffer = Buffer.alloc(0);
+    if (this.#purpose === CURRENT_FOOTPRINT_COMBINED_PURPOSE && this.#combinedReadyPacket === null) {
+      this.#combinedReadyAbandoned = true; this.#combinedReady.reject(error(this.#failure ?? reason));
+    }
+
     const pending = this.#pending; this.#pending = null;
     if (pending !== null) { clearTimeout(pending.timer); pending.reject(error(this.#failure)); }
     // Do not end, destroy, signal, unref or detach this original helper.
@@ -2421,6 +2523,8 @@ class CurrentPcbRetainedOwnerCore {
     if (this.#purpose === CURRENT_FOOTPRINT_COMBINED_PURPOSE && this.#total + chunk.length > CURRENT_FOOTPRINT_COMBINED_PROFILE.helperStdout.normalBytes) {
       this.#combinedOutputCleanupOnly = true;
     }
+    if (this.#purpose === CURRENT_FOOTPRINT_COMBINED_PURPOSE && this.#combinedReadyPacket === null &&
+      this.#buffer.length + chunk.length > CURRENT_FOOTPRINT_COMBINED_READY.maximumBytes) { this.#fail("COMBINED_READY_BOUND"); return; }
     this.#total += chunk.length; this.#buffer = Buffer.concat([this.#buffer, chunk]);
     const ratlineBudget = this.#continuationBudget ?? this.#ratlineBudget;
     if (ratlineBudget !== null) {
@@ -2433,6 +2537,14 @@ class CurrentPcbRetainedOwnerCore {
     if (newline !== this.#buffer.length - 1) { this.#fail("HELPER_FRAMING"); return; }
     try {
       const raw = decodeCurrentPcbDiagnosticJson(this.#buffer.subarray(0, newline));
+      if (this.#purpose === CURRENT_FOOTPRINT_COMBINED_PURPOSE && this.#combinedReadyPacket === null) {
+        if (this.#combinedReadyAbandoned || this.#nativeStdinBytes !== 0 || this.#launchMethodInvoked || this.#buffer.length > CURRENT_FOOTPRINT_COMBINED_READY.maximumBytes) {
+          this.#fail("COMBINED_READY_PACKET"); return;
+        }
+        const ready = decodeCurrentFootprintCombinedReady(raw);
+        if (ready.challenge !== this.#combinedReadyChallenge) { this.#fail("COMBINED_READY_CHALLENGE"); return; }
+        this.#buffer = Buffer.alloc(0); this.#combinedReadyPacket = ready; this.#combinedReady.resolve(ready); return;
+      }
       const pending = this.#pending;
       if (!record(raw) || pending === null || pending.reply !== null || raw["id"] !== pending.id ||
           (raw["ok"] === true ? !exact(raw, ["id", "ok", "result"]) || !record(raw["result"]) :
@@ -2440,7 +2552,14 @@ class CurrentPcbRetainedOwnerCore {
       this.#buffer = Buffer.alloc(0); pending.reply = raw; this.#settle();
     } catch { this.#fail("HELPER_FRAMING"); }
   };
-  readonly #stderr = (): void => { this.#fail("HELPER_STDERR"); };
+  readonly #stderr = (chunk: unknown): void => {
+    if (Buffer.isBuffer(chunk)) {
+      const remaining = CURRENT_FOOTPRINT_COMBINED_READY.stderrBytes - this.#stderrBytes;
+      const selected = chunk.subarray(0, remaining); this.#stderrHash.update(selected); this.#stderrBytes += selected.length;
+      if (chunk.length > remaining) { this.#stderrTruncated = true; }
+    } else { this.#stderrTruncated = true; }
+    this.#fail("HELPER_STDERR");
+  };
   readonly #childError = (): void => { this.#fail("HELPER_ERROR"); };
   readonly #childClose = (): void => { this.#childClosed = true; if (!this.#released) { this.#fail("HELPER_CLOSED"); } this.#closed.resolve(null); };
 }
@@ -2527,8 +2646,8 @@ export class CurrentFootprintCombinedNativeOwner extends CurrentPcbRetainedOwner
   public constructor(child: ChildProcessWithoutNullStreams, verify: () => Promise<void>,
     actorClockSource: CurrentPcb209ActorClockSourceQualification,
     installation: CurrentPcbDiagnosticInstallation | null = null, verifyInstallation: () => Promise<void> = (): Promise<void> => Promise.resolve(),
-    verifyStartupFacade: () => Promise<void> = verifyInstallation) {
-    super(child, verify, installation, verifyInstallation, CURRENT_FOOTPRINT_COMBINED_PURPOSE, verifyStartupFacade, actorClockSource);
+    verifyStartupFacade: () => Promise<void> = verifyInstallation, readyChallenge = randomBytes(16).toString("hex")) {
+    super(child, verify, installation, verifyInstallation, CURRENT_FOOTPRINT_COMBINED_PURPOSE, verifyStartupFacade, actorClockSource, null, null, null, readyChallenge);
   }
 }
 
@@ -2571,6 +2690,21 @@ export function assertOriginalCurrentFootprintCombinedNativeOwner(owner: Current
     Object.getPrototypeOf(CurrentFootprintCombinedNativeOwner.prototype) !== CurrentPcbRetainedOwnerCore.prototype ||
     !originalFootprintDescriptors(CurrentPcbRetainedOwnerCore.prototype, footprintCoreDescriptors)) { throw error("COMBINED_ORIGINAL_OWNER"); }
   combinedOwnershipMethods.generation.call(owner);
+}
+export function currentFootprintCombinedFactoryFailureDiagnostics(failure: unknown, expectedOptions: CurrentPcbDiagnosticInstallationOptions): CurrentFootprintCombinedFactoryFailureDiagnostics | null {
+  if (failure === null || typeof failure !== "object" || types.isProxy(failure)) { return null; }
+  const held = combinedFactoryFailures.get(failure);
+  if (held === undefined || held.options !== expectedOptions) { return null; }
+  assertOriginalCurrentFootprintCombinedNativeOwner(held.owner); return held.owner.combinedFactoryFailureDiagnostics();
+}
+export function requireCurrentFootprintCombinedUnlaunchedFactoryFailure(failure: unknown, expectedOptions: CurrentPcbDiagnosticInstallationOptions): CurrentFootprintCombinedBeforeLaunchFailureProof | null {
+  const diagnostics = currentFootprintCombinedFactoryFailureDiagnostics(failure, expectedOptions);
+  if (diagnostics === null || !diagnostics.helperClosed || diagnostics.launchInvoked || diagnostics.stdinBytesWritten !== 0) { return null; }
+  if (failure === null || typeof failure !== "object") { return null; }
+  const held = combinedFactoryFailures.get(failure); if (held === undefined) { return null; }
+  held.proof ??= Object.freeze({ profile: "private.current-footprint-combined-before-launch-failure.v1", helperTransportClosed: true,
+    launchRequestWritten: false, applicationLaunchDispatched: false, terminationProved: false });
+  return held.proof;
 }
 function originalCombinedCapabilityOwner(capability: CurrentFootprintCombinedMainCapability,
   runner: CurrentFootprintCopyMainBackendRunner, mode: "normal" | "cleanup" | "exited"): CurrentPcbRetainedOwnerCore {
@@ -2689,8 +2823,18 @@ export function startCurrentFootprintCopyNativeOwner(options: CurrentPcbDiagnost
 export function startCurrentFootprintMainNativeOwner(options: CurrentPcbDiagnosticInstallationOptions): Promise<CurrentFootprintMainNativeOwner> {
   return startFixedOwner(options, "worker-startup-footprint-main209", "209-startup");
 }
-export function startCurrentFootprintCombinedNativeOwner(options: CurrentPcbDiagnosticInstallationOptions): Promise<CurrentFootprintCombinedNativeOwner> {
-  return startFixedOwner(options, CURRENT_FOOTPRINT_COMBINED_PURPOSE, "209-startup");
+export async function startCurrentFootprintCombinedNativeOwner(options: CurrentPcbDiagnosticInstallationOptions): Promise<CurrentFootprintCombinedNativeOwner> {
+  const owner = await startFixedOwner(options, CURRENT_FOOTPRINT_COMBINED_PURPOSE, "209-startup");
+  if (!(owner instanceof CurrentFootprintCombinedNativeOwner)) { throw error("COMBINED_FACTORY_OWNER"); }
+  try { await owner.waitFootprintCombinedReady(); return owner; }
+  catch {
+    const failure = error("COMBINED_FACTORY_READY_FAILED"); combinedFactoryFailures.set(failure, { options, owner, proof: null });
+    try { await owner.closeFootprintCombinedBeforeLaunch(); } catch {
+      // Original child closure is still unresolved. The private diagnostics
+      // Getter retains this owner; no terminal proof is issued while it lives.
+    }
+    throw failure;
+  }
 }
 export async function startCurrentFootprintCopySavedNativeOwner(writer: CurrentFootprintCopyNativeOwner,
   after: Awaited<ReturnType<typeof readExactSqlInventory>>): Promise<CurrentFootprintCopySavedNativeOwner> {
@@ -2767,11 +2911,12 @@ async function startFixedOwner(options: CurrentPcbDiagnosticInstallationOptions,
   // PowerShell executes exactly the bytes hashed through this retained file.
   // A short encoded bootstrap avoids the Windows command-length limit for the
   // Entire native helper and avoids reopening a pathname after byte admission.
+  const readyChallenge = purpose === CURRENT_FOOTPRINT_COMBINED_PURPOSE ? randomBytes(16).toString("hex") : null;
   let purposeSwitch = "";
   if (purpose === "worker-startup-ratline-continuation209") { purposeSwitch = " -WorkerStartupRatlineContinuation209"; }
   else if (purpose === "worker-startup-ratline209") { purposeSwitch = " -WorkerStartupRatline209"; }
   else if (purpose === "worker-startup-empty209") { purposeSwitch = " -WorkerStartupEmpty209"; }
-  else if (purpose === CURRENT_FOOTPRINT_COMBINED_PURPOSE) { purposeSwitch = ` ${CURRENT_FOOTPRINT_COMBINED_PROFILE.nativeSwitch}`; }
+  else if (purpose === CURRENT_FOOTPRINT_COMBINED_PURPOSE) { purposeSwitch = ` ${CURRENT_FOOTPRINT_COMBINED_PROFILE.nativeSwitch} -CombinedReadyChallenge '${readyChallenge ?? ""}'`; }
   else if (purpose === "worker-startup-footprint-main209") { purposeSwitch = " -WorkerStartupFootprintMain209"; }
   else if (purpose === "worker-startup-footprint-saved209") { purposeSwitch = " -WorkerStartupFootprintSaved209"; }
   else if (purpose === "worker-startup-footprint-copy209") { purposeSwitch = " -WorkerStartupFootprintCopy209"; }
@@ -2810,7 +2955,8 @@ async function startFixedOwner(options: CurrentPcbDiagnosticInstallationOptions,
   }
   else if (purpose === CURRENT_FOOTPRINT_COMBINED_PURPOSE) {
     if (actorClockSource === null) { throw error("STARTUP209_ACTOR_SOURCE"); }
-    owner = new CurrentFootprintCombinedNativeOwner(child, verify, actorClockSource, installation, verifyInstallation, verifyStartupFacade);
+    if (readyChallenge === null) { throw error("COMBINED_READY_CHALLENGE_PROFILE"); }
+    owner = new CurrentFootprintCombinedNativeOwner(child, verify, actorClockSource, installation, verifyInstallation, verifyStartupFacade, readyChallenge);
     footprintCombinedFactories.set(owner, installation);
   }
   else if (purpose === "worker-startup-footprint-main209") {

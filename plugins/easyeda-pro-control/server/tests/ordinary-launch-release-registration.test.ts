@@ -4,6 +4,7 @@ import { readFile } from "node:fs/promises";
 import { stripTypeScriptTypes } from "node:module";
 import { test } from "node:test";
 import vm from "node:vm";
+import { parse } from "acorn";
 import { z } from "zod";
 import { ordinaryLaunchRequestSchema } from "../src/ordinary-launch.ts";
 import type { OrdinaryLaunchOptions, OrdinaryLaunchRuntime } from "../src/ordinary-launch.ts";
@@ -13,6 +14,28 @@ type Invoke = (input: { request: unknown }) => Promise<unknown>;
 const launch = { action: "launch", operationId: "ordinary-index-fixture", confirmLaunch: true, acceptExistingProfileEffects: true };
 const release = { action: "release-closed", operationId: launch.operationId, expectedLaunchedSha256: "a".repeat(64),
   expectedTerminationSha256: "b".repeat(64), confirmReleaseClosed: true };
+
+function startupDeclarations(source: string): string {
+  const blocks = parse(source, { ecmaVersion: "latest", sourceType: "module" }).body.flatMap(statement =>
+    statement.type === "IfStatement" && statement.consequent.type === "BlockStatement" && statement.consequent.body.some(node =>
+      node.type === "VariableDeclaration" && node.declarations.some(declaration => declaration.id.type === "Identifier" && declaration.id.name === "runStartup")) ? [statement.consequent] : []);
+  assert.equal(blocks.length, 1); const block = blocks[0]; assert.ok(block);
+  const selected = ["startupOriginal", "startupCalls", "combinedHistoricalOriginal", "runStartup"].map(name => {
+    const matches = block.body.filter(node => node.type === "VariableDeclaration" && node.declarations.length === 1 &&
+      node.declarations[0]?.id.type === "Identifier" && node.declarations[0].id.name === name);
+    assert.equal(matches.length, 1); const node = matches[0]; assert.ok(node?.type === "VariableDeclaration");
+    assert.equal(node.kind, name === "runStartup" ? "const" : "let");
+    const initializer = node.declarations[0]?.init;
+    if (name === "runStartup") { assert.equal(initializer?.type, "ArrowFunctionExpression"); }
+    else if (name === "startupCalls") { assert.ok(initializer?.type === "Literal" && initializer.value === 0); }
+    else { assert.equal(initializer, null); }
+    assert.ok(node.end > node.start && node.end - node.start < (name === "runStartup" ? 24_000 : 3000));
+    return source.slice(node.start, node.end);
+  }).join("\n");
+  // Bound the actual callback independently of erased type padding and the
+  // Unused historical dispatcher/registration descriptions in the same block.
+  assert.ok(selected.length < 28_000); return selected;
+}
 
 async function fixture(): Promise<{ invoke: Invoke; startup: () => Promise<unknown>; scope: vm.Context; finish: () => void;
   state: { releaseCalls: number; released: boolean; failRelease: boolean; runtimeCount: number; diagnosticAllocations: number } }> {
@@ -102,21 +125,18 @@ async function fixture(): Promise<{ invoke: Invoke; startup: () => Promise<unkno
     serializedGuarded: (handler: Invoke): Invoke => handler,
     registerFacadeTool: (name: string, _config: unknown, handler: Invoke): void => { assert.equal(name, "easyeda_control_launch"); invoke = handler; },
   });
-  const source = await readFile(new URL("../src/index.ts", import.meta.url), "utf8");
+  const source = stripTypeScriptTypes(await readFile(new URL("../src/index.ts", import.meta.url), "utf8"));
   const helperStart = source.indexOf("function disposableOwnData(");
   const helperEnd = source.indexOf("\n}", source.indexOf("function disposableOwnerMethod(", helperStart)) + 2;
   const allocationStart = source.indexOf("function assertOrdinaryRuntimeAllocationAllowed(");
   const allocationEnd = source.indexOf("\n}", allocationStart) + 2;
-  const startupStart = source.indexOf("  let startupOriginal:");
-  const startupEnd = source.indexOf("\n  if (facadeToolRegistered", startupStart);
   const registrationStart = source.indexOf('registerFacadeTool(\n  "easyeda_control_launch",');
   const registrationEnd = source.indexOf('registerFacadeTool(\n  "easyeda_control_project_open",', registrationStart);
-  for (const [begin, end] of [[helperStart, helperEnd], [allocationStart, allocationEnd], [startupStart, startupEnd], [registrationStart, registrationEnd]] as const) {
-    // The shared startup dispatcher now includes the separately sealed copy
-    // Preparation family; retain its complete callback in this older regression.
+  for (const [begin, end] of [[helperStart, helperEnd], [allocationStart, allocationEnd], [registrationStart, registrationEnd]] as const) {
     assert.ok(begin > 0 && end > begin && end - begin < 24_000);
-    vm.runInContext(stripTypeScriptTypes(source.slice(begin, end)).replaceAll("import.meta.dirname", '"/synthetic/server/src"'), scope);
+    vm.runInContext(source.slice(begin, end).replaceAll("import.meta.dirname", '"/synthetic/server/src"'), scope);
   }
+  vm.runInContext(startupDeclarations(source).replaceAll("import.meta.dirname", '"/synthetic/server/src"'), scope);
   assert.ok(invoke);
   return { invoke, scope, state, finish: (): void => { barrier.resolve(null); }, startup: (): Promise<unknown> =>
     Promise.resolve(vm.runInContext("runStartup({action:'launch'})", scope) as unknown) };

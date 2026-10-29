@@ -48,6 +48,11 @@ import { CURRENT_PCB_209_SELECTION_RELATIONS_RESULT_BYTES, currentPcb209Selectio
 import { assertNoUnresolvedCurrentPcbStringLedgers } from "./current-pcb-string-ledger-exclusion.ts";
 import { CURRENT_FOOTPRINT_MAIN_OPERATION_PREFIX, currentFootprintMainIdSchema } from "./current-footprint-main-validation.ts";
 import { CURRENT_FOOTPRINT_COMBINED_OPERATION_PREFIX, currentFootprintCombinedIdSchema } from "./current-footprint-combined-validation.ts";
+import { currentFootprintCombinedHistoricalIntentSchema } from "./current-footprint-combined-abandonment-contract.ts";
+import { assertCurrentFootprintCombinedHistoricalSnapshot, readCurrentFootprintCombinedAbandonment,
+  readCurrentFootprintCombinedHistoricalSnapshot, requireCurrentFootprintCombinedHistoricalSnapshot } from "./current-footprint-combined-abandonment-journal.ts";
+import type { CurrentFootprintCombinedHistoricalSnapshot } from "./current-footprint-combined-abandonment-journal.ts";
+import { currentFootprintCombinedBeforeLaunchFailureProofSchema } from "./current-footprint-combined-ready.ts";
 import { currentFootprintCopyMainBackendObservationSchema } from "./current-footprint-copy-main-backend-observation.ts";
 import { CURRENT_PCB_COMMON_FAILURE_MAX_BYTES, currentPcbCommonBaselineFailureSchema, currentPcbCommonBaselineResultSchema } from "./current-pcb-common-baseline-validation.ts";
 
@@ -143,6 +148,14 @@ const combinedIntentSchema = workerStartupIntentSchema.extend({
   schema: z.literal("easyeda-pro-control.footprint-combined-launch-intent.v1"), operationId: currentFootprintCombinedIdSchema,
   acceptDebuggerPauseEffects: z.literal(true),
 });
+const combinedReadyIntentSchema = combinedIntentSchema.extend({
+  schema: z.literal("easyeda-pro-control.footprint-combined-launch-intent.v2"),
+  dispatchProtocol: z.literal("challenge-ready-before-launch.v1"),
+});
+const combinedFactoryBeforeLaunchSchema = z.object({ ...base, operationId: currentFootprintCombinedIdSchema,
+  schema: z.literal("easyeda-pro-control.footprint-combined-factory-before-launch.v1"),
+  intentSha256: diagnosticLifecycleDigestSchema, proof: currentFootprintCombinedBeforeLaunchFailureProofSchema,
+}).strict();
 const combinedAbortIntentSchema = z.object({ ...base, operationId: currentFootprintCombinedIdSchema,
   schema: z.literal("easyeda-pro-control.footprint-combined-abort-intent.v1"), bindingSha256: diagnosticLifecycleDigestSchema,
   previousRecordsSha256: diagnosticLifecycleDigestSchema, confirmAbortOriginalCombinedJob: z.literal(true) }).strict();
@@ -155,7 +168,7 @@ const legacyStartupId = z.union([currentPcbWorkerStartupLifecycleIdSchema, footp
 const startupId = z.union([legacyStartupId, footprintRouteId]);
 const startupOpeningId = z.union([startupId, currentPcb209EmptyStartupIdSchema, currentPcb209RatlineStartupIdSchema, currentPcb209RatlineContinuationIdSchema]);
 const intentSchema = z.discriminatedUnion("schema", [diagnosticIntentSchema, stringIntentSchema, workerStartupIntentSchema,
-  workerStartup209IntentSchema, workerStartupEmpty209IntentSchema, workerStartupRatline209IntentSchema, workerStartupContinuation209IntentSchema, workerStartupFootprint209IntentSchema, workerStartupFootprintRoute209IntentSchema, mainIntentSchema, combinedIntentSchema]);
+  workerStartup209IntentSchema, workerStartupEmpty209IntentSchema, workerStartupRatline209IntentSchema, workerStartupContinuation209IntentSchema, workerStartupFootprint209IntentSchema, workerStartupFootprintRoute209IntentSchema, mainIntentSchema, combinedIntentSchema, combinedReadyIntentSchema]);
 const workerStartupHandoffIntentSchema = z.object({ schema: z.literal("easyeda-pro-control.pcb-worker-startup-handoff-intent.v1"), ...base,
   operationId: startupOpeningId, bindingSha256: diagnosticLifecycleDigestSchema,
   scriptResultSha256: diagnosticLifecycleDigestSchema,
@@ -651,6 +664,7 @@ export const diagnosticLifecycleRecordSchemas = {
   "main-construction-result.json": mainObservationResultSchema,
   "main-terminate-intent.json": mainTerminateIntentSchema,
   "main-terminate-acknowledged.json": mainTerminateAckSchema,
+  "combined-factory-before-launch.json": combinedFactoryBeforeLaunchSchema,
   "combined-abort-intent.json": combinedAbortIntentSchema,
   "combined-abort-acknowledged.json": combinedAbortAckSchema,
   "observation-failure.json": observationFailureSchema,
@@ -747,7 +761,12 @@ function hashRecord(hash: Hash, name: RecordName, bytes: Buffer): void {
 }
 function settled(operation: DiagnosticLifecycleOperation): boolean {
   return operation.records["released.json"] !== undefined || operation.records["not-dispatched.json"] !== undefined ||
-    operation.records["no-process-released.json"] !== undefined;
+    operation.records["no-process-released.json"] !== undefined || operation.records["combined-factory-before-launch.json"] !== undefined;
+}
+async function recordedHistoricalRelinquishment(operation: DiagnosticLifecycleOperation): Promise<boolean> {
+  if (Object.keys(operation.records).length !== 1 || !currentFootprintCombinedHistoricalIntentSchema.safeParse(operation.records["intent.json"]).success) { return false; }
+  const snapshot = await readCurrentFootprintCombinedHistoricalSnapshot(operation.operationId);
+  const receipt = await readCurrentFootprintCombinedAbandonment(snapshot); return receipt !== null && receipt.result !== null;
 }
 function forgetSettledChain(key: string): void {
   const previous = settledChains.get(key);
@@ -782,9 +801,15 @@ async function requireSettledOperation(directory: ControlRootDirectory, operatio
       const value: unknown = JSON.parse(new TextDecoder("utf-8", { fatal: true }).decode(bytes));
       Object.defineProperty(records, name, { enumerable: true, value: diagnosticLifecycleRecordSchemas[name].parse(value) });
     }
-    const operation = { operationId, records }; validateChain(operation); requireValue(settled(operation), "UNRESOLVED_LAUNCH");
-    const digest = hash.digest("hex"); const bytes = Buffer.byteLength(key) + digest.length;
-    pending = Object.freeze({ digest, bytes });
+    const operation = { operationId, records }; validateChain(operation);
+    if (settled(operation)) {
+      const digest = hash.digest("hex"); const bytes = Buffer.byteLength(key) + digest.length;
+      pending = Object.freeze({ digest, bytes });
+    } else {
+      // Relinquishment is not a terminal original record. Re-read its separate
+      // Receipt and original identity every time; never cache this admission.
+      requireValue(await recordedHistoricalRelinquishment(operation), "UNRESOLVED_LAUNCH");
+    }
   }
   requireValue(same(initial, await directory.handle.stat({ bigint: true })), "RECORD_ROSTER_CHANGED");
   if (pending !== null && settledChains.size < MAX_SETTLED_CHAIN_ENTRIES && settledChainBytes + pending.bytes <= MAX_SETTLED_CHAIN_BYTES) {
@@ -804,7 +829,11 @@ function validateChain(operation: DiagnosticLifecycleOperation): void {
   const startupLegacy209 = intent?.schema === "easyeda-pro-control.pcb209-worker-startup-launch-intent.v1";
   const startupRatline209 = intent?.schema === "easyeda-pro-control.pcb209-ratline-startup-launch-intent.v1";
   const startupContinuation209 = intent?.schema === "easyeda-pro-control.pcb209-ratline-continuation-launch-intent.v1";
-  const combinedPurpose = intent?.schema === "easyeda-pro-control.footprint-combined-launch-intent.v1";
+  const combinedReadyPurpose = intent?.schema === "easyeda-pro-control.footprint-combined-launch-intent.v2";
+  const combinedPurpose = combinedReadyPurpose || intent?.schema === "easyeda-pro-control.footprint-combined-launch-intent.v1";
+  const factoryBeforeLaunch = records["combined-factory-before-launch.json"];
+  requireValue(factoryBeforeLaunch === undefined || combinedReadyPurpose && intent.dispatchProtocol === "challenge-ready-before-launch.v1" &&
+    factoryBeforeLaunch.intentSha256 === sha256Json(intent) && Object.keys(records).length === 2, "COMBINED_FACTORY_BEFORE_LAUNCH_CHAIN");
   requireValue(!combinedPurpose || operation.operationId.startsWith(CURRENT_FOOTPRINT_COMBINED_OPERATION_PREFIX), "COMBINED_PURPOSE_ID");
   requireValue(intent === undefined || combinedPurpose || !operation.operationId.startsWith(CURRENT_FOOTPRINT_COMBINED_OPERATION_PREFIX), "RESERVED_COMBINED_PURPOSE_ID");
   const mainPurpose = intent?.schema === "easyeda-pro-control.footprint-main-launch-intent.v1";
@@ -1141,6 +1170,21 @@ export async function readCurrentPcbDiagnosticLifecycles(): Promise<readonly Dia
     }
     await root.assertCurrent(); return operations;
   } finally { await parent.handle.close(); }
+}
+
+/** Dedicated read-only recovery isolation. The exception is one reader-issued
+ * historical snapshot, never an operation ID/boolean accepted by normal guards. */
+export async function assertCurrentFootprintCombinedAbandonmentIsolated(snapshot: CurrentFootprintCombinedHistoricalSnapshot): Promise<void> {
+  const original = requireCurrentFootprintCombinedHistoricalSnapshot(snapshot);
+  await assertNoUnresolvedCurrentPcbStringLedgers(); await assertCurrentFootprintCombinedHistoricalSnapshot(snapshot);
+  const operations = await readCurrentPcbDiagnosticLifecycles();
+  let selected = false;
+  for (const operation of operations) {
+    if (operation.operationId === original.operationId) {
+      requireValue(Object.keys(operation.records).length === 1 && canonicalJson(operation.records["intent.json"]) === canonicalJson(original.intent), "COMBINED_ABANDONMENT_ORIGINAL_CHANGED"); selected = true;
+    } else { requireValue(settled(operation) || await recordedHistoricalRelinquishment(operation), "UNRESOLVED_LAUNCH"); }
+  }
+  requireValue(selected, "COMBINED_ABANDONMENT_ORIGINAL_MISSING"); await assertCurrentFootprintCombinedHistoricalSnapshot(snapshot);
 }
 
 export async function assertNoUnresolvedCurrentPcbDiagnosticLaunches(): Promise<void> {

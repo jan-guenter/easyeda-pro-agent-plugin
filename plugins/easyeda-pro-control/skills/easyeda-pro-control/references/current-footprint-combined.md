@@ -19,6 +19,20 @@ renderer, preparation or saved owner cannot be converted. Existing-profile
 startup and opening may restore tabs, use the network, migrate or persist files.
 Use only an explicitly identified disposable project.
 
+The current combined purpose requires a private challenge-matched helper-ready
+packet before writing its launch request. If the original factory observes its
+own helper close with zero input and no launch invocation, it can publish
+`factory-before-launch-failed`. This proves application non-dispatch for that
+attempt. It does not prove native-resource release or qualify an older failure.
+An unclosed helper remains reserved. Inspect after a failure; never infer a
+terminal state from stderr, a timeout or an absent window.
+
+After a combined attempt is durably terminal and its reservation is released,
+a new `launch` may allocate another combined coordinator in the same facade.
+No startup call may remain queued or active. Inspection retains the previous
+coordinator, and the old operation ID remains consumed. This does not convert
+an owner or retire an unknown/live generation.
+
 ## Observe in order
 
 1. Retain the launch's binding digest. Call `observe-main-construction` once
@@ -82,3 +96,56 @@ Use `settle-records` only when fresh inspection reports
 finishes. These observations prove neither complete application startup nor
 request/clock/SQL completion, durable copying, supported inverse or production
 eligibility.
+
+## Relinquish an older unknown launch
+
+`abandon-unknown-launch` is a separate historical action for the reviewed
+installed223950 v1 producer's intent-only combined launches. It does not invoke
+the old launch or reconstruct its ownership. Use a fresh facade before any
+ordinary, native, main or startup coordinator is allocated. Even calling the
+ordinary startup `inspect` first allocates a coordinator and prevents this path.
+Offline API discovery and exact-argument validation can run first.
+
+Supply the original operation ID and its `expectedIntentSha256`, plus
+`confirmAbandonUnknownLaunch:true`, `acceptUnobservedDescendants:true` and
+`acceptUnknownProfileEffects:true`. These acknowledgments must match the user's
+authorized scope. The route requires the exact unchanged intent-only roster,
+no other Linux facade, no other Windows PowerShell and two absent EasyEDA
+samples. Another facade or a conflict stub blocks it; do not terminate gateways
+or edit journals to pass the check.
+
+If the absence check reports an application or PowerShell, finish its separately
+authorized OS cleanup without allocating a plugin owner, then repeat only this
+historical recovery action. Current209 exposes no unowned close/kill route. If
+cleanup allocates a plugin owner, finish that cleanup and use another fresh
+facade before relinquishment. Process cleanup is separate from accepting the
+historical uncertainty; this action cannot kill or adopt a process.
+
+The route writes a separate digest-bound relinquishment receipt and preserves
+the original directory. Its outcome remains unknown. It proves no non-dispatch,
+termination, native-resource release, original launch identity, design effect or
+persistence. A complete receipt relinquishes only that selected startup blocker;
+all other launch and design gates still apply. A new disposable operation is a
+new attempt, never a replay of the historical ID.
+
+## Private groundwork and remaining integration
+
+The unmounted clock/RPC sequencer joins two actual document-clock invocations
+through original worker tasks, selected UI callbacks, replies and post-await
+values. Its derived unit is49 normal and18 cleanup commands. Fixed TypeScript
+and standalone native codecs have offline parity checks; no native owner issues
+its origin, embeds the codec or mounts the collector. Whole-source qualification
+and inert compilation do not prove embedded Electron execution. The existing
+1MiB helper cap remains unchanged.
+
+Pure delete models retain the originally copied UUID, require the complete
+supported SQL inverse and compare an independent saved reader. The inverse
+appends a tombstone and preserves history; it does not restore database bytes.
+It supports locked or independently aged heads. A fresh unlocked copy needs
+another supported model or an aged-head qualification. These models prove no
+native manager deletion, replay exclusion, actual reopen or writer lifecycle.
+
+Before mounting a writer, join original backend completion and the held final
+SQL handoff, derive the entire copy/readback/delete/readback budget, and preflight
+the16KiB main request envelope even when a source reader permits2MiB. Then prove
+closed SQL, saved source and saved absence through their independent owners.

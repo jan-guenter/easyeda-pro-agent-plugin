@@ -1,5 +1,6 @@
-param([switch]$CompileOnly,[switch]$StringPrecreate,[switch]$WorkerStartup,[switch]$Layers209,[switch]$WorkerStartup209,[switch]$WorkerStartupEmpty209,[switch]$WorkerStartupRatline209,[switch]$WorkerStartupRatlineContinuation209,[switch]$WorkerStartupFootprint209,[switch]$WorkerStartupFootprintCopy209,[switch]$WorkerStartupFootprintSaved209,[switch]$WorkerStartupFootprintMain209,[switch]$WorkerStartupFootprintCombined209)
+param([switch]$CompileOnly,[switch]$StringPrecreate,[switch]$WorkerStartup,[switch]$Layers209,[switch]$WorkerStartup209,[switch]$WorkerStartupEmpty209,[switch]$WorkerStartupRatline209,[switch]$WorkerStartupRatlineContinuation209,[switch]$WorkerStartupFootprint209,[switch]$WorkerStartupFootprintCopy209,[switch]$WorkerStartupFootprintSaved209,[switch]$WorkerStartupFootprintMain209,[switch]$WorkerStartupFootprintCombined209,[string]$CombinedReadyChallenge)
 $ErrorActionPreference = 'Stop'
+if (($WorkerStartupFootprintCombined209 -and -not $CompileOnly -and $CombinedReadyChallenge -cnotmatch '\A[a-f0-9]{32}\z') -or (-not $WorkerStartupFootprintCombined209 -and -not [string]::IsNullOrEmpty($CombinedReadyChallenge))) {throw 'pcb-diagnostic-combined-ready-challenge'}
 if (($StringPrecreate -and $WorkerStartup) -or ($Layers209 -and ($StringPrecreate -or $WorkerStartup))) {throw 'pcb-diagnostic-conflicting-purpose'}
 if ($WorkerStartup209 -and ($StringPrecreate -or $WorkerStartup -or $Layers209)) {throw 'pcb-diagnostic-conflicting-purpose'}
 if ($WorkerStartupEmpty209 -and ($StringPrecreate -or $WorkerStartup -or $Layers209 -or $WorkerStartup209)) {throw 'pcb-diagnostic-conflicting-purpose'}
@@ -1337,7 +1338,7 @@ Reject(()=>encode(0,"Runtime.callFunctionOn",sessionId));Reject(()=>encode(1,"Ru
 public static class EasyedaFootprintSavedLimits { public const int Requests=353; public const int NormalRequests=319; public const long NormalMilliseconds=3600000L; public const long TotalMilliseconds=3660000L; }
 // END GENERATED FOOTPRINT COPY SAVED PROTOCOL
 // BEGIN GENERATED FOOTPRINT MAIN TRANSPORT PROTOCOL
-internal static class EasyedaFootprintCombinedLimits { public const int MainNormal=41; public const int MainCleanup=13; public const int MainRequests=54; public const int Requests=825; public const int NormalRequests=780; public const long NormalMilliseconds=3600000L; public const long TotalMilliseconds=3660000L; }
+public static class EasyedaFootprintCombinedLimits { public const int MainNormal=41; public const int MainCleanup=13; public const int MainRequests=54; public const int Requests=825; public const int NormalRequests=780; public const long NormalMilliseconds=3600000L; public const long TotalMilliseconds=3660000L; }
 internal sealed class EasyedaOriginalMainTransport {
   [System.Runtime.InteropServices.StructLayout(System.Runtime.InteropServices.LayoutKind.Sequential)] struct SA { public int length; public System.IntPtr descriptor; [System.Runtime.InteropServices.MarshalAs(System.Runtime.InteropServices.UnmanagedType.Bool)] public bool inherit; }
   [System.Runtime.InteropServices.DllImport("kernel32.dll",SetLastError=true)] static extern bool CreatePipe(out System.IntPtr read,out System.IntPtr write,ref SA attributes,uint size);
@@ -6796,6 +6797,13 @@ $owner=if ($WorkerStartupFootprintCombined209) {[EasyedaDiagnosticOwner]::Create
 $startupRequestLimit=if ($WorkerStartupFootprintCombined209) {[EasyedaFootprintCombinedLimits]::Requests} elseif ($WorkerStartupFootprintSaved209) {[EasyedaFootprintSavedLimits]::Requests} elseif ($WorkerStartupFootprintCopy209) {[EasyedaFootprintExecutionLimits]::Requests} elseif ($WorkerStartupFootprint209) {[EasyedaFootprintPreparationLimits]::Requests} elseif ($WorkerStartupRatlineContinuation209) {[EasyedaRatlineContinuation209Limits]::RequestLimit} elseif ($WorkerStartupRatline209) {[EasyedaRatline209Limits]::RequestLimit} elseif ($WorkerStartupEmpty209) {[EasyedaWorkerStartupEmpty209Protocol]::RequestLimit} else {256}
 try {
   $owner.Initialize()
+  # BEGIN GENERATED FOOTPRINT COMBINED READY
+  if ($WorkerStartupFootprintCombined209 -and -not $CompileOnly) {
+    $readyState=$owner.NoProcessCreationState()
+    if ($readyState -cne 'not-entered' -or $owner.RootPid -ne 0 -or $owner.RootCreated -cne '0') {throw 'pcb-diagnostic-combined-ready-state'}
+    @{schema='easyeda-pro-control.footprint-combined-ready.v1';challenge=$CombinedReadyChallenge;helperInstance=$owner.HelperInstance;jobId=$owner.JobId;creationState=$readyState;processCreated=$false;emptyJob=$true;pipesChecked=$true} | ConvertTo-Json -Compress
+  }
+  # END GENERATED FOOTPRINT COMBINED READY
   if ($CompileOnly) {
     [EasyedaDiagnosticOwner]::VerifyOriginalMainSmoke()
     [EasyedaDiagnosticOwner]::VerifyFootprintCombinedSmoke()
