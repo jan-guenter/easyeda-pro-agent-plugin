@@ -65,7 +65,7 @@ void test("String programs are byte-exact in the native fixed-purpose adapter", 
     ModelPendingV2Function: CURRENT_PCB_DIAGNOSTIC_PENDING_STATE_V2_FUNCTION,
   })) {
     const encoded = new RegExp(`const string ${name}=@"((?:""|[^"])*)";`, "u").exec(native)?.[1];
-    const actual = name === "ModelStateV2Function" || name === "ModelPendingV2Function" || name === "StringProducerMarkersV2Function" ? readPackedNativeProgram(native, name) : encoded?.replaceAll('""', '"');
+    const actual = ["ModelStateV2Function", "ModelPendingV2Function", "StringProducerMarkersV2Function", "StringEmptyProducersFunction", "StringEmptyProducersV2Function"].includes(name) ? readPackedNativeProgram(native, name) : encoded?.replaceAll('""', '"');
     assert.equal(actual, source, name);
     assert.ok(native.includes(createHash("sha256").update(source).digest("hex")));
   }

@@ -188,3 +188,66 @@ coverage/plugin-contract/installed-offline-catalog suite passed66 cases with
 zero failures or skips on the frozen source, bundle and compatibility payload.
 The official CLI has no separate plugin-validation command. No full local facade
 or bridge suite was duplicated.
+
+
+## Publication and official installation, 2026-10-29
+
+Final candidate `96070d2bc5625e0c5fe156aeea1607ced95de9f8` passed all eleven PR
+checks. Linux40818053206 passed13,491 facade tests with five expected platform
+skips and zero failures, plus424 bridge tests. Windows40818053202 passed.
+Protected [PR147](https://github.com/jan-guenter/easyeda-pro-agent-plugin/pull/147)
+merged as `60725ec89e1db94e508fe8392abbdf0e39538aac`. The merged plugin tree
+`677025fb1d2dd020d68fead898711b83159a8a10` is byte-exact to the tested candidate.
+Automatic main Linux40819422503 is still running at this observation; main
+Windows40819422577 has passed.
+
+The official CLI upgraded canonical Git marketplace
+`https://github.com/jan-guenter/easyeda-pro-agent-plugin.git`, refmain. Its cached
+HEAD and marketplace revision both equal merged main. Initial add reported the
+new version, but the following scoped list was empty and the cache leaf was
+absent before verification. That refusal is retained. One official reinstall
+then passed complete verification. A second scoped list reported installed and
+enabled true for `0.3.0+codex.20261029042605`; complete post-list verification
+proved the leaf remained exact. The deleting process and cause are unknown.
+No manual cache, registration, Git-ref or gateway changes were made. The exact
+machine profile remains byte-identical and the bridge key was not reprovisioned.
+
+The maintained verifier matched2,313 files,45,115,243 bytes and42 directories
+including root, with exact committed644/755 modes. Inventory SHA256 is
+`83a874deea0eafa42b85d562ad3a75640e8da30af30ab5049faebd40f294c1a2`.
+The dependency-free installed probe passed27 exposed tools,52 configured tools,
+45 catalog queries and47 total requests. Its synthetic-profile child closed
+through stdin EOF with exit0, no signal and empty stderr. Post-close marker/control
+roster checks passed, with no descendants or non-stdio sockets at the samples.
+Continuous isolation, actual host admission and connected validation remain false.
+
+The [official plugin packaging workflow](https://developers.openai.com/plugins/build/plugins)
+confirms repo marketplaces and the installed cache are separate and documents
+refresh/restart after plugin changes. It does not explain this observed cache
+loss. Local current CLI help and actual outputs establish the commands used in
+this case. Installed bytes and the scoped enabled result supply the concrete
+proofs; a CLI success message alone does not.
+
+No live MCP call followed installation. This chat still owns the older11943
+facade and a conflicting second connector. Use a fresh session before live work.
+After actual root self-admission, attempt selected historical relinquishment
+for `footprint-combined-223950-20261029-01` with the original canonical intent
+SHA256 `a9b1cd4b47c58adebe17728ea584a917a520741ee12a684381e85be8863538c9`.
+Do this before spawning helper agents or allocating any native/startup coordinator.
+Do not repeat the already completed PowerShell48724 termination. The original
+launch remains unknown and consumed until its separate receipt passes. Then use
+a new disposable operation and fresh binding; the old launch is never replayed.
+Genuine clock/backend integration, complete budgets and SQL/publication/saved
+copy/delete proofs, plus the exhaustive broader API backlog, remain open.
+
+This local publication appendix is retained for the next substantive commit.
+The installed package remains the tested merged plugin tree.
+
+
+### Final main verification
+
+Automatic main Linux40819422503 passed all ten jobs, including every complete
+facade shard, and main Windows40819422577 passed for exact merged commit
+`60725ec89e1db94e508fe8392abbdf0e39538aac`. This resolves only the earlier main-CI
+pending observation. No source, bundle, pin or installed package changed.
+The historical recovery and connected writer backlog remain open as above.

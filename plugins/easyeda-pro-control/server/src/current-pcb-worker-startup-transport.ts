@@ -21,7 +21,8 @@ import type { CurrentFootprintParentWorkerCommand, CurrentFootprintParentWorkerP
 import { CURRENT_FOOTPRINT_PARENT_WORKER_LIMITS } from "./current-footprint-copy-parent-worker-contract.ts";
 import { requireCurrentFootprintCopyParentRoute } from "./current-footprint-copy-parent-route.ts";
 import type { CurrentFootprintCopyParentRoute } from "./current-footprint-copy-parent-route.ts";
-import { bindCurrentFootprintCopyClockRoute } from "./current-footprint-copy-clock-route.ts";
+import { bindCurrentFootprintCopyClockRoute, consumeCurrentFootprintCopyClockRpcRoute } from "./current-footprint-copy-clock-route.ts";
+import type { CurrentFootprintCopyClockRpcConstructionLease } from "./current-footprint-copy-clock-rpc-leases.ts";
 import type { CurrentFootprintCopyTransactionClockCommand } from "./current-footprint-copy-transaction-clock.ts";
 import { z } from "zod";
 import { CURRENT_PCB_209_STARTUP_TIMING, currentPcbStartupMonotonicMs, currentPcbStartupWindowObservation } from "./current-pcb-209-worker-startup-timing.ts";
@@ -36,13 +37,39 @@ import { CURRENT_FOOTPRINT_COPY_SOURCE_READ_LIMITS } from "./current-footprint-c
 import { CurrentFootprintSourceReplyCapture } from "./current-footprint-source-reply-capture.ts";
 import { CURRENT_PCB_DIAGNOSTIC_WORKER_SCRIPT } from "./current-pcb-diagnostic-worker-context.ts";
 import type { DiagnosticWorkerScriptProfile } from "./current-pcb-diagnostic-worker-context.ts";
-import { CurrentFootprintCopyConstructionRunner, CurrentPcb209WorkerConstructionRunner, CurrentPcbWorkerConstructionRunner } from "./current-pcb-worker-construction-runner.ts";
+import { CurrentFootprintCopyConstructionRunner, CurrentPcb209WorkerConstructionRunner, CurrentPcbWorkerConstructionRunner,
+  requireCurrentFootprintCopyClockRpcConstructionLease } from "./current-pcb-worker-construction-runner.ts";
 import type { CurrentFootprintCopyConstructionPacket, CurrentPcb209WorkerConstructionPacket, CurrentPcbWorkerConstructionOwner, CurrentPcbWorkerConstructionPacket, CurrentPcbWorkerConstructionPacketFor, CurrentPcbWorkerConstructionProfile } from "./current-pcb-worker-construction-runner.ts";
 import type { CurrentPcbWorkerConstructionCommand, CurrentPcbWorkerConstructionTransport } from "./current-pcb-worker-construction-contract.ts";
 import { CURRENT_PCB_WORKER_STARTUP_ATTACH } from "./current-pcb-worker-startup-contract.ts";
 import type { CurrentPcbWorkerStartupCommand, CurrentPcbWorkerStartupDependency, CurrentPcbWorkerStartupEvent } from "./current-pcb-worker-startup-contract.ts";
 
 const INTERNAL_PROFILE = Symbol("fixed-worker-startup-transport-profile");
+export interface CurrentFootprintCopyClockRpcTransportHandoff { readonly profile: "private.current-footprint-clock-rpc-transport-handoff.v1" }
+interface ClockRpcTransportBinding {
+  readonly dependency: CurrentPcbWorkerStartupDependency;
+  readonly workerLease: CurrentFootprintCopyClockRpcConstructionLease;
+  readonly workerSessionId: string;
+  readonly assertOriginal: () => Promise<void>;
+  readonly assertCleanup: () => void;
+  readonly consume: () => void;
+}
+const clockRpcTransports = new WeakMap<CurrentPcbWorkerStartupDependency,
+  Readonly<{ prepare: (lease: CurrentFootprintCopyClockRpcConstructionLease) => Promise<CurrentFootprintCopyClockRpcTransportHandoff> }>>();
+const clockRpcHandoffs = new WeakMap<CurrentFootprintCopyClockRpcTransportHandoff, ClockRpcTransportBinding>();
+/** Only the actual execution transport registered by its private constructor
+ * can prepare this dependency. No callback or copied worker handle is accepted. */
+export function prepareCurrentFootprintCopyClockRpcTransport(dependency: CurrentPcbWorkerStartupDependency,
+  lease: CurrentFootprintCopyClockRpcConstructionLease): Promise<CurrentFootprintCopyClockRpcTransportHandoff> {
+  const original = clockRpcTransports.get(dependency);
+  if (original === undefined) { return Promise.reject(failure("CLOCK_RPC_ORIGINAL_TRANSPORT")); }
+  return original.prepare(lease);
+}
+export function requireCurrentFootprintCopyClockRpcTransportHandoff(token: CurrentFootprintCopyClockRpcTransportHandoff): ClockRpcTransportBinding {
+  const original = clockRpcHandoffs.get(token);
+  if (original === undefined) { throw failure("CLOCK_RPC_ORIGINAL_TRANSPORT"); }
+  original.assertCleanup(); return original;
+}
 const token = z.string().min(1).max(256).regex(/^[A-Za-z\d_.:-]+$/u);
 const sessionToken = token.max(128);
 const expectedProjectSchema = z.object({ projectUuid: z.string().regex(/^[a-f\d]{64}$/u),
@@ -223,6 +250,9 @@ class CurrentPcbWorkerStartupTransportCore<Packet extends ConstructionPacket, Ru
   #settled = false;
   #sourceQualified = false;
   #clockRpcProjectSource: string | null = null;
+  #clockRpcHandoffAttempted = false;
+  #clockRpcHandoffConsumed = false;
+  #constructionTransport: CurrentPcbWorkerConstructionTransport | null = null;
   #workerScriptLoadedObserved = false;
   #parentConstruction: CurrentFootprintParentConstructionRunner | null = null;
   #parentRoute: CurrentFootprintCopyParentRoute | null = null;
@@ -270,6 +300,49 @@ class CurrentPcbWorkerStartupTransportCore<Packet extends ConstructionPacket, Ru
     void observe(this.#attached.promise); void observe(this.#armed.promise);
     void observe(this.#initialPaused.promise); void observe(this.#initialResumed.promise);
     void observe(this.#peerAdvance.promise); void observe(this.#peerIdle.promise);
+    if (execution209) {
+      if (clockRpcTransports.has(dependency)) { throw failure("CLOCK_RPC_ORIGINAL_TRANSPORT"); }
+      clockRpcTransports.set(dependency, Object.freeze({ prepare: (lease: CurrentFootprintCopyClockRpcConstructionLease): Promise<CurrentFootprintCopyClockRpcTransportHandoff> => this.#prepareClockRpc(lease) }));
+    }
+  }
+  async #prepareClockRpc(lease: CurrentFootprintCopyClockRpcConstructionLease): Promise<CurrentFootprintCopyClockRpcTransportHandoff> {
+    const binding = requireCurrentFootprintCopyClockRpcConstructionLease(lease), worker = this.#worker;
+    const construction = this.#constructionTransport, parent = this.#parentConstruction, runner = this.#runner;
+    const same = (): void => {
+      this.#sameDependency(); binding.assertCleanup();
+      if (!this.#execution209 || !this.#settled || this.#failure !== null || this.#released || worker === null || this.#worker !== worker ||
+          runner === null || this.#runner !== runner || binding.issuer !== runner || construction === null || this.#constructionTransport !== construction ||
+          parent === null || this.#parentConstruction !== parent || !parent.retained().resumed || parent.retained().failed ||
+          this.#parentPeerPacket === null || this.#clockListener !== null || this.#clockLost !== null || this.#clockSubscriptionConsumed ||
+          this.#clockRpcHandoffConsumed || runner.status().unresolvedBreakpoints) { throw failure("CLOCK_RPC_HANDOFF"); }
+    };
+    same();
+    if (worker === null || runner === null || construction === null || parent === null) { throw failure("CLOCK_RPC_HANDOFF"); }
+    if (this.#clockRpcHandoffAttempted) { throw failure("CLOCK_RPC_HANDOFF_CONSUMED"); }
+    this.#clockRpcHandoffAttempted = true;
+    // Reserve the old collector factory before either cleanup await. There can
+    // Never be an old collector allocated concurrently with this transfer.
+    consumeCurrentFootprintCopyClockRpcRoute(construction);
+    if (!(runner instanceof CurrentFootprintCopyConstructionRunner)) { throw failure("CLOCK_RPC_HANDOFF"); }
+    await runner.prepareClockRpcObservationHandoff(lease); same();
+    if (parent === null) { throw failure("CLOCK_RPC_HANDOFF"); }
+    if (!parent.retained().released) { await parent.release(); same(); }
+    if (this.#subscriber !== null || !parent.retained().released) { throw failure("CLOCK_RPC_HANDOFF_SUBSCRIBER"); }
+    const proof = Object.freeze({ profile: "private.current-footprint-clock-rpc-transport-handoff.v1" as const });
+    const original = (): void => {
+      this.#sameDependency(); binding.assertCleanup();
+      if (this.#failure !== null || this.#released || this.#worker !== worker || this.#runner !== runner || this.#constructionTransport !== construction ||
+          this.#subscriber !== null || this.#clockListener !== null || this.#clockLost !== null || !parent.retained().released) { throw failure("CLOCK_RPC_HANDOFF_CHANGED"); }
+    };
+    clockRpcHandoffs.set(proof, Object.freeze({ dependency: this.#dependency, workerLease: lease, workerSessionId: worker.sessionId,
+      assertOriginal: async (): Promise<void> => { original(); await this.#current(); original(); }, assertCleanup: original,
+      consume: (): void => {
+        original();
+        if (this.#clockRpcHandoffConsumed || this.#clockSubscriptionConsumed) { throw failure("CLOCK_RPC_HANDOFF_CONSUMED"); }
+        this.#clockRpcHandoffConsumed = true; this.#clockSubscriptionConsumed = true;
+      },
+    }));
+    return proof;
   }
   public status(): Readonly<{ started: boolean; settled: boolean; failed: boolean; sourceQualified: boolean;
     initialPauseSeen: boolean; initialResumeAttempted: boolean; initialResumeSeen: boolean;
@@ -913,6 +986,7 @@ class CurrentPcbWorkerStartupTransportCore<Packet extends ConstructionPacket, Ru
           return (): void => { if (this.#subscriber === events) { this.#subscriber = null; } };
         },
       });
+      this.#constructionTransport = transport;
       if (this.#bootstrap209) { bindFootprintPreparationConstructionTransport(this.#dependency, transport); }
       if (this.#execution209) {
         bindCurrentFootprintCopyClockRoute(this.#dependency, transport, Object.freeze({ scriptId: script.scriptId, workerSessionId: worker.sessionId,

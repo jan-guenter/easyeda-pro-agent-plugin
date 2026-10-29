@@ -7,6 +7,7 @@ import { createRequire } from "node:module";
 import { test } from "node:test";
 import { runInThisContext } from "node:vm";
 import { transform } from "esbuild";
+import type { CurrentFootprintCopyClockRpcOriginBindings } from "../src/current-footprint-copy-clock-rpc-origin.ts";
 import type { CurrentFootprintCopyClockRpcRunner } from "../src/current-footprint-copy-clock-rpc-runner.ts";
 import { requireCurrentFootprintCopyClockRpcOrigin } from "../src/current-footprint-copy-clock-rpc-origin.ts";
 import { requireCurrentFootprintCopyClockRpcRegistrationLease } from "../src/current-footprint-copy-clock-registration-runner.ts";
@@ -17,13 +18,13 @@ import { currentFootprintCopyClockRpcCondition, validateCurrentFootprintCopyCloc
 import { currentFootprintCopyClockRpcWire } from "../src/current-footprint-copy-clock-rpc-wire.ts";
 import { clockRpcFixture, documentUuid } from "./helpers/footprint-clock-rpc-fixture.ts";
 
-async function fixture(): Promise<ReturnType<typeof clockRpcFixture> & Readonly<{ runner: CurrentFootprintCopyClockRpcRunner }>> {
-  const f = clockRpcFixture(); const url = new URL("../src/current-footprint-copy-clock-rpc-runner.ts", import.meta.url);
+async function fixture(override?: (original: ReturnType<typeof clockRpcFixture>) => CurrentFootprintCopyClockRpcOriginBindings): Promise<ReturnType<typeof clockRpcFixture> & Readonly<{ runner: CurrentFootprintCopyClockRpcRunner }>> {
+  const f = clockRpcFixture(); const binding = override?.(f) ?? f.binding; const url = new URL("../src/current-footprint-copy-clock-rpc-runner.ts", import.meta.url);
   const loaded: { exports: Record<string, unknown> } = { exports: {} }; const actualRequire = createRequire(url);
   const output = await transform(await readFile(url, "utf8"), { loader: "ts", format: "cjs", target: "node24" });
   const evaluate: unknown = runInThisContext(`(function(require,module,exports){${output.code}\n})`); assert.ok(typeof evaluate === "function");
   Reflect.apply(evaluate, undefined, [(name: string): unknown => {
-    if (name === "./current-footprint-copy-clock-rpc-origin.ts") { return { requireCurrentFootprintCopyClockRpcOrigin: (value: unknown): typeof f.binding => { assert.equal(value, f.token); return f.binding; } }; }
+    if (name === "./current-footprint-copy-clock-rpc-origin.ts") { return { requireCurrentFootprintCopyClockRpcOrigin: (value: unknown): typeof binding => { assert.equal(value, f.token); return binding; } }; }
     if (name === "./current-footprint-copy-clock-registration-runner.ts") { return { requireCurrentFootprintCopyClockRpcRegistrationLease: (value: unknown): typeof f.registration => { assert.equal(value, f.binding.registrationLease); return f.registration; } }; }
     if (name === "./current-pcb-worker-construction-runner.ts") { return { requireCurrentFootprintCopyClockRpcConstructionLease: (value: unknown): typeof f.construction => { assert.equal(value, f.binding.workerLease); return f.construction; } }; }
     if (name === "./current-footprint-copy-clock-rpc-source.ts") {
@@ -36,7 +37,7 @@ async function fixture(): Promise<ReturnType<typeof clockRpcFixture> & Readonly<
   // oxlint-disable-next-line typescript/no-unsafe-type-assertion -- Actual runner code uses only explicitly labeled synthetic issuer hooks, never a genuine native owner.
   const Constructor = candidate as typeof CurrentFootprintCopyClockRpcRunner;
   const runner = new Constructor(f.token, documentUuid);
-  return { ...f, runner };
+  return { ...f, binding, runner };
 }
 
 void test("two actual descriptor traces keep distinct RPCs/tasks, fresh offsets and equal consumed values without a clock invocation", async () => {
@@ -106,4 +107,67 @@ void test("whole source/capability pins and exact conditions refuse substituted 
   for (const params of [{ ...command.params, condition: "process.exit()" }, { ...command.params, location: { ...command.params.location, columnNumber: 10_165 } }]) {
     assert.throws(() => validateCurrentFootprintCopyClockRpcCommand({ ...command, params }));
   }
+});
+
+void test("actual original-generation proof cancels a pending allocation and joins its original arm before retirement", async () => {
+  const entered = Promise.withResolvers<null>(), pending = Promise.withResolvers<never>();
+  const f = await fixture(original => Object.freeze({ ...original.binding,
+    request: (command: Parameters<CurrentFootprintCopyClockRpcOriginBindings["request"]>[0]) => {
+      if (command.method === "Debugger.setBreakpoint") { entered.resolve(null); return pending.promise; }
+      return original.binding.request(command, false);
+    },
+    assertOriginalGenerationExited: async (): Promise<void> => {
+      await original.binding.assertOriginalGenerationExited();
+      pending.reject(new Error("synthetic retained generation exited"));
+    },
+  }));
+  let settled = false;
+  const arm = (async (): Promise<unknown> => {
+    try { await f.runner.arm(); settled = true; return null; }
+    catch (error) { settled = true; return error; }
+  })();
+  await entered.promise;
+  await assert.rejects(f.runner.observeOriginalGenerationEnded(), /remains live/u);
+  assert.equal(settled, false); assert.equal(f.runner.diagnostics()["originalGenerationEnded"], false);
+  assert.equal(f.runner.diagnostics()["uncertainAllocation"], true);
+  f.state.exited = true;
+  await f.runner.observeOriginalGenerationEnded();
+  const failure = await arm; assert.ok(failure instanceof Error); assert.match(failure.message, /retained generation exited/u);
+  assert.equal(settled, true); assert.equal(f.runner.diagnostics()["originalGenerationEnded"], true);
+  assert.equal(f.runner.diagnostics()["retired"], true); assert.equal(f.commands.filter(value => value.method === "Debugger.resume").length, 0);
+  await assert.rejects(f.runner.observeOriginalGenerationEnded(), /CONSUMED/u);
+});
+
+void test("malformed final release synchronously revokes retained-origin normal retirement", async () => {
+  let failed = false, retirementControls = 0;
+  const f = await fixture(original => Object.freeze({ ...original.binding,
+    fail: (): void => { failed = true; },
+    request: async (command: Parameters<CurrentFootprintCopyClockRpcOriginBindings["request"]>[0], cleanup: boolean): Promise<unknown> => {
+      const reply = await original.binding.request(command, cleanup);
+      return command.method === "Runtime.releaseObjectGroup" && command.sessionId === "ui" ? { unexpected: true } : reply;
+    },
+    retire: (): Promise<void> => {
+      if (failed && !original.state.exited) { return Promise.reject(new Error("synthetic sticky semantic refusal")); }
+      retirementControls += 1; return original.binding.retire();
+    },
+  }));
+  await f.runner.arm(); f.runner.consumeBeforeInvocation(); f.state.started = true; await f.runner.collect();
+  await assert.rejects(f.runner.cleanup()); assert.equal(failed, true);
+  assert.equal(f.runner.diagnostics()["normalRequests"], 49); assert.equal(f.runner.diagnostics()["cleanupRequests"], 18);
+  await assert.rejects(f.binding.retire(), /semantic refusal/u); assert.equal(retirementControls, 0);
+  f.state.exited = true; await f.runner.observeOriginalGenerationEnded(); assert.equal(retirementControls, 1);
+});
+void test("generation-exit observation joins concurrent successful retirement without dispatching it twice", async () => {
+  const entered = Promise.withResolvers<null>(), release = Promise.withResolvers<null>();
+  let retirements = 0;
+  const f = await fixture(original => Object.freeze({ ...original.binding,
+    retire: async (): Promise<void> => { retirements += 1; entered.resolve(null); await release.promise; await original.binding.retire(); },
+    assertOriginalGenerationExited: async (): Promise<void> => { await release.promise; await original.binding.assertOriginalGenerationExited(); },
+  }));
+  await f.runner.arm(); f.runner.consumeBeforeInvocation(); f.state.started = true; await f.runner.collect();
+  const cleanup = f.runner.cleanup(); await entered.promise;
+  const ended = f.runner.observeOriginalGenerationEnded(); f.state.exited = true; release.resolve(null);
+  await cleanup; await ended;
+  assert.equal(retirements, 1); assert.equal(f.runner.diagnostics()["retired"], true);
+  assert.equal(f.runner.diagnostics()["originalGenerationEnded"], true);
 });

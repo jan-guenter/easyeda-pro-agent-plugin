@@ -41,7 +41,7 @@ function frameFor(role: keyof typeof SITES): ObjectValue {
 }
 export function clockRpcFixture(): Readonly<{
   token: Readonly<{ profile: "private.current-footprint-clock-rpc-origin.v1" }>; binding: CurrentFootprintCopyClockRpcOriginBindings; construction: ObjectValue; registration: ObjectValue;
-  workerSource: object; uiSource: object; commands: Command[]; state: { started: boolean; exited: boolean; stage: number; lostResume: boolean; wrongTarget: boolean; reusedUiTask: boolean; changedResult: boolean; lostWorkerLease: boolean; retired: boolean; clockCalls: number };
+  workerSource: object; uiSource: object; commands: Command[]; state: { started: boolean; exited: boolean; stage: number; lostResume: boolean; wrongTarget: boolean; reusedUiTask: boolean; changedResult: boolean; lostWorkerLease: boolean; retired: boolean; clockCalls: number; semanticFailures: number };
 }> {
   const worker = createContext({}); const ui = createContext({}); runInContext(nativeSetup, worker); runInContext(nativeSetup, ui);
   const dependencyIndexes = Object.fromEntries(CURRENT_FOOTPRINT_COPY_DEPENDENCY_PROFILES.map((value, index) => [value.key, index]));
@@ -71,7 +71,7 @@ globalThis.refs={bus,queue,initialTask,first,bindings,callback,wrapper,UiTask,se
     if (typeof value === "function") { const describe: unknown = runInContext("Function.prototype.toString", context); return { type: "function", className: "Function", objectId: register(value), description: fnApply(describe, value) }; }
     return { type: "object", ...(Array.isArray(value) ? { subtype: "array", className: "Array", description: `Array(${String(value.length)})` } : { className: "Object", description: "Object" }), objectId: register(value) };
   };
-  const state = { started: false, exited: false, stage: 0, lostResume: false, wrongTarget: false, reusedUiTask: false, changedResult: false, lostWorkerLease: false, retired: false, clockCalls: 0 };
+  const state = { started: false, exited: false, stage: 0, lostResume: false, wrongTarget: false, reusedUiTask: false, changedResult: false, lostWorkerLease: false, retired: false, clockCalls: 0, semanticFailures: 0 };
   const commands: Command[] = [], events: CurrentFootprintCopyClockRpcOriginEvent[] = [], points = new Map<string, string>();
   let callerFrame: unknown; let currentFrame: unknown; let currentId = 0; let currentMessage: unknown; let currentPending: unknown;
   let currentTopic = ""; let head: unknown[]; let lastUiTask: unknown = null; let replyQueue: unknown[];
@@ -135,7 +135,7 @@ globalThis.refs={bus,queue,initialTask,first,bindings,callback,wrapper,UiTask,se
       }
       return Promise.resolve({});
     }, pump: (): Promise<void> => { if (state.started && state.stage === 0 && events.length === 0) { preparePause(); } return Promise.resolve(); },
-    takeEvent: (): CurrentFootprintCopyClockRpcOriginEvent | null => events.shift() ?? null, retire: (): Promise<void> => { state.retired = true; return Promise.resolve(); },
+    takeEvent: (): CurrentFootprintCopyClockRpcOriginEvent | null => events.shift() ?? null, fail: (): void => { state.semanticFailures += 1; }, retire: (): Promise<void> => { state.retired = true; return Promise.resolve(); },
   });
   return Object.freeze({ token, binding, construction, registration, workerSource, uiSource, commands, state });
 }

@@ -138,27 +138,53 @@ persistence. A complete receipt relinquishes only that selected startup blocker;
 all other launch and design gates still apply. A new disposable operation is a
 new attempt, never a replay of the historical ID.
 
+## Retained connected scope
+
+Installed042605 passed the separate historical relinquishment, then one fresh
+disposable combined main construction, project/worker capture, four cache-open
+pauses, peer receipt/listener removal and callback assignments. Actor collection
+completed all four coherent samples, but result publication refused a missing
+combined-purpose entry in its generation classifier. The source correction adds
+only that exact purpose and preserves packet, timing and byte checks. It does
+not repair or replay the consumed historical stage. Actor/route publication on
+the corrected installed payload remains unvalidated.
+
+Normal close acknowledged without exit. One authorized original-Job abort was
+followed by retained root-exit/empty-Job proof and release. The entire closed
+disposable fixture remained byte-exact. Those observations supply no copy/delete,
+explicit Save, complete startup or saved-result proof. Historical results do not
+admit a later payload. The [current batch record](https://github.com/jan-guenter/easyeda-pro-agent-plugin/blob/main/docs/history/2026-10-29-combined-recovery-and-native-clock.md)
+retains the failure and its narrower conclusions.
+
 ## Private groundwork and remaining integration
 
-The unmounted clock/RPC sequencer is written to join two actual document-clock
-invocations through original worker tasks, selected UI callbacks, replies and
-post-await values. Its derived unit is 49 normal and 18 cleanup commands. All 67
-commands consume IDs from the original allocator; cleanup classification does
-not remove ID usage or enlarge a native normal-request cap. The full writer
-reservation must account for both limits, every other unit and all generations.
+The private clock/RPC integration joins original worker construction and UI
+registration leases through the same retained combined native owner. A one-way
+handoff replaces the original transport subscription with one paired router,
+allocator and event cursor. Its fixed unit uses49 normal and18 cleanup commands.
+All67 commands consume global IDs. A conservative preflight reserves up to69 IDs
+for original group handoff and the unit, entirely within the existing normal-ID
+ceiling780. It enlarges no native request limit or whole-writer reservation.
+
+Fixed native begin/send/retire actions retain the original two sessions, consume
+before possible pipe writes and exclude other normal renderer/main sends while
+active. A failed or incomplete phase needs original retained root exit and an
+empty Job before retirement; a close or abort acknowledgment is insufficient.
+This private integration exposes no public clock invocation action. Its actual
+origin/router and embedded document-clock execution remain unvalidated. The
+full writer still needs every other unit, output/control bounds and generation.
 
 The execution transport now transfers its same already-qualified complete
 project-source string to the exact new construction runner before capture.
 It adds no fetch, request or await; successful and failed handoff clear the raw
 transport reference. This does not grant invocation authority. The fixed native
-clock encoder is embedded as an unrouted class in the 1,045,412-byte helper under
-the unchanged 1MiB cap. Two existing opener programs use the maintained strict
-packing decoder with byte-exact source parity. Actual Windows combined-flag
-CompileOnly passed with no application launched. No original native owner issues
-the clock origin or routes these commands. Integration still requires the exact
-original UI registration and worker construction, paired realm routing, one
-allocator/event cursor and retained native root/Job. Source qualification,
-codec compilation and synthetic joins do not prove embedded Electron execution.
+clock encoder is embedded under the unchanged1MiB helper cap. Additional existing
+fixed programs use the maintained strict packing decoder with byte-exact source
+parity. The preceding installed helper passed actual Windows combined-flag
+CompileOnly without an application launch; the new fixed codecs and native phase
+accounting have inert C#5 compilation/smoke coverage. Source qualification,
+compilation and synthetic joins do not prove connected origin/router or embedded
+Electron execution.
 
 The original main request collector can select a held-final-PB schedule before
 invocation. Its prefix uses 23 normal and 7 cleanup commands, removes all four
@@ -169,8 +195,11 @@ ordered source-qualified callback/branch/transaction/project-update/service
 joins. Together these main portions use 105 commands; this is not the entire
 combined writer budget or a mounted native-purpose reservation.
 
-Completion has a getter-only origin seam with no issuer or native codec. The
-real owner must atomically consume or transfer the exact held-PB lease before
+The fixed completion codec now embeds48 exact native variants with flat scalar
+parity. Its maximum CDP body is9,412 bytes with all supported handle maxima, below
+the16KiB main envelope. Completion still has a getter-only origin seam with no
+issuer, native dispatch or complete native owner budget. The real owner must
+atomically consume or transfer the exact held-PB lease before
 its first resume so that the old collector cannot remain held authority after
 native advancement. Later checks must retain the same original kernel, channel,
 allocator, cursor and root/Job. The selectors admit missing-header and locked or
@@ -187,8 +216,9 @@ It supports locked or independently aged heads. A fresh unlocked copy needs
 another supported model or an aged-head qualification. These models prove no
 native manager deletion, replay exclusion, actual reopen or writer lifecycle.
 
-Before mounting a writer, implement genuine origins, the atomic held handoff,
-paired router and fixed native completion encoding. Derive the reservation for
+Before mounting a writer, validate the private original-owner clock/router path
+and implement the genuine completion origin, atomic held handoff and native
+completion dispatch. Derive the reservation for
 all four copy/readback/delete/readback generations, including request IDs,
 normal/cleanup categories, native message/output limits and idle/exit/empty Job
 joins. Preflight the 16KiB main request envelope even when a source reader

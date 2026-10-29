@@ -1,4 +1,4 @@
-/** Unmounted flat projection. Only the original owner supplies both sessions;
+/** Private fixed scalar projection. Only the original owner supplies both sessions;
  * no session, program, expression or condition is forwarded as a wire field. */
 import { z } from "zod";
 import { freezeDeep } from "./sqlite-inventory-core.ts";

@@ -73,6 +73,9 @@ export class CurrentFootprintCopyClockRpcRunner {
   #normal = 0;
   #cleanup = 0;
   #busy = false;
+  #idle: PromiseWithResolvers<null> | null = null;
+  #ending = false;
+  #generationEnded = false;
   #started = 0;
   #uncertainAllocation = false;
   #unknownPause = false;
@@ -89,6 +92,11 @@ export class CurrentFootprintCopyClockRpcRunner {
     need(handle.max(128).safeParse(this.#origin.workerSessionId).success && this.#origin.workerSessionId !== this.#ui.sessionId, "REALMS");
     this.#same();
   }
+  #begin(): void {
+    need(!this.#busy && !this.#ending && !this.#generationEnded, "OPERATION_BUSY");
+    this.#busy = true; this.#idle = Promise.withResolvers<null>();
+  }
+  #end(): void { this.#busy = false; this.#idle?.resolve(null); }
   #same(cleanup = false): void {
     need(!this.#retired && requireCurrentFootprintCopyClockRpcOrigin(this.#token) === this.#origin &&
       requireCurrentFootprintCopyClockRpcConstructionLease(this.#origin.workerLease) === this.#worker &&
@@ -105,7 +113,7 @@ export class CurrentFootprintCopyClockRpcRunner {
       await this.#worker.assertOriginal(); this.#same(); await this.#ui.assertOriginal(); this.#same();
     }
   }
-  #fail(): void { this.#firstFailure ??= Object.freeze({ phase: this.#phase, normal: this.#normal, cleanup: this.#cleanup, replies: this.#raw.length }); this.#phase = "failed"; }
+  #fail(): void { this.#origin.fail(); this.#firstFailure ??= Object.freeze({ phase: this.#phase, normal: this.#normal, cleanup: this.#cleanup, replies: this.#raw.length }); this.#phase = "failed"; }
   #session(role: Site): string { return SITES[role].realm === "worker" ? this.#origin.workerSessionId : this.#ui.sessionId; }
   #script(role: Site): string { return SITES[role].realm === "worker" ? this.#worker.scriptId : this.#ui.scriptId; }
   #drain(): void {
@@ -161,7 +169,7 @@ export class CurrentFootprintCopyClockRpcRunner {
       params: { callFrameId, expression, objectGroup: GROUP, silent: true, returnByValue: false, generatePreview: false, throwOnSideEffect: true, includeCommandLineAPI: false } }), count);
   }
   public async arm(): Promise<void> {
-    need(!this.#busy && this.#phase === "ready" && !consumed.has(this.#token), "ARM_CONSUMED"); consumed.add(this.#token); this.#busy = true; this.#phase = "arming"; this.#started = performance.now();
+    need(!this.#busy && !this.#ending && this.#phase === "ready" && !consumed.has(this.#token), "ARM_CONSUMED"); consumed.add(this.#token); this.#begin(); this.#phase = "arming"; this.#started = performance.now();
     try {
       const worker = await this.#call("worker", this.#origin.workerSessionId, this.#worker.dependencyBundleObjectId,
         [this.#worker.projectObjectId, this.#worker.managerObjectId, this.#worker.lexicalBundleObjectId].map(objectId => ({ objectId })), 16);
@@ -182,9 +190,9 @@ export class CurrentFootprintCopyClockRpcRunner {
           actual.actualLocation.lineNumber === site.lineNumber && actual.actualLocation.columnNumber === site.columnNumber, "ALLOCATION_LOCATION");
       }
       need(this.#normal === 13 && this.#points.length === 6, "ARM_COUNT"); this.#phase = "armed";
-    } catch (error) { this.#fail(); throw error; } finally { this.#busy = false; }
+    } catch (error) { this.#fail(); throw error; } finally { this.#end(); }
   }
-  public consumeBeforeInvocation(): void { this.#same(); need(!this.#busy && this.#phase === "armed", "INVOCATION_CONSUMED"); this.#phase = "invocation-consumed"; }
+  public consumeBeforeInvocation(): void { this.#same(); need(!this.#busy && this.#phase === "armed" && !this.#ending, "INVOCATION_CONSUMED"); this.#phase = "invocation-consumed"; }
   async #capture(pause: Pause, ordinal: 1 | 2): Promise<void> {
     const role = pause.role; need(this.#workerBundle !== null && this.#uiBundle !== null && this.#workerUuid !== null && this.#uiUuid !== null, "SETUP");
     const count = { push: 4, dispatch: 7, result: 8, reply: 6, buildString: 4, canvasString: 4 }[role];
@@ -229,7 +237,7 @@ export class CurrentFootprintCopyClockRpcRunner {
     empty.parse(await this.#send({ phase: "rpc-resume", method: "Debugger.resume", sessionId: pause.sessionId, params: {} }, true)); await this.#wait(() => pause.resumed);
   }
   public async collect(): Promise<CurrentFootprintCopyClockRpcObservation> {
-    need(!this.#busy && this.#phase === "invocation-consumed" && this.#packet === null, "COLLECT_CONSUMED"); this.#busy = true;
+    need(!this.#busy && !this.#ending && this.#phase === "invocation-consumed" && this.#packet === null, "COLLECT_CONSUMED"); this.#begin();
     try {
       for (const [index, role] of ORDER.entries()) {
         await this.#wait(() => this.#pauses[index] !== undefined); const pause = this.#pauses[index]; const point = this.#points.find(value => value.role === role);
@@ -243,15 +251,15 @@ export class CurrentFootprintCopyClockRpcRunner {
         allTenResumesObserved: true, allAllocatedBreakpointsRemoved: true, temporaryGroupsReleased: false, nativeBroadcastSenderHandleAuthenticated: false,
         backendClockOrSqlCompletionVerified: false, nativeCreateCompletionVerified: false, executionAuthorized: false });
       packets.set(this.#packet, this); this.#phase = "collected"; return this.#packet;
-    } catch (error) { this.#fail(); throw error; } finally { this.#busy = false; }
+    } catch (error) { this.#fail(); throw error; } finally { this.#end(); }
   }
   public async requireOriginal(packet: CurrentFootprintCopyClockRpcObservation): Promise<void> {
     need(packet === this.#packet && packets.get(packet) === this && this.#phase === "collected", "ORIGINAL_PACKET"); await this.#current();
   }
   public async cleanup(): Promise<void> {
-    need(!this.#busy && !this.#cleanupAttempted, "CLEANUP_CONSUMED");
+    need(!this.#busy && !this.#ending && !this.#cleanupAttempted, "CLEANUP_CONSUMED");
     need(this.#phase !== "failed" && !this.#unknownPause && !this.#uncertainAllocation && this.#resuming === null && this.#pauses.every(value => value.resumed), "GENERATION_CLOSURE_REQUIRED");
-    this.#cleanupAttempted = true; this.#busy = true;
+    this.#cleanupAttempted = true; this.#begin();
     try {
       for (const point of this.#points) { await this.#remove(point); }
       for (const sessionId of [this.#origin.workerSessionId, this.#ui.sessionId]) {
@@ -259,17 +267,28 @@ export class CurrentFootprintCopyClockRpcRunner {
         empty.parse(await this.#send({ phase: "rpc-release", method: "Runtime.releaseObjectGroup", sessionId, params: { objectGroup: GROUP } }, true)); this.#groupsReleased.add(sessionId);
       }
       this.#drain(); await this.#origin.retire(); this.#retired = true;
-    } catch (error) { this.#fail(); throw error; } finally { this.#busy = false; }
+    } catch (error) { this.#fail(); throw error; } finally { this.#end(); }
   }
   public async observeOriginalGenerationEnded(): Promise<void> {
-    need(!this.#busy && !this.#retired, "GENERATION_CLOSURE_CONSUMED"); this.#busy = true;
-    try { await this.#origin.assertOriginalGenerationExited(); await this.#origin.retire(); this.#retired = true; }
-    finally { this.#busy = false; }
+    need(!this.#retired && !this.#ending && !this.#generationEnded, "GENERATION_CLOSURE_CONSUMED");
+    this.#ending = true; const idle = this.#idle;
+    let timer: ReturnType<typeof setTimeout> | null = null;
+    try {
+      // A failed proof leaves the original operation and its waits intact.
+      // The native origin rejects pending allocations only AFTER actual root
+      // And whole-Job exit. No timeout or close acknowledgement substitutes.
+      await this.#origin.assertOriginalGenerationExited(); this.#generationEnded = true; this.#fail();
+      const deadline = Promise.withResolvers<never>();
+      timer = setTimeout(() => { deadline.reject(new Error("FOOTPRINT_CLOCK_RPC_ORIGINAL_IDLE_DEADLINE")); }, 300_000);
+      await Promise.race([idle?.promise ?? Promise.resolve(null), deadline.promise]);
+      need(!this.#busy && this.#idle === idle, "ORIGINAL_OPERATION_UNSETTLED");
+      if (!this.#retired) { await this.#origin.retire(); this.#retired = true; }
+    } finally { if (timer !== null) { clearTimeout(timer); } this.#ending = false; }
   }
   public diagnostics(): Readonly<Record<string, unknown>> {
     return Object.freeze({ phase: this.#phase, normalRequests: this.#normal, cleanupRequests: this.#cleanup, replies: this.#raw.length,
       pauses: this.#pauses.length, resumes: this.#pauses.filter(value => value.resumed).length, removed: this.#points.filter(value => value.removed).length,
       uncertainAllocation: this.#uncertainAllocation, unknownPause: this.#unknownPause, groupReleaseAttempts: this.#groupAttempts.size, groupsReleased: this.#groupsReleased.size,
-      retired: this.#retired, firstFailure: this.#firstFailure, rawEvidenceSha256: sha256Json(this.#raw), executionAuthorized: false });
+      retired: this.#retired, originalGenerationEnded: this.#generationEnded, endingOriginalGeneration: this.#ending, firstFailure: this.#firstFailure, rawEvidenceSha256: sha256Json(this.#raw), executionAuthorized: false });
   }
 }

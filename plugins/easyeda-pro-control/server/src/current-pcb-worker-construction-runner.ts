@@ -282,6 +282,7 @@ class CurrentPcbWorkerConstructionCore<P extends PacketProfile> {
   #transactionClocks: CurrentFootprintCopyTransactionClockEvents | null = null;
   #clockRpcSource: CurrentFootprintCopyClockRpcSource | null = null;
   #clockRpcLease: CurrentFootprintCopyClockRpcConstructionLease | null = null;
+  #clockRpcHandoffAttempted = false;
   #footprintAsyncAttempted = false;
   #footprintAsyncRunner: CurrentFootprintCopyAsyncRunner | null = null;
   #footprintAsyncObservation: CurrentFootprintCopyAsyncObservation | null = null;
@@ -1006,6 +1007,29 @@ class CurrentPcbWorkerConstructionCore<P extends PacketProfile> {
       assertCleanup: same, assertOriginal: async (): Promise<void> => { same(); await this.#current(); same(); },
     }));
     this.#clockRpcLease = lease; return lease;
+  }
+  /** Retire only this original construction listener after its cache observer
+   * releases the original temporary group. Native invocation remains absent. */
+  public async prepareClockRpcObservationHandoff(lease: CurrentFootprintCopyClockRpcConstructionLease): Promise<void> {
+    const binding = requireCurrentFootprintCopyClockRpcConstructionLease(lease);
+    if (binding.issuer !== this || lease !== this.#clockRpcLease || this.#clockRpcHandoffAttempted ||
+      this.#transactionClockAttempted || this.#packet === null) { throw fail("CLOCK_RPC_HANDOFF"); }
+    this.#clockRpcHandoffAttempted = true;
+    binding.assertCleanup();
+    if (this.#footprintCacheConstruction !== null && !this.#footprintCacheConstructionReleased) {
+      const cache = this.#footprintCacheConstruction, retained = cache.retained();
+      const diagnostics = cache.diagnostics();
+      if (this.#footprintCacheConstructionPacket === null || retained["observation"] !== this.#footprintCacheConstructionPacket ||
+          retained["failed"] !== false || !diagnostics.captureComplete || diagnostics.pauseCount !== 4 || diagnostics.resumedPauses !== 4) {
+        throw fail("CLOCK_RPC_CACHE_INCOMPLETE");
+      }
+      // Retire this completed observer's group only. This supplies no fresh
+      // Cache-content or future writer proof and can never resume a pause.
+      await cache.release(); binding.assertCleanup();
+      if (cache.retained()["released"] !== true) { throw fail("CLOCK_RPC_CACHE_RETAINED"); }
+      this.#footprintCacheConstructionReleased = true;
+    }
+    this.stopConstructionPauseSubscription(this.#packet); binding.assertCleanup();
   }
   #footprintDependencyCall(scopeId: string, original: Readonly<CurrentPcbWorkerConstructionIdentities>, recheck: boolean): Promise<unknown> {
     if (this.#footprintManager === null || this.#footprintConsistency === null || this.#footprintConstructors === null ||

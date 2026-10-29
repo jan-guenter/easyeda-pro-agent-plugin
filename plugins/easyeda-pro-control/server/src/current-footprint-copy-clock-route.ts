@@ -34,3 +34,10 @@ export function createCurrentFootprintCopyTransactionClockEvents(construction: C
   consumed.add(construction);
   return new CurrentFootprintCopyTransactionClockEvents(Object.freeze({ ...route, managerObjectId, lexicalBundleObjectId }));
 }
+
+/** Reserve the same one-use role for the paired RPC collector before its
+ * original runner releases groups. No caller supplies a replacement route. */
+export function consumeCurrentFootprintCopyClockRpcRoute(construction: CurrentPcbWorkerConstructionTransport): void {
+  if (!routes.has(construction) || consumed.has(construction)) { throw new Error("FOOTPRINT_COPY_CLOCK_ORIGINAL_ROUTE"); }
+  consumed.add(construction);
+}
