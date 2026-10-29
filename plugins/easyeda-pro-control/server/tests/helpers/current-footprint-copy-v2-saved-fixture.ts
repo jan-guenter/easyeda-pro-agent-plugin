@@ -37,6 +37,8 @@ export function stateReply(): unknown {
     identity: IDENTITY, client: CLIENT, maximumTicket: 102, capturedUser: "own-undefined" }) } };
 }
 export async function savedFixture(equalClocks = false): Promise<Readonly<{
+  copy: Awaited<ReturnType<typeof prepareCurrentFootprintCopyV2Plan>>;
+  sql: Awaited<ReturnType<typeof prepareCurrentFootprintCopyV2SqlPlan>>;
   projection: Awaited<ReturnType<typeof prepareCurrentFootprintCopyV2SavedProjection>>;
   after: Awaited<ReturnType<typeof inventory>>; chunk: string; time: number; innerTicket: number;
 }>> {
@@ -61,7 +63,7 @@ export async function savedFixture(equalClocks = false): Promise<Readonly<{
   applyEffect(path, [edit(TIMES.edit), chunk].join("|\n"));
   mutate(path, "UPDATE project_structures SET ticket=100");
   const after = await inventory(path), effect = await verifyCurrentFootprintCopyV2SqlEffect(sql, after, { returnedUuid: TARGET });
-  return { projection: await prepareCurrentFootprintCopyV2SavedProjection(sql, effect, after), after, chunk, time, innerTicket };
+  return { copy, sql, projection: await prepareCurrentFootprintCopyV2SavedProjection(sql, effect, after), after, chunk, time, innerTicket };
 }
 export function nativeSavedCache(input: Awaited<ReturnType<typeof savedFixture>>, cacheActor: boolean): Context {
   const user = cacheActor ? { uuid: TARGET } : ACTOR;

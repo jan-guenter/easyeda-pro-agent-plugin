@@ -17,12 +17,14 @@ export function currentFootprintCopyUiNativeCases(): readonly CurrentFootprintCo
   const commands: CurrentFootprintCopyUiCommand[] = [{ phase: "initial", method: "Runtime.callFunctionOn", sessionId,
     params: { ...FLAGS, uniqueContextId: "__copyui_uniqueContextId__", functionDeclaration: CALLS.initial.program, arguments: target, returnByValue: false } }];
   const args = { notificationRecheck: [object(0), ...target], responder: [object(0)], responderRecheck: [object(0), object(1)],
-    route: [object(0), ...target], membership: [object(0), ...target, object(4)], routeRecheck: [object(0), ...target, object(4)] };
-  for (const phase of ["notificationRecheck", "responder", "responderRecheck", "route", "membership", "routeRecheck"] as const) {
+    route: [object(0), ...target], registry: [object(0), ...target], registryContextProducer: [object(0), object(1), object(2), ...target],
+    registryRecheck: [object(0), object(1), object(2), object(3), ...target], membership: [object(0), ...target, object(4), object(5)], routeRecheck: [object(0), ...target, object(4), object(5)] };
+  for (const phase of ["notificationRecheck", "responder", "responderRecheck", "route", "registry", "registryContextProducer", "registryRecheck", "membership", "routeRecheck"] as const) {
     commands.push({ phase, method: "Runtime.callFunctionOn", sessionId, params: { ...FLAGS, objectId: "__copyui_objectId__",
       functionDeclaration: CALLS[phase].program, arguments: args[phase], returnByValue: CALLS[phase].returnByValue } });
   }
-  commands.push({ phase: "properties", method: "Runtime.getProperties", sessionId,
+  commands.push({ phase: "registrySource", method: "Debugger.getScriptSource", sessionId, params: { scriptId: "__copyui_scriptId__" } },
+  { phase: "properties", method: "Runtime.getProperties", sessionId,
     params: { objectId: "__copyui_objectId__", ownProperties: true, accessorPropertiesOnly: false, generatePreview: false } },
   { phase: "release", method: "Runtime.releaseObjectGroup", sessionId, params: { objectGroup: CURRENT_FOOTPRINT_COPY_UI_GROUP } });
   return Object.freeze(commands);
@@ -46,14 +48,14 @@ export function currentFootprintCopyUiNativeSource(): string {
     rows.push([phase, original.method, fields.map(([key]) => key).join(","), template].join("\t"));
   }
   const bytes = Buffer.from(rows.join("\0"));
-  // oxlint-disable-next-line node/no-sync -- Deterministic in-memory compression of nine fixed grammar entries during generation.
+  // oxlint-disable-next-line node/no-sync -- Deterministic in-memory compression of thirteen fixed grammar entries during generation.
   const packed = gzipSync(bytes, { level: 9 });
   return `public static class EasyedaFootprintCopyUiProtocol {
 static void Need(bool value){if(!value)throw new System.InvalidOperationException("footprint-copy-ui-protocol");}
 static string[][] Load(){byte[] packed=System.Convert.FromBase64String(${literal(packed.toString("base64"))});byte[] bytes=new byte[${String(bytes.length)}];int count=0;
 using(var input=new System.IO.MemoryStream(packed,false))using(var stream=new System.IO.Compression.GZipStream(input,System.IO.Compression.CompressionMode.Decompress)){while(count<bytes.Length){int read=stream.Read(bytes,count,bytes.Length-count);if(read==0)break;count+=read;}Need(count==bytes.Length&&stream.ReadByte()==-1);}
 using(var sha=System.Security.Cryptography.SHA256.Create())Need(System.BitConverter.ToString(sha.ComputeHash(bytes)).Replace("-","").ToLowerInvariant()==${literal(createHash("sha256").update(bytes).digest("hex"))});
-string[] rows=new System.Text.UTF8Encoding(false,true).GetString(bytes).Split('\\0');Need(rows.Length==9);string[][] result=new string[rows.Length][];for(int i=0;i<rows.Length;i++){result[i]=rows[i].Split('\\t');Need(result[i].Length==4);}return result;}
+string[] rows=new System.Text.UTF8Encoding(false,true).GetString(bytes).Split('\\0');Need(rows.Length==13);string[][] result=new string[rows.Length][];for(int i=0;i<rows.Length;i++){result[i]=rows[i].Split('\\t');Need(result[i].Length==4);}return result;}
 static readonly string[][] Cases=Load();
 static string Field(string name,object input){string value=input as string;Need(value!=null);string pattern=name=="projectUuid"?@"\\A[a-f0-9]{64}\\z":name=="branchUuid"?@"\\A[a-f0-9]{32}\\z":name=="windowTabId"?@"\\A[A-Za-z0-9_-]{1,128}\\z":name=="sessionId"||name=="uniqueContextId"?@"\\A[A-Za-z0-9_.:-]{1,128}\\z":@"\\A[A-Za-z0-9_.:-]{1,256}\\z";Need(System.Text.RegularExpressions.Regex.IsMatch(value,pattern));return value;}
 public static string Encode(int id,string phase,string method,string originalParentSession,System.Collections.IDictionary fields){Need(id>0&&fields!=null);string session=Field("sessionId",originalParentSession);string[] selected=null;foreach(string[] row in Cases)if(row[0]==phase){Need(selected==null);selected=row;}Need(selected!=null&&selected[1]==method);string[] names=selected[2].Length==0?new string[0]:selected[2].Split(',');Need(fields.Count==names.Length);foreach(string name in names)Need(fields.Contains(name));foreach(System.Collections.DictionaryEntry entry in fields){bool found=false;foreach(string name in names)if(entry.Key as string==name)found=true;Need(found);}

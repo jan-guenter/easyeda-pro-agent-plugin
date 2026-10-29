@@ -1,5 +1,8 @@
 # Project history
 
+- [2026-10-29 Native allocation and bounded window capture](2026-10-29-native-allocation-and-window-capture.md).
+- [2026-10-29 Preload registry source qualification](2026-10-29-preload-registry-source-qualification.md).
+- [2026-10-29 Original-window PNG capture](2026-10-29-original-window-png-capture.md).
 - [2026-10-29 Supplied design inspection and viewport validation](2026-10-29-supplied-design-inspection-and-viewport.md).
 - [2026-10-29 Supplied PCB stack and rule inspection](2026-10-29-supplied-pcb-stack-rule-inspection.md).
 - [2026-10-29 Visual review, supplied symbols and copy integration](2026-10-29-visual-review-and-symbol-inspection.md).

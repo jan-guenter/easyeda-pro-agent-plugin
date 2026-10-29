@@ -9,7 +9,8 @@ import { currentFootprintCacheConstructionNativeSource } from "../server/src/cur
 import { currentFootprintCopySavedNativeSource } from "../server/src/current-footprint-copy-saved-native.ts";
 import { currentFootprintCopyClockRegistrationNativeSource } from "../server/src/current-footprint-copy-clock-registration-native.ts";
 import { currentFootprintCopyClockRpcNativeSource } from "../server/src/current-footprint-copy-clock-rpc-native.ts";
-import { currentFootprintCopyCreateClockNativeSource, currentFootprintCopyNativeCreateNativeSource } from "../server/src/current-footprint-copy-native-create-native.ts";
+import { currentFootprintCopyAllocationNativeSource } from "../server/src/current-footprint-copy-allocation-native.ts";
+import { currentFootprintCopyAllocatedCreateClockNativeSource, currentFootprintCopyCreateClockNativeSource, currentFootprintCopyNativeCreateNativeSource } from "../server/src/current-footprint-copy-native-create-native.ts";
 import { CURRENT_FOOTPRINT_COPY_CLOCK_RPC_REQUESTS as clockRpcRequests } from "../server/src/current-footprint-copy-clock-rpc-protocol.ts";
 import { currentFootprintCopyMainTransportNativeSource } from "../server/src/current-footprint-copy-main-transport-native.ts";
 import { currentFootprintCopyMainBackendNativeSource } from "../server/src/current-footprint-copy-main-backend-native.ts";
@@ -117,7 +118,7 @@ function footprintSource(): string {
     "// END GENERATED FOOTPRINT COPY PREPARATION PROTOCOL";
 }
 function footprintExecutionSource(): string {
-  return `// BEGIN GENERATED FOOTPRINT COPY EXECUTION PROTOCOL\n${currentFootprintCopyTransactionClockNativeSource()}\n${currentFootprintCopyExecutionWorkerNativeSource()}\n${currentFootprintCopyParentNativeSource()}\n${currentFootprintCacheConstructionNativeSource()}\n${currentFootprintCopyClockRegistrationNativeSource()}\n${currentFootprintCopyClockRpcNativeSource()}\n${currentFootprintCopyNativeCreateNativeSource()}\n${currentFootprintCopyCreateClockNativeSource()}\n` +
+  return `// BEGIN GENERATED FOOTPRINT COPY EXECUTION PROTOCOL\n${currentFootprintCopyTransactionClockNativeSource()}\n${currentFootprintCopyExecutionWorkerNativeSource()}\n${currentFootprintCopyParentNativeSource()}\n${currentFootprintCacheConstructionNativeSource()}\n${currentFootprintCopyClockRegistrationNativeSource()}\n${currentFootprintCopyClockRpcNativeSource()}\n${currentFootprintCopyNativeCreateNativeSource()}\n${currentFootprintCopyCreateClockNativeSource()}\n${currentFootprintCopyAllocatedCreateClockNativeSource()}\n${currentFootprintCopyAllocationNativeSource()}\n` +
     `public static class EasyedaFootprintExecutionLimits { public const int Requests=${String(execution.requestLimit)}; public const int NormalRequests=${String(execution.normalRequestLimit)}; public const int ClockRequests=11; public const int RpcNormal=${String(clockRpcRequests.normal)}; public const int RpcCleanup=${String(clockRpcRequests.cleanup)}; public const int RpcRequests=${String(clockRpcRequests.total)}; public const int ParentRequests=${String(execution.requests.parentNative)}; public const int CacheRequests=${String(execution.requests.cacheConstructionNative)}; public const int RegistrationRequests=${String(clockRegistration.total)}; public const long NormalMilliseconds=${String(execution.normalMilliseconds)}L; public const long TotalMilliseconds=${String(execution.normalMilliseconds + execution.cleanupMilliseconds)}L; }\n` +
     "// END GENERATED FOOTPRINT COPY EXECUTION PROTOCOL";
 }

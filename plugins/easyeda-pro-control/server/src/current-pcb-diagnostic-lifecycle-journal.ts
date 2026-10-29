@@ -1,6 +1,7 @@
 /** Private, append-only diagnostic lifecycle records. Historical JSON never
  * recreates a native owner. Partial reservations remain launch blockers. */
 /* oxlint-disable import/max-dependencies -- This shared journal validates distinct diagnostic, String and common evidence, including global String exclusion, without merging their authority. */
+import { currentWindowCaptureResultSchema, requireCurrentWindowCaptureResult } from "./current-pcb-diagnostic-window-capture.ts";
 import { currentPcb209VisualIdSchema } from "./current-pcb-209-visual-validation.ts";
 import { CURRENT_PCB_209_VISUAL_OPERATION_BYTES, CURRENT_PCB_209_VISUAL_RESULT_BYTES, currentPcb209VisualOperationSchema,
   requireCurrentPcb209VisualResult } from "./current-pcb-209-visual-actions.ts";
@@ -230,15 +231,22 @@ const noProcessReleasedSchema = z.object({ schema: z.literal("easyeda-pro-contro
   noProcessReleaseIntentSha256: diagnosticLifecycleDigestSchema, proof: diagnosticLifecycleNoProcessReleaseProofSchema,
 }).strict();
 export const diagnosticObservationStageSchema = z.enum(["browser", "frames", "script", "workers", "worker-script", "worker-state", "pcb-opening", "model-state"]);
-const extendedObservationStageSchema = z.enum([...diagnosticObservationStageSchema.options, "visual-viewport209", "layers209", "primitives209", "extended-primitives209", "selection-relations209", "pad-shapes209", "image-shapes209", "arc-shapes209", "poured-shapes209"]);
+const extendedObservationStageSchema = z.enum([...diagnosticObservationStageSchema.options, "window-capture209", "visual-viewport209", "layers209", "primitives209", "extended-primitives209", "selection-relations209", "pad-shapes209", "image-shapes209", "arc-shapes209", "poured-shapes209"]);
 export const lifecycleObservationStages = [...extendedObservationStageSchema.options, "common-baseline", "string-precreate"] as const;
 const observationIntentSchema = z.object({ schema: z.literal("easyeda-pro-control.pcb-diagnostic-observation-intent.v1"), ...base,
   bindingSha256: diagnosticLifecycleDigestSchema, stage: extendedObservationStageSchema,
   targetId: z.string().regex(/^[A-Za-z\d_.:-]{1,128}$/u).optional(), frameId: z.string().regex(/^[A-Za-z\d_.:-]{1,128}$/u).optional(),
   family: z.enum(["ui", "pcb", "public-api"]).optional(),
   componentIds: currentPcb209SelectionRelationsComponentIdsSchema.optional(),
+  captureHwnd: diagnosticLifecycleWindowSchema.optional(), acceptWindowPaintEffects: z.literal(true).optional(), confirmLocalArtifact: z.literal(true).optional(),
   visualOperation: currentPcb209VisualOperationSchema.optional(), confirmVisualStateChanges: z.literal(true).optional(),
 }).strict().refine(value => {
+  if (value.stage === "window-capture209") {
+    return value.captureHwnd !== undefined && value.acceptWindowPaintEffects === true && value.confirmLocalArtifact === true &&
+      value.visualOperation === undefined && value.confirmVisualStateChanges === undefined && value.componentIds === undefined &&
+      value.targetId === undefined && value.frameId === undefined && value.family === undefined;
+  }
+  if (value.captureHwnd !== undefined || value.acceptWindowPaintEffects !== undefined || value.confirmLocalArtifact !== undefined) { return false; }
   if (value.stage === "visual-viewport209") {
     return value.visualOperation !== undefined && value.confirmVisualStateChanges === true &&
       value.componentIds === undefined && value.targetId === undefined && value.frameId === undefined && value.family === undefined;
@@ -258,6 +266,7 @@ const observationResultSchema = z.object({ schema: z.literal("easyeda-pro-contro
   intentSha256: diagnosticLifecycleDigestSchema, stage: extendedObservationStageSchema,
   result: z.record(z.string(), z.unknown()), executionAuthorized: z.literal(false),
 }).strict().refine(value => {
+  if (value.stage === "window-capture209" && !currentWindowCaptureResultSchema.safeParse(value.result).success) { return false; }
   let ordinaryLimit = DIAGNOSTIC_OBSERVATION_MAX_BYTES;
   if (value.stage === "visual-viewport209") { ordinaryLimit = CURRENT_PCB_209_VISUAL_RESULT_BYTES; }
   else if (value.stage === "primitives209") { ordinaryLimit = CURRENT_PCB_209_PRIMITIVES_RESULT_BYTES; }
@@ -638,6 +647,7 @@ export const diagnosticLifecycleRecordSchemas = {
   "pcb-open-intent.json": pcbOpenIntentSchema, "pcb-open-result.json": pcbOpenResultSchema,
   "pcb-opening-intent.json": observationIntentSchema, "pcb-opening-result.json": observationResultSchema,
   "visual-abort-intent.json": visualAbortIntentSchema, "visual-abort-acknowledged.json": visualAbortAckSchema,
+  "window-capture209-intent.json": observationIntentSchema, "window-capture209-result.json": observationResultSchema,
   "visual-viewport209-intent.json": observationIntentSchema, "visual-viewport209-result.json": observationResultSchema,
   "layers209-intent.json": observationIntentSchema, "layers209-result.json": observationResultSchema,
   "primitives209-intent.json": observationIntentSchema, "primitives209-result.json": observationResultSchema,
@@ -1083,6 +1093,15 @@ function validateChain(operation: DiagnosticLifecycleOperation): void {
   requireValue(records["worker-state-intent.json"] === undefined || records["worker-script-result.json"] !== undefined, "WORKER_STATE_CHAIN");
   const opened = records["project-opening-result.json"], opening = records["project-opening-intent.json"], script = records["script-result.json"];
   const pcbObserved = records["pcb-opening-result.json"], pcbOpen = records["pcb-open-intent.json"], pcbOpened = records["pcb-open-result.json"];
+  const windowCapture = records["window-capture209-intent.json"], windowImage = records["window-capture209-result.json"];
+  requireValue(windowCapture === undefined || visualPurpose && pcbObserved !== undefined && opening !== undefined &&
+    diagnosticPcbOpeningSourceAccepted(pcbObserved.result, opening.target) && windowCapture.captureHwnd !== undefined &&
+    windowCapture.acceptWindowPaintEffects === true && windowCapture.confirmLocalArtifact === true &&
+    records["workers-intent.json"] === undefined && records["model-state-intent.json"] === undefined, "WINDOW_CAPTURE209_CHAIN");
+  if (windowImage !== undefined) {
+    requireValue(opening !== undefined && windowCapture?.captureHwnd !== undefined, "WINDOW_CAPTURE209_TARGET_CHAIN");
+    requireCurrentWindowCaptureResult(windowImage.result, opening.target, operation.operationId, windowCapture.bindingSha256, windowCapture.captureHwnd);
+  }
   for (const stage of ["visual-viewport209"] as const) {
     const result = records[`${stage}-result.json`], visual = records[`${stage}-intent.json`];
     requireValue(visual === undefined || intent?.schema === "easyeda-pro-control.pcb209-visual-launch-intent.v1" &&

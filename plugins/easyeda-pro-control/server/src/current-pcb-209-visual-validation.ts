@@ -13,7 +13,7 @@ export const currentPcb209VisualRequestSchema = z.discriminatedUnion("action", [
     confirmValidationOnly: z.literal(true), confirmDiagnosticLaunch: z.literal(true),
     acceptExistingProfileEffects: z.literal(true), acceptVisualStateChanges: z.literal(true) }).strict(),
   z.object({ action: z.literal("inspect"), operationId: currentPcb209VisualIdSchema,
-    observation: z.enum(["browser", "frames", "script", "pcb-opening", "selection-relations209", "visual-viewport209"]).optional() }).strict(),
+    observation: z.enum(["browser", "frames", "script", "pcb-opening", "selection-relations209", "visual-viewport209", "window-capture209"]).optional() }).strict(),
   z.object({ action: z.literal("settle-records"), operationId: currentPcb209VisualIdSchema, expectedIntentSha256: digest }).strict(),
   z.object({ action: z.literal("cleanup-unlaunched"), operationId: currentPcb209VisualIdSchema, expectedIntentSha256: digest }).strict(),
   z.object({ action: z.literal("cleanup-no-process"), operationId: currentPcb209VisualIdSchema, expectedIntentSha256: digest }).strict(),
@@ -26,6 +26,8 @@ export const currentPcb209VisualRequestSchema = z.discriminatedUnion("action", [
   z.object({ action: z.literal("observe-pcb-opening"), ...bound }).strict(),
   z.object({ action: z.literal("observe-selection-relations"), ...bound,
     componentIds: currentPcb209SelectionRelationsComponentIdsSchema.default([]) }).strict(),
+  z.object({ action: z.literal("capture-window"), ...bound, hwnd: z.string().regex(/^[1-9][0-9]{0,18}$/u),
+    acceptWindowPaintEffects: z.literal(true), confirmLocalArtifact: z.literal(true) }).strict(),
   z.object({ action: z.literal("perform-visual"), ...bound, operation: currentPcb209VisualOperationSchema,
     confirmVisualStateChanges: z.literal(true) }).strict(),
   z.object({ action: z.literal("abort-visual"), ...bound, confirmAbortOriginalVisualJob: z.literal(true) }).strict(),
@@ -47,7 +49,7 @@ export function queryCurrentPcb209Visual(input: unknown = {}): Record<string, un
       "One viewport operation is consumed before possible native dispatch. Missing replies or a failure grant no retry or automatic restoration.",
       "Selection writes remain unavailable: native selection dispatch can flush uploads and delete empty selected objects. The existing selection-relations reader can inspect prior IDs without choosing them.",
       "Viewport fit-all, fit-selected and bounded zoom-to use the original captured receiver. Returned native camera bounds are converted to mil. A returned camera box does not prove rendering completion or stable double-sampled camera state.",
-      "No PNG, net highlighting, overlay timers, CAD source edit, explicit Save, complete-board baseline, production scope or saved-result proof is enabled. With explicit confirmation, abort-visual terminates only the original visual Job. It consumes intent before dispatch and blocks normal work. Acknowledgment is not exit; observe-termination and release-closed remain separate.",
+      "A separate capture-window action requests WM_PRINT pixels only from the original unique application HWND. It retains its bounded native resources until actual root exit and empty Job, including after an acknowledged paint. A managed PNG is not an SDK canvas image, a stable render or a saved design. No net highlighting, overlay timers, CAD source edit, explicit Save, complete-board baseline, production scope or saved-result proof is enabled. With explicit confirmation, abort-visual terminates only the original visual Job. It consumes intent before dispatch and blocks normal work. Acknowledgment is not exit; observe-termination and release-closed remain separate.",
     ], ...(request.includeSchemas ? { inputSchema: z.toJSONSchema(currentPcb209VisualRequestSchema) } : {}) };
 }
 

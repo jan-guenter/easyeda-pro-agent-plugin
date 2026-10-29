@@ -178,3 +178,66 @@ machine profile and bridge key identity were not changed.
 Full facade and bridge suites are delegated to exact-commit CI under the
 repository policy; they are not duplicated locally. CI and publication remain
 pending in this entry until their terminal appendix is added.
+
+## Publication, installation and fresh-session handoff
+
+Candidate`a80c7b32fa1aad93c7406eb000aeb6f4cf0c5550` passed all ten Linux jobs
+in40910999244 and Windows40910999215. All11 PR checks passed before protected
+PR152 merged as`bc56dfd6834adedba386dc4f8caa7868d9d46d64`. The Linux suites
+completed13,630 facade cases:13,625 passed, five expected skips and zero
+failures;424 bridge tests passed. Candidate and merged plugin tree are exactly
+`377563f982bff732f772a5a86f0a221d362f4074`. This batches48 changed files.
+
+The canonical Git marketplace was upgraded through the official CLI with
+umask022. It refreshed the enabled install directly; no redundant add, manual
+cache edit or gateway termination ran. The cached marketplace HEAD equals
+merged main and its origin remains the canonical GitHub URL. Scoped official
+listing reports installed/enabled`0.3.0+codex.20261029161500`. The CLI's known
+stale arg0 permission warning remains retained; no unrelated directory cleanup
+was attempted.
+
+Full installed comparisons before and after that listing match2,370 files,
+46,075,250 bytes,42 directories and every committed644/755 mode. Inventory SHA
+is`bf605f743a65b1a66bd3cd4fa4c2437d1a5aca4f346fba5ad9fd35908f0f38e1`.
+Final manifest, both bundles and helper retain the hashes above. A precommit
+mode check caught the two local bundle outputs at0600; those source-checkout
+modes were corrected to0644 before commit. No installed cache was patched.
+
+The installed offline probe passed27 exposed/52 configured tools,45 queries
+and47 requests under pinned Node24.18.0. Its own synthetic-profile child closed
+through stdin EOF with exit0, no signal and zero stderr. Marker/control-roster
+checks passed, and samples found no descendants/nonstdio sockets. This is not
+continuous isolation, ambient Node26 handoff, admission of the newly loaded
+host, or connected execution. The installed helper's builtin identity check
+passed its exact hash, byte count, ASCII and unchanged1MiB cap. The private
+machine-profile hash remains unchanged, with no bridge key provisioning.
+
+At this handoff, merged-main Windows40913831092 and its Linux verify-build job
+passed. The automatically triggered complete Linux run40913831090 is still
+running its facade shards. Its terminal result remains a verification TODO;
+the green PR suite above belongs to the exact candidate payload and does not
+invent a completed main run. Preserve the private pending publication proof and
+check this run after restarting.
+
+The installed snapshot now needs a fresh Codex session and actual161500 host
+admission before live calls. Both142600 native operations are terminal and
+cannot be continued or replayed. Next live work is a new disposable case for
+the corrected UI scope binding. Then finish native allocation mounting and
+whole-copy/delete/saved-readback implementation. Selection writes, bounded PNG,
+complete current live stack/rules, compiled schematic connectivity and remaining
+inventoried omissions stay backlog. The new supplied-file reports are usable
+offline and do not promote those SDK methods.
+
+This publication appendix remains local until the next substantive commit.
+Do not issue another plugin version solely to publish chronology. AGENTS is
+unchanged; README contains only the new functional file-inspection guide.
+
+### Main CI terminal result after restart
+
+Merged-main Linux40913831090 completed successfully for exact
+`bc56dfd6834adedba386dc4f8caa7868d9d46d64`, with all ten jobs passing.
+Windows40913831092 also passed that exact commit. This resolves the preceding
+pending CI item without changing its historical observation or issuing another
+plugin version. The following session independently admitted the actual161500
+host and repeated full installed-file/mode comparison before live work. Its new
+disposable operation and source batch are recorded separately.

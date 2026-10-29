@@ -68,8 +68,8 @@ the cache. Keep raw source ordering and the independent checkpoint comparison
 separate. The manager's own undefined user is also distinct from the backend
 actor selected from SQL.
 
-The preparation purpose reserves 566 normal requests and 34 cleanup requests,
-600 total. The private clock collector captures the two results used by the actual native
+The preparation purpose reserves 584 normal requests and 34 cleanup requests,
+618 total. The private clock collector captures the two results used by the actual native
 `buildString` and `canvasString` continuations. Its synthetic tests do not
 validate embedded-V8 breakpoint locations, server provenance or a writer.
 Preliminary clock calls cannot replace those results. Native create allocates
@@ -123,7 +123,7 @@ native getter/open identities and unchanged project assignments bind the two
 cache namespace arguments to the retained native Cache results. A namespace
 label or an after-the-fact object inspection cannot replace that event history.
 These debugger pauses affect application timing. This purpose shares the private
-execution envelope of 784 normal requests and 45 cleanup requests, 829 total;
+execution envelope of 802 normal requests and 45 cleanup requests, 847 total;
 this does not reserve or enable a complete writer lifecycle.
 
 The parent capture pins ordinary local-project `tl.open`. The temporary-project
@@ -156,3 +156,15 @@ termination, helper release and any reported publication settlement. A failed
 Worker identity challenge leaves uncertain children held until generation
 closure; do not resume or adopt them to continue preparation. Launch/open still
 uses the existing profile and can use the network or automatically persist.
+
+## Preload registry qualification
+
+The ordinary editor creates its registry in preload before loading UI. The
+route qualifies that complete pinned source and its original constructor,
+methods, shared map and notification receiver, including exact lexical
+Block/Closure scopes. UI observation/reproof uses39/11 requests; preparation
+uses49/21 UI requests including its parent guards. The public packet's
+`functionCount:9` counts its original UI roles; five preload function roles are
+qualified separately. Full preload source travels through a dedicated bounded
+source-reply capture rather than the small metadata decoder. These checks do
+not enable copy or establish connected acceptance.

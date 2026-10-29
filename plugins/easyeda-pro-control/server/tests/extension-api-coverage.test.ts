@@ -824,7 +824,7 @@ void test("legacy capture coverage stays separate from the current209 native vie
   }
   assert.match(rows.get("eda.dmt_EditorControl.getCurrentRenderedAreaImage")?.routes[0]?.scope ?? "", /Viewport-image observation only/u);
   assert.match(rows.get("eda.dmt_EditorControl.zoomToRegion")?.routes[0]?.scope ?? "", /no standalone zoom operation/u);
-  assert.match(rows.get("eda.dmt_EditorControl.getCurrentRenderedAreaImage")?.routes[0]?.scope ?? "", /Current209 PNG capture remains unavailable/u);
+  assert.match(rows.get("eda.dmt_EditorControl.getCurrentRenderedAreaImage")?.routes[0]?.scope ?? "", /Current209 SDK canvas PNG capture remains unavailable/u);
   for (const method of ["zoomTo", "zoomToAllPrimitives", "zoomToSelectedPrimitives"]) {
     const row = rows.get(`eda.dmt_EditorControl.${method}`); assert.ok(row);
     assert.equal(row.status, "implemented-native-equivalent"); assert.equal(row.currentGenerationLiveValidation, "not-recorded");

@@ -42,7 +42,7 @@ function createCommand(): object {
     objectGroup: "easyeda-pro-control-worker-construction-v1", silent: true, returnByValue: true,
     generatePreview: false, throwOnSideEffect: false, awaitPromise: true, userGesture: false } };
 }
-export async function createClockChannelFixture(early: boolean, clockLease: object, hooks: CreateClockNativeHooks): Promise<Readonly<{
+export async function createClockChannelFixture(early: boolean, clockLease: object, hooks: CreateClockNativeHooks, allocation = false): Promise<Readonly<{
   channel: Channel; dependency: Dependency; reservation: CurrentFootprintCopyClockRpcChannelReservation;
   requireRoute: typeof requireCurrentFootprintCopyCreateClockChannelRoute;
   state: { exited: boolean; lostWrite: boolean; createFrame: object | null; frames: object[]; sent: Record<string, unknown>[]; consumed: number };
@@ -54,14 +54,14 @@ export async function createClockChannelFixture(early: boolean, clockLease: obje
     this.#executionWorkerSession="worker";this.#workers.set("worker","worker-target");
     const binding = Object.freeze({issuer:{},clockLease,projectObjectId:"project",handles:[],
       assertOriginal:async()=>{await dependency.assertOriginalOwner();},assertCleanup:()=>{},consumeBeforeInvocation:()=>{}});
-    const create={binding,command,token:Object.freeze({profile:"private.current-footprint-copy-pending-create.v1"}),dispatchAttempted:false,pending:null,rejectedFrame:null};
+    const create={allocation:this.#allocationPurpose,binding,command,token:Object.freeze({profile:"private.current-footprint-copy-pending-create.v1"}),dispatchAttempted:false,pending:null,rejectedFrame:null};
     return this.#prepareClockRpc(dependency,"worker",create);
   }\n  public status():`;
   const source = initial.replace("public status():", seed); assert.notEqual(source, initial);
   const loaded: { exports: Record<string, unknown> } = { exports: {} }, output = await transform(source, { loader: "ts", format: "cjs", target: "node24" });
   const evaluate: unknown = runInThisContext(`(function(require,module,exports){${output.code}\n})`); assert.ok(typeof evaluate === "function");
   Reflect.apply(evaluate, undefined, [createRequire(url), loaded, loaded.exports]);
-  const candidate = loaded.exports["CurrentFootprintCopyCreateClockStartupChannel"]; assert.ok(typeof candidate === "function");
+  const candidate = loaded.exports[allocation ? "CurrentFootprintCopyAllocatedCreateClockStartupChannel" : "CurrentFootprintCopyCreateClockStartupChannel"]; assert.ok(typeof candidate === "function");
   // oxlint-disable-next-line typescript/no-unsafe-type-assertion -- VM adds only the explicitly synthetic prerequisite seed to the actual retained channel implementation.
   const Constructor = candidate as new (native: object) => Channel;
   const state = { exited: false, lostWrite: false, createFrame: null as object | null, frames: [] as object[], sent: [] as Record<string, unknown>[], consumed: 0 };
@@ -71,9 +71,9 @@ export async function createClockChannelFixture(early: boolean, clockLease: obje
     observeOriginalParentEvent: (): void => { throw new Error("event reached retired construction observer"); },
     exchange: async (raw: unknown): Promise<unknown> => {
       const request = object(raw); state.sent.push(request);
-      if (request["action"] === "footprint-copy-create-clock-begin") { hooks.begin(); return { begun: true }; }
+      if (request["action"] === "footprint-copy-create-clock-begin" || request["action"] === "footprint-copy-allocated-create-clock-begin") { hooks.begin(); return { begun: true }; }
       if (request["action"] === "footprint-copy-create-clock-retire") { await hooks.retire(); return { retired: true }; }
-      if (request["action"] === "footprint-clock-rpc-send") {
+      if (request["action"] === "footprint-clock-rpc-send" || request["action"] === "footprint-copy-allocation-send") {
         const command = hooks.nextCommand();
         const result = await hooks.request(command, request["cleanup"] === true);
         state.frames.push({ id: request["requestId"], sessionId: command.sessionId, result }); return { written: true };

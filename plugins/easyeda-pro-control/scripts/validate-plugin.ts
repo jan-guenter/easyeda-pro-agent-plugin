@@ -485,7 +485,7 @@ check(
     packageScripts["sanitizer:check"] ===
       "node scripts/build-descriptor-sanitizer.ts --check" &&
     packageScripts["build"] ===
-      "npm run native:helper:check && npm run sanitizer:check && npm run sql:reader:check && npm run startup:protocol:check && npm run pcb:models:check && npm run pcb209:layers:check && npm run pcb209:visual:check && npm run pcb209:primitives:check && npm run pcb209:extended-primitives:check && npm run pcb209:selection-relations:check && npm run pcb209:pad-shapes:check && npm run pcb209:image-shapes:check && npm run pcb209:arc-shapes:check && npm run pcb209:poured-shapes:check && node scripts/build-server.ts" &&
+      "npm run native:helper:check && npm run sanitizer:check && npm run sql:reader:check && npm run startup:protocol:check && npm run window:capture:check && npm run pcb:models:check && npm run pcb209:layers:check && npm run pcb209:visual:check && npm run pcb209:primitives:check && npm run pcb209:extended-primitives:check && npm run pcb209:selection-relations:check && npm run pcb209:pad-shapes:check && npm run pcb209:image-shapes:check && npm run pcb209:arc-shapes:check && npm run pcb209:poured-shapes:check && node scripts/build-server.ts" &&
     packageScripts["pcb:models:check"] === "node scripts/generate-pcb-model-programs.ts --check" &&
     packageScripts["pcb:models:update"] === "node scripts/generate-pcb-model-programs.ts --write" &&
     packageScripts["pcb209:image-shapes:check"] === "node scripts/generate-pcb209-image-shapes-protocol.ts --check" &&
@@ -503,6 +503,7 @@ check(
     packageScripts["pcb209:primitives:check"] === "node scripts/generate-pcb209-primitives-protocol.ts --check" &&
     packageScripts["pcb209:primitives:update"] === "node scripts/generate-pcb209-primitives-protocol.ts --write" &&
     packageScripts["pcb209:visual:check"] === "node scripts/generate-pcb209-visual-protocol.ts --check" &&
+    packageScripts["window:capture:check"] === "node scripts/generate-window-capture-native.ts --check" &&
     packageScripts["pcb209:visual:update"] === "node scripts/generate-pcb209-visual-protocol.ts --write" &&
     packageScripts["pcb209:layers:check"] ===
       "node scripts/generate-pcb209-layers-protocol.ts --check" &&
