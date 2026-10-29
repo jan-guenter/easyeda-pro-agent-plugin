@@ -191,3 +191,63 @@ initial candidate, inventory
 `941b62cf7f4d2cbd3dec26c76bd28cd5784d74bb6a529320a4957a62c08e773e`.
 This corrected a disposable archive extraction, not an installed cache. The
 repaired test payload needs its own complete package comparison below.
+
+## Publication and official installation
+
+Corrected candidate `c1a8aa080a7460c0e9506d1f73e16d7bf262aee5` passed all11
+PR153 checks. Linux40927074586 completed all eight facade shards, verify-build
+and the aggregate gate:13,659 tests,13,654 passed, five expected platform skips,
+zero failures. Bridge tests424/424 passed. Windows40927074558 passed. Initial
+c846 CI remains recorded separately:13,647 pass/seven fail/five skip. No failure
+or pending observation above was overwritten.
+
+Protected PR153 merged as `73f71f14e360258068aeef6425a7a525618e3198`, plugin tree
+`c485e3cd0e9d9f3719bb5e103d2516e99a872704`. The first official marketplace
+upgrade timed out cloning after30s and left its old HEAD/snapshot intact. After
+read-only state inspection, one official retry succeeded. Canonical marketplace
+URL remains `https://github.com/jan-guenter/easyeda-pro-agent-plugin.git`, refmain;
+its cached HEAD/tree equal the reviewed merge. No cache was manually edited.
+
+Official CLI reports installed/enabled `0.3.0+codex.20261029174000`. Full byte/mode
+comparison before and after scoped CLI listing matched all2,389 files,
+46,318,548 bytes and42 directories, inventory
+`21c72b85d7c5b627af72f583cb06f28025269166e010efbee3f8764c9e704e22`.
+Installed helper identity/check and the synthetic-profile offline package probe
+passed:27 discovered tools,45 catalog queries,47 total requests, clean stdin-EOF
+exit, sampled no upstream child/non-stdio socket, and post-close marker/control
+checks. This is not actual new-host admission, continuous isolation or connected
+CAD validation. The private machine profile remained685 bytes with unchanged SHA
+`a080fa71eb45454bd4f53721803f01bdde6ddb5f30eff54650d20afe70a7cb67`.
+No provisioning, owner termination, bridge rebind or production project access
+was performed for installation.
+
+Automatic merged-main Windows40929784077 has passed. Main Linux40929784184 is
+still running on the exact merge at this recorded boundary; its terminal result
+is the first read-only check after restart. The private
+`publication-proof-final.json` retains this pending state instead of claiming
+main success.
+
+The loaded real host remains161500. Start a fresh Codex session before live
+calls so174000 can be admitted through its actual process and installed bytes.
+Do not kill/rebind the old facade or patch its snapshot. The original161500
+combined operation is already terminal/released and must never be replayed.
+The disposable file remains the terminal598,016-byte/e620d21a baseline above.
+
+After new-host admission, use fresh operation IDs for corrected preload-route
+validation and one visual capture with actual cleanup. Native writer mounting,
+pre-write eligibility joins, full closed SQL/saved proof, inverse native lifecycle
+and all four-generation capacity remain the substantial backlog. The complete
+835-method inventory still records concrete reasons for495 omissions and79
+blocked implementations. This batch grants no general writer or Save authority.
+
+This local installation appendix is retained for the next substantive history
+commit; it does not trigger a second payload/version merely to publish chronology.
+
+## Restart confirmation of merged-main CI
+
+After the requested restart, exact merged-main73f71f14 Linux CI40929784184
+completed successfully: all eight facade shards, verify-build and aggregate
+passed. Windows40929784077 had already passed. The earlier pending boundary
+and private proof are retained. The installed174000 payload now has a separate
+actual-host admission; that fresh admission and subsequent cases are recorded
+in the next substantive batch.

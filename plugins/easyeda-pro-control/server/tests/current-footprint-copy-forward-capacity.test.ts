@@ -69,3 +69,65 @@ void test("aggregate artifact limits cannot be spent once per generation", () =>
   assert.equal(main.status().mainRequests, 127); assert.equal(main.status().failed, false);
   assert.throws(() =>{  main.consumeRequest("forward-writer", writer, "main", 128, true); }, /MAIN_REQUEST/u);
 });
+
+
+void test("renderer poll classes cannot renew or borrow another generation's allowance", () => {
+  const ledger = new Ledger(), saved = Object.freeze({}), writer = Object.freeze({});
+  ledger.bind("forward-writer", writer); ledger.bind("forward-saved-readback", saved);
+  assert.throws(() => { ledger.consumeRendererPoll("forward-writer", {}, "data"); }, /ORIGINAL_GENERATION/u);
+  for (const [kind, maximum] of [["data", STREAM.dataPolls], ["idle", STREAM.idlePolls], ["wait", STREAM.waitPolls]] as const) {
+    for (let index = 0; index < maximum; index += 1) { ledger.consumeRendererPoll("forward-writer", writer, kind); }
+  }
+  assert.equal(ledger.status().rendererPolls, CAPACITY.writer.renderer.polls);
+  assert.throws(() => { ledger.consumeRendererPoll("forward-writer", writer, "idle"); }, /RENDERER_POLL/u);
+  assert.throws(() => { ledger.consumeRendererPoll("forward-saved-readback", saved, "idle"); }, /POLL_CLASS/u);
+  ledger.consumeRendererPoll("forward-saved-readback", saved, "idle", true);
+  assert.equal(ledger.status().rendererPolls, CAPACITY.writer.renderer.polls + 1);
+  assert.throws(() => { ledger.consumeRendererPoll("forward-writer", writer, "wait", true); }, /RENDERER_POLL/u);
+  assert.equal(ledger.status().failed, true); assert.equal(ledger.status().executionAuthorized, false);
+});
+
+void test("main polls retain their global normal ceiling and separate terminal reserve", () => {
+  const ledger = new Ledger(), writer = Object.freeze({}); ledger.bind("forward-writer", writer);
+  // Cleanup before normal work still occupies the one native poll cursor.
+  ledger.consumeMainPoll("forward-writer", writer, true);
+  for (let index = 1; index < MAIN_STREAM.normalPolls; index += 1) { ledger.consumeMainPoll("forward-writer", writer); }
+  assert.equal(ledger.status().mainPolls, MAIN_STREAM.normalPolls);
+  assert.throws(() => { ledger.consumeMainPoll("forward-writer", writer); }, /MAIN_POLL/u);
+  for (let index = MAIN_STREAM.normalPolls; index < MAIN_STREAM.totalPolls; index += 1) { ledger.consumeMainPoll("forward-writer", writer, true); }
+  assert.equal(ledger.status().mainPolls, MAIN_STREAM.totalPolls);
+  assert.throws(() => { ledger.consumeMainPoll("forward-writer", writer, true); }, /MAIN_POLL/u);
+  assert.equal(ledger.status().mainPolls, MAIN_STREAM.totalPolls);
+  const owner = Object.freeze({}), saved = new Ledger(); saved.bind("forward-saved-readback", owner);
+  assert.throws(() => { saved.consumeMainPoll("forward-saved-readback", owner); }, /MAIN_POLL/u);
+  assert.equal(saved.status().mainPolls, 0);
+});
+
+void test("renderer event count, individual frame bytes and cumulative event bytes remain independent", () => {
+  const count = new Ledger(), owner = Object.freeze({}); count.bind("forward-writer", owner);
+  for (let index = 0; index < STREAM.eventCount; index += 1) { count.consumeRendererEvent("forward-writer", owner, 1); }
+  assert.throws(() => { count.consumeRendererEvent("forward-writer", owner, 1); }, /RENDERER_EVENT/u);
+  assert.equal(count.status().rendererEvents, STREAM.eventCount);
+  const bytes = new Ledger(); bytes.bind("forward-writer", owner);
+  for (let used = 0; used < STREAM.eventBytes; used += STREAM.frameBytes) { bytes.consumeRendererEvent("forward-writer", owner, STREAM.frameBytes); }
+  assert.throws(() => { bytes.consumeRendererEvent("forward-writer", owner, 1); }, /RENDERER_EVENT/u);
+  assert.equal(bytes.status().rendererEvents, STREAM.eventBytes / STREAM.frameBytes);
+  for (const size of [0, STREAM.frameBytes + 1]) {
+    const frame = new Ledger(); frame.bind("forward-writer", owner);
+    assert.throws(() => { frame.consumeRendererEvent("forward-writer", owner, size); }, /RENDERER_EVENT/u);
+    assert.equal(frame.status().rendererEvents, 0);
+  }
+});
+
+void test("every main frame counts including empty control frames and saved generations cannot receive them", () => {
+  const ledger = new Ledger(), writer = Object.freeze({}); ledger.bind("forward-writer", writer);
+  for (let index = 0; index < MAIN_STREAM.frames; index += 1) { ledger.consumeMainFrame("forward-writer", writer, 0); }
+  assert.throws(() => { ledger.consumeMainFrame("forward-writer", writer, 0); }, /MAIN_FRAME/u);
+  assert.equal(ledger.status().mainFrames, MAIN_STREAM.frames);
+  const oversized = new Ledger(); oversized.bind("forward-writer", writer);
+  assert.throws(() => { oversized.consumeMainFrame("forward-writer", writer, MAIN_STREAM.messageBytes + 1); }, /MAIN_FRAME/u);
+  assert.equal(oversized.status().mainFrames, 0);
+  const saved = new Ledger(); saved.bind("forward-saved-readback", writer);
+  assert.throws(() => { saved.consumeMainFrame("forward-saved-readback", writer, 0); }, /MAIN_FRAME/u);
+  assert.equal(saved.status().mainFrames, 0);
+});

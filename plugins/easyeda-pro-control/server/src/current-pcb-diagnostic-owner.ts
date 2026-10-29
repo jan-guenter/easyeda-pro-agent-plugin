@@ -17,7 +17,7 @@ import { fileURLToPath } from "node:url";
 import { canonicalJson, sha256Json } from "./core.ts";
 import { CurrentPcbDiagnosticPipe, CurrentPcbStringPrecreatePipe, CurrentPcbWorkerStartupDiscoveryPipe, decodeCurrentPcbDiagnosticJson } from "./current-pcb-diagnostic-pipe.ts";
 import type { CurrentPcbDiagnosticFailureObservation } from "./current-pcb-diagnostic-pipe.ts";
-import { diagnosticNativeRequest, stringPrecreateNativeRequest } from "./current-pcb-diagnostic-protocol.ts";
+import { DIAGNOSTIC_REQUEST_LIMIT, diagnosticNativeRequest, stringPrecreateNativeRequest } from "./current-pcb-diagnostic-protocol.ts";
 import { CurrentPcbDiagnosticContext, diagnosticBoundedObservation, diagnosticTargetInventory, diagnosticTargetSummary,
   validateDiagnosticFrameExpectation, validateDiagnosticScriptProfile } from "./current-pcb-diagnostic-context.ts";
 import type { DiagnosticFrameExpectation, DiagnosticScriptProfile } from "./current-pcb-diagnostic-context.ts";
@@ -53,6 +53,10 @@ import { CurrentFootprintCopyWindowsClockIssuer } from "./current-footprint-copy
 import type { CurrentFootprintCopyWindowsClockObservation, CurrentFootprintCopyWindowsClockPhase, CurrentFootprintCopyWindowsClockTransport } from "./current-footprint-copy-windows-clock.ts";
 import { CurrentPcbStringNativeClockIssuer } from "./current-pcb-string-native-clock.ts";
 import { captureCurrentPcbStringClockReply } from "./current-pcb-string-clock-reply.ts";
+import { currentWindowFailureAction, currentWindowFailureLabelOnly, decodeCurrentWindowFailure } from "./current-pcb-diagnostic-window-failure.ts";
+import type { CurrentWindowFailure, CurrentWindowFailureAction } from "./current-pcb-diagnostic-window-failure.ts";
+import { decodeCurrentWindowResize, requireCurrentWindowResizeReadiness } from "./current-pcb-diagnostic-window-resize.ts";
+import { CURRENT_WINDOW_CAPTURE_READINESS_LIMITS, currentWindowCaptureReadiness } from "./current-pcb-diagnostic-window-capture-readiness.ts";
 import { CURRENT_WINDOW_CAPTURE_TRANSPORT_RESERVATION, CurrentWindowCaptureTransportBudget } from "./current-pcb-diagnostic-window-capture-budget.ts";
 import { CURRENT_PCB_DIAGNOSTIC_TRANSPORT_LIMITS as TRANSPORT } from "./current-pcb-diagnostic-transport-limits.ts";
 import { CURRENT_WINDOW_CAPTURE_LIMITS, decodeCurrentWindowCapture } from "./current-pcb-diagnostic-window-capture.ts";
@@ -146,8 +150,8 @@ import { CurrentFootprintCopyMainBackendRunner } from "./current-footprint-copy-
 import type { CurrentFootprintCopyMainBackendObservation } from "./current-footprint-copy-main-backend-runner.ts";
 
 
-const HELPER_SHA256 = "1ac7464a523a46eed23674d0b28d53ed110a80e88b0f3876d9efc76b317755b9";
-const HELPER_BYTES = 1_039_698;
+const HELPER_SHA256 = "99a7bd82f5fd4dc8aa5cc96cfec56e80807e788ac7421119d2508bce88c048db";
+const HELPER_BYTES = 1_047_108;
 const MAX_LINE = TRANSPORT.maximumHelperLineBytes;
 // 64 MiB native bytes need at most 85.34 MiB base64 plus bounded poll envelopes.
 const MAX_TOTAL = TRANSPORT.maximumHelperStdoutBytes;
@@ -204,7 +208,7 @@ type MainNativeAction = typeof mainNativeActions[number];
 interface Pending {
   readonly id: string; readonly resolve: (value: RecordValue) => void; readonly reject: (error: Error) => void;
   readonly timer: ReturnType<typeof setTimeout>; readonly launch: boolean; readonly send: boolean; readonly poll: boolean;
-  readonly windowCapture: boolean; readonly mainAction: MainNativeAction | null; readonly combinedCleanup: boolean; written: boolean; reply: RecordValue | null;
+  readonly windowAction: CurrentWindowFailureAction | null; windowFailure: CurrentWindowFailure | null; readonly windowCapture: boolean; readonly windowResize: boolean; readonly mainAction: MainNativeAction | null; readonly combinedCleanup: boolean; written: boolean; reply: RecordValue | null;
 }
 function record(value: unknown): value is RecordValue { return value !== null && typeof value === "object" && !Array.isArray(value); }
 function exact(value: RecordValue, fields: readonly string[]): boolean { return Object.keys(value).toSorted().join(",") === fields.toSorted().join(","); }
@@ -405,7 +409,12 @@ class CurrentPcbRetainedOwnerCore {
   #arcShapes209Consumed = false;
   #pouredShapes209Consumed = false;
   #selectionRelations209Consumed = false;
+  #windowNativeFailure: CurrentWindowFailure | null = null;
+  #windowResize209Consumed = false;
+  #windowResize209ReadinessObserved = false;
+  #windowResize209Retained: Readonly<RecordValue> | null = null;
   #windowCapture209Consumed = false;
+  #windowCapture209ReadinessQueries = 0;
   #windowCapture209Retained: Readonly<RecordValue> | null = null;
   #windowCapture209DispatchAttempted = false;
   #windowCapture209Transport: CurrentWindowCaptureTransportBudget | null = null;
@@ -520,6 +529,10 @@ class CurrentPcbRetainedOwnerCore {
     busy: boolean; launchConsumed: boolean; closeConsumed: boolean; released: boolean; helperClosed: boolean;
     cleanupOnly: boolean; noProcessCleanupAvailable: boolean; frameWorkerVerified: false; executionAuthorized: false;
     nativeLaunchError: string | null; nativeSendError: string | null; createProcessError: number | null;
+    windowNativeFailure?: CurrentWindowFailure | null;
+    windowResize209AttemptConsumed?: boolean; windowResize209ReadinessObserved?: boolean; windowResize209RetainedObservation?: Readonly<RecordValue>;
+    windowResize209RequestCapacity?: boolean;
+    windowCaptureReadinessQueriesUsed?: number;
     windowCapture209AttemptConsumed?: boolean; windowCapture209NativeDispatchAttempted?: boolean; windowCaptureNativeResourcesMayRemain?: boolean;
     windowCapture209RetainedObservation?: Readonly<RecordValue>; windowCaptureObservationAccepted?: false;
     visual209RetainedObservation?: Readonly<RecordValue>; visualObservationCurrent?: false; visualObservationAccepted?: false;
@@ -546,7 +559,12 @@ class CurrentPcbRetainedOwnerCore {
       frameInspectionConsumed: this.#framesConsumed, scriptInspectionConsumed: this.#scriptConsumed, diagnosticFailure: this.#pipe.status().failure,
       diagnosticFailureObservation: this.#pipe.status().failureObservation,
       workerStartupChannel: this.#startupChannel?.status() ?? null,
-      ...(this.#purpose === "visual209" ? { windowCapture209AttemptConsumed: this.#windowCapture209Consumed,
+      ...(this.#purpose === "visual209" ? { windowNativeFailure: this.#windowNativeFailure, windowResize209AttemptConsumed: this.#windowResize209Consumed, windowResize209ReadinessObserved: this.#windowResize209ReadinessObserved,
+        windowResize209RequestCapacity: this.#pipe.status().failure === null && this.#pcbSourceQualified && !this.#windowResize209Consumed && !this.#windowCapture209Consumed &&
+          this.#windowCapture209ReadinessQueries < CURRENT_WINDOW_CAPTURE_READINESS_LIMITS.queries && this.#pipe.status().requestCount <= DIAGNOSTIC_REQUEST_LIMIT - 2 * CURRENT_WINDOW_CAPTURE_TRANSPORT_RESERVATION.cdpRequests &&
+          MAX_TOTAL - this.#total >= CURRENT_WINDOW_CAPTURE_TRANSPORT_RESERVATION.requiredHeadroomBytes,
+        ...(this.#windowResize209Retained === null ? {} : { windowResize209RetainedObservation: this.#windowResize209Retained }),
+        windowCaptureReadinessQueriesUsed: this.#windowCapture209ReadinessQueries, windowCapture209AttemptConsumed: this.#windowCapture209Consumed,
         windowCapture209NativeDispatchAttempted: this.#windowCapture209DispatchAttempted,
         windowCaptureNativeResourcesMayRemain: this.#windowCapture209DispatchAttempted && !this.#released } : {}),
       ...(this.#windowCapture209Retained === null ? {} : { windowCapture209RetainedObservation: (() => {
@@ -1092,11 +1110,69 @@ class CurrentPcbRetainedOwnerCore {
     finally { this.#busy = false; }
   }
 
+  /** Bounded original-window geometry and budget snapshot. No CDP or paint call. */
+  public async observeWindowCaptureReadiness209(): Promise<Readonly<RecordValue>> {
+    if (this.#purpose !== "visual209" || this.#windowCapture209ReadinessQueries >= CURRENT_WINDOW_CAPTURE_READINESS_LIMITS.queries ||
+        this.#closeConsumed || this.#terminationObserved || this.#visualAbortAttempted) { throw error("WINDOW_READINESS209_UNAVAILABLE"); }
+    if (MAX_TOTAL - this.#total < MAX_LINE + CURRENT_WINDOW_CAPTURE_TRANSPORT_RESERVATION.cleanupReplyBytes) { throw error("WINDOW_READINESS209_STDOUT_HEADROOM"); }
+    this.#enter(true); this.#windowCapture209ReadinessQueries += 1; this.#windowCapture209CleanupReserved = true;
+    if (this.#windowResize209Consumed) { this.#windowResize209ReadinessObserved = false; }
+    try {
+      await this.#verifyInstallation(); this.#available(); await this.#verify(); this.#available();
+      const raw = await this.#request({ action: "window-capture-readiness" });
+      const result = currentWindowCaptureReadiness(raw, { helperStdoutBytes: this.#total, cdpRequests: this.#pipe.status().requestCount,
+        readerAvailable: this.#pipe.status().failure === null, sourceQualified: this.#pcbSourceQualified,
+        captureConsumed: this.#windowCapture209Consumed, resizeConsumed: this.#windowResize209Consumed, queriesUsed: this.#windowCapture209ReadinessQueries });
+      await this.#verifyInstallation(); this.#available(); await this.#verify(); this.#available();
+      if (this.#windowResize209Consumed && result["resizeGeometryObserved"] === true) {
+        requireCurrentWindowResizeReadiness(result, this.#windowResize209Retained); this.#windowResize209ReadinessObserved = true;
+      }
+      return result;
+    } finally { this.#busy = false; }
+  }
+
+  /** One fixed asynchronous resize submission. Geometry is observed separately. */
+  public async resizeWindowForCapture209(input: CurrentDisposableOpenSealedTarget): Promise<Readonly<RecordValue>> {
+    const context = this.#stagedContext, profile = this.#pcbSourceProfile, target = currentDisposableOpenSealedTargetSchema.parse(input);
+    if (this.#purpose !== "visual209" || context === null || profile === null || !this.#pcbSourceQualified ||
+        this.#windowResize209Consumed || this.#windowCapture209Consumed || this.#workersConsumed || this.#modelConsumed ||
+        this.#windowCapture209ReadinessQueries >= CURRENT_WINDOW_CAPTURE_READINESS_LIMITS.queries ||
+        this.#pipe.status().requestCount > DIAGNOSTIC_REQUEST_LIMIT - 2 * CURRENT_WINDOW_CAPTURE_TRANSPORT_RESERVATION.cdpRequests ||
+        JSON.stringify(target) !== JSON.stringify(this.#projectOpeningTarget)) { throw error("WINDOW_RESIZE209_UNAVAILABLE"); }
+    this.#pipe.assertPcb209WindowCaptureCapacity(); const transport = new CurrentWindowCaptureTransportBudget(this.#total);
+    this.#enter(true); this.#windowResize209Consumed = true; this.#windowResize209ReadinessObserved = false;
+    this.#windowCapture209Transport = transport; this.#windowCapture209CleanupReserved = true;
+    try {
+      const pcb = context.modelContext(), selected = context.pcbOpeningContext();
+      const reprove = (): void => {
+        this.#available(); context.pcbScript(profile);
+        if (JSON.stringify(context.pcbOpeningContext()) !== JSON.stringify(selected) || JSON.stringify(context.modelContext()) !== JSON.stringify(pcb)) {
+          throw error("WINDOW_RESIZE209_CONTEXT");
+        }
+      };
+      const identity = async (): Promise<void> => {
+        const result = decodeCurrentPcbDiagnosticPcbOpeningReply(
+          await this.#transfer(() => this.#pipe.observePcbOpening(selected.uniqueContextId, target, "observe")), target, "observe");
+        reprove();
+        if (!result.ok || result.status !== "frame-observed" || !result.frameObserved ||
+            result.windowTabId !== this.#projectOpeningResult?.observation?.windowTabId) { throw error("WINDOW_RESIZE209_ACTIVE_PCB"); }
+      };
+      await this.#verifyInstallation(); reprove(); await this.#verify(); reprove();
+      await this.#observeParent(); reprove(); await this.#observeOpeningAncillary(); reprove(); await identity();
+      const raw = await this.#request({ action: "resize-window-for-capture", acceptWindowResizeEffects: true });
+      this.#windowResize209Retained = decodeCurrentWindowResize(raw);
+      reprove(); await identity(); await this.#observeParent(); reprove(); await this.#observeOpeningAncillary(); reprove();
+      await this.#verifyInstallation(); reprove(); await this.#verify(); reprove(); return this.#windowResize209Retained;
+    } catch (caughtError) { this.#input.emit("error", error("WINDOW_RESIZE209_FAILED")); throw caughtError; }
+    finally { this.#windowCapture209Transport = null; this.#busy = false; }
+  }
+
   /** One original-window paint. Exact native image data is retained before any
    * final context check; only this successful method return can be published. */
   public async captureWindow209(input: CurrentDisposableOpenSealedTarget, hwnd: string): Promise<Readonly<RecordValue>> {
     const context = this.#stagedContext, profile = this.#pcbSourceProfile, target = currentDisposableOpenSealedTargetSchema.parse(input);
-    if (this.#purpose !== "visual209" || context === null || this.#windowCapture209Consumed || !this.#pcbSourceQualified ||
+    if (this.#purpose !== "visual209" || context === null || this.#windowCapture209Consumed ||
+        this.#windowResize209Consumed && !this.#windowResize209ReadinessObserved || !this.#pcbSourceQualified ||
         profile === null || this.#pcbFrameObservation?.ok !== true || this.#workersConsumed || this.#modelConsumed ||
         !/^[1-9][0-9]{0,18}$/u.test(hwnd) || JSON.stringify(target) !== JSON.stringify(this.#projectOpeningTarget)) { throw error("WINDOW_CAPTURE209_UNAVAILABLE"); }
     this.#pipe.assertPcb209WindowCaptureCapacity();
@@ -2707,7 +2783,7 @@ class CurrentPcbRetainedOwnerCore {
     this.#windowCapture209Transport?.consume(request["action"] === "poll");
     const deferred = Promise.withResolvers<RecordValue>(), id = randomBytes(16).toString("hex");
     const launch = request["action"] === "launch";
-    const pending: Pending = { id, resolve: deferred.resolve, reject: deferred.reject, launch, windowCapture: request["action"] === "capture-window" && this.#purpose === "visual209", poll: request["action"] === "poll",
+    const pending: Pending = { id, resolve: deferred.resolve, reject: deferred.reject, launch, windowAction: this.#purpose === "visual209" ? currentWindowFailureAction(request["action"]) : null, windowFailure: null, windowCapture: request["action"] === "capture-window" && this.#purpose === "visual209", windowResize: request["action"] === "resize-window-for-capture" && this.#purpose === "visual209", poll: request["action"] === "poll",
       mainAction: mainNativeActions.find(action => action === request["action"]) ?? null, combinedCleanup,
       send: request["action"] === "send" || request["action"] === "worker-startup-send" || request["action"] === "worker-startup-parent" ||
         request["action"] === "worker-startup-empty-common" || request["action"] === "worker-startup-empty-root" ||
@@ -2760,6 +2836,10 @@ class CurrentPcbRetainedOwnerCore {
           this.#nativeLaunchError = typeof reply["error"] === "string" ? reply["error"] : null;
         }
         const nativeLabel = reply["error"];
+        if (pending.windowAction !== null && typeof nativeLabel === "string") {
+          const windowFailure = pending.windowFailure ?? currentWindowFailureLabelOnly(pending.windowAction, nativeLabel);
+          if (windowFailure !== null) { this.#windowNativeFailure = windowFailure; }
+        }
         pending.reject(typeof nativeLabel === "string" ? issueCurrentPcbDiagnosticNativeRefusal(nativeLabel) : error("HELPER_REPLY"));
       }
       else if (record(reply["result"])) {
@@ -2825,10 +2905,20 @@ class CurrentPcbRetainedOwnerCore {
       const pending = this.#pending;
       if (!record(raw) || pending === null || pending.reply !== null || raw["id"] !== pending.id ||
           (raw["ok"] === true ? !exact(raw, ["id", "ok", "result"]) || !record(raw["result"]) :
-            raw["ok"] !== false || !exact(raw, ["id", "ok", "error"]) || typeof raw["error"] !== "string" || !/^pcb-diagnostic-[a-z-]{1,80}$/u.test(raw["error"]))) { this.#fail("HELPER_REPLY"); return; }
+            raw["ok"] !== false || !exact(raw, Object.hasOwn(raw, "windowFailure") ? ["id", "ok", "error", "windowFailure"] : ["id", "ok", "error"]) || typeof raw["error"] !== "string" || !/^pcb-diagnostic-[a-z-]{1,80}$/u.test(raw["error"]))) { this.#fail("HELPER_REPLY"); return; }
+      if (Object.hasOwn(raw, "windowFailure")) {
+        if (raw["ok"] !== false || pending.windowAction === null || typeof raw["error"] !== "string") { this.#fail("HELPER_REPLY"); return; }
+        pending.windowFailure = decodeCurrentWindowFailure(raw["windowFailure"], pending.windowAction, raw["error"]);
+      } else if (raw["ok"] === false && pending.windowAction !== null && typeof raw["error"] === "string") {
+        pending.windowFailure = currentWindowFailureLabelOnly(pending.windowAction, raw["error"]);
+      }
+      // Retain admitted evidence before narrower budgets or a late native write
+      // Callback can reject/clear pending. This snapshot grants no retry.
+      if (pending.windowFailure !== null) { this.#windowNativeFailure = pending.windowFailure; }
       try {
         const pollReplyKind = pending.poll && raw["ok"] === true ? "poll" : "control";
-        const kind = pending.windowCapture ? "image" : pollReplyKind;
+        const largeKind = pending.windowResize ? "resize" : pollReplyKind;
+        const kind = pending.windowCapture ? "image" : largeKind;
         const result = record(raw["result"]) ? raw["result"] : {};
         this.#windowCapture209Transport?.observeReply(kind, newline + 1, result);
       } catch (budgetError) {

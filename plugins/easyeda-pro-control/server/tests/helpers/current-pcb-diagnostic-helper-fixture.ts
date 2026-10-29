@@ -211,6 +211,14 @@ lines.on("line", line => {
     if (noProcessCase) { result = { ...owner, rootPid: 0, rootCreated: "0" }; }
     else { result = scenario === "launch-time-missing" ? { ...owner, rootCreated: "0" } : owner; }
   }
+  else if (request["action"] === "window-capture-readiness" || scenario === "window-failure-ordinary" && request["action"] === "send") {
+    const fault = { schema: "easyeda-pro-control.window-failure.v1", action: "window-capture-readiness", stage: "identity", code: "window-readiness-changed",
+      paintPhase: "not-dispatched", nativeResourcesRetained: false, bounds: { left: 0, top: 0, right: 3840, bottom: 2160 }, snapshotOnly: true, executionAuthorized: false };
+    if (scenario === "window-failure-scope") { fault.action = "capture-window"; }
+    if (scenario === "window-failure-private") { fault.code = "private-secret native stack text"; }
+    process.stdout.write(`${JSON.stringify({ id: request["id"], ok: false, error: "pcb-diagnostic-window-readiness-changed",
+      ...(scenario === "window-failure-legacy" ? {} : { windowFailure: fault }) })}\n`); return;
+  }
   else if (request["action"] === "send") {
     if (scenario === "hang") { return; }
     if (scenario === "stderr") { process.stderr.write("synthetic private diagnostic\n"); return; }

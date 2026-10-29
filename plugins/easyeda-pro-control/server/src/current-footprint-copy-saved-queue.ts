@@ -4,10 +4,15 @@ import { z } from "zod";
 import { CURRENT_UPLOAD_QUEUE_MAX_BYTES, buildCurrentUploadQueueReadExpression,
   validateCurrentUploadQueueReadResult } from "./current-upload-queue-read.ts";
 import { captureCurrentPcbStringClockReply } from "./current-pcb-string-clock-reply.ts";
+import { CURRENT_FOOTPRINT_COPY_SAVED_START_PAGE_GUARD } from "./current-footprint-copy-saved-start-page.ts";
+import { buildCurrentStartPageGuard } from "./current-start-page.ts";
 import { freezeDeep } from "./sqlite-inventory-core.ts";
 
 const placeholder = Object.freeze({ projectUuid: "a".repeat(64), branchUuid: "b".repeat(32) });
-const expression = buildCurrentUploadQueueReadExpression(placeholder);
+const genericExpression = buildCurrentUploadQueueReadExpression(placeholder), legacyGuard = buildCurrentStartPageGuard();
+const guardParts = genericExpression.split(legacyGuard);
+if (guardParts.length !== 2) { throw new Error("FOOTPRINT_SAVED_QUEUE_START_PAGE_TEMPLATE"); }
+const expression = guardParts.join(CURRENT_FOOTPRINT_COPY_SAVED_START_PAGE_GUARD);
 const needle = `const target=${JSON.stringify(placeholder)},root=globalThis,apply=Reflect.apply;`;
 if (expression.split(needle).length !== 2) { throw new Error("FOOTPRINT_SAVED_QUEUE_TEMPLATE"); }
 export const CURRENT_FOOTPRINT_COPY_SAVED_QUEUE_FUNCTION = `async function(projectUuid,branchUuid){return JSON.stringify(await ${

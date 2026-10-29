@@ -340,3 +340,17 @@ backups and unrelated content. Prove actual reopen/saved copy and supported
 native delete/saved absence through their independent owners. A SQL commit can
 precede a later failure; neither an upload acknowledgment nor a post-await
 observation establishes durability or unchanged storage.
+
+The forward resource ledger now charges renderer data/idle/wait polls separately,
+main normal/cleanup polls and every main WebSocket frame, including empty control
+frames. Renderer event count/per-frame/total bytes are charged independently.
+These finite counters use existing caps and original role references; a future
+native factory must feed them from its actual captured traffic. They do not
+mount that factory or prove pre-write eligibility.
+
+The private saved-generation queue program now has a separate pinned209
+Start Page guard; the generic206 observer remains unchanged. Exact209 UI/backend
+source establishes its field and page-version assumptions. CacheStorage.match
+native metadata has not been captured, so a stable substitute can still fabricate
+absence in the old data-only probe. Native cache ownership/replay exclusion
+therefore remains a concrete blocker before any saved writer lifecycle is mounted.

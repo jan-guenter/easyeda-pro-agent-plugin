@@ -107,6 +107,8 @@ export function requireCurrentFootprintCopyForwardOutput(result: CurrentFootprin
     CURRENT_FOOTPRINT_COPY_FORWARD_CAPACITY.output.journalBytes);
 }
 type StreamKind = "renderer" | "renderer-event" | "main" | "helper-stdout" | "artifact" | "journal";
+const rendererPollLimits = Object.freeze({ data: STREAM.dataPolls, idle: STREAM.idlePolls, wait: STREAM.waitPolls });
+type RendererPollKind = keyof typeof rendererPollLimits;
 interface Generation {
   readonly original: object;
   rendererId: number;
@@ -116,6 +118,10 @@ interface Generation {
   mainNormal: number;
   mainCleanup: number;
   controls: number;
+  readonly rendererPolls: Record<RendererPollKind, number>;
+  mainPolls: number;
+  rendererEvents: number;
+  mainFrames: number;
   readonly bytes: Map<StreamKind, number>;
 }
 function fail(code: string): never { throw new Error(`FOOTPRINT_FORWARD_CAPACITY_${code}`); }
@@ -134,7 +140,8 @@ export class CurrentFootprintCopyForwardResourceLedger {
     if (this.#failed || !CURRENT_FOOTPRINT_COPY_FORWARD_CAPACITY.generations.includes(role) || this.#generations.has(role) ||
         original === null || typeof original !== "object" || [...this.#generations.values()].some(value => value.original === original)) { fail("GENERATION"); }
     this.#generations.set(role, { original, rendererId: 0, rendererNormal: 0, rendererCleanup: 0,
-      mainId: 0, mainNormal: 0, mainCleanup: 0, controls: 0, bytes: new Map() });
+      mainId: 0, mainNormal: 0, mainCleanup: 0, controls: 0, rendererPolls: { data: 0, idle: 0, wait: 0 },
+      mainPolls: 0, rendererEvents: 0, mainFrames: 0, bytes: new Map() });
   }
   #original(role: CurrentFootprintCopyForwardRole, original: object): Generation {
     const value = this.#generations.get(role); if (value === undefined || value.original !== original) { fail("ORIGINAL_GENERATION"); } return value;
@@ -157,6 +164,41 @@ export class CurrentFootprintCopyForwardResourceLedger {
         (cleanupRequest ? value.rendererCleanup >= cleanupLimit : value.rendererNormal >= normalLimit)) { this.#refuse("RENDERER_REQUEST"); }
     value.rendererId = id; if (cleanupRequest) { value.rendererCleanup += 1; } else { value.rendererNormal += 1; }
   }
+  /** The original renderer classifies a completed poll before processing its
+   * bytes or issuing another poll. Data, idle and request-wait allowances are
+   * cumulative and shared by normal and cleanup work within one generation. */
+  public consumeRendererPoll(role: CurrentFootprintCopyForwardRole, original: object, kind: RendererPollKind, cleanupPoll = false): void {
+    const value = this.#original(role, original);
+    if (typeof kind !== "string" || !Object.hasOwn(rendererPollLimits, kind) || typeof cleanupPoll !== "boolean" ||
+        this.#failed && !cleanupPoll) { fail("POLL_CLASS"); }
+    if (value.rendererPolls[kind] >= rendererPollLimits[kind]) { this.#refuse("RENDERER_POLL"); }
+    value.rendererPolls[kind] += 1;
+  }
+  /** Mirrors the native main transport's one cumulative cursor. Cleanup can
+   * use its terminal reserve, but cannot reset the normal poll-ID ceiling. */
+  public consumeMainPoll(role: CurrentFootprintCopyForwardRole, original: object, cleanupPoll = false): void {
+    const value = this.#original(role, original);
+    if (typeof cleanupPoll !== "boolean" || this.#failed && !cleanupPoll) { fail("POLL_CLASS"); }
+    if (role !== "forward-writer" || value.mainPolls >= (cleanupPoll ? MAIN_STREAM.totalPolls : MAIN_STREAM.normalPolls)) { this.#refuse("MAIN_POLL"); }
+    value.mainPolls += 1;
+  }
+  /** Count every original renderer event and its subset of received bytes
+   * before retention. Raw chunk bytes are independently charged as renderer
+   * bytes, including replies; this method does not charge those bytes twice. */
+  public consumeRendererEvent(role: CurrentFootprintCopyForwardRole, original: object, bytes: number): void {
+    const value = this.#original(role, original); count(bytes);
+    const used = value.bytes.get("renderer-event") ?? 0;
+    if (bytes === 0 || bytes > STREAM.frameBytes || value.rendererEvents >= STREAM.eventCount || used + bytes > STREAM.eventBytes) { this.#refuse("RENDERER_EVENT"); }
+    value.rendererEvents += 1; value.bytes.set("renderer-event", used + bytes);
+  }
+  /** Main's native limit covers all WebSocket frames: replies, events,
+   * continuation and control frames. Zero-length control payloads still count.
+   * Received wire bytes remain independently charged at the chunk boundary. */
+  public consumeMainFrame(role: CurrentFootprintCopyForwardRole, original: object, bytes: number): void {
+    const value = this.#original(role, original); count(bytes);
+    if (role !== "forward-writer" || bytes > MAIN_STREAM.messageBytes || value.mainFrames >= MAIN_STREAM.frames) { this.#refuse("MAIN_FRAME"); }
+    value.mainFrames += 1;
+  }
   public consumeBytes(role: CurrentFootprintCopyForwardRole, original: object, kind: StreamKind, bytes: number): void {
     const value = this.#original(role, original); count(bytes);
     const profile = CURRENT_FOOTPRINT_COPY_FORWARD_CAPACITY;
@@ -176,9 +218,13 @@ export class CurrentFootprintCopyForwardResourceLedger {
     if (typeof cleanupControl !== "boolean" || this.#failed && !cleanupControl) { fail("CONTROL_CLASS"); }
     if (value.controls >= CURRENT_FOOTPRINT_COPY_FORWARD_CAPACITY.controls.perGeneration) { this.#refuse("CONTROL"); } value.controls += 1;
   }
-  public status(): Readonly<{ failed: boolean; boundGenerations: number; rendererRequests: number; mainRequests: number; controls: number; executionAuthorized: false }> {
+  public status(): Readonly<{ failed: boolean; boundGenerations: number; rendererRequests: number; mainRequests: number; controls: number;
+    rendererPolls: number; mainPolls: number; rendererEvents: number; mainFrames: number; executionAuthorized: false }> {
     const values = [...this.#generations.values()]; return Object.freeze({ failed: this.#failed, boundGenerations: values.length,
       rendererRequests: values.reduce((sum, value) => sum + value.rendererId, 0), mainRequests: values.reduce((sum, value) => sum + value.mainId, 0),
-      controls: values.reduce((sum, value) => sum + value.controls, 0), executionAuthorized: false });
+      controls: values.reduce((sum, value) => sum + value.controls, 0),
+      rendererPolls: values.reduce((sum, value) => sum + value.rendererPolls.data + value.rendererPolls.idle + value.rendererPolls.wait, 0),
+      mainPolls: values.reduce((sum, value) => sum + value.mainPolls, 0), rendererEvents: values.reduce((sum, value) => sum + value.rendererEvents, 0),
+      mainFrames: values.reduce((sum, value) => sum + value.mainFrames, 0), executionAuthorized: false });
   }
 }

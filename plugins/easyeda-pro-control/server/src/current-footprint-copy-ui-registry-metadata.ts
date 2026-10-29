@@ -28,7 +28,7 @@ function ownData(item: z.infer<typeof property> | z.infer<typeof accessor> | und
 }
 function fieldCount(role: CurrentFootprintCopyUiRegistryFunction): number {
   if (role === "registryConstructor") { return 6; }
-  if (role === "contextProducer") { return 5; } return 2;
+  if (role === "contextProducer") { return SOURCE.targetFunctionMetadata.contextProducerOwnProperties.length; } return 2;
 }
 
 /** No script identity is inferred from source text. A supplied expected ID must
@@ -54,15 +54,9 @@ export function decodeCurrentFootprintCopyUiRegistryFunction(input: unknown, rol
           item.value.className !== "Object" || item.value.description !== "Object" || item.value.subtype !== undefined ||
           item.value.objectId === undefined || item.value.value !== undefined) { return fail(); }
     }
-    // The classic preload and its ws declaration have no strict directive.
-    // Require its exact ordinary-function roster rather than accepting both.
-    if (role === "contextProducer") {
-      for (const name of ["arguments", "caller"] as const) {
-        const item = ownData(fields.get(name));
-        if (item.writable || item.enumerable || item.configurable || item.value.type !== "object" || item.value.subtype !== "null" ||
-            item.value.value !== null || item.value.objectId !== undefined || item.value.className !== undefined || item.value.description !== undefined) { return fail(); }
-      }
-    }
+    // A classic/sloppy source declaration does not establish the inspector's
+    // Own-property roster across V8 versions. This target's exact three fields
+    // Were required above; legacy caller/arguments fields remain refused.
     if (role === "registryConstructor") {
       const context = fields.get("context"), instance = ownData(fields.get("getInstance")), prefix = ownData(fields.get("LIB_ID_PREFFIX"));
       if (!prefix.writable || !prefix.enumerable || !prefix.configurable || prefix.value.type !== "string" || prefix.value.value !== "extend_lib_" ||

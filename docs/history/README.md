@@ -1,5 +1,7 @@
 # Project history
 
+- [2026-10-29 Capture readiness and saved queue correction](2026-10-29-capture-readiness-and-saved-queue.md).
+
 - [2026-10-29 Native allocation and bounded window capture](2026-10-29-native-allocation-and-window-capture.md).
 - [2026-10-29 Preload registry source qualification](2026-10-29-preload-registry-source-qualification.md).
 - [2026-10-29 Original-window PNG capture](2026-10-29-original-window-png-capture.md).

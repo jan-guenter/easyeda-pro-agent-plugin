@@ -87,7 +87,30 @@ camera dispatch after expiry but cannot cancel a handler already sent.
 
 ## Capture the original window
 
-After published `observe-pcb-opening`, obtain the original application `hwnd`
+After published `observe-pcb-opening`, use `observe-capture-readiness` with the
+original operation/binding to query the unique original window and transport
+headroom. Up to eight queries return HWND/bounds, dimension and pixel eligibility,
+remaining CDP/stdout capacity and consumed/retained state. Each bounded query
+preserves cleanup capacity, sends no paint and consumes no capture intent. It
+does not recheck active PCB identity or authorize capture. The window can change
+immediately afterward; actual capture repeats all original-owner, context,
+geometry and capacity checks. No caller PID/HWND or resize is accepted.
+
+For an eligible non-maximized window that needs a smaller size, validate
+`resize-window-for-capture` with the original operation/binding and
+`acceptWindowResizeEffects:true`. It requests fixed1920x1080 using the original
+unique window, without caller coordinates, size, movement, activation or Z-order
+changes. One durable intent precedes dispatch. At least20 CDP slots and32MiB
+stdout headroom are required before resize, retaining ten slots for later
+capture. Acknowledgment proves only submission. Async posting depends on distinct input
+queues; see [SetWindowPos](https://learn.microsoft.com/en-us/windows/win32/api/winuser/nf-winuser-setwindowpos). Run readiness again and require
+exact1920x1080 at the same original position before capture can consume its
+intent. Capture then repeats its fresh checks and recalculates output headroom.
+A missing, refused, clamped or unapplied resize is consumed; it grants no retry
+or automatic restoration. Maximized windows explicitly refuse. Restore/style
+changes and arbitrary window control remain unavailable.
+
+When the snapshot has suitable geometry and capacity, obtain the original application `hwnd`
 with `observe-window`. Validate and send
 `capture-window` with that HWND, the original operation/binding,
 `acceptWindowPaintEffects:true` and `confirmLocalArtifact:true`. This separate
@@ -107,7 +130,9 @@ hash, bounds and pixel summary. Use its exact path for visual inspection. The
 result and journal do not repeat base64 image contents. Unsupported dimensions,
 PNG output or framing refuse whole rather than resize or truncate the image.
 
-The one-second native message deadline does not cancel the target's paint work.
+WM_PRINT uses a one-second SendMessageTimeout request. Windows ignores that
+timeout for the same input queue, and expiration does not cancel the target's
+paint work. See [the native timeout contract](https://learn.microsoft.com/en-us/windows/win32/api/winuser/nf-winuser-sendmessagetimeoutw).
 Native DC/bitmap resources remain retained even after an acknowledged capture,
 until actual original root exit and an empty Job permit release. Keep the owner
 alive through the cleanup steps below; use its confirmed abort when needed.
@@ -120,6 +145,14 @@ persistence. A nonzero pixel summary is not visual acceptance. The public SDK
 canvas-image method and its separate renderer/resource problems remain excluded.
 The new capture route has source/offline validation; connected acceptance is
 pending.
+
+After a native refusal, inspect `windowNativeFailure`. It contains only fixed
+window action/stage/code labels, cached bounds and resource flags. `paintPhase`
+tracks the capture's WM_PRINT dispatch, not ordinary painting triggered by a
+resize. Reading the retained fault does not query the window or prove its current
+state. Unknown or unavailable details remain unclassified. Neither a diagnostic
+nor a lost reply permits repeating capture or resize. Native faults are retained
+before response-budget validation can reject the pending reply.
 
 ## Close and release the original owner
 

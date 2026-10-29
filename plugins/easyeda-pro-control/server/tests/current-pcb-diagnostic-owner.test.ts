@@ -8,7 +8,7 @@ import { test } from "node:test";
 import type { TestContext } from "node:test";
 import { setImmediate as yieldToEventLoop } from "node:timers/promises";
 import { fileURLToPath } from "node:url";
-import { CurrentPcb209DiagnosticOwner, CurrentPcbDiagnosticOwner, CurrentPcbStringPrecreateOwner } from "../src/current-pcb-diagnostic-owner.ts";
+import { CurrentPcb209DiagnosticOwner, CurrentPcb209VisualOwner, CurrentPcbDiagnosticOwner, CurrentPcbStringPrecreateOwner } from "../src/current-pcb-diagnostic-owner.ts";
 // oxlint-disable-next-line import/max-dependencies -- One integration case supplies the real completed SQL reader to the existing synthetic retained native-helper owner.
 import { IDS, encrypted, inventory, mutate, fixture as sqlFixture } from "./helpers/symbol-sql-fixture.ts";
 import { currentPcbStringSaveProvenanceSource } from "../src/current-pcb-string-save-provenance.ts";
@@ -41,6 +41,7 @@ function fixture(context: TestContext, scenario = "normal", stringPurpose = fals
   });
   let Owner = stringPurpose ? CurrentPcbStringPrecreateOwner : CurrentPcbDiagnosticOwner;
   if (scenario.startsWith("opening-pcb-layers209") || scenario.startsWith("opening-pcb-primitives209") || scenario.startsWith("opening-pcb-extended-primitives209") || scenario.startsWith("opening-pcb-selection-relations209") || scenario.startsWith("opening-pcb-pad-shapes209") || scenario.startsWith("opening-pcb-image-shapes209") || scenario.startsWith("opening-pcb-arc-shapes209") || scenario.startsWith("opening-pcb-poured-shapes209")) { Owner = CurrentPcb209DiagnosticOwner; }
+  if (scenario.startsWith("window-failure") && scenario !== "window-failure-ordinary") { Owner = CurrentPcb209VisualOwner; }
   const owner = new Owner(child, () => source.valid ? Promise.resolve() : Promise.reject(new Error("source changed")), null,
     () => installation.valid ? Promise.resolve() : Promise.reject(new Error("installation changed")));
   owner.start();
@@ -1247,4 +1248,47 @@ void test("failed private String native clock stays consumed while original clos
   assert.equal(value.actions.filter(action => action === "normal-close").length, 1);
   assert.equal(value.actions.filter(action => action === "string-clock").length, 2);
   await value.owner.releaseClosed(); assert.equal(value.child.exitCode, 0);
+});
+
+void test("window native fault is retained by the real public callback before refusal and preserves native cleanup", async context => {
+  for (const scenario of ["window-failure-valid", "window-failure-legacy"]) {
+    const value = fixture(context, scenario); await value.owner.launch(LAUNCH);
+    await assert.rejects(value.owner.observeWindowCaptureReadiness209().catch((error: unknown) => {
+      const fault = value.owner.status().windowNativeFailure;
+      assert.equal(fault?.action, "window-capture-readiness"); assert.equal(fault?.code, "window-readiness-changed");
+      assert.equal(fault?.paintPhase, scenario.endsWith("legacy") ? "unknown" : "not-dispatched");
+      assert.equal(value.owner.status().failure, null); throw error;
+    }), /NATIVE_REFUSAL/u);
+    await close(value);
+  }
+});
+void test("window faults cannot attach foreign action, private text or new fields to legacy error envelopes", async context => {
+  for (const scenario of ["window-failure-scope", "window-failure-private", "window-failure-ordinary"]) {
+    const value = fixture(context, scenario); await value.owner.launch(LAUNCH);
+    await assert.rejects(scenario.endsWith("ordinary") ? value.owner.getVersion() : value.owner.observeWindowCaptureReadiness209());
+    assert.ok(value.owner.status().failure !== null); const fault = value.owner.status().windowNativeFailure; assert.ok(fault === null || fault === undefined);
+    assert.equal(JSON.stringify(value.owner.status()).includes("private-secret"), false);
+  }
+});
+
+void test("admitted window fault survives a later failed write callback before ordinary settlement", async context => {
+  const value = fixture(context, "window-failure-valid"); await value.owner.launch(LAUNCH);
+  const input = value.child.stdin, output = value.child.stdout; assert.ok(input !== null && output !== null);
+  const originalWrite = input.write.bind(input);
+  context.mock.method(input, "write", (...args: Parameters<typeof input.write>) => {
+    const callback = typeof args[1] === "function" ? args[1] : args[2]; assert.ok(callback !== undefined);
+    const failAfterFault = (): void => {
+      const fault = value.owner.status().windowNativeFailure;
+      if (fault !== undefined && fault !== null) {
+        output.removeListener("data", failAfterFault);
+        // oxlint-disable-next-line promise/prefer-await-to-callbacks, eslint/no-useless-return -- Exercise and terminate the actual retained Writable callback after the native fault was parsed.
+        callback(new Error("synthetic delayed write failure")); return;
+      }
+    };
+    output.on("data", failAfterFault);
+    return originalWrite(args[0]);
+  });
+  await assert.rejects(value.owner.observeWindowCaptureReadiness209(), /HELPER_WRITE/u);
+  assert.equal(value.owner.status().windowNativeFailure?.code, "window-readiness-changed");
+  assert.equal(value.owner.status().windowNativeFailure?.paintPhase, "not-dispatched");
 });

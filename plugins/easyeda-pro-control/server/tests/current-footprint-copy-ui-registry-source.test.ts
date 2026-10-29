@@ -51,7 +51,7 @@ void test("preload reply capture has its own fixed source ceiling and rejects ho
   assert.equal(calls, 0); assert.throws(() => { qualifyCurrentFootprintCopyUiRegistrySource(reply.scriptSource); });
 });
 
-void test("actual V8 descriptors locate the preload class and methods at independently padded source coordinates", async () => {
+void test("pinned Node24 proves source coordinates and refuses its legacy ws roster for the V8 14.6 target", async () => {
   const session = new Session(); session.connect();
   const contexts: { id: number; name: string }[] = [];
   session.on("Runtime.executionContextCreated", event => { contexts.push(event.params.context); });
@@ -73,18 +73,26 @@ void test("actual V8 descriptors locate the preload class and methods at indepen
       assertCurrentFootprintCopyUiRegistryFunction(role, value.description);
       const metadata = await session.post("Runtime.getProperties", { objectId: value.objectId, ownProperties: true,
         accessorPropertiesOnly: false, generatePreview: false });
-      const decoded = decodeCurrentFootprintCopyUiRegistryFunction(metadata, role, scriptId); scriptId ??= decoded.scriptId;
-      assert.equal(decoded.scriptId, scriptId); assert.ok(decoded.scopesId.length > 0);
-      assert.throws(() => decodeCurrentFootprintCopyUiRegistryFunction(metadata, role, "other-script"), /FOOTPRINT_COPY_UI_REGISTRY_METADATA/u);
-      if (role === "registryContext") {
-        const scopes = decodeCurrentFootprintCopyUiRegistryClassScope(await session.post("Runtime.getProperties", { objectId: decoded.scopesId, ownProperties: true }));
-        const constructor = values.result.find(item => item.name === "registryConstructor")?.value?.objectId; assert.ok(constructor !== undefined);
-        // Inspect the actual internal#scope call receiver, including its Block
-        // Envelope. A direct scope.sl lookup would miss the lexical binding.
-        const relation = await session.post("Runtime.callFunctionOn", { objectId: scopes.blockScopeId,
-          functionDeclaration: 'function(original){const d=Object.getOwnPropertyDescriptor(this,"description"),o=Object.getOwnPropertyDescriptor(this,"object");if(!d||d.value!=="Block"||!o||!Object.hasOwn(o,"value"))throw Error("BLOCK");const binding=Object.getOwnPropertyDescriptor(o.value,"sl");return !!binding&&Object.hasOwn(binding,"value")&&binding.value===original}',
-          arguments: [{ objectId: constructor }], returnByValue: true, ...sideEffectCheck });
-        assert.equal(relation.exceptionDetails, undefined); assert.equal(relation.result.value, true);
+      if (role === "contextProducer") {
+        assert.deepEqual(metadata.result.map(item => item.name).toSorted(), ["arguments", "caller", "length", "name", "prototype"]);
+        const location: unknown = metadata.internalProperties?.find(item => item.name === "[[FunctionLocation]]")?.value?.value;
+        const expectedScriptId = scriptId;
+        assert.deepEqual(location, { scriptId: expectedScriptId, lineNumber: SOURCE.functions.contextProducer.lineNumber, columnNumber: SOURCE.functions.contextProducer.columnNumber });
+        assert.throws(() => decodeCurrentFootprintCopyUiRegistryFunction(metadata, role, expectedScriptId), /FOOTPRINT_COPY_UI_REGISTRY_METADATA/u);
+      } else {
+        const decoded = decodeCurrentFootprintCopyUiRegistryFunction(metadata, role, scriptId); scriptId ??= decoded.scriptId;
+        assert.equal(decoded.scriptId, scriptId); assert.ok(decoded.scopesId.length > 0);
+        assert.throws(() => decodeCurrentFootprintCopyUiRegistryFunction(metadata, role, "other-script"), /FOOTPRINT_COPY_UI_REGISTRY_METADATA/u);
+        if (role === "registryContext") {
+          const scopes = decodeCurrentFootprintCopyUiRegistryClassScope(await session.post("Runtime.getProperties", { objectId: decoded.scopesId, ownProperties: true }));
+          const constructor = values.result.find(item => item.name === "registryConstructor")?.value?.objectId; assert.ok(constructor !== undefined);
+          // Inspect the actual internal#scope call receiver, including its Block
+          // Envelope. A direct scope.sl lookup would miss the lexical binding.
+          const relation = await session.post("Runtime.callFunctionOn", { objectId: scopes.blockScopeId,
+            functionDeclaration: 'function(original){const d=Object.getOwnPropertyDescriptor(this,"description"),o=Object.getOwnPropertyDescriptor(this,"object");if(!d||d.value!=="Block"||!o||!Object.hasOwn(o,"value"))throw Error("BLOCK");const binding=Object.getOwnPropertyDescriptor(o.value,"sl");return !!binding&&Object.hasOwn(binding,"value")&&binding.value===original}',
+            arguments: [{ objectId: constructor }], returnByValue: true, ...sideEffectCheck });
+          assert.equal(relation.exceptionDetails, undefined); assert.equal(relation.result.value, true);
+        }
       }
     }
   } finally {

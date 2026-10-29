@@ -1,4 +1,5 @@
 import { readFile, writeFile } from "node:fs/promises";
+import { currentWindowFailurePowerShell } from "../server/src/current-pcb-diagnostic-window-failure-native.ts";
 import { CURRENT_WINDOW_CAPTURE_NATIVE_MEMBERS } from "../server/src/current-pcb-diagnostic-window-capture-native.ts";
 
 const action = process.argv[2];
@@ -12,7 +13,13 @@ if (start === -1 || stop < start || source.includes(begin, start + begin.length)
   throw new Error("Window capture native markers must occur once inside the original owner");
 }
 const generated = `${begin}\n${CURRENT_WINDOW_CAPTURE_NATIVE_MEMBERS.trim()}\n  ${end}`;
-const next = source.slice(0, start) + generated + source.slice(stop + end.length);
+const nativeNext = source.slice(0, start) + generated + source.slice(stop + end.length);
+const faultEnd = "# END GENERATED WINDOW FAILURE", faultStart = "# BEGIN GENERATED WINDOW FAILURE";
+const first = nativeNext.indexOf(faultStart), last = nativeNext.indexOf(faultEnd);
+if (first === -1 || last < first || nativeNext.includes(faultStart, first + faultStart.length) || nativeNext.includes(faultEnd, last + faultEnd.length)) {
+  throw new Error("Window fault adapter markers must occur once");
+}
+const next = `${nativeNext.slice(0, first)  }${faultStart}\n      ${currentWindowFailurePowerShell()}\n      ${faultEnd}${nativeNext.slice(last + faultEnd.length)}`;
 if (action === "--write") {
   // oxlint-disable-next-line node/no-top-level-await -- Emit only the exact source-owned fixed marker block.
   await writeFile(path, next);

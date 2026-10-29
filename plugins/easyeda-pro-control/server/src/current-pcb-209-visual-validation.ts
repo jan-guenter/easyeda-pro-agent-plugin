@@ -13,7 +13,7 @@ export const currentPcb209VisualRequestSchema = z.discriminatedUnion("action", [
     confirmValidationOnly: z.literal(true), confirmDiagnosticLaunch: z.literal(true),
     acceptExistingProfileEffects: z.literal(true), acceptVisualStateChanges: z.literal(true) }).strict(),
   z.object({ action: z.literal("inspect"), operationId: currentPcb209VisualIdSchema,
-    observation: z.enum(["browser", "frames", "script", "pcb-opening", "selection-relations209", "visual-viewport209", "window-capture209"]).optional() }).strict(),
+    observation: z.enum(["browser", "frames", "script", "pcb-opening", "selection-relations209", "visual-viewport209", "window-capture209", "window-resize209"]).optional() }).strict(),
   z.object({ action: z.literal("settle-records"), operationId: currentPcb209VisualIdSchema, expectedIntentSha256: digest }).strict(),
   z.object({ action: z.literal("cleanup-unlaunched"), operationId: currentPcb209VisualIdSchema, expectedIntentSha256: digest }).strict(),
   z.object({ action: z.literal("cleanup-no-process"), operationId: currentPcb209VisualIdSchema, expectedIntentSha256: digest }).strict(),
@@ -26,6 +26,8 @@ export const currentPcb209VisualRequestSchema = z.discriminatedUnion("action", [
   z.object({ action: z.literal("observe-pcb-opening"), ...bound }).strict(),
   z.object({ action: z.literal("observe-selection-relations"), ...bound,
     componentIds: currentPcb209SelectionRelationsComponentIdsSchema.default([]) }).strict(),
+  z.object({ action: z.literal("resize-window-for-capture"), ...bound, acceptWindowResizeEffects: z.literal(true) }).strict(),
+  z.object({ action: z.literal("observe-capture-readiness"), ...bound }).strict(),
   z.object({ action: z.literal("capture-window"), ...bound, hwnd: z.string().regex(/^[1-9][0-9]{0,18}$/u),
     acceptWindowPaintEffects: z.literal(true), confirmLocalArtifact: z.literal(true) }).strict(),
   z.object({ action: z.literal("perform-visual"), ...bound, operation: currentPcb209VisualOperationSchema,
@@ -49,6 +51,8 @@ export function queryCurrentPcb209Visual(input: unknown = {}): Record<string, un
       "One viewport operation is consumed before possible native dispatch. Missing replies or a failure grant no retry or automatic restoration.",
       "Selection writes remain unavailable: native selection dispatch can flush uploads and delete empty selected objects. The existing selection-relations reader can inspect prior IDs without choosing them.",
       "Viewport fit-all, fit-selected and bounded zoom-to use the original captured receiver. Returned native camera bounds are converted to mil. A returned camera box does not prove rendering completion or stable double-sampled camera state.",
+      "resize-window-for-capture consumes one intent for a fixed1920x1080 asynchronous no-move/no-activate request to the original window. Maximized/restore behavior is unsupported. Submission is not applied geometry or render completion. A new readiness query must observe the exact requested size and unchanged position before capture; capture still rechecks everything. No size/coordinates/caller HWND, retry or restoration is accepted.",
+      "observe-capture-readiness makes at most eight read-only original-owner window/budget queries. It consumes no capture or paint intent, accepts no caller HWND, and returns a snapshot rather than authority for a later capture. Capture still performs its fresh owner/source/geometry checks.",
       "A separate capture-window action requests WM_PRINT pixels only from the original unique application HWND. It retains its bounded native resources until actual root exit and empty Job, including after an acknowledged paint. A managed PNG is not an SDK canvas image, a stable render or a saved design. No net highlighting, overlay timers, CAD source edit, explicit Save, complete-board baseline, production scope or saved-result proof is enabled. With explicit confirmation, abort-visual terminates only the original visual Job. It consumes intent before dispatch and blocks normal work. Acknowledgment is not exit; observe-termination and release-closed remain separate.",
     ], ...(request.includeSchemas ? { inputSchema: z.toJSONSchema(currentPcb209VisualRequestSchema) } : {}) };
 }
