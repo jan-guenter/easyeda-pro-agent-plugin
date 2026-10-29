@@ -146,19 +146,45 @@ A separate fresh-facade `abandon-unknown-launch` action preserves exact reviewed
 installed223950 v1 intent-only journals and records explicit acceptance of an
 unknown outcome. It requires bounded Linux/Windows absence checks and grants no
 termination, non-dispatch, design or persistence proof. Follow the combined
-reference before allocating any startup coordinator.
+reference before allocating any startup coordinator. In a fresh session, admit
+the actual root facade and finish historical recovery before starting subagents;
+automatic connector initialization can create a competing facade without an MCP
+call. Existing conflict stubs and other facades remain blockers.
 Installed211407's separate route stopped at its peer receipt after parent
 continuation. Installed223950's combined launch failed without a binding and
 remains unknown; its later inert reproduction does not prove the original cause
 or outcome. The corrected helper passed actual Windows readiness with empty
 input and no application launch. Integrated project/peer acceptance is pending.
-The original request collector,67-command clock/RPC sequencer and native codec,
-and complete logical delete/saved-reader models remain unmounted. The delete
-model supports locked or aged heads and retained tombstones, with no native
-reopen or replay-exclusion proof. Actual request/clock joins, publication
-completion, full lifecycle budget, closed SQL, fresh saved readback and a supported
-inverse remain required before writer enablement. Query the offline API coverage
-inventory for each current route and omission reason.
+The original request collector now has a preselected held-final-PB schedule:
+23 normal and 7 cleanup commands, four removed request breakpoints and three
+resumes. The separate fixed main-completion unit uses 45 normal and 30 cleanup
+commands and source-qualified callback/append/commit/project-update/service
+joins. These main portions total 105 commands, not a complete writer reservation.
+The main completion origin has no issuer or native codec. Atomic transfer of the
+exact held lease before its first resume, original kernel/cursor/allocator and
+pre-write branch/header eligibility remain required. Fresh unlocked mutable
+history refuses; missing-header append selector support proves no new-document
+lifecycle or durable SQL result.
+
+The 67-command clock/RPC sequencer, main request/completion units and complete
+logical delete/saved-reader models remain unmounted. The same qualified complete
+worker source now reaches its exact construction runner and is cleared on every
+handoff outcome. The fixed clock native encoder is embedded but unrouted in the
+1,045,412-byte helper under the unchanged 1MiB cap; actual Windows combined-flag
+CompileOnly passed without launching an application. No genuine paired native
+clock origin or shared two-realm route exists. Its 49 normal and 18 cleanup
+commands consume 67 request IDs; cleanup status never exempts a command from ID
+limits. Existing native profiles, message/output bounds and the reservation for
+all four copy/readback/delete/readback generations still need joint proof.
+
+The delete model supports locked or aged heads and retained tombstones, with no
+native reopen or replay-exclusion proof. Actual request/clock joins, worker
+parser/upload/publication and native SQL completion, original idle/exit/empty Job
+joins, independent closed full logical-SQL/history/backup/collateral comparison,
+fresh saved copy readback and supported native delete/saved absence remain gates
+before writer enablement. SQL can commit before a later failure; post-await
+observations and compilation grant no durability or execution authority. Query
+the offline API coverage inventory for each current route and omission reason.
 The startup route retains the original
 native process, Job, pipe and fixed256-command budget. These observations do
 not establish continuous publisher ownership, peer containment, server clock

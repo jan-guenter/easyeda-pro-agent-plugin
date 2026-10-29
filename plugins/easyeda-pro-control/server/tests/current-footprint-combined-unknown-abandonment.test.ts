@@ -10,7 +10,8 @@ import { sha256Json } from "../src/core.ts";
 import { currentFootprintCombinedAbandonUnknownRequestSchema } from "../src/current-footprint-combined-validation.ts";
 import { CURRENT_FOOTPRINT_COMBINED_HISTORICAL_PRODUCER, currentFootprintCombinedHistoricalIntentSchema } from "../src/current-footprint-combined-abandonment-contract.ts";
 import { CurrentFootprintCombinedUnknownAbandonment } from "../src/current-footprint-combined-unknown-abandonment.ts";
-import { publishCurrentFootprintCombinedAbandonment, requireCurrentFootprintCombinedHistoricalSnapshot } from "../src/current-footprint-combined-abandonment-journal.ts";
+import { publishCurrentFootprintCombinedAbandonment, readCurrentFootprintCombinedAbandonment,
+  readCurrentFootprintCombinedHistoricalSnapshot, requireCurrentFootprintCombinedHistoricalSnapshot } from "../src/current-footprint-combined-abandonment-journal.ts";
 import type { CurrentFootprintCombinedUnknownAbandonmentOptions } from "../src/current-footprint-combined-unknown-abandonment.ts";
 import { assertNoUnresolvedCurrentPcbDiagnosticLaunches, publishCurrentPcbDiagnosticLifecycleRecord } from "../src/current-pcb-diagnostic-lifecycle-journal.ts";
 import type { CurrentPcbDiagnosticInstallation } from "../src/current-pcb-diagnostic-installation.ts";
@@ -27,10 +28,10 @@ function oldIntent(operationId: string): ReturnType<typeof currentFootprintCombi
 }
 async function fixture(operationId: string): Promise<Readonly<{
   recovery: CurrentFootprintCombinedUnknownAbandonment; request: Record<string, unknown>; originalPath: string;
-  state: { windows: number; linux: number; fresh: boolean; otherLinux: boolean; otherPowerShell: boolean; failPublication: boolean };
+  state: { windows: number; linux: number; fresh: boolean; otherLinux: boolean; otherPowerShell: boolean; applicationPresent: boolean; failPublication: boolean };
 }>> {
   const intent = oldIntent(operationId); await publishCurrentPcbDiagnosticLifecycleRecord(operationId, "intent.json", intent);
-  const state = { windows: 0, linux: 0, fresh: true, otherLinux: false, otherPowerShell: false, failPublication: false };
+  const state = { windows: 0, linux: 0, fresh: true, otherLinux: false, otherPowerShell: false, applicationPresent: false, failPublication: false };
   const options: CurrentFootprintCombinedUnknownAbandonmentOptions = {
     pluginRoot: "/mnt/c/Reviewed/Plugin", assetsRoot: "/mnt/c/Reviewed/EasyEDA/resources/app/assets", powershellSha256: "d".repeat(64), powershellBytes: 123,
     assertLocalAllowed: (): void => undefined, assertAllowed: (): Promise<void> => Promise.resolve(),
@@ -41,7 +42,7 @@ async function fixture(operationId: string): Promise<Readonly<{
     verifyInstallation: (): Promise<CurrentPcbDiagnosticInstallation> => Promise.resolve({ ...createCurrentPcb209DiagnosticInstallationPlan(options), facadeSha256: "b".repeat(64) }),
     observeLinux: (): Promise<boolean> => { state.linux += 1; return Promise.resolve(state.otherLinux); },
     observeWindows: (): ReturnType<typeof observeOrdinaryLaunchRecovery> => { state.windows += 1; return Promise.resolve({ schema: "easyeda-pro-control.ordinary-launch-recovery-observation.v1" as const,
-      samples: 2 as const, otherPowerShellPresent: state.otherPowerShell, sameNameProcessPresent: false, helperSha256: ORDINARY_LAUNCH_RECOVERY_HELPER.sha256 }); },
+      samples: 2 as const, otherPowerShellPresent: state.otherPowerShell, sameNameProcessPresent: state.applicationPresent, helperSha256: ORDINARY_LAUNCH_RECOVERY_HELPER.sha256 }); },
     publishRecord: async (original, name, value): Promise<void> => {
       if (name === "abandoned.json" && state.failPublication) { state.failPublication = false; throw new Error("synthetic abandonment publication failure"); }
       await publishCurrentFootprintCombinedAbandonment(original, name, value);
@@ -77,8 +78,19 @@ void test("retained owners and process presence refuse before publication; retai
   const f = await fixture("footprint-combined-historical-refusals"); f.state.fresh = false;
   await assert.rejects(f.recovery.run(f.request), /retained owner/u); assert.equal(f.state.windows, 0);
   f.state.fresh = true; f.state.otherLinux = true; await assert.rejects(f.recovery.run(f.request), /OTHER_LINUX_FACADE/u); assert.equal(f.state.windows, 0);
-  f.state.otherLinux = false; f.state.otherPowerShell = true; await assert.rejects(f.recovery.run(f.request), /WINDOWS_PROCESS_PRESENT/u);
-  f.state.otherPowerShell = false; f.state.failPublication = true;
+  f.state.otherLinux = false;
+  for (const [otherPowerShell, applicationPresent] of [[true, false], [false, true], [true, true]] as const) {
+    f.state.otherPowerShell = otherPowerShell; f.state.applicationPresent = applicationPresent;
+    await assert.rejects(f.recovery.run(f.request), (error: unknown): boolean => {
+      assert.ok(error instanceof Error); assert.match(error.message, /WINDOWS_PROCESS_PRESENT/u);
+      const descriptor = Object.getOwnPropertyDescriptor(error, "assertionResults");
+      assert.deepEqual(descriptor?.value, { profile: "easyeda-pro-control.footprint-combined-recovery-process-presence.v1",
+        samples: 2, otherPowerShellPresent: otherPowerShell, easyedaProcessPresent: applicationPresent }); return true;
+    });
+    const snapshot = await readCurrentFootprintCombinedHistoricalSnapshot(String(f.request["operationId"]));
+    assert.equal(await readCurrentFootprintCombinedAbandonment(snapshot), null); assert.equal(f.recovery.hasActiveReservation(), false);
+  }
+  f.state.otherPowerShell = false; f.state.applicationPresent = false; f.state.failPublication = true;
   await assert.rejects(f.recovery.run(f.request), /publication failure/u); const windows = f.state.windows; const linux = f.state.linux;
   await assert.rejects(assertNoUnresolvedCurrentPcbDiagnosticLaunches(), /UNRESOLVED_LAUNCH/u);
   await f.recovery.run(f.request); assert.equal(f.state.windows, windows); assert.equal(f.state.linux, linux); await assertNoUnresolvedCurrentPcbDiagnosticLaunches();

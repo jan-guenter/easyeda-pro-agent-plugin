@@ -41,7 +41,7 @@ void test("209 bootstrap source admits only the three exact backend-generated mo
       "importScripts('https://modules.lceda.cn/pro-mgr/3.2.185.bf63a159/js/preload.js');" +
       "importScripts('https://modules.lceda.cn/pro-mgr/3.2.185.bf63a159/js/project-worker.js');";
     assert.equal(CURRENT_PCB_209_WORKER_BOOTSTRAP_SOURCES[index], scriptSource);
-    assert.doesNotThrow(() => { qualifyCurrentPcb209StartupScriptSource("bootstrap", { scriptSource }); });
+    assert.equal(qualifyCurrentPcb209StartupScriptSource("bootstrap", { scriptSource }), scriptSource);
     for (const bad of [`${scriptSource}\n`, `${scriptSource}self.extra=1;`, scriptSource.replace("209", "206"),
       scriptSource.replace("EASYEDA", "LCEDA"), scriptSource.replace(mode, "PRIVATE"),
       scriptSource.replace("10/21/2026", "10/20/2026"), scriptSource.replace("preload.js", "project-worker.js")]) {

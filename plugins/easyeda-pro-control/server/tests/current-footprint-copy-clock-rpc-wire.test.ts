@@ -1,5 +1,6 @@
 /** Pure fixed-wire parity. No native owner, renderer or application connects. */
 import assert from "node:assert/strict";
+import { readFile } from "node:fs/promises";
 import { test } from "node:test";
 import { gunzipSync } from "node:zlib";
 import { CURRENT_FOOTPRINT_COPY_CLOCK_RPC_REQUESTS } from "../src/current-footprint-copy-clock-rpc-protocol.ts";
@@ -7,6 +8,20 @@ import { currentFootprintCopyClockRpcNativeCases, currentFootprintCopyClockRpcNa
 import { currentFootprintCopyClockRpcWire } from "../src/current-footprint-copy-clock-rpc-wire.ts";
 
 const worker = "clockrpc_worker"; const ui = "clockrpc_ui";
+void test("the fixed clock RPC encoder fits the unchanged helper cap without a native request route", async () => {
+  const helper = await readFile(new URL("../../scripts/pcb-diagnostic-owner.ps1", import.meta.url), "utf8");
+  const source = currentFootprintCopyClockRpcNativeSource();
+  assert.ok(Buffer.byteLength(helper) <= 1_048_576);
+  assert.equal(helper.split(source).length, 2);
+  assert.equal(helper.includes("EasyedaFootprintCopyClockRpcProtocol.Encode("), false);
+  const compileOnly = helper.indexOf("  if ($CompileOnly) {");
+  const smoke = helper.indexOf("    [EasyedaFootprintCopyClockRpcProtocol]::VerifySmoke()");
+  const firstPayload = helper.indexOf("    $selectionSmokePath=", compileOnly);
+  assert.ok(compileOnly > 0 && smoke > compileOnly && firstPayload > smoke);
+  assert.equal(helper.split("[EasyedaFootprintCopyClockRpcProtocol]::VerifySmoke()").length, 2);
+  assert.equal(helper.includes("$request.functionDeclaration"), false);
+  assert.equal(helper.includes("$request.programGzip"), false);
+});
 void test("all24 fixed native templates preserve exact realms, source sites, conditions, programs and scalar comparison arguments", () => {
   const cases = currentFootprintCopyClockRpcNativeCases(), source = currentFootprintCopyClockRpcNativeSource(); assert.equal(cases.length, 24);
   const encoded = /FromBase64String\(@"([A-Za-z\d+/=]+)"\)/u.exec(source)?.[1]; assert.ok(encoded !== undefined);

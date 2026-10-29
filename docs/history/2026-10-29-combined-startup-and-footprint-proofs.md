@@ -189,3 +189,51 @@ supported inverse and independently verified saved absence. Broader library,
 PCB/copper, schematic connectivity and manufacturing methods remain backlog.
 Implementation, offline checks, native compilation, installation and connected
 results must stay separately reported.
+
+## Publication and installation, 2026-10-29
+
+Final candidate `e9e2b104a969c7bf287826e9df82094fe3d15113` passed all eleven
+PR checks. Linux40803551393 passed13,476 facade tests with five expected platform
+skips and zero failures, plus424 bridge tests. Windows40803551396 passed.
+Protected [PR146](https://github.com/jan-guenter/easyeda-pro-agent-plugin/pull/146)
+merged as `2cdc114821ec6aae1f695179bbf128708627c386`; its plugin tree is exactly
+the tested candidate tree. Automatic main Linux40805237749 passed all ten jobs
+and main Windows40805237532 passed. Runtime/source/helper/compatibility bytes
+remained unchanged throughout the fixture corrections.
+
+The official CLI upgraded the canonical Git marketplace
+`https://github.com/jan-guenter/easyeda-pro-agent-plugin.git`, refmain, to merged
+main and installed `0.3.0+codex.20261029011943`. Initial add returned success,
+but a subsequent unscoped list showed no EasyEDA installation and the cache
+leaf was absent. The deleting process and cause were not established. Both
+first verification refusals are retained. One observed official reinstall
+restored the leaf. A scoped marketplace list then reported installed/enabled
+true and left it present. No cache file, registration, Git ref or host gateway
+was manually patched or terminated.
+
+The maintained post-list verifier matched all2,303 installed files,44,988,963
+bytes and42 directories including root, with every committed byte and exact
+mode matching merged main. Inventory SHA256 is
+`42b1774bbb271d1ca34a2a5cdf968e6c2afd6e86c1d9b9c5470dfa716f235f3f`.
+The machine profile remains byte-exact. No bridge token was reprovisioned.
+
+The installed dependency-free probe passed27 exposed tools,52 configured tools,
+45 catalog queries and47 total requests, including exact historical recovery
+argument discovery. Its own synthetic-profile child closed through stdin EOF
+with exit0, no signal and empty stderr. Post-close marker and control roster
+checks passed; no descendants or non-stdio sockets were sampled. This is package
+verification, not continuous isolation, host admission or connected validation.
+
+No live MCP call followed installation. The loaded facade still belongs to the
+older223950 snapshot; restart Codex before live work. Admit the actual new owner
+and run historical relinquishment before allocating any native/startup
+coordinator, including through inspection. Another facade or conflict stub
+blocks recovery. Preserve the original unknown launch and use a new disposable
+ID only after its separate receipt passes. Corrected combined project/peer
+validation, genuine clock/native embedding, backend/SQL/publication completion,
+full copy/delete budgets and saved/inverse proof, and the broader API backlog
+remain open. No project capture, copy/delete or explicit Save was dispatched
+in this case.
+
+This local publication appendix is retained for the next substantive commit.
+The installed package remains exactly the tested merged plugin tree.

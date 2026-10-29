@@ -222,6 +222,7 @@ class CurrentPcbWorkerStartupTransportCore<Packet extends ConstructionPacket, Ru
   #started = false;
   #settled = false;
   #sourceQualified = false;
+  #clockRpcProjectSource: string | null = null;
   #workerScriptLoadedObserved = false;
   #parentConstruction: CurrentFootprintParentConstructionRunner | null = null;
   #parentRoute: CurrentFootprintCopyParentRoute | null = null;
@@ -791,14 +792,17 @@ class CurrentPcbWorkerStartupTransportCore<Packet extends ConstructionPacket, Ru
       this.#lastSourceTransfer = Object.freeze({ role: stage.role, limitMs: limit, stageRemainingMs: remaining });
       // Only209 script delivery gets this source-sized ceiling. The original
       // Stage watchdog, owner checks, launch caps and pending reply stay live.
-      qualifyCurrentPcb209StartupScriptSource(stage.role, await bounded(this.#sendOriginal(
+      const qualifiedSource = qualifyCurrentPcb209StartupScriptSource(stage.role, await bounded(this.#sendOriginal(
         { method: "Debugger.getScriptSource", params: { scriptId: script.scriptId }, sessionId: worker.sessionId }), limit));
       stage.sourceQualified = true; this.#step = "source-owner-after"; await this.#current();
       if (this.#execution209 && stage.role === "bootstrap") {
         this.#parentPeerWork = this.#observeParentPeer(worker); void observe(this.#parentPeerWork);
         await bounded(this.#peerAdvance.promise, CURRENT_FOOTPRINT_PARENT_CONSTRUCTION_LIMITS.holdMs); await this.#current();
       }
-      if (stage.role === "project") { this.#sourceQualified = true; return script; }
+      if (stage.role === "project") {
+        if (this.#execution209) { this.#clockRpcProjectSource = qualifiedSource; }
+        this.#sourceQualified = true; return script;
+      }
       this.#step = "source-resume"; await this.#resumeBootstrapStage(stage);
       this.#step = "source-resume-owner-after"; await this.#current();
     }
@@ -940,6 +944,13 @@ class CurrentPcbWorkerStartupTransportCore<Packet extends ConstructionPacket, Ru
         }));
       }
       const runner = this.#createRunner(transport); this.#runner = runner;
+      if (this.#execution209) {
+        const source = this.#clockRpcProjectSource;
+        if (source === null || !(runner instanceof CurrentFootprintCopyConstructionRunner)) { throw failure("CLOCK_RPC_SOURCE_OWNER"); }
+        // Reuse only the complete string from this original project's already
+        // Qualified reply. This synchronous binding issues no channel authority.
+        runner.bindClockRpcSource(source); this.#clockRpcProjectSource = null;
+      }
       this.#step = "construction-arming";
       const captured = runner.capture(); this.#constructionCapture = captured; void observe(captured); await runner.whenArmed();
       this.#step = "instrumentation-removal"; await this.#removeInitialBreakpoint();
@@ -956,7 +967,7 @@ class CurrentPcbWorkerStartupTransportCore<Packet extends ConstructionPacket, Ru
       if (this.#constructionCapture !== null) { await observe(bounded(this.#constructionCapture, WAIT_MS)); }
       try { await this.cleanup(); } catch (cleanupError) { throw new AggregateError([error, cleanupError], "PCB_WORKER_STARTUP_FAILED", { cause: cleanupError }); }
       throw error;
-    } finally { this.#settled = true; }
+    } finally { this.#clockRpcProjectSource = null; this.#settled = true; }
   }
   public async requireOriginal(packet: Packet): Promise<Runner> {
     await this.#current(); const runner = this.#runner; if (runner === null) { throw failure("RUNNER"); }

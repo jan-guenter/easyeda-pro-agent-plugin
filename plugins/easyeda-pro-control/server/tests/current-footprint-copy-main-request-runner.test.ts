@@ -84,3 +84,30 @@ void test("request plan scalar, UTF-8 and escaped original helper envelope are b
     assert.throws(() => new Constructor(f.token, { ...syntheticRequestPlan, dataStr })); assert.equal(f.commands.length, 0);
   }
 });
+void test("completion schedule retains the actual final PB pause and original group without a fourth resume", async () => {
+  const f = await fixture(); await f.runner.armForCompletion(); await assert.rejects(f.runner.arm());
+  f.runner.consumeBeforeInvocation(); f.state.invoked = true;
+  await assert.rejects(f.runner.collect(), /COMPLETION_SCHEDULE_REQUIRED/u);
+  const packet = await f.runner.collectToHeldFinalPb();
+  assert.equal(packet.originalFinalPbStillHeld, true); assert.equal(packet.nativeSqlCompletionVerified, false); assert.equal(packet.executionAuthorized, false);
+  assert.equal(f.runner.diagnostics().phase, "held-final-pb"); assert.equal(f.runner.diagnostics().normalRequests, 23);
+  assert.equal(f.runner.diagnostics().cleanupRequests, 7);
+  assert.equal(f.commands.filter(command => command.phase === "request-resume").length, 3);
+  assert.equal(f.commands.filter(command => command.phase === "request-remove").length, 4);
+  const original = f.runner.heldFinalPbBindings(packet);
+  assert.equal(original.finalPbFrameId, "frame-3"); assert.equal(original.sqlObjectId, "sql"); assert.equal(original.actorObjectId, "actor");
+  assert.equal(f.runner.heldFinalPbBindings(packet), original); await original.assertOriginal();
+  assert.throws(() => f.runner.heldFinalPbBindings(structuredClone(packet)), /ORIGINAL_HELD_PACKET/u);
+  await assert.rejects(f.runner.collectToHeldFinalPb());
+  await assert.rejects(f.runner.cleanup(), /GENERATION_CLOSURE_REQUIRED/u);
+  assert.equal(f.commands.some(command => command.phase === "request-release"), false);
+  assert.equal(f.commands.filter(command => command.phase === "request-resume").length, 3);
+  assert.throws(() => f.runner.heldFinalPbBindings(packet));
+  f.state.exited = true; await f.runner.observeOriginalGenerationEnded(); assert.equal(f.runner.diagnostics().retired, true);
+});
+void test("held completion cannot be selected after ordinary arming or consumed invocation", async () => {
+  const f = await fixture(); await f.runner.arm(); await assert.rejects(f.runner.collectToHeldFinalPb(), /COMPLETION_NOT_PREPARED/u);
+  await assert.rejects(f.runner.armForCompletion(), /ARM_CONSUMED/u);
+  f.runner.consumeBeforeInvocation(); f.state.invoked = true;
+  const packet = await f.runner.collect(); assert.equal(packet.allFourPausesResumed, true); await f.runner.cleanup();
+});
