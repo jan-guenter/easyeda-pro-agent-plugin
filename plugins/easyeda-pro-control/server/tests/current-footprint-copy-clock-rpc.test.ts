@@ -7,8 +7,8 @@ import { createRequire } from "node:module";
 import { test } from "node:test";
 import { runInThisContext } from "node:vm";
 import { transform } from "esbuild";
-import type { CurrentFootprintCopyClockRpcOriginBindings } from "../src/current-footprint-copy-clock-rpc-origin.ts";
-import type { CurrentFootprintCopyClockRpcRunner } from "../src/current-footprint-copy-clock-rpc-runner.ts";
+import type { CurrentFootprintCopyClockRpcOrigin, CurrentFootprintCopyClockRpcOriginBindings } from "../src/current-footprint-copy-clock-rpc-origin.ts";
+import type { CurrentFootprintCopyClockRpcObservation, CurrentFootprintCopyClockRpcRunner } from "../src/current-footprint-copy-clock-rpc-runner.ts";
 import { requireCurrentFootprintCopyClockRpcOrigin } from "../src/current-footprint-copy-clock-rpc-origin.ts";
 import { requireCurrentFootprintCopyClockRpcRegistrationLease } from "../src/current-footprint-copy-clock-registration-runner.ts";
 import { requireCurrentFootprintCopyClockRpcConstructionLease } from "../src/current-pcb-worker-construction-runner.ts";
@@ -18,7 +18,8 @@ import { currentFootprintCopyClockRpcCondition, validateCurrentFootprintCopyCloc
 import { currentFootprintCopyClockRpcWire } from "../src/current-footprint-copy-clock-rpc-wire.ts";
 import { clockRpcFixture, documentUuid } from "./helpers/footprint-clock-rpc-fixture.ts";
 
-async function fixture(override?: (original: ReturnType<typeof clockRpcFixture>) => CurrentFootprintCopyClockRpcOriginBindings): Promise<ReturnType<typeof clockRpcFixture> & Readonly<{ runner: CurrentFootprintCopyClockRpcRunner }>> {
+async function fixture(override?: (original: ReturnType<typeof clockRpcFixture>) => CurrentFootprintCopyClockRpcOriginBindings): Promise<ReturnType<typeof clockRpcFixture> & Readonly<{ runner: CurrentFootprintCopyClockRpcRunner;
+  requireObservation: (packet: CurrentFootprintCopyClockRpcObservation, origin: CurrentFootprintCopyClockRpcOrigin) => Promise<void> }>> {
   const f = clockRpcFixture(); const binding = override?.(f) ?? f.binding; const url = new URL("../src/current-footprint-copy-clock-rpc-runner.ts", import.meta.url);
   const loaded: { exports: Record<string, unknown> } = { exports: {} }; const actualRequire = createRequire(url);
   const output = await transform(await readFile(url, "utf8"), { loader: "ts", format: "cjs", target: "node24" });
@@ -37,7 +38,10 @@ async function fixture(override?: (original: ReturnType<typeof clockRpcFixture>)
   // oxlint-disable-next-line typescript/no-unsafe-type-assertion -- Actual runner code uses only explicitly labeled synthetic issuer hooks, never a genuine native owner.
   const Constructor = candidate as typeof CurrentFootprintCopyClockRpcRunner;
   const runner = new Constructor(f.token, documentUuid);
-  return { ...f, binding, runner };
+  const requireObservation = loaded.exports["requireCurrentFootprintCopyClockRpcObservation"]; assert.ok(typeof requireObservation === "function");
+  return { ...f, binding, runner, requireObservation: async (packet, origin): Promise<void> => {
+    await Reflect.apply(requireObservation, undefined, [packet, origin]);
+  } };
 }
 
 void test("two actual descriptor traces keep distinct RPCs/tasks, fresh offsets and equal consumed values without a clock invocation", async () => {
@@ -57,7 +61,10 @@ void test("two actual descriptor traces keep distinct RPCs/tasks, fresh offsets 
   assert.equal(f.commands.filter(value => value.method === "Debugger.resume").length, 10);
   assert.equal(f.commands.filter(value => value.method === "Runtime.releaseObjectGroup").length, 0);
   await f.runner.requireOriginal(packet); await assert.rejects(f.runner.requireOriginal(structuredClone(packet)));
+  await f.requireObservation(packet, f.token); await assert.rejects(f.requireObservation(structuredClone(packet), f.token));
+  await assert.rejects(f.requireObservation(packet, Object.freeze({ ...f.token })), /ORIGINAL_PACKET_ORIGIN/u);
   await f.runner.cleanup(); assert.equal(f.commands.length, 67); assert.equal(f.runner.diagnostics()["cleanupRequests"], 18);
+  await assert.rejects(f.requireObservation(packet, f.token));
   for (const [index, command] of f.commands.entries()) {
     const wire = currentFootprintCopyClockRpcWire(command, index + 1, "worker", "ui");
     assert.equal(wire.request["requestId"], index + 1); assert.equal(Object.hasOwn(wire.request, "sessionId"), false);
@@ -170,4 +177,43 @@ void test("generation-exit observation joins concurrent successful retirement wi
   await cleanup; await ended;
   assert.equal(retirements, 1); assert.equal(f.runner.diagnostics()["retired"], true);
   assert.equal(f.runner.diagnostics()["originalGenerationEnded"], true);
+});
+
+void test("lost first exit-retirement acknowledgment permits one local original-origin settlement without another native send", async () => {
+  let nativeRetirements = 0, retirementCalls = 0;
+  const f = await fixture(original => Object.freeze({ ...original.binding,
+    retire: async (): Promise<void> => {
+      retirementCalls += 1;
+      if (retirementCalls === 1) {
+        nativeRetirements += 1;
+        throw new Error("synthetic lost first exit-retirement acknowledgment");
+      }
+      await original.binding.retire();
+    },
+  }));
+  await f.runner.arm(); f.state.exited = true;
+  await assert.rejects(f.runner.observeOriginalGenerationEnded(), /lost first exit-retirement/u);
+  const commands = f.commands.length, failure = f.runner.diagnostics()["firstFailure"];
+  assert.equal(f.runner.diagnostics()["originalGenerationEnded"], true);
+  assert.equal(f.runner.diagnostics()["retired"], false);
+  await assert.rejects(f.runner.arm()); await assert.rejects(f.runner.cleanup());
+  await f.runner.observeOriginalGenerationEnded();
+  assert.equal(f.runner.diagnostics()["retired"], true);
+  assert.equal(f.runner.diagnostics()["retirementSettlementAttempted"], true);
+  assert.equal(retirementCalls, 2); assert.equal(nativeRetirements, 1);
+  assert.equal(f.commands.length, commands);
+  assert.deepEqual(f.runner.diagnostics()["firstFailure"], failure);
+  await assert.rejects(f.runner.observeOriginalGenerationEnded(), /CONSUMED/u);
+});
+
+void test("a failed bounded exit-retirement settlement stays consumed", async () => {
+  let retirementCalls = 0;
+  const f = await fixture(original => Object.freeze({ ...original.binding,
+    retire: (): Promise<void> => { retirementCalls += 1; return Promise.reject(new Error("synthetic retirement unavailable")); },
+  }));
+  f.state.exited = true;
+  await assert.rejects(f.runner.observeOriginalGenerationEnded(), /unavailable/u);
+  await assert.rejects(f.runner.observeOriginalGenerationEnded(), /unavailable/u);
+  await assert.rejects(f.runner.observeOriginalGenerationEnded(), /CONSUMED/u);
+  assert.equal(retirementCalls, 2); assert.equal(f.commands.length, 0);
 });

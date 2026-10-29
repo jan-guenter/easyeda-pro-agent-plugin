@@ -8,14 +8,14 @@
     "installed209DistinctMethods": 811,
     "statuses": {
       "implemented-public-subset": 214,
-      "implemented-native-equivalent": 38,
+      "implemented-native-equivalent": 41,
       "implemented-vendor-http-equivalent": 6,
       "internal-lifecycle-only": 0,
       "implemented-but-blocked": 79,
-      "omitted": 498
+      "omitted": 495
     },
     "executionRoutes": {
-      "available-with-runtime-guards": 401,
+      "available-with-runtime-guards": 404,
       "available-with-network-guards": 9,
       "available-with-managed-file-guards": 3,
       "blocked": 94,
@@ -34,13 +34,15 @@
       "implicit-annotation-and-save-all": 2,
       "implicit-save-before-export": 5,
       "installed-209-auto-job-backend-absent": 5,
-      "installed-209-constant-false-stub": 1,
+      "installed-209-constant-false-stub": 2,
       "installed-209-error-stub": 18,
       "installed-209-library-discovery-mutates-ui": 3,
       "installed-209-library-routing-unqualified": 1,
       "installed-209-raytracer-backend-absent": 5,
       "installed-209-readiness-backend-absent": 4,
+      "installed-209-selection-flushes-design-services": 2,
       "installed-209-source-backend-absent": 29,
+      "installed-209-symbol-source-runtime-contract-unqualified": 1,
       "interactive-engine-lifecycle": 9,
       "interactive-export-resource-lifecycle": 1,
       "interactive-ui-resource": 36,
@@ -50,16 +52,16 @@
       "lossy-logging-selection-reader": 1,
       "managed-file-contract-needed": 32,
       "multi-object-electrical-effect": 7,
-      "navigation-or-viewport-adapter-needed": 14,
+      "navigation-or-viewport-adapter-needed": 11,
       "non-json-result-or-callback": 5,
-      "not-in-reviewed-runtime": 56,
+      "not-in-reviewed-runtime": 54,
       "pad-pair-group-replacement-effects": 1,
       "page-order-partial-write-lifecycle": 1,
       "panel-context-not-admitted": 1,
       "private-url-state-projection-needed": 2,
       "reviewed-native-stub": 30,
-      "scoped-effect-adapter-needed": 103,
-      "selection-marker-or-history-mutation": 8,
+      "scoped-effect-adapter-needed": 102,
+      "selection-marker-or-history-mutation": 7,
       "shared-asset-owner-projection-needed": 3,
       "simulation-editor-not-admitted": 1,
       "source-decoder-and-save-lifecycle": 2,
@@ -886,7 +888,7 @@
           "tool": "easyeda_control_capture",
           "selector": "easyeda_canvas_capture",
           "implementation": "public-method",
-          "scope": "Existing visible-canvas capture only, with an explicit tab equal to the proven active tab, unchanged before/after runtime fingerprint and post-capture context. The bridge calls the public image method and converts its Blob; the facade validates one complete bounded PNG and archives managed image evidence. Viewport-image observation only, not complete source, connectivity, persistence or visual acceptance. No omitted-tab default, foreign-tab access, native canvas-receiver identity or full declared-contract claim.",
+          "scope": "Legacy admitted runtime only. Current209 PNG capture remains unavailable: the native renderer can allocate RGBA, ImageData and canvas content before facade image bounds, while original frame/camera/renderer ownership through asynchronous capture and resource cleanup remain unqualified. The separate current209 viewport route returns camera bounds, not an image. Existing visible-canvas capture only, with an explicit tab equal to the proven active tab, unchanged before/after runtime fingerprint and post-capture context. The bridge calls the public image method and converts its Blob; the facade validates one complete bounded PNG and archives managed image evidence. Viewport-image observation only, not complete source, connectivity, persistence or visual acceptance. No omitted-tab default, foreign-tab access, native canvas-receiver identity or full declared-contract claim.",
           "source": [
             "index.ts",
             "../../easyeda-bridge-extension/src/canvas-operations.ts",
@@ -1547,12 +1549,15 @@
       "status": "omitted",
       "routes": [],
       "omission": {
-        "code": "not-in-reviewed-runtime",
-        "reason": "dmt_EditorControl.zoom is absent from the legacy reviewed-installed declaration. Its presence in a newer reference and the separately cataloged installed-209 declaration does not admit that backend or method.",
-        "nextRequirement": "Review and admit a newer installed implementation, then implement and test a scoped adapter; changing a declaration checksum does not admit a runtime.",
+        "code": "installed-209-constant-false-stub",
+        "reason": "The pinned API0.3.59 implementation is zoom(t,i){return!1}. It returns literal false without changing or observing the viewport. The separate current209 native viewport subset uses implemented zoomTo/fit handlers and does not execute this percentage-zoom wrapper.",
+        "nextRequirement": "Review an implementation that actually performs this percentage-zoom contract, or qualify a separate exact task equivalent with observable camera effects. A false stub is not a completed zoom or valid camera-bounds observation.",
         "evidence": [
-          "reviewed-compatibility.json",
-          "extension-api-catalog-data.ts"
+          "docs/history/2026-10-23-installed-209-declaration-inventory.md",
+          "assets/pro-api/0.3.59.1ca9efb5/api.js@sha256:e7c31b0de9dcbe4806e6b3cf8879b31c9e44425361bb8e67c3e8480ae359c8b1",
+          "assets/pro-ui/3.2.198.2800f583/js/ui.js@sha256:3515d4c299b353fa7bcd0d859f0b8b59b7eae39b5dc243b2c27f2e54a60a1ee6",
+          "current-pcb-209-visual-actions.ts",
+          "docs/history/2026-10-29-visual-review-and-symbol-inspection.md"
         ]
       },
       "completeDeclaredContractSupported": false,
@@ -1588,14 +1593,48 @@
       ],
       "reviewedRuntimeDeclaration": true,
       "installed209Declaration": true,
-      "status": "omitted",
-      "routes": [],
-      "omission": {
-        "code": "navigation-or-viewport-adapter-needed",
-        "reason": "dmt_EditorControl.zoomTo changes editor, viewport or window state without a maintained method-specific one-shot completion/ownership proof.",
-        "nextRequirement": "Add strict target/viewport arguments, original owner/context proof, non-replayed dispatch and bounded observable completion; closing must never imply Save or discard.",
-        "evidence": []
-      },
+      "status": "implemented-native-equivalent",
+      "routes": [
+        {
+          "tool": "easyeda_control_pcb209_opening",
+          "selector": "visual.perform-visual",
+          "implementation": "native-task-equivalent",
+          "documentTypes": [
+            3
+          ],
+          "scope": "Separate EasyEDA3.2.209 original disposable visual owner only. Launch pcb209-visual-* with explicit visual-state acceptance; old opening, worker and main purposes cannot upgrade. After the sealed project/PCB opening and exact source-qualified active-frame admission, one journaled perform-visual chooses fit-all, fit-selected or zoom-to through the original captured receiver. fit-selected requires the complete ordered prior selected-ID list and rechecks that list after the call; no selection mutation is mounted. zoom-to requires explicit mil coordinates and scale ratio. The complete operation is bounded to12KiB, selection to256 distinct IDs and48KiB, raw result to128KiB, and the complete success/failure result is reserved before dispatch. The three-second observer disables later dispatch but cannot cancel an already sent native handler. Returned getBBox2 camera bounds are converted from native ten-mil units to mil; camera state is not independently double-sampled and render completion is not observed. Capacity refusal or missing replies consume the once-only lifecycle stage and grant no retry or automatic inverse. The separate confirmed abort-visual targets only its original retained Job; acknowledgment, observed original root exit, empty Job and release remain distinct. No direct SDK wrapper, omitted-tab/default argument, schematic/3D frame, PNG, selection/net highlighting, overlay timers, CAD source edit, explicit Save, complete-board baseline, ordinary-project or saved-result proof. Opening itself may restore tabs, replay caches, migrate and automatically persist files. Source/offline validation only; connected execution remains unvalidated.",
+          "source": [
+            "current-pcb-209-visual-actions.ts",
+            "current-pcb-209-visual-validation.ts",
+            "current-pcb-diagnostic-pipe.ts",
+            "current-pcb-diagnostic-protocol.ts",
+            "current-pcb-diagnostic-owner.ts",
+            "current-pcb-diagnostic-lifecycle.ts",
+            "current-pcb-diagnostic-lifecycle-journal.ts",
+            "../../scripts/pcb-diagnostic-owner.ps1"
+          ],
+          "tests": [
+            "current-pcb-209-visual-actions.test.ts",
+            "current-pcb-209-visual-native.test.ts",
+            "current-pcb-diagnostic-protocol-adapters.test.ts",
+            "current-pcb-209-visual-lifecycle.test.ts"
+          ],
+          "validation": "offline-regression;current-live-unclaimed",
+          "executionState": "available-with-runtime-guards",
+          "inputDiscovery": {
+            "tool": "easyeda_control_api",
+            "arguments": {
+              "request": {
+                "action": "pcb209-visual",
+                "query": {
+                  "includeSchemas": true
+                }
+              }
+            }
+          }
+        }
+      ],
+      "omission": null,
       "completeDeclaredContractSupported": false,
       "currentGenerationLiveValidation": "not-recorded",
       "runtimeAdmission": "not-granted-by-inventory"
@@ -1629,14 +1668,48 @@
       ],
       "reviewedRuntimeDeclaration": true,
       "installed209Declaration": true,
-      "status": "omitted",
-      "routes": [],
-      "omission": {
-        "code": "navigation-or-viewport-adapter-needed",
-        "reason": "dmt_EditorControl.zoomToAllPrimitives changes editor, viewport or window state without a maintained method-specific one-shot completion/ownership proof.",
-        "nextRequirement": "Add strict target/viewport arguments, original owner/context proof, non-replayed dispatch and bounded observable completion; closing must never imply Save or discard.",
-        "evidence": []
-      },
+      "status": "implemented-native-equivalent",
+      "routes": [
+        {
+          "tool": "easyeda_control_pcb209_opening",
+          "selector": "visual.perform-visual",
+          "implementation": "native-task-equivalent",
+          "documentTypes": [
+            3
+          ],
+          "scope": "Separate EasyEDA3.2.209 original disposable visual owner only. Launch pcb209-visual-* with explicit visual-state acceptance; old opening, worker and main purposes cannot upgrade. After the sealed project/PCB opening and exact source-qualified active-frame admission, one journaled perform-visual chooses fit-all, fit-selected or zoom-to through the original captured receiver. fit-selected requires the complete ordered prior selected-ID list and rechecks that list after the call; no selection mutation is mounted. zoom-to requires explicit mil coordinates and scale ratio. The complete operation is bounded to12KiB, selection to256 distinct IDs and48KiB, raw result to128KiB, and the complete success/failure result is reserved before dispatch. The three-second observer disables later dispatch but cannot cancel an already sent native handler. Returned getBBox2 camera bounds are converted from native ten-mil units to mil; camera state is not independently double-sampled and render completion is not observed. Capacity refusal or missing replies consume the once-only lifecycle stage and grant no retry or automatic inverse. The separate confirmed abort-visual targets only its original retained Job; acknowledgment, observed original root exit, empty Job and release remain distinct. No direct SDK wrapper, omitted-tab/default argument, schematic/3D frame, PNG, selection/net highlighting, overlay timers, CAD source edit, explicit Save, complete-board baseline, ordinary-project or saved-result proof. Opening itself may restore tabs, replay caches, migrate and automatically persist files. Source/offline validation only; connected execution remains unvalidated.",
+          "source": [
+            "current-pcb-209-visual-actions.ts",
+            "current-pcb-209-visual-validation.ts",
+            "current-pcb-diagnostic-pipe.ts",
+            "current-pcb-diagnostic-protocol.ts",
+            "current-pcb-diagnostic-owner.ts",
+            "current-pcb-diagnostic-lifecycle.ts",
+            "current-pcb-diagnostic-lifecycle-journal.ts",
+            "../../scripts/pcb-diagnostic-owner.ps1"
+          ],
+          "tests": [
+            "current-pcb-209-visual-actions.test.ts",
+            "current-pcb-209-visual-native.test.ts",
+            "current-pcb-diagnostic-protocol-adapters.test.ts",
+            "current-pcb-209-visual-lifecycle.test.ts"
+          ],
+          "validation": "offline-regression;current-live-unclaimed",
+          "executionState": "available-with-runtime-guards",
+          "inputDiscovery": {
+            "tool": "easyeda_control_api",
+            "arguments": {
+              "request": {
+                "action": "pcb209-visual",
+                "query": {
+                  "includeSchemas": true
+                }
+              }
+            }
+          }
+        }
+      ],
+      "omission": null,
       "completeDeclaredContractSupported": false,
       "currentGenerationLiveValidation": "not-recorded",
       "runtimeAdmission": "not-granted-by-inventory"
@@ -1723,14 +1796,48 @@
       ],
       "reviewedRuntimeDeclaration": true,
       "installed209Declaration": true,
-      "status": "omitted",
-      "routes": [],
-      "omission": {
-        "code": "navigation-or-viewport-adapter-needed",
-        "reason": "dmt_EditorControl.zoomToSelectedPrimitives changes editor, viewport or window state without a maintained method-specific one-shot completion/ownership proof.",
-        "nextRequirement": "Add strict target/viewport arguments, original owner/context proof, non-replayed dispatch and bounded observable completion; closing must never imply Save or discard.",
-        "evidence": []
-      },
+      "status": "implemented-native-equivalent",
+      "routes": [
+        {
+          "tool": "easyeda_control_pcb209_opening",
+          "selector": "visual.perform-visual",
+          "implementation": "native-task-equivalent",
+          "documentTypes": [
+            3
+          ],
+          "scope": "Separate EasyEDA3.2.209 original disposable visual owner only. Launch pcb209-visual-* with explicit visual-state acceptance; old opening, worker and main purposes cannot upgrade. After the sealed project/PCB opening and exact source-qualified active-frame admission, one journaled perform-visual chooses fit-all, fit-selected or zoom-to through the original captured receiver. fit-selected requires the complete ordered prior selected-ID list and rechecks that list after the call; no selection mutation is mounted. zoom-to requires explicit mil coordinates and scale ratio. The complete operation is bounded to12KiB, selection to256 distinct IDs and48KiB, raw result to128KiB, and the complete success/failure result is reserved before dispatch. The three-second observer disables later dispatch but cannot cancel an already sent native handler. Returned getBBox2 camera bounds are converted from native ten-mil units to mil; camera state is not independently double-sampled and render completion is not observed. Capacity refusal or missing replies consume the once-only lifecycle stage and grant no retry or automatic inverse. The separate confirmed abort-visual targets only its original retained Job; acknowledgment, observed original root exit, empty Job and release remain distinct. No direct SDK wrapper, omitted-tab/default argument, schematic/3D frame, PNG, selection/net highlighting, overlay timers, CAD source edit, explicit Save, complete-board baseline, ordinary-project or saved-result proof. Opening itself may restore tabs, replay caches, migrate and automatically persist files. Source/offline validation only; connected execution remains unvalidated.",
+          "source": [
+            "current-pcb-209-visual-actions.ts",
+            "current-pcb-209-visual-validation.ts",
+            "current-pcb-diagnostic-pipe.ts",
+            "current-pcb-diagnostic-protocol.ts",
+            "current-pcb-diagnostic-owner.ts",
+            "current-pcb-diagnostic-lifecycle.ts",
+            "current-pcb-diagnostic-lifecycle-journal.ts",
+            "../../scripts/pcb-diagnostic-owner.ps1"
+          ],
+          "tests": [
+            "current-pcb-209-visual-actions.test.ts",
+            "current-pcb-209-visual-native.test.ts",
+            "current-pcb-diagnostic-protocol-adapters.test.ts",
+            "current-pcb-209-visual-lifecycle.test.ts"
+          ],
+          "validation": "offline-regression;current-live-unclaimed",
+          "executionState": "available-with-runtime-guards",
+          "inputDiscovery": {
+            "tool": "easyeda_control_api",
+            "arguments": {
+              "request": {
+                "action": "pcb209-visual",
+                "query": {
+                  "includeSchemas": true
+                }
+              }
+            }
+          }
+        }
+      ],
+      "omission": null,
       "completeDeclaredContractSupported": false,
       "currentGenerationLiveValidation": "not-recorded",
       "runtimeAdmission": "not-granted-by-inventory"
@@ -7436,8 +7543,8 @@
       "routes": [],
       "omission": {
         "code": "footprint-copy-default-matching-and-lifecycle",
-        "reason": "The pinned3.2.209 public matcher can return an existing footprint; native clone needs a special underscore-containing UUID. The separate fixed native-create route remains private and unavailable. Preparation retains original project/manager/bus constructors, parser/cache methods,61 qualified dependency functions and current actor/SQL inputs. The actual095000 disposable route passed construction, cache/peer capture, assignments and actor publication, then refused a false assumption that zy.parseFull had no native override. Source now qualifies both the original ja override and superclass method and preserves missing-alias identity checks. The separate68-ID create/paired-clock unit, original pending-reply custody, fixed native codec, partial output ledger and actual-runner scheduler are implemented privately. All existing native birth purposes refuse create; no public writer is mounted. Native buildString allocates the new UUID internally before its two clocks; the current collector still needs genuine late allocation/request-plan binding. The current54-ID main profile refuses the known127-command main sequence before completion transfer. Private models, native compilation, early create acknowledgments and historically unchanged fixtures do not prove native SQL completion, saved copy or a supported inverse. Native create can mutate before source lookup and ignores uploadLocal success.",
-        "nextRequirement": "Finish genuine allocation and late request-plan binding, complete pre-write source/head/dependency/queue eligibility, and reserve all four generations including native requests, events, raw outputs and failure journals. Validate the corrected61-function dependency/destination route and genuine create/paired-clock/main completion on disposable data. Then prove original-generation closure, exact full closed SQL effect, upload replay exclusion, fresh independent saved-source equality and final closed equality. Do not use the public matcher or clone as a substitute.",
+        "reason": "The pinned3.2.209 public matcher can return an existing footprint; native clone needs a special underscore-containing UUID. The separate fixed native-create route remains private and unavailable. Preparation retains original project/manager/bus constructors, parser/cache methods,61 qualified dependency functions and current actor/SQL inputs. The actual095000 disposable route passed construction, cache/peer capture, assignments and actor publication, then refused a false assumption that zy.parseFull had no native override. Source now qualifies both the original ja override and superclass method and preserves missing-alias identity checks. The separate68-ID create/paired-clock unit, original pending-reply custody, fixed native codec, partial output ledger and actual-runner scheduler are implemented privately. All existing native birth purposes refuse create; no public writer is mounted. Native buildString allocates the new UUID internally before its two clocks. A separate original-copy request reservation now arms main before the clocks and binds the exact upload body after both genuine paired samples, with same-original-core and escaped-envelope checks. The clock observer still requires a known destination UUID; the missing pre-await wrapper/create/buildString argument-identity capture leaves real native allocation unqualified. The current54-ID main profile refuses the known127-command main sequence before completion transfer. Private models, native compilation, early create acknowledgments and historically unchanged fixtures do not prove native SQL completion, saved copy or a supported inverse. Native create can mutate before source lookup and ignores uploadLocal success.",
+        "nextRequirement": "Finish genuine pre-await native allocation capture and join it to the implemented late request-body binding, complete pre-write source/head/dependency/queue eligibility, and reserve all four generations including native requests, events, raw outputs and failure journals. Validate the corrected61-function dependency/destination route and genuine create/paired-clock/main completion on disposable data. Then prove original-generation closure, exact full closed SQL effect, upload replay exclusion, fresh independent saved-source equality and final closed equality. Do not use the public matcher or clone as a substitute.",
         "evidence": [
           "current-footprint-main-validation.ts",
           "current-footprint-combined-validation.ts",
@@ -7508,6 +7615,8 @@
           "current-footprint-copy-program-exception.ts",
           "current-footprint-copy-native-create-wire.ts",
           "current-footprint-copy-native-create-native.ts",
+          "current-footprint-copy-main-request-plan.ts",
+          "current-footprint-copy-main-request-plan.test.ts",
           "docs/history/2026-10-29-footprint-create-scheduling.md"
         ]
       },
@@ -9432,12 +9541,16 @@
       "status": "omitted",
       "routes": [],
       "omission": {
-        "code": "not-in-reviewed-runtime",
-        "reason": "lib_Symbol.getDocumentSource is absent from the legacy reviewed-installed declaration. Its presence in a newer reference and the separately cataloged installed-209 declaration does not admit that backend or method.",
-        "nextRequirement": "Review and admit a newer installed implementation, then implement and test a scoped adapter; changing a declaration checksum does not admit a runtime.",
+        "code": "installed-209-symbol-source-runtime-contract-unqualified",
+        "reason": "No current209 public symbol-source getter adapter is mounted. The separate managed-file workflow reads exact supplied standalone .esym or SYMBOL/UUID.esym archive bytes and can project recognized pin records. It does not call this SDK method, resolve a live or shared-library symbol, establish current membership or prove saved design state.",
+        "nextRequirement": "Qualify the exact current runtime getter, project/shared-library routing, cache/dependency effects, complete source format and failure behavior before registering live execution. Use the supplied-file reader for offline source and pin inspection without attributing its result to an SDK call.",
         "evidence": [
-          "reviewed-compatibility.json",
-          "extension-api-catalog-data.ts"
+          "docs/history/2026-10-23-installed-209-declaration-inventory.md",
+          "assets/pro-api/0.3.59.1ca9efb5/api.js@sha256:e7c31b0de9dcbe4806e6b3cf8879b31c9e44425361bb8e67c3e8480ae359c8b1",
+          "assets/pro-ui/3.2.198.2800f583/js/ui.js@sha256:3515d4c299b353fa7bcd0d859f0b8b59b7eae39b5dc243b2c27f2e54a60a1ee6",
+          "managed-project-symbol-sources.ts",
+          "managed-symbol-pins.ts",
+          "managed-project-symbol-sources.test.ts"
         ]
       },
       "completeDeclaredContractSupported": false,
@@ -29183,10 +29296,17 @@
       "status": "omitted",
       "routes": [],
       "omission": {
-        "code": "scoped-effect-adapter-needed",
-        "reason": "pcb_SelectControl.clearSelected has no maintained complete effect/ownership verifier for its declared mutation or application-state change. The method is not classified as inherently impossible.",
-        "nextRequirement": "Implement strict typed arguments, exact before/after affected state, collateral invariants, durable intent and recovery; design mutations additionally need disposable save/close/reopen and inverse or explicit no-inverse proof.",
-        "evidence": []
+        "code": "installed-209-selection-flushes-design-services",
+        "reason": "The current native selection handler silently drops missing IDs and can report true after a partial selection. Even with an exactly empty prior selection, append publishes flushService, whose AutoService updates DRC/connectivity and native uploads; flushSelectingInfo reaches flushSelect, which can delete empty selected views or annotations and settle tool state. Clearing also runs the empty-view deletion and stash cleanup paths. Therefore these operations cannot be admitted as camera-only UI changes, and the mounted visual purpose excludes both selecting and clearing.",
+        "nextRequirement": "Bind complete selection membership, active tool/stash state, all affected design services, native uploads and possible empty-object deletions before dispatch. Define the complete source/SQL effects and supported inverse, then validate a disposable closed/reopened lifecycle. The existing selection-relations reader and fit-selected camera operation grant no selection-write authority.",
+        "evidence": [
+          "docs/history/2026-10-23-installed-209-declaration-inventory.md",
+          "assets/pro-api/0.3.59.1ca9efb5/api.js@sha256:e7c31b0de9dcbe4806e6b3cf8879b31c9e44425361bb8e67c3e8480ae359c8b1",
+          "assets/pro-ui/3.2.198.2800f583/js/ui.js@sha256:3515d4c299b353fa7bcd0d859f0b8b59b7eae39b5dc243b2c27f2e54a60a1ee6",
+          "current-pcb-209-visual-actions.ts",
+          "current-pcb-209-selection-relations.ts",
+          "docs/history/2026-10-29-visual-review-and-symbol-inspection.md"
+        ]
       },
       "completeDeclaredContractSupported": false,
       "currentGenerationLiveValidation": "not-recorded",
@@ -29306,10 +29426,17 @@
       "status": "omitted",
       "routes": [],
       "omission": {
-        "code": "selection-marker-or-history-mutation",
-        "reason": "pcb_SelectControl.doSelectPrimitives changes selected objects, indicator markers, cross-probe state or browser navigation history; it is not a read or pure calculation.",
-        "nextRequirement": "Implement typed exact target/state ownership, observe completion and preserve or explicitly restore prior selection, markers or history. Cross-probe can affect another document and needs both contexts bound.",
-        "evidence": []
+        "code": "installed-209-selection-flushes-design-services",
+        "reason": "The current native selection handler silently drops missing IDs and can report true after a partial selection. Even with an exactly empty prior selection, append publishes flushService, whose AutoService updates DRC/connectivity and native uploads; flushSelectingInfo reaches flushSelect, which can delete empty selected views or annotations and settle tool state. Clearing also runs the empty-view deletion and stash cleanup paths. Therefore these operations cannot be admitted as camera-only UI changes, and the mounted visual purpose excludes both selecting and clearing.",
+        "nextRequirement": "Bind complete selection membership, active tool/stash state, all affected design services, native uploads and possible empty-object deletions before dispatch. Define the complete source/SQL effects and supported inverse, then validate a disposable closed/reopened lifecycle. The existing selection-relations reader and fit-selected camera operation grant no selection-write authority.",
+        "evidence": [
+          "docs/history/2026-10-23-installed-209-declaration-inventory.md",
+          "assets/pro-api/0.3.59.1ca9efb5/api.js@sha256:e7c31b0de9dcbe4806e6b3cf8879b31c9e44425361bb8e67c3e8480ae359c8b1",
+          "assets/pro-ui/3.2.198.2800f583/js/ui.js@sha256:3515d4c299b353fa7bcd0d859f0b8b59b7eae39b5dc243b2c27f2e54a60a1ee6",
+          "current-pcb-209-visual-actions.ts",
+          "current-pcb-209-selection-relations.ts",
+          "docs/history/2026-10-29-visual-review-and-symbol-inspection.md"
+        ]
       },
       "completeDeclaredContractSupported": false,
       "currentGenerationLiveValidation": "not-recorded",
@@ -40816,17 +40943,20 @@
           "tool": "easyeda_control_library_files",
           "selector": "extract-library-info",
           "implementation": "native-task-equivalent",
-          "scope": "Offline supplied-file metadata equivalent available in every facade mode. No public SDK invocation, EasyEDA process, bridge, runtime admission, network, project open, import, conversion or Save. prepare-file validates canonical base64 and the complete admitted bounded file before exclusive managed publication with confirmLocalArtifact:true. Later reads require exact managed path/name/size/SHA-256. Standalone .efoo/.epanl/ordinary-type2 .esym libraries require UTF-8 JSON-line DOCTYPE/HEAD framing; filename SHA-256 supplies UUID, filename stem supplies title, and description/tags are empty. Project .epro/.epro2 ZIP32 archives return title, cbbProject and optional editorVersion from the correct manifest. Every archive member is extent/inflation/CRC checked, with no extraction to disk. 4 MiB input, 8 MiB expanded, 256 members, 256 KiB text/manifest, 8192 records, 16 library files, 64 KiB response. Unknown drawing/manifest data remains unexecuted input; geometry, dependencies, ownership, electrical validity and import suitability are unverified. No storage-ID overload, device/archive library extraction, net flags, ports, ZIP64, encrypted archives, unsafe paths, duplicate names or conflicting manifests. Installed connected SDK execution remains unclaimed.",
+          "scope": "Offline supplied-file metadata equivalent available in every facade mode. No public SDK invocation, EasyEDA process, bridge, runtime admission, network, project open, import, conversion or Save. prepare-file validates canonical base64 and the complete admitted bounded file before exclusive managed publication with confirmLocalArtifact:true. Later reads require exact managed path/name/size/SHA-256. Standalone .efoo/.epanl/ordinary-type2 .esym libraries require UTF-8 JSON-line DOCTYPE/HEAD framing; filename SHA-256 supplies UUID, filename stem supplies title, and description/tags are empty. Project .epro/.epro2 ZIP32 archives return title, cbbProject and optional editorVersion from the correct manifest. Every archive member is extent/inflation/CRC checked, with no extraction to disk. 4 MiB input, 8 MiB expanded, 256 members, 256 KiB text/manifest, 8192 records, 16 library files, 64 KiB response. Unknown drawing/manifest data remains unexecuted input; geometry, dependencies, ownership, electrical validity and import suitability are unverified. Separate extract-symbol-sources/list-symbol-sources/read-symbol-source/inspect-symbol-pins actions provide digest-bound supplied SYMBOL source and recognized pin DTOs; they are not extra SDK method implementations or live symbol-source getter coverage. No storage-ID overload, device/archive library extraction, net flags, ports, ZIP64, encrypted archives, unsafe paths, duplicate names or conflicting manifests. Installed connected SDK execution remains unclaimed.",
           "source": [
             "managed-library-files.ts",
             "managed-library-files-zip.ts",
             "managed-library-files-runtime.ts",
+            "managed-project-symbol-sources.ts",
+            "managed-symbol-pins.ts",
             "artifacts.ts",
             "facade-mode.ts"
           ],
           "tests": [
             "managed-library-files.test.ts",
             "managed-library-files-registration.test.ts",
+            "managed-project-symbol-sources.test.ts",
             "facade-mode.test.ts"
           ],
           "validation": "offline-regression;current-live-unclaimed",
@@ -40884,17 +41014,20 @@
           "tool": "easyeda_control_library_files",
           "selector": "extract-project-info",
           "implementation": "native-task-equivalent",
-          "scope": "Offline supplied-file metadata equivalent available in every facade mode. No public SDK invocation, EasyEDA process, bridge, runtime admission, network, project open, import, conversion or Save. prepare-file validates canonical base64 and the complete admitted bounded file before exclusive managed publication with confirmLocalArtifact:true. Later reads require exact managed path/name/size/SHA-256. Standalone .efoo/.epanl/ordinary-type2 .esym libraries require UTF-8 JSON-line DOCTYPE/HEAD framing; filename SHA-256 supplies UUID, filename stem supplies title, and description/tags are empty. Project .epro/.epro2 ZIP32 archives return title, cbbProject and optional editorVersion from the correct manifest. Every archive member is extent/inflation/CRC checked, with no extraction to disk. 4 MiB input, 8 MiB expanded, 256 members, 256 KiB text/manifest, 8192 records, 16 library files, 64 KiB response. Unknown drawing/manifest data remains unexecuted input; geometry, dependencies, ownership, electrical validity and import suitability are unverified. No storage-ID overload, device/archive library extraction, net flags, ports, ZIP64, encrypted archives, unsafe paths, duplicate names or conflicting manifests. Installed connected SDK execution remains unclaimed.",
+          "scope": "Offline supplied-file metadata equivalent available in every facade mode. No public SDK invocation, EasyEDA process, bridge, runtime admission, network, project open, import, conversion or Save. prepare-file validates canonical base64 and the complete admitted bounded file before exclusive managed publication with confirmLocalArtifact:true. Later reads require exact managed path/name/size/SHA-256. Standalone .efoo/.epanl/ordinary-type2 .esym libraries require UTF-8 JSON-line DOCTYPE/HEAD framing; filename SHA-256 supplies UUID, filename stem supplies title, and description/tags are empty. Project .epro/.epro2 ZIP32 archives return title, cbbProject and optional editorVersion from the correct manifest. Every archive member is extent/inflation/CRC checked, with no extraction to disk. 4 MiB input, 8 MiB expanded, 256 members, 256 KiB text/manifest, 8192 records, 16 library files, 64 KiB response. Unknown drawing/manifest data remains unexecuted input; geometry, dependencies, ownership, electrical validity and import suitability are unverified. Separate extract-symbol-sources/list-symbol-sources/read-symbol-source/inspect-symbol-pins actions provide digest-bound supplied SYMBOL source and recognized pin DTOs; they are not extra SDK method implementations or live symbol-source getter coverage. No storage-ID overload, device/archive library extraction, net flags, ports, ZIP64, encrypted archives, unsafe paths, duplicate names or conflicting manifests. Installed connected SDK execution remains unclaimed.",
           "source": [
             "managed-library-files.ts",
             "managed-library-files-zip.ts",
             "managed-library-files-runtime.ts",
+            "managed-project-symbol-sources.ts",
+            "managed-symbol-pins.ts",
             "artifacts.ts",
             "facade-mode.ts"
           ],
           "tests": [
             "managed-library-files.test.ts",
             "managed-library-files-registration.test.ts",
+            "managed-project-symbol-sources.test.ts",
             "facade-mode.test.ts"
           ],
           "validation": "offline-regression;current-live-unclaimed",

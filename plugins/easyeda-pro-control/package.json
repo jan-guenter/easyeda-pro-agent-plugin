@@ -11,7 +11,7 @@
   "packageManager": "npm@11.16.0",
   "type": "module",
   "scripts": {
-    "build": "npm run sanitizer:check && npm run sql:reader:check && npm run startup:protocol:check && npm run pcb:models:check && npm run pcb209:layers:check && npm run pcb209:primitives:check && npm run pcb209:extended-primitives:check && npm run pcb209:selection-relations:check && npm run pcb209:pad-shapes:check && npm run pcb209:image-shapes:check && npm run pcb209:arc-shapes:check && npm run pcb209:poured-shapes:check && node scripts/build-server.ts",
+    "build": "npm run sanitizer:check && npm run sql:reader:check && npm run startup:protocol:check && npm run pcb:models:check && npm run pcb209:layers:check && npm run pcb209:visual:check && npm run pcb209:primitives:check && npm run pcb209:extended-primitives:check && npm run pcb209:selection-relations:check && npm run pcb209:pad-shapes:check && npm run pcb209:image-shapes:check && npm run pcb209:arc-shapes:check && npm run pcb209:poured-shapes:check && node scripts/build-server.ts",
     "bridge:build": "node scripts/build-authenticated-bridge.ts",
     "bridge:lint": "oxlint --config .oxlintrc.bridge.json --type-aware --deny-warnings easyeda-bridge-extension/src easyeda-bridge-extension/tests easyeda-bridge-extension/scripts easyeda-bridge-extension/vitest.config.ts",
     "bridge:provision": "node scripts/provision-bridge-token.ts",
@@ -54,7 +54,9 @@
     "probe:installed:offline": "node scripts/probe-installed-offline-catalog.ts",
     "compatibility:check": "node scripts/reviewed-compatibility.ts --check",
     "compatibility:update": "node scripts/reviewed-compatibility.ts --write",
-    "verify": "npm run typecheck && npm run bridge:typecheck && npm run bridge:lint && npm run lint && npm run api:coverage:check && npm run build && npm run compatibility:check && npm test && npm run bridge:test && npm run skills:validate && npm run validate"
+    "verify": "npm run typecheck && npm run bridge:typecheck && npm run bridge:lint && npm run lint && npm run api:coverage:check && npm run build && npm run compatibility:check && npm test && npm run bridge:test && npm run skills:validate && npm run validate",
+    "pcb209:visual:check": "node scripts/generate-pcb209-visual-protocol.ts --check",
+    "pcb209:visual:update": "node scripts/generate-pcb209-visual-protocol.ts --write"
   },
   "engines": {
     "node": "24.18.0"

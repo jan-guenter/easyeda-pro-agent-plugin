@@ -9,7 +9,7 @@ import { freezeDeep } from "./sqlite-inventory-core.ts";
 import { captureCurrentPcbStringClockReply } from "./current-pcb-string-clock-reply.ts";
 import { requireCurrentFootprintCopyMainRequestSource } from "./current-footprint-copy-main-request-source.ts";
 // oxlint-disable-next-line import/no-cycle -- The original scheduler invokes this collector's synchronous held transfer only after both instances exist; initialization never invokes the getter.
-import { requireCurrentFootprintCopyMainRequestOrigin } from "./current-footprint-copy-main-request-origin.ts";
+import { requireCurrentFootprintCopyMainRequestClockOrigin, requireCurrentFootprintCopyMainRequestOrigin } from "./current-footprint-copy-main-request-origin.ts";
 import type { CurrentFootprintCopyMainRequestOrigin } from "./current-footprint-copy-main-request-origin.ts";
 import { CURRENT_FOOTPRINT_COPY_MAIN_REQUEST_COLLECTION_ORDER as ORDER,
   CURRENT_FOOTPRINT_COPY_MAIN_REQUEST_REQUESTS as REQUESTS, currentFootprintCopyMainRequestAllocatedId, currentFootprintCopyMainRequestSourceArm,
@@ -23,6 +23,13 @@ import { CURRENT_FOOTPRINT_COPY_MAIN_REQUEST_CALLS as CALLS, CURRENT_FOOTPRINT_C
   CURRENT_FOOTPRINT_COPY_MAIN_REQUEST_GROUP as GROUP } from "./current-footprint-copy-main-request-programs.ts";
 import { CURRENT_FOOTPRINT_COPY_MAIN_REQUEST_INVOCATION_EXPRESSIONS as INVOCATION, CURRENT_FOOTPRINT_COPY_MAIN_REQUEST_INVOCATION_PROGRAMS as PROGRAMS } from "./current-footprint-copy-main-request-collect-programs.ts";
 import { currentFootprintCopyMainRequestWire } from "./current-footprint-copy-main-request-wire.ts";
+/* oxlint-disable import/no-cycle -- Late binding calls the actual paired-clock issuer after construction; no capability getter or binder runs during module initialization. */
+import { assertCurrentFootprintCopyMainRequestPlanWire, bindCurrentFootprintCopyMainRequestPlan,
+  isCurrentFootprintCopyMainRequestReservation, requireCurrentFootprintCopyMainRequestReservation } from "./current-footprint-copy-main-request-plan.ts";
+/* oxlint-enable import/no-cycle */
+import type { CurrentFootprintCopyMainRequestReservation } from "./current-footprint-copy-main-request-plan.ts";
+import type { CurrentFootprintCopyClockRpcObservation } from "./current-footprint-copy-clock-rpc-runner.ts";
+import type { CurrentFootprintCopyClockRpcOrigin } from "./current-footprint-copy-clock-rpc-origin.ts";
 
 type Origin = ReturnType<typeof requireCurrentFootprintCopyMainRequestOrigin>;
 type Plan = Readonly<z.infer<typeof currentFootprintCopyMainRequestPlanSchema>>;
@@ -88,7 +95,9 @@ const eventSchema = z.discriminatedUnion("method", [
 export class CurrentFootprintCopyMainRequestRunner {
   readonly #token: CurrentFootprintCopyMainRequestOrigin;
   readonly #origin: Origin;
-  readonly #plan: Plan;
+  #plan: Plan | null;
+  readonly #latePlan: CurrentFootprintCopyMainRequestReservation | null;
+  #latePlanAttempted = false;
   readonly #points: Breakpoint[] = [];
   readonly #pauses: Pause[] = [];
   readonly #raw: unknown[] = [];
@@ -120,12 +129,25 @@ export class CurrentFootprintCopyMainRequestRunner {
   #resolveIdle: (() => void) | null = null;
   public constructor(origin: CurrentFootprintCopyMainRequestOrigin, suppliedPlan: unknown) {
     this.#origin = requireCurrentFootprintCopyMainRequestOrigin(origin); this.#token = origin;
-    this.#plan = freezeDeep(currentFootprintCopyMainRequestPlanSchema.parse(captureCurrentPcbStringClockReply(suppliedPlan).value));
+    this.#latePlan = isCurrentFootprintCopyMainRequestReservation(suppliedPlan) ? suppliedPlan : null;
+    this.#plan = this.#latePlan === null ? freezeDeep(currentFootprintCopyMainRequestPlanSchema.parse(captureCurrentPcbStringClockReply(suppliedPlan).value)) : null;
     // Refuse oversized source/escaping before allocating any breakpoint. The
     // Fixed existing native outgoing-message cap remains65536 bytes.
-    currentFootprintCopyMainRequestWire({ phase: "request-controller", method: "Runtime.callFunctionOn", params: { ...FLAGS,
-      objectId: "x".repeat(256), functionDeclaration: CALLS.controller.program,
-      arguments: [{ objectId: "x".repeat(256) }, { value: this.#plan }], returnByValue: false } }, 2_147_483_647);
+    if (this.#plan === null) {
+      need(this.#latePlan !== null, "ORIGINAL_RESERVATION");
+      assertCurrentFootprintCopyMainRequestPlanWire(requireCurrentFootprintCopyMainRequestReservation(this.#latePlan));
+    } else { assertCurrentFootprintCopyMainRequestPlanWire(this.#plan); }
+  }
+  /** No native request runs here. The same combined scheduler must separately
+   * join the main and clock origins before supplying this original packet. */
+  public async bindObservedClocks(origin: CurrentFootprintCopyClockRpcOrigin, packet: CurrentFootprintCopyClockRpcObservation): Promise<void> {
+    need(this.#latePlan !== null && !this.#latePlanAttempted && this.#plan === null && this.#phase === "invocation-consumed", "LATE_PLAN_CONSUMED");
+    this.#begin(); this.#latePlanAttempted = true;
+    try {
+      requireCurrentFootprintCopyMainRequestClockOrigin(this.#token, origin); await this.#current();
+      const plan = await bindCurrentFootprintCopyMainRequestPlan(this.#latePlan, origin, packet);
+      await this.#current(); requireCurrentFootprintCopyMainRequestClockOrigin(this.#token, origin); this.#plan = plan;
+    } catch (error) { this.#refuse(error); throw error; } finally { this.#end(); }
   }
   #same(cleanup = false): void {
     need(!this.#retired && !this.#generationEnded && requireCurrentFootprintCopyMainRequestOrigin(this.#token) === this.#origin, "ORIGINAL_OWNER");
@@ -239,7 +261,7 @@ export class CurrentFootprintCopyMainRequestRunner {
         functionDeclaration: PROGRAMS.contextJoin, arguments: [{ objectId: this.#context }], returnByValue: true } })); return null;
     }
     if (pause.stage === "controller") {
-      need(this.#context !== null, "CONTEXT_REQUIRED"); const selected = await this.#frame(pause.frameId, "controller");
+      need(this.#context !== null && this.#plan !== null, "CONTEXT_REQUIRED"); const selected = await this.#frame(pause.frameId, "controller");
       this.#controller = decodeCurrentFootprintCopyMainRequestArrayCapture(await this.#send({ phase: "request-controller", method: "Runtime.callFunctionOn", params: { ...FLAGS,
         objectId: selected, functionDeclaration: CALLS.controller.program, arguments: [{ objectId: this.#context }, { value: this.#plan }], returnByValue: false } }), 12);
       const fn = decodeCurrentFootprintCopyMainRequestArrayMember(await this.#properties(this.#controller), 12, 8, "editHead");
@@ -270,6 +292,7 @@ export class CurrentFootprintCopyMainRequestRunner {
     need(result === this.#heldPacket && this.#heldPacket !== null, "ORIGINAL_HELD_PACKET"); return this.#heldPacket;
   }
   async #collect(holdFinalPb: boolean): Promise<CurrentFootprintCopyMainRequestObservation | CurrentFootprintCopyMainRequestHeldFinalPb> {
+    need(this.#plan !== null, "LATE_PLAN_REQUIRED");
     need(this.#phase === "invocation-consumed" && this.#packet === null && this.#heldPacket === null, "COLLECT_CONSUMED"); this.#begin();
     try {
       let actor: Actor | null = null;
@@ -281,7 +304,7 @@ export class CurrentFootprintCopyMainRequestRunner {
           need(actor !== null && this.#normal === REQUESTS.normal && this.#cleanup === REQUESTS.cleanup - 2 &&
             !this.#allocationUncertain && !this.#unknownPause && this.#points.every(value => value.removed) &&
             this.#pauses.slice(0, -1).every(value => value.resumeObserved) && !pause.resumeAttempted && !pause.resumeObserved &&
-            this.#controller !== null && this.#actorPacket !== null && this.#sqlPacket !== null, "HELD_INCOMPLETE");
+            this.#controller !== null && this.#actorPacket !== null && this.#sqlPacket !== null && this.#plan !== null, "HELD_INCOMPLETE");
           this.#heldPacket = Object.freeze({ profile: "private.current-footprint-copy-main-request-held-final-pb.v1",
             originalRequestAndSqlOwnerJoined: true, originalFinalPbStillHeld: true, allAllocatedRequestBreakpointsRemoved: true,
             nativeSqlCompletionVerified: false, executionAuthorized: false });

@@ -103,6 +103,9 @@ import { decodeCurrentPcb209ArcShapesReply } from "./current-pcb-209-arc-shapes.
 import { decodeCurrentPcb209PouredShapesReply } from "./current-pcb-209-poured-shapes.ts";
 import { decodeCurrentPcb209PadShapesReply } from "./current-pcb-209-pad-shapes.ts";
 import { currentPcb209SelectionRelationsComponentIdsSchema, decodeCurrentPcb209SelectionRelationsReply } from "./current-pcb-209-selection-relations.ts";
+import { CURRENT_PCB_209_VISUAL_RESULT_BYTES, currentPcb209VisualOperationSchema, decodeCurrentPcb209VisualReply } from "./current-pcb-209-visual-actions.ts";
+import { issueCurrentPcbDiagnosticNativeRefusal } from "./current-pcb-diagnostic-native-refusal.ts";
+import type { CurrentPcb209VisualOperation } from "./current-pcb-209-visual-actions.ts";
 import { CURRENT_PCB_209_OPENING_SCRIPTS } from "./current-pcb-209-opening-profile.ts";
 import { controlDataDirectory, controlRootCapability } from "./artifacts.ts";
 import { verifyCheckpoint } from "./checkpoint.ts";
@@ -140,7 +143,7 @@ import { CurrentFootprintCopyMainBackendRunner } from "./current-footprint-copy-
 import type { CurrentFootprintCopyMainBackendObservation } from "./current-footprint-copy-main-backend-runner.ts";
 
 
-const HELPER_SHA256 = "3d1d18e7e5de3b226ca76e20c35774a2fcd1436b13b3bec8359f80a63fff9fc9";
+const HELPER_SHA256 = "8b8cef73032950d2804efd6dea2be3ecd6400d1458bc9c4942394359ae8ab469";
 const HELPER_BYTES = 1_026_532;
 const MAX_LINE = 100_000;
 // 64 MiB native bytes need at most 85.34 MiB base64 plus bounded poll envelopes.
@@ -164,7 +167,7 @@ const requireFootprintManagerPeer = CurrentFootprintCopyManagerRouteRunner.proto
 
 
 type RecordValue = Record<string, unknown>;
-type OwnerPurpose = "diagnostic" | "diagnostic209" | "string-precreate" | "worker-startup" | "worker-startup209" | "worker-startup-footprint209" | "worker-startup-footprint-copy209" | "worker-startup-footprint-saved209" | "worker-startup-footprint-main209" | typeof CURRENT_FOOTPRINT_COMBINED_PURPOSE | "worker-startup-empty209" | "worker-startup-ratline209" | "worker-startup-ratline-continuation209";
+type OwnerPurpose = "visual209" | "diagnostic" | "diagnostic209" | "string-precreate" | "worker-startup" | "worker-startup209" | "worker-startup-footprint209" | "worker-startup-footprint-copy209" | "worker-startup-footprint-saved209" | "worker-startup-footprint-main209" | typeof CURRENT_FOOTPRINT_COMBINED_PURPOSE | "worker-startup-empty209" | "worker-startup-ratline209" | "worker-startup-ratline-continuation209";
 function footprintCopyObservationPurpose(purpose: OwnerPurpose): boolean {
   return purpose === "worker-startup-footprint-copy209" || purpose === CURRENT_FOOTPRINT_COMBINED_PURPOSE;
 }
@@ -399,6 +402,8 @@ class CurrentPcbRetainedOwnerCore {
   #arcShapes209Consumed = false;
   #pouredShapes209Consumed = false;
   #selectionRelations209Consumed = false;
+  #visual209Consumed = false;
+  #visual209RetainedObservation: Readonly<RecordValue> | null = null;
   #modelConsumed = false;
   #stringPrecreateConsumed = false;
   #commonBaselineConsumed = false;
@@ -437,6 +442,7 @@ class CurrentPcbRetainedOwnerCore {
   #mainCompletionCleanup = 0;
   #mainCompletionRetireAttempted = false;
   #mainCompletionTailReleaseAttempted = false;
+  #visualAbortAttempted = false;
   #mainTerminateAttempted = false;
   #combinedAbortAttempted = false;
   #combinedOutputCleanupOnly = false;
@@ -506,6 +512,7 @@ class CurrentPcbRetainedOwnerCore {
     busy: boolean; launchConsumed: boolean; closeConsumed: boolean; released: boolean; helperClosed: boolean;
     cleanupOnly: boolean; noProcessCleanupAvailable: boolean; frameWorkerVerified: false; executionAuthorized: false;
     nativeLaunchError: string | null; nativeSendError: string | null; createProcessError: number | null;
+    visual209RetainedObservation?: Readonly<RecordValue>; visualObservationCurrent?: false; visualObservationAccepted?: false;
     mainNativeFailure?: Readonly<{ action: MainNativeAction; code: string }> | null;
     combinedAbortAttempted?: boolean; combinedAbortDispatchAttempted?: boolean; combinedOutputCleanupOnly?: boolean;
     combinedReadiness?: CurrentFootprintCombinedFactoryFailureDiagnostics | null;
@@ -529,6 +536,8 @@ class CurrentPcbRetainedOwnerCore {
       frameInspectionConsumed: this.#framesConsumed, scriptInspectionConsumed: this.#scriptConsumed, diagnosticFailure: this.#pipe.status().failure,
       diagnosticFailureObservation: this.#pipe.status().failureObservation,
       workerStartupChannel: this.#startupChannel?.status() ?? null,
+      ...(this.#visual209RetainedObservation === null ? {} : { visual209RetainedObservation: this.#visual209RetainedObservation,
+        visualObservationCurrent: false as const, visualObservationAccepted: false as const }),
       observationFailure: this.#observationFailure,
       lastTerminationObservation: this.#terminationObservation,
       projectOpeningConsumed: this.#projectOpeningConsumed, projectOpeningResult: this.#projectOpeningResult, modelObservationConsumed: this.#modelConsumed,
@@ -1009,7 +1018,7 @@ class CurrentPcbRetainedOwnerCore {
   public async observeSelectionRelations209(input: CurrentDisposableOpenSealedTarget, inputComponentIds: readonly string[]): Promise<Readonly<RecordValue>> {
     const context = this.#stagedContext, profile = this.#pcbSourceProfile, target = currentDisposableOpenSealedTargetSchema.parse(input);
     const componentIds = Object.freeze(currentPcb209SelectionRelationsComponentIdsSchema.parse(inputComponentIds));
-    if (this.#purpose !== "diagnostic209" || context === null || this.#selectionRelations209Consumed || !this.#pcbSourceQualified ||
+    if ((this.#purpose !== "diagnostic209" && this.#purpose !== "visual209") || context === null || this.#selectionRelations209Consumed || !this.#pcbSourceQualified ||
         profile === null || this.#pcbFrameObservation?.ok !== true || this.#workersConsumed || this.#modelConsumed ||
         JSON.stringify(target) !== JSON.stringify(this.#projectOpeningTarget)) { throw error("SELECTION_RELATIONS209_UNAVAILABLE"); }
     this.#enter(true); this.#selectionRelations209Consumed = true;
@@ -1031,10 +1040,46 @@ class CurrentPcbRetainedOwnerCore {
     finally { this.#busy = false; }
   }
 
+  /** One consumed camera stage under a purpose sealed at birth. Neither
+   * selection mutation, transport retries nor automatic restoration is offered. */
+  public async performVisual209(input: CurrentDisposableOpenSealedTarget, operationInput: CurrentPcb209VisualOperation): Promise<Readonly<RecordValue>> {
+    const context = this.#stagedContext, profile = this.#pcbSourceProfile, target = currentDisposableOpenSealedTargetSchema.parse(input);
+    const operation = Object.freeze(currentPcb209VisualOperationSchema.parse(operationInput));
+    if (this.#purpose !== "visual209" || context === null || this.#visual209Consumed || !this.#pcbSourceQualified ||
+        profile === null || this.#pcbFrameObservation?.ok !== true || this.#workersConsumed || this.#modelConsumed ||
+        JSON.stringify(target) !== JSON.stringify(this.#projectOpeningTarget)) { throw error("VISUAL209_UNAVAILABLE"); }
+    this.#pipe.assertPcb209ShapeStageCapacity();
+    this.#enter(true); this.#visual209Consumed = true;
+    try {
+      const pcb = context.modelContext(), selected = context.pcbOpeningContext();
+      const reprove = (): void => {
+        this.#available(); context.pcbScript(profile);
+        if (JSON.stringify(context.pcbOpeningContext()) !== JSON.stringify(selected) ||
+            JSON.stringify(context.modelContext()) !== JSON.stringify(pcb)) { throw error("VISUAL209_CONTEXT"); }
+      };
+      await this.#verifyInstallation(); reprove(); await this.#verify(); reprove();
+      await this.#observeParent(); reprove(); await this.#observeOpeningAncillary(); reprove();
+      await this.#transfer(async (): Promise<RecordValue> => {
+        const raw = await this.#pipe.performVisual209(selected.uniqueContextId, target, operation);
+        const observed = decodeCurrentPcb209VisualReply(raw, target, operation);
+        if (Buffer.byteLength(canonicalJson(observed)) > CURRENT_PCB_209_VISUAL_RESULT_BYTES) { throw error("VISUAL209_RESULT_BOUND"); }
+        // Retain before #transfer's final owner check and all parent/frame/
+        // Installation reproofs. This candidate never authorizes a retry.
+        this.#visual209RetainedObservation = observed; return raw;
+      });
+      const result = this.#visual209RetainedObservation;
+      if (result === null) { throw error("VISUAL209_RESULT_MISSING"); }
+      reprove(); await this.#observeParent(); reprove(); await this.#observeOpeningAncillary(); reprove();
+      await this.#verifyInstallation(); reprove(); await this.#verify(); reprove();
+      return result;
+    } catch (caughtError) { this.#input.emit("error", error("VISUAL209_FAILED")); throw caughtError; }
+    finally { this.#busy = false; }
+  }
+
   /** Fixed parent-only child reporting. The optional profile is an internal
    * synthetic-test seam, never part of the public lifecycle request. */
   public async inspectWorkers(profile?: DiagnosticWorkerScriptProfile): Promise<Readonly<RecordValue>> {
-    if (this.#startupPurpose || this.#purpose === "diagnostic209") { throw error("STARTUP_LEGACY_ROUTE"); }
+    if (this.#startupPurpose || (this.#purpose === "diagnostic209" || this.#purpose === "visual209")) { throw error("STARTUP_LEGACY_ROUTE"); }
     const attachment = this.#stagedAttachment;
     if (this.#workersConsumed || this.#stagedContext === null || attachment === null || this.#inspectionConsumed ||
         this.#modelConsumed || (this.#stringPurpose ? !this.#pcbSourceQualified : this.#pcbOpeningConsumed)) {
@@ -1089,7 +1134,7 @@ class CurrentPcbRetainedOwnerCore {
   /** Fixed read-only scope path in an already source-qualified PCB context.
    * No opened UI/worker or caller-provided handle can substitute for it. */
   public async observeModelState(): Promise<CurrentPcbDiagnosticModelObservation> {
-    if (this.#purpose === "diagnostic209") { throw error("MODEL_OBSERVATION_UNAVAILABLE"); }
+    if (this.#purpose === "diagnostic209" || this.#purpose === "visual209") { throw error("MODEL_OBSERVATION_UNAVAILABLE"); }
     if (this.#startupPurpose) { throw error("STARTUP_LEGACY_ROUTE"); }
     const context = this.#stagedContext;
     if (this.#stringPurpose || this.#modelConsumed || context === null || !this.#scriptConsumed || this.#inspectionConsumed ||
@@ -2268,6 +2313,23 @@ class CurrentPcbRetainedOwnerCore {
       return encoded;
     } finally { this.#leaveFootprintMain(); }
   }
+  /** Explicit cleanup of this original visual Job. Lost replies never permit another send. */
+  public async terminateVisualJob(confirmAbortOriginalVisualJob: true): Promise<void> {
+    this.#available();
+    const original = this.#binding;
+    if (this.#purpose !== "visual209" || original === null || original.rootCreated === "0" || this.#terminationObserved ||
+      this.#releaseConsumed || this.#visualAbortAttempted) { throw error("VISUAL_ORIGINAL_CLEANUP_OWNER"); }
+    // oxlint-disable-next-line typescript/no-unnecessary-boolean-literal-compare -- Runtime callers must supply the exact explicit original-Job confirmation.
+    if (confirmAbortOriginalVisualJob !== true) { throw error("VISUAL_ABORT_CONFIRMATION"); }
+    this.#enter(true); this.#visualAbortAttempted = true;
+    try {
+      await this.#verify(); this.#available();
+      if (this.#binding !== original) { throw error("VISUAL_ORIGINAL_CLEANUP_OWNER"); }
+      const reply = await this.#request({ action: "terminate-visual", confirmAbortOriginalVisualJob: true });
+      if (!exact(reply, ["terminationDispatched"]) || reply["terminationDispatched"] !== true) { throw error("VISUAL_ABORT_REPLY"); }
+    } finally { this.#busy = false; }
+  }
+
   /** Explicit user-authorized cleanup for the original diagnostic Job, including
    * an initial main pause before any window exists. Acknowledgment is not exit. */
   public async terminateFootprintMain(confirmTerminateOriginalDiagnosticJob: true): Promise<void> {
@@ -2527,6 +2589,7 @@ class CurrentPcbRetainedOwnerCore {
     if (this.#pending !== null) { throw error("REQUEST_PENDING"); }
     if (this.#purpose === CURRENT_FOOTPRINT_COMBINED_PURPOSE && (!this.#combinedFactoryReady || this.#combinedReadyPacket === null || this.#combinedReadyAbandoned)) { throw error("COMBINED_READY_REQUIRED"); }
 
+    if (this.#visualAbortAttempted && !["identity", "termination", "release", "terminate-visual"].includes(String(request["action"]))) { throw error("VISUAL_CLEANUP_ONLY"); }
     const rpcRetireAfterTermination = this.#purpose === CURRENT_FOOTPRINT_COMBINED_PURPOSE &&
       (request["action"] === "footprint-clock-rpc-retire" || request["action"] === "main-completion-retire") &&
       this.#terminationObserved && this.#terminationObservation?.originalRootExited === true && this.#terminationObservation.originalJobEmpty === true;
@@ -2599,11 +2662,11 @@ class CurrentPcbRetainedOwnerCore {
           request["parentPhase"] === "pcb-preflight" || request["parentPhase"] === "pcb-open-document" || request["parentPhase"] === "pcb-observe") || request["action"] === "send" &&
         (request["openingPhase"] === "preflight" || request["openingPhase"] === "open-project" ||
           request["pcbOpeningPhase"] === "preflight" || request["pcbOpeningPhase"] === "open-document" ||
-          request["pcbOpeningPhase"] === "observe" || this.#purpose === "diagnostic209" &&
+          request["pcbOpeningPhase"] === "observe" || this.#purpose === "visual209" && request["pcbVisual209Phase"] === "visual" || (this.#purpose === "diagnostic209" || this.#purpose === "visual209") &&
           ["pcbLayers209Phase", "pcbPrimitives209Phase", "pcbExtendedPrimitives209Phase", "pcbSelectionRelations209Phase",
             "pcbPadShapes209Phase", "pcbImageShapes209Phase", "pcbArcShapes209Phase", "pcbPouredShapes209Phase"]
             .some(key => request[key] === "observe"))) ? 32_768 : 4096;
-      if (Buffer.byteLength(data) > maximum || combinedRequest && data.length >= 32_768) { throw error("REQUEST_SIZE"); }
+      if (Buffer.byteLength(data) > maximum || (combinedRequest || request["pcbVisual209Phase"] === "visual") && data.length >= 32_768) { throw error("REQUEST_SIZE"); }
       this.#nativeStdinBytes += Buffer.byteLength(data);
       this.#child.stdin.write(data, cause => {
         if (cause !== null && cause !== undefined) { this.#fail("HELPER_WRITE"); }
@@ -2633,7 +2696,8 @@ class CurrentPcbRetainedOwnerCore {
            * arbitrary exception messages, command lines or paths. */
           this.#nativeLaunchError = typeof reply["error"] === "string" ? reply["error"] : null;
         }
-        pending.reject(error("NATIVE_REFUSAL"));
+        const nativeLabel = reply["error"];
+        pending.reject(typeof nativeLabel === "string" ? issueCurrentPcbDiagnosticNativeRefusal(nativeLabel) : error("HELPER_REPLY"));
       }
       else if (record(reply["result"])) {
         const result = reply["result"];
@@ -2719,6 +2783,14 @@ export class CurrentPcbDiagnosticOwner extends CurrentPcbRetainedOwnerCore {
   public constructor(child: ChildProcessWithoutNullStreams, verify: () => Promise<void>,
     installation: CurrentPcbDiagnosticInstallation | null = null, verifyInstallation: () => Promise<void> = (): Promise<void> => Promise.resolve()) {
     super(child, verify, installation, verifyInstallation, "diagnostic");
+  }
+}
+
+/** Distinct birth purpose for disposable selection and camera changes. */
+export class CurrentPcb209VisualOwner extends CurrentPcbRetainedOwnerCore {
+  public constructor(child: ChildProcessWithoutNullStreams, verify: () => Promise<void>,
+    installation: CurrentPcbDiagnosticInstallation | null = null, verifyInstallation: () => Promise<void> = (): Promise<void> => Promise.resolve()) {
+    super(child, verify, installation, verifyInstallation, "visual209");
   }
 }
 
@@ -2986,6 +3058,10 @@ export function startCurrentPcbDiagnosticOwner(options: CurrentPcbDiagnosticInst
 }
 /** Separate 209 opening/layer allocator. No existing owner can be upgraded.
  * The native layer command is purpose-sealed; the103-request budget is unchanged. */
+export function startCurrentPcb209VisualOwner(options: CurrentPcbDiagnosticInstallationOptions): Promise<CurrentPcb209VisualOwner> {
+  return startFixedOwner(options, "visual209", "209-visual");
+}
+
 export function startCurrentPcb209DiagnosticOwner(options: CurrentPcbDiagnosticInstallationOptions): Promise<CurrentPcb209DiagnosticOwner> {
   return startFixedOwner(options, "diagnostic209", "209-opening");
 }
@@ -3061,10 +3137,10 @@ export function retainedCurrentFootprintCopySavedAllocation(writer: CurrentFootp
   assertOriginalCurrentFootprintCopyNativeOwner(writer); return footprintSavedAllocations.get(writer) ?? null;
 }
 async function startFixedOwner(options: CurrentPcbDiagnosticInstallationOptions, purpose: OwnerPurpose,
-  generation: "206" | "209-opening" | "209-startup" = "206", savedWriter?: CurrentFootprintCopyNativeOwner): Promise<CurrentPcbDiagnosticOwner | CurrentPcbStringPrecreateOwner | CurrentPcbWorkerStartupOwner> {
+  generation: "206" | "209-opening" | "209-visual" | "209-startup" = "206", savedWriter?: CurrentFootprintCopyNativeOwner): Promise<CurrentPcbDiagnosticOwner | CurrentPcbStringPrecreateOwner | CurrentPcbWorkerStartupOwner> {
   const sealedOptions = Object.freeze({ ...options });
   const startup209 = purpose === "worker-startup209" || (purpose === "worker-startup-footprint209" || purpose === "worker-startup-footprint-copy209" || purpose === "worker-startup-footprint-saved209" || purpose === "worker-startup-footprint-main209" || purpose === CURRENT_FOOTPRINT_COMBINED_PURPOSE) || purpose === "worker-startup-empty209" || purpose === "worker-startup-ratline209" || purpose === "worker-startup-ratline-continuation209";
-  if ((generation === "209-opening") !== (purpose === "diagnostic209") || (generation === "209-startup") !== startup209) { throw error("INSTALLATION_PURPOSE"); }
+  if ((generation === "209-opening") !== (purpose === "diagnostic209") || (generation === "209-visual") !== (purpose === "visual209") || (generation === "209-startup") !== startup209) { throw error("INSTALLATION_PURPOSE"); }
   let verifier = generation === "206" ? verifyCurrentPcbDiagnosticInstallation : verifyCurrentPcb209DiagnosticInstallation;
   if (purpose === "worker-startup-ratline209" || purpose === "worker-startup-ratline-continuation209") { verifier = verifyCurrentPcb209RatlineInstallation; }
   const installation = await verifier(sealedOptions);
@@ -3118,6 +3194,7 @@ async function startFixedOwner(options: CurrentPcbDiagnosticInstallationOptions,
   else if (purpose === "worker-startup209") { purposeSwitch = " -WorkerStartup209"; }
   else if (purpose === "worker-startup") { purposeSwitch = " -WorkerStartup"; }
   else if (purpose === "string-precreate") { purposeSwitch = " -StringPrecreate"; }
+  else if (purpose === "visual209") { purposeSwitch = " -Visual209"; }
   else if (purpose === "diagnostic209") { purposeSwitch = " -Layers209"; }
   const bootstrap = `$ErrorActionPreference='Stop';$ProgressPreference='SilentlyContinue';` +
     `$file=[IO.File]::Open('${windowsPath.replaceAll("'", "''")}',[IO.FileMode]::Open,[IO.FileAccess]::Read,[IO.FileShare]::Read);` +
@@ -3175,6 +3252,7 @@ async function startFixedOwner(options: CurrentPcbDiagnosticInstallationOptions,
   }
   else if (purpose === "worker-startup") { owner = new CurrentPcbWorkerStartupOwner(child, verify, installation, verifyInstallation, verifyStartupFacade); }
   else if (purpose === "string-precreate") { owner = new CurrentPcbStringPrecreateOwner(child, verify, installation, verifyInstallation); }
+  else if (purpose === "visual209") { owner = new CurrentPcb209VisualOwner(child, verify, installation, verifyInstallation); }
   else if (purpose === "diagnostic209") { owner = new CurrentPcb209DiagnosticOwner(child, verify, installation, verifyInstallation); }
   else { owner = new CurrentPcbDiagnosticOwner(child, verify, installation, verifyInstallation); }
   if (owner instanceof CurrentFootprintCopyNativeOwner || owner instanceof CurrentFootprintCopySavedNativeOwner) {

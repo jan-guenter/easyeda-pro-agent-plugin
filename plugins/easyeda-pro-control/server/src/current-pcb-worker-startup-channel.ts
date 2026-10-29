@@ -4,6 +4,7 @@
  * irreversibly hand off its original parent attachment and request counter.
  * This module neither launches EasyEDA nor accepts a parent receipt as authority. */
 import { types } from "node:util";
+import { currentPcbDiagnosticNativeRefusal } from "./current-pcb-diagnostic-native-refusal.ts";
 import { createHash } from "node:crypto";
 import { currentFootprintCopyParentWire } from "./current-footprint-copy-parent-wire.ts";
 import type { CurrentFootprintParentCommand, CurrentFootprintParentCommandKind } from "./current-footprint-copy-parent-wire.ts";
@@ -311,6 +312,7 @@ class CurrentPcbWorkerStartupChannelCore {
   #pcbObservationConsumed = false;
   #failure: Error | null = null;
   #failureCode: string | null = null;
+  #exchangeFailure: Readonly<{ requestId: number; method: string; nativeCode: string | null; kind: "native-refusal" | "unrecognized-exchange-failure" }> | null = null;
   #fatal = false;
 
   public constructor(internal: typeof INTERNAL_PROFILE, native: CurrentPcbWorkerStartupNativeDependency,
@@ -337,11 +339,13 @@ class CurrentPcbWorkerStartupChannelCore {
   }
   public status(): Readonly<{ started: boolean; released: boolean; failed: boolean; fatal: boolean;
     pendingReplies: number; nextRequestId: number; receivedBytes: number; pollCount: number; attachedWorkers: number;
-    dataPollCount: number; waitingPollCount: number; idlePollCount: number; failureCode: string | null }> {
+    dataPollCount: number; waitingPollCount: number; idlePollCount: number; failureCode: string | null;
+    exchangeFailure?: Readonly<{ requestId: number; method: string; nativeCode: string | null; kind: "native-refusal" | "unrecognized-exchange-failure" }> }> {
     return Object.freeze({ started: this.#started, released: this.#released, failed: this.#failure !== null, fatal: this.#fatal,
       pendingReplies: this.#pending.size, nextRequestId: this.#nextId, receivedBytes: this.#bytes,
       pollCount: this.#polls, attachedWorkers: this.#workers.size, dataPollCount: this.#dataPolls,
-      waitingPollCount: this.#waitPolls, idlePollCount: this.#idlePolls, failureCode: this.#failureCode });
+      waitingPollCount: this.#waitPolls, idlePollCount: this.#idlePolls, failureCode: this.#failureCode,
+      ...(this.#exchangeFailure === null ? {} : { exchangeFailure: this.#exchangeFailure }) });
   }
   #withinLifetime(cleanup = false): void {
     const age = monotonicNow() - this.#created;
@@ -545,6 +549,7 @@ class CurrentPcbWorkerStartupChannelCore {
     const completion = Promise.withResolvers<unknown>();
     const queued = this.#queue(async (): Promise<void> => {
       let pending: Pending | null = null;
+      let exchangeAttempted = false;
       try {
         if (!cleanupCommand(command)) { await this.#currentWithinQueue(); }
         this.#attributed(command, manager, clock, parentKind, registration);
@@ -594,9 +599,15 @@ class CurrentPcbWorkerStartupChannelCore {
             this.#openingProjectUuid = command.params.arguments[0].value.projectUuid;
           } else { this.#openingConsumed = true; }
         }
+        exchangeAttempted = true;
         ackSchema.parse(captureCurrentPcbStringClockReply(await this.#exchange.call(this.#native, wire.request)).value);
         pending.written = true; this.#complete(pending);
       } catch (error) {
+        if (exchangeAttempted && pending !== null && this.#exchangeFailure === null) {
+          const native = currentPcbDiagnosticNativeRefusal(error);
+          this.#exchangeFailure = Object.freeze({ requestId: pending.id, method: pending.command.method,
+            nativeCode: native?.nativeCode ?? null, kind: native === null ? "unrecognized-exchange-failure" : "native-refusal" });
+        }
         if (!(error instanceof Error && failureCodes.get(error) === "NORMAL_LIFETIME" && pending === null)) { this.#poison("WRITE"); }
         if (pending === null) { completion.reject(error); }
         else { pending.writeFailed = true; this.#complete(pending); }

@@ -1,6 +1,9 @@
 /** Private, append-only diagnostic lifecycle records. Historical JSON never
  * recreates a native owner. Partial reservations remain launch blockers. */
 /* oxlint-disable import/max-dependencies -- This shared journal validates distinct diagnostic, String and common evidence, including global String exclusion, without merging their authority. */
+import { currentPcb209VisualIdSchema } from "./current-pcb-209-visual-validation.ts";
+import { CURRENT_PCB_209_VISUAL_OPERATION_BYTES, CURRENT_PCB_209_VISUAL_RESULT_BYTES, currentPcb209VisualOperationSchema,
+  requireCurrentPcb209VisualResult } from "./current-pcb-209-visual-actions.ts";
 import { constants } from "node:fs";
 import { createHash } from "node:crypto";
 import type { Hash } from "node:crypto";
@@ -101,6 +104,16 @@ const diagnosticIntentSchema = z.object({ schema: z.literal("easyeda-pro-control
   facadeSha256: diagnosticLifecycleDigestSchema, installationSha256: diagnosticLifecycleDigestSchema,
   confirmValidationOnly: z.literal(true), confirmDiagnosticLaunch: z.literal(true), acceptExistingProfileEffects: z.literal(true),
 }).strict();
+const visualIntentSchema = diagnosticIntentSchema.extend({
+  schema: z.literal("easyeda-pro-control.pcb209-visual-launch-intent.v1"), operationId: currentPcb209VisualIdSchema,
+  acceptVisualStateChanges: z.literal(true),
+});
+const visualAbortIntentSchema = z.object({ ...base, operationId: currentPcb209VisualIdSchema,
+  schema: z.literal("easyeda-pro-control.pcb209-visual-abort-intent.v1"), bindingSha256: diagnosticLifecycleDigestSchema,
+  confirmAbortOriginalVisualJob: z.literal(true) }).strict();
+const visualAbortAckSchema = z.object({ ...base, operationId: currentPcb209VisualIdSchema,
+  schema: z.literal("easyeda-pro-control.pcb209-visual-abort-acknowledged.v1"), intentSha256: diagnosticLifecycleDigestSchema,
+  terminationDispatched: z.literal(true), terminationProved: z.literal(false) }).strict();
 const stringIntentSchema = z.object({ schema: z.literal("easyeda-pro-control.pcb-string-precreate-launch-intent.v1"), ...base,
   operationId: currentPcbStringPrecreateIdSchema, purpose: z.literal("string-precreate"),
   facadeSha256: diagnosticLifecycleDigestSchema, installationSha256: diagnosticLifecycleDigestSchema,
@@ -167,7 +180,7 @@ const footprintStartupId = z.union([currentPcb209WorkerStartupLifecycleIdSchema,
 const legacyStartupId = z.union([currentPcbWorkerStartupLifecycleIdSchema, footprintStartupId]);
 const startupId = z.union([legacyStartupId, footprintRouteId]);
 const startupOpeningId = z.union([startupId, currentPcb209EmptyStartupIdSchema, currentPcb209RatlineStartupIdSchema, currentPcb209RatlineContinuationIdSchema]);
-const intentSchema = z.discriminatedUnion("schema", [diagnosticIntentSchema, stringIntentSchema, workerStartupIntentSchema,
+const intentSchema = z.discriminatedUnion("schema", [diagnosticIntentSchema, visualIntentSchema, stringIntentSchema, workerStartupIntentSchema,
   workerStartup209IntentSchema, workerStartupEmpty209IntentSchema, workerStartupRatline209IntentSchema, workerStartupContinuation209IntentSchema, workerStartupFootprint209IntentSchema, workerStartupFootprintRoute209IntentSchema, mainIntentSchema, combinedIntentSchema, combinedReadyIntentSchema]);
 const workerStartupHandoffIntentSchema = z.object({ schema: z.literal("easyeda-pro-control.pcb-worker-startup-handoff-intent.v1"), ...base,
   operationId: startupOpeningId, bindingSha256: diagnosticLifecycleDigestSchema,
@@ -217,14 +230,20 @@ const noProcessReleasedSchema = z.object({ schema: z.literal("easyeda-pro-contro
   noProcessReleaseIntentSha256: diagnosticLifecycleDigestSchema, proof: diagnosticLifecycleNoProcessReleaseProofSchema,
 }).strict();
 export const diagnosticObservationStageSchema = z.enum(["browser", "frames", "script", "workers", "worker-script", "worker-state", "pcb-opening", "model-state"]);
-const extendedObservationStageSchema = z.enum([...diagnosticObservationStageSchema.options, "layers209", "primitives209", "extended-primitives209", "selection-relations209", "pad-shapes209", "image-shapes209", "arc-shapes209", "poured-shapes209"]);
+const extendedObservationStageSchema = z.enum([...diagnosticObservationStageSchema.options, "visual-viewport209", "layers209", "primitives209", "extended-primitives209", "selection-relations209", "pad-shapes209", "image-shapes209", "arc-shapes209", "poured-shapes209"]);
 export const lifecycleObservationStages = [...extendedObservationStageSchema.options, "common-baseline", "string-precreate"] as const;
 const observationIntentSchema = z.object({ schema: z.literal("easyeda-pro-control.pcb-diagnostic-observation-intent.v1"), ...base,
   bindingSha256: diagnosticLifecycleDigestSchema, stage: extendedObservationStageSchema,
   targetId: z.string().regex(/^[A-Za-z\d_.:-]{1,128}$/u).optional(), frameId: z.string().regex(/^[A-Za-z\d_.:-]{1,128}$/u).optional(),
   family: z.enum(["ui", "pcb", "public-api"]).optional(),
   componentIds: currentPcb209SelectionRelationsComponentIdsSchema.optional(),
+  visualOperation: currentPcb209VisualOperationSchema.optional(), confirmVisualStateChanges: z.literal(true).optional(),
 }).strict().refine(value => {
+  if (value.stage === "visual-viewport209") {
+    return value.visualOperation !== undefined && value.confirmVisualStateChanges === true &&
+      value.componentIds === undefined && value.targetId === undefined && value.frameId === undefined && value.family === undefined;
+  }
+  if (value.visualOperation !== undefined || value.confirmVisualStateChanges !== undefined) { return false; }
   if (value.stage === "selection-relations209") {
     return value.componentIds !== undefined && value.targetId === undefined && value.frameId === undefined && value.family === undefined;
   }
@@ -239,7 +258,9 @@ const observationResultSchema = z.object({ schema: z.literal("easyeda-pro-contro
   intentSha256: diagnosticLifecycleDigestSchema, stage: extendedObservationStageSchema,
   result: z.record(z.string(), z.unknown()), executionAuthorized: z.literal(false),
 }).strict().refine(value => {
-  const ordinaryLimit = value.stage === "primitives209" ? CURRENT_PCB_209_PRIMITIVES_RESULT_BYTES : DIAGNOSTIC_OBSERVATION_MAX_BYTES;
+  let ordinaryLimit = DIAGNOSTIC_OBSERVATION_MAX_BYTES;
+  if (value.stage === "visual-viewport209") { ordinaryLimit = CURRENT_PCB_209_VISUAL_RESULT_BYTES; }
+  else if (value.stage === "primitives209") { ordinaryLimit = CURRENT_PCB_209_PRIMITIVES_RESULT_BYTES; }
   const extendedLimit = value.stage === "extended-primitives209" ? CURRENT_PCB_209_EXTENDED_PRIMITIVES_RESULT_BYTES : ordinaryLimit;
   const padLimit = value.stage === "pad-shapes209" ? CURRENT_PCB_209_PAD_SHAPES_RESULT_BYTES : extendedLimit;
   const imageLimit = value.stage === "image-shapes209" ? CURRENT_PCB_209_IMAGE_SHAPES_RESULT_BYTES : padLimit;
@@ -616,6 +637,8 @@ export const diagnosticLifecycleRecordSchemas = {
   "project-opening-intent.json": projectOpeningIntentSchema, "project-opening-result.json": projectOpeningResultSchema,
   "pcb-open-intent.json": pcbOpenIntentSchema, "pcb-open-result.json": pcbOpenResultSchema,
   "pcb-opening-intent.json": observationIntentSchema, "pcb-opening-result.json": observationResultSchema,
+  "visual-abort-intent.json": visualAbortIntentSchema, "visual-abort-acknowledged.json": visualAbortAckSchema,
+  "visual-viewport209-intent.json": observationIntentSchema, "visual-viewport209-result.json": observationResultSchema,
   "layers209-intent.json": observationIntentSchema, "layers209-result.json": observationResultSchema,
   "primitives209-intent.json": observationIntentSchema, "primitives209-result.json": observationResultSchema,
   "extended-primitives209-intent.json": observationIntentSchema, "extended-primitives209-result.json": observationResultSchema,
@@ -683,6 +706,8 @@ function absent(value: unknown): boolean { return value instanceof Error && "cod
 function recordName(value: string): value is RecordName { return Object.hasOwn(diagnosticLifecycleRecordSchemas, value); }
 function recordBound(name: RecordName): number {
   // Six JSON bytes per UTF-16 code unit covers control-character escapes in16 IDs.
+  if (name === "visual-viewport209-intent.json") { return MAX_BYTES + CURRENT_PCB_209_VISUAL_OPERATION_BYTES; }
+  if (name === "visual-viewport209-result.json") { return MAX_BYTES + CURRENT_PCB_209_VISUAL_RESULT_BYTES; }
   if (name === "selection-relations209-intent.json") { return MAX_BYTES + 16 * 256 * 6; }
   // Two 4096-unit paths can each require six JSON bytes per UTF-16 unit;
   // The remaining schema-bounded fields fit within the ordinary 8 KiB envelope.
@@ -824,6 +849,17 @@ function validateChain(operation: DiagnosticLifecycleOperation): void {
   const release = records["release-intent.json"], released = records["released.json"];
   const notDispatched = records["not-dispatched.json"], unlaunched = records["unlaunched-release-intent.json"];
   const noProcess = records["no-process-release-intent.json"], noProcessReleased = records["no-process-released.json"];
+  const visualPurpose = intent?.schema === "easyeda-pro-control.pcb209-visual-launch-intent.v1";
+  requireValue(intent === undefined || visualPurpose === operation.operationId.startsWith("pcb209-visual-"), "VISUAL_PURPOSE_ID");
+  const visualAbort = records["visual-abort-intent.json"], visualAck = records["visual-abort-acknowledged.json"];
+  requireValue(visualAbort === undefined || visualPurpose && binding !== undefined && visualAbort.bindingSha256 === sha256Json(binding), "VISUAL_ABORT_CHAIN");
+  requireValue(visualAck === undefined || visualAbort !== undefined && visualAck.intentSha256 === sha256Json(visualAbort), "VISUAL_ABORT_ACK_CHAIN");
+  if (visualAbort !== undefined) {
+    const cleanup = new Set(["visual-abort-intent.json", "visual-abort-acknowledged.json", "terminated.json", "release-intent.json", "released.json"]);
+    for (const [name, record] of Object.entries(records)) {
+      requireValue(cleanup.has(name) || record.createdAt <= visualAbort.createdAt, "VISUAL_ABORT_LATER_NORMAL_RECORD");
+    }
+  }
   const stringPurpose = intent?.schema === "easyeda-pro-control.pcb-string-precreate-launch-intent.v1";
   const startupEmpty209 = intent?.schema === "easyeda-pro-control.pcb209-empty-startup-launch-intent.v1";
   const startupLegacy209 = intent?.schema === "easyeda-pro-control.pcb209-worker-startup-launch-intent.v1";
@@ -1047,6 +1083,19 @@ function validateChain(operation: DiagnosticLifecycleOperation): void {
   requireValue(records["worker-state-intent.json"] === undefined || records["worker-script-result.json"] !== undefined, "WORKER_STATE_CHAIN");
   const opened = records["project-opening-result.json"], opening = records["project-opening-intent.json"], script = records["script-result.json"];
   const pcbObserved = records["pcb-opening-result.json"], pcbOpen = records["pcb-open-intent.json"], pcbOpened = records["pcb-open-result.json"];
+  for (const stage of ["visual-viewport209"] as const) {
+    const result = records[`${stage}-result.json`], visual = records[`${stage}-intent.json`];
+    requireValue(visual === undefined || intent?.schema === "easyeda-pro-control.pcb209-visual-launch-intent.v1" &&
+      pcbObserved !== undefined && opening !== undefined && diagnosticPcbOpeningSourceAccepted(pcbObserved.result, opening.target) &&
+      visual.visualOperation !== undefined && visual.confirmVisualStateChanges === true &&
+      records["workers-intent.json"] === undefined && records["model-state-intent.json"] === undefined, "VISUAL209_CHAIN");
+    requireValue(result === undefined || visual !== undefined &&
+      canonicalJson(result.result["operation"]) === canonicalJson(visual.visualOperation), "VISUAL209_OPERATION_CHAIN");
+    if (result !== undefined) {
+      requireValue(opening !== undefined && visual !== undefined, "VISUAL209_TARGET_CHAIN");
+      requireCurrentPcb209VisualResult(result.result, opening.target, visual.visualOperation);
+    }
+  }
   requireValue(records["layers209-intent.json"] === undefined || operation.operationId.startsWith("pcb209-") && pcbObserved !== undefined &&
     pcbObserved.result["sourceVerified"] === true && records["workers-intent.json"] === undefined && records["model-state-intent.json"] === undefined,
   "LAYERS209_CHAIN");

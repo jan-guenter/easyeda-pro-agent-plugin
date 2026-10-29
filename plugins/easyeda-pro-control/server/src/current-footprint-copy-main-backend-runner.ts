@@ -32,8 +32,9 @@ import type { CurrentFootprintCopyMainCompletionOrigin, CurrentFootprintCopyMain
 import { requireCurrentFootprintCopyMainRequestHeldFinalPb, transferCurrentFootprintCopyMainRequestHeldFinalPb } from "./current-footprint-copy-main-request-runner.ts";
 import type { CurrentFootprintCopyMainRequestHeldFinalPb } from "./current-footprint-copy-main-request-runner.ts";
 // oxlint-disable-next-line import/no-cycle -- The native owner constructs this runner; its original private-factory guards are invoked only after that construction, never at module initialization. A callback registration seam would weaken this authority check.
-import { assertCurrentFootprintCombinedMainCompletionCapacity, beginCurrentFootprintCombinedMainCompletion, currentFootprintCombinedMainGenerationExited, failCurrentFootprintCombinedMainCompletion, requireCurrentFootprintCombinedMainCapability, requireCurrentFootprintCombinedMainCleanup, retireCurrentFootprintCombinedMainCompletion, sendCurrentFootprintCombinedMainCommand, sendCurrentFootprintCombinedMainCompletion } from "./current-pcb-diagnostic-owner.ts";
+import { assertCurrentFootprintCombinedMainCompletionCapacity, beginCurrentFootprintCombinedMainCompletion, currentFootprintCombinedMainGenerationExited, failCurrentFootprintCombinedMainCompletion, requireCurrentFootprintCombinedMainCapability, requireCurrentFootprintCombinedMainCleanup, requireCurrentFootprintCombinedPairedSchedule, retireCurrentFootprintCombinedMainCompletion, sendCurrentFootprintCombinedMainCommand, sendCurrentFootprintCombinedMainCompletion } from "./current-pcb-diagnostic-owner.ts";
 import type { CurrentFootprintCombinedMainCapability } from "./current-pcb-diagnostic-owner.ts";
+import type { CurrentFootprintCopyClockRpcOrigin } from "./current-footprint-copy-clock-rpc-origin.ts";
 import { freezeDeep } from "./sqlite-inventory-core.ts";
 
 export { currentFootprintCopyMainBackendObservationSchema } from "./current-footprint-copy-main-backend-observation.ts";
@@ -62,7 +63,8 @@ export interface CurrentFootprintCopyMainRequestOriginBindings {
   readonly takeEvent: () => CurrentFootprintCopyMainRequestOriginEvent | null;
   readonly retire: () => Promise<void>;
 }
-interface OriginEntry { readonly assertOriginalEntry: () => void; readonly bindings: CurrentFootprintCopyMainRequestOriginBindings }
+interface OriginEntry { readonly assertOriginalEntry: () => void; readonly bindings: CurrentFootprintCopyMainRequestOriginBindings;
+  readonly capability: CurrentFootprintCombinedMainCapability; readonly runner: CurrentFootprintCopyMainBackendRunner }
 const requestOrigins = new WeakMap<CurrentFootprintCopyMainRequestOrigin, OriginEntry>();
 const completionOrigins = new WeakMap<CurrentFootprintCopyMainCompletionOrigin, Readonly<{
   assertOriginalEntry: () => void; bindings: CurrentFootprintCopyMainCompletionOriginBindings;
@@ -74,6 +76,13 @@ export function requireCurrentFootprintCopyMainCompletionOrigin(token: CurrentFo
 export function requireCurrentFootprintCopyMainRequestOrigin(token: CurrentFootprintCopyMainRequestOrigin): CurrentFootprintCopyMainRequestOriginBindings {
   const entry = requestOrigins.get(token); need(entry !== undefined, "REQUEST_ORIGINAL_LEASE_REQUIRED");
   entry.assertOriginalEntry(); return entry.bindings;
+}
+/** The actual native issuer joins both origins through the same retained
+ * combined core. Equal plan bytes or a foreign genuine clock packet fail. */
+export function requireCurrentFootprintCopyMainRequestClockOrigin(token: CurrentFootprintCopyMainRequestOrigin,
+  clock: CurrentFootprintCopyClockRpcOrigin): void {
+  const entry = requestOrigins.get(token); need(entry !== undefined, "REQUEST_ORIGINAL_LEASE_REQUIRED");
+  entry.assertOriginalEntry(); requireCurrentFootprintCombinedPairedSchedule(entry.capability, entry.runner, clock);
 }
 
 const handle = z.string().regex(/^[A-Za-z\d_.:-]{1,256}$/u);
@@ -400,7 +409,7 @@ export class CurrentFootprintCopyMainBackendRunner {
         },
       });
       this.#originCapability = capability; this.#originToken = token; this.#originActive = true;
-      requestOrigins.set(token, Object.freeze({ assertOriginalEntry: (): void => { this.#originCheck(token, true); }, bindings })); return token;
+      requestOrigins.set(token, Object.freeze({ assertOriginalEntry: (): void => { this.#originCheck(token, true); }, bindings, capability, runner: this })); return token;
     } catch (error) { this.#fail(error); throw error; } finally { this.#busy = false; }
   }
   /** Synchronous identity join before any create. Equal receipts or an origin

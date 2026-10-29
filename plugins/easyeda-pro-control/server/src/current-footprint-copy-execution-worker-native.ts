@@ -50,3 +50,27 @@ public static string Encode(int id,string phase,string method,string originalWor
 string template=selected[3];var output=new System.Text.StringBuilder();int previous=0;foreach(System.Text.RegularExpressions.Match match in System.Text.RegularExpressions.Regex.Matches(template,"\\"__copyworker_([A-Za-z0-9]+)__\\"")){string name=match.Groups[1].Value;output.Append(template,previous,match.Index-previous);output.Append('"');output.Append(name=="sessionId"?session:Field(name,fields[name]));output.Append('"');previous=match.Index+match.Length;}output.Append(template,previous,template.Length-previous);string text=output.ToString();Need(text.Length>1&&text[0]=='{'&&System.Text.Encoding.UTF8.GetByteCount(text)<=16384);return "{\\"id\\":"+id.ToString(System.Globalization.CultureInfo.InvariantCulture)+","+text.Substring(1)+"\\0";}
 }`;
 }
+
+/** The outer PowerShell envelope has an independent field allowlist. Derive
+ * its complete union from real command cases so an added argument cannot pass
+ * TypeScript/C# generation yet be refused before native reconstruction. */
+export function assertCurrentFootprintCopyExecutionWorkerNativeFields(source: string): void {
+  const begin = source.indexOf("'footprint-copy-worker' {"), end = source.indexOf("'footprint-saved-worker' {", begin);
+  if (begin === -1 || end <= begin) { throw new Error("FOOTPRINT_COPY_EXECUTION_NATIVE_FIELD_BOUNDARY"); }
+  const body = source.slice(begin, end);
+  const matched = /^\$footprintCopyWorkerHandleFields=@\(([^\n]+)\)$/mu.exec(source);
+  if (!body.includes("if ($footprintCopyWorkerHandleFields -cnotcontains $property.Name -or")) { throw new Error("FOOTPRINT_COPY_EXECUTION_NATIVE_FIELD_BOUNDARY"); }
+  if (matched?.[1] === undefined) { throw new Error("FOOTPRINT_COPY_EXECUTION_NATIVE_FIELD_BOUNDARY"); }
+  const fields = [...matched[1].matchAll(/'([A-Za-z\d]+)'/gu)].map(match => match[1]);
+  const expected = new Set<string>();
+  for (const sample of currentFootprintCopyExecutionWorkerNativeCases()) {
+    const wire = currentFootprintCopyExecutionWorkerWire(sample, 1);
+    if (wire === null) { throw new Error("FOOTPRINT_COPY_EXECUTION_NATIVE_CASE"); }
+    for (const key of Object.keys(wire.request)) {
+      if (!["action", "requestId", "method", "executionPhase"].includes(key)) { expected.add(key); }
+    }
+  }
+  if (fields.length !== expected.size || fields.some(field => field === undefined || !expected.has(field)) || new Set(fields).size !== fields.length) {
+    throw new Error("FOOTPRINT_COPY_EXECUTION_NATIVE_FIELD_BOUNDARY");
+  }
+}

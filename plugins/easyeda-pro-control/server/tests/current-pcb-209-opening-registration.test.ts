@@ -1,6 +1,7 @@
 /** Executes the actual public registration/callback with isolated collaborators.
  * The 209 lifecycle uses its real inherited run and default dependencies; no
  * native launch is attempted because the original engine admission refuses. */
+/* oxlint-disable import/max-dependencies -- Keep actual mode selection, strict schemas and every retained lifecycle together at the real registration/callback boundary. */
 // oxlint-disable-next-line eslint/max-classes-per-file -- Keep both actual lifecycle allocations in the same isolated registration scope.
 import assert from "node:assert/strict";
 import { readFile } from "node:fs/promises";
@@ -8,12 +9,12 @@ import { stripTypeScriptTypes } from "node:module";
 import { test } from "node:test";
 import vm from "node:vm";
 import { z } from "zod";
-import { CurrentFootprintCopyPreparationLifecycle, CurrentFootprintCopyRoutePreparationLifecycle, CurrentFootprintMainLifecycle, CurrentPcb209DiagnosticLifecycle, CurrentPcb209EmptyStartupLifecycle, CurrentPcb209RatlineContinuationLifecycle, CurrentPcb209RatlineStartupLifecycle, CurrentPcb209WorkerStartupLifecycle } from "../src/current-pcb-diagnostic-lifecycle.ts";
+import { CurrentFootprintCopyPreparationLifecycle, CurrentFootprintCopyRoutePreparationLifecycle, CurrentFootprintMainLifecycle, CurrentPcb209DiagnosticLifecycle, CurrentPcb209EmptyStartupLifecycle, CurrentPcb209RatlineContinuationLifecycle, CurrentPcb209RatlineStartupLifecycle, CurrentPcb209VisualLifecycle, CurrentPcb209WorkerStartupLifecycle } from "../src/current-pcb-diagnostic-lifecycle.ts";
 import type { CurrentPcbDiagnosticLifecycleOptions } from "../src/current-pcb-diagnostic-lifecycle.ts";
 import { CURRENT_PCB_DIAGNOSTIC_PROFILE } from "../src/current-pcb-diagnostic-profile.ts";
 import { currentPcbDiagnosticToolRequestSchema } from "../src/current-pcb-diagnostic-validation.ts";
 import { currentPcb209OpeningRequestSchema } from "../src/current-pcb-209-opening-validation.ts";
-// oxlint-disable-next-line import/max-dependencies -- Keep actual mode selection, schemas and both lifecycles together at this registration boundary.
+import { currentPcb209VisualRequestSchema } from "../src/current-pcb-209-visual-validation.ts";
 import { sha256Text } from "../src/core.ts";
 import { currentPcb209WorkerStartupToolRequestSchema } from "../src/current-pcb-209-empty-startup-validation.ts";
 import { facadeToolRegistered } from "../src/facade-mode.ts";
@@ -21,6 +22,7 @@ import { facadeToolRegistered } from "../src/facade-mode.ts";
 function forbiddenLegacyLifecycle(): never { assert.fail("209 registration selected a legacy diagnostic or worker-startup lifecycle"); }
 function wrapRatline(request: unknown): { request: unknown } { return { request: { action: "ratline-held-import", request } }; }
 function mainWrap(request: unknown): { request: unknown } { return { request: { action: "footprint-main", request } }; }
+function visualWrap(request: unknown): { request: unknown } { return { request: { action: "visual", request } }; }
 
 void test("209 public opening and startup callbacks select original lifecycles and reject wider/caller-selected routes before allocation", async () => {
   const source = await readFile(new URL("../src/index.ts", import.meta.url), "utf8");
@@ -32,6 +34,7 @@ void test("209 public opening and startup callbacks select original lifecycles a
   const registrations = new Map<string, { inputSchema: z.ZodType; invoke: Invoke }>();
   let options: CurrentPcbDiagnosticLifecycleOptions | undefined, startupOptions: CurrentPcbDiagnosticLifecycleOptions | undefined;
   let startupAllocations = 0;
+  let visualAllocations = 0;
   let allocations = 0, checks = 0, gateCalls = 0, wrappers = 0;
   let blocked = true;
   let pendingAdmission: Promise<null> | undefined;
@@ -40,6 +43,9 @@ void test("209 public opening and startup callbacks select original lifecycles a
   }
   class Selected209StartupLifecycle extends CurrentPcb209WorkerStartupLifecycle {
     public constructor(input: CurrentPcbDiagnosticLifecycleOptions) { super(input); startupAllocations += 1; startupOptions = input; }
+  }
+  class Selected209VisualLifecycle extends CurrentPcb209VisualLifecycle {
+    public constructor(input: CurrentPcbDiagnosticLifecycleOptions) { super(input); visualAllocations += 1; }
   }
   assert.equal(Object.hasOwn(Selected209StartupLifecycle.prototype, "run"), false);
   assert.equal(Object.hasOwn(CurrentPcb209WorkerStartupLifecycle.prototype, "run"), false);
@@ -52,8 +58,9 @@ void test("209 public opening and startup callbacks select original lifecycles a
       checks += 1; if (blocked) { throw new Error("synthetic unresolved engine journal"); }
       if (pendingAdmission !== undefined) { await pendingAdmission; }
     } };
-  const scope = vm.createContext({ z, currentPcb209OpeningRequestSchema, currentPcbDiagnosticToolRequestSchema, currentPcb209WorkerStartupToolRequestSchema,
+  const scope = vm.createContext({ z, currentPcb209OpeningRequestSchema, currentPcb209VisualRequestSchema, currentPcbDiagnosticToolRequestSchema, currentPcb209WorkerStartupToolRequestSchema,
     CURRENT_PCB_DIAGNOSTIC_PROFILE, CurrentPcb209DiagnosticLifecycle: Selected209Lifecycle,
+    CurrentPcb209VisualLifecycle: Selected209VisualLifecycle,
     CurrentPcb209WorkerStartupLifecycle: Selected209StartupLifecycle, CurrentPcb209EmptyStartupLifecycle, CurrentPcb209RatlineStartupLifecycle, CurrentPcb209RatlineContinuationLifecycle,
     CurrentFootprintMainLifecycle, CurrentFootprintCopyPreparationLifecycle, CurrentFootprintCopyRoutePreparationLifecycle,
     CurrentPcbDiagnosticLifecycle: forbiddenLegacyLifecycle, CurrentPcbWorkerStartupLifecycle: forbiddenLegacyLifecycle,
@@ -74,7 +81,7 @@ void test("209 public opening and startup callbacks select original lifecycles a
       assert.ok(["easyeda_control_pcb209_opening", "easyeda_control_pcb209_worker_startup"].includes(name));
       assert.equal(registrations.has(name), false); registrations.set(name, { inputSchema: configuration.inputSchema, invoke: handler });
       assert.equal(configuration.annotations.readOnlyHint, false);
-      assert.equal(configuration.annotations.destructiveHint, name === "easyeda_control_pcb209_worker_startup");
+      assert.equal(configuration.annotations.destructiveHint, true);
       assert.equal(configuration.annotations.idempotentHint, false); assert.equal(configuration.annotations.openWorldHint, true);
     } },
   });
@@ -108,6 +115,8 @@ void test("209 public opening and startup callbacks select original lifecycles a
     expectedResultRecordSha256: "a".repeat(64), query: { kind: "family", family: "Line" } } }), /QUERY_PUBLISHED_RESULT_REQUIRED/u);
   assert.equal(allocations, 1); assert.equal(gateCalls, 0); assert.equal(checks, 0);
   assert.ok(options); assert.ok(scope["currentPcbDiagnosticLifecycle"] instanceof Selected209Lifecycle);
+  await assert.rejects(invoke({ request: { action: "visual", request: { action: "inspect", operationId: "pcb209-visual-registration" } } }), /purpose cannot change/u);
+  assert.equal(visualAllocations, 0);
   assert.equal(options.powershellSha256, CURRENT_PCB_DIAGNOSTIC_PROFILE.powershell.sha256);
   assert.equal(options.powershellBytes, CURRENT_PCB_DIAGNOSTIC_PROFILE.powershell.bytes);
   await assert.rejects(invoke({ request: launch }), /unresolved engine journal/u);
@@ -247,4 +256,29 @@ void test("209 public opening and startup callbacks select original lifecycles a
   const expectedOwner = scope["currentFootprintMainLifecycle"]; scope["currentFootprintMainLifecycle"] = {};
   await assert.rejects(startupInvoke(mainWrap({ action: "inspect", operationId: mainId })), /Original main lifecycle owner/u);
   scope["currentFootprintMainLifecycle"] = expectedOwner;
+
+  // A fresh registration chooses the actual visual subclass before any owner
+  // Exists. It cannot upgrade that choice to ordinary diagnostics afterward.
+  registrations.clear();
+  const visualScope = vm.createContext({ ...scope, currentPcbDiagnosticLifecycle: undefined });
+  vm.runInContext(stripTypeScriptTypes(`${helpers}\n${source.slice(start, end)}`).replaceAll("import.meta.dirname", '"/synthetic/server/src"'), visualScope);
+  const visualRegistration = registrations.get("easyeda_control_pcb209_opening"); assert.ok(visualRegistration);
+  const visualId = "pcb209-visual-registration";
+  for (const request of [{ ...launch, operationId: visualId, acceptVisualStateChanges: false },
+    { action: "perform-visual", operationId: visualId, expectedBindingSha256, operation: { kind: "select", primitiveIds: ["a"] }, confirmVisualStateChanges: true }]) {
+    assert.equal(visualRegistration.inputSchema.safeParse(visualWrap(request)).success, false);
+    await assert.rejects(visualRegistration.invoke(visualWrap(request)));
+  }
+  assert.equal(visualAllocations, 0);
+  const visualInspected = await visualRegistration.invoke(visualWrap({ action: "inspect", operationId: visualId }));
+  assert.match(JSON.stringify(visualInspected), /not-found/u); assert.equal(visualAllocations, 1);
+  assert.ok(visualScope["currentPcbDiagnosticLifecycle"] instanceof Selected209VisualLifecycle);
+  const beforeVisual = counts();
+  await assert.rejects(visualRegistration.invoke(visualWrap({ ...launch, operationId: visualId, acceptVisualStateChanges: true })), /unresolved engine journal/u);
+  assert.equal(checks, beforeVisual.checks + 1); assert.equal(gateCalls, beforeVisual.gateCalls + 1);
+  await assert.rejects(visualRegistration.invoke(visualWrap({ action: "perform-visual", operationId: visualId, expectedBindingSha256,
+    operation: { kind: "fit-all" }, confirmVisualStateChanges: true })), /ORIGINAL_OWNER_REQUIRED/u);
+  assert.equal(checks, beforeVisual.checks + 1); assert.equal(gateCalls, beforeVisual.gateCalls + 2);
+  await assert.rejects(visualRegistration.invoke({ request: { action: "inspect", operationId } }), /purpose cannot change/u);
+  assert.equal(visualAllocations, 1);
 });

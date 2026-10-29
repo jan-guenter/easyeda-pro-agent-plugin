@@ -4,10 +4,15 @@ import { controlDataDirectory, ensureManagedDirectory, publishManagedAttachmentE
 import { MANAGED_LIBRARY_FILES_MAX_RESULT_BYTES, decodeManagedLibraryBase64, decodeManagedProjectArchive, extractManagedLibraryMetadata, extractManagedProjectMetadata,
   managedLibraryExtractRequestSchema, managedLibraryFileSchema, managedLibraryFilesRequestSchema, managedLibraryMetadataSchema,
   managedLibraryPrepareRequestSchema, managedProjectExtractRequestSchema, managedProjectFootprintSourceListRequestSchema,
-  managedProjectFootprintSourceReadRequestSchema, managedProjectFootprintSourcesRequestSchema, validateManagedLibraryFileContents } from "./managed-library-files.ts";
+  managedProjectFootprintSourceReadRequestSchema, managedProjectFootprintSourcesRequestSchema, managedSymbolPinsRequestSchema,
+  managedSymbolSourceListRequestSchema, managedSymbolSourceReadRequestSchema, managedSymbolSourcesRequestSchema, validateManagedLibraryFileContents } from "./managed-library-files.ts";
 import type { ManagedLibraryFile } from "./managed-library-files.ts";
 import { collectManagedProjectFootprintSources, encodeManagedProjectFootprintSourceIndex,
   pageManagedProjectFootprintRoster, pageManagedProjectFootprintSource } from "./managed-project-footprint-sources.ts";
+import { collectManagedProjectSymbolSources, collectManagedStandaloneSymbolSource, encodeManagedSymbolSourceIndex,
+  pageManagedSymbolRoster, pageManagedSymbolSource } from "./managed-project-symbol-sources.ts";
+import type { ManagedSymbolSource, ManagedSymbolSourceSet } from "./managed-project-symbol-sources.ts";
+import { inspectManagedSymbolPins } from "./managed-symbol-pins.ts";
 
 function inputsDirectory(): string { return join(controlDataDirectory(), "artifacts", "library-file-inputs"); }
 function result(value: Record<string, unknown>, metadataOnly = true): Record<string, unknown> {
@@ -99,13 +104,55 @@ export async function readManagedProjectFootprintSource(input: unknown): Promise
     suppliedSourceOnly: true, cadFramingValidated: false }, false);
 }
 
+async function symbolSources(file: ManagedLibraryFile, expectedSourceSetSha256?: string): Promise<ManagedSymbolSourceSet> {
+  const content = await exactInput(file);
+  if (file.name.endsWith(".esym")) { extractManagedLibraryMetadata(file.name, content); }
+  const set = file.name.endsWith(".esym") ? collectManagedStandaloneSymbolSource(file.name, content) :
+    collectManagedProjectSymbolSources(decodeManagedProjectArchive(file.name, content).members, file.sha256);
+  if (expectedSourceSetSha256 !== undefined && set.sourceSetSha256 !== expectedSourceSetSha256) { throw new Error("Supplied symbol source-set digest differs."); }
+  return set;
+}
+function selectedSymbol(set: ManagedSymbolSourceSet, symbolId: string): ManagedSymbolSource {
+  const item = set.sources.find((entry) => entry.symbolId === symbolId);
+  if (item === undefined) { throw new Error("Requested symbol identity is absent from the complete supplied source roster."); }
+  return item;
+}
+export async function extractManagedSymbolSources(input: unknown): Promise<Record<string, unknown>> {
+  const request = managedSymbolSourcesRequestSchema.parse(input); const set = await symbolSources(request.file);
+  const directory = await ensureManagedDirectory(join(controlDataDirectory(), "artifacts", "symbol-source-indexes"));
+  const index = await publishManagedAttachmentExclusive(join(directory, `${randomUUID()}.json`), "Supplied symbol source index",
+    encodeManagedSymbolSourceIndex(set), "symbol-source-index");
+  if (index.sha256 !== set.sourceSetSha256) { throw new Error("Supplied symbol source index differs from its complete source-set digest."); }
+  return result({ action: request.action, input: request.file, sourceSetSha256: set.sourceSetSha256,
+    symbolCount: set.sources.length, totalSourceBytes: set.totalSourceBytes, inputMembers: set.inputMembers,
+    index, localArtifactWritten: true, suppliedSourceOnly: true, cadFramingValidated: false }, false);
+}
+export async function listManagedSymbolSources(input: unknown): Promise<Record<string, unknown>> {
+  const request = managedSymbolSourceListRequestSchema.parse(input); const set = await symbolSources(request.file, request.expectedSourceSetSha256);
+  return result({ action: request.action, input: request.file, sourceSetSha256: set.sourceSetSha256,
+    ...pageManagedSymbolRoster(set, request.offset, request.length), localArtifactWritten: false, suppliedSourceOnly: true, cadFramingValidated: false });
+}
+export async function readManagedSymbolSource(input: unknown): Promise<Record<string, unknown>> {
+  const request = managedSymbolSourceReadRequestSchema.parse(input); const set = await symbolSources(request.file, request.expectedSourceSetSha256);
+  return result({ action: request.action, input: request.file, sourceSetSha256: set.sourceSetSha256,
+    ...pageManagedSymbolSource(selectedSymbol(set, request.symbolId), request.offset, request.length),
+    localArtifactWritten: false, suppliedSourceOnly: true, cadFramingValidated: false }, false);
+}
+export async function inspectManagedSymbolSourcePins(input: unknown): Promise<Record<string, unknown>> {
+  const request = managedSymbolPinsRequestSchema.parse(input); const set = await symbolSources(request.file, request.expectedSourceSetSha256);
+  return result({ action: request.action, input: request.file, sourceSetSha256: set.sourceSetSha256,
+    ...inspectManagedSymbolPins(selectedSymbol(set, request.symbolId), request.offset, request.length),
+    localArtifactWritten: false, suppliedSourceOnly: true, cadFramingValidated: false, symbolPinRecordFramingValidated: true }, false);
+}
+
 /** Fixed local dispatch; accepting this operation never starts the bridge. */
 export async function executeManagedLibraryFiles(input: unknown): Promise<Record<string, unknown>> {
   const request = managedLibraryFilesRequestSchema.parse(input);
   const routes = { "prepare-file": prepareManagedLibraryFile, "extract-library-info": extractManagedLibraryFiles,
     "extract-project-info": extractManagedProjectFile, "extract-project-footprint-sources": extractManagedProjectFootprintSources,
     "list-project-footprint-sources": listManagedProjectFootprintSources,
-    "read-project-footprint-source": readManagedProjectFootprintSource };
+    "read-project-footprint-source": readManagedProjectFootprintSource, "extract-symbol-sources": extractManagedSymbolSources,
+    "list-symbol-sources": listManagedSymbolSources, "read-symbol-source": readManagedSymbolSource, "inspect-symbol-pins": inspectManagedSymbolSourcePins };
   const output = await routes[request.action](request);
   return output;
 }

@@ -20,7 +20,7 @@ import { currentFootprintCombinedReadyNativeSource } from "../server/src/current
 import { CURRENT_FOOTPRINT_COPY_CLOCK_REGISTRATION_REQUESTS as clockRegistration } from "../server/src/current-footprint-copy-clock-registration-runner.ts";
 import { CURRENT_FOOTPRINT_COPY_SAVED_PROFILE as saved } from "../server/src/current-footprint-copy-saved-profile.ts";
 import { currentFootprintCopyTransactionClockNativeSource } from "../server/src/current-footprint-copy-transaction-clock-native.ts";
-import { currentFootprintCopyExecutionWorkerNativeSource } from "../server/src/current-footprint-copy-execution-worker-native.ts";
+import { assertCurrentFootprintCopyExecutionWorkerNativeFields, currentFootprintCopyExecutionWorkerNativeSource } from "../server/src/current-footprint-copy-execution-worker-native.ts";
 import { currentPcbWorkerStartupNativeSource } from "../server/src/current-pcb-worker-startup-native.ts";
 import { currentPcb209EmptyNativeSource } from "../server/src/current-pcb-209-empty-native.ts";
 import { currentPcb209RatlineNativeSource } from "../server/src/current-pcb-209-ratline-native.ts";
@@ -97,6 +97,7 @@ async function main(): Promise<void> {
     throw new Error("Native combined readiness markers must occur once");
   }
   next = next.slice(0, readyStart) + currentFootprintCombinedReadyNativeSource() + next.slice(readyStop + readyEnd.length);
+  assertCurrentFootprintCopyExecutionWorkerNativeFields(next);
   if (Buffer.byteLength(next) > 1_048_576) { throw new Error("Native startup helper exceeds its fixed byte bound"); }
   if (action === "--write") { await writeFile(path, next); }
   else if (next !== source) { throw new Error("Generated native startup protocol differs"); }
