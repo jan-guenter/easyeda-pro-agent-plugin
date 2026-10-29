@@ -188,3 +188,11 @@ and the compatibility manifest is
 The helper is unchanged. Final whole types, zero-warning lint, package and
 compatibility checks pass after rebuilding the corrected catalog. Complete
 suite evidence must name this final candidate rather than the superseded run.
+
+The superseded5e15cb0 run also exposed one stale wire assertion. It expected the
+old clock-begin guard without the new completion-phase exclusion. The updated
+assertion requires the complete stronger guard, including `mainCompletionBegun`.
+Runtime/helper bytes and the final catalog projections above are unchanged.
+The three focused wire cases and their strict type-aware lint pass. The initial
+failure and cancelled remainder stay preserved; final CI must cover every shard
+on the test correction as well.

@@ -14,7 +14,7 @@ void test("the fixed clock RPC encoder fits the unchanged cap behind its origina
   assert.ok(Buffer.byteLength(helper) <= 1_048_576);
   assert.equal(helper.split(source).length, 2);
   assert.equal(helper.split("EasyedaFootprintCopyClockRpcProtocol.Encode(").length, 2);
-  assert.ok(helper.includes("if(!workerStartupFootprintCombined209 || footprintClockRpcBegun)"));
+  assert.ok(helper.includes("if(!workerStartupFootprintCombined209 || footprintClockRpcBegun || mainCompletionBegun)"));
   assert.ok(helper.includes("id!=footprintClockRpcFirst+footprintClockRpcTotal"));
   assert.ok(helper.includes("bool ended=Terminated();if(!ended)AssertLive();RetireFootprintClockRpcCore(ended);"));
   assert.ok(helper.includes("$largeClockRpcRequest=$WorkerStartupFootprintCombined209 -and $request.action -ceq 'footprint-clock-rpc-send'"));
