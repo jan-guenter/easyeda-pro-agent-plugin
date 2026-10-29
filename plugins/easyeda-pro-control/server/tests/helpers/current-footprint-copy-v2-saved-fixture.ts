@@ -80,13 +80,14 @@ class Response{constructor(bytes){this.bytes=bytes;}get body(){return new Readab
 class Cache{async match(key){matches.push(key);return key===${JSON.stringify(cacheKey)}?new Response(${JSON.stringify([...Buffer.from(input.chunk)])}):undefined;}}
 Object.assign(globalThis,{Cache,Response,ReadableStream,ReadableStreamDefaultReader});
 class bb{constructor(){this.cacheName=${JSON.stringify(`project_${PROJECT}_v6`)};this.cache=new Cache;}}
-globalThis.project=new Lg;globalThis.bus={};globalThis.consistency=new ja;globalThis.manager=new Tg;
+class Mb{}class KP extends Mb{}class JP extends KP{}
+globalThis.project=new Lg;globalThis.bus=new JP;globalThis.consistency=new ja;globalThis.manager=new Tg;
 Object.assign(project,{uuid:'${PROJECT}',_branchUuid:'${IDS.branch}',workerBus:bus,consistencyManager:consistency,footprint:manager,cache:new bb});
 Object.assign(consistency,{client:'${CLIENT}',maxTicket:102,docHead:{'${TARGET}':{...${JSON.stringify(header)},ticket:${String(input.innerTicket)}}},historyMap:{}});
 Object.assign(manager,{projectManager:project,client:'${CLIENT}',user:undefined,data:{'${TARGET}':{...${JSON.stringify(NEW_META)},ticket:101,version:'${String(input.time)}',updateTime:${String(input.time)},modifier:${JSON.stringify(user)}}}});
 globalThis.nodes=new Map(${JSON.stringify(nodes)});nodes.set('META',{last:{dataType:'META',ticket:101,data:'{}'}});
 consistency.wDocData=new Map([['${TARGET}',nodes]]);globalThis.PROJECT=project;globalThis._TAB_ID_='synthetic-window';globalThis.PRO_EDITOR_VERSION='3.2.209';
-globalThis.selected=${JSON.stringify(REQUEST)};globalThis.constructors=[Tg,ar,Pi,ja,Vc,zy];
+globalThis.selected=${JSON.stringify(REQUEST)};globalThis.constructors=[Tg,ar,Pi,ja,Vc,zy,Lg,Gd,JP,KP,Mb];
 globalThis.methods=[Tg.prototype.getStr,Object.getOwnPropertyDescriptor(Pi.prototype,'maxTicket').get,Vc.prototype.getMaxTicket,Lg.prototype.getCanvasByConsistency,Lg.prototype.compress,Cache.prototype.match,Object.getOwnPropertyDescriptor(Response.prototype,'body').get,ReadableStream.prototype.getReader,ReadableStreamDefaultReader.prototype.read,ReadableStreamDefaultReader.prototype.cancel,ReadableStreamDefaultReader.prototype.releaseLock,TextDecoder,TextDecoder.prototype.decode,Uint8Array];`, vm);
   return vm;
 }

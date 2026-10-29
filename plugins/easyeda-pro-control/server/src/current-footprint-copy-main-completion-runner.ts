@@ -7,7 +7,7 @@ import { setTimeout as delay } from "node:timers/promises";
 import { z } from "zod";
 import { captureCurrentPcbStringClockReply } from "./current-pcb-string-clock-reply.ts";
 import { freezeDeep } from "./sqlite-inventory-core.ts";
-import { requireCurrentFootprintCopyMainRequestHeldFinalPb } from "./current-footprint-copy-main-request-runner.ts";
+import type { CurrentFootprintCopyMainRequestHeldFinalPbBindings } from "./current-footprint-copy-main-request-runner.ts";
 import { requireCurrentFootprintCopyMainCompletionOrigin } from "./current-footprint-copy-main-completion-origin.ts";
 import type { CurrentFootprintCopyMainCompletionOrigin } from "./current-footprint-copy-main-completion-origin.ts";
 import { CURRENT_FOOTPRINT_COPY_MAIN_COMPLETION_ORDER as ORDER, requireCurrentFootprintCopyMainCompletionSource } from "./current-footprint-copy-main-completion-source.ts";
@@ -23,7 +23,7 @@ import { CURRENT_FOOTPRINT_COPY_MAIN_COMPLETION_FLAGS as FLAGS, CURRENT_FOOTPRIN
 import type { CurrentFootprintCopyMainCompletionCommand as Command } from "./current-footprint-copy-main-completion-protocol.ts";
 
 type Origin = ReturnType<typeof requireCurrentFootprintCopyMainCompletionOrigin>;
-type Held = ReturnType<typeof requireCurrentFootprintCopyMainRequestHeldFinalPb>;
+type Held = CurrentFootprintCopyMainRequestHeldFinalPbBindings;
 type Value = ReturnType<typeof decodeCurrentFootprintCopyMainCompletionValue>;
 interface Point { readonly stage: Stage; readonly id: string; attempted: boolean; removed: boolean }
 interface Pause { readonly stage: Stage | "original-final-pb"; readonly frameId: string; readonly callerFrameId: string | null; attempted: boolean; resumed: boolean }
@@ -70,13 +70,14 @@ export class CurrentFootprintCopyMainCompletionRunner {
   #retired = false;
   #ending = false;
   #generationEnded = false;
+  #retirementSettlementAttempted = false;
   #packet: CurrentFootprintCopyMainCompletionObservation | null = null;
   #firstFailure: Failure | null = null;
   #idle: Promise<null> = Promise.resolve(null);
   #resolveIdle: (() => void) | null = null;
   public constructor(token: CurrentFootprintCopyMainCompletionOrigin) {
     this.#origin = requireCurrentFootprintCopyMainCompletionOrigin(token); this.#token = token;
-    this.#held = requireCurrentFootprintCopyMainRequestHeldFinalPb(this.#origin.heldFinalPb);
+    this.#held = this.#origin.transferredHeld;
     need(this.#held.scriptId === this.#origin.scriptId, "ORIGINAL_SCRIPT"); requireCurrentFootprintCopyMainCompletionSource(this.#origin.source);
     this.#originalPause = { stage: "original-final-pb", frameId: this.#held.finalPbFrameId, callerFrameId: null, attempted: false, resumed: false };
   }
@@ -88,17 +89,16 @@ export class CurrentFootprintCopyMainCompletionRunner {
   }
   async #current(cleanup = false): Promise<void> {
     this.#same(cleanup); await (cleanup ? this.#origin.assertCleanup() : this.#origin.assertOriginal()); this.#same(cleanup);
-    // The native issuer must consume/transfer this exact held lease immediately
-    // Before its first original-PB resume. Once transferred, only that issuer's
-    // Original kernel/channel assertions qualify later completion operations.
+    // Issuance has already consumed the old collector's held lease. Only the
+    // Original scheduler can prove that its same PB pause remains held.
     if (!this.#originalPause.attempted && !cleanup) {
-      need(requireCurrentFootprintCopyMainRequestHeldFinalPb(this.#origin.heldFinalPb) === this.#held, "ORIGINAL_HELD_LEASE");
-      await this.#held.assertOriginal(); this.#same();
+      await this.#origin.assertOriginalHeld(); this.#same();
     }
   }
   #begin(): void { need(!this.#busy && !this.#ending, "BUSY"); this.#busy = true; const idle = Promise.withResolvers<null>(); this.#idle = idle.promise; this.#resolveIdle = (): void => { idle.resolve(null); }; }
   #end(): void { this.#busy = false; this.#resolveIdle?.(); this.#resolveIdle = null; }
   #failed(): void {
+    this.#origin.fail();
     this.#firstFailure ??= Object.freeze({ phase: this.#phase, normalRequests: this.#normal, cleanupRequests: this.#cleanup,
       completedPauses: this.#pauses.filter(value => value.resumed).length, applicationEffectsMayHaveOccurred: true }); this.#phase = "failed";
   }
@@ -226,9 +226,12 @@ export class CurrentFootprintCopyMainCompletionRunner {
     } catch (error) { this.#failed(); throw error; } finally { this.#end(); }
   }
   public async observeOriginalGenerationEnded(): Promise<void> {
-    need(!this.#ending && !this.#generationEnded && !this.#retired, "GENERATION_CONSUMED"); this.#ending = true; const idle = this.#idle;
+    need(!this.#ending && !this.#retired && (!this.#generationEnded || !this.#retirementSettlementAttempted), "GENERATION_CONSUMED");
+    if (this.#generationEnded) { this.#retirementSettlementAttempted = true; }
+    this.#ending = true; const idle = this.#idle;
     try { await this.#origin.assertOriginalGenerationExited(); this.#generationEnded = true; this.#failed(); await idle;
-      need(!this.#busy && this.#idle === idle, "ORIGINAL_OPERATION_UNSETTLED"); await this.#origin.retire(); this.#retired = true;
+      need(!this.#busy && this.#idle === idle, "ORIGINAL_OPERATION_UNSETTLED");
+      if (!this.#retired) { await this.#origin.retire(); this.#retired = true; }
     } finally { this.#ending = false; }
   }
   public diagnostics(): Readonly<{ phase: Phase; normalRequests: number; cleanupRequests: number; replies: number; pauses: number;

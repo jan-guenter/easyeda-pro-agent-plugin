@@ -34,7 +34,8 @@ class Gd{uploadLocal(){calls++;}}class Lg extends Gd{}
 class Pi{get newTicket(){calls++;return 1;}}class ar extends Pi{}
 class Tg extends ar{async create(argument){${createBody}}buildString(){calls++;}canvasString(){calls++;}getCanvasData(){calls++;}get(){calls++;}}
 class zy{}class Vc extends zy{}class ja extends Vc{setDoctype(){calls++;}}
-const bus={},manager=new Tg,consistency=new ja,constructors=[Tg,ar,Pi,ja,Vc,zy];
+class Mb{}class KP extends Mb{}class JP extends KP{}
+const bus=new JP,manager=new Tg,consistency=new ja,constructors=[Tg,ar,Pi,ja,Vc,zy,Lg,Gd,JP,KP,Mb];
 globalThis.PROJECT=new Lg;PROJECT.workerBus=bus;PROJECT.footprint=manager;PROJECT.consistencyManager=consistency;
 manager.projectManager=PROJECT;manager.user=undefined;`, context);
   return context;

@@ -113,6 +113,31 @@ void test("dependency runner retains75 original reads, then one fresh3-request r
   await runner.requireOriginal(packet); assert.equal(calls.length, 78);
   await assert.rejects(runner.requireOriginal(packet)); await assert.rejects(runner.observe()); assert.equal(calls.length, 78);
 });
+void test("dependency selectors retain original classes when V8 omits unused lexical aliases", () => {
+  const context = fixedWorld();
+  vm.runInContext('for(const key of ["Lg","Gd","Tg","ar","Pi","ja","Vc","zy","JP","KP","Mb","of","th","Fo"])delete scope[key];', context);
+  vm.runInContext(`const original=(${CALLS.capture.program}).call({object:scope},project,bus,manager,consistency,constructors,lexicals);`, context);
+  assert.equal(vm.runInContext(`(${CALLS.recheck.program}).call({object:scope},project,bus,manager,consistency,constructors,lexicals,original)`, context), true);
+  assert.equal(vm.runInContext("calls", context), 0);
+  // Only the original captured class can satisfy a later lexical alias.
+  vm.runInContext("scope.Lg=function Lg(){};", context);
+  assert.throws(() => vm.runInContext(`(${CALLS.recheck.program}).call({object:scope},project,bus,manager,consistency,constructors,lexicals,original)`, context), /FOOTPRINT_COPY_DEPENDENCY_BINDING/u);
+  assert.equal(vm.runInContext("calls", context), 0);
+});
+void test("dependency selectors reject changed original class vectors and derived encoder ancestry", () => {
+  for (const change of [
+    "constructors[6]=class Lg{}",
+    "constructors[8]=class JP{}",
+    "Object.setPrototypeOf(bus,Object.create(scope.JP.prototype))",
+    "Object.setPrototypeOf(scope.rl,class of{})",
+    "Object.defineProperty(scope,'Gd',{get(){calls++;return stop;}})",
+  ]) {
+    const context = fixedWorld();
+    vm.runInContext(change, context);
+    assert.throws(() => vm.runInContext(`(${CALLS.capture.program}).call({object:scope},project,bus,manager,consistency,constructors,lexicals)`, context), /FOOTPRINT_COPY_DEPENDENCY_BINDING/u);
+    assert.equal(vm.runInContext("calls", context), 0);
+  }
+});
 void test("dependency owner loss retains the arrived reply and failed reproof cannot retry", async () => {
   const lost = owner(); lost.loseAfterReply(); await assert.rejects(lost.runner.observe(), /owner lost/u);
   assert.equal(lost.runner.retained().replies.length, 1); assert.equal(lost.runner.retained().failed, true);

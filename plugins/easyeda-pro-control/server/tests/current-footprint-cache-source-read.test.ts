@@ -47,7 +47,8 @@ class Response{constructor(bytes){this.bytes=bytes;}get body(){return new Readab
 class Cache{async match(key){matches.push(key);await afterMatch();const bytes=cacheBytes[key];return bytes===undefined?undefined:new Response(bytes);}}
 Object.assign(globalThis,{Cache,Response,ReadableStream,ReadableStreamDefaultReader});
 class bb{constructor(){this.cacheName='project_${PROJECT}_v6';this.cache=new Cache;}}
-globalThis.project=new Lg;globalThis.bus={};globalThis.consistency=new ja;globalThis.manager=new Tg;
+class Mb{}class KP extends Mb{}class JP extends KP{}
+globalThis.project=new Lg;globalThis.bus=new JP;globalThis.consistency=new ja;globalThis.manager=new Tg;
 Object.assign(project,{uuid:'${PROJECT}',_branchUuid:'${BRANCH}',workerBus:bus,consistencyManager:consistency,footprint:manager,cache:new bb});
 Object.assign(consistency,{client:'${CLIENT}',maxTicket:100,docHead:{'${FOOTPRINT}':{...${JSON.stringify(HEADER)},ticket:100}},historyMap:{}});
 Object.assign(manager,{projectManager:project,client:'${CLIENT}',user:undefined,data:{'${FOOTPRINT}':{...${JSON.stringify(META)},ticket:90,version:'100',updateTime:100,modifier:${JSON.stringify(ACTOR)}}}});
@@ -56,7 +57,7 @@ for(const type of ['META','META_PLACEHOLDER','DELETE_DOC','META_CREATE','META_MO
 consistency.wDocData=new Map([['${FOOTPRINT}',nodes]]);globalThis.cacheBytes=${JSON.stringify(cacheBytes)};
 globalThis.PROJECT=project;globalThis._TAB_ID_='synthetic-window';globalThis.PRO_EDITOR_VERSION='3.2.209';
 globalThis.selected={identity:{projectUuid:'${PROJECT}',branchUuid:'${BRANCH}',windowTabId:'synthetic-window'},footprintUuid:'${FOOTPRINT}',client:'${CLIENT}',maximumTicket:100};
-globalThis.constructors=[Tg,ar,Pi,ja,Vc,zy];globalThis.methods=[Tg.prototype.getStr,Object.getOwnPropertyDescriptor(Pi.prototype,'maxTicket').get,Vc.prototype.getMaxTicket,Lg.prototype.getCanvasByConsistency,Lg.prototype.compress,Cache.prototype.match,Object.getOwnPropertyDescriptor(Response.prototype,'body').get,ReadableStream.prototype.getReader,ReadableStreamDefaultReader.prototype.read,ReadableStreamDefaultReader.prototype.cancel,ReadableStreamDefaultReader.prototype.releaseLock,TextDecoder,TextDecoder.prototype.decode,Uint8Array];`, vm);
+globalThis.constructors=[Tg,ar,Pi,ja,Vc,zy,Lg,Gd,JP,KP,Mb];globalThis.methods=[Tg.prototype.getStr,Object.getOwnPropertyDescriptor(Pi.prototype,'maxTicket').get,Vc.prototype.getMaxTicket,Lg.prototype.getCanvasByConsistency,Lg.prototype.compress,Cache.prototype.match,Object.getOwnPropertyDescriptor(Response.prototype,'body').get,ReadableStream.prototype.getReader,ReadableStreamDefaultReader.prototype.read,ReadableStreamDefaultReader.prototype.cancel,ReadableStreamDefaultReader.prototype.releaseLock,TextDecoder,TextDecoder.prototype.decode,Uint8Array];`, vm);
   return { vm, expected, bytes: chunks.reduce((sum, chunk) => sum + Buffer.byteLength(chunk), 0) };
 }
 async function reply(vm: Context): Promise<ReturnType<typeof decodeCurrentFootprintCopySourceRead>> {

@@ -36,8 +36,9 @@ const chain=(o,names,original,offset)=>{const result=[];let p=proto(o);for(let i
 const method=(o,parents,k,index)=>{absent(o,k);for(let i=0;i<index;i++)absent(parents[i],k);const d=descriptor(parents[index],k);if(!d||!Object.hasOwn(d,"value")||typeof d.value!=="function"||d.writable!==true||d.enumerable!==false||d.configurable!==true)bad();return d.value;};
 const verify=()=>{for(const [o,p]of prototypes)if(Object.getPrototypeOf(o)!==p)bad();for(const [o,k,d]of descriptors){const n=Object.getOwnPropertyDescriptor(o,k);if(d===undefined?n!==undefined:!n||d.enumerable!==n.enumerable||d.configurable!==n.configurable||d.writable!==n.writable||d.get!==n.get||d.set!==n.set||!Object.is(d.value,n.value)||Object.hasOwn(d,"value")!==Object.hasOwn(n,"value"))bad();}};
 if(own(globalThis,"PROJECT")!==this||own(this,"workerBus")!==bus||own(this,"footprint")!==manager||own(this,"consistencyManager")!==consistency||own(manager,"projectManager")!==this)bad();
-array(constructors,6);
-const footprintChain=chain(manager,["Tg","ar","Pi"],constructors,0),consistencyChain=chain(consistency,["ja","Vc","zy"],constructors,3),projectChain=chain(this,["Lg","Gd"],null,0);
+array(constructors,11);
+const footprintChain=chain(manager,["Tg","ar","Pi"],constructors,0),consistencyChain=chain(consistency,["ja","Vc","zy"],constructors,3),projectChain=chain(this,["Lg","Gd"],constructors,6);
+chain(bus,["JP","KP","Mb"],constructors,8);
 const getStr=method(manager,footprintChain,"getStr",0),getMaxTicket=method(consistency,consistencyChain,"getMaxTicket",1),getCanvas=method(this,projectChain,"getCanvasByConsistency",0),compress=method(this,projectChain,"compress",0);
 absent(manager,"maxTicket");absent(footprintChain[0],"maxTicket");absent(footprintChain[1],"maxTicket");
 const ticket=descriptor(footprintChain[2],"maxTicket");if(!ticket||typeof ticket.get!=="function"||ticket.set!==undefined||Object.hasOwn(ticket,"value")||ticket.enumerable!==false||ticket.configurable!==true)bad();

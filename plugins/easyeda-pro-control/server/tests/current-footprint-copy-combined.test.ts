@@ -209,6 +209,10 @@ process.stdout.write(JSON.stringify({id:q.id,ok:true,result})+'\\n');});
   context.after(async () => { if (!owner.status().helperClosed) { const closed = once(child, "close"); child.stdin.end(); await closed; } });
   await owner.waitFootprintCombinedReady();
   await owner.launch({ executable: "C:\\Reviewed\\easyeda-pro.exe", executableSha256: "a".repeat(64), confirmDiagnosticLaunch: true }); await owner.attachFootprintMain();
+  // Exercise the real owner preflight before any CDP request. Insufficient
+  // Completion capacity must preserve its entire existing observation role.
+  assert.throws(() => { owner.assertFootprintMainCompletionCapacity(1); }, /FOOTPRINT_MAIN_COMPLETION_CAPACITY_HEADROOM/u);
+  await assert.rejects(owner.beginFootprintMainCompletion(1), /FOOTPRINT_MAIN_COMPLETION_CAPACITY_HEADROOM/u);
   let cleanup = 0, lastNormalId = 0, normal = 0;
   for (const [index, request] of schedule.entries()) {
     const id = index + 1;

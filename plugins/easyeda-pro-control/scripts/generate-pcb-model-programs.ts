@@ -8,6 +8,8 @@ import { CURRENT_PCB_COMMON_PACKET_SEEDS } from "../server/src/current-pcb-commo
 import { CURRENT_PCB_DIAGNOSTIC_OPENING_FUNCTION } from "../server/src/current-pcb-diagnostic-opening.ts";
 import { CURRENT_PCB_DIAGNOSTIC_PCB_OPENING_FUNCTION } from "../server/src/current-pcb-diagnostic-pcb-opening.ts";
 import { CURRENT_PCB_STRING_EMPTY_PRODUCERS_FUNCTION, CURRENT_PCB_STRING_EMPTY_PRODUCERS_V2_FUNCTION } from "../server/src/current-pcb-string-empty-producers.ts";
+// oxlint-disable-next-line import/max-dependencies -- Byte-exact packing requires the independently maintained metadata program alongside the other fixed model sources.
+import { CURRENT_PCB_COMMON_METADATA_FUNCTION } from "../server/src/current-pcb-common-metadata.ts";
 
 for (const [marker, name, source] of [
   ["DIAGNOSTIC OPENING", "OpeningFunction", CURRENT_PCB_DIAGNOSTIC_OPENING_FUNCTION],
@@ -24,6 +26,7 @@ for (const [marker, name, source] of [
   ["COMMON PREFERENCE SEED", "CommonPreferenceSeedFunction", CURRENT_PCB_COMMON_PACKET_SEEDS.preference],
   ["COMMON PRESENTATION SEED", "CommonPresentationSeedFunction", CURRENT_PCB_COMMON_PACKET_SEEDS.presentation],
   ["COMMON RULES SEED", "CommonRulesSeedFunction", CURRENT_PCB_COMMON_PACKET_SEEDS.rules],
+  ["COMMON METADATA", "CommonMetadataFunction", CURRENT_PCB_COMMON_METADATA_FUNCTION],
   ["STRING EMPTY PRODUCERS", "StringEmptyProducersFunction", CURRENT_PCB_STRING_EMPTY_PRODUCERS_FUNCTION],
   ["STRING EMPTY PRODUCERS V TWO", "StringEmptyProducersV2Function", CURRENT_PCB_STRING_EMPTY_PRODUCERS_V2_FUNCTION],
 ] as const) {

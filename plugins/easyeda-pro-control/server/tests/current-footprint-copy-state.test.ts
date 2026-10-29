@@ -65,8 +65,9 @@ void test("same-field replacement managers and captured-user/client drift refuse
 
 const SYNTHETIC = `class Pi{constructor(p){this.projectManager=p;this.client=p.consistencyManager.client;this.user=undefined;}}
 class ar extends Pi{}class Tg extends ar{}class zy{}class Vc extends zy{constructor(){super();this.client="1234567890abcdef";this.maxTicket=8;}}class ja extends Vc{}
-const bus={};const consistency=new ja();globalThis.PROJECT={workerBus:bus,consistencyManager:consistency,uuid:"a".repeat(64),_branchUuid:"b".repeat(32)};
-globalThis._TAB_ID_="window_1";const manager=new Tg(PROJECT);PROJECT.footprint=manager;const constructors=[Tg,ar,Pi,ja,Vc,zy];`;
+class Gd{}class Lg extends Gd{}class Mb{}class KP extends Mb{}class JP extends KP{}
+const bus=new JP;const consistency=new ja();globalThis.PROJECT=Object.assign(new Lg,{workerBus:bus,consistencyManager:consistency,uuid:"a".repeat(64),_branchUuid:"b".repeat(32)});
+globalThis._TAB_ID_="window_1";const manager=new Tg(PROJECT);PROJECT.footprint=manager;const constructors=[Tg,ar,Pi,ja,Vc,zy,Lg,Gd,JP,KP,Mb];`;
 void test("fixed footprint state reads reject accessors without invoking them and retain bounded exact native fields", () => {
   const source = CURRENT_FOOTPRINT_COPY_STATE_CALLS.observe.program;
   for (const [receiver, field] of [["manager", "user"], ["manager", "client"], ["consistency", "maxTicket"], ["PROJECT", "footprint"]]) {
@@ -88,14 +89,28 @@ void test("constructor capture binds original lexical classes and state rejects 
   const capture = CURRENT_FOOTPRINT_COPY_CONSTRUCTORS_EXPRESSION;
   const source = CURRENT_FOOTPRINT_COPY_STATE_CALLS.observe.program;
   const result: unknown = runInNewContext(`${SYNTHETIC}(function(){return ${capture};}).call(PROJECT);`);
-  assert.ok(Array.isArray(result)); assert.equal(result.length, 6);
+  assert.ok(Array.isArray(result)); assert.equal(result.length, 11);
   for (const mutation of [
     "Object.setPrototypeOf(manager,{constructor:class Tg extends ar{}})",
     "Object.setPrototypeOf(consistency,{constructor:class ja extends Vc{}})",
+    "Object.setPrototypeOf(PROJECT,{constructor:class Lg extends Gd{}})",
+    "Object.setPrototypeOf(bus,{constructor:class JP extends KP{}})",
   ]) {
     assert.throws(() => runInNewContext(`${SYNTHETIC}${mutation};(function(){return ${capture};}).call(PROJECT);`), /FOOTPRINT_CONSTRUCTOR_BINDING/u);
     assert.throws(() => runInNewContext(`${SYNTHETIC}${mutation};(${source}).call(PROJECT,bus,manager,consistency,constructors);`), /FOOTPRINT_COPY_STATE/u);
   }
   assert.throws(() => runInNewContext(`${SYNTHETIC}(function(Tg){return ${capture};}).call(PROJECT,class Tg extends ar{});`), /FOOTPRINT_CONSTRUCTOR_BINDING/u);
   assert.throws(() => runInNewContext(`${SYNTHETIC}(function(Tg){return ${capture};}).call(PROJECT,undefined);`), /FOOTPRINT_CONSTRUCTOR_BINDING/u);
+});
+void test("original project and channel classes are captured through original receivers without later lexical bindings or lazy notification getters", () => {
+  const capture = CURRENT_FOOTPRINT_COPY_CONSTRUCTORS_EXPRESSION;
+  const result: unknown = runInNewContext(`${SYNTHETIC}
+Object.defineProperty(PROJECT,"wsBus",{get(){throw new Error("Lazy notification getter invoked");}});
+(function(Lg,Gd,JP,KP,Mb){return ${capture};}).call(PROJECT);`);
+  assert.ok(Array.isArray(result)); assert.equal(result.length, 11);
+  assert.deepEqual(Array.from(result.slice(6), (value: unknown) => typeof value === "function" ? value.name : "invalid"), ["Lg", "Gd", "JP", "KP", "Mb"]);
+  let hooks = 0;
+  const hook = (): never => { hooks += 1; throw new Error("Original bus getter invoked"); };
+  assert.throws(() => runInNewContext(`${SYNTHETIC}Object.defineProperty(PROJECT,"workerBus",{get:hook});(function(){return ${capture};}).call(PROJECT);`, { hook }), /FOOTPRINT_CONSTRUCTOR_BINDING/u);
+  assert.equal(hooks, 0);
 });

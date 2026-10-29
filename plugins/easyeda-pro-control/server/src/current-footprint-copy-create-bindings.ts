@@ -28,8 +28,9 @@ const chain=(o,names,original,offset)=>{const result=[];let p=proto(o);for(let i
 const method=(o,parents,k,index)=>{absent(o,k);for(let i=0;i<index;i++)absent(parents[i],k);const d=descriptor(parents[index],k);if(!d||!Object.hasOwn(d,"value")||typeof d.value!=="function"||d.writable!==true||d.enumerable!==false||d.configurable!==true)bad();return d.value;};
 const verify=()=>{for(const [o,p]of prototypes)if(Object.getPrototypeOf(o)!==p)bad();for(const [o,k,d]of descriptors){const n=Object.getOwnPropertyDescriptor(o,k);if(d===undefined?n!==undefined:!n||d.enumerable!==n.enumerable||d.configurable!==n.configurable||d.writable!==n.writable||d.get!==n.get||d.set!==n.set||!Object.is(d.value,n.value)||Object.hasOwn(d,"value")!==Object.hasOwn(n,"value"))bad();}};
 if(own(globalThis,"PROJECT")!==this||own(this,"workerBus")!==bus||own(this,"footprint")!==manager||own(this,"consistencyManager")!==consistency||own(manager,"projectManager")!==this||own(manager,"user")!==undefined)bad();
-array(constructors,6);
-const footprint=chain(manager,["Tg","ar","Pi"],constructors,0),common=chain(consistency,["ja","Vc","zy"],constructors,3),project=chain(this,["Lg","Gd"],null,0);
+array(constructors,11);
+const footprint=chain(manager,["Tg","ar","Pi"],constructors,0),common=chain(consistency,["ja","Vc","zy"],constructors,3),project=chain(this,["Lg","Gd"],constructors,6);
+chain(bus,["JP","KP","Mb"],constructors,8);
 const selected=["create","buildString","canvasString","getCanvasData","get"].map(name=>method(manager,footprint,name,0));
 selected.push(method(this,project,"uploadLocal",1),method(consistency,common,"setDoctype",0));
 absent(manager,"newTicket");absent(footprint[0],"newTicket");absent(footprint[1],"newTicket");

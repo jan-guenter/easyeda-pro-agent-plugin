@@ -148,6 +148,12 @@ export function currentFootprintCopyMainTransportNativeSource(): string {
   }
   // Only the separately generated fixed command encoder may call this method.
   // It is internal, has no serialized tool route and accepts no URL/session.
+  internal void RequireCompletionCapacity(int consumed){
+    Need(consumed>=0&&requests==consumed&&normalRequests+cleanupRequests==requests,"completion-counters");
+    Need(normalRequests+EasyedaFootprintCopyMainCompletionProtocol.NormalRequests<=normalLimit &&
+      cleanupRequests+EasyedaFootprintCopyMainCompletionProtocol.CleanupRequests+1<=cleanupLimit &&
+      requests+EasyedaFootprintCopyMainCompletionProtocol.Requests+1<=normalLimit+cleanupLimit,"completion-capacity");
+  }
   internal void SendFixed(string fixedMessage,bool cleanup){
     Budget(cleanup);AssertConnection();Need(fixedMessage!=null&&fixedMessage.Length>0&&fixedMessage.IndexOf('\0')<0&&utf8.GetByteCount(fixedMessage)<=65536,"command-bound");
     Need(requests<normalLimit+cleanupLimit&&(cleanup?cleanupRequests<cleanupLimit:normalRequests<normalLimit),"request-budget");requests++;if(cleanup)cleanupRequests++;else normalRequests++;WriteFrame(1,utf8.GetBytes(fixedMessage));AssertConnection();
@@ -199,6 +205,7 @@ export function currentFootprintCopyMainTransportNativeSource(): string {
     framed.incoming.AddRange(new byte[]{129,128});refuse(()=>framed.ReadFrame());framed.incoming.Clear();framed.Release();
     var originalElapsed=System.Diagnostics.Stopwatch.StartNew();var combined=new EasyedaOriginalMainTransport(true,originalElapsed);
     Need(System.Object.ReferenceEquals(combined.elapsed,originalElapsed)&&combined.normalLimit==EasyedaFootprintCombinedLimits.MainNormal&&combined.cleanupLimit==EasyedaFootprintCombinedLimits.MainCleanup,"smoke-combined-clock-budget");
+    refuse(()=>combined.RequireCompletionCapacity(1));refuse(()=>combined.RequireCompletionCapacity(0));Need(combined.requests==0&&combined.normalRequests==0&&combined.cleanupRequests==0,"smoke-completion-capacity-nondispatch");
     refuse(()=>new EasyedaOriginalMainTransport(false,originalElapsed));refuse(()=>new EasyedaOriginalMainTransport(true,null));combined.Release();
     var transport=new EasyedaOriginalMainTransport();refuse(()=>transport.Attach());refuse(()=>transport.SendFixed("{}",false));refuse(()=>transport.RequestOriginalJobTermination());transport.Release();refuse(()=>transport.Release());
   }

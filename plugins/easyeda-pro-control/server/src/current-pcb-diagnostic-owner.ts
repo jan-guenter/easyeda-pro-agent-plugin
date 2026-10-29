@@ -124,6 +124,10 @@ import type { CurrentFootprintCopySourceReadTransport } from "./current-footprin
 import { currentFootprintCopyMainBackendWire } from "./current-footprint-copy-main-backend-wire.ts";
 import type { CurrentFootprintCopyMainBackendCommand } from "./current-footprint-copy-main-backend-contract.ts";
 import { currentFootprintCopyMainRequestWire } from "./current-footprint-copy-main-request-wire.ts";
+import { currentFootprintCopyMainCompletionWire } from "./current-footprint-copy-main-completion-wire.ts";
+import type { CurrentFootprintCopyMainCompletionCommand } from "./current-footprint-copy-main-completion-protocol.ts";
+import { CURRENT_FOOTPRINT_COPY_MAIN_COMPLETION_REQUESTS } from "./current-footprint-copy-main-completion-protocol.ts";
+import { requireCurrentFootprintCopyMainCompletionHeadroom } from "./current-footprint-copy-main-capacity.ts";
 import type { CurrentFootprintCopyMainRequestCollectCommand } from "./current-footprint-copy-main-request-protocol.ts";
 import { CURRENT_FOOTPRINT_COMBINED_PROFILE, CURRENT_FOOTPRINT_COMBINED_PURPOSE } from "./current-footprint-copy-combined-profile.ts";
 import { CURRENT_FOOTPRINT_COMBINED_READY, decodeCurrentFootprintCombinedReady } from "./current-footprint-combined-ready.ts";
@@ -136,8 +140,8 @@ import { CurrentFootprintCopyMainBackendRunner } from "./current-footprint-copy-
 import type { CurrentFootprintCopyMainBackendObservation } from "./current-footprint-copy-main-backend-runner.ts";
 
 
-const HELPER_SHA256 = "d3ce3cee810a9804839acff1def0601997ba01eb78b0f7e673b0920825b1a701";
-const HELPER_BYTES = 1_043_219;
+const HELPER_SHA256 = "ba99b949930606e9371fd5ca39d2b617d31c4a256f9b32213ae5bcbc34dcb63b";
+const HELPER_BYTES = 1_044_546;
 const MAX_LINE = 100_000;
 // 64 MiB native bytes need at most 85.34 MiB base64 plus bounded poll envelopes.
 const MAX_TOTAL = 96 * 1024 * 1024;
@@ -189,7 +193,7 @@ export interface CurrentPcbDiagnosticNoProcessRelease {
   readonly processCreated: false; readonly released: true;
 }
 interface NoProcessProof { readonly creationState: "not-entered" | "returned-false"; readonly createProcessError?: number }
-const mainNativeActions = ["main-attach", "main-reprove", "main-send", "main-request-send", "main-poll", "main-terminate", "combined-abort"] as const;
+const mainNativeActions = ["main-attach", "main-reprove", "main-send", "main-request-send", "main-completion-begin", "main-completion-send", "main-completion-retire", "main-poll", "main-terminate", "combined-abort"] as const;
 type MainNativeAction = typeof mainNativeActions[number];
 interface Pending {
   readonly id: string; readonly resolve: (value: RecordValue) => void; readonly reject: (error: Error) => void;
@@ -426,6 +430,12 @@ class CurrentPcbRetainedOwnerCore {
   #mainRequestId = 0;
   #mainNormalRequests = 0;
   #mainCleanupRequests = 0;
+  #mainCompletionState: "unused" | "beginning" | "active" | "failed" | "retired" = "unused";
+  #mainCompletionFirst = 0;
+  #mainCompletionNormal = 0;
+  #mainCompletionCleanup = 0;
+  #mainCompletionRetireAttempted = false;
+  #mainCompletionTailReleaseAttempted = false;
   #mainTerminateAttempted = false;
   #combinedAbortAttempted = false;
   #combinedOutputCleanupOnly = false;
@@ -2154,6 +2164,10 @@ class CurrentPcbRetainedOwnerCore {
    * connection and independently checks its own counters before each write. */
   public async sendFootprintMain(command: CurrentFootprintCopyMainBackendCommand | CurrentFootprintCopyMainRequestCollectCommand, requestId: number): Promise<void> {
     const original = this.#requireFootprintMain(true);
+    if (this.#mainCompletionState !== "unused" && !(this.#mainCompletionState === "retired" && command.phase === "release")) {
+      throw error("MAIN_COMPLETION_OLD_ROLE_CONSUMED");
+    }
+    if (this.#mainCompletionState === "retired" && this.#mainCompletionTailReleaseAttempted) { throw error("MAIN_COMPLETION_TAIL_RELEASE_CONSUMED"); }
     if (requestId !== this.#mainRequestId + 1) { throw error("MAIN_REQUEST_ID"); }
     const collection = command.phase.startsWith("request-");
     if (collection && this.#purpose !== CURRENT_FOOTPRINT_COMBINED_PURPOSE) { throw error("MAIN_REQUEST_PURPOSE"); }
@@ -2163,6 +2177,7 @@ class CurrentPcbRetainedOwnerCore {
     const maximumCleanup = this.#purpose === CURRENT_FOOTPRINT_COMBINED_PURPOSE ? CURRENT_FOOTPRINT_COMBINED_PROFILE.main.cleanupRequestLimit : CURRENT_FOOTPRINT_COPY_MAIN_TRANSPORT.cleanupRequests;
     if (cleanup ? this.#mainCleanupRequests >= maximumCleanup : this.#mainNormalRequests >= maximumNormal) { throw error("MAIN_REQUEST_BUDGET"); }
     this.#enterFootprintMain(); this.#mainRequestId += 1;
+    if (this.#mainCompletionState === "retired") { this.#mainCompletionTailReleaseAttempted = true; }
     if (cleanup) { this.#mainCleanupRequests += 1; } else { this.#mainNormalRequests += 1; }
     try {
       await this.#verify();
@@ -2172,6 +2187,69 @@ class CurrentPcbRetainedOwnerCore {
       await this.#verify();
       if (this.#requireFootprintMain(true) !== original) { throw error("MAIN_OWNER_CHANGED"); }
     } finally { this.#leaveFootprintMain(); }
+  }
+  /** Check the original counters before the held collector can transfer its
+   * lease. The current observation profile deliberately cannot fit this unit. */
+  public assertFootprintMainCompletionCapacity(firstRequestId: number): void {
+    this.#requireFootprintMain(true);
+    if (this.#purpose !== CURRENT_FOOTPRINT_COMBINED_PURPOSE || this.#mainCompletionState !== "unused" ||
+      !Number.isSafeInteger(firstRequestId) || firstRequestId !== this.#mainRequestId + 1) { throw error("MAIN_COMPLETION_CAPACITY_OWNER"); }
+    requireCurrentFootprintCopyMainCompletionHeadroom(this.#mainRequestId, this.#mainNormalRequests, this.#mainCleanupRequests);
+  }
+  public async beginFootprintMainCompletion(firstRequestId: number): Promise<void> {
+    this.assertFootprintMainCompletionCapacity(firstRequestId);
+    const original = this.#requireFootprintMain(true);
+    this.#enterFootprintMain(); this.#mainCompletionState = "beginning"; this.#mainCompletionFirst = firstRequestId;
+    try {
+      await this.#verify();
+      if (this.#requireFootprintMain(true) !== original) { throw error("MAIN_COMPLETION_OWNER_CHANGED"); }
+      const reply = await this.#request({ action: "main-completion-begin", firstRequestId });
+      if (!exact(reply, ["begun"]) || reply["begun"] !== true || this.#requireFootprintMain(true) !== original) { throw error("MAIN_COMPLETION_BEGIN_REPLY"); }
+      await this.#verify();
+      if (this.#requireFootprintMain(true) !== original) { throw error("MAIN_COMPLETION_OWNER_CHANGED"); }
+      this.#mainCompletionState = "active";
+    } catch (caughtError) { this.#mainCompletionState = "failed"; throw caughtError; }
+    finally { this.#leaveFootprintMain(); }
+  }
+  public async sendFootprintMainCompletion(command: CurrentFootprintCopyMainCompletionCommand, requestId: number): Promise<void> {
+    const original = this.#requireFootprintMain(true);
+    if (this.#mainCompletionState !== "active" || requestId !== this.#mainRequestId + 1 ||
+      requestId !== this.#mainCompletionFirst + this.#mainCompletionNormal + this.#mainCompletionCleanup) { throw error("MAIN_COMPLETION_SEQUENCE"); }
+    const wire = currentFootprintCopyMainCompletionWire(command, requestId);
+    const cleanup = command.method === "Debugger.removeBreakpoint" || command.method === "Debugger.resume" || command.method === "Runtime.releaseObjectGroup";
+    const limits = CURRENT_FOOTPRINT_COPY_MAIN_COMPLETION_REQUESTS;
+    if (cleanup ? this.#mainCompletionCleanup >= limits.cleanup : this.#mainCompletionNormal >= limits.normal) { throw error("MAIN_COMPLETION_BUDGET"); }
+    this.#enterFootprintMain(); this.#mainRequestId += 1;
+    if (cleanup) { this.#mainCompletionCleanup += 1; this.#mainCleanupRequests += 1; }
+    else { this.#mainCompletionNormal += 1; this.#mainNormalRequests += 1; }
+    try {
+      await this.#verify();
+      if (this.#requireFootprintMain(true) !== original) { throw error("MAIN_COMPLETION_OWNER_CHANGED"); }
+      const reply = await this.#request({ ...wire.request });
+      if (!exact(reply, ["written"]) || reply["written"] !== true || this.#requireFootprintMain(true) !== original) { throw error("MAIN_COMPLETION_WRITE_REPLY"); }
+      await this.#verify();
+      if (this.#requireFootprintMain(true) !== original) { throw error("MAIN_COMPLETION_OWNER_CHANGED"); }
+    } catch (caughtError) { this.#mainCompletionState = "failed"; throw caughtError; }
+    finally { this.#leaveFootprintMain(); }
+  }
+  public async retireFootprintMainCompletion(): Promise<void> {
+    const ended = this.#terminationObserved && this.#terminationObservation?.originalRootExited === true && this.#terminationObservation.originalJobEmpty === true;
+    if (this.#purpose !== CURRENT_FOOTPRINT_COMBINED_PURPOSE || this.#mainCompletionState === "unused" && !ended ||
+      this.#mainCompletionState === "retired" || this.#mainCompletionRetireAttempted) { throw error("MAIN_COMPLETION_RETIRE_OWNER"); }
+    const limits = CURRENT_FOOTPRINT_COPY_MAIN_COMPLETION_REQUESTS;
+    const complete = this.#mainCompletionState === "active" && this.#mainCompletionNormal === limits.normal && this.#mainCompletionCleanup === limits.cleanup &&
+      this.#mainRequestId + 1 === this.#mainCompletionFirst + limits.total;
+    if (!complete && !ended) { this.#mainCompletionState = "failed"; throw error("MAIN_COMPLETION_RETIRE_NEEDS_EXIT"); }
+    this.#available(); this.#enterFootprintMain(); this.#mainCompletionRetireAttempted = true;
+    try {
+      const reply = await this.#request({ action: "main-completion-retire" });
+      if (!exact(reply, ["retired"]) || reply["retired"] !== true) { throw error("MAIN_COMPLETION_RETIRE_REPLY"); }
+      this.#mainCompletionState = "retired";
+    } catch (caughtError) { this.#mainCompletionState = "failed"; throw caughtError; }
+    finally { this.#leaveFootprintMain(); }
+  }
+  public failFootprintMainCompletion(): void {
+    if (this.#mainCompletionState !== "unused" && this.#mainCompletionState !== "retired") { this.#mainCompletionState = "failed"; }
   }
   /** Returns only a bounded transport chunk. The private construction runner
    * owns message framing, outstanding replies and actual inspector events. */
@@ -2447,7 +2525,8 @@ class CurrentPcbRetainedOwnerCore {
     if (this.#pending !== null) { throw error("REQUEST_PENDING"); }
     if (this.#purpose === CURRENT_FOOTPRINT_COMBINED_PURPOSE && (!this.#combinedFactoryReady || this.#combinedReadyPacket === null || this.#combinedReadyAbandoned)) { throw error("COMBINED_READY_REQUIRED"); }
 
-    const rpcRetireAfterTermination = this.#purpose === CURRENT_FOOTPRINT_COMBINED_PURPOSE && request["action"] === "footprint-clock-rpc-retire" &&
+    const rpcRetireAfterTermination = this.#purpose === CURRENT_FOOTPRINT_COMBINED_PURPOSE &&
+      (request["action"] === "footprint-clock-rpc-retire" || request["action"] === "main-completion-retire") &&
       this.#terminationObserved && this.#terminationObservation?.originalRootExited === true && this.#terminationObservation.originalJobEmpty === true;
     const combinedCleanup = combinedCleanupControl(request) || rpcRetireAfterTermination;
     if ((this.#combinedAbortAttempted || this.#combinedOutputCleanupOnly) && !combinedCleanup) { throw error("COMBINED_CLEANUP_ONLY"); }
@@ -2505,14 +2584,14 @@ class CurrentPcbRetainedOwnerCore {
       send: request["action"] === "send" || request["action"] === "worker-startup-send" || request["action"] === "worker-startup-parent" ||
         request["action"] === "worker-startup-empty-common" || request["action"] === "worker-startup-empty-root" ||
         request["action"] === "worker-startup-ratline" || request["action"] === "worker-startup-ratline-continuation" || request["action"] === "main-send" || request["action"] === "main-request-send" ||
-        request["action"] === "footprint-clock-rpc-send", written: false, reply: null,
+        request["action"] === "footprint-clock-rpc-send" || request["action"] === "main-completion-send", written: false, reply: null,
       timer: setTimeout(() => { this.#fail("HELPER_DEADLINE"); }, 15_000) };
     this.#pending = pending;
     if (launch) { this.#launchRequestIssued = true; }
     try {
       const data = `${JSON.stringify({ ...this.#binding, ...request, id })}\n`;
       const combinedRequest = this.#purpose === CURRENT_FOOTPRINT_COMBINED_PURPOSE &&
-        (request["action"] === "main-request-send" || request["action"] === "footprint-clock-rpc-send");
+        (request["action"] === "main-request-send" || request["action"] === "footprint-clock-rpc-send" || request["action"] === "main-completion-send");
       const maximum = combinedRequest || request["method"] === "Runtime.callFunctionOn" && (request["action"] === "worker-startup-parent" &&
         (request["parentPhase"] === "preflight" || request["parentPhase"] === "open-project" ||
           request["parentPhase"] === "pcb-preflight" || request["parentPhase"] === "pcb-open-document" || request["parentPhase"] === "pcb-observe") || request["action"] === "send" &&
@@ -2749,7 +2828,12 @@ const footprintOwnershipMethods = Object.freeze({ assert: CurrentPcbRetainedOwne
   requireTermination: CurrentPcbRetainedOwnerCore.prototype.requireFootprintTermination });
 const combinedOwnershipMethods = Object.freeze({ generation: CurrentPcbRetainedOwnerCore.prototype.requireOriginalFootprintCombinedGeneration,
   require: CurrentPcbRetainedOwnerCore.prototype.requireOriginalCombinedMainRunner,
-  send: CurrentPcbRetainedOwnerCore.prototype.sendFootprintMain });
+  send: CurrentPcbRetainedOwnerCore.prototype.sendFootprintMain,
+  completionCapacity: CurrentPcbRetainedOwnerCore.prototype.assertFootprintMainCompletionCapacity,
+  completionBegin: CurrentPcbRetainedOwnerCore.prototype.beginFootprintMainCompletion,
+  completionSend: CurrentPcbRetainedOwnerCore.prototype.sendFootprintMainCompletion,
+  completionRetire: CurrentPcbRetainedOwnerCore.prototype.retireFootprintMainCompletion,
+  completionFail: CurrentPcbRetainedOwnerCore.prototype.failFootprintMainCompletion });
 const combinedOwnerDescriptors = Object.getOwnPropertyDescriptors(CurrentFootprintCombinedNativeOwner.prototype);
 /* oxlint-enable typescript/unbound-method */
 export function assertOriginalCurrentFootprintCombinedNativeOwner(owner: CurrentFootprintCombinedNativeOwner): void {
@@ -2798,6 +2882,39 @@ export async function sendCurrentFootprintCombinedMainCommand(capability: Curren
   const owner = originalCombinedCapabilityOwner(capability, runner, "normal");
   await combinedOwnershipMethods.send.call(owner, command, id);
   originalCombinedCapabilityOwner(capability, runner, "normal");
+}
+export function assertCurrentFootprintCombinedMainCompletionCapacity(capability: CurrentFootprintCombinedMainCapability,
+  runner: CurrentFootprintCopyMainBackendRunner, firstRequestId: number): void {
+  const owner = originalCombinedCapabilityOwner(capability, runner, "normal");
+  combinedOwnershipMethods.completionCapacity.call(owner, firstRequestId);
+}
+export async function beginCurrentFootprintCombinedMainCompletion(capability: CurrentFootprintCombinedMainCapability,
+  runner: CurrentFootprintCopyMainBackendRunner, firstRequestId: number): Promise<void> {
+  const owner = originalCombinedCapabilityOwner(capability, runner, "normal");
+  await combinedOwnershipMethods.completionBegin.call(owner, firstRequestId);
+  originalCombinedCapabilityOwner(capability, runner, "normal");
+}
+export async function sendCurrentFootprintCombinedMainCompletion(capability: CurrentFootprintCombinedMainCapability,
+  runner: CurrentFootprintCopyMainBackendRunner, command: CurrentFootprintCopyMainCompletionCommand, id: number): Promise<void> {
+  const owner = originalCombinedCapabilityOwner(capability, runner, "normal");
+  await combinedOwnershipMethods.completionSend.call(owner, command, id);
+  originalCombinedCapabilityOwner(capability, runner, "normal");
+}
+export async function retireCurrentFootprintCombinedMainCompletion(capability: CurrentFootprintCombinedMainCapability,
+  runner: CurrentFootprintCopyMainBackendRunner): Promise<void> {
+  const owner = originalCombinedCapabilityOwner(capability, runner, "cleanup");
+  await combinedOwnershipMethods.completionRetire.call(owner);
+  originalCombinedCapabilityOwner(capability, runner, "cleanup");
+}
+export function failCurrentFootprintCombinedMainCompletion(capability: CurrentFootprintCombinedMainCapability,
+  runner: CurrentFootprintCopyMainBackendRunner): void {
+  try {
+    const owner = originalCombinedCapabilityOwner(capability, runner, "cleanup");
+    combinedOwnershipMethods.completionFail.call(owner);
+  } catch {
+    // Revocation never masks the primary failure. A foreign, released or
+    // Substituted capability cannot acquire normal authority from this sink.
+  }
 }
 export function assertOriginalCurrentFootprintCopyNativeOwner(owner: CurrentFootprintCopyGenerationOwner): void {
   if (types.isProxy(owner)) { throw error("FOOTPRINT_ORIGINAL_OWNER"); }

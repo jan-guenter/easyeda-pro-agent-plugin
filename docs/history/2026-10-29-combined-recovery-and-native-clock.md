@@ -168,3 +168,54 @@ project-open evidence and footprint copy/delete reasons changed. Private clock
 origin/routing and completion encoding do not enable a public writer or prove
 connected clock invocation, backend completion, publication or durability.
 Publication and official installation are pending at this candidate snapshot.
+
+
+## Publication, installation and final main verification
+
+Final candidate `d32601e9e287759a45b172f19a616cd20bfb5eac` passed all eleven PR
+checks. Linux40841403261 passed13,516 facade tests with five expected platform
+skips and zero failures, plus424 bridge tests. Windows40841403474 passed.
+Protected [PR148](https://github.com/jan-guenter/easyeda-pro-agent-plugin/pull/148)
+merged as `b8db6aa2661f2db7c7d62a621c9696f04595c0f5`. Its plugin tree
+`56a9ec5c529f57fb53099de23b2785cb8ef52afd` is exactly the tested candidate tree.
+Automatic main Linux40843336203 passed all ten jobs, and main Windows40843336155
+passed on that exact merge. Source, runtime, helper and compatibility pins
+remained unchanged throughout final verification.
+
+The official CLI upgraded canonical Git marketplace
+`https://github.com/jan-guenter/easyeda-pro-agent-plugin.git`, refmain, to merged
+main and reported installing `0.3.0+codex.20261029081309`. Its new leaf was absent
+at the initial verifier, before any scoped plugin-list call had run. That
+refusal is preserved; no deleting process or cause was established. Inspection
+confirmed the exact canonical Git/main revision, enabled setting and absent
+leaf. One official reinstall restored it. The following scoped list reported
+installed/enabled true, and complete verification after that list passed.
+No installed cache, registration, Git ref or host gateway was manually patched
+or terminated. The machine profile remains byte-exact; no key was reprovisioned.
+
+The maintained installed verifier matched all2,321 files,45,275,434 bytes and42
+directories including root, with exact committed bytes and644/755 modes.
+Inventory SHA256 is
+`406904e7c747088688206d75975687b260b89483cae91b7430391d287c2241cf`.
+The dependency-free installed probe passed27 exposed tools,52 configured tools,
+45 catalog queries and47 total requests. Its own synthetic-profile child closed
+through stdin EOF with exit0, no signal and empty stderr. Post-close marker and
+control-roster checks passed; no descendants or non-stdio sockets were sampled.
+This is package verification, not continuous isolation, actual host admission,
+connected clock execution or writer validation. Selected installed manifest,
+bundle and native-helper identities also remain present/exact after main CI.
+
+No live MCP call followed installation. This chat still loaded042605. The new
+snapshot needs a fresh Codex session and actual-process admission before live
+work. Historical relinquishment is COMPLETE; do not rerun it, PowerShell48724
+termination, the released042605 launch or its consumed actor observation. Use a
+new disposable operation and fresh bindings to validate actor publication and
+then route acceptance. Never repair the old journal merely to publish its
+retained actor packet. Full copy-trigger/main scheduling, backend completion
+ownership and atomic held-PB transfer, pre-write history eligibility, parser/
+upload/publication completion, complete four-generation budgets, independent
+closed SQL, saved copy and supported delete/saved absence remain open. Broader
+API omissions remain explicit in the exhaustive coverage inventory.
+
+This local publication appendix is retained for the next substantive commit.
+The installed package remains the exact tested merged plugin tree.

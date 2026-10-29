@@ -101,11 +101,12 @@ const projectUuid=text(own(target,"projectUuid"),/^(?:[a-f0-9]{32}|[a-f0-9]{64})
 const footprintUuid=text(own(selected,"footprintUuid"),/^(?:[a-f0-9]{16}|[a-f0-9]{32})$/),client=text(own(selected,"client"),/^[a-f0-9]{16}$/),maximumTicket=own(selected,"maximumTicket");
 if(!Number.isSafeInteger(maximumTicket)||Object.is(maximumTicket,-0)||maximumTicket<0||maximumTicket>Number.MAX_SAFE_INTEGER-3)bad();
 if(own(globalThis,"PROJECT")!==project||own(globalThis,"_TAB_ID_")!==windowTabId||own(project,"uuid")!==projectUuid||own(project,"_branchUuid")!==branchUuid||own(project,"workerBus")!==bus||own(project,"footprint")!==this||own(project,"consistencyManager")!==consistency||own(this,"projectManager")!==project||own(this,"client")!==client||own(this,"user")!==undefined||own(consistency,"client")!==client||own(consistency,"maxTicket")!==maximumTicket)bad();
-if(!Array.isArray(constructors)||proto(constructors)!==Array.prototype||own(constructors,"length")!==6||Reflect.ownKeys(constructors).length!==7)bad();
-const constructorValues=[];for(let index=0;index<6;index++){const c=own(constructors,String(index));if(typeof c!=="function")bad();constructorValues.push(c);}
+if(!Array.isArray(constructors)||proto(constructors)!==Array.prototype||own(constructors,"length")!==11||Reflect.ownKeys(constructors).length!==12)bad();
+const constructorValues=[];for(let index=0;index<11;index++){const c=own(constructors,String(index));if(typeof c!=="function")bad();constructorValues.push(c);}
 if(!Array.isArray(methods)||proto(methods)!==Array.prototype||own(methods,"length")!==5||Reflect.ownKeys(methods).length!==6)bad();
 const methodValues=[];for(let index=0;index<5;index++){const fn=own(methods,String(index));if(typeof fn!=="function")bad();methodValues.push(fn);}
-const footprintChain=chain(this,["Tg","ar","Pi"],constructorValues.slice(0,3)),consistencyChain=chain(consistency,["ja","Vc","zy"],constructorValues.slice(3)),projectChain=chain(project,["Lg","Gd"]);
+const footprintChain=chain(this,["Tg","ar","Pi"],constructorValues.slice(0,3)),consistencyChain=chain(consistency,["ja","Vc","zy"],constructorValues.slice(3,6)),projectChain=chain(project,["Lg","Gd"],constructorValues.slice(6,8));
+chain(bus,["JP","KP","Mb"],constructorValues.slice(8,11));
 const getStr=method(this,footprintChain,"getStr",0);
 if(getStr!==methodValues[0]||method(consistency,consistencyChain,"getMaxTicket",1)!==methodValues[2]||method(project,projectChain,"getCanvasByConsistency",0)!==methodValues[3]||method(project,projectChain,"compress",0)!==methodValues[4])bad();
 absent(this,"maxTicket");absent(footprintChain[0],"maxTicket");absent(footprintChain[1],"maxTicket");

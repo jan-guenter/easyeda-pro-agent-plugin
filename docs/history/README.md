@@ -38,6 +38,7 @@ archive retain their original paths and must not be rewritten to later names.
 
 ## Record index and former paths
 
+- [2026-10-29 footprint completion ownership and route](2026-10-29-footprint-completion-owner-and-route.md): fresh installed owner, connected actor publication and batched private completion/delete work.
 - [2026-10-29 combined recovery and native clock integration](2026-10-29-combined-recovery-and-native-clock.md).
 - [2026-10-29 footprint recovery and completion](2026-10-29-footprint-recovery-and-completion.md): fresh host admission, process-presence refusal and batched clock/backend completion work.
 - [2026-10-29 combined startup and footprint proofs](2026-10-29-combined-startup-and-footprint-proofs.md): consumed pre-binding helper failure, actual flag correction, readiness/relinquishment work, clock/RPC and pure delete verification.

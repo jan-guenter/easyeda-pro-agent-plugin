@@ -111,3 +111,17 @@ void test("held completion cannot be selected after ordinary arming or consumed 
   f.runner.consumeBeforeInvocation(); f.state.invoked = true;
   const packet = await f.runner.collect(); assert.equal(packet.allFourPausesResumed, true); await f.runner.cleanup();
 });
+void test("atomic completion transfer consumes exact held owner before any resume and revokes every retained old alias", async () => {
+  const f = await fixture(); await f.runner.armForCompletion(); f.runner.consumeBeforeInvocation(); f.state.invoked = true;
+  const packet = await f.runner.collectToHeldFinalPb();
+  const count = f.commands.length, old = f.runner.heldFinalPbBindings(packet);
+  assert.throws(() => f.runner.transferHeldFinalPb(structuredClone(packet), f.token), /ORIGINAL_HELD_PACKET/u);
+  assert.throws(() => f.runner.transferHeldFinalPb(packet, Object.freeze({ ...f.token })), /ORIGINAL_TRANSFER_ORIGIN/u);
+  assert.equal(f.runner.transferHeldFinalPb(packet, f.token), old);
+  assert.equal(f.runner.diagnostics().phase, "completion-transferred");
+  assert.throws(() => f.runner.heldFinalPbBindings(packet)); await assert.rejects(old.assertOriginal());
+  assert.throws(() => f.runner.transferHeldFinalPb(packet, f.token));
+  await assert.rejects(f.runner.cleanup(), /COMPLETION_OWNS_GENERATION/u);
+  f.state.exited = true; await assert.rejects(f.runner.observeOriginalGenerationEnded(), /COMPLETION_OWNS_GENERATION/u);
+  assert.equal(f.commands.length, count); assert.equal(f.state.retired, false); assert.equal(f.state.groupReleased, false);
+});

@@ -5,7 +5,7 @@ import { gzipSync } from "node:zlib";
 import { CURRENT_FOOTPRINT_COPY_MAIN_REQUEST_GROUP as GROUP } from "./current-footprint-copy-main-request-programs.ts";
 import { CURRENT_FOOTPRINT_COPY_MAIN_COMPLETION_EXPRESSIONS as EXPRESSIONS, CURRENT_FOOTPRINT_COPY_MAIN_COMPLETION_PROGRAMS as PROGRAMS } from "./current-footprint-copy-main-completion-programs.ts";
 import { CURRENT_FOOTPRINT_COPY_MAIN_COMPLETION_ORDER as ORDER } from "./current-footprint-copy-main-completion-source.ts";
-import { CURRENT_FOOTPRINT_COPY_MAIN_COMPLETION_FLAGS as FLAGS, currentFootprintCopyMainCompletionSourceArm } from "./current-footprint-copy-main-completion-protocol.ts";
+import { CURRENT_FOOTPRINT_COPY_MAIN_COMPLETION_FLAGS as FLAGS, CURRENT_FOOTPRINT_COPY_MAIN_COMPLETION_REQUESTS as REQUESTS, currentFootprintCopyMainCompletionSourceArm } from "./current-footprint-copy-main-completion-protocol.ts";
 import type { CurrentFootprintCopyMainCompletionCommand as Command } from "./current-footprint-copy-main-completion-protocol.ts";
 import { currentFootprintCopyMainCompletionWire } from "./current-footprint-copy-main-completion-wire.ts";
 
@@ -59,6 +59,7 @@ export function currentFootprintCopyMainCompletionNativeSource(): string {
   const packed = gzipSync(bytes, { level: 9 });
   const hashes = cases.map(command => createHash("sha256").update(JSON.stringify({ id: 73, method: command.method, params: command.params })).digest("hex"));
   return `public static class EasyedaFootprintCopyMainCompletionProtocol {
+public const int NormalRequests=${String(REQUESTS.normal)},CleanupRequests=${String(REQUESTS.cleanup)},Requests=${String(REQUESTS.total)};
 static void Need(bool value){if(!value)throw new System.InvalidOperationException("footprint-main-completion-protocol");}
 static string[][] Load(){byte[] packed=System.Convert.FromBase64String(${literal(packed.toString("base64"))});byte[] bytes=new byte[${String(bytes.length)}];int count=0;
 using(var input=new System.IO.MemoryStream(packed,false))using(var stream=new System.IO.Compression.GZipStream(input,System.IO.Compression.CompressionMode.Decompress)){while(count<bytes.Length){int n=stream.Read(bytes,count,bytes.Length-count);if(n==0)break;count+=n;}Need(count==bytes.Length&&stream.ReadByte()==-1);}
