@@ -88,6 +88,18 @@ distinct saved verification generation. The private saved owner uses purpose
 and saved-source reads. It cannot adopt the writer's handles or dispatch create,
 transaction-clock calls or explicit Save. This is implementation coverage,
 not connected saved-copy acceptance or a public saved-owner action.
+
+A separate private forward-to-saved observation factory now retains the original
+forward ledger, original completed closed SQL snapshot and observed release
+before allocating a fresh saved helper. Its distinct discovery and startup
+channel account the second generation's traffic under the existing103/353
+limits, with separate per-generation controls. The path withholds legacy saved
+admission and permits only the first Start Page upload-queue observation, which
+already checks both fixed cache namespaces. It rejects project preflight/open,
+worker attachment and the second pre-open freshness read before exchange.
+Neither baseline SQL nor accounting can stand in for a created-destination
+projection, native cache qualification, saved result or writer authority.
+
 Generation closure does not prove callback completion or undo external effects;
 those effect branches must be qualified before dispatch. Neither preparation
 nor a returned UUID supplies the missing proofs.

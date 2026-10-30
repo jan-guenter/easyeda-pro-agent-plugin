@@ -121,7 +121,24 @@ void test("native DOS creation verifies the retained original image before one p
   assert.doesNotMatch(dispatcher, /\$_\s+-c?eq\s+['"]resume['"]/u);
   // One P/Invoke declaration plus the image-verified call checked above.
   assert.equal(source.match(/\bResumeThread\s*\(/gu)?.length, 2);
-  assert.ok(!source.includes("OpenProcess("));
+  const coreStart = "void CreateVerifiedRoot()", launchStart = "public void Launch(";
+  const launch = source.slice(source.indexOf(launchStart), source.indexOf(coreStart));
+  assert.ok(launch.startsWith(launchStart) && core.startsWith(coreStart));
+  assert.doesNotMatch(launch + core, /\bOpenProcess\s*\(/u);
+  // Capture may open only a noninheritable query/wait child lease. That one
+  // Declaration and fixed call cannot attach, replace or recreate the root.
+  const captureStart = "// BEGIN GENERATED DIAGNOSTIC WINDOW CAPTURE", captureStop = "// END GENERATED DIAGNOSTIC WINDOW CAPTURE";
+  assert.equal(source.split(captureStart).length, 2); assert.equal(source.split(captureStop).length, 2);
+  const captureBegin = source.indexOf(captureStart), captureEnd = source.indexOf(captureStop);
+  assert.ok(captureBegin > source.indexOf(coreStart) && captureEnd > captureBegin);
+  const capture = source.slice(captureBegin, captureEnd);
+  const captureDeclaration = '[DllImport("kernel32.dll",SetLastError=true)] static extern IntPtr OpenProcess(uint access,bool inherit,uint pid);';
+  const captureCall = "lease.handle=OpenProcess(0x00101000,false,pid);";
+  assert.equal(capture.split(captureDeclaration).length, 2); assert.equal(capture.split(captureCall).length, 2);
+  assert.equal(capture.match(/\bOpenProcess\s*\(/gu)?.length, 2);
+  assert.doesNotMatch(source.slice(0, captureBegin) + source.slice(captureEnd), /\bOpenProcess\s*\(/u);
+  assert.doesNotMatch(capture, /\b(?:root|rootThread|rootPid|rootCreated)\s*=(?!=)/u);
+  assert.ok(!source.includes("Process.GetProcessById"));
   // Forced cleanup is confined to the separately confirmed original Main and
   // Visual Jobs. Excluding only the exact guarded visual method/declaration
   // Keeps every other creation, installation and dispatcher path prohibited.

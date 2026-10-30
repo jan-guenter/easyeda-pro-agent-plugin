@@ -12,6 +12,9 @@ void test("window faults keep geometry/paint snapshots bounded and release actio
   const release = { ...fault, action: "release", stage: "cleanup", code: "window-capture-gdi-release", bounds: null, paintPhase: "possibly-dispatched", nativeResourcesRetained: true };
   assert.equal(decodeCurrentWindowFailure(release, "release", "pcb-diagnostic-window-capture-gdi-release").action, "release");
   assert.throws(() => decodeCurrentWindowFailure({ ...release, stage: "paint" }, "release", "pcb-diagnostic-window-capture-gdi-release"));
+  const childRelease = { ...release, code: "window-capture-child-release", paintPhase: "not-dispatched" };
+  assert.equal(decodeCurrentWindowFailure(childRelease, "release", "pcb-diagnostic-window-capture-child-release").nativeResourcesRetained, true);
+  assert.throws(() => decodeCurrentWindowFailure({ ...childRelease, stage: "children" }, "release", "pcb-diagnostic-window-capture-child-release"));
 });
 
 void test("unavailable native entry points retain fixed fault metadata without exception text or retry authority", () => {
@@ -46,6 +49,27 @@ void test("child ownership faults distinguish the fixed native refusals without 
     assert.equal(result.stage, stage);
   }
   assert.equal(decodeCurrentWindowFailure(childFault, "capture-window", "pcb-diagnostic-window-capture-child-ownership").childOwnership, undefined);
+});
+
+void test("retained child process refusals keep proof failures bounded without granting process authority", () => {
+  for (const reason of ["process-open-failed", "process-query-failed", "process-job-query-failed"]) {
+    for (const nativeError of [0, 5, 1400, 4_294_967_295]) {
+      const childOwnership = { reason, visited: 2, visible: 1, nativeError };
+      const result = decodeCurrentWindowFailure({ ...childFault, nativeResourcesRetained: reason !== "process-open-failed", childOwnership }, "capture-window", "pcb-diagnostic-window-capture-child-ownership");
+      assert.deepEqual(result.childOwnership, childOwnership);
+      assert.equal(result.executionAuthorized, false);
+    }
+    assert.throws(() => decodeCurrentWindowFailure({ ...childFault, childOwnership: { reason, visited: 2, visible: 1, nativeError: null } }, "capture-window", "pcb-diagnostic-window-capture-child-ownership"));
+  }
+  for (const reason of ["process-not-live", "process-identity", "process-outside-job", "process-image", "window-linkage-changed"]) {
+    const childOwnership = { reason, visited: 2, visible: 1, nativeError: null };
+    const result = decodeCurrentWindowFailure({ ...childFault, nativeResourcesRetained: true, childOwnership }, "capture-window", "pcb-diagnostic-window-capture-child-ownership");
+    assert.deepEqual(result.childOwnership, childOwnership);
+    assert.throws(() => decodeCurrentWindowFailure({ ...childFault, childOwnership: { ...childOwnership, nativeError: 5 } }, "capture-window", "pcb-diagnostic-window-capture-child-ownership"));
+    for (const extra of [{ pid: 7 }, { processCreated: 10 }, { threadId: 11 }, { executable: "private-image" }]) {
+      assert.throws(() => decodeCurrentWindowFailure({ ...childFault, childOwnership: { ...childOwnership, ...extra } }, "capture-window", "pcb-diagnostic-window-capture-child-ownership"));
+    }
+  }
 });
 
 void test("child snapshots reject inconsistent native outcomes, unbounded counts, extra identity data and foreign failure scopes", () => {

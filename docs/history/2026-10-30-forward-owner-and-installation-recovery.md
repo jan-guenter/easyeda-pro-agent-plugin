@@ -238,3 +238,77 @@ external pin, bundle, live case or installed cache changed for these CI repairs.
 Complete suites are required again on the final updated head; the failed run is
 not relabeled as passing. Plugin version121029 remains unpublished at this
 boundary, so no extra installation or Codex restart was introduced.
+
+## Published installation and next-session handoff
+
+The64-file batch merged through protected PR157 as
+`b02537f6d3e3f91c0bc9cb53024898b123239e78`, from final reviewed payload
+`6eec0e3d05853fe05f7fe744e0687f430a69ddb1`. PR Linux41058297730 and
+Windows41058297791 passed all11 required checks:13,744 facade passes,
+five expected platform skips, zero failures, and424 bridge passes.
+Main Linux41060383367 and Windows41060383440: all required jobs passed with the same13,744 facade passes, five expected skips, zero failures and424 bridge passes.
+The root tree251c8c58c9b5e63c8e8a37fc09bdfb5d9356a416 and plugin tree
+f135916b87758b07932a727a3488acb305eea98c match the checked PR payload.
+No CI cases were filtered or jobs manually cancelled/rerun.
+
+One official marketplace upgrade installed and enabled
+`0.3.0+codex.20261030121029`; inspection found that it had already performed
+the installation, so no redundant plugin add was issued. Canonical source
+`https://github.com/jan-guenter/easyeda-pro-agent-plugin.git`, refmain,
+cache HEADb02537f6 and both sparse paths remain exact. Complete installed
+comparison before and after the scoped official listing and after the offline
+probe passed2,420 files/46,855,322 bytes/42 directories and every committed mode.
+Inventory SHA01f31108d266d85290b9b2f90bf7e25e57a57794ac83a1ee30393e43d6b99551.
+The final five CI repair locations changed tests and the offline probe only;
+source950/SHAaa52d532 and runtime3/SHA03f21544 remain unchanged. Final helper
+1,044,336 bytes/SHA01df2d03 and all independent pins match.
+
+The first installed offline probe failed during setup on full `/tmp`; its
+failure record is empty and no native error code was retained. Its private
+control directory contains no machine profile or lease, so no synthetic child
+was launched. That evidence was retained. A fresh offline probe using
+`TMPDIR=/root/.cache/easyeda-042605-checks-my11d5vs` passed46 queries/48 requests,
+27 synthetic-profile catalog tools and52 configured tools. Original stdin EOF,
+zero exit, absent upstream marker and final private-control roster are verified.
+This is installed-package offline evidence, not actual runtime admission or
+connected behavior. No shared temporary files were deleted. Use that available
+private temporary directory for later local checks; do not broadly clean `/tmp`.
+
+The real private machine profile remains685 bytes/SHAa080fa71 unchanged.
+No cache bytes/modes, installer backups or production designs were manually
+changed, and no host-owned process was terminated or rebound. A single separately authorized child-connection metadata
+query identified the original host facade3467307, still serving053408 through
+Node24.18.0 with admissionGrantedfalse. A later read-only lease observation
+confirmed that original host remains present. No bridge/status/native call was
+made through it. Source metadata alone does not admit it or explain how the host
+connection started. The new installed package has no actual-host admission yet.
+
+The two original053408 native cases are terminal and released, their original
+roots exited with empty Jobs, and the disposable file is byte-exact. No edit,
+explicit Save or navigation replay is pending. The fresh candidate connection
+never created a native owner. Production designs remain excluded.
+
+Next session:
+
+1. Load the newly installed snapshot in a fresh Codex session, verify its actual
+   process/module/lease and complete installed/source/runtime identities before
+   any live stage. Do not kill/rebind the retained old host, hotpatch a cache or
+   create another control root to obtain authority.
+2. On a new disposable original owner, validate the four-slot saved-cache probe
+   on Chrome146. All earlier cache/capture stages are consumed; do not reuse them.
+   Native CacheStorage.match qualification and replay exclusion remain separate.
+3. Use a new disposable visual owner to collect the bounded child-ownership
+   reason. The new diagnostics preserve the refusal; Job membership alone is
+   not an accepted replacement for retained child-process ownership proof.
+4. Join the private forward owner to current head/dependencies, replay exclusion,
+   actual document clock/offset, complete native completion and detached cleanup.
+   Finish saved/inverse owners, delete clock, final SQL and reopened absence,
+   with all four generations reserved before enabling a writer. General design,
+   library and manufacturing lifecycles and the494 omitted/79 blocked inventory
+   methods remain backlog. The fixed `cll` reader also lacks connected evidence.
+
+This post-publication appendix is retained locally for the next substantive
+batch, avoiding another release solely for chronology. Installed payload and
+marketplace files remain equal to merged main; only this history appendix may
+be dirty. The remaining live work needs a fresh loaded version, not a repeat of
+completed operations or another source-only validation campaign.

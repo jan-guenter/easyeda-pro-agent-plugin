@@ -221,6 +221,22 @@ export class CurrentFootprintCopyForwardResourceLedger {
     if (typeof cleanupControl !== "boolean" || this.#failed && !cleanupControl) { fail("CONTROL_CLASS"); }
     if (value.controls >= CURRENT_FOOTPRINT_COPY_FORWARD_CAPACITY.controls.perGeneration) { this.#refuse("CONTROL"); } value.controls += 1;
   }
+  /** Cleanup reserves use this generation's original counters. Aggregate
+   * controls include the other owner and cannot determine its remaining slots.
+   * Artifact and journal bytes retain their separate shared ceilings. */
+  public generationStatus(role: CurrentFootprintCopyForwardRole, original: object): Readonly<{
+    failed: boolean; rendererRequests: number; mainRequests: number; controls: number;
+    rendererPolls: number; mainPolls: number; rendererEvents: number; mainFrames: number;
+    rendererBytes: number; rendererEventBytes: number; mainBytes: number; helperStdoutBytes: number;
+    executionAuthorized: false }> {
+    const value = this.#original(role, original); return Object.freeze({ failed: this.#failed,
+      rendererRequests: value.rendererId, mainRequests: value.mainId, controls: value.controls,
+      rendererPolls: value.rendererPolls.data + value.rendererPolls.idle + value.rendererPolls.wait,
+      mainPolls: value.mainPolls, rendererEvents: value.rendererEvents, mainFrames: value.mainFrames,
+      rendererBytes: value.bytes.get("renderer") ?? 0, rendererEventBytes: value.bytes.get("renderer-event") ?? 0,
+      mainBytes: value.bytes.get("main") ?? 0, helperStdoutBytes: value.bytes.get("helper-stdout") ?? 0,
+      executionAuthorized: false });
+  }
   public status(): Readonly<{ failed: boolean; boundGenerations: number; rendererRequests: number; mainRequests: number; controls: number;
     rendererPolls: number; mainPolls: number; rendererEvents: number; mainFrames: number;
     rendererBytes: number; rendererEventBytes: number; mainBytes: number; helperStdoutBytes: number; artifactBytes: number; journalBytes: number;
@@ -246,7 +262,8 @@ const ledgerDescriptors = Object.getOwnPropertyDescriptors(ledgerPrototype);
 const ledgerMethods = Object.freeze({ bind: ledgerPrototype.bind, consumeRequest: ledgerPrototype.consumeRequest,
   consumeRendererPoll: ledgerPrototype.consumeRendererPoll, consumeMainPoll: ledgerPrototype.consumeMainPoll,
   consumeRendererEvent: ledgerPrototype.consumeRendererEvent, consumeMainFrame: ledgerPrototype.consumeMainFrame,
-  consumeBytes: ledgerPrototype.consumeBytes, consumeControl: ledgerPrototype.consumeControl, status: ledgerPrototype.status });
+  consumeBytes: ledgerPrototype.consumeBytes, consumeControl: ledgerPrototype.consumeControl,
+  generationStatus: ledgerPrototype.generationStatus, status: ledgerPrototype.status });
 /* oxlint-enable typescript/unbound-method */
 type LedgerMethod = keyof typeof ledgerMethods;
 export type CurrentFootprintCopyForwardLedgerBinding = Readonly<Pick<CurrentFootprintCopyForwardResourceLedger, LedgerMethod> & {
@@ -281,6 +298,9 @@ export function requireOriginalForwardLedgerBinding(ledger: CurrentFootprintCopy
     consumeMainFrame: (...args: Parameters<CurrentFootprintCopyForwardResourceLedger["consumeMainFrame"]>): void => { requireOriginal(); ledgerMethods.consumeMainFrame.call(ledger, ...args); },
     consumeBytes: (...args: Parameters<CurrentFootprintCopyForwardResourceLedger["consumeBytes"]>): void => { requireOriginal(); ledgerMethods.consumeBytes.call(ledger, ...args); },
     consumeControl: (...args: Parameters<CurrentFootprintCopyForwardResourceLedger["consumeControl"]>): void => { requireOriginal(); ledgerMethods.consumeControl.call(ledger, ...args); },
+    generationStatus: (...args: Parameters<CurrentFootprintCopyForwardResourceLedger["generationStatus"]>): ReturnType<CurrentFootprintCopyForwardResourceLedger["generationStatus"]> => {
+      requireOriginal(); return ledgerMethods.generationStatus.call(ledger, ...args);
+    },
     status: (): ReturnType<CurrentFootprintCopyForwardResourceLedger["status"]> => { requireOriginal(); return ledgerMethods.status.call(ledger); },
   });
   ledgerBindings.set(ledger, binding); return binding;
