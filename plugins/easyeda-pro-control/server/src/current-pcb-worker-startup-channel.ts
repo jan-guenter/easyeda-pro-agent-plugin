@@ -15,7 +15,7 @@ import { z } from "zod";
 import { decodeCurrentPcbDiagnosticJson } from "./current-pcb-diagnostic-json.ts";
 import { captureCurrentPcbStringClockReply } from "./current-pcb-string-clock-reply.ts";
 import { CURRENT_FOOTPRINT_COPY_SOURCE_FRAME_BYTES } from "./current-footprint-copy-source-command.ts";
-import { CURRENT_PCB_WORKER_STARTUP_REQUEST_LIMIT, currentFootprintCombinedStartupWire, currentFootprintCopyExecutionStartupWire, currentFootprintCopyPreparationWire, currentFootprintCopySavedStartupWire,
+import { CURRENT_PCB_WORKER_STARTUP_REQUEST_LIMIT, currentFootprintCombinedStartupWire, currentFootprintCopyExecutionStartupWire, currentFootprintCopyForwardStartupWire, currentFootprintCopyPreparationWire, currentFootprintCopySavedStartupWire,
   currentPcb209WorkerStartupWire, currentPcbWorkerStartupWire } from "./current-pcb-worker-startup-wire.ts";
 import { currentFootprintCopyManagerRouteWire } from "./current-footprint-copy-manager-route-wire.ts";
 import type { CurrentFootprintCopyManagerRouteCommand } from "./current-footprint-copy-manager-route-command.ts";
@@ -27,6 +27,7 @@ import type { CurrentFootprintCopyUiCommand } from "./current-footprint-copy-ui-
 import { CURRENT_FOOTPRINT_COPY_PREPARATION_PROFILE } from "./current-footprint-copy-preparation-profile.ts";
 import { CURRENT_FOOTPRINT_COPY_EXECUTION_PROFILE } from "./current-footprint-copy-execution-profile.ts";
 import { CURRENT_FOOTPRINT_COMBINED_RENDERER_PROFILE } from "./current-footprint-copy-combined-profile.ts";
+import { CURRENT_FOOTPRINT_COPY_FORWARD_RENDERER_PROFILE } from "./current-footprint-copy-forward-profile.ts";
 import { CURRENT_FOOTPRINT_COPY_SAVED_PROFILE } from "./current-footprint-copy-saved-profile.ts";
 import { currentFootprintCopySavedQueueWire } from "./current-footprint-copy-saved-queue-wire.ts";
 import type { CurrentFootprintCopySavedQueueChannelCommand } from "./current-footprint-copy-saved-queue-wire.ts";
@@ -248,8 +249,9 @@ class CurrentPcbWorkerStartupChannelCore {
   readonly #executionPurpose: boolean;
   readonly #createClockPurpose: boolean;
   readonly #allocationPurpose: boolean;
+  readonly #forwardEventBytes: ((bytes: number) => void) | null;
   readonly #savedPurpose: boolean;
-  readonly #footprintProfile: typeof CURRENT_FOOTPRINT_COPY_PREPARATION_PROFILE | typeof CURRENT_FOOTPRINT_COPY_EXECUTION_PROFILE | typeof CURRENT_FOOTPRINT_COPY_SAVED_PROFILE | typeof CURRENT_FOOTPRINT_COMBINED_RENDERER_PROFILE;
+  readonly #footprintProfile: typeof CURRENT_FOOTPRINT_COPY_PREPARATION_PROFILE | typeof CURRENT_FOOTPRINT_COPY_EXECUTION_PROFILE | typeof CURRENT_FOOTPRINT_COPY_SAVED_PROFILE | typeof CURRENT_FOOTPRINT_COMBINED_RENDERER_PROFILE | typeof CURRENT_FOOTPRINT_COPY_FORWARD_RENDERER_PROFILE;
   readonly #requestLimit: number;
   readonly #native: CurrentPcbWorkerStartupNativeDependency;
   readonly #members: readonly unknown[];
@@ -325,16 +327,20 @@ class CurrentPcbWorkerStartupChannelCore {
   #fatal = false;
 
   public constructor(internal: typeof INTERNAL_PROFILE, native: CurrentPcbWorkerStartupNativeDependency,
-    wire: typeof currentPcbWorkerStartupWire, priorUsage?: CurrentPcbWorkerStartupPriorUsage, createClockPurpose = false, allocationPurpose = false) {
+    wire: typeof currentPcbWorkerStartupWire, priorUsage?: CurrentPcbWorkerStartupPriorUsage, createClockPurpose = false, allocationPurpose = false,
+    forwardEventBytes: ((bytes: number) => void) | null = null) {
     if (internal !== INTERNAL_PROFILE) { throw fail("INTERNAL_PROFILE"); } this.#wire = wire; this.#createClockPurpose = createClockPurpose; this.#allocationPurpose = allocationPurpose;
+    if ((wire === currentFootprintCopyForwardStartupWire) !== (forwardEventBytes !== null) || forwardEventBytes !== null && typeof forwardEventBytes !== "function") { throw fail("FORWARD_ACCOUNTING"); }
+    this.#forwardEventBytes = forwardEventBytes;
     if (allocationPurpose && !createClockPurpose) { throw fail("FOOTPRINT_ALLOCATION_PURPOSE"); }
-    this.#executionPurpose = wire === currentFootprintCopyExecutionStartupWire || wire === currentFootprintCombinedStartupWire;
+    this.#executionPurpose = wire === currentFootprintCopyExecutionStartupWire || wire === currentFootprintCombinedStartupWire || wire === currentFootprintCopyForwardStartupWire;
     this.#savedPurpose = wire === currentFootprintCopySavedStartupWire;
     this.#footprintPurpose = this.#executionPurpose || this.#savedPurpose || wire === currentFootprintCopyPreparationWire;
     const writerProfile = this.#executionPurpose ? CURRENT_FOOTPRINT_COPY_EXECUTION_PROFILE : CURRENT_FOOTPRINT_COPY_PREPARATION_PROFILE;
-    let footprintProfile: typeof CURRENT_FOOTPRINT_COPY_PREPARATION_PROFILE | typeof CURRENT_FOOTPRINT_COPY_EXECUTION_PROFILE | typeof CURRENT_FOOTPRINT_COPY_SAVED_PROFILE | typeof CURRENT_FOOTPRINT_COMBINED_RENDERER_PROFILE = writerProfile;
+    let footprintProfile: typeof CURRENT_FOOTPRINT_COPY_PREPARATION_PROFILE | typeof CURRENT_FOOTPRINT_COPY_EXECUTION_PROFILE | typeof CURRENT_FOOTPRINT_COPY_SAVED_PROFILE | typeof CURRENT_FOOTPRINT_COMBINED_RENDERER_PROFILE | typeof CURRENT_FOOTPRINT_COPY_FORWARD_RENDERER_PROFILE = writerProfile;
     if (this.#savedPurpose) { footprintProfile = CURRENT_FOOTPRINT_COPY_SAVED_PROFILE; }
     if (wire === currentFootprintCombinedStartupWire) { footprintProfile = CURRENT_FOOTPRINT_COMBINED_RENDERER_PROFILE; }
+    if (wire === currentFootprintCopyForwardStartupWire) { footprintProfile = CURRENT_FOOTPRINT_COPY_FORWARD_RENDERER_PROFILE; }
     this.#footprintProfile = footprintProfile;
     this.#requestLimit = this.#footprintPurpose ? this.#footprintProfile.requestLimit : CURRENT_PCB_WORKER_STARTUP_REQUEST_LIMIT;
     this.#members = members(native); this.#native = native;
@@ -356,6 +362,15 @@ class CurrentPcbWorkerStartupChannelCore {
       pollCount: this.#polls, attachedWorkers: this.#workers.size, dataPollCount: this.#dataPolls,
       waitingPollCount: this.#waitPolls, idlePollCount: this.#idlePolls, failureCode: this.#failureCode,
       ...(this.#exchangeFailure === null ? {} : { exchangeFailure: this.#exchangeFailure }) });
+  }
+  public classifyForwardRequest(id: number): boolean {
+    const pending = this.#pending.get(id);
+    if (this.#wire !== currentFootprintCopyForwardStartupWire || pending === undefined || pending.written || pending.writeFailed) { throw fail("FORWARD_PENDING_REQUEST"); }
+    return cleanupCommand(pending.command);
+  }
+  public forwardPollWaiting(): boolean {
+    if (this.#wire !== currentFootprintCopyForwardStartupWire) { throw fail("FORWARD_PENDING_REQUEST"); }
+    return this.#pending.size > 0 || this.#queuedRequests !== 0 || this.#used !== 0;
   }
   #withinLifetime(cleanup = false): void {
     const age = monotonicNow() - this.#created;
@@ -1088,6 +1103,7 @@ class CurrentPcbWorkerStartupChannelCore {
     this.#complete(pending);
   }
   #event(value: Record<string, unknown>, bytes: number): void {
+    this.#forwardEventBytes?.(bytes);
     this.#events += 1; this.#eventBytes += bytes;
     if (bytes > MAX_FRAME || this.#events > MAX_EVENTS || this.#eventBytes > MAX_EVENT_BYTES || this.#parent === null) { throw fail("EVENT_BUDGET"); }
     const event = z.object({ method: z.string().min(1).max(128), params: z.record(z.string(), z.unknown()), sessionId: token }).strict()
@@ -1195,6 +1211,13 @@ export class CurrentFootprintCopyExecutionChannel extends CurrentPcbWorkerStartu
 export class CurrentFootprintCombinedStartupChannel extends CurrentPcbWorkerStartupChannelCore {
   public constructor(native: CurrentPcbWorkerStartupNativeDependency, priorUsage?: CurrentPcbWorkerStartupPriorUsage) {
     super(INTERNAL_PROFILE, native, currentFootprintCombinedStartupWire, priorUsage);
+  }
+}
+/** Distinct forward observation grammar and counters. Its allocation/create
+ * paths remain absent until current-head/cache/clock eligibility is joined. */
+export class CurrentFootprintCopyForwardStartupChannel extends CurrentPcbWorkerStartupChannelCore {
+  public constructor(native: CurrentPcbWorkerStartupNativeDependency, observeEventBytes: (bytes: number) => void, priorUsage?: CurrentPcbWorkerStartupPriorUsage) {
+    super(INTERNAL_PROFILE, native, currentFootprintCopyForwardStartupWire, priorUsage, false, false, observeEventBytes);
   }
 }
 /** Unmounted future writer birth. No diagnostic owner constructs this class;

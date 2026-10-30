@@ -31,7 +31,9 @@ provides fit/zoom and one bounded capture of its original application window.
 Before capture, a bounded readiness query reports window geometry and remaining
 transport capacity without painting or consuming the capture attempt. A separate
 once-only request can resize an eligible normal window to1920x1080; a later
-readiness sample must confirm it. Maximized-window restore is unsupported.
+readiness sample must confirm it. An eligible maximized original window can
+first use one confirmed restore request, followed by fresh readiness before
+resize or capture.
 Capture returns a managed PNG, retains native paint resources until verified
 process exit and may show blank, stale or partial content. It has offline
 validation; connected capture acceptance remains pending. It does not use the
@@ -43,8 +45,10 @@ request budget. [Netlist comparison](plugins/easyeda-pro-control/skills/easyeda-
 prepares managed Allegro files locally, then uses the authenticated app to compare
 footprint/designator and net/pin memberships. It does not compare component values
 or export a design. [UI utility readers](plugins/easyeda-pro-control/skills/easyeda-pro-control/references/current-utility-readers.md#language-and-api-page-viewport-readers)
-include resolved theme, global toolbar units, the fixed system-library UUID and
-SDK-resolved language. The language result can be a fallback and does not prove
+include resolved theme, global toolbar units, the fixed system-library UUID,
+SDK-resolved language and a fixed API-page `cll` query reader. The query returns
+a known log level or null from the API page and exposes no other URL keys.
+The language result can be a fallback and does not prove
 that the UI language provider succeeded. Up to seven different utility methods
 can run in one bounded batch with a shared ten-second deadline and one runtime
 admission sequence. Two complete ordered passes must match. The observations
@@ -118,7 +122,8 @@ versions or general writing.
 Install the published GitHub marketplace snapshot:
 
 ```bash
-codex plugin marketplace add https://github.com/jan-guenter/easyeda-pro-agent-plugin
+umask 022
+codex plugin marketplace add https://github.com/jan-guenter/easyeda-pro-agent-plugin.git --ref main
 codex plugin add easyeda-pro-control@easyeda-pro-agent
 ```
 

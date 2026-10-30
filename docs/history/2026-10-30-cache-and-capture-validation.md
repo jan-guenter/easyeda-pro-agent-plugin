@@ -213,3 +213,91 @@ types/lint, strict facade lint, coverage, compatibility, package/MCP/privacy,
 repository and all seven skill checks pass. Independent review found no
 actionable issue in this correction diff. Full CI on the corrected commit is
 still required; none of these local results resolve the original SIGSEGV.
+
+## Publication and installed package, 2026-10-30
+
+Final candidate `1d70a4d6dca145590e1262feae194075cb60c4eb` passed all11 required
+checks. Linux CI41013431973 completed all eight facade shards, build/bridge and
+aggregate checks; Windows CI41013432324 passed. Protected PR156 merged as
+`74e674c4e4753b2e3a9e8083e70701715b44d944`, with plugin tree
+`a3d23d20d60e6a24a5ec8fc4a6b4ec91b84b2aa1` equal to the tested candidate.
+Initial failed-candidate logs and the corrected terminal run metadata remain
+preserved separately. Neither the correction nor this passing run establishes
+the earlier inspector SIGSEGV's cause.
+
+The current official CLI's full Git clone hit its30-second checkout timeout on
+the Windows-mounted filesystem. One temporary parallel-checkout configuration
+attempt hit the same timeout; inheritance of that Git setting was not proved.
+Re-adding sparse paths first refused because the old source was configured.
+Official marketplace remove/add then registered the same canonical Git source,
+`https://github.com/jan-guenter/easyeda-pro-agent-plugin.git`, ref `main`, with
+`.agents/plugins` and the complete `plugins/easyeda-pro-control` directory.
+Sparse registration succeeded and retained enablement. The old cache was still
+installed, so one official plugin add installed
+`0.3.0+codex.20261030053408`. No installed files, cache modes, host processes or
+Git source bytes were manually repaired. The recurring stale arg0-directory
+warning was retained; unrelated temporary directories were left alone.
+The supported sparse paths are documented in the
+[official marketplace guide](https://developers.openai.com/plugins/build/plugins).
+
+With installer subprocess umask022, complete comparison before and after the
+scoped official plugin listing proves2,411 files,46,691,538 bytes,42 directories
+and exact committed644/755 modes. Inventory SHA:
+`1b9fa1cfc3d06a3e19c1f6baf5758ca0f9649a6ee3a2786947978a15ecc0af0e`.
+The cached marketplace HEAD/tree equal merged main; its Git source/ref and both
+sparse paths are configured. The installed plugin is enabled. Machine profile
+remains685 bytes/SHAa080fa71 unchanged. Installed helper identity also passes.
+
+The dependency-free installed offline probe passed27 registered tools,
+46 queries and48 requests on pinned Node24.18.0. Its original synthetic child
+exited0 through stdin EOF with observed close, zero stderr and sampled absence
+of descendants/non-stdio sockets. These samples are not continuous isolation
+proof or actual-host admission. An offline query confirms the actual serving
+PID3390115 still loads210530 after installation. It grants no admission.
+Both native diagnostic operations from this record remain terminal/released;
+there is no native owner to recover or consumed action to replay.
+
+At06:48UTC, automatic main Windows CI41014975799 passed; Linux CI41014975786 was
+still running. These observations remain separate from the completed exact
+candidate CI. A later continuation should record main's terminal result.
+
+## Next implementation slices
+
+After a fresh Codex load, admit the actual installed053408 facade before live
+calls. Use new disposable operations for the cache metadata/context join and
+window readiness/capture, not either consumed210530 operation.
+
+The source backlog has a concrete order. Qualify native CacheStorage identity
+and join both pre-open probes before issuing replay exclusion. Add a distinct
+forward factory and original-owner registry, mount the allocated channel, and
+charge actual traffic through the forward ledger before dispatch or retention.
+Current-head/dependency eligibility, native local time/offset provenance and
+detached cleanup completion remain separate proofs. Join that original forward
+owner to the existing closed snapshot, fresh saved generation and independent
+saved/final-SQL readers.
+
+Then implement original forward-result handoff, consumed inverse dispatch,
+genuine inverse owner, actual delete clock and full upload/main completion.
+Qualify a supported head-age model and native reopened manager absence before
+offering the whole copy/readback/delete/readback lifecycle. SQL tombstones do
+not restore database bytes. Reserve all four generations together; current
+aggregate totals remain deliberately unset. The helper has only534 bytes spare
+under the unchanged1MiB cap, so native additions need further packing.
+
+The broader835-method inventory still has495 omissions and79 blocked
+implementations. Populated shapes and general design/library/manufacturing
+lifecycles remain backlog. Document the tested sparse installer route in the
+reusable installation guide during the next substantive documentation batch.
+This publication appendix is retained locally for that next commit, avoiding a
+new plugin version solely for chronology. Production designs remain excluded.
+
+## Main CI terminal result, 2026-10-30 06:52UTC
+
+Linux main CI41014975786 completed successfully with all ten jobs, including
+eight facade shards and the aggregate check. Windows main CI41014975799 also
+completed successfully. Both name merged74e674c4 exactly. Terminal metadata is
+retained separately from the earlier pending snapshot. Independent release
+review confirms the installed inventory, enablement, offline evidence and this
+handoff agree. Only the history appendix is dirty; plugin payload and marketplace
+files remain equal to merged main. The next live stage requires a fresh Codex
+load and actual-facade admission, not another publication for these notes.

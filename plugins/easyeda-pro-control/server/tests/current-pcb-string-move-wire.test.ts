@@ -67,12 +67,17 @@ void test("five native move programs, twelve-step grammar and original session/g
   assert.equal(programs.length, 5);
   for (const [index, entry] of programs.entries()) {
     const [phase, program] = entry; assert.ok(phase !== undefined && program !== undefined);
-    const encoded = new RegExp(`const string MoveProducerProgram${index}=@"((?:""|[^"])*)";`, "u").exec(source)?.[1];
     const packed = ["", "", "MoveProducerTwoFunction", "MoveProducerThreeFunction", "MoveProducerFourFunction"][index];
     if (packed !== undefined && packed !== "") {
       assert.ok(source.includes(`static readonly string MoveProducerProgram${String(index)}=${packed};`));
       assert.equal(readPackedNativeProgram(source, packed), program, phase);
-    } else { assert.equal(encoded?.replaceAll('""', '"'), program, phase); }
+    } else {
+      const alias = ["ModelCallbackExpression", "ModelHandlerFunction"][index];
+      assert.ok(alias !== undefined);
+      assert.ok(source.includes(`const string MoveProducerProgram${String(index)}=${alias};`));
+      const canonical = new RegExp(`const string ${alias}=@"((?:""|[^"])*)";`, "u").exec(source)?.[1];
+      assert.equal(canonical?.replaceAll('""', '"'), program, phase);
+    }
     assert.ok(source.includes(createHash("sha256").update(program).digest("hex")));
     assert.ok(source.includes(`case "${phase}": return MoveProducerProgram${index};`));
   }

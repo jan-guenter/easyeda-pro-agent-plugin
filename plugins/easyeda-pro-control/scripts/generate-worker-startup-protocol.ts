@@ -17,6 +17,7 @@ import { currentFootprintCopyMainBackendNativeSource } from "../server/src/curre
 import { currentFootprintCopyMainRequestNativeSource } from "../server/src/current-footprint-copy-main-request-native.ts";
 import { currentFootprintCopyMainCompletionNativeSource } from "../server/src/current-footprint-copy-main-completion-native.ts";
 import { currentFootprintCombinedNativeLimits } from "../server/src/current-footprint-copy-combined-profile.ts";
+import { currentFootprintCopyForwardNativeLimits } from "../server/src/current-footprint-copy-forward-profile.ts";
 import { currentFootprintCombinedReadyNativeSource } from "../server/src/current-footprint-combined-ready.ts";
 import { currentFootprintSavedCacheNativeSource } from "../server/src/current-footprint-saved-cache-native.ts";
 import { CURRENT_FOOTPRINT_COPY_CLOCK_REGISTRATION_REQUESTS as clockRegistration } from "../server/src/current-footprint-copy-clock-registration-runner.ts";
@@ -129,7 +130,7 @@ function footprintSavedSource(): string {
     "// END GENERATED FOOTPRINT COPY SAVED PROTOCOL";
 }
 function footprintMainSource(): string {
-  return `// BEGIN GENERATED FOOTPRINT MAIN TRANSPORT PROTOCOL\n${currentFootprintCombinedNativeLimits()}\n${currentFootprintCopyMainTransportNativeSource()}\n${currentFootprintCopyMainBackendNativeSource()}\n${currentFootprintCopyMainRequestNativeSource()}\n${currentFootprintCopyMainCompletionNativeSource()}\n${currentFootprintSavedCacheNativeSource()}\n` +
+  return `// BEGIN GENERATED FOOTPRINT MAIN TRANSPORT PROTOCOL\n${currentFootprintCombinedNativeLimits()}\n// BEGIN GENERATED FOOTPRINT FORWARD LIMITS\n${currentFootprintCopyForwardNativeLimits()}\n// END GENERATED FOOTPRINT FORWARD LIMITS\n${currentFootprintCopyMainTransportNativeSource()}\n${currentFootprintCopyMainBackendNativeSource()}\n${currentFootprintCopyMainRequestNativeSource()}\n${currentFootprintCopyMainCompletionNativeSource()}\n${currentFootprintSavedCacheNativeSource()}\n` +
     "// END GENERATED FOOTPRINT MAIN TRANSPORT PROTOCOL";
 }
 // oxlint-disable-next-line node/no-top-level-await -- ESM-only build command; never loaded by require().

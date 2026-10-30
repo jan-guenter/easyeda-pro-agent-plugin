@@ -34,12 +34,12 @@ function property(name: string, value: unknown, writable = true, enumerable = tr
   return { name, value, writable, enumerable, configurable, isOwn: true };
 }
 const replies = {
-  capture: { result: { type: "object", subtype: "array", className: "Array", description: "Array(3)", objectId: "array" } },
+  capture: { result: { type: "object", subtype: "array", className: "Array", description: "Array(4)", objectId: "array" } },
   "array-properties": { result: [property("0", { type: "function", className: "Function", objectId: "constructor" }),
     property("1", { type: "object", className: "SyntheticCacheStorage", objectId: "prototype" }),
     property("2", { type: "function", className: "Function", objectId: "match" }),
-    property("length", { type: "number", value: 3 }, true, false, false),
-    property("descriptorBaseline", { type: "string", value: baseline }, false, false, false)],
+    property("3", { type: "string", value: baseline }, true, true, true),
+    property("length", { type: "number", value: 4 }, true, false, false)],
   internalProperties: [{ name: "[[Prototype]]", value: { type: "object", subtype: "array", className: "Array", description: "Array(0)", objectId: "array-prototype" } }] },
   "constructor-properties": { result: [] }, "match-properties": { result: [] }, recheck: { result: { type: "string", value: baseline } }, release: {},
 };

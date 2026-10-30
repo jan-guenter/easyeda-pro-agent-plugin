@@ -79,7 +79,7 @@ void test("coverage retains both system-library getter routes while account disc
   const legacy = current.routes.find((route) => route.tool === "easyeda_control_sdk_read"); assert.ok(legacy);
   assert.deepEqual(legacy.tests, ["system-library-read.test.ts"]);
   const installed = current.routes.find((route) => route.tool === "easyeda_control_public_readers"); assert.ok(installed);
-  assert.deepEqual(installed.tests, ["sdk-public-readers.test.ts", "sdk-public-readers-batch.test.ts", "sdk-public-readers-runtime.test.ts", "sdk-public-readers-ui.test.ts", "sdk-public-readers-registration.test.ts", "facade-mode.test.ts"]);
+  assert.deepEqual(installed.tests, ["sdk-public-readers.test.ts", "sdk-public-readers-url.test.ts", "sdk-public-readers-batch.test.ts", "sdk-public-readers-runtime.test.ts", "sdk-public-readers-ui.test.ts", "sdk-public-readers-registration.test.ts", "facade-mode.test.ts"]);
   assert.match(installed.scope, /EasyEDA 3\.2\.209\/API 0\.3\.59 only; older profiles do not register this route/u);
   for (const route of [legacy, installed]) {
     assert.equal(route.selector, METHOD); assert.equal(route.implementation, "public-method");

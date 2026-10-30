@@ -139,6 +139,7 @@ class CurrentPcbFixedPipeCore {
   readonly #stringPurpose: boolean;
   readonly #startupPurpose: boolean;
   readonly #combinedPurpose: boolean;
+  readonly #observeEventBytes: ((bytes: number) => void) | null;
   #savedCacheSession: string | null = null;
   #savedCacheStep = 0;
   #savedCacheReleaseAttempted = false;
@@ -166,10 +167,13 @@ class CurrentPcbFixedPipeCore {
   #workerDiscoverySettled = false;
   #selectedWorkerSession: string | null = null;
 
-  public constructor(input: Readable, output: Writable, purpose: "diagnostic" | "string-precreate" | "worker-startup" | "combined-discovery") {
+  public constructor(input: Readable, output: Writable, purpose: "diagnostic" | "string-precreate" | "worker-startup" | "combined-discovery" | "forward-discovery",
+    observeEventBytes: ((bytes: number) => void) | null = null) {
+    if ((purpose === "forward-discovery") !== (observeEventBytes !== null) || observeEventBytes !== null && typeof observeEventBytes !== "function") { throw new Error("PCB_DIAGNOSTIC_FORWARD_ACCOUNTING"); }
+    this.#observeEventBytes = observeEventBytes;
     this.#input = input; this.#output = output; this.#stringPurpose = purpose === "string-precreate";
-    this.#startupPurpose = purpose === "worker-startup" || purpose === "combined-discovery";
-    this.#combinedPurpose = purpose === "combined-discovery";
+    this.#startupPurpose = purpose === "worker-startup" || purpose === "combined-discovery" || purpose === "forward-discovery";
+    this.#combinedPurpose = purpose === "combined-discovery" || purpose === "forward-discovery";
   }
 
   /** One clean transfer of the original counter and receive budgets. Listeners
@@ -539,6 +543,8 @@ class CurrentPcbFixedPipeCore {
 
   #receiveEvent(value: Record<string, unknown>, bytes: number): void {
     const method = value["method"], params = value["params"], sessionId = value["sessionId"];
+    try { this.#observeEventBytes?.(bytes); }
+    catch { this.#fail("reply", "event-budget-or-handler", eventKind(method)); return; }
     this.#eventCount += 1; this.#eventBytes += bytes;
     if (this.#event === null || bytes > MAX_FRAME_BYTES || this.#eventCount > TRANSPORT.maximumEventCount || this.#eventBytes > TRANSPORT.maximumEventBytes) {
       this.#fail("reply", "event-budget-or-handler", eventKind(method)); return;
@@ -634,6 +640,15 @@ export class CurrentPcbWorkerStartupDiscoveryPipe extends CurrentPcbFixedPipeCor
  * observation. Old startup pipes cannot acquire this fixed command grammar. */
 export class CurrentFootprintCombinedDiscoveryPipe extends CurrentPcbFixedPipeCore {
   public constructor(input: Readable, output: Writable) { super(input, output, "combined-discovery"); }
+  public observeSavedCacheNative(command: CurrentFootprintSavedCacheCommand): Promise<Reply> { return this.savedCacheNative(command); }
+  public handoff(): CurrentPcbWorkerStartupPipeHandoff { return this.handoffStartupPipe(); }
+}
+/** The born forward owner's original counter observes every discovery event
+ * before this parser can retain or deliver it. This callback grants no owner. */
+export class CurrentFootprintCopyForwardDiscoveryPipe extends CurrentPcbFixedPipeCore {
+  public constructor(input: Readable, output: Writable, observeEventBytes: (bytes: number) => void) {
+    super(input, output, "forward-discovery", observeEventBytes);
+  }
   public observeSavedCacheNative(command: CurrentFootprintSavedCacheCommand): Promise<Reply> { return this.savedCacheNative(command); }
   public handoff(): CurrentPcbWorkerStartupPipeHandoff { return this.handoffStartupPipe(); }
 }

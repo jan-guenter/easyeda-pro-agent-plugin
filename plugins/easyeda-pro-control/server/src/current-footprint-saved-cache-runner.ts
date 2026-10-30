@@ -31,7 +31,19 @@ function methods(value: CurrentFootprintSavedCacheTransport): readonly unknown[]
   });
 }
 const remoteArray = z.object({ result: z.object({ type: z.literal("object"), subtype: z.literal("array"), className: z.literal("Array"),
-  description: z.literal("Array(3)"), objectId: handle.max(256) }).strict() }).strict();
+  description: z.literal("Array(4)"), objectId: handle.max(256) }).strict() }).strict();
+const sideEffectRemote = z.object({ type: z.literal("object"), subtype: z.literal("error"), className: z.literal("EvalError"),
+  description: z.literal("EvalError: Possible side-effect in debug-evaluate"), objectId: handle }).strict();
+const sideEffectReply = z.object({ result: sideEffectRemote, exceptionDetails: z.object({ exceptionId: z.number().int().positive(),
+  text: z.literal("Uncaught"), lineNumber: z.literal(-1), columnNumber: z.literal(-1), scriptId: handle, exception: sideEffectRemote }).strict() }).strict();
+type NativeExceptionCode = "debug-evaluate-side-effect-refused" | "unclassified-native-exception";
+/** The input is already an inert complete retained reply. Exact known native
+ * fields yield a fixed label; unknown exception descriptions remain raw evidence.
+ * This classification is neither engine qualification nor permission to retry. */
+function nativeExceptionCode(reply: unknown): NativeExceptionCode | null {
+  if (reply === null || typeof reply !== "object" || !Object.hasOwn(reply, "exceptionDetails")) { return null; }
+  return sideEffectReply.safeParse(reply).success ? "debug-evaluate-side-effect-refused" : "unclassified-native-exception";
+}
 export class CurrentFootprintSavedCacheRunner {
   readonly #transport: CurrentFootprintSavedCacheTransport;
   readonly #methods: readonly unknown[];
@@ -44,6 +56,7 @@ export class CurrentFootprintSavedCacheRunner {
   #released = false;
   #position: string | null = null;
   #failure: Readonly<{ phase: string | null; replyIndex: number | null }> | null = null;
+  #nativeException: Readonly<{ phase: Command["cacheNativePhase"]; replyIndex: number; code: NativeExceptionCode }> | null = null;
   public constructor(transport: CurrentFootprintSavedCacheTransport, binding: Readonly<{ sessionId: string; uniqueContextId: string }>, engine: unknown) {
     this.#methods = methods(transport); this.#transport = transport;
     this.#binding = Object.freeze(z.object({ sessionId: session, uniqueContextId: session }).strict().parse(captureCurrentPcbStringClockReply(binding).value));
@@ -56,7 +69,13 @@ export class CurrentFootprintSavedCacheRunner {
     const reply = captureCurrentPcbStringClockReply(await this.#transport.request(command));
     need(Buffer.byteLength(reply.text) <= LIMITS.replyBytes); this.#raw.push(reply.value);
     this.#phases.push(Object.freeze({ phase: command.cacheNativePhase, method: command.method }));
-    await this.#transport.assertCurrent(); this.#same(); return reply.value;
+    await this.#transport.assertCurrent(); this.#same();
+    const code = nativeExceptionCode(reply.value);
+    if (code !== null) {
+      this.#nativeException ??= Object.freeze({ phase: command.cacheNativePhase, replyIndex: this.#raw.length - 1, code });
+      throw new Error(code === "debug-evaluate-side-effect-refused" ? "SAVED_CACHE_NATIVE_PROBE_SIDE_EFFECT_REFUSED" : "SAVED_CACHE_NATIVE_PROBE_NATIVE_EXCEPTION");
+    }
+    return reply.value;
   }
   #properties(phase: "array-properties" | "constructor-properties" | "match-properties", objectId: string): Promise<unknown> {
     return this.#request({ cacheNativePhase: phase, method: "Runtime.getProperties", sessionId: this.#binding.sessionId,
@@ -64,7 +83,7 @@ export class CurrentFootprintSavedCacheRunner {
   }
   public retained(): Readonly<Record<string, unknown>> {
     const base = { attempted: this.#attempted, releaseAttempted: this.#releaseAttempted, released: this.#released, phase: this.#position,
-      failure: this.#failure, engine: this.#engine, originalRepliesRetainedPrivately: true,
+      failure: this.#failure, nativeException: this.#nativeException, engine: this.#engine, originalRepliesRetainedPrivately: true,
       nativeMatchQualified: false, replayTokenIssued: false, executionAuthorized: false };
     let remaining = LIMITS.resultBytes - Buffer.byteLength(JSON.stringify(base)) - 4096;
     const replies: unknown[] = Array.from({ length: this.#raw.length });

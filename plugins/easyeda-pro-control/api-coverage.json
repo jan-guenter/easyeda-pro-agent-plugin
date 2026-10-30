@@ -7,15 +7,15 @@
     "latestDistinctMethods": 773,
     "installed209DistinctMethods": 811,
     "statuses": {
-      "implemented-public-subset": 214,
+      "implemented-public-subset": 215,
       "implemented-native-equivalent": 41,
       "implemented-vendor-http-equivalent": 6,
       "internal-lifecycle-only": 0,
       "implemented-but-blocked": 79,
-      "omitted": 495
+      "omitted": 494
     },
     "executionRoutes": {
-      "available-with-runtime-guards": 404,
+      "available-with-runtime-guards": 405,
       "available-with-network-guards": 9,
       "available-with-managed-file-guards": 3,
       "blocked": 94,
@@ -26,6 +26,7 @@
       "bom-template-shared-preference-effects": 2,
       "callback-or-registration-lifecycle": 27,
       "canvas-origin-pending-geometry-queues": 1,
+      "client-config-protocol-and-response-needed": 1,
       "cross-tab-netlist-export-scope": 1,
       "extension-or-global-settings-state": 15,
       "external-commercial-action": 6,
@@ -50,7 +51,7 @@
       "library-render-resource-and-failure-lifecycle": 2,
       "lossy-heterogeneous-primitive-projection": 2,
       "lossy-logging-selection-reader": 1,
-      "managed-file-contract-needed": 32,
+      "managed-file-contract-needed": 31,
       "multi-object-electrical-effect": 7,
       "navigation-or-viewport-adapter-needed": 11,
       "non-json-result-or-callback": 5,
@@ -58,7 +59,7 @@
       "pad-pair-group-replacement-effects": 1,
       "page-order-partial-write-lifecycle": 1,
       "panel-context-not-admitted": 1,
-      "private-url-state-projection-needed": 2,
+      "private-url-state-projection-needed": 1,
       "reviewed-native-stub": 30,
       "scoped-effect-adapter-needed": 102,
       "selection-marker-or-history-mutation": 7,
@@ -8556,6 +8557,7 @@
           ],
           "tests": [
             "sdk-public-readers.test.ts",
+            "sdk-public-readers-url.test.ts",
             "sdk-public-readers-batch.test.ts",
             "sdk-public-readers-runtime.test.ts",
             "sdk-public-readers-ui.test.ts",
@@ -41892,10 +41894,12 @@
       "status": "omitted",
       "routes": [],
       "omission": {
-        "code": "managed-file-contract-needed",
-        "reason": "sys_FileSystem.getEdaPath consumes or produces File/Blob, filesystem paths, project archives or image data without an implemented method-specific managed-artifact contract.",
-        "nextRequirement": "Add bounded hash-bound artifact transfer, exact input ownership/format checks, exclusive output publication and any associated import effect proof. A filename or Blob handle is not a verified file.",
-        "evidence": []
+        "code": "client-config-protocol-and-response-needed",
+        "reason": "The pinned public method requires external-interaction permission and client mode, then fetches app://api/client/config at high priority through a GET helper with cache:no-cache and redirect:follow. It parses the complete config JSON before selecting result.basePath. The native client protocol handler and complete response/parse bounds are not qualified by the admitted API/UI getters; a path result is not itself an artifact transfer.",
+        "nextRequirement": "Qualify the fixed local protocol handler, permission/owner checks, redirect behavior and complete response/parse bounds before a read-only path-metadata adapter. Do not expose the full client configuration or substitute an arbitrary filesystem read.",
+        "evidence": [
+          "assets/pro-api/0.3.59.1ca9efb5/api.js@sha256:e7c31b0de9dcbe4806e6b3cf8879b31c9e44425361bb8e67c3e8480ae359c8b1;utf16:472220,1825634"
+        ]
       },
       "completeDeclaredContractSupported": false,
       "currentGenerationLiveValidation": "not-recorded",
@@ -43100,6 +43104,7 @@
           ],
           "tests": [
             "sdk-public-readers.test.ts",
+            "sdk-public-readers-url.test.ts",
             "sdk-public-readers-batch.test.ts",
             "sdk-public-readers-runtime.test.ts",
             "sdk-public-readers-ui.test.ts",
@@ -43204,6 +43209,7 @@
           ],
           "tests": [
             "sdk-public-readers.test.ts",
+            "sdk-public-readers-url.test.ts",
             "sdk-public-readers-batch.test.ts",
             "sdk-public-readers-runtime.test.ts",
             "sdk-public-readers-ui.test.ts",
@@ -43472,6 +43478,7 @@
           ],
           "tests": [
             "sdk-public-readers.test.ts",
+            "sdk-public-readers-url.test.ts",
             "sdk-public-readers-batch.test.ts",
             "sdk-public-readers-runtime.test.ts",
             "sdk-public-readers-ui.test.ts",
@@ -47872,6 +47879,7 @@
           ],
           "tests": [
             "sdk-public-readers.test.ts",
+            "sdk-public-readers-url.test.ts",
             "sdk-public-readers-batch.test.ts",
             "sdk-public-readers-runtime.test.ts",
             "sdk-public-readers-ui.test.ts",
@@ -48752,6 +48760,7 @@
           ],
           "tests": [
             "sdk-public-readers.test.ts",
+            "sdk-public-readers-url.test.ts",
             "sdk-public-readers-batch.test.ts",
             "sdk-public-readers-runtime.test.ts",
             "sdk-public-readers-ui.test.ts",
@@ -48881,14 +48890,46 @@
       ],
       "reviewedRuntimeDeclaration": true,
       "installed209Declaration": true,
-      "status": "omitted",
-      "routes": [],
-      "omission": {
-        "code": "private-url-state-projection-needed",
-        "reason": "Window query parameters are outside the disposable design and can contain account/session or extension secrets. No allowlisted public-key projection exists.",
-        "nextRequirement": "Define exact safe parameter names, sensitive-value redaction and URL ownership before exposing selected values; never return the complete query map by default.",
-        "evidence": []
-      },
+      "status": "implemented-public-subset",
+      "routes": [
+        {
+          "tool": "easyeda_control_public_readers",
+          "selector": "eda.sys_Window.getUrlParam",
+          "implementation": "public-method",
+          "scope": "Separately reviewed EasyEDA 3.2.209/API 0.3.59 only; older profiles do not register this route. Single requests or a batch of up to seven unique methods use two matching observations. Batch methods share one ten-second deadline and retain all owners before invocation; two ordered passes are sequential, not atomic. Each member is bounded to 8192 bytes and the complete batch to 65536 bytes. One failed member refuses the whole result; no cached authority or partial success. Only the separately hash-admitted EasyEDA 3.2.209 / API 0.3.59 tuple. No admission of older, newer or unknown implementations, native adapters or general SDK dispatch. Two complete samples retain the same extension, namespace and method. Viewport reads retain the window object. UI-backed methods additionally require exact UI and selector files and retain the editor window, document, UI, host and method-specific available RPC bus around each await. No project, document, account, file, network, navigation, settings change or Save access is performed by these getters. Replies are bounded to 8192 UTF-8 bytes. Synchronous methods reject Promises; UI-backed methods await sequentially. Partial or malformed values, changed owners, unstable samples and oversized responses refuse without truncation or automatic retry. Source implementation and synthetic tests do not establish connected validation. UI-backed reads enforce a 10-second monotonic deadline around every await and before a second sample. The timer is cooperative; it does not cancel an outstanding vendor RPC or synchronous vendor work. The 60-second execution and 70-second transport limits are separate waiting bounds. Only key cll is admitted. Reads the actual public API execution page's query, which can belong to an API iframe and differ from the application UI. Returns null for an absent key or exactly trace, debug, info, warn or error; other values refuse. Both synchronous samples must match the retained API page's own parsed value. Window, location, document, href and the original method/receiver stay unchanged. Href input is bounded to 8192 UTF-8 bytes and never returned; other query keys, the fragment, full URL and UI log-state claims remain unavailable. The source-pinned API extension compiler and bridge executor create the generated program in the API realm; no UI or parent URL is substituted.",
+          "source": [
+            "sdk-public-readers.ts",
+            "sdk-public-readers-batch.ts",
+            "sdk-public-readers-runtime.ts",
+            "sdk-public-utilities-profile.ts",
+            "facade-mode.ts"
+          ],
+          "tests": [
+            "sdk-public-readers.test.ts",
+            "sdk-public-readers-url.test.ts",
+            "sdk-public-readers-batch.test.ts",
+            "sdk-public-readers-runtime.test.ts",
+            "sdk-public-readers-ui.test.ts",
+            "sdk-public-readers-registration.test.ts",
+            "facade-mode.test.ts"
+          ],
+          "validation": "offline-regression;current-live-unclaimed",
+          "executionState": "available-with-runtime-guards",
+          "inputDiscovery": {
+            "tool": "easyeda_control_api",
+            "arguments": {
+              "request": {
+                "action": "public-readers",
+                "query": {
+                  "method": "eda.sys_Window.getUrlParam",
+                  "includeSchemas": true
+                }
+              }
+            }
+          }
+        }
+      ],
+      "omission": null,
       "completeDeclaredContractSupported": false,
       "currentGenerationLiveValidation": "not-recorded",
       "runtimeAdmission": "not-granted-by-inventory"
@@ -48931,6 +48972,7 @@
           ],
           "tests": [
             "sdk-public-readers.test.ts",
+            "sdk-public-readers-url.test.ts",
             "sdk-public-readers-batch.test.ts",
             "sdk-public-readers-runtime.test.ts",
             "sdk-public-readers-ui.test.ts",

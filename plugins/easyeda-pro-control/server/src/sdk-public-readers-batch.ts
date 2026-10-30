@@ -78,7 +78,7 @@ export function validateSdkPublicReadersBatchResult(input: unknown, raw: unknown
     limitations: [
       "One to seven unique reviewed methods, each sampled twice in two complete ordered passes. All owners are retained before the first invocation and rechecked around every await. The result is sequential, not an atomic snapshot or a guarantee of later stability.",
       "All methods share one ten-second monotonic deadline and cooperative timer. Expiry prevents further calls or acceptance, but does not cancel an outstanding vendor RPC, its bookkeeping or synchronous work. No retry, partial success or proof caching.",
-      "Each member retains its single-reader meaning and limits. SDK-resolved language can be a fallback; toolbar units are not document units; the fixed library UUID does not enumerate libraries. API viewport is not desktop or PCB geometry.",
+      "Each member retains its single-reader meaning and limits. SDK-resolved language can be a fallback; toolbar units are not document units; the fixed library UUID does not enumerate libraries. API viewport is not desktop or PCB geometry. The fixed cll query belongs to the API execution page and does not verify the UI log state.",
       "The complete response is bounded to 65536 UTF-8 bytes and each member to 8192 bytes. A failure discards the entire returned batch; it does not undo already performed reads. No design, navigation, network, settings change or Save operation is introduced.",
     ] };
   if (Buffer.byteLength(JSON.stringify(result), "utf8") > SDK_PUBLIC_READERS_BATCH_MAX_BYTES) {

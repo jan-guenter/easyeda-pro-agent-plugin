@@ -33,7 +33,7 @@ export function decodeCurrentFootprintCombinedReady(value: unknown): CurrentFoot
  * inheritance. It cannot dispatch Launch until the owner writes a request. */
 export function currentFootprintCombinedReadyNativeSource(): string {
   return `  # BEGIN GENERATED FOOTPRINT COMBINED READY
-  if ($WorkerStartupFootprintCombined209 -and -not $CompileOnly) {
+  if (($WorkerStartupFootprintCombined209 -or $WorkerStartupFootprintForward209) -and -not $CompileOnly) {
     $readyState=$owner.NoProcessCreationState()
     if ($readyState -cne 'not-entered' -or $owner.RootPid -ne 0 -or $owner.RootCreated -cne '0') {throw 'pcb-diagnostic-combined-ready-state'}
     @{schema='${CURRENT_FOOTPRINT_COMBINED_READY.schema}';challenge=$CombinedReadyChallenge;helperInstance=$owner.HelperInstance;jobId=$owner.JobId;creationState=$readyState;processCreated=$false;emptyJob=$true;pipesChecked=$true} | ConvertTo-Json -Compress

@@ -50,6 +50,14 @@ not grant permission to repair an unfinished production journal, restore a
 database or broaden external writes. A newer declaration package is research
 material until its installed implementation is deliberately admitted.
 
+For iterative adapter validation, the control skill's
+[foreground client](../easyeda-pro-control/references/connection-and-context.md#foreground-mcp-session)
+can target one verified installed snapshot or trusted frozen build while the
+next source batch is developed. Require a free control lease, keep the selected
+payload unchanged through the run and retain its original process through
+cleanup. This supports validation without repeatedly publishing intermediate
+versions; it supplies no admission for another client or snapshot.
+
 Finish with the implemented scope, exact versions, test evidence, remaining
 unavailable methods and any required fresh-chat/import step. Do not label the
 entire SDK callable because it is discoverable.

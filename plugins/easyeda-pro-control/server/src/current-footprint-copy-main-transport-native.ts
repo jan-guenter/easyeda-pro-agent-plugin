@@ -33,10 +33,13 @@ export function currentFootprintCopyMainTransportNativeSource(): string {
   uint rootPid;long rootCreated,stdoutBytes,stderrBytes,totalReceived;int clientPort,requests,normalRequests,cleanupRequests,frames,polls;bool creationEntered,noRoot,drainStarted,childClosed,attachAttempted,attached,fragmented,detachAttempted,terminationAttempted,terminated,released;
   System.Threading.Thread stdoutThread,stderrThread;System.Net.Sockets.Socket socket;Endpoint endpoint;string failure;
   internal EasyedaOriginalMainTransport():this(false,null){}
-  internal EasyedaOriginalMainTransport(bool combined,System.Diagnostics.Stopwatch originalElapsed){
-    Need(combined==(originalElapsed!=null),"purpose-clock");elapsed=combined?originalElapsed:System.Diagnostics.Stopwatch.StartNew();
-    normalLimit=combined?EasyedaFootprintCombinedLimits.MainNormal:${String(PROFILE.normalRequests)};cleanupLimit=combined?EasyedaFootprintCombinedLimits.MainCleanup:${String(PROFILE.cleanupRequests)};
+  internal EasyedaOriginalMainTransport(bool combined,System.Diagnostics.Stopwatch originalElapsed):this(combined,originalElapsed,false){}
+  internal EasyedaOriginalMainTransport(bool combined,System.Diagnostics.Stopwatch originalElapsed,bool forward){
+    Need(combined==(originalElapsed!=null)&&(!forward||combined),"purpose-clock");elapsed=combined?originalElapsed:System.Diagnostics.Stopwatch.StartNew();
+    normalLimit=forward?EasyedaFootprintForwardLimits.MainNormal:combined?EasyedaFootprintCombinedLimits.MainNormal:${String(PROFILE.normalRequests)};cleanupLimit=forward?EasyedaFootprintForwardLimits.MainCleanup:combined?EasyedaFootprintCombinedLimits.MainCleanup:${String(PROFILE.cleanupRequests)};
   }
+  internal long ReceivedBytes {get{return totalReceived;}}
+  internal int FrameCount {get{return frames;}}
   static System.Exception Error(string code){return new System.InvalidOperationException("pcb-diagnostic-main-"+code);}
   static void Need(bool value,string code){if(!value)throw Error(code);}
   static void Close(ref System.IntPtr handle){if(handle==System.IntPtr.Zero)return;System.IntPtr original=handle;Need(CloseHandle(original),"close-handle");handle=System.IntPtr.Zero;}
