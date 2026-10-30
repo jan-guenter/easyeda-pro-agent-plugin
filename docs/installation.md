@@ -6,7 +6,8 @@ These commands install the published GitHub snapshot. Check its plugin version
 and actual tool catalog; an older cached snapshot can differ from this checkout.
 
 ```bash
-codex plugin marketplace add https://github.com/jan-guenter/easyeda-pro-agent-plugin
+umask 022
+codex plugin marketplace add https://github.com/jan-guenter/easyeda-pro-agent-plugin.git --ref main
 codex plugin add easyeda-pro-control@easyeda-pro-agent
 ```
 
@@ -32,6 +33,65 @@ finish and release any original native diagnostic owners, then fully quit and
 reopen Codex. Recheck the actual process and installed payload afterward. Do not
 terminate a host-owned facade, write to its stdio, or patch a cache to force an
 update.
+
+For development when host tools are absent, the
+[persistent foreground client](architecture.md) can target a verified installed
+snapshot or trusted frozen build if the control lease is free. It uses the same
+facade and typed contracts. Retain it through native cleanup and record its own
+admission separately from the desktop host.
+
+## Git checkout timeouts on Windows-mounted filesystems
+
+A full marketplace clone can exceed the CLI's checkout deadline on a
+Windows-mounted filesystem. Retain the failure and inspect the configured
+source, installed version and enablement before changing the registration:
+
+```bash
+codex plugin marketplace list --json
+codex plugin list --marketplace easyeda-pro-agent --json
+```
+
+If checkout timed out and the old registration remains, use the official CLI to
+replace only this marketplace's registration with
+[supported sparse paths](https://developers.openai.com/plugins/build/plugins).
+Both the catalog and complete plugin directory are required:
+
+```bash
+umask 022
+codex plugin marketplace remove easyeda-pro-agent --json
+codex plugin marketplace add https://github.com/jan-guenter/easyeda-pro-agent-plugin.git \
+  --ref main --sparse .agents/plugins --sparse plugins/easyeda-pro-control --json
+```
+
+Check that the cached marketplace resolves to the intended released commit,
+keeps the canonical Git URL and `main` ref, and retains both sparse paths.
+Inspect the installed cache version and enablement again. A marketplace refresh
+can install an enabled plugin; run the following only if the intended version is
+still absent:
+
+```bash
+umask 022
+codex plugin add easyeda-pro-control@easyeda-pro-agent --json
+```
+
+From a trusted checkout at that release commit, use pinned Node `24.18.0` with
+soft core limit `0` to compare every installed file and byte, file modes
+`0644`/`0755`, and directory mode `0755`:
+
+```bash
+ulimit -c 0
+node plugins/easyeda-pro-control/scripts/verify-installed-payload.ts \
+  /absolute/installed/plugin FULL_COMMIT_SHA
+```
+
+Replace the path and commit placeholders with the observed installation and
+full release SHA. Repeat this comparison after a scoped official plugin list
+and confirm the intended version is installed and enabled. A same-HEAD no-op
+does not repair a failed comparison. Use official installation operations for
+recovery; do not edit or chmod cache files. Finally, load a fresh Codex session
+and admit its actual serving process before live calls, as described above.
+
+## Bridge setup
 
 Marketplace installation does not create a credential or modify EasyEDA. From
 a trusted checkout of this repository, provision the owner-only bridge token
@@ -200,8 +260,9 @@ PCB/API files, keeps a byte-exact private backup and changes only two bundle
 selectors. The control root, Node, upstream, credentials and journals stay
 unchanged. It never promotes an existing process or updates the legacy global
 compatibility profile. Restart Codex afterward. The new `public-utilities-only`
-mode registers fifteen tools, with separate runtime admission for 16 Math, 18
-Unit/Environment operations, six language/viewport/theme/toolbar-unit/system-ID readers,
+mode registers sixteen tools, with separate runtime admission for 16 Math, 18
+Unit/Environment operations, eight fixed readers covering language, viewport,
+theme, toolbar units, system ID and the API-page `cll` URL parameter,
 tab-count/active-identity/shortcut observations and ordinary launch. A separate
 managed-file netlist comparison requires runtime admission and compares only
 footprint/designator and net/pin memberships. Local file preparation contacts

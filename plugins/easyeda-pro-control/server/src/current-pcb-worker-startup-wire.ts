@@ -7,6 +7,7 @@ import { CURRENT_FOOTPRINT_COPY_CREATE_METHOD_CALLS } from "./current-footprint-
 import { CURRENT_FOOTPRINT_COPY_LEXICAL_CALLS } from "./current-footprint-copy-producer-scope.ts";
 import { CURRENT_FOOTPRINT_COPY_PREPARATION_PROFILE } from "./current-footprint-copy-preparation-profile.ts";
 import { CURRENT_FOOTPRINT_COPY_EXECUTION_PROFILE } from "./current-footprint-copy-execution-profile.ts";
+import { CURRENT_FOOTPRINT_COPY_FORWARD_PROFILE } from "./current-footprint-copy-forward-profile.ts";
 import { currentFootprintCopyExecutionWorkerWire } from "./current-footprint-copy-execution-worker-wire.ts";
 import { CURRENT_FOOTPRINT_COPY_SAVED_PROFILE } from "./current-footprint-copy-saved-profile.ts";
 import { currentFootprintCopySavedSourceWire } from "./current-footprint-copy-saved-source-wire.ts";
@@ -276,6 +277,17 @@ export function currentFootprintCopyExecutionStartupWire(raw: unknown, id: numbe
  * observation vocabulary, never a write or upgrade of a historical owner. */
 export function currentFootprintCombinedStartupWire(raw: unknown, id: number): ReturnType<typeof startupWire> {
   return currentFootprintCopyExecutionStartupWire(raw, id);
+}
+/** The separate forward birth gets its own derived ID space. This encoder
+ * still admits only fixed observation programs; create, transaction-clock and
+ * allocation controls have separate unavailable authority requirements. */
+export function currentFootprintCopyForwardStartupWire(raw: unknown, id: number): ReturnType<typeof startupWire> {
+  if (!Number.isSafeInteger(id) || id < 1 || id > CURRENT_FOOTPRINT_COPY_FORWARD_PROFILE.renderer.requestLimit) { return fail(); }
+  const execution = currentFootprintCopyExecutionWorkerWire(raw, id);
+  if (execution !== null) { return execution; }
+  const original = startupWire(raw, 1, CURRENT_PCB_209_WORKER_CONSTRUCTION_SITES, CURRENT_PCB_DIAGNOSTIC_PCB_OPENING_FUNCTION, true);
+  return Object.freeze({ command: Object.freeze({ ...original.command, id }),
+    request: Object.freeze({ ...original.request, requestId: id }) });
 }
 /** The saved owner admits only construction and native-cache observation.
  * Parser registration capture is shared fixed code, not execution authority. */

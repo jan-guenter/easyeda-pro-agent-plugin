@@ -68,7 +68,7 @@ void test("combined native mapping refuses program/effect substitutions and nonc
   assert.throws(() => combinedDiagnosticNativeRequest(wire({ id: 104, ...first })));
   assert.equal(combinedDiagnosticNativeRequest(wire({ id: 1, method: "Browser.getVersion" }))["action"], "send");
 });
-void test("the packed native six-case table equals the exact TS vocabulary and is mounted only on the combined helper path", async () => {
+void test("the packed native six-case table equals the exact TS vocabulary and stays restricted to born combined or forward purposes", async () => {
   const source = currentFootprintSavedCacheNativeSource();
   const packedCall = /EasyedaDiagnosticOwner\.UnpackFixedProgram\(@"([A-Za-z\d+/=]+)",(\d+),@"([a-f\d]{64})",@"([a-f\d]{64})"\)/u.exec(source);
   const packed = packedCall?.[1]; assert.ok(packed !== undefined);
@@ -89,6 +89,6 @@ void test("the packed native six-case table equals the exact TS vocabulary and i
   }
   const helper = await readFile(new URL("../../scripts/pcb-diagnostic-owner.ps1", import.meta.url), "utf8");
   assert.ok(helper.includes(source));
-  assert.match(helper, /'saved-cache-native' \{\s+if \(-not \$WorkerStartupFootprintCombined209/u);
+  assert.match(helper, /'saved-cache-native' \{\s+if \(\(-not \$WorkerStartupFootprintCombined209 -and -not \$WorkerStartupFootprintForward209\)/u);
   assert.ok(helper.includes("saved-cache-cleanup-required"));
 });

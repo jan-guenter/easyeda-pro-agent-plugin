@@ -295,7 +295,7 @@ Distinguish these failure layers before changing anything:
 |---|---|---|
 | Tool is absent or host rejects dispatch as unavailable | No facade handler result | Check the plugin's enabled state. For authorized EasyEDA work, the checkout-only foreground MCP client below can use the same facade when no other owner is active. Never start a second owner or use a new data root to evade the lease. |
 | Status reports `mode:"offline-only"` and `installation.ready:false`; only three tools are listed | Trusted profile/Node admission passed, but a selected external installation check failed | Use the retained startup code and current read-only `diagnostics`: configured file roles, candidate bundle directory names and app package version. These metadata observations neither admit candidates nor prove who replaced the app. API reference/local discovery remain usable; live/recovery tools do not exist here. Review the changed installation, use only a supported explicit migration, then restart. |
-| Status reports `facade.mode:"public-utilities-only"`; fifteen tools are listed | The exact3.2.209 selector pair selected the restricted catalog, not runtime admission | Utilities, managed netlist comparison, shell/identity/shortcut observations, catalog queries and ordinary launch have separate contracts. The209-only disposable opener retains its own native owner through cleanup; opening can automatically persist/Save. The separate209 project-worker startup owner captures original constructors and bounded assignment/channel/actor samples. No older project opener, PCB-worker/model, design-content or explicit Save route is registered. Source tests are not connected validation. |
+| Status reports `facade.mode:"public-utilities-only"`; sixteen tools are listed | The exact3.2.209 selector pair selected the restricted catalog, not runtime admission | Utilities, managed netlist comparison, shell/identity/shortcut observations, catalog queries and ordinary launch have separate contracts. The209-only disposable opener retains its own native owner through cleanup; opening can automatically persist/Save. The separate209 project-worker startup owner captures original constructors and bounded assignment/channel/actor samples. No older project opener, PCB-worker/model, design-content or explicit Save route is registered. Source tests are not connected validation. |
 | Status reports `facade.mode:"calculation-only"`; twenty-six tools are listed | Configured bundle selectors selected the older restricted catalog | API reference, local discovery, status, scoped utilities/metadata including no-editor project PCB metadata, exact PCB layer/loaded-view identities and geometry, local historical abandonment, ordinary launch, disposable project opening, disposable symbol copying, disposable PCB renaming and the separate forward-only `easyeda_control_project_symbol_metadata` route are registered. Each has separate exact admission. The ordinary symbol route supports unused project-local symbols with complete META-only or bounded canvas-segments history and exactly one write; it does not enable generic design writers. Generic navigation, native UI and legacy recovery remain unavailable. |
 | Structured status error during upstream startup | Facade handler ran, but startup failed | Run `npm run doctor` offline from the trusted checkout. Use reported stage/exit details and failed checks; private stderr remains withheld. Do not infer the cause from its hash or length. |
 | Status succeeds but has no authenticated session | Upstream responded; extension connection is unproven | Verify the selected receipt/import and bridge connection. Do not call context or design readers yet. |
@@ -364,10 +364,19 @@ The selected plugin must have its reviewed bundle and `.mcp.json`; the client ch
 After its `ready` response, send one JSON request per line:
 
 ```json
-{"id":1,"tool":"easyeda_control_status","arguments":{}}
+{"id":1,"tool":"easyeda_control_api","arguments":{"request":{"action":"loaded-facade"}}}
 ```
 
 Only tools actually listed by that facade are accepted. The client dispatches serially and never retries a timeout, disconnect, or failed result publication. Such failures close the session; inspect the facade journal before retrying an uncertain operation. Tool error results remain errors, even though transport succeeded. All facade authentication, compatibility, quarantine and writer restrictions remain in force.
+
+Use the reported serving PID, module URL and Node version for the foreground
+facade's own source/process admission. Its parent is the retained developer
+client; it is separate from the Codex host. For bridge workflows, continue with
+`easyeda_control_status` and the required authentication/fingerprint checks.
+Before `ready`, startup failures report fixed `phase` and `reason` labels with
+allowlisted OS/protocol codes where available. Raw exceptions and stderr stay
+private. A startup/catalog failure does not establish a native launch or permit
+repeating an earlier dispatched operation.
 
 For a large response, supply `responseFile` with a fresh absolute filename inside an existing canonical owner-only `0700` directory. The client creates it exclusively at `0600` and reports its size and SHA-256. This transport result is not a facade evidence receipt. Use the facade evidence tools for engineering proof.
 

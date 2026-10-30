@@ -24,3 +24,48 @@ void test("unavailable native entry points retain fixed fault metadata without e
   assert.throws(() => decodeCurrentWindowFailure(fault, "window-capture-readiness", "pcb-diagnostic-window-readiness-changed"));
   assert.throws(() => decodeCurrentWindowFailure({ ...fault, executionAuthorized: true }, "window-capture-readiness", "pcb-diagnostic-native-call"));
 });
+
+const childFault = { schema: "easyeda-pro-control.window-failure.v1", action: "capture-window", stage: "children", code: "window-capture-child-ownership",
+  paintPhase: "not-dispatched", nativeResourcesRetained: false, bounds: { left: 106, top: 0, right: 1402, bottom: 728 }, snapshotOnly: true, executionAuthorized: false };
+
+void test("child ownership faults distinguish the fixed native refusals without process or window identifiers", () => {
+  for (const childOwnership of [
+    { reason: "descendant-limit", visited: 257, visible: 0, nativeError: null },
+    { reason: "descendant-limit", visited: 257, visible: 256, nativeError: null },
+    { reason: "pid-query-failed", visited: 7, visible: 4, nativeError: 0 },
+    { reason: "pid-query-failed", visited: 7, visible: 4, nativeError: 4_294_967_295 },
+    { reason: "window-disappeared", visited: 7, visible: 4, nativeError: 1400 },
+    { reason: "different-process", visited: 7, visible: 4, nativeError: null },
+  ]) {
+    const result = decodeCurrentWindowFailure({ ...childFault, childOwnership }, "capture-window", "pcb-diagnostic-window-capture-child-ownership");
+    assert.deepEqual(result.childOwnership, childOwnership); assert.equal(Object.isFrozen(result.childOwnership), true);
+    assert.equal(result.snapshotOnly, true); assert.equal(result.executionAuthorized, false);
+  }
+  for (const stage of ["before-paint", "after-paint", "after-encoding"]) {
+    const result = decodeCurrentWindowFailure({ ...childFault, stage, childOwnership: { reason: "different-process", visited: 1, visible: 1, nativeError: null } }, "capture-window", "pcb-diagnostic-window-capture-child-ownership");
+    assert.equal(result.stage, stage);
+  }
+  assert.equal(decodeCurrentWindowFailure(childFault, "capture-window", "pcb-diagnostic-window-capture-child-ownership").childOwnership, undefined);
+});
+
+void test("child snapshots reject inconsistent native outcomes, unbounded counts, extra identity data and foreign failure scopes", () => {
+  const valid = { reason: "different-process", visited: 7, visible: 4, nativeError: null };
+  for (const changes of [
+    { reason: "arbitrary reason" }, { visited: 0 }, { visited: 258 }, { visited: 2 }, { visited: Number.NaN },
+    { visible: -0 }, { visible: 0 }, { visible: 257 }, { visible: 8 }, { visible: 0.5 },
+    { reason: "descendant-limit", visited: 256 }, { reason: "descendant-limit", visited: 257, nativeError: 5 },
+    { reason: "pid-query-failed", nativeError: null }, { reason: "pid-query-failed", nativeError: 1400 },
+    { reason: "pid-query-failed", nativeError: -1 }, { reason: "pid-query-failed", nativeError: -0 },
+    { reason: "pid-query-failed", nativeError: 4_294_967_296 }, { reason: "pid-query-failed", nativeError: 0.5 },
+    { reason: "window-disappeared", nativeError: null }, { reason: "window-disappeared", nativeError: 5 },
+    { nativeError: 5 }, { pid: 123 }, { hwnd: "456" }, { title: "private window title" }, { executable: "private executable" },
+  ]) {
+    assert.throws(() => decodeCurrentWindowFailure({ ...childFault, childOwnership: { ...valid, ...changes } }, "capture-window", "pcb-diagnostic-window-capture-child-ownership"));
+  }
+  for (const changes of [
+    { action: "window-capture-readiness" }, { stage: "paint" }, { stage: "bounds" }, { stage: "cleanup" },
+    { code: "window-capture-window-changed" },
+  ]) {
+    assert.throws(() => decodeCurrentWindowFailure({ ...childFault, ...changes, childOwnership: valid }, "capture-window", "pcb-diagnostic-window-capture-child-ownership"));
+  }
+});

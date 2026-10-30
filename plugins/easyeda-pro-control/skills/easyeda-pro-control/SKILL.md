@@ -15,6 +15,13 @@ module URL and Node version help detect a stale MCP generation even when skills
 have refreshed. An older server may reject the action. The report grants no
 runtime admission or native ownership; retain the required process/source checks.
 
+When host tools are missing, read the
+[foreground session workflow](references/connection-and-context.md#foreground-mcp-session)
+before requesting another restart. If the control lease is free, the maintained
+client can target a verified installed package or a trusted frozen build. Admit
+its actual serving facade and retain that client through native closure and
+release. Record foreground validation separately from Codex-host admission.
+
 Current restriction: compiled schematic topology and transactions depending on
 it are disabled because the installed netlist getter can annotate parts and
 Save All. Separate sealed profiles retain contracts for stored attribute/text

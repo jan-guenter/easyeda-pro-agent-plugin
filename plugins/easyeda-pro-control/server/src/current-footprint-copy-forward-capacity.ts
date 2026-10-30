@@ -10,13 +10,14 @@ import { CURRENT_FOOTPRINT_COPY_MAIN_TRANSPORT as MAIN_STREAM } from "./current-
 import { CURRENT_FOOTPRINT_COPY_NATIVE_CREATE_LIMITS as CREATE } from "./current-footprint-copy-native-create-wire.ts";
 import { CURRENT_FOOTPRINT_COPY_PREPARATION_REQUESTS as SOURCE_PREPARATION } from "./current-footprint-copy-preparation.ts";
 import { CURRENT_FOOTPRINT_COPY_SAVED_PROFILE as SAVED } from "./current-footprint-copy-saved-profile.ts";
-import { CURRENT_FOOTPRINT_COPY_SOURCE_STAGE_REQUESTS as SOURCE } from "./current-footprint-copy-source-read-runner.ts";
+import { CURRENT_FOOTPRINT_COPY_SOURCE_STAGE_REQUESTS as SOURCE } from "./current-footprint-copy-source-stage-budget.ts";
 import { CURRENT_PCB_WORKER_STARTUP_STREAM_LIMITS as STREAM } from "./current-pcb-worker-startup-stream-limits.ts";
 import { MAX_ENCODED_BYTES as SQL_BYTES, freezeDeep } from "./sqlite-inventory-core.ts";
 import { assertCurrentFootprintCopyOutputHeadroom, reserveCurrentFootprintCopyOutput } from "./current-footprint-copy-output-reservation.ts";
 import type { CurrentFootprintCopyOutputReservation } from "./current-footprint-copy-output-reservation.ts";
 import type { CurrentFootprintCopyV2Plan } from "./current-footprint-copy-v2-plan.ts";
 import type { CurrentFootprintCopyV2SqlPlan } from "./current-footprint-copy-v2-sql.ts";
+import { types } from "node:util";
 
 const MiB = 1024 * 1024;
 const legacyClockCleanup = 5;
@@ -126,6 +127,7 @@ interface Generation {
 }
 function fail(code: string): never { throw new Error(`FOOTPRINT_FORWARD_CAPACITY_${code}`); }
 function count(value: number): void { if (!Number.isSafeInteger(value) || value < 0 || Object.is(value, -0)) { fail("COUNT"); } }
+const originalLedgers = new WeakSet<CurrentFootprintCopyForwardResourceLedger>();
 
 /** A genuine future native factory must retain this counter and feed the
  * original validated sends/chunks BEFORE dispatch or retention. Callers cannot
@@ -136,6 +138,7 @@ export class CurrentFootprintCopyForwardResourceLedger {
   readonly #generations = new Map<CurrentFootprintCopyForwardRole, Generation>();
   readonly #aggregateBytes = new Map<"artifact" | "journal", number>();
   #failed = false;
+  public constructor() { originalLedgers.add(this); }
   public bind(role: CurrentFootprintCopyForwardRole, original: object): void {
     if (this.#failed || !CURRENT_FOOTPRINT_COPY_FORWARD_CAPACITY.generations.includes(role) || this.#generations.has(role) ||
         original === null || typeof original !== "object" || [...this.#generations.values()].some(value => value.original === original)) { fail("GENERATION"); }
@@ -219,12 +222,66 @@ export class CurrentFootprintCopyForwardResourceLedger {
     if (value.controls >= CURRENT_FOOTPRINT_COPY_FORWARD_CAPACITY.controls.perGeneration) { this.#refuse("CONTROL"); } value.controls += 1;
   }
   public status(): Readonly<{ failed: boolean; boundGenerations: number; rendererRequests: number; mainRequests: number; controls: number;
-    rendererPolls: number; mainPolls: number; rendererEvents: number; mainFrames: number; executionAuthorized: false }> {
+    rendererPolls: number; mainPolls: number; rendererEvents: number; mainFrames: number;
+    rendererBytes: number; rendererEventBytes: number; mainBytes: number; helperStdoutBytes: number; artifactBytes: number; journalBytes: number;
+    executionAuthorized: false }> {
     const values = [...this.#generations.values()]; return Object.freeze({ failed: this.#failed, boundGenerations: values.length,
       rendererRequests: values.reduce((sum, value) => sum + value.rendererId, 0), mainRequests: values.reduce((sum, value) => sum + value.mainId, 0),
       controls: values.reduce((sum, value) => sum + value.controls, 0),
       rendererPolls: values.reduce((sum, value) => sum + value.rendererPolls.data + value.rendererPolls.idle + value.rendererPolls.wait, 0),
       mainPolls: values.reduce((sum, value) => sum + value.mainPolls, 0), rendererEvents: values.reduce((sum, value) => sum + value.rendererEvents, 0),
-      mainFrames: values.reduce((sum, value) => sum + value.mainFrames, 0), executionAuthorized: false });
+      mainFrames: values.reduce((sum, value) => sum + value.mainFrames, 0),
+      rendererBytes: values.reduce((sum, value) => sum + (value.bytes.get("renderer") ?? 0), 0),
+      rendererEventBytes: values.reduce((sum, value) => sum + (value.bytes.get("renderer-event") ?? 0), 0),
+      mainBytes: values.reduce((sum, value) => sum + (value.bytes.get("main") ?? 0), 0),
+      helperStdoutBytes: values.reduce((sum, value) => sum + (value.bytes.get("helper-stdout") ?? 0), 0),
+      artifactBytes: this.#aggregateBytes.get("artifact") ?? 0, journalBytes: this.#aggregateBytes.get("journal") ?? 0,
+      executionAuthorized: false });
   }
+}
+
+const ledgerPrototype = CurrentFootprintCopyForwardResourceLedger.prototype;
+const ledgerDescriptors = Object.getOwnPropertyDescriptors(ledgerPrototype);
+/* oxlint-disable typescript/unbound-method -- Capture only original class methods after class initialization; every invocation below supplies the registry-checked private-field receiver. */
+const ledgerMethods = Object.freeze({ bind: ledgerPrototype.bind, consumeRequest: ledgerPrototype.consumeRequest,
+  consumeRendererPoll: ledgerPrototype.consumeRendererPoll, consumeMainPoll: ledgerPrototype.consumeMainPoll,
+  consumeRendererEvent: ledgerPrototype.consumeRendererEvent, consumeMainFrame: ledgerPrototype.consumeMainFrame,
+  consumeBytes: ledgerPrototype.consumeBytes, consumeControl: ledgerPrototype.consumeControl, status: ledgerPrototype.status });
+/* oxlint-enable typescript/unbound-method */
+type LedgerMethod = keyof typeof ledgerMethods;
+export type CurrentFootprintCopyForwardLedgerBinding = Readonly<Pick<CurrentFootprintCopyForwardResourceLedger, LedgerMethod> & {
+  requireOriginal: () => void;
+}>;
+const ledgerBindings = new WeakMap<CurrentFootprintCopyForwardResourceLedger, CurrentFootprintCopyForwardLedgerBinding>();
+function requireOriginalLedger(ledger: CurrentFootprintCopyForwardResourceLedger): void {
+  if (ledger === null || typeof ledger !== "object" || types.isProxy(ledger) || !originalLedgers.has(ledger) ||
+      Object.getPrototypeOf(ledger) !== ledgerPrototype || Reflect.ownKeys(ledger).length > 0) { fail("ORIGINAL_LEDGER"); }
+  const descriptors = Object.getOwnPropertyDescriptors(ledgerPrototype);
+  if (Reflect.ownKeys(descriptors).length !== Reflect.ownKeys(ledgerDescriptors).length ||
+      Object.keys(ledgerDescriptors).some(key => {
+        const before = Object.getOwnPropertyDescriptor(ledgerPrototype, key), original = ledgerDescriptors[key];
+        return before === undefined || original === undefined || before.value !== original.value || before.get !== original.get ||
+          before.set !== original.set || before.enumerable !== original.enumerable || before.configurable !== original.configurable || before.writable !== original.writable;
+      })) { fail("ORIGINAL_LEDGER_METHODS"); }
+  ledgerMethods.status.call(ledger);
+}
+/** Original methods are captured here after the class has initialized. The
+ * hoisted function is safe to import through the owner module cycle; invoking
+ * it still requires the original registry and private-field receiver. This is
+ * accounting custody only, never proof of native process ownership. */
+export function requireOriginalForwardLedgerBinding(ledger: CurrentFootprintCopyForwardResourceLedger): CurrentFootprintCopyForwardLedgerBinding {
+  const requireOriginal = (): void => { requireOriginalLedger(ledger); }; requireOriginal();
+  const retained = ledgerBindings.get(ledger); if (retained !== undefined) { return retained; }
+  const binding: CurrentFootprintCopyForwardLedgerBinding = Object.freeze({ requireOriginal,
+    bind: (...args: Parameters<CurrentFootprintCopyForwardResourceLedger["bind"]>): void => { requireOriginal(); ledgerMethods.bind.call(ledger, ...args); },
+    consumeRequest: (...args: Parameters<CurrentFootprintCopyForwardResourceLedger["consumeRequest"]>): void => { requireOriginal(); ledgerMethods.consumeRequest.call(ledger, ...args); },
+    consumeRendererPoll: (...args: Parameters<CurrentFootprintCopyForwardResourceLedger["consumeRendererPoll"]>): void => { requireOriginal(); ledgerMethods.consumeRendererPoll.call(ledger, ...args); },
+    consumeMainPoll: (...args: Parameters<CurrentFootprintCopyForwardResourceLedger["consumeMainPoll"]>): void => { requireOriginal(); ledgerMethods.consumeMainPoll.call(ledger, ...args); },
+    consumeRendererEvent: (...args: Parameters<CurrentFootprintCopyForwardResourceLedger["consumeRendererEvent"]>): void => { requireOriginal(); ledgerMethods.consumeRendererEvent.call(ledger, ...args); },
+    consumeMainFrame: (...args: Parameters<CurrentFootprintCopyForwardResourceLedger["consumeMainFrame"]>): void => { requireOriginal(); ledgerMethods.consumeMainFrame.call(ledger, ...args); },
+    consumeBytes: (...args: Parameters<CurrentFootprintCopyForwardResourceLedger["consumeBytes"]>): void => { requireOriginal(); ledgerMethods.consumeBytes.call(ledger, ...args); },
+    consumeControl: (...args: Parameters<CurrentFootprintCopyForwardResourceLedger["consumeControl"]>): void => { requireOriginal(); ledgerMethods.consumeControl.call(ledger, ...args); },
+    status: (): ReturnType<CurrentFootprintCopyForwardResourceLedger["status"]> => { requireOriginal(); return ledgerMethods.status.call(ledger); },
+  });
+  ledgerBindings.set(ledger, binding); return binding;
 }

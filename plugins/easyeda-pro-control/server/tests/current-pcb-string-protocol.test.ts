@@ -57,7 +57,7 @@ void test("String programs are byte-exact in the native fixed-purpose adapter", 
   const native = await readFile(new URL("../../scripts/pcb-diagnostic-owner.ps1", import.meta.url), "utf8");
   for (const [name, source] of Object.entries({
     StringRendererAssociationFunction: CURRENT_PCB_STRING_RENDERER_ASSOCIATION_FUNCTION,
-    StringWorkerAssociationExpression: CURRENT_PCB_STRING_WORKER_ASSOCIATION_EXPRESSION,
+    StringWorkerAssociationExpressionFunction: CURRENT_PCB_STRING_WORKER_ASSOCIATION_EXPRESSION,
     StringEmptyProducersFunction: CURRENT_PCB_STRING_EMPTY_PRODUCERS_FUNCTION,
     StringEmptyProducersV2Function: CURRENT_PCB_STRING_EMPTY_PRODUCERS_V2_FUNCTION,
     StringProducerMarkersV2Function: CURRENT_PCB_STRING_PRODUCER_MARKERS_V2_FUNCTION,
@@ -65,7 +65,7 @@ void test("String programs are byte-exact in the native fixed-purpose adapter", 
     ModelPendingV2Function: CURRENT_PCB_DIAGNOSTIC_PENDING_STATE_V2_FUNCTION,
   })) {
     const encoded = new RegExp(`const string ${name}=@"((?:""|[^"])*)";`, "u").exec(native)?.[1];
-    const actual = ["StringRendererAssociationFunction", "ModelStateV2Function", "ModelPendingV2Function", "StringProducerMarkersV2Function", "StringEmptyProducersFunction", "StringEmptyProducersV2Function"].includes(name) ? readPackedNativeProgram(native, name) : encoded?.replaceAll('""', '"');
+    const actual = ["StringRendererAssociationFunction", "StringWorkerAssociationExpressionFunction", "ModelStateV2Function", "ModelPendingV2Function", "StringProducerMarkersV2Function", "StringEmptyProducersFunction", "StringEmptyProducersV2Function"].includes(name) ? readPackedNativeProgram(native, name) : encoded?.replaceAll('""', '"');
     assert.equal(actual, source, name);
     assert.ok(native.includes(createHash("sha256").update(source).digest("hex")));
   }

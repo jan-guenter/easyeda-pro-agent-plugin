@@ -8,6 +8,8 @@ export const SDK_PUBLIC_READERS_BATCH_MAX_BYTES = 65_536;
 export const SDK_PUBLIC_READERS_BATCH_MAX_METHODS = 7;
 export const SDK_PUBLIC_READERS_BATCH_DEADLINE_MS = 10_000;
 export const SDK_PUBLIC_READERS_MAX_VIEWPORT_DIMENSION = 1_000_000;
+export const SDK_PUBLIC_READERS_MAX_API_HREF_BYTES = 8192;
+export const SDK_PUBLIC_READERS_API_LOG_LEVELS = Object.freeze(["trace", "debug", "info", "warn", "error"] as const);
 export const SDK_PUBLIC_READERS_209_SYSTEM_LIBRARY_UUID = "0819f05c4eef4c71ace90d822a990e87";
 // Exact m2 return domain, including the vendor's edition fallback. This is
 // Deliberately distinct from the API's supported-language catalog below.
@@ -23,12 +25,14 @@ export const SDK_PUBLIC_READERS_209_LANGUAGES = Object.freeze([
   "en-boont", "en-scouse", "gan", "cdo", "cjy", "cmn", "cnp", "cpx", "csp", "czh", "czo", "hak", "hsn", "lzh", "mnp", "nan", "wuu", "yue",
 ] as const);
 const emptyArguments = z.object({}).strict();
+const cllArguments = z.object({ key: z.literal("cll") }).strict();
 const language = z.string().min(1).max(64).regex(/^[A-Za-z0-9_-]+$/u);
 export const sdkPublicReadersRequestSchema = z.discriminatedUnion("method", [
   z.object({ method: z.literal("eda.sys_I18n.getAllSupportedLanguages"), arguments: emptyArguments }).strict(),
   z.object({ method: z.literal("eda.sys_I18n.isLanguageSupported"), arguments: z.object({ language }).strict() }).strict(),
   z.object({ method: z.literal("eda.sys_I18n.getCurrentLanguage"), arguments: emptyArguments }).strict(),
   z.object({ method: z.literal("eda.sys_Window.getViewportSize"), arguments: emptyArguments }).strict(),
+  z.object({ method: z.literal("eda.sys_Window.getUrlParam"), arguments: cllArguments }).strict(),
   z.object({ method: z.literal("eda.sys_Window.getCurrentTheme"), arguments: emptyArguments }).strict(),
   z.object({ method: z.literal("eda.sys_Unit.getFrontendDataUnit"), arguments: emptyArguments }).strict(),
   z.object({ method: z.literal("eda.lib_LibrariesList.getSystemLibraryUuid"), arguments: emptyArguments }).strict(),
@@ -49,10 +53,10 @@ export type SdkPublicReadersOperation = z.infer<typeof sdkPublicReadersOperation
 type PublicReaderMethod = SdkPublicReadersRequest["method"];
 interface Definition {
   readonly namespace: "sys_I18n" | "sys_Window" | "sys_Unit" | "lib_LibrariesList";
-  readonly name: "getAllSupportedLanguages" | "isLanguageSupported" | "getCurrentLanguage" | "getViewportSize" | "getCurrentTheme" | "getFrontendDataUnit" | "getSystemLibraryUuid";
+  readonly name: "getAllSupportedLanguages" | "isLanguageSupported" | "getCurrentLanguage" | "getViewportSize" | "getUrlParam" | "getCurrentTheme" | "getFrontendDataUnit" | "getSystemLibraryUuid";
   readonly parameters: readonly string[];
-  readonly resultKind: "languages" | "boolean" | "resolved-language" | "viewport" | "theme" | "toolbar-unit" | "system-library-uuid";
-  readonly effect: "language-catalog-read" | "sdk-resolved-language-read" | "extension-page-viewport-read" | "ui-theme-read" | "ui-toolbar-unit-read" | "system-library-identity-read";
+  readonly resultKind: "languages" | "boolean" | "resolved-language" | "viewport" | "api-url-log-level" | "theme" | "toolbar-unit" | "system-library-uuid";
+  readonly effect: "language-catalog-read" | "sdk-resolved-language-read" | "extension-page-viewport-read" | "api-page-log-level-query-read" | "ui-theme-read" | "ui-toolbar-unit-read" | "system-library-identity-read";
   readonly limitation: string;
   readonly sourceOffsets: readonly number[];
   readonly documentationUrl: string;
@@ -80,6 +84,11 @@ const definitions: Record<PublicReaderMethod, Definition> = {
     namespace: "sys_Window", name: "getViewportSize", parameters: [], resultKind: "viewport", effect: "extension-page-viewport-read",
     limitation: "Reads the public API window's page viewport in CSS pixels, not the OS window, screen, document canvas or PCB geometry. Width and height must be integers 0-1000000. Zero is retained, not interpreted as a visible or ready editor. Two synchronous matching samples do not prove later layout stability.",
     sourceOffsets: [1_893_138], documentationUrl: "https://prodocs.easyeda.com/en/api/reference/pro-api.sys_window.getviewportsize.html",
+  },
+  "eda.sys_Window.getUrlParam": {
+    namespace: "sys_Window", name: "getUrlParam", parameters: ["key"], resultKind: "api-url-log-level", effect: "api-page-log-level-query-read",
+    limitation: "Only key cll is admitted. Reads the actual public API execution page's query, which can belong to an API iframe and differ from the application UI. Returns null for an absent key or exactly trace, debug, info, warn or error; other values refuse. Both synchronous samples must match the retained API page's own parsed value. Window, location, document, href and the original method/receiver stay unchanged. Href input is bounded to 8192 UTF-8 bytes and never returned; other query keys, the fragment, full URL and UI log-state claims remain unavailable. The source-pinned API extension compiler and bridge executor create the generated program in the API realm; no UI or parent URL is substituted.",
+    sourceOffsets: [472_002, 1_892_975, 1_907_530, 1_944_339], documentationUrl: "https://prodocs.easyeda.com/en/api/reference/pro-api.sys_window.geturlparam.html",
   },
   "eda.sys_Window.getCurrentTheme": {
     namespace: "sys_Window", name: "getCurrentTheme", parameters: [], resultKind: "theme", effect: "ui-theme-read",
@@ -191,6 +200,25 @@ export const SDK_PUBLIC_READERS_RETAIN_OWNER_PROGRAM = `const retain=(value,key)
 };
 `;
 
+/** Mu and the private bridge executor both construct their functions in the
+ * pinned API realm. Capture that page here; EDITOR_TOP can name a different UI
+ * window. The existing API-page viewport contract adds no UI URL assumption. */
+const apiPageUrlOwnerProgram = (sharedDeadline: boolean): string => `
+${SDK_PUBLIC_READERS_RETAIN_OWNER_PROGRAM}const reader=retain(owner,'getUrlParam'),method=reader.method,apply=Reflect.apply;
+const apiPage=window,apiLocation=apiPage?.location,apiDocument=apiPage?.document,apiHref=apiLocation?.href;
+if(!apiPage||typeof apiPage!=='object'||!apiLocation||typeof apiLocation!=='object'||!apiDocument||typeof apiDocument!=='object'||
+ typeof apiHref!=='string'||apiHref.length===0||apiHref.length>${SDK_PUBLIC_READERS_MAX_API_HREF_BYTES}||
+ new TextEncoder().encode(apiHref).byteLength>${SDK_PUBLIC_READERS_MAX_API_HREF_BYTES})fail();
+const expectedUrlLogLevel=new URLSearchParams(new URL(apiHref).search).get('cll');
+if(expectedUrlLogLevel!==null&&!${JSON.stringify(SDK_PUBLIC_READERS_API_LOG_LEVELS)}.includes(expectedUrlLogLevel))fail();
+const sameUi=()=>{
+ ${sharedDeadline ? "readersBatchDeadline();" : ""}
+ if(window!==apiPage||apiPage.location!==apiLocation||apiPage.document!==apiDocument||apiLocation.href!==apiHref||
+  apiDocument.defaultView!==apiPage||apiDocument.nodeType!==9||apiDocument.URL!==apiHref)fail();
+ reader.check();
+};sameUi();
+`;
+
 const uiOwnerProgram = (methodName: Definition["name"], sharedDeadline = false): string => {
   const legacy = methodName === "getCurrentLanguage";
   const rootBusKey = JSON.stringify(legacy ? "_MSG_BUS_" : "_MSG_BUS2_EXTAPI_");
@@ -224,6 +252,7 @@ sameUi();${sharedDeadline ? "" : "readerTimer=apply(set,root,[()=>{expired=true;
 };
 
 const readerProjectProgram = (expectedSupported: boolean): string => `const project=value=>{
+ if(kind==='api-url-log-level'){if(value!==expectedUrlLogLevel)fail();return value;}
  if(kind==='resolved-language'){if(!${JSON.stringify(SDK_PUBLIC_READERS_209_RESOLVED_LANGUAGES)}.includes(value))fail();return value;}
  if(kind==='theme'){if(value!=='light'&&value!=='dark')fail();return value;}
  if(kind==='toolbar-unit'){if(value!=='mm'&&value!=='inch'&&value!=='mil')fail();return value;}
@@ -247,20 +276,25 @@ export function buildSdkPublicReadersProgram(input: unknown): string {
   const request = parseSdkPublicReadersRequest(input);
   const definition = definitions[request.method];
   const uiBacked = sdkPublicReaderRequiresUi(request);
+  const apiUrl = definition.resultKind === "api-url-log-level", strictOwner = uiBacked || apiUrl;
   const languageArgument = "language" in request.arguments ? request.arguments.language : undefined;
   const expectedSupported = SDK_PUBLIC_READERS_209_LANGUAGES.some((entry) => entry === languageArgument);
-  const argumentsCode = languageArgument === undefined ? "" : JSON.stringify(languageArgument);
+  const argument = "key" in request.arguments ? request.arguments.key : languageArgument;
+  const argumentsCode = argument === undefined ? "" : JSON.stringify(argument);
+  let ownerProgram = "const sameUi=()=>{};", readCall = `method.call(owner,${argumentsCode})`;
+  if (uiBacked) { ownerProgram = uiOwnerProgram(definition.name); readCall = "await apply(method,owner,[])"; }
+  else if (apiUrl) { ownerProgram = apiPageUrlOwnerProgram(false); readCall = `apply(method,owner,[${argumentsCode}])`; }
   return `${uiBacked ? "let readerTimer,readerClear;" : ""}try {
 const fail=()=>{throw new Error('SDK_PUBLIC_READERS_INVALID_RESULT');};
 const data=(object,key)=>{const descriptor=Object.getOwnPropertyDescriptor(object,key);if(!descriptor||!Object.hasOwn(descriptor,'value'))fail();return descriptor.value;};
-const edaOwner=eda,owner=${uiBacked ? `data(edaOwner,${JSON.stringify(definition.namespace)})` : `edaOwner.${definition.namespace}`};if(!owner)fail();
-${uiBacked ? "" : `const method=owner.${definition.name};if(typeof method!=='function')fail();`}
+const edaOwner=eda,owner=${strictOwner ? `data(edaOwner,${JSON.stringify(definition.namespace)})` : `edaOwner.${definition.namespace}`};if(!owner)fail();
+${strictOwner ? "" : `const method=owner.${definition.name};if(typeof method!=='function')fail();`}
 const kind=${JSON.stringify(definition.resultKind)},languages=Object.freeze(${JSON.stringify(SDK_PUBLIC_READERS_209_LANGUAGES)});
 const pageWindow=kind==='viewport'?window:null;
 if(kind==='viewport'&&(!pageWindow||typeof pageWindow!=='object'))fail();
-${uiBacked ? uiOwnerProgram(definition.name) : "const sameUi=()=>{};"}
-${readerProjectProgram(expectedSupported)}const sameOwner=()=>{if(eda!==edaOwner||${uiBacked ? `data(edaOwner,${JSON.stringify(definition.namespace)})!==owner` : `edaOwner.${definition.namespace}!==owner||owner.${definition.name}!==method`}||(kind==='viewport'&&window!==pageWindow))fail();sameUi();};
-const read=${uiBacked ? "async " : ""}()=>{sameOwner();const raw=${uiBacked ? "await apply(method,owner,[])" : `method.call(owner,${argumentsCode})`};sameOwner();const value=project(raw);sameOwner();return value;};
+${ownerProgram}
+${readerProjectProgram(expectedSupported)}const sameOwner=()=>{if(eda!==edaOwner||${strictOwner ? `data(edaOwner,${JSON.stringify(definition.namespace)})!==owner` : `edaOwner.${definition.namespace}!==owner||owner.${definition.name}!==method`}||(kind==='viewport'&&window!==pageWindow))fail();sameUi();};
+const read=${uiBacked ? "async " : ""}()=>{sameOwner();const raw=${readCall};sameOwner();const value=project(raw);sameOwner();return value;};
 const first=${uiBacked ? "await " : ""}read(),second=${uiBacked ? "await " : ""}read();if(JSON.stringify(first)!==JSON.stringify(second))fail();sameOwner();
 const json=JSON.stringify({ok:true,kind:'sdk-public-readers',method:${JSON.stringify(request.method)},value:first});
 const utf8Bytes=new TextEncoder().encode(json).byteLength;
@@ -276,9 +310,15 @@ export function buildSdkPublicReadersBatchMemberProgram(input: unknown): string 
   const request = parseSdkPublicReadersRequest(input);
   const definition = definitions[request.method];
   const uiBacked = sdkPublicReaderRequiresUi(request);
+  const apiUrl = definition.resultKind === "api-url-log-level";
   const languageArgument = "language" in request.arguments ? request.arguments.language : undefined;
   const expectedSupported = SDK_PUBLIC_READERS_209_LANGUAGES.some((entry) => entry === languageArgument);
-  const argumentsCode = languageArgument === undefined ? "" : JSON.stringify(languageArgument);
+  const argument = "key" in request.arguments ? request.arguments.key : languageArgument;
+  const argumentsCode = argument === undefined ? "" : JSON.stringify(argument);
+  let ownerProgram = `${SDK_PUBLIC_READERS_RETAIN_OWNER_PROGRAM}const reader=retain(owner,${JSON.stringify(definition.name)}),method=reader.method,apply=Reflect.apply;
+const sameUi=()=>{reader.check();readersBatchDeadline();};`;
+  if (uiBacked) { ownerProgram = uiOwnerProgram(definition.name, true); }
+  else if (apiUrl) { ownerProgram = apiPageUrlOwnerProgram(true); }
   return `(()=>{
 const fail=()=>{throw new Error('SDK_PUBLIC_READERS_INVALID_RESULT');};
 const data=(object,key)=>{const descriptor=Object.getOwnPropertyDescriptor(object,key);if(!descriptor||!Object.hasOwn(descriptor,'value'))fail();return descriptor.value;};
@@ -286,8 +326,7 @@ const edaOwner=eda,owner=data(edaOwner,${JSON.stringify(definition.namespace)});
 const kind=${JSON.stringify(definition.resultKind)},languages=Object.freeze(${JSON.stringify(SDK_PUBLIC_READERS_209_LANGUAGES)});
 const pageWindow=kind==='viewport'?window:null;
 if(kind==='viewport'&&(!pageWindow||typeof pageWindow!=='object'))fail();
-${uiBacked ? uiOwnerProgram(definition.name, true) : `${SDK_PUBLIC_READERS_RETAIN_OWNER_PROGRAM}const reader=retain(owner,${JSON.stringify(definition.name)}),method=reader.method,apply=Reflect.apply;
-const sameUi=()=>{reader.check();readersBatchDeadline();};`}
+${ownerProgram}
 ${readerProjectProgram(expectedSupported)}const sameOwner=()=>{if(eda!==edaOwner||data(edaOwner,${JSON.stringify(definition.namespace)})!==owner||(kind==='viewport'&&window!==pageWindow))fail();sameUi();};
 const read=${uiBacked ? "async " : ""}()=>{readersBatchCurrent();const raw=${uiBacked ? "await " : ""}apply(method,owner,[${argumentsCode}]);readersBatchCurrent();const value=project(raw);readersBatchCurrent();return {ok:true,kind:'sdk-public-readers',method:${JSON.stringify(request.method)},value};};
 sameOwner();return Object.freeze({sameOwner,read,uiBacked:${String(uiBacked)}});
@@ -314,6 +353,8 @@ export function validateSdkPublicReadersResult(input: unknown, raw: unknown): Re
     }
   } else if (request.method === "eda.sys_Window.getCurrentTheme") {
     value = z.enum(["light", "dark"]).parse(payload.value);
+  } else if (request.method === "eda.sys_Window.getUrlParam") {
+    value = z.enum(SDK_PUBLIC_READERS_API_LOG_LEVELS).nullable().parse(payload.value);
   } else if (request.method === "eda.sys_I18n.getCurrentLanguage") {
     value = z.enum(SDK_PUBLIC_READERS_209_RESOLVED_LANGUAGES).parse(payload.value);
   } else if (request.method === "eda.sys_Unit.getFrontendDataUnit") {
@@ -327,6 +368,7 @@ export function validateSdkPublicReadersResult(input: unknown, raw: unknown): Re
     ...(definition.resultKind === "resolved-language" ? { languageScope: "sdk-resolved-language", fallbackPossible: true,
       providerSuccessVerified: false, cachedMessageBusIdentityVerified: false } : {}),
     ...(definition.resultKind === "viewport" ? { units: "css-pixels", viewportScope: "public-api-extension-page" } : {}),
+    ...(definition.resultKind === "api-url-log-level" ? { urlScope: "public-api-execution-page", queryKey: "cll", uiStateVerified: false } : {}),
     ...(sdkPublicReaderRequiresUi(request) ? { uiVersion: EDITOR_OBSERVATION_209_UI.version, uiSha256: EDITOR_OBSERVATION_209_UI.sha256 } : {}),
     authority: "bounded-public-utility-read-only;not-project-state-or-runtime-admission",
     apiVersion: provenance.version, apiSha256: provenance.apiSha256,

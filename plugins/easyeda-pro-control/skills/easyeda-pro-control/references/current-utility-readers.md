@@ -116,7 +116,7 @@ On the exact 3.2.209/API0.3.59 profile, query `public-readers` with an exact
 `public-readers-validate`, then pass it and the actual authenticated status
 fingerprint to `easyeda_control_public_readers`.
 
-The seven methods have distinct meanings:
+The eight methods have distinct meanings:
 
 | Method | Accepted observation |
 | --- | --- |
@@ -124,13 +124,26 @@ The seven methods have distinct meanings:
 | `eda.sys_I18n.isLanguageSupported` | Exact case-sensitive membership for the supplied `language` |
 | `eda.sys_I18n.getCurrentLanguage` | SDK-resolved language identifier; vendor fallback remains possible |
 | `eda.sys_Window.getViewportSize` | API-page viewport width and height in CSS pixels |
+| `eda.sys_Window.getUrlParam` | Only `key:"cll"`: API-page query log level or `null` |
 | `eda.sys_Window.getCurrentTheme` | Resolved `light` or `dark` UI theme |
 | `eda.sys_Unit.getFrontendDataUnit` | Global toolbar selection, `mm`, `inch` or `mil` |
 | `eda.lib_LibrariesList.getSystemLibraryUuid` | The exact returned system-library UUID constant |
 
-Only language membership accepts an argument. Every other request has
-`arguments:{}`. Preserve language identifier order and spelling. The catalog
-and membership methods perform no locale normalization.
+Language membership accepts `arguments:{"language":"en"}`; the URL reader
+accepts only `arguments:{"key":"cll"}`. Other requests have `arguments:{}`.
+Preserve language identifier order and spelling. The catalog and membership
+methods perform no locale normalization.
+
+The fixed URL reader returns exactly `trace`, `debug`, `info`, `warn`, `error`
+or `null` when the key is absent. It reads the API execution page, which can be
+an iframe with a different URL from the editor UI. It never borrows the parent
+URL or proves the UI's active log level. The pinned API compiler and private
+bridge executor create the generated program in that API realm. Its original
+window, location, document, href and method receiver are retained across both
+synchronous samples. The complete href is bounded to8192 UTF-8 bytes before
+parsing; the method result must equal its retained page's own `cll` parameter.
+Other query keys, fragments and full URLs are neither accepted nor returned.
+An unsupported `cll` value refuses rather than being relabeled as absent.
 
 To observe several of these values together, pass the following inner request
 to the same tool, with the fresh authenticated `expectedFingerprint`:

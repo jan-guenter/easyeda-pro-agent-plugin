@@ -1,6 +1,9 @@
 import assert from "node:assert/strict";
+import { execFile } from "node:child_process";
 import { readFile } from "node:fs/promises";
+import { join } from "node:path";
 import { test } from "node:test";
+import { fileURLToPath } from "node:url";
 
 import {
   MAXIMUM_REQUEST_BYTES,
@@ -8,10 +11,12 @@ import {
   parseSessionConfiguration,
   parseSessionRequest,
   runSessionRequests,
+  sessionFailureDiagnostic,
   sessionMachineLaunchConfiguration,
   sessionTransportEnvironment,
 } from "../../scripts/control-session.ts";
 import { machineProfileSchema } from "../src/machine-profile.ts";
+import { assertTestIsolation } from "../../scripts/test-isolation.ts";
 
 async function* values<T>(items: readonly T[]): AsyncGenerator<T> {
   yield* await Promise.resolve(items);
@@ -40,6 +45,61 @@ void test("session preserves only the WSL share identity in addition to its conf
   assert.deepEqual(definition, { EASYEDA_CONTROL_DATA_DIR: "/private/control" });
 });
 
+void test("startup diagnostics classify fixed causes without exposing private data or invoking exception hooks", () => {
+  const secret = "private-startup-canary";
+  const prefix = { error: "session-stopped", privateDiagnosticsWithheld: true };
+  const filesystem = Object.assign(new Error(secret), { code: "ENOENT", errno: -2, path: secret, env: secret });
+  assert.deepEqual(sessionFailureDiagnostic("plugin-root", filesystem), {
+    ...prefix, phase: "plugin-root", reason: "operating-system-error", osCode: "ENOENT", errno: -2,
+  });
+  assert.deepEqual(sessionFailureDiagnostic("connect", { code: -32_001, message: secret, data: { token: secret } }), {
+    ...prefix, phase: "connect", reason: "request-timeout", protocolCode: -32_001,
+  });
+  assert.deepEqual(sessionFailureDiagnostic("connect", { code: -32_000, message: secret }), {
+    ...prefix, phase: "connect", reason: "connection-closed", protocolCode: -32_000,
+  });
+  assert.equal(sessionFailureDiagnostic("bundle-file-validate", new Error("bundle-drift")).reason, "bundle-drift");
+  assert.equal(sessionFailureDiagnostic("bundle-file-validate", new Error(`bundle-drift: ${secret}`)).reason, "unclassified");
+  assert.equal(sessionFailureDiagnostic("configuration-parse", new SyntaxError(secret)).reason, "json-rejected");
+  let schemaFailure: unknown;
+  try { parseSessionConfiguration({}); } catch (error) { schemaFailure = error; }
+  assert.equal(sessionFailureDiagnostic("configuration-parse", schemaFailure).reason, "schema-rejected");
+  let hooks = 0;
+  const accessor = Object.defineProperties({}, {
+    code: { get: (): never => { hooks += 1; throw new Error(secret); } },
+    message: { get: (): never => { hooks += 1; throw new Error(secret); } },
+    toJSON: { value: (): never => { hooks += 1; throw new Error(secret); } },
+  });
+  const proxy = new Proxy(filesystem, { getOwnPropertyDescriptor: (): never => { hooks += 1; throw new Error(secret); },
+    getPrototypeOf: (): never => { hooks += 1; throw new Error(secret); } });
+  const inherited: unknown = Object.create({ code: "ENOENT", errno: -2, message: "bundle-drift" });
+  const outputs = [accessor, proxy, inherited, { message: secret, code: secret }, new Error(secret)].map(error => sessionFailureDiagnostic(secret, error));
+  for (const output of outputs) { assert.deepEqual(output, { ...prefix, phase: "unclassified", reason: "unclassified" }); }
+  const malformedErrno = sessionFailureDiagnostic("plugin-root", { code: "ENOENT", errno: secret });
+  assert.equal(Object.hasOwn(malformedErrno, "errno"), false);
+  assert.equal(JSON.stringify([...outputs, malformedErrno]).includes(secret), false);
+  assert.equal(hooks, 0); assert.ok(JSON.stringify(outputs).length < 4096);
+});
+
+void test("missing plugin root reports its fixed startup phase before profile or transport startup", {
+  skip: process.platform !== "linux" || process.arch !== "x64" || process.version !== "v24.18.0",
+}, async () => {
+  const isolation = await assertTestIsolation();
+  const pluginRoot = join(isolation.directory, "missing-plugin"), profilePath = join(isolation.directory, "unread-profile.json");
+  const completed = Promise.withResolvers<Readonly<{ code: string | number; signal: NodeJS.Signals | null; stdout: string; stderr: string }>>();
+  execFile(process.execPath, [fileURLToPath(new URL("../../scripts/control-session.ts", import.meta.url)), "--plugin-root", pluginRoot], {
+    env: { PATH: "/usr/bin:/bin", EASYEDA_MACHINE_PROFILE: profilePath }, encoding: "utf8", timeout: 10_000, maxBuffer: 32_768,
+  },
+  // oxlint-disable-next-line promise/prefer-await-to-callbacks -- This owned child callback retains its expected nonzero exit, bounded output and status without serializing the private exception.
+  (error, stdout, stderr) => { completed.resolve({ code: error?.code ?? 0, signal: error?.signal ?? null, stdout, stderr }); });
+  const result = await completed.promise;
+  assert.equal(result.code, 1); assert.equal(result.signal, null); assert.equal(result.stderr, "");
+  const output: unknown = JSON.parse(result.stdout);
+  assert.deepEqual(output, { error: "session-stopped", privateDiagnosticsWithheld: true,
+    phase: "plugin-root", reason: "operating-system-error", osCode: "ENOENT", errno: -2 });
+  assert.equal(result.stdout.includes(pluginRoot), false); assert.equal(result.stdout.includes(profilePath), false);
+});
+
 void test("foreground sessions enter the common launcher without carrying direct live configuration", () => {
   const profile = machineProfileSchema.parse({
     schema: "easyeda-pro-control.machine-profile.v1", platform: "linux-x64",
@@ -58,9 +118,33 @@ void test("foreground sessions enter the common launcher without carrying direct
 
 void test("session admits only strict facade requests", () => {
   assert.equal(parseSessionRequest('{"id":1,"tool":"easyeda_control_status"}').id, 1);
+  assert.equal(parseSessionRequest('{"id":2,"tool":"easyeda_control_pcb209_opening"}').id, 2);
+  assert.equal(parseSessionRequest('{"id":3,"tool":"easyeda_control_pcb209_worker_startup"}').id, 3);
   assert.throws(() => parseSessionRequest('{"id":1,"tool":"easyeda_execute"}'));
   assert.throws(() => parseSessionRequest('{"id":1,"tool":"easyeda_control_status","command":"sh"}'));
+  for (const tool of ["easyeda_control_209_opening", "easyeda_control__opening", "easyeda_control_PCB209_opening", "easyeda_control_pcb209-opening"]) {
+    assert.throws(() => parseSessionRequest(JSON.stringify({ id: 4, tool })));
+  }
   assert.throws(() => parseSessionRequest(" ".repeat(MAXIMUM_REQUEST_BYTES + 1)));
+});
+
+void test("registered pcb209 tools dispatch serially while syntactically valid unlisted tools still stop without dispatch", async () => {
+  const names = ["easyeda_control_pcb209_opening", "easyeda_control_pcb209_worker_startup"] as const;
+  const order: unknown[] = [];
+  await runSessionRequests(values([
+    JSON.stringify({ id: 1, tool: names[0], arguments: { sample: "opening" } }),
+    JSON.stringify({ id: 2, tool: names[1], arguments: { sample: "startup" } }),
+    JSON.stringify({ id: 3, tool: "easyeda_control_pcb209_unlisted" }),
+    JSON.stringify({ id: 4, tool: names[0] }),
+  ]), new Set(names), (request) => {
+    order.push({ id: request.id, tool: request.tool, arguments: request.arguments });
+    return Promise.resolve({ ok: true });
+  }, async output => { order.push(output); await Promise.resolve(); });
+  assert.deepEqual(order, [
+    { id: 1, tool: names[0], arguments: { sample: "opening" } }, { id: 1, result: { ok: true } },
+    { id: 2, tool: names[1], arguments: { sample: "startup" } }, { id: 2, result: { ok: true } },
+    { id: 3, error: "tool-not-admitted", dispatched: false },
+  ]);
 });
 
 void test("framing preserves split UTF-8 and refuses oversized or incomplete lines", async () => {

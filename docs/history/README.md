@@ -1,5 +1,6 @@
 # Project history
 
+- [2026-10-30 Forward owner and installation recovery](2026-10-30-forward-owner-and-installation-recovery.md).
 - [2026-10-30 Native cache metadata and capture validation](2026-10-30-cache-and-capture-validation.md).
 - [2026-10-29 Diagnostic shutdown, cache metadata and window restoration](2026-10-29-diagnostic-shutdown-cache-and-window.md).
 - [2026-10-29 Capture readiness and saved queue correction](2026-10-29-capture-readiness-and-saved-queue.md).

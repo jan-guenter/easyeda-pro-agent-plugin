@@ -10,7 +10,7 @@ export function currentWindowFailurePowerShell(): string {
       $windowRelease=$request.action -ceq 'release' -and @('pcb-diagnostic-window-capture-release-before-exit','pcb-diagnostic-window-capture-gdi-release') -ccontains $code
       if ($Visual209 -and (@(${actions}) -ccontains $request.action -or $windowRelease)) {
         try {
-          $stage=$owner.WindowFaultStage;$bounds=$owner.WindowFaultBounds
+          $stage=$owner.WindowFaultStage;$bounds=$owner.WindowFaultBounds;$children=$owner.WindowFaultChildren
           $label=$code.Substring(15)
           if (@(${codes}) -cnotcontains $label) {
             $label='unclassified';$fault=$_.Exception
@@ -28,8 +28,9 @@ export function currentWindowFailurePowerShell(): string {
           if ($label.EndsWith('-fields')) {$stage='request';$bounds=$null}
           if ($windowRelease) {$stage='cleanup';$bounds=$null}
           if (@(${stages}) -cnotcontains $stage) {$stage='unclassified';$bounds=$null}
+          if ($request.action -cne 'capture-window' -or $label -cne 'window-capture-child-ownership') {$children=$null}
           $paint=if ($owner.WindowCapturePaintDispatched) {'possibly-dispatched'} else {'not-dispatched'}
-          $windowFailure=@{schema='easyeda-pro-control.window-failure.v1';action=$request.action;stage=$stage;code=$label;paintPhase=$paint;nativeResourcesRetained=$owner.WindowCaptureResourcesRetained;bounds=$bounds;snapshotOnly=$true;executionAuthorized=$false}
+          $windowFailure=@{schema='easyeda-pro-control.window-failure.v1';action=$request.action;stage=$stage;code=$label;paintPhase=$paint;nativeResourcesRetained=$owner.WindowCaptureResourcesRetained;bounds=$bounds;childOwnership=$children;snapshotOnly=$true;executionAuthorized=$false}
         } catch {$windowFailure=$null}
       }`;
 }

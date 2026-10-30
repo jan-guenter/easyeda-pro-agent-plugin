@@ -59,6 +59,7 @@ export async function readSdkPublicReaders(engine: SdkPublicReadersEngine, reque
   let scope = uiBacked ? "fixed-ui-theme-toolbar-unit-or-system-library-identity" : "fixed-language-catalog-or-extension-page-viewport";
   if (batch) { scope = "fixed-public-utility-batch-with-independent-member-limits"; }
   else if (request.method === "eda.sys_I18n.getCurrentLanguage") { scope = "fixed-sdk-resolved-language-with-fallback"; }
+  else if (request.method === "eda.sys_Window.getUrlParam") { scope = "fixed-api-page-cll-query-not-ui-log-state"; }
   const response = { ...result, runtimeAdmission: {
     profile: uiBacked ? SDK_PUBLIC_READERS_209_UI_RUNTIME_PROFILE.schema : SDK_PUBLIC_UTILITIES_209_PROFILE.schema,
     fingerprintSha256: sha256Json(initial), ...(uiBacked ? { uiImplementation: EDITOR_OBSERVATION_209_UI } : {}),

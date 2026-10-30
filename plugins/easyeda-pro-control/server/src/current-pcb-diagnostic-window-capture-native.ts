@@ -11,6 +11,7 @@ export const CURRENT_WINDOW_CAPTURE_NATIVE_MEMBERS = String.raw`
   [DllImport("user32.dll",SetLastError=true,EntryPoint="SendMessageTimeoutW")] static extern IntPtr WcSendMessageTimeout(IntPtr hwnd,uint message,IntPtr wparam,IntPtr lparam,uint flags,uint milliseconds,out UIntPtr result);
   [DllImport("user32.dll",EntryPoint="GetWindowRect",ExactSpelling=true,SetLastError=true)] static extern bool WcGetWindowRect(IntPtr hwnd,out WcRect bounds);
   [DllImport("user32.dll")] static extern bool EnumChildWindows(IntPtr hwnd,WindowCallback callback,IntPtr argument);
+  [DllImport("user32.dll",EntryPoint="GetWindowThreadProcessId",ExactSpelling=true,SetLastError=true)] static extern uint WcChildProcess(IntPtr hwnd,out uint pid);
   [DllImport("gdi32.dll")] static extern IntPtr CreateCompatibleDC(IntPtr source);
   [DllImport("gdi32.dll")] static extern IntPtr CreateDIBSection(IntPtr dc,ref WcBitmapInfo info,uint usage,out IntPtr bits,IntPtr section,uint offset);
   [DllImport("gdi32.dll")] static extern IntPtr SelectObject(IntPtr dc,IntPtr selected);
@@ -35,10 +36,11 @@ export const CURRENT_WINDOW_CAPTURE_NATIVE_MEMBERS = String.raw`
       return dc==IntPtr.Zero&&bitmap==IntPtr.Zero;
     }
   }
-  string windowFaultStage="request";WcRect windowFaultBounds;bool windowFaultBoundsObserved;
-  void WcFaultStart(string stage){windowFaultStage=stage;windowFaultBoundsObserved=false;}
+  string windowFaultStage="request";WcRect windowFaultBounds;bool windowFaultBoundsObserved;object windowFaultChildren;
+  void WcFaultStart(string stage){windowFaultStage=stage;windowFaultBoundsObserved=false;windowFaultChildren=null;}
   public string WindowFaultStage {get{return windowFaultStage;}}
   public object WindowFaultBounds {get{return windowFaultBoundsObserved?(object)new Dictionary<string,object>{{"left",windowFaultBounds.left},{"top",windowFaultBounds.top},{"right",windowFaultBounds.right},{"bottom",windowFaultBounds.bottom}}:null;}}
+  public object WindowFaultChildren {get{return windowFaultChildren;}}
   WindowCaptureSurface windowCaptureSurface;
   [DllImport("user32.dll")] static extern bool IsZoomed(IntPtr hwnd);
   [DllImport("user32.dll",SetLastError=true)] static extern bool SetWindowPos(IntPtr hwnd,IntPtr after,int x,int y,int width,int height,uint flags);
@@ -69,13 +71,14 @@ export const CURRENT_WINDOW_CAPTURE_NATIVE_MEMBERS = String.raw`
   }
   static bool WcSame(WcRect a,WcRect b){return a.left==b.left&&a.top==b.top&&a.right==b.right&&a.bottom==b.bottom;}
   string WcChildren(IntPtr hwnd) {
-    List<string> children=new List<string>();bool bad=false;int visited=0;
+    List<string> children=new List<string>();string refusal=null;int visited=0,visible=0;object nativeError=null;windowFaultChildren=null;
     // WM_PRINT never receives PRF_OWNED. Visible descendants must belong to the
     // original root process, not an embedded foreign application.
-    EnumChildWindows(hwnd,(child,unused)=>{if(++visited>256){bad=true;return false;}if(!IsWindowVisible(child))return true;uint pid;
-      GetWindowThreadProcessId(child,out pid);if(pid!=rootPid||children.Count>=256){bad=true;return false;}
+    EnumChildWindows(hwnd,(child,unused)=>{if(++visited>256){refusal="descendant-limit";return false;}if(!IsWindowVisible(child))return true;visible++;uint pid;
+      if(WcChildProcess(child,out pid)==0){uint error=unchecked((uint)Marshal.GetLastWin32Error());nativeError=error;refusal=error==1400?"window-disappeared":"pid-query-failed";return false;}
+      if(pid!=rootPid||children.Count>=256){refusal=pid!=rootPid?"different-process":"descendant-limit";return false;}
       children.Add(child.ToInt64().ToString(CultureInfo.InvariantCulture));return true;},IntPtr.Zero);
-    if(bad)throw Error("window-capture-child-ownership");return string.Join(",",children.ToArray());
+    if(refusal!=null){windowFaultChildren=new Dictionary<string,object>{{"reason",refusal},{"visited",visited},{"visible",visible},{"nativeError",nativeError}};throw Error("window-capture-child-ownership");}return string.Join(",",children.ToArray());
   }
   static void WcWriteUInt(byte[] target,int offset,uint value){target[offset]=(byte)(value>>24);target[offset+1]=(byte)(value>>16);target[offset+2]=(byte)(value>>8);target[offset+3]=(byte)value;}
   static uint WcCrc(byte[] type,byte[] body) {
