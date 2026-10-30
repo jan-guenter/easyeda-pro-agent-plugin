@@ -357,3 +357,15 @@ vendor cursor enumerates the full index internally before projection, and the
 produce local diagnostics; outward failures are redacted. A timeout authorizes
 neither retry nor startup. This internal diagnostic does not increase the public
 SDK method coverage count. Connected validation is not yet recorded.
+
+## EDA document-root path on209
+
+`sys_FileSystem.getEdaPath` remains omitted. Its pinned SDK wrapper calls an
+unregistered `app://api/client/config` route and maps a failed response to an
+empty string. That source-derived fallback is not a live path observation.
+The UI's alternative HTTP configuration getter can create configured folders
+and serialize private proxy settings, so it is outside these read-only utility
+contracts. A future native equivalent must bind only the original document-root
+value; the pinned executable directory and a supplied project's parent are not
+substitutes. The declared result is the EDA document directory, not the program
+installation directory. See the [official method contract](https://prodocs.easyeda.com/en/api/reference/pro-api.sys_filesystem.getedapath.html).

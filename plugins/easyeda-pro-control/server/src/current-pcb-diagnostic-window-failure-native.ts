@@ -7,7 +7,7 @@ export function currentWindowFailurePowerShell(): string {
   const codes = CURRENT_WINDOW_FAILURE_NATIVE_CODES.map(code => `'${code}'`).join(",");
   const stages = CURRENT_WINDOW_FAILURE_STAGES.map(stage => `'${stage}'`).join(",");
   return `$windowFailure=$null
-      $windowRelease=$request.action -ceq 'release' -and @('pcb-diagnostic-window-capture-release-before-exit','pcb-diagnostic-window-capture-gdi-release') -ccontains $code
+      $windowRelease=$request.action -ceq 'release' -and @('pcb-diagnostic-window-capture-release-before-exit','pcb-diagnostic-window-capture-gdi-release','pcb-diagnostic-window-capture-child-release') -ccontains $code
       if ($Visual209 -and (@(${actions}) -ccontains $request.action -or $windowRelease)) {
         try {
           $stage=$owner.WindowFaultStage;$bounds=$owner.WindowFaultBounds;$children=$owner.WindowFaultChildren

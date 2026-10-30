@@ -250,6 +250,7 @@ class CurrentPcbWorkerStartupChannelCore {
   readonly #createClockPurpose: boolean;
   readonly #allocationPurpose: boolean;
   readonly #forwardEventBytes: ((bytes: number) => void) | null;
+  readonly #forwardSavedObservation: boolean;
   readonly #savedPurpose: boolean;
   readonly #footprintProfile: typeof CURRENT_FOOTPRINT_COPY_PREPARATION_PROFILE | typeof CURRENT_FOOTPRINT_COPY_EXECUTION_PROFILE | typeof CURRENT_FOOTPRINT_COPY_SAVED_PROFILE | typeof CURRENT_FOOTPRINT_COMBINED_RENDERER_PROFILE | typeof CURRENT_FOOTPRINT_COPY_FORWARD_RENDERER_PROFILE;
   readonly #requestLimit: number;
@@ -328,10 +329,12 @@ class CurrentPcbWorkerStartupChannelCore {
 
   public constructor(internal: typeof INTERNAL_PROFILE, native: CurrentPcbWorkerStartupNativeDependency,
     wire: typeof currentPcbWorkerStartupWire, priorUsage?: CurrentPcbWorkerStartupPriorUsage, createClockPurpose = false, allocationPurpose = false,
-    forwardEventBytes: ((bytes: number) => void) | null = null) {
+    forwardEventBytes: ((bytes: number) => void) | null = null, accountedSavedPurpose = false) {
     if (internal !== INTERNAL_PROFILE) { throw fail("INTERNAL_PROFILE"); } this.#wire = wire; this.#createClockPurpose = createClockPurpose; this.#allocationPurpose = allocationPurpose;
-    if ((wire === currentFootprintCopyForwardStartupWire) !== (forwardEventBytes !== null) || forwardEventBytes !== null && typeof forwardEventBytes !== "function") { throw fail("FORWARD_ACCOUNTING"); }
-    this.#forwardEventBytes = forwardEventBytes;
+    if (typeof accountedSavedPurpose !== "boolean" || accountedSavedPurpose && wire !== currentFootprintCopySavedStartupWire ||
+        (wire === currentFootprintCopyForwardStartupWire || accountedSavedPurpose) !== (forwardEventBytes !== null) ||
+        forwardEventBytes !== null && typeof forwardEventBytes !== "function") { throw fail("FORWARD_ACCOUNTING"); }
+    this.#forwardEventBytes = forwardEventBytes; this.#forwardSavedObservation = accountedSavedPurpose;
     if (allocationPurpose && !createClockPurpose) { throw fail("FOOTPRINT_ALLOCATION_PURPOSE"); }
     this.#executionPurpose = wire === currentFootprintCopyExecutionStartupWire || wire === currentFootprintCombinedStartupWire || wire === currentFootprintCopyForwardStartupWire;
     this.#savedPurpose = wire === currentFootprintCopySavedStartupWire;
@@ -365,11 +368,11 @@ class CurrentPcbWorkerStartupChannelCore {
   }
   public classifyForwardRequest(id: number): boolean {
     const pending = this.#pending.get(id);
-    if (this.#wire !== currentFootprintCopyForwardStartupWire || pending === undefined || pending.written || pending.writeFailed) { throw fail("FORWARD_PENDING_REQUEST"); }
+    if (this.#forwardEventBytes === null || pending === undefined || pending.written || pending.writeFailed) { throw fail("FORWARD_PENDING_REQUEST"); }
     return cleanupCommand(pending.command);
   }
   public forwardPollWaiting(): boolean {
-    if (this.#wire !== currentFootprintCopyForwardStartupWire) { throw fail("FORWARD_PENDING_REQUEST"); }
+    if (this.#forwardEventBytes === null) { throw fail("FORWARD_PENDING_REQUEST"); }
     return this.#pending.size > 0 || this.#queuedRequests !== 0 || this.#used !== 0;
   }
   #withinLifetime(cleanup = false): void {
@@ -426,7 +429,7 @@ class CurrentPcbWorkerStartupChannelCore {
       },
     });
     if (this.#footprintPurpose && !this.#savedPurpose) { footprintDependencies.add(dependency); }
-    if (this.#savedPurpose) { savedDependencies.add(dependency); }
+    if (this.#savedPurpose && !this.#forwardSavedObservation) { savedDependencies.add(dependency); }
     if (this.#executionPurpose) { markCurrentFootprintExecutionDependency(dependency); executionDependencies.set(dependency, this); }
     return dependency;
   }
@@ -449,6 +452,11 @@ class CurrentPcbWorkerStartupChannelCore {
   }
   #attributed(command: ChannelCommand, manager = false, clock = false, parentKind?: CurrentFootprintParentCommandKind, registration = false): void {
     if (this.#parent === null || this.#released || this.#releaseRequested || this.#terminationVerified) { throw fail("NOT_STARTED"); }
+    if (this.#forwardSavedObservation && (command.method === "Target.setAutoAttach" ||
+        !("phase" in command) && command.method === "Runtime.callFunctionOn" && "uniqueContextId" in command.params && command.params.arguments.length > 0 ||
+        "phase" in command && command.phase === "saved-upload-queue" && this.#savedQueueReads > 0)) {
+      throw fail("FORWARD_SAVED_OBSERVATION_ONLY");
+    }
     if (registration) {
       if (!("phase" in command) || !this.#executionPurpose || !this.#openingConsumed || !this.#footprintUiStarted || this.#footprintUiReleased ||
           command.sessionId !== this.#parent.sessionId || this.#footprintClockRegistrationReleased ||
@@ -1237,6 +1245,13 @@ export class CurrentFootprintCopyAllocatedCreateClockStartupChannel extends Curr
 export class CurrentFootprintCopySavedChannel extends CurrentPcbWorkerStartupChannelCore {
   public constructor(native: CurrentPcbWorkerStartupNativeDependency, priorUsage?: CurrentPcbWorkerStartupPriorUsage) {
     super(INTERNAL_PROFILE, native, currentFootprintCopySavedStartupWire, priorUsage);
+  }
+}
+/** Distinct accounted saved birth. Its fixed wire and353-request ceiling are
+ * identical to the ordinary saved reader; it accepts no create or clock route. */
+export class CurrentFootprintCopyForwardSavedStartupChannel extends CurrentPcbWorkerStartupChannelCore {
+  public constructor(native: CurrentPcbWorkerStartupNativeDependency, observeEventBytes: (bytes: number) => void, priorUsage?: CurrentPcbWorkerStartupPriorUsage) {
+    super(INTERNAL_PROFILE, native, currentFootprintCopySavedStartupWire, priorUsage, false, false, observeEventBytes, true);
   }
 }
 // oxlint-disable-next-line typescript/unbound-method -- Called only with the original WeakMap-selected private-field channel above.

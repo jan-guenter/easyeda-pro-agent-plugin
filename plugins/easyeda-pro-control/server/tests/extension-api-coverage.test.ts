@@ -20,6 +20,20 @@ void test("supplied footprint archive coverage distinguishes exact offline sourc
 });
 
 
+void test("EDA document-root coverage keeps the missing209 protocol separate from the broader native config route", () => {
+  const row = inventoryExtensionApiCoverage().find(entry => entry.path === "eda.sys_FileSystem.getEdaPath"); assert.ok(row);
+  assert.equal(row.status, "omitted"); assert.deepEqual(row.routes, []);
+  assert.equal(row.completeDeclaredContractSupported, false); assert.equal(row.currentGenerationLiveValidation, "not-recorded");
+  assert.equal(row.runtimeAdmission, "not-granted-by-inventory"); assert.ok(row.omission);
+  assert.equal(row.omission.code, "installed-209-eda-path-protocol-missing");
+  assert.equal(row.omission.evidence.length, 3);
+  assert.ok(row.omission.evidence.some(item => item.includes("api.js@sha256:e7c31b0d") && item.includes("1825628..1826175")));
+  assert.ok(row.omission.evidence.some(item => item.startsWith("app.js@sha256:52f51ce4") && item.includes("2636991..2647647")));
+  const result = queryExtensionApiCoverage({ search: row.path, status: "omitted" });
+  assert.ok(JSON.stringify(result).includes("installed-209-eda-path-protocol-missing"));
+});
+
+
 void test("all eight legacy project-structure writer routes remain blocked without removing argument discovery", () => {
   const mappings = [
     ["eda.lib_Symbol.create", "library.symbol.create"], ["eda.lib_Symbol.modify", "library.symbol.modify"],

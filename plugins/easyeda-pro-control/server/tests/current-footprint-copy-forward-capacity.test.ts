@@ -3,7 +3,8 @@
 import assert from "node:assert/strict";
 import { test } from "node:test";
 import { CURRENT_FOOTPRINT_COPY_FORWARD_CAPACITY as CAPACITY,
-  CurrentFootprintCopyForwardResourceLedger as Ledger } from "../src/current-footprint-copy-forward-capacity.ts";
+  CurrentFootprintCopyForwardResourceLedger as Ledger,
+  requireOriginalForwardLedgerBinding } from "../src/current-footprint-copy-forward-capacity.ts";
 import { CURRENT_FOOTPRINT_COPY_ALLOCATED_CREATE_CLOCK_BUDGET as ALLOCATION } from "../src/current-footprint-copy-allocated-create-clock-budget.ts";
 import { CURRENT_FOOTPRINT_COPY_PREPARATION_REQUESTS as SOURCE_PREPARATION } from "../src/current-footprint-copy-preparation.ts";
 import { CURRENT_FOOTPRINT_COPY_SOURCE_STAGE_REQUESTS as SOURCE } from "../src/current-footprint-copy-source-read-runner.ts";
@@ -130,4 +131,75 @@ void test("every main frame counts including empty control frames and saved gene
   const saved = new Ledger(); saved.bind("forward-saved-readback", writer);
   assert.throws(() => { saved.consumeMainFrame("forward-saved-readback", writer, 0); }, /MAIN_FRAME/u);
   assert.equal(saved.status().mainFrames, 0);
+});
+
+void test("writer controls cannot reduce the saved owner's separate cleanup reserve", () => {
+  const ledger = new Ledger(), saved = Object.freeze({}), writer = Object.freeze({});
+  const binding = requireOriginalForwardLedgerBinding(ledger);
+  binding.bind("forward-writer", writer); binding.bind("forward-saved-readback", saved);
+  const reserve = CAPACITY.controls.terminationObservationsPerGeneration + CAPACITY.controls.releaseObservationsPerGeneration +
+    CAPACITY.controls.normalCloseAttemptsPerGeneration + CAPACITY.controls.abortAttemptsPerGeneration;
+  for (let index = 0; index < CAPACITY.controls.perGeneration; index += 1) { binding.consumeControl("forward-writer", writer); }
+  assert.equal(binding.generationStatus("forward-writer", writer).controls, CAPACITY.controls.perGeneration);
+  assert.equal(binding.generationStatus("forward-saved-readback", saved).controls, 0);
+  for (let index = 0; index < CAPACITY.controls.perGeneration - reserve; index += 1) { binding.consumeControl("forward-saved-readback", saved); }
+  assert.equal(binding.status().controls, CAPACITY.controls.perGeneration * 2 - reserve);
+  assert.equal(CAPACITY.controls.perGeneration - binding.generationStatus("forward-saved-readback", saved).controls, reserve);
+  for (let index = 0; index < reserve; index += 1) { binding.consumeControl("forward-saved-readback", saved, true); }
+  assert.equal(binding.generationStatus("forward-saved-readback", saved).controls, CAPACITY.controls.perGeneration);
+  assert.equal(binding.status().controls, CAPACITY.controls.perGeneration * 2);
+  assert.throws(() => { binding.consumeControl("forward-saved-readback", saved, true); }, /CAPACITY_CONTROL/u);
+  assert.equal(binding.generationStatus("forward-writer", writer).controls, CAPACITY.controls.perGeneration);
+  assert.equal(binding.generationStatus("forward-saved-readback", saved).executionAuthorized, false);
+});
+
+void test("generation snapshots retain their own requests and received bytes", () => {
+  const ledger = new Ledger(), saved = Object.freeze({}), writer = Object.freeze({});
+  const binding = requireOriginalForwardLedgerBinding(ledger);
+  binding.bind("forward-writer", writer); binding.bind("forward-saved-readback", saved);
+  binding.consumeRequest("forward-writer", writer, "renderer", 1, false);
+  binding.consumeRequest("forward-writer", writer, "main", 1, false);
+  binding.consumeBytes("forward-writer", writer, "renderer", 11); binding.consumeBytes("forward-writer", writer, "main", 13);
+  binding.consumeBytes("forward-writer", writer, "helper-stdout", 17);
+  binding.consumeRendererPoll("forward-writer", writer, "data"); binding.consumeMainPoll("forward-writer", writer);
+  binding.consumeRendererEvent("forward-writer", writer, 3); binding.consumeMainFrame("forward-writer", writer, 2);
+  const before = binding.generationStatus("forward-saved-readback", saved);
+  assert.ok(Object.isFrozen(before)); assert.equal(before.rendererRequests, 0); assert.equal(before.rendererBytes, 0);
+  binding.consumeRequest("forward-saved-readback", saved, "renderer", 1, false);
+  binding.consumeBytes("forward-saved-readback", saved, "renderer", 19); binding.consumeBytes("forward-saved-readback", saved, "helper-stdout", 23);
+  binding.consumeRendererPoll("forward-saved-readback", saved, "idle"); binding.consumeRendererEvent("forward-saved-readback", saved, 5);
+  assert.deepEqual(binding.generationStatus("forward-writer", writer), { failed: false, rendererRequests: 1, mainRequests: 1, controls: 0,
+    rendererPolls: 1, mainPolls: 1, rendererEvents: 1, mainFrames: 1, rendererBytes: 11, rendererEventBytes: 3,
+    mainBytes: 13, helperStdoutBytes: 17, executionAuthorized: false });
+  assert.deepEqual(binding.generationStatus("forward-saved-readback", saved), { failed: false, rendererRequests: 1, mainRequests: 0, controls: 0,
+    rendererPolls: 1, mainPolls: 0, rendererEvents: 1, mainFrames: 0, rendererBytes: 19, rendererEventBytes: 5,
+    mainBytes: 0, helperStdoutBytes: 23, executionAuthorized: false });
+  assert.equal(before.rendererRequests, 0); assert.equal(before.rendererBytes, 0);
+});
+
+void test("generation counters reject other owners, copied and proxied references before spending", () => {
+  const ledger = new Ledger(), saved = Object.freeze({}), writer = Object.freeze({});
+  const binding = requireOriginalForwardLedgerBinding(ledger);
+  binding.bind("forward-writer", writer); binding.bind("forward-saved-readback", saved);
+  for (const original of [writer, { ...saved }, new Proxy(saved, {})]) {
+    assert.throws(() => { binding.generationStatus("forward-saved-readback", original); }, /ORIGINAL_GENERATION/u);
+    assert.throws(() => { binding.consumeControl("forward-saved-readback", original, true); }, /ORIGINAL_GENERATION/u);
+  }
+  assert.throws(() => { binding.generationStatus("forward-writer", saved); }, /ORIGINAL_GENERATION/u);
+  assert.throws(() => { binding.consumeControl("forward-writer", saved, true); }, /ORIGINAL_GENERATION/u);
+  assert.equal(binding.status().controls, 0); assert.equal(binding.status().failed, false);
+  assert.throws(() => { requireOriginalForwardLedgerBinding(new Proxy(ledger, {})); }, /ORIGINAL_LEDGER/u);
+});
+
+void test("captured generation status rejects prototype replacement without invoking it", () => {
+  const ledger = new Ledger(), writer = Object.freeze({});
+  const binding = requireOriginalForwardLedgerBinding(ledger); binding.bind("forward-writer", writer);
+  const descriptor = Object.getOwnPropertyDescriptor(Ledger.prototype, "generationStatus"); assert.ok(descriptor);
+  let replacements = 0;
+  try {
+    Object.defineProperty(Ledger.prototype, "generationStatus", { ...descriptor, value: (): unknown => { replacements += 1; return {}; } });
+    assert.throws(() => { binding.generationStatus("forward-writer", writer); }, /ORIGINAL_LEDGER_METHODS/u);
+    assert.throws(() => { requireOriginalForwardLedgerBinding(ledger); }, /ORIGINAL_LEDGER_METHODS/u);
+  } finally { Object.defineProperty(Ledger.prototype, "generationStatus", descriptor); }
+  assert.equal(replacements, 0); assert.equal(binding.generationStatus("forward-writer", writer).controls, 0);
 });

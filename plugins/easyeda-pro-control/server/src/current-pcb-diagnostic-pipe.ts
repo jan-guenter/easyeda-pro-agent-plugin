@@ -167,12 +167,12 @@ class CurrentPcbFixedPipeCore {
   #workerDiscoverySettled = false;
   #selectedWorkerSession: string | null = null;
 
-  public constructor(input: Readable, output: Writable, purpose: "diagnostic" | "string-precreate" | "worker-startup" | "combined-discovery" | "forward-discovery",
+  public constructor(input: Readable, output: Writable, purpose: "diagnostic" | "string-precreate" | "worker-startup" | "combined-discovery" | "forward-discovery" | "forward-saved-discovery",
     observeEventBytes: ((bytes: number) => void) | null = null) {
-    if ((purpose === "forward-discovery") !== (observeEventBytes !== null) || observeEventBytes !== null && typeof observeEventBytes !== "function") { throw new Error("PCB_DIAGNOSTIC_FORWARD_ACCOUNTING"); }
+    if ((purpose === "forward-discovery" || purpose === "forward-saved-discovery") !== (observeEventBytes !== null) || observeEventBytes !== null && typeof observeEventBytes !== "function") { throw new Error("PCB_DIAGNOSTIC_FORWARD_ACCOUNTING"); }
     this.#observeEventBytes = observeEventBytes;
     this.#input = input; this.#output = output; this.#stringPurpose = purpose === "string-precreate";
-    this.#startupPurpose = purpose === "worker-startup" || purpose === "combined-discovery" || purpose === "forward-discovery";
+    this.#startupPurpose = purpose === "worker-startup" || purpose === "combined-discovery" || purpose === "forward-discovery" || purpose === "forward-saved-discovery";
     this.#combinedPurpose = purpose === "combined-discovery" || purpose === "forward-discovery";
   }
 
@@ -650,5 +650,14 @@ export class CurrentFootprintCopyForwardDiscoveryPipe extends CurrentPcbFixedPip
     super(input, output, "forward-discovery", observeEventBytes);
   }
   public observeSavedCacheNative(command: CurrentFootprintSavedCacheCommand): Promise<Reply> { return this.savedCacheNative(command); }
+  public handoff(): CurrentPcbWorkerStartupPipeHandoff { return this.handoffStartupPipe(); }
+}
+
+/** The original forward-to-saved observation factory accounts this ordinary
+ * startup vocabulary from discovery birth. It gains no combined cache grammar. */
+export class CurrentFootprintCopyForwardSavedDiscoveryPipe extends CurrentPcbFixedPipeCore {
+  public constructor(input: Readable, output: Writable, observeEventBytes: (bytes: number) => void) {
+    super(input, output, "forward-saved-discovery", observeEventBytes);
+  }
   public handoff(): CurrentPcbWorkerStartupPipeHandoff { return this.handoffStartupPipe(); }
 }

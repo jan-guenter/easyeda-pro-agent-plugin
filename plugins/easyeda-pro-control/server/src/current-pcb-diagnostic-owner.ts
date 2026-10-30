@@ -15,7 +15,7 @@ import { PassThrough, Writable } from "node:stream";
 import { setTimeout as delay } from "node:timers/promises";
 import { fileURLToPath } from "node:url";
 import { canonicalJson, sha256Json } from "./core.ts";
-import { CurrentFootprintCombinedDiscoveryPipe, CurrentFootprintCopyForwardDiscoveryPipe, CurrentPcbDiagnosticPipe, CurrentPcbStringPrecreatePipe, CurrentPcbWorkerStartupDiscoveryPipe, decodeCurrentPcbDiagnosticJson } from "./current-pcb-diagnostic-pipe.ts";
+import { CurrentFootprintCombinedDiscoveryPipe, CurrentFootprintCopyForwardDiscoveryPipe, CurrentFootprintCopyForwardSavedDiscoveryPipe, CurrentPcbDiagnosticPipe, CurrentPcbStringPrecreatePipe, CurrentPcbWorkerStartupDiscoveryPipe, decodeCurrentPcbDiagnosticJson } from "./current-pcb-diagnostic-pipe.ts";
 import type { CurrentPcbDiagnosticFailureObservation } from "./current-pcb-diagnostic-pipe.ts";
 import { DIAGNOSTIC_REQUEST_LIMIT, combinedDiagnosticNativeRequest, diagnosticNativeRequest, stringPrecreateNativeRequest } from "./current-pcb-diagnostic-protocol.ts";
 import { CurrentPcbDiagnosticContext, diagnosticBoundedObservation, diagnosticTargetInventory, diagnosticTargetSummary,
@@ -63,7 +63,7 @@ import { CURRENT_PCB_DIAGNOSTIC_TRANSPORT_LIMITS as TRANSPORT } from "./current-
 import { CURRENT_WINDOW_CAPTURE_LIMITS, decodeCurrentWindowCapture } from "./current-pcb-diagnostic-window-capture.ts";
 import type { CurrentPcbStringNativeClockObservation, CurrentPcbStringNativeClockPhase } from "./current-pcb-string-native-clock.ts";
 import { freezeDeep } from "./sqlite-inventory-core.ts";
-import { CurrentFootprintCombinedStartupChannel, CurrentFootprintCopyExecutionChannel, CurrentFootprintCopyForwardStartupChannel, CurrentFootprintCopyPreparationChannel, CurrentFootprintCopySavedChannel, CurrentPcb209WorkerStartupChannel, CurrentPcbWorkerStartupChannel,
+import { CurrentFootprintCombinedStartupChannel, CurrentFootprintCopyExecutionChannel, CurrentFootprintCopyForwardSavedStartupChannel, CurrentFootprintCopyForwardStartupChannel, CurrentFootprintCopyPreparationChannel, CurrentFootprintCopySavedChannel, CurrentPcb209WorkerStartupChannel, CurrentPcbWorkerStartupChannel,
   beginCurrentFootprintCopyClockRpcChannel, prepareCurrentFootprintCopyClockRpcChannel } from "./current-pcb-worker-startup-channel.ts";
 import type { CurrentPcbWorkerStartupParent } from "./current-pcb-worker-startup-channel.ts";
 import type { CurrentPcbWorkerStartupDependency } from "./current-pcb-worker-startup-contract.ts";
@@ -147,6 +147,7 @@ import type { CurrentFootprintCopyMainRequestCollectCommand } from "./current-fo
 import { CURRENT_FOOTPRINT_COMBINED_PROFILE, CURRENT_FOOTPRINT_COMBINED_PURPOSE } from "./current-footprint-copy-combined-profile.ts";
 import { CURRENT_FOOTPRINT_COPY_FORWARD_PROFILE, CURRENT_FOOTPRINT_COPY_FORWARD_PURPOSE } from "./current-footprint-copy-forward-profile.ts";
 import { CURRENT_FOOTPRINT_COPY_FORWARD_CAPACITY, CurrentFootprintCopyForwardResourceLedger, requireOriginalForwardLedgerBinding } from "./current-footprint-copy-forward-capacity.ts";
+import type { CurrentFootprintCopyForwardRole } from "./current-footprint-copy-forward-capacity.ts";
 import { CurrentFootprintCopyForwardMainAccounting } from "./current-footprint-copy-forward-main-accounting.ts";
 import { CURRENT_FOOTPRINT_COMBINED_READY, decodeCurrentFootprintCombinedReady } from "./current-footprint-combined-ready.ts";
 import type { CurrentFootprintCombinedBeforeLaunchFailureProof, CurrentFootprintCombinedFactoryFailureDiagnostics, CurrentFootprintCombinedReadyPacket } from "./current-footprint-combined-ready.ts";
@@ -158,8 +159,8 @@ import { CurrentFootprintCopyMainBackendRunner } from "./current-footprint-copy-
 import type { CurrentFootprintCopyMainBackendObservation } from "./current-footprint-copy-main-backend-runner.ts";
 
 
-const HELPER_SHA256 = "01df2d0353b8e65ac06f1b8cf8de4ffbf735fef39d68e2bd71a7fee54c68d9c4";
-const HELPER_BYTES = 1_044_336;
+const HELPER_SHA256 = "802c563f38535f5277a4f3ba9d3dd5bcd487b00a2fefc7d879802e7303cf4e70";
+const HELPER_BYTES = 1_047_450;
 const MAX_LINE = TRANSPORT.maximumHelperLineBytes;
 // 64 MiB native bytes need at most 85.34 MiB base64 plus bounded poll envelopes.
 const MAX_TOTAL = TRANSPORT.maximumHelperStdoutBytes;
@@ -205,7 +206,7 @@ export interface CurrentPcbWorkerStartupOpeningBinding {
   readonly ancillaryObservation: () => RecordValue | null;
 }
 export interface CurrentPcbWorkerStartupHandoff {
-  readonly channel: CurrentPcbWorkerStartupChannel | CurrentPcb209WorkerStartupChannel | CurrentFootprintCopyPreparationChannel | CurrentFootprintCopyExecutionChannel | CurrentFootprintCombinedStartupChannel | CurrentFootprintCopyForwardStartupChannel | CurrentFootprintCopySavedChannel | CurrentPcb209EmptyStartupChannel | CurrentPcb209RatlineContinuationChannel | CurrentPcb209RatlineStartupChannel;
+  readonly channel: CurrentPcbWorkerStartupChannel | CurrentPcb209WorkerStartupChannel | CurrentFootprintCopyPreparationChannel | CurrentFootprintCopyExecutionChannel | CurrentFootprintCombinedStartupChannel | CurrentFootprintCopyForwardStartupChannel | CurrentFootprintCopyForwardSavedStartupChannel | CurrentFootprintCopySavedChannel | CurrentPcb209EmptyStartupChannel | CurrentPcb209RatlineContinuationChannel | CurrentPcb209RatlineStartupChannel;
   readonly actorClockSourceQualification?: CurrentPcb209ActorClockSourceQualification;
   readonly dependency: CurrentPcbWorkerStartupDependency;
   readonly opening: CurrentPcbWorkerStartupOpeningBinding;
@@ -279,7 +280,7 @@ export interface CurrentFootprintCopyNativeTarget {
   readonly checkpoint: CheckpointReceipt;
   readonly before: Awaited<ReturnType<typeof readExactSqlInventory>>;
 }
-export type CurrentFootprintCopyGenerationOwner = CurrentFootprintCopyNativeOwner | CurrentFootprintCopySavedNativeOwner | CurrentFootprintCopyForwardNativeOwner;
+export type CurrentFootprintCopyGenerationOwner = CurrentFootprintCopyNativeOwner | CurrentFootprintCopySavedNativeOwner | CurrentFootprintCopyForwardNativeOwner | CurrentFootprintCopyForwardSavedNativeOwner;
 const footprintSavedAllocations = new WeakMap<CurrentFootprintCopyNativeOwner, CurrentFootprintCopySavedNativeOwner>();
 const footprintSavedAllocationAttempts = new WeakSet<CurrentFootprintCopyNativeOwner>();
 const footprintSavedAllocationStates = new WeakMap<CurrentFootprintCopyNativeOwner, "pending" | "no-resource" | "unresolved">();
@@ -301,6 +302,23 @@ interface ForwardFactoryFailure {
   proof: CurrentFootprintCombinedBeforeLaunchFailureProof | null;
 }
 const forwardFactoryFailures = new WeakMap<object, ForwardFactoryFailure>();
+/** These references are issued only inside the genuine original forward
+ * factory. A token does not certify that a copy happened or a saved result exists. */
+interface ForwardResources {
+  readonly ledger: CurrentFootprintCopyForwardResourceLedger;
+  readonly methods: ReturnType<typeof requireOriginalForwardLedgerBinding>;
+}
+interface ForwardSavedObservationHandoff extends ForwardResources {
+  readonly writer: CurrentFootprintCopyForwardNativeOwner;
+  readonly after: Awaited<ReturnType<typeof readExactSqlInventory>>;
+  owner: CurrentFootprintCopyForwardSavedNativeOwner | null;
+}
+const forwardResourceBirths = new WeakMap<object, ForwardResources>();
+const forwardSavedHandoffs = new WeakMap<object, ForwardSavedObservationHandoff>();
+const forwardSavedOwnerHandoffs = new WeakMap<object, ForwardSavedObservationHandoff>();
+const forwardSavedAllocations = new WeakMap<CurrentFootprintCopyForwardNativeOwner, CurrentFootprintCopyForwardSavedNativeOwner>();
+const forwardSavedAllocationAttempts = new WeakSet<CurrentFootprintCopyForwardNativeOwner>();
+const forwardSavedAllocationStates = new WeakMap<CurrentFootprintCopyForwardNativeOwner, "pending" | "no-resource" | "unresolved">();
 const footprintCombinedCapabilities = new WeakMap<CurrentFootprintCombinedMainCapability, CurrentPcbRetainedOwnerCore>();
 interface CombinedFactoryFailure {
   readonly options: CurrentPcbDiagnosticInstallationOptions;
@@ -325,6 +343,8 @@ export function requireCurrentFootprintCopyClockRpcOrigin(token: CurrentFootprin
  * constructor nor successful discovery grants current runtime admission. */
 class CurrentPcbRetainedOwnerCore {
   readonly #child: ChildProcessWithoutNullStreams;
+  readonly #forwardRole: CurrentFootprintCopyForwardRole | null;
+  readonly #forwardSavedHandoff: object | null;
   readonly #forwardLedger: CurrentFootprintCopyForwardResourceLedger | null;
   readonly #forwardLedgerMethods: ReturnType<typeof requireOriginalForwardLedgerBinding> | null;
   readonly #forwardMainAccounting: CurrentFootprintCopyForwardMainAccounting | null;
@@ -335,14 +355,14 @@ class CurrentPcbRetainedOwnerCore {
   readonly #installation: CurrentPcbDiagnosticInstallation | null;
   readonly #input = new PassThrough({ autoDestroy: false });
   readonly #output: Writable;
-  readonly #pipe: CurrentPcbDiagnosticPipe | CurrentPcbStringPrecreatePipe | CurrentPcbWorkerStartupDiscoveryPipe | CurrentFootprintCombinedDiscoveryPipe | CurrentFootprintCopyForwardDiscoveryPipe;
+  readonly #pipe: CurrentPcbDiagnosticPipe | CurrentPcbStringPrecreatePipe | CurrentPcbWorkerStartupDiscoveryPipe | CurrentFootprintCombinedDiscoveryPipe | CurrentFootprintCopyForwardDiscoveryPipe | CurrentFootprintCopyForwardSavedDiscoveryPipe;
   readonly #stringPurpose: boolean;
   readonly #startupPurpose: boolean;
   readonly #actorClockSource: CurrentPcb209ActorClockSourceQualification | null;
   readonly #purpose: OwnerPurpose;
   #startupHandoffConsumed = false;
   #startupParent: CurrentPcbWorkerStartupParent | null = null;
-  #startupChannel: CurrentPcbWorkerStartupChannel | CurrentPcb209WorkerStartupChannel | CurrentFootprintCopyPreparationChannel | CurrentFootprintCopyExecutionChannel | CurrentFootprintCombinedStartupChannel | CurrentFootprintCopyForwardStartupChannel | CurrentFootprintCopySavedChannel | CurrentPcb209EmptyStartupChannel | CurrentPcb209RatlineContinuationChannel | CurrentPcb209RatlineStartupChannel | null = null;
+  #startupChannel: CurrentPcbWorkerStartupChannel | CurrentPcb209WorkerStartupChannel | CurrentFootprintCopyPreparationChannel | CurrentFootprintCopyExecutionChannel | CurrentFootprintCombinedStartupChannel | CurrentFootprintCopyForwardStartupChannel | CurrentFootprintCopyForwardSavedStartupChannel | CurrentFootprintCopySavedChannel | CurrentPcb209EmptyStartupChannel | CurrentPcb209RatlineContinuationChannel | CurrentPcb209RatlineStartupChannel | null = null;
   readonly #emptyAnchor: CurrentPcb209EmptyStartupBudgetAnchor | null;
   readonly #ratlineBudget: CurrentPcb209RatlineBudget | null;
   readonly #continuationBudget: CurrentPcb209RatlineContinuationBudget | null;
@@ -519,13 +539,21 @@ class CurrentPcbRetainedOwnerCore {
   public constructor(child: ChildProcessWithoutNullStreams, verify: () => Promise<void>,
     installation: CurrentPcbDiagnosticInstallation | null, verifyInstallation: () => Promise<void>, purpose: OwnerPurpose,
     verifyStartupFacade: () => Promise<void> = verifyInstallation, actorClockSource: CurrentPcb209ActorClockSourceQualification | null = null,
-    emptyAnchor: CurrentPcb209EmptyStartupBudgetAnchor | null = null, ratlineBudget: CurrentPcb209RatlineBudget | null = null, continuationBudget: CurrentPcb209RatlineContinuationBudget | null = null, readyChallenge: string | null = null) {
-    this.#forwardLedger = purpose === CURRENT_FOOTPRINT_COPY_FORWARD_PURPOSE ? new CurrentFootprintCopyForwardResourceLedger() : null;
+    emptyAnchor: CurrentPcb209EmptyStartupBudgetAnchor | null = null, ratlineBudget: CurrentPcb209RatlineBudget | null = null, continuationBudget: CurrentPcb209RatlineContinuationBudget | null = null, readyChallenge: string | null = null, forwardSavedHandoff: object | null = null) {
+    const saved = forwardSavedHandoff === null ? null : requireForwardSavedObservationHandoff(forwardSavedHandoff);
+    if (saved !== null && purpose !== "worker-startup-footprint-saved209") { throw error("FORWARD_SAVED_PURPOSE"); }
+    let role: CurrentFootprintCopyForwardRole | null = null;
+    if (purpose === CURRENT_FOOTPRINT_COPY_FORWARD_PURPOSE) { role = "forward-writer"; }
+    else if (saved !== null) { role = "forward-saved-readback"; }
+    this.#forwardRole = role;
+    this.#forwardSavedHandoff = forwardSavedHandoff;
+    this.#forwardLedger = purpose === CURRENT_FOOTPRINT_COPY_FORWARD_PURPOSE ? new CurrentFootprintCopyForwardResourceLedger() : saved?.ledger ?? null;
     this.#forwardLedgerMethods = this.#forwardLedger === null ? null : requireOriginalForwardLedgerBinding(this.#forwardLedger);
-    if (this.#forwardLedger !== null && this.#forwardLedgerMethods !== null) {
+    if (this.#forwardRole === "forward-writer" && this.#forwardLedger !== null && this.#forwardLedgerMethods !== null) {
       this.#forwardLedgerMethods.bind.call(this.#forwardLedger, "forward-writer", this);
+      forwardResourceBirths.set(this, Object.freeze({ ledger: this.#forwardLedger, methods: this.#forwardLedgerMethods }));
     }
-    this.#forwardMainAccounting = this.#forwardLedger === null ? null : new CurrentFootprintCopyForwardMainAccounting(this.#forwardLedger, this);
+    this.#forwardMainAccounting = this.#forwardRole !== "forward-writer" || this.#forwardLedger === null ? null : new CurrentFootprintCopyForwardMainAccounting(this.#forwardLedger, this);
     if ((bornFootprintTransport(purpose)) !== (readyChallenge !== null) ||
       readyChallenge !== null && !/^[a-f\d]{32}(?![\s\S])/u.test(readyChallenge)) { throw error("COMBINED_READY_CHALLENGE_PROFILE"); }
     this.#combinedReadyChallenge = readyChallenge;
@@ -559,9 +587,15 @@ class CurrentPcbRetainedOwnerCore {
       },
     });
     if (this.#purpose === CURRENT_FOOTPRINT_COPY_FORWARD_PURPOSE) { this.#pipe = new CurrentFootprintCopyForwardDiscoveryPipe(this.#input, this.#output, (bytes): void => { this.#forwardRendererEvent(bytes); }); }
+    else if (saved !== null) { this.#pipe = new CurrentFootprintCopyForwardSavedDiscoveryPipe(this.#input, this.#output, (bytes): void => { this.#forwardRendererEvent(bytes); }); }
     else if (this.#purpose === CURRENT_FOOTPRINT_COMBINED_PURPOSE) { this.#pipe = new CurrentFootprintCombinedDiscoveryPipe(this.#input, this.#output); }
     else if (this.#startupPurpose) { this.#pipe = new CurrentPcbWorkerStartupDiscoveryPipe(this.#input, this.#output); }
     else { this.#pipe = this.#stringPurpose ? new CurrentPcbStringPrecreatePipe(this.#input, this.#output) : new CurrentPcbDiagnosticPipe(this.#input, this.#output); }
+    if (saved !== null && this.#forwardLedger !== null && this.#forwardLedgerMethods !== null) {
+      // Binding happens before start attaches a listener or processes helper output.
+      this.#forwardLedgerMethods.bind.call(this.#forwardLedger, "forward-saved-readback", this);
+      saved.owner = this; forwardSavedOwnerHandoffs.set(this, saved);
+    }
   }
 
   /** Retain the object before attaching listeners; failures preserve its child. */
@@ -1629,7 +1663,8 @@ class CurrentPcbRetainedOwnerCore {
    * its journal. No project or worker is opened by the handoff itself. */
   public async handoffWorkerStartup(): Promise<CurrentPcbWorkerStartupHandoff> {
     const attachment = this.#stagedAttachment, context = this.#stagedContext, original = this.#binding;
-    if (!this.#startupPurpose || !(this.#pipe instanceof CurrentPcbWorkerStartupDiscoveryPipe || this.#pipe instanceof CurrentFootprintCombinedDiscoveryPipe) ||
+    if (!this.#startupPurpose || !(this.#pipe instanceof CurrentPcbWorkerStartupDiscoveryPipe || this.#pipe instanceof CurrentFootprintCombinedDiscoveryPipe ||
+        this.#pipe instanceof CurrentFootprintCopyForwardDiscoveryPipe || this.#pipe instanceof CurrentFootprintCopyForwardSavedDiscoveryPipe) ||
         this.#startupHandoffConsumed || context === null || attachment === null || original === null ||
         !this.#scriptConsumed || this.#inspectionConsumed || this.#projectOpeningConsumed || this.#pcbOpeningConsumed ||
         this.#workersConsumed || this.#workerContext !== null || this.#modelConsumed || !this.#launchSucceeded) {
@@ -1707,7 +1742,7 @@ class CurrentPcbRetainedOwnerCore {
         if (canonicalJson(this.#startupEmptyPcbContext) !== canonicalJson(selectedModel)) { throw error("STARTUP_EMPTY_PCB_CHANGED"); }
         return this.#startupEmptyPcbContext;
       };
-      let channel: CurrentPcbWorkerStartupChannel | CurrentPcb209WorkerStartupChannel | CurrentFootprintCopyPreparationChannel | CurrentFootprintCopyExecutionChannel | CurrentFootprintCombinedStartupChannel | CurrentFootprintCopyForwardStartupChannel | CurrentFootprintCopySavedChannel | CurrentPcb209EmptyStartupChannel | CurrentPcb209RatlineContinuationChannel | CurrentPcb209RatlineStartupChannel;
+      let channel: CurrentPcbWorkerStartupChannel | CurrentPcb209WorkerStartupChannel | CurrentFootprintCopyPreparationChannel | CurrentFootprintCopyExecutionChannel | CurrentFootprintCombinedStartupChannel | CurrentFootprintCopyForwardStartupChannel | CurrentFootprintCopyForwardSavedStartupChannel | CurrentFootprintCopySavedChannel | CurrentPcb209EmptyStartupChannel | CurrentPcb209RatlineContinuationChannel | CurrentPcb209RatlineStartupChannel;
       if (this.#purpose === "worker-startup-ratline-continuation209") {
         if (this.#continuationBudget === null) { throw error("CONTINUATION_BUDGET"); }
         this.#continuationBudget.closeDiscovery(prior.nextRequestId); channel = new CurrentPcb209RatlineContinuationChannel(native, this.#continuationBudget);
@@ -1719,7 +1754,9 @@ class CurrentPcbRetainedOwnerCore {
         if (this.#emptyAnchor === null) { throw error("STARTUP_EMPTY_ANCHOR"); }
         channel = new CurrentPcb209EmptyStartupChannel(native, { ...priorUsage, pollCount: this.#emptyPolls }, this.#emptyAnchor, requireOriginalPcbContext);
       } else if (this.#purpose === "worker-startup-footprint-saved209") {
-        channel = new CurrentFootprintCopySavedChannel(native, priorUsage);
+        channel = this.#forwardRole === "forward-saved-readback" ?
+          new CurrentFootprintCopyForwardSavedStartupChannel(native, (bytes): void => { this.#forwardRendererEvent(bytes); }, priorUsage) :
+          new CurrentFootprintCopySavedChannel(native, priorUsage);
       } else if (this.#purpose === CURRENT_FOOTPRINT_COPY_FORWARD_PURPOSE) {
         channel = new CurrentFootprintCopyForwardStartupChannel(native, (bytes): void => { this.#forwardRendererEvent(bytes); }, priorUsage);
       } else if (this.#purpose === CURRENT_FOOTPRINT_COMBINED_PURPOSE) {
@@ -1755,6 +1792,7 @@ class CurrentPcbRetainedOwnerCore {
         context: (): Readonly<{ sessionId: string; uniqueContextId: string }> => { current(); return selected; }, reprove,
         begin: (input, titleProof): Readonly<{ sessionId: string; uniqueContextId: string }> => {
           current();
+          if (this.#forwardRole === "forward-saved-readback") { throw error("FORWARD_SAVED_OBSERVATION_OPEN_UNAVAILABLE"); }
           if (this.#projectOpeningConsumed) { throw error("PROJECT_OPENING_UNAVAILABLE"); }
           const target = currentDisposableOpenSealedTargetSchema.parse(input);
           currentPcbDiagnosticOpeningArguments(target, "preflight");
@@ -2298,10 +2336,15 @@ class CurrentPcbRetainedOwnerCore {
       checkpoint: freezeDeep(checkpoint), before: prepared.before });
     this.#footprintSourceBindingText = canonicalJson({ ...this.#footprintSourceBinding, before: undefined });
   }
-  public bindFootprintSavedSource(writer: CurrentFootprintCopyNativeOwner,
+  public bindFootprintSavedSource(writer: CurrentFootprintCopyNativeOwner | CurrentFootprintCopyForwardNativeOwner,
     after: Awaited<ReturnType<typeof readExactSqlInventory>>): void {
     this.requireOriginalFootprintGeneration(); const source = originalCurrentFootprintCopyNativeTarget(writer);
     const snapshot = requireCurrentFootprintCopyClosedSnapshot(writer, after);
+    if (this.#forwardRole === "forward-saved-readback") {
+      if (this.#forwardSavedHandoff === null) { throw error("FORWARD_SAVED_HANDOFF"); }
+      const held = requireForwardSavedObservationHandoff(this.#forwardSavedHandoff, this);
+      if (held.writer !== writer || held.after !== after) { throw error("FORWARD_SAVED_SOURCE_BINDING"); }
+    }
     if (this.#purpose !== "worker-startup-footprint-saved209" || this.#launchConsumed || this.#footprintSourceBinding !== null ||
       !writer.status().released || !writer.status().helperClosed) { throw error("FOOTPRINT_SAVED_SOURCE_BINDING"); }
     const target = Object.freeze({ ...source.target, expectedSourceSha256: snapshot.checkpoint.sourceSha256 });
@@ -2334,8 +2377,9 @@ class CurrentPcbRetainedOwnerCore {
   public async observeFootprintCopyUploadQueue(): Promise<unknown> {
     this.requireOriginalFootprintGeneration(); const origin = this.originalFootprintSourceBinding();
     const context = this.#stagedContext, handoff = this.#startupHandoff;
+    if (this.#forwardRole === "forward-saved-readback" && this.#footprintSavedQueues > 0) { throw error("FORWARD_SAVED_QUEUE_OBSERVATION_CONSUMED"); }
     if (this.#purpose !== "worker-startup-footprint-saved209" || handoff === null || context === null ||
-      !(handoff.channel instanceof CurrentFootprintCopySavedChannel) || this.#footprintSavedQueues >= 2 || this.#closeConsumed) {
+      !(handoff.channel instanceof CurrentFootprintCopySavedChannel || handoff.channel instanceof CurrentFootprintCopyForwardSavedStartupChannel) || this.#footprintSavedQueues >= 2 || this.#closeConsumed) {
       throw error("FOOTPRINT_SAVED_QUEUE_CONSUMED");
     }
     this.#footprintSavedQueues += 1;
@@ -2350,7 +2394,9 @@ class CurrentPcbRetainedOwnerCore {
   }
   public async openFootprintCopySavedProject(projection: CurrentFootprintCopyV2SavedProjection,
     guard: CurrentFootprintCopySavedOpenGuard): Promise<Readonly<{ state: CurrentFootprintCopyStatePacket; transport: CurrentFootprintCopySourceReadTransport }>> {
-    this.requireOriginalFootprintGeneration(); const origin = this.originalFootprintSourceBinding();
+    this.requireOriginalFootprintGeneration();
+    if (this.#forwardRole === "forward-saved-readback") { throw error("FORWARD_SAVED_OBSERVATION_OPEN_UNAVAILABLE"); }
+    const origin = this.originalFootprintSourceBinding();
     const handoff = this.#startupHandoff, target = currentFootprintCopyV2SavedTarget(projection);
     if (this.#purpose !== "worker-startup-footprint-saved209" || handoff === null || this.#footprintSavedOpenAttempted ||
       this.#footprintSavedQueues !== 1 || target.projectUuid !== origin.target.projectUuid || target.branchUuid !== origin.target.branchUuid ||
@@ -2913,19 +2959,26 @@ class CurrentPcbRetainedOwnerCore {
       callback(error("WRITE_FAILED")); return;
     }
   }
-  #forwardResources(): Readonly<{ ledger: CurrentFootprintCopyForwardResourceLedger; methods: ReturnType<typeof requireOriginalForwardLedgerBinding> }> {
-    const ledger = this.#forwardLedger, methods = this.#forwardLedgerMethods;
-    if (this.#purpose !== CURRENT_FOOTPRINT_COPY_FORWARD_PURPOSE || ledger === null || methods === null ||
-      requireOriginalForwardLedgerBinding(ledger) !== methods) { throw error("FORWARD_ORIGINAL_ACCOUNTING"); }
-    return { ledger, methods };
+  #forwardResources(): Readonly<ForwardResources & { role: CurrentFootprintCopyForwardRole }> {
+    const ledger = this.#forwardLedger, methods = this.#forwardLedgerMethods, role = this.#forwardRole;
+    if (ledger === null || methods === null || role === null || requireOriginalForwardLedgerBinding(ledger) !== methods) { throw error("FORWARD_ORIGINAL_ACCOUNTING"); }
+    if (role === "forward-writer") {
+      const original = forwardResourceBirths.get(this);
+      if (this.#purpose !== CURRENT_FOOTPRINT_COPY_FORWARD_PURPOSE || original?.ledger !== ledger || original.methods !== methods) { throw error("FORWARD_ORIGINAL_ACCOUNTING"); }
+    } else {
+      if (this.#purpose !== "worker-startup-footprint-saved209" || this.#forwardSavedHandoff === null) { throw error("FORWARD_ORIGINAL_ACCOUNTING"); }
+      const held = requireForwardSavedObservationHandoff(this.#forwardSavedHandoff, this);
+      if (held.ledger !== ledger || held.methods !== methods) { throw error("FORWARD_ORIGINAL_ACCOUNTING"); }
+    }
+    return { ledger, methods, role };
   }
   #forwardRendererEvent(bytes: number): void {
-    const { ledger, methods } = this.#forwardResources();
-    try { methods.consumeRendererEvent.call(ledger, "forward-writer", this, bytes); }
+    const { ledger, methods, role } = this.#forwardResources();
+    try { methods.consumeRendererEvent.call(ledger, role, this, bytes); }
     catch (caughtError) { this.#forwardCleanupOnly = true; throw caughtError; }
   }
   #forwardRequest(request: RecordValue): Readonly<{ cleanup: boolean; waiting: boolean }> {
-    const { ledger, methods } = this.#forwardResources(), action = request["action"];
+    const { ledger, methods, role } = this.#forwardResources(), action = request["action"];
     // This born observation owner has no current head/cache/native-clock
     // Qualification or four-generation reservation. Refuse every unmounted
     // Create/clock/completion route before a native helper write is reachable.
@@ -2938,21 +2991,21 @@ class CurrentPcbRetainedOwnerCore {
     const requestId = request["requestId"];
     if (requestId !== undefined && typeof requestId !== "number") { throw error("FORWARD_REQUEST_ID"); }
     const main = action === "main-send";
-    const commandCleanup = requestId !== undefined && !main && channel instanceof CurrentFootprintCopyForwardStartupChannel ?
+    const commandCleanup = requestId !== undefined && !main && (channel instanceof CurrentFootprintCopyForwardStartupChannel || channel instanceof CurrentFootprintCopyForwardSavedStartupChannel) ?
       classifyForwardRequest.call(channel, requestId) :
       request["method"] === "Debugger.removeBreakpoint" || request["method"] === "Debugger.resume" || request["method"] === "Runtime.releaseObjectGroup";
     const cleanup = commandCleanup || combinedCleanupControl(request) ||
       ["window", "normal-close", "main-close-detach", "release-unlaunched"].includes(String(action)) || action === "main-poll" && request["cleanup"] === true ||
       action === "worker-startup-reprove" && (this.#forwardCleanupOnly || channel?.status().failed === true);
-    const waiting = action === "poll" && (channel instanceof CurrentFootprintCopyForwardStartupChannel ?
+    const waiting = action === "poll" && ((channel instanceof CurrentFootprintCopyForwardStartupChannel || channel instanceof CurrentFootprintCopyForwardSavedStartupChannel) ?
       forwardPollWaiting.call(channel) : this.#pipe.status().pendingRequestId !== null);
     try {
       if (this.#forwardCleanupOnly && !cleanup && action !== "poll") { throw error("FORWARD_CLEANUP_ONLY"); }
       if (requestId !== undefined) {
         if (typeof requestId !== "number") { throw error("FORWARD_REQUEST_ID"); }
-        methods.consumeRequest.call(ledger, "forward-writer", this, main ? "main" : "renderer", requestId, commandCleanup);
+        methods.consumeRequest.call(ledger, role, this, main ? "main" : "renderer", requestId, commandCleanup);
       } else if (action === "main-poll") {
-        methods.consumeMainPoll.call(ledger, "forward-writer", this, request["cleanup"] === true);
+        methods.consumeMainPoll.call(ledger, role, this, request["cleanup"] === true);
       } else if (action !== "poll") {
         // Release observations are local. Preserve every termination sample,
         // Normal close and abort plus window, main detach, the channel's final
@@ -2960,8 +3013,8 @@ class CurrentPcbRetainedOwnerCore {
         const maximum = CURRENT_FOOTPRINT_COPY_FORWARD_CAPACITY.controls.perGeneration;
         const controls = CURRENT_FOOTPRINT_COPY_FORWARD_CAPACITY.controls;
         const reserve = controls.terminationObservationsPerGeneration + controls.normalCloseAttemptsPerGeneration + controls.abortAttemptsPerGeneration + 4;
-        if (!cleanup && methods.status.call(ledger).controls >= maximum - reserve) { throw error("FORWARD_CONTROL_CLEANUP_RESERVE"); }
-        methods.consumeControl.call(ledger, "forward-writer", this, cleanup);
+        if (!cleanup && methods.generationStatus.call(ledger, role, this).controls >= maximum - reserve) { throw error("FORWARD_CONTROL_CLEANUP_RESERVE"); }
+        methods.consumeControl.call(ledger, role, this, cleanup);
       }
     } catch (caughtError) { this.#forwardCleanupOnly = true; throw caughtError; }
     return Object.freeze({ cleanup, waiting });
@@ -2972,11 +3025,11 @@ class CurrentPcbRetainedOwnerCore {
       !/^(?:[A-Za-z\d+/]{4})*(?:[A-Za-z\d+/]{2}==|[A-Za-z\d+/]{3}=)?$/u.test(encoded)) { throw error("FORWARD_RENDERER_CHUNK"); }
     const bytes = Buffer.from(encoded, "base64");
     if (bytes.length > TRANSPORT.maximumNativePollBytes || bytes.toString("base64") !== encoded) { throw error("FORWARD_RENDERER_CHUNK"); }
-    const { ledger, methods } = this.#forwardResources();
+    const { ledger, methods, role } = this.#forwardResources();
     let kind: "data" | "wait" | "idle" = "idle";
     if (bytes.length > 0) { kind = "data"; } else if (pending.forwardPollWaiting) { kind = "wait"; }
-    methods.consumeRendererPoll.call(ledger, "forward-writer", this, kind, pending.forwardCleanup || this.#forwardCleanupOnly);
-    methods.consumeBytes.call(ledger, "forward-writer", this, "renderer", bytes.length);
+    methods.consumeRendererPoll.call(ledger, role, this, kind, pending.forwardCleanup || this.#forwardCleanupOnly);
+    methods.consumeBytes.call(ledger, role, this, "renderer", bytes.length);
   }
   #forwardReply(result: RecordValue, pending: Pending): RecordValue {
     if (pending.poll) { this.#forwardRendererChunk(result, pending); }
@@ -3180,11 +3233,13 @@ class CurrentPcbRetainedOwnerCore {
       this.#buffer.length + chunk.length > CURRENT_FOOTPRINT_COMBINED_READY.maximumBytes) { this.#fail("COMBINED_READY_BOUND"); return; }
     if (this.#forwardLedger !== null) {
       try {
-        const { ledger, methods } = this.#forwardResources();
-        methods.consumeBytes.call(ledger, "forward-writer", this, "helper-stdout", chunk.length);
+        const { ledger, methods, role } = this.#forwardResources();
+        methods.consumeBytes.call(ledger, role, this, "helper-stdout", chunk.length);
       } catch { this.#fail("FORWARD_HELPER_STDOUT"); return; }
       const reserve = CURRENT_FOOTPRINT_COPY_FORWARD_CAPACITY.controls.perGeneration * CURRENT_FOOTPRINT_COPY_FORWARD_CAPACITY.controls.replyHeaderBytes + MAX_LINE;
-      if (this.#total + chunk.length > CURRENT_FOOTPRINT_COPY_FORWARD_CAPACITY.writer.helperStdoutBytes - reserve) { this.#forwardCleanupOnly = true; }
+      const ceiling = this.#forwardRole === "forward-writer" ? CURRENT_FOOTPRINT_COPY_FORWARD_CAPACITY.writer.helperStdoutBytes :
+        Math.min(MAX_TOTAL, CURRENT_FOOTPRINT_COPY_FORWARD_CAPACITY.saved.helperStdoutBytes);
+      if (this.#total + chunk.length > ceiling - reserve) { this.#forwardCleanupOnly = true; }
     }
     this.#total += chunk.length; this.#buffer = Buffer.concat([this.#buffer, chunk]);
     const ratlineBudget = this.#continuationBudget ?? this.#ratlineBudget;
@@ -3363,12 +3418,24 @@ export class CurrentFootprintCopySavedNativeOwner extends CurrentPcbRetainedOwne
     super(child, verify, installation, verifyInstallation, "worker-startup-footprint-saved209", verifyStartupFacade, actorClockSource);
   }
 }
+/** Fresh read-only second generation with the original forward ledger. The
+ * private handoff is required even by constructor seams; it is not saved-copy
+ * evidence and cannot open a project through the copy-specific saved path. */
+export class CurrentFootprintCopyForwardSavedNativeOwner extends CurrentPcbRetainedOwnerCore {
+  public constructor(child: ChildProcessWithoutNullStreams, verify: () => Promise<void>,
+    actorClockSource: CurrentPcb209ActorClockSourceQualification, forwardSavedHandoff: object,
+    installation: CurrentPcbDiagnosticInstallation | null = null, verifyInstallation: () => Promise<void> = (): Promise<void> => Promise.resolve(),
+    verifyStartupFacade: () => Promise<void> = verifyInstallation) {
+    super(child, verify, installation, verifyInstallation, "worker-startup-footprint-saved209", verifyStartupFacade, actorClockSource, null, null, null, null, forwardSavedHandoff);
+  }
+}
 /* oxlint-disable typescript/unbound-method -- Original private-field receiver is explicitly supplied; these exported checks reject prototype and instance substitution. */
 const footprintCoreDescriptors = Object.getOwnPropertyDescriptors(CurrentPcbRetainedOwnerCore.prototype);
 const footprintOwnerDescriptors = new Map<object, PropertyDescriptorMap>([
   [CurrentFootprintCopyNativeOwner.prototype, Object.getOwnPropertyDescriptors(CurrentFootprintCopyNativeOwner.prototype)],
   [CurrentFootprintCopyForwardNativeOwner.prototype, Object.getOwnPropertyDescriptors(CurrentFootprintCopyForwardNativeOwner.prototype)],
   [CurrentFootprintCopySavedNativeOwner.prototype, Object.getOwnPropertyDescriptors(CurrentFootprintCopySavedNativeOwner.prototype)],
+  [CurrentFootprintCopyForwardSavedNativeOwner.prototype, Object.getOwnPropertyDescriptors(CurrentFootprintCopyForwardSavedNativeOwner.prototype)],
 ]);
 function originalFootprintDescriptors(prototype: object, original: PropertyDescriptorMap): boolean {
   return Reflect.ownKeys(prototype).length === Reflect.ownKeys(original).length && Object.entries(original).every(([name, held]) => {
@@ -3482,7 +3549,7 @@ export function failCurrentFootprintCombinedMainCompletion(capability: CurrentFo
 export function assertOriginalCurrentFootprintCopyNativeOwner(owner: CurrentFootprintCopyGenerationOwner): void {
   if (types.isProxy(owner)) { throw error("FOOTPRINT_ORIGINAL_OWNER"); }
   const proto: unknown = Object.getPrototypeOf(owner);
-  if (proto !== CurrentFootprintCopyNativeOwner.prototype && proto !== CurrentFootprintCopySavedNativeOwner.prototype && proto !== CurrentFootprintCopyForwardNativeOwner.prototype) { throw error("FOOTPRINT_ORIGINAL_OWNER"); }
+  if (proto !== CurrentFootprintCopyNativeOwner.prototype && proto !== CurrentFootprintCopySavedNativeOwner.prototype && proto !== CurrentFootprintCopyForwardNativeOwner.prototype && proto !== CurrentFootprintCopyForwardSavedNativeOwner.prototype) { throw error("FOOTPRINT_ORIGINAL_OWNER"); }
   const descriptors = footprintOwnerDescriptors.get(proto);
   if (descriptors === undefined || !originalFootprintDescriptors(proto, descriptors) ||
     Object.getPrototypeOf(proto) !== CurrentPcbRetainedOwnerCore.prototype || Reflect.ownKeys(owner).length > 0 ||
@@ -3496,6 +3563,36 @@ export function assertOriginalCurrentFootprintCopyForwardNativeOwner(owner: Curr
   if (types.isProxy(owner) || Object.getPrototypeOf(owner) !== CurrentFootprintCopyForwardNativeOwner.prototype ||
     !footprintForwardFactories.has(owner)) { throw error("FORWARD_ORIGINAL_OWNER"); }
   assertOriginalCurrentFootprintCopyNativeOwner(owner);
+}
+/** The handoff selects original resources and closed SQL only. It never
+ * proves a preceding write, replay exclusion or a saved result. */
+function requireForwardSavedObservationHandoff(token: object, owner: CurrentPcbRetainedOwnerCore | null = null): ForwardSavedObservationHandoff {
+  if (token === null || typeof token !== "object" || types.isProxy(token)) { throw error("FORWARD_SAVED_HANDOFF"); }
+  const held = forwardSavedHandoffs.get(token);
+  if (held === undefined) { throw error("FORWARD_SAVED_HANDOFF"); }
+  assertOriginalCurrentFootprintCopyForwardNativeOwner(held.writer);
+  const resources = forwardResourceBirths.get(held.writer);
+  if (resources === undefined || resources.ledger !== held.ledger || resources.methods !== held.methods ||
+      requireOriginalForwardLedgerBinding(held.ledger) !== held.methods) { throw error("FORWARD_SAVED_ORIGINAL_LEDGER"); }
+  held.methods.requireOriginal();
+  requireCurrentFootprintCopyClosedSnapshot(held.writer, held.after);
+  const state = held.writer.status();
+  if (!state.released || !state.helperClosed || held.writer.observeFootprintCopyRelease() !== "released") { throw error("FORWARD_SAVED_WRITER_RELEASE_REQUIRED"); }
+  held.methods.generationStatus.call(held.ledger, "forward-writer", held.writer);
+  if (owner === null) {
+    const counters = held.methods.status.call(held.ledger);
+    if (held.owner !== null || counters.failed || counters.boundGenerations !== 1) { throw error("FORWARD_SAVED_HANDOFF_CONSUMED"); }
+  } else if (held.owner !== owner || forwardSavedOwnerHandoffs.get(owner) !== held) { throw error("FORWARD_SAVED_ORIGINAL_OWNER"); }
+  return held;
+}
+export function assertOriginalCurrentFootprintCopyForwardSavedNativeOwner(owner: CurrentFootprintCopyForwardSavedNativeOwner): void {
+  if (types.isProxy(owner) || Object.getPrototypeOf(owner) !== CurrentFootprintCopyForwardSavedNativeOwner.prototype) { throw error("FORWARD_SAVED_ORIGINAL_OWNER"); }
+  assertOriginalCurrentFootprintCopyNativeOwner(owner);
+  const held = forwardSavedOwnerHandoffs.get(owner);
+  if (held === undefined || held.owner !== owner || forwardSavedAllocations.get(held.writer) !== owner) { throw error("FORWARD_SAVED_ORIGINAL_OWNER"); }
+  const resources = forwardResourceBirths.get(held.writer);
+  if (resources === undefined || resources.ledger !== held.ledger || resources.methods !== held.methods) { throw error("FORWARD_SAVED_ORIGINAL_LEDGER"); }
+  held.methods.requireOriginal(); held.methods.generationStatus.call(held.ledger, "forward-saved-readback", owner);
 }
 export function currentFootprintCopyForwardFactoryFailureDiagnostics(failure: unknown,
   expectedOptions: CurrentPcbDiagnosticInstallationOptions): CurrentFootprintCombinedFactoryFailureDiagnostics | null {
@@ -3625,6 +3722,37 @@ export async function startCurrentFootprintCopyForwardNativeOwner(options: Curre
   }
 }
 
+/** Allocate one actual read-only second generation from the original closed
+ * and released forward observation. It inherits no writer/project-open route,
+ * saved projection, replay token or result authority. */
+export async function startCurrentFootprintCopyForwardSavedObservationOwner(writer: CurrentFootprintCopyForwardNativeOwner,
+  after: Awaited<ReturnType<typeof readExactSqlInventory>>): Promise<CurrentFootprintCopyForwardSavedNativeOwner> {
+  assertOriginalCurrentFootprintCopyForwardNativeOwner(writer);
+  requireCurrentFootprintCopyClosedSnapshot(writer, after);
+  if (forwardSavedAllocationAttempts.has(writer)) { throw error("FORWARD_SAVED_ALLOCATION_CONSUMED"); }
+  const original = footprintFactories.get(writer), resources = forwardResourceBirths.get(writer);
+  if (original === undefined || resources === undefined) { throw error("FORWARD_SAVED_ORIGINAL_LEDGER"); }
+  const token = Object.freeze({});
+  forwardSavedHandoffs.set(token, { writer, after, ...resources, owner: null });
+  requireForwardSavedObservationHandoff(token);
+  forwardSavedAllocationAttempts.add(writer); forwardSavedAllocationStates.set(writer, "pending");
+  let owner: Awaited<ReturnType<typeof startFixedOwner>>;
+  try { owner = await startFixedOwner(original.options, "worker-startup-footprint-saved209", "209-startup", undefined, token); }
+  catch (caughtError) {
+    if (forwardSavedAllocationStates.get(writer) === "pending") { forwardSavedAllocationStates.set(writer, "no-resource"); }
+    throw caughtError;
+  }
+  if (!(owner instanceof CurrentFootprintCopyForwardSavedNativeOwner)) { throw error("FORWARD_SAVED_FACTORY"); }
+  owner.bindFootprintSavedSource(writer, after); return owner;
+}
+export function currentFootprintCopyForwardSavedObservationAllocationOutcome(writer: CurrentFootprintCopyForwardNativeOwner): Readonly<{
+  status: "not-attempted" | "pending" | "no-resource" | "unresolved"; owner: null;
+}> | Readonly<{ status: "retained"; owner: CurrentFootprintCopyForwardSavedNativeOwner }> {
+  assertOriginalCurrentFootprintCopyForwardNativeOwner(writer);
+  const owner = forwardSavedAllocations.get(writer);
+  if (owner !== undefined) { assertOriginalCurrentFootprintCopyForwardSavedNativeOwner(owner); return Object.freeze({ status: "retained", owner }); }
+  return Object.freeze({ status: forwardSavedAllocationStates.get(writer) ?? "not-attempted", owner: null });
+}
 export async function startCurrentFootprintCopySavedNativeOwner(writer: CurrentFootprintCopyNativeOwner,
   after: Awaited<ReturnType<typeof readExactSqlInventory>>): Promise<CurrentFootprintCopySavedNativeOwner> {
   assertOriginalCurrentFootprintCopyNativeOwner(writer);
@@ -3660,8 +3788,10 @@ export function retainedCurrentFootprintCopySavedAllocation(writer: CurrentFootp
   assertOriginalCurrentFootprintCopyNativeOwner(writer); return footprintSavedAllocations.get(writer) ?? null;
 }
 async function startFixedOwner(options: CurrentPcbDiagnosticInstallationOptions, purpose: OwnerPurpose,
-  generation: "206" | "209-opening" | "209-visual" | "209-startup" = "206", savedWriter?: CurrentFootprintCopyNativeOwner): Promise<CurrentPcbDiagnosticOwner | CurrentPcbStringPrecreateOwner | CurrentPcbWorkerStartupOwner> {
+  generation: "206" | "209-opening" | "209-visual" | "209-startup" = "206", savedWriter?: CurrentFootprintCopyNativeOwner, forwardSavedHandoff: object | null = null): Promise<CurrentPcbDiagnosticOwner | CurrentPcbStringPrecreateOwner | CurrentPcbWorkerStartupOwner> {
   const sealedOptions = Object.freeze({ ...options });
+  const forwardSaved = forwardSavedHandoff === null ? null : requireForwardSavedObservationHandoff(forwardSavedHandoff);
+  if (forwardSaved !== null && (purpose !== "worker-startup-footprint-saved209" || generation !== "209-startup" || savedWriter !== undefined)) { throw error("FORWARD_SAVED_PURPOSE"); }
   const startup209 = purpose === "worker-startup209" || (purpose === "worker-startup-footprint209" || purpose === "worker-startup-footprint-copy209" || purpose === "worker-startup-footprint-saved209" || purpose === "worker-startup-footprint-main209" || bornFootprintTransport(purpose)) || purpose === "worker-startup-empty209" || purpose === "worker-startup-ratline209" || purpose === "worker-startup-ratline-continuation209";
   if ((generation === "209-opening") !== (purpose === "diagnostic209") || (generation === "209-visual") !== (purpose === "visual209") || (generation === "209-startup") !== startup209) { throw error("INSTALLATION_PURPOSE"); }
   let verifier = generation === "206" ? verifyCurrentPcbDiagnosticInstallation : verifyCurrentPcb209DiagnosticInstallation;
@@ -3732,6 +3862,10 @@ async function startFixedOwner(options: CurrentPcbDiagnosticInstallationOptions,
   const emptyAnchor = purpose === "worker-startup-empty209" ? new CurrentPcb209EmptyStartupBudgetAnchor() : null;
   const ratlineBudget = purpose === "worker-startup-ratline209" ? new CurrentPcb209RatlineBudget() : null;
   const continuationBudget = purpose === "worker-startup-ratline-continuation209" ? new CurrentPcb209RatlineContinuationBudget() : null;
+  if (forwardSavedHandoff !== null) {
+    if (requireForwardSavedObservationHandoff(forwardSavedHandoff) !== forwardSaved || forwardSaved === null) { throw error("FORWARD_SAVED_HANDOFF"); }
+    forwardSavedAllocationStates.set(forwardSaved.writer, "unresolved");
+  }
   if (savedWriter !== undefined) { footprintSavedAllocationStates.set(savedWriter, "unresolved"); }
   const child = spawn(installation.paths.powershellExecutable,
     ["-NoLogo", "-NoProfile", "-NonInteractive", "-ExecutionPolicy", "Bypass", "-EncodedCommand", encoded],
@@ -3765,7 +3899,8 @@ async function startFixedOwner(options: CurrentPcbDiagnosticInstallationOptions,
   }
   else if (purpose === "worker-startup-footprint-saved209") {
     if (actorClockSource === null) { throw error("STARTUP209_ACTOR_SOURCE"); }
-    owner = new CurrentFootprintCopySavedNativeOwner(child, verify, actorClockSource, installation, verifyInstallation, verifyStartupFacade);
+    owner = forwardSavedHandoff === null ? new CurrentFootprintCopySavedNativeOwner(child, verify, actorClockSource, installation, verifyInstallation, verifyStartupFacade) :
+      new CurrentFootprintCopyForwardSavedNativeOwner(child, verify, actorClockSource, forwardSavedHandoff, installation, verifyInstallation, verifyStartupFacade);
   }
   else if (purpose === "worker-startup-footprint-copy209") {
     if (actorClockSource === null) { throw error("STARTUP209_ACTOR_SOURCE"); }
@@ -3784,12 +3919,15 @@ async function startFixedOwner(options: CurrentPcbDiagnosticInstallationOptions,
   else if (purpose === "visual209") { owner = new CurrentPcb209VisualOwner(child, verify, installation, verifyInstallation); }
   else if (purpose === "diagnostic209") { owner = new CurrentPcb209DiagnosticOwner(child, verify, installation, verifyInstallation); }
   else { owner = new CurrentPcbDiagnosticOwner(child, verify, installation, verifyInstallation); }
-  if (owner instanceof CurrentFootprintCopyNativeOwner || owner instanceof CurrentFootprintCopySavedNativeOwner || owner instanceof CurrentFootprintCopyForwardNativeOwner) {
+  if (owner instanceof CurrentFootprintCopyNativeOwner || owner instanceof CurrentFootprintCopySavedNativeOwner || owner instanceof CurrentFootprintCopyForwardNativeOwner || owner instanceof CurrentFootprintCopyForwardSavedNativeOwner) {
     footprintFactories.set(owner, Object.freeze({ options: sealedOptions, installation }));
   }
   if (owner instanceof CurrentFootprintCopySavedNativeOwner) {
     if (savedWriter === undefined) { throw error("FOOTPRINT_SAVED_WRITER_REQUIRED"); }
     footprintSavedAllocations.set(savedWriter, owner);
+  } else if (owner instanceof CurrentFootprintCopyForwardSavedNativeOwner) {
+    if (forwardSaved === null || forwardSaved.owner !== owner) { throw error("FORWARD_SAVED_WRITER_REQUIRED"); }
+    forwardSavedAllocations.set(forwardSaved.writer, owner);
   }
   retainedOwners.add(owner); owner.start();
   return owner;

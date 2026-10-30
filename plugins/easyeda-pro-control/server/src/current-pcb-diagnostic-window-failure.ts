@@ -13,9 +13,9 @@ const childOwnershipSchema = z.object({ reason: z.enum(CURRENT_WINDOW_FAILURE_CH
   if (value.visible > value.visited) { return false; }
   if (value.reason === "descendant-limit") { return value.visited === 257 && value.nativeError === null; }
   if (value.visited > 256 || value.visible < 1) { return false; }
-  if (value.reason === "different-process") { return value.nativeError === null; }
+  if (["different-process", "process-not-live", "process-identity", "process-outside-job", "process-image", "window-linkage-changed"].includes(value.reason)) { return value.nativeError === null; }
   if (value.reason === "window-disappeared") { return value.nativeError === 1400; }
-  return value.nativeError !== null && value.nativeError !== 1400;
+  return value.nativeError !== null && (value.reason !== "pid-query-failed" || value.nativeError !== 1400);
 });
 export const currentWindowFailureSchema = z.object({ schema: z.literal("easyeda-pro-control.window-failure.v1"),
   action: z.enum(CURRENT_WINDOW_FAILURE_ACTIONS), stage: z.enum(CURRENT_WINDOW_FAILURE_STAGES),
@@ -31,7 +31,7 @@ export function currentWindowFailureAction(value: unknown): CurrentWindowFailure
   return CURRENT_WINDOW_FAILURE_ACTIONS.find(action => action === value) ?? null;
 }
 export function currentWindowReleaseFailure(code: string): boolean {
-  return code === "pcb-diagnostic-window-capture-release-before-exit" || code === "pcb-diagnostic-window-capture-gdi-release";
+  return code === "pcb-diagnostic-window-capture-release-before-exit" || code === "pcb-diagnostic-window-capture-gdi-release" || code === "pcb-diagnostic-window-capture-child-release";
 }
 export function decodeCurrentWindowFailure(input: unknown, action: CurrentWindowFailureAction, nativeCode: string): CurrentWindowFailure {
   const captured = captureCurrentPcbStringClockReply(input);

@@ -26,7 +26,6 @@
       "bom-template-shared-preference-effects": 2,
       "callback-or-registration-lifecycle": 27,
       "canvas-origin-pending-geometry-queues": 1,
-      "client-config-protocol-and-response-needed": 1,
       "cross-tab-netlist-export-scope": 1,
       "extension-or-global-settings-state": 15,
       "external-commercial-action": 6,
@@ -36,6 +35,7 @@
       "implicit-save-before-export": 5,
       "installed-209-auto-job-backend-absent": 5,
       "installed-209-constant-false-stub": 2,
+      "installed-209-eda-path-protocol-missing": 1,
       "installed-209-error-stub": 18,
       "installed-209-library-discovery-mutates-ui": 3,
       "installed-209-library-routing-unqualified": 1,
@@ -41894,11 +41894,13 @@
       "status": "omitted",
       "routes": [],
       "omission": {
-        "code": "client-config-protocol-and-response-needed",
-        "reason": "The pinned public method requires external-interaction permission and client mode, then fetches app://api/client/config at high priority through a GET helper with cache:no-cache and redirect:follow. It parses the complete config JSON before selecting result.basePath. The native client protocol handler and complete response/parse bounds are not qualified by the admitted API/UI getters; a path result is not itself an artifact transfer.",
-        "nextRequirement": "Qualify the fixed local protocol handler, permission/owner checks, redirect behavior and complete response/parse bounds before a read-only path-metadata adapter. Do not expose the full client configuration or substitute an arbitrary filesystem read.",
+        "code": "installed-209-eda-path-protocol-missing",
+        "reason": "The pinned209 SDK checks external-interaction permission/client mode, then calls app://api/client/config. The sole source-registered app processor has no config case; the unhandled route returns500, which the SDK discards before falling back to an empty string. This source-derived fallback is not a connected path observation. The separate UI getter uses HTTP /api/client/config and appBaseDir, but that handler can create configured directories, change the default update flag and exit after directory errors; it also serializes full configuration including proxy data without a response bound.",
+        "nextRequirement": "Implement a separately qualified native task equivalent reading only the original main-generation document-root binding Je, with retained owner/source identity and bounded path output, or review a corrected public SDK/protocol tuple. Do not invoke or redirect to the broader configuration handler, return its full configuration, or substitute the executable/fixture directory for the EDA document root. Legacy execution remains unavailable.",
         "evidence": [
-          "assets/pro-api/0.3.59.1ca9efb5/api.js@sha256:e7c31b0de9dcbe4806e6b3cf8879b31c9e44425361bb8e67c3e8480ae359c8b1;utf16:472220,1825634"
+          "assets/pro-api/0.3.59.1ca9efb5/api.js@sha256:e7c31b0de9dcbe4806e6b3cf8879b31c9e44425361bb8e67c3e8480ae359c8b1;utf16:472220..472501,1825628..1826175",
+          "app.js@sha256:52f51ce43cfebc81a362addde6cd27e39fa58c8fc1ab4ee5adacca4551e5ef0c;utf16:1242374..1242498,1328167..1328874,1329225..1329330,1333382..1333662,2325793..2326244,2636991..2647647,2648374..2650366",
+          "assets/pro-ui/3.2.198.2800f583/js/ui.js@sha256:3515d4c299b353fa7bcd0d859f0b8b59b7eae39b5dc243b2c27f2e54a60a1ee6;utf16:13920093..13920169,15972862..15973414"
         ]
       },
       "completeDeclaredContractSupported": false,

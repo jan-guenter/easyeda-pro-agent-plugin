@@ -626,6 +626,17 @@ Parser/upload completion, HTTP backend ownership and actual backend actor/clock
 provenance still require their own runtime evidence. See the
 [preparation workflow](../../easyeda-pro-control/references/current-footprint-copy-preparation.md).
 
+The separate private forward-to-saved observation birth now transfers the
+original ledger only after original closed SQL, termination and release proof.
+Distinct accounted discovery/channel classes preserve the old saved103/353
+limits and keep each helper's control reserve separate. They withhold the legacy
+saved-execution marker and reject project preflight/open, attachment and queue2
+before native exchange. Its first queue observation covers both namespaces;
+the later legacy queue call is a pre-open freshness recheck. This accounting
+path supplies no created destination, replay token or saved-copy proof. Native
+cache accessor/match qualification still needs a fresh, separately bounded
+original-scope stage, not a reinterpretation of historical descriptor JSON.
+
 The UI source route uses a notification RPC wrapper and an async responder.
 Extension-library lookup precedes project routing. Inspect the existing registry
 and bus without calling their lazy getters or initializers; absence of a matching

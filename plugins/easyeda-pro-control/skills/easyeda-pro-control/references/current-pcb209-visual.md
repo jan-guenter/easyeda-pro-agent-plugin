@@ -148,7 +148,26 @@ capture with fresh source-qualified active-PCB checks. It cannot capture an
 arbitrary PID, HWND or an ordinary running session.
 
 The action requests `WM_PRINT` from the original root window into an owned,
-bounded bitmap. The paint request can run application paint handlers. Native
+bounded bitmap. Visible descendants must belong to the original process or to
+the same pinned application image in its original Job. For another process,
+the owner retains a noninheritable query-only handle before qualification,
+checks its PID, creation time, liveness, image and Job, and rechecks fresh
+HWND/PID/thread/creation tuples at the existing capture brackets. Other images,
+Jobs, failed queries, replaced processes and changed window links refuse.
+Job membership alone grants no capture authority. No caller PID or executable
+allowlist is accepted.
+
+The initial child roster is sealed; later brackets cannot adopt new process
+leases. Process handles remain retained even if capture refuses before bitmap
+allocation. Only actual original root exit and empty Job permit their release,
+alongside any DC/bitmap resources. Child drift stops capture without blocking
+normal close or an authorized original-Job abort. A partial release failure
+retains the remaining resources and grants no public retry.
+
+These are sequential ownership samples. Windows can create descendants during
+enumeration or recycle HWNDs after a check; retained process handles do not pin
+window lifetimes. No atomic window ownership or render completion is claimed.
+The paint request can run application paint handlers. Native
 dimensions and pixels are capped before allocation: at most4096 pixels per
 side and4,194,304 pixels total, with at most256KiB PNG and360,000 bytes for the
 native packet. Before paint, the original transport reserves32MiB of remaining

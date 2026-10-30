@@ -12,6 +12,7 @@ export const CURRENT_WINDOW_CAPTURE_NATIVE_MEMBERS = String.raw`
   [DllImport("user32.dll",EntryPoint="GetWindowRect",ExactSpelling=true,SetLastError=true)] static extern bool WcGetWindowRect(IntPtr hwnd,out WcRect bounds);
   [DllImport("user32.dll")] static extern bool EnumChildWindows(IntPtr hwnd,WindowCallback callback,IntPtr argument);
   [DllImport("user32.dll",EntryPoint="GetWindowThreadProcessId",ExactSpelling=true,SetLastError=true)] static extern uint WcChildProcess(IntPtr hwnd,out uint pid);
+  [DllImport("kernel32.dll",SetLastError=true)] static extern IntPtr OpenProcess(uint access,bool inherit,uint pid);
   [DllImport("gdi32.dll")] static extern IntPtr CreateCompatibleDC(IntPtr source);
   [DllImport("gdi32.dll")] static extern IntPtr CreateDIBSection(IntPtr dc,ref WcBitmapInfo info,uint usage,out IntPtr bits,IntPtr section,uint offset);
   [DllImport("gdi32.dll")] static extern IntPtr SelectObject(IntPtr dc,IntPtr selected);
@@ -42,6 +43,8 @@ export const CURRENT_WINDOW_CAPTURE_NATIVE_MEMBERS = String.raw`
   public object WindowFaultBounds {get{return windowFaultBoundsObserved?(object)new Dictionary<string,object>{{"left",windowFaultBounds.left},{"top",windowFaultBounds.top},{"right",windowFaultBounds.right},{"bottom",windowFaultBounds.bottom}}:null;}}
   public object WindowFaultChildren {get{return windowFaultChildren;}}
   WindowCaptureSurface windowCaptureSurface;
+  sealed class WcProcessLease {public IntPtr handle;public long created;public bool qualified;}
+  readonly Dictionary<uint,WcProcessLease> windowChildProcesses=new Dictionary<uint,WcProcessLease>();bool windowChildrenSealed;int windowChildHandles;
   [DllImport("user32.dll")] static extern bool IsZoomed(IntPtr hwnd);
   [DllImport("user32.dll",SetLastError=true)] static extern bool SetWindowPos(IntPtr hwnd,IntPtr after,int x,int y,int width,int height,uint flags);
   [DllImport("user32.dll")] static extern bool ShowWindowAsync(IntPtr hwnd,int command);
@@ -51,7 +54,7 @@ export const CURRENT_WINDOW_CAPTURE_NATIVE_MEMBERS = String.raw`
   int windowCaptureReadinessQueries;
   bool windowCaptureAttempted,windowCapturePaintDispatched,windowCapturePrintAcknowledged;
   public bool WindowCaptureAttempted { get { return windowCaptureAttempted; } }
-  public bool WindowCaptureResourcesRetained { get { return windowCaptureSurface!=null; } }
+  public bool WindowCaptureResourcesRetained { get { return windowCaptureSurface!=null||windowChildHandles!=0; } }
   public bool WindowCapturePaintDispatched { get { return windowCapturePaintDispatched; } }
   public bool WindowCapturePrintAcknowledged { get { return windowCapturePrintAcknowledged; } }
   static void WcDimensions(int width,int height) {
@@ -70,15 +73,43 @@ export const CURRENT_WINDOW_CAPTURE_NATIVE_MEMBERS = String.raw`
     WcDimensions((int)width,(int)height);return value;
   }
   static bool WcSame(WcRect a,WcRect b){return a.left==b.left&&a.top==b.top&&a.right==b.right&&a.bottom==b.bottom;}
+  string WcProcess(uint pid,out long created,out object nativeError) {
+    created=rootCreated;nativeError=null;IntPtr process=root;WcProcessLease lease=null;
+    if(pid!=rootPid){
+      if(windowChildProcesses.TryGetValue(pid,out lease)){if(!lease.qualified)return "process-identity";}
+      else {
+        if(windowChildrenSealed||windowChildProcesses.Count>=256)return "process-identity";
+        // Retain the slot before OpenProcess and all fallible qualification. No
+        // failed/recycled PID is reopened. Query+wait only, never inheritable.
+        lease=new WcProcessLease();windowChildProcesses.Add(pid,lease);lease.handle=OpenProcess(0x00101000,false,pid);
+        if(lease.handle==IntPtr.Zero){nativeError=unchecked((uint)Marshal.GetLastWin32Error());return "process-open-failed";}
+        windowChildHandles++;
+      }
+      process=lease.handle;created=lease.created;
+    }
+    long expected=created,exited,kernel,user;bool contained;
+    if(process==IntPtr.Zero||job==IntPtr.Zero||rootCreated<=0)return "process-identity";
+    if(WaitForSingleObject(process,0)!=258)return "process-not-live";
+    if(GetProcessId(process)!=pid)return "process-identity";
+    if(!GetProcessTimes(process,out created,out exited,out kernel,out user)){nativeError=unchecked((uint)Marshal.GetLastWin32Error());return "process-query-failed";}
+    if(created<rootCreated||created<=0||expected!=0&&created!=expected)return "process-identity";
+    if(!IsProcessInJob(process,job,out contained)){nativeError=unchecked((uint)Marshal.GetLastWin32Error());return "process-job-query-failed";}
+    if(!contained)return "process-outside-job";
+    try{installation.AssertCreatedImage(process);}catch(InvalidOperationException){return "process-image";}
+    if(WaitForSingleObject(process,0)!=258||GetProcessId(process)!=pid)return "process-not-live";
+    if(lease!=null){lease.created=created;lease.qualified=true;}return null;
+  }
   string WcChildren(IntPtr hwnd) {
     List<string> children=new List<string>();string refusal=null;int visited=0,visible=0;object nativeError=null;windowFaultChildren=null;
-    // WM_PRINT never receives PRF_OWNED. Visible descendants must belong to the
-    // original root process, not an embedded foreign application.
+    // Same pinned application image, retained process generation and original
+    // Job are all required. These HWND samples do not pin window lifetimes.
     EnumChildWindows(hwnd,(child,unused)=>{if(++visited>256){refusal="descendant-limit";return false;}if(!IsWindowVisible(child))return true;visible++;uint pid;
-      if(WcChildProcess(child,out pid)==0){uint error=unchecked((uint)Marshal.GetLastWin32Error());nativeError=error;refusal=error==1400?"window-disappeared":"pid-query-failed";return false;}
-      if(pid!=rootPid||children.Count>=256){refusal=pid!=rootPid?"different-process":"descendant-limit";return false;}
-      children.Add(child.ToInt64().ToString(CultureInfo.InvariantCulture));return true;},IntPtr.Zero);
-    if(refusal!=null){windowFaultChildren=new Dictionary<string,object>{{"reason",refusal},{"visited",visited},{"visible",visible},{"nativeError",nativeError}};throw Error("window-capture-child-ownership");}return string.Join(",",children.ToArray());
+      uint thread=WcChildProcess(child,out pid);if(thread==0){uint error=unchecked((uint)Marshal.GetLastWin32Error());nativeError=error;refusal=error==1400?"window-disappeared":"pid-query-failed";return false;}
+      long created;refusal=WcProcess(pid,out created,out nativeError);if(refusal!=null)return false;
+      uint again;uint current=WcChildProcess(child,out again);if(current==0){uint error=unchecked((uint)Marshal.GetLastWin32Error());nativeError=error;refusal=error==1400?"window-disappeared":"pid-query-failed";return false;}
+      if(current!=thread||again!=pid||!IsWindowVisible(child)||GetAncestor(child,2)!=hwnd){refusal="window-linkage-changed";return false;}
+      children.Add(string.Format(CultureInfo.InvariantCulture,"{0}:{1}:{2}:{3}",child.ToInt64(),pid,thread,created));return true;},IntPtr.Zero);
+    if(refusal!=null){windowFaultChildren=new Dictionary<string,object>{{"reason",refusal},{"visited",visited},{"visible",visible},{"nativeError",nativeError}};throw Error("window-capture-child-ownership");}windowChildrenSealed=true;return string.Join(",",children.ToArray());
   }
   static void WcWriteUInt(byte[] target,int offset,uint value){target[offset]=(byte)(value>>24);target[offset+1]=(byte)(value>>16);target[offset+2]=(byte)(value>>8);target[offset+3]=(byte)value;}
   static uint WcCrc(byte[] type,byte[] body) {
@@ -165,7 +196,7 @@ export const CURRENT_WINDOW_CAPTURE_NATIVE_MEMBERS = String.raw`
       bounds=new Dictionary<string,object>{{"left",value.left},{"top",value.top},{"right",value.right},{"bottom",value.bottom}};
     }else{AssertLive();if(Window()!=null)throw Error("window-readiness-changed");}
     return new Dictionary<string,object>{{"hwnd",hwnd},{"bounds",bounds},{"queriesUsed",windowCaptureReadinessQueries},{"captureAttempted",windowCaptureAttempted},
-      {"paintDispatched",windowCapturePaintDispatched},{"nativeResourcesRetained",windowCaptureSurface!=null},{"maximized",maximized},
+      {"paintDispatched",windowCapturePaintDispatched},{"nativeResourcesRetained",WindowCaptureResourcesRetained},{"maximized",maximized},
       {"restoreAttempted",windowRestoreAttempted},{"restoreRequestSubmitted",windowRestoreSubmitted},{"restoreStateObserved",windowRestoreStateObserved},
       {"resizeAttempted",windowResizeAttempted},{"resizeRequestSubmitted",windowResizeSubmitted},{"resizeGeometryObserved",windowResizeGeometryObserved}};
   }
@@ -202,9 +233,11 @@ export const CURRENT_WINDOW_CAPTURE_NATIVE_MEMBERS = String.raw`
     }
   }
   public void ReleaseWindowCaptureAfterTermination() {
-    if(windowCaptureSurface==null)return;WcFaultStart("cleanup");
+    if(!WindowCaptureResourcesRetained)return;WcFaultStart("cleanup");
     if(!Terminated())throw Error("window-capture-release-before-exit");
-    if(!windowCaptureSurface.Release())throw Error("window-capture-gdi-release");windowCaptureSurface=null;
+    if(windowCaptureSurface!=null){if(!windowCaptureSurface.Release())throw Error("window-capture-gdi-release");windowCaptureSurface=null;}
+    foreach(WcProcessLease lease in windowChildProcesses.Values)if(lease.handle!=IntPtr.Zero){if(!CloseHandle(lease.handle))throw Error("window-capture-child-release");lease.handle=IntPtr.Zero;windowChildHandles--;}
+    windowChildProcesses.Clear();
   }
   public static void VerifyWindowCaptureSmoke() {
     // Resolve the renamed import on Windows without observing or controlling a window.
