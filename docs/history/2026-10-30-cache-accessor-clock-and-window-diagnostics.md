@@ -202,3 +202,29 @@ both original continuation outcomes and all serialized-context negatives.
 Strict types, bridge types/lint, type-aware facade lint, coverage generation,
 build and compatibility checks pass. Final exact-head CI and CodeRabbit review
 are still required before merge.
+
+The completed `e9dee5b` CodeRabbit review reported no actionable code or legacy
+issues. Its actual docstring metric improved from 12.90% to 78.13%, below the
+configured 80% threshold. Seven remaining named synthetic-inspector helper
+contracts now document failure retention, deadline semantics, bounded diagnostic
+snapshots and original-child teardown. This follow-up changes 30 comment lines
+in one test helper; AST tokens, literals and its 11,283-byte fixture-world source
+remain exact. Production source, bundle, helper and compatibility identities
+above are unchanged. The follow-up's actual CodeRabbit metric remains pending
+until its own review; the earlier warning is preserved rather than relabeled.
+
+Exact `e9dee5b` CI completed all 11 checks. Windows, build/package and seven
+facade shards passed; one loader test consumer correctly refused because it
+omitted the newly required compile/run execution-context ID. The aggregate
+failed as required. The retained totals are 13,797 facade cases, 13,791 passes,
+one failure and five expected skips, plus 424 bridge passes. No job was cancelled,
+filtered or manually retried. The original Node crash did not recur in this run;
+that observation does not establish its cause.
+
+The loader consumer now retains one original context, supplies its ID to both
+existing calls and rechecks identity after each await. Its three focused tests
+and strict lint pass. All previous loader pause and ownership assertions remain,
+and the explicit-context refusal is unchanged. Inventory of the shared fixture's
+other direct compile/run consumers found no other positive omission; intentional
+negative calls remain negative. This test-only correction and the seven helper
+contracts are batched together. Runtime/source projections above are unchanged.

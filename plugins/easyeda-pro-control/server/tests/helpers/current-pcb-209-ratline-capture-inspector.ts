@@ -13,11 +13,19 @@ import { CURRENT_PCB_209_RATLINE_SOURCE_PROFILE } from "../../src/current-pcb-20
 import { ratlineCaptureFixtureSource } from "./current-pcb-209-ratline-capture-fixture.ts";
 import type { RatlineCaptureFixtureOptions } from "./current-pcb-209-ratline-capture-fixture.ts";
 
+/** Observe setup promises that may reject before their primary waiter attaches.
+ * The active setup/request/teardown wait still reports the original failure;
+ * this rejection handler grants no recovery or retry of a consumed request.
+ */
 async function observed(work: Promise<unknown>): Promise<void> {
   try { await work; } catch {
     // The active setup, request or teardown wait reports the original failure.
   }
 }
+/** Bound one synthetic fixture wait and clear its timer on every outcome.
+ * Expiration rejects this observer without cancelling the underlying child or
+ * command; original-child teardown must still establish exit and close.
+ */
 async function deadline<T>(work: Promise<T>, phase: string, milliseconds = 10_000): Promise<T> {
   const expired = Promise.withResolvers<never>();
   const timer = setTimeout(() => { expired.reject(new Error(`RATLINE_FIXTURE_DEADLINE_${phase}`)); }, milliseconds);
@@ -56,20 +64,37 @@ export async function ratlineCaptureInspector(context: Pick<TestContext, "after"
   const contextReady = Promise.withResolvers<null>();
   let originalContext: Readonly<{ id: number; uniqueId: string; childReady: true }> | null = null;
   const commands: string[] = [];
+  /** Snapshot pending request counts and at most sixteen bounded method names.
+   * Diagnostics preserve the first failure's outstanding-work context without
+   * exposing request parameters or treating an empty map as child termination.
+   */
   const pendingContext = (): Readonly<{ pendingRequestCount: number; pendingMethods: readonly string[]; pendingMethodsTruncated: boolean }> => Object.freeze({
     pendingRequestCount: pending.size, pendingMethods: Object.freeze([...pending.values()].slice(0, 16).map(value => value.method.slice(0, 80))),
     pendingMethodsTruncated: pending.size > 16 });
   let initialFailurePending: ReturnType<typeof pendingContext> | null = null;
+  /** Limit retained child stderr to 32 KiB of UTF-8, including split-character
+   * handling. The caller separately reports truncation and escapes terminal
+   * controls; this text never becomes an inspector endpoint or executable code.
+   */
   const boundedStderr = (): string => {
     let text = Buffer.from(stderr, "utf8").subarray(0, 32_768).toString("utf8");
     // A boundary inside a multibyte character can add one replacement glyph.
     if (Buffer.byteLength(text) > 32_768) { text = text.slice(0, -1); }
     return text;
   };
+  /** Capture bounded state from this synthetic child and its original requests.
+   * Keep current exit/teardown observations beside the first failure snapshot;
+   * diagnostic JSON is historical evidence and grants no process ownership.
+   */
   const failureContext = (): Readonly<Record<string, unknown>> => Object.freeze({ role, childPid: child.pid ?? null, ...pendingContext(), initialFailurePending,
     childExitCode: child.exitCode, childSignalCode: child.signalCode, teardownConsumed: teardown !== null,
     childStderr: boundedStderr(), childStderrTruncated: Buffer.byteLength(stderr) > 32_768,
     pauses, resumes, subscribers: subscribers.size, childReady, originalContext });
+  /** Make the first fixture failure sticky, invalidate current ownership and
+   * reject every setup/request waiter before notifying original subscribers.
+   * Later errors retain the original cause; failure does not replace teardown
+   * or permit adoption of another child, context or inspector request.
+   */
   const fail = (error: Error): void => {
     if (failure === null) { failureBeforeTeardown = teardown === null; initialFailurePending = pendingContext(); }
     failure ??= error; ownerCurrent = false; address.reject(failure); extraPause.reject(failure); ready.reject(failure); contextReady.reject(failure);
@@ -142,6 +167,11 @@ export async function ratlineCaptureInspector(context: Pick<TestContext, "after"
     if (stderr.length > 32_768) { fail(new Error("RATLINE_FIXTURE_STDERR_BOUND")); return; }
     const match = /ws:\/\/127\.0\.0\.1:\d+\/[a-f\d-]+/u.exec(stderr); if (match !== null) { address.resolve(match[0]); }
   });
+  /** Consume and reuse one teardown promise for this synthetic Node child only.
+   * Close its socket, request child exit and escalate after a bounded wait, then
+   * require both exit and stdio close. Host facades and EasyEDA are never targeted;
+   * a failed teardown remains the same rejected promise rather than a new attempt.
+   */
   const terminate = (): Promise<void> => {
     if (teardown !== null) { return teardown; }
     // Publish teardown consumption before closing the socket or child. This

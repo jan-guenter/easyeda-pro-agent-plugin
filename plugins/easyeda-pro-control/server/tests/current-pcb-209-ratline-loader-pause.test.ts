@@ -74,8 +74,12 @@ void test("actual inert V8 default callback matches the retained constructor pau
   const caller = "({message:s})=>{";
   const expression = `${"\n".repeat(1923)}${" ".repeat(75_109)}async function by(t,e=void 0,i=new Function,o){return i;}${"\n".repeat(8)}` +
     `${" ".repeat(3752 - prefix.length)}${prefix}${caller}${" ".repeat(4009 - 3752 - caller.length)}by(s,void 0,void 0,void 0)});`;
-  const compiled = z.object({ scriptId: z.string() }).strict().parse(await fixture.request("Runtime.compileScript", { expression, sourceURL: uiUrl, persistScript: true }));
-  await fixture.request("Runtime.runScript", { scriptId: compiled.scriptId, returnByValue: true });
+  const originalContext = fixture.originalContext();
+  const compiled = z.object({ scriptId: z.string() }).strict().parse(await fixture.request("Runtime.compileScript", {
+    expression, sourceURL: uiUrl, persistScript: true, executionContextId: originalContext.id }));
+  assert.equal(fixture.originalContext(), originalContext);
+  await fixture.request("Runtime.runScript", { scriptId: compiled.scriptId, executionContextId: originalContext.id, returnByValue: true });
+  assert.equal(fixture.originalContext(), originalContext);
   const remote = z.object({ result: z.looseObject({ objectId: z.string() }) }).strict().parse(
     await fixture.request("Runtime.evaluate", { expression: "globalThis", returnByValue: false }));
   const initial = Promise.withResolvers<unknown>(); const generated = Promise.withResolvers<unknown>(); let pauses = 0;
