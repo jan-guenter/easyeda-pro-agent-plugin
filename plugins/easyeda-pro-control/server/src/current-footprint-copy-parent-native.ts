@@ -48,6 +48,10 @@ export function currentFootprintCopyParentNativeCases(): readonly Sample[] {
   return Object.freeze([...construction.map(command => Object.freeze({ kind: "construction" as const, command })),
     ...peer.map(command => Object.freeze({ kind: "peer" as const, command }))]);
 }
+/** Generate separate construction and parent/child-peer command cases with their
+ * reviewed realms and argument slots. Packing preserves the native wire; generating
+ * a codec does not bind a live worker, channel peer or manager.
+ */
 export function currentFootprintCopyParentNativeSource(): string {
   const rows = currentFootprintCopyParentNativeCases().map(sample => {
     const wire = currentFootprintCopyParentWire(sample.command, 1, sample.kind, parent, child);
@@ -77,10 +81,7 @@ export function currentFootprintCopyParentNativeSource(): string {
   const smokePacked = gzipSync(smokeBytes, { level: 9 });
   return `public static class EasyedaFootprintCopyParentProtocol {
 static void Need(bool value){if(!value)throw new System.InvalidOperationException("footprint-parent-protocol");}
-static string[][] Load(){byte[] packed=System.Convert.FromBase64String(${literal(packed.toString("base64"))});byte[] bytes=new byte[${String(bytes.length)}];int count=0;
-using(var input=new System.IO.MemoryStream(packed,false))using(var stream=new System.IO.Compression.GZipStream(input,System.IO.Compression.CompressionMode.Decompress)){while(count<bytes.Length){int read=stream.Read(bytes,count,bytes.Length-count);if(read==0)break;count+=read;}Need(count==bytes.Length&&stream.ReadByte()==-1);}
-using(var sha=System.Security.Cryptography.SHA256.Create())Need(System.BitConverter.ToString(sha.ComputeHash(bytes)).Replace("-","").ToLowerInvariant()==${literal(createHash("sha256").update(bytes).digest("hex"))});
-string[] rows=new System.Text.UTF8Encoding(false,true).GetString(bytes).Split('\\0');Need(rows.Length==20);string[][] result=new string[rows.Length][];for(int i=0;i<rows.Length;i++){result[i]=rows[i].Split('\\t');Need(result[i].Length==4);}return result;}
+static string[][] Load(){return EasyedaDiagnosticFixedTable.Load(${literal(packed.toString("base64"))},${String(bytes.length)},${literal(createHash("sha256").update(bytes).digest("hex"))},${literal(createHash("sha256").update(packed).digest("hex"))},20,4);}
 static readonly string[][] Cases=Load();
 static string Field(string name,object input){string value=input as string;Need(value!=null&&System.Text.RegularExpressions.Regex.IsMatch(value,name=="sessionId"?@"\\A[A-Za-z0-9_.:-]{1,128}\\z":@"\\A[A-Za-z0-9_.:-]{1,256}\\z"));return value;}
 public static string Encode(int id,string phase,string method,string realm,string originalParentSession,string originalChildSession,System.Collections.IDictionary fields){Need(id>0&&fields!=null&&(realm=="parent"||realm=="child"));

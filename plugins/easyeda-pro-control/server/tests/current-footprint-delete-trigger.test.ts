@@ -2,10 +2,10 @@
  * transport, intent issuer, process, backend or durable inverse is exercised. */
 /* oxlint-disable import/max-dependencies -- This boundary composes the independent source-pinned entry producer, fixed wire/native table and actual inert vendor delete methods. */
 import assert from "node:assert/strict";
+import { decodeFixedNativeTable } from "./helpers/fixed-native-table.ts";
 import { createHash } from "node:crypto";
 import { test } from "node:test";
 import { runInNewContext } from "node:vm";
-import { gunzipSync } from "node:zlib";
 import { CURRENT_FOOTPRINT_DELETE_TRIGGER_PROGRAMS as PROGRAMS } from "../src/current-footprint-delete-trigger-programs.ts";
 import { decodeCurrentFootprintDeleteTriggerAcknowledgment, decodeCurrentFootprintDeleteTriggerPreflight } from "../src/current-footprint-delete-trigger-protocol.ts";
 import { currentFootprintDeleteTriggerNativeCases, currentFootprintDeleteTriggerNativeSource } from "../src/current-footprint-delete-trigger-native.ts";
@@ -90,12 +90,9 @@ void test("closed delete grammar rejects programs, changed side-effect flags, al
   assert.throws(() => decodeCurrentFootprintDeleteTriggerAcknowledgment(reply('{"success":false}')));
 });
 
-void test("native templates reconstruct every exact command through flat scalars without a caller session or program", () => {
+void test("native templates reconstruct every exact command through flat scalars without a caller session or program", async () => {
   const source = currentFootprintDeleteTriggerNativeSource();
-  const packed = /FromBase64String\(@"([A-Za-z\d+/=]+)"\)/u.exec(source)?.[1];
-  assert.ok(packed !== undefined);
-  // oxlint-disable-next-line node/no-sync -- Decode only this bounded facade-generated fixed table, without app files or user data.
-  const rows = gunzipSync(Buffer.from(packed, "base64"), { maxOutputLength: 65_536 }).toString("utf8").split("\0");
+  const { rows } = await decodeFixedNativeTable(source, 3, 3);
   const cases = currentFootprintDeleteTriggerNativeCases(); assert.equal(rows.length, cases.length);
   for (const [index, command] of cases.entries()) {
     const wire = currentFootprintDeleteTriggerWire(command, 73);

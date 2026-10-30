@@ -1,9 +1,8 @@
 /** Synthetic original-channel ordering and grammar tests. No live EasyEDA
  * process, native create, backend clock or saved lifecycle is exercised. */
 import assert from "node:assert/strict";
-import { createHash } from "node:crypto";
+import { decodeFixedNativeTable } from "./helpers/fixed-native-table.ts";
 import { test } from "node:test";
-import { gunzipSync } from "node:zlib";
 import { CurrentFootprintCopyTransactionClockEvents } from "../src/current-footprint-copy-transaction-clock-events.ts";
 import type { CurrentFootprintCopyTransactionClockEventTransport } from "../src/current-footprint-copy-transaction-clock-events.ts";
 import { currentFootprintCopyTransactionClockNativeCases, currentFootprintCopyTransactionClockNativeSource } from "../src/current-footprint-copy-transaction-clock-native.ts";
@@ -142,13 +141,9 @@ void test("fixed clock wire rejects caller code, arbitrary locations, session su
   for (const input of [getter, proxy]) { assert.throws(() => currentFootprintCopyTransactionClockWire(input, 1, "worker")); }
   assert.equal(traps, 0);
 });
-void test("native clock encoder embeds the same bounded eight grammars and independently seals packed bytes", () => {
+void test("native clock encoder embeds the same bounded eight grammars and independently seals packed bytes", async () => {
   const source = currentFootprintCopyTransactionClockNativeSource();
-  const base64 = /FromBase64String\(@"([A-Za-z\d+/=]+)"\)/u.exec(source)?.[1]; assert.ok(base64 !== undefined);
-  // oxlint-disable-next-line node/no-sync -- Inspect one fixed in-memory generated table; this test performs no file decompression.
-  const bytes = gunzipSync(Buffer.from(base64, "base64"));
-  assert.ok(bytes.length <= 65_536); assert.ok(source.includes(createHash("sha256").update(bytes).digest("hex")));
-  const rows = bytes.toString("utf8").split("\0"); assert.equal(rows.length, 8);
+  const { rows } = await decodeFixedNativeTable(source, 8, 4);
   for (const [index, sample] of currentFootprintCopyTransactionClockNativeCases().entries()) {
     const wire = currentFootprintCopyTransactionClockWire(sample, 1, "__copyclock_sessionId__");
     const { id: _id, ...command } = wire.command;
@@ -158,5 +153,4 @@ void test("native clock encoder embeds the same bounded eight grammars and indep
   }
   assert.ok(source.includes('Need(fields.Count==names.Length)'));
   assert.ok(source.includes('originalWorkerSession'));
-  assert.ok(source.includes('stream.ReadByte()==-1'));
 });

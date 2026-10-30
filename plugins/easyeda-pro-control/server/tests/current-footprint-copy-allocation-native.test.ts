@@ -1,9 +1,7 @@
 /** Fixed codecs and actual channel/ledger with explicit synthetic original
  * prerequisites. No native owner, application or writer issuer is created. */
-/* oxlint-disable import/max-dependencies -- Compare the fixed native table, independent ledger and actual original queue through the shared explicit synthetic fixture. */
 import assert from "node:assert/strict";
-import { createHash } from "node:crypto";
-import { gunzipSync } from "node:zlib";
+import { decodeFixedNativeTable } from "./helpers/fixed-native-table.ts";
 import { test } from "node:test";
 import { CurrentFootprintCopyAllocatedCreateClockBudget, CURRENT_FOOTPRINT_COPY_ALLOCATED_CREATE_CLOCK_BUDGET as LIMITS,
   CURRENT_FOOTPRINT_COPY_ALLOCATION_NATIVE_ORDER as ORDER, requireCurrentFootprintCopyAllocatedCreateClockHandoffHeadroom } from "../src/current-footprint-copy-allocated-create-clock-budget.ts";
@@ -18,13 +16,9 @@ function clock(cleanup: boolean): CurrentFootprintCopyClockRpcCommand {
   return cleanup ? { phase: "rpc-release", method: "Runtime.releaseObjectGroup", sessionId: "worker", params: { objectGroup: CURRENT_FOOTPRINT_COPY_CLOCK_RPC_GROUP } } :
     { phase: "rpc-properties", method: "Runtime.getProperties", sessionId: "worker", params: { objectId: "original", ownProperties: true, accessorPropertiesOnly: false, generatePreview: false } };
 }
-void test("allocation fixed native table retains exact commands while data wires cannot forward programs or sessions", () => {
+void test("allocation fixed native table retains exact commands while data wires cannot forward programs or sessions", async () => {
   const cases = currentFootprintCopyAllocationNativeCases(), source = currentFootprintCopyAllocationNativeSource(); assert.equal(cases.length, 10);
-  const encoded = /FromBase64String\(@"([A-Za-z\d+/=]+)"\)/u.exec(source)?.[1]; assert.ok(encoded !== undefined);
-  // oxlint-disable-next-line node/no-sync -- Independently decode one bounded immutable native table; no runtime input participates.
-  const bytes = gunzipSync(Buffer.from(encoded, "base64"), { maxOutputLength: 65_536 });
-  assert.ok(source.includes(createHash("sha256").update(bytes).digest("hex"))); assert.ok(source.includes("stream.ReadByte()==-1"));
-  const rows = bytes.toString().split("\0"); assert.equal(rows.length, 10);
+  const { rows } = await decodeFixedNativeTable(source, 10, 4);
   for (const [index, command] of cases.entries()) {
     const wire = currentFootprintCopyAllocationWire(command, 73, command.sessionId); const row = rows[index]?.split("\t"); assert.ok(row);
     const { phase: _phase, ...native } = command; assert.deepEqual(JSON.parse(row[3] ?? ""), native);

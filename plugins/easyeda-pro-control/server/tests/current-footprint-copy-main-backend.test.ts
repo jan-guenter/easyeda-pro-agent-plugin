@@ -2,10 +2,10 @@
 /** Synthetic original-main selectors and actual local V8 metadata. No app,
  * project, installed source or live inspector is used by these tests. */
 import assert from "node:assert/strict";
+import { decodeFixedNativeTable } from "./helpers/fixed-native-table.ts";
 import { Session } from "node:inspector/promises";
 import { test } from "node:test";
 import { createContext, runInContext } from "node:vm";
-import { gunzipSync } from "node:zlib";
 import { CURRENT_FOOTPRINT_COPY_MAIN_BACKEND_SOURCE as SOURCE, assertCurrentFootprintCopyMainBackendFunction,
   captureCurrentFootprintCopyMainBackendSourceReply, qualifyCurrentFootprintCopyMainBackendSource,
   requireCurrentFootprintCopyMainBackendSource } from "../src/current-footprint-copy-main-backend-source.ts";
@@ -114,11 +114,9 @@ void test("both exact original registration expressions retain unrelocated V8 br
     assert.equal(result.exceptionDetails, undefined); assert.deepEqual(events, [4003, 4032]); assert.deepEqual(errors, []); assert.equal(runInContext('calls.join(",")', context), "https,http");
   } finally { try { for (const breakpointId of points) { await session.post("Debugger.removeBreakpoint", { breakpointId }); } } finally { session.disconnect(); } }
 });
-void test("all fourteen fixed native main commands retain exact JSON and admit no caller program, session or endpoint", () => {
+void test("all fourteen fixed native main commands retain exact JSON and admit no caller program, session or endpoint", async () => {
   const cases = currentFootprintCopyMainBackendNativeCases(), native = currentFootprintCopyMainBackendNativeSource(); assert.equal(cases.length, 14);
-  const encoded = /FromBase64String\(@"([A-Za-z\d+/=]+)"\)/u.exec(native)?.[1]; assert.ok(encoded !== undefined);
-  // oxlint-disable-next-line node/no-sync -- Inflate a bounded in-memory protocol generated from the fourteen fixed commands.
-  const rows = gunzipSync(Buffer.from(encoded, "base64")).toString("utf8").split("\0"); assert.equal(rows.length, 14);
+  const { rows } = await decodeFixedNativeTable(native, 14, 4);
   for (const [index, command] of cases.entries()) {
     const fields = rows[index]?.split("\t"), wire = currentFootprintCopyMainBackendWire(command, 73); assert.ok(fields !== undefined); const template = fields[3]; assert.ok(template !== undefined);
     const restored = template.replaceAll(/"__mainbackend_([A-Za-z\d]+)__"/gu, (_all, name: string) => JSON.stringify(wire.request[name]));

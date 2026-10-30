@@ -12,6 +12,7 @@ import { fileURLToPath } from "node:url";
 import { runInThisContext } from "node:vm";
 import { transform } from "esbuild";
 import { CURRENT_FOOTPRINT_COMBINED_READY, decodeCurrentFootprintCombinedReady } from "../../src/current-footprint-combined-ready.ts";
+import type { CurrentFootprintCopyWindowsClockIssuer } from "../../src/current-footprint-copy-windows-clock.ts";
 import type { CurrentPcbDiagnosticInstallationOptions } from "../../src/current-pcb-diagnostic-installation.ts";
 import type { CurrentFootprintCombinedNativeOwner, CurrentFootprintCopyForwardNativeOwner, CurrentFootprintCopyForwardSavedNativeOwner, CurrentFootprintCopyNativeTarget, assertOriginalCurrentFootprintCopyForwardNativeOwner,
   assertOriginalCurrentFootprintCopyForwardSavedNativeOwner, currentFootprintCombinedFactoryFailureDiagnostics,
@@ -20,6 +21,7 @@ import type { CurrentFootprintCombinedNativeOwner, CurrentFootprintCopyForwardNa
 
 type Mode = "ready" | "stderr-close" | "malformed" | "wrong-challenge" | "oversize-no-newline" | "stderr-delayed-close" | "resource-traffic" | "saved-admission-failure" | "saved-spawn-refusal";
 export interface SyntheticForwardFactoryOwner extends CurrentFootprintCopyForwardNativeOwner {
+  syntheticClockIssuerForTest: (issuer: CurrentFootprintCopyWindowsClockIssuer) => void;
   syntheticForwardRequestForTest: (request: Readonly<Record<string, unknown>>) => Promise<Readonly<Record<string, unknown>>>;
   syntheticForwardFrameForTest: (frame: Buffer) => Promise<void>;
 }
@@ -41,6 +43,12 @@ interface Module {
   readonly assertOriginalCurrentFootprintCopyForwardSavedNativeOwner: typeof assertOriginalCurrentFootprintCopyForwardSavedNativeOwner;
   readonly currentFootprintCopyForwardSavedObservationAllocationOutcome: typeof currentFootprintCopyForwardSavedObservationAllocationOutcome;
 }
+/** Exercise the real owner factories, private registries and transport counters
+ * with synthetic installation/SQL seams and an inert Node child. Fixed modes
+ * model readiness, failure and saved-owner birth without Windows resources.
+ * Callers must retain the returned child through cleanup; the fixture issues
+ * no native application ownership, real closed-SQL proof or writer authority.
+ */
 export async function combinedReadyFactoryFixture(mode: Mode, purpose: "combined" | "forward" = "combined", savedObservation = false): Promise<Readonly<{
   api: Module; options: CurrentPcbDiagnosticInstallationOptions; child: () => ChildProcessWithoutNullStreams;
   state: { writes: number; bytes: number; readySent: boolean; actions: string[] };
@@ -56,6 +64,7 @@ export async function combinedReadyFactoryFixture(mode: Mode, purpose: "combined
     // Pipe callbacks. It proves no Windows handle, app launch or writer route.
     ownerSource = ownerSource.replace("  public status():", "  public syntheticForwardRequestForTest(request: RecordValue): Promise<RecordValue> { return this.#request(request); }\n" +
       "  public syntheticForwardFrameForTest(frame: Buffer): Promise<void> { return new Promise<void>((resolve,reject)=>{void this.#sendFrame(frame,cause=>{if(cause===undefined||cause===null){resolve();}else{reject(cause);}});}); }\n" +
+      "  public syntheticClockIssuerForTest(issuer: CurrentFootprintCopyWindowsClockIssuer): void { this.#footprintWindowsClock=issuer; }\n" +
       "  public syntheticForwardClosedSourceForTest(source: CurrentFootprintCopyNativeTarget): void { this.#footprintSourceBinding=source; this.#footprintSourceBindingText=canonicalJson({...source,before:undefined}); }\n  public status():");
   }
   const raw = ownerSource.replaceAll("import.meta.url", JSON.stringify(path.href))

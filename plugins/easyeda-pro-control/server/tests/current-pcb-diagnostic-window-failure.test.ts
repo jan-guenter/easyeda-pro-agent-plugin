@@ -93,3 +93,46 @@ void test("child snapshots reject inconsistent native outcomes, unbounded counts
     assert.throws(() => decodeCurrentWindowFailure({ ...childFault, ...changes, childOwnership: valid }, "capture-window", "pcb-diagnostic-window-capture-child-ownership"));
   }
 });
+
+void test("original window selection diagnostics distinguish absence, ambiguity and repeated-check drift without identity data", () => {
+  const fault = { schema: "easyeda-pro-control.window-failure.v1", action: "restore-window-for-capture", stage: "identity", code: "window-restore-window",
+    paintPhase: "not-dispatched", nativeResourcesRetained: false, bounds: null, snapshotOnly: true, executionAuthorized: false };
+  for (const windowDiscovery of [
+    { reason: "no-owned-windows", owned: 0, eligible: 0, changed: 0, nativeError: null },
+    { reason: "no-eligible-window", owned: 2, eligible: 0, changed: 0, nativeError: null },
+    { reason: "ambiguous-windows", owned: 3, eligible: 2, changed: 1, nativeError: null },
+    { reason: "candidate-window-changed", owned: 1, eligible: 0, changed: 1, nativeError: null },
+    { reason: "selected-window-changed", owned: 1, eligible: 1, changed: 1, nativeError: null },
+    { reason: "owned-window-limit", owned: 65, eligible: 64, changed: 0, nativeError: null },
+  ]) {
+    const result = decodeCurrentWindowFailure({ ...fault, windowDiscovery }, "restore-window-for-capture", "pcb-diagnostic-window-restore-window");
+    assert.deepEqual(result.windowDiscovery, windowDiscovery); assert.equal(Object.isFrozen(result.windowDiscovery), true);
+    assert.equal(result.executionAuthorized, false);
+  }
+  const native = { reason: "enumeration-failed", owned: 0, eligible: 0, changed: 0, nativeError: 0 };
+  assert.deepEqual(decodeCurrentWindowFailure({ ...fault, code: "window-enumeration", windowDiscovery: native }, "restore-window-for-capture", "pcb-diagnostic-window-enumeration").windowDiscovery, native);
+  const selected = { reason: "selected", owned: 1, eligible: 1, changed: 0, nativeError: null };
+  assert.deepEqual(decodeCurrentWindowFailure({ ...fault, stage: "before-restore", code: "window-restore-window-changed", windowDiscovery: selected }, "restore-window-for-capture", "pcb-diagnostic-window-restore-window-changed").windowDiscovery, selected);
+  assert.equal(decodeCurrentWindowFailure(fault, "restore-window-for-capture", "pcb-diagnostic-window-restore-window").windowDiscovery, undefined);
+});
+
+void test("window selection diagnostics reject impossible counts, stale stages and private identity fields", () => {
+  const fault = { schema: "easyeda-pro-control.window-failure.v1", action: "restore-window-for-capture", stage: "identity", code: "window-restore-window",
+    paintPhase: "not-dispatched", nativeResourcesRetained: false, bounds: null, snapshotOnly: true, executionAuthorized: false };
+  const valid = { reason: "candidate-window-changed", owned: 1, eligible: 0, changed: 1, nativeError: null };
+  for (const change of [{ reason: "private title" }, { owned: -0 }, { owned: 66 }, { owned: 0 }, { eligible: 65 }, { changed: 65 }, { nativeError: 5 },
+    { reason: "no-owned-windows" }, { reason: "no-eligible-window" }, { reason: "ambiguous-windows", eligible: 1 },
+    { reason: "selected-window-changed", eligible: 0 }, { reason: "owned-window-limit", owned: 64 },
+    { reason: "selected", eligible: 1 }, { reason: "owned-window-limit", owned: 65, eligible: 64, changed: 1 },
+    { reason: "enumeration-failed", owned: 2, eligible: 2, changed: 1, nativeError: 5 },
+    { reason: "enumeration-failed", nativeError: null },
+    { pid: 1 }, { hwnd: "123" }, { title: "private window" }, { path: "private image" }]) {
+    assert.throws(() => decodeCurrentWindowFailure({ ...fault, windowDiscovery: { ...valid, ...change } }, "restore-window-for-capture", "pcb-diagnostic-window-restore-window"));
+  }
+  for (const stage of ["request", "owner", "cleanup"]) {
+    assert.throws(() => decodeCurrentWindowFailure({ ...fault, stage, windowDiscovery: valid }, "restore-window-for-capture", "pcb-diagnostic-window-restore-window"));
+  }
+  assert.throws(() => decodeCurrentWindowFailure({ ...fault, code: "window-enumeration", windowDiscovery: valid }, "restore-window-for-capture", "pcb-diagnostic-window-enumeration"));
+  assert.throws(() => decodeCurrentWindowFailure({ ...fault, windowDiscovery: { ...valid, reason: "enumeration-failed", nativeError: 5 } }, "restore-window-for-capture", "pcb-diagnostic-window-restore-window"));
+  assert.throws(() => decodeCurrentWindowFailure({ ...fault, code: "window-restore-not-maximized", windowDiscovery: valid }, "restore-window-for-capture", "pcb-diagnostic-window-restore-not-maximized"));
+});

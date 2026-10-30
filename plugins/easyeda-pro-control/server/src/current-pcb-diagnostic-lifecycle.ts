@@ -202,7 +202,7 @@ type StartupFootprintUiMethods = Pick<CurrentFootprintCopyPreparationOwner, "obs
 type StartupFootprintRouteMethods = Pick<CurrentFootprintCopyNativeOwner, "observeFootprintCopyWindowsClock" | "joinFootprintCopyManagerPeer" |
   "observeFootprintCopyClockRegistration" | "sampleFootprintCopyClockRegistration" | "retainedFootprintCopyClockRegistration" | "releaseFootprintCopyClockRegistration">;
 type MainOwnerMethods = Pick<CurrentFootprintMainNativeOwner, "observeFootprintMainConstruction" | "retainedFootprintMainConstruction" | "terminateFootprintMain">;
-type CombinedOwnerMethods = Pick<CurrentFootprintCombinedNativeOwner, "abortFootprintCombined" | "reserveFootprintCombinedAbort" | "dispatchFootprintCombinedAbort" | "observeSavedCacheNative">;
+type CombinedOwnerMethods = Pick<CurrentFootprintCombinedNativeOwner, "abortFootprintCombined" | "reserveFootprintCombinedAbort" | "dispatchFootprintCombinedAbort" | "observeSavedCacheNative" | "observeSavedCacheAccessor">;
 type LifecycleOwner = CurrentPcbDiagnosticLifecycleOwner & Partial<CombinedOwnerMethods & MainOwnerMethods & StartupFootprintRouteMethods & StartupFootprintUiMethods & StringOwnerMethods & StartupOwnerMethods & StartupEmptyOwnerMethods & StartupRatlineOwnerMethods & StartupContinuationOwnerMethods>;
 export interface CurrentPcb209StartupEmptyPreparation {
   /** The enclosing lifecycle must durably consume PCB navigation intent before
@@ -429,6 +429,7 @@ class CurrentPcbLifecycleCore {
   #footprintManagerRoute: CurrentFootprintCopyManagerRouteObservation | null = null;
   #mainObservationAttempted = false;
   #savedCacheNativeAttempted = false;
+  #savedCacheAccessorAttempted = false;
   #visualAbortAttempted = false;
   #mainTerminateAttempted = false;
   #combinedFactoryError: unknown = null;
@@ -525,6 +526,11 @@ class CurrentPcbLifecycleCore {
     }
   }
 
+  /** Validate the request against this core's sealed launch generation, then serialize
+   * its lifecycle action under retained-owner and journal checks. Inspection is separate
+   * from native work; consumed navigation, observations and close/release stages cannot
+   * be replayed after uncertainty.
+   */
   public async run(input: unknown): Promise<Record<string, unknown>> {
     let request: LifecycleRequest;
     if (this.#generation === "209-startup-footprint-main" || this.#generation === "209-startup-footprint-combined") {
@@ -657,6 +663,9 @@ class CurrentPcbLifecycleCore {
         savedCacheNativeAttemptConsumed: operation?.records["saved-cache-native-intent.json"] !== undefined || original && this.#savedCacheNativeAttempted,
         savedCacheNativeObservation: original && operation?.records["saved-cache-native-result.json"] === undefined ? native?.savedCacheNativeObservation ?? null : null,
         savedCacheNativeResult: operation?.records["saved-cache-native-result.json"]?.result ?? null,
+        savedCacheAccessorAttemptConsumed: operation?.records["saved-cache-accessor-intent.json"] !== undefined || original && this.#savedCacheAccessorAttempted,
+        savedCacheAccessorObservation: original && operation?.records["saved-cache-accessor-result.json"] === undefined ? native?.savedCacheAccessorObservation ?? null : null,
+        savedCacheAccessorResult: operation?.records["saved-cache-accessor-result.json"]?.result ?? null,
         mainConstructionObservation: original && this.#retained?.methods.retainedFootprintMainConstruction !== undefined ? this.#retained.methods.retainedFootprintMainConstruction.call(this.#retained.owner) : null,
         visualAbortAttemptConsumed: operation?.records["visual-abort-intent.json"] !== undefined || original && this.#visualAbortAttempted,
         visualAbortAcknowledged: operation?.records["visual-abort-acknowledged.json"] !== undefined,
@@ -919,6 +928,66 @@ class CurrentPcbLifecycleCore {
       this.#retainRecord("saved-cache-native-result.json", result); same(); await assertSnapshot(expected); same();
       await this.#publish(request.operationId, "saved-cache-native-result.json", result); same();
       const completed = { ...updated, records: { ...updated.records, "saved-cache-native-result.json": result } };
+      await assertSnapshot(operations.map(value => value.operationId === request.operationId ? completed : value)); same();
+      return { ...describe(request.operationId, completed), result: structuredClone(result.result), executionAuthorized: false, saveAuthorized: false };
+    } finally { this.#busy = false; }
+  }
+  /** Journal and publish one pre-opening Combined accessor observation under the
+   * retained original owner. Require published main/browser/UI records, consume intent
+   * before native dispatch, and retain a result before postchecks so uncertainty grants
+   * no replay. The response enables neither getter execution nor Save.
+   */
+  protected async runSavedCacheAccessor(request: Extract<CurrentFootprintCombinedValidationRequest,
+    { action: "observe-saved-cache-accessor" }>): Promise<Record<string, unknown>> {
+    this.#options.assertLocalAllowed();
+    requireValue(this.#generation === "209-startup-footprint-combined" && !this.#busy && !this.#combinedAbortBusy &&
+      !this.#combinedAbortAttempted, "SAVED_CACHE_ACCESSOR_PURPOSE_OR_BUSY");
+    this.#busy = true;
+    try {
+      const operations = await readCurrentPcbDiagnosticLifecycles();
+      const operation = operations.find(value => value.operationId === request.operationId), retained = this.#retained;
+      this.#assertPurpose(request.operationId, operation);
+      const binding = operation?.records["binding.json"], browser = operation?.records["browser-result.json"],
+        main = operation?.records["main-construction-result.json"], script = operation?.records["script-result.json"];
+      requireValue(retained !== null && retained.operationId === request.operationId && operation !== undefined && binding !== undefined &&
+        binding.launchAcknowledged && binding.intentSha256 === retained.intentSha256 && canonicalJson(binding.binding) === canonicalJson(retained.binding) &&
+        sha256Json(binding) === request.expectedBindingSha256, "ORIGINAL_OWNER_REQUIRED");
+      this.#assertNormalOwner(retained);
+      requireValue(this.#mainObservationAttempted && main !== undefined && browser !== undefined && script !== undefined &&
+        this.#pending.get("main-construction-result.json") === canonicalJson(main) &&
+        this.#pending.get("browser-result.json") === canonicalJson(browser) && canonicalJson(this.#observations.get("browser")) === canonicalJson(browser.result) &&
+        this.#pending.get("script-result.json") === canonicalJson(script) && canonicalJson(this.#observations.get("script")) === canonicalJson(script.result) &&
+        operation.records["script-intent.json"]?.family === "ui" && script.result["sourceVerified"] === true && script.result["family"] === "ui",
+      "SAVED_CACHE_ACCESSOR_PUBLICATION_REQUIRED");
+      requireValue(!this.#savedCacheAccessorAttempted && operation.records["saved-cache-accessor-intent.json"] === undefined &&
+        operation.records["worker-startup-handoff-intent.json"] === undefined && operation.records["worker-startup-opening-intent.json"] === undefined &&
+        operation.records["project-opening-intent.json"] === undefined && operation.records["close-intent.json"] === undefined &&
+        operation.records["terminated.json"] === undefined && operation.records["release-intent.json"] === undefined &&
+        !this.#closeAttempted && !this.#releaseAttempted, "SAVED_CACHE_ACCESSOR_CONSUMED_OR_OPENED");
+      const observe = retained.methods.observeSavedCacheAccessor;
+      requireValue(observe !== undefined && retained.owner.observeSavedCacheAccessor === observe, "SAVED_CACHE_ACCESSOR_ORIGINAL_METHOD");
+      const same = (): void => {
+        this.#assertNormalOwner(retained); requireValue(retained.owner.observeSavedCacheAccessor === observe, "SAVED_CACHE_ACCESSOR_ORIGINAL_METHOD");
+      };
+      await this.#installation(retained); same(); await assertSnapshot(operations); same();
+      const intent: NonNullable<DiagnosticLifecycleRecords["saved-cache-accessor-intent.json"]> = {
+        schema: "easyeda-pro-control.saved-cache-accessor-intent.v1", operationId: request.operationId, createdAt: new Date().toISOString(),
+        bindingSha256: request.expectedBindingSha256, mainResultSha256: sha256Json(main), browserResultSha256: sha256Json(browser), scriptResultSha256: sha256Json(script),
+      };
+      this.#savedCacheAccessorAttempted = true; await this.#record(request.operationId, "saved-cache-accessor-intent.json", intent); same();
+      const updated = { ...operation, records: { ...operation.records, "saved-cache-accessor-intent.json": intent } };
+      const expected = operations.map(value => value.operationId === request.operationId ? updated : value);
+      await assertSnapshot(expected); same();
+      const observation = await observe.call(retained.owner);
+      requireValue(canonicalJson(observation.engine) === canonicalJson(browser.result["version"]), "SAVED_CACHE_ACCESSOR_ENGINE_CHANGED");
+      // Preserve the bounded complete packet before any post-await owner check.
+      const result = diagnosticLifecycleRecordSchemas["saved-cache-accessor-result.json"].parse({
+        schema: "easyeda-pro-control.saved-cache-accessor-result.v1", operationId: request.operationId, createdAt: new Date().toISOString(),
+        intentSha256: sha256Json(intent), result: observation,
+      });
+      this.#retainRecord("saved-cache-accessor-result.json", result); same(); await assertSnapshot(expected); same();
+      await this.#publish(request.operationId, "saved-cache-accessor-result.json", result); same();
+      const completed = { ...updated, records: { ...updated.records, "saved-cache-accessor-result.json": result } };
       await assertSnapshot(operations.map(value => value.operationId === request.operationId ? completed : value)); same();
       return { ...describe(request.operationId, completed), result: structuredClone(result.result), executionAuthorized: false, saveAuthorized: false };
     } finally { this.#busy = false; }
@@ -2502,6 +2571,10 @@ class CurrentPcbLifecycleCore {
       { ...candidate, records: { ...candidate.records, "combined-factory-before-launch.json": record } } : candidate));
     this.#options.assertLocalAllowed(); assertCurrentPcbDiagnosticLaunchExclusion(this.#lease); this.#releaseLease(); return true;
   }
+  /** Reserve one operation ID and durably record its purpose/installation intent
+   * before allocating the native helper. Recheck launch exclusion and journal state;
+   * a failed allocation or acknowledgment stays consumed and retains its cleanup path.
+   */
   async #launch(request: Extract<LifecycleRequest, { action: "launch" }>): Promise<Record<string, unknown>> {
     requireValue(!this.#launchAttempted && this.#retained === null, "LAUNCH_CONSUMED");
     this.#assertPurpose(request.operationId);
@@ -2565,7 +2638,7 @@ class CurrentPcbLifecycleCore {
         retainedFootprintCopyManagerRoute: owner.retainedFootprintCopyManagerRoute } : {}),
       ...(this.#generation === "209-startup-footprint-main" || this.#generation === "209-startup-footprint-combined" ? { observeFootprintMainConstruction: owner.observeFootprintMainConstruction, retainedFootprintMainConstruction: owner.retainedFootprintMainConstruction } : {}),
       ...(this.#generation === "209-startup-footprint-main" ? { terminateFootprintMain: owner.terminateFootprintMain } : {}),
-      ...(this.#generation === "209-startup-footprint-combined" ? { abortFootprintCombined: owner.abortFootprintCombined, reserveFootprintCombinedAbort: owner.reserveFootprintCombinedAbort, dispatchFootprintCombinedAbort: owner.dispatchFootprintCombinedAbort, observeSavedCacheNative: owner.observeSavedCacheNative } : {}),
+      ...(this.#generation === "209-startup-footprint-combined" ? { abortFootprintCombined: owner.abortFootprintCombined, reserveFootprintCombinedAbort: owner.reserveFootprintCombinedAbort, dispatchFootprintCombinedAbort: owner.dispatchFootprintCombinedAbort, observeSavedCacheNative: owner.observeSavedCacheNative, observeSavedCacheAccessor: owner.observeSavedCacheAccessor } : {}),
       ...(routeStartup209(this.#generation) ? { observeFootprintCopyWindowsClock: owner.observeFootprintCopyWindowsClock, joinFootprintCopyManagerPeer: owner.joinFootprintCopyManagerPeer,
         observeFootprintCopyClockRegistration: owner.observeFootprintCopyClockRegistration, sampleFootprintCopyClockRegistration: owner.sampleFootprintCopyClockRegistration,
         retainedFootprintCopyClockRegistration: owner.retainedFootprintCopyClockRegistration, releaseFootprintCopyClockRegistration: owner.releaseFootprintCopyClockRegistration } : {}),
@@ -3548,6 +3621,10 @@ export class CurrentFootprintCombinedLifecycle extends CurrentPcbLifecycleCore {
   public constructor(options: CurrentPcbDiagnosticLifecycleOptions, dependencies: CurrentPcb209WorkerStartupLifecycleDependencies = {}) {
     super(options, dependencies, "worker-startup", "209-startup-footprint-combined");
   }
+  /** Expose only the Combined request grammar, routing its separate main/cache actions
+   * to once-only retained-owner stages. Abort blocks later normal work while preserving
+   * inspection and original termination/release; no writer or Save route is added.
+   */
   public override run(input: unknown): Promise<Record<string, unknown>> {
     try {
       const request = currentFootprintCombinedValidationRequestSchema.parse(input);
@@ -3555,6 +3632,7 @@ export class CurrentFootprintCombinedLifecycle extends CurrentPcbLifecycleCore {
     if (!["inspect", "observe-termination", "release-closed", "settle-records", "cleanup-unlaunched", "cleanup-no-process"].includes(request.action)) { this.assertCombinedNormal(); }
       if (request.action === "observe-main-construction") { return this.runMainAction(request); }
       if (request.action === "observe-saved-cache-native") { return this.runSavedCacheNative(request); }
+      if (request.action === "observe-saved-cache-accessor") { return this.runSavedCacheAccessor(request); }
       return super.run(request);
     } catch (error) { return Promise.reject(error instanceof Error ? error : new Error("COMBINED_REQUEST_REFUSED")); }
   }

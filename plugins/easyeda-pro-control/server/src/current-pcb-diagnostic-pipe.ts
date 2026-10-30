@@ -30,6 +30,8 @@ import { CURRENT_PCB_STRING_MOVE_SEQUENCE } from "./current-pcb-string-move-runn
 import type { CurrentPcbStringMoveCommand } from "./current-pcb-string-move-runner.ts";
 import { currentFootprintSavedCacheWire } from "./current-footprint-saved-cache-protocol.ts";
 import type { CurrentFootprintSavedCacheCommand } from "./current-footprint-saved-cache-protocol.ts";
+import { currentFootprintSavedCacheAccessorWire } from "./current-footprint-saved-cache-accessor-protocol.ts";
+import type { CurrentFootprintSavedCacheAccessorCommand } from "./current-footprint-saved-cache-accessor-protocol.ts";
 
 export { decodeCurrentPcbDiagnosticJson } from "./current-pcb-diagnostic-json.ts";
 
@@ -49,7 +51,8 @@ type RequestPhase = "discovery" | "frame-owner" | "worker-discovery" | "worker-s
   `model-${CurrentPcbDiagnosticModelCommand["modelPhase"]}` | `string-${CurrentPcbStringPrecreatePhase}` |
   `common-${CurrentPcbCommonBaselineCommand["commonPhase"]}` | `worker-producer-${CurrentPcbStringWorkerProducerCommand["workerProducerPhase"]}` |
   `actor-clock-${CurrentPcbStringActorClockCommand["actorClockPhase"]}` | `move-${CurrentPcbStringMoveCommand["movePhase"]}` |
-  `saved-cache-${CurrentFootprintSavedCacheCommand["cacheNativePhase"]}`;
+  `saved-cache-${CurrentFootprintSavedCacheCommand["cacheNativePhase"]}` |
+  `saved-accessor-${CurrentFootprintSavedCacheAccessorCommand["cacheAccessorPhase"]}`;
 const REQUEST_METHODS = [
   "Browser.getVersion", "Target.getTargets", "Target.attachToTarget", "Page.enable", "Page.getFrameTree", "Runtime.enable",
   "Debugger.enable", "Debugger.getScriptSource", "DOM.getFrameOwner", "DOM.describeNode", "Target.setAutoAttach",
@@ -69,6 +72,7 @@ const REQUEST_PHASES = [
   ...CURRENT_PCB_STRING_ACTOR_CLOCK_PHASES.map(phase => `actor-clock-${phase}` as const),
   ...CURRENT_PCB_STRING_MOVE_SEQUENCE.map(phase => `move-${phase}` as const),
   ...(["capture", "array-properties", "constructor-properties", "match-properties", "recheck", "release"] as const).map(phase => `saved-cache-${phase}` as const),
+  ...(["capture", "array-properties", "constructor-properties", "match-properties", "getter-properties", "recheck", "release"] as const).map(phase => `saved-accessor-${phase}` as const),
 ] as const satisfies readonly RequestPhase[];
 const EVENT_KINDS = [
   "Target.attachedToTarget", "Target.detachedFromTarget", "Target.targetCreated", "Target.targetDestroyed",
@@ -144,6 +148,10 @@ class CurrentPcbFixedPipeCore {
   #savedCacheStep = 0;
   #savedCacheReleaseAttempted = false;
   #savedCacheReleased = false;
+  #savedAccessorSession: string | null = null;
+  #savedAccessorStep = 0;
+  #savedAccessorReleaseAttempted = false;
+  #savedAccessorReleased = false;
   #handedOff = false;
   #started = false;
   #failure: Failure | null = null;
@@ -182,7 +190,7 @@ class CurrentPcbFixedPipeCore {
     if (!this.#startupPurpose || this.#handedOff || !this.#started || this.#released || this.#failure !== null ||
         this.#sessionId === null || this.#event === null || this.#workerEvent !== null || this.#pending !== null || this.#used !== 0 ||
         this.#inputEnded || this.#inputClosed || this.#outputClosed || this.#output.writableLength !== 0 || this.#input.readableLength !== 0 ||
-        this.#combinedPurpose && this.#savedCacheStep > 0 && !this.#savedCacheReleased) {
+        this.#combinedPurpose && (this.#savedCacheStep > 0 && !this.#savedCacheReleased || this.#savedAccessorStep > 0 && !this.#savedAccessorReleased)) {
       throw new Error("PCB_DIAGNOSTIC_PIPE_HANDOFF_UNAVAILABLE");
     }
     this.#handedOff = true;
@@ -225,6 +233,29 @@ class CurrentPcbFixedPipeCore {
     if (phase === "release") {
       if (!diagnosticExact(reply, [])) { this.#fail("reply"); throw failureError("reply"); }
       this.#savedCacheReleased = true;
+    }
+    return reply;
+  }
+  /** Consume the next accessor phase only for the original attached Combined session.
+   * Permit one release after a started attempt, require its exact empty reply, and
+   * block handoff while its group is unreleased. Lost replies grant no phase retry.
+   */
+  protected async savedCacheAccessor(command: CurrentFootprintSavedCacheAccessorCommand): Promise<Reply> {
+    if (!this.#combinedPurpose || this.#sessionId === null || this.#handedOff || this.#savedAccessorReleaseAttempted ||
+      command.sessionId !== this.#sessionId) { throw new Error("PCB_DIAGNOSTIC_PIPE_SAVED_CACHE_PURPOSE"); }
+    const wire = currentFootprintSavedCacheAccessorWire(command, this.#nextId);
+    const phase = wire.command.cacheAccessorPhase;
+    const sequence = ["capture", "array-properties", "constructor-properties", "match-properties", "getter-properties", "recheck"] as const;
+    if (phase === "release" ? this.#savedAccessorStep === 0 : sequence[this.#savedAccessorStep] !== phase) {
+      throw new Error("PCB_DIAGNOSTIC_PIPE_SAVED_CACHE_SEQUENCE");
+    }
+    if (this.#savedAccessorSession !== null && this.#savedAccessorSession !== command.sessionId) { throw new Error("PCB_DIAGNOSTIC_PIPE_SAVED_CACHE_SESSION"); }
+    this.#savedAccessorSession = command.sessionId;
+    if (phase === "release") { this.#savedAccessorReleaseAttempted = true; } else { this.#savedAccessorStep += 1; }
+    const reply = await this.#request(wire.command, `saved-accessor-${phase}`);
+    if (phase === "release") {
+      if (!diagnosticExact(reply, [])) { this.#fail("reply"); throw failureError("reply"); }
+      this.#savedAccessorReleased = true;
     }
     return reply;
   }
@@ -455,11 +486,17 @@ class CurrentPcbFixedPipeCore {
     this.#released = true;
   }
 
+  /** Reserve a bounded request ID, deadline and pending reply before writing bytes.
+   * Reject unsupported purpose/phase combinations and concurrent requests; require
+   * both the original write callback and matching reply before success. Timeout or
+   * write ambiguity fails the pipe and never grants an automatic resend.
+   */
   // oxlint-disable-next-line eslint/require-await -- Async converts pre-dispatch guards to rejected promises; native completion is callback-based.
-  async #request(command: DiagnosticCommand | (CurrentFootprintSavedCacheCommand & Readonly<{ id: number }>) | (Omit<CurrentPcbStringPrecreateCommand, "stringPhase"> &
+  async #request(command: DiagnosticCommand | (CurrentFootprintSavedCacheCommand & Readonly<{ id: number }>) | (CurrentFootprintSavedCacheAccessorCommand & Readonly<{ id: number }>) | (Omit<CurrentPcbStringPrecreateCommand, "stringPhase"> &
     Readonly<{ id: number; sessionId: string }>), phase: RequestPhase = "discovery"): Promise<Reply> {
     if (!this.#started || this.#released || this.#handedOff) { throw new Error("PCB_DIAGNOSTIC_PIPE_NOT_STARTED"); }
-    const savedCache = this.#combinedPurpose && phase.startsWith("saved-cache-") && "cacheNativePhase" in command;
+    const savedCache = this.#combinedPurpose && (phase.startsWith("saved-cache-") && "cacheNativePhase" in command ||
+      phase.startsWith("saved-accessor-") && "cacheAccessorPhase" in command);
     if (this.#startupPurpose && !savedCache && (phase !== "discovery" && phase !== "frame-owner" ||
         command.method === "Target.setAutoAttach" || command.method === "Runtime.evaluate" || command.method === "Runtime.callFunctionOn")) {
       throw new Error("PCB_DIAGNOSTIC_PIPE_STARTUP_DISCOVERY_ONLY");
@@ -641,6 +678,7 @@ export class CurrentPcbWorkerStartupDiscoveryPipe extends CurrentPcbFixedPipeCor
 export class CurrentFootprintCombinedDiscoveryPipe extends CurrentPcbFixedPipeCore {
   public constructor(input: Readable, output: Writable) { super(input, output, "combined-discovery"); }
   public observeSavedCacheNative(command: CurrentFootprintSavedCacheCommand): Promise<Reply> { return this.savedCacheNative(command); }
+  public observeSavedCacheAccessor(command: CurrentFootprintSavedCacheAccessorCommand): Promise<Reply> { return this.savedCacheAccessor(command); }
   public handoff(): CurrentPcbWorkerStartupPipeHandoff { return this.handoffStartupPipe(); }
 }
 /** The born forward owner's original counter observes every discovery event
@@ -650,6 +688,7 @@ export class CurrentFootprintCopyForwardDiscoveryPipe extends CurrentPcbFixedPip
     super(input, output, "forward-discovery", observeEventBytes);
   }
   public observeSavedCacheNative(command: CurrentFootprintSavedCacheCommand): Promise<Reply> { return this.savedCacheNative(command); }
+  public observeSavedCacheAccessor(command: CurrentFootprintSavedCacheAccessorCommand): Promise<Reply> { return this.savedCacheAccessor(command); }
   public handoff(): CurrentPcbWorkerStartupPipeHandoff { return this.handoffStartupPipe(); }
 }
 

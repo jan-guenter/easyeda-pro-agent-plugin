@@ -61,6 +61,8 @@ import type { CurrentFootprintCombinedHistoricalSnapshot } from "./current-footp
 import { currentFootprintCombinedBeforeLaunchFailureProofSchema } from "./current-footprint-combined-ready.ts";
 import { CURRENT_FOOTPRINT_SAVED_CACHE_PROBE_LIMITS } from "./current-footprint-saved-cache-probe.ts";
 import { currentFootprintSavedCacheObservationSchema } from "./current-footprint-saved-cache-runner.ts";
+import { CURRENT_FOOTPRINT_SAVED_CACHE_ACCESSOR_PROBE_LIMITS } from "./current-footprint-saved-cache-accessor-probe.ts";
+import { currentFootprintSavedCacheAccessorObservationSchema } from "./current-footprint-saved-cache-accessor-runner.ts";
 import { currentFootprintCopyMainBackendObservationSchema } from "./current-footprint-copy-main-backend-observation.ts";
 import { CURRENT_PCB_COMMON_FAILURE_MAX_BYTES, currentPcbCommonBaselineFailureSchema, currentPcbCommonBaselineResultSchema } from "./current-pcb-common-baseline-validation.ts";
 
@@ -165,6 +167,15 @@ const savedCacheNativeResultSchema = z.object({ ...base, operationId: currentFoo
   schema: z.literal("easyeda-pro-control.saved-cache-native-result.v1"), intentSha256: diagnosticLifecycleDigestSchema,
   result: currentFootprintSavedCacheObservationSchema,
 }).strict().refine(value => Buffer.byteLength(canonicalJson(value.result)) <= CURRENT_FOOTPRINT_SAVED_CACHE_PROBE_LIMITS.resultBytes,
+  "Saved cache metadata observation exceeds its bound.");
+const savedCacheAccessorIntentSchema = z.object({ ...base, operationId: currentFootprintCombinedIdSchema,
+  schema: z.literal("easyeda-pro-control.saved-cache-accessor-intent.v1"), bindingSha256: diagnosticLifecycleDigestSchema,
+  mainResultSha256: diagnosticLifecycleDigestSchema, browserResultSha256: diagnosticLifecycleDigestSchema, scriptResultSha256: diagnosticLifecycleDigestSchema,
+}).strict();
+const savedCacheAccessorResultSchema = z.object({ ...base, operationId: currentFootprintCombinedIdSchema,
+  schema: z.literal("easyeda-pro-control.saved-cache-accessor-result.v1"), intentSha256: diagnosticLifecycleDigestSchema,
+  result: currentFootprintSavedCacheAccessorObservationSchema,
+}).strict().refine(value => Buffer.byteLength(canonicalJson(value.result)) <= CURRENT_FOOTPRINT_SAVED_CACHE_ACCESSOR_PROBE_LIMITS.resultBytes,
   "Saved cache metadata observation exceeds its bound.");
 const mainTerminateIntentSchema = z.object({ ...mainBound, operationId: currentFootprintMainIdSchema, schema: z.literal("easyeda-pro-control.footprint-main-terminate-intent.v1"),
   confirmTerminateOriginalDiagnosticJob: z.literal(true) }).strict();
@@ -733,6 +744,8 @@ export const diagnosticLifecycleRecordSchemas = {
   "main-construction-result.json": mainObservationResultSchema,
   "saved-cache-native-intent.json": savedCacheNativeIntentSchema,
   "saved-cache-native-result.json": savedCacheNativeResultSchema,
+  "saved-cache-accessor-intent.json": savedCacheAccessorIntentSchema,
+  "saved-cache-accessor-result.json": savedCacheAccessorResultSchema,
   "main-terminate-intent.json": mainTerminateIntentSchema,
   "main-terminate-acknowledged.json": mainTerminateAckSchema,
   "combined-factory-before-launch.json": combinedFactoryBeforeLaunchSchema,
@@ -752,9 +765,14 @@ function requireValue(condition: boolean, message: string): asserts condition {
 }
 function absent(value: unknown): boolean { return value instanceof Error && "code" in value && value.code === "ENOENT"; }
 function recordName(value: string): value is RecordName { return Object.hasOwn(diagnosticLifecycleRecordSchemas, value); }
+/** Choose the read/write byte envelope for each exact lifecycle record kind.
+ * Specialized results retain their own packet bounds plus journal overhead;
+ * unknown encodings cannot gain a larger allowance through their contents.
+ */
 function recordBound(name: RecordName): number {
   // Six JSON bytes per UTF-16 code unit covers control-character escapes in16 IDs.
   if (name === "saved-cache-native-result.json") { return MAX_BYTES + CURRENT_FOOTPRINT_SAVED_CACHE_PROBE_LIMITS.resultBytes; }
+  if (name === "saved-cache-accessor-result.json") { return MAX_BYTES + CURRENT_FOOTPRINT_SAVED_CACHE_ACCESSOR_PROBE_LIMITS.resultBytes; }
   if (name === "visual-viewport209-intent.json") { return MAX_BYTES + CURRENT_PCB_209_VISUAL_OPERATION_BYTES; }
   if (name === "visual-viewport209-result.json") { return MAX_BYTES + CURRENT_PCB_209_VISUAL_RESULT_BYTES; }
   if (name === "selection-relations209-intent.json") { return MAX_BYTES + 16 * 256 * 6; }
@@ -890,6 +908,11 @@ async function requireSettledOperation(directory: ControlRootDirectory, operatio
     forgetSettledChain(key); settledChains.set(key, pending); settledChainBytes += pending.bytes;
   }
 }
+/** Validate the complete journal's purpose, digest links and legal lifecycle order.
+ * Intents consume their stages, results require their original predecessors, and
+ * terminal records require the matching closure path. This checks stored evidence;
+ * it cannot reconstruct process handles or authorize another native dispatch.
+ */
 function validateChain(operation: DiagnosticLifecycleOperation): void {
   const records = operation.records;
   for (const record of Object.values(records)) { requireValue(record.operationId === operation.operationId, "RECORD_OPERATION"); }
@@ -935,6 +958,16 @@ function validateChain(operation: DiagnosticLifecycleOperation): void {
   requireValue(savedCacheNativeResult === undefined || savedCacheNative !== undefined &&
     savedCacheNativeResult.intentSha256 === sha256Json(savedCacheNative) &&
     canonicalJson(savedCacheNativeResult.result.engine) === canonicalJson(records["browser-result.json"]?.result["version"]), "SAVED_CACHE_NATIVE_RESULT_CHAIN");
+  const savedCacheAccessor = records["saved-cache-accessor-intent.json"], savedCacheAccessorResult = records["saved-cache-accessor-result.json"];
+  requireValue(savedCacheAccessor === undefined || combinedPurpose && binding !== undefined && mainResult !== undefined &&
+    records["browser-result.json"] !== undefined && records["script-result.json"] !== undefined && records["script-intent.json"]?.family === "ui" &&
+    records["script-result.json"].result["sourceVerified"] === true && records["script-result.json"].result["family"] === "ui" &&
+    savedCacheAccessor.bindingSha256 === sha256Json(binding) && savedCacheAccessor.mainResultSha256 === sha256Json(mainResult) &&
+    savedCacheAccessor.browserResultSha256 === sha256Json(records["browser-result.json"]) &&
+    savedCacheAccessor.scriptResultSha256 === sha256Json(records["script-result.json"]), "SAVED_CACHE_ACCESSOR_CHAIN");
+  requireValue(savedCacheAccessorResult === undefined || savedCacheAccessor !== undefined &&
+    savedCacheAccessorResult.intentSha256 === sha256Json(savedCacheAccessor) &&
+    canonicalJson(savedCacheAccessorResult.result.engine) === canonicalJson(records["browser-result.json"]?.result["version"]), "SAVED_CACHE_ACCESSOR_RESULT_CHAIN");
   const mainAck = records["main-terminate-acknowledged.json"], mainTerminate = records["main-terminate-intent.json"];
   requireValue(mainObservation === undefined || (mainPurpose || combinedPurpose) && binding !== undefined && binding.launchAcknowledged && mainObservation.bindingSha256 === sha256Json(binding), "MAIN_CONSTRUCTION_CHAIN");
   requireValue(mainResult === undefined || mainObservation !== undefined && mainResult.intentSha256 === sha256Json(mainObservation), "MAIN_CONSTRUCTION_RESULT_CHAIN");

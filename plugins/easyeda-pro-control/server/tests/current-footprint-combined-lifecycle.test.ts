@@ -15,6 +15,7 @@ import { currentFootprintCopyMainBackendObservationSchema } from "../src/current
 import { sha256Text } from "../src/core.ts";
 import { CURRENT_PCB_209_OPENING_SCRIPTS } from "../src/current-pcb-209-opening-profile.ts";
 import { currentFootprintSavedCacheObservationSchema } from "../src/current-footprint-saved-cache-runner.ts";
+import { currentFootprintSavedCacheAccessorObservationSchema } from "../src/current-footprint-saved-cache-accessor-runner.ts";
 import { currentFootprintCombinedNativeStateSchema, currentFootprintCombinedValidationRequestSchema } from "../src/current-footprint-combined-validation.ts";
 import { CURRENT_FOOTPRINT_COPY_MAIN_BACKEND_SOURCE } from "../src/current-footprint-copy-main-backend-source.ts";
 import { assertNoUnresolvedCurrentPcbDiagnosticLaunches, publishCurrentPcbDiagnosticLifecycleRecord } from "../src/current-pcb-diagnostic-lifecycle-journal.ts";
@@ -22,7 +23,7 @@ import { assertNoUnresolvedCurrentPcbDiagnosticLaunches, publishCurrentPcbDiagno
 const syntheticEngine = { protocolVersion: "synthetic", product: "synthetic", revision: "synthetic", userAgent: "synthetic", jsVersion: "synthetic" };
 const unavailable = (): Promise<never> => Promise.reject(new Error("Unexpected synthetic native operation"));
 type MainOwner = CurrentPcbDiagnosticLifecycleOwner & Pick<CurrentFootprintCombinedNativeOwner,
-  "observeFootprintMainConstruction" | "retainedFootprintMainConstruction" | "abortFootprintCombined" | "reserveFootprintCombinedAbort" | "dispatchFootprintCombinedAbort" | "handoffWorkerStartup" | "observeSavedCacheNative">;
+  "observeFootprintMainConstruction" | "retainedFootprintMainConstruction" | "abortFootprintCombined" | "reserveFootprintCombinedAbort" | "dispatchFootprintCombinedAbort" | "handoffWorkerStartup" | "observeSavedCacheNative" | "observeSavedCacheAccessor">;
 function fixture(operationId: string, options: { lostAbort?: boolean; suspendedMain?: boolean; lostResult?: boolean; suspendedPublication?: boolean; failedCacheProbe?: boolean; failedCacheIntent?: boolean } = {}): { lifecycle: CurrentFootprintCombinedLifecycle; calls: string[]; mainEntered: Promise<null>; publicationEntered: Promise<null>; releasePublication: () => void } {
   const calls: string[] = []; let bound = false, cacheIntentFailed = false, released = false, terminated = false;
   const mainContinue = Promise.withResolvers<null>();
@@ -76,6 +77,11 @@ function fixture(operationId: string, options: { lostAbort?: boolean; suspendedM
       calls.push("cache-probe"); if (options.failedCacheProbe === true) { throw new Error("synthetic consumed native metadata failure"); }
       return syntheticCacheObservation();
     },
+    observeSavedCacheAccessor: async () => {
+      assert.match(await readFile(path("saved-cache-accessor-intent.json"), "utf8"), /saved-cache-accessor-intent/u);
+      calls.push("cache-probe"); if (options.failedCacheProbe === true) { throw new Error("synthetic consumed native metadata failure"); }
+      return syntheticCacheAccessorObservation();
+    },
     abortFootprintCombined: unavailable,
     reserveFootprintCombinedAbort: () => { calls.push("reserve-abort"); return abortReservation; },
     dispatchFootprintCombinedAbort: async (reservation, confirm) => {
@@ -95,7 +101,7 @@ function fixture(operationId: string, options: { lostAbort?: boolean; suspendedM
   const lifecycle = new CurrentFootprintCombinedLifecycle(installationOptions, {
     verifyInstallation: (): Promise<CurrentPcbDiagnosticInstallation> => Promise.resolve({ ...createCurrentPcb209DiagnosticInstallationPlan(installationOptions), facadeSha256: "a".repeat(64) }),
     publishRecord: async (id, name, record): Promise<void> => {
-      if (name === "saved-cache-native-intent.json" && options.failedCacheIntent === true && !cacheIntentFailed) { cacheIntentFailed = true; throw new Error("synthetic cache intent publication failure"); }
+      if ((name === "saved-cache-native-intent.json" || name === "saved-cache-accessor-intent.json") && options.failedCacheIntent === true && !cacheIntentFailed) { cacheIntentFailed = true; throw new Error("synthetic cache intent publication failure"); }
       if (name === "main-construction-result.json" && options.lostResult === true) { throw new Error("synthetic result publication failure"); }
       if (name === "main-construction-result.json" && options.suspendedPublication === true) {
         publicationEntered.resolve(null); await publicationContinue.promise;
@@ -114,6 +120,13 @@ function syntheticCacheObservation(): ReturnType<typeof currentFootprintSavedCac
     descriptors: { globalConstructor: flags, constructorPrototype: flags, prototypeConstructor: flags, match: flags },
     arrayMetadata: { synthetic: true }, constructorMetadata: { synthetic: true }, matchMetadata: { synthetic: true },
     originalHandlesRechecked: true, cacheStorageGetterInvoked: false, matchInvoked: false, nativeMatchQualified: false, replayTokenIssued: false, executionAuthorized: false });
+}
+function syntheticCacheAccessorObservation(): ReturnType<typeof currentFootprintSavedCacheAccessorObservationSchema.parse> {
+  const flags = { writable: true, configurable: true, enumerable: false };
+  return currentFootprintSavedCacheAccessorObservationSchema.parse({ profile: "easyeda-pro-control.saved-cache-accessor-observation.v1", engine: syntheticEngine,
+    descriptors: { globalConstructor: flags, constructorPrototype: flags, prototypeConstructor: flags, match: flags, globalAccessor: { enumerable: true, configurable: true, hasGetter: true, hasSetter: false } },
+    arrayMetadata: { synthetic: true }, constructorMetadata: { synthetic: true }, matchMetadata: { synthetic: true }, getterMetadata: { synthetic: true },
+    originalHandlesRechecked: true, cacheStorageGetterInvoked: false, matchInvoked: false, nativeGetterQualified: false, nativeMatchQualified: false, replayTokenIssued: false, executionAuthorized: false });
 }
 const launchRequest = (operationId: string): Record<string, unknown> => ({ action: "launch", operationId, confirmValidationOnly: true,
   confirmDiagnosticLaunch: true, acceptExistingProfileEffects: true, acceptDebuggerPauseEffects: true });
@@ -239,6 +252,34 @@ for (const mode of ["success", "metadata-failure", "intent-failure"] as const) {
     await assert.rejects(f.lifecycle.run(request), /CONSUMED_OR_OPENED/u);
     assert.equal(f.calls.filter(value => value === "cache-probe").length, mode === "intent-failure" ? 0 : 1);
     const inspected = await f.lifecycle.run({ action: "inspect", operationId }); assert.equal(inspected["savedCacheNativeAttemptConsumed"], true);
+    if (mode === "intent-failure") { await f.lifecycle.run({ action: "settle-records", operationId, expectedIntentSha256: inspected["intentSha256"] }); }
+    await f.lifecycle.run({ action: "abort-generation", operationId, expectedBindingSha256, confirmAbortOriginalCombinedJob: true });
+    await f.lifecycle.run({ action: "observe-termination", operationId, expectedBindingSha256 });
+    await f.lifecycle.run({ action: "release-closed", operationId, expectedBindingSha256 });
+  });
+}
+
+for (const mode of ["success", "metadata-failure", "intent-failure"] as const) {
+  void test(`native-cache-accessor observation requires original published prerequisites and durable once-only intent: ${mode}`, async () => {
+    const operationId = `footprint-combined-cache-accessor-${mode}`;
+    const f = fixture(operationId, { failedCacheProbe: mode === "metadata-failure", failedCacheIntent: mode === "intent-failure" });
+    const launch = await f.lifecycle.run(launchRequest(operationId)); const expectedBindingSha256 = launch["bindingSha256"];
+    const request = { action: "observe-saved-cache-accessor", operationId, expectedBindingSha256 };
+    await assert.rejects(f.lifecycle.run(request), /PUBLICATION_REQUIRED/u); assert.equal(f.calls.includes("cache-probe"), false);
+    await f.lifecycle.run({ action: "observe-main-construction", operationId, expectedBindingSha256 });
+    await assert.rejects(f.lifecycle.run(request), /PUBLICATION_REQUIRED/u);
+    await f.lifecycle.run({ action: "browser-observation", operationId, expectedBindingSha256 });
+    await f.lifecycle.run({ action: "inspect-frames", operationId, expectedBindingSha256, targetId: "synthetic-target" });
+    await assert.rejects(f.lifecycle.run(request), /PUBLICATION_REQUIRED/u);
+    await f.lifecycle.run({ action: "inspect-script", operationId, expectedBindingSha256, frameId: "synthetic-frame", family: "ui" });
+    if (mode === "success") {
+      const observed = await f.lifecycle.run(request), result: unknown = observed["result"];
+      assert.ok(result !== null && typeof result === "object"); assert.equal(Reflect.get(result, "nativeMatchQualified"), false);
+      assert.equal(Reflect.get(result, "replayTokenIssued"), false);
+    } else { await assert.rejects(f.lifecycle.run(request), mode === "intent-failure" ? /intent publication/u : /metadata failure/u); }
+    await assert.rejects(f.lifecycle.run(request), /CONSUMED_OR_OPENED/u);
+    assert.equal(f.calls.filter(value => value === "cache-probe").length, mode === "intent-failure" ? 0 : 1);
+    const inspected = await f.lifecycle.run({ action: "inspect", operationId }); assert.equal(inspected["savedCacheAccessorAttemptConsumed"], true);
     if (mode === "intent-failure") { await f.lifecycle.run({ action: "settle-records", operationId, expectedIntentSha256: inspected["intentSha256"] }); }
     await f.lifecycle.run({ action: "abort-generation", operationId, expectedBindingSha256, confirmAbortOriginalCombinedJob: true });
     await f.lifecycle.run({ action: "observe-termination", operationId, expectedBindingSha256 });

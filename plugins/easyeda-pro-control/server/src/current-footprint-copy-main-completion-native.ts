@@ -1,5 +1,6 @@
 /** Fixed C#5 completion encoder for a future original-main purpose. This
  * source is not a native dispatch action, origin issuer or writer reservation. */
+import { currentPcbDiagnosticNativeHashVector } from "./current-pcb-diagnostic-fixed-table-native.ts";
 import { createHash } from "node:crypto";
 import { gzipSync } from "node:zlib";
 import { CURRENT_FOOTPRINT_COPY_MAIN_REQUEST_GROUP as GROUP } from "./current-footprint-copy-main-request-programs.ts";
@@ -40,6 +41,10 @@ export function currentFootprintCopyMainCompletionNativeCases(): readonly Comman
   { phase: "completion-release", method: "Runtime.releaseObjectGroup", params: { objectGroup: GROUP } });
   return Object.freeze(commands);
 }
+/** Emit the fixed native completion codec used by the retained original main.
+ * The returned source encodes reviewed completion roles only; generation does not
+ * observe callback return, detached cleanup or a saved copy.
+ */
 export function currentFootprintCopyMainCompletionNativeSource(): string {
   const cases = currentFootprintCopyMainCompletionNativeCases();
   const rows = cases.map(command => {
@@ -71,6 +76,6 @@ public static string Encode(int id,string phase,string method,System.Collections
 string template=selected[3];var output=new System.Text.StringBuilder();int previous=0;foreach(System.Text.RegularExpressions.Match match in System.Text.RegularExpressions.Regex.Matches(template,"\\"__maincompletion_([A-Za-z0-9]+)__\\"")){string name=match.Groups[1].Value;output.Append(template,previous,match.Index-previous);output.Append(Field(fields[name]));previous=match.Index+match.Length;}output.Append(template,previous,template.Length-previous);string text="{\\"id\\":"+id.ToString(System.Globalization.CultureInfo.InvariantCulture)+","+output.ToString().Substring(1);Need(System.Text.Encoding.UTF8.GetByteCount(text)<=65536);return text;}
 static string Smoke(string name){return "completion_"+name;}
 static void Refused(System.Action action){bool refused=false;try{action();}catch(System.InvalidOperationException){refused=true;}Need(refused);}
-public static void VerifySmoke(){string[] hashes=new string[]{${hashes.map(value => literal(value)).join(",")}};for(int i=0;i<Cases.Length;i++){string[] row=Cases[i];var fields=new System.Collections.Hashtable(System.StringComparer.Ordinal);if(row[2].Length>0)foreach(string name in row[2].Split(','))fields.Add(name,Smoke(name));System.Func<string> encode=()=>Encode(73,row[0],row[1],fields);using(var sha=System.Security.Cryptography.SHA256.Create())Need(System.BitConverter.ToString(sha.ComputeHash(System.Text.Encoding.UTF8.GetBytes(encode()))).Replace("-","").ToLowerInvariant()==hashes[i]);Refused(()=>Encode(0,row[0],row[1],fields));Refused(()=>Encode(-1,row[0],row[1],fields));Refused(()=>Encode(73,"unknown",row[1],fields));Refused(()=>Encode(73,row[0],"Runtime.evaluate",fields));foreach(string extra in new string[]{"sessionId","url","functionDeclaration","expression","condition","lineNumber","columnNumber","argument2"}){fields.Add(extra,"copied");Refused(()=>{encode();});fields.Remove(extra);}foreach(string name in row[2].Split(',')){if(name.Length==0)continue;object original=fields[name];fields.Remove(name);Refused(()=>{encode();});fields.Add(name,original);foreach(object invalid in new object[]{null,1L,"",new string('x',257),(string)original+"\\n",(string)original+"\\"",(string)original+"\\\\"}){fields[name]=invalid;Refused(()=>{encode();});}fields[name]=original;}}}
+public static void VerifySmoke(){string[] hashes=${currentPcbDiagnosticNativeHashVector(hashes)};for(int i=0;i<Cases.Length;i++){string[] row=Cases[i];var fields=new System.Collections.Hashtable(System.StringComparer.Ordinal);if(row[2].Length>0)foreach(string name in row[2].Split(','))fields.Add(name,Smoke(name));System.Func<string> encode=()=>Encode(73,row[0],row[1],fields);using(var sha=System.Security.Cryptography.SHA256.Create())Need(System.BitConverter.ToString(sha.ComputeHash(System.Text.Encoding.UTF8.GetBytes(encode()))).Replace("-","").ToLowerInvariant()==hashes[i]);Refused(()=>Encode(0,row[0],row[1],fields));Refused(()=>Encode(-1,row[0],row[1],fields));Refused(()=>Encode(73,"unknown",row[1],fields));Refused(()=>Encode(73,row[0],"Runtime.evaluate",fields));foreach(string extra in new string[]{"sessionId","url","functionDeclaration","expression","condition","lineNumber","columnNumber","argument2"}){fields.Add(extra,"copied");Refused(()=>{encode();});fields.Remove(extra);}foreach(string name in row[2].Split(',')){if(name.Length==0)continue;object original=fields[name];fields.Remove(name);Refused(()=>{encode();});fields.Add(name,original);foreach(object invalid in new object[]{null,1L,"",new string('x',257),(string)original+"\\n",(string)original+"\\"",(string)original+"\\\\"}){fields[name]=invalid;Refused(()=>{encode();});}fields[name]=original;}}}
 }`;
 }

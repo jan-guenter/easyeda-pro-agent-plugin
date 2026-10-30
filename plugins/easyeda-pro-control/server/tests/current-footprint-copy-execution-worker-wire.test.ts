@@ -1,6 +1,5 @@
 import assert from "node:assert/strict";
-import { createHash } from "node:crypto";
-import { gunzipSync } from "node:zlib";
+import { decodeFixedNativeTable } from "./helpers/fixed-native-table.ts";
 import { test } from "node:test";
 import { currentFootprintCopyExecutionWorkerNativeCases, currentFootprintCopyExecutionWorkerNativeSource } from "../src/current-footprint-copy-execution-worker-native.ts";
 import { currentFootprintCopyExecutionWorkerWire } from "../src/current-footprint-copy-execution-worker-wire.ts";
@@ -29,13 +28,9 @@ void test("copy-only worker grammar excludes caller programs, extra fields and l
   assert.throws(() => currentFootprintCopyExecutionWorkerWire(input, 1)); assert.equal(calls, 0);
 });
 
-void test("native copy encoder seals exact parser and async literals and supplies session only from its original owner", () => {
+void test("native copy encoder seals exact parser and async literals and supplies session only from its original owner", async () => {
   const source = currentFootprintCopyExecutionWorkerNativeSource();
-  const base64 = /FromBase64String\(@"([A-Za-z\d+/=]+)"\)/u.exec(source)?.[1]; assert.ok(base64 !== undefined);
-  // oxlint-disable-next-line node/no-sync -- Verify one bounded in-memory generated table; no files are decompressed.
-  const bytes = gunzipSync(Buffer.from(base64, "base64"));
-  assert.ok(bytes.length <= 65_536); assert.ok(source.includes(createHash("sha256").update(bytes).digest("hex")));
-  const rows = bytes.toString("utf8").split("\0"); assert.equal(rows.length, 11);
+  const { rows } = await decodeFixedNativeTable(source, 11, 4);
   for (const [index, sample] of currentFootprintCopyExecutionWorkerNativeCases().entries()) {
     const wire = currentFootprintCopyExecutionWorkerWire(sample, 1); assert.ok(wire !== null);
     const { id: _id, ...command } = wire.command;
@@ -44,5 +39,4 @@ void test("native copy encoder seals exact parser and async literals and supplie
     assert.equal(row[2]?.includes("sessionId"), false);
   }
   assert.ok(source.includes('Need(fields.Count==names.Length)')); assert.ok(source.includes('Field("sessionId",originalWorkerSession)'));
-  assert.ok(source.includes('stream.ReadByte()==-1'));
 });

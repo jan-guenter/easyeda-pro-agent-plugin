@@ -3,11 +3,13 @@ import { createHash } from "node:crypto";
 import { readFile } from "node:fs/promises";
 import { test } from "node:test";
 import { gunzipSync } from "node:zlib";
+import { compactGeneratedCSharpIndentation } from "../../scripts/csharp-generated-indentation.ts";
 import { currentFootprintCopyDependencyNativeCases, currentFootprintCopyProducerNativeCases, currentPcb209RatlineWorkerStartupNativeParentCases, currentPcb209WorkerStartupNativeCases, currentPcb209WorkerStartupNativeParentCases, currentPcbWorkerStartupNativeCases, currentPcbWorkerStartupNativeParentCases,
   currentPcbWorkerStartupNativeSource } from "../src/current-pcb-worker-startup-native.ts";
 import { currentFootprintCopyPreparationWire, currentPcb209RatlineWorkerStartupWire, currentPcb209WorkerStartupWire, currentPcbWorkerStartupWire } from "../src/current-pcb-worker-startup-wire.ts";
 import { CURRENT_PCB_209_RATLINE_OPENING_FUNCTION } from "../src/current-pcb-209-ratline-opening-program.ts";
 import { CURRENT_PCB_WORKER_STARTUP_UI_ACTOR_CLOCK_FUNCTION, CURRENT_PCB_WORKER_STARTUP_WORKER_ACTOR_CLOCK_FUNCTION, currentPcbWorkerStartupUiActorCommand } from "../src/current-pcb-worker-startup-actor.ts";
+// oxlint-disable-next-line import/max-dependencies -- The independent build compactor supplements the existing exact native cases and wire/purpose guards.
 import { CURRENT_PCB_WORKER_STARTUP_CHANNEL_CALLS } from "../src/current-pcb-worker-startup-channel-observation.ts";
 
 const samples = currentPcbWorkerStartupNativeCases();
@@ -141,7 +143,14 @@ void test("startup identifiers and budget are bounded; placeholder-shaped handle
 void test("native startup source is generated exactly and keeps the distinct purpose boundary", async () => {
   const native = await readFile(new URL("../../scripts/pcb-diagnostic-owner.ps1", import.meta.url), "utf8");
   const generated = currentPcbWorkerStartupNativeSource();
-  assert.ok(native.includes(generated));
+  // The generator removes code indentation with its literal-aware compactor.
+  // Compare the entire uniquely delimited body, including every packed byte.
+  const begin = "// BEGIN GENERATED WORKER STARTUP PROTOCOL", end = "// END GENERATED WORKER STARTUP PROTOCOL";
+  const start = native.indexOf(begin), stop = native.indexOf(end);
+  assert.ok(start !== -1 && stop > start);
+  assert.equal(native.indexOf(begin, start + begin.length), -1);
+  assert.equal(native.indexOf(end, stop + end.length), -1);
+  assert.equal(native.slice(start, stop + end.length), compactGeneratedCSharpIndentation(generated));
   assert.ok(!generated.includes("parameters.Replace("));
   assert.ok(generated.includes("smoke-placeholder") && generated.includes("smoke-parity"));
   assert.ok(native.includes("if(!workerStartup || stringPrecreate)throw Error(\"startup-purpose\")"));

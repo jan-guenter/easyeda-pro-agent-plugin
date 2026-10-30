@@ -1,6 +1,7 @@
 /* oxlint-disable import/max-dependencies -- Exercise the actual runner, fixed selectors and native grammar with an explicitly isolated source issuer boundary. */
 /** Synthetic CDP test; no editor or original runtime owner is connected. */
 import assert from "node:assert/strict";
+import { decodeFixedNativeTable } from "./helpers/fixed-native-table.ts";
 import { readFile } from "node:fs/promises";
 import { createRequire } from "node:module";
 import { test } from "node:test";
@@ -143,14 +144,19 @@ Registry.tool=null;let refused=false;try{Reflect.apply(select,scope,[reg,first,p
   const script = `const initial=${CALLS.initial.program},registry=${CALLS.registry.program},select=${CALLS.project.program};${expression}`;
   assert.equal(runInNewContext(script, { path: binding.projectUuid, branch: binding.branchUuid, tab: binding.windowTabId }, { timeout: 1000, contextCodeGeneration: { strings: false, wasm: false } }), true);
 });
-void test("manager native vocabulary fixes all eleven commands and excludes caller session or program fields", () => {
+void test("manager native vocabulary fixes all eleven commands and excludes caller session or program fields", async () => {
   const cases = currentFootprintCopyManagerRouteNativeCases(); assert.equal(cases.length, 11);
-  for (const command of cases) {
+  const native = currentFootprintCopyManagerRouteNativeSource(), { rows } = await decodeFixedNativeTable(native, 11, 4);
+  for (const [index, command] of cases.entries()) {
     const wire = currentFootprintCopyManagerRouteWire(command, 1); assert.equal(wire.request["parentPhase"], `footprint-copy-manager-route-${command.phase}`); assert.equal(Object.hasOwn(wire.request, "sessionId"), false);
+    const row = rows[index]?.split("\t"), template = row?.[3]; assert.ok(row !== undefined && template !== undefined);
+    assert.equal(row[0], command.phase); assert.equal(row[1], command.method);
+    const restored = template.replaceAll(/"__copymanager_([A-Za-z\d]+)__"/gu, (whole, name: string) => name === "sessionId" ? whole : JSON.stringify(wire.request[name]));
+    const { phase: _phase, ...expected } = command; assert.deepEqual(JSON.parse(restored), expected);
     assert.throws(() => validateCurrentFootprintCopyManagerRouteCommand({ ...command, extra: true }));
     if (command.method === "Runtime.callFunctionOn") { assert.throws(() => validateCurrentFootprintCopyManagerRouteCommand({ ...command, params: { ...command.params, functionDeclaration: "function(){return true}" } })); }
   }
-  const native = currentFootprintCopyManagerRouteNativeSource(); assert.match(native, /rows.Length==11/u); assert.match(native, /originalParentSession/u);
+  assert.match(native, /originalParentSession/u);
 });
 
 void test("manager source capture accepts its full fixed byte count and rejects accessors without invoking them", () => {

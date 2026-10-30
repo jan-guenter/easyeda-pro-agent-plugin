@@ -1,5 +1,6 @@
 /** Seven fixed native entries, packed with exact decoded length and hash.
  * Inclusion alone mounts no route and authorizes no document-clock or writer. */
+import { currentPcbDiagnosticNativeHashVector } from "./current-pcb-diagnostic-fixed-table-native.ts";
 import { createHash } from "node:crypto";
 import { gzipSync } from "node:zlib";
 import { CURRENT_FOOTPRINT_COPY_CLOCK_REGISTRATION_CALLS as CALLS, CURRENT_FOOTPRINT_COPY_CLOCK_REGISTRATION_FLAGS as FLAGS,
@@ -23,6 +24,10 @@ export function currentFootprintCopyClockRegistrationNativeCases(): readonly Com
     { phase: "release", method: "Runtime.releaseObjectGroup", sessionId: marker("sessionId"), params: { objectGroup: GROUP } });
   return Object.freeze(commands);
 }
+/** Generate the registered-clock codec with only its reviewed callback, binding,
+ * sample and cleanup roles. Validate fixed values and placeholders before packing;
+ * this build step observes no live callback or server-clock provenance.
+ */
 export function currentFootprintCopyClockRegistrationNativeSource(): string {
   const rows = currentFootprintCopyClockRegistrationNativeCases().map(original => {
     const wire = currentFootprintCopyClockRegistrationWire(original, 1, marker("sessionId"));
@@ -45,16 +50,13 @@ export function currentFootprintCopyClockRegistrationNativeSource(): string {
   const packed = gzipSync(bytes, { level: 9 });
   return `public static class EasyedaFootprintCopyClockRegistrationProtocol {
 static void Need(bool value){if(!value)throw new System.InvalidOperationException("footprint-copy-clock-registration-protocol");}
-static string[][] Load(){byte[] packed=System.Convert.FromBase64String(${literal(packed.toString("base64"))});byte[] bytes=new byte[${String(bytes.length)}];int count=0;
-using(var input=new System.IO.MemoryStream(packed,false))using(var stream=new System.IO.Compression.GZipStream(input,System.IO.Compression.CompressionMode.Decompress)){while(count<bytes.Length){int read=stream.Read(bytes,count,bytes.Length-count);if(read==0)break;count+=read;}Need(count==bytes.Length&&stream.ReadByte()==-1);}
-using(var sha=System.Security.Cryptography.SHA256.Create())Need(System.BitConverter.ToString(sha.ComputeHash(bytes)).Replace("-","").ToLowerInvariant()==${literal(createHash("sha256").update(bytes).digest("hex"))});
-string[] rows=new System.Text.UTF8Encoding(false,true).GetString(bytes).Split('\\0');Need(rows.Length==7);string[][] result=new string[rows.Length][];for(int i=0;i<rows.Length;i++){result[i]=rows[i].Split('\\t');Need(result[i].Length==4);}return result;}
+static string[][] Load(){return EasyedaDiagnosticFixedTable.Load(${literal(packed.toString("base64"))},${String(bytes.length)},${literal(createHash("sha256").update(bytes).digest("hex"))},${literal(createHash("sha256").update(packed).digest("hex"))},7,4);}
 static readonly string[][] Cases=Load();
 static string Field(string name,object input){string value=input as string;Need(value!=null);string pattern=name=="projectUuid"?@"\\A[a-f0-9]{64}\\z":name=="branchUuid"?@"\\A[a-f0-9]{32}\\z":name=="windowTabId"?@"\\A[A-Za-z0-9_-]{1,128}\\z":name=="sessionId"?@"\\A[A-Za-z0-9_.:-]{1,128}\\z":@"\\A[A-Za-z0-9_.:-]{1,256}\\z";Need(System.Text.RegularExpressions.Regex.IsMatch(value,pattern));return value;}
 public static string Encode(int id,string phase,string method,string originalParentSession,System.Collections.IDictionary fields){Need(id>0&&fields!=null);string session=Field("sessionId",originalParentSession);string[] selected=null;foreach(string[] row in Cases)if(row[0]==phase){Need(selected==null);selected=row;}Need(selected!=null&&selected[1]==method);string[] names=selected[2].Length==0?new string[0]:selected[2].Split(',');Need(fields.Count==names.Length);foreach(string name in names)Need(fields.Contains(name));foreach(System.Collections.DictionaryEntry entry in fields){bool found=false;foreach(string name in names)if(entry.Key as string==name)found=true;Need(found);}
 string template=selected[3];var output=new System.Text.StringBuilder();int previous=0;foreach(System.Text.RegularExpressions.Match match in System.Text.RegularExpressions.Regex.Matches(template,"\\"__copyregistration_([A-Za-z0-9]+)__\\"")){string name=match.Groups[1].Value;output.Append(template,previous,match.Index-previous);output.Append('"');output.Append(name=="sessionId"?session:Field(name,fields[name]));output.Append('"');previous=match.Index+match.Length;}output.Append(template,previous,template.Length-previous);string text=output.ToString();Need(text.Length>1&&text[0]=='{'&&System.Text.Encoding.UTF8.GetByteCount(text)<=16384);return "{\\"id\\":"+id.ToString(System.Globalization.CultureInfo.InvariantCulture)+","+text.Substring(1)+"\\0";}
 static void Refused(System.Action action){bool refused=false;try{action();}catch(System.InvalidOperationException){refused=true;}Need(refused);}
 static string SmokeValue(string name){return name=="projectUuid"?new string('a',64):name=="branchUuid"?new string('b',32):name=="windowTabId"?"clock_tab":"clock_handle";}
-public static void VerifySmoke(){string[] hashes=new string[]{${smokeHashes.map(value => literal(value)).join(",")}};for(int i=0;i<Cases.Length;i++){string[] row=Cases[i];var fields=new System.Collections.Hashtable();if(row[2].Length>0)foreach(string name in row[2].Split(','))fields.Add(name,SmokeValue(name));string output=Encode(73,row[0],row[1],"clock_parent",fields);using(var sha=System.Security.Cryptography.SHA256.Create())Need(System.BitConverter.ToString(sha.ComputeHash(System.Text.Encoding.UTF8.GetBytes(output))).Replace("-","").ToLowerInvariant()==hashes[i]);Refused(()=>Encode(73,"unknown",row[1],"clock_parent",fields));Refused(()=>Encode(73,row[0],"Runtime.evaluate","clock_parent",fields));fields.Add("sessionId","replacement");Refused(()=>Encode(73,row[0],row[1],"clock_parent",fields));fields.Remove("sessionId");fields.Add("functionDeclaration","function(){}");Refused(()=>Encode(73,row[0],row[1],"clock_parent",fields));fields.Remove("functionDeclaration");Refused(()=>Encode(0,row[0],row[1],"clock_parent",fields));if(fields.Contains("objectId")){fields["objectId"]="bad\\n";Refused(()=>Encode(73,row[0],row[1],"clock_parent",fields));}}}
+public static void VerifySmoke(){string[] hashes=${currentPcbDiagnosticNativeHashVector(smokeHashes)};for(int i=0;i<Cases.Length;i++){string[] row=Cases[i];var fields=new System.Collections.Hashtable();if(row[2].Length>0)foreach(string name in row[2].Split(','))fields.Add(name,SmokeValue(name));string output=Encode(73,row[0],row[1],"clock_parent",fields);using(var sha=System.Security.Cryptography.SHA256.Create())Need(System.BitConverter.ToString(sha.ComputeHash(System.Text.Encoding.UTF8.GetBytes(output))).Replace("-","").ToLowerInvariant()==hashes[i]);Refused(()=>Encode(73,"unknown",row[1],"clock_parent",fields));Refused(()=>Encode(73,row[0],"Runtime.evaluate","clock_parent",fields));fields.Add("sessionId","replacement");Refused(()=>Encode(73,row[0],row[1],"clock_parent",fields));fields.Remove("sessionId");fields.Add("functionDeclaration","function(){}");Refused(()=>Encode(73,row[0],row[1],"clock_parent",fields));fields.Remove("functionDeclaration");Refused(()=>Encode(0,row[0],row[1],"clock_parent",fields));if(fields.Contains("objectId")){fields["objectId"]="bad\\n";Refused(()=>Encode(73,row[0],row[1],"clock_parent",fields));}}}
 }`;
 }

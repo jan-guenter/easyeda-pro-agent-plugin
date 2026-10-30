@@ -1,5 +1,7 @@
 /* oxlint-disable import/max-dependencies -- This sole generator assembles independently bounded native protocol families and their exact purpose limits. */
 import { readFile, writeFile } from "node:fs/promises";
+import { currentPcbDiagnosticFixedTableNativeSource } from "../server/src/current-pcb-diagnostic-fixed-table-native.ts";
+import { compactGeneratedCSharpIndentation } from "./csharp-generated-indentation.ts";
 import { currentFootprintCopyManagerRouteNativeSource } from "../server/src/current-footprint-copy-manager-route-native.ts";
 import { currentFootprintCopyUiNativeSource } from "../server/src/current-footprint-copy-ui-native.ts";
 import { CURRENT_FOOTPRINT_COPY_PREPARATION_PROFILE as footprint } from "../server/src/current-footprint-copy-preparation-profile.ts";
@@ -20,6 +22,7 @@ import { currentFootprintCombinedNativeLimits } from "../server/src/current-foot
 import { currentFootprintCopyForwardNativeLimits } from "../server/src/current-footprint-copy-forward-profile.ts";
 import { currentFootprintCombinedReadyNativeSource } from "../server/src/current-footprint-combined-ready.ts";
 import { currentFootprintSavedCacheNativeSource } from "../server/src/current-footprint-saved-cache-native.ts";
+import { currentFootprintSavedCacheAccessorNativeSource } from "../server/src/current-footprint-saved-cache-accessor-native.ts";
 import { CURRENT_FOOTPRINT_COPY_CLOCK_REGISTRATION_REQUESTS as clockRegistration } from "../server/src/current-footprint-copy-clock-registration-runner.ts";
 import { CURRENT_FOOTPRINT_COPY_SAVED_PROFILE as saved } from "../server/src/current-footprint-copy-saved-profile.ts";
 import { currentFootprintCopyTransactionClockNativeSource } from "../server/src/current-footprint-copy-transaction-clock-native.ts";
@@ -75,6 +78,10 @@ function ratlineSource(): string {
     "// END GENERATED WORKER STARTUP RATLINE209 PROTOCOL";
 }
 
+/** Regenerate or verify each uniquely delimited native protocol block using only
+ * fixed builders. Refuse duplicate markers, changed worker fields or a helper over
+ * 1 MiB before writing; check mode never changes the helper.
+ */
 async function main(): Promise<void> {
   const action = process.argv[2];
   if (process.argv.length !== 3 || action !== "--write" && action !== "--check") { throw new Error("Expected --write or --check"); }
@@ -92,7 +99,7 @@ async function main(): Promise<void> {
     if (start === -1 || stop < start || next.includes(begin, start + begin.length) || next.includes(end, stop + end.length)) {
       throw new Error("Native startup protocol markers must occur once");
     }
-    next = next.slice(0, start) + generated + next.slice(stop + end.length);
+    next = next.slice(0, start) + compactGeneratedCSharpIndentation(generated) + next.slice(stop + end.length);
   }
   const readyBegin = "  # BEGIN GENERATED FOOTPRINT COMBINED READY", readyEnd = "  # END GENERATED FOOTPRINT COMBINED READY";
   const readyStart = next.indexOf(readyBegin), readyStop = next.indexOf(readyEnd);
@@ -101,7 +108,7 @@ async function main(): Promise<void> {
   }
   next = next.slice(0, readyStart) + currentFootprintCombinedReadyNativeSource() + next.slice(readyStop + readyEnd.length);
   assertCurrentFootprintCopyExecutionWorkerNativeFields(next);
-  if (Buffer.byteLength(next) > 1_048_576) { throw new Error("Native startup helper exceeds its fixed byte bound"); }
+  if (Buffer.byteLength(next) > 1_048_576) { throw new Error(`Native startup helper exceeds its fixed byte bound: ${String(Buffer.byteLength(next))} >1048576`); }
   if (action === "--write") { await writeFile(path, next); }
   else if (next !== source) { throw new Error("Generated native startup protocol differs"); }
 }
@@ -129,8 +136,12 @@ function footprintSavedSource(): string {
     `public static class EasyedaFootprintSavedLimits { public const int Requests=${String(saved.requestLimit)}; public const int NormalRequests=${String(saved.normalRequestLimit)}; public const long NormalMilliseconds=${String(saved.normalMilliseconds)}L; public const long TotalMilliseconds=${String(saved.normalMilliseconds + saved.cleanupMilliseconds)}L; }\n` +
     "// END GENERATED FOOTPRINT COPY SAVED PROTOCOL";
 }
+/** Assemble the main-transport block with its separate combined/forward limits,
+ * fixed codecs and cache diagnostics. Generation adds no launch, request or writer
+ * authority and does not merge their runtime grammars.
+ */
 function footprintMainSource(): string {
-  return `// BEGIN GENERATED FOOTPRINT MAIN TRANSPORT PROTOCOL\n${currentFootprintCombinedNativeLimits()}\n// BEGIN GENERATED FOOTPRINT FORWARD LIMITS\n${currentFootprintCopyForwardNativeLimits()}\n// END GENERATED FOOTPRINT FORWARD LIMITS\n${currentFootprintCopyMainTransportNativeSource()}\n${currentFootprintCopyMainBackendNativeSource()}\n${currentFootprintCopyMainRequestNativeSource()}\n${currentFootprintCopyMainCompletionNativeSource()}\n${currentFootprintSavedCacheNativeSource()}\n` +
+  return `// BEGIN GENERATED FOOTPRINT MAIN TRANSPORT PROTOCOL\n${currentPcbDiagnosticFixedTableNativeSource()}\n${currentFootprintCombinedNativeLimits()}\n// BEGIN GENERATED FOOTPRINT FORWARD LIMITS\n${currentFootprintCopyForwardNativeLimits()}\n// END GENERATED FOOTPRINT FORWARD LIMITS\n${currentFootprintCopyMainTransportNativeSource()}\n${currentFootprintCopyMainBackendNativeSource()}\n${currentFootprintCopyMainRequestNativeSource()}\n${currentFootprintCopyMainCompletionNativeSource()}\n${currentFootprintSavedCacheNativeSource()}\n${currentFootprintSavedCacheAccessorNativeSource()}\n` +
     "// END GENERATED FOOTPRINT MAIN TRANSPORT PROTOCOL";
 }
 // oxlint-disable-next-line node/no-top-level-await -- ESM-only build command; never loaded by require().

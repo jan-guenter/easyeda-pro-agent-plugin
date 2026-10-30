@@ -202,6 +202,13 @@ state. Unknown or unavailable details remain unclassified. Neither a diagnostic
 nor a lost reply permits repeating capture or resize. Native faults are retained
 before response-budget validation can reject the pending reply.
 
+Window-related failures may include `windowDiscovery`, a cached bounded snapshot
+from the original window selection. Its fixed reason and counts distinguish no
+owned or eligible window, ambiguity, repeated-check drift, the owned-window limit
+and enumeration failure. It contains no titles, PIDs or HWNDs. Serialization
+makes no new window query, and the snapshot grants no current-window authority
+or retry. Older records can omit the field.
+
 `native-entry-point-unavailable` identifies failure to resolve a managed native
 binding; it is not evidence that the window is hidden or needs user input.
 The rectangle adapter explicitly binds `WcGetWindowRect` to the documented

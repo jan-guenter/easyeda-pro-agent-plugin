@@ -41,6 +41,7 @@ import type { CurrentPcbStringWorkerProducerWireCommand } from "./current-pcb-st
 import { currentPcbStringMoveWire } from "./current-pcb-string-move-wire.ts";
 import type { CurrentPcbStringMoveWireCommand } from "./current-pcb-string-move-wire.ts";
 import { currentFootprintSavedCacheWire } from "./current-footprint-saved-cache-protocol.ts";
+import { currentFootprintSavedCacheAccessorWire } from "./current-footprint-saved-cache-accessor-protocol.ts";
 
 // The original complete worker path uses32 requests. Project opening adds8.
 // The existing-PCB model path uses69; the complete project/PCB opening and
@@ -345,10 +346,10 @@ export function diagnosticNativeRequest(chunk: Buffer): Readonly<Record<string, 
 export function combinedDiagnosticNativeRequest(chunk: Buffer): Readonly<Record<string, unknown>> {
   if (chunk.length > 16_384 || chunk.at(-1) !== 0) { return fail(); }
   const raw: unknown = JSON.parse(new TextDecoder("utf-8", { fatal: true }).decode(chunk.subarray(0, -1)));
-  if (!diagnosticRecord(raw) || !Object.hasOwn(raw, "cacheNativePhase")) { return diagnosticNativeRequest(chunk); }
+  if (!diagnosticRecord(raw) || !Object.hasOwn(raw, "cacheNativePhase") && !Object.hasOwn(raw, "cacheAccessorPhase")) { return diagnosticNativeRequest(chunk); }
   const { id, ...command } = raw;
   if (typeof id !== "number") { return fail(); }
-  const fixed = currentFootprintSavedCacheWire(command, id);
+  const fixed = Object.hasOwn(command, "cacheAccessorPhase") ? currentFootprintSavedCacheAccessorWire(command, id) : currentFootprintSavedCacheWire(command, id);
   if (!chunk.equals(Buffer.from(`${JSON.stringify(fixed.command)}\0`))) { return fail(); }
   return fixed.request;
 }
