@@ -206,3 +206,35 @@ alternate control root, cache patch or owner termination was used. The corrected
 cache probe therefore still has Node-inspector evidence only; Chrome146 proof
 requires a fresh admitted connection after installation. This limit does not
 change the original consumed probes or qualify a writer.
+
+## Full-CI findings folded into the same unpublished batch
+
+Initial Linux CI41055939948 at273b9244 completed13,748 facade cases:
+13,736 passed, seven failed and five expected platform skips; no cancellations
+or todo cases. Bridge424/424 and Windows41055939989 passed. The failures remain
+retained in their original run and were repaired together before another push:
+
+- Two allocation-fixture cases lacked the newly referenced original writer-kind
+  class in their extracted VM. An explicit synthetic writer class now supplies
+  that dependency. A separate foreign-prototype case proves rejection before
+  snapshot reads or native allocation; all four focused cases pass. This is a
+  synthetic allocation-boundary proof, not original native ownership.
+- One original-owner context fixture still supplied three-slot cache metadata.
+  It now supplies the strict four-slot tuple and ordinary slot-three descriptor;
+  all three existing context/budget cases pass without changing their refusals.
+- One exact coverage summary still expected214 public subsets/495 omissions.
+  It now expects215/494 for the fixed `cll` addition; all other counts and
+  current-live-unclaimed classifications remain unchanged.
+- Two installed-offline-probe cases stopped at the maintained script's stale
+  seven-reader check. It now checks eight readers while preserving the seven-
+  method batch limit and complete fixed request count. All six probe cases pass,
+  including post-shutdown marker/control-data refusal checks.
+- One system-library evidence list lacked the new shared URL-reader regression
+  file. Its exact list is updated; both routes, account-discovery omissions and
+  unclaimed live-validation assertions remain intact. The focused case passes.
+
+All five repair locations pass strict scoped lint. No runtime source, helper,
+external pin, bundle, live case or installed cache changed for these CI repairs.
+Complete suites are required again on the final updated head; the failed run is
+not relabeled as passing. Plugin version121029 remains unpublished at this
+boundary, so no extra installation or Codex restart was introduced.

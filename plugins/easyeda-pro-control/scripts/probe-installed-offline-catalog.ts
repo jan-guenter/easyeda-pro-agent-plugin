@@ -424,9 +424,9 @@ async function catalogChecks(child: OfflineChild, root: string, sample: () => Pr
   "Netlist file discovery or its bounded action schema changed.");
   const readers = await offlineApi(child, { action: "public-readers", query: { includeSchemas: true } });
   const readerEntries = readers["entries"];
-  requireCheck(readers["total"] === 7 && Array.isArray(readerEntries) && readerEntries.length === 7 &&
+  requireCheck(readers["total"] === 8 && Array.isArray(readerEntries) && readerEntries.length === 8 &&
     readerEntries.every((entry: unknown) => isRecord(entry) && isRecord(entry["inputSchema"]) && entry["invocationEnabledByDiscovery"] === false),
-  "Public utility discovery differs from its seven bounded readers.");
+  "Public utility discovery differs from its eight bounded readers.");
   const readerBatch = record(readers["batch"]);
   requireCheck(readerBatch["maximumMethods"] === 7 && readerBatch["uniqueMethods"] === true &&
     readerBatch["completeOrderedPasses"] === 2 && readerBatch["sharedDeadlineMilliseconds"] === 10_000 &&
