@@ -175,3 +175,34 @@ matrix and installation guide now agree on confirmed restore, sixteen current
 utility-mode tools and eight fixed readers. Private forward observation birth
 and accounting are implemented; forward writer mounting remains unfinished.
 Earlier helper sizes and check results above refer to their retained snapshots.
+
+## Frozen candidate and live-check limit
+
+Candidate36254b88 contains the59-file batch and plugin version
+`0.3.0+codex.20261030121029`. The complete local non-suite checks passed again
+after the final diagnostic revision. Both committed bundles reproduce exactly:
+server11,601,998 bytes/SHA27463a7d9207db638dd0185ae5b7ecf450771900a8c8391727b951242a6ce47c,
+supervisor795,316 bytes/SHAc33902d3de6f48801a643721f71dabf65084b90b2926f6dc4140c713edcab8c2.
+A fresh C#5/net10 warnings-as-errors build of the exact final helper passed all
+ten selected portable methods, and all seven skill-creator validations passed.
+
+One private materialization initially refused full payload verification because
+its newly created root inherited0700. It was never launched; the failure is
+retained. A fresh materialization used umask022 inside its0700 parent and passed
+all2,420 files,46,854,021 bytes,42 directories and committed modes. Plugin tree
+`cb1cf520f80f24b66331526ba773a6422c878533`; inventory SHA
+`4b71cb3188f794936bd5e0d4b6c4de565184f27782845cb0f194f22d7b15621d`.
+Facade source950/SHAaa52d532b884219dd6a1e8655a94695d8317ce9f8a9787f0a2de2db4c0b93d3a;
+runtime3/SHA03f21544cc6ea48efcd30cf5d8b5f113fa743a9ceacacf8d83b575dad37f1d74.
+
+The candidate foreground connection exposed only a status tool. Its attempted
+API query was refused by the client's actual-catalog allowlist before dispatch,
+and the client closed normally through its existing failure path. No candidate
+native owner or cache probe was created. A separate read-only observation found
+an existing lease for another host-owned053408 facade, started after the prior
+foreground session closed. The candidate process is absent. The host facade
+and lease were left intact; its tools remain unavailable in this chat. No
+alternate control root, cache patch or owner termination was used. The corrected
+cache probe therefore still has Node-inspector evidence only; Chrome146 proof
+requires a fresh admitted connection after installation. This limit does not
+change the original consumed probes or qualify a writer.
