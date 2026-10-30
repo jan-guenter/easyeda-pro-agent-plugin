@@ -1,8 +1,8 @@
 /** Pure fixed-wire parity. No native owner, renderer or application connects. */
 import assert from "node:assert/strict";
+import { decodeFixedNativeTable } from "./helpers/fixed-native-table.ts";
 import { readFile } from "node:fs/promises";
 import { test } from "node:test";
-import { gunzipSync } from "node:zlib";
 import { CURRENT_FOOTPRINT_COPY_CLOCK_RPC_REQUESTS } from "../src/current-footprint-copy-clock-rpc-protocol.ts";
 import { currentFootprintCopyClockRpcNativeCases, currentFootprintCopyClockRpcNativeSource } from "../src/current-footprint-copy-clock-rpc-native.ts";
 import { currentFootprintCopyClockRpcWire } from "../src/current-footprint-copy-clock-rpc-wire.ts";
@@ -28,11 +28,9 @@ void test("the fixed clock RPC encoder fits the unchanged cap behind its origina
   assert.equal(helper.includes("$request.functionDeclaration"), false);
   assert.equal(helper.includes("$request.programGzip"), false);
 });
-void test("all24 fixed native templates preserve exact realms, source sites, conditions, programs and scalar comparison arguments", () => {
+void test("all24 fixed native templates preserve exact realms, source sites, conditions, programs and scalar comparison arguments", async () => {
   const cases = currentFootprintCopyClockRpcNativeCases(), source = currentFootprintCopyClockRpcNativeSource(); assert.equal(cases.length, 24);
-  const encoded = /FromBase64String\(@"([A-Za-z\d+/=]+)"\)/u.exec(source)?.[1]; assert.ok(encoded !== undefined);
-  // oxlint-disable-next-line node/no-sync -- Decode the bounded in-memory finite table, without reading application assets or an external input.
-  const rows = gunzipSync(Buffer.from(encoded, "base64")).toString("utf8").split("\0"); assert.equal(rows.length, 24);
+  const { rows } = await decodeFixedNativeTable(source, 24, 5);
   const phases = new Set<string>();
   for (const [index, command] of cases.entries()) {
     const wire = currentFootprintCopyClockRpcWire(command, 73, worker, ui); const row = rows[index]?.split("\t"); assert.ok(row !== undefined);

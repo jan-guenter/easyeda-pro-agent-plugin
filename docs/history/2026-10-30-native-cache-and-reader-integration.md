@@ -190,39 +190,40 @@ checks are unchanged. All17 installation tests and strict scoped lint pass.
 No runtime, native helper, budget, compatibility pin or bundle changed for this
 repair. Complete exact-head CI remains required for the corrected commit.
 
-## Published143226 installation and next-session handoff
+## Published 143226 installation and next-session handoff
 
-The31-file batch merged through protected PR158 as
+The 31-file batch merged through protected PR 158 as
 `c57d8bfe0f8e9908fd6d842c308da1a2f993d93a`, from final payload
-`6da5f0717bd796ce30134b7dd1246ca63e9838db`. PR Linux41077373391 and
-Windows41077374138 passed all11 required checks:13,759 facade passes,
-five expected platform skips, zero failures, and424 bridge passes.
-Main Linux41079885888 and Windows41079885830: all required jobs passed with13,759 facade passes, five expected skips, zero failures and424 bridge passes.
-Root treec8ac5fd35616d733faee230b8d9c18f1dddc45a9 and plugin tree
+`6da5f0717bd796ce30134b7dd1246ca63e9838db`. PR Linux CI 41077373391 and
+Windows CI 41077374138 passed all 11 required checks: 13,759 facade passes,
+five expected platform skips, zero failures, and 424 bridge passes.
+Main Linux CI 41079885888 and Windows CI 41079885830 passed all required jobs,
+with 13,759 facade passes, five expected skips, zero failures and 424 bridge passes.
+Root tree c8ac5fd35616d733faee230b8d9c18f1dddc45a9 and plugin tree
 db4bdb843f6e1c55e62e7643b7ff49175d674ca0 match the checked PR payload.
 No CI cases were filtered or jobs manually cancelled/rerun.
 
 The official Git marketplace upgrade installed and enabled
 `0.3.0+codex.20261030143226`; inspection showed no additional plugin add was
-needed. The canonical `.git` URL, refmain, merged cache HEAD and both sparse
+needed. The canonical `.git` URL, ref `main`, merged cache HEAD and both sparse
 paths remain exact. Complete comparison before/after the scoped official
-listing and after the private-profile offline probe passed2,422 files,
-46,918,655 bytes,42 directories and all committed modes. Inventory SHA
+listing and after the private-profile offline probe passed 2,422 files,
+46,918,655 bytes, 42 directories and all committed modes. Inventory SHA
 45ba26f9c983463151ad229d0165b1f277b776e1603d93cfef87bd19850bdbc9.
-The final CI repair changed only a test and this record; source950/SHA b105fae5,
-runtime3/SHA8e053dd5 and helper1,047,450 bytes/SHA802c563f remain unchanged.
-The helper has1,126 bytes spare under the unchanged1MiB cap.
+The final CI repair changed only a test and this record; 950 source files/SHA b105fae5,
+3 runtime files/SHA 8e053dd5 and helper 1,047,450 bytes/SHA 802c563f remain unchanged.
+The helper has 1,126 bytes spare under the unchanged 1 MiB cap.
 
-The installed offline catalog probe passed46 queries/48 requests using the
+The installed offline catalog probe passed 46 queries/48 requests using the
 available private TMPDIR, with original EOF closure/zero exit, absent upstream
-marker and exact final synthetic control roster. It observed27 synthetic-profile
-tools and52 configured tools. This does not admit the actual current profile or
-prove connected behavior. The685-byte private machine profile/SHAa080fa71 is
+marker and exact final synthetic control roster. It observed 27 synthetic-profile
+tools and 52 configured tools. This does not admit the actual current profile or
+prove connected behavior. The 685-byte private machine profile/SHA a080fa71 is
 unchanged. No manual cache repair, backup removal or host termination occurred.
 
-The original host3494151 remains present and retains its lease; it last served
-121029. No native/API call was made after143226 installation. Actual143226
-host admission and new child-capture acceptance are pending. The two121029
+The original host 3494151 remains present and retains its lease; it last served
+121029. No native/API call was made after 143226 installation. Actual 143226
+host admission and new child-capture acceptance are pending. The two 121029
 validation generations are terminal/released with original root exit/empty Job,
 no unsettled publication and a byte-exact closed disposable file. No Save,
 edit, navigation replay or original native cleanup is pending. No production
@@ -231,14 +232,14 @@ existing profile and was not an isolation proof.
 
 Next session:
 
-1. Freshly load143226 and admit its actual process/module/lease and complete
+1. Freshly load 143226 and admit its actual process/module/lease and complete
    package/source/runtime identities before live work. Preserve original host
    ownership and journals; no cache hotpatch or alternate control root.
 2. On a fresh disposable visual owner, qualify child-process capture with the
    new query-only handle/image/Job/lifetime checks. Prior capture attempts are
-   consumed. A returned PNG still needs visual inspection and proves no saved
+   consumed. A returned PNG still needs visual inspection and does not prove saved
    design or render completion. Keep original handles through exit/release.
-3. The four-slot cache diagnostic passed on121029; do not repeat it merely for
+3. The four-slot cache diagnostic passed on 121029; do not repeat it merely for
    chronology or retroactively set qualification flags. The missing fresh saved
    stage needs the native caches getter roster as well as ctor/match, held
    original identities through both fixed namespaces, a distinct closed native
@@ -249,7 +250,7 @@ Next session:
    saved/inverse/closed-SQL joins before enabling footprint copy/delete. The
    newly shared saved-reader ledger is observation-only and cannot open a project
    or adopt legacy saved-execution admission.
-5. General design/library/manufacturing writers and494 omitted/79 blocked
+5. General design/library/manufacturing writers and 494 omitted/79 blocked
    inventory methods remain backlog. For getEdaPath, bind original main Je or a
    corrected SDK/protocol tuple; never fetch broader private configuration or
    infer the document root from executable/project directories. Fixed `cll`

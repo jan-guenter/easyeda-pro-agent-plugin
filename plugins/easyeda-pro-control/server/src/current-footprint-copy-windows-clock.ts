@@ -11,7 +11,7 @@ import { validateClockSample } from "./windows-clock-transport.ts";
 export const CURRENT_FOOTPRINT_COPY_WINDOWS_CLOCK_PHASES = ["before", "armed", "post", "termination"] as const;
 export type CurrentFootprintCopyWindowsClockPhase = typeof CURRENT_FOOTPRINT_COPY_WINDOWS_CLOCK_PHASES[number];
 export const CURRENT_FOOTPRINT_COPY_WINDOWS_CLOCK_LIMITS = Object.freeze({ liveObservations: 3, terminationObservations: 1,
-  nativeRequests: 4, collectionMilliseconds: 10_000, executionAuthorized: false, saveAuthorized: false });
+  nativeRequests: 4, collectionMilliseconds: 10_000, closedWindowMilliseconds: 60_000, executionAuthorized: false, saveAuthorized: false });
 const bindingSchema = z.object({ helperInstance: z.string().regex(/^[a-f\d]{32}$/u), jobId: z.string().regex(/^[a-f\d]{32}$/u),
   rootPid: z.number().int().min(1).max(2_147_483_647), rootCreated: z.string().regex(/^[1-9]\d{14,19}$/u) }).strict();
 export type CurrentFootprintCopyWindowsClockBinding = Readonly<z.infer<typeof bindingSchema>>;
@@ -44,6 +44,41 @@ export interface CurrentFootprintCopyWindowsClockObservation {
   readonly documentClockProvenanceVerified: false;
   readonly executionAuthorized: false;
   readonly saveAuthorized: false;
+}
+/** Retained numerical interval from this issuer's four original observations.
+ * It does not authenticate the application's Date calls, RPC responder, native
+ * create or SQL actor. The original native factory must still join those owners.
+ * Ordered endpoint samples do not prove continuous UTC or timezone stability. */
+export interface CurrentFootprintCopyWindowsClockWindow {
+  readonly profile: "private.current-footprint-copy-windows-clock-window.v1";
+  readonly binding: CurrentFootprintCopyWindowsClockBinding;
+  readonly backendClockMinMs: number;
+  readonly backendClockMaxMs: number;
+  readonly backendLocalOffsetMinutes: number;
+  readonly documentNativeDateMinMs: number;
+  readonly documentNativeDateMaxMs: number;
+  readonly zoneRulesSha256: string;
+  readonly originalFourPhasesJoined: true;
+  readonly continuousClockStabilityProved: false;
+  readonly nativeDateCallProvenanceVerified: false;
+  readonly documentClockProvenanceVerified: false;
+  readonly executionAuthorized: false;
+  readonly saveAuthorized: false;
+}
+export interface CurrentFootprintCopyDocumentClockWindow {
+  readonly documentClockMinMs: number;
+  readonly documentClockMaxMs: number;
+  readonly documentNativeDateValues: readonly [number, number];
+  readonly suppliedDocumentValuesOnly: true;
+  readonly documentClockProvenanceVerified: false;
+  readonly executionAuthorized: false;
+}
+const epochTicks = 621_355_968_000_000_000n;
+function unixMilliseconds(ticks: string): number {
+  // Date.now is an integer millisecond value. Preserve the containing floor
+  // When converting the native 100ns sample instead of rounding it inwards.
+  const value = Number((BigInt(ticks) - epochTicks) / 10_000n);
+  need(Number.isSafeInteger(value) && value >= 0, "native clock conversion differs"); return value;
 }
 const nativeObservation = z.object({ tzAbsent: z.literal(true), reason: z.null(), sample: z.unknown() }).strict();
 const replySchema = z.object({ schema: z.literal("easyeda-pro-control.footprint-copy-windows-clock.v1"),
@@ -92,6 +127,7 @@ export class CurrentFootprintCopyWindowsClockIssuer {
   #sequence = 0;
   #failed = false;
   #busy = false;
+  #closedWindow: CurrentFootprintCopyWindowsClockWindow | null = null;
   public constructor(transport: CurrentFootprintCopyWindowsClockTransport, originalBinding: CurrentFootprintCopyWindowsClockBinding) {
     this.#methods = methods(transport); this.#transport = transport;
     this.#request = transport.request; this.#assertOwned = transport.assertOwned; this.#assertCurrent = transport.assertCurrent;
@@ -151,6 +187,68 @@ export class CurrentFootprintCopyWindowsClockIssuer {
     need(!this.#failed || observation.phase === "termination", "live observation failed");
     try { this.#current(observation.phase); return observation; }
     catch (error) { this.#failed = true; throw error; }
+  }
+  /** A pure historical join after genuine original-root/whole-Job exit was
+   * observed for termination. Missing, failed or overlong phases refuse; no new
+   * native request, retry, source qualification or dispatch authority follows. */
+  public closedWindow(): CurrentFootprintCopyWindowsClockWindow {
+    need(!this.#busy && !this.#failed && this.#issued.size === 4, "complete original closed clock window required");
+    this.#owned();
+    const before = this.#issued.get("before");
+    const armed = this.#issued.get("armed");
+    const post = this.#issued.get("post");
+    const termination = this.#issued.get("termination");
+    need(before !== undefined && armed !== undefined && post !== undefined && termination !== undefined &&
+      before.sequence === 1 && armed.sequence === 2 && post.sequence === 3 && termination.sequence === 4,
+    "complete original closed clock window required");
+    for (const observation of [before, armed, post, termination]) { this.requireRecorded(observation); }
+    const first = before.before, last = termination.after;
+    const maximum = BigInt(CURRENT_FOOTPRINT_COPY_WINDOWS_CLOCK_LIMITS.closedWindowMilliseconds);
+    // Both independently ordered counters must fit the SQL comparator's fixed
+    // One-minute envelope. This is a finite bound, not UTC/QPC calibration.
+    need(BigInt(last.utcAfterTicks) - BigInt(first.utcBeforeTicks) <= maximum * 10_000n &&
+      (BigInt(last.qpcAfter) - BigInt(first.qpcBefore)) * 1000n <= maximum * BigInt(first.qpcFrequency),
+    "closed clock window exceeds one minute");
+    const backendClockMinMs = unixMilliseconds(first.utcBeforeTicks);
+    const backendClockMaxMs = unixMilliseconds(last.utcAfterTicks);
+    const documentNativeDateMinMs = unixMilliseconds(armed.before.utcBeforeTicks);
+    const documentNativeDateMaxMs = unixMilliseconds(post.after.utcAfterTicks);
+    need(backendClockMaxMs - backendClockMinMs <= CURRENT_FOOTPRINT_COPY_WINDOWS_CLOCK_LIMITS.closedWindowMilliseconds &&
+      documentNativeDateMinMs >= backendClockMinMs && documentNativeDateMaxMs <= backendClockMaxMs,
+    "closed clock bounds differ");
+    this.#owned();
+    this.#closedWindow ??= freezeDeep({ profile: "private.current-footprint-copy-windows-clock-window.v1",
+      binding: this.#binding, backendClockMinMs, backendClockMaxMs, backendLocalOffsetMinutes: first.localOffsetMinutes,
+      documentNativeDateMinMs, documentNativeDateMaxMs, zoneRulesSha256: first.zoneRulesSha256,
+      originalFourPhasesJoined: true, continuousClockStabilityProved: false, nativeDateCallProvenanceVerified: false,
+      documentClockProvenanceVerified: false, executionAuthorized: false, saveAuthorized: false });
+    return this.#closedWindow;
+  }
+  public requireClosedWindow(window: CurrentFootprintCopyWindowsClockWindow): CurrentFootprintCopyWindowsClockWindow {
+    need(window === this.#closedWindow && window !== null, "original closed clock window required");
+    need(this.closedWindow() === window, "original closed clock window changed"); return window;
+  }
+  /** Check both independently supplied document results and lexical offsets
+   * against the original armed-to-post interval. Equal result values are legal;
+   * neither equality nor this numerical check proves an original native call. */
+  public boundDocumentValues(window: CurrentFootprintCopyWindowsClockWindow,
+    values: readonly [readonly [number, number], readonly [number, number]]): CurrentFootprintCopyDocumentClockWindow {
+    this.requireClosedWindow(window);
+    const raw = captureCurrentPcbStringClockReply(values).value;
+    const scalar = z.number().int().min(-8_640_000_000_000_000).max(8_640_000_000_000_000);
+    const document = z.number().int().positive().max(8_640_000_000_000_000);
+    const pair = z.tuple([z.tuple([document, scalar]), z.tuple([document, scalar])]).parse(raw);
+    const [first, second] = pair, firstNative = first[0] - first[1], secondNative = second[0] - second[1];
+    need([firstNative, secondNative].every(value => Number.isSafeInteger(value) && !Object.is(value, -0) &&
+      value >= window.documentNativeDateMinMs && value <= window.documentNativeDateMaxMs), "document native Date values outside original interval");
+    const minimum = Math.min(first[0], second[0]);
+    const maximum = Math.max(first[0], second[0]);
+    need(maximum - minimum <= CURRENT_FOOTPRINT_COPY_WINDOWS_CLOCK_LIMITS.closedWindowMilliseconds,
+      "document clock values exceed one minute");
+    this.requireClosedWindow(window);
+    return freezeDeep({ documentClockMinMs: minimum, documentClockMaxMs: maximum,
+      documentNativeDateValues: [firstNative, secondNative], suppliedDocumentValuesOnly: true,
+      documentClockProvenanceVerified: false, executionAuthorized: false });
   }
   public evidence(): Readonly<{ phasesAttempted: readonly CurrentFootprintCopyWindowsClockPhase[];
     phasesObserved: readonly CurrentFootprintCopyWindowsClockPhase[]; rawReplies: readonly unknown[]; failed: boolean; busy: boolean;

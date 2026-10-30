@@ -2,10 +2,10 @@
  * fragments run only against inert stubs, without app, project or SQLite I/O. */
 /* oxlint-disable import/max-dependencies -- Independently compare source, V8, fixed command grammar, native reconstruction and descriptor-only joins. */
 import assert from "node:assert/strict";
+import { decodeFixedNativeTable } from "./helpers/fixed-native-table.ts";
 import { Session } from "node:inspector/promises";
 import { test } from "node:test";
 import { createContext, runInContext } from "node:vm";
-import { gunzipSync } from "node:zlib";
 import { CURRENT_FOOTPRINT_COPY_MAIN_BACKEND_CALLS as BACKEND } from "../src/current-footprint-copy-main-backend-programs.ts";
 import { CURRENT_FOOTPRINT_COPY_MAIN_REQUEST_COLLECTION_ORDER as ORDER, CURRENT_FOOTPRINT_COPY_MAIN_REQUEST_COLLECTION_SITES as SITES,
   currentFootprintCopyMainRequestAllocatedId, currentFootprintCopyMainRequestSourceArm, decodeCurrentFootprintCopyMainRequestCollectedFunction, decodeCurrentFootprintCopyMainRequestCollectionPause,
@@ -17,11 +17,9 @@ import { currentFootprintCopyMainRequestWire } from "../src/current-footprint-co
 import { mainBackendFragments } from "./helpers/footprint-main-backend-fragments.ts";
 import { mainRequestFragments } from "./helpers/footprint-main-request-fragments.ts";
 
-void test("all21 finite native templates reconstruct exact fixed methods, source sites, programs and typed comparison fields", () => {
+void test("all21 finite native templates reconstruct exact fixed methods, source sites, programs and typed comparison fields", async () => {
   const cases = currentFootprintCopyMainRequestNativeCases(), source = currentFootprintCopyMainRequestNativeSource(); assert.equal(cases.length, 21);
-  const encoded = /FromBase64String\(@"([A-Za-z\d+/=]+)"\)/u.exec(source)?.[1]; assert.ok(encoded !== undefined);
-  // oxlint-disable-next-line node/no-sync -- Decode the bounded in-memory fixed protocol table, not an external input or application asset.
-  const rows = gunzipSync(Buffer.from(encoded, "base64")).toString("utf8").split("\0"); assert.equal(rows.length, 21);
+  const { rows } = await decodeFixedNativeTable(source, 21, 4);
   for (const [index, command] of cases.entries()) {
     const wire = currentFootprintCopyMainRequestWire(command, 73); const row = rows[index]?.split("\t"); assert.ok(row !== undefined); const template = row[3]; assert.ok(template !== undefined);
     const restored = template.replaceAll(/"__mainrequest_([A-Za-z\d]+)__"/gu, (_whole, name: string) => JSON.stringify(wire.request[name]));

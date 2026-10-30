@@ -38,7 +38,7 @@ export const CURRENT_WINDOW_CAPTURE_NATIVE_MEMBERS = String.raw`
     }
   }
   string windowFaultStage="request";WcRect windowFaultBounds;bool windowFaultBoundsObserved;object windowFaultChildren;
-  void WcFaultStart(string stage){windowFaultStage=stage;windowFaultBoundsObserved=false;windowFaultChildren=null;}
+  void WcFaultStart(string stage){ResetWindowDiscovery();windowFaultStage=stage;windowFaultBoundsObserved=false;windowFaultChildren=null;}
   public string WindowFaultStage {get{return windowFaultStage;}}
   public object WindowFaultBounds {get{return windowFaultBoundsObserved?(object)new Dictionary<string,object>{{"left",windowFaultBounds.left},{"top",windowFaultBounds.top},{"right",windowFaultBounds.right},{"bottom",windowFaultBounds.bottom}}:null;}}
   public object WindowFaultChildren {get{return windowFaultChildren;}}

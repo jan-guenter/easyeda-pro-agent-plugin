@@ -196,6 +196,33 @@ byte-exact. These observations supply no copy/delete or saved-result proof.
 The [following batch record](https://github.com/jan-guenter/easyeda-pro-agent-plugin/blob/main/docs/history/2026-10-29-footprint-completion-owner-and-route.md)
 retains the new actor result and route refusal separately.
 
+## Separate caches accessor diagnostic
+
+`observe-saved-cache-accessor` is a distinct optional pre-opening diagnostic,
+using the original combined owner after published main construction, browser and
+source-qualified UI observations. Its exact operation arguments are the operation
+ID and current binding digest. Discover and validate the action offline first.
+
+It reserves eleven existing discovery IDs before dispatch: up to four original
+parent/frame and ancillary DOM checks, six fixed metadata reads and one object
+group release. A fresh five-slot tuple retains the CacheStorage constructor,
+prototype, match function, the global `caches` getter and descriptor baseline.
+The getter descriptor must be an own accessor with no setter. The tuple and
+original descriptors are rechecked after all three complete function metadata
+reads. No constructor, getter or cache method is called. The native codec accepts
+only these seven fixed commands under the original combined or private forward
+purpose. The legacy six-command diagnostic and353-ID saved execution purpose
+remain separate and unchanged.
+
+Intent publication consumes the attempt before native dispatch. Inspect after a
+lost reply. The original runner releases its group even after a failed read,
+while uncertain cleanup still requires original process/Job termination and
+release. Returned metadata keeps native getter qualification, match
+qualification, replay-token issuance and execution authority false. This path
+exists to acquire the missing engine-specific getter roster. Historical JSON
+cannot recreate its original handles or qualify a later saved generation.
+Actual native execution of this new diagnostic remains unvalidated.
+
 ## Private groundwork and remaining integration
 
 Installed095000 subsequently passed a fresh original main/worker/cache/peer
@@ -384,9 +411,12 @@ These finite counters use existing caps and original role references; a future
 native factory must feed them from its actual captured traffic. They do not
 mount that factory or prove pre-write eligibility.
 
-The private saved-generation queue program now has a separate pinned209
-Start Page guard; the generic206 observer remains unchanged. Exact209 UI/backend
-source establishes its field and page-version assumptions. CacheStorage.match
-native metadata has not been captured, so a stable substitute can still fabricate
-absence in the old data-only probe. Native cache ownership/replay exclusion
-therefore remains a concrete blocker before any saved writer lifecycle is mounted.
+The private saved-generation queue program has a separate pinned209 Start Page
+guard; the generic206 observer remains unchanged. Exact209 UI/backend source
+establishes its field and page-version assumptions. A separate diagnostic has
+observed constructor/match metadata; the accessor diagnostic can now collect the
+missing getter roster without invoking it. These released diagnostic groups do
+not qualify the original getter/match in a fresh saved generation. The old queue
+program still reads those globals directly, so a stable substitute can fabricate
+absence. Native cache ownership and replay exclusion remain concrete blockers
+before any saved writer lifecycle is mounted.

@@ -1,11 +1,11 @@
 /* oxlint-disable import/max-dependencies -- Exercise the actual source qualifier, runner, selectors and native encoder together at one isolated source-issuer boundary. */
 /** Synthetic CDP and native getter fixtures. No application is connected. */
 import assert from "node:assert/strict";
+import { decodeFixedNativeTable } from "./helpers/fixed-native-table.ts";
 import { readFile } from "node:fs/promises";
 import { createRequire } from "node:module";
 import { test } from "node:test";
 import vm from "node:vm";
-import { gunzipSync } from "node:zlib";
 import { transform } from "esbuild";
 import { CURRENT_FOOTPRINT_COPY_CLOCK_REGISTRATION_CALLS as CALLS, CURRENT_FOOTPRINT_COPY_CLOCK_REGISTRATION_FLAGS as FLAGS,
   decodeCurrentFootprintCopyClockRegistrationFunction, validateCurrentFootprintCopyClockRegistrationCommand } from "../src/current-footprint-copy-clock-registration-contract.ts";
@@ -150,11 +150,10 @@ void test("source, location and fixed command grammar reject substitutes before 
   assert.ok(Object.isFrozen(validateCurrentFootprintCopyClockRegistrationCommand(valid)));
   for (const changed of [{ ...valid, extra: true }, { ...valid, params: { ...valid.params, functionDeclaration: "function(){return Date.now()}" } }, { ...valid, params: { ...valid.params, throwOnSideEffect: false } }]) { assert.throws(() => validateCurrentFootprintCopyClockRegistrationCommand(changed)); }
 });
-void test("native registration vocabulary preserves every fixed command and cannot substitute a session or program", () => {
+void test("native registration vocabulary preserves every fixed command and cannot substitute a session or program", async () => {
   const cases = currentFootprintCopyClockRegistrationNativeCases(); assert.equal(cases.length, 7);
-  const native = currentFootprintCopyClockRegistrationNativeSource(); const encoded = /FromBase64String\(@"([A-Za-z\d+/=]+)"\)/u.exec(native)?.[1]; assert.ok(encoded !== undefined);
-  // oxlint-disable-next-line node/no-sync -- Inflate seven bounded in-memory fixed templates to compare their exact reconstructed commands.
-  const rows = gunzipSync(Buffer.from(encoded, "base64")).toString("utf8").split("\0"); assert.equal(rows.length, 7);
+  const native = currentFootprintCopyClockRegistrationNativeSource();
+  const { rows } = await decodeFixedNativeTable(native, 7, 4);
   for (const [index, command] of cases.entries()) {
     const wire = currentFootprintCopyClockRegistrationWire(command, 52, command.sessionId);
     assert.equal(wire.request["parentPhase"], `footprint-copy-clock-registration-${command.phase}`); assert.equal(Object.hasOwn(wire.request, "sessionId"), false); assert.equal(Object.hasOwn(wire.request, "functionDeclaration"), false);
@@ -164,5 +163,5 @@ void test("native registration vocabulary preserves every fixed command and cann
     const restored = template.replaceAll(/"__copyregistration_([A-Za-z\d]+)__"/gu, (_all, name: string) => JSON.stringify(name === "sessionId" ? command.sessionId : wire.request[name]));
     const { phase: _phase, ...expected } = command; assert.deepEqual(JSON.parse(restored), expected);
   }
-  assert.match(native, /originalParentSession/u); assert.match(native, /fields.Count==names.Length/u); assert.match(native, /rows.Length==7/u);
+  assert.match(native, /originalParentSession/u); assert.match(native, /fields.Count==names.Length/u);
 });

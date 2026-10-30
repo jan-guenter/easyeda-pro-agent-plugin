@@ -50,7 +50,7 @@ import type { CurrentPcbStringSaveProvenance } from "./current-pcb-string-save-p
 import { CurrentPcbStringMoveRunner, currentPcbStringMoveFailureDetail } from "./current-pcb-string-move-runner.ts";
 import { inspectCurrentPcbStringFiniteEffects } from "./current-pcb-string-finite-effects.ts";
 import { CurrentFootprintCopyWindowsClockIssuer } from "./current-footprint-copy-windows-clock.ts";
-import type { CurrentFootprintCopyWindowsClockObservation, CurrentFootprintCopyWindowsClockPhase, CurrentFootprintCopyWindowsClockTransport } from "./current-footprint-copy-windows-clock.ts";
+import type { CurrentFootprintCopyDocumentClockWindow, CurrentFootprintCopyWindowsClockObservation, CurrentFootprintCopyWindowsClockPhase, CurrentFootprintCopyWindowsClockTransport, CurrentFootprintCopyWindowsClockWindow } from "./current-footprint-copy-windows-clock.ts";
 import { CurrentPcbStringNativeClockIssuer } from "./current-pcb-string-native-clock.ts";
 import { captureCurrentPcbStringClockReply } from "./current-pcb-string-clock-reply.ts";
 import { currentWindowFailureAction, currentWindowFailureLabelOnly, decodeCurrentWindowFailure } from "./current-pcb-diagnostic-window-failure.ts";
@@ -86,6 +86,10 @@ import { CurrentFootprintSavedCacheRunner } from "./current-footprint-saved-cach
 import type { CurrentFootprintSavedCacheObservation } from "./current-footprint-saved-cache-runner.ts";
 import { CURRENT_FOOTPRINT_SAVED_CACHE_PROBE_LIMITS } from "./current-footprint-saved-cache-probe.ts";
 import type { CurrentFootprintSavedCacheCommand } from "./current-footprint-saved-cache-protocol.ts";
+import { CurrentFootprintSavedCacheAccessorRunner } from "./current-footprint-saved-cache-accessor-runner.ts";
+import type { CurrentFootprintSavedCacheAccessorObservation } from "./current-footprint-saved-cache-accessor-runner.ts";
+import { CURRENT_FOOTPRINT_SAVED_CACHE_ACCESSOR_PROBE_LIMITS } from "./current-footprint-saved-cache-accessor-probe.ts";
+import type { CurrentFootprintSavedCacheAccessorCommand } from "./current-footprint-saved-cache-accessor-protocol.ts";
 import { CurrentFootprintCopyUiRunner } from "./current-footprint-copy-ui-runner.ts";
 import type { CurrentFootprintCopyUiCommand } from "./current-footprint-copy-ui-command.ts";
 import type { CurrentFootprintCopyUiObservation } from "./current-footprint-copy-ui-runner.ts";
@@ -159,8 +163,8 @@ import { CurrentFootprintCopyMainBackendRunner } from "./current-footprint-copy-
 import type { CurrentFootprintCopyMainBackendObservation } from "./current-footprint-copy-main-backend-runner.ts";
 
 
-const HELPER_SHA256 = "802c563f38535f5277a4f3ba9d3dd5bcd487b00a2fefc7d879802e7303cf4e70";
-const HELPER_BYTES = 1_047_450;
+const HELPER_SHA256 = "b8575880cdeb91831d58c2d4c77bb8c679b79c6bf905f95bf2f0df468c8ae2bf";
+const HELPER_BYTES = 1_044_671;
 const MAX_LINE = TRANSPORT.maximumHelperLineBytes;
 // 64 MiB native bytes need at most 85.34 MiB base64 plus bounded poll envelopes.
 const MAX_TOTAL = TRANSPORT.maximumHelperStdoutBytes;
@@ -435,6 +439,10 @@ class CurrentPcbRetainedOwnerCore {
   #savedCacheNativeAttempted = false;
   #savedCacheNativeSetupPhase: "source" | "parent" | "ancillary-owner" | "selector" | "metadata" | "completed" | null = null;
   #savedCacheNativeSetupFailed = false;
+  #savedCacheAccessorRunner: CurrentFootprintSavedCacheAccessorRunner | null = null;
+  #savedCacheAccessorAttempted = false;
+  #savedCacheAccessorSetupPhase: "source" | "parent" | "ancillary-owner" | "selector" | "metadata" | "completed" | null = null;
+  #savedCacheAccessorSetupFailed = false;
   #framesConsumed = false;
   #scriptConsumed = false;
   #browserTargets: readonly Readonly<RecordValue>[] | null = null;
@@ -631,6 +639,7 @@ class CurrentPcbRetainedOwnerCore {
     forwardResources?: Readonly<{ counters: ReturnType<CurrentFootprintCopyForwardResourceLedger["status"]>;
       cleanupOnly: boolean; artifactAccountingMounted: false; journalAccountingMounted: false; nativeWriterMounted: false }>;
     savedCacheNativeObservation?: Readonly<Record<string, unknown>> | null;
+    savedCacheAccessorObservation?: Readonly<Record<string, unknown>> | null;
     browserObservationConsumed: boolean; frameInspectionConsumed: boolean; scriptInspectionConsumed: boolean; diagnosticFailure: string | null;
     diagnosticFailureObservation: CurrentPcbDiagnosticFailureObservation | null;
     workerStartupChannel?: ReturnType<CurrentPcbWorkerStartupChannel["status"]> | ReturnType<CurrentPcb209EmptyStartupChannel["status"]> |
@@ -653,6 +662,10 @@ class CurrentPcbRetainedOwnerCore {
         savedCacheNativeObservation: this.#savedCacheNativeRunner?.retained() ?? (this.#savedCacheNativeAttempted ? Object.freeze({
           attempted: true, phase: this.#savedCacheNativeSetupPhase, setupFailed: this.#savedCacheNativeSetupFailed, runnerCreated: false,
           nativeMatchQualified: false, replayTokenIssued: false, executionAuthorized: false,
+        }) : null),
+        savedCacheAccessorObservation: this.#savedCacheAccessorRunner?.retained() ?? (this.#savedCacheAccessorAttempted ? Object.freeze({
+          attempted: true, phase: this.#savedCacheAccessorSetupPhase, setupFailed: this.#savedCacheAccessorSetupFailed, runnerCreated: false,
+          nativeGetterQualified: false, nativeMatchQualified: false, replayTokenIssued: false, executionAuthorized: false,
         }) : null) } : {}),
       mainNativeFailure: this.#mainNativeFailure, mainCloseDetachAttempted: this.#mainCloseDetachAttempted, mainCloseDetached: this.#mainCloseDetached,
       combinedAbortAttempted: this.#combinedAbortAttempted, combinedAbortDispatchAttempted: this.#combinedAbortDispatchAttempted, combinedOutputCleanupOnly: this.#combinedOutputCleanupOnly,
@@ -2479,6 +2492,21 @@ class CurrentPcbRetainedOwnerCore {
     if (this.#footprintWindowsClock === null) { throw error("FOOTPRINT_WINDOWS_CLOCK_ORIGINAL"); }
     return this.#footprintWindowsClock.requireRecorded(observation);
   }
+  /** Historical numeric closure only. These methods keep the original issuer
+   * private; caller JSON or a foreign generation cannot become its window. */
+  public closedFootprintCopyWindowsClockWindow(): CurrentFootprintCopyWindowsClockWindow {
+    if (this.#footprintWindowsClock === null) { throw error("FOOTPRINT_WINDOWS_CLOCK_ORIGINAL"); }
+    return this.#footprintWindowsClock.closedWindow();
+  }
+  public requireClosedFootprintCopyWindowsClockWindow(window: CurrentFootprintCopyWindowsClockWindow): CurrentFootprintCopyWindowsClockWindow {
+    if (this.#footprintWindowsClock === null) { throw error("FOOTPRINT_WINDOWS_CLOCK_ORIGINAL"); }
+    return this.#footprintWindowsClock.requireClosedWindow(window);
+  }
+  public boundFootprintCopyDocumentClockValues(window: CurrentFootprintCopyWindowsClockWindow,
+    values: readonly [readonly [number, number], readonly [number, number]]): CurrentFootprintCopyDocumentClockWindow {
+    if (this.#footprintWindowsClock === null) { throw error("FOOTPRINT_WINDOWS_CLOCK_ORIGINAL"); }
+    return this.#footprintWindowsClock.boundDocumentValues(window, values);
+  }
   public retainedFootprintCopyWindowsClock(): Readonly<Record<string, unknown>> | null { return this.#footprintWindowsClock?.evidence() ?? null; }
 
   #requireFootprintMain(attached: boolean): Binding {
@@ -2785,6 +2813,59 @@ class CurrentPcbRetainedOwnerCore {
       this.#savedCacheNativeRunner = runner; this.#savedCacheNativeSetupPhase = "metadata";
       const result = await runner.observe(); this.#savedCacheNativeSetupPhase = "completed"; return result;
     } catch (caughtError) { this.#savedCacheNativeSetupFailed = true; throw caughtError; }
+    finally { this.#busy = false; }
+  }
+  /** Observe original native accessor descriptors before opening. No native roster,
+   * CacheStorage invocation or saved-generation replay authority is inferred. */
+  public async observeSavedCacheAccessor(): Promise<CurrentFootprintSavedCacheAccessorObservation> {
+    // Original target/frame reads plus at most two ancillary DOM-owner reads.
+    const contextRequests = 4;
+    const context = this.#stagedContext, engine = this.#savedCacheBrowserVersion, main = this.#mainRunner,
+      original = this.#binding, pipe = this.#pipe, source = this.#footprintUiSource;
+    if (!bornFootprintTransport(this.#purpose) || !(pipe instanceof CurrentFootprintCombinedDiscoveryPipe) && !(pipe instanceof CurrentFootprintCopyForwardDiscoveryPipe) ||
+        context === null || source === null || original === null || engine === null || main === null ||
+        !main.retained().completed || main.retained().failed || !main.retained().sourceQualified ||
+        this.#savedCacheAccessorAttempted || !this.#scriptConsumed || this.#inspectionConsumed || this.#startupHandoffConsumed ||
+        this.#projectOpeningConsumed || this.#startupParent !== null || this.#closeConsumed || this.#terminationObserved || this.#releaseConsumed ||
+        pipe.status().requestCount > DIAGNOSTIC_REQUEST_LIMIT - contextRequests - CURRENT_FOOTPRINT_SAVED_CACHE_ACCESSOR_PROBE_LIMITS.normal - CURRENT_FOOTPRINT_SAVED_CACHE_ACCESSOR_PROBE_LIMITS.cleanup) {
+      throw error("SAVED_CACHE_ACCESSOR_PROBE_UNAVAILABLE");
+    }
+    // oxlint-disable-next-line typescript/unbound-method -- Retain original method identities and invoke only with their original pipe/context receivers.
+    const request = pipe.observeSavedCacheAccessor, selectContext = context.savedCacheMetadataContext;
+    this.#enter(true); this.#savedCacheAccessorAttempted = true;
+    try {
+      this.#savedCacheAccessorSetupPhase = "source";
+      const script = context.script();
+      const sameOwner = (): void => {
+        this.#available(); requireCurrentFootprintCopyUiSource(source); context.assertCurrent();
+        if (this.#pipe !== pipe || pipe.observeSavedCacheAccessor !== request || this.#stagedContext !== context || context.savedCacheMetadataContext !== selectContext ||
+            this.#binding !== original || this.#footprintUiSource !== source || this.#mainRunner !== main || this.#savedCacheBrowserVersion !== engine ||
+            !this.#busy || !this.#savedCacheAccessorAttempted || !main.retained().completed || main.retained().failed ||
+            this.#startupHandoffConsumed || this.#startupParent !== null || this.#projectOpeningConsumed ||
+            this.#closeConsumed || this.#terminationObserved || this.#releaseConsumed || context.script().scriptId !== script.scriptId) {
+          throw error("SAVED_CACHE_ACCESSOR_PROBE_OWNER_CHANGED");
+        }
+      };
+      sameOwner(); await this.#verify(); sameOwner(); await this.#verifyInstallation(); sameOwner();
+      this.#savedCacheAccessorSetupPhase = "parent";
+      await this.#observeParent(); sameOwner();
+      this.#savedCacheAccessorSetupPhase = "ancillary-owner";
+      await this.#observeOpeningAncillary(); sameOwner();
+      this.#savedCacheAccessorSetupPhase = "selector";
+      const selected = selectContext.call(context);
+      const same = (): void => {
+        sameOwner(); const observed = selectContext.call(context);
+        if (observed.sessionId !== selected.sessionId || observed.uniqueContextId !== selected.uniqueContextId) { throw error("SAVED_CACHE_ACCESSOR_PROBE_OWNER_CHANGED"); }
+      };
+      const current = async (): Promise<void> => {
+        same(); await this.#verify(); same(); await this.#verifyInstallation(); same();
+      };
+      const runner = new CurrentFootprintSavedCacheAccessorRunner(Object.freeze({ assertCurrent: current,
+        request: (command: CurrentFootprintSavedCacheAccessorCommand): Promise<unknown> => this.#transfer(() => request.call(pipe, command)),
+      }), selected, engine);
+      this.#savedCacheAccessorRunner = runner; this.#savedCacheAccessorSetupPhase = "metadata";
+      const result = await runner.observe(); this.#savedCacheAccessorSetupPhase = "completed"; return result;
+    } catch (caughtError) { this.#savedCacheAccessorSetupFailed = true; throw caughtError; }
     finally { this.#busy = false; }
   }
   public retainedFootprintMainConstruction(): ReturnType<CurrentFootprintCopyMainBackendRunner["retained"]> | null {

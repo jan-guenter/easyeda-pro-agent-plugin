@@ -2,6 +2,7 @@
 /** Synthetic fixed encoders. Packed data and exact schemas are checked here;
  * platform compilation and connected cache ownership remain separate evidence. */
 import assert from "node:assert/strict";
+import { decodeFixedNativeTable } from "./helpers/fixed-native-table.ts";
 import { createHash } from "node:crypto";
 import { gunzipSync } from "node:zlib";
 import { test } from "node:test";
@@ -13,13 +14,9 @@ import { CURRENT_FOOTPRINT_COPY_V2_SAVED_CACHE_READ_FUNCTION } from "../src/curr
 import { currentFootprintCopySourceNativeParameters } from "../src/current-footprint-copy-source-native.ts";
 import { currentFootprintCopySavedStartupWire } from "../src/current-pcb-worker-startup-wire.ts";
 
-void test("cache construction native table retains every exact case and never carries a caller session", () => {
+void test("cache construction native table retains every exact case and never carries a caller session", async () => {
   const source = currentFootprintCacheConstructionNativeSource();
-  const encoded = /FromBase64String\(@"([A-Za-z\d+/=]+)"\)/u.exec(source)?.[1]; assert.ok(encoded !== undefined);
-  // oxlint-disable-next-line node/no-sync -- Decode one bounded in-memory constant table for exact encoder parity.
-  const bytes = gunzipSync(Buffer.from(encoded, "base64")), rows = bytes.toString("utf8").split("\0");
-  assert.equal(rows.length, 14); assert.ok(bytes.length <= 65_536);
-  assert.ok(source.includes(createHash("sha256").update(bytes).digest("hex")));
+  const { rows } = await decodeFixedNativeTable(source, 14, 4);
   for (const [index, sample] of currentFootprintCacheConstructionNativeCases().entries()) {
     const row = rows[index]?.split("\t"), wire = currentFootprintCacheConstructionWire(sample, 1); assert.ok(row !== undefined);
     const { id: _id, phase: _phase, ...command } = wire.command;
@@ -33,7 +30,7 @@ void test("cache construction native table retains every exact case and never ca
       assert.throws(() => currentFootprintCacheConstructionWire({ ...sample, params: { ...sample.params, arguments: [] } }, 1));
     }
   }
-  assert.ok(source.includes("stream.ReadByte()==-1")); assert.ok(source.includes('Field("sessionId",originalWorkerSession)'));
+  assert.ok(source.includes('Field("sessionId",originalWorkerSession)'));
   assert.ok(source.includes("public static void VerifySmoke()"));
 });
 void test("saved native encoder pins distinct V2 source and queue programs with strict original-session and field bounds", () => {
