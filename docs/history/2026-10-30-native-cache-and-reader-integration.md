@@ -34,8 +34,8 @@ and descriptor baseline. Neither the cache getter nor match was invoked.
 
 The observed engine is Chrome146.0.7680.188/V814.6.202.33,
 Electron41.2.1-jlc-sa-win-x64.6, EasyEDAPro3.2.209.8a704eab. Constructor own
-metadata is length0, nameCacheStorage and prototype; match own metadata is
-length1 and nameMatch. Each function has native-function prototype and an empty
+metadata has `length:0`, `name:"CacheStorage"` and `prototype`; match own metadata
+has `length:1` and `name:"match"`. Each function has native-function prototype and an empty
 scope list. The match descriptor is writable/enumerable/configurable; the
 constructor's prototype descriptor has all three flags false. These are profile
 observations, not native-method qualification or a saved-generation binding.
