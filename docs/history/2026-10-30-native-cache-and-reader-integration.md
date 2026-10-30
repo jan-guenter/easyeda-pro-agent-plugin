@@ -172,3 +172,20 @@ are unchanged. Both bundles reproduce exactly: server11,611,630 bytes/SHA
 supervisor795,316 bytes/SHA182a107d8ad25858b5177743d4294b1bdede7559c4d4fad9a7f7a595771111cd.
 Complete facade/bridge suites and Windows compilation remain assigned to the
 final exact-head GitHub checks. Publication/installation are not claimed yet.
+
+## First complete CI result and test-only correction
+
+PR Linux41074590476 at4d4afad4 completed every shard. One installation-source
+assertion prohibited OpenProcess across the whole helper, including the newly
+implemented query-only capture path. All other facade shards, build/package,
+bridge and Windows41074590417 checks passed; the aggregate correctly refused.
+The original failed result is retained without filtering, cancellation or rerun.
+
+The corrected existing test keeps OpenProcess prohibited in original Launch and
+CreateVerifiedRoot, permits exactly its declaration and fixed noninheritable
+0x00101000 capture call, and rejects any other use. It also keeps Process.GetProcessById
+prohibited and prevents capture from assigning root/rootThread/rootPid/rootCreated.
+Original suspended creation, image verification and single primary-thread resume
+checks are unchanged. All17 installation tests and strict scoped lint pass.
+No runtime, native helper, budget, compatibility pin or bundle changed for this
+repair. Complete exact-head CI remains required for the corrected commit.
