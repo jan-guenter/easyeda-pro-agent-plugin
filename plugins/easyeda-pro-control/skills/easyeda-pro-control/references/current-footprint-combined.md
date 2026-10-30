@@ -43,8 +43,10 @@ an owner or retire an unknown/live generation.
    Use the returned target/frame identities, never historical ones. Before
    `capture-project`, `observe-saved-cache-native` may be called once with the
    same original binding. It requires all three prerequisite results to be
-   published and consumes a durable intent before five fixed reads plus one
-   object-group release. It retains the original `CacheStorage` constructor,
+   published and consumes a durable intent before reobserving the original
+   parent/frame and any ancillary DOM owner. Preflight reserves ten existing
+   discovery IDs: up to four ownership observations, five fixed metadata reads
+   and one object-group release. It retains the original `CacheStorage` constructor,
    prototype and `match` descriptor identities, complete bounded metadata and
    the browser engine tuple. It invokes neither `caches` nor `match`. The result
    is unqualified evidence for later profile review: no native-match
@@ -306,15 +308,29 @@ explicit synthetic issuers and the existing known-UUID clock/scheduler path;
 they do not establish a complete allocation/clock/main generation. Neither the
 new lease nor an allocated UUID supplies whole-writer authority.
 
+The private fixed create invocation also retains the original asynchronous
+observer's scope, fourteen-object roster and three upload callbacks. Immediately
+before calling native create, it synchronously rechecks those identities, empty
+task/cache/upload collections, false upload flags and null timer/promise/resolver
+state. Collection receiver-brand checks use fixed native methods and a facade
+rejection callback; they do not read size getters or caller iterators. Changed
+state refuses before the native call. This guard does not freeze vendor work
+across later awaits, observe detached cache cleanup, qualify the history head or
+mount a writer purpose. The fixed envelope has ten arguments and accepts no
+caller programs, callbacks or free-form prewrite handles.
+
 A separate source-derived forward-only reservation now covers two generations:
 renderer926 normal/61 cleanup/987 total commands, main127 known-minimum commands,
 helper stdout, events, raw replies, SQL snapshots and failure journals. The
 actual private coordinator now spends its result/artifact/journal ledger before
 callbacks; normal failure leaves only bounded cleanup publications. These
 counters neither authenticate a caller-supplied owner nor mount a native writer.
-The old coordinator still uses its obsolete11-clock contract. A genuine forward
-factory must join the allocated unit, current source/head/dependency/empty-queue
-eligibility, paired clocks, main completion and saved-generation replay exclusion
+The existing coordinator now consumes the original allocated paired scheduler,
+its exact returned create packet and paired samples. Closed SQL must match both
+document clocks, the main history UUID and project timestamp. Qualification
+failure retains the armed schedule for cleanup after original exit. A genuine
+forward factory must still join the allocated unit, current source/head/dependency/
+empty-queue eligibility and saved-generation replay exclusion
 before any write. Four-generation copy/delete/readback capacity remains
 unreserved. A native create result can precede the buffered backend upload;
 neither an early acknowledgment nor waiting for it proves SQL completion.

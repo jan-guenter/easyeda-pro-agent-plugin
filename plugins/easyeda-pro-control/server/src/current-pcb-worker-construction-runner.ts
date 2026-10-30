@@ -77,6 +77,8 @@ import type { CurrentFootprintCopyClockRpcConstructionBinding, CurrentFootprintC
 import type { CurrentFootprintCopyCreateInvocationBinding, CurrentFootprintCopyCreateInvocationLease } from "./current-footprint-copy-create-invocation-lease.ts";
 
 const createInvocationLeases = new WeakMap<CurrentFootprintCopyCreateInvocationLease, CurrentFootprintCopyCreateInvocationBinding>();
+// oxlint-disable-next-line typescript/unbound-method -- Invoke only on the construction core's original private-field runner.
+const originalAsyncPrewriteHandles = CurrentFootprintCopyAsyncRunner.prototype.prewriteHandles;
 export function requireCurrentFootprintCopyCreateInvocationLease(lease: CurrentFootprintCopyCreateInvocationLease): CurrentFootprintCopyCreateInvocationBinding {
   const binding = createInvocationLeases.get(lease); if (binding === undefined) { throw new Error("FOOTPRINT_COPY_CREATE_INVOCATION_LEASE"); }
   binding.assertCleanup(); return binding;
@@ -1025,8 +1027,11 @@ class CurrentPcbWorkerConstructionCore<P extends PacketProfile> {
     clock.assertCleanup();
     const bus = this.#identities.channelBus, manager = this.#footprintManager, project = this.#identities.project;
     const consistency = this.#footprintConsistency, constructors = this.#footprintConstructors, methods = this.#footprintCreateMethods;
+    const asyncPacket = this.#footprintAsyncObservation, asyncRunner = this.#footprintAsyncRunner, registered = this.#registeredAsyncPacket;
     if (clock.issuer !== this || clockLease !== this.#clockRpcLease || project === undefined || bus === undefined ||
-        manager === null || consistency === null || constructors === null || methods === null) { throw fail("CREATE_INVOCATION_PREPARATION"); }
+        manager === null || consistency === null || constructors === null || methods === null || asyncRunner === null || asyncPacket === null ||
+        registered === null || !registered.trackedQueuesEmptyAtSamples || CurrentFootprintCopyAsyncRunner.prototype.prewriteHandles !== originalAsyncPrewriteHandles) { throw fail("CREATE_INVOCATION_PREPARATION"); }
+    const prewriteHandles = originalAsyncPrewriteHandles.call(asyncRunner, asyncPacket);
     if (this.#createInvocationLease !== null) { return this.#createInvocationLease; }
     const same = (): void => {
       clock.assertCleanup();
@@ -1034,11 +1039,14 @@ class CurrentPcbWorkerConstructionCore<P extends PacketProfile> {
           this.#footprintConsistency !== consistency || this.#footprintConstructors !== constructors || this.#footprintCreateMethods !== methods) {
         throw fail("CREATE_INVOCATION_PREPARATION_CHANGED");
       }
+      if (this.#footprintAsyncRunner !== asyncRunner || this.#footprintAsyncObservation !== asyncPacket || this.#registeredAsyncPacket !== registered ||
+          CurrentFootprintCopyAsyncRunner.prototype.prewriteHandles !== originalAsyncPrewriteHandles ||
+          originalAsyncPrewriteHandles.call(asyncRunner, asyncPacket) !== prewriteHandles) { throw fail("CREATE_INVOCATION_PREWRITE_CHANGED"); }
     };
     let consumed = false;
     const lease = Object.freeze({ profile: "private.current-footprint-copy-create-invocation-lease.v1" as const });
     const handles: readonly [string, string, string, string, string] = Object.freeze([bus, manager, consistency, constructors, methods]);
-    createInvocationLeases.set(lease, Object.freeze({ issuer: this, clockLease, projectObjectId: project, handles,
+    createInvocationLeases.set(lease, Object.freeze({ issuer: this, clockLease, projectObjectId: project, handles, prewriteHandles,
       assertCleanup: same, assertOriginal: async (): Promise<void> => { same(); await clock.assertOriginal(); same(); },
       consumeBeforeInvocation: (): void => {
         same(); if (consumed) { throw fail("CREATE_INVOCATION_CONSUMED"); } consumed = true;

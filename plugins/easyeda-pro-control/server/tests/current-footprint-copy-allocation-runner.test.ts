@@ -18,7 +18,9 @@ import { requireCurrentFootprintCopyCreateInvocationLease } from "../src/current
 import { allocationVmFixture } from "./helpers/footprint-copy-allocation-fixture.ts";
 
 async function fixture(): Promise<Readonly<{ runner: CurrentFootprintCopyAllocationRunner; state: { consumed: boolean; changed: boolean; exited: boolean; lost: string | null; badSource: boolean; failures: number };
-  events: CurrentFootprintCopyClockRpcOriginEvent[]; commands: string[]; start: () => void; remainingClock: CurrentFootprintCopyClockRpcOriginEvent; destination: () => Promise<unknown> }>> {
+  events: CurrentFootprintCopyClockRpcOriginEvent[]; commands: string[]; start: () => void; remainingClock: CurrentFootprintCopyClockRpcOriginEvent;
+  plan: CurrentFootprintCopyV2Plan; binding: CurrentFootprintCopyCreateInvocationBinding; origin: CurrentFootprintCopyClockRpcOriginBindings;
+  requireCopy: (plan: CurrentFootprintCopyV2Plan, binding: CurrentFootprintCopyCreateInvocationBinding) => void; destination: () => Promise<unknown> }>> {
   const context = allocationVmFixture(); const object = (name: string): unknown => runInContext(name, context) as unknown;
   const token = Object.freeze({ profile: "private.current-footprint-clock-rpc-origin.v1" as const });
   const lease = Object.freeze({ profile: "private.current-footprint-copy-create-invocation-lease.v1" as const });
@@ -27,6 +29,7 @@ async function fixture(): Promise<Readonly<{ runner: CurrentFootprintCopyAllocat
   const same = (): void => { assert.equal(state.changed, false, "original changed"); };
   const construction = { issuer, scriptId: "worker-script", projectObjectId: "PROJECT", managerObjectId: "manager", assertCleanup: same };
   const binding: CurrentFootprintCopyCreateInvocationBinding = { issuer, clockLease, projectObjectId: "PROJECT", handles: ["bus", "manager", "consistency", "constructors", "methods"],
+    prewriteHandles: Object.freeze(["prewrite-scope", "prewrite-original", "prewrite-upload"]),
     assertOriginal: async (): Promise<void> => { await Promise.resolve(); same(); }, assertCleanup: same, consumeBeforeInvocation: (): void => { assert.equal(state.consumed, false); state.consumed = true; },
     requireInvocationConsumed: (): void => { same(); assert.equal(state.consumed, true, "original invocation not consumed"); } };
   const commands: string[] = [], events: CurrentFootprintCopyClockRpcOriginEvent[] = []; const values = new Map<string, unknown>();
@@ -83,7 +86,9 @@ async function fixture(): Promise<Readonly<{ runner: CurrentFootprintCopyAllocat
   const plan = { source: { footprintUuid: "a".repeat(16) } } as CurrentFootprintCopyV2Plan;
   const runner = new Constructor(token, lease, plan); const destination = loaded.exports["requireCurrentFootprintCopyAllocatedDestination"]; assert.ok(typeof destination === "function");
   assert.throws(() => requireCurrentFootprintCopyCreateInvocationLease(lease));
-  return { runner, state, events, commands, remainingClock, destination: async (): Promise<unknown> => await Reflect.apply(destination, undefined, [runner, token]), start: (): void => {
+  return { runner, state, events, commands, remainingClock, plan, binding, origin,
+    requireCopy: (copy, originalBinding): void => { runner.requireForCopyPlan(token, copy, originalBinding); },
+    destination: async (): Promise<unknown> => await Reflect.apply(destination, undefined, [runner, token]), start: (): void => {
     runner.consumeBeforeInvocation(); binding.consumeBeforeInvocation();
     events.push({ method: "Debugger.paused", sessionId: "worker", params: { reason: "other", hitBreakpoints: ["allocation-point"], callFrames: [
       { callFrameId: "build", functionName: "buildString", functionLocation: { scriptId: "worker-script", lineNumber: SITE.functionLine, columnNumber: SITE.functionColumn }, location: { scriptId: "worker-script", lineNumber: SITE.lineNumber, columnNumber: SITE.columnNumber } },
@@ -93,7 +98,12 @@ async function fixture(): Promise<Readonly<{ runner: CurrentFootprintCopyAllocat
   } };
 }
 void test("original pre-await collector issues allocated UUID only after exact invocation custody and preserves next clock event", async () => {
-  const f = await fixture(); await assert.rejects(f.destination()); await f.runner.arm(); f.start(); await f.runner.collectAndResume();
+  const f = await fixture(); await assert.rejects(f.destination());
+  assert.throws(() => { f.requireCopy(f.plan, f.binding); }, /ORIGINAL_COPY_PLAN/u);
+  await f.runner.arm(); f.requireCopy(f.plan, f.binding);
+  assert.throws(() => { f.requireCopy(structuredClone(f.plan), f.binding); }, /ORIGINAL_COPY_PLAN/u);
+  assert.throws(() => { f.requireCopy(f.plan, { ...f.binding }); }, /ORIGINAL_COPY_PLAN/u);
+  f.start(); await f.runner.collectAndResume();
   assert.equal(await f.destination(), "c".repeat(16)); assert.equal(f.events.shift(), f.remainingClock);
   await f.runner.release(); assert.equal(await f.destination(), "c".repeat(16)); assert.equal(f.commands.length, 10);
   assert.equal(f.runner.diagnostics()["normalRequests"], 7); assert.equal(f.runner.diagnostics()["cleanupRequests"], 3);

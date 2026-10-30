@@ -22,7 +22,7 @@ const remote = z.object({ objectId: token }).strict();
 const argumentValue = z.object({ value: text }).strict(), projectValue = z.object({ value: project }).strict();
 const schema = z.object({ method: z.literal("Runtime.callFunctionOn"), sessionId: token.max(128), params: z.object({
   objectId: token, functionDeclaration: z.literal(CURRENT_FOOTPRINT_COPY_NATIVE_CREATE_CALL.program),
-  arguments: z.tuple([remote, remote, remote, remote, remote, projectValue, argumentValue]),
+  arguments: z.tuple([remote, remote, remote, remote, remote, projectValue, argumentValue, remote, remote, remote]),
   objectGroup: z.literal(CURRENT_PCB_WORKER_CONSTRUCTION_SOURCE.group), silent: z.literal(true), returnByValue: z.literal(true),
   generatePreview: z.literal(false), throwOnSideEffect: z.literal(false), awaitPromise: z.literal(true), userGesture: z.literal(false),
 }).strict() }).strict();
@@ -57,6 +57,9 @@ export function currentFootprintCopyNativeCreateWire(serialized: unknown, id: nu
     if (!("objectId" in entry)) { throw new Error("FOOTPRINT_COPY_NATIVE_CREATE_HANDLES"); }
     request[`arg${String(index)}ObjectId`] = entry.objectId;
   }
+  request["prewriteScopeObjectId"] = args[7].objectId;
+  request["prewriteOriginalObjectId"] = args[8].objectId;
+  request["prewriteUploadObjectId"] = args[9].objectId;
   // Reserve the complete escaped flat helper input as well as the argument.
   // Original bindings cannot exceed these maximum-width values.
   // Include LF although the helper strips it before its byte check.
@@ -72,12 +75,14 @@ export function currentFootprintCopyNativeCreateWire(serialized: unknown, id: nu
 /** Creates only a fixed data envelope; original handle custody and consumed
  * dispatch remain the enclosing native owner's duties. */
 export function currentFootprintCopyNativeCreateCommand(sessionId: string, projectObjectId: string,
-  handles: readonly [string, string, string, string, string], plan: CurrentFootprintCopyV2Plan): CurrentFootprintCopyNativeCreateCommand {
-  captureCurrentPcbStringClockReply({ sessionId, projectObjectId, handles });
+  handles: readonly [string, string, string, string, string], plan: CurrentFootprintCopyV2Plan,
+  prewriteHandles: readonly [string, string, string]): CurrentFootprintCopyNativeCreateCommand {
+  captureCurrentPcbStringClockReply({ sessionId, projectObjectId, handles, prewriteHandles });
   const args = currentFootprintCopyV2NativeCreateArguments(plan);
   const command = { method: "Runtime.callFunctionOn", sessionId, params: { objectId: projectObjectId,
     functionDeclaration: CURRENT_FOOTPRINT_COPY_NATIVE_CREATE_CALL.program,
-    arguments: [...handles.map(objectId => ({ objectId })), { value: args.expectedProjectUuid }, { value: JSON.stringify(args.createArgument) }],
+    arguments: [...handles.map(objectId => ({ objectId })), { value: args.expectedProjectUuid }, { value: JSON.stringify(args.createArgument) },
+      ...prewriteHandles.map(objectId => ({ objectId }))],
     objectGroup: CURRENT_PCB_WORKER_CONSTRUCTION_SOURCE.group, silent: true, returnByValue: true, generatePreview: false,
     throwOnSideEffect: false, awaitPromise: true, userGesture: false } };
   const wire = currentFootprintCopyNativeCreateWire(JSON.stringify(command), 1);

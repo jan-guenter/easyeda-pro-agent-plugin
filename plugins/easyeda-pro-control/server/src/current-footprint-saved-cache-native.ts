@@ -40,10 +40,7 @@ export function currentFootprintSavedCacheNativeSource(): string {
   });
   return `public static class EasyedaFootprintSavedCacheProtocol {
 static void Need(bool value){if(!value)throw new System.InvalidOperationException("pcb-diagnostic-saved-cache-protocol");}
-static string[][] Load(){byte[] packed=System.Convert.FromBase64String(${literal(compressed.toString("base64"))});byte[] bytes=new byte[${String(bytes.length)}];int count=0;
-using(var input=new System.IO.MemoryStream(packed,false))using(var stream=new System.IO.Compression.GZipStream(input,System.IO.Compression.CompressionMode.Decompress)){while(count<bytes.Length){int read=stream.Read(bytes,count,bytes.Length-count);if(read==0)break;count+=read;}Need(count==bytes.Length&&stream.ReadByte()==-1);}
-using(var sha=System.Security.Cryptography.SHA256.Create())Need(System.BitConverter.ToString(sha.ComputeHash(bytes)).Replace("-","").ToLowerInvariant()==${literal(createHash("sha256").update(bytes).digest("hex"))});
-string[] rows=new System.Text.UTF8Encoding(false,true).GetString(bytes).Split('\\0');Need(rows.Length==6);string[][] result=new string[6][];for(int i=0;i<6;i++){result[i]=rows[i].Split('\\t');Need(result[i].Length==4);}return result;}
+static string[][] Load(){string[] rows=EasyedaDiagnosticOwner.UnpackFixedProgram(${literal(compressed.toString("base64"))},${String(bytes.length)},${literal(createHash("sha256").update(bytes).digest("hex"))},${literal(createHash("sha256").update(compressed).digest("hex"))}).Split('\\0');Need(rows.Length==6);string[][] result=new string[6][];for(int i=0;i<6;i++){result[i]=rows[i].Split('\\t');Need(result[i].Length==4);}return result;}
 static readonly string[][] Cases=Load();
 public static string Field(string name,object input){string value=input as string;Need(value!=null&&System.Text.RegularExpressions.Regex.IsMatch(value,name=="objectId"?@"\\A[A-Za-z0-9_.:-]{1,256}\\z":@"\\A[A-Za-z0-9_.:-]{1,128}\\z"));return value;}
 public static string Encode(int id,string phase,string method,System.Collections.IDictionary fields){Need(id>0&&id<=103&&fields!=null);string[] selected=null;foreach(string[] row in Cases)if(row[0]==phase)selected=row;Need(selected!=null&&selected[1]==method);string[] names=selected[2].Split(',');Need(fields.Count==names.Length);foreach(string name in names)Need(fields.Contains(name));

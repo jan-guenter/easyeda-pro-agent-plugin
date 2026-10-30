@@ -70,11 +70,14 @@ void test("combined native mapping refuses program/effect substitutions and nonc
 });
 void test("the packed native six-case table equals the exact TS vocabulary and is mounted only on the combined helper path", async () => {
   const source = currentFootprintSavedCacheNativeSource();
-  const packed = /FromBase64String\(@"([A-Za-z\d+/=]+)"\)/u.exec(source)?.[1]; assert.ok(packed !== undefined);
+  const packedCall = /EasyedaDiagnosticOwner\.UnpackFixedProgram\(@"([A-Za-z\d+/=]+)",(\d+),@"([a-f\d]{64})",@"([a-f\d]{64})"\)/u.exec(source);
+  const packed = packedCall?.[1]; assert.ok(packed !== undefined);
   // oxlint-disable-next-line node/no-sync -- Independently decode the one fixed bounded generation table without invoking any native application code.
   const bytes = gunzipSync(Buffer.from(packed, "base64"));
   const cases = currentFootprintSavedCacheNativeCases(), rows = bytes.toString().split("\0"); assert.equal(rows.length, cases.length);
-  assert.ok(source.includes(createHash("sha256").update(bytes).digest("hex")));
+  assert.equal(packedCall?.[2], String(bytes.length)); assert.ok(bytes.length <= 16_384);
+  assert.equal(packedCall?.[3], createHash("sha256").update(bytes).digest("hex"));
+  assert.equal(packedCall?.[4], createHash("sha256").update(Buffer.from(packed, "base64")).digest("hex"));
   for (const [index, row] of rows.entries()) {
     const [phase, method, names, template] = row.split("\t"), original = cases[index]; assert.ok(original !== undefined && template !== undefined);
     const { cacheNativePhase, ...command } = original;

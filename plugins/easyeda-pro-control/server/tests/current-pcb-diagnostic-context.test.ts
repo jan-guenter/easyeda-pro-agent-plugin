@@ -516,6 +516,24 @@ function ancillaryProject(): CurrentPcbDiagnosticContext {
   context.observeOpeningAncillaryOwner({ backendNodeId: 91 }, { node: SENSOR_NODE });
   return context;
 }
+void test("saved-cache metadata selects only source-qualified original Start Page UI after ancillary owner proof", () => {
+  const expected = { sessionId: "session-1", uniqueContextId: UI_CONTEXT.uniqueId };
+  assert.deepEqual(openingFixture().savedCacheMetadataContext(), expected);
+  assert.deepEqual(ancillaryFixture().savedCacheMetadataContext(), expected);
+  const unproved = ancillaryFixture(false);
+  assert.throws(() => unproved.savedCacheMetadataContext(), /IDENTITY/u);
+  assert.throws(() => { unproved.observeOpeningAncillaryOwner({ backendNodeId: 91 }, { node: SENSOR_NODE }); }, /IDENTITY/u);
+});
+void test("saved-cache metadata never adopts unqualified source, PCB source or an already consumed opening", () => {
+  for (const context of [openingFixture(false), fixture(), staged(), ancillaryProject(), pcbOpeningFixture()]) {
+    assert.throws(() => context.savedCacheMetadataContext(), /IDENTITY/u);
+  }
+  const opening = ancillaryFixture(); opening.beginOpeningTransition(PROJECT_UUID);
+  assert.throws(() => opening.savedCacheMetadataContext(), /IDENTITY/u);
+  const lost = ancillaryFixture();
+  assert.throws(() => { lost.observeEvent(event("Runtime.executionContextDestroyed", { executionContextId: 7 })); }, /INVALIDATED/u);
+  assert.throws(() => lost.savedCacheMetadataContext(), /IDENTITY/u);
+});
 void test("source-shaped original sensor survives project and separate PCB source without becoming editor authority", () => {
   const context = ancillaryFixture(), selected = { sessionId: "session-1", uniqueContextId: UI_CONTEXT.uniqueId };
   assert.equal(context.openingAncillaryFrame(), "sensor-frame"); assert.deepEqual(context.openingContext(), selected);

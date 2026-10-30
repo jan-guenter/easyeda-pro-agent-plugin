@@ -1,16 +1,24 @@
 /** Original synthetic SQLite plans and actual byte/slot preflight. No EasyEDA,
  * native owner, filesystem publication or whole-writer reservation is created. */
+/* oxlint-disable import/max-dependencies -- The actual coordinator boundary uses the real owner, schema, SQL-reader and output modules; a callback stand-in would not exercise its publication and cleanup guards. */
 import assert from "node:assert/strict";
 import { test } from "node:test";
+import { readFile } from "node:fs/promises";
+import { stripTypeScriptTypes } from "node:module";
+import { types } from "node:util";
+import { createContext, runInContext } from "node:vm";
+import { canonicalJson, sha256Text } from "../src/core.ts";
+import { CURRENT_FOOTPRINT_COPY_EXECUTION_LIMITS as LIMITS, currentFootprintCopyExecutionAdvanceSchema, currentFootprintCopyExecutionGenerationSchema } from "../src/current-footprint-copy-execution.ts";
+import { captureCurrentPcbStringClockReply } from "../src/current-pcb-string-clock-reply.ts";
+import { readerCompletion } from "../src/sqlite-inventory.ts";
 import { CurrentFootprintCopyOutputLedger, assertCurrentFootprintCopyOutputHeadroom,
   reserveCurrentFootprintCopyOutput } from "../src/current-footprint-copy-output-reservation.ts";
 import { prepareCurrentFootprintSourcePlan } from "../src/current-footprint-source-plan.ts";
 import { currentFootprintCopyV2Before, prepareCurrentFootprintCopyV2Plan } from "../src/current-footprint-copy-v2-plan.ts";
 import { prepareCurrentFootprintCopyV2SqlPlan } from "../src/current-footprint-copy-v2-sql.ts";
 import { requireCurrentFootprintCopyForwardOutput, reserveCurrentFootprintCopyForwardOutput } from "../src/current-footprint-copy-forward-capacity.ts";
-import { CurrentFootprintCopyExecutionCoordinator, CurrentFootprintCopyExecutionOwner } from "../src/current-footprint-copy-execution-runtime.ts";
-import type { CurrentFootprintCopyExecutionNative } from "../src/current-footprint-copy-execution-runtime.ts";
-import { CurrentFootprintCopyTransactionClockEvents } from "../src/current-footprint-copy-transaction-clock-events.ts";
+import type { CurrentFootprintCopyExecutionCoordinator, CurrentFootprintCopyExecutionNative } from "../src/current-footprint-copy-execution-runtime.ts";
+import { CurrentFootprintCopyPairedScheduler } from "../src/current-footprint-copy-paired-scheduler.ts";
 import { IDS, WITNESS, encrypted, fixture, inventory, mutate } from "./helpers/symbol-sql-fixture.ts";
 
 const SOURCE = { projectUuid: IDS.project, branchUuid: IDS.branch, footprintUuid: IDS.target };
@@ -110,23 +118,35 @@ void test("UTF8 size and failed output consume publication once without invoking
   assert.equal(ledger.status().retained, 0); assert.equal(ledger.status().failed, true);
 });
 
+/** Earlier qualification is synthetic setup. The actual coordinator still owns
+ * close-intent publication, output refusal and independently retained cleanup. */
+async function closeBoundary(native: CurrentFootprintCopyExecutionNative, output: CurrentFootprintCopyOutputLedger): Promise<CurrentFootprintCopyExecutionCoordinator> {
+  let program = stripTypeScriptTypes(await readFile(new URL("../src/current-footprint-copy-execution-runtime.ts", import.meta.url), "utf8"))
+    .replaceAll(/^import[\s\S]*?;\n/gmu, "").replaceAll(/\bexport (?=(?:async )?(?:function|const|class))/gu, "")
+    .replaceAll(/(#(?:phase|output)) +(?==)/gu, "$1 ");
+  for (const [original, replacement] of [['#phase = "prepare"', '#phase = "close-writer"'], ["#output = null", "#output = output"]]) {
+    assert.ok(original !== undefined && replacement !== undefined); assert.equal(program.split(original).length, 2);
+    program = program.replace(original, replacement);
+  }
+  const scope = createContext({ types, Object, Reflect, Error, AggregateError, Buffer, process, canonicalJson, sha256Text,
+    LIMITS, currentFootprintCopyExecutionAdvanceSchema, currentFootprintCopyExecutionGenerationSchema,
+    CurrentFootprintCopyPairedScheduler, captureCurrentPcbStringClockReply, readerCompletion, native, output });
+  const loaded: unknown = runInContext(`${program}\nnew CurrentFootprintCopyExecutionCoordinator(new CurrentFootprintCopyExecutionOwner(native))`, scope);
+  assert.ok(loaded !== null && typeof loaded === "object");
+  // oxlint-disable-next-line typescript/no-unsafe-type-assertion -- The maintained coordinator runs with only the explicitly synthetic prior-phase setup above; no native qualification or dispatch is claimed.
+  return loaded as CurrentFootprintCopyExecutionCoordinator;
+}
 void test("actual coordinator callbacks charge publication before sending and retain cleanup after output refusal", async () => {
-  const { copy } = await plans(), before = currentFootprintCopyV2Before(copy), terminated = Object.freeze({});
-  const clocks = new CurrentFootprintCopyTransactionClockEvents(Object.freeze({ scriptId: "script", managerObjectId: "manager",
-    lexicalBundleObjectId: "lexicals", workerSessionId: "worker", assertOriginal: (): Promise<void> => Promise.resolve(),
-    assertCleanup: (): void => { assert.ok(true); }, assertOriginalTermination: (): Promise<void> => Promise.resolve(),
-    request: (): Promise<unknown> => Promise.reject(new Error("synthetic arm stop")),
-    subscribe: (): (() => void) => (): void => { assert.ok(true); },
-  }));
-  const published: string[] = [], qualification = Object.freeze({ copyPlan: copy, witness: SQL_WITNESS, clocks });
-  let closes = 0, creates = 0, releases = 0;
+  const { copy, sql } = await plans(), before = currentFootprintCopyV2Before(copy), terminated = Object.freeze({});
+  const output = new CurrentFootprintCopyOutputLedger(reserveCurrentFootprintCopyOutput(copy, sql));
+  const published: string[] = []; let closes = 0, releases = 0;
   const native: CurrentFootprintCopyExecutionNative = Object.freeze({
     generation: Object.freeze({ profile: "private.current-footprint-copy-execution-generation.v1",
       purpose: "worker-startup-footprint-copy209", operationId: "footprint-copy-output-synthetic", bindingSha256: "a".repeat(64) }),
-    nativeGeneration: Object.freeze({}), assertOwned: (): void => { assert.ok(true); }, qualify: () => Promise.resolve(qualification),
-    requireQualification: (original: object) => { assert.equal(original, qualification); return Promise.resolve(); },
+    nativeGeneration: Object.freeze({}), assertOwned: (): void => { assert.ok(true); },
+    qualify: () => Promise.reject(new Error("writer already stopped at synthetic boundary")),
+    requireQualification: () => Promise.reject(new Error("no qualification at synthetic boundary")),
     publish: (phase: string) => { published.push(phase); return Promise.resolve(); },
-    create: () => { creates += 1; return Promise.reject(new Error("create must not execute")); },
     close: () => { closes += 1; return Promise.resolve("x".repeat(262_144)); },
     termination: () => Promise.resolve({ status: "terminated", original: terminated } as const),
     requireTermination: (original: object) => { assert.equal(original, terminated); return Promise.resolve(); },
@@ -136,15 +156,14 @@ void test("actual coordinator callbacks charge publication before sending and re
     observeRelease: () => Promise.resolve("released" as const),
     verification: (): never => { throw new Error("failed work must not allocate verification"); },
   });
-  const runner = new CurrentFootprintCopyExecutionCoordinator(new CurrentFootprintCopyExecutionOwner(native));
-  await assert.rejects(runner.advance({ expectedPhase: "prepare" }), /synthetic arm stop/u);
-  assert.deepEqual(published, ["prepared"]); assert.equal(runner.status().output?.retained, 1);
+  const runner = await closeBoundary(native, output);
   await assert.rejects(runner.advance({ expectedPhase: "close-writer" }), /SLOT_BYTES/u);
-  assert.deepEqual(published, ["prepared", "clock-cleanup-failed", "writer-close-intent"]);
+  assert.deepEqual(published, ["writer-close-intent"]);
   assert.equal(runner.status().output?.failed, true); assert.equal(closes, 1);
+  assert.equal(runner.status().output?.retained, 1);
   await runner.advance({ expectedPhase: "observe-writer-exit" });
   await runner.advance({ expectedPhase: "release-writer" });
   assert.equal(published.at(-1), "writer-closed-without-continuation");
   assert.equal(runner.status().phase, "failed-closed"); assert.equal(runner.status().cleanupPending, false);
-  assert.equal(runner.status().output?.failed, true); assert.equal(creates, 0); assert.equal(closes, 1); assert.equal(releases, 1);
+  assert.equal(runner.status().output?.failed, true); assert.equal(closes, 1); assert.equal(releases, 1);
 });

@@ -6,6 +6,7 @@ import { CURRENT_FOOTPRINT_COPY_CREATE_METHOD_CALLS as CALLS, CURRENT_FOOTPRINT_
   CURRENT_FOOTPRINT_COPY_CREATE_METHOD_PROFILES as PROFILES,
   decodeCurrentFootprintCopyCreateMethodArray, decodeCurrentFootprintCopyCreateMethodProperties } from "../src/current-footprint-copy-create-bindings.ts";
 import { FOOTPRINT_CREATE_SOURCE_FIXTURE as SOURCE } from "./helpers/current-footprint-copy-create-source-fixture.ts";
+import { CURRENT_FOOTPRINT_COPY_ASYNC_CALLS as ASYNC } from "../src/current-footprint-copy-async-bindings.ts";
 
 type Data = Record<string, unknown>;
 const property = (name: string, value: Data, writable = false, enumerable = false, configurable = true):
@@ -56,12 +57,19 @@ void test("create method capture retains eight original callable objects without
 
 function create(context: vm.Context, argumentExpression = "JSON.stringify(argument)"): Promise<unknown> {
   // oxlint-disable-next-line typescript/no-unsafe-type-assertion -- This exact embedded async program always returns a Promise; the synthetic VM supplies no external execution owner.
-  return vm.runInContext(`(${CREATE.program}).call(PROJECT,bus,manager,consistency,constructors,methods,PROJECT.uuid,${argumentExpression})`, context) as Promise<unknown>;
+  return vm.runInContext(`(${CREATE.program}).call(PROJECT,bus,manager,consistency,constructors,methods,PROJECT.uuid,${argumentExpression},prewriteScope,prewriteOriginal,prewriteUpload)`, context) as Promise<unknown>;
 }
 function createFixture(body: string): vm.Context {
   const context = fixture(body);
   vm.runInContext(`PROJECT.uuid="${"1".repeat(64)}";const argument={uuid:"${"a".repeat(16)}",path:PROJECT.uuid,isProject:true,docType:4,
-title:"Copy",display_title:"Copy",description:"",custom_tags:"[]",source:"",version:""};`, context);
+title:"Copy",display_title:"Copy",description:"",custom_tags:"[]",source:"",version:""};
+consistency.headCbArr=[()=>{}];consistency.cbArr=[()=>{}];consistency.getCache=()=>{};PROJECT.bufferedUploadCloud=()=>{};
+for(const key of ['task1','task2','task3','cachePromise'])PROJECT[key]=new Set;
+for(const key of ['bufferUploadData','bufferUploadCache'])PROJECT[key]=new Map;
+PROJECT.localCache={};PROJECT.cache={};PROJECT.isUploadingCloud=false;PROJECT.isBatchUpload=false;PROJECT.pendingSyncCloud=false;
+const prewriteBindings={a:PROJECT,s:500,t:()=>{},c:()=>{},o:()=>{},r:null,i:null,n:null},prewriteScope={object:prewriteBindings};
+const prewriteOriginal=(${ASYNC.capture.program}).call(PROJECT,bus,manager,consistency);
+const prewriteUpload=(${ASYNC.captureUpload.program}).call(prewriteScope,PROJECT,bus,manager,consistency);`, context);
   capture(context); return context;
 }
 void test("fixed native create passes only its one argument and preserves the complete bounded JSON result", async () => {
@@ -69,6 +77,44 @@ void test("fixed native create passes only its one argument and preserves the co
   vm.runInContext("globalThis.expected=JSON.stringify(argument)", context);
   assert.equal(await create(context), '{"success":true,"result":{"creator":{},"value":"Ω","nested":[1,null]}}');
   assert.equal(vm.runInContext("calls", context), 1);
+});
+void test("fixed invocation rejects changed original callbacks and nonempty source-derived queues before create", async () => {
+  const changes = [
+    ...["task1", "task2", "task3", "cachePromise"].map(key => `PROJECT.${key}.add({})`),
+    ...["bufferUploadData", "bufferUploadCache"].map(key => `PROJECT.${key}.set('pending',{})`),
+    ...["isUploadingCloud", "isBatchUpload", "pendingSyncCloud"].map(key => `PROJECT.${key}=true`),
+    "prewriteBindings.r=1", "prewriteBindings.i=Promise.resolve()", "prewriteBindings.n=()=>{calls++}",
+    "prewriteBindings.a={}", "prewriteBindings.s=499", "prewriteBindings.t=()=>{calls++}",
+    "consistency.headCbArr[0]=()=>{calls++}", "consistency.cbArr[0]=()=>{calls++}",
+    "PROJECT.bufferedUploadCloud=()=>{calls++}", "PROJECT.task1=new Set", "PROJECT.localCache={}",
+  ];
+  for (const change of changes) {
+    const context = createFixture("calls++;return {success:true};"); vm.runInContext(change, context);
+    await assert.rejects(create(context), /FOOTPRINT_COPY_ASYNC_BINDING/u); assert.equal(vm.runInContext("calls", context), 0, change);
+  }
+});
+void test("synchronous queue guard avoids size getters and rejects shadow accessors, replaced proxies and fake collection receivers", async () => {
+  const untouched = createFixture("calls++;return {success:true};");
+  vm.runInContext("for(const p of [Map.prototype,Set.prototype])Object.defineProperty(p,'size',{get(){calls+=10;throw Error('size getter')}})", untouched);
+  assert.equal(await create(untouched), '{"success":true}'); assert.equal(vm.runInContext("calls", untouched), 1);
+  for (const change of [
+    "Object.defineProperty(PROJECT,'isUploadingCloud',{get(){calls++;throw Error('flag getter')}})",
+    "Object.defineProperty(Map.prototype,'forEach',{get(){calls++;throw Error('method getter')}})",
+    "PROJECT.task1=new Proxy(PROJECT.task1,{getPrototypeOf(){calls++;throw Error('proxy trap')}})",
+    "PROJECT.task1=prewriteOriginal[6]=Object.create(Set.prototype)",
+  ]) {
+    const context = createFixture("calls++;return {success:true};"); vm.runInContext(change, context);
+    await assert.rejects(create(context)); assert.equal(vm.runInContext("calls", context), 0, change);
+  }
+});
+void test("synchronous queue guard rejects native array enumeration substituted for a collection method", async () => {
+  for (const change of [
+    "PROJECT.task1.add({});Set.prototype.forEach=Array.prototype.forEach",
+    "PROJECT.bufferUploadData.set('pending',{});Map.prototype.forEach=Array.prototype.forEach",
+  ]) {
+    const context = createFixture("calls++;return {success:true};"); vm.runInContext(change, context);
+    await assert.rejects(create(context), /FOOTPRINT_COPY_ASYNC_BINDING/u); assert.equal(vm.runInContext("calls", context), 0, change);
+  }
 });
 void test("fixed native create refuses changed receivers and argument accessors before its sole native invocation", async () => {
   for (const change of ["methods[0]=methods[1]", "PROJECT.uuid='wrong'", "argument.path='wrong'", "argument.isProject=false",

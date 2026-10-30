@@ -67,6 +67,16 @@ export function requireCurrentFootprintCopyMainRequestReservation(token: Current
   const original = originals.get(token); need(original !== undefined && !original.consumed, "ORIGINAL_RESERVATION");
   currentFootprintCopyV2Rows(original.copy); return original.maximum;
 }
+/** The execution coordinator must use the exact original copy and clock
+ * window reserved before main arming. This remains a data-identity check;
+ * native purpose and allocation custody are independently required. */
+export function requireCurrentFootprintCopyMainRequestReservationCopy(token: CurrentFootprintCopyMainRequestReservation,
+  copy: CurrentFootprintCopyV2Plan, minimum: number, maximum: number): void {
+  const original = originals.get(token);
+  need(original !== undefined && original.copy === copy && original.window.minimum === minimum && original.window.maximum === maximum,
+    "ORIGINAL_EXECUTION_COPY");
+  currentFootprintCopyV2Rows(copy);
+}
 /** Consumed before the first owner await. Only the actual paired runner's
  * original packet and origin can bind clocks. This derives request bytes; it
  * does not qualify the UUID allocator, source queues or any writer purpose. */

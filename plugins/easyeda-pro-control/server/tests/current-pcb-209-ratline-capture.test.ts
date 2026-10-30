@@ -6,7 +6,19 @@ import { ratlineCaptureFixtureSource } from "./helpers/current-pcb-209-ratline-c
 import { ratlineCaptureInspector } from "./helpers/current-pcb-209-ratline-capture-inspector.ts";
 
 void test("fixed209 inert capture fixture reports child exit before inspector address instead of waiting indefinitely", async context => {
-  await assert.rejects(ratlineCaptureInspector(context, "pcb", 0, false, true), /RATLINE_FIXTURE_CHILD_EXIT/u);
+  const diagnostic = Promise.withResolvers<string>();
+  await assert.rejects(ratlineCaptureInspector({ after: context.after.bind(context), diagnostic: (message): void => { diagnostic.resolve(message); } }, "pcb", 0, false, true), /RATLINE_FIXTURE_CHILD_EXIT/u);
+  const text = await diagnostic.promise;
+  // oxlint-disable-next-line eslint/no-control-regex -- The regression rejects literal terminal controls in diagnostic console output.
+  assert.equal(/[\u0000-\u001F\u007F-\u009F\u2028\u2029]/u.test(text), false);
+  const value: unknown = JSON.parse(text);
+  assert.ok(value !== null && typeof value === "object" && "role" in value && "childPid" in value && "childExitCode" in value &&
+    "childStderr" in value && "childStderrTruncated" in value && "initialFailurePending" in value && "pendingRequestCount" in value);
+  assert.equal(value.role, "pcb"); assert.ok(Number.isSafeInteger(value.childPid)); assert.equal(value.childExitCode, 0);
+  assert.equal(value.pendingRequestCount, 0);
+  assert.deepEqual(value.initialFailurePending, { pendingRequestCount: 0, pendingMethods: [], pendingMethodsTruncated: false });
+  assert.ok(typeof value.childStderr === "string"); assert.ok(Buffer.byteLength(value.childStderr) <= 32_768);
+  assert.equal(value.childStderr, ""); assert.equal(value.childStderrTruncated, false);
 });
 
 for (const role of ["pcb", "worker"] as const) {

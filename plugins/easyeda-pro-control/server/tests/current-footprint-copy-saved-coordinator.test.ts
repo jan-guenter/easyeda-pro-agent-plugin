@@ -14,7 +14,7 @@ import { CURRENT_FOOTPRINT_COPY_EXECUTION_LIMITS as LIMITS, currentFootprintCopy
   currentFootprintCopyExecutionGenerationSchema } from "../src/current-footprint-copy-execution.ts";
 import type { CurrentFootprintCopyExecutionCoordinator, CurrentFootprintCopyExecutionNative,
   CurrentFootprintCopySavedExecutionNative, CurrentFootprintCopySavedStartOutcome } from "../src/current-footprint-copy-execution-runtime.ts";
-import { CurrentFootprintCopyTransactionClockEvents } from "../src/current-footprint-copy-transaction-clock-events.ts";
+import { CurrentFootprintCopyPairedScheduler } from "../src/current-footprint-copy-paired-scheduler.ts";
 import { captureCurrentPcbStringClockReply } from "../src/current-pcb-string-clock-reply.ts";
 import { readerCompletion } from "../src/sqlite-inventory.ts";
 import { CurrentFootprintCopyOutputLedger, reserveCurrentFootprintCopyOutput } from "../src/current-footprint-copy-output-reservation.ts";
@@ -53,7 +53,7 @@ async function fixture(options: Readonly<{ outcome: CurrentFootprintCopySavedSta
       if (phase === "verification-start-intent" && options.expireBeforeStart === true) { now = BigInt(LIMITS.milliseconds) * 1_000_000n; }
       if (phase === "verification-start-intent" && options.intentFails === true) { return Promise.reject(new Error("start intent unavailable")); }
       return phase === "verification-not-allocated" && options.journalFails === true ? Promise.reject(new Error("journal unavailable")) : Promise.resolve();
-    }, create: unavailable, close: unavailable, termination: unavailable, requireTermination: unavailable, snapshot: unavailable,
+    }, close: unavailable, termination: unavailable, requireTermination: unavailable, snapshot: unavailable,
     verifyClockClosure: unavailable, release: unavailable, observeRelease: unavailable,
     verification: (): CurrentFootprintCopySavedExecutionNative => { calls.push("allocate-binding"); return saved; },
   });
@@ -73,7 +73,7 @@ async function fixture(options: Readonly<{ outcome: CurrentFootprintCopySavedSta
   const scope = createContext({ types, Object, Reflect, Error, AggregateError, Buffer,
     process: { hrtime: { bigint: (): bigint => now } }, canonicalJson, sha256Text,
     LIMITS, currentFootprintCopyExecutionAdvanceSchema, currentFootprintCopyExecutionGenerationSchema,
-    CurrentFootprintCopyTransactionClockEvents, captureCurrentPcbStringClockReply, compareCompleteClosedSql,
+    CurrentFootprintCopyPairedScheduler, captureCurrentPcbStringClockReply, compareCompleteClosedSql,
     readerCompletion, native, input, output });
   const loaded: unknown = runInContext(`${program}\nnew CurrentFootprintCopyExecutionCoordinator(new CurrentFootprintCopyExecutionOwner(native))`, scope);
   assert.ok(loaded !== null && typeof loaded === "object");

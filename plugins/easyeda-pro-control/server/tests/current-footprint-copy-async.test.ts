@@ -66,10 +66,14 @@ void test("async collector qualifies seven callback sources and observes17 reads
   for (const upload of [false, true]) { assert.equal(decodeCurrentFootprintCopyAsyncArray(arrayReply(upload), upload).length, upload ? 3 : 4); }
   for (const index of PROFILES.keys()) { decodeCurrentFootprintCopyAsyncFunction(metadata(index), "script", index); }
   const fixture = owner(), packet = await fixture.runner.observe(); currentFootprintCopyAsyncObservationSchema.parse(packet);
+  const prewrite = fixture.runner.prewriteHandles(packet);
+  assert.deepEqual(prewrite, ["scope-0", "original", "upload"]); assert.equal(Object.isFrozen(prewrite), true);
+  assert.throws(() => fixture.runner.prewriteHandles({ ...packet }));
   assert.equal(fixture.calls.length, 17); assert.equal(packet.trackedQueuesEmptyAtSamples, true); assert.equal(packet.callbacksCompleted, false);
   assert.equal(packet.parserArrowReceiversVerified, false); assert.equal(packet.untrackedUploadCacheCleanupComplete, false);
   await assert.rejects(fixture.runner.requireOriginal({ ...packet })); assert.equal(fixture.calls.length, 17);
   await fixture.runner.requireOriginal(packet); assert.equal(fixture.calls.length, 21);
+  assert.equal(fixture.runner.prewriteHandles(packet), prewrite); assert.equal(fixture.calls.length, 21);
   await assert.rejects(fixture.runner.observe()); await assert.rejects(fixture.runner.requireOriginal(packet));
 });
 void test("async collector retains arrived replies across owner loss and never retries a consumed unstable snapshot", async () => {

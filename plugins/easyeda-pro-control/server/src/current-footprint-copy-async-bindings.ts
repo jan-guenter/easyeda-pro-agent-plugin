@@ -32,6 +32,26 @@ cachePromises:size(own(project,"cachePromise"),Set.prototype),bufferedUploads:si
 uploading:flag("isUploadingCloud"),batchUploading:flag("isBatchUpload"),pendingSync:flag("pendingSyncCloud")};
 verify();return result;`;
 
+/** Fixed synchronous pre-invocation check over the original observer's handles.
+ * Each selected enumerator first proves its collection brand using a fresh
+ * nonempty collection and a wrong receiver, then rejects on the first original
+ * queue entry. These calls use only fixed local callbacks, never an element or
+ * a caller callback; no size getter or user-supplied iterator is consulted. */
+export const CURRENT_FOOTPRINT_COPY_ASYNC_PREWRITE_GUARD = `function(project,bus,manager,consistency,original,upload){${helpers}
+array(original,14);array(upload,3);identity();
+if(own(consistency,"headCbArr")!==own(original,"4")||own(consistency,"cbArr")!==own(original,"5")||own(project,"bufferedUploadCloud")!==own(original,"2")||own(consistency,"getCache")!==own(original,"3"))bad();
+for(const[key,index]of [["task1",6],["task2",7],["task3",8],["cachePromise",9],["bufferUploadData",10],["bufferUploadCache",11],["localCache",12],["cache",13]])if(own(project,key)!==own(original,String(index)))bad();
+${closure}
+const heads=own(original,"4"),changes=own(original,"5");array(heads,1);array(changes,1);if(own(heads,"0")!==own(original,"0")||own(changes,"0")!==own(original,"1"))bad();
+for(let i=4;i<14;i++)for(let j=4;j<i;j++)if(own(original,String(i))===own(original,String(j)))bad();
+same(upload,callbacks);if(own(bindings,"r")!==null||own(bindings,"i")!==null||own(bindings,"n")!==null)bad();
+const formatter=own(Function.prototype,"toString"),reject=()=>bad();
+const intrinsic=(name)=>{const constructor=own(globalThis,name),p=own(constructor,"prototype"),fn=own(p,"forEach"),method=name==="Set"?"add":"set",insert=own(p,method);if(typeof constructor!=="function"||typeof formatter!=="function"||typeof fn!=="function"||typeof insert!=="function"||own(fn,"name")!=="forEach"||own(fn,"length")!==1||own(insert,"name")!==method||own(insert,"length")!==(name==="Set"?1:2)||Reflect.apply(formatter,constructor,[])!=="function "+name+"() { [native code] }"||Reflect.apply(formatter,fn,[])!=="function forEach() { [native code] }"||Reflect.apply(formatter,insert,[])!=="function "+method+"() { [native code] }")bad();
+const probe=Reflect.construct(constructor,[]),key={},value={};if(Object.getPrototypeOf(probe)!==p||Reflect.ownKeys(probe).length!==0)bad();Object.setPrototypeOf(probe,null);if(Reflect.apply(insert,probe,name==="Set"?[value]:[key,value])!==probe)bad();let count=0;Reflect.apply(fn,probe,[function(v,k,receiver){if(arguments.length!==3||v!==value||k!==(name==="Set"?value:key)||receiver!==probe||++count!==1)bad();}]);if(count!==1)bad();let branded=false;try{Reflect.apply(fn,Object.create(null),[reject]);}catch{branded=true;}if(!branded)bad();return[p,fn];};
+const sets=intrinsic("Set"),maps=intrinsic("Map");
+for(const[key,native]of [["task1",sets],["task2",sets],["task3",sets],["cachePromise",sets],["bufferUploadData",maps],["bufferUploadCache",maps]]){const value=own(project,key);if(Object.getPrototypeOf(value)!==native[0]||Reflect.ownKeys(value).length!==0)bad();Reflect.apply(native[1],value,[reject]);}
+for(const key of ["isUploadingCloud","isBatchUpload","pendingSyncCloud"])if(own(project,key)!==false)bad();verify();return true;}`;
+
 /** The enclosing original worker owner supplies these handles. No caller code
  * or native method name is a parameter in any selector. */
 export const CURRENT_FOOTPRINT_COPY_ASYNC_CALLS = freezeDeep({

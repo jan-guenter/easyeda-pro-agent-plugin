@@ -19,7 +19,6 @@ function fixture(options: Readonly<{ lostClose?: boolean; lostRelease?: boolean;
     qualify: () => Promise.reject(new Error("qualification unavailable")),
     requireQualification: () => Promise.reject(new Error("no original qualification")),
     publish: () => Promise.resolve(),
-    create: () => { counts.create += 1; return Promise.reject(new Error("create must not execute")); },
     close: () => { counts.close += 1; return options.lostClose === true ? Promise.reject(new Error("close reply lost")) : Promise.resolve({ closed: false }); },
     termination: () => Promise.resolve({ status: "terminated", original: terminated } as const),
     requireTermination: (original: object) => { assert.equal(original, terminated); return Promise.resolve(); },
