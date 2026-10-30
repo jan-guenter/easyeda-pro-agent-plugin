@@ -8,6 +8,7 @@ export interface CurrentFootprintCopyCreateInvocationBinding {
   readonly clockLease: CurrentFootprintCopyClockRpcConstructionLease;
   readonly projectObjectId: string;
   readonly handles: readonly [string, string, string, string, string];
+  readonly prewriteHandles: readonly [string, string, string];
   readonly assertOriginal: () => Promise<void>;
   readonly assertCleanup: () => void;
   readonly consumeBeforeInvocation: () => void;

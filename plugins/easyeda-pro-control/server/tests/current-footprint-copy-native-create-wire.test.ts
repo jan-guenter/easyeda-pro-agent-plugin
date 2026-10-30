@@ -21,7 +21,8 @@ function sample(): { method: string; sessionId: string; params: Record<string, u
 function complete(): ReturnType<typeof sample> {
   const command = sample(); command.params.arguments = [...command.params.arguments,
     { value: "1".repeat(64) }, { value: JSON.stringify({ uuid: "a".repeat(16), path: "1".repeat(64), isProject: true, docType: 4,
-      title: "Copy", display_title: "Copy", description: "Ω ".repeat(5000), custom_tags: '["x"]', source: "", version: "" }) }];
+      title: "Copy", display_title: "Copy", description: "Ω ".repeat(5000), custom_tags: '["x"]', source: "", version: "" }) },
+    ...["prewrite-scope", "prewrite-original", "prewrite-upload"].map(objectId => ({ objectId }))];
   return command;
 }
 void test("separate fixed create grammar accepts exact data only and remains excluded from preparation and route owners", () => {
@@ -41,13 +42,16 @@ void test("separate fixed create grammar accepts exact data only and remains exc
 });
 void test("native create packed template matches the immutable command and retains native bounds and original-session selection", () => {
   const source = currentFootprintCopyNativeCreateNativeSource();
-  const encoded = /FromBase64String\("([A-Za-z\d+/=]+)"\)/u.exec(source)?.[1];
+  const packed = /EasyedaDiagnosticOwner\.UnpackFixedProgram\("([A-Za-z\d+/=]+)",(\d+),"([a-f\d]{64})","([a-f\d]{64})"\)/u.exec(source);
+  const encoded = packed?.[1];
   assert.ok(encoded !== undefined);
   // oxlint-disable-next-line node/no-sync -- This bounded in-memory fixed template is synthetic encoding evidence only.
   const bytes = gunzipSync(Buffer.from(encoded, "base64"));
   assert.equal(bytes.toString(), currentFootprintCopyNativeCreateTemplate());
-  assert.ok(source.includes(createHash("sha256").update(bytes).digest("hex")));
-  assert.ok(source.includes("stream.ReadByte()==-1")); assert.ok(source.includes("fields.Count==8"));
+  assert.equal(packed?.[2], String(bytes.length)); assert.ok(bytes.length <= 16_384);
+  assert.equal(packed?.[3], createHash("sha256").update(bytes).digest("hex"));
+  assert.equal(packed?.[4], createHash("sha256").update(Buffer.from(encoded, "base64")).digest("hex"));
+  assert.ok(source.includes("fields.Count==11"));
   assert.ok(source.includes('Field("sessionId",originalWorkerSession)')); assert.ok(source.includes("<=81920"));
 });
 void test("native create smoke uses ASCII C# literals while preserving its exact Unicode argument bytes", () => {

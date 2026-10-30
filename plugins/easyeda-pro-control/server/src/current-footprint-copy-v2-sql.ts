@@ -64,6 +64,7 @@ export interface CurrentFootprintCopyV2SqlSource {
   /** Actual decoded closed-history pair. These values alone carry no native
    * clock provenance; an original execution collector must bind them. */
   readonly documentClocks: readonly [number, number];
+  readonly projectUpdatedAtLiteral: string;
 }
 const completedEffects = new WeakMap<object, Readonly<{ plan: CurrentFootprintCopyV2SqlPlan; after: Inventory; source: CurrentFootprintCopyV2SqlSource }>>();
 function need(condition: boolean, message: string): asserts condition { if (!condition) { throw new Error(`Current footprint copy-v2 SQL: ${message}`); } }
@@ -377,7 +378,7 @@ export async function verifyCurrentFootprintCopyV2SqlEffect(plan: CurrentFootpri
     newHistoryId: prepared.historyId.toString(), newChunkId: prepared.chunkId.toString(),
     expectedTicket: plan.expectedTicket, expectedStructureRequests: 0, executionAuthorized: false, producerBindingVerified: false,
     structureRowsUnchanged: true, completionProved: false, generationClosureVerified: false, persistentUploadReplayExcluded: false, reopened: false });
-  const source = Object.freeze({ copyPlan: copy, append, documentClocks: Object.freeze([first, second] as const) });
+  const source = Object.freeze({ copyPlan: copy, append, documentClocks: Object.freeze([first, second] as const), projectUpdatedAtLiteral: projectTime });
   completedEffects.set(effect, Object.freeze({ plan, after, source }));
   return effect;
 }

@@ -69,6 +69,7 @@ export class CurrentFootprintCopyAsyncRunner {
   #originalId: string | null = null;
   #uploadId: string | null = null;
   #bufferedId: string | null = null;
+  #prewrite: readonly [string, string, string] | null = null;
   #packet: CurrentFootprintCopyAsyncObservation | null = null;
   public constructor(transport: CurrentFootprintCopyAsyncTransport, scriptId: string) {
     this.#transport = transport; this.#methods = methods(transport); this.#scriptId = token.parse(scriptId);
@@ -110,6 +111,8 @@ export class CurrentFootprintCopyAsyncRunner {
       yes.parse(await this.#request(() => this.#transport.recheck(original)));
       const second = await this.#sample(freshScope);
       need(this.#requests === CURRENT_FOOTPRINT_COPY_ASYNC_REQUESTS.observe && JSON.stringify(first) === JSON.stringify(second));
+      need(this.#originalId !== null && this.#uploadId !== null);
+      this.#prewrite = Object.freeze([freshScope, this.#originalId, this.#uploadId]);
       this.#packet = Object.freeze({ profile: "private.current-footprint-copy-async.v1", sourceQualifiedCallbacks: 7, parserHeadSubscribers: 1, parserChangeSubscribers: 1,
         originalCallbackIdentitiesRetained: true, bufferedClosureProjectMatched: true, coherentSnapshots: 2, snapshot: second,
         trackedQueuesEmptyAtSamples: Object.values(second).every(value => value === false || value === 0), ...limits }); return this.#packet;
@@ -124,6 +127,13 @@ export class CurrentFootprintCopyAsyncRunner {
       yes.parse(await this.#request(() => this.#transport.recheck(original)));
       need(JSON.stringify(await this.#sample(scope)) === JSON.stringify(packet.snapshot)); this.#current();
     } catch (error) { this.#failed = true; throw error; }
+  }
+  /** The construction issuer joins these existing remote references to its
+   * create lease. They are not a stand-alone qualification or writer token. */
+  public prewriteHandles(packet: CurrentFootprintCopyAsyncObservation): readonly [string, string, string] {
+    need(packet === this.#packet && !this.#failed && this.#prewrite !== null);
+    this.#current();
+    return this.#prewrite;
   }
   public retained(): Readonly<{ attempted: boolean; failed: boolean; completed: boolean; requests: number; reproofAttempted: boolean; replies: readonly unknown[] }> {
     return Object.freeze({ attempted: this.#attempted, failed: this.#failed, completed: this.#packet !== null, requests: this.#requests,

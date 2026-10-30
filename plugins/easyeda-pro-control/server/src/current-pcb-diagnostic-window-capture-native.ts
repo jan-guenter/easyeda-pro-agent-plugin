@@ -9,7 +9,7 @@ export const CURRENT_WINDOW_CAPTURE_NATIVE_MEMBERS = String.raw`
     public int xResolution,yResolution;public uint colors,important,color;
   }
   [DllImport("user32.dll",SetLastError=true,EntryPoint="SendMessageTimeoutW")] static extern IntPtr WcSendMessageTimeout(IntPtr hwnd,uint message,IntPtr wparam,IntPtr lparam,uint flags,uint milliseconds,out UIntPtr result);
-  [DllImport("user32.dll")] static extern bool WcGetWindowRect(IntPtr hwnd,out WcRect bounds);
+  [DllImport("user32.dll",EntryPoint="GetWindowRect",ExactSpelling=true,SetLastError=true)] static extern bool WcGetWindowRect(IntPtr hwnd,out WcRect bounds);
   [DllImport("user32.dll")] static extern bool EnumChildWindows(IntPtr hwnd,WindowCallback callback,IntPtr argument);
   [DllImport("gdi32.dll")] static extern IntPtr CreateCompatibleDC(IntPtr source);
   [DllImport("gdi32.dll")] static extern IntPtr CreateDIBSection(IntPtr dc,ref WcBitmapInfo info,uint usage,out IntPtr bits,IntPtr section,uint offset);
@@ -204,6 +204,8 @@ export const CURRENT_WINDOW_CAPTURE_NATIVE_MEMBERS = String.raw`
     if(!windowCaptureSurface.Release())throw Error("window-capture-gdi-release");windowCaptureSurface=null;
   }
   public static void VerifyWindowCaptureSmoke() {
+    // Resolve the renamed import on Windows without observing or controlling a window.
+    if(Environment.OSVersion.Platform==PlatformID.Win32NT){WcRect invalid;if(WcGetWindowRect(IntPtr.Zero,out invalid))throw Error("window-capture-invalid-handle-smoke");}
     EasyedaDiagnosticOwner oldRestore=new EasyedaDiagnosticOwner();bool restoreRefused=false;
     try{oldRestore.RestoreWindowForCapture();}catch(InvalidOperationException){restoreRefused=true;}
     if(!restoreRefused||oldRestore.windowRestoreAttempted)throw Error("window-restore-purpose-smoke");

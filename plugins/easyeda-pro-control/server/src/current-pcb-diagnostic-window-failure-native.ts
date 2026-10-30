@@ -18,6 +18,7 @@ export function currentWindowFailurePowerShell(): string {
               switch -CaseSensitive ($fault.GetType().Name) {
                 'OutOfMemoryException' {$label='allocation-failed'}
                 'OverflowException' {$label='arithmetic-overflow'}
+                'EntryPointNotFoundException' {$label='native-entry-point-unavailable'}
                 'NotSupportedException' {if ($stage -ceq 'encoding') {$label='encoding-capacity'}}
                 'IOException' {if ($stage -ceq 'encoding') {$label='encoding-io'}}
               }

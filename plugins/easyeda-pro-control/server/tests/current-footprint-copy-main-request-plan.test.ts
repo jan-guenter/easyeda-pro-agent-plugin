@@ -9,6 +9,7 @@ import { runInThisContext } from "node:vm";
 import { transform } from "esbuild";
 import { assertCurrentFootprintCopyMainRequestPlanWire, bindCurrentFootprintCopyMainRequestPlan,
   isCurrentFootprintCopyMainRequestReservation, requireCurrentFootprintCopyMainRequestReservation,
+  requireCurrentFootprintCopyMainRequestReservationCopy,
   reserveCurrentFootprintCopyMainRequestPlan } from "../src/current-footprint-copy-main-request-plan.ts";
 import type { CurrentFootprintCopyClockRpcOrigin } from "../src/current-footprint-copy-clock-rpc-origin.ts";
 import type { CurrentFootprintCopyClockRpcObservation } from "../src/current-footprint-copy-clock-rpc-runner.ts";
@@ -22,7 +23,8 @@ import { IDS, encrypted, fixture, inventory, mutate } from "./helpers/symbol-sql
 const CLIENT = "a".repeat(16), CLOCK = 1_700_000_000_123, PROJECT = "1".repeat(64), TARGET = "e".repeat(16);
 const ACTOR = { uuid: IDS.actor, username: "synthetic-user", nickname: "Synthetic" };
 const real = Object.freeze({ assertCurrentFootprintCopyMainRequestPlanWire, bindCurrentFootprintCopyMainRequestPlan,
-  isCurrentFootprintCopyMainRequestReservation, requireCurrentFootprintCopyMainRequestReservation, reserveCurrentFootprintCopyMainRequestPlan });
+  isCurrentFootprintCopyMainRequestReservation, requireCurrentFootprintCopyMainRequestReservation,
+  requireCurrentFootprintCopyMainRequestReservationCopy, reserveCurrentFootprintCopyMainRequestPlan });
 const CONTEXT = Object.freeze({ projectUuid: PROJECT, branchUuid: IDS.branch, projectKey: PROJECT, path: "inert-request-path" });
 const WINDOW = Object.freeze({ minimum: CLOCK - 10, maximum: CLOCK + 10 });
 const META = { title: "Source", description: "Keep \"Ω\"\n\\", tags: ["raw"], source: "original" };
@@ -84,6 +86,9 @@ async function collector(f: ReturnType<typeof requestCollectorFixture>, projecti
 void test("late body uses both clocks, exact raw order and omitted worker user without a backend edit header", async () => {
   const copy = await copyPlan(), module = await model();
   const reservation = module.reserveCurrentFootprintCopyMainRequestPlan(copy, CONTEXT, WINDOW);
+  module.requireCurrentFootprintCopyMainRequestReservationCopy(reservation, copy, WINDOW.minimum, WINDOW.maximum);
+  assert.throws(() => { module.requireCurrentFootprintCopyMainRequestReservationCopy(reservation, structuredClone(copy), WINDOW.minimum, WINDOW.maximum); }, /ORIGINAL_EXECUTION_COPY/u);
+  assert.throws(() => { module.requireCurrentFootprintCopyMainRequestReservationCopy(reservation, copy, WINDOW.minimum, WINDOW.maximum + 1); }, /ORIGINAL_EXECUTION_COPY/u);
   assert.equal(reservation.nativeAllocationQualified, false); assert.equal(reservation.executionAuthorized, false);
   const maximum = module.requireCurrentFootprintCopyMainRequestReservation(reservation);
   const plan = await module.bindCurrentFootprintCopyMainRequestPlan(reservation, ORIGIN, packet());

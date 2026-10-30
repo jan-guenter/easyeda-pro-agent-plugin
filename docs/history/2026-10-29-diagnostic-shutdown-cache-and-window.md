@@ -145,3 +145,71 @@ Supervisor:
 CI, protected publication and official installation remain pending at this
 frozen boundary. No new live cache/registry/capture acceptance, write, explicit
 Save or production access occurred.
+
+## Publication, official installation and handoff
+
+Candidate `41b5bab8ab94969191c1233164e47506f935405f` passed all 11 required
+PR155 checks. Linux run40955502235 completed all eight facade shards, build and
+aggregate; Windows run40955502597 passed the full native checks. Protected
+[PR155](https://github.com/jan-guenter/easyeda-pro-agent-plugin/pull/155) merged as
+`b6b1815e4943e35e62f77ba5237ed93eee56f3d0`. Its plugin tree
+`e0e06f4ff235ae4a9dc0a2d898dabe44ad227692` equals the reviewed candidate.
+
+One official CLI marketplace upgrade succeeded. The configured source remains
+`https://github.com/jan-guenter/easyeda-pro-agent-plugin.git`, Git refmain;
+cached marketplace HEAD/tree equal the merge. The scoped CLI list reports
+installed/enabled `0.3.0+codex.20261029210530`. Complete comparisons before and
+after that list match all 2,409 files,46,620,615 bytes and42 directories, with
+committed bytes and644/755 modes. Inventory:
+`8b0bf27bc1e1612f4d131d97cf952afab17771a3edbd7f7f6b919e14322e0bd9`.
+
+The installed helper identity passes. The maintained installed synthetic probe
+passes27 discovered tools,46 queries and48 total requests. Its new serving-PID
+and module-URL assertion matches the original probe child and installed bundle.
+Stdin EOF led to observed exit0, no signal and zero stderr. Its samples found no
+upstream child or non-stdio socket, and post-close marker/control checks passed.
+These are bounded samples, not continuous isolation, admission of the actual
+host-owned MCP or connected validation. The private machine profile remains
+685 bytes, SHA
+`a080fa71eb45454bd4f53721803f01bdde6ddb5f30eff54650d20afe70a7cb67`.
+No provisioning, key change, manual cache patch or host-owned gateway termination
+occurred.
+
+Automatic merged-main Windows run40957608331 is successful. Linux
+run40957608241 is still running on the exact merge at this boundary. Private
+`publication-proof-final.json` preserves that pending observation separately
+from terminal candidate CI. Check its result on continuation.
+
+An offline query after installation still returned the old combined action
+catalog without `observe-saved-cache-native`. This chat has not loaded the new
+server. Fully quit and reopen Codex before live continuation; merely resuming
+this chat has retained the old process. First use `loaded-facade`, then admit
+its actual process and full installed payload. The metadata report itself grants
+no source integrity or native ownership. No new live operation or design read
+occurred in this batch, and all originating native cases remain terminal.
+
+Continue the open work above with fresh original owners. For cache discovery,
+publish main construction, qualify browser/frame/UI, then collect the optional
+native metadata before opening any project. Review actual descriptors before
+implementing qualification. Separately validate restore/readiness/capture and
+actual cleanup on the selected disposable fixture. Keep the forward, saved,
+inverse/four-generation and general API backlog explicit.
+
+This local publication appendix is retained for the next substantive history
+commit. It does not trigger another payload release or session restart merely
+to publish chronology.
+
+## 2026-10-30 merged-main CI and refreshed host
+
+Linux run40957608241 completed successfully on
+`b6b1815e4943e35e62f77ba5237ed93eee56f3d0`, including all ten jobs. Both
+automatic merged-main workflows are now green; the earlier pending observation
+is preserved above.
+
+The new process-local query now identifies the installed210530 module and
+Node24.18.0. A fresh original-process/parent-stdio/control-root/lease audit held
+pidfds across the complete2,409-file comparison, then repeated every identity
+check. Source947, runtime3, bytes, modes and inventory equal the exact merged
+payload. This admits the actual facade snapshot, not a native owner or live
+effect. Live continuation and the source batch are recorded in
+[the next case](2026-10-30-cache-and-capture-validation.md).

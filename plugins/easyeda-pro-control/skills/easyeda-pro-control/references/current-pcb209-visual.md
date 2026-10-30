@@ -183,6 +183,14 @@ state. Unknown or unavailable details remain unclassified. Neither a diagnostic
 nor a lost reply permits repeating capture or resize. Native faults are retained
 before response-budget validation can reject the pending reply.
 
+`native-entry-point-unavailable` identifies failure to resolve a managed native
+binding; it is not evidence that the window is hidden or needs user input.
+The rectangle adapter explicitly binds `WcGetWindowRect` to the documented
+[GetWindowRect](https://learn.microsoft.com/en-us/windows/win32/api/winuser/nf-winuser-getwindowrect)
+export. Inspect the retained fault and use the offered cleanup after a binding
+failure. A corrected package needs a fresh original owner; retrying the consumed
+action cannot repair its loaded helper.
+
 ## Close and release the original owner
 
 Use `observe-window`, then one `normal-close` with the observed `hwnd` and

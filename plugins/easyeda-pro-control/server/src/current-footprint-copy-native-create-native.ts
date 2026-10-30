@@ -20,7 +20,8 @@ export function currentFootprintCopyNativeCreateTemplate(): string {
   return JSON.stringify({ method: "Runtime.callFunctionOn", sessionId: marker("sessionId"), params: {
     objectId: marker("objectId"), functionDeclaration: CURRENT_FOOTPRINT_COPY_NATIVE_CREATE_CALL.program,
     arguments: [...Array.from({ length: 5 }, (_, index) => ({ objectId: marker(`arg${String(index)}ObjectId`) })),
-      { value: marker("expectedProjectUuid") }, { value: marker("createArgumentJson") }],
+      { value: marker("expectedProjectUuid") }, { value: marker("createArgumentJson") },
+      ...["prewriteScopeObjectId", "prewriteOriginalObjectId", "prewriteUploadObjectId"].map(name => ({ objectId: marker(name) }))],
     objectGroup: CURRENT_PCB_WORKER_CONSTRUCTION_SOURCE.group, silent: true, returnByValue: true, generatePreview: false,
     throwOnSideEffect: false, awaitPromise: true, userGesture: false,
   } });
@@ -38,21 +39,20 @@ export function currentFootprintCopyNativeCreateNativeSource(): string {
     objectGroup: CURRENT_PCB_WORKER_CONSTRUCTION_SOURCE.group, silent: true, returnByValue: true, generatePreview: false,
     throwOnSideEffect: false, awaitPromise: true, userGesture: false } };
   const sample = { ...sampleCommand, params: { ...sampleCommand.params,
-    arguments: [...sampleCommand.params.arguments, { value: sampleArgument.path }, { value: JSON.stringify(sampleArgument) }] } };
+    arguments: [...sampleCommand.params.arguments, { value: sampleArgument.path }, { value: JSON.stringify(sampleArgument) },
+      ...["prewrite-scope", "prewrite-original", "prewrite-upload"].map(objectId => ({ objectId }))] } };
   const wire = currentFootprintCopyNativeCreateWire(JSON.stringify(sample), 73);
   const sampleFields = Object.entries(wire.request).filter(([name]) => name !== "action" && name !== "requestId");
   const sampleHash = createHash("sha256").update(`${JSON.stringify({ id: 73, ...sample })}\0`).digest("hex");
   return `public static class EasyedaFootprintCopyNativeCreateProtocol {
 static void Need(bool value){if(!value)throw new System.InvalidOperationException("footprint-copy-native-create-protocol");}
 static readonly System.Text.UTF8Encoding Utf8=new System.Text.UTF8Encoding(false,true);
-static string Load(){byte[] packed=System.Convert.FromBase64String(${literal(packed.toString("base64"))});byte[] bytes=new byte[${String(template.length)}];int count=0;
-using(var input=new System.IO.MemoryStream(packed,false))using(var stream=new System.IO.Compression.GZipStream(input,System.IO.Compression.CompressionMode.Decompress)){while(count<bytes.Length){int read=stream.Read(bytes,count,bytes.Length-count);if(read==0)break;count+=read;}Need(count==bytes.Length&&stream.ReadByte()==-1);}
-using(var sha=System.Security.Cryptography.SHA256.Create())Need(System.BitConverter.ToString(sha.ComputeHash(bytes)).Replace("-","").ToLowerInvariant()==${literal(createHash("sha256").update(template).digest("hex"))});return Utf8.GetString(bytes);}
+static string Load(){return EasyedaDiagnosticOwner.UnpackFixedProgram(${literal(packed.toString("base64"))},${String(template.length)},${literal(createHash("sha256").update(template).digest("hex"))},${literal(createHash("sha256").update(packed).digest("hex"))});}
 static readonly string Template=Load();
 static string Text(object input,int maximum){string value=input as string;Need(value!=null&&value.Length<=maximum);Utf8.GetByteCount(value);return value;}
 static string Field(string name,object input){string value=Text(input,256);Need(System.Text.RegularExpressions.Regex.IsMatch(value,name=="sessionId"?@"\\A[A-Za-z0-9_.:-]{1,128}\\z":name=="expectedProjectUuid"?@"\\A(?:[a-f0-9]{32}|[a-f0-9]{64})\\z":@"\\A[A-Za-z0-9_.:-]{1,256}\\z"));return value;}
 static string Quote(string value){var output=new System.Text.StringBuilder("\\"");foreach(char c in value){if(c=='\\"'||c=='\\\\'){output.Append('\\\\');output.Append(c);}else if(c<32){output.Append("\\\\u");output.Append(((int)c).ToString("x4",System.Globalization.CultureInfo.InvariantCulture));}else output.Append(c);}return output.Append('\\"').ToString();}
-public static string Encode(int id,string originalWorkerSession,System.Collections.IDictionary fields){Need(id>0&&fields!=null&&fields.Count==8);string[] names={"objectId","arg0ObjectId","arg1ObjectId","arg2ObjectId","arg3ObjectId","arg4ObjectId","expectedProjectUuid","createArgumentJson"};foreach(string name in names)Need(fields.Contains(name));string session=Field("sessionId",originalWorkerSession),raw=Text(fields["createArgumentJson"],65536);Field("expectedProjectUuid",fields["expectedProjectUuid"]);Need(Utf8.GetByteCount(raw)<=${String(LIMITS.argumentsBytes)});var output=new System.Text.StringBuilder();int previous=0;
+public static string Encode(int id,string originalWorkerSession,System.Collections.IDictionary fields){Need(id>0&&fields!=null&&fields.Count==11);string[] names={"objectId","arg0ObjectId","arg1ObjectId","arg2ObjectId","arg3ObjectId","arg4ObjectId","expectedProjectUuid","createArgumentJson","prewriteScopeObjectId","prewriteOriginalObjectId","prewriteUploadObjectId"};foreach(string name in names)Need(fields.Contains(name));string session=Field("sessionId",originalWorkerSession),raw=Text(fields["createArgumentJson"],65536);Field("expectedProjectUuid",fields["expectedProjectUuid"]);Need(Utf8.GetByteCount(raw)<=${String(LIMITS.argumentsBytes)});var output=new System.Text.StringBuilder();int previous=0;
 foreach(System.Text.RegularExpressions.Match match in System.Text.RegularExpressions.Regex.Matches(Template,"\\"__copycreate_([A-Za-z0-9]+)__\\"")){string name=match.Groups[1].Value;output.Append(Template,previous,match.Index-previous);if(name=="createArgumentJson")output.Append(Quote(raw));else{output.Append('"');output.Append(name=="sessionId"?session:Field(name,fields[name]));output.Append('"');}previous=match.Index+match.Length;}output.Append(Template,previous,Template.Length-previous);string command="{\\"id\\":"+id.ToString(System.Globalization.CultureInfo.InvariantCulture)+","+output.ToString().Substring(1);Need(Utf8.GetByteCount(command)<=${String(LIMITS.commandBytes)});return command+"\\0";}
 public static void VerifySmoke(){var fields=new System.Collections.Hashtable(System.StringComparer.Ordinal);${sampleFields.map(([name, value]) => `fields.Add(${literal(name)},${literal(String(value))});`).join("")}
 string command=Encode(73,${literal(sample.sessionId)},fields);using(var sha=System.Security.Cryptography.SHA256.Create())Need(System.BitConverter.ToString(sha.ComputeHash(Utf8.GetBytes(command))).Replace("-","").ToLowerInvariant()==${literal(sampleHash)});

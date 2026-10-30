@@ -13,3 +13,14 @@ void test("window faults keep geometry/paint snapshots bounded and release actio
   assert.equal(decodeCurrentWindowFailure(release, "release", "pcb-diagnostic-window-capture-gdi-release").action, "release");
   assert.throws(() => decodeCurrentWindowFailure({ ...release, stage: "paint" }, "release", "pcb-diagnostic-window-capture-gdi-release"));
 });
+
+void test("unavailable native entry points retain fixed fault metadata without exception text or retry authority", () => {
+  const fault = { schema: "easyeda-pro-control.window-failure.v1", action: "window-capture-readiness", stage: "bounds", code: "native-entry-point-unavailable",
+    paintPhase: "not-dispatched", nativeResourcesRetained: false, bounds: null, snapshotOnly: true, executionAuthorized: false };
+  const result = decodeCurrentWindowFailure(fault, "window-capture-readiness", "pcb-diagnostic-native-call");
+  assert.equal(result.code, "native-entry-point-unavailable"); assert.equal(result.bounds, null); assert.equal(Object.isFrozen(result), true);
+  assert.throws(() => decodeCurrentWindowFailure({ ...fault, message: "unbounded native exception text" }, "window-capture-readiness", "pcb-diagnostic-native-call"));
+  assert.throws(() => decodeCurrentWindowFailure({ ...fault, code: "EntryPointNotFoundException" }, "window-capture-readiness", "pcb-diagnostic-native-call"));
+  assert.throws(() => decodeCurrentWindowFailure(fault, "window-capture-readiness", "pcb-diagnostic-window-readiness-changed"));
+  assert.throws(() => decodeCurrentWindowFailure({ ...fault, executionAuthorized: true }, "window-capture-readiness", "pcb-diagnostic-native-call"));
+});

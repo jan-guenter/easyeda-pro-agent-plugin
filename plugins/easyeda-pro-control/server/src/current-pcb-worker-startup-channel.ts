@@ -179,6 +179,7 @@ interface ClockRpcState {
 }
 interface CreateClockState {
   readonly allocation: boolean;
+  readonly copyPlan: CurrentFootprintCopyV2Plan;
   readonly binding: CurrentFootprintCopyCreateInvocationBinding;
   readonly command: CurrentFootprintCopyNativeCreateCommand;
   readonly token: CurrentFootprintCopyPendingCreate;
@@ -190,6 +191,8 @@ interface CreateClockState {
 export interface CurrentFootprintCopyPendingCreate { readonly profile: "private.current-footprint-copy-pending-create.v1" }
 export interface CurrentFootprintCopyCreateClockChannelBindings {
   readonly clockLease: CurrentFootprintCopyCreateInvocationBinding["clockLease"];
+  readonly copyPlan: CurrentFootprintCopyV2Plan;
+  readonly invocationBinding: CurrentFootprintCopyCreateInvocationBinding;
   readonly workerSessionId: string;
   readonly assertOriginalSynchronous: () => void;
 }
@@ -704,10 +707,10 @@ class CurrentPcbWorkerStartupChannelCore {
     if (!this.#createClockPurpose || executionDependencies.get(dependency) !== this || this.#clockRpcAttempted) { throw fail("FOOTPRINT_CREATE_PURPOSE"); }
     const binding = requireCurrentFootprintCopyCreateInvocationLease(lease);
     await binding.assertOriginal();
-    const command = currentFootprintCopyNativeCreateCommand(workerSessionId, binding.projectObjectId, binding.handles, plan);
+    const command = currentFootprintCopyNativeCreateCommand(workerSessionId, binding.projectObjectId, binding.handles, plan, binding.prewriteHandles);
     if (command.params.arguments[5].value !== this.#openingProjectUuid) { throw fail("FOOTPRINT_CREATE_PROJECT"); }
     binding.assertCleanup();
-    const create: CreateClockState = { allocation: this.#allocationPurpose, binding, command, token: Object.freeze({ profile: "private.current-footprint-copy-pending-create.v1" }),
+    const create: CreateClockState = { allocation: this.#allocationPurpose, copyPlan: plan, binding, command, token: Object.freeze({ profile: "private.current-footprint-copy-pending-create.v1" }),
       dispatchAttempted: false, pending: null, rejectedFrame: null };
     return this.#prepareClockRpc(dependency, workerSessionId, create);
   }
@@ -795,7 +798,8 @@ class CurrentPcbWorkerStartupChannelCore {
     const original = Object.freeze({ ...route, dispatchCreate: (): Promise<CurrentFootprintCopyPendingCreate> => this.#dispatchCreate(state),
       joinCreate: (originalPending: CurrentFootprintCopyPendingCreate): Promise<string> => this.#joinCreate(state, originalPending) });
     const create = this.#samePendingCreate(state);
-    createClockRoutes.set(original, Object.freeze({ clockLease: create.binding.clockLease, workerSessionId: state.workerSessionId,
+    createClockRoutes.set(original, Object.freeze({ clockLease: create.binding.clockLease, copyPlan: create.copyPlan,
+      invocationBinding: create.binding, workerSessionId: state.workerSessionId,
       assertOriginalSynchronous: (): void => { this.#samePendingCreate(state); } }));
     return original;
   }

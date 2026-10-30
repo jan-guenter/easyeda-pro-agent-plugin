@@ -8,7 +8,7 @@
  * internally; a supplied known UUID never qualifies that allocation. */
 /* oxlint-disable import/max-dependencies -- Keep genuine native ownership, the exact pending channel and each original sequencer explicit; none is replaceable by caller callbacks. */
 import { types } from "node:util";
-import { CurrentFootprintCopyAllocationRunner, requireCurrentFootprintCopyAllocationOrigin } from "./current-footprint-copy-allocation-runner.ts";
+import { CurrentFootprintCopyAllocationRunner, requireCurrentFootprintCopyAllocationCopyPlan, requireCurrentFootprintCopyAllocationOrigin } from "./current-footprint-copy-allocation-runner.ts";
 import type { z } from "zod";
 import { CurrentFootprintCopyMainBackendRunner } from "./current-footprint-copy-main-backend-runner.ts";
 import { CurrentFootprintCopyMainRequestRunner } from "./current-footprint-copy-main-request-runner.ts";
@@ -26,8 +26,9 @@ import { requireCurrentFootprintCopyCreateClockChannelRoute } from "./current-pc
 import type { CurrentFootprintCopyCreateClockChannelRoute, CurrentFootprintCopyPendingCreate } from "./current-pcb-worker-startup-channel.ts";
 import { requireCurrentFootprintCombinedPairedSchedule } from "./current-pcb-diagnostic-owner.ts";
 import type { CurrentFootprintCombinedMainCapability } from "./current-pcb-diagnostic-owner.ts";
-import { isCurrentFootprintCopyMainRequestReservation } from "./current-footprint-copy-main-request-plan.ts";
+import { isCurrentFootprintCopyMainRequestReservation, requireCurrentFootprintCopyMainRequestReservationCopy } from "./current-footprint-copy-main-request-plan.ts";
 import type { CurrentFootprintCopyMainRequestReservation } from "./current-footprint-copy-main-request-plan.ts";
+import type { CurrentFootprintCopyV2Plan } from "./current-footprint-copy-v2-plan.ts";
 
 type Plan = Readonly<z.infer<typeof currentFootprintCopyMainRequestPlanSchema>>;
 type Phase = "ready" | "main-armed" | "clocks-bound" | "clocks-armed" | "create-written" | "clocks-retired" | "main-completed" | "complete" | "failed" | "ended";
@@ -39,6 +40,7 @@ const allocationMethods = Object.freeze({ arm: CurrentFootprintCopyAllocationRun
   observeOriginalGenerationEnded: CurrentFootprintCopyAllocationRunner.prototype.observeOriginalGenerationEnded, release: CurrentFootprintCopyAllocationRunner.prototype.release });
 /* oxlint-enable typescript/unbound-method */
 function need(value: boolean, code: string): asserts value { if (!value) { throw new Error(`FOOTPRINT_PAIRED_SCHEDULE_${code}`); } }
+const issued = new WeakMap<CurrentFootprintCopyPairedScheduleObservation, CurrentFootprintCopyPairedScheduler>();
 export interface CurrentFootprintCopyPairedScheduleObservation {
   readonly profile: "private.current-footprint-copy-paired-schedule-observation.v1";
   readonly clocks: CurrentFootprintCopyClockRpcObservation;
@@ -57,6 +59,9 @@ export class CurrentFootprintCopyPairedScheduler {
   readonly #mainOrigin: CurrentFootprintCopyMainRequestOrigin;
   readonly #main: CurrentFootprintCopyMainRequestRunner;
   readonly #latePlan: boolean;
+  readonly #reservation: CurrentFootprintCopyMainRequestReservation | null;
+  #executionCopy: CurrentFootprintCopyV2Plan | null = null;
+  #packet: CurrentFootprintCopyPairedScheduleObservation | null = null;
   #phase: Phase = "ready";
   #busy = false;
   #ending = false;
@@ -82,6 +87,7 @@ export class CurrentFootprintCopyPairedScheduler {
     backendMethods.requireRequestOrigin.call(backend, capability, mainOrigin);
     this.#backend = backend; this.#capability = capability; this.#mainOrigin = mainOrigin;
     this.#latePlan = isCurrentFootprintCopyMainRequestReservation(plan);
+    this.#reservation = isCurrentFootprintCopyMainRequestReservation(plan) ? plan : null;
     this.#main = new CurrentFootprintCopyMainRequestRunner(mainOrigin, plan);
   }
   #same(): void {
@@ -119,6 +125,18 @@ export class CurrentFootprintCopyPairedScheduler {
     this.#begin("clocks-bound");
     try { need(this.#clock !== null, "CLOCKS"); if (this.#allocation !== null) { await allocationMethods.arm.call(this.#allocation); this.#same(); } await this.#clock.arm(); this.#same(); this.#phase = "clocks-armed"; }
     catch (error) { this.#failed(); throw error; } finally { this.#end(); }
+  }
+  /** Only an original allocated-create schedule for this exact copy/window
+   * can reach the existing coordinator's write boundary. Known-UUID fixtures
+   * and merely shape-compatible schedules are not execution qualifications. */
+  public requireExecutionReady(copy: CurrentFootprintCopyV2Plan, minimum: number, maximum: number): void {
+    need(!this.#busy && !this.#ending && this.#phase === "clocks-armed" && this.#reservation !== null &&
+      this.#allocation !== null && this.#clockToken !== null && !this.#createDispatchAttempted, "EXECUTION_READY");
+    this.#same();
+    requireCurrentFootprintCopyMainRequestReservationCopy(this.#reservation, copy, minimum, maximum);
+    need(this.#routeBinding !== null && this.#routeBinding.copyPlan === copy, "ORIGINAL_EXECUTION_COPY");
+    requireCurrentFootprintCopyAllocationCopyPlan(this.#allocation, this.#clockToken, copy, this.#routeBinding.invocationBinding);
+    need(this.#executionCopy === null || this.#executionCopy === copy, "ORIGINAL_EXECUTION_COPY"); this.#executionCopy = copy;
   }
   /** The enclosing genuine owner must already have durable intent and complete
    * eligibility. This partial schedule cannot issue either prerequisite. */
@@ -169,8 +187,23 @@ export class CurrentFootprintCopyPairedScheduler {
         clocks: this.#clocks, main: this.#mainPacket, serializedCreateResult, clockRetirementBeforeMainCollection: true as const,
         exactOriginalCreateReplyJoined: true as const, fullQualificationVerified: false as const,
         nativeSqlCompletionVerified: false as const, savedResultVerified: false as const, executionAuthorized: false as const });
-      this.#phase = "complete"; return result;
+      this.#packet = result; issued.set(result, this); this.#phase = "complete"; return result;
     } catch (error) { this.#failed(); throw error; } finally { this.#end(); }
+  }
+  /** A retained result remains inspectable after original generation exit.
+   * Its data alone grants neither current ownership nor saved-content proof. */
+  public requireOriginalResult(packet: CurrentFootprintCopyPairedScheduleObservation): void {
+    need(!this.#busy && !this.#ending && packet === this.#packet && issued.get(packet) === this &&
+      packet.clocks === this.#clocks && packet.main === this.#mainPacket &&
+      (this.#phase === "complete" || this.#phase === "ended"), "ORIGINAL_RESULT");
+  }
+  /** Success already retired both sequencers. Failure or an armed/pending
+   * schedule needs actual original root/Job exit; it is never resumed here. */
+  public requireQuiescentClose(): void {
+    need(!this.#busy && !this.#ending && this.#phase === "complete" && this.#packet !== null &&
+      this.#clock?.diagnostics()["retired"] === true && this.#completion?.diagnostics().retired === true &&
+      this.#allocation?.diagnostics()["phase"] === "released", "GENERATION_CLOSURE_REQUIRED");
+    this.requireOriginalResult(this.#packet);
   }
   /** Does not close/kill the process. Only the retained native root-exit and
    * empty-Job proof can end ambiguous pending replies and held native pauses. */
@@ -202,6 +235,7 @@ export class CurrentFootprintCopyPairedScheduler {
     return Object.freeze({ phase: this.#phase, busy: this.#busy, ending: this.#ending, originalGenerationEnded: this.#generationEnded, firstFailure: this.#firstFailure,
       createDispatchAttempted: this.#createDispatchAttempted, createWriteAcknowledged: this.#pending !== null, clocks: this.#clock?.diagnostics() ?? null, allocation: this.#allocation?.diagnostics() ?? null,
       main: this.#main.diagnostics(), completion: this.#completion?.diagnostics() ?? null,
+      executionCopyBound: this.#executionCopy !== null, originalResultRetained: this.#packet !== null,
       writerPurposeMounted: false, wholeWriterBudgetReserved: false, executionAuthorized: false });
   }
 }

@@ -366,6 +366,18 @@ export class CurrentPcbDiagnosticContext {
     if (this.#frames?.length !== (ancillary === null ? 1 : 2) || ancillary !== null && this.#ancillaryOwner === null) { return this.#refuse(); }
     return selected;
   }
+  /** This fixed metadata probe belongs to the original Start Page UI only.
+   * Keep the complete UI/source/ancillary proof and exclude every opening
+   * transition; a PCB or a previously opened project cannot adopt this phase. */
+  public savedCacheMetadataContext(): Readonly<{ sessionId: string; uniqueContextId: string }> {
+    if (this.#openingConsumed || this.#opening !== null || this.#rootNavigation !== null ||
+        this.#priorRootNavigation !== null || this.#pcbOpening !== null) { return this.#refuse(); }
+    const selected = this.openingContext();
+    if (this.#frame === null || this.#target === null) { return this.#refuse(); }
+    const base = startPageBase(this.#frame), fragment = this.#frame["urlFragment"] === "#" ? "#" : "";
+    if (this.#target["url"] !== `${base}${fragment}`) { return this.#refuse(); }
+    return selected;
+  }
   /** Fixed model observer only, after the existing PCB frame's complete source
    * was admitted. UI opening and model inspection are intentionally disjoint;
    * a worker-only opening never upgrades its context into a PCB compiler. */

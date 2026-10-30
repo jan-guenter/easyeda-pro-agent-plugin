@@ -74,7 +74,7 @@ void test("worker grammar refuses phase/function mismatch, effects, context/grou
 void test("all 20 native programs, sequence, effects and fixed argument grammar match the reviewed exports", async () => {
   const source = await readFile(new URL("../../scripts/pcb-diagnostic-owner.ps1", import.meta.url), "utf8");
   const programs = [...Object.entries(CURRENT_PCB_STRING_WORKER_PRODUCER_EVALUATIONS), ...Object.entries(CURRENT_PCB_STRING_WORKER_PRODUCER_CALLS)];
-  const packedNames = new Map([[1, "StringWorkerUploadStructureSelectorFunction"], [3, "StringWorkerCooperationSelectorFunction"],
+  const packedNames = new Map([[1, "StringWorkerUploadStructureSelectorFunction"], [2, "StringWorkerStructureSelectorFunction"], [3, "StringWorkerCooperationSelectorFunction"],
     [4, "StringWorkerUploadSelectorFunction"], [5, "StringWorkerGateSelectorFunction"], [6, "StringWorkerGateFunction"],
     [7, "StringWorkerUploadStructureFunction"], [8, "StringWorkerStructureFunction"], [10, "StringWorkerDebounceFunction"],
     [9, "StringWorkerDebounceSelectorFunction"], [11, "StringWorkerCooperationFunction"], [12, "StringWorkerUploadFunction"], [19, "StringWorkerBufferedEnvironmentFunction"]]);

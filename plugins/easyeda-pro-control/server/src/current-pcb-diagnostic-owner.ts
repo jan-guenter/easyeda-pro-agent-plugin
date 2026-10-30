@@ -155,8 +155,8 @@ import { CurrentFootprintCopyMainBackendRunner } from "./current-footprint-copy-
 import type { CurrentFootprintCopyMainBackendObservation } from "./current-footprint-copy-main-backend-runner.ts";
 
 
-const HELPER_SHA256 = "90b8678d467f51cd398f6cae40a420410df52c9ee112ede47759d41f8d93a19c";
-const HELPER_BYTES = 1_047_854;
+const HELPER_SHA256 = "12518c58c90a0998583d49547e4d7b647edfcd444294a0a69ed484a3f00e5162";
+const HELPER_BYTES = 1_048_042;
 const MAX_LINE = TRANSPORT.maximumHelperLineBytes;
 // 64 MiB native bytes need at most 85.34 MiB base64 plus bounded poll envelopes.
 const MAX_TOTAL = TRANSPORT.maximumHelperStdoutBytes;
@@ -391,6 +391,8 @@ class CurrentPcbRetainedOwnerCore {
   #savedCacheBrowserVersion: Readonly<RecordValue> | null = null;
   #savedCacheNativeRunner: CurrentFootprintSavedCacheRunner | null = null;
   #savedCacheNativeAttempted = false;
+  #savedCacheNativeSetupPhase: "source" | "parent" | "ancillary-owner" | "selector" | "metadata" | "completed" | null = null;
+  #savedCacheNativeSetupFailed = false;
   #framesConsumed = false;
   #scriptConsumed = false;
   #browserTargets: readonly Readonly<RecordValue>[] | null = null;
@@ -579,7 +581,11 @@ class CurrentPcbRetainedOwnerCore {
       released: this.#released, helperClosed: this.#childClosed, cleanupOnly: this.#binding !== null && !this.#launchSucceeded,
       noProcessCleanupAvailable: this.#noProcessCleanupAvailable(), frameWorkerVerified: false, executionAuthorized: false, browserObservationConsumed: this.#browserObservationConsumed,
       nativeLaunchError: this.#nativeLaunchError, nativeSendError: this.#nativeSendError, createProcessError: this.#noProcessProof?.createProcessError ?? null,
-      ...(this.#purpose === CURRENT_FOOTPRINT_COMBINED_PURPOSE ? { combinedReadiness: this.combinedFactoryFailureDiagnostics(), savedCacheNativeObservation: this.#savedCacheNativeRunner?.retained() ?? null } : {}),
+      ...(this.#purpose === CURRENT_FOOTPRINT_COMBINED_PURPOSE ? { combinedReadiness: this.combinedFactoryFailureDiagnostics(),
+        savedCacheNativeObservation: this.#savedCacheNativeRunner?.retained() ?? (this.#savedCacheNativeAttempted ? Object.freeze({
+          attempted: true, phase: this.#savedCacheNativeSetupPhase, setupFailed: this.#savedCacheNativeSetupFailed, runnerCreated: false,
+          nativeMatchQualified: false, replayTokenIssued: false, executionAuthorized: false,
+        }) : null) } : {}),
       mainNativeFailure: this.#mainNativeFailure, mainCloseDetachAttempted: this.#mainCloseDetachAttempted, mainCloseDetached: this.#mainCloseDetached,
       combinedAbortAttempted: this.#combinedAbortAttempted, combinedAbortDispatchAttempted: this.#combinedAbortDispatchAttempted, combinedOutputCleanupOnly: this.#combinedOutputCleanupOnly,
       frameInspectionConsumed: this.#framesConsumed, scriptInspectionConsumed: this.#scriptConsumed, diagnosticFailure: this.#pipe.status().failure,
@@ -2640,6 +2646,8 @@ class CurrentPcbRetainedOwnerCore {
   /** Observe original native descriptors before opening. No native roster,
    * CacheStorage invocation or saved-generation replay authority is inferred. */
   public async observeSavedCacheNative(): Promise<CurrentFootprintSavedCacheObservation> {
+    // Original target/frame reads plus at most two ancillary DOM-owner reads.
+    const contextRequests = 4;
     const context = this.#stagedContext, engine = this.#savedCacheBrowserVersion, main = this.#mainRunner,
       original = this.#binding, pipe = this.#pipe, source = this.#footprintUiSource;
     if (this.#purpose !== CURRENT_FOOTPRINT_COMBINED_PURPOSE || !(pipe instanceof CurrentFootprintCombinedDiscoveryPipe) ||
@@ -2647,30 +2655,46 @@ class CurrentPcbRetainedOwnerCore {
         !main.retained().completed || main.retained().failed || !main.retained().sourceQualified ||
         this.#savedCacheNativeAttempted || !this.#scriptConsumed || this.#inspectionConsumed || this.#startupHandoffConsumed ||
         this.#projectOpeningConsumed || this.#startupParent !== null || this.#closeConsumed || this.#terminationObserved || this.#releaseConsumed ||
-        pipe.status().requestCount > DIAGNOSTIC_REQUEST_LIMIT - CURRENT_FOOTPRINT_SAVED_CACHE_PROBE_LIMITS.normal - CURRENT_FOOTPRINT_SAVED_CACHE_PROBE_LIMITS.cleanup) {
+        pipe.status().requestCount > DIAGNOSTIC_REQUEST_LIMIT - contextRequests - CURRENT_FOOTPRINT_SAVED_CACHE_PROBE_LIMITS.normal - CURRENT_FOOTPRINT_SAVED_CACHE_PROBE_LIMITS.cleanup) {
       throw error("SAVED_CACHE_NATIVE_PROBE_UNAVAILABLE");
     }
-    // oxlint-disable-next-line typescript/unbound-method -- Retain the original method identity and always invoke it with the original pipe receiver.
-    const request = pipe.observeSavedCacheNative, script = context.script(), selected = context.openingContext();
+    // oxlint-disable-next-line typescript/unbound-method -- Retain original method identities and invoke only with their original pipe/context receivers.
+    const request = pipe.observeSavedCacheNative, selectContext = context.savedCacheMetadataContext;
     this.#enter(true); this.#savedCacheNativeAttempted = true;
     try {
+      this.#savedCacheNativeSetupPhase = "source";
+      const script = context.script();
+      const sameOwner = (): void => {
+        this.#available(); requireCurrentFootprintCopyUiSource(source); context.assertCurrent();
+        if (this.#pipe !== pipe || pipe.observeSavedCacheNative !== request || this.#stagedContext !== context || context.savedCacheMetadataContext !== selectContext ||
+            this.#binding !== original || this.#footprintUiSource !== source || this.#mainRunner !== main || this.#savedCacheBrowserVersion !== engine ||
+            !this.#busy || !this.#savedCacheNativeAttempted || !main.retained().completed || main.retained().failed ||
+            this.#startupHandoffConsumed || this.#startupParent !== null || this.#projectOpeningConsumed ||
+            this.#closeConsumed || this.#terminationObserved || this.#releaseConsumed || context.script().scriptId !== script.scriptId) {
+          throw error("SAVED_CACHE_NATIVE_PROBE_OWNER_CHANGED");
+        }
+      };
+      sameOwner(); await this.#verify(); sameOwner(); await this.#verifyInstallation(); sameOwner();
+      this.#savedCacheNativeSetupPhase = "parent";
+      await this.#observeParent(); sameOwner();
+      this.#savedCacheNativeSetupPhase = "ancillary-owner";
+      await this.#observeOpeningAncillary(); sameOwner();
+      this.#savedCacheNativeSetupPhase = "selector";
+      const selected = selectContext.call(context);
+      const same = (): void => {
+        sameOwner(); const observed = selectContext.call(context);
+        if (observed.sessionId !== selected.sessionId || observed.uniqueContextId !== selected.uniqueContextId) { throw error("SAVED_CACHE_NATIVE_PROBE_OWNER_CHANGED"); }
+      };
       const current = async (): Promise<void> => {
-        const same = (): void => {
-          this.#available(); requireCurrentFootprintCopyUiSource(source); context.assertCurrent();
-          if (this.#pipe !== pipe || pipe.observeSavedCacheNative !== request || this.#stagedContext !== context ||
-              this.#binding !== original || this.#footprintUiSource !== source || this.#mainRunner !== main || this.#savedCacheBrowserVersion !== engine ||
-              !main.retained().completed || main.retained().failed || this.#startupHandoffConsumed || this.#startupParent !== null ||
-              this.#projectOpeningConsumed || this.#closeConsumed || this.#terminationObserved || this.#releaseConsumed ||
-              context.script().scriptId !== script.scriptId || context.openingContext().sessionId !== selected.sessionId ||
-              context.openingContext().uniqueContextId !== selected.uniqueContextId) { throw error("SAVED_CACHE_NATIVE_PROBE_OWNER_CHANGED"); }
-        };
         same(); await this.#verify(); same(); await this.#verifyInstallation(); same();
       };
       const runner = new CurrentFootprintSavedCacheRunner(Object.freeze({ assertCurrent: current,
         request: (command: CurrentFootprintSavedCacheCommand): Promise<unknown> => this.#transfer(() => request.call(pipe, command)),
       }), selected, engine);
-      this.#savedCacheNativeRunner = runner; return await runner.observe();
-    } finally { this.#busy = false; }
+      this.#savedCacheNativeRunner = runner; this.#savedCacheNativeSetupPhase = "metadata";
+      const result = await runner.observe(); this.#savedCacheNativeSetupPhase = "completed"; return result;
+    } catch (caughtError) { this.#savedCacheNativeSetupFailed = true; throw caughtError; }
+    finally { this.#busy = false; }
   }
   public retainedFootprintMainConstruction(): ReturnType<CurrentFootprintCopyMainBackendRunner["retained"]> | null {
     return this.#mainRunner?.retained() ?? null;

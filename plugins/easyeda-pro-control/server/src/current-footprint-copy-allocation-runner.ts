@@ -11,7 +11,7 @@ import { CURRENT_FOOTPRINT_COPY_ALLOCATION_FRAMES as FRAMES, CURRENT_FOOTPRINT_C
   decodeCurrentFootprintCopyAllocationPause, validateCurrentFootprintCopyAllocationCommand } from "./current-footprint-copy-allocation-contract.ts";
 import type { CurrentFootprintCopyAllocationCommand as Command } from "./current-footprint-copy-allocation-contract.ts";
 import { requireCurrentFootprintCopyCreateInvocationLease } from "./current-footprint-copy-create-invocation-lease.ts";
-import type { CurrentFootprintCopyCreateInvocationLease } from "./current-footprint-copy-create-invocation-lease.ts";
+import type { CurrentFootprintCopyCreateInvocationBinding, CurrentFootprintCopyCreateInvocationLease } from "./current-footprint-copy-create-invocation-lease.ts";
 // oxlint-disable-next-line import/no-cycle -- The native owner issues both original capabilities; no ownership getter runs during module initialization.
 import { requireCurrentFootprintCopyClockRpcOrigin } from "./current-footprint-copy-clock-rpc-origin.ts";
 import type { CurrentFootprintCopyClockRpcOrigin } from "./current-footprint-copy-clock-rpc-origin.ts";
@@ -153,6 +153,11 @@ export class CurrentFootprintCopyAllocationRunner {
     });
   }
   public requireForOrigin(origin: CurrentFootprintCopyClockRpcOrigin): void { this.#same(); need(origin === this.#token && issued.get(this) === origin, "ORIGINAL_ORIGIN"); }
+  public requireForCopyPlan(origin: CurrentFootprintCopyClockRpcOrigin, plan: CurrentFootprintCopyV2Plan,
+    binding: CurrentFootprintCopyCreateInvocationBinding): void {
+    this.#same(); need(origin === this.#token && issued.get(this) === origin && this.#plan === plan && this.#binding === binding &&
+      this.#phase === "armed", "ORIGINAL_COPY_PLAN");
+  }
   public async requireDestination(origin: CurrentFootprintCopyClockRpcOrigin): Promise<string> {
     this.requireForOrigin(origin); need(!this.#busy && (this.#phase === "resumed" || this.#phase === "released") && this.#destination !== null, "DESTINATION_NOT_ISSUED");
     await this.#current(); this.requireForOrigin(origin); this.#binding.requireInvocationConsumed(); return this.#destination;
@@ -168,8 +173,14 @@ export class CurrentFootprintCopyAllocationRunner {
 }
 /* oxlint-disable typescript/unbound-method -- Call only the original private-field receiver; own-property methods cannot issue allocation custody. */
 const originalOrigin = CurrentFootprintCopyAllocationRunner.prototype.requireForOrigin;
+const originalCopy = CurrentFootprintCopyAllocationRunner.prototype.requireForCopyPlan;
 const originalDestination = CurrentFootprintCopyAllocationRunner.prototype.requireDestination;
 /* oxlint-enable typescript/unbound-method */
+
+export function requireCurrentFootprintCopyAllocationCopyPlan(runner: CurrentFootprintCopyAllocationRunner,
+  origin: CurrentFootprintCopyClockRpcOrigin, plan: CurrentFootprintCopyV2Plan, binding: CurrentFootprintCopyCreateInvocationBinding): void {
+  originalCopy.call(runner, origin, plan, binding);
+}
 export function requireCurrentFootprintCopyAllocationOrigin(runner: CurrentFootprintCopyAllocationRunner, origin: CurrentFootprintCopyClockRpcOrigin): void {
   need(issued.get(runner) === origin, "ORIGINAL_RUNNER"); originalOrigin.call(runner, origin);
 }
