@@ -20,9 +20,17 @@ const schema = z.discriminatedUnion("cacheAccessorPhase", [
   z.object({ cacheAccessorPhase: z.literal("release"), method: z.literal("Runtime.releaseObjectGroup"), sessionId: session, params: releaseParams }).strict(),
 ]);
 export type CurrentFootprintSavedCacheAccessorCommand = Readonly<z.infer<typeof schema>>;
+/** Capture inert input, apply the strict seven-phase schema and freeze the result.
+ * Only fixed programs, flags and object-group fields survive validation; this does
+ * not check a live owner or dispatch the accepted command.
+ */
 export function validateCurrentFootprintSavedCacheAccessorCommand(input: unknown): CurrentFootprintSavedCacheAccessorCommand {
   return freezeDeep(schema.parse(captureCurrentPcbStringClockReply(input).value));
 }
+/** Encode one validated metadata command into its narrow native discriminator.
+ * Require an integer discovery ID in 1..103 and expose only phase-specific scalar
+ * slots; ordering, native ownership and once-only consumption remain the pipe's job.
+ */
 export function currentFootprintSavedCacheAccessorWire(input: unknown, id: number): Readonly<{
   command: CurrentFootprintSavedCacheAccessorCommand & Readonly<{ id: number }>; request: Readonly<Record<string, string | number>>;
 }> {

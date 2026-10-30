@@ -42,6 +42,10 @@ export function currentFootprintCopyMainRequestNativeCases(): readonly Command[]
   ] satisfies Command[]);
 }
 const nativeQuote = String.raw`static string Quote(string value){var b=new System.Text.StringBuilder();b.Append('"');for(int i=0;i<value.Length;i++){char c=value[i];if(char.IsHighSurrogate(c)){Need(i+1<value.Length&&char.IsLowSurrogate(value[i+1]));b.Append(c);b.Append(value[++i]);}else{Need(!char.IsLowSurrogate(c));if(c=='"'||c=='\\'){b.Append('\\');b.Append(c);}else if(c=='\b')b.Append("\\b");else if(c=='\t')b.Append("\\t");else if(c=='\n')b.Append("\\n");else if(c=='\f')b.Append("\\f");else if(c=='\r')b.Append("\\r");else if(c<32){b.Append("\\u");b.Append(((int)c).ToString("x4",System.Globalization.CultureInfo.InvariantCulture));}else b.Append(c);}}b.Append('"');return b.ToString();}`;
+/** Generate the backend-request capture codec with reviewed scalar replacements
+ * and bounded fixed templates. Independent smoke hashes cover emitted wire bytes;
+ * this build step sends no request and grants no writer admission.
+ */
 export function currentFootprintCopyMainRequestNativeSource(): string {
   const cases = currentFootprintCopyMainRequestNativeCases();
   const rows = cases.map(command => {

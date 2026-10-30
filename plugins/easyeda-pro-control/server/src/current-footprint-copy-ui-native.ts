@@ -29,6 +29,10 @@ export function currentFootprintCopyUiNativeCases(): readonly CurrentFootprintCo
   { phase: "release", method: "Runtime.releaseObjectGroup", sessionId, params: { objectGroup: CURRENT_FOOTPRINT_COPY_UI_GROUP } });
   return Object.freeze(commands);
 }
+/** Generate the UI route codec from its reviewed responder/registry cases.
+ * Preserve exact fixed values and scalar placeholders under bounded templates;
+ * this build step invokes no lazy getter, UI handler or library operation.
+ */
 export function currentFootprintCopyUiNativeSource(): string {
   const rows: string[] = [];
   for (const original of currentFootprintCopyUiNativeCases()) {

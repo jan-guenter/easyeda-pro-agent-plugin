@@ -21,6 +21,10 @@ export function currentFootprintCopyExecutionWorkerNativeCases(): readonly Curre
     } })),
   ]);
 }
+/** Generate the worker-construction codec from exact reviewed breakpoint/call
+ * cases. Refuse missing placeholders, malformed rows and the fixed size bounds;
+ * no worker is attached or continued during generation.
+ */
 export function currentFootprintCopyExecutionWorkerNativeSource(): string {
   const rows = currentFootprintCopyExecutionWorkerNativeCases().map(sample => {
     const wire = currentFootprintCopyExecutionWorkerWire(sample, 1);

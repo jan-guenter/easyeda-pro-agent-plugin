@@ -41,6 +41,10 @@ export function currentFootprintCopyMainCompletionNativeCases(): readonly Comman
   { phase: "completion-release", method: "Runtime.releaseObjectGroup", params: { objectGroup: GROUP } });
   return Object.freeze(commands);
 }
+/** Emit the fixed native completion codec used by the retained original main.
+ * The returned source encodes reviewed completion roles only; generation does not
+ * observe callback return, detached cleanup or a saved copy.
+ */
 export function currentFootprintCopyMainCompletionNativeSource(): string {
   const cases = currentFootprintCopyMainCompletionNativeCases();
   const rows = cases.map(command => {

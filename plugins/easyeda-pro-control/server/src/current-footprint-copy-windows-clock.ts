@@ -74,6 +74,10 @@ export interface CurrentFootprintCopyDocumentClockWindow {
   readonly executionAuthorized: false;
 }
 const epochTicks = 621_355_968_000_000_000n;
+/** Convert retained Windows UTC ticks to a safe nonnegative Unix millisecond value.
+ * Reject out-of-range results instead of coercing them; this numerical conversion
+ * neither samples a clock nor establishes its native provenance.
+ */
 function unixMilliseconds(ticks: string): number {
   // Date.now is an integer millisecond value. Preserve the containing floor
   // When converting the native 100ns sample instead of rounding it inwards.
@@ -224,6 +228,10 @@ export class CurrentFootprintCopyWindowsClockIssuer {
       documentClockProvenanceVerified: false, executionAuthorized: false, saveAuthorized: false });
     return this.#closedWindow;
   }
+  /** Accept only this issuer's original cached four-phase window, then reprove its
+   * complete recorded closure. Equal copied JSON and foreign windows refuse without
+   * issuing another clock request or granting dispatch authority.
+   */
   public requireClosedWindow(window: CurrentFootprintCopyWindowsClockWindow): CurrentFootprintCopyWindowsClockWindow {
     need(window === this.#closedWindow && window !== null, "original closed clock window required");
     need(this.closedWindow() === window, "original closed clock window changed"); return window;

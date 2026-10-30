@@ -143,3 +143,62 @@ and dependency eligibility; original document clock provenance; complete native
 completion and detached cleanup; four-generation saved/inverse/full-SQL joins;
 and broader SDK coverage. The inventory still distinguishes 494 omitted and 79
 blocked methods. No generic copy/delete or other writer is enabled by this batch.
+
+## Later review and synthetic inspector hardening
+
+The corrective commit `cdef902297e6b527d1d34bae652e11231ce6aa4e` passed the
+repaired startup comparison in full CI. Its complete Linux 41104702073 and
+Windows 41104701883 results are retained: Windows, build/package and seven
+facade shards passed. One different shard failed when an original synthetic
+Node 24.18.0 inspector child exited with `SIGSEGV` during initial
+`Runtime.compileScript`. No debugger pause, resume or continuation routing had
+occurred. The same unchanged case passed on `39c95ee`. Both attempts ran 13,789
+facade cases with 13,783 passes, one failure and five expected platform skips;
+their bridge suites each passed 424 cases. No job was cancelled, filtered or
+manually retried, and the two distinct failures remain separate evidence.
+
+The native crash's cause is unproved. The existing fixture did have a concrete
+readiness gap: it compiled in an implicit default context after enabling the
+inspector, without retaining that context's creation event. The revised fixture
+waits for a nonce-matched packet on its original child IPC after the first
+event-loop turn, then retains the original default-context ID and unique ID.
+Compile/run requests use that explicit context. Original loss, replacement,
+destruction or clearing is sticky across awaited replies. Pending requests and
+teardown retain their original child; crashes still fail without retry or skip.
+The exact serialized request is checked before dispatch so a serialization hook
+cannot substitute a different context after validation.
+
+These changes harden the synthetic fixture. Passing checks do not establish a
+V8 crash fix, an EasyEDA ownership proof or connected behavior. The original
+failed child diagnostics and complete CI logs remain retained privately.
+
+CodeRabbit's completed `cdef902` review had zero actionable comments and resolved
+all three earlier issue threads. Its full report also exposed a separate
+docstring-coverage warning, 12.90% against an 80% setting. That warning was not
+silently treated as a pass. Forty-nine direct JSDocs now explain ownership,
+request bounds, cleanup and effect limits across 28 already-touched production
+files. An independent TypeScript 7 AST inventory records direct documentation
+for all 46 estimated complex named functions and 60 of 66 named functions. This
+inventory is not CodeRabbit's percentage or denominator.
+
+AST/token/literal comparison proves the documentation edits change no function
+syntax or literal bytes. Actual output comparison against frozen `cdef902`
+also preserves all 19 checked native codecs, PowerShell fragments and current
+and legacy probe programs, 129,226 bytes in total. No fixed program was changed
+to satisfy the documentation metric. The final batch refreshes only the allowed
+facade projections after these source comments; external compatibility pins,
+bridge identity and the native helper remain unchanged.
+
+The final frozen source projection for 955 files is
+`26d1e1c550313f89350c98e5018cb39d9156e053bb42fc6df413cde793ff35d2`.
+Its runtime projection is
+`1ed6662ba7c5a9ec808d8a2f97de12d3d11b874f92593628cf3e44d7c783a823`.
+Both bundle bodies match `cdef902`
+exactly apart from the source-bound pair identity marker; both reproduce
+byte-for-byte. The native helper remains 1,044,671 bytes/SHA-256
+`b8575880cdeb91831d58c2d4c77bb8c679b79c6bf905f95bf2f0df468c8ae2bf`.
+All 11 focused context/continuation cases pass on this final source, including
+both original continuation outcomes and all serialized-context negatives.
+Strict types, bridge types/lint, type-aware facade lint, coverage generation,
+build and compatibility checks pass. Final exact-head CI and CodeRabbit review
+are still required before merge.

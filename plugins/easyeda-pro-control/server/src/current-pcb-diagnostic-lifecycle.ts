@@ -526,6 +526,11 @@ class CurrentPcbLifecycleCore {
     }
   }
 
+  /** Validate the request against this core's sealed launch generation, then serialize
+   * its lifecycle action under retained-owner and journal checks. Inspection is separate
+   * from native work; consumed navigation, observations and close/release stages cannot
+   * be replayed after uncertainty.
+   */
   public async run(input: unknown): Promise<Record<string, unknown>> {
     let request: LifecycleRequest;
     if (this.#generation === "209-startup-footprint-main" || this.#generation === "209-startup-footprint-combined") {
@@ -927,6 +932,11 @@ class CurrentPcbLifecycleCore {
       return { ...describe(request.operationId, completed), result: structuredClone(result.result), executionAuthorized: false, saveAuthorized: false };
     } finally { this.#busy = false; }
   }
+  /** Journal and publish one pre-opening Combined accessor observation under the
+   * retained original owner. Require published main/browser/UI records, consume intent
+   * before native dispatch, and retain a result before postchecks so uncertainty grants
+   * no replay. The response enables neither getter execution nor Save.
+   */
   protected async runSavedCacheAccessor(request: Extract<CurrentFootprintCombinedValidationRequest,
     { action: "observe-saved-cache-accessor" }>): Promise<Record<string, unknown>> {
     this.#options.assertLocalAllowed();
@@ -2561,6 +2571,10 @@ class CurrentPcbLifecycleCore {
       { ...candidate, records: { ...candidate.records, "combined-factory-before-launch.json": record } } : candidate));
     this.#options.assertLocalAllowed(); assertCurrentPcbDiagnosticLaunchExclusion(this.#lease); this.#releaseLease(); return true;
   }
+  /** Reserve one operation ID and durably record its purpose/installation intent
+   * before allocating the native helper. Recheck launch exclusion and journal state;
+   * a failed allocation or acknowledgment stays consumed and retains its cleanup path.
+   */
   async #launch(request: Extract<LifecycleRequest, { action: "launch" }>): Promise<Record<string, unknown>> {
     requireValue(!this.#launchAttempted && this.#retained === null, "LAUNCH_CONSUMED");
     this.#assertPurpose(request.operationId);
@@ -3607,6 +3621,10 @@ export class CurrentFootprintCombinedLifecycle extends CurrentPcbLifecycleCore {
   public constructor(options: CurrentPcbDiagnosticLifecycleOptions, dependencies: CurrentPcb209WorkerStartupLifecycleDependencies = {}) {
     super(options, dependencies, "worker-startup", "209-startup-footprint-combined");
   }
+  /** Expose only the Combined request grammar, routing its separate main/cache actions
+   * to once-only retained-owner stages. Abort blocks later normal work while preserving
+   * inspection and original termination/release; no writer or Save route is added.
+   */
   public override run(input: unknown): Promise<Record<string, unknown>> {
     try {
       const request = currentFootprintCombinedValidationRequestSchema.parse(input);

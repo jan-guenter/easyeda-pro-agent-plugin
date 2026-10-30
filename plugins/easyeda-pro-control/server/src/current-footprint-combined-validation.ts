@@ -32,6 +32,10 @@ export const currentFootprintCombinedNativeStateSchema = z.object({
   combinedAbortDispatchAttempted: z.boolean(), combinedOutputCleanupOnly: z.boolean(),
 }).strict();
 export type CurrentFootprintCombinedValidationRequest = z.infer<typeof currentFootprintCombinedValidationRequestSchema>;
+/** Describe the Combined owner's fixed actions, limitations and optional schemas
+ * without allocating an owner or contacting EasyEDA. Returned discovery metadata
+ * never authorizes execution or upgrades another launch purpose.
+ */
 export function queryCurrentFootprintCombined(includeSchemas: boolean): Record<string, unknown> {
   return { wrapperAction: "footprint-combined", toolWrapperAction: "footprint-combined", validationOnly: true,
     connectedValidation: false, executionAuthorized: false, saveAuthorized: false, profile: CURRENT_FOOTPRINT_COMBINED_PROFILE,

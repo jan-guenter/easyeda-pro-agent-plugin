@@ -29,6 +29,10 @@ export function currentFootprintCopyManagerRouteNativeCases(): readonly CurrentF
   { phase: "release", method: "Runtime.releaseObjectGroup", sessionId, params: { objectGroup: CURRENT_FOOTPRINT_COPY_MANAGER_ROUTE_GROUP } });
   return Object.freeze(commands);
 }
+/** Generate the manager-route codec while preserving fixed service, registry and
+ * project checks. Accept replacements only for reviewed fields, cap each row and
+ * pack exact templates; no manager method is invoked by this builder.
+ */
 export function currentFootprintCopyManagerRouteNativeSource(): string {
   const rows: string[] = [];
   for (const original of currentFootprintCopyManagerRouteNativeCases()) {

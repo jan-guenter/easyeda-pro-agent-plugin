@@ -57,6 +57,10 @@ function templateValue(value: unknown, fields: Readonly<Record<string, string | 
   if (value !== null && typeof value === "object") { return Object.fromEntries(Object.entries(value).map(([name, item]: [string, unknown]) => [name, templateValue(item, fields, condition)])); }
   return value;
 }
+/** Generate the closed clock-RPC codec, preserving worker/UI realms and fixed
+ * per-phase templates. Enforce template bounds and embed independent smoke hashes;
+ * creating this source proves no responder identity or native clock completion.
+ */
 export function currentFootprintCopyClockRpcNativeSource(): string {
   const cases = currentFootprintCopyClockRpcNativeCases();
   const rows = cases.map(command => {

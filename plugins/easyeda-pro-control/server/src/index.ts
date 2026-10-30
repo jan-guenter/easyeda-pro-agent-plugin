@@ -2707,6 +2707,11 @@ if (facadeToolRegistered(facadeMode, "easyeda_control_pcb_diagnostic_validation"
       }
     });
   };
+  /** Route startup requests through one original purpose-sealed coordinator.
+   * Retain queued calls and native reservations through uncertainty/cleanup, and allow
+   * replacement only after the original lease is released. Fixed route flags select reviewed
+   * purposes; they cannot upgrade an allocated owner or replay consumed operation IDs.
+   */
   const runStartup = (request: CurrentPcbWorkerStartupValidationRequest | CurrentPcb209WorkerStartupValidationRequest | CurrentPcb209EmptyStartupValidationRequest | CurrentPcb209RatlineStartupValidationRequest | CurrentPcb209RatlineContinuationValidationRequest | CurrentFootprintCopyPreparationValidationRequest | CurrentFootprintCopyRoutePreparationValidationRequest | CurrentFootprintCombinedValidationRequest, emptyPurpose = false, ratlinePurpose = false, continuationPurpose = false, footprintPurpose = false, routePurpose = false, combinedPurpose = false): Promise<{ result: Record<string, unknown> }> => {
     if (combinedHistoricalOriginal !== undefined && currentPcbWorkerStartupLifecycle === combinedHistoricalOriginal.owner) {
       throw new Error("Combined historical relinquishment reserves this facade.");
@@ -2755,6 +2760,10 @@ if (facadeToolRegistered(facadeMode, "easyeda_control_pcb_diagnostic_validation"
       const facadePromise = disposableOwnData(engine, "controlFingerprintPromise");
       const authority = disposableOwnData(engine, "executionAuthorityValidator");
       const controlPath = retainedControlRoot.path, pluginRoot = resolve(import.meta.dirname, "../..");
+      /** Capture the exact methods used by the selected startup purpose, including its
+       * optional observation stages. Later local checks compare these identities and
+       * retained dependencies so prototype replacement cannot reuse the original authority.
+       */
       const methodIdentities = (): readonly unknown[] => [disposableOwnerMethod(bridgeGate, "run"),
         disposableOwnerMethod(engine, "assertDiagnosticLaunchOtherOperationsSettled"),
         ...["run", "captureWorkerStartup", "handoffWorkerStartup", "openWorkerStartup", "handoffStartup", "openStartup", "requireStartup",

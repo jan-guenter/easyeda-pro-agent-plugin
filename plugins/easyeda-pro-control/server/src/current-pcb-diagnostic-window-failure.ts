@@ -49,6 +49,10 @@ export function currentWindowFailureAction(value: unknown): CurrentWindowFailure
 export function currentWindowReleaseFailure(code: string): boolean {
   return code === "pcb-diagnostic-window-capture-release-before-exit" || code === "pcb-diagnostic-window-capture-gdi-release" || code === "pcb-diagnostic-window-capture-child-release";
 }
+/** Decode at most 4 KiB of inert native failure evidence for the requested action.
+ * Validate fixed action/code/stage relationships and optional cached child/window
+ * counts; refuse contradictory scope rather than querying Windows or guessing causes.
+ */
 export function decodeCurrentWindowFailure(input: unknown, action: CurrentWindowFailureAction, nativeCode: string): CurrentWindowFailure {
   const captured = captureCurrentPcbStringClockReply(input);
   if (Buffer.byteLength(captured.text) > 4096) { throw new Error("PCB_WINDOW_FAILURE_BOUND"); }

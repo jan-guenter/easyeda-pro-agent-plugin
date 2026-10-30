@@ -765,6 +765,10 @@ function requireValue(condition: boolean, message: string): asserts condition {
 }
 function absent(value: unknown): boolean { return value instanceof Error && "code" in value && value.code === "ENOENT"; }
 function recordName(value: string): value is RecordName { return Object.hasOwn(diagnosticLifecycleRecordSchemas, value); }
+/** Choose the read/write byte envelope for each exact lifecycle record kind.
+ * Specialized results retain their own packet bounds plus journal overhead;
+ * unknown encodings cannot gain a larger allowance through their contents.
+ */
 function recordBound(name: RecordName): number {
   // Six JSON bytes per UTF-16 code unit covers control-character escapes in16 IDs.
   if (name === "saved-cache-native-result.json") { return MAX_BYTES + CURRENT_FOOTPRINT_SAVED_CACHE_PROBE_LIMITS.resultBytes; }
@@ -904,6 +908,11 @@ async function requireSettledOperation(directory: ControlRootDirectory, operatio
     forgetSettledChain(key); settledChains.set(key, pending); settledChainBytes += pending.bytes;
   }
 }
+/** Validate the complete journal's purpose, digest links and legal lifecycle order.
+ * Intents consume their stages, results require their original predecessors, and
+ * terminal records require the matching closure path. This checks stored evidence;
+ * it cannot reconstruct process handles or authorize another native dispatch.
+ */
 function validateChain(operation: DiagnosticLifecycleOperation): void {
   const records = operation.records;
   for (const record of Object.values(records)) { requireValue(record.operationId === operation.operationId, "RECORD_OPERATION"); }

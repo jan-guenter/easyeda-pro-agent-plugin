@@ -36,6 +36,10 @@ export function currentFootprintCopyMainBackendNativeCases(): readonly Command[]
     { phase: "release", method: "Runtime.releaseObjectGroup", params: { objectGroup: GROUP } },
   ] satisfies Command[]);
 }
+/** Generate the original-main backend codec from fixed registration/capture cases.
+ * Validate scalar slots and bounded rows before packing with hashes; emission
+ * performs no HTTP request and supplies no backend-owner admission.
+ */
 export function currentFootprintCopyMainBackendNativeSource(): string {
   const rows = currentFootprintCopyMainBackendNativeCases().map(command => {
     const wire = currentFootprintCopyMainBackendWire(command, 1);

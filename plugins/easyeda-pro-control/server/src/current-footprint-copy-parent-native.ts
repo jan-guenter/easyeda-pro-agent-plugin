@@ -48,6 +48,10 @@ export function currentFootprintCopyParentNativeCases(): readonly Sample[] {
   return Object.freeze([...construction.map(command => Object.freeze({ kind: "construction" as const, command })),
     ...peer.map(command => Object.freeze({ kind: "peer" as const, command }))]);
 }
+/** Generate separate construction and parent/child-peer command cases with their
+ * reviewed realms and argument slots. Packing preserves the native wire; generating
+ * a codec does not bind a live worker, channel peer or manager.
+ */
 export function currentFootprintCopyParentNativeSource(): string {
   const rows = currentFootprintCopyParentNativeCases().map(sample => {
     const wire = currentFootprintCopyParentWire(sample.command, 1, sample.kind, parent, child);

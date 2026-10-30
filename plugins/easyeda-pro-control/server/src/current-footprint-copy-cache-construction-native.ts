@@ -33,6 +33,10 @@ export function currentFootprintCacheConstructionNativeCases(): readonly Current
   for (const command of commands) { result.push(Object.freeze({ ...command, phase: "cache-construction", sessionId: marker("sessionId") })); }
   return Object.freeze(result);
 }
+/** Generate the cache-construction codec from reviewed owner/namespace cases.
+ * Validate every dynamic placeholder and the 16 KiB row/64 KiB table bounds before
+ * packing; source generation neither opens caches nor adopts native handles.
+ */
 export function currentFootprintCacheConstructionNativeSource(): string {
   const rows = currentFootprintCacheConstructionNativeCases().map(sample => {
     const wire = currentFootprintCacheConstructionWire(sample, 1);

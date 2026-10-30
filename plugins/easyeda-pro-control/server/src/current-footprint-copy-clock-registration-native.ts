@@ -24,6 +24,10 @@ export function currentFootprintCopyClockRegistrationNativeCases(): readonly Com
     { phase: "release", method: "Runtime.releaseObjectGroup", sessionId: marker("sessionId"), params: { objectGroup: GROUP } });
   return Object.freeze(commands);
 }
+/** Generate the registered-clock codec with only its reviewed callback, binding,
+ * sample and cleanup roles. Validate fixed values and placeholders before packing;
+ * this build step observes no live callback or server-clock provenance.
+ */
 export function currentFootprintCopyClockRegistrationNativeSource(): string {
   const rows = currentFootprintCopyClockRegistrationNativeCases().map(original => {
     const wire = currentFootprintCopyClockRegistrationWire(original, 1, marker("sessionId"));

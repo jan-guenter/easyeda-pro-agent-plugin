@@ -22,6 +22,10 @@ export function currentFootprintSavedCacheNativeCases(): readonly CurrentFootpri
     { cacheNativePhase: "release", method: "Runtime.releaseObjectGroup", sessionId, params: { objectGroup: GROUP } },
   ];
 }
+/** Generate the unchanged six-command metadata codec from its own fixed cases.
+ * Bound and hash the packed table with independent smoke bytes; this builder does
+ * not add the accessor grammar, invoke caches or issue replay authority.
+ */
 export function currentFootprintSavedCacheNativeSource(): string {
   const rows = currentFootprintSavedCacheNativeCases().map(command => {
     const wire = currentFootprintSavedCacheWire(command, 1);

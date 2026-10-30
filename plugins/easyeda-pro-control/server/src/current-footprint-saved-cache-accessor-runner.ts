@@ -22,7 +22,14 @@ export const currentFootprintSavedCacheAccessorObservationSchema = z.object({ pr
 }).strict();
 export type CurrentFootprintSavedCacheAccessorObservation = Readonly<z.infer<typeof currentFootprintSavedCacheAccessorObservationSchema>>;
 export interface CurrentFootprintSavedCacheAccessorTransport { readonly assertCurrent: () => Promise<void>; readonly request: (command: Command) => Promise<unknown> }
+/** Refuse a failed transport or metadata precondition with a fixed owner label.
+ * The label contains no received values and grants no retry or ownership.
+ */
 function need(value: boolean): asserts value { if (!value) { throw new Error("SAVED_CACHE_ACCESSOR_PROBE_OWNER"); } }
+/** Retain exactly the transport's two own data-function identities, rejecting
+ * proxies, extra keys and accessor-based substitutions. The identities are rechecked
+ * around awaits; this shape check alone does not prove a native owner.
+ */
 function methods(value: CurrentFootprintSavedCacheAccessorTransport): readonly unknown[] {
   need(!types.isProxy(value) && Object.getPrototypeOf(value) === Object.prototype && Reflect.ownKeys(value).length === 2);
   return ["assertCurrent", "request"].map(key => {
@@ -62,7 +69,15 @@ export class CurrentFootprintSavedCacheAccessorRunner {
     this.#binding = Object.freeze(z.object({ sessionId: session, uniqueContextId: session }).strict().parse(captureCurrentPcbStringClockReply(binding).value));
     this.#engine = Object.freeze(engineSchema.parse(captureCurrentPcbStringClockReply(engine).value));
   }
+  /** Recheck the retained transport method identities without invoking getters.
+   * A replacement refuses before further requests; matching identities still require
+   * the transport's separate original-owner assertion.
+   */
   #same(): void { need(methods(this.#transport).every((value, index) => value === this.#methods[index])); }
+  /** Send one closed command with original-owner and method checks around each await.
+   * Retain a complete bounded inert reply before postchecks, and classify exact native
+   * exceptions without authorizing a retry or changing qualification flags.
+   */
   async #request(input: Command): Promise<unknown> {
     this.#same(); await this.#transport.assertCurrent(); this.#same();
     const command = validateCurrentFootprintSavedCacheAccessorCommand(input); this.#position = command.cacheAccessorPhase;
@@ -77,10 +92,18 @@ export class CurrentFootprintSavedCacheAccessorRunner {
     }
     return reply.value;
   }
+  /** Build an own-properties-only request for one retained metadata handle under the
+   * original session. Getters are not invoked and previews stay disabled; the request
+   * path supplies the owner checks, bounds and evidence retention.
+   */
   #properties(phase: "array-properties" | "constructor-properties" | "match-properties" | "getter-properties", objectId: string): Promise<unknown> {
     return this.#request({ cacheAccessorPhase: phase, method: "Runtime.getProperties", sessionId: this.#binding.sessionId,
       params: { objectId, ownProperties: true, accessorPropertiesOnly: false, generatePreview: false } });
   }
+  /** Return bounded diagnostics while retaining every original reply privately.
+   * Inline recent non-source replies only within the aggregate budget; hash omitted
+   * packets and preserve failure/cleanup state without granting current ownership.
+   */
   public retained(): Readonly<Record<string, unknown>> {
     const base = { attempted: this.#attempted, releaseAttempted: this.#releaseAttempted, released: this.#released, phase: this.#position,
       failure: this.#failure, nativeException: this.#nativeException, engine: this.#engine, originalRepliesRetainedPrivately: true,
@@ -96,6 +119,11 @@ export class CurrentFootprintSavedCacheAccessorRunner {
     }
     return freezeDeep({ ...base, replies });
   }
+  /** Consume one metadata attempt, retain/recheck the original constructor, match and
+   * getter tuple, and attempt its object-group release once even after failure.
+   * Return only complete bounded metadata; getter/match invocation, native roster
+   * qualification and replay authority remain false.
+   */
   public async observe(): Promise<CurrentFootprintSavedCacheAccessorObservation> {
     need(!this.#attempted); this.#attempted = true;
     const flags = { objectGroup: GROUP, silent: true, generatePreview: false, throwOnSideEffect: true, awaitPromise: false, userGesture: false, arguments: [] as [] } as const;

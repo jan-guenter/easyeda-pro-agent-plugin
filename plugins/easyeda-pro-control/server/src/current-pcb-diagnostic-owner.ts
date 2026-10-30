@@ -619,6 +619,10 @@ class CurrentPcbRetainedOwnerCore {
     this.#pipe.start();
   }
 
+  /** Report cached owner, consumption, transport and cleanup state without launching
+   * or querying a window. Optional diagnostics describe retained observations only;
+   * PID/binding metadata and successful acknowledgments never recreate native ownership.
+   */
   public status(): Readonly<{ helperPid: number | null; binding: Binding | null; failure: string | null;
     busy: boolean; launchConsumed: boolean; closeConsumed: boolean; released: boolean; helperClosed: boolean;
     cleanupOnly: boolean; noProcessCleanupAvailable: boolean; frameWorkerVerified: false; executionAuthorized: false;
@@ -2498,10 +2502,18 @@ class CurrentPcbRetainedOwnerCore {
     if (this.#footprintWindowsClock === null) { throw error("FOOTPRINT_WINDOWS_CLOCK_ORIGINAL"); }
     return this.#footprintWindowsClock.closedWindow();
   }
+  /** Require the original issuer's exact retained closed window, refusing copied or
+   * foreign values. This historical identity check issues no native request and
+   * establishes no document-clock provenance or execution permission.
+   */
   public requireClosedFootprintCopyWindowsClockWindow(window: CurrentFootprintCopyWindowsClockWindow): CurrentFootprintCopyWindowsClockWindow {
     if (this.#footprintWindowsClock === null) { throw error("FOOTPRINT_WINDOWS_CLOCK_ORIGINAL"); }
     return this.#footprintWindowsClock.requireClosedWindow(window);
   }
+  /** Check both supplied result/offset pairs against the original issuer's retained
+   * closed interval. The values remain caller-supplied numerical evidence; a match
+   * cannot prove the original Date/RPC calls or admit a writer.
+   */
   public boundFootprintCopyDocumentClockValues(window: CurrentFootprintCopyWindowsClockWindow,
     values: readonly [readonly [number, number], readonly [number, number]]): CurrentFootprintCopyDocumentClockWindow {
     if (this.#footprintWindowsClock === null) { throw error("FOOTPRINT_WINDOWS_CLOCK_ORIGINAL"); }
@@ -2836,6 +2848,10 @@ class CurrentPcbRetainedOwnerCore {
     try {
       this.#savedCacheAccessorSetupPhase = "source";
       const script = context.script();
+      /** Reprove every captured owner, source, context and method before continuing this
+       * metadata attempt. Checks use retained objects and refuse close, handoff or context
+       * drift instead of adopting a replacement owner.
+       */
       const sameOwner = (): void => {
         this.#available(); requireCurrentFootprintCopyUiSource(source); context.assertCurrent();
         if (this.#pipe !== pipe || pipe.observeSavedCacheAccessor !== request || this.#stagedContext !== context || context.savedCacheMetadataContext !== selectContext ||
@@ -2853,6 +2869,9 @@ class CurrentPcbRetainedOwnerCore {
       await this.#observeOpeningAncillary(); sameOwner();
       this.#savedCacheAccessorSetupPhase = "selector";
       const selected = selectContext.call(context);
+      /** Recheck the original owner and exact session/context selector after awaits.
+       * A newly matching context cannot replace the original captured selector result.
+       */
       const same = (): void => {
         sameOwner(); const observed = selectContext.call(context);
         if (observed.sessionId !== selected.sessionId || observed.uniqueContextId !== selected.uniqueContextId) { throw error("SAVED_CACHE_ACCESSOR_PROBE_OWNER_CHANGED"); }

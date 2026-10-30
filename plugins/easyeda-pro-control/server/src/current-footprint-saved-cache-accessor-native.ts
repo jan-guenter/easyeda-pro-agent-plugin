@@ -9,6 +9,10 @@ import type { CurrentFootprintSavedCacheAccessorCommand } from "./current-footpr
 
 const marker = (name: string): string => `__savedaccessor_${name}__`;
 const literal = (value: string): string => `@"${value.replaceAll('"', '""')}"`;
+/** Enumerate the seven fixed metadata/recheck/release cases with inert placeholder
+ * handles. These templates invoke neither caches nor match, and cannot encode a
+ * caller program, arbitrary effect flags or another diagnostic grammar.
+ */
 export function currentFootprintSavedCacheAccessorNativeCases(): readonly CurrentFootprintSavedCacheAccessorCommand[] {
   const objectId = marker("objectId"), sessionId = marker("sessionId");
   const flags = { objectGroup: GROUP, silent: true, generatePreview: false, throwOnSideEffect: true, awaitPromise: false, userGesture: false, arguments: [] } as const;
@@ -22,6 +26,10 @@ export function currentFootprintSavedCacheAccessorNativeCases(): readonly Curren
     { cacheAccessorPhase: "release", method: "Runtime.releaseObjectGroup", sessionId, params: { objectGroup: GROUP } },
   ];
 }
+/** Generate the separate seven-command native metadata codec from validated cases.
+ * Cap the exact table at 16 KiB, bind compressed/decoded hashes and smoke bytes;
+ * source generation performs no getter call or native-roster qualification.
+ */
 export function currentFootprintSavedCacheAccessorNativeSource(): string {
   const rows = currentFootprintSavedCacheAccessorNativeCases().map(command => {
     const wire = currentFootprintSavedCacheAccessorWire(command, 1);

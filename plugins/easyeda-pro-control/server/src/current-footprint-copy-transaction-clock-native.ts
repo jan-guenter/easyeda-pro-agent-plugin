@@ -24,6 +24,10 @@ export function currentFootprintCopyTransactionClockNativeCases(): readonly Curr
     { method: "Runtime.releaseObjectGroup", params: { objectGroup: GROUP } },
   ]);
 }
+/** Generate the fixed transaction-clock breakpoint, relation and cleanup codec.
+ * Validate each placeholder and the 8 KiB row/64 KiB table bounds before packing;
+ * no clock is armed and no paused worker is resumed during generation.
+ */
 export function currentFootprintCopyTransactionClockNativeSource(): string {
   const rows = currentFootprintCopyTransactionClockNativeCases().map(sample => {
     const wire = currentFootprintCopyTransactionClockWire(sample, 1, marker("sessionId"));

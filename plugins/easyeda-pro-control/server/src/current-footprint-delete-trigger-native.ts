@@ -23,6 +23,10 @@ export function currentFootprintDeleteTriggerNativeCases(): readonly Command[] {
     return Object.freeze(command);
   }));
 }
+/** Generate the fixed delete-trigger capture, preflight and invoke grammar.
+ * Replace only reviewed fields and embed exact packed-table checks; source emission
+ * performs no deletion and cannot substitute for an original live trigger owner.
+ */
 export function currentFootprintDeleteTriggerNativeSource(): string {
   const cases = currentFootprintDeleteTriggerNativeCases();
   const rows = cases.map(command => {

@@ -236,6 +236,10 @@ class CurrentPcbFixedPipeCore {
     }
     return reply;
   }
+  /** Consume the next accessor phase only for the original attached Combined session.
+   * Permit one release after a started attempt, require its exact empty reply, and
+   * block handoff while its group is unreleased. Lost replies grant no phase retry.
+   */
   protected async savedCacheAccessor(command: CurrentFootprintSavedCacheAccessorCommand): Promise<Reply> {
     if (!this.#combinedPurpose || this.#sessionId === null || this.#handedOff || this.#savedAccessorReleaseAttempted ||
       command.sessionId !== this.#sessionId) { throw new Error("PCB_DIAGNOSTIC_PIPE_SAVED_CACHE_PURPOSE"); }
@@ -482,6 +486,11 @@ class CurrentPcbFixedPipeCore {
     this.#released = true;
   }
 
+  /** Reserve a bounded request ID, deadline and pending reply before writing bytes.
+   * Reject unsupported purpose/phase combinations and concurrent requests; require
+   * both the original write callback and matching reply before success. Timeout or
+   * write ambiguity fails the pipe and never grants an automatic resend.
+   */
   // oxlint-disable-next-line eslint/require-await -- Async converts pre-dispatch guards to rejected promises; native completion is callback-based.
   async #request(command: DiagnosticCommand | (CurrentFootprintSavedCacheCommand & Readonly<{ id: number }>) | (CurrentFootprintSavedCacheAccessorCommand & Readonly<{ id: number }>) | (Omit<CurrentPcbStringPrecreateCommand, "stringPhase"> &
     Readonly<{ id: number; sessionId: string }>), phase: RequestPhase = "discovery"): Promise<Reply> {

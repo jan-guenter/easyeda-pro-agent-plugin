@@ -34,7 +34,14 @@ const flags = z.object({ writable: z.boolean(), enumerable: z.boolean(), configu
 export const currentFootprintSavedCacheAccessorDescriptorSchema = z.object({ globalConstructor: flags, constructorPrototype: flags,
   prototypeConstructor: flags, match: flags, globalAccessor: z.object({ enumerable: z.boolean(), configurable: z.boolean(),
     hasGetter: z.literal(true), hasSetter: z.literal(false) }).strict() }).strict();
+/** Refuse malformed tuple metadata before extracting usable remote handles.
+ * The fixed label does not expose received fields or qualify native methods.
+ */
 function need(value: boolean): asserts value { if (!value) { throw new Error("SAVED_CACHE_ACCESSOR_PROBE_METADATA"); } }
+/** Decode a bounded inert CDP reply for the original five-slot tuple. Require exact
+ * own array fields, four distinct remote handles and canonical descriptor JSON;
+ * returned IDs identify retained metadata, never native execution or replay proof.
+ */
 export function decodeCurrentFootprintSavedCacheAccessorProbeArray(input: unknown): Readonly<{ constructor: string; prototype: string; match: string; getter: string; baseline: string }> {
   const internal = z.object({ name: z.literal("[[Prototype]]"), value: remote }).strict();
   const reply = z.object({ result: z.array(property).length(6), internalProperties: z.array(internal).length(1) }).strict()

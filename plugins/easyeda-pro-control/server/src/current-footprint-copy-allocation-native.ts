@@ -26,6 +26,10 @@ export function currentFootprintCopyAllocationNativeCases(): readonly CurrentFoo
     { phase: "allocation-release", method: "Runtime.releaseObjectGroup", sessionId, params: { objectGroup: GROUP } },
   ]);
 }
+/** Generate the fixed allocation codec and independent smoke hashes from the
+ * reviewed TypeScript wire cases. Reject oversized or delimiter-bearing rows;
+ * packing changes storage only and dispatches no allocation request.
+ */
 export function currentFootprintCopyAllocationNativeSource(): string {
   const cases = currentFootprintCopyAllocationNativeCases();
   const rows: string[] = [];

@@ -78,6 +78,10 @@ function ratlineSource(): string {
     "// END GENERATED WORKER STARTUP RATLINE209 PROTOCOL";
 }
 
+/** Regenerate or verify each uniquely delimited native protocol block using only
+ * fixed builders. Refuse duplicate markers, changed worker fields or a helper over
+ * 1 MiB before writing; check mode never changes the helper.
+ */
 async function main(): Promise<void> {
   const action = process.argv[2];
   if (process.argv.length !== 3 || action !== "--write" && action !== "--check") { throw new Error("Expected --write or --check"); }
@@ -132,6 +136,10 @@ function footprintSavedSource(): string {
     `public static class EasyedaFootprintSavedLimits { public const int Requests=${String(saved.requestLimit)}; public const int NormalRequests=${String(saved.normalRequestLimit)}; public const long NormalMilliseconds=${String(saved.normalMilliseconds)}L; public const long TotalMilliseconds=${String(saved.normalMilliseconds + saved.cleanupMilliseconds)}L; }\n` +
     "// END GENERATED FOOTPRINT COPY SAVED PROTOCOL";
 }
+/** Assemble the main-transport block with its separate combined/forward limits,
+ * fixed codecs and cache diagnostics. Generation adds no launch, request or writer
+ * authority and does not merge their runtime grammars.
+ */
 function footprintMainSource(): string {
   return `// BEGIN GENERATED FOOTPRINT MAIN TRANSPORT PROTOCOL\n${currentPcbDiagnosticFixedTableNativeSource()}\n${currentFootprintCombinedNativeLimits()}\n// BEGIN GENERATED FOOTPRINT FORWARD LIMITS\n${currentFootprintCopyForwardNativeLimits()}\n// END GENERATED FOOTPRINT FORWARD LIMITS\n${currentFootprintCopyMainTransportNativeSource()}\n${currentFootprintCopyMainBackendNativeSource()}\n${currentFootprintCopyMainRequestNativeSource()}\n${currentFootprintCopyMainCompletionNativeSource()}\n${currentFootprintSavedCacheNativeSource()}\n${currentFootprintSavedCacheAccessorNativeSource()}\n` +
     "// END GENERATED FOOTPRINT MAIN TRANSPORT PROTOCOL";
