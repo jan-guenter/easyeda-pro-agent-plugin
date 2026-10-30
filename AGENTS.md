@@ -164,6 +164,9 @@ are build/check dependencies only.
 
 ## Release discipline
 
+- Obtain CodeRabbit's PR review before merging. Address its reported issues,
+  including legacy issues outside the immediate diff. If a substantive review
+  recommendation remains disputed, ask the user to decide before merging.
 - Keep marketplace/manifests/README/skills/agent metadata/tool descriptions and exhaustive
   coverage/omission reasons consistent. Publish only with green exact-payload CI and
   reproducible bundles. Scan staged secrets/design artifacts; preserve bridge identity/key epoch.
