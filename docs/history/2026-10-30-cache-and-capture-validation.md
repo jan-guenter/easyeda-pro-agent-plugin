@@ -182,3 +182,34 @@ passes six cases. Its serving-process assertion uses the original synthetic
 child; it neither uses the live control root nor admits a connected generation.
 Local source, bundles and pins are now frozen for exact-commit CI. No complete
 local facade/bridge suite was duplicated.
+
+## Initial candidate CI and integration-fixture corrections
+
+Initial candidate `614872b2360d9c8a6be8537d9232e9fea5b705d4` in PR156 was not
+merged or installed. Build and Windows native checks passed, including actual
+GetWindowRect symbol resolution. Complete Linux CI41010430624 failed shards4/6.
+Four create-clock channel cases still supplied the old seven arguments, so the
+new strict ten-argument schema rejected them before their intended ACK/retirement
+checks. Another invocation test had not established its genuine AsyncRunner
+preparation. Those test fixtures now provide the complete argument tuple and
+real registered preparation custody. All nine focused integration tests pass;
+their original ACK, retirement and zero-additional-request assertions remain.
+Production guards, source fingerprint, helper and bundles are unchanged.
+
+A separate Ratline inspector child exited SIGSEGV while `Runtime.compileScript`
+was pending, before any pause or subscriber. One focused reproduction on the
+same commit, pinned Node24.18.0/core0 and unchanged fixture hashes passed all
+three tests; all six original test children exited through their fixture's
+SIGTERM cleanup. Private process/signal traces and the original failed logs
+remain preserved. No functional cause or crash fix was established. Additional
+bounded failure diagnostics retain the initial command and child context;
+they neither alter lifecycle/timing nor retry, filter or weaken a test.
+
+Two added in-inspector exit-test experiments reached the unchanged evaluation
+deadline and were removed; their failed logs remain private. The existing
+deterministic pre-address child-exit case now checks the bounded diagnostic
+schema. All nine unchanged test selections pass. Final whole types, bridge
+types/lint, strict facade lint, coverage, compatibility, package/MCP/privacy,
+repository and all seven skill checks pass. Independent review found no
+actionable issue in this correction diff. Full CI on the corrected commit is
+still required; none of these local results resolve the original SIGSEGV.

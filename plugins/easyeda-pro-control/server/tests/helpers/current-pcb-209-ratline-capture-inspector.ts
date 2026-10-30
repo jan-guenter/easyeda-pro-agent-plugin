@@ -24,7 +24,7 @@ async function deadline<T>(work: Promise<T>, phase: string, milliseconds = 10_00
 
 /** Actual V8 pause delivery in a synthetic Node child. This owner deliberately
  * does not attest an EasyEDA native source, process, Worker or message peer. */
-export async function ratlineCaptureInspector(context: TestContext, role: CurrentPcb209RatlineCaptureRole,
+export async function ratlineCaptureInspector(context: Pick<TestContext, "after" | "diagnostic">, role: CurrentPcb209RatlineCaptureRole,
   loseAtPause = 0, pauseAtFinalReproof = false, exitBeforeAddress = false,
   options: Readonly<{ holdPcbResult?: boolean; expectedPauses?: number; onScriptParsed?: (params: unknown) => void; onWorkerTermination?: () => void; onPublication?: () => void; world?: RatlineCaptureFixtureOptions["world"] }> = {}): Promise<Readonly<{ transport: CurrentPcb209RatlineCaptureTransport; commands: string[];
     request: (method: string, params: object) => Promise<unknown>; run: () => Promise<unknown>; lose: () => void; regain: () => void; terminate: () => Promise<void>; counts: () => Readonly<{ pauses: number; resumes: number; subscribers: number }> }>> {
@@ -44,12 +44,22 @@ export async function ratlineCaptureInspector(context: TestContext, role: Curren
   let failure: Error | null = null, failureBeforeTeardown = false, socket: WebSocket | null = null, teardown: Promise<void> | null = null;
   let stderr = "";
   const commands: string[] = [];
-  const failureContext = (): Readonly<Record<string, unknown>> => Object.freeze({ pendingRequestCount: pending.size,
-    pendingMethods: [...pending.values()].slice(0, 16).map(value => value.method.slice(0, 80)), pendingMethodsTruncated: pending.size > 16,
+  const pendingContext = (): Readonly<{ pendingRequestCount: number; pendingMethods: readonly string[]; pendingMethodsTruncated: boolean }> => Object.freeze({
+    pendingRequestCount: pending.size, pendingMethods: Object.freeze([...pending.values()].slice(0, 16).map(value => value.method.slice(0, 80))),
+    pendingMethodsTruncated: pending.size > 16 });
+  let initialFailurePending: ReturnType<typeof pendingContext> | null = null;
+  const boundedStderr = (): string => {
+    let text = Buffer.from(stderr, "utf8").subarray(0, 32_768).toString("utf8");
+    // A boundary inside a multibyte character can add one replacement glyph.
+    if (Buffer.byteLength(text) > 32_768) { text = text.slice(0, -1); }
+    return text;
+  };
+  const failureContext = (): Readonly<Record<string, unknown>> => Object.freeze({ role, childPid: child.pid ?? null, ...pendingContext(), initialFailurePending,
     childExitCode: child.exitCode, childSignalCode: child.signalCode, teardownConsumed: teardown !== null,
+    childStderr: boundedStderr(), childStderrTruncated: Buffer.byteLength(stderr) > 32_768,
     pauses, resumes, subscribers: subscribers.size });
   const fail = (error: Error): void => {
-    if (failure === null) { failureBeforeTeardown = teardown === null; }
+    if (failure === null) { failureBeforeTeardown = teardown === null; initialFailurePending = pendingContext(); }
     failure ??= error; ownerCurrent = false; address.reject(failure); extraPause.reject(failure);
     for (const value of pending.values()) { clearTimeout(value.timer); value.reply.reject(failure); } pending.clear();
     for (const subscriber of subscribers) { subscriber.lost(); }
@@ -61,7 +71,12 @@ export async function ratlineCaptureInspector(context: TestContext, role: Curren
   child.once("close", () => {
     // The socket can fail before Node reports why the original child exited.
     // Keep that later observation without changing the first rejection.
-    if (failureBeforeTeardown) { context.diagnostic(JSON.stringify({ event: "ratline-fixture-child-close", ...failureContext() })); }
+    if (failureBeforeTeardown) {
+      // JSON escapes C0 controls. Escape the remaining terminal controls and
+      // Line separators as well; diagnostic data never becomes console syntax.
+      const text = JSON.stringify({ event: "ratline-fixture-child-close", ...failureContext() });
+      context.diagnostic(text.replaceAll(/[\u007F-\u009F\u2028\u2029]/gu, value => `\\u${value.codePointAt(0)?.toString(16).padStart(4, "0")}`));
+    }
     closed.resolve(null);
   });
   assert.ok(child.stderr !== null); child.stderr.on("data", (data: Buffer) => {

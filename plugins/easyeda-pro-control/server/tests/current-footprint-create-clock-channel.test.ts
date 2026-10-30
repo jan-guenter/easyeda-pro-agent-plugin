@@ -33,7 +33,8 @@ function createCommand(): object {
     functionDeclaration: CURRENT_FOOTPRINT_COPY_NATIVE_CREATE_CALL.program,
     arguments: [...["bus", "manager", "consistency", "constructors", "methods"].map(objectId => ({ objectId })),
       { value: "a".repeat(64) }, { value: JSON.stringify({ uuid: "b".repeat(16), path: "a".repeat(64), isProject: true, docType: 4,
-        title: "Copy", display_title: "Copy", description: "", custom_tags: "[]", source: "", version: "" }) }],
+        title: "Copy", display_title: "Copy", description: "", custom_tags: "[]", source: "", version: "" }) },
+      ...["prewrite-scope", "prewrite-original", "prewrite-upload"].map(objectId => ({ objectId }))],
     objectGroup: "easyeda-pro-control-worker-construction-v1", silent: true, returnByValue: true,
     generatePreview: false, throwOnSideEffect: false, awaitPromise: true, userGesture: false } };
 }
@@ -50,7 +51,7 @@ async function fixture(early: boolean): Promise<Readonly<{
   const seed = `public seedCreateForTest(dependency: CurrentPcbWorkerStartupDependency, command: CurrentFootprintCopyNativeCreateCommand): Promise<CurrentFootprintCopyClockRpcChannelReservation> {
     this.#openingConsumed=true;this.#footprintUiStarted=true;this.#footprintClockRegistrationStarted=true;
     this.#executionWorkerSession="worker";this.#workers.set("worker","worker-target");
-    const binding = Object.freeze({issuer:{},clockLease:{profile:"synthetic"},projectObjectId:"project",handles:[],
+    const binding = Object.freeze({issuer:{},clockLease:{profile:"synthetic"},projectObjectId:"project",handles:[],prewriteHandles:["prewrite-scope","prewrite-original","prewrite-upload"],
       assertOriginal:async()=>{await dependency.assertOriginalOwner();},assertCleanup:()=>{},consumeBeforeInvocation:()=>{}});
     const create={binding,command,token:Object.freeze({profile:"private.current-footprint-copy-pending-create.v1"}),dispatchAttempted:false,pending:null,rejectedFrame:null};
     return this.#prepareClockRpc(dependency,"worker",create);
