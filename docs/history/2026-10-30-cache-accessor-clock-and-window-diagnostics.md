@@ -83,11 +83,45 @@ Generated C# indentation is removed only outside strings and comments, keeping
 line breaks and literal bytes exact. The whole helper remains under its
 unchanged 1 MiB cap. No runtime input can supply a packed table or program.
 
-Focused checks cover the new diagnostic, actual owner/discovery integration,
-native wire parity, clock/factory closure, failure decoding and packing.
-Synthetic Node inspector and C# 5 tests are separately labeled; they establish
-no connected Windows result. Required local non-suite checks and exact-head CI
-must finish before merge. Full local suites are not duplicated.
+The tested release candidate is `0.3.0+codex.20261030174608`, first committed as
+`39c95eec5eced63bf3e97fbb03409e9a546d67ef`. Its frozen package comparison
+passed all 2,434 files, modes and 47,069,670 bytes, with inventory SHA-256
+`a9d7fa08d6eba8e1386876aab3a66ff2fa45179bc98463c068b2bb4b254474e8`.
+The runtime identities below remain exact through the following test-only
+correction:
+
+| Payload | SHA-256 |
+| --- | --- |
+| Server source, 955 files | `2f72166a6eaafec6824099f18c3001847eec5e2e854b493eaad05e622dae6ee3` |
+| Runtime bundle projection, three files | `a64ceca9f6b13590a0b1119e25011c57a3eae2289e316e1f4b2525db7c84a347` |
+| Native helper, 1,044,671 bytes | `b8575880cdeb91831d58c2d4c77bb8c679b79c6bf905f95bf2f0df468c8ae2bf` |
+
+All 43 packing/wire regressions passed. The accessor checks passed their
+10-case probe/inspector/real-owner group, 20-case lifecycle group and four-case
+transport group. Seven clock, nine affected factory and seven failure-decoder
+cases passed. These groups overlap; their counts are not an aggregate suite
+total. Strict types and type-aware lint passed with zero warnings. Dependency,
+signature and security audits, sanitizer checks, reproducible bundles, all seven
+skill-creator checks and repository/MCP/all-skill validators passed.
+
+The complete helper compiled as C# 5 with warnings as errors under SDK 10.0.113
+and passed 16 portable smoke methods. The exact window-selector synthetic
+program separately passed 62 assertions. Synthetic Node inspector and C# tests
+establish no connected Windows result. An initial private .NET restore failed
+to resolve an ASP.NET reference under an empty package home; that log is
+retained separately from the successful pinned-SDK check.
+
+Exact-head Windows 41101973813 and Linux CI 41101973806 completed all required
+jobs. Windows, build/package and seven facade shards passed. One shard failed an
+existing raw generated-source substring assertion after indentation packing,
+and the aggregate correctly refused. Its complete failure is retained; no job
+was manually cancelled or rerun. The
+test-only correction compares the entire uniquely delimited packed body and
+keeps every purpose/refusal assertion. All 19 focused startup, ratline-owner
+and literal-packing cases then passed, with strict lint clean. No runtime,
+helper, bundle or compatibility pin changed for that repair. Complete final-head
+CI remains required before merge; no full local suite is duplicated or CI test
+selection relaxed.
 
 ## Review and remaining work
 
@@ -95,7 +129,11 @@ The exact `@coderabbitai full review` comment was posted once. CodeRabbit's firs
 pass reviewed the initial two changed documentation files and raised two minor
 issues. Missing spaces and ambiguous negative wording were corrected, preserving
 prior history bytes and numeric evidence. No legacy issue was reported in that
-pass. The substantive batch requires its own completed review before merge.
+pass. Exact-head substantive review 5716619844 completed on `39c95ee` with one minor
+issue asking for exact payload identities and check results. That issue is
+addressed above. The complete report contained no legacy or code issues, and
+there was no disputed recommendation. The corrective commit still requires its
+own completed review before merge. No further command comment was posted.
 CodeRabbit documents this command as review of the entire PR diff; it does not
 promise an audit of every unchanged repository file.
 
