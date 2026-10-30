@@ -228,3 +228,23 @@ and the explicit-context refusal is unchanged. Inventory of the shared fixture's
 other direct compile/run consumers found no other positive omission; intentional
 negative calls remain negative. This test-only correction and the seven helper
 contracts are batched together. Runtime/source projections above are unchanged.
+
+Commit `c769451c66ffc10a27c3f17b2a09ee77e45c71d9` passed all 11 required
+checks in Linux 41111111466 and Windows 41111111236: 13,797 facade cases,
+13,792 passes, five expected skips and zero failures/cancellations/todos, plus
+424 bridge passes. Exact complete logs and payload identities are retained.
+CodeRabbit review 5717472523 had no correctness or legacy issue, but included
+one collapsed test nitpick and a 79.41% docstring warning against 80%.
+
+The requested single negative now drives the real two-pause loader path,
+injects original context destruction and replacement at the initializer pause,
+and requires the pending original call to reject. It proves the driver issues
+no further resume/retry request or context adoption, then observes termination
+of the retained synthetic child. Inspector disconnect may itself resume Node
+during teardown; no continuous suspension or V8 crash fix is claimed. The
+existing positive loader case remains unchanged. All 12 affected loader/context
+cases and strict lint pass. Four additional named complex fixture/decoder
+functions now have meaningful direct contracts; their AST tokens and literals
+are unchanged. These remaining review items are batched without production,
+bundle, compatibility, helper or version changes. Actual review coverage and
+the final exact-head CI result remain pending until their own checks complete.

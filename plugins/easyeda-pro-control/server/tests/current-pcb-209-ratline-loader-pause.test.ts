@@ -1,6 +1,7 @@
 import assert from "node:assert/strict";
 import { createHash } from "node:crypto";
 import { test } from "node:test";
+import type { TestContext } from "node:test";
 import { z } from "zod";
 import { CURRENT_PCB_209_OPENING_SCRIPTS } from "../src/current-pcb-209-opening-profile.ts";
 import { CURRENT_PCB_209_RATLINE_LOADER_SOURCE, CURRENT_PCB_209_RATLINE_LOADER_SOURCE_SHA256,
@@ -104,3 +105,64 @@ void test("actual inert V8 default callback matches the retained constructor pau
   await fixture.request("Debugger.resume", {}); await call; unsubscribe();
   assert.equal(fixture.counts().pauses, 2); assert.equal(fixture.counts().resumes, 2);
 });
+
+/** Drive the real two-pause loader sequence in one retained synthetic Node
+ * child, then inject context destruction at the validated initializer pause.
+ * The pending original call must reject and a replacement must not restore
+ * requests or resume authority. Cleanup observes only that original child's
+ * exit; the driver issues no resume or replacement request after loss.
+ * Inspector disconnect may itself resume Node during teardown; these request
+ * assertions do not prove continuous suspension. Context events are injected,
+ * so this test establishes no EasyEDA ownership or native crash explanation. */
+async function pausedLoaderContextLoss(context: TestContext): Promise<void> {
+  let parsed: unknown;
+  const fixture = await ratlineCaptureInspector(context, "pcb", 0, false, false, { expectedPauses: 2,
+    onScriptParsed: (value): void => {
+      if (z.looseObject({ url: z.literal(""), length: z.literal(28) }).safeParse(value).success) { parsed = value; }
+    } });
+  const prefix = "globalThis.runLoader=()=>Promise.resolve({message:null}).then(";
+  const caller = "({message:s})=>{";
+  const expression = `${"\n".repeat(1923)}${" ".repeat(75_109)}async function by(t,e=void 0,i=new Function,o){return i;}${"\n".repeat(8)}` +
+    `${" ".repeat(3752 - prefix.length)}${prefix}${caller}${" ".repeat(4009 - 3752 - caller.length)}by(s,void 0,void 0,void 0)});`;
+  const original = fixture.originalContext();
+  const compiled = z.object({ scriptId: z.string() }).strict().parse(await fixture.request("Runtime.compileScript", {
+    expression, sourceURL: uiUrl, persistScript: true, executionContextId: original.id }));
+  await fixture.request("Runtime.runScript", { scriptId: compiled.scriptId, executionContextId: original.id, returnByValue: true });
+  assert.equal(fixture.originalContext(), original);
+  const remote = z.object({ result: z.looseObject({ objectId: z.string() }) }).strict().parse(
+    await fixture.request("Runtime.evaluate", { expression: "globalThis", contextId: original.id, returnByValue: false }));
+  const initial = Promise.withResolvers<unknown>();
+  const generated = Promise.withResolvers<unknown>();
+  let lost = false, pauses = 0;
+  const unsubscribe = fixture.transport.subscribe({ paused: (value): void => { pauses += 1; (pauses === 1 ? initial : generated).resolve(value); },
+    resumed: (): void => {
+      // Only the original first-pause continuation is permitted below.
+    }, lost: (): void => { lost = true; } });
+  await fixture.request("Debugger.setInstrumentationBreakpoint", { instrumentation: "beforeScriptExecution" });
+  const call = fixture.request("Runtime.callFunctionOn", { objectId: remote.result.objectId,
+    functionDeclaration: "function(){return globalThis.runLoader();}", returnByValue: true, awaitPromise: true, silent: true });
+  const finishedEarly = (async (): Promise<never> => { await call; throw new Error("Loader completed before its expected pause."); })();
+  await Promise.race([initial.promise, finishedEarly]); await fixture.request("Debugger.resume", {});
+  const pause = z.record(z.string(), z.unknown()).parse(await Promise.race([generated.promise, finishedEarly]));
+  const source = z.looseObject({ executionContextId: z.number().int().positive() }).parse(parsed);
+  assert.equal(source.executionContextId, original.id);
+  qualifyCurrentPcb209RatlineLoaderPause({ method: "Debugger.paused", sessionId, params: pause },
+    { method: "Debugger.scriptParsed", sessionId, params: source }, sessionId, original.id, compiled.scriptId);
+  assert.equal(fixture.counts().pauses, 2); assert.equal(fixture.counts().resumes, 1);
+  const commands = fixture.commands.length;
+  const rejected = assert.rejects(call, /RATLINE_FIXTURE_CONTEXT_DESTROYED/u);
+  // The loader is genuinely paused in V8; only the context-loss notifications
+  // Are injected. They must revoke its already pending original request.
+  fixture.observeContextForTest("Runtime.executionContextDestroyed", { executionContextId: original.id, executionContextUniqueId: original.uniqueId });
+  fixture.observeContextForTest("Runtime.executionContextCreated", { context: { id: original.id + 1, uniqueId: `${original.uniqueId}-replacement`, auxData: { isDefault: true } } });
+  await rejected; assert.equal(lost, true);
+  assert.throws(() => fixture.originalContext(), /CONTEXT_DESTROYED/u);
+  await assert.rejects(fixture.request("Debugger.resume", {}), /CONTEXT_DESTROYED/u);
+  await assert.rejects(fixture.request("Runtime.callFunctionOn", { objectId: remote.result.objectId,
+    functionDeclaration: "function(){return globalThis.runLoader();}", returnByValue: true, awaitPromise: true, silent: true }), /CONTEXT_DESTROYED/u);
+  assert.equal(fixture.commands.length, commands); assert.equal(fixture.counts().resumes, 1);
+  await fixture.terminate(); await fixture.transport.assertOriginalTermination(); unsubscribe();
+  assert.equal(fixture.counts().subscribers, 0); assert.equal(fixture.counts().resumes, 1);
+}
+
+void test("actual paused loader rejects original context loss without dispatching resume or adopting a replacement", pausedLoaderContextLoss);

@@ -6,6 +6,12 @@ import { readFile } from "node:fs/promises";
 import { gunzipSync } from "node:zlib";
 import { currentPcbDiagnosticFixedTableNativeSource } from "../../src/current-pcb-diagnostic-fixed-table-native.ts";
 
+/** Independently decode one exact shared-loader call with canonical base64,
+ * compressed/decoded SHA-256, 64 KiB bounds and exact row/column counts. Also
+ * verify the committed helper retains the shared decoder, strict UTF-8 and
+ * trailing-data refusal. This reads maintained helper source, never app assets
+ * or native application state.
+ */
 export async function decodeFixedNativeTable(source: string, expectedRows: number, expectedColumns: number): Promise<Readonly<{
   bytes: Buffer; encoded: string; rows: readonly string[];
 }>> {

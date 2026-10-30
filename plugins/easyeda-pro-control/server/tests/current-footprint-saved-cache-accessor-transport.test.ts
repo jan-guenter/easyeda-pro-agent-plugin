@@ -13,6 +13,11 @@ import { combinedDiagnosticNativeRequest, diagnosticNativeRequest, stringPrecrea
 import { currentFootprintSavedCacheAccessorNativeCases, currentFootprintSavedCacheAccessorNativeSource } from "../src/current-footprint-saved-cache-accessor-native.ts";
 
 const wire = (input: unknown): Buffer => Buffer.from(`${JSON.stringify(input)}\0`);
+/** Start the genuine discovery pipe over isolated in-memory byte streams.
+ * Select the Combined or old startup purpose for positive/negative grammar
+ * checks, retain exact outgoing bytes and close both streams before releasing
+ * listeners. No Windows owner, cache getter or native method is exercised.
+ */
 function fixture(context: TestContext, combined = true): Readonly<{
   input: PassThrough; output: PassThrough; pipe: CurrentFootprintCombinedDiscoveryPipe | CurrentPcbWorkerStartupDiscoveryPipe; sent: Buffer[];
 }> {

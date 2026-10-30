@@ -43,6 +43,12 @@ interface Module {
   readonly assertOriginalCurrentFootprintCopyForwardSavedNativeOwner: typeof assertOriginalCurrentFootprintCopyForwardSavedNativeOwner;
   readonly currentFootprintCopyForwardSavedObservationAllocationOutcome: typeof currentFootprintCopyForwardSavedObservationAllocationOutcome;
 }
+/** Exercise the real owner factories, private registries and transport counters
+ * with synthetic installation/SQL seams and an inert Node child. Fixed modes
+ * model readiness, failure and saved-owner birth without Windows resources.
+ * Callers must retain the returned child through cleanup; the fixture issues
+ * no native application ownership, real closed-SQL proof or writer authority.
+ */
 export async function combinedReadyFactoryFixture(mode: Mode, purpose: "combined" | "forward" = "combined", savedObservation = false): Promise<Readonly<{
   api: Module; options: CurrentPcbDiagnosticInstallationOptions; child: () => ChildProcessWithoutNullStreams;
   state: { writes: number; bytes: number; readySent: boolean; actions: string[] };

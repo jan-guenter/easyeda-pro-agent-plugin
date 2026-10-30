@@ -23,6 +23,10 @@ function arrayMetadata(writable = true, enumerable = true, configurable = true):
     property("length", { type: "number", value: 5 }, true, false, false), property("4", { type: "string", value: baseline }, writable, enumerable, configurable)],
     internalProperties: [{ name: "[[Prototype]]", value: { type: "object", subtype: "array", className: "Array", description: "Array(0)", objectId: "array-prototype" } }] };
 }
+/** Build complete inert native-error packets for exact classification tests.
+ * The known side-effect refusal and unknown-error branch remain synthetic;
+ * neither packet observes Chromium behavior or authorizes retry of a probe.
+ */
 function nativeException(kind: "side-effect" | "unknown"): Data {
   const remote = { type: "object", subtype: "error", className: kind === "side-effect" ? "EvalError" : "Error",
     description: kind === "side-effect" ? "EvalError: Possible side-effect in debug-evaluate" : "Error: synthetic-private-note" };
