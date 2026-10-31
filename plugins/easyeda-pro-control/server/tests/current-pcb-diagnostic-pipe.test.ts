@@ -8,7 +8,7 @@ import { setImmediate as yieldToEventLoop } from "node:timers/promises";
 import { CurrentPcbDiagnosticPipe, CurrentPcbStringPrecreatePipe } from "../src/current-pcb-diagnostic-pipe.ts";
 import { CURRENT_PCB_STRING_PRECREATE_REQUEST_LIMIT, currentPcbStringWorkerCommand } from "../src/current-pcb-string-commands.ts";
 import type { DiagnosticEvent } from "../src/current-pcb-diagnostic-protocol.ts";
-import { DIAGNOSTIC_REQUEST_LIMIT, DIAGNOSTIC_WORKER_ATTACH_PARAMS, diagnosticArcShapes209Params, diagnosticExtendedPrimitives209Params, diagnosticImageShapes209Params, diagnosticNativeRequest, diagnosticPadShapes209Params, diagnosticPouredShapes209Params, diagnosticPrimitives209Params, diagnosticSelectionRelations209Params, diagnosticWorkerEvaluationParams } from "../src/current-pcb-diagnostic-protocol.ts";
+import { CURRENT_RENDERER_CAPTURE_PARAMS, DIAGNOSTIC_REQUEST_LIMIT, DIAGNOSTIC_WORKER_ATTACH_PARAMS, diagnosticArcShapes209Params, diagnosticExtendedPrimitives209Params, diagnosticImageShapes209Params, diagnosticNativeRequest, diagnosticPadShapes209Params, diagnosticPouredShapes209Params, diagnosticPrimitives209Params, diagnosticSelectionRelations209Params, diagnosticWorkerEvaluationParams, visualDiagnosticNativeRequest } from "../src/current-pcb-diagnostic-protocol.ts";
 
 /** Real Node byte streams only, with no Windows process, application, bridge,
  * filesystem, socket or native process-owner authority in these tests. */
@@ -588,4 +588,36 @@ void test("worker-specific failure preserves original streams and parent navigat
   const observed = assert.rejects(value.pipe.enableWorkerRuntime(), /PIPE_REPLY/u);
   value.input.write(wire({ method: "Page.frameNavigated", params: {}, sessionId: "session-1" }));
   await observed; retained(value);
+});
+
+void test("fixed renderer screenshot uses the original pipe session and remains refused by ordinary native encoding", async context => {
+  const value = fixture(context);
+  await assert.rejects(value.pipe.captureRendererViewport209(), /NO_PARENT/u); assert.equal(value.sent.length, 0);
+  const attachment = value.pipe.attachTarget("original-target", () => { assert.fail("Unexpected diagnostic event"); });
+  value.input.write(wire({ id: 1, result: { sessionId: "original-session" } })); await attachment;
+  value.pipe.assertPcb209RendererCaptureCapacity();
+  const pending = value.pipe.captureRendererViewport209();
+  const command = { id: 2, method: "Page.captureScreenshot", params: CURRENT_RENDERER_CAPTURE_PARAMS, sessionId: "original-session" };
+  assert.equal(value.sent[1]?.toString(), wire(command).toString());
+  assert.deepEqual(visualDiagnosticNativeRequest(wire(command)), { action: "renderer-viewport-send", requestId: 2, sessionId: "original-session" });
+  assert.throws(() => diagnosticNativeRequest(wire(command)));
+  for (const params of [{ ...CURRENT_RENDERER_CAPTURE_PARAMS, fromSurface: false }, { ...CURRENT_RENDERER_CAPTURE_PARAMS, clip: {} },
+    { ...CURRENT_RENDERER_CAPTURE_PARAMS, format: "jpeg" }, { ...CURRENT_RENDERER_CAPTURE_PARAMS, captureBeyondViewport: true }]) {
+    assert.throws(() => visualDiagnosticNativeRequest(wire({ ...command, params })));
+  }
+  const refused = assert.rejects(pending, /PIPE_REPLY/u);
+  value.input.write(wire({ id: 2, sessionId: "foreign-session", result: { data: "AQ==" } })); await refused;
+  await assert.rejects(value.pipe.captureRendererViewport209(), /PIPE_REPLY/u); assert.equal(value.sent.length, 2); retained(value);
+});
+
+void test("renderer capacity reserves its screenshot in addition to all ten context brackets", async context => {
+  const value = fixture(context);
+  const attachment = value.pipe.attachTarget("original-target", () => { assert.fail("Unexpected diagnostic event"); });
+  value.input.write(wire({ id: 1, result: { sessionId: "original-session" } })); await attachment;
+  for (let id = 2; id <= 93; id += 1) {
+    const pending = value.pipe.getVersion(); value.input.write(wire({ id, result: {} })); await pending;
+  }
+  value.pipe.assertPcb209WindowCaptureCapacity();
+  assert.throws(() => { value.pipe.assertPcb209RendererCaptureCapacity(); }, /RENDERER_CAPTURE_REQUEST_BUDGET/u);
+  assert.equal(value.sent.length, 93); assert.equal(value.pipe.status().failure, null); retained(value);
 });

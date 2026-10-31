@@ -248,3 +248,104 @@ functions now have meaningful direct contracts; their AST tokens and literals
 are unchanged. These remaining review items are batched without production,
 bundle, compatibility, helper or version changes. Actual review coverage and
 the final exact-head CI result remain pending until their own checks complete.
+
+## Published 174608 installation and next-session handoff
+
+The 69-file batch merged through protected PR 159 as
+`7347b83e1312af8ce11249b83262bb98d51304f1`, from reviewed payload
+`44754f7ec33fdeb556e19e325070fea45ce2bcbc`. The entire root tree
+`6d46807d1f0a1440a5f1c3c68079e0ba783bd36a` and plugin tree
+`090d80f13267260de349e528bcd3a906c16ddfd0` match that payload exactly.
+Final PR Linux 41114859450 and Windows 41114859488 passed all 11 required checks:
+13,798 facade cases, 13,793 passes, five expected platform skips and zero
+failures/cancellations/todos; 424 bridge passes across 28 files. Main Linux
+41117152888 and Windows41117152858 are being collected separately; the latter
+was already green when this installation note was appended.
+
+Final CodeRabbit review on `44754f7` reported no outstanding inline, collapsed or
+legacy issues. All three earlier threads are resolved, and all five pre-merge
+checks pass, including 86.11% docstring coverage against 80%. The original
+`@coderabbitai full review` is the sole authored command comment. After its
+default five-commit automatic pause, the existing bot's Trigger review checkbox
+requested this final review without posting another command. Coverage was not
+relaxed, and no test or CI case was filtered, cancelled or manually retried.
+This review covered the complete PR diff through its reviewed heads, not every
+unchanged repository file. Earlier failures and warnings above remain evidence.
+
+The official Git marketplace upgrade installed and enabled
+`0.3.0+codex.20261030174608` from canonical
+`https://github.com/jan-guenter/easyeda-pro-agent-plugin.git`, ref main. The cached
+marketplace HEAD equals merged main, with the same two sparse paths. The upgrade
+already installed the package, so no redundant plugin add was needed. Complete
+comparison before/after official listing and after the private offline probe
+passed 2,435 files, 47,103,743 bytes, 42 directories and all committed modes.
+Inventory SHA-256:
+`0c87c811b06e2104efb86f7e8f99fd6fb9294c45f953efcde1fe679cc0fcfbd9`.
+
+The installed private-profile offline probe passed 46 queries/48 requests,
+reported 27 synthetic tools and 52 configured tools, closed through original EOF
+with zero exit and verified its final synthetic control roster. Sampled process
+and socket absence and offline queries are not continuous isolation or actual
+host admission. The real 685-byte machine profile/SHA a080fa71 remains unchanged.
+No manual installed-cache repair, bridge identity/key-epoch change or host-owner
+termination occurred. Source 955/SHA 26d1e1c5, runtime 3/SHA 1ed6662b and helper
+1,044,671 bytes/SHA b8575880 are exact. The helper leaves 3,905 bytes under its
+unchanged 1 MiB cap. Required local non-suite checks, strict type-aware lint,
+dependency/signature/security audits, reproducible bundles, repository/MCP/all-
+skill checks and all seven skill-creator checks passed. The external official
+plugin validator remains unavailable; maintained validators were not skipped.
+
+No live API/native call was made after installation. Host 3537240 was last
+admitted on 143226; actual 174608 module/process/lease admission remains pending.
+The only live visual generation in this session is terminal and released, with
+original root 18776 exited, empty Job, idle state and no pending record settlement.
+Its restore failed before submission; no capture, camera/source edit or explicit
+Save occurred. The selected disposable remained 598,016 bytes with its original
+hash and no SQLite sidecars. Startup used the existing profile; it does not prove
+whole-profile I/O invariance. No production design was directly opened, hashed
+or edited by the agent. No native cleanup, Save or navigation replay is pending.
+
+Next session:
+
+1. Collect any still-pending main CI result, then load 174608 and admit its actual
+   serving module/PID/Node/lease and complete package/source/runtime identities.
+   Never kill/rebind host controllers, patch caches or adopt historical handles.
+2. Use one new original Combined owner and the distinct
+   `observe-saved-cache-accessor` stage to acquire the actual getter roster. It
+   performs metadata collection only and releases its group. Historical JSON
+   cannot qualify native getter/match invocation or issue replay authority. Do
+   not repeat the completed four-slot 121029 diagnostic merely for chronology.
+3. Implement the distinct fresh saved purpose and held native getter/match tuple
+   across both fixed namespaces with derived budgets and original cleanup. Each
+   existing pair already reads both namespaces; the later pair is freshness,
+   not a missing second namespace. Preserve point-in-time limits.
+4. Continue original current-head/dependency eligibility, actual document Date
+   and RPC/offset provenance, complete native/main completion and detached
+   cleanup, whole four-generation capacity and saved/inverse/full-SQL joins
+   before enabling copy/delete. The numerical clock join is not that provenance.
+5. Qualify child-process capture on a fresh disposable visual owner. The old
+   restore/capture attempts remain consumed. New window discovery details are
+   sampled diagnostics, not current authority, rendering or persistence proof.
+6. Broader design/library/manufacturing writers and 494 omitted/79 blocked SDK
+   methods remain backlog. getEdaPath needs original main Je or a corrected
+   SDK/protocol tuple; never substitute the broader private configuration route.
+   Fixed cll execution remains connected-unvalidated.
+
+Use the available private TMPDIR; do not broadly clean full `/tmp`. This local
+post-publication appendix is retained for the next substantive commit, avoiding
+a new plugin release solely for chronology. Packaged files remain equal to
+merged main; only this history appendix may be dirty.
+
+## 2026-10-30 terminal main CI result
+
+Main `7347b83e1312af8ce11249b83262bb98d51304f1` subsequently passed all 11
+checks in [Linux 41117152888](https://github.com/jan-guenter/easyeda-pro-agent-plugin/actions/runs/41117152888)
+and [Windows 41117152858](https://github.com/jan-guenter/easyeda-pro-agent-plugin/actions/runs/41117152858).
+The root independently queried both exact-commit terminal runs and verified all
+11 retained log hashes. It parsed all eight facade shard totals independently:
+13,798 cases, 13,793 passes, five expected platform skips and zero failures,
+cancellations or todos. The build log reports 424 bridge passes across 28 files.
+No run was filtered, cancelled or manually retried. This resolves the pending
+main-CI observation above; installed payload identities and the next-session
+live-admission boundary remain unchanged. The appendix stays local for the next
+substantive commit. No additional release is needed for this result.

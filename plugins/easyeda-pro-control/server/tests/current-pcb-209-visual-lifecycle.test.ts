@@ -64,15 +64,15 @@ function fixture(context: TestContext, id: string): Readonly<{
   lifecycle: CurrentPcb209VisualLifecycle; options: CurrentPcbDiagnosticLifecycleOptions;
   dependencies: CurrentPcbDiagnosticLifecycleDependencies; calls: string[];
   state: { bound: boolean; released: boolean; terminated: boolean; publicationLoss: boolean; throwVisual: boolean; wrongTarget: boolean;
-    maximized: boolean; restoreCalls: number; restoreReadinessObserved: boolean; resizeCalls: number; resizeReadinessObserved: boolean; readinessCalls: number; captureCalls: number; throwCapture: boolean; methodCalls: number; abortCalls: number; abortPublicationLoss: boolean; lostAbort: boolean };
+    maximized: boolean; restoreCalls: number; restoreReadinessObserved: boolean; resizeCalls: number; resizeReadinessObserved: boolean; readinessCalls: number; captureCalls: number; rendererCalls: number; throwRenderer: boolean; wrongRendererSession: boolean; throwCapture: boolean; methodCalls: number; abortCalls: number; abortPublicationLoss: boolean; lostAbort: boolean };
   request: (action: string, extra?: Record<string, unknown>) => Promise<Record<string, unknown>>;
 }> {
   const calls: string[] = [], state = { bound: false, released: false, terminated: false, publicationLoss: false, throwVisual: false,
-    wrongTarget: false, maximized: false, restoreCalls: 0, restoreReadinessObserved: false, resizeCalls: 0, resizeReadinessObserved: false, readinessCalls: 0, captureCalls: 0, throwCapture: false, methodCalls: 0, abortCalls: 0, abortPublicationLoss: false, lostAbort: false };
+    wrongTarget: false, maximized: false, restoreCalls: 0, restoreReadinessObserved: false, resizeCalls: 0, resizeReadinessObserved: false, readinessCalls: 0, captureCalls: 0, rendererCalls: 0, throwRenderer: false, wrongRendererSession: false, throwCapture: false, methodCalls: 0, abortCalls: 0, abortPublicationLoss: false, lostAbort: false };
   const valueReadinessCalls = (): void => { state.readinessCalls += 1; };
   const binding = { helperInstance: "b".repeat(32), jobId: "c".repeat(32), rootPid: 123, rootCreated: "123456789012345" };
   const owner: CurrentPcbDiagnosticLifecycleOwner = {
-    status: () => ({ windowRestore209AttemptConsumed: state.restoreCalls > 0, windowRestore209ReadinessObserved: state.restoreReadinessObserved,
+    status: () => ({ rendererCapture209AttemptConsumed: state.rendererCalls > 0, windowCapture209AttemptConsumed: state.captureCalls > 0, windowRestore209AttemptConsumed: state.restoreCalls > 0, windowRestore209ReadinessObserved: state.restoreReadinessObserved,
       windowRestore209RequestCapacity: state.restoreCalls === 0 && state.resizeCalls === 0 && state.captureCalls === 0 && state.readinessCalls <= 6,
       windowResize209AttemptConsumed: state.resizeCalls > 0, windowResize209ReadinessObserved: state.resizeReadinessObserved,
       windowResize209RequestCapacity: state.resizeCalls === 0 && state.captureCalls === 0 && state.readinessCalls < 8 && (state.restoreCalls === 0 || state.restoreReadinessObserved), profile: "visual209", stringPrecreateConsumed: false, helperPid: 456, binding: state.bound ? binding : null,
@@ -127,6 +127,16 @@ function fixture(context: TestContext, id: string): Readonly<{
       const intentFile = join(directory(id), "window-resize209-intent.json");
       assert.match(await readFile(intentFile, "utf8"), /acceptWindowResizeEffects/u); return windowResizePacket();
     },
+    rendererCaptureSession209: () => "renderer-parent",
+    captureRendererViewport209: async (target) => {
+      state.rendererCalls += 1; assert.deepEqual(target, SEALED);
+      const intentFile = join(directory(id), "renderer-capture209-intent.json");
+      assert.match(await readFile(intentFile, "utf8"), /acceptRendererCaptureEffects/u);
+      if (state.throwRenderer) { throw new Error("synthetic screenshot failed after possible dispatch"); }
+      const encoded = windowCapturePacket()["pngBase64"]; assert.equal(typeof encoded, "string");
+      return { schema: "easyeda-pro-control.renderer-viewport-png.v1", sessionId: state.wrongRendererSession ? "wrong-session" : "renderer-parent",
+        pngBase64: encoded, screenshotReplyReceived: true, renderCompletionVerified: false };
+    },
     captureWindow209: async (target, hwnd) => {
       state.captureCalls += 1; assert.deepEqual(target, SEALED); assert.equal(hwnd, "12345");
       const intentFile = join(directory(id), "window-capture209-intent.json");
@@ -160,7 +170,7 @@ function fixture(context: TestContext, id: string): Readonly<{
     verifyCheckpoint: (checkpoint, target) => { assert.equal(checkpoint, CHECKPOINT); assert.deepEqual(target, TARGET); return Promise.resolve(); },
     verifyHistoricalCheckpoint: () => Promise.resolve(),
     publishRecord: (operationId, name, record) => {
-      if ((name === "visual-viewport209-result.json" || name === "window-capture209-result.json") && state.publicationLoss) { return Promise.reject(new Error("synthetic lost visual result publication")); }
+      if ((name === "visual-viewport209-result.json" || name === "window-capture209-result.json" || name === "renderer-capture209-result.json") && state.publicationLoss) { return Promise.reject(new Error("synthetic lost visual result publication")); }
       if (name === "visual-abort-intent.json" && state.abortPublicationLoss) { return Promise.reject(new Error("synthetic visual abort intent publication lost")); }
       return publishCurrentPcbDiagnosticLifecycleRecord(operationId, name, record);
     },
@@ -186,11 +196,11 @@ function fixture(context: TestContext, id: string): Readonly<{
   });
   return { lifecycle, options, dependencies, calls, state, request };
 }
-async function ready(value: ReturnType<typeof fixture>, id: string): Promise<void> {
+async function ready(value: ReturnType<typeof fixture>, id: string, observeSource = true): Promise<void> {
   await value.lifecycle.run(launch(id)); await value.request("browser-observation");
   await value.request("inspect-frames", { targetId: "target" }); await value.request("inspect-script", { frameId: "frame", family: "ui" });
   await value.request("open-project", { target: TARGET, confirmDisposableProject: true, acceptNormalOpenEffects: true });
-  await value.request("open-pcb", { acceptNormalOpenEffects: true }); await value.request("observe-pcb-opening");
+  await value.request("open-pcb", { acceptNormalOpenEffects: true }); if (observeSource) { await value.request("observe-pcb-opening"); }
 }
 function visualObservation(value: Record<string, unknown>): Record<string, unknown> {
   const observations = value["observations"]; assert.ok(Array.isArray(observations));
@@ -351,4 +361,45 @@ void test("restore submission needs later normal-state readiness before fixed re
   await value.request("capture-window", { hwnd: "12345", acceptWindowPaintEffects: true, confirmLocalArtifact: true });
   await assert.rejects(value.request("restore-window-for-capture", { acceptWindowRestoreEffects: true }), /CONSUMED/u);
   assert.equal(value.state.restoreCalls, 1); assert.equal(value.state.resizeCalls, 1); assert.equal(value.state.captureCalls, 1);
+});
+
+void test("renderer capture journals before dispatch, settles lost publication, and consumes both image methods", async context => {
+  const id = "pcb209-visual-test-renderer-image", value = fixture(context, id); await ready(value, id);
+  value.state.publicationLoss = true;
+  await assert.rejects(value.request("capture-renderer-viewport", { acceptRendererCaptureEffects: true, confirmLocalArtifact: true }), /synthetic lost/u);
+  value.state.publicationLoss = false;
+  const inspected = await value.lifecycle.run({ action: "inspect", operationId: id });
+  await value.lifecycle.run({ action: "settle-records", operationId: id, expectedIntentSha256: inspected["intentSha256"] });
+  const journals = await readCurrentPcbDiagnosticLifecycles(), result = journals.find(item => item.operationId === id)?.records["renderer-capture209-result.json"]?.result;
+  assert.ok(isRecord(result)); assert.equal(result["sessionId"], "renderer-parent"); assert.equal(result["executionAuthorized"], false);
+  assert.equal(result["imageScope"], "original-parent-renderer-viewport"); assert.equal(result["printMessageAcknowledged"], undefined);
+  await assert.rejects(value.request("capture-renderer-viewport", { acceptRendererCaptureEffects: true, confirmLocalArtifact: true }), /CONSUMED/u);
+  await assert.rejects(value.request("capture-window", { hwnd: "12345", acceptWindowPaintEffects: true, confirmLocalArtifact: true }), /CONSUMED/u);
+  assert.equal(value.state.rendererCalls, 1); assert.equal(value.state.captureCalls, 0);
+});
+
+void test("ambiguous native-window failure never enables renderer fallback", async context => {
+  const id = "pcb209-visual-test-renderer-fallback", value = fixture(context, id); await ready(value, id); value.state.throwCapture = true;
+  await assert.rejects(value.request("capture-window", { hwnd: "12345", acceptWindowPaintEffects: true, confirmLocalArtifact: true }), /synthetic paint/u);
+  await assert.rejects(value.request("capture-renderer-viewport", { acceptRendererCaptureEffects: true, confirmLocalArtifact: true }));
+  const journals = await readCurrentPcbDiagnosticLifecycles();
+  const journal = journals.find(item => item.operationId === id);
+  assert.equal(journal?.records["renderer-capture209-intent.json"], undefined);
+  assert.equal(value.state.captureCalls, 1); assert.equal(value.state.rendererCalls, 0);
+});
+
+void test("renderer failure or wrong original-session result consumes its attempt and cannot reach native-window fallback", async context => {
+  const id = "pcb209-visual-test-renderer-session", value = fixture(context, id); await ready(value, id); value.state.wrongRendererSession = true;
+  await assert.rejects(value.request("capture-renderer-viewport", { acceptRendererCaptureEffects: true, confirmLocalArtifact: true }), /TARGET|SESSION/u);
+  await assert.rejects(value.request("capture-window", { hwnd: "12345", acceptWindowPaintEffects: true, confirmLocalArtifact: true }), /CONSUMED/u);
+  await assert.rejects(value.request("capture-renderer-viewport", { acceptRendererCaptureEffects: true, confirmLocalArtifact: true }), /CONSUMED/u);
+  assert.equal(value.state.rendererCalls, 1); assert.equal(value.state.captureCalls, 0);
+});
+
+void test("renderer capture without original PCB source refuses before image intent or native dispatch", async context => {
+  const id = "pcb209-visual-test-renderer-source", value = fixture(context, id); await ready(value, id, false);
+  await assert.rejects(value.request("capture-renderer-viewport", { acceptRendererCaptureEffects: true, confirmLocalArtifact: true }));
+  const journals = await readCurrentPcbDiagnosticLifecycles();
+  const journal = journals.find(item => item.operationId === id);
+  assert.equal(journal?.records["renderer-capture209-intent.json"], undefined); assert.equal(value.state.rendererCalls, 0);
 });

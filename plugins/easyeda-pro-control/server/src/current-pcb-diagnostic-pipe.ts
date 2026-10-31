@@ -10,7 +10,7 @@
 /* oxlint-disable import/max-dependencies -- Fixed transport composes independent model/common/worker/actor grammars without merging their source or authority boundaries. */
 import { CURRENT_PCB_DIAGNOSTIC_TRANSPORT_LIMITS as TRANSPORT } from "./current-pcb-diagnostic-transport-limits.ts";
 import type { Readable, Writable } from "node:stream";
-import { DIAGNOSTIC_REQUEST_LIMIT, DIAGNOSTIC_SESSION_BYTES, DIAGNOSTIC_SOURCE_FRAME_BYTES, DIAGNOSTIC_WORKER_ATTACH_PARAMS, diagnosticArcShapes209Params, diagnosticExact, diagnosticExtendedPrimitives209Params, diagnosticImageShapes209Params, diagnosticLayers209Params, diagnosticOpeningParams, diagnosticPadShapes209Params, diagnosticPcbOpeningParams, diagnosticPouredShapes209Params, diagnosticPrimitives209Params, diagnosticSelectionRelations209Params, diagnosticToken, diagnosticVisual209Params, diagnosticWorkerEvaluationParams } from "./current-pcb-diagnostic-protocol.ts";
+import { CURRENT_RENDERER_CAPTURE_PARAMS, DIAGNOSTIC_REQUEST_LIMIT, DIAGNOSTIC_SESSION_BYTES, DIAGNOSTIC_SOURCE_FRAME_BYTES, DIAGNOSTIC_WORKER_ATTACH_PARAMS, diagnosticArcShapes209Params, diagnosticExact, diagnosticExtendedPrimitives209Params, diagnosticImageShapes209Params, diagnosticLayers209Params, diagnosticOpeningParams, diagnosticPadShapes209Params, diagnosticPcbOpeningParams, diagnosticPouredShapes209Params, diagnosticPrimitives209Params, diagnosticSelectionRelations209Params, diagnosticToken, diagnosticVisual209Params, diagnosticWorkerEvaluationParams } from "./current-pcb-diagnostic-protocol.ts";
 import type { DiagnosticCommand, DiagnosticEvent } from "./current-pcb-diagnostic-protocol.ts";
 import { decodeCurrentPcbDiagnosticJson } from "./current-pcb-diagnostic-json.ts";
 import type { CurrentDisposableOpenSealedTarget } from "./current-disposable-open.ts";
@@ -46,7 +46,7 @@ type Failure = "attachment" | "input" | "output" | "eof" | "closed" | "framing" 
 type FailureReason = Failure | "empty-frame" | "nonobject-frame" | "reply-unsolicited" | "reply-duplicate" | "reply-id" | "reply-envelope" | "reply-result" |
   "event-budget-or-handler" | "event-envelope" | "event-session" | "worker-attachment" | "worker-handler" | "event-callback" | "unsolicited-data" |
   "trailing-reply-data" | "attachment-result" | "worker-discovery-result";
-type RequestPhase = "discovery" | "frame-owner" | "worker-discovery" | "worker-state" |
+type RequestPhase = "renderer-capture209" | "discovery" | "frame-owner" | "worker-discovery" | "worker-state" |
   `project-${CurrentPcbDiagnosticOpeningPhase}` | `pcb-${CurrentPcbDiagnosticPcbOpeningPhase}` | "layers209" | "primitives209" | "extended-primitives209" | "selection-relations209" | "visual209" | "pad-shapes209" | "image-shapes209" | "arc-shapes209" | "poured-shapes209" |
   `model-${CurrentPcbDiagnosticModelCommand["modelPhase"]}` | `string-${CurrentPcbStringPrecreatePhase}` |
   `common-${CurrentPcbCommonBaselineCommand["commonPhase"]}` | `worker-producer-${CurrentPcbStringWorkerProducerCommand["workerProducerPhase"]}` |
@@ -54,11 +54,12 @@ type RequestPhase = "discovery" | "frame-owner" | "worker-discovery" | "worker-s
   `saved-cache-${CurrentFootprintSavedCacheCommand["cacheNativePhase"]}` |
   `saved-accessor-${CurrentFootprintSavedCacheAccessorCommand["cacheAccessorPhase"]}`;
 const REQUEST_METHODS = [
-  "Browser.getVersion", "Target.getTargets", "Target.attachToTarget", "Page.enable", "Page.getFrameTree", "Runtime.enable",
+  "Browser.getVersion", "Target.getTargets", "Target.attachToTarget", "Page.enable", "Page.getFrameTree", "Page.captureScreenshot", "Runtime.enable",
   "Debugger.enable", "Debugger.getScriptSource", "DOM.getFrameOwner", "DOM.describeNode", "Target.setAutoAttach",
   "Runtime.evaluate", "Runtime.callFunctionOn", "Runtime.getProperties", "Runtime.releaseObjectGroup",
 ] as const satisfies readonly DiagnosticCommand["method"][];
 const REQUEST_PHASES = [
+  "renderer-capture209",
   "discovery", "frame-owner", "worker-discovery", "worker-state", "project-preflight", "project-open-project",
   "pcb-preflight", "pcb-open-document", "pcb-observe", "layers209", "primitives209", "extended-primitives209", "selection-relations209", "visual209", "pad-shapes209", "image-shapes209", "arc-shapes209", "poured-shapes209", "model-wrapper", "model-properties", "model-handler",
   "model-constructors-diagnostic", "model-constructors-precreate",
@@ -430,6 +431,19 @@ class CurrentPcbFixedPipeCore {
   public assertPcb209WindowCaptureCapacity(): void {
     this.assertPcb209ShapeStageCapacity();
     if (DIAGNOSTIC_REQUEST_LIMIT - (this.#nextId - 1) < 10) { throw new Error("PCB209_WINDOW_CAPTURE_REQUEST_BUDGET"); }
+  }
+  /** The renderer capture adds one request to the ten existing identity
+   * brackets. All eleven IDs remain in the original global pipe allocator. */
+  public assertPcb209RendererCaptureCapacity(): void {
+    this.assertPcb209ShapeStageCapacity();
+    if (DIAGNOSTIC_REQUEST_LIMIT - (this.#nextId - 1) < 11) { throw new Error("PCB209_RENDERER_CAPTURE_REQUEST_BUDGET"); }
+  }
+  /** The born visual native encoder separately admits this fixed command.
+   * No target, clip, flags or session can be supplied by an operation caller. */
+  public captureRendererViewport209(): Promise<Reply> {
+    if (this.#sessionId === null || this.#workerEvent !== null) { return Promise.reject(new Error("PCB209_RENDERER_CAPTURE_NO_PARENT")); }
+    return this.#request({ id: this.#nextId, method: "Page.captureScreenshot", params: CURRENT_RENDERER_CAPTURE_PARAMS,
+      sessionId: this.#sessionId }, "renderer-capture209");
   }
   public observeArcShapes209(uniqueContextId: string, target: CurrentDisposableOpenSealedTarget): Promise<Reply> {
     if (this.#sessionId === null || this.#workerEvent !== null) { return Promise.reject(new Error("PCB209_ARC_SHAPES_PIPE_INPUT")); }

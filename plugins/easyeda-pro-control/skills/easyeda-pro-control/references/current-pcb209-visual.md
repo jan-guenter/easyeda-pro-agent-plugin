@@ -85,7 +85,51 @@ state is not independently double-sampled, rendering completion is not observed
 and the result contains no screenshot. A three-second observer prevents later
 camera dispatch after expiry but cannot cancel a handler already sent.
 
-## Capture the original window
+## Choose one capture method
+
+Choose an image method before dispatch. `capture-renderer-viewport` captures
+the original application renderer's viewport; `capture-window` requests pixels
+from the original Windows HWND. They share one consumed image slot, including
+after a missing reply, blank image or failed postcheck. There is no automatic
+fallback, second-method retry or adoption of a historical owner. The camera
+operation has its own once-only reservation.
+
+### Capture the renderer viewport
+
+After published `observe-pcb-opening`, validate and send
+`capture-renderer-viewport` with the original operation/binding,
+`acceptRendererCaptureEffects:true` and `confirmLocalArtifact:true`. No HWND,
+target URL, clip, dimensions, format, screenshot options or foreground request
+is accepted. The fixed command uses PNG `Page.captureScreenshot` on the retained
+source-qualified parent Page session, with surface capture enabled and capture
+beyond the viewport disabled. It does not use an Electron main-process fallback
+or this plugin's GDI bitmap acquisition. This does not prove that Chromium avoids
+GPU resources or can capture a hidden/minimized application successfully.
+
+The owner brackets capture with original parent/ancillary-frame and active-PCB
+checks, reserving eleven CDP requests in the existing global allocator and
+protected output/cleanup capacity. Its durable renderer intent is separate from
+the window paint intent. A successful reply is published only after original
+session, source and target reproof. Record inspection uses
+`observation:"renderer-capture209"`; it does not dispatch a second screenshot.
+
+The managed PNG is bounded to 256 KiB, 4,096 pixels per side and 4,194,304 pixels
+total. The decoder checks the complete RGB/RGBA8 noninterlaced PNG, CRCs, standard
+scanline filters and exact bounded zlib consumption. Ancillary metadata remains
+opaque and byte-exact. Dimensions, hash and raw RGB-zero status come from the
+decoded image, not caller or native summary fields. The result accepts no color,
+alpha-display, metadata, stable-render, complete-board or saved-design claim.
+The viewport can include application UI and child-frame content; it is not a
+canvas-only image. Use the exact returned managed path for visual inspection.
+
+This renderer route has source/offline coverage. Connected visual acceptance
+requires a fresh installed generation and remains pending. The older installed
+174608 window capture returned a valid but all-RGB-zero PNG; that consumed owner
+cannot use this new action as a fallback. Its terminal cleanup and the scope of
+the native metadata observations are retained in the
+[batch record](https://github.com/jan-guenter/easyeda-pro-agent-plugin/blob/main/docs/history/2026-10-31-held-cache-and-capture-validation.md).
+
+### Capture the original window
 
 After published `observe-pcb-opening`, use `observe-capture-readiness` with the
 original operation/binding to query the unique original window and transport
@@ -96,8 +140,16 @@ does not recheck active PCB identity or authorize capture. The window can change
 immediately afterward; actual capture repeats all original-owner, context,
 geometry and capacity checks. No caller PID/HWND or resize is accepted.
 
-For a visible maximized original window, validate `restore-window-for-capture`
-with the same operation/binding and `acceptWindowRestoreEffects:true`. This
+Capture an already geometry-eligible window directly, including a maximized
+window, when transport capacity is eligible, the original PCB source is retained
+and the reader is available. Readiness remains a snapshot; capture must pass its
+fresh original-owner, active-PCB and geometry checks. Direct capture requests
+painting at the observed bounds. It establishes no render completion or
+persistence result.
+
+Restore and resize are optional. If a visible maximized original window needs
+the fixed smaller size, first validate `restore-window-for-capture` with the same
+operation/binding and `acceptWindowRestoreEffects:true`. This
 separate once-only action requests the fixed nonactivating show command4 through
 [ShowWindowAsync](https://learn.microsoft.com/en-us/windows/win32/api/winuser/nf-winuser-showwindowasync).
 Windows may restore the previous position as well as size; accepting restore
@@ -111,18 +163,19 @@ no Z-order, geometry, rendering or persistence guarantee. It does not use
 `SetWindowPlacement`, style changes, a foreground request or synchronous restore.
 Minimized, hidden, ambiguous and ordinary-purpose windows remain unsupported.
 
-Restore must precede every resize/capture attempt. Its durable intent is consumed
-before possible dispatch; source/postguard failures, missing replies and refusal
-do not permit retry or an inverse. Before restore, at least30 CDP slots and32MiB
-stdout headroom and two unused readiness-query slots are required. These reserve
+If using restore, complete it before any resize/capture attempt. Its durable
+intent is consumed before possible dispatch. Source/postguard failures, missing
+replies and refusal do not permit retry or an inverse. Before restore, at least30
+CDP slots and32MiB stdout headroom and two unused readiness-query slots are
+required. These reserve
 transport capacity for restore, potential resize and capture; each later stage
 rechecks its remaining output capacity independently. Run readiness after the
 restore result is published and require `restoreStateObserved:true` on the same
-original HWND with `maximized:false`. This snapshot is required before resize or
-capture, and neither later operation treats it as current-state authority. If the
-restored window remains too large, use the fixed resize below and run readiness
-again. If it remains maximized or the window changes, inspect and use only the
-offered cleanup; do not issue another restore.
+original HWND with `maximized:false`. After a restore attempt, this snapshot is
+required before resize or capture. Neither later operation treats it as
+current-state authority. If the restored window remains too large, use the fixed
+resize below and run readiness again. If it remains maximized or the window
+changes, inspect and use only the offered cleanup; do not issue another restore.
 
 For an eligible non-maximized window that needs a smaller size, validate
 `resize-window-for-capture` with the original operation/binding and

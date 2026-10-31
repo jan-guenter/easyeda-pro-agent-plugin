@@ -106,6 +106,34 @@ void test("all 20 native programs, sequence, effects and fixed argument grammar 
   assert.ok(!source.includes("$request.arguments")); assert.ok(!source.includes("$request.functionDeclaration"));
 });
 
+void test("fixed worker table reader refuses ambiguous aliases and corrupt table or member pins", async () => {
+  const source = await readFile(new URL("../../scripts/pcb-diagnostic-owner.ps1", import.meta.url), "utf8");
+  const name = "StringWorkerProjectSelectorFunction";
+  const table = /static readonly string\[\] StringWorkerProgramTable0=StringWorkerPackedProgramTable\("([A-Za-z0-9+/=]+)",([0-9]+),"([a-f0-9]{64})","([a-f0-9]{64})",([0-9]+)\);/u.exec(source);
+  const alias = /static readonly string StringWorkerProjectSelectorFunction=StringWorkerPackedProgram\(StringWorkerProgramTable0,0,([0-9]+),StringWorkerProjectSelectorFunctionSha256\);/u.exec(source);
+  const hash = /const string StringWorkerProjectSelectorFunctionSha256="([a-f0-9]{64})";/u.exec(source);
+  assert.ok(table?.[1] !== undefined && table[2] !== undefined && table[3] !== undefined && table[4] !== undefined && table[5] !== undefined &&
+    alias?.[1] !== undefined && hash?.[1] !== undefined);
+  const zeroHash = "0".repeat(64);
+  const nextTableLength = String(Number(table[2]) + 1);
+  const nextCount = String(Number(table[5]) + 1);
+  const nextMemberLength = String(Number(alias[1]) + 1);
+  for (const broken of [
+    source.replace(table[0], table[0] + table[0]), source.replace(alias[0], alias[0] + alias[0]),
+    source.replace(table[0], table[0].replace(`"${table[1]}"`, `"${table[1]}="`)),
+    source.replace(table[0], table[0].replace(`",${table[2]},`, `",${nextTableLength},`)),
+    source.replace(table[0], table[0].replace(`"${table[3]}"`, `"${zeroHash}"`)),
+    source.replace(table[0], table[0].replace(`"${table[4]}"`, `"${zeroHash}"`)),
+    source.replace(table[0], table[0].replace(`,${table[5]});`, `,${nextCount});`)),
+    source.replace(alias[0], alias[0].replace("StringWorkerProgramTable0,0,", `StringWorkerProgramTable0,${table[5]},`)),
+    source.replace(alias[0], alias[0].replace(`,0,${alias[1]},`, `,0,${nextMemberLength},`)),
+    source.replace(hash[0], hash[0].replace(hash[1], zeroHash)),
+    source.replace(alias[0], alias[0].replace("StringWorkerProgramTable0", "ForeignProgramTable0")),
+  ]) {
+    assert.notEqual(broken, source); assert.throws(() => readPackedNativeProgram(broken, name));
+  }
+});
+
 void test("synthetic native responder consumes the complete flattened worker grammar with retained real scope handles", async () => {
   const identity = { projectUuid: "e".repeat(64), branchUuid: "f".repeat(32), windowTabId: "original-window" };
   const responder = createCurrentPcbStringWorkerProducerResponder(identity, "worker-script-1");
