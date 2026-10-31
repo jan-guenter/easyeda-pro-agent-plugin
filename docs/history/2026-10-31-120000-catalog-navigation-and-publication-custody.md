@@ -223,10 +223,10 @@ runtime programs:
   clock-channel and publication V8 selection passed all 11 cases after both
   failures were reproduced. No runtime guard was relaxed.
 
-CodeRabbit's initial automatic review reported three minor issues, including
-two collapsed outside-diff issues: numeric spacing in this record, viewport
-acknowledgment versus camera-bound documentation, and the older execution budget
-in the preparation reference. All three are corrected locally. Its docstring
+CodeRabbit's initial automatic review reported three minor issues: one inline
+issue about numeric spacing in this record, and two issues outside the diff
+about navigation acknowledgments and the execution budget in the preparation
+reference. All three are corrected locally. Its docstring
 check also reported insufficient coverage. Useful contracts now describe original
 reader custody, SQL/UTF-8 bounds, callback identity, one-shot phases, metadata
 projections and navigation acknowledgment limits. The native contract additions
@@ -254,10 +254,10 @@ unchanged dependency, bridge and audit inputs were retained rather than running
 a second full local campaign. Complete final-payload suites and final automatic
 CodeRabbit follow-up remain required before merge.
 
-The first full review reported three issues: one inline issue and two issues
-outside the diff. The request-budget issue affects both the preparation and
-combined references, so these three issues cover four document locations.
-There were no other legacy issues or nitpicks in that review. Full check
+Together, the initial automatic review and the full review identified three
+issues across four document locations. The full review extended the existing
+request-budget issue to the combined reference; it did not add another issue.
+There were no other legacy issues or nitpicks in those reviews. Full check
 124538685457 succeeded on the initial head.
 Final source 982 SHA `d61c1a1df0cd4c5c185c4ffe8e24af0aea7962a627a14020fea6cbbe907c1861`;
 runtime 3 SHA `074b3d7ff9a75c9d1c5725829faca7de42bd5310686f3b6b370802553ba7d8fd`.
