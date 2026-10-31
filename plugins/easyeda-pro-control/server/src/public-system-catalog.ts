@@ -7,6 +7,7 @@ import { PUBLIC_SYSTEM_LIBRARY_LOOKUP_LIMITATIONS, PUBLIC_SYSTEM_LOOKUP_MAX_CAND
   queryPublicSystemLibraryLookups } from "./public-system-library-lookups.ts";
 import type { PublicSystemLookupCandidate } from "./public-system-library-lookups.ts";
 import { publicSystemClassificationSchemas, queryPublicSystemClassification, validatePublicSystemClassificationResult } from "./public-system-classification.ts";
+import { publicSystemAssetCatalogSchemas, queryPublicSystemAssetCatalog, validatePublicSystemAssetCatalogResult } from "./public-system-asset-catalog.ts";
 
 const uuid = z.string().regex(/^[a-f0-9]{32}$/u);
 const safeText = (maximum: number): z.ZodString => z.string().max(maximum).refine((value) => value.isWellFormed() && !value.includes("\u0000"));
@@ -22,7 +23,7 @@ const symbolSchema = z.object({ action: z.literal("get-symbol"), symbolUuid: uui
 const deviceSchema = z.object({ action: z.literal("get-device"), deviceUuid: uuid, confirmNetwork: z.literal(true) }).strict();
 export const publicSystemCatalogRequestSchema = z.discriminatedUnion("action", [searchSchema, symbolSearchSchema, deviceSearchSchema,
   symbolSchema, deviceSchema, publicSystemSymbolExactRequestSchema, publicSystemFootprintNameRequestSchema, publicSystemLcscRequestSchema,
-  ...publicSystemClassificationSchemas]);
+  ...publicSystemClassificationSchemas, ...publicSystemAssetCatalogSchemas]);
 export type PublicSystemCatalogRequest = z.infer<typeof publicSystemCatalogRequestSchema>;
 export function parsePublicSystemCatalogRequest(input: unknown): PublicSystemCatalogRequest { return publicSystemCatalogRequestSchema.parse(input); }
 
@@ -42,6 +43,9 @@ const source = { source: "pro-ui/3.2.198.2800f583/js/ui.js",
   componentRoutesUtf16Offset: 6_073_155, deviceRoutesUtf16Offset: 6_072_582, formEncoderUtf16Offset: 6_061_646,
   deviceSearchUtf16Offset: 6_177_499, symbolSearchUtf16Offset: 6_179_220, defaultPostJsonUtf16Offset: 6_061_207 };
 export const publicSystemCatalogQuerySchema = z.object({ includeSchemas: z.boolean().default(false) }).strict();
+/** Report fixed anonymous catalog subsets and optional exact schemas without
+ * performing a network request or granting discovery-based execution.
+ */
 export function queryPublicSystemCatalog(input: unknown = {}): Record<string, unknown> {
   const query = publicSystemCatalogQuerySchema.parse(input);
   const entries: Record<string, unknown>[] = [];
@@ -52,7 +56,7 @@ export function queryPublicSystemCatalog(input: unknown = {}): Record<string, un
     ...(query.includeSchemas ? { inputSchema: z.toJSONSchema(schema) } : {}), limitations: [...limitations], provenance: source,
   }); }
   entries.push(...queryPublicSystemSymbolExact(query).entries, ...queryPublicSystemLibraryLookups(query).entries,
-    ...queryPublicSystemClassification(query).entries);
+    ...queryPublicSystemClassification(query).entries, ...queryPublicSystemAssetCatalog(query).entries);
   return { offline: true, invocationEnabledByDiscovery: false, total: entries.length, entries };
 }
 export function validatePublicSystemCatalogArguments(input: unknown): Record<string, unknown> {
@@ -206,6 +210,9 @@ function projectLibraryLookup(input: unknown, raw: unknown): Record<string, unkn
  * complete component or execute instructions contained in names/descriptions. */
 export function validatePublicSystemCatalogResult(input: unknown, raw: unknown): Record<string, unknown> {
   const request = parsePublicSystemCatalogRequest(input);
+  if (request.action === "search-3d-models" || request.action === "search-panel-libraries" || request.action === "get-panel-library") {
+    return validatePublicSystemAssetCatalogResult(request, raw);
+  }
   if (request.action === "get-classification-tree" || request.action === "get-classification-index-by-name" ||
     request.action === "get-classification-name-by-uuid" || request.action === "get-classification-name-by-index") {
     return validatePublicSystemClassificationResult(request, raw);

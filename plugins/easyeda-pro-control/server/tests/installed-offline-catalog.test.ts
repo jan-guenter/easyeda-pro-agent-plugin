@@ -121,10 +121,18 @@ process.once("exit", () => {
     }
   });
 
-  void test("script dependencies are only Node builtins and the builtin-only private directory helper", async () => {
+  void test("script imports stay within Node builtins and two fixed builtin-only verification helpers", async () => {
     const source = await readFile(new URL("../../scripts/probe-installed-offline-catalog.ts", import.meta.url), "utf8");
     const imports = [...source.matchAll(/from "([^"]+)"/gu)].map(match => match[1]);
-    assert.ok(imports.every(value => value?.startsWith("node:") === true || value === "./private-temporary-directory.ts"));
+    const helpers = ["./private-temporary-directory.ts", "./public-catalog-expectations.ts"] as const;
+    assert.ok(imports.every(value => value?.startsWith("node:") === true || helpers.some(helper => helper === value)));
+    for (const helper of helpers) {
+      const helperSource = await readFile(new URL(`../../scripts/${helper.slice(2)}`, import.meta.url), "utf8");
+      const helperImports = [...helperSource.matchAll(/from "([^"]+)"/gu)].map(match => match[1]);
+      assert.ok(helperImports.every(value => value?.startsWith("node:") === true));
+      assert.doesNotMatch(helperSource, /\bimport\s*\(|\brequire\s*\(/u);
+      if (helper === "./public-catalog-expectations.ts") { assert.equal(helperImports.length, 0); }
+    }
     assert.equal(source.includes('name: "easyeda_control_api"'), true);
     assert.equal(source.includes(".kill("), false);
     assert.equal(source.includes("process.env"), false);

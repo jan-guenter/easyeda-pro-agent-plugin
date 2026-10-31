@@ -93,7 +93,7 @@ function command(cleanup: boolean, sessionId = "worker"): CurrentFootprintCopyCl
 async function finish(f: Awaited<ReturnType<typeof fixture>>): Promise<void> { f.state.exited = true; await f.channel.releaseAfterTermination(); }
 
 void test("paired RPC unit retains the real allocator and original framing without enlarging its normal-ID ceiling", async () => {
-  const f = await fixture(736);
+  const f = await fixture(745);
   try {
     const reservation = await f.channel.prepareFootprintClockRpc(f.dependency, "worker");
     await assert.rejects(f.dependency.request({ method: "Debugger.resume", sessionId: "worker", params: {} }), /EXCLUSIVE/u);
@@ -101,9 +101,9 @@ void test("paired RPC unit retains the real allocator and original framing witho
     for (let index = 0; index < 67; index += 1) {
       const cleanup = index >= 49; await route.request(command(cleanup, index % 2 === 0 ? "worker" : "ui"), cleanup);
     }
-    await route.retire(); assert.equal(f.channel.status().nextRequestId, 803);
+    await route.retire(); assert.equal(f.channel.status().nextRequestId, 812);
     const sends = f.state.sent.filter(value => value["action"] === "footprint-clock-rpc-send");
-    assert.deepEqual(sends.map(value => value["requestId"]), Array.from({ length: 67 }, (_, index) => 736 + index));
+    assert.deepEqual(sends.map(value => value["requestId"]), Array.from({ length: 67 }, (_, index) => 745 + index));
     assert.equal(f.state.sent.filter(value => value["action"] === "footprint-clock-rpc-begin").length, 1);
     await assert.rejects(route.request(command(false), false), /ORIGINAL/u);
     await assert.rejects(f.channel.requestFootprintClock({ method: "Debugger.resume", params: {}, sessionId: "worker" }), /CLOCK_PURPOSE/u);
@@ -159,7 +159,7 @@ void test("a lost allocation reply remains retained until actual original-genera
 });
 for (const partial of [false, true]) {
   void test(`handoff refuses ${partial ? "an incomplete frame" : "insufficient unchanged ID headroom"} before native begin`, async () => {
-    const f = await fixture(partial ? 100 : 737, partial);
+    const f = await fixture(partial ? 100 : 746, partial);
     try {
       await assert.rejects(f.channel.prepareFootprintClockRpc(f.dependency, "worker"));
       assert.equal(f.state.sent.filter(value => value["action"] === "footprint-clock-rpc-begin").length, 0);

@@ -2,7 +2,7 @@
 
 Use `easyeda_control_catalog_components` for bounded footprint, ordinary-symbol
 or device search, symbol/footprint lookup by name, LCSC C-number lookup,
-symbol metadata, device symbol/footprint references and public classifications. Discover
+symbol metadata, device symbol/footprint references, 3D/panel metadata and public classifications. Discover
 `catalog-components` with `query:{includeSchemas:true}`, then validate the inner
 request with `catalog-components-validate`.
 
@@ -56,6 +56,58 @@ Inline vendor `dataStr` may arrive within the response limit. Only the name
 lookup below parses two header records to check symbol type; drawing geometry
 is never parsed or executed, and source is not projected. No separate image, 3D,
 datasheet or linked-asset download occurs.
+
+## Public 3D and panel metadata
+
+The same tool supports `search-3d-models` and `search-panel-libraries` with
+`query`, `page`, `pageSize` and `confirmNetwork:true`. Use the same bounded,
+nonempty public query contract above. These actions also reject Unicode
+control, format, private-use and unassigned characters instead of silently
+stripping them. The installed UI strips those characters in its SDK wrapper.
+
+```json
+{"request":{"action":"search-3d-models","query":"SOT-23","page":1,"pageSize":5,"confirmNetwork":true}}
+{"request":{"action":"get-panel-library","panelLibraryUuid":"<32 lowercase hex public UUID>","confirmNetwork":true}}
+```
+
+Search uses the fixed component endpoint with document type 16 for models and
+29 for panels. Panel lookup uses the same fixed single-component GET as the
+other catalog assets. The returned library categories are model `"5"` and panel
+`"29"`, as declared by the installed209 `ELIB_LibraryType` enum. These are
+explicit category mappings, not a general conversion from document types.
+The bounded projection contains only UUID, name, description and classification
+IDs. Unknown vendor fields are discarded from this projection; their absence
+does not establish a complete asset. Model geometry/downloads, units, scale,
+rendering, footprint associations, panel outlines/children and editor opening
+remain outside this route.
+
+Every received candidate must have the fixed system owner and correct document
+type. Contradictory owner aliases, project scope, paths or public flags refuse
+the whole page; foreign result groups and duplicate identities also refuse.
+Missing visibility/path flags remain explicitly unverified. The exact panel
+GET additionally requires `public:true` and the fixed system path. A supplied
+keyword echo must match the request or its observed ASCII lowercase spelling.
+An absent echo supplies no query-echo verification. Other Unicode case folding
+is unsupported. Raw vendor counts and empty pages still prove no completeness.
+
+A source-composed anonymous model search returned five system-owned candidates.
+An anonymous panel search returned no rows; positive public panel search/GET
+availability has not been recorded. Neither result validates the installed
+plugin tool or desktop SDK. The official
+[model search](https://prodocs.easyeda.com/en/api/reference/pro-api.lib_3dmodel.search.html),
+[panel search](https://prodocs.easyeda.com/en/api/reference/pro-api.lib_panellibrary.search.html)
+and [panel getter](https://prodocs.easyeda.com/en/api/reference/pro-api.lib_panellibrary.get.html)
+also describe wider library/classification contracts. These adapters expose
+only the fixed public-system metadata subset.
+
+CBB methods remain omitted. Desktop CBB search can refresh local project-path
+discovery; its online positive project/block metadata projection is not yet
+qualified for the fixed system library. CBB lookup fetches a project and its
+branch profile/structure before assembling boards, rather than the generic
+component metadata GET. Do not substitute an empty board list, follow arbitrary
+project/branch endpoints or infer CBB absence from the empty anonymous sample.
+Inspect the exact method's `coverage` entry for its remaining implementation
+requirements.
 
 ## Public classifications
 

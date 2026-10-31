@@ -555,7 +555,7 @@ void test("NetGroup and filtered PCB membership reads expose narrow native route
   assert.match(route.scope, /not public primitive instances/u); assert.match(route.scope, /explicit nonempty unique filters/u);
   assert.match(route.scope, /source\/inventory\/source/u);
   assert.deepEqual(extensionApiCoverageSummary()["statuses"], {
-    "implemented-public-subset": 215, "implemented-native-equivalent": 41, "implemented-vendor-http-equivalent": 10, "internal-lifecycle-only": 0, "implemented-but-blocked": 79, omitted: 490,
+    "implemented-public-subset": 215, "implemented-native-equivalent": 43, "implemented-vendor-http-equivalent": 13, "internal-lifecycle-only": 0, "implemented-but-blocked": 79, omitted: 485,
   });
 });
 
@@ -1117,16 +1117,63 @@ void test("iframe existence remains omitted because the installed wrapper return
   assert.match(row.omission.reason, /literal false/u); assert.match(row.omission.nextRequirement, /not evidence of absence/u);
 });
 
-void test("omitted heterogeneous geometric getters retain proven projection defects", () => {
+void test("omitted geometric getters retain projection defects and the region selection-service effects", () => {
   const rows = new Map(inventoryExtensionApiCoverage().map((row) => [row.path, row]));
   for (const path of ["eda.pcb_Document.getPrimitiveAtPoint", "eda.pcb_Document.getPrimitivesInRegion"]) {
     const row = rows.get(path);
     assert.ok(row);
     assert.equal(row.status, "omitted");
-    assert.equal(row.omission?.code, "lossy-heterogeneous-primitive-projection");
+    assert.equal(row.omission?.code, path.endsWith("getPrimitivesInRegion") ? "installed-209-region-selection-side-effects" : "lossy-heterogeneous-primitive-projection");
     assert.match(row.omission.reason, /Text/u);
     assert.equal(row.routes.length, 0);
   }
+  const region = rows.get("eda.pcb_Document.getPrimitivesInRegion"); assert.ok(region?.omission);
+  for (const text of ["getItemsByBBox", "boxSelect", "select", "native uploads", "selection restoration"]) {
+    assert.ok(region.omission.reason.includes(text));
+  }
+  assert.match(region.omission.nextRequirement, /nonmutating region-membership/u);
+});
+
+void test("two navigation methods retain exact disposable operation kinds and explicit transient-marker acceptance", () => {
+  const rows = new Map(inventoryExtensionApiCoverage().map((row) => [row.path, row]));
+  for (const [method, operation] of [["navigateToCoordinates", { kind: "navigate-coordinates", xMil: 10, yMil: -20, acceptTransientOverlayEffects: true }],
+    ["navigateToRegion", { kind: "navigate-region", leftMil: -10, rightMil: 10, bottomMil: -20, topMil: 20, acceptTransientOverlayEffects: true }]] as const) {
+    const row = rows.get(`eda.pcb_Document.${method}`); assert.ok(row);
+    assert.equal(row.status, "implemented-native-equivalent"); assert.equal(row.currentGenerationLiveValidation, "not-recorded");
+    assert.equal(row.completeDeclaredContractSupported, false); assert.equal(row.routes.length, 1);
+    const route = row.routes[0]; assert.ok(route);
+    assert.equal(route.tool, "easyeda_control_pcb209_opening"); assert.equal(route.selector, "visual.perform-visual");
+    assert.equal(route.executionState, "available-with-runtime-guards"); assert.deepEqual(route.documentTypes, [3]);
+    for (const text of [operation.kind, "acceptTransientOverlayEffects:true", "mil", "camera bounds remain null",
+      "timer settlement", "selection is checked unchanged", "without replay", "No connected navigation validation"]) { assert.ok(route.scope.includes(text)); }
+    const request = { action: "perform-visual", operationId: "pcb209-visual-coverage", expectedBindingSha256: "a".repeat(64),
+      operation, confirmVisualStateChanges: true };
+    for (const [candidate, valid] of [[request, true], [{ ...request, operation: { ...operation, acceptTransientOverlayEffects: false } }, false]] as const) {
+      const result = queryOfflineApi(apiRequestSchema.parse({ action: "pcb209-visual-validate", query: { request: candidate } })).result;
+      assert.ok(isRecord(result)); assert.equal(result["valid"], valid); assert.equal(result["validationOnly"], true); assert.equal(result["saveAuthorized"], false);
+    }
+  }
+});
+
+void test("model and panel metadata routes stay narrower than SDK contracts and CBB project/profile methods stay omitted", () => {
+  const rows = new Map(inventoryExtensionApiCoverage().map((row) => [row.path, row]));
+  for (const [path, selector] of [["eda.lib_3DModel.search", "search-3d-models"], ["eda.lib_PanelLibrary.search", "search-panel-libraries"],
+    ["eda.lib_PanelLibrary.get", "get-panel-library"]] as const) {
+    const row = rows.get(path); assert.ok(row);
+    assert.equal(row.status, "implemented-vendor-http-equivalent"); assert.equal(row.omission, null);
+    assert.equal(row.completeDeclaredContractSupported, false); assert.equal(row.currentGenerationLiveValidation, "not-recorded");
+    assert.equal(row.routes.length, 1); const route = row.routes[0]; assert.ok(route);
+    assert.equal(route.selector, selector); assert.equal(route.implementation, "vendor-http-task-equivalent");
+    assert.equal(route.executionState, "available-with-network-guards");
+    for (const text of ["fixed public system-owned", "not public SDK execution", "docType16/29", "libraryType5/29",
+      "positive public panel search/GET availability remains unrecorded", "no credentials", "no model/panel geometry"]) { assert.ok(route.scope.includes(text)); }
+  }
+  const cbbGet = rows.get("eda.lib_Cbb.get"), cbbSearch = rows.get("eda.lib_Cbb.search");
+  assert.equal(cbbSearch?.status, "omitted"); assert.equal(cbbGet?.status, "omitted");
+  assert.match(cbbSearch?.omission?.reason ?? "", /project-path discovery with refresh:yes/u);
+  assert.match(cbbSearch?.omission?.reason ?? "", /positive project\/block ownership/u);
+  assert.match(cbbGet?.omission?.reason ?? "", /project and its branch profile\/structure/u);
+  assert.match(cbbGet?.omission?.nextRequirement ?? "", /before fetching the profile/u);
 });
 
 void test("selected PCB objects expose source DTOs without promoting the lossy public wrapper", () => {

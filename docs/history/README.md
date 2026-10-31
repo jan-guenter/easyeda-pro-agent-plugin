@@ -1,5 +1,7 @@
 # Project history
 
+- [2026-10-31 catalog, viewport and footprint publication batch](2026-10-31-120000-catalog-navigation-and-publication-custody.md). Restarted-host admission, consumed disposable cache case, batched API and native custody work.
+
 - [2026-10-31 Library readers and complete copy/delete SQL relation](2026-10-31-090000-library-readers-and-sql-lifecycle.md).
 - [2026-10-31 Renderer proof and held-cache ownership integration](2026-10-31-renderer-proof-and-held-cache-owner.md).
 

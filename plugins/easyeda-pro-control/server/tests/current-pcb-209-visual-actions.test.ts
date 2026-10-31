@@ -23,6 +23,7 @@ else if(topic==="pcb/extensionAPI/selectcontrol-getAllSelectedPrimitiveIds")resu
 else if(topic==="pcb/extensionAPI/selectcontrol-clearSelected"){writes.push("clear");selected=[];result=true;}
 else if(topic==="pcb/extensionAPI/selectcontrol-doSelectPrimitives"){writes.push("append");selected.push(...arg.primitiveIds);result=arg.primitiveIds.length>0;}
 else if(["adaptAllAndGetBBox","adaptSelectAndGetBbox","pcbZoomTo"].includes(topic)){writes.push(topic);result=box;}
+else if(["pcb/extensionAPI/document-navigateToCoordinates","pcb/extensionAPI/document-navigateToRegion"].includes(topic)){writes.push(topic);result=true;}
 else{const family=/^pcb\\/extensionAPI\\/(track|arc|via|component|pad|string|attribute|dimension|image)-getAll$/.exec(topic)?.[1];if(!family)throw new Error("PRIVATE_TOPIC");result=rows[family];}
 ${afterCall}return {message:result};}}
 globalThis.MSG_BUS_PCB={messageBus:new Bus()};globalThis.location={href:"https://client/editor?entry=pcb"};${childBefore}`, child);
@@ -93,6 +94,53 @@ void test("visual209 complete data grammar and flat escaped envelope are bounded
   assert.equal(native["pcbVisual209Phase"], "visual"); assert.equal(native["visualOperationJson"], JSON.stringify(operation)); assert.ok(Buffer.byteLength(`${JSON.stringify(native)}\n`) < 32_768);
   assert.equal(currentPcb209VisualOperationSchema.safeParse({ ...operation, expectedSelection: ids.map(value => `${value}${String.raw`\"`.repeat(60)}`) }).success, false);
   assert.throws(() => diagnosticNativeRequest(Buffer.from(`${JSON.stringify({ ...command, params: { ...params, functionDeclaration: "async()=>1" } })}\0`)));
+});
+
+void test("visual209 navigation requires explicit overlay scope and passes data-origin mil without a second conversion", async () => {
+  const cases = [
+    { operation: { kind: "navigate-coordinates", xMil: 120, yMil: -340, acceptTransientOverlayEffects: true },
+      topic: "pcb/extensionAPI/document-navigateToCoordinates", argument: { x: 120, y: -340 } },
+    { operation: { kind: "navigate-region", leftMil: -120, rightMil: 340, topMil: 500, bottomMil: -700,
+      acceptTransientOverlayEffects: true }, topic: "pcb/extensionAPI/document-navigateToRegion",
+      argument: { left: -120, right: 340, top: 500, bottom: -700 } },
+  ];
+  for (const item of cases) {
+    const value = fixture(item.operation); const result = await value.run();
+    assert.equal(result["ok"], true); assert.equal(result["viewportAcknowledged"], true);
+    assert.equal(result["nativeBounds"], null); assert.equal(result["boundsMil"], null);
+    assert.equal(result["transientOverlayCompletionVerified"], false);
+    assert.equal(result["cameraBoundsScope"], "not-observed-native-navigation-boolean-acknowledgment");
+    assert.equal(value.read("writes.length"), 1);
+    const actual: unknown = value.read(`calls.find(c=>c.topic===${JSON.stringify(item.topic)}).arg`);
+    assert.deepEqual(structuredClone(actual), item.argument);
+    for (const accept of [false, undefined, "true", 1]) {
+      const invalid = { ...item.operation, acceptTransientOverlayEffects: accept };
+      assert.equal(currentPcb209VisualOperationSchema.safeParse(invalid).success, false);
+      const refused = fixture(invalid); await assert.rejects(refused.raw()); assert.equal(refused.read("writes.length"), 0);
+    }
+  }
+  for (const invalid of [
+    { kind: "navigate-coordinates", xMil: -0, yMil: 1, acceptTransientOverlayEffects: true },
+    { kind: "navigate-region", leftMil: 1, rightMil: 1, topMil: 2, bottomMil: 0, acceptTransientOverlayEffects: true },
+    { kind: "navigate-region", leftMil: 1, rightMil: 2, topMil: 0, bottomMil: 2, acceptTransientOverlayEffects: true },
+  ]) { assert.equal(currentPcb209VisualOperationSchema.safeParse(invalid).success, false); }
+});
+
+void test("visual209 navigation preserves ambiguous dispatch and refuses false acknowledgments and fabricated camera evidence", async () => {
+  const operation = { kind: "navigate-coordinates", xMil: 0, yMil: 1, acceptTransientOverlayEffects: true };
+  for (const after of [
+    'if(topic==="pcb/extensionAPI/document-navigateToCoordinates")result=false;',
+    'if(topic==="pcb/extensionAPI/document-navigateToCoordinates")throw new Error("PRIVATE_NAVIGATION_ACK");',
+    'if(topic==="pcb/extensionAPI/document-navigateToCoordinates")parent.activeTab="other";',
+  ]) {
+    const value = fixture(operation, "", after); const result = await value.run();
+    assert.equal(result["ok"], false); assert.equal(result["viewportAttempted"], true);
+    assert.equal(result["viewportAcknowledged"], false); assert.equal(value.read("writes.length"), 1);
+    assert.equal(JSON.stringify(result).includes("PRIVATE_NAVIGATION_ACK"), false);
+  }
+  const raw = await fixture(operation).raw(); const packet = z.record(z.string(), z.unknown()).parse(JSON.parse(raw) as unknown);
+  assert.throws(() => decodeCurrentPcb209VisualReply({ result: { type: "string", value: JSON.stringify({ ...packet,
+    nativeBounds: { minX: -1, maxX: 1, minY: -1, maxY: 1 } }) } }, target, operation));
 });
 
 void test("visual209 independent decoder rejects forged target causal flags and success", async () => {

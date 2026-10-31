@@ -20,6 +20,11 @@ export const currentPcb209VisualOperationSchema = z.discriminatedUnion("kind", [
   z.object({ kind: z.literal("fit-selected"), expectedSelection: currentPcb209VisualIdsSchema.min(1) }).strict(),
   z.object({ kind: z.literal("zoom-to"), xMil: coordinate, yMil: coordinate,
     scaleRatio: z.number().min(0.00001).max(1_000_000) }).strict(),
+  z.object({ kind: z.literal("navigate-coordinates"), xMil: coordinate, yMil: coordinate,
+    acceptTransientOverlayEffects: z.literal(true) }).strict(),
+  z.object({ kind: z.literal("navigate-region"), leftMil: coordinate, rightMil: coordinate,
+    topMil: coordinate, bottomMil: coordinate, acceptTransientOverlayEffects: z.literal(true) }).strict()
+    .refine(value => value.leftMil < value.rightMil && value.bottomMil < value.topMil, "Navigation region must have positive width and height."),
 ]).refine(value => Buffer.byteLength(canonicalJson(value)) <= CURRENT_PCB_209_VISUAL_OPERATION_BYTES,
   "Complete visual operation exceeds its native envelope reservation.");
 export type CurrentPcb209VisualOperation = z.infer<typeof currentPcb209VisualOperationSchema>;
@@ -33,8 +38,9 @@ const packetSchema = z.object({ ok: z.boolean(), kind: z.literal("pcb209-origina
   observedSelection: currentPcb209VisualIdsSchema.nullable(), viewportAttempted: z.boolean(), viewportAcknowledged: z.boolean(),
   nativeBounds: nativeBoundsSchema.nullable() }).strict();
 
-/** Three fixed camera operations. Selection and clearing are excluded because
- * their installed handlers flush design services and may delete empty views. */
+/** Fixed camera and explicitly accepted transient navigation operations.
+ * Selection and clearing remain excluded because their installed handlers
+ * flush design services and may delete empty views. */
 export const CURRENT_PCB_209_VISUAL_FUNCTION = `async function(sealed,phase,operation){
 "use strict";
 let clear,timer,expired=false;
@@ -92,6 +98,8 @@ const kind=own(operation,"kind");let expected=[];
 if(kind==="fit-selected"){exact(operation,["kind","expectedSelection"]);expected=ids(own(operation,"expectedSelection"));if(!expected.length)bad();}
 else if(kind==="fit-all")exact(operation,["kind"]);
 else if(kind==="zoom-to"){exact(operation,["kind","xMil","yMil","scaleRatio"]);number(own(operation,"xMil"));number(own(operation,"yMil"));const ratio=number(own(operation,"scaleRatio"));if(ratio<0.00001||ratio>1e6)bad();}
+else if(kind==="navigate-coordinates"){exact(operation,["kind","xMil","yMil","acceptTransientOverlayEffects"]);number(own(operation,"xMil"));number(own(operation,"yMil"));if(own(operation,"acceptTransientOverlayEffects")!==true)bad();}
+else if(kind==="navigate-region"){exact(operation,["kind","leftMil","rightMil","topMil","bottomMil","acceptTransientOverlayEffects"]);for(const key of ["leftMil","rightMil","topMil","bottomMil"])number(own(operation,key));if(own(operation,"acceptTransientOverlayEffects")!==true||operation.leftMil>=operation.rightMil||operation.bottomMil>=operation.topMil)bad();}
 else bad();
 const encodedOperation=JSON.stringify(operation);if(new TextEncoder().encode(encodedOperation).byteLength>${CURRENT_PCB_209_VISUAL_OPERATION_BYTES})bad();
 const state={ok:false,kind:"pcb209-original-visual-action",target,operation,stage:"preflight",previousSelection:null,observedSelection:null,
@@ -113,13 +121,22 @@ state.viewportAttempted=true;state.stage="viewport-dispatched";
 let box;
 if(kind==="fit-all")box=await call("adaptAllAndGetBBox","");
 else if(kind==="fit-selected")box=await call("adaptSelectAndGetBbox","");
-else box=await call("pcbZoomTo",{x:number(own(operation,"xMil"))*.1,y:number(own(operation,"yMil"))*.1,scaleRatio:number(own(operation,"scaleRatio"))});
+else if(kind==="zoom-to")box=await call("pcbZoomTo",{x:number(own(operation,"xMil"))*.1,y:number(own(operation,"yMil"))*.1,scaleRatio:number(own(operation,"scaleRatio"))});
+else if(kind==="navigate-coordinates"){if(await call("pcb/extensionAPI/document-navigateToCoordinates",{x:operation.xMil,y:operation.yMil})!==true)bad();}
+else if(kind==="navigate-region"){if(await call("pcb/extensionAPI/document-navigateToRegion",{left:operation.leftMil,right:operation.rightMil,top:operation.topMil,bottom:operation.bottomMil})!==true)bad();}
+if(kind==="navigate-coordinates"||kind==="navigate-region"){
+// PCB a8405930@10303941/10304400 acknowledges after scheduling its own
+// requestAnimationFrame/75ms/3s overlays. That boolean is not a camera box,
+// rendering completion or timer settlement; the original process stays owned.
+state.viewportAcknowledged=true;state.stage="viewport-acknowledged";
+}else{
 // Native unsafe messageBus returns the original at/cI bounding-box instance,
 // not a cloned plain object. Read exactly its four own numeric data fields.
 if(!object(box))bad();const keys=Reflect.ownKeys(box);if(keys.length!==4||keys.some(k=>!["minX","maxX","minY","maxY"].includes(k)))bad();
 const bounds={minX:number(own(box,"minX")),maxX:number(own(box,"maxX")),minY:number(own(box,"minY")),maxY:number(own(box,"maxY"))};
 if(bounds.minX>=bounds.maxX||bounds.minY>=bounds.maxY)bad();for(const value of Object.values(bounds))number(value*10);
 state.nativeBounds=bounds;state.viewportAcknowledged=true;state.stage="viewport-acknowledged";
+}
 state.observedSelection=await selected();if(!same(state.previousSelection,state.observedSelection))bad();await identity();check();state.ok=true;return result();
 };
 try{
@@ -128,9 +145,14 @@ return await Promise.race([run(),timeout]);
 }catch{return result();}finally{if(timer!==undefined&&typeof clear==="function")apply(clear,root,[timer]);}
 }`;
 
+/** Recheck the sealed operation, selection and effect ordering in one retained
+ * reply. Navigation's boolean acknowledgment is never interpreted as camera
+ * bounds, rendered arrival or completion of its native overlay timers.
+ */
 export function decodeCurrentPcb209VisualReply(raw: unknown, targetInput: unknown, operationInput: unknown): Readonly<Record<string, unknown>> {
   const target = currentDisposableOpenSealedTargetSchema.parse(targetInput);
   const operation = currentPcb209VisualOperationSchema.parse(operationInput);
+  const navigation = operation.kind === "navigate-coordinates" || operation.kind === "navigate-region";
   const reply = z.object({ result: z.object({ type: z.literal("string"), value: z.string() }).strict() }).strict().parse(raw);
   if (Buffer.byteLength(reply.result.value) > CURRENT_PCB_209_VISUAL_RESULT_BYTES) { throw new Error("PCB209_VISUAL_RESULT_BOUND"); }
   const packet = packetSchema.parse(decodeCurrentPcbDiagnosticJson(Buffer.from(reply.result.value)));
@@ -141,9 +163,9 @@ export function decodeCurrentPcb209VisualReply(raw: unknown, targetInput: unknow
   }
   if (packet.viewportAcknowledged !== (packet.stage === "viewport-acknowledged") ||
       packet.viewportAttempted !== (packet.stage !== "preflight") ||
-      (packet.nativeBounds !== null) !== packet.viewportAcknowledged ||
+      (navigation ? packet.nativeBounds !== null : (packet.nativeBounds !== null) !== packet.viewportAcknowledged) ||
       (packet.observedSelection !== null && !packet.viewportAcknowledged)) { throw new Error("PCB209_VISUAL_EFFECT_ORDER"); }
-  if (packet.ok && (packet.stage !== "viewport-acknowledged" || !packet.viewportAcknowledged || packet.nativeBounds === null ||
+  if (packet.ok && (packet.stage !== "viewport-acknowledged" || !packet.viewportAcknowledged || (!navigation && packet.nativeBounds === null) ||
       packet.previousSelection === null || canonicalJson(packet.previousSelection) !== canonicalJson(packet.observedSelection) ||
       (operation.kind === "fit-selected" && canonicalJson(packet.previousSelection) !== canonicalJson(operation.expectedSelection)))) {
     throw new Error("PCB209_VISUAL_VIEWPORT_RESULT");
@@ -153,12 +175,14 @@ export function decodeCurrentPcb209VisualReply(raw: unknown, targetInput: unknow
     mutationMayHaveOccurred: packet.viewportAttempted,
     boundsMil: bounds === null ? null : { left: bounds.minX * 10, right: bounds.maxX * 10, bottom: bounds.minY * 10, top: bounds.maxY * 10 },
     resultSha256: sha256Json(packet), implementationKind: "native-task-equivalent",
-    cameraBoundsScope: "single-source-returned-camera-getBBox2", cameraStateDoubleSampled: false, automaticInverseAvailable: false,
+    cameraBoundsScope: navigation ? "not-observed-native-navigation-boolean-acknowledgment" : "single-source-returned-camera-getBBox2",
+    cameraStateDoubleSampled: false, transientOverlayCompletionVerified: false, automaticInverseAvailable: false,
     cadAuthority: false, startupCompletionVerified: false, completeLiveBaselineVerified: false, sourceMembershipVerified: false,
     connectivityVerified: false, persistenceVerified: false, executionAuthorized: false, saveAuthorized: false,
-    limitations: ["Only camera UI effects and native render notifications are requested. No source edit or Save is requested, and file invariance is not established by this response.",
+    limitations: ["Camera UI effects and native render notifications are requested. Navigation also requires explicit acceptance of native transient overlays. No source edit or Save is requested, and file invariance is not established by this response.",
       "Selection mutation is excluded. Installed selection handlers can flush connectivity, DRC and uploads, and delete empty views. Fit-selected compares the complete ordered selected-ID list with the request before dispatch and again afterward.",
-      "Viewport bounds come from the original native handler once. Camera state is not independently double-sampled and render completion is not observed. Fit-selected includes component attribute bounding boxes. No screenshot, overlays, schematic or3D routing is included."] });
+      "Fit/zoom viewport bounds come from the original native handler once. Navigation returns only the exact native true acknowledgment, with no camera bounds. Camera state is not independently double-sampled and render completion is not observed. Fit-selected includes component attribute bounding boxes.",
+      "navigate-coordinates and navigate-region pass data-origin mil values unchanged to their fixed native handlers. Both center the viewport without requesting a scale change. They may cancel an existing navigation overlay and schedule an animation frame, a 75ms timer and a 3s crossline or rectangle overlay. Their acknowledgment does not prove callback execution, timer settlement, overlay absence or visual arrival. Keep the original disposable owner through actual process/Job exit and release. No screenshot, schematic or3D routing is included."] });
 }
 
 /** Independently reconstruct historical/publication data from its complete

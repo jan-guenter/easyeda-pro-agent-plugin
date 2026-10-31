@@ -18,11 +18,13 @@ export async function readPublicSystemCatalog(input: unknown): Promise<Record<st
   let body: string | undefined, path: string;
   switch (request.action) {
     case "get-symbol": { path = `/api/v2/components/${request.symbolUuid}`; break; }
+    case "get-panel-library": { path = `/api/v2/components/${request.panelLibraryUuid}`; break; }
     case "get-device": { path = `/api/v2/devices/${request.deviceUuid}`; break; }
-    case "search-footprints": case "search-symbols": {
+    case "search-footprints": case "search-symbols": case "search-3d-models": case "search-panel-libraries": {
       path = "/api/v2/components/search";
+      const documentTypes = { "search-footprints": "4", "search-symbols": "2", "search-3d-models": "16", "search-panel-libraries": "29" } as const;
       body = new URLSearchParams({ path: PUBLIC_SYSTEM_FOOTPRINT_LIBRARY, uid: PUBLIC_SYSTEM_FOOTPRINT_LIBRARY,
-        page: String(request.page), pageSize: String(request.pageSize), "docType[]": request.action === "search-footprints" ? "4" : "2",
+        page: String(request.page), pageSize: String(request.pageSize), "docType[]": documentTypes[request.action],
         wd: request.query }).toString(); break;
     }
     case "search-devices": {

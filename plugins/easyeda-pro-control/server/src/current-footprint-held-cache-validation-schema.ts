@@ -167,7 +167,7 @@ export function queryCurrentFootprintHeldCacheValidation(includeSchemas = false)
       startupReadiness: CURRENT_FOOTPRINT_HELD_CACHE_PAGE_READINESS, nativeRequests: CURRENT_FOOTPRINT_HELD_CACHE_DIAGNOSTIC_PROFILE,
       journal: CURRENT_FOOTPRINT_HELD_CACHE_JOURNAL_LIMITS },
     notes: ["Launch selects one exact disposable checkpoint before the new read-only native generation starts; default branch comes from actual complete SQL.",
-      "Browser discovery reads version once and samples at most sixteen valid target inventories, waiting only between empty/about:blank observations. Malformed, attached, unexpected or multiple pages refuse without retry; retained diagnostics contain bounded stages, classifications, counts and hashes only.",
+      "Browser discovery reads version once and samples at most sixteen valid target inventories, waiting only between empty/about:blank or installation-bound loading-page observations. One exact editor may accompany its loading window; malformed, attached, unrelated or duplicate pages refuse without retry. Retained diagnostics contain bounded stages, classifications, counts and hashes only.",
       "The first observation qualifies the actual held getter/match tuple and reads both fixed namespaces. Fresh observation separately reads both namespaces again.",
       "These sequential point-in-time observations do not grant continuous cache emptiness, saved-copy qualification, replay authority or permission to open a project.",
       "Every native action is consumed before dispatch. Missing acknowledgment permits original cleanup and evidence settlement, never retry or historical owner adoption.",

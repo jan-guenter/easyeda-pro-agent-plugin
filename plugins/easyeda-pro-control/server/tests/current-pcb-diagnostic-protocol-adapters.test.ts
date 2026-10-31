@@ -249,9 +249,7 @@ void test("native adapter embeds and private fields match TS programs without na
     TeardropCallbacksFunction: CURRENT_PCB_TEARDROP_CALLBACK_SELECTOR,
     TeardropOwnerFunction: CURRENT_PCB_TEARDROP_OWNER_ASSOCIATION,
   })) {
-    const encoded = new RegExp(`const string ${name}=@"((?:""|[^"])*)";`, "u").exec(source)?.[1];
-    const actual = ["ModelRawStringsFunction", "TeardropCallbacksFunction", "TeardropOwnerFunction"].includes(name) || name === "OpeningFunction" || name === "PcbOpeningFunction" || name === "ModelStateFunction" || name === "ModelPendingFunction" || name === "ModelRootInventoryFunction" || name === "ModelDiagnosticConstructorsFunction" || name === "ModelPrecreateConstructorsFunction"
-      ? readPackedNativeProgram(source, name) : encoded?.replaceAll('""', '"');
+    const actual = readPackedNativeProgram(source, name === "ModelCallbackExpression" ? "ModelCallbackExpressionFunction" : name);
     assert.equal(actual, program, name);
     assert.ok(source.includes(createHash("sha256").update(program).digest("hex")));
   }

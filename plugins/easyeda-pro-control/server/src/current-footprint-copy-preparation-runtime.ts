@@ -20,6 +20,8 @@ import { readerCompletion } from "./sqlite-inventory.ts";
 import type { readExactSqlInventory } from "./sqlite-inventory.ts";
 import { qualifyCurrentFootprintCopySourceAssets, requireCurrentFootprintCopySourceAssets } from "./current-footprint-copy-source-assets.ts";
 import type { CurrentFootprintCopySourceAssetQualification } from "./current-footprint-copy-source-assets.ts";
+import { prepareCurrentFootprintCopyHeadReference, requireCurrentFootprintCopyHeadReference } from "./current-footprint-copy-head-reference.ts";
+import type { CurrentFootprintCopyHeadReference } from "./current-footprint-copy-head-reference.ts";
 
 type Inventory = Awaited<ReturnType<typeof readExactSqlInventory>>;
 interface Source {
@@ -40,13 +42,17 @@ interface Retained {
   readonly plan: CurrentFootprintCopyV2Plan;
   readonly arguments: CurrentFootprintCopyV2NativeArguments;
   readonly sourceAssets: CurrentFootprintCopySourceAssetQualification;
+  readonly headReference: CurrentFootprintCopyHeadReference;
   failed: boolean;
 }
 const preparations = new WeakMap<CurrentFootprintCopyPreparation, Retained>();
 const consumed = new WeakSet<CurrentFootprintSourceReadPacket>();
+/** Refuse with a fixed reason instead of leaking a source packet into errors. */
 function need(condition: boolean, detail: string): asserts condition {
   if (!condition) { throw new Error(`CURRENT_FOOTPRINT_COPY_PREPARATION: ${detail}`); }
 }
+/** Retain the exact completed SQL reader, opening class and source bytes across
+ * preparation awaits. A hash-compatible replacement cannot satisfy this join. */
 function same(source: Source, completion: ReturnType<typeof readerCompletion>, text: string): void {
   assertCurrentFootprintSourcePlanInventory(source.sourcePlan, source.before);
   need(readerCompletion(source.before) === completion && completion.observedChildClose && completion.exitCode === 0 &&
@@ -54,6 +60,8 @@ function same(source: Source, completion: ReturnType<typeof readerCompletion>, t
   currentFootprintCopyPreparationOpeningMethods(source.opening);
   need(canonicalJson(source.source) === text, "original source changed");
 }
+/** Ask the original opening to reprove its source/assignment/native-owner join,
+ * with local original-reference checks before and after that awaited work. */
 async function reprove(source: Source, completion: ReturnType<typeof readerCompletion>, text: string): Promise<void> {
   same(source, completion, text);
   await currentFootprintCopyPreparationOpeningMethods(source.opening).requireFootprintSource.call(source.opening,
@@ -90,6 +98,7 @@ export async function prepareCurrentFootprintCopyOwned(source: Source): Promise<
   const plan = await prepareCurrentFootprintCopyV2Plan(source.before, source.sourcePlan,
     { client: source.source.request.client, content: source.source.content });
   const sourceAssets = await qualifyCurrentFootprintCopySourceAssets(plan);
+  const headReference = await prepareCurrentFootprintCopyHeadReference(source.before, source.sourcePlan);
   await reprove(source, completion, text);
   const args = currentFootprintCopyV2NativeCreateArguments(plan);
   const preparation: CurrentFootprintCopyPreparation = Object.freeze({ profile: "private.current-footprint-copy-owned-preparation.v1",
@@ -99,7 +108,7 @@ export async function prepareCurrentFootprintCopyOwned(source: Source): Promise<
     originalSourceObservationRetained: true, lifecyclePublicationVerified: false, copyLaunchPurposeQualified: false,
     completeCapacityReserved: false, producerBindingVerified: false, actorAndClocksVerified: false,
     executionAuthorized: false, persistenceVerified: false });
-  preparations.set(preparation, { source, sourceText: text, completion, plan, arguments: args, sourceAssets, failed: false });
+  preparations.set(preparation, { source, sourceText: text, completion, plan, arguments: args, sourceAssets, headReference, failed: false });
   return preparation;
 }
 
@@ -110,6 +119,7 @@ export async function requireCurrentFootprintCopyOwned(preparation: CurrentFootp
     before: Inventory; sourcePlan: CurrentFootprintSourcePlan; copyPlan: CurrentFootprintCopyV2Plan;
     nativeArguments: CurrentFootprintCopyV2NativeArguments;
     sourceAssets: CurrentFootprintCopySourceAssetQualification;
+    headReference: CurrentFootprintCopyHeadReference;
   }>> {
   const retained = preparations.get(preparation);
   need(retained !== undefined && retained.source.opening === opening && !retained.failed, "original preparation and opening required");
@@ -117,7 +127,8 @@ export async function requireCurrentFootprintCopyOwned(preparation: CurrentFootp
     await reprove(retained.source, retained.completion, retained.sourceText);
     assertCurrentFootprintCopyV2Inventory(retained.plan, retained.source.before);
     requireCurrentFootprintCopySourceAssets(retained.sourceAssets, retained.plan);
+    requireCurrentFootprintCopyHeadReference(retained.headReference, retained.source.before, retained.source.sourcePlan);
     return Object.freeze({ before: retained.source.before, sourcePlan: retained.source.sourcePlan,
-      copyPlan: retained.plan, nativeArguments: retained.arguments, sourceAssets: retained.sourceAssets });
+      copyPlan: retained.plan, nativeArguments: retained.arguments, sourceAssets: retained.sourceAssets, headReference: retained.headReference });
   } catch (error) { retained.failed = true; throw error; }
 }

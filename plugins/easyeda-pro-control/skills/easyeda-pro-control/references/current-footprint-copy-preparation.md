@@ -32,13 +32,18 @@ Follow the returned phase and retain the same Codex session:
    responder, initialized registry and bus. It checks registry membership
    without invoking a lazy getter or creating a bus. A matching project ID and
    worker identity bracket do not prove that the UI bus targets that worker.
-6. `prepare-footprint-dependencies` qualifies 61 helper, serializer, parser,
+6. `prepare-footprint-dependencies` qualifies 64 helper, serializer, parser,
    cache, upload and notification functions, including the original `bb` cache
    wrapper class and its six methods. It retains the initialized bus
    without invoking those functions or initializing a lazy bus. This does not
    prove subscriber completion or that an upload queue has drained. Declared
    wrapper names and four qualified native Cache functions retain candidate
-   receivers; they do not prove the native cache namespaces.
+   receivers; they do not prove the native cache namespaces. The current
+   selector also retains `Tg.onDataChange`, `ar.publishCanvas` and the project's
+   own `Nd`-wrapped `uploadStructure`. It qualifies the wrapper's exact `e`
+   callback and joins it to the original constructor argument, then rechecks
+   those browser-side identities. Callback custody does not prove publication
+   completion or continuous ownership.
 7. `observe-footprint-manager-route` follows the original UI subscription
    through the initialized manager registry to the project and worker bus.
    It fetches and qualifies the original callback's complete manager script
@@ -68,13 +73,22 @@ the cache. Keep raw source ordering and the independent checkpoint comparison
 separate. The manager's own undefined user is also distinct from the backend
 actor selected from SQL.
 
-The preparation purpose reserves 584 normal requests and 34 cleanup requests,
-618 total. The private clock collector captures the two results used by the actual native
+The preparation purpose reserves 593 normal requests and 34 cleanup requests,
+627 total. Dependency capture uses 82 requests, with six more for its sole
+reproof. Original producer and opening checks bring the complete dependency
+stage to 110 requests. The private clock collector captures the two results used by the actual native
 `buildString` and `canvasString` continuations. Its synthetic tests do not
 validate embedded-V8 breakpoint locations, server provenance or a writer.
 Preliminary clock calls cannot replace those results. Native create allocates
 state before its first clock continuation, so a later failure may already have
 changed the design.
+
+Owned copy preparation now retains the actual completed SQL reader's project,
+branch, owner, selected history UUID, lock state and `created_at` literal. The
+opaque reference rejects copied plans and another reader with equal bytes.
+Unlocked literals must be calendar-valid, but this selection samples no native
+clock and supplies no age witness. Original main `Date`/parser custody and the
+Windows clock bracket remain required before a writer can use an unlocked head.
 
 Copy execution still needs complete backend actor/clock bindings, durable
 one-shot dispatch integration and complete effect verification. Fixed private
@@ -135,7 +149,7 @@ native getter/open identities and unchanged project assignments bind the two
 cache namespace arguments to the retained native Cache results. A namespace
 label or an after-the-fact object inspection cannot replace that event history.
 These debugger pauses affect application timing. This purpose shares the private
-execution envelope of 802 normal requests and 45 cleanup requests, 847 total;
+execution envelope of 811 normal requests and 45 cleanup requests, 856 total;
 this does not reserve or enable a complete writer lifecycle.
 
 The parent capture pins ordinary local-project `tl.open`. The temporary-project

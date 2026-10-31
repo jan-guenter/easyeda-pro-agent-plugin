@@ -1,5 +1,6 @@
 import assert from "node:assert/strict";
 import { test } from "node:test";
+import { EXPECTED_COMPONENT_CATALOG_ACTIONS } from "../../scripts/public-catalog-expectations.ts";
 import { parsePublicSystemCatalogRequest, queryPublicSystemCatalog, validatePublicSystemCatalogArguments,
   validatePublicSystemCatalogResult } from "../src/public-system-catalog.ts";
 import { PUBLIC_SYSTEM_FOOTPRINT_LIBRARY } from "../src/public-system-footprint.ts";
@@ -19,7 +20,7 @@ const deviceResult = (): Record<string, unknown> => ({ ...metadata(), project_uu
   symbol: { uuid: symbolUuid, display_title: "R" }, footprint: { uuid: footprintUuid, display_title: "R0603" }, product_code: "C12345" });
 const envelope = (result: unknown): Record<string, unknown> => ({ success: true, code: 0, result });
 
-void test("catalog expansion has twelve strict bounded requests and offline schemas, without destination selection", () => {
+void test("catalog expansion has fifteen strict bounded requests and offline schemas, without destination selection", () => {
   for (const request of [searchRequest, symbolRequest, deviceRequest, { ...searchRequest, action: "search-symbols" }, { ...searchRequest, action: "search-devices" }]) {
     assert.deepEqual(parsePublicSystemCatalogRequest(request), request);
     assert.equal(validatePublicSystemCatalogArguments(request)["valid"], true);
@@ -40,7 +41,11 @@ void test("catalog expansion has twelve strict bounded requests and offline sche
   }
   assert.equal(validatePublicSystemCatalogArguments({})["valid"], false);
   const catalog = queryPublicSystemCatalog({ includeSchemas: true });
-  assert.equal(catalog["total"], 12); assert.equal(catalog["offline"], true); assert.equal(catalog["invocationEnabledByDiscovery"], false);
+  assert.equal(catalog["total"], EXPECTED_COMPONENT_CATALOG_ACTIONS.length);
+  assert.ok(Array.isArray(catalog["entries"]));
+  assert.deepEqual(catalog["entries"].map((entry: Record<string, unknown>) => entry["action"])
+    .toSorted((left, right) => String(left).localeCompare(String(right), "en")), EXPECTED_COMPONENT_CATALOG_ACTIONS);
+  assert.equal(catalog["offline"], true); assert.equal(catalog["invocationEnabledByDiscovery"], false);
   assert.match(JSON.stringify(catalog), /inputSchema/u); assert.match(JSON.stringify(catalog), /read-only POST/u);
   assert.throws(() => queryPublicSystemCatalog({ method: "private" }));
 });

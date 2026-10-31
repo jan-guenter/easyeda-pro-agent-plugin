@@ -48,10 +48,10 @@ void test("combined capacities include construction cleanup IDs without reservin
 void test("combined wire has a separate issuer identity and refuses generic programs at its fixed observation bound", () => {
   assert.notEqual(currentFootprintCombinedStartupWire, currentFootprintCopyExecutionStartupWire);
   const command = { method: "Runtime.releaseObjectGroup", sessionId: "worker-session", params: { objectGroup: "easyeda-pro-control-worker-construction-v1" } };
-  const first = currentFootprintCombinedStartupWire(command, 847);
-  assert.equal(first.command.id, 847); assert.equal(first.request["requestId"], 847);
+  const first = currentFootprintCombinedStartupWire(command, 856);
+  assert.equal(first.command.id, 856); assert.equal(first.request["requestId"], 856);
   assert.equal(Object.isFrozen(first.command), true);
-  assert.throws(() => currentFootprintCombinedStartupWire(command, 848));
+  assert.throws(() => currentFootprintCombinedStartupWire(command, 857));
   assert.throws(() => currentFootprintCombinedStartupWire({ method: "Runtime.evaluate", params: { expression: "Date.now()" } }, 1));
 });
 

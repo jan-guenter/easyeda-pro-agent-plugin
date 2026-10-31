@@ -347,7 +347,7 @@ mount a writer purpose. The fixed envelope has ten arguments and accepts no
 caller programs, callbacks or free-form prewrite handles.
 
 A separate source-derived forward-only reservation now covers two generations:
-renderer926 normal/61 cleanup/987 total commands, main127 known-minimum commands,
+renderer935 normal/61 cleanup/996 total commands, main127 known-minimum commands,
 helper stdout, events, raw replies, SQL snapshots and failure journals. The
 actual private coordinator now spends its result/artifact/journal ledger before
 callbacks; normal failure leaves only bounded cleanup publications. These
@@ -369,7 +369,7 @@ registry before UI defines its separate class. The fixed route now qualifies
 that exact preload constructor, methods, lexical Block/Closure scopes and shared
 map/original notification receiver; original Map guards remain strict. UI
 observation/reproof budgets are39/11, preparation49/21, and the existing execution
-preparation ceiling is now802 normal/45 cleanup/847 total. This source correction
+preparation ceiling is now 811 normal/45 cleanup/856 total. This source correction
 still needs connected validation. See the [batch record](https://github.com/jan-guenter/easyeda-pro-agent-plugin/blob/main/docs/history/2026-10-29-native-allocation-and-window-capture.md)
 and [source finding](https://github.com/jan-guenter/easyeda-pro-agent-plugin/blob/main/docs/history/2026-10-29-preload-registry-source-qualification.md).
 

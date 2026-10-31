@@ -4,6 +4,7 @@ import { stripTypeScriptTypes } from "node:module";
 import { test } from "node:test";
 import { runInNewContext } from "node:vm";
 import { z } from "zod";
+import { EXPECTED_NETWORK_CATALOG_ROUTES } from "../../scripts/public-catalog-expectations.ts";
 import { apiRequestSchema, queryOfflineApi } from "../src/offline-api.ts";
 import { publicSystemFootprintRequestSchema } from "../src/public-system-footprint.ts";
 import { extensionApiCoverageSummary, inventoryExtensionApiCoverage } from "../src/extension-api-coverage.ts";
@@ -95,7 +96,15 @@ void test("catalog footprint coverage labels vendor HTTP separately and retains 
   const summary = extensionApiCoverageSummary();
   const states = summary["executionRoutes"];
   assert.ok(typeof states === "object" && states !== null && "available-with-network-guards" in states);
-  assert.equal(states["available-with-network-guards"], 13);
+  assert.equal(states["available-with-network-guards"], EXPECTED_NETWORK_CATALOG_ROUTES.length);
+  const networkRoutes: string[][] = [];
+  for (const entry of coverage) {
+    for (const route of entry.routes) {
+      if (route.executionState === "available-with-network-guards") { networkRoutes.push([entry.path, route.tool, route.selector]); }
+    }
+  }
+  assert.deepEqual(networkRoutes.toSorted((left, right) => JSON.stringify(left).localeCompare(JSON.stringify(right), "en")),
+    EXPECTED_NETWORK_CATALOG_ROUTES.toSorted((left, right) => JSON.stringify(left).localeCompare(JSON.stringify(right), "en")));
   for (const [method, action] of [["getAllClassificationTree", "get-classification-tree"],
     ["getIndexByName", "get-classification-index-by-name"], ["getNameByUuid", "get-classification-name-by-uuid"],
     ["getNameByIndex", "get-classification-name-by-index"]] as const) {

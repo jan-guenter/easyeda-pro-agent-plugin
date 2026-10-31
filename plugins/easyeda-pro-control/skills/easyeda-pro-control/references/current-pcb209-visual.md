@@ -1,12 +1,13 @@
 # Disposable PCB viewport control on 3.2.209
 
 Use this workflow to fit an existing disposable PCB or move its camera to exact
-mil coordinates. It offers three viewport operations through a separate native
+mil coordinates. It offers five viewport operations through a separate native
 owner. Source implementation, offline tests and native compilation exist;
 installed 142600 passed one disposable zoom-to at 0,0 mil and scale ratio 1,
 unchanged selection, normal root/Job exit and helper release. The whole closed
 fixture stayed byte-exact. Fit-all, fit-selected and other argument domains
-remain unvalidated. Read the [case record](https://github.com/jan-guenter/easyeda-pro-agent-plugin/blob/main/docs/history/2026-10-29-supplied-design-inspection-and-viewport.md)
+remain unvalidated. The two transient-overlay navigation operations have no
+connected validation. Read the [case record](https://github.com/jan-guenter/easyeda-pro-agent-plugin/blob/main/docs/history/2026-10-29-supplied-design-inspection-and-viewport.md)
 for the exact evidence and limits. Historical results do not admit a later
 loaded host. Check the installed catalog before use.
 
@@ -56,6 +57,14 @@ and exactly one `operation`:
 | `fit-all` | `kind:"fit-all"` | Native adapt-all camera operation and returned bounding box. It does not establish complete design membership. |
 | `fit-selected` | `kind:"fit-selected",expectedSelection:[...]` | Fit the already selected objects. The complete ordered ID list must match before dispatch and afterward. No selection change is requested. Component attribute boxes can contribute to the fit. |
 | `zoom-to` | `kind:"zoom-to",xMil,yMil,scaleRatio` | Explicit coordinates in mil and explicit positive native camera scale ratio. No omitted-coordinate defaults or percentage-zoom wrapper. |
+| `navigate-coordinates` | `kind:"navigate-coordinates",xMil,yMil,acceptTransientOverlayEffects:true` | Center on a data-origin mil coordinate through the native SDK handler, without requesting a scale change. A transient crossline may appear. Returns only the native boolean acknowledgment. |
+| `navigate-region` | `kind:"navigate-region",leftMil,rightMil,topMil,bottomMil,acceptTransientOverlayEffects:true` | Center on a positive-width/height data-origin mil rectangle through the native SDK handler, without requesting a scale change. A transient rectangle may appear. Returns only the native boolean acknowledgment. |
+
+The official [coordinate contract](https://prodocs.easyeda.com/en/api/reference/pro-api.pcb_document.navigatetocoordinates.html)
+uses data-origin mil coordinates. The [region contract](https://prodocs.easyeda.com/en/api/reference/pro-api.pcb_document.navigatetoregion.html)
+describes centering without zoom and a temporary rectangle. This adapter uses
+the captured receiver's matching installed209 handlers rather than the public
+wrapper's mutable active-tab lookup.
 
 Use `observe-selection-relations` once when the existing selected IDs or child
 pads are needed. Its optional `componentIds` defaults to `[]` and admits at most
@@ -64,7 +73,10 @@ shares the original transport budget with viewport work. This visual grammar
 does not expose the ordinary opening owner's other optional readers.
 
 Coordinates are finite, exclude negative zero and have absolute value at most
-1e12 mil. Scale ratio is between 0.00001 and 1000000. Selected IDs are distinct,
+1e12 mil. Navigation regions require `leftMil < rightMil` and
+`bottomMil < topMil`; reversed or degenerate rectangles refuse. The narrower
+contract keeps region direction explicit. Scale ratio is between 0.00001 and
+1000000. Selected IDs are distinct,
 well-formed UTF-16 strings of at most 256 units, with at most 256 IDs. Fit-selected
 requires a nonempty list. The complete JSON operation is at most 12000 UTF-8
 bytes. The selected-list and whole success/failure packet reservations are
@@ -79,11 +91,22 @@ the original coordinator offers `settle-records`; settlement dispatches no new
 camera operation.
 
 A successful result binds its exact operation and target, attempted/acknowledged
-flags, complete unchanged selection and one native `getBBox2` return. Both raw
-native bounds and `boundsMil` are provided. Native units equal ten mil. Camera
-state is not independently double-sampled, rendering completion is not observed
-and the result contains no screenshot. A three-second observer prevents later
-camera dispatch after expiry but cannot cancel a handler already sent.
+flags and complete unchanged selection. Fit and zoom additionally retain one
+native `getBBox2` return, with raw native bounds and `boundsMil`. Native units
+equal ten mil. Navigation retains only an exact native `true` acknowledgment;
+its bounds fields stay null. Camera state is not independently double-sampled,
+rendering completion is not observed and the result contains no screenshot. A
+three-second observer prevents later camera dispatch after expiry but cannot
+cancel a handler already sent.
+
+The navigation acknowledgment occurs after the native handler schedules an
+animation frame, a 75ms timer and a 3s crossline or rectangle overlay. It may also
+cancel a previous navigation overlay. `acceptTransientOverlayEffects:true`
+acknowledges these visual effects; it grants no general timer or overlay API.
+The result does not prove callbacks ran, timers settled, the overlay appeared
+or disappeared, or the viewport arrived. Keep the original disposable owner
+through observed root exit, empty Job and release. The existing explicit
+`zoom-to` operation avoids these navigation handlers when no overlay is wanted.
 
 ## Choose one capture method
 
@@ -306,13 +329,13 @@ its exact intent digest. A restarted facade cannot adopt old native ownership.
   DRC/connectivity and uploads, can delete empty selected views or annotations,
   and can settle tool or stash state. Even empty prior selection does not make
   append a camera-only action. A true result can also hide missing IDs.
-- `dmt_EditorControl.zoom` is a literal false stub. The three operations above
+- `dmt_EditorControl.zoom` is a literal false stub. The operations above
   use implemented zoom-to and fit handlers, not that percentage wrapper.
 - Current 209 SDK canvas PNG capture remains unavailable. The image path can allocate
   RGBA, ImageData and canvas data before facade bounds. Original renderer/frame
   ownership, asynchronous capture completion and resource cleanup need their
   own bounded implementation. The separate original-window operation above does
   not qualify that path. The older capture route has separate admission.
-- Net highlighting, cross-probe, overlay timers, schematic/3D routing, ordinary
+- Net highlighting, cross-probe, caller-controlled overlay timers, schematic/3D routing, ordinary
   projects, complete startup/baseline, source membership, electrical correctness,
   explicit Save, saved/reopened content and exact inverse are not supplied.

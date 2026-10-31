@@ -32,9 +32,8 @@ void test("native helper bytes and hash match both owner and synthetic launch sm
 
 void test("native helper embeds the complete fixed worker program with separate outgoing frame budget", async () => {
   const source = await readFile(sourcePath, "utf8");
-  const encoded = /const string WorkerExpression=@"((?:""|[^"])*)";/u.exec(source)?.[1];
-  assert.ok(encoded !== undefined);
-  const expression = encoded.replaceAll('""', '"');
+  const expression = readPackedNativeProgram(source, "WorkerExpressionFunction");
+  assert.ok(source.includes("static readonly string WorkerExpression=WorkerExpressionFunction;"));
   assert.equal(expression, CURRENT_PCB_DIAGNOSTIC_WORKER_EXPRESSION);
   assert.equal(Buffer.byteLength(expression, "utf8"), 3841);
   assert.equal(createHash("sha256").update(expression, "utf8").digest("hex"), CURRENT_PCB_DIAGNOSTIC_WORKER_EXPRESSION_SHA256);
@@ -64,10 +63,9 @@ void test("native worker commands accept identifiers only and keep fixed non-pau
   assert.ok(!source.includes("$request.expression"));
   assert.ok(!source.includes("$request.params"));
   assert.ok(!source.includes("$request.timeout"));
-  const encoded = /const string WorkerExpression=@"((?:""|[^"])*)";/u.exec(source)?.[1];
-  assert.ok(encoded !== undefined);
+  const expression = readPackedNativeProgram(source, "WorkerExpressionFunction");
   const message = JSON.stringify({ id: 32, method: "Runtime.evaluate", sessionId: "s".repeat(128), params: {
-    expression: encoded.replaceAll('""', '"'), uniqueContextId: "c".repeat(128), returnByValue: true, throwOnSideEffect: true,
+    expression, uniqueContextId: "c".repeat(128), returnByValue: true, throwOnSideEffect: true,
     silent: true, awaitPromise: false, includeCommandLineAPI: false, allowUnsafeEvalBlockedByCSP: false, timeout: 1000,
     userGesture: false, generatePreview: false,
   } });
@@ -84,9 +82,7 @@ void test("native opening and model programs are byte-exact fixed commands, not 
     ModelRootInventoryFunction: CURRENT_PCB_DIAGNOSTIC_ROOT_INVENTORY_FUNCTION, PcbOpeningFunction: CURRENT_PCB_DIAGNOSTIC_PCB_OPENING_FUNCTION,
     ModelDiagnosticConstructorsFunction: CURRENT_PCB_CONSTRUCTOR_BUNDLE_FUNCTIONS.diagnostic,
     ModelPrecreateConstructorsFunction: CURRENT_PCB_CONSTRUCTOR_BUNDLE_FUNCTIONS.precreate })) {
-    const encoded = new RegExp(`const string ${name}=@"((?:""|[^"])*)";`, "u").exec(source)?.[1];
-    const actual = name === "ModelRawStringsFunction" || name === "OpeningFunction" || name === "PcbOpeningFunction" || name === "ModelStateFunction" || name === "ModelPendingFunction" || name === "ModelRootInventoryFunction" || name === "ModelDiagnosticConstructorsFunction" || name === "ModelPrecreateConstructorsFunction"
-      ? readPackedNativeProgram(source, name) : encoded?.replaceAll('""', '"');
+    const actual = readPackedNativeProgram(source, name === "ModelCallbackExpression" ? "ModelCallbackExpressionFunction" : name);
     assert.equal(actual, expected, name);
     assert.ok(source.includes(createHash("sha256").update(expected).digest("hex")), name);
   }

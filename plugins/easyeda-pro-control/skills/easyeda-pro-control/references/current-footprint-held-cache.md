@@ -87,9 +87,11 @@ the target to satisfy a refusal.
 
 Browser readiness reads the engine version once and observes at most sixteen
 target inventories, with 250 ms between valid empty or single `about:blank`
-page samples. A malformed reply, attached page, multiple pages or unexpected
-page stops immediately. Selection still requires the unique original editor
-page and all frame/source/Start Page checks. This is bounded readiness within
+page samples. The original admitted backend path also identifies its fixed
+local loading window. That window may permit another sample or accompany one
+exact editor page; it is never selected or attached. Unrelated, duplicate or
+attached pages stop immediately. Selection still requires the unique original
+editor page and all frame/source/Start Page checks. This is bounded readiness within
 one consumed launch, not a replay of a failed launch. `inspect` retains its
 stage, classifications, counts and hashes without exposing target URLs or titles.
 One bounded startup packet and original binding are journaled on launch failure,

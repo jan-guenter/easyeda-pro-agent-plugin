@@ -1,6 +1,7 @@
 /** Bounded startup observations for the distinct read-only owner. Transient
  * target discovery never qualifies the UI source or grants cache authority. */
 import { sha256Json } from "./core.ts";
+import path from "node:path";
 import { diagnosticExact } from "./current-pcb-diagnostic-protocol.ts";
 import { diagnosticTargetInventory } from "./current-pcb-diagnostic-context.ts";
 import { CURRENT_FOOTPRINT_HELD_CACHE_PAGE_READINESS as LIMITS, currentFootprintHeldCacheStartupObservationSchema } from "./current-footprint-held-cache-diagnostic-profile.ts";
@@ -9,7 +10,7 @@ import type { CurrentFootprintHeldCacheStartupObservation, CurrentFootprintHeldC
 export type { CurrentFootprintHeldCacheStartupObservation, CurrentFootprintHeldCacheStartupStage } from "./current-footprint-held-cache-diagnostic-profile.ts";
 
 type Row = Readonly<Record<string, unknown>>;
-type Classification = "empty" | "about-blank" | "ready" | "multiple-pages" | "attached-page" | "unexpected-page";
+type Classification = "empty" | "about-blank" | "startup-loading" | "ready" | "ready-with-loading" | "multiple-pages" | "attached-page" | "unexpected-page";
 interface Sample {
   readonly attempt: number; readonly targetCount: number; readonly pageCount: number;
   readonly classification: Classification; readonly inventorySha256: string;
@@ -25,6 +26,7 @@ function refuse(code: string): never { throw new Error(`PCB_DIAGNOSTIC_HELD_CACH
  * call consumes its attempt, including errors before a valid inventory exists.
  */
 export class CurrentFootprintHeldCachePageReadiness {
+  readonly #loadingPrefix: string | null;
   #stage: CurrentFootprintHeldCacheStartupStage = "checkpoint";
   #failed = false;
   #failureKind: CurrentFootprintHeldCacheStartupObservation["failureKind"] = null;
@@ -32,6 +34,20 @@ export class CurrentFootprintHeldCachePageReadiness {
   #versionSha256: string | null = null;
   #targetAttempts = 0;
   readonly #samples: Sample[] = [];
+
+  /** The original installation supplies its already admitted app.js path.
+   * Its fixed N6 startup creates this local loading window before the editor.
+   * Recognizing it only permits bounded waiting or selection of a separate
+   * exact editor page; it never attaches to or executes code in the loader.
+   */
+  public constructor(backendWindowsPath?: string) {
+    if (backendWindowsPath === undefined) { this.#loadingPrefix = null; return; }
+    if (!/^[A-Z]:\\/u.test(backendWindowsPath) || path.win32.normalize(backendWindowsPath) !== backendWindowsPath ||
+        !backendWindowsPath.endsWith(String.raw`\resources\app\app.js`) || /[?#%\r\n\0]/u.test(backendWindowsPath)) { refuse("INSTALLATION_PATH"); }
+    const segments = backendWindowsPath.slice(3).split("\\");
+    segments.pop(); segments.push("assets", "view", "index.html");
+    this.#loadingPrefix = `file:///${backendWindowsPath.slice(0, 2)}/${segments.map(segment => encodeURIComponent(segment)).join("/")}?`;
+  }
 
   /** Track the original launch's next fixed stage without replacing a failure. */
   public stage(stage: CurrentFootprintHeldCacheStartupStage): void {
@@ -41,8 +57,9 @@ export class CurrentFootprintHeldCachePageReadiness {
   public fail(): void { this.#failed = true; this.#failureKind ??= "transport-or-owner"; }
 
   /** Read browser identity once, then poll only valid empty/about:blank page
-   * inventories. A malformed response, unexpected page or exhausted bound stops
-   * immediately. Selection still requires one unattached exact editor URL.
+   * inventories and the installation-bound loading page. A malformed response,
+   * unexpected page or exhausted bound stops immediately. One loading page
+   * may accompany the unique unattached editor; it is never selected itself.
    */
   public async observeBrowser(transport: Transport): Promise<Readonly<{ version: Row; targets: readonly Row[]; targetId: string }>> {
     if (this.#failed || this.#versionAttempts !== 0 || this.#targetAttempts !== 0) { refuse("CONSUMED"); }
@@ -67,20 +84,30 @@ export class CurrentFootprintHeldCachePageReadiness {
         try { inventory = diagnosticTargetInventory(raw); }
         catch (error) { this.#failureKind = "inventory"; throw error; }
         const pages = inventory.filter(value => value["type"] === "page");
-        const page = pages[0];
+        /** Match only the ordinary editor URL; later frame/source checks still qualify its realm. */
+        const editor = (value: Row): boolean => typeof value["url"] === "string" &&
+          /^https:\/\/client\/editor\?cll=(?:trace|debug|info|warn|error)(?:#.*)?(?![\s\S])/u.test(value["url"]);
+        /** Recognize the original installation's loader solely as an unselected startup companion. */
+        const loading = (value: Row): boolean => this.#loadingPrefix !== null && typeof value["url"] === "string" &&
+          value["url"].startsWith(this.#loadingPrefix) && value["url"].length > this.#loadingPrefix.length &&
+          !/[#\r\n\0]/u.test(value["url"]);
+        const editors = pages.filter(value => editor(value)), loaders = pages.filter(value => loading(value));
+        const page = editors[0] ?? pages[0];
         let classification: Classification;
         if (pages.length === 0) { classification = "empty"; }
+        else if (pages.some(value => value["attached"] !== false)) { classification = "attached-page"; }
+        else if (pages.length === 2 && editors.length === 1 && loaders.length === 1) { classification = "ready-with-loading"; }
         else if (pages.length > 1) { classification = "multiple-pages"; }
-        else if (page?.["attached"] !== false) { classification = "attached-page"; }
-        else if (page["url"] === "about:blank") { classification = "about-blank"; }
-        else if (typeof page["url"] === "string" && /^https:\/\/client\/editor\?cll=(?:trace|debug|info|warn|error)(?:#.*)?(?![\s\S])/u.test(page["url"])) { classification = "ready"; }
+        else if (page?.["url"] === "about:blank") { classification = "about-blank"; }
+        else if (editors.length === 1) { classification = "ready"; }
+        else if (loaders.length === 1) { classification = "startup-loading"; }
         else { classification = "unexpected-page"; }
         this.#samples.push(Object.freeze({ attempt, targetCount: inventory.length, pageCount: pages.length, classification, inventorySha256: sha256Json(inventory) }));
         current();
-        if (classification === "ready" && typeof page?.["targetId"] === "string") {
+        if ((classification === "ready" || classification === "ready-with-loading") && typeof page?.["targetId"] === "string") {
           return Object.freeze({ version: Object.freeze(structuredClone(observedVersion)), targets: inventory, targetId: page["targetId"] });
         }
-        if (classification !== "empty" && classification !== "about-blank") { this.#failureKind = "selection"; refuse("PAGE"); }
+        if (classification !== "empty" && classification !== "about-blank" && classification !== "startup-loading") { this.#failureKind = "selection"; refuse("PAGE"); }
         if (attempt === LIMITS.targetSamples) { this.#failureKind = "target-limit"; refuse("TARGET_LIMIT"); }
         await pause(); current();
       }

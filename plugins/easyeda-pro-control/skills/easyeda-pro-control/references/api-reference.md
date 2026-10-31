@@ -94,7 +94,7 @@ for network confirmation and metadata limits. This separate fixed vendor HTTPS
 lookup needs no application or fingerprint and is not public SDK execution.
 It does not enable the general library executor.
 
-For footprint/symbol/device search, symbol/device metadata or public system
+For footprint/symbol/device/3D-model/panel search, symbol/device/panel metadata or public system
 classifications, discover `catalog-components`
 and validate with `catalog-components-validate`. The separate catalog tool
 uses fixed anonymous vendor HTTPS endpoints, not desktop SDK getters. Read

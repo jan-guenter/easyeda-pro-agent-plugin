@@ -12,16 +12,18 @@ function counter(maximum: number, minimum = 0): z.ZodNumber {
   return z.number().int().min(minimum).max(maximum).refine(value => !Object.is(value, -0));
 }
 const startupSampleSchema = z.object({ attempt: counter(16, 1), targetCount: counter(256), pageCount: counter(256),
-  classification: z.enum(["empty", "about-blank", "ready", "multiple-pages", "attached-page", "unexpected-page"]),
+  classification: z.enum(["empty", "about-blank", "startup-loading", "ready", "ready-with-loading", "multiple-pages", "attached-page", "unexpected-page"]),
   inventorySha256: z.string().regex(/^[a-f\d]{64}(?![\s\S])/u),
 }).strict().readonly();
-/** Only an empty or about:blank page inventory permits another target query. */
-function transient(classification: string): boolean { return classification === "empty" || classification === "about-blank"; }
+/** Only empty, about:blank or the admitted installation's loading page permits another target query. */
+function transient(classification: string): boolean { return classification === "empty" || classification === "about-blank" || classification === "startup-loading"; }
 /** Match a recorded classification to its observed page count, preserving
  * non-page targets without treating them as additional editor pages. */
 function pageCountMatches(sample: z.infer<typeof startupSampleSchema>): boolean {
   if (sample.classification === "empty") { return sample.pageCount === 0; }
   if (sample.classification === "multiple-pages") { return sample.pageCount >= 2; }
+  if (sample.classification === "ready-with-loading") { return sample.pageCount === 2; }
+  if (sample.classification === "attached-page") { return sample.pageCount >= 1; }
   return sample.pageCount === 1;
 }
 /** Strict inert diagnostic evidence, including initial or interrupted reads.
@@ -58,7 +60,7 @@ export const currentFootprintHeldCacheStartupObservationSchema = z.object({
   } else if (observation.stage === "browser-version") { valid &&= observation.versionAttempts === 1 && observation.targetAttempts === 0; }
   else {
     valid &&= observation.versionAttempts === 1 && observation.versionSha256 !== null;
-    if (observation.stage !== "browser-targets") { valid &&= last?.classification === "ready"; }
+    if (observation.stage !== "browser-targets") { valid &&= last?.classification === "ready" || last?.classification === "ready-with-loading"; }
   }
   if (observation.failureKind === "target-limit") { valid &&= observation.stage === "browser-targets" && observation.targetAttempts === 16 && observation.samples.length === 16 && last !== undefined && transient(last.classification); }
   if (observation.failureKind === "inventory") { valid &&= observation.stage === "browser-targets" && observation.targetAttempts === observation.samples.length + 1; }

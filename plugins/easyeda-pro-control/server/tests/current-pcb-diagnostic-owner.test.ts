@@ -451,7 +451,7 @@ void test("diagnostic native source preserves original handles, explicit inherit
   assert.ok(source.includes("if(creationPhase==CreationPhase.Unknown || (creationPhase==CreationPhase.RootRetained && root==IntPtr.Zero)) return false;"));
   assert.ok(!source.includes("Process.GetProcessById")); assert.ok(!source.includes("TerminateProcess"));
   assert.ok(!source.includes("--remote-debugging-port"));
-  assert.ok(source.includes('const string WorkerExpression=@"'));
+  assert.ok(source.includes("static readonly string WorkerExpression=WorkerExpressionFunction;"));
   assert.ok(!source.includes("$request.expression"));
   assert.ok(!source.includes("$request.params"));
 });

@@ -52,7 +52,11 @@ void test("full dependency selector runs on actual V8 Scope.object while preserv
   const session = new Session(); session.connect();
   try {
     await session.post("Runtime.enable");
-    const names = [...new Set([...CURRENT_FOOTPRINT_COPY_DEPENDENCY_PROFILES.map(item => item.key.split(".")[0]),
+    // The own project field comes from the retained receiver argument.
+    // Its instance handle is separate from module lexical aliases.
+    // The fixture already declares that project object.
+    const lexicalProfiles = CURRENT_FOOTPRINT_COPY_DEPENDENCY_PROFILES.filter(item => item.key !== "project.uploadStructure");
+    const names = [...new Set([...lexicalProfiles.map(item => item.key.split(".")[0]),
       "Lg", "Gd", "Tg", "ar", "Pi", "ja", "Vc", "zy", "JP", "KP", "Mb", "qe", "Qe", "Ke", "Ni", "cg"])];
     const closure = await handle(session, `(()=>{${footprintDependencyWorldSource()}
       const {${names.join(",")}}=scope;globalThis.SCOPE_TEST_WORLD=[project,bus,manager,consistency,constructors,lexicals];

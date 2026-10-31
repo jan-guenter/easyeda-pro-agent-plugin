@@ -8,21 +8,21 @@
     "installed209DistinctMethods": 811,
     "statuses": {
       "implemented-public-subset": 215,
-      "implemented-native-equivalent": 41,
-      "implemented-vendor-http-equivalent": 10,
+      "implemented-native-equivalent": 43,
+      "implemented-vendor-http-equivalent": 13,
       "internal-lifecycle-only": 0,
       "implemented-but-blocked": 79,
-      "omitted": 490
+      "omitted": 485
     },
     "executionRoutes": {
-      "available-with-runtime-guards": 405,
-      "available-with-network-guards": 13,
+      "available-with-runtime-guards": 407,
+      "available-with-network-guards": 16,
       "available-with-managed-file-guards": 3,
       "blocked": 94,
       "partially-blocked": 2
     },
     "omissions": {
-      "account-or-library-scope-needed": 26,
+      "account-or-library-scope-needed": 24,
       "bom-template-shared-preference-effects": 2,
       "callback-or-registration-lifecycle": 27,
       "canvas-origin-pending-geometry-queues": 1,
@@ -41,6 +41,7 @@
       "installed-209-library-routing-unqualified": 1,
       "installed-209-raytracer-backend-absent": 5,
       "installed-209-readiness-backend-absent": 4,
+      "installed-209-region-selection-side-effects": 1,
       "installed-209-selection-flushes-design-services": 2,
       "installed-209-source-backend-absent": 29,
       "installed-209-symbol-source-runtime-contract-unqualified": 1,
@@ -49,11 +50,11 @@
       "interactive-ui-resource": 36,
       "layer-selection-collateral-state": 1,
       "library-render-resource-and-failure-lifecycle": 2,
-      "lossy-heterogeneous-primitive-projection": 2,
+      "lossy-heterogeneous-primitive-projection": 1,
       "lossy-logging-selection-reader": 1,
       "managed-file-contract-needed": 31,
       "multi-object-electrical-effect": 7,
-      "navigation-or-viewport-adapter-needed": 11,
+      "navigation-or-viewport-adapter-needed": 9,
       "non-json-result-or-callback": 5,
       "not-in-reviewed-runtime": 54,
       "pad-pair-group-replacement-effects": 1,
@@ -63,7 +64,7 @@
       "reviewed-native-stub": 30,
       "scoped-effect-adapter-needed": 102,
       "selection-marker-or-history-mutation": 7,
-      "shared-asset-owner-projection-needed": 3,
+      "shared-asset-owner-projection-needed": 2,
       "simulation-editor-not-admitted": 1,
       "source-decoder-and-save-lifecycle": 2,
       "symbol-delete-subscriber-and-structure-lifecycle": 1,
@@ -6233,14 +6234,40 @@
       ],
       "reviewedRuntimeDeclaration": true,
       "installed209Declaration": true,
-      "status": "omitted",
-      "routes": [],
-      "omission": {
-        "code": "account-or-library-scope-needed",
-        "reason": "lib_3DModel.search reaches account, workspace, folder, project or shared-library metadata outside the active disposable document.",
-        "nextRequirement": "Define explicit owner, collection/search bounds and privacy rules; mutations also need cloud/shared-asset authority and a durable independent verifier. Read-only catalog discovery is still feasible without granting writes.",
-        "evidence": []
-      },
+      "status": "implemented-vendor-http-equivalent",
+      "routes": [
+        {
+          "tool": "easyeda_control_catalog_components",
+          "selector": "search-3d-models",
+          "implementation": "vendor-http-task-equivalent",
+          "scope": "Application-independent fixed public system-owned metadata subset, not public SDK execution or runtime admission. Explicit confirmNetwork:true authorizes one anonymous fixed-host request with no credentials, redirects, retries, arbitrary URL/library, automatic pagination or linked-asset fetch. Nonempty model/panel searches use read-only form POST /api/v2/components/search with docType16/29 and fixed owner/path/uid; at most20 candidates retain raw pagination without arithmetic, exact-match or completeness claims. Every candidate and all supplied ownership/project/visibility witnesses are checked, foreign result groups refuse. Panel GET requires exact UUID, docType29, system path/owner and public:true. Projection includes only names, descriptions and classification IDs, with libraryType5/29 from the installed enum; no model/panel geometry, download, units, rendering, associations, board children, CAD, editor or Save. 1MiB decoded response,128KiB result,30-second body/request deadline. Positive anonymous3D composed source execution passed; panel search returned no rows and positive public panel search/GET availability remains unrecorded. Desktop3D search can additionally retrieve source data; this metadata subset does not execute that path. The installed plugin route and public SDK remain unvalidated.",
+          "source": [
+            "public-system-asset-catalog.ts",
+            "public-system-catalog.ts",
+            "public-system-catalog-runtime.ts",
+            "facade-mode.ts"
+          ],
+          "tests": [
+            "public-system-asset-catalog.test.ts",
+            "public-system-asset-catalog-runtime.test.ts",
+            "public-system-catalog-registration.test.ts"
+          ],
+          "validation": "offline-regression;current-live-unclaimed",
+          "executionState": "available-with-network-guards",
+          "inputDiscovery": {
+            "tool": "easyeda_control_api",
+            "arguments": {
+              "request": {
+                "action": "catalog-components",
+                "query": {
+                  "includeSchemas": true
+                }
+              }
+            }
+          }
+        }
+      ],
+      "omission": null,
       "completeDeclaredContractSupported": false,
       "currentGenerationLiveValidation": "not-recorded",
       "runtimeAdmission": "not-granted-by-inventory"
@@ -6401,9 +6428,11 @@
       "routes": [],
       "omission": {
         "code": "shared-asset-owner-projection-needed",
-        "reason": "CBB lookup can resolve external/shared component-block assets; the existing project symbol/footprint/device metadata verifier does not prove their owner or hierarchical descendants.",
-        "nextRequirement": "Implement explicit collection ownership, bounded CBB metadata/child projection and failure handling, with no implicit external-library write authority.",
-        "evidence": []
+        "reason": "The pinned CBB getInfo fetches a project and its branch profile/structure, then assembles boards from schematic and PCB references. This is not the generic component metadata GET used for symbols, footprints and panel libraries. Fixed public-system project ownership, branch membership and the bounded board projection remain unqualified.",
+        "nextRequirement": "Add an explicit anonymous public-project eligibility proof and complete bounded branch/board projection before fetching the profile. Do not infer missing boards as an empty array or follow a caller-selected private project/branch endpoint.",
+        "evidence": [
+          "assets/pro-ui/3.2.198.2800f583/js/ui.js@sha256:3515d4c299b353fa7bcd0d859f0b8b59b7eae39b5dc243b2c27f2e54a60a1ee6;utf16:17383890..17385625"
+        ]
       },
       "completeDeclaredContractSupported": false,
       "currentGenerationLiveValidation": "not-recorded",
@@ -6565,9 +6594,11 @@
       "routes": [],
       "omission": {
         "code": "account-or-library-scope-needed",
-        "reason": "lib_Cbb.search reaches account, workspace, folder, project or shared-library metadata outside the active disposable document.",
-        "nextRequirement": "Define explicit owner, collection/search bounds and privacy rules; mutations also need cloud/shared-asset authority and a durable independent verifier. Read-only catalog discovery is still feasible without granting writes.",
-        "evidence": []
+        "reason": "The pinned desktop CBB search invokes project-path discovery with refresh:yes before filtering. Its online manager can use component search docType17, but a fixed anonymous system-only sample returned no rows, leaving positive project/block ownership and metadata projection unqualified. Empty results prove neither absence nor routing parity.",
+        "nextRequirement": "Qualify a positive system-owned CBB search response and explicit project/block references without local project discovery, mutable classification state, credentials or a private-library fallback; preserve the separate CBB get/profile lifecycle.",
+        "evidence": [
+          "assets/pro-ui/3.2.198.2800f583/js/ui.js@sha256:3515d4c299b353fa7bcd0d859f0b8b59b7eae39b5dc243b2c27f2e54a60a1ee6;utf16:12192224..12194697,17386420..17387304"
+        ]
       },
       "completeDeclaredContractSupported": false,
       "currentGenerationLiveValidation": "not-recorded",
@@ -8947,14 +8978,40 @@
       ],
       "reviewedRuntimeDeclaration": true,
       "installed209Declaration": true,
-      "status": "omitted",
-      "routes": [],
-      "omission": {
-        "code": "shared-asset-owner-projection-needed",
-        "reason": "Panel-library metadata can refer to external assets and panel document types outside current project-library proof profiles.",
-        "nextRequirement": "Add explicit library ownership and a bounded panel metadata projection; current-project PCB or footprint guards do not prove panel asset scope.",
-        "evidence": []
-      },
+      "status": "implemented-vendor-http-equivalent",
+      "routes": [
+        {
+          "tool": "easyeda_control_catalog_components",
+          "selector": "get-panel-library",
+          "implementation": "vendor-http-task-equivalent",
+          "scope": "Application-independent fixed public system-owned metadata subset, not public SDK execution or runtime admission. Explicit confirmNetwork:true authorizes one anonymous fixed-host request with no credentials, redirects, retries, arbitrary URL/library, automatic pagination or linked-asset fetch. Nonempty model/panel searches use read-only form POST /api/v2/components/search with docType16/29 and fixed owner/path/uid; at most20 candidates retain raw pagination without arithmetic, exact-match or completeness claims. Every candidate and all supplied ownership/project/visibility witnesses are checked, foreign result groups refuse. Panel GET requires exact UUID, docType29, system path/owner and public:true. Projection includes only names, descriptions and classification IDs, with libraryType5/29 from the installed enum; no model/panel geometry, download, units, rendering, associations, board children, CAD, editor or Save. 1MiB decoded response,128KiB result,30-second body/request deadline. Positive anonymous3D composed source execution passed; panel search returned no rows and positive public panel search/GET availability remains unrecorded. Desktop3D search can additionally retrieve source data; this metadata subset does not execute that path. The installed plugin route and public SDK remain unvalidated.",
+          "source": [
+            "public-system-asset-catalog.ts",
+            "public-system-catalog.ts",
+            "public-system-catalog-runtime.ts",
+            "facade-mode.ts"
+          ],
+          "tests": [
+            "public-system-asset-catalog.test.ts",
+            "public-system-asset-catalog-runtime.test.ts",
+            "public-system-catalog-registration.test.ts"
+          ],
+          "validation": "offline-regression;current-live-unclaimed",
+          "executionState": "available-with-network-guards",
+          "inputDiscovery": {
+            "tool": "easyeda_control_api",
+            "arguments": {
+              "request": {
+                "action": "catalog-components",
+                "query": {
+                  "includeSchemas": true
+                }
+              }
+            }
+          }
+        }
+      ],
+      "omission": null,
       "completeDeclaredContractSupported": false,
       "currentGenerationLiveValidation": "not-recorded",
       "runtimeAdmission": "not-granted-by-inventory"
@@ -9070,14 +9127,40 @@
       ],
       "reviewedRuntimeDeclaration": true,
       "installed209Declaration": true,
-      "status": "omitted",
-      "routes": [],
-      "omission": {
-        "code": "account-or-library-scope-needed",
-        "reason": "lib_PanelLibrary.search reaches account, workspace, folder, project or shared-library metadata outside the active disposable document.",
-        "nextRequirement": "Define explicit owner, collection/search bounds and privacy rules; mutations also need cloud/shared-asset authority and a durable independent verifier. Read-only catalog discovery is still feasible without granting writes.",
-        "evidence": []
-      },
+      "status": "implemented-vendor-http-equivalent",
+      "routes": [
+        {
+          "tool": "easyeda_control_catalog_components",
+          "selector": "search-panel-libraries",
+          "implementation": "vendor-http-task-equivalent",
+          "scope": "Application-independent fixed public system-owned metadata subset, not public SDK execution or runtime admission. Explicit confirmNetwork:true authorizes one anonymous fixed-host request with no credentials, redirects, retries, arbitrary URL/library, automatic pagination or linked-asset fetch. Nonempty model/panel searches use read-only form POST /api/v2/components/search with docType16/29 and fixed owner/path/uid; at most20 candidates retain raw pagination without arithmetic, exact-match or completeness claims. Every candidate and all supplied ownership/project/visibility witnesses are checked, foreign result groups refuse. Panel GET requires exact UUID, docType29, system path/owner and public:true. Projection includes only names, descriptions and classification IDs, with libraryType5/29 from the installed enum; no model/panel geometry, download, units, rendering, associations, board children, CAD, editor or Save. 1MiB decoded response,128KiB result,30-second body/request deadline. Positive anonymous3D composed source execution passed; panel search returned no rows and positive public panel search/GET availability remains unrecorded. Desktop3D search can additionally retrieve source data; this metadata subset does not execute that path. The installed plugin route and public SDK remain unvalidated.",
+          "source": [
+            "public-system-asset-catalog.ts",
+            "public-system-catalog.ts",
+            "public-system-catalog-runtime.ts",
+            "facade-mode.ts"
+          ],
+          "tests": [
+            "public-system-asset-catalog.test.ts",
+            "public-system-asset-catalog-runtime.test.ts",
+            "public-system-catalog-registration.test.ts"
+          ],
+          "validation": "offline-regression;current-live-unclaimed",
+          "executionState": "available-with-network-guards",
+          "inputDiscovery": {
+            "tool": "easyeda_control_api",
+            "arguments": {
+              "request": {
+                "action": "catalog-components",
+                "query": {
+                  "includeSchemas": true
+                }
+              }
+            }
+          }
+        }
+      ],
+      "omission": null,
       "completeDeclaredContractSupported": false,
       "currentGenerationLiveValidation": "not-recorded",
       "runtimeAdmission": "not-granted-by-inventory"
@@ -10797,10 +10880,11 @@
       "status": "omitted",
       "routes": [],
       "omission": {
-        "code": "lossy-heterogeneous-primitive-projection",
-        "reason": "The installed wrapper skips Text and unknown native region-hit types. Its array is not a complete region inventory and generic JSON/class projection cannot recover omitted identities.",
-        "nextRequirement": "Bind the complete native region-hit identity list, project every admitted family and prove exact parity; require explicit region direction and boundary semantics with disposable geometry fixtures.",
+        "code": "installed-209-region-selection-side-effects",
+        "reason": "The pinned209 native region handler calls t.getItemsByBBox, which calls boxSelect and select. It changes selection and invokes the design-service modify path, which can flush native uploads; selection restoration does not prove collateral invariance. The public wrapper also skips Text and unknown hit types, so its returned array is incomplete.",
+        "nextRequirement": "Implement a separately source-qualified nonmutating region-membership adapter with explicit direction/boundary semantics, complete supported identities and selection/source invariants on disposable geometry. Do not execute or relabel the selection-service getter as a harmless read, or recover omitted identities through generic JSON projection.",
         "evidence": [
+          "assets/pro-pcb/3.2.195.6b67774e/js/pcb.js@sha256:a84059304d32d4f0feb768d6c5baf00d72a954643ac62299f2c46c08fa68fd0b;utf16:10304939..10305263,7881974..7882035,7843579..7844096,7849566..7851391",
           "docs/history/2026-10-10-api-execution-feasibility.md"
         ]
       },
@@ -11001,14 +11085,43 @@
       ],
       "reviewedRuntimeDeclaration": true,
       "installed209Declaration": true,
-      "status": "omitted",
-      "routes": [],
-      "omission": {
-        "code": "navigation-or-viewport-adapter-needed",
-        "reason": "pcb_Document.navigateToCoordinates changes editor, viewport or window state without a maintained method-specific one-shot completion/ownership proof.",
-        "nextRequirement": "Add strict target/viewport arguments, original owner/context proof, non-replayed dispatch and bounded observable completion; closing must never imply Save or discard.",
-        "evidence": []
-      },
+      "status": "implemented-native-equivalent",
+      "routes": [
+        {
+          "tool": "easyeda_control_pcb209_opening",
+          "selector": "visual.perform-visual",
+          "implementation": "native-task-equivalent",
+          "documentTypes": [
+            3
+          ],
+          "scope": "Separate pinned209 original disposable visual owner only, not direct public SDK execution or ordinary-project navigation. One journaled perform-visual operation.kind navigate-coordinates accepts bounded xMil/yMil; navigate-region accepts bounded leftMil/rightMil/topMil/bottomMil with left<right and bottom<top. Both require operation.acceptTransientOverlayEffects:true in addition to visual-state acceptance and pass exact data-origin mil values to the source-qualified original PCB RPC receiver. The handlers may hide a previous marker and schedule an animation frame,75ms timer and3s crossline/rectangle overlay. Exact native true is acknowledgment only: camera bounds remain null, rendering, callbacks and timer settlement are unverified, and selection is checked unchanged. No caller protocol, selection mutation, general overlay/timer control, CAD edit, explicit Save, inverse or retry. After ambiguity inspect without replay. Keep the original owner through normal close or its separately confirmed original-Job abort, actual original root/empty-Job exit, helper release and record settlement; an acknowledgment is not cleanup. No connected navigation validation is recorded for this payload.",
+          "source": [
+            "current-pcb-209-visual-actions.ts",
+            "current-pcb-209-visual-validation.ts",
+            "current-pcb-diagnostic-owner.ts",
+            "../../scripts/pcb-diagnostic-owner.ps1"
+          ],
+          "tests": [
+            "current-pcb-209-visual-actions.test.ts",
+            "current-pcb-209-visual-native.test.ts",
+            "current-pcb-209-visual-lifecycle.test.ts"
+          ],
+          "validation": "offline-regression;current-live-unclaimed",
+          "executionState": "available-with-runtime-guards",
+          "inputDiscovery": {
+            "tool": "easyeda_control_api",
+            "arguments": {
+              "request": {
+                "action": "pcb209-visual",
+                "query": {
+                  "includeSchemas": true
+                }
+              }
+            }
+          }
+        }
+      ],
+      "omission": null,
       "completeDeclaredContractSupported": false,
       "currentGenerationLiveValidation": "not-recorded",
       "runtimeAdmission": "not-granted-by-inventory"
@@ -11042,14 +11155,43 @@
       ],
       "reviewedRuntimeDeclaration": true,
       "installed209Declaration": true,
-      "status": "omitted",
-      "routes": [],
-      "omission": {
-        "code": "navigation-or-viewport-adapter-needed",
-        "reason": "pcb_Document.navigateToRegion changes editor, viewport or window state without a maintained method-specific one-shot completion/ownership proof.",
-        "nextRequirement": "Add strict target/viewport arguments, original owner/context proof, non-replayed dispatch and bounded observable completion; closing must never imply Save or discard.",
-        "evidence": []
-      },
+      "status": "implemented-native-equivalent",
+      "routes": [
+        {
+          "tool": "easyeda_control_pcb209_opening",
+          "selector": "visual.perform-visual",
+          "implementation": "native-task-equivalent",
+          "documentTypes": [
+            3
+          ],
+          "scope": "Separate pinned209 original disposable visual owner only, not direct public SDK execution or ordinary-project navigation. One journaled perform-visual operation.kind navigate-coordinates accepts bounded xMil/yMil; navigate-region accepts bounded leftMil/rightMil/topMil/bottomMil with left<right and bottom<top. Both require operation.acceptTransientOverlayEffects:true in addition to visual-state acceptance and pass exact data-origin mil values to the source-qualified original PCB RPC receiver. The handlers may hide a previous marker and schedule an animation frame,75ms timer and3s crossline/rectangle overlay. Exact native true is acknowledgment only: camera bounds remain null, rendering, callbacks and timer settlement are unverified, and selection is checked unchanged. No caller protocol, selection mutation, general overlay/timer control, CAD edit, explicit Save, inverse or retry. After ambiguity inspect without replay. Keep the original owner through normal close or its separately confirmed original-Job abort, actual original root/empty-Job exit, helper release and record settlement; an acknowledgment is not cleanup. No connected navigation validation is recorded for this payload.",
+          "source": [
+            "current-pcb-209-visual-actions.ts",
+            "current-pcb-209-visual-validation.ts",
+            "current-pcb-diagnostic-owner.ts",
+            "../../scripts/pcb-diagnostic-owner.ps1"
+          ],
+          "tests": [
+            "current-pcb-209-visual-actions.test.ts",
+            "current-pcb-209-visual-native.test.ts",
+            "current-pcb-209-visual-lifecycle.test.ts"
+          ],
+          "validation": "offline-regression;current-live-unclaimed",
+          "executionState": "available-with-runtime-guards",
+          "inputDiscovery": {
+            "tool": "easyeda_control_api",
+            "arguments": {
+              "request": {
+                "action": "pcb209-visual",
+                "query": {
+                  "includeSchemas": true
+                }
+              }
+            }
+          }
+        }
+      ],
+      "omission": null,
       "completeDeclaredContractSupported": false,
       "currentGenerationLiveValidation": "not-recorded",
       "runtimeAdmission": "not-granted-by-inventory"

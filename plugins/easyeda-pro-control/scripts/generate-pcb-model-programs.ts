@@ -2,7 +2,8 @@
 import { createHash } from "node:crypto";
 import { readFile, writeFile } from "node:fs/promises";
 import { gzipSync } from "node:zlib";
-import { CURRENT_PCB_DIAGNOSTIC_MODEL_STATE_FUNCTION, CURRENT_PCB_DIAGNOSTIC_MODEL_STATE_V2_FUNCTION } from "../server/src/current-pcb-diagnostic-model-program.ts";
+import { CURRENT_PCB_DIAGNOSTIC_MODEL_CALLBACK_EXPRESSION, CURRENT_PCB_DIAGNOSTIC_MODEL_HANDLER_FUNCTION, CURRENT_PCB_DIAGNOSTIC_MODEL_STATE_FUNCTION, CURRENT_PCB_DIAGNOSTIC_MODEL_STATE_V2_FUNCTION } from "../server/src/current-pcb-diagnostic-model-program.ts";
+import { CURRENT_PCB_DIAGNOSTIC_WORKER_EXPRESSION } from "../server/src/current-pcb-diagnostic-worker-program.ts";
 import { CURRENT_PCB_DIAGNOSTIC_PENDING_STATE_FUNCTION, CURRENT_PCB_DIAGNOSTIC_PENDING_STATE_V2_FUNCTION } from "../server/src/current-pcb-diagnostic-pending-program.ts";
 import { CURRENT_PCB_DIAGNOSTIC_ROOT_INVENTORY_FUNCTION } from "../server/src/current-pcb-diagnostic-root-inventory.ts";
 import { CURRENT_PCB_STRING_PRODUCER_MARKERS_V2_FUNCTION } from "../server/src/current-pcb-string-producer-markers.ts";
@@ -30,6 +31,9 @@ import { CURRENT_PCB_STRING_RENDERER_ASSOCIATION_FUNCTION, CURRENT_PCB_STRING_WO
 import { CURRENT_PCB_STRING_EMPTY_ASSETS_FUNCTION } from "../server/src/current-pcb-string-empty-assets.ts";
 
 const programs = [
+  ["DIAGNOSTIC WORKER EXPRESSION", "WorkerExpressionFunction", CURRENT_PCB_DIAGNOSTIC_WORKER_EXPRESSION],
+  ["MODEL CALLBACK EXPRESSION", "ModelCallbackExpressionFunction", CURRENT_PCB_DIAGNOSTIC_MODEL_CALLBACK_EXPRESSION],
+  ["MODEL HANDLER", "ModelHandlerFunction", CURRENT_PCB_DIAGNOSTIC_MODEL_HANDLER_FUNCTION],
   ["STRING WORKER PROJECT SELECTOR", "StringWorkerProjectSelectorFunction", CURRENT_PCB_STRING_WORKER_PROJECT_SELECTOR],
   ["STRING WORKER UPLOAD STRUCTURE CALLBACK SELECTOR", "StringWorkerUploadStructureCallbackSelectorFunction", CURRENT_PCB_STRING_UPLOAD_STRUCTURE_CALLBACK_SELECTOR],
   ["STRING WORKER STRUCTURE CALLBACK SELECTOR", "StringWorkerStructureCallbackSelectorFunction", CURRENT_PCB_STRING_STRUCTURE_CALLBACK_SELECTOR],
@@ -111,6 +115,18 @@ function packedCommonPacketPrograms(): ReadonlyMap<string, string> {
   return packedProgramGroup(selected, "CommonPacketProgramTable", "");
 }
 
+/** These original diagnostic programs share bounded storage. Their independent
+ * hashes and decoded bytes remain unchanged, including every outgoing guard.
+ */
+function packedDiagnosticCorePrograms(): ReadonlyMap<string, string> {
+  const names = ["WorkerExpressionFunction", "ModelCallbackExpressionFunction", "ModelHandlerFunction", "OpeningFunction", "PcbOpeningFunction"];
+  const selected = names.map(name => {
+    const program = programs.find(([, candidate]) => candidate === name);
+    if (program === undefined) { throw new Error("Fixed diagnostic core program roster differs"); } return program;
+  });
+  return packedProgramGroup(selected, "DiagnosticCoreProgramTable", "");
+}
+
 /** Pack one reviewed roster using the unchanged64KiB decoder. No runtime input
  * can choose a table, program, index, count or decoder capacity. */
 function packedProgramGroup(selected: readonly Program[], tablePrefix: string, decoder: string): ReadonlyMap<string, string> {
@@ -166,7 +182,7 @@ async function main(): Promise<void> {
   const action = process.argv[2];
   if (process.argv.length !== 3 || action !== "--write" && action !== "--check") { throw new Error("Expected --write or --check"); }
   const path = new URL("pcb-diagnostic-owner.ps1", import.meta.url);
-  const grouped = new Map([...packedStringWorkerPrograms(), ...packedCommonPacketPrograms()]);
+  const grouped = new Map([...packedStringWorkerPrograms(), ...packedCommonPacketPrograms(), ...packedDiagnosticCorePrograms()]);
   const bytes = await readFile(path);
   // Preserve a valid BOM and refuse malformed input before replacing any block.
   const source = new TextDecoder("utf-8", { fatal: true, ignoreBOM: true }).decode(bytes);

@@ -61,4 +61,11 @@ export const CURRENT_FOOTPRINT_COPY_DEPENDENCY_PROFILES = freezeDeep([
   // Append the native receiver override so existing producer/cache indices stay
   // Stable. Its super call still requires the separately qualified zy method.
   {"key":"ja.parseFull","name":"parseFull","kind":"method","async":false,"arity":4,"lineNumber":9,"columnNumber":7641,"bytes":165,"sha256":"25704701f7723aa391b5ae1ca283a14fbd8ddfb622365a9446cdca4b78b269ba","parent":null},
+  // Retain the original publication methods and own Nd wrapper without invoking them.
+  {"key":"Tg.onDataChange","name":"onDataChange","kind":"method","async":false,"arity":11,"lineNumber":109,"columnNumber":31_524,"bytes":931,"sha256":"a6d8254ca882842724fc5ab8d35ddc8d90b6088d74828f23465cb26a9e842356","parent":null},
+  {"key":"ar.publishCanvas","name":"publishCanvas","kind":"method","async":false,"arity":11,"lineNumber":109,"columnNumber":10_489,"bytes":1154,"sha256":"1f780d00b20987ba2eb3d9bbb561a51486dcef9fc8465f346a3c81d91a4443e0","parent":null},
+  {"key":"project.uploadStructure","name":"","kind":"arrow","async":false,"arity":0,"lineNumber":108,"columnNumber":145_602,"bytes":149,"sha256":"212bd4de32ee78a2924190e6d36bdf3f0592a92663faaf50151a341837488c7d","parent":null},
 ] as const);
+
+/** The Nd wrapper's retained e argument. Its arrow receiver remains unproved. */
+export const CURRENT_FOOTPRINT_COPY_STRUCTURE_CALLBACK_PROFILE = freezeDeep({"key":"structure-callback","name":"","kind":"arrow","async":false,"arity":3,"lineNumber":110,"columnNumber":89_838,"start":2_104_048,"end":2_104_241,"bytes":193,"sha256":"f78a4c3123cfbf7d2be2c7404abcb1519fecbea1fd9f6fed49107cbac4f77f70"} as const);

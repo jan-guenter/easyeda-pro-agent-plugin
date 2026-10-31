@@ -94,7 +94,7 @@ Promise<Readonly<{ value: Fixture; id: string; binding: string; prepare: () => P
   let bindingToken: ReturnType<typeof currentFootprintCopyBindingsSchema.parse> | null = null;
   const producers = Object.freeze({ synthetic: "original-producers" });
   const dependencies = Object.freeze(currentFootprintCopyDependencyObservationSchema.parse({ profile: "private.current-footprint-copy-dependencies.v1",
-    selectedFunctionCount: 61, nativeParserOverrideQualified: true, freshDirectScopeCount: 3, originalSelectedIdentitiesRechecked: true, initializedNotificationBusRetained: true,
+    selectedFunctionCount: 64, nativePublicationMethodsRetained: true, ownUploadStructureCallbackRetained: true, uploadStructureArrowReceiverVerified: false, nativeParserOverrideQualified: true, freshDirectScopeCount: 3, originalSelectedIdentitiesRechecked: true, initializedNotificationBusRetained: true,
     originalCacheObjectsRetained: true,
     cacheWrapperFunctionsQualified: 7, cacheWrapperNamespaceNamesMatched: true, originalNativeCacheReceiverCandidatesRetained: true,
     nativeCacheFunctionsQualified: 4, nativeCacheNamespaceProvenanceVerified: false, parserSubscriberCallbacksBound: false, uploadCallbacksBound: false, transitiveProducerClosuresBound: false,
@@ -411,7 +411,7 @@ for (const mode of ["success", "capacity", "reproof", "publication"] as const) {
     await assert.rejects(f.prepareDependencies(), /ORIGINAL_FOOTPRINT_DEPENDENCIES_INPUT_REQUIRED/u);
     f.setNextRequestId(1); await f.observeUi(); f.calls.length = 0;
     const requests = 4 + CURRENT_FOOTPRINT_COPY_DEPENDENCY_OWNER_REQUESTS.observeMaximum + CURRENT_FOOTPRINT_COPY_DEPENDENCY_OWNER_REQUESTS.requireMaximum;
-    assert.equal(requests, 101);
+    assert.equal(requests, 110);
     f.setNextRequestId(CURRENT_FOOTPRINT_COPY_PREPARATION_PROFILE.normalRequestLimit - requests + (mode === "capacity" ? 2 : 1));
     if (mode === "reproof") { f.expireDependencies(); }
     if (mode === "publication") { f.refuseDependencyPublication(); }

@@ -11,13 +11,13 @@ const page = (url = "https://client/editor?cll=info", attached = false): Readonl
 
 /** Supply replies through one retained transport and count attempted calls,
  * including failures. No real timer, CDP connection or application is used. */
-function fixture(replies: readonly Readonly<Record<string, unknown>>[]): Readonly<{
+function fixture(replies: readonly Readonly<Record<string, unknown>>[], backendWindowsPath?: string): Readonly<{
   observer: CurrentFootprintHeldCachePageReadiness;
   counts: { version: number; targets: number; pauses: number; current: number; ownerLost: boolean };
   transport: { assertCurrent: () => void; version: () => Promise<Readonly<Record<string, unknown>>>;
     targets: () => Promise<Readonly<Record<string, unknown>>>; pause: () => Promise<void> };
 }> {
-  const observer = new CurrentFootprintHeldCachePageReadiness();
+  const observer = new CurrentFootprintHeldCachePageReadiness(backendWindowsPath);
   const counts = { version: 0, targets: 0, pauses: 0, current: 0, ownerLost: false };
   const transport = {
     assertCurrent: (): void => { counts.current += 1; if (counts.ownerLost) { throw new Error("synthetic original owner lost"); } },
@@ -44,6 +44,41 @@ void test("bounded readiness waits through valid empty and about:blank inventori
   const text = JSON.stringify(observation); assert.ok(!text.includes("private-title") && !text.includes("original-page") && !text.includes("https://"));
   await assert.rejects(value.observer.observeBrowser(value.transport), /CONSUMED/u);
   assert.deepEqual([value.counts.version, value.counts.targets, value.counts.pauses], [1, 3, 2]);
+});
+
+void test("the installation-bound loading page permits waiting and never becomes the selected editor", async () => {
+  const backend = String.raw`C:\Program Files\synthetic-easyeda\resources\app\app.js`;
+  const url = "file:///C:/Program%20Files/synthetic-easyeda/resources/app/assets/view/index.html?activated=synthetic&version=3.2.209";
+  const editor = page(), loading = { ...page(url), targetId: "loading-page" };
+  for (const pages of [[loading, editor], [editor, loading]]) {
+    const value = fixture([{ targetInfos: [loading] }, { targetInfos: pages }], backend);
+    const result = await value.observer.observeBrowser(value.transport);
+    assert.equal(result.targetId, "original-page"); assert.deepEqual(result.targets, pages);
+    assert.deepEqual([value.counts.version, value.counts.targets, value.counts.pauses], [1, 2, 1]);
+    assert.deepEqual(value.observer.observation().samples.map(sample => sample.classification), ["startup-loading", "ready-with-loading"]);
+    value.observer.stage("frames"); assert.doesNotThrow(() => value.observer.observation());
+    assert.ok(!JSON.stringify(value.observer.observation()).includes("activated"));
+  }
+});
+
+void test("foreign loaders, path aliases, attached loaders and extra editor pages cannot gain readiness", async () => {
+  const backend = String.raw`C:\Program Files\synthetic-easyeda\resources\app\app.js`;
+  const url = "file:///C:/Program%20Files/synthetic-easyeda/resources/app/assets/view/index.html?activated=synthetic";
+  const loading = { ...page(url), targetId: "loading-page" };
+  const variants = [[{ ...loading, url: url.replace("synthetic-easyeda", "foreign") }], [{ ...loading, url: url.replace("index.html", "%69ndex.html") }],
+    [{ ...loading, url: `${url}#fragment` }], [{ ...loading, attached: true }, page()],
+    [loading, page(), { ...page(), targetId: "extra-editor" }], [loading, { ...loading, targetId: "extra-loader" }]];
+  for (const pages of variants) {
+    const value = fixture([{ targetInfos: pages }], backend);
+    await assert.rejects(value.observer.observeBrowser(value.transport), /READINESS_PAGE/u);
+    assert.deepEqual([value.counts.targets, value.counts.pauses], [1, 0]);
+    assert.equal(value.observer.observation().failureKind, "selection");
+  }
+  const unbound = fixture([{ targetInfos: [loading] }]);
+  await assert.rejects(unbound.observer.observeBrowser(unbound.transport), /READINESS_PAGE/u);
+  for (const pathname of [String.raw`C:\other\app.js`, String.raw`C:\a\..\resources\app\app.js`, String.raw`\\server\resources\app\app.js`]) {
+    assert.throws(() => new CurrentFootprintHeldCachePageReadiness(pathname), /INSTALLATION_PATH/u);
+  }
 });
 
 void test("readiness exhausts exactly sixteen valid target samples and fifteen waits with no further native attempt", async () => {
