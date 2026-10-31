@@ -85,6 +85,16 @@ Start Page with no active project/PCB transition. There are no public browser,
 frame, worker or project-opening actions in this grammar. Do not manually open
 the target to satisfy a refusal.
 
+Browser readiness reads the engine version once and observes at most sixteen
+target inventories, with 250 ms between valid empty or single `about:blank`
+page samples. A malformed reply, attached page, multiple pages or unexpected
+page stops immediately. Selection still requires the unique original editor
+page and all frame/source/Start Page checks. This is bounded readiness within
+one consumed launch, not a replay of a failed launch. `inspect` retains its
+stage, classifications, counts and hashes without exposing target URLs or titles.
+One bounded startup packet and original binding are journaled on launch failure,
+including a late failure after an accepted abort.
+
 Read-only describes the requested cache work. Existing-profile startup can
 restore tabs, contact services, change shared state, migrate or automatically
 persist files. The launch flags acknowledge those effects; they do not promise
@@ -180,8 +190,8 @@ before ending the session or starting another native generation.
 
 ## Limits and excluded authority
 
-The fixed native/pipe budget is at most 19 discovery requests, eleven normal
-held-cache requests and one cleanup request, for 30 normal and one cleanup
+The fixed native/pipe budget is at most 34 discovery requests, eleven normal
+held-cache requests and one cleanup request, for 45 normal and one cleanup
 request in total. Physical IDs are global within that owner, not reset for each
 phase. Each held reply is bounded to 32 KiB, with a 33,024-byte framed cleanup
 reply bound and a 15-second outer request deadline. Unsupported or excessively
@@ -198,7 +208,7 @@ transaction clock, arbitrary main-process request, CAD edit, explicit Save,
 saved-copy proof or saved/reopened content verification. The full held-saved
 writer composition remains private and unavailable through this wrapper. The
 older saved profile's 353-request contract is unchanged. Cache qualification
-does not close the wider 494 omitted and 79 blocked SDK-method backlog.
+does not close the wider SDK-method backlog.
 
 For implementation and publication work, use
 [$easyeda-extension-development](../../easyeda-extension-development/SKILL.md).

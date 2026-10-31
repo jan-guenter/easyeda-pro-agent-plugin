@@ -40,6 +40,7 @@ function fixture(context: TestContext): Readonly<{
   pipe.start();
   const prefix = async (): Promise<void> => {
     await pipe.getVersion(); await pipe.getTargets();
+    for (let sample = 1; sample < 16; sample += 1) { await pipe.getTargets(); }
     await pipe.getTargets(); await pipe.attachTarget("original-target", (): void => undefined); await pipe.enablePage();
     await pipe.getFrameTree(); await pipe.getTargets(); await pipe.getFrameTree();
     await pipe.getTargets(); await pipe.getFrameTree(); await pipe.enableRuntime(); await pipe.enableDebugger();
@@ -50,39 +51,39 @@ function fixture(context: TestContext): Readonly<{
   return { pipe, commands, native, prefix };
 }
 
-void test("read-only held encoder accepts only fixed discovery or held commands through globalID31", () => {
-  assert.equal(PROFILE.discoveryRequests, 19); assert.equal(PROFILE.normalRequestLimit, 30);
-  assert.equal(PROFILE.cleanupRequestLimit, 1); assert.equal(PROFILE.requestLimit, 31);
+void test("read-only held encoder accepts only fixed discovery or held commands through globalID46", () => {
+  assert.equal(PROFILE.discoveryRequests, 34); assert.equal(PROFILE.normalRequestLimit, 45);
+  assert.equal(PROFILE.cleanupRequestLimit, 1); assert.equal(PROFILE.requestLimit, 46);
   for (const command of currentFootprintSavedCacheHeldNativeCases()) {
-    for (const id of [1, 31]) {
+    for (const id of [1, 46]) {
       const raw = wire({ id, ...command }); assert.equal(heldCacheDiagnosticNativeRequest(raw)["requestId"], id);
       for (const encode of [diagnosticNativeRequest, combinedDiagnosticNativeRequest, stringPrecreateNativeRequest]) { assert.throws(() => encode(raw)); }
     }
-    for (const changed of [{ id: 32, ...command }, { id: 1, ...command, extra: true },
+    for (const changed of [{ id: 47, ...command }, { id: 1, ...command, extra: true },
       { id: 1, ...command, params: { ...command.params, functionDeclaration: "function(){return true}" } }]) {
       assert.throws(() => heldCacheDiagnosticNativeRequest(wire(changed)));
     }
     const raw = wire({ id: 1, ...command }); assert.throws(() => heldCacheDiagnosticNativeRequest(Buffer.from(`${raw.subarray(0, -1).toString()} \0`)));
   }
-  assert.deepEqual(heldCacheDiagnosticNativeRequest(wire({ id: 31, method: "Browser.getVersion" })), diagnosticNativeRequest(wire({ id: 31, method: "Browser.getVersion" })));
+  assert.deepEqual(heldCacheDiagnosticNativeRequest(wire({ id: 46, method: "Browser.getVersion" })), diagnosticNativeRequest(wire({ id: 46, method: "Browser.getVersion" })));
   for (const method of ["Target.setAutoAttach", "Page.captureScreenshot", "Runtime.evaluate", "Runtime.callFunctionOn", "Runtime.getProperties", "Runtime.releaseObjectGroup"]) {
     assert.throws(() => heldCacheDiagnosticNativeRequest(wire({ id: 1, method })));
   }
 });
 
-void test("read-only qualification keeps19discovery plus12held commands and exposes no worker/open handoff", async context => {
+void test("read-only qualification keeps34discovery plus12held commands and exposes no worker/open handoff", async context => {
   const value = fixture(context);
   const capture = value.commands[0]; assert.ok(capture !== undefined);
   await assert.rejects(value.pipe.observeHeldCache(capture), /PURPOSE/u); assert.equal(value.native.length, 0);
   await value.prefix();
   for (const command of value.commands) { await value.pipe.observeHeldCache(command); }
-  assert.equal(value.pipe.status().requestCount, 31); assert.equal(value.pipe.status().failure, null);
-  assert.deepEqual(value.native.map(request => request["requestId"]), Array.from({ length: 31 }, (_, index) => index + 1));
+  assert.equal(value.pipe.status().requestCount, 46); assert.equal(value.pipe.status().failure, null);
+  assert.deepEqual(value.native.map(request => request["requestId"]), Array.from({ length: 46 }, (_, index) => index + 1));
   await assert.rejects(value.pipe.observeHeldCache(capture)); await assert.rejects(value.pipe.getVersion(), /DISCOVERY_ONLY/u);
   await assert.rejects(value.pipe.enableWorkerDiscovery((): void => undefined), /DISCOVERY_ONLY/u);
   // oxlint-disable-next-line typescript/unbound-method -- Borrow the genuine old method to prove this receiver cannot adopt a startup handoff.
   assert.throws(() => Reflect.apply(CurrentPcbWorkerStartupDiscoveryPipe.prototype.handoff, value.pipe, []), /HANDOFF_UNAVAILABLE/u);
-  assert.equal(value.native.length, 31);
+  assert.equal(value.native.length, 46);
 });
 
 void test("read-only held phases seal context/tuple/target and permit one early original group cleanup", async context => {
@@ -97,7 +98,7 @@ void test("read-only held phases seal context/tuple/target and permit one early 
   await assert.rejects(value.pipe.observeHeldCache({ ...queue, params: { ...queue.params,
     arguments: [{ value: "f".repeat(64) }, queue.params.arguments[1]] } }), /TARGET/u);
   await value.pipe.observeHeldCache(release);
-  assert.equal(value.native.length, 27); await assert.rejects(value.pipe.observeHeldCache(release));
+  assert.equal(value.native.length, 42); await assert.rejects(value.pipe.observeHeldCache(release));
   const input = new PassThrough(), output = new PassThrough();
   const old = new CurrentPcbDiagnosticPipe(input, output); old.start();
   context.after(async () => {

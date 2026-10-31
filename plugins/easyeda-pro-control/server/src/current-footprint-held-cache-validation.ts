@@ -362,6 +362,7 @@ export class CurrentFootprintHeldCacheValidation {
       cacheReleaseAcknowledged: original && this.#runner !== null && retained.call(this.#runner)["released"] === true,
       closeAttemptConsumed: original && this.#closeAttempted, abortAttemptConsumed: original && this.#abortAttempted,
       lastFailure: original ? this.#lastFailure : null,
+      heldCacheStartupObservation: original && this.#owner !== null ? this.#methods.status.call(this.#owner).heldCacheStartupObservation ?? null : null,
       originalTerminationObserved: original && this.#terminated, released: original && this.#released,
       cleanupNoResourceAvailable: original && this.#binding !== null && this.#owner === null && this.#allocationOutcome === "no-resource" && !this.#noResourceCleanupAttempted,
       cleanupUnlaunchedAvailable: original && this.#owner !== null && !this.#methods.status.call(this.#owner).launchConsumed && !this.#releaseAttempted,
@@ -383,8 +384,12 @@ export class CurrentFootprintHeldCacheValidation {
     if (action === "settle-records" || this.#records.at(-1)?.kind === results[action]) { return; }
     if (this.#reserved) {
       try {
+        const native = this.#owner === null ? null : this.#methods.status.call(this.#owner);
+        const startup = native?.heldCacheStartupObservation ?? null;
         await this.#record("failure", { action, nativeAllocationNeverAttempted: !this.#allocationInvoked,
           nativeAllocationOutcome: this.#allocationOutcome, retryAllowed: false,
+          ...(action === "launch" && native?.binding !== null && native?.binding !== undefined ? { nativeBinding: diagnosticLifecycleBindingSchema.parse(native.binding) } : {}),
+          ...(action === "launch" && startup !== null ? { heldCacheStartupObservation: startup } : {}),
           failure: this.#lastFailure });
         if (!this.#allocationInvoked) { this.#reservationSettled = true; }
       } catch (error) {

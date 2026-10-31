@@ -9,20 +9,20 @@
     "statuses": {
       "implemented-public-subset": 215,
       "implemented-native-equivalent": 41,
-      "implemented-vendor-http-equivalent": 6,
+      "implemented-vendor-http-equivalent": 10,
       "internal-lifecycle-only": 0,
       "implemented-but-blocked": 79,
-      "omitted": 494
+      "omitted": 490
     },
     "executionRoutes": {
       "available-with-runtime-guards": 405,
-      "available-with-network-guards": 9,
+      "available-with-network-guards": 13,
       "available-with-managed-file-guards": 3,
       "blocked": 94,
       "partially-blocked": 2
     },
     "omissions": {
-      "account-or-library-scope-needed": 30,
+      "account-or-library-scope-needed": 26,
       "bom-template-shared-preference-effects": 2,
       "callback-or-registration-lifecycle": 27,
       "canvas-origin-pending-geometry-queues": 1,
@@ -6840,14 +6840,40 @@
       ],
       "reviewedRuntimeDeclaration": true,
       "installed209Declaration": true,
-      "status": "omitted",
-      "routes": [],
-      "omission": {
-        "code": "account-or-library-scope-needed",
-        "reason": "lib_Classification.getAllClassificationTree reaches account, workspace, folder, project or shared-library metadata outside the active disposable document.",
-        "nextRequirement": "Define explicit owner, collection/search bounds and privacy rules; mutations also need cloud/shared-asset authority and a durable independent verifier. Read-only catalog discovery is still feasible without granting writes.",
-        "evidence": []
-      },
+      "status": "implemented-vendor-http-equivalent",
+      "routes": [
+        {
+          "tool": "easyeda_control_catalog_components",
+          "selector": "get-classification-tree",
+          "implementation": "vendor-http-task-equivalent",
+          "scope": "Application-independent fixed public system-library category metadata for types 2/3/4/5, not public SDK execution or desktop/account-library admission. One explicitly confirmed anonymous fixed GET /api/categories with exact system owner/path/type, credentials omitted, redirects/retries/automatic pagination forbidden. The independent 8 MiB decoded-body/32,768-row/two-level envelope validates every received row, unique ID, owner/type and parent before projection. The tree action returns one digest-bound flattened page of at most 100 rows, not the complete nested SDK array; separate requests are not an atomic snapshot. Three exact name/UUID/index projections refuse duplicate matching names and report missing children explicitly rather than returning the SDK's partial first match. Whole-tree digest expectation detects changed observations without a retry. Unknown fields, orphan/deep rows, malformed or failed responses refuse. Only type 4 anonymous availability was sampled; other filters and composed installed execution remain unvalidated. No app, bridge, user/team/project discovery, private metadata, CAD, navigation, shared settings, local file or Save. Direct desktop wrappers also permit extension libraries and run a translation RPC; those paths remain omitted.",
+          "source": [
+            "public-system-classification.ts",
+            "public-system-classification-runtime.ts",
+            "public-system-catalog.ts",
+            "public-system-catalog-runtime.ts"
+          ],
+          "tests": [
+            "public-system-classification.test.ts",
+            "public-system-classification-runtime.test.ts",
+            "extension-api-coverage.test.ts"
+          ],
+          "validation": "offline-regression;current-live-unclaimed",
+          "executionState": "available-with-network-guards",
+          "inputDiscovery": {
+            "tool": "easyeda_control_api",
+            "arguments": {
+              "request": {
+                "action": "catalog-components",
+                "query": {
+                  "includeSchemas": true
+                }
+              }
+            }
+          }
+        }
+      ],
+      "omission": null,
       "completeDeclaredContractSupported": false,
       "currentGenerationLiveValidation": "not-recorded",
       "runtimeAdmission": "not-granted-by-inventory"
@@ -6918,14 +6944,40 @@
       ],
       "reviewedRuntimeDeclaration": true,
       "installed209Declaration": true,
-      "status": "omitted",
-      "routes": [],
-      "omission": {
-        "code": "account-or-library-scope-needed",
-        "reason": "lib_Classification.getIndexByName reaches account, workspace, folder, project or shared-library metadata outside the active disposable document.",
-        "nextRequirement": "Define explicit owner, collection/search bounds and privacy rules; mutations also need cloud/shared-asset authority and a durable independent verifier. Read-only catalog discovery is still feasible without granting writes.",
-        "evidence": []
-      },
+      "status": "implemented-vendor-http-equivalent",
+      "routes": [
+        {
+          "tool": "easyeda_control_catalog_components",
+          "selector": "get-classification-index-by-name",
+          "implementation": "vendor-http-task-equivalent",
+          "scope": "Application-independent fixed public system-library category metadata for types 2/3/4/5, not public SDK execution or desktop/account-library admission. One explicitly confirmed anonymous fixed GET /api/categories with exact system owner/path/type, credentials omitted, redirects/retries/automatic pagination forbidden. The independent 8 MiB decoded-body/32,768-row/two-level envelope validates every received row, unique ID, owner/type and parent before projection. The tree action returns one digest-bound flattened page of at most 100 rows, not the complete nested SDK array; separate requests are not an atomic snapshot. Three exact name/UUID/index projections refuse duplicate matching names and report missing children explicitly rather than returning the SDK's partial first match. Whole-tree digest expectation detects changed observations without a retry. Unknown fields, orphan/deep rows, malformed or failed responses refuse. Only type 4 anonymous availability was sampled; other filters and composed installed execution remain unvalidated. No app, bridge, user/team/project discovery, private metadata, CAD, navigation, shared settings, local file or Save. Direct desktop wrappers also permit extension libraries and run a translation RPC; those paths remain omitted.",
+          "source": [
+            "public-system-classification.ts",
+            "public-system-classification-runtime.ts",
+            "public-system-catalog.ts",
+            "public-system-catalog-runtime.ts"
+          ],
+          "tests": [
+            "public-system-classification.test.ts",
+            "public-system-classification-runtime.test.ts",
+            "extension-api-coverage.test.ts"
+          ],
+          "validation": "offline-regression;current-live-unclaimed",
+          "executionState": "available-with-network-guards",
+          "inputDiscovery": {
+            "tool": "easyeda_control_api",
+            "arguments": {
+              "request": {
+                "action": "catalog-components",
+                "query": {
+                  "includeSchemas": true
+                }
+              }
+            }
+          }
+        }
+      ],
+      "omission": null,
       "completeDeclaredContractSupported": false,
       "currentGenerationLiveValidation": "not-recorded",
       "runtimeAdmission": "not-granted-by-inventory"
@@ -6959,14 +7011,40 @@
       ],
       "reviewedRuntimeDeclaration": true,
       "installed209Declaration": true,
-      "status": "omitted",
-      "routes": [],
-      "omission": {
-        "code": "account-or-library-scope-needed",
-        "reason": "lib_Classification.getNameByIndex reaches account, workspace, folder, project or shared-library metadata outside the active disposable document.",
-        "nextRequirement": "Define explicit owner, collection/search bounds and privacy rules; mutations also need cloud/shared-asset authority and a durable independent verifier. Read-only catalog discovery is still feasible without granting writes.",
-        "evidence": []
-      },
+      "status": "implemented-vendor-http-equivalent",
+      "routes": [
+        {
+          "tool": "easyeda_control_catalog_components",
+          "selector": "get-classification-name-by-index",
+          "implementation": "vendor-http-task-equivalent",
+          "scope": "Application-independent fixed public system-library category metadata for types 2/3/4/5, not public SDK execution or desktop/account-library admission. One explicitly confirmed anonymous fixed GET /api/categories with exact system owner/path/type, credentials omitted, redirects/retries/automatic pagination forbidden. The independent 8 MiB decoded-body/32,768-row/two-level envelope validates every received row, unique ID, owner/type and parent before projection. The tree action returns one digest-bound flattened page of at most 100 rows, not the complete nested SDK array; separate requests are not an atomic snapshot. Three exact name/UUID/index projections refuse duplicate matching names and report missing children explicitly rather than returning the SDK's partial first match. Whole-tree digest expectation detects changed observations without a retry. Unknown fields, orphan/deep rows, malformed or failed responses refuse. Only type 4 anonymous availability was sampled; other filters and composed installed execution remain unvalidated. No app, bridge, user/team/project discovery, private metadata, CAD, navigation, shared settings, local file or Save. Direct desktop wrappers also permit extension libraries and run a translation RPC; those paths remain omitted.",
+          "source": [
+            "public-system-classification.ts",
+            "public-system-classification-runtime.ts",
+            "public-system-catalog.ts",
+            "public-system-catalog-runtime.ts"
+          ],
+          "tests": [
+            "public-system-classification.test.ts",
+            "public-system-classification-runtime.test.ts",
+            "extension-api-coverage.test.ts"
+          ],
+          "validation": "offline-regression;current-live-unclaimed",
+          "executionState": "available-with-network-guards",
+          "inputDiscovery": {
+            "tool": "easyeda_control_api",
+            "arguments": {
+              "request": {
+                "action": "catalog-components",
+                "query": {
+                  "includeSchemas": true
+                }
+              }
+            }
+          }
+        }
+      ],
+      "omission": null,
       "completeDeclaredContractSupported": false,
       "currentGenerationLiveValidation": "not-recorded",
       "runtimeAdmission": "not-granted-by-inventory"
@@ -7000,14 +7078,40 @@
       ],
       "reviewedRuntimeDeclaration": true,
       "installed209Declaration": true,
-      "status": "omitted",
-      "routes": [],
-      "omission": {
-        "code": "account-or-library-scope-needed",
-        "reason": "lib_Classification.getNameByUuid reaches account, workspace, folder, project or shared-library metadata outside the active disposable document.",
-        "nextRequirement": "Define explicit owner, collection/search bounds and privacy rules; mutations also need cloud/shared-asset authority and a durable independent verifier. Read-only catalog discovery is still feasible without granting writes.",
-        "evidence": []
-      },
+      "status": "implemented-vendor-http-equivalent",
+      "routes": [
+        {
+          "tool": "easyeda_control_catalog_components",
+          "selector": "get-classification-name-by-uuid",
+          "implementation": "vendor-http-task-equivalent",
+          "scope": "Application-independent fixed public system-library category metadata for types 2/3/4/5, not public SDK execution or desktop/account-library admission. One explicitly confirmed anonymous fixed GET /api/categories with exact system owner/path/type, credentials omitted, redirects/retries/automatic pagination forbidden. The independent 8 MiB decoded-body/32,768-row/two-level envelope validates every received row, unique ID, owner/type and parent before projection. The tree action returns one digest-bound flattened page of at most 100 rows, not the complete nested SDK array; separate requests are not an atomic snapshot. Three exact name/UUID/index projections refuse duplicate matching names and report missing children explicitly rather than returning the SDK's partial first match. Whole-tree digest expectation detects changed observations without a retry. Unknown fields, orphan/deep rows, malformed or failed responses refuse. Only type 4 anonymous availability was sampled; other filters and composed installed execution remain unvalidated. No app, bridge, user/team/project discovery, private metadata, CAD, navigation, shared settings, local file or Save. Direct desktop wrappers also permit extension libraries and run a translation RPC; those paths remain omitted.",
+          "source": [
+            "public-system-classification.ts",
+            "public-system-classification-runtime.ts",
+            "public-system-catalog.ts",
+            "public-system-catalog-runtime.ts"
+          ],
+          "tests": [
+            "public-system-classification.test.ts",
+            "public-system-classification-runtime.test.ts",
+            "extension-api-coverage.test.ts"
+          ],
+          "validation": "offline-regression;current-live-unclaimed",
+          "executionState": "available-with-network-guards",
+          "inputDiscovery": {
+            "tool": "easyeda_control_api",
+            "arguments": {
+              "request": {
+                "action": "catalog-components",
+                "query": {
+                  "includeSchemas": true
+                }
+              }
+            }
+          }
+        }
+      ],
+      "omission": null,
       "completeDeclaredContractSupported": false,
       "currentGenerationLiveValidation": "not-recorded",
       "runtimeAdmission": "not-granted-by-inventory"
@@ -7556,7 +7660,7 @@
       "routes": [],
       "omission": {
         "code": "footprint-copy-default-matching-and-lifecycle",
-        "reason": "The pinned3.2.209 public matcher can return an existing footprint; native clone needs a special underscore-containing UUID. The separate fixed native-create route remains private and unavailable. Preparation retains original project/manager/bus constructors, parser/cache methods,61 qualified dependency functions and current actor/SQL inputs. The actual095000 disposable route passed construction, cache/peer capture, assignments and actor publication, then refused a false assumption that zy.parseFull had no native override. Source now qualifies both the original ja override and superclass method and preserves missing-alias identity checks. The separate68-ID create/paired-clock unit, original pending-reply custody, fixed native codec, partial output ledger and actual-runner scheduler are implemented privately. All existing native birth purposes refuse create; no public writer is mounted. Native buildString allocates the new UUID internally before its two clocks. A separate original-copy request reservation now arms main before the clocks and binds the exact upload body after both genuine paired samples, with same-original-core and escaped-envelope checks. A separate private pre-await allocation mode now captures the exact adjacent wrapper/create/buildString argument identity, original five handles and consumed invocation lease before issuing its native destination UUID to the clock observer. The additional7 normal/3 cleanup commands require at least78 create/clock IDs; existing native purposes reject this grammar before arming. Fixed native encoding and exact78-command native accounting are now implemented privately:57 normal/21 cleanup, create offset14,22 events. A source-derived two-generation forward envelope and actual coordinator output-ledger spending are implemented, including bounded cleanup after normal failure. Renderer forward ceilings are926 normal/61 cleanup/987 total after exact preload-registry qualification; UI preparation is49/21. The private forward ledger separately charges poll/event categories within existing caps; a future native factory must supply its actual captured traffic. A separate source-pinned209 saved StartPage queue program fixes the old206-only HOST refusal. Source now qualifies the pinned native getter, CacheStorage constructor/prototype/match metadata and actual same-realm tuple/receiver before separate first and fresh observations of both fixed namespaces. The public read-only footprint-held-cache purpose binds an actual disposable checkpoint, complete SQL/default branch and original UI/native owner without opening the project or granting copy authority. A distinct private held-saved owner/channel/transport/opener joins original retained packets, acknowledged group release and pre-open source verification, with328 normal/35 cleanup requests,363 physical IDs,46 normal/251 cleanup helper controls and a bounded resource ledger; the older353-request contract is unchanged. Connected getter qualification, upload replay exclusion and saved-copy proof remain unvalidated. No native writer purpose is mounted. The source coordinator now consumes an original allocated paired scheduler and compares both document clocks, main history UUID and project timestamp with complete closed SQL. Genuine native birth/prewrite eligibility, full four-generation reservation and connected allocation/clock/main validation remain unavailable. The current54-ID main profile refuses the known127-command main sequence before completion transfer. Private models, native compilation, early create acknowledgments and historically unchanged fixtures do not prove native SQL completion, saved copy or a supported inverse. Native create can mutate before source lookup and ignores uploadLocal success.",
+        "reason": "The pinned3.2.209 public matcher can return an existing footprint; native clone needs a special underscore-containing UUID. The separate fixed native-create route remains private and unavailable. Preparation retains original project/manager/bus constructors, parser/cache methods,61 qualified dependency functions and current actor/SQL inputs. The actual095000 disposable route passed construction, cache/peer capture, assignments and actor publication, then refused a false assumption that zy.parseFull had no native override. Source now qualifies both the original ja override and superclass method and preserves missing-alias identity checks. The separate68-ID create/paired-clock unit, original pending-reply custody, fixed native codec, partial output ledger and actual-runner scheduler are implemented privately. All existing native birth purposes refuse create; no public writer is mounted. Native buildString allocates the new UUID internally before its two clocks. A separate original-copy request reservation now arms main before the clocks and binds the exact upload body after both genuine paired samples, with same-original-core and escaped-envelope checks. A separate private pre-await allocation mode now captures the exact adjacent wrapper/create/buildString argument identity, original five handles and consumed invocation lease before issuing its native destination UUID to the clock observer. The additional7 normal/3 cleanup commands require at least78 create/clock IDs; existing native purposes reject this grammar before arming. Fixed native encoding and exact78-command native accounting are now implemented privately:57 normal/21 cleanup, create offset14,22 events. A source-derived two-generation forward envelope and actual coordinator output-ledger spending are implemented, including bounded cleanup after normal failure. Renderer forward ceilings are926 normal/61 cleanup/987 total after exact preload-registry qualification; UI preparation is49/21. The private forward ledger separately charges poll/event categories within existing caps; a future native factory must supply its actual captured traffic. A separate source-pinned209 saved StartPage queue program fixes the old206-only HOST refusal. Source now qualifies the pinned native getter, CacheStorage constructor/prototype/match metadata and actual same-realm tuple/receiver before separate first and fresh observations of both fixed namespaces. The public read-only footprint-held-cache purpose binds an actual disposable checkpoint, complete SQL/default branch and original UI/native owner without opening the project or granting copy authority. A distinct private held-saved owner/channel/transport/opener joins original retained packets, acknowledged group release and pre-open source verification, with328 normal/35 cleanup requests,363 physical IDs,46 normal/251 cleanup helper controls and a bounded resource ledger; the older353-request contract is unchanged. Connected getter qualification, upload replay exclusion and saved-copy proof remain unvalidated. No native writer purpose is mounted. The source coordinator now consumes an original allocated paired scheduler and compares both document clocks, main history UUID and project timestamp with complete closed SQL. Genuine native birth/prewrite eligibility, full four-generation reservation and connected allocation/clock/main validation remain unavailable. The current54-ID main profile refuses the known127-command main sequence before completion transfer. A private complete stored-data relation now joins five independently completed SQL readers with the original copy/delete effects, exact readback equality, unchanged original visible documents and retained tombstone history. It grants no actual reopen, native generation closure, persistent-cache exclusion or inverse execution. Original owned preparation separately retains strict document-local source-asset qualification without claiming parser/publisher/upload callback provenance. Private models, native compilation, early create acknowledgments and historically unchanged fixtures do not prove native SQL completion, saved copy or a supported inverse. Native create can mutate before source lookup and ignores uploadLocal success.",
         "nextRequirement": "Validate the separate public read-only held-cache purpose on an exact disposable checkpoint before claiming connected native getter/match or namespace evidence. Mount and validate the privately implemented pre-await allocation/clock/late-body fixed native composition through its own complete native purpose, complete pre-write source/head/dependency/queue eligibility, and reserve all four generations including native requests, events, raw outputs and failure journals. Installed161500 passed61 dependencies and31 destinations, then stopped at the registry compound guard. Source now qualifies the exact preload-created registry and original lexical scopes; validate its corrected original UI binding and genuine create/paired-clock/main completion on disposable data. Then prove original-generation closure, exact full closed SQL effect, upload replay exclusion, fresh independent saved-source equality and final closed equality. Do not use the public matcher or clone as a substitute.",
         "evidence": [
           "current-footprint-main-validation.ts",
@@ -7603,6 +7707,11 @@
           "current-footprint-copy-execution-runtime.ts",
           "current-footprint-copy-async-runner.ts",
           "current-footprint-copy-v2-sql.ts",
+          "current-footprint-copy-delete-sql-lifecycle.ts",
+          "current-footprint-copy-delete-sql-lifecycle.test.ts",
+          "current-footprint-copy-source-assets.ts",
+          "current-footprint-copy-source-assets.test.ts",
+          "docs/history/2026-10-31-090000-library-readers-and-sql-lifecycle.md",
           "docs/history/2026-10-25-current-footprint-copy-preparation.md",
           "docs/history/2026-10-26-footprint-source-and-preparation.md",
           "docs/history/2026-10-26-footprint-producer-bindings.md",

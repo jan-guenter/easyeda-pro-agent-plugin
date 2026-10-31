@@ -18,6 +18,8 @@ import type { CurrentFootprintCopyOpeningOwner, CurrentFootprintCopyOpeningResul
 import type { CurrentPcbWorkerConstructionAssignments } from "./current-pcb-worker-construction-assignment.ts";
 import { readerCompletion } from "./sqlite-inventory.ts";
 import type { readExactSqlInventory } from "./sqlite-inventory.ts";
+import { qualifyCurrentFootprintCopySourceAssets, requireCurrentFootprintCopySourceAssets } from "./current-footprint-copy-source-assets.ts";
+import type { CurrentFootprintCopySourceAssetQualification } from "./current-footprint-copy-source-assets.ts";
 
 type Inventory = Awaited<ReturnType<typeof readExactSqlInventory>>;
 interface Source {
@@ -37,6 +39,7 @@ interface Retained {
   readonly completion: ReturnType<typeof readerCompletion>;
   readonly plan: CurrentFootprintCopyV2Plan;
   readonly arguments: CurrentFootprintCopyV2NativeArguments;
+  readonly sourceAssets: CurrentFootprintCopySourceAssetQualification;
   failed: boolean;
 }
 const preparations = new WeakMap<CurrentFootprintCopyPreparation, Retained>();
@@ -86,6 +89,7 @@ export async function prepareCurrentFootprintCopyOwned(source: Source): Promise<
   await reprove(source, completion, text);
   const plan = await prepareCurrentFootprintCopyV2Plan(source.before, source.sourcePlan,
     { client: source.source.request.client, content: source.source.content });
+  const sourceAssets = await qualifyCurrentFootprintCopySourceAssets(plan);
   await reprove(source, completion, text);
   const args = currentFootprintCopyV2NativeCreateArguments(plan);
   const preparation: CurrentFootprintCopyPreparation = Object.freeze({ profile: "private.current-footprint-copy-owned-preparation.v1",
@@ -95,7 +99,7 @@ export async function prepareCurrentFootprintCopyOwned(source: Source): Promise<
     originalSourceObservationRetained: true, lifecyclePublicationVerified: false, copyLaunchPurposeQualified: false,
     completeCapacityReserved: false, producerBindingVerified: false, actorAndClocksVerified: false,
     executionAuthorized: false, persistenceVerified: false });
-  preparations.set(preparation, { source, sourceText: text, completion, plan, arguments: args, failed: false });
+  preparations.set(preparation, { source, sourceText: text, completion, plan, arguments: args, sourceAssets, failed: false });
   return preparation;
 }
 
@@ -105,13 +109,15 @@ export async function requireCurrentFootprintCopyOwned(preparation: CurrentFootp
   opening: CurrentFootprintCopyOpeningOwner): Promise<Readonly<{
     before: Inventory; sourcePlan: CurrentFootprintSourcePlan; copyPlan: CurrentFootprintCopyV2Plan;
     nativeArguments: CurrentFootprintCopyV2NativeArguments;
+    sourceAssets: CurrentFootprintCopySourceAssetQualification;
   }>> {
   const retained = preparations.get(preparation);
   need(retained !== undefined && retained.source.opening === opening && !retained.failed, "original preparation and opening required");
   try {
     await reprove(retained.source, retained.completion, retained.sourceText);
     assertCurrentFootprintCopyV2Inventory(retained.plan, retained.source.before);
+    requireCurrentFootprintCopySourceAssets(retained.sourceAssets, retained.plan);
     return Object.freeze({ before: retained.source.before, sourcePlan: retained.source.sourcePlan,
-      copyPlan: retained.plan, nativeArguments: retained.arguments });
+      copyPlan: retained.plan, nativeArguments: retained.arguments, sourceAssets: retained.sourceAssets });
   } catch (error) { retained.failed = true; throw error; }
 }

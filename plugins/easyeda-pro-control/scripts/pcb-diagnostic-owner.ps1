@@ -1888,7 +1888,7 @@ public sealed class EasyedaDiagnosticOwner {
   // Distinct held-saved reservations. Source parity checks bind these constants
   // to the derived TypeScript profile; no old purpose obtains these counters.
   public const int HeldSavedRequests=363,HeldSavedNormal=328,HeldSavedCleanup=35;
-  public const int HeldCacheRequests=31,HeldCacheNormal=30,HeldCacheCleanup=1;
+  public const int HeldCacheRequests=46,HeldCacheNormal=45,HeldCacheCleanup=1;
   const int HeldNormalControls=46,HeldCleanupControls=251;
   const int HeldNormalData=3915,HeldCleanupData=4277,HeldNormalWait=5192,HeldCleanupWait=3000,HeldNormalIdle=14160,HeldCleanupIdle=240;
   const long HeldNormalRaw=57564416,HeldCleanupRaw=9544448,HeldNormalOutput=89128960,HeldCleanupOutput=16777216;
@@ -2055,15 +2055,15 @@ public sealed class EasyedaDiagnosticOwner {
     string encoded=source.WorkerStartupProtocolMessage(363,"Runtime.callFunctionOn","worker","footprint-saved-source-read",input);
     if(!encoded.StartsWith("{\"id\":363,",StringComparison.Ordinal))throw Error("held-saved-source-id-smoke");
     var cache=CreateFootprintHeldCache209();
-    if(!cache.footprintHeldCache209||cache.workerStartup||cache.workerStartupFootprintCopy209||cache.EffectiveRequestLimit!=31)throw Error("held-cache-birth-smoke");
+    if(!cache.footprintHeldCache209||cache.workerStartup||cache.workerStartupFootprintCopy209||cache.EffectiveRequestLimit!=46)throw Error("held-cache-birth-smoke");
     foreach(string action in new string[]{"worker-startup-send","worker-startup-parent","footprint-held-saved-worker"})refuse(()=>cache.AdmitHeldSavedAction(action,false));
     foreach(string method in new string[]{"Runtime.evaluate","Target.setAutoAttach","Runtime.callFunctionOn","Debugger.setBreakpoint"})refuse(()=>cache.ChargeHeldSavedRenderer(1,"{\"id\":1,\"method\":\""+method+"\"}"));
     refuse(()=>cache.SendWorkerStartup(1,"Runtime.enable","worker","runtime",new System.Collections.Hashtable()));
     refuse(()=>cache.SendWorkerStartupParent(1,"Target.getTargets","targets",new System.Collections.Hashtable()));
-    for(int id=1;id<=30;id++)cache.ChargeHeldSavedRenderer(id,"{\"id\":"+id+",\"method\":\"Runtime.enable\"}");
-    cache.heldCacheSending=true;cache.ChargeHeldSavedRenderer(31,"{\"id\":31,\"method\":\"Runtime.releaseObjectGroup\"}");cache.heldCacheSending=false;
-    refuse(()=>cache.ChargeHeldSavedRenderer(32,"{\"id\":32,\"method\":\"Runtime.enable\"}"));
-    if(cache.heldNormalRequests!=30||cache.heldCleanupRequests!=1)throw Error("held-cache-budget-smoke");
+    for(int id=1;id<=45;id++)cache.ChargeHeldSavedRenderer(id,"{\"id\":"+id+",\"method\":\"Runtime.enable\"}");
+    cache.heldCacheSending=true;cache.ChargeHeldSavedRenderer(46,"{\"id\":46,\"method\":\"Runtime.releaseObjectGroup\"}");cache.heldCacheSending=false;
+    refuse(()=>cache.ChargeHeldSavedRenderer(47,"{\"id\":47,\"method\":\"Runtime.enable\"}"));
+    if(cache.heldNormalRequests!=45||cache.heldCleanupRequests!=1)throw Error("held-cache-budget-smoke");
   }
   EasyedaDiagnosticOwner(int mainPurpose){if(mainPurpose!=209)throw Error("main-purpose");workerStartup=true;workerStartup209=true;workerStartupFootprintMain209=true;originalMain=new EasyedaOriginalMainTransport();}
   public static EasyedaDiagnosticOwner CreateWorkerStartupFootprintMain209(){return new EasyedaDiagnosticOwner(209);}

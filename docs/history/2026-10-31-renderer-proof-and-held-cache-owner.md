@@ -212,3 +212,59 @@ changed TypeScript file emits byte-identical JavaScript to 158a74f3 under the
 pinned compiler transformation. No new tests or behavior changes were added
 for this correction. The source fingerprint, required build checks and final
 exact-head CI/review still need their normal refresh before publication.
+
+## Protected merge and official installation
+
+Final payload `50fdae17c149ba925f748929f0004965075b13e7` passed all eleven
+PR CI jobs. The complete facade result is 13,861 passes and five expected
+platform skips, with zero failures, cancellations or todo cases; bridge
+results are 424 passes across 28 files. CodeRabbit's exact-head follow-up
+passed with no new actionable, legacy or collapsed issues. Documentation
+coverage reached the required 80.00%, all five pre-merge checks passed, and
+both original threads are resolved. The sole authored review command remains
+the original full-review request.
+
+Protected PR 161 merged as main
+`1b40a56b0620f6a3c5602b41605ddbc0b5ac7f7f`, without an admin bypass. Its
+complete root tree equals the reviewed payload. Plugin tree
+`504c31fbabaa0c3baa33b1bb97cdc959e653f88c` is identical as well. The final
+facade source projection has 974 files, SHA
+`2564ba906146597237cb30c3163f3c77a57211b8403596d9515b134507aa49d7`;
+the three-file runtime projection is
+`65dc10d6a2228ab4c150ea90a103a35c23c835883bd7426a6eb0e8881b63e859`.
+
+The official Git marketplace was upgraded on ref main at
+`https://github.com/jan-guenter/easyeda-pro-agent-plugin.git`. Installed and
+enabled version `0.3.0+codex.20261031073130` matches all 2,468 committed files,
+42 directories including the plugin root, and 47,817,801 bytes with exact
+modes. Inventory SHA
+`dc5c4a8e5b2524cb5ce008e797a8e9d92912ccbbf008460da8f7e7814f522bd3`
+remained identical before and after the dependency-free installed probe. Its
+52 catalog queries and 54 total requests passed and the original child closed
+after EOF. No upstream child or bridge socket was observed. This is a sampled
+offline probe, not continuous isolation or actual serving-host admission.
+
+The original machine-profile descriptor and bytes remained unchanged. No
+manual cache edit, host-controller termination or production CAD action was
+performed. No native owner, Save, navigation or record cleanup is pending.
+The installed predecessor host has not been upgraded in place. A fresh Codex
+session must load and independently admit the new actual process before live
+qualification of the held-cache route. The automatic main CI rerun is still
+running at this handoff; its Windows job has passed. PR CI already covers the
+identical reviewed tree. Continue with disposable cache qualification and the
+copy/delete, four-generation capacity and broader SDK backlog above.
+
+## Merged-main CI terminal result
+
+The automatic main runs have now completed successfully for
+`1b40a56b0620f6a3c5602b41605ddbc0b5ac7f7f`: Linux run 41185406773 and
+Windows run 41185406872. All eleven jobs passed. Complete CRC-checked archives
+match each retained raw job log. Every checkout-bearing job records the full
+actual main commit; its root and plugin trees match the reviewed PR payload.
+Source, runtime and native-helper fingerprints also match the published pins.
+
+The facade totals remain 13,861 passes, five expected platform skips and zero
+failures, cancellations or todo cases across 13,866 tests and 65 suites. All
+424 bridge tests passed across 28 files. No workflow was rerun and no complete
+local suite was added. This closes the pending main-CI record above; it grants
+no connected EasyEDA admission, live cache qualification or persistence proof.

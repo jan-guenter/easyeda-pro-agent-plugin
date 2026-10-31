@@ -94,11 +94,14 @@ for network confirmation and metadata limits. This separate fixed vendor HTTPS
 lookup needs no application or fingerprint and is not public SDK execution.
 It does not enable the general library executor.
 
-For footprint/symbol/device search or symbol/device metadata, discover `catalog-components`
+For footprint/symbol/device search, symbol/device metadata or public system
+classifications, discover `catalog-components`
 and validate with `catalog-components-validate`. The separate catalog tool
 uses fixed anonymous vendor HTTPS endpoints, not desktop SDK getters. Read
 [the catalog contract](current-system-library.md) for candidate pagination,
-visibility evidence and association limits.
+visibility evidence, association limits and digest-bound category paging.
+Classification uses a separate complete-response bound and projects exact
+names/UUIDs locally. It does not execute the obsolete desktop classification SDK.
 
 For disposable PCB/worker continuation observations, discover
 `pcb209-ratline-continuation` and validate with

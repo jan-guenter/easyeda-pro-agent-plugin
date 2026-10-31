@@ -1,5 +1,6 @@
 # Project history
 
+- [2026-10-31 Library readers and complete copy/delete SQL relation](2026-10-31-090000-library-readers-and-sql-lifecycle.md).
 - [2026-10-31 Renderer proof and held-cache ownership integration](2026-10-31-renderer-proof-and-held-cache-owner.md).
 
 - [2026-10-31 Held cache qualification and capture validation](2026-10-31-held-cache-and-capture-validation.md).

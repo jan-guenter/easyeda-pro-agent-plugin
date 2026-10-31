@@ -2,7 +2,7 @@
 
 Use `easyeda_control_catalog_components` for bounded footprint, ordinary-symbol
 or device search, symbol/footprint lookup by name, LCSC C-number lookup,
-symbol metadata, and device symbol/footprint references. Discover
+symbol metadata, device symbol/footprint references and public classifications. Discover
 `catalog-components` with `query:{includeSchemas:true}`, then validate the inner
 request with `catalog-components-validate`.
 
@@ -56,6 +56,56 @@ Inline vendor `dataStr` may arrive within the response limit. Only the name
 lookup below parses two header records to check symbol type; drawing geometry
 is never parsed or executed, and source is not projected. No separate image, 3D,
 datasheet or linked-asset download occurs.
+
+## Public classifications
+
+The same catalog tool has four category actions. Each needs `libraryType` set
+to `"2"`, `"3"`, `"4"` or `"5"` and `confirmNetwork:true`. These identify symbol,
+device, footprint or 3D-model categories in the fixed public system library.
+They never select an account, project, favorite, team or extension library.
+
+```json
+{"request":{"action":"get-classification-tree","libraryType":"4","offset":0,"limit":50,"confirmNetwork":true}}
+{"request":{"action":"get-classification-index-by-name","libraryType":"4","primaryClassificationName":"<exact vendor name>","confirmNetwork":true}}
+```
+
+The first action returns one flattened parent/child page of at most 100 rows,
+the complete received row count, `nextOffset` and `treeSha256`. It is a paged
+subset of the SDK's nested-tree task. Fetching another page makes another
+confirmed network observation. Supply `expectedTreeSha256` from the first
+result to reject a changed tree; the digest does not make separate requests
+atomic. Names remain exact vendor strings, without desktop translation.
+
+Use `get-classification-name-by-uuid` with `primaryClassificationUuid` and an
+optional `secondaryClassificationUuid`. The equivalent
+`get-classification-name-by-index` accepts those UUID fields inside
+`classificationIndex`. Name-to-index lookup accepts an optional
+`secondaryClassificationName`. Every child must belong to the exact selected
+parent. Duplicate matching names refuse, and a missing parent or requested
+child returns `found:false`. That result describes this observation, not
+permanent absence. The name/UUID selectors are evaluated locally and are not
+sent to the vendor.
+
+Each action performs one anonymous fixed `GET /api/categories`. The complete
+response must fit its own 8 MiB decoded-body, 32,768-row, two-level limit.
+Every row must have the exact system owner and category, a unique UUID and a
+recognized body; every child needs an existing root parent. Unknown fields,
+deep/orphan rows, contradictory identities, malformed replies and overflows
+refuse the entire result. Output stays under the shared 128 KiB result cap.
+The other catalog actions retain their 1 MiB response bound.
+
+The composed source route passed one anonymous category-4 request with 8,662
+recognized rows and a five-row page. That is vendor HTTP validation, separate
+from packaged/installed validation and SDK execution. Other category filters
+use the same reviewed endpoint but have no recorded anonymous sample. The
+SDK's corresponding methods,
+[getAllClassificationTree](https://prodocs.easyeda.com/en/api/reference/pro-api.lib_classification.getallclassificationtree.html),
+[getIndexByName](https://prodocs.easyeda.com/en/api/reference/pro-api.lib_classification.getindexbyname.html),
+[getNameByUuid](https://prodocs.easyeda.com/en/api/reference/pro-api.lib_classification.getnamebyuuid.html) and
+[getNameByIndex](https://prodocs.easyeda.com/en/api/reference/pro-api.lib_classification.getnamebyindex.html),
+are documented as beta and obsolete, with removal in EDA 3.3. These adapters execute the fixed vendor
+endpoint and have no extension-SDK stability guarantee. Direct desktop
+execution, its translation RPC and extension-library behavior remain unqualified.
 
 ## Symbol lookup by name
 

@@ -475,7 +475,7 @@ async function catalogChecks(child: OfflineChild, root: string, sample: () => Pr
   }
   const catalog = await offlineApi(child, { action: "catalog-components", query: { includeSchemas: true } });
   const catalogEntries = catalog["entries"];
-  requireCheck(catalog["total"] === 8 && Array.isArray(catalogEntries) && catalogEntries.length === 8 &&
+  requireCheck(catalog["total"] === 12 && Array.isArray(catalogEntries) && catalogEntries.length === 12 &&
     catalogEntries.some((entry: unknown) => isRecord(entry) && entry["action"] === "search-symbols-by-name" &&
       entry["publicSdkMethodExecuted"] === false && entry["installedRuntimeAdmission"] === false && isRecord(entry["inputSchema"])),
   "Catalog discovery lost its separate symbol-name HTTP equivalent.");
@@ -483,6 +483,11 @@ async function catalogChecks(child: OfflineChild, root: string, sample: () => Pr
     requireCheck(catalogEntries.some((entry: unknown) => isRecord(entry) && entry["action"] === action &&
       entry["publicSdkMethodExecuted"] === false && entry["installedRuntimeAdmission"] === false && isRecord(entry["inputSchema"])),
     "Catalog discovery lost an enriched metadata HTTP equivalent.");
+  }
+  for (const action of ["get-classification-tree", "get-classification-index-by-name", "get-classification-name-by-uuid", "get-classification-name-by-index"]) {
+    requireCheck(catalogEntries.some((entry: unknown) => isRecord(entry) && entry["action"] === action &&
+      entry["publicSdkMethodExecuted"] === false && entry["installedRuntimeAdmission"] === false && isRecord(entry["inputSchema"])),
+    "Catalog discovery lost a fixed system-classification HTTP equivalent.");
   }
   const libraryFiles = await offlineApi(child, { action: "library-files", query: { includeSchemas: true } });
   requireCheck(libraryFiles["offline"] === true && libraryFiles["publicSdkMethodExecuted"] === false &&
