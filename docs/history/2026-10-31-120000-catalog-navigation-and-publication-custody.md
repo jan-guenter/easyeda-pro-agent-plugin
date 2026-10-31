@@ -123,7 +123,7 @@ selectors are receiving the same exact-end correction before final verification.
 The first startup generator refused 1,049,635 bytes against the unchanged 1 MiB
 limit. Grouping a fourth unchanged diagnostic program still refused 1,048,903.
 Both failures remain in private evidence. The final fixed storage roster groups
-five programs, 37,826 decodedbytes, preserving each program's committed bytes,
+five programs, 37,826 decoded bytes, preserving each program's committed bytes,
 member hash, limits and alias initialization. An independent reader compared
 all five with main `ac99764` and current TypeScript and rejected corrupt count/hash
 fixtures. The generated helper is now 1,045,312 bytes, SHA
@@ -135,7 +135,7 @@ reported separately from any connected execution.
 Coverage after the five new method mappings is 835 distinct methods,
 215 public subsets/43 native equivalents/13 HTTP equivalents/79 blocked/485 omitted.
 No current-payload connected navigation or installed new-catalog SDK validation
-is claimed. Source-anonymous3D and empty panel observations do not prove panel
+is claimed. Source-anonymous 3D and empty panel observations do not prove panel
 lookup availability, full assets or electrical suitability.
 
 The public asset UUID correction is complete: newline selectors refuse before
@@ -143,7 +143,7 @@ HTTP dispatch, and candidate, classification and lookup-result UUID aliases also
 refuse. Seven focused asset cases and 79 combined catalog/coverage/registration
 cases passed with zero type-aware lint warnings. The original SQL-head review
 confirmed the exact-length correction. Final footprint checks passed 22 focused
-source/head/actual-Node-V 8 cases and 64 dependent preparation/construction/channel/
+source/head/actual-Node V8 cases and 64 dependent preparation/construction/channel/
 budget cases. A prior composed publication selection passed 30 cases. These are
 source/synthetic or local inspector checks; no connected copy, delete, native
 age or publication completion is established.
