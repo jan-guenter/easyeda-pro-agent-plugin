@@ -562,7 +562,7 @@ void test("NetGroup and filtered PCB membership reads expose narrow native route
   assert.match(route.scope, /not public primitive instances/u); assert.match(route.scope, /explicit nonempty unique filters/u);
   assert.match(route.scope, /source\/inventory\/source/u);
   assert.deepEqual(extensionApiCoverageSummary()["statuses"], {
-    "implemented-public-subset": 215, "implemented-native-equivalent": 43, "implemented-vendor-http-equivalent": 13, "internal-lifecycle-only": 0, "implemented-but-blocked": 79, omitted: 485,
+    "implemented-public-subset": 216, "implemented-native-equivalent": 44, "implemented-vendor-http-equivalent": 13, "internal-lifecycle-only": 0, "implemented-but-blocked": 79, omitted: 483,
   });
 });
 

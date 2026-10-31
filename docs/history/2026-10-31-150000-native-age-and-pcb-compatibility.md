@@ -151,3 +151,57 @@ completion, forward saved/reopened proof and native inverse-delete saved
 absence. Shared operation-owned structure completion continues to block the
 79 previously blocked methods; those routes are not enabled by this work.
 Keep the unfinished implementation and live-validation backlog distinct.
+
+
+## Full review and initial CI correction
+
+PR [164](https://github.com/jan-guenter/easyeda-pro-agent-plugin/pull/164)
+opened at frozen payload `9bb52350d2febb1d5e51b9ce3ee84158efd0ffd5`.
+The sole authored review command was exactly `@coderabbitai full review`,
+comment `6545401287`. Its separate full invocation completed on that unchanged
+head: tracker `6545551683`, check `124580973222`, review `5723639060`.
+The initial automatic review `5723591410` was recorded separately and did not
+satisfy that command. The full PR review selected 86 changed files and excluded
+two generated dist files. It does not establish a review of every unchanged
+repository file. Docstring coverage was separately 87.93 percent against an
+80 percent threshold, covering 58 functions in 50 files. Its file-limit and
+unsupported-file skips describe that check, not the PR review roster.
+
+All review bodies, collapsed outside-diff/nitpick feedback and pagination were
+read. Three reported comments covered two themes: stale coverage totals in a
+preexisting test, and duplicated generated head-age request limits. The full
+review expanded the latter to the transport and its managed smoke. There were
+no inline threads or additional explicitly labeled legacy blocks. Both themes
+were accepted. The coverage expectation now matches 216 public subsets,
+44 native equivalents and 483 omissions. Generated consumers now use the
+emitted MainNormal/MainCleanup/MainRequests constants. Values remain 33/4/37.
+
+Initial Linux CI `41214964107` and Windows CI `41214964048` completed without
+reruns or cancellations. Windows and verify-build passed. The facade result
+was 13,933 passed, four failed and five expected skips, with no cancelled or
+TODO tests. Bridge results were 424 passed across 28 files. The four failures
+were the stale coverage assertion, two missing VM bindings for the new
+controller, and a termination allowlist that had not admitted the exact new
+head-age abort block. Their fixture corrections preserve production guards;
+the allowlist still rejects termination elsewhere. The focused correction run
+passed all 89 cases. Complete ZIP CRC/raw-log equality, all ten checkout-bearing
+jobs and source/runtime/helper pins were verified. Synthetic merge `5fc07c92`
+had the exact base/payload parents and matching root/plugin trees. This failed
+run is retained as failure evidence, not release acceptance.
+
+The corrected helper is 1,036,067 bytes, SHA-256
+`e9bc47e9c73afd8340f4ffc43922e506eac609c66d7212e039d533945fb3b079`,
+12,509 bytes below the unchanged 1 MiB cap. Independent comparison found only
+the intended literal-to-constant substitutions in native source. Whole C#5
+compilation, managed transport/head-age/packing smoke and actual TS/C# codec
+parity passed. No native purpose, request value or effect guard was broadened.
+The corrected commit still needs exact-head CI and the automatic review
+follow-up before protected merge.
+
+
+The correction's types, zero-warning strict lint, coverage, generated/native
+checks, build, reproducible bundles and compatibility checks passed. Only the
+allowed facade projections/review time changed; external pins stayed exact.
+Repository/MCP/all-skill validation and all seven quick validators passed.
+Dependency, lockfile and bridge inputs remained byte-identical to the initial
+successful non-suite checks. No full local suite was duplicated.
