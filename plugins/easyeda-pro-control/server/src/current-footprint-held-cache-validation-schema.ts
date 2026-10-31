@@ -4,6 +4,7 @@ import { z } from "zod";
 import { types } from "node:util";
 import { sha256Json } from "./core.ts";
 import { currentDisposableOpenTargetSchema } from "./current-disposable-open.ts";
+import { CURRENT_FOOTPRINT_HELD_CACHE_DIAGNOSTIC_PROFILE, CURRENT_FOOTPRINT_HELD_CACHE_PAGE_READINESS } from "./current-footprint-held-cache-diagnostic-profile.ts";
 import { CURRENT_FOOTPRINT_SAVED_CACHE_HELD_ENGINE, CURRENT_FOOTPRINT_SAVED_CACHE_HELD_LIMITS } from "./current-footprint-saved-cache-held-profile.ts";
 
 export const CURRENT_FOOTPRINT_HELD_CACHE_VALIDATION_PREFIX = "footprint-held-cache-";
@@ -51,12 +52,15 @@ const cleanupRecords = 2 * cleanupAttempts + pendingNormalFailureRecords;
 const cleanupScalarRecordBytes = Buffer.byteLength(JSON.stringify(maxScalarRecord)) + 1;
 // Each original leaf reply is retained once, plus two packets bounded by the
 // Maintained clock-reply capture's131072-byte ceiling. Wrapper keys are fixed.
+// One late launch failure may follow an abort intent. Its bounded startup
+// Snapshot and original binding therefore need protected cleanup space too.
+const startupEvidenceBytes = 8192;
 const rawEvidenceBytes = (CURRENT_FOOTPRINT_SAVED_CACHE_HELD_LIMITS.normal + CURRENT_FOOTPRINT_SAVED_CACHE_HELD_LIMITS.cleanup) *
-  (CURRENT_FOOTPRINT_SAVED_CACHE_HELD_LIMITS.replyBytes + 128) + 2 * (131_072 + 128);
+  (CURRENT_FOOTPRINT_SAVED_CACHE_HELD_LIMITS.replyBytes + 128) + 2 * (131_072 + 128) + startupEvidenceBytes;
 const operationBytes = 8 * 1024 * 1024;
 const cleanupBytes = cleanupRecords * cleanupScalarRecordBytes + rawEvidenceBytes;
 export const CURRENT_FOOTPRINT_HELD_CACHE_JOURNAL_LIMITS = Object.freeze({ operationBytes, records: 512, cleanupAttempts, cleanupRecords,
-  pendingNormalFailureRecords, cleanupScalarRecordBytes, rawEvidenceBytes, cleanupBytes, normalBytes: operationBytes - cleanupBytes, normalRecords: 512 - cleanupRecords });
+  pendingNormalFailureRecords, cleanupScalarRecordBytes, startupEvidenceBytes, rawEvidenceBytes, cleanupBytes, normalBytes: operationBytes - cleanupBytes, normalRecords: 512 - cleanupRecords });
 
 /** Apply the same aggregate and protected cleanup limits before memory/disk
  * append and when reading history. Raw retained deltas are charged once. */
@@ -84,6 +88,13 @@ export function assertFootprintHeldCacheJournalBudget(records: readonly CurrentF
         packets.add(key);
         if (key === "firstObservation") { delete evidence["firstObservation"]; } else { delete evidence["freshObservation"]; }
       }
+    }
+    if (Object.hasOwn(evidence, "heldCacheStartupObservation") || Object.hasOwn(evidence, "nativeBinding")) {
+      const startup = { ...(Object.hasOwn(evidence, "heldCacheStartupObservation") ? { heldCacheStartupObservation: evidence["heldCacheStartupObservation"] } : {}),
+        ...(Object.hasOwn(evidence, "nativeBinding") ? { nativeBinding: evidence["nativeBinding"] } : {}) };
+      if (record.kind !== "failure" || evidence["action"] !== "launch" || packets.has("startupDiagnostics") ||
+          Buffer.byteLength(JSON.stringify(startup)) > startupEvidenceBytes) { throw new Error("HELD_CACHE_JOURNAL_STARTUP_PACKET"); }
+      packets.add("startupDiagnostics"); delete evidence["heldCacheStartupObservation"]; delete evidence["nativeBinding"];
     }
     const scalarBytes = Buffer.byteLength(JSON.stringify({ ...record, evidence })) + 1; rawBytes += size - scalarBytes;
     if (cleanup) { cleanupRows += 1; if (scalarBytes > cleanupScalarRecordBytes) { throw new Error("HELD_CACHE_JOURNAL_CLEANUP_SCALAR"); } }
@@ -139,8 +150,10 @@ export function queryCurrentFootprintHeldCacheValidation(includeSchemas = false)
     executionAuthorized: false, actions: ["launch", "observe-first", "observe-fresh", "release-cache", "normal-close", "abort", "observe-termination",
       "release-closed", "cleanup-no-resource", "cleanup-unlaunched", "cleanup-no-process", "inspect", "settle-records"],
     limits: { terminationObservations: 240, recordBytes: CURRENT_FOOTPRINT_HELD_CACHE_VALIDATION_RECORD_BYTES,
+      startupReadiness: CURRENT_FOOTPRINT_HELD_CACHE_PAGE_READINESS, nativeRequests: CURRENT_FOOTPRINT_HELD_CACHE_DIAGNOSTIC_PROFILE,
       journal: CURRENT_FOOTPRINT_HELD_CACHE_JOURNAL_LIMITS },
     notes: ["Launch selects one exact disposable checkpoint before the new read-only native generation starts; default branch comes from actual complete SQL.",
+      "Browser discovery reads version once and samples at most sixteen valid target inventories, waiting only between empty/about:blank observations. Malformed, attached, unexpected or multiple pages refuse without retry; retained diagnostics contain bounded stages, classifications, counts and hashes only.",
       "The first observation qualifies the actual held getter/match tuple and reads both fixed namespaces. Fresh observation separately reads both namespaces again.",
       "These sequential point-in-time observations do not grant continuous cache emptiness, saved-copy qualification, replay authority or permission to open a project.",
       "Every native action is consumed before dispatch. Missing acknowledgment permits original cleanup and evidence settlement, never retry or historical owner adoption.",

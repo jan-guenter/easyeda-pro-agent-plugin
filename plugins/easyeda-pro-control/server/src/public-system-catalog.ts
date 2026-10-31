@@ -6,6 +6,7 @@ import { PUBLIC_SYSTEM_LIBRARY_LOOKUP_LIMITATIONS, PUBLIC_SYSTEM_LOOKUP_MAX_CAND
   publicSystemFootprintNameRequestSchema, publicSystemLcscRequestSchema, publicSystemLibraryLookupRequestSchema,
   queryPublicSystemLibraryLookups } from "./public-system-library-lookups.ts";
 import type { PublicSystemLookupCandidate } from "./public-system-library-lookups.ts";
+import { publicSystemClassificationSchemas, queryPublicSystemClassification, validatePublicSystemClassificationResult } from "./public-system-classification.ts";
 
 const uuid = z.string().regex(/^[a-f0-9]{32}$/u);
 const safeText = (maximum: number): z.ZodString => z.string().max(maximum).refine((value) => value.isWellFormed() && !value.includes("\u0000"));
@@ -20,7 +21,8 @@ const deviceSearchSchema = z.object({ action: z.literal("search-devices"), ...se
 const symbolSchema = z.object({ action: z.literal("get-symbol"), symbolUuid: uuid, confirmNetwork: z.literal(true) }).strict();
 const deviceSchema = z.object({ action: z.literal("get-device"), deviceUuid: uuid, confirmNetwork: z.literal(true) }).strict();
 export const publicSystemCatalogRequestSchema = z.discriminatedUnion("action", [searchSchema, symbolSearchSchema, deviceSearchSchema,
-  symbolSchema, deviceSchema, publicSystemSymbolExactRequestSchema, publicSystemFootprintNameRequestSchema, publicSystemLcscRequestSchema]);
+  symbolSchema, deviceSchema, publicSystemSymbolExactRequestSchema, publicSystemFootprintNameRequestSchema, publicSystemLcscRequestSchema,
+  ...publicSystemClassificationSchemas]);
 export type PublicSystemCatalogRequest = z.infer<typeof publicSystemCatalogRequestSchema>;
 export function parsePublicSystemCatalogRequest(input: unknown): PublicSystemCatalogRequest { return publicSystemCatalogRequestSchema.parse(input); }
 
@@ -49,7 +51,8 @@ export function queryPublicSystemCatalog(input: unknown = {}): Record<string, un
     origin: PUBLIC_SYSTEM_FOOTPRINT_ORIGIN, libraryUuid: PUBLIC_SYSTEM_FOOTPRINT_LIBRARY, invocationEnabledByDiscovery: false,
     ...(query.includeSchemas ? { inputSchema: z.toJSONSchema(schema) } : {}), limitations: [...limitations], provenance: source,
   }); }
-  entries.push(...queryPublicSystemSymbolExact(query).entries, ...queryPublicSystemLibraryLookups(query).entries);
+  entries.push(...queryPublicSystemSymbolExact(query).entries, ...queryPublicSystemLibraryLookups(query).entries,
+    ...queryPublicSystemClassification(query).entries);
   return { offline: true, invocationEnabledByDiscovery: false, total: entries.length, entries };
 }
 export function validatePublicSystemCatalogArguments(input: unknown): Record<string, unknown> {
@@ -203,6 +206,10 @@ function projectLibraryLookup(input: unknown, raw: unknown): Record<string, unkn
  * complete component or execute instructions contained in names/descriptions. */
 export function validatePublicSystemCatalogResult(input: unknown, raw: unknown): Record<string, unknown> {
   const request = parsePublicSystemCatalogRequest(input);
+  if (request.action === "get-classification-tree" || request.action === "get-classification-index-by-name" ||
+    request.action === "get-classification-name-by-uuid" || request.action === "get-classification-name-by-index") {
+    return validatePublicSystemClassificationResult(request, raw);
+  }
   if (request.action === "search-symbols-by-name") { return validatePublicSystemSymbolExactResult(request, raw); }
   if (request.action === "search-footprints-by-name" || request.action === "get-devices-by-lcsc-ids") { return projectLibraryLookup(request, raw); }
   let projected: Record<string, unknown>;

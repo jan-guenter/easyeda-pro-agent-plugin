@@ -32,7 +32,7 @@ const rawWindowsPath = String.raw`C:\EasyEDA\held-cache-validation.eprj2`;
 const target = Object.freeze({ rawWindowsPath, projectUuid: sha256Text(rawWindowsPath), documentUuid: "b".repeat(16), expectedSourceSha256: "a".repeat(64) });
 interface Options { readonly copiedFirst?: boolean; readonly lostRelease?: boolean; readonly pendingFirst?: boolean;
   readonly noResource?: boolean; readonly retainedAllocationFailure?: boolean; readonly noProcess?: boolean;
-  readonly pendingPrepare?: boolean; readonly holdAbortDisk?: boolean }
+  readonly pendingPrepare?: boolean; readonly holdAbortDisk?: boolean; readonly startupFailure?: boolean }
 interface Fixture {
   readonly controller: CurrentFootprintHeldCacheValidation;
   readonly operationId: string;
@@ -97,6 +97,7 @@ async function fixture(options: Options = {}): Promise<Fixture> {
   class NativeOwner {
     public startFootprintHeldCacheValidationGeneration(): Promise<void> {
       assert.equal(this, allocated); calls.push("native-start"); launched = true;
+      if (options.startupFailure === true) { return Promise.reject(new Error("PCB_DIAGNOSTIC_OWNER_HELD_CACHE_PAGE")); }
       return options.noProcess === true ? Promise.reject(new Error("native launch refused without process")) : Promise.resolve();
     }
     public retainedFootprintCopyHeldSavedCache(): CurrentFootprintSavedCacheHeldRunner { assert.equal(this, allocated); return runner; }
@@ -129,7 +130,8 @@ async function fixture(options: Options = {}): Promise<Fixture> {
       assert.equal(this, allocated); assert.equal(token, abortToken); assert.equal(confirm, true); calls.push("abort-original-job"); closed = true; gate.resolve(null); return Promise.resolve();
     }
     public status(): unknown { assert.equal(this, allocated); return { binding: launched && options.noProcess !== true ? nativeBinding : null,
-      launchConsumed: launched, noProcessCleanupAvailable: options.noProcess === true && !released, released, helperClosed: released }; }
+      launchConsumed: launched, noProcessCleanupAvailable: options.noProcess === true && !released, released, helperClosed: released,
+      ...(options.startupFailure === true ? { heldCacheStartupObservation: { stage: "page-selection", samples: [{ classification: "empty", targetCount: 0 }] } } : {}) }; }
   }
   scope["CurrentFootprintHeldCacheValidationOwner"] = NativeOwner;
   scope["startCurrentFootprintHeldCacheValidationOwner"] = (actualOptions: unknown, binding: unknown): Promise<NativeOwner> => {
@@ -169,6 +171,39 @@ async function finish(f: Fixture): Promise<void> {
   await f.controller.run({ action: "release-closed", operationId: f.operationId });
   assert.equal(f.controller.hasActiveReservation(), false); assert.equal(f.controller.hasOwnedAllocation(), false);
 }
+
+void test("failed startup retains original binding and bounded diagnostics before original cleanup", async () => {
+  const f = await fixture({ startupFailure: true });
+  await assert.rejects(f.controller.run(f.launch), /HELD_CACHE_PAGE/u);
+  const journal = await readFootprintHeldCacheValidation(f.operationId);
+  const failure = journal?.records.find(record => record.kind === "failure");
+  assert.ok(failure !== undefined);
+  assert.deepEqual(failure.evidence["nativeBinding"], { helperInstance: "d".repeat(32), jobId: "e".repeat(32), rootPid: 1234, rootCreated: "133000000000000000" });
+  assert.deepEqual(failure.evidence["heldCacheStartupObservation"], { stage: "page-selection", samples: [{ classification: "empty", targetCount: 0 }] });
+  const status = await f.controller.run({ action: "inspect", operationId: f.operationId });
+  assert.deepEqual(status["heldCacheStartupObservation"], failure.evidence["heldCacheStartupObservation"]);
+  assert.equal(status["firstObserved"], false);
+  await finish(f);
+});
+
+void test("one late launch diagnostic has protected cleanup space without widening scalar records", () => {
+  const operationId = "footprint-held-cache-late-startup-diagnostics";
+  const common = { schema: "easyeda-pro-control.footprint-held-cache-validation-record.v1", operationId,
+    createdAt: "2000-01-01T00:00:00.000Z", previousSha256: null };
+  const abort = captureFootprintHeldCacheValidationRecord({ ...common, sequence: 0, kind: "abort-intent", evidence: { confirmOriginalJob: true } });
+  const observation = { schema: "private.current-footprint-held-cache-startup-observation.v1", stage: "browser-targets", failed: true,
+    failureKind: "target-limit", versionAttempts: 1, versionSha256: "a".repeat(64), targetAttempts: 16, maximumTargetSamples: 16, delayMilliseconds: 250,
+    samples: Array.from({ length: 16 }, (_, index) => ({ attempt: index + 1, targetCount: 256, pageCount: 1,
+      classification: "about-blank", inventorySha256: "b".repeat(64) })), uiSourceQualified: false, cacheQualificationGranted: false, executionAuthorized: false };
+  const failure = captureFootprintHeldCacheValidationRecord({ ...common, sequence: 1, kind: "failure", evidence: { action: "launch",
+    failure: "\0".repeat(512), heldCacheStartupObservation: observation,
+    nativeBinding: { helperInstance: "d".repeat(32), jobId: "e".repeat(32), rootPid: 2_147_483_647, rootCreated: "133000000000000000" } } });
+  assert.ok(Buffer.byteLength(JSON.stringify(failure)) > CURRENT_FOOTPRINT_HELD_CACHE_JOURNAL_LIMITS.cleanupScalarRecordBytes);
+  assert.doesNotThrow(() => { assertFootprintHeldCacheJournalBudget([abort, failure]); });
+  assert.throws(() => { assertFootprintHeldCacheJournalBudget([abort, failure, { ...failure, sequence: 2 }]); }, /STARTUP_PACKET/u);
+  const oversized = captureFootprintHeldCacheValidationRecord({ ...failure, evidence: { action: "launch", heldCacheStartupObservation: "a".repeat(8192) } });
+  assert.throws(() => { assertFootprintHeldCacheJournalBudget([abort, oversized]); }, /STARTUP_PACKET/u);
+});
 
 void test("public cache grammar refuses branch/runtime/code/qualification overrides and capture rejects active data", () => {
   const operationId = "footprint-held-cache-schema-test";

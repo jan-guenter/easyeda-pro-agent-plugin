@@ -271,7 +271,7 @@ void test("native adapter embeds and private fields match TS programs without na
   const footprintNormalLimits = [...source.matchAll(/long FootprintNormalRequestLimit \{ get \{ return ([^;\r\n]+); \} \}/gu)];
   assert.equal(footprintNormalLimits.length, 1); assert.equal(footprintNormalLimits[0]?.[1], heldLimitPrefix + legacyNormalLimit);
   assert.ok(source.includes("public const int HeldSavedRequests=363,HeldSavedNormal=328,HeldSavedCleanup=35;"));
-  assert.ok(source.includes("public const int HeldCacheRequests=31,HeldCacheNormal=30,HeldCacheCleanup=1;"));
+  assert.ok(source.includes("public const int HeldCacheRequests=46,HeldCacheNormal=45,HeldCacheCleanup=1;"));
   assert.ok(source.includes("public static class EasyedaFootprintSavedLimits { public const int Requests=353; public const int NormalRequests=319;"));
   assert.ok(source.includes("long EffectiveRequestLimit { get { return workerStartupFootprint209?FootprintRequestLimit:workerStartupRatline209?RatlineRequestLimit:workerStartupEmpty209?EasyedaWorkerStartupEmpty209Protocol.RequestLimit:RequestLimit; } }"));
   assert.ok(source.includes("public const int RequestLimit=3466;"));

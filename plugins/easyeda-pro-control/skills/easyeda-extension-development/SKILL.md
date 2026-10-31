@@ -45,6 +45,10 @@ for UI receiver qualification, complete parser recognition and timeout limits.
    installed package, connected admission, live effect, saved/reopened result.
    Use a disposable fixture for new live writer validation; never a user board.
 
+For native startup, cache, source-route or renderer investigations, select the
+[diagnostic task](../easyeda-pro-control/references/task-navigation.md#extension-diagnostics)
+and read its specific operating reference before choosing a launch purpose.
+
 For actual live editor work also use `$easyeda-pro-control`. Source updates do
 not grant permission to repair an unfinished production journal, restore a
 database or broaden external writes. A newer declaration package is research

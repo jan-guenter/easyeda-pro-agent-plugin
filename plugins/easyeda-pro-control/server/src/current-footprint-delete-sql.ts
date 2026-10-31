@@ -51,6 +51,9 @@ interface Prepared {
 }
 export interface CurrentFootprintDeleteSqlSource {
   readonly projectUuid: string; readonly branchUuid: string; readonly targetUuid: string;
+  /** Original successful forward relation and reader, retained by the inverse.
+   * These references join logical effects without issuing native ownership. */
+  readonly copySource: CurrentFootprintCopyV2SqlSource; readonly copyAfter: Inventory;
   readonly before: Inventory; readonly after: Inventory; readonly documentClock: number;
   readonly workerUpload: string; readonly appendPlaintextSha256: string;
 }
@@ -362,6 +365,7 @@ export async function verifyCurrentFootprintDeleteSqlEffect(plan: CurrentFootpri
     executionAuthorized: false, producerBindingVerified: false, dependencyEligibilityVerified: false, nativeClockProvenanceVerified: false,
     completionProved: false, generationClosureVerified: false, savedAbsenceVerified: false, reopened: false });
   const source = Object.freeze({ projectUuid: witness.projectUuid, branchUuid: witness.branchUuid, targetUuid: plan.targetUuid,
+    copySource: prepared.copySource, copyAfter: prepared.copyAfter,
     before, after, documentClock: clock, workerUpload: upload, appendPlaintextSha256: sha256Text(plaintext) });
   completedEffects.set(effect, Object.freeze({ plan, after, source })); return effect;
 }

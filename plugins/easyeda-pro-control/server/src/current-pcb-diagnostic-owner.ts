@@ -133,7 +133,9 @@ import { loadRuntimeMachineProfile } from "./machine-profile.ts";
 import { verifyCurrentDisposableOpenCheckpoint } from "./current-disposable-open-checkpoint.ts";
 import type { CurrentFootprintHeldCacheValidationBinding } from "./current-footprint-held-cache-validation.ts";
 import { currentFootprintHeldCacheValidationIdSchema } from "./current-footprint-held-cache-validation-schema.ts";
-import { CURRENT_FOOTPRINT_HELD_CACHE_DIAGNOSTIC_PROFILE } from "./current-footprint-held-cache-diagnostic-profile.ts";
+import { CURRENT_FOOTPRINT_HELD_CACHE_DIAGNOSTIC_PROFILE, CURRENT_FOOTPRINT_HELD_CACHE_PAGE_READINESS } from "./current-footprint-held-cache-diagnostic-profile.ts";
+import { CurrentFootprintHeldCachePageReadiness } from "./current-footprint-held-cache-page-readiness.ts";
+import type { CurrentFootprintHeldCacheStartupObservation } from "./current-footprint-held-cache-page-readiness.ts";
 import { join } from "node:path";
 import { requireCurrentFootprintCopyOwned } from "./current-footprint-copy-preparation-runtime.ts";
 import type { CurrentFootprintCopyPreparation } from "./current-footprint-copy-preparation.ts";
@@ -180,7 +182,7 @@ import { CurrentFootprintCopyMainBackendRunner } from "./current-footprint-copy-
 import type { CurrentFootprintCopyMainBackendObservation } from "./current-footprint-copy-main-backend-runner.ts";
 
 
-const HELPER_SHA256 = "c3723bf23e9fd50d8511228ffd0936c5e75241cd25335c2dbbceacda0e139129";
+const HELPER_SHA256 = "09fb014b82a602dbaa3c8de7afc8a0fae619ff8b3309fe47969a132bc7de2fb6";
 const HELPER_BYTES = 1_047_546;
 const heldRunnerDescriptors = Object.getOwnPropertyDescriptors(CurrentFootprintSavedCacheHeldRunner.prototype);
 /* oxlint-disable typescript/unbound-method -- Retain fixed methods and invoke them only on the original private-field runner. */
@@ -477,6 +479,7 @@ class CurrentPcbRetainedOwnerCore {
   #send: Promise<void> | null = null;
   #inspectionConsumed = false;
   #browserObservationConsumed = false;
+  #heldCacheStartup: CurrentFootprintHeldCachePageReadiness | null = null;
   #savedCacheBrowserVersion: Readonly<RecordValue> | null = null;
   #savedCacheNativeRunner: CurrentFootprintSavedCacheRunner | null = null;
   #savedCacheNativeAttempted = false;
@@ -716,6 +719,7 @@ class CurrentPcbRetainedOwnerCore {
       cleanupOnly: boolean; artifactAccountingMounted: false; journalAccountingMounted: false; nativeWriterMounted: false }>;
     savedCacheNativeObservation?: Readonly<Record<string, unknown>> | null;
     savedCacheAccessorObservation?: Readonly<Record<string, unknown>> | null;
+    heldCacheStartupObservation?: CurrentFootprintHeldCacheStartupObservation;
     browserObservationConsumed: boolean; frameInspectionConsumed: boolean; scriptInspectionConsumed: boolean; diagnosticFailure: string | null;
     diagnosticFailureObservation: CurrentPcbDiagnosticFailureObservation | null;
     workerStartupChannel?: ReturnType<CurrentPcbWorkerStartupChannel["status"]> | ReturnType<CurrentPcb209EmptyStartupChannel["status"]> |
@@ -731,6 +735,7 @@ class CurrentPcbRetainedOwnerCore {
       released: this.#released, helperClosed: this.#childClosed, cleanupOnly: this.#binding !== null && !this.#launchSucceeded,
       noProcessCleanupAvailable: this.#noProcessCleanupAvailable(), frameWorkerVerified: false, executionAuthorized: false, browserObservationConsumed: this.#browserObservationConsumed,
       nativeLaunchError: this.#nativeLaunchError, nativeSendError: this.#nativeSendError, createProcessError: this.#noProcessProof?.createProcessError ?? null,
+      ...(this.#heldCacheStartup === null ? {} : { heldCacheStartupObservation: this.#heldCacheStartup.observation() }),
       ...(this.#forwardLedger === null || this.#forwardLedgerMethods === null ? {} : { forwardResources: Object.freeze({
         counters: this.#forwardLedgerMethods.status.call(this.#forwardLedger), cleanupOnly: this.#forwardCleanupOnly,
         artifactAccountingMounted: false, journalAccountingMounted: false, nativeWriterMounted: false }) }),
@@ -884,6 +889,28 @@ class CurrentPcbRetainedOwnerCore {
       return diagnosticBoundedObservation({ schema: "easyeda-pro-control.pcb-diagnostic-browser-observation.v1", version: structuredClone(version),
         targets: this.#browserTargets.map(value => diagnosticTargetSummary(value)), projectFreeVerified: false, profileIsolated: false,
         debuggerSocketAbsenceVerified: false, bridgeAuthentication: false, executionAuthorized: false });
+    } catch (caughtError) { this.#input.emit("error", error("BROWSER_OBSERVATION_FAILED")); throw caughtError; }
+    finally { this.#busy = false; }
+  }
+
+  /** Only the distinct read-only purpose may wait for its original UI page.
+   * Valid transient inventories consume bounded requests; malformed responses
+   * and transport failures stop without retry or alternative target selection.
+   */
+  async #observeHeldCacheBrowser(current: () => void): Promise<string> {
+    const observation = this.#heldCacheStartup;
+    if (this.#purpose !== "footprint-held-cache209" || observation === null || this.#browserObservationConsumed || this.#inspectionConsumed) {
+      throw error("HELD_CACHE_BROWSER_UNAVAILABLE");
+    }
+    this.#enter(true); this.#browserObservationConsumed = true;
+    try {
+      const observed = await observation.observeBrowser(Object.freeze({ assertCurrent: current,
+        version: (): Promise<RecordValue> => this.#transfer(() => this.#pipe.getVersion()),
+        targets: (): Promise<RecordValue> => this.#transfer(() => this.#pipe.getTargets()),
+        pause: (): Promise<void> => delay(CURRENT_FOOTPRINT_HELD_CACHE_PAGE_READINESS.delayMilliseconds),
+      }));
+      current(); this.#browserTargets = observed.targets; this.#savedCacheBrowserVersion = observed.version;
+      return observed.targetId;
     } catch (caughtError) { this.#input.emit("error", error("BROWSER_OBSERVATION_FAILED")); throw caughtError; }
     finally { this.#busy = false; }
   }
@@ -2608,24 +2635,26 @@ class CurrentPcbRetainedOwnerCore {
       this.#requireHeldRole(); this.#available(); requireHeldCacheValidationBinding(allocation);
       if (this.#heldSavedFailed || this.#heldSavedAbortAttempted || this.#closeConsumed || this.#terminationObserved || this.#releaseConsumed) { throw error("HELD_CACHE_NORMAL_ENDED"); }
     };
+    const startup = new CurrentFootprintHeldCachePageReadiness(); this.#heldCacheStartup = startup;
     try {
       await verifyCurrentDisposableOpenCheckpoint(origin.prepared, origin.originalTarget); current();
       const executable = this.#installation.plan.files[0];
       if (executable === undefined) { throw error("HELD_CACHE_INSTALLATION"); }
+      startup.stage("launch");
       await this.launch({ executable: executable.windowsPath, executableSha256: executable.sha256, confirmDiagnosticLaunch: true }); current();
-      await this.#heldSavedNativeReprove(); current(); await this.browserObservation(); current();
-      const pages = this.#browserTargets?.filter(value => value["type"] === "page" && value["attached"] === false &&
-        typeof value["url"] === "string" && /^https:\/\/client\/editor\?cll=(?:trace|debug|info|warn|error)(?:#.*)?$/u.test(value["url"]));
-      const targetId = pages?.[0]?.["targetId"];
-      if (pages?.length !== 1 || typeof targetId !== "string") { throw error("HELD_CACHE_PAGE"); }
+      startup.stage("native-reproof"); await this.#heldSavedNativeReprove(); current();
+      const targetId = await this.#observeHeldCacheBrowser(current); current();
+      startup.stage("frames");
       const frames = await this.inspectFrames(targetId); current();
       const rows = frames["frames"];
       if (!Array.isArray(rows)) { throw error("HELD_CACHE_FRAMES"); }
       const roots = rows.filter((value: unknown): value is RecordValue => record(value) && !Object.hasOwn(value, "parentId"));
       const frameId = roots[0]?.["id"];
       if (roots.length !== 1 || typeof frameId !== "string") { throw error("HELD_CACHE_ROOT_FRAME"); }
+      startup.stage("ui-source");
       await this.inspectScript(frameId, CURRENT_PCB_209_OPENING_SCRIPTS.ui); current();
-      await this.#observeParent(); current(); await this.#observeOpeningAncillary(); current();
+      startup.stage("parent"); await this.#observeParent(); current();
+      startup.stage("ancillary"); await this.#observeOpeningAncillary(); current();
       const context = this.#stagedContext;
       const engine = this.#savedCacheBrowserVersion;
       const binding = this.#binding;
@@ -2644,6 +2673,7 @@ class CurrentPcbRetainedOwnerCore {
           if (actual.sessionId !== selected.sessionId || actual.uniqueContextId !== selected.uniqueContextId) { throw error("HELD_CACHE_REALM_CHANGED"); }
         }
       };
+      startup.stage("cache-bind");
       pipe.bindHeldCache({ ...selected, projectUuid: origin.target.projectUuid, branchUuid: origin.target.branchUuid });
       const bound = await this.#request({ action: "held-saved-bind", ...selected,
         projectUuid: origin.target.projectUuid, branchUuid: origin.target.branchUuid }); same();
@@ -2657,8 +2687,8 @@ class CurrentPcbRetainedOwnerCore {
           methods.consumeHeldReply.call(ledger, this, Buffer.byteLength(canonicalJson(reply))); return reply;
         },
       }), { ...selected, projectUuid: origin.target.projectUuid, branchUuid: origin.target.branchUuid }, engine);
-      await this.#heldSavedNativeReprove(); same(); this.#heldSavedStarted = true;
-    } catch (caughtError) { this.#heldSavedFailed = true; throw caughtError; }
+      await this.#heldSavedNativeReprove(); same(); this.#heldSavedStarted = true; startup.stage("ready");
+    } catch (caughtError) { startup.fail(); this.#heldSavedFailed = true; throw caughtError; }
   }
 
   /** Start the separate saved generation without borrowing diagnostic authority. */

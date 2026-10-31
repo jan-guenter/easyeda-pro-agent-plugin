@@ -62,17 +62,21 @@ void test("actual component catalog registration forwards strict requests withou
   fail = true; await assert.rejects(invoke({ request: expectedRequest }), /synthetic refusal/u); assert.equal(calls.length, 7);
 });
 
-void test("component catalog discovery exposes all eight exact actions but grants no execution", () => {
+void test("component catalog discovery exposes all twelve exact actions but grants no execution", () => {
   const catalog = queryOfflineApi(apiRequestSchema.parse({ action: "catalog-components", query: { includeSchemas: true } }));
   assert.equal(catalog.offline, true);
   assert.ok(typeof catalog.result === "object" && catalog.result !== null && "total" in catalog.result);
-  assert.equal(catalog.result.total, 8);
+  assert.equal(catalog.result.total, 12);
   for (const candidate of [request, { action: "get-symbol", symbolUuid: "a".repeat(32), confirmNetwork: true },
     { action: "get-device", deviceUuid: "b".repeat(32), confirmNetwork: true },
     { ...request, action: "search-symbols" }, { ...request, action: "search-devices" },
     { action: "search-symbols-by-name", name: "R0603", confirmNetwork: true },
     { action: "search-footprints-by-name", name: "R0603", confirmNetwork: true },
-    { action: "get-devices-by-lcsc-ids", lcscIds: ["C1523"], confirmNetwork: true }]) {
+    { action: "get-devices-by-lcsc-ids", lcscIds: ["C1523"], confirmNetwork: true },
+    { action: "get-classification-tree", libraryType: "4", confirmNetwork: true },
+    { action: "get-classification-index-by-name", libraryType: "4", primaryClassificationName: "Package", confirmNetwork: true },
+    { action: "get-classification-name-by-uuid", libraryType: "4", primaryClassificationUuid: "a".repeat(32), confirmNetwork: true },
+    { action: "get-classification-name-by-index", libraryType: "4", classificationIndex: { primaryClassificationUuid: "a".repeat(32) }, confirmNetwork: true }]) {
     const reply = queryOfflineApi(apiRequestSchema.parse({ action: "catalog-components-validate", query: { request: candidate } }));
     assert.ok(typeof reply.result === "object" && reply.result !== null && "valid" in reply.result && "executionAuthorized" in reply.result);
     assert.equal(reply.result.valid, true); assert.equal(reply.result.executionAuthorized, false);

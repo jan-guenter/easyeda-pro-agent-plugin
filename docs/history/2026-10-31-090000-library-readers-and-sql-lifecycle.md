@@ -1,0 +1,153 @@
+# Library readers and complete copy/delete SQL relation
+
+This batch follows the [renderer and held-cache release](2026-10-31-renderer-proof-and-held-cache-owner.md).
+It starts from main `1b40a56b0620f6a3c5602b41605ddbc0b5ac7f7f`, installed
+`0.3.0+codex.20261031073130`. Publication is pending. The batch groups useful
+catalog readers, stored-data lifecycle integration and launch readiness fixes.
+
+## Installed owner and consumed cache probe
+
+The restarted serving facade independently matched its complete installed
+payload, original process, executable, control descriptor, lease, profile and
+stdio. All 2,468 files and modes matched merged main. The automatic main CI
+record is also terminal and green, as appended to the preceding release record.
+
+One new read-only held-cache launch prepared the exact disposable checkpoint
+and complete SQL inventory, retained its original helper, and launched the
+application. The first browser observation did not satisfy the required unique
+unattached editor-page predicate. The operation stopped with
+`PCB_DIAGNOSTIC_OWNER_HELD_CACHE_PAGE` before getter qualification or namespace
+matching. The browser target inventory was not retained in the failed controller
+record, so its exact rejection cause is unknown. It is not evidence that the
+cache getter or match method failed.
+
+The original owner then requested normal closure once, observed actual root
+exit and empty original Job, and released the helper. All eleven journal records
+were published; the terminal inspection reports released with no unpublished
+records. No abort, project navigation, CAD edit or explicit Save was performed.
+The complete disposable file remained 598,016 bytes with SHA-256
+`e620d21af8ca0378b7a3960a10acdaadf894f216e93a034f698fd7e4795fb741`
+and no SQLite sidecars. This proves file invariance for this failed probe,
+not successful cache qualification or discard. The operation must not be replayed.
+Production designs were not opened or changed.
+
+## Complete stored-data relation
+
+The new private SQL verifier joins five independent completed readers with the
+original copy and delete effect objects. The saved-copy reader must be the
+inverse operation's actual baseline. It checks both readback equalities, the
+complete original raw-history prefix with exactly two appends, unchanged
+original documents and visible roster, and the retained copied-footprint
+tombstone. Deletion preserves history; the database is not restored to its
+original bytes or logical hash.
+
+These are original stored-data relationships. The relation deliberately grants
+no native ownership, actual editor reopen, persistent-cache exclusion, clock
+provenance or writer authority. There is no four-generation native orchestrator
+to consume it yet. Its integration point is after the inverse saved-reader's
+actual closure, complete snapshot and release, alongside the retained original
+forward and inverse effect objects.
+
+## Public system classification readers
+
+Four fixed actions now extend the existing component-catalog tool. They return
+a digest-bound flattened tree page, an exact name-to-index projection, or exact
+names for UUIDs or an index. The complete response is recognized before any
+projection, with exact system ownership/type, unique IDs and two-level parent
+membership. Their separate 8 MiB/32,768-row body envelope leaves the existing
+1 MiB component-catalog bound unchanged. All outputs remain under 128 KiB.
+Optional whole-tree digest expectations reject changed later observations;
+separate network requests do not become an atomic snapshot.
+
+An initial endpoint sample refused at the old 1 MiB cap and was retained.
+The complete footprint-category response contained 2,123,118 decoded bytes and
+8,662 rows. Strict recognition initially refused one `order_no` value encoded
+as the literal string `"0"`. Only that witnessed literal was admitted alongside
+the bounded numeric form; general provider coercion remains refused. The
+complete sample then passed all four local projections.
+
+The actual composed source transport also passed one fixed anonymous GET,
+recognized all 8,662 rows and returned a five-row page. Whole-tree digest was
+`af43fb7a4a9910a097fb77c6d15331ef4583155065a39773cb4f2ca0297d05b0`.
+It sends no name/UUID selector to the vendor, no credentials, no alternate
+destination and no automatic follow-up request. Other category filters have
+no recorded anonymous sample. These are vendor HTTP task equivalents, not
+desktop SDK execution. The four corresponding official SDK methods are beta
+and obsolete, with removal documented for EDA 3.3; the fixed internal endpoint
+has no SDK stability promise.
+
+## Launch readiness and skill navigation
+
+The read-only cache purpose now samples at most sixteen structurally valid
+target inventories, waiting only after empty or single unattached `about:blank`
+page observations. Malformed, unexpected, attached or multiple-page replies
+stop immediately. The original exact editor-page and frame/source/Start Page
+requirements remain. The fixed budget is 34 discovery, eleven held normal and
+one cleanup request, 46 global IDs. Other native purposes retain their limits.
+This handles a possible startup transition; it does not establish the exact
+cause of the earlier unrecorded target rejection.
+
+Bounded stage/count/classification/hash diagnostics now survive startup failure,
+along with the original binding. A once-only 8 KiB raw-evidence partition also
+protects a late launch failure after abort without increasing each cleanup
+scalar record's allowance. Helper size and the 1 MiB cap are unchanged.
+
+The control skill's long list moved into a task reference with everyday work
+and extension diagnostics separated. Operating instructions remain linked
+and the existing admission and recovery contracts are preserved.
+
+## Original source-asset qualification
+
+Owned footprint preparation now retains a separate qualification of its actual
+original copy plan and reader. A narrow document-local subset recognizes exact
+META, CANVAS, LAYER, LINE, ARC, simple PAD, default-font STRING and selected ATTR
+bodies. Nested pads use only supported primitive outlines and holes. Nonempty
+groups/nets, unknown fields, opaque nested data and asset-bearing or unsupported
+families do not qualify. The general copy planner still preserves those broader
+sources; this subset does not change its lossless source contract.
+
+The qualification requires the destination's cleared source metadata to win
+over copied history. It retains original plan/row objects and rejects copied
+qualification receipts. This proves source-asset eligibility only. Native parser,
+publisher and upload callback identities, transaction clocks and completion
+remain separate unavailable gates. No public writer is enabled.
+
+## Remaining work
+
+Connected held-cache qualification needs a fresh original generation using the
+corrected installed code. Footprint execution still needs original copy-head
+eligibility, complete dependency qualification, genuine Date/RPC provenance,
+native/main completion, inverse execution and a finite whole-lifecycle resource
+reservation. The complete stored-data relation alone enables none of these.
+The exhaustive SDK inventory remains the source of concrete omissions.
+
+## Frozen candidate checks
+
+Candidate `0.3.0+codex.20261031092130` passed the mandatory local non-suite
+checks under Node 24.18.0, npm 11.16.0 and soft core limit zero. The clean
+dependency install, complete dependency tree, 151 registry signatures and
+42 attestations verified; the vulnerability audit reported zero. Facade and
+bridge types, strict type-aware lint, generated programs, sanitizer, coverage,
+build, reproducibility, compatibility, repository, MCP and all seven skill
+validators passed. Both committed bundles reproduced exactly. External
+compatibility pins remained unchanged.
+
+The first full lint pass found five style issues in the new startup journal
+code and test. They were corrected without rule exceptions, and the complete
+lint pass is clean. Focused controller, source-asset, SQL, catalog and native
+readiness checks passed. The native helper compiled with C# 5 and passed its
+managed parity smoke. A stale test-only request ceiling failed that smoke
+initially; the old failure is retained, and only the new purpose's expected
+ceiling was corrected. No full local suite was run.
+
+The frozen source projection is 979 files, SHA
+`f85d87d346c2581f435f43aee6888d40103aad77f7d70cc8ed8bcd651395de1d`.
+The three-file runtime projection is
+`823c0982e08a698810f04bb0d08274b896aa45105c94612160ab26e7137a6b22`.
+The helper remains 1,047,546 bytes, SHA
+`09fb014b82a602dbaa3c8de7afc8a0fae619ff8b3309fe47969a132bc7de2fb6`,
+with 1,030 bytes below the unchanged cap. Both helper identity consumers match.
+Independent review found no actionable issue in the five-reader relation,
+source-asset qualification, readiness limits or late-failure journal reserve.
+The complete inventory now records 835 methods with 490 omitted and 79 blocked.
+Exact-commit CI, CodeRabbit, packaging, publication and installation are pending.

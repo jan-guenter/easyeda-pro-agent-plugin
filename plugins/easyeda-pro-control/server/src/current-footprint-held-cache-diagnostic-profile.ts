@@ -4,7 +4,8 @@ import { z } from "zod";
 import { CURRENT_FOOTPRINT_SAVED_CACHE_HELD_LIMITS as HELD } from "./current-footprint-saved-cache-held-profile.ts";
 import { freezeDeep } from "./sqlite-inventory-core.ts";
 
-const discovery = { browser: 2, frames: 6, script: 7, parent: 2, ancillary: 2 } as const;
+export const CURRENT_FOOTPRINT_HELD_CACHE_PAGE_READINESS = Object.freeze({ targetSamples: 16, delayMilliseconds: 250 });
+const discovery = { browser: 1 + CURRENT_FOOTPRINT_HELD_CACHE_PAGE_READINESS.targetSamples, frames: 6, script: 7, parent: 2, ancillary: 2 } as const;
 const discoveryRequests = Object.values(discovery).reduce((total, value) => total + value, 0);
 export const CURRENT_FOOTPRINT_HELD_CACHE_DIAGNOSTIC_PROFILE = freezeDeep({
   purpose: "footprint-held-cache209", discovery, discoveryRequests,
