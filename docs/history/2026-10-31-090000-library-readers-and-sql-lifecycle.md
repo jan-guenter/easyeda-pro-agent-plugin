@@ -209,3 +209,45 @@ the three-file runtime projection is
 `738f5bf5ce1868ccdc6b978457fb729dca17c9162d7502097daf328ba0b019f8`.
 No full local suite was added. Final exact-head CI, review and publication
 remain pending.
+
+## Completed full review and nested evidence correction
+
+Corrected payload `a5eb0c698c0e5cbd6997d7a8b2cd307f9f8707eb` passed
+all eleven CI jobs: 13,889 facade passes, five expected skips and 424 bridge
+passes, with zero failures or cancellations. CodeRabbit's automatic follow-up
+accepted all three corrections and resolved their threads.
+
+The initial separately queued full-review command was canceled when the head
+changed. The identical command was sent again after the corrected head and
+automatic follow-up stabilized. Both authored comment bodies are exactly
+`@coderabbitai full review`; no other review command was posted. The retry
+finished on the unchanged corrected head and reviewed 43 changed PR files,
+excluding the two generated bundles. This is full PR scope, not a claim that
+every unchanged repository file was reviewed.
+
+That completed full review found one additional minor issue: startup journal
+evidence had size and position checks but lacked strict nested observation and
+native-binding validation. The correction shares a bounded startup schema
+between the producer and record readers, and reuses the existing native binding
+schema through an inert leaf to avoid a journal import cycle. Native ownership
+and authority remain separate from these diagnostic fields. The completed full
+review is retained as the baseline; the narrow correction requires follow-up
+review and new exact-head CI before merge.
+
+The nested-evidence correction passed 22 focused cases through actual record
+capture, publication and descriptor-bound reading, including corrupted persisted
+records and valid partial/late-abort observations. Sample cardinality is checked
+before detailed row validation. The existing binding declaration is byte-exact
+and both exports reference the same schema object. Independent review found no
+import cycle, startup side effect, new authority path or valid-state rejection.
+An initial synthetic target-path/hash mismatch and lint findings were retained
+and corrected in the fixture or style, without relaxing a guard.
+
+Complete local types, strict lint, coverage, build, reproducibility, compatibility,
+repository, MCP and skill checks passed again. Native helper bytes, budgets and
+external compatibility pins remain unchanged. The final 980-file source
+projection is `2859aed9c5355d142a4278d8e64768374c795abf9e7fdd9b4eafa30673cd0649`;
+the three-file runtime projection is
+`af611cb884dd608cb7442cd8867d082301b7c579fe49d29ae363fc6912849c72`.
+The same install version is retained for this batch. Publication still requires
+the final payload's CI and follow-up review.

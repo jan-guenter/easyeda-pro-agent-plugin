@@ -3,23 +3,16 @@
 import { sha256Json } from "./core.ts";
 import { diagnosticExact } from "./current-pcb-diagnostic-protocol.ts";
 import { diagnosticTargetInventory } from "./current-pcb-diagnostic-context.ts";
-import { CURRENT_FOOTPRINT_HELD_CACHE_PAGE_READINESS as LIMITS } from "./current-footprint-held-cache-diagnostic-profile.ts";
+import { CURRENT_FOOTPRINT_HELD_CACHE_PAGE_READINESS as LIMITS, currentFootprintHeldCacheStartupObservationSchema } from "./current-footprint-held-cache-diagnostic-profile.ts";
+import type { CurrentFootprintHeldCacheStartupObservation, CurrentFootprintHeldCacheStartupStage } from "./current-footprint-held-cache-diagnostic-profile.ts";
+
+export type { CurrentFootprintHeldCacheStartupObservation, CurrentFootprintHeldCacheStartupStage } from "./current-footprint-held-cache-diagnostic-profile.ts";
 
 type Row = Readonly<Record<string, unknown>>;
-export type CurrentFootprintHeldCacheStartupStage = "checkpoint" | "launch" | "native-reproof" | "browser-version" | "browser-targets" |
-  "frames" | "ui-source" | "parent" | "ancillary" | "cache-bind" | "ready";
 type Classification = "empty" | "about-blank" | "ready" | "multiple-pages" | "attached-page" | "unexpected-page";
 interface Sample {
   readonly attempt: number; readonly targetCount: number; readonly pageCount: number;
   readonly classification: Classification; readonly inventorySha256: string;
-}
-export interface CurrentFootprintHeldCacheStartupObservation {
-  readonly schema: "private.current-footprint-held-cache-startup-observation.v1";
-  readonly stage: CurrentFootprintHeldCacheStartupStage;
-  readonly failed: boolean; readonly failureKind: "inventory" | "selection" | "target-limit" | "version" | "transport-or-owner" | null;
-  readonly versionAttempts: number; readonly versionSha256: string | null; readonly targetAttempts: number;
-  readonly maximumTargetSamples: 16; readonly delayMilliseconds: 250; readonly samples: readonly Sample[];
-  readonly uiSourceQualified: false; readonly cacheQualificationGranted: false; readonly executionAuthorized: false;
 }
 interface Transport {
   readonly assertCurrent: () => void; readonly version: () => Promise<Row>; readonly targets: () => Promise<Row>;
@@ -97,7 +90,7 @@ export class CurrentFootprintHeldCachePageReadiness {
 
   /** Return a fresh bounded diagnostic snapshot. It grants no live authority. */
   public observation(): CurrentFootprintHeldCacheStartupObservation {
-    return Object.freeze({ schema: "private.current-footprint-held-cache-startup-observation.v1", stage: this.#stage,
+    return currentFootprintHeldCacheStartupObservationSchema.parse({ schema: "private.current-footprint-held-cache-startup-observation.v1", stage: this.#stage,
       failed: this.#failed, failureKind: this.#failureKind, versionAttempts: this.#versionAttempts, versionSha256: this.#versionSha256,
       targetAttempts: this.#targetAttempts, maximumTargetSamples: 16, delayMilliseconds: 250, samples: Object.freeze([...this.#samples]),
       uiSourceQualified: false, cacheQualificationGranted: false, executionAuthorized: false });

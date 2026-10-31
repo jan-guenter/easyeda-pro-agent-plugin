@@ -25,11 +25,18 @@ import { CurrentFootprintSavedCacheHeldRunner } from "../src/current-footprint-s
 import type { CurrentFootprintSavedCacheHeldObservation } from "../src/current-footprint-saved-cache-held-runner.ts";
 import type { CurrentFootprintSavedCacheHeldCommand } from "../src/current-footprint-saved-cache-held-protocol.ts";
 import { CURRENT_FOOTPRINT_SAVED_CACHE_HELD_ENGINE as ENGINE } from "../src/current-footprint-saved-cache-held-profile.ts";
+import { currentFootprintHeldCacheStartupObservationSchema } from "../src/current-footprint-held-cache-diagnostic-profile.ts";
 import { createHeldCacheSyntheticPage } from "./helpers/current-footprint-saved-cache-held-fixture.ts";
 import { savedFixture } from "./helpers/current-footprint-copy-v2-saved-fixture.ts";
 
 const rawWindowsPath = String.raw`C:\EasyEDA\held-cache-validation.eprj2`;
 const target = Object.freeze({ rawWindowsPath, projectUuid: sha256Text(rawWindowsPath), documentUuid: "b".repeat(16), expectedSourceSha256: "a".repeat(64) });
+const startupFailureObservation = currentFootprintHeldCacheStartupObservationSchema.parse({
+  schema: "private.current-footprint-held-cache-startup-observation.v1", stage: "browser-targets", failed: true, failureKind: "transport-or-owner",
+  versionAttempts: 1, versionSha256: "a".repeat(64), targetAttempts: 1, maximumTargetSamples: 16, delayMilliseconds: 250,
+  samples: [{ attempt: 1, classification: "empty", targetCount: 0, pageCount: 0, inventorySha256: sha256Json([]) }],
+  uiSourceQualified: false, cacheQualificationGranted: false, executionAuthorized: false,
+});
 interface Options { readonly copiedFirst?: boolean; readonly lostRelease?: boolean; readonly pendingFirst?: boolean;
   readonly noResource?: boolean; readonly retainedAllocationFailure?: boolean; readonly noProcess?: boolean;
   readonly pendingPrepare?: boolean; readonly holdAbortDisk?: boolean; readonly startupFailure?: boolean }
@@ -131,7 +138,7 @@ async function fixture(options: Options = {}): Promise<Fixture> {
     }
     public status(): unknown { assert.equal(this, allocated); return { binding: launched && options.noProcess !== true ? nativeBinding : null,
       launchConsumed: launched, noProcessCleanupAvailable: options.noProcess === true && !released, released, helperClosed: released,
-      ...(options.startupFailure === true ? { heldCacheStartupObservation: { stage: "page-selection", samples: [{ classification: "empty", targetCount: 0 }] } } : {}) }; }
+      ...(options.startupFailure === true ? { heldCacheStartupObservation: startupFailureObservation } : {}) }; }
   }
   scope["CurrentFootprintHeldCacheValidationOwner"] = NativeOwner;
   scope["startCurrentFootprintHeldCacheValidationOwner"] = (actualOptions: unknown, binding: unknown): Promise<NativeOwner> => {
@@ -179,7 +186,7 @@ void test("failed startup retains original binding and bounded diagnostics befor
   const failure = journal?.records.find(record => record.kind === "failure");
   assert.ok(failure !== undefined);
   assert.deepEqual(failure.evidence["nativeBinding"], { helperInstance: "d".repeat(32), jobId: "e".repeat(32), rootPid: 1234, rootCreated: "133000000000000000" });
-  assert.deepEqual(failure.evidence["heldCacheStartupObservation"], { stage: "page-selection", samples: [{ classification: "empty", targetCount: 0 }] });
+  assert.deepEqual(failure.evidence["heldCacheStartupObservation"], startupFailureObservation);
   const status = await f.controller.run({ action: "inspect", operationId: f.operationId });
   assert.deepEqual(status["heldCacheStartupObservation"], failure.evidence["heldCacheStartupObservation"]);
   assert.equal(status["firstObserved"], false);
@@ -201,8 +208,7 @@ void test("one late launch diagnostic has protected cleanup space without wideni
   assert.ok(Buffer.byteLength(JSON.stringify(failure)) > CURRENT_FOOTPRINT_HELD_CACHE_JOURNAL_LIMITS.cleanupScalarRecordBytes);
   assert.doesNotThrow(() => { assertFootprintHeldCacheJournalBudget([abort, failure]); });
   assert.throws(() => { assertFootprintHeldCacheJournalBudget([abort, failure, { ...failure, sequence: 2 }]); }, /STARTUP_PACKET/u);
-  const oversized = captureFootprintHeldCacheValidationRecord({ ...failure, evidence: { action: "launch", heldCacheStartupObservation: "a".repeat(8192) } });
-  assert.throws(() => { assertFootprintHeldCacheJournalBudget([abort, oversized]); }, /STARTUP_PACKET/u);
+  assert.throws(() => { captureFootprintHeldCacheValidationRecord({ ...failure, evidence: { action: "launch", heldCacheStartupObservation: "a".repeat(8192) } }); });
 });
 
 void test("public cache grammar refuses branch/runtime/code/qualification overrides and capture rejects active data", () => {

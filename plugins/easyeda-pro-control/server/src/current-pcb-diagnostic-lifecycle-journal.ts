@@ -16,6 +16,7 @@ import type { BigIntStats, Dirent } from "node:fs";
 import { lstat, mkdir, open, opendir } from "node:fs/promises";
 import { join } from "node:path";
 import { z } from "zod";
+import { diagnosticLifecycleBindingSchema } from "./current-pcb-diagnostic-binding-schema.ts";
 import { CURRENT_FOOTPRINT_COPY_ROUTE_PREPARATION_OPERATION_PREFIX, currentFootprintCopyRoutePreparationIdSchema } from "./current-footprint-copy-route-preparation-validation.ts";
 import { CURRENT_FOOTPRINT_COPY_ROUTE_RESULT_MAX_BYTES, recordedCurrentFootprintCopyRouteObservationSchema } from "./current-footprint-copy-route-observation.ts";
 import { currentFootprintCopyStatePacketSchema } from "./current-footprint-copy-state.ts";
@@ -68,6 +69,8 @@ import { currentFootprintSavedCacheAccessorObservationSchema } from "./current-f
 import { currentFootprintCopyMainBackendObservationSchema } from "./current-footprint-copy-main-backend-observation.ts";
 import { CURRENT_PCB_COMMON_FAILURE_MAX_BYTES, currentPcbCommonBaselineFailureSchema, currentPcbCommonBaselineResultSchema } from "./current-pcb-common-baseline-validation.ts";
 
+export { diagnosticLifecycleBindingSchema } from "./current-pcb-diagnostic-binding-schema.ts";
+
 const DIRECTORY = "pcb-diagnostic-lifecycle-v1";
 const MAX_BYTES = 8192;
 export const DIAGNOSTIC_OBSERVATION_MAX_BYTES = 128 * 1024;
@@ -104,10 +107,6 @@ export const diagnosticLifecycleIdSchema = z.string().min(1).max(80).regex(/^[a-
 export const diagnosticLifecycleDigestSchema = z.string().regex(/^[a-f0-9]{64}$/u);
 export const diagnosticLifecycleWindowSchema = z.string().regex(/^[1-9]\d{0,18}$/u);
 const token = z.string().regex(/^[a-f0-9]{32}$/u);
-export const diagnosticLifecycleBindingSchema = z.object({
-  helperInstance: token, jobId: token, rootPid: z.number().int().positive().max(Number.MAX_SAFE_INTEGER),
-  rootCreated: z.string().regex(/^(?:0|[1-9]\d{14,19})$/u),
-}).strict();
 const base = { operationId: diagnosticLifecycleIdSchema, createdAt: z.iso.datetime() };
 const diagnosticIntentSchema = z.object({ schema: z.literal("easyeda-pro-control.pcb-diagnostic-launch-intent.v1"), ...base,
   facadeSha256: diagnosticLifecycleDigestSchema, installationSha256: diagnosticLifecycleDigestSchema,

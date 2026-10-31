@@ -4,7 +4,8 @@ import { z } from "zod";
 import { types } from "node:util";
 import { sha256Json } from "./core.ts";
 import { currentDisposableOpenTargetSchema } from "./current-disposable-open.ts";
-import { CURRENT_FOOTPRINT_HELD_CACHE_DIAGNOSTIC_PROFILE, CURRENT_FOOTPRINT_HELD_CACHE_PAGE_READINESS } from "./current-footprint-held-cache-diagnostic-profile.ts";
+import { CURRENT_FOOTPRINT_HELD_CACHE_DIAGNOSTIC_PROFILE, CURRENT_FOOTPRINT_HELD_CACHE_PAGE_READINESS, currentFootprintHeldCacheStartupObservationSchema } from "./current-footprint-held-cache-diagnostic-profile.ts";
+import { diagnosticLifecycleBindingSchema } from "./current-pcb-diagnostic-binding-schema.ts";
 import { CURRENT_FOOTPRINT_SAVED_CACHE_HELD_ENGINE, CURRENT_FOOTPRINT_SAVED_CACHE_HELD_LIMITS } from "./current-footprint-saved-cache-held-profile.ts";
 
 export const CURRENT_FOOTPRINT_HELD_CACHE_VALIDATION_PREFIX = "footprint-held-cache-";
@@ -24,6 +25,18 @@ export const currentFootprintHeldCacheValidationRequestSchema = z.discriminatedU
 ]);
 export type CurrentFootprintHeldCacheValidationRequest = z.infer<typeof currentFootprintHeldCacheValidationRequestSchema>;
 
+const startupFields = { heldCacheStartupObservation: currentFootprintHeldCacheStartupObservationSchema, nativeBinding: diagnosticLifecycleBindingSchema } as const;
+/** Preserve the existing generic evidence map while requiring complete closed
+ * shapes for startup diagnostics and native-binding data at every record
+ * acceptance boundary. Successful parsing confers no original-owner custody.
+ */
+const evidenceSchema = z.record(z.string().max(128), z.unknown()).superRefine((evidence, context) => {
+  for (const [key, schema] of Object.entries(startupFields)) {
+    if (Object.hasOwn(evidence, key) && !schema.safeParse(evidence[key]).success) {
+      context.addIssue({ code: "custom", path: [key], message: "The complete bounded startup observation or original native-binding shape is required." });
+    }
+  }
+});
 export const currentFootprintHeldCacheValidationRecordSchema = z.object({
   schema: z.literal("easyeda-pro-control.footprint-held-cache-validation-record.v1"), ...identity,
   sequence: z.number().int().min(0).max(511), createdAt: z.iso.datetime(), previousSha256: digest.nullable(),
@@ -31,7 +44,7 @@ export const currentFootprintHeldCacheValidationRecordSchema = z.object({
     "observe-fresh-intent", "observe-fresh-result", "release-cache-intent", "release-cache-result", "normal-close-intent", "normal-close-result",
     "abort-intent", "abort-result", "termination-intent", "termination-result", "release-closed-intent", "release-closed-result",
     "cleanup-no-resource-result", "cleanup-unlaunched-intent", "cleanup-unlaunched-result", "cleanup-no-process-intent", "cleanup-no-process-result", "failure"]),
-  evidence: z.record(z.string().max(128), z.unknown()),
+  evidence: evidenceSchema,
 }).strict();
 export type CurrentFootprintHeldCacheValidationRecord = z.infer<typeof currentFootprintHeldCacheValidationRecordSchema>;
 
@@ -90,6 +103,7 @@ export function assertFootprintHeldCacheJournalBudget(records: readonly CurrentF
       }
     }
     if (Object.hasOwn(evidence, "heldCacheStartupObservation") || Object.hasOwn(evidence, "nativeBinding")) {
+      for (const [key, schema] of Object.entries(startupFields)) { if (Object.hasOwn(evidence, key)) { schema.parse(evidence[key]); } }
       const startup = { ...(Object.hasOwn(evidence, "heldCacheStartupObservation") ? { heldCacheStartupObservation: evidence["heldCacheStartupObservation"] } : {}),
         ...(Object.hasOwn(evidence, "nativeBinding") ? { nativeBinding: evidence["nativeBinding"] } : {}) };
       if (record.kind !== "failure" || evidence["action"] !== "launch" || packets.has("startupDiagnostics") ||
