@@ -3,7 +3,7 @@
 Use this workflow to fit an existing disposable PCB or move its camera to exact
 mil coordinates. It offers three viewport operations through a separate native
 owner. Source implementation, offline tests and native compilation exist;
-installed142600 passed one disposable zoom-to at0,0 mil and scale ratio1,
+installed 142600 passed one disposable zoom-to at 0,0 mil and scale ratio 1,
 unchanged selection, normal root/Job exit and helper release. The whole closed
 fixture stayed byte-exact. Fit-all, fit-selected and other argument domains
 remain unvalidated. Read the [case record](https://github.com/jan-guenter/easyeda-pro-agent-plugin/blob/main/docs/history/2026-10-29-supplied-design-inspection-and-viewport.md)
@@ -64,9 +64,9 @@ shares the original transport budget with viewport work. This visual grammar
 does not expose the ordinary opening owner's other optional readers.
 
 Coordinates are finite, exclude negative zero and have absolute value at most
-1e12 mil. Scale ratio is between0.00001 and1000000. Selected IDs are distinct,
-well-formed UTF-16 strings of at most256 units, with at most256 IDs. Fit-selected
-requires a nonempty list. The complete JSON operation is at most12000 UTF-8
+1e12 mil. Scale ratio is between 0.00001 and 1000000. Selected IDs are distinct,
+well-formed UTF-16 strings of at most 256 units, with at most 256 IDs. Fit-selected
+requires a nonempty list. The complete JSON operation is at most 12000 UTF-8
 bytes. The selected-list and whole success/failure packet reservations are
 checked before camera dispatch. Unsupported or excessive values refuse whole.
 
@@ -127,7 +127,7 @@ requires a fresh installed generation and remains pending. The older installed
 174608 window capture returned a valid but all-RGB-zero PNG; that consumed owner
 cannot use this new action as a fallback. Its terminal cleanup and the scope of
 the native metadata observations are retained in the
-[batch record](https://github.com/jan-guenter/easyeda-pro-agent-plugin/blob/main/docs/history/2026-10-31-held-cache-and-capture-validation.md).
+[batch record](https://github.com/jan-guenter/easyeda-pro-agent-plugin/blob/5424343bbb026334fc3b1eb0292dbc1d7eab34f7/docs/history/2026-10-31-held-cache-and-capture-validation.md).
 
 ### Capture the original window
 
@@ -150,13 +150,13 @@ persistence result.
 Restore and resize are optional. If a visible maximized original window needs
 the fixed smaller size, first validate `restore-window-for-capture` with the same
 operation/binding and `acceptWindowRestoreEffects:true`. This
-separate once-only action requests the fixed nonactivating show command4 through
+separate once-only action requests the fixed nonactivating show command 4 through
 [ShowWindowAsync](https://learn.microsoft.com/en-us/windows/win32/api/winuser/nf-winuser-showwindowasync).
 Windows may restore the previous position as well as size; accepting restore
 includes that possible position change. No caller HWND, coordinates or show
 command are accepted. This changes window state, not a project backup or design.
 
-The native API reports only that its request started. Command4 follows
+The native API reports only that its request started. Command 4 follows
 [SW_SHOWNOACTIVATE](https://learn.microsoft.com/en-us/windows/win32/api/winuser/nf-winuser-showwindow):
 it requests the most recent size/position without activation. The adapter makes
 no Z-order, geometry, rendering or persistence guarantee. It does not use
@@ -165,8 +165,8 @@ Minimized, hidden, ambiguous and ordinary-purpose windows remain unsupported.
 
 If using restore, complete it before any resize/capture attempt. Its durable
 intent is consumed before possible dispatch. Source/postguard failures, missing
-replies and refusal do not permit retry or an inverse. Before restore, at least30
-CDP slots and32MiB stdout headroom and two unused readiness-query slots are
+replies and refusal do not permit retry or an inverse. Before restore, at least 30
+CDP slots, 32 MiB stdout headroom and two unused readiness-query slots are
 required. These reserve
 transport capacity for restore, potential resize and capture; each later stage
 rechecks its remaining output capacity independently. Run readiness after the
@@ -179,13 +179,13 @@ changes, inspect and use only the offered cleanup; do not issue another restore.
 
 For an eligible non-maximized window that needs a smaller size, validate
 `resize-window-for-capture` with the original operation/binding and
-`acceptWindowResizeEffects:true`. It requests fixed1920x1080 using the original
+`acceptWindowResizeEffects:true`. It requests fixed 1920x1080 using the original
 unique window, without caller coordinates, size, movement, activation or Z-order
-changes. One durable intent precedes dispatch. At least20 CDP slots and32MiB
+changes. One durable intent precedes dispatch. At least 20 CDP slots and 32 MiB
 stdout headroom are required before resize, retaining ten slots for later
 capture. Acknowledgment proves only submission. Async posting depends on distinct input
 queues; see [SetWindowPos](https://learn.microsoft.com/en-us/windows/win32/api/winuser/nf-winuser-setwindowpos). Run readiness again and require
-exact1920x1080 at the same original position before capture can consume its
+exact 1920x1080 at the same original position before capture can consume its
 intent. Capture then repeats its fresh checks and recalculates output headroom.
 A missing, refused, clamped or unapplied resize is consumed; it grants no retry
 or automatic restoration. Resize itself refuses maximized windows; use only the
@@ -221,9 +221,9 @@ These are sequential ownership samples. Windows can create descendants during
 enumeration or recycle HWNDs after a check; retained process handles do not pin
 window lifetimes. No atomic window ownership or render completion is claimed.
 The paint request can run application paint handlers. Native
-dimensions and pixels are capped before allocation: at most4096 pixels per
-side and4,194,304 pixels total, with at most256KiB PNG and360,000 bytes for the
-native packet. Before paint, the original transport reserves32MiB of remaining
+dimensions and pixels are capped before allocation: at most 4096 pixels per
+side and 4,194,304 pixels total, with at most 256 KiB PNG and 360,000 bytes for the
+native packet. Before paint, the original transport reserves 32 MiB of remaining
 helper output and a separate protected cleanup allowance, with bounded CDP
 requests, polls and control replies. Capacity refusal consumes the capture stage
 while preserving original-owner cleanup. The return contains a managed PNG descriptor and exact dimensions,
@@ -297,7 +297,7 @@ its exact intent digest. A restarted facade cannot adopt old native ownership.
   append a camera-only action. A true result can also hide missing IDs.
 - `dmt_EditorControl.zoom` is a literal false stub. The three operations above
   use implemented zoom-to and fit handlers, not that percentage wrapper.
-- Current209 SDK canvas PNG capture remains unavailable. The image path can allocate
+- Current 209 SDK canvas PNG capture remains unavailable. The image path can allocate
   RGBA, ImageData and canvas data before facade bounds. Original renderer/frame
   ownership, asynchronous capture completion and resource cleanup need their
   own bounded implementation. The separate original-window operation above does

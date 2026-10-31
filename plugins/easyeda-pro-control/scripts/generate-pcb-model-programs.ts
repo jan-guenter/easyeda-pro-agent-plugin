@@ -148,7 +148,11 @@ async function main(): Promise<void> {
   const action = process.argv[2];
   if (process.argv.length !== 3 || action !== "--write" && action !== "--check") { throw new Error("Expected --write or --check"); }
   const path = new URL("pcb-diagnostic-owner.ps1", import.meta.url);
-  const grouped = packedStringWorkerPrograms(), source = await readFile(path, "utf8");
+  const grouped = packedStringWorkerPrograms();
+  const bytes = await readFile(path);
+  // Preserve a valid BOM and refuse malformed input before replacing any block.
+  const source = new TextDecoder("utf-8", { fatal: true, ignoreBOM: true }).decode(bytes);
+  if (!Buffer.from(source).equals(bytes)) { throw new Error("Native helper UTF-8 bytes did not round-trip"); }
   let next = source;
   for (const [marker, name, program] of programs) {
     if (!/^[A-Z][A-Z ]{1,63}$/u.test(marker) || !/^[A-Z][A-Za-z0-9]{1,63}Function$/u.test(name)) { throw new Error("Invalid fixed native program marker or name"); }

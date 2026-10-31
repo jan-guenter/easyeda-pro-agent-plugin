@@ -373,6 +373,10 @@ void test("renderer capture journals before dispatch, settles lost publication, 
   const journals = await readCurrentPcbDiagnosticLifecycles(), result = journals.find(item => item.operationId === id)?.records["renderer-capture209-result.json"]?.result;
   assert.ok(isRecord(result)); assert.equal(result["sessionId"], "renderer-parent"); assert.equal(result["executionAuthorized"], false);
   assert.equal(result["imageScope"], "original-parent-renderer-viewport"); assert.equal(result["printMessageAcknowledged"], undefined);
+  const inspectedResult = await value.lifecycle.run({ action: "inspect", operationId: id, observation: "renderer-capture209" });
+  const observations = inspectedResult["observations"]; assert.ok(Array.isArray(observations));
+  const observation: unknown = observations.find((item: unknown) => isRecord(item) && item["stage"] === "renderer-capture209");
+  assert.ok(isRecord(observation)); assert.equal(observation["published"], true); assert.deepEqual(observation["result"], result);
   await assert.rejects(value.request("capture-renderer-viewport", { acceptRendererCaptureEffects: true, confirmLocalArtifact: true }), /CONSUMED/u);
   await assert.rejects(value.request("capture-window", { hwnd: "12345", acceptWindowPaintEffects: true, confirmLocalArtifact: true }), /CONSUMED/u);
   assert.equal(value.state.rendererCalls, 1); assert.equal(value.state.captureCalls, 0);
@@ -388,7 +392,15 @@ void test("ambiguous native-window failure never enables renderer fallback", asy
   assert.equal(value.state.captureCalls, 1); assert.equal(value.state.rendererCalls, 0);
 });
 
-void test("renderer failure or wrong original-session result consumes its attempt and cannot reach native-window fallback", async context => {
+void test("lost renderer acknowledgment consumes both image methods without another native call", async context => {
+  const id = "pcb209-visual-test-renderer-failure", value = fixture(context, id); await ready(value, id); value.state.throwRenderer = true;
+  await assert.rejects(value.request("capture-renderer-viewport", { acceptRendererCaptureEffects: true, confirmLocalArtifact: true }), /synthetic screenshot/u);
+  await assert.rejects(value.request("capture-window", { hwnd: "12345", acceptWindowPaintEffects: true, confirmLocalArtifact: true }), /CONSUMED/u);
+  await assert.rejects(value.request("capture-renderer-viewport", { acceptRendererCaptureEffects: true, confirmLocalArtifact: true }), /CONSUMED/u);
+  assert.equal(value.state.rendererCalls, 1); assert.equal(value.state.captureCalls, 0);
+});
+
+void test("wrong original-session renderer result consumes its attempt and cannot reach native-window fallback", async context => {
   const id = "pcb209-visual-test-renderer-session", value = fixture(context, id); await ready(value, id); value.state.wrongRendererSession = true;
   await assert.rejects(value.request("capture-renderer-viewport", { acceptRendererCaptureEffects: true, confirmLocalArtifact: true }), /TARGET|SESSION/u);
   await assert.rejects(value.request("capture-window", { hwnd: "12345", acceptWindowPaintEffects: true, confirmLocalArtifact: true }), /CONSUMED/u);

@@ -475,7 +475,7 @@ class CurrentPcbLifecycleCore {
     this.#generation = generation;
     this.#purpose = purpose;
     this.#stringPurpose = stringPurpose;
-    this.#stages = opening209(generation) ? [...(generation === "209-visual" ? ["visual-viewport209" as const, "window-restore209" as const, "window-resize209" as const, "window-capture209" as const] : []), "browser", "frames", "script", "pcb-opening", "layers209", "primitives209", "extended-primitives209", "selection-relations209", "pad-shapes209", "image-shapes209", "arc-shapes209", "poured-shapes209"] :
+    this.#stages = opening209(generation) ? [...(generation === "209-visual" ? ["visual-viewport209" as const, "window-restore209" as const, "window-resize209" as const, "window-capture209" as const, "renderer-capture209" as const] : []), "browser", "frames", "script", "pcb-opening", "layers209", "primitives209", "extended-primitives209", "selection-relations209", "pad-shapes209", "image-shapes209", "arc-shapes209", "poured-shapes209"] :
       { diagnostic: diagnosticObservationStageSchema.options, "string-precreate": currentPcbStringPrecreateStages,
         "worker-startup": startupStages }[purpose];
     this.#options = Object.freeze({ ...options });

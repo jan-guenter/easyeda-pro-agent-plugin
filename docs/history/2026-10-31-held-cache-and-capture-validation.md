@@ -234,3 +234,44 @@ renderer acceptance are still pending at this observation.
    blocked SDK methods. `getEdaPath` still needs the original main `Je` receiver
    or corrected protocol tuple; the private configuration route is not a
    substitute. Fixed `cll` execution remains connected-unvalidated.
+
+
+## Initial PR review and corrections
+
+PR160 initially published commit
+`5424343bbb026334fc3b1eb0292dbc1d7eab34f7`. Its complete GitHub CI passed:
+all eight facade shards total 13,826 passes and five expected platform/application
+skips, with zero failures, cancellations or todo cases. The bridge has 424
+passes across 28 files. All ten Linux jobs and the Windows native job passed;
+the synthetic merge tree equals the submitted payload tree. Complete job logs
+and both CRC-checked run archives are retained privately. No full local suite,
+remote retry or cancellation was used.
+
+The sole review command comment is `@coderabbitai full review` on PR160.
+CodeRabbit review5721262222 reported seven items, including its outside-diff
+issue and collapsed nitpick. All recommendations were accepted. The generator
+now fatally decodes UTF-8 and verifies the original bytes round-trip before
+replacement, preserving a valid BOM and rejecting malformed bytes before any
+write. Visual inspection now includes the renderer result stage. A focused
+lost-renderer-acknowledgment case proves that both image methods remain consumed
+and no second native image call occurs. The positive case also verifies durable
+renderer-result inspection. All nineteen focused visual-lifecycle cases and
+strict targeted lint pass.
+
+The remaining four review items correct numeric spacing and pin the visual
+reference's batch-record link to the immutable initial reviewed commit. That
+link intentionally identifies the original observation, not later review fixes.
+CodeRabbit's initial check succeeded with five passing premerge checks and
+83.72% docstring coverage against its 80% threshold. All seven source/doc fixes
+are present; final regenerated artifacts, the follow-up review and exact-head
+CI remain pending at this observation. Neither the installed174608 host nor
+any project is changed by these corrections.
+
+Final review-fix local types, strict lint, coverage and build checks pass. The
+first strict lint run refused an unsorted new variable declaration; its log is
+retained, the declaration was split without changing evaluation order, and
+the full strict lint then passed with zero warnings. Both bundles reproduce
+byte-for-byte after the fixes. Only facade source/bundle projections and
+review time changed in compatibility; external pins and the native helper
+remain exact. Final source SHA `abc793525a6e7fa01afc36352608e26f2b89ef093d5e08f2d4ba9e56bed0ea27`,
+runtime3 SHA `4ad127565a7ec6de49706c6d3dc961e849edbbffe6564e202a45e7d71f4f91f2`.
