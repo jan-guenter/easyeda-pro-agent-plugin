@@ -39,7 +39,7 @@ void test("a rejected original registration retains bounded location and script-
 });
 void test("metadata schema failure retains only a bounded role and immutable issue codes and paths", async () => {
   const Constructor = await constructor();
-  for (const role of ["capture", "Date", "now", "protocolCallback", "driverIntercept", "driverCallback", "router", "actorClock", "projectSql"]) {
+  for (const role of ["capture", "Date", "now", "protocolCallback", "driverIntercept", "driverCallback", "router", "actorClock", "projectSql", "dateParser"]) {
     const value = fixture(); value.state.metadataShapeRole = role; const runner = new Constructor(value.transport);
     await assert.rejects(runner.observe()); const retained = runner.retained();
     assert.equal(retained.metadataRole, role === "capture" ? "retained-array" : role); assert.equal(retained.failure, "REPLY_SCHEMA");

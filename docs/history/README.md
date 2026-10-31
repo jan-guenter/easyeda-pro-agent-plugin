@@ -1,5 +1,7 @@
 # Project history
 
+- [2026-10-31 native age workflow and historical PCB compatibility](2026-10-31-150000-native-age-and-pcb-compatibility.md). Consumed pre-allocation refusal, immutable historical visual results and a larger native/API batch.
+
 - [2026-10-31 catalog, viewport and footprint publication batch](2026-10-31-120000-catalog-navigation-and-publication-custody.md). Restarted-host admission, consumed disposable cache case, batched API and native custody work.
 
 - [2026-10-31 Library readers and complete copy/delete SQL relation](2026-10-31-090000-library-readers-and-sql-lifecycle.md).

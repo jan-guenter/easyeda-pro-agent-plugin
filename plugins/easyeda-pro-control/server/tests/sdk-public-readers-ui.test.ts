@@ -16,6 +16,8 @@ const cases = [
   { method: "eda.sys_Unit.getFrontendDataUnit", namespace: "sys_Unit", name: "getFrontendDataUnit", value: "mil" },
   { method: "eda.lib_LibrariesList.getSystemLibraryUuid", namespace: "lib_LibrariesList", name: "getSystemLibraryUuid", value: SDK_PUBLIC_READERS_209_SYSTEM_LIBRARY_UUID },
   { method: "eda.sys_I18n.getCurrentLanguage", namespace: "sys_I18n", name: "getCurrentLanguage", value: "de" },
+  { method: "eda.lib_SelectControl.getSelectedLibraryRowInfo", namespace: "lib_SelectControl", name: "getSelectedLibraryRowInfo",
+    value: { uuid: "a".repeat(32), libraryType: "4", libraryUuid: SDK_PUBLIC_READERS_209_SYSTEM_LIBRARY_UUID } },
 ] as const;
 const request = (method: string): unknown => ({ method, arguments: {} });
 
@@ -46,16 +48,41 @@ function fixture(entry: typeof cases[number], response: (call: number) => unknow
   } };
 }
 
-void test("four UI-backed public methods await two fixed calls and retain bounded public values", async () => {
+void test("five UI-backed public methods await two fixed calls and retain bounded public values", async () => {
   for (const entry of cases) {
     const observed = fixture(entry), raw = decodeExactReadEnvelope(await observed.run());
     const result = validateSdkPublicReadersResult(request(entry.method), raw);
-    assert.equal(observed.calls(), 2); assert.equal(result["value"], entry.value);
+    assert.equal(observed.calls(), 2); assert.deepEqual(result["value"], entry.value);
     assert.equal(observed.timersCleared(), 1);
     assert.equal(result["uiVersion"], "3.2.198.2800f583");
     assert.match(String(result["authority"]), /not-project-state/u);
     const descriptor = sdkPublicReadersDescriptors().find((item) => item.method === entry.method);
     assert.ok(descriptor?.uiSource); assert.equal(descriptor.uiSource.sha256, result["uiSha256"]);
+  }
+});
+
+void test("selected row reports only bounded UI metadata and never grants ownership", async () => {
+  const entry = cases[4];
+  for (const libraryType of ["1", "2", "3", "4", "5", "29"]) {
+    const value = { ...entry.value, libraryType };
+    const observed = fixture(entry, () => value);
+    const projected = validateSdkPublicReadersResult(request(entry.method), decodeExactReadEnvelope(await observed.run()));
+    assert.deepEqual(projected["value"], value); assert.equal(observed.calls(), 2);
+    assert.equal(projected["assetOwnershipVerified"], false); assert.equal(projected["selectedRowProvenanceVerified"], false);
+    assert.equal(projected["currentProjectBindingVerified"], false); assert.equal(projected["libraryScope"], "ui-reported-system-library");
+  }
+  for (const value of [undefined, null, {}, { ...entry.value, uuid: `${"a".repeat(32)}\n` },
+    { ...entry.value, uuid: "A".repeat(32) }, { ...entry.value, libraryUuid: "b".repeat(32) },
+    { ...entry.value, libraryType: 4 }, { ...entry.value, libraryType: "32" }, { ...entry.value, private: "extra" }]) {
+    const observed = fixture(entry, () => value);
+    await assert.rejects(observed.run(), /SDK_PUBLIC_READERS_READ_FAILED/u); assert.equal(observed.calls(), 1);
+    assert.throws(() => validateSdkPublicReadersResult(request(entry.method), { ok: true, kind: "sdk-public-readers", method: entry.method, value }));
+  }
+  const changed = fixture(entry, call => ({ ...entry.value, uuid: (call === 1 ? "a" : "b").repeat(32) }));
+  await assert.rejects(changed.run(), /SDK_PUBLIC_READERS_READ_FAILED/u); assert.equal(changed.calls(), 2);
+  for (const mutation of ["eda.lib_SelectControl={...eda.lib_SelectControl}", "eda.lib_SelectControl.getSelectedLibraryRowInfo=async()=>({})"]) {
+    const observed = fixture(entry, async () => { await Promise.resolve(); observed.evaluate(mutation); return entry.value; });
+    await assert.rejects(observed.run(), /SDK_PUBLIC_READERS_READ_FAILED/u); assert.equal(observed.calls(), 1);
   }
 });
 

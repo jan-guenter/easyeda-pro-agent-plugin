@@ -60,7 +60,7 @@ void test("offline API forwards public reader catalog and strict validation with
   const catalog = queryOfflineApi(apiRequestSchema.parse({ action: "public-readers" }));
   assert.equal(catalog.offline, true);
   assert.ok(typeof catalog.result === "object" && catalog.result !== null && "total" in catalog.result);
-  assert.equal(catalog.result.total, 8);
+  assert.equal(catalog.result.total, 9);
   const query = { method: "eda.sys_Window.getViewportSize", includeSchemas: true };
   const detail = queryOfflineApi(apiRequestSchema.parse({ action: "public-readers", query }));
   assert.match(JSON.stringify(detail), /inputSchema/u);

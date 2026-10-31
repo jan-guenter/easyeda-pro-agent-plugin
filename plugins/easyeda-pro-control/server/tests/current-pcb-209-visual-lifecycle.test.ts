@@ -11,8 +11,8 @@ import { CurrentPcb209DiagnosticLifecycle, CurrentPcb209VisualLifecycle } from "
 import type { CurrentPcbDiagnosticLifecycleDependencies, CurrentPcbDiagnosticLifecycleOptions,
   CurrentPcbDiagnosticLifecycleOwner } from "../src/current-pcb-diagnostic-lifecycle.ts";
 import { createCurrentPcb209DiagnosticInstallationPlan } from "../src/current-pcb-diagnostic-installation.ts";
-import { diagnosticLifecycleRecordSchemas, publishCurrentPcbDiagnosticLifecycleRecord,
-  readCurrentPcbDiagnosticLifecycles } from "../src/current-pcb-diagnostic-lifecycle-journal.ts";
+import { assertNoUnresolvedCurrentPcbDiagnosticLaunches, diagnosticLifecycleRecordSchemas,
+  publishCurrentPcbDiagnosticLifecycleRecord, readCurrentPcbDiagnosticLifecycles } from "../src/current-pcb-diagnostic-lifecycle-journal.ts";
 import { CURRENT_PCB_209_OPENING_SCRIPTS } from "../src/current-pcb-209-opening-profile.ts";
 import { decodeCurrentPcb209VisualReply } from "../src/current-pcb-209-visual-actions.ts";
 import type { CurrentPcb209VisualOperation } from "../src/current-pcb-209-visual-actions.ts";
@@ -22,6 +22,7 @@ import { windowRestorePacket } from "./helpers/window-restore-packet.ts";
 import { windowResizePacket } from "./helpers/window-resize-packet.ts";
 import { windowCapturePacket } from "./helpers/window-capture-png.ts";
 import { queryOfflineApi } from "../src/offline-api.ts";
+import { historicalCameraVisualResult } from "./helpers/visual-v1-result.ts";
 
 const PATH = String.raw`C:\Fixtures\Visual.eprj2`;
 const TARGET = { rawWindowsPath: PATH, projectUuid: sha256Text(PATH), documentUuid: "b".repeat(16), expectedSourceSha256: "a".repeat(64) };
@@ -183,7 +184,7 @@ function fixture(context: TestContext, id: string): Readonly<{
   context.after(async () => {
     state.publicationLoss = false; state.abortPublicationLoss = false;
     let current = await lifecycle.run({ action: "inspect", operationId: id });
-    if (typeof current["intentSha256"] === "string") {
+    if (typeof current["intentSha256"] === "string" && !state.released) {
       await lifecycle.run({ action: "settle-records", operationId: id, expectedIntentSha256: current["intentSha256"] });
       current = await lifecycle.run({ action: "inspect", operationId: id });
     }
@@ -268,6 +269,31 @@ void test("historical visual journal independently rejects target, converted bou
     } finally { await writeFile(path, raw); }
   }
   const operations = await readCurrentPcbDiagnosticLifecycles(); assert.equal(operations.some(operation => operation.operationId === id), true);
+});
+
+void test("closed camera-only v1 journal remains settled after result projection changes and still rejects altered evidence", async context => {
+  const id = "pcb209-visual-test-historical-camera", value = fixture(context, id); await ready(value, id);
+  const historical = historicalCameraVisualResult({ projectUuid: SEALED.projectUuid, branchUuid: SEALED.branchUuid, documentUuid: SEALED.documentUuid });
+  await value.request("perform-visual", { operation: historical["operation"], confirmVisualStateChanges: true });
+  await value.request("normal-close", { hwnd: "12345", confirmNormalClose: true });
+  value.state.terminated = true; await value.request("observe-termination"); await value.request("release-closed");
+  const path = join(directory(id), "visual-viewport209-result.json"), raw = await readFile(path, "utf8");
+  const record = diagnosticLifecycleRecordSchemas["visual-viewport209-result.json"].parse(JSON.parse(raw) as unknown);
+  try {
+    await writeFile(path, JSON.stringify({ ...record, result: historical }));
+    const operations = await readCurrentPcbDiagnosticLifecycles();
+    assert.equal(operations.some(operation => operation.operationId === id), true);
+    await assertNoUnresolvedCurrentPcbDiagnosticLaunches();
+    for (const patch of [{ saveAuthorized: true }, { transientOverlayCompletionVerified: false },
+      { boundsMil: { left: 0, right: 110, bottom: 20, top: 220 } }, { resultSha256: "0".repeat(64) },
+      { limitations: ["Unreviewed replacement"] }, { schema: "easyeda-pro-control.pcb209-visual-action.v2" },
+      { arbitraryField: false }]) {
+      await writeFile(path, JSON.stringify({ ...record, result: { ...historical, ...patch } }));
+      await assert.rejects(assertNoUnresolvedCurrentPcbDiagnosticLaunches(), /VISUAL/u);
+    }
+    await writeFile(path, JSON.stringify({ ...record, result: historical }));
+    await assertNoUnresolvedCurrentPcbDiagnosticLaunches();
+  } finally { await writeFile(path, raw); }
 });
 
 void test("original visual Job abort remains available after normal close and requests termination only once", async context => {

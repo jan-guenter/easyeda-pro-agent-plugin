@@ -262,3 +262,61 @@ There were no other legacy issues or nitpicks in those reviews. Full check
 Final source 982 SHA `d61c1a1df0cd4c5c185c4ffe8e24af0aea7962a627a14020fea6cbbe907c1861`;
 runtime 3 SHA `074b3d7ff9a75c9d1c5725829faca7de42bd5310686f3b6b370802553ba7d8fd`.
 These corrected bytes still require final CI and automatic review follow-up.
+
+## Terminal publication and installation, 2026-10-31
+
+[PR 163](https://github.com/jan-guenter/easyeda-pro-agent-plugin/pull/163) merged
+through the protected squash flow at 13:25:24 UTC. Reviewed payload
+`baf03968f300dc9083dc70e451f869e61eafa020` became main
+`27881f4918e4ce8375500b7f1ef57b94155abd3f`. Root tree
+`8d9d31883da2377923445b98bf74bb23663ac47b` and plugin tree
+`d04707d11d0f1d6b3638314c8a7cd385527319e5` match exactly. No administrative
+bypass was used.
+
+Final PR CI 41204297172/41204297157 and automatic main CI
+41205494988/41205495032 each passed all 11 jobs. Both recorded 13,913 facade
+passes, 5 expected platform skips, zero failures/cancellations, and 424 bridge
+passes across 28 files. Complete log archives passed CRC checks and matched
+all raw job logs. PR checkout trees match the reviewed payload; main jobs
+actually checked out the merged commit. Source, runtime and helper pins match.
+The earlier failed and automatically superseded runs remain separate evidence.
+
+The single authorized CodeRabbit full-review command completed on the initial
+head. Automatic reviews covered the corrections through the final payload.
+All five reported issue groups, including the issues outside the diff, were
+addressed. All three inline threads were automatically resolved. Final
+Docstring coverage is 85.42% against 80%. Title and Docstrings executed and
+passed; Description, Linked Issues and Out of Scope were explicitly skipped.
+No additional review command, local CodeRabbit CLI run or review reply was
+posted. No substantive recommendation required a user tie-breaker.
+
+The official CLI upgraded the existing
+[Git marketplace](https://github.com/jan-guenter/easyeda-pro-agent-plugin.git)
+on ref `main`, retaining the existing sparse paths. It installed and enabled
+`0.3.0+codex.20261031120940`. All 2,488 packaged files, 42 directories,
+48,139,025 bytes and committed modes match the merged Git payload. Inventory
+SHA `a1e97761efb4cad40e7b41ecb0576e147523cf21698acfb3ed8765378a8699dc`.
+The installed configured launcher passed 52 offline queries/54 requests, with
+27 discovered tools, 52 configured tools and seven skills. Package comparison
+remained exact afterward. The probe used its own synthetic control state and
+closed its own child. Its two isolation samples are not continuous observation.
+
+The original machine-profile descriptor, identity and bytes stayed unchanged.
+No manual cache edits or host-controller termination occurred. No live EasyEDA
+call followed installation. The newly serving Codex host has not been admitted;
+start a fresh Codex session before further live work. This is the deliberate
+release boundary, not completion of the remaining API backlog.
+
+No native operation, Save, navigation or journal cleanup is pending. The failed
+disposable cache case above is fully closed and must never be replayed. No
+production CAD navigation, edit or explicit Save was dispatched; shared startup
+effects were acknowledged, and no whole-production-storage audit is claimed.
+
+Remaining work is live validation of the changed cache and viewport routes,
+native footprint age and publication completion, the full saved copy/delete
+lifecycle, and deliberate requalification of the blocked writers. The inventory
+retains 485 omitted methods and 79 blocked methods. Five methods remain from the
+prior ten-method API plan. The private `next-batched-work-plan.json` retains
+exact method reasons and native prerequisites. Batch substantive implementations
+before the next release; do not publish another version solely for this
+terminal history append.

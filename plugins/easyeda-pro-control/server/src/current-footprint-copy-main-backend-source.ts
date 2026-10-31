@@ -18,6 +18,9 @@ export const CURRENT_FOOTPRINT_COPY_MAIN_BACKEND_SOURCE = freezeDeep({
       sha256: "59126d16b6b7c6c045030480adeed53cd299567707a96e735a3c2cb3cf333975" },
   },
   functions: {
+    dateParser: { start: 1_322_261, end: 1_322_365, bytes: 104, name: "rl", arity: 1, async: false,
+      lineNumber: 1027, columnNumber: 1234,
+      sha256: "439208592f434083b0b180c96d50b483cc83959cbb3a9e6d2e6787234deb2f13" },
     projectSql: { start: 1_318_983, end: 1_319_062, bytes: 79, name: "y", arity: 2, async: true,
       lineNumber: 1025, columnNumber: 20_177,
       sha256: "26351dd282391b70094abe75b253acf2dd0a37d6b8197fbb027dce1f6d2c0a98" },
@@ -69,7 +72,7 @@ export function assertCurrentFootprintCopyMainBackendFunction(role: CurrentFootp
 export function qualifyCurrentFootprintCopyMainBackendSource(input: unknown): CurrentFootprintCopyMainBackendSource {
   const profile = CURRENT_FOOTPRINT_COPY_MAIN_BACKEND_SOURCE;
   need(typeof input === "string" && input.isWellFormed() && Buffer.byteLength(input) === profile.bytes && hash(input) === profile.sha256);
-  for (const role of ["projectSql", "driverCallback", "driverIntercept", "actorClock", "protocolCallback", "router"] as const) {
+  for (const role of ["projectSql", "driverCallback", "driverIntercept", "actorClock", "protocolCallback", "router", "dateParser"] as const) {
     const fn = profile.functions[role]; assertCurrentFootprintCopyMainBackendFunction(role, input.slice(fn.start, fn.end));
   }
   for (const site of Object.values(profile.registration)) {

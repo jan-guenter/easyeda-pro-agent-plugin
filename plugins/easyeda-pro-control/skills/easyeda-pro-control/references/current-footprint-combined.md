@@ -229,12 +229,13 @@ Installed095000 subsequently passed a fresh original main/worker/cache/peer
 capture, assignments and four coherent actor samples. Dependency capture
 progressed past the missing-alias check and refused an incorrect receiver
 resolution assumption. The pinned worker has a real `ja.parseFull` override.
-Source now qualifies that override and its `zy.parseFull` superclass separately,
-while keeping arbitrary shadows refused. The61st method adds exactly one
-metadata read to preparation. Three separately source-qualified destination
-classes add three further renderer reads. Current preparation is
-566 normal/34 cleanup/600 total; combined renderer is784 normal/45 cleanup/829
-total. Main remains41 normal/13 cleanup/54 total.
+Source qualifies that override and its `zy.parseFull` superclass separately,
+while keeping arbitrary shadows refused. Current preparation reserves
+593 normal, 34 cleanup and 627 total commands; the combined renderer reserves
+811 normal, 45 cleanup and 856 total. Original main construction also captures
+and qualifies the pinned `rl` timestamp parser. Its extra metadata read brings
+main capacity to 42 normal, 13 cleanup and 55 total commands. These are source
+budgets, not acceptance of a connected execution.
 
 The consumed095000 route was not retried. Original normal close, one authorized
 original-Job abort, actual termination and release completed. The closed
@@ -287,10 +288,10 @@ the16KiB main envelope. A genuine private completion issuer now transfers the
 exact held-PB lease atomically before any native advancement. The old collector
 loses held authority, while the original kernel, channel, allocator, cursor and
 root/Job remain bound. Fixed native completion begin/send/retire is implemented.
-The current observation profile still reserves41 normal and13 cleanup commands,
-54 total. It refuses the75-command completion unit plus the final construction
+The current observation profile reserves 42 normal and 13 cleanup commands,
+55 total. It refuses the75-command completion unit plus the final construction
 release before the held lease can transfer. The known main stages need at least
-86 normal and41 cleanup commands,127 total. That partial lower bound is neither
+87 normal and 41 cleanup commands, 128 total. That partial lower bound is neither
 a complete writer reservation nor a reason to enlarge an existing profile.
 Connected completion execution remains unvalidated. The selectors admit
 missing-header and locked or aged append paths. Fresh unlocked mutable history refuses, and first-header

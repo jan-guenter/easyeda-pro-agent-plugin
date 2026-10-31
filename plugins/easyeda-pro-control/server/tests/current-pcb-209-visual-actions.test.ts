@@ -4,8 +4,10 @@ import { createContext, runInContext } from "node:vm";
 import { z } from "zod";
 import { sha256Text } from "../src/core.ts";
 import { currentDisposableOpenSealedTargetSchema } from "../src/current-disposable-open.ts";
-import { CURRENT_PCB_209_VISUAL_FUNCTION, currentPcb209VisualOperationSchema, decodeCurrentPcb209VisualReply } from "../src/current-pcb-209-visual-actions.ts";
+import { CURRENT_PCB_209_VISUAL_FUNCTION, currentPcb209VisualOperationSchema, decodeCurrentPcb209VisualReply,
+  requireCurrentPcb209VisualResult } from "../src/current-pcb-209-visual-actions.ts";
 import { diagnosticNativeRequest, diagnosticVisual209Params } from "../src/current-pcb-diagnostic-protocol.ts";
+import { historicalCameraVisualResult, historicalNavigationVisualResult } from "./helpers/visual-v1-result.ts";
 
 const path = String.raw`C:\Reviewed\VisualFixture.eprj2`;
 const target = currentDisposableOpenSealedTargetSchema.parse({ rawWindowsPath: path, projectUuid: sha256Text(path),
@@ -17,7 +19,8 @@ function fixture(operation: unknown, childBefore = "", afterCall = "", before = 
   runInContext(`globalThis.rows={track:[{globalIndex:"line-a"}],arc:[],via:[],component:[{globalIndex:"component-a"}],pad:[{globalIndex:"pad-a"}],string:[],attribute:[{attrs:[]}],dimension:[],image:[]};
 globalThis.selected=["line-a"];globalThis.calls=[];globalThis.writes=[];globalThis.box={minX:-1,maxX:3,minY:-2,maxY:4};
 globalThis.identity={tabId:${JSON.stringify(`${target.documentUuid}@${target.projectUuid}`)},docType:3};
-class Bus {async rpcCall(topic,arg,timeout){if(this!==MSG_BUS_PCB.messageBus||timeout!==0)throw new Error("PRIVATE_RECEIVER");calls.push({topic,arg});await Promise.resolve();let result;
+class Bus {publish(topic,arg){if(this!==MSG_BUS_PCB.messageBus||topic!=="fitBoard"||arg!=="")throw new Error("PRIVATE_PUBLISH_RECEIVER");calls.push({topic,arg});writes.push(topic);if(globalThis.afterPublish)globalThis.afterPublish();}
+async rpcCall(topic,arg,timeout){if(this!==MSG_BUS_PCB.messageBus||timeout!==0)throw new Error("PRIVATE_RECEIVER");calls.push({topic,arg});await Promise.resolve();let result;
 if(topic==="getTabIdAndDocType")result=identity;
 else if(topic==="pcb/extensionAPI/selectcontrol-getAllSelectedPrimitiveIds")result=selected;
 else if(topic==="pcb/extensionAPI/selectcontrol-clearSelected"){writes.push("clear");selected=[];result=true;}
@@ -84,6 +87,7 @@ void test("visual209 fit and zoom preserve selection and use exact mil/native un
 void test("visual209 complete data grammar and flat escaped envelope are bounded", () => {
   for(const invalid of [{ kind: "fit-selected", expectedSelection: ["same", "same"] }, { kind: "fit-selected", expectedSelection: ["\uD800"] },
     { kind: "fit-selected", expectedSelection: Array.from({ length: 257 }, (_, i) => `id${i}`) }, { kind: "fit-all", code: "anything" },
+    { kind: "fit-board-outline", expectedSelection: ["line-a"] }, { kind: "fit-board-outline", fallbackToAllGeometry: true },
     { kind: "select-primitives", expectedSelection: [], primitiveIds: ["pad-a"] }, { kind: "replace-selection", expectedSelection: [], primitiveIds: ["pad-a"] },
     { kind: "zoom-to", xMil: -0, yMil: 0, scaleRatio: 1 }, { kind: "zoom-to", xMil: 0, yMil: 0, scaleRatio: 0 }]) { assert.equal(currentPcb209VisualOperationSchema.safeParse(invalid).success, false); }
   const ids = Array.from({ length: 256 }, (_, i) => `pad-${i}`);
@@ -94,6 +98,37 @@ void test("visual209 complete data grammar and flat escaped envelope are bounded
   assert.equal(native["pcbVisual209Phase"], "visual"); assert.equal(native["visualOperationJson"], JSON.stringify(operation)); assert.ok(Buffer.byteLength(`${JSON.stringify(native)}\n`) < 32_768);
   assert.equal(currentPcb209VisualOperationSchema.safeParse({ ...operation, expectedSelection: ids.map(value => `${value}${String.raw`\"`.repeat(60)}`) }).success, false);
   assert.throws(() => diagnosticNativeRequest(Buffer.from(`${JSON.stringify({ ...command, params: { ...params, functionDeclaration: "async()=>1" } })}\0`)));
+});
+
+void test("visual209 outline fitting submits only native fitBoard and never invents bounds or a successful camera effect", async () => {
+  const operation = { kind: "fit-board-outline" };
+  const value = fixture(operation); const result = await value.run();
+  assert.equal(result["ok"], true); assert.equal(result["viewportAcknowledged"], true);
+  assert.equal(result["nativeBounds"], null); assert.equal(result["boundsMil"], null);
+  assert.equal(result["cameraBoundsScope"], "not-observed-source-qualified-fitBoard-publish-return");
+  assert.equal(value.read('JSON.stringify(calls.filter(call=>call.topic==="fitBoard"))'), '[{"topic":"fitBoard","arg":""}]');
+  assert.equal(value.read('calls.some(call=>call.topic==="getAllBoardBox"||call.topic==="pcbZoomToRegion")'), false);
+  assert.equal(value.read("writes.length"), 1);
+  // A normal void return, including a no-subscriber/no-outline no-op, is only
+  // Submission evidence. No subscriber/camera result is fabricated.
+  const raw = await fixture(operation).raw(); const packet = z.record(z.string(), z.unknown()).parse(JSON.parse(raw) as unknown);
+  assert.throws(() => decodeCurrentPcb209VisualReply({ result: { type: "string", value: JSON.stringify({ ...packet,
+    nativeBounds: { minX: -1, maxX: 1, minY: -1, maxY: 1 } }) } }, target, operation));
+  const accessor = fixture(operation,
+    'Object.defineProperty(Object.getPrototypeOf(MSG_BUS_PCB.messageBus),"publish",{get(){throw new Error("PRIVATE_ACCESSOR");}});');
+  await assert.rejects(accessor.raw()); assert.equal(accessor.read("writes.length"), 0);
+  for (const setup of [
+    'afterPublish=()=>{throw new Error("PRIVATE_PUBLISH_FAILURE");};',
+    'afterPublish=()=>{parent.activeTab="other";};',
+  ]) {
+    const refused = fixture(operation, setup); const failed = await refused.run();
+    assert.equal(failed["ok"], false); assert.equal(failed["viewportAcknowledged"], false);
+    assert.equal(refused.read("writes.length"), 1);
+    assert.equal(JSON.stringify(failed).includes("PRIVATE_"), false);
+  }
+  const drift = fixture(operation, "", 'if(calls.length===3)MSG_BUS_PCB.messageBus.publish=()=>{};');
+  const driftResult = await drift.run(); assert.equal(driftResult["mutationMayHaveOccurred"], false);
+  assert.equal(drift.read("writes.length"), 0);
 });
 
 void test("visual209 navigation requires explicit overlay scope and passes data-origin mil without a second conversion", async () => {
@@ -152,4 +187,21 @@ void test("visual209 independent decoder rejects forged target causal flags and 
     assert.throws(() => decodeCurrentPcb209VisualReply({ result: { type: "string", value: JSON.stringify({ ...packet, ...patch }) } }, target, operation));
   }
   for(const topic of ["clearSelected", "doSelectPrimitives", "flushService", "flushSelectingInfo"]) { assert.equal(CURRENT_PCB_209_VISUAL_FUNCTION.includes(topic), false); }
+});
+
+void test("visual209 new publications use v2 while both exact historical v1 forms remain data-only", async () => {
+  const current = await fixture({ kind: "fit-board-outline" }).run();
+  assert.equal(current["schema"], "easyeda-pro-control.pcb209-visual-action.v2");
+  requireCurrentPcb209VisualResult(current, target, current["operation"]);
+  const legacyTarget = { projectUuid: target.projectUuid, branchUuid: target.branchUuid, documentUuid: target.documentUuid };
+  for (const historical of [historicalCameraVisualResult(legacyTarget), historicalNavigationVisualResult(legacyTarget)]) {
+    assert.doesNotThrow(() => { requireCurrentPcb209VisualResult(historical, target, historical["operation"]); });
+    for (const patch of [{ extra: false }, { saveAuthorized: true }, { transientOverlayCompletionVerified: true },
+      { schema: "easyeda-pro-control.pcb209-visual-action.v2" }, { limitations: ["Changed historical text"] },
+      { cameraBoundsScope: "source-membership-verified" }, { resultSha256: "f".repeat(64) }]) {
+      assert.throws(() => { requireCurrentPcb209VisualResult({ ...historical, ...patch }, target, historical["operation"]); });
+    }
+  }
+  // Assigning the old schema cannot invent support for a later operation.
+  assert.throws(() => { requireCurrentPcb209VisualResult({ ...current, schema: "easyeda-pro-control.pcb209-visual-action.v1" }, target, current["operation"]); });
 });

@@ -26,15 +26,15 @@ void test("forward birth derives separate ID and class ceilings without widening
   assert.equal(RENDERER.requestLimit, CAPACITY.writer.renderer.requestLimit);
   assert.equal(RENDERER.normalClassLimit, CAPACITY.writer.renderer.normalClassLimit);
   assert.equal(RENDERER.cleanupClassLimit, CAPACITY.writer.renderer.cleanupClassLimit);
-  assert.equal(PROFILE.main.normalRequestLimit, 86); assert.equal(PROFILE.main.cleanupRequestLimit, 41);
+  assert.equal(PROFILE.main.normalRequestLimit, 87); assert.equal(PROFILE.main.cleanupRequestLimit, 41);
   assert.equal(PROFILE.main.requestLimit, CAPACITY.writer.main.requestLimit);
-  assert.equal(PROFILE.main.requestLimit, 127);
+  assert.equal(PROFILE.main.requestLimit, 128);
   assert.equal(COMBINED.renderer.normalRequestLimit, 811); assert.equal(COMBINED.renderer.requestLimit, 856);
   assert.equal(PROFILE.nativeWriterMounted, false); assert.equal(PROFILE.wholeFourGenerationBudgetReserved, false);
   assert.equal(RENDERER.executionAuthorized, false); assert.equal(RENDERER.saveAuthorized, false);
   assert.ok(Object.isFrozen(PROFILE) && Object.isFrozen(RENDERER) && Object.isFrozen(RENDERER.requests));
   const native = currentFootprintCopyForwardNativeLimits();
-  for (const declaration of ["MainNormal=86;", "MainCleanup=41;", "MainRequests=127;", "Requests=996;",
+  for (const declaration of ["MainNormal=87;", "MainCleanup=41;", "MainRequests=128;", "Requests=996;",
     "NormalRequests=996;", "NormalClass=935;", "CleanupClass=61;", "NormalMilliseconds=3600000L;", "TotalMilliseconds=3660000L;"]) {
     assert.ok(native.includes(declaration));
   }

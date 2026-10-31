@@ -87,6 +87,9 @@ Open questions are not requirements.
 - Reject missing, malformed, non-finite, coerced, truncated or contradictory evidence.
   Preserve unknown fields/full source/peers; refuse unsupported encodings before writes.
   Never weaken shared guards for one defect or cache ownership/admission/authority.
+- Keep persisted result schemas and projections immutable, including their fixed
+  explanatory fields. Emit a new schema for changed results and validate released
+  historical shapes explicitly. Historical parsing grants no live ownership.
 - Use append-only/exclusive evidence, bounded symlink-safe reads, descriptor identity
   checks and durable directory sync. Safety regressions must fail unsafe code and
   prove no downstream mutation. Test real callbacks/owners, not only mocks; label

@@ -29,3 +29,32 @@ void test("native decoder has bounded fixed inputs and real CompileOnly refusal 
   assert.equal(native.includes("$request.functionDeclaration"), false);
   assert.equal(native.includes("$request.programGzip"), false);
 });
+
+void test("fixed support tables initialize before aliases and reject corrupted storage", async () => {
+  const native = await readFile(new URL("../../scripts/pcb-diagnostic-owner.ps1", import.meta.url), "utf8");
+  const names = ["ModelStateFunction", "ModelStateV2Function", "ModelPendingFunction", "ModelPendingV2Function",
+    "ModelRootInventoryFunction", "StringProducerMarkersV2Function", "CommonPresentationFunction", "CommonPreferenceFunction",
+    "CommonRulesFunction", "CommonMetadataFunction", "ModelDiagnosticConstructorsFunction", "ModelPrecreateConstructorsFunction",
+    "CommonAssetsFunction", "StringEmptyProducersFunction", "StringEmptyProducersV2Function"];
+  const firstTable = native.indexOf("static readonly string[] DiagnosticSupportProgramTable0=");
+  assert.ok(firstTable > 0);
+  for (const name of names) {
+    assert.ok(native.indexOf(`static readonly string ${name}=`) > firstTable);
+    assert.ok(readPackedNativeProgram(native, name).length > 0);
+  }
+  const table = /static readonly string\[\] DiagnosticSupportProgramTable0=StringWorkerPackedProgramTable\("([A-Za-z0-9+/=]+)",([0-9]+),"([a-f0-9]{64})","([a-f0-9]{64})",([0-9]+)\);/u.exec(native);
+  assert.ok(table !== null && table[1] !== undefined && table[5] !== undefined);
+  for (const replacement of [
+    table[0].replace(table[1], "AAAA"),
+    table[0].replace(/,([0-9]+)\);$/u, ",21);"),
+    table[0].replace(/,"[a-f0-9]{64}",/u, `,"${"0".repeat(64)}",`),
+  ]) {
+    assert.throws(() => readPackedNativeProgram(native.replace(table[0], replacement), "ModelStateFunction"));
+  }
+  const member = "static readonly string ModelStateFunction=StringWorkerPackedProgram(DiagnosticSupportProgramTable0,0,7741,ModelStateFunctionSha256);";
+  assert.ok(native.includes(member));
+  for (const index of [1, 20]) {
+    const changed = native.replace(member, member.replace("Table0,0,", `Table0,${String(index)},`));
+    assert.throws(() => readPackedNativeProgram(changed, "ModelStateFunction"));
+  }
+});

@@ -10,6 +10,9 @@ export const currentFootprintCopyMainBackendObservationSchema = z.object({
   registrationBreakpointArmedBeforeInitialContinuation: z.literal(true), actualRegistrationLocationVerified: z.literal(true),
   originalProtocolCallbackAndBackendRetained: z.literal(true), originalDriverCallbackAndRouterRetained: z.literal(true),
   originalActorClockAndSqlFunctionsRetained: z.literal(true), originalNativeDateNowRetained: z.literal(true),
+  // Historical construction records precede parser custody.
+  // Parsing them issues no live runner or age authority. New observations set true.
+  originalDateParserRetained: z.literal(true).optional(),
   protocolRegistrationObserved: z.literal(false), requestContextRetained: z.literal(false), actualActorClockInvocationObserved: z.literal(false),
   projectSqlInvocationObserved: z.literal(false), responderExclusivityProven: z.literal(false), executionAuthorized: z.literal(false),
 }).strict();

@@ -7,15 +7,15 @@
     "latestDistinctMethods": 773,
     "installed209DistinctMethods": 811,
     "statuses": {
-      "implemented-public-subset": 215,
-      "implemented-native-equivalent": 43,
+      "implemented-public-subset": 216,
+      "implemented-native-equivalent": 44,
       "implemented-vendor-http-equivalent": 13,
       "internal-lifecycle-only": 0,
       "implemented-but-blocked": 79,
-      "omitted": 485
+      "omitted": 483
     },
     "executionRoutes": {
-      "available-with-runtime-guards": 407,
+      "available-with-runtime-guards": 409,
       "available-with-network-guards": 16,
       "available-with-managed-file-guards": 3,
       "blocked": 94,
@@ -34,6 +34,7 @@
       "implicit-annotation-and-save-all": 2,
       "implicit-save-before-export": 5,
       "installed-209-auto-job-backend-absent": 5,
+      "installed-209-config-path-protocol-missing": 3,
       "installed-209-constant-false-stub": 2,
       "installed-209-eda-path-protocol-missing": 1,
       "installed-209-error-stub": 18,
@@ -52,9 +53,9 @@
       "library-render-resource-and-failure-lifecycle": 2,
       "lossy-heterogeneous-primitive-projection": 1,
       "lossy-logging-selection-reader": 1,
-      "managed-file-contract-needed": 31,
+      "managed-file-contract-needed": 28,
       "multi-object-electrical-effect": 7,
-      "navigation-or-viewport-adapter-needed": 9,
+      "navigation-or-viewport-adapter-needed": 8,
       "non-json-result-or-callback": 5,
       "not-in-reviewed-runtime": 54,
       "pad-pair-group-replacement-effects": 1,
@@ -64,7 +65,7 @@
       "reviewed-native-stub": 30,
       "scoped-effect-adapter-needed": 102,
       "selection-marker-or-history-mutation": 7,
-      "shared-asset-owner-projection-needed": 2,
+      "shared-asset-owner-projection-needed": 1,
       "simulation-editor-not-admitted": 1,
       "source-decoder-and-save-lifecycle": 2,
       "symbol-delete-subscriber-and-structure-lifecycle": 1,
@@ -3742,7 +3743,7 @@
           "tool": "easyeda_control_pcb209_worker_startup",
           "selector": "footprint-combined/capture-project",
           "implementation": "native-task-equivalent",
-          "scope": "Separate disposable main/renderer validation purpose sealed before launch. A challenge-bound helper readiness packet is required before application launch can be requested. Only an original factory failure with the exact original options, observed helper transport closure and zero stdin/launch dispatch can publish the separate v2 before-launch terminal; it proves neither Windows native-resource release nor termination and cannot clear earlier v1 unknown launches. A distinct fresh-facade historical abandonment path admits only the pinned old producer's unchanged intent-only record, explicit unknown-effects acceptance and original opaque observations excluding other Linux facades, Windows PowerShell and EasyEDA processes; its separate receipt relinquishes only that startup blocker and proves no non-dispatch, termination, native-resource release or design/persistence authority. Presence refusals expose only two validated presence flags and sample count, without process identity or termination authority. Published original main source/function construction is required before one checkpoint-bound project opening; browser/frame/UI and original worker/callback/cache/actor/route observations keep their exact guards. The startup transport passes the same complete qualified project source to its original execution construction runner without another source fetch and clears its temporary reference on every terminal capture path; source retention issues no native origin. Both transports retain the same original root/Job and absolute lifetime, with independent protocol counters and one main event cursor. Private clock integration now issues an origin only through the genuine combined owner and original registration/construction leases, with one paired router, allocator and event cursor. Fixed native begin/send/retire reserves the67-command unit within the unchanged normal-ID ceiling780, accounting for49 normal and18 cleanup commands; up to69 IDs cover original group handoff plus the unit. This supplies no public clock invocation action, complete writer reservation or connected clock/origin validation. The fourteen-stage backend-completion48-variant codec, genuine original completion issuer, atomic held-PB transfer and fixed native begin/send/retire are implemented privately. The current54-ID observation purpose refuses the75-command completion unit and final construction release before any held transfer. Known main stages require at least86 normal/41 cleanup/127 total; no complete writer reservation or public completion action follows. A confirmed journaled abort targets only this original Job, consumes the generation and blocks normal work; acknowledgment, observed original-root exit, empty Job and release are separate. Existing owners cannot upgrade. Opening may migrate, replay caches, restore tabs, use the network or automatically persist. Installed042605 passed historical relinquishment, original main construction, disposable project/worker/cache/peer capture and assignments, followed by retained original-Job exit/release and exact closed-fixture equality. Actor collection completed but publication refused an omitted combined-purpose prefix; the exact source fix preserves packet/timing/generation bounds and does not repair that consumed historical stage. Installed081309 was later admitted as the actual host-owned facade with complete packaged-file equality, then passed new original main/project/worker capture, assignments and four-sample actor publication over38481ms. Route cache construction, state and producer capture passed before dependency capture refused a missing optimized-away lexical class alias. The consumed route was not repeated. Source now retains eleven original manager/common/project/bus constructors and qualifies encoder ancestry without extra requests; this correction remains unvalidated live. One normal close acknowledged without exit, then one authorized original-Job abort, retained actual root-exit/empty-Job proof and release completed with the entire closed fixture byte-exact. No public backend request collector, actual document-clock invocation, copy/delete, explicit Save, complete startup or saved-result proof is mounted. The four-generation writer budget remains incomplete and refuses reservation.",
+          "scope": "Separate disposable main/renderer validation purpose sealed before launch. A challenge-bound helper readiness packet is required before application launch can be requested. Only an original factory failure with the exact original options, observed helper transport closure and zero stdin/launch dispatch can publish the separate v2 before-launch terminal; it proves neither Windows native-resource release nor termination and cannot clear earlier v1 unknown launches. A distinct fresh-facade historical abandonment path admits only the pinned old producer's unchanged intent-only record, explicit unknown-effects acceptance and original opaque observations excluding other Linux facades, Windows PowerShell and EasyEDA processes; its separate receipt relinquishes only that startup blocker and proves no non-dispatch, termination, native-resource release or design/persistence authority. Presence refusals expose only two validated presence flags and sample count, without process identity or termination authority. Published original main source/function construction is required before one checkpoint-bound project opening; browser/frame/UI and original worker/callback/cache/actor/route observations keep their exact guards. The startup transport passes the same complete qualified project source to its original execution construction runner without another source fetch and clears its temporary reference on every terminal capture path; source retention issues no native origin. Both transports retain the same original root/Job and absolute lifetime, with independent protocol counters and one main event cursor. Private clock integration now issues an origin only through the genuine combined owner and original registration/construction leases, with one paired router, allocator and event cursor. Fixed native begin/send/retire reserves the67-command unit within the unchanged normal-ID ceiling780, accounting for49 normal and18 cleanup commands; up to69 IDs cover original group handoff plus the unit. This supplies no public clock invocation action, complete writer reservation or connected clock/origin validation. The fourteen-stage backend-completion48-variant codec, genuine original completion issuer, atomic held-PB transfer and fixed native begin/send/retire are implemented privately. The current55-ID observation purpose refuses the75-command completion unit and final construction release before any held transfer. Known main stages require at least87 normal/41 cleanup/128 total; no complete writer reservation or public completion action follows. A confirmed journaled abort targets only this original Job, consumes the generation and blocks normal work; acknowledgment, observed original-root exit, empty Job and release are separate. Existing owners cannot upgrade. Opening may migrate, replay caches, restore tabs, use the network or automatically persist. Installed042605 passed historical relinquishment, original main construction, disposable project/worker/cache/peer capture and assignments, followed by retained original-Job exit/release and exact closed-fixture equality. Actor collection completed but publication refused an omitted combined-purpose prefix; the exact source fix preserves packet/timing/generation bounds and does not repair that consumed historical stage. Installed081309 was later admitted as the actual host-owned facade with complete packaged-file equality, then passed new original main/project/worker capture, assignments and four-sample actor publication over38481ms. Route cache construction, state and producer capture passed before dependency capture refused a missing optimized-away lexical class alias. The consumed route was not repeated. Source now retains eleven original manager/common/project/bus constructors and qualifies encoder ancestry without extra requests; this correction remains unvalidated live. One normal close acknowledged without exit, then one authorized original-Job abort, retained actual root-exit/empty-Job proof and release completed with the entire closed fixture byte-exact. No public backend request collector, actual document-clock invocation, copy/delete, explicit Save, complete startup or saved-result proof is mounted. The four-generation writer budget remains incomplete and refuses reservation.",
           "source": [
             "current-footprint-combined-validation.ts",
             "current-footprint-copy-combined-profile.ts",
@@ -9194,14 +9195,46 @@
       ],
       "reviewedRuntimeDeclaration": true,
       "installed209Declaration": true,
-      "status": "omitted",
-      "routes": [],
-      "omission": {
-        "code": "shared-asset-owner-projection-needed",
-        "reason": "The selected library row is UI state and may point at a cloud/shared library unrelated to the active project. The result has no admitted current-project owner binding.",
-        "nextRequirement": "Define exact visible row and library scope, validate the selected asset owner, and expose only reviewed metadata fields.",
-        "evidence": []
-      },
+      "status": "implemented-public-subset",
+      "routes": [
+        {
+          "tool": "easyeda_control_public_readers",
+          "selector": "eda.lib_SelectControl.getSelectedLibraryRowInfo",
+          "implementation": "public-method",
+          "scope": "Separately reviewed EasyEDA 3.2.209/API 0.3.59 only; older profiles do not register this route. Single requests or a batch of up to seven unique methods use two matching observations. Batch methods share one ten-second deadline and retain all owners before invocation; two ordered passes are sequential, not atomic. Each member is bounded to 8192 bytes and the complete batch to 65536 bytes. One failed member refuses the whole result; no cached authority or partial success. Only the separately hash-admitted EasyEDA 3.2.209 / API 0.3.59 tuple. No admission of older, newer or unknown implementations, native adapters or general SDK dispatch. Two complete samples retain the same extension, namespace and method. Viewport reads retain the window object. UI-backed methods additionally require exact UI and selector files and retain the editor window, document, UI, host and method-specific available RPC bus around each await. No project, document, account, file, network, navigation, settings change or Save access is performed by these getters. Replies are bounded to 8192 UTF-8 bytes. Synchronous methods reject Promises; UI-backed methods await sequentially. Partial or malformed values, changed owners, unstable samples and oversized responses refuse without truncation or automatic retry. Source implementation and synthetic tests do not establish connected validation. UI-backed reads enforce a 10-second monotonic deadline around every await and before a second sample. The timer is cooperative; it does not cancel an outstanding vendor RPC or synchronous vendor work. The 60-second execution and 70-second transport limits are separate waiting bounds. This SDK method is beta. Reads one bottom-library row with the fixed system-library UUID reported by the UI. Returns only its UUID, supported library type and reported library UUID; no selection or a missing subscriber refuses rather than becoming an empty success. The callback combines independently retained row and library state, so even two matching samples do not prove that this asset belongs to that library. A non-system reported library UUID refuses. No ownership, freshness, existence, geometry or current-project binding is verified. No lookup, download, navigation, placement or Save runs.",
+          "source": [
+            "sdk-public-readers.ts",
+            "sdk-public-readers-batch.ts",
+            "sdk-public-readers-runtime.ts",
+            "sdk-public-utilities-profile.ts",
+            "facade-mode.ts"
+          ],
+          "tests": [
+            "sdk-public-readers.test.ts",
+            "sdk-public-readers-url.test.ts",
+            "sdk-public-readers-batch.test.ts",
+            "sdk-public-readers-runtime.test.ts",
+            "sdk-public-readers-ui.test.ts",
+            "sdk-public-readers-registration.test.ts",
+            "facade-mode.test.ts"
+          ],
+          "validation": "offline-regression;current-live-unclaimed",
+          "executionState": "available-with-runtime-guards",
+          "inputDiscovery": {
+            "tool": "easyeda_control_api",
+            "arguments": {
+              "request": {
+                "action": "public-readers",
+                "query": {
+                  "method": "eda.lib_SelectControl.getSelectedLibraryRowInfo",
+                  "includeSchemas": true
+                }
+              }
+            }
+          }
+        }
+      ],
+      "omission": null,
       "completeDeclaredContractSupported": false,
       "currentGenerationLiveValidation": "not-recorded",
       "runtimeAdmission": "not-granted-by-inventory"
@@ -10838,9 +10871,10 @@
       "routes": [],
       "omission": {
         "code": "lossy-heterogeneous-primitive-projection",
-        "reason": "The installed wrapper skips Text and unknown native hit types before returning the first mapped primitive. It can report no hit or a later supported hit when the native first hit was omitted.",
-        "nextRequirement": "Use a reviewed native hit-identity projection with explicit hit ordering and supported family mapping; refuse unknown hit types rather than silently selecting a different primitive.",
+        "reason": "The installed wrapper skips Text and unknown native hit types before returning the first mapped primitive. The pinned209 native RPC already applies Hr.pointSelect, qt.filter and filterPartiton, then removes every item without a toJSON function before Ey serialization. Reading this RPC cannot recover discarded native hit identities or establish whether its first serializable hit was the original first hit.",
+        "nextRequirement": "Capture a separately reviewed complete native hit-identity sequence before serialization loss, with explicit display-filter, partition and hit-order semantics and supported family mapping. Refuse unknown hits rather than selecting a later supported primitive; do not relabel the existing lossy RPC as a complete hit reader.",
         "evidence": [
+          "assets/pro-pcb/3.2.195.6b67774e/js/pcb.js@sha256:a84059304d32d4f0feb768d6c5baf00d72a954643ac62299f2c46c08fa68fd0b;utf16:10305245..10305479",
           "docs/history/2026-10-10-api-execution-feasibility.md"
         ]
       },
@@ -11595,14 +11629,43 @@
       ],
       "reviewedRuntimeDeclaration": true,
       "installed209Declaration": true,
-      "status": "omitted",
-      "routes": [],
-      "omission": {
-        "code": "navigation-or-viewport-adapter-needed",
-        "reason": "pcb_Document.zoomToBoardOutline changes editor, viewport or window state without a maintained method-specific one-shot completion/ownership proof.",
-        "nextRequirement": "Add strict target/viewport arguments, original owner/context proof, non-replayed dispatch and bounded observable completion; closing must never imply Save or discard.",
-        "evidence": []
-      },
+      "status": "implemented-native-equivalent",
+      "routes": [
+        {
+          "tool": "easyeda_control_pcb209_opening",
+          "selector": "visual.perform-visual",
+          "implementation": "native-task-equivalent",
+          "documentTypes": [
+            3
+          ],
+          "scope": "Separate pinned209 original disposable visual owner only. After exact sealed project/PCB source admission, one journaled perform-visual operation.kind fit-board-outline submits the fixed fitBoard topic and empty string through the retained, rechecked original native MessageBus.publish receiver. The pinned subscriber uses existing nonempty Board Outline views and Line views on layer11; this adapter never invokes the separate getAllBoardBox handler or its all-geometry fallback. A normal void publish return proves submission only: no outlines, a missing or cancelled subscriber, or a caught callback error may leave the camera unchanged. Bounds remain null; outline membership, camera movement, callback success and render completion are not observed. Complete ordered selection is checked unchanged. Existing opening/profile effects and all original target, one-shot journal, timeout, root/Job closure, helper-release and settlement guards remain. No direct public wrapper, caller topic, selection change, CAD source edit, explicit Save, ordinary-project navigation, retry or inverse. New result publications use v2; exact released v1 shapes remain historical data only and cannot recreate an owner or authorize replay. Connected validation of this operation is not recorded.",
+          "source": [
+            "current-pcb-209-visual-actions.ts",
+            "current-pcb-209-visual-validation.ts",
+            "current-pcb-diagnostic-owner.ts",
+            "../../scripts/pcb-diagnostic-owner.ps1"
+          ],
+          "tests": [
+            "current-pcb-209-visual-actions.test.ts",
+            "current-pcb-209-visual-native.test.ts",
+            "current-pcb-209-visual-lifecycle.test.ts"
+          ],
+          "validation": "offline-regression;current-live-unclaimed",
+          "executionState": "available-with-runtime-guards",
+          "inputDiscovery": {
+            "tool": "easyeda_control_api",
+            "arguments": {
+              "request": {
+                "action": "pcb209-visual",
+                "query": {
+                  "includeSchemas": true
+                }
+              }
+            }
+          }
+        }
+      ],
+      "omission": null,
       "completeDeclaredContractSupported": false,
       "currentGenerationLiveValidation": "not-recorded",
       "runtimeAdmission": "not-granted-by-inventory"
@@ -42132,10 +42195,13 @@
       "status": "omitted",
       "routes": [],
       "omission": {
-        "code": "managed-file-contract-needed",
-        "reason": "sys_FileSystem.getDocumentsPath consumes or produces File/Blob, filesystem paths, project archives or image data without an implemented method-specific managed-artifact contract.",
-        "nextRequirement": "Add bounded hash-bound artifact transfer, exact input ownership/format checks, exclusive output publication and any associated import effect proof. A filename or Blob handle is not a verified file.",
-        "evidence": []
+        "code": "installed-209-config-path-protocol-missing",
+        "reason": "After their mode/permission checks, the pinned209 documents/library/project directory getters request app://api/client/config. Its sole registered app-protocol processor has no config case and returns500; the SDK discards that response and falls back to an empty string or array. Those source-derived fallbacks are not connected path observations. The separate HTTP config handler can create configured directories, probe/cache drive state with PowerShell and initialize an update preference. Library/project getters also expect legacy libPath/projectPath keys rather than that handler's systemLib/projectDir keys. Redirecting to HTTP would neither preserve effects nor establish API parity.",
+        "nextRequirement": "Review a corrected public SDK/protocol tuple, or add a distinct bounded native reader of the original main-generation path/configuration bindings with exact mode, source and owner custody. Preserve absent versus empty configuration. Do not call or redirect to the broader HTTP configuration handler, emit its full configuration, or infer configured paths from the executable or fixture directory.",
+        "evidence": [
+          "assets/pro-api/0.3.59.1ca9efb5/api.js@sha256:e7c31b0de9dcbe4806e6b3cf8879b31c9e44425361bb8e67c3e8480ae359c8b1;utf16:472220..472535,1826175..1827890",
+          "app.js@sha256:52f51ce43cfebc81a362addde6cd27e39fa58c8fc1ab4ee5adacca4551e5ef0c;utf16:1242360..1242540,1328160..1329480,2325793..2326350,2636991..2647647,2648374..2650366"
+        ]
       },
       "completeDeclaredContractSupported": false,
       "currentGenerationLiveValidation": "not-recorded",
@@ -42259,10 +42325,13 @@
       "status": "omitted",
       "routes": [],
       "omission": {
-        "code": "managed-file-contract-needed",
-        "reason": "sys_FileSystem.getLibrariesPaths consumes or produces File/Blob, filesystem paths, project archives or image data without an implemented method-specific managed-artifact contract.",
-        "nextRequirement": "Add bounded hash-bound artifact transfer, exact input ownership/format checks, exclusive output publication and any associated import effect proof. A filename or Blob handle is not a verified file.",
-        "evidence": []
+        "code": "installed-209-config-path-protocol-missing",
+        "reason": "After their mode/permission checks, the pinned209 documents/library/project directory getters request app://api/client/config. Its sole registered app-protocol processor has no config case and returns500; the SDK discards that response and falls back to an empty string or array. Those source-derived fallbacks are not connected path observations. The separate HTTP config handler can create configured directories, probe/cache drive state with PowerShell and initialize an update preference. Library/project getters also expect legacy libPath/projectPath keys rather than that handler's systemLib/projectDir keys. Redirecting to HTTP would neither preserve effects nor establish API parity.",
+        "nextRequirement": "Review a corrected public SDK/protocol tuple, or add a distinct bounded native reader of the original main-generation path/configuration bindings with exact mode, source and owner custody. Preserve absent versus empty configuration. Do not call or redirect to the broader HTTP configuration handler, emit its full configuration, or infer configured paths from the executable or fixture directory.",
+        "evidence": [
+          "assets/pro-api/0.3.59.1ca9efb5/api.js@sha256:e7c31b0de9dcbe4806e6b3cf8879b31c9e44425361bb8e67c3e8480ae359c8b1;utf16:472220..472535,1826175..1827890",
+          "app.js@sha256:52f51ce43cfebc81a362addde6cd27e39fa58c8fc1ab4ee5adacca4551e5ef0c;utf16:1242360..1242540,1328160..1329480,2325793..2326350,2636991..2647647,2648374..2650366"
+        ]
       },
       "completeDeclaredContractSupported": false,
       "currentGenerationLiveValidation": "not-recorded",
@@ -42300,10 +42369,13 @@
       "status": "omitted",
       "routes": [],
       "omission": {
-        "code": "managed-file-contract-needed",
-        "reason": "sys_FileSystem.getProjectsPaths consumes or produces File/Blob, filesystem paths, project archives or image data without an implemented method-specific managed-artifact contract.",
-        "nextRequirement": "Add bounded hash-bound artifact transfer, exact input ownership/format checks, exclusive output publication and any associated import effect proof. A filename or Blob handle is not a verified file.",
-        "evidence": []
+        "code": "installed-209-config-path-protocol-missing",
+        "reason": "After their mode/permission checks, the pinned209 documents/library/project directory getters request app://api/client/config. Its sole registered app-protocol processor has no config case and returns500; the SDK discards that response and falls back to an empty string or array. Those source-derived fallbacks are not connected path observations. The separate HTTP config handler can create configured directories, probe/cache drive state with PowerShell and initialize an update preference. Library/project getters also expect legacy libPath/projectPath keys rather than that handler's systemLib/projectDir keys. Redirecting to HTTP would neither preserve effects nor establish API parity.",
+        "nextRequirement": "Review a corrected public SDK/protocol tuple, or add a distinct bounded native reader of the original main-generation path/configuration bindings with exact mode, source and owner custody. Preserve absent versus empty configuration. Do not call or redirect to the broader HTTP configuration handler, emit its full configuration, or infer configured paths from the executable or fixture directory.",
+        "evidence": [
+          "assets/pro-api/0.3.59.1ca9efb5/api.js@sha256:e7c31b0de9dcbe4806e6b3cf8879b31c9e44425361bb8e67c3e8480ae359c8b1;utf16:472220..472535,1826175..1827890",
+          "app.js@sha256:52f51ce43cfebc81a362addde6cd27e39fa58c8fc1ab4ee5adacca4551e5ef0c;utf16:1242360..1242540,1328160..1329480,2325793..2326350,2636991..2647647,2648374..2650366"
+        ]
       },
       "completeDeclaredContractSupported": false,
       "currentGenerationLiveValidation": "not-recorded",

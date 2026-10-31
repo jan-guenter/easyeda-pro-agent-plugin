@@ -127,6 +127,22 @@ function packedDiagnosticCorePrograms(): ReadonlyMap<string, string> {
   return packedProgramGroup(selected, "DiagnosticCoreProgramTable", "");
 }
 
+/** Store the fixed diagnostic support programs in bounded tables. Each alias
+ * retains its original program bytes, length and hash. This only reduces the
+ * native helper's source size; it adds no command or caller-selected program.
+ */
+function packedDiagnosticSupportPrograms(): ReadonlyMap<string, string> {
+  const names = ["ModelStateFunction", "ModelStateV2Function", "ModelPendingFunction", "ModelPendingV2Function",
+    "ModelRootInventoryFunction", "StringProducerMarkersV2Function", "CommonPresentationFunction", "CommonPreferenceFunction",
+    "CommonRulesFunction", "CommonMetadataFunction", "ModelDiagnosticConstructorsFunction", "ModelPrecreateConstructorsFunction",
+    "CommonAssetsFunction", "StringEmptyProducersFunction", "StringEmptyProducersV2Function"];
+  const selected = names.map(name => {
+    const program = programs.find(([, candidate]) => candidate === name);
+    if (program === undefined) { throw new Error("Fixed diagnostic support program roster differs"); } return program;
+  });
+  return packedProgramGroup(selected, "DiagnosticSupportProgramTable", "");
+}
+
 /** Pack one reviewed roster using the unchanged64KiB decoder. No runtime input
  * can choose a table, program, index, count or decoder capacity. */
 function packedProgramGroup(selected: readonly Program[], tablePrefix: string, decoder: string): ReadonlyMap<string, string> {
@@ -182,7 +198,7 @@ async function main(): Promise<void> {
   const action = process.argv[2];
   if (process.argv.length !== 3 || action !== "--write" && action !== "--check") { throw new Error("Expected --write or --check"); }
   const path = new URL("pcb-diagnostic-owner.ps1", import.meta.url);
-  const grouped = new Map([...packedStringWorkerPrograms(), ...packedCommonPacketPrograms(), ...packedDiagnosticCorePrograms()]);
+  const grouped = new Map([...packedStringWorkerPrograms(), ...packedCommonPacketPrograms(), ...packedDiagnosticCorePrograms(), ...packedDiagnosticSupportPrograms()]);
   const bytes = await readFile(path);
   // Preserve a valid BOM and refuse malformed input before replacing any block.
   const source = new TextDecoder("utf-8", { fatal: true, ignoreBOM: true }).decode(bytes);

@@ -22,7 +22,7 @@ const NODE_VERSION = "24.18.0";
 const MAX_REPLY_BYTES = 8 * 1024 * 1024;
 const MAX_OUTPUT_BYTES = 16 * 1024 * 1024;
 const REQUEST_TIMEOUT_MS = 15_000;
-const CATALOG_QUERY_COUNT = 52;
+const CATALOG_QUERY_COUNT = 54;
 // Initialize and tool discovery plus the fixed catalog requests below.
 const REQUEST_LIMIT = 2 + CATALOG_QUERY_COUNT;
 const EXPECTED_TOOLS = [
@@ -279,7 +279,7 @@ async function offlineApi(child: OfflineChild, request: Record<string, unknown>)
  * its original synthetic child. Exact positive and negative argument checks
  * dispatch no live action; catalog conformance grants no runtime admission.
  */
-async function catalogChecks(child: OfflineChild, root: string, sample: () => Promise<void>): Promise<{ readonly tools: number; readonly queries: number; readonly loadedFacadeChecked: true; readonly ratlineContinuationDiscoveryChecked: true; readonly footprintCopyPreparationDiscoveryChecked: true; readonly footprintCopyRoutePreparationDiscoveryChecked: true; readonly footprintMainDiscoveryChecked: true; readonly footprintCombinedDiscoveryChecked: true; readonly footprintCombinedUnknownAbandonmentDiscoveryChecked: true; readonly rendererCaptureDiscoveryChecked: true; readonly footprintHeldCacheDiscoveryChecked: true }> {
+async function catalogChecks(child: OfflineChild, root: string, sample: () => Promise<void>): Promise<{ readonly tools: number; readonly queries: number; readonly loadedFacadeChecked: true; readonly ratlineContinuationDiscoveryChecked: true; readonly footprintCopyPreparationDiscoveryChecked: true; readonly footprintCopyRoutePreparationDiscoveryChecked: true; readonly footprintMainDiscoveryChecked: true; readonly footprintCombinedDiscoveryChecked: true; readonly footprintCombinedUnknownAbandonmentDiscoveryChecked: true; readonly rendererCaptureDiscoveryChecked: true; readonly footprintHeldCacheDiscoveryChecked: true; readonly footprintHeadAgeDiscoveryChecked: true }> {
   const initialized = await child.request("initialize", {
     protocolVersion: "2024-11-05", capabilities: {}, clientInfo: { name: "easyeda-installed-offline-probe", version: "1.0.0" },
   });
@@ -332,6 +332,22 @@ async function catalogChecks(child: OfflineChild, root: string, sample: () => Pr
     requireCheck(result["valid"] === valid && result["validationOnly"] === true && result["executionAuthorized"] === false,
       "Held-cache exact-argument validation accepted a caller budget or implied execution authority.");
   }
+  const headAge = await offlineApi(child, { action: "footprint-head-age", query: { includeSchemas: true } });
+  const headAgeActions = headAge["actions"], headAgeJournal = record(record(headAge["limits"])["journal"]);
+  requireCheck(headAge["tool"] === "easyeda_control_pcb209_worker_startup" && headAge["wrapperAction"] === "footprint-head-age" &&
+    headAge["readOnly"] === true && headAge["validationOnly"] === true && headAge["executionAuthorized"] === false &&
+    headAge["writerAuthority"] === false && headAge["saveAuthorized"] === false && headAge["nativeQualificationIssued"] === false &&
+    headAge["runtimeAdmissionGranted"] === false && headAge["replayTokenIssued"] === false && Array.isArray(headAgeActions) &&
+    ["observe-head-age", "normal-close", "abort", "observe-termination", "release-closed", "settle-records"].every(action => headAgeActions.includes(action)) &&
+    !["open-project", "copy", "delete", "save", "observe-first", "observe-fresh"].some(action => headAgeActions.includes(action)) &&
+    headAgeJournal["observationBytes"] === 131_072 && headAgeJournal["records"] === 512 &&
+    headAgeJournal["cleanupAttempts"] === 243 && headAgeJournal["cleanupRecords"] === 487 &&
+    Array.isArray(record(headAge["inputSchema"])["oneOf"]), "Head-age discovery lost its distinct original read-only lifecycle or cleanup reserve.");
+  const headAgeLaunch = { ...launch, operationId: "footprint-head-age-offline-catalog", confirmDisposableProject: true,
+    acceptNativeClockObservation: true, target: heldCacheLaunch.target };
+  const headAgeValid = await offlineApi(child, { action: "footprint-head-age-validate", query: { request: headAgeLaunch } });
+  requireCheck(headAgeValid["valid"] === true && headAgeValid["validationOnly"] === true && headAgeValid["executionAuthorized"] === false,
+    "Head-age exact-argument validation changed or implied execution authority.");
   const precreate = await offlineApi(child, { action: "pcb-string-precreate-validation", query: { includeSchemas: true } });
   requireCheck(precreate["tool"] === "easyeda_control_pcb_string_precreate_validation" &&
     precreate["executionAuthorized"] === false && precreate["saveAuthorized"] === false &&
@@ -458,9 +474,9 @@ async function catalogChecks(child: OfflineChild, root: string, sample: () => Pr
   "Netlist file discovery or its bounded action schema changed.");
   const readers = await offlineApi(child, { action: "public-readers", query: { includeSchemas: true } });
   const readerEntries = readers["entries"];
-  requireCheck(readers["total"] === 8 && Array.isArray(readerEntries) && readerEntries.length === 8 &&
+  requireCheck(readers["total"] === 9 && Array.isArray(readerEntries) && readerEntries.length === 9 &&
     readerEntries.every((entry: unknown) => isRecord(entry) && isRecord(entry["inputSchema"]) && entry["invocationEnabledByDiscovery"] === false),
-  "Public utility discovery differs from its eight bounded readers.");
+  "Public utility discovery differs from its nine bounded readers.");
   const readerBatch = record(readers["batch"]);
   requireCheck(readerBatch["maximumMethods"] === 7 && readerBatch["uniqueMethods"] === true &&
     readerBatch["completeOrderedPasses"] === 2 && readerBatch["sharedDeadlineMilliseconds"] === 10_000 &&
@@ -469,7 +485,8 @@ async function catalogChecks(child: OfflineChild, root: string, sample: () => Pr
     readerBatch["invocationEnabledByDiscovery"] === false && isRecord(readerBatch["inputSchema"]),
   "Public utility batch lost its bounds or implies execution authority.");
   const languageReader = { method: "eda.sys_I18n.getCurrentLanguage", arguments: {} };
-  for (const [requests, valid] of [[[languageReader], true], [[], false], [[languageReader, languageReader], false]] as const) {
+  const selectedRowReader = { method: "eda.lib_SelectControl.getSelectedLibraryRowInfo", arguments: {} };
+  for (const [requests, valid] of [[[languageReader, selectedRowReader], true], [[], false], [[languageReader, languageReader], false]] as const) {
     const result = await offlineApi(child, { action: "public-readers-validate", query: { request: { action: "batch", requests } } });
     requireCheck(result["valid"] === valid && result["executionAuthorized"] === false,
       "Public utility batch validation accepted empty/duplicate methods or implied execution authority.");
@@ -508,7 +525,7 @@ async function catalogChecks(child: OfflineChild, root: string, sample: () => Pr
   requireCheck(fileValidation["valid"] === true && fileValidation["executionAuthorized"] === false &&
     record(fileValidation["requestSummary"])["base64Echoed"] === false && !Object.hasOwn(fileValidation, "request"),
   "Managed library-file validation echoed source or implied execution authority.");
-  return { tools: tools.length, queries: CATALOG_QUERY_COUNT, loadedFacadeChecked: true, footprintMainDiscoveryChecked: true, footprintCombinedDiscoveryChecked: true, footprintCombinedUnknownAbandonmentDiscoveryChecked: true, rendererCaptureDiscoveryChecked: true, footprintHeldCacheDiscoveryChecked: true, ratlineContinuationDiscoveryChecked: true, footprintCopyPreparationDiscoveryChecked: true, footprintCopyRoutePreparationDiscoveryChecked: true };
+  return { tools: tools.length, queries: CATALOG_QUERY_COUNT, loadedFacadeChecked: true, footprintMainDiscoveryChecked: true, footprintCombinedDiscoveryChecked: true, footprintCombinedUnknownAbandonmentDiscoveryChecked: true, rendererCaptureDiscoveryChecked: true, footprintHeldCacheDiscoveryChecked: true, footprintHeadAgeDiscoveryChecked: true, ratlineContinuationDiscoveryChecked: true, footprintCopyPreparationDiscoveryChecked: true, footprintCopyRoutePreparationDiscoveryChecked: true };
 }
 
 export async function probeInstalledOfflineCatalog(installedRoot: string): Promise<Record<string, unknown>> {

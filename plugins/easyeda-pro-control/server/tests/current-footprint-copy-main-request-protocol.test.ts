@@ -42,9 +42,9 @@ void test("all21 finite native templates reconstruct exact fixed methods, source
 
 void test("driver invocation and later context join compare original receivers rather than copied request fields", () => {
   const setup = String.raw`let calls=0;const forbidden=()=>{calls++;throw Error("must not invoke");};
-const u=async function u(t){forbidden();},xC=function xC(t,e,r){forbidden();},L3=async function L3(t,e,r=false){forbidden();},y=async function y(t,e){forbidden();};
+const u=async function u(t){forbidden();},xC=function xC(t,e,r){forbidden();},L3=async function L3(t,e,r=false){forbidden();},y=async function y(t,e){forbidden();},rl=function rl(t){forbidden();};
 class Driver{async interceptHttpProtocol(e,r,i){forbidden();}}const backend=new Driver();backend.cb=(()=>async(r,i)=>{forbidden();})();
-const source=[u,backend,{},xC,L3,y,Date,Date.now],router={logger:{}},req={},res={},top=[router,req,res],caller=[backend,req,res];
+const source=[u,backend,{},xC,L3,y,Date,Date.now,rl],router={logger:{}},req={},res={},top=[router,req,res],caller=[backend,req,res];
 const ctx={req,res,routerUrl:"inert",routerParams:{},routerArgs:[],logger:router.logger};const contextFrame=[router,req,res,ctx];`;
   const make = (): ReturnType<typeof createContext> => {
     const context = createContext({}); runInContext(`${setup}\nconst original=(${BACKEND.capture.program}).call(source);const invocation=(${PROGRAMS.invocation}).call(top,original,caller);const contextPacket=(${CALLS.context.program}).call(contextFrame,original);`, context); return context;

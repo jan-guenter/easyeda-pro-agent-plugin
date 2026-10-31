@@ -52,14 +52,14 @@ function nativeMetadata(role: "Date" | "now"): Data {
   return { result, internalProperties: internal(true) };
 }
 function array(): Data {
-  const roles = new Map<number, Role>([[3, "protocolCallback"], [5, "driverIntercept"], [6, "driverCallback"], [7, "router"], [8, "actorClock"], [9, "projectSql"]]);
-  const result = Array.from({ length: 12 }, (_, index) => {
+  const roles = new Map<number, Role>([[3, "protocolCallback"], [5, "driverIntercept"], [6, "driverCallback"], [7, "router"], [8, "actorClock"], [9, "projectSql"], [12, "dateParser"]]);
+  const result = Array.from({ length: 13 }, (_, index) => {
     const role = roles.get(index); let value: Data = { type: "object", objectId: `member-${String(index)}` };
     if (role !== undefined) { value = { type: "function", className: SOURCE.functions[role].async ? "AsyncFunction" : "Function", description: fragments[role], objectId: role }; }
     else if (index === 10 || index === 11) { value = { type: "function", className: "Function", objectId: index === 10 ? "Date" : "now" }; }
     return property(String(index), value, true, true);
   });
-  result.push(property("length", { type: "number", value: 12 }, true, false, false));
+  result.push(property("length", { type: "number", value: 13 }, true, false, false));
   return { result, internalProperties: [{ name: "[[Prototype]]", value: { type: "object", subtype: "array", className: "Array", objectId: "array-prototype" } }] };
 }
 export function mainBackendTransportFixture(): Readonly<{ transport: CurrentFootprintCopyMainBackendTransport; commands: Command[]; state: {
@@ -87,7 +87,7 @@ export function mainBackendTransportFixture(): Readonly<{ transport: CurrentFoot
       return {};
     }
     if (command.phase === "source") { return { scriptSource: state.wrongSource ? "drift" : "synthetic-complete-app-source" }; }
-    if (command.phase === "frame" || command.phase === "capture") { return { result: { type: "object", subtype: "array", className: "Array", description: command.phase === "frame" ? "Array(8)" : "Array(12)", objectId: command.phase } }; }
+    if (command.phase === "frame" || command.phase === "capture") { return { result: { type: "object", subtype: "array", className: "Array", description: command.phase === "frame" ? "Array(9)" : "Array(13)", objectId: command.phase } }; }
     if (command.phase === "require") { return { result: { type: "boolean", value: true } }; }
     if (command.phase === "properties") {
       const id = command.params.objectId;
@@ -95,7 +95,7 @@ export function mainBackendTransportFixture(): Readonly<{ transport: CurrentFoot
       if (id === "capture") { return array(); }
       if (id === "Date" || id === "now") { return nativeMetadata(id); }
       assert.ok(Object.hasOwn(SOURCE.functions, id));
-      // oxlint-disable-next-line typescript/no-unsafe-type-assertion -- Above membership check restricts this synthetic remote handle to the exact six role literals.
+      // oxlint-disable-next-line typescript/no-unsafe-type-assertion -- Above membership check restricts this synthetic remote handle to the exact seven role literals.
       return metadata(id as Role);
     }
     return {};

@@ -1,6 +1,7 @@
 /** Exact inert function fragments used only by synthetic V8 and protocol tests. */
 /* oxlint-disable unicorn/prefer-string-raw, eslint/no-template-curly-in-string -- These exact inert vendor fragments preserve their JSON-escaped bytes without evaluating their template literals. */
 export const mainBackendFragments = Object.freeze({
+  "dateParser": "function rl(t){let e=new Date(t).getTime(),r=new Date().getTimezoneOffset()*1e3*60;return new Date(e-r)}",
   "projectSql": "async function y(t,e){return e in t.db||(t.db[e]=xt(e,t.logger)),B5(e),t.db[e]}",
   "driverCallback": "async(r,i)=>{let s={req:r,res:i,routerUrl:r.url(),routerParams:{},routerArgs:[],logger:this.logger},a=0;i.setStatus(200);try{await this.run(s,r.url()),s.matched||i.setStatus(404)}catch(n){this.logger.error(n),a=isNaN(n.code)?500:n.code,isNaN(n.code)&&i.setStatus(500),Sj(s,n,a)}i.stream().writableEnded||i.stream().end()}",
   "driverIntercept": "async interceptHttpProtocol(e,r,i){if(this.cb){let s,a;return Va?(s=new zL(e,fE.session.defaultSession,i),a=new kL(r,i)):(s=new BL(e,i),a=new YL(r,i)),/.+\\.js/.test(e.url)&&a.setHeader(\"Content-Type\",\"text/javascript\"),/entry=/.test(e.url)&&(a.setHeader(\"Cross-Origin-Embedder-Policy\",\"require-corp\"),a.setHeader(\"Cross-Origin-Opener-Policy\",\"same-origin\")),await this.cb(s,a),i.trace(\"intercept driver complete\"),a.getHeader(\"set-cookie\")}}",

@@ -55,6 +55,7 @@ and exactly one `operation`:
 | Operation | Fields | Effect and scope |
 | --- | --- | --- |
 | `fit-all` | `kind:"fit-all"` | Native adapt-all camera operation and returned bounding box. It does not establish complete design membership. |
+| `fit-board-outline` | `kind:"fit-board-outline"` | Submit the fixed native `fitBoard` topic to the retained PCB receiver. Only submission is observed; no outline membership, camera bounds or viewport change is proved. |
 | `fit-selected` | `kind:"fit-selected",expectedSelection:[...]` | Fit the already selected objects. The complete ordered ID list must match before dispatch and afterward. No selection change is requested. Component attribute boxes can contribute to the fit. |
 | `zoom-to` | `kind:"zoom-to",xMil,yMil,scaleRatio` | Explicit coordinates in mil and explicit positive native camera scale ratio. No omitted-coordinate defaults or percentage-zoom wrapper. |
 | `navigate-coordinates` | `kind:"navigate-coordinates",xMil,yMil,acceptTransientOverlayEffects:true` | Center on a data-origin mil coordinate through the native SDK handler, without requesting a scale change. A transient crossline may appear. Returns only the native boolean acknowledgment. |
@@ -91,13 +92,31 @@ the original coordinator offers `settle-records`; settlement dispatches no new
 camera operation.
 
 A successful result binds its exact operation and target, attempted/acknowledged
-flags and complete unchanged selection. Fit and zoom additionally retain one
+flags and complete unchanged selection. Fit-all, fit-selected and zoom-to retain one
 native `getBBox2` return, with raw native bounds and `boundsMil`. Native units
 equal ten mil. Navigation retains only an exact native `true` acknowledgment;
 its bounds fields stay null. Camera state is not independently double-sampled,
 rendering completion is not observed and the result contains no screenshot. A
 three-second observer prevents later camera dispatch after expiry but cannot
 cancel a handler already sent.
+
+The [public outline-fitting method](https://prodocs.easyeda.com/en/api/reference/pro-api.pcb_document.zoomtoboardoutline.html)
+submits `fitBoard` in the installed UI. This native equivalent uses that exact
+topic on the captured PCB message bus. The pinned subscriber collects nonempty
+`Board Outline` views and `Line` views on layer11. It does not use
+`getAllBoardBox`, whose separate handler can fall back to all geometry.
+`fit-board-outline` keeps both bounds fields null. A normal void publish return
+cannot distinguish missing outlines, a missing or cancelled subscriber, a caught
+callback error, or a completed camera movement. It proves submission only.
+Source and offline checks do not establish a connected result for this operation.
+
+New visual publications use schema `easyeda-pro-control.pcb209-visual-action.v2`.
+Historical journal reads also recognize both exact released v1 projections:
+the original three camera operations and the later navigation-expanded shape.
+The reader preserves every known field, limitation string and causal check;
+extra or modified fields refuse. This compatibility validates stored evidence
+without rewriting journals, restoring original handles, authorizing replay or
+granting a new launch.
 
 The navigation acknowledgment occurs after the native handler schedules an
 animation frame, a 75ms timer and a 3s crossline or rectangle overlay. It may also

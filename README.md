@@ -27,10 +27,13 @@ angles do not establish full-circle rendering, and Poured contours prove neither
 fresh copper nor fabrication geometry. Arc/Poured passed a live empty-collection
 case; populated shapes still need connected validation.
 A separate [disposable visual workflow](plugins/easyeda-pro-control/skills/easyeda-pro-control/references/current-pcb209-visual.md)
-provides fit/zoom, coordinate/region navigation and one bounded capture of its
+provides fit/zoom, outline-fit submission, coordinate/region navigation and one bounded capture of its
 original application window. Coordinate/region operations require explicit
 acceptance of transient marker overlays. Their native acknowledgment does not
 prove camera position, rendered content or completion of the delayed overlay.
+Outline fitting submits the fixed native command without an all-geometry
+fallback. Its return does not prove that a subscriber handled the command or
+that the camera moved.
 Before capture, a bounded readiness query reports window geometry and remaining
 transport capacity without painting or consuming the capture attempt. A separate
 once-only request can resize an eligible normal window to1920x1080; a later
@@ -49,8 +52,11 @@ prepares managed Allegro files locally, then uses the authenticated app to compa
 footprint/designator and net/pin memberships. It does not compare component values
 or export a design. [UI utility readers](plugins/easyeda-pro-control/skills/easyeda-pro-control/references/current-utility-readers.md#language-and-api-page-viewport-readers)
 include resolved theme, global toolbar units, the fixed system-library UUID,
+selected bottom-library row metadata,
 SDK-resolved language and a fixed API-page `cll` query reader. The query returns
 a known log level or null from the API page and exposes no other URL keys.
+Selected-row metadata accepts only a UI-reported system-library UUID. It does
+not prove asset ownership because the UI retains row and library separately.
 The language result can be a fallback and does not prove
 that the UI language provider succeeded. Up to seven different utility methods
 can run in one bounded batch with a shared ten-second deadline and one runtime
@@ -77,6 +83,10 @@ general geometry operations, writers and explicit Save remain disabled. A
 separate disposable project-worker startup tool captures original constructors,
 current wrapper/channel relations and actor/local-Date observations. It does
 not establish PCB-worker completion or enable writers.
+The separate [head-age diagnostic](plugins/easyeda-pro-control/skills/easyeda-pro-control/references/current-footprint-head-age.md)
+checks an unlocked head from a closed disposable project against the original
+application Date/parser and Windows clocks. It opens no project and issues no
+copy/delete or Save authority.
 Its separate [ratline diagnostic purpose](plugins/easyeda-pro-control/skills/easyeda-pro-control/references/current-pcb209-ratline-held-import.md)
 observes PCB construction and holds the first child's qualified source import.
 It also records native creation-stack evidence for exact constructor comparison.

@@ -11,6 +11,7 @@ export const SDK_PUBLIC_READERS_MAX_VIEWPORT_DIMENSION = 1_000_000;
 export const SDK_PUBLIC_READERS_MAX_API_HREF_BYTES = 8192;
 export const SDK_PUBLIC_READERS_API_LOG_LEVELS = Object.freeze(["trace", "debug", "info", "warn", "error"] as const);
 export const SDK_PUBLIC_READERS_209_SYSTEM_LIBRARY_UUID = "0819f05c4eef4c71ace90d822a990e87";
+export const SDK_PUBLIC_READERS_209_SELECTED_LIBRARY_TYPES = Object.freeze(["1", "2", "3", "4", "5", "29"] as const);
 // Exact m2 return domain, including the vendor's edition fallback. This is
 // Deliberately distinct from the API's supported-language catalog below.
 export const SDK_PUBLIC_READERS_209_RESOLVED_LANGUAGES = Object.freeze([
@@ -36,6 +37,7 @@ export const sdkPublicReadersRequestSchema = z.discriminatedUnion("method", [
   z.object({ method: z.literal("eda.sys_Window.getCurrentTheme"), arguments: emptyArguments }).strict(),
   z.object({ method: z.literal("eda.sys_Unit.getFrontendDataUnit"), arguments: emptyArguments }).strict(),
   z.object({ method: z.literal("eda.lib_LibrariesList.getSystemLibraryUuid"), arguments: emptyArguments }).strict(),
+  z.object({ method: z.literal("eda.lib_SelectControl.getSelectedLibraryRowInfo"), arguments: emptyArguments }).strict(),
 ]);
 export type SdkPublicReadersRequest = z.infer<typeof sdkPublicReadersRequestSchema>;
 export const sdkPublicReadersBatchRequestSchema = z.object({ action: z.literal("batch"),
@@ -52,11 +54,11 @@ export type SdkPublicReadersBatchRequest = z.infer<typeof sdkPublicReadersBatchR
 export type SdkPublicReadersOperation = z.infer<typeof sdkPublicReadersOperationSchema>;
 type PublicReaderMethod = SdkPublicReadersRequest["method"];
 interface Definition {
-  readonly namespace: "sys_I18n" | "sys_Window" | "sys_Unit" | "lib_LibrariesList";
-  readonly name: "getAllSupportedLanguages" | "isLanguageSupported" | "getCurrentLanguage" | "getViewportSize" | "getUrlParam" | "getCurrentTheme" | "getFrontendDataUnit" | "getSystemLibraryUuid";
+  readonly namespace: "sys_I18n" | "sys_Window" | "sys_Unit" | "lib_LibrariesList" | "lib_SelectControl";
+  readonly name: "getAllSupportedLanguages" | "isLanguageSupported" | "getCurrentLanguage" | "getViewportSize" | "getUrlParam" | "getCurrentTheme" | "getFrontendDataUnit" | "getSystemLibraryUuid" | "getSelectedLibraryRowInfo";
   readonly parameters: readonly string[];
-  readonly resultKind: "languages" | "boolean" | "resolved-language" | "viewport" | "api-url-log-level" | "theme" | "toolbar-unit" | "system-library-uuid";
-  readonly effect: "language-catalog-read" | "sdk-resolved-language-read" | "extension-page-viewport-read" | "api-page-log-level-query-read" | "ui-theme-read" | "ui-toolbar-unit-read" | "system-library-identity-read";
+  readonly resultKind: "languages" | "boolean" | "resolved-language" | "viewport" | "api-url-log-level" | "theme" | "toolbar-unit" | "system-library-uuid" | "selected-system-library-row";
+  readonly effect: "language-catalog-read" | "sdk-resolved-language-read" | "extension-page-viewport-read" | "api-page-log-level-query-read" | "ui-theme-read" | "ui-toolbar-unit-read" | "system-library-identity-read" | "selected-system-library-row-read";
   readonly limitation: string;
   readonly sourceOffsets: readonly number[];
   readonly documentationUrl: string;
@@ -107,6 +109,12 @@ const definitions: Record<PublicReaderMethod, Definition> = {
     limitation: "Awaits the public method and requires the exact system-library UUID constant in the reviewed UI. The constant is a validation expectation, never a fallback result. No personal, team, favorite or project library enumeration, account lookup, asset retrieval, network request or write is performed. Missing and different values refuse.",
     sourceOffsets: [1_342_770, 1_974_359], uiSourceOffsets: [8_799_592, 17_214_753, 17_443_393, 17_456_623],
     documentationUrl: "https://prodocs.easyeda.com/en/api/reference/pro-api.lib_librarieslist.getsystemlibraryuuid.html",
+  },
+  "eda.lib_SelectControl.getSelectedLibraryRowInfo": {
+    namespace: "lib_SelectControl", name: "getSelectedLibraryRowInfo", parameters: [], resultKind: "selected-system-library-row", effect: "selected-system-library-row-read",
+    limitation: "This SDK method is beta. Reads one bottom-library row with the fixed system-library UUID reported by the UI. Returns only its UUID, supported library type and reported library UUID; no selection or a missing subscriber refuses rather than becoming an empty success. The callback combines independently retained row and library state, so even two matching samples do not prove that this asset belongs to that library. A non-system reported library UUID refuses. No ownership, freshness, existence, geometry or current-project binding is verified. No lookup, download, navigation, placement or Save runs.",
+    sourceOffsets: [1_345_306, 1_974_359], uiSourceOffsets: [12_328_063, 17_427_892, 17_445_105, 17_456_623],
+    documentationUrl: "https://prodocs.easyeda.com/en/api/reference/pro-api.lib_selectcontrol.getselectedlibraryrowinfo.html",
   },
 };
 const commonLimitations = [
@@ -257,6 +265,13 @@ const readerProjectProgram = (expectedSupported: boolean): string => `const proj
  if(kind==='theme'){if(value!=='light'&&value!=='dark')fail();return value;}
  if(kind==='toolbar-unit'){if(value!=='mm'&&value!=='inch'&&value!=='mil')fail();return value;}
  if(kind==='system-library-uuid'){if(value!==${JSON.stringify(SDK_PUBLIC_READERS_209_SYSTEM_LIBRARY_UUID)})fail();return value;}
+ if(kind==='selected-system-library-row'){
+  if(!value||typeof value!=='object'||Array.isArray(value)||Reflect.ownKeys(value).length!==3)fail();
+  const uuid=data(value,'uuid'),libraryUuid=data(value,'libraryUuid'),libraryType=data(value,'libraryType');
+  if(typeof uuid!=='string'||uuid.length!==32||!/^[a-f0-9]{32}$/.test(uuid)||
+   libraryUuid!==${JSON.stringify(SDK_PUBLIC_READERS_209_SYSTEM_LIBRARY_UUID)}||!${JSON.stringify(SDK_PUBLIC_READERS_209_SELECTED_LIBRARY_TYPES)}.includes(libraryType))fail();
+  return {uuid,libraryUuid,libraryType};
+ }
  if(kind==='boolean'){if(typeof value!=='boolean'||value!==${String(expectedSupported)})fail();return value;}
  if(kind==='languages'){
   if(!Array.isArray(value)||value.length!==languages.length||Reflect.ownKeys(value).length!==languages.length+1)fail();
@@ -335,6 +350,11 @@ sameOwner();return Object.freeze({sameOwner,read,uiBacked:${String(uiBacked)}});
 
 const dimensionSchema = z.number().int().min(0).max(SDK_PUBLIC_READERS_MAX_VIEWPORT_DIMENSION).refine((value) => !Object.is(value, -0));
 const viewportSchema = z.object({ width: dimensionSchema, height: dimensionSchema }).strict();
+const selectedLibraryRowSchema = z.object({
+  uuid: z.string().length(32).regex(/^[a-f0-9]{32}$/u),
+  libraryUuid: z.literal(SDK_PUBLIC_READERS_209_SYSTEM_LIBRARY_UUID),
+  libraryType: z.enum(SDK_PUBLIC_READERS_209_SELECTED_LIBRARY_TYPES),
+}).strict();
 const languagesSchema = z.array(language).length(SDK_PUBLIC_READERS_209_LANGUAGES.length)
   .refine((value) => value.every((entry, index) => entry === SDK_PUBLIC_READERS_209_LANGUAGES[index]));
 const payloadSchema = z.object({ ok: z.literal(true), kind: z.literal("sdk-public-readers"), method: z.string(), value: z.unknown() }).strict();
@@ -361,6 +381,8 @@ export function validateSdkPublicReadersResult(input: unknown, raw: unknown): Re
     value = z.enum(["mm", "inch", "mil"]).parse(payload.value);
   } else if (request.method === "eda.lib_LibrariesList.getSystemLibraryUuid") {
     value = z.literal(SDK_PUBLIC_READERS_209_SYSTEM_LIBRARY_UUID).parse(payload.value);
+  } else if (request.method === "eda.lib_SelectControl.getSelectedLibraryRowInfo") {
+    value = selectedLibraryRowSchema.parse(payload.value);
   } else {
     value = viewportSchema.parse(payload.value);
   }
@@ -369,6 +391,7 @@ export function validateSdkPublicReadersResult(input: unknown, raw: unknown): Re
       providerSuccessVerified: false, cachedMessageBusIdentityVerified: false } : {}),
     ...(definition.resultKind === "viewport" ? { units: "css-pixels", viewportScope: "public-api-extension-page" } : {}),
     ...(definition.resultKind === "api-url-log-level" ? { urlScope: "public-api-execution-page", queryKey: "cll", uiStateVerified: false } : {}),
+    ...(definition.resultKind === "selected-system-library-row" ? { libraryScope: "ui-reported-system-library", assetOwnershipVerified: false, selectedRowProvenanceVerified: false, currentProjectBindingVerified: false } : {}),
     ...(sdkPublicReaderRequiresUi(request) ? { uiVersion: EDITOR_OBSERVATION_209_UI.version, uiSha256: EDITOR_OBSERVATION_209_UI.sha256 } : {}),
     authority: "bounded-public-utility-read-only;not-project-state-or-runtime-admission",
     apiVersion: provenance.version, apiSha256: provenance.apiSha256,

@@ -18,7 +18,7 @@ export const CURRENT_FOOTPRINT_COMBINED_PROFILE = freezeDeep({
   purpose: CURRENT_FOOTPRINT_COMBINED_PURPOSE,
   nativeSwitch: "-WorkerStartupFootprintCombined209",
   // Normal/cleanup are charged classes. The maximum successful normal ID is
-  // 50 after interleaved cleanup; it is not the 41-command normal-class ceiling.
+  // 51 after interleaved cleanup; it is not the 42-command normal-class ceiling.
   main: { normalRequestLimit: mainNormal, cleanupRequestLimit: mainCleanup, requestLimit: mainNormal + mainCleanup,
     requests: { constructionNormal: CONSTRUCTION.observeNormal, constructionCleanup: CONSTRUCTION.observeCleanup,
       originIssueNormal, requestNormal: REQUEST.normal, requestCleanup: REQUEST.cleanup, releaseCleanup: CONSTRUCTION.releaseCleanup },

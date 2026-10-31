@@ -69,7 +69,7 @@ export async function unarmedMainCompletionOriginFixture(): Promise<Readonly<{
     assertCurrent: base.transport.assertCurrent,
     send(command: CurrentFootprintCopyMainBackendCommand, id: number): Promise<void> {
       if (command.phase === "release" && native.beginCount > 0) {
-        native.tailReleases += 1; assert.equal(id, 127); queue.push(`${JSON.stringify({ id, result: {} })}\0`); return Promise.resolve();
+        native.tailReleases += 1; assert.equal(id, 128); queue.push(`${JSON.stringify({ id, result: {} })}\0`); return Promise.resolve();
       }
       return base.transport.send(command, id);
     },

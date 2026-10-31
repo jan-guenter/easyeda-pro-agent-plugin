@@ -2,6 +2,7 @@
  * recreates a native owner. Partial reservations remain launch blockers. */
 /* oxlint-disable import/max-dependencies -- This shared journal validates distinct diagnostic, String and common evidence, including global String exclusion, without merging their authority. */
 import { currentWindowRestoreResultSchema, requireCurrentWindowRestoreResult } from "./current-pcb-diagnostic-window-restore.ts";
+import { assertNoUnresolvedFootprintHeadAgeValidation } from "./current-footprint-head-age-validation-journal.ts";
 import { assertNoUnresolvedFootprintHeldCacheValidation } from "./current-footprint-held-cache-validation-journal.ts";
 import { currentWindowResizeResultSchema, requireCurrentWindowResizeResult } from "./current-pcb-diagnostic-window-resize.ts";
 import { CURRENT_RENDERER_CAPTURE_LIMITS, currentRendererCaptureResultSchema, requireCurrentRendererCaptureResult } from "./current-pcb-diagnostic-renderer-capture.ts";
@@ -1374,6 +1375,7 @@ export async function readCurrentPcbDiagnosticLifecycles(): Promise<readonly Dia
  * historical snapshot, never an operation ID/boolean accepted by normal guards. */
 export async function assertCurrentFootprintCombinedAbandonmentIsolated(snapshot: CurrentFootprintCombinedHistoricalSnapshot): Promise<void> {
   await assertNoUnresolvedFootprintHeldCacheValidation();
+  await assertNoUnresolvedFootprintHeadAgeValidation();
   const original = requireCurrentFootprintCombinedHistoricalSnapshot(snapshot);
   await assertNoUnresolvedCurrentPcbStringLedgers(); await assertCurrentFootprintCombinedHistoricalSnapshot(snapshot);
   const operations = await readCurrentPcbDiagnosticLifecycles();
@@ -1388,6 +1390,7 @@ export async function assertCurrentFootprintCombinedAbandonmentIsolated(snapshot
 
 export async function assertNoUnresolvedCurrentPcbDiagnosticLaunches(): Promise<void> {
   await assertNoUnresolvedFootprintHeldCacheValidation();
+  await assertNoUnresolvedFootprintHeadAgeValidation();
   await assertNoUnresolvedCurrentPcbStringLedgers();
   const root = await controlRootCapability(false);
   const parent = await root.openDirectory(join(controlDataDirectory(), DIRECTORY), false).catch((error: unknown) => {

@@ -44,8 +44,8 @@ void test("all three public readers preserve the exact receiver and positional a
 });
 
 void test("public reader catalog exposes exact schemas and reviewed source offsets without execution authority", () => {
-  assert.equal(sdkPublicReadersDescriptors().length, 8);
-  assert.equal(querySdkPublicReadersMethods()["total"], 8);
+  assert.equal(sdkPublicReadersDescriptors().length, 9);
+  assert.equal(querySdkPublicReadersMethods()["total"], 9);
   assert.equal(JSON.stringify(querySdkPublicReadersMethods()).includes("inputSchema"), false);
   const filtered = querySdkPublicReadersMethods({ method: viewportRequest.method, includeSchemas: true });
   assert.equal(filtered["total"], 1); assert.match(JSON.stringify(filtered), /inputSchema/u);

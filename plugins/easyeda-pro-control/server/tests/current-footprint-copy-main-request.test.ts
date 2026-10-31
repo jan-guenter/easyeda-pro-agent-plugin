@@ -15,10 +15,10 @@ import { mainRequestFragments } from "./helpers/footprint-main-request-fragments
 
 const setup = String.raw`
 let called=0;const forbidden=()=>{called++;throw Error("must not invoke");};
-const u=async function u(L){forbidden();},xC=function xC(t,e,r){forbidden();},L3=async function L3(t,e,r=false){forbidden();},y=async function y(t,e){forbidden();};
+const u=async function u(L){forbidden();},xC=function xC(t,e,r){forbidden();},L3=async function L3(t,e,r=false){forbidden();},y=async function y(t,e){forbidden();},rl=function rl(t){forbidden();};
 class Driver{async interceptHttpProtocol(e,r,i){forbidden();}}
 const backend=new Driver(),session={};backend.cb=(()=>async(r,i)=>{forbidden();})();
-const source=[u,backend,session,xC,L3,y,Date,Date.now],router={logger:{}},req={},res={};
+const source=[u,backend,session,xC,L3,y,Date,Date.now,rl],router={logger:{}},req={},res={};
 const ctx={req,res,routerUrl:"/api/v4/projects/inert/branches/inert/histories",routerParams:{},routerArgs:[],logger:router.logger};
 const contextFrame=[router,req,res,ctx];
 const expected={projectUuid:"a".repeat(64),branchUuid:"b".repeat(32),projectKey:"a".repeat(64),path:"C:\\disposable\\inert.eprj2",dataStr:"inert-native-body"};
