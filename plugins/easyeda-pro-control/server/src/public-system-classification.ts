@@ -101,7 +101,11 @@ function readTree(request: PublicSystemClassificationRequest, raw: unknown): Cat
     }
   }
   const order = (row: CategoryRow): number => row.order_no === "0" ? 0 : row.order_no;
-  const byOrder = (left: CategoryRow, right: CategoryRow): number => order(left) - order(right);
+  const byOrder = (left: CategoryRow, right: CategoryRow): number => {
+    const compared = order(left) - order(right);
+    if (compared !== 0) { return compared; }
+    return left.uuid < right.uuid ? -1 : Number(left.uuid > right.uuid);
+  };
   const nodes: CategoryNode[] = [];
   for (const root of roots.toSorted(byOrder)) {
     nodes.push({ uuid: root.uuid, name: root.name, parentUuid: null, order: order(root) });

@@ -1,7 +1,8 @@
 /** Synthetic completed-reader source eligibility. No live callbacks or writer. */
 import assert from "node:assert/strict";
 import { test } from "node:test";
-import { qualifyCurrentFootprintCopySourceAssets, requireCurrentFootprintCopySourceAssets } from "../src/current-footprint-copy-source-assets.ts";
+import { currentFootprintCopySourceAssetBodySupported, qualifyCurrentFootprintCopySourceAssets,
+  requireCurrentFootprintCopySourceAssets } from "../src/current-footprint-copy-source-assets.ts";
 import { currentFootprintCopyV2Rows, prepareCurrentFootprintCopyV2Plan } from "../src/current-footprint-copy-v2-plan.ts";
 import { prepareCurrentFootprintSourcePlan } from "../src/current-footprint-source-plan.ts";
 import { IDS, encrypted, fixture, inventory, mutate } from "./helpers/symbol-sql-fixture.ts";
@@ -34,6 +35,17 @@ async function copyPlan(atoms: readonly Atom[]): Promise<Awaited<ReturnType<type
   const content = [head(101), row("META", atoms.length + 9, "META", metadata), head(100), ...records].join("|\n");
   return prepareCurrentFootprintCopyV2Plan(before, source, { client, content });
 }
+
+void test("the raw body gate classifies malformed JSON as unsupported without throwing or minting an original plan", () => {
+  for (const body of ['{"centerX":', '{"defaultPad":{"padType":"RECT"', "not-json", '{"originX":0,}']) {
+    assert.equal(currentFootprintCopySourceAssetBodySupported("PAD", body), false);
+  }
+  assert.equal(currentFootprintCopySourceAssetBodySupported("CANVAS", "null"), false);
+  assert.equal(currentFootprintCopySourceAssetBodySupported("CANVAS", JSON.stringify(canvas)), true);
+  assert.equal(currentFootprintCopySourceAssetBodySupported("PAD", JSON.stringify(pad)), true);
+  assert.equal(currentFootprintCopySourceAssetBodySupported("META", JSON.stringify(metadata)), true);
+  assert.equal(currentFootprintCopySourceAssetBodySupported("LINE", ""), true);
+});
 
 void test("strict local primitive bodies qualify while the losing original META source stays preserved", async () => {
   const copy = await copyPlan([{ type: "CANVAS", id: "CANVAS", body: canvas }, { type: "PAD", id: "pad", body: pad },

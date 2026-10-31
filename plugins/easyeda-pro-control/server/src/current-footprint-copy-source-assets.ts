@@ -84,6 +84,16 @@ export function requireCurrentFootprintCopySourceAssets(qualification: CurrentFo
     "ORIGINAL_QUALIFICATION");
   assertCurrentFootprintCopyV2Inventory(copy, currentFootprintCopyV2Before(copy)); return qualification;
 }
+/** Check one selected family's raw body without issuing qualification or owner
+ * authority. Malformed JSON and unsupported shapes both refuse this subset;
+ * an empty body retains the existing explicit-tombstone behavior.
+ */
+export function currentFootprintCopySourceAssetBodySupported(family: Family, body: string): boolean {
+  if (body === "") { return true; }
+  let parsed: unknown;
+  try { parsed = JSON.parse(body) as unknown; } catch { return false; }
+  return schemas[family].safeParse(parsed).success;
+}
 /** Qualify only explicitly enumerated primitive bodies. JSON strings are read
  * from the original plan, never executed. Even a tombstone of an unknown family
  * refuses this subset; unsupported data remains available to other profiles.
@@ -112,7 +122,7 @@ export async function qualifyCurrentFootprintCopySourceAssets(copy: CurrentFootp
     // oxlint-disable-next-line typescript/no-unsafe-type-assertion -- Narrow a checked own key into the closed schema table, not arbitrary caller data.
     const family = header.type as Family;
     const body = raw.slice(split + 2);
-    if (family === "META" && header.ticket >= copy.metadataTicket || body !== "" && !schemas[family].safeParse(JSON.parse(body) as unknown).success) {
+    if (family === "META" && header.ticket >= copy.metadataTicket || !currentFootprintCopySourceAssetBodySupported(family, body)) {
       return publish(freezeDeep({ ...common, status: "unsupported", reason: "record-body", recordId: header.id, recordType: family }));
     }
     families.add(family);

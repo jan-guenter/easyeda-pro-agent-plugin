@@ -77,7 +77,8 @@ void test("offline catalog discovery and validation cannot grant network or SDK 
 });
 
 void test("catalog footprint coverage labels vendor HTTP separately and retains the public getter omission", () => {
-  const row = inventoryExtensionApiCoverage().find((entry) => entry.path === "eda.lib_Footprint.get"); assert.ok(row);
+  const coverage = inventoryExtensionApiCoverage();
+  const row = coverage.find((entry) => entry.path === "eda.lib_Footprint.get"); assert.ok(row);
   assert.equal(row.status, "implemented-public-subset"); assert.equal(row.currentGenerationLiveValidation, "not-recorded");
   assert.equal(row.completeDeclaredContractSupported, false); assert.equal(row.runtimeAdmission, "not-granted-by-inventory");
   const legacy = row.routes.find((entry) => entry.tool === "easyeda_control_library"); assert.ok(legacy);
@@ -94,8 +95,18 @@ void test("catalog footprint coverage labels vendor HTTP separately and retains 
   const summary = extensionApiCoverageSummary();
   const states = summary["executionRoutes"];
   assert.ok(typeof states === "object" && states !== null && "available-with-network-guards" in states);
-  assert.equal(states["available-with-network-guards"], 9);
-  const symbolTitle = inventoryExtensionApiCoverage().find((entry) => entry.path === "eda.lib_Symbol.searchByProperties");
+  assert.equal(states["available-with-network-guards"], 13);
+  for (const [method, action] of [["getAllClassificationTree", "get-classification-tree"],
+    ["getIndexByName", "get-classification-index-by-name"], ["getNameByUuid", "get-classification-name-by-uuid"],
+    ["getNameByIndex", "get-classification-name-by-index"]] as const) {
+    const classification = coverage.find((entry) => entry.path === `eda.lib_Classification.${method}`); assert.ok(classification);
+    assert.equal(classification.status, "implemented-vendor-http-equivalent"); assert.equal(classification.routes.length, 1);
+    assert.equal(classification.runtimeAdmission, "not-granted-by-inventory"); assert.equal(classification.completeDeclaredContractSupported, false);
+    const route = classification.routes[0]; assert.ok(route);
+    assert.equal(route.tool, "easyeda_control_catalog_components"); assert.equal(route.selector, action);
+    assert.equal(route.implementation, "vendor-http-task-equivalent"); assert.equal(route.executionState, "available-with-network-guards");
+  }
+  const symbolTitle = coverage.find((entry) => entry.path === "eda.lib_Symbol.searchByProperties");
   assert.ok(symbolTitle); assert.equal(symbolTitle.routes.length, 1);
   const titleRoute = symbolTitle.routes[0]; assert.ok(titleRoute);
   assert.equal(titleRoute.tool, "easyeda_control_catalog_components"); assert.equal(titleRoute.selector, "search-symbols-by-name");

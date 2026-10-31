@@ -44,6 +44,28 @@ void test("tree paging validates the complete response and binds subsequent page
   assert.throws(() => validatePublicSystemClassificationResult(treeRequest, envelope([row, child, { ...row, uuid: otherUuid, type: 2 }])));
 });
 
+void test("equal-order roots and children use UUID ties so shuffled responses preserve every digest-bound page", () => {
+  const anotherChild = { ...child, uuid: "d".repeat(32), name: "0805" };
+  const anotherRoot = { ...row, uuid: otherUuid, name: "Another package" };
+  const rows = [row, child, anotherRoot, anotherChild];
+  const shuffled = [anotherRoot, anotherChild, child, row];
+  const first = validatePublicSystemClassificationResult({ ...treeRequest, limit: 2 }, envelope(rows));
+  for (const offset of [0, 2]) {
+    const page = { ...treeRequest, offset, limit: 2, expectedTreeSha256: first["treeSha256"] };
+    const expected = validatePublicSystemClassificationResult(page, envelope(rows));
+    const observed = validatePublicSystemClassificationResult(page, envelope(shuffled));
+    assert.deepEqual(observed["rows"], expected["rows"]); assert.equal(observed["treeSha256"], expected["treeSha256"]);
+    assert.equal(observed["nextOffset"], expected["nextOffset"]);
+  }
+  assert.deepEqual(first["rows"], [{ uuid: primaryUuid, name: "Package", parentUuid: null, order: 0 },
+    { uuid: secondaryUuid, name: "0603", parentUuid: primaryUuid, order: 3 }]);
+  for (const changed of [[row, child, { ...anotherRoot, order_no: -1 }, anotherChild],
+    [row, child, anotherRoot, { ...anotherChild, order_no: 2 }]]) {
+    const result = validatePublicSystemClassificationResult({ ...treeRequest, limit: 2 }, envelope(changed));
+    assert.notEqual(result["treeSha256"], first["treeSha256"]); assert.notDeepEqual(result["rows"], first["rows"]);
+  }
+});
+
 void test("the three exact projections preserve parent-child membership and explicitly report a missing child", () => {
   const index = validatePublicSystemClassificationResult({ action: "get-classification-index-by-name", ...common,
     primaryClassificationName: "Package", secondaryClassificationName: "0603" }, envelope());

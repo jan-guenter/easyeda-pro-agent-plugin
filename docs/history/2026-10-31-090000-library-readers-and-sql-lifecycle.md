@@ -151,3 +151,61 @@ Independent review found no actionable issue in the five-reader relation,
 source-asset qualification, readiness limits or late-failure journal reserve.
 The complete inventory now records 835 methods with 490 omitted and 79 blocked.
 Exact-commit CI, CodeRabbit, packaging, publication and installation are pending.
+
+## Initial CI and CodeRabbit review
+
+The first PR payload, `58c7f13ed1ce3f384601e7a55b9d15441e716d53`,
+passed build and Windows CI. One facade shard found an outdated sibling
+assertion expecting nine network-enabled method mappings. The four new
+classification methods bring that count to thirteen. The assertion was
+corrected and its existing regression now verifies the four exact method/action
+mappings retain vendor-HTTP scope without runtime admission.
+
+CodeRabbit's full-review request was posted once. Its exact-head review raised
+three minor issues: malformed source bodies should return an unsupported
+qualification, category order ties need a deterministic UUID tie-break, and
+coverage text needs missing spaces. No additional legacy, collapsed or
+outside-diff issue was reported. All five pre-merge checks passed, including
+85.19% docstring coverage. The review covered 42 changed files and excluded the
+two generated bundles; it is not evidence of reviewing every unchanged file.
+All reported issues are being corrected together before a successor CI/review.
+
+The production-scope statement above describes agent actions: no production
+navigation, writer or explicit Save was dispatched. Existing-profile startup
+effects were acknowledged, and no whole-production-storage audit was performed.
+The byte-invariance proof covers the selected disposable file only.
+
+## Batched review corrections
+
+All three CodeRabbit issues are corrected. The source-body gate catches malformed
+JSON and returns the existing unsupported-record result, with valid schemas,
+metadata ticket rules and tombstones unchanged. A focused pure-parser regression
+checks this without fabricating original plan custody. Coverage text now uses
+normal word and number/unit spacing. Classification roots and siblings use UUIDs
+to break equal-order ties, so provider row order cannot change logical paging
+or its digest. A regression shuffles tied roots and children and preserves
+genuine order changes.
+
+All four projections passed again against the retained complete public response,
+without another network request. The corrected canonical digest is
+`b216eb772531ba65e6ab44f2a7c23d5a09ade31b2635b50bd8c40ab68e6b3afa`;
+the earlier `af43` receipt remains historical evidence of the initial ordering.
+The corrected source/parser, catalog and sibling-count checks passed strict lint
+and their focused regressions. Runtime bundles and compatibility projections
+still require the normal refresh before successor CI and follow-up review.
+
+The initial CI is terminal: 13,886 facade passes, the one stale assertion
+failure, five expected platform skips and zero cancelled/todo cases. Seven
+shards, Windows, build verification and all 424 bridge tests passed. Complete
+CRC-checked logs and tree/source/runtime/helper comparisons are retained. This
+failed payload is not release evidence.
+
+The corrected payload passed complete local types and strict lint, coverage,
+generated-program/build checks, reproducible bundles, compatibility, repository,
+MCP and skill validation. External pins and native helper bytes did not change.
+Its 979-file source projection is
+`ca116f92d185d183698977038371edd08c45124b8aa774cd51a3f0c453e51a1f`;
+the three-file runtime projection is
+`738f5bf5ce1868ccdc6b978457fb729dca17c9162d7502097daf328ba0b019f8`.
+No full local suite was added. Final exact-head CI, review and publication
+remain pending.
