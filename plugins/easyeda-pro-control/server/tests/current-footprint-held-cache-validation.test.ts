@@ -16,7 +16,7 @@ import { acquireCurrentPcbDiagnosticLaunchExclusion, assertCurrentPcbDiagnosticL
 import { CURRENT_FOOTPRINT_HELD_CACHE_JOURNAL_LIMITS, assertFootprintHeldCacheJournalBudget, captureFootprintHeldCacheValidationRecord,
   currentFootprintHeldCacheValidationRequestSchema, queryCurrentFootprintHeldCacheValidation,
   validateCurrentFootprintHeldCacheValidationArguments } from "../src/current-footprint-held-cache-validation-schema.ts";
-import { assertNoUnresolvedFootprintHeldCacheValidation, publishFootprintHeldCacheValidationRecord, readFootprintHeldCacheValidation,
+import { assertFootprintHeldCacheValidationChain, assertNoUnresolvedFootprintHeldCacheValidation, publishFootprintHeldCacheValidationRecord, readFootprintHeldCacheValidation,
   readFootprintHeldCacheValidations, reserveFootprintHeldCacheValidation } from "../src/current-footprint-held-cache-validation-journal.ts";
 import type { CurrentFootprintHeldCacheValidation } from "../src/current-footprint-held-cache-validation.ts";
 import { captureCurrentPcbStringClockReply } from "../src/current-pcb-string-clock-reply.ts";
@@ -73,7 +73,7 @@ async function fixture(options: Options = {}): Promise<Fixture> {
     currentDisposableOpenSealedTargetSchema, captureCurrentPcbStringClockReply, CurrentFootprintSavedCacheHeldRunner,
     currentFootprintHeldCacheValidationRequestSchema, acquireCurrentPcbDiagnosticLaunchExclusion, assertCurrentPcbDiagnosticLaunchExclusion,
     releaseCurrentPcbDiagnosticLaunchExclusion, diagnosticLifecycleBindingSchema,
-    assertNoUnresolvedFootprintHeldCacheValidation, publishFootprintHeldCacheValidationRecord, reserveFootprintHeldCacheValidation,
+    assertFootprintHeldCacheValidationChain, assertNoUnresolvedFootprintHeldCacheValidation, publishFootprintHeldCacheValidationRecord, reserveFootprintHeldCacheValidation,
     readFootprintHeldCacheValidation: async (operation: string): ReturnType<typeof readFootprintHeldCacheValidation> => {
       if (options.holdAbortDisk === true && reserved && !diskHeld) { diskHeld = true; diskEntered.resolve(null); await diskGate.promise; }
       return readFootprintHeldCacheValidation(operation);
@@ -122,7 +122,8 @@ async function fixture(options: Options = {}): Promise<Fixture> {
     public releaseUnlaunched(): Promise<void> { assert.equal(this, allocated); assert.equal(launched, false); calls.push("release-unlaunched"); released = true; return Promise.resolve(); }
     public releaseNoProcess(): Promise<void> { assert.equal(this, allocated); assert.equal(options.noProcess, true); calls.push("release-no-process"); released = true; return Promise.resolve(); }
     public reserveFootprintHeldCacheValidationAbort(): object {
-      assert.equal(this, allocated); assert.equal(reserved, false); reserved = true; calls.push("reserve-abort"); return abortToken;
+      assert.equal(this, allocated); assert.equal(reserved, false); reserved = true; calls.push("reserve-abort");
+      if (options.noProcess === true) { throw new Error("HELD_CACHE_ABORT_ORIGINAL_BINDING_REQUIRED"); } return abortToken;
     }
     public dispatchFootprintHeldCacheValidationAbort(token: object, confirm: true): Promise<void> {
       assert.equal(this, allocated); assert.equal(token, abortToken); assert.equal(confirm, true); calls.push("abort-original-job"); closed = true; gate.resolve(null); return Promise.resolve();
@@ -252,6 +253,24 @@ void test("original factory outcomes choose explicit no-resource, unlaunched and
     await assert.rejects(f.newController().run({ action, operationId: f.operationId }), /ORIGINAL_OPERATION_REQUIRED/u);
     await assertNoUnresolvedFootprintHeldCacheValidation();
   }
+});
+
+void test("missing-root abort cannot create a termination intent or poison original no-process cleanup", async () => {
+  const f = await fixture({ noProcess: true }); await assert.rejects(f.controller.run(f.launch), /native launch refused without process/u);
+  await assert.rejects(f.controller.run({ action: "abort", operationId: f.operationId, confirmOriginalJob: true }), /HELD_CACHE_ABORT_ORIGINAL_BINDING_REQUIRED/u);
+  const before = await readFootprintHeldCacheValidation(f.operationId); assert.ok(before !== null);
+  assert.equal(before.records.some(record => record.kind === "abort-intent" || record.kind === "normal-close-intent"), false);
+  await assert.rejects(f.controller.run({ action: "observe-termination", operationId: f.operationId }), /TERMINATION_CONSUMED/u);
+  const after = await readFootprintHeldCacheValidation(f.operationId); assert.ok(after !== null);
+  assert.equal(canonicalJson(after.records), canonicalJson(before.records)); assert.equal(f.calls.includes("termination"), false);
+  const settled = await f.controller.run({ action: "settle-records", operationId: f.operationId });
+  assert.equal(settled["retainedUnpublishedRecords"], 0); assert.equal(settled["abortAttemptConsumed"], true);
+  await assert.rejects(f.controller.run({ action: "abort", operationId: f.operationId, confirmOriginalJob: true }), /ABORT_CONSUMED/u);
+  await assert.rejects(f.controller.run({ action: "observe-first", operationId: f.operationId }), /NORMAL_ENDED/u);
+  const result = await f.controller.run({ action: "cleanup-no-process", operationId: f.operationId });
+  assert.equal(result["originalTerminationObserved"], false); assert.equal(f.controller.hasActiveReservation(), false);
+  assert.equal(f.calls.filter(call => call === "release-no-process").length, 1); assert.equal(f.calls.includes("abort-original-job"), false);
+  await assertNoUnresolvedFootprintHeldCacheValidation();
 });
 
 void test("durable chain corruption and foreign operation IDs refuse before any new native phase", async () => {

@@ -11,6 +11,7 @@ import { transform } from "esbuild";
 import type { CurrentFootprintCopyWorkerStartupTransport, CurrentPcb209WorkerStartupTransport } from "../src/current-pcb-worker-startup-transport.ts";
 import type { CurrentPcbWorkerConstructionTransport } from "../src/current-pcb-worker-construction-contract.ts";
 import type { CurrentPcbWorkerStartupDependency, CurrentPcbWorkerStartupEvent } from "../src/current-pcb-worker-startup-contract.ts";
+import { isOriginalFootprintHeldSavedDependency } from "../src/current-pcb-worker-startup-channel.ts";
 
 const projectSource = "synthetic complete project source\nwith the original trailing newline\n";
 const targetUrl = "https://client/editor?entry=mgr-project-worker.js&cll=warn&debugOpen=0";
@@ -59,6 +60,7 @@ async function fixture(execution: boolean, loseAfterSource = false, refuseSource
       return Promise.resolve({});
     },
   };
+  assert.equal(isOriginalFootprintHeldSavedDependency(dependency), false);
   class Construction {
     public constructor(transport: CurrentPcbWorkerConstructionTransport) {
       assert.equal(transport.scriptId, "project-script");
@@ -99,6 +101,9 @@ async function fixture(execution: boolean, loseAfterSource = false, refuseSource
       isOriginalFootprintExecutionDependency: (value: unknown): boolean => value === dependency && execution,
       isOriginalFootprintPreparationDependency: (value: unknown): boolean => value === dependency && execution,
       isOriginalFootprintSavedDependency: (): boolean => false,
+      // Keep the genuine held-purpose registry check. These old-purpose
+      // Synthetic dependencies must never acquire that separate marker.
+      isOriginalFootprintHeldSavedDependency,
     }; }
     if (name === "./current-footprint-copy-construction-purpose.ts") { return { bindFootprintPreparationConstructionTransport: (): void => undefined }; }
     if (name === "./current-footprint-copy-clock-route.ts") { return { bindCurrentFootprintCopyClockRoute: (): void => undefined }; }

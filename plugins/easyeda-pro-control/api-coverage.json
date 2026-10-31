@@ -7663,7 +7663,8 @@
           "current-footprint-held-cache-validation.test.ts",
           "current-footprint-held-cache-registration.test.ts",
           "current-footprint-held-saved-native.test.ts",
-          "docs/history/2026-10-31-renderer-proof-and-held-cache-owner.md"
+          "docs/history/2026-10-31-renderer-proof-and-held-cache-owner.md",
+          "docs/history/2026-10-31-held-cache-and-capture-validation.md"
         ]
       },
       "completeDeclaredContractSupported": false,

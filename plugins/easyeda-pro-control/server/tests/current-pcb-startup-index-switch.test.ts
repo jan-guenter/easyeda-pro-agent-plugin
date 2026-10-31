@@ -91,7 +91,7 @@ async function fixture(): Promise<Readonly<{ run: Run; owners: readonly Readonly
     windowsRuntime: undefined, ordinaryLaunchRuntime: undefined, currentDisposableOpenCoordinator: undefined,
     currentPcbRenameOperationCoordinator: undefined, currentSchematicRenameOperationCoordinator: undefined,
     closedSymbolIndexReservation: undefined, closedSymbolUnreservedFailure: { observed: false }, scheduledShutdown: undefined,
-    currentPcbDiagnosticLifecycle: undefined, currentPcbStringPrecreateLifecycle: undefined, currentFootprintMainLifecycle: undefined };
+    currentPcbDiagnosticLifecycle: undefined, currentPcbStringPrecreateLifecycle: undefined, currentFootprintMainLifecycle: undefined, currentFootprintHeldCacheValidation: undefined };
   const source = stripTypeScriptTypes(await readFile(new URL("../src/index.ts", import.meta.url), "utf8"));
   const startup = startupDeclarations(source);
   const helpersBegin = source.indexOf("function disposableOwnData("), helpersEnd = source.indexOf("\n}", source.indexOf("function disposableOwnerMethod(", helpersBegin)) + 2;

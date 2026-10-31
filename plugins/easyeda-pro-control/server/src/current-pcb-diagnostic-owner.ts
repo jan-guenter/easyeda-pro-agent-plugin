@@ -180,8 +180,8 @@ import { CurrentFootprintCopyMainBackendRunner } from "./current-footprint-copy-
 import type { CurrentFootprintCopyMainBackendObservation } from "./current-footprint-copy-main-backend-runner.ts";
 
 
-const HELPER_SHA256 = "53bb4667fff551bf54709f1262a25e2e34b922f57ec0c6b4d9e74131af0a4f5e";
-const HELPER_BYTES = 1_046_825;
+const HELPER_SHA256 = "c3723bf23e9fd50d8511228ffd0936c5e75241cd25335c2dbbceacda0e139129";
+const HELPER_BYTES = 1_047_546;
 const heldRunnerDescriptors = Object.getOwnPropertyDescriptors(CurrentFootprintSavedCacheHeldRunner.prototype);
 /* oxlint-disable typescript/unbound-method -- Retain fixed methods and invoke them only on the original private-field runner. */
 const heldRunnerMethods = Object.freeze({ prepare: CurrentFootprintSavedCacheHeldRunner.prototype.prepare,

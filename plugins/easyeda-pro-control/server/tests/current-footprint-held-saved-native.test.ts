@@ -12,6 +12,7 @@ import { CURRENT_FOOTPRINT_HELD_CACHE_DIAGNOSTIC_PROFILE as DIAGNOSTIC,
 
 void test("held-saved native class, ID, poll, byte and control caps match their complete derived reservation", async () => {
   const source = await readFile(new URL("../../scripts/pcb-diagnostic-owner.ps1", import.meta.url), "utf8");
+  assert.ok(Buffer.byteLength(source) <= 1_048_576, "Native cleanup regressions must preserve the fixed helper byte ceiling.");
   const expected: Readonly<Record<string, number>> = {
     HeldSavedRequests: PROFILE.requestLimit, HeldSavedNormal: PROFILE.normalRequestLimit, HeldSavedCleanup: PROFILE.cleanupRequestLimit,
     HeldCacheRequests: DIAGNOSTIC.requestLimit, HeldCacheNormal: DIAGNOSTIC.normalRequestLimit, HeldCacheCleanup: DIAGNOSTIC.cleanupRequestLimit,

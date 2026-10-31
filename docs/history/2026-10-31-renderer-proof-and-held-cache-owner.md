@@ -153,3 +153,40 @@ external runtime, upstream and installed-bundle pins remain exact. The scoped
 payload scan found no credentials, design artifacts or private evidence paths.
 This is local verification of the candidate, not publication, installation,
 connected cache qualification or a saved-copy result.
+
+## Full PR review and first CI corrections
+
+The sole authored review command was `@coderabbitai full review` on PR 161.
+CodeRabbit review 5721872573 completed on initial payload
+`d4369a24d12bdc7f8b302aeae2b18d63e1108e65`. It selected 48 changed files and
+excluded the two generated bundles. This is not evidence that every unchanged
+repository file was reviewed. All paginated comments, review bodies, collapsed
+sections and both complete threads were retained privately. There were three
+reported issues, including one collapsed unverified item, and no separate
+legacy issue section.
+
+All three issues were accepted and corrected. Semantic journal transitions now
+validate before entering the retained prefix, and termination requires a
+retained original close/abort intent. The real-controller no-process regression
+proves a refused abort cannot poison later cleanup. Native post-abort polling
+now reaches the existing cleanup classifier while other normal work remains
+blocked. The predecessor held-cache record was added to the coverage evidence
+declaration and its generated inventory. No additional review command was posted.
+
+The first CI run failed. Existing extracted-code VMs lacked the new controller
+or sibling-attempt binding, one synthetic channel module lacked its new
+held-dependency predicate, and old fixed-source assertions still described the
+older native-purpose/termination grammar. Another registration fixture selected
+an entire expanded block and exceeded its original 40,000-byte bound. These
+failures are retained. The fixtures now include the actual default bindings,
+use the genuine held predicate, select bounded AST declarations, and verify
+the exact sanctioned original-Job abort without removing the general refusal
+or raising the extraction bound. Production guards were preserved.
+
+Focused correction checks passed: eight controller cases, 22 registration
+fixture cases, 32 protocol/installation/transport cases, four saved-allocation
+cases, and native managed/parity checks. The helper is now 1,047,546 bytes, SHA
+`c3723bf23e9fd50d8511228ffd0936c5e75241cd25335c2dbbceacda0e139129`,
+with 1,030 bytes of headroom under the unchanged 1 MiB cap. All generated
+program blocks remain exact and both identity consumers match. The corrected
+payload still needs its new exact-head CI and follow-up review before merge.

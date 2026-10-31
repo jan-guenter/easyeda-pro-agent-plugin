@@ -255,14 +255,28 @@ void test("native adapter embeds and private fields match TS programs without na
   assert.ok(source.includes("$request.requestId -gt $requestLimit"));
   assert.ok(source.includes("id!=nextRequest || id>EffectiveRequestLimit"));
   assert.ok(source.includes("int RequestLimit { get { return workerStartup?256:stringPrecreate?3309:103; } }"));
-  assert.ok(source.includes("long FootprintRequestLimit { get { return workerStartupFootprintForward209?EasyedaFootprintForwardLimits.Requests:workerStartupFootprintCombined209?EasyedaFootprintCombinedLimits.Requests:workerStartupFootprintSaved209?EasyedaFootprintSavedLimits.Requests:workerStartupFootprintCopy209?EasyedaFootprintExecutionLimits.Requests:EasyedaFootprintPreparationLimits.Requests; } }"));
+  // New held purposes choose their fixed physical-ID ceilings before the
+  // Unchanged legacy route chain. Normal/cleanup classes are counted separately.
+  const heldLimitPrefix = "footprintHeldCache209?HeldCacheRequests:workerStartupFootprintHeldSaved209?HeldSavedRequests:";
+  const legacyLimit = "workerStartupFootprintForward209?EasyedaFootprintForwardLimits.Requests:workerStartupFootprintCombined209?EasyedaFootprintCombinedLimits.Requests:workerStartupFootprintSaved209?EasyedaFootprintSavedLimits.Requests:workerStartupFootprintCopy209?EasyedaFootprintExecutionLimits.Requests:EasyedaFootprintPreparationLimits.Requests";
+  const footprintLimits = [...source.matchAll(/long FootprintRequestLimit \{ get \{ return ([^;\r\n]+); \} \}/gu)];
+  assert.equal(footprintLimits.length, 1); assert.equal(footprintLimits[0]?.[1], heldLimitPrefix + legacyLimit);
+  const legacyNormalLimit = legacyLimit.replaceAll(".Requests", ".NormalRequests");
+  const footprintNormalLimits = [...source.matchAll(/long FootprintNormalRequestLimit \{ get \{ return ([^;\r\n]+); \} \}/gu)];
+  assert.equal(footprintNormalLimits.length, 1); assert.equal(footprintNormalLimits[0]?.[1], heldLimitPrefix + legacyNormalLimit);
+  assert.ok(source.includes("public const int HeldSavedRequests=363,HeldSavedNormal=328,HeldSavedCleanup=35;"));
+  assert.ok(source.includes("public const int HeldCacheRequests=31,HeldCacheNormal=30,HeldCacheCleanup=1;"));
+  assert.ok(source.includes("public static class EasyedaFootprintSavedLimits { public const int Requests=353; public const int NormalRequests=319;"));
   assert.ok(source.includes("long EffectiveRequestLimit { get { return workerStartupFootprint209?FootprintRequestLimit:workerStartupRatline209?RatlineRequestLimit:workerStartupEmpty209?EasyedaWorkerStartupEmpty209Protocol.RequestLimit:RequestLimit; } }"));
   assert.ok(source.includes("public const int RequestLimit=3466;"));
   assert.ok(source.includes("public const long RequestLimit=383L;"));
   assert.ok(source.includes("public const long NormalRequestLimit=337L;"));
   assert.ok(source.includes("if (($StringPrecreate -and $WorkerStartup) -or ($Layers209 -and ($StringPrecreate -or $WorkerStartup)))"));
   assert.ok(source.includes("if ($WorkerStartupRatline209 -and ($StringPrecreate -or $WorkerStartup -or $Layers209 -or $WorkerStartup209 -or $WorkerStartupEmpty209))"));
-  assert.ok(source.includes("$startupRequestLimit=if ($WorkerStartupFootprintForward209) {[EasyedaFootprintForwardLimits]::Requests} elseif ($WorkerStartupFootprintCombined209) {[EasyedaFootprintCombinedLimits]::Requests} elseif ($WorkerStartupFootprintSaved209) {[EasyedaFootprintSavedLimits]::Requests} elseif ($WorkerStartupFootprintCopy209) {[EasyedaFootprintExecutionLimits]::Requests} elseif ($WorkerStartupFootprint209) {[EasyedaFootprintPreparationLimits]::Requests} elseif ($WorkerStartupRatlineContinuation209) {[EasyedaRatlineContinuation209Limits]::RequestLimit} elseif ($WorkerStartupRatline209) {[EasyedaRatline209Limits]::RequestLimit} elseif ($WorkerStartupEmpty209) {[EasyedaWorkerStartupEmpty209Protocol]::RequestLimit} else {256}"));
+  const legacyStartupLimit = "if ($WorkerStartupFootprintForward209) {[EasyedaFootprintForwardLimits]::Requests} elseif ($WorkerStartupFootprintCombined209) {[EasyedaFootprintCombinedLimits]::Requests} elseif ($WorkerStartupFootprintSaved209) {[EasyedaFootprintSavedLimits]::Requests} elseif ($WorkerStartupFootprintCopy209) {[EasyedaFootprintExecutionLimits]::Requests} elseif ($WorkerStartupFootprint209) {[EasyedaFootprintPreparationLimits]::Requests} elseif ($WorkerStartupRatlineContinuation209) {[EasyedaRatlineContinuation209Limits]::RequestLimit} elseif ($WorkerStartupRatline209) {[EasyedaRatline209Limits]::RequestLimit} elseif ($WorkerStartupEmpty209) {[EasyedaWorkerStartupEmpty209Protocol]::RequestLimit} else {256}";
+  const startupLimits = [...source.matchAll(/^\$startupRequestLimit=(.+)$/gmu)];
+  assert.equal(startupLimits.length, 1);
+  assert.equal(startupLimits[0]?.[1], `if ($FootprintHeldCache209) {[EasyedaDiagnosticOwner]::HeldCacheRequests} elseif ($WorkerStartupFootprintHeldSaved209) {[EasyedaDiagnosticOwner]::HeldSavedRequests} else${legacyStartupLimit}`);
   assert.ok(source.includes("$request.requestId -gt $startupRequestLimit) {throw 'pcb-diagnostic-startup-fields'}"));
   assert.ok(source.includes('if((long)received+count>(workerStartupRatline209?RatlineTotalByteLimit:workerStartupEmpty209?EasyedaWorkerStartupEmpty209Protocol.TotalByteLimit:64L*1024*1024)) throw Error("receive-budget")'));
   assert.ok(source.includes("'snapshot' {$fields+=@('objectId','callbackObjectId')}"));

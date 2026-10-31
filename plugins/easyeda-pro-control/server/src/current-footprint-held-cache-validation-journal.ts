@@ -27,7 +27,7 @@ function same(a: BigIntStats, b: BigIntStats): boolean {
 
 /** Validate consumed intent/result relationships independently of the hash
  * chain. In particular a standalone release row cannot settle a native launch. */
-function validateChain(records: readonly RecordEntry[]): void {
+export function assertFootprintHeldCacheValidationChain(records: readonly RecordEntry[]): void {
   const seen = new Set<RecordEntry["kind"]>(); let branch: RecordEntry["kind"] | null = null, pendingPoll = false, polls = 0, terminal = false, terminated = false;
   const requirePrior = (kind: RecordEntry["kind"]): void => { need(seen.has(kind), "MISSING_INTENT_OR_PREDECESSOR"); };
   for (const [index, record] of records.entries()) {
@@ -126,7 +126,7 @@ export async function readFootprintHeldCacheValidation(operationId: string): Pro
         record.previousSha256 === (records.length === 0 ? null : sha256Json(records.at(-1))), "CHAIN");
       bytes += captured.bytes; need(bytes <= OPERATION_BYTES, "OPERATION_BYTES"); records.push(record);
     }
-    validateChain(records); assertFootprintHeldCacheJournalBudget(records); need(same(initial, await directory.handle.stat({ bigint: true })), "ROSTER_CHANGED");
+    assertFootprintHeldCacheValidationChain(records); assertFootprintHeldCacheJournalBudget(records); need(same(initial, await directory.handle.stat({ bigint: true })), "ROSTER_CHANGED");
     const current = await root.openDirectory(absolute, false);
     try { need(current.info.dev === directory.info.dev && current.info.ino === directory.info.ino, "PATH_CHANGED"); }
     finally { await current.handle.close(); }
@@ -193,7 +193,7 @@ export async function publishFootprintHeldCacheValidationRecord(input: RecordEnt
   need(prior !== null && prior.records.length >= record.sequence && prior.records.length <= record.sequence + 1, "PUBLICATION_POSITION");
   if (prior.records.length === record.sequence + 1) { need(canonicalJson(prior.records.at(-1)) === canonicalJson(record), "PUBLICATION_CHANGED"); return; }
   need(record.previousSha256 === (record.sequence === 0 ? null : sha256Json(prior.records.at(-1))), "PUBLICATION_PREDECESSOR");
-  validateChain([...prior.records, record]);
+  assertFootprintHeldCacheValidationChain([...prior.records, record]);
   const bytes = Buffer.from(`${JSON.stringify(record)}\n`); need(bytes.length <= RECORD_BYTES, "PUBLICATION_BOUND");
   need(prior.bytes + bytes.length <= OPERATION_BYTES, "OPERATION_BYTES"); assertFootprintHeldCacheJournalBudget([...prior.records, record]);
   await publishManagedAttachmentExclusive(join(controlDataDirectory(), DIRECTORY, record.operationId,

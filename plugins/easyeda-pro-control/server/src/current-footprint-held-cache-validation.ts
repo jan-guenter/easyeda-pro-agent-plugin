@@ -21,7 +21,7 @@ import type { CurrentFootprintSavedCacheHeldObservation } from "./current-footpr
 import { captureCurrentPcbStringClockReply } from "./current-pcb-string-clock-reply.ts";
 import { assertFootprintHeldCacheJournalBudget, captureFootprintHeldCacheValidationRecord, currentFootprintHeldCacheValidationRequestSchema } from "./current-footprint-held-cache-validation-schema.ts";
 import type { CurrentFootprintHeldCacheValidationRecord as RecordEntry, CurrentFootprintHeldCacheValidationRequest as Request } from "./current-footprint-held-cache-validation-schema.ts";
-import { assertNoUnresolvedFootprintHeldCacheValidation, publishFootprintHeldCacheValidationRecord,
+import { assertFootprintHeldCacheValidationChain, assertNoUnresolvedFootprintHeldCacheValidation, publishFootprintHeldCacheValidationRecord,
   readFootprintHeldCacheValidation, reserveFootprintHeldCacheValidation } from "./current-footprint-held-cache-validation-journal.ts";
 
 export interface CurrentFootprintHeldCacheValidationBinding {
@@ -191,6 +191,7 @@ export class CurrentFootprintHeldCacheValidation {
     const record = captureFootprintHeldCacheValidationRecord({
       schema: "easyeda-pro-control.footprint-held-cache-validation-record.v1", operationId: this.#operationId, sequence: this.#records.length,
       createdAt: new Date().toISOString(), previousSha256: this.#records.length === 0 ? null : sha256Json(this.#records.at(-1)), kind, evidence: capturedEvidence });
+    assertFootprintHeldCacheValidationChain([...this.#records, record]);
     assertFootprintHeldCacheJournalBudget([...this.#records, record]); this.#records.push(record);
     this.#recordedReplies = replyCount; this.#recordedRepliesSha256 = replySha256;
     this.#recordedFirst ||= this.#rawFirst !== null; this.#recordedFresh ||= this.#rawFresh !== null;
@@ -299,7 +300,8 @@ export class CurrentFootprintHeldCacheValidation {
   /** Bound actual original kernel observations. A false or missing reply grants
    * no exit/release proof and never permits another close or abort attempt. */
   async #observeTermination(): Promise<void> {
-    need((this.#closeAttempted || this.#abortAttempted) && !this.#released && !this.#terminated && this.#terminationObservations < 240,
+    need(this.#records.some(record => record.kind === "normal-close-intent" || record.kind === "abort-intent") &&
+      !this.#released && !this.#terminated && this.#terminationObservations < 240,
       "TERMINATION_CONSUMED"); this.#terminationObservations += 1;
     await this.#record("termination-intent", { ordinal: this.#terminationObservations });
     const ended = await this.#methods.observeTermination.call(this.#native()); this.#current();
@@ -404,7 +406,7 @@ export class CurrentFootprintHeldCacheValidation {
     need(request.action !== "normal-close" || !this.#closeAttempted, "CLOSE_CONSUMED");
     need(request.action !== "abort" || !this.#abortAttempted, "ABORT_CONSUMED");
     need(request.action !== "cleanup-no-resource" || !this.#noResourceCleanupAttempted, "NO_RESOURCE_CLEANUP_CONSUMED");
-    need(request.action !== "observe-termination" || (this.#closeAttempted || this.#abortAttempted) && !this.#released &&
+    need(request.action !== "observe-termination" || this.#records.some(record => record.kind === "normal-close-intent" || record.kind === "abort-intent") && !this.#released &&
       !this.#terminated && this.#terminationObservations < 240, "TERMINATION_CONSUMED");
     need(request.action !== "release-closed" && request.action !== "cleanup-unlaunched" && request.action !== "cleanup-no-process" || !this.#releaseAttempted,
       "RELEASE_CONSUMED");

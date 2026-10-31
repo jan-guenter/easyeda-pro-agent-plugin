@@ -1921,7 +1921,7 @@ public sealed class EasyedaDiagnosticOwner {
   public void AdmitHeldSavedAction(string action,bool cleanup) {
     if(!workerStartupFootprintHeldSaved209)throw Error("held-saved-purpose");
     if(footprintHeldCache209&&(action=="worker-startup-send"||action=="worker-startup-parent"||action=="footprint-held-saved-worker"))throw Error("held-cache-scope");
-    if(heldAbortAttempted&&action!="identity"&&action!="termination"&&action!="release"&&action!="held-saved-abort")throw Error("held-saved-aborted");
+    if(heldAbortAttempted&&action!="identity"&&action!="termination"&&action!="release"&&action!="held-saved-abort"&&action!="poll")throw Error("held-saved-aborted");
     if(action=="send"||action=="worker-startup-send"||action=="worker-startup-parent"||action=="footprint-held-saved-worker"||action=="saved-cache-held"||action=="poll")return;
     if(action!="worker-startup-reprove") {
       if(action=="launch"||action=="held-saved-bind")cleanup=false;
@@ -2042,6 +2042,12 @@ public sealed class EasyedaDiagnosticOwner {
     if(!ack.heldReleaseAcknowledged)throw Error("held-saved-ack-fragment-smoke");
     var noRoot=CreateWorkerStartupFootprintHeldSaved209();refuse(()=>noRoot.AbortHeldSaved());
     if(noRoot.heldAbortAttempted)throw Error("held-saved-abort-unbound-smoke");
+    foreach(var aborted in new[]{CreateWorkerStartupFootprintHeldSaved209(),CreateFootprintHeldCache209()}) {
+      aborted.heldAbortAttempted=true;aborted.heldFailed=true;aborted.AdmitHeldSavedAction("poll",false);
+      bool noJob=false;try{aborted.PollHeldSaved(false,true);}catch(InvalidOperationException e){if(e.Message!="pcb-diagnostic-owner-unavailable")throw;noJob=true;}
+      if(!noJob||!aborted.heldPollCleanup||!aborted.heldReplyCleanup||aborted.heldPollEntered)throw Error("held-abort-poll-smoke");
+      foreach(string action in new[]{"send","launch","held-saved-bind","saved-cache-held","worker-startup-reprove","normal-close"})refuse(()=>aborted.AdmitHeldSavedAction(action,true));
+    }
     var source=CreateWorkerStartupFootprintHeldSaved209();source.footprintCopyWorkerSession="worker";
     var input=new System.Collections.Hashtable();string[] names={"objectId","argument0","argument1","argument2","argument4","argument5","projectUuid","branchUuid","windowTabId","footprintUuid","client","maximumTicket"};
     string[] values={"manager","project","bus","consistency","constructors","methods",new string('a',64),new string('b',32),"tab",new string('c',16),new string('d',16),"1"};

@@ -119,7 +119,7 @@ async function fixture(): Promise<{ invoke: Invoke; startup: () => Promise<unkno
     resolve: (): string => "/synthetic/plugin", controlDataDirectory: (): string => "/synthetic/control", retainedControlRoot: { path: "/synthetic/control" },
     CURRENT_PCB_DIAGNOSTIC_PROFILE: { powershell: { sha256: "a".repeat(64), bytes: 1 } },
     ordinaryLaunchCoordinator: undefined, ordinaryLaunchRuntime: undefined, windowsRuntime: undefined,
-    currentPcbDiagnosticLifecycle: undefined, currentPcbStringPrecreateLifecycle: undefined, currentPcbWorkerStartupLifecycle: undefined, currentFootprintMainLifecycle: undefined,
+    currentPcbDiagnosticLifecycle: undefined, currentPcbStringPrecreateLifecycle: undefined, currentPcbWorkerStartupLifecycle: undefined, currentFootprintMainLifecycle: undefined, currentFootprintHeldCacheValidation: undefined,
     currentDisposableOpenCoordinator: undefined, currentPcbRenameOperationCoordinator: undefined, currentSchematicRenameOperationCoordinator: undefined,
     closedSymbolIndexReservation: undefined, closedSymbolUnreservedFailure: { observed: false }, scheduledShutdown: undefined,
     serializedGuarded: (handler: Invoke): Invoke => handler,
@@ -152,6 +152,15 @@ void test("actual ordinary allocation callback waits for helper closure then per
   assert.equal(value.scope["windowsRuntime"], undefined); assert.equal(value.scope["ordinaryLaunchRuntime"], undefined);
   await value.invoke({ request: { ...launch, operationId: "ordinary-index-next" } });
   assert.equal(value.state.runtimeCount, 2); assert.notEqual(value.scope["windowsRuntime"], original);
+});
+
+void test("actual ordinary allocation refuses an active held-cache reservation before constructing a runtime", async () => {
+  const value = await fixture(); let active = true;
+  value.scope["currentFootprintHeldCacheValidation"] = { hasActiveReservation: (): boolean => active };
+  await assert.rejects(value.invoke({ request: launch }), /diagnostic lifecycle reserves application startup/u);
+  assert.equal(value.state.runtimeCount, 0); assert.equal(value.scope["windowsRuntime"], undefined);
+  assert.equal(value.scope["ordinaryLaunchRuntime"], undefined);
+  active = false; await value.invoke({ request: launch }); assert.equal(value.state.runtimeCount, 1);
 });
 
 void test("actual release callback allows a preflight-refused never-allocated diagnostic and then its startup", async () => {
