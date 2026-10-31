@@ -134,9 +134,11 @@ reported separately from any connected execution.
 
 Coverage after the five new method mappings is 835 distinct methods,
 215 public subsets/43 native equivalents/13 HTTP equivalents/79 blocked/485 omitted.
-No current-payload connected navigation or installed new-catalog SDK validation
-is claimed. Source-anonymous 3D and empty panel observations do not prove panel
-lookup availability, full assets or electrical suitability.
+Live validation of the new navigation operations remains pending. The new
+catalog adapters have been exercised from source, but not from an installed
+plugin. Their anonymous HTTP queries do not invoke the public SDK. Positive
+3D results and empty panel results do not prove panel lookup availability,
+complete assets or electrical suitability.
 
 The public asset UUID correction is complete: newline selectors refuse before
 HTTP dispatch, and candidate, classification and lookup-result UUID aliases also
@@ -252,10 +254,11 @@ unchanged dependency, bridge and audit inputs were retained rather than running
 a second full local campaign. Complete final-payload suites and final automatic
 CodeRabbit follow-up remain required before merge.
 
-The final full-review inventory contains one inline comment, two automatic
-outside-diff comment blocks and one repeated/expanded full-review block: three
-underlying issue groups across four document locations, with no additional
-legacy/nitpick blocks. Full check 124538685457 succeeded on the initial head.
+The first full review reported three issues: one inline issue and two issues
+outside the diff. The request-budget issue affects both the preparation and
+combined references, so these three issues cover four document locations.
+There were no other legacy issues or nitpicks in that review. Full check
+124538685457 succeeded on the initial head.
 Final source 982 SHA `d61c1a1df0cd4c5c185c4ffe8e24af0aea7962a627a14020fea6cbbe907c1861`;
 runtime 3 SHA `074b3d7ff9a75c9d1c5725829faca7de42bd5310686f3b6b370802553ba7d8fd`.
 These corrected bytes still require final CI and automatic review follow-up.
