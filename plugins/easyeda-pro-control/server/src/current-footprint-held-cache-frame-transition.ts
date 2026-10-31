@@ -35,6 +35,7 @@ export function issueCurrentFootprintHeldCacheFrameTargetTransition(error: Error
     if (original === undefined || JSON.stringify(original) === JSON.stringify(current)) { return error; }
     const changed = Object.fromEntries(fields.map(field => [field, Object.hasOwn(original, field) !== (current !== undefined && Object.hasOwn(current, field)) ||
       JSON.stringify(original[field]) !== JSON.stringify(current?.[field])]));
+    /** Compare unlisted fields locally; retain only their changed flag, never this raw projection. */
     const other = (row: Row | undefined): Record<string, unknown> => Object.fromEntries(Object.entries(row ?? {}).filter(([key]) => !fields.some(field => field === key)));
     const packet = currentFootprintHeldCacheFrameTargetTransitionSchema.parse({
       schema: "private.current-footprint-held-cache-frame-target-transition.v1",

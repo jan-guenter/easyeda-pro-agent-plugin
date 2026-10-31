@@ -43,10 +43,15 @@ export type CurrentProjectStructureCompletionPlan = Readonly<z.infer<typeof plan
 export type CurrentProjectStructureCompletionEvent = Readonly<z.infer<typeof event>>;
 // Structure text needs its own limit. The small clock-packet copier accepts
 // Only16KiB strings and would silently make this grammar's2MiB contract unusable.
+/** Refuse malformed evidence with a fixed code that does not echo foreign data. */
 function bad(): never { throw new Error("PROJECT_STRUCTURE_COMPLETION_INPUT"); }
+/** Copy bounded plain own data before schema parsing. Accessors, proxies,
+ * aliases, cycles and excessive structure content refuse without invoking hooks. */
 function capture(input: unknown): unknown {
   let bytes = 0, nodes = 0;
   const seen = new Set<object>();
+  /** Account for every nested node and UTF-8 string while preserving checked
+   * primitives and freezing new arrays/objects; unsupported shapes stop the copy. */
   const copy = (value: unknown, depth: number): unknown => {
     nodes += 1; if (nodes > 40_000 || depth > 8) { return bad(); }
     if (value === null || typeof value === "boolean") { return value; }
@@ -56,6 +61,7 @@ function capture(input: unknown): unknown {
       bytes += Buffer.byteLength(value); if (bytes > 8_388_608) { return bad(); } return value;
     }
     if (typeof value !== "object" || types.isProxy(value) || seen.has(value)) { return bad(); } seen.add(value);
+    /** Read one enumerable own data field; inherited fields and getters refuse. */
     const own = (key: string): unknown => {
       const descriptor = Object.getOwnPropertyDescriptor(value, key);
       if (descriptor === undefined || !Object.hasOwn(descriptor, "value") || descriptor.enumerable !== true) { return bad(); }
@@ -76,9 +82,13 @@ function capture(input: unknown): unknown {
   };
   return copy(input, 0);
 }
+/** Strictly parse and freeze the copied comparison plan, retaining complete
+ * supplied tree text and row data without granting owner or writer authority. */
 export function validateCurrentProjectStructureCompletionPlan(input: unknown): CurrentProjectStructureCompletionPlan {
   return freezeDeep(plan.parse(capture(input)));
 }
+/** Admit exactly one strict observation stage after safe capture; unknown keys,
+ * malformed identities and unsupported outcomes cannot enter the transcript. */
 export function validateCurrentProjectStructureCompletionEvent(input: unknown): CurrentProjectStructureCompletionEvent {
   return freezeDeep(event.parse(capture(input)));
 }

@@ -21,15 +21,20 @@ interface Slot {
 interface Serial { current: Slot | null; queued: Slot | null }
 interface Publication { readonly callbackId: string; readonly taskId: string; readonly packetId: string; readonly runId: string;
   requestId: string | null; responseId: string | null; step: number }
+/** Refuse a failed model invariant with its fixed stage code. */
 function need(value: boolean, code: string): asserts value {
   if (!value) { throw new Error(`PROJECT_STRUCTURE_COMPLETION_${code}`); }
 }
+/** Compare ticket/tree multisets including duplicate multiplicity, matching
+ * the native SELECT projection that omits row IDs; this proves no SQL custody. */
 function sameSelectedRows(left: Plan["rows"], right: Extract<Event, { stage: "main-select" }>["rows"]): boolean {
   if (left.length !== right.length) { return false; }
   const projected = left.map(row => JSON.stringify([row.ticket, row.structureText])).toSorted();
   const observed = right.map(row => JSON.stringify([row.ticket, row.structureText])).toSorted();
   return projected.every((row, index) => row === observed[index]);
 }
+/** Track one supplied publication and both serializer queues through recorded
+ * acknowledgments/finalizers. Even a terminal match grants no native completion. */
 export class CurrentProjectStructureCompletionModel {
   readonly #plan: Plan;
   readonly #serial: Record<Kind, Serial> = { uploadStructure: { current: null, queued: null }, structure: { current: null, queued: null } };
@@ -43,6 +48,8 @@ export class CurrentProjectStructureCompletionModel {
   #events = 0;
   #failed = false;
   #finished = false;
+  /** Capture the plan and require unique row IDs with the same project, branch
+   * and baseline tree; every affected row ticket must precede the proposed ticket. */
   public constructor(input: unknown) {
     this.#plan = validateCurrentProjectStructureCompletionPlan(input);
     const ids = new Set<number>(), plan = this.#plan;
@@ -52,18 +59,27 @@ export class CurrentProjectStructureCompletionModel {
         row.ticket < plan.ticket && row.structureText === plan.beforeStructureText, "LOWER_TICKET_BASELINE");
     }
   }
+  /** Report modeled idleness only after both queues clear and every admitted
+   * promise has its own finalizer and fulfillment, rather than relying on task2. */
   #idle(): boolean {
     return Object.values(this.#serial).every(serial => serial.current === null && serial.queued === null) &&
       [...this.#promises.values()].every(slot => slot.finalized && slot.settled);
   }
+  /** Find the current unfinalized modeled run; stale IDs and wrong-kind or
+   * already finalized runs cannot supply another stage's continuation. */
   #run(kind: Kind, runId: string): Slot {
     const slot = this.#runs.get(runId);
     need(slot !== undefined && slot.kind === kind && this.#serial[kind].current === slot && !slot.finalized, "ORIGINAL_RUN"); return slot;
   }
+  /** Join the supplied request ID to the sole publication at its exact next
+   * step, refusing skipped acknowledgments and responses from another request. */
   #request(event: Extract<Event, { requestId: string }>, step: number): Publication {
     const publication = this.#publication;
     need(publication !== null && publication.requestId === event.requestId && publication.step === step, "REQUEST_ORDER"); return publication;
   }
+  /** Advance one modeled stage while checking call/dependency order, queued
+   * arguments, complete POST/SELECT/update joins and separate return/finalizer
+   * acknowledgments. The public admission method seals any failed transition. */
   #accept(event: Event): void {
     const plan = this.#plan;
     if (event.stage === "boundary") {
@@ -164,6 +180,9 @@ export class CurrentProjectStructureCompletionModel {
       this.#hash.update(JSON.stringify(event)); this.#hash.update("\n"); this.#events += 1;
     } catch (error) { this.#failed = true; throw error; }
   }
+  /** Consume terminal comparison once, requiring both idle boundaries and the
+   * complete publication/dependency chain. Incomplete attempts remain consumed;
+   * the ordered accepted-JSON digest supplies no native or saved-state proof. */
   public finish(): Readonly<{ profile: "private.current-project-structure-completion-comparison.v1";
     suppliedTranscriptConsistent: true; transcriptSha256: string; events: number; calls: number; runs: number;
     originalEventProvenanceVerified: false; nativeQueueCompletionGranted: false; completeSqlEffectVerified: false;

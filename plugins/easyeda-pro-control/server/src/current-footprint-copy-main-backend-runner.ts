@@ -202,11 +202,15 @@ export class CurrentFootprintCopyMainBackendRunner {
   #headAgeArray: string | null = null;
   #headAgeContextSource: CurrentFootprintHeadAgeContextSource | null = null;
   #headAgeAttempted = false;
+  /** Retain the fixed transport and optional original-owner bootstrap token.
+   * Copied tokens refuse before any inspector request is issued. */
   public constructor(transport: CurrentFootprintCopyMainBackendTransport, headAgeBootstrap?: CurrentFootprintHeadAgeBootstrapCapability) {
     if (headAgeBootstrap !== undefined) { requireCurrentFootprintHeadAgeBootstrapCapability(headAgeBootstrap, transport); }
     this.#headAgeBootstrapCapture = headAgeBootstrap !== undefined; this.#headAgeBootstrapCapability = headAgeBootstrap ?? null;
     this.#methods = methods(transport); this.#transport = transport;
   }
+  /** Reprove transport, bootstrap custody, source and the active deadline.
+   * Cleanup retains its separate lifetime without reopening normal work. */
   #same(cleanup: boolean): void {
     if (this.#headAgeBootstrapCapability !== null) { requireCurrentFootprintHeadAgeBootstrapCapability(this.#headAgeBootstrapCapability, this.#transport); }
     need(methods(this.#transport).every((value, index) => value === this.#methods[index]) && !this.#released &&
@@ -225,6 +229,8 @@ export class CurrentFootprintCopyMainBackendRunner {
     need(this.#resolved.length < 8, "RESOLUTION_BOUND"); this.#resolved.push(record);
     if (this.#breakpoint !== null) { need(record.breakpointId === this.#breakpoint, "FOREIGN_BREAKPOINT"); this.#location(record.location); }
   }
+  /** Account for bounded original inspector events and exact source locations.
+   * Only the owner-issued head-age token admits the passive Node bootstrap. */
   #event(method: string, input: unknown): void {
     if (this.#headAgeBootstrapCapability !== null) { requireCurrentFootprintHeadAgeBootstrapCapability(this.#headAgeBootstrapCapability, this.#transport); }
     this.#events += 1; need(this.#events <= 4096, "EVENT_BOUND");
@@ -291,6 +297,9 @@ export class CurrentFootprintCopyMainBackendRunner {
   async #wait(predicate: () => boolean, cleanup = false): Promise<void> {
     const started = performance.now(); while (!predicate()) { need(performance.now() - started < 20_000, "REPLY_DEADLINE"); await this.#pump(cleanup); }
   }
+  /** Consume one fixed request number and retain its sole pending reply.
+   * Head-age exceptions are captured before success decoding; cleanup keeps
+   * its own counter and cannot repeat a consumed normal request. */
   async #request(input: Command | CurrentFootprintCopyMainRequestCollectCommand | CurrentFootprintCopyMainCompletionCommand, cleanup = false): Promise<unknown> {
     this.#phase = input.phase; await this.#current(cleanup);
     const collection = input.phase.startsWith("request-");
@@ -398,7 +407,7 @@ export class CurrentFootprintCopyMainBackendRunner {
     need(!this.#originAttempted && !this.#busy && packet === this.#packet && issued.get(packet) === this, "ORIGINAL_PACKET_REQUIRED"); this.#busy = true;
     try { await this.#reprove(); } catch (error) { this.#fail(error); throw error; } finally { this.#busy = false; }
   }
-  /** The native owner admits these two fixed phases only for its separate
+  /** The native owner admits the fixed head-age phases only for its separate
    * head-age birth. This method cannot grant that birth to another transport.
    * Every actual Date method receives native V8 metadata checks before the one
    * synchronous parser/control call; failures consume the complete attempt. */

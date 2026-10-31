@@ -124,6 +124,8 @@ export function assertFootprintHeadAgeJournalBudget(records: readonly CurrentFoo
  * here; the smaller public-request capture is deliberately separate. */
 export function captureFootprintHeadAgeValidationRecord(input: unknown): CurrentFootprintHeadAgeValidationRecord {
   const seen = new Set<object>(); let nodes = 0;
+  /** Copy the bounded record graph without evaluating hooks, while retaining
+   * the dedicated observation and exception packet validators below. */
   const copy = (value: unknown, depth: number): unknown => {
     nodes += 1;
     if (nodes > 16_384 || depth > 24) { throw new Error("HEAD_AGE_RECORD_NODES"); }
@@ -133,6 +135,8 @@ export function captureFootprintHeadAgeValidationRecord(input: unknown): Current
     if (value === null || typeof value !== "object" || types.isProxy(value) || seen.has(value)) { throw new Error("HEAD_AGE_RECORD_DATA"); }
     seen.add(value);
     const keys = Reflect.ownKeys(value), prototype: unknown = Object.getPrototypeOf(value);
+    /** Read an enumerable own field and select the larger raw-packet decoder
+     * only at its fixed evidence key and depth. */
     const own = (key: string): unknown => {
       const field = Object.getOwnPropertyDescriptor(value, key);
       if (field === undefined || !Object.hasOwn(field, "value") || field.enumerable !== true) { throw new Error("HEAD_AGE_RECORD_FIELD"); }

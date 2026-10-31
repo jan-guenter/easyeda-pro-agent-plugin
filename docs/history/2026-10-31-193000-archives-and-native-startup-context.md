@@ -129,3 +129,32 @@ all-seven-skill validators also passed. Dependency installation/tree,
 signatures, moderate-level audit and sanitizer checks passed; no dependency
 changed. Complete facade/bridge suites and Windows checks remain assigned to
 exact-payload GitHub CI. No full local suite was duplicated.
+
+## PR165 review correction
+
+The initial payload `a685eb90fdbb7324c2b05d8e9dbc21391eb2ac47` passed all
+eleven PR CI jobs. Facade results were 14,001 passed, five expected platform
+skips and zero failures across 14,006 tests. The bridge passed all 424 tests
+across 28 files. Complete log archives, individual raw logs, committed pins
+and all ten checkout/root/plugin tree joins were verified.
+
+The sole authored CodeRabbit command was `@coderabbitai full review`, comment
+`6548169516`. Its completed review reported one minor history-placement issue
+and a docstring warning at 30.43 percent against 80 percent. The full review
+and collapsed bodies contained no further outside-diff, nitpick or legacy
+issues. No additional command or review reply was posted.
+
+The completed PR164 publication section moved verbatim to a
+[separate timestamped release record](2026-10-31-194500-pr164-publication-and-installation.md),
+with an index entry, original-location link and exact section hash. All earlier
+native-age observations remain unchanged. Function documentation now explains
+the source framing, refusal conditions, owner lifetimes and comparison limits.
+An independent Acorn comparison of all 30 changed TypeScript files against the
+initial payload found identical executable ASTs and literal values. The native
+helper also remained byte-exact. A separate optional lexical proof exhausted
+its own isolated Node heap; that failed proof was retained and replaced by
+bounded parsed-AST checks. No core or application action resulted.
+
+The final documented commit requires its own CI and automatic follow-up review.
+It retains the same plugin version, so these corrections add no separate
+installation or restart boundary. Connected qualification remains pending.

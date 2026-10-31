@@ -9,6 +9,7 @@ import { managedLibraryFileSchema, queryManagedLibraryFiles, validateManagedLibr
 import { managedLibraryArchiveFixture } from "./helpers/managed-library-archive.ts";
 import { managedProjectFootprintArchive } from "./helpers/managed-project-footprint-archive.ts";
 
+/** Independently hash fixture/artifact bytes for the complete-roster and lossless-page assertions. */
 function hash(value: Buffer | string): string { return createHash("sha256").update(value).digest("hex"); }
 const fixture = managedLibraryArchiveFixture();
 const prepare = { action: "prepare-file", name: "Supplied.elibz2", base64: fixture.archive.toString("base64"), confirmLocalArtifact: true };

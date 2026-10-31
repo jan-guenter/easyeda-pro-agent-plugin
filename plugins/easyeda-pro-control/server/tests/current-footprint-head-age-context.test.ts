@@ -11,6 +11,8 @@ import { CURRENT_FOOTPRINT_COPY_MAIN_BACKEND_CALLS } from "../src/current-footpr
 import { CURRENT_FOOTPRINT_HEAD_AGE_CAPTURE_PROGRAM, CURRENT_FOOTPRINT_HEAD_AGE_OBSERVE_PROGRAM } from "../src/current-footprint-head-age-main.ts";
 import { mainBackendFragments } from "./helpers/footprint-main-backend-fragments.ts";
 
+/** Bind the exact fixed programs to a synthetic accessor-backed process and
+ * matching lexical scope wrappers without issuing native custody. */
 function fixture(): ReturnType<typeof createContext> {
   const context = createContext({});
   runInContext(`const originalProcess={pid:123,versions:{node:"24.14.1"},env:{}};let _process=originalProcess;

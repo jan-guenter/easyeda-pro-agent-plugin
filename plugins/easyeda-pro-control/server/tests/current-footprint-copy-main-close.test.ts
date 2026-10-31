@@ -20,6 +20,8 @@ type Owner = CurrentFootprintCombinedNativeOwner | CurrentFootprintHeadAgeValida
 const readyPreload = fileURLToPath(new URL("helpers/current-footprint-combined-helper-ready.ts", import.meta.url));
 const peerFixture = new URL("helpers/footprint-main-backend-runner-fixture.ts", import.meta.url).href;
 
+/** Evaluate the maintained owner with synthetic external source/SQL issuers.
+ * Its private bootstrap capability map and reproof remain the actual code. */
 async function ownerConstructor(combined: boolean, headAge: boolean): Promise<Readonly<{ Constructor: new (...args: unknown[]) => Owner; source: object; seed: (owner: Owner) => void }>> {
   const path = new URL("../src/current-pcb-diagnostic-owner.ts", import.meta.url);
   const actualRequire = createRequire(path);
@@ -60,6 +62,8 @@ async function ownerConstructor(combined: boolean, headAge: boolean): Promise<Re
   } };
 }
 
+/** Connect the evaluated owner to an inert child that records native requests.
+ * Selected faults prove that failed cleanup cannot reach normal close. */
 async function fixture(combined: boolean, failure: "none" | "source" | "release" | "detach", headAge = false): Promise<Readonly<{
   owner: Owner; actions: string[]; dispose: () => Promise<void>;
 }>> {
@@ -88,6 +92,7 @@ try{
   const child = spawn(process.execPath, [...(combined ? ["--import", readyPreload] : []), "--input-type=module", "-e", script],
     { stdio: ["pipe", "pipe", "pipe"] });
   const actions: string[] = [], write = child.stdin.write.bind(child.stdin);
+  /** Record scalar request labels without replacing the original write result. */
   const record = (chunk: unknown): void => {
     if (typeof chunk === "string") {
       const raw: unknown = JSON.parse(chunk); assert.ok(raw !== null && typeof raw === "object" && "action" in raw);

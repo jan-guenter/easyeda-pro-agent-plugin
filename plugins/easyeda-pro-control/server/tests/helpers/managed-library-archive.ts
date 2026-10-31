@@ -1,6 +1,7 @@
 import { managedProjectFootprintArchive } from "./managed-project-footprint-archive.ts";
 
 export const MANAGED_LIBRARY_ARCHIVE_FIXTURE_UUID = "1234567890abcdef1234567890abcdef";
+/** Build a synthetic two-member archive with separately known prefix/body bytes and unknown fields. */
 export function managedLibraryArchiveFixture(docType: 2 | 4 = 4): Readonly<{ archive: Buffer; source: string; member: string; manifest: string; prefix: string }> {
   const documentType = docType === 4 ? "FOOTPRINT" : "SYMBOL";
   const header = `${JSON.stringify({ type: "DOCHEAD", ticket: 0 })}||${JSON.stringify({ docType: documentType, uuid: MANAGED_LIBRARY_ARCHIVE_FIXTURE_UUID })}`;

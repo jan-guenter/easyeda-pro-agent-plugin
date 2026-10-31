@@ -52,12 +52,15 @@ function need(value: boolean): asserts value { if (!value) { throw new Error("FO
  * arrays have their own bound; the ordinary small clock decoder is unchanged. */
 export function captureCurrentFootprintHeadAgeReply(input: unknown): Readonly<{ value: unknown; text: string; sha256: string }> {
   let nodes = 0; const seen = new Set<object>();
+  /** Copy bounded own JSON data recursively, rejecting hooks, aliases and
+   * non-finite values before any result is hashed or projected. */
   const copy = (value: unknown, depth: number): unknown => {
     nodes += 1; need(nodes <= 10_000 && depth <= 16);
     if (value === null || typeof value === "boolean") { return value; }
     if (typeof value === "string") { need(value.length <= 16_384 && value.isWellFormed()); return value; }
     if (typeof value === "number") { need(Number.isFinite(value) && !Object.is(value, -0)); return value; }
     need(typeof value === "object" && !types.isProxy(value) && !seen.has(value)); seen.add(value);
+    /** Read one enumerable own data field without invoking an accessor. */
     const own = (key: string): unknown => { const field = Object.getOwnPropertyDescriptor(value, key); need(field !== undefined && Object.hasOwn(field, "value") && field.enumerable === true); return field.value as unknown; };
     if (Array.isArray(value)) {
       need(Object.getPrototypeOf(value) === Array.prototype && value.length <= 2048 && Reflect.ownKeys(value).length === value.length + 1);

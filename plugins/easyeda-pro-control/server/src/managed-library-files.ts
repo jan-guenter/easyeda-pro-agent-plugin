@@ -89,6 +89,7 @@ export const managedLibraryFilesRequestSchema = z.discriminatedUnion("action", [
   managedSchematicRecordsRequestSchema, managedPcbStackRulesRequestSchema, managedProjectSymbolPinsRequestSchema,
   managedLibraryArchiveSourcesRequestSchema, managedLibraryArchiveSourceListRequestSchema,
   managedLibraryArchiveSourceReadRequestSchema]);
+/** Bound projected metadata text without accepting malformed Unicode or embedded NUL. */
 const text = (maximum: number): z.ZodString => z.string().max(maximum).refine((value) => value.isWellFormed() && !value.includes("\u0000"));
 const projectMetadataSchema = z.object({ title: text(512), cbbProject: z.boolean().optional(), editorVersion: text(128).optional() });
 const project2MetadataSchema = z.object({ title: text(512), cbb_project: z.boolean().optional(), editorVersion: text(128).optional() });
@@ -100,8 +101,10 @@ export const managedProjectMetadataSchema = z.object({ title: text(512), cbbProj
 export type ManagedLibraryMetadata = z.infer<typeof managedLibraryMetadataSchema>;
 export type ManagedProjectMetadata = z.infer<typeof managedProjectMetadataSchema>;
 
+/** Reject unsupported supplied-file content before it can become a prepared input. */
 function refuse(reason: string): never { throw new Error(`Managed library file refused: ${reason}.`); }
 
+/** Decode only canonical, padded base64 within the complete archive input bound. */
 export function decodeManagedLibraryBase64(value: string): Buffer {
   if (value.length > Math.ceil(MANAGED_LIBRARY_ARCHIVE_MAX_BYTES / 3) * 4 || value.length % 4 !== 0 || !/^[A-Za-z0-9+/]*={0,2}$/u.test(value)) {
     refuse("canonical base64 required");
@@ -165,10 +168,13 @@ export function decodeManagedProjectArchive(nameInput: string, bytes: Buffer): R
     ...(metadata.editorVersion === undefined ? {} : { editorVersion: metadata.editorVersion }) }) };
 }
 
+/** Project supported metadata only after the entire project archive passes integrity checks. */
 export function extractManagedProjectMetadata(nameInput: string, bytes: Buffer): ManagedProjectMetadata {
   return decodeManagedProjectArchive(nameInput, bytes).metadata;
 }
 
+/** Match the descriptor's full byte count/hash before recognizing its supported container.
+ * Library archives require complete manifest/source recognition, not a manifest-only check. */
 export function validateManagedLibraryFileContents(fileInput: unknown, bytes: Buffer): ManagedLibraryMetadata | ManagedProjectMetadata | ManagedLibraryArchiveSourceSet {
   const file = managedLibraryFileSchema.parse(fileInput);
   if (file.bytes !== bytes.length || file.sha256 !== createHash("sha256").update(bytes).digest("hex")) { refuse("managed byte descriptor differs"); }
@@ -194,6 +200,7 @@ const limitations = [
 ] as const;
 
 export const managedLibraryFilesCatalogQuerySchema = z.object({ includeSchemas: z.boolean().default(false) }).strict();
+/** Describe strict offline grammars, source bounds and remaining omissions without reading files. */
 export function queryManagedLibraryFiles(input: unknown = {}): Record<string, unknown> {
   const query = managedLibraryFilesCatalogQuerySchema.parse(input);
   return { offline: true, invocationEnabledByDiscovery: false, executionAuthorized: false, implementationKind: "native-task-equivalent",
@@ -224,6 +231,8 @@ export function queryManagedLibraryFiles(input: unknown = {}): Record<string, un
     } };
 }
 
+/** Check exact request shapes without execution authority or managed-path access.
+ * Preparation also recognizes all supplied bytes and returns a summary that omits the base64. */
 export function validateManagedLibraryFilesArguments(input: unknown): Record<string, unknown> {
   const result = managedLibraryFilesRequestSchema.safeParse(input);
   if (!result.success) { return { valid: false, executionAuthorized: false,

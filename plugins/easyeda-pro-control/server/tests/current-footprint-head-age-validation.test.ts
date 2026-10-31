@@ -73,6 +73,8 @@ async function fixture(options: FixtureOptions = {}): Promise<Fixture> {
       assert.equal(this, allocated); calls.push("native-start"); launched = true; bound = options.pendingGeneration !== "unbound";
       if (options.pendingGeneration !== undefined) { generationEntered.resolve(null); await generationGate.promise; bound = true; }
     }
+    /** Model a delayed original observation, supplied primary error or copied
+     * packet so controller custody and cleanup are tested independently. */
     public async observeFootprintHeadAgeValidation(): Promise<unknown> {
       assert.equal(this, allocated); calls.push("observe-native-date"); entered.resolve(null);
       if (options.pendingObservation === true) { await gate.promise; }

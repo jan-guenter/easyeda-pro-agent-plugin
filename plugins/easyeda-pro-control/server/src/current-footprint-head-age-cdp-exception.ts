@@ -17,20 +17,25 @@ export interface CurrentFootprintHeadAgeCdpException {
   readonly reply: unknown;
 }
 const issued = new WeakMap<object, CurrentFootprintHeadAgeCdpException>();
+/** Emit only a fixed refusal code and admitted phase, never foreign CDP text. */
 function refuse(phase: CurrentFootprintHeadAgeCdpPhase = "head-age-observe"): never { throw new Error(`FOOTPRINT_HEAD_AGE_CDP_REPLY_REFUSED:${phase}`); }
+/** Reject malformed private evidence before it can acquire Error issuance. */
 function need(value: boolean): asserts value { if (!value) { refuse(); } }
 const resultSchema = z.object({ result: z.object({ type: z.literal("object"), value: z.unknown() }).strict() }).strict();
 const exceptionSchema = z.object({ schema: z.literal("private.current-footprint-head-age-cdp-exception.v1"), phase: phaseSchema, code: z.literal(CODE),
   replySha256: z.string().regex(/^[a-f0-9]{64}$/u), reply: z.unknown() }).strict();
 const remoteTypes = new Set(["object", "function", "undefined", "string", "number", "boolean", "symbol", "bigint"]);
+/** Enforce a present CDP text field's type and bound without coercion. */
 function optionalText(value: Readonly<Record<string, unknown>>, key: string, maximum: number): void {
   if (Object.hasOwn(value, key)) { need(typeof value[key] === "string" && value[key].length <= maximum); }
 }
+/** Validate known remote-object fields while retaining bounded unknown data. */
 function remote(value: unknown): void {
   need(isRecord(value) && typeof value["type"] === "string" && remoteTypes.has(value["type"]));
   for (const key of ["subtype", "className"]) { optionalText(value, key, 128); }
   optionalText(value, "description", 16_384); optionalText(value, "objectId", 256); optionalText(value, "unserializableValue", 8192);
 }
+/** Check each frame and optional parent in an already depth-bounded CDP stack. */
 function stack(value: unknown): void {
   need(isRecord(value) && Array.isArray(value["callFrames"]) && value["callFrames"].length <= 512);
   optionalText(value, "description", 16_384);
@@ -41,6 +46,8 @@ function stack(value: unknown): void {
   }
   if (Object.hasOwn(value, "parent")) { stack(value["parent"]); }
 }
+/** Recognize the complete result/exception envelope and ensure its nested
+ * arrays fit the unchanged private journal copier before retaining it. */
 function completeException(input: unknown): void {
   need(isRecord(input) && Object.keys(input).length === 2 && Object.hasOwn(input, "result") && Object.hasOwn(input, "exceptionDetails"));
   remote(input["result"]); const details = input["exceptionDetails"];
@@ -53,6 +60,8 @@ function completeException(input: unknown): void {
   if (Object.hasOwn(details, "stackTrace")) { stack(details["stackTrace"]); }
   // The ordinary private-record copier caps arrays at512. Keeping this raw
   // Envelope within that bound makes every accepted exception publishable.
+  /** Reject an oversized array anywhere in the copied envelope, including
+   * unknown fields that otherwise remain intact in the private evidence. */
   const arrays = (value: unknown): void => {
     if (Array.isArray(value)) { need(value.length <= 512); for (const child of value) { arrays(child); } }
     else if (isRecord(value)) { for (const child of Object.values(value)) { arrays(child); } }
@@ -69,8 +78,8 @@ export function captureCurrentFootprintHeadAgeCdpException(input: unknown): Curr
     return Object.freeze(parsed);
   } catch { return refuse(); }
 }
-/** The actual runner alone sends this fixed native phase. A complete bounded
- * exception is retained under its genuine thrown Error, not caller JSON. */
+/** Reject exceptions from the five fixed head-age phases before success
+ * decoding, retaining complete bounded evidence under the genuine Error. */
 export function rejectCurrentFootprintHeadAgeCdpException(input: unknown, phase: CurrentFootprintHeadAgeCdpPhase): void {
   const selected = phaseSchema.safeParse(phase); if (!selected.success) { refuse(); }
   try {
@@ -85,7 +94,9 @@ export function rejectCurrentFootprintHeadAgeCdpException(input: unknown, phase:
     return refuse(selected.data);
   }
 }
+/** Limit exception handling to the five fixed head-age phases. */
 export function isCurrentFootprintHeadAgeCdpPhase(input: string): input is CurrentFootprintHeadAgeCdpPhase { return phaseSchema.safeParse(input).success; }
+/** Decode only the strict by-value observation reply after exception refusal. */
 export function decodeCurrentFootprintHeadAgeCdpReply(input: unknown): unknown {
   rejectCurrentFootprintHeadAgeCdpException(input, "head-age-observe");
   try { return resultSchema.parse(captureCurrentFootprintHeadAgeReply(input).value).result.value; }

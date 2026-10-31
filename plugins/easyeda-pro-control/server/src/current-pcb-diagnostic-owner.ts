@@ -3439,6 +3439,9 @@ class CurrentPcbRetainedOwnerCore {
     const reply = await this.#request({ action: "head-age-abort", confirmOriginalJob: true });
     if (!exact(reply, ["terminationDispatched"]) || reply["terminationDispatched"] !== true) { throw error("HEAD_AGE_ABORT_REPLY"); }
   }
+  /** Capture the original main registration once on its retained transport.
+   * The distinct head-age purpose alone receives passive bootstrap custody.
+   * That token stays bound to this runner and its original native generation. */
   public async observeFootprintMainConstruction(): Promise<CurrentFootprintCopyMainBackendObservation> {
     this.#requireFootprintMain(false);
     if (this.#mainObservationAttempted) { throw error("MAIN_OBSERVATION_CONSUMED"); }

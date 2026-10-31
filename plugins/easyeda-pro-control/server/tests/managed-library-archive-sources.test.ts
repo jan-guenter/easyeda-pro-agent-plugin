@@ -8,8 +8,10 @@ import { MANAGED_LIBRARY_ARCHIVE_MAX_SOURCE_BYTES, collectManagedLibraryArchiveS
 const MEMBER = "ProLib_pc_2026-10-31.elibu", NAME = "ProLib_pc_2026-10-31.elibz2";
 const OTHER = "fedcba0987654321fedcba0987654321", UUID = "1234567890abcdef1234567890abcdef";
 const PATH = "0819f05c4eef4c71ace90d822a990e87";
+/** Hash exact fixture bytes independently of the decoder's source/index digest helpers. */
 function hash(value: Buffer | string): string { return createHash("sha256").update(value).digest("hex"); }
 interface Entry { readonly name: string; readonly content: Buffer }
+/** Construct deterministic ZIP32 members with real deflate streams, CRCs and directory extents. */
 function archive(entries: readonly Entry[]): Buffer {
   const centrals: Buffer[] = [], locals: Buffer[] = []; let offset = 0;
   for (const entry of entries) {
@@ -28,34 +30,43 @@ function archive(entries: readonly Entry[]): Buffer {
   end.writeUInt32LE(directory.length, 12); end.writeUInt32LE(offset, 16);
   return Buffer.concat([...locals, directory, end]);
 }
+/** Encode a synthetic native row while allowing explicit unknown-header fields in test cases. */
 function row(type: string, id: string, value: unknown, extra: Record<string, unknown> = {}): string {
   return `${JSON.stringify({ type, ticket: 2, id, ...extra })}||${JSON.stringify(value)}`;
 }
+/** Supply the repeated native DOCHEAD with a known UUID/family and preserved unknown metadata. */
 function head(uuid = UUID, type = "FOOTPRINT"): string {
   return `${JSON.stringify({ type: "DOCHEAD", ticket: 0 })}||${JSON.stringify({ docType: type, uuid, client: "original", future: { retained: true } })}`;
 }
+/** Build bounded manifest metadata whose unknown nested fields must remain artifact-bound. */
 function item(uuid = UUID, docType: 2 | 4 = 4): Record<string, unknown> {
   return { uuid, path: PATH, docType, title: "Exact title", description: "Description", tags: ["Tag"], source: "local",
     ticket: 12, future: { url: "https://example.invalid/never-follow", nested: ["retained", 1] } };
 }
+/** Reproduce the exporter's inserted META independently of the production reconstruction. */
 function meta(docType: 2 | 4 = 4): string {
   return `${JSON.stringify({ type: "META", ticket: 1, id: "META" })}||${JSON.stringify({ title: "Exact title", description: "Description", tags: ["Tag"], source: "local", ...(docType === 2 ? { docType: 2 } : {}) })}`;
 }
+/** Build an exact original body with Unicode, unknown records and an optional final delimiter. */
 function body(uuid = UUID, type = "FOOTPRINT", terminal = false): string {
   return `${head(uuid, type)}|\n${row("CANVAS", "CANVAS", { title: "raw 😀", future: "|| source" })}|\n${row("FUTURE", "future", { arbitrary: [1, { value: "retained" }] }, { future: "header||value" })}${terminal ? "|\n" : ""}`;
 }
+/** Join the copied header and synthesized META to an original body without changing its bytes. */
 function wrapped(uuid = UUID, docType: 2 | 4 = 4, terminal = false): string {
   return [head(uuid, docType === 4 ? "FOOTPRINT" : "SYMBOL"), meta(docType), body(uuid, docType === 4 ? "FOOTPRINT" : "SYMBOL", terminal)].join("|\n");
 }
+/** Place supplied test items in exactly one supported map and preserve an unknown root field. */
 function manifest(values: readonly Record<string, unknown>[] = [item()], docType: 2 | 4 = 4): string {
   const members: Record<string, unknown> = {};
   for (const value of values) { members[String(value["uuid"])] = value; }
   return JSON.stringify({ devices: {}, symbols: docType === 2 ? members : {},
     footprints: docType === 4 ? members : {}, panelLibs: {}, futureRoot: { keep: true } });
 }
+/** Package caller-selected native/manifest fixtures so malformed cases still use a valid ZIP. */
 function input(source = wrapped(), json = manifest(), member = MEMBER, manifestName = "footprint2.json"): Buffer {
   return archive([{ name: member, content: Buffer.from(source) }, { name: manifestName, content: Buffer.from(json) }]);
 }
+/** Invoke the real decoder with the exact whole-fixture digest rather than a trusted fake index. */
 function collect(bytes = input()): ReturnType<typeof collectManagedLibraryArchiveSources> {
   return collectManagedLibraryArchiveSources(NAME, bytes, hash(bytes));
 }

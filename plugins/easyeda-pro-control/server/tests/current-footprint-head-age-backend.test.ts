@@ -8,6 +8,7 @@ import { headAgeBackendRunnerFixture } from "./helpers/footprint-head-age-backen
 import { footprintHeadAgeMainFixture } from "./helpers/footprint-head-age-main-fixture.ts";
 
 const scope = { createdAtLiteral: "2020-01-15 12:34:56", referenceUtcMs: 0 };
+/** Supply a complete synthetic exception with an unknown field to preserve. */
 function syntheticHeadAgeCdpFailure(): Record<string, unknown> {
   return { result: { type: "object", subtype: "error", className: "Error", description: "private original context failure", objectId: "original-error" },
     exceptionDetails: { exceptionId: 1, text: "Uncaught", lineNumber: 12, columnNumber: 3, privateUnknown: { retained: "complete diagnostic" } } };

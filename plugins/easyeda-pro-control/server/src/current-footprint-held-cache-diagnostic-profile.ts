@@ -68,19 +68,18 @@ export const currentFootprintHeldCacheStartupObservationSchema = z.object({
   if (observation.failureKind === "version") { valid &&= observation.stage === "browser-version" && observation.versionSha256 === null; }
   if (!valid) { context.addIssue({ code: "custom", message: "Startup stage, attempts, accepted samples and failure classification must agree." }); }
 }).readonly();
-/** V2 retains the bounded V1 field roster, while allowing pre-seal editor and
- * loader transitions. V2 hashes the exact JSON serialization used for the
- * runtime equality check; V1 used canonical JSON. Only two final matching
- * exclusive-editor inventories permit a later stage. Historical V1 parsing
- * above retains its original rules.
- */
+/** Allow another bounded V2 sample while the loader or an unconfirmed editor is present. */
 function waitingForStableEditor(classification: string): boolean {
   return transient(classification) || classification === "ready-with-loading" || classification === "ready";
 }
+/** Require two exclusive-editor samples with agreeing counts and exact-serialization hashes.
+ * This validates recorded observations, not continuous startup stability or owner custody. */
 function matchingExclusiveSamples(left: z.infer<typeof startupSampleSchema> | undefined, right: z.infer<typeof startupSampleSchema> | undefined): boolean {
   return left?.classification === "ready" && right?.classification === "ready" && left.pageCount === 1 && right.pageCount === 1 &&
     left.targetCount === right.targetCount && left.inventorySha256 === right.inventorySha256;
 }
+/** V2 retains the bounded V1 field roster while allowing pre-seal editor/loader transitions.
+ * Its hashes cover exact JSON serialization; historical V1 keeps canonical hashes and rules. */
 export const currentFootprintHeldCacheStartupObservationV2Schema = z.object({
   schema: z.literal("private.current-footprint-held-cache-startup-observation.v2"), stage: z.enum(startupStages),
   failed: z.boolean(), failureKind: z.enum(["inventory", "selection", "target-limit", "version", "transport-or-owner"]).nullable(),
@@ -119,6 +118,7 @@ export const currentFootprintHeldCacheStartupObservationV2Schema = z.object({
   if (observation.failureKind === "version") { valid &&= observation.stage === "browser-version" && observation.versionSha256 === null; }
   if (!valid) { context.addIssue({ code: "custom", message: "Startup V2 stage, attempts, complete inventory stabilization and failure classification must agree." }); }
 }).readonly();
+/** Accept either released diagnostic version without promoting historical JSON into ownership. */
 export const currentFootprintHeldCacheStartupObservationRecordSchema = z.union([
   currentFootprintHeldCacheStartupObservationSchema, currentFootprintHeldCacheStartupObservationV2Schema,
 ]);

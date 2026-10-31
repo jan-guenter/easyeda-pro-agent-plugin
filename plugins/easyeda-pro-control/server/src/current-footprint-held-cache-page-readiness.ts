@@ -19,6 +19,7 @@ interface Transport {
   readonly assertCurrent: () => void; readonly version: () => Promise<Row>; readonly targets: () => Promise<Row>;
   readonly pause: () => Promise<void>;
 }
+/** Stop readiness with a bounded code instead of selecting or retrying another target. */
 function refuse(code: string): never { throw new Error(`PCB_DIAGNOSTIC_HELD_CACHE_READINESS_${code}`); }
 
 /** Retain only bounded classifications, counts and hashes in public diagnostics.
@@ -64,6 +65,7 @@ export class CurrentFootprintHeldCachePageReadiness {
   public async observeBrowser(transport: Transport): Promise<Readonly<{ version: Row; targets: readonly Row[]; targetId: string }>> {
     if (this.#failed || this.#versionAttempts !== 0 || this.#targetAttempts !== 0) { refuse("CONSUMED"); }
     const { assertCurrent, version, targets, pause } = transport;
+    /** Reprove the retained transport methods and original owner around every awaited step. */
     const current = (): void => {
       if (transport.assertCurrent !== assertCurrent || transport.version !== version || transport.targets !== targets || transport.pause !== pause) { refuse("TRANSPORT_CHANGED"); }
       assertCurrent();

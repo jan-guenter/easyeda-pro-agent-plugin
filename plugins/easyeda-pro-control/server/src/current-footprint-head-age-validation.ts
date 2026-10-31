@@ -132,6 +132,8 @@ export class CurrentFootprintHeadAgeValidation {
    * never retries native work or permits another owner to adopt the operation. */
   async #settle(): Promise<void> {
     const previous = this.#publication;
+    /** Serialize publication after the prior attempt, verify the entire
+     * retained prefix and settle only an actually terminal cleanup record. */
     const work = (async (): Promise<void> => {
       await previous; await this.#durable();
       const actual = await readFootprintHeadAgeValidation(this.#operationId ?? ""); this.#current(); need(actual !== null, "JOURNAL_REQUIRED");

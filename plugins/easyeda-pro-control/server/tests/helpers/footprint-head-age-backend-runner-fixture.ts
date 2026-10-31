@@ -6,6 +6,8 @@ import type { CurrentFootprintHeadAgeBootstrapCapability } from "../../src/curre
 import type { CurrentFootprintCopyMainBackendRunner } from "../../src/current-footprint-copy-main-backend-runner.ts";
 import { mainBackendModule, mainBackendTransportFixture } from "./footprint-main-backend-runner-fixture.ts";
 
+/** Exercise the maintained runner with test-local source/capability issuers.
+ * Exact fixture identity replaces native custody only in this module loader. */
 export async function headAgeBackendRunnerFixture(): Promise<Readonly<{ runner: CurrentFootprintCopyMainBackendRunner; value: ReturnType<typeof mainBackendTransportFixture> }>> {
   const value = mainBackendTransportFixture(true);
   const context = await import("../../src/current-footprint-head-age-context.ts"), owner = await import("../../src/current-pcb-diagnostic-owner.ts");

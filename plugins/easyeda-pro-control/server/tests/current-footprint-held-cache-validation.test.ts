@@ -111,6 +111,8 @@ async function fixture(options: Options = {}): Promise<Fixture> {
     },
   });
   class NativeOwner {
+    /** Model original startup binding and its bounded failure branches,
+     * including frame-target drift, without allocating an application or Job. */
     public async startFootprintHeldCacheValidationGeneration(): Promise<void> {
       assert.equal(this, allocated); calls.push("native-start"); launched = true; bound = options.pendingGeneration !== "unbound" && options.noProcess !== true;
       if (options.pendingGeneration !== undefined) { generationEntered.resolve(null); await generationGate.promise; bound = true; }

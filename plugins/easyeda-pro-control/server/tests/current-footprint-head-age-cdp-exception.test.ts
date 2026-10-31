@@ -10,12 +10,15 @@ import { CURRENT_FOOTPRINT_HEAD_AGE_CDP_EXCEPTION_MAX_BYTES, captureCurrentFootp
 import { assertFootprintHeadAgeJournalBudget, captureFootprintHeadAgeValidationRecord } from "../src/current-footprint-head-age-validation-schema.ts";
 
 const privateText = "private/owner/path and exception source must stay private";
+/** Build a complete synthetic CDP exception with retained unknown fields. */
 function reply(): Record<string, unknown> {
   return { result: { type: "object", subtype: "error", className: "Error", description: privateText, objectId: "local-error" },
     exceptionDetails: { exceptionId: 1, text: "Uncaught", lineNumber: 14, columnNumber: 7, scriptId: "local",
       exception: { type: "object", subtype: "error", className: "Error", description: privateText, objectId: "local-exception" },
       future: { source: "unknown field retained", values: [1, false, null] } } };
 }
+/** Require the actual decoder to throw and return that precise Error identity
+ * for private-evidence and public-message assertions. */
 function failure(input: unknown): Error {
   try { decodeCurrentFootprintHeadAgeCdpReply(input); } catch (error) { assert.ok(error instanceof Error); return error; }
   throw new Error("Expected native CDP failure.");

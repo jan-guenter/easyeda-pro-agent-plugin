@@ -14,6 +14,7 @@ import { CONTEXT_SOURCE, CURRENT_FOOTPRINT_HEAD_AGE_DATE_METHODS } from "./footp
 
 type Data = Record<string, unknown>;
 const qualified = Object.freeze({ profile: "private.current-footprint-copy-main-backend-source.v1", sha256: SOURCE.sha256, runtimeBound: false, executionAuthorized: false });
+/** Load the maintained runner with explicit test-local module replacements. */
 export async function mainBackendModule(overrides: Readonly<Record<string, unknown>> = {}): Promise<Readonly<{ Constructor: typeof CurrentFootprintCopyMainBackendRunner; requireRequest: typeof requireCurrentFootprintCopyMainRequestOrigin; requireCompletion: typeof requireCurrentFootprintCopyMainCompletionOrigin }>> {
   const path = new URL("../../src/current-footprint-copy-main-backend-runner.ts", import.meta.url);
   const loaded: { exports: Record<string, unknown> } = { exports: {} }, originalRequire = createRequire(path);
@@ -63,10 +64,12 @@ function array(): Data {
   result.push(property("length", { type: "number", value: 13 }, true, false, false));
   return { result, internalProperties: [{ name: "[[Prototype]]", value: { type: "object", subtype: "array", className: "Array", objectId: "array-prototype" } }] };
 }
+/** Build synthetic own-index and length descriptors for a retained array. */
 function remoteArray(values: readonly Data[]): Data {
   return { result: [...values.map((value, index) => property(String(index), value, true, true)), property("length", { type: "number", value: values.length }, true, false, false)],
     internalProperties: [{ name: "[[Prototype]]", value: { type: "object", subtype: "array", className: "Array", objectId: "array-prototype" } }] };
 }
+/** Model the pinned getter/setter location and lexical-scope descriptors. */
 function contextAccessor(role: "getter" | "setter", scriptId: string): Data {
   const pin = CONTEXT_SOURCE[role];
   return { result: [property("name", { type: "string", value: pin.name }), property("length", { type: "number", value: pin.arity })],
@@ -74,6 +77,8 @@ function contextAccessor(role: "getter" | "setter", scriptId: string): Data {
       { name: "[[Prototype]]", value: { type: "function", className: "Function", objectId: "function-prototype" } },
       { name: "[[Scopes]]", value: { type: "object", subtype: "internal#scopeList", className: "Array", description: "Scopes[3]", objectId: `${role}-scopes` } }] };
 }
+/** Supply an inert queued CDP peer and explicit drift/failure controls.
+ * The head-age branch emits synthetic bootstrap/context metadata only. */
 export function mainBackendTransportFixture(headAge = false): Readonly<{ transport: CurrentFootprintCopyMainBackendTransport; commands: Command[]; state: {
   current: boolean; wrongSource: boolean; foreignPause: boolean; duplicateResume: boolean; sendFailure: string; malformedChunk: boolean; resumeCount: number; polls: number;
   registrationColumnDelta: number; foreignRegistrationScript: boolean;
@@ -85,6 +90,7 @@ export function mainBackendTransportFixture(headAge = false): Readonly<{ transpo
     registrationColumnDelta: 0, foreignRegistrationScript: false, metadataShapeRole: "", sendFailureText: "lost original send acknowledgment", sendError: null as Error | null,
     bootstrap: "unique" as "unique" | "missing" | "duplicate", contextScriptId: "bootstrap", headAgeExceptionPhase: "", headAgeExceptionReply: null as unknown };
   const event = (method: string, params: Data): void => { queue.push(`${JSON.stringify({ method, params })}\0`); };
+  /** Produce the fixed synthetic reply or selected original-request failure. */
   function response(command: Command): unknown {
     if (command.phase === state.headAgeExceptionPhase) { return state.headAgeExceptionReply; }
     if (command.phase === "debugger-enable") { return { debuggerId: "main-debugger" }; }

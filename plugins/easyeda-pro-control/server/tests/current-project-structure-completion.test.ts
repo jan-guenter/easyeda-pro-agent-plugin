@@ -38,9 +38,13 @@ const suffix = [
   { stage: "serial-finally", kind: "uploadStructure", runId: "upload-run", promiseId: "upload-promise" },
   { stage: "promise-settled", kind: "uploadStructure", promiseId: "upload-promise", outcome: "fulfilled" }, boundary,
 ];
+/** Feed a supplied fixture transcript through the real comparison model and
+ * consume its terminal result; this helper supplies no original native events. */
 function compare(events: readonly unknown[]): ReturnType<CurrentProjectStructureCompletionModel["finish"]> {
   const model = new CurrentProjectStructureCompletionModel(plan); for (const event of events) { model.accept(event); } return model.finish();
 }
+/** Change only the named fixture stage so refusal cases isolate a foreign
+ * request/response field or changed SELECT multiplicity in an otherwise valid chain. */
 function changeBody(stage: string, changes: Readonly<Record<string, unknown>>): readonly unknown[] {
   const result: unknown[] = [];
   for (const event of body) { result.push(event.stage === stage ? { ...event, ...changes } : event); }

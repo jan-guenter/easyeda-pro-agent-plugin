@@ -7,10 +7,12 @@ import { test } from "node:test";
 import { runInNewContext } from "node:vm";
 
 const actions = ["extract-library-archive-sources", "list-library-archive-sources", "read-library-archive-source"] as const;
+/** Build an inert offline schema reply with explicit action constants for probe guard cases. */
 function reply(selected: readonly string[]): Record<string, unknown> {
   return { offline: true, publicSdkMethodExecuted: false, installedRuntimeAdmission: false, executionAuthorized: false,
     inputSchema: { oneOf: selected.map(action => ({ type: "object", properties: { action: { type: "string", const: action } } })) } };
 }
+/** Evaluate the maintained probe's actual guard and helpers without its process-launch code. */
 async function actualGuard(): Promise<(value: unknown) => void> {
   const source = await readFile(new URL("../../scripts/probe-installed-offline-catalog.ts", import.meta.url), "utf8");
   const helperStart = source.indexOf("function isRecord(");

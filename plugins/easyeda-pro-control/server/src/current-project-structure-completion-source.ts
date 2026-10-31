@@ -35,7 +35,10 @@ export interface CurrentProjectStructureCompletionSource {
   readonly executionAuthorized: false;
 }
 const issued = new WeakSet<CurrentProjectStructureCompletionSource>();
+/** Hash the complete UTF-8 text used by the fixed source and span comparisons. */
 function hash(value: string): string { return createHash("sha256").update(value).digest("hex"); }
+/** Require the selected complete source digest and every pinned UTF-16 span;
+ * malformed text or any byte/count mismatch refuses before token issuance. */
 function qualify(input: unknown, realm: keyof typeof CURRENT_PROJECT_STRUCTURE_COMPLETION_SOURCES): void {
   const source = CURRENT_PROJECT_STRUCTURE_COMPLETION_SOURCES[realm];
   if (typeof input !== "string" || !input.isWellFormed() || input.length > source.bytes || Buffer.byteLength(input) !== source.bytes || hash(input) !== source.sha256) {
@@ -46,12 +49,16 @@ function qualify(input: unknown, realm: keyof typeof CURRENT_PROJECT_STRUCTURE_C
     if (Buffer.byteLength(text) !== span.bytes || hash(text) !== span.sha256) { throw new Error("PROJECT_STRUCTURE_COMPLETION_SPAN"); }
   }
 }
+/** Qualify both complete worker/main sources and retain this exact frozen
+ * comparison token. Matching source bytes grant no runtime or completion custody. */
 export function qualifyCurrentProjectStructureCompletionSource(worker: unknown, main: unknown): CurrentProjectStructureCompletionSource {
   qualify(worker, "worker"); qualify(main, "main");
   const token = Object.freeze({ profile: "private.current-project-structure-completion-source.v1" as const,
     originalRuntimeVerified: false as const, executionAuthorized: false as const });
   issued.add(token); return token;
 }
+/** Require the original token issued here; copied JSON cannot satisfy the
+ * private membership check or create original native process ownership. */
 export function requireCurrentProjectStructureCompletionSource(input: CurrentProjectStructureCompletionSource): void {
   if (!issued.has(input)) { throw new Error("PROJECT_STRUCTURE_COMPLETION_ORIGINAL_SOURCE"); }
 }

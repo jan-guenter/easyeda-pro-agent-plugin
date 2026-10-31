@@ -1,5 +1,7 @@
 # Project history
 
+- [2026-10-31 PR164 publication and installation](2026-10-31-194500-pr164-publication-and-installation.md). Verbatim terminal release record, separated from the earlier native-age development observations.
+
 - [2026-10-31 archives and native startup context](2026-10-31-193000-archives-and-native-startup-context.md). Supplied library archives, process accessor custody, startup stabilization and a structure-completion prerequisite model.
 
 - [2026-10-31 native age workflow and historical PCB compatibility](2026-10-31-150000-native-age-and-pcb-compatibility.md). Consumed pre-allocation refusal, immutable historical visual results and a larger native/API batch.

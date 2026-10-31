@@ -62,6 +62,8 @@ const command = z.discriminatedUnion("phase", [
   z.object({ phase: z.literal("release"), method: z.literal("Runtime.releaseObjectGroup"), params: releaseParameters }).strict(),
 ]);
 export type CurrentFootprintCopyMainBackendCommand = Readonly<z.infer<typeof command>>;
+/** Capture bounded plain data and require an exact fixed inspector command.
+ * Validation freezes the result but issues no transport or native ownership. */
 export function validateCurrentFootprintCopyMainBackendCommand(input: unknown): CurrentFootprintCopyMainBackendCommand {
   return freezeDeep(command.parse(captureCurrentPcbStringClockReply(input).value));
 }

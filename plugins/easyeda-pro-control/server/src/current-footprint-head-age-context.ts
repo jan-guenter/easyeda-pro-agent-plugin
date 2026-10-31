@@ -29,7 +29,10 @@ export interface CurrentFootprintHeadAgeContextSource {
   readonly runtimeProcessVerified: false;
   readonly executionAuthorized: false;
 }
+/** Refuse context drift without accepting source text as an original handle. */
 function need(value: boolean): asserts value { if (!value) { throw new Error("FOOTPRINT_HEAD_AGE_CONTEXT"); } }
+/** Pin the complete embedded bootstrap bytes and issue a local source token.
+ * The token proves source identity only; native scope custody remains separate. */
 export function qualifyCurrentFootprintHeadAgeContextSource(input: unknown): CurrentFootprintHeadAgeContextSource {
   const pin = CURRENT_FOOTPRINT_HEAD_AGE_CONTEXT_SOURCE;
   need(typeof input === "string" && input.length === pin.bytes && input.isWellFormed() && Buffer.byteLength(input) === pin.bytes &&
@@ -37,6 +40,7 @@ export function qualifyCurrentFootprintHeadAgeContextSource(input: unknown): Cur
   const token = Object.freeze({ profile: "private.current-footprint-head-age-context-source.v1" as const,
     runtimeProcessVerified: false as const, executionAuthorized: false as const }); sourceTokens.add(token); return token;
 }
+/** Require this module's original source token instead of a matching report. */
 export function requireCurrentFootprintHeadAgeContextSource(input: CurrentFootprintHeadAgeContextSource): void { need(sourceTokens.has(input)); }
 const helpers = String.raw`"use strict";const bad=()=>{throw new Error("FOOTPRINT_HEAD_AGE_CONTEXT");};
 const own=(o,k)=>{if(o===null||(typeof o!=="object"&&typeof o!=="function"))bad();const d=Object.getOwnPropertyDescriptor(o,k);if(!d||!Object.hasOwn(d,"value"))bad();return d.value;};
@@ -75,6 +79,8 @@ const remote = z.object({ type: z.string(), subtype: z.string().optional(), clas
   description: z.string().max(8192).optional(), value: z.unknown().optional() }).strict();
 const property = z.object({ name: z.string(), value: remote, writable: z.boolean(), enumerable: z.boolean(), configurable: z.boolean(), isOwn: z.literal(true) }).strict();
 const internal = z.object({ name: z.string(), value: remote }).strict();
+/** Check every descriptor of the captured four-item array before returning its
+ * distinct getter/setter handles for original V8 metadata qualification. */
 export function decodeCurrentFootprintHeadAgeContextArray(input: unknown): Readonly<{ getter: string; setter: string }> {
   const reply = z.object({ result: z.array(property).length(5), internalProperties: z.array(internal).length(1) }).strict().parse(captureCurrentPcbStringClockReply(input).value);
   const fields = new Map(reply.result.map(field => [field.name, field])); need(fields.size === 5);
@@ -90,6 +96,8 @@ export function decodeCurrentFootprintHeadAgeContextArray(input: unknown): Reado
   }
   const getter = ids[2], setter = ids[3]; need(getter !== undefined && setter !== undefined && getter !== setter); return Object.freeze({ getter, setter });
 }
+/** Match accessor name, arity, bootstrap location and three-scope V8 shape.
+ * The returned handles still require exact source and lexical-scope checks. */
 export function decodeCurrentFootprintHeadAgeContextAccessor(input: unknown, role: "getter" | "setter"): Readonly<{ scriptId: string; scopesId: string }> {
   const reply = z.object({ result: z.array(property).length(2), internalProperties: z.array(internal).length(3) }).strict().parse(captureCurrentPcbStringClockReply(input).value);
   const expected = CURRENT_FOOTPRINT_HEAD_AGE_CONTEXT_SOURCE[role], fields = new Map(reply.result.map(field => [field.name, field])); need(fields.size === 2);
@@ -101,6 +109,8 @@ export function decodeCurrentFootprintHeadAgeContextAccessor(input: unknown, rol
     scopes?.type === "object" && scopes.subtype === "internal#scopeList" && scopes.className === "Array" && scopes.description === "Scopes[3]" && scopes.objectId !== undefined && scopes.value === undefined);
   return Object.freeze({ scriptId: actual.scriptId, scopesId: scopes.objectId });
 }
+/** Require the complete ordered inner-closure, outer-closure and global roster,
+ * returning only the two original lexical scope-wrapper handles. */
 export function decodeCurrentFootprintHeadAgeContextScopes(input: unknown): readonly [string, string] {
   const reply = z.object({ result: z.array(property).length(3) }).strict().parse(captureCurrentPcbStringClockReply(input).value);
   const ids: string[] = [], labels = ["Closure (setupProcessObject)", "Closure", "Global"];
