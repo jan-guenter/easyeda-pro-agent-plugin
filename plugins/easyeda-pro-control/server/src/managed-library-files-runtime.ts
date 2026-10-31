@@ -2,6 +2,7 @@ import { createHash, randomUUID } from "node:crypto";
 import { basename, dirname, join } from "node:path";
 import { controlDataDirectory, ensureManagedDirectory, publishManagedAttachmentExclusive, readExactBinaryArtifact } from "./artifacts.ts";
 import { MANAGED_LIBRARY_FILES_MAX_RESULT_BYTES, decodeManagedLibraryBase64, decodeManagedProjectArchive, extractManagedLibraryMetadata, extractManagedProjectMetadata,
+  managedLibraryArchiveSourceListRequestSchema, managedLibraryArchiveSourceReadRequestSchema, managedLibraryArchiveSourcesRequestSchema,
   managedLibraryExtractRequestSchema, managedLibraryFileSchema, managedLibraryFilesRequestSchema, managedLibraryMetadataSchema,
   managedLibraryPrepareRequestSchema, managedPcbStackRulesRequestSchema, managedProjectDocumentSourceListRequestSchema, managedProjectDocumentSourceReadRequestSchema,
   managedProjectDocumentSourcesRequestSchema, managedProjectExtractRequestSchema, managedProjectFootprintSourceListRequestSchema,
@@ -20,6 +21,9 @@ import { collectManagedProjectDocumentSources, encodeManagedProjectDocumentSourc
 import type { ManagedProjectDocumentSource, ManagedProjectDocumentSourceSet } from "./managed-project-document-sources.ts";
 import { inspectManagedSchematicRecords } from "./managed-schematic-records.ts";
 import { inspectManagedPcbStackRules } from "./managed-pcb-stack-rules.ts";
+// oxlint-disable-next-line import/max-dependencies -- Fixed offline dispatch joins the exact artifact guards and each supported decoder; a pass-through module would hide the same operation dependencies.
+import { collectManagedLibraryArchiveSources, encodeManagedLibraryArchiveSourceIndex, pageManagedLibraryArchiveRoster, pageManagedLibraryArchiveSource } from "./managed-library-archive-sources.ts";
+import type { ManagedLibraryArchiveSourceSet } from "./managed-library-archive-sources.ts";
 
 function inputsDirectory(): string { return join(controlDataDirectory(), "artifacts", "library-file-inputs"); }
 function result(value: Record<string, unknown>, metadataOnly = true): Record<string, unknown> {
@@ -208,6 +212,41 @@ export async function inspectManagedProjectSymbolPins(input: unknown): Promise<R
     localArtifactWritten: false, suppliedSourceOnly: true, cadFramingValidated: false, symbolPinRecordFramingValidated: true }, false);
 }
 
+async function libraryArchiveSources(file: ManagedLibraryFile, expectedSourceSetSha256?: string): Promise<ManagedLibraryArchiveSourceSet> {
+  const content = await exactInput(file);
+  const set = collectManagedLibraryArchiveSources(file.name, content, file.sha256);
+  if (expectedSourceSetSha256 !== undefined && set.sourceSetSha256 !== expectedSourceSetSha256) { throw new Error("Supplied library archive source-set digest differs."); }
+  return set;
+}
+
+/** The complete roster binds the supplied archive and both member hashes.
+ * Prefix bookkeeping stays separate from each exact original source body. */
+export async function extractManagedLibraryArchiveSources(input: unknown): Promise<Record<string, unknown>> {
+  const request = managedLibraryArchiveSourcesRequestSchema.parse(input); const set = await libraryArchiveSources(request.file);
+  const directory = await ensureManagedDirectory(join(controlDataDirectory(), "artifacts", "library-archive-source-indexes"));
+  const index = await publishManagedAttachmentExclusive(join(directory, `${randomUUID()}.json`), "Supplied library archive source index",
+    encodeManagedLibraryArchiveSourceIndex(set), "library-archive-source-index");
+  if (index.sha256 !== set.sourceSetSha256) { throw new Error("Supplied library archive index differs from its complete source-set digest."); }
+  return result({ action: request.action, input: request.file, sourceSetSha256: set.sourceSetSha256,
+    sourceCount: set.sources.length, totalSourceBytes: set.totalSourceBytes, inputMembers: set.inputMembers,
+    sourceLayout: set.sourceLayout, index, localArtifactWritten: true, suppliedSourceOnly: true,
+    cadFramingValidated: false, libraryArchiveRecordFramingValidated: true, symbolSubtypeVerified: false }, false);
+}
+export async function listManagedLibraryArchiveSources(input: unknown): Promise<Record<string, unknown>> {
+  const request = managedLibraryArchiveSourceListRequestSchema.parse(input); const set = await libraryArchiveSources(request.file, request.expectedSourceSetSha256);
+  return result({ action: request.action, input: request.file, sourceSetSha256: set.sourceSetSha256,
+    ...pageManagedLibraryArchiveRoster(set, request.offset, request.length), localArtifactWritten: false,
+    suppliedSourceOnly: true, cadFramingValidated: false, libraryArchiveRecordFramingValidated: true, symbolSubtypeVerified: false });
+}
+export async function readManagedLibraryArchiveSource(input: unknown): Promise<Record<string, unknown>> {
+  const request = managedLibraryArchiveSourceReadRequestSchema.parse(input); const set = await libraryArchiveSources(request.file, request.expectedSourceSetSha256);
+  const item = set.sources.find((entry) => entry.sourceId === request.sourceId);
+  if (item === undefined) { throw new Error("Requested source identity is absent from the complete supplied library archive roster."); }
+  return result({ action: request.action, input: request.file, sourceSetSha256: set.sourceSetSha256,
+    ...pageManagedLibraryArchiveSource(item, request.offset, request.length), localArtifactWritten: false,
+    suppliedSourceOnly: true, cadFramingValidated: false, libraryArchiveRecordFramingValidated: true, symbolSubtypeVerified: false }, false);
+}
+
 /** Fixed local dispatch; accepting this operation never starts the bridge. */
 export async function executeManagedLibraryFiles(input: unknown): Promise<Record<string, unknown>> {
   const request = managedLibraryFilesRequestSchema.parse(input);
@@ -218,7 +257,9 @@ export async function executeManagedLibraryFiles(input: unknown): Promise<Record
     "list-symbol-sources": listManagedSymbolSources, "read-symbol-source": readManagedSymbolSource, "inspect-symbol-pins": inspectManagedSymbolSourcePins,
     "extract-project-document-sources": extractManagedProjectDocumentSources, "list-project-document-sources": listManagedProjectDocumentSources,
     "read-project-document-source": readManagedProjectDocumentSource, "inspect-schematic-records": inspectManagedProjectSchematicRecords,
-    "inspect-pcb-stack-rules": inspectManagedProjectPcbStackRules, "inspect-project-symbol-pins": inspectManagedProjectSymbolPins };
+    "inspect-pcb-stack-rules": inspectManagedProjectPcbStackRules, "inspect-project-symbol-pins": inspectManagedProjectSymbolPins,
+    "extract-library-archive-sources": extractManagedLibraryArchiveSources, "list-library-archive-sources": listManagedLibraryArchiveSources,
+    "read-library-archive-source": readManagedLibraryArchiveSource };
   const output = await routes[request.action](request);
   return output;
 }

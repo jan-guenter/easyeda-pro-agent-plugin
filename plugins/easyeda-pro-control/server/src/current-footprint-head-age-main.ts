@@ -1,5 +1,6 @@
 /** Fixed original-main Date/parser observations for one read-only native birth.
  * No supplied program, callback, parser or writer enters this grammar. */
+import { CURRENT_FOOTPRINT_HEAD_AGE_CONTEXT_REQUIRE_PROGRAM, specializeCurrentFootprintHeadAgeControls } from "./current-footprint-head-age-context.ts";
 import { types } from "node:util";
 import { z } from "zod";
 import { sha256Text } from "./core.ts";
@@ -14,7 +15,7 @@ export const CURRENT_FOOTPRINT_HEAD_AGE_DATE_METHODS = Object.freeze(["getTime",
 export type CurrentFootprintHeadAgeDateMethod = typeof CURRENT_FOOTPRINT_HEAD_AGE_DATE_METHODS[number];
 const marker = { createdAtLiteral: "1987-09-23 01:02:03", referenceUtcMs: 1_721_111_111_123 };
 const markerWall = Date.parse(`${marker.createdAtLiteral.replace(" ", "T")}Z`);
-const originalControls = buildCurrentAgedSqlClockControls(marker, "main-reference");
+const originalControls = specializeCurrentFootprintHeadAgeControls(buildCurrentAgedSqlClockControls(marker, "main-reference"));
 const controls = originalControls.replaceAll(JSON.stringify(marker.createdAtLiteral), "createdAtLiteral")
   .replaceAll(String(marker.referenceUtcMs), "referenceUtcMs").replace(`wallMs=${String(markerWall)}`, "wallMs=wallEpochMs");
 if (controls === originalControls || controls.includes(JSON.stringify(marker.createdAtLiteral)) || controls.includes(String(marker.referenceUtcMs)) ||
@@ -25,15 +26,16 @@ const arr=(o,n)=>{if(!Array.isArray(o)||Object.getPrototypeOf(o)!==Array.prototy
 const requireOriginal=${CURRENT_FOOTPRINT_COPY_MAIN_BACKEND_CALLS.require.program};
 const methodNames=${JSON.stringify(CURRENT_FOOTPRINT_HEAD_AGE_DATE_METHODS)};
 const original=o=>{arr(o,13);if(Reflect.apply(requireOriginal,own(o,"0"),[o])!==true)bad();};
-const select=o=>{original(o);const date=own(o,"10"),now=own(o,"11"),parser=own(o,"12"),prototype=own(date,"prototype"),methods=methodNames.map(name=>own(prototype,name));
+const requireHeadContext=${CURRENT_FOOTPRINT_HEAD_AGE_CONTEXT_REQUIRE_PROGRAM};
+const select=(o,context)=>{original(o);if(Reflect.apply(requireHeadContext,undefined,[context])!==true)bad();const date=own(o,"10"),now=own(o,"11"),parser=own(o,"12"),prototype=own(date,"prototype"),methods=methodNames.map(name=>own(prototype,name));
 for(let i=0;i<methods.length;i++){const fn=methods[i],name=methodNames[i];if(typeof fn!=="function"||own(fn,"name")!==name||own(fn,"length")!==0||Function.prototype.toString.call(fn)!=="function "+name+"() { [native code] }")bad();}
-return[o,date,now,parser,prototype,...methods];};
-const same=a=>{arr(a,15);const fresh=select(own(a,"0"));for(let i=0;i<15;i++)if(own(a,String(i))!==fresh[i])bad();};`;
+return[o,date,now,parser,prototype,...methods,context];};
+const same=a=>{arr(a,16);const fresh=select(own(a,"0"),own(a,"15"));for(let i=0;i<16;i++)if(own(a,String(i))!==fresh[i])bad();};`;
 
 // The fixed helper's original() predicate cannot be shadowed by its argument.
-export const CURRENT_FOOTPRINT_HEAD_AGE_CAPTURE_PROGRAM = `function(retained){${helpers}\nreturn select(retained);}`;
+export const CURRENT_FOOTPRINT_HEAD_AGE_CAPTURE_PROGRAM = `function(retained,context){${helpers}\nreturn select(retained,context);}`;
 export const CURRENT_FOOTPRINT_HEAD_AGE_OBSERVE_PROGRAM = `function(createdAtLiteral,wallEpochMs){${helpers}
-const retained=this;same(retained);
+const retained=this;same(retained);const headAgeContext=own(retained,"15");
 if(typeof createdAtLiteral!=="string"||createdAtLiteral.length!==19||!Number.isSafeInteger(wallEpochMs))bad();
 const date=own(retained,"1"),now=own(retained,"2"),parser=own(retained,"3"),prototype=own(retained,"4"),getTime=own(retained,"5");
 const referenceUtcMs=Reflect.apply(now,date,[]);same(retained);if(!Number.isSafeInteger(referenceUtcMs)||referenceUtcMs<0)bad();
@@ -76,16 +78,16 @@ const internal = z.object({ name: z.string(), value: remote }).strict();
 /** Return only the ten fixed method handles after their complete remote array
  * roster is checked. Later native metadata checks admit each original handle. */
 export function decodeCurrentFootprintHeadAgeArray(input: unknown): readonly string[] {
-  const reply = z.object({ result: z.array(property).length(16), internalProperties: z.array(internal).length(1) }).strict().parse(captureCurrentPcbStringClockReply(input).value);
-  const fields = new Map(reply.result.map(item => [item.name, item])); need(fields.size === 16);
+  const reply = z.object({ result: z.array(property).length(17), internalProperties: z.array(internal).length(1) }).strict().parse(captureCurrentPcbStringClockReply(input).value);
+  const fields = new Map(reply.result.map(item => [item.name, item])); need(fields.size === 17);
   const length = fields.get("length"), parent = reply.internalProperties[0];
-  need(length?.value.type === "number" && length.value.value === 15 && length.writable && !length.enumerable && !length.configurable && length.value.objectId === undefined &&
+  need(length?.value.type === "number" && length.value.value === 16 && length.writable && !length.enumerable && !length.configurable && length.value.objectId === undefined &&
     parent?.name === "[[Prototype]]" && parent.value.type === "object" && parent.value.subtype === "array" && parent.value.className === "Array" && parent.value.objectId !== undefined && parent.value.value === undefined);
   const ids: string[] = [];
-  for (let index = 0; index < 15; index += 1) {
+  for (let index = 0; index < 16; index += 1) {
     const field = fields.get(String(index)); need(field !== undefined && field.writable && field.enumerable && field.configurable &&
       field.value.objectId !== undefined && field.value.value === undefined && field.value.subtype !== "proxy");
-    if (index >= 5) { const name = CURRENT_FOOTPRINT_HEAD_AGE_DATE_METHODS[index - 5]; need(field.value.type === "function" && field.value.className === "Function" && field.value.description === `function ${String(name)}() { [native code] }`); ids.push(field.value.objectId); }
+    if (index >= 5 && index < 15) { const name = CURRENT_FOOTPRINT_HEAD_AGE_DATE_METHODS[index - 5]; need(field.value.type === "function" && field.value.className === "Function" && field.value.description === `function ${String(name)}() { [native code] }`); ids.push(field.value.objectId); }
   }
   need(new Set(ids).size === ids.length); return Object.freeze(ids);
 }

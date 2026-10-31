@@ -12,42 +12,62 @@ import { test } from "node:test";
 import { fileURLToPath } from "node:url";
 import { runInThisContext } from "node:vm";
 import { transform } from "esbuild";
-import type { CurrentFootprintCombinedNativeOwner, CurrentFootprintMainNativeOwner } from "../src/current-pcb-diagnostic-owner.ts";
+import type { CurrentFootprintCombinedNativeOwner, CurrentFootprintHeadAgeValidationOwner, CurrentFootprintMainNativeOwner } from "../src/current-pcb-diagnostic-owner.ts";
 import { mainBackendModule } from "./helpers/footprint-main-backend-runner-fixture.ts";
 import { unarmedMainCompletionOriginFixture } from "./helpers/footprint-main-completion-origin-fixture.ts";
 
-type Owner = CurrentFootprintCombinedNativeOwner | CurrentFootprintMainNativeOwner;
+type Owner = CurrentFootprintCombinedNativeOwner | CurrentFootprintHeadAgeValidationOwner | CurrentFootprintMainNativeOwner;
 const readyPreload = fileURLToPath(new URL("helpers/current-footprint-combined-helper-ready.ts", import.meta.url));
 const peerFixture = new URL("helpers/footprint-main-backend-runner-fixture.ts", import.meta.url).href;
 
-async function ownerConstructor(combined: boolean): Promise<Readonly<{ Constructor: new (...args: unknown[]) => Owner; source: object }>> {
+async function ownerConstructor(combined: boolean, headAge: boolean): Promise<Readonly<{ Constructor: new (...args: unknown[]) => Owner; source: object; seed: (owner: Owner) => void }>> {
   const path = new URL("../src/current-pcb-diagnostic-owner.ts", import.meta.url);
   const actualRequire = createRequire(path);
-  const compiled = await transform(await readFile(path, "utf8"), { loader: "ts", format: "cjs", target: "node24", logLevel: "silent" });
-  const runner = await mainBackendModule(), source = Object.freeze({ syntheticOriginalSource: true });
   const loaded: { exports: Record<string, unknown> } = { exports: {} };
-  const evaluate: unknown = runInThisContext(`(function(require,module,exports){${compiled.code}\n})`); assert.ok(typeof evaluate === "function");
+  const completion = Object.freeze({ observedChildClose: true, exitCode: 0, exitSignal: null }), sqlHead = Object.freeze({ syntheticSqlHead: true });
+  // External SQL/factory provenance is synthetic. The production owner itself
+  // Still mints and reproves its genuine private bootstrap capability below.
+  const sourceCode = `${await readFile(path, "utf8")}\nexport function seedSyntheticHeadAgeClose(owner){
+ const binding=Object.freeze({operationId:"footprint-head-age-synthetic-close",target:Object.freeze({}),originalTarget:Object.freeze({}),
+  prepared:Object.freeze({checkpoint:Object.freeze({checkpointSha256:"a".repeat(64)})}),inventory:Object.freeze({checkpointSha256:"a".repeat(64)}),runtime:Object.freeze({})});
+ const allocation={binding,text:headAgeValidationBindingText(binding),completion:readerCompletion(binding.inventory),head:syntheticSqlHead,owner,status:"retained"};
+ headAgeValidationAllocations.set(binding,allocation);headAgeValidationFactories.set(owner,Object.freeze({allocation,options:Object.freeze({syntheticOnly:true}),installation:{facadeSha256:"b".repeat(64)}}));
+}\n`;
+  const compiled = await transform(sourceCode, { loader: "ts", format: "cjs", target: "node24", logLevel: "silent" });
+  const originalOwner: unknown = actualRequire("./current-pcb-diagnostic-owner.ts"); assert.ok(originalOwner !== null && typeof originalOwner === "object");
+  const runner = await mainBackendModule(headAge ? { "./current-pcb-diagnostic-owner.ts": { ...originalOwner,
+    requireCurrentFootprintHeadAgeBootstrapCapability(capability: unknown, transport: unknown): void {
+      const requireOriginal = loaded.exports["requireCurrentFootprintHeadAgeBootstrapCapability"]; assert.equal(typeof requireOriginal, "function");
+      if (typeof requireOriginal !== "function") { throw new TypeError("Missing original capability issuer."); }
+      Reflect.apply(requireOriginal, undefined, [capability, transport]);
+    } } } : {}), source = Object.freeze({ syntheticOriginalSource: true });
+  const evaluate: unknown = runInThisContext(`(function(require,module,exports,syntheticSqlHead){${compiled.code}\n})`); assert.ok(typeof evaluate === "function");
   Reflect.apply(evaluate, undefined, [(name: string): unknown => {
     if (name === "./current-footprint-copy-main-backend-runner.ts") { return { CurrentFootprintCopyMainBackendRunner: runner.Constructor }; }
     if (name === "./current-pcb-209-actor-clock-source.ts") {
       return { requireCurrentPcb209ActorClockSourceQualification: (value: unknown): void => { assert.equal(value, source); } };
     }
+    if (headAge && name === "./sqlite-inventory.ts") { return { readerCompletion: (): object => completion }; }
+    if (headAge && name === "./current-footprint-head-age-sql.ts") { return { requireCurrentFootprintHeadAgeSqlHead: (actual: unknown): void => { assert.equal(actual, sqlHead); } }; }
     return actualRequire(name) as unknown;
-  }, loaded, loaded.exports]);
-  const Constructor = loaded.exports[combined ? "CurrentFootprintCombinedNativeOwner" : "CurrentFootprintMainNativeOwner"];
+  }, loaded, loaded.exports, sqlHead]);
+  const name = headAge ? "CurrentFootprintHeadAgeValidationOwner" : "CurrentFootprintMainNativeOwner";
+  const Constructor = loaded.exports[combined ? "CurrentFootprintCombinedNativeOwner" : name];
   assert.ok(typeof Constructor === "function");
   // oxlint-disable-next-line typescript/no-unsafe-type-assertion -- The evaluated maintained export is checked above; construction below supplies the exact native-owner arguments.
-  return { Constructor: Constructor as new (...args: unknown[]) => Owner, source };
+  return { Constructor: Constructor as new (...args: unknown[]) => Owner, source, seed(owner): void {
+    if (headAge) { const seed = loaded.exports["seedSyntheticHeadAgeClose"]; assert.ok(typeof seed === "function"); Reflect.apply(seed, undefined, [owner]); }
+  } };
 }
 
-async function fixture(combined: boolean, failure: "none" | "source" | "release" | "detach"): Promise<Readonly<{
+async function fixture(combined: boolean, failure: "none" | "source" | "release" | "detach", headAge = false): Promise<Readonly<{
   owner: Owner; actions: string[]; dispose: () => Promise<void>;
 }>> {
-  const { Constructor, source } = await ownerConstructor(combined);
+  const { Constructor, seed, source } = await ownerConstructor(combined, headAge);
   const script = `
 import { createInterface } from 'node:readline';
 import { mainBackendTransportFixture } from ${JSON.stringify(peerFixture)};
-const f=mainBackendTransportFixture();const failure=${JSON.stringify(failure)};
+const f=mainBackendTransportFixture(${String(headAge)});const failure=${JSON.stringify(failure)};
 f.state.wrongSource=failure==='source';if(failure==='release')f.state.sendFailure='release';
 const input=createInterface({input:process.stdin});
 input.on('line',async line=>{const q=JSON.parse(line);let result;
@@ -81,7 +101,7 @@ try{
   };
   const owner = new Constructor(child, (): Promise<void> => Promise.resolve(), source, null, undefined, undefined,
     ...(combined ? ["a".repeat(32)] : []));
-  owner.start();
+  seed(owner); owner.start();
   if (combined) {
     assert.ok("waitFootprintCombinedReady" in owner); await owner.waitFootprintCombinedReady();
   }
@@ -107,6 +127,19 @@ void test("ordinary and combined main owners release then detach before their so
     assert.equal(f.actions.filter(value => value === "main-close-detach").length, 1);
     assert.equal(await f.owner.observeTermination(), true); await f.owner.releaseClosed();
   }
+});
+
+void test("genuine head-age bootstrap custody survives only its original release/detach normal-close lane", async context => {
+  const f = await fixture(false, "none", true); context.after(f.dispose);
+  await f.owner.observeFootprintMainConstruction(); const before = f.actions.length;
+  await f.owner.requestNormalClose("456");
+  const close = f.actions.slice(before), detached = close.indexOf("main-close-detach"), normal = close.indexOf("normal-close"), released = close.indexOf("main-send:release");
+  assert.ok(released !== -1 && detached > released && normal > detached);
+  assert.equal(f.owner.retainedFootprintMainConstruction()?.released, true); assert.equal(f.owner.status().mainCloseDetached, true);
+  const after = [...f.actions]; await assert.rejects(f.owner.reproveFootprintMain(), /MAIN_ORIGINAL_OWNER/u);
+  await assert.rejects(f.owner.requestNormalClose("456"), /CLOSE_CONSUMED/u); assert.deepEqual(f.actions, after);
+  assert.equal(f.actions.filter(action => action === "main-send:release").length, 1); assert.equal(f.actions.includes("head-age-abort"), false);
+  assert.equal(await f.owner.observeTermination(), true); await f.owner.releaseClosed(); assert.equal(f.owner.status().helperClosed, true);
 });
 
 void test("held registration, failed release and failed detach never reach normal close or replay cleanup", async context => {

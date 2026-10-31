@@ -6,6 +6,7 @@ import { currentDisposableOpenTargetSchema } from "./current-disposable-open.ts"
 import { diagnosticLifecycleBindingSchema } from "./current-pcb-diagnostic-binding-schema.ts";
 import { captureCurrentFootprintHeadAgeReply } from "./current-footprint-head-age-main.ts";
 import { CURRENT_FOOTPRINT_HEAD_AGE_NATIVE_LIMITS } from "./current-footprint-head-age-native.ts";
+import { captureCurrentFootprintHeadAgeCdpException } from "./current-footprint-head-age-cdp-exception.ts";
 
 export const CURRENT_FOOTPRINT_HEAD_AGE_VALIDATION_PREFIX = "footprint-head-age-";
 export const CURRENT_FOOTPRINT_HEAD_AGE_VALIDATION_RECORD_BYTES = 524_288;
@@ -92,10 +93,17 @@ export function assertFootprintHeadAgeJournalBudget(records: readonly CurrentFoo
     cleanup ||= /^(?:normal-close|abort|termination|release-closed|cleanup-)/u.test(record.kind);
     const evidence = { ...record.evidence };
     if (Object.hasOwn(evidence, "headAgeObservation")) {
-      if (packets.has("headAgeObservation") || Buffer.byteLength(JSON.stringify(evidence["headAgeObservation"])) > observationBytes) {
+      if (packets.has("headAgeObservation") || packets.has("headAgeCdpException") || Buffer.byteLength(JSON.stringify(evidence["headAgeObservation"])) > observationBytes) {
         throw new Error("HEAD_AGE_JOURNAL_RAW_PACKET");
       }
       packets.add("headAgeObservation"); delete evidence["headAgeObservation"];
+    }
+    if (Object.hasOwn(evidence, "headAgeCdpException")) {
+      if (record.kind !== "failure" || evidence["action"] !== "observe-head-age" || packets.has("headAgeObservation") || packets.has("headAgeCdpException")) {
+        throw new Error("HEAD_AGE_JOURNAL_EXCEPTION_PACKET");
+      }
+      captureCurrentFootprintHeadAgeCdpException(evidence["headAgeCdpException"]);
+      packets.add("headAgeCdpException"); delete evidence["headAgeCdpException"];
     }
     if (Object.hasOwn(evidence, "nativeBinding")) {
       diagnosticLifecycleBindingSchema.parse(evidence["nativeBinding"]);
@@ -131,6 +139,7 @@ export function captureFootprintHeadAgeValidationRecord(input: unknown): Current
       // Only the once-retained native packet may contain its two exhaustive
       // 1681-offset timestamp-control rosters. Other record arrays stay at512.
       if (depth === 1 && key === "headAgeObservation") { return captureCurrentFootprintHeadAgeReply(field.value as unknown).value; }
+      if (depth === 1 && key === "headAgeCdpException") { return captureCurrentFootprintHeadAgeCdpException(field.value as unknown); }
       return copy(field.value as unknown, depth + 1);
     };
     if (Array.isArray(value)) {

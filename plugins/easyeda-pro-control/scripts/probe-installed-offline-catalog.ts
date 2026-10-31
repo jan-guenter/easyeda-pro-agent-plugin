@@ -516,9 +516,13 @@ async function catalogChecks(child: OfflineChild, root: string, sample: () => Pr
     "Catalog discovery lost a public model/panel metadata equivalent.");
   }
   const libraryFiles = await offlineApi(child, { action: "library-files", query: { includeSchemas: true } });
+  const libraryFileSchemas = record(libraryFiles["inputSchema"])["oneOf"];
   requireCheck(libraryFiles["offline"] === true && libraryFiles["publicSdkMethodExecuted"] === false &&
     libraryFiles["installedRuntimeAdmission"] === false && libraryFiles["executionAuthorized"] === false &&
-    Array.isArray(record(libraryFiles["inputSchema"])["oneOf"]), "Managed library-file discovery lost offline scope or exact schemas.");
+    Array.isArray(libraryFileSchemas), "Managed library-file discovery lost offline scope or exact schemas.");
+  const libraryFileActions = new Set(libraryFileSchemas.map((schema: unknown) => record(record(record(schema)["properties"])["action"])["const"]));
+  requireCheck(["extract-library-archive-sources", "list-library-archive-sources", "read-library-archive-source"]
+    .every(action => libraryFileActions.has(action)), "Managed library-file discovery lost a supplied archive source action.");
   const fileValidation = await offlineApi(child, { action: "library-files-validate", query: { request: {
     action: "prepare-file", name: "probe.efoo", base64: Buffer.from('["DOCTYPE","FOOTPRINT","1.0"]\n["HEAD",{}]\n').toString("base64"), confirmLocalArtifact: true,
   } } });

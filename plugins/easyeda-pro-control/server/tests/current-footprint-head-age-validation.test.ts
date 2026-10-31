@@ -18,11 +18,13 @@ import type { CurrentFootprintHeadAgeValidation } from "../src/current-footprint
 import { captureCurrentPcbStringClockReply } from "../src/current-pcb-string-clock-reply.ts";
 import { readerCompletion } from "../src/sqlite-inventory.ts";
 import { savedFixture } from "./helpers/current-footprint-copy-v2-saved-fixture.ts";
+import { currentFootprintHeadAgeCdpExceptionForError, decodeCurrentFootprintHeadAgeCdpReply } from "../src/current-footprint-head-age-cdp-exception.ts";
+import { headAgeBackendRunnerFixture } from "./helpers/footprint-head-age-backend-runner-fixture.ts";
 
 const rawWindowsPath = String.raw`C:\EasyEDA\head-age-validation.eprj2`;
 const target = Object.freeze({ rawWindowsPath, projectUuid: sha256Text(rawWindowsPath), documentUuid: "b".repeat(16), expectedSourceSha256: "a".repeat(64) });
 interface FixtureOptions { readonly copiedObservation?: boolean; readonly pendingObservation?: boolean; readonly pendingAllocation?: boolean;
-  readonly noResource?: boolean; readonly retainedFailure?: boolean; readonly pendingGeneration?: "unbound" | "bound" }
+  readonly noResource?: boolean; readonly retainedFailure?: boolean; readonly pendingGeneration?: "unbound" | "bound"; readonly nativeObservationError?: Error }
 interface Fixture {
   readonly controller: CurrentFootprintHeadAgeValidation; readonly operationId: string; readonly launch: Readonly<Record<string, unknown>>;
   readonly calls: string[]; readonly entered: Promise<null>; readonly newController: () => CurrentFootprintHeadAgeValidation;
@@ -50,6 +52,7 @@ async function fixture(options: FixtureOptions = {}): Promise<Fixture> {
     acquireCurrentPcbDiagnosticLaunchExclusion, assertCurrentPcbDiagnosticLaunchExclusion, releaseCurrentPcbDiagnosticLaunchExclusion, diagnosticLifecycleBindingSchema,
     assertFootprintHeadAgeValidationChain, assertNoUnresolvedFootprintHeadAgeValidation, publishFootprintHeadAgeValidationRecord,
     reserveFootprintHeadAgeValidation, readFootprintHeadAgeValidation, assertFootprintHeadAgeJournalBudget,
+    currentFootprintHeadAgeCdpExceptionForError,
     captureFootprintHeadAgeValidationRecord: (record: unknown): unknown => captureFootprintHeadAgeValidationRecord(structuredClone(record)),
     assertNoUnresolvedCurrentPcbDiagnosticLaunches: (): Promise<void> => Promise.resolve(),
     prepareCurrentDisposableOpenCheckpoint: (actual: unknown): Promise<unknown> => { assert.deepEqual(actual, target); calls.push("checkpoint"); return Promise.resolve(prepared); },
@@ -73,6 +76,7 @@ async function fixture(options: FixtureOptions = {}): Promise<Fixture> {
     public async observeFootprintHeadAgeValidation(): Promise<unknown> {
       assert.equal(this, allocated); calls.push("observe-native-date"); entered.resolve(null);
       if (options.pendingObservation === true) { await gate.promise; }
+      if (options.nativeObservationError !== undefined) { throw options.nativeObservationError; }
       return options.copiedObservation === true ? structuredClone(packet) : packet;
     }
     public requireOriginalFootprintHeadAgeValidationObservation(actual: unknown): void { assert.equal(this, allocated); assert.equal(actual, packet); }
@@ -167,6 +171,80 @@ void test("copied Date packets refuse and preserve original owner cleanup", asyn
   // The failed packet has not acquired genuine issuance. Inspection/cleanup
   // Must remain possible even though the original observer rejected it.
   assert.equal(f.controller.hasOwnedAllocation(), true); await finish(f);
+});
+
+void test("genuine head-age CDP exception persists privately while public failure and cleanup remain bounded", async () => {
+  const raw = { result: { type: "object", subtype: "error", description: "private exception source", objectId: "error" },
+    exceptionDetails: { exceptionId: 1, text: "Uncaught", lineNumber: 145, columnNumber: 7, privateExtra: "retain full failure" } };
+  let nativeError: Error | undefined;
+  try { decodeCurrentFootprintHeadAgeCdpReply(raw); } catch (error) { assert.ok(error instanceof Error); nativeError = error; }
+  assert.ok(nativeError);
+  const f = await fixture({ nativeObservationError: nativeError }); await f.controller.run(f.launch);
+  await assert.rejects(f.controller.run({ action: "observe-head-age", operationId: f.operationId }), error => error === nativeError);
+  const status = await f.controller.run({ action: "inspect", operationId: f.operationId });
+  assert.match(String(status["lastFailure"]), /^FOOTPRINT_HEAD_AGE_CDP_EXCEPTION:head-age-observe:[a-f0-9]{64}$/u);
+  assert.doesNotMatch(JSON.stringify(status), /private exception source|retain full failure/u);
+  const journal = await readFootprintHeadAgeValidation(f.operationId); assert.ok(journal);
+  const failed = journal.records.find(record => record.kind === "failure"); assert.ok(failed);
+  assert.deepEqual(failed.evidence["headAgeCdpException"], currentFootprintHeadAgeCdpExceptionForError(nativeError));
+  assert.match(JSON.stringify(failed), /private exception source|retain full failure/u);
+  const calls = [...f.calls];
+  await assert.rejects(f.controller.run({ action: "observe-head-age", operationId: f.operationId })); assert.deepEqual(f.calls, calls);
+  await finish(f); const completed = await readFootprintHeadAgeValidation(f.operationId); assertFootprintHeadAgeJournalBudget(completed?.records ?? []);
+});
+
+void test("malformed exception evidence preserves its primary refusal and original owner cleanup", async () => {
+  for (const raw of [{ result: { type: "object" }, exceptionDetails: { text: "malformed private exception" } },
+    { result: { type: "object" }, exceptionDetails: { exceptionId: 1, text: "Uncaught", lineNumber: 1, columnNumber: 1, large: "\u0000".repeat(12_000) } }]) {
+    let nativeError: Error | undefined;
+    try { decodeCurrentFootprintHeadAgeCdpReply(raw); }
+    catch (error) { assert.ok(error instanceof Error); nativeError = error; }
+    assert.ok(nativeError); assert.equal(currentFootprintHeadAgeCdpExceptionForError(nativeError), null);
+    const f = await fixture({ nativeObservationError: nativeError }); await f.controller.run(f.launch);
+    await assert.rejects(f.controller.run({ action: "observe-head-age", operationId: f.operationId }), error => error === nativeError);
+    const journal = await readFootprintHeadAgeValidation(f.operationId); assert.ok(journal);
+    assert.equal(journal.records.some(record => Object.hasOwn(record.evidence, "headAgeCdpException")), false);
+    await finish(f);
+  }
+});
+
+void test("late original CDP exception preserves abort cutoff, private evidence and cleanup capacity", async () => {
+  let nativeError: Error | undefined;
+  try { decodeCurrentFootprintHeadAgeCdpReply({ result: { type: "object", description: "late private failure" },
+    exceptionDetails: { exceptionId: 1, text: "Uncaught", lineNumber: 1, columnNumber: 1 } }); }
+  catch (error) { assert.ok(error instanceof Error); nativeError = error; }
+  assert.ok(nativeError);
+  const f = await fixture({ pendingObservation: true, nativeObservationError: nativeError }); await f.controller.run(f.launch);
+  const pending = f.controller.run({ action: "observe-head-age", operationId: f.operationId }); const outcome = Promise.allSettled([pending]); await f.entered;
+  await f.controller.run({ action: "abort", operationId: f.operationId, confirmOriginalJob: true });
+  const [result] = await outcome; assert.equal(result?.status, "rejected");
+  if (result?.status === "rejected") { assert.equal(result.reason, nativeError); }
+  await f.controller.run({ action: "observe-termination", operationId: f.operationId });
+  await f.controller.run({ action: "release-closed", operationId: f.operationId });
+  await assert.rejects(f.controller.run({ action: "observe-head-age", operationId: f.operationId }));
+  const journal = await readFootprintHeadAgeValidation(f.operationId); assert.ok(journal);
+  assert.equal(journal.records.filter(record => Object.hasOwn(record.evidence, "headAgeCdpException")).length, 1);
+  assert.equal(f.calls.filter(call => call === "observe-native-date").length, 1);
+  assertFootprintHeadAgeValidationChain(journal.records); assertFootprintHeadAgeJournalBudget(journal.records);
+});
+
+void test("actual maintained backend context-capture exception persists through the original controller privately", async () => {
+  const backend = await headAgeBackendRunnerFixture(); await backend.runner.observe();
+  backend.value.state.headAgeExceptionPhase = "head-age-context-capture";
+  const raw = { result: { type: "object", subtype: "error", description: "private bootstrap context exception", objectId: "error" },
+    exceptionDetails: { exceptionId: 1, text: "Uncaught", lineNumber: 17, columnNumber: 2, extra: { complete: true } } };
+  backend.value.state.headAgeExceptionReply = raw;
+  let originalError: Error | undefined;
+  try { await backend.runner.prepareHeadAge(123); } catch (error) { assert.ok(error instanceof Error); originalError = error; }
+  assert.ok(originalError); const diagnostic = currentFootprintHeadAgeCdpExceptionForError(originalError); assert.ok(diagnostic);
+  assert.equal(diagnostic.phase, "head-age-context-capture"); assert.deepEqual(diagnostic.reply, raw);
+  const f = await fixture({ nativeObservationError: originalError }); await f.controller.run(f.launch);
+  await assert.rejects(f.controller.run({ action: "observe-head-age", operationId: f.operationId }), error => error === originalError);
+  const journal = await readFootprintHeadAgeValidation(f.operationId); assert.ok(journal);
+  const failed = journal.records.find(record => record.kind === "failure"); assert.ok(failed); assert.deepEqual(failed.evidence["headAgeCdpException"], diagnostic);
+  const status = await f.controller.run({ action: "inspect", operationId: f.operationId }); assert.doesNotMatch(JSON.stringify(status), /private bootstrap context exception/u);
+  const count = backend.value.commands.length; await assert.rejects(backend.runner.prepareHeadAge(123)); assert.equal(backend.value.commands.length, count);
+  await backend.runner.release(); await finish(f);
 });
 
 void test("abort during pending allocation refuses without consuming state and the original launch continues", async () => {

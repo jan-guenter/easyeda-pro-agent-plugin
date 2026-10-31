@@ -1,5 +1,7 @@
 # Project history
 
+- [2026-10-31 archives and native startup context](2026-10-31-193000-archives-and-native-startup-context.md). Supplied library archives, process accessor custody, startup stabilization and a structure-completion prerequisite model.
+
 - [2026-10-31 native age workflow and historical PCB compatibility](2026-10-31-150000-native-age-and-pcb-compatibility.md). Consumed pre-allocation refusal, immutable historical visual results and a larger native/API batch.
 
 - [2026-10-31 catalog, viewport and footprint publication batch](2026-10-31-120000-catalog-navigation-and-publication-custody.md). Restarted-host admission, consumed disposable cache case, batched API and native custody work.

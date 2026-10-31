@@ -4,7 +4,8 @@ import { z } from "zod";
 import { types } from "node:util";
 import { sha256Json } from "./core.ts";
 import { currentDisposableOpenTargetSchema } from "./current-disposable-open.ts";
-import { CURRENT_FOOTPRINT_HELD_CACHE_DIAGNOSTIC_PROFILE, CURRENT_FOOTPRINT_HELD_CACHE_PAGE_READINESS, currentFootprintHeldCacheStartupObservationSchema } from "./current-footprint-held-cache-diagnostic-profile.ts";
+import { CURRENT_FOOTPRINT_HELD_CACHE_DIAGNOSTIC_PROFILE, CURRENT_FOOTPRINT_HELD_CACHE_PAGE_READINESS, currentFootprintHeldCacheStartupObservationRecordSchema } from "./current-footprint-held-cache-diagnostic-profile.ts";
+import { currentFootprintHeldCacheFrameTargetTransitionSchema } from "./current-footprint-held-cache-frame-transition.ts";
 import { diagnosticLifecycleBindingSchema } from "./current-pcb-diagnostic-binding-schema.ts";
 import { CURRENT_FOOTPRINT_SAVED_CACHE_HELD_ENGINE, CURRENT_FOOTPRINT_SAVED_CACHE_HELD_LIMITS } from "./current-footprint-saved-cache-held-profile.ts";
 
@@ -25,7 +26,8 @@ export const currentFootprintHeldCacheValidationRequestSchema = z.discriminatedU
 ]);
 export type CurrentFootprintHeldCacheValidationRequest = z.infer<typeof currentFootprintHeldCacheValidationRequestSchema>;
 
-const startupFields = { heldCacheStartupObservation: currentFootprintHeldCacheStartupObservationSchema, nativeBinding: diagnosticLifecycleBindingSchema } as const;
+const startupFields = { heldCacheStartupObservation: currentFootprintHeldCacheStartupObservationRecordSchema, nativeBinding: diagnosticLifecycleBindingSchema,
+  heldCacheFrameTargetTransition: currentFootprintHeldCacheFrameTargetTransitionSchema } as const;
 /** Preserve the existing generic evidence map while requiring complete closed
  * shapes for startup diagnostics and native-binding data at every record
  * acceptance boundary. Successful parsing confers no original-owner custody.
@@ -102,13 +104,15 @@ export function assertFootprintHeldCacheJournalBudget(records: readonly CurrentF
         if (key === "firstObservation") { delete evidence["firstObservation"]; } else { delete evidence["freshObservation"]; }
       }
     }
-    if (Object.hasOwn(evidence, "heldCacheStartupObservation") || Object.hasOwn(evidence, "nativeBinding")) {
-      for (const [key, schema] of Object.entries(startupFields)) { if (Object.hasOwn(evidence, key)) { schema.parse(evidence[key]); } }
-      const startup = { ...(Object.hasOwn(evidence, "heldCacheStartupObservation") ? { heldCacheStartupObservation: evidence["heldCacheStartupObservation"] } : {}),
-        ...(Object.hasOwn(evidence, "nativeBinding") ? { nativeBinding: evidence["nativeBinding"] } : {}) };
+    if (Object.keys(startupFields).some(key => Object.hasOwn(evidence, key))) {
+      const startup: Record<string, unknown> = {};
+      for (const [key, schema] of Object.entries(startupFields)) {
+        if (Object.hasOwn(evidence, key)) { schema.parse(evidence[key]); startup[key] = evidence[key]; }
+      }
       if (record.kind !== "failure" || evidence["action"] !== "launch" || packets.has("startupDiagnostics") ||
           Buffer.byteLength(JSON.stringify(startup)) > startupEvidenceBytes) { throw new Error("HELD_CACHE_JOURNAL_STARTUP_PACKET"); }
-      packets.add("startupDiagnostics"); delete evidence["heldCacheStartupObservation"]; delete evidence["nativeBinding"];
+      packets.add("startupDiagnostics");
+      delete evidence["heldCacheStartupObservation"]; delete evidence["nativeBinding"]; delete evidence["heldCacheFrameTargetTransition"];
     }
     const scalarBytes = Buffer.byteLength(JSON.stringify({ ...record, evidence })) + 1; rawBytes += size - scalarBytes;
     if (cleanup) { cleanupRows += 1; if (scalarBytes > cleanupScalarRecordBytes) { throw new Error("HELD_CACHE_JOURNAL_CLEANUP_SCALAR"); } }
@@ -167,7 +171,8 @@ export function queryCurrentFootprintHeldCacheValidation(includeSchemas = false)
       startupReadiness: CURRENT_FOOTPRINT_HELD_CACHE_PAGE_READINESS, nativeRequests: CURRENT_FOOTPRINT_HELD_CACHE_DIAGNOSTIC_PROFILE,
       journal: CURRENT_FOOTPRINT_HELD_CACHE_JOURNAL_LIMITS },
     notes: ["Launch selects one exact disposable checkpoint before the new read-only native generation starts; default branch comes from actual complete SQL.",
-      "Browser discovery reads version once and samples at most sixteen valid target inventories, waiting only between empty/about:blank or installation-bound loading-page observations. One exact editor may accompany its loading window; malformed, attached, unrelated or duplicate pages refuse without retry. Retained diagnostics contain bounded stages, classifications, counts and hashes only.",
+      "Browser discovery reads version once and samples at most sixteen valid target inventories with 250 ms waits. The installation-bound loading window must disappear, then two consecutive complete exclusive-editor inventories must match exactly before frame capture. Title/target-field changes reset this pre-seal candidate. Malformed, attached, unrelated or duplicate pages refuse; consumed frame capture or launch is never retried. V2 diagnostics preserve bounded stages, classifications, counts and hashes without raw titles/URLs; historical V1 parsing is unchanged. Sequential matching samples do not prove atomic stability or complete startup.",
+      "An exact frame-target refusal may carry one original-Error-issued private transition packet, at most 2048 bytes, with before/after complete-inventory hashes, target presence and fixed changed-field flags. It retains no raw titles/URLs, preserves the refusal, grants no authority and shares the unchanged 8192-byte startup diagnostic reserve.",
       "The first observation qualifies the actual held getter/match tuple and reads both fixed namespaces. Fresh observation separately reads both namespaces again.",
       "These sequential point-in-time observations do not grant continuous cache emptiness, saved-copy qualification, replay authority or permission to open a project.",
       "Every native action is consumed before dispatch. Missing acknowledgment permits original cleanup and evidence settlement, never retry or historical owner adoption.",

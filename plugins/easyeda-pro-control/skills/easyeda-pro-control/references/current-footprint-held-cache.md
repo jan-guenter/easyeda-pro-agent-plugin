@@ -86,16 +86,36 @@ frame, worker or project-opening actions in this grammar. Do not manually open
 the target to satisfy a refusal.
 
 Browser readiness reads the engine version once and observes at most sixteen
-target inventories, with 250 ms between valid empty or single `about:blank`
-page samples. The original admitted backend path also identifies its fixed
-local loading window. That window may permit another sample or accompany one
-exact editor page; it is never selected or attached. Unrelated, duplicate or
-attached pages stop immediately. Selection still requires the unique original
-editor page and all frame/source/Start Page checks. This is bounded readiness within
-one consumed launch, not a replay of a failed launch. `inspect` retains its
-stage, classifications, counts and hashes without exposing target URLs or titles.
+target inventories, with 250 ms between valid samples. The original admitted
+backend path identifies its fixed local loading window. That window permits
+waiting, including while one exact editor page is present, and must disappear
+before selection. Two consecutive complete inventories must then match exactly
+with one unattached editor page. A title change, another target field change,
+loader return or transient empty/about:blank inventory resets the candidate.
+Unrelated, malformed, duplicate or attached pages stop immediately. The same
+sixteen samples and fifteen waits cover all transitions; one last unmatched
+editor sample exhausts the bound.
+
+V2 startup diagnostics retain every candidate classification, count and complete
+inventory hash without exposing URLs, titles or new V1 fields. These inventory
+hashes cover the exact JSON serialization used by the runtime comparison,
+including field order. V1 used canonical JSON hashes. Historical V1
+snapshots retain their original parser and meaning. Two matching samples are
+sequential observations, not atomic stability or complete startup. Selection
+still requires all original frame/source/Start Page checks. The exact target
+comparison before frame capture remains unchanged, and later drift still
+refuses. This is bounded waiting within one consumed launch. There is no retry
+after return, frame capture or a failed launch. `inspect` retains its failing
+stage and bounded observations.
 One bounded startup packet and original binding are journaled on launch failure,
 including a late failure after an accepted abort.
+An exact frame-target refusal can also retain one separate private failure
+packet with before/after complete-inventory hashes, target presence and fixed
+changed-field flags. The original Error issues that packet through a private
+WeakMap, and the controller consumes it once. It preserves the refusal message,
+retains no raw titles or URLs, and fits the existing 8192-byte startup reserve
+with the startup snapshot and binding. This evidence grants no owner or retry
+authority and does not weaken the frame comparison.
 
 Read-only describes the requested cache work. Existing-profile startup can
 restore tabs, contact services, change shared state, migrate or automatically

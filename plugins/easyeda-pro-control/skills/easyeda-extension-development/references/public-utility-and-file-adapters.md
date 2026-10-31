@@ -76,3 +76,30 @@ UI selector drift, authentication and result bounds. Registration tests should
 exercise the real serialization gate and prove offline preparation does not
 start or authenticate the app. Synthetic extracted-parser tests do not validate
 browser FileReader, IPC, a connected app or saved state; report those separately.
+
+## Reusable library archive files
+
+The offline [supplied-library workflow](../../easyeda-pro-control/references/current-library-files.md#read-reusable-library-archive-sources)
+recognizes bounded `.elibz2` footprint2 and symbol2 archives. Its complete source
+index binds the exact archive, manifest, native `.elibu` member, selected metadata
+and original bodies. Keep the exporter-inserted copied header and synthesized
+META distinct from the original source bytes. A declared docType2 symbol does
+not prove its original subtype or enable the existing standalone pin inspector.
+Device dependency closure, panel framing and legacy conversion remain separate.
+
+On the pinned UI, the four public library-file exporters can return incomplete
+archives after a failed metadata or source read. A genuine awaited File proves
+only that the builder returned a File. The ordinary library worker also keys
+retained canvases by UUID without the requested library path, so it can package
+unsaved source from a previously retained canvas. An empty editor does not prove
+that the original worker has no retained canvas. Project/local history routes
+can initialize SQL tables or schema, and online routes have no reviewed total
+byte or elapsed bound. The offline decoder grants no live-export route.
+
+Before adding one, qualify the original public receiver, MessageBus, library
+route and worker/canvas ownership. Journal once before dispatch, reject failure
+objects and undefined, verify the original genuine File getters, and validate
+complete UUID/docType/source membership before exclusive managed publication.
+An outer timeout cannot cancel compression, history fetches or the pending
+public call. Do not turn archive hashes into asset ownership, remote freshness,
+saved geometry, complete dependencies or importability claims.
