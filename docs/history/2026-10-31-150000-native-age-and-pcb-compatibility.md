@@ -247,3 +247,47 @@ The native helper and every external compatibility pin stayed unchanged.
 Dependency/lockfile, all 70 tracked bridge files and sanitizer inputs match the
 initial successful checks exactly. No full local suite was duplicated and no
 additional live attempt was made.
+
+
+## Bound startup abort refinement
+
+Correction `e923a7ed118bc87b8d4cf143793b3f81ca34669d` passed all eleven
+PR jobs: Linux `41218949741` and Windows `41218949687`. Actual facade totals
+were 13,939 passed, five recognized skips and zero failures across 13,944 tests
+and 65 suites. Bridge results were 424 passed across 28 files. Complete archive
+CRC/raw-log equality and all ten synthetic checkout parent/tree/pin checks
+passed. Synthetic merge `a7320ee344991af5f46b9ce7d9d62a2848607833` had the
+exact base/payload parents and matching root/plugin trees.
+
+Automatic review `5723763420` accepted the earlier race correction but raised
+one Minor inline issue, comment `4432418336`, thread
+`PRRT_kwDOUGnrrM6ySfh4`. The startup phase can also include a genuinely bound
+original Job while post-launch verification awaits. Rejecting every startup
+abort would prevent termination in that useful window. This refinement was
+accepted without disagreement. There were no additional outside-diff,
+nitpick or explicitly labeled legacy issues. The sole full-review command and
+completed full-review lineage remain unchanged.
+
+Both controllers now reprove synchronous original-owner/method custody and
+refuse a startup abort before state consumption only while that owner or its
+original Job binding is absent. Once the binding exists, abort uses the
+existing original reservation and termination lane. No await separates this
+readiness check from reservation. Independent review accepted the refinement.
+New cases distinguish an allocated but unbound owner from a bound owner whose
+native-start result is pending. The bound case must reject its late normal
+continuation, publish no successful launch result and retain original cleanup.
+These are maintained-controller tests with synthetic original native issuers,
+not connected Windows/CAD validation. Final focused checks and exact-head
+CI/review are pending at this checkpoint; no new version was published.
+
+
+All 22 focused controller cases passed, including missing/unbound startup
+refusal, bound startup abort with late-result cutoff and the existing active
+observation/preparation aborts. Types, full zero-warning strict lint, coverage,
+reproducible bundles, unchanged external pins and all repository/MCP/skill
+validators passed. A test-only declaration-order lint failure was retained and
+corrected without rule changes. Source has 989 files with SHA-256
+`e777b320dca00d8b5660035dd967fe4777cc5bf9372ede890e52fbed04c76ed0`;
+the three runtime files have SHA-256
+`f0399ac20b49f0ef84bd387866c251f4508a3d5df9f7fe1279f35dba83d9950c`.
+The native helper remains byte-identical. No full local suite was duplicated.

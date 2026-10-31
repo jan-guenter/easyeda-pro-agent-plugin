@@ -39,7 +39,8 @@ const startupFailureObservation = currentFootprintHeldCacheStartupObservationSch
 });
 interface Options { readonly copiedFirst?: boolean; readonly lostRelease?: boolean; readonly pendingFirst?: boolean;
   readonly noResource?: boolean; readonly retainedAllocationFailure?: boolean; readonly noProcess?: boolean;
-  readonly pendingPrepare?: boolean; readonly holdAbortDisk?: boolean; readonly startupFailure?: boolean; readonly pendingAllocation?: boolean }
+  readonly pendingPrepare?: boolean; readonly holdAbortDisk?: boolean; readonly startupFailure?: boolean; readonly pendingAllocation?: boolean;
+  readonly pendingGeneration?: "unbound" | "bound" }
 interface Fixture {
   readonly controller: CurrentFootprintHeldCacheValidation;
   readonly operationId: string;
@@ -55,6 +56,8 @@ interface Fixture {
   readonly getterCalls: () => unknown;
   readonly allocationEntered: Promise<null>;
   readonly releaseAllocation: () => void;
+  readonly generationEntered: Promise<null>;
+  readonly releaseGeneration: () => void;
 }
 
 /** Evaluate maintained source with explicit synthetic factory/checkpoint seams.
@@ -64,12 +67,13 @@ async function fixture(options: Options = {}): Promise<Fixture> {
   const calls: string[] = [], entered = Promise.withResolvers<null>(), gate = Promise.withResolvers<null>(), page = createHeldCacheSyntheticPage();
   const diskEntered = Promise.withResolvers<null>(), diskGate = Promise.withResolvers<null>(), prepareEntered = Promise.withResolvers<null>(), prepareGate = Promise.withResolvers<null>();
   const allocationEntered = Promise.withResolvers<null>(), allocationGate = Promise.withResolvers<null>();
+  const generationEntered = Promise.withResolvers<null>(), generationGate = Promise.withResolvers<null>();
   const branchUuid = "c".repeat(32), nativeBinding = Object.freeze({ helperInstance: "d".repeat(32), jobId: "e".repeat(32), rootPid: 1234, rootCreated: "133000000000000000" });
   const prepared = Object.freeze({ profile: "easyeda-pro-control.current-disposable-open-checkpoint.v1", checkpoint: Object.freeze({
     schema: "easyeda-pro-control.checkpoint.v2", source: "/synthetic-held.eprj2", sourceSha256: target.expectedSourceSha256,
     checkpoint: "/synthetic-checkpoint.eprj2", checkpointSha256: input.after.checkpointSha256 }),
   targetEvidence: Object.freeze({ ...target, branchUuid, docType: "PCB" }) });
-  let allocated: object | null = null, allocationBinding: unknown, closed = false, launched = false, released = false;
+  let allocated: object | null = null, allocationBinding: unknown, bound = false, closed = false, launched = false, released = false;
   let diskHeld = false, reserved = false;
   const abortToken = Object.freeze({});
   const runner = new CurrentFootprintSavedCacheHeldRunner({ assertCurrent: (): Promise<void> => {
@@ -105,10 +109,11 @@ async function fixture(options: Options = {}): Promise<Fixture> {
     },
   });
   class NativeOwner {
-    public startFootprintHeldCacheValidationGeneration(): Promise<void> {
-      assert.equal(this, allocated); calls.push("native-start"); launched = true;
-      if (options.startupFailure === true) { return Promise.reject(new Error("PCB_DIAGNOSTIC_OWNER_HELD_CACHE_PAGE")); }
-      return options.noProcess === true ? Promise.reject(new Error("native launch refused without process")) : Promise.resolve();
+    public async startFootprintHeldCacheValidationGeneration(): Promise<void> {
+      assert.equal(this, allocated); calls.push("native-start"); launched = true; bound = options.pendingGeneration !== "unbound" && options.noProcess !== true;
+      if (options.pendingGeneration !== undefined) { generationEntered.resolve(null); await generationGate.promise; bound = true; }
+      if (options.startupFailure === true) { throw new Error("PCB_DIAGNOSTIC_OWNER_HELD_CACHE_PAGE"); }
+      if (options.noProcess === true) { throw new Error("native launch refused without process"); }
     }
     public retainedFootprintCopyHeldSavedCache(): CurrentFootprintSavedCacheHeldRunner { assert.equal(this, allocated); return runner; }
     public requireOriginalFootprintCopyHeldSavedCache(original: CurrentFootprintSavedCacheHeldRunner): void { assert.equal(this, allocated); assert.equal(original, runner); }
@@ -139,7 +144,7 @@ async function fixture(options: Options = {}): Promise<Fixture> {
     public dispatchFootprintHeldCacheValidationAbort(token: object, confirm: true): Promise<void> {
       assert.equal(this, allocated); assert.equal(token, abortToken); assert.equal(confirm, true); calls.push("abort-original-job"); closed = true; gate.resolve(null); return Promise.resolve();
     }
-    public status(): unknown { assert.equal(this, allocated); return { binding: launched && options.noProcess !== true ? nativeBinding : null,
+    public status(): unknown { assert.equal(this, allocated); return { binding: bound ? nativeBinding : null,
       launchConsumed: launched, noProcessCleanupAvailable: options.noProcess === true && !released, released, helperClosed: released,
       ...(options.startupFailure === true ? { heldCacheStartupObservation: startupFailureObservation } : {}) }; }
   }
@@ -172,6 +177,7 @@ async function fixture(options: Options = {}): Promise<Fixture> {
     prepareEntered: prepareEntered.promise, diskEntered: diskEntered.promise, releasePrepare: (): void => { prepareGate.resolve(null); },
     releaseDisk: (): void => { diskGate.resolve(null); }, getterCalls: (): unknown => page.evaluate("getterCalls"),
     allocationEntered: allocationEntered.promise, releaseAllocation: (): void => { allocationGate.resolve(null); },
+    generationEntered: generationEntered.promise, releaseGeneration: (): void => { generationGate.resolve(null); },
     launch: { action: "launch", operationId, target, confirmValidationOnly: true, confirmDiagnosticLaunch: true,
       confirmDisposableProject: true, acceptExistingProfileEffects: true, acceptCacheReadEffects: true } };
 }
@@ -279,6 +285,45 @@ void test("abort during pending allocation refuses without consuming state and t
   const [result] = await outcome; assert.equal(result?.status, "fulfilled");
   await f.controller.run({ action: "observe-first", operationId: f.operationId });
   await finish(f); assert.equal(f.calls.includes("reserve-abort"), false); assert.equal(f.calls.includes("abort-original-job"), false);
+});
+
+void test("abort during unbound generation refuses without consuming state and the original launch continues", async () => {
+  const f = await fixture({ pendingGeneration: "unbound" }), launch = f.controller.run(f.launch);
+  const outcome = Promise.allSettled([launch]); await f.generationEntered;
+  try {
+    const before = await readFootprintHeldCacheValidation(f.operationId), calls = [...f.calls]; assert.ok(before);
+    await assert.rejects(f.controller.run({ action: "abort", operationId: f.operationId, confirmOriginalJob: true }), /BUSY/u);
+    const status = await f.controller.run({ action: "inspect", operationId: f.operationId });
+    assert.equal(status["phase"], "starting"); assert.equal(status["failed"], false);
+    assert.equal(status["abortAttemptConsumed"], false); assert.equal(status["lastFailure"], null);
+    assert.equal(status["originalOwnerRetained"], true); assert.deepEqual(f.calls, calls);
+    const after = await readFootprintHeldCacheValidation(f.operationId); assert.equal(canonicalJson(after?.records), canonicalJson(before.records));
+  } finally { f.releaseGeneration(); }
+  const [result] = await outcome; assert.equal(result?.status, "fulfilled");
+  await f.controller.run({ action: "observe-first", operationId: f.operationId }); await finish(f);
+  assert.equal(f.calls.includes("reserve-abort"), false); assert.equal(f.calls.includes("abort-original-job"), false);
+});
+
+void test("abort during original bound generation cuts off its late launch result and retains complete cleanup", async () => {
+  const f = await fixture({ pendingGeneration: "bound" }), launch = f.controller.run(f.launch);
+  const outcome = Promise.allSettled([launch]); await f.generationEntered;
+  try {
+    const abort = f.controller.run({ action: "abort", operationId: f.operationId, confirmOriginalJob: true });
+    assert.equal(f.calls.filter(call => call === "reserve-abort").length, 1); await abort;
+    await assert.rejects(f.controller.run({ action: "abort", operationId: f.operationId, confirmOriginalJob: true }), /ABORT_CONSUMED/u);
+  } finally { f.releaseGeneration(); }
+  await outcome; await assert.rejects(launch, /NORMAL_ENDED/u);
+  const status = await f.controller.run({ action: "inspect", operationId: f.operationId });
+  assert.equal(status["phase"], "failed"); assert.equal(status["failed"], true); assert.equal(status["abortAttemptConsumed"], true);
+  assert.equal(status["firstObserved"], false); assert.equal(status["executionAuthorized"], false);
+  const journal = await readFootprintHeldCacheValidation(f.operationId); assert.ok(journal);
+  assert.equal(journal.records.some(record => record.kind === "launch-result"), false);
+  await assert.rejects(f.controller.run({ action: "observe-first", operationId: f.operationId }), /NORMAL_ENDED/u);
+  await f.controller.run({ action: "observe-termination", operationId: f.operationId });
+  await f.controller.run({ action: "release-closed", operationId: f.operationId });
+  const settled = await f.controller.run({ action: "settle-records", operationId: f.operationId });
+  assert.equal(settled["retainedUnpublishedRecords"], 0); assert.equal(f.controller.hasActiveReservation(), false);
+  assert.equal(f.controller.hasOwnedAllocation(), false); assert.equal(f.calls.filter(call => call === "abort-original-job").length, 1);
 });
 
 void test("confirmed original abort consumes an in-flight observation and its late result cannot restore normal work", async () => {

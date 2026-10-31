@@ -428,9 +428,13 @@ export class CurrentFootprintHeldCacheValidation {
     need(request.action !== "cleanup-no-resource" || this.#binding !== null && this.#allocationInvoked && this.#owner === null &&
       this.#allocationOutcome === "no-resource", "ORIGINAL_NO_RESOURCE_REQUIRED");
     const abort = request.action === "abort";
-    // The original factory may still be allocating the owner during startup.
-    // Refuse before consuming an abort that cannot yet reserve its native Job.
-    need(abort ? !this.#abortBusy && this.#stage !== "starting" : !this.#busy && !this.#abortBusy, "BUSY");
+    need(abort ? !this.#abortBusy : !this.#busy && !this.#abortBusy, "BUSY");
+    // Startup may already own a native Job while verification is pending.
+    // Reprove custody before allowing abort, or refuse without consuming it.
+    if (abort && this.#stage === "starting") {
+      this.#current();
+      need(this.#owner !== null && this.#methods.status.call(this.#owner).binding !== null, "BUSY");
+    }
     if (abort) { this.#abortBusy = true; this.#abortAttempted = true; this.#failed = true; } else { this.#busy = true; }
     try {
       if (abort) { this.#abortToken = this.#methods.reserveFootprintHeldCacheValidationAbort.call(this.#native()); }

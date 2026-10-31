@@ -22,11 +22,12 @@ import { savedFixture } from "./helpers/current-footprint-copy-v2-saved-fixture.
 const rawWindowsPath = String.raw`C:\EasyEDA\head-age-validation.eprj2`;
 const target = Object.freeze({ rawWindowsPath, projectUuid: sha256Text(rawWindowsPath), documentUuid: "b".repeat(16), expectedSourceSha256: "a".repeat(64) });
 interface FixtureOptions { readonly copiedObservation?: boolean; readonly pendingObservation?: boolean; readonly pendingAllocation?: boolean;
-  readonly noResource?: boolean; readonly retainedFailure?: boolean }
+  readonly noResource?: boolean; readonly retainedFailure?: boolean; readonly pendingGeneration?: "unbound" | "bound" }
 interface Fixture {
   readonly controller: CurrentFootprintHeadAgeValidation; readonly operationId: string; readonly launch: Readonly<Record<string, unknown>>;
   readonly calls: string[]; readonly entered: Promise<null>; readonly newController: () => CurrentFootprintHeadAgeValidation;
   readonly allocationEntered: Promise<null>; readonly releaseAllocation: () => void;
+  readonly generationEntered: Promise<null>; readonly releaseGeneration: () => void;
 }
 
 /** Evaluate the maintained controller with a synthetic original native class.
@@ -35,13 +36,14 @@ async function fixture(options: FixtureOptions = {}): Promise<Fixture> {
   const input = await savedFixture(), operationId = `footprint-head-age-${randomBytes(8).toString("hex")}`;
   const calls: string[] = [], entered = Promise.withResolvers<null>(), gate = Promise.withResolvers<null>();
   const allocationEntered = Promise.withResolvers<null>(), allocationGate = Promise.withResolvers<null>();
+  const generationEntered = Promise.withResolvers<null>(), generationGate = Promise.withResolvers<null>();
   const branchUuid = "c".repeat(32), nativeBinding = Object.freeze({ helperInstance: "d".repeat(32), jobId: "e".repeat(32), rootPid: 1234, rootCreated: "133000000000000000" });
   const prepared = Object.freeze({ profile: "easyeda-pro-control.current-disposable-open-checkpoint.v1", checkpoint: Object.freeze({
     schema: "easyeda-pro-control.checkpoint.v2", source: "/synthetic-age.eprj2", sourceSha256: target.expectedSourceSha256,
     checkpoint: "/synthetic-checkpoint.eprj2", checkpointSha256: input.after.checkpointSha256 }), targetEvidence: Object.freeze({ ...target, branchUuid, docType: "PCB" }) });
   const packet = Object.freeze({ synthetic: true, nativeDateProvenanceVerified: true, appClockDirectlyObserved: true,
     minimumObservedAgeMs: 61_000, observedWindow: Object.freeze({ notBeforeMs: 1_720_000_000_000, notAfterMs: 1_720_000_000_100 }), executionAuthorized: false });
-  let allocated: object | null = null, allocationBinding: unknown, closed = false, cutoff = false, launched = false, released = false;
+  let allocated: object | null = null, allocationBinding: unknown, bound = false, closed = false, cutoff = false, launched = false, released = false;
   const abortToken = Object.freeze({});
   const scope = createContext({ Object, Reflect, Promise, Error, AggregateError, Set, Date, types, canonicalJson, sha256Json, readerCompletion,
     currentDisposableOpenSealedTargetSchema, captureCurrentPcbStringClockReply, currentFootprintHeadAgeValidationRequestSchema, currentFootprintHeadAgeSummarySchema,
@@ -64,7 +66,10 @@ async function fixture(options: FixtureOptions = {}): Promise<Fixture> {
     },
   });
   class NativeOwner {
-    public startFootprintHeadAgeValidationGeneration(): Promise<void> { assert.equal(this, allocated); calls.push("native-start"); launched = true; return Promise.resolve(); }
+    public async startFootprintHeadAgeValidationGeneration(): Promise<void> {
+      assert.equal(this, allocated); calls.push("native-start"); launched = true; bound = options.pendingGeneration !== "unbound";
+      if (options.pendingGeneration !== undefined) { generationEntered.resolve(null); await generationGate.promise; bound = true; }
+    }
     public async observeFootprintHeadAgeValidation(): Promise<unknown> {
       assert.equal(this, allocated); calls.push("observe-native-date"); entered.resolve(null);
       if (options.pendingObservation === true) { await gate.promise; }
@@ -81,7 +86,7 @@ async function fixture(options: FixtureOptions = {}): Promise<Fixture> {
     public dispatchFootprintHeadAgeValidationAbort(token: object, confirm: true): Promise<void> {
       assert.equal(this, allocated); assert.equal(token, abortToken); assert.equal(confirm, true); calls.push("abort-original-job"); closed = true; gate.resolve(null); return Promise.resolve();
     }
-    public status(): unknown { assert.equal(this, allocated); return { binding: launched ? nativeBinding : null, launchConsumed: launched,
+    public status(): unknown { assert.equal(this, allocated); return { binding: bound ? nativeBinding : null, launchConsumed: launched,
       noProcessCleanupAvailable: false, released, helperClosed: released }; }
   }
   scope["CurrentFootprintHeadAgeValidationOwner"] = NativeOwner;
@@ -110,6 +115,7 @@ async function fixture(options: FixtureOptions = {}): Promise<Fixture> {
   };
   return { controller: construct(), operationId, calls, entered: entered.promise, newController: construct,
     allocationEntered: allocationEntered.promise, releaseAllocation: (): void => { allocationGate.resolve(null); },
+    generationEntered: generationEntered.promise, releaseGeneration: (): void => { generationGate.resolve(null); },
     launch: { action: "launch", operationId, target, confirmValidationOnly: true, confirmDiagnosticLaunch: true,
       confirmDisposableProject: true, acceptExistingProfileEffects: true, acceptNativeClockObservation: true } };
 }
@@ -178,6 +184,45 @@ void test("abort during pending allocation refuses without consuming state and t
   const [result] = await outcome; assert.equal(result?.status, "fulfilled");
   await f.controller.run({ action: "observe-head-age", operationId: f.operationId });
   await finish(f); assert.equal(f.calls.includes("reserve-abort"), false); assert.equal(f.calls.includes("abort-original-job"), false);
+});
+
+void test("abort during unbound generation refuses without consuming state and the original launch continues", async () => {
+  const f = await fixture({ pendingGeneration: "unbound" }), launch = f.controller.run(f.launch);
+  const outcome = Promise.allSettled([launch]); await f.generationEntered;
+  try {
+    const before = await readFootprintHeadAgeValidation(f.operationId), calls = [...f.calls]; assert.ok(before);
+    await assert.rejects(f.controller.run({ action: "abort", operationId: f.operationId, confirmOriginalJob: true }), /BUSY/u);
+    const status = await f.controller.run({ action: "inspect", operationId: f.operationId });
+    assert.equal(status["phase"], "starting"); assert.equal(status["failed"], false);
+    assert.equal(status["abortAttemptConsumed"], false); assert.equal(status["lastFailure"], null);
+    assert.equal(status["originalOwnerRetained"], true); assert.deepEqual(f.calls, calls);
+    const after = await readFootprintHeadAgeValidation(f.operationId); assert.equal(canonicalJson(after?.records), canonicalJson(before.records));
+  } finally { f.releaseGeneration(); }
+  const [result] = await outcome; assert.equal(result?.status, "fulfilled");
+  await f.controller.run({ action: "observe-head-age", operationId: f.operationId }); await finish(f);
+  assert.equal(f.calls.includes("reserve-abort"), false); assert.equal(f.calls.includes("abort-original-job"), false);
+});
+
+void test("abort during original bound generation cuts off its late launch result and retains complete cleanup", async () => {
+  const f = await fixture({ pendingGeneration: "bound" }), launch = f.controller.run(f.launch);
+  const outcome = Promise.allSettled([launch]); await f.generationEntered;
+  try {
+    const abort = f.controller.run({ action: "abort", operationId: f.operationId, confirmOriginalJob: true });
+    assert.equal(f.calls.filter(call => call === "reserve-abort").length, 1); await abort;
+    await assert.rejects(f.controller.run({ action: "abort", operationId: f.operationId, confirmOriginalJob: true }), /ABORT_CONSUMED/u);
+  } finally { f.releaseGeneration(); }
+  await outcome; await assert.rejects(launch, /NORMAL_ENDED/u);
+  const status = await f.controller.run({ action: "inspect", operationId: f.operationId });
+  assert.equal(status["phase"], "failed"); assert.equal(status["failed"], true); assert.equal(status["abortAttemptConsumed"], true);
+  assert.equal(status["headAgeObserved"], false); assert.equal(status["executionAuthorized"], false);
+  const journal = await readFootprintHeadAgeValidation(f.operationId); assert.ok(journal);
+  assert.equal(journal.records.some(record => record.kind === "launch-result"), false);
+  await assert.rejects(f.controller.run({ action: "observe-head-age", operationId: f.operationId }), /NORMAL_ENDED/u);
+  await f.controller.run({ action: "observe-termination", operationId: f.operationId });
+  await f.controller.run({ action: "release-closed", operationId: f.operationId });
+  const settled = await f.controller.run({ action: "settle-records", operationId: f.operationId });
+  assert.equal(settled["retainedUnpublishedRecords"], 0); assert.equal(f.controller.hasActiveReservation(), false);
+  assert.equal(f.controller.hasOwnedAllocation(), false); assert.equal(f.calls.filter(call => call === "abort-original-job").length, 1);
 });
 
 void test("abort cuts off a pending observation before publication and preserves one actual termination lane", async () => {
