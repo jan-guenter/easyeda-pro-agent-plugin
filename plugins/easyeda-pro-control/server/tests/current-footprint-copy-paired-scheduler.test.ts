@@ -88,7 +88,7 @@ async function fixture(early: boolean): Promise<Readonly<{
   scheduler.bindClocks(rpc.token, route, documentUuid); return { Scheduler, scheduler, main, channel, rpc, route };
 }
 for (const early of [true, false]) {
-  void test(`actual paired schedule preserves ${early ? "early" : "pending"} create reply across clock retirement and all127 original main commands`, async () => {
+  void test(`actual paired schedule preserves ${early ? "early" : "pending"} create reply across clock retirement and all128 original main commands`, async () => {
     const f = await fixture(early);
     try {
       await assert.rejects(f.scheduler.collectMain(), /PHASE/u);

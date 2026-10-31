@@ -31,6 +31,13 @@ void test("EDA document-root coverage keeps the missing209 protocol separate fro
   assert.ok(row.omission.evidence.some(item => item.startsWith("app.js@sha256:52f51ce4") && item.includes("2636991..2647647")));
   const result = queryExtensionApiCoverage({ search: row.path, status: "omitted" });
   assert.ok(JSON.stringify(result).includes("installed-209-eda-path-protocol-missing"));
+  for (const path of ["getDocumentsPath", "getLibrariesPaths", "getProjectsPaths"]) {
+    const directory = inventoryExtensionApiCoverage().find(entry => entry.path === `eda.sys_FileSystem.${path}`); assert.ok(directory?.omission);
+    assert.equal(directory.status, "omitted"); assert.deepEqual(directory.routes, []);
+    assert.equal(directory.omission.code, "installed-209-config-path-protocol-missing");
+    assert.match(directory.omission.reason, /sole registered app-protocol processor has no config case/u);
+    assert.match(directory.omission.nextRequirement, /Do not call or redirect/u);
+  }
 });
 
 
@@ -555,7 +562,7 @@ void test("NetGroup and filtered PCB membership reads expose narrow native route
   assert.match(route.scope, /not public primitive instances/u); assert.match(route.scope, /explicit nonempty unique filters/u);
   assert.match(route.scope, /source\/inventory\/source/u);
   assert.deepEqual(extensionApiCoverageSummary()["statuses"], {
-    "implemented-public-subset": 215, "implemented-native-equivalent": 43, "implemented-vendor-http-equivalent": 13, "internal-lifecycle-only": 0, "implemented-but-blocked": 79, omitted: 485,
+    "implemented-public-subset": 216, "implemented-native-equivalent": 44, "implemented-vendor-http-equivalent": 13, "internal-lifecycle-only": 0, "implemented-but-blocked": 79, omitted: 483,
   });
 });
 
@@ -1132,6 +1139,27 @@ void test("omitted geometric getters retain projection defects and the region se
     assert.ok(region.omission.reason.includes(text));
   }
   assert.match(region.omission.nextRequirement, /nonmutating region-membership/u);
+  const point = rows.get("eda.pcb_Document.getPrimitiveAtPoint"); assert.ok(point?.omission);
+  for (const text of ["Hr.pointSelect", "qt.filter", "filterPartiton", "toJSON", "Ey serialization"]) {
+    assert.ok(point.omission.reason.includes(text));
+  }
+  assert.match(point.omission.nextRequirement, /before serialization loss/u);
+});
+
+void test("outline fitting exposes only the disposable fixed-topic submission route without geometry fallback", () => {
+  const row = inventoryExtensionApiCoverage().find(entry => entry.path === "eda.pcb_Document.zoomToBoardOutline"); assert.ok(row);
+  assert.equal(row.status, "implemented-native-equivalent"); assert.equal(row.completeDeclaredContractSupported, false);
+  assert.equal(row.currentGenerationLiveValidation, "not-recorded"); assert.equal(row.routes.length, 1);
+  const route = row.routes[0]; assert.ok(route);
+  assert.equal(route.tool, "easyeda_control_pcb209_opening"); assert.equal(route.selector, "visual.perform-visual");
+  assert.deepEqual(route.documentTypes, [3]);
+  for (const text of ["fit-board-outline", "fitBoard", "MessageBus.publish", "submission only", "Bounds remain null", "all-geometry fallback"]) {
+    assert.ok(route.scope.includes(text));
+  }
+  const request = { action: "perform-visual", operationId: "pcb209-visual-test-coverage", expectedBindingSha256: "a".repeat(64),
+    operation: { kind: "fit-board-outline" }, confirmVisualStateChanges: true };
+  const result = queryOfflineApi(apiRequestSchema.parse({ action: "pcb209-visual-validate", query: { request } })).result;
+  assert.ok(isRecord(result)); assert.equal(result["valid"], true);
 });
 
 void test("two navigation methods retain exact disposable operation kinds and explicit transient-marker acceptance", () => {

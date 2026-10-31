@@ -13,6 +13,11 @@ On API0.3.59/UI3.2.198, `getCurrentTheme`, `getFrontendDataUnit` and
 an existing active-theme field, the global toolbar unit store and a fixed UUID,
 respectively. They do not resolve a document. This qualifies only those getter
 closures; neighboring library and unit methods can have different effects.
+The beta `getSelectedLibraryRowInfo` callback returns a fresh three-field object
+from independently retained UI row and library state. The bounded reader accepts
+only a reported system-library UUID and known types. That does not prove the
+asset belongs to that library, even when both samples match. Preserve the false
+ownership and row-provenance flags; do not use this report as lookup authority.
 `getCurrentLanguage` uses a separately reviewed legacy bus path. Its public
 result is an SDK-resolved language, including a fallback when the provider
 returns an unknown or missing value. Keep `fallbackPossible:true`,

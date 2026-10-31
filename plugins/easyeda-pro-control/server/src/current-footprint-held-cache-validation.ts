@@ -429,6 +429,12 @@ export class CurrentFootprintHeldCacheValidation {
       this.#allocationOutcome === "no-resource", "ORIGINAL_NO_RESOURCE_REQUIRED");
     const abort = request.action === "abort";
     need(abort ? !this.#abortBusy : !this.#busy && !this.#abortBusy, "BUSY");
+    // Startup may already own a native Job while verification is pending.
+    // Reprove custody before allowing abort, or refuse without consuming it.
+    if (abort && this.#stage === "starting") {
+      this.#current();
+      need(this.#owner !== null && this.#methods.status.call(this.#owner).binding !== null, "BUSY");
+    }
     if (abort) { this.#abortBusy = true; this.#abortAttempted = true; this.#failed = true; } else { this.#busy = true; }
     try {
       if (abort) { this.#abortToken = this.#methods.reserveFootprintHeldCacheValidationAbort.call(this.#native()); }

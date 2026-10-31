@@ -1,5 +1,5 @@
 /** Actual private issuer/collector with explicit synthetic source and native
- * capacity dependencies. This does not admit the current54-command purpose. */
+ * capacity dependencies. This does not admit the current55-command purpose. */
 import assert from "node:assert/strict";
 import { test } from "node:test";
 import { unarmedMainCompletionOriginFixture } from "./helpers/footprint-main-completion-origin-fixture.ts";
@@ -47,14 +47,14 @@ void test("lost native retirement acknowledgment is consumed and only original e
   await bound.assertOriginalGenerationExited(); await assert.rejects(bound.retire(), /lost original retirement/u);
   await bound.retire(); assert.equal(f.native.retireCount, 1); assert.throws(() => f.module.requireCompletion(origin));
 });
-void test("one original allocator and event cursor serve actual request/held/completion classes through exact127-command tail", async () => {
+void test("one original allocator and event cursor serve actual request/held/completion classes through exact128-command tail", async () => {
   const f = await fixture(), origin = await f.backend.issueCompletionOrigin(f.capability, f.held);
   const runner = new f.Completion(origin); await runner.arm(); const packet = await runner.collect();
   assert.equal(packet.nativeSqlCompletionVerified, false); assert.equal(packet.savedResultVerified, false);
   assert.equal(runner.diagnostics().normalRequests, 45); assert.equal(runner.diagnostics().cleanupRequests, 29);
   await runner.cleanup(); assert.equal(f.native.retireCount, 1); assert.equal(f.native.sends, 105);
   assert.throws(() => f.module.requireRequest(f.oldOrigin)); assert.throws(() => f.module.requireCompletion(origin));
-  await f.backend.release(); assert.equal(f.native.tailReleases, 1); assert.equal(f.backend.retained().requests, 127);
+  await f.backend.release(); assert.equal(f.native.tailReleases, 1); assert.equal(f.backend.retained().requests, 128);
   assert.equal(f.backend.retained().pendingReplies, 0); await assert.rejects(f.backend.release());
 });
 void test("actual completion sequencer settles lost original-exit retirement once without replaying native retirement", async () => {

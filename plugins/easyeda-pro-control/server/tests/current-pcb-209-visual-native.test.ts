@@ -5,7 +5,7 @@ import { test } from "node:test";
 import { CURRENT_PCB_209_VISUAL_FUNCTION } from "../src/current-pcb-209-visual-actions.ts";
 import { readPackedNativeProgram } from "./helpers/native-packed-program.ts";
 
-void test("native visual program is exact, packed and independently constrained to its five viewport operations", async () => {
+void test("native visual program is exact, packed and independently constrained to its six viewport operations", async () => {
   const source = await readFile(new URL("../../scripts/pcb-diagnostic-owner.ps1", import.meta.url), "utf8");
   assert.equal(readPackedNativeProgram(source, "Visual209Function"), CURRENT_PCB_209_VISUAL_FUNCTION);
   assert.equal(/const string Visual209FunctionSha256="([a-f0-9]{64})";/u.exec(source)?.[1],

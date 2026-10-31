@@ -36,6 +36,10 @@ import { assertCurrentFootprintCombinedMainCompletionCapacity, beginCurrentFootp
 import type { CurrentFootprintCombinedMainCapability } from "./current-pcb-diagnostic-owner.ts";
 import type { CurrentFootprintCopyClockRpcOrigin } from "./current-footprint-copy-clock-rpc-origin.ts";
 import { freezeDeep } from "./sqlite-inventory-core.ts";
+import { CURRENT_FOOTPRINT_HEAD_AGE_CAPTURE_PROGRAM, CURRENT_FOOTPRINT_HEAD_AGE_DATE_METHODS, CURRENT_FOOTPRINT_HEAD_AGE_OBSERVE_PROGRAM,
+  decodeCurrentFootprintHeadAgeArray, decodeCurrentFootprintHeadAgeMainObservation, decodeCurrentFootprintHeadAgeNativeMethod } from "./current-footprint-head-age-main.ts";
+import type { CurrentFootprintHeadAgeMainObservation } from "./current-footprint-head-age-main.ts";
+import { validateClockControlScope } from "./symbol-clock-controls.ts";
 
 export { currentFootprintCopyMainBackendObservationSchema } from "./current-footprint-copy-main-backend-observation.ts";
 export type { CurrentFootprintCopyMainBackendObservation } from "./current-footprint-copy-main-backend-observation.ts";
@@ -100,7 +104,7 @@ interface RegistrationLocationFailure {
   readonly columnNumber: number;
   readonly scriptObserved: boolean;
 }
-type MetadataRole = Role | "Date" | "now" | "retained-array";
+type MetadataRole = Role | "Date" | "now" | "retained-array" | "head-age-array" | typeof CURRENT_FOOTPRINT_HEAD_AGE_DATE_METHODS[number];
 interface SchemaIssue { readonly code: string; readonly path: readonly (string | number)[] }
 const schemaPathKeys = new Set(["args", "breakpointId", "callFrameId", "callFrames", "className", "columnNumber", "configurable", "context", "debuggerId",
   "description", "enumerable", "executionContextId", "hitBreakpoints", "id", "internalProperties", "isOwn", "lineNumber", "location", "locations", "name",
@@ -188,6 +192,9 @@ export class CurrentFootprintCopyMainBackendRunner {
   #completionCleanup = 0;
   #completionFinalResumeAttempted = false;
   #completionRetireAttempted = false;
+  #headAgePreparationAttempted = false;
+  #headAgeArray: string | null = null;
+  #headAgeAttempted = false;
   public constructor(transport: CurrentFootprintCopyMainBackendTransport) {
     this.#methods = methods(transport); this.#transport = transport;
   }
@@ -337,15 +344,15 @@ export class CurrentFootprintCopyMainBackendRunner {
         record.location.lineNumber === registration.location.lineNumber && record.location.columnNumber === registration.location.columnNumber) || armed.locations.some(actual => actual.scriptId === registration.location.scriptId), "REGISTRATION_RESOLUTION_REQUIRED");
       const selected = objectReply.parse(await this.#request({ phase: "frame", method: "Debugger.evaluateOnCallFrame", params: { callFrameId: registration.frameId,
         expression: EXPRESSION, objectGroup: GROUP, silent: true, returnByValue: false, generatePreview: false, throwOnSideEffect: true, includeCommandLineAPI: false } }));
-      need(selected.result.description === "Array(8)", "FRAME_ARRAY"); this.#sourceArray = selected.result.objectId;
+      need(selected.result.description === "Array(9)", "FRAME_ARRAY"); this.#sourceArray = selected.result.objectId;
       const captured = objectReply.parse(await this.#request({ phase: "capture", method: "Runtime.callFunctionOn", params: { ...FLAGS, objectId: this.#sourceArray,
         functionDeclaration: CALLS.capture.program, arguments: [], returnByValue: false } }));
-      need(captured.result.description === "Array(12)", "CAPTURE_ARRAY"); this.#retainedArray = captured.result.objectId;
+      need(captured.result.description === "Array(13)", "CAPTURE_ARRAY"); this.#retainedArray = captured.result.objectId;
       const ids = decodeCurrentFootprintCopyMainBackendArray(await this.#properties(this.#retainedArray, "retained-array"));
       for (const [index, role] of [[10, "Date"], [11, "now"]] as const) {
         const id = ids[index]; need(id !== undefined, "NATIVE_MEMBER_REQUIRED"); decodeCurrentFootprintCopyMainBackendNative(await this.#properties(id, role), role);
       }
-      for (const [index, role] of [[3, "protocolCallback"], [5, "driverIntercept"], [6, "driverCallback"], [7, "router"], [8, "actorClock"], [9, "projectSql"]] as readonly (readonly [number, Role])[]) {
+      for (const [index, role] of [[3, "protocolCallback"], [5, "driverIntercept"], [6, "driverCallback"], [7, "router"], [8, "actorClock"], [9, "projectSql"], [12, "dateParser"]] as readonly (readonly [number, Role])[]) {
         const id = ids[index]; need(id !== undefined && this.#appScriptId !== null, "MEMBER_REQUIRED"); decodeCurrentFootprintCopyMainBackendFunction(await this.#properties(id, role), role, this.#appScriptId);
       }
       this.#metadataRole = null;
@@ -354,7 +361,7 @@ export class CurrentFootprintCopyMainBackendRunner {
       this.#packet = Object.freeze(currentFootprintCopyMainBackendObservationSchema.parse({ profile: "private.current-footprint-copy-main-backend-construction.v1",
         originalMainTransportRetained: true, runtimeAppSourceQualified: true, runtimeAppSourceSha256: SOURCE.sha256, initialContinuationCount: this.#initialContinuationCount,
         registrationBreakpointArmedBeforeInitialContinuation: true, actualRegistrationLocationVerified: true, originalProtocolCallbackAndBackendRetained: true,
-        originalDriverCallbackAndRouterRetained: true, originalActorClockAndSqlFunctionsRetained: true, originalNativeDateNowRetained: true,
+        originalDriverCallbackAndRouterRetained: true, originalActorClockAndSqlFunctionsRetained: true, originalNativeDateNowRetained: true, originalDateParserRetained: true,
         protocolRegistrationObserved: false, requestContextRetained: false, actualActorClockInvocationObserved: false, projectSqlInvocationObserved: false,
         responderExclusivityProven: false, executionAuthorized: false })); issued.set(this.#packet, this); return this.#packet;
     } catch (error) { this.#fail(error); throw error; } finally { this.#busy = false; }
@@ -368,6 +375,42 @@ export class CurrentFootprintCopyMainBackendRunner {
   public async reprove(packet: CurrentFootprintCopyMainBackendObservation): Promise<void> {
     need(!this.#originAttempted && !this.#busy && packet === this.#packet && issued.get(packet) === this, "ORIGINAL_PACKET_REQUIRED"); this.#busy = true;
     try { await this.#reprove(); } catch (error) { this.#fail(error); throw error; } finally { this.#busy = false; }
+  }
+  /** The native owner admits these two fixed phases only for its separate
+   * head-age birth. This method cannot grant that birth to another transport.
+   * Every actual Date method receives native V8 metadata checks before the one
+   * synchronous parser/control call; failures consume the complete attempt. */
+  public async prepareHeadAge(): Promise<void> {
+    need(!this.#headAgePreparationAttempted && !this.#originAttempted && !this.#busy && this.#packet !== null && issued.get(this.#packet) === this &&
+      this.#retainedArray !== null && this.#sourceArray !== null, "HEAD_AGE_CONSUMED");
+    this.#headAgePreparationAttempted = true; this.#busy = true;
+    try {
+      await this.#reprove();
+      const selected = objectReply.parse(await this.#request({ phase: "head-age-capture", method: "Runtime.callFunctionOn", params: {
+        ...FLAGS, objectId: this.#sourceArray, functionDeclaration: CURRENT_FOOTPRINT_HEAD_AGE_CAPTURE_PROGRAM,
+        arguments: [{ objectId: this.#retainedArray }], returnByValue: false } }));
+      need(selected.result.description === "Array(15)", "HEAD_AGE_ARRAY");
+      const ids = decodeCurrentFootprintHeadAgeArray(await this.#properties(selected.result.objectId, "head-age-array"));
+      for (const [index, name] of CURRENT_FOOTPRINT_HEAD_AGE_DATE_METHODS.entries()) {
+        const id = ids[index]; need(id !== undefined, "HEAD_AGE_METHOD"); decodeCurrentFootprintHeadAgeNativeMethod(await this.#properties(id, name), name);
+      }
+      this.#metadataRole = null; this.#headAgeArray = selected.result.objectId;
+    } catch (error) { this.#fail(error); throw error; } finally { this.#busy = false; }
+  }
+  /** Run the one synchronous native Date/parser observation only after the
+   * original method roster was fully checked. Metadata reads occur outside the
+   * Windows collection bracket; no retry or new array is allocated here. */
+  public async observeHeadAge(input: unknown): Promise<CurrentFootprintHeadAgeMainObservation> {
+    need(!this.#headAgeAttempted && !this.#originAttempted && !this.#busy && this.#headAgeArray !== null && this.#packet !== null && issued.get(this.#packet) === this, "HEAD_AGE_CONSUMED");
+    this.#headAgeAttempted = true; this.#busy = true;
+    try {
+      const scope = validateClockControlScope(input); need(scope.createdAtLiteral.length === 19, "HEAD_AGE_LITERAL");
+      const observed = await this.#request({ phase: "head-age-observe", method: "Runtime.callFunctionOn", params: {
+        ...FLAGS, throwOnSideEffect: false, objectId: this.#headAgeArray, functionDeclaration: CURRENT_FOOTPRINT_HEAD_AGE_OBSERVE_PROGRAM,
+        arguments: [{ value: scope.createdAtLiteral }, { value: Date.parse(`${scope.createdAtLiteral.replace(" ", "T")}Z`) }], returnByValue: true } });
+      const result = z.object({ result: z.object({ type: z.literal("object"), value: z.unknown() }).strict() }).strict().parse(observed);
+      const decoded = decodeCurrentFootprintHeadAgeMainObservation(result.result.value, scope.createdAtLiteral); await this.#reprove(); return decoded;
+    } catch (error) { this.#fail(error); throw error; } finally { this.#busy = false; }
   }
   public async release(): Promise<void> {
     await this.#release();

@@ -25,10 +25,10 @@ const readyPreload = fileURLToPath(new URL("helpers/current-footprint-combined-h
 
 void test("combined capacities include construction cleanup IDs without reserving unfinished writer stages", () => {
   assert.equal(CONSTRUCTION.maximumObserve, CONSTRUCTION.observeNormal + CONSTRUCTION.observeCleanup);
-  assert.equal(PROFILE.main.normalRequestLimit, 17 + 1 + REQUEST.normal);
+  assert.equal(PROFILE.main.normalRequestLimit, 18 + 1 + REQUEST.normal);
   assert.equal(PROFILE.main.cleanupRequestLimit, 3 + 1 + REQUEST.cleanup);
-  assert.equal(PROFILE.main.requestLimit, 20 + 1 + REQUEST.total + 1);
-  assert.deepEqual([PROFILE.main.normalRequestLimit, PROFILE.main.cleanupRequestLimit, PROFILE.main.requestLimit], [41, 13, 54]);
+  assert.equal(PROFILE.main.requestLimit, 21 + 1 + REQUEST.total + 1);
+  assert.deepEqual([PROFILE.main.normalRequestLimit, PROFILE.main.cleanupRequestLimit, PROFILE.main.requestLimit], [42, 13, 55]);
   const result = planCurrentFootprintCombinedCapacity();
   assert.deepEqual(result.generationRoles, ["forward-writer", "forward-saved-readback", "inverse-writer", "inverse-saved-readback"]);
   assert.equal(result.wholeLifecycleRequestLimit, null); assert.equal(result.wholeLifecycleBytes, null); assert.equal(result.wholeLifecycleMilliseconds, null);
@@ -170,7 +170,7 @@ process.stdout.write(JSON.stringify({id:q.id,ok:true,result})+'\\n');});
   assert.equal(child.exitCode, 0); assert.equal(child.signalCode, null);
 });
 
-void test("composed original allocator accepts last normal ID 50 with 41 normal charges and closes at 54", async context => {
+void test("composed original allocator accepts last normal ID 51 with 42 normal charges and closes at 55", async context => {
   const f = requestCollectorFixture(), path = new URL("../src/current-footprint-copy-main-request-runner.ts", import.meta.url);
   const code = await transform(await readFile(path, "utf8"), { loader: "ts", format: "cjs", target: "node24", logLevel: "silent" });
   const collectorModule: { exports: Record<string, unknown> } = { exports: {} }, originalRequire = createRequire(path);
@@ -186,10 +186,10 @@ void test("composed original allocator accepts last normal ID 50 with 41 normal 
   await collector.arm(); collector.consumeBeforeInvocation(); f.state.invoked = true; await collector.collect(); await collector.cleanup();
   const cases = currentFootprintCopyMainBackendNativeCases();
   const command = (phase: string): typeof cases[number] => { const result = cases.find(value => value.phase === phase); assert.ok(result !== undefined); return result; };
-  // Use the maximum 20-command initial-pause construction path, then the one
+  // Use the maximum 21-command initial-pause construction path, then the one
   // Original retained-array reproof before the collector's actual command log.
   const construction = ["runtime-enable", "debugger-enable", "registration-arm", "run-waiting", "source", "resume", "frame", "capture",
-    ...Array.from({ length: 9 }, () => "properties"), "require", "remove", "resume"].map(phase => command(phase));
+    ...Array.from({ length: 10 }, () => "properties"), "require", "remove", "resume"].map(phase => command(phase));
   assert.equal(construction.length, CONSTRUCTION.maximumObserve);
   const schedule = [...construction, command("require"), ...f.commands, command("release")];
   assert.equal(schedule.length, PROFILE.main.requestLimit);
@@ -221,8 +221,8 @@ process.stdout.write(JSON.stringify({id:q.id,ok:true,result})+'\\n');});
     else { normal += 1; lastNormalId = id; }
     await owner.sendFootprintMain(request, id);
   }
-  assert.deepEqual({ normal, cleanup, lastNormalId, total: schedule.length }, { normal: 41, cleanup: 13, lastNormalId: 50, total: 54 });
-  await assert.rejects(owner.sendFootprintMain(command("require"), 55), /MAIN_REQUEST_BUDGET/u);
-  await assert.rejects(owner.sendFootprintMain(command("release"), 55), /MAIN_REQUEST_BUDGET/u);
+  assert.deepEqual({ normal, cleanup, lastNormalId, total: schedule.length }, { normal: 42, cleanup: 13, lastNormalId: 51, total: 55 });
+  await assert.rejects(owner.sendFootprintMain(command("require"), 56), /MAIN_REQUEST_BUDGET/u);
+  await assert.rejects(owner.sendFootprintMain(command("release"), 56), /MAIN_REQUEST_BUDGET/u);
   assert.equal(await owner.observeTermination(), true); await owner.releaseClosed();
 });

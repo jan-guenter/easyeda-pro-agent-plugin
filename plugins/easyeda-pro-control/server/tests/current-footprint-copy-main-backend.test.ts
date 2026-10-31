@@ -19,8 +19,8 @@ import { currentFootprintCopyMainBackendWire } from "../src/current-footprint-co
 
 import { mainBackendFragments as fragments } from "./helpers/footprint-main-backend-fragments.ts";
 
-const roles: readonly Role[] = ["projectSql", "driverCallback", "driverIntercept", "actorClock", "protocolCallback", "router"];
-void test("six exact backend fragments match local V8 function locations and native async prototype shapes", async () => {
+const roles: readonly Role[] = ["projectSql", "driverCallback", "driverIntercept", "actorClock", "protocolCallback", "router", "dateParser"];
+void test("seven exact backend fragments match local V8 function locations and native async prototype shapes", async () => {
   const session = new Session(); session.connect();
   const scripts = new Map<string, Readonly<{ scriptId: string; contextId: number }>>();
   session.on("Debugger.scriptParsed", event => { scripts.set(event.params.url, { scriptId: event.params.scriptId, contextId: event.params.executionContextId }); });
@@ -50,10 +50,10 @@ void test("six exact backend fragments match local V8 function locations and nat
 });
 const setup = String.raw`
 let called=0;const forbidden=()=>{called++;throw Error("must not invoke");};
-const u=async function u(L){forbidden();},xC=function xC(t,e,r){forbidden();},L3=async function L3(t,e,r=false){forbidden();},y=async function y(t,e){forbidden();};
+const u=async function u(L){forbidden();},xC=function xC(t,e,r){forbidden();},L3=async function L3(t,e,r=false){forbidden();},y=async function y(t,e){forbidden();},rl=function rl(t){forbidden();};
 class Driver{async interceptHttpProtocol(e,r,i){forbidden();}}
 const backend=new Driver(),session={};backend.cb=(()=>async(r,i)=>{forbidden();})();
-const source=[u,backend,session,xC,L3,y,Date,Date.now];
+const source=[u,backend,session,xC,L3,y,Date,Date.now,rl];
 `;
 function fixture(): ReturnType<typeof createContext> {
   const context = createContext({}); runInContext(`${setup}\nconst original=(${CALLS.capture.program}).call(source);`, context); return context;
@@ -64,7 +64,7 @@ void test("construction capture retains descriptor identities without invoking r
   assert.equal(LIMITS.protocolRegistrationObserved, false); assert.equal(LIMITS.requestContextRetained, false);
   assert.equal(LIMITS.actualActorClockInvocationObserved, false); assert.equal(LIMITS.projectSqlInvocationObserved, false); assert.equal(LIMITS.executionAuthorized, false);
   for (const mutation of ["backend.cb=(()=>async(r,i)=>{})()", "Object.setPrototypeOf(backend,{interceptHttpProtocol:Driver.prototype.interceptHttpProtocol})",
-    "source[2]={}", "source[3]=function xC(t,e,r){}", "Object.defineProperty(backend,'cb',{get:forbidden})", "source[7]=()=>0", "source.push({})"]) {
+    "source[2]={}", "source[3]=function xC(t,e,r){}", "Object.defineProperty(backend,'cb',{get:forbidden})", "source[7]=()=>0", "source[8]=function rl(t){}", "source.push({})"]) {
     const altered = fixture(); runInContext(mutation, altered); assert.throws(() => reprove(altered), /FOOTPRINT_MAIN_BACKEND_BINDING/u); assert.equal(runInContext("called", altered), 0);
   }
 });

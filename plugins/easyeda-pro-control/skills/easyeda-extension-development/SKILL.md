@@ -62,6 +62,12 @@ payload unchanged through the run and retain its original process through
 cleanup. This supports validation without repeatedly publishing intermediate
 versions; it supplies no admission for another client or snapshot.
 
+For the separate read-only main-realm Date/SQL-head age workflow, read
+[the native head-age control reference](../easyeda-pro-control/references/current-footprint-head-age.md).
+It binds the actual closed checkpoint and completed SQL reader before allocating
+a distinct native generation. It offers no project-open, writer or Save grant.
+Keep the original owner through separately observed termination and release.
+
 For the separate read-only native CacheStorage qualification lifecycle, read
 [the held-cache control reference](../easyeda-pro-control/references/current-footprint-held-cache.md).
 It documents original checkpoint/factory custody, first/fresh observations,

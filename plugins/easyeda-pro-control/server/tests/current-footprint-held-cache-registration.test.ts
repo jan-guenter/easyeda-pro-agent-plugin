@@ -45,7 +45,7 @@ async function fixture(blocked = true): Promise<Readonly<{ invoke: Invoke; schem
     bridgeGate: new SerializedGate(), diagnostic209: true, facadeMode: "public-utilities-only", facadeToolRegistered: (): boolean => true,
     process: { env: { EASYEDA_ASSETS_ROOT: "/synthetic/assets", WSL_DISTRO_NAME: "synthetic" } },
     resolve: (): string => "/synthetic/plugin", retainedControlRoot: { path: controlDataDirectory() }, controlDataDirectory,
-    currentFootprintHeldCacheValidation: undefined, windowsRuntime: undefined, ordinaryLaunchRuntime: undefined,
+    currentFootprintHeldCacheValidation: undefined, currentFootprintHeadAgeValidation: undefined, windowsRuntime: undefined, ordinaryLaunchRuntime: undefined,
     currentDisposableOpenCoordinator: undefined, currentPcbRenameOperationCoordinator: undefined, currentSchematicRenameOperationCoordinator: undefined,
     closedSymbolIndexReservation: undefined, closedSymbolUnreservedFailure: { observed: false }, scheduledShutdown: undefined,
     currentPcbDiagnosticLifecycle: undefined, currentPcbStringPrecreateLifecycle: undefined,

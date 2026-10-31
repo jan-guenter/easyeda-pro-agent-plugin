@@ -10,6 +10,7 @@ export function currentFootprintCopyMainBackendWire(input: unknown, id: number):
 }> {
   if (!Number.isSafeInteger(id) || id < 1 || id > 2_147_483_647) { throw new Error("FOOTPRINT_MAIN_BACKEND_WIRE_ID"); }
   const command = validateCurrentFootprintCopyMainBackendCommand(input);
+  if (command.phase.startsWith("head-age-")) { throw new Error("HEAD_AGE_SEPARATE_NATIVE_PURPOSE"); }
   const request: Record<string, string | number> = { action: "main-send", requestId: id, phase: command.phase, method: command.method };
   if (command.method === "Debugger.getScriptSource") { request["scriptId"] = command.params.scriptId; }
   else if (command.method === "Debugger.setBreakpoint") {

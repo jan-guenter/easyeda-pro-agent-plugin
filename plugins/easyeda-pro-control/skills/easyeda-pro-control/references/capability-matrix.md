@@ -4,7 +4,7 @@ Use supported typed APIs first. Native controls cover genuine API stubs and dial
 
 The separate EasyEDA3.2.209 profile registers API reference,
 local discovery, status, calculations, system observations, language/viewport/theme/
-toolbar-unit/system-library-identity readers, managed netlist comparison,
+toolbar-unit/system-library-identity and selected-row readers, managed netlist comparison,
 offline supplied-library/project-file metadata, mixed-document sources, schematic
 records, persisted PCB stack/rules and symbol pin inspection,
 tab-count/active-identity/shortcut observations, public catalog queries,
@@ -12,7 +12,9 @@ ordinary launch, disposable project/PCB opening with layer and primitive observa
 a separate disposable PCB viewport purpose, and original project-worker startup capture.
 The [public utility readers](current-utility-readers.md#language-and-api-page-viewport-readers)
 do not establish document units or account/library contents. SDK-resolved
-language can be a fallback and does not prove provider success.
+language can be a fallback and does not prove provider success. Selected-row
+metadata reports UI state without proving that the asset belongs to the
+UI-reported system library.
 [Managed File/File comparison](current-netlist-files.md) accepts a completely
 recognized Allegro subset and compares footprint/designator plus net/pin
 memberships. It does not compare component values, export a project or qualify
@@ -129,11 +131,19 @@ ownership, complete external-effect qualification and connected saved-copy proof
 remain open. The complete private copy/closure/reopen coordinator is unmounted;
 its tests are not connected writer validation.
 The distinct public [held-cache qualification](current-footprint-held-cache.md)
-uses its own factory-issued read-only UI purpose, with 30 normal and one cleanup
+uses its own factory-issued read-only UI purpose, with 45 normal and one cleanup
 request. It retains a qualified original getter/match tuple for separate first
 and fresh observations of both upload-cache namespaces without opening the
 project. Its cleanup and journal do not issue copy, replay or saved-generation
 authority. The larger held-saved composition remains private and unavailable.
+The separate public [head-age diagnostic](current-footprint-head-age.md)
+selects an unlocked head from an original completed closed-SQL checkpoint,
+then allocates a new read-only main-process purpose. It qualifies the original
+Date constructor, native methods and `rl` parser before one fixed observation
+inside an original Windows UTC/QPC/zone bracket. Its bounded original-only
+summary describes age under the vendor parser for that observed window.
+It grants no future dispatch interval, writer capability, project opening or
+Save. Native root/Job exit, helper release and record settlement remain required.
 The separate [original-main diagnostic](current-footprint-main.md) retains owned
 stderr and a root/Job/TCP-bound inspector connection, source-qualified original
 protocol/driver/router functions and native Date.now. It records no actual
@@ -146,8 +156,8 @@ admit this source payload or an actual backend request.
 The separate [combined main/renderer validation](current-footprint-combined.md)
 seals both channels to one original root/Job before launch. It requires published
 main construction before disposable capture, then offers the existing assignment,
-actor and full-route observations. Its derived main budget is41 normal and13
-cleanup commands; renderer limits remain780 normal and45 cleanup. Confirmed
+actor and full-route observations. Its derived main budget is 42 normal and 13
+cleanup commands; renderer limits are 811 normal and 45 cleanup. Confirmed
 original-Job abort synchronously blocks normal work, publishes exact-prefix
 intent and dispatches once. Intent-publication failure prevents dispatch while
 leaving the abort consumed; acknowledgment never proves exit or rollback.
@@ -194,9 +204,9 @@ Its fixed48-variant native codec is embedded with exact flat scalar parity and a
 maximum9,412-byte CDP body. A genuine private completion issuer now atomically
 transfers the exact held lease, retaining the original main kernel/channel,
 allocator, event cursor and root/Job. Fixed native completion begin/send/retire is
-implemented. The unchanged54-ID observation purpose cannot fit the75-command
+implemented. The 55-ID observation purpose cannot fit the75-command
 completion unit and final construction release; it refuses before transfer.
-Known main stages require at least86 normal/41 cleanup/127 total commands. This
+Known main stages require at least 87 normal, 41 cleanup and 128 total commands. This
 partial lower bound grants no whole-writer reservation or connected acceptance.
 Pre-write branch/header eligibility remains required. Fresh unlocked mutable
 history refuses; missing-header append selector support proves no new-document

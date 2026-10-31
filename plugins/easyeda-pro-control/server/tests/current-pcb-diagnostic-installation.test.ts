@@ -140,7 +140,7 @@ void test("native DOS creation verifies the retained original image before one p
   assert.doesNotMatch(capture, /\b(?:root|rootThread|rootPid|rootCreated)\s*=(?!=)/u);
   assert.ok(!source.includes("Process.GetProcessById"));
   // Forced cleanup is confined to the separately confirmed original Main,
-  // Visual and held-cache Jobs. Remove only the exact guarded methods below;
+  // Visual, held-cache and head-age Jobs. Remove only the exact guarded methods below;
   // Every other creation, installation and dispatcher path remains prohibited.
   const mainBegin = source.indexOf("// BEGIN GENERATED FOOTPRINT MAIN TRANSPORT PROTOCOL"), mainEnd = source.indexOf("// END GENERATED FOOTPRINT MAIN TRANSPORT PROTOCOL");
   assert.ok(mainBegin !== -1 && mainEnd > mainBegin);
@@ -178,10 +178,20 @@ void test("native DOS creation verifies the retained original image before one p
   const bindingGuard = "if ($launched -and $request.action -cne 'identity' -and ($request.helperInstance -isnot [string] -or $request.jobId -isnot [string] -or $request.rootCreated -isnot [string] -or ($request.rootPid -isnot [int] -and $request.rootPid -isnot [long]) -or $request.helperInstance -cne $owner.HelperInstance -or $request.jobId -cne $owner.JobId -or $request.rootCreated -cne $owner.RootCreated -or $request.rootPid -ne $owner.RootPid)) {throw 'pcb-diagnostic-owner-binding'}";
   assert.equal(source.split(bindingGuard).length, 2);
   assert.ok(source.indexOf(bindingGuard) < source.indexOf(actionSwitch));
+  const headAge = `  public void AbortHeadAge(){if(!footprintHeadAge209||headAgeAbortAttempted||released||root==IntPtr.Zero||job==IntPtr.Zero)throw Error("head-age-abort-owner");AssertLimits();AssertPipes();long created,exited,kernel,user;if(GetProcessId(root)!=rootPid||!GetProcessTimes(root,out created,out exited,out kernel,out user)||created!=rootCreated)throw Error("head-age-abort-identity");headAgeAbortAttempted=true;Native(TerminateJobObject(job,0x45444841));}`;
+  assert.equal(source.split(headAge).length, 2);
+  assert.equal(headAge.match(/\bTerminateJobObject\(/gu)?.length, 1);
+  const headAgeDispatch = `        'head-age-abort' {
+          if (-not $FootprintHeadAge209 -or $request.confirmOriginalJob -isnot [bool] -or -not $request.confirmOriginalJob -or (@($request.PSObject.Properties.Name | Sort-Object) -join ',') -cne 'action,confirmOriginalJob,helperInstance,id,jobId,rootCreated,rootPid') {throw 'pcb-diagnostic-head-age-abort-fields'}
+          $owner.AbortHeadAge();$result=@{terminationDispatched=$true}
+        }`;
+  assert.equal(dispatcher.split(headAgeDispatch).length, 2);
+  assert.equal(source.split("$owner.AbortHeadAge()").length, 2);
   const declaration = '[DllImport("kernel32.dll",SetLastError=true)] static extern bool TerminateJobObject(IntPtr job,uint code);';
   const outsideMain = source.slice(0, mainBegin) + source.slice(mainEnd);
   assert.equal(outsideMain.split(declaration).length, 2); assert.equal(outsideMain.split(visual).length, 2); assert.equal(outsideMain.split(held).length, 2);
-  assert.ok(!outsideMain.replace(declaration, "").replace(visual, "").replace(held, "").includes("TerminateJobObject"));
+  assert.equal(outsideMain.split(headAge).length, 2);
+  assert.ok(!outsideMain.replace(declaration, "").replace(visual, "").replace(held, "").replace(headAge, "").includes("TerminateJobObject"));
   assert.ok(source.includes("public void TerminateMain(){MainPurpose();originalMain.RequestOriginalJobTermination();}"));
   assert.ok(source.includes("$request.confirmTerminateOriginalDiagnosticJob -isnot [bool]"));
   assert.ok(source.includes("if (-not $Visual209 -or $request.confirmAbortOriginalVisualJob -isnot [bool] -or -not $request.confirmAbortOriginalVisualJob"));

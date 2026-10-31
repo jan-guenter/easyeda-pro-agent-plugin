@@ -24,13 +24,13 @@ void test("forward ceiling separates two generations, normal classes and global 
   assert.equal(CAPACITY.writer.renderer.normalIdCeiling, 996);
   assert.equal(CAPACITY.writer.renderer.stages.allocatedCreateClockTotal, 78);
   assert.equal(CAPACITY.writer.main.requestLimit, MAIN.minimumTotal);
-  assert.equal(CAPACITY.writer.main.requestLimit, 127);
+  assert.equal(CAPACITY.writer.main.requestLimit, 128);
   assert.equal(EXISTING.normalRequestLimit, 811); assert.equal(EXISTING.requestLimit, 856);
   assert.equal(CAPACITY.nativePurposeMounted, false); assert.equal(CAPACITY.inverseAvailable, false);
   assert.equal(CAPACITY.wholeFourGenerationBudgetReserved, false); assert.equal(CAPACITY.executionAuthorized, false);
   const writerMinimumStdout = 4 * Math.ceil((STREAM.receivedBytes + MAIN_STREAM.totalReceivedBytes) / 3) +
     4 * (CAPACITY.writer.renderer.polls + MAIN_STREAM.totalPolls) +
-    (CAPACITY.writer.renderer.polls + MAIN_STREAM.totalPolls + 996 + 127 + CAPACITY.controls.perGeneration) * CAPACITY.controls.replyHeaderBytes;
+    (CAPACITY.writer.renderer.polls + MAIN_STREAM.totalPolls + 996 + 128 + CAPACITY.controls.perGeneration) * CAPACITY.controls.replyHeaderBytes;
   assert.ok(CAPACITY.writer.helperStdoutBytes >= writerMinimumStdout);
   assert.ok(CAPACITY.controls.perGeneration > CAPACITY.controls.terminationObservationsPerGeneration +
     CAPACITY.controls.releaseObservationsPerGeneration + CAPACITY.controls.normalCloseAttemptsPerGeneration + 1);
@@ -66,9 +66,9 @@ void test("aggregate artifact limits cannot be spent once per generation", () =>
   assert.throws(() =>{  ledger.consumeBytes("forward-saved-readback", saved, "journal", 1); }, /BYTES/u);
   const main = new Ledger(); main.bind("forward-writer", writer);
   for (let id = 1; id <= CAPACITY.writer.main.cleanupClassLimit; id += 1) { main.consumeRequest("forward-writer", writer, "main", id, true); }
-  for (let id = 42; id <= 127; id += 1) { main.consumeRequest("forward-writer", writer, "main", id, false); }
-  assert.equal(main.status().mainRequests, 127); assert.equal(main.status().failed, false);
-  assert.throws(() =>{  main.consumeRequest("forward-writer", writer, "main", 128, true); }, /MAIN_REQUEST/u);
+  for (let id = 42; id <= 128; id += 1) { main.consumeRequest("forward-writer", writer, "main", id, false); }
+  assert.equal(main.status().mainRequests, 128); assert.equal(main.status().failed, false);
+  assert.throws(() =>{  main.consumeRequest("forward-writer", writer, "main", 129, true); }, /MAIN_REQUEST/u);
 });
 
 

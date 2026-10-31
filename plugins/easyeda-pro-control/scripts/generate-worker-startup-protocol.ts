@@ -14,6 +14,7 @@ import { currentFootprintCopyClockRpcNativeSource } from "../server/src/current-
 import { currentFootprintCopyAllocationNativeSource } from "../server/src/current-footprint-copy-allocation-native.ts";
 import { currentFootprintCopyAllocatedCreateClockNativeSource, currentFootprintCopyCreateClockNativeSource, currentFootprintCopyNativeCreateNativeSource } from "../server/src/current-footprint-copy-native-create-native.ts";
 import { CURRENT_FOOTPRINT_COPY_CLOCK_RPC_REQUESTS as clockRpcRequests } from "../server/src/current-footprint-copy-clock-rpc-protocol.ts";
+import { currentFootprintHeadAgeNativeSource } from "../server/src/current-footprint-head-age-native.ts";
 import { currentFootprintCopyMainTransportNativeSource } from "../server/src/current-footprint-copy-main-transport-native.ts";
 import { currentFootprintCopyMainBackendNativeSource } from "../server/src/current-footprint-copy-main-backend-native.ts";
 import { currentFootprintCopyMainRequestNativeSource } from "../server/src/current-footprint-copy-main-request-native.ts";
@@ -142,7 +143,7 @@ function footprintSavedSource(): string {
  * authority and does not merge their runtime grammars.
  */
 function footprintMainSource(): string {
-  return `// BEGIN GENERATED FOOTPRINT MAIN TRANSPORT PROTOCOL\n${currentPcbDiagnosticFixedTableNativeSource()}\n${currentFootprintCombinedNativeLimits()}\n// BEGIN GENERATED FOOTPRINT FORWARD LIMITS\n${currentFootprintCopyForwardNativeLimits()}\n// END GENERATED FOOTPRINT FORWARD LIMITS\n${currentFootprintCopyMainTransportNativeSource()}\n${currentFootprintCopyMainBackendNativeSource()}\n${currentFootprintCopyMainRequestNativeSource()}\n${currentFootprintCopyMainCompletionNativeSource()}\n${currentFootprintSavedCacheNativeSource()}\n${currentFootprintSavedCacheAccessorNativeSource()}\n${currentFootprintSavedCacheHeldNativeSource()}\n` +
+  return `// BEGIN GENERATED FOOTPRINT MAIN TRANSPORT PROTOCOL\n${currentPcbDiagnosticFixedTableNativeSource()}\n${currentFootprintCombinedNativeLimits()}\n// BEGIN GENERATED FOOTPRINT FORWARD LIMITS\n${currentFootprintCopyForwardNativeLimits()}\n// END GENERATED FOOTPRINT FORWARD LIMITS\n${currentFootprintCopyMainTransportNativeSource()}\n${currentFootprintCopyMainBackendNativeSource()}\n${currentFootprintHeadAgeNativeSource()}\n${currentFootprintCopyMainRequestNativeSource()}\n${currentFootprintCopyMainCompletionNativeSource()}\n${currentFootprintSavedCacheNativeSource()}\n${currentFootprintSavedCacheAccessorNativeSource()}\n${currentFootprintSavedCacheHeldNativeSource()}\n` +
     "// END GENERATED FOOTPRINT MAIN TRANSPORT PROTOCOL";
 }
 // oxlint-disable-next-line node/no-top-level-await -- ESM-only build command; never loaded by require().

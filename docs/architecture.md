@@ -23,6 +23,13 @@ graph, mounts that graph and the reviewed supervisor from retained descriptors,
 and starts the pinned upstream in a minimal sandbox. Do not run a second
 EasyEDA MCP process against the same bridge.
 
+Persisted results use versioned, closed schemas. A release that changes a result's
+fields or fixed explanatory text emits a new version. Historical readers retain
+the exact previously released projections and their original operation limits.
+They validate records without rewriting them or recreating a native owner.
+This keeps a valid, completed older operation from blocking unrelated new work
+when the current result format changes.
+
 For authorized EasyEDA work when the host does not expose MCP tools,
 `scripts/control-session.ts` provides a persistent foreground client for the
 same facade. Run this developer CLI from a trusted checkout after `npm ci`

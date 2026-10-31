@@ -116,7 +116,7 @@ On the exact 3.2.209/API0.3.59 profile, query `public-readers` with an exact
 `public-readers-validate`, then pass it and the actual authenticated status
 fingerprint to `easyeda_control_public_readers`.
 
-The eight methods have distinct meanings:
+The nine methods have distinct meanings:
 
 | Method | Accepted observation |
 | --- | --- |
@@ -128,6 +128,7 @@ The eight methods have distinct meanings:
 | `eda.sys_Window.getCurrentTheme` | Resolved `light` or `dark` UI theme |
 | `eda.sys_Unit.getFrontendDataUnit` | Global toolbar selection, `mm`, `inch` or `mil` |
 | `eda.lib_LibrariesList.getSystemLibraryUuid` | The exact returned system-library UUID constant |
+| `eda.lib_SelectControl.getSelectedLibraryRowInfo` | The selected bottom-library row's UUID/type and UI-reported system-library UUID |
 
 Language membership accepts `arguments:{"language":"en"}`; the URL reader
 accepts only `arguments:{"key":"cll"}`. Other requests have `arguments:{}`.
@@ -204,6 +205,15 @@ reviewed UI. That value is an expectation, never a fallback for a failed call.
 It does not enumerate personal/team/project libraries, identify the account or
 retrieve an asset. Use a separate catalog route when public asset metadata is
 needed.
+
+The beta selected-row reader accepts only the same UI-reported system-library
+UUID, a 32-character lowercase hexadecimal asset UUID and library types `1`, `2`, `3`, `4`, `5`
+or `29`. It refuses no selection, private reported library IDs and unknown
+types. The callback combines independently retained row and library state, so
+matching samples do not prove that the asset belongs to the reported library.
+Results retain `assetOwnershipVerified:false`,
+`selectedRowProvenanceVerified:false` and `currentProjectBindingVerified:false`.
+This is advisory selection metadata; it performs no asset lookup or selection.
 
 The adapter retains the same namespace/method owners, copies complete bounded
 results twice and rejects malformed or changing output without truncation.

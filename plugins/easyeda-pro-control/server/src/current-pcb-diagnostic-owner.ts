@@ -132,6 +132,14 @@ import type { CheckpointReceipt } from "./checkpoint.ts";
 import type { MachineProfile } from "./machine-profile.ts";
 import { loadRuntimeMachineProfile } from "./machine-profile.ts";
 import { verifyCurrentDisposableOpenCheckpoint } from "./current-disposable-open-checkpoint.ts";
+import type { CurrentFootprintHeadAgeValidationBinding } from "./current-footprint-head-age-validation.ts";
+import { currentFootprintHeadAgeValidationIdSchema } from "./current-footprint-head-age-validation-schema.ts";
+import { prepareCurrentFootprintHeadAgeSqlHead, requireCurrentFootprintHeadAgeSqlHead } from "./current-footprint-head-age-sql.ts";
+import type { CurrentFootprintHeadAgeSqlHead } from "./current-footprint-head-age-sql.ts";
+import { CURRENT_FOOTPRINT_HEAD_AGE_NATIVE_LIMITS, currentFootprintHeadAgeNativeWire } from "./current-footprint-head-age-native.ts";
+import { captureCurrentFootprintHeadAgeReply } from "./current-footprint-head-age-main.ts";
+import { compareCurrentFootprintHeadAgeObservation } from "./current-footprint-head-age-observation.ts";
+import type { CurrentFootprintHeadAgeObservation } from "./current-footprint-head-age-observation.ts";
 import type { CurrentFootprintHeldCacheValidationBinding } from "./current-footprint-held-cache-validation.ts";
 import { currentFootprintHeldCacheValidationIdSchema } from "./current-footprint-held-cache-validation-schema.ts";
 import { CURRENT_FOOTPRINT_HELD_CACHE_DIAGNOSTIC_PROFILE, CURRENT_FOOTPRINT_HELD_CACHE_PAGE_READINESS } from "./current-footprint-held-cache-diagnostic-profile.ts";
@@ -183,8 +191,8 @@ import { CurrentFootprintCopyMainBackendRunner } from "./current-footprint-copy-
 import type { CurrentFootprintCopyMainBackendObservation } from "./current-footprint-copy-main-backend-runner.ts";
 
 
-const HELPER_SHA256 = "0e54ae7b0895ef1d2d3a4688946c46e3d113e9c538304cede9f99aaf54bda03b";
-const HELPER_BYTES = 1_045_312;
+const HELPER_SHA256 = "e9bc47e9c73afd8340f4ffc43922e506eac609c66d7212e039d533945fb3b079";
+const HELPER_BYTES = 1_036_067;
 const heldRunnerDescriptors = Object.getOwnPropertyDescriptors(CurrentFootprintSavedCacheHeldRunner.prototype);
 /* oxlint-disable typescript/unbound-method -- Retain fixed methods and invoke them only on the original private-field runner. */
 const heldRunnerMethods = Object.freeze({ prepare: CurrentFootprintSavedCacheHeldRunner.prototype.prepare,
@@ -217,7 +225,7 @@ const forwardPollWaiting = CurrentFootprintCopyForwardStartupChannel.prototype.f
 
 
 type RecordValue = Record<string, unknown>;
-type OwnerPurpose = "footprint-held-cache209" | "worker-startup-footprint-held-saved209" | "visual209" | "diagnostic" | "diagnostic209" | "string-precreate" | "worker-startup" | "worker-startup209" | "worker-startup-footprint209" | "worker-startup-footprint-copy209" | "worker-startup-footprint-saved209" | "worker-startup-footprint-main209" | typeof CURRENT_FOOTPRINT_COMBINED_PURPOSE | typeof CURRENT_FOOTPRINT_COPY_FORWARD_PURPOSE | "worker-startup-empty209" | "worker-startup-ratline209" | "worker-startup-ratline-continuation209";
+type OwnerPurpose = "footprint-head-age209" | "footprint-held-cache209" | "worker-startup-footprint-held-saved209" | "visual209" | "diagnostic" | "diagnostic209" | "string-precreate" | "worker-startup" | "worker-startup209" | "worker-startup-footprint209" | "worker-startup-footprint-copy209" | "worker-startup-footprint-saved209" | "worker-startup-footprint-main209" | typeof CURRENT_FOOTPRINT_COMBINED_PURPOSE | typeof CURRENT_FOOTPRINT_COPY_FORWARD_PURPOSE | "worker-startup-empty209" | "worker-startup-ratline209" | "worker-startup-ratline-continuation209";
 function heldCachePurpose(purpose: OwnerPurpose): boolean {
   return purpose === "worker-startup-footprint-held-saved209" || purpose === "footprint-held-cache209";
 }
@@ -252,7 +260,7 @@ export interface CurrentPcbDiagnosticNoProcessRelease {
   readonly processCreated: false; readonly released: true;
 }
 interface NoProcessProof { readonly creationState: "not-entered" | "returned-false"; readonly createProcessError?: number }
-const mainNativeActions = ["main-attach", "main-reprove", "main-send", "main-request-send", "main-completion-begin", "main-completion-send", "main-completion-retire", "main-poll", "main-close-detach", "main-terminate", "combined-abort"] as const;
+const mainNativeActions = ["head-age-main", "head-age-abort", "main-attach", "main-reprove", "main-send", "main-request-send", "main-completion-begin", "main-completion-send", "main-completion-retire", "main-poll", "main-close-detach", "main-terminate", "combined-abort"] as const;
 type MainNativeAction = typeof mainNativeActions[number];
 interface Pending {
   readonly id: string; readonly resolve: (value: RecordValue) => void; readonly reject: (error: Error) => void;
@@ -332,6 +340,21 @@ const heldCacheValidationAllocations = new WeakMap<CurrentFootprintHeldCacheVali
 const heldCacheValidationOperationIds = new Set<string>();
 const heldCacheValidationFactories = new WeakMap<CurrentFootprintHeldCacheValidationOwner, Readonly<{
   allocation: HeldCacheValidationAllocation;
+  options: CurrentPcbDiagnosticInstallationOptions;
+  installation: CurrentPcbDiagnosticInstallation;
+}>>();
+interface HeadAgeValidationAllocation {
+  readonly binding: CurrentFootprintHeadAgeValidationBinding;
+  readonly text: string;
+  readonly completion: ReturnType<typeof readerCompletion>;
+  head: CurrentFootprintHeadAgeSqlHead | null;
+  status: "pending" | "no-resource" | "unresolved" | "retained";
+  owner: CurrentFootprintHeadAgeValidationOwner | null;
+}
+const headAgeValidationAllocations = new WeakMap<CurrentFootprintHeadAgeValidationBinding, HeadAgeValidationAllocation>();
+const headAgeValidationOperationIds = new Set<string>();
+const headAgeValidationFactories = new WeakMap<CurrentFootprintHeadAgeValidationOwner, Readonly<{
+  allocation: HeadAgeValidationAllocation;
   options: CurrentPcbDiagnosticInstallationOptions;
   installation: CurrentPcbDiagnosticInstallation;
 }>>();
@@ -590,6 +613,20 @@ class CurrentPcbRetainedOwnerCore {
   #combinedAbortDispatchAttempted = false;
   #mainObservationAttempted = false;
   #mainRunner: CurrentFootprintCopyMainBackendRunner | null = null;
+  // oxlint-disable-next-line typescript/unbound-method -- Retain and call only with the private original main runner receiver.
+  readonly #headAgeMainMethods = Object.freeze({ prepare: CurrentFootprintCopyMainBackendRunner.prototype.prepareHeadAge, observe: CurrentFootprintCopyMainBackendRunner.prototype.observeHeadAge });
+  #headAgeStarted = false;
+  #headAgeAttempted = false;
+  #headAgeBusy = false;
+  #headAgeAbortAttempted = false;
+  #headAgeAbortDispatched = false;
+  #headAgeAbortToken: object | null = null;
+  #headAgeObservation: CurrentFootprintHeadAgeObservation | null = null;
+  #headAgeObservationText: string | null = null;
+  #headAgeNormalControls = 0;
+  #headAgeCleanupControls = 0;
+  #headAgeInspectorBytes = Buffer.alloc(0);
+  #headAgeBracket: Readonly<{ before: unknown; after: unknown }> | null = null;
   #combinedMainCapability: CurrentFootprintCombinedMainCapability | null = null;
   readonly #footprintSavedQueueReplies: unknown[] = [];
   #heldSavedStartAttempted = false;
@@ -649,11 +686,11 @@ class CurrentPcbRetainedOwnerCore {
     if ((purpose === "worker-startup-ratline209") !== (ratlineBudget !== null)) { throw error("RATLINE_BUDGET"); }
     if (ratlineBudget !== null) { assertOriginalCurrentPcb209RatlineBudget(ratlineBudget); }
     if ((purpose === "worker-startup-empty209") !== (emptyAnchor !== null)) { throw error("STARTUP_EMPTY_ANCHOR"); }
-    if (purpose === "worker-startup209" || (purpose === "worker-startup-footprint209" || purpose === "worker-startup-footprint-copy209" || purpose === "worker-startup-footprint-saved209" || purpose === "worker-startup-footprint-held-saved209" || purpose === "worker-startup-footprint-main209" || bornFootprintTransport(purpose)) || purpose === "worker-startup-empty209" || purpose === "worker-startup-ratline209" || purpose === "worker-startup-ratline-continuation209") {
+    if (purpose === "worker-startup209" || (purpose === "worker-startup-footprint209" || purpose === "worker-startup-footprint-copy209" || purpose === "worker-startup-footprint-saved209" || purpose === "worker-startup-footprint-held-saved209" || purpose === "worker-startup-footprint-main209" || purpose === "footprint-head-age209" || bornFootprintTransport(purpose)) || purpose === "worker-startup-empty209" || purpose === "worker-startup-ratline209" || purpose === "worker-startup-ratline-continuation209") {
       if (actorClockSource === null) { throw error("STARTUP209_ACTOR_SOURCE"); }
       requireCurrentPcb209ActorClockSourceQualification(actorClockSource);
     } else if (actorClockSource !== null) { throw error("STARTUP209_PURPOSE"); }
-    this.#startupPurpose = purpose === "worker-startup" || purpose === "worker-startup209" || (purpose === "worker-startup-footprint209" || purpose === "worker-startup-footprint-copy209" || purpose === "worker-startup-footprint-saved209" || purpose === "worker-startup-footprint-held-saved209" || purpose === "worker-startup-footprint-main209" || bornFootprintTransport(purpose)) || purpose === "worker-startup-empty209" || purpose === "worker-startup-ratline209" || purpose === "worker-startup-ratline-continuation209";
+    this.#startupPurpose = purpose === "worker-startup" || purpose === "worker-startup209" || (purpose === "worker-startup-footprint209" || purpose === "worker-startup-footprint-copy209" || purpose === "worker-startup-footprint-saved209" || purpose === "worker-startup-footprint-held-saved209" || purpose === "worker-startup-footprint-main209" || purpose === "footprint-head-age209" || bornFootprintTransport(purpose)) || purpose === "worker-startup-empty209" || purpose === "worker-startup-ratline209" || purpose === "worker-startup-ratline-continuation209";
     this.#child = child; this.#verify = verify; this.#installation = installation; this.#verifyInstallation = verifyInstallation;
     this.#verifyStartupFacade = verifyStartupFacade;
     this.#purpose = purpose; this.#stringPurpose = purpose === "string-precreate";
@@ -2422,7 +2459,7 @@ class CurrentPcbRetainedOwnerCore {
     this.#enter(true); this.#closeConsumed = true;
     try {
       await this.#verify(); this.#available();
-      if (this.#purpose === "worker-startup-footprint-main209" || bornFootprintTransport(this.#purpose)) {
+      if (this.#purpose === "worker-startup-footprint-main209" || this.#purpose === "footprint-head-age209" || bornFootprintTransport(this.#purpose)) {
         await this.#detachMainForNormalClose();
       }
       const reply = await this.#request({ action: "normal-close", hwnd, confirmNormalClose: true });
@@ -3055,9 +3092,9 @@ class CurrentPcbRetainedOwnerCore {
 
   #requireFootprintMain(attached: boolean): Binding {
     this.#available();
-    if ((this.#purpose !== "worker-startup-footprint-main209" && !bornFootprintTransport(this.#purpose)) || this.#binding === null || !this.#launchSucceeded ||
+    if ((this.#purpose !== "worker-startup-footprint-main209" && this.#purpose !== "footprint-head-age209" && !bornFootprintTransport(this.#purpose)) || this.#binding === null || !this.#launchSucceeded ||
       this.#terminationObserved || this.#releaseConsumed || this.#closeConsumed && !this.#mainCloseCleanupActive ||
-      this.#mainCloseDetached || this.#mainTerminateAttempted || attached && !this.#mainAttached) {
+      this.#mainCloseDetached || this.#mainTerminateAttempted || this.#headAgeAbortAttempted || attached && !this.#mainAttached) {
       throw error("MAIN_ORIGINAL_OWNER");
     }
     return this.#binding;
@@ -3112,12 +3149,20 @@ class CurrentPcbRetainedOwnerCore {
     if (this.#mainCompletionState === "retired" && this.#mainCompletionTailReleaseAttempted) { throw error("MAIN_COMPLETION_TAIL_RELEASE_CONSUMED"); }
     if (requestId !== this.#mainRequestId + 1) { throw error("MAIN_REQUEST_ID"); }
     const collection = command.phase.startsWith("request-");
+    if (this.#purpose === "footprint-head-age209" && !["runtime-enable", "debugger-enable", "run-waiting", "resume", "registration-arm", "source", "breakpoint", "frame", "capture", "require", "properties", "remove", "release", "head-age-capture", "head-age-observe"].includes(command.phase)) { throw error("HEAD_AGE_MAIN_PHASE_PURPOSE"); }
     if (collection && this.#purpose !== CURRENT_FOOTPRINT_COMBINED_PURPOSE) { throw error("MAIN_REQUEST_PURPOSE"); }
-    const wire = collection ? currentFootprintCopyMainRequestWire(command, requestId) : currentFootprintCopyMainBackendWire(command, requestId);
+    const headAge = command.phase.startsWith("head-age-");
+    if (headAge && this.#purpose !== "footprint-head-age209") { throw error("HEAD_AGE_MAIN_PURPOSE"); }
+    let wire: Readonly<{ request: Readonly<Record<string, string | number>> }>;
+    if (headAge) { wire = { request: currentFootprintHeadAgeNativeWire(command, requestId) }; }
+    else { wire = collection ? currentFootprintCopyMainRequestWire(command, requestId) : currentFootprintCopyMainBackendWire(command, requestId); }
     const cleanup = command.method === "Debugger.removeBreakpoint" || command.method === "Debugger.resume" || command.method === "Runtime.releaseObjectGroup";
     let maximumNormal: number = CURRENT_FOOTPRINT_COPY_MAIN_TRANSPORT.normalRequests;
     let maximumCleanup: number = CURRENT_FOOTPRINT_COPY_MAIN_TRANSPORT.cleanupRequests;
-    if (this.#purpose === CURRENT_FOOTPRINT_COMBINED_PURPOSE) {
+    if (this.#purpose === "footprint-head-age209") {
+      maximumNormal = CURRENT_FOOTPRINT_HEAD_AGE_NATIVE_LIMITS.normalMainRequests;
+      maximumCleanup = CURRENT_FOOTPRINT_HEAD_AGE_NATIVE_LIMITS.cleanupMainRequests;
+    } else if (this.#purpose === CURRENT_FOOTPRINT_COMBINED_PURPOSE) {
       maximumNormal = CURRENT_FOOTPRINT_COMBINED_PROFILE.main.normalRequestLimit;
       maximumCleanup = CURRENT_FOOTPRINT_COMBINED_PROFILE.main.cleanupRequestLimit;
     } else if (this.#purpose === CURRENT_FOOTPRINT_COPY_FORWARD_PURPOSE) {
@@ -3132,7 +3177,15 @@ class CurrentPcbRetainedOwnerCore {
       await this.#verify();
       if (this.#requireFootprintMain(true) !== original) { throw error("MAIN_OWNER_CHANGED"); }
       const reply = await this.#request({ ...wire.request });
-      if (!exact(reply, ["written"]) || reply["written"] !== true) { throw error("MAIN_WRITE_REPLY"); }
+      if (command.phase === "head-age-observe") {
+        const encoded = reply["bytes"];
+        if (!exact(reply, ["written", "bytes", "before", "after"]) || reply["written"] !== true || typeof encoded !== "string" || encoded.length > 87_384 ||
+          !/^(?:[A-Za-z\d+/]{4})*(?:[A-Za-z\d+/]{2}==|[A-Za-z\d+/]{3}=)?$/u.test(encoded) || this.#headAgeBracket !== null || this.#headAgeInspectorBytes.length > 0) { throw error("HEAD_AGE_MAIN_NATIVE_REPLY"); }
+        const bytes = Buffer.from(encoded, "base64");
+        if (bytes.length === 0 || bytes.length > 65_536 || bytes.toString("base64") !== encoded) { throw error("HEAD_AGE_MAIN_NATIVE_BYTES"); }
+        const before = captureCurrentPcbStringClockReply(reply["before"]).value; const after = captureCurrentPcbStringClockReply(reply["after"]).value;
+        this.#headAgeBracket = Object.freeze({ before, after }); this.#headAgeInspectorBytes = bytes;
+      } else if (!exact(reply, ["written"]) || reply["written"] !== true) { throw error("MAIN_WRITE_REPLY"); }
       await this.#verify();
       if (this.#requireFootprintMain(true) !== original) { throw error("MAIN_OWNER_CHANGED"); }
     } finally { this.#leaveFootprintMain(); }
@@ -3207,6 +3260,10 @@ class CurrentPcbRetainedOwnerCore {
     if (this.#mainCloseCleanupActive && !cleanup) { throw error("MAIN_CLOSE_CLEANUP_ONLY"); }
     const original = this.#requireFootprintMain(true); this.#enterFootprintMain();
     try {
+      if (this.#purpose === "footprint-head-age209" && this.#headAgeInspectorBytes.length > 0) {
+        const chunk = this.#headAgeInspectorBytes.subarray(0, 32_768); this.#headAgeInspectorBytes = this.#headAgeInspectorBytes.subarray(chunk.length);
+        if (this.#requireFootprintMain(true) !== original) { throw error("HEAD_AGE_MAIN_OWNER_CHANGED"); } return chunk.toString("base64");
+      }
       const reply = await this.#request({ action: "main-poll", cleanup });
       const encoded = reply["bytes"];
       if (!exact(reply, ["bytes"]) || typeof encoded !== "string" || encoded.length > 43_692 ||
@@ -3293,6 +3350,78 @@ class CurrentPcbRetainedOwnerCore {
     // oxlint-disable-next-line typescript/no-unnecessary-boolean-literal-compare -- Reject malformed runtime confirmation before consuming a logical reservation.
     if (confirmAbortOriginalCombinedJob !== true) { throw error("COMBINED_ABORT_CONFIRMATION"); }
     await this.dispatchFootprintCombinedAbort(this.reserveFootprintCombinedAbort(), true);
+  }
+  /** Require the distinct factory even during cleanup. This reference check
+   * never adopts another generation or grants a live request after release. */
+  #headAgeAllocation(normal: boolean): HeadAgeValidationAllocation {
+    if (this.#purpose !== "footprint-head-age209") { throw error("HEAD_AGE_PURPOSE"); }
+    const entry = headAgeValidationFactories.get(this);
+    if (entry === undefined || entry.allocation.owner !== this || entry.allocation.head === null) { throw error("HEAD_AGE_ORIGINAL_FACTORY"); }
+    assertOriginalCurrentFootprintHeadAgeValidationOwner(this);
+    if (normal) {
+      this.#available();
+      if (CurrentFootprintCopyMainBackendRunner.prototype.prepareHeadAge !== this.#headAgeMainMethods.prepare || CurrentFootprintCopyMainBackendRunner.prototype.observeHeadAge !== this.#headAgeMainMethods.observe) { throw error("HEAD_AGE_MAIN_METHOD_CHANGED"); }
+      if (this.#headAgeAbortAttempted || this.#closeConsumed || this.#terminationObserved || this.#releaseConsumed) { throw error("HEAD_AGE_NORMAL_ENDED"); }
+    }
+    return entry.allocation;
+  }
+  /** Start the one genuinely allocated main-only diagnostic. The exact
+   * disposable checkpoint is checked again before the paused application starts. */
+  public async startFootprintHeadAgeValidationGeneration(): Promise<void> {
+    const allocation = this.#headAgeAllocation(true);
+    if (this.#headAgeStarted || this.#installation === null) { throw error("HEAD_AGE_START_CONSUMED"); }
+    this.#headAgeStarted = true;
+    await verifyCurrentDisposableOpenCheckpoint(allocation.binding.prepared, allocation.binding.originalTarget); this.#headAgeAllocation(true);
+    const executable = this.#installation.plan.files[0]; if (executable === undefined) { throw error("HEAD_AGE_INSTALLATION"); }
+    await this.launch({ executable: executable.windowsPath, executableSha256: executable.sha256, confirmDiagnosticLaunch: true }); this.#headAgeAllocation(true);
+  }
+  /** Qualify the original app-main parser and native Date methods, then collect
+   * one finite Windows/app bracket for the original completed SQL head. There
+   * is no project navigation, backend request, copy, delete or Save command. */
+  public async observeFootprintHeadAgeValidation(): Promise<CurrentFootprintHeadAgeObservation> {
+    const allocation = this.#headAgeAllocation(true);
+    if (!this.#headAgeStarted || !this.#launchSucceeded || this.#headAgeAttempted || this.#headAgeBusy || allocation.head === null) { throw error("HEAD_AGE_OBSERVE_CONSUMED"); }
+    this.#headAgeAttempted = true; this.#headAgeBusy = true;
+    try {
+      await this.observeFootprintMainConstruction(); this.#headAgeAllocation(true);
+      const main = this.#mainRunner, original = this.#binding;
+      if (main === null || original === null) { throw error("HEAD_AGE_MAIN_REQUIRED"); }
+      await this.#headAgeMainMethods.prepare.call(main); this.#headAgeAllocation(true);
+      await verifyCurrentDisposableOpenCheckpoint(allocation.binding.prepared, allocation.binding.originalTarget); this.#headAgeAllocation(true);
+      const observed = await this.#headAgeMainMethods.observe.call(main, { createdAtLiteral: allocation.head.createdAtLiteral, referenceUtcMs: 0 }); this.#headAgeAllocation(true);
+      const bracket = this.#headAgeBracket;
+      if (bracket === null || this.#headAgeInspectorBytes.length > 0) { throw error("HEAD_AGE_NATIVE_BRACKET_REQUIRED"); }
+      if (this.#mainRunner !== main || this.#binding !== original) { throw error("HEAD_AGE_ORIGINAL_MAIN_CHANGED"); }
+      const compared = compareCurrentFootprintHeadAgeObservation(allocation.binding.operationId, allocation.head, original, observed, bracket.before, bracket.after);
+      await verifyCurrentDisposableOpenCheckpoint(allocation.binding.prepared, allocation.binding.originalTarget); this.#headAgeAllocation(true);
+      const packet: CurrentFootprintHeadAgeObservation = Object.freeze({ ...compared, nativeDateProvenanceVerified: true, appClockDirectlyObserved: true });
+      this.#headAgeObservationText = captureCurrentFootprintHeadAgeReply(packet).text; this.#headAgeObservation = packet; return packet;
+    } finally { this.#headAgeBusy = false; }
+  }
+  /** Historical original-object custody only. This remains usable after actual
+   * termination and helper release so evidence publication can finish. */
+  public requireOriginalFootprintHeadAgeValidationObservation(packet: CurrentFootprintHeadAgeObservation): void {
+    this.#headAgeAllocation(false);
+    if (packet !== this.#headAgeObservation || this.#headAgeObservationText === null || captureCurrentFootprintHeadAgeReply(packet).text !== this.#headAgeObservationText) { throw error("HEAD_AGE_ORIGINAL_OBSERVATION"); }
+  }
+  /** Synchronously cut off every normal continuation before durable abort
+   * intent is awaited. The opaque reservation retains this original Job only. */
+  public reserveFootprintHeadAgeValidationAbort(): object {
+    this.#headAgeAllocation(false);
+    if (this.#binding === null || this.#headAgeAbortAttempted || this.#terminationObserved || this.#releaseConsumed) { throw error("HEAD_AGE_ABORT_CONSUMED"); }
+    this.#headAgeAbortAttempted = true; this.#headAgeAbortToken = Object.freeze({}); return this.#headAgeAbortToken;
+  }
+  /** Dispatch the retained abort once; its acknowledgment never proves exit,
+   * saved-state invariance, discard or successful cache/clock observations. */
+  public async dispatchFootprintHeadAgeValidationAbort(token: object, confirmOriginalJob: true): Promise<void> {
+    this.#headAgeAllocation(false);
+    // oxlint-disable-next-line typescript/no-unnecessary-boolean-literal-compare -- Reject malformed runtime confirmations before consuming the original dispatch.
+    if (confirmOriginalJob !== true || token !== this.#headAgeAbortToken || !this.#headAgeAbortAttempted || this.#headAgeAbortDispatched || this.#binding === null || this.#terminationObserved || this.#releaseConsumed) { throw error("HEAD_AGE_ABORT_ORIGINAL_RESERVATION"); }
+    this.#headAgeAbortDispatched = true; const original = this.#binding;
+    await this.#verify(); this.#headAgeAllocation(false);
+    if (this.#binding !== original) { throw error("HEAD_AGE_ABORT_OWNER_CHANGED"); }
+    const reply = await this.#request({ action: "head-age-abort", confirmOriginalJob: true });
+    if (!exact(reply, ["terminationDispatched"]) || reply["terminationDispatched"] !== true) { throw error("HEAD_AGE_ABORT_REPLY"); }
   }
   public async observeFootprintMainConstruction(): Promise<CurrentFootprintCopyMainBackendObservation> {
     this.#requireFootprintMain(false);
@@ -3738,7 +3867,7 @@ class CurrentPcbRetainedOwnerCore {
    * Recheck held normal-work cutoff and the optional original-owner assertion
    * at dispatch, preserving a predecessor's refusal without blocking cleanup. */
   #request(request: RecordValue, beforeDispatch?: () => void): Promise<RecordValue> {
-    if (this.#startupParent === null && !bornFootprintTransport(this.#purpose) && !heldCachePurpose(this.#purpose)) {
+    if (this.#startupParent === null && !bornFootprintTransport(this.#purpose) && !heldCachePurpose(this.#purpose) && this.#purpose !== "footprint-head-age209") {
       beforeDispatch?.(); return this.#requestNow(request);
     }
     const heldNormal = heldCachePurpose(this.#purpose) && request["action"] !== "poll" &&
@@ -3766,6 +3895,12 @@ class CurrentPcbRetainedOwnerCore {
   #requestNow(request: RecordValue): Promise<RecordValue> {
     this.#available();
     if (this.#pending !== null) { throw error("REQUEST_PENDING"); }
+    if (this.#purpose === "footprint-head-age209") {
+      const action = String(request["action"]), cleanup = ["identity", "window", "normal-close", "termination", "release", "release-unlaunched", "release-no-process", "no-process-proof", "head-age-abort", "main-close-detach"].includes(action) || action === "main-poll" && request["cleanup"] === true || action === "main-send" && ["release", "remove", "resume"].includes(String(request["phase"]));
+      if (!["identity", "launch", "window", "normal-close", "termination", "release", "release-unlaunched", "release-no-process", "no-process-proof", "main-attach", "main-reprove", "main-send", "main-poll", "main-close-detach", "head-age-main", "head-age-abort"].includes(action) || this.#headAgeAbortAttempted && !["identity", "termination", "release", "head-age-abort"].includes(action)) { throw error("HEAD_AGE_ACTION_PURPOSE"); }
+      if (cleanup) { if (this.#headAgeCleanupControls >= CURRENT_FOOTPRINT_HEAD_AGE_NATIVE_LIMITS.cleanupControls) { throw error("HEAD_AGE_CLEANUP_CONTROL_BOUND"); } this.#headAgeCleanupControls += 1; }
+      else { if (this.#headAgeNormalControls >= CURRENT_FOOTPRINT_HEAD_AGE_NATIVE_LIMITS.normalControls || this.#total > MAX_TOTAL - CURRENT_FOOTPRINT_HEAD_AGE_NATIVE_LIMITS.helperCleanupReserveBytes) { throw error("HEAD_AGE_NORMAL_CONTROL_BOUND"); } this.#headAgeNormalControls += 1; }
+    }
     if (bornFootprintTransport(this.#purpose) && (!this.#combinedFactoryReady || this.#combinedReadyPacket === null || this.#combinedReadyAbandoned)) { throw error("COMBINED_READY_REQUIRED"); }
 
     if (this.#visualAbortAttempted && !["identity", "termination", "release", "terminate-visual"].includes(String(request["action"]))) { throw error("VISUAL_CLEANUP_ONLY"); }
@@ -3840,7 +3975,7 @@ class CurrentPcbRetainedOwnerCore {
       send: request["action"] === "saved-cache-held" || request["action"] === "footprint-held-saved-worker" || request["action"] === "renderer-viewport-send" || request["action"] === "send" || request["action"] === "worker-startup-send" || request["action"] === "worker-startup-parent" ||
         request["action"] === "worker-startup-empty-common" || request["action"] === "worker-startup-empty-root" ||
         request["action"] === "worker-startup-ratline" || request["action"] === "worker-startup-ratline-continuation" || request["action"] === "main-send" || request["action"] === "main-request-send" ||
-        request["action"] === "footprint-clock-rpc-send" || request["action"] === "main-completion-send", written: false, reply: null,
+        request["action"] === "footprint-clock-rpc-send" || request["action"] === "main-completion-send" || request["action"] === "head-age-main", written: false, reply: null,
       timer: setTimeout(() => { this.#fail("HELPER_DEADLINE"); }, 15_000) };
     this.#pending = pending;
     if (launch) { this.#launchRequestIssued = true; }
@@ -4110,6 +4245,17 @@ export class CurrentFootprintCopyNativeOwner extends CurrentPcbRetainedOwnerCore
     super(child, verify, installation, verifyInstallation, "worker-startup-footprint-copy209", verifyStartupFacade, actorClockSource);
   }
 }
+
+/** Read-only closed-head/native-Date birth. Only the genuine factory below
+ * registers its original binding; constructor seams cannot issue observations. */
+export class CurrentFootprintHeadAgeValidationOwner extends CurrentPcbRetainedOwnerCore {
+  public constructor(child: ChildProcessWithoutNullStreams, verify: () => Promise<void>,
+    actorClockSource: CurrentPcb209ActorClockSourceQualification, installation: CurrentPcbDiagnosticInstallation | null = null,
+    verifyInstallation: () => Promise<void> = (): Promise<void> => Promise.resolve(), verifyFacade: () => Promise<void> = verifyInstallation) {
+    super(child, verify, installation, verifyInstallation, "footprint-head-age209", verifyFacade, actorClockSource);
+  }
+}
+const headAgeValidationOwnerDescriptors = Object.getOwnPropertyDescriptors(CurrentFootprintHeadAgeValidationOwner.prototype);
 
 /** Standalone original-main construction purpose. Existing native owners
  * cannot adopt this inspector or receive its launch switch after creation. */
@@ -4667,17 +4813,104 @@ export function currentFootprintHeldCacheValidationAllocationOutcome(binding: Cu
   return Object.freeze({ status: allocation.status === "retained" ? "unresolved" : allocation.status, owner: null });
 }
 
+/** Capture only the inert frozen binding fields. Its original completed SQL
+ * reader remains a separate reference and is never reconstructed from JSON. */
+function headAgeValidationBindingText(binding: CurrentFootprintHeadAgeValidationBinding): string {
+  if (binding === null || typeof binding !== "object" || types.isProxy(binding) || Object.getPrototypeOf(binding) !== Object.prototype || !Object.isFrozen(binding)) { throw error("HEAD_AGE_BINDING"); }
+  const names = ["operationId", "target", "originalTarget", "prepared", "inventory", "runtime"] as const;
+  if (Reflect.ownKeys(binding).length !== names.length || names.some(name => {
+    const field = Object.getOwnPropertyDescriptor(binding, name); return field === undefined || !Object.hasOwn(field, "value") || field.enumerable !== true;
+  })) { throw error("HEAD_AGE_BINDING_FIELDS"); }
+  const fields = captureCurrentPcbStringClockReply({ operationId: binding.operationId, target: binding.target,
+    originalTarget: binding.originalTarget, prepared: binding.prepared, runtime: binding.runtime }).value;
+  return canonicalJson(fields);
+}
+
+/** Require exact allocation input references and the genuine reader-completion
+ * record. This is local custody, not a new disk or Windows observation. */
+function requireHeadAgeValidationBinding(allocation: HeadAgeValidationAllocation): void {
+  if (allocation.head !== null) { requireCurrentFootprintHeadAgeSqlHead(allocation.head, allocation.binding.inventory); }
+  const binding = allocation.binding, completion = readerCompletion(binding.inventory);
+  if (headAgeValidationAllocations.get(binding) !== allocation || headAgeValidationBindingText(binding) !== allocation.text ||
+      completion !== allocation.completion || !completion.observedChildClose || completion.exitCode !== 0 || completion.exitSignal !== null ||
+      binding.inventory.checkpointSha256 !== binding.prepared.checkpoint.checkpointSha256) { throw error("HEAD_AGE_PREPARATION_CHANGED"); }
+}
+
+/** Only the genuinely allocated read-only class passes. Its installation and
+ * descriptor registry is intentionally absent from all copy/saved predicates. */
+export function assertOriginalCurrentFootprintHeadAgeValidationOwner(owner: CurrentFootprintHeadAgeValidationOwner): void {
+  if (owner === null || typeof owner !== "object" || types.isProxy(owner) || Object.getPrototypeOf(owner) !== CurrentFootprintHeadAgeValidationOwner.prototype ||
+      Reflect.ownKeys(owner).length > 0 || !originalFootprintDescriptors(CurrentFootprintHeadAgeValidationOwner.prototype, headAgeValidationOwnerDescriptors) ||
+      Object.getPrototypeOf(CurrentFootprintHeadAgeValidationOwner.prototype) !== CurrentPcbRetainedOwnerCore.prototype ||
+      !originalFootprintDescriptors(CurrentPcbRetainedOwnerCore.prototype, footprintCoreDescriptors)) { throw error("HEAD_AGE_ORIGINAL_OWNER"); }
+  const original = headAgeValidationFactories.get(owner);
+  if (original === undefined || original.allocation.owner !== owner || original.allocation.status !== "retained" ||
+      original.installation.facadeSha256.length !== 64 || !Object.isFrozen(original.options)) { throw error("HEAD_AGE_ORIGINAL_FACTORY"); }
+  requireHeadAgeValidationBinding(original.allocation);
+}
+
+/** Allocate a distinct helper only after independently checking the original
+ * managed source/checkpoint, complete SQL reader and current machine runtime.
+ * The owner is registered and retained before fallible helper listeners start. */
+export async function startCurrentFootprintHeadAgeValidationOwner(options: CurrentPcbDiagnosticInstallationOptions,
+  binding: CurrentFootprintHeadAgeValidationBinding): Promise<CurrentFootprintHeadAgeValidationOwner> {
+  const text = headAgeValidationBindingText(binding);
+  currentFootprintHeadAgeValidationIdSchema.parse(binding.operationId);
+  const target = currentDisposableOpenSealedTargetSchema.parse(binding.target);
+  const originalTarget = currentDisposableOpenTargetSchema.parse(binding.originalTarget);
+  const completion = readerCompletion(binding.inventory);
+  if (!completion.observedChildClose || completion.exitCode !== 0 || completion.exitSignal !== null || !Object.isFrozen(binding.inventory) ||
+      binding.inventory.checkpointSha256 !== binding.prepared.checkpoint.checkpointSha256 || binding.prepared.purpose !== undefined ||
+      canonicalJson(target) !== canonicalJson({ ...originalTarget, branchUuid: binding.prepared.targetEvidence.branchUuid })) { throw error("HEAD_AGE_PREPARATION"); }
+  if (headAgeValidationAllocations.has(binding) || headAgeValidationOperationIds.has(binding.operationId)) { throw error("HEAD_AGE_ALLOCATION_CONSUMED"); }
+  const allocation: HeadAgeValidationAllocation = { binding, text, completion, head: null, owner: null, status: "pending" };
+  headAgeValidationAllocations.set(binding, allocation); headAgeValidationOperationIds.add(binding.operationId);
+  try {
+    allocation.head = await prepareCurrentFootprintHeadAgeSqlHead(binding.inventory, binding.target); requireHeadAgeValidationBinding(allocation);
+    await verifyCurrentDisposableOpenCheckpoint(binding.prepared, binding.originalTarget); requireHeadAgeValidationBinding(allocation);
+    const configured = await loadRuntimeMachineProfile(); requireHeadAgeValidationBinding(allocation);
+    if (canonicalJson(configured.profile.runtime) !== canonicalJson(binding.runtime)) { throw error("HEAD_AGE_RUNTIME_CHANGED"); }
+    const root = await controlRootCapability(); requireHeadAgeValidationBinding(allocation);
+    const checkpoint = binding.prepared.checkpoint;
+    const verified = await verifyCheckpoint(checkpoint.receiptPath, { expectedSource: checkpoint.source, controlRoot: root,
+      artifactRoots: [join(controlDataDirectory(), "checkpoints")], maximumSourceBytes: 268_435_456 });
+    requireHeadAgeValidationBinding(allocation);
+    if (!verified.ok || verified.sourceChanged || !verified.sourceMatchesReceipt || !verified.checkpointMatchesReceipt || !verified.sourceEqualsCheckpoint ||
+        verified.sourceSha256 !== checkpoint.sourceSha256 || verified.checkpointSha256 !== checkpoint.checkpointSha256) { throw error("HEAD_AGE_CHECKPOINT_CHANGED"); }
+    const owner = await startFixedOwner(options, "footprint-head-age209", "209-startup", undefined, null, null, allocation);
+    requireHeadAgeValidationBinding(allocation);
+    if (!(owner instanceof CurrentFootprintHeadAgeValidationOwner)) { throw error("HEAD_AGE_FACTORY"); }
+    assertOriginalCurrentFootprintHeadAgeValidationOwner(owner); return owner;
+  } catch (caughtError) {
+    if (allocation.status === "pending") { allocation.status = "no-resource"; } throw caughtError;
+  }
+}
+
+/** Return only this exact input reference's original allocation, including a
+ * helper retained after factory/listener failure. JSON cannot recover an owner. */
+export function currentFootprintHeadAgeValidationAllocationOutcome(binding: CurrentFootprintHeadAgeValidationBinding): Readonly<{
+  status: "not-attempted" | "pending" | "no-resource" | "unresolved"; owner: null;
+}> | Readonly<{ status: "retained"; owner: CurrentFootprintHeadAgeValidationOwner }> {
+  const allocation = headAgeValidationAllocations.get(binding);
+  if (allocation === undefined) { return Object.freeze({ status: "not-attempted", owner: null }); }
+  requireHeadAgeValidationBinding(allocation);
+  if (allocation.owner !== null) { assertOriginalCurrentFootprintHeadAgeValidationOwner(allocation.owner); return Object.freeze({ status: "retained", owner: allocation.owner }); }
+  return Object.freeze({ status: allocation.status === "retained" ? "unresolved" : allocation.status, owner: null });
+}
+
 async function startFixedOwner(options: CurrentPcbDiagnosticInstallationOptions, purpose: OwnerPurpose,
   generation: "206" | "209-opening" | "209-visual" | "209-startup" | "209-held-cache" = "206", savedWriter?: CurrentFootprintCopyNativeOwner,
-  forwardSavedHandoff: object | null = null, heldValidation: HeldCacheValidationAllocation | null = null): Promise<CurrentPcbDiagnosticOwner | CurrentPcbStringPrecreateOwner | CurrentPcbWorkerStartupOwner> {
+  forwardSavedHandoff: object | null = null, heldValidation: HeldCacheValidationAllocation | null = null, headAgeValidation: HeadAgeValidationAllocation | null = null): Promise<CurrentPcbDiagnosticOwner | CurrentPcbStringPrecreateOwner | CurrentPcbWorkerStartupOwner> {
   const sealedOptions = Object.freeze({ ...options });
   const forwardSaved = forwardSavedHandoff === null ? null : requireForwardSavedObservationHandoff(forwardSavedHandoff);
   if (forwardSaved !== null && (purpose !== "worker-startup-footprint-saved209" || generation !== "209-startup" || savedWriter !== undefined)) { throw error("FORWARD_SAVED_PURPOSE"); }
-  const startup209 = purpose === "worker-startup209" || (purpose === "worker-startup-footprint209" || purpose === "worker-startup-footprint-copy209" || purpose === "worker-startup-footprint-saved209" || purpose === "worker-startup-footprint-held-saved209" || purpose === "worker-startup-footprint-main209" || bornFootprintTransport(purpose)) || purpose === "worker-startup-empty209" || purpose === "worker-startup-ratline209" || purpose === "worker-startup-ratline-continuation209";
+  const startup209 = purpose === "worker-startup209" || (purpose === "worker-startup-footprint209" || purpose === "worker-startup-footprint-copy209" || purpose === "worker-startup-footprint-saved209" || purpose === "worker-startup-footprint-held-saved209" || purpose === "worker-startup-footprint-main209" || purpose === "footprint-head-age209" || bornFootprintTransport(purpose)) || purpose === "worker-startup-empty209" || purpose === "worker-startup-ratline209" || purpose === "worker-startup-ratline-continuation209";
   if ((generation === "209-opening") !== (purpose === "diagnostic209") || (generation === "209-visual") !== (purpose === "visual209") ||
       (generation === "209-startup") !== startup209 || (generation === "209-held-cache") !== (purpose === "footprint-held-cache209") ||
       (heldValidation !== null) !== (purpose === "footprint-held-cache209")) { throw error("INSTALLATION_PURPOSE"); }
   if (heldValidation !== null) { requireHeldCacheValidationBinding(heldValidation); }
+  if ((headAgeValidation !== null) !== (purpose === "footprint-head-age209")) { throw error("HEAD_AGE_INSTALLATION_PURPOSE"); }
+  if (headAgeValidation !== null) { requireHeadAgeValidationBinding(headAgeValidation); }
   let verifier = generation === "206" ? verifyCurrentPcbDiagnosticInstallation : verifyCurrentPcb209DiagnosticInstallation;
   if (purpose === "worker-startup-ratline209" || purpose === "worker-startup-ratline-continuation209") { verifier = verifyCurrentPcb209RatlineInstallation; }
   const installation = await verifier(sealedOptions);
@@ -4725,6 +4958,7 @@ async function startFixedOwner(options: CurrentPcbDiagnosticInstallationOptions,
   else if (purpose === "worker-startup-empty209") { purposeSwitch = " -WorkerStartupEmpty209"; }
   else if (purpose === CURRENT_FOOTPRINT_COPY_FORWARD_PURPOSE) { purposeSwitch = ` ${CURRENT_FOOTPRINT_COPY_FORWARD_PROFILE.nativeSwitch} -CombinedReadyChallenge '${readyChallenge ?? ""}'`; }
   else if (purpose === CURRENT_FOOTPRINT_COMBINED_PURPOSE) { purposeSwitch = ` ${CURRENT_FOOTPRINT_COMBINED_PROFILE.nativeSwitch} -CombinedReadyChallenge '${readyChallenge ?? ""}'`; }
+  else if (purpose === "footprint-head-age209") { purposeSwitch = " -FootprintHeadAge209"; }
   else if (purpose === "worker-startup-footprint-main209") { purposeSwitch = " -WorkerStartupFootprintMain209"; }
   else if (purpose === "worker-startup-footprint-held-saved209") { purposeSwitch = " -WorkerStartupFootprintHeldSaved209"; }
   else if (purpose === "worker-startup-footprint-saved209") { purposeSwitch = " -WorkerStartupFootprintSaved209"; }
@@ -4757,11 +4991,17 @@ async function startFixedOwner(options: CurrentPcbDiagnosticInstallationOptions,
     else { footprintSavedAllocationStates.set(savedWriter, "unresolved"); }
   }
   if (heldValidation !== null) { requireHeldCacheValidationBinding(heldValidation); heldValidation.status = "unresolved"; }
+  if (headAgeValidation !== null) { requireHeadAgeValidationBinding(headAgeValidation); headAgeValidation.status = "unresolved"; }
   const child = spawn(installation.paths.powershellExecutable,
     ["-NoLogo", "-NoProfile", "-NonInteractive", "-ExecutionPolicy", "Bypass", "-EncodedCommand", encoded],
     { stdio: ["pipe", "pipe", "pipe"], windowsHide: true });
   let owner: CurrentPcbRetainedOwnerCore;
-  if (purpose === "footprint-held-cache209") {
+  if (purpose === "footprint-head-age209") {
+    if (headAgeValidation === null || actorClockSource === null || headAgeValidation.head === null) { throw error("HEAD_AGE_FACTORY_PROFILE"); }
+    const diagnostic = new CurrentFootprintHeadAgeValidationOwner(child, verify, actorClockSource, installation, verifyInstallation, verifyStartupFacade);
+    headAgeValidationFactories.set(diagnostic, Object.freeze({ allocation: headAgeValidation, options: sealedOptions, installation }));
+    headAgeValidation.owner = diagnostic; headAgeValidation.status = "retained"; owner = diagnostic;
+  } else if (purpose === "footprint-held-cache209") {
     if (heldValidation === null || actorClockSource !== null) { throw error("HELD_CACHE_FACTORY_PROFILE"); }
     const diagnostic = new CurrentFootprintHeldCacheValidationOwner(child, verify, installation, verifyInstallation, verifyStartupFacade);
     heldCacheValidationFactories.set(diagnostic, Object.freeze({ allocation: heldValidation, options: sealedOptions, installation }));

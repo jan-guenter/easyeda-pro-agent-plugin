@@ -8,6 +8,7 @@ import { CURRENT_FOOTPRINT_COPY_MAIN_BACKEND_CALLS as CALLS, CURRENT_FOOTPRINT_C
   CURRENT_FOOTPRINT_COPY_MAIN_BACKEND_FLAGS as FLAGS, CURRENT_FOOTPRINT_COPY_MAIN_BACKEND_GROUP as GROUP } from "./current-footprint-copy-main-backend-programs.ts";
 import { CURRENT_FOOTPRINT_COPY_MAIN_BACKEND_SOURCE as SOURCE, assertCurrentFootprintCopyMainBackendFunction } from "./current-footprint-copy-main-backend-source.ts";
 import type { CurrentFootprintCopyMainBackendRole as Role } from "./current-footprint-copy-main-backend-source.ts";
+import { CURRENT_FOOTPRINT_HEAD_AGE_CAPTURE_PROGRAM, CURRENT_FOOTPRINT_HEAD_AGE_OBSERVE_PROGRAM } from "./current-footprint-head-age-main.ts";
 
 const handle = z.string().min(1).max(256).regex(/^[A-Za-z\d_.:-]+$/u);
 const object = z.object({ objectId: handle }).strict();
@@ -19,6 +20,13 @@ const breakpointParameters = z.object({ location: breakpointLocation }).strict()
 const frameParameters = z.object({ callFrameId: handle, expression: z.literal(EXPRESSION), objectGroup: z.literal(GROUP), silent: z.literal(true),
   returnByValue: z.literal(false), generatePreview: z.literal(false), throwOnSideEffect: z.literal(true), includeCommandLineAPI: z.literal(false) }).strict();
 const captureParameters = z.object({ ...flags, objectId: handle, functionDeclaration: z.literal(CALLS.capture.program), arguments: z.tuple([]), returnByValue: z.literal(false) }).strict();
+const headCaptureParameters = z.object({ ...flags, objectId: handle, functionDeclaration: z.literal(CURRENT_FOOTPRINT_HEAD_AGE_CAPTURE_PROGRAM), arguments: z.tuple([object]), returnByValue: z.literal(false) }).strict();
+const headDateLiteral = z.object({ value: z.string().length(19).regex(/^\d{4}-\d{2}-\d{2} \d{2}:\d{2}:\d{2}$/u) }).strict();
+const headWallEpoch = z.object({ value: z.number().int().min(0).max(253_402_214_399_999) }).strict();
+const headObserveParameters = z.object({ ...flags, throwOnSideEffect: z.literal(false), objectId: handle,
+  functionDeclaration: z.literal(CURRENT_FOOTPRINT_HEAD_AGE_OBSERVE_PROGRAM), arguments: z.tuple([
+    headDateLiteral, headWallEpoch,
+  ]), returnByValue: z.literal(true) }).strict();
 const requireParameters = z.object({ ...flags, objectId: handle, functionDeclaration: z.literal(CALLS.require.program), arguments: z.tuple([object]), returnByValue: z.literal(true) }).strict();
 const propertiesParameters = z.object({ objectId: handle, ownProperties: z.literal(true), accessorPropertiesOnly: z.literal(false), generatePreview: z.literal(false) }).strict();
 export const CURRENT_FOOTPRINT_COPY_MAIN_BACKEND_APP_URL_PATTERN = String.raw`(?:^|[\\/])app\.js$`;
@@ -38,6 +46,8 @@ const command = z.discriminatedUnion("phase", [
   z.object({ phase: z.literal("breakpoint"), method: z.literal("Debugger.setBreakpoint"), params: breakpointParameters }).strict(),
   z.object({ phase: z.literal("frame"), method: z.literal("Debugger.evaluateOnCallFrame"), params: frameParameters }).strict(),
   z.object({ phase: z.literal("capture"), method: z.literal("Runtime.callFunctionOn"), params: captureParameters }).strict(),
+  z.object({ phase: z.literal("head-age-capture"), method: z.literal("Runtime.callFunctionOn"), params: headCaptureParameters }).strict(),
+  z.object({ phase: z.literal("head-age-observe"), method: z.literal("Runtime.callFunctionOn"), params: headObserveParameters }).strict(),
   z.object({ phase: z.literal("require"), method: z.literal("Runtime.callFunctionOn"), params: requireParameters }).strict(),
   z.object({ phase: z.literal("properties"), method: z.literal("Runtime.getProperties"), params: propertiesParameters }).strict(),
   z.object({ phase: z.literal("remove"), method: z.literal("Debugger.removeBreakpoint"), params: removeParameters }).strict(),
@@ -76,13 +86,13 @@ export function decodeCurrentFootprintCopyMainBackendFunction(input: unknown, ro
 /** Return handles only after every fixed member and function text is checked.
  * The returned IDs are descriptive; the future mounted runner retains them. */
 export function decodeCurrentFootprintCopyMainBackendArray(input: unknown): readonly string[] {
-  const reply = z.object({ result: z.array(property).length(13), internalProperties: z.array(internal).length(1) }).strict().parse(captureCurrentPcbStringClockReply(input).value);
-  const fields = new Map(reply.result.map(item => [item.name, item])); need(fields.size === 13);
+  const reply = z.object({ result: z.array(property).length(14), internalProperties: z.array(internal).length(1) }).strict().parse(captureCurrentPcbStringClockReply(input).value);
+  const fields = new Map(reply.result.map(item => [item.name, item])); need(fields.size === 14);
   const length = fields.get("length"), parent = reply.internalProperties[0];
-  need(length?.value.type === "number" && length.value.value === 12 && length.value.objectId === undefined && length.writable && !length.enumerable && !length.configurable &&
+  need(length?.value.type === "number" && length.value.value === 13 && length.value.objectId === undefined && length.writable && !length.enumerable && !length.configurable &&
     parent?.name === "[[Prototype]]" && parent.value.type === "object" && parent.value.subtype === "array" && parent.value.className === "Array" && parent.value.objectId !== undefined && parent.value.value === undefined);
-  const roles = new Map<number, Role>([[3, "protocolCallback"], [5, "driverIntercept"], [6, "driverCallback"], [7, "router"], [8, "actorClock"], [9, "projectSql"]]);
-  return Object.freeze(Array.from({ length: 12 }, (_, index) => {
+  const roles = new Map<number, Role>([[3, "protocolCallback"], [5, "driverIntercept"], [6, "driverCallback"], [7, "router"], [8, "actorClock"], [9, "projectSql"], [12, "dateParser"]]);
+  return Object.freeze(Array.from({ length: 13 }, (_, index) => {
     const field = fields.get(String(index)), role = roles.get(index);
     need(field !== undefined && field.writable && field.enumerable && field.configurable && field.value.objectId !== undefined && field.value.value === undefined && field.value.subtype !== "proxy");
     if (role !== undefined) {
