@@ -21,10 +21,12 @@ import { savedFixture } from "./helpers/current-footprint-copy-v2-saved-fixture.
 
 const rawWindowsPath = String.raw`C:\EasyEDA\head-age-validation.eprj2`;
 const target = Object.freeze({ rawWindowsPath, projectUuid: sha256Text(rawWindowsPath), documentUuid: "b".repeat(16), expectedSourceSha256: "a".repeat(64) });
-interface FixtureOptions { readonly copiedObservation?: boolean; readonly pendingObservation?: boolean; readonly noResource?: boolean; readonly retainedFailure?: boolean }
+interface FixtureOptions { readonly copiedObservation?: boolean; readonly pendingObservation?: boolean; readonly pendingAllocation?: boolean;
+  readonly noResource?: boolean; readonly retainedFailure?: boolean }
 interface Fixture {
   readonly controller: CurrentFootprintHeadAgeValidation; readonly operationId: string; readonly launch: Readonly<Record<string, unknown>>;
   readonly calls: string[]; readonly entered: Promise<null>; readonly newController: () => CurrentFootprintHeadAgeValidation;
+  readonly allocationEntered: Promise<null>; readonly releaseAllocation: () => void;
 }
 
 /** Evaluate the maintained controller with a synthetic original native class.
@@ -32,6 +34,7 @@ interface Fixture {
 async function fixture(options: FixtureOptions = {}): Promise<Fixture> {
   const input = await savedFixture(), operationId = `footprint-head-age-${randomBytes(8).toString("hex")}`;
   const calls: string[] = [], entered = Promise.withResolvers<null>(), gate = Promise.withResolvers<null>();
+  const allocationEntered = Promise.withResolvers<null>(), allocationGate = Promise.withResolvers<null>();
   const branchUuid = "c".repeat(32), nativeBinding = Object.freeze({ helperInstance: "d".repeat(32), jobId: "e".repeat(32), rootPid: 1234, rootCreated: "133000000000000000" });
   const prepared = Object.freeze({ profile: "easyeda-pro-control.current-disposable-open-checkpoint.v1", checkpoint: Object.freeze({
     schema: "easyeda-pro-control.checkpoint.v2", source: "/synthetic-age.eprj2", sourceSha256: target.expectedSourceSha256,
@@ -82,14 +85,15 @@ async function fixture(options: FixtureOptions = {}): Promise<Fixture> {
       noProcessCleanupAvailable: false, released, helperClosed: released }; }
   }
   scope["CurrentFootprintHeadAgeValidationOwner"] = NativeOwner;
-  scope["startCurrentFootprintHeadAgeValidationOwner"] = (actualOptions: unknown, binding: unknown): Promise<NativeOwner> => {
+  scope["startCurrentFootprintHeadAgeValidationOwner"] = async (actualOptions: unknown, binding: unknown): Promise<NativeOwner> => {
     assert.ok(actualOptions !== null && binding !== null && typeof binding === "object");
     assert.equal(Object.isFrozen(binding), true); assert.equal(Reflect.get(binding, "prepared"), prepared); assert.equal(Reflect.get(binding, "inventory"), input.after);
     const selected: unknown = Reflect.get(binding, "target"); assert.ok(selected !== null && typeof selected === "object");
     assert.equal(Reflect.get(selected, "branchUuid"), branchUuid); calls.push("allocate-helper"); allocationBinding = binding;
-    if (options.noResource === true) { return Promise.reject(new Error("factory refused before allocation")); }
+    if (options.pendingAllocation === true) { allocationEntered.resolve(null); await allocationGate.promise; }
+    if (options.noResource === true) { throw new Error("factory refused before allocation"); }
     const owner = new NativeOwner(); allocated = owner;
-    return options.retainedFailure === true ? Promise.reject(new Error("factory refused after retained allocation")) : Promise.resolve(owner);
+    if (options.retainedFailure === true) { throw new Error("factory refused after retained allocation"); } return owner;
   };
   scope["options"] = { pluginRoot: "/synthetic/plugin", assetsRoot: "/synthetic/assets", powershellBytes: 1, powershellSha256: "a".repeat(64),
     assertAllowed: (): Promise<void> => Promise.resolve(), assertLocalAllowed: (): void => {
@@ -105,6 +109,7 @@ async function fixture(options: FixtureOptions = {}): Promise<Fixture> {
     return instance as CurrentFootprintHeadAgeValidation;
   };
   return { controller: construct(), operationId, calls, entered: entered.promise, newController: construct,
+    allocationEntered: allocationEntered.promise, releaseAllocation: (): void => { allocationGate.resolve(null); },
     launch: { action: "launch", operationId, target, confirmValidationOnly: true, confirmDiagnosticLaunch: true,
       confirmDisposableProject: true, acceptExistingProfileEffects: true, acceptNativeClockObservation: true } };
 }
@@ -156,6 +161,23 @@ void test("copied Date packets refuse and preserve original owner cleanup", asyn
   // The failed packet has not acquired genuine issuance. Inspection/cleanup
   // Must remain possible even though the original observer rejected it.
   assert.equal(f.controller.hasOwnedAllocation(), true); await finish(f);
+});
+
+void test("abort during pending allocation refuses without consuming state and the original launch continues", async () => {
+  const f = await fixture({ pendingAllocation: true }), launch = f.controller.run(f.launch);
+  const outcome = Promise.allSettled([launch]); await f.allocationEntered;
+  try {
+    const before = await readFootprintHeadAgeValidation(f.operationId), calls = [...f.calls]; assert.ok(before);
+    await assert.rejects(f.controller.run({ action: "abort", operationId: f.operationId, confirmOriginalJob: true }), /BUSY/u);
+    const status = await f.controller.run({ action: "inspect", operationId: f.operationId });
+    assert.equal(status["phase"], "starting"); assert.equal(status["failed"], false);
+    assert.equal(status["abortAttemptConsumed"], false); assert.equal(status["lastFailure"], null);
+    assert.equal(status["originalOwnerRetained"], false); assert.deepEqual(f.calls, calls);
+    const after = await readFootprintHeadAgeValidation(f.operationId); assert.equal(canonicalJson(after?.records), canonicalJson(before.records));
+  } finally { f.releaseAllocation(); }
+  const [result] = await outcome; assert.equal(result?.status, "fulfilled");
+  await f.controller.run({ action: "observe-head-age", operationId: f.operationId });
+  await finish(f); assert.equal(f.calls.includes("reserve-abort"), false); assert.equal(f.calls.includes("abort-original-job"), false);
 });
 
 void test("abort cuts off a pending observation before publication and preserves one actual termination lane", async () => {

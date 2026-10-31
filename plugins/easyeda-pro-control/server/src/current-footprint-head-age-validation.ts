@@ -379,7 +379,9 @@ export class CurrentFootprintHeadAgeValidation {
     need(request.action !== "cleanup-no-resource" || this.#binding !== null && this.#allocationInvoked && this.#owner === null &&
       this.#allocationOutcome === "no-resource", "ORIGINAL_NO_RESOURCE_REQUIRED");
     const abort = request.action === "abort";
-    need(abort ? !this.#abortBusy : !this.#busy && !this.#abortBusy, "BUSY");
+    // The original factory may still be allocating the owner during startup.
+    // Refuse before consuming an abort that cannot yet reserve its native Job.
+    need(abort ? !this.#abortBusy && this.#stage !== "starting" : !this.#busy && !this.#abortBusy, "BUSY");
     if (abort) { this.#abortBusy = true; this.#abortAttempted = true; this.#failed = true; } else { this.#busy = true; }
     try {
       if (abort) { this.#abortToken = this.#methods.reserveFootprintHeadAgeValidationAbort.call(this.#native()); }

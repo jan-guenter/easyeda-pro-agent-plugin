@@ -205,3 +205,45 @@ allowed facade projections/review time changed; external pins stayed exact.
 Repository/MCP/all-skill validation and all seven quick validators passed.
 Dependency, lockfile and bridge inputs remained byte-identical to the initial
 successful non-suite checks. No full local suite was duplicated.
+
+
+## Corrected CI and startup abort follow-up
+
+Correction `f6e622c05b4ee96c1914fe23ce05e6f9de41cc27` passed all eleven
+PR jobs: Linux `41217342576` and Windows `41217342579`. The facade result
+was 13,937 passed, five recognized platform skips and zero failures across
+13,942 tests and 65 suites. Bridge results were 424 passed across 28 files.
+Both complete run archives passed CRC checks and matched the individual raw
+job logs byte-for-byte. All ten checkout-bearing jobs used synthetic merge
+`690dfd45084d677ae29a515fd892aa5ff4d7e0ec`, with the exact base/correction
+parents and independently matching root/plugin trees and reviewed pins.
+
+The automatic CodeRabbit follow-up completed in check `124584665571`, review
+`5723695266`. It accepted the earlier corrections and reported one additional
+outside-diff Minor issue. Aborting while the native factory was still starting
+could consume abort/failure state before an owner existed. The same race was
+present in the held-cache controller. Both controllers now return `BUSY` during
+startup before consuming those flags or reserving an abort. Aborts during an
+active observation still use the original reservation and termination lane.
+
+Independent review accepted the four-file correction. Eighteen focused tests
+passed. Deferred-factory regressions prove that rejected startup aborts preserve
+journal records, native calls and controller state, then allow the same launch,
+observation and normal cleanup to complete. Existing observation/preparation
+abort regressions still pass. These tests use synthetic native/checkpoint
+issuers and do not establish connected validation. The corrected source still
+needs its own final checks and automatic review before merge. No second full
+review comment was posted.
+
+
+The startup correction passed all required non-suite phases: types, full
+zero-warning strict lint, coverage, reproducible build, allowed compatibility
+refresh and repository/MCP/all-skill checks, including all seven quick
+validators. Source has 989 files with SHA-256
+`7a16c304dd2f0903daf07293780288bf5bc5ad6c1e9a5085fbf76a768aaf3326`;
+the three runtime files have SHA-256
+`4911e4cbfdf6cb3fa46d772f57c9a4a57e5f4a7d326fcf70ff9fb362bae2a7b5`.
+The native helper and every external compatibility pin stayed unchanged.
+Dependency/lockfile, all 70 tracked bridge files and sanitizer inputs match the
+initial successful checks exactly. No full local suite was duplicated and no
+additional live attempt was made.

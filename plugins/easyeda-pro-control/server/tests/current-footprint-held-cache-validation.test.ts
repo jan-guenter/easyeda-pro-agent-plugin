@@ -39,7 +39,7 @@ const startupFailureObservation = currentFootprintHeldCacheStartupObservationSch
 });
 interface Options { readonly copiedFirst?: boolean; readonly lostRelease?: boolean; readonly pendingFirst?: boolean;
   readonly noResource?: boolean; readonly retainedAllocationFailure?: boolean; readonly noProcess?: boolean;
-  readonly pendingPrepare?: boolean; readonly holdAbortDisk?: boolean; readonly startupFailure?: boolean }
+  readonly pendingPrepare?: boolean; readonly holdAbortDisk?: boolean; readonly startupFailure?: boolean; readonly pendingAllocation?: boolean }
 interface Fixture {
   readonly controller: CurrentFootprintHeldCacheValidation;
   readonly operationId: string;
@@ -53,6 +53,8 @@ interface Fixture {
   readonly releasePrepare: () => void;
   readonly releaseDisk: () => void;
   readonly getterCalls: () => unknown;
+  readonly allocationEntered: Promise<null>;
+  readonly releaseAllocation: () => void;
 }
 
 /** Evaluate maintained source with explicit synthetic factory/checkpoint seams.
@@ -61,6 +63,7 @@ async function fixture(options: Options = {}): Promise<Fixture> {
   const input = await savedFixture(), operationId = `footprint-held-cache-${randomBytes(8).toString("hex")}`;
   const calls: string[] = [], entered = Promise.withResolvers<null>(), gate = Promise.withResolvers<null>(), page = createHeldCacheSyntheticPage();
   const diskEntered = Promise.withResolvers<null>(), diskGate = Promise.withResolvers<null>(), prepareEntered = Promise.withResolvers<null>(), prepareGate = Promise.withResolvers<null>();
+  const allocationEntered = Promise.withResolvers<null>(), allocationGate = Promise.withResolvers<null>();
   const branchUuid = "c".repeat(32), nativeBinding = Object.freeze({ helperInstance: "d".repeat(32), jobId: "e".repeat(32), rootPid: 1234, rootCreated: "133000000000000000" });
   const prepared = Object.freeze({ profile: "easyeda-pro-control.current-disposable-open-checkpoint.v1", checkpoint: Object.freeze({
     schema: "easyeda-pro-control.checkpoint.v2", source: "/synthetic-held.eprj2", sourceSha256: target.expectedSourceSha256,
@@ -141,14 +144,15 @@ async function fixture(options: Options = {}): Promise<Fixture> {
       ...(options.startupFailure === true ? { heldCacheStartupObservation: startupFailureObservation } : {}) }; }
   }
   scope["CurrentFootprintHeldCacheValidationOwner"] = NativeOwner;
-  scope["startCurrentFootprintHeldCacheValidationOwner"] = (actualOptions: unknown, binding: unknown): Promise<NativeOwner> => {
+  scope["startCurrentFootprintHeldCacheValidationOwner"] = async (actualOptions: unknown, binding: unknown): Promise<NativeOwner> => {
     assert.ok(actualOptions !== null); assert.ok(binding !== null && typeof binding === "object");
     assert.equal(Object.isFrozen(binding), true); assert.equal(Reflect.get(binding, "prepared"), prepared); assert.equal(Reflect.get(binding, "inventory"), input.after);
     const selected: unknown = Reflect.get(binding, "target"); assert.ok(selected !== null && typeof selected === "object");
     assert.equal(Reflect.get(selected, "branchUuid"), branchUuid); calls.push("allocate-helper"); allocationBinding = binding;
-    if (options.noResource === true) { return Promise.reject(new Error("factory refused before allocation")); }
+    if (options.pendingAllocation === true) { allocationEntered.resolve(null); await allocationGate.promise; }
+    if (options.noResource === true) { throw new Error("factory refused before allocation"); }
     const owner = new NativeOwner(); allocated = owner;
-    return options.retainedAllocationFailure === true ? Promise.reject(new Error("factory refused after retained allocation")) : Promise.resolve(owner);
+    if (options.retainedAllocationFailure === true) { throw new Error("factory refused after retained allocation"); } return owner;
   };
   scope["options"] = { pluginRoot: "/synthetic/plugin", assetsRoot: "/synthetic/assets", powershellExecutable: "/synthetic/powershell",
     powershellBytes: 1, powershellSha256: "a".repeat(64), assertAllowed: (): Promise<void> => Promise.resolve(),
@@ -167,6 +171,7 @@ async function fixture(options: Options = {}): Promise<Fixture> {
   return { controller: construct(), operationId, calls, entered: entered.promise, runner, newController: construct,
     prepareEntered: prepareEntered.promise, diskEntered: diskEntered.promise, releasePrepare: (): void => { prepareGate.resolve(null); },
     releaseDisk: (): void => { diskGate.resolve(null); }, getterCalls: (): unknown => page.evaluate("getterCalls"),
+    allocationEntered: allocationEntered.promise, releaseAllocation: (): void => { allocationGate.resolve(null); },
     launch: { action: "launch", operationId, target, confirmValidationOnly: true, confirmDiagnosticLaunch: true,
       confirmDisposableProject: true, acceptExistingProfileEffects: true, acceptCacheReadEffects: true } };
 }
@@ -257,6 +262,23 @@ void test("copied observation and lost release acknowledgment consume stages whi
     await assert.rejects(f.controller.run({ action: "observe-first", operationId: f.operationId }), /NORMAL_ENDED/u); await finish(f);
     assert.equal(f.calls.filter(call => call === "queue-first").length, 1); assert.equal(f.calls.filter(call => call === "release").length, 1);
   }
+});
+
+void test("abort during pending allocation refuses without consuming state and the original launch continues", async () => {
+  const f = await fixture({ pendingAllocation: true }), launch = f.controller.run(f.launch);
+  const outcome = Promise.allSettled([launch]); await f.allocationEntered;
+  try {
+    const before = await readFootprintHeldCacheValidation(f.operationId), calls = [...f.calls]; assert.ok(before);
+    await assert.rejects(f.controller.run({ action: "abort", operationId: f.operationId, confirmOriginalJob: true }), /BUSY/u);
+    const status = await f.controller.run({ action: "inspect", operationId: f.operationId });
+    assert.equal(status["phase"], "starting"); assert.equal(status["failed"], false);
+    assert.equal(status["abortAttemptConsumed"], false); assert.equal(status["lastFailure"], null);
+    assert.equal(status["originalOwnerRetained"], false); assert.deepEqual(f.calls, calls);
+    const after = await readFootprintHeldCacheValidation(f.operationId); assert.equal(canonicalJson(after?.records), canonicalJson(before.records));
+  } finally { f.releaseAllocation(); }
+  const [result] = await outcome; assert.equal(result?.status, "fulfilled");
+  await f.controller.run({ action: "observe-first", operationId: f.operationId });
+  await finish(f); assert.equal(f.calls.includes("reserve-abort"), false); assert.equal(f.calls.includes("abort-original-job"), false);
 });
 
 void test("confirmed original abort consumes an in-flight observation and its late result cannot restore normal work", async () => {
