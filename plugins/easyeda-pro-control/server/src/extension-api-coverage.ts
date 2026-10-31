@@ -223,6 +223,9 @@ function designLifecycleRoute(route: ApiCoverageRoute, namespace: string): ApiCo
   };
 }
 
+/** Merge pinned declarations with deliberate route mappings and concrete
+ * omissions. Declaration presence alone never enables execution.
+ */
 export function inventoryExtensionApiCoverage(): ApiCoverageEntry[] {
   const methods = new Map<string, MethodGroup>();
   for (const snapshot of extensionApiSnapshots) {

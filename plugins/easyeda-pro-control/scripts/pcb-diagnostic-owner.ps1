@@ -2102,13 +2102,13 @@ public sealed class EasyedaDiagnosticOwner {
   }
   public static void VerifyFootprintForwardSmoke(){
     var fresh=CreateWorkerStartupFootprintForward209();var old=CreateWorkerStartupFootprintCombined209();
-    if(!fresh.workerStartupFootprintForward209||fresh.workerStartupFootprintCombined209||fresh.footprintCreateClockPurpose||fresh.FootprintRequestLimit!=987||fresh.FootprintNormalRequestLimit!=987||old.FootprintRequestLimit!=847||old.FootprintNormalRequestLimit!=802||fresh.ForwardMainReceivedBytes!=0||fresh.ForwardMainFrames!=0)throw Error("forward-birth-smoke");
+    if(!fresh.workerStartupFootprintForward209||fresh.workerStartupFootprintCombined209||fresh.footprintCreateClockPurpose||fresh.FootprintRequestLimit!=996||fresh.FootprintNormalRequestLimit!=996||old.FootprintRequestLimit!=856||old.FootprintNormalRequestLimit!=811||fresh.ForwardMainReceivedBytes!=0||fresh.ForwardMainFrames!=0)throw Error("forward-birth-smoke");
     foreach(string action in new string[]{"footprint-copy-native-create","footprint-copy-allocated-create-clock-begin","footprint-copy-clock","footprint-clock-rpc-begin","main-completion-begin"}){bool refused=false;try{fresh.AdmitForwardAction(action);}catch(InvalidOperationException e){if(e.Message!="pcb-diagnostic-forward-writer-unmounted")throw;refused=true;}if(!refused||fresh.footprintCreateClockBegun||fresh.launchAttempted||fresh.root!=IntPtr.Zero)throw Error("forward-unmounted-smoke");}
     fresh.AdmitForwardAction("identity");fresh.AdmitForwardAction("release-unlaunched");
     for(int i=1;i<=EasyedaFootprintForwardLimits.NormalClass;i++)fresh.ChargeForwardRenderer(i,"{\"id\":"+i+",\"method\":\"Runtime.enable\"}");
     for(int i=EasyedaFootprintForwardLimits.NormalClass+1;i<=EasyedaFootprintForwardLimits.Requests;i++)fresh.ChargeForwardRenderer(i,"{\"id\":"+i+",\"method\":\"Runtime.releaseObjectGroup\"}");
-    bool full=false;try{fresh.ChargeForwardRenderer(988,"{\"id\":988,\"method\":\"Runtime.enable\"}");}catch(InvalidOperationException){full=true;}
-    if(!full||fresh.forwardNormalRequests!=926||fresh.forwardCleanupRequests!=61||old.forwardNormalRequests!=0||old.forwardCleanupRequests!=0)throw Error("forward-renderer-budget-smoke");
+    bool full=false;try{fresh.ChargeForwardRenderer(997,"{\"id\":997,\"method\":\"Runtime.enable\"}");}catch(InvalidOperationException){full=true;}
+    if(!full||fresh.forwardNormalRequests!=935||fresh.forwardCleanupRequests!=61||old.forwardNormalRequests!=0||old.forwardCleanupRequests!=0)throw Error("forward-renderer-budget-smoke");
   }
   public void AdmitCombinedAction(string action){
     if((workerStartupFootprintCombined209||workerStartupFootprintForward209)&&footprintCombinedAbortAttempted&&action!="combined-abort"&&action!="identity"&&action!="termination"&&action!="release"&&action!="no-process-proof"&&action!="release-no-process"&&action!="footprint-clock-rpc-retire"&&action!="footprint-copy-create-clock-retire"&&action!="main-completion-retire")throw Error("combined-abort-consumed");

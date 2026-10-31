@@ -145,6 +145,10 @@ return await Promise.race([run(),timeout]);
 }catch{return result();}finally{if(timer!==undefined&&typeof clear==="function")apply(clear,root,[timer]);}
 }`;
 
+/** Recheck the sealed operation, selection and effect ordering in one retained
+ * reply. Navigation's boolean acknowledgment is never interpreted as camera
+ * bounds, rendered arrival or completion of its native overlay timers.
+ */
 export function decodeCurrentPcb209VisualReply(raw: unknown, targetInput: unknown, operationInput: unknown): Readonly<Record<string, unknown>> {
   const target = currentDisposableOpenSealedTargetSchema.parse(targetInput);
   const operation = currentPcb209VisualOperationSchema.parse(operationInput);

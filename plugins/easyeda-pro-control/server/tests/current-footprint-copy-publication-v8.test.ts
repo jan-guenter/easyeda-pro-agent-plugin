@@ -9,9 +9,12 @@ import { decodeCurrentFootprintCopyDependencyFunction, decodeCurrentFootprintCop
 import { CURRENT_FOOTPRINT_COPY_STRUCTURE_CALLBACK_PROFILE as CALLBACK, CURRENT_FOOTPRINT_COPY_DEPENDENCY_PROFILES as PROFILES } from "../src/current-footprint-copy-dependency-profiles.ts";
 import { CURRENT_FOOTPRINT_COPY_DEPENDENCY_FIXTURE as SOURCES, CURRENT_FOOTPRINT_COPY_STRUCTURE_CALLBACK_FIXTURE as SOURCE_CALLBACK } from "./helpers/current-footprint-copy-dependency-fixture.ts";
 
+/** Extract the actual inspector-assigned script ID for location comparisons. */
 function scriptId(input: unknown): string {
   assert.ok(isRecord(input) && typeof input["scriptId"] === "string"); return input["scriptId"];
 }
+/** Read only Nd.e through V8's virtual scope wrapper in this isolated Node test;
+ * the captured vendor callback is returned as a handle and never invoked. */
 function readScope(session: Session, objectId: string, objectGroup: string): Promise<unknown> {
   const params = { objectId, functionDeclaration: "function(){return this.object.e}", arguments: [], objectGroup, throwOnSideEffect: true };
   return session.post("Runtime.callFunctionOn", params);

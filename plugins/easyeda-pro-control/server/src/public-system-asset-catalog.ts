@@ -2,6 +2,7 @@ import { z } from "zod";
 import { PUBLIC_SYSTEM_FOOTPRINT_LIBRARY, PUBLIC_SYSTEM_FOOTPRINT_MAX_RESULT_BYTES, PUBLIC_SYSTEM_FOOTPRINT_ORIGIN } from "./public-system-footprint.ts";
 
 const uuid = z.string().length(32).regex(/^[a-f0-9]{32}$/u);
+/** Bound metadata text and reject NUL or unpaired UTF-16 before projection. */
 const safeText = (maximum: number): z.ZodString => z.string().max(maximum).refine((value) => value.isWellFormed() && !value.includes("\u0000"));
 // Match the UI's QT rejection set without silently stripping submitted text.
 const queryText = safeText(128).min(1).refine((value) => value.trim() === value && !/\p{C}/u.test(value));
@@ -56,6 +57,7 @@ const panelResponse = z.object({ success: z.literal(true), code: z.literal(0), r
 const pageNumber = z.union([z.number().int().min(1).max(1000), z.string().regex(/^[1-9]\d{0,3}$/u)]);
 const pagination = { uid: z.literal(PUBLIC_SYSTEM_FOOTPRINT_LIBRARY), page: pageNumber, pageSize: pageNumber,
   count: z.number().int().min(0).max(100_000_000), totalPage: z.number().int().min(0).max(100_000_000), wd: queryText.optional() };
+/** Check page cardinality before validating every ownership/type witness. */
 const boundedItems = <T extends z.ZodType>(item: T): z.ZodType<z.infer<T>[]> => z.array(z.unknown()).max(20).pipe(z.array(item));
 const modelLists = z.object({ lcsc: boundedItems(modelItem), mine: empty, user: empty }).strict();
 const panelLists = z.object({ lcsc: boundedItems(panelItem), mine: empty, user: empty }).strict();
@@ -64,6 +66,9 @@ const modelResponse = z.object({ success: z.literal(true), code: z.literal(0), r
 const panelSearchResponse = z.object({ success: z.literal(true), code: z.literal(0), result: z.object({ ...pagination,
   lists: panelLists }) });
 type AssetMetadata = z.infer<typeof modelItem> | z.infer<typeof panelItem>;
+/** Return only recognized metadata; vendor CAD, image and download objects
+ * never become output assets or additional network requests.
+ */
 function projectMetadata(item: AssetMetadata): Record<string, unknown> {
   // Installed ELIB_LibraryType.MODEL='5' and PANEL_LIBRARY='29', confirmed by
   // ILIB_PanelLibraryItem and the pinned UI getter. These are not docType casts.
@@ -73,6 +78,9 @@ function projectMetadata(item: AssetMetadata): Record<string, unknown> {
       ...(Array.isArray(item.tags.child_tag) ? {} : { secondaryClassificationUuid: item.tags.child_tag.uuid }) },
     publicVisibilityFlagVerified: item.public === true, responseLibraryPathVerified: item.path === PUBLIC_SYSTEM_FOOTPRINT_LIBRARY };
 }
+/** Admit an exact echo or the witnessed ASCII folding only, without inventing
+ * Unicode equivalence or accepting a different vendor search term.
+ */
 function keywordEchoMatches(query: string, echo: string): boolean {
   // Only ASCII folding was observed. Do not invent Unicode case equivalence.
   return echo === query || /^[\u0020-\u007E]+$/u.test(query) && echo === query.toLowerCase();

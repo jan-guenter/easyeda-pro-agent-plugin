@@ -149,7 +149,7 @@ native getter/open identities and unchanged project assignments bind the two
 cache namespace arguments to the retained native Cache results. A namespace
 label or an after-the-fact object inspection cannot replace that event history.
 These debugger pauses affect application timing. This purpose shares the private
-execution envelope of 802 normal requests and 45 cleanup requests, 847 total;
+execution envelope of 811 normal requests and 45 cleanup requests, 856 total;
 this does not reserve or enable a complete writer lifecycle.
 
 The parent capture pins ordinary local-project `tl.open`. The temporary-project

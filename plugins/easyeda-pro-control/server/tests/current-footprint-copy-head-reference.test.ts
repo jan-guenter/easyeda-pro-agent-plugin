@@ -7,6 +7,8 @@ import { prepareCurrentFootprintSourcePlan } from "../src/current-footprint-sour
 import { HISTORY_TABLE, IDS, encrypted, fixture, inventory, mutate } from "./helpers/symbol-sql-fixture.ts";
 
 const SOURCE = Object.freeze({ projectUuid: IDS.project, branchUuid: IDS.branch, footprintUuid: IDS.target });
+/** Build a private synthetic footprint database and complete reader. Optional
+ * SQL changes exercise malformed storage without adopting live project data. */
 async function source(change = ""): Promise<Readonly<{
   path: string;
   before: Awaited<ReturnType<typeof inventory>>;

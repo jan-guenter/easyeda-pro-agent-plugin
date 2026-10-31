@@ -98,7 +98,11 @@ const remote = z.object({ type: z.enum(["object", "function", "number", "string"
   description: text.optional(), objectId: token.optional(), value: z.union([z.null(), text, z.number(), position]).optional() }).strict();
 const property = z.object({ name: text, value: remote, writable: z.boolean(), configurable: z.boolean(), enumerable: z.boolean(), isOwn: z.literal(true) }).strict();
 const internal = z.object({ name: text, value: remote }).strict();
+/** Keep malformed inspector metadata behind one fixed, non-disclosing error. */
 function need(condition: boolean): asserts condition { if (!condition) { throw new Error("FOOTPRINT_COPY_DEPENDENCY_METADATA"); } }
+/** Decode the complete function/cache tuple in its fixed order. Every function
+ * must match its source digest, every handle must be distinct, and all native
+ * cache roles must be present before any function IDs are returned. */
 export function decodeCurrentFootprintCopyDependencies(input: unknown): readonly string[] {
   const count = PROFILES.length + 9;
   const reply = z.object({ result: z.array(property).length(count + 1), internalProperties: z.array(internal).length(1) }).strict()
@@ -137,10 +141,14 @@ export function decodeCurrentFootprintCopyDependencies(input: unknown): readonly
     parent.value.subtype === "array" && parent.value.className === "Array" && parent.value.description === "Array(0)" && parent.value.objectId !== undefined);
   return Object.freeze(ids);
 }
+/** Qualify one selected function's descriptor and source location in the
+ * original worker script, returning only its inspector scope-list handle. */
 export function decodeCurrentFootprintCopyDependencyFunction(input: unknown, scriptId: string, index: number): string {
   token.parse(scriptId); const expected = Number.isInteger(index) ? PROFILES[index] : undefined; need(expected !== undefined);
   return metadata(input, scriptId, expected);
 }
+/** Validate own name/arity/prototype descriptors and the exact V8 source
+ * location. This checks metadata, not callback execution or receiver custody. */
 function metadata(input: unknown, scriptId: string,
   expected: typeof PROFILES[number] | typeof CURRENT_FOOTPRINT_COPY_STRUCTURE_CALLBACK_PROFILE): string {
   const reply = z.object({ result: z.array(property).min(2).max(3), internalProperties: z.array(internal).length(3) }).strict()
@@ -181,6 +189,8 @@ export function decodeCurrentFootprintCopyStructureScope(input: unknown): string
   need(first?.value.description === "Closure (Nd)" && first.value.objectId !== undefined && last?.value.description === "Global");
   return first.value.objectId;
 }
+/** Accept only the pinned193-byte structure arrow returned by the fixed
+ * selector. Its remote handle remains subject to original-owner reproof. */
 export function decodeCurrentFootprintCopyStructureCallback(input: unknown): string {
   const reply = z.object({ result: z.object({ type: z.literal("function"), className: z.literal("Function"),
     description: text, objectId: token }).strict() }).strict().parse(captureCurrentPcbStringClockReply(input).value);
@@ -188,10 +198,14 @@ export function decodeCurrentFootprintCopyStructureCallback(input: unknown): str
     createHash("sha256").update(reply.result.description).digest("hex") === CURRENT_FOOTPRINT_COPY_STRUCTURE_CALLBACK_PROFILE.sha256);
   return reply.result.objectId;
 }
+/** Require the retained structure arrow's descriptor and exact worker location;
+ * equal function text from another script is insufficient. */
 export function decodeCurrentFootprintCopyStructureCallbackMetadata(input: unknown, scriptId: string): void {
   token.parse(scriptId); metadata(input, scriptId, CURRENT_FOOTPRINT_COPY_STRUCTURE_CALLBACK_PROFILE);
 }
 
+/** Validate the entire tuple before extracting its four native Cache function
+ * handles. These candidates do not establish cache-namespace provenance. */
 export function decodeCurrentFootprintCopyDependencyNativeFunctions(input: unknown): readonly string[] {
   decodeCurrentFootprintCopyDependencies(input);
   const reply = z.object({ result: z.array(property), internalProperties: z.array(internal) }).strict()

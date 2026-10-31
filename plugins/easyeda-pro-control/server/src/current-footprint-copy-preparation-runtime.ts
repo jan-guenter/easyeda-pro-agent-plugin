@@ -47,9 +47,12 @@ interface Retained {
 }
 const preparations = new WeakMap<CurrentFootprintCopyPreparation, Retained>();
 const consumed = new WeakSet<CurrentFootprintSourceReadPacket>();
+/** Refuse with a fixed reason instead of leaking a source packet into errors. */
 function need(condition: boolean, detail: string): asserts condition {
   if (!condition) { throw new Error(`CURRENT_FOOTPRINT_COPY_PREPARATION: ${detail}`); }
 }
+/** Retain the exact completed SQL reader, opening class and source bytes across
+ * preparation awaits. A hash-compatible replacement cannot satisfy this join. */
 function same(source: Source, completion: ReturnType<typeof readerCompletion>, text: string): void {
   assertCurrentFootprintSourcePlanInventory(source.sourcePlan, source.before);
   need(readerCompletion(source.before) === completion && completion.observedChildClose && completion.exitCode === 0 &&
@@ -57,6 +60,8 @@ function same(source: Source, completion: ReturnType<typeof readerCompletion>, t
   currentFootprintCopyPreparationOpeningMethods(source.opening);
   need(canonicalJson(source.source) === text, "original source changed");
 }
+/** Ask the original opening to reprove its source/assignment/native-owner join,
+ * with local original-reference checks before and after that awaited work. */
 async function reprove(source: Source, completion: ReturnType<typeof readerCompletion>, text: string): Promise<void> {
   same(source, completion, text);
   await currentFootprintCopyPreparationOpeningMethods(source.opening).requireFootprintSource.call(source.opening,

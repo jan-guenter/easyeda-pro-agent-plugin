@@ -46,6 +46,8 @@ function functionReply(index: number, direct = false): Data {
     { name: "[[Scopes]]", value: { type: "object", subtype: "internal#scopeList", className: "Array", description: "Scopes[2]", objectId: `scopes-${String(index)}` } },
   ] };
 }
+/** Supply synthetic metadata for the callback role; this fixture never issues
+ * a construction owner or replaces the separate actual V8 metadata test. */
 function structureMetadata(): Data {
   const output = functionReply(PROFILES.length - 1);
   const result = output["result"]; assert.ok(Array.isArray(result));

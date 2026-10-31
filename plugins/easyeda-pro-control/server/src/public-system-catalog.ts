@@ -43,6 +43,9 @@ const source = { source: "pro-ui/3.2.198.2800f583/js/ui.js",
   componentRoutesUtf16Offset: 6_073_155, deviceRoutesUtf16Offset: 6_072_582, formEncoderUtf16Offset: 6_061_646,
   deviceSearchUtf16Offset: 6_177_499, symbolSearchUtf16Offset: 6_179_220, defaultPostJsonUtf16Offset: 6_061_207 };
 export const publicSystemCatalogQuerySchema = z.object({ includeSchemas: z.boolean().default(false) }).strict();
+/** Report fixed anonymous catalog subsets and optional exact schemas without
+ * performing a network request or granting discovery-based execution.
+ */
 export function queryPublicSystemCatalog(input: unknown = {}): Record<string, unknown> {
   const query = publicSystemCatalogQuerySchema.parse(input);
   const entries: Record<string, unknown>[] = [];

@@ -84,8 +84,10 @@ export class CurrentFootprintHeldCachePageReadiness {
         try { inventory = diagnosticTargetInventory(raw); }
         catch (error) { this.#failureKind = "inventory"; throw error; }
         const pages = inventory.filter(value => value["type"] === "page");
+        /** Match only the ordinary editor URL; later frame/source checks still qualify its realm. */
         const editor = (value: Row): boolean => typeof value["url"] === "string" &&
           /^https:\/\/client\/editor\?cll=(?:trace|debug|info|warn|error)(?:#.*)?(?![\s\S])/u.test(value["url"]);
+        /** Recognize the original installation's loader solely as an unselected startup companion. */
         const loading = (value: Row): boolean => this.#loadingPrefix !== null && typeof value["url"] === "string" &&
           value["url"].startsWith(this.#loadingPrefix) && value["url"].length > this.#loadingPrefix.length &&
           !/[#\r\n\0]/u.test(value["url"]);

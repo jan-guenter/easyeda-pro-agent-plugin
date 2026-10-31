@@ -59,7 +59,10 @@ const scopeValue = z.looseObject({ objectId: handle.optional() });
 const scopeInternal = z.looseObject({ name: z.string(), value: scopeValue });
 const scopeMetadata = z.looseObject({ internalProperties: z.array(scopeInternal) });
 const fields = ["lexicalBundleObjectId", "assertCurrent", "properties", "capture", "recheck", "captureStructure", "recheckStructure"] as const;
+/** Reject an invalid collector state without including private remote handles. */
 function need(condition: boolean): asserts condition { if (!condition) { throw new Error("FOOTPRINT_COPY_DEPENDENCY_OWNER"); } }
+/** Capture only the exact data-method transport shape. Accessors and proxy
+ * wrappers cannot substitute callbacks while the collector is awaiting I/O. */
 function methods(transport: CurrentFootprintCopyDependencyTransport): readonly unknown[] {
   need(transport !== null && typeof transport === "object" && !types.isProxy(transport) &&
     (Object.getPrototypeOf(transport) === Object.prototype || Object.getPrototypeOf(transport) === null) && Reflect.ownKeys(transport).length === fields.length);
@@ -83,17 +86,26 @@ export class CurrentFootprintCopyDependencyRunner {
   #structureWrapperId: string | null = null;
   #structureCallbackId: string | null = null;
   #packet: CurrentFootprintCopyDependencyObservation | null = null;
+  /** Retain the original transport methods and worker script. Construction
+   * allocates no inspector request and conveys no native ownership authority. */
   public constructor(transport: CurrentFootprintCopyDependencyTransport, scriptId: string) {
     this.#methods = methods(transport); this.#transport = transport; this.#scriptId = handle.parse(scriptId);
     handle.parse(transport.lexicalBundleObjectId);
   }
+  /** Require unchanged transport methods and its original upstream-owner check.
+   * A failed attempt permanently prevents further normal observations. */
   #current(): void { need(!this.#failed && methods(this.#transport).every((method, index) => method === this.#methods[index])); this.#transport.assertCurrent(); }
+  /** Charge a fixed request before dispatch, retain its arrived raw reply, and
+   * recheck ownership before interpreting it. Inspector exceptions consume the
+   * request and remain available in the retained evidence. */
   async #request(operation: () => Promise<unknown>, reproof = false): Promise<unknown> {
     this.#current(); need(this.#requests < CURRENT_FOOTPRINT_COPY_DEPENDENCY_REQUESTS + (reproof ? CURRENT_FOOTPRINT_COPY_DEPENDENCY_REPROOF_REQUESTS : 0));
     this.#requests += 1;
     const raw = captureCurrentPcbStringClockReply(await operation()).value; this.#replies.push(raw); this.#current();
     assertCurrentFootprintCopyProgramReturned(raw, "dependencies"); return raw;
   }
+  /** Obtain a fresh direct lexical scope after qualifying the original
+   * producer's metadata. No alternate scope is searched on refusal. */
   async #scope(objectId: string, index: number, reproof = false): Promise<string> {
     const input = await this.#request(() => this.#transport.properties(objectId), reproof);
     // Existing direct-source decoder verifies the function's exact source in
@@ -103,12 +115,17 @@ export class CurrentFootprintCopyDependencyRunner {
     const scopesId = metadata.internalProperties.find(item => item.name === "[[Scopes]]")?.value.objectId; need(scopesId !== undefined);
     return decodeCurrentFootprintCopyProducerScope(await this.#request(() => this.#transport.properties(scopesId), reproof));
   }
+  /** Reobserve the original Nd wrapper's scope rather than reusing an earlier
+   * V8 scope wrapper that could contain an older lexical snapshot. */
   async #structureScope(reproof: boolean): Promise<string> {
     const wrapper = this.#structureWrapperId; need(wrapper !== null);
     const scopes = decodeCurrentFootprintCopyDependencyFunction(await this.#request(() => this.#transport.properties(wrapper), reproof),
       this.#scriptId, CURRENT_FOOTPRINT_COPY_DEPENDENCY_PROFILES.length - 1);
     return decodeCurrentFootprintCopyStructureScope(await this.#request(() => this.#transport.properties(scopes), reproof));
   }
+  /** Capture Nd.e and qualify its exact source metadata. The enclosing
+   * production transport also matches the constructor's retained arrow.
+   * No callback is invoked and no publication completion is inferred. */
   async #captureStructure(wrapper: string, scopes: string): Promise<void> {
     this.#structureWrapperId = wrapper;
     const scope = decodeCurrentFootprintCopyStructureScope(await this.#request(() => this.#transport.properties(scopes)));
@@ -117,6 +134,8 @@ export class CurrentFootprintCopyDependencyRunner {
     this.#structureCallbackId = callback;
     decodeCurrentFootprintCopyStructureCallbackMetadata(await this.#request(() => this.#transport.properties(callback)), this.#scriptId);
   }
+  /** Retain the complete dependency tuple and qualify every selected function,
+   * structure callback and native Cache role before issuing an observation. */
   async #captureBundle(scopeId: string): Promise<void> {
     const captured = array.parse(await this.#request(() => this.#transport.capture(scopeId)));
     this.#bundleId = captured.result.objectId;
@@ -130,6 +149,9 @@ export class CurrentFootprintCopyDependencyRunner {
       decodeCurrentFootprintCopyBackendCacheNativeProperties(await this.#request(() => this.#transport.properties(id)), position);
     }
   }
+  /** Consume one82-request observation. Three fresh direct scopes must agree
+   * on the same retained tuple; failure cannot be retried or promoted into a
+   * callback-completion, clock or writer permit. */
   public async observe(): Promise<CurrentFootprintCopyDependencyObservation> {
     need(!this.#attempted); this.#attempted = true;
     try {
@@ -157,6 +179,9 @@ export class CurrentFootprintCopyDependencyRunner {
       return this.#packet;
     } catch (error) { this.#failed = true; throw error; }
   }
+  /** Consume the sole six-request reproof for this exact issued packet.
+   * Browser-side reference comparison preserves the constructor callback join
+   * without accepting a copied observation or another equal function body. */
   public async requireOriginal(packet: CurrentFootprintCopyDependencyObservation): Promise<void> {
     need(packet === this.#packet && this.#packet !== null && !this.#reproofAttempted && this.#clockFunctionId !== null && this.#bundleId !== null &&
       this.#structureCallbackId !== null);
@@ -168,6 +193,8 @@ export class CurrentFootprintCopyDependencyRunner {
       yes.parse(await this.#request(() => this.#transport.recheckStructure(structureScope, bundle, callback), true)); this.#current();
     } catch (error) { this.#failed = true; throw error; }
   }
+  /** Return bounded local attempt counters and arrived replies for inspection.
+   * Historical evidence cannot recreate this collector or authorize dispatch. */
   public retained(): Readonly<{ attempted: boolean; failed: boolean; completed: boolean; requests: number;
     originalBundleRetained: boolean; reproofAttempted: boolean; replies: readonly unknown[] }> {
     return Object.freeze({ attempted: this.#attempted, failed: this.#failed, completed: this.#packet !== null, requests: this.#requests,

@@ -34,9 +34,12 @@ interface Retained {
   readonly referenceText: string;
 }
 const issued = new WeakMap<CurrentFootprintCopyHeadReference, Retained>();
+/** Emit a fixed refusal code without exposing SQL contents or owner fields. */
 function need(value: boolean, detail: string): asserts value {
   if (!value) { throw new Error(`FOOTPRINT_COPY_HEAD_REFERENCE_${detail}`); }
 }
+/** Recheck the exact completed reader and source-plan pair after cooperative
+ * yields. Matching hashes alone cannot replace either original object. */
 function same(before: NativeSqlInventory, sourcePlan: CurrentFootprintSourcePlan,
   completion: ReturnType<typeof readerCompletion>, sourcePlanText: string): void {
   assertCurrentFootprintSourcePlanInventory(sourcePlan, before);
@@ -45,20 +48,26 @@ function same(before: NativeSqlInventory, sourcePlan: CurrentFootprintSourcePlan
     before.checkpointSha256 === sourcePlan.beforeCheckpointSha256 && before.logicalSha256 === sourcePlan.beforeSqlSha256,
   "ORIGINAL_COMPLETED_READER");
 }
+/** Require one complete named table; never select the first duplicate. */
 function table(before: NativeSqlInventory, name: string): SqlTable {
   const selected = before.tables.filter(value => value.name === name);
   need(selected.length === 1 && selected[0] !== undefined, "UNIQUE_TABLE"); return selected[0];
 }
+/** Resolve one unambiguous column and require its cell in the selected row. */
 function field(owner: SqlTable, selected: SqlRow, name: string): SqlCell {
   const indices = owner.columns.flatMap((column, index) => column["name"] === name ? [index] : []);
   const index = indices[0]; need(indices.length === 1 && index !== undefined, "UNIQUE_COLUMN");
   const value = selected.cells[index]; need(value !== undefined, "PRESENT_CELL"); return value;
 }
+/** Decode at most256 exact UTF-8 bytes from a SQL TEXT cell, refusing malformed
+ * hex or lossy decoding before comparing identifiers. */
 function text(value: SqlCell): string {
   need(value.kind === "text" && value.hex.length <= 512, "BOUNDED_TEXT");
   const bytes = Buffer.from(value.hex, "hex"), result = bytes.toString("utf8");
   need(bytes.toString("hex") === value.hex && Buffer.from(result).equals(bytes), "EXACT_UTF8"); return result;
 }
+/** Find one UUID across the complete table and yield every128 rows. Each yield
+ * rechecks original reader custody before the scan can continue. */
 async function row(owner: SqlTable, uuid: string, current: () => void): Promise<SqlRow> {
   let selected: SqlRow | undefined;
   for (const [index, candidate] of owner.rows.entries()) {

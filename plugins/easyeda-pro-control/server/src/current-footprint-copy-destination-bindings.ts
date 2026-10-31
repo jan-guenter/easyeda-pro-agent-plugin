@@ -72,7 +72,11 @@ const value = z.object({ type: z.enum(["function", "object", "string", "number"]
   objectId: handle.optional(), description: text.optional(), value: z.union([text, z.number(), point]).optional() }).strict();
 const property = z.object({ name: text, value, writable: z.boolean(), configurable: z.boolean(), enumerable: z.boolean(), isOwn: z.literal(true) }).strict();
 const internal = z.object({ name: text, value }).strict();
+/** Keep destination metadata refusals independent of private remote values. */
 function need(condition: boolean): asserts condition { if (!condition) { throw new Error("FOOTPRINT_COPY_DESTINATION_METADATA"); } }
+/** Validate the complete fixed destination tuple before exposing its function
+ * handles and project/client/ticket fields. Source hashes and scalar types
+ * must match; these values alone do not prove native backend ownership. */
 export function decodeCurrentFootprintCopyDestinationArray(raw: unknown): Readonly<{
   functions: readonly string[]; client: string; maximumTicket: number; projectUuid: string; branchUuid: string;
 }> {
@@ -101,6 +105,8 @@ export function decodeCurrentFootprintCopyDestinationArray(raw: unknown): Readon
     maximumTicket: z.number().int().min(0).max(Number.MAX_SAFE_INTEGER - 1).refine(n => !Object.is(n, -0)).parse(scalar(40)),
     projectUuid: z.string().regex(/^[a-f\d]{64}$/u).parse(scalar(41)), branchUuid: z.string().regex(/^[a-f\d]{32}$/u).parse(scalar(42)) });
 }
+/** Require one destination function's exact source location, arity and own
+ * descriptors in the retained worker script without invoking the function. */
 export function decodeCurrentFootprintCopyDestinationFunction(raw: unknown, scriptId: string, index: number): void {
   const profile = PROFILES[index]; need(profile !== undefined); handle.parse(scriptId);
   const prototype = profile.kind === "class" || profile.kind === "function" && !profile.async;

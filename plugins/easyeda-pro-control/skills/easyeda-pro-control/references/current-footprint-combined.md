@@ -369,7 +369,7 @@ registry before UI defines its separate class. The fixed route now qualifies
 that exact preload constructor, methods, lexical Block/Closure scopes and shared
 map/original notification receiver; original Map guards remain strict. UI
 observation/reproof budgets are39/11, preparation49/21, and the existing execution
-preparation ceiling is now802 normal/45 cleanup/847 total. This source correction
+preparation ceiling is now 811 normal/45 cleanup/856 total. This source correction
 still needs connected validation. See the [batch record](https://github.com/jan-guenter/easyeda-pro-agent-plugin/blob/main/docs/history/2026-10-29-native-allocation-and-window-capture.md)
 and [source finding](https://github.com/jan-guenter/easyeda-pro-agent-plugin/blob/main/docs/history/2026-10-29-preload-registry-source-qualification.md).
 

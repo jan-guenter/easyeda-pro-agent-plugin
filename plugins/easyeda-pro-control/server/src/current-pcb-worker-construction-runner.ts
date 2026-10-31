@@ -1081,6 +1081,9 @@ class CurrentPcbWorkerConstructionCore<P extends PacketProfile> {
     }
     this.stopConstructionPauseSubscription(this.#packet); binding.assertCleanup();
   }
+  /** Compile only the fixed dependency capture/recheck with this construction's
+   * retained project, bus, managers and lexical tuple. No caller chooses code
+   * or substitutes the previously captured dependency bundle. */
   #footprintDependencyCall(scopeId: string, original: Readonly<CurrentPcbWorkerConstructionIdentities>, recheck: boolean): Promise<unknown> {
     if (this.#footprintManager === null || this.#footprintConsistency === null || this.#footprintConstructors === null ||
         this.#footprintLexicalBundle === null || recheck && this.#footprintDependencyBundle === null) { throw fail("FOOTPRINT_DEPENDENCIES_OWNER"); }
@@ -1118,6 +1121,8 @@ class CurrentPcbWorkerConstructionCore<P extends PacketProfile> {
           if (bundleId !== this.#footprintDependencyBundle) { throw fail("FOOTPRINT_DEPENDENCIES_OWNER"); }
           return this.#footprintDependencyCall(scopeId, original, true);
         },
+        /** Join current Nd.e to the arrow retained at the original constructor
+         * pause, rather than accepting equal text from another constructor. */
         captureStructure: (scopeId: string, bundleId: string): Promise<unknown> => {
           if (bundleId !== this.#footprintDependencyBundle) { throw fail("FOOTPRINT_DEPENDENCIES_OWNER"); }
           const call = CURRENT_FOOTPRINT_COPY_DEPENDENCY_CALLS.structure;
@@ -1125,6 +1130,8 @@ class CurrentPcbWorkerConstructionCore<P extends PacketProfile> {
             [original.project, original.channelBus, manager, consistency, constructors, bundleId, original.uploadStructure],
             call.returnByValue, this.#footprintDependencyReplies);
         },
+        /** Recompare the callback already joined to the constructor, keeping
+         * the existing seven-argument native grammar and original bundle. */
         recheckStructure: (scopeId: string, bundleId: string, callbackId: string): Promise<unknown> => {
           if (bundleId !== this.#footprintDependencyBundle) { throw fail("FOOTPRINT_DEPENDENCIES_OWNER"); }
           const call = CURRENT_FOOTPRINT_COPY_DEPENDENCY_CALLS.structureRecheck;

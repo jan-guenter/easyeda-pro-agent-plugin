@@ -43,6 +43,9 @@ export const currentPcb209VisualRequestSchema = z.discriminatedUnion("action", [
 ]);
 export type CurrentPcb209VisualRequest = z.infer<typeof currentPcb209VisualRequestSchema>;
 
+/** Describe the fixed disposable grammar, limits and excluded authority
+ * without allocating a native owner or dispatching a viewport operation.
+ */
 export function queryCurrentPcb209Visual(input: unknown = {}): Record<string, unknown> {
   const request = z.object({ includeSchemas: z.boolean().default(false) }).strict().parse(input);
   return { offline: true, tool: "easyeda_control_pcb209_opening", wrapperAction: "visual", validationOnly: true,

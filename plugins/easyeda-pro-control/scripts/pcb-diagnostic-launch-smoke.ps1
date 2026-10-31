@@ -36,7 +36,7 @@ if ($bytes.Length -ne 1045312) {throw 'synthetic-launch-helper-size'}
 $hash = [Security.Cryptography.SHA256]::Create()
 try {$helperHash = [BitConverter]::ToString($hash.ComputeHash($bytes)).Replace('-','').ToLowerInvariant()}
 finally {$hash.Dispose()}
-if ($helperHash -cne '98a6bfa6066625b788bc873bb1c00b7d601f03e4a9b200e6f7a459b4fcc9d928') {
+if ($helperHash -cne '0e54ae7b0895ef1d2d3a4688946c46e3d113e9c538304cede9f99aaf54bda03b') {
   throw 'synthetic-launch-helper-hash'
 }
 $source = [Text.UTF8Encoding]::new($false,$true).GetString($bytes)
