@@ -3,6 +3,7 @@
 /* oxlint-disable import/max-dependencies -- This shared journal validates distinct diagnostic, String and common evidence, including global String exclusion, without merging their authority. */
 import { currentWindowRestoreResultSchema, requireCurrentWindowRestoreResult } from "./current-pcb-diagnostic-window-restore.ts";
 import { currentWindowResizeResultSchema, requireCurrentWindowResizeResult } from "./current-pcb-diagnostic-window-resize.ts";
+import { CURRENT_RENDERER_CAPTURE_LIMITS, currentRendererCaptureResultSchema, requireCurrentRendererCaptureResult } from "./current-pcb-diagnostic-renderer-capture.ts";
 import { currentWindowCaptureResultSchema, requireCurrentWindowCaptureResult } from "./current-pcb-diagnostic-window-capture.ts";
 import { currentPcb209VisualIdSchema } from "./current-pcb-209-visual-validation.ts";
 import { CURRENT_PCB_209_VISUAL_OPERATION_BYTES, CURRENT_PCB_209_VISUAL_RESULT_BYTES, currentPcb209VisualOperationSchema,
@@ -255,7 +256,7 @@ const noProcessReleasedSchema = z.object({ schema: z.literal("easyeda-pro-contro
   noProcessReleaseIntentSha256: diagnosticLifecycleDigestSchema, proof: diagnosticLifecycleNoProcessReleaseProofSchema,
 }).strict();
 export const diagnosticObservationStageSchema = z.enum(["browser", "frames", "script", "workers", "worker-script", "worker-state", "pcb-opening", "model-state"]);
-const extendedObservationStageSchema = z.enum([...diagnosticObservationStageSchema.options, "window-restore209", "window-resize209", "window-capture209", "visual-viewport209", "layers209", "primitives209", "extended-primitives209", "selection-relations209", "pad-shapes209", "image-shapes209", "arc-shapes209", "poured-shapes209"]);
+const extendedObservationStageSchema = z.enum([...diagnosticObservationStageSchema.options, "window-restore209", "window-resize209", "window-capture209", "renderer-capture209", "visual-viewport209", "layers209", "primitives209", "extended-primitives209", "selection-relations209", "pad-shapes209", "image-shapes209", "arc-shapes209", "poured-shapes209"]);
 export const lifecycleObservationStages = [...extendedObservationStageSchema.options, "common-baseline", "string-precreate"] as const;
 const observationIntentSchema = z.object({ schema: z.literal("easyeda-pro-control.pcb-diagnostic-observation-intent.v1"), ...base,
   bindingSha256: diagnosticLifecycleDigestSchema, stage: extendedObservationStageSchema,
@@ -266,9 +267,18 @@ const observationIntentSchema = z.object({ schema: z.literal("easyeda-pro-contro
   restoreResultSha256: diagnosticLifecycleDigestSchema.optional(), postRestoreStateObserved: z.literal(true).optional(),
   acceptWindowResizeEffects: z.literal(true).optional(),
   resizeResultSha256: diagnosticLifecycleDigestSchema.optional(), postResizeGeometryObserved: z.literal(true).optional(),
+  rendererSessionId: z.string().regex(/^[A-Za-z\d_.:-]{1,128}$/u).optional(), acceptRendererCaptureEffects: z.literal(true).optional(),
   captureHwnd: diagnosticLifecycleWindowSchema.optional(), acceptWindowPaintEffects: z.literal(true).optional(), confirmLocalArtifact: z.literal(true).optional(),
   visualOperation: currentPcb209VisualOperationSchema.optional(), confirmVisualStateChanges: z.literal(true).optional(),
 }).strict().refine(value => {
+  if (value.stage === "renderer-capture209") {
+    return value.rendererSessionId !== undefined && value.acceptRendererCaptureEffects === true && value.confirmLocalArtifact === true &&
+      value.captureHwnd === undefined && value.acceptWindowPaintEffects === undefined && value.acceptWindowResizeEffects === undefined && value.acceptWindowRestoreEffects === undefined &&
+      value.restoreResultSha256 === undefined && value.postRestoreStateObserved === undefined && value.resizeResultSha256 === undefined && value.postResizeGeometryObserved === undefined &&
+      value.visualOperation === undefined && value.confirmVisualStateChanges === undefined && value.componentIds === undefined &&
+      value.targetId === undefined && value.frameId === undefined && value.family === undefined;
+  }
+  if (value.rendererSessionId !== undefined || value.acceptRendererCaptureEffects !== undefined) { return false; }
   if (value.stage !== "window-capture209" && value.stage !== "window-resize209" && (value.restoreResultSha256 !== undefined || value.postRestoreStateObserved !== undefined)) { return false; }
   if ((value.restoreResultSha256 === undefined) !== (value.postRestoreStateObserved === undefined)) { return false; }
   if (value.stage !== "window-capture209" && (value.resizeResultSha256 !== undefined || value.postResizeGeometryObserved !== undefined)) { return false; }
@@ -312,6 +322,7 @@ const observationResultSchema = z.object({ schema: z.literal("easyeda-pro-contro
   if (value.stage === "window-restore209" && !currentWindowRestoreResultSchema.safeParse(value.result).success) { return false; }
   if (value.stage === "window-resize209" && !currentWindowResizeResultSchema.safeParse(value.result).success) { return false; }
   if (value.stage === "window-capture209" && !currentWindowCaptureResultSchema.safeParse(value.result).success) { return false; }
+  if (value.stage === "renderer-capture209" && (!currentRendererCaptureResultSchema.safeParse(value.result).success || Buffer.byteLength(canonicalJson(value.result)) > CURRENT_RENDERER_CAPTURE_LIMITS.maximumResultBytes)) { return false; }
   let ordinaryLimit = DIAGNOSTIC_OBSERVATION_MAX_BYTES;
   if (value.stage === "visual-viewport209") { ordinaryLimit = CURRENT_PCB_209_VISUAL_RESULT_BYTES; }
   else if (value.stage === "primitives209") { ordinaryLimit = CURRENT_PCB_209_PRIMITIVES_RESULT_BYTES; }
@@ -694,6 +705,7 @@ export const diagnosticLifecycleRecordSchemas = {
   "visual-abort-intent.json": visualAbortIntentSchema, "visual-abort-acknowledged.json": visualAbortAckSchema,
   "window-restore209-intent.json": observationIntentSchema, "window-restore209-result.json": observationResultSchema,
   "window-resize209-intent.json": observationIntentSchema, "window-resize209-result.json": observationResultSchema,
+  "renderer-capture209-intent.json": observationIntentSchema, "renderer-capture209-result.json": observationResultSchema,
   "window-capture209-intent.json": observationIntentSchema, "window-capture209-result.json": observationResultSchema,
   "visual-viewport209-intent.json": observationIntentSchema, "visual-viewport209-result.json": observationResultSchema,
   "layers209-intent.json": observationIntentSchema, "layers209-result.json": observationResultSchema,
@@ -1195,6 +1207,16 @@ function validateChain(operation: DiagnosticLifecycleOperation): void {
   if (resizedWindow !== undefined) {
     requireValue(opening !== undefined && windowResize !== undefined, "WINDOW_RESIZE209_TARGET_CHAIN");
     requireCurrentWindowResizeResult(resizedWindow.result, opening.target);
+  }
+  const rendererCapture = records["renderer-capture209-intent.json"], rendererImage = records["renderer-capture209-result.json"];
+  requireValue(rendererCapture === undefined || records["window-capture209-intent.json"] === undefined, "CAPTURE209_METHOD_EXCLUSION");
+  requireValue(rendererCapture === undefined || visualPurpose && pcbObserved !== undefined && opening !== undefined &&
+    diagnosticPcbOpeningSourceAccepted(pcbObserved.result, opening.target) && rendererCapture.rendererSessionId !== undefined &&
+    rendererCapture.acceptRendererCaptureEffects === true && rendererCapture.confirmLocalArtifact === true &&
+    records["workers-intent.json"] === undefined && records["model-state-intent.json"] === undefined, "RENDERER_CAPTURE209_CHAIN");
+  if (rendererImage !== undefined) {
+    requireValue(opening !== undefined && rendererCapture?.rendererSessionId !== undefined, "RENDERER_CAPTURE209_TARGET_CHAIN");
+    requireCurrentRendererCaptureResult(rendererImage.result, opening.target, operation.operationId, rendererCapture.bindingSha256, rendererCapture.rendererSessionId);
   }
   const windowCapture = records["window-capture209-intent.json"], windowImage = records["window-capture209-result.json"];
   requireValue(windowCapture === undefined || visualPurpose && pcbObserved !== undefined && opening !== undefined &&

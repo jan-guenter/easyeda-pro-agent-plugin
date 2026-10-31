@@ -3,6 +3,7 @@
 /* oxlint-disable max-classes-per-file, import/max-dependencies -- Fixed facades share one private cleanup/journal core; keeping the purpose selector unexported prevents a caller-selectable upgrade API. */
 import { CURRENT_WINDOW_RESTORE_LIMITS, currentWindowRestoreResult, requireCurrentWindowRestoreResult } from "./current-pcb-diagnostic-window-restore.ts";
 import { CURRENT_WINDOW_RESIZE_LIMITS, currentWindowResizeResult, requireCurrentWindowResizeResult } from "./current-pcb-diagnostic-window-resize.ts";
+import { currentRendererCaptureResult, decodeCurrentRendererCapture, publishCurrentRendererCapture, requireCurrentRendererCaptureResult } from "./current-pcb-diagnostic-renderer-capture.ts";
 import { currentWindowCaptureResult, publishCurrentWindowCapture, requireCurrentWindowCaptureResult } from "./current-pcb-diagnostic-window-capture.ts";
 import { currentPcb209VisualRequestSchema } from "./current-pcb-209-visual-validation.ts";
 import type { CurrentPcb209VisualRequest } from "./current-pcb-209-visual-validation.ts";
@@ -183,13 +184,13 @@ const continuationSessionMethods = Object.freeze({ capture: CurrentPcb209Ratline
 // oxlint-enable typescript/unbound-method
 
 type CleanupRequest = Exclude<LifecycleRequest, { action: "launch" | "inspect" | "query-observation" | "settle-records" | "cleanup-unlaunched" | "cleanup-no-process" }>;
-type ObservationRequest = Extract<LifecycleRequest, { action: "restore-window-for-capture" | "resize-window-for-capture" | "capture-window" | "perform-visual" | "browser-observation" | "inspect-frames" | "inspect-script" | "inspect-workers" | "inspect-worker-script" | "observe-worker-state" | "observe-model-state" | "observe-pcb-opening" | "observe-string-precreate" | "observe-layers" | "observe-primitives" | "observe-extended-primitives" | "observe-selection-relations" | "observe-pad-shapes" | "observe-image-shapes" | "observe-arc-shapes" | "observe-poured-shapes" }>;
-type ObservationStage = "window-restore209" | "window-resize209" | "window-capture209" | "visual-viewport209" | z.infer<typeof diagnosticObservationStageSchema> | "common-baseline" | "string-precreate" | "layers209" | "primitives209" | "extended-primitives209" | "selection-relations209" | "pad-shapes209" | "image-shapes209" | "arc-shapes209" | "poured-shapes209";
+type ObservationRequest = Extract<LifecycleRequest, { action: "capture-renderer-viewport" | "restore-window-for-capture" | "resize-window-for-capture" | "capture-window" | "perform-visual" | "browser-observation" | "inspect-frames" | "inspect-script" | "inspect-workers" | "inspect-worker-script" | "observe-worker-state" | "observe-model-state" | "observe-pcb-opening" | "observe-string-precreate" | "observe-layers" | "observe-primitives" | "observe-extended-primitives" | "observe-selection-relations" | "observe-pad-shapes" | "observe-image-shapes" | "observe-arc-shapes" | "observe-poured-shapes" }>;
+type ObservationStage = "renderer-capture209" | "window-restore209" | "window-resize209" | "window-capture209" | "visual-viewport209" | z.infer<typeof diagnosticObservationStageSchema> | "common-baseline" | "string-precreate" | "layers209" | "primitives209" | "extended-primitives209" | "selection-relations209" | "pad-shapes209" | "image-shapes209" | "arc-shapes209" | "poured-shapes209";
 const methods = ["launch", "status", "observeApplicationWindow", "requestNormalClose", "observeTermination", "releaseClosed", "releaseUnlaunched",
   "releaseNoProcess", "browserObservation", "inspectFrames", "inspectScript", "inspectWorkers", "inspectWorkerScript", "observeWorkerState", "observeModelState", "openProject",
   "openPcb", "observePcbOpening"] as const;
 export type CurrentPcbDiagnosticLifecycleOwner = Pick<CurrentPcbDiagnosticOwner, (typeof methods)[number]> &
-  Partial<Pick<CurrentPcbDiagnosticOwner, "observeLayers209" | "observePrimitives209" | "observeExtendedPrimitives209" | "observeSelectionRelations209" | "observePadShapes209" | "observeImageShapes209" | "observeArcShapes209" | "observePouredShapes209" | "performVisual209" | "captureWindow209" | "observeWindowCaptureReadiness209" | "resizeWindowForCapture209" | "restoreWindowForCapture209" | "terminateVisualJob">>;
+  Partial<Pick<CurrentPcbDiagnosticOwner, "observeLayers209" | "observePrimitives209" | "observeExtendedPrimitives209" | "observeSelectionRelations209" | "observePadShapes209" | "observeImageShapes209" | "observeArcShapes209" | "observePouredShapes209" | "performVisual209" | "captureRendererViewport209" | "rendererCaptureSession209" | "captureWindow209" | "observeWindowCaptureReadiness209" | "resizeWindowForCapture209" | "restoreWindowForCapture209" | "terminateVisualJob">>;
 type StringOwnerMethods = Pick<CurrentPcbStringPrecreateOwner, "observeStringPrecreate" | "observeCommonBaseline" | "retainedCommonBaselineFailure">;
 type StartupOwnerMethods = Pick<CurrentPcbWorkerStartupOwner, "handoffWorkerStartup">;
 type StartupContinuationOwnerMethods = Pick<CurrentPcb209RatlineContinuationOwner, "prepareWorkerStartupRatlineContinuationSession209">;
@@ -474,7 +475,7 @@ class CurrentPcbLifecycleCore {
     this.#generation = generation;
     this.#purpose = purpose;
     this.#stringPurpose = stringPurpose;
-    this.#stages = opening209(generation) ? [...(generation === "209-visual" ? ["visual-viewport209" as const, "window-restore209" as const, "window-resize209" as const, "window-capture209" as const] : []), "browser", "frames", "script", "pcb-opening", "layers209", "primitives209", "extended-primitives209", "selection-relations209", "pad-shapes209", "image-shapes209", "arc-shapes209", "poured-shapes209"] :
+    this.#stages = opening209(generation) ? [...(generation === "209-visual" ? ["visual-viewport209" as const, "window-restore209" as const, "window-resize209" as const, "window-capture209" as const, "renderer-capture209" as const] : []), "browser", "frames", "script", "pcb-opening", "layers209", "primitives209", "extended-primitives209", "selection-relations209", "pad-shapes209", "image-shapes209", "arc-shapes209", "poured-shapes209"] :
       { diagnostic: diagnosticObservationStageSchema.options, "string-precreate": currentPcbStringPrecreateStages,
         "worker-startup": startupStages }[purpose];
     this.#options = Object.freeze({ ...options });
@@ -644,6 +645,8 @@ class CurrentPcbLifecycleCore {
         windowCapture209RetainedObservation: original && this.#generation === "209-visual" &&
           operation?.records["window-capture209-result.json"] === undefined && !this.#pending.has("window-capture209-result.json") ?
           native?.windowCapture209RetainedObservation ?? null : null,
+        rendererCapture209AttemptConsumed: operation?.records["renderer-capture209-intent.json"] !== undefined || original && native?.rendererCapture209AttemptConsumed === true,
+        rendererCapture209RetainedObservation: original && operation?.records["renderer-capture209-result.json"] === undefined ? native?.rendererCapture209RetainedObservation ?? null : null,
         windowNativeFailure: original ? native?.windowNativeFailure ?? null : null,
         windowRestore209AttemptConsumed: operation?.records["window-restore209-intent.json"] !== undefined || original && native?.windowRestore209AttemptConsumed === true,
         windowRestore209ReadinessObserved: original ? native?.windowRestore209ReadinessObserved ?? false : false,
@@ -2307,6 +2310,8 @@ class CurrentPcbLifecycleCore {
       (this.#generation !== "209-visual" || typeof retained.methods.restoreWindowForCapture209 === "function" && retained.owner.restoreWindowForCapture209 === retained.methods.restoreWindowForCapture209 &&
         typeof retained.methods.resizeWindowForCapture209 === "function" && retained.owner.resizeWindowForCapture209 === retained.methods.resizeWindowForCapture209 &&
         typeof retained.methods.observeWindowCaptureReadiness209 === "function" && retained.owner.observeWindowCaptureReadiness209 === retained.methods.observeWindowCaptureReadiness209 &&
+        typeof retained.methods.captureRendererViewport209 === "function" && retained.owner.captureRendererViewport209 === retained.methods.captureRendererViewport209 &&
+        typeof retained.methods.rendererCaptureSession209 === "function" && retained.owner.rendererCaptureSession209 === retained.methods.rendererCaptureSession209 &&
         typeof retained.methods.captureWindow209 === "function" && retained.owner.captureWindow209 === retained.methods.captureWindow209 &&
         typeof retained.methods.performVisual209 === "function" && retained.owner.performVisual209 === retained.methods.performVisual209 &&
         typeof retained.methods.terminateVisualJob === "function" && retained.owner.terminateVisualJob === retained.methods.terminateVisualJob &&
@@ -2625,7 +2630,7 @@ class CurrentPcbLifecycleCore {
       inspectWorkers: owner.inspectWorkers, inspectWorkerScript: owner.inspectWorkerScript, observeWorkerState: owner.observeWorkerState,
       observeModelState: owner.observeModelState, openProject: owner.openProject,
       openPcb: owner.openPcb, observePcbOpening: owner.observePcbOpening,
-      ...(this.#generation === "209-visual" ? { performVisual209: owner.performVisual209, captureWindow209: owner.captureWindow209, observeWindowCaptureReadiness209: owner.observeWindowCaptureReadiness209, resizeWindowForCapture209: owner.resizeWindowForCapture209, restoreWindowForCapture209: owner.restoreWindowForCapture209, terminateVisualJob: owner.terminateVisualJob } : {}),
+      ...(this.#generation === "209-visual" ? { performVisual209: owner.performVisual209, captureRendererViewport209: owner.captureRendererViewport209, rendererCaptureSession209: owner.rendererCaptureSession209, captureWindow209: owner.captureWindow209, observeWindowCaptureReadiness209: owner.observeWindowCaptureReadiness209, resizeWindowForCapture209: owner.resizeWindowForCapture209, restoreWindowForCapture209: owner.restoreWindowForCapture209, terminateVisualJob: owner.terminateVisualJob } : {}),
       ...(opening209(this.#generation) ? { observeLayers209: owner.observeLayers209, observePrimitives209: owner.observePrimitives209,
         observeExtendedPrimitives209: owner.observeExtendedPrimitives209, observeSelectionRelations209: owner.observeSelectionRelations209,
         observePadShapes209: owner.observePadShapes209, observeImageShapes209: owner.observeImageShapes209, observeArcShapes209: owner.observeArcShapes209, observePouredShapes209: owner.observePouredShapes209 } : {}),
@@ -2730,7 +2735,7 @@ class CurrentPcbLifecycleCore {
     if (request.action === "observe-common-baseline") { return this.#observeCommonBaseline(request, operation, operations, retained); }
     if (request.action === "browser-observation" || request.action === "inspect-frames" || request.action === "inspect-script" ||
         request.action === "inspect-workers" || request.action === "inspect-worker-script" || request.action === "observe-worker-state" ||
-        request.action === "restore-window-for-capture" || request.action === "resize-window-for-capture" || request.action === "capture-window" || request.action === "perform-visual" || request.action === "observe-model-state" || request.action === "observe-pcb-opening" || request.action === "observe-string-precreate" || request.action === "observe-layers" || request.action === "observe-primitives" || request.action === "observe-extended-primitives" || request.action === "observe-selection-relations" || request.action === "observe-pad-shapes" || request.action === "observe-image-shapes" || request.action === "observe-arc-shapes" || request.action === "observe-poured-shapes") {
+        request.action === "capture-renderer-viewport" || request.action === "restore-window-for-capture" || request.action === "resize-window-for-capture" || request.action === "capture-window" || request.action === "perform-visual" || request.action === "observe-model-state" || request.action === "observe-pcb-opening" || request.action === "observe-string-precreate" || request.action === "observe-layers" || request.action === "observe-primitives" || request.action === "observe-extended-primitives" || request.action === "observe-selection-relations" || request.action === "observe-pad-shapes" || request.action === "observe-image-shapes" || request.action === "observe-arc-shapes" || request.action === "observe-poured-shapes") {
       return this.#observe(request, operation, operations, retained);
     }
     if (request.action === "observe-capture-readiness") {
@@ -2815,6 +2820,7 @@ class CurrentPcbLifecycleCore {
     if (request.action === "restore-window-for-capture") { stage = "window-restore209"; }
     if (request.action === "resize-window-for-capture") { stage = "window-resize209"; }
     if (request.action === "capture-window") { stage = "window-capture209"; }
+    if (request.action === "capture-renderer-viewport") { stage = "renderer-capture209"; }
     if (request.action === "perform-visual") { stage = "visual-viewport209"; }
     if (request.action === "inspect-frames") { stage = "frames"; }
     if (request.action === "inspect-script") { stage = "script"; }
@@ -2861,8 +2867,17 @@ class CurrentPcbLifecycleCore {
         !this.#observationConsumed.has("window-capture209") && retained.methods.status.call(retained.owner).windowResize209RequestCapacity === true,
       "WINDOW_RESIZE209_CAPACITY"); this.#originalPcbSource(operation);
     }
+    if (request.action === "capture-renderer-viewport") {
+      requireValue(this.#generation === "209-visual" && retained.methods.captureRendererViewport209 !== undefined && retained.methods.rendererCaptureSession209 !== undefined &&
+        !this.#observationConsumed.has("window-capture209") && operation.records["window-capture209-intent.json"] === undefined &&
+        retained.methods.status.call(retained.owner).windowCapture209AttemptConsumed !== true &&
+        !this.#observationConsumed.has("workers") && !this.#observationConsumed.has("model-state"), "RENDERER_CAPTURE209_PURPOSE");
+      this.#originalPcbSource(operation);
+    }
     if (request.action === "capture-window") {
       const status = retained.methods.status.call(retained.owner);
+      requireValue(!this.#observationConsumed.has("renderer-capture209") && operation.records["renderer-capture209-intent.json"] === undefined &&
+        status.rendererCapture209AttemptConsumed !== true, "CAPTURE209_METHOD_CONSUMED");
       if (operation.records["window-resize209-intent.json"] !== undefined) {
         const resized = operation.records["window-resize209-result.json"];
         requireValue(resized !== undefined && this.#pending.get("window-resize209-result.json") === canonicalJson(resized) &&
@@ -2980,6 +2995,8 @@ class CurrentPcbLifecycleCore {
       ...(request.action === "restore-window-for-capture" ? { acceptWindowRestoreEffects: true as const } : {}),
       ...(request.action === "resize-window-for-capture" || request.action === "capture-window" ? restoreProof : {}),
       ...(request.action === "resize-window-for-capture" ? { acceptWindowResizeEffects: true as const } : {}),
+      ...(request.action === "capture-renderer-viewport" ? { rendererSessionId: retained.methods.rendererCaptureSession209?.call(retained.owner),
+        acceptRendererCaptureEffects: true as const, confirmLocalArtifact: true as const } : {}),
       ...(request.action === "capture-window" ? { captureHwnd: request.hwnd, acceptWindowPaintEffects: true as const, confirmLocalArtifact: true as const,
         ...(operation.records["window-resize209-result.json"] === undefined ? {} : {
           resizeResultSha256: sha256Json(operation.records["window-resize209-result.json"]), postResizeGeometryObserved: true as const }) } : {}),
@@ -3059,6 +3076,22 @@ class CurrentPcbLifecycleCore {
       const selected = this.#originalProjectOpening(operation).sealedTarget;
       result = currentWindowResizeResult(await resize.call(retained.owner, selected), selected);
       requireCurrentWindowResizeResult(result, selected);
+    }
+    else if (request.action === "capture-renderer-viewport") {
+      const capture = retained.methods.captureRendererViewport209;
+      requireValue(capture !== undefined && intent.schema === "easyeda-pro-control.pcb-diagnostic-observation-intent.v1" && intent.rendererSessionId !== undefined, "RENDERER_CAPTURE209_PURPOSE");
+      const rendererSessionId = intent.rendererSessionId;
+      const selected = this.#originalProjectOpening(operation).sealedTarget;
+      const raw = await capture.call(retained.owner, selected);
+      requireValue(decodeCurrentRendererCapture(raw).observation.sessionId === rendererSessionId, "RENDERER_CAPTURE209_SESSION");
+      const guard = async (): Promise<void> => {
+        this.#assertNormalOwner(retained); await this.#installation(retained); this.#assertNormalOwner(retained);
+        await assertSnapshot(expected); this.#assertNormalOwner(retained); this.#originalPcbSource(updated);
+        requireValue(retained.methods.rendererCaptureSession209?.call(retained.owner) === rendererSessionId, "RENDERER_CAPTURE209_SESSION");
+      };
+      await guard(); const image = await publishCurrentRendererCapture(raw, request.operationId, request.expectedBindingSha256, guard);
+      result = currentRendererCaptureResult(image.observation, image.image, selected);
+      requireCurrentRendererCaptureResult(result, selected, request.operationId, request.expectedBindingSha256, rendererSessionId);
     }
     else if (request.action === "capture-window") {
       const capture = retained.methods.captureWindow209;

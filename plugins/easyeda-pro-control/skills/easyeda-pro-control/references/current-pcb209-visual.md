@@ -3,7 +3,7 @@
 Use this workflow to fit an existing disposable PCB or move its camera to exact
 mil coordinates. It offers three viewport operations through a separate native
 owner. Source implementation, offline tests and native compilation exist;
-installed142600 passed one disposable zoom-to at0,0 mil and scale ratio1,
+installed 142600 passed one disposable zoom-to at 0,0 mil and scale ratio 1,
 unchanged selection, normal root/Job exit and helper release. The whole closed
 fixture stayed byte-exact. Fit-all, fit-selected and other argument domains
 remain unvalidated. Read the [case record](https://github.com/jan-guenter/easyeda-pro-agent-plugin/blob/main/docs/history/2026-10-29-supplied-design-inspection-and-viewport.md)
@@ -64,9 +64,9 @@ shares the original transport budget with viewport work. This visual grammar
 does not expose the ordinary opening owner's other optional readers.
 
 Coordinates are finite, exclude negative zero and have absolute value at most
-1e12 mil. Scale ratio is between0.00001 and1000000. Selected IDs are distinct,
-well-formed UTF-16 strings of at most256 units, with at most256 IDs. Fit-selected
-requires a nonempty list. The complete JSON operation is at most12000 UTF-8
+1e12 mil. Scale ratio is between 0.00001 and 1000000. Selected IDs are distinct,
+well-formed UTF-16 strings of at most 256 units, with at most 256 IDs. Fit-selected
+requires a nonempty list. The complete JSON operation is at most 12000 UTF-8
 bytes. The selected-list and whole success/failure packet reservations are
 checked before camera dispatch. Unsupported or excessive values refuse whole.
 
@@ -85,7 +85,51 @@ state is not independently double-sampled, rendering completion is not observed
 and the result contains no screenshot. A three-second observer prevents later
 camera dispatch after expiry but cannot cancel a handler already sent.
 
-## Capture the original window
+## Choose one capture method
+
+Choose an image method before dispatch. `capture-renderer-viewport` captures
+the original application renderer's viewport; `capture-window` requests pixels
+from the original Windows HWND. They share one consumed image slot, including
+after a missing reply, blank image or failed postcheck. There is no automatic
+fallback, second-method retry or adoption of a historical owner. The camera
+operation has its own once-only reservation.
+
+### Capture the renderer viewport
+
+After published `observe-pcb-opening`, validate and send
+`capture-renderer-viewport` with the original operation/binding,
+`acceptRendererCaptureEffects:true` and `confirmLocalArtifact:true`. No HWND,
+target URL, clip, dimensions, format, screenshot options or foreground request
+is accepted. The fixed command uses PNG `Page.captureScreenshot` on the retained
+source-qualified parent Page session, with surface capture enabled and capture
+beyond the viewport disabled. It does not use an Electron main-process fallback
+or this plugin's GDI bitmap acquisition. This does not prove that Chromium avoids
+GPU resources or can capture a hidden/minimized application successfully.
+
+The owner brackets capture with original parent/ancillary-frame and active-PCB
+checks, reserving eleven CDP requests in the existing global allocator and
+protected output/cleanup capacity. Its durable renderer intent is separate from
+the window paint intent. A successful reply is published only after original
+session, source and target reproof. Record inspection uses
+`observation:"renderer-capture209"`; it does not dispatch a second screenshot.
+
+The managed PNG is bounded to 256 KiB, 4,096 pixels per side and 4,194,304 pixels
+total. The decoder checks the complete RGB/RGBA8 noninterlaced PNG, CRCs, standard
+scanline filters and exact bounded zlib consumption. Ancillary metadata remains
+opaque and byte-exact. Dimensions, hash and raw RGB-zero status come from the
+decoded image, not caller or native summary fields. The result accepts no color,
+alpha-display, metadata, stable-render, complete-board or saved-design claim.
+The viewport can include application UI and child-frame content; it is not a
+canvas-only image. Use the exact returned managed path for visual inspection.
+
+This renderer route has source/offline coverage. Connected visual acceptance
+requires a fresh installed generation and remains pending. The older installed
+174608 window capture returned a valid but all-RGB-zero PNG; that consumed owner
+cannot use this new action as a fallback. Its terminal cleanup and the scope of
+the native metadata observations are retained in the
+[batch record](https://github.com/jan-guenter/easyeda-pro-agent-plugin/blob/5424343bbb026334fc3b1eb0292dbc1d7eab34f7/docs/history/2026-10-31-held-cache-and-capture-validation.md).
+
+### Capture the original window
 
 After published `observe-pcb-opening`, use `observe-capture-readiness` with the
 original operation/binding to query the unique original window and transport
@@ -96,43 +140,52 @@ does not recheck active PCB identity or authorize capture. The window can change
 immediately afterward; actual capture repeats all original-owner, context,
 geometry and capacity checks. No caller PID/HWND or resize is accepted.
 
-For a visible maximized original window, validate `restore-window-for-capture`
-with the same operation/binding and `acceptWindowRestoreEffects:true`. This
-separate once-only action requests the fixed nonactivating show command4 through
+Capture an already geometry-eligible window directly, including a maximized
+window, when transport capacity is eligible, the original PCB source is retained
+and the reader is available. Readiness remains a snapshot; capture must pass its
+fresh original-owner, active-PCB and geometry checks. Direct capture requests
+painting at the observed bounds. It establishes no render completion or
+persistence result.
+
+Restore and resize are optional. If a visible maximized original window needs
+the fixed smaller size, first validate `restore-window-for-capture` with the same
+operation/binding and `acceptWindowRestoreEffects:true`. This
+separate once-only action requests the fixed nonactivating show command 4 through
 [ShowWindowAsync](https://learn.microsoft.com/en-us/windows/win32/api/winuser/nf-winuser-showwindowasync).
 Windows may restore the previous position as well as size; accepting restore
 includes that possible position change. No caller HWND, coordinates or show
 command are accepted. This changes window state, not a project backup or design.
 
-The native API reports only that its request started. Command4 follows
+The native API reports only that its request started. Command 4 follows
 [SW_SHOWNOACTIVATE](https://learn.microsoft.com/en-us/windows/win32/api/winuser/nf-winuser-showwindow):
 it requests the most recent size/position without activation. The adapter makes
 no Z-order, geometry, rendering or persistence guarantee. It does not use
 `SetWindowPlacement`, style changes, a foreground request or synchronous restore.
 Minimized, hidden, ambiguous and ordinary-purpose windows remain unsupported.
 
-Restore must precede every resize/capture attempt. Its durable intent is consumed
-before possible dispatch; source/postguard failures, missing replies and refusal
-do not permit retry or an inverse. Before restore, at least30 CDP slots and32MiB
-stdout headroom and two unused readiness-query slots are required. These reserve
+If using restore, complete it before any resize/capture attempt. Its durable
+intent is consumed before possible dispatch. Source/postguard failures, missing
+replies and refusal do not permit retry or an inverse. Before restore, at least 30
+CDP slots, 32 MiB stdout headroom and two unused readiness-query slots are
+required. These reserve
 transport capacity for restore, potential resize and capture; each later stage
 rechecks its remaining output capacity independently. Run readiness after the
 restore result is published and require `restoreStateObserved:true` on the same
-original HWND with `maximized:false`. This snapshot is required before resize or
-capture, and neither later operation treats it as current-state authority. If the
-restored window remains too large, use the fixed resize below and run readiness
-again. If it remains maximized or the window changes, inspect and use only the
-offered cleanup; do not issue another restore.
+original HWND with `maximized:false`. After a restore attempt, this snapshot is
+required before resize or capture. Neither later operation treats it as
+current-state authority. If the restored window remains too large, use the fixed
+resize below and run readiness again. If it remains maximized or the window
+changes, inspect and use only the offered cleanup; do not issue another restore.
 
 For an eligible non-maximized window that needs a smaller size, validate
 `resize-window-for-capture` with the original operation/binding and
-`acceptWindowResizeEffects:true`. It requests fixed1920x1080 using the original
+`acceptWindowResizeEffects:true`. It requests fixed 1920x1080 using the original
 unique window, without caller coordinates, size, movement, activation or Z-order
-changes. One durable intent precedes dispatch. At least20 CDP slots and32MiB
+changes. One durable intent precedes dispatch. At least 20 CDP slots and 32 MiB
 stdout headroom are required before resize, retaining ten slots for later
 capture. Acknowledgment proves only submission. Async posting depends on distinct input
 queues; see [SetWindowPos](https://learn.microsoft.com/en-us/windows/win32/api/winuser/nf-winuser-setwindowpos). Run readiness again and require
-exact1920x1080 at the same original position before capture can consume its
+exact 1920x1080 at the same original position before capture can consume its
 intent. Capture then repeats its fresh checks and recalculates output headroom.
 A missing, refused, clamped or unapplied resize is consumed; it grants no retry
 or automatic restoration. Resize itself refuses maximized windows; use only the
@@ -168,9 +221,9 @@ These are sequential ownership samples. Windows can create descendants during
 enumeration or recycle HWNDs after a check; retained process handles do not pin
 window lifetimes. No atomic window ownership or render completion is claimed.
 The paint request can run application paint handlers. Native
-dimensions and pixels are capped before allocation: at most4096 pixels per
-side and4,194,304 pixels total, with at most256KiB PNG and360,000 bytes for the
-native packet. Before paint, the original transport reserves32MiB of remaining
+dimensions and pixels are capped before allocation: at most 4096 pixels per
+side and 4,194,304 pixels total, with at most 256 KiB PNG and 360,000 bytes for the
+native packet. Before paint, the original transport reserves 32 MiB of remaining
 helper output and a separate protected cleanup allowance, with bounded CDP
 requests, polls and control replies. Capacity refusal consumes the capture stage
 while preserving original-owner cleanup. The return contains a managed PNG descriptor and exact dimensions,
@@ -244,7 +297,7 @@ its exact intent digest. A restarted facade cannot adopt old native ownership.
   append a camera-only action. A true result can also hide missing IDs.
 - `dmt_EditorControl.zoom` is a literal false stub. The three operations above
   use implemented zoom-to and fit handlers, not that percentage wrapper.
-- Current209 SDK canvas PNG capture remains unavailable. The image path can allocate
+- Current 209 SDK canvas PNG capture remains unavailable. The image path can allocate
   RGBA, ImageData and canvas data before facade bounds. Original renderer/frame
   ownership, asynchronous capture completion and resource cleanup need their
   own bounded implementation. The separate original-window operation above does

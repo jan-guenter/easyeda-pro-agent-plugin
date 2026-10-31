@@ -21,7 +21,7 @@ const NODE_VERSION = "24.18.0";
 const MAX_REPLY_BYTES = 8 * 1024 * 1024;
 const MAX_OUTPUT_BYTES = 16 * 1024 * 1024;
 const REQUEST_TIMEOUT_MS = 15_000;
-const CATALOG_QUERY_COUNT = 46;
+const CATALOG_QUERY_COUNT = 49;
 // Initialize and tool discovery plus the fixed catalog requests below.
 const REQUEST_LIMIT = 2 + CATALOG_QUERY_COUNT;
 const EXPECTED_TOOLS = [
@@ -274,7 +274,11 @@ async function offlineApi(child: OfflineChild, request: Record<string, unknown>)
   return record(content["result"]);
 }
 
-async function catalogChecks(child: OfflineChild, root: string, sample: () => Promise<void>): Promise<{ readonly tools: number; readonly queries: number; readonly loadedFacadeChecked: true; readonly ratlineContinuationDiscoveryChecked: true; readonly footprintCopyPreparationDiscoveryChecked: true; readonly footprintCopyRoutePreparationDiscoveryChecked: true; readonly footprintMainDiscoveryChecked: true; readonly footprintCombinedDiscoveryChecked: true; readonly footprintCombinedUnknownAbandonmentDiscoveryChecked: true }> {
+/** Check the selected package's restricted offline tool/schema catalog through
+ * its original synthetic child. Exact positive and negative argument checks
+ * dispatch no live action; catalog conformance grants no runtime admission.
+ */
+async function catalogChecks(child: OfflineChild, root: string, sample: () => Promise<void>): Promise<{ readonly tools: number; readonly queries: number; readonly loadedFacadeChecked: true; readonly ratlineContinuationDiscoveryChecked: true; readonly footprintCopyPreparationDiscoveryChecked: true; readonly footprintCopyRoutePreparationDiscoveryChecked: true; readonly footprintMainDiscoveryChecked: true; readonly footprintCombinedDiscoveryChecked: true; readonly footprintCombinedUnknownAbandonmentDiscoveryChecked: true; readonly rendererCaptureDiscoveryChecked: true }> {
   const initialized = await child.request("initialize", {
     protocolVersion: "2024-11-05", capabilities: {}, clientInfo: { name: "easyeda-installed-offline-probe", version: "1.0.0" },
   });
@@ -418,6 +422,18 @@ async function catalogChecks(child: OfflineChild, root: string, sample: () => Pr
   } } });
   requireCheck(combinedAbandonment["valid"] === true && combinedAbandonment["executionAuthorized"] === false,
     "Combined validation refused its exact historical relinquishment schema.");
+  const visual = await offlineApi(child, { action: "pcb209-visual", query: { includeSchemas: true } });
+  requireCheck(visual["wrapperAction"] === "visual" && visual["executionAuthorized"] === false && visual["saveAuthorized"] === false &&
+    Array.isArray(visual["actions"]) && visual["actions"].includes("capture-renderer-viewport"),
+  "Renderer capture discovery lost its separate bounded action or implied execution authority.");
+  const rendererCapture = { action: "capture-renderer-viewport", operationId: "pcb209-visual-offline-catalog",
+    expectedBindingSha256: "a".repeat(64), acceptRendererCaptureEffects: true, confirmLocalArtifact: true };
+  for (const { request, valid } of [{ request: rendererCapture, valid: true },
+    { request: { ...rendererCapture, captureOptions: { fromSurface: false } }, valid: false }]) {
+    const result = await offlineApi(child, { action: "pcb209-visual-validate", query: { request } });
+    requireCheck(result["valid"] === valid && result["validationOnly"] === true && result["saveAuthorized"] === false,
+      "Renderer capture validation accepted caller options or lost its validation-only boundary.");
+  }
   const netlist = await offlineApi(child, { action: "netlist-files", query: { includeSchemas: true } });
   requireCheck(netlist["method"] === "eda.sys_Tool.netlistComparison" && netlist["executionAuthorized"] === false &&
     netlist["invocationEnabledByDiscovery"] === false && Array.isArray(record(netlist["inputSchema"])["oneOf"]),
@@ -461,7 +477,7 @@ async function catalogChecks(child: OfflineChild, root: string, sample: () => Pr
   requireCheck(fileValidation["valid"] === true && fileValidation["executionAuthorized"] === false &&
     record(fileValidation["requestSummary"])["base64Echoed"] === false && !Object.hasOwn(fileValidation, "request"),
   "Managed library-file validation echoed source or implied execution authority.");
-  return { tools: tools.length, queries: CATALOG_QUERY_COUNT, loadedFacadeChecked: true, footprintMainDiscoveryChecked: true, footprintCombinedDiscoveryChecked: true, footprintCombinedUnknownAbandonmentDiscoveryChecked: true, ratlineContinuationDiscoveryChecked: true, footprintCopyPreparationDiscoveryChecked: true, footprintCopyRoutePreparationDiscoveryChecked: true };
+  return { tools: tools.length, queries: CATALOG_QUERY_COUNT, loadedFacadeChecked: true, footprintMainDiscoveryChecked: true, footprintCombinedDiscoveryChecked: true, footprintCombinedUnknownAbandonmentDiscoveryChecked: true, rendererCaptureDiscoveryChecked: true, ratlineContinuationDiscoveryChecked: true, footprintCopyPreparationDiscoveryChecked: true, footprintCopyRoutePreparationDiscoveryChecked: true };
 }
 
 export async function probeInstalledOfflineCatalog(installedRoot: string): Promise<Record<string, unknown>> {

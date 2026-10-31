@@ -49,6 +49,8 @@ import { currentFootprintSavedCacheAccessorWire } from "./current-footprint-save
 // Five DOM reproofs. Totals include18 constructor-bundle/source checks and21
 // Bound-teardrop-owner checks. No writer or caller override is admitted.
 export const DIAGNOSTIC_REQUEST_LIMIT = 103;
+export const CURRENT_RENDERER_CAPTURE_PARAMS = Object.freeze({ format: "png", fromSurface: true,
+  captureBeyondViewport: false, optimizeForSpeed: false } as const);
 export function diagnosticOpeningParams(uniqueContextId: string, target: CurrentDisposableOpenSealedTarget,
   phase: CurrentPcbDiagnosticOpeningPhase): Readonly<{
     functionDeclaration: string; uniqueContextId: string; arguments: readonly Readonly<{ value: unknown }>[];
@@ -137,6 +139,7 @@ export type DiagnosticCommand =
   | Readonly<{ id: number; method: "Browser.getVersion" | "Target.getTargets" }>
   | Readonly<{ id: number; method: "Target.attachToTarget"; params: Readonly<{ targetId: string; flatten: true }> }>
   | Readonly<{ id: number; method: "Page.enable" | "Page.getFrameTree" | "Runtime.enable"; params: Readonly<Record<string, never>>; sessionId: string }>
+  | Readonly<{ id: number; method: "Page.captureScreenshot"; params: typeof CURRENT_RENDERER_CAPTURE_PARAMS; sessionId: string }>
   | Readonly<{ id: number; method: "Debugger.enable"; params: Readonly<{ maxScriptsCacheSize: 33_554_432 }>; sessionId: string }>
   | Readonly<{ id: number; method: "Debugger.getScriptSource"; params: Readonly<{ scriptId: string }>; sessionId: string }>
   | Readonly<{ id: number; method: "DOM.getFrameOwner"; params: Readonly<{ frameId: string }>; sessionId: string }>
@@ -340,6 +343,21 @@ function modelWire(id: number, method: unknown, params: Record<string, unknown>,
  * JSON itself. Canonical re-encoding prevents an alternative wire vocabulary. */
 export function diagnosticNativeRequest(chunk: Buffer): Readonly<Record<string, unknown>> {
   return fixedNativeRequest(chunk, false);
+}
+/** Only a born visual owner selects this separate fixed screenshot vocabulary.
+ * The ordinary diagnostic encoder still refuses it. IDs share its existing
+ * global allocator; callers cannot select a target, clip or screenshot flags. */
+export function visualDiagnosticNativeRequest(chunk: Buffer): Readonly<Record<string, unknown>> {
+  if (chunk.length > 4096 || chunk.at(-1) !== 0) { return diagnosticNativeRequest(chunk); }
+  const raw: unknown = JSON.parse(new TextDecoder("utf-8", { fatal: true }).decode(chunk.subarray(0, -1)));
+  if (!diagnosticRecord(raw) || raw["method"] !== "Page.captureScreenshot") { return diagnosticNativeRequest(chunk); }
+  if (!diagnosticExact(raw, ["id", "method", "params", "sessionId"]) || !Number.isSafeInteger(raw["id"]) ||
+      typeof raw["id"] !== "number" || raw["id"] < 1 || raw["id"] > DIAGNOSTIC_REQUEST_LIMIT ||
+      !diagnosticToken(raw["sessionId"]) || !diagnosticRecord(raw["params"]) ||
+      JSON.stringify(raw["params"]) !== JSON.stringify(CURRENT_RENDERER_CAPTURE_PARAMS)) { return fail(); }
+  const command = { id: raw["id"], method: "Page.captureScreenshot", params: CURRENT_RENDERER_CAPTURE_PARAMS, sessionId: raw["sessionId"] };
+  if (!chunk.equals(Buffer.from(`${JSON.stringify(command)}\0`))) { return fail(); }
+  return Object.freeze({ action: "renderer-viewport-send", requestId: raw["id"], sessionId: raw["sessionId"] });
 }
 /** Only the separate combined discovery owner selects this encoder. The
  * ordinary diagnostic/startup encoders keep refusing this discriminator. */

@@ -1,5 +1,6 @@
 # Project history
 
+- [2026-10-31 Held cache qualification and capture validation](2026-10-31-held-cache-and-capture-validation.md).
 - [2026-10-30 Cache accessor, clock closure and window diagnostics](2026-10-30-cache-accessor-clock-and-window-diagnostics.md).
 - [2026-10-30 Native cache metadata and reader integration](2026-10-30-native-cache-and-reader-integration.md).
 - [2026-10-30 Forward owner and installation recovery](2026-10-30-forward-owner-and-installation-recovery.md).
