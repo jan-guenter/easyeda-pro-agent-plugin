@@ -14,6 +14,7 @@ import { executeManagedLibraryFiles } from "../src/managed-library-files-runtime
 import { managedLibraryFilesRequestSchema } from "../src/managed-library-files.ts";
 import { apiRequestSchema, queryOfflineApi } from "../src/offline-api.ts";
 import { managedProjectFootprintArchive } from "./helpers/managed-project-footprint-archive.ts";
+import { managedLibraryArchiveFixture } from "./helpers/managed-library-archive.ts";
 
 const request = { action: "prepare-file", name: "registration.efoo",
   base64: Buffer.from('["DOCTYPE","FOOTPRINT","1.0"]\n["HEAD",{}]\n').toString("base64"), confirmLocalArtifact: true };
@@ -78,6 +79,34 @@ void test("strict registration refuses injected paths and mismatched actions bef
   const failed = await tool.invoke({ request: { ...request, base64: "e30=" } });
   assert.ok(isRecord(failed)); assert.equal(failed["failed"], true); assert.equal(tool.calls.length, 1);
   assert.equal(JSON.stringify(failed).includes("e30="), false);
+});
+
+void test("registered library archive actions inspect complete supplied footprint and symbol source in every mode", async () => {
+  for (const mode of ["legacy-reviewed", "calculation-only", "public-utilities-only"] as const) {
+    for (const docType of [4, 2] as const) {
+      const fixture = managedLibraryArchiveFixture(docType); const tool = await registration(mode);
+      const prepared = await tool.invoke({ request: { action: "prepare-file", name: "Supplied.elibz2", base64: fixture.archive.toString("base64"), confirmLocalArtifact: true } });
+      assert.ok(isRecord(prepared) && isRecord(prepared["result"]));
+      const file = prepared["result"]["file"];
+      const extracted = await tool.invoke({ request: { action: "extract-library-archive-sources", file } });
+      assert.ok(isRecord(extracted) && isRecord(extracted["result"]));
+      assert.equal(extracted["result"]["sourceCount"], 1); assert.equal(extracted["result"]["libraryArchiveRecordFramingValidated"], true);
+      const bound = { file, expectedSourceSetSha256: extracted["result"]["sourceSetSha256"] };
+      const roster = await tool.invoke({ request: { action: "list-library-archive-sources", ...bound } });
+      assert.ok(isRecord(roster) && isRecord(roster["result"]));
+      const entries = roster["result"]["sources"]; assert.ok(Array.isArray(entries) && isRecord(entries[0]));
+      assert.equal(entries[0]["docType"], docType); assert.equal(Object.hasOwn(entries[0], "documentSource"), false);
+      const raw = await tool.invoke({ request: { action: "read-library-archive-source", ...bound, sourceId: entries[0]["sourceId"] } });
+      assert.ok(isRecord(raw) && isRecord(raw["result"]));
+      assert.equal(raw["result"]["documentSource"], fixture.source); assert.equal(raw["result"]["symbolSubtypeVerified"], false);
+      assert.equal(raw["result"]["publicSdkMethodExecuted"], false); assert.equal(raw["result"]["installedRuntimeAdmission"], false);
+      assert.equal(raw["result"]["cadFramingValidated"], false); assert.equal(tool.calls.length, 4);
+      for (const action of ["export-system-library-file", "inspect-library-archive-symbol-pins", "import-library-archive"]) {
+        await assert.rejects(tool.invoke({ request: { action, ...bound, sourceId: entries[0]["sourceId"] } }));
+      }
+      assert.equal(tool.calls.length, 4);
+    }
+  }
 });
 
 void test("registered tool reads current combined project sources and raw schematic/PCB reports in every mode", async () => {

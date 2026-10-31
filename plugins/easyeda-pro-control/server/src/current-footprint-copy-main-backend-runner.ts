@@ -32,14 +32,17 @@ import type { CurrentFootprintCopyMainCompletionOrigin, CurrentFootprintCopyMain
 import { requireCurrentFootprintCopyMainRequestHeldFinalPb, transferCurrentFootprintCopyMainRequestHeldFinalPb } from "./current-footprint-copy-main-request-runner.ts";
 import type { CurrentFootprintCopyMainRequestHeldFinalPb } from "./current-footprint-copy-main-request-runner.ts";
 // oxlint-disable-next-line import/no-cycle -- The native owner constructs this runner; its original private-factory guards are invoked only after that construction, never at module initialization. A callback registration seam would weaken this authority check.
-import { assertCurrentFootprintCombinedMainCompletionCapacity, beginCurrentFootprintCombinedMainCompletion, currentFootprintCombinedMainGenerationExited, failCurrentFootprintCombinedMainCompletion, requireCurrentFootprintCombinedMainCapability, requireCurrentFootprintCombinedMainCleanup, requireCurrentFootprintCombinedPairedSchedule, retireCurrentFootprintCombinedMainCompletion, sendCurrentFootprintCombinedMainCommand, sendCurrentFootprintCombinedMainCompletion } from "./current-pcb-diagnostic-owner.ts";
+import { assertCurrentFootprintCombinedMainCompletionCapacity, beginCurrentFootprintCombinedMainCompletion, currentFootprintCombinedMainGenerationExited, failCurrentFootprintCombinedMainCompletion, requireCurrentFootprintCombinedMainCapability, requireCurrentFootprintCombinedMainCleanup, requireCurrentFootprintCombinedPairedSchedule, requireCurrentFootprintHeadAgeBootstrapCapability, retireCurrentFootprintCombinedMainCompletion, sendCurrentFootprintCombinedMainCommand, sendCurrentFootprintCombinedMainCompletion } from "./current-pcb-diagnostic-owner.ts";
 import type { CurrentFootprintCombinedMainCapability } from "./current-pcb-diagnostic-owner.ts";
 import type { CurrentFootprintCopyClockRpcOrigin } from "./current-footprint-copy-clock-rpc-origin.ts";
 import { freezeDeep } from "./sqlite-inventory-core.ts";
+import { CURRENT_FOOTPRINT_HEAD_AGE_CONTEXT_BIND_PROGRAM, CURRENT_FOOTPRINT_HEAD_AGE_CONTEXT_CAPTURE_PROGRAM, decodeCurrentFootprintHeadAgeContextAccessor, decodeCurrentFootprintHeadAgeContextArray, decodeCurrentFootprintHeadAgeContextScopes, qualifyCurrentFootprintHeadAgeContextSource, requireCurrentFootprintHeadAgeContextSource } from "./current-footprint-head-age-context.ts";
+import type { CurrentFootprintHeadAgeBootstrapCapability, CurrentFootprintHeadAgeContextSource } from "./current-footprint-head-age-context.ts";
 import { CURRENT_FOOTPRINT_HEAD_AGE_CAPTURE_PROGRAM, CURRENT_FOOTPRINT_HEAD_AGE_DATE_METHODS, CURRENT_FOOTPRINT_HEAD_AGE_OBSERVE_PROGRAM,
   decodeCurrentFootprintHeadAgeArray, decodeCurrentFootprintHeadAgeMainObservation, decodeCurrentFootprintHeadAgeNativeMethod } from "./current-footprint-head-age-main.ts";
 import type { CurrentFootprintHeadAgeMainObservation } from "./current-footprint-head-age-main.ts";
 import { validateClockControlScope } from "./symbol-clock-controls.ts";
+import { decodeCurrentFootprintHeadAgeCdpReply, isCurrentFootprintHeadAgeCdpPhase, rejectCurrentFootprintHeadAgeCdpException } from "./current-footprint-head-age-cdp-exception.ts";
 
 export { currentFootprintCopyMainBackendObservationSchema } from "./current-footprint-copy-main-backend-observation.ts";
 export type { CurrentFootprintCopyMainBackendObservation } from "./current-footprint-copy-main-backend-observation.ts";
@@ -104,7 +107,7 @@ interface RegistrationLocationFailure {
   readonly columnNumber: number;
   readonly scriptObserved: boolean;
 }
-type MetadataRole = Role | "Date" | "now" | "retained-array" | "head-age-array" | typeof CURRENT_FOOTPRINT_HEAD_AGE_DATE_METHODS[number];
+type MetadataRole = "head-age-context-array" | "head-age-context-getter" | "head-age-context-setter" | "head-age-context-getter-scopes" | "head-age-context-setter-scopes" | Role | "Date" | "now" | "retained-array" | "head-age-array" | typeof CURRENT_FOOTPRINT_HEAD_AGE_DATE_METHODS[number];
 interface SchemaIssue { readonly code: string; readonly path: readonly (string | number)[] }
 const schemaPathKeys = new Set(["args", "breakpointId", "callFrameId", "callFrames", "className", "columnNumber", "configurable", "context", "debuggerId",
   "description", "enumerable", "executionContextId", "hitBreakpoints", "id", "internalProperties", "isOwn", "lineNumber", "location", "locations", "name",
@@ -135,6 +138,9 @@ export class CurrentFootprintCopyMainBackendRunner {
   readonly #methods: readonly unknown[];
   readonly #decoder = new TextDecoder("utf-8", { fatal: true });
   readonly #scripts = new Map<string, number>();
+  readonly #headAgeBootstrapCapture: boolean;
+  readonly #headAgeBootstrapCapability: CurrentFootprintHeadAgeBootstrapCapability | null;
+  #headAgeBootstrapScriptId: string | null = null;
   readonly #resolved: Resolved[] = [];
   readonly #replies: unknown[] = [];
   #text = "";
@@ -194,11 +200,19 @@ export class CurrentFootprintCopyMainBackendRunner {
   #completionRetireAttempted = false;
   #headAgePreparationAttempted = false;
   #headAgeArray: string | null = null;
+  #headAgeContextSource: CurrentFootprintHeadAgeContextSource | null = null;
   #headAgeAttempted = false;
-  public constructor(transport: CurrentFootprintCopyMainBackendTransport) {
+  /** Retain the fixed transport and optional original-owner bootstrap token.
+   * Copied tokens refuse before any inspector request is issued. */
+  public constructor(transport: CurrentFootprintCopyMainBackendTransport, headAgeBootstrap?: CurrentFootprintHeadAgeBootstrapCapability) {
+    if (headAgeBootstrap !== undefined) { requireCurrentFootprintHeadAgeBootstrapCapability(headAgeBootstrap, transport); }
+    this.#headAgeBootstrapCapture = headAgeBootstrap !== undefined; this.#headAgeBootstrapCapability = headAgeBootstrap ?? null;
     this.#methods = methods(transport); this.#transport = transport;
   }
+  /** Reprove transport, bootstrap custody, source and the active deadline.
+   * Cleanup retains its separate lifetime without reopening normal work. */
   #same(cleanup: boolean): void {
+    if (this.#headAgeBootstrapCapability !== null) { requireCurrentFootprintHeadAgeBootstrapCapability(this.#headAgeBootstrapCapability, this.#transport); }
     need(methods(this.#transport).every((value, index) => value === this.#methods[index]) && !this.#released &&
       (cleanup || !this.#failed && !this.#releaseAttempted && !this.#normalCloseAttempted), "OWNER");
     if (this.#source !== null) { requireCurrentFootprintCopyMainBackendSource(this.#source); }
@@ -215,7 +229,10 @@ export class CurrentFootprintCopyMainBackendRunner {
     need(this.#resolved.length < 8, "RESOLUTION_BOUND"); this.#resolved.push(record);
     if (this.#breakpoint !== null) { need(record.breakpointId === this.#breakpoint, "FOREIGN_BREAKPOINT"); this.#location(record.location); }
   }
+  /** Account for bounded original inspector events and exact source locations.
+   * Only the owner-issued head-age token admits the passive Node bootstrap. */
   #event(method: string, input: unknown): void {
+    if (this.#headAgeBootstrapCapability !== null) { requireCurrentFootprintHeadAgeBootstrapCapability(this.#headAgeBootstrapCapability, this.#transport); }
     this.#events += 1; need(this.#events <= 4096, "EVENT_BOUND");
     if (this.#originActive && (method === "Debugger.paused" || method === "Debugger.resumed")) {
       need(this.#originEvents.length < 64, "REQUEST_EVENT_BOUND");
@@ -225,6 +242,15 @@ export class CurrentFootprintCopyMainBackendRunner {
       this.#originEvents.push(Object.freeze({ method, params: freezeDeep(input) })); return;
     }
     if (method === "Debugger.scriptParsed") {
+      if (this.#headAgeBootstrapCapture) {
+        const bootstrap = z.looseObject({ scriptId: handle, url: z.literal("node:internal/bootstrap/node"), executionContextId: z.number().int().nonnegative(),
+          startLine: z.literal(0), startColumn: z.literal(0), endLine: z.literal(479), endColumn: z.literal(0), length: z.literal(15_939),
+          isLiveEdit: z.literal(false), hasSourceURL: z.literal(false), isModule: z.literal(false), scriptLanguage: z.literal("JavaScript"),
+          embedderName: z.literal("node:internal/bootstrap/node") }).safeParse(input);
+        if (bootstrap.success) {
+          need(this.#headAgeBootstrapScriptId === null, "HEAD_AGE_BOOTSTRAP_CHANGED"); this.#headAgeBootstrapScriptId = bootstrap.data.scriptId; return;
+        }
+      }
       const script = z.looseObject({ scriptId: handle, url: z.string().max(4096), executionContextId: z.number().int().positive() }).parse(input);
       if (new RegExp(URL_PATTERN, "u").test(script.url)) { need(!this.#scripts.has(script.scriptId) && this.#scripts.size === 0, "APP_SCRIPT_CHANGED"); this.#scripts.set(script.scriptId, script.executionContextId); }
       return;
@@ -271,6 +297,9 @@ export class CurrentFootprintCopyMainBackendRunner {
   async #wait(predicate: () => boolean, cleanup = false): Promise<void> {
     const started = performance.now(); while (!predicate()) { need(performance.now() - started < 20_000, "REPLY_DEADLINE"); await this.#pump(cleanup); }
   }
+  /** Consume one fixed request number and retain its sole pending reply.
+   * Head-age exceptions are captured before success decoding; cleanup keeps
+   * its own counter and cannot repeat a consumed normal request. */
   async #request(input: Command | CurrentFootprintCopyMainRequestCollectCommand | CurrentFootprintCopyMainCompletionCommand, cleanup = false): Promise<unknown> {
     this.#phase = input.phase; await this.#current(cleanup);
     const collection = input.phase.startsWith("request-");
@@ -295,7 +324,9 @@ export class CurrentFootprintCopyMainBackendRunner {
       await sendCurrentFootprintCombinedMainCommand(this.#originCapability, this, validateCurrentFootprintCopyMainRequestCollectCommand(input), id);
     } else { await this.#transport.send(validateCurrentFootprintCopyMainBackendCommand(input), id); }
     await this.#current(cleanup); await this.#wait(() => this.#replySeen, cleanup);
-    const result = this.#reply; this.#pendingId = null; this.#reply = null; this.#replySeen = false; return result;
+    const result = this.#reply; this.#pendingId = null; this.#reply = null; this.#replySeen = false;
+    if (isCurrentFootprintHeadAgeCdpPhase(input.phase)) { rejectCurrentFootprintHeadAgeCdpException(result, input.phase); }
+    return result;
   }
   #properties(objectId: string, role: MetadataRole): Promise<unknown> {
     this.#metadataRole = role;
@@ -376,20 +407,38 @@ export class CurrentFootprintCopyMainBackendRunner {
     need(!this.#originAttempted && !this.#busy && packet === this.#packet && issued.get(packet) === this, "ORIGINAL_PACKET_REQUIRED"); this.#busy = true;
     try { await this.#reprove(); } catch (error) { this.#fail(error); throw error; } finally { this.#busy = false; }
   }
-  /** The native owner admits these two fixed phases only for its separate
+  /** The native owner admits the fixed head-age phases only for its separate
    * head-age birth. This method cannot grant that birth to another transport.
    * Every actual Date method receives native V8 metadata checks before the one
    * synchronous parser/control call; failures consume the complete attempt. */
-  public async prepareHeadAge(): Promise<void> {
-    need(!this.#headAgePreparationAttempted && !this.#originAttempted && !this.#busy && this.#packet !== null && issued.get(this.#packet) === this &&
+  public async prepareHeadAge(nativeRootPid: number): Promise<void> {
+    need(this.#headAgeBootstrapCapture && !this.#headAgePreparationAttempted && !this.#originAttempted && !this.#busy && this.#packet !== null && issued.get(this.#packet) === this &&
       this.#retainedArray !== null && this.#sourceArray !== null, "HEAD_AGE_CONSUMED");
     this.#headAgePreparationAttempted = true; this.#busy = true;
     try {
+      need(Number.isSafeInteger(nativeRootPid) && nativeRootPid > 0 && nativeRootPid <= 4_294_967_295, "HEAD_AGE_NATIVE_ROOT");
       await this.#reprove();
+      const captured = objectReply.parse(await this.#request({ phase: "head-age-context-capture", method: "Runtime.callFunctionOn", params: {
+        ...FLAGS, objectId: this.#sourceArray, functionDeclaration: CURRENT_FOOTPRINT_HEAD_AGE_CONTEXT_CAPTURE_PROGRAM,
+        arguments: [{ objectId: this.#retainedArray }], returnByValue: false } }));
+      need(captured.result.description === "Array(4)", "HEAD_AGE_CONTEXT_ARRAY");
+      const accessors = decodeCurrentFootprintHeadAgeContextArray(await this.#properties(captured.result.objectId, "head-age-context-array"));
+      const getter = decodeCurrentFootprintHeadAgeContextAccessor(await this.#properties(accessors.getter, "head-age-context-getter"), "getter");
+      const setter = decodeCurrentFootprintHeadAgeContextAccessor(await this.#properties(accessors.setter, "head-age-context-setter"), "setter");
+      need(getter.scriptId === setter.scriptId && getter.scriptId === this.#headAgeBootstrapScriptId, "HEAD_AGE_CONTEXT_SCRIPT");
+      const source = z.object({ scriptSource: z.string().length(15_939) }).strict().parse(await this.#request({ phase: "head-age-context-source", method: "Debugger.getScriptSource", params: { scriptId: getter.scriptId } }));
+      this.#headAgeContextSource = qualifyCurrentFootprintHeadAgeContextSource(source.scriptSource);
+      const getterScopes = decodeCurrentFootprintHeadAgeContextScopes(await this.#properties(getter.scopesId, "head-age-context-getter-scopes"));
+      const setterScopes = decodeCurrentFootprintHeadAgeContextScopes(await this.#properties(setter.scopesId, "head-age-context-setter-scopes"));
+      const context = objectReply.parse(await this.#request({ phase: "head-age-context-bind", method: "Runtime.callFunctionOn", params: {
+        ...FLAGS, objectId: getterScopes[0], functionDeclaration: CURRENT_FOOTPRINT_HEAD_AGE_CONTEXT_BIND_PROGRAM,
+        arguments: [{ objectId: getterScopes[1] }, { objectId: setterScopes[0] }, { objectId: setterScopes[1] },
+          { objectId: captured.result.objectId }, { value: nativeRootPid }], returnByValue: false } }));
+      need(context.result.description === "Array(5)", "HEAD_AGE_CONTEXT_BOUND"); requireCurrentFootprintHeadAgeContextSource(this.#headAgeContextSource);
       const selected = objectReply.parse(await this.#request({ phase: "head-age-capture", method: "Runtime.callFunctionOn", params: {
         ...FLAGS, objectId: this.#sourceArray, functionDeclaration: CURRENT_FOOTPRINT_HEAD_AGE_CAPTURE_PROGRAM,
-        arguments: [{ objectId: this.#retainedArray }], returnByValue: false } }));
-      need(selected.result.description === "Array(15)", "HEAD_AGE_ARRAY");
+        arguments: [{ objectId: this.#retainedArray }, { objectId: context.result.objectId }], returnByValue: false } }));
+      need(selected.result.description === "Array(16)", "HEAD_AGE_ARRAY");
       const ids = decodeCurrentFootprintHeadAgeArray(await this.#properties(selected.result.objectId, "head-age-array"));
       for (const [index, name] of CURRENT_FOOTPRINT_HEAD_AGE_DATE_METHODS.entries()) {
         const id = ids[index]; need(id !== undefined, "HEAD_AGE_METHOD"); decodeCurrentFootprintHeadAgeNativeMethod(await this.#properties(id, name), name);
@@ -408,8 +457,8 @@ export class CurrentFootprintCopyMainBackendRunner {
       const observed = await this.#request({ phase: "head-age-observe", method: "Runtime.callFunctionOn", params: {
         ...FLAGS, throwOnSideEffect: false, objectId: this.#headAgeArray, functionDeclaration: CURRENT_FOOTPRINT_HEAD_AGE_OBSERVE_PROGRAM,
         arguments: [{ value: scope.createdAtLiteral }, { value: Date.parse(`${scope.createdAtLiteral.replace(" ", "T")}Z`) }], returnByValue: true } });
-      const result = z.object({ result: z.object({ type: z.literal("object"), value: z.unknown() }).strict() }).strict().parse(observed);
-      const decoded = decodeCurrentFootprintHeadAgeMainObservation(result.result.value, scope.createdAtLiteral); await this.#reprove(); return decoded;
+      const value = decodeCurrentFootprintHeadAgeCdpReply(observed);
+      const decoded = decodeCurrentFootprintHeadAgeMainObservation(value, scope.createdAtLiteral); await this.#reprove(); return decoded;
     } catch (error) { this.#fail(error); throw error; } finally { this.#busy = false; }
   }
   public async release(): Promise<void> {

@@ -138,12 +138,14 @@ import { prepareCurrentFootprintHeadAgeSqlHead, requireCurrentFootprintHeadAgeSq
 import type { CurrentFootprintHeadAgeSqlHead } from "./current-footprint-head-age-sql.ts";
 import { CURRENT_FOOTPRINT_HEAD_AGE_NATIVE_LIMITS, currentFootprintHeadAgeNativeWire } from "./current-footprint-head-age-native.ts";
 import { captureCurrentFootprintHeadAgeReply } from "./current-footprint-head-age-main.ts";
+import type { CurrentFootprintHeadAgeBootstrapCapability } from "./current-footprint-head-age-context.ts";
 import { compareCurrentFootprintHeadAgeObservation } from "./current-footprint-head-age-observation.ts";
 import type { CurrentFootprintHeadAgeObservation } from "./current-footprint-head-age-observation.ts";
 import type { CurrentFootprintHeldCacheValidationBinding } from "./current-footprint-held-cache-validation.ts";
 import { currentFootprintHeldCacheValidationIdSchema } from "./current-footprint-held-cache-validation-schema.ts";
 import { CURRENT_FOOTPRINT_HELD_CACHE_DIAGNOSTIC_PROFILE, CURRENT_FOOTPRINT_HELD_CACHE_PAGE_READINESS } from "./current-footprint-held-cache-diagnostic-profile.ts";
 import { CurrentFootprintHeldCachePageReadiness } from "./current-footprint-held-cache-page-readiness.ts";
+import { issueCurrentFootprintHeldCacheFrameTargetTransition } from "./current-footprint-held-cache-frame-transition.ts";
 import type { CurrentFootprintHeldCacheStartupObservation } from "./current-footprint-held-cache-page-readiness.ts";
 import { join } from "node:path";
 import { requireCurrentFootprintCopyOwned } from "./current-footprint-copy-preparation-runtime.ts";
@@ -191,8 +193,8 @@ import { CurrentFootprintCopyMainBackendRunner } from "./current-footprint-copy-
 import type { CurrentFootprintCopyMainBackendObservation } from "./current-footprint-copy-main-backend-runner.ts";
 
 
-const HELPER_SHA256 = "e9bc47e9c73afd8340f4ffc43922e506eac609c66d7212e039d533945fb3b079";
-const HELPER_BYTES = 1_036_067;
+const HELPER_SHA256 = "c751ba35fe05f56b8ff24ec333b26468959f955475050a8e1784f1effbbbed8d";
+const HELPER_BYTES = 1_041_544;
 const heldRunnerDescriptors = Object.getOwnPropertyDescriptors(CurrentFootprintSavedCacheHeldRunner.prototype);
 /* oxlint-disable typescript/unbound-method -- Retain fixed methods and invoke them only on the original private-field runner. */
 const heldRunnerMethods = Object.freeze({ prepare: CurrentFootprintSavedCacheHeldRunner.prototype.prepare,
@@ -358,6 +360,15 @@ const headAgeValidationFactories = new WeakMap<CurrentFootprintHeadAgeValidation
   options: CurrentPcbDiagnosticInstallationOptions;
   installation: CurrentPcbDiagnosticInstallation;
 }>>();
+const headAgeBootstrapCapabilities = new WeakMap<object, Readonly<{ transport: object; reprove: () => void }>>();
+/** This token admits only the original head-age transport's passive bootstrap
+ * capture. Its fields or a copied transport cannot recreate original custody. */
+export function requireCurrentFootprintHeadAgeBootstrapCapability(capability: CurrentFootprintHeadAgeBootstrapCapability, transport: object): void {
+  if (types.isProxy(capability) || types.isProxy(transport)) { throw error("HEAD_AGE_BOOTSTRAP_CAPABILITY"); }
+  const original = headAgeBootstrapCapabilities.get(capability);
+  if (original === undefined || original.transport !== transport) { throw error("HEAD_AGE_BOOTSTRAP_CAPABILITY"); }
+  original.reprove();
+}
 const footprintTerminations = new WeakMap<object, Readonly<{ owner: object; binding: Binding | null; noProcess: boolean }>>();
 export interface CurrentFootprintCombinedMainCapability {
   readonly profile: "private.current-footprint-combined-main-capability.v1";
@@ -963,7 +974,12 @@ class CurrentPcbRetainedOwnerCore {
     const context = new CurrentPcbDiagnosticContext(targetId); this.#stagedContext = context;
     try {
       const targets = await this.#transfer(() => this.#pipe.getTargets());
-      if (JSON.stringify(diagnosticTargetInventory(targets).find(item => item["targetId"] === targetId)) !== JSON.stringify(original)) { throw error("FRAME_TARGET_CHANGED"); }
+      const currentInventory = diagnosticTargetInventory(targets);
+      if (JSON.stringify(currentInventory.find(item => item["targetId"] === targetId)) !== JSON.stringify(original)) {
+        const refusal = error("FRAME_TARGET_CHANGED");
+        if (heldCachePurpose(this.#purpose)) { issueCurrentFootprintHeldCacheFrameTargetTransition(refusal, this.#browserTargets, currentInventory, targetId); }
+        throw refusal;
+      }
       context.selectTarget(targets);
       await this.#attach(context, targetId);
       const page = await this.#transfer(() => this.#pipe.enablePage());
@@ -3149,7 +3165,7 @@ class CurrentPcbRetainedOwnerCore {
     if (this.#mainCompletionState === "retired" && this.#mainCompletionTailReleaseAttempted) { throw error("MAIN_COMPLETION_TAIL_RELEASE_CONSUMED"); }
     if (requestId !== this.#mainRequestId + 1) { throw error("MAIN_REQUEST_ID"); }
     const collection = command.phase.startsWith("request-");
-    if (this.#purpose === "footprint-head-age209" && !["runtime-enable", "debugger-enable", "run-waiting", "resume", "registration-arm", "source", "breakpoint", "frame", "capture", "require", "properties", "remove", "release", "head-age-capture", "head-age-observe"].includes(command.phase)) { throw error("HEAD_AGE_MAIN_PHASE_PURPOSE"); }
+    if (this.#purpose === "footprint-head-age209" && !["runtime-enable", "debugger-enable", "run-waiting", "resume", "registration-arm", "source", "breakpoint", "frame", "capture", "require", "properties", "remove", "release", "head-age-context-capture", "head-age-context-source", "head-age-context-bind", "head-age-capture", "head-age-observe"].includes(command.phase)) { throw error("HEAD_AGE_MAIN_PHASE_PURPOSE"); }
     if (collection && this.#purpose !== CURRENT_FOOTPRINT_COMBINED_PURPOSE) { throw error("MAIN_REQUEST_PURPOSE"); }
     const headAge = command.phase.startsWith("head-age-");
     if (headAge && this.#purpose !== "footprint-head-age209") { throw error("HEAD_AGE_MAIN_PURPOSE"); }
@@ -3386,7 +3402,7 @@ class CurrentPcbRetainedOwnerCore {
       await this.observeFootprintMainConstruction(); this.#headAgeAllocation(true);
       const main = this.#mainRunner, original = this.#binding;
       if (main === null || original === null) { throw error("HEAD_AGE_MAIN_REQUIRED"); }
-      await this.#headAgeMainMethods.prepare.call(main); this.#headAgeAllocation(true);
+      await this.#headAgeMainMethods.prepare.call(main, original.rootPid); this.#headAgeAllocation(true);
       await verifyCurrentDisposableOpenCheckpoint(allocation.binding.prepared, allocation.binding.originalTarget); this.#headAgeAllocation(true);
       const observed = await this.#headAgeMainMethods.observe.call(main, { createdAtLiteral: allocation.head.createdAtLiteral, referenceUtcMs: 0 }); this.#headAgeAllocation(true);
       const bracket = this.#headAgeBracket;
@@ -3423,16 +3439,32 @@ class CurrentPcbRetainedOwnerCore {
     const reply = await this.#request({ action: "head-age-abort", confirmOriginalJob: true });
     if (!exact(reply, ["terminationDispatched"]) || reply["terminationDispatched"] !== true) { throw error("HEAD_AGE_ABORT_REPLY"); }
   }
+  /** Capture the original main registration once on its retained transport.
+   * The distinct head-age purpose alone receives passive bootstrap custody.
+   * That token stays bound to this runner and its original native generation. */
   public async observeFootprintMainConstruction(): Promise<CurrentFootprintCopyMainBackendObservation> {
     this.#requireFootprintMain(false);
     if (this.#mainObservationAttempted) { throw error("MAIN_OBSERVATION_CONSUMED"); }
     this.#mainObservationAttempted = true;
     await this.attachFootprintMain();
-    const runner = new CurrentFootprintCopyMainBackendRunner(Object.freeze({
+    const transport = Object.freeze({
       assertCurrent: (): Promise<void> => this.reproveFootprintMain(),
       send: (command: CurrentFootprintCopyMainBackendCommand, id: number): Promise<void> => this.sendFootprintMain(command, id),
       poll: (cleanup: boolean): Promise<string> => this.pollFootprintMain(cleanup),
-    }));
+    });
+    let runner: CurrentFootprintCopyMainBackendRunner | null = null;
+    let bootstrap: CurrentFootprintHeadAgeBootstrapCapability | undefined;
+    if (this.#purpose === "footprint-head-age209") {
+      this.#headAgeAllocation(true); const original = this.#requireFootprintMain(true);
+      bootstrap = Object.freeze({ profile: "private.current-footprint-head-age-bootstrap-capability.v1", executionAuthorized: false });
+      headAgeBootstrapCapabilities.set(bootstrap, Object.freeze({ transport, reprove: (): void => {
+        // Only the original owner's normal-close lane may retain cleanup
+        // Custody after close is consumed; its main transport admits release only.
+        this.#headAgeAllocation(!this.#mainCloseCleanupActive);
+        if (this.#requireFootprintMain(true) !== original || this.#mainRunner !== runner) { throw error("HEAD_AGE_BOOTSTRAP_OWNER_CHANGED"); }
+      } }));
+    }
+    runner = new CurrentFootprintCopyMainBackendRunner(transport, bootstrap);
     this.#mainRunner = runner; return runner.observe();
   }
   /** Observe original native descriptors before opening. No native roster,

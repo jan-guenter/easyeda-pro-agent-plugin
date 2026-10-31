@@ -1,7 +1,7 @@
 # Supplied libraries, project sources and raw design records
 
-Use `easyeda_control_library_files` to inspect supplied standalone libraries or
-project archives without launching EasyEDA. This tool is available in every
+Use `easyeda_control_library_files` to inspect supplied standalone libraries,
+reusable library archives or project archives without launching EasyEDA. This tool is available in every
 facade mode. It implements bounded native-task-equivalent metadata projections
 and lossless supplied-document source reads. It does not invoke the SDK's
 `extractLibInfo`, `extractProjectInfo` or `getDocumentFootprintSources` methods.
@@ -40,7 +40,9 @@ Standalone-library UUIDs are SHA-256 hashes of filenames, and titles are filenam
 stems. The native metadata projection gives empty descriptions and tags. These
 values are not manufacturer identities, catalog ownership or a complete library
 record. Symbol input is limited to ordinary type 2. Net flags, ports, device
-archives and vendor storage-ID string overloads are unavailable.
+archives and vendor storage-ID string overloads are unavailable. Reusable
+`.elibz2` footprint and declared docType2 symbol archives have the separate
+source workflow below.
 
 Project metadata is title, Boolean `cbbProject` and optional `editorVersion`.
 `.epro` uses `project.json.config`; `.epro2` uses `project2.json` and its
@@ -56,6 +58,56 @@ fields remain in the retained input and are not followed or executed. Keep
 returned scope when reporting the result. Metadata actions return
 `metadataOnly:true`, as do source-roster pages. Source-index extraction and
 source-body pages return `metadataOnly:false` and `cadFramingValidated:false`.
+
+## Read reusable library archive sources
+
+Prepare the actual supplied `.elibz2` bytes with `prepare-file`, then send
+`request:{action:"extract-library-archive-sources",file}`. The result supplies
+`sourceSetSha256`, source counts and one exclusive managed `index`. The index
+binds the whole archive SHA-256, both member hashes, the complete source roster,
+selected metadata hashes and every original source body's hash and lengths.
+Unknown metadata and records remain in the exact prepared archive.
+
+Use `request:{action:"list-library-archive-sources",file,
+expectedSourceSetSha256,offset:0,length:32}` to enumerate the roster, then
+`request:{action:"read-library-archive-source",file,expectedSourceSetSha256,
+sourceId,offset:0,length:4096}` for a selected source. Use only a `sourceId`
+returned by the complete roster. Each call rereads the exact managed archive,
+validates every member and source, and recomputes the full digest before paging.
+Roster offsets count entries. Source offsets count UTF-16 units and retain the
+same surrogate-pair, base64, page-hash and completion rules described below.
+No source member is written to disk.
+
+The supported archive has exactly two ZIP members. One is `footprint2.json`
+or `symbol2.json`; the other has the canonical generated ProLib name and
+`.elibu` extension. The manifest's devices, symbols, footprints and panelLibs
+maps must describe exactly one supported family with 1 to 16 UUID-bound items.
+Each body has an agreeing native DOCHEAD and a distinct copied-header plus
+synthesized META prefix. The roster keeps `exportPrefix` byte offsets and
+hashes separate from `memberByteOffset`, which locates the original body.
+Source pages return that original body exactly, including its supplied final
+delimiter state. The complete source member stays in the prepared archive.
+Do not rename `.elibu` to `.efoo` or `.esym` or treat it as a project archive.
+
+Missing, empty or extra source bodies, mismatched UUID/docType, mixed manifests,
+legacy `.elibz`, device/panel archives, BLOB members and mutable histories
+refuse. Tags support bounded flat string arrays; locale-dependent hierarchical
+tag objects refuse. Each original body and the manifest must fit 256 KiB. Complete lexical
+record framing does not validate shapes, electrical behavior, library ownership,
+saved application state or importability. Manifest docType2 and the synthesized
+META do not prove that the original symbol has ordinary subtype2. No archive
+pin action is registered until that source model is independently established.
+`libraryArchiveRecordFramingValidated:true` reports only the lexical checks;
+`cadFramingValidated:false` and `symbolSubtypeVerified:false` retain their scope.
+If a roster page exceeds the 64 KiB result limit, request fewer entries. The
+tool refuses an oversized response instead of returning an incomplete entry.
+
+This workflow invokes none of the public `get*FileBy*Uuid` library exporters.
+Those methods can omit failed metadata/source reads, and the ordinary library
+worker can export a retained unsaved canvas under a UUID from another library
+path. A future live exporter needs its own original worker and route ownership,
+complete File/member/source verification and persistence lifecycle. Offline
+archive equality supplies none of that evidence.
 
 ## Read project footprint sources
 

@@ -26,6 +26,7 @@ import type { CurrentFootprintSavedCacheHeldObservation } from "../src/current-f
 import type { CurrentFootprintSavedCacheHeldCommand } from "../src/current-footprint-saved-cache-held-protocol.ts";
 import { CURRENT_FOOTPRINT_SAVED_CACHE_HELD_ENGINE as ENGINE } from "../src/current-footprint-saved-cache-held-profile.ts";
 import { currentFootprintHeldCacheStartupObservationSchema } from "../src/current-footprint-held-cache-diagnostic-profile.ts";
+import { issueCurrentFootprintHeldCacheFrameTargetTransition, takeCurrentFootprintHeldCacheFrameTargetTransition } from "../src/current-footprint-held-cache-frame-transition.ts";
 import { createHeldCacheSyntheticPage } from "./helpers/current-footprint-saved-cache-held-fixture.ts";
 import { savedFixture } from "./helpers/current-footprint-copy-v2-saved-fixture.ts";
 
@@ -39,7 +40,7 @@ const startupFailureObservation = currentFootprintHeldCacheStartupObservationSch
 });
 interface Options { readonly copiedFirst?: boolean; readonly lostRelease?: boolean; readonly pendingFirst?: boolean;
   readonly noResource?: boolean; readonly retainedAllocationFailure?: boolean; readonly noProcess?: boolean;
-  readonly pendingPrepare?: boolean; readonly holdAbortDisk?: boolean; readonly startupFailure?: boolean; readonly pendingAllocation?: boolean;
+  readonly pendingPrepare?: boolean; readonly holdAbortDisk?: boolean; readonly startupFailure?: boolean; readonly frameTargetFailure?: boolean; readonly pendingAllocation?: boolean;
   readonly pendingGeneration?: "unbound" | "bound" }
 interface Fixture {
   readonly controller: CurrentFootprintHeldCacheValidation;
@@ -84,6 +85,7 @@ async function fixture(options: Options = {}): Promise<Fixture> {
     return reply;
   } }, { sessionId: "parent", uniqueContextId: "original", projectUuid: target.projectUuid, branchUuid }, ENGINE);
   const scope = createContext({ Object, Reflect, Promise, Error, AggregateError, Set, Date, types, canonicalJson, sha256Json, readerCompletion,
+    takeCurrentFootprintHeldCacheFrameTargetTransition,
     currentDisposableOpenSealedTargetSchema, captureCurrentPcbStringClockReply, CurrentFootprintSavedCacheHeldRunner,
     currentFootprintHeldCacheValidationRequestSchema, acquireCurrentPcbDiagnosticLaunchExclusion, assertCurrentPcbDiagnosticLaunchExclusion,
     releaseCurrentPcbDiagnosticLaunchExclusion, diagnosticLifecycleBindingSchema,
@@ -109,9 +111,16 @@ async function fixture(options: Options = {}): Promise<Fixture> {
     },
   });
   class NativeOwner {
+    /** Model original startup binding and its bounded failure branches,
+     * including frame-target drift, without allocating an application or Job. */
     public async startFootprintHeldCacheValidationGeneration(): Promise<void> {
       assert.equal(this, allocated); calls.push("native-start"); launched = true; bound = options.pendingGeneration !== "unbound" && options.noProcess !== true;
       if (options.pendingGeneration !== undefined) { generationEntered.resolve(null); await generationGate.promise; bound = true; }
+      if (options.frameTargetFailure === true) {
+        const before = { targetId: "original-page", type: "page", url: "https://client/editor?cll=info", title: "Synthetic private initial title", attached: false };
+        throw issueCurrentFootprintHeldCacheFrameTargetTransition(new Error("PCB_DIAGNOSTIC_OWNER_FRAME_TARGET_CHANGED"), [before],
+          [{ ...before, title: "Synthetic private final title" }], before.targetId);
+      }
       if (options.startupFailure === true) { throw new Error("PCB_DIAGNOSTIC_OWNER_HELD_CACHE_PAGE"); }
       if (options.noProcess === true) { throw new Error("native launch refused without process"); }
     }
@@ -201,6 +210,22 @@ void test("failed startup retains original binding and bounded diagnostics befor
   const status = await f.controller.run({ action: "inspect", operationId: f.operationId });
   assert.deepEqual(status["heldCacheStartupObservation"], failure.evidence["heldCacheStartupObservation"]);
   assert.equal(status["firstObserved"], false);
+  await finish(f);
+});
+
+void test("one issued frame-target failure packet reaches the actual journal without changing the refusal or retrying launch", async () => {
+  const f = await fixture({ frameTargetFailure: true });
+  await assert.rejects(f.controller.run(f.launch), /^Error: PCB_DIAGNOSTIC_OWNER_FRAME_TARGET_CHANGED$/u);
+  const journal = await readFootprintHeldCacheValidation(f.operationId);
+  const failure = journal?.records.find(record => record.kind === "failure"); assert.ok(failure);
+  assert.equal(failure.evidence["failure"], "PCB_DIAGNOSTIC_OWNER_FRAME_TARGET_CHANGED");
+  const packet = failure.evidence["heldCacheFrameTargetTransition"]; assert.ok(packet !== null && typeof packet === "object");
+  assert.equal(Reflect.get(packet, "targetPresent"), true);
+  assert.doesNotMatch(JSON.stringify(packet), /Synthetic private|https:\/\//u);
+  await assert.rejects(f.controller.run(f.launch), /LAUNCH_CONSUMED/u);
+  assert.equal(f.calls.filter(value => value === "native-start").length, 1);
+  const retained = await readFootprintHeldCacheValidation(f.operationId);
+  assert.equal(retained?.records.filter(record => Object.hasOwn(record.evidence, "heldCacheFrameTargetTransition")).length, 1);
   await finish(f);
 });
 

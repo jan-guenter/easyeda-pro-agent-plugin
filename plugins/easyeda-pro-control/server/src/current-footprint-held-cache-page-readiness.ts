@@ -1,10 +1,10 @@
 /** Bounded startup observations for the distinct read-only owner. Transient
  * target discovery never qualifies the UI source or grants cache authority. */
-import { sha256Json } from "./core.ts";
+import { sha256Json, sha256Text } from "./core.ts";
 import path from "node:path";
 import { diagnosticExact } from "./current-pcb-diagnostic-protocol.ts";
 import { diagnosticTargetInventory } from "./current-pcb-diagnostic-context.ts";
-import { CURRENT_FOOTPRINT_HELD_CACHE_PAGE_READINESS as LIMITS, currentFootprintHeldCacheStartupObservationSchema } from "./current-footprint-held-cache-diagnostic-profile.ts";
+import { CURRENT_FOOTPRINT_HELD_CACHE_PAGE_READINESS as LIMITS, currentFootprintHeldCacheStartupObservationV2Schema } from "./current-footprint-held-cache-diagnostic-profile.ts";
 import type { CurrentFootprintHeldCacheStartupObservation, CurrentFootprintHeldCacheStartupStage } from "./current-footprint-held-cache-diagnostic-profile.ts";
 
 export type { CurrentFootprintHeldCacheStartupObservation, CurrentFootprintHeldCacheStartupStage } from "./current-footprint-held-cache-diagnostic-profile.ts";
@@ -19,6 +19,7 @@ interface Transport {
   readonly assertCurrent: () => void; readonly version: () => Promise<Row>; readonly targets: () => Promise<Row>;
   readonly pause: () => Promise<void>;
 }
+/** Stop readiness with a bounded code instead of selecting or retrying another target. */
 function refuse(code: string): never { throw new Error(`PCB_DIAGNOSTIC_HELD_CACHE_READINESS_${code}`); }
 
 /** Retain only bounded classifications, counts and hashes in public diagnostics.
@@ -37,8 +38,8 @@ export class CurrentFootprintHeldCachePageReadiness {
 
   /** The original installation supplies its already admitted app.js path.
    * Its fixed N6 startup creates this local loading window before the editor.
-   * Recognizing it only permits bounded waiting or selection of a separate
-   * exact editor page; it never attaches to or executes code in the loader.
+   * Recognizing it only permits bounded waiting until it disappears. This
+   * observer never attaches to or executes code in the loader.
    */
   public constructor(backendWindowsPath?: string) {
     if (backendWindowsPath === undefined) { this.#loadingPrefix = null; return; }
@@ -56,14 +57,15 @@ export class CurrentFootprintHeldCachePageReadiness {
   /** Preserve the failing stage. The caller supplies no exception text or data. */
   public fail(): void { this.#failed = true; this.#failureKind ??= "transport-or-owner"; }
 
-  /** Read browser identity once, then poll only valid empty/about:blank page
-   * inventories and the installation-bound loading page. A malformed response,
-   * unexpected page or exhausted bound stops immediately. One loading page
-   * may accompany the unique unattached editor; it is never selected itself.
+  /** Read browser identity once, then wait within the fixed budget until two
+   * consecutive complete inventories match with one unattached editor and no
+   * loading window. These sequential samples do not prove atomic stability or
+   * complete startup. The later exact frame-target guard remains necessary.
    */
   public async observeBrowser(transport: Transport): Promise<Readonly<{ version: Row; targets: readonly Row[]; targetId: string }>> {
     if (this.#failed || this.#versionAttempts !== 0 || this.#targetAttempts !== 0) { refuse("CONSUMED"); }
     const { assertCurrent, version, targets, pause } = transport;
+    /** Reprove the retained transport methods and original owner around every awaited step. */
     const current = (): void => {
       if (transport.assertCurrent !== assertCurrent || transport.version !== version || transport.targets !== targets || transport.pause !== pause) { refuse("TRANSPORT_CHANGED"); }
       assertCurrent();
@@ -77,6 +79,7 @@ export class CurrentFootprintHeldCachePageReadiness {
       }
       this.#versionSha256 = sha256Json(observedVersion);
       this.#stage = "browser-targets";
+      let precedingExclusiveInventory: string | null = null;
       for (let attempt = 1; attempt <= LIMITS.targetSamples; attempt += 1) {
         current(); this.#targetAttempts += 1;
         const raw = await targets(); current();
@@ -87,7 +90,7 @@ export class CurrentFootprintHeldCachePageReadiness {
         /** Match only the ordinary editor URL; later frame/source checks still qualify its realm. */
         const editor = (value: Row): boolean => typeof value["url"] === "string" &&
           /^https:\/\/client\/editor\?cll=(?:trace|debug|info|warn|error)(?:#.*)?(?![\s\S])/u.test(value["url"]);
-        /** Recognize the original installation's loader solely as an unselected startup companion. */
+        /** Recognize the original installation's loader solely for bounded waiting. */
         const loading = (value: Row): boolean => this.#loadingPrefix !== null && typeof value["url"] === "string" &&
           value["url"].startsWith(this.#loadingPrefix) && value["url"].length > this.#loadingPrefix.length &&
           !/[#\r\n\0]/u.test(value["url"]);
@@ -102,12 +105,14 @@ export class CurrentFootprintHeldCachePageReadiness {
         else if (editors.length === 1) { classification = "ready"; }
         else if (loaders.length === 1) { classification = "startup-loading"; }
         else { classification = "unexpected-page"; }
-        this.#samples.push(Object.freeze({ attempt, targetCount: inventory.length, pageCount: pages.length, classification, inventorySha256: sha256Json(inventory) }));
+        const inventoryJson = JSON.stringify(inventory);
+        this.#samples.push(Object.freeze({ attempt, targetCount: inventory.length, pageCount: pages.length, classification, inventorySha256: sha256Text(inventoryJson) }));
         current();
-        if ((classification === "ready" || classification === "ready-with-loading") && typeof page?.["targetId"] === "string") {
+        if (classification === "ready" && precedingExclusiveInventory === inventoryJson && typeof page?.["targetId"] === "string") {
           return Object.freeze({ version: Object.freeze(structuredClone(observedVersion)), targets: inventory, targetId: page["targetId"] });
         }
-        if (classification !== "empty" && classification !== "about-blank" && classification !== "startup-loading") { this.#failureKind = "selection"; refuse("PAGE"); }
+        if (!["empty", "about-blank", "startup-loading", "ready-with-loading", "ready"].includes(classification)) { this.#failureKind = "selection"; refuse("PAGE"); }
+        precedingExclusiveInventory = classification === "ready" ? inventoryJson : null;
         if (attempt === LIMITS.targetSamples) { this.#failureKind = "target-limit"; refuse("TARGET_LIMIT"); }
         await pause(); current();
       }
@@ -117,7 +122,7 @@ export class CurrentFootprintHeldCachePageReadiness {
 
   /** Return a fresh bounded diagnostic snapshot. It grants no live authority. */
   public observation(): CurrentFootprintHeldCacheStartupObservation {
-    return currentFootprintHeldCacheStartupObservationSchema.parse({ schema: "private.current-footprint-held-cache-startup-observation.v1", stage: this.#stage,
+    return currentFootprintHeldCacheStartupObservationV2Schema.parse({ schema: "private.current-footprint-held-cache-startup-observation.v2", stage: this.#stage,
       failed: this.#failed, failureKind: this.#failureKind, versionAttempts: this.#versionAttempts, versionSha256: this.#versionSha256,
       targetAttempts: this.#targetAttempts, maximumTargetSamples: 16, delayMilliseconds: 250, samples: Object.freeze([...this.#samples]),
       uiSourceQualified: false, cacheQualificationGranted: false, executionAuthorized: false });

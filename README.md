@@ -63,7 +63,7 @@ can run in one bounded batch with a shared ten-second deadline and one runtime
 admission sequence. Two complete ordered passes must match. The observations
 are sequential; a failure returns no partial batch.
 The offline [library-file reader](plugins/easyeda-pro-control/skills/easyeda-pro-control/references/current-library-files.md)
-prepares supplied standalone libraries or project archives as managed inputs and
+prepares supplied standalone libraries, reusable `.elibz2` libraries or project archives as managed inputs and
 extracts bounded metadata in every facade mode. It checks supported file framing
 and archive integrity without opening EasyEDA. It does not import the files or
 validate their geometry, dependencies or electrical correctness.
@@ -71,7 +71,10 @@ It also pages exact document sources from current mixed-document `.epro2`
 exports and recognized legacy archive members. Separate reports expose raw
 schematic records, supported symbol pins and persisted PCB stack/rule records.
 They preserve raw selectors and unknown source data without compiling
-connectivity or calculating effective rule precedence.
+connectivity or calculating effective rule precedence. Separate `.elibz2` actions
+index footprint2/symbol2 manifests and page exact original source bodies, with
+exporter-inserted header/META prefixes identified separately. They execute no
+library exporter and do not prove original symbol subtype, ownership or importability.
 After an ordinary session closes and its retained process/Job termination is
 verified, an explicit `release-closed` action frees its helper for another
 workflow. Project workflows that still own that runtime prevent release.

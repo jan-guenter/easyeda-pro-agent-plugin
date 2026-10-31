@@ -291,3 +291,11 @@ corrected without rule changes. Source has 989 files with SHA-256
 the three runtime files have SHA-256
 `f0399ac20b49f0ef84bd387866c251f4508a3d5df9f7fe1279f35dba83d9950c`.
 The native helper remains byte-identical. No full local suite was duplicated.
+
+
+## Publication record
+
+The completed PR164 publication and installation section is preserved verbatim
+in the [separate release record](2026-10-31-194500-pr164-publication-and-installation.md).
+Its source commit and section hash are retained there. The preceding native-age
+observations remain unchanged.

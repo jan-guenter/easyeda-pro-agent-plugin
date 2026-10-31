@@ -17,6 +17,8 @@ import type { CurrentPcbDiagnosticLifecycleOptions } from "./current-pcb-diagnos
 import { CurrentFootprintHeldCacheValidationOwner, assertOriginalCurrentFootprintHeldCacheValidationOwner,
   currentFootprintHeldCacheValidationAllocationOutcome, startCurrentFootprintHeldCacheValidationOwner } from "./current-pcb-diagnostic-owner.ts";
 import { CurrentFootprintSavedCacheHeldRunner } from "./current-footprint-saved-cache-held-runner.ts";
+import { takeCurrentFootprintHeldCacheFrameTargetTransition } from "./current-footprint-held-cache-frame-transition.ts";
+import type { CurrentFootprintHeldCacheFrameTargetTransition } from "./current-footprint-held-cache-frame-transition.ts";
 import type { CurrentFootprintSavedCacheHeldObservation } from "./current-footprint-saved-cache-held-runner.ts";
 import { captureCurrentPcbStringClockReply } from "./current-pcb-string-clock-reply.ts";
 import { assertFootprintHeldCacheJournalBudget, captureFootprintHeldCacheValidationRecord, currentFootprintHeldCacheValidationRequestSchema } from "./current-footprint-held-cache-validation-schema.ts";
@@ -83,6 +85,7 @@ export class CurrentFootprintHeldCacheValidation {
   #recordedFirst = false;
   #recordedFresh = false;
   #lastFailure: string | null = null;
+  #frameTargetTransition: CurrentFootprintHeldCacheFrameTargetTransition | null = null;
   #abortToken: object | null = null;
   #stage: Stage = "new";
   #busy = false;
@@ -384,12 +387,14 @@ export class CurrentFootprintHeldCacheValidation {
     if (action === "settle-records" || this.#records.at(-1)?.kind === results[action]) { return; }
     if (this.#reserved) {
       try {
+        if (action === "launch" && this.#frameTargetTransition === null) { this.#frameTargetTransition = takeCurrentFootprintHeldCacheFrameTargetTransition(originalError); }
         const native = this.#owner === null ? null : this.#methods.status.call(this.#owner);
         const startup = native?.heldCacheStartupObservation ?? null;
         await this.#record("failure", { action, nativeAllocationNeverAttempted: !this.#allocationInvoked,
           nativeAllocationOutcome: this.#allocationOutcome, retryAllowed: false,
           ...(action === "launch" && native?.binding !== null && native?.binding !== undefined ? { nativeBinding: diagnosticLifecycleBindingSchema.parse(native.binding) } : {}),
           ...(action === "launch" && startup !== null ? { heldCacheStartupObservation: startup } : {}),
+          ...(action === "launch" && this.#frameTargetTransition !== null ? { heldCacheFrameTargetTransition: this.#frameTargetTransition } : {}),
           failure: this.#lastFailure });
         if (!this.#allocationInvoked) { this.#reservationSettled = true; }
       } catch (error) {

@@ -50,10 +50,13 @@
       "interactive-export-resource-lifecycle": 1,
       "interactive-ui-resource": 36,
       "layer-selection-collateral-state": 1,
+      "library-archive-device-dependency-closure-and-worker-ownership": 1,
+      "library-archive-panel-framing-and-worker-ownership": 1,
+      "library-archive-partial-source-and-worker-ownership": 2,
       "library-render-resource-and-failure-lifecycle": 2,
       "lossy-heterogeneous-primitive-projection": 1,
       "lossy-logging-selection-reader": 1,
-      "managed-file-contract-needed": 28,
+      "managed-file-contract-needed": 24,
       "multi-object-electrical-effect": 7,
       "navigation-or-viewport-adapter-needed": 8,
       "non-json-result-or-callback": 5,
@@ -41495,10 +41498,17 @@
       "status": "omitted",
       "routes": [],
       "omission": {
-        "code": "managed-file-contract-needed",
-        "reason": "sys_FileManager.getDeviceFileByDeviceUuid consumes or produces File/Blob, filesystem paths, project archives or image data without an implemented method-specific managed-artifact contract.",
-        "nextRequirement": "Add bounded hash-bound artifact transfer, exact input ownership/format checks, exclusive output publication and any associated import effect proof. A filename or Blob handle is not a verified file.",
-        "evidence": []
+        "code": "library-archive-device-dependency-closure-and-worker-ownership",
+        "reason": "The pinned device exporter independently fetches Symbol and Footprint bindings, warns on missing details and still returns success with remaining entries. Metadata, dependent source or bindings can therefore be absent in a genuine File; images remain metadata and no 3D archive closure is established. The shared source route also permits retained unsaved UUID canvas reuse and unbounded history reconstruction. No complete dependency/worker/File lifecycle is mounted, and supplied device2 archives remain unsupported.",
+        "nextRequirement": "Qualify the original public receiver/bus, exact library route and original worker with no retained UUID canvas before one journaled export. Bound the awaited genuine File, independently verify complete requested UUID/docType/source membership, retain timeout custody and publish once to a managed artifact. An empty editor, metadata equality or the offline supplied .elibz2 decoder does not prove original worker ownership, saved source, remote freshness or asset ownership. Legacy .elibz conversion requires separate qualification. Additionally define exact device Symbol/Footprint closure, legitimate absent-footprint behavior and complete metadata/native-source agreement without treating image/3D references as included assets.",
+        "evidence": [
+          "assets/pro-api/0.3.59.1ca9efb5/api.js@sha256:e7c31b0de9dcbe4806e6b3cf8879b31c9e44425361bb8e67c3e8480ae359c8b1;utf16:1474321..1475080,1475385..1475663",
+          "assets/pro-ui/3.2.198.2800f583/js/ui.js@sha256:3515d4c299b353fa7bcd0d859f0b8b59b7eae39b5dc243b2c27f2e54a60a1ee6;utf16:6354318..6362549,15021631..15024595,17348299..17350396,17351204..17351929",
+          "assets/pro-mgr/3.2.185.bf63a159/js/lib-worker.js@sha256:ee7738d0203daa4094f9a3ed62cdc4b3d93fe27ee249e276f27109d7c52f2555;utf16:947623..948572,1621469..1622027,1623369..1625420",
+          "assets/pro-mgr/3.2.185.bf63a159/js/pro-mgr.js@sha256:b3260ec9d98d6cad5f65a6234aa839b32f6bf5954cb03de0bd6ce003577b388d;utf16:1858253..1859279,2031492..2032117",
+          "app.js@sha256:52f51ce43cfebc81a362addde6cd27e39fa58c8fc1ab4ee5adacca4551e5ef0c;utf16:1318983..1321132,2231778..2232389,2598654..2599064,2603481..2603762",
+          "managed-library-archive-sources.ts"
+        ]
       },
       "completeDeclaredContractSupported": false,
       "currentGenerationLiveValidation": "not-recorded",
@@ -41698,10 +41708,17 @@
       "status": "omitted",
       "routes": [],
       "omission": {
-        "code": "managed-file-contract-needed",
-        "reason": "sys_FileManager.getFootprintFileByFootprintUuid consumes or produces File/Blob, filesystem paths, project archives or image data without an implemented method-specific managed-artifact contract.",
-        "nextRequirement": "Add bounded hash-bound artifact transfer, exact input ownership/format checks, exclusive output publication and any associated import effect proof. A filename or Blob handle is not a verified file.",
-        "evidence": []
+        "code": "library-archive-partial-source-and-worker-ownership",
+        "reason": "The pinned footprint exporter can warn and omit failed metadata/source reads while still returning a File. Its ordinary library worker reuses a canvas keyed only by UUID, so the requested path's metadata can accompany retained unsaved source from another path. Source reconstruction can fetch unbounded history chunks; local history reads can initialize SQL tables/schema. No scoped original-worker/File/persistence lifecycle is mounted. The separate offline footprint2 .elibz2 decoder inspects supplied bytes only.",
+        "nextRequirement": "Qualify the original public receiver/bus, exact library route and original worker with no retained UUID canvas before one journaled export. Bound the awaited genuine File, independently verify complete requested UUID/docType/source membership, retain timeout custody and publish once to a managed artifact. An empty editor, metadata equality or the offline supplied .elibz2 decoder does not prove original worker ownership, saved source, remote freshness or asset ownership. Legacy .elibz conversion requires separate qualification.",
+        "evidence": [
+          "assets/pro-api/0.3.59.1ca9efb5/api.js@sha256:e7c31b0de9dcbe4806e6b3cf8879b31c9e44425361bb8e67c3e8480ae359c8b1;utf16:1474321..1475080,1475385..1475663",
+          "assets/pro-ui/3.2.198.2800f583/js/ui.js@sha256:3515d4c299b353fa7bcd0d859f0b8b59b7eae39b5dc243b2c27f2e54a60a1ee6;utf16:6354318..6362549,15021631..15024595,17348299..17350396,17351204..17351929",
+          "assets/pro-mgr/3.2.185.bf63a159/js/lib-worker.js@sha256:ee7738d0203daa4094f9a3ed62cdc4b3d93fe27ee249e276f27109d7c52f2555;utf16:947623..948572,1621469..1622027,1623369..1625420",
+          "assets/pro-mgr/3.2.185.bf63a159/js/pro-mgr.js@sha256:b3260ec9d98d6cad5f65a6234aa839b32f6bf5954cb03de0bd6ce003577b388d;utf16:1858253..1859279,2031492..2032117",
+          "app.js@sha256:52f51ce43cfebc81a362addde6cd27e39fa58c8fc1ab4ee5adacca4551e5ef0c;utf16:1318983..1321132,2231778..2232389,2598654..2599064,2603481..2603762",
+          "managed-library-archive-sources.ts"
+        ]
       },
       "completeDeclaredContractSupported": false,
       "currentGenerationLiveValidation": "not-recorded",
@@ -41739,10 +41756,17 @@
       "status": "omitted",
       "routes": [],
       "omission": {
-        "code": "managed-file-contract-needed",
-        "reason": "sys_FileManager.getPanelLibraryFileByPanelLibraryUuid consumes or produces File/Blob, filesystem paths, project archives or image data without an implemented method-specific managed-artifact contract.",
-        "nextRequirement": "Add bounded hash-bound artifact transfer, exact input ownership/format checks, exclusive output publication and any associated import effect proof. A filename or Blob handle is not a verified file.",
-        "evidence": []
+        "code": "library-archive-panel-framing-and-worker-ownership",
+        "reason": "The pinned panel exporter has the same partial-success metadata/source behavior and UUID-keyed retained-canvas source route as the other library exporters. A genuine File does not prove complete docType29 panel membership or native framing. No admitted positive panel archive fixture or original-worker/File lifecycle exists; the offline supplied decoder deliberately excludes panel-lib2 archives.",
+        "nextRequirement": "Qualify the original public receiver/bus, exact library route and original worker with no retained UUID canvas before one journaled export. Bound the awaited genuine File, independently verify complete requested UUID/docType/source membership, retain timeout custody and publish once to a managed artifact. An empty editor, metadata equality or the offline supplied .elibz2 decoder does not prove original worker ownership, saved source, remote freshness or asset ownership. Legacy .elibz conversion requires separate qualification. Additionally establish complete docType29 panel native-stream framing and one positive complete panel fixture before admitting supplied panel decoding or direct export.",
+        "evidence": [
+          "assets/pro-api/0.3.59.1ca9efb5/api.js@sha256:e7c31b0de9dcbe4806e6b3cf8879b31c9e44425361bb8e67c3e8480ae359c8b1;utf16:1474321..1475080,1475385..1475663",
+          "assets/pro-ui/3.2.198.2800f583/js/ui.js@sha256:3515d4c299b353fa7bcd0d859f0b8b59b7eae39b5dc243b2c27f2e54a60a1ee6;utf16:6354318..6362549,15021631..15024595,17348299..17350396,17351204..17351929",
+          "assets/pro-mgr/3.2.185.bf63a159/js/lib-worker.js@sha256:ee7738d0203daa4094f9a3ed62cdc4b3d93fe27ee249e276f27109d7c52f2555;utf16:947623..948572,1621469..1622027,1623369..1625420",
+          "assets/pro-mgr/3.2.185.bf63a159/js/pro-mgr.js@sha256:b3260ec9d98d6cad5f65a6234aa839b32f6bf5954cb03de0bd6ce003577b388d;utf16:1858253..1859279,2031492..2032117",
+          "app.js@sha256:52f51ce43cfebc81a362addde6cd27e39fa58c8fc1ab4ee5adacca4551e5ef0c;utf16:1318983..1321132,2231778..2232389,2598654..2599064,2603481..2603762",
+          "managed-library-archive-sources.ts"
+        ]
       },
       "completeDeclaredContractSupported": false,
       "currentGenerationLiveValidation": "not-recorded",
@@ -41899,10 +41923,17 @@
       "status": "omitted",
       "routes": [],
       "omission": {
-        "code": "managed-file-contract-needed",
-        "reason": "sys_FileManager.getSymbolFileBySymbolUuid consumes or produces File/Blob, filesystem paths, project archives or image data without an implemented method-specific managed-artifact contract.",
-        "nextRequirement": "Add bounded hash-bound artifact transfer, exact input ownership/format checks, exclusive output publication and any associated import effect proof. A filename or Blob handle is not a verified file.",
-        "evidence": []
+        "code": "library-archive-partial-source-and-worker-ownership",
+        "reason": "The pinned symbol exporter can warn and omit failed metadata/source reads while still returning a File. Its ordinary library worker reuses a canvas keyed only by UUID, so the requested path's metadata can accompany retained unsaved source from another path. Source reconstruction can fetch unbounded history chunks; local history reads can initialize SQL tables/schema. No scoped original-worker/File/persistence lifecycle is mounted. The separate offline symbol2 .elibz2 decoder neither executes this method nor proves original symbol subtype.",
+        "nextRequirement": "Qualify the original public receiver/bus, exact library route and original worker with no retained UUID canvas before one journaled export. Bound the awaited genuine File, independently verify complete requested UUID/docType/source membership, retain timeout custody and publish once to a managed artifact. An empty editor, metadata equality or the offline supplied .elibz2 decoder does not prove original worker ownership, saved source, remote freshness or asset ownership. Legacy .elibz conversion requires separate qualification.",
+        "evidence": [
+          "assets/pro-api/0.3.59.1ca9efb5/api.js@sha256:e7c31b0de9dcbe4806e6b3cf8879b31c9e44425361bb8e67c3e8480ae359c8b1;utf16:1474321..1475080,1475385..1475663",
+          "assets/pro-ui/3.2.198.2800f583/js/ui.js@sha256:3515d4c299b353fa7bcd0d859f0b8b59b7eae39b5dc243b2c27f2e54a60a1ee6;utf16:6354318..6362549,15021631..15024595,17348299..17350396,17351204..17351929",
+          "assets/pro-mgr/3.2.185.bf63a159/js/lib-worker.js@sha256:ee7738d0203daa4094f9a3ed62cdc4b3d93fe27ee249e276f27109d7c52f2555;utf16:947623..948572,1621469..1622027,1623369..1625420",
+          "assets/pro-mgr/3.2.185.bf63a159/js/pro-mgr.js@sha256:b3260ec9d98d6cad5f65a6234aa839b32f6bf5954cb03de0bd6ce003577b388d;utf16:1858253..1859279,2031492..2032117",
+          "app.js@sha256:52f51ce43cfebc81a362addde6cd27e39fa58c8fc1ab4ee5adacca4551e5ef0c;utf16:1318983..1321132,2231778..2232389,2598654..2599064,2603481..2603762",
+          "managed-library-archive-sources.ts"
+        ]
       },
       "completeDeclaredContractSupported": false,
       "currentGenerationLiveValidation": "not-recorded",

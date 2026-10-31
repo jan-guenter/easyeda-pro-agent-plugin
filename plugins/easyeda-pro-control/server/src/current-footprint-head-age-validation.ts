@@ -22,6 +22,7 @@ import { assertFootprintHeadAgeJournalBudget, captureFootprintHeadAgeValidationR
 import type { CurrentFootprintHeadAgeValidationRecord as RecordEntry, CurrentFootprintHeadAgeValidationRequest as Request } from "./current-footprint-head-age-validation-schema.ts";
 import { assertFootprintHeadAgeValidationChain, assertNoUnresolvedFootprintHeadAgeValidation, publishFootprintHeadAgeValidationRecord,
   readFootprintHeadAgeValidation, reserveFootprintHeadAgeValidation } from "./current-footprint-head-age-validation-journal.ts";
+import { currentFootprintHeadAgeCdpExceptionForError } from "./current-footprint-head-age-cdp-exception.ts";
 
 export interface CurrentFootprintHeadAgeValidationBinding {
   readonly operationId: string;
@@ -131,6 +132,8 @@ export class CurrentFootprintHeadAgeValidation {
    * never retries native work or permits another owner to adopt the operation. */
   async #settle(): Promise<void> {
     const previous = this.#publication;
+    /** Serialize publication after the prior attempt, verify the entire
+     * retained prefix and settle only an actually terminal cleanup record. */
     const work = (async (): Promise<void> => {
       await previous; await this.#durable();
       const actual = await readFootprintHeadAgeValidation(this.#operationId ?? ""); this.#current(); need(actual !== null, "JOURNAL_REQUIRED");
@@ -329,6 +332,7 @@ export class CurrentFootprintHeadAgeValidation {
    * a failure row. A publication error preserves both errors and owner custody. */
   async #recordFailure(originalError: unknown, action: Request["action"]): Promise<void> {
     this.#lastFailure = originalError instanceof Error ? originalError.message.slice(0, 512) : "non-error refusal";
+    const headAgeCdpException = action === "observe-head-age" ? currentFootprintHeadAgeCdpExceptionForError(originalError) : null;
     const results: Partial<Record<Request["action"], RecordEntry["kind"]>> = { launch: "launch-result", "observe-head-age": "observe-head-age-result", "normal-close": "normal-close-result", abort: "abort-result",
       "observe-termination": "termination-result", "release-closed": "release-closed-result", "cleanup-unlaunched": "cleanup-unlaunched-result",
       "cleanup-no-process": "cleanup-no-process-result", "cleanup-no-resource": "cleanup-no-resource-result" };
@@ -341,6 +345,7 @@ export class CurrentFootprintHeadAgeValidation {
         await this.#record("failure", { action, nativeAllocationNeverAttempted: !this.#allocationInvoked,
           nativeAllocationOutcome: this.#allocationOutcome, retryAllowed: false,
           ...(action === "launch" && native?.binding !== null && native?.binding !== undefined ? { nativeBinding: diagnosticLifecycleBindingSchema.parse(native.binding) } : {}),
+          ...(headAgeCdpException === null ? {} : { headAgeCdpException }),
           failure: this.#lastFailure });
         if (!this.#allocationInvoked) { this.#reservationSettled = true; }
       } catch (error) {

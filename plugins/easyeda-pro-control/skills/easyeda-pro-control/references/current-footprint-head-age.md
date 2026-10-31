@@ -99,6 +99,33 @@ and the current instant can use different daylight-saving offsets. Keep
 `timestampInterpretation:"original-rl-with-current-offset"` with the result;
 do not replace that behavior with a facade UTC parser or relabel its age.
 
+## Original main process context
+
+The embedded Node 24.14.1 runtime exposes `globalThis.process` through an
+accessor. This workflow qualifies its exact bootstrap script, getter/setter
+locations and original lexical scopes before binding the original process,
+native root PID and environment. The separate opaque capability belongs only
+to this native owner's main transport. Copied metadata or a matching script
+hash cannot create it. The setter is never called and no global descriptor is
+replaced. Each synchronous clock boundary rechecks the original descriptor,
+getter result, process/PID/environment identities and absence of every
+case-insensitive `TZ` key. Shared scratch and renderer clock guards retain
+their own contracts.
+
+The native main budget is 41 normal and four cleanup requests, 45 in total.
+Eight fixed preparation requests qualify this process context before the
+existing Date-method checks. The native Windows observation bracket still
+permits one call, 1024 bounded polls and ten seconds; the process-context work
+does not extend it.
+
+A valid bounded CDP exception remains failure evidence. The original runner
+retains its complete canonical envelope privately, at most 65,536 bytes, under
+the genuine thrown Error. The public failure reports a fixed code, phase and
+digest, without foreign exception text. This packet and a successful native
+observation share one exclusive journal slot; the existing operation and
+cleanup limits remain unchanged. Historical error JSON cannot reconstruct an
+owner or permit a retry. Missing, malformed or oversized replies still refuse.
+
 Abort has a separate lane while an observation is pending. The controller
 reserves the original owner's cutoff synchronously before its first journal
 await, then publishes intent before dispatch. Missing intent acknowledgment

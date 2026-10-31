@@ -10,6 +10,8 @@ import { CURRENT_FOOTPRINT_COPY_MAIN_BACKEND_SOURCE as SOURCE, assertCurrentFoot
 import type { CurrentFootprintCopyMainBackendRole as Role } from "./current-footprint-copy-main-backend-source.ts";
 import { CURRENT_FOOTPRINT_HEAD_AGE_CAPTURE_PROGRAM, CURRENT_FOOTPRINT_HEAD_AGE_OBSERVE_PROGRAM } from "./current-footprint-head-age-main.ts";
 
+import { CURRENT_FOOTPRINT_HEAD_AGE_CONTEXT_BIND_PROGRAM, CURRENT_FOOTPRINT_HEAD_AGE_CONTEXT_CAPTURE_PROGRAM } from "./current-footprint-head-age-context.ts";
+
 const handle = z.string().min(1).max(256).regex(/^[A-Za-z\d_.:-]+$/u);
 const object = z.object({ objectId: handle }).strict();
 const flags = { objectGroup: z.literal(GROUP), silent: z.literal(true), generatePreview: z.literal(false),
@@ -20,7 +22,10 @@ const breakpointParameters = z.object({ location: breakpointLocation }).strict()
 const frameParameters = z.object({ callFrameId: handle, expression: z.literal(EXPRESSION), objectGroup: z.literal(GROUP), silent: z.literal(true),
   returnByValue: z.literal(false), generatePreview: z.literal(false), throwOnSideEffect: z.literal(true), includeCommandLineAPI: z.literal(false) }).strict();
 const captureParameters = z.object({ ...flags, objectId: handle, functionDeclaration: z.literal(CALLS.capture.program), arguments: z.tuple([]), returnByValue: z.literal(false) }).strict();
-const headCaptureParameters = z.object({ ...flags, objectId: handle, functionDeclaration: z.literal(CURRENT_FOOTPRINT_HEAD_AGE_CAPTURE_PROGRAM), arguments: z.tuple([object]), returnByValue: z.literal(false) }).strict();
+const headCaptureParameters = z.object({ ...flags, objectId: handle, functionDeclaration: z.literal(CURRENT_FOOTPRINT_HEAD_AGE_CAPTURE_PROGRAM), arguments: z.tuple([object, object]), returnByValue: z.literal(false) }).strict();
+const headContextCaptureParameters = z.object({ ...flags, objectId: handle, functionDeclaration: z.literal(CURRENT_FOOTPRINT_HEAD_AGE_CONTEXT_CAPTURE_PROGRAM), arguments: z.tuple([object]), returnByValue: z.literal(false) }).strict();
+const nativePidArgument = z.object({ value: z.number().int().positive().max(4_294_967_295) }).strict();
+const headContextBindParameters = z.object({ ...flags, objectId: handle, functionDeclaration: z.literal(CURRENT_FOOTPRINT_HEAD_AGE_CONTEXT_BIND_PROGRAM), arguments: z.tuple([object, object, object, object, nativePidArgument]), returnByValue: z.literal(false) }).strict();
 const headDateLiteral = z.object({ value: z.string().length(19).regex(/^\d{4}-\d{2}-\d{2} \d{2}:\d{2}:\d{2}$/u) }).strict();
 const headWallEpoch = z.object({ value: z.number().int().min(0).max(253_402_214_399_999) }).strict();
 const headObserveParameters = z.object({ ...flags, throwOnSideEffect: z.literal(false), objectId: handle,
@@ -46,6 +51,9 @@ const command = z.discriminatedUnion("phase", [
   z.object({ phase: z.literal("breakpoint"), method: z.literal("Debugger.setBreakpoint"), params: breakpointParameters }).strict(),
   z.object({ phase: z.literal("frame"), method: z.literal("Debugger.evaluateOnCallFrame"), params: frameParameters }).strict(),
   z.object({ phase: z.literal("capture"), method: z.literal("Runtime.callFunctionOn"), params: captureParameters }).strict(),
+  z.object({ phase: z.literal("head-age-context-capture"), method: z.literal("Runtime.callFunctionOn"), params: headContextCaptureParameters }).strict(),
+  z.object({ phase: z.literal("head-age-context-source"), method: z.literal("Debugger.getScriptSource"), params: sourceParameters }).strict(),
+  z.object({ phase: z.literal("head-age-context-bind"), method: z.literal("Runtime.callFunctionOn"), params: headContextBindParameters }).strict(),
   z.object({ phase: z.literal("head-age-capture"), method: z.literal("Runtime.callFunctionOn"), params: headCaptureParameters }).strict(),
   z.object({ phase: z.literal("head-age-observe"), method: z.literal("Runtime.callFunctionOn"), params: headObserveParameters }).strict(),
   z.object({ phase: z.literal("require"), method: z.literal("Runtime.callFunctionOn"), params: requireParameters }).strict(),
@@ -54,6 +62,8 @@ const command = z.discriminatedUnion("phase", [
   z.object({ phase: z.literal("release"), method: z.literal("Runtime.releaseObjectGroup"), params: releaseParameters }).strict(),
 ]);
 export type CurrentFootprintCopyMainBackendCommand = Readonly<z.infer<typeof command>>;
+/** Capture bounded plain data and require an exact fixed inspector command.
+ * Validation freezes the result but issues no transport or native ownership. */
 export function validateCurrentFootprintCopyMainBackendCommand(input: unknown): CurrentFootprintCopyMainBackendCommand {
   return freezeDeep(command.parse(captureCurrentPcbStringClockReply(input).value));
 }
