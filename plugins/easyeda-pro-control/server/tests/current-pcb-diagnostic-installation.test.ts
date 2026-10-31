@@ -139,9 +139,9 @@ void test("native DOS creation verifies the retained original image before one p
   assert.doesNotMatch(source.slice(0, captureBegin) + source.slice(captureEnd), /\bOpenProcess\s*\(/u);
   assert.doesNotMatch(capture, /\b(?:root|rootThread|rootPid|rootCreated)\s*=(?!=)/u);
   assert.ok(!source.includes("Process.GetProcessById"));
-  // Forced cleanup is confined to the separately confirmed original Main and
-  // Visual Jobs. Excluding only the exact guarded visual method/declaration
-  // Keeps every other creation, installation and dispatcher path prohibited.
+  // Forced cleanup is confined to the separately confirmed original Main,
+  // Visual and held-cache Jobs. Remove only the exact guarded methods below;
+  // Every other creation, installation and dispatcher path remains prohibited.
   const mainBegin = source.indexOf("// BEGIN GENERATED FOOTPRINT MAIN TRANSPORT PROTOCOL"), mainEnd = source.indexOf("// END GENERATED FOOTPRINT MAIN TRANSPORT PROTOCOL");
   assert.ok(mainBegin !== -1 && mainEnd > mainBegin);
   const main = source.slice(mainBegin, mainEnd);
@@ -156,10 +156,32 @@ void test("native DOS creation verifies the retained original image before one p
   const terminate = visual.indexOf("Native(TerminateJobObject(job,0x45444156))");
   assert.ok(once !== -1 && once < visual.indexOf("AssertLimits();") && identity > once && terminate > identity);
   assert.equal(visual.match(/\bTerminateJobObject\(/gu)?.length, 1);
+  const held = `  public void AbortHeldSaved() {
+    if(!workerStartupFootprintHeldSaved209||heldAbortAttempted||released||root==IntPtr.Zero||job==IntPtr.Zero)throw Error("held-saved-abort-owner");
+    AssertLimits();AssertPipes();long created,exited,kernel,user;
+    if(GetProcessId(root)!=rootPid||!GetProcessTimes(root,out created,out exited,out kernel,out user)||created!=rootCreated)throw Error("held-saved-abort-identity");
+    heldAbortAttempted=true;heldFailed=true;Native(TerminateJobObject(job,0x45444853));
+  }`;
+  assert.equal(source.split(held).length, 2);
+  assert.equal(held.match(/\bTerminateJobObject\(/gu)?.length, 1);
+  assert.ok(source.includes("readonly bool workerStartupFootprintHeldSaved209;"));
+  assert.ok(source.includes('footprintHeldCache209=purpose=="footprint-held-cache209";'));
+  assert.ok(source.includes('workerStartupFootprintHeldSaved209=purpose=="worker-startup-footprint-held-saved209"||footprintHeldCache209;'));
+  assert.equal(source.split("$heldNativePurpose=$WorkerStartupFootprintHeldSaved209 -or $FootprintHeldCache209").length, 2);
+  const heldDispatch = `        'held-saved-abort' {
+          if (-not $heldNativePurpose -or -not $launched -or $request.confirmAbortOriginalJob -isnot [bool] -or $request.confirmAbortOriginalJob -ne $true -or
+              (@($request.PSObject.Properties.Name | Sort-Object) -join ',') -cne 'action,confirmAbortOriginalJob,helperInstance,id,jobId,rootCreated,rootPid') {throw 'pcb-diagnostic-held-saved-abort-fields'}
+          $owner.AbortHeldSaved();$result=@{abortRequested=$true;originalJobOnly=$true}
+        }`;
+  assert.equal(dispatcher.split(heldDispatch).length, 2);
+  assert.equal(source.split("$owner.AbortHeldSaved()").length, 2);
+  const bindingGuard = "if ($launched -and $request.action -cne 'identity' -and ($request.helperInstance -isnot [string] -or $request.jobId -isnot [string] -or $request.rootCreated -isnot [string] -or ($request.rootPid -isnot [int] -and $request.rootPid -isnot [long]) -or $request.helperInstance -cne $owner.HelperInstance -or $request.jobId -cne $owner.JobId -or $request.rootCreated -cne $owner.RootCreated -or $request.rootPid -ne $owner.RootPid)) {throw 'pcb-diagnostic-owner-binding'}";
+  assert.equal(source.split(bindingGuard).length, 2);
+  assert.ok(source.indexOf(bindingGuard) < source.indexOf(actionSwitch));
   const declaration = '[DllImport("kernel32.dll",SetLastError=true)] static extern bool TerminateJobObject(IntPtr job,uint code);';
   const outsideMain = source.slice(0, mainBegin) + source.slice(mainEnd);
-  assert.equal(outsideMain.split(declaration).length, 2); assert.equal(outsideMain.split(visual).length, 2);
-  assert.ok(!outsideMain.replace(declaration, "").replace(visual, "").includes("TerminateJobObject"));
+  assert.equal(outsideMain.split(declaration).length, 2); assert.equal(outsideMain.split(visual).length, 2); assert.equal(outsideMain.split(held).length, 2);
+  assert.ok(!outsideMain.replace(declaration, "").replace(visual, "").replace(held, "").includes("TerminateJobObject"));
   assert.ok(source.includes("public void TerminateMain(){MainPurpose();originalMain.RequestOriginalJobTermination();}"));
   assert.ok(source.includes("$request.confirmTerminateOriginalDiagnosticJob -isnot [bool]"));
   assert.ok(source.includes("if (-not $Visual209 -or $request.confirmAbortOriginalVisualJob -isnot [bool] -or -not $request.confirmAbortOriginalVisualJob"));

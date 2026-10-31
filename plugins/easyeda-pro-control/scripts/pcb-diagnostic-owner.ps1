@@ -1,5 +1,7 @@
-param([switch]$CompileOnly,[switch]$StringPrecreate,[switch]$WorkerStartup,[switch]$Layers209,[switch]$Visual209,[switch]$WorkerStartup209,[switch]$WorkerStartupEmpty209,[switch]$WorkerStartupRatline209,[switch]$WorkerStartupRatlineContinuation209,[switch]$WorkerStartupFootprint209,[switch]$WorkerStartupFootprintCopy209,[switch]$WorkerStartupFootprintSaved209,[switch]$WorkerStartupFootprintMain209,[switch]$WorkerStartupFootprintCombined209,[switch]$WorkerStartupFootprintForward209,[string]$CombinedReadyChallenge)
+param([switch]$CompileOnly,[switch]$StringPrecreate,[switch]$WorkerStartup,[switch]$Layers209,[switch]$Visual209,[switch]$WorkerStartup209,[switch]$WorkerStartupEmpty209,[switch]$WorkerStartupRatline209,[switch]$WorkerStartupRatlineContinuation209,[switch]$WorkerStartupFootprint209,[switch]$WorkerStartupFootprintCopy209,[switch]$WorkerStartupFootprintSaved209,[switch]$WorkerStartupFootprintHeldSaved209,[switch]$FootprintHeldCache209,[switch]$WorkerStartupFootprintMain209,[switch]$WorkerStartupFootprintCombined209,[switch]$WorkerStartupFootprintForward209,[string]$CombinedReadyChallenge)
 $ErrorActionPreference = 'Stop'
+if (((($WorkerStartupFootprintHeldSaved209 -or $FootprintHeldCache209) -and ($StringPrecreate -or $WorkerStartup -or $Layers209 -or $Visual209 -or $WorkerStartup209 -or $WorkerStartupEmpty209 -or $WorkerStartupRatline209 -or $WorkerStartupRatlineContinuation209 -or $WorkerStartupFootprint209 -or $WorkerStartupFootprintCopy209 -or $WorkerStartupFootprintSaved209 -or $WorkerStartupFootprintMain209 -or $WorkerStartupFootprintCombined209 -or $WorkerStartupFootprintForward209)) -or ($WorkerStartupFootprintHeldSaved209 -and $FootprintHeldCache209))) {throw 'pcb-diagnostic-conflicting-purpose'}
+$heldNativePurpose=$WorkerStartupFootprintHeldSaved209 -or $FootprintHeldCache209
 if ($Visual209 -and ($Layers209 -or $StringPrecreate -or $WorkerStartup -or $WorkerStartup209 -or $WorkerStartupEmpty209 -or $WorkerStartupRatline209 -or $WorkerStartupRatlineContinuation209 -or $WorkerStartupFootprint209 -or $WorkerStartupFootprintCopy209 -or $WorkerStartupFootprintSaved209 -or $WorkerStartupFootprintMain209 -or $WorkerStartupFootprintCombined209 -or $WorkerStartupFootprintForward209)) {throw 'pcb-diagnostic-conflicting-visual-purpose'}
 if ($Visual209) {$Layers209=$true}
 if ((($WorkerStartupFootprintCombined209 -or $WorkerStartupFootprintForward209) -and -not $CompileOnly -and $CombinedReadyChallenge -cnotmatch '\A[a-f0-9]{32}\z') -or (-not ($WorkerStartupFootprintCombined209 -or $WorkerStartupFootprintForward209) -and -not [string]::IsNullOrEmpty($CombinedReadyChallenge))) {throw 'pcb-diagnostic-combined-ready-challenge'}
@@ -17,7 +19,7 @@ if ($WorkerStartupFootprintForward209 -and ($StringPrecreate -or $WorkerStartup 
 $footprintMainPurpose=$WorkerStartupFootprintMain209 -or $WorkerStartupFootprintCombined209 -or $WorkerStartupFootprintForward209
 $footprintExecutionPurpose=$WorkerStartupFootprintCopy209 -or $WorkerStartupFootprintCombined209 -or $WorkerStartupFootprintForward209
 $ratlinePurpose=$WorkerStartupRatline209 -or $WorkerStartupRatlineContinuation209
-$startupPurpose=$footprintMainPurpose -or $WorkerStartup -or $WorkerStartup209 -or $WorkerStartupEmpty209 -or $WorkerStartupFootprint209 -or $WorkerStartupFootprintCopy209 -or $WorkerStartupFootprintSaved209 -or $ratlinePurpose
+$startupPurpose=$footprintMainPurpose -or $WorkerStartup -or $WorkerStartup209 -or $WorkerStartupEmpty209 -or $WorkerStartupFootprint209 -or $WorkerStartupFootprintCopy209 -or $WorkerStartupFootprintSaved209 -or $WorkerStartupFootprintHeldSaved209 -or $ratlinePurpose
 [Console]::OutputEncoding = New-Object System.Text.UTF8Encoding($false)
 # Separate diagnostic owner. The ordinary no-argument launcher is unchanged.
 # Electron requests Browser::Quit on pipe disconnect. Never dispose live pipes,
@@ -1770,6 +1772,8 @@ public sealed class EasyedaDiagnosticOwner {
   readonly bool workerStartupFootprint209;
   readonly bool workerStartupFootprintCopy209;
   readonly bool workerStartupFootprintSaved209;
+  readonly bool workerStartupFootprintHeldSaved209;
+  readonly bool footprintHeldCache209;
   readonly Stopwatch footprintElapsed;
   string footprintCopyWorkerSession;
   int footprintCopyClockRequests,footprintCopyParentRequests,footprintSavedQueueReads,footprintCacheConstructionRequests;
@@ -1782,8 +1786,8 @@ public sealed class EasyedaDiagnosticOwner {
   bool mainCompletionBegun,mainCompletionActive,mainCompletionFailed,mainCompletionRetired,mainCompletionTailReleaseAttempted;
   int mainCompletionFirst,mainCompletionNormal,mainCompletionCleanup;
   string footprintSavedParentSession,footprintSavedQueueContext,footprintSavedQueueScope;
-  long FootprintRequestLimit { get { return workerStartupFootprintForward209?EasyedaFootprintForwardLimits.Requests:workerStartupFootprintCombined209?EasyedaFootprintCombinedLimits.Requests:workerStartupFootprintSaved209?EasyedaFootprintSavedLimits.Requests:workerStartupFootprintCopy209?EasyedaFootprintExecutionLimits.Requests:EasyedaFootprintPreparationLimits.Requests; } }
-  long FootprintNormalRequestLimit { get { return workerStartupFootprintForward209?EasyedaFootprintForwardLimits.NormalRequests:workerStartupFootprintCombined209?EasyedaFootprintCombinedLimits.NormalRequests:workerStartupFootprintSaved209?EasyedaFootprintSavedLimits.NormalRequests:workerStartupFootprintCopy209?EasyedaFootprintExecutionLimits.NormalRequests:EasyedaFootprintPreparationLimits.NormalRequests; } }
+  long FootprintRequestLimit { get { return footprintHeldCache209?HeldCacheRequests:workerStartupFootprintHeldSaved209?HeldSavedRequests:workerStartupFootprintForward209?EasyedaFootprintForwardLimits.Requests:workerStartupFootprintCombined209?EasyedaFootprintCombinedLimits.Requests:workerStartupFootprintSaved209?EasyedaFootprintSavedLimits.Requests:workerStartupFootprintCopy209?EasyedaFootprintExecutionLimits.Requests:EasyedaFootprintPreparationLimits.Requests; } }
+  long FootprintNormalRequestLimit { get { return footprintHeldCache209?HeldCacheRequests:workerStartupFootprintHeldSaved209?HeldSavedRequests:workerStartupFootprintForward209?EasyedaFootprintForwardLimits.NormalRequests:workerStartupFootprintCombined209?EasyedaFootprintCombinedLimits.NormalRequests:workerStartupFootprintSaved209?EasyedaFootprintSavedLimits.NormalRequests:workerStartupFootprintCopy209?EasyedaFootprintExecutionLimits.NormalRequests:EasyedaFootprintPreparationLimits.NormalRequests; } }
   long FootprintNormalMilliseconds { get { return workerStartupFootprintForward209?EasyedaFootprintForwardLimits.NormalMilliseconds:workerStartupFootprintCombined209?EasyedaFootprintCombinedLimits.NormalMilliseconds:workerStartupFootprintSaved209?EasyedaFootprintSavedLimits.NormalMilliseconds:workerStartupFootprintCopy209?EasyedaFootprintExecutionLimits.NormalMilliseconds:EasyedaFootprintPreparationLimits.NormalMilliseconds; } }
   long FootprintTotalMilliseconds { get { return workerStartupFootprintForward209?EasyedaFootprintForwardLimits.TotalMilliseconds:workerStartupFootprintCombined209?EasyedaFootprintCombinedLimits.TotalMilliseconds:workerStartupFootprintSaved209?EasyedaFootprintSavedLimits.TotalMilliseconds:workerStartupFootprintCopy209?EasyedaFootprintExecutionLimits.TotalMilliseconds:EasyedaFootprintPreparationLimits.TotalMilliseconds; } }
   bool footprintUiStarted,footprintUiReleased,footprintManagerStarted,footprintManagerSource,footprintManagerReleased;
@@ -1869,14 +1873,198 @@ public sealed class EasyedaDiagnosticOwner {
   }
   public static EasyedaDiagnosticOwner CreateWorkerStartup209() { return new EasyedaDiagnosticOwner(false,true,false,true); }
   EasyedaDiagnosticOwner(string purpose,bool footprintPurpose) {
-    if(!footprintPurpose || purpose!="footprint-copy-preparation"&&purpose!="worker-startup-footprint-copy209"&&purpose!="worker-startup-footprint-saved209")throw Error("footprint-purpose");
+    if(!footprintPurpose || purpose!="footprint-copy-preparation"&&purpose!="worker-startup-footprint-copy209"&&purpose!="worker-startup-footprint-saved209"&&purpose!="worker-startup-footprint-held-saved209"&&purpose!="footprint-held-cache209")throw Error("footprint-purpose");
     workerStartupFootprintCopy209=purpose=="worker-startup-footprint-copy209";
-    workerStartupFootprintSaved209=purpose=="worker-startup-footprint-saved209";
-    workerStartup=true;workerStartup209=true;workerStartupFootprint209=true;footprintElapsed=Stopwatch.StartNew();
+    footprintHeldCache209=purpose=="footprint-held-cache209";
+    workerStartupFootprintHeldSaved209=purpose=="worker-startup-footprint-held-saved209"||footprintHeldCache209;
+    workerStartupFootprintSaved209=purpose=="worker-startup-footprint-saved209"||workerStartupFootprintHeldSaved209;
+    workerStartup=!footprintHeldCache209;workerStartup209=!footprintHeldCache209;workerStartupFootprint209=true;footprintElapsed=Stopwatch.StartNew();
   }
   public static EasyedaDiagnosticOwner CreateWorkerStartupFootprint209() { return new EasyedaDiagnosticOwner("footprint-copy-preparation",true); }
   public static EasyedaDiagnosticOwner CreateWorkerStartupFootprintCopy209() { return new EasyedaDiagnosticOwner("worker-startup-footprint-copy209",true); }
   public static EasyedaDiagnosticOwner CreateWorkerStartupFootprintSaved209() { return new EasyedaDiagnosticOwner("worker-startup-footprint-saved209",true); }
+  public static EasyedaDiagnosticOwner CreateWorkerStartupFootprintHeldSaved209() { return new EasyedaDiagnosticOwner("worker-startup-footprint-held-saved209",true); }
+  public static EasyedaDiagnosticOwner CreateFootprintHeldCache209() { return new EasyedaDiagnosticOwner("footprint-held-cache209",true); }
+  // Distinct held-saved reservations. Source parity checks bind these constants
+  // to the derived TypeScript profile; no old purpose obtains these counters.
+  public const int HeldSavedRequests=363,HeldSavedNormal=328,HeldSavedCleanup=35;
+  public const int HeldCacheRequests=31,HeldCacheNormal=30,HeldCacheCleanup=1;
+  const int HeldNormalControls=46,HeldCleanupControls=251;
+  const int HeldNormalData=3915,HeldCleanupData=4277,HeldNormalWait=5192,HeldCleanupWait=3000,HeldNormalIdle=14160,HeldCleanupIdle=240;
+  const long HeldNormalRaw=57564416,HeldCleanupRaw=9544448,HeldNormalOutput=89128960,HeldCleanupOutput=16777216;
+  int heldNormalRequests,heldCleanupRequests,heldNormalControls,heldCleanupControls,heldStep;
+  bool heldCacheSending;int heldDiscoveryAttachments;
+  int heldNormalData,heldCleanupData,heldNormalWait,heldCleanupWait,heldNormalIdle,heldCleanupIdle;
+  long heldNormalRaw,heldCleanupRaw,heldNormalOutput,heldCleanupOutput;
+  bool heldBound,heldReleaseAttempted,heldReleaseAcknowledged,heldFailed,heldAbortAttempted,heldReplyCleanup;
+  bool heldPollEntered,heldPollCleanup,heldPollWaiting,heldFramePartial,heldAckSkipPartial;
+  string heldContext,heldProject,heldBranch,heldTuple;int heldReleaseId;
+  readonly HashSet<string> heldFunctions=new HashSet<string>(StringComparer.Ordinal);
+  readonly MemoryStream heldAckFrame=new MemoryStream();
+  static readonly string[] HeldPhases={"capture","array-properties","constructor-properties","match-properties","getter-properties","recheck-before-getter","retain-receiver","queue-first","recheck-first","queue-fresh","recheck-fresh"};
+  static bool HeldCleanupMethod(string message,int id) {
+    string prefix="{\"id\":"+id.ToString(CultureInfo.InvariantCulture)+",\"method\":\"";
+    if(message==null||!message.StartsWith(prefix,StringComparison.Ordinal))throw Error("held-saved-renderer-envelope");
+    foreach(string method in new string[]{"Debugger.removeBreakpoint","Debugger.resume","Runtime.runIfWaitingForDebugger","Runtime.releaseObjectGroup"})
+      if(message.StartsWith(prefix+method+"\"",StringComparison.Ordinal))return true;
+    return false;
+  }
+  void ChargeHeldSavedRenderer(int id,string message) {
+    if(!workerStartupFootprintHeldSaved209)return;
+    bool cleanup=HeldCleanupMethod(message,id);
+    if(footprintHeldCache209&&!heldCacheSending){bool allowed=false;foreach(string method in new string[]{"Browser.getVersion","Target.getTargets","Target.attachToTarget","Page.enable","Page.getFrameTree","Runtime.enable","Debugger.enable","Debugger.getScriptSource","DOM.getFrameOwner","DOM.describeNode"})if(message.StartsWith("{\"id\":"+id+",\"method\":\""+method+"\"",StringComparison.Ordinal))allowed=true;if(!allowed)throw Error("held-cache-scope");}
+    CheckFootprintWork(id,cleanup);
+    if(id<1||id>(footprintHeldCache209?HeldCacheRequests:HeldSavedRequests)||heldNormalRequests+heldCleanupRequests>=(footprintHeldCache209?HeldCacheRequests:HeldSavedRequests)||
+       (cleanup?heldCleanupRequests>=(footprintHeldCache209?HeldCacheCleanup:HeldSavedCleanup):heldNormalRequests>=(footprintHeldCache209?HeldCacheNormal:HeldSavedNormal)||heldFailed||heldAbortAttempted))throw Error("held-saved-renderer-budget");
+    if(cleanup)heldCleanupRequests++;else heldNormalRequests++;heldReplyCleanup=cleanup;
+  }
+  public void AdmitHeldSavedAction(string action,bool cleanup) {
+    if(!workerStartupFootprintHeldSaved209)throw Error("held-saved-purpose");
+    if(footprintHeldCache209&&(action=="worker-startup-send"||action=="worker-startup-parent"||action=="footprint-held-saved-worker"))throw Error("held-cache-scope");
+    if(heldAbortAttempted&&action!="identity"&&action!="termination"&&action!="release"&&action!="held-saved-abort"&&action!="poll")throw Error("held-saved-aborted");
+    if(action=="send"||action=="worker-startup-send"||action=="worker-startup-parent"||action=="footprint-held-saved-worker"||action=="saved-cache-held"||action=="poll")return;
+    if(action!="worker-startup-reprove") {
+      if(action=="launch"||action=="held-saved-bind")cleanup=false;
+      else if(action=="identity"||action=="no-process-proof"||action=="release-no-process"||action=="release-unlaunched"||action=="window"||action=="normal-close"||action=="termination"||action=="release"||action=="held-saved-abort")cleanup=true;
+      else throw Error("held-saved-action");
+    }
+    if(cleanup?heldCleanupControls>=HeldCleanupControls:heldNormalControls>=HeldNormalControls||heldFailed)throw Error("held-saved-control-budget");
+    if(cleanup)heldCleanupControls++;else heldNormalControls++;heldReplyCleanup=cleanup;
+  }
+  public void FailHeldSaved() {if(workerStartupFootprintHeldSaved209)heldFailed=true;}
+  public void WriteHeldSavedReply(string text) {
+    if(!workerStartupFootprintHeldSaved209||text==null)throw Error("held-saved-output-purpose");
+    int bytes=Encoding.UTF8.GetByteCount(text)+2;
+    if(heldReplyCleanup?heldCleanupOutput+bytes>HeldCleanupOutput:heldNormalOutput+bytes>HeldNormalOutput)throw Error("held-saved-output-budget");
+    if(heldReplyCleanup)heldCleanupOutput+=bytes;else heldNormalOutput+=bytes;Console.WriteLine(text);
+  }
+  public void BindHeldSaved(string session,string context,string project,string branch) {
+    if(!workerStartupFootprintHeldSaved209||heldBound||heldFailed||startupOpeningIdentity!=null||startupOpeningConsumed||
+       footprintSavedParentSession==null||session!=footprintSavedParentSession||!HandleToken(context,128)||
+       project==null||!System.Text.RegularExpressions.Regex.IsMatch(project,@"\A[a-f0-9]{64}\z")||
+       branch==null||!System.Text.RegularExpressions.Regex.IsMatch(branch,@"\A[a-f0-9]{32}\z"))throw Error("held-saved-bind");
+    AssertLive();heldBound=true;heldContext=context;heldProject=project;heldBranch=branch;AssertLive();
+  }
+  static bool HandleToken(string value,int limit) {return value!=null&&value.Length<=limit&&System.Text.RegularExpressions.Regex.IsMatch(value,@"\A[A-Za-z0-9_.:-]+\z");}
+  public void SendHeldSavedCache(int id,string phase,string method,System.Collections.IDictionary fields) {
+    if(!workerStartupFootprintHeldSaved209||!heldBound||fields==null||heldReleaseAttempted||heldAbortAttempted)throw Error("held-saved-cache-purpose");
+    bool cleanup=phase=="release";
+    if(cleanup?heldStep==0:heldFailed||heldStep>=HeldPhases.Length||HeldPhases[heldStep]!=phase)throw Error("held-saved-cache-sequence");
+    CheckFootprintWork(id,cleanup);
+    string message=EasyedaFootprintSavedCacheHeldProtocol.Encode(id,phase,method,fields);
+    if((string)fields["sessionId"]!=footprintSavedParentSession)throw Error("held-saved-cache-session");
+    if(phase=="capture"&&(string)fields["uniqueContextId"]!=heldContext)throw Error("held-saved-cache-context");
+    if(phase=="array-properties")heldTuple=(string)fields["objectId"];
+    else if(phase=="constructor-properties"||phase=="match-properties"||phase=="getter-properties") {
+      string handle=(string)fields["objectId"];if(handle==heldTuple||!heldFunctions.Add(handle))throw Error("held-saved-cache-function");
+    } else if(!cleanup&&phase!="capture"&&(string)fields["objectId"]!=heldTuple)throw Error("held-saved-cache-tuple");
+    if((phase=="queue-first"||phase=="queue-fresh")&&((string)fields["projectUuid"]!=heldProject||(string)fields["branchUuid"]!=heldBranch))throw Error("held-saved-cache-target");
+    if(cleanup){heldReleaseAttempted=true;heldReleaseId=id;heldAckSkipPartial=heldFramePartial;heldAckFrame.SetLength(0);}
+    else heldStep++;
+    heldCacheSending=true;try{SendMessage(id,message,cleanup);}finally{heldCacheSending=false;}
+  }
+  public string PollHeldSaved(bool cleanup,bool waiting) {
+    if(!workerStartupFootprintHeldSaved209||heldPollEntered)throw Error("held-saved-poll-purpose");
+    heldPollEntered=true;heldPollCleanup=cleanup||heldFailed||heldAbortAttempted;heldPollWaiting=waiting;heldReplyCleanup=heldPollCleanup;
+    try{return Poll();}finally{heldPollEntered=false;}
+  }
+  void ChargeHeldSavedPoll(int bytes) {
+    if(!workerStartupFootprintHeldSaved209)return;
+    if(!heldPollEntered)throw Error("held-saved-poll-fields");bool cleanup=heldPollCleanup;
+    if(bytes>0) {
+      if(cleanup?heldCleanupData>=HeldCleanupData||heldCleanupRaw+bytes>HeldCleanupRaw:heldNormalData>=HeldNormalData||heldNormalRaw+bytes>HeldNormalRaw)throw Error("held-saved-data-budget");
+      if(cleanup){heldCleanupData++;heldCleanupRaw+=bytes;}else{heldNormalData++;heldNormalRaw+=bytes;}
+    } else if(heldPollWaiting) {
+      if(cleanup?heldCleanupWait>=HeldCleanupWait:heldNormalWait>=HeldNormalWait)throw Error("held-saved-wait-budget");
+      if(cleanup)heldCleanupWait++;else heldNormalWait++;
+    } else {
+      if(cleanup?heldCleanupIdle>=HeldCleanupIdle:heldNormalIdle>=HeldNormalIdle)throw Error("held-saved-idle-budget");
+      if(cleanup)heldCleanupIdle++;else heldNormalIdle++;
+    }
+    heldReplyCleanup=cleanup;
+  }
+  void ObserveHeldSavedBytes(byte[] bytes,int count) {
+    if(!workerStartupFootprintHeldSaved209)return;
+    for(int i=0;i<count;i++) {
+      byte value=bytes[i];bool previousPartial=heldFramePartial;heldFramePartial=value!=0;
+      if(!heldReleaseAttempted||heldReleaseAcknowledged)continue;
+      if(heldAckSkipPartial){if(value==0)heldAckSkipPartial=false;continue;}
+      if(value!=0){if(heldAckFrame.Length>=1048576)throw Error("held-saved-ack-frame");heldAckFrame.WriteByte(value);continue;}
+      if(!previousPartial||heldAckFrame.Length==0)throw Error("held-saved-ack-empty");
+      string text=new UTF8Encoding(false,true).GetString(heldAckFrame.ToArray());heldAckFrame.SetLength(0);
+      if(new HeldAckJson(text).Matches(heldReleaseId,footprintSavedParentSession))heldReleaseAcknowledged=true;
+    }
+  }
+  // A bounded skip parser avoids searching nested/string text for an ID. It
+  // rejects duplicate decoded top-level keys, malformed JSON and nonempty
+  // result objects, while accepting every key order and JSON whitespace.
+  sealed class HeldAckJson {
+    readonly string text;int at;const int Depth=64;
+    public HeldAckJson(string value){text=value;}
+    void Need(bool value){if(!value)throw Error("held-saved-ack-json");}
+    void White(){while(at<text.Length&&(text[at]==' '||text[at]=='\t'||text[at]=='\r'||text[at]=='\n'))at++;}
+    bool Take(char value){White();if(at<text.Length&&text[at]==value){at++;return true;}return false;}
+    int Hex(){Need(at+4<=text.Length);int value=0;for(int n=0;n<4;n++){char c=text[at++];int d=c>='0'&&c<='9'?c-'0':c>='a'&&c<='f'?c-'a'+10:c>='A'&&c<='F'?c-'A'+10:-1;Need(d>=0);value=value*16+d;}return value;}
+    string String(){White();Need(at<text.Length&&text[at++]=='"');var result=new StringBuilder();while(at<text.Length){char c=text[at++];if(c=='"')return result.ToString();Need(c>=32);if(c=='\\'){Need(at<text.Length);c=text[at++];switch(c){case '"':case '\\':case '/':break;case 'b':c='\b';break;case 'f':c='\f';break;case 'n':c='\n';break;case 'r':c='\r';break;case 't':c='\t';break;case 'u':c=(char)Hex();if(char.IsHighSurrogate(c)){Need(at+2<=text.Length&&text[at++]=='\\'&&text[at++]=='u');char low=(char)Hex();Need(char.IsLowSurrogate(low));result.Append(c);c=low;}else Need(!char.IsLowSurrogate(c));break;default:Need(false);break;}}else if(char.IsHighSurrogate(c)){Need(at<text.Length&&char.IsLowSurrogate(text[at]));result.Append(c);c=text[at++];}else Need(!char.IsLowSurrogate(c));result.Append(c);}Need(false);return null;}
+    string Number(){White();int start=at;if(at<text.Length&&text[at]=='-')at++;Need(at<text.Length);if(text[at]=='0')at++;else{Need(text[at]>='1'&&text[at]<='9');while(at<text.Length&&text[at]>='0'&&text[at]<='9')at++;}if(at<text.Length&&text[at]=='.'){at++;int begin=at;while(at<text.Length&&text[at]>='0'&&text[at]<='9')at++;Need(at>begin);}if(at<text.Length&&(text[at]=='e'||text[at]=='E')){at++;if(at<text.Length&&(text[at]=='+'||text[at]=='-'))at++;int begin=at;while(at<text.Length&&text[at]>='0'&&text[at]<='9')at++;Need(at>begin);}return text.Substring(start,at-start);}
+    void Skip(int depth){Need(depth<=Depth);White();Need(at<text.Length);char c=text[at];if(c=='"'){String();return;}if(c=='{'){at++;if(Take('}'))return;do{String();Need(Take(':'));Skip(depth+1);}while(Take(','));Need(Take('}'));return;}if(c=='['){at++;if(Take(']'))return;do{Skip(depth+1);}while(Take(','));Need(Take(']'));return;}foreach(string literal in new string[]{"true","false","null"})if(text.Length-at>=literal.Length&&text.Substring(at,literal.Length)==literal){at+=literal.Length;return;}Number();}
+    public bool Matches(int expected,string session){Need(Take('{'));var keys=new HashSet<string>(StringComparer.Ordinal);int id=-1;string observed=null;bool empty=false;if(!Take('}')){do{string key=String();Need(keys.Add(key)&&Take(':'));if(key=="id"){string number=Number();int parsed;if(int.TryParse(number,NumberStyles.None,CultureInfo.InvariantCulture,out parsed))id=parsed;}else if(key=="sessionId")observed=String();else{White();int start=at;Skip(1);if(key=="result")empty=System.Text.RegularExpressions.Regex.IsMatch(text.Substring(start,at-start),@"\A\{[ \t\r\n]*\}\z");}}while(Take(','));Need(Take('}'));}White();Need(at==text.Length);if(id!=expected)return false;Need(keys.Count==3&&keys.Contains("id")&&keys.Contains("result")&&keys.Contains("sessionId")&&empty&&observed==session);return true;}
+  }
+  public void AbortHeldSaved() {
+    if(!workerStartupFootprintHeldSaved209||heldAbortAttempted||released||root==IntPtr.Zero||job==IntPtr.Zero)throw Error("held-saved-abort-owner");
+    AssertLimits();AssertPipes();long created,exited,kernel,user;
+    if(GetProcessId(root)!=rootPid||!GetProcessTimes(root,out created,out exited,out kernel,out user)||created!=rootCreated)throw Error("held-saved-abort-identity");
+    heldAbortAttempted=true;heldFailed=true;Native(TerminateJobObject(job,0x45444853));
+  }
+  public static void VerifyHeldSavedSmoke() {
+    Action<Action> refuse=action=>{bool blocked=false;try{action();}catch(InvalidOperationException){blocked=true;}if(!blocked)throw Error("held-saved-smoke-refusal");};
+    var owner=CreateWorkerStartupFootprintHeldSaved209();var old=CreateWorkerStartupFootprintSaved209();
+    if(!owner.workerStartupFootprintHeldSaved209||!owner.workerStartupFootprintSaved209||owner.workerStartupFootprintCopy209||owner.EffectiveRequestLimit!=363||old.EffectiveRequestLimit!=353)throw Error("held-saved-birth-smoke");
+    owner.ChargeHeldSavedRenderer(1,"{\"id\":1,\"method\":\"Debugger.resume\"}");
+    for(int id=2;id<=329;id++)owner.ChargeHeldSavedRenderer(id,"{\"id\":"+id+",\"method\":\"Runtime.enable\"}");
+    for(int id=330;id<=363;id++)owner.ChargeHeldSavedRenderer(id,"{\"id\":"+id+",\"method\":\"Runtime.releaseObjectGroup\"}");
+    refuse(()=>owner.ChargeHeldSavedRenderer(364,"{\"id\":364,\"method\":\"Runtime.enable\"}"));
+    if(owner.heldNormalRequests!=328||owner.heldCleanupRequests!=35||old.heldNormalRequests!=0)throw Error("held-saved-request-smoke");
+    var controls=CreateWorkerStartupFootprintHeldSaved209();
+    for(int n=0;n<46;n++)controls.AdmitHeldSavedAction("worker-startup-reprove",false);
+    refuse(()=>controls.AdmitHeldSavedAction("worker-startup-reprove",false));
+    for(int n=0;n<251;n++)controls.AdmitHeldSavedAction("worker-startup-reprove",true);
+    refuse(()=>controls.AdmitHeldSavedAction("worker-startup-reprove",true));
+    refuse(()=>controls.AdmitHeldSavedAction("footprint-saved-upload-queue",false));
+    refuse(()=>old.AdmitHeldSavedAction("held-saved-bind",false));
+    string[] fields={"\"id\":73","\"result\": { \r\n }","\"sessionId\":\"original\""};
+    foreach(int[] order in new int[][]{new int[]{0,1,2},new int[]{0,2,1},new int[]{1,0,2},new int[]{1,2,0},new int[]{2,0,1},new int[]{2,1,0}})
+      if(!new HeldAckJson(" \t{ "+fields[order[0]]+" , "+fields[order[1]]+" , "+fields[order[2]]+" }\n").Matches(73,"original"))throw Error("held-saved-ack-order-smoke");
+    foreach(string bad in new string[]{"{\"id\":73,\"result\":{},\"sessionId\":\"foreign\"}","{\"id\":73,\"result\":{\"x\":0},\"sessionId\":\"original\"}","{\"id\":73,\"result\":{},\"sessionId\":\"original\",\"id\":73}","{\"id\":73,\"error\":{},\"sessionId\":\"original\"}","{\"id\":73,\"result\":{},\"sessionId\":\"original\",\"extra\":0}","{\"id\":73,\"result\":{},\"sessionId\":\"original\"}{}"})refuse(()=>new HeldAckJson(bad).Matches(73,"original"));
+    var ack=CreateWorkerStartupFootprintHeldSaved209();ack.footprintSavedParentSession="original";ack.heldReleaseAttempted=true;ack.heldReleaseId=73;
+    byte[] bytes=Encoding.UTF8.GetBytes("{\"sessionId\":\"original\",\"result\":{},\"id\":73}\0");
+    for(int n=0;n<bytes.Length;n++)ack.ObserveHeldSavedBytes(new byte[]{bytes[n]},1);
+    if(!ack.heldReleaseAcknowledged)throw Error("held-saved-ack-fragment-smoke");
+    var noRoot=CreateWorkerStartupFootprintHeldSaved209();refuse(()=>noRoot.AbortHeldSaved());
+    if(noRoot.heldAbortAttempted)throw Error("held-saved-abort-unbound-smoke");
+    foreach(var aborted in new[]{CreateWorkerStartupFootprintHeldSaved209(),CreateFootprintHeldCache209()}) {
+      aborted.heldAbortAttempted=true;aborted.heldFailed=true;aborted.AdmitHeldSavedAction("poll",false);
+      bool noJob=false;try{aborted.PollHeldSaved(false,true);}catch(InvalidOperationException e){if(e.Message!="pcb-diagnostic-owner-unavailable")throw;noJob=true;}
+      if(!noJob||!aborted.heldPollCleanup||!aborted.heldReplyCleanup||aborted.heldPollEntered)throw Error("held-abort-poll-smoke");
+      foreach(string action in new[]{"send","launch","held-saved-bind","saved-cache-held","worker-startup-reprove","normal-close"})refuse(()=>aborted.AdmitHeldSavedAction(action,true));
+    }
+    var source=CreateWorkerStartupFootprintHeldSaved209();source.footprintCopyWorkerSession="worker";
+    var input=new System.Collections.Hashtable();string[] names={"objectId","argument0","argument1","argument2","argument4","argument5","projectUuid","branchUuid","windowTabId","footprintUuid","client","maximumTicket"};
+    string[] values={"manager","project","bus","consistency","constructors","methods",new string('a',64),new string('b',32),"tab",new string('c',16),new string('d',16),"1"};
+    for(int n=0;n<names.Length;n++)input.Add(names[n],values[n]);
+    string encoded=source.WorkerStartupProtocolMessage(363,"Runtime.callFunctionOn","worker","footprint-saved-source-read",input);
+    if(!encoded.StartsWith("{\"id\":363,",StringComparison.Ordinal))throw Error("held-saved-source-id-smoke");
+    var cache=CreateFootprintHeldCache209();
+    if(!cache.footprintHeldCache209||cache.workerStartup||cache.workerStartupFootprintCopy209||cache.EffectiveRequestLimit!=31)throw Error("held-cache-birth-smoke");
+    foreach(string action in new string[]{"worker-startup-send","worker-startup-parent","footprint-held-saved-worker"})refuse(()=>cache.AdmitHeldSavedAction(action,false));
+    foreach(string method in new string[]{"Runtime.evaluate","Target.setAutoAttach","Runtime.callFunctionOn","Debugger.setBreakpoint"})refuse(()=>cache.ChargeHeldSavedRenderer(1,"{\"id\":1,\"method\":\""+method+"\"}"));
+    refuse(()=>cache.SendWorkerStartup(1,"Runtime.enable","worker","runtime",new System.Collections.Hashtable()));
+    refuse(()=>cache.SendWorkerStartupParent(1,"Target.getTargets","targets",new System.Collections.Hashtable()));
+    for(int id=1;id<=30;id++)cache.ChargeHeldSavedRenderer(id,"{\"id\":"+id+",\"method\":\"Runtime.enable\"}");
+    cache.heldCacheSending=true;cache.ChargeHeldSavedRenderer(31,"{\"id\":31,\"method\":\"Runtime.releaseObjectGroup\"}");cache.heldCacheSending=false;
+    refuse(()=>cache.ChargeHeldSavedRenderer(32,"{\"id\":32,\"method\":\"Runtime.enable\"}"));
+    if(cache.heldNormalRequests!=30||cache.heldCleanupRequests!=1)throw Error("held-cache-budget-smoke");
+  }
   EasyedaDiagnosticOwner(int mainPurpose){if(mainPurpose!=209)throw Error("main-purpose");workerStartup=true;workerStartup209=true;workerStartupFootprintMain209=true;originalMain=new EasyedaOriginalMainTransport();}
   public static EasyedaDiagnosticOwner CreateWorkerStartupFootprintMain209(){return new EasyedaDiagnosticOwner(209);}
   EasyedaDiagnosticOwner(int mainPurpose,bool combined){
@@ -3190,7 +3378,12 @@ return handler;
   }
   public void Send(int id,string method,object targetId,object sessionId,object scriptId,object uniqueContextId) {
     string message=ProtocolMessageCore(id,method,OptionalText(targetId),OptionalText(sessionId),OptionalText(scriptId),OptionalText(uniqueContextId),stringPrecreate);
-    if(workerStartupFootprintSaved209 && method=="Page.getFrameTree")BindFootprintSavedParent(OptionalText(sessionId));
+    if(footprintHeldCache209&&method=="Target.attachToTarget"){if(heldBound||heldDiscoveryAttachments!=0)throw Error("held-cache-attachment");heldDiscoveryAttachments++;}
+    if(workerStartupFootprintSaved209 && !workerStartupFootprintHeldSaved209 && method=="Page.getFrameTree")BindFootprintSavedParent(OptionalText(sessionId));
+    if(workerStartupFootprintHeldSaved209 && method=="Page.getFrameTree") {
+      AssertLive();if(!launchCompleted||protocolFailed||id!=nextRequest)throw Error("held-saved-parent-state");
+      BindFootprintSavedParent(OptionalText(sessionId));
+    }
     if(visual209 && method=="Page.getFrameTree") {
       AssertLive();if(!launchCompleted||protocolFailed||id!=nextRequest)throw Error("renderer-capture-parent-state");
       string parent=OptionalText(sessionId);if(visualParentSession==null)visualParentSession=parent;else if(parent!=visualParentSession)throw Error("renderer-capture-parent-drift");
@@ -3390,30 +3583,26 @@ return handler;
     catch(InvalidOperationException) { extra=true; }if(!extra) throw Error("actor-clock-extra-smoke");
   }
 // BEGIN GENERATED PCB209 COMMON PRESENTATION SEED PROGRAM
-  const string CommonPresentationSeedFunctionGzip="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";
+  static readonly string[] CommonPacketProgramTable0=StringWorkerPackedProgramTable("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",59951,"09da8c92b48e1ce38bd8bcffe883e8de6944b57d1d0d60a82224b201c6acfa8d","ac42fbd09aa9ac79761eea51a551b364381769dee4989d5e4f44c0d18327eb16",5);
   const string CommonPresentationSeedFunctionSha256="8581262355c08b04542b41dd3bb1dc98bc58fc7937527ad03735884f397226c9";
-  static readonly string CommonPresentationSeedFunction=UnpackFixedProgram(CommonPresentationSeedFunctionGzip,14190,CommonPresentationSeedFunctionSha256,"53b692e6c14660433a18f7ed99ad95c9b8acabf60722794c2f88da52ee0c7f82");
+  static readonly string CommonPresentationSeedFunction=StringWorkerPackedProgram(CommonPacketProgramTable0,0,14190,CommonPresentationSeedFunctionSha256);
   // END GENERATED PCB209 COMMON PRESENTATION SEED PROGRAM
   // BEGIN GENERATED PCB209 COMMON RULES SEED PROGRAM
-  const string CommonRulesSeedFunctionGzip="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";
   const string CommonRulesSeedFunctionSha256="9572111945920e26b18d8dee6fd0e1b3839121682bee1af0f0ceb855e6b50a8e";
-  static readonly string CommonRulesSeedFunction=UnpackFixedProgram(CommonRulesSeedFunctionGzip,13648,CommonRulesSeedFunctionSha256,"627114b2bb5c4618f8beba11e28d240101d9bd058c34f97b4050b5f5becead56");
+  static readonly string CommonRulesSeedFunction=StringWorkerPackedProgram(CommonPacketProgramTable0,1,13648,CommonRulesSeedFunctionSha256);
   // END GENERATED PCB209 COMMON RULES SEED PROGRAM
 // BEGIN GENERATED PCB209 COMMON PREFERENCE SEED PROGRAM
-  const string CommonPreferenceSeedFunctionGzip="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";
   const string CommonPreferenceSeedFunctionSha256="9d1ff54eb25d8871b2f9957e5453a02cd7b9184625dae1439417189df8491dc2";
-  static readonly string CommonPreferenceSeedFunction=UnpackFixedProgram(CommonPreferenceSeedFunctionGzip,14246,CommonPreferenceSeedFunctionSha256,"a949c43a24d845cd3f25ab386fa015e5a6bb39163ff5ba4fd16cba2cfd569f2d");
+  static readonly string CommonPreferenceSeedFunction=StringWorkerPackedProgram(CommonPacketProgramTable0,2,14246,CommonPreferenceSeedFunctionSha256);
   // END GENERATED PCB209 COMMON PREFERENCE SEED PROGRAM
 // BEGIN GENERATED PCB209 COMMON PACKET ADVANCE PROGRAM
-  const string CommonPacketAdvanceFunctionGzip="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";
   const string CommonPacketAdvanceFunctionSha256="d405217e4c500a5db533583d12088075eeb39e310e816df245143c42bd2313a4";
-  static readonly string CommonPacketAdvanceFunction=UnpackFixedProgram(CommonPacketAdvanceFunctionGzip,10135,CommonPacketAdvanceFunctionSha256,"2c7dd867be7dd4835686971ef26e5171bf98d5730ca728f8970e08b9c128d0bc");
+  static readonly string CommonPacketAdvanceFunction=StringWorkerPackedProgram(CommonPacketProgramTable0,3,10135,CommonPacketAdvanceFunctionSha256);
   // END GENERATED PCB209 COMMON PACKET ADVANCE PROGRAM
   const string CommonPacketReadFunction=@"function(){""use strict"";const d=Object.getOwnPropertyDescriptor(this,""json"");if(!d||!Object.hasOwn(d,""value"")||typeof d.value!==""string""||d.value.length>262144)throw new Error(""PCB_COMMON_PACKET"");return d.value;}";
 // BEGIN GENERATED PCB209 COMMON PACKET RESULT PROGRAM
-  const string CommonPacketResultFunctionGzip="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";
   const string CommonPacketResultFunctionSha256="475af0126bc4cdc448419d95807dadc73833009be8f6b2763ed7abe89df2d1eb";
-  static readonly string CommonPacketResultFunction=UnpackFixedProgram(CommonPacketResultFunctionGzip,7728,CommonPacketResultFunctionSha256,"e6adfeaef29afc2acfef9b1dadbc6ff30618bf765596e3d0aaba1188fcedf24a");
+  static readonly string CommonPacketResultFunction=StringWorkerPackedProgram(CommonPacketProgramTable0,4,7728,CommonPacketResultFunctionSha256);
   // END GENERATED PCB209 COMMON PACKET RESULT PROGRAM
   static void VerifyCommonPacketPrograms() {
     string[] programs={CommonPresentationSeedFunction,CommonRulesSeedFunction,CommonPreferenceSeedFunction,CommonPacketAdvanceFunction,CommonPacketReadFunction,CommonPacketResultFunction};
@@ -3838,7 +4027,8 @@ return handler;
     if(!workerStartup || stringPrecreate)throw Error("startup-purpose");
     if(phase=="footprint-saved-source-read") {
       if(!workerStartupFootprintSaved209 || footprintCopyWorkerSession==null || sessionId!=footprintCopyWorkerSession)throw Error("footprint-saved-source-purpose");
-      return EasyedaFootprintSavedProtocol.EncodeSource(id,method,footprintCopyWorkerSession,fields);
+      return workerStartupFootprintHeldSaved209?FootprintOriginalId(id,EasyedaFootprintSavedProtocol.EncodeSource(1,method,footprintCopyWorkerSession,fields)):
+        EasyedaFootprintSavedProtocol.EncodeSource(id,method,footprintCopyWorkerSession,fields);
     }
     if(workerStartupFootprintSaved209 && (phase=="actor-clock" || phase=="footprint-source-read" || phase.StartsWith("channel-",StringComparison.Ordinal) || phase.StartsWith("footprint-producer-",StringComparison.Ordinal) || phase.StartsWith("footprint-dependency-",StringComparison.Ordinal)))throw Error("footprint-saved-worker-phase");
     if(workerStartupFootprint209)return FootprintOriginalId(id,EasyedaWorkerStartupProtocol.Encode209(1,method,sessionId,phase,fields));
@@ -3847,6 +4037,7 @@ return handler;
     return workerStartup209?EasyedaWorkerStartupProtocol.Encode209(id,method,sessionId,phase,fields):EasyedaWorkerStartupProtocol.Encode(id,method,sessionId,phase,fields);
   }
   public void SendWorkerStartup(int id,string method,string sessionId,string phase,System.Collections.IDictionary fields) {
+    if(footprintHeldCache209)throw Error("held-cache-scope");
     if((workerStartupFootprintCombined209||workerStartupFootprintForward209)&&savedCacheProbeStep>0&&!savedCacheProbeReleased)throw Error("saved-cache-cleanup-required");
     if((workerStartupFootprintCombined209||workerStartupFootprintForward209)&&savedCacheAccessorProbeStep>0&&!savedCacheAccessorProbeReleased)throw Error("saved-cache-accessor-cleanup-required");savedCacheDiscoveryEnded=true;
     if((phase=="footprint-dependency-capture" || phase=="footprint-dependency-recheck" || phase.StartsWith("footprint-producer-",StringComparison.Ordinal)) && !workerStartupFootprint209)throw Error("footprint-dependency-purpose");
@@ -3994,13 +4185,14 @@ return handler;
     footprintCacheConstructionRequests++;SendMessage(id,message);
   }
   public void SendFootprintSavedWorker(int id,string method,string phase,System.Collections.IDictionary fields) {
+    if(footprintHeldCache209)throw Error("held-cache-scope");
     if(!workerStartupFootprintSaved209 || footprintCopyWorkerSession==null ||
       phase!="parser-head-arm"&&phase!="parser-change-arm"&&phase!="parser-head"&&phase!="parser-change"&&phase!="parser-registered")throw Error("footprint-saved-worker-purpose");
     CheckFootprintWork(id,false);
     SendMessage(id,EasyedaFootprintCopyExecutionWorkerProtocol.Encode(id,phase,method,footprintCopyWorkerSession,fields));
   }
   public void SendFootprintSavedQueue(int id,string method,System.Collections.IDictionary fields) {
-    if(!workerStartupFootprintSaved209 || footprintSavedParentSession==null || startupOpeningConsumed || footprintSavedQueueReads>=2 ||
+    if(!workerStartupFootprintSaved209 || workerStartupFootprintHeldSaved209 || footprintSavedParentSession==null || startupOpeningConsumed || footprintSavedQueueReads>=2 ||
       footprintSavedQueueReads==0&&startupOpeningIdentity!=null || footprintSavedQueueReads==1&&startupOpeningIdentity==null)throw Error("footprint-saved-queue-purpose");
     CheckFootprintWork(id,false);
     string message=EasyedaFootprintSavedProtocol.EncodeQueue(id,method,footprintSavedParentSession,fields);
@@ -4014,7 +4206,7 @@ return handler;
   // installation leases. Pin acquired these deny-write/delete handles before
   // hashing and retained them; this is not a timestamp-only or cached admission.
   public void ReproveWorkerStartup() {
-    if(!workerStartup || stringPrecreate || !launchCompleted || protocolFailed)throw Error("startup-purpose");
+    if((!workerStartup&&!footprintHeldCache209) || stringPrecreate || !launchCompleted || protocolFailed)throw Error("startup-purpose");
     AssertLive();
   }
   string RatlineOriginalId(int id,string encoded) {
@@ -4549,6 +4741,7 @@ return handler;
     SendMessage(id,message);
   }
   public void SendWorkerStartupParent(int id,string method,string phase,System.Collections.IDictionary fields) {
+    if(footprintHeldCache209)throw Error("held-cache-scope");
     if((workerStartupFootprintCombined209||workerStartupFootprintForward209)&&savedCacheProbeStep>0&&!savedCacheProbeReleased)throw Error("saved-cache-cleanup-required");
     if((workerStartupFootprintCombined209||workerStartupFootprintForward209)&&savedCacheAccessorProbeStep>0&&!savedCacheAccessorProbeReleased)throw Error("saved-cache-accessor-cleanup-required");savedCacheDiscoveryEnded=true;
     if(phase!=null && phase.StartsWith("footprint-copy-clock-registration-",StringComparison.Ordinal)) {
@@ -4573,7 +4766,10 @@ return handler;
       BindFootprintSavedParent(session);
     }
     if(phase=="preflight" || phase=="open-project") {
-      if(workerStartupFootprintSaved209 && (footprintSavedQueueReads<1 || phase=="open-project"&&footprintSavedQueueReads!=2 ||
+      if(workerStartupFootprintHeldSaved209 && (!heldBound||heldFailed||heldAbortAttempted||
+        heldContext!=(string)fields["uniqueContextId"]||heldProject!=(string)fields["targetProjectUuid"]||heldBranch!=(string)fields["targetBranchUuid"]||
+        (phase=="preflight"?heldStep!=9||heldReleaseAttempted:heldStep!=11||!heldReleaseAcknowledged)))throw Error("held-saved-replay-brackets");
+      if(workerStartupFootprintSaved209 && !workerStartupFootprintHeldSaved209 && (footprintSavedQueueReads<1 || phase=="open-project"&&footprintSavedQueueReads!=2 ||
         footprintSavedQueueContext!=(string)fields["uniqueContextId"] || footprintSavedQueueScope!=(string)fields["targetProjectUuid"]+"\n"+(string)fields["targetBranchUuid"]))throw Error("footprint-saved-replay-brackets");
       // The same complete target/context tuple must survive the once-only
       // preflight and opening. Reservation precedes any potentially partial write.
@@ -4777,6 +4973,7 @@ return handler;
     AssertLive(); if(!launchCompleted || protocolFailed || id!=nextRequest || id>EffectiveRequestLimit) throw Error("discovery-request");
     if(workerStartupRatline209 && ratlineCleanup)ratlineCleanupRequests++;
     ChargeForwardRenderer(id,message);
+    ChargeHeldSavedRenderer(id,message);
     byte[] bytes=Encoding.UTF8.GetBytes(message);
     nextRequest++; // A failed write consumes its ID and the entire diagnostic channel.
     try { uint written; Native(WriteFile(parentWrite,bytes,(uint)bytes.Length,out written,IntPtr.Zero)); if(written!=bytes.Length) throw Error("partial-write"); AssertLive(); }
@@ -4784,18 +4981,20 @@ return handler;
   }
   public string Poll() {
     if(workerStartupFootprint209 && (footprintElapsed==null || footprintElapsed.ElapsedMilliseconds>=FootprintTotalMilliseconds))throw Error("footprint-deadline");
+    if(workerStartupFootprintHeldSaved209&&!heldPollEntered)throw Error("held-saved-poll-fields");
     AssertLive(); if(!launchCompleted || protocolFailed) throw Error("channel-failed");
     long ratlineReadLimit=ratlineCleanup?RatlineTotalByteLimit:RatlineNormalByteLimit;
     if(workerStartupRatline209 && (emptyElapsed==null || emptyElapsed.ElapsedMilliseconds>(ratlineCleanup?RatlineTotalMilliseconds:RatlineNormalMilliseconds) || received>=ratlineReadLimit))throw Error("ratline-deadline-or-bytes");
     try {
       if(workerStartupEmpty209 && (emptyElapsed==null || emptyElapsed.ElapsedMilliseconds>EasyedaWorkerStartupEmpty209Protocol.TotalMilliseconds))throw Error("empty-deadline");
       uint available; Native(PeekNamedPipe(parentRead,IntPtr.Zero,0,IntPtr.Zero,out available,IntPtr.Zero));
-      if(available==0) return "";
+      if(available==0) {ChargeHeldSavedPoll(0); AssertLive(); return ""; }
       int count=workerStartupRatline209?RatlineReadCount(available):(int)Math.Min(65536u,available);
       if((long)received+count>(workerStartupRatline209?RatlineTotalByteLimit:workerStartupEmpty209?EasyedaWorkerStartupEmpty209Protocol.TotalByteLimit:64L*1024*1024)) throw Error("receive-budget");
+      if(workerStartupFootprintHeldSaved209&&(heldPollCleanup?heldCleanupData>=HeldCleanupData||heldCleanupRaw+count>HeldCleanupRaw:heldNormalData>=HeldNormalData||heldNormalRaw+count>HeldNormalRaw))throw Error("held-saved-data-budget");
       byte[] bytes=new byte[count]; uint read; Native(ReadFile(parentRead,bytes,(uint)count,out read,IntPtr.Zero));
-      if(read==0 || read>count) throw Error("read-size"); received+=checked((int)read); AssertLive(); return Convert.ToBase64String(bytes,0,(int)read);
-    } catch { protocolFailed=true; throw; }
+      if(read==0 || read>count) throw Error("read-size"); received+=checked((int)read);ChargeHeldSavedPoll(checked((int)read));ObserveHeldSavedBytes(bytes,checked((int)read));AssertLive(); return Convert.ToBase64String(bytes,0,(int)read);
+    } catch { protocolFailed=true;FailHeldSaved();throw; }
   }
   // BEGIN GENERATED DIAGNOSTIC WINDOW CAPTURE
 const int WindowCaptureMaximumDimension=4096,WindowCaptureMaximumPixels=4194304,WindowCaptureMaximumPngBytes=262144;
@@ -5324,8 +5523,8 @@ const int WindowCaptureMaximumDimension=4096,WindowCaptureMaximumPixels=4194304,
 }
 '@
 $footprintCopyWorkerHandleFields=@('scriptId','objectId','arg0ObjectId','arg1ObjectId','arg2ObjectId','arg3ObjectId','arg4ObjectId','arg5ObjectId','arg6ObjectId','arg7ObjectId')
-$owner=if ($Visual209) {[EasyedaDiagnosticOwner]::CreateVisual209()} elseif ($WorkerStartupFootprintForward209) {[EasyedaDiagnosticOwner]::CreateWorkerStartupFootprintForward209()} elseif ($WorkerStartupFootprintCombined209) {[EasyedaDiagnosticOwner]::CreateWorkerStartupFootprintCombined209()} elseif ($WorkerStartupFootprintMain209) {[EasyedaDiagnosticOwner]::CreateWorkerStartupFootprintMain209()} elseif ($WorkerStartupFootprintSaved209) {[EasyedaDiagnosticOwner]::CreateWorkerStartupFootprintSaved209()} elseif ($WorkerStartupFootprintCopy209) {[EasyedaDiagnosticOwner]::CreateWorkerStartupFootprintCopy209()} elseif ($WorkerStartupFootprint209) {[EasyedaDiagnosticOwner]::CreateWorkerStartupFootprint209()} elseif ($WorkerStartupRatlineContinuation209) {[EasyedaDiagnosticOwner]::CreateWorkerStartupRatlineContinuation209()} elseif ($WorkerStartupRatline209) {[EasyedaDiagnosticOwner]::CreateWorkerStartupRatline209()} elseif ($WorkerStartupEmpty209) {[EasyedaDiagnosticOwner]::CreateWorkerStartupEmpty209()} elseif ($WorkerStartup209) {[EasyedaDiagnosticOwner]::CreateWorkerStartup209()} elseif ($WorkerStartup) {[EasyedaDiagnosticOwner]::CreateWorkerStartup()} elseif ($StringPrecreate) {[EasyedaDiagnosticOwner]::CreateStringPrecreate()} elseif ($Layers209) {[EasyedaDiagnosticOwner]::CreateLayers209()} else {New-Object EasyedaDiagnosticOwner}
-$startupRequestLimit=if ($WorkerStartupFootprintForward209) {[EasyedaFootprintForwardLimits]::Requests} elseif ($WorkerStartupFootprintCombined209) {[EasyedaFootprintCombinedLimits]::Requests} elseif ($WorkerStartupFootprintSaved209) {[EasyedaFootprintSavedLimits]::Requests} elseif ($WorkerStartupFootprintCopy209) {[EasyedaFootprintExecutionLimits]::Requests} elseif ($WorkerStartupFootprint209) {[EasyedaFootprintPreparationLimits]::Requests} elseif ($WorkerStartupRatlineContinuation209) {[EasyedaRatlineContinuation209Limits]::RequestLimit} elseif ($WorkerStartupRatline209) {[EasyedaRatline209Limits]::RequestLimit} elseif ($WorkerStartupEmpty209) {[EasyedaWorkerStartupEmpty209Protocol]::RequestLimit} else {256}
+$owner=if ($FootprintHeldCache209) {[EasyedaDiagnosticOwner]::CreateFootprintHeldCache209()} elseif ($WorkerStartupFootprintHeldSaved209) {[EasyedaDiagnosticOwner]::CreateWorkerStartupFootprintHeldSaved209()} elseif ($Visual209) {[EasyedaDiagnosticOwner]::CreateVisual209()} elseif ($WorkerStartupFootprintForward209) {[EasyedaDiagnosticOwner]::CreateWorkerStartupFootprintForward209()} elseif ($WorkerStartupFootprintCombined209) {[EasyedaDiagnosticOwner]::CreateWorkerStartupFootprintCombined209()} elseif ($WorkerStartupFootprintMain209) {[EasyedaDiagnosticOwner]::CreateWorkerStartupFootprintMain209()} elseif ($WorkerStartupFootprintSaved209) {[EasyedaDiagnosticOwner]::CreateWorkerStartupFootprintSaved209()} elseif ($WorkerStartupFootprintCopy209) {[EasyedaDiagnosticOwner]::CreateWorkerStartupFootprintCopy209()} elseif ($WorkerStartupFootprint209) {[EasyedaDiagnosticOwner]::CreateWorkerStartupFootprint209()} elseif ($WorkerStartupRatlineContinuation209) {[EasyedaDiagnosticOwner]::CreateWorkerStartupRatlineContinuation209()} elseif ($WorkerStartupRatline209) {[EasyedaDiagnosticOwner]::CreateWorkerStartupRatline209()} elseif ($WorkerStartupEmpty209) {[EasyedaDiagnosticOwner]::CreateWorkerStartupEmpty209()} elseif ($WorkerStartup209) {[EasyedaDiagnosticOwner]::CreateWorkerStartup209()} elseif ($WorkerStartup) {[EasyedaDiagnosticOwner]::CreateWorkerStartup()} elseif ($StringPrecreate) {[EasyedaDiagnosticOwner]::CreateStringPrecreate()} elseif ($Layers209) {[EasyedaDiagnosticOwner]::CreateLayers209()} else {New-Object EasyedaDiagnosticOwner}
+$startupRequestLimit=if ($FootprintHeldCache209) {[EasyedaDiagnosticOwner]::HeldCacheRequests} elseif ($WorkerStartupFootprintHeldSaved209) {[EasyedaDiagnosticOwner]::HeldSavedRequests} elseif ($WorkerStartupFootprintForward209) {[EasyedaFootprintForwardLimits]::Requests} elseif ($WorkerStartupFootprintCombined209) {[EasyedaFootprintCombinedLimits]::Requests} elseif ($WorkerStartupFootprintSaved209) {[EasyedaFootprintSavedLimits]::Requests} elseif ($WorkerStartupFootprintCopy209) {[EasyedaFootprintExecutionLimits]::Requests} elseif ($WorkerStartupFootprint209) {[EasyedaFootprintPreparationLimits]::Requests} elseif ($WorkerStartupRatlineContinuation209) {[EasyedaRatlineContinuation209Limits]::RequestLimit} elseif ($WorkerStartupRatline209) {[EasyedaRatline209Limits]::RequestLimit} elseif ($WorkerStartupEmpty209) {[EasyedaWorkerStartupEmpty209Protocol]::RequestLimit} else {256}
 try {
   $owner.Initialize()
   # BEGIN GENERATED FOOTPRINT COMBINED READY
@@ -5345,6 +5544,7 @@ try {
     [EasyedaDiagnosticOwner]::VerifySavedCacheAccessorProbePurposeSmoke()
     [EasyedaDiagnosticOwner]::VerifyFootprintCombinedSmoke()
     [EasyedaDiagnosticOwner]::VerifyFootprintForwardSmoke()
+    [EasyedaDiagnosticOwner]::VerifyHeldSavedSmoke()
     [EasyedaDiagnosticOwner]::VerifyMainCompletionPurposeSmoke()
     [EasyedaFootprintCopyMainRequestProtocol]::VerifySmoke()
     [EasyedaFootprintCopyMainCompletionProtocol]::VerifySmoke()
@@ -5511,6 +5711,14 @@ try {
       if ($Visual209) {$owner.AdmitVisualAction($request.action)}
       if ($WorkerStartupFootprintCombined209) {$owner.AdmitCombinedAction($request.action)}
       if ($WorkerStartupFootprintForward209) {$owner.AdmitForwardAction($request.action)}
+      if ($heldNativePurpose) {
+        $heldCleanup=$false
+        if ($request.action -ceq 'worker-startup-reprove') {
+          if ($request.heldCleanup -isnot [bool]) {throw 'pcb-diagnostic-held-saved-reprove-fields'}
+          $heldCleanup=$request.heldCleanup
+        }
+        $owner.AdmitHeldSavedAction($request.action,$heldCleanup)
+      }
       if ($WorkerStartupEmpty209) {
         if ($request.action -isnot [string]) {throw 'pcb-diagnostic-empty-action'}
         $cleanup=(@('identity','window','normal-close','termination','release','release-unlaunched','no-process-proof','release-no-process') -ccontains $request.action) -or
@@ -5528,6 +5736,28 @@ try {
         $owner.AdmitRatlineRequest($request.action,$cleanup)
       }
       switch -CaseSensitive ($request.action) {
+        'held-saved-bind' {
+          if (-not $heldNativePurpose -or -not $launched -or
+              (@($request.PSObject.Properties.Name | Sort-Object) -join ',') -cne 'action,branchUuid,helperInstance,id,jobId,projectUuid,rootCreated,rootPid,sessionId,uniqueContextId' -or
+              $request.sessionId -isnot [string] -or $request.uniqueContextId -isnot [string] -or $request.projectUuid -isnot [string] -or $request.branchUuid -isnot [string]) {throw 'pcb-diagnostic-held-saved-bind-fields'}
+          $owner.BindHeldSaved($request.sessionId,$request.uniqueContextId,$request.projectUuid,$request.branchUuid);$result=@{bound=$true}
+        }
+        'saved-cache-held' {
+          if (-not $heldNativePurpose -or -not $launched -or $request.phase -isnot [string] -or $request.method -isnot [string] -or
+              ($request.requestId -isnot [int] -and $request.requestId -isnot [long]) -or $request.requestId -lt 1 -or $request.requestId -gt $startupRequestLimit) {throw 'pcb-diagnostic-held-saved-cache-fields'}
+          $baseFields=@('action','helperInstance','id','jobId','rootCreated','rootPid','requestId','phase','method');$fields=New-Object Collections.Hashtable ([StringComparer]::Ordinal)
+          foreach ($field in $baseFields) {if (@($request.PSObject.Properties.Name) -cnotcontains $field) {throw 'pcb-diagnostic-held-saved-cache-field'}}
+          foreach ($property in $request.PSObject.Properties) {if ($baseFields -cnotcontains $property.Name) {
+            if (@('sessionId','uniqueContextId','objectId','projectUuid','branchUuid') -cnotcontains $property.Name -or $property.Value -isnot [string]) {throw 'pcb-diagnostic-held-saved-cache-field'}
+            $fields.Add($property.Name,$property.Value)
+          }}
+          $owner.SendHeldSavedCache([int]$request.requestId,$request.phase,$request.method,$fields);$result=@{written=$true}
+        }
+        'held-saved-abort' {
+          if (-not $heldNativePurpose -or -not $launched -or $request.confirmAbortOriginalJob -isnot [bool] -or $request.confirmAbortOriginalJob -ne $true -or
+              (@($request.PSObject.Properties.Name | Sort-Object) -join ',') -cne 'action,confirmAbortOriginalJob,helperInstance,id,jobId,rootCreated,rootPid') {throw 'pcb-diagnostic-held-saved-abort-fields'}
+          $owner.AbortHeldSaved();$result=@{abortRequested=$true;originalJobOnly=$true}
+        }
         'saved-cache-native' {
           if ((-not $WorkerStartupFootprintCombined209 -and -not $WorkerStartupFootprintForward209) -or -not $launched -or $request.phase -isnot [string] -or $request.method -isnot [string] -or ($request.requestId -isnot [int] -and $request.requestId -isnot [long])) {throw 'pcb-diagnostic-saved-cache-fields'}
           $baseFields=@('action','helperInstance','id','jobId','rootCreated','rootPid','requestId','phase','method');$fields=New-Object Collections.Hashtable ([StringComparer]::Ordinal)
@@ -5662,8 +5892,8 @@ try {
           $result=@{written=$true}
         }
         'worker-startup-reprove' {
-          if (-not $startupPurpose -or -not $launched -or
-              (@($request.PSObject.Properties.Name | Sort-Object) -join ',') -cne 'action,helperInstance,id,jobId,rootCreated,rootPid') {throw 'pcb-diagnostic-startup-reprove-fields'}
+          if (-not ($startupPurpose -or $FootprintHeldCache209) -or -not $launched -or
+              (@($request.PSObject.Properties.Name | Sort-Object) -join ',') -cne $(if ($heldNativePurpose) {'action,heldCleanup,helperInstance,id,jobId,rootCreated,rootPid'} else {'action,helperInstance,id,jobId,rootCreated,rootPid'})) {throw 'pcb-diagnostic-startup-reprove-fields'}
           $owner.ReproveWorkerStartup()
           $result=@{current=$true}
         }
@@ -5727,6 +5957,18 @@ try {
           }
           $owner.SendFootprintSavedWorker([int]$request.requestId,$request.method,$request.executionPhase,$workerFields)
           $result=@{written=$true}
+        }
+        'footprint-held-saved-worker' {
+          if (-not $WorkerStartupFootprintHeldSaved209 -or -not $launched -or $request.method -isnot [string] -or $request.executionPhase -isnot [string] -or
+              ($request.requestId -isnot [int] -and $request.requestId -isnot [long]) -or $request.requestId -lt 1 -or $request.requestId -gt [EasyedaDiagnosticOwner]::HeldSavedRequests) {throw 'pcb-diagnostic-held-saved-worker-fields'}
+          $workerFields=New-Object 'System.Collections.Hashtable' ([StringComparer]::Ordinal)
+          foreach ($property in $request.PSObject.Properties) {
+            if (@('id','action','helperInstance','jobId','rootPid','rootCreated','requestId','method','executionPhase') -cnotcontains $property.Name) {
+              if (@('scriptId','objectId','arg0ObjectId','arg1ObjectId','arg2ObjectId','arg3ObjectId','arg4ObjectId','arg5ObjectId','arg6ObjectId') -cnotcontains $property.Name -or $property.Value -isnot [string]) {throw 'pcb-diagnostic-held-saved-worker-field'}
+              $workerFields.Add($property.Name,$property.Value)
+            }
+          }
+          $owner.SendFootprintSavedWorker([int]$request.requestId,$request.method,$request.executionPhase,$workerFields);$result=@{written=$true}
         }
         'footprint-cache-construction' {
           if (-not $footprintExecutionPurpose -or -not $launched -or $request.method -isnot [string] -or $request.cachePhase -isnot [string] -or
@@ -6078,7 +6320,14 @@ try {
           }
           $result=@{written=$true}
         }
-        'poll' {if (-not $launched) {throw 'pcb-diagnostic-not-launched'}; $result=@{bytes=$owner.Poll()}}
+        'poll' {
+          if (-not $launched) {throw 'pcb-diagnostic-not-launched'}
+          if ($heldNativePurpose) {
+            if ($request.heldCleanup -isnot [bool] -or $request.heldWaiting -isnot [bool] -or
+                (@($request.PSObject.Properties.Name | Sort-Object) -join ',') -cne 'action,heldCleanup,heldWaiting,helperInstance,id,jobId,rootCreated,rootPid') {throw 'pcb-diagnostic-held-saved-poll-fields'}
+            $result=@{bytes=$owner.PollHeldSaved($request.heldCleanup,$request.heldWaiting)}
+          } else {$result=@{bytes=$owner.Poll()}}
+        }
         'footprint-copy-windows-clock' {
           if (-not $footprintExecutionPurpose -or -not $launched -or $request.phase -isnot [string] -or
               ($request.sequence -isnot [int] -and $request.sequence -isnot [long]) -or $request.sequence -lt 1 -or $request.sequence -gt 4 -or
@@ -6139,8 +6388,10 @@ try {
       }
       if ($ratlinePurpose) {$owner.WriteRatlineReply((@{id=$id;ok=$true;result=$result} | ConvertTo-Json -Depth 5 -Compress))}
       elseif ($WorkerStartupEmpty209) {$owner.WriteEmptyReply((@{id=$id;ok=$true;result=$result} | ConvertTo-Json -Depth 5 -Compress))}
+      elseif ($heldNativePurpose) {$owner.WriteHeldSavedReply((@{id=$id;ok=$true;result=$result} | ConvertTo-Json -Depth 5 -Compress))}
       else {@{id=$id;ok=$true;result=$result} | ConvertTo-Json -Depth 5 -Compress}
     } catch {
+      if ($heldNativePurpose) {$owner.FailHeldSaved()}
       # A post-create exception must not hide the retained process from its
       # original helper. The facade can recover its binding using identity.
       if ($owner.RootPid -gt 0) {$launched=$true}
@@ -6186,6 +6437,7 @@ try {
       else {
       if ($ratlinePurpose) {$owner.WriteRatlineReply((@{id=$id;ok=$false;error=$code} | ConvertTo-Json -Compress))}
       elseif ($WorkerStartupEmpty209) {$owner.WriteEmptyReply((@{id=$id;ok=$false;error=$code} | ConvertTo-Json -Compress))}
+      elseif ($heldNativePurpose) {$owner.WriteHeldSavedReply((@{id=$id;ok=$false;error=$code} | ConvertTo-Json -Compress))}
       else {@{id=$id;ok=$false;error=$code} | ConvertTo-Json -Compress}
       }
     }

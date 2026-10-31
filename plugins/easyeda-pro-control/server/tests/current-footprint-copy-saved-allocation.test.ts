@@ -19,7 +19,7 @@ async function fixture(failure: "admission" | "allocation" | "retained" | "none"
   const writer = Object.freeze(writerKind === "copy" ? new SyntheticCopyWriter() : { status: (): { released: true; helperClosed: true } => ({ released: true, helperClosed: true }) });
   let closedSnapshotReads = 0;
   const allocations = new WeakMap<object, object>(), attempts = new WeakSet<object>(), factories = new WeakMap<object, unknown>();
-  const states = new WeakMap<object, string>(); factories.set(writer, { options: Object.freeze({}) });
+  const states = new WeakMap<object, string>(), successorAttempts = new WeakSet<object>(); factories.set(writer, { options: Object.freeze({}) });
   const source = await readFile(new URL("../src/current-pcb-diagnostic-owner.ts", import.meta.url), "utf8");
   const start = source.indexOf("export async function startCurrentFootprintCopySavedNativeOwner(");
   const end = source.indexOf("\nasync function startFixedOwner(", start); assert.ok(start > 0 && end > start);
@@ -30,7 +30,7 @@ async function fixture(failure: "admission" | "allocation" | "retained" | "none"
     }
   }
   const scope = createContext({ Object, Error, writer, input, footprintSavedAllocations: allocations, footprintSavedAllocationAttempts: attempts,
-    footprintSavedAllocationStates: states, footprintFactories: factories, CurrentFootprintCopySavedNativeOwner: SavedOwner,
+    footprintSavedAllocationStates: states, footprintFactories: factories, savedSuccessorAttempts: successorAttempts, CurrentFootprintCopySavedNativeOwner: SavedOwner,
     CurrentFootprintCopyNativeOwner: SyntheticCopyWriter,
     assertOriginalCurrentFootprintCopyNativeOwner: (original: object): void => { assert.equal(original, writer); },
     requireCurrentFootprintCopyClosedSnapshot: (original: object, after: object): void => { assert.equal(original, writer); assert.equal(after, input); closedSnapshotReads += 1; },
@@ -80,9 +80,12 @@ void test("saved factory rejects another writer kind before snapshot reads or al
 
 void test("no-resource admission proof ends before the maintained native spawn boundary", async () => {
   const source = await readFile(new URL("../src/current-pcb-diagnostic-owner.ts", import.meta.url), "utf8");
-  assert.ok(source.includes('if (savedWriter !== undefined) { footprintSavedAllocationStates.set(savedWriter, "unresolved"); }\n  const child = spawn('));
-  const boundary = source.indexOf('footprintSavedAllocationStates.set(savedWriter, "unresolved")');
-  const retained = source.indexOf("footprintSavedAllocations.set(savedWriter, owner)", boundary);
-  assert.ok(boundary > 0 && retained > boundary);
+  const factory = source.indexOf("\nasync function startFixedOwner(");
+  const guard = source.indexOf("if (savedWriter !== undefined) {", factory);
+  const boundary = source.indexOf('footprintSavedAllocationStates.set(savedWriter, "unresolved")', guard);
+  const spawn = source.indexOf("const child = spawn(", boundary);
+  const retained = source.indexOf("footprintSavedAllocations.set(savedWriter, owner)", spawn);
+  assert.ok(factory > 0 && guard > factory && boundary > guard && spawn > boundary && retained > spawn);
+  assert.ok(source.slice(guard, spawn).includes('else { footprintSavedAllocationStates.set(savedWriter, "unresolved"); }'));
   assert.equal(/\bawait\b/u.test(source.slice(boundary, retained)), false);
 });

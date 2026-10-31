@@ -10,6 +10,8 @@ import { parse } from "acorn";
 
 type Row = Record<string, unknown>;
 type Run = (request: Readonly<{ action: string }>, empty?: boolean, ratline?: boolean) => Promise<Readonly<{ result: Row }>>;
+/** Extract the unique production dispatcher and its retained state without
+ * importing the server or including unrelated registrations in the VM. */
 function startupDeclarations(source: string): string {
   const blocks = parse(source, { ecmaVersion: "latest", sourceType: "module" }).body.flatMap(statement =>
     statement.type === "IfStatement" && statement.consequent.type === "BlockStatement" && statement.consequent.body.some(node =>
@@ -31,6 +33,8 @@ function startupDeclarations(source: string): string {
   // Unused historical dispatcher/registration descriptions in the same block.
   assert.ok(selected.length < 28_000); return selected;
 }
+/** Evaluate the unchanged dispatcher against inert purpose owners and a gate
+ * whose queued work can be held to exercise reservation and method drift. */
 async function fixture(): Promise<Readonly<{ run: Run; owners: readonly Readonly<{ hasActiveReservation: () => boolean }>[]; flush: () => Promise<void>;
   state: { holdInspect: Promise<unknown> | null; blockGate: boolean; rejectEnqueue: boolean } }>> {
   const owners: Owner[] = [], state = { holdInspect: null as Promise<unknown> | null, blockGate: false, rejectEnqueue: false };
@@ -38,6 +42,8 @@ async function fixture(): Promise<Readonly<{ run: Run; owners: readonly Readonly
   class Owner {
     #lease = false;
     public constructor() { owners.push(this); }
+    /** Model a retained launch lease independently of an inspection's pending
+     * callback so the real dispatcher must account for both forms of custody. */
     public async run(request: Readonly<{ action: string }>): Promise<Row> {
       if (request.action === "launch") { assert.equal(this.#lease, false); this.#lease = true; }
       else if (request.action === "release-closed") { assert.equal(this.#lease, true); this.#lease = false; }
@@ -91,7 +97,7 @@ async function fixture(): Promise<Readonly<{ run: Run; owners: readonly Readonly
     windowsRuntime: undefined, ordinaryLaunchRuntime: undefined, currentDisposableOpenCoordinator: undefined,
     currentPcbRenameOperationCoordinator: undefined, currentSchematicRenameOperationCoordinator: undefined,
     closedSymbolIndexReservation: undefined, closedSymbolUnreservedFailure: { observed: false }, scheduledShutdown: undefined,
-    currentPcbDiagnosticLifecycle: undefined, currentPcbStringPrecreateLifecycle: undefined, currentFootprintMainLifecycle: undefined };
+    currentPcbDiagnosticLifecycle: undefined, currentPcbStringPrecreateLifecycle: undefined, currentFootprintMainLifecycle: undefined, currentFootprintHeldCacheValidation: undefined };
   const source = stripTypeScriptTypes(await readFile(new URL("../src/index.ts", import.meta.url), "utf8"));
   const startup = startupDeclarations(source);
   const helpersBegin = source.indexOf("function disposableOwnData("), helpersEnd = source.indexOf("\n}", source.indexOf("function disposableOwnerMethod(", helpersBegin)) + 2;

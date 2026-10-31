@@ -4,9 +4,9 @@
 import assert from "node:assert/strict";
 import { test } from "node:test";
 import type { TestContext } from "node:test";
-import { CurrentFootprintCopySavedChannel, isOriginalFootprintExecutionDependency, isOriginalFootprintPreparationDependency,
+import { CurrentFootprintCopyHeldSavedStartupChannel, CurrentFootprintCopySavedChannel, isOriginalFootprintExecutionDependency, isOriginalFootprintHeldSavedDependency, isOriginalFootprintPreparationDependency,
   isOriginalFootprintSavedDependency, requestCurrentFootprintCopyCacheConstruction, requestCurrentFootprintCopyTransactionClock } from "../src/current-pcb-worker-startup-channel.ts";
-import { CurrentFootprintCopySavedWorkerStartupTransport, CurrentFootprintCopyWorkerStartupTransport,
+import { CurrentFootprintCopyHeldSavedWorkerStartupTransport, CurrentFootprintCopySavedWorkerStartupTransport, CurrentFootprintCopyWorkerStartupTransport,
   CurrentPcb209WorkerStartupTransport } from "../src/current-pcb-worker-startup-transport.ts";
 import { CURRENT_FOOTPRINT_COPY_SAVED_PROFILE as PROFILE } from "../src/current-footprint-copy-saved-profile.ts";
 import { currentFootprintCopySavedQueueCommand } from "../src/current-footprint-copy-saved-queue.ts";
@@ -17,6 +17,9 @@ import { currentFootprintCopyExecutionWorkerNativeCases } from "../src/current-f
 import { currentFootprintCopyTransactionClockNativeCases } from "../src/current-footprint-copy-transaction-clock-native.ts";
 import { currentPcb209WorkerStartupNativeParentCases } from "../src/current-pcb-worker-startup-native.ts";
 import { CURRENT_PCB_WORKER_STARTUP_ATTACH } from "../src/current-pcb-worker-startup-contract.ts";
+import { bindFootprintPreparationConstructionTransport, isOriginalFootprintHeldSavedConstructionTransport,
+  isOriginalFootprintSavedConstructionTransport } from "../src/current-footprint-copy-construction-purpose.ts";
+import type { CurrentPcbWorkerConstructionTransport } from "../src/current-pcb-worker-construction-contract.ts";
 
 type Request = Readonly<Record<string, string | number>>;
 async function fixture(context: TestContext, nextRequestId = 17): Promise<Readonly<{
@@ -71,6 +74,7 @@ void test("saved generation retains a distinct original channel and excludes exe
   assert.equal(isOriginalFootprintExecutionDependency(value.dependency), false);
   assert.equal(isOriginalFootprintPreparationDependency(value.dependency), false);
   assert.throws(() => new CurrentFootprintCopyWorkerStartupTransport(value.dependency), /PURPOSE/u);
+  assert.throws(() => new CurrentFootprintCopyHeldSavedWorkerStartupTransport(value.dependency), /PURPOSE/u);
   assert.throws(() => new CurrentPcb209WorkerStartupTransport(value.dependency), /PURPOSE/u);
   assert.throws(() => new CurrentFootprintCopySavedWorkerStartupTransport(Object.freeze({ ...value.dependency })), /PURPOSE/u);
   assert.doesNotThrow(() => new CurrentFootprintCopySavedWorkerStartupTransport(value.dependency));
@@ -83,6 +87,42 @@ void test("saved generation retains a distinct original channel and excludes exe
   const parser = currentFootprintCopyExecutionWorkerNativeCases().find(command => command.method === "Debugger.setBreakpoint"); assert.ok(parser);
   await value.dependency.request({ ...parser, sessionId: "worker-session" });
   assert.equal(value.requests.at(-1)?.["action"], "footprint-saved-worker");
+});
+void test("held-saved transport retains its original distinct dependency before any native send", async context => {
+  const parent = Object.freeze({ targetId: "parent-target", sessionId: "parent-session", nextRequestId: 17 });
+  let exited = false, sends = 0;
+  const channel = new CurrentFootprintCopyHeldSavedStartupChannel({
+    requireOriginalParent: (): Promise<typeof parent> => Promise.resolve(parent),
+    assertOriginalTermination: (): Promise<void> => { assert.ok(exited); return Promise.resolve(); },
+    observeOriginalParentEvent: (): void => undefined,
+    exchange: (): Promise<never> => { sends += 1; return Promise.reject(new Error("Unexpected native send")); },
+  }, { sessionId: parent.sessionId, uniqueContextId: "original-context", projectUuid: "a".repeat(64), branchUuid: "b".repeat(32) },
+  (): void => undefined);
+  const dependency = await channel.start();
+  context.after(async () => { exited = true; await channel.releaseAfterTermination(); });
+  assert.equal(isOriginalFootprintHeldSavedDependency(dependency), true);
+  assert.equal(isOriginalFootprintSavedDependency(dependency), false);
+  assert.equal(isOriginalFootprintPreparationDependency(dependency), false);
+  assert.equal(isOriginalFootprintExecutionDependency(dependency), false);
+  assert.doesNotThrow(() => new CurrentFootprintCopyHeldSavedWorkerStartupTransport(dependency));
+  const copied = Object.freeze({ ...dependency });
+  assert.equal(isOriginalFootprintHeldSavedDependency(copied), false);
+  assert.throws(() => new CurrentFootprintCopyHeldSavedWorkerStartupTransport(copied), /PURPOSE/u);
+  for (const Constructor of [CurrentFootprintCopySavedWorkerStartupTransport, CurrentFootprintCopyWorkerStartupTransport, CurrentPcb209WorkerStartupTransport]) {
+    assert.throws(() => new Constructor(dependency), /PURPOSE/u);
+  }
+  const construction: CurrentPcbWorkerConstructionTransport = Object.freeze({ scriptId: "original-script",
+    assertOriginalPinnedWorker: (): Promise<void> => Promise.resolve(),
+    request: (): Promise<never> => { sends += 1; return Promise.reject(new Error("Unexpected construction send")); },
+    subscribe: (): (() => void) => (): void => undefined,
+  });
+  bindFootprintPreparationConstructionTransport(copied, construction);
+  assert.equal(isOriginalFootprintHeldSavedConstructionTransport(construction), false);
+  bindFootprintPreparationConstructionTransport(dependency, construction);
+  assert.equal(isOriginalFootprintHeldSavedConstructionTransport(construction), true);
+  assert.equal(isOriginalFootprintHeldSavedConstructionTransport(Object.freeze({ ...construction })), false);
+  assert.equal(isOriginalFootprintSavedConstructionTransport(construction), false);
+  assert.equal(sends, 0);
 });
 void test("saved normal allocations cannot spend the independently reserved cleanup slots", async context => {
   assert.equal(PROFILE.normalRequestLimit, 319); assert.equal(PROFILE.requestLimit, 353); assert.equal(PROFILE.stateSampleLimit, 8);

@@ -15,6 +15,8 @@ const launch = { action: "launch", operationId: "ordinary-index-fixture", confir
 const release = { action: "release-closed", operationId: launch.operationId, expectedLaunchedSha256: "a".repeat(64),
   expectedTerminationSha256: "b".repeat(64), confirmReleaseClosed: true };
 
+/** Select the actual startup dispatcher and its original retained state by
+ * AST shape, excluding unrelated declarations without widening source bounds. */
 function startupDeclarations(source: string): string {
   const blocks = parse(source, { ecmaVersion: "latest", sourceType: "module" }).body.flatMap(statement =>
     statement.type === "IfStatement" && statement.consequent.type === "BlockStatement" && statement.consequent.body.some(node =>
@@ -37,6 +39,8 @@ function startupDeclarations(source: string): string {
   assert.ok(selected.length < 28_000); return selected;
 }
 
+/** Join the real ordinary allocation guard, launch registration and startup
+ * dispatcher with inert peers whose helper release can remain pending or fail. */
 async function fixture(): Promise<{ invoke: Invoke; startup: () => Promise<unknown>; scope: vm.Context; finish: () => void;
   state: { releaseCalls: number; released: boolean; failRelease: boolean; runtimeCount: number; diagnosticAllocations: number } }> {
   const barrier = Promise.withResolvers<null>();
@@ -55,6 +59,8 @@ async function fixture(): Promise<{ invoke: Invoke; startup: () => Promise<unkno
     public observeLaunchTermination(): ReturnType<OrdinaryLaunchRuntime["observeLaunchTermination"]> {
       assert.equal(this.original, state); return Promise.resolve({ jobId: "a".repeat(32), helperInstance: "b".repeat(32), terminated: true });
     }
+    /** Hold synthetic helper closure until the test permits it, then retain
+     * success only if closure acknowledges; a request alone releases no owner. */
     public async release(): Promise<void> {
       assert.equal(this.original, state); state.releaseCalls += 1; await barrier.promise;
       if (state.failRelease) { throw new Error("synthetic helper closure failure"); }
@@ -68,6 +74,8 @@ async function fixture(): Promise<{ invoke: Invoke; startup: () => Promise<unkno
     private consumed = false;
     private readonly options: OrdinaryLaunchOptions;
     public constructor(options: OrdinaryLaunchOptions) { this.options = options; }
+    /** Drive the actual index allocation and release hooks in their original
+     * order, consuming release before the deliberately delayed helper result. */
     public async run(raw: unknown): Promise<Row> {
       const request = ordinaryLaunchRequestSchema.parse(raw); await this.options.assertAllowed();
       if (request.action === "launch") {
@@ -86,6 +94,8 @@ async function fixture(): Promise<{ invoke: Invoke; startup: () => Promise<unkno
     private reserved = false;
     private readonly options: { assertAllowed: () => Promise<void> };
     public constructor(options: { assertAllowed: () => Promise<void> }) { this.options = options; }
+    /** Model a diagnostic reservation through its captured admission hook so
+     * the real index must exclude it while ordinary helper custody is retained. */
     public async run(request: { action: string }): Promise<Row> {
       if (request.action === "release-closed") { this.reserved = false; return { synthetic: true }; }
       assert.equal(request.action, "launch"); await this.options.assertAllowed();
@@ -119,7 +129,7 @@ async function fixture(): Promise<{ invoke: Invoke; startup: () => Promise<unkno
     resolve: (): string => "/synthetic/plugin", controlDataDirectory: (): string => "/synthetic/control", retainedControlRoot: { path: "/synthetic/control" },
     CURRENT_PCB_DIAGNOSTIC_PROFILE: { powershell: { sha256: "a".repeat(64), bytes: 1 } },
     ordinaryLaunchCoordinator: undefined, ordinaryLaunchRuntime: undefined, windowsRuntime: undefined,
-    currentPcbDiagnosticLifecycle: undefined, currentPcbStringPrecreateLifecycle: undefined, currentPcbWorkerStartupLifecycle: undefined, currentFootprintMainLifecycle: undefined,
+    currentPcbDiagnosticLifecycle: undefined, currentPcbStringPrecreateLifecycle: undefined, currentPcbWorkerStartupLifecycle: undefined, currentFootprintMainLifecycle: undefined, currentFootprintHeldCacheValidation: undefined,
     currentDisposableOpenCoordinator: undefined, currentPcbRenameOperationCoordinator: undefined, currentSchematicRenameOperationCoordinator: undefined,
     closedSymbolIndexReservation: undefined, closedSymbolUnreservedFailure: { observed: false }, scheduledShutdown: undefined,
     serializedGuarded: (handler: Invoke): Invoke => handler,
@@ -152,6 +162,15 @@ void test("actual ordinary allocation callback waits for helper closure then per
   assert.equal(value.scope["windowsRuntime"], undefined); assert.equal(value.scope["ordinaryLaunchRuntime"], undefined);
   await value.invoke({ request: { ...launch, operationId: "ordinary-index-next" } });
   assert.equal(value.state.runtimeCount, 2); assert.notEqual(value.scope["windowsRuntime"], original);
+});
+
+void test("actual ordinary allocation refuses an active held-cache reservation before constructing a runtime", async () => {
+  const value = await fixture(); let active = true;
+  value.scope["currentFootprintHeldCacheValidation"] = { hasActiveReservation: (): boolean => active };
+  await assert.rejects(value.invoke({ request: launch }), /diagnostic lifecycle reserves application startup/u);
+  assert.equal(value.state.runtimeCount, 0); assert.equal(value.scope["windowsRuntime"], undefined);
+  assert.equal(value.scope["ordinaryLaunchRuntime"], undefined);
+  active = false; await value.invoke({ request: launch }); assert.equal(value.state.runtimeCount, 1);
 });
 
 void test("actual release callback allows a preflight-refused never-allocated diagnostic and then its startup", async () => {

@@ -32,8 +32,17 @@ import { currentFootprintSavedCacheWire } from "./current-footprint-saved-cache-
 import type { CurrentFootprintSavedCacheCommand } from "./current-footprint-saved-cache-protocol.ts";
 import { currentFootprintSavedCacheAccessorWire } from "./current-footprint-saved-cache-accessor-protocol.ts";
 import type { CurrentFootprintSavedCacheAccessorCommand } from "./current-footprint-saved-cache-accessor-protocol.ts";
+import { currentFootprintSavedCacheHeldWire } from "./current-footprint-saved-cache-held-wire.ts";
+import type { CurrentFootprintSavedCacheHeldCommand } from "./current-footprint-saved-cache-held-protocol.ts";
+import { CURRENT_FOOTPRINT_SAVED_CACHE_HELD_LIMITS } from "./current-footprint-saved-cache-held-profile.ts";
+import { CURRENT_FOOTPRINT_HELD_CACHE_DIAGNOSTIC_METHODS, CURRENT_FOOTPRINT_HELD_CACHE_DIAGNOSTIC_PROFILE as HELD_DIAGNOSTIC,
+  currentFootprintHeldCacheDiagnosticBindingSchema } from "./current-footprint-held-cache-diagnostic-profile.ts";
+import type { CurrentFootprintHeldCacheDiagnosticBinding } from "./current-footprint-held-cache-diagnostic-profile.ts";
+import { captureCurrentPcbStringClockReply } from "./current-pcb-string-clock-reply.ts";
+import { freezeDeep } from "./sqlite-inventory-core.ts";
 
 export { decodeCurrentPcbDiagnosticJson } from "./current-pcb-diagnostic-json.ts";
+export { heldCacheDiagnosticNativeRequest } from "./current-pcb-diagnostic-protocol.ts";
 
 const MAX_FRAME_BYTES = TRANSPORT.maximumFrameBytes;
 // A fixed reader returns JSON text inside a CDP string. Escaped quotes and
@@ -52,7 +61,10 @@ type RequestPhase = "renderer-capture209" | "discovery" | "frame-owner" | "worke
   `common-${CurrentPcbCommonBaselineCommand["commonPhase"]}` | `worker-producer-${CurrentPcbStringWorkerProducerCommand["workerProducerPhase"]}` |
   `actor-clock-${CurrentPcbStringActorClockCommand["actorClockPhase"]}` | `move-${CurrentPcbStringMoveCommand["movePhase"]}` |
   `saved-cache-${CurrentFootprintSavedCacheCommand["cacheNativePhase"]}` |
-  `saved-accessor-${CurrentFootprintSavedCacheAccessorCommand["cacheAccessorPhase"]}`;
+  `saved-accessor-${CurrentFootprintSavedCacheAccessorCommand["cacheAccessorPhase"]}` |
+  `held-cache-${CurrentFootprintSavedCacheHeldCommand["heldCachePhase"]}`;
+const HELD_CACHE_PHASES = ["capture", "array-properties", "constructor-properties", "match-properties", "getter-properties", "recheck-before-getter",
+  "retain-receiver", "queue-first", "recheck-first", "queue-fresh", "recheck-fresh"] as const;
 const REQUEST_METHODS = [
   "Browser.getVersion", "Target.getTargets", "Target.attachToTarget", "Page.enable", "Page.getFrameTree", "Page.captureScreenshot", "Runtime.enable",
   "Debugger.enable", "Debugger.getScriptSource", "DOM.getFrameOwner", "DOM.describeNode", "Target.setAutoAttach",
@@ -74,6 +86,7 @@ const REQUEST_PHASES = [
   ...CURRENT_PCB_STRING_MOVE_SEQUENCE.map(phase => `move-${phase}` as const),
   ...(["capture", "array-properties", "constructor-properties", "match-properties", "recheck", "release"] as const).map(phase => `saved-cache-${phase}` as const),
   ...(["capture", "array-properties", "constructor-properties", "match-properties", "getter-properties", "recheck", "release"] as const).map(phase => `saved-accessor-${phase}` as const),
+  ...([...HELD_CACHE_PHASES, "release"] as const).map(phase => `held-cache-${phase}` as const),
 ] as const satisfies readonly RequestPhase[];
 const EVENT_KINDS = [
   "Target.attachedToTarget", "Target.detachedFromTarget", "Target.targetCreated", "Target.targetDestroyed",
@@ -116,6 +129,7 @@ interface Pending {
   readonly sessionId: string | null;
   readonly source: boolean;
   readonly common: boolean;
+  readonly heldCache: boolean;
   written: boolean;
   reply: Reply | null;
 }
@@ -144,6 +158,7 @@ class CurrentPcbFixedPipeCore {
   readonly #stringPurpose: boolean;
   readonly #startupPurpose: boolean;
   readonly #combinedPurpose: boolean;
+  readonly #heldCacheDiagnosticPurpose: boolean;
   readonly #observeEventBytes: ((bytes: number) => void) | null;
   #savedCacheSession: string | null = null;
   #savedCacheStep = 0;
@@ -153,6 +168,13 @@ class CurrentPcbFixedPipeCore {
   #savedAccessorStep = 0;
   #savedAccessorReleaseAttempted = false;
   #savedAccessorReleased = false;
+  #heldCacheBinding: CurrentFootprintHeldCacheDiagnosticBinding | null = null;
+  #heldCacheSourceSeen = false;
+  #heldCacheStep = 0;
+  #heldCacheTuple: string | null = null;
+  #heldCacheReleaseAttempted = false;
+  #heldCacheNormal = 0;
+  #heldCacheCleanup = 0;
   #handedOff = false;
   #started = false;
   #failure: Failure | null = null;
@@ -176,13 +198,14 @@ class CurrentPcbFixedPipeCore {
   #workerDiscoverySettled = false;
   #selectedWorkerSession: string | null = null;
 
-  public constructor(input: Readable, output: Writable, purpose: "diagnostic" | "string-precreate" | "worker-startup" | "combined-discovery" | "forward-discovery" | "forward-saved-discovery",
+  public constructor(input: Readable, output: Writable, purpose: "diagnostic" | "string-precreate" | "worker-startup" | "combined-discovery" | "forward-discovery" | "forward-saved-discovery" | "held-cache-diagnostic",
     observeEventBytes: ((bytes: number) => void) | null = null) {
-    if ((purpose === "forward-discovery" || purpose === "forward-saved-discovery") !== (observeEventBytes !== null) || observeEventBytes !== null && typeof observeEventBytes !== "function") { throw new Error("PCB_DIAGNOSTIC_FORWARD_ACCOUNTING"); }
+    if ((purpose === "forward-discovery" || purpose === "forward-saved-discovery" || purpose === "held-cache-diagnostic") !== (observeEventBytes !== null) || observeEventBytes !== null && typeof observeEventBytes !== "function") { throw new Error("PCB_DIAGNOSTIC_FORWARD_ACCOUNTING"); }
     this.#observeEventBytes = observeEventBytes;
     this.#input = input; this.#output = output; this.#stringPurpose = purpose === "string-precreate";
     this.#startupPurpose = purpose === "worker-startup" || purpose === "combined-discovery" || purpose === "forward-discovery" || purpose === "forward-saved-discovery";
     this.#combinedPurpose = purpose === "combined-discovery" || purpose === "forward-discovery";
+    this.#heldCacheDiagnosticPurpose = purpose === "held-cache-diagnostic";
   }
 
   /** One clean transfer of the original counter and receive budgets. Listeners
@@ -218,6 +241,36 @@ class CurrentPcbFixedPipeCore {
   }
 
   public getVersion(): Promise<Reply> { return this.#request({ id: this.#nextId, method: "Browser.getVersion" }); }
+  /** Seal only the new diagnostic's owner-selected realm/target after its UI
+   * script reply. Actual pinned-source/context admission belongs to the genuine
+   * retained owner; this local data seal cannot manufacture that admission. */
+  protected bindHeldCacheDiagnostic(input: CurrentFootprintHeldCacheDiagnosticBinding): void {
+    if (!this.#heldCacheDiagnosticPurpose || !this.#started || this.#released || this.#failure !== null ||
+        this.#heldCacheBinding !== null || this.#pending !== null || this.#used !== 0 || !this.#heldCacheSourceSeen ||
+        this.#nextId - 1 > HELD_DIAGNOSTIC.discoveryRequests) { throw new Error("PCB_DIAGNOSTIC_HELD_CACHE_BINDING"); }
+    const binding = freezeDeep(currentFootprintHeldCacheDiagnosticBindingSchema.parse(captureCurrentPcbStringClockReply(input).value));
+    if (binding.sessionId !== this.#sessionId) { throw new Error("PCB_DIAGNOSTIC_HELD_CACHE_SESSION"); }
+    this.#heldCacheBinding = binding;
+  }
+  /** Execute the exact once-only held phases in the original attached UI.
+   * Each attempt consumes before write, including original cleanup release. */
+  // oxlint-disable-next-line eslint/require-await -- Preserve the original request promise while converting all pre-dispatch fixed-purpose guards to API rejections.
+  protected async heldCacheDiagnostic(command: CurrentFootprintSavedCacheHeldCommand): Promise<Reply> {
+    const binding = this.#heldCacheBinding;
+    if (!this.#heldCacheDiagnosticPurpose || binding === null || this.#heldCacheReleaseAttempted) { throw new Error("PCB_DIAGNOSTIC_HELD_CACHE_PURPOSE"); }
+    const wire = currentFootprintSavedCacheHeldWire(command, this.#nextId);
+    const fixed = wire.command, phase = fixed.heldCachePhase;
+    if (fixed.sessionId !== binding.sessionId || (phase === "release" ? this.#heldCacheStep === 0 : HELD_CACHE_PHASES[this.#heldCacheStep] !== phase)) { throw new Error("PCB_DIAGNOSTIC_HELD_CACHE_SEQUENCE"); }
+    if (phase === "capture") {
+      if (fixed.params.uniqueContextId !== binding.uniqueContextId) { throw new Error("PCB_DIAGNOSTIC_HELD_CACHE_CONTEXT"); }
+    } else if (phase !== "release" && !["array-properties", "constructor-properties", "match-properties", "getter-properties"].includes(phase) &&
+      fixed.params.objectId !== this.#heldCacheTuple) { throw new Error("PCB_DIAGNOSTIC_HELD_CACHE_TUPLE"); }
+    if ((phase === "queue-first" || phase === "queue-fresh") && (fixed.params.arguments[0].value !== binding.projectUuid ||
+      fixed.params.arguments[1].value !== binding.branchUuid)) { throw new Error("PCB_DIAGNOSTIC_HELD_CACHE_TARGET"); }
+    if (phase === "release") { this.#heldCacheReleaseAttempted = true; } else { this.#heldCacheStep += 1; }
+    if (phase === "array-properties") { this.#heldCacheTuple = fixed.params.objectId; }
+    return this.#request(fixed, `held-cache-${phase}`);
+  }
   protected async savedCacheNative(command: CurrentFootprintSavedCacheCommand): Promise<Reply> {
     if (!this.#combinedPurpose || this.#sessionId === null || this.#handedOff || this.#savedCacheReleaseAttempted ||
       command.sessionId !== this.#sessionId) { throw new Error("PCB_DIAGNOSTIC_PIPE_SAVED_CACHE_PURPOSE"); }
@@ -506,9 +559,13 @@ class CurrentPcbFixedPipeCore {
    * write ambiguity fails the pipe and never grants an automatic resend.
    */
   // oxlint-disable-next-line eslint/require-await -- Async converts pre-dispatch guards to rejected promises; native completion is callback-based.
-  async #request(command: DiagnosticCommand | (CurrentFootprintSavedCacheCommand & Readonly<{ id: number }>) | (CurrentFootprintSavedCacheAccessorCommand & Readonly<{ id: number }>) | (Omit<CurrentPcbStringPrecreateCommand, "stringPhase"> &
+  async #request(command: DiagnosticCommand | (CurrentFootprintSavedCacheCommand & Readonly<{ id: number }>) | (CurrentFootprintSavedCacheAccessorCommand & Readonly<{ id: number }>) | (CurrentFootprintSavedCacheHeldCommand & Readonly<{ id: number }>) | (Omit<CurrentPcbStringPrecreateCommand, "stringPhase"> &
     Readonly<{ id: number; sessionId: string }>), phase: RequestPhase = "discovery"): Promise<Reply> {
     if (!this.#started || this.#released || this.#handedOff) { throw new Error("PCB_DIAGNOSTIC_PIPE_NOT_STARTED"); }
+    const heldCache = this.#heldCacheDiagnosticPurpose && "heldCachePhase" in command && phase.startsWith("held-cache-");
+    if (this.#heldCacheDiagnosticPurpose && !heldCache && (this.#heldCacheBinding !== null ||
+        phase !== "discovery" && phase !== "frame-owner" || !CURRENT_FOOTPRINT_HELD_CACHE_DIAGNOSTIC_METHODS.some(method => method === command.method) ||
+        this.#nextId - 1 >= HELD_DIAGNOSTIC.discoveryRequests)) { throw new Error("PCB_DIAGNOSTIC_HELD_CACHE_DISCOVERY_ONLY"); }
     const savedCache = this.#combinedPurpose && (phase.startsWith("saved-cache-") && "cacheNativePhase" in command ||
       phase.startsWith("saved-accessor-") && "cacheAccessorPhase" in command);
     if (this.#startupPurpose && !savedCache && (phase !== "discovery" && phase !== "frame-owner" ||
@@ -517,10 +574,15 @@ class CurrentPcbFixedPipeCore {
     }
     if (this.#failure !== null) { throw failureError(this.#failure); }
     if (this.#pending !== null) { throw new Error("PCB_DIAGNOSTIC_PIPE_REQUEST_PENDING"); }
-    if (this.#nextId > (this.#stringPurpose ? CURRENT_PCB_STRING_PRECREATE_REQUEST_LIMIT : DIAGNOSTIC_REQUEST_LIMIT)) {
+    let limit = this.#stringPurpose ? CURRENT_PCB_STRING_PRECREATE_REQUEST_LIMIT : DIAGNOSTIC_REQUEST_LIMIT;
+    if (this.#heldCacheDiagnosticPurpose) { limit = HELD_DIAGNOSTIC.requestLimit; }
+    const heldCleanup = heldCache && command.method === "Runtime.releaseObjectGroup";
+    if (this.#nextId > limit || this.#heldCacheDiagnosticPurpose && (heldCleanup ? this.#heldCacheCleanup >= HELD_DIAGNOSTIC.cleanupRequestLimit :
+      this.#heldCacheNormal >= HELD_DIAGNOSTIC.normalRequestLimit)) {
       this.#fail("budget"); throw failureError("budget");
     }
     const id = this.#nextId; this.#nextId += 1;
+    if (this.#heldCacheDiagnosticPurpose) { if (heldCleanup) { this.#heldCacheCleanup += 1; } else { this.#heldCacheNormal += 1; } }
     this.#lastRequest = Object.freeze({ id,
       method: REQUEST_METHODS.find(method => method === command.method) ?? "unknown",
       phase: REQUEST_PHASES.find(value => value === phase) ?? "unknown" });
@@ -528,10 +590,11 @@ class CurrentPcbFixedPipeCore {
     let deadline = DEADLINE_MS;
     if (command.method === "Debugger.getScriptSource") { deadline = 30_000; }
     else if (command.method === "Runtime.callFunctionOn" && command.params.awaitPromise) { deadline = 60_000; }
+    if (heldCache) { deadline = CURRENT_FOOTPRINT_SAVED_CACHE_HELD_LIMITS.requestMilliseconds; }
     const pending: Pending = { id, resolve: deferred.resolve, reject: deferred.reject,
       timer: setTimeout(() => { this.#fail("deadline"); }, deadline), written: false, reply: null,
       sessionId: "sessionId" in command ? command.sessionId : null, source: command.method === "Debugger.getScriptSource",
-      common: ["common-packet-read", "common-packet-result", "common-assets", "common-metadata"].includes(phase) };
+      common: ["common-packet-read", "common-packet-result", "common-assets", "common-metadata"].includes(phase), heldCache };
     this.#pending = pending;
     // Reserve before write, including synchronous throw and synchronous peer
     // Reply. A callback error still defeats an earlier received response.
@@ -563,6 +626,7 @@ class CurrentPcbFixedPipeCore {
   #complete(): void {
     const pending = this.#pending;
     if (this.#failure === null && pending !== null && pending.written && pending.reply !== null && this.#used === 0) {
+      if (this.#heldCacheDiagnosticPurpose && pending.source && typeof pending.reply["scriptSource"] === "string") { this.#heldCacheSourceSeen = true; }
       this.#pending = null; clearTimeout(pending.timer); pending.resolve(pending.reply);
     }
   }
@@ -576,6 +640,7 @@ class CurrentPcbFixedPipeCore {
     if (!record(decoded)) { this.#fail("reply", "nonobject-frame"); return; }
     if (Object.hasOwn(decoded, "method")) { this.#receiveEvent(decoded, bytes.length); return; }
     if (pending === null) { this.#fail("reply", "reply-unsolicited"); return; }
+    if (pending.heldCache && bytes.length > HELD_DIAGNOSTIC.maximumHeldReplyFrameBytes) { this.#fail("framing"); return; }
     if (pending.reply !== null) { this.#fail("reply", "reply-duplicate"); return; }
     if (!Object.is(decoded["id"], pending.id)) { this.#fail("reply", "reply-id"); return; }
     const keys = Object.keys(decoded);
@@ -686,6 +751,16 @@ export class CurrentPcbStringPrecreatePipe extends CurrentPcbFixedPipeCore {
 export class CurrentPcbWorkerStartupDiscoveryPipe extends CurrentPcbFixedPipeCore {
   public constructor(input: Readable, output: Writable) { super(input, output, "worker-startup"); }
   public handoff(): CurrentPcbWorkerStartupPipeHandoff { return this.handoffStartupPipe(); }
+}
+/** Distinct read-only UI qualification. It exposes no startup handoff, worker
+ * discovery, project opener or saved/copy dependency marker. The real native
+ * owner must qualify the pinned source before supplying the one local seal. */
+export class CurrentFootprintHeldCacheDiagnosticPipe extends CurrentPcbFixedPipeCore {
+  public constructor(input: Readable, output: Writable, observeEventBytes: (bytes: number) => void) {
+    super(input, output, "held-cache-diagnostic", observeEventBytes);
+  }
+  public bindHeldCache(binding: CurrentFootprintHeldCacheDiagnosticBinding): void { this.bindHeldCacheDiagnostic(binding); }
+  public observeHeldCache(command: CurrentFootprintSavedCacheHeldCommand): Promise<Reply> { return this.heldCacheDiagnostic(command); }
 }
 /** Separate birth for the combined owner's bounded pre-opening metadata
  * observation. Old startup pipes cannot acquire this fixed command grammar. */

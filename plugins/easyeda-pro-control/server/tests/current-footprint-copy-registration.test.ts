@@ -6,6 +6,7 @@ import { readFile } from "node:fs/promises";
 import { stripTypeScriptTypes } from "node:module";
 import { test } from "node:test";
 import vm from "node:vm";
+import { parse } from "acorn";
 import { z } from "zod";
 import { SerializedGate } from "../src/engine.ts";
 import { currentPcb209WorkerStartupToolRequestSchema } from "../src/current-pcb-209-empty-startup-validation.ts";
@@ -18,6 +19,34 @@ const wrap = (request: object): { request: object } => ({ request: { action: "fo
 const route = (request: object): { request: object } => ({ request: { action: "footprint-copy-route-preparation", request } });
 const launch = { action: "launch", operationId, confirmValidationOnly: true, confirmDiagnosticLaunch: true, acceptExistingProfileEffects: true };
 const bound = (action: string): object => ({ action, operationId, expectedBindingSha256 });
+
+/** Select the actual startup state, dispatcher and registration independently
+ * of unrelated historical dispatchers and their erased type padding. */
+function startupRegistration(source: string): string {
+  const blocks = parse(source, { ecmaVersion: "latest", sourceType: "module" }).body.flatMap(statement =>
+    statement.type === "IfStatement" && statement.consequent.type === "BlockStatement" && statement.consequent.body.some(node =>
+      node.type === "VariableDeclaration" && node.declarations.some(declaration => declaration.id.type === "Identifier" && declaration.id.name === "runStartup")) ? [statement.consequent] : []);
+  assert.equal(blocks.length, 1); const block = blocks[0]; assert.ok(block);
+  const declarations = ["startupOriginal", "startupCalls", "combinedHistoricalOriginal", "runStartup"].map(name => {
+    const matches = block.body.filter(node => node.type === "VariableDeclaration" && node.declarations.length === 1 &&
+      node.declarations[0]?.id.type === "Identifier" && node.declarations[0].id.name === name);
+    assert.equal(matches.length, 1); const node = matches[0]; assert.ok(node?.type === "VariableDeclaration");
+    assert.equal(node.kind, name === "runStartup" ? "const" : "let");
+    assert.ok(node.end > node.start && node.end - node.start < 24_000); return source.slice(node.start, node.end);
+  });
+  const registrations = block.body.filter(node => node.type === "IfStatement" && node.consequent.type === "BlockStatement" &&
+    node.consequent.body.some(statement => statement.type === "ExpressionStatement" && statement.expression.type === "CallExpression" &&
+      statement.expression.callee.type === "MemberExpression" && statement.expression.callee.object.type === "Identifier" &&
+      statement.expression.callee.object.name === "server" && statement.expression.callee.property.type === "Identifier" &&
+      statement.expression.callee.property.name === "registerTool" && statement.expression.arguments[0]?.type === "Literal" &&
+      statement.expression.arguments[0].value === "easyeda_control_pcb209_worker_startup"));
+  assert.equal(registrations.length, 1); const registration = registrations[0]; assert.ok(registration);
+  assert.ok(registration.end > registration.start && registration.end - registration.start < 16_000);
+  return [...declarations, source.slice(registration.start, registration.end)].join("\n");
+}
+
+/** Capture the real registered callback with strict schemas and inert purpose
+ * peers, retaining the real gate to test routing, replacement and failures. */
 async function fixture(): Promise<Readonly<{ invoke: Handler; calls: readonly Row[]; allocations: readonly string[];
   gate: SerializedGate; replaceMethod: () => void; replaceRouteMethod: () => void; failNext: () => void }>> {
   const allocations: string[] = [], calls: Row[] = []; let fail = false;
@@ -28,12 +57,16 @@ async function fixture(): Promise<Readonly<{ invoke: Handler; calls: readonly Ro
     public constructor(kind: string, options: { assertAllowed: () => Promise<void> }) {
       this.#kind = kind; this.#options = options; allocations.push(kind);
     }
+    /** Exercise the registration's original launch admission while modeling
+     * only the peer's reservation; no native owner is allocated by this double. */
     public async run(request: Row): Promise<Row> {
       if (request["action"] === "launch") { await this.#options.assertAllowed(); this.#reserved = true; }
       if (request["action"] === "release-closed") { this.#reserved = false; }
       return this.record("run", [request]);
     }
     public hasActiveReservation(): boolean { return this.#reserved; }
+    /** Retain which purpose received a call and optionally reject it once so
+     * later assertions can distinguish dispatch from a refused retry. */
     public record(method: string, args: unknown[]): Promise<Row> {
       calls.push({ kind: this.#kind, method, args });
       if (fail) { fail = false; return Promise.reject(new Error("synthetic consumed stage")); }
@@ -70,7 +103,7 @@ async function fixture(): Promise<Readonly<{ invoke: Handler; calls: readonly Ro
     process: { env: { EASYEDA_ASSETS_ROOT: "/synthetic/assets", WSL_DISTRO_NAME: "synthetic" } },
     resolve: (): string => "/synthetic/plugin", retainedControlRoot: { path: "/synthetic/control" }, controlDataDirectory: (): string => "/synthetic/control",
     CURRENT_PCB_DIAGNOSTIC_PROFILE: { powershell: { sha256: "a".repeat(64), bytes: 1 } }, engine, upstream, bridgeGate: gate,
-    windowsRuntime: undefined, ordinaryLaunchRuntime: undefined, currentPcbWorkerStartupLifecycle: undefined, currentFootprintMainLifecycle: undefined,
+    windowsRuntime: undefined, ordinaryLaunchRuntime: undefined, currentPcbWorkerStartupLifecycle: undefined, currentFootprintMainLifecycle: undefined, currentFootprintHeldCacheValidation: undefined,
     currentDisposableOpenCoordinator: undefined, currentPcbRenameOperationCoordinator: undefined, currentSchematicRenameOperationCoordinator: undefined,
     closedSymbolIndexReservation: undefined, closedSymbolUnreservedFailure: { observed: false }, scheduledShutdown: undefined,
     currentPcbDiagnosticLifecycle: undefined, currentPcbStringPrecreateLifecycle: undefined,
@@ -81,14 +114,13 @@ async function fixture(): Promise<Readonly<{ invoke: Handler; calls: readonly Ro
       handler = registered;
     } },
   });
-  const source = await readFile(new URL("../src/index.ts", import.meta.url), "utf8");
+  const source = stripTypeScriptTypes(await readFile(new URL("../src/index.ts", import.meta.url), "utf8"));
   const helperStart = source.indexOf("function disposableOwnData(");
   const helperEnd = source.indexOf("\n}", source.indexOf("function disposableOwnerMethod(", helperStart)) + 2;
-  const start = source.indexOf("  let startupOriginal:");
-  const end = source.indexOf("\n  server.registerTool(diagnosticTool,", start);
-  for (const [begin, finish] of [[helperStart, helperEnd], [start, end]] as const) {
-    assert.ok(begin > 0 && finish > begin && finish - begin < 40_000);
-    vm.runInContext(stripTypeScriptTypes(source.slice(begin, finish)).replaceAll("import.meta.dirname", '"/synthetic/server/src"'), scope);
+  assert.ok(helperStart > 0 && helperEnd > helperStart);
+  for (const selected of [source.slice(helperStart, helperEnd), startupRegistration(source)]) {
+    assert.ok(selected.length > 0 && selected.length < 40_000);
+    vm.runInContext(selected.replaceAll("import.meta.dirname", '"/synthetic/server/src"'), scope);
   }
   assert.ok(handler !== null);
   return { invoke: handler, calls, allocations, gate, failNext: (): void => { fail = true; }, replaceMethod: (): void => {

@@ -52,13 +52,17 @@ function decode(encoded: string, length: number, sourceSha: string, packedSha: s
 /** Independently read a fixed table alias, including complete table integrity,
  * unique declarations, row count/index, and the original member's byte/hash pin. */
 function readTable(native: string, scope: string, name: string, sourceSha: string): string {
-  const alias = unique(scope, `static readonly string ${name}=StringWorkerPackedProgram\\((StringWorkerProgramTable[0-9]+),([0-9]+),([0-9]+),${name}Sha256\\);`);
+  const alias = unique(scope, `static readonly string ${name}=StringWorkerPackedProgram\\((StringWorkerProgramTable[0-9]+|CommonPacketProgramTable0),([0-9]+),([0-9]+),${name}Sha256\\);`);
   const index = Number(alias[2]), length = Number(alias[3]), table = alias[1];
   assert.ok(table !== undefined && Number.isSafeInteger(index) && index >= 0 && Number.isSafeInteger(length) && length > 0 && length <= 65_536);
   unique(native, `static readonly string\\[\\] ${table}=`);
   const declaration = unique(native, `static readonly string\\[\\] ${table}=StringWorkerPackedProgramTable\\("([A-Za-z0-9+/=]+)",([0-9]+),"([a-f0-9]{64})","([a-f0-9]{64})",([0-9]+)\\);`);
   const count = Number(declaration[5]), encoded = declaration[1], packedSha = declaration[4], tableSha = declaration[3];
   assert.ok(encoded !== undefined && tableSha !== undefined && packedSha !== undefined && Number.isSafeInteger(count) && count >= 1 && count <= 20 && index < count);
+  if (table === "CommonPacketProgramTable0") {
+    const names = ["CommonPresentationSeedFunction", "CommonRulesSeedFunction", "CommonPreferenceSeedFunction", "CommonPacketAdvanceFunction", "CommonPacketResultFunction"];
+    assert.equal(count, names.length); assert.equal(names[index], name);
+  }
   const rows = decode(encoded, Number(declaration[2]), tableSha, packedSha).split("\0");
   assert.equal(rows.length, count); assert.ok(rows.every(row => row.length > 0));
   const value = rows[index]; assert.ok(value !== undefined);

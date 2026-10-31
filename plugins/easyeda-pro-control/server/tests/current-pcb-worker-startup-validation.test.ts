@@ -89,12 +89,16 @@ void test("startup public registration binds the actual inherited methods, fixed
   const calls: unknown[] = [];
   class Coordinator extends CurrentPcbWorkerStartupLifecycle {
     public constructor(input: CurrentPcbDiagnosticLifecycleOptions) { super(input); allocations += 1; options = input; }
+    /** Validate the real request and captured index guards before recording a
+     * synthetic stage, so admission checks remain part of callback coverage. */
     public override async run(input: unknown): Promise<Record<string, unknown>> {
       assert.ok(this instanceof Coordinator);
       const request = currentPcbWorkerStartupValidationRequestSchema.parse(input); assert.ok(options); options.assertLocalAllowed();
       if (request.action === "launch") { await options.assertAllowed(); }
       calls.push(request); return { synthetic: true, action: request.action };
     }
+    /** Cross an await before rechecking local ownership to expose replacement
+     * of the captured index while a synthetic capture is in flight. */
     public override async captureWorkerStartup(id: string, binding: string, input: unknown): Promise<Record<string, unknown>> {
       assert.ok(this instanceof Coordinator);
       await Promise.resolve(); assert.ok(options); options.assertLocalAllowed(); calls.push({ id, binding, input });
@@ -121,7 +125,7 @@ void test("startup public registration binds the actual inherited methods, fixed
     CurrentPcbDiagnosticLifecycle, CurrentPcb209DiagnosticLifecycle, CurrentPcb209VisualLifecycle, CurrentPcb209EmptyStartupLifecycle, CurrentPcb209RatlineStartupLifecycle, CurrentPcb209RatlineContinuationLifecycle, CurrentPcb209WorkerStartupLifecycle,
     CurrentFootprintCopyPreparationLifecycle, CurrentFootprintCopyRoutePreparationLifecycle,
     CurrentPcbWorkerStartupLifecycle: Coordinator, currentPcbWorkerStartupLifecycle: undefined,
-    currentPcbDiagnosticLifecycle: undefined, currentPcbStringPrecreateLifecycle: undefined, currentFootprintMainLifecycle: undefined,
+    currentPcbDiagnosticLifecycle: undefined, currentPcbStringPrecreateLifecycle: undefined, currentFootprintMainLifecycle: undefined, currentFootprintHeldCacheValidation: undefined,
     process: { env: environment }, engine, upstream,
     facadeMode: "calculation-only", facadeToolRegistered,
     bridgeGate: { run: (handler: () => Promise<unknown>): Promise<unknown> => { gateCalls += 1; return handler(); } },
@@ -197,6 +201,8 @@ void test("registered combined wrapper retains its lifecycle and confirmed abort
   class Coordinator extends CurrentFootprintCombinedLifecycle {
     #attempted = false;
     public constructor(input: CurrentPcbDiagnosticLifecycleOptions) { super(input); allocations += 1; options = input; coordinators.push(this); }
+    /** Model once-only launch, main publication and abort cutoff through the
+     * actual registration's captured guards without claiming native effects. */
     public override async run(input: unknown): Promise<Record<string, unknown>> {
       assert.ok(this instanceof Coordinator); assert.ok(options); options.assertLocalAllowed();
       const request = currentFootprintCombinedValidationRequestSchema.parse(input);
@@ -208,6 +214,8 @@ void test("registered combined wrapper retains its lifecycle and confirmed abort
       if (request.action === "abort-generation") { sealed = true; }
       calls.push(request.action); return { synthetic: true, action: request.action, executionAuthorized: false };
     }
+    /** Hold a captured generation inside the real bridge gate until abort has
+     * sealed it; its late continuation must refuse rather than resume work. */
     public override async captureWorkerStartup(id: string, binding: string, input: unknown): Promise<Record<string, unknown>> {
       assert.ok(this instanceof Coordinator); assert.ok(options); options.assertLocalAllowed();
       assert.equal(id, "footprint-combined-registration"); assert.equal(binding, expectedBindingSha256);
@@ -223,6 +231,8 @@ void test("registered combined wrapper retains its lifecycle and confirmed abort
     #reserved = false;
     public constructor(input: CurrentFootprintCombinedUnknownAbandonmentOptions) { this.#input = input; historicalAllocations += 1; historicalOwners.push(this); }
     public hasActiveReservation(): boolean { return this.#reserved; }
+    /** Retain the historical wrapper's reservation across its pending result
+     * and recheck original admission before settling, even when it rejects. */
     public async run(input: unknown): Promise<Record<string, unknown>> {
       const request = currentFootprintCombinedValidationRequestSchema.parse(input);
       assert.equal(request.action, "abandon-unknown-launch"); this.#input.assertFreshNoOwnedAllocations(); this.#reserved = true;
@@ -243,7 +253,7 @@ void test("registered combined wrapper retains its lifecycle and confirmed abort
     CurrentFootprintCopyRoutePreparationLifecycle, CurrentFootprintCombinedLifecycle: Coordinator, CurrentPcbWorkerStartupLifecycle,
     CurrentFootprintCombinedUnknownAbandonment: HistoricalCoordinator, ordinaryLaunchCoordinator: undefined,
     currentPcbWorkerStartupLifecycle: undefined, currentPcbDiagnosticLifecycle: undefined, currentPcbStringPrecreateLifecycle: undefined,
-    currentFootprintMainLifecycle: undefined, process: { env: { EASYEDA_ASSETS_ROOT: "/synthetic/assets", WSL_DISTRO_NAME: "Ubuntu" } },
+    currentFootprintMainLifecycle: undefined, currentFootprintHeldCacheValidation: undefined, process: { env: { EASYEDA_ASSETS_ROOT: "/synthetic/assets", WSL_DISTRO_NAME: "Ubuntu" } },
     engine, upstream, facadeMode: "public-utilities-only", facadeToolRegistered,
     bridgeGate: { run: (handler: () => Promise<unknown>): Promise<unknown> => { gateCalls += 1; return gate.run(handler); } },
     retainedControlRoot: { path: "/synthetic/control" }, controlDataDirectory: (): string => "/synthetic/control",

@@ -42,6 +42,8 @@ import { currentPcbStringMoveWire } from "./current-pcb-string-move-wire.ts";
 import type { CurrentPcbStringMoveWireCommand } from "./current-pcb-string-move-wire.ts";
 import { currentFootprintSavedCacheWire } from "./current-footprint-saved-cache-protocol.ts";
 import { currentFootprintSavedCacheAccessorWire } from "./current-footprint-saved-cache-accessor-protocol.ts";
+import { currentFootprintSavedCacheHeldWire } from "./current-footprint-saved-cache-held-wire.ts";
+import { CURRENT_FOOTPRINT_HELD_CACHE_DIAGNOSTIC_METHODS, CURRENT_FOOTPRINT_HELD_CACHE_DIAGNOSTIC_PROFILE } from "./current-footprint-held-cache-diagnostic-profile.ts";
 
 // The original complete worker path uses32 requests. Project opening adds8.
 // The existing-PCB model path uses69; the complete project/PCB opening and
@@ -368,6 +370,23 @@ export function combinedDiagnosticNativeRequest(chunk: Buffer): Readonly<Record<
   const { id, ...command } = raw;
   if (typeof id !== "number") { return fail(); }
   const fixed = Object.hasOwn(command, "cacheAccessorPhase") ? currentFootprintSavedCacheAccessorWire(command, id) : currentFootprintSavedCacheWire(command, id);
+  if (!chunk.equals(Buffer.from(`${JSON.stringify(fixed.command)}\0`))) { return fail(); }
+  return fixed.request;
+}
+/** Separate read-only qualification grammar. Discovery keeps its existing
+ * canonical encoder; only this purpose selects the fixed held leaf. Neither
+ * raw JSON nor a matching program grants source/native/copy authority. */
+export function heldCacheDiagnosticNativeRequest(chunk: Buffer): Readonly<Record<string, unknown>> {
+  if (chunk.length > CURRENT_FOOTPRINT_HELD_CACHE_DIAGNOSTIC_PROFILE.maximumRequestBytes || chunk.at(-1) !== 0) { return fail(); }
+  const raw: unknown = JSON.parse(new TextDecoder("utf-8", { fatal: true }).decode(chunk.subarray(0, -1)));
+  if (!diagnosticRecord(raw) || typeof raw["id"] !== "number" || !Number.isSafeInteger(raw["id"]) ||
+      raw["id"] < 1 || raw["id"] > CURRENT_FOOTPRINT_HELD_CACHE_DIAGNOSTIC_PROFILE.requestLimit) { return fail(); }
+  if (!Object.hasOwn(raw, "heldCachePhase")) {
+    if (!CURRENT_FOOTPRINT_HELD_CACHE_DIAGNOSTIC_METHODS.some(method => method === raw["method"])) { return fail(); }
+    return diagnosticNativeRequest(chunk);
+  }
+  const { id, ...command } = raw;
+  const fixed = currentFootprintSavedCacheHeldWire(command, id);
   if (!chunk.equals(Buffer.from(`${JSON.stringify(fixed.command)}\0`))) { return fail(); }
   return fixed.request;
 }

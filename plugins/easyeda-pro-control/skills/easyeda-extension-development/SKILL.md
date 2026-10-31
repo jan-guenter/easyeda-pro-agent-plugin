@@ -58,6 +58,13 @@ payload unchanged through the run and retain its original process through
 cleanup. This supports validation without repeatedly publishing intermediate
 versions; it supplies no admission for another client or snapshot.
 
+For the separate read-only native CacheStorage qualification lifecycle, read
+[the held-cache control reference](../easyeda-pro-control/references/current-footprint-held-cache.md).
+It documents original checkpoint/factory custody, first/fresh observations,
+synchronous abort reservation before journal awaits, and separately observed
+termination/release. Its public wrapper supplies no project-open or saved-copy
+authority; keep the private held-saved composition separate when extending it.
+
 Finish with the implemented scope, exact versions, test evidence, remaining
 unavailable methods and any required fresh-chat/import step. Do not label the
 entire SDK callable because it is discoverable.

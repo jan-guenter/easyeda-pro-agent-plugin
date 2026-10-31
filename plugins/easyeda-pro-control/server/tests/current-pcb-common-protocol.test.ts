@@ -111,6 +111,23 @@ void test("common native adapter embeds exact historical and packet programs and
   assert.ok(native.includes("$owner.SendCommonBaseline("));
 });
 
+void test("common packet table keeps initialization order and refuses ambiguous or substituted aliases", async () => {
+  const native = await readFile(new URL("../../scripts/pcb-diagnostic-owner.ps1", import.meta.url), "utf8");
+  const table = /^ *static readonly string\[\] CommonPacketProgramTable0=StringWorkerPackedProgramTable\("[A-Za-z0-9+/=]+",[0-9]+,"[a-f0-9]{64}","[a-f0-9]{64}",5\);$/mu.exec(native)?.[0];
+  assert.ok(table !== undefined);
+  const names = ["CommonPresentationSeedFunction", "CommonRulesSeedFunction", "CommonPreferenceSeedFunction", "CommonPacketAdvanceFunction", "CommonPacketResultFunction"];
+  for (const [index, name] of names.entries()) {
+    const alias = new RegExp(`static readonly string ${name}=StringWorkerPackedProgram\\(CommonPacketProgramTable0,${index},[0-9]+,${name}Sha256\\);`, "u").exec(native)?.[0];
+    assert.ok(alias !== undefined); assert.ok(native.indexOf(table) < native.indexOf(alias));
+    for (const broken of [native.replace(alias, alias + alias), native.replace(table, table + table),
+      native.replace(table, table.replace(/,5\);$/u, ",6);")),
+      native.replace(alias, alias.replace(`,${index},`, ",5,")),
+      native.replaceAll("CommonPacketProgramTable0", "CommonPacketProgramTable1")]) {
+      assert.notEqual(broken, native); assert.throws(() => readPackedNativeProgram(broken, name));
+    }
+  }
+});
+
 void test("common pipe requires original retained page and worker and always reads the page session", async context => {
   const input = new PassThrough(), sent: Buffer[] = [];
   // oxlint-disable-next-line promise/prefer-await-to-callbacks -- The real Writable completion callback is the boundary under test.
