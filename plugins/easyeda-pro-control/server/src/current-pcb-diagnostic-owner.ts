@@ -15,6 +15,7 @@ import { PassThrough, Writable } from "node:stream";
 import { setTimeout as delay } from "node:timers/promises";
 import { fileURLToPath } from "node:url";
 import { canonicalJson, sha256Json } from "./core.ts";
+import { ORDINARY_LAUNCH_209_PROFILE } from "./ordinary-launch-209-profile.ts";
 import { CurrentFootprintCombinedDiscoveryPipe, CurrentFootprintCopyForwardDiscoveryPipe, CurrentFootprintCopyForwardSavedDiscoveryPipe, CurrentFootprintHeldCacheDiagnosticPipe, CurrentPcbDiagnosticPipe, CurrentPcbStringPrecreatePipe, CurrentPcbWorkerStartupDiscoveryPipe, decodeCurrentPcbDiagnosticJson } from "./current-pcb-diagnostic-pipe.ts";
 import type { CurrentPcbDiagnosticFailureObservation } from "./current-pcb-diagnostic-pipe.ts";
 import { DIAGNOSTIC_REQUEST_LIMIT, combinedDiagnosticNativeRequest, diagnosticNativeRequest, heldCacheDiagnosticNativeRequest, stringPrecreateNativeRequest, visualDiagnosticNativeRequest } from "./current-pcb-diagnostic-protocol.ts";
@@ -182,8 +183,8 @@ import { CurrentFootprintCopyMainBackendRunner } from "./current-footprint-copy-
 import type { CurrentFootprintCopyMainBackendObservation } from "./current-footprint-copy-main-backend-runner.ts";
 
 
-const HELPER_SHA256 = "09fb014b82a602dbaa3c8de7afc8a0fae619ff8b3309fe47969a132bc7de2fb6";
-const HELPER_BYTES = 1_047_546;
+const HELPER_SHA256 = "98a6bfa6066625b788bc873bb1c00b7d601f03e4a9b200e6f7a459b4fcc9d928";
+const HELPER_BYTES = 1_045_312;
 const heldRunnerDescriptors = Object.getOwnPropertyDescriptors(CurrentFootprintSavedCacheHeldRunner.prototype);
 /* oxlint-disable typescript/unbound-method -- Retain fixed methods and invoke them only on the original private-field runner. */
 const heldRunnerMethods = Object.freeze({ prepare: CurrentFootprintSavedCacheHeldRunner.prototype.prepare,
@@ -2635,7 +2636,9 @@ class CurrentPcbRetainedOwnerCore {
       this.#requireHeldRole(); this.#available(); requireHeldCacheValidationBinding(allocation);
       if (this.#heldSavedFailed || this.#heldSavedAbortAttempted || this.#closeConsumed || this.#terminationObserved || this.#releaseConsumed) { throw error("HELD_CACHE_NORMAL_ENDED"); }
     };
-    const startup = new CurrentFootprintHeldCachePageReadiness(); this.#heldCacheStartup = startup;
+    const backend = this.#installation.plan.files[1];
+    if (backend === undefined || backend.sha256 !== ORDINARY_LAUNCH_209_PROFILE.installedFiles[1].sha256) { throw error("HELD_CACHE_BACKEND_INSTALLATION"); }
+    const startup = new CurrentFootprintHeldCachePageReadiness(backend.windowsPath); this.#heldCacheStartup = startup;
     try {
       await verifyCurrentDisposableOpenCheckpoint(origin.prepared, origin.originalTarget); current();
       const executable = this.#installation.plan.files[0];

@@ -16,6 +16,7 @@ import { dirname, isAbsolute, join, resolve as resolvePath } from "node:path";
 import { pathToFileURL } from "node:url";
 
 import { createPrivateTemporaryDirectory } from "./private-temporary-directory.ts";
+import { EXPECTED_COMPONENT_CATALOG_ACTIONS } from "./public-catalog-expectations.ts";
 
 const NODE_VERSION = "24.18.0";
 const MAX_REPLY_BYTES = 8 * 1024 * 1024;
@@ -475,7 +476,10 @@ async function catalogChecks(child: OfflineChild, root: string, sample: () => Pr
   }
   const catalog = await offlineApi(child, { action: "catalog-components", query: { includeSchemas: true } });
   const catalogEntries = catalog["entries"];
-  requireCheck(catalog["total"] === 12 && Array.isArray(catalogEntries) && catalogEntries.length === 12 &&
+  requireCheck(catalog["total"] === EXPECTED_COMPONENT_CATALOG_ACTIONS.length && Array.isArray(catalogEntries) &&
+    catalogEntries.length === EXPECTED_COMPONENT_CATALOG_ACTIONS.length &&
+    JSON.stringify(catalogEntries.map((entry: unknown) => record(entry)["action"])
+      .toSorted((left, right) => String(left).localeCompare(String(right), "en"))) === JSON.stringify(EXPECTED_COMPONENT_CATALOG_ACTIONS) &&
     catalogEntries.some((entry: unknown) => isRecord(entry) && entry["action"] === "search-symbols-by-name" &&
       entry["publicSdkMethodExecuted"] === false && entry["installedRuntimeAdmission"] === false && isRecord(entry["inputSchema"])),
   "Catalog discovery lost its separate symbol-name HTTP equivalent.");
@@ -488,6 +492,11 @@ async function catalogChecks(child: OfflineChild, root: string, sample: () => Pr
     requireCheck(catalogEntries.some((entry: unknown) => isRecord(entry) && entry["action"] === action &&
       entry["publicSdkMethodExecuted"] === false && entry["installedRuntimeAdmission"] === false && isRecord(entry["inputSchema"])),
     "Catalog discovery lost a fixed system-classification HTTP equivalent.");
+  }
+  for (const action of ["search-3d-models", "search-panel-libraries", "get-panel-library"]) {
+    requireCheck(catalogEntries.some((entry: unknown) => isRecord(entry) && entry["action"] === action &&
+      entry["publicSdkMethodExecuted"] === false && entry["installedRuntimeAdmission"] === false && isRecord(entry["inputSchema"])),
+    "Catalog discovery lost a public model/panel metadata equivalent.");
   }
   const libraryFiles = await offlineApi(child, { action: "library-files", query: { includeSchemas: true } });
   requireCheck(libraryFiles["offline"] === true && libraryFiles["publicSdkMethodExecuted"] === false &&

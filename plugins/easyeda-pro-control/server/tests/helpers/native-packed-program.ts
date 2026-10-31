@@ -52,7 +52,7 @@ function decode(encoded: string, length: number, sourceSha: string, packedSha: s
 /** Independently read a fixed table alias, including complete table integrity,
  * unique declarations, row count/index, and the original member's byte/hash pin. */
 function readTable(native: string, scope: string, name: string, sourceSha: string): string {
-  const alias = unique(scope, `static readonly string ${name}=StringWorkerPackedProgram\\((StringWorkerProgramTable[0-9]+|CommonPacketProgramTable0),([0-9]+),([0-9]+),${name}Sha256\\);`);
+  const alias = unique(scope, `static readonly string ${name}=StringWorkerPackedProgram\\((StringWorkerProgramTable[0-9]+|CommonPacketProgramTable0|DiagnosticCoreProgramTable0),([0-9]+),([0-9]+),${name}Sha256\\);`);
   const index = Number(alias[2]), length = Number(alias[3]), table = alias[1];
   assert.ok(table !== undefined && Number.isSafeInteger(index) && index >= 0 && Number.isSafeInteger(length) && length > 0 && length <= 65_536);
   unique(native, `static readonly string\\[\\] ${table}=`);
@@ -61,6 +61,10 @@ function readTable(native: string, scope: string, name: string, sourceSha: strin
   assert.ok(encoded !== undefined && tableSha !== undefined && packedSha !== undefined && Number.isSafeInteger(count) && count >= 1 && count <= 20 && index < count);
   if (table === "CommonPacketProgramTable0") {
     const names = ["CommonPresentationSeedFunction", "CommonRulesSeedFunction", "CommonPreferenceSeedFunction", "CommonPacketAdvanceFunction", "CommonPacketResultFunction"];
+    assert.equal(count, names.length); assert.equal(names[index], name);
+  }
+  if (table === "DiagnosticCoreProgramTable0") {
+    const names = ["WorkerExpressionFunction", "ModelCallbackExpressionFunction", "ModelHandlerFunction", "OpeningFunction", "PcbOpeningFunction"];
     assert.equal(count, names.length); assert.equal(names[index], name);
   }
   const rows = decode(encoded, Number(declaration[2]), tableSha, packedSha).split("\0");

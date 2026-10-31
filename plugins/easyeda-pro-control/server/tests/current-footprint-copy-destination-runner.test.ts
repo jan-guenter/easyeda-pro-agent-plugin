@@ -26,7 +26,7 @@ function array(dependency: boolean): Data {
       result.push(property(String(index + 39), { type: typeof value, value }, true, true));
     }
   }
-  result.push(property("length", { type: "number", value: dependency ? 70 : 43 }, true, false, false));
+  result.push(property("length", { type: "number", value: dependency ? 73 : 43 }, true, false, false));
   return { result, internalProperties: [{ name: "[[Prototype]]", value: { type: "object", subtype: "array", className: "Array", description: "Array(0)", objectId: "array-proto" } }] };
 }
 function metadata(index: number, head = false): Data {

@@ -3,7 +3,7 @@
 import { CURRENT_FOOTPRINT_COPY_BACKEND_CACHE_BINDING, CURRENT_FOOTPRINT_COPY_BACKEND_CACHE_NATIVE_PROFILES } from "./current-footprint-copy-backend-cache.ts";
 import { createHash } from "node:crypto";
 import { z } from "zod";
-import { CURRENT_FOOTPRINT_COPY_DEPENDENCY_PROFILES as PROFILES } from "./current-footprint-copy-dependency-profiles.ts";
+import { CURRENT_FOOTPRINT_COPY_STRUCTURE_CALLBACK_PROFILE, CURRENT_FOOTPRINT_COPY_DEPENDENCY_PROFILES as PROFILES } from "./current-footprint-copy-dependency-profiles.ts";
 import { captureCurrentPcbStringClockReply } from "./current-pcb-string-clock-reply.ts";
 import { freezeDeep } from "./sqlite-inventory-core.ts";
 
@@ -33,6 +33,7 @@ for(let i=0;i<3;i++)if(own(constructors,String(i))!==own(managerLevels[i],"const
 for(const [key,index]of [["qe",2],["Qe",3],["Ke",4],["Ni",5],["cg",6]])if(own(bindings,key)!==own(lexicals,String(index)))bad();
 const selected=[];`;
 const selection = PROFILES.map(profile => {
+  if (profile.key === "project.uploadStructure") { return 'selected.push(fun(project,"uploadStructure"));'; }
   if (profile.kind === "method") {
     const [owner, name] = profile.key.split(".");
     return `selected.push(method(classRef(${JSON.stringify(owner)}),${JSON.stringify(name)}));`;
@@ -45,10 +46,10 @@ const inheritance = PROFILES.filter(profile => profile.kind === "class").map(pro
   const parentPrototype = profile.parent === null ? "Object.prototype" : `own(${parent},"prototype")`;
   return `if(proto(classRef(${JSON.stringify(profile.key)}))!==${parent}||proto(own(classRef(${JSON.stringify(profile.key)}),"prototype"))!==${parentPrototype})bad();`;
 }).join("\n");
-const runtimeMethods = PROFILES.filter(profile => profile.kind === "method" && /^(?:Gd|Lg|ja|zy|Vc)\./u.test(profile.key)).map(profile => {
+const runtimeMethods = PROFILES.filter(profile => profile.kind === "method" && /^(?:Gd|Lg|ja|zy|Vc|Tg|ar)\./u.test(profile.key)).map(profile => {
   const [owner, name] = profile.key.split(".");
   const project = owner === "Gd" || owner === "Lg";
-  const levels: Readonly<Record<string, number>> = { Lg: 0, Gd: 1, ja: 0, Vc: 1, zy: 2 };
+  const levels: Readonly<Record<string, number>> = { Lg: 0, Gd: 1, ja: 0, Vc: 1, zy: 2, Tg: 0, ar: 1 };
   const level = levels[owner ?? ""];
   if (level === undefined) { throw new Error("FOOTPRINT_DEPENDENCY_PROFILE"); }
   if (profile.key === "zy.parseFull") {
@@ -56,7 +57,10 @@ const runtimeMethods = PROFILES.filter(profile => profile.kind === "method" && /
     // It through super. Qualify both exact functions and the original chain.
     return 'absent(consistency,"parseFull");absent(commonLevels[1],"parseFull");if(own(commonLevels[0],"parseFull")!==method(classRef("ja"),"parseFull")||own(commonLevels[2],"parseFull")!==method(classRef("zy"),"parseFull"))bad();';
   }
-  return `if(resolved(${project ? "project,projectLevels" : "consistency,commonLevels"},${JSON.stringify(name)},${String(level)})!==method(classRef(${JSON.stringify(owner)}),${JSON.stringify(name)}))bad();`;
+  let target = "consistency,commonLevels";
+  if (project) { target = "project,projectLevels"; }
+  else if (owner === "Tg" || owner === "ar") { target = "manager,managerLevels"; }
+  return `if(resolved(${target},${JSON.stringify(name)},${String(level)})!==method(classRef(${JSON.stringify(owner)}),${JSON.stringify(name)}))bad();`;
 }).join("\n");
 const notification = String.raw`
 const top=descriptor(globalThis,"EDITOR_TOP");if(top!==undefined&&(!Object.hasOwn(top,"value")||top.value!==undefined&&top.value!==globalThis))bad();
@@ -70,10 +74,22 @@ if(typeof uuid!=="string"||!/^[a-f\d]{8}-[a-f\d]{4}-[a-f\d]{4}-[a-f\d]{4}-[a-f\d
 selected.push(notification,object(own(project,"cache")),object(own(project,"localCache")));
 const verify=()=>{for(const [o,p]of parents)if(Object.getPrototypeOf(o)!==p)bad();for(const [o,k,d]of seen){const n=Object.getOwnPropertyDescriptor(o,k);if(d===undefined?n!==undefined:!n||d.writable!==n.writable||d.enumerable!==n.enumerable||d.configurable!==n.configurable||!Object.is(d.value,n.value)||d.get!==n.get||d.set!==n.set||Object.hasOwn(d,"value")!==Object.hasOwn(n,"value"))bad();}};`;
 const body = `${helper}\n${selection}\n${inheritance}\n${runtimeMethods}\n${notification}\n${CURRENT_FOOTPRINT_COPY_BACKEND_CACHE_BINDING}`;
+const structure = `"use strict";
+const bad=()=>{throw Error("FOOTPRINT_COPY_STRUCTURE_CLOSURE");},seen=[];
+const own=(o,k)=>{if(o===null||(typeof o!=="object"&&typeof o!=="function"))bad();const d=Object.getOwnPropertyDescriptor(o,k);if(!d||!Object.hasOwn(d,"value"))bad();seen.push([o,k,d]);return d.value;};
+const verify=()=>{for(const[o,k,d]of seen){const n=Object.getOwnPropertyDescriptor(o,k);if(!n||!Object.hasOwn(n,"value")||n.value!==d.value||n.writable!==d.writable||n.enumerable!==d.enumerable||n.configurable!==d.configurable)bad();}};
+if(own(globalThis,"PROJECT")!==project||own(project,"workerBus")!==bus||own(project,"footprint")!==manager||own(project,"consistencyManager")!==consistency||own(manager,"projectManager")!==project)bad();
+if(!Array.isArray(original)||Object.getPrototypeOf(original)!==Array.prototype||own(original,"length")!==${String(PROFILES.length + 9)}||Reflect.ownKeys(original).length!==${String(PROFILES.length + 10)}||own(original,"${String(PROFILES.length - 1)}")!==own(project,"uploadStructure"))bad();
+if(!Array.isArray(constructors)||Object.getPrototypeOf(constructors)!==Array.prototype||own(constructors,"length")!==11||Reflect.ownKeys(constructors).length!==12)bad();
+const parents=[own(own(constructors,"0"),"prototype"),own(own(constructors,"1"),"prototype"),own(own(constructors,"2"),"prototype")];
+if(Object.getPrototypeOf(manager)!==parents[0]||Object.getPrototypeOf(parents[0])!==parents[1]||Object.getPrototypeOf(parents[1])!==parents[2]||Object.getPrototypeOf(parents[2])!==Object.prototype||Object.getOwnPropertyDescriptor(manager,"onDataChange")!==undefined||Object.getOwnPropertyDescriptor(manager,"publishCanvas")!==undefined||Object.getOwnPropertyDescriptor(parents[0],"publishCanvas")!==undefined||own(parents[0],"onDataChange")!==own(original,"${String(PROFILES.length - 3)}")||own(parents[1],"publishCanvas")!==own(original,"${String(PROFILES.length - 2)}"))bad();
+const bindings=own(this,"object"),callback=own(bindings,"e");if(typeof callback!=="function"||callback!==constructed)bad();`;
 /** Capture uses the original direct lexical bundle. Recheck keeps all seven original object associations explicit. */
 export const CURRENT_FOOTPRINT_COPY_DEPENDENCY_CALLS = freezeDeep({
   capture: { program: `function(project,bus,manager,consistency,constructors,lexicals){${body}\nverify();return selected;}`, arguments: 6, returnByValue: false },
   recheck: { program: `function(project,bus,manager,consistency,constructors,lexicals,original){${body}\narray(original,${String(PROFILES.length + 9)});for(let i=0;i<selected.length;i++)if(own(original,String(i))!==selected[i])bad();verify();return true;}`, arguments: 7, returnByValue: true },
+  structure: { program: `function(project,bus,manager,consistency,constructors,original,constructed){${structure}\nverify();return callback;}`, arguments: 7, returnByValue: false },
+  structureRecheck: { program: `function(project,bus,manager,consistency,constructors,original,constructed){${structure}\nverify();return true;}`, arguments: 7, returnByValue: true },
 });
 const token = z.string().regex(/^[A-Za-z\d_.:-]{1,256}$/u);
 const text = z.string().max(16_384).refine(value => value.isWellFormed());
@@ -123,9 +139,13 @@ export function decodeCurrentFootprintCopyDependencies(input: unknown): readonly
 }
 export function decodeCurrentFootprintCopyDependencyFunction(input: unknown, scriptId: string, index: number): string {
   token.parse(scriptId); const expected = Number.isInteger(index) ? PROFILES[index] : undefined; need(expected !== undefined);
+  return metadata(input, scriptId, expected);
+}
+function metadata(input: unknown, scriptId: string,
+  expected: typeof PROFILES[number] | typeof CURRENT_FOOTPRINT_COPY_STRUCTURE_CALLBACK_PROFILE): string {
   const reply = z.object({ result: z.array(property).min(2).max(3), internalProperties: z.array(internal).length(3) }).strict()
     .parse(captureCurrentPcbStringClockReply(input).value);
-  const fields = new Map(reply.result.map(item => [item.name, item])), hasPrototype = expected.kind !== "method" && !expected.async;
+  const fields = new Map(reply.result.map(item => [item.name, item])), hasPrototype = (expected.kind === "function" || expected.kind === "class") && !expected.async;
   need(fields.size === (hasPrototype ? 3 : 2));
   for (const [name, expectedValue] of [["name", expected.name], ["length", expected.arity]] as const) {
     const item = fields.get(name); need(item !== undefined && !item.writable && item.configurable && !item.enumerable &&
@@ -144,6 +164,32 @@ export function decodeCurrentFootprintCopyDependencyFunction(input: unknown, scr
     parent?.type === (expected.async ? "object" : "function") && parent.objectId !== undefined &&
     scopes?.type === "object" && scopes.subtype === "internal#scopeList" && scopes.className === "Array" && scopes.objectId !== undefined &&
     /^Scopes\[[1-8]\]$/u.test(scopes.description ?? "")); return scopes.objectId;
+}
+
+/** One exact Nd closure. This does not establish the captured arrow's hidden
+ * receiver or permit a replacement scope when the original is unavailable. */
+export function decodeCurrentFootprintCopyStructureScope(input: unknown): string {
+  const reply = z.object({ result: z.array(property).min(2).max(8) }).strict().parse(captureCurrentPcbStringClockReply(input).value);
+  const ids = new Set<string>();
+  for (const [index, item] of reply.result.entries()) {
+    const value = item.value;
+    need(item.name === String(index) && item.writable && item.enumerable && item.configurable && value.type === "object" &&
+      value.subtype === "internal#scope" && value.className === "Object" && value.objectId !== undefined && value.value === undefined &&
+      !ids.has(value.objectId)); ids.add(value.objectId);
+  }
+  const first = reply.result[0], last = reply.result.at(-1);
+  need(first?.value.description === "Closure (Nd)" && first.value.objectId !== undefined && last?.value.description === "Global");
+  return first.value.objectId;
+}
+export function decodeCurrentFootprintCopyStructureCallback(input: unknown): string {
+  const reply = z.object({ result: z.object({ type: z.literal("function"), className: z.literal("Function"),
+    description: text, objectId: token }).strict() }).strict().parse(captureCurrentPcbStringClockReply(input).value);
+  need(Buffer.byteLength(reply.result.description) === CURRENT_FOOTPRINT_COPY_STRUCTURE_CALLBACK_PROFILE.bytes &&
+    createHash("sha256").update(reply.result.description).digest("hex") === CURRENT_FOOTPRINT_COPY_STRUCTURE_CALLBACK_PROFILE.sha256);
+  return reply.result.objectId;
+}
+export function decodeCurrentFootprintCopyStructureCallbackMetadata(input: unknown, scriptId: string): void {
+  token.parse(scriptId); metadata(input, scriptId, CURRENT_FOOTPRINT_COPY_STRUCTURE_CALLBACK_PROFILE);
 }
 
 export function decodeCurrentFootprintCopyDependencyNativeFunctions(input: unknown): readonly string[] {

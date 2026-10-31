@@ -1090,7 +1090,7 @@ class CurrentPcbWorkerConstructionCore<P extends PacketProfile> {
     const call = recheck ? CURRENT_FOOTPRINT_COPY_DEPENDENCY_CALLS.recheck : CURRENT_FOOTPRINT_COPY_DEPENDENCY_CALLS.capture;
     return this.#assignmentCall(scopeId, call.program, args, call.returnByValue, this.#footprintDependencyReplies);
   }
-  /** 76 selected dependency requests plus two six-request original producer
+  /** 82 selected dependency requests plus two six-request original producer
    * reproofs. This never invokes wa, lazy cache factories or queued uploads. */
   public async observeFootprintDependencies(packet: ConstructionPacket<P>, assignments: CurrentPcbWorkerConstructionAssignments,
     state: CurrentFootprintCopyStatePacket, producers: CurrentFootprintCopyProducerObservation): Promise<CurrentFootprintCopyDependencyObservation> {
@@ -1102,6 +1102,8 @@ class CurrentPcbWorkerConstructionCore<P extends PacketProfile> {
     try {
       await this.requireFootprintProducers(packet, assignments, state, producers);
       const original = await this.requireOriginal(packet);
+      const consistency = this.#footprintConsistency, constructors = this.#footprintConstructors, manager = this.#footprintManager;
+      if (manager === null || consistency === null || constructors === null) { throw fail("FOOTPRINT_DEPENDENCIES_OWNER"); }
       const runner = new CurrentFootprintCopyDependencyRunner(Object.freeze({
         lexicalBundleObjectId: this.#footprintLexicalBundle,
         assertCurrent: (): void => { this.#footprintProducerCurrent(packet, assignments, state); },
@@ -1116,6 +1118,20 @@ class CurrentPcbWorkerConstructionCore<P extends PacketProfile> {
           if (bundleId !== this.#footprintDependencyBundle) { throw fail("FOOTPRINT_DEPENDENCIES_OWNER"); }
           return this.#footprintDependencyCall(scopeId, original, true);
         },
+        captureStructure: (scopeId: string, bundleId: string): Promise<unknown> => {
+          if (bundleId !== this.#footprintDependencyBundle) { throw fail("FOOTPRINT_DEPENDENCIES_OWNER"); }
+          const call = CURRENT_FOOTPRINT_COPY_DEPENDENCY_CALLS.structure;
+          return this.#assignmentCall(scopeId, call.program,
+            [original.project, original.channelBus, manager, consistency, constructors, bundleId, original.uploadStructure],
+            call.returnByValue, this.#footprintDependencyReplies);
+        },
+        recheckStructure: (scopeId: string, bundleId: string, callbackId: string): Promise<unknown> => {
+          if (bundleId !== this.#footprintDependencyBundle) { throw fail("FOOTPRINT_DEPENDENCIES_OWNER"); }
+          const call = CURRENT_FOOTPRINT_COPY_DEPENDENCY_CALLS.structureRecheck;
+          return this.#assignmentCall(scopeId, call.program,
+            [original.project, original.channelBus, manager, consistency, constructors, bundleId, callbackId],
+            call.returnByValue, this.#footprintDependencyReplies);
+        },
       }), this.#scriptId);
       this.#footprintDependencyRunner = runner;
       const observation = await runner.observe();
@@ -1124,7 +1140,7 @@ class CurrentPcbWorkerConstructionCore<P extends PacketProfile> {
       this.#footprintDependencyPacket = observation; return observation;
     } catch (error) { this.#fail("FOOTPRINT_DEPENDENCIES_FAILED"); throw error; }
   }
-  /** One final nine-request reproof. The retained observation remains read-only. */
+  /** One final twelve-request reproof. The retained observation remains read-only. */
   public async requireFootprintDependencies(packet: ConstructionPacket<P>, assignments: CurrentPcbWorkerConstructionAssignments,
     state: CurrentFootprintCopyStatePacket, producers: CurrentFootprintCopyProducerObservation,
     observation: CurrentFootprintCopyDependencyObservation): Promise<void> {

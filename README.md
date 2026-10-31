@@ -27,7 +27,10 @@ angles do not establish full-circle rendering, and Poured contours prove neither
 fresh copper nor fabrication geometry. Arc/Poured passed a live empty-collection
 case; populated shapes still need connected validation.
 A separate [disposable visual workflow](plugins/easyeda-pro-control/skills/easyeda-pro-control/references/current-pcb209-visual.md)
-provides fit/zoom and one bounded capture of its original application window.
+provides fit/zoom, coordinate/region navigation and one bounded capture of its
+original application window. Coordinate/region operations require explicit
+acceptance of transient marker overlays. Their native acknowledgment does not
+prove camera position, rendered content or completion of the delayed overlay.
 Before capture, a bounded readiness query reports window geometry and remaining
 transport capacity without painting or consuming the capture attempt. A separate
 once-only request can resize an eligible normal window to1920x1080; a later

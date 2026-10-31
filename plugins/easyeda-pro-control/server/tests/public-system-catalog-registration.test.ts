@@ -4,6 +4,7 @@ import { stripTypeScriptTypes } from "node:module";
 import { test } from "node:test";
 import { runInNewContext } from "node:vm";
 import { z } from "zod";
+import { EXPECTED_COMPONENT_CATALOG_ACTIONS } from "../../scripts/public-catalog-expectations.ts";
 import { apiRequestSchema, queryOfflineApi } from "../src/offline-api.ts";
 import { publicSystemCatalogRequestSchema } from "../src/public-system-catalog.ts";
 import { inventoryExtensionApiCoverage } from "../src/extension-api-coverage.ts";
@@ -62,14 +63,19 @@ void test("actual component catalog registration forwards strict requests withou
   fail = true; await assert.rejects(invoke({ request: expectedRequest }), /synthetic refusal/u); assert.equal(calls.length, 7);
 });
 
-void test("component catalog discovery exposes all twelve exact actions but grants no execution", () => {
+void test("component catalog discovery matches the independent exact-action contract but grants no execution", () => {
   const catalog = queryOfflineApi(apiRequestSchema.parse({ action: "catalog-components", query: { includeSchemas: true } }));
   assert.equal(catalog.offline, true);
   assert.ok(typeof catalog.result === "object" && catalog.result !== null && "total" in catalog.result);
-  assert.equal(catalog.result.total, 12);
+  assert.equal(catalog.result.total, EXPECTED_COMPONENT_CATALOG_ACTIONS.length);
+  assert.ok("entries" in catalog.result && Array.isArray(catalog.result.entries));
+  assert.deepEqual(catalog.result.entries.map((entry: Record<string, unknown>) => entry["action"])
+    .toSorted((left, right) => String(left).localeCompare(String(right), "en")), EXPECTED_COMPONENT_CATALOG_ACTIONS);
   for (const candidate of [request, { action: "get-symbol", symbolUuid: "a".repeat(32), confirmNetwork: true },
     { action: "get-device", deviceUuid: "b".repeat(32), confirmNetwork: true },
     { ...request, action: "search-symbols" }, { ...request, action: "search-devices" },
+    { ...request, action: "search-3d-models" }, { ...request, action: "search-panel-libraries" },
+    { action: "get-panel-library", panelLibraryUuid: "a".repeat(32), confirmNetwork: true },
     { action: "search-symbols-by-name", name: "R0603", confirmNetwork: true },
     { action: "search-footprints-by-name", name: "R0603", confirmNetwork: true },
     { action: "get-devices-by-lcsc-ids", lcscIds: ["C1523"], confirmNetwork: true },

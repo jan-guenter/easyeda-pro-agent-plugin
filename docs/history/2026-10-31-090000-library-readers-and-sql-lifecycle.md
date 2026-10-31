@@ -251,3 +251,73 @@ the three-file runtime projection is
 `af611cb884dd608cb7442cd8867d082301b7c579fe49d29ae363fc6912849c72`.
 The same install version is retained for this batch. Publication still requires
 the final payload's CI and follow-up review.
+
+## Protected merge and verified installation
+
+Final payload `fd5a7d8fd917ea6da20f5ffbd58f94f7e8a54216` passed all
+eleven CI jobs. Complete logs prove 13,893 facade passes and five expected
+platform skips, with zero failures, cancellations or todo cases. All 424 bridge
+tests passed across 28 files. The four new strict-startup cases are present in
+the raw shard-eight log. Complete ZIP archives passed CRC and match every
+retained job log; checkout trees and source/runtime/helper pins match the final
+reviewed payload.
+
+CodeRabbit accepted all four reported issues and auto-resolved their threads.
+The completed full review on predecessor `a5eb0c6` is a verified Git ancestor;
+the final exact-head automatic review covers the nested-evidence correction,
+reports no new actionable, legacy, collapsed or outside issue, and records
+Minimal risk. Docstring coverage is 87.50% against 80%. Title and docstring checks
+passed; the remaining three pre-merge entries display Passed but were skipped
+by configuration or absence of linked issues. No third full-review trigger was
+posted. Generated bundles were excluded by CodeRabbit and verified separately
+through reproducible builds.
+
+Protected PR 162 merged without an admin bypass as main
+`ac99764e55cbcdb4c639f9317f28339bea00f371`. Main and the final reviewed
+payload share complete root tree `5e0ac883d414b40bb3b3cca1c95a53ff55d5747c`
+and plugin tree `f99932a2e8948f0705ac664a23d370eae5448859`.
+
+The official CLI upgraded the existing Git marketplace on ref main at
+`https://github.com/jan-guenter/easyeda-pro-agent-plugin.git`. Installed and
+enabled `0.3.0+codex.20261031092130` matches all 2,481 committed files and
+modes, 42 directories including the plugin root, and 47,987,621 bytes.
+Inventory SHA is
+`1c78c315382460b6fdb2bc3a558fcd84b3422730995a2c23fad5786634b040a4`.
+The complete inventory is byte-exact before and after the dependency-free
+installed probe, whose 52 catalog queries and 54 total requests passed. Its
+original child closed after EOF, and isolation samples observed no upstream
+child or bridge socket. This is sampled offline validation, not continuous
+isolation or actual serving-host admission.
+
+The original machine-profile descriptor and bytes remained unchanged. No manual
+cache edit or host-controller termination was performed. No native owner, Save,
+navigation or record cleanup is pending. A fresh Codex session must load and
+independently admit the new serving process before further live qualification.
+The automatic main CI run is being collected separately from the already green
+identical-payload PR CI. No full local suite or extra workflow rerun was added.
+
+## Main CI terminal result and next-session boundary
+
+Automatic main CI is complete for
+`ac99764e55cbcdb4c639f9317f28339bea00f371`: Linux run 41193394236
+and Windows run 41193394246 passed all eleven jobs. Totals match the final PR:
+13,893 facade passes, five expected platform skips, zero failures/cancellations/
+todo cases, and all 424 bridge passes. Every checkout-bearing job logs the actual
+main commit. Complete CRC-checked archives match the raw logs, and actual-main
+trees and source/runtime/helper pins match the reviewed payload. This closes the
+pending main-CI record above. No workflow was rerun or canceled.
+
+Publication, installation and CI recording are complete for this batch. The
+local terminal history append is intentionally left for the next source batch;
+it does not need another plugin version. No native, Save, navigation or journal
+cleanup is pending. The failed predecessor cache probe remains terminal and
+must never be replayed.
+
+After a fresh Codex session, admit the actual installed serving process and
+recompute the disposable target before a new held-cache qualification. Continue
+the original copy-head/callback/clock/native completion and four-generation
+copy/delete lifecycle. The shared native structure-write completion gap affects
+79 blocked methods, ten also needing topology work. The remaining 490 omissions
+have concrete inventory reasons. A further API batch can reuse existing paths
+for PCB region/point readers and camera actions, then public 3D, panel and CBB
+catalog readers. These are implementation plans, not new execution authority.

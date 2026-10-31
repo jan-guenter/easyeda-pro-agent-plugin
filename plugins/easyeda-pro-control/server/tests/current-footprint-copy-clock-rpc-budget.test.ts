@@ -6,19 +6,19 @@ import { CurrentFootprintCopyClockRpcBudget, CURRENT_FOOTPRINT_COPY_CLOCK_RPC_BU
 
 void test("complete interleaved RPC unit stays inside the original normal-ID ceiling", () => {
   assert.deepEqual(LIMITS, { normal: 49, cleanup: 18, total: 67, handoffMaximum: 2,
-    maximumNormalId: 802, maximumRequestId: 847, handoffAndUnit: 69 });
-  const reservation = requireCurrentFootprintCopyClockRpcHandoffHeadroom(734);
-  assert.deepEqual(reservation, { nextId: 734, lastReservedId: 802, handoffMaximum: 2, reservedIds: 69 });
-  const budget = new CurrentFootprintCopyClockRpcBudget(736);
-  let id = 736;
+    maximumNormalId: 811, maximumRequestId: 856, handoffAndUnit: 69 });
+  const reservation = requireCurrentFootprintCopyClockRpcHandoffHeadroom(743);
+  assert.deepEqual(reservation, { nextId: 743, lastReservedId: 811, handoffMaximum: 2, reservedIds: 69 });
+  const budget = new CurrentFootprintCopyClockRpcBudget(745);
+  let id = 745;
   // Fourteen cleanup commands precede the final normal command. A normal-class
   // Count of49 therefore does not establish the final command's native ID.
   for (let index = 0; index < 48; index += 1) { budget.consume(id, false); id += 1; }
   for (let index = 0; index < 14; index += 1) { budget.consume(id, true); id += 1; }
-  budget.consume(id, false); assert.equal(id, 798); id += 1;
+  budget.consume(id, false); assert.equal(id, 807); id += 1;
   for (let index = 0; index < 4; index += 1) { budget.consume(id, true); id += 1; }
   const complete = budget.snapshot();
-  assert.equal(complete.nextId, 803); assert.equal(complete.lastReservedId, 802);
+  assert.equal(complete.nextId, 812); assert.equal(complete.lastReservedId, 811);
   assert.equal(complete.normalConsumed, 49); assert.equal(complete.cleanupConsumed, 18); assert.equal(complete.consumed, 67);
   assert.equal(complete.executionAuthorized, false); assert.equal(complete.originalGenerationExitRequired, false);
   budget.requireCompleted(); budget.retire(); assert.equal(budget.snapshot().retired, true); assert.equal(budget.snapshot().nextId, id);
@@ -26,11 +26,11 @@ void test("complete interleaved RPC unit stays inside the original normal-ID cei
   assert.throws(() => { budget.retire(); }, /UNAVAILABLE/u);
 });
 
-void test("handoff headroom preserves both original releases and refuses even an all-cleanup tail beyond802", () => {
-  assert.throws(() => requireCurrentFootprintCopyClockRpcHandoffHeadroom(735), /HEADROOM/u);
-  assert.equal(new CurrentFootprintCopyClockRpcBudget(736).snapshot().lastReservedId, 802);
-  assert.throws(() => new CurrentFootprintCopyClockRpcBudget(737), /HEADROOM/u);
-  for (const value of [-1, 0, -0, 1.5, Number.NaN, Number.POSITIVE_INFINITY, Number.NEGATIVE_INFINITY, 848, Number.MAX_SAFE_INTEGER]) {
+void test("handoff headroom preserves both original releases and refuses even an all-cleanup tail beyond811", () => {
+  assert.throws(() => requireCurrentFootprintCopyClockRpcHandoffHeadroom(744), /HEADROOM/u);
+  assert.equal(new CurrentFootprintCopyClockRpcBudget(745).snapshot().lastReservedId, 811);
+  assert.throws(() => new CurrentFootprintCopyClockRpcBudget(746), /HEADROOM/u);
+  for (const value of [-1, 0, -0, 1.5, Number.NaN, Number.POSITIVE_INFINITY, Number.NEGATIVE_INFINITY, 857, Number.MAX_SAFE_INTEGER]) {
     assert.throws(() => new CurrentFootprintCopyClockRpcBudget(value), /START_ID/u);
     assert.throws(() => requireCurrentFootprintCopyClockRpcHandoffHeadroom(value), /START_ID/u);
   }

@@ -1,4 +1,5 @@
 /** Synthetic native metadata only. No browser ownership or cache I/O. */
+import { CURRENT_FOOTPRINT_COPY_DEPENDENCY_PROFILES } from "../../src/current-footprint-copy-dependency-profiles.ts";
 import { CURRENT_FOOTPRINT_COPY_BACKEND_CACHE_NATIVE_PROFILES as PROFILES } from "../../src/current-footprint-copy-backend-cache.ts";
 
 type Data = Record<string, unknown>;
@@ -7,9 +8,9 @@ const property = (name: string, value: Data, writable = false, enumerable = fals
 
 export function backendCacheArrayTail(): Data[] {
   return [
-    ...["JP", "bb", "bb", "Cache", "Cache"].map((className, index) => property(String(index + 61),
+    ...["JP", "bb", "bb", "Cache", "Cache"].map((className, index) => property(String(index + CURRENT_FOOTPRINT_COPY_DEPENDENCY_PROFILES.length),
       { type: "object", className, objectId: `runtime-${String(index)}` }, true, true)),
-    ...PROFILES.map((profile, index) => property(String(index + 66), { type: "function", className: "Function",
+    ...PROFILES.map((profile, index) => property(String(index + CURRENT_FOOTPRINT_COPY_DEPENDENCY_PROFILES.length + 5), { type: "function", className: "Function",
       description: `function ${profile.name}() { [native code] }`, objectId: `native-${String(index)}` }, true, true)),
   ];
 }

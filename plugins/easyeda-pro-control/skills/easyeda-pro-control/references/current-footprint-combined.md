@@ -347,7 +347,7 @@ mount a writer purpose. The fixed envelope has ten arguments and accepts no
 caller programs, callbacks or free-form prewrite handles.
 
 A separate source-derived forward-only reservation now covers two generations:
-renderer926 normal/61 cleanup/987 total commands, main127 known-minimum commands,
+renderer935 normal/61 cleanup/996 total commands, main127 known-minimum commands,
 helper stdout, events, raw replies, SQL snapshots and failure journals. The
 actual private coordinator now spends its result/artifact/journal ledger before
 callbacks; normal failure leaves only bounded cleanup publications. These

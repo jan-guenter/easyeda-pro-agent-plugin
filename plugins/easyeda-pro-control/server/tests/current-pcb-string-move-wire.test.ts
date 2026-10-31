@@ -74,9 +74,8 @@ void test("five native move programs, twelve-step grammar and original session/g
     } else {
       const alias = ["ModelCallbackExpression", "ModelHandlerFunction"][index];
       assert.ok(alias !== undefined);
-      assert.ok(source.includes(`const string MoveProducerProgram${String(index)}=${alias};`));
-      const canonical = new RegExp(`const string ${alias}=@"((?:""|[^"])*)";`, "u").exec(source)?.[1];
-      assert.equal(canonical?.replaceAll('""', '"'), program, phase);
+      assert.ok(source.includes(`static readonly string MoveProducerProgram${String(index)}=${alias};`));
+      assert.equal(readPackedNativeProgram(source, index === 0 ? "ModelCallbackExpressionFunction" : "ModelHandlerFunction"), program, phase);
     }
     assert.ok(source.includes(createHash("sha256").update(program).digest("hex")));
     assert.ok(source.includes(`case "${phase}": return MoveProducerProgram${index};`));

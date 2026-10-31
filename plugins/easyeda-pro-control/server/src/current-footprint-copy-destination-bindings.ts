@@ -3,6 +3,7 @@
 import { createHash } from "node:crypto";
 import { z } from "zod";
 import { CURRENT_FOOTPRINT_COPY_DESTINATION_PROFILES as PROFILES } from "./current-footprint-copy-destination-profiles.ts";
+import { CURRENT_FOOTPRINT_COPY_DEPENDENCY_PROFILES as DEPENDENCIES } from "./current-footprint-copy-dependency-profiles.ts";
 import { captureCurrentPcbStringClockReply } from "./current-pcb-string-clock-reply.ts";
 import { freezeDeep } from "./sqlite-inventory-core.ts";
 
@@ -18,7 +19,7 @@ const bind=(name,c)=>{if(typeof c!=="function"||Object.hasOwn(classes,name))bad(
 const classRef=name=>Object.hasOwn(classes,name)?classes[name]:fun(bindings,name);
 const chain=(o,names)=>{const out=[];let p=proto(o);for(const name of names){const c=classRef(name);if(p!==own(c,"prototype")||own(p,"constructor")!==c)bad();out.push(p);p=proto(p);}if(p!==Object.prototype)bad();return out;};
 const resolved=(o,levels,k,index)=>{absent(o,k);for(let i=0;i<index;i++)absent(levels[i],k);return own(levels[index],k);};
-const bindings=own(this,"object");array(dependencies,70);array(callbacks,14);array(constructors,11);
+const bindings=own(this,"object");array(dependencies,${String(DEPENDENCIES.length + 9)});array(callbacks,14);array(constructors,11);
 for(const [index,name]of ["Tg","ar","Pi","ja","Vc","zy","Lg","Gd","JP","KP","Mb"].entries())bind(name,own(constructors,String(index)));
 if(own(globalThis,"PROJECT")!==project||own(project,"workerBus")!==bus||own(project,"footprint")!==manager||own(project,"consistencyManager")!==consistency||own(manager,"projectManager")!==project)bad();
 const projectLevels=chain(project,["Lg","Gd"]);
@@ -30,7 +31,7 @@ for(const key of ["isTemporary","isHistoryBack","_isV2Format","isUploadingCloud"
 if(own(project,"isReady")!==true)bad();
 for(const[key,index]of [["onHeadChange",39],["uploadCloud",35],["batchUploadCloud",36],["publishUploadPending",37]])if(resolved(project,projectLevels,key,key==="onHeadChange"?0:1)!==own(dependencies,String(index)))bad();
 const cache=own(project,"cache"),localCache=own(project,"localCache");
-if(cache!==own(dependencies,"62")||localCache!==own(dependencies,"63")||localCache!==own(callbacks,"12")||cache!==own(callbacks,"13"))bad();
+if(cache!==own(dependencies,"${String(DEPENDENCIES.length + 1)}")||localCache!==own(dependencies,"${String(DEPENDENCIES.length + 2)}")||localCache!==own(callbacks,"12")||cache!==own(callbacks,"13"))bad();
 for(const[key,index,set]of [["task1",6,true],["task2",7,true],["task3",8,true],["cachePromise",9,true],["bufferUploadData",10,false],["bufferUploadCache",11,false]]){const value=own(project,key),p=set?Set.prototype:Map.prototype,d=Object.getOwnPropertyDescriptor(p,"size");if(value!==own(callbacks,String(index))||proto(value)!==p||Reflect.ownKeys(value).length!==0||!d||typeof d.get!=="function"||Object.hasOwn(d,"value")||Reflect.apply(d.get,value,[])!==0)bad();}
 const api=fun(bindings,"Re");bind("mc",api);if(own(api,"name")!=="mc"||proto(api)!==Function.prototype)bad();const instance=own(api,"tool");if(instance===null||proto(instance)!==own(api,"prototype")||own(own(api,"prototype"),"constructor")!==api)bad();
 const history=own(instance,"projectHistory"),branchApi=own(instance,"branch"),historyPrototype=proto(history),branchPrototype=proto(branchApi);
