@@ -11,6 +11,8 @@ import { CURRENT_FOOTPRINT_COPY_FORWARD_PROFILE } from "./current-footprint-copy
 import { currentFootprintCopyExecutionWorkerWire } from "./current-footprint-copy-execution-worker-wire.ts";
 import { CURRENT_FOOTPRINT_COPY_SAVED_PROFILE } from "./current-footprint-copy-saved-profile.ts";
 import { currentFootprintCopySavedSourceWire } from "./current-footprint-copy-saved-source-wire.ts";
+import { CURRENT_FOOTPRINT_COPY_HELD_SAVED_PROFILE } from "./current-footprint-copy-held-saved-profile.ts";
+import { currentFootprintCopyHeldSavedSourceWire } from "./current-footprint-copy-held-saved-source-wire.ts";
 import { CURRENT_FOOTPRINT_COPY_CONSTRUCTORS_EXPRESSION, CURRENT_FOOTPRINT_COPY_STATE_CALLS } from "./current-footprint-copy-state.ts";
 import { currentFootprintCopySourceCommandParamsSchema } from "./current-footprint-copy-source-command.ts";
 import { CURRENT_FOOTPRINT_COPY_METHOD_CALLS } from "./current-footprint-copy-method-bindings.ts";
@@ -299,6 +301,23 @@ export function currentFootprintCopySavedStartupWire(raw: unknown, id: number): 
   if (extra !== null) {
     if (!["parser-head-arm", "parser-change-arm", "parser-head", "parser-change", "parser-registered"].includes(String(extra.request["executionPhase"]))) { return fail(); }
     return Object.freeze({ command: extra.command, request: Object.freeze({ ...extra.request, action: "footprint-saved-worker" }) });
+  }
+  const original = startupWire(raw, 1, CURRENT_PCB_209_WORKER_CONSTRUCTION_SITES);
+  const parent = original.request["parentPhase"], phase = original.request["startupPhase"];
+  if (parent !== undefined && !["targets", "frames", "frame-owner", "describe-owner", "preflight", "open-project"].includes(String(parent)) ||
+    typeof phase === "string" && (phase === "actor-clock" || phase === "footprint-source-read" || phase.startsWith("channel-") || phase.startsWith("footprint-producer-") || phase.startsWith("footprint-dependency-"))) { return fail(); }
+  return Object.freeze({ command: Object.freeze({ ...original.command, id }), request: Object.freeze({ ...original.request, requestId: id }) });
+}
+/** Separate held-saved fixed grammar. Larger physical IDs do not upgrade the
+ * legacy saved wire or permit its generic queue/getter path in this purpose. */
+export function currentFootprintCopyHeldSavedStartupWire(raw: unknown, id: number): ReturnType<typeof startupWire> {
+  if (!Number.isSafeInteger(id) || id < 1 || id > CURRENT_FOOTPRINT_COPY_HELD_SAVED_PROFILE.requestLimit) { return fail(); }
+  const source = currentFootprintCopyHeldSavedSourceWire(raw, id);
+  if (source !== null) { return source; }
+  const extra = currentFootprintCopyExecutionWorkerWire(raw, id);
+  if (extra !== null) {
+    if (!["parser-head-arm", "parser-change-arm", "parser-head", "parser-change", "parser-registered"].includes(String(extra.request["executionPhase"]))) { return fail(); }
+    return Object.freeze({ command: extra.command, request: Object.freeze({ ...extra.request, action: "footprint-held-saved-worker" }) });
   }
   const original = startupWire(raw, 1, CURRENT_PCB_209_WORKER_CONSTRUCTION_SITES);
   const parent = original.request["parentPhase"], phase = original.request["startupPhase"];

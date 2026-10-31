@@ -275,3 +275,73 @@ byte-for-byte after the fixes. Only facade source/bundle projections and
 review time changed in compatibility; external pins and the native helper
 remain exact. Final source SHA `abc793525a6e7fa01afc36352608e26f2b89ef093d5e08f2d4ba9e56bed0ea27`,
 runtime3 SHA `4ad127565a7ec6de49706c6d3dc961e849edbbffe6564e202a45e7d71f4f91f2`.
+
+
+## Protected publication and official installation
+
+PR 160 merged through the normal protected squash operation as main
+`7fbc0e788928f13619bebe2d42412850f0914b4f`. Its complete root tree
+`759ba946a6c516bd19254938102f211a110f85af` and plugin tree
+`9786adbf4d8e8d34469fb906ab65a006d110249a` equal the reviewed payload
+`e45ed5e674f573d8dbe21d5d3788ad0c04beb657`; no admin override was used.
+The final PR CI 41169858592 and Windows CI 41169858584 passed all eleven jobs:
+13,827 facade passes, five expected platform/application skips and zero failures,
+cancellations or todo cases; bridge 424 passes across 28 files. Complete raw
+logs, CRC-checked archives and exact checkout/pin comparisons are retained.
+
+CodeRabbit's final exact-head check succeeded with zero new actionable,
+collapsed, outside-diff or legacy issues. All seven original recommendations
+were accepted and fixed; all five inline threads were acknowledged as addressed
+and resolved. Its five premerge checks passed and docstring coverage remained
+83.72%, above 80%. Only the original `@coderabbitai full review` command comment
+was posted. The evidence covers the complete initial PR diff and final
+incremental follow-up; it does not claim an audit of unchanged repository files.
+
+Official CLI marketplace upgrade used canonical Git URL
+`https://github.com/jan-guenter/easyeda-pro-agent-plugin.git`, ref `main`, with
+installer umask 022 and private evidence 077. It installed and enabled
+`0.3.0+codex.20261031040653`; no redundant add or manual cache modification was
+needed. Cached marketplace HEAD equals merged main and retains the exact two
+configured sparse paths. Both before and after one installed offline startup,
+all 2,452 packaged files, 42 directories, 47,323,105 bytes and every committed
+mode match the frozen candidate. Inventory SHA is
+`f2ddf5dc70cd13fce8ea5080f3c16e4d40fa2837200ca0e46edd91c1cf429730`.
+The installed offline probe passed 49 queries and 51 requests, including renderer
+discovery, and observed its own child's stdin EOF and zero exit. Its synthetic
+profile selected no live control root and supplied no connected admission.
+The original machine-profile descriptor, identity and bytes remained unchanged.
+No host termination or actual new-generation admission occurred.
+
+GitHub automatically started main CI41170871799 and Windows CI41170871778.
+These were still running at this installation observation; their terminal
+results are not claimed here. The next session should collect their remaining
+logs and exact-head result without triggering another suite. The already-green
+premerge jobs cover the identical installed payload. This local appendix is
+retained for the next substantive source batch, without another release solely
+for publication chronology.
+
+A fresh Codex session must admit the actual installed serving process before
+live calls. The previous Combined and window-image cases are terminal; never
+replay navigation, capture or Save. Use a fresh visual owner for renderer PNG
+acceptance. The next substantive source batch should join the held-cache leaf
+to a distinct read-only saved purpose, original factory/native issuer, global
+allocator/channel and opener/replay adapter together. Keep the 353-request saved profile and existing
+observation-only births unchanged. Replacing two legacy queue calls yields only
+a lower bound of 328 normal plus 35 cleanup commands; derive ancillary and
+reproof costs before reserving a profile. Cleanup before later normal work
+requires separate command-class counts and physical IDs. No writer is enabled
+by that arithmetic. Original current-head/dependency, clock/RPC, native/main
+completion, deletion/saved-absence and whole four-generation capacity remain
+required, along with the wider SDK backlog listed above.
+
+
+## Main CI and connected renderer follow-up
+
+The previously pending merged-main CI 41170871799 and Windows CI 41170871778
+passed all eleven jobs on main `7fbc0e7` with the same 13,827 facade passes/five
+expected skips and 424 bridge passes. Full logs and exact checkout/pin proof are
+retained. The newly admitted installed 040653 host then completed one fresh
+renderer capture, original root/Job termination and release on the disposable
+fixture. Its raw file stayed exact. See the [next batch record](2026-10-31-renderer-proof-and-held-cache-owner.md)
+for the image scope, evidence and still-pending held-cache integration. Earlier
+pending observations above remain historical and must not be replayed.

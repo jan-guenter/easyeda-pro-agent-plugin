@@ -29,7 +29,7 @@ import { CurrentPcb209WorkerConstructionRunner } from "./current-pcb-worker-cons
 import type { CurrentPcbWorkerConstructionOwner, CurrentPcbWorkerConstructionPacketFor, CurrentPcbWorkerConstructionProjectIdentity } from "./current-pcb-worker-construction-runner.ts";
 import type { CurrentPcbWorkerConstructionAssignments } from "./current-pcb-worker-construction-assignment.ts";
 import type { CurrentPcbWorkerStartupCommand, CurrentPcbWorkerStartupDependency } from "./current-pcb-worker-startup-contract.ts";
-import { CurrentFootprintCopySavedWorkerStartupTransport, CurrentFootprintCopyWorkerStartupTransport, CurrentPcb209WorkerStartupTransport } from "./current-pcb-worker-startup-transport.ts";
+import { CurrentFootprintCopyHeldSavedWorkerStartupTransport, CurrentFootprintCopySavedWorkerStartupTransport, CurrentFootprintCopyWorkerStartupTransport, CurrentPcb209WorkerStartupTransport } from "./current-pcb-worker-startup-transport.ts";
 import type { CurrentPcbWorkerStartupTransportOwner } from "./current-pcb-worker-startup-transport.ts";
 import { currentPcbWorkerStartupUiActorCommand } from "./current-pcb-worker-startup-actor.ts";
 import { CurrentPcb209WorkerStartupActorRunner } from "./current-pcb-209-worker-startup-actor.ts";
@@ -706,6 +706,14 @@ export class CurrentPcb209WorkerStartupOpening extends CurrentPcb209WorkerStartu
 export class CurrentFootprintCopySavedStartupOpening extends CurrentPcb209WorkerStartupOpeningCore<"private.current-footprint-copy-construction.v1"> {
   public constructor(handoff: Pick<CurrentPcbWorkerStartupHandoff, "dependency" | "opening" | "actorClockSourceQualification">) {
     super(INTERNAL_OPENING, handoff, dependency => new CurrentFootprintCopySavedWorkerStartupTransport(dependency));
+  }
+}
+/** Fresh held-cache saved verification uses only its separately marked
+ * read-only transport. The shared before-dispatch callback remains unchanged.
+ */
+export class CurrentFootprintCopyHeldSavedStartupOpening extends CurrentPcb209WorkerStartupOpeningCore<"private.current-footprint-copy-construction.v1"> {
+  public constructor(handoff: Pick<CurrentPcbWorkerStartupHandoff, "dependency" | "opening" | "actorClockSourceQualification">) {
+    super(INTERNAL_OPENING, handoff, dependency => new CurrentFootprintCopyHeldSavedWorkerStartupTransport(dependency));
   }
 }
 /** Distinct execution opening selects its original 11-pause constructor. This

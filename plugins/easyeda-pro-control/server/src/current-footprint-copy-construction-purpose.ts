@@ -1,7 +1,7 @@
 /** Private identity propagation from the native-purpose dependency. Neither a
  * copied adapter nor a caller-provided field can enlarge the state-read bound. */
 /* oxlint-disable import/no-cycle -- Retain genuine channel identity checks through the construction/create cycle; these imports run only inside later owner operations. */
-import { isOriginalFootprintExecutionDependency, isOriginalFootprintPreparationDependency, isOriginalFootprintSavedDependency,
+import { isOriginalFootprintExecutionDependency, isOriginalFootprintHeldSavedDependency, isOriginalFootprintPreparationDependency, isOriginalFootprintSavedDependency,
   originalCurrentFootprintExecutionProjectUuid, requestCurrentFootprintCopyCacheConstruction } from "./current-pcb-worker-startup-channel.ts";
 /* oxlint-enable import/no-cycle */
 import type { CurrentFootprintCacheConstructionCommand } from "./current-footprint-copy-cache-construction-contract.ts";
@@ -11,6 +11,7 @@ import type { CurrentPcbWorkerConstructionTransport } from "./current-pcb-worker
 const originals = new WeakSet<CurrentPcbWorkerConstructionTransport>();
 const executionOriginals = new WeakMap<CurrentPcbWorkerConstructionTransport, Readonly<{ dependency: CurrentPcbWorkerStartupDependency; projectUuid: string }>>();
 const savedOriginals = new WeakSet<CurrentPcbWorkerConstructionTransport>();
+const heldSavedOriginals = new WeakSet<CurrentPcbWorkerConstructionTransport>();
 export function bindFootprintPreparationConstructionTransport(dependency: CurrentPcbWorkerStartupDependency,
   transport: CurrentPcbWorkerConstructionTransport): void {
   if (isOriginalFootprintPreparationDependency(dependency)) { originals.add(transport); }
@@ -19,8 +20,13 @@ export function bindFootprintPreparationConstructionTransport(dependency: Curren
     executionOriginals.set(transport, Object.freeze({ dependency, projectUuid: originalCurrentFootprintExecutionProjectUuid(dependency) }));
   }
   if (isOriginalFootprintSavedDependency(dependency)) { savedOriginals.add(transport); }
+  if (isOriginalFootprintHeldSavedDependency(dependency)) { heldSavedOriginals.add(transport); }
 }
 export function isOriginalFootprintSavedConstructionTransport(transport: CurrentPcbWorkerConstructionTransport): boolean { return savedOriginals.has(transport); }
+/** Distinct held-saved state-read marker; old saved and writer markers are not
+ * inferred from this transport's shape or its separately retained identity.
+ */
+export function isOriginalFootprintHeldSavedConstructionTransport(transport: CurrentPcbWorkerConstructionTransport): boolean { return heldSavedOriginals.has(transport); }
 export function isOriginalFootprintExecutionConstructionTransport(transport: CurrentPcbWorkerConstructionTransport): boolean {
   return executionOriginals.has(transport);
 }

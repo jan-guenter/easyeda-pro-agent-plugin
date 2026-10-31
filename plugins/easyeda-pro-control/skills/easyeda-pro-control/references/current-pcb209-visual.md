@@ -122,11 +122,21 @@ alpha-display, metadata, stable-render, complete-board or saved-design claim.
 The viewport can include application UI and child-frame content; it is not a
 canvas-only image. Use the exact returned managed path for visual inspection.
 
-This renderer route has source/offline coverage. Connected visual acceptance
-requires a fresh installed generation and remains pending. The older installed
-174608 window capture returned a valid but all-RGB-zero PNG; that consumed owner
-cannot use this new action as a fallback. Its terminal cleanup and the scope of
-the native metadata observations are retained in the
+Installed `0.3.0+codex.20261031040653` passed one fresh disposable renderer
+capture: 65,084 PNG bytes, 1,492 by 712 pixels, SHA-256
+`196a863515772b0bc83b23fec9e4e3e57454f5bbaa237f30cfb034d374666277`.
+Independent decoding found nonzero RGB, and visual inspection accepted the
+actual disposable PCB with application menus and panels. Original root exit,
+empty Job and helper release were separately observed; the complete closed
+fixture remained byte-exact. Read the
+[connected renderer case](https://github.com/jan-guenter/easyeda-pro-agent-plugin/blob/main/docs/history/2026-10-31-renderer-proof-and-held-cache-owner.md)
+for the exact scope. This validates that one installed capture, not a later
+host, hidden/minimized capture, stable render, canvas-only content or complete
+board membership. It establishes no general saved-design proof.
+
+The older installed 174608 window capture returned a valid but all-RGB-zero
+PNG; that consumed owner cannot use this action as a fallback. Its terminal
+cleanup and the scope of the native metadata observations are retained in the
 [batch record](https://github.com/jan-guenter/easyeda-pro-agent-plugin/blob/5424343bbb026334fc3b1eb0292dbc1d7eab34f7/docs/history/2026-10-31-held-cache-and-capture-validation.md).
 
 ### Capture the original window
@@ -244,8 +254,9 @@ This is a full-window pixel observation. It may be blank, stale or partial and
 does not prove a stable render, canvas-only content, geometry, connectivity or
 persistence. A nonzero pixel summary is not visual acceptance. The public SDK
 canvas-image method and its separate renderer/resource problems remain excluded.
-The new capture route has source/offline validation; connected acceptance is
-pending.
+Window capture has source/offline validation. The installed 174608 all-RGB-zero
+result was not accepted as a useful visual observation. The separate successful
+renderer case above does not validate WM_PRINT pixels or permit recapture.
 
 After a native refusal, inspect `windowNativeFailure`. It contains only fixed
 window action/stage/code labels, cached bounds and resource flags. `paintPhase`

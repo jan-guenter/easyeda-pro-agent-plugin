@@ -15,9 +15,9 @@ import { PassThrough, Writable } from "node:stream";
 import { setTimeout as delay } from "node:timers/promises";
 import { fileURLToPath } from "node:url";
 import { canonicalJson, sha256Json } from "./core.ts";
-import { CurrentFootprintCombinedDiscoveryPipe, CurrentFootprintCopyForwardDiscoveryPipe, CurrentFootprintCopyForwardSavedDiscoveryPipe, CurrentPcbDiagnosticPipe, CurrentPcbStringPrecreatePipe, CurrentPcbWorkerStartupDiscoveryPipe, decodeCurrentPcbDiagnosticJson } from "./current-pcb-diagnostic-pipe.ts";
+import { CurrentFootprintCombinedDiscoveryPipe, CurrentFootprintCopyForwardDiscoveryPipe, CurrentFootprintCopyForwardSavedDiscoveryPipe, CurrentFootprintHeldCacheDiagnosticPipe, CurrentPcbDiagnosticPipe, CurrentPcbStringPrecreatePipe, CurrentPcbWorkerStartupDiscoveryPipe, decodeCurrentPcbDiagnosticJson } from "./current-pcb-diagnostic-pipe.ts";
 import type { CurrentPcbDiagnosticFailureObservation } from "./current-pcb-diagnostic-pipe.ts";
-import { DIAGNOSTIC_REQUEST_LIMIT, combinedDiagnosticNativeRequest, diagnosticNativeRequest, stringPrecreateNativeRequest, visualDiagnosticNativeRequest } from "./current-pcb-diagnostic-protocol.ts";
+import { DIAGNOSTIC_REQUEST_LIMIT, combinedDiagnosticNativeRequest, diagnosticNativeRequest, heldCacheDiagnosticNativeRequest, stringPrecreateNativeRequest, visualDiagnosticNativeRequest } from "./current-pcb-diagnostic-protocol.ts";
 import { CurrentPcbDiagnosticContext, diagnosticBoundedObservation, diagnosticTargetInventory, diagnosticTargetSummary,
   validateDiagnosticFrameExpectation, validateDiagnosticScriptProfile } from "./current-pcb-diagnostic-context.ts";
 import type { DiagnosticFrameExpectation, DiagnosticScriptProfile } from "./current-pcb-diagnostic-context.ts";
@@ -25,7 +25,7 @@ import { CurrentPcbDiagnosticWorkerContext } from "./current-pcb-diagnostic-work
 import type { DiagnosticWorkerScriptProfile } from "./current-pcb-diagnostic-worker-context.ts";
 import { qualifyCurrentPcb209StartupActorInstallation, verifyCurrentPcb209DiagnosticFacade, verifyCurrentPcb209DiagnosticInstallation, verifyCurrentPcb209RatlineFacade, verifyCurrentPcb209RatlineInstallation, verifyCurrentPcb209WorkerBootstrapInstallation, verifyCurrentPcbDiagnosticFacade, verifyCurrentPcbDiagnosticInstallation } from "./current-pcb-diagnostic-installation.ts";
 import type { CurrentPcbDiagnosticInstallation, CurrentPcbDiagnosticInstallationOptions } from "./current-pcb-diagnostic-installation.ts";
-import { currentDisposableOpenSealedTargetSchema } from "./current-disposable-open.ts";
+import { currentDisposableOpenSealedTargetSchema, currentDisposableOpenTargetSchema } from "./current-disposable-open.ts";
 import type { CurrentDisposableOpenSealedTarget } from "./current-disposable-open.ts";
 import { currentPcbDiagnosticOpeningArguments, decodeCurrentPcbDiagnosticOpeningReply } from "./current-pcb-diagnostic-opening.ts";
 import type { CurrentPcbDiagnosticOpeningResult } from "./current-pcb-diagnostic-opening.ts";
@@ -65,7 +65,7 @@ import { CurrentRendererCaptureTransportBudget } from "./current-pcb-diagnostic-
 import { CURRENT_WINDOW_CAPTURE_LIMITS, decodeCurrentWindowCapture } from "./current-pcb-diagnostic-window-capture.ts";
 import type { CurrentPcbStringNativeClockObservation, CurrentPcbStringNativeClockPhase } from "./current-pcb-string-native-clock.ts";
 import { freezeDeep } from "./sqlite-inventory-core.ts";
-import { CurrentFootprintCombinedStartupChannel, CurrentFootprintCopyExecutionChannel, CurrentFootprintCopyForwardSavedStartupChannel, CurrentFootprintCopyForwardStartupChannel, CurrentFootprintCopyPreparationChannel, CurrentFootprintCopySavedChannel, CurrentPcb209WorkerStartupChannel, CurrentPcbWorkerStartupChannel,
+import { CurrentFootprintCombinedStartupChannel, CurrentFootprintCopyExecutionChannel, CurrentFootprintCopyForwardSavedStartupChannel, CurrentFootprintCopyForwardStartupChannel, CurrentFootprintCopyHeldSavedStartupChannel, CurrentFootprintCopyPreparationChannel, CurrentFootprintCopySavedChannel, CurrentPcb209WorkerStartupChannel, CurrentPcbWorkerStartupChannel,
   beginCurrentFootprintCopyClockRpcChannel, prepareCurrentFootprintCopyClockRpcChannel } from "./current-pcb-worker-startup-channel.ts";
 import type { CurrentPcbWorkerStartupParent } from "./current-pcb-worker-startup-channel.ts";
 import type { CurrentPcbWorkerStartupDependency } from "./current-pcb-worker-startup-contract.ts";
@@ -98,7 +98,7 @@ import type { CurrentFootprintCopyUiObservation } from "./current-footprint-copy
 import { qualifyCurrentFootprintCopyUiSource, requireCurrentFootprintCopyUiSource } from "./current-footprint-copy-ui-source.ts";
 import type { CurrentFootprintCopyUiSourceQualification } from "./current-footprint-copy-ui-source.ts";
 import { bindCurrentFootprintCopyParentRoute } from "./current-footprint-copy-parent-route.ts";
-import { CurrentFootprintCopySavedStartupOpening, CurrentPcb209WorkerStartupOpening, originalCurrentFootprintCopyParentPeer, requireCurrentFootprintCopyOpening } from "./current-pcb-209-worker-startup-opening.ts";
+import { CurrentFootprintCopyHeldSavedStartupOpening, CurrentFootprintCopySavedStartupOpening, CurrentPcb209WorkerStartupOpening, originalCurrentFootprintCopyParentPeer, requireCurrentFootprintCopyOpening } from "./current-pcb-209-worker-startup-opening.ts";
 import type { CurrentFootprintCopyOpeningOwner, CurrentFootprintCopyOpeningResult, CurrentPcb209WorkerStartupOpeningResult } from "./current-pcb-209-worker-startup-opening.ts";
 import { CurrentPcb209WorkerStartupPcbSession } from "./current-pcb-209-worker-startup-pcb-session.ts";
 import type { CurrentPcb209EmptyNativeDependency } from "./current-pcb-209-worker-startup-empty-session.ts";
@@ -129,6 +129,11 @@ import { controlDataDirectory, controlRootCapability } from "./artifacts.ts";
 import { verifyCheckpoint } from "./checkpoint.ts";
 import type { CheckpointReceipt } from "./checkpoint.ts";
 import type { MachineProfile } from "./machine-profile.ts";
+import { loadRuntimeMachineProfile } from "./machine-profile.ts";
+import { verifyCurrentDisposableOpenCheckpoint } from "./current-disposable-open-checkpoint.ts";
+import type { CurrentFootprintHeldCacheValidationBinding } from "./current-footprint-held-cache-validation.ts";
+import { currentFootprintHeldCacheValidationIdSchema } from "./current-footprint-held-cache-validation-schema.ts";
+import { CURRENT_FOOTPRINT_HELD_CACHE_DIAGNOSTIC_PROFILE } from "./current-footprint-held-cache-diagnostic-profile.ts";
 import { join } from "node:path";
 import { requireCurrentFootprintCopyOwned } from "./current-footprint-copy-preparation-runtime.ts";
 import type { CurrentFootprintCopyPreparation } from "./current-footprint-copy-preparation.ts";
@@ -138,6 +143,16 @@ import { requireCurrentFootprintCopyClosedSnapshot } from "./current-footprint-c
 import { revalidateCurrentFootprintCopySavedOpenGuard } from "./current-footprint-copy-saved-generation.ts";
 import type { CurrentFootprintCopySavedOpenGuard } from "./current-footprint-copy-saved-generation.ts";
 import { currentFootprintCopySavedQueueCommand, decodeCurrentFootprintCopySavedQueueReply } from "./current-footprint-copy-saved-queue.ts";
+import { CurrentFootprintSavedCacheHeldRunner } from "./current-footprint-saved-cache-held-runner.ts";
+import type { CurrentFootprintSavedCacheHeldObservation } from "./current-footprint-saved-cache-held-runner.ts";
+import type { CurrentFootprintSavedCacheHeldCommand } from "./current-footprint-saved-cache-held-protocol.ts";
+import { CURRENT_FOOTPRINT_COPY_HELD_SAVED_PROFILE } from "./current-footprint-copy-held-saved-profile.ts";
+import { CURRENT_FOOTPRINT_COPY_HELD_SAVED_CAPACITY, CurrentFootprintCopyHeldSavedResourceLedger,
+  requireOriginalHeldSavedLedgerBinding } from "./current-footprint-copy-held-saved-capacity.ts";
+import type { CurrentFootprintCopyHeldSavedLedgerBinding } from "./current-footprint-copy-held-saved-capacity.ts";
+// oxlint-disable-next-line import/no-cycle -- The private guard revalidates its retained issuer only after original allocation.
+import { revalidateCurrentFootprintCopyHeldSavedOpenGuard } from "./current-footprint-copy-held-saved-generation.ts";
+import type { CurrentFootprintCopyHeldSavedOpenGuard } from "./current-footprint-copy-held-saved-generation.ts";
 import type { CurrentFootprintCopyV2SavedProjection } from "./current-footprint-copy-v2-saved-source.ts";
 import { currentFootprintCopyV2SavedTarget } from "./current-footprint-copy-v2-saved-source.ts";
 import type { CurrentFootprintCopyStatePacket } from "./current-footprint-copy-state.ts";
@@ -165,8 +180,14 @@ import { CurrentFootprintCopyMainBackendRunner } from "./current-footprint-copy-
 import type { CurrentFootprintCopyMainBackendObservation } from "./current-footprint-copy-main-backend-runner.ts";
 
 
-const HELPER_SHA256 = "8b8d53118c57269f6508830ec7cce1d72a59fea9699e5246e096577ba61408a3";
-const HELPER_BYTES = 1_032_592;
+const HELPER_SHA256 = "53bb4667fff551bf54709f1262a25e2e34b922f57ec0c6b4d9e74131af0a4f5e";
+const HELPER_BYTES = 1_046_825;
+const heldRunnerDescriptors = Object.getOwnPropertyDescriptors(CurrentFootprintSavedCacheHeldRunner.prototype);
+/* oxlint-disable typescript/unbound-method -- Retain fixed methods and invoke them only on the original private-field runner. */
+const heldRunnerMethods = Object.freeze({ prepare: CurrentFootprintSavedCacheHeldRunner.prototype.prepare,
+  first: CurrentFootprintSavedCacheHeldRunner.prototype.observeFirst, fresh: CurrentFootprintSavedCacheHeldRunner.prototype.observeFresh,
+  release: CurrentFootprintSavedCacheHeldRunner.prototype.release, retained: CurrentFootprintSavedCacheHeldRunner.prototype.retained });
+/* oxlint-enable typescript/unbound-method */
 const MAX_LINE = TRANSPORT.maximumHelperLineBytes;
 // 64 MiB native bytes need at most 85.34 MiB base64 plus bounded poll envelopes.
 const MAX_TOTAL = TRANSPORT.maximumHelperStdoutBytes;
@@ -193,7 +214,10 @@ const forwardPollWaiting = CurrentFootprintCopyForwardStartupChannel.prototype.f
 
 
 type RecordValue = Record<string, unknown>;
-type OwnerPurpose = "visual209" | "diagnostic" | "diagnostic209" | "string-precreate" | "worker-startup" | "worker-startup209" | "worker-startup-footprint209" | "worker-startup-footprint-copy209" | "worker-startup-footprint-saved209" | "worker-startup-footprint-main209" | typeof CURRENT_FOOTPRINT_COMBINED_PURPOSE | typeof CURRENT_FOOTPRINT_COPY_FORWARD_PURPOSE | "worker-startup-empty209" | "worker-startup-ratline209" | "worker-startup-ratline-continuation209";
+type OwnerPurpose = "footprint-held-cache209" | "worker-startup-footprint-held-saved209" | "visual209" | "diagnostic" | "diagnostic209" | "string-precreate" | "worker-startup" | "worker-startup209" | "worker-startup-footprint209" | "worker-startup-footprint-copy209" | "worker-startup-footprint-saved209" | "worker-startup-footprint-main209" | typeof CURRENT_FOOTPRINT_COMBINED_PURPOSE | typeof CURRENT_FOOTPRINT_COPY_FORWARD_PURPOSE | "worker-startup-empty209" | "worker-startup-ratline209" | "worker-startup-ratline-continuation209";
+function heldCachePurpose(purpose: OwnerPurpose): boolean {
+  return purpose === "worker-startup-footprint-held-saved209" || purpose === "footprint-held-cache209";
+}
 function bornFootprintTransport(purpose: OwnerPurpose): boolean {
   return purpose === CURRENT_FOOTPRINT_COMBINED_PURPOSE || purpose === CURRENT_FOOTPRINT_COPY_FORWARD_PURPOSE;
 }
@@ -212,7 +236,7 @@ export interface CurrentPcbWorkerStartupOpeningBinding {
   readonly ancillaryObservation: () => RecordValue | null;
 }
 export interface CurrentPcbWorkerStartupHandoff {
-  readonly channel: CurrentPcbWorkerStartupChannel | CurrentPcb209WorkerStartupChannel | CurrentFootprintCopyPreparationChannel | CurrentFootprintCopyExecutionChannel | CurrentFootprintCombinedStartupChannel | CurrentFootprintCopyForwardStartupChannel | CurrentFootprintCopyForwardSavedStartupChannel | CurrentFootprintCopySavedChannel | CurrentPcb209EmptyStartupChannel | CurrentPcb209RatlineContinuationChannel | CurrentPcb209RatlineStartupChannel;
+  readonly channel: CurrentPcbWorkerStartupChannel | CurrentPcb209WorkerStartupChannel | CurrentFootprintCopyPreparationChannel | CurrentFootprintCopyExecutionChannel | CurrentFootprintCombinedStartupChannel | CurrentFootprintCopyForwardStartupChannel | CurrentFootprintCopyForwardSavedStartupChannel | CurrentFootprintCopySavedChannel | CurrentFootprintCopyHeldSavedStartupChannel | CurrentPcb209EmptyStartupChannel | CurrentPcb209RatlineContinuationChannel | CurrentPcb209RatlineStartupChannel;
   readonly actorClockSourceQualification?: CurrentPcb209ActorClockSourceQualification;
   readonly dependency: CurrentPcbWorkerStartupDependency;
   readonly opening: CurrentPcbWorkerStartupOpeningBinding;
@@ -259,7 +283,7 @@ function terminationObservation(value: RecordValue): Readonly<TerminationObserva
       terminated !== (originalRootExited === true && originalJobEmpty === true)) { throw error("TERMINATION_REPLY"); }
   return Object.freeze({ originalRootExited, originalJobEmpty, terminated });
 }
-function binding(value: RecordValue): Binding {
+function decodeNativeBinding(value: RecordValue): Binding {
   const { helperInstance, jobId, rootPid, rootCreated } = value;
   if (!exact(value, ["helperInstance", "jobId", "rootPid", "rootCreated"]) ||
       typeof helperInstance !== "string" || !/^[a-f\d]{32}$/u.test(helperInstance) ||
@@ -291,6 +315,23 @@ const footprintSavedAllocations = new WeakMap<CurrentFootprintCopyNativeOwner, C
 const footprintSavedAllocationAttempts = new WeakSet<CurrentFootprintCopyNativeOwner>();
 const footprintSavedAllocationStates = new WeakMap<CurrentFootprintCopyNativeOwner, "pending" | "no-resource" | "unresolved">();
 const footprintFactories = new WeakMap<object, Readonly<{ options: CurrentPcbDiagnosticInstallationOptions; installation: CurrentPcbDiagnosticInstallation }>>();
+const savedSuccessorAttempts = new WeakSet<object>();
+const heldSavedAllocations = new WeakMap<CurrentFootprintCopyNativeOwner, CurrentFootprintCopyHeldSavedNativeOwner>();
+const heldSavedAllocationStates = new WeakMap<CurrentFootprintCopyNativeOwner, "pending" | "no-resource" | "unresolved">();
+interface HeldCacheValidationAllocation {
+  readonly binding: CurrentFootprintHeldCacheValidationBinding;
+  readonly text: string;
+  readonly completion: ReturnType<typeof readerCompletion>;
+  status: "pending" | "no-resource" | "unresolved" | "retained";
+  owner: CurrentFootprintHeldCacheValidationOwner | null;
+}
+const heldCacheValidationAllocations = new WeakMap<CurrentFootprintHeldCacheValidationBinding, HeldCacheValidationAllocation>();
+const heldCacheValidationOperationIds = new Set<string>();
+const heldCacheValidationFactories = new WeakMap<CurrentFootprintHeldCacheValidationOwner, Readonly<{
+  allocation: HeldCacheValidationAllocation;
+  options: CurrentPcbDiagnosticInstallationOptions;
+  installation: CurrentPcbDiagnosticInstallation;
+}>>();
 const footprintTerminations = new WeakMap<object, Readonly<{ owner: object; binding: Binding | null; noProcess: boolean }>>();
 export interface CurrentFootprintCombinedMainCapability {
   readonly profile: "private.current-footprint-combined-main-capability.v1";
@@ -361,14 +402,14 @@ class CurrentPcbRetainedOwnerCore {
   readonly #installation: CurrentPcbDiagnosticInstallation | null;
   readonly #input = new PassThrough({ autoDestroy: false });
   readonly #output: Writable;
-  readonly #pipe: CurrentPcbDiagnosticPipe | CurrentPcbStringPrecreatePipe | CurrentPcbWorkerStartupDiscoveryPipe | CurrentFootprintCombinedDiscoveryPipe | CurrentFootprintCopyForwardDiscoveryPipe | CurrentFootprintCopyForwardSavedDiscoveryPipe;
+  readonly #pipe: CurrentPcbDiagnosticPipe | CurrentPcbStringPrecreatePipe | CurrentPcbWorkerStartupDiscoveryPipe | CurrentFootprintCombinedDiscoveryPipe | CurrentFootprintCopyForwardDiscoveryPipe | CurrentFootprintCopyForwardSavedDiscoveryPipe | CurrentFootprintHeldCacheDiagnosticPipe;
   readonly #stringPurpose: boolean;
   readonly #startupPurpose: boolean;
   readonly #actorClockSource: CurrentPcb209ActorClockSourceQualification | null;
   readonly #purpose: OwnerPurpose;
   #startupHandoffConsumed = false;
   #startupParent: CurrentPcbWorkerStartupParent | null = null;
-  #startupChannel: CurrentPcbWorkerStartupChannel | CurrentPcb209WorkerStartupChannel | CurrentFootprintCopyPreparationChannel | CurrentFootprintCopyExecutionChannel | CurrentFootprintCombinedStartupChannel | CurrentFootprintCopyForwardStartupChannel | CurrentFootprintCopyForwardSavedStartupChannel | CurrentFootprintCopySavedChannel | CurrentPcb209EmptyStartupChannel | CurrentPcb209RatlineContinuationChannel | CurrentPcb209RatlineStartupChannel | null = null;
+  #startupChannel: CurrentPcbWorkerStartupChannel | CurrentPcb209WorkerStartupChannel | CurrentFootprintCopyPreparationChannel | CurrentFootprintCopyExecutionChannel | CurrentFootprintCombinedStartupChannel | CurrentFootprintCopyForwardStartupChannel | CurrentFootprintCopyForwardSavedStartupChannel | CurrentFootprintCopySavedChannel | CurrentFootprintCopyHeldSavedStartupChannel | CurrentPcb209EmptyStartupChannel | CurrentPcb209RatlineContinuationChannel | CurrentPcb209RatlineStartupChannel | null = null;
   readonly #emptyAnchor: CurrentPcb209EmptyStartupBudgetAnchor | null;
   readonly #ratlineBudget: CurrentPcb209RatlineBudget | null;
   readonly #continuationBudget: CurrentPcb209RatlineContinuationBudget | null;
@@ -547,6 +588,26 @@ class CurrentPcbRetainedOwnerCore {
   #mainRunner: CurrentFootprintCopyMainBackendRunner | null = null;
   #combinedMainCapability: CurrentFootprintCombinedMainCapability | null = null;
   readonly #footprintSavedQueueReplies: unknown[] = [];
+  #heldSavedStartAttempted = false;
+  #heldSavedStarted = false;
+  #heldSavedCache: CurrentFootprintSavedCacheHeldRunner | null = null;
+  #heldSavedCurrent: (() => void) | null = null;
+  #heldSavedCleanupActive = false;
+  #heldSavedFailed = false;
+  #heldSavedOpenAttempted = false;
+  #heldSavedOpening: CurrentFootprintCopyHeldSavedStartupOpening | null = null;
+  #heldSavedObservedEventBytes = 0;
+  #heldSavedStateReads = 0;
+  #heldSavedSourceReads = 0;
+  #heldSavedOpeningReleased = false;
+  #heldSavedAbortAttempted = false;
+  #heldCacheAbortReservation: object | null = null;
+  #heldCacheAbortBinding: Binding | null = null;
+  #heldCacheAbortDispatchAttempted = false;
+  #heldSavedReadCleanup = false;
+  #heldSavedLastCommandCleanup = false;
+  readonly #heldSavedLedger: CurrentFootprintCopyHeldSavedResourceLedger | null;
+  readonly #heldSavedLedgerMethods: CurrentFootprintCopyHeldSavedLedgerBinding | null;
 
   public constructor(child: ChildProcessWithoutNullStreams, verify: () => Promise<void>,
     installation: CurrentPcbDiagnosticInstallation | null, verifyInstallation: () => Promise<void>, purpose: OwnerPurpose,
@@ -584,21 +645,27 @@ class CurrentPcbRetainedOwnerCore {
     if ((purpose === "worker-startup-ratline209") !== (ratlineBudget !== null)) { throw error("RATLINE_BUDGET"); }
     if (ratlineBudget !== null) { assertOriginalCurrentPcb209RatlineBudget(ratlineBudget); }
     if ((purpose === "worker-startup-empty209") !== (emptyAnchor !== null)) { throw error("STARTUP_EMPTY_ANCHOR"); }
-    if (purpose === "worker-startup209" || (purpose === "worker-startup-footprint209" || purpose === "worker-startup-footprint-copy209" || purpose === "worker-startup-footprint-saved209" || purpose === "worker-startup-footprint-main209" || bornFootprintTransport(purpose)) || purpose === "worker-startup-empty209" || purpose === "worker-startup-ratline209" || purpose === "worker-startup-ratline-continuation209") {
+    if (purpose === "worker-startup209" || (purpose === "worker-startup-footprint209" || purpose === "worker-startup-footprint-copy209" || purpose === "worker-startup-footprint-saved209" || purpose === "worker-startup-footprint-held-saved209" || purpose === "worker-startup-footprint-main209" || bornFootprintTransport(purpose)) || purpose === "worker-startup-empty209" || purpose === "worker-startup-ratline209" || purpose === "worker-startup-ratline-continuation209") {
       if (actorClockSource === null) { throw error("STARTUP209_ACTOR_SOURCE"); }
       requireCurrentPcb209ActorClockSourceQualification(actorClockSource);
     } else if (actorClockSource !== null) { throw error("STARTUP209_PURPOSE"); }
-    this.#startupPurpose = purpose === "worker-startup" || purpose === "worker-startup209" || (purpose === "worker-startup-footprint209" || purpose === "worker-startup-footprint-copy209" || purpose === "worker-startup-footprint-saved209" || purpose === "worker-startup-footprint-main209" || bornFootprintTransport(purpose)) || purpose === "worker-startup-empty209" || purpose === "worker-startup-ratline209" || purpose === "worker-startup-ratline-continuation209";
+    this.#startupPurpose = purpose === "worker-startup" || purpose === "worker-startup209" || (purpose === "worker-startup-footprint209" || purpose === "worker-startup-footprint-copy209" || purpose === "worker-startup-footprint-saved209" || purpose === "worker-startup-footprint-held-saved209" || purpose === "worker-startup-footprint-main209" || bornFootprintTransport(purpose)) || purpose === "worker-startup-empty209" || purpose === "worker-startup-ratline209" || purpose === "worker-startup-ratline-continuation209";
     this.#child = child; this.#verify = verify; this.#installation = installation; this.#verifyInstallation = verifyInstallation;
     this.#verifyStartupFacade = verifyStartupFacade;
     this.#purpose = purpose; this.#stringPurpose = purpose === "string-precreate";
+    this.#heldSavedLedger = heldCachePurpose(purpose) ? new CurrentFootprintCopyHeldSavedResourceLedger() : null;
+    this.#heldSavedLedgerMethods = this.#heldSavedLedger === null ? null : requireOriginalHeldSavedLedgerBinding(this.#heldSavedLedger);
+    if (this.#heldSavedLedger !== null && this.#heldSavedLedgerMethods !== null) {
+      this.#heldSavedLedgerMethods.bind.call(this.#heldSavedLedger, this);
+    }
     this.#output = new Writable({ autoDestroy: false,
       // oxlint-disable-next-line promise/prefer-await-to-callbacks -- Writable requires its original callback, acknowledged only after native WriteFile.
       write: (chunk: unknown, _encoding, callback): void => {
         this.#send = this.#sendFrame(chunk, callback);
       },
     });
-    if (this.#purpose === CURRENT_FOOTPRINT_COPY_FORWARD_PURPOSE) { this.#pipe = new CurrentFootprintCopyForwardDiscoveryPipe(this.#input, this.#output, (bytes): void => { this.#forwardRendererEvent(bytes); }); }
+    if (this.#purpose === "footprint-held-cache209") { this.#pipe = new CurrentFootprintHeldCacheDiagnosticPipe(this.#input, this.#output, (bytes): void => { this.#heldSavedEventBytes(bytes); }); }
+    else if (this.#purpose === CURRENT_FOOTPRINT_COPY_FORWARD_PURPOSE) { this.#pipe = new CurrentFootprintCopyForwardDiscoveryPipe(this.#input, this.#output, (bytes): void => { this.#forwardRendererEvent(bytes); }); }
     else if (saved !== null) { this.#pipe = new CurrentFootprintCopyForwardSavedDiscoveryPipe(this.#input, this.#output, (bytes): void => { this.#forwardRendererEvent(bytes); }); }
     else if (this.#purpose === CURRENT_FOOTPRINT_COMBINED_PURPOSE) { this.#pipe = new CurrentFootprintCombinedDiscoveryPipe(this.#input, this.#output); }
     else if (this.#startupPurpose) { this.#pipe = new CurrentPcbWorkerStartupDiscoveryPipe(this.#input, this.#output); }
@@ -748,7 +815,7 @@ class CurrentPcbRetainedOwnerCore {
       stderr: Object.freeze({ bytes: this.#stderrBytes, sha256: this.#stderrBytes === 0 ? null : this.#stderrHash.copy().digest("hex"), truncated: this.#stderrTruncated }) });
   }
   #bindingFromOriginalHelper(value: RecordValue): Binding {
-    const observed = binding(value), ready = this.#combinedReadyPacket;
+    const observed = decodeNativeBinding(value), ready = this.#combinedReadyPacket;
     if (bornFootprintTransport(this.#purpose) && (ready === null || ready.helperInstance !== observed.helperInstance || ready.jobId !== observed.jobId)) {
       throw error("COMBINED_READY_BINDING_CHANGED");
     }
@@ -813,7 +880,7 @@ class CurrentPcbRetainedOwnerCore {
         throw error("BROWSER_VERSION_REPLY");
       }
       this.#browserTargets = diagnosticTargetInventory(await this.#transfer(() => this.#pipe.getTargets()));
-      if (bornFootprintTransport(this.#purpose)) { this.#savedCacheBrowserVersion = Object.freeze(structuredClone(version)); }
+      if (bornFootprintTransport(this.#purpose) || heldCachePurpose(this.#purpose)) { this.#savedCacheBrowserVersion = Object.freeze(structuredClone(version)); }
       return diagnosticBoundedObservation({ schema: "easyeda-pro-control.pcb-diagnostic-browser-observation.v1", version: structuredClone(version),
         targets: this.#browserTargets.map(value => diagnosticTargetSummary(value)), projectFreeVerified: false, profileIsolated: false,
         debuggerSocketAbsenceVerified: false, bridgeAuthentication: false, executionAuthorized: false });
@@ -1733,7 +1800,7 @@ class CurrentPcbRetainedOwnerCore {
     const targets = await this.#transfer(() => this.#pipe.getTargets());
     const frameTree = await this.#transfer(() => this.#pipe.getFrameTree());
     context.assertCurrent(); const result = context.finish(source, targets, frameTree);
-    if ((this.#purpose === "worker-startup-footprint209" || footprintCopyObservationPurpose(this.#purpose) || this.#purpose === "worker-startup-footprint-saved209")) { this.#footprintUiSource = qualifyCurrentFootprintCopyUiSource(source["scriptSource"]); }
+    if ((this.#purpose === "worker-startup-footprint209" || footprintCopyObservationPurpose(this.#purpose) || this.#purpose === "worker-startup-footprint-saved209" || this.#purpose === "worker-startup-footprint-held-saved209")) { this.#footprintUiSource = qualifyCurrentFootprintCopyUiSource(source["scriptSource"]); }
     return result;
   }
 
@@ -1772,6 +1839,12 @@ class CurrentPcbRetainedOwnerCore {
         if (observed.sessionId !== selected.sessionId || observed.uniqueContextId !== selected.uniqueContextId) { throw error("STARTUP_PARENT_CHANGED"); }
       };
       const reprove = async (): Promise<void> => {
+        if (this.#purpose === "worker-startup-footprint-held-saved209") {
+          // Retained context and local bytes are not fresh Windows evidence.
+          // Separate native stage brackets and native I/O retain kernel proof.
+          current(); await this.#verify(); current(); await this.#verifyStartupFacade(); current();
+          return;
+        }
         // The original native owner holds deny-write/delete installation and
         // Ancestor leases from full launch admission. Reprove those live leases
         // Around fresh facade/helper bytes; never adopt a returned JSON proof.
@@ -1821,7 +1894,7 @@ class CurrentPcbRetainedOwnerCore {
         if (canonicalJson(this.#startupEmptyPcbContext) !== canonicalJson(selectedModel)) { throw error("STARTUP_EMPTY_PCB_CHANGED"); }
         return this.#startupEmptyPcbContext;
       };
-      let channel: CurrentPcbWorkerStartupChannel | CurrentPcb209WorkerStartupChannel | CurrentFootprintCopyPreparationChannel | CurrentFootprintCopyExecutionChannel | CurrentFootprintCombinedStartupChannel | CurrentFootprintCopyForwardStartupChannel | CurrentFootprintCopyForwardSavedStartupChannel | CurrentFootprintCopySavedChannel | CurrentPcb209EmptyStartupChannel | CurrentPcb209RatlineContinuationChannel | CurrentPcb209RatlineStartupChannel;
+      let channel: CurrentPcbWorkerStartupChannel | CurrentPcb209WorkerStartupChannel | CurrentFootprintCopyPreparationChannel | CurrentFootprintCopyExecutionChannel | CurrentFootprintCombinedStartupChannel | CurrentFootprintCopyForwardStartupChannel | CurrentFootprintCopyForwardSavedStartupChannel | CurrentFootprintCopySavedChannel | CurrentFootprintCopyHeldSavedStartupChannel | CurrentPcb209EmptyStartupChannel | CurrentPcb209RatlineContinuationChannel | CurrentPcb209RatlineStartupChannel;
       if (this.#purpose === "worker-startup-ratline-continuation209") {
         if (this.#continuationBudget === null) { throw error("CONTINUATION_BUDGET"); }
         this.#continuationBudget.closeDiscovery(prior.nextRequestId); channel = new CurrentPcb209RatlineContinuationChannel(native, this.#continuationBudget);
@@ -1832,6 +1905,12 @@ class CurrentPcbRetainedOwnerCore {
       } else if (this.#purpose === "worker-startup-empty209") {
         if (this.#emptyAnchor === null) { throw error("STARTUP_EMPTY_ANCHOR"); }
         channel = new CurrentPcb209EmptyStartupChannel(native, { ...priorUsage, pollCount: this.#emptyPolls }, this.#emptyAnchor, requireOriginalPcbContext);
+       } else if (this.#purpose === "worker-startup-footprint-held-saved209") {
+        const origin = this.originalFootprintSourceBinding();
+        channel = new CurrentFootprintCopyHeldSavedStartupChannel(native,
+          Object.freeze({ sessionId: selected.sessionId, uniqueContextId: selected.uniqueContextId,
+            projectUuid: origin.target.projectUuid, branchUuid: origin.target.branchUuid }),
+          (bytes): void => { this.#heldSavedEventBytes(bytes); }, priorUsage);
       } else if (this.#purpose === "worker-startup-footprint-saved209") {
         channel = this.#forwardRole === "forward-saved-readback" ?
           new CurrentFootprintCopyForwardSavedStartupChannel(native, (bytes): void => { this.#forwardRendererEvent(bytes); }, priorUsage) :
@@ -2300,6 +2379,15 @@ class CurrentPcbRetainedOwnerCore {
   public async requestNormalClose(hwnd: string): Promise<void> {
     if (this.#closeConsumed) { throw error("CLOSE_CONSUMED"); }
     if (!/^[1-9]\d{0,18}$/u.test(hwnd)) { throw error("WINDOW_INPUT"); }
+    if (heldCachePurpose(this.#purpose) && this.#heldSavedCache !== null &&
+        this.#heldSavedCache.retained()["releaseAttempted"] !== true) {
+      try { await this.releaseFootprintCopyHeldSavedCache(); }
+      catch {
+        // Retain the consumed group failure. A still-available original close
+        // May end the realm, but never fabricates a group-release reply.
+        this.#heldSavedFailed = true;
+      }
+    }
     this.#enter(true); this.#closeConsumed = true;
     try {
       await this.#verify(); this.#available();
@@ -2353,7 +2441,7 @@ class CurrentPcbRetainedOwnerCore {
   public requireOriginalFootprintGeneration(): void {
     const original = footprintFactories.get(this);
     if (original === undefined || original.installation !== this.#installation ||
-      this.#purpose !== "worker-startup-footprint-copy209" && this.#purpose !== "worker-startup-footprint-saved209" && this.#purpose !== CURRENT_FOOTPRINT_COPY_FORWARD_PURPOSE) {
+      this.#purpose !== "worker-startup-footprint-copy209" && this.#purpose !== "worker-startup-footprint-saved209" && this.#purpose !== "worker-startup-footprint-held-saved209" && this.#purpose !== CURRENT_FOOTPRINT_COPY_FORWARD_PURPOSE) {
       throw error("FOOTPRINT_ORIGINAL_FACTORY");
     }
     if (this.#footprintSourceBinding !== null && canonicalJson({ ...this.#footprintSourceBinding, before: undefined }) !== this.#footprintSourceBindingText) {
@@ -2424,7 +2512,7 @@ class CurrentPcbRetainedOwnerCore {
       const held = requireForwardSavedObservationHandoff(this.#forwardSavedHandoff, this);
       if (held.writer !== writer || held.after !== after) { throw error("FORWARD_SAVED_SOURCE_BINDING"); }
     }
-    if (this.#purpose !== "worker-startup-footprint-saved209" || this.#launchConsumed || this.#footprintSourceBinding !== null ||
+    if (this.#purpose !== "worker-startup-footprint-saved209" && this.#purpose !== "worker-startup-footprint-held-saved209" || this.#launchConsumed || this.#footprintSourceBinding !== null ||
       !writer.status().released || !writer.status().helperClosed) { throw error("FOOTPRINT_SAVED_SOURCE_BINDING"); }
     const target = Object.freeze({ ...source.target, expectedSourceSha256: snapshot.checkpoint.sourceSha256 });
     this.#footprintSourceBinding = Object.freeze({ operationId: source.operationId, target, source: source.source,
@@ -2453,6 +2541,347 @@ class CurrentPcbRetainedOwnerCore {
     if (roots.length !== 1 || typeof frameId !== "string") { throw error("FOOTPRINT_SAVED_ROOT_FRAME"); }
     await this.inspectScript(frameId, CURRENT_PCB_209_OPENING_SCRIPTS.ui); await this.handoffWorkerStartup();
   }
+  /** Admit the two genuine held roles without widening generic copy ownership. */
+  #requireHeldRole(): void {
+    if (this.#purpose === "footprint-held-cache209") { assertOriginalCurrentFootprintHeldCacheValidationOwner(this); }
+    else if (this.#purpose === "worker-startup-footprint-held-saved209") { this.requireOriginalFootprintGeneration(); }
+    else { throw error("HELD_CACHE_ORIGINAL_ROLE"); }
+  }
+
+  /** Select only the genuine role's original target. A diagnostic binding is
+   * deliberately excluded from every copy/saved source or generation registry. */
+  #heldOrigin(): Readonly<{ target: CurrentDisposableOpenSealedTarget }> {
+    this.#requireHeldRole();
+    if (this.#purpose === "footprint-held-cache209") {
+      const original = heldCacheValidationFactories.get(this);
+      if (original === undefined) { throw error("HELD_CACHE_ORIGINAL_FACTORY"); } return original.allocation.binding;
+    }
+    return this.originalFootprintSourceBinding();
+  }
+
+  /** Bracket local identity checks with native point samples. A normal stage
+   * rechecks cutoff and its original transport after every asynchronous step. */
+  async #heldSavedNativeReprove(guard?: () => void): Promise<void> {
+    this.#requireHeldRole();
+    const binding = this.#binding;
+    const cleanup = this.#heldSavedCleanupActive;
+    const current = (): void => {
+      this.#requireHeldRole(); this.#available();
+      if (binding === null || this.#binding !== binding || !this.#launchSucceeded || this.#terminationObserved || this.#releaseConsumed ||
+          !cleanup && (this.#heldSavedFailed || this.#closeConsumed || this.#heldSavedAbortAttempted)) { throw error("HELD_SAVED_NATIVE_LIFETIME"); }
+      guard?.();
+    };
+    current(); await this.#verify(); current();
+    const before = await this.#request({ action: "worker-startup-reprove", heldCleanup: cleanup });
+    current();
+    if (!exact(before, ["current"]) || before["current"] !== true) { throw error("HELD_SAVED_NATIVE_REPROOF"); }
+    await this.#verifyStartupFacade(); current(); await this.#verify(); current();
+    const after = await this.#request({ action: "worker-startup-reprove", heldCleanup: cleanup });
+    current();
+    if (!exact(after, ["current"]) || after["current"] !== true || this.#binding !== binding) { throw error("HELD_SAVED_NATIVE_REPROOF"); }
+  }
+
+  #heldSavedEventBytes(bytes: number): void {
+    if (!heldCachePurpose(this.#purpose) || !Number.isSafeInteger(bytes) || bytes < 0 ||
+        this.#heldSavedObservedEventBytes + bytes > 8 * 1024 * 1024) { throw error("HELD_SAVED_EVENT_BYTES"); }
+    this.#heldSavedObservedEventBytes += bytes;
+    const { ledger, methods } = this.#heldSavedResources();
+    methods.consumeRendererEvent.call(ledger, this, bytes);
+  }
+
+  /** Start only this fresh factory-issued generation, retain its original
+   * browser engine and parent realm, then create one privately held runner. */
+  public async startFootprintHeldCacheValidationGeneration(): Promise<void> {
+    this.#requireHeldRole();
+    if (this.#purpose !== "footprint-held-cache209" || this.#heldSavedStartAttempted || this.#installation === null ||
+        !(this.#pipe instanceof CurrentFootprintHeldCacheDiagnosticPipe)) { throw error("HELD_CACHE_START_CONSUMED"); }
+    this.#heldSavedStartAttempted = true;
+    const allocation = heldCacheValidationFactories.get(this)?.allocation;
+    if (allocation === undefined) { throw error("HELD_CACHE_ORIGINAL_FACTORY"); }
+    const origin = allocation.binding;
+    const current = (): void => {
+      this.#requireHeldRole(); this.#available(); requireHeldCacheValidationBinding(allocation);
+      if (this.#heldSavedFailed || this.#heldSavedAbortAttempted || this.#closeConsumed || this.#terminationObserved || this.#releaseConsumed) { throw error("HELD_CACHE_NORMAL_ENDED"); }
+    };
+    try {
+      await verifyCurrentDisposableOpenCheckpoint(origin.prepared, origin.originalTarget); current();
+      const executable = this.#installation.plan.files[0];
+      if (executable === undefined) { throw error("HELD_CACHE_INSTALLATION"); }
+      await this.launch({ executable: executable.windowsPath, executableSha256: executable.sha256, confirmDiagnosticLaunch: true }); current();
+      await this.#heldSavedNativeReprove(); current(); await this.browserObservation(); current();
+      const pages = this.#browserTargets?.filter(value => value["type"] === "page" && value["attached"] === false &&
+        typeof value["url"] === "string" && /^https:\/\/client\/editor\?cll=(?:trace|debug|info|warn|error)(?:#.*)?$/u.test(value["url"]));
+      const targetId = pages?.[0]?.["targetId"];
+      if (pages?.length !== 1 || typeof targetId !== "string") { throw error("HELD_CACHE_PAGE"); }
+      const frames = await this.inspectFrames(targetId); current();
+      const rows = frames["frames"];
+      if (!Array.isArray(rows)) { throw error("HELD_CACHE_FRAMES"); }
+      const roots = rows.filter((value: unknown): value is RecordValue => record(value) && !Object.hasOwn(value, "parentId"));
+      const frameId = roots[0]?.["id"];
+      if (roots.length !== 1 || typeof frameId !== "string") { throw error("HELD_CACHE_ROOT_FRAME"); }
+      await this.inspectScript(frameId, CURRENT_PCB_209_OPENING_SCRIPTS.ui); current();
+      await this.#observeParent(); current(); await this.#observeOpeningAncillary(); current();
+      const context = this.#stagedContext;
+      const engine = this.#savedCacheBrowserVersion;
+      const binding = this.#binding;
+      const pipe = this.#pipe;
+      if (context === null || engine === null || binding === null) { throw error("HELD_CACHE_ORIGINAL_CONTEXT"); }
+      // oxlint-disable-next-line typescript/unbound-method -- Capture exact methods from original private-field receivers; every call below supplies those same receivers.
+      const assertContext = context.assertCurrent, metadataContext = context.savedCacheMetadataContext, requestCache = pipe.observeHeldCache;
+      const selected = metadataContext.call(context);
+      const same = (): void => {
+        this.#requireHeldRole(); this.#available(); requireHeldCacheValidationBinding(allocation);
+        if (this.#binding !== binding || this.#stagedContext !== context || this.#pipe !== pipe || this.#savedCacheBrowserVersion !== engine ||
+            this.#heldOrigin() !== origin || context.assertCurrent !== assertContext || context.savedCacheMetadataContext !== metadataContext ||
+            pipe.observeHeldCache !== requestCache || this.#terminationObserved || this.#releaseConsumed || !this.#launchSucceeded) { throw error("HELD_CACHE_CONTEXT_CHANGED"); }
+        if (!this.#heldSavedCleanupActive) {
+          current(); assertContext.call(context); const actual = metadataContext.call(context);
+          if (actual.sessionId !== selected.sessionId || actual.uniqueContextId !== selected.uniqueContextId) { throw error("HELD_CACHE_REALM_CHANGED"); }
+        }
+      };
+      pipe.bindHeldCache({ ...selected, projectUuid: origin.target.projectUuid, branchUuid: origin.target.branchUuid });
+      const bound = await this.#request({ action: "held-saved-bind", ...selected,
+        projectUuid: origin.target.projectUuid, branchUuid: origin.target.branchUuid }); same();
+      if (!exact(bound, ["bound"]) || bound["bound"] !== true) { throw error("HELD_CACHE_BIND_ACK"); }
+      this.#heldSavedCurrent = same;
+      this.#heldSavedCache = new CurrentFootprintSavedCacheHeldRunner(Object.freeze({
+        assertCurrent: (): Promise<void> => { same(); return Promise.resolve(); },
+        request: async (command: CurrentFootprintSavedCacheHeldCommand): Promise<unknown> => {
+          same(); const reply = await this.#transfer(() => requestCache.call(pipe, command)); same();
+          const { ledger, methods } = this.#heldSavedResources();
+          methods.consumeHeldReply.call(ledger, this, Buffer.byteLength(canonicalJson(reply))); return reply;
+        },
+      }), { ...selected, projectUuid: origin.target.projectUuid, branchUuid: origin.target.branchUuid }, engine);
+      await this.#heldSavedNativeReprove(); same(); this.#heldSavedStarted = true;
+    } catch (caughtError) { this.#heldSavedFailed = true; throw caughtError; }
+  }
+
+  /** Start the separate saved generation without borrowing diagnostic authority. */
+  public async startFootprintCopyHeldSavedGeneration(): Promise<void> {
+    this.requireOriginalFootprintGeneration();
+    const origin = this.originalFootprintSourceBinding();
+    if (this.#purpose !== "worker-startup-footprint-held-saved209" || this.#heldSavedStartAttempted || this.#installation === null) { throw error("HELD_SAVED_START_CONSUMED"); }
+    this.#heldSavedStartAttempted = true;
+    try {
+    const executable = this.#installation.plan.files[0];
+    if (executable === undefined) { throw error("HELD_SAVED_INSTALLATION"); }
+    await this.launch({ executable: executable.windowsPath, executableSha256: executable.sha256, confirmDiagnosticLaunch: true });
+    await this.#heldSavedNativeReprove(); await this.browserObservation();
+    const pages = this.#browserTargets?.filter(value => value["type"] === "page" && value["attached"] === false &&
+      typeof value["url"] === "string" && /^https:\/\/client\/editor\?cll=(?:trace|debug|info|warn|error)(?:#.*)?$/u.test(value["url"]));
+    const targetId = pages?.[0]?.["targetId"];
+    if (pages?.length !== 1 || typeof targetId !== "string") { throw error("HELD_SAVED_PAGE"); }
+    const frames = await this.inspectFrames(targetId), rows = frames["frames"];
+    if (!Array.isArray(rows)) { throw error("HELD_SAVED_FRAMES"); }
+    const roots = rows.filter((value: unknown): value is RecordValue => record(value) && !Object.hasOwn(value, "parentId"));
+    const frameId = roots[0]?.["id"];
+    if (roots.length !== 1 || typeof frameId !== "string") { throw error("HELD_SAVED_ROOT_FRAME"); }
+    await this.inspectScript(frameId, CURRENT_PCB_209_OPENING_SCRIPTS.ui); await this.handoffWorkerStartup();
+    const context = this.#stagedContext;
+    const handoff = this.#startupHandoff;
+    const engine = this.#savedCacheBrowserVersion;
+    const binding = this.#binding;
+    if (context === null || handoff === null || engine === null || binding === null ||
+        !(handoff.channel instanceof CurrentFootprintCopyHeldSavedStartupChannel)) { throw error("HELD_SAVED_ORIGINAL_CONTEXT"); }
+    // oxlint-disable-next-line typescript/unbound-method -- Capture originals and invoke only on their original private-field receivers.
+    const assertContext = context.assertCurrent, openingContext = context.openingContext, requestCache = handoff.channel.requestFootprintHeldSavedCache;
+    const selected = context.savedCacheMetadataContext();
+    const channel = handoff.channel;
+    const bound = await this.#request({ action: "held-saved-bind", sessionId: selected.sessionId,
+      uniqueContextId: selected.uniqueContextId, projectUuid: origin.target.projectUuid, branchUuid: origin.target.branchUuid });
+    if (!exact(bound, ["bound"]) || bound["bound"] !== true) { throw error("HELD_SAVED_BIND_ACK"); }
+    const same = (): void => {
+      this.#available(); this.requireOriginalFootprintGeneration();
+      if (this.#binding !== binding || this.#stagedContext !== context || this.#startupHandoff !== handoff ||
+          this.#savedCacheBrowserVersion !== engine || this.originalFootprintSourceBinding() !== origin ||
+          context.assertCurrent !== assertContext || context.openingContext !== openingContext || channel.requestFootprintHeldSavedCache !== requestCache ||
+          this.#terminationObserved || this.#releaseConsumed || !this.#launchSucceeded) { throw error("HELD_SAVED_CONTEXT_CHANGED"); }
+      if (!this.#heldSavedCleanupActive) {
+        if (this.#heldSavedFailed || this.#closeConsumed) { throw error("HELD_SAVED_NORMAL_ENDED"); }
+        assertContext.call(context); const actual = openingContext.call(context);
+        if (actual.sessionId !== selected.sessionId || actual.uniqueContextId !== selected.uniqueContextId) { throw error("HELD_SAVED_REALM_CHANGED"); }
+      }
+    };
+    this.#heldSavedCurrent = same;
+    this.#heldSavedCache = new CurrentFootprintSavedCacheHeldRunner(Object.freeze({
+      // Retained JavaScript custody only. Fresh native samples belong to the
+      // Enclosing stage; this callback issues neither CDP nor helper controls.
+      assertCurrent: (): Promise<void> => { same(); return Promise.resolve(); },
+        request: async (command: CurrentFootprintSavedCacheHeldCommand): Promise<unknown> => {
+          same(); const reply = await requestCache.call(channel, command); same();
+          const { ledger, methods } = this.#heldSavedResources();
+          methods.consumeHeldReply.call(ledger, this, Buffer.byteLength(canonicalJson(reply))); return reply;
+        },
+    }), { sessionId: selected.sessionId, uniqueContextId: selected.uniqueContextId,
+      projectUuid: origin.target.projectUuid, branchUuid: origin.target.branchUuid }, engine);
+    await this.#heldSavedNativeReprove(); same(); this.#heldSavedStarted = true;
+    } catch (caughtError) { this.#heldSavedFailed = true; throw caughtError; }
+  }
+
+  public retainedFootprintCopyHeldSavedCache(): CurrentFootprintSavedCacheHeldRunner {
+    this.#requireHeldRole();
+    if (this.#heldSavedCache === null) { throw error("HELD_SAVED_RUNNER_REQUIRED"); }
+    if (types.isProxy(this.#heldSavedCache) || Object.getPrototypeOf(this.#heldSavedCache) !== CurrentFootprintSavedCacheHeldRunner.prototype ||
+        Reflect.ownKeys(this.#heldSavedCache).length > 0 ||
+        !originalFootprintDescriptors(CurrentFootprintSavedCacheHeldRunner.prototype, heldRunnerDescriptors)) { throw error("HELD_SAVED_RUNNER_METHODS"); }
+    return this.#heldSavedCache;
+  }
+  public requireOriginalFootprintCopyHeldSavedCache(runner: CurrentFootprintSavedCacheHeldRunner): void {
+    if (this.retainedFootprintCopyHeldSavedCache() !== runner) { throw error("HELD_SAVED_ORIGINAL_RUNNER"); }
+  }
+
+  async #heldSavedStage<T>(work: (runner: CurrentFootprintSavedCacheHeldRunner) => Promise<T>, cleanup = false): Promise<T> {
+    const runner = this.retainedFootprintCopyHeldSavedCache();
+    if (!cleanup && (this.#heldSavedFailed || !this.#heldSavedStarted)) { throw error("HELD_SAVED_NORMAL_ENDED"); }
+    this.#enter(true); this.#heldSavedCleanupActive = cleanup;
+    try {
+      await this.#heldSavedNativeReprove(this.#heldSavedCurrent ?? undefined); this.#heldSavedCurrent?.();
+      const result = await work(runner);
+      await this.#heldSavedNativeReprove(this.#heldSavedCurrent ?? undefined); this.#heldSavedCurrent?.(); return result;
+    } catch (caughtError) { this.#heldSavedFailed = true; throw caughtError; }
+    finally { this.#heldSavedCleanupActive = false; this.#busy = false; }
+  }
+  public prepareFootprintCopyHeldSavedCache(): Promise<void> { return this.#heldSavedStage(runner => heldRunnerMethods.prepare.call(runner)); }
+  public observeFirstFootprintCopyHeldSavedCache(): Promise<CurrentFootprintSavedCacheHeldObservation> {
+    return this.#heldSavedStage(runner => heldRunnerMethods.first.call(runner));
+  }
+  public observeFreshFootprintCopyHeldSavedCache(): Promise<CurrentFootprintSavedCacheHeldObservation> {
+    return this.#heldSavedStage(runner => heldRunnerMethods.fresh.call(runner));
+  }
+  public releaseFootprintCopyHeldSavedCache(): Promise<void> { return this.#heldSavedStage(runner => heldRunnerMethods.release.call(runner), true); }
+
+  /** Consume one termination request for this exact original Job. A reply is
+   * not exit proof; original termination observation and release remain separate. */
+  public async abortFootprintCopyHeldSavedJob(confirmAbortOriginalJob: true): Promise<void> {
+    this.requireOriginalFootprintGeneration();
+    if (this.#purpose !== "worker-startup-footprint-held-saved209") { throw error("HELD_SAVED_ABORT_PURPOSE"); }
+    await this.#abortHeldJob(confirmAbortOriginalJob);
+  }
+
+  /** Seal normal work synchronously before the lifecycle's first journal await.
+   * The original token binds this owner and root; no native I/O or busy flag is
+   * touched. A missing root still consumes cutoff without inventing authority. */
+  public reserveFootprintHeldCacheValidationAbort(): object {
+    assertOriginalCurrentFootprintHeldCacheValidationOwner(this);
+    if (this.#purpose !== "footprint-held-cache209") { throw error("HELD_CACHE_ABORT_PURPOSE"); }
+    this.#available();
+    if (this.#heldSavedAbortAttempted || this.#terminationObserved || this.#releaseConsumed) { throw error("HELD_CACHE_ABORT_CONSUMED"); }
+    this.#heldSavedAbortAttempted = true; this.#heldSavedFailed = true;
+    const binding = this.#binding;
+    if (binding === null) { throw error("HELD_CACHE_ABORT_ORIGINAL_BINDING_REQUIRED"); }
+    const reservation = Object.freeze({});
+    this.#heldCacheAbortReservation = reservation; this.#heldCacheAbortBinding = binding; return reservation;
+  }
+
+  /** Dispatch only the retained token after durable intent. Dispatch is consumed
+   * before any await; acknowledgment proves neither root exit nor Job closure. */
+  public async dispatchFootprintHeldCacheValidationAbort(reservation: object, confirmOriginalJob: true): Promise<void> {
+    assertOriginalCurrentFootprintHeldCacheValidationOwner(this); this.#available();
+    // oxlint-disable-next-line typescript/no-unnecessary-boolean-literal-compare -- Runtime callers must confirm the exact original Job before a native dispatch is consumed.
+    if (confirmOriginalJob !== true) { throw error("HELD_CACHE_ABORT_CONFIRMATION"); }
+    const binding = this.#heldCacheAbortBinding;
+    const current = (): void => {
+      assertOriginalCurrentFootprintHeldCacheValidationOwner(this); this.#available();
+      if (this.#purpose !== "footprint-held-cache209" || reservation !== this.#heldCacheAbortReservation ||
+          binding === null || this.#binding !== binding || !this.#heldSavedAbortAttempted || !this.#heldSavedFailed ||
+          this.#terminationObserved || this.#releaseConsumed) { throw error("HELD_CACHE_ABORT_ORIGINAL_RESERVATION"); }
+    };
+    current();
+    if (this.#heldCacheAbortDispatchAttempted) { throw error("HELD_CACHE_ABORT_DISPATCH_CONSUMED"); }
+    this.#heldCacheAbortDispatchAttempted = true;
+    await this.#verify(); current();
+    const result = await this.#request({ action: "held-saved-abort", confirmAbortOriginalJob: true }, current); current();
+    if (!exact(result, ["abortRequested", "originalJobOnly"]) || result["abortRequested"] !== true || result["originalJobOnly"] !== true) { throw error("HELD_CACHE_ABORT_ACK"); }
+  }
+
+  /** Private convenience. Durable lifecycle callers reserve before awaiting
+   * their journal, then pass that exact token to the separate dispatch method. */
+  public async abortFootprintHeldCacheValidationJob(confirmAbortOriginalJob: true): Promise<void> {
+    // oxlint-disable-next-line typescript/no-unnecessary-boolean-literal-compare -- Reject malformed runtime confirmation before consuming a reservation.
+    if (confirmAbortOriginalJob !== true) { throw error("HELD_CACHE_ABORT_CONFIRMATION"); }
+    await this.dispatchFootprintHeldCacheValidationAbort(this.reserveFootprintHeldCacheValidationAbort(), true);
+  }
+
+  /** Consume cutoff before awaiting local checks. Only the retained helper's
+   * exact Job may be addressed, and queued normal commands cannot run afterward. */
+  async #abortHeldJob(confirmAbortOriginalJob: unknown): Promise<void> {
+    this.#requireHeldRole(); this.#available();
+    if (confirmAbortOriginalJob !== true || this.#heldSavedAbortAttempted || this.#terminationObserved || this.#releaseConsumed) { throw error("HELD_SAVED_ABORT_CONSUMED"); }
+    this.#heldSavedAbortAttempted = true; this.#heldSavedFailed = true;
+    const binding = this.#binding;
+    if (binding === null) { throw error("HELD_SAVED_ABORT_ORIGINAL_BINDING_REQUIRED"); }
+    const current = (): void => {
+      this.#requireHeldRole(); this.#available();
+      if (this.#binding !== binding || this.#releaseConsumed) { throw error("HELD_SAVED_ABORT_OWNER_CHANGED"); }
+    };
+    await this.#verify(); current();
+    const result = await this.#request({ action: "held-saved-abort", confirmAbortOriginalJob: true }, current); current();
+    if (!exact(result, ["abortRequested", "originalJobOnly"]) || result["abortRequested"] !== true || result["originalJobOnly"] !== true) { throw error("HELD_SAVED_ABORT_ACK"); }
+  }
+
+  /** Guarded original open. The adapter's private guard performs the later
+   * freshness read, acknowledged group release and descriptor-bound byte check
+   * at the maintained opener's sole before-dispatch hook. */
+  public async openFootprintCopyHeldSavedProject(projection: CurrentFootprintCopyV2SavedProjection,
+    guard: CurrentFootprintCopyHeldSavedOpenGuard): Promise<Readonly<{ state: CurrentFootprintCopyStatePacket; transport: CurrentFootprintCopySourceReadTransport }>> {
+    this.requireOriginalFootprintGeneration();
+    const origin = this.originalFootprintSourceBinding();
+    const handoff = this.#startupHandoff;
+    const target = currentFootprintCopyV2SavedTarget(projection);
+    if (this.#purpose !== "worker-startup-footprint-held-saved209" || handoff === null || !this.#heldSavedStarted || this.#heldSavedOpenAttempted ||
+        this.#heldSavedFailed || this.#closeConsumed || this.retainedFootprintCopyHeldSavedCache().retained()["phase"] !== "first-observed" ||
+        target.projectUuid !== origin.target.projectUuid || target.branchUuid !== origin.target.branchUuid ||
+        projection.afterSqlSha256 !== origin.before.logicalSha256) { throw error("HELD_SAVED_OPEN_CONSUMED"); }
+    this.#heldSavedOpenAttempted = true;
+    try {
+    const opening = new CurrentFootprintCopyHeldSavedStartupOpening(handoff); this.#heldSavedOpening = opening;
+    await this.#heldSavedNativeReprove();
+    const result = await opening.open(origin.target, (): Promise<void> => Promise.resolve(),
+      (): Promise<void> => revalidateCurrentFootprintCopyHeldSavedOpenGuard(this, guard));
+    const assignments = await opening.proveCurrentAssignments(result), state = await opening.observeFootprintState(result, assignments);
+    const original = await opening.createFootprintSavedReadTransport(result, assignments, state, projection);
+    await this.#heldSavedNativeReprove();
+    // Capture actual methods. Source callbacks have fixed two/four call limits
+    // And their own native pre/post samples; local assertions retain custody.
+    if (types.isProxy(original) || !Object.isFrozen(original) || Reflect.ownKeys(original).length !== 3 ||
+        ["assertOriginalState", "observeState", "readSource"].some(name => {
+          const field = Object.getOwnPropertyDescriptor(original, name); return field === undefined || !Object.hasOwn(field, "value") || typeof field.value !== "function";
+        })) { throw error("HELD_SAVED_SOURCE_TRANSPORT"); }
+    const assert = original.assertOriginalState, observe = original.observeState, read = original.readSource;
+    const current = (): void => {
+      this.requireOriginalFootprintGeneration(); this.#available();
+      if (this.#heldSavedFailed || this.#closeConsumed || this.#heldSavedAbortAttempted || this.#terminationObserved || this.#releaseConsumed ||
+          this.#heldSavedOpening !== opening || original.assertOriginalState !== assert || original.observeState !== observe || original.readSource !== read) { throw error("HELD_SAVED_SOURCE_ENDED"); }
+    };
+    current();
+    const transport = Object.freeze<CurrentFootprintCopySourceReadTransport>({
+      assertOriginalState: async packet => {
+        current();
+        try { await assert.call(original, packet); current(); } catch (caughtError) { this.#heldSavedFailed = true; throw caughtError; }
+      },
+      observeState: async () => {
+        current();
+        if (this.#heldSavedStateReads >= 4 || this.#heldSavedOpening !== opening || this.#heldSavedFailed) { throw error("HELD_SAVED_STATE_CONSUMED"); }
+        this.#heldSavedStateReads += 1;
+        try {
+          await this.#heldSavedNativeReprove(current); current();
+          const packet = await observe.call(original); current(); await this.#heldSavedNativeReprove(current); current(); return packet;
+        } catch (caughtError) { this.#heldSavedFailed = true; throw caughtError; }
+      },
+      readSource: async request => {
+        current();
+        if (this.#heldSavedSourceReads >= 2 || this.#heldSavedOpening !== opening || this.#heldSavedFailed) { throw error("HELD_SAVED_SOURCE_CONSUMED"); }
+        this.#heldSavedSourceReads += 1;
+        try {
+          await this.#heldSavedNativeReprove(current); current();
+          const packet = await read.call(original, request); current(); await this.#heldSavedNativeReprove(current); current(); return packet;
+        } catch (caughtError) { this.#heldSavedFailed = true; throw caughtError; }
+      },
+    });
+    return Object.freeze({ state, transport });
+    } catch (caughtError) { this.#heldSavedFailed = true; throw caughtError; }
+  }
+
   public async observeFootprintCopyUploadQueue(): Promise<unknown> {
     this.requireOriginalFootprintGeneration(); const origin = this.originalFootprintSourceBinding();
     const context = this.#stagedContext, handoff = this.#startupHandoff;
@@ -3031,6 +3460,9 @@ class CurrentPcbRetainedOwnerCore {
         if (this.#footprintSavedOpening !== null && !this.#footprintSavedOpeningReleased) {
           await this.#footprintSavedOpening.releaseAfterTermination(); this.#footprintSavedOpeningReleased = true;
         }
+        if (this.#heldSavedOpening !== null && !this.#heldSavedOpeningReleased) {
+          await this.#heldSavedOpening.releaseAfterTermination(); this.#heldSavedOpeningReleased = true;
+        }
       }
       this.#releaseConsumed = true;
       // Native release independently observes original root and Job again.
@@ -3038,7 +3470,7 @@ class CurrentPcbRetainedOwnerCore {
       const reply = await this.#request({ action: unlaunched ? "release-unlaunched" : "release" });
       if (!exact(reply, unlaunched ? ["released", "launchNeverAttempted"] : ["released"]) || reply["released"] !== true ||
           unlaunched && reply["launchNeverAttempted"] !== true) { throw error("RELEASE_REPLY"); }
-      if (unlaunched && this.#purpose === "worker-startup-footprint-saved209") { this.#footprintUnlaunchedRelease = Object.freeze(reply); }
+      if (unlaunched && (this.#purpose === "worker-startup-footprint-saved209" || this.#purpose === "worker-startup-footprint-held-saved209")) { this.#footprintUnlaunchedRelease = Object.freeze(reply); }
       await this.#finishRelease();
     } finally { this.#busy = false; }
   }
@@ -3113,6 +3545,7 @@ class CurrentPcbRetainedOwnerCore {
       if (!Buffer.isBuffer(chunk)) { throw error("OUTBOUND_FRAME"); }
       let nativeRequest = diagnosticNativeRequest;
       if (bornFootprintTransport(this.#purpose)) { nativeRequest = combinedDiagnosticNativeRequest; }
+      else if (this.#purpose === "footprint-held-cache209") { nativeRequest = heldCacheDiagnosticNativeRequest; }
       else if (this.#purpose === "visual209") { nativeRequest = visualDiagnosticNativeRequest; }
       const result = await this.#request(this.#stringPurpose ? stringPrecreateNativeRequest(chunk) : nativeRequest(chunk));
       if (!exact(result, ["written"]) || result["written"] !== true) { throw error("WRITE_ACK"); }
@@ -3203,11 +3636,68 @@ class CurrentPcbRetainedOwnerCore {
     }
     return result;
   }
-  #request(request: RecordValue): Promise<RecordValue> {
-    if (this.#startupParent === null && !bornFootprintTransport(this.#purpose)) { return this.#requestNow(request); }
+  #heldSavedResources(): Readonly<{ ledger: CurrentFootprintCopyHeldSavedResourceLedger; methods: CurrentFootprintCopyHeldSavedLedgerBinding }> {
+    this.#requireHeldRole();
+    const ledger = this.#heldSavedLedger, methods = this.#heldSavedLedgerMethods;
+    if (!heldCachePurpose(this.#purpose) || ledger === null || methods === null ||
+        requireOriginalHeldSavedLedgerBinding(ledger) !== methods) { throw error("HELD_SAVED_ORIGINAL_ACCOUNTING"); }
+    methods.requireOriginal(); return { ledger, methods };
+  }
+  #heldSavedRequest(request: RecordValue): Readonly<{ cleanup: boolean; waiting: boolean }> {
+    const { ledger, methods } = this.#heldSavedResources();
+    const action = request["action"], channel = this.#startupChannel, id = request["requestId"];
+    if (id !== undefined && typeof id !== "number") { throw error("HELD_SAVED_REQUEST_ID"); }
+    const commandCleanup = typeof id === "number" && channel instanceof CurrentFootprintCopyHeldSavedStartupChannel ?
+      classifyForwardRequest.call(channel, id) : ["Debugger.removeBreakpoint", "Debugger.resume", "Runtime.runIfWaitingForDebugger", "Runtime.releaseObjectGroup"].includes(String(request["method"]));
+    const cleanup = commandCleanup ||
+      action === "poll" && (this.#heldSavedLastCommandCleanup || this.#heldSavedFailed || this.#closeConsumed) ||
+      ["identity", "window", "normal-close", "termination", "release", "release-unlaunched", "no-process-proof", "release-no-process", "held-saved-abort"].includes(String(action)) ||
+      action === "worker-startup-reprove" && request["heldCleanup"] === true;
+    if (!cleanup && action !== "poll" && (this.#heldSavedFailed || this.#heldSavedAbortAttempted || this.#closeConsumed || this.#releaseConsumed)) { throw error("HELD_CACHE_NORMAL_ENDED"); }
+    const waiting = action === "poll" && (channel instanceof CurrentFootprintCopyHeldSavedStartupChannel ?
+      forwardPollWaiting.call(channel) : this.#pipe.status().pendingRequestId !== null);
+    if (!cleanup) {
+      const usage = methods.status.call(ledger, this);
+      const maximum = CURRENT_FOOTPRINT_COPY_HELD_SAVED_CAPACITY;
+      if (usage.bytes["helper-stdout"].normal + MAX_LINE > maximum.normalHelperStdoutBytes ||
+          action === "poll" && usage.bytes.renderer.normal + TRANSPORT.maximumNativePollBytes > maximum.renderer.normalReceivedBytes) {
+        methods.fail.call(ledger, this); this.#heldSavedFailed = true; throw error("HELD_SAVED_NORMAL_OUTPUT_RESERVE");
+      }
+    }
+    if (typeof id === "number") {
+      methods.consumeRequest.call(ledger, this, id, commandCleanup); this.#heldSavedLastCommandCleanup = commandCleanup;
+    }
+    else if (action !== "poll") { methods.consumeControl.call(ledger, this, cleanup); }
+    this.#heldSavedReadCleanup = cleanup; return { cleanup, waiting };
+  }
+  #heldSavedReply(result: RecordValue, pending: Pending): RecordValue {
+    if (!pending.poll) { return result; }
+    const encoded = result["bytes"];
+    if (!exact(result, ["bytes"]) || typeof encoded !== "string" || !/^(?:[A-Za-z\d+/]{4})*(?:[A-Za-z\d+/]{2}==|[A-Za-z\d+/]{3}=)?$/u.test(encoded)) { throw error("HELD_SAVED_RENDERER_CHUNK"); }
+    const bytes = Buffer.from(encoded, "base64");
+    if (bytes.length > TRANSPORT.maximumNativePollBytes || bytes.toString("base64") !== encoded) { throw error("HELD_SAVED_RENDERER_CHUNK"); }
+    const { ledger, methods } = this.#heldSavedResources();
+    let kind: "data" | "wait" | "idle" = "idle";
+    if (bytes.length > 0) { kind = "data"; } else if (pending.forwardPollWaiting) { kind = "wait"; }
+    methods.consumeRendererPoll.call(ledger, this, kind, pending.forwardCleanup);
+    methods.consumeBytes.call(ledger, this, "renderer", bytes.length, pending.forwardCleanup); return result;
+  }
+  #request(request: RecordValue, beforeDispatch?: () => void): Promise<RecordValue> {
+    if (this.#startupParent === null && !bornFootprintTransport(this.#purpose) && !heldCachePurpose(this.#purpose)) {
+      beforeDispatch?.(); return this.#requestNow(request);
+    }
+    const heldNormal = heldCachePurpose(this.#purpose) && request["action"] !== "poll" &&
+      !(request["action"] === "worker-startup-reprove" && request["heldCleanup"] === true) &&
+      !["identity", "window", "normal-close", "termination", "release", "release-unlaunched", "no-process-proof", "release-no-process", "held-saved-abort"].includes(String(request["action"])) &&
+      !["Debugger.removeBreakpoint", "Debugger.resume", "Runtime.runIfWaitingForDebugger", "Runtime.releaseObjectGroup"].includes(String(request["method"]));
     // The startup channel polls independently of lifecycle cleanup. Serialize
     // Both against the same retained helper, never a second poll owner.
-    const next = (async (): Promise<RecordValue> => { await this.#nativeTail; return this.#requestNow(request); })();
+    const next = (async (): Promise<RecordValue> => {
+      await this.#nativeTail;
+      if (heldNormal && (this.#heldSavedFailed || this.#heldSavedAbortAttempted || this.#closeConsumed || this.#releaseConsumed)) { throw error("HELD_CACHE_QUEUED_NORMAL_ENDED"); }
+      beforeDispatch?.();
+      return this.#requestNow(request);
+    })();
     this.#nativeTail = (async (): Promise<void> => {
       try { await next; } catch {
         // The original caller retains the refusal.
@@ -3280,14 +3770,16 @@ class CurrentPcbRetainedOwnerCore {
         throw error("WINDOW_CAPTURE209_CLEANUP_RESERVE");
       }
     }
-    const forward = this.#forwardLedger === null ? { cleanup: false, waiting: false } : this.#forwardRequest(request);
+    let forward: Readonly<{ cleanup: boolean; waiting: boolean }> = { cleanup: false, waiting: false };
+    if (heldCachePurpose(this.#purpose)) { forward = this.#heldSavedRequest(request); }
+    else if (this.#forwardLedger !== null) { forward = this.#forwardRequest(request); }
     this.#windowCapture209Transport?.consume(request["action"] === "poll");
     const deferred = Promise.withResolvers<RecordValue>(), id = randomBytes(16).toString("hex");
     const launch = request["action"] === "launch";
     const pending: Pending = { id, resolve: deferred.resolve, reject: deferred.reject, launch, windowAction: this.#purpose === "visual209" ? currentWindowFailureAction(request["action"]) : null, windowFailure: null, windowRestore: request["action"] === "restore-window-for-capture" && this.#purpose === "visual209", windowCapture: request["action"] === "capture-window" && this.#purpose === "visual209", windowResize: request["action"] === "resize-window-for-capture" && this.#purpose === "visual209", poll: request["action"] === "poll",
       mainAction: mainNativeActions.find(action => action === request["action"]) ?? null, combinedCleanup,
       forwardCleanup: forward.cleanup, forwardPollWaiting: forward.waiting,
-      send: request["action"] === "renderer-viewport-send" || request["action"] === "send" || request["action"] === "worker-startup-send" || request["action"] === "worker-startup-parent" ||
+      send: request["action"] === "saved-cache-held" || request["action"] === "footprint-held-saved-worker" || request["action"] === "renderer-viewport-send" || request["action"] === "send" || request["action"] === "worker-startup-send" || request["action"] === "worker-startup-parent" ||
         request["action"] === "worker-startup-empty-common" || request["action"] === "worker-startup-empty-root" ||
         request["action"] === "worker-startup-ratline" || request["action"] === "worker-startup-ratline-continuation" || request["action"] === "main-send" || request["action"] === "main-request-send" ||
         request["action"] === "footprint-clock-rpc-send" || request["action"] === "main-completion-send", written: false, reply: null,
@@ -3295,7 +3787,12 @@ class CurrentPcbRetainedOwnerCore {
     this.#pending = pending;
     if (launch) { this.#launchRequestIssued = true; }
     try {
-      const data = `${JSON.stringify({ ...this.#binding, ...request, id })}\n`;
+      let heldAccounting: RecordValue = {};
+      if (heldCachePurpose(this.#purpose)) {
+        if (request["action"] === "poll") { heldAccounting = { heldCleanup: forward.cleanup, heldWaiting: forward.waiting }; }
+        else if (request["action"] === "worker-startup-reprove") { heldAccounting = { heldCleanup: forward.cleanup }; }
+      }
+      const data = `${JSON.stringify({ ...this.#binding, ...request, ...heldAccounting, id })}\n`;
       const combinedRequest = bornFootprintTransport(this.#purpose) &&
         (request["action"] === "main-request-send" || request["action"] === "footprint-clock-rpc-send" || request["action"] === "main-completion-send");
       const maximum = combinedRequest || request["method"] === "Runtime.callFunctionOn" && (request["action"] === "worker-startup-parent" &&
@@ -3356,6 +3853,13 @@ class CurrentPcbRetainedOwnerCore {
             pending.reject(caughtError instanceof Error ? caughtError : error("FORWARD_REPLY_ACCOUNTING")); return;
           }
         }
+        if (this.#heldSavedLedger !== null) {
+          try { result = this.#heldSavedReply(result, pending); }
+          catch (caughtError) {
+            this.#heldSavedFailed = true;
+            pending.reject(caughtError instanceof Error ? caughtError : error("HELD_SAVED_REPLY_ACCOUNTING")); return;
+          }
+        }
         const bytes = result["bytes"];
         const ratlineBudget = this.#continuationBudget ?? this.#ratlineBudget;
         if (ratlineBudget !== null && pending.poll) {
@@ -3383,6 +3887,7 @@ class CurrentPcbRetainedOwnerCore {
   readonly #data = (chunk: unknown): void => {
     if (this.#failure !== null) { return; }
     let maximum = MAX_TOTAL;
+    if (heldCachePurpose(this.#purpose)) { maximum = CURRENT_FOOTPRINT_COPY_HELD_SAVED_CAPACITY.helperStdoutBytes; }
     if (this.#purpose === CURRENT_FOOTPRINT_COMBINED_PURPOSE) { maximum = CURRENT_FOOTPRINT_COMBINED_PROFILE.helperStdout.totalBytes; }
     if (this.#purpose === CURRENT_FOOTPRINT_COPY_FORWARD_PURPOSE) { maximum = CURRENT_FOOTPRINT_COPY_FORWARD_CAPACITY.writer.helperStdoutBytes; }
     if (this.#purpose === "worker-startup-empty209") { maximum = CURRENT_PCB_209_EMPTY_NATIVE_PROFILE.bytes.helperStdout; }
@@ -3404,6 +3909,12 @@ class CurrentPcbRetainedOwnerCore {
       const ceiling = this.#forwardRole === "forward-writer" ? CURRENT_FOOTPRINT_COPY_FORWARD_CAPACITY.writer.helperStdoutBytes :
         Math.min(MAX_TOTAL, CURRENT_FOOTPRINT_COPY_FORWARD_CAPACITY.saved.helperStdoutBytes);
       if (this.#total + chunk.length > ceiling - reserve) { this.#forwardCleanupOnly = true; }
+    }
+    if (this.#heldSavedLedger !== null) {
+      try {
+        const { ledger, methods } = this.#heldSavedResources();
+        methods.consumeBytes.call(ledger, this, "helper-stdout", chunk.length, this.#heldSavedReadCleanup);
+      } catch { this.#fail("HELD_SAVED_HELPER_STDOUT"); return; }
     }
     this.#total += chunk.length; this.#buffer = Buffer.concat([this.#buffer, chunk]);
     const ratlineBudget = this.#continuationBudget ?? this.#ratlineBudget;
@@ -3574,6 +4085,24 @@ export class CurrentFootprintCopyForwardNativeOwner extends CurrentPcbRetainedOw
 
 /** Distinct read-only fresh generation. It cannot dispatch native create or
  * transaction clocks and cannot inherit a writer's process/Job handles. */
+export class CurrentFootprintCopyHeldSavedNativeOwner extends CurrentPcbRetainedOwnerCore {
+  public constructor(child: ChildProcessWithoutNullStreams, verify: () => Promise<void>,
+    actorClockSource: CurrentPcb209ActorClockSourceQualification,
+    installation: CurrentPcbDiagnosticInstallation | null = null, verifyInstallation: () => Promise<void> = (): Promise<void> => Promise.resolve(),
+    verifyStartupFacade: () => Promise<void> = verifyInstallation) {
+    super(child, verify, installation, verifyInstallation, CURRENT_FOOTPRINT_COPY_HELD_SAVED_PROFILE.purpose, verifyStartupFacade, actorClockSource);
+  }
+}
+/** Separate read-only qualification birth. No copy/saved factory, worker
+ * bootstrap, main transport or actor-clock capability is installed here. */
+export class CurrentFootprintHeldCacheValidationOwner extends CurrentPcbRetainedOwnerCore {
+  public constructor(child: ChildProcessWithoutNullStreams, verify: () => Promise<void>,
+    installation: CurrentPcbDiagnosticInstallation | null = null, verifyInstallation: () => Promise<void> = (): Promise<void> => Promise.resolve(),
+    verifyFacade: () => Promise<void> = verifyInstallation) {
+    super(child, verify, installation, verifyInstallation, CURRENT_FOOTPRINT_HELD_CACHE_DIAGNOSTIC_PROFILE.purpose, verifyFacade);
+  }
+}
+const heldCacheValidationOwnerDescriptors = Object.getOwnPropertyDescriptors(CurrentFootprintHeldCacheValidationOwner.prototype);
 export class CurrentFootprintCopySavedNativeOwner extends CurrentPcbRetainedOwnerCore {
   public constructor(child: ChildProcessWithoutNullStreams, verify: () => Promise<void>,
     actorClockSource: CurrentPcb209ActorClockSourceQualification,
@@ -3599,6 +4128,7 @@ const footprintOwnerDescriptors = new Map<object, PropertyDescriptorMap>([
   [CurrentFootprintCopyNativeOwner.prototype, Object.getOwnPropertyDescriptors(CurrentFootprintCopyNativeOwner.prototype)],
   [CurrentFootprintCopyForwardNativeOwner.prototype, Object.getOwnPropertyDescriptors(CurrentFootprintCopyForwardNativeOwner.prototype)],
   [CurrentFootprintCopySavedNativeOwner.prototype, Object.getOwnPropertyDescriptors(CurrentFootprintCopySavedNativeOwner.prototype)],
+  [CurrentFootprintCopyHeldSavedNativeOwner.prototype, Object.getOwnPropertyDescriptors(CurrentFootprintCopyHeldSavedNativeOwner.prototype)],
   [CurrentFootprintCopyForwardSavedNativeOwner.prototype, Object.getOwnPropertyDescriptors(CurrentFootprintCopyForwardSavedNativeOwner.prototype)],
 ]);
 function originalFootprintDescriptors(prototype: object, original: PropertyDescriptorMap): boolean {
@@ -3713,7 +4243,7 @@ export function failCurrentFootprintCombinedMainCompletion(capability: CurrentFo
 export function assertOriginalCurrentFootprintCopyNativeOwner(owner: CurrentFootprintCopyGenerationOwner): void {
   if (types.isProxy(owner)) { throw error("FOOTPRINT_ORIGINAL_OWNER"); }
   const proto: unknown = Object.getPrototypeOf(owner);
-  if (proto !== CurrentFootprintCopyNativeOwner.prototype && proto !== CurrentFootprintCopySavedNativeOwner.prototype && proto !== CurrentFootprintCopyForwardNativeOwner.prototype && proto !== CurrentFootprintCopyForwardSavedNativeOwner.prototype) { throw error("FOOTPRINT_ORIGINAL_OWNER"); }
+  if (proto !== CurrentFootprintCopyNativeOwner.prototype && proto !== CurrentFootprintCopySavedNativeOwner.prototype && proto !== CurrentFootprintCopyHeldSavedNativeOwner.prototype && proto !== CurrentFootprintCopyForwardNativeOwner.prototype && proto !== CurrentFootprintCopyForwardSavedNativeOwner.prototype) { throw error("FOOTPRINT_ORIGINAL_OWNER"); }
   const descriptors = footprintOwnerDescriptors.get(proto);
   if (descriptors === undefined || !originalFootprintDescriptors(proto, descriptors) ||
     Object.getPrototypeOf(proto) !== CurrentPcbRetainedOwnerCore.prototype || Reflect.ownKeys(owner).length > 0 ||
@@ -3893,13 +4423,13 @@ export async function startCurrentFootprintCopyForwardSavedObservationOwner(writ
   after: Awaited<ReturnType<typeof readExactSqlInventory>>): Promise<CurrentFootprintCopyForwardSavedNativeOwner> {
   assertOriginalCurrentFootprintCopyForwardNativeOwner(writer);
   requireCurrentFootprintCopyClosedSnapshot(writer, after);
-  if (forwardSavedAllocationAttempts.has(writer)) { throw error("FORWARD_SAVED_ALLOCATION_CONSUMED"); }
+  if (forwardSavedAllocationAttempts.has(writer) || savedSuccessorAttempts.has(writer)) { throw error("FORWARD_SAVED_ALLOCATION_CONSUMED"); }
   const original = footprintFactories.get(writer), resources = forwardResourceBirths.get(writer);
   if (original === undefined || resources === undefined) { throw error("FORWARD_SAVED_ORIGINAL_LEDGER"); }
   const token = Object.freeze({});
   forwardSavedHandoffs.set(token, { writer, after, ...resources, owner: null });
   requireForwardSavedObservationHandoff(token);
-  forwardSavedAllocationAttempts.add(writer); forwardSavedAllocationStates.set(writer, "pending");
+  savedSuccessorAttempts.add(writer); forwardSavedAllocationAttempts.add(writer); forwardSavedAllocationStates.set(writer, "pending");
   let owner: Awaited<ReturnType<typeof startFixedOwner>>;
   try { owner = await startFixedOwner(original.options, "worker-startup-footprint-saved209", "209-startup", undefined, token); }
   catch (caughtError) {
@@ -3926,8 +4456,8 @@ export async function startCurrentFootprintCopySavedNativeOwner(writer: CurrentF
   requireCurrentFootprintCopyClosedSnapshot(writer, after);
   const original = footprintFactories.get(writer);
   if (original === undefined || !writer.status().released || !writer.status().helperClosed) { throw error("FOOTPRINT_WRITER_RELEASE_REQUIRED"); }
-  if (footprintSavedAllocationAttempts.has(writer)) { throw error("FOOTPRINT_SAVED_ALLOCATION_CONSUMED"); }
-  footprintSavedAllocationAttempts.add(writer);
+  if (footprintSavedAllocationAttempts.has(writer) || savedSuccessorAttempts.has(writer)) { throw error("FOOTPRINT_SAVED_ALLOCATION_CONSUMED"); }
+  savedSuccessorAttempts.add(writer); footprintSavedAllocationAttempts.add(writer);
   footprintSavedAllocationStates.set(writer, "pending");
   let owner: Awaited<ReturnType<typeof startFixedOwner>>;
   try { owner = await startFixedOwner(original.options, "worker-startup-footprint-saved209", "209-startup", writer); }
@@ -3951,13 +4481,142 @@ export function currentFootprintCopySavedAllocationOutcome(writer: CurrentFootpr
 export function retainedCurrentFootprintCopySavedAllocation(writer: CurrentFootprintCopyNativeOwner): CurrentFootprintCopySavedNativeOwner | null {
   assertOriginalCurrentFootprintCopyNativeOwner(writer); return footprintSavedAllocations.get(writer) ?? null;
 }
+/** This assertion joins private factory custody to exact unmodified prototypes.
+ * A matching constructor, packet or injected child cannot issue the role. */
+export function assertOriginalCurrentFootprintCopyHeldSavedNativeOwner(owner: CurrentFootprintCopyHeldSavedNativeOwner): void {
+  const descriptors = footprintOwnerDescriptors.get(CurrentFootprintCopyHeldSavedNativeOwner.prototype);
+  if (types.isProxy(owner) || Object.getPrototypeOf(owner) !== CurrentFootprintCopyHeldSavedNativeOwner.prototype ||
+      Reflect.ownKeys(owner).length > 0 || descriptors === undefined ||
+      !originalFootprintDescriptors(CurrentFootprintCopyHeldSavedNativeOwner.prototype, descriptors) ||
+      Object.getPrototypeOf(CurrentFootprintCopyHeldSavedNativeOwner.prototype) !== CurrentPcbRetainedOwnerCore.prototype ||
+      !originalFootprintDescriptors(CurrentPcbRetainedOwnerCore.prototype, footprintCoreDescriptors)) { throw error("HELD_SAVED_ORIGINAL_OWNER"); }
+  footprintOwnershipMethods.assert.call(owner);
+}
+
+/** Consume one original closed predecessor before allocating a distinct native
+ * purpose. This supplies no original forward-ledger or native writer admission. */
+export async function startCurrentFootprintCopyHeldSavedNativeOwner(writer: CurrentFootprintCopyNativeOwner,
+  after: Awaited<ReturnType<typeof readExactSqlInventory>>): Promise<CurrentFootprintCopyHeldSavedNativeOwner> {
+  assertOriginalCurrentFootprintCopyNativeOwner(writer);
+  if (Object.getPrototypeOf(writer) !== CurrentFootprintCopyNativeOwner.prototype) { throw error("HELD_SAVED_PREDECESSOR_KIND_UNMOUNTED"); }
+  requireCurrentFootprintCopyClosedSnapshot(writer, after);
+  const original = footprintFactories.get(writer);
+  if (original === undefined || !writer.status().released || !writer.status().helperClosed) { throw error("HELD_SAVED_PREDECESSOR_RELEASE_REQUIRED"); }
+  if (savedSuccessorAttempts.has(writer) || footprintSavedAllocationAttempts.has(writer)) { throw error("HELD_SAVED_ALLOCATION_CONSUMED"); }
+  savedSuccessorAttempts.add(writer); heldSavedAllocationStates.set(writer, "pending");
+  let owner: Awaited<ReturnType<typeof startFixedOwner>>;
+  try { owner = await startFixedOwner(original.options, "worker-startup-footprint-held-saved209", "209-startup", writer); }
+  catch (caughtError) {
+    if (heldSavedAllocationStates.get(writer) === "pending") { heldSavedAllocationStates.set(writer, "no-resource"); }
+    throw caughtError;
+  }
+  if (!(owner instanceof CurrentFootprintCopyHeldSavedNativeOwner)) { throw error("HELD_SAVED_FACTORY"); }
+  owner.bindFootprintSavedSource(writer, after); return owner;
+}
+
+export function currentFootprintCopyHeldSavedAllocationOutcome(writer: CurrentFootprintCopyNativeOwner): Readonly<{
+  status: "not-attempted" | "pending" | "no-resource" | "unresolved"; owner: null;
+}> | Readonly<{ status: "retained"; owner: CurrentFootprintCopyHeldSavedNativeOwner }> {
+  assertOriginalCurrentFootprintCopyNativeOwner(writer);
+  const owner = heldSavedAllocations.get(writer);
+  if (owner !== undefined) { assertOriginalCurrentFootprintCopyHeldSavedNativeOwner(owner); return Object.freeze({ status: "retained", owner }); }
+  return Object.freeze({ status: heldSavedAllocationStates.get(writer) ?? "not-attempted", owner: null });
+}
+
+/** Capture only the inert frozen binding fields. Its original completed SQL
+ * reader remains a separate reference and is never reconstructed from JSON. */
+function heldCacheValidationBindingText(binding: CurrentFootprintHeldCacheValidationBinding): string {
+  if (binding === null || typeof binding !== "object" || types.isProxy(binding) || Object.getPrototypeOf(binding) !== Object.prototype || !Object.isFrozen(binding)) { throw error("HELD_CACHE_BINDING"); }
+  const names = ["operationId", "target", "originalTarget", "prepared", "inventory", "runtime"] as const;
+  if (Reflect.ownKeys(binding).length !== names.length || names.some(name => {
+    const field = Object.getOwnPropertyDescriptor(binding, name); return field === undefined || !Object.hasOwn(field, "value") || field.enumerable !== true;
+  })) { throw error("HELD_CACHE_BINDING_FIELDS"); }
+  const fields = captureCurrentPcbStringClockReply({ operationId: binding.operationId, target: binding.target,
+    originalTarget: binding.originalTarget, prepared: binding.prepared, runtime: binding.runtime }).value;
+  return canonicalJson(fields);
+}
+
+/** Require exact allocation input references and the genuine reader-completion
+ * record. This is local custody, not a new disk or Windows observation. */
+function requireHeldCacheValidationBinding(allocation: HeldCacheValidationAllocation): void {
+  const binding = allocation.binding, completion = readerCompletion(binding.inventory);
+  if (heldCacheValidationAllocations.get(binding) !== allocation || heldCacheValidationBindingText(binding) !== allocation.text ||
+      completion !== allocation.completion || !completion.observedChildClose || completion.exitCode !== 0 || completion.exitSignal !== null ||
+      binding.inventory.checkpointSha256 !== binding.prepared.checkpoint.checkpointSha256) { throw error("HELD_CACHE_PREPARATION_CHANGED"); }
+}
+
+/** Only the genuinely allocated read-only class passes. Its installation and
+ * descriptor registry is intentionally absent from all copy/saved predicates. */
+export function assertOriginalCurrentFootprintHeldCacheValidationOwner(owner: CurrentFootprintHeldCacheValidationOwner): void {
+  if (owner === null || typeof owner !== "object" || types.isProxy(owner) || Object.getPrototypeOf(owner) !== CurrentFootprintHeldCacheValidationOwner.prototype ||
+      Reflect.ownKeys(owner).length > 0 || !originalFootprintDescriptors(CurrentFootprintHeldCacheValidationOwner.prototype, heldCacheValidationOwnerDescriptors) ||
+      Object.getPrototypeOf(CurrentFootprintHeldCacheValidationOwner.prototype) !== CurrentPcbRetainedOwnerCore.prototype ||
+      !originalFootprintDescriptors(CurrentPcbRetainedOwnerCore.prototype, footprintCoreDescriptors)) { throw error("HELD_CACHE_ORIGINAL_OWNER"); }
+  const original = heldCacheValidationFactories.get(owner);
+  if (original === undefined || original.allocation.owner !== owner || original.allocation.status !== "retained" ||
+      original.installation.facadeSha256.length !== 64 || !Object.isFrozen(original.options)) { throw error("HELD_CACHE_ORIGINAL_FACTORY"); }
+  requireHeldCacheValidationBinding(original.allocation);
+}
+
+/** Allocate a distinct helper only after independently checking the original
+ * managed source/checkpoint, complete SQL reader and current machine runtime.
+ * The owner is registered and retained before fallible helper listeners start. */
+export async function startCurrentFootprintHeldCacheValidationOwner(options: CurrentPcbDiagnosticInstallationOptions,
+  binding: CurrentFootprintHeldCacheValidationBinding): Promise<CurrentFootprintHeldCacheValidationOwner> {
+  const text = heldCacheValidationBindingText(binding);
+  currentFootprintHeldCacheValidationIdSchema.parse(binding.operationId);
+  const target = currentDisposableOpenSealedTargetSchema.parse(binding.target);
+  const originalTarget = currentDisposableOpenTargetSchema.parse(binding.originalTarget);
+  const completion = readerCompletion(binding.inventory);
+  if (!completion.observedChildClose || completion.exitCode !== 0 || completion.exitSignal !== null || !Object.isFrozen(binding.inventory) ||
+      binding.inventory.checkpointSha256 !== binding.prepared.checkpoint.checkpointSha256 || binding.prepared.purpose !== undefined ||
+      canonicalJson(target) !== canonicalJson({ ...originalTarget, branchUuid: binding.prepared.targetEvidence.branchUuid })) { throw error("HELD_CACHE_PREPARATION"); }
+  if (heldCacheValidationAllocations.has(binding) || heldCacheValidationOperationIds.has(binding.operationId)) { throw error("HELD_CACHE_ALLOCATION_CONSUMED"); }
+  const allocation: HeldCacheValidationAllocation = { binding, text, completion, owner: null, status: "pending" };
+  heldCacheValidationAllocations.set(binding, allocation); heldCacheValidationOperationIds.add(binding.operationId);
+  try {
+    await verifyCurrentDisposableOpenCheckpoint(binding.prepared, binding.originalTarget); requireHeldCacheValidationBinding(allocation);
+    const configured = await loadRuntimeMachineProfile(); requireHeldCacheValidationBinding(allocation);
+    if (canonicalJson(configured.profile.runtime) !== canonicalJson(binding.runtime)) { throw error("HELD_CACHE_RUNTIME_CHANGED"); }
+    const root = await controlRootCapability(); requireHeldCacheValidationBinding(allocation);
+    const checkpoint = binding.prepared.checkpoint;
+    const verified = await verifyCheckpoint(checkpoint.receiptPath, { expectedSource: checkpoint.source, controlRoot: root,
+      artifactRoots: [join(controlDataDirectory(), "checkpoints")], maximumSourceBytes: 268_435_456 });
+    requireHeldCacheValidationBinding(allocation);
+    if (!verified.ok || verified.sourceChanged || !verified.sourceMatchesReceipt || !verified.checkpointMatchesReceipt || !verified.sourceEqualsCheckpoint ||
+        verified.sourceSha256 !== checkpoint.sourceSha256 || verified.checkpointSha256 !== checkpoint.checkpointSha256) { throw error("HELD_CACHE_CHECKPOINT_CHANGED"); }
+    const owner = await startFixedOwner(options, CURRENT_FOOTPRINT_HELD_CACHE_DIAGNOSTIC_PROFILE.purpose, "209-held-cache", undefined, null, allocation);
+    requireHeldCacheValidationBinding(allocation);
+    if (!(owner instanceof CurrentFootprintHeldCacheValidationOwner)) { throw error("HELD_CACHE_FACTORY"); }
+    assertOriginalCurrentFootprintHeldCacheValidationOwner(owner); return owner;
+  } catch (caughtError) {
+    if (allocation.status === "pending") { allocation.status = "no-resource"; } throw caughtError;
+  }
+}
+
+/** Return only this exact input reference's original allocation, including a
+ * helper retained after factory/listener failure. JSON cannot recover an owner. */
+export function currentFootprintHeldCacheValidationAllocationOutcome(binding: CurrentFootprintHeldCacheValidationBinding): Readonly<{
+  status: "not-attempted" | "pending" | "no-resource" | "unresolved"; owner: null;
+}> | Readonly<{ status: "retained"; owner: CurrentFootprintHeldCacheValidationOwner }> {
+  const allocation = heldCacheValidationAllocations.get(binding);
+  if (allocation === undefined) { return Object.freeze({ status: "not-attempted", owner: null }); }
+  requireHeldCacheValidationBinding(allocation);
+  if (allocation.owner !== null) { assertOriginalCurrentFootprintHeldCacheValidationOwner(allocation.owner); return Object.freeze({ status: "retained", owner: allocation.owner }); }
+  return Object.freeze({ status: allocation.status === "retained" ? "unresolved" : allocation.status, owner: null });
+}
+
 async function startFixedOwner(options: CurrentPcbDiagnosticInstallationOptions, purpose: OwnerPurpose,
-  generation: "206" | "209-opening" | "209-visual" | "209-startup" = "206", savedWriter?: CurrentFootprintCopyNativeOwner, forwardSavedHandoff: object | null = null): Promise<CurrentPcbDiagnosticOwner | CurrentPcbStringPrecreateOwner | CurrentPcbWorkerStartupOwner> {
+  generation: "206" | "209-opening" | "209-visual" | "209-startup" | "209-held-cache" = "206", savedWriter?: CurrentFootprintCopyNativeOwner,
+  forwardSavedHandoff: object | null = null, heldValidation: HeldCacheValidationAllocation | null = null): Promise<CurrentPcbDiagnosticOwner | CurrentPcbStringPrecreateOwner | CurrentPcbWorkerStartupOwner> {
   const sealedOptions = Object.freeze({ ...options });
   const forwardSaved = forwardSavedHandoff === null ? null : requireForwardSavedObservationHandoff(forwardSavedHandoff);
   if (forwardSaved !== null && (purpose !== "worker-startup-footprint-saved209" || generation !== "209-startup" || savedWriter !== undefined)) { throw error("FORWARD_SAVED_PURPOSE"); }
-  const startup209 = purpose === "worker-startup209" || (purpose === "worker-startup-footprint209" || purpose === "worker-startup-footprint-copy209" || purpose === "worker-startup-footprint-saved209" || purpose === "worker-startup-footprint-main209" || bornFootprintTransport(purpose)) || purpose === "worker-startup-empty209" || purpose === "worker-startup-ratline209" || purpose === "worker-startup-ratline-continuation209";
-  if ((generation === "209-opening") !== (purpose === "diagnostic209") || (generation === "209-visual") !== (purpose === "visual209") || (generation === "209-startup") !== startup209) { throw error("INSTALLATION_PURPOSE"); }
+  const startup209 = purpose === "worker-startup209" || (purpose === "worker-startup-footprint209" || purpose === "worker-startup-footprint-copy209" || purpose === "worker-startup-footprint-saved209" || purpose === "worker-startup-footprint-held-saved209" || purpose === "worker-startup-footprint-main209" || bornFootprintTransport(purpose)) || purpose === "worker-startup-empty209" || purpose === "worker-startup-ratline209" || purpose === "worker-startup-ratline-continuation209";
+  if ((generation === "209-opening") !== (purpose === "diagnostic209") || (generation === "209-visual") !== (purpose === "visual209") ||
+      (generation === "209-startup") !== startup209 || (generation === "209-held-cache") !== (purpose === "footprint-held-cache209") ||
+      (heldValidation !== null) !== (purpose === "footprint-held-cache209")) { throw error("INSTALLATION_PURPOSE"); }
+  if (heldValidation !== null) { requireHeldCacheValidationBinding(heldValidation); }
   let verifier = generation === "206" ? verifyCurrentPcbDiagnosticInstallation : verifyCurrentPcb209DiagnosticInstallation;
   if (purpose === "worker-startup-ratline209" || purpose === "worker-startup-ratline-continuation209") { verifier = verifyCurrentPcb209RatlineInstallation; }
   const installation = await verifier(sealedOptions);
@@ -4006,6 +4665,7 @@ async function startFixedOwner(options: CurrentPcbDiagnosticInstallationOptions,
   else if (purpose === CURRENT_FOOTPRINT_COPY_FORWARD_PURPOSE) { purposeSwitch = ` ${CURRENT_FOOTPRINT_COPY_FORWARD_PROFILE.nativeSwitch} -CombinedReadyChallenge '${readyChallenge ?? ""}'`; }
   else if (purpose === CURRENT_FOOTPRINT_COMBINED_PURPOSE) { purposeSwitch = ` ${CURRENT_FOOTPRINT_COMBINED_PROFILE.nativeSwitch} -CombinedReadyChallenge '${readyChallenge ?? ""}'`; }
   else if (purpose === "worker-startup-footprint-main209") { purposeSwitch = " -WorkerStartupFootprintMain209"; }
+  else if (purpose === "worker-startup-footprint-held-saved209") { purposeSwitch = " -WorkerStartupFootprintHeldSaved209"; }
   else if (purpose === "worker-startup-footprint-saved209") { purposeSwitch = " -WorkerStartupFootprintSaved209"; }
   else if (purpose === "worker-startup-footprint-copy209") { purposeSwitch = " -WorkerStartupFootprintCopy209"; }
   else if (purpose === "worker-startup-footprint209") { purposeSwitch = " -WorkerStartupFootprint209"; }
@@ -4014,6 +4674,7 @@ async function startFixedOwner(options: CurrentPcbDiagnosticInstallationOptions,
   else if (purpose === "string-precreate") { purposeSwitch = " -StringPrecreate"; }
   else if (purpose === "visual209") { purposeSwitch = " -Visual209"; }
   else if (purpose === "diagnostic209") { purposeSwitch = " -Layers209"; }
+  else if (purpose === "footprint-held-cache209") { purposeSwitch = " -FootprintHeldCache209"; }
   const bootstrap = `$ErrorActionPreference='Stop';$ProgressPreference='SilentlyContinue';` +
     `$file=[IO.File]::Open('${windowsPath.replaceAll("'", "''")}',[IO.FileMode]::Open,[IO.FileAccess]::Read,[IO.FileShare]::Read);` +
     `try{if($file.Length -ne ${HELPER_BYTES}){throw 'pcb-diagnostic-helper-size'};$bytes=New-Object byte[] ([int]$file.Length);$offset=0;` +
@@ -4030,12 +4691,21 @@ async function startFixedOwner(options: CurrentPcbDiagnosticInstallationOptions,
     if (requireForwardSavedObservationHandoff(forwardSavedHandoff) !== forwardSaved || forwardSaved === null) { throw error("FORWARD_SAVED_HANDOFF"); }
     forwardSavedAllocationStates.set(forwardSaved.writer, "unresolved");
   }
-  if (savedWriter !== undefined) { footprintSavedAllocationStates.set(savedWriter, "unresolved"); }
+  if (savedWriter !== undefined) {
+    if (purpose === "worker-startup-footprint-held-saved209") { heldSavedAllocationStates.set(savedWriter, "unresolved"); }
+    else { footprintSavedAllocationStates.set(savedWriter, "unresolved"); }
+  }
+  if (heldValidation !== null) { requireHeldCacheValidationBinding(heldValidation); heldValidation.status = "unresolved"; }
   const child = spawn(installation.paths.powershellExecutable,
     ["-NoLogo", "-NoProfile", "-NonInteractive", "-ExecutionPolicy", "Bypass", "-EncodedCommand", encoded],
     { stdio: ["pipe", "pipe", "pipe"], windowsHide: true });
   let owner: CurrentPcbRetainedOwnerCore;
-  if (purpose === "worker-startup-ratline-continuation209") {
+  if (purpose === "footprint-held-cache209") {
+    if (heldValidation === null || actorClockSource !== null) { throw error("HELD_CACHE_FACTORY_PROFILE"); }
+    const diagnostic = new CurrentFootprintHeldCacheValidationOwner(child, verify, installation, verifyInstallation, verifyStartupFacade);
+    heldCacheValidationFactories.set(diagnostic, Object.freeze({ allocation: heldValidation, options: sealedOptions, installation }));
+    heldValidation.owner = diagnostic; heldValidation.status = "retained"; owner = diagnostic;
+  } else if (purpose === "worker-startup-ratline-continuation209") {
     if (actorClockSource === null || continuationBudget === null) { throw error("CONTINUATION_ALLOCATION"); }
     owner = new CurrentPcb209RatlineContinuationOwner(child, verify, actorClockSource, continuationBudget, installation, verifyInstallation, verifyStartupFacade);
   } else if (purpose === "worker-startup-ratline209") {
@@ -4061,6 +4731,10 @@ async function startFixedOwner(options: CurrentPcbDiagnosticInstallationOptions,
     if (actorClockSource === null) { throw error("STARTUP209_ACTOR_SOURCE"); }
     owner = new CurrentFootprintMainNativeOwner(child, verify, actorClockSource, installation, verifyInstallation, verifyStartupFacade);
   }
+  else if (purpose === "worker-startup-footprint-held-saved209") {
+    if (actorClockSource === null || savedWriter === undefined) { throw error("HELD_SAVED_FACTORY_PROFILE"); }
+    owner = new CurrentFootprintCopyHeldSavedNativeOwner(child, verify, actorClockSource, installation, verifyInstallation, verifyStartupFacade);
+  }
   else if (purpose === "worker-startup-footprint-saved209") {
     if (actorClockSource === null) { throw error("STARTUP209_ACTOR_SOURCE"); }
     owner = forwardSavedHandoff === null ? new CurrentFootprintCopySavedNativeOwner(child, verify, actorClockSource, installation, verifyInstallation, verifyStartupFacade) :
@@ -4083,10 +4757,13 @@ async function startFixedOwner(options: CurrentPcbDiagnosticInstallationOptions,
   else if (purpose === "visual209") { owner = new CurrentPcb209VisualOwner(child, verify, installation, verifyInstallation); }
   else if (purpose === "diagnostic209") { owner = new CurrentPcb209DiagnosticOwner(child, verify, installation, verifyInstallation); }
   else { owner = new CurrentPcbDiagnosticOwner(child, verify, installation, verifyInstallation); }
-  if (owner instanceof CurrentFootprintCopyNativeOwner || owner instanceof CurrentFootprintCopySavedNativeOwner || owner instanceof CurrentFootprintCopyForwardNativeOwner || owner instanceof CurrentFootprintCopyForwardSavedNativeOwner) {
+  if (owner instanceof CurrentFootprintCopyNativeOwner || owner instanceof CurrentFootprintCopySavedNativeOwner || owner instanceof CurrentFootprintCopyHeldSavedNativeOwner || owner instanceof CurrentFootprintCopyForwardNativeOwner || owner instanceof CurrentFootprintCopyForwardSavedNativeOwner) {
     footprintFactories.set(owner, Object.freeze({ options: sealedOptions, installation }));
   }
-  if (owner instanceof CurrentFootprintCopySavedNativeOwner) {
+  if (owner instanceof CurrentFootprintCopyHeldSavedNativeOwner) {
+    if (savedWriter === undefined) { throw error("HELD_SAVED_WRITER_REQUIRED"); }
+    heldSavedAllocations.set(savedWriter, owner);
+  } else if (owner instanceof CurrentFootprintCopySavedNativeOwner) {
     if (savedWriter === undefined) { throw error("FOOTPRINT_SAVED_WRITER_REQUIRED"); }
     footprintSavedAllocations.set(savedWriter, owner);
   } else if (owner instanceof CurrentFootprintCopyForwardSavedNativeOwner) {

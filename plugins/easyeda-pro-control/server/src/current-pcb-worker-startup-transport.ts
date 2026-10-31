@@ -7,11 +7,12 @@
 import { createHash } from "node:crypto";
 import { types } from "node:util";
 import { bindFootprintPreparationConstructionTransport } from "./current-footprint-copy-construction-purpose.ts";
-import { isOriginalFootprintExecutionDependency, isOriginalFootprintPreparationDependency, isOriginalFootprintSavedDependency,
+import { isOriginalFootprintExecutionDependency, isOriginalFootprintHeldSavedDependency, isOriginalFootprintPreparationDependency, isOriginalFootprintSavedDependency,
   requestCurrentFootprintCopyParent, requestCurrentFootprintCopyTransactionClock, subscribeCurrentFootprintCopyParentEvents } from "./current-pcb-worker-startup-channel.ts";
 import { CURRENT_FOOTPRINT_COPY_PREPARATION_PROFILE } from "./current-footprint-copy-preparation-profile.ts";
 import { CURRENT_FOOTPRINT_COPY_EXECUTION_PROFILE } from "./current-footprint-copy-execution-profile.ts";
 import { CURRENT_FOOTPRINT_COPY_SAVED_PROFILE } from "./current-footprint-copy-saved-profile.ts";
+import { CURRENT_FOOTPRINT_COPY_HELD_SAVED_PROFILE } from "./current-footprint-copy-held-saved-profile.ts";
 import { CurrentFootprintParentConstructionRunner } from "./current-footprint-copy-parent-construction-runner.ts";
 import type { CurrentFootprintParentConstructionHeld, CurrentFootprintParentConstructionTransport } from "./current-footprint-copy-parent-construction-contract.ts";
 import { CURRENT_FOOTPRINT_PARENT_CONSTRUCTION_LIMITS } from "./current-footprint-copy-parent-construction-contract.ts";
@@ -270,21 +271,26 @@ class CurrentPcbWorkerStartupTransportCore<Packet extends ConstructionPacket, Ru
   #events = 0;
   #eventBytes = 0;
   #requests = 0;
+  readonly #heldSaved209: boolean;
+  #heldSavedCleanupRequests = 0;
   readonly #normalRequestLimit: number;
   readonly #requestLimit: number;
   #cleanup: Promise<void> | null = null;
 
   public constructor(internal: typeof INTERNAL_PROFILE, dependency: CurrentPcbWorkerStartupDependency,
     profile: DiagnosticWorkerScriptProfile, createRunner: (transport: CurrentPcbWorkerConstructionTransport) => Runner,
-    bootstrap209 = false, execution209 = false, saved209 = false) {
+    bootstrap209 = false, execution209 = false, saved209 = false, heldSaved209 = false) {
     if (internal !== INTERNAL_PROFILE) { throw failure("INTERNAL_PROFILE"); } this.#createRunner = createRunner;
     this.#originalMembers = members(dependency); this.#dependency = dependency;
     if (execution209 !== isOriginalFootprintExecutionDependency(dependency)) { throw failure("EXECUTION_PURPOSE"); }
     if (saved209 !== isOriginalFootprintSavedDependency(dependency) || execution209 && saved209) { throw failure("SAVED_PURPOSE"); }
+    if (heldSaved209 !== isOriginalFootprintHeldSavedDependency(dependency) || heldSaved209 && (execution209 || saved209)) { throw failure("HELD_SAVED_PURPOSE"); }
     this.#execution209 = execution209;
-    const footprint = bootstrap209 && (isOriginalFootprintPreparationDependency(dependency) || saved209);
+    this.#heldSaved209 = heldSaved209;
+    const footprint = bootstrap209 && (isOriginalFootprintPreparationDependency(dependency) || saved209 || heldSaved209);
     const writerBudget = execution209 ? CURRENT_FOOTPRINT_COPY_EXECUTION_PROFILE : CURRENT_FOOTPRINT_COPY_PREPARATION_PROFILE;
-    const budget = saved209 ? CURRENT_FOOTPRINT_COPY_SAVED_PROFILE : writerBudget;
+    const savedBudget = heldSaved209 ? CURRENT_FOOTPRINT_COPY_HELD_SAVED_PROFILE : CURRENT_FOOTPRINT_COPY_SAVED_PROFILE;
+    const budget = saved209 || heldSaved209 ? savedBudget : writerBudget;
     this.#normalRequestLimit = footprint ? budget.normalRequestLimit : 224;
     this.#requestLimit = footprint ? budget.requestLimit : 256;
     this.#parentSession = sessionToken.parse(dependency.parentSessionId); this.#parentTarget = sessionToken.parse(dependency.parentTargetId);
@@ -460,10 +466,20 @@ class CurrentPcbWorkerStartupTransportCore<Packet extends ConstructionPacket, Ru
     this.#checkWindow();
     if (this.#failure !== null || this.#released) { throw this.#failure ?? failure("OWNER_CHANGED"); }
   }
+  /** The distinct held-saved transport counts an early cleanup separately from
+   * normal commands. Legacy transports retain their original total-ID bound.
+   */
+  #normalRequestLimitReached(): boolean {
+    const normal = this.#heldSaved209 ? this.#requests - this.#heldSavedCleanupRequests : this.#requests;
+    return this.#requests >= this.#requestLimit || normal >= this.#normalRequestLimit;
+  }
   async #request(command: CurrentPcbWorkerStartupCommand, cleanup = false): Promise<unknown> {
     if (!cleanup) { await this.#current(); }
-    if (this.#requests >= (cleanup ? this.#requestLimit : this.#normalRequestLimit)) { this.#poison("REQUEST_BUDGET"); throw failure("REQUEST_BUDGET"); }
+    const exhausted = cleanup ? this.#requests >= this.#requestLimit || this.#heldSaved209 &&
+      this.#heldSavedCleanupRequests >= CURRENT_FOOTPRINT_COPY_HELD_SAVED_PROFILE.cleanupRequestLimit : this.#normalRequestLimitReached();
+    if (exhausted) { this.#poison("REQUEST_BUDGET"); throw failure("REQUEST_BUDGET"); }
     this.#requests += 1;
+    if (this.#heldSaved209 && cleanup) { this.#heldSavedCleanupRequests += 1; }
     const sourceRead = command.method === "Runtime.callFunctionOn" && "objectId" in command.params && command.params.awaitPromise;
     const raw = await bounded(this.#sendOriginal(command), sourceRead ? CURRENT_FOOTPRINT_COPY_SOURCE_READ_LIMITS.hostTimeoutMs : REQUEST_MS);
     // This transport is the earliest strict source-envelope boundary. Retain
@@ -795,7 +811,7 @@ class CurrentPcbWorkerStartupTransportCore<Packet extends ConstructionPacket, Ru
   }
   async #armInstrumentation(worker: Worker): Promise<void> {
     await this.#current();
-    if (this.#requests >= this.#normalRequestLimit) { this.#poison("REQUEST_BUDGET"); throw failure("REQUEST_BUDGET"); }
+    if (this.#normalRequestLimitReached()) { this.#poison("REQUEST_BUDGET"); throw failure("REQUEST_BUDGET"); }
     this.#requests += 1;
     this.#instrumentationUncertain = true;
     const pending = (async (): Promise<void> => {
@@ -817,7 +833,7 @@ class CurrentPcbWorkerStartupTransportCore<Packet extends ConstructionPacket, Ru
   async #constructionRequest(command: CurrentPcbWorkerConstructionCommand, worker: Worker): Promise<unknown> {
     if (command.method === "Debugger.setBreakpoint") {
       await this.#current();
-      if (this.#requests >= this.#normalRequestLimit) { this.#poison("REQUEST_BUDGET"); throw failure("REQUEST_BUDGET"); }
+      if (this.#normalRequestLimitReached()) { this.#poison("REQUEST_BUDGET"); throw failure("REQUEST_BUDGET"); }
       this.#requests += 1;
       // The runner owns this allocation deadline and retains late IDs. An
       // Additional transport timeout would hide its original late reply.
@@ -852,7 +868,7 @@ class CurrentPcbWorkerStartupTransportCore<Packet extends ConstructionPacket, Ru
         qualifyCurrentPcb209PreloadCopyPause(stage.role, script.scriptId, preload.scriptId, paused);
       }
       this.#step = "source-owner-before"; await this.#current();
-      if (this.#requests >= this.#normalRequestLimit) { this.#poison("REQUEST_BUDGET"); throw failure("REQUEST_BUDGET"); }
+      if (this.#normalRequestLimitReached()) { this.#poison("REQUEST_BUDGET"); throw failure("REQUEST_BUDGET"); }
       this.#requests += 1;
       // Source replies exceed the small event capture bound. Qualify the own
       // Data string before any following awaited owner reproof.
@@ -1148,5 +1164,15 @@ export class CurrentFootprintCopySavedWorkerStartupTransport extends CurrentPcbW
     const source = CURRENT_PCB_209_WORKER_STARTUP_SOURCE;
     super(INTERNAL_PROFILE, dependency, { relativePath: source.relativePath, scriptBytes: source.bytes, scriptSha256: source.sha256 },
       transport => new CurrentFootprintCopyConstructionRunner(transport), true, false, true);
+  }
+}
+/** Distinct held-cache saved birth. The original marker and fixed profile
+ * cannot be acquired by an old saved, preparation or execution dependency.
+ */
+export class CurrentFootprintCopyHeldSavedWorkerStartupTransport extends CurrentPcbWorkerStartupTransportCore<CurrentFootprintCopyConstructionPacket, CurrentFootprintCopyConstructionRunner> {
+  public constructor(dependency: CurrentPcbWorkerStartupDependency) {
+    const source = CURRENT_PCB_209_WORKER_STARTUP_SOURCE;
+    super(INTERNAL_PROFILE, dependency, { relativePath: source.relativePath, scriptBytes: source.bytes, scriptSha256: source.sha256 },
+      transport => new CurrentFootprintCopyConstructionRunner(transport), true, false, false, true);
   }
 }

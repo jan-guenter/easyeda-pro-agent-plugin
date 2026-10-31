@@ -96,6 +96,24 @@ const maximumProgramBytes = 65_536;
 function packedStringWorkerPrograms(): ReadonlyMap<string, string> {
   const selected = programs.filter(([, name]) => name.startsWith("StringWorker") && name !== "StringWorkerAssociationExpressionFunction");
   if (selected.length !== 20 || new Set(selected.map(([, name]) => name)).size !== 20) { throw new Error("Fixed worker program roster differs"); }
+  return packedProgramGroup(selected, "StringWorkerProgramTable", stringWorkerTableDecoder());
+}
+
+/** These five fixed Common programs share storage only. The table precedes the
+ * first physical alias; the existing bounded member decoder preserves each
+ * program's original name, UTF-8 length and SHA independently of that storage. */
+function packedCommonPacketPrograms(): ReadonlyMap<string, string> {
+  const names = ["CommonPresentationSeedFunction", "CommonRulesSeedFunction", "CommonPreferenceSeedFunction", "CommonPacketAdvanceFunction", "CommonPacketResultFunction"];
+  const selected = names.map(name => {
+    const program = programs.find(([, candidate]) => candidate === name);
+    if (program === undefined) { throw new Error("Fixed Common packet program roster differs"); } return program;
+  });
+  return packedProgramGroup(selected, "CommonPacketProgramTable", "");
+}
+
+/** Pack one reviewed roster using the unchanged64KiB decoder. No runtime input
+ * can choose a table, program, index, count or decoder capacity. */
+function packedProgramGroup(selected: readonly Program[], tablePrefix: string, decoder: string): ReadonlyMap<string, string> {
   const groups: ProgramGroup[] = [];
   for (const program of selected) {
     const source = program[2];
@@ -109,7 +127,7 @@ function packedStringWorkerPrograms(): ReadonlyMap<string, string> {
   }
   const declarations: string[] = [], output = new Map<string, string>();
   for (const [index, group] of groups.entries()) {
-    const bytes = Buffer.from(group.entries.map(program => program[2]).join("\0")), table = `StringWorkerProgramTable${String(index)}`;
+    const bytes = Buffer.from(group.entries.map(program => program[2]).join("\0")), table = `${tablePrefix}${String(index)}`;
     // oxlint-disable-next-line node/no-sync -- Deterministic compression of one fixed table under the unchanged64KiB native bound.
     const compressed = gzipSync(bytes, { level: 9 });
     if (compressed.length > maximumProgramBytes) { throw new Error("Fixed worker program table exceeds its packed bound"); }
@@ -122,7 +140,7 @@ function packedStringWorkerPrograms(): ReadonlyMap<string, string> {
   }
   const first = selected[0];
   if (first === undefined) { throw new Error("Missing first fixed worker program"); }
-  output.set(first[1], `${stringWorkerTableDecoder()}\n${declarations.join("\n")}\n${output.get(first[1]) ?? ""}`);
+  output.set(first[1], `${decoder.length === 0 ? "" : `${decoder}\n`}${declarations.join("\n")}\n${output.get(first[1]) ?? ""}`);
   return output;
 }
 
@@ -148,7 +166,7 @@ async function main(): Promise<void> {
   const action = process.argv[2];
   if (process.argv.length !== 3 || action !== "--write" && action !== "--check") { throw new Error("Expected --write or --check"); }
   const path = new URL("pcb-diagnostic-owner.ps1", import.meta.url);
-  const grouped = packedStringWorkerPrograms();
+  const grouped = new Map([...packedStringWorkerPrograms(), ...packedCommonPacketPrograms()]);
   const bytes = await readFile(path);
   // Preserve a valid BOM and refuse malformed input before replacing any block.
   const source = new TextDecoder("utf-8", { fatal: true, ignoreBOM: true }).decode(bytes);

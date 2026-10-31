@@ -4,10 +4,11 @@
  * create/Save and writer permits remain outside this class. */
 import { z } from "zod";
 // oxlint-disable-next-line import/no-cycle -- Retain the genuine construction issuer and original startup transport; no initialization work crosses the cycle.
-import { isOriginalFootprintExecutionConstructionTransport, isOriginalFootprintPreparationConstructionTransport, isOriginalFootprintSavedConstructionTransport, originalFootprintExecutionConstructionProjectUuid, requestFootprintExecutionConstructionCache } from "./current-footprint-copy-construction-purpose.ts";
+import { isOriginalFootprintExecutionConstructionTransport, isOriginalFootprintHeldSavedConstructionTransport, isOriginalFootprintPreparationConstructionTransport, isOriginalFootprintSavedConstructionTransport, originalFootprintExecutionConstructionProjectUuid, requestFootprintExecutionConstructionCache } from "./current-footprint-copy-construction-purpose.ts";
 import { CurrentFootprintCopyCacheConstructionRunner } from "./current-footprint-copy-cache-construction-runner.ts";
 import type { CurrentFootprintCopyCacheConstructionObservation, CurrentFootprintCopyCacheConstructionTransport } from "./current-footprint-copy-cache-construction-runner.ts";
 import { CURRENT_FOOTPRINT_COPY_SAVED_PROFILE } from "./current-footprint-copy-saved-profile.ts";
+import { CURRENT_FOOTPRINT_COPY_HELD_SAVED_PROFILE } from "./current-footprint-copy-held-saved-profile.ts";
 import { CURRENT_FOOTPRINT_COPY_PREPARATION_PROFILE } from "./current-footprint-copy-preparation-profile.ts";
 import { CURRENT_FOOTPRINT_COPY_EXECUTION_PROFILE } from "./current-footprint-copy-execution-profile.ts";
 // oxlint-disable-next-line import/no-cycle -- The original clock route and construction issuer share retained transport custody; no module initializer invokes them.
@@ -313,7 +314,9 @@ class CurrentPcbWorkerConstructionCore<P extends PacketProfile> {
   public constructor(internal: typeof INTERNAL_PROFILE, transport: CurrentPcbWorkerConstructionTransport, profile: P,
     sites: typeof CURRENT_PCB_WORKER_CONSTRUCTION_SITES | typeof CURRENT_PCB_209_WORKER_CONSTRUCTION_SITES | typeof CURRENT_FOOTPRINT_COPY_CONSTRUCTION_SITES, decoders: ConstructionDecoders) {
     if (internal !== INTERNAL_PROFILE) { throw fail("INTERNAL_PROFILE"); }
-    if (profile === "private.current-footprint-copy-construction.v1" && isOriginalFootprintSavedConstructionTransport(transport)) {
+    if (profile === "private.current-footprint-copy-construction.v1" && isOriginalFootprintHeldSavedConstructionTransport(transport)) {
+      this.#footprintSampleLimit = CURRENT_FOOTPRINT_COPY_HELD_SAVED_PROFILE.stateSampleLimit;
+    } else if (profile === "private.current-footprint-copy-construction.v1" && isOriginalFootprintSavedConstructionTransport(transport)) {
       this.#footprintSampleLimit = CURRENT_FOOTPRINT_COPY_SAVED_PROFILE.stateSampleLimit;
     } else if (profile === "private.current-footprint-copy-construction.v1" && isOriginalFootprintExecutionConstructionTransport(transport)) {
       this.#footprintSampleLimit = CURRENT_FOOTPRINT_COPY_EXECUTION_PROFILE.stateSampleLimit;

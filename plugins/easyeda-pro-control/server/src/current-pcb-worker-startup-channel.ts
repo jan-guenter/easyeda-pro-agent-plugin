@@ -15,7 +15,7 @@ import { z } from "zod";
 import { decodeCurrentPcbDiagnosticJson } from "./current-pcb-diagnostic-json.ts";
 import { captureCurrentPcbStringClockReply } from "./current-pcb-string-clock-reply.ts";
 import { CURRENT_FOOTPRINT_COPY_SOURCE_FRAME_BYTES } from "./current-footprint-copy-source-command.ts";
-import { CURRENT_PCB_WORKER_STARTUP_REQUEST_LIMIT, currentFootprintCombinedStartupWire, currentFootprintCopyExecutionStartupWire, currentFootprintCopyForwardStartupWire, currentFootprintCopyPreparationWire, currentFootprintCopySavedStartupWire,
+import { CURRENT_PCB_WORKER_STARTUP_REQUEST_LIMIT, currentFootprintCombinedStartupWire, currentFootprintCopyExecutionStartupWire, currentFootprintCopyForwardStartupWire, currentFootprintCopyHeldSavedStartupWire, currentFootprintCopyPreparationWire, currentFootprintCopySavedStartupWire,
   currentPcb209WorkerStartupWire, currentPcbWorkerStartupWire } from "./current-pcb-worker-startup-wire.ts";
 import { currentFootprintCopyManagerRouteWire } from "./current-footprint-copy-manager-route-wire.ts";
 import type { CurrentFootprintCopyManagerRouteCommand } from "./current-footprint-copy-manager-route-command.ts";
@@ -29,6 +29,12 @@ import { CURRENT_FOOTPRINT_COPY_EXECUTION_PROFILE } from "./current-footprint-co
 import { CURRENT_FOOTPRINT_COMBINED_RENDERER_PROFILE } from "./current-footprint-copy-combined-profile.ts";
 import { CURRENT_FOOTPRINT_COPY_FORWARD_RENDERER_PROFILE } from "./current-footprint-copy-forward-profile.ts";
 import { CURRENT_FOOTPRINT_COPY_SAVED_PROFILE } from "./current-footprint-copy-saved-profile.ts";
+import { CURRENT_FOOTPRINT_COPY_HELD_SAVED_PROFILE } from "./current-footprint-copy-held-saved-profile.ts";
+import { CURRENT_FOOTPRINT_COPY_HELD_SAVED_CAPACITY } from "./current-footprint-copy-held-saved-capacity.ts";
+import { CURRENT_FOOTPRINT_SAVED_CACHE_HELD_LIMITS } from "./current-footprint-saved-cache-held-profile.ts";
+import type { CurrentFootprintSavedCacheHeldCommand } from "./current-footprint-saved-cache-held-protocol.ts";
+import { currentFootprintSavedCacheHeldWire } from "./current-footprint-saved-cache-held-wire.ts";
+import { freezeDeep } from "./sqlite-inventory-core.ts";
 import { currentFootprintCopySavedQueueWire } from "./current-footprint-copy-saved-queue-wire.ts";
 import type { CurrentFootprintCopySavedQueueChannelCommand } from "./current-footprint-copy-saved-queue-wire.ts";
 import type { CurrentFootprintCopySavedQueueCommand } from "./current-footprint-copy-saved-queue.ts";
@@ -76,15 +82,26 @@ export interface CurrentPcbWorkerStartupPriorUsage {
   readonly eventCount: number;
   readonly eventBytes: number;
 }
+/** The actual owner selects this realm and target from its original UI source
+ * and closed snapshot. Matching constructor data grants no native authority. */
+export interface CurrentFootprintCopyHeldSavedChannelBinding {
+  readonly sessionId: string;
+  readonly uniqueContextId: string;
+  readonly projectUuid: string;
+  readonly branchUuid: string;
+}
 const INTERNAL_PROFILE = Symbol("fixed-worker-startup-channel-wire");
 const footprintDependencies = new WeakSet<CurrentPcbWorkerStartupDependency>();
 const savedDependencies = new WeakSet<CurrentPcbWorkerStartupDependency>();
+const heldSavedDependencies = new WeakSet<CurrentPcbWorkerStartupDependency>();
 const executionDependencies = new WeakMap<CurrentPcbWorkerStartupDependency, CurrentPcbWorkerStartupChannelCore>();
 /** This marker is issued only by the separate channel, never by receipt data. */
 export function isOriginalFootprintPreparationDependency(dependency: CurrentPcbWorkerStartupDependency): boolean {
   return footprintDependencies.has(dependency);
 }
 export function isOriginalFootprintSavedDependency(dependency: CurrentPcbWorkerStartupDependency): boolean { return savedDependencies.has(dependency); }
+/** This separate marker never confers the legacy saved, preparation or writer purpose. */
+export function isOriginalFootprintHeldSavedDependency(dependency: CurrentPcbWorkerStartupDependency): boolean { return heldSavedDependencies.has(dependency); }
 export { isOriginalFootprintExecutionDependency } from "./current-footprint-copy-execution-purpose.ts";
 export function requestCurrentFootprintCopyTransactionClock(dependency: CurrentPcbWorkerStartupDependency,
   command: CurrentFootprintCopyTransactionClockCommand & Readonly<{ sessionId: string }>): Promise<unknown> {
@@ -118,6 +135,11 @@ export function subscribeCurrentFootprintCopyParentEvents(dependency: CurrentPcb
 const token = z.string().min(1).max(128).regex(/^[A-Za-z\d_.:-]+$/u);
 const parentSchema = z.object({ targetId: token, sessionId: token,
   nextRequestId: z.number().int().min(1).max(CURRENT_PCB_WORKER_STARTUP_REQUEST_LIMIT) }).strict();
+const heldSavedToken = z.string().regex(/^[A-Za-z\d_.:-]{1,128}(?![\s\S])/u);
+const heldSavedBindingSchema = z.object({ sessionId: heldSavedToken, uniqueContextId: heldSavedToken,
+  projectUuid: z.string().regex(/^[a-f\d]{64}(?![\s\S])/u), branchUuid: z.string().regex(/^[a-f\d]{32}(?![\s\S])/u) }).strict();
+const heldSavedSequence = ["capture", "array-properties", "constructor-properties", "match-properties", "getter-properties", "recheck-before-getter",
+  "retain-receiver", "queue-first", "recheck-first", "queue-fresh", "recheck-fresh"] as const;
 const ackSchema = z.object({ written: z.literal(true) }).strict();
 const MAX_BYTES = STREAM.receivedBytes, MAX_EVENTS = STREAM.eventCount, MAX_EVENT_BYTES = STREAM.eventBytes;
 const MAX_FRAME = STREAM.frameBytes, SOURCE_FRAME = STREAM.sourceFrameBytes;
@@ -126,7 +148,7 @@ const MAX_DATA_POLLS = STREAM.dataPolls, MAX_IDLE_POLLS = STREAM.idlePolls, MAX_
 const monotonicNow = process.hrtime.bigint.bind(process.hrtime);
 const failureCodes = new WeakMap<Error, string>();
 type ClockCommand = CurrentFootprintCopyTransactionClockCommand & Readonly<{ sessionId: string }>;
-type ChannelCommand = CurrentPcbWorkerStartupCommand | CurrentFootprintCopyUiCommand | CurrentFootprintCopyManagerRouteCommand | CurrentFootprintCopyClockRegistrationCommand | ClockCommand | CurrentFootprintParentCommand | CurrentFootprintCopySavedQueueChannelCommand | CurrentFootprintCacheConstructionChannelCommand;
+type ChannelCommand = CurrentPcbWorkerStartupCommand | CurrentFootprintCopyUiCommand | CurrentFootprintCopyManagerRouteCommand | CurrentFootprintCopyClockRegistrationCommand | ClockCommand | CurrentFootprintParentCommand | CurrentFootprintCopySavedQueueChannelCommand | CurrentFootprintCacheConstructionChannelCommand | CurrentFootprintSavedCacheHeldCommand;
 function clockWire(raw: unknown, id: number): ReturnType<typeof currentFootprintCopyTransactionClockWire> {
   const captured = captureCurrentPcbStringClockReply(raw).value;
   if (!record(captured) || !exact(captured, ["method", "params", "sessionId"]) || typeof captured["sessionId"] !== "string") { throw fail("FOOTPRINT_CLOCK_COMMAND"); }
@@ -134,8 +156,13 @@ function clockWire(raw: unknown, id: number): ReturnType<typeof currentFootprint
   return currentFootprintCopyTransactionClockWire(command, id, sessionId);
 }
 type PendingCommand = ChannelCommand | CurrentFootprintCopyClockRpcCommand | CurrentFootprintCopyNativeCreateCommand;
-function replyFrameLimit(command: PendingCommand, nativeCreate = false): number {
+type FootprintProfile = typeof CURRENT_FOOTPRINT_COPY_PREPARATION_PROFILE | typeof CURRENT_FOOTPRINT_COPY_EXECUTION_PROFILE | typeof CURRENT_FOOTPRINT_COPY_SAVED_PROFILE | typeof CURRENT_FOOTPRINT_COMBINED_RENDERER_PROFILE | typeof CURRENT_FOOTPRINT_COPY_FORWARD_RENDERER_PROFILE | typeof CURRENT_FOOTPRINT_COPY_HELD_SAVED_PROFILE;
+function replyFrameLimit(command: PendingCommand, nativeCreate = false, heldSavedCleanup = false): number {
+  if (heldSavedCleanup) { return CURRENT_FOOTPRINT_COPY_HELD_SAVED_CAPACITY.renderer.cleanupReplyFrameBytes; }
   if (nativeCreate) { return CURRENT_FOOTPRINT_COPY_NATIVE_CREATE_LIMITS.responseFrameBytes; }
+  // The leaf's limit covers its result object. The fixed CDP envelope adds a
+  // Bounded positive int32 ID, original session token and framing keys.
+  if ("heldCachePhase" in command) { return CURRENT_FOOTPRINT_SAVED_CACHE_HELD_LIMITS.replyBytes + 256; }
   if ("phase" in command && typeof command.phase === "string" && command.phase.startsWith("allocation-")) { return 65_536; }
   if (command.method === "Debugger.getScriptSource") { return SOURCE_FRAME; }
   return command.method === "Runtime.callFunctionOn" && "objectId" in command.params && command.params.awaitPromise === true ?
@@ -145,6 +172,7 @@ interface Pending {
   readonly id: number;
   readonly command: PendingCommand;
   readonly nativeCreate?: true;
+  readonly heldSavedCleanup?: true;
   rawFrame?: string;
   readonly commandSha256?: string;
   readonly completion: PromiseWithResolvers<unknown>;
@@ -252,7 +280,8 @@ class CurrentPcbWorkerStartupChannelCore {
   readonly #forwardEventBytes: ((bytes: number) => void) | null;
   readonly #forwardSavedObservation: boolean;
   readonly #savedPurpose: boolean;
-  readonly #footprintProfile: typeof CURRENT_FOOTPRINT_COPY_PREPARATION_PROFILE | typeof CURRENT_FOOTPRINT_COPY_EXECUTION_PROFILE | typeof CURRENT_FOOTPRINT_COPY_SAVED_PROFILE | typeof CURRENT_FOOTPRINT_COMBINED_RENDERER_PROFILE | typeof CURRENT_FOOTPRINT_COPY_FORWARD_RENDERER_PROFILE;
+  readonly #heldSavedBinding: CurrentFootprintCopyHeldSavedChannelBinding | null;
+  readonly #footprintProfile: FootprintProfile;
   readonly #requestLimit: number;
   readonly #native: CurrentPcbWorkerStartupNativeDependency;
   readonly #members: readonly unknown[];
@@ -294,6 +323,12 @@ class CurrentPcbWorkerStartupChannelCore {
   #savedQueueReads = 0;
   #savedQueueContext: string | null = null;
   #savedQueueScope: string | null = null;
+  #heldSavedNormal = 0;
+  #heldSavedCleanup = 0;
+  #heldCacheStep = 0;
+  #heldCacheTuple: string | null = null;
+  #heldCacheReleaseAttempted = false;
+  #heldCacheReleased = false;
   #footprintUiStarted = false;
   #footprintUiReleased = false;
   #footprintManagerStarted = false;
@@ -329,21 +364,25 @@ class CurrentPcbWorkerStartupChannelCore {
 
   public constructor(internal: typeof INTERNAL_PROFILE, native: CurrentPcbWorkerStartupNativeDependency,
     wire: typeof currentPcbWorkerStartupWire, priorUsage?: CurrentPcbWorkerStartupPriorUsage, createClockPurpose = false, allocationPurpose = false,
-    forwardEventBytes: ((bytes: number) => void) | null = null, accountedSavedPurpose = false) {
+    forwardEventBytes: ((bytes: number) => void) | null = null, accountedSavedPurpose = false,
+    heldSavedBinding: CurrentFootprintCopyHeldSavedChannelBinding | null = null) {
     if (internal !== INTERNAL_PROFILE) { throw fail("INTERNAL_PROFILE"); } this.#wire = wire; this.#createClockPurpose = createClockPurpose; this.#allocationPurpose = allocationPurpose;
     if (typeof accountedSavedPurpose !== "boolean" || accountedSavedPurpose && wire !== currentFootprintCopySavedStartupWire ||
-        (wire === currentFootprintCopyForwardStartupWire || accountedSavedPurpose) !== (forwardEventBytes !== null) ||
+        (wire === currentFootprintCopyForwardStartupWire || accountedSavedPurpose || wire === currentFootprintCopyHeldSavedStartupWire) !== (forwardEventBytes !== null) ||
         forwardEventBytes !== null && typeof forwardEventBytes !== "function") { throw fail("FORWARD_ACCOUNTING"); }
     this.#forwardEventBytes = forwardEventBytes; this.#forwardSavedObservation = accountedSavedPurpose;
+    if ((wire === currentFootprintCopyHeldSavedStartupWire) !== (heldSavedBinding !== null)) { throw fail("HELD_SAVED_BINDING"); }
+    this.#heldSavedBinding = heldSavedBinding === null ? null : freezeDeep(heldSavedBindingSchema.parse(captureCurrentPcbStringClockReply(heldSavedBinding).value));
     if (allocationPurpose && !createClockPurpose) { throw fail("FOOTPRINT_ALLOCATION_PURPOSE"); }
     this.#executionPurpose = wire === currentFootprintCopyExecutionStartupWire || wire === currentFootprintCombinedStartupWire || wire === currentFootprintCopyForwardStartupWire;
-    this.#savedPurpose = wire === currentFootprintCopySavedStartupWire;
+    this.#savedPurpose = wire === currentFootprintCopySavedStartupWire || wire === currentFootprintCopyHeldSavedStartupWire;
     this.#footprintPurpose = this.#executionPurpose || this.#savedPurpose || wire === currentFootprintCopyPreparationWire;
     const writerProfile = this.#executionPurpose ? CURRENT_FOOTPRINT_COPY_EXECUTION_PROFILE : CURRENT_FOOTPRINT_COPY_PREPARATION_PROFILE;
-    let footprintProfile: typeof CURRENT_FOOTPRINT_COPY_PREPARATION_PROFILE | typeof CURRENT_FOOTPRINT_COPY_EXECUTION_PROFILE | typeof CURRENT_FOOTPRINT_COPY_SAVED_PROFILE | typeof CURRENT_FOOTPRINT_COMBINED_RENDERER_PROFILE | typeof CURRENT_FOOTPRINT_COPY_FORWARD_RENDERER_PROFILE = writerProfile;
+    let footprintProfile: FootprintProfile = writerProfile;
     if (this.#savedPurpose) { footprintProfile = CURRENT_FOOTPRINT_COPY_SAVED_PROFILE; }
     if (wire === currentFootprintCombinedStartupWire) { footprintProfile = CURRENT_FOOTPRINT_COMBINED_RENDERER_PROFILE; }
     if (wire === currentFootprintCopyForwardStartupWire) { footprintProfile = CURRENT_FOOTPRINT_COPY_FORWARD_RENDERER_PROFILE; }
+    if (wire === currentFootprintCopyHeldSavedStartupWire) { footprintProfile = CURRENT_FOOTPRINT_COPY_HELD_SAVED_PROFILE; }
     this.#footprintProfile = footprintProfile;
     this.#requestLimit = this.#footprintPurpose ? this.#footprintProfile.requestLimit : CURRENT_PCB_WORKER_STARTUP_REQUEST_LIMIT;
     this.#members = members(native); this.#native = native;
@@ -359,11 +398,15 @@ class CurrentPcbWorkerStartupChannelCore {
   public status(): Readonly<{ started: boolean; released: boolean; failed: boolean; fatal: boolean;
     pendingReplies: number; nextRequestId: number; receivedBytes: number; pollCount: number; attachedWorkers: number;
     dataPollCount: number; waitingPollCount: number; idlePollCount: number; failureCode: string | null;
+    heldSaved?: Readonly<{ normalRequests: number; cleanupRequests: number; heldNormalPhases: number; releaseAttempted: boolean; released: boolean }>;
     exchangeFailure?: Readonly<{ requestId: number; method: string; nativeCode: string | null; kind: "native-refusal" | "unrecognized-exchange-failure" }> }> {
     return Object.freeze({ started: this.#started, released: this.#released, failed: this.#failure !== null, fatal: this.#fatal,
       pendingReplies: this.#pending.size, nextRequestId: this.#nextId, receivedBytes: this.#bytes,
       pollCount: this.#polls, attachedWorkers: this.#workers.size, dataPollCount: this.#dataPolls,
       waitingPollCount: this.#waitPolls, idlePollCount: this.#idlePolls, failureCode: this.#failureCode,
+      ...(this.#heldSavedBinding === null ? {} : { heldSaved: Object.freeze({ normalRequests: this.#heldSavedNormal,
+        cleanupRequests: this.#heldSavedCleanup, heldNormalPhases: this.#heldCacheStep,
+        releaseAttempted: this.#heldCacheReleaseAttempted, released: this.#heldCacheReleased }) }),
       ...(this.#exchangeFailure === null ? {} : { exchangeFailure: this.#exchangeFailure }) });
   }
   public classifyForwardRequest(id: number): boolean {
@@ -413,6 +456,10 @@ class CurrentPcbWorkerStartupChannelCore {
       if (!record(original) || types.isProxy(original) || !Object.isFrozen(original)) { throw fail("PARENT"); }
       const parent = (this.#footprintPurpose ? parentSchema.extend({ nextRequestId: z.number().int().min(1).max(this.#requestLimit) }) : parentSchema)
         .parse(captureCurrentPcbStringClockReply(original).value);
+      if (this.#heldSavedBinding !== null) {
+        if (parent.sessionId !== this.#heldSavedBinding.sessionId || parent.nextRequestId - 1 > CURRENT_FOOTPRINT_COPY_HELD_SAVED_PROFILE.normalRequestLimit) { throw fail("HELD_SAVED_PARENT"); }
+        this.#heldSavedNormal = parent.nextRequestId - 1;
+      }
       if (this.#released || this.#releaseRequested || this.#terminationVerified) { throw fail("START_CLOSING"); }
       this.#parent = original; this.#nextId = parent.nextRequestId;
     });
@@ -429,7 +476,8 @@ class CurrentPcbWorkerStartupChannelCore {
       },
     });
     if (this.#footprintPurpose && !this.#savedPurpose) { footprintDependencies.add(dependency); }
-    if (this.#savedPurpose && !this.#forwardSavedObservation) { savedDependencies.add(dependency); }
+    if (this.#savedPurpose && !this.#forwardSavedObservation && this.#heldSavedBinding === null) { savedDependencies.add(dependency); }
+    if (this.#heldSavedBinding !== null) { heldSavedDependencies.add(dependency); }
     if (this.#executionPurpose) { markCurrentFootprintExecutionDependency(dependency); executionDependencies.set(dependency, this); }
     return dependency;
   }
@@ -450,8 +498,23 @@ class CurrentPcbWorkerStartupChannelCore {
     const next = (async (): Promise<void> => { await previous; await work(); })();
     this.#tail = observe(next); return next;
   }
+  /** Keep the fixed leaf on the original realm, target and single held tuple.
+   * Metadata handles have their own roles; they cannot replace the tuple used
+   * by rechecks/getter/namespace observations. Attempts consume at dispatch. */
+  #attributeHeld(command: CurrentFootprintSavedCacheHeldCommand): void {
+    const binding = this.#heldSavedBinding, phase = command.heldCachePhase;
+    if (binding === null || command.sessionId !== binding.sessionId || this.#openingConsumed ||
+        this.#heldCacheReleaseAttempted || (phase === "release" ? this.#heldCacheStep === 0 : heldSavedSequence[this.#heldCacheStep] !== phase)) { throw fail("HELD_CACHE_SEQUENCE"); }
+    if (phase === "capture") {
+      if (command.params.uniqueContextId !== binding.uniqueContextId) { throw fail("HELD_CACHE_CONTEXT"); }
+    } else if (phase !== "release" && !["array-properties", "constructor-properties", "match-properties", "getter-properties"].includes(phase) &&
+        command.params.objectId !== this.#heldCacheTuple) { throw fail("HELD_CACHE_TUPLE"); }
+    if ((phase === "queue-first" || phase === "queue-fresh") &&
+        (command.params.arguments[0].value !== binding.projectUuid || command.params.arguments[1].value !== binding.branchUuid)) { throw fail("HELD_CACHE_TARGET"); }
+  }
   #attributed(command: ChannelCommand, manager = false, clock = false, parentKind?: CurrentFootprintParentCommandKind, registration = false): void {
     if (this.#parent === null || this.#released || this.#releaseRequested || this.#terminationVerified) { throw fail("NOT_STARTED"); }
+    if ("heldCachePhase" in command) { this.#attributeHeld(command); return; }
     if (this.#forwardSavedObservation && (command.method === "Target.setAutoAttach" ||
         !("phase" in command) && command.method === "Runtime.callFunctionOn" && "uniqueContextId" in command.params && command.params.arguments.length > 0 ||
         "phase" in command && command.phase === "saved-upload-queue" && this.#savedQueueReads > 0)) {
@@ -476,7 +539,7 @@ class CurrentPcbWorkerStartupChannelCore {
     }
     if ("phase" in command && command.phase === "saved-upload-queue") {
       const scope = JSON.stringify(command.params.arguments.map(argument => argument.value));
-      if (!this.#savedPurpose || command.sessionId !== this.#parent.sessionId || this.#openingConsumed || this.#savedQueueReads >= 2 ||
+      if (!this.#savedPurpose || this.#heldSavedBinding !== null || command.sessionId !== this.#parent.sessionId || this.#openingConsumed || this.#savedQueueReads >= 2 ||
         this.#savedQueueContext !== null && this.#savedQueueContext !== command.params.uniqueContextId ||
         this.#savedQueueScope !== null && this.#savedQueueScope !== scope) { throw fail("SAVED_QUEUE_OWNER"); }
       return;
@@ -532,9 +595,13 @@ class CurrentPcbWorkerStartupChannelCore {
         const phase = command.params.arguments[1].value;
         if (this.#savedPurpose) {
           const target = command.params.arguments[0].value;
-          if (this.#savedQueueReads < 1 || this.#savedQueueContext !== command.params.uniqueContextId ||
+          const binding = this.#heldSavedBinding;
+          if (binding === null ? this.#savedQueueReads < 1 || this.#savedQueueContext !== command.params.uniqueContextId ||
             this.#savedQueueScope !== JSON.stringify([target.projectUuid, target.branchUuid]) ||
-            phase === "open-project" && this.#savedQueueReads !== 2) { throw fail("SAVED_REPLAY_BRACKETS"); }
+            phase === "open-project" && this.#savedQueueReads !== 2 :
+            command.params.uniqueContextId !== binding.uniqueContextId || target.projectUuid !== binding.projectUuid ||
+            target.branchUuid !== binding.branchUuid || this.#heldCacheStep < 9 ||
+            (phase === "preflight" ? this.#heldCacheReleaseAttempted : this.#heldCacheStep !== heldSavedSequence.length || !this.#heldCacheReleased)) { throw fail("SAVED_REPLAY_BRACKETS"); }
         }
         if (command.params.functionDeclaration === CURRENT_PCB_DIAGNOSTIC_PCB_OPENING_FUNCTION) {
           if (!this.#openingConsumed || this.#openingIdentity !== identity ||
@@ -554,7 +621,7 @@ class CurrentPcbWorkerStartupChannelCore {
         (!this.#openingConsumed || this.#executionWorkerSession !== null)) { throw fail("EXECUTION_WORKER_RUNTIME"); }
   }
   // oxlint-disable-next-line eslint/require-await -- Return the original retained completion, with synchronous guards converted to rejection.
-  async #request(raw: ChannelCommand, manager = false, clock = false, parentKind?: CurrentFootprintParentCommandKind, registration = false): Promise<unknown> {
+  async #request(raw: ChannelCommand, manager = false, clock = false, parentKind?: CurrentFootprintParentCommandKind, registration = false, heldCache = false): Promise<unknown> {
     if (this.#clockRpcHandoffPending || this.#clockRpc !== null && (!this.#clockRpc.retired || this.#clockRpc.create !== null)) { throw fail("FOOTPRINT_RPC_EXCLUSIVE"); }
     // Select the fixed grammar only after rejecting prototype/proxy traps.
     if (!record(raw) || types.isProxy(raw) ||
@@ -563,6 +630,10 @@ class CurrentPcbWorkerStartupChannelCore {
       Object.getOwnPropertyDescriptor(raw, "phase")?.value !== "saved-upload-queue")) { throw fail("FOOTPRINT_UI_PURPOSE"); }
     const copyWire = manager ? currentFootprintCopyManagerRouteWire : currentFootprintCopyUiWire;
     const encode = (value: ChannelCommand, id: number): Readonly<{ command: ChannelCommand & Readonly<{ id: number }>; request: Readonly<Record<string, string | number>> }> => {
+      if (heldCache) {
+        if (this.#heldSavedBinding === null) { throw fail("HELD_CACHE_PURPOSE"); }
+        return currentFootprintSavedCacheHeldWire(value, id);
+      }
       if (registration) { if (this.#parent === null) { throw fail("NOT_STARTED"); } return currentFootprintCopyClockRegistrationWire(value, id, this.#parent.sessionId); }
       if (Object.getOwnPropertyDescriptor(value, "phase")?.value === "saved-upload-queue") { return currentFootprintCopySavedQueueWire(value, id); }
       if (Object.getOwnPropertyDescriptor(value, "phase")?.value === "cache-construction") { return currentFootprintCacheConstructionWire(value, id); }
@@ -587,12 +658,22 @@ class CurrentPcbWorkerStartupChannelCore {
         if (!cleanupCommand(command)) { await this.#currentWithinQueue(); }
         this.#attributed(command, manager, clock, parentKind, registration);
         this.#withinLifetime(cleanupCommand(command));
-        const limit = this.#footprintPurpose && !cleanupCommand(command) ? this.#footprintProfile.normalRequestLimit : this.#requestLimit;
+        const cleanup = cleanupCommand(command);
+        const limit = this.#heldSavedBinding === null && this.#footprintPurpose && !cleanup ? this.#footprintProfile.normalRequestLimit : this.#requestLimit;
         if (this.#fatal || this.#released || this.#nextId > limit) { throw fail("REQUEST_BUDGET"); }
+        if (this.#heldSavedBinding !== null && (cleanup ? this.#heldSavedCleanup >= CURRENT_FOOTPRINT_COPY_HELD_SAVED_PROFILE.cleanupRequestLimit :
+          this.#heldSavedNormal >= CURRENT_FOOTPRINT_COPY_HELD_SAVED_PROFILE.normalRequestLimit)) { throw fail("HELD_SAVED_REQUEST_CLASS"); }
         const wire = encode(command, this.#nextId); this.#nextId += 1;
+        if (this.#heldSavedBinding !== null) { if (cleanup) { this.#heldSavedCleanup += 1; } else { this.#heldSavedNormal += 1; } }
+        if ("heldCachePhase" in command) {
+          if (command.heldCachePhase === "release") { this.#heldCacheReleaseAttempted = true; }
+          else { this.#heldCacheStep += 1; }
+          if (command.heldCachePhase === "array-properties") { this.#heldCacheTuple = command.params.objectId; }
+        }
         if (this.#executionPurpose && command.method === "Runtime.enable") { this.#executionWorkerSession = command.sessionId ?? null; }
         if (clock) { this.#footprintClockSession ??= command.sessionId ?? null; this.#footprintClockRequests += 1; }
         pending = { id: wire.command.id, command, completion,
+          ...(this.#heldSavedBinding !== null && cleanup ? { heldSavedCleanup: true as const } : {}),
           allocation: command.method === "Debugger.setBreakpoint" || command.method === "Debugger.setInstrumentationBreakpoint",
           written: false, writeFailed: false, replied: false, result: null, remoteError: false, settled: false };
         this.#pending.set(pending.id, pending);
@@ -619,7 +700,7 @@ class CurrentPcbWorkerStartupChannelCore {
           if (command.phase === "initial") { this.#footprintUiStarted = true; }
           if (command.phase === "release") { this.#footprintUiReleased = true; }
         }
-        if (!clock && parentKind === undefined && !("phase" in command) && command.method === "Runtime.callFunctionOn" && "uniqueContextId" in command.params) {
+        if (!clock && parentKind === undefined && !("phase" in command) && !("heldCachePhase" in command) && command.method === "Runtime.callFunctionOn" && "uniqueContextId" in command.params) {
           if (command.params.arguments.length === 0) { this.#actorReads += 1; }
           else if (command.params.functionDeclaration === CURRENT_PCB_DIAGNOSTIC_PCB_OPENING_FUNCTION) {
             if (command.params.arguments[1].value === "preflight") { this.#pcbPreflightConsumed = true; }
@@ -663,13 +744,22 @@ class CurrentPcbWorkerStartupChannelCore {
     return this.#request(command, false, false, undefined, true);
   }
   public requestFootprintSavedUploadQueue(command: CurrentFootprintCopySavedQueueCommand): Promise<unknown> {
-    if (!this.#savedPurpose) { return Promise.reject(fail("SAVED_QUEUE_PURPOSE")); }
+    if (!this.#savedPurpose || this.#heldSavedBinding !== null) { return Promise.reject(fail("SAVED_QUEUE_PURPOSE")); }
     try {
       const captured = captureCurrentPcbStringClockReply(command).value;
       if (!record(captured)) { return Promise.reject(fail("SAVED_QUEUE_COMMAND")); }
       const parsed = currentFootprintCopySavedQueueWire({ ...captured, phase: "saved-upload-queue" }, 1);
       const { id: _id, ...original } = parsed.command; return this.#request(original);
     } catch (error) { return Promise.reject(error instanceof Error ? error : fail("SAVED_QUEUE_COMMAND")); }
+  }
+  /** Only the separately born held-saved purpose reaches this fixed codec.
+   * Cleanup shares the global counter and retains its consumed attempt. */
+  public async requestFootprintHeldSavedCache(command: CurrentFootprintSavedCacheHeldCommand): Promise<unknown> {
+    if (this.#heldSavedBinding === null) { throw fail("HELD_CACHE_PURPOSE"); }
+    const { id: _id, ...fixed } = currentFootprintSavedCacheHeldWire(command, 1).command;
+    const reply = await this.#request(fixed, false, false, undefined, false, true);
+    if (fixed.heldCachePhase === "release") { z.object({}).strict().parse(captureCurrentPcbStringClockReply(reply).value); this.#heldCacheReleased = true; }
+    return reply;
   }
   public requestFootprintCacheConstruction(command: CurrentFootprintCacheConstructionCommand): Promise<unknown> {
     if (!this.#executionPurpose || this.#executionWorkerSession === null) { return Promise.reject(fail("FOOTPRINT_CACHE_PURPOSE")); }
@@ -1059,7 +1149,7 @@ class CurrentPcbWorkerStartupChannelCore {
       const zero = bytes.indexOf(0, start);
       const end = zero === -1 ? bytes.length : zero;
       const required = this.#used + end - start;
-      const limit = Math.max(MAX_FRAME, ...[...this.#pending.values()].map(pending => replyFrameLimit(pending.command, pending.nativeCreate === true)));
+      const limit = Math.max(MAX_FRAME, ...[...this.#pending.values()].map(pending => replyFrameLimit(pending.command, pending.nativeCreate === true, pending.heldSavedCleanup === true)));
       if (required > limit) { throw fail("FRAME_BUDGET"); }
       if (required > this.#buffer.length) {
         const replacement = Buffer.alloc(Math.min(limit, Math.max(required, this.#buffer.length * 2)));
@@ -1095,7 +1185,7 @@ class CurrentPcbWorkerStartupChannelCore {
     const sessionKeys = pending?.command.sessionId === undefined ? [] : ["sessionId"];
     if (pending === undefined || pending.replied || value["sessionId"] !== pending.command.sessionId ||
         !exact(value, ["id", ...sessionKeys, Object.hasOwn(value, "result") ? "result" : "error"]) ||
-        !record(value["result"] ?? value["error"]) || bytes.length > replyFrameLimit(pending.command, pending.nativeCreate === true)) {
+        !record(value["result"] ?? value["error"]) || bytes.length > replyFrameLimit(pending.command, pending.nativeCreate === true, pending.heldSavedCleanup === true)) {
       throw fail("REPLY");
     }
     // Preserve the exact original frame before any semantic create decoder or
@@ -1245,6 +1335,14 @@ export class CurrentFootprintCopyAllocatedCreateClockStartupChannel extends Curr
 export class CurrentFootprintCopySavedChannel extends CurrentPcbWorkerStartupChannelCore {
   public constructor(native: CurrentPcbWorkerStartupNativeDependency, priorUsage?: CurrentPcbWorkerStartupPriorUsage) {
     super(INTERNAL_PROFILE, native, currentFootprintCopySavedStartupWire, priorUsage);
+  }
+}
+/** Separately marked held-saved birth. The owner supplies its original sealed
+ * realm/target and charges actual sends, polls/events and retained bytes. */
+export class CurrentFootprintCopyHeldSavedStartupChannel extends CurrentPcbWorkerStartupChannelCore {
+  public constructor(native: CurrentPcbWorkerStartupNativeDependency, binding: CurrentFootprintCopyHeldSavedChannelBinding,
+    observeEventBytes: (bytes: number) => void, priorUsage?: CurrentPcbWorkerStartupPriorUsage) {
+    super(INTERNAL_PROFILE, native, currentFootprintCopyHeldSavedStartupWire, priorUsage, false, false, observeEventBytes, false, binding);
   }
 }
 /** Distinct accounted saved birth. Its fixed wire and353-request ceiling are
