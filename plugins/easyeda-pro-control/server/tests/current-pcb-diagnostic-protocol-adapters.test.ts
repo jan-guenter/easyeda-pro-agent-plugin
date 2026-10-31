@@ -17,6 +17,9 @@ import { readPackedNativeProgram } from "./helpers/native-packed-program.ts";
 
 type Row = Record<string, unknown>;
 function wire(value: unknown): Buffer { return Buffer.from(`${JSON.stringify(value)}\0`); }
+/** Build schema-valid target data whose project ID hashes the exact supplied
+ * path. The document, branch and source digest are synthetic; acceptance does
+ * not read a file, establish checkpoint membership or authorize navigation. */
 function target(rawWindowsPath = String.raw`C:\validation\disposable.eprj2`): ReturnType<typeof currentDisposableOpenSealedTargetSchema.parse> {
   return currentDisposableOpenSealedTargetSchema.parse({
     rawWindowsPath, projectUuid: createHash("sha256").update(rawWindowsPath).digest("hex"),
@@ -27,6 +30,9 @@ const effects = { throwOnSideEffect: true, silent: true, awaitPromise: false, ge
 function properties(objectId: string): Row {
   return { method: "Runtime.getProperties", params: { objectId, ownProperties: true, accessorPropertiesOnly: false, generatePreview: false } };
 }
+/** Assemble the eleven fixed model phases with increasing physical IDs and
+ * distinct receiver-role placeholders. Mutation cases serialize these packets
+ * through the real adapter; the fixtures issue no live handle or owner proof. */
 function modelCommands(): readonly Row[] {
   const commands = [
     { method: "Runtime.evaluate", params: { ...effects, expression: CURRENT_PCB_DIAGNOSTIC_MODEL_CALLBACK_EXPRESSION,

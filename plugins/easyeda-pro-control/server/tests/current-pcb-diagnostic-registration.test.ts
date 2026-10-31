@@ -33,6 +33,8 @@ void test(`public ${stringPurpose ? "String precreate" : "diagnostic"} registrat
   let pendingAdmission: Promise<null> | undefined;
   class Coordinator extends Base {
     public constructor(input: CurrentPcbDiagnosticLifecycleOptions) { super(input); options = input; }
+    /** Preserve real local inspection while exercising captured local and
+     * launch guards for synthetic effects, avoiding any native allocation. */
     public override async run(input: unknown): Promise<Record<string, unknown>> {
       const request = requestSchema.parse(input);
       if (request.action === "inspect") { return super.run(request); }

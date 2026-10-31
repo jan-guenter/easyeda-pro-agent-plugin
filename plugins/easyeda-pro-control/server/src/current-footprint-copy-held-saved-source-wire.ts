@@ -15,6 +15,11 @@ function plain(value: unknown): value is Record<string, unknown> {
 }
 const session = z.string().regex(/^[A-Za-z\d_.:-]{1,128}(?![\s\S])/u);
 const schema = z.object({ method: z.literal("Runtime.callFunctionOn"), sessionId: session, params: currentFootprintCopySavedSourceCommandParamsSchema }).strict();
+/** Recognize only the fixed saved-source reader, capture its data descriptors
+ * without invoking caller hooks, and flatten its sealed arguments for native
+ * grammar. Unrelated programs return null; recognized malformed commands or
+ * physical IDs outside this separate profile refuse. Encoding spends no
+ * allocator slot and grants no original-receiver or saved-state authority. */
 export function currentFootprintCopyHeldSavedSourceWire(raw: unknown, id: number): Readonly<{
   command: CurrentPcbWorkerStartupCommand & Readonly<{ id: number }>;
   request: Readonly<Record<string, string | number>>;

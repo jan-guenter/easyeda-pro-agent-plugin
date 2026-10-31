@@ -2376,6 +2376,9 @@ class CurrentPcbRetainedOwnerCore {
     } finally { this.#busy = false; }
   }
 
+  /** Request normal closure of the original window, attempting any unused held
+   * group release first. Preserve a failed release acknowledgment; closure never
+   * selects Save/Discard or substitutes for later root/Job termination proof. */
   public async requestNormalClose(hwnd: string): Promise<void> {
     if (this.#closeConsumed) { throw error("CLOSE_CONSUMED"); }
     if (!/^[1-9]\d{0,18}$/u.test(hwnd)) { throw error("WINDOW_INPUT"); }
@@ -2581,6 +2584,8 @@ class CurrentPcbRetainedOwnerCore {
     if (!exact(after, ["current"]) || after["current"] !== true || this.#binding !== binding) { throw error("HELD_SAVED_NATIVE_REPROOF"); }
   }
 
+  /** Charge observed renderer events to this original held-purpose ledger and
+   * its aggregate byte ceiling before accepting further event traffic. */
   #heldSavedEventBytes(bytes: number): void {
     if (!heldCachePurpose(this.#purpose) || !Number.isSafeInteger(bytes) || bytes < 0 ||
         this.#heldSavedObservedEventBytes + bytes > 8 * 1024 * 1024) { throw error("HELD_SAVED_EVENT_BYTES"); }
@@ -2730,6 +2735,9 @@ class CurrentPcbRetainedOwnerCore {
     if (this.retainedFootprintCopyHeldSavedCache() !== runner) { throw error("HELD_SAVED_ORIGINAL_RUNNER"); }
   }
 
+  /** Bracket one retained runner stage with fresh native ownership checks.
+   * A refusal ends normal work without releasing the owner; cleanup uses its
+   * separate reserved bucket and cannot restore a failed normal stage. */
   async #heldSavedStage<T>(work: (runner: CurrentFootprintSavedCacheHeldRunner) => Promise<T>, cleanup = false): Promise<T> {
     const runner = this.retainedFootprintCopyHeldSavedCache();
     if (!cleanup && (this.#heldSavedFailed || !this.#heldSavedStarted)) { throw error("HELD_SAVED_NORMAL_ENDED"); }
@@ -3539,6 +3547,9 @@ class CurrentPcbRetainedOwnerCore {
       this.#input.emit("error", error("DISCOVERY_FAILED")); throw caughtError;
     }
   }
+  /** Encode one Buffer through its fixed purpose-specific native grammar and
+   * settle the original Writable callback after an exact written acknowledgment.
+   * Invalid frames and uncertain writes retain the fixed failure result. */
   // oxlint-disable-next-line promise/prefer-await-to-callbacks -- This adapter must settle the original Writable completion callback after native WriteFile.
   async #sendFrame(chunk: unknown, callback: (cause?: Error | null) => void): Promise<void> {
     try {
@@ -3636,6 +3647,8 @@ class CurrentPcbRetainedOwnerCore {
     }
     return result;
   }
+  /** Recover only this purpose's original ledger and captured method binding.
+   * A matching shape or another owner's ledger cannot supply accounting custody. */
   #heldSavedResources(): Readonly<{ ledger: CurrentFootprintCopyHeldSavedResourceLedger; methods: CurrentFootprintCopyHeldSavedLedgerBinding }> {
     this.#requireHeldRole();
     const ledger = this.#heldSavedLedger, methods = this.#heldSavedLedgerMethods;
@@ -3643,6 +3656,9 @@ class CurrentPcbRetainedOwnerCore {
         requireOriginalHeldSavedLedgerBinding(ledger) !== methods) { throw error("HELD_SAVED_ORIGINAL_ACCOUNTING"); }
     methods.requireOriginal(); return { ledger, methods };
   }
+  /** Charge requests and controls before native dispatch, deriving cleanup and
+   * waiting buckets from the retained channel/state and preserving normal-output
+   * headroom. These accounting fields grant no native ownership authority. */
   #heldSavedRequest(request: RecordValue): Readonly<{ cleanup: boolean; waiting: boolean }> {
     const { ledger, methods } = this.#heldSavedResources();
     const action = request["action"], channel = this.#startupChannel, id = request["requestId"];
@@ -3670,6 +3686,9 @@ class CurrentPcbRetainedOwnerCore {
     else if (action !== "poll") { methods.consumeControl.call(ledger, this, cleanup); }
     this.#heldSavedReadCleanup = cleanup; return { cleanup, waiting };
   }
+  /** Validate canonical bounded poll bytes and charge their actual data/wait/idle
+   * category against the original pending request's normal or cleanup reservation.
+   * Return the complete original result without treating empty bytes as completion. */
   #heldSavedReply(result: RecordValue, pending: Pending): RecordValue {
     if (!pending.poll) { return result; }
     const encoded = result["bytes"];
@@ -3682,6 +3701,9 @@ class CurrentPcbRetainedOwnerCore {
     methods.consumeRendererPoll.call(ledger, this, kind, pending.forwardCleanup);
     methods.consumeBytes.call(ledger, this, "renderer", bytes.length, pending.forwardCleanup); return result;
   }
+  /** Serialize startup polling and lifecycle work on the same retained helper.
+   * Recheck held normal-work cutoff and the optional original-owner assertion
+   * at dispatch, preserving a predecessor's refusal without blocking cleanup. */
   #request(request: RecordValue, beforeDispatch?: () => void): Promise<RecordValue> {
     if (this.#startupParent === null && !bornFootprintTransport(this.#purpose) && !heldCachePurpose(this.#purpose)) {
       beforeDispatch?.(); return this.#requestNow(request);
@@ -3705,6 +3727,9 @@ class CurrentPcbRetainedOwnerCore {
     })();
     return next;
   }
+  /** Admit one correlated helper request after purpose, ownership and resource
+   * checks, then bound its encoded input and original reply deadline. A write or
+   * deadline failure consumes the attempt without proving exit or allowing retry. */
   #requestNow(request: RecordValue): Promise<RecordValue> {
     this.#available();
     if (this.#pending !== null) { throw error("REQUEST_PENDING"); }
@@ -3813,6 +3838,9 @@ class CurrentPcbRetainedOwnerCore {
     } catch { this.#fail("HELPER_WRITE"); }
     return deferred.promise;
   }
+  /** Settle only when the original stdin write completed and its admitted reply
+   * arrived. Apply purpose-specific output accounting before resolution and retain
+   * fixed native refusals for original cleanup; neither condition proves durability. */
   #settle(): void {
     const pending = this.#pending;
     if (pending !== null && pending.written && pending.reply !== null && this.#failure === null) {

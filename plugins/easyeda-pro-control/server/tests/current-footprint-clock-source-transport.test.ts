@@ -17,6 +17,10 @@ const projectSource = "synthetic complete project source\nwith the original trai
 const targetUrl = "https://client/editor?entry=mgr-project-worker.js&cll=warn&debugOpen=0";
 const projectUrl = "https://modules.lceda.cn/pro-mgr/3.2.185.bf63a159/js/project-worker.js";
 const identity = { projectUuid: "a".repeat(64), branchUuid: "b".repeat(32), windowTabId: "source_fixture" };
+/** Load the actual transport with a single synthetic project-source stage and
+ * injectable source/owner/construction failures. Its genuine held-purpose
+ * predicate must reject the synthetic dependency; the returned counters prove
+ * source handoff ordering, not native ownership or a real clock invocation. */
 async function fixture(execution: boolean, loseAfterSource = false, refuseSource = false, refuseBinding = false, refuseConstruction = false): Promise<Readonly<{
   owner: CurrentFootprintCopyWorkerStartupTransport | CurrentPcb209WorkerStartupTransport;
   sourceRetained: () => boolean;

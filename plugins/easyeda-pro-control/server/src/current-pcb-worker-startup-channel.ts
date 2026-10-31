@@ -1340,6 +1340,8 @@ export class CurrentFootprintCopySavedChannel extends CurrentPcbWorkerStartupCha
 /** Separately marked held-saved birth. The owner supplies its original sealed
  * realm/target and charges actual sends, polls/events and retained bytes. */
 export class CurrentFootprintCopyHeldSavedStartupChannel extends CurrentPcbWorkerStartupChannelCore {
+  /** Bind the private held-cache grammar and shared accounting at channel birth.
+   * Legacy saved/execution markers cannot substitute for this dependency. */
   public constructor(native: CurrentPcbWorkerStartupNativeDependency, binding: CurrentFootprintCopyHeldSavedChannelBinding,
     observeEventBytes: (bytes: number) => void, priorUsage?: CurrentPcbWorkerStartupPriorUsage) {
     super(INTERNAL_PROFILE, native, currentFootprintCopyHeldSavedStartupWire, priorUsage, false, false, observeEventBytes, false, binding);

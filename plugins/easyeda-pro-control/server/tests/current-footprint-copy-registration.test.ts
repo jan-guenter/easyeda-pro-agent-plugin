@@ -45,6 +45,8 @@ function startupRegistration(source: string): string {
   return [...declarations, source.slice(registration.start, registration.end)].join("\n");
 }
 
+/** Capture the real registered callback with strict schemas and inert purpose
+ * peers, retaining the real gate to test routing, replacement and failures. */
 async function fixture(): Promise<Readonly<{ invoke: Handler; calls: readonly Row[]; allocations: readonly string[];
   gate: SerializedGate; replaceMethod: () => void; replaceRouteMethod: () => void; failNext: () => void }>> {
   const allocations: string[] = [], calls: Row[] = []; let fail = false;
@@ -55,12 +57,16 @@ async function fixture(): Promise<Readonly<{ invoke: Handler; calls: readonly Ro
     public constructor(kind: string, options: { assertAllowed: () => Promise<void> }) {
       this.#kind = kind; this.#options = options; allocations.push(kind);
     }
+    /** Exercise the registration's original launch admission while modeling
+     * only the peer's reservation; no native owner is allocated by this double. */
     public async run(request: Row): Promise<Row> {
       if (request["action"] === "launch") { await this.#options.assertAllowed(); this.#reserved = true; }
       if (request["action"] === "release-closed") { this.#reserved = false; }
       return this.record("run", [request]);
     }
     public hasActiveReservation(): boolean { return this.#reserved; }
+    /** Retain which purpose received a call and optionally reject it once so
+     * later assertions can distinguish dispatch from a refused retry. */
     public record(method: string, args: unknown[]): Promise<Row> {
       calls.push({ kind: this.#kind, method, args });
       if (fail) { fail = false; return Promise.reject(new Error("synthetic consumed stage")); }

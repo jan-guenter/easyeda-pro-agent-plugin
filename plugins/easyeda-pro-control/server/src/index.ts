@@ -306,6 +306,8 @@ function disposableConstructedMethods(runtime: WindowsControlRuntime, nativeUi: 
       "requestClosedSessionNormalClose", "probeClosedSessionTermination", "clockObservationForLaunch"]
       .map(key => disposableOwnerMethod(runtime, key))];
 }
+/** Reserve ordinary startup against every active diagnostic purpose and consumed
+ * closed-symbol attempt. Read-only diagnostics still own their app allocation. */
 function assertOrdinaryRuntimeAllocationAllowed(): void {
   if (currentPcbDiagnosticLifecycle?.hasActiveReservation() === true || currentPcbStringPrecreateLifecycle?.hasActiveReservation() === true || currentPcbWorkerStartupLifecycle?.hasActiveReservation() === true || currentFootprintMainLifecycle?.hasActiveReservation() === true || currentFootprintHeldCacheValidation?.hasActiveReservation() === true) {
     throw new Error("An original diagnostic lifecycle reserves application startup.");
@@ -2574,6 +2576,8 @@ if (facadeToolRegistered(facadeMode, "easyeda_control_pcb_diagnostic_validation"
   let heldCacheOriginal: { readonly owner: CurrentFootprintHeldCacheValidation; readonly run: CurrentFootprintHeldCacheValidation["run"];
     readonly assertLocal: () => void } | undefined;
   let heldCacheCalls = 0;
+  /** Route the sealed read-only purpose through its original controller. Replace
+   * a retired controller only after both reservations and actual allocations end. */
   const runHeldCache = (request: CurrentFootprintHeldCacheValidationRequest): Promise<{ result: Readonly<Record<string, unknown>> }> => {
     if (!diagnostic209) { throw new Error("Held-cache qualification requires the current209 route."); }
     if (heldCacheOriginal !== undefined && request.action === "launch" && heldCacheCalls === 0) {
@@ -2592,6 +2596,8 @@ if (facadeToolRegistered(facadeMode, "easyeda_control_pcb_diagnostic_validation"
         disposableOwnerMethod(engine, "assertDiagnosticLaunchOtherOperationsSettled"),
         ...["run", "hasActiveReservation", "hasOwnedAllocation"].map(key => disposableOwnerMethod(CurrentFootprintHeldCacheValidation.prototype, key))];
       const captured = methods();
+      /** Recheck captured methods, environment, root and controller identity at
+       * each await boundary without treating a status reply as native custody. */
       const assertLocal = (): void => {
         const current = methods();
         if (engine !== originalEngine || bridgeGate !== originalGate || upstream !== originalUpstream ||
@@ -2604,6 +2610,8 @@ if (facadeToolRegistered(facadeMode, "easyeda_control_pcb_diagnostic_validation"
           throw new Error("Original held-cache controller, environment or methods changed.");
         }
       };
+      /** Refuse competing app owners before the diagnostic can reserve a helper;
+       * the controller retains its own reservation separately during cleanup. */
       const assertUnreserved = (): void => {
         assertLocal();
         if (assetsRoot === undefined || windowsRuntime !== undefined || ordinaryLaunchRuntime !== undefined ||
@@ -2614,6 +2622,8 @@ if (facadeToolRegistered(facadeMode, "easyeda_control_pcb_diagnostic_validation"
           throw new Error("Held-cache launch requires no other application owner or shutdown.");
         }
       };
+      /** Scan other engine operations between local identity checks. The new
+       * controller separately scans diagnostic history before its own intent. */
       const assertAllowed = async (): Promise<void> => {
         assertUnreserved(); await engine.assertDiagnosticLaunchOtherOperationsSettled(); assertUnreserved();
       };
@@ -2626,6 +2636,8 @@ if (facadeToolRegistered(facadeMode, "easyeda_control_pcb_diagnostic_validation"
       heldCacheOriginal = { owner, run: owner.run, assertLocal };
     }
     const retained = heldCacheOriginal; retained.assertLocal();
+    /** Invoke the retained method on its private-field receiver and recheck the
+     * same identity after completion, including inspect and concurrent abort. */
     const run = async (): Promise<{ result: Readonly<Record<string, unknown>> }> => {
       retained.assertLocal(); const result = await retained.run.call(retained.owner, request); retained.assertLocal(); return { result };
     };

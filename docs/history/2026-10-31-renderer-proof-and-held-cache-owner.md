@@ -190,3 +190,25 @@ cases, and native managed/parity checks. The helper is now 1,047,546 bytes, SHA
 with 1,030 bytes of headroom under the unchanged 1 MiB cap. All generated
 program blocks remain exact and both identity consumers match. The corrected
 payload still needs its new exact-head CI and follow-up review before merge.
+
+## Corrected CI and documentation follow-up
+
+Payload `158a74f3cd0266de4d42d0c12091d5b2c6f9f07a` passed all eleven CI
+jobs. Complete CRC-checked logs prove 13,861 facade passes, five expected
+platform skips, zero failures/cancellations/todo cases, and 424 bridge passes
+across 28 files. Exact source, runtime and native-helper pins matched the
+reviewed payload and the synthetic merge tree.
+
+The delayed requested full-review round on the original payload completed
+successfully without new comments. CodeRabbit's follow-up check on 158a74f3
+also succeeded without new actionable, legacy or collapsed issues. Its
+remaining generic documentation warning was 69.49% coverage against 80%,
+scoped to 59 touched complex functions. That warning had not been included in
+the earlier correction batch and is retained here.
+
+Forty JSDoc contracts were added for the affected ownership, accounting,
+cleanup and fixture-extraction functions. These are comments only; every
+changed TypeScript file emits byte-identical JavaScript to 158a74f3 under the
+pinned compiler transformation. No new tests or behavior changes were added
+for this correction. The source fingerprint, required build checks and final
+exact-head CI/review still need their normal refresh before publication.

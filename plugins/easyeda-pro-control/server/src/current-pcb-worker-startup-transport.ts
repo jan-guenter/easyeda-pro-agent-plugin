@@ -277,6 +277,8 @@ class CurrentPcbWorkerStartupTransportCore<Packet extends ConstructionPacket, Ru
   readonly #requestLimit: number;
   #cleanup: Promise<void> | null = null;
 
+  /** Seal one birth purpose to its genuine dependency marker and captured
+   * callbacks. Caller booleans cannot upgrade an older transport to held-saved. */
   public constructor(internal: typeof INTERNAL_PROFILE, dependency: CurrentPcbWorkerStartupDependency,
     profile: DiagnosticWorkerScriptProfile, createRunner: (transport: CurrentPcbWorkerConstructionTransport) => Runner,
     bootstrap209 = false, execution209 = false, saved209 = false, heldSaved209 = false) {
@@ -473,6 +475,9 @@ class CurrentPcbWorkerStartupTransportCore<Packet extends ConstructionPacket, Ru
     const normal = this.#heldSaved209 ? this.#requests - this.#heldSavedCleanupRequests : this.#requests;
     return this.#requests >= this.#requestLimit || normal >= this.#normalRequestLimit;
   }
+  /** Charge a fixed command before dispatch, keeping early held cleanup apart
+   * from normal capacity. Capture bounded replies before the original-owner
+   * recheck; failure never refunds an ID or retries the native request. */
   async #request(command: CurrentPcbWorkerStartupCommand, cleanup = false): Promise<unknown> {
     if (!cleanup) { await this.#current(); }
     const exhausted = cleanup ? this.#requests >= this.#requestLimit || this.#heldSaved209 &&
