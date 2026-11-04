@@ -1,5 +1,12 @@
 # Project history
 
+- [2026-11-04 session retirement and cache startup batch](2026-11-04-session-retirement-and-cache-batch.md). Cooperative idle-owner handoff, source/reference-only retirement, actual isolated MCP proof and combined verification.
+- [2026-11-04 held-cache startup wait](2026-11-04-held-cache-startup-wait.md). Source-timed loader lifecycle, a bounded V3 wait and retained historical V1/V2 formats.
+- [2026-11-04 native clock validation and subagent loading](2026-11-04-native-clock-validation-and-subagent-loading.md). Complete installed193000 read-only clock lifecycle, terminal cache startup refusal and the separate fresh-context MCP ownership experiment.
+- [2026-11-04 CBB and PCB hit-reader feasibility](2026-11-04-cbb-and-pcb-hit-reader-feasibility.md). Exact public/native reader blockers and nonselecting selector candidates.
+
+- [2026-10-31 PR165 publication and remaining work](2026-10-31-203348-pr165-publication-and-backlog.md). Completed protected release/install, final CI and the remaining native/API backlog.
+
 - [2026-10-31 PR164 publication and installation](2026-10-31-194500-pr164-publication-and-installation.md). Verbatim terminal release record, separated from the earlier native-age development observations.
 
 - [2026-10-31 archives and native startup context](2026-10-31-193000-archives-and-native-startup-context.md). Supplied library archives, process accessor custody, startup stabilization and a structure-completion prerequisite model.

@@ -76,6 +76,7 @@ void test("offline held-cache query validates the same strict mounted grammar wi
   const discovery = z.record(z.string(), z.unknown()).parse(queryOfflineApi(apiRequestSchema.parse({
     action: "footprint-held-cache", query: { includeSchemas: true } })).result);
   assert.equal(discovery["wrapperAction"], "footprint-held-cache"); assert.equal(discovery["readOnly"], true);
+  assert.deepEqual(z.record(z.string(), z.unknown()).parse(discovery["limits"])["startupReadiness"], { targetSamples: 16, delayMilliseconds: 1000 });
   for (const flag of ["nativeQualificationIssued", "runtimeAdmissionGranted", "replayTokenIssued", "writerAuthority", "saveAuthorized", "executionAuthorized"]) {
     assert.equal(discovery[flag], false);
   }

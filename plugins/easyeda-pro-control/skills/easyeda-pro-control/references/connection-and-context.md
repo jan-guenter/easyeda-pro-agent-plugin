@@ -56,6 +56,65 @@ open a fresh MCP connection for live control. The diagnostic connection never
 promotes itself, even if the original owner later exits. Older plugin versions
 may instead disappear from the tool list when this conflict occurs.
 
+### Cooperative retirement and update handoff
+
+`easyeda_control_session` is available only in snapshots that implement this
+route. It releases the original facade's own upstream, gateway and control
+lease while keeping its MCP connection available for local retirement state
+and synchronous source/reference API queries. It never closes EasyEDA, releases
+native proof handles, chooses a prompt or takes over another owner.
+
+This handoff currently follows fully released diagnostic owners, an ordinary
+launch that completed its own `release-closed`, or a connection that allocated
+no native owner. Project-opening and metadata-writer coordinators can remain
+allocated even after their internal final closure. They have no index-level
+disposal through this tool and still refuse retirement; completing their
+workflow alone is insufficient. Do not clear those owners or their leases.
+
+For a user-requested handoff to a fresh-context subagent after an update:
+
+1. Query offline `session` with `includeSchemas:true` and validate the assembled
+   request with `session-validate`. Finish every original workflow's native closure, observed root/Job termination,
+   helper release and record settlement. Await all tool calls, including queued
+   calls and offline managed-file/SQL work. Retained runtime, project and writer
+   owners refuse retirement. Diagnostic reservations and owned cache/head-age
+   allocations refuse too. Complete original cleanup before retrying preflight.
+2. On the original owning connection, inspect with
+   `{"request":{"action":"inspect"}}`, then submit
+   `{"request":{"action":"retire","confirmRetire":true}}` when retirement is
+   within the user's requested handoff. The facade blocks new work synchronously
+   before reading fresh design, diagnostic and ordinary journals. Unfinished or
+   unreadable records refuse before authority cleanup.
+3. Await a successful result with `state:"retired"`,
+   `leaseReleaseAcknowledged:true` and `liveAdmissionOpen:false`. The old
+   connection permanently refuses other tools. `easyeda_control_api` accepts
+   source/reference queries such as `loaded-facade`; managed-file preparation
+   and SQL baseline analysis refuse. Existing API calls must finish before
+   retirement and new API calls refuse while checking or retiring.
+4. Only then spawn a new subagent with fresh context. Pass the scoped task,
+   expected installed version/payload and necessary evidence references.
+   The subagent must query offline `loaded-facade` and verify its serving PID,
+   module path, Node version, exact installed payload and full process/source
+   admission before any live call. A new process does not prove it loaded the
+   latest plugin. A subagent or connection already in ownership-conflict mode
+   never retries; create a later fresh connection after release.
+
+After any retirement error, inspect the same original connection. `state:"active"`
+means preflight refused before cleanup, so its original workflow can finish
+cleanup or resolve quarantine. `state:"retirement-failed"` consumes the attempt
+and permanently closes live admission. Do not repeat retirement or start a
+replacement on that result. Review the retained error through the supported
+host lifecycle. Authority-close failure prevents lease release. A false
+`leaseReleaseAcknowledged` means release was not acknowledged; a release error
+can leave the actual lock state uncertain. Do not remove or repair it manually.
+
+Older snapshots without this route cannot retire themselves through MCP. A
+fresh subagent started while such an owner remains will only encounter the
+ownership conflict. Report the missing capability and use supported connection
+closure when available. Do not kill an owner, change control roots, patch a
+cache or repeatedly ask for chat restarts. The maintained foreground client
+remains an option only when the original control lease is free.
+
 ### Ordinary application startup on the current tuple
 
 When startup is within the user's task, prefer `easyeda_control_launch` over
@@ -272,7 +331,8 @@ validates that diagnostic case only, not the later abandonment implementation.
 After updating the marketplace, verify the actual tool catalog and loaded
 facade generation. Reopening the desktop app or seeing new skills is not by
 itself evidence that an existing chat's MCP process changed. If it still runs
-the old cache path, stop live calls and use a fresh chat/session. Do not repair
+the old cache path, stop live calls and follow the cooperative handoff above
+when supported. A fresh connection still needs exact payload admission. Do not repair
 the cache by hand or terminate the owner. A removed old cache can also leave
 the old process with a deleted working directory; a resulting historical-reader
 failure is not proof that the retained journal was corrupted.
@@ -295,8 +355,8 @@ Distinguish these failure layers before changing anything:
 |---|---|---|
 | Tool is absent or host rejects dispatch as unavailable | No facade handler result | Check the plugin's enabled state. For authorized EasyEDA work, the checkout-only foreground MCP client below can use the same facade when no other owner is active. Never start a second owner or use a new data root to evade the lease. |
 | Status reports `mode:"offline-only"` and `installation.ready:false`; only three tools are listed | Trusted profile/Node admission passed, but a selected external installation check failed | Use the retained startup code and current read-only `diagnostics`: configured file roles, candidate bundle directory names and app package version. These metadata observations neither admit candidates nor prove who replaced the app. API reference/local discovery remain usable; live/recovery tools do not exist here. Review the changed installation, use only a supported explicit migration, then restart. |
-| Status reports `facade.mode:"public-utilities-only"`; sixteen tools are listed | The exact3.2.209 selector pair selected the restricted catalog, not runtime admission | Utilities, managed netlist comparison, shell/identity/shortcut observations, catalog queries and ordinary launch have separate contracts. The209-only disposable opener retains its own native owner through cleanup; opening can automatically persist/Save. The separate209 project-worker startup owner captures original constructors and bounded assignment/channel/actor samples. No older project opener, PCB-worker/model, design-content or explicit Save route is registered. Source tests are not connected validation. |
-| Status reports `facade.mode:"calculation-only"`; twenty-six tools are listed | Configured bundle selectors selected the older restricted catalog | API reference, local discovery, status, scoped utilities/metadata including no-editor project PCB metadata, exact PCB layer/loaded-view identities and geometry, local historical abandonment, ordinary launch, disposable project opening, disposable symbol copying, disposable PCB renaming and the separate forward-only `easyeda_control_project_symbol_metadata` route are registered. Each has separate exact admission. The ordinary symbol route supports unused project-local symbols with complete META-only or bounded canvas-segments history and exactly one write; it does not enable generic design writers. Generic navigation, native UI and legacy recovery remain unavailable. |
+| Status reports `facade.mode:"public-utilities-only"`; seventeen tools are listed | The exact3.2.209 selector pair selected the restricted catalog, not runtime admission | Utilities, managed netlist comparison, shell/identity/shortcut observations, catalog queries and ordinary launch have separate contracts. The209-only disposable opener retains its own native owner through cleanup; opening can automatically persist/Save. The separate209 project-worker startup owner captures original constructors and bounded assignment/channel/actor samples. No older project opener, PCB-worker/model, design-content or explicit Save route is registered. Source tests are not connected validation. |
+| Status reports `facade.mode:"calculation-only"`; twenty-eight tools are listed | Configured bundle selectors selected the older restricted catalog | API reference, local discovery, status, scoped utilities/metadata including no-editor project PCB metadata, exact PCB layer/loaded-view identities and geometry, local historical abandonment, ordinary launch, disposable project opening, disposable symbol copying, disposable PCB renaming and the separate forward-only `easyeda_control_project_symbol_metadata` route are registered. Each has separate exact admission. The ordinary symbol route supports unused project-local symbols with complete META-only or bounded canvas-segments history and exactly one write; it does not enable generic design writers. Generic navigation, native UI and legacy recovery remain unavailable. |
 | Structured status error during upstream startup | Facade handler ran, but startup failed | Run `npm run doctor` offline from the trusted checkout. Use reported stage/exit details and failed checks; private stderr remains withheld. Do not infer the cause from its hash or length. |
 | Status succeeds but has no authenticated session | Upstream responded; extension connection is unproven | Verify the selected receipt/import and bridge connection. Do not call context or design readers yet. |
 | Authenticated session with `validation-required` tuple | Connection succeeded; compatibility remains unadmitted | Collect bounded status/context/public-read evidence for review. Exact/private calls remain blocked. |
@@ -321,7 +381,8 @@ and four bundle hashes, retains an exact private backup and atomically changes
 only the PCB/API version selectors. It preserves the control root, Node,
 upstream, credentials and journals. A matching already-upgraded profile is a
 verified no-op; other generations refuse. It does not update the old global
-compatibility manifest or launch a bridge. Use a fresh Codex chat afterward.
+compatibility manifest or launch a bridge. Load the selection through a fresh
+connection using cooperative retirement above when supported.
 Never start a competing owner to test the new selection. Broader editor support
 requires separate review; this helper selects the restricted utility catalog.
 
@@ -329,8 +390,9 @@ For the separately reviewed 3.2.209 installation, use the same helper with the
 explicit `--target public-utilities-209`. It accepts the previous 3.2.206 selector
 pair or an already-selected exact 3.2.209 pair, verifies all new package/bundle
 hashes, retains the exact backup and changes only the two selectors. It does not
-replace old native/private profiles. A fresh session will expose the fifteen-tool
-utility-only catalog, not the older twenty-six-tool catalog. Existing offline
+replace old native/private profiles. A freshly admitted session exposes the
+seventeen-tool utility-only catalog; the older restricted catalog has twenty-eight
+tools. Existing offline
 status remains offline even if its current metadata diagnostics now find all
 configured files. Never use a second facade or patched cache to skip that restart.
 

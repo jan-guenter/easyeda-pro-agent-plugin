@@ -409,7 +409,7 @@ void describe("self-contained packaged machine startup", () => {
         [options.pinnedNode, options.bundle]);
       assert.equal(await readlink(`/proc/${pid}/cwd`), options.pluginRoot);
       const tools = await client.listTools();
-      assert.equal(tools.tools.length, 52);
+      assert.equal(tools.tools.length, 53);
       assert.equal(new Set(tools.tools.map((tool) => tool.name)).size, tools.tools.length);
       assert.ok(tools.tools.some((tool) => tool.name === "easyeda_control_api"));
       assert.ok(tools.tools.some((tool) => tool.name === "easyeda_control_sdk_read"));

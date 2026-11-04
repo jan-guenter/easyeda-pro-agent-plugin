@@ -4,7 +4,7 @@ import { z } from "zod";
 import { types } from "node:util";
 import { sha256Json } from "./core.ts";
 import { currentDisposableOpenTargetSchema } from "./current-disposable-open.ts";
-import { CURRENT_FOOTPRINT_HELD_CACHE_DIAGNOSTIC_PROFILE, CURRENT_FOOTPRINT_HELD_CACHE_PAGE_READINESS, currentFootprintHeldCacheStartupObservationRecordSchema } from "./current-footprint-held-cache-diagnostic-profile.ts";
+import { CURRENT_FOOTPRINT_HELD_CACHE_DIAGNOSTIC_PROFILE, CURRENT_FOOTPRINT_HELD_CACHE_PAGE_READINESS_V3, currentFootprintHeldCacheStartupObservationRecordSchema } from "./current-footprint-held-cache-diagnostic-profile.ts";
 import { currentFootprintHeldCacheFrameTargetTransitionSchema } from "./current-footprint-held-cache-frame-transition.ts";
 import { diagnosticLifecycleBindingSchema } from "./current-pcb-diagnostic-binding-schema.ts";
 import { CURRENT_FOOTPRINT_SAVED_CACHE_HELD_ENGINE, CURRENT_FOOTPRINT_SAVED_CACHE_HELD_LIMITS } from "./current-footprint-saved-cache-held-profile.ts";
@@ -168,10 +168,10 @@ export function queryCurrentFootprintHeldCacheValidation(includeSchemas = false)
     executionAuthorized: false, actions: ["launch", "observe-first", "observe-fresh", "release-cache", "normal-close", "abort", "observe-termination",
       "release-closed", "cleanup-no-resource", "cleanup-unlaunched", "cleanup-no-process", "inspect", "settle-records"],
     limits: { terminationObservations: 240, recordBytes: CURRENT_FOOTPRINT_HELD_CACHE_VALIDATION_RECORD_BYTES,
-      startupReadiness: CURRENT_FOOTPRINT_HELD_CACHE_PAGE_READINESS, nativeRequests: CURRENT_FOOTPRINT_HELD_CACHE_DIAGNOSTIC_PROFILE,
+      startupReadiness: CURRENT_FOOTPRINT_HELD_CACHE_PAGE_READINESS_V3, nativeRequests: CURRENT_FOOTPRINT_HELD_CACHE_DIAGNOSTIC_PROFILE,
       journal: CURRENT_FOOTPRINT_HELD_CACHE_JOURNAL_LIMITS },
     notes: ["Launch selects one exact disposable checkpoint before the new read-only native generation starts; default branch comes from actual complete SQL.",
-      "Browser discovery reads version once and samples at most sixteen valid target inventories with 250 ms waits. The installation-bound loading window must disappear, then two consecutive complete exclusive-editor inventories must match exactly before frame capture. Title/target-field changes reset this pre-seal candidate. Malformed, attached, unrelated or duplicate pages refuse; consumed frame capture or launch is never retried. V2 diagnostics preserve bounded stages, classifications, counts and hashes without raw titles/URLs; historical V1 parsing is unchanged. Sequential matching samples do not prove atomic stability or complete startup.",
+      "Browser discovery reads version once and samples at most sixteen valid target inventories with 1000 ms waits, at most fifteen seconds of deliberate waiting within the same launch. The installation-bound loading window must disappear, then two consecutive complete exclusive-editor inventories must match exactly before frame capture. Title/target-field changes reset this pre-seal candidate. Malformed, attached, unrelated or duplicate pages refuse; consumed frame capture or launch is never retried. V3 diagnostics preserve bounded stages, classifications, counts and hashes without raw titles/URLs; historical V1/V2 parsing keeps its 250 ms contract unchanged. Sequential matching samples do not prove atomic stability or complete startup.",
       "An exact frame-target refusal may carry one original-Error-issued private transition packet, at most 2048 bytes, with before/after complete-inventory hashes, target presence and fixed changed-field flags. It retains no raw titles/URLs, preserves the refusal, grants no authority and shares the unchanged 8192-byte startup diagnostic reserve.",
       "The first observation qualifies the actual held getter/match tuple and reads both fixed namespaces. Fresh observation separately reads both namespaces again.",
       "These sequential point-in-time observations do not grant continuous cache emptiness, saved-copy qualification, replay authority or permission to open a project.",

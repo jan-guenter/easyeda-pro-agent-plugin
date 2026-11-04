@@ -86,21 +86,27 @@ frame, worker or project-opening actions in this grammar. Do not manually open
 the target to satisfy a refusal.
 
 Browser readiness reads the engine version once and observes at most sixteen
-target inventories, with 250 ms between valid samples. The original admitted
+target inventories, with 1000 ms between valid samples. The original admitted
 backend path identifies its fixed local loading window. That window permits
 waiting, including while one exact editor page is present, and must disappear
 before selection. Two consecutive complete inventories must then match exactly
 with one unattached editor page. A title change, another target field change,
 loader return or transient empty/about:blank inventory resets the candidate.
 Unrelated, malformed, duplicate or attached pages stop immediately. The same
-sixteen samples and fifteen waits cover all transitions; one last unmatched
+sixteen samples and fifteen waits cover all transitions, at most fifteen seconds
+of deliberate waiting; one last unmatched
 editor sample exhausts the bound.
 
-V2 startup diagnostics retain every candidate classification, count and complete
+The admitted backend intends to close its loader after a 4700 ms timer followed
+by a 300 ms timer. Scheduling delays or its awaited first-run branch can take
+longer, and an exception can prevent closure. This observation budget allows
+that normal timer sequence and still refuses if the loader persists.
+
+V3 startup diagnostics retain every candidate classification, count and complete
 inventory hash without exposing URLs, titles or new V1 fields. These inventory
 hashes cover the exact JSON serialization used by the runtime comparison,
-including field order. V1 used canonical JSON hashes. Historical V1
-snapshots retain their original parser and meaning. Two matching samples are
+including field order. V1 used canonical JSON hashes. Historical V1/V2
+snapshots retain their original parsers, 250 ms interval and meaning. Two matching samples are
 sequential observations, not atomic stability or complete startup. Selection
 still requires all original frame/source/Start Page checks. The exact target
 comparison before frame capture remains unchanged, and later drift still

@@ -6,6 +6,13 @@ head. This is a distinct original native generation. It opens no project and
 performs no copy, delete or explicit Save. It does not enable a blocked writer.
 Source implementation and offline tests do not establish a connected result.
 
+Installed `0.3.0+codex.20261031193000` completed one disposable read-only
+observation through original bootstrap/process, native Date/parser and Windows
+clock checks, followed by normal close, separately observed root/empty-Job exit,
+helper release and settled evidence. This historical result admits no later
+generation, future writer interval or saved-copy operation. Do not replay the
+completed case.
+
 ## Discover and validate offline
 
 Query `easyeda_control_api` before execution:

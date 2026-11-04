@@ -143,7 +143,8 @@ import { compareCurrentFootprintHeadAgeObservation } from "./current-footprint-h
 import type { CurrentFootprintHeadAgeObservation } from "./current-footprint-head-age-observation.ts";
 import type { CurrentFootprintHeldCacheValidationBinding } from "./current-footprint-held-cache-validation.ts";
 import { currentFootprintHeldCacheValidationIdSchema } from "./current-footprint-held-cache-validation-schema.ts";
-import { CURRENT_FOOTPRINT_HELD_CACHE_DIAGNOSTIC_PROFILE, CURRENT_FOOTPRINT_HELD_CACHE_PAGE_READINESS } from "./current-footprint-held-cache-diagnostic-profile.ts";
+import { CURRENT_FOOTPRINT_HELD_CACHE_DIAGNOSTIC_PROFILE } from "./current-footprint-held-cache-diagnostic-profile.ts";
+import type { CURRENT_FOOTPRINT_HELD_CACHE_PAGE_READINESS_V3 } from "./current-footprint-held-cache-diagnostic-profile.ts";
 import { CurrentFootprintHeldCachePageReadiness } from "./current-footprint-held-cache-page-readiness.ts";
 import { issueCurrentFootprintHeldCacheFrameTargetTransition } from "./current-footprint-held-cache-frame-transition.ts";
 import type { CurrentFootprintHeldCacheStartupObservation } from "./current-footprint-held-cache-page-readiness.ts";
@@ -956,7 +957,7 @@ class CurrentPcbRetainedOwnerCore {
       const observed = await observation.observeBrowser(Object.freeze({ assertCurrent: current,
         version: (): Promise<RecordValue> => this.#transfer(() => this.#pipe.getVersion()),
         targets: (): Promise<RecordValue> => this.#transfer(() => this.#pipe.getTargets()),
-        pause: (): Promise<void> => delay(CURRENT_FOOTPRINT_HELD_CACHE_PAGE_READINESS.delayMilliseconds),
+        pause: (milliseconds: typeof CURRENT_FOOTPRINT_HELD_CACHE_PAGE_READINESS_V3.delayMilliseconds): Promise<void> => delay(milliseconds),
       }));
       current(); this.#browserTargets = observed.targets; this.#savedCacheBrowserVersion = observed.version;
       return observed.targetId;

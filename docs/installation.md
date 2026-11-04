@@ -88,8 +88,11 @@ Replace the path and commit placeholders with the observed installation and
 full release SHA. Repeat this comparison after a scoped official plugin list
 and confirm the intended version is installed and enabled. A same-HEAD no-op
 does not repair a failed comparison. Use official installation operations for
-recovery; do not edit or chmod cache files. Finally, load a fresh Codex session
-and admit its actual serving process before live calls, as described above.
+recovery; do not edit or chmod cache files. Load a fresh MCP connection and
+admit its actual serving process before live calls. A user-requested fresh-context
+subagent can follow [cooperative retirement](../plugins/easyeda-pro-control/skills/easyeda-pro-control/references/connection-and-context.md#cooperative-retirement-and-update-handoff)
+when the original facade supports it; retire before spawning and verify the
+replacement payload. Older snapshots cannot perform that handoff.
 
 ## Bridge setup
 

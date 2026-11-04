@@ -19,6 +19,14 @@ module URL and Node version help detect a stale MCP generation even when skills
 have refreshed. An older server may reject the action. The report grants no
 runtime admission or native ownership; retain the required process/source checks.
 
+For a user-requested update handoff to a fresh-context subagent, read the
+[cooperative retirement workflow](references/connection-and-context.md#cooperative-retirement-and-update-handoff).
+Finish original native cleanup, await acknowledged retirement, then spawn and
+prove the replacement's loaded snapshot and process admission. A subagent
+already in ownership-conflict mode cannot retry. Older snapshots without the
+retirement tool cannot perform this handoff; report the limit without repeated
+restart requests, owner termination or cache edits.
+
 When host tools are missing, read the
 [foreground session workflow](references/connection-and-context.md#foreground-mcp-session)
 before requesting another restart. If the control lease is free, the maintained

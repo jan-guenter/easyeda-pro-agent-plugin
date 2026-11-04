@@ -75,6 +75,15 @@ synchronous abort reservation before journal awaits, and separately observed
 termination/release. Its public wrapper supplies no project-open or saved-copy
 authority; keep the private held-saved composition separate when extending it.
 
+For a user-requested fresh-context subagent after an installed update, use the
+[cooperative retirement workflow](../easyeda-pro-control/references/connection-and-context.md#cooperative-retirement-and-update-handoff).
+Keep the original facade through native cleanup and settlement; retire it before
+spawning the replacement. Verify the replacement's actual snapshot and full
+process/source admission before live work. Do not assume subagent creation
+refreshes its plugin, or retry an ownership-conflict connection. Older snapshots
+without retirement need a supported owner lifecycle; report that limit instead
+of prescribing repeated chat restarts.
+
 Finish with the implemented scope, exact versions, test evidence, remaining
-unavailable methods and any required fresh-chat/import step. Do not label the
+unavailable methods and any pending connection/import step. Do not label the
 entire SDK callable because it is discoverable.

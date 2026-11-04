@@ -179,8 +179,18 @@ are build/check dependencies only.
 - Record commit, counts, marketplace URL and installation proof in dated
   `docs/history/` records. Update originating records only within scope, never
   the excluded production record.
-- Load installed snapshots in a fresh Codex chat and admit the actual process. Never
-  kill/rebind host-owned gateways. Report pending live validation/import separately.
+- Load installed snapshots through a fresh MCP connection and admit its actual
+  process. When the user requests continuation through a fresh-context subagent,
+  finish original native cleanup and all calls first, then use the original
+  facade's supported `easyeda_control_session` retirement. Spawn only after its
+  acknowledged `retired` result and lease-release acknowledgement. A conflict
+  connection never retries. Verify the replacement's offline `loaded-facade`,
+  exact installed payload and full process/source admission before live work;
+  a new subagent alone proves no package refresh. Keep the retired connection
+  offline. Older snapshots without retirement cannot use this handoff; report
+  that limit without inventing shutdown, killing/rebinding owners or patching
+  caches. Do not repeatedly request chat restarts as the default update loop.
+  Report pending connected validation/import separately.
 
 ## Maintaining documentation and history
 

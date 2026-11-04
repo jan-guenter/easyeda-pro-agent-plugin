@@ -223,10 +223,15 @@ and review the actual closure; never copy old evidence onto a new generation.
 Import or activate changed runtime bytes only through the supported workflow.
 
 After Git publication and marketplace installation, verify version, packaged
-file inventory, metadata and offline catalog. Start a fresh Codex chat to load
-the installed catalog. Do not kill the host-owned gateway, patch a loaded cache
-or force a connected runtime onto a new source tree. Report any outstanding
-live admission/import requirement explicitly.
+file inventory, metadata and offline catalog. For a user-requested fresh-context
+subagent handoff, use the [cooperative retirement workflow](../../easyeda-pro-control/references/connection-and-context.md#cooperative-retirement-and-update-handoff).
+Finish original native cleanup and settlement, await acknowledged retirement,
+then spawn a fresh subagent and verify its actual installed payload and full
+process/source admission. An existing conflict connection never retries, and
+older snapshots without retirement cannot use this handoff. Report that limit
+without repeatedly requesting chat restarts. Do not kill the host-owned gateway,
+patch a loaded cache or force a connected runtime onto a new source tree.
+Report any outstanding live admission/import requirement explicitly.
 
 Use `scripts/probe-installed-offline-catalog.ts /absolute/installed/plugin`
 with pinned Node24.18.0 and soft core limit zero for the offline catalog check.

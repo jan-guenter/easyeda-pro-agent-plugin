@@ -70,7 +70,7 @@ void test("actual-like loader and editor-title transitions finish before sealing
   const value = fixture(replies, backend); const observed = await value.observer.observeBrowser(value.transport);
   assert.deepEqual(observed.targets, [final]); assert.equal(observed.targetId, "original-page");
   assert.deepEqual([value.counts.version, value.counts.targets, value.counts.pauses], [1, 9, 8]);
-  const observation = value.observer.observation(); assert.equal(observation.schema, "private.current-footprint-held-cache-startup-observation.v2");
+  const observation = value.observer.observation(); assert.equal(observation.schema, "private.current-footprint-held-cache-startup-observation.v3");
   assert.deepEqual(observation.samples.map(sample => sample.classification), ["empty", "empty", "empty", "empty", "empty", "ready-with-loading", "ready", "ready", "ready"]);
   assert.notEqual(observation.samples[6]?.inventorySha256, observation.samples[7]?.inventorySha256);
   assert.equal(observation.samples[7]?.inventorySha256, observation.samples[8]?.inventorySha256);
@@ -95,6 +95,37 @@ void test("a returning loader or any complete-inventory field change resets the 
     assert.deepEqual(observed.targets, replies.at(-1)?.targetInfos);
     assert.equal(value.counts.targets, replies.length); assert.equal(value.counts.pauses, replies.length - 1);
   }
+});
+
+void test("the V3 clock spans the backend's intended five-second loader chain before exact confirmation", async () => {
+  const backend = String.raw`C:\Program Files\synthetic-easyeda\resources\app\app.js`;
+  const editor = page(), loading = { ...page("file:///C:/Program%20Files/synthetic-easyeda/resources/app/assets/view/index.html?activated=synthetic"), targetId: "loading-page" };
+  const observer = new CurrentFootprintHeldCachePageReadiness(backend), sampledAt: number[] = [], waits: number[] = [];
+  let elapsed = 0;
+  const observed = await observer.observeBrowser({ assertCurrent: (): void => undefined, version: () => Promise.resolve(version),
+    targets: (): Promise<Readonly<Record<string, unknown>>> => {
+      sampledAt.push(elapsed); return Promise.resolve({ targetInfos: elapsed < 4700 + 300 ? [loading, editor] : [editor] });
+    }, pause: (milliseconds): Promise<void> => { waits.push(milliseconds); elapsed += milliseconds; return Promise.resolve(); } });
+  assert.deepEqual(sampledAt, [0, 1000, 2000, 3000, 4000, 5000, 6000]);
+  assert.deepEqual(waits, [1000, 1000, 1000, 1000, 1000, 1000]);
+  assert.deepEqual(observed.targets, [editor]);
+  const observation = observer.observation(); assert.equal(observation.delayMilliseconds, 1000);
+  assert.deepEqual(observation.samples.map(sample => sample.classification), [...Array.from({ length: 5 }, () => "ready-with-loading"), "ready", "ready"]);
+});
+
+void test("a V3 persistent loader consumes at most fifteen seconds of deliberate waits and never seals", async () => {
+  const backend = String.raw`C:\Program Files\synthetic-easyeda\resources\app\app.js`;
+  const loading = { ...page("file:///C:/Program%20Files/synthetic-easyeda/resources/app/assets/view/index.html?activated=synthetic"), targetId: "loading-page" };
+  const observer = new CurrentFootprintHeldCachePageReadiness(backend), sampledAt: number[] = [];
+  let elapsed = 0;
+  await assert.rejects(observer.observeBrowser({ assertCurrent: (): void => undefined, version: () => Promise.resolve(version),
+    targets: (): Promise<Readonly<Record<string, unknown>>> => { sampledAt.push(elapsed); return Promise.resolve({ targetInfos: [loading, page()] }); },
+    pause: (milliseconds): Promise<void> => { elapsed += milliseconds; return Promise.resolve(); } }), /TARGET_LIMIT/u);
+  assert.deepEqual(sampledAt, Array.from({ length: 16 }, (_unused, index) => index * 1000));
+  assert.equal(elapsed, 15_000); assert.equal(observer.observation().failureKind, "target-limit");
+  await assert.rejects(observer.observeBrowser({ assertCurrent: (): void => undefined, version: () => Promise.reject(new Error("consumed")),
+    targets: () => Promise.reject(new Error("consumed")), pause: () => Promise.reject(new Error("consumed")) }), /CONSUMED/u);
+  assert.equal(sampledAt.length, 16);
 });
 
 void test("unstable title, persistent loader and a lone final editor exhaust the same sixteen-sample bound", async () => {
