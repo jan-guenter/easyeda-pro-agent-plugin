@@ -4,8 +4,10 @@ Source review on 2026-11-04 against main
 `bd357765a3801afa3642014775b2af3afe9a3a58`. This review covers
 `lib_Cbb.get`, `lib_Cbb.search`, `pcb_Document.getPrimitiveAtPoint` and
 `pcb_Document.getPrimitivesInRegion`. None gained an enabled execution route.
-No EasyEDA MCP, native diagnostic, editor, project, profile, installed package
-or cache operation was performed. No new comparison model or test was added.
+No EasyEDA MCP, native diagnostic or editor call was made. This investigation
+opened or edited no local project and changed no profile, installed package
+or cache. Anonymous vendor HTTP probes are documented below. No new comparison
+model or test was added.
 
 ## Primary implementation and declarations
 

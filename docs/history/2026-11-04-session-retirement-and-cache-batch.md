@@ -83,3 +83,17 @@ installation and admission of the installed batch are subsequent release
 stages. No connected V3 cache run or new native writer was performed by this
 source batch. The wider structure-completion, export and reader backlog remains
 open, along with project/writer coordinator disposal for session handoff.
+
+## PR166 follow-up
+
+The first final-head CI attempt found two stale expected tool rosters
+in the packaged-startup tests. Both omitted the new session tool. The expected
+rosters and the current209 test title were corrected; registration, isolation
+checks and deadlines were unchanged. The failed CI log remains retained.
+
+CodeRabbit's reported prose issues were addressed by clarifying the previous
+release's supplied-archive sentence and distinguishing the reader research's
+anonymous HTTP probes from local project operations. No further review command
+was posted. The original full-review invocation stopped after the head changed;
+published automatic reviews separately covered the full PR range. Final review
+and CI results remain separate evidence.
