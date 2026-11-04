@@ -118,6 +118,10 @@ export class CurrentSchematicRenameOperationCoordinator {
     this.engine = engine; this.opener = opener; this.writer = new CurrentSchematicRenameWriterCoordinator(engine);
     this.verifier = new CurrentSchematicRenameVerificationCoordinator(engine); this.scratch = new CurrentSchematicAgedSqlReferenceStage(engine);
   }
+  /** For an opening-only coordinator with no lifecycle slots, observe its exact
+   * opener's disposal latch. Once a slot exists, require the actual final verifier
+   * so pending or failed rename allocations cannot inherit opening cleanup.
+   */
   public isRuntimeDisposed(runtime?: WindowsControlRuntime): boolean {
     return !this.busy && (this.slots.size === 0 ? this.opener.isRuntimeDisposed(runtime) : this.verifier.isRuntimeDisposed(runtime));
   }
@@ -125,6 +129,10 @@ export class CurrentSchematicRenameOperationCoordinator {
     complete: (runtime: WindowsControlRuntime) => void): Promise<OriginalTerminalRuntimeDisposal> {
     return this.releaseCompletedRuntime(operationId, complete, true);
   }
+  /** Release only this single fully verified original schematic rename lifecycle.
+   * Return the final verifier's receipt through its exact opening transfer before
+   * notifying the matching index allocation; cleanup-only slots remain retained.
+   */
   public async releaseCompletedRuntime(operationId: string,
     complete: (runtime: WindowsControlRuntime) => void, settleRecordsOnly = false): Promise<OriginalTerminalRuntimeDisposal> {
     const slot = this.slots.get(operationId);

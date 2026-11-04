@@ -46,6 +46,9 @@ export class CurrentSymbolCopyOperationCoordinator {
     this.writer = new CurrentSymbolCopyWriterCoordinator(engine); this.verifier = new CurrentSymbolCopyVerificationCoordinator(engine);
   }
 
+  /** Expose only a completed copy's original final-verifier disposal latch.
+   * Failed phases, selected cleanup or a pending coordinator never count as disposal.
+   */
   public isRuntimeDisposed(runtime?: WindowsControlRuntime): boolean {
     return !this.busy && this.slot?.next === "completed" && this.slot.copyVerified && this.slot.failedPhase === undefined &&
       !this.slot.cleanupRequested && this.slot.cleanup === undefined && this.verifier.isRuntimeDisposed(runtime);
@@ -54,6 +57,10 @@ export class CurrentSymbolCopyOperationCoordinator {
     complete: (runtime: WindowsControlRuntime, receipt: OriginalTerminalRuntimeDisposal) => void): Promise<OriginalTerminalRuntimeDisposal> {
     return this.releaseCompletedRuntime(operationId, complete, true);
   }
+  /** Release through the successful copy's retained final verifier and callback.
+   * The same slot must remain complete and free of cleanup before its original
+   * runtime receipt can reach the opening owner and matching index allocation.
+   */
   public async releaseCompletedRuntime(operationId: string,
     complete: (runtime: WindowsControlRuntime, receipt: OriginalTerminalRuntimeDisposal) => void, settleRecordsOnly = false): Promise<OriginalTerminalRuntimeDisposal> {
     const slot = this.slot;

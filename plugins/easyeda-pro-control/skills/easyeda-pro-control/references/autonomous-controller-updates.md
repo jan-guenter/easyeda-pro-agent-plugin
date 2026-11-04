@@ -16,7 +16,9 @@ retirement while its original package still exists. Require `state:"retired"`,
 connection offline afterward. A stale or conflict connection cannot retry the
 lease or take over control.
 
-Start the client with Node24.18.0, npm11.16.0, zero soft core limit and a canonical
+Run the client from the trusted checkout's `plugins/easyeda-pro-control`
+directory, with Node24.18.0, npm11.16.0 and zero soft core limit. The relative
+script path below belongs to that checkout; `--plugin-root` selects a canonical
 verified installed package or trusted frozen build:
 
 ```bash
@@ -56,8 +58,12 @@ helper release. Later metadata generations retain their own final verification
 proof, with initial ordinary termination recorded before the first relaunch.
 
 ```json
-{"id":"release-1","tool":"easyeda_control_native_release","arguments":{"request":{"action":"release-completed","kind":"pcb-rename","operationId":"original-operation-id","confirmReleaseOriginalRuntime":true}}}
+{"id":"release-1","cleanup":true,"tool":"easyeda_control_native_release","arguments":{"request":{"action":"release-completed","kind":"pcb-rename","operationId":"original-operation-id","confirmReleaseOriginalRuntime":true}}}
 ```
+
+The top-level `cleanup:true` marker charges the manager's reserved cleanup
+budget. Use it for explicit cleanup calls after normal-call capacity is
+exhausted. It grants no facade authority and changes no tool arguments.
 
 Kinds are `project-opening`, `pcb-rename`, `schematic-rename`, `symbol-metadata`
 and `symbol-copy`. Each original owner determines whether its exact workflow is
@@ -90,8 +96,14 @@ termination signal. Only then does it publish `replacementAllowed:true`.
 
 An acknowledged preflight refusal is inspected on that same connection. Exact
 active state preserves the original cleanup path; finish that cleanup before
-another explicit retirement. Unknown acknowledgments or transport failures never
-authorize a replacement. Keep the manager alive through review of ambiguity.
+another explicit retirement while its cleanup reserve remains available.
+Once that reserve is exhausted, the manager permits one final retirement and
+sets `finalRetirementAttemptConsumed` before dispatch. Even an exact active-state
+preflight refusal consumes that final attempt. Finish original cleanup before
+using it. After successful final retirement and child closure, shut down the
+exhausted manager; it cannot start another generation. Unknown acknowledgments
+or transport failures never authorize a replacement. Keep the manager alive
+through review of ambiguity.
 
 Run the official Git marketplace upgrade and verify the installed state and
 complete package after retirement. Installation can prune the old package, so
@@ -122,8 +134,11 @@ Keep new MCP connection creation outside the retirement-to-replacement window.
 Source/review subagents can initialize their plugin connection while the live
 controller still owns the lease. A competing connection from the same agent
 team must retire through its own supported tool; another chat's owner cannot
-be displaced. If startup yields a conflict or fails before any caller tool was
-dispatched, use `{"id":"startup-cleanup","action":"cleanup-startup","confirmCloseOriginalStartup":true}`.
+be displaced. If startup fails, inspect first. A selection or runtime failure
+before child allocation leaves no original starting child, so `cleanup-startup`
+refuses. Shut down only after inspection confirms no owned child remains.
+If startup retained an unused child, with no caller tool dispatched, use
+`{"id":"startup-cleanup","action":"cleanup-startup","confirmCloseOriginalStartup":true}`.
 It closes only that manager's retained unused startup child through EOF and
 observed exit/stdio closure. It never retries or promotes the conflict, creates
 a replacement permit, or closes the competing owner. After cleanup, shut down

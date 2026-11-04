@@ -176,12 +176,18 @@ void test("runtime does not start helpers implicitly and binds normal close/rele
 
 async function waitForRuntimeClose(pending: Promise<null>): Promise<void> { await pending; }
 
+/** Check rejection by object identity so wrapping or replacing a consumed
+ * release failure cannot satisfy the regression through equal error text.
+ */
 async function assertOriginalFailure(pending: Promise<unknown>, failure: Error): Promise<void> {
   let observed: unknown;
   try { await pending; } catch (error) { observed = error; }
   assert.equal(observed, failure);
 }
 
+/** Build an offline runtime around the synthetic supervisor, allowing tests
+ * to hold or reject actual acquisition/release awaits without native startup.
+ */
 function releaseRuntimeFixture(overrides: Partial<WindowsAuthoritySupervisor> = {}, dependencies: WindowsRuntimeDependencies = {}): {
   readonly runtime: WindowsControlRuntime; readonly supervisor: WindowsAuthoritySupervisor;
 } {

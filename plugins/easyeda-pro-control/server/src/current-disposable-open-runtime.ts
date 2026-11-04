@@ -446,6 +446,9 @@ export class CurrentDisposableOpenCoordinator {
       return receipt !== undefined && isOriginalTerminalRuntimeDisposalCompleted(receipt, slot.runtime) && (runtime === undefined || slot.runtime === runtime);
     });
   }
+  /** Require one retained original opening and its supported downstream inventory.
+   * Partial transfers, additional owners and unsettled allocations stay blocked.
+   */
   private assertDisposalInventory(runtime: OpenRuntime, openingOperationId: string, pcb: number, schematic: number): void {
     requireValue(this.productionServices && !this.busy && this.retained.size === 1 && this.retained.get(openingOperationId)?.runtime === runtime &&
       this.generations.size === 0 && this.baselines.size === 0 && this.baselinePurposes.size === 0 && this.baselineTransfers.size === 0 && this.validations.size === 0 &&
@@ -453,6 +456,9 @@ export class CurrentDisposableOpenCoordinator {
       this.pcbRenameOpeningOwners.size === pcb && this.schematicRenameOpeningOwners.size === schematic && this.baselineJobs.size === pcb + schematic,
     "Opening native release has an unsupported, partial or unsettled original downstream allocation.");
   }
+  /** Accept disposal only through the exact completed PCB opening transfer and
+   * its issued runtime receipt, retaining the original reservation and owner maps.
+   */
   public acceptCurrentPcbRenameCompletedRuntimeDisposal(owner: CurrentPcbRenameOpeningOwner, runtime: WindowsControlRuntime,
     receipt: OriginalTerminalRuntimeDisposal): void {
     const issued = issuedPcbRenameOpeningOwners.get(owner);
@@ -462,6 +468,9 @@ export class CurrentDisposableOpenCoordinator {
     assertOriginalTerminalRuntimeDisposal(receipt, runtime, "pcb-rename", owner.operationId);
     this.runtimeDisposals.set(runtime, receipt);
   }
+  /** Accept disposal only through the exact completed schematic opening transfer
+   * and its issued runtime receipt. Historical ownership is never reconstructed.
+   */
   public acceptCurrentSchematicRenameCompletedRuntimeDisposal(owner: CurrentSchematicRenameOpeningOwner, runtime: WindowsControlRuntime,
     receipt: OriginalTerminalRuntimeDisposal): void {
     const issued = issuedSchematicRenameOpeningOwners.get(owner);
@@ -471,6 +480,10 @@ export class CurrentDisposableOpenCoordinator {
     assertOriginalTerminalRuntimeDisposal(receipt, runtime, "schematic-rename", owner.operationId);
     this.runtimeDisposals.set(runtime, receipt);
   }
+  /** Select the retained symbol family before dispatch and require its sole
+   * original baseline transfer. The actual final verifier returns an opaque
+   * receipt through that same transfer before the index allocation is released.
+   */
   public async releaseCompletedSymbolRuntime(operationId: string, family: "symbol-metadata" | "symbol-copy",
     complete: (runtime: WindowsControlRuntime) => void, settleRecordsOnly = false): Promise<OriginalTerminalRuntimeDisposal> {
     const operation = family === "symbol-copy" ? this.copyOperations.get(operationId) :
@@ -506,6 +519,10 @@ export class CurrentDisposableOpenCoordinator {
     complete: (runtime: WindowsControlRuntime) => void): Promise<OriginalTerminalRuntimeDisposal> {
     return this.releaseCompletedRuntime(operationId, complete, true);
   }
+  /** Release the original untransferred opening only after its private success or
+   * settled retirement latch. Preserve its exact final journal and runtime through
+   * helper acknowledgment, separate completion publication and index notification.
+   */
   public async releaseCompletedRuntime(operationId: string,
     complete: (runtime: WindowsControlRuntime) => void, settleRecordsOnly = false): Promise<OriginalTerminalRuntimeDisposal> {
     const slot = this.retained.get(operationId);
@@ -520,12 +537,19 @@ export class CurrentDisposableOpenCoordinator {
       if (release === undefined) {
         const engine = this.options.engine, journalText = canonicalJson(slot.journal);
         const ownerGuard = this.options.assertOwner, runtimeReader = this.options.runtime;
+        /** Pin the retained opening and original resolver identities without invoking
+         * an owned-only resolver after helper release has closed native admission.
+         */
         const owner = (): void => {
           requireValue(this.retained.get(operationId) === slot && slot.runtime === runtime && this.options.engine === engine &&
             this.options.runtime === runtimeReader && this.options.assertOwner === ownerGuard &&
             (this.completedOpeningRetirements.has(slot) || this.completedSuccessfulOpenings.has(slot)) && canonicalJson(slot.journal) === journalText,
           "Opening disposal lost its original retired slot or settled journal.");
         };
+        /** Before release, recheck the original persisted journal, latest root and empty
+         * Job, plus closure of the exact authenticated dispatch. Native owner guards
+         * are confined to this stage because release invalidates their proof epoch.
+         */
         const eligible = async (): Promise<void> => {
           owner(); this.currentUntransferred(slot);
           requireValue(canonicalJson(await this.load(operationId)) === journalText, "Opening terminal journal changed before native release.");
@@ -1369,6 +1393,10 @@ export class CurrentDisposableOpenCoordinator {
     requireValue(!baselineRuntimeReservations.has(runtime), "Current disposable opening was transferred to a one-shot baseline owner.");
   }
 
+  /** Transfer only the original preparation and generation into one baseline owner.
+   * Keep the source opening and permanent runtime reservation bound to that owner
+   * so later cleanup can return through the same private transfer registry.
+   */
   private transferBaseline(slot: Retained, engine: EasyedaControlEngine, generation: CurrentDisposableOpenGeneration,
     preparation: CurrentOwnedSymbolMetadataPreparation | CurrentOwnedSymbolCopyPreparation, operationId: string): CurrentSymbolBaselineOwner | CurrentSymbolCopyBaselineOwner {
     const original = preparation.profile === "private.current-owned-symbol-copy-preparation.v1"
@@ -1599,6 +1627,10 @@ export class CurrentDisposableOpenCoordinator {
     return result;
   }
 
+  /** Consume one original navigation attempt under tracked dispatch and checkpoints.
+   * Publish and reload a successful native-identity result before issuing its
+   * cleanup latch; opening alone grants no persistence or writer authority.
+   */
   private async open(request: OpenRequest | OrdinaryOpenRequest | SchematicOpenRequest, fingerprint: Value,
     purpose: CurrentDisposableOpenPurpose = "disposable-validation"): Promise<Value> {
     const { engine } = this.options;
@@ -1693,6 +1725,10 @@ export class CurrentDisposableOpenCoordinator {
     this.current(slot); return slot;
   }
 
+  /** Observe the original untransferred target without replaying navigation.
+   * Revoke any prior success latch before dispatch, and renew it only after the
+   * new native-identity result and its journal publication have settled.
+   */
   private async observe(loaded: OpenJournal): Promise<Value> {
     requireValue(!loaded.orphanedCallPossible && loaded.state !== "plan-invalidated", "An uncertain or retired open cannot dispatch observations.");
     const slot = this.retainedJournal(loaded);
@@ -1784,6 +1820,10 @@ export class CurrentDisposableOpenCoordinator {
     return { ...summary(journal), action: "request-normal-close", terminationProved: false, quarantineCleared: false };
   }
 
+  /** Retire a stopped original opening after root and empty-Job termination and
+   * closed dispatch proof. Keep quarantine until its no-replay record is durable,
+   * then retire the original capture and issue only a settled cleanup latch.
+   */
   private async retire(loaded: OpenJournal): Promise<Value> {
     requireValue(!isTerminalOperation(loaded), "Current disposable-open attempt is already terminal.");
     const slot = this.retainedJournal(loaded);

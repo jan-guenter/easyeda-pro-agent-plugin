@@ -283,10 +283,16 @@ export class WindowsControlRuntime implements RuntimeExecutionAuthorityValidator
     }); } finally { this.launchInFlight = false; }
   }
 
+  /** Refuse new authority work as soon as actual release is reserved, including
+   * while the original helper's closure is still pending or has failed.
+   */
   private assertNotReleased(): void {
     if (this.releasePromise !== undefined || this.state === "released") { throw new Error("Windows runtime changed during release; its authority is consumed."); }
   }
 
+  /** Share one original helper acquisition across callers. If release overtakes
+   * startup, join that helper's once-only close before refusing its use.
+   */
   private async ensureSupervisor(): Promise<WindowsAuthoritySupervisor> {
     this.assertNotReleased();
     if (this.supervisor !== undefined) { return this.supervisor; }
@@ -299,6 +305,11 @@ export class WindowsControlRuntime implements RuntimeExecutionAuthorityValidator
     return supervisor;
   }
 
+  /** Admit the installed executable before allocating the proof helper and
+   * retain its original methods. State drift cannot transfer the new helper
+   * to another generation, and an uncertain start remains distinguishable
+   * from a failure that allocated no helper.
+   */
   private async acquireSupervisor(): Promise<WindowsAuthoritySupervisor> {
     const expectedState = this.state;
     const hashExecutable = this.dependencies.hashExecutable ?? hashInstalledExecutable;
@@ -329,6 +340,9 @@ export class WindowsControlRuntime implements RuntimeExecutionAuthorityValidator
     return this.supervisor;
   }
 
+  /** Preserve the exact original helper release attempt. Reentrant callers
+   * share its pending or failed Promise instead of dispatching another close.
+   */
   private releaseSupervisorOnce(supervisor: WindowsAuthoritySupervisor): Promise<void> {
     const release = this.supervisorReleaseMethods.get(supervisor);
     if (this.supervisor !== supervisor || release === undefined || supervisor.release !== release) { throw new Error("Windows runtime lost its original helper or release method before release."); }
@@ -338,6 +352,9 @@ export class WindowsControlRuntime implements RuntimeExecutionAuthorityValidator
     return this.supervisorRelease;
   }
 
+  /** Defer the original close callback until its Promise has been retained,
+   * then recheck the helper and method identities before invoking it.
+   */
   private async releaseOriginalSupervisor(supervisor: WindowsAuthoritySupervisor, release: WindowsAuthoritySupervisor["release"]): Promise<void> {
     await Promise.resolve();
     if (this.supervisor !== supervisor || supervisor.release !== release) { throw new Error("Windows runtime lost its original helper or release method before release."); }
@@ -376,11 +393,17 @@ export class WindowsControlRuntime implements RuntimeExecutionAuthorityValidator
     const observation = await windowsClockObservationForResult(slot.original, "launch"); current(); return observation;
   }
 
+  /** Return only this explicitly launched generation's retained supervisor.
+   * Release reservation immediately revokes new proof and cleanup dispatch.
+   */
   private requireSupervisor(): WindowsAuthoritySupervisor {
     if (this.releasePromise !== undefined || this.state !== "owned" || this.supervisor === undefined || this.currentLaunch === null) { throw new Error("Windows authority requires the explicitly launched supervised runtime."); }
     return this.supervisor;
   }
 
+  /** Withhold a late proof or receipt if its original supervisor or launch
+   * ceased to be current while the operation was awaiting completion.
+   */
   private async currentSupervisorResult<Result>(supervisor: WindowsAuthoritySupervisor, launch: WindowsAuthorityLaunch | null, pending: Promise<Result>): Promise<Result> {
     const result = await pending;
     if (this.requireSupervisor() !== supervisor || this.currentLaunch !== launch) { throw new Error("Windows runtime ownership changed during proof completion."); }
@@ -552,6 +575,10 @@ export class WindowsControlRuntime implements RuntimeExecutionAuthorityValidator
     return this.releasePromise;
   }
 
+  /** Join any prelaunch acquisition and original helper closure before issuing
+   * local acknowledgment. Only a known allocation-free failure can be treated
+   * as an empty close; uncertain startup or helper failure remains consumed.
+   */
   private async completeRelease(): Promise<void> {
     // Retain releasePromise before invoking any original owner callback.
     await Promise.resolve();

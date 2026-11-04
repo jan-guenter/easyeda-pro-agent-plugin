@@ -18,6 +18,10 @@ interface Harness {
   readonly invoke: (name: string, argument?: unknown) => Promise<Value>;
   readonly inspect: () => Value;
 }
+/** Evaluate the metadata lifecycle with separate synthetic forward and inverse
+ * owners, preserving their original continuation identities and call ordering.
+ * Native receipt issuance is tested in the concrete verifier and runtime suites.
+ */
 async function fixture(purpose: Harness["state"]["purpose"] = "disposable-validation"): Promise<Harness> {
   const calls: string[] = [], state: Harness["state"] = { authenticationPending: false, terminationPending: false, cleanupInspectionFails: false,
     purpose, startupExpectationRetained: true, fullReopenReadbackInvariant: true };
@@ -40,6 +44,9 @@ async function fixture(purpose: Harness["state"]["purpose"] = "disposable-valida
       return { ...this.status };
     }
     public isRuntimeDisposed(): boolean { return this.runtimeDisposed; }
+    /** Model one final verifier callback after its original synthetic retirement.
+     * The wrapper test checks owner selection; this receipt grants no native authority.
+     */
     public releaseCompletedRuntime(operationId: string, complete: (runtime: object, receipt: Value) => void): Promise<Value> {
       assert.equal(this.runtimeDisposed, false); assert.equal(this.status["retired"], true);
       this.step("release-runtime");
@@ -318,6 +325,9 @@ void test("metadata disposal selects only the actual completed final forward or 
     await f.invoke(ordinary ? "beginOrdinary" : "begin");
     const inspection = structuredClone(f.inspect()); inspection["nextPhase"] = "completed"; inspection["forwardVerified"] = true;
     let callbacks = 0;
+    /** Require the purpose-selected final operation ID: the ordinary forward owner
+     * or the disposable inverse owner, with exactly one allocation callback.
+     */
     const complete = (runtime: unknown, receipt: unknown): void => {
       assert.deepEqual(runtime, { original: "shared-runtime" });
       assert.equal(object(receipt)["operationId"], ordinary ? ID : INVERSE_ID); callbacks += 1;

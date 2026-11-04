@@ -13,6 +13,10 @@ import { closedSessionFixture } from "./helpers/windows-closed-session-fixture.t
 
 function noDispatchBinding(): undefined { return undefined; }
 
+/** Compose the actual runtime and disposal publisher with a synthetic supervisor.
+ * The helper gate and capture failure expose consumed cleanup boundaries while
+ * isolated managed files retain the real intent and completion records.
+ */
 async function fixture(operationId: string, releaseGate?: Promise<unknown>, failCaptures = false): Promise<{
   runtime: WindowsControlRuntime; release: OriginalTerminalRuntimeRelease;
   helperStarted: Promise<null>;
@@ -35,10 +39,16 @@ async function fixture(operationId: string, releaseGate?: Promise<unknown>, fail
       callTool: (): Promise<never> => Promise.reject(new Error("No bridge dispatch belongs to disposal.")),
     } }, { hashExecutable: (): Promise<string> => Promise.resolve("d".repeat(64)), startSupervisor: (): Promise<WindowsAuthoritySupervisor> => Promise.resolve(supervisor) });
   const launch = await runtime.launch();
+  /** Model the index resolver that becomes unavailable after native release.
+   * Post-release record settlement must retain object identity without calling it.
+   */
   const resolveOwnedRuntime = (): WindowsControlRuntime => {
     assert.equal(state.currentOwner, true); assert.equal(runtime.status().state, "owned"); return runtime;
   };
   const owner = (): void => { assert.equal(state.currentOwner, true); };
+  /** Check the synthetic original launch through the owned-only resolver around
+   * its termination await, matching the pre-release workflow eligibility boundary.
+   */
   const eligible = async (): Promise<void> => {
     assert.equal(resolveOwnedRuntime(), runtime);
     const observation = await runtime.observeLaunchTermination();
@@ -49,6 +59,9 @@ async function fixture(operationId: string, releaseGate?: Promise<unknown>, fail
     state.capturesRetired += 1; if (failCaptures) { throw new Error("Synthetic unsettled capture cleanup"); }
     return Promise.resolve();
   });
+  /** Require acknowledged closure and the original issued receipt before counting
+   * the allocation callback; its completion latch must still be false on entry.
+   */
   const complete = (original: WindowsControlRuntime, receipt: OriginalTerminalRuntimeDisposal): void => {
     assert.equal(original, runtime); assert.equal(runtime.isReleaseAcknowledged(), true);
     assertOriginalTerminalRuntimeDisposal(receipt, runtime, "project-opening", operationId);

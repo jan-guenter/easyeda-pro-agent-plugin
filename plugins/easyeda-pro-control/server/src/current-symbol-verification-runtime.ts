@@ -161,10 +161,17 @@ export class CurrentSymbolVerificationCoordinator {
     return this.slots.size > 0 && this.runtimeReleases.size === this.slots.size &&
       [...this.runtimeReleases.values()].every(release => release.isDisposed(runtime));
   }
+  /** Finish retained disposal records after acknowledged helper closure,
+   * without repeating native release or reviving inverse authority.
+   */
   public settleRuntimeReleaseRecords(operationId: string,
     complete: (runtime: WindowsControlRuntime, receipt: OriginalTerminalRuntimeDisposal) => void): Promise<OriginalTerminalRuntimeDisposal> {
     return this.releaseCompletedRuntime(operationId, complete, true);
   }
+  /** Release the final successful verifier's original helper and deliver its
+   * opaque disposal receipt to the allocation owner. Failed, partial and
+   * inverse-transferred generations cannot supply this cleanup authority.
+   */
   public async releaseCompletedRuntime(operationId: string,
     complete: (runtime: WindowsControlRuntime, receipt: OriginalTerminalRuntimeDisposal) => void, settleRecordsOnly = false): Promise<OriginalTerminalRuntimeDisposal> {
     const slot = this.slots.get(operationId);
@@ -179,6 +186,9 @@ export class CurrentSymbolVerificationCoordinator {
         const { runtime, launch } = slot, upstream = this.engine.upstream, validator = this.engine.executionAuthorityValidator;
         const capture = slot.capture, journalText = slot.journalText, source = slot.source;
         const settledText = canonicalJson({ saved: slot.saved, snapshot: slot.snapshot, comparison: slot.comparison });
+        /** Preserve original verifier and settled-record identity across release,
+         * when live capture proofs are no longer available for revalidation.
+         */
         const owner = (): void => {
           need(this.slots.get(operationId) === slot && slot.runtime === runtime && slot.launch === launch && slot.source === source &&
             slot.capture === capture && slot.retired && slot.releaseAttempted && !slot.failed && !slot.inverseTransferred && !slot.dispatchCaptureCleanupUncertain &&
@@ -186,6 +196,9 @@ export class CurrentSymbolVerificationCoordinator {
             this.engine.executionAuthorityValidator === validator && canonicalJson({ saved: slot.saved, snapshot: slot.snapshot, comparison: slot.comparison }) === settledText,
           "Symbol metadata final original verifier or settled records changed.");
         };
+        /** Recheck durable terminal records and observe the latest original
+         * root/Job termination and closed dispatch scope before helper release.
+         */
         const eligible = async (): Promise<void> => {
           owner(); slot.infrastructure();
           need(canonicalJson(await loadOperation(operationId)) === journalText, "Symbol metadata terminal journal changed before native release.");

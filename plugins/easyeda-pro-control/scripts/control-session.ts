@@ -144,6 +144,8 @@ export async function* boundedLines(
   }
 }
 
+/** Publish one bounded result inline or as an exclusive, synced private file.
+ * Publication failure grants no retry of the original facade operation. */
 export async function publishSessionResult(
   request: CallRequest,
   result: unknown,
@@ -187,6 +189,8 @@ export async function publishSessionResult(
   });
 }
 
+/** Dispatch admitted tools serially and await each result's publication.
+ * Invalid input, shutdown or uncertain dispatch/publication stops later lines. */
 export async function runSessionRequests(
   lines: AsyncIterable<string>,
   allowedTools: ReadonlySet<string>,
@@ -342,6 +346,8 @@ export async function selectSessionLaunch(suppliedRoot: string): Promise<ReturnT
   return definition;
 }
 
+/** Retain one verified facade connection for the serial foreground request loop.
+ * Cleanup closes that original transport without reconnecting after an error. */
 async function main(): Promise<void> {
   sessionPhase = "arguments";
   const option = process.argv[2];

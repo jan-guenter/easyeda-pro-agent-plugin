@@ -125,6 +125,9 @@ export class ClosedSymbolOperationEntry {
       claimState: this.claimState, claim: this.claim, coordinator: this.coordinator, terminal: this.terminal,
       full: this.full, completion: this.completion, failure: this.failure, phase: this.phase, replayAllowed: false });
   }
+  /** Expose the original coordinator completion latch only when entry cleanup
+   * is idle; an inspect result or terminal projection cannot release ownership.
+   */
   public isRuntimeDisposed(runtime?: WindowsControlRuntime): boolean {
     return !this.releaseBusy && this.coordinator?.isRuntimeDisposed(runtime) === true;
   }
@@ -132,6 +135,10 @@ export class ClosedSymbolOperationEntry {
     complete: (runtime: WindowsControlRuntime) => void): Promise<OriginalTerminalRuntimeDisposal> {
     return this.releaseCompletedRuntime(operationId, complete, true);
   }
+  /** Serialize cleanup on this entry's original gate after its complete result.
+   * Retain the same full and terminal objects throughout; settlement forwards
+   * only the already acknowledged release and never repeats native cleanup.
+   */
   public async releaseCompletedRuntime(operationId: string,
     complete: (runtime: WindowsControlRuntime) => void, settleRecordsOnly = false): Promise<OriginalTerminalRuntimeDisposal> {
     const { coordinator, full, completion } = this;

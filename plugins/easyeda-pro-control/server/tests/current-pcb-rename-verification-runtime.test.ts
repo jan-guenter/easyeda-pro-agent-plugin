@@ -26,6 +26,10 @@ interface Harness {
 const ID = "synthetic-current-verification";
 function object(value: unknown): Bag { assert.ok(isRecord(value)); return value; }
 function noOp(): undefined { return undefined; }
+/** Run the maintained PCB verifier with synthetic original lifecycle inputs
+ * and transport replies. The real disposal helper publishes isolated records;
+ * the injected helper gate exposes pending and rejected cleanup without native I/O.
+ */
 async function fixture(failure: Failure = "none", operationId = ID, releaseHelper: () => Promise<void> = () => Promise.resolve()): Promise<Harness> {
   const continuation = Object.freeze({ profile: "private.current-pcb-rename-writer-continuation.v1", operationId });
   const prior = { gatewayInstanceId: "g".repeat(43), sessionId: "o".repeat(43), sequence: 4,
@@ -180,18 +184,27 @@ async function fixture(failure: Failure = "none", operationId = ID, releaseHelpe
   });
   const constructor: unknown = runInContext(`${program}\nCurrentPcbRenameVerificationCoordinator;`, context); assert.ok(typeof constructor === "function");
   const instance: unknown = Reflect.construct(constructor, [engine]); assert.ok(isRecord(instance));
+  /** Invoke the evaluated verifier on its retained receiver, passing the original
+   * writer continuation only to start and the same operation ID to later stages.
+   */
   const invokeRaw = (name: string): unknown => {
     const method = instance[name]; assert.ok(typeof method === "function");
     return Reflect.apply(method, instance, [name === "start" ? continuation : operationId]) as unknown;
   };
   const generationAssert: unknown = runInContext("assertCurrentPcbRenameVerificationGeneration;", context);
   assert.ok(typeof generationAssert === "function");
+  /** Count allocation disposal only for the original runtime and issued receipt.
+   * A serialized copy must fail the same private issuer check.
+   */
   const completeRelease = (received: WindowsControlRuntime, receipt: OriginalTerminalRuntimeDisposal): void => {
     assert.equal(received, runtime);
     assertOriginalTerminalRuntimeDisposal(receipt, received, "pcb-rename", operationId);
     assert.throws(() => { assertOriginalTerminalRuntimeDisposal(structuredClone(receipt), received, "pcb-rename", operationId); });
     state.disposals += 1;
   };
+  /** Select the explicit release or record-settlement method on the same verifier.
+   * Both retain its original operation and allocation callback through completion.
+   */
   const releaseRuntime = async (settleRecordsOnly = false): Promise<Bag> => {
     const method = instance[settleRecordsOnly ? "settleRuntimeReleaseRecords" : "releaseCompletedRuntime"]; assert.ok(typeof method === "function");
     return object(await Reflect.apply(method, instance, [operationId, completeRelease]));

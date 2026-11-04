@@ -29,6 +29,10 @@ export function syntheticClockSample(index = 0): Bag {
     qpcAfter: (10_000_000_000_001_000n + base).toString(), qpcFrequency: "1000000", highResolution: true,
     localOffsetMinutes: 120, zoneRulesSha256: "f".repeat(64) };
 }
+/** Emulate only the fixed native child protocol while keeping maintained issuers.
+ * Retain each synthetic capture's original Job across relaunch and consume that
+ * binding on release; only the fixed read-only SQL delegate may spawn a real child.
+ */
 export async function clockSpawnFixture(context: TestContext, reviewedExecutionScopeSha256 = "e".repeat(64)): Promise<{
   helperPath: string; requests: Bag[]; behavior: ClockSpawnBehavior; child: SyntheticChild;
   spawnCalls: () => number; closeCount: () => number;
@@ -69,6 +73,10 @@ export async function clockSpawnFixture(context: TestContext, reviewedExecutionS
     return [{ pid: 100, role: "easyeda-main", startIdentity: `win32:63924748600000000${generation}:job:${jobId}` },
       { pid: 101, role: probe ? "native-socket-owner" : "renderer", startIdentity: `win32:63924748610000000${generation}:job:${jobId}` }];
   }
+  /** Build a fixed synthetic protocol reply for the current launch or retained
+   * capture. Releasing an older capture must match its original Job, and an unknown
+   * or consumed binding cannot acquire a replacement ownership response.
+   */
   function response(request: Bag): Bag {
     const action = request["action"];
     if (action === "begin-probe") { return { schema: "easyeda-pro-control.windows-process-probe.v1", bindingSha256: request["bindingSha256"], port: 12_345, nonce: "0".repeat(64) }; }

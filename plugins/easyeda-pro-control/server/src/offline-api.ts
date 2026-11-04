@@ -184,6 +184,7 @@ export async function runOfflineApi(request: ApiRequest): Promise<{ offline: tru
   return queryOfflineApi(request);
 }
 
+/** Route static references and argument validation without live admission; file preparation stays in runOfflineApi. */
 export function queryOfflineApi(request: ApiRequest): { offline: true; result: unknown } {
   let result: unknown;
   switch (request.action) {

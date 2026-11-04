@@ -10,6 +10,10 @@ import { readFile } from "node:fs/promises";
 import { retireSyntheticJournal } from "./synthetic-journal-retirement.ts";
 import { closedSymbolEntryFailureDiagnostic } from "../../src/closed-symbol-failure-diagnostic.ts";
 
+/** Exercise the actual entry, terminal and runtime owners on fixed synthetic I/O.
+ * Require original completion before helper disposal and preserve consumed
+ * results and owner identities when later requests are refused.
+ */
 export function registerSuccess(kind: "locked" | "aged"): void {
   void test(`dormant handler ${kind} selects its terminal from the original full result`, async context => {
     const f = await handlerFixture(context, kind), result = await f.entry.run(f.request);
@@ -47,6 +51,10 @@ export function registerSuccess(kind: "locked" | "aged"): void {
   });
 }
 
+/** Register refusal cases that must stop before a claim or native allocation.
+ * Real unresolved journals and queued request drift cannot become cleanup or
+ * ownership authority merely because their diagnostic result is inspectable.
+ */
 export function registerEarlyRefusals(): void {
   for (const orphan of [false, true]) {
     void test(`real ${orphan ? "orphan-risk" : "unfinished"} journal blocks before claim`, async context => {

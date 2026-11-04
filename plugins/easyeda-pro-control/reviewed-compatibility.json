@@ -3,7 +3,7 @@
     "source-tree": {
       "version": "0.3.0",
       "operationSchema": "easyeda-pro-control.operation.v2",
-      "sha256": "1e308fcbcdec9afbcc7e41a64c66aa1d924c255ab9ef4bdc959f7b84fff81ae3",
+      "sha256": "edd9bc8b97d50a212d77114f9060dd427403bb32844582d5d7d0198c7b727eca",
       "fileCount": 1000,
       "files": [
         {
@@ -118,8 +118,8 @@
         },
         {
           "relativePath": "closed-symbol-coordinator.ts",
-          "bytes": 57467,
-          "sha256": "f9b5612d6d46d6adb64de51190fafe4bf4705ee91b78a9695f333bc6551cf7d2"
+          "bytes": 58198,
+          "sha256": "aed94ce51fca94739a125cacc8153d9a07b45cfff3747319b5be080f8d3bb2fa"
         },
         {
           "relativePath": "closed-symbol-copy.ts",
@@ -128,8 +128,8 @@
         },
         {
           "relativePath": "closed-symbol-disposable-entry.ts",
-          "bytes": 20244,
-          "sha256": "050bc5104ec666bcf8819b510eac9d33f7d69fc499c6604cb356378d037412d6"
+          "bytes": 20653,
+          "sha256": "a6021b69c98e2e7df32ed8d5577c1ce2da7d3e0e2f4d135ce2035354390c276a"
         },
         {
           "relativePath": "closed-symbol-disposable-tool.ts",
@@ -213,8 +213,8 @@
         },
         {
           "relativePath": "closed-symbol-operation-entry.ts",
-          "bytes": 18794,
-          "sha256": "b5ccf67ef7a39d2bbc42b47210a39ee465460c4a088149029886d30872a9b4d7"
+          "bytes": 19203,
+          "sha256": "765165728a007c5fd2d3c8a63f3fb25d765a07f71a47a78a6cd4725b765ce01e"
         },
         {
           "relativePath": "closed-symbol-operation-intent.ts",
@@ -513,8 +513,8 @@
         },
         {
           "relativePath": "current-disposable-open-runtime.ts",
-          "bytes": 139659,
-          "sha256": "f054bf323ef1f2c67bff6c34990b86f766b24970b54eb974d623fe68f2792273"
+          "bytes": 142111,
+          "sha256": "5a568ff05119abb86b178eff2d5b7c2aeeeab45b932c02f054adbe64d4cd72c1"
         },
         {
           "relativePath": "current-disposable-open.ts",
@@ -2503,8 +2503,8 @@
         },
         {
           "relativePath": "current-pcb-rename-operation-runtime.ts",
-          "bytes": 20495,
-          "sha256": "58cf655b4bf6e93661d2b02ac87e8304dea09799191d273b9a4377b3bdcb79b4"
+          "bytes": 20905,
+          "sha256": "a7a29615db7c849a40bc90d8198d05a4265b257823134ec31abe4a7ab5b2c324"
         },
         {
           "relativePath": "current-pcb-rename-operation.ts",
@@ -2603,8 +2603,8 @@
         },
         {
           "relativePath": "current-pcb-rename-verification-runtime.ts",
-          "bytes": 56024,
-          "sha256": "3bc349b091f2f1b0016798302b39104e7b9f3cf3a635b5ce14523d10c5be2df0"
+          "bytes": 56718,
+          "sha256": "54e5f5d58625df97468ddb87b33296fe9e3f433b2d17c41b1d0deeb89c4925ae"
         },
         {
           "relativePath": "current-pcb-rename-writer-clock-program.ts",
@@ -3178,8 +3178,8 @@
         },
         {
           "relativePath": "current-schematic-rename-operation-runtime.ts",
-          "bytes": 28120,
-          "sha256": "e28b299a9d413c9f76e6408b2c4607b4e4c857c146cdeccee54b1636533362bd"
+          "bytes": 28622,
+          "sha256": "a3a87f3433cdfed5d3b614360ae2a140bf5406d0ddb14e19c521295c6464104e"
         },
         {
           "relativePath": "current-schematic-rename-operation.ts",
@@ -3263,8 +3263,8 @@
         },
         {
           "relativePath": "current-schematic-rename-verification-runtime.ts",
-          "bytes": 56855,
-          "sha256": "a91fc0e2360f2f12c481decc6b2a2f16740e370d55469905d1c727328432df3f"
+          "bytes": 57549,
+          "sha256": "654a245bf9b8d734d8ed5cfa031d76225bd2209b6d311c807aa291329b79a7b4"
         },
         {
           "relativePath": "current-schematic-rename-writer-clock-program.ts",
@@ -3373,8 +3373,8 @@
         },
         {
           "relativePath": "current-symbol-copy-operation-runtime.ts",
-          "bytes": 12190,
-          "sha256": "51b79c9d89262f361ead10bfb75a4f5af8373e822527a1127e7134d416a5cf03"
+          "bytes": 12608,
+          "sha256": "4bcb398ae29ab78aab2d8808dd31b8a17f0b59537a2736d82df174ff8c93820f"
         },
         {
           "relativePath": "current-symbol-copy-operation.ts",
@@ -3428,8 +3428,8 @@
         },
         {
           "relativePath": "current-symbol-copy-verification-runtime.ts",
-          "bytes": 52414,
-          "sha256": "72cda5536902d3cf999c900a89ab1e5f52895b8c962b12f21d9806dd36831316"
+          "bytes": 53134,
+          "sha256": "46e66317da85215acab1c5b9671f477178b9b9f0638acca6f71119c1fee94585"
         },
         {
           "relativePath": "current-symbol-copy-writer-runtime.ts",
@@ -3538,8 +3538,8 @@
         },
         {
           "relativePath": "current-symbol-validation-runtime.ts",
-          "bytes": 21506,
-          "sha256": "16d4ec5ea7f69c8342f9c65930582854fee337859f10383229e99323530b8048"
+          "bytes": 21996,
+          "sha256": "f644837ce7b21f55ca36186ef1486950d4d25e263265f5433f1528ce031e007c"
         },
         {
           "relativePath": "current-symbol-validation.ts",
@@ -3548,8 +3548,8 @@
         },
         {
           "relativePath": "current-symbol-verification-runtime.ts",
-          "bytes": 58348,
-          "sha256": "9e0204c5d6e8e28f8e081a24899afed5b4d50dd76e52a5225cd6d74921d1660b"
+          "bytes": 59073,
+          "sha256": "e59b27f2eb4f8758e8448ce06c7e570b6e55d14c1c1e9c38524ee2adeaf3484a"
         },
         {
           "relativePath": "current-symbol-write-budget.ts",
@@ -3958,8 +3958,8 @@
         },
         {
           "relativePath": "index.ts",
-          "bytes": 316625,
-          "sha256": "c7532a197a507d2d3faaf8a726f7de14510f7b1bad2dea35fd457f80b3ebaf3a"
+          "bytes": 316719,
+          "sha256": "e77a07ebaef7070a6b954338d979e801719b33080b6f29b503647431ab9e8fba"
         },
         {
           "relativePath": "lease.ts",
@@ -4208,8 +4208,8 @@
         },
         {
           "relativePath": "offline-api.ts",
-          "bytes": 43925,
-          "sha256": "353262a6a1179b086f78a0824b9016293b6f32235f59a670dbeb0e931b45d834"
+          "bytes": 44045,
+          "sha256": "519bc7a87477cf27c1e5d6d76d70650ca281b18eeda16b715736f4481a64985e"
         },
         {
           "relativePath": "offline-control.ts",
@@ -4913,8 +4913,8 @@
         },
         {
           "relativePath": "terminal-runtime-release.ts",
-          "bytes": 9600,
-          "sha256": "23a919be0b1d05041ba549a5e698f80417e73d46c10edeabb8382facfe208973"
+          "bytes": 10882,
+          "sha256": "73312a4b6d9f1f90433b751b18949e16c2a761b03f9cd0cbfb6b2a0a9ed99bab"
         },
         {
           "relativePath": "tool-operation-envelope.ts",
@@ -5003,15 +5003,15 @@
         },
         {
           "relativePath": "windows-runtime.ts",
-          "bytes": 33800,
-          "sha256": "83646e1eb1d117bf7b96c16262b6a484f82a3d41195b1a87853e33840c94fd3f"
+          "bytes": 35272,
+          "sha256": "1659a38dcb3d94dcf1b04d67d41f18d197ca116d4df996c5ed0145d1f004a609"
         }
       ]
     },
     "bundle": {
       "version": "0.3.0",
       "operationSchema": "easyeda-pro-control.operation.v2",
-      "sha256": "6090d6335cad50f41d70a10df9bbbf2433301825f030850ab9f45d0b670aad0d",
+      "sha256": "17d0d807d6c92a9c734c673179628e11b40d8311589c99edda46ed9ecebfce41",
       "fileCount": 3,
       "files": [
         {
@@ -5022,18 +5022,18 @@
         {
           "relativePath": "server.mjs",
           "bytes": 12138464,
-          "sha256": "9b7a909002c9de6130897990a06af57f14039368f3963226f4cb837afb58e7f1"
+          "sha256": "b48965ff25e0d3bace4107be62832ad90467b6fa763175f215a3de8b634ce508"
         },
         {
           "relativePath": "upstream-supervisor.mjs",
           "bytes": 795316,
-          "sha256": "fed3e0ef5b3d6ab2e9dd358515ef2291236de2fdd5dcb62456948fed0f7e1024"
+          "sha256": "31a265ed912876412435f203fbba0ebe7762b0c6378896c8af16f59b6293d9b3"
         }
       ]
     }
   },
   "schema": "easyeda-pro-control.reviewed-compatibility.v1",
-  "reviewedAt": "2026-11-04T12:22:32.756Z",
+  "reviewedAt": "2026-11-04T13:34:23.797Z",
   "upstream": {
     "serverVersion": "1.0.0-rc.1",
     "launcher": {

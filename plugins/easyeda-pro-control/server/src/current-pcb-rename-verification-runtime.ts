@@ -146,6 +146,10 @@ export class CurrentPcbRenameVerificationCoordinator {
     complete: (runtime: WindowsControlRuntime, receipt: OriginalTerminalRuntimeDisposal) => void): Promise<OriginalTerminalRuntimeDisposal> {
     return this.releaseCompletedRuntime(operationId, complete, true);
   }
+  /** Bind helper disposal to the privately retired successful final verification.
+   * Require settled saved-read, snapshot and comparison evidence with no failed
+   * capture cleanup; retain the release owner for explicit record-only settlement.
+   */
   public async releaseCompletedRuntime(operationId: string,
     complete: (runtime: WindowsControlRuntime, receipt: OriginalTerminalRuntimeDisposal) => void, settleRecordsOnly = false): Promise<OriginalTerminalRuntimeDisposal> {
     const slot = this.slots.get(operationId);
@@ -160,6 +164,9 @@ export class CurrentPcbRenameVerificationCoordinator {
         const { runtime, launch } = slot, upstream = this.engine.upstream, validator = this.engine.executionAuthorityValidator;
         const capture = slot.capture, journalText = slot.journalText, source = slot.source;
         const settledText = canonicalJson({ saved: slot.saved, snapshot: slot.snapshot, comparison: slot.comparison });
+        /** Keep the final slot, original runtime and sealed result records stable after
+         * capture retirement, without reviving the expired native proof epoch.
+         */
         const owner = (): void => {
           need(this.slots.get(operationId) === slot && slot.runtime === runtime && slot.launch === launch && slot.source === source &&
             slot.capture === capture && slot.retired && slot.releaseAttempted && !slot.failed && !slot.dispatchCaptureCleanupUncertain &&
@@ -167,6 +174,10 @@ export class CurrentPcbRenameVerificationCoordinator {
             this.engine.executionAuthorityValidator === validator && canonicalJson({ saved: slot.saved, snapshot: slot.snapshot, comparison: slot.comparison }) === settledText,
           "PCB final original verifier or settled records changed.");
         };
+        /** Before helper release, recheck the original infrastructure and terminal bytes
+         * around each await, then freshly observe the same final root and empty Job with
+         * no authenticated bridge session or dispatch scope left.
+         */
         const eligible = async (): Promise<void> => {
           owner(); slot.infrastructure();
           need(canonicalJson(await loadOperation(operationId)) === journalText, "PCB terminal journal changed before native release.");

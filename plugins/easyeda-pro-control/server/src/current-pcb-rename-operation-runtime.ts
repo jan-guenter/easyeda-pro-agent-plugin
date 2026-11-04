@@ -64,6 +64,9 @@ export class CurrentPcbRenameOperationCoordinator {
     this.engine = engine; this.opener = opener; this.writer = new CurrentPcbRenameWriterCoordinator(engine);
     this.verifier = new CurrentPcbRenameVerificationCoordinator(engine); this.scratch = new CurrentPcbAgedSqlReferenceStage(engine);
   }
+  /** Observe only the original final verifier's irreversible disposal latch;
+   * completed phase JSON cannot release this operation's retained ownership.
+   */
   public isRuntimeDisposed(runtime?: WindowsControlRuntime): boolean {
     return !this.busy && this.verifier.isRuntimeDisposed(runtime);
   }
@@ -71,6 +74,10 @@ export class CurrentPcbRenameOperationCoordinator {
     complete: (runtime: WindowsControlRuntime) => void): Promise<OriginalTerminalRuntimeDisposal> {
     return this.releaseCompletedRuntime(operationId, complete, true);
   }
+  /** Release only this single fully verified original PCB rename lifecycle.
+   * Return the final verifier's receipt through its exact opening transfer before
+   * notifying the matching index allocation; cleanup-only slots remain retained.
+   */
   public async releaseCompletedRuntime(operationId: string,
     complete: (runtime: WindowsControlRuntime) => void, settleRecordsOnly = false): Promise<OriginalTerminalRuntimeDisposal> {
     const slot = this.slots.get(operationId);

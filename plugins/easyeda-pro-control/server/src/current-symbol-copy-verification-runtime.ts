@@ -137,10 +137,17 @@ export class CurrentSymbolCopyVerificationCoordinator {
     return this.slots.size > 0 && this.runtimeReleases.size === this.slots.size &&
       [...this.runtimeReleases.values()].every(release => release.isDisposed(runtime));
   }
+  /** Settle disposal evidence after acknowledged original helper closure;
+   * this path cannot dispatch another release or reconstruct copy ownership.
+   */
   public settleRuntimeReleaseRecords(operationId: string,
     complete: (runtime: WindowsControlRuntime, receipt: OriginalTerminalRuntimeDisposal) => void): Promise<OriginalTerminalRuntimeDisposal> {
     return this.releaseCompletedRuntime(operationId, complete, true);
   }
+  /** Dispose of the successful copy verifier's retained native allocation only
+   * through its original helper and opaque completion receipt. Partial or
+   * uncertain verification cannot release the allocation owner.
+   */
   public async releaseCompletedRuntime(operationId: string,
     complete: (runtime: WindowsControlRuntime, receipt: OriginalTerminalRuntimeDisposal) => void, settleRecordsOnly = false): Promise<OriginalTerminalRuntimeDisposal> {
     const slot = this.slots.get(operationId);
@@ -155,6 +162,9 @@ export class CurrentSymbolCopyVerificationCoordinator {
         const { runtime, launch } = slot, upstream = this.engine.upstream, validator = this.engine.executionAuthorityValidator;
         const capture = slot.capture, journalText = slot.journalText, source = slot.source;
         const settledText = canonicalJson({ saved: slot.saved, snapshot: slot.snapshot, comparison: slot.comparison });
+        /** Keep the final verifier, capture and completed SQL/readback records
+         * bound to the same allocation through helper closure and settlement.
+         */
         const owner = (): void => {
           need(this.slots.get(operationId) === slot && slot.runtime === runtime && slot.launch === launch && slot.source === source &&
             slot.capture === capture && slot.retired && slot.releaseAttempted && !slot.failed && !slot.dispatchCaptureCleanupUncertain &&
@@ -162,6 +172,9 @@ export class CurrentSymbolCopyVerificationCoordinator {
             this.engine.executionAuthorityValidator === validator && canonicalJson({ saved: slot.saved, snapshot: slot.snapshot, comparison: slot.comparison }) === settledText,
           "Symbol copy final original verifier or settled records changed.");
         };
+        /** Read the unchanged terminal journal and independently observe the
+         * latest original root/empty Job before surrendering its helper.
+         */
         const eligible = async (): Promise<void> => {
           owner(); slot.infrastructure();
           need(canonicalJson(await loadOperation(operationId)) === journalText, "Symbol copy terminal journal changed before native release.");

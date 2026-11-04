@@ -66,6 +66,8 @@ export function sessionManagerRetirementBudgetAvailable(controlRecords: number, 
 export class SessionManagerRetirementReservation {
   private finalAttempt = false;
   public finalAttemptConsumed(): boolean { return this.finalAttempt; }
+  /** Select proof capacity before dispatch. Exhausted cleanup bookkeeping
+   * consumes one final attempt whose latch survives refusal and RPC failure. */
   public reserve(controlRecords: number, controlBytes: number, cleanupRecords: number, cleanupBytes: number): "ordinary" | "final" {
     if (this.finalAttempt || !sessionManagerRetirementBudgetAvailable(controlRecords, controlBytes)) {
       throw new Error("manager-control-budget-exhausted");
@@ -147,6 +149,9 @@ export class ForegroundSessionManager {
    * supply a launch command or substitute process termination evidence. */
   public constructor(emit: Emitter) { this.emit = emit; }
 
+  /** Publish immutable evidence through the retained private directory handle.
+   * Keep the full value in memory until file and directory sync complete, then
+   * retain only its bounded path, size and hash summary. */
   private async retain(kind: string, value: unknown, budget: RecordBudget = "control"): Promise<void> {
     if (this.evidenceFault) { throw new Error("manager-evidence-unavailable"); }
     const record = Object.freeze({ sequence: this.records.length + 1, generation: this.generation, kind, budget, value });
@@ -174,6 +179,8 @@ export class ForegroundSessionManager {
       evidenceFile: join(evidence.path, name), bytes: bytes.length, sha256: createHash("sha256").update(bytes).digest("hex") });
   }
 
+  /** Keep the original owner inspectable when evidence writing itself fails.
+   * A fault blocks handoff without escaping and abandoning the request loop. */
   private async retainFailure(kind: string, value: unknown): Promise<void> {
     try { await this.retain(kind, value); }
     catch { this.evidenceFault = true; this.stage = "blocked"; }
@@ -201,6 +208,8 @@ export class ForegroundSessionManager {
       admissionGranted: false };
   }
 
+  /** Include response publication in request settlement. An output failure
+   * blocks replacement and retains a fixed diagnostic before propagating. */
   private async publish(value: unknown): Promise<void> {
     try { await this.emit(value); }
     catch (error) { this.stage = "blocked"; await this.retainFailure("publication-failed", { privateDiagnosticsWithheld: true }); throw error; }
@@ -217,6 +226,9 @@ export class ForegroundSessionManager {
     catch (error) { this.stage = "blocked"; await this.retainFailure("start-failed", sessionFailureDiagnostic("connect", error)); throw error; }
   }
 
+  /** Start one verified child and bind its catalog and serving identity before
+   * publishing ready. Reserve final retirement proof using actual evidence bytes;
+   * any startup failure retains this child for explicit startup cleanup. */
   private async start(pluginRoot: string, id?: string | number): Promise<void> {
     this.stage = "starting";
     // Every newly admitted child needs its own ready records plus a reserved
@@ -268,11 +280,16 @@ export class ForegroundSessionManager {
     this.stage = "active";
   }
 
+  /** Return only the fully published current connection. Failed startup and
+   * retired generations cannot admit caller tools or supply a replacement. */
   private requireActive(): Connection {
     if (this.stage !== "active" || this.connection === undefined) { throw new Error("manager-active-connection-required"); }
     return this.connection;
   }
 
+  /** Consume explicit cleanup before this startup child has served caller tools.
+   * EOF and observed exit/close dispose only that child; its connection stays
+   * blocked and acquires no retry or replacement permission. */
   private async cleanupStartup(id: string | number): Promise<void> {
     const starting = this.startingConnection;
     if (this.stage !== "blocked" || starting === undefined || this.callerToolDispatches.has(starting.transport) || this.startupCleanupAttempted) {
@@ -297,6 +314,9 @@ export class ForegroundSessionManager {
       replacementAllowed: false, managerPid: process.pid, evidenceFault: this.evidenceFault });
   }
 
+  /** Retire the exact original facade, then require acknowledged lease release
+   * and observed child closure. Only an exact active-state refusal preserves
+   * cleanup access; uncertain results never authorize a replacement. */
   private async retire(id: string | number, generation: number, reservation: "ordinary" | "final"): Promise<void> {
     const connection = this.requireActive();
     if (generation !== this.generation) { throw new Error("manager-generation-mismatch"); }
@@ -356,6 +376,9 @@ export class ForegroundSessionManager {
       replacementAllowed: true, managerPid: process.pid });
   }
 
+  /** Mark the exact child before caller dispatch and retain its result before
+   * output publication. The cleanup marker selects bookkeeping capacity only;
+   * facade admission and operation guards still govern the call. */
   private async call(request: ManagerCallRequest): Promise<void> {
     const connection = this.requireActive();
     if (!connection.tools.has(request.tool)) { throw new Error("manager-tool-not-admitted"); }
@@ -441,10 +464,14 @@ export class ForegroundSessionManager {
   }
 }
 
+/** Write one protocol response line while honoring stdout backpressure, so
+ * callers await publication before advancing ownership or request state. */
 async function emitJson(value: unknown): Promise<void> {
   if (!process.stdout.write(`${JSON.stringify(value)}\n`)) { await once(process.stdout, "drain"); }
 }
 
+/** Keep one foreground request loop through startup refusal and explicit cleanup.
+ * Closing input cannot silently release an active or ambiguous original owner. */
 async function main(): Promise<void> {
   const pluginRoot = process.argv[3];
   if (process.argv.length !== 4 || process.argv[2] !== "--plugin-root" || pluginRoot === undefined) {

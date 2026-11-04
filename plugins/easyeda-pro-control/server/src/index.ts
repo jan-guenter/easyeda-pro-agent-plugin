@@ -320,6 +320,7 @@ function completeTerminalRuntimeRelease(runtime: WindowsControlRuntime): void {
 /** Original coordinators select eligibility; historical state cannot create one. */
 function releaseCompletedNativeRuntime(request: NativeRuntimeReleaseRequest): Promise<unknown> {
   const closedEntry = request.kind === "symbol-metadata" ? closedSymbolIndexReservation?.entry : undefined;
+  /** Route cleanup to the retained family owner after its ordinary launch record settles. */
   const release = async (): Promise<unknown> => {
     // Record ordinary launch termination before consuming the helper. Releasing
     // First would strand its original observe-termination action afterward.

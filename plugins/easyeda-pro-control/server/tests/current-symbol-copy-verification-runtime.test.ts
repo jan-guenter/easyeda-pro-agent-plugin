@@ -26,6 +26,10 @@ interface Harness {
 const ID = "synthetic-current-verification";
 function object(value: unknown): Bag { assert.ok(isRecord(value)); return value; }
 function noOp(): undefined { return undefined; }
+/** Run the real copy verifier against synthetic original-generation bindings
+ * and a separately retained journal, with controllable failures and helper
+ * closure acknowledgments that require no native application process.
+ */
 async function fixture(failure: Failure = "none", operationId = ID, releaseHelper: () => Promise<void> = () => Promise.resolve()): Promise<Harness> {
   const continuation = Object.freeze({ profile: "private.current-symbol-copy-writer-continuation.v1", operationId });
   const prior = { gatewayInstanceId: "g".repeat(43), sessionId: "o".repeat(43), sequence: 4,
@@ -174,18 +178,27 @@ async function fixture(failure: Failure = "none", operationId = ID, releaseHelpe
   });
   const constructor: unknown = runInContext(`${program}\nCurrentSymbolCopyVerificationCoordinator;`, context); assert.ok(typeof constructor === "function");
   const instance: unknown = Reflect.construct(constructor, [engine]); assert.ok(isRecord(instance));
+  /** Keep every VM invocation on the original coordinator and continuation;
+   * method-name selection cannot substitute a reconstructed copy owner.
+   */
   const invokeRaw = (name: string): unknown => {
     const method = instance[name]; assert.ok(typeof method === "function");
     return Reflect.apply(method, instance, [name === "start" ? continuation : operationId]) as unknown;
   };
   const generationAssert: unknown = runInContext("assertCurrentSymbolCopyVerificationGeneration;", context);
   assert.ok(typeof generationAssert === "function");
+  /** Accept only the original runtime's issued disposal receipt and prove that
+   * a cloned receipt cannot release the allocation through this callback.
+   */
   const completeRelease = (received: WindowsControlRuntime, receipt: OriginalTerminalRuntimeDisposal): void => {
     assert.equal(received, runtime);
     assertOriginalTerminalRuntimeDisposal(receipt, received, "symbol-copy", operationId);
     assert.throws(() => { assertOriginalTerminalRuntimeDisposal(structuredClone(receipt), received, "symbol-copy", operationId); });
     state.disposals += 1;
   };
+  /** Exercise native release or evidence-only settlement on the retained
+   * verifier, with allocation completion gated by the original receipt issuer.
+   */
   const releaseRuntime = async (settleRecordsOnly = false): Promise<Bag> => {
     const method = instance[settleRecordsOnly ? "settleRuntimeReleaseRecords" : "releaseCompletedRuntime"]; assert.ok(typeof method === "function");
     return object(await Reflect.apply(method, instance, [operationId, completeRelease]));

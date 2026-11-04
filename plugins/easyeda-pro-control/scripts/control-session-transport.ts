@@ -111,6 +111,8 @@ export class ForegroundSessionTransport implements Transport {
     await once(child, "spawn");
   }
 
+  /** Latch transport failure before notifying the SDK. Subsequent writes refuse,
+   * while the original child handle remains available for observed closure. */
   private fail(error: Error): void {
     this.failed = true;
     this.onerror?.(error);

@@ -20,14 +20,24 @@ export interface OriginalTerminalRuntimeDisposal {
 }
 type Completion = (runtime: WindowsControlRuntime, receipt: OriginalTerminalRuntimeDisposal) => void;
 const receipts = new WeakMap<object, { readonly runtime: WindowsControlRuntime; readonly seal: string; completed: boolean }>();
+/** Refuse a broken cleanup invariant before the original owner can advance.
+ * The caller keeps its consumed attempt and retained evidence on failure.
+ */
 function need(value: boolean, message: string): asserts value { if (!value) { throw new Error(message); } }
 
+/** Require the issued receipt for this exact runtime, workflow and operation.
+ * Acknowledged helper closure permits the original transfer callback; completion
+ * of the matching index allocation callback is checked separately.
+ */
 export function assertOriginalTerminalRuntimeDisposal(value: OriginalTerminalRuntimeDisposal, runtime: WindowsControlRuntime,
   family: TerminalRuntimeFamily, operationId: string): void {
   const owner = receipts.get(value);
   need(owner !== undefined && owner.runtime === runtime && value.family === family && value.operationId === operationId &&
     canonicalJson(value) === owner.seal && runtime.isReleaseAcknowledged(), "Native disposal requires its original acknowledged workflow receipt.");
 }
+/** Observe the private completion latch after the original allocation callback.
+ * A copied receipt or published completion JSON cannot satisfy this check.
+ */
 export function isOriginalTerminalRuntimeDisposalCompleted(value: OriginalTerminalRuntimeDisposal, runtime: object): boolean {
   const owner = receipts.get(value);
   return owner !== undefined && owner.runtime === runtime && owner.completed && canonicalJson(value) === owner.seal;
@@ -65,6 +75,10 @@ export class OriginalTerminalRuntimeRelease {
     // oxlint-disable-next-line typescript/unbound-method -- Identity pins; every invocation retains the original runtime receiver.
     this.release = runtime.release; this.acknowledged = runtime.isReleaseAcknowledged; this.status = runtime.status;
   }
+  /** Recheck the original owner, pinned methods and final launch across awaits.
+   * Before release the runtime must still own that launch; afterward only its
+   * acknowledged helper closure and released state are accepted.
+   */
   private current(closed: boolean): void {
     this.owner();
     need(this.runtime.release === this.release && this.runtime.isReleaseAcknowledged === this.acknowledged &&
@@ -84,9 +98,17 @@ export class OriginalTerminalRuntimeRelease {
       "Original native runtime disposal", bytes, "easyeda-pro-control.terminal-runtime-release.v1");
     return Object.freeze({ path: descriptor.path, sha256: descriptor.sha256, bytes: descriptor.bytes });
   }
+  /** Report irreversible disposal only after records and the allocation callback
+   * have completed, optionally restricted to this exact retained runtime.
+   */
   public isDisposed(runtime?: WindowsControlRuntime): boolean { return this.disposed && (runtime === undefined || runtime === this.runtime); }
   public run(complete: Completion): Promise<OriginalTerminalRuntimeDisposal> { return this.perform(complete, false); }
   public settle(complete: Completion): Promise<OriginalTerminalRuntimeDisposal> { return this.perform(complete, true); }
+  /** Consume one durable release attempt on the original eligible owner.
+   * Retire captures before releasing its helper, then publish and reload completion
+   * before notifying the matching allocation owner. Explicit settlement can finish
+   * records or that callback after acknowledged closure without repeating native work.
+   */
   private async perform(complete: Completion, settleRecordsOnly: boolean): Promise<OriginalTerminalRuntimeDisposal> {
     need(!this.busy && !this.disposed, "Native disposal is pending or already completed."); this.busy = true;
     try {

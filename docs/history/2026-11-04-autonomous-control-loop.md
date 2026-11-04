@@ -150,3 +150,39 @@ SQL and saved/reopened lifecycles; native structure completion; library exports;
 and the documented CBB/PCB reader gaps. Standalone cache success does not supply
 the original tokens required by a future writer generation. The completed
 read-only clock case is not repeated just because the package changes.
+
+## Review completion and same-version follow-up
+
+PR167's initial payload `b12918e91ccb717d5ca2359f6266ac535162b190` passed all
+11 CI checks. The complete facade suite reported 14,065 tests, 14,060 passes,
+five expected platform skips and zero failures; the bridge suite passed all
+424 tests across 28 files. This is offline CI evidence, separate from native
+validation.
+
+The single requested `@coderabbitai full review` completed on that payload.
+Across its automatic and full reviews, CodeRabbit reported five minor issues
+and an optional docstring-coverage warning. The follow-up replaces three fixed
+test sleeps with bounded polling for actual retained closure observations,
+documents the trusted checkout working directory and cleanup-budget marker,
+explains the exhausted manager's one-shot final retirement, and distinguishes
+startup failures before child allocation. Ownership and lifecycle methods now
+have purpose-specific JSDoc. No production behavior or signatures changed in
+this follow-up; the independent stripped-AST comparison is retained privately.
+
+The same foreground manager retired its installed084035 generation, observed
+its original child exit and stdio closure, and admitted a second generation
+from the frozen initial PR167 candidate. That second generation performed only
+offline identity inspection. It then retired and closed with code zero and no
+signal. The manager itself shut down with code zero before its frontend source
+comments were edited. All 46 original durable manager records remain retained;
+a truncated terminal inspection was excluded from the proof. Codex did not
+restart during either transition, and no manual interaction was required.
+
+The follow-up keeps version `0.3.0+codex.20261104120101`. Its 1,000-file source
+projection is `edd9bc8b97d50a212d77114f9060dd427403bb32844582d5d7d0198c7b727eca`;
+the three-file runtime projection is
+`17d0d807d6c92a9c734c673179628e11b40d8311589c99edda46ed9ecebfce41`.
+Both bundles reproduce exactly and all external compatibility pins remain
+unchanged. Strict types, zero-warning type-aware lint and coverage checks pass;
+the revised manager slice passes all 11 tests. Final-head CI, automatic review,
+protected merge and installed-package verification remain subsequent stages.

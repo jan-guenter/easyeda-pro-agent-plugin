@@ -28,6 +28,10 @@ interface Harness {
 const ID = "synthetic-current-verification";
 function object(value: unknown): Bag { assert.ok(isRecord(value)); return value; }
 function noOp(): undefined { return undefined; }
+/** Execute the real metadata verifier in a VM with synthetic native dependencies
+ * and an independently retained journal. Injected failures and closure gates
+ * exercise ownership without starting EasyEDA or granting live authority.
+ */
 async function fixture(failure: Failure = "none", operationId = ID, releaseHelper: () => Promise<void> = () => Promise.resolve()): Promise<Harness> {
   const continuation = Object.freeze({ profile: "private.current-symbol-writer-continuation.v1", operationId });
   const prior = { gatewayInstanceId: "g".repeat(43), sessionId: "o".repeat(43), sequence: 4,
@@ -179,6 +183,9 @@ async function fixture(failure: Failure = "none", operationId = ID, releaseHelpe
   });
   const constructor: unknown = runInContext(`${program}\nCurrentSymbolVerificationCoordinator;`, context); assert.ok(typeof constructor === "function");
   const instance: unknown = Reflect.construct(constructor, [engine]); assert.ok(isRecord(instance));
+  /** Invoke the original VM coordinator with its retained continuation or ID,
+   * preserving the optional inverse-retention request for closure tests.
+   */
   const invokeRaw = (name: string, retainForInverse?: true): unknown => {
     const method = instance[name]; assert.ok(typeof method === "function");
     return Reflect.apply(method, instance, [name === "start" ? continuation : operationId, retainForInverse]) as unknown;
@@ -191,12 +198,18 @@ async function fixture(failure: Failure = "none", operationId = ID, releaseHelpe
     const method = result[methodName]; assert.ok(typeof method === "function");
     await Reflect.apply(method, result, []);
   };
+  /** Count allocation disposal only after the real issuer authenticates its
+   * original receipt and rejects a serialized copy of that receipt.
+   */
   const completeRelease = (received: WindowsControlRuntime, receipt: OriginalTerminalRuntimeDisposal): void => {
     assert.equal(received, runtime);
     assertOriginalTerminalRuntimeDisposal(receipt, received, "symbol-metadata", operationId);
     assert.throws(() => { assertOriginalTerminalRuntimeDisposal(structuredClone(receipt), received, "symbol-metadata", operationId); });
     state.disposals += 1;
   };
+  /** Route release or record settlement through the original verifier instance
+   * and its receipt-checking allocation callback, preserving native call counts.
+   */
   const releaseRuntime = async (settleRecordsOnly = false): Promise<Bag> => {
     const method = instance[settleRecordsOnly ? "settleRuntimeReleaseRecords" : "releaseCompletedRuntime"]; assert.ok(typeof method === "function");
     return object(await Reflect.apply(method, instance, [operationId, completeRelease]));

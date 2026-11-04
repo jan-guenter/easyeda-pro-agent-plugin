@@ -19,6 +19,8 @@ import { createTestTemporaryDirectory } from "./helpers/temporary-directory.ts";
 
 const pluginRoot = resolve(import.meta.dirname, "../..");
 const hash = (value: Uint8Array): string => createHash("sha256").update(value).digest("hex");
+/** Require object-shaped emitted JSON so assertions cannot accept null or an
+ * array in place of a structured manager or facade result. */
 const record = (value: unknown): Record<string, unknown> => {
   assert.ok(value !== null && typeof value === "object" && !Array.isArray(value));
   return z.record(z.string(), z.unknown()).parse(value);
@@ -26,6 +28,8 @@ const record = (value: unknown): Record<string, unknown> => {
 let actualBundle: Promise<Uint8Array> | undefined;
 let nodeHash: Promise<string> | undefined;
 
+/** Freeze the real facade index behind a synthetic private-profile launcher.
+ * This tests manager ownership without admitting external software or live data. */
 function bundleActualFacade(): Promise<Uint8Array> {
   actualBundle ??= (async (): Promise<Uint8Array> => {
     // This synthetic frozen launcher skips external-installation readiness and
@@ -50,6 +54,8 @@ interface Fixture {
   readonly profilePath: string;
 }
 
+/** Build a canonical package and owner-only profile inside test isolation,
+ * retaining its actual bundle hashes and leaving external installations absent. */
 async function fixture(contents?: string): Promise<Fixture> {
   await assertTestIsolation();
   const root = await createTestTemporaryDirectory("easyeda-manager-fixture-");
@@ -82,6 +88,8 @@ async function fixture(contents?: string): Promise<Fixture> {
   return { root: packageRoot, control, profilePath };
 }
 
+/** Select only this fixture's profile for the awaited operation and restore the
+ * prior environment even when initialization, dispatch or publication fails. */
 async function selectedProfile<T>(profilePath: string, operation: () => Promise<T>): Promise<T> {
   const previous = process.env["EASYEDA_MACHINE_PROFILE"];
   process.env["EASYEDA_MACHINE_PROFILE"] = profilePath;
@@ -97,6 +105,8 @@ const retire = (id: string, generation: number): string => request({ id, action:
 const loaded = (id: string): string => request({ id, tool: "easyeda_control_api", arguments: { request: { action: "loaded-facade" } } });
 
 const sdkModule = (path: string): string => JSON.stringify(pathToFileURL(join(pluginRoot, "node_modules/@modelcontextprotocol/sdk/dist/esm", path)).href);
+/** Emit one controlled RPC rejection or contradictory retirement reply from a
+ * synthetic peer that closes itself without the manager signalling its child. */
 function syntheticPeer(kind: "rpc-rejection" | "bad-retirement"): string {
   return `import {Server} from ${sdkModule("server/index.js")};
 import {StdioServerTransport} from ${sdkModule("server/stdio.js")};
@@ -115,6 +125,17 @@ server.setRequestHandler(CallToolRequestSchema,async({params})=>{
  return {content:[{type:'text',text:JSON.stringify(value)}],structuredContent:value};
 });
 await server.connect(new StdioServerTransport());`;
+}
+
+/** Poll retained child exit/close evidence and fail if no observation becomes
+ * available before the monotonic deadline. */
+async function waitForObservedClosure(observed: () => boolean): Promise<void> {
+  const deadline = performance.now() + 5000;
+  while (!observed()) {
+    const remaining = deadline - performance.now();
+    assert.ok(remaining > 0, "Original child closure was not observed before the test deadline.");
+    await wait(Math.min(10, remaining));
+  }
 }
 
 void test("manager grammar refuses executable hooks, generic retirement and reconstructed replacement authority", () => {
@@ -361,7 +382,7 @@ void test("cooperative transport retains its exact child through timeout and obs
   assert.equal(transport.pid, pid); assert.equal(transport.inspectClosure(), null);
   const processInfo = await lstat(`/proc/${String(pid)}`);
   assert.ok(processInfo.isDirectory());
-  await wait(400);
+  await waitForObservedClosure(() => transport.inspectClosure() !== null);
   assert.deepEqual(transport.inspectClosure(), { pid, exitObserved: true, closeObserved: true, exitCode: 0, signal: null, stdinEof: true });
 });
 
@@ -374,7 +395,7 @@ void test("SDK startup auto-close cannot discard a rejecting closure promise or 
   await assert.rejects(client.connect(transport, { timeout: 100 }));
   assert.equal(transport.hasUnclosedChild(), true);
   await assert.rejects(transport.awaitOwnedClosure(), /foreground-child-closure-unproven/u);
-  await wait(350);
+  await waitForObservedClosure(() => transport.inspectClosure() !== null);
   assert.equal(transport.hasUnclosedChild(), false);
   assert.equal(transport.inspectClosure()?.exitCode, 0);
   assert.equal(transport.inspectClosure()?.signal, null);
@@ -421,7 +442,7 @@ void test("rejected RPC and contradictory retirement acknowledgement freeze repl
       assert.equal(JSON.stringify(outputs).includes("private-peer-error"), false);
       // This synthetic peer closes itself after the one failure. The manager
       // Neither requests closure nor sends a signal to obtain that observation.
-      await wait(300);
+      await waitForObservedClosure(() => manager.inspect()["closure"] !== null);
       assert.equal(record(manager.inspect()["closure"])["signal"], null);
       await manager.handle(request({ id: "closed-peer", action: "shutdown" }));
       assert.equal(manager.inspect()["stage"], "closed");

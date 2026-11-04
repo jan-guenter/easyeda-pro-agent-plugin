@@ -9,6 +9,10 @@ import { currentSymbolCopyOperationStepSchema } from "../src/current-symbol-copy
 type Value = Record<string, unknown>;
 const ID = "disposable-copy-runtime";
 function object(value: unknown): Value { assert.ok(isRecord(value)); return value; }
+/** Evaluate copy orchestration with synthetic original baseline, writer and
+ * verifier owners so failure cleanup and final disposal delegation can be checked
+ * without manufacturing native handles or a production receipt.
+ */
 async function fixture(): Promise<{
   calls: string[];
   state: { failure: string | undefined; pendingAuthentication: boolean; pendingTermination: boolean; invariant: boolean; purpose: string };
@@ -31,6 +35,9 @@ async function fixture(): Promise<{
       return { ...this.status };
     }
     public isRuntimeDisposed(): boolean { return this.runtimeDisposed; }
+    /** Model the selected verifier's single callback after synthetic retirement.
+     * This local marker tests delegation and never represents native qualification.
+     */
     public releaseCompletedRuntime(operationId: string, complete: (runtime: object, receipt: Value) => void): Promise<Value> {
       assert.equal(this.runtimeDisposed, false); assert.equal(this.status["retired"], true);
       this.step("release-runtime");

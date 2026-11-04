@@ -61,6 +61,10 @@ export class CurrentSymbolValidationCoordinator {
     this.inverseWriter = new CurrentSymbolWriterCoordinator(engine); this.inverseVerifier = new CurrentSymbolVerificationCoordinator(engine);
   }
 
+  /** Observe disposal of the actual final verifier selected by the original purpose.
+   * Ordinary metadata ends at the forward verifier; disposable validation must
+   * finish and release its inverse verifier while keeping prior owners retained.
+   */
   public isRuntimeDisposed(runtime?: WindowsControlRuntime): boolean {
     const slot = this.slot;
     return !this.busy && slot?.next === "completed" && slot.forwardVerified && slot.failedPhase === undefined && slot.cleanup === undefined &&
@@ -70,6 +74,10 @@ export class CurrentSymbolValidationCoordinator {
     complete: (runtime: WindowsControlRuntime, receipt: OriginalTerminalRuntimeDisposal) => void): Promise<OriginalTerminalRuntimeDisposal> {
     return this.releaseCompletedRuntime(operationId, complete, true);
   }
+  /** Delegate completed metadata cleanup to the original final forward or inverse
+   * verifier. The root operation ID stays bound to this slot even when the actual
+   * disposal receipt belongs to its derived inverse operation.
+   */
   public async releaseCompletedRuntime(operationId: string,
     complete: (runtime: WindowsControlRuntime, receipt: OriginalTerminalRuntimeDisposal) => void, settleRecordsOnly = false): Promise<OriginalTerminalRuntimeDisposal> {
     const slot = this.slot;
