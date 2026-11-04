@@ -98,7 +98,13 @@ export class CurrentFootprintForwardOpeningUnknownRelinquishment {
       await this.#current(original);
       this.#lease = acquireCurrentPcbDiagnosticLaunchExclusion(); this.#local();
       let receipt = await readCurrentFootprintForwardOpeningRelinquishment(original); await this.#current(original);
-      if (receipt?.result !== undefined && receipt.result !== null) { return publicResult(receipt.result); }
+      if (receipt?.result !== undefined && receipt.result !== null) {
+        if (this.#pending !== null) {
+          need(canonicalJson(receipt.result) === canonicalJson(this.#pending.result), "RESULT_PUBLICATION_CHANGED");
+          this.#pending = null;
+        }
+        return publicResult(receipt.result);
+      }
       if (this.#pending === null) {
         const installation = await this.#verify(this.#options); await this.#current(original);
         // The nonce is lexical to this observation pair. Caller JSON and a
@@ -147,6 +153,7 @@ export class CurrentFootprintForwardOpeningUnknownRelinquishment {
       if (receipt.result === null) { await this.#publish(original, "relinquished.json", pending.result); await this.#current(original); }
       receipt = await readCurrentFootprintForwardOpeningRelinquishment(original); await this.#current(original);
       need(receipt !== null && canonicalJson(receipt.result) === canonicalJson(pending.result), "RESULT_PUBLICATION_CHANGED");
+      this.#pending = null;
       return publicResult(pending.result);
     } finally {
       if (this.#lease !== null) { releaseCurrentPcbDiagnosticLaunchExclusion(this.#lease); this.#lease = null; }

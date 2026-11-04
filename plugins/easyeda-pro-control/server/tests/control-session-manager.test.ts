@@ -131,7 +131,7 @@ await server.connect(new StdioServerTransport());`;
 
 /** Hold an actual SDK request through its timeout. Only the fixed same-owner
  * cleanup protocol can settle this synthetic native reservation and its records. */
-function interruptedForwardPeer(): string {
+function interruptedForwardPeer(largeInspection = false): string {
   return `import {Server} from ${sdkModule("server/index.js")};
 import {StdioServerTransport} from ${sdkModule("server/stdio.js")};
 import {CallToolRequestSchema,ListToolsRequestSchema} from ${sdkModule("types.js")};
@@ -153,7 +153,7 @@ server.setRequestHandler(CallToolRequestSchema,async({params})=>{
  const request=outer?.request;
  calls.push({tool:params.name,action:request?.action,operationId:request?.operationId,binding:request?.expectedBindingSha256});
  if(params.name!=='easyeda_control_pcb209_worker_startup'||outer?.action!=='footprint-forward-prewrite'||request?.operationId!==op)return refused();
- if(request.action==='inspect')return result({result:{operationId:op,bindingSha256:binding,intentSha256:intent,active,captures,aborted,released,settled,calls}});
+ if(request.action==='inspect')return result({result:{operationId:op,bindingSha256:binding,intentSha256:intent,active,captures,aborted,released,settled,calls,...(${JSON.stringify(largeInspection)}?{padding:'x'.repeat(1048576)}:{})}});
  if(request.action==='settle-records'){if(active!==0||request.expectedIntentSha256!==intent)return refused();settled=true;return result({result:{operationId:op,settled:true}});}
  if(request.expectedBindingSha256!==binding)return refused();
  if(request.action==='capture-project'){captures++;active++;await gate.promise;active--;return result({result:{operationId:op,lateCapture:true}});}
@@ -317,6 +317,64 @@ void test("actual manager preserves ambiguous capture and permits only same-owne
     const raw = await Promise.all(rows.map(row => readFile(String(record(row)["evidenceFile"]), "utf8")));
     assert.match(raw.join("\n"), /request-timeout/u); assert.match(raw.join("\n"), /original-cleanup-result/u);
     await manager.handle(request({ id: "closed-original-manager", action: "shutdown" }));
+    assert.equal(manager.inspect()["stage"], "closed");
+  });
+});
+
+void test("pre-emit delivery refusal retains complete results and the original normal and interrupted cleanup channels", { timeout: 15_000 }, async () => {
+  const outputs: unknown[] = [], selected = await fixture(interruptedForwardPeer(true));
+  const expectedBindingSha256 = "a".repeat(64), operationId = "footprint-copy-qualify-timeout";
+  const interruptedRequestId = "interrupted-publication-capture";
+  const publicDirectory = join(selected.control, "public-response");
+  await mkdir(publicDirectory); await chmod(publicDirectory, 0o755);
+  await selectedProfile(selected.profilePath, async () => {
+    const manager = new ForegroundSessionManager(async value => { outputs.push(value); await Promise.resolve(); });
+    await manager.initialize(selected.root);
+    const originalPid = manager.inspect()["facadePid"];
+    const output = (): Record<string, unknown> => record(outputs.at(-1));
+    const cleanup = (id: string, action: string, extra: object = {}): object => ({ id, action: "cleanup-original", generation: 1,
+      interruptedRequestId: record(manager.inspect()["interruptedRequest"])["id"], request: { action, ...extra } });
+    for (const interrupted of [false, true]) {
+      if (interrupted) {
+        const rawWindowsPath = String.raw`C:\Disposable\fixture.eprj2`;
+        const projectUuid = hash(Buffer.from(rawWindowsPath));
+        await manager.handle(request({ id: interruptedRequestId, tool: "easyeda_control_pcb209_worker_startup", timeoutMs: 1000,
+          arguments: { request: { action: "footprint-forward-prewrite", request: { action: "capture-project", operationId, expectedBindingSha256,
+            target: { rawWindowsPath, projectUuid, documentUuid: "c".repeat(32), expectedSourceSha256: "d".repeat(64) },
+            confirmDisposableProject: true, acceptNormalOpenEffects: true, acceptDebuggerPauseEffects: true } } } }));
+        assert.equal(output()["error"], "manager-blocked");
+      }
+      for (const usePublicDirectory of [false, true]) {
+        const id = `refusal-${String(interrupted)}-${String(usePublicDirectory)}`;
+        const responseFile = join(publicDirectory, `${id}.json`);
+        const call = interrupted ? cleanup(id, "inspect") : { id, tool: "easyeda_control_pcb209_worker_startup",
+          arguments: { request: { action: "footprint-forward-prewrite", request: { action: "inspect", operationId } } } };
+        await manager.handle(request({ ...call, ...(usePublicDirectory ? { responseFile } : {}) }));
+        const refused = output();
+        assert.equal(refused["error"], "result-publication-refused");
+        assert.equal(refused["reason"], usePublicDirectory ? "response-directory-must-be-private-and-canonical" : "result-needs-response-file");
+        assert.equal(refused["dispatched"], true); assert.equal(refused["retryAllowed"], false);
+        assert.equal(refused["resultRetainedInEvidence"], true);
+        const bytes = await readFile(String(refused["evidenceFile"]));
+        assert.equal(bytes.length, refused["bytes"]); assert.equal(hash(bytes), refused["sha256"]);
+        const journal = record(JSON.parse(bytes.toString("utf8"))), value = record(journal["value"]);
+        const result = record(value["result"]), retained = record(result["structuredContent"]);
+        assert.equal(record(retained["result"])["padding"], "x".repeat(1_048_576));
+        assert.equal(manager.inspect()["stage"], interrupted ? "blocked" : "active");
+        assert.equal(manager.inspect()["publicationFault"], false); assert.equal(manager.inspect()["evidenceFault"], false);
+        assert.equal(manager.inspect()["facadePid"], originalPid); assert.equal(manager.inspect()["generation"], 1);
+        if (interrupted) { assert.equal(record(manager.inspect()["interruptedRequest"])["cleanupAvailable"], true); }
+        await assert.rejects(lstat(responseFile), { code: "ENOENT" });
+      }
+    }
+    await manager.handle(request(cleanup("abort-after-delivery-refusal", "abort-generation", { confirmAbortOriginalForwardJob: true })));
+    await manager.handle(request(cleanup("observe-after-delivery-refusal", "observe-termination")));
+    await manager.handle(request(cleanup("settle-after-delivery-refusal", "settle-records")));
+    await manager.handle(request(cleanup("release-after-delivery-refusal", "release-closed")));
+    await manager.handle(retire("retire-after-delivery-refusal", 1));
+    assert.equal(output()["retired"], true);
+    assert.deepEqual(record(output()["closure"]), { pid: originalPid, exitObserved: true, closeObserved: true, exitCode: 0, signal: null, stdinEof: true });
+    await manager.handle(request({ id: "shutdown-after-delivery-refusal", action: "shutdown" }));
     assert.equal(manager.inspect()["stage"], "closed");
   });
 });

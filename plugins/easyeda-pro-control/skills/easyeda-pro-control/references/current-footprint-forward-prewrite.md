@@ -72,8 +72,10 @@ records without retrying a failed stage. Native normal close, actual root exit,
 empty original Job, helper release and record settlement remain separate steps.
 Keep Save/Discard prompts unanswered unless explicitly authorized.
 
-The explicit `abort-generation` action requires
-`confirmAbortOriginalForwardJob:true`. It can target only this original forward
+Use the explicit `abort-generation` action only when the user has authorized
+forced termination of this original EasyEDA Job. It requires
+`confirmAbortOriginalForwardJob:true`, which records that authority. It can
+target only this original forward
 Job, consumes its own intent and blocks subsequent normal work. A missing
 acknowledgment grants no retry. Abort acknowledgment does not prove termination
 or helper release; observe both before considering controller retirement.

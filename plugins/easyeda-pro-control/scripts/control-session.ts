@@ -148,22 +148,23 @@ export async function* boundedLines(
 }
 
 /** Publish one bounded result inline or as an exclusive, synced private file.
- * Publication failure grants no retry of the original facade operation. */
+ * Return deterministic refusals before file creation or emission. Actual I/O
+ * failures still throw; neither outcome grants an operation retry. */
 export async function publishSessionResult(
   request: CallRequest,
   result: unknown,
   emit: Emitter,
-): Promise<void> {
+): Promise<"published" | "result-needs-response-file" | "response-directory-must-be-private-and-canonical"> {
   const bytes = Buffer.from(JSON.stringify({ id: request.id, result }));
   if (bytes.length > MAXIMUM_RESULT_BYTES) {
     throw new Error("result-too-large");
   }
   if (request.responseFile === undefined) {
     if (bytes.length > MAXIMUM_INLINE_BYTES) {
-      throw new Error("result-needs-response-file");
+      return "result-needs-response-file";
     }
     await emit({ id: request.id, result });
-    return;
+    return "published";
   }
   const directory = dirname(request.responseFile);
   const directoryInfo = await lstat(directory);
@@ -173,7 +174,7 @@ export async function publishSessionResult(
     directoryInfo.uid !== process.getuid?.() ||
     await realpath(directory) !== directory
   ) {
-    throw new Error("response-directory-must-be-private-and-canonical");
+    return "response-directory-must-be-private-and-canonical";
   }
   // Exclusive creation refuses existing files and symlinks. The caller must
   // Retain ownership of the private parent directory throughout this call.
@@ -190,6 +191,7 @@ export async function publishSessionResult(
     bytes: bytes.length,
     sha256: createHash("sha256").update(bytes).digest("hex"),
   });
+  return "published";
 }
 
 /** Dispatch admitted tools serially and await each result's publication.
@@ -218,7 +220,8 @@ export async function runSessionRequests(
     }
     try {
       const result = await invoke(request);
-      await publishSessionResult(request, result, emit);
+      const outcome = await publishSessionResult(request, result, emit);
+      if (outcome !== "published") { throw new Error(outcome); }
     } catch (error) {
       // Never print private transport stderr or nested exceptions. A timeout,
       // Disconnect or result-publication failure ends this session, never retries.

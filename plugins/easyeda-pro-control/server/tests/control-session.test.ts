@@ -1,6 +1,6 @@
 import assert from "node:assert/strict";
 import { execFile } from "node:child_process";
-import { readFile } from "node:fs/promises";
+import { chmod, lstat, mkdir, readFile, writeFile } from "node:fs/promises";
 import { join } from "node:path";
 import { test } from "node:test";
 import { fileURLToPath } from "node:url";
@@ -11,6 +11,7 @@ import {
   boundedLines,
   parseSessionConfiguration,
   parseSessionRequest,
+  publishSessionResult,
   runSessionRequests,
   sessionFailureDiagnostic,
   sessionMachineLaunchConfiguration,
@@ -23,6 +24,28 @@ import { CURRENT_PCB_209_STARTUP_OPENING_TIMING } from "../src/current-pcb-209-w
 async function* values<T>(items: readonly T[]): AsyncGenerator<T> {
   yield* await Promise.resolve(items);
 }
+
+void test("pre-emit result refusals are explicit outcomes while emitter and response-file faults still throw", async () => {
+  const isolation = await assertTestIsolation();
+  const directory = join(isolation.directory, "result-publication"), publicDirectory = join(directory, "public");
+  await mkdir(directory, { mode: 0o700 });
+  await mkdir(publicDirectory); await chmod(publicDirectory, 0o755);
+  const parsed = parseSessionRequest(JSON.stringify({ id: "publication", tool: "easyeda_control_api" }));
+  assert.ok("tool" in parsed);
+  let emitted = 0;
+  const emit = async (): Promise<void> => { emitted += 1; await Promise.resolve(); };
+  assert.equal(await publishSessionResult(parsed, "x".repeat(1_048_576), emit), "result-needs-response-file");
+  const publicFile = join(publicDirectory, "result.json");
+  assert.equal(await publishSessionResult({ ...parsed, responseFile: publicFile }, {}, emit), "response-directory-must-be-private-and-canonical");
+  assert.equal(emitted, 0); await assert.rejects(lstat(publicFile), { code: "ENOENT" });
+  for (const message of ["result-needs-response-file", "response-directory-must-be-private-and-canonical"]) {
+    const failure = new Error(message);
+    await assert.rejects(publishSessionResult(parsed, {}, () => Promise.reject(failure)), error => error === failure);
+  }
+  const existingFile = join(directory, "existing.json"); await writeFile(existingFile, "unchanged");
+  await assert.rejects(publishSessionResult({ ...parsed, responseFile: existingFile }, {}, emit), { code: "EEXIST" });
+  assert.equal(await readFile(existingFile, "utf8"), "unchanged"); assert.equal(emitted, 0);
+});
 
 void test("session selection requires the complete installed bundled-launch contract", async () => {
   const source = await readFile(new URL("../../.mcp.json", import.meta.url), "utf8");

@@ -53,6 +53,13 @@ inspection and supported cleanup. Transport or publication ambiguity blocks
 replacement; inspect the retained original evidence rather than starting another
 controller. A manager generation number is a freshness check, not authority.
 
+`result-publication-refused` reports a complete result already retained in the
+referenced evidence file. It means an oversized inline result needed a response
+file, or the supplied parent directory failed the private/canonical check before
+file creation or emission. Verify the evidence bytes and hash; never replay the
+operation to obtain its result. The same original normal or cleanup channel
+remains available. Actual file/output/evidence failures still block handoff.
+
 Each request line is limited to 65,536 UTF-8 bytes, excluding its newline.
 The manager keeps a fixed 64 KiB frame buffer. An oversized frame is drained
 through its newline and rejected once without dispatch. Invalid UTF-8 is
@@ -72,7 +79,11 @@ After an RPC rejection or timeout of a bound `footprint-forward-prewrite`
 request, `inspect` reports
 the privately retained interrupted request ID and generation. Normal calls,
 replay and replacement stay blocked. The manager's separate `cleanup-original`
-command uses that exact original client and transport:
+command uses that exact original client and transport.
+
+Use `abort-generation` only when the user has authorized forced termination of
+that original EasyEDA Job. The confirmation below records that authority; it
+does not grant it or prove unchanged saved state.
 
 ```json
 {"id":"inspect-original","action":"cleanup-original","generation":1,"interruptedRequestId":"capture-1","request":{"action":"inspect"}}

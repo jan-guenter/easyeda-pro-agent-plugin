@@ -435,8 +435,7 @@ export class ForegroundSessionManager {
         interrupted.intentSha256 = inspected.data.result.intentSha256;
       }
     }
-    try { await publishSessionResult(call, result, value => this.publish(value)); }
-    catch (error) { this.publicationFault = true; throw error; }
+    await this.publishCallResult(call, result);
   }
 
   /** Consume explicit cleanup before this startup child has served caller tools.
@@ -551,8 +550,25 @@ export class ForegroundSessionManager {
     // Strict evidence freeze. It cannot mint timeout-cleanup authority.
     await this.retain("call-result", { id: request.id, result }, budget);
     toolResultSchema.parse(result);
-    try { await publishSessionResult(request, result, value => this.publish(value)); }
-    catch (error) { this.publicationFault = true; throw error; }
+    await this.publishCallResult(request, result);
+  }
+
+  /** A complete retained result can refuse delivery before any file or output
+   * write. Report its exact evidence without replaying the facade operation;
+   * actual publication failures preserve the existing custody freeze. */
+  private async publishCallResult(request: CallRequest, result: unknown): Promise<void> {
+    const evidence = this.records.at(-1);
+    try {
+      const outcome = await publishSessionResult(request, result, value => this.publish(value));
+      if (outcome === "published") { return; }
+      if (evidence?.generation !== this.generation ||
+          !["call-result", "original-cleanup-result"].includes(evidence.kind) ||
+          evidence.evidenceFile === undefined || evidence.sha256 === undefined || evidence.bytes === undefined ||
+          Object.hasOwn(evidence, "unpublishedValue")) { throw new Error("manager-result-evidence-unsettled"); }
+      await this.publish({ id: request.id, error: "result-publication-refused", dispatched: true, reason: outcome,
+        resultRetainedInEvidence: true, evidenceFile: evidence.evidenceFile, bytes: evidence.bytes,
+        sha256: evidence.sha256, retryAllowed: false });
+    } catch (error) { this.publicationFault = true; throw error; }
   }
 
   /** Serial admission covers invocation and publication. A concurrent request
