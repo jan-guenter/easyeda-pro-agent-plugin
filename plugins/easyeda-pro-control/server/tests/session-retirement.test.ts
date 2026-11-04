@@ -120,8 +120,16 @@ void test("actual index native guard refuses every retained runtime and native r
   const check = (): unknown => vm.runInContext("assertSessionRetirementNativeOwnersSettled()", scope);
   check();
   for (const name of names) {
-    scope[name] = {}; assert.throws(check, /completed native cleanup/u); scope[name] = undefined;
+    scope[name] = { isRuntimeDisposed: (): boolean => false };
+    assert.throws(check, /completed native cleanup/u); scope[name] = undefined;
   }
+  for (const name of ["currentDisposableOpenCoordinator", "currentPcbRenameOperationCoordinator", "currentSchematicRenameOperationCoordinator"]) {
+    scope[name] = { isRuntimeDisposed: (): boolean => true }; check();
+    scope["windowsRuntime"] = {}; assert.throws(check, /completed native cleanup/u);
+    scope["windowsRuntime"] = undefined; scope[name] = undefined;
+  }
+  scope["closedSymbolIndexReservation"] = { entry: { isRuntimeDisposed: (): boolean => true } }; check();
+  scope["closedSymbolIndexReservation"] = undefined;
   scope["closedSymbolUnreservedFailure"] = { observed: true }; assert.throws(check, /completed native cleanup/u);
   scope["closedSymbolUnreservedFailure"] = { observed: false };
   for (const name of diagnostics) {
@@ -145,6 +153,17 @@ void test("actual isolated MCP index retires, stays offline and permits a distin
   };
   const first = await connect();
   const catalog = await first.client.listTools(); assert.ok(catalog.tools.some(tool => tool.name === "easyeda_control_session"));
+  assert.ok(catalog.tools.some(tool => tool.name === "easyeda_control_native_release"));
+  for (const requestArguments of [
+    { request: { action: "release-completed", kind: "pcb-rename", operationId: "never-owned-operation", confirmReleaseOriginalRuntime: true } },
+    { request: { action: "release-completed", kind: "project-opening", operationId: "never-owned-operation", confirmReleaseOriginalRuntime: true }, pid: 12_345 },
+    { request: { action: "settle-release-records", kind: "symbol-copy", operationId: "never-owned-operation" } },
+  ]) {
+    const refusedRelease = await first.client.callTool({ name: "easyeda_control_native_release", arguments: requestArguments });
+    assert.equal(refusedRelease.isError, true);
+  }
+  const catalogAfterRefusals = await first.client.listTools();
+  assert.deepEqual(catalogAfterRefusals.tools.map(tool => tool.name), catalog.tools.map(tool => tool.name));
   const result = await first.client.callTool({ name: "easyeda_control_session", arguments: { request: { action: "retire", confirmRetire: true } } });
   assert.notEqual(result.isError, true); assert.notEqual(result.structuredContent, undefined);
   assert.match(JSON.stringify(result.structuredContent), /"state":"retired"/u);

@@ -220,6 +220,13 @@ export class WindowsControlRuntime implements RuntimeExecutionAuthorityValidator
   private readonly dependencies: WindowsRuntimeDependencies;
   private readonly paths: WindowsRuntimePaths;
   private supervisor: WindowsAuthoritySupervisor | undefined;
+  private supervisorAcquisition: Promise<WindowsAuthoritySupervisor> | undefined;
+  private supervisorAllocationAttempted = false;
+  private supervisorRelease: Promise<void> | undefined;
+  private releasePromise: Promise<void> | undefined;
+  private releaseAcknowledged = false;
+  private launchInFlight = false;
+  private readonly supervisorReleaseMethods = new WeakMap<WindowsAuthoritySupervisor, WindowsAuthoritySupervisor["release"]>();
   private readonly supervisorClockMethods = new WeakMap<WindowsAuthoritySupervisor, {
     readonly observe: WindowsAuthoritySupervisor["observeCurrentClock"];
     readonly capture: WindowsAuthoritySupervisor["capture"];
@@ -250,29 +257,49 @@ export class WindowsControlRuntime implements RuntimeExecutionAuthorityValidator
 
   /** Explicit launch only; constructor/status/capture never start an application. */
   public async launch(): Promise<WindowsAuthorityLaunch> {
-    if (this.state === "released" || this.state === "launching" || this.state === "launch-unknown") { throw new Error("Windows runtime cannot start another application from its current state."); }
+    if (this.releasePromise !== undefined || this.launchInFlight || this.state === "released" || this.state === "launching" || this.state === "launch-unknown") { throw new Error("Windows runtime cannot start another application from its current state."); }
+    // Reserve before the exclusion's first journal await. Release cannot
+    // Mistake a pending admission for an unallocated runtime.
+    this.launchInFlight = true;
     // Every ordinary, closed-symbol and replacement generation passes here.
     // A diagnostic owner retains its distinct exclusion lease until original
     // Root/Job closure and durable release; historical JSON cannot release it.
-    const launched = await withCurrentPcbDiagnosticLaunchExclusion(async () => {
+    try { return await withCurrentPcbDiagnosticLaunchExclusion(async () => {
       await assertNoUnresolvedCurrentPcbDiagnosticLaunches();
+      this.assertNotReleased();
       this.state = "launching";
       try {
         const supervisor = await this.ensureSupervisor();
         await assertNoUnresolvedCurrentPcbDiagnosticLaunches();
+        this.assertNotReleased();
         const launch = await supervisor.launch({ confirmLaunch: true });
+        this.assertNotReleased();
         this.currentLaunch = structuredClone(launch);
         this.state = "owned";
         const returned = structuredClone(launch);
         this.clockLaunches.set(returned, { original: launch, snapshot: canonicalJson(returned), supervisor });
         return returned;
-      } catch (error) { this.state = "launch-unknown"; throw error; }
-    });
-    return launched;
+      } catch (error) { if (this.releasePromise === undefined) { this.state = "launch-unknown"; } throw error; }
+    }); } finally { this.launchInFlight = false; }
+  }
+
+  private assertNotReleased(): void {
+    if (this.releasePromise !== undefined || this.state === "released") { throw new Error("Windows runtime changed during release; its authority is consumed."); }
   }
 
   private async ensureSupervisor(): Promise<WindowsAuthoritySupervisor> {
+    this.assertNotReleased();
     if (this.supervisor !== undefined) { return this.supervisor; }
+    this.supervisorAcquisition ??= this.acquireSupervisor();
+    const supervisor = await this.supervisorAcquisition;
+    if (this.releasePromise !== undefined) {
+      await this.releaseSupervisorOnce(supervisor);
+      throw new Error("Windows runtime changed during helper startup.");
+    }
+    return supervisor;
+  }
+
+  private async acquireSupervisor(): Promise<WindowsAuthoritySupervisor> {
     const expectedState = this.state;
     const hashExecutable = this.dependencies.hashExecutable ?? hashInstalledExecutable;
     const executableSha256 = await hashExecutable(this.paths.executablePath, this.paths.assetsRoot);
@@ -281,8 +308,10 @@ export class WindowsControlRuntime implements RuntimeExecutionAuthorityValidator
       throw new Error("Installed EasyEDA executable differs from the reviewed launch profile.");
     }
     this.executableSha256 = executableSha256;
+    this.assertNotReleased();
     if (this.state !== expectedState) { throw new Error("Windows runtime changed before helper startup."); }
     const start = this.dependencies.startSupervisor ?? startWindowsAuthoritySupervisor;
+    this.supervisorAllocationAttempted = true;
     this.supervisor = await start({
       powershellExecutable: this.paths.powershellExecutable, helperPath: this.paths.helperPath, helperWindowsPath: this.paths.helperWindowsPath,
       expectedExecutable: this.paths.executableWindowsPath, expectedExecutableSha256: executableSha256,
@@ -290,15 +319,29 @@ export class WindowsControlRuntime implements RuntimeExecutionAuthorityValidator
       reviewedExecutionScopeSha256: this.options.reviewedExecutionScopeSha256,
       performAuthenticatedProcessProbe: (session, probe) => performWindowsAuthenticatedProcessProbe(this.options.upstream, session, probe),
     });
-    if (this.state !== expectedState) {
-      const acquired = this.supervisor;
-      this.supervisor = undefined;
-      await acquired.release();
+    this.supervisorReleaseMethods.set(this.supervisor, this.supervisor.release);
+    if (this.releasePromise === undefined && this.state !== expectedState) {
+      await this.releaseSupervisorOnce(this.supervisor);
       throw new Error("Windows runtime changed during helper startup.");
     }
     // Identity only. Calls below retain their original supervisor receiver.
     this.supervisorClockMethods.set(this.supervisor, { observe: this.supervisor.observeCurrentClock, capture: this.supervisor.capture });
     return this.supervisor;
+  }
+
+  private releaseSupervisorOnce(supervisor: WindowsAuthoritySupervisor): Promise<void> {
+    const release = this.supervisorReleaseMethods.get(supervisor);
+    if (this.supervisor !== supervisor || release === undefined || supervisor.release !== release) { throw new Error("Windows runtime lost its original helper or release method before release."); }
+    // Queue the call after retaining its Promise, including synchronous throws
+    // And reentrant cleanup. A pending or failed close never permits a retry.
+    this.supervisorRelease ??= this.releaseOriginalSupervisor(supervisor, release);
+    return this.supervisorRelease;
+  }
+
+  private async releaseOriginalSupervisor(supervisor: WindowsAuthoritySupervisor, release: WindowsAuthoritySupervisor["release"]): Promise<void> {
+    await Promise.resolve();
+    if (this.supervisor !== supervisor || supervisor.release !== release) { throw new Error("Windows runtime lost its original helper or release method before release."); }
+    await release.call(supervisor);
   }
 
   /** Starts only the proof helper, not EasyEDA. Existing instances are observed
@@ -310,6 +353,7 @@ export class WindowsControlRuntime implements RuntimeExecutionAuthorityValidator
     }
     const previousState = this.state;
     const supervisor = await this.ensureSupervisor();
+    this.assertNotReleased();
     if (supervisor.observeExistingApplication === undefined) { throw new Error("Existing application observation is unavailable."); }
     const observation = await supervisor.observeExistingApplication();
     if (this.supervisor !== supervisor || this.state !== previousState || typeof observation.running !== "boolean") {
@@ -333,13 +377,31 @@ export class WindowsControlRuntime implements RuntimeExecutionAuthorityValidator
   }
 
   private requireSupervisor(): WindowsAuthoritySupervisor {
-    if (this.state !== "owned" || this.supervisor === undefined || this.currentLaunch === null) { throw new Error("Windows authority requires the explicitly launched supervised runtime."); }
+    if (this.releasePromise !== undefined || this.state !== "owned" || this.supervisor === undefined || this.currentLaunch === null) { throw new Error("Windows authority requires the explicitly launched supervised runtime."); }
     return this.supervisor;
   }
 
-  public capture(input: ExecutionAuthorityCaptureInput): Promise<ExecutionAuthorityEvidence> { return this.requireSupervisor().capture(input); }
-  public proveTerminated(input: ExecutionAuthorityTerminationInput): Promise<ExecutionAuthorityTerminationProof> { return this.requireSupervisor().proveTerminated(input); }
-  public releaseCapture(evidence: ExecutionAuthorityEvidence): Promise<void> { return this.requireSupervisor().releaseCapture(evidence); }
+  private async currentSupervisorResult<Result>(supervisor: WindowsAuthoritySupervisor, launch: WindowsAuthorityLaunch | null, pending: Promise<Result>): Promise<Result> {
+    const result = await pending;
+    if (this.requireSupervisor() !== supervisor || this.currentLaunch !== launch) { throw new Error("Windows runtime ownership changed during proof completion."); }
+    return result;
+  }
+
+  public capture(input: ExecutionAuthorityCaptureInput): Promise<ExecutionAuthorityEvidence> {
+    const supervisor = this.requireSupervisor();
+    const launch = this.currentLaunch;
+    return this.currentSupervisorResult(supervisor, launch, supervisor.capture(input));
+  }
+  public proveTerminated(input: ExecutionAuthorityTerminationInput): Promise<ExecutionAuthorityTerminationProof> {
+    const supervisor = this.requireSupervisor();
+    const launch = this.currentLaunch;
+    return this.currentSupervisorResult(supervisor, launch, supervisor.proveTerminated(input));
+  }
+  public releaseCapture(evidence: ExecutionAuthorityEvidence): Promise<void> {
+    const supervisor = this.requireSupervisor();
+    const launch = this.currentLaunch;
+    return this.currentSupervisorResult(supervisor, launch, supervisor.releaseCapture(evidence));
+  }
 
   /** Internal fresh read from the original capture. Never starts or adopts a helper. */
   public async observeCurrentClock(evidence: ExecutionAuthorityEvidence): Promise<IssuedCurrentWindowsClockObservation> {
@@ -398,7 +460,9 @@ export class WindowsControlRuntime implements RuntimeExecutionAuthorityValidator
   }): Promise<ClosedSessionCloseReceipt> {
     const bound = structuredClone(input);
     const launch = this.closedSessionLaunch(bound.intent);
-    return this.requireSupervisor().requestClosedSessionNormalClose({ ...bound, launch });
+    const supervisor = this.requireSupervisor();
+    const currentLaunch = this.currentLaunch;
+    return this.currentSupervisorResult(supervisor, currentLaunch, supervisor.requestClosedSessionNormalClose({ ...bound, launch }));
   }
 
   public proveClosedSession(input: Omit<ClosedSessionBinding, "launch"> & {
@@ -406,7 +470,9 @@ export class WindowsControlRuntime implements RuntimeExecutionAuthorityValidator
   }): Promise<ClosedSessionTerminationProof> {
     const bound = structuredClone(input);
     const launch = this.closedSessionLaunch(bound.intent);
-    return this.requireSupervisor().proveClosedSession({ ...bound, launch });
+    const supervisor = this.requireSupervisor();
+    const currentLaunch = this.currentLaunch;
+    return this.currentSupervisorResult(supervisor, currentLaunch, supervisor.proveClosedSession({ ...bound, launch }));
   }
 
   public async probeClosedSessionTermination(input: Omit<ClosedSessionBinding, "launch"> & {
@@ -471,15 +537,40 @@ export class WindowsControlRuntime implements RuntimeExecutionAuthorityValidator
     return observation;
   }
 
-  public async release(): Promise<void> {
-    if (this.state === "launching") { throw new Error("Cannot release Windows proof authority during launch."); }
+  /** Consume once, preserving pending/failure. Released status closes admission;
+   * Only isReleaseAcknowledged proves the original helper close completed.
+   */
+  public release(): Promise<void> {
+    if (this.releasePromise !== undefined) { return this.releasePromise; }
+    // A launch preflight refusal has dispatched no helper release. Preserve
+    // The original launch and its cleanup owner instead of consuming them.
+    if (this.launchInFlight) { return Promise.reject(new Error("Cannot release Windows proof authority during launch.")); }
     this.state = "released";
     this.currentLaunch = null;
     this.closedSessionLaunches.clear();
-    const supervisor = this.supervisor;
-    this.supervisor = undefined;
-    await supervisor?.release();
+    this.releasePromise = this.completeRelease();
+    return this.releasePromise;
   }
+
+  private async completeRelease(): Promise<void> {
+    // Retain releasePromise before invoking any original owner callback.
+    await Promise.resolve();
+    let supervisor = this.supervisor;
+    if (this.supervisorAcquisition !== undefined) {
+      try { supervisor = await this.supervisorAcquisition; }
+      catch (error) {
+        // Failed hashing or admission allocated nothing. A failed start may
+        // Have allocated a helper, so its uncertainty cannot acknowledge close.
+        if (this.supervisorAllocationAttempted) { throw error; }
+      }
+    }
+    if (supervisor !== undefined) { await this.releaseSupervisorOnce(supervisor); }
+    this.supervisor = undefined;
+    this.releaseAcknowledged = true;
+  }
+
+  /** Internal original-owner evidence; never inferred from persisted status. */
+  public isReleaseAcknowledged(): boolean { return this.releaseAcknowledged; }
 
   public status(): WindowsControlRuntimeStatus {
     return { state: this.state, launch: structuredClone(this.currentLaunch), executableSha256: this.executableSha256, reviewedExecutionScopeSha256: this.options.reviewedExecutionScopeSha256 };

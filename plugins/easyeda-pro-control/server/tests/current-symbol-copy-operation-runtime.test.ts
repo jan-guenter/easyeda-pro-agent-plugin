@@ -22,12 +22,21 @@ async function fixture(): Promise<{
   class Controller {
     public readonly kind: string;
     public owned = false;
+    private runtimeDisposed = false;
     public status: Value = { failed: false, retired: false, closeAttempted: false, finishCloseAttempted: false, finishObservationAvailable: false };
     public constructor(kind: string) { this.kind = kind; }
     private step(name: string): Value {
       const event = `${this.kind}.${name}`; calls.push(event);
       if (state.failure === event) { this.status["failed"] = true; throw new Error(`Synthetic failure: ${event}`); }
       return { ...this.status };
+    }
+    public isRuntimeDisposed(): boolean { return this.runtimeDisposed; }
+    public releaseCompletedRuntime(operationId: string, complete: (runtime: object, receipt: Value) => void): Promise<Value> {
+      assert.equal(this.runtimeDisposed, false); assert.equal(this.status["retired"], true);
+      this.step("release-runtime");
+      const receipt = Object.freeze({ operationId, family: "symbol-copy" });
+      complete(Object.freeze({ original: "shared-runtime" }), receipt); this.runtimeDisposed = true;
+      return Promise.resolve(receipt);
     }
     public inspect(): Value { assert.ok(this.kind === "baseline" || this.owned); return { ...this.status }; }
     public getCopyProjectOnlyGeneration(): unknown { assert.equal(this.kind, "baseline"); return generation; }
@@ -137,4 +146,18 @@ void test("startup, copy and reopened read failures retain their actual close ow
     assert.equal(f.inspect()["nextPhase"], "stopped"); assert.equal(f.inspect()["copyVerified"], false);
     assert.deepEqual(f.calls.slice(-2), [`${owner}.close`, `${owner}.finish`]);
   }
+});
+
+void test("copy disposal requires actual final completion and never promotes a cloned inspection", async () => {
+  const f = await fixture(); await f.invoke("begin");
+  const inspection = structuredClone(f.inspect()); inspection["nextPhase"] = "completed"; inspection["copyVerified"] = true;
+  let callbacks = 0;
+  const complete = (runtime: unknown, receipt: unknown): void => {
+    assert.deepEqual(runtime, { original: "shared-runtime" }); assert.equal(object(receipt)["operationId"], ID); callbacks += 1;
+  };
+  await assert.rejects(f.invoke("releaseCompletedRuntime", complete), /fully completed original/u);
+  assert.equal(callbacks, 0); assert.equal(f.calls.includes("verifier.release-runtime"), false);
+  await reach(f, "completed"); await f.invoke("releaseCompletedRuntime", complete);
+  assert.equal(callbacks, 1); assert.equal(f.calls.at(-1), "verifier.release-runtime");
+  await assert.rejects(f.invoke("releaseCompletedRuntime", complete)); assert.equal(callbacks, 1);
 });

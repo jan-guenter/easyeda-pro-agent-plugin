@@ -22,6 +22,8 @@ import type { CurrentSchematicRenameStartupObservation } from "./current-schemat
 import { CurrentSchematicRenameVerificationCoordinator } from "./current-schematic-rename-verification-runtime.ts";
 import { CurrentSchematicRenameWriterCoordinator } from "./current-schematic-rename-writer-runtime.ts";
 import type { EasyedaControlEngine } from "./engine.ts";
+import type { WindowsControlRuntime } from "./windows-runtime.ts";
+import type { OriginalTerminalRuntimeDisposal } from "./terminal-runtime-release.ts";
 import { loadRuntimeMachineProfile } from "./machine-profile.ts";
 
 type Value = Readonly<Record<string, unknown>>;
@@ -115,6 +117,29 @@ export class CurrentSchematicRenameOperationCoordinator {
   public constructor(engine: EasyedaControlEngine, opener: CurrentDisposableOpenCoordinator) {
     this.engine = engine; this.opener = opener; this.writer = new CurrentSchematicRenameWriterCoordinator(engine);
     this.verifier = new CurrentSchematicRenameVerificationCoordinator(engine); this.scratch = new CurrentSchematicAgedSqlReferenceStage(engine);
+  }
+  public isRuntimeDisposed(runtime?: WindowsControlRuntime): boolean {
+    return !this.busy && (this.slots.size === 0 ? this.opener.isRuntimeDisposed(runtime) : this.verifier.isRuntimeDisposed(runtime));
+  }
+  public settleRuntimeReleaseRecords(operationId: string,
+    complete: (runtime: WindowsControlRuntime) => void): Promise<OriginalTerminalRuntimeDisposal> {
+    return this.releaseCompletedRuntime(operationId, complete, true);
+  }
+  public async releaseCompletedRuntime(operationId: string,
+    complete: (runtime: WindowsControlRuntime) => void, settleRecordsOnly = false): Promise<OriginalTerminalRuntimeDisposal> {
+    const slot = this.slots.get(operationId);
+    need(!this.busy && this.slots.size === 1 && slot !== undefined && slot.next === "completed" && slot.renameVerified &&
+      !slot.cleanupRequested && slot.failedPhase === undefined && slot.owner !== undefined,
+    "SCHEMATIC native release requires its fully completed original operation; cleanup and partial construction remain blocked.");
+    this.busy = true;
+    try {
+      const owner = slot.owner;
+      return await this.verifier.releaseCompletedRuntime(operationId, (runtime, receipt) => {
+        need(this.slots.get(operationId) === slot && slot.owner === owner && slot.next === "completed" && slot.renameVerified);
+        this.opener.acceptCurrentSchematicRenameCompletedRuntimeDisposal(owner, runtime, receipt);
+        complete(runtime);
+      }, settleRecordsOnly);
+    } finally { this.busy = false; }
   }
   public run(input: unknown): Promise<Value> {
     const request = currentSchematicRenameOperationRequestSchema.parse(structuredClone(input));

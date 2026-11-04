@@ -17,6 +17,8 @@ import type { AuthenticatedBridgeSessionIdentity, TrackedDispatchOperationJourna
 import { validateSdkLocalRuntimeFingerprint } from "./sdk-local-runtime.ts";
 import { WindowsControlRuntime } from "./windows-runtime.ts";
 import type { WindowsAuthorityLaunch } from "./windows-authority.ts";
+import { OriginalTerminalRuntimeRelease, assertOriginalTerminalRuntimeDisposal, isOriginalTerminalRuntimeDisposalCompleted } from "./terminal-runtime-release.ts";
+import type { OriginalTerminalRuntimeDisposal } from "./terminal-runtime-release.ts";
 // oxlint-disable-next-line import/no-cycle -- The fixed preparation stage consumes this module's private original-object issuer after initialization.
 import { assertOriginalCurrentOwnedSymbolCopyPreparation, assertOriginalCurrentOwnedSymbolPreparation, currentOwnedSymbolCopyRequestSchema, prepareCurrentOwnedSymbolCopy, prepareCurrentOwnedSymbolMetadata } from "./current-symbol-owned-preparation.ts";
 import type { CurrentOwnedSymbolCopyPreparation, CurrentOwnedSymbolMetadataPreparation } from "./current-symbol-owned-preparation.ts";
@@ -87,7 +89,7 @@ interface Retained {
   readonly launch: WindowsAuthorityLaunch;
   readonly launchText: string;
   readonly planText: string;
-  readonly nativeCleanup: Readonly<Pick<OpenRuntime, "status" | "observeApplicationWindow" | "normalClose">>;
+  readonly nativeCleanup: Readonly<Pick<OpenRuntime, "status" | "observeApplicationWindow" | "normalClose" | "observeLaunchTermination">>;
 }
 interface CopyOpeningCleanup {
   readonly operationId: string;
@@ -416,6 +418,7 @@ export class CurrentDisposableOpenCoordinator {
   private readonly baselineJobs = new Set<string>();
   private readonly baselines = new Map<string, CurrentSymbolBaselineCoordinator>();
   private readonly baselinePurposes = new Map<string, BaselinePurpose>();
+  private readonly baselineTransfers = new Map<string, CurrentSymbolBaselineOwner | CurrentSymbolCopyBaselineOwner>();
   private readonly validations = new Map<string, CurrentSymbolValidationCoordinator>();
   private readonly ordinaryOperations = new Map<string, CurrentSymbolValidationCoordinator>();
   private readonly copyOperations = new Map<string, CurrentSymbolCopyOperationCoordinator>();
@@ -423,11 +426,131 @@ export class CurrentDisposableOpenCoordinator {
   private readonly normalCloseAttempts = new Set<string>();
   private readonly pcbRenameOpeningOwners = new Map<string, CurrentPcbRenameOpeningOwner>();
   private readonly schematicRenameOpeningOwners = new Map<string, CurrentSchematicRenameOpeningOwner>();
+  private readonly completedOpeningRetirements = new Set<Retained>();
+  private readonly completedSuccessfulOpenings = new Set<Retained>();
+  private readonly openingRuntimeReleases = new Map<string, OriginalTerminalRuntimeRelease>();
+  private readonly runtimeDisposals = new Map<OpenRuntime, OriginalTerminalRuntimeDisposal>();
   private busy = false;
 
   public constructor(options: CurrentDisposableOpenOptions, dependencies: CurrentDisposableOpenDependencies = {}) {
     this.options = options; this.services = { ...defaults, ...dependencies };
     this.productionServices = Reflect.ownKeys(dependencies).length === 0;
+  }
+
+  /** This observer reads only irreversible acknowledgments issued by the actual
+   * original owner. Terminal journal JSON and transfer reservations are retained.
+   */
+  public isRuntimeDisposed(runtime?: WindowsControlRuntime): boolean {
+    return !this.busy && this.retained.size > 0 && [...this.retained.values()].every(slot => {
+      const receipt = this.runtimeDisposals.get(slot.runtime);
+      return receipt !== undefined && isOriginalTerminalRuntimeDisposalCompleted(receipt, slot.runtime) && (runtime === undefined || slot.runtime === runtime);
+    });
+  }
+  private assertDisposalInventory(runtime: OpenRuntime, openingOperationId: string, pcb: number, schematic: number): void {
+    requireValue(this.productionServices && !this.busy && this.retained.size === 1 && this.retained.get(openingOperationId)?.runtime === runtime &&
+      this.generations.size === 0 && this.baselines.size === 0 && this.baselinePurposes.size === 0 && this.baselineTransfers.size === 0 && this.validations.size === 0 &&
+      this.ordinaryOperations.size === 0 && this.copyOperations.size === 0 && this.copyOpeningCleanups.size === 0 &&
+      this.pcbRenameOpeningOwners.size === pcb && this.schematicRenameOpeningOwners.size === schematic && this.baselineJobs.size === pcb + schematic,
+    "Opening native release has an unsupported, partial or unsettled original downstream allocation.");
+  }
+  public acceptCurrentPcbRenameCompletedRuntimeDisposal(owner: CurrentPcbRenameOpeningOwner, runtime: WindowsControlRuntime,
+    receipt: OriginalTerminalRuntimeDisposal): void {
+    const issued = issuedPcbRenameOpeningOwners.get(owner);
+    requireValue(this.pcbRenameOpeningOwners.get(owner.operationId) === owner && issued?.state === "completed" && issued.value.source.runtime === runtime,
+      "PCB disposal must return through its exact original opening transfer.");
+    this.assertDisposalInventory(runtime, owner.openingOperationId, 1, 0);
+    assertOriginalTerminalRuntimeDisposal(receipt, runtime, "pcb-rename", owner.operationId);
+    this.runtimeDisposals.set(runtime, receipt);
+  }
+  public acceptCurrentSchematicRenameCompletedRuntimeDisposal(owner: CurrentSchematicRenameOpeningOwner, runtime: WindowsControlRuntime,
+    receipt: OriginalTerminalRuntimeDisposal): void {
+    const issued = issuedSchematicRenameOpeningOwners.get(owner);
+    requireValue(this.schematicRenameOpeningOwners.get(owner.operationId) === owner && issued?.state === "completed" && issued.value.source.runtime === runtime,
+      "Schematic disposal must return through its exact original opening transfer.");
+    this.assertDisposalInventory(runtime, owner.openingOperationId, 0, 1);
+    assertOriginalTerminalRuntimeDisposal(receipt, runtime, "schematic-rename", owner.operationId);
+    this.runtimeDisposals.set(runtime, receipt);
+  }
+  public async releaseCompletedSymbolRuntime(operationId: string, family: "symbol-metadata" | "symbol-copy",
+    complete: (runtime: WindowsControlRuntime) => void, settleRecordsOnly = false): Promise<OriginalTerminalRuntimeDisposal> {
+    const operation = family === "symbol-copy" ? this.copyOperations.get(operationId) :
+      this.ordinaryOperations.get(operationId) ?? this.validations.get(operationId);
+    const transfer = this.baselineTransfers.get(operationId);
+    requireValue(this.productionServices && !this.busy && operation !== undefined && transfer !== undefined &&
+      this.baselines.size === 1 && this.baselineTransfers.size === 1 && this.baselinePurposes.size === 1 &&
+      this.generations.size === 0 && this.pcbRenameOpeningOwners.size === 0 && this.schematicRenameOpeningOwners.size === 0 && this.baselineJobs.size === 1 &&
+      (family === "symbol-copy" ? this.copyOperations.size === 1 && this.ordinaryOperations.size === 0 && this.validations.size === 0 &&
+        this.baselinePurposes.get(operationId) === "disposable-symbol-copy" && transfer.profile === "private.current-symbol-copy-baseline-owner.v1" :
+        this.copyOperations.size === 0 && this.ordinaryOperations.size + this.validations.size === 1 && transfer.profile === "private.current-symbol-baseline-owner.v1"),
+    "Symbol native release requires its exact original completed family; other, partial or unsettled downstream allocations remain blocked.");
+    const issued = family === "symbol-copy" ? issuedCopyBaselineOwners.get(transfer) : issuedBaselineOwners.get(transfer);
+    requireValue(issued !== undefined && issued.value.source.engine === this.options.engine,
+      "Symbol native release lost its original opening transfer registry.");
+    const opening = this.retained.get(transfer.openingOperationId), runtime = issued.value.source.runtime;
+    const cleanup = this.copyOpeningCleanups.get(operationId);
+    requireValue(this.retained.size === 1 && opening?.runtime === runtime &&
+      (family === "symbol-copy" ? this.copyOpeningCleanups.size === 1 && cleanup !== undefined && !cleanup.failed && !cleanup.failureRecorded &&
+        !cleanup.closeAttempted && !cleanup.closeAcknowledged && !cleanup.releaseAttempted && !cleanup.retired && cleanup.artifacts.length === 0 : this.copyOpeningCleanups.size === 0),
+    "Symbol native release has an unsettled original opening or cleanup record.");
+    this.busy = true;
+    try {
+      return await operation.releaseCompletedRuntime(operationId, (original, receipt) => {
+        requireValue(original === runtime && this.baselineTransfers.get(operationId) === transfer && this.retained.get(transfer.openingOperationId) === opening,
+          "Symbol disposal must return through its exact original opening transfer.");
+        assertOriginalTerminalRuntimeDisposal(receipt, original, family, receipt.operationId);
+        this.runtimeDisposals.set(original, receipt); complete(original);
+      }, settleRecordsOnly);
+    } finally { this.busy = false; }
+  }
+  public settleRuntimeReleaseRecords(operationId: string,
+    complete: (runtime: WindowsControlRuntime) => void): Promise<OriginalTerminalRuntimeDisposal> {
+    return this.releaseCompletedRuntime(operationId, complete, true);
+  }
+  public async releaseCompletedRuntime(operationId: string,
+    complete: (runtime: WindowsControlRuntime) => void, settleRecordsOnly = false): Promise<OriginalTerminalRuntimeDisposal> {
+    const slot = this.retained.get(operationId);
+    requireValue(slot !== undefined && slot.runtime instanceof WindowsControlRuntime &&
+      (this.completedOpeningRetirements.has(slot) || this.completedSuccessfulOpenings.has(slot)),
+      "Opening native release requires its original complete success or completed retirement; partial opening and historical JSON are insufficient.");
+    const runtime = slot.runtime;
+    this.assertDisposalInventory(runtime, operationId, 0, 0);
+    this.busy = true;
+    try {
+      let release = this.openingRuntimeReleases.get(operationId);
+      if (release === undefined) {
+        const engine = this.options.engine, journalText = canonicalJson(slot.journal);
+        const ownerGuard = this.options.assertOwner, runtimeReader = this.options.runtime;
+        const owner = (): void => {
+          requireValue(this.retained.get(operationId) === slot && slot.runtime === runtime && this.options.engine === engine &&
+            this.options.runtime === runtimeReader && this.options.assertOwner === ownerGuard &&
+            (this.completedOpeningRetirements.has(slot) || this.completedSuccessfulOpenings.has(slot)) && canonicalJson(slot.journal) === journalText,
+          "Opening disposal lost its original retired slot or settled journal.");
+        };
+        const eligible = async (): Promise<void> => {
+          owner(); this.currentUntransferred(slot);
+          requireValue(canonicalJson(await this.load(operationId)) === journalText, "Opening terminal journal changed before native release.");
+          owner(); this.currentUntransferred(slot); await engine.assertRecoveryOperationIsolated(operationId); owner(); this.currentUntransferred(slot);
+          const observeTermination = slot.nativeCleanup.observeLaunchTermination;
+          requireValue(runtime.observeLaunchTermination === observeTermination, "Opening original termination observer changed.");
+          const observation = terminationSchema.parse(await observeTermination.call(runtime)); owner(); this.currentUntransferred(slot);
+          requireValue(runtime.observeLaunchTermination === observeTermination, "Opening original termination observer changed during disposal.");
+          requireValue(observation.jobId === slot.launch.jobId && observation.helperInstance === slot.launch.helperInstance,
+            "Opening native release requires its actual original root and empty Job.");
+          const lifecycle = engine.upstream.bridgeSessionLifecycle?.();
+          requireValue(isRecord(lifecycle) && lifecycle["activeSession"] === null && engine.upstream.currentAuthenticatedBridgeDispatchBinding?.() === undefined,
+            "Opening native release requires its closed authenticated dispatch scope.");
+          const binding = slot.journal.bridgeDispatchBeforeOrphan, prior = slot.journal.bridgeSessionBeforeOrphan;
+          const closed = engine.upstream.assertClosedAuthenticatedBridgeDispatchReleased;
+          requireValue(prior !== undefined && binding !== undefined && closed !== undefined,
+            "Opening native release lacks its original closed authenticated dispatch evidence.");
+          closedSessionSchema.parse(closed.call(engine.upstream, binding, prior));
+        };
+        release = new OriginalTerminalRuntimeRelease(runtime, operationId, "project-opening", slot.launch, owner, eligible);
+        this.openingRuntimeReleases.set(operationId, release);
+      }
+      const finished = (original: WindowsControlRuntime, receipt: OriginalTerminalRuntimeDisposal): void => { this.runtimeDisposals.set(original, receipt); complete(original); };
+      return await (settleRecordsOnly ? release.settle(finished) : release.run(finished));
+    } finally { this.busy = false; }
   }
 
   public async run(input: unknown, expectedFingerprint?: Value): Promise<Value> {
@@ -1275,6 +1398,7 @@ export class CurrentDisposableOpenCoordinator {
       requireValue(source.purpose === "disposable-validation", "Copy baseline transfer requires its disposable original opening.");
       issuedCopyBaselineOwners.set(owner, { value: Object.freeze({ source, preparation }), current, revalidate });
     } else { issuedBaselineOwners.set(owner, { value: Object.freeze({ source, preparation }), current, revalidate }); }
+    this.baselineTransfers.set(operationId, owner);
     return owner;
   }
 
@@ -1518,7 +1642,8 @@ export class CurrentDisposableOpenCoordinator {
       projectDispatchConsumed: false, documentDispatchConsumed: false,
       nextSafeAction: "Run one current-profile disposable project/document open; normal open effects are accepted, not validated design changes." };
     const slot: Retained = { journal, runtime, launch, launchText: canonicalJson(launch), planText: canonicalJson(plan),
-      nativeCleanup: Object.freeze({ status: runtime.status, observeApplicationWindow: runtime.observeApplicationWindow, normalClose: runtime.normalClose }) };
+      nativeCleanup: Object.freeze({ status: runtime.status, observeApplicationWindow: runtime.observeApplicationWindow, normalClose: runtime.normalClose,
+        observeLaunchTermination: runtime.observeLaunchTermination }) };
     this.retained.set(request.operationId, slot); this.currentUntransferred(slot);
     await this.services.createOperation(journal);
     const failureContext: CurrentOpenFailureContext = { phase: "preflight", hostStage: "owner-check" };
@@ -1536,6 +1661,10 @@ export class CurrentDisposableOpenCoordinator {
       failureContext.hostStage = "write-completion";
       await this.record(journal, "completed", { result: journal.result, replayAllowed: false, persistenceVerified: false, writerAuthority: false });
       this.currentUntransferred(slot);
+      if (journal.result["outcome"] === "target-native-identity-observed") {
+        requireValue(canonicalJson(await this.load(journal.operationId)) === canonicalJson(journal), "Opening completion publication did not settle.");
+        this.currentUntransferred(slot); this.completedSuccessfulOpenings.add(slot);
+      }
       return summary(journal);
     } catch (error) { return this.stop(journal, error, failureContext); }
   }
@@ -1567,6 +1696,7 @@ export class CurrentDisposableOpenCoordinator {
   private async observe(loaded: OpenJournal): Promise<Value> {
     requireValue(!loaded.orphanedCallPossible && loaded.state !== "plan-invalidated", "An uncertain or retired open cannot dispatch observations.");
     const slot = this.retainedJournal(loaded);
+    this.completedSuccessfulOpenings.delete(slot);
     CurrentDisposableOpenCoordinator.assertNotTransferred(slot.runtime);
     const journal = slot.journal;
     const failureContext: CurrentOpenFailureContext = { phase: "observe", hostStage: "owner-check" };
@@ -1577,6 +1707,10 @@ export class CurrentDisposableOpenCoordinator {
       failureContext.hostStage = "write-completion";
       await this.record(journal, "observed", { observation, earlierNavigationOutcome: "not-inferred", replayAllowed: false });
       this.currentUntransferred(slot);
+      if (journal.result["outcome"] === "target-native-identity-observed") {
+        requireValue(canonicalJson(await this.load(journal.operationId)) === canonicalJson(journal), "Opening observation publication did not settle.");
+        this.currentUntransferred(slot); this.completedSuccessfulOpenings.add(slot);
+      }
       return summary(journal);
     } catch (error) { return this.stop(journal, error, failureContext); }
   }
@@ -1691,6 +1825,9 @@ export class CurrentDisposableOpenCoordinator {
     Object.assign(journal, terminal);
     delete journal.runtimeRestartChallenge; delete journal.runtimeRestartChallengeIssuedAt;
     if (hadOrphan) { await engine.executionAuthorityValidator?.releaseCapture?.(authority); }
+    this.currentUntransferred(slot);
+    requireValue(canonicalJson(await this.load(journal.operationId)) === canonicalJson(journal), "Opening retirement publication did not settle.");
+    this.currentUntransferred(slot); this.completedOpeningRetirements.add(slot);
     return summary(journal);
   }
 }

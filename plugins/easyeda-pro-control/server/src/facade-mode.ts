@@ -7,7 +7,7 @@ import { isPublicUtilities209Configured } from "./sdk-public-utilities-profile.t
 export type FacadeMode = "legacy-reviewed" | "calculation-only" | "public-utilities-only";
 
 export const PUBLIC_UTILITIES_ONLY_TOOLS = Object.freeze([
-  "easyeda_control_api", "easyeda_control_discover", "easyeda_control_status", "easyeda_control_session",
+  "easyeda_control_api", "easyeda_control_discover", "easyeda_control_status", "easyeda_control_session", "easyeda_control_native_release",
   "easyeda_control_calculate", "easyeda_control_system", "easyeda_control_launch",
   "easyeda_control_public_readers",
   "easyeda_control_netlist_files", "easyeda_control_library_files",
@@ -59,7 +59,7 @@ export function publicUtilitiesOnlyCapabilities(): Record<string, unknown> {
 }
 
 export const CALCULATION_ONLY_TOOLS = Object.freeze([
-  "easyeda_control_api", "easyeda_control_discover", "easyeda_control_status", "easyeda_control_session", "easyeda_control_calculate",
+  "easyeda_control_api", "easyeda_control_discover", "easyeda_control_status", "easyeda_control_session", "easyeda_control_native_release", "easyeda_control_calculate",
   "easyeda_control_system", "easyeda_control_extensions", "easyeda_control_library_files",
   "easyeda_control_launch", "easyeda_control_editor_shell",
   "easyeda_control_pcb_diagnostic_validation",

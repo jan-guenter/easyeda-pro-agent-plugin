@@ -66,10 +66,13 @@ native proof handles, chooses a prompt or takes over another owner.
 
 This handoff currently follows fully released diagnostic owners, an ordinary
 launch that completed its own `release-closed`, or a connection that allocated
-no native owner. Project-opening and metadata-writer coordinators can remain
-allocated even after their internal final closure. They have no index-level
-disposal through this tool and still refuse retirement; completing their
-workflow alone is insufficient. Do not clear those owners or their leases.
+no native owner. Supported completed project-opening and metadata workflows
+must explicitly finish `easyeda_control_native_release` first. That separate
+original-owner route awaits helper closure and releases the matching index
+allocation while retaining coordinator history. Completion alone is insufficient;
+partial construction, multiple unrelated roots and unsupported cleanup remain
+blocked. Read the [autonomous update workflow](autonomous-controller-updates.md)
+for exact release and evidence-settlement requests. Never clear owners or leases.
 
 For a user-requested handoff to a fresh-context subagent during an update:
 

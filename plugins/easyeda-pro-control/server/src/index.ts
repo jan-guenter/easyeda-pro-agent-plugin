@@ -92,6 +92,8 @@ import { buildDsnExportCode, wrapWithContextGuard } from "./runtime-scripts.ts";
 import { UpstreamEasyedaClient, UpstreamStartupError } from "./upstream.ts";
 import { createSerializedShutdown } from "./shutdown.ts";
 import { FacadeSessionRetirement, sessionRetirementOutputSchema, sessionRetirementRequestSchema } from "./session-retirement.ts";
+import { nativeRuntimeReleaseRequestSchema, nativeRuntimeReleaseResultSchema } from "./native-runtime-release.ts";
+import type { NativeRuntimeReleaseRequest } from "./native-runtime-release.ts";
 import { SessionRetirementMcpServer } from "./session-mcp-server.ts";
 import { offlineApiToolConfiguration, queryOfflineApi, runOfflineApi } from "./offline-api.ts";
 import { publicSdkReadImplementationKind, publicSdkReadRequestSchema } from "./public-sdk-read.ts";
@@ -284,9 +286,10 @@ const closedSymbolUnreservedFailure: { observed: boolean; original: unknown } = 
  * own cleanup. It never releases, adopts or terminates a native owner. */
 function assertSessionRetirementNativeOwnersSettled(): void {
   if (scheduledShutdown !== undefined || windowsRuntime !== undefined || ordinaryLaunchRuntime !== undefined ||
-      closedSymbolIndexReservation !== undefined || closedSymbolUnreservedFailure.observed ||
-      currentDisposableOpenCoordinator !== undefined || currentPcbRenameOperationCoordinator !== undefined ||
-      currentSchematicRenameOperationCoordinator !== undefined) {
+      closedSymbolIndexReservation !== undefined && closedSymbolIndexReservation.entry?.isRuntimeDisposed() !== true || closedSymbolUnreservedFailure.observed ||
+      currentDisposableOpenCoordinator !== undefined && !currentDisposableOpenCoordinator.isRuntimeDisposed() ||
+      currentPcbRenameOperationCoordinator !== undefined && !currentPcbRenameOperationCoordinator.isRuntimeDisposed() ||
+      currentSchematicRenameOperationCoordinator !== undefined && !currentSchematicRenameOperationCoordinator.isRuntimeDisposed()) {
     throw new Error("EasyEDA retirement requires completed native cleanup and no retained runtime, project or writer owner.");
   }
   const diagnostics = [currentPcbDiagnosticLifecycle, currentPcbStringPrecreateLifecycle,
@@ -295,6 +298,53 @@ function assertSessionRetirementNativeOwnersSettled(): void {
       currentFootprintHeldCacheValidation?.hasOwnedAllocation() === true || currentFootprintHeadAgeValidation?.hasOwnedAllocation() === true) {
     throw new Error("EasyEDA retirement requires every diagnostic reservation and native allocation to be released by its original owner.");
   }
+}
+
+/** Clear only the exact native allocation whose original workflow has awaited
+ * helper closure. Coordinators remain retained with their irreversible proof. */
+function completeTerminalRuntimeRelease(runtime: WindowsControlRuntime): void {
+  if (windowsRuntime !== runtime || !runtime.isReleaseAcknowledged() || scheduledShutdown !== undefined ||
+      ordinaryLaunchRuntime !== undefined && ordinaryLaunchRuntime !== runtime) {
+    throw new Error("Native cleanup must complete its exact original acknowledged runtime allocation.");
+  }
+  const diagnostics = [currentPcbDiagnosticLifecycle, currentPcbStringPrecreateLifecycle,
+    currentPcbWorkerStartupLifecycle, currentFootprintMainLifecycle, currentFootprintHeldCacheValidation, currentFootprintHeadAgeValidation];
+  if (diagnostics.some(owner => owner?.hasActiveReservation() === true) ||
+      currentFootprintHeldCacheValidation?.hasOwnedAllocation() === true || currentFootprintHeadAgeValidation?.hasOwnedAllocation() === true) {
+    throw new Error("Native cleanup cannot clear a runtime while another diagnostic owner remains allocated.");
+  }
+  windowsRuntime = undefined;
+  if (ordinaryLaunchRuntime === runtime) { ordinaryLaunchRuntime = undefined; }
+}
+
+/** Original coordinators select eligibility; historical state cannot create one. */
+function releaseCompletedNativeRuntime(request: NativeRuntimeReleaseRequest): Promise<unknown> {
+  const closedEntry = request.kind === "symbol-metadata" ? closedSymbolIndexReservation?.entry : undefined;
+  const release = async (): Promise<unknown> => {
+    // Record ordinary launch termination before consuming the helper. Releasing
+    // First would strand its original observe-termination action afterward.
+    await assertNoUnresolvedOrdinaryLaunches();
+    const settle = request.action === "settle-release-records";
+    if ((request.kind === "symbol-metadata" || request.kind === "symbol-copy") && closedEntry === undefined) {
+      if (currentDisposableOpenCoordinator === undefined) { throw new Error("Native release requires its retained original symbol workflow."); }
+      const disposal = await currentDisposableOpenCoordinator.releaseCompletedSymbolRuntime(request.operationId, request.kind,
+        completeTerminalRuntimeRelease, settle);
+      return nativeRuntimeReleaseResultSchema.parse({ schema: "easyeda-pro-control.native-runtime-release-result.v1",
+        requestedOperationId: request.operationId, kind: request.kind, disposal });
+    }
+    let owner: CurrentDisposableOpenCoordinator | CurrentPcbRenameOperationCoordinator | CurrentSchematicRenameOperationCoordinator | typeof closedEntry = currentDisposableOpenCoordinator;
+    if (request.kind === "pcb-rename") { owner = currentPcbRenameOperationCoordinator; }
+    else if (request.kind === "schematic-rename") { owner = currentSchematicRenameOperationCoordinator; }
+    else if (request.kind === "symbol-metadata") { owner = closedEntry; }
+    if (owner === undefined) { throw new Error("Native release requires this facade's retained original workflow; history cannot restore it."); }
+    const disposal = settle ? await owner.settleRuntimeReleaseRecords(request.operationId, completeTerminalRuntimeRelease) :
+      await owner.releaseCompletedRuntime(request.operationId, completeTerminalRuntimeRelease);
+    return nativeRuntimeReleaseResultSchema.parse({ schema: "easyeda-pro-control.native-runtime-release-result.v1",
+      requestedOperationId: request.operationId, kind: request.kind, disposal });
+  };
+  // Closed-symbol entries already serialize on this exact gate. Nesting that
+  // Gate would deadlock their original cleanup. Other families enter it here.
+  return closedEntry === undefined ? bridgeGate.run(release) : release();
 }
 
 function disposableOwnData(owner: object, key: string): unknown {
@@ -1996,6 +2046,7 @@ const toolOutputSchemas: Readonly<Record<string, z.ZodType>> = {
   easyeda_control_library: z.object({ operationId: z.string().optional(), state: z.string().optional(), result: z.unknown().optional(), nextSafeAction: z.string().optional(), capabilities: z.array(z.unknown()).optional() }).catchall(z.unknown()),
   easyeda_control_status: statusSuccessOutputSchema,
   easyeda_control_session: z.object({ result: sessionRetirementOutputSchema.optional(), ...optionalFailureOutputShape }).strict(),
+  easyeda_control_native_release: z.object({ result: nativeRuntimeReleaseResultSchema.optional(), ...optionalFailureOutputShape }).strict(),
   easyeda_control_discover: discoverSuccessOutputSchema,
   easyeda_control_context: contextOutputSchema,
   easyeda_control_exact_read: evidenceSuccessOutputSchema,
@@ -2056,6 +2107,16 @@ registerFacadeTool(
   },
   guarded(async ({ request }) => ({ result: request.action === "inspect" ? facadeSession.inspect() : await facadeSession.retire() })),
 );
+
+if (facadeToolRegistered(facadeMode, "easyeda_control_native_release")) {
+  const inputSchema = z.object({ request: z.unknown().pipe(nativeRuntimeReleaseRequestSchema) }).strict();
+  server.registerTool("easyeda_control_native_release", {
+    title: "Release a completed workflow's original native helper",
+    description: "Explicit original-owner helper disposal after a supported completed project, PCB/SCH rename or symbol workflow. Query offline native-release/native-release-validate first. Requires the actual retained final generation, its original root and empty Job exit, retired captures and settled workflow records. release-completed requires confirmReleaseOriginalRuntime:true and dispatches helper release at most once. settle-release-records can publish retained completion only after original release was acknowledged; it cannot repeat native cleanup. Historical journals, copied receipts, PIDs and completed-status JSON cannot create ownership. This tool does not close or terminate EasyEDA, choose prompts, replay an operation, Save, discard, delete or restore. Partial construction or unsupported cleanup remains blocked. Only acknowledged helper closure and matching index disposal permit later cooperative session retirement.",
+    inputSchema, outputSchema: z.object({ result: nativeRuntimeReleaseResultSchema.optional(), ...optionalFailureOutputShape }).strict(),
+    annotations: { readOnlyHint: false, destructiveHint: false, idempotentHint: false },
+  }, guarded(async ({ request }: z.output<typeof inputSchema>) => ({ result: await releaseCompletedNativeRuntime(request) })));
+}
 
 registerFacadeTool(
   "easyeda_control_status",

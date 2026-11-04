@@ -33,7 +33,7 @@ const requestSchema = z.union([
   z.strictObject({ id: requestId, shutdown: z.literal(true) }),
 ]);
 type SessionRequest = z.infer<typeof requestSchema>;
-type CallRequest = z.infer<typeof callSchema>;
+export type CallRequest = z.infer<typeof callSchema>;
 type Emitter = (value: unknown) => Promise<void>;
 type Invoker = (request: CallRequest) => Promise<unknown>;
 
@@ -144,7 +144,7 @@ export async function* boundedLines(
   }
 }
 
-async function publishResult(
+export async function publishSessionResult(
   request: CallRequest,
   result: unknown,
   emit: Emitter,
@@ -211,7 +211,7 @@ export async function runSessionRequests(
     }
     try {
       const result = await invoke(request);
-      await publishResult(request, result, emit);
+      await publishSessionResult(request, result, emit);
     } catch (error) {
       // Never print private transport stderr or nested exceptions. A timeout,
       // Disconnect or result-publication failure ends this session, never retries.
@@ -303,12 +303,10 @@ export function sessionMachineLaunchConfiguration(profilePath: string, profile: 
   return { ...definition, args: [...definition.args, "--machine-launch"], env: { EASYEDA_MACHINE_PROFILE: profilePath } };
 }
 
-async function main(): Promise<void> {
-  sessionPhase = "arguments";
-  const option = process.argv[2];
-  const suppliedRoot = process.argv[3];
-  if (process.argv.length !== 4 || option !== "--plugin-root" ||
-    suppliedRoot === undefined || !isAbsolute(suppliedRoot)) {
+/** Shared selector for maintained foreground clients. It supplies neither live
+ * admission nor permission to replace an existing control owner. */
+export async function selectSessionLaunch(suppliedRoot: string): Promise<ReturnType<typeof sessionMachineLaunchConfiguration>> {
+  if (!isAbsolute(suppliedRoot)) {
     throw new Error("usage-control-session--plugin-root-absolute-path");
   }
   sessionPhase = "core-limit";
@@ -341,6 +339,18 @@ async function main(): Promise<void> {
     throw new Error("unreviewed-node-command");
   }
   await verifyBundle(pluginRoot);
+  return definition;
+}
+
+async function main(): Promise<void> {
+  sessionPhase = "arguments";
+  const option = process.argv[2];
+  const suppliedRoot = process.argv[3];
+  if (process.argv.length !== 4 || option !== "--plugin-root" || suppliedRoot === undefined) {
+    throw new Error("usage-control-session--plugin-root-absolute-path");
+  }
+  const definition = await selectSessionLaunch(suppliedRoot);
+  const pluginRoot = definition.cwd;
   // The facade retains its own atomic lease. Never create another data root to
   // Evading an existing owner or spawning the upstream directly is prohibited.
   sessionPhase = "transport-create";

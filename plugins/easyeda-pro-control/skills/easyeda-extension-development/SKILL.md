@@ -62,6 +62,12 @@ payload unchanged through the run and retain its original process through
 cleanup. This supports validation without repeatedly publishing intermediate
 versions; it supplies no admission for another client or snapshot.
 
+Use the [autonomous controller manager](../easyeda-pro-control/references/autonomous-controller-updates.md)
+for repeated updates. It retires and observes its original facade's exit before
+selecting a verified replacement, while Codex remains running. Finish supported
+project and metadata helper disposal through `easyeda_control_native_release`
+first. Installation belongs between retirement and replacement selection.
+
 For the separate read-only main-realm Date/SQL-head age workflow, read
 [the native head-age control reference](../easyeda-pro-control/references/current-footprint-head-age.md).
 It binds the actual closed checkpoint and completed SQL reader before allocating

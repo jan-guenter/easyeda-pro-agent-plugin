@@ -29,6 +29,15 @@ export function registerSuccess(kind: "locked" | "aged"): void {
     assert.deepEqual(result.claimArtifact, claim.artifact); assert.ok(Buffer.byteLength(JSON.stringify(result)) <= 16_384);
     for (const key of ["fingerprint", "expected", "plan", "request", "raw", "failure", "full", "completion", "coordinator"]) { assert.equal(Object.hasOwn(result, key), false); }
     assert.equal(originalClosedSymbolFullEvidenceKind(retained["full"], f.engine, result.operationId), result.headEligibility);
+    assert.equal(f.entry.isRuntimeDisposed(), false);
+    let disposed = 0;
+    const release = await f.entry.releaseCompletedRuntime(result.operationId, original => {
+      assert.equal(original, f.runtime); assert.equal(original.isReleaseAcknowledged(), true); disposed += 1;
+    });
+    assert.equal(release.family, "symbol-metadata"); assert.equal(f.entry.isRuntimeDisposed(f.runtime), true);
+    assert.equal(f.runtime.status().state, "released"); assert.equal(disposed, 1);
+    await assert.rejects(f.entry.releaseCompletedRuntime(result.operationId, () => { disposed += 1; }), /completed/u);
+    assert.equal(disposed, 1);
     const events = [...f.events];
     const again = await f.entry.run(f.request);
     assert.equal(again.outcome, "stopped"); assert.ok(again.outcome === "stopped"); assert.equal(again.reason, "entry-already-used");
@@ -65,6 +74,8 @@ export function registerEarlyRefusals(): void {
     const result = await f.entry.run(f.request); assert.equal(result.outcome, "stopped"); assert.ok(result.outcome === "stopped");
     assert.equal(result.claimState, "not-attempted"); assert.equal(f.launches(), 0); assert.deepEqual(f.localReads, []);
     assert.match(String(f.entry.retained()["failure"]), /authenticated session/u);
+    await assert.rejects(f.entry.releaseCompletedRuntime("synthetic-missing-completion", () => { throw new Error("Partial entry cannot clear an allocation."); }), /complete original entry/u);
+    assert.equal(f.entry.isRuntimeDisposed(), false);
   });
   void test("queued caller mutation refuses without any claim or native call", async context => {
     const f = await handlerFixture(context);

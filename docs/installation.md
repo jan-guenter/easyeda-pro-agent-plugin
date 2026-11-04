@@ -16,8 +16,10 @@ codex plugin marketplace add https://github.com/jan-guenter/easyeda-pro-agent-pl
 codex plugin add easyeda-pro-control@easyeda-pro-agent
 ```
 
-Start a new Codex task after installation, then verify that its actual MCP
-process uses the installed snapshot before live EasyEDA calls. An updated skill
+After installation, establish a fresh MCP connection and verify that its actual
+process uses the installed snapshot before live EasyEDA calls. During repeated
+development, use the [foreground manager](../plugins/easyeda-pro-control/skills/easyeda-pro-control/references/autonomous-controller-updates.md)
+to replace its retired controller while Codex stays running. An updated skill
 list or successful marketplace upgrade alone does not establish that the running
 server changed. A process whose working directory names an older cache generation,
 including a deleted directory, still needs replacement.
@@ -33,11 +35,13 @@ Codex app-server exposes
 [`config/mcpServer/reload`](https://developers.openai.com/codex/app-server), which
 queues a configuration refresh for loaded threads. Use it through a supported
 client connection when available. The `codex mcp` CLI has no reload subcommand.
-If the client offers no reload control and a new task retains the old process,
-finish and release any original native diagnostic owners, then fully quit and
-reopen Codex. Recheck the actual process and installed payload afterward. Do not
-terminate a host-owned facade, write to its stdio, or patch a cache to force an
-update.
+If that client control is unavailable, use supported cooperative retirement
+before installation, followed by the foreground manager or a fresh-context
+subagent. An older serving process without retirement needs supported normal
+connection closure once; installing newer files cannot add a method to that
+already running process. Recheck the replacement's actual process and installed
+payload. Do not terminate a host-owned facade, write to its stdio, or patch a
+cache to force an update.
 
 For development when host tools are absent, the
 [persistent foreground client](architecture.md) can target a verified installed

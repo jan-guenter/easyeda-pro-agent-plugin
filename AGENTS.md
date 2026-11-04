@@ -193,6 +193,12 @@ are build/check dependencies only.
   that limit without inventing shutdown, killing/rebinding owners or patching
   caches. Do not repeatedly request chat restarts as the default update loop.
   Report pending connected validation/import separately.
+- For repeated development and disposable validation, prefer the maintained
+  foreground manager after retiring the original Codex connection. Keep the
+  selected payload frozen through native cleanup. Finish each workflow's own
+  acknowledged helper release, retire the original facade before installation,
+  observe its exit, then select and admit the verified replacement. Manager
+  generations and historical receipts cannot transfer unfinished native owners.
 
 ## Maintaining documentation and history
 

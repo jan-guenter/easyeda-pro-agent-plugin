@@ -1,3 +1,4 @@
+/* oxlint-disable import/max-dependencies -- Compose original verification, inverse and opaque runtime-disposal issuers without caller-supplied providers. */
 /** Retains an original forward-only edit or disposable forward/inverse lifecycle. */
 // oxlint-disable-next-line import/no-cycle -- Purpose is checked on the original baseline registry, never caller JSON.
 import { assertCurrentProjectOnlySymbolGeneration } from "./current-symbol-baseline-runtime.ts";
@@ -16,6 +17,8 @@ import { CurrentSymbolVerificationCoordinator } from "./current-symbol-verificat
 // oxlint-disable-next-line import/no-cycle -- The original writer transfers the opener's baseline registry rather than accepting an injected authority callback.
 import { CurrentSymbolWriterCoordinator } from "./current-symbol-writer-runtime.ts";
 import type { EasyedaControlEngine } from "./engine.ts";
+import type { WindowsControlRuntime } from "./windows-runtime.ts";
+import type { OriginalTerminalRuntimeDisposal } from "./terminal-runtime-release.ts";
 
 type Value = Readonly<Record<string, unknown>>;
 type CloseOwner = CurrentSymbolBaselineCoordinator | CurrentSymbolInverseCoordinator | CurrentSymbolWriterCoordinator | CurrentSymbolVerificationCoordinator;
@@ -56,6 +59,32 @@ export class CurrentSymbolValidationCoordinator {
     this.forwardWriter = new CurrentSymbolWriterCoordinator(engine); this.forwardVerifier = new CurrentSymbolVerificationCoordinator(engine);
     this.inverse = new CurrentSymbolInverseCoordinator(engine);
     this.inverseWriter = new CurrentSymbolWriterCoordinator(engine); this.inverseVerifier = new CurrentSymbolVerificationCoordinator(engine);
+  }
+
+  public isRuntimeDisposed(runtime?: WindowsControlRuntime): boolean {
+    const slot = this.slot;
+    return !this.busy && slot?.next === "completed" && slot.forwardVerified && slot.failedPhase === undefined && slot.cleanup === undefined &&
+      (slot.purpose === "ordinary-symbol-metadata" ? this.forwardVerifier.isRuntimeDisposed(runtime) : slot.inverseVerified && this.inverseVerifier.isRuntimeDisposed(runtime));
+  }
+  public settleRuntimeReleaseRecords(operationId: string,
+    complete: (runtime: WindowsControlRuntime, receipt: OriginalTerminalRuntimeDisposal) => void): Promise<OriginalTerminalRuntimeDisposal> {
+    return this.releaseCompletedRuntime(operationId, complete, true);
+  }
+  public async releaseCompletedRuntime(operationId: string,
+    complete: (runtime: WindowsControlRuntime, receipt: OriginalTerminalRuntimeDisposal) => void, settleRecordsOnly = false): Promise<OriginalTerminalRuntimeDisposal> {
+    const slot = this.slot;
+    need(!this.busy && slot !== undefined && slot.operationId === operationId && slot.next === "completed" && slot.forwardVerified &&
+      slot.failedPhase === undefined && slot.cleanup === undefined && (slot.purpose === "ordinary-symbol-metadata" || slot.inverseVerified && slot.inverseOperationId !== undefined),
+    "Symbol metadata native release requires its complete original forward lifecycle or complete disposable inverse lifecycle.");
+    this.busy = true;
+    try {
+      const verifier = slot.purpose === "ordinary-symbol-metadata" ? this.forwardVerifier : this.inverseVerifier;
+      const finalOperationId = slot.purpose === "ordinary-symbol-metadata" ? operationId : this.inverseId(slot);
+      return await verifier.releaseCompletedRuntime(finalOperationId, (runtime, receipt) => {
+        need(this.slot === slot && slot.next === "completed" && slot.forwardVerified && slot.cleanup === undefined);
+        complete(runtime, receipt);
+      }, settleRecordsOnly);
+    } finally { this.busy = false; }
   }
 
   /** No dispatch. Preserve the original baseline even when later startup fails. */

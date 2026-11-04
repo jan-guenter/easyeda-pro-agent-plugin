@@ -7,6 +7,9 @@ import { stripTypeScriptTypes } from "node:module";
 import { test } from "node:test";
 import { createContext, runInContext } from "node:vm";
 import { canonicalJson, isRecord, sha256Json, sha256Text } from "../src/core.ts";
+import { OriginalTerminalRuntimeRelease, assertOriginalTerminalRuntimeDisposal } from "../src/terminal-runtime-release.ts";
+import type { OriginalTerminalRuntimeDisposal } from "../src/terminal-runtime-release.ts";
+import type { WindowsControlRuntime } from "../src/windows-runtime.ts";
 
 type Bag = Record<string, unknown>;
 type Failure = "none" | "cache-preflight" | "cache-clear-release" | "open-decode" | "saved-read" | "snapshot" | "comparison" | "foreign-journal" | "source-before-launch" |
@@ -14,24 +17,26 @@ type Failure = "none" | "cache-preflight" | "cache-clear-release" | "open-decode
 interface Harness {
   invoke: (name: string, retainForInverse?: true) => Promise<Bag>;
   inspect: () => Bag;
+  releaseRuntime: (settleRecordsOnly?: boolean) => Promise<Bag>;
+  isDisposed: () => boolean;
   assertResult: (value: unknown) => Bag;
   transferResult: (value: unknown) => Promise<void>;
   revalidateResult: (value: unknown) => Promise<void>;
-  state: { calls: string[]; launches: number; closes: number; reads: number; snapshots: number; comparisons: number; releases: number; sourceReads: number };
+  state: { calls: string[]; launches: number; closes: number; reads: number; snapshots: number; comparisons: number; disposals: number; helperReleases: number; releases: number; sourceReads: number };
   artifacts: Map<string, unknown>;
 }
 const ID = "synthetic-current-verification";
 function object(value: unknown): Bag { assert.ok(isRecord(value)); return value; }
 function noOp(): undefined { return undefined; }
-async function fixture(failure: Failure = "none"): Promise<Harness> {
-  const continuation = Object.freeze({ profile: "private.current-symbol-writer-continuation.v1", operationId: ID });
+async function fixture(failure: Failure = "none", operationId = ID, releaseHelper: () => Promise<void> = () => Promise.resolve()): Promise<Harness> {
+  const continuation = Object.freeze({ profile: "private.current-symbol-writer-continuation.v1", operationId });
   const prior = { gatewayInstanceId: "g".repeat(43), sessionId: "o".repeat(43), sequence: 4,
     authenticationReceiptSha256: "a".repeat(64), authenticatedAtEpochMs: 1000 };
   const selected = { sessionId: "n".repeat(43), sequence: 5, authenticationReceiptSha256: "b".repeat(64), authenticatedAtEpochMs: 2000 };
   const active = { ...selected, gatewayInstanceId: prior.gatewayInstanceId };
   const previousLaunch = { jobId: "old-job", helperInstance: "original-helper", root: { role: "easyeda-main", pid: 10, startIdentity: "win32:123:job:old-job" } };
   const launch = { jobId: "new-job", helperInstance: "original-helper", root: { role: "easyeda-main", pid: 11, startIdentity: "win32:456:job:new-job" } };
-  const capture = { operationId: ID, phase: "closed-verification", challengeAttempt: 1, bridgeSession: active,
+  const capture = { operationId, phase: "closed-verification", challengeAttempt: 1, bridgeSession: active,
     runtimeIdentity: { synthetic: "new-renderer" }, executionAuthority: { processes: [launch.root] } };
   const clock = Object.freeze({ synthetic: "original-clock" });
   const lease = { gatewayInstanceId: prior.gatewayInstanceId, sessionId: selected.sessionId, sessionSequence: selected.sequence };
@@ -42,16 +47,22 @@ async function fixture(failure: Failure = "none"): Promise<Harness> {
   const originalFinalSnapshot = Object.freeze({ inventory: afterInventory, proof: { synthetic: "original-proof" }, capture, launch });
   const initialMetadata = Object.freeze({ name: "Before", description: "Before description", tags: [], source: "" });
   const savedSource = Object.freeze({ observation: { synthetic: "original-saved-observation" }, source: { synthetic: "original-saved-source" } });
-  const journal: Bag = { operationId: ID, artifacts: [], sequence: 30, plan: { profile: "writer" }, state: "plan-invalidated",
+  const journal: Bag = { operationId, artifacts: [], sequence: 30, plan: { profile: "writer" }, state: "plan-invalidated",
     hardStop: false, orphanedCallPossible: false, bridgeSessionBeforeOrphan: prior,
     bridgeDispatchBeforeOrphan: { old: true }, executionAuthorityBeforeOrphan: { processes: [previousLaunch.root] },
     runtimeIdentityBeforeOrphan: { old: true }, orphanedCallPhase: "old-write", orphanedCallMarkedAt: "old", orphanedCallReturnedAt: "old" };
   let closed = false, consumed = false, disk = structuredClone(journal), launched = false, probeCount = 0, scopeActive = false, statusCount = 0;
-  const state = { calls: [] as string[], launches: 0, closes: 0, reads: 0, snapshots: 0, comparisons: 0, releases: 0, sourceReads: 0 };
+  let helperReleased = false;
+  const state = { calls: [] as string[], launches: 0, closes: 0, reads: 0, snapshots: 0, comparisons: 0, disposals: 0, helperReleases: 0, releases: 0, sourceReads: 0 };
   const artifacts = new Map<string, unknown>();
   const runtime = {
     launch: (): Promise<unknown> => { state.launches += 1; launched = true; return Promise.resolve(launch); },
-    status: (): Bag => ({ state: "owned", launch: launched ? launch : previousLaunch }),
+    status: (): Bag => {
+      if (helperReleased) { return { state: "released", launch: null }; }
+      return { state: "owned", launch: launched ? launch : previousLaunch };
+    },
+    release: async (): Promise<void> => { state.helperReleases += 1; await releaseHelper(); helperReleased = true; },
+    isReleaseAcknowledged: (): boolean => helperReleased,
     clockObservationForLaunch: (): Promise<unknown> => failure.startsWith("launch-clock") ? Promise.reject(new Error("Synthetic launch clock refused")) : Promise.resolve(clock),
     releaseCapture: (): Promise<void> => { state.releases += 1; return Promise.resolve(); },
     observeApplicationWindow: (): Promise<unknown> => Promise.resolve({ outcome: "available", hwnd: "5", jobId: launch.jobId, helperInstance: launch.helperInstance }),
@@ -68,7 +79,7 @@ async function fixture(failure: Failure = "none"): Promise<Harness> {
       probeCount += 1; return Promise.resolve(probeCount === 1 ? { status: "pending" } : { status: "terminated", proof: { synthetic: "original-proof" } });
     },
   };
-  const source = { operationId: ID, snapshot: postedit, clockPlan: {}, dispatchOwner: {}, writeInput: {}, sqlRuntime: {}, journal,
+  const source = { operationId, snapshot: postedit, clockPlan: {}, dispatchOwner: {}, writeInput: {}, sqlRuntime: {}, journal,
     original: { source: { runtime, target: { projectUuid: "p", branchUuid: "b", expectedSourceSha256: "c".repeat(64) }, expectedFingerprint: fingerprint },
       launch: previousLaunch, capture: { bridgeSession: prior }, baseline: { checkpoint: { sourceSha256: "c".repeat(64) }, preparation: { metadata: { before: initialMetadata } } } } };
   const mark = (): void => {
@@ -117,7 +128,7 @@ async function fixture(failure: Failure = "none"): Promise<Harness> {
   };
   const program = stripTypeScriptTypes(await readFile(new URL("../src/current-symbol-verification-runtime.ts", import.meta.url), "utf8"))
     .replaceAll(/^import[\s\S]*?;\n/gmu, "").replaceAll(/\bexport (?=(?:async )?(?:class|function|const))/gu, "");
-  const context = createContext({ Object, Reflect, Map, WeakMap, Date, Promise, structuredClone, canonicalJson, isRecord, sha256Json, sha256Text,
+  const context = createContext({ OriginalTerminalRuntimeRelease, Object, Reflect, Map, WeakMap, Date, Promise, structuredClone, canonicalJson, isRecord, sha256Json, sha256Text,
     buildPlanHash: sha256Json, assertExpectedFingerprint: noOp, assertSubset: noOp, validateSdkLocalRuntimeFingerprint: noOp, assertWindowsRuntimeValidator: noOp,
     assertOriginalCurrentSymbolWriterContinuation: (value: unknown): typeof source => { assert.equal(value, continuation); return source; },
     revalidateCurrentSymbolWriterContinuation: (value: unknown): Promise<typeof source> => { assert.equal(value, continuation); assert.equal(consumed, false); return Promise.resolve(source); },
@@ -170,7 +181,7 @@ async function fixture(failure: Failure = "none"): Promise<Harness> {
   const instance: unknown = Reflect.construct(constructor, [engine]); assert.ok(isRecord(instance));
   const invokeRaw = (name: string, retainForInverse?: true): unknown => {
     const method = instance[name]; assert.ok(typeof method === "function");
-    return Reflect.apply(method, instance, [name === "start" ? continuation : ID, retainForInverse]) as unknown;
+    return Reflect.apply(method, instance, [name === "start" ? continuation : operationId, retainForInverse]) as unknown;
   };
   const assertResultFunction: unknown = runInContext("assertCurrentSymbolVerificationResult;", context);
   assert.ok(typeof assertResultFunction === "function");
@@ -180,8 +191,22 @@ async function fixture(failure: Failure = "none"): Promise<Harness> {
     const method = result[methodName]; assert.ok(typeof method === "function");
     await Reflect.apply(method, result, []);
   };
+  const completeRelease = (received: WindowsControlRuntime, receipt: OriginalTerminalRuntimeDisposal): void => {
+    assert.equal(received, runtime);
+    assertOriginalTerminalRuntimeDisposal(receipt, received, "symbol-metadata", operationId);
+    assert.throws(() => { assertOriginalTerminalRuntimeDisposal(structuredClone(receipt), received, "symbol-metadata", operationId); });
+    state.disposals += 1;
+  };
+  const releaseRuntime = async (settleRecordsOnly = false): Promise<Bag> => {
+    const method = instance[settleRecordsOnly ? "settleRuntimeReleaseRecords" : "releaseCompletedRuntime"]; assert.ok(typeof method === "function");
+    return object(await Reflect.apply(method, instance, [operationId, completeRelease]));
+  };
+  const isDisposed = (): boolean => {
+    const method = instance["isRuntimeDisposed"]; assert.ok(typeof method === "function");
+    const disposed: unknown = Reflect.apply(method, instance, [runtime]); assert.equal(typeof disposed, "boolean"); return disposed === true;
+  };
   return { invoke: async (name, retainForInverse): Promise<Bag> => object(await invokeRaw(name, retainForInverse)),
-    inspect: (): Bag => object(invokeRaw("inspect")), assertResult,
+    releaseRuntime, isDisposed, inspect: (): Bag => object(invokeRaw("inspect")), assertResult,
     transferResult: (value): Promise<void> => callResult(value, "transfer"),
     revalidateResult: (value): Promise<void> => callResult(value, "revalidateClosed"), state, artifacts };
 }
@@ -214,6 +239,7 @@ void test("verified result retains the original closure and transfers it only on
   await f.revalidateResult(token); await f.transferResult(token);
   assert.equal(f.inspect()["inverseOwnershipTransferred"], true); assert.equal(f.inspect()["finishObservationAvailable"], false);
   assert.equal(f.state.releases, 0); assert.equal(f.state.snapshots, 1); assert.equal(f.state.comparisons, 1);
+  await assert.rejects(f.releaseRuntime(), /fully completed original verification/u); assert.equal(f.state.helperReleases, 0);
   await assert.rejects(f.transferResult(token)); await assert.rejects(f.invoke("observeFinish"));
   assert.equal(f.state.releases, 0);
 });
@@ -250,6 +276,7 @@ void test("cache preflight failure before first dispatch preserves normal close 
   const f = await fixture("cache-preflight"); await f.invoke("start"); await f.invoke("admit");
   await assert.rejects(f.invoke("observeCaches"), /preflight/u); const result = await finish(f);
   assert.equal(result["retired"], true); assert.equal(result["fullReopenReadbackInvariant"], false); assert.equal(f.state.calls.length, 0);
+  await assert.rejects(f.releaseRuntime(), /fully completed original verification/u); assert.equal(f.state.helperReleases, 0);
   const previous = object(object(f.artifacts.get("verification-launch-intent"))["previousJournal"]);
   assert.ok(previous["bridgeSessionBeforeOrphan"] !== undefined); assert.equal(f.state.closes, 1); assert.equal(f.state.releases, 1);
 });
@@ -276,6 +303,7 @@ for (const failure of ["snapshot", "comparison"] as const) {
     const f = await fixture(failure); await open(f); await f.invoke("collectSavedContent"); await f.invoke("finishNormalClose"); await f.invoke("observeFinish");
     await assert.rejects(f.invoke("observeFinish"), /Synthetic/u); const retired = await f.invoke("observeFinish");
     assert.equal(retired["retired"], true); assert.equal(retired["fullReopenReadbackInvariant"], false);
+    await assert.rejects(f.releaseRuntime(), /fully completed original verification/u); assert.equal(f.state.helperReleases, 0);
     assert.equal(f.state.snapshots, 1); assert.equal(f.state.comparisons, failure === "snapshot" ? 0 : 1);
   });
 }
@@ -283,4 +311,42 @@ void test("verification refuses foreign journal replacement without close or ove
   const f = await fixture("foreign-journal"); await open(f); await assert.rejects(f.invoke("collectSavedContent"), /changed journal/u);
   await assert.rejects(f.invoke("finishNormalClose"), /changed journal/u);
   assert.equal(f.state.closes, 0); assert.equal(f.artifacts.has("verification-stopped"), false);
+});
+
+void test("completed symbol-metadata verifier releases its original helper and issues one opaque disposal receipt", async () => {
+  const f = await fixture("none", "synthetic-symbol-metadata-release-complete");
+  assert.equal(f.isDisposed(), false);
+  await assert.rejects(f.releaseRuntime(), /fully completed original verification/u);
+  await open(f); await f.invoke("collectSavedContent");
+  await assert.rejects(f.releaseRuntime(), /fully completed original verification/u);
+  await finish(f);
+  const receipt = await f.releaseRuntime();
+  assert.equal(receipt["family"], "symbol-metadata");
+  assert.equal(receipt["helperReleaseAcknowledged"], true);
+  assert.equal(f.isDisposed(), true);
+  assert.equal(f.state.helperReleases, 1); assert.equal(f.state.disposals, 1);
+  await assert.rejects(f.releaseRuntime(), /pending or already completed/u);
+  await assert.rejects(f.releaseRuntime(true), /pending or already completed/u);
+  assert.equal(f.state.helperReleases, 1); assert.equal(f.state.disposals, 1);
+});
+
+void test("symbol-metadata disposal waits for original helper closure and refuses duplicate in-flight release", async () => {
+  const called = Promise.withResolvers<null>(), close = Promise.withResolvers<null>();
+  const f = await fixture("none", "synthetic-symbol-metadata-release-pending", async () => { called.resolve(null); await close.promise; });
+  await open(f); await f.invoke("collectSavedContent"); await finish(f);
+  const pending = f.releaseRuntime();
+  await called.promise;
+  assert.equal(f.isDisposed(), false); assert.equal(f.state.disposals, 0); assert.equal(f.state.helperReleases, 1);
+  await assert.rejects(f.releaseRuntime()); await assert.rejects(f.releaseRuntime(true));
+  close.resolve(null); await pending;
+  assert.equal(f.isDisposed(), true); assert.equal(f.state.helperReleases, 1); assert.equal(f.state.disposals, 1);
+});
+
+void test("failed symbol-metadata helper closure consumes disposal without an allocation-release receipt", async () => {
+  const f = await fixture("none", "synthetic-symbol-metadata-release-refused", () => Promise.reject(new Error("Synthetic helper closure refused")));
+  await open(f); await f.invoke("collectSavedContent"); await finish(f);
+  await assert.rejects(f.releaseRuntime(), /helper closure refused/u);
+  assert.equal(f.isDisposed(), false); assert.equal(f.state.helperReleases, 1); assert.equal(f.state.disposals, 0);
+  await assert.rejects(f.releaseRuntime(), /consumed/u); await assert.rejects(f.releaseRuntime(true), /consumed/u);
+  assert.equal(f.state.helperReleases, 1); assert.equal(f.state.disposals, 0);
 });

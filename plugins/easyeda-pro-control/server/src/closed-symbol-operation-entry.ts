@@ -5,6 +5,7 @@ import { canonicalJson, sha256Json } from "./core.ts";
 import type { EasyedaControlEngine, SerializedGate } from "./engine.ts";
 import type { UpstreamEasyedaClient } from "./upstream.ts";
 import type { WindowsControlRuntime } from "./windows-runtime.ts";
+import type { OriginalTerminalRuntimeDisposal } from "./terminal-runtime-release.ts";
 import type { WindowsNativeUiController } from "./windows-native-ui.ts";
 import { currentProcessSqlRuntime } from "./machine-profile.ts";
 import type { MachineProfile } from "./machine-profile.ts";
@@ -81,6 +82,7 @@ export class ClosedSymbolOperationEntry {
   private full: FinalEvidenceRecord | undefined;
   private completion: OriginalTerminalCompletion | OriginalAgedTerminalCompletion | undefined;
   private failure: unknown;
+  private releaseBusy = false;
   private readonly methods: readonly unknown[];
   private readonly facadePromise: EasyedaControlEngine["controlFingerprintPromise"];
   private readonly owners: Readonly<{ engine: EasyedaControlEngine; upstream: UpstreamEasyedaClient;
@@ -122,6 +124,29 @@ export class ClosedSymbolOperationEntry {
     return Object.freeze({ request: this.request, expected: this.expected, sqlRuntime: this.sqlRuntime, plan: this.plan,
       claimState: this.claimState, claim: this.claim, coordinator: this.coordinator, terminal: this.terminal,
       full: this.full, completion: this.completion, failure: this.failure, phase: this.phase, replayAllowed: false });
+  }
+  public isRuntimeDisposed(runtime?: WindowsControlRuntime): boolean {
+    return !this.releaseBusy && this.coordinator?.isRuntimeDisposed(runtime) === true;
+  }
+  public settleRuntimeReleaseRecords(operationId: string,
+    complete: (runtime: WindowsControlRuntime) => void): Promise<OriginalTerminalRuntimeDisposal> {
+    return this.releaseCompletedRuntime(operationId, complete, true);
+  }
+  public async releaseCompletedRuntime(operationId: string,
+    complete: (runtime: WindowsControlRuntime) => void, settleRecordsOnly = false): Promise<OriginalTerminalRuntimeDisposal> {
+    const { coordinator, full, completion } = this;
+    need(!this.releaseBusy && this.phase === "projection" && this.failure === undefined && coordinator !== undefined && full !== undefined &&
+      completion !== undefined && this.claimState === "acknowledged" && full.operationId === operationId && completion.operationId === operationId,
+    "Closed symbol native release requires its complete original entry; partial construction and stopped results remain blocked.");
+    this.releaseBusy = true;
+    try {
+      return await this.gate.run(() => {
+        this.owner();
+        need(this.coordinator === coordinator && this.full === full && this.completion === completion && this.failure === undefined,
+          "Closed symbol native cleanup lost its original entry references.");
+        return coordinator.releaseCompletedRuntime(full, completion, complete, settleRecordsOnly);
+      });
+    } finally { this.releaseBusy = false; }
   }
   private stopped(): ClosedSymbolOperationResult {
     let claimArtifact: Descriptor | null = null, operationId: string | null = null, terminalArtifact: Descriptor | null = null;

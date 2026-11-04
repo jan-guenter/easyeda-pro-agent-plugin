@@ -1,5 +1,9 @@
 # Project history
 
+- [2026-11-04 autonomous controller lifecycle](2026-11-04-autonomous-control-loop.md). Persistent controller replacement, original helper disposal, startup-conflict cleanup and a complete disposable V3 cache lifecycle through the new client.
+
+- [2026-11-04 PR166 publication and fresh-agent handoff](2026-11-04-104500-pr166-publication-and-fresh-agent-handoff.md). Protected release/install, review scope, latest-package startup in a fresh subagent, the older owner's retained lease and remaining work.
+
 - [2026-11-04 session retirement and cache startup batch](2026-11-04-session-retirement-and-cache-batch.md). Cooperative idle-owner handoff, source/reference-only retirement, actual isolated MCP proof and combined verification.
 - [2026-11-04 held-cache startup wait](2026-11-04-held-cache-startup-wait.md). Source-timed loader lifecycle, a bounded V3 wait and retained historical V1/V2 formats.
 - [2026-11-04 native clock validation and subagent loading](2026-11-04-native-clock-validation-and-subagent-loading.md). Complete installed193000 read-only clock lifecycle, terminal cache startup refusal and the separate fresh-context MCP ownership experiment.

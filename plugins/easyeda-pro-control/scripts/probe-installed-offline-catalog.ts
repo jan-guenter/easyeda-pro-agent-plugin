@@ -22,12 +22,12 @@ const NODE_VERSION = "24.18.0";
 const MAX_REPLY_BYTES = 8 * 1024 * 1024;
 const MAX_OUTPUT_BYTES = 16 * 1024 * 1024;
 const REQUEST_TIMEOUT_MS = 15_000;
-const CATALOG_QUERY_COUNT = 54;
+const CATALOG_QUERY_COUNT = 57;
 // Initialize and tool discovery plus the fixed catalog requests below.
 const REQUEST_LIMIT = 2 + CATALOG_QUERY_COUNT;
 const EXPECTED_TOOLS = [
   "api", "calculate", "discover", "disposable_pcb_rename", "disposable_schematic_rename", "disposable_symbol_copy",
-  "editor_context", "editor_shell", "extensions", "history", "launch", "library_files", "pcb_diagnostic_validation", "pcb_geometry",
+  "editor_context", "editor_shell", "extensions", "history", "launch", "library_files", "native_release", "pcb_diagnostic_validation", "pcb_geometry",
   "pcb_identities", "pcb_layers", "pcb_string_precreate_validation", "project_board", "project_open", "project_pcb", "project_schematic",
   "project_schematic_rename", "project_symbol", "project_symbol_metadata", "session", "shortcuts", "status", "system",
 ].map(name => `easyeda_control_${name}`).toSorted();
@@ -299,6 +299,16 @@ async function catalogChecks(child: OfflineChild, root: string, sample: () => Pr
   requireCheck(JSON.stringify(names) === JSON.stringify(EXPECTED_TOOLS), "Offline tool names changed.");
   await sample();
   child.assertLoadedFacade(await offlineApi(child, { action: "loaded-facade" }), root);
+  const nativeRelease = await offlineApi(child, { action: "native-release", query: { includeSchemas: true } });
+  requireCheck(nativeRelease["tool"] === "easyeda_control_native_release" && nativeRelease["originalOwnerRequired"] === true &&
+    nativeRelease["executionAuthorized"] === false && nativeRelease["historicalAdoption"] === false &&
+    Array.isArray(record(nativeRelease["requestSchema"])["oneOf"]), "Native release discovery lost its original-owner boundary.");
+  const nativeReleaseRequest = { action: "release-completed", kind: "project-opening", operationId: "offline-native-release", confirmReleaseOriginalRuntime: true };
+  for (const [request, valid] of [[nativeReleaseRequest, true], [{ ...nativeReleaseRequest, pid: 12_345 }, false]] as const) {
+    const result = await offlineApi(child, { action: "native-release-validate", query: { request } });
+    requireCheck(result["valid"] === valid && result["executionAuthorized"] === false,
+      "Native release validation accepted caller-selected ownership or execution authority.");
+  }
   for (const [action, total] of [["calculations", 16], ["system", 18], ["pcb-geometry", 20], ["project-schematic", 4]] as const) {
     const result = await offlineApi(child, { action, query: { includeSchemas: true } });
     requireCheck(result["total"] === total && result["invocationEnabledByDiscovery"] === false,

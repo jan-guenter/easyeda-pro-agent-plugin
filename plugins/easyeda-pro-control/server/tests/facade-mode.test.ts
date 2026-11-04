@@ -13,7 +13,7 @@ void test("only the exact legacy configuration retains legacy tool registration"
 });
 
 void test("restricted registration admits scoped metadata and disposable opening but no generic design or recovery route", () => {
-  assert.equal(CALCULATION_ONLY_TOOLS.length, 28);
+  assert.equal(CALCULATION_ONLY_TOOLS.length, 29);
   assert.equal(facadeToolRegistered("calculation-only", "easyeda_control_pcb_string_precreate_validation"), true);
   assert.equal(facadeToolRegistered("calculation-only", "easyeda_control_project_open"), true);
   assert.equal(facadeToolRegistered("calculation-only", "easyeda_control_history"), true);
@@ -37,10 +37,10 @@ void test("restricted registration admits scoped metadata and disposable opening
   }
 });
 
-void test("exact209 selectors expose seventeen scoped tools without inheriting unreviewed old routes", () => {
+void test("exact209 selectors expose eighteen scoped tools without inheriting unreviewed old routes", () => {
   assert.equal(configuredFacadeMode({ EASYEDA_PCB_BUNDLE_VERSION: "3.2.195.6b67774e",
     EASYEDA_PUBLIC_API_BUNDLE_VERSION: "0.3.59.1ca9efb5" }), "public-utilities-only");
-  assert.equal(PUBLIC_UTILITIES_ONLY_TOOLS.length, 17);
+  assert.equal(PUBLIC_UTILITIES_ONLY_TOOLS.length, 18);
   assert.equal(facadeToolRegistered("legacy-reviewed", "easyeda_control_public_readers"), false);
   assert.equal(facadeToolRegistered("calculation-only", "easyeda_control_public_readers"), false);
   assert.equal(facadeToolRegistered("legacy-reviewed", "easyeda_control_catalog_footprint"), false);
