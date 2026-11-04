@@ -1,5 +1,8 @@
 # Controller timeout recovery and retired connection closure
 
+The later cross-version review fix and CI fixture correction are recorded in
+the [historical recovery continuation](2026-11-04-historical-recovery-continuation.md).
+
 This follows the [controller lifecycle](2026-11-04-autonomous-control-loop.md),
 [forward source qualification](2026-11-04-footprint-forward-prewrite-qualification.md)
 and [registration fixture follow-up](2026-11-04-registration-fixture-followup.md).

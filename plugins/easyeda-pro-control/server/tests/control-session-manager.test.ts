@@ -409,7 +409,11 @@ void test("actual manager keeps original cleanup calls after semantic errors and
     const manager = new ForegroundSessionManager(async value => { outputs.push(value); await Promise.resolve(); });
     await manager.initialize(selected.root);
     const original = manager.inspect()["facadePid"];
-    await manager.handle(request({ id: "failed-operation", tool: "easyeda_control_api", arguments: { request: { action: "unregistered-action" } } }));
+    // Use an admitted non-reference callback: SDK argument rejection alone
+    // Preserves a source-only facade and cannot require global journal parsing.
+    await manager.handle(request({ id: "failed-operation", tool: "easyeda_control_native_release", arguments: { request: {
+      action: "release-completed", kind: "project-opening", operationId: "manager-semantic-refusal", confirmReleaseOriginalRuntime: true,
+    } } }));
     const errorResult = record(outputs.at(-1))["result"];
     assert.equal(record(errorResult)["isError"], true);
     assert.equal(manager.inspect()["stage"], "active");

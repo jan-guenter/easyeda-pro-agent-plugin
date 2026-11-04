@@ -1,5 +1,7 @@
 # Project history
 
+- [2026-11-04 historical recovery continuation](2026-11-04-historical-recovery-continuation.md). CodeRabbit's cross-version partial-intent fix, fresh-proof regression and retained source-only retirement fixture failure.
+
 - [2026-11-04 controller timeout recovery and retirement](2026-11-04-controller-timeout-and-retirement.md). Interrupted disposable capture, unchanged closed fixture, original-client cleanup and supported retired connection closure.
 
 - [2026-11-04 registration and coverage fixture follow-up](2026-11-04-registration-fixture-followup.md). Retained failed CI, corrected exact dispatcher/VM/coverage expectations and unchanged production payload.

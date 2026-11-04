@@ -10,7 +10,7 @@ import { sha256Json, sha256Text } from "../src/core.ts";
 import { CURRENT_PCB_209_OPENING_SCRIPTS } from "../src/current-pcb-209-opening-profile.ts";
 import { CURRENT_FOOTPRINT_COPY_MAIN_BACKEND_SOURCE } from "../src/current-footprint-copy-main-backend-source.ts";
 import { CURRENT_FOOTPRINT_FORWARD_OPENING_INSTALLATION, CURRENT_FOOTPRINT_FORWARD_OPENING_PRODUCER,
-  currentFootprintForwardOpeningHistoricalIntentSchema, currentFootprintForwardOpeningRelinquishmentRequestSchema } from "../src/current-footprint-forward-opening-relinquishment-contract.ts";
+  currentFootprintForwardOpeningHistoricalIntentSchema, currentFootprintForwardOpeningRelinquishmentIntentSchema, currentFootprintForwardOpeningRelinquishmentRequestSchema } from "../src/current-footprint-forward-opening-relinquishment-contract.ts";
 import type { CurrentFootprintForwardOpeningRelinquishmentRequest } from "../src/current-footprint-forward-opening-relinquishment-contract.ts";
 import { CurrentFootprintForwardOpeningUnknownRelinquishment } from "../src/current-footprint-forward-opening-unknown-relinquishment.ts";
 import { publishCurrentFootprintForwardOpeningRelinquishment, readCurrentFootprintForwardOpeningHistoricalSnapshot,
@@ -77,11 +77,11 @@ async function history(operationId: string): Promise<DiagnosticLifecycleRecords>
 }
 /** Retain actual managed publisher/snapshot identities while making collection counts explicit. */
 async function fixture(operationId: string): Promise<{
-  recovery: CurrentFootprintForwardOpeningUnknownRelinquishment; originalPath: string; request: CurrentFootprintForwardOpeningRelinquishmentRequest;
-  state: { windows: number; linux: number; files: number; owned: boolean; otherLinux: boolean; present: boolean; fileMismatch: boolean; publicationFailure: boolean };
+  recovery: CurrentFootprintForwardOpeningUnknownRelinquishment; restart: () => CurrentFootprintForwardOpeningUnknownRelinquishment; originalPath: string; request: CurrentFootprintForwardOpeningRelinquishmentRequest;
+  state: { producer: string; windows: number; linux: number; files: number; owned: boolean; otherLinux: boolean; present: boolean; fileMismatch: boolean; publicationFailure: boolean };
 }> {
   const records = await history(operationId);
-  const state = { windows: 0, linux: 0, files: 0, owned: false, otherLinux: false, present: false, fileMismatch: false, publicationFailure: false };
+  const state = { producer: "b".repeat(64), windows: 0, linux: 0, files: 0, owned: false, otherLinux: false, present: false, fileMismatch: false, publicationFailure: false };
   const options = { pluginRoot: "/mnt/c/Reviewed/Plugin", assetsRoot: "/mnt/c/Reviewed/EasyEDA/resources/app/assets", powershellSha256: "d".repeat(64), powershellBytes: 123,
     assertLocalAllowed: (): void => undefined, assertAllowed: (): Promise<void> => Promise.resolve(),
     assertOtherLaunchesSettled: (): Promise<void> => Promise.resolve(),
@@ -92,8 +92,8 @@ async function fixture(operationId: string): Promise<{
     freshCheckpointReceiptSha256: "3".repeat(64), beforeSqlSha256: "2".repeat(64), freshSqlSha256: "2".repeat(64),
     rawSourceSha256: "a".repeat(64), oldHistorySemanticSha256: "4".repeat(64), freshHistorySemanticSha256: "4".repeat(64),
     fullSqlEqual: true, historyEqual: true, sidecarsAbsent: true, executionAuthorized: false, writerAuthority: false, restored: false });
-  const recovery = new CurrentFootprintForwardOpeningUnknownRelinquishment(options, {
-    verifyInstallation: (): Promise<CurrentPcbDiagnosticInstallation> => Promise.resolve({ ...createCurrentPcb209DiagnosticInstallationPlan(options), facadeSha256: "b".repeat(64) }),
+  const restart = (): CurrentFootprintForwardOpeningUnknownRelinquishment => new CurrentFootprintForwardOpeningUnknownRelinquishment(options, {
+    verifyInstallation: (): Promise<CurrentPcbDiagnosticInstallation> => Promise.resolve({ ...createCurrentPcb209DiagnosticInstallationPlan(options), facadeSha256: state.producer }),
     observeLinux: (): Promise<boolean> => { state.linux += 1; return Promise.resolve(state.otherLinux); },
     observeWindows: (): ReturnType<typeof observeOrdinaryLaunchRecovery> => { state.windows += 1; return Promise.resolve({ schema: "easyeda-pro-control.ordinary-launch-recovery-observation.v1" as const,
       samples: 2 as const, otherPowerShellPresent: state.present, sameNameProcessPresent: state.present, helperSha256: ORDINARY_LAUNCH_RECOVERY_HELPER.sha256 }); },
@@ -103,7 +103,7 @@ async function fixture(operationId: string): Promise<{
       await publishCurrentFootprintForwardOpeningRelinquishment(original, name, value);
     },
   });
-  return { recovery, state, originalPath: join(controlDataDirectory(), "pcb-diagnostic-lifecycle-v1", operationId, "intent.json"),
+  return { recovery: restart(), restart, state, originalPath: join(controlDataDirectory(), "pcb-diagnostic-lifecycle-v1", operationId, "intent.json"),
     request: { action: "relinquish-unknown-opening", operationId, expectedIntentSha256: sha256Json(records["intent.json"]),
       expectedBindingSha256: sha256Json(records["binding.json"]), expectedOpeningIntentSha256: sha256Json(records["worker-startup-opening-intent.json"]),
       confirmRelinquishUnknownOpening: true, acceptUnknownCaptureOutcome: true } };
@@ -130,6 +130,41 @@ void test("managed original chain, fresh absence and file proofs precede one lex
   for (const key of ["dev", "ino", "mode", "nlink", "size", "mtimeNs", "ctimeNs"] as const) { assert.equal(after[key], identity[key]); }
   await assertNoUnresolvedCurrentPcbDiagnosticLaunches(); await f.recovery.run(f.request);
   assert.deepEqual({ windows: f.state.windows, linux: f.state.linux, files: f.state.files }, counts);
+});
+void test("a new recovery producer recollects fresh proof and preserves the old partial intent's publisher and original binding", async () => {
+  const f = await fixture("footprint-copy-qualify-relinquishment-upgraded-producer");
+  const originalBytes = await readFile(f.originalPath);
+  const original = requireCurrentFootprintForwardOpeningHistoricalSnapshot(await readCurrentFootprintForwardOpeningHistoricalSnapshot(f.request.operationId));
+  f.state.publicationFailure = true;
+  await assert.rejects(f.recovery.run(f.request), /sidecar publication failure/u);
+  const intentPath = join(controlDataDirectory(), "pcb-diagnostic-forward-opening-relinquishments-v1", f.request.operationId, "intent.json");
+  const intentBytes = await readFile(intentPath);
+  const oldIntent = currentFootprintForwardOpeningRelinquishmentIntentSchema.parse(JSON.parse(intentBytes.toString("utf8")) as unknown);
+  assert.equal(oldIntent.facadeSha256, "b".repeat(64));
+  const priorCounts = { windows: f.state.windows, linux: f.state.linux, files: f.state.files };
+  f.state.producer = "c".repeat(64);
+  const upgraded = f.restart();
+  for (const field of ["expectedIntentSha256", "expectedBindingSha256", "expectedOpeningIntentSha256"] as const) {
+    await assert.rejects(upgraded.run({ ...f.request, [field]: "0".repeat(64) }), /ORIGINAL_DIGEST/u);
+  }
+  assert.deepEqual({ windows: f.state.windows, linux: f.state.linux, files: f.state.files }, priorCounts);
+  // The old sidecar supplies no retained nonce or file/absence authority to a
+  // Newly constructed coordinator, even with the exact original expectations.
+  f.state.fileMismatch = true;
+  await assert.rejects(upgraded.run(f.request), /file proof mismatch/u);
+  await assert.rejects(assertNoUnresolvedCurrentPcbDiagnosticLaunches());
+  f.state.fileMismatch = false;
+  const result = await upgraded.run(f.request);
+  assert.deepEqual({ windows: f.state.windows, linux: f.state.linux, files: f.state.files }, {
+    windows: priorCounts.windows + 3, linux: priorCounts.linux + 3, files: priorCounts.files + 2,
+  });
+  assert.equal(result["relinquishmentIntentSha256"], sha256Json(oldIntent));
+  for (const field of ["captureOutcome", "terminationOutcome", "helperReleaseOutcome"]) { assert.equal(result[field], "unknown"); }
+  for (const field of ["retainedLaunchAuthority", "originalLaunchIdentityVerified", "nativeResourcesReleased", "helperReleaseAcknowledged", "executionAuthorized", "saveAuthorized"]) { assert.equal(result[field], false); }
+  assert.deepEqual(await readFile(intentPath), intentBytes); assert.deepEqual(await readFile(f.originalPath), originalBytes);
+  const after = requireCurrentFootprintForwardOpeningHistoricalSnapshot(await readCurrentFootprintForwardOpeningHistoricalSnapshot(f.request.operationId));
+  assert.equal(after.originalRosterSha256, original.originalRosterSha256); assert.equal(after.originalIdentitySha256, original.originalIdentitySha256);
+  await assertNoUnresolvedCurrentPcbDiagnosticLaunches();
 });
 void test("caller JSON cannot supply original or observation authority and guard rereads immutable historical bytes", async () => {
   const f = await fixture("footprint-copy-qualify-relinquishment-original");

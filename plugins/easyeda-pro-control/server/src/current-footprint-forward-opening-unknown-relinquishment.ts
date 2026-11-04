@@ -121,7 +121,11 @@ export class CurrentFootprintForwardOpeningUnknownRelinquishment {
           createdAt: new Date().toISOString(), facadeSha256: installation.facadeSha256, installationSha256: sha256Json(installation),
           confirmRelinquishUnknownOpening: true, acceptUnknownCaptureOutcome: true,
         });
-        need(intent.facadeSha256 === installation.facadeSha256 && intent.installationSha256 === sha256Json(installation), "RECOVERY_PRODUCER_CHANGED");
+        // Persisted producer fields identify the intent's original publisher.
+        // Fresh recollection above does not reattribute that immutable intent.
+        if (receipt === null) {
+          need(intent.facadeSha256 === installation.facadeSha256 && intent.installationSha256 === sha256Json(installation), "RECOVERY_PRODUCER_CHANGED");
+        }
         const result = currentFootprintForwardOpeningRelinquishmentResultSchema.parse({
           schema: "easyeda-pro-control.footprint-forward-opening-relinquished.v1", ...fields,
           createdAt: new Date().toISOString(), relinquishmentIntentSha256: sha256Json(intent), observationNonceSha256: sha256Text(nonce),
