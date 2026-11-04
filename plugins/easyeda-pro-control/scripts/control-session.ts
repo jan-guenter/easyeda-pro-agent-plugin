@@ -17,6 +17,9 @@ import { loadMachineLaunchProfile, machineProfileLaunchConfiguration } from "../
 import type { MachineProfile } from "../server/src/machine-profile.ts";
 
 export const MAXIMUM_REQUEST_BYTES = 65_536;
+// Cover the native owner's one-hour normal lifetime, one-minute cleanup and
+// One-minute delivery margin, including preparation outside its leaf RPC timer.
+export const SESSION_CALL_TIMEOUT_MS = 3_720_000;
 const MAXIMUM_INLINE_BYTES = 1_048_576;
 const MAXIMUM_RESULT_BYTES = 67_108_864;
 const TOOL_PATTERN = /^easyeda_control_[a-z][a-z0-9_]*$/u;
@@ -25,7 +28,7 @@ const callSchema = z.strictObject({
   id: requestId,
   tool: z.string().regex(TOOL_PATTERN),
   arguments: z.record(z.string(), z.unknown()).default({}),
-  timeoutMs: z.number().int().min(1000).max(600_000).default(600_000),
+  timeoutMs: z.number().int().min(1000).max(SESSION_CALL_TIMEOUT_MS).default(SESSION_CALL_TIMEOUT_MS),
   responseFile: z.string().refine(isAbsolute).optional(),
 });
 const requestSchema = z.union([

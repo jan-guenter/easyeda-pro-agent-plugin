@@ -64,6 +64,21 @@ lease while keeping its MCP connection available for local retirement state
 and synchronous source/reference API queries. It never closes EasyEDA, releases
 native proof handles, chooses a prompt or takes over another owner.
 
+A session that has admitted only static API reference queries retains private
+source-only status. It can retire without parsing unrelated global journals,
+after checking its local owners and reservations. Any admitted non-reference
+callback permanently consumes that status, even if the callback refuses.
+Callers cannot assert or restore it.
+
+After acknowledged retirement and all metadata callbacks have finished,
+`{"request":{"action":"close-retired","confirmCloseRetired":true}}`
+consumes one supported request to schedule the server's normal shutdown.
+Its separate close-scheduled result proves neither response delivery nor
+process exit. Observe the original process exiting independently; do not retry
+an unacknowledged request. This action exists only in snapshots that implement
+it. The foreground manager ordinarily closes its retired child's stdin and
+observes exit instead.
+
 This handoff currently follows fully released diagnostic owners, an ordinary
 launch that completed its own `release-closed`, or a connection that allocated
 no native owner. Supported completed project-opening and metadata workflows
@@ -447,6 +462,14 @@ After its `ready` response, send one JSON request per line:
 ```
 
 Only tools actually listed by that facade are accepted. The client dispatches serially and never retries a timeout, disconnect, or failed result publication. Such failures close the session; inspect the facade journal before retrying an uncertain operation. Tool error results remain errors, even though transport succeeded. All facade authentication, compatibility, quarantine and writer restrictions remain in force.
+
+The caller timeout defaults to a finite 3,720,000 milliseconds and accepts
+explicit smaller bounds. This outer lifetime/delivery allowance does not prove
+native cancellation or completion. For supported cleanup after an ambiguous
+bound forward request, prefer the maintained manager's
+[original cleanup command](autonomous-controller-updates.md#establish-one-controller),
+which preserves the same connection and keeps normal calls and replacement
+blocked through original cleanup and genuine retirement.
 
 Use the reported serving PID, module URL and Node version for the foreground
 facade's own source/process admission. Its parent is the retained developer

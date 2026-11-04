@@ -1,5 +1,8 @@
 # Mounted forward footprint source qualification
 
+The later disposable attempt and its unknown capture outcome are retained in
+the [controller timeout and retirement follow-up](2026-11-04-controller-timeout-and-retirement.md).
+
 This batch follows the [controller lifecycle implementation](2026-11-04-autonomous-control-loop.md)
 and its separate [review and cleanup follow-up](2026-11-04-autonomous-controller-review-followup.md).
 The user requested continued API implementation and fewer intermediate releases.

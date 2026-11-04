@@ -64,6 +64,12 @@ import { currentFootprintCombinedHistoricalIntentSchema } from "./current-footpr
 import { assertCurrentFootprintCombinedHistoricalSnapshot, readCurrentFootprintCombinedAbandonment,
   readCurrentFootprintCombinedHistoricalSnapshot, requireCurrentFootprintCombinedHistoricalSnapshot } from "./current-footprint-combined-abandonment-journal.ts";
 import type { CurrentFootprintCombinedHistoricalSnapshot } from "./current-footprint-combined-abandonment-journal.ts";
+import { currentFootprintForwardOpeningHistoricalIntentSchema } from "./current-footprint-forward-opening-relinquishment-contract.ts";
+/* oxlint-disable import/no-cycle -- The separate receipt reader calls this maintained parser only lazily; no initialization path can admit or reconstruct an owner. */
+import { assertCurrentFootprintForwardOpeningHistoricalSnapshot, readCurrentFootprintForwardOpeningHistoricalSnapshot,
+  readCurrentFootprintForwardOpeningRelinquishment, requireCurrentFootprintForwardOpeningHistoricalSnapshot } from "./current-footprint-forward-opening-relinquishment-journal.ts";
+/* oxlint-enable import/no-cycle */
+import type { CurrentFootprintForwardOpeningHistoricalSnapshot } from "./current-footprint-forward-opening-relinquishment-journal.ts";
 import { currentFootprintCombinedBeforeLaunchFailureProofSchema } from "./current-footprint-combined-ready.ts";
 import { CURRENT_FOOTPRINT_SAVED_CACHE_PROBE_LIMITS } from "./current-footprint-saved-cache-probe.ts";
 import { currentFootprintSavedCacheObservationSchema } from "./current-footprint-saved-cache-runner.ts";
@@ -903,6 +909,11 @@ function settled(operation: DiagnosticLifecycleOperation): boolean {
     operation.records["no-process-released.json"] !== undefined || operation.records["combined-factory-before-launch.json"] !== undefined || operation.records["forward-factory-before-launch.json"] !== undefined;
 }
 async function recordedHistoricalRelinquishment(operation: DiagnosticLifecycleOperation): Promise<boolean> {
+  if (currentFootprintForwardOpeningHistoricalIntentSchema.safeParse(operation.records["intent.json"]).success) {
+    const snapshot = await readCurrentFootprintForwardOpeningHistoricalSnapshot(operation.operationId);
+    const receipt = await readCurrentFootprintForwardOpeningRelinquishment(snapshot);
+    return receipt !== null && receipt.result !== null;
+  }
   if (Object.keys(operation.records).length !== 1 || !currentFootprintCombinedHistoricalIntentSchema.safeParse(operation.records["intent.json"]).success) { return false; }
   const snapshot = await readCurrentFootprintCombinedHistoricalSnapshot(operation.operationId);
   const receipt = await readCurrentFootprintCombinedAbandonment(snapshot); return receipt !== null && receipt.result !== null;
@@ -1455,6 +1466,22 @@ export async function assertCurrentFootprintCombinedAbandonmentIsolated(snapshot
     } else { requireValue(settled(operation) || await recordedHistoricalRelinquishment(operation), "UNRESOLVED_LAUNCH"); }
   }
   requireValue(selected, "COMBINED_ABANDONMENT_ORIGINAL_MISSING"); await assertCurrentFootprintCombinedHistoricalSnapshot(snapshot);
+}
+
+/** Only this descriptor-issued full opening snapshot is exempt during its
+ * separate resolver. No ID, copied JSON or normal caller can select an exception. */
+export async function assertCurrentFootprintForwardOpeningRelinquishmentIsolated(snapshot: CurrentFootprintForwardOpeningHistoricalSnapshot): Promise<void> {
+  await assertNoUnresolvedFootprintHeldCacheValidation(); await assertNoUnresolvedFootprintHeadAgeValidation();
+  await assertNoUnresolvedCurrentPcbStringLedgers();
+  const original = requireCurrentFootprintForwardOpeningHistoricalSnapshot(snapshot);
+  await assertCurrentFootprintForwardOpeningHistoricalSnapshot(snapshot);
+  const operations = await readCurrentPcbDiagnosticLifecycles(); let selected = false;
+  for (const operation of operations) {
+    if (operation.operationId === original.operationId) {
+      requireValue(canonicalJson(operation.records) === canonicalJson(original.records), "FORWARD_RELINQUISHMENT_ORIGINAL_CHANGED"); selected = true;
+    } else { requireValue(settled(operation) || await recordedHistoricalRelinquishment(operation), "UNRESOLVED_LAUNCH"); }
+  }
+  requireValue(selected, "FORWARD_RELINQUISHMENT_ORIGINAL_MISSING"); await assertCurrentFootprintForwardOpeningHistoricalSnapshot(snapshot);
 }
 
 export async function assertNoUnresolvedCurrentPcbDiagnosticLaunches(): Promise<void> {

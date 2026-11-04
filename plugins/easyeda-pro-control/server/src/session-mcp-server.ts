@@ -2,6 +2,7 @@ import { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
 import type { RegisteredTool, ToolCallback } from "@modelcontextprotocol/sdk/server/mcp.js";
 import type { AnySchema, ZodRawShapeCompat } from "@modelcontextprotocol/sdk/server/zod-compat.js";
 import type { CallToolResult, ToolAnnotations } from "@modelcontextprotocol/sdk/types.js";
+import { isStaticOfflineApiReference } from "./offline-api.ts";
 import type { FacadeSessionRetirement } from "./session-retirement.ts";
 
 /** Every SDK tool registration, including full-schema diagnostic routes, enters
@@ -27,9 +28,15 @@ export class SessionRetirementMcpServer extends McpServer {
   ): RegisteredTool {
     const callback = async (...args: Parameters<ToolCallback<InputArgs>>): Promise<CallToolResult> => {
       try {
+        // Classification uses only the SDK-validated own data request. Caller
+        // Fields cannot select or restore the private source-only history.
+        const input: unknown = args[0];
+        const request = name === "easyeda_control_api" && input !== null && typeof input === "object"
+          ? Object.getOwnPropertyDescriptor(input, "request") : undefined;
+        const reference = request !== undefined && "value" in request && isStaticOfflineApiReference(request.value);
         return await this.retirement.run(name, () =>
           // oxlint-disable-next-line typescript/no-unsafe-type-assertion -- The SDK's validated ToolCallback supplies this exact result union; Reflect.apply preserves its conditional argument tuple.
-          Reflect.apply(handler, undefined, args) as CallToolResult | Promise<CallToolResult>);
+          Reflect.apply(handler, undefined, args) as CallToolResult | Promise<CallToolResult>, reference);
       } catch (error) { return this.refusal(error); }
     };
     // The SDK conditionally selects a raw-shape, full-schema or zero-argument

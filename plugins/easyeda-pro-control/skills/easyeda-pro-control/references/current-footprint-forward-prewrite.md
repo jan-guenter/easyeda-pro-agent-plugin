@@ -76,3 +76,28 @@ or helper release; observe both before considering controller retirement.
 
 This mounted contract and its offline tests do not establish connected native
 qualification, saved/reopened effects or writer readiness.
+
+## Historical opening without its original owner
+
+If the original facade disappears during opening, do not reconstruct its owner
+from journal JSON or replay capture. The separate offline
+`footprint-forward-opening-relinquishment` and
+`footprint-forward-opening-relinquishment-validate` selectors describe a narrow
+historical resolver. Its live wrapper has the same name and accepts only
+`relinquish-unknown-opening`, the original operation and three exact expected
+intent/binding/opening digests, plus `confirmRelinquishUnknownOpening:true` and
+`acceptUnknownCaptureOutcome:true`.
+
+Only the exact reviewed producer, installation and complete opening-intent
+roster qualify. The resolver must run in a fresh facade before any application
+owner allocation. Other recognized Linux facades, including retired and
+ownership-conflict processes, block it. Use their supported normal lifecycle;
+do not signal another server without explicit user authority. The resolver
+collects its own Windows absence and complete unchanged raw/prepared SQL and
+history proof. Supplied audit JSON cannot replace those observations.
+
+Separate append-only receipts can relinquish the historical startup blocker.
+They keep capture, termination and helper-release outcomes unknown and
+`originalLaunchIdentityVerified:false`. They grant no original owner, replay,
+writer, Save or qualification authority. Preserve the failed case and its
+original records after successful relinquishment.

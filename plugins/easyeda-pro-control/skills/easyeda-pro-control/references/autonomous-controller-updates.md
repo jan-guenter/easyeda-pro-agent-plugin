@@ -32,6 +32,13 @@ loaded-facade identity and private evidence directory. These are observations,
 not runtime admission. Complete the actual process/source/package checks before
 native or bridge work. It never chooses an alternate control directory.
 
+Keep process ownership in the root agent's active tool session through native
+cleanup, facade retirement and manager closure, or use an explicitly maintained
+persistent service with equivalent custody. A subagent that owns live tool
+resources must send status and remain active instead of returning a final answer
+with those resources retained. A missing tool session or process listing supplies
+no original exit or closure evidence and cannot transfer an unfinished owner.
+
 Ordinary tool requests retain the existing foreground-client grammar:
 
 ```json
@@ -45,6 +52,37 @@ Semantic tool errors preserve the original connection for explicitly requested
 inspection and supported cleanup. Transport or publication ambiguity blocks
 replacement; inspect the retained original evidence rather than starting another
 controller. A manager generation number is a freshness check, not authority.
+
+Caller `timeoutMs` defaults to and cannot exceed 3,720,000 milliseconds. This
+finite outer bound covers the native owner's one-hour normal lifetime,
+one-minute cleanup allowance and one-minute delivery margin, including
+preparation outside a leaf RPC timer. It does not guarantee that all I/O finishes
+or that timeout cancels native work. Explicit smaller timeouts remain valid.
+
+After an RPC rejection or timeout of a bound `footprint-forward-prewrite`
+request, `inspect` reports
+the privately retained interrupted request ID and generation. Normal calls,
+replay and replacement stay blocked. The manager's separate `cleanup-original`
+command uses that exact original client and transport:
+
+```json
+{"id":"inspect-original","action":"cleanup-original","generation":1,"interruptedRequestId":"capture-1","request":{"action":"inspect"}}
+{"id":"abort-original","action":"cleanup-original","generation":1,"interruptedRequestId":"capture-1","request":{"action":"abort-generation","confirmAbortOriginalForwardJob":true}}
+```
+
+Only `inspect`, explicitly confirmed `abort-generation`, `observe-termination`,
+`release-closed` and `settle-records` are accepted. The manager injects the
+original operation and binding from its interrupted arguments and validates the
+generated call with the maintained forward schema. Callers cannot supply a tool,
+operation, binding, code or intent hash. `settle-records` requires the intent hash
+from an earlier same-operation, same-binding original inspection. These calls
+consume the bounded cleanup reserve and never retry automatically. A refused or
+disconnected cleanup stays blocked. Unpublished evidence, failed result
+publication or an ambiguous retirement supplies no cleanup or replacement
+permission. Finish supported original cleanup, then
+request ordinary manager retirement. Only its genuine facade retirement and
+observed original child closure permit replacement; the interrupted request's
+unknown outcome remains retained even after separate cleanup succeeds.
 
 ## Finish the original workflow
 

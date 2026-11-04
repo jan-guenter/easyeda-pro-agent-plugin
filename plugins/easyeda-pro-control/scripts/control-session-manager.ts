@@ -13,7 +13,7 @@ import { Client } from "@modelcontextprotocol/sdk/client/index.js";
 import { z } from "zod";
 
 import {
-  MAXIMUM_REQUEST_BYTES, boundedLines, parseSessionRequest, publishSessionResult,
+  MAXIMUM_REQUEST_BYTES, SESSION_CALL_TIMEOUT_MS, boundedLines, parseSessionRequest, publishSessionResult,
   selectSessionLaunch, sessionFailureDiagnostic, sessionTransportEnvironment,
 } from "./control-session.ts";
 import type { CallRequest } from "./control-session.ts";
@@ -21,9 +21,19 @@ import { ForegroundSessionTransport } from "./control-session-transport.ts";
 import { createPrivateTemporaryDirectory } from "./private-temporary-directory.ts";
 import type { PrivateTemporaryDirectory } from "./private-temporary-directory.ts";
 import { sessionRetirementOutputSchema } from "../server/src/session-retirement.ts";
+import { currentFootprintForwardPrewriteValidationRequestSchema } from "../server/src/current-footprint-forward-prewrite-validation.ts";
 
 const requestId = z.union([z.string().min(1).max(128), z.number().int()]);
 const generationSchema = z.number().int().positive().max(Number.MAX_SAFE_INTEGER);
+// These selectors deliberately accept no tool, operation, binding or intent
+// Override. The manager supplies those from its private interrupted connection.
+const originalCleanupSchema = z.discriminatedUnion("action", [
+  z.strictObject({ action: z.literal("inspect") }),
+  z.strictObject({ action: z.literal("abort-generation"), confirmAbortOriginalForwardJob: z.literal(true) }),
+  z.strictObject({ action: z.literal("observe-termination") }),
+  z.strictObject({ action: z.literal("release-closed") }),
+  z.strictObject({ action: z.literal("settle-records") }),
+]);
 const commandSchema = z.discriminatedUnion("action", [
   z.strictObject({ id: requestId, action: z.literal("inspect") }),
   z.strictObject({ id: requestId, action: z.literal("retire"), generation: generationSchema, confirmRetire: z.literal(true) }),
@@ -31,9 +41,13 @@ const commandSchema = z.discriminatedUnion("action", [
     pluginRoot: z.string().refine(root => isAbsolute(root) && resolve(root) === root) }),
   z.strictObject({ id: requestId, action: z.literal("shutdown") }),
   z.strictObject({ id: requestId, action: z.literal("cleanup-startup"), confirmCloseOriginalStartup: z.literal(true) }),
+  z.strictObject({ id: requestId, action: z.literal("cleanup-original"), generation: generationSchema,
+    interruptedRequestId: requestId, request: originalCleanupSchema,
+    responseFile: z.string().refine(isAbsolute).optional() }),
 ]);
 type ManagerCallRequest = CallRequest & { readonly cleanup?: true };
 type ManagerRequest = z.infer<typeof commandSchema> | ManagerCallRequest;
+type OriginalCleanupRequest = Extract<z.infer<typeof commandSchema>, { action: "cleanup-original" }>;
 type Emitter = (value: unknown) => Promise<void>;
 type Stage = "new" | "starting" | "active" | "retiring" | "closing" | "between-facades" | "blocked" | "closed";
 const toolResultSchema = z.looseObject({ isError: z.boolean().optional(), structuredContent: z.unknown().optional() });
@@ -112,6 +126,14 @@ interface Connection {
   readonly tools: Set<string>;
   readonly loadedFacade: z.infer<typeof loadedFacadeSchema>;
 }
+interface InterruptedCall {
+  readonly connection: Connection;
+  readonly generation: number;
+  readonly requestId: string | number;
+  readonly tool: string;
+  readonly forward: Readonly<{ operationId: string; bindingSha256: string }> | null;
+  intentSha256?: string;
+}
 interface RetainedRecord {
   readonly sequence: number;
   readonly generation: number;
@@ -137,11 +159,14 @@ export class ForegroundSessionManager {
   private readonly records: RetainedRecord[] = [];
   private requestPending = false;
   private replacementFrom: Connection | undefined;
+  private interrupted: InterruptedCall | undefined;
+  private retirementUncertain = false;
   private evidence: PrivateTemporaryDirectory | undefined;
   private evidenceBytes = 0;
   private readonly recordCounts = { normal: 0, cleanup: 0, control: 0 };
   private readonly byteCounts = { normal: 0, cleanup: 0, control: 0 };
   private evidenceFault = false;
+  private publicationFault = false;
   private readonly retirementReservation = new SessionManagerRetirementReservation();
   private readonly emit: Emitter;
 
@@ -181,8 +206,8 @@ export class ForegroundSessionManager {
 
   /** Keep the original owner inspectable when evidence writing itself fails.
    * A fault blocks handoff without escaping and abandoning the request loop. */
-  private async retainFailure(kind: string, value: unknown): Promise<void> {
-    try { await this.retain(kind, value); }
+  private async retainFailure(kind: string, value: unknown, budget: RecordBudget = "control"): Promise<void> {
+    try { await this.retain(kind, value, budget); }
     catch { this.evidenceFault = true; this.stage = "blocked"; }
   }
 
@@ -200,9 +225,18 @@ export class ForegroundSessionManager {
       closure: observed?.transport.inspectClosure() ?? null,
       recordCount: this.records.length, evidenceBytes: this.evidenceBytes,
       evidenceFault: this.evidenceFault,
+      publicationFault: this.publicationFault,
       finalRetirementAttemptConsumed: this.retirementReservation.finalAttemptConsumed(),
       startupCleanupAttempted: this.startupCleanupAttempted,
       callerToolDispatchStarted: observed === undefined ? false : this.callerToolDispatches.has(observed.transport),
+      interruptedRequest: this.interrupted === undefined ? null : { id: this.interrupted.requestId,
+        generation: this.interrupted.generation, tool: this.interrupted.tool,
+        forward: this.interrupted.forward, outcome: "unknown", cleanupAvailable: this.stage === "blocked" &&
+          !this.retirementUncertain && this.interrupted.forward !== null &&
+          this.interrupted.connection === this.connection && this.connection.client.transport === this.connection.transport &&
+          this.connection.transport.hasUnclosedChild() && !this.evidenceFault && !this.publicationFault &&
+          !this.records.some(row => Object.hasOwn(row, "unpublishedValue")) },
+      retirementUncertain: this.retirementUncertain,
       budgets: { recordLimits: RECORD_BUDGETS, byteLimits: BYTE_BUDGETS, records: { ...this.recordCounts }, bytes: { ...this.byteCounts } },
       records: this.records.slice(-32).map(({ unpublishedValue: withheld, ...summary }) => Object.assign(summary, { unpublished: withheld !== undefined })),
       admissionGranted: false };
@@ -212,7 +246,7 @@ export class ForegroundSessionManager {
    * blocks replacement and retains a fixed diagnostic before propagating. */
   private async publish(value: unknown): Promise<void> {
     try { await this.emit(value); }
-    catch (error) { this.stage = "blocked"; await this.retainFailure("publication-failed", { privateDiagnosticsWithheld: true }); throw error; }
+    catch (error) { this.publicationFault = true; this.stage = "blocked"; await this.retainFailure("publication-failed", { privateDiagnosticsWithheld: true }); throw error; }
   }
 
   /** Initial selection is separate from replacements and is reserved once. */
@@ -276,6 +310,8 @@ export class ForegroundSessionManager {
     await this.retain("ready", ready);
     await this.publish(ready);
     this.connection = { pluginRoot, transport, client, tools: new Set(names), loadedFacade };
+    this.interrupted = undefined;
+    this.retirementUncertain = false;
     this.startingConnection = undefined;
     this.stage = "active";
   }
@@ -285,6 +321,84 @@ export class ForegroundSessionManager {
   private requireActive(): Connection {
     if (this.stage !== "active" || this.connection === undefined) { throw new Error("manager-active-connection-required"); }
     return this.connection;
+  }
+
+  /** Timeout leaves the original SDK client and native owner in custody. Only
+   * that private interrupted connection may reach fresh retirement preflight;
+   * an ambiguous retirement itself never authorizes another attempt. */
+  private requireRetirable(): Connection {
+    if (this.retirementUncertain) { throw new Error("manager-retirement-outcome-unknown"); }
+    if (this.evidenceFault || this.publicationFault || this.records.some(row => Object.hasOwn(row, "unpublishedValue"))) { throw new Error("manager-evidence-unsettled"); }
+    if (this.stage === "active") { return this.requireActive(); }
+    const connection = this.connection, interrupted = this.interrupted;
+    if (this.stage !== "blocked" || interrupted === undefined || interrupted.forward === null || connection === undefined ||
+        interrupted.connection !== connection || interrupted.generation !== this.generation ||
+        connection.client.transport !== connection.transport || !connection.transport.hasUnclosedChild()) {
+      throw new Error("manager-original-connection-required");
+    }
+    return connection;
+  }
+
+  /** Capture only strict registered forward arguments before caller dispatch.
+   * Reparsed JSON is comparison data; the retained Connection supplies custody. */
+  private interruptedCall(connection: Connection, request: ManagerCallRequest): InterruptedCall {
+    const outer = z.strictObject({ request: z.strictObject({ action: z.literal("footprint-forward-prewrite"),
+      request: currentFootprintForwardPrewriteValidationRequestSchema }) }).safeParse(request.arguments);
+    const selected = outer.success ? outer.data.request.request : null;
+    const forward = request.tool === "easyeda_control_pcb209_worker_startup" && selected !== null &&
+      "expectedBindingSha256" in selected ? Object.freeze({ operationId: selected.operationId, bindingSha256: selected.expectedBindingSha256 }) : null;
+    return { connection, generation: this.generation, requestId: request.id, tool: request.tool, forward };
+  }
+
+  /** Reject foreign, disconnected or unpublished original state before any
+   * reservation. Invalid cleanup input cannot freeze a healthy active owner. */
+  private requireOriginalCleanup(request: OriginalCleanupRequest): Readonly<{
+    connection: Connection; interrupted: InterruptedCall; binding: NonNullable<InterruptedCall["forward"]>;
+  }> {
+    const connection = this.connection, interrupted = this.interrupted;
+    if (this.stage !== "blocked" || interrupted === undefined || interrupted.forward === null || connection === undefined ||
+        this.retirementUncertain || this.evidenceFault || this.publicationFault || this.records.some(row => Object.hasOwn(row, "unpublishedValue")) ||
+        interrupted.connection !== connection || interrupted.generation !== this.generation || request.generation !== this.generation ||
+        request.interruptedRequestId !== interrupted.requestId || connection.client.transport !== connection.transport ||
+        !connection.transport.hasUnclosedChild() || !connection.tools.has("easyeda_control_pcb209_worker_startup")) {
+      throw new Error("manager-original-cleanup-not-authorized");
+    }
+    if (request.request.action === "settle-records" && interrupted.intentSha256 === undefined) {
+      throw new Error("manager-original-intent-inspection-required");
+    }
+    return { connection, interrupted, binding: interrupted.forward };
+  }
+
+  /** Generate one allowlisted original-owner cleanup call. Normal/replay routes
+   * remain blocked, and no cleanup result settles the interrupted call's unknown
+   * outcome. Only the facade's own final retirement can release that custody. */
+  private async cleanupOriginal(request: OriginalCleanupRequest): Promise<void> {
+    const { binding, connection, interrupted } = this.requireOriginalCleanup(request);
+    const selected = request.request;
+    const input: Record<string, unknown> = { ...selected, operationId: binding.operationId };
+    if (selected.action === "settle-records") { input["expectedIntentSha256"] = interrupted.intentSha256; }
+    else if (selected.action !== "inspect") { input["expectedBindingSha256"] = binding.bindingSha256; }
+    const nested = currentFootprintForwardPrewriteValidationRequestSchema.parse(input);
+    const call: CallRequest = { id: request.id, tool: "easyeda_control_pcb209_worker_startup", timeoutMs: SESSION_CALL_TIMEOUT_MS,
+      arguments: { request: { action: "footprint-forward-prewrite", request: nested } },
+      ...(request.responseFile === undefined ? {} : { responseFile: request.responseFile }) };
+    await this.retain("original-cleanup-intent", { id: request.id, interruptedRequestId: interrupted.requestId,
+      generation: this.generation, tool: call.tool, request: nested }, "cleanup");
+    const result = await connection.client.callTool({ name: call.tool, arguments: call.arguments }, undefined, { timeout: call.timeoutMs });
+    await this.retain("original-cleanup-result", { id: request.id, result }, "cleanup");
+    const envelope = toolResultSchema.parse(result);
+    if (selected.action === "inspect" && envelope.isError !== true) {
+      const inspected = z.looseObject({ result: z.looseObject({ operationId: z.literal(binding.operationId),
+        bindingSha256: z.literal(binding.bindingSha256), intentSha256: z.string().regex(/^[a-f0-9]{64}$/u).optional() }) }).safeParse(envelope.structuredContent);
+      if (inspected.success && inspected.data.result.intentSha256 !== undefined) {
+        if (interrupted.intentSha256 !== undefined && interrupted.intentSha256 !== inspected.data.result.intentSha256) {
+          throw new Error("manager-original-intent-changed");
+        }
+        interrupted.intentSha256 = inspected.data.result.intentSha256;
+      }
+    }
+    try { await publishSessionResult(call, result, value => this.publish(value)); }
+    catch (error) { this.publicationFault = true; throw error; }
   }
 
   /** Consume explicit cleanup before this startup child has served caller tools.
@@ -318,10 +432,12 @@ export class ForegroundSessionManager {
    * and observed child closure. Only an exact active-state refusal preserves
    * cleanup access; uncertain results never authorize a replacement. */
   private async retire(id: string | number, generation: number, reservation: "ordinary" | "final"): Promise<void> {
-    const connection = this.requireActive();
+    const connection = this.requireRetirable();
+    const interrupted = this.interrupted;
     if (generation !== this.generation) { throw new Error("manager-generation-mismatch"); }
     const firstRecord = this.records.length;
     this.stage = "retiring";
+    this.retirementUncertain = true;
     await this.retain("retirement-intent", { id, generation, facadePid: connection.loadedFacade.pid });
     const result = await connection.client.callTool({ name: "easyeda_control_session",
       arguments: { request: { action: "retire", confirmRetire: true } } }, undefined, { timeout: 600_000 });
@@ -338,7 +454,7 @@ export class ForegroundSessionManager {
       if (inspected.isError === true) { throw new TypeError("retirement-refusal-unproven"); }
       const state = retirementEnvelopeSchema.parse(inspected.structuredContent).result;
       if (state.state !== "active" || !state.liveAdmissionOpen || state.leaseReleaseAcknowledged ||
-        state.replacementConnectionRequired || state.activeCalls !== 0) { throw new TypeError("retirement-refusal-unproven"); }
+        state.replacementConnectionRequired || interrupted === undefined && state.activeCalls !== 0) { throw new TypeError("retirement-refusal-unproven"); }
       // Only these exact same-owner active observations permit reclassification.
       // The three on-disk records retain their original bytes and hashes; their
       // Current accounting labels move to the reserved cleanup bucket so an
@@ -356,9 +472,10 @@ export class ForegroundSessionManager {
           this.records[firstRecord + offset] = Object.freeze({ ...row, budget: "cleanup" });
         }
       }
-      this.stage = "active";
+      this.stage = interrupted === undefined ? "active" : "blocked";
       await this.publish({ id, retirementRefused: true, generation, result, inspection, replacementAllowed: false,
         finalRetirementAttemptConsumed: this.retirementReservation.finalAttemptConsumed() });
+      this.retirementUncertain = false;
       return;
     }
     const state = retirementEnvelopeSchema.parse(envelope.structuredContent).result;
@@ -374,6 +491,7 @@ export class ForegroundSessionManager {
     this.stage = "between-facades";
     await this.publish({ id, retired: true, generation, retirement: state, closure,
       replacementAllowed: true, managerPid: process.pid });
+    this.retirementUncertain = false;
   }
 
   /** Mark the exact child before caller dispatch and retain its result before
@@ -387,11 +505,16 @@ export class ForegroundSessionManager {
     const budget = request.cleanup === true ? "cleanup" : "normal";
     await this.retain("call-intent", { id: request.id, tool: request.tool }, budget);
     this.callerToolDispatches.add(connection.transport);
-    const result = await connection.client.callTool({ name: request.tool, arguments: request.arguments }, undefined, { timeout: request.timeoutMs });
+    const interrupted = this.interruptedCall(connection, request);
+    let result: unknown;
+    try { result = await connection.client.callTool({ name: request.tool, arguments: request.arguments }, undefined, { timeout: request.timeoutMs }); }
+    catch (error) { this.interrupted = interrupted; this.stage = "blocked"; throw error; }
+    // A returned result with failed retention/publication keeps the earlier
+    // Strict evidence freeze. It cannot mint timeout-cleanup authority.
     await this.retain("call-result", { id: request.id, result }, budget);
     toolResultSchema.parse(result);
     try { await publishSessionResult(request, result, value => this.publish(value)); }
-    catch (error) { this.stage = "blocked"; throw error; }
+    catch (error) { this.publicationFault = true; throw error; }
   }
 
   /** Serial admission covers invocation and publication. A concurrent request
@@ -401,6 +524,7 @@ export class ForegroundSessionManager {
     this.requestPending = true;
     let id: string | number | undefined;
     let reserved = false;
+    let failureBudget: RecordBudget = "control";
     try {
       const request = parseSessionManagerRequest(line);
       id = request.id;
@@ -415,6 +539,17 @@ export class ForegroundSessionManager {
         await this.call(request); return;
       }
       if (request.action === "inspect") { await this.publish({ id, manager: this.inspect() }); return; }
+      if (request.action === "cleanup-original") {
+        this.requireOriginalCleanup(request);
+        // Reserve intent, largest possible result and a failure record without
+        // Spending the separate terminal retirement/control capacity.
+        if (!sessionManagerCallBudgetAvailable(true, this.recordCounts.cleanup + 1, this.byteCounts.cleanup)) {
+          throw new Error("manager-cleanup-reserve-required");
+        }
+        failureBudget = "cleanup";
+        reserved = true;
+        await this.cleanupOriginal(request); return;
+      }
       if (request.action === "cleanup-startup") {
         const starting = this.startingConnection;
         if (this.stage !== "blocked" || starting === undefined || this.callerToolDispatches.has(starting.transport) || this.startupCleanupAttempted) {
@@ -424,7 +559,7 @@ export class ForegroundSessionManager {
         await this.cleanupStartup(id); return;
       }
       if (request.action === "retire") {
-        this.requireActive();
+        this.requireRetirable();
         if (request.generation !== this.generation) { throw new Error("manager-generation-mismatch"); }
         const reservation = this.retirementReservation.reserve(this.recordCounts.control, this.byteCounts.control,
           this.recordCounts.cleanup, this.byteCounts.cleanup);
@@ -458,7 +593,7 @@ export class ForegroundSessionManager {
       const failure = { ...(id === undefined ? {} : { id }), error: reserved ? "manager-blocked" : "manager-request-rejected", generation: this.generation,
         diagnostic: sessionFailureDiagnostic("requests", error), retryAllowed: false,
         dispatched: reserved, originalOwnerRetained: true };
-      if (reserved) { await this.retainFailure("failure", failure); }
+      if (reserved) { await this.retainFailure("failure", failure, failureBudget); }
       await this.publish(failure);
     } finally { this.requestPending = false; }
   }

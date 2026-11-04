@@ -43,6 +43,12 @@ already running process. Recheck the replacement's actual process and installed
 payload. Do not terminate a host-owned facade, write to its stdio, or patch a
 cache to force an update.
 
+Newer snapshots also accept `close-retired` after acknowledged retirement and
+zero active callbacks. It schedules their own normal shutdown once. The reply
+does not prove delivery or process termination; observe the original process
+exiting before relying on its absence. A running older snapshot cannot acquire
+this command through installation alone.
+
 For development when host tools are absent, the
 [persistent foreground client](architecture.md) can target a verified installed
 snapshot or trusted frozen build if the control lease is free. It uses the same

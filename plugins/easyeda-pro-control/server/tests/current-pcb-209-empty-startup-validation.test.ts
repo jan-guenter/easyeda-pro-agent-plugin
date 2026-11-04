@@ -4,8 +4,9 @@ import { test } from "node:test";
 import { currentPcb209EmptyStartupLifecycleRequestSchema, currentPcb209EmptyStartupValidationRequestSchema,
   currentPcb209WorkerStartupToolRequestSchema, queryCurrentPcb209EmptyStartupValidation,
   validateCurrentPcb209EmptyStartupArguments } from "../src/current-pcb-209-empty-startup-validation.ts";
-import { apiRequestSchema, queryOfflineApi } from "../src/offline-api.ts";
+import { apiRequestSchema, isStaticOfflineApiReference, queryOfflineApi } from "../src/offline-api.ts";
 import { currentFootprintForwardPrewriteValidationRequestSchema } from "../src/current-footprint-forward-prewrite-validation.ts";
+import { currentFootprintForwardOpeningRelinquishmentRequestSchema } from "../src/current-footprint-forward-opening-relinquishment-contract.ts";
 import { currentPcb209WorkerStartupValidationRequestSchema } from "../src/current-pcb-209-worker-startup-validation.ts";
 import { diagnosticLifecycleRecordSchemas } from "../src/current-pcb-diagnostic-lifecycle-journal.ts";
 import { CURRENT_PCB_209_EMPTY_STARTUP_RESULT_MAX_BYTES } from "../src/current-pcb-209-empty-startup-packet-schema.ts";
@@ -14,6 +15,37 @@ import { CURRENT_PCB_209_EMPTY_BASELINE_PACKET_MAX_BYTES } from "../src/current-
 const digest = "a".repeat(64), operationId = "pcb209-empty-contract";
 const launch = { action: "launch", operationId, confirmValidationOnly: true, confirmDiagnosticLaunch: true, acceptExistingProfileEffects: true };
 const observe = { action: "observe-empty-baseline", operationId, expectedBindingSha256: digest, acceptNormalOpenEffects: true };
+
+void test("forward opening relinquishment has a separate strict historical wrapper and static discovery", () => {
+  const request = { action: "relinquish-unknown-opening", operationId: "footprint-copy-qualify-contract",
+    expectedIntentSha256: digest, expectedBindingSha256: digest, expectedOpeningIntentSha256: digest,
+    confirmRelinquishUnknownOpening: true, acceptUnknownCaptureOutcome: true };
+  assert.equal(currentFootprintForwardOpeningRelinquishmentRequestSchema.safeParse(request).success, true);
+  assert.equal(currentPcb209WorkerStartupToolRequestSchema.safeParse({ action: "footprint-forward-opening-relinquishment", request }).success, true);
+  assert.equal(currentPcb209WorkerStartupToolRequestSchema.safeParse(request).success, false);
+  assert.equal(currentFootprintForwardPrewriteValidationRequestSchema.safeParse(request).success, false);
+  for (const wrapper of ["footprint-forward-prewrite", "footprint-combined", "footprint-copy-preparation"]) {
+    assert.equal(currentPcb209WorkerStartupToolRequestSchema.safeParse({ action: wrapper, request }).success, false);
+  }
+  for (const change of [{ confirmRelinquishUnknownOpening: false }, { acceptUnknownCaptureOutcome: false }, { originalPid: 42 },
+    { operationId: "footprint-combined-old" }, { expectedIntentSha256: "invalid" }, { observationNonce: digest },
+    { action: "capture-project" }, { executionReady: true }, { sourceReferenceApi: true }]) {
+    assert.equal(currentFootprintForwardOpeningRelinquishmentRequestSchema.safeParse({ ...request, ...change }).success, false);
+  }
+  const discovery = apiRequestSchema.parse({ action: "footprint-forward-opening-relinquishment", query: { includeSchemas: true } });
+  const query = queryOfflineApi(discovery).result;
+  assert.ok(query !== null && typeof query === "object" && "executionReady" in query && "inputSchema" in query && "actions" in query && "wrapperAction" in query);
+  assert.equal(query.wrapperAction, "footprint-forward-opening-relinquishment");
+  assert.equal(query.executionReady, false); assert.notEqual(query.inputSchema, undefined);
+  assert.deepEqual(query.actions, ["relinquish-unknown-opening"]);
+  const validation = apiRequestSchema.parse({ action: "footprint-forward-opening-relinquishment-validate", query: { request } });
+  const validated = queryOfflineApi(validation).result;
+  assert.ok(validated !== null && typeof validated === "object" && "valid" in validated && "executionReady" in validated);
+  assert.equal(validated.valid, true); assert.equal(validated.executionReady, false);
+  assert.equal(isStaticOfflineApiReference(discovery), true); assert.equal(isStaticOfflineApiReference(validation), true);
+  assert.equal(isStaticOfflineApiReference({ ...discovery, sourceReferenceApi: true }), false);
+  assert.equal(isStaticOfflineApiReference({ action: "unknown-future-action" }), false);
+});
 
 void test("forward prewrite wrapper and discovery preserve a separate qualification-only grammar", () => {
   const id = "footprint-copy-qualify-contract";

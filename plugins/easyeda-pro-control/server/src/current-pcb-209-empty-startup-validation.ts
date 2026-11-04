@@ -4,6 +4,7 @@ import { z } from "zod";
 import { currentFootprintCopyRoutePreparationValidationRequestSchema } from "./current-footprint-copy-route-preparation-validation.ts";
 import { currentFootprintMainValidationRequestSchema } from "./current-footprint-main-validation.ts";
 import { currentFootprintCombinedValidationRequestSchema } from "./current-footprint-combined-validation.ts";
+import { currentFootprintForwardOpeningRelinquishmentRequestSchema } from "./current-footprint-forward-opening-relinquishment-contract.ts";
 import { currentFootprintForwardPrewriteValidationRequestSchema } from "./current-footprint-forward-prewrite-validation.ts";
 import { currentFootprintHeadAgeValidationRequestSchema } from "./current-footprint-head-age-validation-schema.ts";
 import { currentFootprintHeldCacheValidationRequestSchema } from "./current-footprint-held-cache-validation-schema.ts";
@@ -32,6 +33,7 @@ export type CurrentPcb209EmptyStartupValidationRequest = z.infer<typeof currentP
 export const currentPcb209WorkerStartupToolRequestSchema = z.discriminatedUnion("action", [
   z.object({ action: z.literal("footprint-head-age"), request: currentFootprintHeadAgeValidationRequestSchema }).strict(),
   z.object({ action: z.literal("footprint-held-cache"), request: currentFootprintHeldCacheValidationRequestSchema }).strict(),
+  z.object({ action: z.literal("footprint-forward-opening-relinquishment"), request: currentFootprintForwardOpeningRelinquishmentRequestSchema }).strict(),
   z.object({ action: z.literal("footprint-forward-prewrite"), request: currentFootprintForwardPrewriteValidationRequestSchema }).strict(),
   z.object({ action: z.literal("footprint-combined"), request: currentFootprintCombinedValidationRequestSchema }).strict(),
   z.object({ action: z.literal("footprint-main"), request: currentFootprintMainValidationRequestSchema }).strict(),

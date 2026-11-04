@@ -127,6 +127,45 @@ server.setRequestHandler(CallToolRequestSchema,async({params})=>{
 await server.connect(new StdioServerTransport());`;
 }
 
+/** Hold an actual SDK request through its timeout. Only the fixed same-owner
+ * cleanup protocol can settle this synthetic native reservation and its records. */
+function interruptedForwardPeer(): string {
+  return `import {Server} from ${sdkModule("server/index.js")};
+import {StdioServerTransport} from ${sdkModule("server/stdio.js")};
+import {CallToolRequestSchema,ListToolsRequestSchema} from ${sdkModule("types.js")};
+const server=new Server({name:'synthetic-interrupted-forward',version:'1.0.0'},{capabilities:{tools:{}}});
+const op='footprint-copy-qualify-timeout',binding='a'.repeat(64),intent='b'.repeat(64),gate=Promise.withResolvers(),calls=[];
+let active=0,aborted=false,released=false,settled=false,captures=0;
+const result=value=>({content:[{type:'text',text:JSON.stringify(value)}],structuredContent:value});
+const refused=()=>({isError:true,content:[{type:'text',text:'synthetic-original-owner-refusal'}]});
+server.setRequestHandler(ListToolsRequestSchema,async()=>({tools:['easyeda_control_api','easyeda_control_session','easyeda_control_pcb209_worker_startup'].map(name=>({name,inputSchema:{type:'object'}}))}));
+server.setRequestHandler(CallToolRequestSchema,async({params})=>{
+ const outer=params.arguments?.request;
+ if(params.name==='easyeda_control_api'&&outer?.action==='loaded-facade')return result({offline:true,result:{schema:'easyeda-pro-control.loaded-facade.v1',pid:process.pid,moduleUrl:import.meta.url,nodeVersion:process.version,admissionGranted:false}});
+ if(params.name==='easyeda_control_session'){
+  calls.push({tool:params.name,action:outer?.action});
+  if(outer?.action==='retire'&&(active!==0||!released||!settled))return refused();
+  const retired=outer?.action==='retire';
+  return result({result:{schema:'easyeda-pro-control.session-retirement.v1',state:retired?'retired':'active',activeCalls:active,liveAdmissionOpen:!retired,leaseReleaseAcknowledged:retired,replacementConnectionRequired:retired}});
+ }
+ const request=outer?.request;
+ calls.push({tool:params.name,action:request?.action,operationId:request?.operationId,binding:request?.expectedBindingSha256});
+ if(params.name!=='easyeda_control_pcb209_worker_startup'||outer?.action!=='footprint-forward-prewrite'||request?.operationId!==op)return refused();
+ if(request.action==='inspect')return result({result:{operationId:op,bindingSha256:binding,intentSha256:intent,active,captures,aborted,released,settled,calls}});
+ if(request.action==='settle-records'){if(active!==0||request.expectedIntentSha256!==intent)return refused();settled=true;return result({result:{operationId:op,settled:true}});}
+ if(request.expectedBindingSha256!==binding)return refused();
+ if(request.action==='capture-project'){captures++;active++;await gate.promise;active--;return result({result:{operationId:op,lateCapture:true}});}
+ if(request.action==='abort-generation'){if(aborted||request.confirmAbortOriginalForwardJob!==true)return refused();aborted=true;gate.resolve();return result({result:{operationId:op,terminationDispatched:true}});}
+ if(request.action==='observe-termination')return result({result:{operationId:op,terminated:aborted&&active===0}});
+ if(request.action==='release-closed'){if(!aborted||active!==0||released)return refused();released=true;return result({result:{operationId:op,state:'released'}});}
+ return refused();
+});
+// A failed regression still lets this inert peer finish naturally. Passing
+// Requires manager-requested EOF before this separate fixture deadline.
+setTimeout(()=>{gate.resolve();void server.close();},15000).unref();
+await server.connect(new StdioServerTransport());`;
+}
+
 /** Poll retained child exit/close evidence and fail if no observation becomes
  * available before the monotonic deadline. */
 async function waitForObservedClosure(observed: () => boolean): Promise<void> {
@@ -147,6 +186,80 @@ void test("manager grammar refuses executable hooks, generic retirement and reco
     { id: 1, action: "start", afterGeneration: 1, pluginRoot: "/root/plugin/../other" },
     { id: 1, shutdown: true },
   ]) { assert.throws(() => parseSessionManagerRequest(request(value))); }
+});
+
+void test("actual manager preserves ambiguous capture and permits only same-owner cleanup before real retirement and closure", { timeout: 12_000 }, async () => {
+  const outputs: unknown[] = [], selected = await fixture(interruptedForwardPeer());
+  const expectedBindingSha256 = "a".repeat(64), operationId = "footprint-copy-qualify-timeout";
+  await selectedProfile(selected.profilePath, async () => {
+    const manager = new ForegroundSessionManager(async value => { outputs.push(value); await Promise.resolve(); });
+    await manager.initialize(selected.root);
+    const originalPid = manager.inspect()["facadePid"];
+    const output = (): Record<string, unknown> => record(outputs.at(-1));
+    const toolResult = (): Record<string, unknown> => record(output()["result"]);
+    const observed = (): Record<string, unknown> => record(record(toolResult()["structuredContent"])["result"]);
+    const cleanup = (id: string, action: string, extra: object = {}): string => request({ id, action: "cleanup-original", generation: 1,
+      interruptedRequestId: "interrupted-capture", request: { action, ...extra } });
+    const originalBudgets = manager.inspect()["budgets"];
+    await manager.handle(cleanup("unauthorized-active-cleanup", "inspect"));
+    assert.equal(output()["error"], "manager-request-rejected"); assert.equal(manager.inspect()["stage"], "active");
+    assert.deepEqual(manager.inspect()["budgets"], originalBudgets);
+    const rawWindowsPath = String.raw`C:\Disposable\fixture.eprj2`;
+    const capture = { id: "interrupted-capture", tool: "easyeda_control_pcb209_worker_startup", timeoutMs: 1000,
+      arguments: { request: { action: "footprint-forward-prewrite", request: { action: "capture-project", operationId, expectedBindingSha256,
+        target: { rawWindowsPath, projectUuid: hash(Buffer.from(rawWindowsPath)), documentUuid: "c".repeat(32), expectedSourceSha256: "d".repeat(64) },
+        confirmDisposableProject: true, acceptNormalOpenEffects: true, acceptDebuggerPauseEffects: true } } } };
+    await manager.handle(request(capture));
+    assert.equal(output()["error"], "manager-blocked");
+    assert.equal(record(output()["diagnostic"])["reason"], "request-timeout");
+    assert.equal(manager.inspect()["stage"], "blocked"); assert.equal(manager.inspect()["closure"], null);
+    assert.equal(record(manager.inspect()["interruptedRequest"])["outcome"], "unknown");
+    assert.equal(record(manager.inspect()["interruptedRequest"])["cleanupAvailable"], true);
+    await manager.handle(retire("before-cleanup-refused", 1));
+    assert.equal(output()["retirementRefused"], true); assert.equal(manager.inspect()["stage"], "blocked");
+    for (const rejected of [
+      loaded("blocked-normal"), request({ ...capture, id: "blocked-replay", cleanup: true }),
+      request({ id: "blocked-replacement", action: "start", afterGeneration: 1, pluginRoot: selected.root }),
+      request({ id: "foreign-request", action: "cleanup-original", generation: 1, interruptedRequestId: "foreign", request: { action: "inspect" } }),
+      request({ id: "foreign-generation", action: "cleanup-original", generation: 2, interruptedRequestId: "interrupted-capture", request: { action: "inspect" } }),
+      cleanup("foreign-operation", "inspect", { operationId: "footprint-copy-qualify-foreign" }),
+      cleanup("foreign-binding", "observe-termination", { expectedBindingSha256: "f".repeat(64) }),
+      cleanup("blocked-cleanup-replay", "capture-project"),
+    ]) {
+      await manager.handle(rejected); assert.equal(manager.inspect()["stage"], "blocked"); assert.equal(manager.inspect()["facadePid"], originalPid);
+      assert.equal(output()["retryAllowed"], false);
+    }
+    await manager.handle(cleanup("no-fabricated-intent", "settle-records"));
+    assert.equal(output()["error"], "manager-request-rejected");
+    await manager.handle(cleanup("same-original-inspection", "inspect"));
+    let inspected = observed();
+    assert.equal(inspected["captures"], 1); assert.equal(inspected["active"], 1);
+    assert.deepEqual(inspected["calls"], [
+      { tool: "easyeda_control_pcb209_worker_startup", action: "capture-project", operationId, binding: expectedBindingSha256 },
+      { tool: "easyeda_control_session", action: "retire" }, { tool: "easyeda_control_session", action: "inspect" },
+      { tool: "easyeda_control_pcb209_worker_startup", action: "inspect", operationId },
+    ]);
+    await manager.handle(cleanup("refused-live-release", "release-closed"));
+    assert.equal(toolResult()["isError"], true); assert.equal(manager.inspect()["stage"], "blocked");
+    await manager.handle(cleanup("abort-original", "abort-generation", { confirmAbortOriginalForwardJob: true }));
+    await manager.handle(cleanup("observe-original-exit", "observe-termination"));
+    await manager.handle(cleanup("settle-original-records", "settle-records"));
+    await manager.handle(cleanup("release-original-helper", "release-closed"));
+    await manager.handle(cleanup("still-original", "inspect"));
+    inspected = observed();
+    assert.equal(inspected["active"], 0); assert.equal(inspected["released"], true); assert.equal(inspected["settled"], true);
+    assert.equal(inspected["captures"], 1); assert.equal(manager.inspect()["facadePid"], originalPid);
+    assert.equal(record(manager.inspect()["interruptedRequest"])["outcome"], "unknown");
+    await manager.handle(retire("retire-after-original-cleanup", 1));
+    const retired = output(); assert.equal(retired["retired"], true); assert.equal(retired["replacementAllowed"], true);
+    assert.deepEqual(record(retired["closure"]), { pid: originalPid, exitObserved: true, closeObserved: true, exitCode: 0, signal: null, stdinEof: true });
+    await assert.rejects(lstat(`/proc/${String(originalPid)}`), { code: "ENOENT" });
+    const rows = manager.inspect()["records"]; assert.ok(Array.isArray(rows));
+    const raw = await Promise.all(rows.map(row => readFile(String(record(row)["evidenceFile"]), "utf8")));
+    assert.match(raw.join("\n"), /request-timeout/u); assert.match(raw.join("\n"), /original-cleanup-result/u);
+    await manager.handle(request({ id: "closed-original-manager", action: "shutdown" }));
+    assert.equal(manager.inspect()["stage"], "closed");
+  });
 });
 
 void test("normal and cleanup budgets refuse before dispatch and preserve separate control evidence capacity", () => {

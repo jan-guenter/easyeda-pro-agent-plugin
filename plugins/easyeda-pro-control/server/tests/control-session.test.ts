@@ -7,6 +7,7 @@ import { fileURLToPath } from "node:url";
 
 import {
   MAXIMUM_REQUEST_BYTES,
+  SESSION_CALL_TIMEOUT_MS,
   boundedLines,
   parseSessionConfiguration,
   parseSessionRequest,
@@ -17,6 +18,7 @@ import {
 } from "../../scripts/control-session.ts";
 import { machineProfileSchema } from "../src/machine-profile.ts";
 import { assertTestIsolation } from "../../scripts/test-isolation.ts";
+import { CURRENT_PCB_209_STARTUP_OPENING_TIMING } from "../src/current-pcb-209-worker-startup-timing.ts";
 
 async function* values<T>(items: readonly T[]): AsyncGenerator<T> {
   yield* await Promise.resolve(items);
@@ -36,6 +38,17 @@ void test("session selection requires the complete installed bundled-launch cont
     assert.throws(() => parseSessionConfiguration({ mcpServers: { easyeda_pro_control: candidate } }));
   }
   assert.throws(() => parseSessionConfiguration({ mcpServers: { ...configuration.mcpServers, other: server } }));
+});
+
+void test("caller deadline covers the native lifetime envelope while smaller explicit bounds remain valid", () => {
+  const ordinary = { id: "outer-bound", tool: "easyeda_control_pcb209_worker_startup" };
+  const parsed = parseSessionRequest(JSON.stringify(ordinary)); assert.ok("timeoutMs" in parsed);
+  assert.equal(parsed.timeoutMs, 3_600_000 + 60_000 + 60_000);
+  assert.ok(parsed.timeoutMs > CURRENT_PCB_209_STARTUP_OPENING_TIMING.hostMs + CURRENT_PCB_209_STARTUP_OPENING_TIMING.openingCompletionMs);
+  assert.equal(parsed.timeoutMs, SESSION_CALL_TIMEOUT_MS);
+  const smaller = parseSessionRequest(JSON.stringify({ ...ordinary, timeoutMs: 721_000 })); assert.ok("timeoutMs" in smaller);
+  assert.equal(smaller.timeoutMs, 721_000);
+  assert.throws(() => parseSessionRequest(JSON.stringify({ ...ordinary, timeoutMs: SESSION_CALL_TIMEOUT_MS + 1 })));
 });
 
 void test("session preserves only the WSL share identity in addition to its configured environment", () => {
