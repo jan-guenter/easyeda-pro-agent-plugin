@@ -1989,7 +1989,11 @@ class CurrentPcbLifecycleCore {
             intentSha256: sha256Json(intent), failedStage: stage, error: (error instanceof Error ? error.message : String(error)).slice(0, 4096), source, preparation,
             executionReady: false, executionAuthorized: false, saveAuthorized: false });
           this.#retainRecord("forward-prewrite-failure.json", failure);
-          await assertSnapshot(expected); await this.#publish(operationId, "forward-prewrite-failure.json", failure);
+          try { await assertSnapshot(expected); await this.#publish(operationId, "forward-prewrite-failure.json", failure); }
+          catch (publicationError) {
+            // oxlint-disable-next-line eslint/preserve-caught-error -- Keep the original qualification as cause; both errors remain in the aggregate.
+            throw new AggregateError([error, publicationError], "FORWARD_PREWRITE_FAILURE_PUBLICATION", { cause: error });
+          }
         }
         throw error;
       }

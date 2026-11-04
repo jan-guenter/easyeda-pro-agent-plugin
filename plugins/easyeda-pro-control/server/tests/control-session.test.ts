@@ -52,12 +52,14 @@ void test("session selection requires the complete installed bundled-launch cont
   const configuration = parseSessionConfiguration(JSON.parse(source));
   const server = configuration.mcpServers.easyeda_pro_control;
   assert.deepEqual(server.args, ["server/dist/server.mjs", "--machine-launch"]);
+  assert.ok(server.tool_timeout_sec * 1000 >= SESSION_CALL_TIMEOUT_MS);
   for (const candidate of [{ ...server, args: ["scripts/launch-machine.ts"] },
     { ...server, args: ["server/dist/server.mjs"] },
     { ...server, args: ["--machine-launch", "server/dist/server.mjs"] },
     { ...server, args: ["server/dist/server.mjs", "--machine-launch", "--profile", "/caller/profile"] },
     { ...server, command: "/private/node" }, { ...server, enabled: false },
-    { ...server, env: { EASYEDA_CONTROL_DATA_DIR: "/caller/control" } }]) {
+    { ...server, env: { EASYEDA_CONTROL_DATA_DIR: "/caller/control" } },
+    { ...server, tool_timeout_sec: 600 }, { ...server, tool_timeout_sec: undefined }]) {
     assert.throws(() => parseSessionConfiguration({ mcpServers: { easyeda_pro_control: candidate } }));
   }
   assert.throws(() => parseSessionConfiguration({ mcpServers: { ...configuration.mcpServers, other: server } }));

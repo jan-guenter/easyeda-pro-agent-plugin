@@ -232,10 +232,15 @@ Spawn a fresh subagent only after that installation and verify its actual payloa
 process/source admission. An existing conflict connection never retries, and
 older snapshots without retirement cannot use this handoff. Report that limit
 without repeatedly requesting chat restarts. Prefer supported normal closure.
-Only the user's explicit narrow authorization can permit normal termination of
-a verified idle legacy server with no native owner; preserve its scope and
-observe the exact original process exiting. Never use SIGKILL, patch a loaded
-cache or force a connected native owner onto a new source tree.
+Only the user's explicit narrow authorization can permit normal SIGTERM of a
+verified idle legacy EasyEDA MCP server that lacks a usable shutdown command.
+It must be retired, reference-only or ownership-conflict and have no native
+owner. Verify its original PID/start identity, executable, module and lack of
+owned resources immediately before signaling. Retain a pidfd through observed
+exit and preserve the authorization's scope. Never use SIGKILL, signal unrelated
+services, remove a lease manually, patch a loaded cache or force a connected
+native owner onto a new source tree. Host exit proves neither original native
+termination nor helper release.
 Report any outstanding live admission/import requirement explicitly.
 
 Use `scripts/probe-installed-offline-catalog.ts /absolute/installed/plugin`

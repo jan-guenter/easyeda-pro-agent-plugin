@@ -128,9 +128,11 @@ function recordBytes(value: unknown): Buffer { return Buffer.from(`${JSON.string
 
 /** Exercise the genuine mounted stage and original-reference joins. Native
  * inspection and plan leaves are synthetic; all lifecycle/journal guards run. */
-async function fixture(context: TestContext, mode: "success" | "capacity" | "source-failure" | "checkpoint-failure" | "publication" | "method-drift" | "unsupported" | "unicode-failure" | "route-capacity" | "result-bound" | "failure-chain", routeHeadroom: "exact" | "short" = "short"):
-Promise<Readonly<{ value: Fixture; id: string; binding: string; calls: string[]; qualify: () => Promise<Row>; next: () => number; route: () => Promise<Row>; routeStarted: () => boolean; normal: () => number }>> {
+async function fixture(context: TestContext, mode: "success" | "capacity" | "source-failure" | "checkpoint-failure" | "publication" | "method-drift" | "unsupported" | "unicode-failure" | "route-capacity" | "result-bound" | "failure-chain" | "failure-publication", routeHeadroom: "exact" | "short" = "short"):
+Promise<Readonly<{ value: Fixture; id: string; binding: string; calls: string[]; errors: Readonly<{ qualification: Error; publication: Error }>;
+  qualify: () => Promise<Row>; next: () => number; route: () => Promise<Row>; routeStarted: () => boolean; normal: () => number }>> {
   const calls: string[] = [];
+  const errors = Object.freeze({ qualification: new Error("synthetic source failure"), publication: new Error("synthetic failure record publication failure") });
   let id = `footprint-copy-qualify-test-${mode}`;
   if (mode === "unicode-failure") { id = id.padEnd(80, "x"); }
   if (mode === "route-capacity") { id += `-${routeHeadroom}`; }
@@ -140,7 +142,7 @@ Promise<Readonly<{ value: Fixture; id: string; binding: string; calls: string[];
   let preparation: ReturnType<typeof currentFootprintCopyPreparationSchema.parse> | null = null;
   let actor: ReturnType<typeof currentPcb209WorkerStartupActorPacketSchema.parse> | null = null;
   let before: Awaited<ReturnType<typeof readExactSqlInventory>> | null = null, plan: Row | null = null;
-  let failPublication = mode === "publication", routeStarted = false, sourceStarted = false;
+  let failFailurePublication = mode === "failure-publication", failPublication = mode === "publication", routeStarted = false, sourceStarted = false;
   const packets = routeEvidence({ helperInstance: "b".repeat(32), jobId: "c".repeat(32), rootPid: 123, rootCreated: "123456789012345" });
   const assignments = Object.freeze({ profile: "private.current-pcb-worker-construction-assignments.v1", callbackKinds: ["uploadStructure", "structure", "cooperation", "upload"],
     originalConstructionCallbacksMatched: true, originalCallbackReceiversVerified: true, currentProjectWrapperRelationsVerified: true,
@@ -169,7 +171,7 @@ Promise<Readonly<{ value: Fixture; id: string; binding: string; calls: string[];
       const intentPath = join(module.directory(id), "forward-prewrite-intent.json");
       assert.match(await readFile(intentPath, "utf8"), /footprint-forward-prewrite-intent/u);
       sourceStarted = true; calls.push("source-after-intent");
-      if (mode === "source-failure") { throw new Error("synthetic source failure"); }
+      if (mode === "source-failure" || mode === "failure-publication") { throw errors.qualification; }
       if (mode === "method-drift") { this.requireFootprintSource = unused; }
       return source;
     }
@@ -222,6 +224,7 @@ Promise<Readonly<{ value: Fixture; id: string; binding: string; calls: string[];
   const value = module.fixture(context, id, { createFootprintRouteStartupOpening: (): Opening => new Opening(),
     publishRecord: async (...args: Parameters<typeof publishCurrentPcbDiagnosticLifecycleRecord>): Promise<void> => {
       if (args[1] === "forward-prewrite-result.json" && failPublication) { failPublication = false; throw new Error("synthetic qualification publication failure"); }
+      if (args[1] === "forward-prewrite-failure.json" && failFailurePublication) { failFailurePublication = false; throw errors.publication; }
       await publishCurrentPcbDiagnosticLifecycleRecord(...args);
     } });
   result = Object.freeze({ opening: module.OPEN_RESULT, construction: Object.freeze({ profile: "private.current-footprint-copy-construction.v1", pauses: 11,
@@ -296,7 +299,7 @@ Promise<Readonly<{ value: Fixture; id: string; binding: string; calls: string[];
     advance(CURRENT_FOOTPRINT_COPY_FORWARD_CAPACITY.writer.renderer.normalClassLimit - 73 + (mode === "capacity" ? 1 : 0),
       mode === "capacity" ? 0 : CURRENT_FOOTPRINT_COPY_FORWARD_CAPACITY.writer.renderer.cleanupClassLimit);
   }
-  return { value, id, binding, calls, next: (): number => usage().rendererRequests + 1, route, routeStarted: (): boolean => routeStarted,
+  return { value, id, binding, calls, errors, next: (): number => usage().rendererRequests + 1, route, routeStarted: (): boolean => routeStarted,
     normal: (): number => usage().rendererNormalRequests,
     qualify: () => value.coordinator.qualifyWorkerStartupFootprintSource(id, binding, { footprintUuid: "1234567890abcdef" }) };
 }
@@ -458,6 +461,45 @@ void test("managed forward failure reader joins present source and preparation w
     assert.equal(f.value.coordinator.hasActiveReservation(), false);
   }
 });
+void test("forward qualification retains original and failure-publication errors for exact record settlement", async context => {
+  const f = await fixture(context, "failure-publication");
+  const failurePath = join(controlDataDirectory(), "pcb-diagnostic-lifecycle-v1", f.id, "forward-prewrite-failure.json");
+  const resultPath = join(controlDataDirectory(), "pcb-diagnostic-lifecycle-v1", f.id, "forward-prewrite-result.json");
+  let settled = false;
+  try {
+    await assert.rejects(f.qualify(), (error: unknown): boolean => {
+      assert.ok(error instanceof AggregateError); assert.equal(error.message, "FORWARD_PREWRITE_FAILURE_PUBLICATION");
+      assert.equal(error.cause, f.errors.qualification);
+      assert.equal(error.errors[0], f.errors.qualification); assert.equal(error.errors[1], f.errors.publication);
+      return true;
+    });
+    await assert.rejects(readFile(failurePath), { code: "ENOENT" });
+    await assert.rejects(readFile(resultPath), { code: "ENOENT" });
+    const inspect = await f.value.coordinator.run({ action: "inspect", operationId: f.id });
+    assert.equal(inspect["forwardQualificationFailure"], null); assert.equal(inspect["forwardQualificationResult"], null);
+    await assert.rejects(f.qualify(), /FORWARD_QUALIFICATION_CONSUMED/u);
+    await f.value.coordinator.run({ action: "settle-records", operationId: f.id, expectedIntentSha256: inspect["intentSha256"] }); settled = true;
+    const failure = diagnosticLifecycleRecordSchemas["forward-prewrite-failure.json"].parse(JSON.parse(await readFile(failurePath, "utf8")) as unknown);
+    assert.equal(failure.error, f.errors.qualification.message); assert.equal(failure.failedStage, "source");
+    assert.equal(failure.source, null); assert.equal(failure.preparation, null);
+    const operations = await readCurrentPcbDiagnosticLifecycles();
+    assert.deepEqual(operations.find(value => value.operationId === f.id)?.records["forward-prewrite-failure.json"], failure);
+    await assert.rejects(readFile(resultPath), { code: "ENOENT" });
+    assert.equal(f.calls.filter(call => call === "source-after-intent").length, 1);
+  } finally {
+    if (!settled) {
+      const inspect = await f.value.coordinator.run({ action: "inspect", operationId: f.id });
+      await f.value.coordinator.run({ action: "settle-records", operationId: f.id, expectedIntentSha256: inspect["intentSha256"] });
+    }
+    await f.value.coordinator.run({ action: "observe-window", operationId: f.id, expectedBindingSha256: f.binding });
+    await f.value.coordinator.run({ action: "normal-close", operationId: f.id, expectedBindingSha256: f.binding, hwnd: "12345", confirmNormalClose: true });
+    f.value.state.terminated = true;
+    await f.value.coordinator.run({ action: "observe-termination", operationId: f.id, expectedBindingSha256: f.binding });
+    await f.value.coordinator.run({ action: "release-closed", operationId: f.id, expectedBindingSha256: f.binding });
+    assert.equal(f.value.coordinator.hasActiveReservation(), false);
+  }
+});
+
 for (const mode of ["success", "capacity", "source-failure", "checkpoint-failure", "publication", "method-drift", "unsupported"] as const) {
   void test(`born-forward source/route qualification preserves original inputs and cleanup: ${mode}`, async context => {
     const f = await fixture(context, mode);
@@ -479,8 +521,11 @@ for (const mode of ["success", "capacity", "source-failure", "checkpoint-failure
     if (mode === "method-drift") { assert.deepEqual(f.calls, ["source-after-intent"]); }
     if (mode === "publication") {
       assert.equal(inspect["forwardQualificationResult"], null);
+      const failurePath = join(controlDataDirectory(), "pcb-diagnostic-lifecycle-v1", f.id, "forward-prewrite-failure.json");
+      await assert.rejects(readFile(failurePath), { code: "ENOENT" });
       await f.value.coordinator.run({ action: "settle-records", operationId: f.id, expectedIntentSha256: inspect["intentSha256"] });
       const settled = await f.value.coordinator.run({ action: "inspect", operationId: f.id }); assert.notEqual(settled["forwardQualificationResult"], null);
+      await assert.rejects(readFile(failurePath), { code: "ENOENT" });
     }
     await f.value.coordinator.run({ action: "observe-window", operationId: f.id, expectedBindingSha256: f.binding });
     await f.value.coordinator.run({ action: "normal-close", operationId: f.id, expectedBindingSha256: f.binding, hwnd: "12345", confirmNormalClose: true });

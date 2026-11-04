@@ -74,6 +74,9 @@ finite outer bound covers the native owner's one-hour normal lifetime,
 one-minute cleanup allowance and one-minute delivery margin, including
 preparation outside a leaf RPC timer. It does not guarantee that all I/O finishes
 or that timeout cancels native work. Explicit smaller timeouts remain valid.
+The packaged direct MCP connection separately uses 3,720 seconds for its host
+tool timeout. A foreground caller's deadline cannot change a direct host's
+limit, and neither setting extends the original native owner's budgets.
 
 After an RPC rejection or timeout of a bound `footprint-forward-prewrite`
 request, `inspect` reports

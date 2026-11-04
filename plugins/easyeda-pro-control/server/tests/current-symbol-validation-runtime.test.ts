@@ -323,7 +323,6 @@ void test("metadata disposal selects only the actual completed final forward or 
   for (const purpose of ["ordinary-symbol-metadata", "disposable-validation"] as const) {
     const f = await fixture(purpose), ordinary = purpose === "ordinary-symbol-metadata";
     await f.invoke(ordinary ? "beginOrdinary" : "begin");
-    const inspection = structuredClone(f.inspect()); inspection["nextPhase"] = "completed"; inspection["forwardVerified"] = true;
     let callbacks = 0;
     /** Require the purpose-selected final operation ID: the ordinary forward owner
      * or the disposable inverse owner, with exactly one allocation callback.

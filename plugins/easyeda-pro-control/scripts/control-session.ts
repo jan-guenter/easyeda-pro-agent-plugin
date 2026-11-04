@@ -244,6 +244,7 @@ const serverSchema = z.object({
   args: z.tuple([z.literal("server/dist/server.mjs"), z.literal("--machine-launch")]),
   cwd: z.literal("."),
   env: z.record(z.string(), z.string()).refine((environment) => Object.keys(environment).length === 0),
+  tool_timeout_sec: z.literal(SESSION_CALL_TIMEOUT_MS / 1000),
 });
 const serversSchema = z.strictObject({ easyeda_pro_control: serverSchema });
 const configurationSchema = z.object({ mcpServers: serversSchema });

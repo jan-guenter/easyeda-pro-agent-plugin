@@ -1,5 +1,7 @@
 # Project history
 
+- [2026-11-04 host deadline and review completion](2026-11-04-host-deadline-and-review-completion.md). Direct MCP lifetime bound, combined-error retention and all five inline/outside-diff/test review corrections.
+
 - [2026-11-04 settled delivery and recovery confirmation](2026-11-04-settled-delivery-and-recovery-confirmation.md). Explicit pre-emit result refusals, exact historical publication confirmation and force-termination authority.
 
 - [2026-11-04 forward failure evidence and dependency count](2026-11-04-forward-failure-evidence-and-dependency-count.md). Original target/preparation joins, valid early failures and the current 64-function inventory.

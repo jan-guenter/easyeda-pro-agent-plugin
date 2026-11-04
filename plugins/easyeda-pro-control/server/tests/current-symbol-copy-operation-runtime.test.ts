@@ -155,9 +155,8 @@ void test("startup, copy and reopened read failures retain their actual close ow
   }
 });
 
-void test("copy disposal requires actual final completion and never promotes a cloned inspection", async () => {
+void test("copy disposal requires actual final completion", async () => {
   const f = await fixture(); await f.invoke("begin");
-  const inspection = structuredClone(f.inspect()); inspection["nextPhase"] = "completed"; inspection["copyVerified"] = true;
   let callbacks = 0;
   const complete = (runtime: unknown, receipt: unknown): void => {
     assert.deepEqual(runtime, { original: "shared-runtime" }); assert.equal(object(receipt)["operationId"], ID); callbacks += 1;
