@@ -113,6 +113,13 @@ comparison before frame capture remains unchanged, and later drift still
 refuses. This is bounded waiting within one consumed launch. There is no retry
 after return, frame capture or a failed launch. `inspect` retains its failing
 stage and bounded observations.
+
+New operations store this data in validation-record V2. Released outer
+validation-record V1 continues to admit only its historical startup V1/V2
+observations; it rejects startup V3. Readers explicitly support both outer
+record versions and reject a chain that mixes them. This changes no journal
+byte reserve, native request limit or original-owner requirement.
+
 One bounded startup packet and original binding are journaled on launch failure,
 including a late failure after an accepted abort.
 An exact frame-target refusal can also retain one separate private failure

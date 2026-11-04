@@ -65,11 +65,55 @@ instead of inferring it from the requested library or the SDK declaration.
 Three anonymous, credential-free fixed-system requests were attempted once:
 docType 17 component searches for `power` and `USB`, and the source-defined
 `/api/cbbProject` list with `user_uuid` fixed to the system UUID. Each returned
-HTTP 403. Redirects were disabled, responses were subject to a 1 MiB bound,
-and each request had a 20-second timeout. No account or alternate endpoint
+HTTP 403. Redirects were disabled, successful response bodies had a 1 MiB
+acceptance bound, and each request had a 20-second urllib timeout. No account or alternate endpoint
 fallback was attempted. These refusals supply no positive response schema,
 project eligibility or absence evidence. They do not replace the earlier
 recorded empty CBB search sample.
+
+The original submitted command and matching output were recovered from this
+task's retained tool history, call
+`call_516ddbe989c64dd6be62200d961c91aa`, submitted at
+`2026-11-04T08:22:04.961Z` with output at `2026-11-04T08:22:05.288Z`.
+The following are that command's actual request definitions, not parameters
+inferred from the vendor source or a later reproduction. All three used origin
+`https://pro.easyeda.com` and fixed public system-library UUID
+`0819f05c4eef4c71ace90d822a990e87`.
+
+The two searches used `POST /api/v2/components/search`, no URL query, and these
+UTF-8 `application/x-www-form-urlencoded` bodies, respectively:
+
+```text
+uid=0819f05c4eef4c71ace90d822a990e87&path=0819f05c4eef4c71ace90d822a990e87&page=1&pageSize=5&wd=power&needStr=false&returnListStyle=classifyarr&docType%5B%5D=17&type=3&isProject=false
+```
+
+```text
+uid=0819f05c4eef4c71ace90d822a990e87&path=0819f05c4eef4c71ace90d822a990e87&page=1&pageSize=5&wd=USB&needStr=false&returnListStyle=classifyarr&docType%5B%5D=17&type=3&isProject=false
+```
+
+The list used `GET` with no request body and this exact path and URL query:
+
+```text
+/api/cbbProject?page=1&pageSize=5&user_uuid=0819f05c4eef4c71ace90d822a990e87&isCbb=true
+```
+
+The command supplied these same explicit headers to all three requests:
+
+```text
+Accept: application/json
+Content-Type: application/x-www-form-urlencoded
+path: 0819f05c4eef4c71ace90d822a990e87
+```
+
+It supplied no cookies or authorization header and installed no credential or
+cookie handler. A three-worker executor submitted each request once through
+`urllib.request.build_opener(NoRedirect()).open(req, timeout=20)`. The timeout
+is urllib's socket timeout, not a cumulative wall-clock deadline. On success,
+the command would read at most 1,048,577 bytes and reject bodies above
+1,048,576 bytes. All three instead raised `HTTPError` with the recorded message
+`HTTP Error 403: Forbidden`; their error bodies and response headers were not
+read or retained. The retained evidence is the command and its tool output,
+not a raw HTTP wire capture. No probe was rerun to recover these details.
 
 ## PCB hits must be captured before serialization
 

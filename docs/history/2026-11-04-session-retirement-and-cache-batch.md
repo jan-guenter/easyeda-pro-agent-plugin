@@ -97,3 +97,19 @@ anonymous HTTP probes from local project operations. No further review command
 was posted. The original full-review invocation stopped after the head changed;
 published automatic reviews separately covered the full PR range. Final review
 and CI results remain separate evidence.
+
+A later review identified that admitting startup observation V3 through the
+released outer validation-record V1 would widen its persisted contract. New
+operations now emit outer record V2. The released outer V1 and its historical
+startup V1/V2 validators remain byte-exact, and readers explicitly parse both
+outer versions. Mixed-version chains refuse before publication and during
+descriptor-bound reads. The record literals have equal length, so existing
+journal byte reserves and native request counts remain unchanged. All 24
+focused compatibility, controller and journal tests passed after this fix,
+with strict types and targeted type-aware lint clean. The earlier fixture
+failure remains retained; only its current-chain version was corrected.
+
+The CBB report now includes the exact three original HTTP request definitions
+recovered from retained tool history. It distinguishes the requests and 403
+error messages from response headers/bodies, which were never retained. No
+probe was rerun to fill that evidence gap.

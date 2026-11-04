@@ -192,7 +192,7 @@ export class CurrentFootprintHeldCacheValidation {
     if (!this.#recordedFirst && this.#rawFirst !== null) { capturedEvidence["firstObservation"] = this.#rawFirst; }
     if (!this.#recordedFresh && this.#rawFresh !== null) { capturedEvidence["freshObservation"] = this.#rawFresh; }
     const record = captureFootprintHeldCacheValidationRecord({
-      schema: "easyeda-pro-control.footprint-held-cache-validation-record.v1", operationId: this.#operationId, sequence: this.#records.length,
+      schema: "easyeda-pro-control.footprint-held-cache-validation-record.v2", operationId: this.#operationId, sequence: this.#records.length,
       createdAt: new Date().toISOString(), previousSha256: this.#records.length === 0 ? null : sha256Json(this.#records.at(-1)), kind, evidence: capturedEvidence });
     assertFootprintHeldCacheValidationChain([...this.#records, record]);
     assertFootprintHeldCacheJournalBudget([...this.#records, record]); this.#records.push(record);

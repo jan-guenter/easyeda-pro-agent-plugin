@@ -277,6 +277,7 @@ void test("public qualification checkpoints before allocation and separately sam
   await assert.rejects(historical.run({ action: "observe-first", operationId: f.operationId }), /ORIGINAL_OPERATION_REQUIRED/u);
   await assertNoUnresolvedFootprintHeldCacheValidation();
   const journal = await readFootprintHeldCacheValidation(f.operationId); assert.ok(journal !== null); assert.equal(journal.records.at(-1)?.kind, "release-closed-result");
+  assert.ok(journal.records.every(record => record.schema === "easyeda-pro-control.footprint-held-cache-validation-record.v2"));
   assert.equal(f.calls.filter(call => call === "release").length, 1); assert.equal(f.runner.retained()["nativeQualificationIssued"], false);
 });
 
@@ -427,19 +428,19 @@ void test("durable chain corruption and foreign operation IDs refuse before any 
   const active = await fork(false), activeJournal = await readFootprintHeldCacheValidation(active); assert.ok(activeJournal !== null);
   const activePrevious = sha256Json(activeJournal.records.at(-1));
   for (const kind of ["cleanup-unlaunched-intent", "cleanup-no-process-intent"] as const) {
-    await assert.rejects(publishFootprintHeldCacheValidationRecord({ schema: "easyeda-pro-control.footprint-held-cache-validation-record.v1",
+    await assert.rejects(publishFootprintHeldCacheValidationRecord({ schema: "easyeda-pro-control.footprint-held-cache-validation-record.v2",
       operationId: active, sequence: activeJournal.records.length, createdAt: new Date().toISOString(), previousSha256: activePrevious,
       kind, evidence: { applicationTerminationObserved: false } }), /ROOT_LAUNCH_CONTRADICTS_HELPER_ONLY_CLEANUP/u);
   }
   const terminal = await fork(true), terminalJournal = await readFootprintHeldCacheValidation(terminal); assert.ok(terminalJournal !== null);
   const terminalPrevious = sha256Json(terminalJournal.records.at(-1));
-  await assert.rejects(publishFootprintHeldCacheValidationRecord({ schema: "easyeda-pro-control.footprint-held-cache-validation-record.v1",
+  await assert.rejects(publishFootprintHeldCacheValidationRecord({ schema: "easyeda-pro-control.footprint-held-cache-validation-record.v2",
     operationId: terminal, sequence: terminalJournal.records.length, createdAt: new Date().toISOString(), previousSha256: terminalPrevious,
     kind: "abort-intent", evidence: { confirmOriginalJob: true } }), /AFTER_TERMINAL_OR_CLEANUP_BRANCH/u);
   const records = [...activeJournal.records];
   let refused = false;
   for (let index = 0; index < 20 && !refused; index += 1) {
-    const record = { schema: "easyeda-pro-control.footprint-held-cache-validation-record.v1" as const, operationId: active,
+    const record = { schema: "easyeda-pro-control.footprint-held-cache-validation-record.v2" as const, operationId: active,
       sequence: records.length, createdAt: new Date().toISOString(), previousSha256: sha256Json(records.at(-1)), kind: "failure" as const,
       evidence: { padding: Array.from({ length: 7 }, () => "x".repeat(65_536)), nativeAllocationNeverAttempted: false } };
     try { assertFootprintHeldCacheJournalBudget([...records, record]); records.push(record); }
@@ -448,7 +449,7 @@ void test("durable chain corruption and foreign operation IDs refuse before any 
   assert.equal(refused, true); assert.ok(records.length < 25);
   const cleanup = [...activeJournal.records];
   const append = (kind: "normal-close-intent" | "normal-close-result" | "abort-intent" | "abort-result" | "termination-intent" | "termination-result" | "release-closed-intent" | "release-closed-result" | "failure"): void => {
-    cleanup.push({ schema: "easyeda-pro-control.footprint-held-cache-validation-record.v1", operationId: active, sequence: cleanup.length,
+    cleanup.push({ schema: "easyeda-pro-control.footprint-held-cache-validation-record.v2", operationId: active, sequence: cleanup.length,
       createdAt: new Date().toISOString(), previousSha256: sha256Json(cleanup.at(-1)), kind, evidence: {} });
   };
   append("normal-close-intent"); append("normal-close-result"); append("abort-intent"); append("abort-result"); append("failure");

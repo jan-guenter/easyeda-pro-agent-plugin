@@ -9,11 +9,11 @@ import { controlDataDirectory } from "../src/artifacts.ts";
 import { sha256Json, sha256Text } from "../src/core.ts";
 import { diagnosticLifecycleBindingSchema } from "../src/current-pcb-diagnostic-binding-schema.ts";
 import { diagnosticLifecycleBindingSchema as originalBindingExport } from "../src/current-pcb-diagnostic-lifecycle-journal.ts";
-import { currentFootprintHeldCacheStartupObservationRecordSchema, currentFootprintHeldCacheStartupObservationSchema,
+import { currentFootprintHeldCacheStartupObservationAllVersionsSchema, currentFootprintHeldCacheStartupObservationRecordSchema, currentFootprintHeldCacheStartupObservationSchema,
   currentFootprintHeldCacheStartupObservationV2Schema, currentFootprintHeldCacheStartupObservationV3Schema } from "../src/current-footprint-held-cache-diagnostic-profile.ts";
 import { CurrentFootprintHeldCachePageReadiness } from "../src/current-footprint-held-cache-page-readiness.ts";
 import { CURRENT_FOOTPRINT_HELD_CACHE_JOURNAL_LIMITS, assertFootprintHeldCacheJournalBudget, captureFootprintHeldCacheValidationRecord,
-  currentFootprintHeldCacheValidationRecordSchema } from "../src/current-footprint-held-cache-validation-schema.ts";
+  currentFootprintHeldCacheValidationPersistedRecordSchema } from "../src/current-footprint-held-cache-validation-schema.ts";
 import { CURRENT_FOOTPRINT_HELD_CACHE_FRAME_TRANSITION_BYTES, issueCurrentFootprintHeldCacheFrameTargetTransition,
   takeCurrentFootprintHeldCacheFrameTargetTransition } from "../src/current-footprint-held-cache-frame-transition.ts";
 import type { CurrentFootprintHeldCacheValidationRecord } from "../src/current-footprint-held-cache-validation-schema.ts";
@@ -33,7 +33,7 @@ async function readyObservation(): Promise<ReturnType<CurrentFootprintHeldCacheP
 
 /** Construct ordinary immutable JSON evidence; it supplies no native authority. */
 function failureRecord(evidence: Readonly<Record<string, unknown>>, operationId = "footprint-held-cache-startup-schema"): CurrentFootprintHeldCacheValidationRecord {
-  return { schema: "easyeda-pro-control.footprint-held-cache-validation-record.v1", operationId, sequence: 0,
+  return { schema: "easyeda-pro-control.footprint-held-cache-validation-record.v2", operationId, sequence: 0,
     createdAt: "2000-01-01T00:00:00.000Z", previousSha256: null, kind: "failure", evidence: { action: "launch", ...evidence } };
 }
 
@@ -71,7 +71,7 @@ void test("record acceptance rejects malformed startup fields, inconsistent samp
     { ...ready, samples: [sample, { ...sample, attempt: 2, inventorySha256: "b".repeat(64) }], targetAttempts: 2 }];
   for (const observation of malformed) {
     const record = failureRecord({ heldCacheStartupObservation: observation });
-    assert.equal(currentFootprintHeldCacheValidationRecordSchema.safeParse(record).success, false);
+    assert.equal(currentFootprintHeldCacheValidationPersistedRecordSchema.safeParse(record).success, false);
     assert.throws(() => { captureFootprintHeldCacheValidationRecord(record); });
   }
   const tooMany = { ...ready, samples: Array.from({ length: 17 }, (_unused, index) => ({ ...sample, attempt: index + 1 })) };
@@ -115,7 +115,8 @@ void test("historical V1/V2 retain their 250 ms contracts while current V3 recor
   const current = await readyObservation(); assert.deepEqual(Object.keys(current), Object.keys(legacy));
   assert.equal(current.schema, "private.current-footprint-held-cache-startup-observation.v3"); assert.equal(current.delayMilliseconds, 1000);
   assert.equal(currentFootprintHeldCacheStartupObservationSchema.safeParse(current).success, false);
-  assert.equal(currentFootprintHeldCacheStartupObservationRecordSchema.safeParse(current).success, true);
+  assert.equal(currentFootprintHeldCacheStartupObservationRecordSchema.safeParse(current).success, false);
+  assert.equal(currentFootprintHeldCacheStartupObservationAllVersionsSchema.safeParse(current).success, true);
   assert.equal(currentFootprintHeldCacheStartupObservationSchema.safeParse({ ...current, schema: "private.current-footprint-held-cache-startup-observation.v1" }).success, false);
   const legacyV2 = { ...current, schema: "private.current-footprint-held-cache-startup-observation.v2", delayMilliseconds: 250 };
   assert.deepEqual(currentFootprintHeldCacheStartupObservationV2Schema.parse(legacyV2), legacyV2);

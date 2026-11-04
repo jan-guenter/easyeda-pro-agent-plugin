@@ -4,7 +4,8 @@ import { z } from "zod";
 import { types } from "node:util";
 import { sha256Json } from "./core.ts";
 import { currentDisposableOpenTargetSchema } from "./current-disposable-open.ts";
-import { CURRENT_FOOTPRINT_HELD_CACHE_DIAGNOSTIC_PROFILE, CURRENT_FOOTPRINT_HELD_CACHE_PAGE_READINESS_V3, currentFootprintHeldCacheStartupObservationRecordSchema } from "./current-footprint-held-cache-diagnostic-profile.ts";
+import { CURRENT_FOOTPRINT_HELD_CACHE_DIAGNOSTIC_PROFILE, CURRENT_FOOTPRINT_HELD_CACHE_PAGE_READINESS_V3,
+  currentFootprintHeldCacheStartupObservationAllVersionsSchema, currentFootprintHeldCacheStartupObservationRecordSchema } from "./current-footprint-held-cache-diagnostic-profile.ts";
 import { currentFootprintHeldCacheFrameTargetTransitionSchema } from "./current-footprint-held-cache-frame-transition.ts";
 import { diagnosticLifecycleBindingSchema } from "./current-pcb-diagnostic-binding-schema.ts";
 import { CURRENT_FOOTPRINT_SAVED_CACHE_HELD_ENGINE, CURRENT_FOOTPRINT_SAVED_CACHE_HELD_LIMITS } from "./current-footprint-saved-cache-held-profile.ts";
@@ -48,7 +49,23 @@ export const currentFootprintHeldCacheValidationRecordSchema = z.object({
     "cleanup-no-resource-result", "cleanup-unlaunched-intent", "cleanup-unlaunched-result", "cleanup-no-process-intent", "cleanup-no-process-result", "failure"]),
   evidence: evidenceSchema,
 }).strict();
-export type CurrentFootprintHeldCacheValidationRecord = z.infer<typeof currentFootprintHeldCacheValidationRecordSchema>;
+const startupV2Fields = { ...startupFields, heldCacheStartupObservation: currentFootprintHeldCacheStartupObservationAllVersionsSchema } as const;
+/** V2 alone admits the longer-wait V3 diagnostic packet. Historical V1 remains exact. */
+const evidenceV2Schema = z.record(z.string().max(128), z.unknown()).superRefine((evidence, context) => {
+  for (const [key, schema] of Object.entries(startupV2Fields)) {
+    if (Object.hasOwn(evidence, key) && !schema.safeParse(evidence[key]).success) {
+      context.addIssue({ code: "custom", path: [key], message: "The complete bounded startup observation or original native-binding shape is required." });
+    }
+  }
+});
+export const currentFootprintHeldCacheValidationRecordV2Schema = currentFootprintHeldCacheValidationRecordSchema.extend({
+  schema: z.literal("easyeda-pro-control.footprint-held-cache-validation-record.v2"), evidence: evidenceV2Schema,
+});
+/** Historical records are parsed explicitly and never promoted into current ownership. */
+export const currentFootprintHeldCacheValidationPersistedRecordSchema = z.discriminatedUnion("schema", [
+  currentFootprintHeldCacheValidationRecordSchema, currentFootprintHeldCacheValidationRecordV2Schema,
+]);
+export type CurrentFootprintHeldCacheValidationRecord = z.infer<typeof currentFootprintHeldCacheValidationPersistedRecordSchema>;
 
 const maxSummary = { phase: "fresh-observing", failure: "recheck-before-getter", normalRequests: 11, cleanupRequests: 1,
   pendingCallbacks: 1, releaseAttempted: false, released: false, metadataRosterConformant: false,
@@ -83,6 +100,8 @@ export function assertFootprintHeldCacheJournalBudget(records: readonly CurrentF
   let bytes = 0, cleanup = false, cleanupRows = 0, normalBytes = 0, normalRows = 0, rawBytes = 0, replies = 0;
   const packets = new Set<string>(), replyValues: unknown[] = [];
   for (const record of records) {
+    currentFootprintHeldCacheValidationPersistedRecordSchema.parse(record);
+    if (record.schema !== records[0]?.schema) { throw new Error("HELD_CACHE_JOURNAL_RECORD_VERSION"); }
     const size = Buffer.byteLength(JSON.stringify(record)) + 1;
     bytes += size;
     cleanup ||= /^(?:normal-close|abort|termination|release-closed|cleanup-)/u.test(record.kind);
@@ -106,7 +125,8 @@ export function assertFootprintHeldCacheJournalBudget(records: readonly CurrentF
     }
     if (Object.keys(startupFields).some(key => Object.hasOwn(evidence, key))) {
       const startup: Record<string, unknown> = {};
-      for (const [key, schema] of Object.entries(startupFields)) {
+      const fields: Readonly<Record<string, z.ZodType>> = record.schema === "easyeda-pro-control.footprint-held-cache-validation-record.v2" ? startupV2Fields : startupFields;
+      for (const [key, schema] of Object.entries(fields)) {
         if (Object.hasOwn(evidence, key)) { schema.parse(evidence[key]); startup[key] = evidence[key]; }
       }
       if (record.kind !== "failure" || evidence["action"] !== "launch" || packets.has("startupDiagnostics") ||
@@ -155,7 +175,7 @@ export function captureFootprintHeldCacheValidationRecord(input: unknown): Curre
   };
   const value = copy(input, 0);
   if (Buffer.byteLength(JSON.stringify(value)) + 1 > CURRENT_FOOTPRINT_HELD_CACHE_VALIDATION_RECORD_BYTES) { throw new Error("HELD_CACHE_RECORD_BYTES"); }
-  return currentFootprintHeldCacheValidationRecordSchema.parse(value);
+  return currentFootprintHeldCacheValidationPersistedRecordSchema.parse(value);
 }
 
 /** Describe separately mounted read-only qualification without starting a

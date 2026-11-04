@@ -164,9 +164,13 @@ export const currentFootprintHeldCacheStartupObservationV3Schema = z.object({
 }).readonly();
 /** Accept released diagnostic versions without promoting historical JSON into ownership. */
 export const currentFootprintHeldCacheStartupObservationRecordSchema = z.union([
-  currentFootprintHeldCacheStartupObservationSchema, currentFootprintHeldCacheStartupObservationV2Schema, currentFootprintHeldCacheStartupObservationV3Schema,
+  currentFootprintHeldCacheStartupObservationSchema, currentFootprintHeldCacheStartupObservationV2Schema,
 ]);
-export type CurrentFootprintHeldCacheStartupObservation = z.infer<typeof currentFootprintHeldCacheStartupObservationRecordSchema>;
+/** Current outer record V2 explicitly admits V3 without widening released outer V1. */
+export const currentFootprintHeldCacheStartupObservationAllVersionsSchema = z.union([
+  currentFootprintHeldCacheStartupObservationRecordSchema, currentFootprintHeldCacheStartupObservationV3Schema,
+]);
+export type CurrentFootprintHeldCacheStartupObservation = z.infer<typeof currentFootprintHeldCacheStartupObservationAllVersionsSchema>;
 const discovery = { browser: 1 + CURRENT_FOOTPRINT_HELD_CACHE_PAGE_READINESS_V3.targetSamples, frames: 6, script: 7, parent: 2, ancillary: 2 } as const;
 const discoveryRequests = Object.values(discovery).reduce((total, value) => total + value, 0);
 export const CURRENT_FOOTPRINT_HELD_CACHE_DIAGNOSTIC_PROFILE = freezeDeep({
