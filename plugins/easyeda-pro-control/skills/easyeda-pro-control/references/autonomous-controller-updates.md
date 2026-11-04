@@ -53,6 +53,15 @@ inspection and supported cleanup. Transport or publication ambiguity blocks
 replacement; inspect the retained original evidence rather than starting another
 controller. A manager generation number is a freshness check, not authority.
 
+Each request line is limited to 65,536 UTF-8 bytes, excluding its newline.
+The manager keeps a fixed 64 KiB frame buffer. An oversized frame is drained
+through its newline and rejected once without dispatch. Invalid UTF-8 is
+rejected without replacement characters or BOM removal. Later complete frames
+continue on the same manager, client and generation; ordinary JSON/schema
+errors remain local request rejections too. A rejected frame grants no cleanup
+or replacement authority. Actual EOF closes the input channel and retains any
+active owner according to the existing EOF contract; it cannot restore stdin.
+
 Caller `timeoutMs` defaults to and cannot exceed 3,720,000 milliseconds. This
 finite outer bound covers the native owner's one-hour normal lifetime,
 one-minute cleanup allowance and one-minute delivery margin, including

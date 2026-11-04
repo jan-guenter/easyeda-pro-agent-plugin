@@ -1,5 +1,8 @@
 # Conflict connection closure and full-review repairs
 
+The later full-review input-channel finding is retained in
+[manager input recovery](2026-11-04-manager-input-recovery.md).
+
 This follows the [historical recovery continuation](2026-11-04-historical-recovery-continuation.md).
 The frozen `5435a6a036714e0ac320e84644134782029c16be` payload passed all 11
 required CI jobs: 14,099 facade tests passed with five expected platform skips,

@@ -13,7 +13,7 @@ import { Client } from "@modelcontextprotocol/sdk/client/index.js";
 import { z } from "zod";
 
 import {
-  MAXIMUM_REQUEST_BYTES, SESSION_CALL_TIMEOUT_MS, boundedLines, parseSessionRequest, publishSessionResult,
+  MAXIMUM_REQUEST_BYTES, SESSION_CALL_TIMEOUT_MS, parseSessionRequest, publishSessionResult,
   selectSessionLaunch, sessionFailureDiagnostic, sessionTransportEnvironment,
 } from "./control-session.ts";
 import type { CallRequest } from "./control-session.ts";
@@ -59,6 +59,43 @@ const MAXIMUM_RECORD_BYTES = 67_108_864;
 const RECORD_BUDGETS = Object.freeze({ normal: 4096, cleanup: 128, control: 128 });
 const BYTE_BUDGETS = Object.freeze({ normal: 1_073_741_824, cleanup: 134_217_728, control: 4_194_304 });
 type RecordBudget = keyof typeof RECORD_BUDGETS;
+const inputRejectionSchema = z.strictObject({ reason: z.enum(["request-too-large", "invalid-utf8", "incomplete-request-line"]) });
+type InputRejection = z.infer<typeof inputRejectionSchema>;
+
+/** Decode one complete bounded frame without replacement characters or BOM
+ * removal. A malformed frame supplies no request text or caller arguments. */
+function decodeManagerInput(bytes: Uint8Array): string | InputRejection {
+  try { return new TextDecoder("utf-8", { fatal: true, ignoreBOM: true }).decode(bytes); }
+  catch { return { reason: "invalid-utf8" }; }
+}
+
+/** Keep one bounded frame buffer while draining oversized input to its newline.
+ * Only complete, strictly decoded UTF-8 frames become request strings. EOF can
+ * report a rejected tail, but never reopens the caller's closed input channel. */
+export async function* managerInputLines(chunks: AsyncIterable<Buffer>): AsyncGenerator<string | InputRejection> {
+  const pending = Buffer.alloc(MAXIMUM_REQUEST_BYTES);
+  let discarding = false, length = 0;
+  for await (const chunk of chunks) {
+    let offset = 0;
+    while (offset < chunk.length) {
+      const newline = chunk.indexOf(10, offset);
+      const end = newline === -1 ? chunk.length : newline;
+      const bytes = end - offset;
+      if (!discarding) {
+        if (bytes > MAXIMUM_REQUEST_BYTES - length) { discarding = true; length = 0; }
+        else { chunk.copy(pending, length, offset, end); length += bytes; }
+      }
+      offset = newline === -1 ? chunk.length : newline + 1;
+      if (newline !== -1) {
+        const input: string | InputRejection = discarding ? { reason: "request-too-large" } : decodeManagerInput(pending.subarray(0, length));
+        discarding = false; length = 0;
+        yield input;
+      }
+    }
+  }
+  if (discarding) { yield { reason: "request-too-large" }; }
+  else if (length > 0) { yield { reason: "incomplete-request-line" }; }
+}
 
 /** Cleanup is a bounded bookkeeping reserve. It grants no tool admission and
  * cannot consume the distinct retirement/startup control budget. */
@@ -519,13 +556,18 @@ export class ForegroundSessionManager {
 
   /** Serial admission covers invocation and publication. A concurrent request
    * cannot retire a call whose response file or output has not settled. */
-  public async handle(line: string): Promise<void> {
+  public async handle(line: string | InputRejection): Promise<void> {
     if (this.requestPending) { throw new Error("manager-request-pending"); }
     this.requestPending = true;
     let id: string | number | undefined;
     let reserved = false;
     let failureBudget: RecordBudget = "control";
+    let framingReason: InputRejection["reason"] | undefined;
     try {
+      if (typeof line !== "string") {
+        framingReason = inputRejectionSchema.parse(line).reason;
+        throw new Error("manager-input-rejected");
+      }
       const request = parseSessionManagerRequest(line);
       id = request.id;
       if ("tool" in request) {
@@ -591,12 +633,22 @@ export class ForegroundSessionManager {
     } catch (error) {
       if (reserved || this.stage === "blocked") { this.stage = "blocked"; this.replacementFrom = undefined; }
       const failure = { ...(id === undefined ? {} : { id }), error: reserved ? "manager-blocked" : "manager-request-rejected", generation: this.generation,
-        diagnostic: sessionFailureDiagnostic("requests", error), retryAllowed: false,
+        diagnostic: { ...sessionFailureDiagnostic("requests", error), ...(framingReason === undefined ? {} : { reason: framingReason }) }, retryAllowed: false,
         dispatched: reserved, originalOwnerRetained: true };
       if (reserved) { await this.retainFailure("failure", failure, failureBudget); }
       await this.publish(failure);
     } finally { this.requestPending = false; }
   }
+}
+
+/** Run the CLI's original manager and owned child through one serialized input
+ * channel. Returning at EOF does not close, retire or replace that owner. */
+export async function runManagerInput(manager: ForegroundSessionManager, chunks: AsyncIterable<Buffer>): Promise<"closed" | "input-closed"> {
+  for await (const line of managerInputLines(chunks)) {
+    await manager.handle(line);
+    if (manager.inspect()["stage"] === "closed") { return "closed"; }
+  }
+  return "input-closed";
 }
 
 /** Write one protocol response line while honoring stdout backpressure, so
@@ -617,10 +669,7 @@ async function main(): Promise<void> {
   catch (error) {
     await emitJson({ error: "manager-initialization-failed", diagnostic: sessionFailureDiagnostic("connect", error), manager: manager.inspect() });
   }
-  for await (const line of boundedLines(process.stdin)) {
-    await manager.handle(line);
-    if (manager.inspect()["stage"] === "closed") { return; }
-  }
+  if (await runManagerInput(manager, process.stdin) === "closed") { return; }
   // EOF during active/ambiguous ownership does not close or release the facade.
   // The referenced original child keeps this manager alive for investigation.
   if (manager.inspect()["stage"] !== "between-facades") {

@@ -12,7 +12,8 @@ import { build } from "esbuild";
 import { Client } from "@modelcontextprotocol/sdk/client/index.js";
 import { z } from "zod";
 
-import { ForegroundSessionManager, SessionManagerRetirementReservation, parseSessionManagerRequest, sessionManagerCallBudgetAvailable, sessionManagerRetirementBudgetAvailable, sessionManagerStartBudgetAvailable } from "../../scripts/control-session-manager.ts";
+import { ForegroundSessionManager, SessionManagerRetirementReservation, managerInputLines, parseSessionManagerRequest, runManagerInput, sessionManagerCallBudgetAvailable, sessionManagerRetirementBudgetAvailable, sessionManagerStartBudgetAvailable } from "../../scripts/control-session-manager.ts";
+import { MAXIMUM_REQUEST_BYTES } from "../../scripts/control-session.ts";
 import { ForegroundSessionTransport } from "../../scripts/control-session-transport.ts";
 import { assertTestIsolation } from "../../scripts/test-isolation.ts";
 import { createTestTemporaryDirectory } from "./helpers/temporary-directory.ts";
@@ -177,6 +178,63 @@ async function waitForObservedClosure(observed: () => boolean): Promise<void> {
   }
 }
 
+/** Deliver explicit byte boundaries without decoding or coercing test input. */
+async function* inputChunks(values: readonly Buffer[]): AsyncGenerator<Buffer> { await Promise.resolve(); yield* values; }
+
+void test("manager framing drains one oversized frame, preserves split UTF-8 and rejects closed tails", async () => {
+  const exact = Buffer.alloc(MAXIMUM_REQUEST_BYTES, 0x20);
+  const chunks = [
+    exact, Buffer.from("\n"), exact, Buffer.from("x"), Buffer.alloc(MAXIMUM_REQUEST_BYTES * 3, 0x78), Buffer.from("\n"),
+    Buffer.from([0xF0, 0x9F]), Buffer.from([0x8E, 0xB9, 10]), Buffer.from([0xE2]), Buffer.from([0x28, 0xA1, 10]),
+    Buffer.from("next\npartial"),
+  ];
+  const values = await Array.fromAsync(managerInputLines(inputChunks(chunks)));
+  assert.deepEqual(values, [exact.toString(), { reason: "request-too-large" }, "🎹", { reason: "invalid-utf8" }, "next", { reason: "incomplete-request-line" }]);
+  const oversizedEof = Buffer.alloc(MAXIMUM_REQUEST_BYTES + 1);
+  const rejectedEof = await Array.fromAsync(managerInputLines(inputChunks([oversizedEof])));
+  assert.deepEqual(rejectedEof, [{ reason: "request-too-large" }]);
+  const bom = Buffer.from("\uFEFF{}\n");
+  const preservedBom = await Array.fromAsync(managerInputLines(inputChunks([bom])));
+  assert.deepEqual(preservedBom, ["\uFEFF{}"]);
+});
+
+void test("actual manager input loop rejects oversized and invalid UTF-8 frames then retires its same original child", { timeout: 30_000 }, async () => {
+  const outputs: unknown[] = [], selected = await fixture();
+  await selectedProfile(selected.profilePath, async () => {
+    const manager = new ForegroundSessionManager(async value => { outputs.push(value); await Promise.resolve(); });
+    await manager.initialize(selected.root);
+    const original = manager.inspect()["facadePid"], sentinel = "private-discarded-input";
+    assert.ok(typeof original === "number");
+    try {
+      const oversized = Buffer.from(sentinel.repeat(Math.ceil((MAXIMUM_REQUEST_BYTES + 1) / sentinel.length)));
+      const followups = `${request({ id: "same-owner-after-input-rejection", action: "inspect" })}\n${loaded("same-offline-child")}\n${retire("retire-after-input-rejection", 1)}\n${request({ id: "close-after-input-rejection", action: "shutdown" })}\n`;
+      const chunks = [
+        oversized.subarray(0, MAXIMUM_REQUEST_BYTES), oversized.subarray(MAXIMUM_REQUEST_BYTES), Buffer.from("\n"),
+        Buffer.from([0xC3]), Buffer.from([0x28, 10]), Buffer.from("{malformed}\n"), Buffer.from(followups),
+      ];
+      const result = await runManagerInput(manager, inputChunks(chunks));
+      assert.equal(result, "closed"); assert.equal(manager.inspect()["stage"], "closed");
+      const rows = outputs.map(value => record(value));
+      const rejected = rows.filter(row => row["error"] === "manager-request-rejected");
+      assert.deepEqual(rejected.map(row => record(row["diagnostic"])["reason"]), ["request-too-large", "invalid-utf8", "json-rejected"]);
+      assert.ok(rejected.every(row => row["dispatched"] === false && row["originalOwnerRetained"] === true));
+      const inspected = record(rows.find(row => row["id"] === "same-owner-after-input-rejection")?.["manager"]);
+      assert.equal(inspected["facadePid"], original); assert.equal(inspected["generation"], 1); assert.equal(inspected["stage"], "active");
+      const offline = record(record(rows.find(row => row["id"] === "same-offline-child")?.["result"])["structuredContent"]);
+      assert.equal(record(offline["result"])["pid"], original);
+      const retired = rows.find(row => row["id"] === "retire-after-input-rejection"); assert.equal(retired?.["retired"], true);
+      assert.deepEqual(record(retired?.["closure"]), { pid: original, exitObserved: true, closeObserved: true, exitCode: 0, signal: null, stdinEof: true });
+      assert.equal(JSON.stringify(outputs).includes(sentinel), false); assert.equal(JSON.stringify(outputs).includes("{malformed}"), false);
+      await assert.rejects(lstat(`/proc/${String(original)}`), { code: "ENOENT" });
+    } finally {
+      // This test retains the same manager object through any assertion failure.
+      // Cleanup uses its original retirement path, never a signal or takeover.
+      if (manager.inspect()["stage"] === "active") { await manager.handle(retire("inert-input-test-cleanup", 1)); }
+      if (manager.inspect()["stage"] === "between-facades") { await manager.handle(request({ id: "inert-input-test-close", action: "shutdown" })); }
+    }
+  });
+});
+
 void test("manager grammar refuses executable hooks, generic retirement and reconstructed replacement authority", () => {
   assert.equal(parseSessionManagerRequest(retire("r", 1)).id, "r");
   for (const value of [
@@ -298,52 +356,76 @@ void test("actual manager retains a conflicting startup catalog and explicitly c
   const selected = await fixture();
   const conflictOutputs: unknown[] = [], ownerOutputs: unknown[] = [];
   await selectedProfile(selected.profilePath, async () => {
-    const owner = new ForegroundSessionManager(async value => { ownerOutputs.push(value); await Promise.resolve(); });
-    await owner.initialize(selected.root);
-    const ownerPid = owner.inspect()["facadePid"];
-    const conflict = new ForegroundSessionManager(async value => { conflictOutputs.push(value); await Promise.resolve(); });
-    await assert.rejects(conflict.initialize(selected.root), /unexpected-facade-catalog/u);
-    const blocked = conflict.inspect(), childPid = blocked["facadePid"];
-    assert.equal(blocked["generation"], 0); assert.equal(blocked["stage"], "blocked");
-    assert.equal(blocked["callerToolDispatchStarted"], false); assert.notEqual(childPid, ownerPid);
-    const records = blocked["records"]; assert.ok(Array.isArray(records));
-    const catalogRecord = records.map(row => record(row)).find(row => row["kind"] === "startup-catalog"); assert.ok(catalogRecord);
-    const catalogText = await readFile(String(catalogRecord["evidenceFile"]), "utf8");
-    const catalog = record(JSON.parse(catalogText))["value"];
-    const tools = record(catalog)["tools"]; assert.ok(Array.isArray(tools));
-    assert.deepEqual(tools.map(tool => record(tool)["name"]), ["easyeda_control_status"]);
-    await conflict.handle(request({ id: "close-unused-startup", action: "cleanup-startup", confirmCloseOriginalStartup: true }));
-    const result = record(conflictOutputs.at(-1));
-    assert.equal(result["startupClosed"], true); assert.equal(result["replacementAllowed"], false);
-    assert.deepEqual(record(result["closure"]), { pid: childPid, exitObserved: true, closeObserved: true,
-      exitCode: 0, signal: null, stdinEof: true });
-    await assert.rejects(lstat(`/proc/${String(childPid)}`), { code: "ENOENT" });
-    const leaseText = await readFile(join(selected.control, "facade.lock"), "utf8");
-    assert.equal(record(JSON.parse(leaseText))["pid"], ownerPid);
-    const ownerProcess = await lstat(`/proc/${String(ownerPid)}`); assert.ok(ownerProcess.isDirectory());
-    await conflict.handle(request({ id: "no-startup-cleanup-replay", action: "cleanup-startup", confirmCloseOriginalStartup: true }));
-    await conflict.handle(request({ id: "no-startup-retry", action: "start", afterGeneration: 1, pluginRoot: selected.root }));
-    assert.equal(conflict.inspect()["stage"], "blocked"); assert.equal(conflict.inspect()["generation"], 0);
-    assert.equal(conflict.inspect()["facadePid"], childPid);
-    await conflict.handle(request({ id: "close-conflict-manager", action: "shutdown" }));
-    await owner.handle(loaded("admitted-original-call"));
-    assert.equal(owner.inspect()["callerToolDispatchStarted"], true);
-    await owner.handle(request({ id: "cannot-close-used-owner-as-startup", action: "cleanup-startup", confirmCloseOriginalStartup: true }));
-    assert.equal(owner.inspect()["stage"], "active"); assert.equal(owner.inspect()["closure"], null);
-    await owner.handle(retire("retire-original-owner", 1));
-    assert.equal(record(ownerOutputs.at(-1))["retired"], true);
-    await owner.handle(request({ id: "close-original-manager", action: "shutdown" }));
-    let failReady = true;
-    const publicationOutputs: unknown[] = [];
-    const publication = new ForegroundSessionManager(async value => {
-      if (record(value)["ready"] === true && failReady) { failReady = false; throw new Error("synthetic-ready-publication-failed"); }
-      publicationOutputs.push(value); await Promise.resolve();
-    });
-    await assert.rejects(publication.initialize(selected.root), /synthetic-ready-publication-failed/u);
-    assert.equal(publication.inspect()["callerToolDispatchStarted"], false);
-    await publication.handle(request({ id: "close-unpublished-startup", action: "cleanup-startup", confirmCloseOriginalStartup: true }));
-    assert.equal(record(publicationOutputs.at(-1))["startupClosed"], true);
-    await publication.handle(request({ id: "close-publication-manager", action: "shutdown" }));
+    const retained: ForegroundSessionManager[] = [];
+    try {
+      const owner = new ForegroundSessionManager(async value => { ownerOutputs.push(value); await Promise.resolve(); });
+      retained.push(owner);
+      await owner.initialize(selected.root);
+      const ownerPid = owner.inspect()["facadePid"];
+      const conflict = new ForegroundSessionManager(async value => { conflictOutputs.push(value); await Promise.resolve(); });
+      retained.push(conflict);
+      await assert.rejects(conflict.initialize(selected.root), /unexpected-facade-catalog/u);
+      const blocked = conflict.inspect(), childPid = blocked["facadePid"];
+      assert.equal(blocked["generation"], 0); assert.equal(blocked["stage"], "blocked");
+      assert.equal(blocked["callerToolDispatchStarted"], false); assert.notEqual(childPid, ownerPid);
+      const records = blocked["records"]; assert.ok(Array.isArray(records));
+      const catalogRecord = records.map(row => record(row)).find(row => row["kind"] === "startup-catalog"); assert.ok(catalogRecord);
+      const catalogText = await readFile(String(catalogRecord["evidenceFile"]), "utf8");
+      const catalog = record(JSON.parse(catalogText))["value"];
+      const tools = record(catalog)["tools"]; assert.ok(Array.isArray(tools));
+      assert.deepEqual(tools.map(tool => record(tool)["name"]), ["easyeda_control_status", "easyeda_control_session"]);
+      await conflict.handle(request({ id: "close-unused-startup", action: "cleanup-startup", confirmCloseOriginalStartup: true }));
+      const result = record(conflictOutputs.at(-1));
+      assert.equal(result["startupClosed"], true); assert.equal(result["replacementAllowed"], false);
+      assert.deepEqual(record(result["closure"]), { pid: childPid, exitObserved: true, closeObserved: true,
+        exitCode: 0, signal: null, stdinEof: true });
+      await assert.rejects(lstat(`/proc/${String(childPid)}`), { code: "ENOENT" });
+      const leaseText = await readFile(join(selected.control, "facade.lock"), "utf8");
+      assert.equal(record(JSON.parse(leaseText))["pid"], ownerPid);
+      const ownerProcess = await lstat(`/proc/${String(ownerPid)}`); assert.ok(ownerProcess.isDirectory());
+      await conflict.handle(request({ id: "no-startup-cleanup-replay", action: "cleanup-startup", confirmCloseOriginalStartup: true }));
+      await conflict.handle(request({ id: "no-startup-retry", action: "start", afterGeneration: 1, pluginRoot: selected.root }));
+      assert.equal(conflict.inspect()["stage"], "blocked"); assert.equal(conflict.inspect()["generation"], 0);
+      assert.equal(conflict.inspect()["facadePid"], childPid);
+      await conflict.handle(request({ id: "close-conflict-manager", action: "shutdown" }));
+      await owner.handle(loaded("admitted-original-call"));
+      assert.equal(owner.inspect()["callerToolDispatchStarted"], true);
+      await owner.handle(request({ id: "cannot-close-used-owner-as-startup", action: "cleanup-startup", confirmCloseOriginalStartup: true }));
+      assert.equal(owner.inspect()["stage"], "active"); assert.equal(owner.inspect()["closure"], null);
+      await owner.handle(retire("retire-original-owner", 1));
+      assert.equal(record(ownerOutputs.at(-1))["retired"], true);
+      await owner.handle(request({ id: "close-original-manager", action: "shutdown" }));
+      let failReady = true;
+      const publicationOutputs: unknown[] = [];
+      const publication = new ForegroundSessionManager(async value => {
+        if (record(value)["ready"] === true && failReady) { failReady = false; throw new Error("synthetic-ready-publication-failed"); }
+        publicationOutputs.push(value); await Promise.resolve();
+      });
+      retained.push(publication);
+      await assert.rejects(publication.initialize(selected.root), /synthetic-ready-publication-failed/u);
+      assert.equal(publication.inspect()["callerToolDispatchStarted"], false);
+      await publication.handle(request({ id: "close-unpublished-startup", action: "cleanup-startup", confirmCloseOriginalStartup: true }));
+      assert.equal(record(publicationOutputs.at(-1))["startupClosed"], true);
+      await publication.handle(request({ id: "close-publication-manager", action: "shutdown" }));
+    } finally {
+      // Register every isolated owner before fallible initialization/assertions.
+      // Only original supported cleanup can finish this fixture on failure.
+      for (const [index, manager] of retained.toReversed().entries()) {
+        const state = manager.inspect();
+        if (state["stage"] === "active") {
+          const generation = state["generation"]; assert.ok(typeof generation === "number");
+          await manager.handle(retire(`fixture-finally-retire-${String(index)}`, generation));
+        } else if (state["stage"] === "blocked" && state["callerToolDispatchStarted"] === false &&
+          state["startupCleanupAttempted"] === false && state["facadePid"] !== null && state["closure"] === null) {
+          await manager.handle(request({ id: `fixture-finally-startup-${String(index)}`, action: "cleanup-startup", confirmCloseOriginalStartup: true }));
+        }
+        const current = manager.inspect();
+        if (current["stage"] === "between-facades" || current["stage"] === "blocked" && (current["facadePid"] === null || current["closure"] !== null)) {
+          await manager.handle(request({ id: `fixture-finally-close-${String(index)}`, action: "shutdown" }));
+        }
+        assert.equal(manager.inspect()["stage"], "closed");
+      }
+    }
   });
 });
 
