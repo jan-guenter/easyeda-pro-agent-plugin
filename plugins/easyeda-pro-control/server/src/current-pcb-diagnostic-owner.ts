@@ -766,6 +766,7 @@ class CurrentPcbRetainedOwnerCore {
     combinedAbortAttempted?: boolean; combinedAbortDispatchAttempted?: boolean; combinedOutputCleanupOnly?: boolean;
     combinedReadiness?: CurrentFootprintCombinedFactoryFailureDiagnostics | null;
     forwardResources?: Readonly<{ counters: ReturnType<CurrentFootprintCopyForwardResourceLedger["status"]>;
+      generation: ReturnType<CurrentFootprintCopyForwardResourceLedger["generationStatus"]>;
       cleanupOnly: boolean; artifactAccountingMounted: false; journalAccountingMounted: false; nativeWriterMounted: false }>;
     savedCacheNativeObservation?: Readonly<Record<string, unknown>> | null;
     savedCacheAccessorObservation?: Readonly<Record<string, unknown>> | null;
@@ -786,8 +787,9 @@ class CurrentPcbRetainedOwnerCore {
       noProcessCleanupAvailable: this.#noProcessCleanupAvailable(), frameWorkerVerified: false, executionAuthorized: false, browserObservationConsumed: this.#browserObservationConsumed,
       nativeLaunchError: this.#nativeLaunchError, nativeSendError: this.#nativeSendError, createProcessError: this.#noProcessProof?.createProcessError ?? null,
       ...(this.#heldCacheStartup === null ? {} : { heldCacheStartupObservation: this.#heldCacheStartup.observation() }),
-      ...(this.#forwardLedger === null || this.#forwardLedgerMethods === null ? {} : { forwardResources: Object.freeze({
-        counters: this.#forwardLedgerMethods.status.call(this.#forwardLedger), cleanupOnly: this.#forwardCleanupOnly,
+      ...(this.#forwardLedger === null || this.#forwardLedgerMethods === null || this.#forwardRole === null ? {} : { forwardResources: Object.freeze({
+        counters: this.#forwardLedgerMethods.status.call(this.#forwardLedger),
+        generation: this.#forwardLedgerMethods.generationStatus.call(this.#forwardLedger, this.#forwardRole, this), cleanupOnly: this.#forwardCleanupOnly,
         artifactAccountingMounted: false, journalAccountingMounted: false, nativeWriterMounted: false }) }),
       ...(bornFootprintTransport(this.#purpose) ? { combinedReadiness: this.combinedFactoryFailureDiagnostics(),
         savedCacheNativeObservation: this.#savedCacheNativeRunner?.retained() ?? (this.#savedCacheNativeAttempted ? Object.freeze({

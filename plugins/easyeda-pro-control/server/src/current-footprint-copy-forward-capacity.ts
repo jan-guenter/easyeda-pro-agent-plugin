@@ -236,12 +236,13 @@ export class CurrentFootprintCopyForwardResourceLedger {
    * controls include the other owner and cannot determine its remaining slots.
    * Artifact and journal bytes retain their separate shared ceilings. */
   public generationStatus(role: CurrentFootprintCopyForwardRole, original: object): Readonly<{
-    failed: boolean; rendererRequests: number; mainRequests: number; controls: number; normalControls: number; cleanupControls: number;
+    failed: boolean; rendererRequests: number; rendererNormalRequests: number; rendererCleanupRequests: number; mainRequests: number; controls: number; normalControls: number; cleanupControls: number;
     rendererPolls: number; mainPolls: number; rendererEvents: number; mainFrames: number;
     rendererBytes: number; rendererEventBytes: number; mainBytes: number; helperStdoutBytes: number;
     executionAuthorized: false }> {
     const value = this.#original(role, original); return Object.freeze({ failed: this.#failed,
-      rendererRequests: value.rendererId, mainRequests: value.mainId, controls: value.controls, normalControls: value.normalControls, cleanupControls: value.cleanupControls,
+      rendererRequests: value.rendererId, rendererNormalRequests: value.rendererNormal, rendererCleanupRequests: value.rendererCleanup,
+      mainRequests: value.mainId, controls: value.controls, normalControls: value.normalControls, cleanupControls: value.cleanupControls,
       rendererPolls: value.rendererPolls.data + value.rendererPolls.idle + value.rendererPolls.wait,
       mainPolls: value.mainPolls, rendererEvents: value.rendererEvents, mainFrames: value.mainFrames,
       rendererBytes: value.bytes.get("renderer") ?? 0, rendererEventBytes: value.bytes.get("renderer-event") ?? 0,

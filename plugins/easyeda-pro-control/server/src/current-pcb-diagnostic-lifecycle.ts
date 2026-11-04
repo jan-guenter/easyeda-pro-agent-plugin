@@ -114,7 +114,7 @@ import { CURRENT_FOOTPRINT_FORWARD_PREWRITE_OPERATION_PREFIX, currentFootprintFo
   currentFootprintForwardPrewriteLifecycleRequestSchema, currentFootprintForwardPrewriteResultSchema,
   currentFootprintForwardPrewriteValidationRequestSchema } from "./current-footprint-forward-prewrite-validation.ts";
 import type { CurrentFootprintForwardPrewriteValidationRequest } from "./current-footprint-forward-prewrite-validation.ts";
-import { CURRENT_FOOTPRINT_COPY_FORWARD_PROFILE } from "./current-footprint-copy-forward-profile.ts";
+import { CURRENT_FOOTPRINT_COPY_FORWARD_CAPACITY } from "./current-footprint-copy-forward-capacity.ts";
 import type { CurrentFootprintCombinedValidationRequest } from "./current-footprint-combined-validation.ts";
 
 export type { CurrentPcbWorkerStartupOpeningCoordinator } from "./current-pcb-worker-startup-lifecycle-adapter.ts";
@@ -265,6 +265,16 @@ interface ProjectPreparation {
   readonly originalTarget: Extract<Request, { action: "open-project" }>["target"];
   readonly commonInventory: Awaited<ReturnType<typeof readExactSqlInventory>> | null;
 }
+const footprintAbortVariants = Object.freeze({
+  combined: Object.freeze({ generation: "209-startup-footprint-combined", consumed: "COMBINED_ABORT_CONSUMED", unavailable: "COMBINED_ABORT_UNAVAILABLE",
+    intentName: "combined-abort-intent.json", intentSchema: "easyeda-pro-control.footprint-combined-abort-intent.v1",
+    acknowledgmentName: "combined-abort-acknowledged.json", acknowledgmentSchema: "easyeda-pro-control.footprint-combined-abort-acknowledged.v1",
+    confirmation: "confirmAbortOriginalCombinedJob" }),
+  forward: Object.freeze({ generation: "209-startup-footprint-forward", consumed: "FORWARD_ABORT_CONSUMED", unavailable: "FORWARD_ABORT_UNAVAILABLE",
+    intentName: "forward-abort-intent.json", intentSchema: "easyeda-pro-control.footprint-forward-abort-intent.v1",
+    acknowledgmentName: "forward-abort-acknowledged.json", acknowledgmentSchema: "easyeda-pro-control.footprint-forward-abort-acknowledged.v1",
+    confirmation: "confirmAbortOriginalForwardJob" }),
+} as const);
 const claims = Object.freeze({ bridgeAuthentication: false, frameWorkerVerified: false, startupQualified: false,
   validationOnly: true, executionAuthorized: false, designExecutionAuthorized: false, savedStateVerified: false, historicalOwnershipRecreated: false });
 function requireValue(value: boolean, message: string): asserts value {
@@ -1588,7 +1598,7 @@ class CurrentPcbLifecycleCore {
         "FOOTPRINT_ROUTE_METHODS_CHANGED");
       };
       const capacity = (): void => {
-        current(); const channel = retained.methods.status.call(retained.owner).workerStartupChannel;
+        current(); const ownerStatus = retained.methods.status.call(retained.owner); const channel = ownerStatus.workerStartupChannel;
         // Conservative original reserves include unused source/plan work. The
         // Windows control sample has its own four-message native limit.
         const requests = CURRENT_FOOTPRINT_COPY_PREPARATION_PROFILE.requests.bindings + CURRENT_FOOTPRINT_COPY_PREPARATION_PROFILE.requests.dependencies +
@@ -1598,7 +1608,8 @@ class CurrentPcbLifecycleCore {
           CURRENT_FOOTPRINT_COPY_EXECUTION_PROFILE.requests.clockRegistration;
         requireValue(channel !== undefined && channel !== null && channel.started && !channel.failed && !channel.released && channel.pendingReplies === 0 &&
           Number.isSafeInteger(channel.nextRequestId) && channel.nextRequestId >= 1 &&
-          channel.nextRequestId + requests - 1 <= (this.#generation === "209-startup-footprint-forward" ? CURRENT_FOOTPRINT_COPY_FORWARD_PROFILE.renderer.normalRequestLimit : CURRENT_FOOTPRINT_COPY_EXECUTION_PROFILE.normalRequestLimit), "FOOTPRINT_ROUTE_CAPACITY");
+          channel.nextRequestId + requests - 1 <= (this.#generation === "209-startup-footprint-forward" ? CURRENT_FOOTPRINT_COPY_FORWARD_CAPACITY.writer.renderer.normalIdCeiling : CURRENT_FOOTPRINT_COPY_EXECUTION_PROFILE.normalRequestLimit) &&
+          (this.#generation !== "209-startup-footprint-forward" || this.#forwardRendererHeadroom(ownerStatus, channel.nextRequestId, requests)), "FOOTPRINT_ROUTE_CAPACITY");
       };
       await this.#installation(retained); current();
       await this.#verifyHistoricalCheckpoint(checkpoint.prepared, checkpoint.originalTarget); current();
@@ -1915,11 +1926,12 @@ class CurrentPcbLifecycleCore {
           route.opening.retainedFootprintSource === footprintForwardSourceMethods.retained, "ORIGINAL_FORWARD_SOURCE_METHODS_REQUIRED");
       };
       const capacity = (): void => {
-        current(); const channel = retained.methods.status.call(retained.owner).workerStartupChannel;
+        current(); const ownerStatus = retained.methods.status.call(retained.owner); const channel = ownerStatus.workerStartupChannel;
         requireValue(channel !== undefined && channel !== null && channel.started && !channel.failed && !channel.released && channel.pendingReplies === 0 &&
           Number.isSafeInteger(channel.nextRequestId) && channel.nextRequestId >= 1 &&
           channel.nextRequestId + CURRENT_FOOTPRINT_COPY_SOURCE_STAGE_REQUESTS + CURRENT_FOOTPRINT_COPY_PREPARATION_REQUESTS - 1 <=
-            CURRENT_FOOTPRINT_COPY_FORWARD_PROFILE.renderer.normalRequestLimit, "FORWARD_QUALIFICATION_CAPACITY");
+            CURRENT_FOOTPRINT_COPY_FORWARD_CAPACITY.writer.renderer.normalIdCeiling &&
+          this.#forwardRendererHeadroom(ownerStatus, channel.nextRequestId, CURRENT_FOOTPRINT_COPY_SOURCE_STAGE_REQUESTS + CURRENT_FOOTPRINT_COPY_PREPARATION_REQUESTS), "FORWARD_QUALIFICATION_CAPACITY");
       };
       await this.#installation(retained); current();
       await this.#verifyHistoricalCheckpoint(checkpoint.prepared, checkpoint.originalTarget); current();
@@ -2393,62 +2405,29 @@ class CurrentPcbLifecycleCore {
     requireValue(this.#mainObservationAttempted && result !== undefined && this.#pending.get("main-construction-result.json") === canonicalJson(result), "COMBINED_MAIN_PUBLICATION_REQUIRED");
     await assertSnapshot(operations); this.#assertNormalOwner(retained);
   }
-  protected async runCombinedAbort(request: Extract<CurrentFootprintCombinedValidationRequest, { action: "abort-generation" }>): Promise<Record<string, unknown>> {
-    this.#options.assertLocalAllowed();
-    requireValue(this.#generation === "209-startup-footprint-combined" && !this.#combinedAbortBusy && !this.#combinedAbortAttempted, "COMBINED_ABORT_CONSUMED");
-    const retained = this.#retained;
-    const bindingText = this.#pending.get("binding.json");
-    requireValue(retained !== null && retained.operationId === request.operationId && bindingText !== undefined &&
-      sha256Json(JSON.parse(bindingText) as unknown) === request.expectedBindingSha256 && !this.#releaseAttempted, "ORIGINAL_OWNER_REQUIRED");
-    this.#assertOwner(retained);
-    const dispatch = retained.methods.dispatchFootprintCombinedAbort; const reserve = retained.methods.reserveFootprintCombinedAbort;
-    requireValue(reserve !== undefined && dispatch !== undefined, "COMBINED_OWNER_REQUIRED");
-    // Consume synchronously, independently of normal #busy. A renderer wait
-    // Must not queue a confirmed original-Job abort behind that same wait.
-    this.#combinedAbortBusy = true; this.#combinedAbortAttempted = true;
-    try {
-      const reservation = reserve.call(retained.owner); this.#assertOwner(retained);
-      await this.#publicationTail; this.#assertOwner(retained);
-      const operations = await readCurrentPcbDiagnosticLifecycles(); this.#assertOwner(retained);
-      const operation = operations.find(value => value.operationId === request.operationId);
-      this.#assertPurpose(request.operationId, operation);
-      const binding = operation?.records["binding.json"];
-      requireValue(operation !== undefined && binding !== undefined && canonicalJson(binding) === bindingText &&
-        operation.records["combined-abort-intent.json"] === undefined && operation.records["terminated.json"] === undefined &&
-        operation.records["release-intent.json"] === undefined && operation.records["released.json"] === undefined, "COMBINED_ABORT_UNAVAILABLE");
-      requireValue(Object.keys(operation.records).every(name => [...this.#pending].some(([known, text]) => known === name && canonicalJson(operation.records[known]) === text)), "JOURNAL_CHANGED");
-      // Retain interrupted plans privately. They cannot become post-abort
-      // Success records or obstruct the original generation's cleanup.
-      for (const [name, text] of this.#pending) {
-        if (operation.records[name] === undefined) { this.#combinedAbortedRecords.set(name, text); this.#pending.delete(name); }
-      }
-      const intent: NonNullable<DiagnosticLifecycleRecords["combined-abort-intent.json"]> = {
-        schema: "easyeda-pro-control.footprint-combined-abort-intent.v1", operationId: request.operationId,
-        createdAt: new Date().toISOString(), bindingSha256: request.expectedBindingSha256,
-        previousRecordsSha256: sha256Json(operation.records), confirmAbortOriginalCombinedJob: true,
-      };
-      await assertSnapshot(operations); this.#assertOwner(retained);
-      await this.#record(request.operationId, "combined-abort-intent.json", intent); this.#assertOwner(retained);
-      const updated = { ...operation, records: { ...operation.records, "combined-abort-intent.json": intent } };
-      const expected = operations.map(value => value.operationId === request.operationId ? updated : value);
-      await assertSnapshot(expected); this.#assertOwner(retained);
-      await dispatch.call(retained.owner, reservation, request.confirmAbortOriginalCombinedJob); this.#assertOwner(retained);
-      await assertSnapshot(expected); this.#assertOwner(retained);
-      const acknowledgment: NonNullable<DiagnosticLifecycleRecords["combined-abort-acknowledged.json"]> = {
-        schema: "easyeda-pro-control.footprint-combined-abort-acknowledged.v1", operationId: request.operationId,
-        createdAt: new Date().toISOString(), intentSha256: sha256Json(intent), abortDispatched: true, terminationProved: false,
-      };
-      await this.#record(request.operationId, "combined-abort-acknowledged.json", acknowledgment); this.#assertOwner(retained);
-      return { ...describe(request.operationId, { ...updated, records: { ...updated.records, "combined-abort-acknowledged.json": acknowledgment } }),
-        abortDispatched: true, terminationProved: false, executionAuthorized: false, saveAuthorized: false };
-    } finally { this.#combinedAbortBusy = false; }
+  /** Keep the fixed Combined wrapper pinned while sharing the original abort sequence. */
+  protected runCombinedAbort(request: Extract<CurrentFootprintCombinedValidationRequest, { action: "abort-generation" }>): Promise<Record<string, unknown>> {
+    return this.#runFootprintAbort(request, "combined");
   }
-  /** Reserve only this born-forward Job before awaiting journal publication.
-   * Abort remains available while an inspector collector is pending; its ack
-   * supplies no root-exit, empty-Job or helper-release proof. */
-  protected async runForwardAbort(request: Extract<CurrentFootprintForwardPrewriteValidationRequest, { action: "abort-generation" }>): Promise<Record<string, unknown>> {
+  /** Reserve only this born-forward Job; acknowledgment supplies no termination or release proof. */
+  protected runForwardAbort(request: Extract<CurrentFootprintForwardPrewriteValidationRequest, { action: "abort-generation" }>): Promise<Record<string, unknown>> {
+    return this.#runFootprintAbort(request, "forward");
+  }
+  /** A generation's own counters reserve normal classes independently of its
+   * ID ceiling. Saved-generation totals cannot spend this writer's headroom. */
+  #forwardRendererHeadroom(status: ReturnType<LifecycleOwner["status"]>, nextId: number, required: number): boolean {
+    const resources = status.forwardResources; const generation = resources?.generation;
+    return this.#generation === "209-startup-footprint-forward" && resources !== undefined && !resources.cleanupOnly && generation !== undefined && !generation.failed &&
+      Number.isSafeInteger(generation.rendererRequests) && generation.rendererRequests >= 0 && generation.rendererRequests + 1 === nextId &&
+      Number.isSafeInteger(generation.rendererNormalRequests) && generation.rendererNormalRequests >= 0 &&
+      generation.rendererNormalRequests + required <= CURRENT_FOOTPRINT_COPY_FORWARD_CAPACITY.writer.renderer.normalClassLimit;
+  }
+  /** Consume before the first await, preserve the published prefix and privately
+   * retain interrupted plans before dispatching this generation's original Job. */
+  async #runFootprintAbort(request: Extract<CurrentFootprintCombinedValidationRequest | CurrentFootprintForwardPrewriteValidationRequest, { action: "abort-generation" }>, variant: keyof typeof footprintAbortVariants): Promise<Record<string, unknown>> {
+    const selected = footprintAbortVariants[variant];
     this.#options.assertLocalAllowed();
-    requireValue(this.#generation === "209-startup-footprint-forward" && !this.#combinedAbortBusy && !this.#combinedAbortAttempted, "FORWARD_ABORT_CONSUMED");
+    requireValue(this.#generation === selected.generation && !this.#combinedAbortBusy && !this.#combinedAbortAttempted, selected.consumed);
     const retained = this.#retained;
     const bindingText = this.#pending.get("binding.json");
     requireValue(retained !== null && retained.operationId === request.operationId && bindingText !== undefined &&
@@ -2467,32 +2446,32 @@ class CurrentPcbLifecycleCore {
       this.#assertPurpose(request.operationId, operation);
       const binding = operation?.records["binding.json"];
       requireValue(operation !== undefined && binding !== undefined && canonicalJson(binding) === bindingText &&
-        operation.records["forward-abort-intent.json"] === undefined && operation.records["terminated.json"] === undefined &&
-        operation.records["release-intent.json"] === undefined && operation.records["released.json"] === undefined, "FORWARD_ABORT_UNAVAILABLE");
+        operation.records[selected.intentName] === undefined && operation.records["terminated.json"] === undefined &&
+        operation.records["release-intent.json"] === undefined && operation.records["released.json"] === undefined, selected.unavailable);
       requireValue(Object.keys(operation.records).every(name => [...this.#pending].some(([known, text]) => known === name && canonicalJson(operation.records[known]) === text)), "JOURNAL_CHANGED");
       // Retain interrupted plans privately. They cannot become post-abort
       // Success records or obstruct the original generation's cleanup.
       for (const [name, text] of this.#pending) {
         if (operation.records[name] === undefined) { this.#combinedAbortedRecords.set(name, text); this.#pending.delete(name); }
       }
-      const intent: NonNullable<DiagnosticLifecycleRecords["forward-abort-intent.json"]> = {
-        schema: "easyeda-pro-control.footprint-forward-abort-intent.v1", operationId: request.operationId,
+      const intent = diagnosticLifecycleRecordSchemas[selected.intentName].parse({
+        schema: selected.intentSchema, operationId: request.operationId,
         createdAt: new Date().toISOString(), bindingSha256: request.expectedBindingSha256,
-        previousRecordsSha256: sha256Json(operation.records), confirmAbortOriginalForwardJob: true,
-      };
+        previousRecordsSha256: sha256Json(operation.records), [selected.confirmation]: true,
+      });
       await assertSnapshot(operations); this.#assertOwner(retained);
-      await this.#record(request.operationId, "forward-abort-intent.json", intent); this.#assertOwner(retained);
-      const updated = { ...operation, records: { ...operation.records, "forward-abort-intent.json": intent } };
+      await this.#record(request.operationId, selected.intentName, intent); this.#assertOwner(retained);
+      const updated = { ...operation, records: { ...operation.records, [selected.intentName]: intent } };
       const expected = operations.map(value => value.operationId === request.operationId ? updated : value);
       await assertSnapshot(expected); this.#assertOwner(retained);
-      await dispatch.call(retained.owner, reservation, request.confirmAbortOriginalForwardJob); this.#assertOwner(retained);
+      await dispatch.call(retained.owner, reservation, ("confirmAbortOriginalCombinedJob" in request ? request.confirmAbortOriginalCombinedJob : request.confirmAbortOriginalForwardJob)); this.#assertOwner(retained);
       await assertSnapshot(expected); this.#assertOwner(retained);
-      const acknowledgment: NonNullable<DiagnosticLifecycleRecords["forward-abort-acknowledged.json"]> = {
-        schema: "easyeda-pro-control.footprint-forward-abort-acknowledged.v1", operationId: request.operationId,
+      const acknowledgment = diagnosticLifecycleRecordSchemas[selected.acknowledgmentName].parse({
+        schema: selected.acknowledgmentSchema, operationId: request.operationId,
         createdAt: new Date().toISOString(), intentSha256: sha256Json(intent), abortDispatched: true, terminationProved: false,
-      };
-      await this.#record(request.operationId, "forward-abort-acknowledged.json", acknowledgment); this.#assertOwner(retained);
-      return { ...describe(request.operationId, { ...updated, records: { ...updated.records, "forward-abort-acknowledged.json": acknowledgment } }),
+      });
+      await this.#record(request.operationId, selected.acknowledgmentName, acknowledgment); this.#assertOwner(retained);
+      return { ...describe(request.operationId, { ...updated, records: { ...updated.records, [selected.acknowledgmentName]: acknowledgment } }),
         abortDispatched: true, terminationProved: false, executionAuthorized: false, saveAuthorized: false };
     } finally { this.#combinedAbortBusy = false; }
   }

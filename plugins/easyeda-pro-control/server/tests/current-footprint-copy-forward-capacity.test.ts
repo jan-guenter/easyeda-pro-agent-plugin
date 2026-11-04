@@ -47,6 +47,8 @@ void test("normal request IDs remain usable after reserved interleaved cleanup",
   }
   for (let id = 62; id <= 996; id += 1) { ledger.consumeRequest("forward-writer", owner, "renderer", id, false); }
   assert.equal(ledger.status().rendererRequests, 996); assert.equal(ledger.status().failed, false);
+  assert.equal(ledger.generationStatus("forward-writer", owner).rendererNormalRequests, 935);
+  assert.equal(ledger.generationStatus("forward-writer", owner).rendererCleanupRequests, 61);
   assert.throws(() =>{  ledger.consumeRequest("forward-writer", owner, "renderer", 997, false); }, /RENDERER_REQUEST/u);
   assert.equal(ledger.status().failed, true);
   assert.throws(() =>{  ledger.consumeRequest("forward-saved-readback", saved, "renderer", 1, false); }, /REQUEST_CLASS/u);
@@ -165,10 +167,10 @@ void test("generation snapshots retain their own requests and received bytes", (
   binding.consumeRequest("forward-saved-readback", saved, "renderer", 1, false);
   binding.consumeBytes("forward-saved-readback", saved, "renderer", 19); binding.consumeBytes("forward-saved-readback", saved, "helper-stdout", 23);
   binding.consumeRendererPoll("forward-saved-readback", saved, "idle"); binding.consumeRendererEvent("forward-saved-readback", saved, 5);
-  assert.deepEqual(binding.generationStatus("forward-writer", writer), { failed: false, rendererRequests: 1, mainRequests: 1, controls: 0, normalControls: 0, cleanupControls: 0,
+  assert.deepEqual(binding.generationStatus("forward-writer", writer), { failed: false, rendererRequests: 1, rendererNormalRequests: 1, rendererCleanupRequests: 0, mainRequests: 1, controls: 0, normalControls: 0, cleanupControls: 0,
     rendererPolls: 1, mainPolls: 1, rendererEvents: 1, mainFrames: 1, rendererBytes: 11, rendererEventBytes: 3,
     mainBytes: 13, helperStdoutBytes: 17, executionAuthorized: false });
-  assert.deepEqual(binding.generationStatus("forward-saved-readback", saved), { failed: false, rendererRequests: 1, mainRequests: 0, controls: 0, normalControls: 0, cleanupControls: 0,
+  assert.deepEqual(binding.generationStatus("forward-saved-readback", saved), { failed: false, rendererRequests: 1, rendererNormalRequests: 1, rendererCleanupRequests: 0, mainRequests: 0, controls: 0, normalControls: 0, cleanupControls: 0,
     rendererPolls: 1, mainPolls: 0, rendererEvents: 1, mainFrames: 0, rendererBytes: 19, rendererEventBytes: 5,
     mainBytes: 0, helperStdoutBytes: 23, executionAuthorized: false });
   assert.equal(before.rendererRequests, 0); assert.equal(before.rendererBytes, 0);

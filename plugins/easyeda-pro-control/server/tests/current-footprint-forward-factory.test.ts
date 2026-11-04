@@ -73,6 +73,9 @@ void test("original forward sends, polls and native counter tuples charge before
   assert.deepEqual(main, { bytes: Buffer.from("{}\0").toString("base64") });
   const counters = owner.status().forwardResources?.counters; assert.ok(counters !== undefined);
   assert.equal(counters.rendererRequests, 1); assert.equal(counters.rendererPolls, 1);
+  const generation = owner.status().forwardResources?.generation; assert.ok(generation !== undefined);
+  assert.equal(generation.rendererNormalRequests, 1); assert.equal(generation.rendererCleanupRequests, 0);
+  assert.equal(generation.rendererRequests, 1);
   assert.equal(counters.rendererBytes, Buffer.byteLength(JSON.stringify({ id: 1, result: {} })) + 1);
   assert.equal(counters.mainRequests, 1); assert.equal(counters.mainPolls, 1); assert.equal(counters.mainFrames, 1);
   assert.equal(counters.mainBytes, 4); assert.ok(counters.helperStdoutBytes > 0);

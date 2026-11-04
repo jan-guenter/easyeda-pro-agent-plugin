@@ -12,7 +12,9 @@ import { transform } from "esbuild";
 import { sha256Json, sha256Text } from "../src/core.ts";
 import { controlDataDirectory } from "../src/artifacts.ts";
 import { CURRENT_FOOTPRINT_COPY_SOURCE_READ_LIMITS } from "../src/current-footprint-copy-source-read.ts";
-import { CURRENT_FOOTPRINT_COPY_FORWARD_PROFILE } from "../src/current-footprint-copy-forward-profile.ts";
+import { CURRENT_FOOTPRINT_COPY_FORWARD_CAPACITY, CurrentFootprintCopyForwardResourceLedger } from "../src/current-footprint-copy-forward-capacity.ts";
+import { CURRENT_FOOTPRINT_COPY_EXECUTION_PROFILE } from "../src/current-footprint-copy-execution-profile.ts";
+import { CURRENT_FOOTPRINT_COPY_PREPARATION_PROFILE } from "../src/current-footprint-copy-preparation-profile.ts";
 import { CurrentPcbWorkerStartupActorRunner } from "../src/current-pcb-worker-startup-actor-runner.ts";
 import { currentPcb209WorkerStartupActorPacketSchema } from "../src/current-pcb-209-worker-startup-actor.ts";
 import { currentFootprintCopyMainBackendObservationSchema } from "../src/current-footprint-copy-main-backend-runner.ts";
@@ -126,18 +128,19 @@ function recordBytes(value: unknown): Buffer { return Buffer.from(`${JSON.string
 
 /** Exercise the genuine mounted stage and original-reference joins. Native
  * inspection and plan leaves are synthetic; all lifecycle/journal guards run. */
-async function fixture(context: TestContext, mode: "success" | "capacity" | "source-failure" | "checkpoint-failure" | "publication" | "method-drift" | "unsupported" | "unicode-failure"):
-Promise<Readonly<{ value: Fixture; id: string; binding: string; calls: string[]; qualify: () => Promise<Row>; next: () => number }>> {
+async function fixture(context: TestContext, mode: "success" | "capacity" | "source-failure" | "checkpoint-failure" | "publication" | "method-drift" | "unsupported" | "unicode-failure" | "route-capacity", routeHeadroom: "exact" | "short" = "short"):
+Promise<Readonly<{ value: Fixture; id: string; binding: string; calls: string[]; qualify: () => Promise<Row>; next: () => number; route: () => Promise<Row>; routeStarted: () => boolean; normal: () => number }>> {
   const calls: string[] = [];
   let id = `footprint-copy-qualify-test-${mode}`;
   if (mode === "unicode-failure") { id = id.padEnd(80, "x"); }
+  if (mode === "route-capacity") { id += `-${routeHeadroom}`; }
   let module: Module | null = null, result: CurrentFootprintCopyStartupOpeningResult | null = null;
   let state: ReturnType<typeof currentFootprintCopyStatePacketSchema.parse> | null = null;
   let source: ReturnType<typeof currentFootprintSourceReadPacketSchema.parse> | null = null;
   let preparation: ReturnType<typeof currentFootprintCopyPreparationSchema.parse> | null = null;
   let actor: ReturnType<typeof currentPcb209WorkerStartupActorPacketSchema.parse> | null = null;
   let before: Awaited<ReturnType<typeof readExactSqlInventory>> | null = null, plan: Row | null = null;
-  let failPublication = mode === "publication", nextRequestId = 100, sourceStarted = false;
+  let failPublication = mode === "publication", routeStarted = false, sourceStarted = false;
   const packets = routeEvidence({ helperInstance: "b".repeat(32), jobId: "c".repeat(32), rootPid: 123, rootCreated: "123456789012345" });
   const assignments = Object.freeze({ profile: "private.current-pcb-worker-construction-assignments.v1", callbackKinds: ["uploadStructure", "structure", "cooperation", "upload"],
     originalConstructionCallbacksMatched: true, originalCallbackReceiversVerified: true, currentProjectWrapperRelationsVerified: true,
@@ -174,7 +177,7 @@ Promise<Readonly<{ value: Fixture; id: string; binding: string; calls: string[];
       assert.equal(selected, result); assert.equal(assigned, assignments); assert.equal(observed, state); assert.equal(selectedPlan, plan); assert.equal(packet, source);
       calls.push("source-reproof");  return Promise.resolve();
     }
-    public observeFootprintCacheConstruction(): Promise<unknown> { assert.ok(this.#original.synthetic); return Promise.resolve(packets["cacheConstruction"]); }
+    public observeFootprintCacheConstruction(): Promise<unknown> { assert.ok(this.#original.synthetic); routeStarted = true; return Promise.resolve(packets["cacheConstruction"]); }
     public observeFootprintProducers(): Promise<unknown> { assert.ok(this.#original.synthetic); return Promise.resolve(packets["producers"]); }
     public observeFootprintDependencies(): Promise<unknown> { assert.ok(this.#original.synthetic); return Promise.resolve(packets["dependencies"]); }
     public observeFootprintRegisteredAsync(): Promise<unknown> { assert.ok(this.#original.synthetic); return Promise.resolve(packets["callbacks"]); }
@@ -246,11 +249,20 @@ Promise<Readonly<{ value: Fixture; id: string; binding: string; calls: string[];
   const parent = Object.freeze({ targetId: "parent-target", sessionId: "parent-session", nextRequestId: 17 });
   const channel = new CurrentPcbWorkerStartupChannel({ requireOriginalParent: (): Promise<typeof parent> => Promise.resolve(parent), assertOriginalTermination: (): Promise<void> => { assert.ok(value.state.terminated); return Promise.resolve(); }, observeOriginalParentEvent: unused, exchange: unused });
   const handoff = Object.freeze({ channel, dependency: await channel.start(), opening: Object.freeze({ context: () => ({ sessionId: parent.sessionId, uniqueContextId: "parent-context" }), reprove: () => Promise.resolve(), begin: unused, finish: unused, observeParent: unused, ancillaryFrame: (): null => null, observeAncillary: unused, ancillaryObservation: (): null => null }) });
+  const ledger = new CurrentFootprintCopyForwardResourceLedger(); ledger.bind("forward-writer", value.owner);
+  const usage = (): ReturnType<CurrentFootprintCopyForwardResourceLedger["generationStatus"]> => ledger.generationStatus("forward-writer", value.owner);
+  const advance = (normal: number, cleanup = 0): void => {
+    while (usage().rendererCleanupRequests < cleanup) { ledger.consumeRequest("forward-writer", value.owner, "renderer", usage().rendererRequests + 1, true); }
+    while (usage().rendererNormalRequests < normal) { ledger.consumeRequest("forward-writer", value.owner, "renderer", usage().rendererRequests + 1, false); }
+  };
+  advance(99);
   const status = value.owner["status"]; assert.ok(typeof status === "function");
   Object.assign(value.owner, {
     status: (): Row => {
       const current: unknown = Reflect.apply(status, value.owner, []); assert.ok(current !== null && typeof current === "object");
-      return { ...current, workerStartupChannel: { ...channel.status(), nextRequestId }, combinedAbortDispatchAttempted: false, combinedOutputCleanupOnly: false };
+      return { ...current, workerStartupChannel: { ...channel.status(), nextRequestId: usage().rendererRequests + 1 },
+        forwardResources: { counters: ledger.status(), generation: usage(), cleanupOnly: false,
+          artifactAccountingMounted: false, journalAccountingMounted: false, nativeWriterMounted: false }, combinedAbortDispatchAttempted: false, combinedOutputCleanupOnly: false };
     },
     handoffWorkerStartup: () => Promise.resolve(handoff), observeFootprintCopyUi: () => Promise.resolve(packets["ui"]), requireFootprintCopyUi: () => Promise.resolve(), retainedFootprintCopyUi: (): null => null,
     observeFootprintCopyManagerRoute: () => Promise.resolve(packets["manager"]), requireFootprintCopyManagerRoute: () => Promise.resolve(), retainedFootprintCopyManagerRoute: (): null => null,
@@ -271,11 +283,43 @@ Promise<Readonly<{ value: Fixture; id: string; binding: string; calls: string[];
   await value.coordinator.captureWorkerStartup(id, binding, module.STARTUP_OPEN_INPUT);
   await value.coordinator.observeWorkerStartupAssignments(id, binding); await value.coordinator.observeWorkerStartupActor(id, binding);
   await assert.rejects(value.coordinator.qualifyWorkerStartupFootprintSource(id, binding, { footprintUuid: "1234567890abcdef" }), /ORIGINAL_FORWARD_ROUTE_REQUIRED/u);
-  await value.coordinator.observeWorkerStartupFootprintRoute(id, binding);
-  nextRequestId = CURRENT_FOOTPRINT_COPY_FORWARD_PROFILE.renderer.normalRequestLimit - 73 + (mode === "capacity" ? 2 : 1);
-  return { value, id, binding, calls, next: (): number => nextRequestId,
+  const route = (): Promise<Row> => value.coordinator.observeWorkerStartupFootprintRoute(id, binding);
+  if (mode === "route-capacity") {
+    const requests = CURRENT_FOOTPRINT_COPY_PREPARATION_PROFILE.requests.bindings + CURRENT_FOOTPRINT_COPY_PREPARATION_PROFILE.requests.dependencies +
+      CURRENT_FOOTPRINT_COPY_PREPARATION_PROFILE.requests.uiObserve + CURRENT_FOOTPRINT_COPY_PREPARATION_PROFILE.requests.uiReprove +
+      CURRENT_FOOTPRINT_COPY_PREPARATION_PROFILE.requests.managerRoute + CURRENT_FOOTPRINT_COPY_EXECUTION_PROFILE.requests.asyncAndHandoff +
+      CURRENT_FOOTPRINT_COPY_EXECUTION_PROFILE.requests.destinations + 18 + CURRENT_FOOTPRINT_COPY_EXECUTION_PROFILE.requests.cacheConstructionDelegates +
+      CURRENT_FOOTPRINT_COPY_EXECUTION_PROFILE.requests.clockRegistration;
+    advance(CURRENT_FOOTPRINT_COPY_FORWARD_CAPACITY.writer.renderer.normalClassLimit - requests + (routeHeadroom === "short" ? 1 : 0));
+  } else {
+    await route();
+    advance(CURRENT_FOOTPRINT_COPY_FORWARD_CAPACITY.writer.renderer.normalClassLimit - 73 + (mode === "capacity" ? 1 : 0),
+      mode === "capacity" ? 0 : CURRENT_FOOTPRINT_COPY_FORWARD_CAPACITY.writer.renderer.cleanupClassLimit);
+  }
+  return { value, id, binding, calls, next: (): number => usage().rendererRequests + 1, route, routeStarted: (): boolean => routeStarted,
+    normal: (): number => usage().rendererNormalRequests,
     qualify: () => value.coordinator.qualifyWorkerStartupFootprintSource(id, binding, { footprintUuid: "1234567890abcdef" }) };
 }
+
+void test("forward route reserves its original normal class separately from unused renderer IDs", async context => {
+  for (const headroom of ["exact", "short"] as const) {
+    const f = await fixture(context, "route-capacity", headroom); const before = f.next(), normal = f.normal();
+    assert.equal(f.routeStarted(), false);
+    if (headroom === "exact") { await f.route(); assert.equal(f.routeStarted(), true); }
+    else {
+      await assert.rejects(f.route(), /FOOTPRINT_ROUTE_CAPACITY/u);
+      assert.equal(f.routeStarted(), false); assert.equal(f.next(), before); assert.equal(f.normal(), normal);
+      const intentPath = join(controlDataDirectory(), "pcb-diagnostic-lifecycle-v1", f.id, "footprint-copy-route-intent.json");
+      await assert.rejects(readFile(intentPath), { code: "ENOENT" });
+    }
+    await f.value.coordinator.run({ action: "observe-window", operationId: f.id, expectedBindingSha256: f.binding });
+    await f.value.coordinator.run({ action: "normal-close", operationId: f.id, expectedBindingSha256: f.binding, hwnd: "12345", confirmNormalClose: true });
+    f.value.state.terminated = true;
+    await f.value.coordinator.run({ action: "observe-termination", operationId: f.id, expectedBindingSha256: f.binding });
+    await f.value.coordinator.run({ action: "release-closed", operationId: f.id, expectedBindingSha256: f.binding });
+    assert.equal(f.value.coordinator.hasActiveReservation(), false);
+  }
+});
 
 void test("maximum escaped forward failure publishes and reads at the exact finite byte boundary", async context => {
   const f = await fixture(context, "unicode-failure");
@@ -340,6 +384,12 @@ for (const mode of ["success", "capacity", "source-failure", "checkpoint-failure
     assert.equal(inspect["forwardQualificationAttemptConsumed"], true);
     await assert.rejects(f.qualify(), /FORWARD_QUALIFICATION_CONSUMED/u);
     if (mode === "capacity" || mode === "checkpoint-failure") { assert.deepEqual(f.calls, []); assert.equal(f.next(), before); }
+    if (mode === "capacity") {
+      assert.ok(f.next() + 73 - 1 <= CURRENT_FOOTPRINT_COPY_FORWARD_CAPACITY.writer.renderer.normalIdCeiling);
+      assert.equal(f.normal() + 73, CURRENT_FOOTPRINT_COPY_FORWARD_CAPACITY.writer.renderer.normalClassLimit + 1);
+      const intentPath = join(controlDataDirectory(), "pcb-diagnostic-lifecycle-v1", f.id, "forward-prewrite-intent.json");
+      await assert.rejects(readFile(intentPath), { code: "ENOENT" });
+    }
     if (mode === "method-drift") { assert.deepEqual(f.calls, ["source-after-intent"]); }
     if (mode === "publication") {
       assert.equal(inspect["forwardQualificationResult"], null);

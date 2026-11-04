@@ -12,14 +12,14 @@ import { createCurrentPcb209DiagnosticInstallationPlan } from "../src/current-pc
 import type { CurrentPcbDiagnosticInstallation } from "../src/current-pcb-diagnostic-installation.ts";
 import type { CurrentFootprintCombinedNativeOwner } from "../src/current-pcb-diagnostic-owner.ts";
 import { currentFootprintCopyMainBackendObservationSchema } from "../src/current-footprint-copy-main-backend-runner.ts";
-import { sha256Text } from "../src/core.ts";
+import { sha256Json, sha256Text } from "../src/core.ts";
 import { CURRENT_PCB_209_OPENING_SCRIPTS } from "../src/current-pcb-209-opening-profile.ts";
 import { currentFootprintSavedCacheObservationSchema } from "../src/current-footprint-saved-cache-runner.ts";
 import { currentFootprintSavedCacheAccessorObservationSchema } from "../src/current-footprint-saved-cache-accessor-runner.ts";
 import { currentFootprintCombinedNativeStateSchema } from "../src/current-footprint-combined-validation.ts";
 import { currentFootprintForwardPrewriteValidationRequestSchema } from "../src/current-footprint-forward-prewrite-validation.ts";
 import { CURRENT_FOOTPRINT_COPY_MAIN_BACKEND_SOURCE } from "../src/current-footprint-copy-main-backend-source.ts";
-import { assertNoUnresolvedCurrentPcbDiagnosticLaunches, publishCurrentPcbDiagnosticLifecycleRecord } from "../src/current-pcb-diagnostic-lifecycle-journal.ts";
+import { assertNoUnresolvedCurrentPcbDiagnosticLaunches, diagnosticLifecycleRecordSchemas, publishCurrentPcbDiagnosticLifecycleRecord } from "../src/current-pcb-diagnostic-lifecycle-journal.ts";
 
 const syntheticEngine = { protocolVersion: "synthetic", product: "synthetic", revision: "synthetic", userAgent: "synthetic", jsVersion: "synthetic" };
 const unavailable = (): Promise<never> => Promise.reject(new Error("Unexpected synthetic native operation"));
@@ -174,6 +174,20 @@ for (const lostAbort of [false, true]) {
       const dispatched = f.lifecycle.run(abort);
       await assert.rejects(f.lifecycle.run({ action: "observe-termination", operationId, expectedBindingSha256 }), /BUSY/u);
       const acknowledged = await dispatched; assert.equal(acknowledged["terminationProved"], false);
+    }
+    const directory = join(controlDataDirectory(), "pcb-diagnostic-lifecycle-v1", operationId);
+    const intentText = await readFile(join(directory, "forward-abort-intent.json"), "utf8");
+    const intent = diagnosticLifecycleRecordSchemas["forward-abort-intent.json"].parse(JSON.parse(intentText) as unknown);
+    assert.equal(intent.schema, "easyeda-pro-control.footprint-forward-abort-intent.v1"); assert.equal(intent.confirmAbortOriginalForwardJob, true);
+    assert.equal(Object.hasOwn(intent, "confirmAbortOriginalCombinedJob"), false);
+    await assert.rejects(readFile(join(directory, "combined-abort-intent.json")), { code: "ENOENT" });
+    await assert.rejects(readFile(join(directory, "combined-abort-acknowledged.json")), { code: "ENOENT" });
+    if (lostAbort) { await assert.rejects(readFile(join(directory, "forward-abort-acknowledged.json")), { code: "ENOENT" }); }
+    else {
+      const acknowledgmentText = await readFile(join(directory, "forward-abort-acknowledged.json"), "utf8");
+      const acknowledgment = diagnosticLifecycleRecordSchemas["forward-abort-acknowledged.json"].parse(JSON.parse(acknowledgmentText) as unknown);
+      assert.equal(acknowledgment.schema, "easyeda-pro-control.footprint-forward-abort-acknowledged.v1");
+      assert.equal(acknowledgment.intentSha256, sha256Json(intent)); assert.equal(acknowledgment.terminationProved, false);
     }
     await assert.rejects(f.lifecycle.run(abort), /FORWARD_ABORT_CONSUMED/u);
     await assert.rejects(f.lifecycle.run({ action: "observe-main-construction", operationId, expectedBindingSha256 }), /COMBINED_GENERATION_ABORTED/u);

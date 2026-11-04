@@ -1,5 +1,7 @@
 # Project history
 
+- [2026-11-04 historical controller recovery completed](2026-11-04-controller-recovery-completed.md). Actual separate unknown-opening relinquishment, unchanged original journals and two-generation normal retirement without a Codex restart.
+
 - [2026-11-04 manager input recovery](2026-11-04-manager-input-recovery.md). Recoverable bounded framing, same-controller cleanup proof and preserved isolated-test/CI failures.
 
 - [2026-11-04 conflict closure and full-review repairs](2026-11-04-conflict-closure-and-review-repairs.md). Normal conflict-server closure, explicit idle legacy cleanup, real manager retirement, full review and both cleanup/journal fixes.
